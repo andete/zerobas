@@ -1105,6 +1105,45 @@ linemax-acceptance: repack-machine
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
 	        $(if $(CAS),--cas,)
 
+# --- D-LNBLANK: a blank INSIDE a line number ---------------------------------
+# docs/spec-basic-lnblank.md, measurement docs/lnblank-msx1-characterization.md.
+# Three batteries: num (the leading line number, program.asm parse_lineno), ref
+# (a line-number REFERENCE inside a statement, tokenise.inc branch_lineno -- a
+# DIFFERENT code path), lit (is the rule the line-number scan's, or the number
+# scanner's?). Scope with ONLY=num,ref,lit.
+#
+# ⚠️ TWO ORACLES. Every row is asked of the VG-8020 AND the CF-3300, because the
+# whole slice rests on one filed row from one machine and a rule only one ROM
+# shows is not a rule MSX-BASIC has. Affordable only because the readout is
+# MEMORY (`("stored_line", TXTTAB)`), not the screen -- the CF-3300 boots Disk
+# BASIC in SCREEN 1 and a screen readout would need chancost's geometry dance.
+# SIDES= overrides the machine list; the characterize target defaults to the two
+# references alone, which is what an ORACLE-LOCK pass is.
+#
+# ⚠️ REPEAT=2 IS MANDATORY ON A REFERENCE PASS and the reason is asymmetric: a
+# dropped keystroke changes the stored bytes and looks exactly like a semantic
+# divergence. In the differential direction that is a loud false FAIL; in the
+# oracle-lock direction it is a false PASS FOREVER. Any row whose two boots
+# disagree is UNSTABLE and fatal.
+#
+# `make lnblank-echo` runs the echo guard instead of the measurement. It does NOT
+# squeeze whitespace the way the other probes' guards do -- blanks are the
+# subject here -- so it measures the screen's left margin per capture instead.
+lnblank-characterize: repack-machine
+	python3 probes/basic/basic_probe_lnblank.py \
+	        $(if $(SIDES),--sides '$(SIDES)',) \
+	        $(if $(ONLY),--only '$(ONLY)',) $(if $(REPEAT),--repeat $(REPEAT),)
+
+lnblank-acceptance: repack-machine
+	python3 probes/basic/basic_probe_lnblank.py --gate \
+	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',) --repeat $(if $(REPEAT),$(REPEAT),1)
+
+lnblank-echo: repack-machine
+	python3 probes/basic/basic_probe_lnblank.py --echo --repeat 1 \
+	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',)
+
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #
 # What one open channel costs on a real disk-capable MSX1, measured out of the same
@@ -1341,5 +1380,6 @@ clean:
         width-characterize width-acceptance \
         arrdim-characterize arrdim-acceptance \
         linemax-characterize linemax-acceptance chancost-characterize \
+        lnblank-characterize lnblank-acceptance lnblank-echo \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance clean
