@@ -267,6 +267,19 @@ CASES = [
     # IFC readings above are a DOMAIN verdict and not the machine erroring at
     # everything typed at it.
     ("mfd_noeq",  ["MAXFILES 2", "PRINT FRE(0)"]),
+
+    # --- the int16 BOUNDARY, both sides of it, both signs. These pin the
+    # DENOMINATOR OF THE FIX rather than of the defect: mfd_65536/mfd_70000 show
+    # THAT out-of-int16 is mishandled, these four show WHERE the line is, so a
+    # fix cannot land one off and still score green on the two rows that found it.
+    # get_byte_arg's own header records the reference rule as the RANGE
+    # -32768..32767 (not the magnitude |x| <= 32767), verified on the VG-8020 at
+    # CHR$(-32768) vs CHR$(-32769). These rows ask whether MAXFILES sits on that
+    # same boundary on the CF-3300 -- measured, not inherited from another verb.
+    ("mfd_32767",  ["MAXFILES=32767", "PRINT FRE(0)"]),   # in int16, >15  -> IFC?
+    ("mfd_32768",  ["MAXFILES=32768", "PRINT FRE(0)"]),   # just OUT       -> OVF?
+    ("mfd_n32768", ["MAXFILES=-32768", "PRINT FRE(0)"]),  # in int16 (range) -> IFC?
+    ("mfd_n32769", ["MAXFILES=-32769", "PRINT FRE(0)"]),  # just OUT       -> OVF?
 ]
 
 # The reference's own recorded answers. Re-checking that the oracle still
@@ -337,6 +350,15 @@ REF_EXPECT = {
     "mfd_frac15":  7777,     # 15.9 -> 15, accepted (rounding would be IFC)
     "mfd_expr":    "IFC",
     "mfd_noeq":    "SYNTAX",
+    # the int16 boundary, measured on the CF-3300 2026-07-31 (again, BEFORE
+    # zerobas was run on them). It is the RANGE -32768..32767, NOT the magnitude
+    # |x| <= 32767 -- the same asymmetric boundary get_byte_arg's header records
+    # for CHR$ on the VG-8020, now confirmed for MAXFILES on the CF-3300 rather
+    # than assumed to carry over from another verb.
+    "mfd_32767":   "IFC",
+    "mfd_32768":   "OVF",
+    "mfd_n32768":  "IFC",
+    "mfd_n32769":  "OVF",
 }
 
 # Error CLASSES, not wordings. zerobas prints its OWN lowercase messages by
