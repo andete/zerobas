@@ -216,14 +216,74 @@ CASES = [
     ("trap_lof_closed",   (["10 ON ERROR GOTO 100", "20 A=LOF(1)",
                             "100 PRINT ERR", "RUN"], None)),
 
-    # The sites D-NOTOPEN DELIBERATELY LEFT, measured and allowlisted below. They
-    # are here so KNOWN_DIVERGE stays a CONTROL THAT MUST KEEP MATCHING rather
-    # than an empty box (memory: deadcode-gate) -- and so that a later slice which
-    # sweeps them, or one which sweeps them BY ACCIDENT, moves a row instead of
-    # landing silently. `closed_ch2` is the ERR 52 class, which is a DIFFERENT
-    # class reached one check earlier (fch_valid), not this item.
+    # --- D-NOTOPEN2 (docs/spec-basic-gpfi-notopen-err59.md) ------------------
+    # The four verbs D-NOTOPEN measured and LEFT. `closed_get`/`closed_field` were
+    # its allowlisted pins; `PUT` and `INPUT$` had NO ROW AT ALL, which is the same
+    # half-gated shape D-NOTOPEN itself had to correct for INPUT#/LINE INPUT#.
+    # All four raise ERR 59 on the CF-3300 with the channel never opened.
     ("closed_get",     (["GET #1,1"], None)),
     ("closed_field",   (['FIELD #1,10 AS A$'], None)),
+    ("closed_put",     (["PUT #1,1"], None)),
+    ("closed_inpd",    (["A$=INPUT$(3,#1)"], None)),
+    # ...and their TRAPPABILITY, read as the CODE the handler printed. These four
+    # already trapped before the slice (via stmt_error -> raise_error), just with
+    # ERR 2 -- so unlike D-NOTOPEN this is a code change, not a control-flow one,
+    # and these rows are what say so rather than an argument in the spec.
+    ("trap_get_closed",   (["10 ON ERROR GOTO 100", "20 GET #1,1",
+                            "100 PRINT ERR", "RUN"], None)),
+    ("trap_put_closed",   (["10 ON ERROR GOTO 100", "20 PUT #1,1",
+                            "100 PRINT ERR", "RUN"], None)),
+    ("trap_field_closed", (["10 ON ERROR GOTO 100", "20 FIELD #1,10 AS A$",
+                            "100 PRINT ERR", "RUN"], None)),
+    ("trap_inpd_closed",  (["10 ON ERROR GOTO 100", "20 A$=INPUT$(3,#1)",
+                            "100 PRINT ERR", "RUN"], None)),
+
+    # GREEN CONTROLS -- the channel modes that are CORRECT for each verb, so they
+    # must raise NOTHING (`0`) on both machines. Without these two, a "fix" that
+    # raised 59 or 61 unconditionally would turn every row above green and every
+    # row below green, and the battery would report a clean sweep.
+    # `ok_in_inpd` is load-bearing for the INPUT$ hunk specifically: that hunk
+    # moved the mode test AHEAD of fch_select, and this is the only row that would
+    # notice if INPUT$ stopped reading. `rand_put` (LOF 256) is the matching
+    # control for FIELD+PUT on a real RANDOM channel.
+    ("ok_in_inpd",     (["10 ON ERROR GOTO 100", '20 OPEN "HI.TXT" FOR INPUT AS #1',
+                         "30 A$=INPUT$(3,#1)", "100 PRINT ERR", "RUN"], None)),
+    ("ok_rnd_get",     (["10 ON ERROR GOTO 100", '20 OPEN "HI.TXT" AS #1',
+                         "30 FIELD #1,10 AS A$:GET #1,1",
+                         "100 PRINT ERR", "RUN"], None)),
+
+    # THE WRONG-MODE COLUMN. The reference answers FIVE distinct codes across this
+    # grid (5/55/58/59/61), not one, and these seven rows cover each RULE once and
+    # each rule's BOUNDARY once -- rather than all 17 cells, which would add 20
+    # boots to re-measure rules already pinned.
+    #   * wm_in_get + wm_app_put  -- GET/PUT on a disk channel that is not RANDOM
+    #     -> 61, pinned at both ends of the disk modes and on both verbs.
+    #   * wm_lpt_get vs wm_lpt_fld -- THE PAIR THAT MATTERS. Same LPT: channel, and
+    #     the reference answers 58 for GET but 5 for FIELD. A fix that collapsed
+    #     "device -> one code" goes red on exactly one of these two, which is the
+    #     only way that mistake is visible at all.
+    #   * wm_rnd_inpd vs wm_out_inpd -- INPUT$'s two rules. RANDOM is 61, every
+    #     other open mode is 55. Sampling only one of them is how a wrong rule gets
+    #     carried forward as settled (memory: err21-no-resume-slice).
+    ("wm_in_get",      (["10 ON ERROR GOTO 100", '20 OPEN "HI.TXT" FOR INPUT AS #1',
+                         "30 GET #1,1", "100 PRINT ERR", "RUN"], None)),
+    ("wm_app_put",     (["10 ON ERROR GOTO 100", '20 OPEN "HI.TXT" FOR APPEND AS #1',
+                         "30 PUT #1,1", "100 PRINT ERR", "RUN"], None)),
+    ("wm_lpt_get",     (["10 ON ERROR GOTO 100", '20 OPEN "LPT:" FOR OUTPUT AS #1',
+                         "30 GET #1,1", "100 PRINT ERR", "RUN"], None)),
+    ("wm_in_field",    (["10 ON ERROR GOTO 100", '20 OPEN "HI.TXT" FOR INPUT AS #1',
+                         "30 FIELD #1,10 AS A$", "100 PRINT ERR", "RUN"], None)),
+    ("wm_lpt_fld",     (["10 ON ERROR GOTO 100", '20 OPEN "LPT:" FOR OUTPUT AS #1',
+                         "30 FIELD #1,10 AS A$", "100 PRINT ERR", "RUN"], None)),
+    ("wm_rnd_inpd",    (["10 ON ERROR GOTO 100", '20 OPEN "HI.TXT" AS #1',
+                         "30 A$=INPUT$(3,#1)", "100 PRINT ERR", "RUN"], None)),
+    ("wm_out_inpd",    (["10 ON ERROR GOTO 100", '20 OPEN "ZQ.DAT" FOR OUTPUT AS #1',
+                         "30 A$=INPUT$(3,#1)", "100 PRINT ERR", "RUN"], None)),
+
+    # The ERR 52 class -- a DIFFERENT class reached one check EARLIER (fch_valid),
+    # so neither D-NOTOPEN nor D-NOTOPEN2 moves it. It is the ONLY entry left in
+    # KNOWN_DIVERGE, and it keeps that list a control that must keep matching
+    # rather than an empty box (memory: deadcode-gate).
     ("closed_ch2",     (['PRINT #2,"X"'], None)),
 
     # write -> CLOSE -> re-open: catches a fix that lets its zero reach the dir.
@@ -272,13 +332,33 @@ REF_EXPECT: dict = {
     "trap_print_closed": 59,    # the handler RAN and printed 59 -- so the
     "trap_input_closed": 59,    # reference's ERR 59 here is trappable, and a `0`
     "trap_lof_closed":   59,    # would have meant no error was raised at all
-    "closed_get":     "FNO",    # GET on a never-opened channel: ERR 59 too...
-    "closed_field":   "FNO",    # ...and FIELD. Both LEFT by D-NOTOPEN (its §7.1):
-                                # zerobas answers `Syntax error` from a DIFFERENT
-                                # disposition at DIFFERENT sites (field.asm's
-                                # stmt_error), and what the reference answers for
-                                # GET on a channel open FOR INPUT is NOT measured
-                                # -- sweeping an unmeasured neighbour is the trap.
+    # --- D-NOTOPEN2, all MEASURED 2026-07-31 on the CF-3300, never guessed.
+    "closed_get":     "FNO",    # GET on a never-opened channel: ERR 59...
+    "closed_field":   "FNO",    # ...FIELD...
+    "closed_put":     "FNO",    # ...PUT...
+    "closed_inpd":    "FNO",    # ...and INPUT$. All four, one rule.
+    "trap_get_closed":   59,    # and all four TRAP -- the handler ran and printed
+    "trap_put_closed":   59,    # the code. A `0` here would mean nothing was
+    "trap_field_closed": 59,    # raised at all, so the three outcomes (trapped /
+    "trap_inpd_closed":  59,    # not trapped / nothing happened) stay distinct.
+    "ok_in_inpd":      0,       # CONTROL: INPUT$ on a channel open FOR INPUT reads
+                                # normally -- NOTHING is raised.
+    "ok_rnd_get":      0,       # CONTROL: FIELD + GET on a real RANDOM channel.
+    # The wrong-mode grid. FIVE distinct codes, each measured:
+    "wm_in_get":      61,       # GET,   disk channel not RANDOM -> bad file mode
+    "wm_app_put":     61,       # PUT,   ditto at the APPEND end of the disk modes
+    "wm_lpt_get":     58,       # GET,   DEVICE channel -> sequential i/o only
+    "wm_in_field":    61,       # FIELD, disk channel not RANDOM -> bad file mode
+                                # (zerobas used to accept this SILENTLY -- the row
+                                # read 0, i.e. nothing raised at all)
+    "wm_lpt_fld":      5,       # FIELD, DEVICE channel -> illegal function call.
+                                # ⚠️ NOT 58: the same LPT: channel answers 58 to
+                                # GET and 5 to FIELD. This row and wm_lpt_get are
+                                # the pair that keeps those two apart.
+    "wm_rnd_inpd":    61,       # INPUT$ on RANDOM -> bad file mode...
+    "wm_out_inpd":    55,       # ...but on ANY other open mode -> input past end.
+                                # The two INPUT$ rules; measuring only one of them
+                                # is how a wrong rule gets carried forward.
     "closed_ch2":     "BFN",    # #2 > MAXFILES=1 -> ERR 52 `bad file number`, a
                                 # DIFFERENT class from 59, rejected one check
                                 # earlier (fch_valid). ⚠️ And it does NOT
@@ -341,22 +421,18 @@ DIR_EXPECT: dict = {
 # already reaching (`fch_mode_class`, basic/expr.asm) instead of hand-inlining its
 # array read and omitting its `or a`. Both sites got 4 bytes of page 1 back.
 KNOWN_DIVERGE: dict = {
-    # What D-NOTOPEN MEASURED AND DELIBERATELY LEFT (its §7), each with the row
-    # that pins it. These are not "known bad, ignore" -- they are a CONTROL THAT
-    # MUST KEEP MATCHING: if a later slice sweeps them, or sweeps them by
-    # accident, the value moves and this gate trips.
+    # ✅ D-NOTOPEN2 LANDED 2026-07-31 (docs/spec-basic-gpfi-notopen-err59.md): the
+    # `closed_get` and `closed_field` entries D-NOTOPEN parked here are GONE rather
+    # than updated, and the whole wrong-mode column they pinned is now FIXED rows
+    # above instead of allowlisted ones. GET/PUT/FIELD/INPUT$ on a not-open channel
+    # raise ERR 59; on an open channel of the wrong mode they raise the reference's
+    # 61 / 58 / 5 / 55 -- five codes, measured across every FCH_MODES value.
     #
-    # §7.1 -- GET/PUT/FIELD/INPUT$ on a not-open channel answer `Syntax error`
-    # where the reference answers ERR 59. A DIFFERENT disposition (stmt_error /
-    # str_eval_no, not load_error) at DIFFERENT sites (basic/field.asm,
-    # basic/strvar.asm). FIELD's would be a 0-byte change, but GET's site
-    # conflates "not open" with "open but not RANDOM" and what the reference
-    # answers for GET on a channel open FOR INPUT is NOT MEASURED.
-    "closed_get":   ("FNO", "SYNTAX"),
-    "closed_field": ("FNO", "SYNTAX"),
-    # §7.2 -- the ERR 52 class, reached one check EARLIER (fch_valid), so
-    # D-NOTOPEN's change cannot and does not move it. ⚠️ It does not generalise:
-    # `PRINT #0,"X"` measures FNO on the reference, not BFN.
+    # §7.2 -- the ERR 52 class, reached one check EARLIER (fch_valid), so neither
+    # of those slices can or does move it. ⚠️ It does not generalise: `PRINT #0,"X"`
+    # measures FNO on the reference, not BFN, so channel 0 is a legal channel that
+    # is merely not open. THIS IS THE ONLY ENTRY LEFT -- and it is still a CONTROL
+    # THAT MUST KEEP MATCHING, not an empty box (memory: deadcode-gate).
     "closed_ch2":   ("BFN", "LOADERR"),
 }
 
@@ -381,6 +457,12 @@ ERR_CLASSES = {
     "BFN":    ("bad file number",),
     "FNO":    ("file not open",),
     "OOM":    ("out of memory",),
+    # D-NOTOPEN2's three new codes. Present so that a reference message this
+    # battery CAN now produce never classifies as `None` -- which also reads as
+    # "nothing went wrong" (memory: appmiss-slice).
+    "BFM":    ("bad file mode",),        # ERR 61
+    "SIO":    ("sequential i/o only",),  # ERR 58
+    "IPE":    ("input past end",),       # ERR 55
     "DIO":    ("disk i/o error", "disk offline"),
     # zerobas's OWN lowercase catch-all for the file/channel family (bload.asm
     # `load_error`). The reference never prints it, so a LOADERR here is always a

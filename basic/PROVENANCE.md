@@ -2158,13 +2158,34 @@ the `syntax error`/`load error` wording where the reference raises ERR 5 / 52 /
 59 — open, owned by S-FCH-2. ⚠️ **Partly closed 2026-07-31 by D-NOTOPEN**
 (`docs/spec-basic-chan-notopen-err59.md`): a channel that is IN RANGE but NOT OPEN
 now raises the reference's trappable ERR 59 from `PRINT#`/`INPUT#`/`LINE INPUT#`
-as well as from `EOF`/`LOF`. What is still open, and now MEASURED rather than
-asserted, is the OUT-OF-RANGE class (`PRINT #2` → reference ERR 52, zerobas
-`load error`) and `GET`/`PUT`/`FIELD`/`INPUT$` (→ zerobas `syntax error`); both
-are filed in TODO.md with their measurement tables and pinned by
-`diskbasic_probe_lof.py` rows. ⚠️ `PRINT #0` measures ERR **59** on the reference,
-not 52 — channel 0 is legal-but-not-open there, so the out-of-range item is not a
-single `fch_valid` choke point.
+as well as from `EOF`/`LOF`. ⚠️ **Closed further 2026-07-31 by D-NOTOPEN2**
+(`docs/spec-basic-gpfi-notopen-err59.md`): `GET`/`PUT`/`FIELD`/`INPUT$(n,#f)` now
+answer the reference on the WHOLE channel-mode grid, not just the not-open column.
+Measured across every `FCH_MODES` value, both machines — the reference uses **five**
+codes here and zerobas had two of them:
+
+| channel | `GET`/`PUT` | `FIELD` | `INPUT$` |
+|---|---|---|---|
+| not open | **59** | **59** | **59** |
+| open, disk, not RANDOM | **61** | **61** | **55** |
+| open RANDOM | *(works)* | *(works)* | **61** |
+| open `LPT:`/`CRT:` | **58** | **5** | **55** |
+
+⚠️ Note `LPT:` answers **58** to `GET` and **5** to `FIELD` — the device rule is
+per-verb, not one code. 🔴 And `FIELD` on a sequential channel used to be accepted
+**SILENTLY** (nothing raised at all); that is the half of this that was a missing
+check rather than a wrong code. ERR **55**/**58**/**61** are new to zerobas and are
+served by `rerr_sparse2` (basic/missing.asm tail), a second sparse arm sited in
+page 1 so the page-0 low region paid **zero** bytes for them.
+
+What is STILL open is the OUT-OF-RANGE class (`PRINT #2` → reference ERR 52,
+zerobas `load error`), filed in TODO.md with its measurement table and pinned by
+`diskbasic_probe_lof.py`'s `closed_ch2` — the ONLY entry left in that probe's
+`KNOWN_DIVERGE`. ⚠️ `PRINT #0` measures ERR **59** on the reference, not 52 —
+channel 0 is legal-but-not-open there, so the out-of-range item is not a single
+`fch_valid` choke point. ⚠️ The `CAS:` channel modes (7/8) are **NOT measured** —
+zerobas sends them down the device arm by analogy with `LPT:`/`CRT:`, which is an
+inference, and it is filed as such.
 
 ## OPEN … FOR APPEND — extend an existing sequential file (basic/files.asm, basic/fat.asm)
 

@@ -177,21 +177,29 @@ str_inputd:
                 call    fch_valid
                 jp      nc,str_eval_no      ; bad file number
                 push    hl                  ; guard the eval cursor (fch_select + CALSLT)
+                ; D-NOTOPEN2 §3.3: classify BEFORE fch_select, not after. The old
+                ; order selected the channel and only then looked at its mode, so a
+                ; not-open (or device) slot got fch_select'd -- the very thing
+                ; fch_mode_class's header forbids. Measured reference rule: mode 1
+                ; reads; RANDOM is ERR 61; EVERY other open mode is ERR 55.
+                call    fch_mode_class      ; A = FCH_MODES[E]; ERR 59 if NOT OPEN
+                cp      1                   ; open FOR INPUT -> read it
+                jr      z,sid_ok
+                cp      4
+                ld      a,55                ; input past end (modes 2/3/5/6 alike)
+                jr      nz,sid_raise
+                ld      a,61                ; bad file mode (RANDOM)
+sid_raise:
+                jp      raise_error         ; no `pop hl` -- raise_error resets SP
+sid_ok:
                 ld      a,e
                 call    fch_select          ; make channel f live; FCH_MODE = its mode
-                ld      a,(FCH_MODE)
-                cp      1                   ; must be open FOR INPUT
-                jr      nz,str_inputd_err
                 call    str_inputd_read     ; fill STRSCR [len][bytes] with n bytes
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
                                             ; (arrays slice-4a §10)
                 ld      (STRPTR),hl         ; the stack (HL here would clobber it)
                 pop     hl                  ; restore the eval cursor (past ')')
                 jp      str_eval_ok
-str_inputd_err:
-                pop     hl
-                jp      str_eval_no
-
 ; str_inputd_read — consume INDLR_N bytes from the open channel into STRSCR
 ; ([len][bytes]); store up to STRMAX, but keep consuming so the file cursor advances
 ; the full count. Stops early at EOF. All loop state is in RAM (CALSLT clobbers regs).

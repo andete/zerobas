@@ -153,16 +153,15 @@ exf_havech:
                 jp      nc,stmt_error       ; 0 or > MAXF -> bad file number
                 ld      a,e
                 ld      (FLD_CHAN),a
-                ; the channel must be open (FCH_MODES[ch] != 0).
-                push    hl                  ; guard cursor across the array read
-                ld      d,0
-                ld      e,a
-                ld      hl,FCH_MODES
-                add     hl,de
-                ld      a,(hl)
+                ; the channel must be open, and open RANDOM. D-NOTOPEN2: this was a
+                ; fourth hand-inlined copy of fch_mode_class -- which ALSO returns
+                ; CF = disk-vs-device, exactly the 61-vs-5 split measured below.
+                push    hl                  ; guard cursor across the classify
+                call    fch_mode_class      ; A = FCH_MODES[E]; ERR 59 if NOT OPEN
                 pop     hl
-                or      a
-                jp      z,stmt_error        ; channel not open
+                jr      nc,exf_dev          ; device channel (LPT:/CRT:) -> ERR 5
+                cp      4
+                jr      nz,exf_bfm          ; a disk channel must be RANDOM -> ERR 61
                 ; re-FIELD replaces: drop prior fields on this channel, offset = 0.
                 push    hl
                 ld      a,(FLD_CHAN)
@@ -214,6 +213,19 @@ exf_comma:
 exf_syn:
                 pop     de                  ; discard the saved width
                 jp      stmt_error
+; D-NOTOPEN2 §3.1: FIELD on an open channel that is not RANDOM. Until this slice
+; ex_field tested only "open at all", so `OPEN "X" FOR INPUT AS #1 : FIELD #1,…`
+; was accepted SILENTLY -- measured `0` (nothing raised) against the CF-3300's
+; ERR 61. ⚠️ The device answer is 5, NOT the 58 that GET/PUT give on the very same
+; LPT: channel; `wm_lpt_fld` and `wm_lpt_get` are the pair that pins that apart.
+exf_dev:
+                ld      a,5                 ; illegal function call (LPT:/CRT:)
+                jr      exf_raise
+exf_bfm:
+                ld      a,61                ; bad file mode (disk, not RANDOM)
+exf_raise:
+                jp      raise_error         ; no `pop hl` -- raise_error resets SP on
+                                            ; BOTH arms (trap and abort)
 
 ; fld_add — append a field entry: chan=(FLD_CHAN), key=BC, offset=(FLD_CUROFF),
 ; width=E; then advance FLD_CUROFF by the width. Silently drops if the table is
@@ -514,15 +526,15 @@ gp_defrec:
 gp_haverec:
                 ld      (GP_RECNO),de
                 push    hl                  ; guard cursor across select + disk op
-                ; the channel must be open RANDOM (FCH_MODES[ch] == 4).
+                ; the channel must be open RANDOM (FCH_MODES[ch] == 4). D-NOTOPEN2:
+                ; the old `cp 4` conflated THREE conditions the reference separates --
+                ; not open (59), open-but-not-RANDOM (61), device channel (58).
                 ld      a,(GP_CHAN)
                 ld      e,a
-                ld      d,0
-                ld      hl,FCH_MODES
-                add     hl,de
-                ld      a,(hl)
+                call    fch_mode_class      ; ERR 59 if NOT OPEN; CF set = disk channel
+                jr      nc,gp_dev           ; LPT:/CRT: -> ERR 58 sequential i/o only
                 cp      4
-                jr      nz,gp_err
+                jr      nz,gp_bfm           ; a disk channel must be RANDOM -> ERR 61
                 ld      a,(GP_CHAN)
                 call    fch_select          ; FSECTOR_BUF + FWR_* = this channel's state
                 ld      a,(GP_MODE)
@@ -536,6 +548,10 @@ gp_fin:
                 pop     hl
                 jp      c,load_error        ; disk error
                 jp      exec_stmt
-gp_err:
-                pop     hl
-                jp      stmt_error
+gp_dev:
+                ld      a,58                ; sequential i/o only (LPT:/CRT:)
+                jr      gp_raise
+gp_bfm:
+                ld      a,61                ; bad file mode (disk, not RANDOM)
+gp_raise:
+                jp      raise_error         ; no `pop hl` -- raise_error resets SP

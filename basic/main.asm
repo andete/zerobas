@@ -356,7 +356,11 @@ rerr_sparse:                                ; A = ERRCODE-1, CF set. Re-read the
                 ld      hl,err_file_notopen
                 cp      59
                 jr      z,rsp_go
-                jp      rerr_unprintable    ; any other out-of-table code, unchanged
+                jp      rerr_sparse2        ; D-NOTOPEN2's 55/58/61, then unprintable.
+                                            ; Sited in page 1 (basic/missing.asm tail)
+                                            ; because those three cost 72 B and THIS
+                                            ; region is the hard wall -- so this line
+                                            ; is a 0-byte change to the low region.
 rsp_go:
                 jp      raise_error_hl      ; the SHARED trap decision -- so 52/59 trap
                                             ; into an armed handler like every other

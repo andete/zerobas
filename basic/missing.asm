@@ -568,3 +568,55 @@ trace_line:
                 pop     hl
                 ret
 
+
+; ===========================================================================
+; rerr_sparse2 — the SECOND sparse-code arm (D-NOTOPEN2)
+; ===========================================================================
+; in: A = ERRCODE. Reached only from rerr_sparse (basic/main.asm), which has
+; already failed to match 52 and 59, which in turn is reached only when the code
+; is past the dense err_msgtab (1..25). Falls through to rerr_unprintable exactly
+; as rerr_sparse used to, so an unknown code is unchanged.
+;
+; WHY A SECOND ARM RATHER THAN THREE MORE LINES IN rerr_sparse: that routine and
+; its two messages live in the page-0 LOW REGION, which had 23 B free; these three
+; codes cost 72 B. Page 1 had 137 B after this slice's carve. The walls are
+; co-mapped so a `jp` across them is ordinary and free ([[promotion-funds-low-
+; region]] is the same trade in the other direction) -- so main.asm's low-region
+; tail changed by ZERO bytes (`jp rerr_unprintable` -> `jp rerr_sparse2`) and all
+; 72 B landed on the roomy wall.
+;
+; Sited at the END of the last include on purpose: inserting bytes mid-page-1
+; lands between dense forward `jr`s and their targets and pasmo rejects it
+; outright (see err_unprintable's note in basic/interp.asm).
+;
+; The three codes, all MEASURED on the CF-3300 (docs/spec-basic-gpfi-notopen-
+; err59.md §2a), never guessed:
+;   55  INPUT$ on any open channel that is not FOR INPUT, except RANDOM
+;   58  GET/PUT on a DEVICE channel (LPT:/CRT:)
+;   61  GET/PUT/FIELD on a disk channel that is open but not RANDOM, and
+;       INPUT$ on a RANDOM channel
+; ⚠️ FIELD on a device channel is ERR 5, not 58 -- it goes through err_msgtab
+; like any dense code and needs nothing here.
+rerr_sparse2:
+                ld      hl,err_input_pastend
+                cp      55
+                jr      z,rsp2_go
+                ld      hl,err_seq_only
+                cp      58
+                jr      z,rsp2_go
+                ld      hl,err_bad_filemode
+                cp      61
+                jr      z,rsp2_go
+                jp      rerr_unprintable    ; any other out-of-table code, unchanged
+rsp2_go:
+                jp      raise_error_hl      ; the SHARED trap decision -- so 55/58/61
+                                            ; trap into an armed handler like 52/59
+; D-MSGENC: only the third of these can use a phrase escape (MSGESC_FILE = "file ").
+; The other two share no phrase with any existing message, so they are stored plain
+; -- adding an escape for a phrase with ONE user costs more than it saves.
+err_input_pastend:
+                db      "input past end",0
+err_seq_only:
+                db      "sequential i/o only",0
+err_bad_filemode:
+                db      "bad ",MSGESC_FILE,"mode",0

@@ -307,32 +307,7 @@ oo_random:
                 ld      a,4                 ; mode = RANDOM (no FOR clause)
 oo_setmode:
                 ld      (FCH_MODE),a        ; provisional; cleared on any failure
-                ; "AS" is kept verbatim ASCII (not tokenised) — match it.
-                call    skip_spaces
-                ld      a,(hl)
-                call    upcase
-                cp      'A'
-                jp      nz,oo_fail_syn
-                inc     hl
-                ld      a,(hl)
-                call    upcase
-                cp      'S'
-                jp      nz,oo_fail_syn
-                inc     hl
-                call    skip_spaces
-                ld      a,(hl)              ; optional '#'
-                cp      '#'
-                jr      nz,oo_num
-                inc     hl
-oo_num:
-                call    eval                ; DE = channel number, HL past it
-                ; validate the channel against the MAXFILES ceiling (1..MAXF).
-                ld      a,d
-                or      a
-                jp      nz,oo_fail_bfn       ; > 255 -> bad file number
-                ld      a,e
-                call    fch_valid
-                jp      nc,oo_fail_bfn       ; 0 or > MAXF -> bad file number
+                call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
                 ; --- optional "LEN=r" record-size clause (Phase 2c; disk-BASIC
                 ; option-closure Item 3). Parsed for every mode; only RANDOM GET/PUT
                 ; reads it. A channel without LEN= defaults to 256. r must be a power
@@ -408,10 +383,8 @@ oo_done:
                 ld      (FCH_MODE),a
 oo_storemode:
                 push    hl
-                ld      c,e
-                ld      b,0
-                ld      hl,FCH_MODES
-                add     hl,bc
+                ld      a,e
+                call    fch_modes_ptr
                 ld      a,(FCH_MODE)        ; 1 (INPUT) or 2 (OUTPUT/APPEND)
                 ld      (hl),a              ; FCH_MODES[ch] = mode (now committed)
                 pop     hl
@@ -419,10 +392,8 @@ oo_storemode:
 oo_fail:
                 ; post-claim failure (DE = channel): release the slot we claimed and
                 ; mark the channel closed in the table (its globals are stale garbage).
-                ld      c,e
-                ld      b,0
-                ld      hl,FCH_MODES
-                add     hl,bc
+                ld      a,e
+                call    fch_modes_ptr
                 xor     a
                 ld      (hl),a              ; FCH_MODES[ch] = 0
                 ld      (FCH_MODE),a
@@ -484,30 +455,7 @@ oodv_fn:
                 cp      PUT_TOKEN
                 jp      nz,oo_fail_syn
                 inc     hl
-                call    skip_spaces         ; "AS" (verbatim ASCII, upper/lower)
-                ld      a,(hl)
-                call    upcase
-                cp      'A'
-                jp      nz,oo_fail_syn
-                inc     hl
-                ld      a,(hl)
-                call    upcase
-                cp      'S'
-                jp      nz,oo_fail_syn
-                inc     hl
-                call    skip_spaces
-                ld      a,(hl)              ; optional '#'
-                cp      '#'
-                jr      nz,oodv_num
-                inc     hl
-oodv_num:
-                call    eval                ; DE = channel number, HL past it
-                ld      a,d
-                or      a
-                jp      nz,oo_fail_bfn       ; > 255 -> bad file number
-                ld      a,e
-                call    fch_valid
-                jp      nc,oo_fail_bfn       ; 0 or > MAXF -> bad file number
+                call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
                 call    skip_spaces         ; only a terminator may follow (no LEN=)
                 ld      a,(hl)
                 or      a
@@ -518,9 +466,8 @@ oodv_ok:
                 ; mark the channel open as a device (FCH_MODES[ch] = LPT/CRT_MODE);
                 ; no fat.asm I/O. Guard the text cursor across the array store.
                 push    hl
-                ld      d,0                 ; DE = channel (e set)
-                ld      hl,FCH_MODES
-                add     hl,de
+                ld      a,e
+                call    fch_modes_ptr
                 ld      a,(OO_DEVTYPE)
                 ld      (hl),a
                 pop     hl
@@ -572,30 +519,7 @@ oocas_out:
                 ld      a,CAS_OUT_MODE
 oocas_setmode:
                 ld      (OO_DEVTYPE),a      ; remember the CAS mode across the AS/#n parse
-                call    skip_spaces         ; "AS" (verbatim ASCII, upper/lower)
-                ld      a,(hl)
-                call    upcase
-                cp      'A'
-                jp      nz,oo_fail_syn
-                inc     hl
-                ld      a,(hl)
-                call    upcase
-                cp      'S'
-                jp      nz,oo_fail_syn
-                inc     hl
-                call    skip_spaces
-                ld      a,(hl)              ; optional '#'
-                cp      '#'
-                jr      nz,oocas_num
-                inc     hl
-oocas_num:
-                call    eval                ; DE = channel number, HL past it
-                ld      a,d
-                or      a
-                jp      nz,oo_fail_bfn       ; > 255 -> bad file number
-                ld      a,e
-                call    fch_valid
-                jp      nc,oo_fail_bfn       ; 0 or > MAXF -> bad file number
+                call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
                 call    skip_spaces         ; only a terminator may follow (no LEN=)
                 ld      a,(hl)
                 or      a
@@ -632,9 +556,8 @@ oocas_mark:
                 pop     hl                  ; text cursor
                 pop     de                  ; channel
                 push    hl                  ; guard cursor across the array store
-                ld      d,0
-                ld      hl,FCH_MODES
-                add     hl,de
+                ld      a,e
+                call    fch_modes_ptr
                 ld      a,(OO_DEVTYPE)
                 ld      (hl),a              ; FCH_MODES[ch] = CAS_OUT/CAS_IN (committed)
                 pop     hl
@@ -907,10 +830,8 @@ dc_num:
                 ld      a,e
                 call    fch_valid
                 jr      nc,dc_done          ; out of range -> lenient no-op
-                ld      c,e                 ; FCH_MODES[ch] == 0 ? -> already closed
-                ld      b,0
-                ld      hl,FCH_MODES
-                add     hl,bc
+                ld      a,e                 ; FCH_MODES[ch] == 0 ? -> already closed
+                call    fch_modes_ptr       ; (preserves E for the fch_do_close_ch below)
                 ld      a,(hl)
                 or      a
                 jr      z,dc_done           ; not open -> no-op
@@ -1052,10 +973,7 @@ fch_load_ctx:
 fch_sync_mirror:
                 ld      a,(FCH_ACTIVE)
                 ld      (FCH_NUM),a
-                ld      e,a
-                ld      d,0
-                ld      hl,FCH_MODES
-                add     hl,de
+                call    fch_modes_ptr
                 ld      a,(hl)
                 ld      (FCH_MODE),a
                 ret
@@ -1093,6 +1011,78 @@ fch_claim:
                 ld      (FCH_ACTIVE),a      ; A claims the globals (no load)
                 ret
 
+; oo_parse_as_chan — the "AS [#]n" clause shared by EVERY form of OPEN.
+; in : HL = cursor just past the mode clause.
+; out: HL past the channel expression, DE = channel (D = 0, E validated 1..MAXF).
+; Never returns on a malformed clause: jumps to oo_fail_syn / oo_fail_bfn.
+; Clobbers A/BC/DE/HL (eval).
+;
+; D-NOTOPEN2 §2d(b): this body was hand-inlined VERBATIM at THREE sites --
+; oo_setmode (disk OPEN), the LPT:/CRT: device arm, and oocas_setmode (cassette).
+; 47 identical bytes each, same raisers, same exit contract. Found by
+; tools/clone_scout.py, not by eye; collapsing the three funds the ERR 55/58/61
+; message pool this slice needs (see docs/spec-basic-gpfi-notopen-err59.md).
+; ⚠️ The three callers differ ONLY in the store that precedes the clause
+; (FCH_MODE / OO_DEVTYPE) and in what may follow it (LEN= for disk, a bare
+; terminator for the other two) -- both stay at the call sites.
+oo_parse_as_chan:
+                ; "AS" is kept verbatim ASCII (not tokenised) -- match it.
+                call    skip_spaces
+                ld      a,(hl)
+                call    upcase
+                cp      'A'
+                jp      nz,oo_fail_syn
+                inc     hl
+                ld      a,(hl)
+                call    upcase
+                cp      'S'
+                jp      nz,oo_fail_syn
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)              ; optional '#'
+                cp      '#'
+                jr      nz,oopac_num
+                inc     hl
+oopac_num:
+                call    eval                ; DE = channel number, HL past it
+                ; validate the channel against the MAXFILES ceiling (1..MAXF).
+                ld      a,d
+                or      a
+                jp      nz,oo_fail_bfn      ; > 255 -> bad file number
+                ld      a,e
+                call    fch_valid
+                jp      nc,oo_fail_bfn      ; 0 or > MAXF -> bad file number
+                ret
+
+; fch_modes_ptr — HL = &FCH_MODES[A]. A = channel. Clobbers A and HL ONLY.
+;
+; D-NOTOPEN2 §2d(a): the index math was hand-inlined at TEN sites (three spelled
+; with BC, five with DE, one inside fch_mode_class itself).
+; The 8-bit page-local form costs 1 byte more than the obvious
+; `ld e,a / ld d,0 / ld hl,FCH_MODES / add hl,de`, and buys DE preservation.
+; ⚠️ I JUSTIFIED THAT BYTE WITH A CLAIM THAT MEASUREMENT REFUTED. The claim was
+; that the DE-clobbering form BREAKS the two callers which read E after the index
+; (fch_do_close_ch's fdcc_disk `ld a,e`, and the CLOSE arm). It does not: every
+; call site passes the channel in **A**, so the naive form's `ld e,a` puts the
+; same channel straight back into E. Built and gated (K0', 2026-07-31):
+; diskbasic-acceptance 34/34 and the 41-case lof battery both GREEN, at 8 bytes.
+; The form is KEPT anyway, and the honest reason is the smaller one: with the
+; naive helper those two callers are correct only BY LUCK -- they depend on
+; A == E holding at every present and future call site, which nothing enforces
+; (cf. cont-depth-slice, where one exit was clean by luck and the next slice paid
+; for it). One byte for a contract that does not rest on a coincidence.
+; See `refactor-inherits-clobber-contracts` -- the failure mode is real, this
+; particular instance of it was not.
+; Relies on FCH_MODES not straddling a page boundary -- the same assumption
+; fch_mode_class (basic/expr.asm) already documented and relied on.
+fch_modes_ptr:
+                add     a,FCH_MODES & $FF
+                ld      l,a
+                ld      a,FCH_MODES >> 8
+                adc     a,0
+                ld      h,a
+                ret
+
 ; fch_valid — CF set iff 1 <= A <= MAXF (a legal, in-ceiling channel number).
 ; A = channel. Clobbers A, B.
 fch_valid:
@@ -1113,10 +1103,8 @@ fch_do_close_ch:
                 ; fat.asm context: skip fch_select (which would LDIR an uninitialised
                 ; ctx block over the engine globals, corrupting any concurrently-open
                 ; disk channel) and the OUTPUT flush; just clear its mode entry.
-                ld      e,a
-                ld      d,0
-                ld      hl,FCH_MODES
-                add     hl,de
+                ld      e,a                 ; keep the channel in E for fdcc_disk
+                call    fch_modes_ptr
                 ld      a,(hl)
                 cp      LPT_MODE
                 jr      c,fdcc_disk         ; mode < 5 -> disk channel (INPUT/OUTPUT)
@@ -1154,10 +1142,7 @@ fdcc_clear:
                 ld      a,(FCH_ACTIVE)      ; = the channel (fch_select made it active)
                 call    fld_clear_chan      ; drop any FIELD definitions on this channel
                 ld      a,(FCH_ACTIVE)      ; (fld_clear_chan clobbered A; reload)
-                ld      e,a
-                ld      d,0
-                ld      hl,FCH_MODES
-                add     hl,de
+                call    fch_modes_ptr
                 xor     a
                 ld      (hl),a              ; FCH_MODES[ch] = 0 (closed)
                 ld      (FCH_MODE),a        ; mirror
@@ -1174,10 +1159,8 @@ fcla_lp:
                 cp      FCH_CEIL+1
                 ret     nc
                 push    bc
-                ld      e,b
-                ld      d,0
-                ld      hl,FCH_MODES
-                add     hl,de
+                ld      a,b
+                call    fch_modes_ptr
                 ld      a,(hl)
                 or      a
                 jr      z,fcla_next         ; not open -> skip

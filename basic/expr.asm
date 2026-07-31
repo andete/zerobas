@@ -1035,11 +1035,9 @@ ev_ff_lof:                                  ; LOF(n): length of open input file 
 ; namespace is the whole of that rename; it is sited here, beside EOF/LOF, still.
 fch_mode_class:
                 ld      a,e
-                add     a,FCH_MODES & $FF   ; HL = FCH_MODES + E (page-local; array is
-                ld      l,a                 ; well within one page of its base)
-                ld      a,FCH_MODES >> 8
-                adc     a,0
-                ld      h,a
+                call    fch_modes_ptr       ; HL = &FCH_MODES[E] (basic/files.asm --
+                                            ; D-NOTOPEN2 §2d(a): this routine held the
+                                            ; tenth hand-inlined copy of that index)
                 ld      a,(hl)              ; A = FCH_MODES[E]
                 or      a                   ; S-FCH-2: 0 = the channel is NOT OPEN.
                 jp      z,err_notopen_raise ; -> ERR 59 "file not open" (main.asm low

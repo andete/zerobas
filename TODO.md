@@ -2869,28 +2869,75 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       replaced by three rows for the sites deliberately LEFT (below), so the list
       stays a control that must keep matching rather than an empty box.
 
-- [ ] **`GET`/`PUT`/`FIELD`/`INPUT$(n,#f)` on a NOT-OPEN channel answer
-      `Syntax error`; the reference answers ERR 59.** MEASURED 2026-07-31 by
-      D-NOTOPEN's denominator sweep (spec §2, §7.1) — every channel-touching verb
-      typed with channel 1 never opened, both machines, 0 mangled rows:
+- [x] ✅ **`GET`/`PUT`/`FIELD`/`INPUT$(n,#f)` answer the reference on the WHOLE
+      channel-mode grid, not just the not-open column.** LANDED 2026-07-31,
+      D-NOTOPEN2, [`docs/spec-basic-gpfi-notopen-err59.md`](docs/spec-basic-gpfi-notopen-err59.md).
+      **Net −19 B: page 1 30 → 49 B free, low UNCHANGED at 23 B.**
+      Filed as "these four answer `Syntax error`, the reference answers ERR 59";
+      the filed measurement was the not-open COLUMN of a grid that turned out to
+      have **five** reference codes.
 
-      | typed | reference | zerobas |
-      |---|---|---|
-      | `A$=INPUT$(3,#1)` | ERR 59 | `Syntax error` |
-      | `GET #1,1` / `PUT #1,1` | ERR 59 | `Syntax error` |
-      | `FIELD #1,10 AS A$` | ERR 59 | `Syntax error` |
-      | `CLOSE #1` | no error | no error ✅ |
+      | `FCH_MODES` | `GET`/`PUT` | `FIELD` | `INPUT$` |
+      |---|---|---|---|
+      | 0 not open | **59** | **59** | **59** |
+      | 1/2/3 disk, not RANDOM | **61** | **61** | **55** |
+      | 4 RANDOM | *(works)* | *(works)* | **61** |
+      | 5/6 `LPT:`/`CRT:` | **58** | **5** | **55** |
 
-      A DIFFERENT disposition (`stmt_error` / `str_eval_no`, not `load_error`) at
-      DIFFERENT sites, which is why D-NOTOPEN did not sweep them.
-      [`basic/field.asm`](basic/field.asm)'s `FIELD` arm would be a **0-byte**
-      change (`jp z,stmt_error` → `jp z,err_notopen_raise`) and `GET`/`PUT` about
-      4 B — but ⚠️ **`GET`'s site conflates "not open" with "open but not RANDOM"**
-      (`cp 4 / jr nz,gp_err`), and what the reference answers for `GET` on a
-      channel open FOR INPUT is **NOT MEASURED**. Measure that neighbour first;
-      splitting the two conditions is most of the work.
-      Gated by `diskbasic_probe_lof.py` cases `closed_get` and `closed_field`,
-      allowlisted in `KNOWN_DIVERGE` naming this item.
+      🔴 **MEASURING THE NEIGHBOUR CHANGED THE ANSWER TWICE, AND THE SECOND TIME
+      WAS AFTER I HAD ALREADY COSTED THE SLICE.** Battery 1 sampled modes 0/1/2/4
+      and read two new codes (61, 55); I costed the sweep against that and called
+      it unaffordable. Battery 2 added modes **3/5/6** — the ones nobody had typed —
+      and the answer became five codes. ⚠️ **A grid sampled at three of its seven
+      rows is not a denominator**, and the rows that were missing are exactly the
+      ones that carried the exceptions (`LPT:` answers **58** to `GET` but **5** to
+      `FIELD`; `INPUT$` is **61** on RANDOM and **55** on everything else).
+      🔴 **`FIELD` ON A SEQUENTIAL CHANNEL WAS ACCEPTED SILENTLY** — the row read
+      `0`, *nothing raised*, where the reference raises 61. Nobody was looking for
+      it; it is a missing check, not a wrong code, and it is the severe half.
+      🔴 **"IT DOES NOT FIT" WAS A CLAIM ABOUT TODAY'S BUDGET, NOT ABOUT THE
+      CHANGE.** Costed at ~86 B against 53 B free, I proposed dropping to the
+      not-open column. The override was right: `tools/clone_scout.py` found the
+      funding in one run, in the same file. **The carve was −107 B:**
+      `oo_parse_as_chan` — the `AS [#]n` clause hand-inlined **VERBATIM at THREE**
+      OPEN arms (disk, `LPT:`/`CRT:`, `CAS:`), 47 identical bytes each (−84 B) —
+      and `fch_modes_ptr`, the `&FCH_MODES[ch]` index hand-inlined at **TEN** sites
+      (−23 B). ⚠️ Same shape as D-NOTOPEN's defect, three times over: **when a
+      fragment appears at N sites, N is never the number you first counted.**
+      ⚠️ `fch_modes_ptr` uses the 8-bit page-local form deliberately — the obvious
+      `add hl,de` version clobbers DE, and TWO callers read `E` after the index.
+      That version assembles clean and breaks `CLOSE` on a device channel.
+      Placement: ERR 55/58/61 cost 72 B, and the low region had 23 B — so
+      `rerr_sparse`'s tail became `jp rerr_sparse2` (**a 0-byte change to the low
+      region**) and all 72 B landed in page 1, at the tail of the LAST include
+      (inserting mid-page-1 breaks dense forward `jr`s — pasmo rejects it).
+      Gate: `diskbasic_probe_lof.py` 26 → **41 cases**; `KNOWN_DIVERGE`'s
+      `closed_get` + `closed_field` entries **DELETED, not updated**, leaving
+      **exactly one** entry (`closed_ch2`, the ERR 52 item). The two rows that earn
+      their keep are `wm_lpt_get`/`wm_lpt_fld` (same channel, 58 vs 5 — a fix that
+      collapsed "device → one code" goes red on exactly one) and
+      `wm_rnd_inpd`/`wm_out_inpd` (61 vs 55, `INPUT$`'s two rules). Plus two GREEN
+      controls, `ok_in_inpd` and `ok_rnd_get`, both `0`/`0`: without them a fix
+      that raised unconditionally would have turned every other new row green.
+      ⚠️ APPARATUS: battery 2's first run read the zb column as **entirely `None`**.
+      `rm -rf build && make basic-reloc` rebuilds neither `build/disk.rom` nor
+      `build/zerobas-main-eu.rom`, and the machine XML names both by absolute path,
+      so the house-rule clean wall measurement leaves the installed machine
+      dangling. Caught only by `ctl_syntax`. **Clean measure, THEN
+      `make repack-machine`, THEN probe.**
+
+- [ ] **`GET`/`PUT`/`FIELD`/`INPUT$` on a `CAS:` channel (`FCH_MODES` 7/8) are
+      INFERRED, not measured.** D-NOTOPEN2 swept modes 0–6 against the CF-3300 and
+      sends 7/8 down the *device* arm (CF clear, since both are >= `LPT_MODE`), i.e.
+      `GET`/`PUT` → 58, `FIELD` → 5, `INPUT$` → 55, **by analogy with `LPT:`/`CRT:`
+      rather than by measurement.** 🔴 That is precisely the shape that slice spent
+      two batteries avoiding everywhere else, so it is filed rather than shipped
+      quietly. Blocked on apparatus, not on ROM space: `diskbasic_probe_lof.py`
+      mounts a disk image per case and has no way to attach a tape, so this needs a
+      `disk_probe`-side (or new cassette-side) harness. ⚠️ The reference may well
+      not agree with the analogy — `LPT:` itself answers **two different codes**
+      (58 to `GET`, 5 to `FIELD`), which is the local evidence that device handling
+      here is per-verb and not a single rule.
 
 - [ ] **`fch_valid`'s rejects are the wrong error class: ERR 52 `bad file number`
       comes out as `load error`.** MEASURED 2026-07-31 by D-NOTOPEN (spec §2b,
