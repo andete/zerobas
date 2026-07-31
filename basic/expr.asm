@@ -980,9 +980,11 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
                 ; uses LDIR only (no CALSLT), so IX — the evaluator's token cursor —
                 ; survives; it does clobber HL/BC/A (the factor caller tolerates that,
                 ; like PEEK). A bad channel number is a function error.
-                ld      a,e
-                call    fch_valid
-                jp      nc,ev_f_err
+                call    fch_check           ; D-BADFNUM: 5 / 59 / 52. Was
+                                            ; `jp nc,ev_f_err`, which set ERRMARK and
+                                            ; returned DE=0 -- and NOTHING on this path
+                                            ; reads ERRMARK, so `PRINT EOF(0)` printed
+                                            ; a plausible ` 0` with no error at all
                 call    fch_mode_class      ; device/cassette channels have no length
                 jp      nc,ev_f_err         ; -> function error (never fch_select them)
                 ld      a,e
@@ -1002,9 +1004,8 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
 ev_ff_lof:                                  ; LOF(n): length of open input file n
                 ; Select channel n so FAT_FILESIZE (set by fat_find at OPEN, part of
                 ; the per-channel state span) belongs to it; return its low 16 bits.
-                ld      a,e
-                call    fch_valid
-                jp      nc,ev_f_err
+                call    fch_check           ; D-BADFNUM: 5 / 59 / 52 -- see ev_ff_eof
+                                            ; above. `PRINT LOF(0)` printed ` 0` too
                 call    fch_mode_class      ; device/cassette channels have no length
                 jp      nc,ev_f_err         ; -> function error (never fch_select them)
                 ld      a,e
@@ -1016,8 +1017,9 @@ ev_ff_lof:                                  ; LOF(n): length of open input file 
 ; ERR 59 "file not open" if that is 0; CF set if E is a disk file channel
 ; (FCH_MODES[E] < LPT_MODE), CF clear if it is a length-less device channel
 ; (LPT/CRT/CAS, mode >= LPT_MODE). Preserves E + IX (no CALSLT); clobbers A/HL.
-; FCH_MODES[0] is unused/0, so a 0 channel (already rejected by fch_valid before
-; every call site) would raise 59 here — never reached.
+; FCH_MODES[0] is unused/0, so a 0 channel (already rejected by fch_check before
+; every call site, which raises the same 59 one step earlier) would raise 59 here
+; — never reached.
 ;
 ; ⚠️ FOUR CALLERS, in THREE files — not the two this comment used to claim:
 ;   * ev_ff_eof / ev_ff_lof (below): CF clear -> function error, so EOF()/LOF()

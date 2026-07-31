@@ -2178,12 +2178,19 @@ check rather than a wrong code. ERR **55**/**58**/**61** are new to zerobas and 
 served by `rerr_sparse2` (basic/missing.asm tail), a second sparse arm sited in
 page 1 so the page-0 low region paid **zero** bytes for them.
 
-What is STILL open is the OUT-OF-RANGE class (`PRINT #2` → reference ERR 52,
-zerobas `load error`), filed in TODO.md with its measurement table and pinned by
-`diskbasic_probe_lof.py`'s `closed_ch2` — the ONLY entry left in that probe's
-`KNOWN_DIVERGE`. ⚠️ `PRINT #0` measures ERR **59** on the reference, not 52 —
-channel 0 is legal-but-not-open there, so the out-of-range item is not a single
-`fch_valid` choke point. ⚠️ The `CAS:` channel modes (7/8) are **NOT measured** —
+✅ The OUT-OF-RANGE class **LANDED 2026-07-31** as D-BADFNUM
+(`docs/spec-basic-badfnum-channel-class.md`). It was filed as three rows and swept
+as a grid of **12 channel-taking verbs × 5 channel classes**, 63 of whose 72 cells
+diverged. The reference answers ONE rule — `D != 0` → ERR **5**, channel 0 → ERR
+**59**, `> MAXF` → ERR **52** — with exactly two exceptions (`CLOSE #0` no-ops,
+`OPEN … AS #0` is 52), so the nine `fch_valid` call sites that had invented **six**
+dispositions between them now share one `fch_check`, and `fch_valid` is gone.
+⚠️ It was NOT a single choke point in the way the filed item feared, but not for
+the reason it gave: `PRINT #0` is ERR 59 and `PRINT #2` is ERR 52, yet BOTH are the
+same routine's business — the exceptions are `CLOSE` and `OPEN`, not the codes.
+⚠️ The two worst cells were not in the filed rows at all: `EOF`/`LOF` on a rejected
+channel **raised nothing and returned a number** (`PRINT LOF(0)` printed ` 0`), and
+`CLOSE #2` silently no-opped. ⚠️ The `CAS:` channel modes (7/8) are **NOT measured** —
 zerobas sends them down the device arm by analogy with `LPT:`/`CRT:`, which is an
 inference, and it is filed as such.
 

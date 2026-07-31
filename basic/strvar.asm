@@ -173,9 +173,11 @@ str_inputd:
                 cp      ')'
                 jp      nz,str_eval_no
                 inc     hl                  ; HL past ')'
-                ld      a,e
-                call    fch_valid
-                jp      nc,str_eval_no      ; bad file number
+                call    fch_check           ; D-BADFNUM: 5 / 59 / 52. Was
+                                            ; `jp nc,str_eval_no` -- a PARSE-level
+                                            ; "not a string operand", which surfaced
+                                            ; as Syntax error for every rejected
+                                            ; channel. We are already past the ')'
                 push    hl                  ; guard the eval cursor (fch_select + CALSLT)
                 ; D-NOTOPEN2 §3.3: classify BEFORE fch_select, not after. The old
                 ; order selected the channel and only then looked at its mode, so a

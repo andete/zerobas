@@ -2939,25 +2939,70 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (58 to `GET`, 5 to `FIELD`), which is the local evidence that device handling
       here is per-verb and not a single rule.
 
-- [ ] **`fch_valid`'s rejects are the wrong error class: ERR 52 `bad file number`
-      comes out as `load error`.** MEASURED 2026-07-31 by D-NOTOPEN (spec §2b,
-      §7.2), which does NOT move them — `fch_valid` rejects one check EARLIER than
-      the mode test that slice fixed:
+- [x] ✅ **A REJECTED channel number answers the reference's error class, on every
+      verb.** LANDED 2026-07-31, D-BADFNUM,
+      [`docs/spec-basic-badfnum-channel-class.md`](docs/spec-basic-badfnum-channel-class.md).
+      **Net −14 B: page 1 49 → 63 B free, low UNCHANGED at 23 B.**
+      Filed as three rows (`PRINT #2`, `INPUT #2`, `PRINT #0`) with the warning
+      that they do not generalise. The warning was right and it was the smaller
+      half: `fch_valid` had **NINE call sites routing to SIX dispositions**, so the
+      filed rows walked 2 sites and 1 disposition. Swept as **12 channel-taking
+      verbs × 6 channel classes**; **63 of the first 72 cells diverged.**
 
-      | typed | reference | zerobas |
+      The reference rule, measured, is ONE rule with two exceptions:
+
+      | channel | reference | exceptions |
       |---|---|---|
-      | `PRINT #2,"X"` (2 > MAXFILES=1) | **ERR 52** `bad file number` | `load error` |
-      | `INPUT #2,A$` | **ERR 52** | `load error` |
-      | `PRINT #0,"X"` | **ERR 59** `file not open` | `load error` |
+      | `A$` (string) | **ERR 13** `Type mismatch` | none |
+      | `#256` / `#-1` | **ERR 5** `Illegal function call` | none |
+      | `#0` | **ERR 59** `File not OPEN` | `CLOSE #0` no-ops; `OPEN … AS #0` is **52** |
+      | `1 … MAXF` | proceeds | |
+      | `> MAXF` | **ERR 52** `Bad file number` | none |
 
-      🔴 **IT DOES NOT GENERALISE, AND THE THIRD ROW IS WHY.** On the reference
-      channel **0 is a legal channel number that is merely not open** (ERR 59),
-      not a bad file number — so the fix is NOT "route `fch_valid`'s failures to
-      52". The six OPEN sites already raise 52 correctly via `oo_fail_bfn`
-      ([`basic/main.asm`](basic/main.asm)), so this is a per-verb disposition item
-      like D-NOTOPEN was, not a single choke point.
-      Gated by `diskbasic_probe_lof.py` case `closed_ch2`, allowlisted in
-      `KNOWN_DIVERGE` naming this item.
+      🔴 **THE TWO WORST CELLS WERE NOT IN THE FILED ITEM.** `EOF`/`LOF` on a
+      rejected channel **raised nothing and returned a number** — `PRINT LOF(0)`
+      printed ` 0`, an answer, not an error, and an armed handler never ran. And
+      `CLOSE #2`/`#16`/`#256`/`#-1` **silently no-opped**. Same shape as
+      D-NOTOPEN2's silently-accepted `FIELD`, one layer earlier.
+      🔴 **THE SWEEP REFUTED MY OWN SAMPLE, TWICE.** Battery 1 took the last three
+      classes on `PRINT#`/`GET`/`LOF`, read a uniform rule and looked settled — but
+      it excluded `OPEN`, the one verb already known to differ at `#0`, and
+      `OPEN … AS #256` is **ERR 5** on the reference where zerobas said 52.
+      🔴 **AND THEN I MADE THE SAME MISTAKE INSIDE THE SPEC THAT ARGUES AGAINST
+      IT.** The type-mismatch cells were written up as three "edge cells" rather
+      than as a sixth CLASS with twelve rows. The signed-off design shipped a
+      REGRESSION on them (a type mismatch hard-zeroes the channel to 0, so
+      `fch_check`'s ERR 59 got there first), and the row that caught it —
+      `PRINT LOF(A$)` — was in the gate **only because it already AGREED**.
+      Sweeping that column found the reference uniform at `Type mismatch` and
+      zerobas wrong on **8 of 12**, only two of them regressions. Cost: +7 B.
+      ⚠️ **A CELL PINNED AS A CONTROL BECAUSE IT AGREES IS WHAT FINDS THE AXIS YOU
+      DID NOT KNOW YOU WERE SAMPLING.**
+      🔴 **A THIRD PROBE HAD ENCODED THE OLD BUG AS AN ORACLE.**
+      `disk_probe_closelist.py` ran `CLOSE#1,#2,#3` at `MAXFILES=1` and its
+      docstring called the out-of-range channels a "lenient no-op" — a zerobas-only
+      claim with no reference column. Typed on the CF-3300: it answers **ERR 52**,
+      **after flushing #1** (the directory column proves the flush; a screen
+      reading would not). `5 MAXFILES=3` added, so the probe still tests the LIST
+      PARSER without resting on a leniency the reference lacks. The §7 blast-radius
+      grep could not have found it — the channel is only out of range if you
+      already know `MAXF`.
+      Fix: the nine sites (78 B) became one `fch_check` with two extra entry points
+      for `CLOSE`'s and `OPEN`'s channel-0 exceptions (38 B + 35 B), and
+      `fch_valid` is DELETED (−9 B). §6 also took a **0-byte** change —
+      `eval_chan`'s tail `jp check_fperr_only` → `jp check_expr_errors` — whose
+      independent value is proven by knife K5 and nothing else.
+      Gate: NEW `probes/disk/diskbasic_probe_badfnum.py`, `make badfnum-acceptance`,
+      **93 cases, 0 unfiled / 0 oracle drift / 0 mangled / 0 without an oracle
+      lock.** `diskbasic_probe_lof.py`'s `closed_ch2` entry **DELETED, not
+      updated**, leaving `KNOWN_DIVERGE` **EMPTY — asserted in words, not left as a
+      dict with no lines in it.** Six knives RUN: K1/K2/K3/K4/K5 each red on their
+      own rows with every control green (K1's four rows go red in four DIFFERENT
+      ways; K5 leaves exactly the four `eval_chan` verbs green), and K0 — aimed at
+      the spec's own `FCH_MODE` justification — **held**. ⚠️ K0's first cut read
+      `DIR=7` on subject AND control and looked like a pass; both had fallen into
+      their own handler (`RESUME without error`), so it could not separate "the
+      trap fired and the write survived" from "line 20 did nothing".
 
 - [ ] **A RANDOM `PUT` stamps the on-disk directory size immediately; the
       reference does not.** Found 2026-07-31 by D-APPMISS making

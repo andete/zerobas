@@ -1272,13 +1272,15 @@ eval_addr:
 ; --- eval_chan: evaluate a file-channel-number expression, surfacing a channel-
 ; expr FP error as a run abort (spec §5.7 gaps). eval, then — for a NUMERIC
 ; channel only — an address-domain int coercion so an out-of-range channel value
-; sets FPERR=1 (Overflow) (gap 1: `INPUT#99999*99999`); then check_fperr_only
+; sets FPERR=1 (Overflow) (gap 1: `INPUT#99999*99999`); then check_expr_errors
 ; surfaces that Overflow OR a deferred mid-expression Division-by-zero (gap 2:
 ; `PRINT#1+0*(1/0)`) as an abort. A TMISMATCH channel (`INPUT#A$`) SKIPS the
-; coercion so it still derails through fch_valid to "load error" exactly as
-; before (the coercion on a hard-zeroed type-mismatch state must not spuriously
-; fault). Shared by INPUT#/LINE INPUT# (files.asm) and PRINT# (print.asm); the
-; tail `jp check_fperr_only` keeps that routine's SP-clean abort semantics (it
+; coercion (the coercion on a hard-zeroed type-mismatch state must not spuriously
+; fault) and is raised as `Type mismatch` by check_expr_errors' own leading test
+; -- D-BADFNUM §6, MEASURED on the CF-3300. It used to fall through to channel 0
+; and derail to "load error". Shared by INPUT#/LINE INPUT# (files.asm) and PRINT#
+; (print.asm); the tail `jp check_expr_errors` keeps that routine's SP-clean
+; abort semantics (it
 ; pops the driver's resume addr, which is eval_chan's caller). Repack-only (low
 ; region). out: DE = channel number, HL past the expr. Clobbers as eval +
 ; fac_to_int_addr.
@@ -1291,7 +1293,19 @@ eval_chan:
                 call    fac_to_int_addr     ; out-of-int-domain channel -> FPERR=1 (overflow)
                 pop     hl
 evc_check:
-                jp      check_fperr_only    ; surface Overflow/DivZero as abort, else ret
+                ; D-BADFNUM §6: check_expr_errors, NOT check_fperr_only -- the same
+                ; routine with the TMISMATCH test in front of it (check_fperr_only is
+                ; its fall-in entry point, so this costs ZERO bytes and the tail-`jp`
+                ; shape that keeps the abort chain SP-clean is unchanged).
+                ; MEASURED: `PRINT #A$,"X"` is `Type mismatch` on the CF-3300. It used
+                ; to hard-zero to channel 0 and derail to `load error`; leaving it
+                ; alone was deliberate while `load error` was the status quo, but
+                ; D-BADFNUM moves the cell either way -- channel 0 now raises ERR 59,
+                ; so NOT taking this would have traded an obviously wrong answer for a
+                ; confidently wrong one. On the non-mismatch path TMISMATCH is 0, so
+                ; that arm is bit-identical to before.
+                jp      check_expr_errors   ; surface TMISMATCH/Overflow/DivZero as
+                                            ; abort, else ret
 
 ; --- fac_to_int_strict_reset: fac_to_int_strict, then FACTYP := 2. Shared --
 ; tail for expr.asm's logical/\/MOD operand sites (ev_xor/ev_or/ev_and/

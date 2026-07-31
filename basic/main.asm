@@ -256,7 +256,7 @@ __MEAS_LOW_END:
                 include "basic/files.asm"
 
 ; Random-access record verbs (Phase 2c): FIELD / LSET / RSET. Builds on the
-; file-channel manager (fch_select/fch_valid) in files.asm and the string layer,
+; file-channel manager (fch_select/fch_check) in files.asm and the string layer,
 ; so it follows files.asm + strvar.asm in the include order.
                 include "basic/field.asm"
 

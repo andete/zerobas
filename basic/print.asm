@@ -37,9 +37,10 @@ ex_print:
                 call    eval_chan           ; §5.7 gap 2: surface a channel-expr FP
                                             ; error (Division-by-zero / Overflow) as
                                             ; a run abort, matching INPUT# (files.asm)
-                ld      a,e
-                call    fch_valid
-                jp      nc,load_error       ; 0 or > MAXF -> bad file number
+                call    fch_check           ; D-BADFNUM: D!=0 -> ERR 5, 0 -> ERR 59,
+                                            ; > MAXF -> ERR 52. Was `jp nc,load_error`,
+                                            ; which answered one untrappable message
+                                            ; to all three and let the program run on
                 ; classify the channel by its stored mode WITHOUT selecting it: a
                 ; device channel (LPT:/CRT:, FCH_MODES 5/6) owns no fat.asm context,
                 ; so fch_select would LDIR a garbage buffer over the engine globals.

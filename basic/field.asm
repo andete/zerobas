@@ -145,12 +145,9 @@ ex_field:
                 inc     hl
 exf_havech:
                 call    eval                ; DE = channel; HL advanced
-                ld      a,d
-                or      a
-                jp      nz,stmt_error       ; > 255 -> bad file number
-                ld      a,e
-                call    fch_valid
-                jp      nc,stmt_error       ; 0 or > MAXF -> bad file number
+                call    fch_check           ; D-BADFNUM: D!=0 -> ERR 5, 0 -> ERR 59,
+                                            ; > MAXF -> ERR 52. All three used to be
+                                            ; stmt_error (ERR 2, `Syntax error`)
                 ld      a,e
                 ld      (FLD_CHAN),a
                 ; the channel must be open, and open RANDOM. D-NOTOPEN2: this was a
@@ -505,12 +502,8 @@ gp_common:
                 inc     hl
 gp_nochan:
                 call    eval                ; DE = channel
-                ld      a,d
-                or      a
-                jp      nz,stmt_error
-                ld      a,e
-                call    fch_valid
-                jp      nc,stmt_error
+                call    fch_check           ; D-BADFNUM: 5 / 59 / 52, all three
+                                            ; previously stmt_error (ERR 2)
                 ld      a,e
                 ld      (GP_CHAN),a
                 ; optional ", recno" (else default record 1)

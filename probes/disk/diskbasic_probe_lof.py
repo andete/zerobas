@@ -361,12 +361,15 @@ REF_EXPECT: dict = {
                                 # is how a wrong rule gets carried forward.
     "closed_ch2":     "BFN",    # #2 > MAXFILES=1 -> ERR 52 `bad file number`, a
                                 # DIFFERENT class from 59, rejected one check
-                                # earlier (fch_valid). ⚠️ And it does NOT
-                                # generalise: `PRINT #0,"X"` measures **FNO** on
-                                # the reference, not BFN -- channel 0 is a legal
-                                # channel number that is merely not open. So the
-                                # ERR 52 item cannot be "route fch_valid's
-                                # rejects to 52". D-NOTOPEN §7.2.
+                                # earlier. ✅ AGREES since D-BADFNUM. ⚠️ It does
+                                # NOT generalise -- `PRINT #0,"X"` measures FNO,
+                                # not BFN, because channel 0 is a legal channel
+                                # number that is merely not open -- which is why
+                                # the fix was a shared checker with two exceptions
+                                # (CLOSE and OPEN) rather than "route the rejects
+                                # to 52". The full 12x6 grid lives in
+                                # diskbasic_probe_badfnum.py; this row stays here
+                                # as the seam between the two gates.
     "roundtrip":    8,       # "ABCDE" + CRLF + Ctrl-Z
 }
 
@@ -420,21 +423,21 @@ DIR_EXPECT: dict = {
 # the same trappable ERR 59 the CF-3300 does, by CALLING the classifier LOF was
 # already reaching (`fch_mode_class`, basic/expr.asm) instead of hand-inlining its
 # array read and omitting its `or a`. Both sites got 4 bytes of page 1 back.
-KNOWN_DIVERGE: dict = {
-    # ✅ D-NOTOPEN2 LANDED 2026-07-31 (docs/spec-basic-gpfi-notopen-err59.md): the
-    # `closed_get` and `closed_field` entries D-NOTOPEN parked here are GONE rather
-    # than updated, and the whole wrong-mode column they pinned is now FIXED rows
-    # above instead of allowlisted ones. GET/PUT/FIELD/INPUT$ on a not-open channel
-    # raise ERR 59; on an open channel of the wrong mode they raise the reference's
-    # 61 / 58 / 5 / 55 -- five codes, measured across every FCH_MODES value.
-    #
-    # §7.2 -- the ERR 52 class, reached one check EARLIER (fch_valid), so neither
-    # of those slices can or does move it. ⚠️ It does not generalise: `PRINT #0,"X"`
-    # measures FNO on the reference, not BFN, so channel 0 is a legal channel that
-    # is merely not open. THIS IS THE ONLY ENTRY LEFT -- and it is still a CONTROL
-    # THAT MUST KEEP MATCHING, not an empty box (memory: deadcode-gate).
-    "closed_ch2":   ("BFN", "LOADERR"),
-}
+# ✅ D-BADFNUM LANDED 2026-07-31 (docs/spec-basic-badfnum-channel-class.md): the
+# last entry, `closed_ch2`, is GONE rather than updated. `PRINT #2,"X"` now reads
+# BFN on both machines, and the whole rejected-channel class it stood for -- 12
+# verbs x 6 channel classes -- is gated by diskbasic_probe_badfnum.py, where those
+# 93 rows are FIXED rather than allowlisted.
+#
+# ⚠️ THIS LIST IS NOW EMPTY, AND EMPTY IS AN ASSERTED STATE HERE, NOT AN ABSENT
+# ONE. An allowlist that must keep matching is a control; one that only suppresses
+# is rot (memory: deadcode-gate). `--gate` fails on a filed entry that has STOPPED
+# diverging, so an entry can never rot silently -- with the dict empty that check
+# is vacuous, which is exactly why the emptiness is written down in words instead
+# of being left for a reader to infer from a dict with no lines in it. The next
+# slice that needs to park a divergence here must file it WITH its measurement and
+# its attribution control, which is the only way this list is allowed to grow.
+KNOWN_DIVERGE: dict = {}
 
 # The same, for the directory column.
 DIR_DIVERGE: dict = {

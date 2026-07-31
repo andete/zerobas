@@ -1171,11 +1171,14 @@ check_expr_errors:
                 or      a
                 jr      nz,cee_abort_tm
 ; check_fperr_only — same SP-clean-site shape as check_expr_errors above, but
-; skips the TMISMATCH check (fall-in entry point, adds no bytes). For a
-; caller where a TMISMATCH here would be a behaviour change vs today's
-; ordering (e.g. INPUT#'s channel-number eval, files.asm: a TMISMATCH channel
-; expr already hard-zeroes to channel 0 and derails through fch_valid to
-; "load error" -- unrelated to this FPERR-only check).
+; skips the TMISMATCH check (fall-in entry point, adds no bytes). For a caller
+; where a TMISMATCH here would be a behaviour change vs that caller's own
+; ordering.
+; ⚠️ eval_chan (float-arith.asm) USED TO BE THAT CALLER and is NOT one any more:
+; D-BADFNUM §6 measured `PRINT #A$,"X"` as `Type mismatch` on the CF-3300, so it
+; now tails into check_expr_errors instead -- a 0-byte change, since the two are
+; one routine with two entry points. The ordering preserved here was preserving a
+; derail to "load error", which was never the reference's answer.
 check_fperr_only:
                 ld      a,(FPERR)
                 or      a

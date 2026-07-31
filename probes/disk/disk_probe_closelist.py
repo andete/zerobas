@@ -10,18 +10,25 @@ spec.md): an AUTOEXEC.BAS -- tokenised by OUR OWN ROM crunch (bas_tokenise) and
 injected into a fresh FAT12 image -- opens ONE OUTPUT channel, PRINT#s a line, then
 closes it with a comma-LIST that also names two un-opened channels:
 
+  5  MAXFILES=3
   10 OPEN"C1.DAT"FOR OUTPUT AS#1
   20 PRINT#1,"HELLO"
-  30 CLOSE#1,#2,#3          ' list: close #1 (open) + #2,#3 (not open -> lenient)
+  30 CLOSE#1,#2,#3          ' list: close #1 (open) + #2,#3 (in range, not open)
   40 POKE&HD0FF,&H99        ' done witness
 
-This isolates the list PARSER without needing MAXFILES>1: the old single-channel
-CLOSE stopped after #1, so the trailing ",#2,#3" was a Syntax error that halts the
-program BEFORE line 40 -- the done witness would stay poisoned. The list form
-consumes the whole comma list (lenient no-op for the un-opened channels), reaches
-line 40, and flushes #1. So a PASS = done witness $99 AND C1.DAT present + non-empty
-(proving #1 was closed/flushed through the list). Offline + deterministic; no
-keystrokes, no screen scrape.
+This isolates the list PARSER: the old single-channel CLOSE stopped after #1, so
+the trailing ",#2,#3" was a Syntax error that halts the program BEFORE line 40 --
+the done witness would stay poisoned. The list form consumes the whole comma list
+(a no-op for the un-opened channels), reaches line 40, and flushes #1. So a PASS =
+done witness $99 AND C1.DAT present + non-empty (proving #1 was closed/flushed
+through the list). Offline + deterministic; no keystrokes, no screen scrape.
+
+⚠️ LINE 5 WAS ADDED 2026-07-31 BY D-BADFNUM, AND IT MATTERS. This program used to
+run at the default MAXFILES=1, which made #2/#3 OUT OF RANGE, and this docstring
+described that as a "lenient no-op" -- a claim about zerobas's own behaviour that
+had no reference column and turned out to be false. `CLOSE #1,#2,#3` at MAXFILES=1
+answers ERR 52 on the CF-3300 (measured), after flushing #1. Raising the ceiling
+keeps the subject (the list parser) and drops the unmeasured premise.
 
 Clean-room: our own `.bas`, our own ROM tokeniser, a FAT12 image per the public
 spec. A fresh /tmp image; disk/test720.dsk is never touched.
@@ -55,9 +62,20 @@ DONE_BYTE = 0x99
 POISON = 0x11
 
 AUTOEXEC_LINES = [
+    # ⚠️ MAXFILES=3 IS LOAD-BEARING, AND IT WAS ADDED BECAUSE THE ORIGINAL FORM
+    # RESTED ON AN ASSUMPTION NOBODY HAD MEASURED. This program used to run at the
+    # default MAXFILES=1, so #2/#3 were BEYOND THE CEILING, and the docstring
+    # called that a "lenient no-op". D-BADFNUM typed it on the CF-3300
+    # (2026-07-31): `CLOSE #1,#2,#3` at MAXFILES=1 answers **ERR 52 bad file
+    # number** there -- after flushing #1 -- and so does zerobas now. The
+    # leniency the reference actually has is about channel **0** only.
+    # Raising the ceiling keeps this probe aimed at what it exists to test -- the
+    # LIST PARSER consuming the whole comma list instead of stopping after #1 --
+    # while dropping a premise that was never a measurement.
+    (5,  "MAXFILES=3"),
     (10, 'OPEN"C1.DAT"FOR OUTPUT AS#1'),
     (20, 'PRINT#1,"HELLO"'),
-    (30, "CLOSE#1,#2,#3"),          # comma list; #2/#3 not open -> lenient no-op
+    (30, "CLOSE#1,#2,#3"),          # comma list; #2/#3 in range, not open -> no-op
     (40, f"POKE&H{DONE_ADDR:04X},&H{DONE_BYTE:02X}"),
 ]
 

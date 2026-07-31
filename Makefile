@@ -1144,6 +1144,28 @@ lof-acceptance: repack-machine
 	  python3 probes/disk/diskbasic_probe_lof.py --gate \
 	        $(if $(ONLY),--only '$(ONLY)',) $(if $(V),-v,)
 
+# --- D-BADFNUM: the REJECTED-channel-number grid ------------------------------
+# docs/spec-basic-badfnum-channel-class.md. 12 channel-taking verbs x 5 channel
+# classes, SWEPT rather than sampled, plus 4 controls, 8 trappability rows and 10
+# edge cells: 82 cases. The filed item named THREE of them.
+# ⚠️ The sweep is the point. A first battery sampled the last three classes on
+# three verbs, read a uniform rule, and would have shipped `OPEN … AS #256` wrong
+# -- OPEN being the one verb that already followed a different rule at channel 0.
+# Scope with `make badfnum-characterize ONLY=clo_c2,opn_c256`.
+badfnum-characterize: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
+	  python3 probes/disk/diskbasic_probe_badfnum.py \
+	        $(if $(ONLY),--only '$(ONLY)',) $(if $(SIDE),--side $(SIDE),) \
+	        $(if $(V),-v,)
+
+# `--gate`: oracle drift on the reference column, any divergence not in the
+# probe's (currently EMPTY, and asserted so) KNOWN_DIVERGE, a mangled row, or a
+# case with no oracle lock at all -- any of them fails the run.
+badfnum-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
+	  python3 probes/disk/diskbasic_probe_badfnum.py --gate \
+	        $(if $(ONLY),--only '$(ONLY)',) $(if $(V),-v,)
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
@@ -1300,4 +1322,5 @@ clean:
         width-characterize width-acceptance \
         arrdim-characterize arrdim-acceptance \
         linemax-characterize linemax-acceptance chancost-characterize \
-        lof-characterize lof-acceptance clean
+        lof-characterize lof-acceptance \
+        badfnum-characterize badfnum-acceptance clean

@@ -690,9 +690,9 @@ input_common:
                 ; still derails through fch_valid to "load error" (coercion skipped
                 ; on a hard-zeroed type mismatch) -- that ordering is untouched.
                 call    eval_chan
-                ld      a,e
-                call    fch_valid
-                jp      nc,load_error       ; 0 or > MAXF -> bad file number
+                call    fch_check           ; D-BADFNUM: D!=0 -> ERR 5, 0 -> ERR 59,
+                                            ; > MAXF -> ERR 52. Was `jp nc,load_error`,
+                                            ; one untrappable message for all three
                 ; classify the channel by FCH_MODES[ch] WITHOUT fch_select (a cassette
                 ; channel owns no fat.asm ctx — selecting it would LDIR garbage over
                 ; the globals). CAS_IN reads via cas_in_getbyte; a disk channel keeps
@@ -827,9 +827,12 @@ dc_listloop:
 dc_num:
                 call    eval                ; DE = channel number; HL = text cursor
                 push    hl                  ; guard the cursor (HL is reused + CALSLT)
-                ld      a,e
-                call    fch_valid
-                jr      nc,dc_done          ; out of range -> lenient no-op
+                ; D-BADFNUM: the reference is lenient about channel 0 ONLY. CLOSE #2
+                ; / #16 / #256 / #-1 all RAISE there, while this used to no-op every
+                ; one of them silently -- `CLOSE #2 : PRINT 7` printed 7.
+                call    fch_check_d         ; D != 0 -> ERR 5; else A = E, Z <=> ch 0
+                jr      z,dc_done           ; channel 0 -> the one lenient no-op
+                call    fch_check_nz        ; > MAXF -> ERR 52
                 ld      a,e                 ; FCH_MODES[ch] == 0 ? -> already closed
                 call    fch_modes_ptr       ; (preserves E for the fch_do_close_ch below)
                 ld      a,(hl)
@@ -1046,13 +1049,13 @@ oo_parse_as_chan:
 oopac_num:
                 call    eval                ; DE = channel number, HL past it
                 ; validate the channel against the MAXFILES ceiling (1..MAXF).
-                ld      a,d
-                or      a
-                jp      nz,oo_fail_bfn      ; > 255 -> bad file number
-                ld      a,e
-                call    fch_valid
-                jp      nc,oo_fail_bfn      ; 0 or > MAXF -> bad file number
-                ret
+                ; D-BADFNUM: OPEN is the ONE verb that answers 52 to channel 0 --
+                ; everything else answers 59 there -- but it answers ERR 5, not 52,
+                ; to `AS #256` / `AS #-1`. That last cell is the one a three-verb
+                ; sample would have shipped wrong (spec §2).
+                call    fch_check_d         ; D != 0 -> ERR 5; else A = E, Z <=> ch 0
+                jp      z,oo_fail_bfn       ; OPEN's channel-0 exception -> ERR 52
+                jp      fch_check_nz        ; > MAXF -> ERR 52; else return A = E
 
 ; fch_modes_ptr — HL = &FCH_MODES[A]. A = channel. Clobbers A and HL ONLY.
 ;
@@ -1083,15 +1086,81 @@ fch_modes_ptr:
                 ld      h,a
                 ret
 
-; fch_valid — CF set iff 1 <= A <= MAXF (a legal, in-ceiling channel number).
-; A = channel. Clobbers A, B.
-fch_valid:
+; --- fch_check — a REJECTED channel number, dispositioned as the reference ---
+; does (D-BADFNUM, docs/spec-basic-badfnum-channel-class.md §2a). DE = channel.
+; Returns A = E (1..MAXF) or does not return at all. Clobbers A, B — the SAME
+; contract fch_valid published, which is why all nine call sites already tolerate
+; it. DE and HL are untouched (three callers read E afterwards).
+;
+; This REPLACES fch_valid, which returned a flag and left each caller to invent a
+; disposition. Nine sites invented SIX (load_error, a silent no-op, ERR 52, ERR 2
+; twice over, and a silent `0` from the evaluator), and the CF-3300 answers ONE
+; rule with two exceptions:
+;
+;   D != 0 (> 255 or negative)  ERR 5   illegal function call  — all 12 verbs
+;   channel 0                   ERR 59  file not open          — except CLOSE (no-op)
+;                                                               and OPEN (52)
+;   1 .. MAXF                   proceed to the mode checks
+;   channel > MAXF              ERR 52  bad file number        — all 12 verbs
+;
+; ⚠️ THE `> MAXF` BOUNDARY IS MAXFILES, NOT THE CONSTANT 2. `MAXFILES=2 : PRINT
+; #2,"X"` answers 59, not 52, on both machines (gate row ctl_mf2_ch2) — without
+; that row "channel 2 is bad" and "channel 2 is past the ceiling" are one reading.
+;
+; Raising from here is safe at every site: raise_error resets SP from SAVSTK on
+; BOTH the trap and the abort arm, so a caller's pushed cursor needs no pop (the
+; same depth-independence LOF has relied on since S-FCH-2).
+
+; fch_check_d — the high-byte test alone: D != 0 -> ERR 5. Otherwise A = E and
+; Z <=> "channel 0", which is the ONE cell CLOSE and OPEN each answer their own
+; way. Six of the nine sites used to skip this test entirely and silently
+; truncate to E — that is exactly the `#256` defect (`PRINT #256` was handled as
+; channel 0).
+fch_check_d:
+                ; A STRING channel expression is `Type mismatch` on the reference,
+                ; uniformly across all 12 verbs (measured). It must be tested HERE,
+                ; ahead of everything else, because a type mismatch HARD-ZEROES the
+                ; expression to 0 -- so without this the channel reads as 0 and the
+                ; rule above answers ERR 59 to `PRINT LOF(A$)`.
+                ; 🔴 THIS WAS FOUND BY A ROW ADDED AS A CONTROL BECAUSE IT ALREADY
+                ; AGREED: `EOF`/`LOF` on a string channel were `type mismatch` on
+                ; both machines BEFORE this slice, and the first cut of fch_check
+                ; REGRESSED them to `file not open`. The type-mismatch axis had been
+                ; sampled on 3 of the 12 verbs -- the very mistake §2's sweep exists
+                ; to avoid, made one axis over.
+                ; ⚠️ Only four of the twelve reach eval_chan, whose check_expr_errors
+                ; tail (§6) raises this one step earlier; the other eight call plain
+                ; `eval` and have no such check. This is the site that covers all 12.
+                ld      a,(TMISMATCH)
                 or      a
-                ret     z                   ; 0 -> CF clear (invalid)
+                jp      nz,type_mismatch_error
+                ld      a,d
+                or      a
+                jr      nz,fchk_ifc
+                ld      a,e
+                or      a                   ; Z <=> channel 0
+                ret
+fchk_ifc:
+                ld      a,5                 ; illegal function call (err_msgtab[5])
+                jp      raise_error
+; fch_check — the whole rule, for the seven verbs with no channel-0 exception.
+fch_check:
+                call    fch_check_d
+                jp      z,err_notopen_raise ; channel 0 -> ERR 59. A LEGAL channel
+                                            ; number that is merely not open, which
+                                            ; is why this is not simply "-> 52"
+; fch_check_nz — entered directly by CLOSE and OPEN, which have already disposed
+; of channel 0 themselves. Falls in from fch_check above.
+fch_check_nz:
                 ld      b,a
                 ld      a,(MAXF)
-                cp      b                   ; MAXF - ch: CY set iff ch > MAXF
-                ccf                         ; invert -> CY set iff ch <= MAXF
+                cp      b                   ; CF set iff ch > MAXF
+                jp      c,oo_fail_bfn       ; -> ERR 52. Its FCH_MODE clear is
+                                            ; harmless for the eight non-OPEN
+                                            ; callers: every reader of FCH_MODE is
+                                            ; immediately preceded by fch_select,
+                                            ; which re-stamps the mirror (§3)
+                ld      a,b
                 ret
 
 ; fch_do_close_ch — close channel A: if open FOR OUTPUT, append the Ctrl-Z text-EOF
@@ -1287,7 +1356,7 @@ nm_fail2:
 
 ; --- MAXFILES = n — size the multi-channel table ---------------------------
 ; MAXFILES sets how many file channels may be open simultaneously (the value also
-; bounds every OPEN/INPUT#/PRINT#/CLOSE channel number, via fch_valid). Tokenised
+; bounds every OPEN/INPUT#/PRINT#/CLOSE channel number, via fch_check). Tokenised
 ; as MAX ($CD) + FILES ($B7) — two reserved words, oracle-locked like OUTPUT. Like
 ; the reference, changing MAXFILES reinitialises the file system: every open channel
 ; is closed first (OUTPUT ones flushed + Ctrl-Z-stamped) and every variable is
