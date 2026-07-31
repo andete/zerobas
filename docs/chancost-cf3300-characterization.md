@@ -38,6 +38,70 @@ reproduced in the probe's first smoke run and is unambiguous garbage while
 so the same code drives both the SCREEN 1 reference and the SCREEN 0 zerobas
 machine. ⚠️ Do not "simplify" that back to a constant.
 
+### 0.1 The echo guard — and the reason this probe's harness control could not fail
+
+Added 2026-07-31 ([`spec-probe-chancost-echo-guard.md`](spec-probe-chancost-echo-guard.md)),
+ported from [`diskbasic_probe_lof.py`](../probes/disk/diskbasic_probe_lof.py).
+§0 of [`lof-cf3300-characterization.md`](lof-cf3300-characterization.md) is the
+record of the guard's **three wrong versions** and is not re-derived here.
+
+Every typed line is now checked against the screen before any answer is read off
+it. A line that is not echoed returns **`MANGLED`**, which is **fatal** and which
+**suppresses the derived slope, ceiling and headline** — a slope computed from a
+ladder that never received `MAXFILES=8` is a number the run did not measure.
+
+⚠️ **The reason this mattered here is not the one the item was filed for.** The
+filed worry was that a mangled line would read as an `FRE(0)` finding. The sharper
+problem is what mangling actually produces: **a `Syntax error`** — which is what
+`ctl_syntax`, this probe's own harness control, is *recorded as expecting*. A
+mangled `ctl_syntax` row reads `SYNTAX`, matches its oracle, compares equal
+across the machines and prints **`agree`**. The control that exists to prove the
+harness is typing **fails toward "pass" when the harness stops typing.** That is
+not hypothetical: K1 below shows mangled lines landing on `SYNTAX` on both
+machines in the same run.
+
+**Falsified before being believed, both halves:**
+
+* **K1 — real captures, end to end.** `--only lof_new,lof_existing,open_after
+  --line-delay 3.1` → **3/3 `MANGLED`, exit 3**, derivation suppressed. The
+  screens are D-LOF's failure mode reproduced inside this probe: on the reference
+  `PRINT LOF(1)` arrived as **`RIT OF1)`** and `OPEN "ZQ.DAT" FOR OUTPUT AS #1` as
+  **`PE "Q.AT FR UTUTAS#1`**, each answered with a **completely real
+  `Syntax error`**; on zerobas the same lines arrived as `T`, `(1`,
+  `ZBPN"Z.A"FO UPU S#`. **Both sides mangled, both reading `SYNTAX` — they would
+  have compared EQUAL.**
+  Control: **the identical command with the one flag removed** (default 4.5 s) →
+  **exit 0**, `lof_new` 0/0, `lof_existing` 26/26, `open_after` 23163/14799.
+* **K2 — the INSERTED half, deterministically.** `echo_missing` fed synthetic
+  screens, **8/8**: a doubled-character row (`ZBPPRINT FRE(0)`) is **RED** — the
+  case a plain substring test passes, because `PRINTFRE(0)` is still inside it —
+  while a clean row, and a **wrapped** reference echo split across two rows at a
+  left margin of 2 *and* at margin 1, are all **GREEN**. Wrapping is the shape
+  versions 1 and 2 wrongly failed; a scrolled-off first line is **RED**.
+
+⚠️ **And the gate immediately found one more non-reading wearing a reading's
+face.** A full run came back `lof_new` reference = `None` → **`ORACLE DRIFT`**;
+re-run, a clean **0** on a perfect screen. The guard had not fired because
+`run_case`'s **TIMEOUT** and **NO CAPTURE** paths return *before* it, both
+returning `None` — the same value a clean screen with no number on it reads as.
+**A sentinel that also means "no reading" is not a measurement**: a run that never
+finished was being reported as the CF-3300 failing to reproduce its own oracle.
+Both paths now return `TIMEOUT` / `NOCAPTURE` and are handled like `MANGLED`
+(fatal, derivation suppressed) under the verdict `RUN FAILED`. **K3:** a bogus
+`ZEROBAS_BASIC_MACHINE` → `NOCAPTURE`, exit **3**; the identical command with the
+real machine → `0`, exit **0**. The 200 s deadline is deliberately left alone —
+which path fired is not known, and raising a timeout to fix an unattributed
+failure would be a guess. The markers make the next occurrence name itself.
+
+The wrap case is also confirmed on a real capture rather than only synthetically:
+`err_badchan` types a 32-character line 30, which the reference wraps across two
+rows (`30 OPEN "HI.TXT" FOR INPUT AS` / `#2`), and the guard passes it.
+
+**The port moved no reading.** Full run after: **39 cases, 0 mangled, 0 oracle
+drift, 0 unfiled divergence, `KNOWN_DIVERGE` empty**, both machines per-channel
+and linear with ceiling 15, headline 267 B (ref) / 50 B (zb) — identical to
+before. That is the control on the change itself.
+
 ## 1. `FRE(0)` is the instrument, and it is impure
 
 `FRE(0)` counts down to the **stack pointer**; every extra expression-nesting

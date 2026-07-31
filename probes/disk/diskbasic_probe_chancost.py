@@ -26,6 +26,15 @@ assumed: `scrmod=$01`, `linlen=$1d` (29), name table **$1800 at 32 columns**.
 This probe reads the geometry out of RAM and picks the name table from it, so it
 works on both machines.
 
+⚠️ EVERY ROW IS ECHO-GUARDED (`echo_missing`, ported from
+diskbasic_probe_lof.py). A typed line that is not on screen returns MANGLED,
+which is fatal and which SUPPRESSES the derived slope/ceiling/headline. This
+probe types at the very 4.5 s cadence at which D-LOF measured the CF-3300
+dropping whole chunks of a line and zerobas doubling its first character, and a
+mangled line earns a COMPLETELY REAL error message — so without the guard it
+would read as an `FRE(0)` finding, an oracle drift or a divergence, never as an
+apparatus failure. Stability across many sessions is not attribution.
+
 ⚠️ `FRE(0)` IS IMPURE — it counts down to the STACK POINTER, and every extra
 expression-nesting level costs 6 bytes (docs/binfre-vg8020-characterization.md
 §3.1). Every reading below is therefore the byte-identical expression
@@ -33,7 +42,13 @@ expression-nesting level costs 6 bytes (docs/binfre-vg8020-characterization.md
 
 CONTROLS (a ladder this clean is exactly when to try hardest to falsify it):
   * `ctl_syntax` types a misspelled keyword and MUST show `Syntax error` — if it
-    comes back clean the harness is not typing and every number here is worthless;
+    comes back clean the harness is not typing and every number here is worthless.
+    ⚠️ BUT IT FAILS TOWARD "PASS", WHICH IS WHY THE ECHO GUARD IS NOT OPTIONAL:
+    a MANGLED line also earns a `Syntax error`, so a `ctl_syntax` row that never
+    received its line still reads SYNTAX, still matches its oracle, still
+    compares equal across the machines and still prints `agree`. The control that
+    proves the harness is typing cannot notice the harness NOT typing. Only
+    `echo_missing` can, and it runs before this value is read;
   * `ctl_noop` types `REM MAXFILES=8`: echoed, parsed, and MUST NOT move FRE(0)
     — so the ladder's movement is attributable to the statement, not the typing;
   * note `MAXFILES=1` reads the SAME as an untouched boot because 1 IS the Disk
@@ -69,11 +84,18 @@ OMSX = shutil.which("openmsx") or "/Applications/openMSX.app/Contents/MacOS/open
 SRC_DSK = os.path.join(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))), "disk", "test720.dsk")
 
-# side -> (machine, has-date-prompt, boot instant in emulated seconds)
+# side -> (machine, has-date-prompt, boot instant in emulated seconds, prompt).
+# ⚠️ The PROMPT is what the echo guard anchors on, and it must be exact: the
+# reference echoes a typed line at the start of its own row (after the SCREEN 1
+# left margin, which the guard squeezes away), while zerobas prints "ZB" and
+# echoes on the same row. Anchoring on it is what makes an INSERTED character
+# visible -- a plain substring test passes `ZBPPRINT FRE(0)` because the correct
+# text is still in there. If a prompt ever changes, every row fails loudly, which
+# is the right direction for a guard to break in.
 MACHINES = {
-    "ref": ("National_CF-3300", True, 12.0),
+    "ref": ("National_CF-3300", True, 12.0, ""),
     "zb":  (os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK"),
-            False, 8.0),
+            False, 8.0, "ZB"),
 }
 
 # label -> typed lines. Keep <= 6 lines: the 24-row screen scrolls.
@@ -327,7 +349,8 @@ def tcl_quote(s: str) -> str:
     return '"' + "".join(out) + '"'
 
 
-def build_tcl(out_path: str, lines, date_prompt: bool, boot_t: float) -> str:
+def build_tcl(out_path: str, lines, date_prompt: bool, boot_t: float,
+              step: float = 4.5) -> str:
     L = ["set throttle off",
          f"set __f [open {{{out_path}}} w]",
          "proc __hex {a l} { binary scan [debug read_block memory $a $l] H* h; return $h }",
@@ -347,30 +370,92 @@ def build_tcl(out_path: str, lines, date_prompt: bool, boot_t: float) -> str:
     for ln in lines:
         # openMSX drops a CR that shares a burst with text under `throttle off`,
         # so each Enter is its own event ~3s after its command.
+        #
+        # ⚠️ 4.5 s is this probe's MEASURED-STABLE cadence, and it is the cadence
+        # at which D-LOF measured the CF-3300 EATING keystrokes on lines that
+        # touched the DISK (`PRINT LOF(1)` -> `PRO)`, answered with a completely
+        # real `Syntax error`). This probe's rows are FRE(0) reads, which is why
+        # it has been safe here -- but "has been stable" is not attribution, and
+        # a delay makes mangling RARE, it cannot make it VISIBLE. The ECHO GUARD
+        # (echo_missing) is what makes it loud; the delay and the guard are not
+        # substitutes for one another.
         L.append(f"after time {t} {{ type {tcl_quote(ln)} }}")
         L.append(f'after time {t + 3.0} {{ type "\\r" }}')
-        t += 4.5
+        t += step
     L.append(f"after time {t + 2.0} {{ __dump }}")
     L.append(f"after time {t + 4.0} {{ close $__f; exit }}")
     return "\n".join(L) + "\n"
 
 
-def decode(hexv: str, cols: int):
+def decode_raw(hexv: str, cols: int):
+    """The name table as a list of UNSTRIPPED rows, one string per screen row."""
     data = bytes.fromhex(hexv)
-    return [("".join(chr(c) if 32 <= c < 127 else " "
-                     for c in data[r * cols:(r + 1) * cols])).strip()
+    return ["".join(chr(c) if 32 <= c < 127 else " "
+                    for c in data[r * cols:(r + 1) * cols])
             for r in range(len(data) // cols)]
 
 
-def run_case(side: str, label: str, lines):
-    machine, date_prompt, boot_t = MACHINES[side]
+def decode(hexv: str, cols: int):
+    return [r.strip() for r in decode_raw(hexv, cols)]
+
+
+def echo_missing(raw_rows, lines, prompt: str):
+    """Which typed lines are NOT echoed on screen -- i.e. arrived mangled.
+
+    THE APPARATUS GUARD, ported wholesale from diskbasic_probe_lof.py (its §0 in
+    docs/lof-cf3300-characterization.md is the record of the THREE wrong versions
+    below -- do not re-derive them). A dropped keystroke turns `PRINT FRE(0)` into
+    something shorter, and the machine answers THAT with a completely real
+    `Syntax error` -- which reads as a finding about MAXFILES. Concatenating the
+    rows reproduces the screen as one string, so a WRAPPED echo is contiguous in
+    it and both wrapped and unwrapped lines are covered by one test.
+
+    ⚠️ MATCH WITH ALL WHITESPACE REMOVED, from both sides. Two separate screen
+    geometries conspire against a naive comparison, and the guard's first two
+    versions were each wrong in exactly the way the guard exists to catch:
+      * the name table is 32 cells wide but CF-3300 Disk BASIC boots SCREEN 1 at
+        `linlen=$1d` = 29 columns, so a 30-character line WRAPS and the unused
+        cells land between the two halves of the echo -- comparing against full
+        32-wide rows flagged 10 of 16 rows, several with perfect screens;
+      * slicing to `linlen` instead was ALSO wrong, because the reference indents
+        SCREEN 1 by a LEFT MARGIN of 2 (measured; C-BIOS uses 1 -- memory
+        lean-retire-s2-switch), so `r[:29]` cuts the last two characters off any
+        full-width line and re-flagged the same rows.
+    Stripping whitespace on both sides is independent of margin, of `linlen` and
+    of the wrap point, so it needs no per-machine constant to be right. The cost
+    is that a dropped SPACE no longer trips the guard -- acceptable, because the
+    drops this catches swallow whole chunks, and BASIC ignores spacing anyway.
+
+    ⚠️ AND THE MATCH IS ANCHORED ON THE PROMPT AND EXACT, not a substring test:
+    with whitespace squeezed out `ZBPPRINT FRE(0)` CONTAINS `PRINTFRE(0)`, so a
+    plain `in` test passes a DOUBLED-character screen. A guard against DROPPED
+    text is not a guard against INSERTED text.
+
+    ⚠️ Assumes the case is short enough that nothing scrolls off the 24-row
+    screen. That is the one assumption this probe strains and lof does not: ten
+    cases here type a five-line program and then RUN it. A scrolled-off echo
+    reports MANGLED on a PERFECT screen; `-v` tells the two apart at a glance
+    (scrolled-off = the echo is simply absent and everything after it is clean).
+    """
+    squeeze = lambda s: "".join(s.split())
+    # every row, and every run of 2 or 3 consecutive rows, as one squeezed string
+    # (a wrapped echo spans rows; nothing here wraps past three).
+    cand = set()
+    for i in range(len(raw_rows)):
+        for n in (1, 2, 3):
+            cand.add(squeeze("".join(raw_rows[i:i + n])))
+    return [ln for ln in lines if prompt + squeeze(ln) not in cand]
+
+
+def run_case(side: str, label: str, lines, step: float = 4.5):
+    machine, date_prompt, boot_t, prompt = MACHINES[side]
     dsk = tempfile.NamedTemporaryFile(suffix=".dsk", prefix=f"cc_{side}_{label}_",
                                       delete=False).name
     shutil.copy(SRC_DSK, dsk)              # /tmp copy -- never the committed image
     out = f"/tmp/chancost_{side}_{label}.txt"
     tcl = out + ".tcl"
     with open(tcl, "w") as fh:
-        fh.write(build_tcl(out, lines, date_prompt, boot_t))
+        fh.write(build_tcl(out, lines, date_prompt, boot_t, step))
     if os.path.exists(out):
         os.unlink(out)
     proc = subprocess.Popen(
@@ -383,17 +468,27 @@ def run_case(side: str, label: str, lines):
     if proc.poll() is None:
         os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
         os.unlink(dsk)
-        return side, label, None, ["TIMEOUT"], ""
+        # ⚠️ A DISTINCT MARKER, not None. `None` is also what a clean screen with
+        # no number on it reads as, and these two paths return BEFORE the echo
+        # guard runs -- so a run that never finished would arrive at the verdict
+        # column wearing the same face as a reading. It is then reported as
+        # ORACLE DRIFT, i.e. blamed on the CF-3300. MEASURED, not hypothetical:
+        # `lof_new` came back None on one full run and read a clean 0 on re-run.
+        # (memory: a sentinel that also means "no reading" is not a measurement)
+        return side, label, "TIMEOUT", ["TIMEOUT"], ""
     os.unlink(dsk)
     if not os.path.exists(out):
-        return side, label, None, ["NO CAPTURE (machine/ROMs missing?)"], ""
-    s0, s1, meta, scrmod = [], [], "", 0
+        return (side, label, "NOCAPTURE",
+                ["NO CAPTURE (machine/ROMs missing?)"], "")
+    s0, s1, r0, r1, meta, scrmod = [], [], [], [], "", 0
     for line in open(out):
         line = line.rstrip("\n")
         if line.startswith("scr0="):
-            s0 = decode(line.partition("=")[2], 40)
+            r0 = decode_raw(line.partition("=")[2], 40)
+            s0 = [r.strip() for r in r0]
         elif line.startswith("scr1="):
-            s1 = decode(line.partition("=")[2], 32)
+            r1 = decode_raw(line.partition("=")[2], 32)
+            s1 = [r.strip() for r in r1]
         else:
             meta = line
             for tok in line.split():
@@ -401,6 +496,10 @@ def run_case(side: str, label: str, lines):
                     scrmod = int(tok.split("=")[1], 16)
     # geometry MEASURED, not assumed
     rows = [r for r in (s1 if scrmod == 1 else s0) if r]
+    # the apparatus guard runs BEFORE any answer is read off the screen.
+    missing = echo_missing(r1 if scrmod == 1 else r0, lines, prompt)
+    if missing:
+        return (side, label, "MANGLED", rows + [f"NOT ECHOED: {missing!r}"], meta)
     value = None
     for r in rows:                                   # an error outranks a number
         cls = err_class(r)
@@ -416,6 +515,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", help="comma-separated case labels")
     ap.add_argument("--side", choices=("ref", "zb", "both"), default="both")
+    ap.add_argument("--line-delay", type=float, default=4.5,
+                    help="emulated seconds per typed line (default 4.5, this "
+                         "probe's measured-stable cadence). Settable mainly so "
+                         "the echo guard can be shown to CUT: at a short delay "
+                         "the machines drop or double keystrokes.")
     ap.add_argument("-v", "--verbose", action="store_true", help="print screens")
     args = ap.parse_args()
     if not os.path.isfile(SRC_DSK):
@@ -429,20 +533,30 @@ def main() -> int:
             print(f"--only matched no cases: {sorted(want)}")
             return 2
     sides = ("ref", "zb") if args.side == "both" else (args.side,)
-    jobs = [(s, lbl, lines) for lbl, lines in cases for s in sides]
+    jobs = [(s, lbl, lines, args.line_delay)
+            for lbl, lines in cases for s in sides]
     with cf.ThreadPoolExecutor(max_workers=4) as ex:
         results = list(ex.map(lambda j: run_case(*j), jobs))
     by = {(s, l): (v, rows, meta) for s, l, v, rows, meta in results}
 
     print(f"{'case':<14} {'reference':>14} {'zerobas':>14}   verdict")
     print("-" * 70)
-    oracle_bad, diverge = [], []
+    oracle_bad, diverge, mangled = [], [], []
     for label, _ in cases:
         rv = by.get(("ref", label), (None, [], ""))[0] if "ref" in sides else "-"
         zv = by.get(("zb", label), (None, [], ""))[0] if "zb" in sides else "-"
         mode = COMPARE.get(label, "class")
         note = ""
-        if "ref" in sides and label in REF_EXPECT and rv != REF_EXPECT[label]:
+        # ⚠️ CHECKED FIRST, and never folded into anything below. Two reasons,
+        # each on its own sufficient: two MANGLED sides compare EQUAL and would
+        # print `agree` (gate-can-be-green-while-measuring-nothing), and a
+        # mangled REFERENCE row would otherwise be reported as ORACLE DRIFT --
+        # loud, but blaming the CF-3300 for the typing. Attribution is the point.
+        if {rv, zv} & {"MANGLED", "TIMEOUT", "NOCAPTURE"}:
+            why = "MANGLED" if "MANGLED" in (rv, zv) else "RUN FAILED"
+            note = f"{why} (the machine did not answer THIS line -- NOT a reading)"
+            mangled.append(label)
+        elif "ref" in sides and label in REF_EXPECT and rv != REF_EXPECT[label]:
             note = f"ORACLE DRIFT (recorded {REF_EXPECT[label]!r})"
             oracle_bad.append(label)
         elif args.side == "both":
@@ -468,6 +582,22 @@ def main() -> int:
         print("meta(ref):", by.get(("ref", cases[0][0]), (None, [], ""))[2])
     if "zb" in sides:
         print("meta(zb) :", by.get(("zb", cases[0][0]), (None, [], ""))[2])
+
+    # --- MANGLED: fatal, and it SUPPRESSES the derivation rather than letting it
+    # print. The slope, the ceiling and the HEADLINE are all computed from the
+    # `mf*` ladder; derived from a mangled ladder they are numbers this run never
+    # measured, and printing "the reference charges 267 B per channel" off a
+    # screen that never received `MAXFILES=8` is exactly the failure this guard
+    # exists to close. Print the table, name the rows, stop.
+    if mangled:
+        print(f"\n{len(mangled)} NON-READING row(s): {mangled}")
+        print("  Either a typed line was not echoed on screen (the machine "
+              "answered a line other\n  than the one this probe meant to type, and "
+              "a mangled line earns a COMPLETELY\n  REAL error message), or the run "
+              "itself did not finish (TIMEOUT / NO CAPTURE).\n  Both are APPARATUS "
+              "failures, not readings: re-run, and if a MANGLED row\n  reproduces "
+              "raise --line-delay. Every derived number is suppressed below.")
+        return 3        # ALWAYS fatal: it is not a measurement.
 
     # --- THE DERIVED ANSWER: per-channel slope + ceiling, both machines ---
     ladder = [("mf0", 0), ("mf1", 1), ("mf2", 2), ("mf3", 3),

@@ -1106,6 +1106,14 @@ linemax-acceptance: repack-machine
 #
 # ⚠️ FRE(0) is impure (counts down to SP, +6 per nesting level), so every row asks
 # the byte-identical `PRINT FRE(0)` at identical depth. Boot-per-case both sides.
+#
+# ⚠️ EVERY ROW IS ECHO-GUARDED (docs/chancost-cf3300-characterization.md §0.1). A
+# typed line that is not on screen returns MANGLED, which is fatal and which
+# SUPPRESSES the derived slope/ceiling/headline. A mangled line earns a
+# COMPLETELY REAL `Syntax error` -- which is what `ctl_syntax` EXPECTS, so this
+# probe's own harness control fails toward "pass" without the guard.
+# `--line-delay` (default 4.5) exists so the guard can be shown to CUT: at 3.1 the
+# CF-3300 turns `PRINT LOF(1)` into `RIT OF1)`, on BOTH machines at once.
 chancost-characterize: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
 	  python3 probes/disk/diskbasic_probe_chancost.py \

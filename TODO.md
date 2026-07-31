@@ -3068,14 +3068,70 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       dangling entry here" are both plausible from what is known and neither has
       been typed.
 
-- [ ] **`diskbasic_probe_chancost.py` has no echo guard.** Its rows are short
-      `PRINT FRE(0)` reads and it has been stable for many sessions, but it types
-      into the same CF-3300 that D-LOF caught dropping and doubling keystrokes,
-      at the very cadence (4.5 s) where that was measured to happen — and a
-      mangled line there would read as an `FRE(0)` finding, not as an apparatus
-      failure. Port `echo_missing` + the per-side prompt from
-      `diskbasic_probe_lof.py`. Cheap, and it makes the ladder's numbers
-      attributable rather than merely stable.
+- [x] ✅ **`diskbasic_probe_chancost.py` IS ECHO-GUARDED — LANDED 2026-07-31,
+      39/39, falsified both ways.** Apparatus only, **0 ROM bytes**, walls
+      UNCHANGED (low 23 B, page 1 63 B — no `basic/` or `sub/` file touched).
+      Spec [`docs/spec-probe-chancost-echo-guard.md`](docs/spec-probe-chancost-echo-guard.md),
+      results [`docs/chancost-cf3300-characterization.md`](docs/chancost-cf3300-characterization.md) §0.1.
+      `echo_missing` + the per-side prompt (`""` ref / `"ZB"` zb) ported from
+      [`diskbasic_probe_lof.py`](probes/disk/diskbasic_probe_lof.py), plus a
+      `--line-delay` knob (default **4.5**, unchanged) so the guard can be shown
+      to cut.
+
+      🔴 **THE FILED REASON WAS THE WEAKER ONE.** The item said a mangled line
+      would read as an `FRE(0)` finding. What mangling actually produces is a
+      **`Syntax error`** — which is what **`ctl_syntax`, this probe's own harness
+      control, is recorded as expecting.** A mangled `ctl_syntax` row reads
+      `SYNTAX`, matches its oracle, compares equal across the machines and prints
+      **`agree`**. ⚠️ **The control that proves the harness is typing fails toward
+      "pass" when the harness stops typing** — it cannot measure its own class,
+      the same shape as the filed grep in [[test-reads-ram-after-runaway]].
+      Measured, not argued: K1's mangled rows land on `SYNTAX` on BOTH machines.
+      🔴 **AND A MANGLED ROW WOULD HAVE PRINTED A HEADLINE.** The slope, the
+      ceiling and `HEADLINE: reference charges 267 B per channel` are derived from
+      the `mf*` ladder. `MANGLED` therefore **suppresses** the derivation rather
+      than being reported beside it — a slope computed from a ladder that never
+      received `MAXFILES=8` is a number the run never measured. Ordering is
+      load-bearing twice over: `MANGLED` is checked BEFORE the oracle comparison,
+      or a mangled *reference* row reports as `ORACLE DRIFT` and blames the
+      CF-3300 for the typing.
+      Falsified both halves. **K1 CUT** — the same three disk-touching cases at
+      `--line-delay 3.1` go **3/3 MANGLED, exit 3**, reproducing D-LOF's failure
+      mode inside this probe: `PRINT LOF(1)` arrives as **`RIT OF1)`** and
+      `OPEN "ZQ.DAT" FOR OUTPUT AS #1` as **`PE "Q.AT FR UTUTAS#1`**, each earning
+      a completely real `Syntax error`, with zerobas mangling in parallel — **both
+      sides `SYNTAX`, i.e. EQUAL.** Control: the **identical command with the one
+      flag removed** → exit 0, 0/0, 26/26, 23163/14799. **K2 8/8** on synthetic
+      screens: a doubled-character row (`ZBPPRINT FRE(0)`) is RED (a substring
+      test passes it — a guard against DROPPED text is not one against INSERTED
+      text), while a clean row and a **wrapped** reference echo at margin 2 *and*
+      margin 1 are GREEN, and a scrolled-off first line is RED. The wrap is
+      confirmed on a REAL capture too: `err_badchan`'s 32-char line 30 wraps on
+      the reference and passes.
+      🔴 **AND THE NEW GATE IMMEDIATELY CAUGHT ONE MORE NON-READING WEARING A
+      READING'S FACE — beyond the signed-off scope, fixed here rather than
+      filed.** A full run came back `lof_new` ref = `None` → **`ORACLE DRIFT`**;
+      re-run, a clean **0** on a perfect screen. The guard had not fired because
+      `run_case`'s **TIMEOUT** and **NO CAPTURE** paths return BEFORE it, both
+      returning `None` — the same value a clean screen with no number on it reads
+      as. ⚠️ **A sentinel that also means "no reading" is not a measurement**: a
+      run that never finished was being reported as the CF-3300 failing its own
+      oracle, i.e. **the host blamed on the reference machine.** Both paths now
+      return `TIMEOUT`/`NOCAPTURE`, handled like `MANGLED` (fatal, derivation
+      suppressed) under the verdict `RUN FAILED`. **K3 CUT**: a bogus
+      `ZEROBAS_BASIC_MACHINE` → `NOCAPTURE`, exit **3**; the identical command
+      with the real machine → `0`, exit **0**. The 200 s deadline is left ALONE —
+      which path fired is not known, and raising a timeout to fix an unattributed
+      failure is a guess; the markers make the next occurrence name itself.
+      ⚠️ §5 of the spec pre-committed what to do about red rows at the 4.5 s
+      default. **None appeared** — the full run is clean on all 39 — so the
+      cadence is unchanged and no rule was reached. The scroll-off risk flagged in
+      §5.1 (ten cases type a 5-line program and then `RUN` it) did not materialise
+      either; `err_badchan`'s six typed lines fit the 24-row screen.
+      Gate: `make chancost-characterize` — **39 cases, 0 mangled, 0 oracle drift,
+      0 unfiled divergence, `KNOWN_DIVERGE` EMPTY**, both machines per-channel and
+      linear with ceiling 15, headline 267 B (ref) / 50 B (zb): **identical to the
+      pre-change run**, which is the control on the change itself.
 
 - [ ] **Over-ceiling `MAXFILES` raises the wrong error class.** `MAXFILES=16` →
       reference **`Illegal function call`** (ERR 5); zerobas raises **`syntax
