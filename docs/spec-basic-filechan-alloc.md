@@ -661,6 +661,16 @@ rest: removing `MAXFILES`' `CLEAR` flips `sem_var`/`sem_str`/`sem_same` to
   + 3/3 `--cas`, arrdim 73/73, clearpool 52/52, diskbasic 34/34, bdos 12/12,
   fat-error 7/7, array 149/151 (the standing `ifc.instr.*` baseline).
 
+* ✅ **S-FCH-2 — the `MAXFILES` ARGUMENT DOMAIN IS CLOSED 2026-07-31 (D-MFDOM,
+  [`spec-basic-maxfiles-domain.md`](spec-basic-maxfiles-domain.md)).** ERR 5 was
+  landed by `61e3a48`; the rest of the domain was never measured, and behind it
+  sat two live defects — an out-of-int16 argument **silently accepted as
+  `MAXFILES=0`** (all file I/O disabled, no error), and ERR 5 where the
+  reference raises **ERR 6 `Overflow`** for `32768`/`-32769`. Routing the
+  argument through `eval_byte_arg` fixed both and **freed 6 B**. ⚠️ The lesson
+  for the rest of this spec: `mf16`/`mf255` are ONE arm of the test, and
+  "the class is right" had been concluded from them.
+
 * ⚠️ **S-FCH-2 — ERR 5 / 52 / 59. NOW MEASURED (§5c): ERR 5 is FREE and is
   LANDED; the remainder is 86 B.** Its premise had moved adversely — it was
   costed at ~100 B against **6 B** free in page 1, and page 1 now stands at

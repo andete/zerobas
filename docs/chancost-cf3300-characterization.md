@@ -102,6 +102,37 @@ drift, 0 unfiled divergence, `KNOWN_DIVERGE` empty**, both machines per-channel
 and linear with ceiling 15, headline 267 B (ref) / 50 B (zb) — identical to
 before. That is the control on the change itself.
 
+### 0.2 `NOREAD` — the third thing wearing a reading's face (D-MFDOM, 2026-07-31)
+
+§0.1 fixed `TIMEOUT`/`NOCAPTURE` returning the same `None` a clean screen does.
+**One layer further in, the value derivation had the same shape.** `err_class`
+returns `None` for any message not in `ERR_CLASSES`; the number scan then also
+returned `None`. So a screen carrying an **unclassified error** was indistinguishable
+from a screen carrying no number — and `ERR_CLASSES` had **no entry for
+`Overflow`**, which is precisely what the reference answers for `MAXFILES=65536`.
+
+⚠️ **That is not a hypothetical, it is this slice's own defect.** A reference
+raising `Overflow` against a zerobas that silently accepts reads `None` vs
+`None`, compares **equal**, and prints **`agree`** — the exact defect the rows
+were written to find, scored as a pass.
+
+Fixed: `OVF` and `TM` added to `ERR_CLASSES`; an unreadable screen now returns
+**`NOREAD`**, fatal like `MANGLED` and likewise suppressing the derivation. The
+derivation was lifted into `read_value()` so it can be falsified without booting
+a machine.
+
+⚠️ **And K4 is COMMITTED, unlike K1/K2/K3.** Those were run ad hoc and survive
+only as claims in this document; a guard whose falsification cannot be re-run is
+a guard nobody can check. `python3 probes/disk/selftest_chancost_readvalue.py`
+boots no machine and needs no reference ROMs.
+
+**K4 12/12** on synthetic screens — four RED (unclassified error, empty screen,
+`Ok` only, an un-mapped message) and eight GREEN (a number, a negative number,
+`IFC`, `SYNTAX`, `Overflow` in both cases, `Type mismatch`, and an error
+outranking a later number, which pins that the refactor moved nothing).
+**K4b CUTS**: replaying the old rule on the same two screens returns
+`None`/`None` → `agree`.
+
 ## 1. `FRE(0)` is the instrument, and it is impure
 
 `FRE(0)` counts down to the **stack pointer**; every extra expression-nesting
@@ -152,6 +183,10 @@ all of which move.
 
 TODO recorded "at least 15". It is **exactly 15**, and the rejection is
 **ERR 5 (Illegal function call)** — measured, not assumed.
+
+⚠️ **Both rows above have a zero high byte**, so this table pins ONE arm of the
+argument test. The full domain — including the `Overflow` class these two rows
+cannot reach, and the two zerobas defects hiding behind them — is **§11**.
 
 ## 4. When is the buffer charged? At `MAXFILES` time, not at `OPEN` time
 
@@ -255,12 +290,93 @@ previously exist. −1 = `$FFFF` suggests an uninitialized size field being
 reported rather than a zero. (The reference staying at 0 after `PRINT #1` is its
 own documented behaviour — the directory entry is not updated until `CLOSE`.)
 
-### 7.2 Over-ceiling `MAXFILES` raises the wrong error class
+### 7.2 ✅ Over-ceiling `MAXFILES` raises the wrong error class — FIXED
 
-`MAXFILES=16` → reference **`Illegal function call`**; zerobas raises
-**`syntax error`** (and does so from `MAXFILES=3` up, its own ceiling). The
-error *class* is wrong independently of where the ceiling sits, so it is fixable
-without changing the ceiling.
+> **LANDED.** The class half was fixed by `61e3a48` (ERR 5, at zero cost); the
+> rest of the argument domain was measured and fixed 2026-07-31 as **D-MFDOM**
+> ([`spec-basic-maxfiles-domain.md`](spec-basic-maxfiles-domain.md)) — see §11
+> below, which is the full domain rather than this one row.
+
+The finding as filed: `MAXFILES=16` → reference **`Illegal function call`**;
+zerobas raised **`syntax error`**. The error *class* was wrong independently of
+where the ceiling sat, so it was fixable without changing the ceiling.
+
+⚠️ **And closing it on that row alone would have been wrong.** `mf16` and
+`mf255` both have a **zero high byte**, so both land on the same arm of the
+domain test; nothing in the corpus reached the other arm, and the two defects in
+§11 were sitting behind it the whole time.
+
+## 11. The `MAXFILES` argument DOMAIN — measured (D-MFDOM, 2026-07-31)
+
+Fourteen rows, `mfd_*`. The reference's answers were recorded **before zerobas
+was run on a single one of them**, so the oracle cannot have been back-fitted.
+
+### 11.1 The reference's rule — three parts
+
+| typed | reference | rule |
+|---|---|---|
+| `MAXFILES=300` | `Illegal function call` | in int16, outside `0..15` → **ERR 5** |
+| `MAXFILES=8+8` | `Illegal function call` | …reached by an expression, same answer |
+| `MAXFILES=-1`, `=-16` | `Illegal function call` | negatives are ERR 5, not Overflow |
+| `MAXFILES=32767` | `Illegal function call` | …up to the int16 edge |
+| `MAXFILES=-32768` | `Illegal function call` | **the range, not the magnitude** |
+| `MAXFILES=32768` | **`Overflow`** | outside int16 → **ERR 6** |
+| `MAXFILES=-32769` | **`Overflow`** | …and symmetrically below |
+| `MAXFILES=65536`, `=70000` | **`Overflow`** | …however far out |
+| `MAXFILES=2.5` | *(effective 2)* | fractional **TRUNCATES** |
+| `MAXFILES=15.9` | *(effective 15, accepted)* | …truncation, not rounding — rounding would be ERR 5 |
+| `MAXFILES 2` | `Syntax error` | the missing `=` is still syntax |
+
+⚠️ **The int16 boundary is the RANGE −32768..32767, not the magnitude
+|x| ≤ 32767.** That asymmetry was already recorded in `get_byte_arg`'s header
+for `CHR$` on the VG-8020; §11 **measures it for `MAXFILES` on the CF-3300**
+rather than assuming it carries across verbs.
+
+### 11.2 Two zerobas defects, and only one of them was the filed one
+
+`ex_maxfiles` took its argument through `eval` plus a hand-inlined
+`ld a,d / or a / jp nz,gb_illegal`. Measured against the rule above:
+
+| typed | reference | zerobas (before) | |
+|---|---|---|---|
+| `MAXFILES=65536` | `Overflow` | **`FRE(0)` = mf0's value** | 🔴 **SILENT ACCEPT** |
+| `MAXFILES=70000` | `Overflow` | **`FRE(0)` = mf0's value** | 🔴 **SILENT ACCEPT** |
+| `MAXFILES=32768` | `Overflow` | `Illegal function call` | wrong class |
+| `MAXFILES=-32769` | `Overflow` | `Illegal function call` | wrong class |
+| `MAXFILES=32767` | `Illegal function call` | `Illegal function call` | *control — green* |
+| `MAXFILES=-32768` | `Illegal function call` | `Illegal function call` | *control — green* |
+
+🔴 **The severe one is the silent accept.** `eval`'s `flt_to_int16` **zeroes
+`DE`** for an out-of-int16 value (`interp.asm`'s own header says so), so the
+high-byte test could never fire for exactly the arguments it existed to catch:
+`MAXFILES=65536` arrived as `DE=0` and was accepted as an ordinary request for
+**zero channels — disabling every file channel with no error at all.**
+
+🔴 **And the second defect was invisible to the rows that found the first.**
+`32768` and `-32769` are *representable* in 16 bits, so `DE` is non-zero and the
+old test *did* fire — with ERR 5 where the reference says ERR 6. The two rows
+that triggered this slice (`65536`, `70000`) could not have exposed it; only the
+boundary rows could, and they were added to pin **the denominator of the FIX**,
+not of the defect.
+
+### 11.3 The fix
+
+`call eval` + the five hand-inlined bytes → **`call eval_byte_arg`**, which *is*
+the reference rule (int16 stage → ERR 6, then `0..255` → ERR 5). The `FCH_CEIL`
+test stays, because that bound is the statement's own. Nine bytes become three:
+**page 1 free 63 → 69 B, low region unchanged at 23 B** — a net saving.
+
+### 11.4 Falsification
+
+Reverting `basic/files.asm` alone and re-running: **4 rows RED, 10 GREEN**, the
+red ones exactly `mfd_65536` / `mfd_70000` / `mfd_32768` / `mfd_n32769`, with
+`mfd_32767` and `mfd_n32768` — the *same* boundary, one step inside — staying
+green. The knife is attributable to crossing int16, not to "large arguments
+behave differently".
+
+⚠️ The prediction written before that run said `MAXFILES=32768` would be a
+**silent accept** too. It is not; it read `IFC`. The measurement corrected the
+prediction, which is the whole reason the knife is run instead of reasoned.
 
 ## 9. `MAXFILES` semantics — measured
 

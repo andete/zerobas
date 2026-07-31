@@ -1,5 +1,35 @@
 # D-MFDOM — the `MAXFILES` argument domain
 
+> ## ✅ LANDED 2026-07-31 — 53/53, falsified, **NET −6 B**
+>
+> The filed item was stale *and* the domain behind it held **two live defects**,
+> one of them a silent accept. `ex_maxfiles` now takes its argument through
+> `eval_byte_arg`: **page 1 free 63 → 69 B, low region unchanged at 23 B.**
+>
+> * 🔴 **`MAXFILES=65536` was accepted SILENTLY as `MAXFILES=0`** — every file
+>   channel disabled, no error — where the reference raises ERR 6 `Overflow`.
+>   `eval`'s `flt_to_int16` zeroes `DE` for out-of-int16 values, so the
+>   hand-inlined high-byte test could never fire for the arguments it existed
+>   to catch.
+> * 🔴 **A second defect was invisible to the rows that found the first.**
+>   `32768`/`-32769` *are* representable in 16 bits, so the old test fired —
+>   with ERR 5 where the reference says ERR 6. Only the boundary rows, added to
+>   pin the denominator of the **fix**, could see it.
+> * ⚠️ **The probe would have scored the silent accept as `agree`.**
+>   `ERR_CLASSES` had no `Overflow`, so an unclassified reference error and a
+>   silently-accepting zerobas both read `None` and compared equal. Fixed
+>   first — see [`chancost-cf3300-characterization.md`](chancost-cf3300-characterization.md) §0.2.
+> * ⚠️ **Two of my own rows were weak and were corrected before they became
+>   oracles**: `MAXFILES=1.5` read `mf1`, and 1 *is* the boot default; and a
+>   fractional row read off `FRE(0)` is `COMPARE absfre`, i.e. informational —
+>   it would have gated nothing on the machine under test.
+> * ⚠️ **The knife corrected a prediction.** I expected `MAXFILES=32768` to be a
+>   silent accept too. It read `IFC`. Measurement, not reasoning, is what named
+>   the second defect.
+>
+> Results: [`chancost-cf3300-characterization.md`](chancost-cf3300-characterization.md) §11.
+> Gate: `make chancost-characterize` — **53 cases, `KNOWN_DIVERGE` EMPTY**.
+
 Owner of the filed item: **S-FCH-2** ([`spec-basic-filechan-alloc.md`](spec-basic-filechan-alloc.md) §7).
 Characterization it updates: [`chancost-cf3300-characterization.md`](chancost-cf3300-characterization.md) §3, §7.2.
 Gate: `make chancost-characterize`.

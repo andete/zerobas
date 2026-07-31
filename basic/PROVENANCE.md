@@ -2153,9 +2153,19 @@ block genuinely is 50 B of state (its sector staging is the shared cache), so it
 charges what it uses rather than reserving 217 B/channel that nothing reads. The
 *mechanism* and the *ceiling* now match. The resume-state RAM layout
 (`FCH_MODES`/`FCH_ACTIVE` and the carved block itself) is zerobas's own, not the
-reference's FCB/buffer map. Out-of-range channel/`MAXFILES` values still reuse
-the `syntax error`/`load error` wording where the reference raises ERR 5 / 52 /
-59 — open, owned by S-FCH-2. ⚠️ **Partly closed 2026-07-31 by D-NOTOPEN**
+reference's FCB/buffer map. ✅ **The `MAXFILES` ARGUMENT DOMAIN IS CLOSED
+2026-07-31 by D-MFDOM** (`docs/spec-basic-maxfiles-domain.md`): the statement
+takes its argument through `eval_byte_arg`, so the whole domain answers the
+reference's class — outside int16 (the **range** −32768..32767, asymmetric)
+raises ERR 6 `Overflow`; inside int16 but outside `0..FCH_CEIL` raises ERR 5
+`Illegal function call`, negatives included; a fractional value **truncates** and
+is then judged on the integer (`15.9` is accepted as 15, `2.5` becomes 2). All
+measured on the CF-3300 across fourteen rows, not inferred from `CHR$`.
+🔴 Before it, an argument **outside int16 was accepted SILENTLY as
+`MAXFILES=0`** — every file channel disabled with no error — because `eval`'s
+`flt_to_int16` zeroes `DE` for those and the hand-inlined high-byte test could
+therefore never fire. The channel-NUMBER side was closed separately by
+D-BADFNUM. ⚠️ **Partly closed 2026-07-31 by D-NOTOPEN**
 (`docs/spec-basic-chan-notopen-err59.md`): a channel that is IN RANGE but NOT OPEN
 now raises the reference's trappable ERR 59 from `PRINT#`/`INPUT#`/`LINE INPUT#`
 as well as from `EOF`/`LOF`. ⚠️ **Closed further 2026-07-31 by D-NOTOPEN2**

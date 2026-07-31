@@ -3133,14 +3133,76 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       linear with ceiling 15, headline 267 B (ref) / 50 B (zb): **identical to the
       pre-change run**, which is the control on the change itself.
 
-- [ ] **Over-ceiling `MAXFILES` raises the wrong error class.** `MAXFILES=16` →
-      reference **`Illegal function call`** (ERR 5); zerobas raises **`syntax
-      error`** (ERR 2). ⚠️ Updated 2026-07-29: D-FCH §3.2 raised `FCH_CEIL` to
-      the measured reference ceiling of **15**, so the two machines now REJECT
-      the same values — only the class still differs. Owned by **S-FCH-2**
-      (spec §7), together with ERR 52/59. (Message *wording* is NOT the issue — zerobas's
-      lowercase strings are deliberate provenance policy, PROVENANCE §851.)
-      Case `mf16`/`mf255` in the same probe.
+- [x] ✅ **The `MAXFILES` ARGUMENT DOMAIN — LANDED 2026-07-31, 53/53, falsified,
+      NET −6 B.** Filed as "over-ceiling `MAXFILES` raises the wrong error
+      class". **The filed item was already fixed** (`61e3a48` made `MAXFILES=16`
+      raise ERR 5) — **and closing it on that would have shipped two live
+      defects.** Spec [`docs/spec-basic-maxfiles-domain.md`](docs/spec-basic-maxfiles-domain.md),
+      results [`docs/chancost-cf3300-characterization.md`](docs/chancost-cf3300-characterization.md) §11.
+      Walls: page 1 **63 → 69 B**, low region **UNCHANGED at 23 B**.
+
+      🔴 **THE FILED ROWS COULD NOT REACH THE DEFECT.** `mf16` and `mf255` both
+      have a **zero high byte**, so both land on the same arm of `ex_maxfiles`'s
+      domain test; `ld a,d / or a / jp nz,gb_illegal` had **never been executed
+      by any test on either machine**, across 39 cases. "The class is right" had
+      been concluded from two same-side samples.
+      🔴 **AND THE SEVERE DEFECT WAS A SILENT ACCEPT.** `ex_maxfiles` took its
+      argument through `eval`, not `get_byte_arg`; `eval`'s `flt_to_int16`
+      **zeroes `DE`** for an out-of-int16 value (`basic/interp.asm`'s own header
+      says so), so `MAXFILES=65536` and `=70000` arrived as `DE=0` and were
+      accepted as an ordinary request for **zero channels — every file channel
+      disabled, no error raised** — where the reference raises ERR 6 `Overflow`.
+      🔴 **AND A SECOND DEFECT WAS INVISIBLE TO THE ROWS THAT FOUND THE FIRST.**
+      `32768`/`-32769` *are* representable in 16 bits, so `DE` is non-zero and
+      the old test **did** fire — with ERR 5 where the reference says ERR 6. The
+      two rows that triggered the slice could not have exposed it; only the
+      boundary rows could, and those were added to pin **the denominator of the
+      FIX**, not of the defect. ⚠️ **Ask what a fix's own rule needs pinned, not
+      just what the defect needed.**
+      ⚠️ **THE PROBE WOULD HAVE SCORED THE SILENT ACCEPT AS `agree`.** `err_class`
+      returns `None` for any message not in `ERR_CLASSES`, the number scan then
+      also returns `None`, and `ERR_CLASSES` had **no entry for `Overflow`** —
+      exactly what the reference answers here. Unclassified-error and no-number
+      were the same value, so both sides read `None`, compared **equal**, and
+      printed `agree`. Fixed FIRST (§0.2): `OVF`/`TM` added, an unreadable screen
+      returns **`NOREAD`** and is fatal like `MANGLED`, and the derivation was
+      lifted into `read_value()` so it is falsifiable without booting a machine.
+      **K4 12/12** synthetic (4 RED / 8 GREEN); **K4b CUTS** — the old rule scores
+      the reference-`Overflow`-vs-zerobas-silent-accept pair as `agree`. This is
+      [[apparatus-is-part-of-the-measurement]] one layer *inside* where the
+      previous session left it.
+      ⚠️ **TWO OF MY OWN ROWS WERE WEAK AND WERE CORRECTED BEFORE THEY BECAME
+      ORACLES.** `MAXFILES=1.5` read **23430 = `mf1`**, and **1 IS THE BOOT
+      DEFAULT** — the cell could not separate "truncated to 1" from "the
+      statement did nothing", the same hole the probe header already flags for
+      `mf1`. And a fractional row read off `FRE(0)` is `COMPARE absfre`, i.e.
+      *informational* — it would have gated **nothing on the machine under
+      test**. Both now read out through the channel-number range (a class on
+      both machines), with a paired integer control `mfd_frac_ctl`.
+      **The reference's rule, measured across 14 rows and recorded BEFORE
+      zerobas was run on any of them:** outside int16 → ERR 6 `Overflow`; inside
+      int16 but outside `0..15` → ERR 5 (negatives included); fractional
+      **TRUNCATES** (`15.9` accepted as 15, `2.5` → 2). ⚠️ The int16 boundary is
+      the **RANGE −32768..32767, not the magnitude** — the asymmetry
+      `get_byte_arg`'s header records for `CHR$` on the VG-8020, here **measured
+      for `MAXFILES` on the CF-3300** rather than assumed to carry across verbs.
+      **The fix REPLACES code:** `call eval` + five hand-inlined bytes →
+      `call eval_byte_arg`, which *is* the reference rule. Nine bytes become
+      three; the `FCH_CEIL` test stays because that bound is the statement's own.
+      **Falsified:** reverting `basic/files.asm` alone → **4 RED, 10 GREEN**, red
+      exactly `mfd_65536`/`mfd_70000`/`mfd_32768`/`mfd_n32769`, with `mfd_32767`
+      and `mfd_n32768` — the *same* boundary, one step inside — staying green, so
+      the knife is attributable to crossing int16. ⚠️ **The knife corrected my
+      prediction**: I expected `32768` to be a silent accept too; it read `IFC`,
+      and that is how the second defect got its name.
+      Gate: `make chancost-characterize` — **53 cases, 0 mangled, 0 oracle drift,
+      0 unfiled divergence, `KNOWN_DIVERGE` EMPTY**; every ladder reading
+      byte-identical to the pre-change run, and both fractional rows held
+      (`fac_to_int_strict` truncates like the reference — the live risk in
+      routing the argument through a different converter). Full corpus green:
+      unit 55/55, badfnum 93, lof 45, diskbasic 34/34, bdos 12/12, fat-error 8/8,
+      error/stop-trap, abort 49/49, linemax 60/60, arrdim 73/73, clearpool 52/52,
+      array 149/151 (standing `ifc.instr.zero`/`ifc.instr.neg`, confirmed BY NAME).
 
 - [ ] **Line-number scan does not skip embedded blanks.** Found 2026-07-29 as a
       FAILING TWO-SIDED CONTROL in D-LINEMAX's `tok` battery — a confound there,
