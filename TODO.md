@@ -3248,7 +3248,50 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       arguable. Sharpening the policy wording is a decision for the owner, not a
       sweep.
 
-- [ ] **Line-number scan does not skip embedded blanks.** Found 2026-07-29 as a
+- [ ] **The general DECIMAL LITERAL scanner does not skip embedded blanks.**
+      Split out of D-LNBLANK 2026-07-31, where it was the *unfiled* half of the
+      finding. Blank-transparency is **not** a property of the line-number scan;
+      it is a property of the decimal number scanner, and the line number is one
+      of its customers. Measured byte-exact on the VG-8020 **and** the CF-3300,
+      which agree ([`docs/lnblank-msx1-characterization.md`](docs/lnblank-msx1-characterization.md) §1/§11 D):
+      ```
+      20 A=1 0     ref -> A <EF> <0F><0A>   (the single literal 10, = `A=10`)
+      20 A=1 . 5   ref -> A <EF> <1D>A<15><00><00>   (1.5, across TWO blanks)
+      20 A=1E 2    ref -> A <EF> <1D>C<10><00><00>   (100)
+      ```
+      ⚠️ **And it does NOT reach everywhere** — the bounding controls are already
+      measured and must stay green: a **hex** literal does *not* skip
+      (`&H1 F` → `&H1` then ` F`), nor a **string** literal (`"1 0"`), nor a
+      **REM** tail, and a variable name keeps its blank (`A B` stores `A B`).
+      A fix written as "make the crunch's digit fetch blank-transparent" is
+      therefore **wrong**, and only the hex row says so.
+      Site: `tk_float` ([`basic/tokenise.inc:57`](basic/tokenise.inc:57) → the
+      sub-ROM float pack) — a different ROM from the two scanners D-LNBLANK
+      fixed, and a change touching every numeric literal in every program, so it
+      earns its own falsification.
+      Gate: the five rows are **already live** in `make lnblank-acceptance` as
+      `KNOWN_DIVERGE`, each **pinned to the exact bytes zerobas produces today** —
+      fix the scanner and the allowlist stops matching and the gate goes red,
+      which is how the entry gets retired instead of rotting.
+
+- [ ] **`$0E` line-number references are missing for five verbs — and three of
+      the verbs do not exist at all.** Split out of D-LNBLANK 2026-07-31 (its
+      `ref` battery, measured as denominator). Both references crunch a line
+      number after `LIST`/`DELETE`/`AUTO`/`RENUM`/`ELSE` to `$0E,<lineno LE>`;
+      `bl_yes` ([`basic/tokenise.inc`](basic/tokenise.inc)) tests only
+      `GOTO`/`GOSUB`/`THEN`/`RESTORE`/`RUN`/`RESUME`.
+      ⚠️ **It is bigger than a missing `$0E` arm.** zerobas has no token for
+      three of these verbs whatsoever: `20 DELETE 1 0` crunches to `DE<88>E …`
+      and `20 RENUM 1 0` stores `RENUM` **verbatim** — i.e. `DELETE`, `AUTO` and
+      `RENUM` are unimplemented statements, not just unconverted arguments.
+      `LIST` (`$93`) and `ELSE` (`:`+`$A1`) exist and only lack the arm.
+      Measured bytes: [`docs/lnblank-msx1-characterization.md`](docs/lnblank-msx1-characterization.md) §6.
+      The rows are live and **informational** (non-gating) in
+      `make lnblank-acceptance`.
+
+- [x] ✅ **LINE-NUMBER SCAN AND EMBEDDED BLANKS — LANDED 2026-07-31, 52/52,
+      falsified on five knives.** Was 🔴 a silently wrapped line number shipping
+      today. Found 2026-07-29 as a
       FAILING TWO-SIDED CONTROL in D-LINEMAX's `tok` battery — a confound there,
       a real divergence of its own. Byte-exact via the
       `("stored_line", TXTTAB)` capture:
@@ -3258,14 +3301,69 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       zerobas ->  line 20,  body = five double literals
       ```
       The reference's line-number scan **skips the blank and keeps accumulating
-      digits** (`20` + ` ` + `0` = 200); zerobas stops at the space. Same source
-      text, different line number AND different body. Sites:
-      `dispatch_line`/`parse_lineno` ([`basic/program.asm:31`](basic/program.asm:31))
-      and `mrg_storeline` ([`basic/files.asm:1496`](basic/files.asm:1496)), which
-      reaches the same path for ASCII LOAD/MERGE. Check with it whether a
-      line-number REFERENCE inside a statement (`GOTO 1 0`) behaves the same —
-      that goes through `branch_lineno` in
-      [`basic/tokenise.inc`](basic/tokenise.inc), a different path.
+      digits** (`20` + ` ` + `0` = 200); zerobas stopped at the space.
+      Spec [`docs/spec-basic-lnblank.md`](docs/spec-basic-lnblank.md),
+      characterization [`docs/lnblank-msx1-characterization.md`](docs/lnblank-msx1-characterization.md),
+      gate `make lnblank-acceptance` (54 rows, five batteries). **Baseline 18/48.**
+      **Cost: 61 B, all page 1 (69 B → 8 B free)**, low region untouched at 23 B;
+      the crunch half rides the sub-ROM.
+      ⚠️ **TWO ORACLES.** Every row was asked of the VG-8020 **and** the CF-3300,
+      because the whole item rested on one row from one machine. They agree on
+      all 54 rows byte for byte — so this is MSX-BASIC and not one ROM.
+      🔴 **THE FILED TITLE WAS THE SMALLEST PART, in four directions:**
+      * **`99999 REM` SILENTLY STORED LINE 34463.** The ceiling was unguarded and
+        `parse_lineno` wrapped at 16 bits; both references refuse anything past
+        65529 with `Syntax error` (`PRINT ERR` then reads 2; 65529 is accepted
+        and leaves ERR at 0). Live *before* this slice and independent of blanks —
+        but the blank fix widens its reach, so it landed here.
+        ⚠️ **And the first cut of the fix did not catch it**: a ceiling tested on
+        the *finished* value cannot see an accumulator that already wrapped, so
+        `99999` passed a bound it was 34463 lower than. The overflow is now caught
+        **where it happens** (any carry out of the `*10+digit` chain saturates to
+        `$FFFF`), and knives C/D show the two halves are independent.
+      * **THE BODY OFFSET HAS A RULE, and it is not the digit count.** The line
+        number eats its digits plus exactly **one** blank — **none when its VALUE
+        is zero**. `00 REMX` eats none and `01 REMX` eats one (same digit count,
+        same leading digit); `0 0 REMX` reaches zero *through* a blank and still
+        eats none. `skip_spaces` had been eating the whole run.
+      * **A BLANK BEFORE AN `ON…GOTO` COMMA ENDED THE LIST**, so every later
+        target crunched as a plain literal — the same failure `bl_num`'s own
+        comment records for an *empty* slot, one character to the left of where
+        that one was fixed. The blank rule does not explain it; `ref-oncomma`
+        found it, and the fix is **two bytes cheaper** than the test it replaces.
+      * **IT IS NOT THE LINE-NUMBER SCAN AT ALL** — it is the decimal *number*
+        scanner (`A=1 0` → literal 10). Split out above, with the bounding
+        controls (hex / string / REM / variable name) already measured.
+      Sites fixed: `parse_lineno` + `dl_store`
+      ([`basic/program.asm:200`](basic/program.asm:200)) and `bl_acc` + `bl_done`
+      ([`basic/tokenise.inc:444`](basic/tokenise.inc:444)) — two copies of the
+      same lookahead **on purpose**: they live in different ROMs (the crunch body
+      is evicted to the sub-ROM), so no call could be shared. `mrg_storeline`
+      ([`basic/files.asm:1593`](basic/files.asm:1593)) reaches the storage path
+      through `dispatch_line` and is covered by construction.
+      ⚠️ **A blank is only transparent when the run ENDS IN A DIGIT.** A greedy
+      skip gives the right line number and the wrong body, which is why the scan
+      looks ahead across the run before committing to it.
+      ⚠️ **`num-zero` was labelled a two-sided CONTROL and it was RED.** The label
+      was right about the blank rule and wrong as a claim about the row: it also
+      exercises the body offset, which no rule in the spec covered when the label
+      was assigned. **A control is a claim about which variables a row holds
+      still**, and this one held fewer than its label said.
+      ⚠️ **Apparatus: the standard echo guard would have been blind here.** The
+      other probes squeeze runs of blanks so a wrapped echo still matches — and
+      the blank *is* the subject, so squeezed, `2 0 REMX` and `20 REMX` are the
+      same string and a dropped space reads as a clean echo. Not squeezing then
+      reported `MANGLED` on **every row of both references** while the memory pass
+      read them perfectly: the squeeze had been *hiding* a two-column screen
+      margin, not tolerating it. `lstrip()` is no fix either (`num-lead` types a
+      leading blank on purpose). The margin is now **measured per capture**.
+      ⚠️ **And the `err` battery's control agreed for the wrong reason** — batched,
+      it read back the `ERR 2` the previous row had just raised, because `reset`
+      clears the program and not `ERRCODE`. Isolated it reads 0. That is
+      [`probes/basic/basic_probe_linemax.py:276`](probes/basic/basic_probe_linemax.py:276)'s
+      recorded trap, reappearing in a new probe within the hour — **and isolating
+      the rows then broke them a second way**, because boot-per-case *ignores*
+      `reset`, where the CF-3300's date-prompt CR lives.
 
 - [x] ✅ **`WIDTH n`'s VALID DOMAIN — LANDED 2026-07-28, 76/76, falsified.**
       Was 🔴 FIVE silent screen-destroyers shipping today. The last residue of

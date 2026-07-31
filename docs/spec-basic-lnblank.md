@@ -1,8 +1,28 @@
 # D-LNBLANK — blanks inside a line number
 
-> **STATUS: SPEC, AWAITING SIGN-OFF.** Nothing under `basic/` has been edited.
-> The rule this spec will pin is **not yet known**; §3 lists what will be
-> measured and §5 lists the *candidate* fixes, deliberately undecided.
+> ## ✅ LANDED 2026-07-31 — 52/52, falsified on five knives, **61 B** (page 1 69 → 8 B)
+>
+> Low region untouched at 23 B. Baseline 18/48. The rule is measured on **two**
+> reference machines that agree on all 54 rows byte for byte.
+>
+> * 🔴 **`99999 REM` SILENTLY STORED LINE 34463.** The ceiling was unguarded and
+>   the accumulator wrapped; both references refuse anything past 65529 with
+>   `Syntax error` (`PRINT ERR` → 2). Live before this slice, widened by it.
+>   ⚠️ **And the first cut of the fix did not catch it** — a bound tested on the
+>   *finished* value cannot see a number that already wrapped.
+> * 🔴 **The body offset turns on the line number's VALUE**, not its digit count:
+>   one blank eaten, none when the value is zero. `00` vs `01` is what says so.
+> * 🔴 **A blank before an `ON…GOTO` comma ended the list** — the blank rule does
+>   not explain it, and the fix is 2 B *cheaper* than the test it replaces.
+> * 🔴 **It is not the line-number scan at all** — it is the decimal *number*
+>   scanner. Split out (§7); its bounding controls (hex/string/REM/name) are
+>   measured and go with it.
+> * ⚠️ **A labelled two-sided CONTROL went RED** (`num-zero`): the label was right
+>   about the blank rule and wrong about the row, which also exercised a rule
+>   nobody had discovered when the label was assigned.
+>
+> Gate `make lnblank-acceptance`; apparatus lessons in
+> [`lnblank-msx1-characterization.md`](lnblank-msx1-characterization.md) §9.
 
 Filed item: [`TODO.md:3251`](../TODO.md:3251) — "Line-number scan does not skip
 embedded blanks", found 2026-07-29 as a **failing two-sided control** inside
@@ -232,11 +252,54 @@ and a boot each, and their job is fix-coverage, not rule discovery.
 | `cas-ctl` | `20 REMX` | control |
 | `cas-blank` | `2 0 REMX` | the rule, on the ASCII path |
 
-## 4. What the spec will assert
+## 4. The rule — measured, on two machines that agree on every row
 
-Deliberately blank until §3 has run. The rule is **whatever both references do**;
-if they disagree, that disagreement is the finding and this section will say so
-instead of picking a winner.
+Filled in from [`lnblank-msx1-characterization.md`](lnblank-msx1-characterization.md)
+after step 1. The VG-8020 and the CF-3300 agree byte for byte on all 54 rows, so
+each of these is a property of MSX-BASIC and not of one ROM.
+
+**L1 — a blank inside a decimal number is transparent.** `2 0 REMX` is line 20;
+`2 0 0 REMX` is line 200; any *run* of blanks is transparent, not just one.
+The same holds for a line-number reference: `GOTO 1 0` crunches to `$0E,$000A`,
+byte-identical to `GOTO 10`.
+
+**L2 — but only when the run ends in a digit.** Blanks *before* a line-number
+reference are copied verbatim (`GOTO   10` keeps all three), and a run that
+merely trails the number is not consumed by the scan. A greedy skip gives the
+right line number and the wrong body.
+
+**L3 — the number/body separator is exactly one blank, and none when the line
+number's value is zero.** `20␣␣REMX` stores `␣REM X`; `0 REMX` stores `␣REM X`
+where `01 REMX` stores `REM X`. The discriminator is the **value** — `00` vs `01`
+have the same digit count and the same leading digit, and `0 0 REMX` reaches zero
+*through* a blank and still eats no separator.
+
+**L4 — a line number past 65529 is REFUSED.** Nothing is stored, `Syntax error`
+is printed, and `PRINT ERR` then reads **2**. 65529 is accepted and leaves ERR
+at 0. The refusal is independent of blanks.
+
+**L5 — in an `ON…GOTO` list, a blank before the comma does not end the list.**
+`ON A GOTO 1 0 , 2 0` converts *both* slots to `$0E`.
+
+**L6 — blank-transparency does NOT extend to** a hex literal (`&H1 F` → `&H1`
+then ` F`), a string literal, a REM tail, or a variable name.
+
+⚠️ **L7 — and the rule is not the line-number scan's at all.** `20 A=1 0`
+crunches to the single literal 10, `1 . 5` to 1.5, `1E 2` to 100. It is the
+**decimal number scanner**, of which the leading line number is one customer.
+See §7 — the general literal scanner is filed as its own slice.
+
+## 4b. What zerobas did — 18/48
+
+Five divergence groups, recorded in
+[`lnblank-msx1-characterization.md`](lnblank-msx1-characterization.md) §11.
+Two of them were not in this spec when it was signed off:
+
+* 🔴 **`99999 REM` silently stored line 34463** (L4 unguarded — a wrap, reported
+  as nothing). Live before this slice and independent of blanks.
+* 🔴 **A blank before an `ON…GOTO` comma ended the list** (L5), so every later
+  target crunched as a plain literal. The blank rule does not explain this one;
+  `ref-oncomma` found it.
 
 ## 5. Candidate fixes — costed, undecided
 
@@ -262,6 +325,30 @@ Whether P4 is fixed **at all** depends on §3.3: if the references do *not* skip
 blanks in a line-number reference, then changing `bl_acc` would be a regression,
 and the row that says so is a row this spec would otherwise never have run.
 
+## 5b. The fix, as landed — 61 B, all page 1 (69 → 8 B free)
+
+Low region untouched at 23 B. The crunch half rides the sub-ROM.
+
+| site | change |
+|---|---|
+| [`basic/program.asm:200`](../basic/program.asm:200) `parse_lineno` | blank-transparency **with a lookahead** (L1/L2), and L3's separator folded in — the run that did *not* end in a digit is exactly where the body begins, so it is one decision, not two. Folding it paid for itself: `dl_store`'s `call skip_spaces` is gone. |
+| same, `pl_sat` | overflow caught **where it happens**: any carry out of the `*10+digit` chain saturates to `$FFFF`. |
+| [`basic/program.asm:82`](../basic/program.asm:82) `dl_store` | the `LINENO_CEIL` bound (L4) → `Syntax error` + `ERRCODE = 2`, reported like the overflow arm rather than through `raise_error` (line *entry*, so a trap arm would jump into a finished program). |
+| [`basic/sysvars.inc:747`](../basic/sysvars.inc:747) | `LINENO_CEIL equ 65529`. |
+| [`basic/tokenise.inc:444`](../basic/tokenise.inc:444) `bl_acc` | the same lookahead (L1/L2) for a line-number reference. |
+| same, `bl_done` | L5 — `jr bl_yes` in place of the inline comma test: bl_yes already copies a blank run and falls into bl_num's comma test, so this is **2 bytes cheaper** than what it replaces. |
+
+**Two copies of the lookahead, deliberately.** The two scanners live in different
+ROMs — the crunch body is evicted to the sub-ROM, `program.asm` stays in the main
+— so no call could be shared even if the down-payment were worth it at two
+callers ([[generalisation-not-free-at-two-callers]]).
+
+⚠️ **The first cut of the ceiling did not work, and the gate said so.** A bound
+tested on the finished value cannot see an accumulator that already wrapped:
+`99999` arrives as 34463, which is *under* the ceiling, so `num-huge` stayed red
+with the range check in place. That is why the overflow is detected during
+accumulation and not after it.
+
 ## 6. Falsification
 
 Per the standing method: revert **the fix alone**, re-run, and confirm that
@@ -272,6 +359,24 @@ be a **probe row** — and it must be a row **downstream of the edit**
 ([[notopen-chan-err59-slice]]). The `num-only` row (§3.1) is the designated
 witness: it changes the *number of stored lines*, which no adjacent behaviour
 can produce by accident.
+
+### 6b. Result — five knives, each with its own witness
+
+Every knife leaves the code **reachable**: one that creates dead code fails
+`make basic-reloc`'s hard dead-code gate and measures nothing.
+
+| knife | reverts | rows that went red | verdict |
+|---|---|---|---|
+| **A** | the whole storage path | 20 of 33 `num-`/`body-` rows | 13 green, incl. all four two-sided controls |
+| **B** | the whole crunch path | 8 of 10 `ref-` rows | ⭐ the 2 that stayed green are **exactly `ref-ctl` and `ref-sp`**, the two controls |
+| **C** | the explicit ceiling only (`LINENO_CEIL` → 65534) | **`num-over`, `num-over0` only** | the saturated `$FFFF` is still refused, so 99999 stays green |
+| **D** | the overflow saturation only (`$FFFF` → 0) | **`num-huge`, `num-huge0` only** | the ceiling still fires, so 65530 stays green |
+| **E** | the list-comma fix only | **`ref-oncomma` only** | 9 of 10 green |
+
+C and D are **complementary**: they are the two halves of the range defence and
+each is falsified by its own witness row, which is what says the pair is not one
+mechanism wearing two hats. E isolates a change that *saves* two bytes down to a
+single row.
 
 Gates to re-run after any `basic/` change (the standing corpus):
 `make unit-test` 55/55 · `badfnum-acceptance` 93 · `lof-acceptance` 45 ·

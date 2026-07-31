@@ -79,9 +79,42 @@ dl_cmd:
                 ld      hl,TOKBUF
                 jp      rp_exec             ; unwinds to the REPL at end of line
 dl_store:
-                call    parse_lineno        ; HL -> first digit; BC = number, HL past
+                call    parse_lineno        ; HL -> first digit; BC = number, HL at
+                                            ; the body (parse_lineno eats the ONE
+                                            ; separator blank itself -- D-LNBLANK
+                                            ; R3, so no skip_spaces here: that ate
+                                            ; the WHOLE run and lost the body offset)
+                ; D-LNBLANK R4: a line number past 65529 is REFUSED, not stored and
+                ; not wrapped. Measured on both references: `65530 REM` and
+                ; `99999 REM` print `Syntax error` and store nothing, and `PRINT ERR`
+                ; then reads 2 (65529 is accepted and leaves ERR at 0).
+                ;
+                ; 🔴 UNGUARDED, THIS WAS A SILENT WRONG ANSWER: `99999 REM` stored a
+                ; line numbered 99999-65536 = 34463 and reported nothing. It was
+                ; live before the blank fix and independent of it -- but the blank
+                ; fix WIDENS its reach (`9 9 9 9 9 REM` went from a visibly wrong
+                ; line 9 to a silent 34463), which is why it lands in the same
+                ; slice. Shipping the one without the other repeats D-LINEMAX, where
+                ; raising one limit turned a previously-safe unbounded path into a
+                ; live defect.
+                ld      a,b
+                cp      high (LINENO_CEIL+1)
+                jr      c,dl_lnok
+                ld      a,c
+                cp      low (LINENO_CEIL+1)
+                jr      c,dl_lnok
+                ld      a,2                 ; ERR 2 -- measured, not assumed
+                ld      (ERRCODE),a
+                ld      hl,err_syntax       ; low-region string pool (arrays.asm)
+                jr      dl_ovf_report       ; reports and returns to the REPL. Like
+                                            ; the overflow arm above this reports
+                                            ; rather than calling raise_error: the
+                                            ; error happens at line ENTRY, and
+                                            ; raise_error's trap arm would jump INTO
+                                            ; a finished program on a mistyped line.
+                                            ; The reference cannot trap it either.
+dl_lnok:
                 push    bc                  ; guard line number across tokenise
-                call    skip_spaces         ; one or more spaces before the body
                 ld      de,TOKBUF
                 call    tokenise            ; crunch the remainder of the line
                 ld      a,(TKOVF)
@@ -194,33 +227,106 @@ ic_yes:
 run_kw:         db      "RUN",0
 new_kw:         db      "NEW",0
 
-; --- parse_lineno: ASCII decimal at (HL) -> BC, HL advanced past the digits --
-; Accumulates BC = BC*10 + digit (16-bit, wraps past 65535; line numbers above
-; 65529 are out of the documented range and not guarded here). Clobbers A, HL.
+; --- parse_lineno: ASCII decimal at (HL) -> BC, HL advanced past the number ---
+; Accumulates BC = BC*10 + digit (16-bit; dl_store rejects anything past 65529
+; before the value is used, so the wrap this used to document is unreachable).
+; Clobbers A, HL.
+;
+; D-LNBLANK (docs/spec-basic-lnblank.md): A BLANK INSIDE THE NUMBER IS
+; TRANSPARENT. `2 0 REMX` stores line 20, `2 0 0 REMX` stores line 200 -- measured
+; byte-exact on BOTH the VG-8020 and the CF-3300, which agree on all 54 rows
+; (docs/lnblank-msx1-characterization.md §1). zerobas stopped at the blank and
+; stored line 2, with the leftover digits crunched into the BODY: same source
+; text, different line number AND different body.
+;
+; ⚠️ A BLANK IS ONLY TRANSPARENT WHEN A DIGIT FOLLOWS IT. Consuming blanks
+; greedily gives the right line number and the WRONG BODY: the reference keeps
+; every blank of the run except one, so `20  REMX` stores ` REM X` and not
+; `REM X`. The scan therefore looks ahead across the run and only commits to it
+; when it ends in a digit.
+;
+; ⚠️ AND THE SEPARATOR IT EATS DEPENDS ON THE VALUE, NOT THE TEXT. Exactly one
+; blank separates the number from the body -- unless the line number is ZERO, when
+; none is eaten (`0 REMX` -> ` REM X`, `00 REMX` -> ` REM X`, but `01 REMX` ->
+; `REM X`). `00`/`01` differ only in VALUE, both have two digits and both start
+; with `0`, so the discriminator is the value; `0 0 REMX` reaches zero THROUGH a
+; blank and still eats none, which is the row that rules out "the digit run".
+; That rule lives here rather than in dl_store because it is the same decision:
+; the run of blanks that did NOT end in a digit is where the body begins.
+; (Folding it in also pays for itself -- dl_store's `call skip_spaces` is gone.)
 parse_lineno:
                 ld      bc,0
 pl_lp:
                 ld      a,(hl)
                 cp      '0'
-                ret     c
+                jr      c,pl_blank
                 cp      '9'+1
-                ret     nc
+                jr      nc,pl_blank
                 sub     '0'
                 push    hl                  ; BC = BC*10 + A
                 ld      h,b
                 ld      l,c
                 add     hl,hl               ; 2*acc
+                jr      c,pl_sat
                 add     hl,hl               ; 4*acc
+                jr      c,pl_sat
                 add     hl,bc               ; 5*acc
+                jr      c,pl_sat
                 add     hl,hl               ; 10*acc
+                jr      c,pl_sat
                 ld      c,a
                 ld      b,0
                 add     hl,bc               ; + digit
+                jr      c,pl_sat
                 ld      b,h
                 ld      c,l
                 pop     hl
                 inc     hl
                 jr      pl_lp
+pl_sat:
+                ; 🔴 THE CEILING CHECK IN dl_store CANNOT SEE AN ACCUMULATOR THAT
+                ; ALREADY WRAPPED. `99999` is 99999-65536 = 34463 in 16 bits, which
+                ; is comfortably UNDER the ceiling -- so a bound tested on the
+                ; finished value passed it, and `99999 REM` still stored line 34463
+                ; with the range check in place. Measured, not reasoned: the gate
+                ; row stayed red after the first cut of the fix.
+                ;
+                ; So the overflow is caught WHERE IT HAPPENS. Any carry out of the
+                ; BC*10+digit chain means the number has passed 65535, and 65535 is
+                ; already past the ceiling -- saturating to $FFFF hands dl_store a
+                ; value its own bound rejects, and the two checks together cover
+                ; both halves (wrapped values here, 65530..65535 there).
+                ;
+                ; No need to consume the remaining digits: the caller refuses the
+                ; line outright and never reads HL again. The `pop` only balances
+                ; the push above.
+                pop     hl
+                ld      bc,$FFFF
+                ret
+pl_blank:
+                ; Not a digit. Only a blank can continue the number; anything else
+                ; ends it here, with HL on it (`20REMX`, `2 X=1`).
+                cp      ' '
+                ret     nz
+                push    hl                  ; where the run of blanks starts
+pl_bl_lp:
+                inc     hl
+                ld      a,(hl)
+                cp      ' '
+                jr      z,pl_bl_lp          ; ANY run is transparent, not just one
+                cp      '0'
+                jr      c,pl_bl_end
+                cp      '9'+1
+                jr      nc,pl_bl_end
+                pop     af                  ; a digit follows -> the run belonged to
+                jr      pl_lp               ; the number; keep the advanced HL
+pl_bl_end:
+                pop     hl                  ; back to the first blank of the run
+                ld      a,b                 ; the number/body separator: exactly one
+                or      c                   ; blank, and NONE when the value is zero
+                ret     z
+                inc     hl
+                ret
 
 ; --- new_prog: clear the stored program (NEW) --------------------------------
 ; Empty program = a $0000 link word at the text base. Clobbers A, HL.

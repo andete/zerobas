@@ -237,12 +237,47 @@ REF = [
     ("ref-else",     ["20 IF A THEN 1 0 ELSE 2 0"]),
 ]
 
-CASES = NUM + BODY + LIT + REF
+# --- the `err` battery: WHICH ERROR CLASS a rejected line number RAISES -------
+# ⚠️ SAY-MODE ONLY. These rows read the SCREEN, not the stored line, so they
+# cannot share the measurement run -- and their claim is not "what was stored"
+# but "what does PRINT ERR read afterwards". The refusal happens at line ENTRY,
+# not during RUN, so a handler cannot see it and asking afterwards is the only
+# readout there is (the same reasoning basic_probe_linemax.py's `code` battery
+# arrived at). `err-ctl` pins what ERR reads when NO error happened, so the
+# reject row's value is a DIFFERENCE and not a number floating on its own.
+ERRB = [
+    ("err-over",     ["65530 REMX", 'PRINT"[";ERR;"]"']),
+    ("err-ctl",      ["65529 REMX", 'PRINT"[";ERR;"]"']),
+]
+SAY_ONLY = {lb for lb, _l in ERRB}
+
+CASES = NUM + BODY + LIT + REF + ERRB
 
 INFORMATIONAL = {"num-tab", "ref-list", "ref-delete", "ref-auto", "ref-renum",
                  "ref-else", "lit-varname"}
 CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             "lit-ctl", "lit-str", "lit-rem", "ref-ctl", "ref-sp"}
+
+# --- KNOWN_DIVERGE: filed, not fixed, and PINNED TO ITS EXACT VALUE ----------
+# The `lit` rows measure the GENERAL DECIMAL LITERAL SCANNER, which D-LNBLANK
+# established is the real home of blank-transparency (docs/lnblank-msx1-
+# characterization.md §11 D). It is a different ROM from the two line-number
+# scanners this slice fixes -- tk_float, in the sub-ROM float pack -- and it would
+# change every numeric literal in every program, so it is its own slice.
+#
+# ⚠️ These are not suppressions. Each entry records what zerobas ACTUALLY reads,
+# so the row passes only while it keeps diverging in EXACTLY that way. Fix the
+# literal scanner and the entry stops matching and the gate goes red, which is
+# how the allowlist gets retired instead of rotting. `lit-ctl` / `lit-str` /
+# `lit-rem` are deliberately NOT here: they are the controls that bound the
+# filed defect and they must stay green.
+KNOWN_DIVERGE = {
+    "lit-assign": "line 20 | A<EF><12> <11>",
+    "lit-print":  "line 20 | <91> <12> <11>",
+    "lit-add":    "line 20 | A<EF><12> <11><F1><13> <11>",
+    "lit-float":  "line 20 | A<EF><12> . <16>",
+    "lit-exp":    "line 20 | A<EF><12>E <13>",
+}
 
 
 def battery(label):
@@ -392,19 +427,54 @@ def run_side(side, cases, repeat, echo, saymode=False):
         reset = reset + ("SCREEN 0", "CLS")
     capture = "screen" if (echo or saymode) else ("stored_line", TXTTAB)
 
+    # ⚠️ THE `err` ROWS MUST NOT SHARE A BOOT, AND BATCHED THEY MADE THEIR OWN
+    # CONTROL AGREE FOR THE WRONG REASON. `reset` clears the PROGRAM; it does not
+    # clear ERRCODE. Batched, `err-ctl` ran after `err-over` and read back the 2
+    # that row had just raised -- on BOTH references:
+    #
+    #     err-ctl, batched after err-over : ref ` 2 `  -> agrees, measures nothing
+    #     err-ctl, alone on a fresh boot  : the real value
+    #
+    # A row that reads leftover state cannot share a boot with the row that
+    # leaves it. This is the identical trap basic_probe_linemax.py:276 recorded
+    # for its `code` battery; it reappeared in a new probe within the hour.
+    # ⚠️ AND BOOT-PER-CASE IGNORES `reset` ENTIRELY (omsx_repl.run_cases), which
+    # is where the CF-3300's boot date-prompt CR and the say pass's `SCREEN 0`
+    # live. Isolating the rows without carrying those forward left the CF-3300
+    # sitting at its date prompt reading a SCREEN 1 name table through a 40-col
+    # SCREEN 0 scraper -- `<none>` on both rows, which would have been reported
+    # as the CF-3300 declining to answer. The isolation has to carry the setup,
+    # so the reset lines are prepended to the case itself.
+    batch = not any(lb in SAY_ONLY for lb, _l in cases)
+    specs = [("direct", (list(reset) + lines) if not batch else lines)
+             for _l, lines in cases]
     runs = []
     for _ in range(repeat):
         runs.append(omsx_repl.run_cases(
-            cfg["machine"], [("direct", lines) for _l, lines in cases],
-            reset=reset, capture=capture, boot=cfg["boot"], step=cfg["step"],
-            diska=tmp))
+            cfg["machine"], specs, reset=reset, capture=capture,
+            boot=cfg["boot"], step=cfg["step"], diska=tmp, batch=batch))
     if tmp:
         os.unlink(tmp)
 
     if saymode:
         out = []
         for i, (label, lines) in enumerate(cases):
-            vals = [say(r[i], lines, reset) for r in runs]
+            # ⚠️ SAY_ONLY ROWS MUST NOT USE say(). say() drops any row built
+            # ONLY from characters the case typed, and `err-ctl`'s answer `[ 0 ]`
+            # is exactly that -- the reset line `SCREEN 0` puts '0' into the
+            # alphabet, so the control read `<nothing printed>` whether ERR was 0
+            # or whether nothing printed at all. A sentinel that also means "no
+            # reading" is not a measurement, and this one was sitting on the row
+            # whose whole job is to be the contrast. These rows ANCHOR on the
+            # echo of their own last line instead and read what follows it.
+            # NOCAPTURE, not None: `is_bad` treats it as fatal, and a None here
+            # would crash the printer rather than report an apparatus failure.
+            rd = ((lambda raw: ("NOCAPTURE" if raw is None else
+                                (omsx_repl.result_span_after_echo(raw, lines[-1])
+                                 or "<none>")))
+                  if label in SAY_ONLY else
+                  (lambda raw: say(raw, lines, reset)))
+            vals = [rd(r[i]) for r in runs]
             out.append(vals[0] if len(set(vals)) == 1
                        else f"UNSTABLE across {repeat} boots: {vals}")
         return out
@@ -454,6 +524,9 @@ def main():
             return 1
     want = [t.strip() for t in (args.only or "").split(",") if t.strip()]
     sel = [c for c in CASES if not want or any(t in c[0] for t in want)]
+    # SAY_ONLY rows read the screen; they are invisible to the measurement
+    # and echo passes rather than silently reading the wrong capture.
+    sel = [c for c in sel if args.say or c[0] not in SAY_ONLY]
     if not sel:
         print("APPARATUS FAILURE: no rows selected")
         return 1
@@ -524,16 +597,45 @@ def main():
     # oracles agree with each other"; with zerobas in the list it is the
     # differential. Informational rows are reported but never gate.
     npass = ngate = 0
-    diverge = []
+    diverge, stale = [], []
     for i, (label, _l) in enumerate(sel):
         vals = {cols[s][i] for s in sides}
         ok = len(vals) == 1
+        # ⚠️ AN ALLOWLIST THAT MUST KEEP MATCHING IS A CONTROL; ONE THAT ONLY
+        # SUPPRESSES IS ROT. A KNOWN_DIVERGE row passes only if it STILL diverges
+        # AND zerobas still reads the EXACT value recorded when it was filed. Fix
+        # the literal scanner and the entry stops matching, so the gate goes red
+        # and the entry has to be retired -- which is the point. The references
+        # must still agree with each other either way.
+        if label in KNOWN_DIVERGE and "zb" in sides:
+            ngate += 1
+            refs = {cols[s][i] for s in sides if s != "zb"}
+            want = KNOWN_DIVERGE[label]
+            if ok:
+                stale.append(f"{label}: allowlisted as divergent but the row now "
+                             f"AGREES -- retire the entry")
+            elif len(refs) > 1:
+                stale.append(f"{label}: the REFERENCES disagree -- {refs}")
+            elif cols["zb"][i] != want:
+                stale.append(f"{label}: zerobas now reads {cols['zb'][i]!r}, "
+                             f"filed as {want!r} -- the allowlist no longer "
+                             f"describes the defect")
+            else:
+                npass += 1
+            continue
         if label not in INFORMATIONAL:
             ngate += 1
             npass += 1 if ok else 0
         if not ok:
             diverge.append((label, {s: cols[s][i] for s in sides}))
-    print(f"\n{npass}/{ngate} gating rows agree across {sides}")
+    if stale:
+        print("\nALLOWLIST FAILURE -- KNOWN_DIVERGE no longer describes zerobas:")
+        for m in stale:
+            print(f"  {m}")
+
+    print(f"\n{npass}/{ngate} gating rows agree across {sides} "
+          f"({len([l for l in KNOWN_DIVERGE if any(c[0] == l for c in sel)])} "
+          f"of them allowlisted as KNOWN_DIVERGE, pinned to their exact value)")
     if diverge:
         print("\nDIVERGENT:")
         for label, d in diverge:
@@ -542,6 +644,8 @@ def main():
             for s, v in d.items():
                 print(f"      {s:8} {v}")
 
+    if stale:
+        return 1
     return 1 if (args.gate and npass != ngate) else 0
 
 

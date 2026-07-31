@@ -338,7 +338,51 @@ defect.
 
 ### F. Five `$0E` verbs zerobas has no arm for (informational)
 
+
 `LIST`/`DELETE`/`AUTO`/`RENUM`/`ELSE` — §6. And it is worse than a missing
 `$0E` arm: zerobas has no token for three of these verbs at all —
 `20 DELETE 1 0` crunches to `DE<88>E …` and `20 RENUM 1 0` stores `RENUM`
 verbatim. Filed; a much larger gap than this slice.
+
+## 12. After the fix — 52/52
+
+`make lnblank-acceptance`, three sides, all 52 gating rows agreeing (five of them
+allowlisted as `KNOWN_DIVERGE` and **pinned to the exact bytes zerobas produces**,
+so the allowlist is a control and not a suppression). The five remaining
+divergences are the informational `ref-` rows of §6, filed.
+
+Cost: **61 B, all page 1** (69 → 8 B free); low region untouched at 23 B.
+
+### 12.1 What the knives showed
+
+Five reverts, each leaving the code reachable — a knife that creates dead code
+fails `make basic-reloc`'s hard dead-code gate and measures nothing.
+
+| knife | reverts | red | note |
+|---|---|---|---|
+| A | the whole storage path | 20 of 33 | 13 green, all four two-sided controls among them |
+| B | the whole crunch path | 8 of 10 | ⭐ the 2 still green are **exactly `ref-ctl` and `ref-sp`** |
+| C | the explicit ceiling only | `num-over`, `num-over0` | 99999 stays refused — the saturation covers it |
+| D | the saturation only | `num-huge`, `num-huge0` | 65530 stays refused — the ceiling covers it |
+| E | the list-comma fix only | `ref-oncomma` | a change that *saves* 2 B, isolated to one row |
+
+C and D are the two halves of the range defence and each has its own witness.
+That pairing is the whole point: without it, "the range is guarded" would be one
+claim with one row behind it, and the row that actually found the wrap
+(`num-huge`) is not the row that pins the bound (`num-over`).
+
+### 12.2 🔴 The first cut of the ceiling did not work
+
+A bound tested on the **finished** value cannot see an accumulator that has
+already wrapped. `99999` arrives in `BC` as 34463 — comfortably *under* 65529 —
+so `num-huge` stayed red with the range check in place, and `99999 REM` still
+stored line 34463.
+
+The overflow is now caught **where it happens**: any carry out of the
+`BC*10 + digit` chain saturates to `$FFFF`, which the ceiling then rejects. The
+two checks cover different halves (wrapped values / 65530…65535) and knives C and
+D are what say so rather than the reasoning above.
+
+⚠️ The general shape is worth keeping: **a bound placed after a lossy step is
+testing the wrong number.** This one was caught only because the battery had a
+row that reached past 65535 *and* a row that stopped short of it.

@@ -500,9 +500,9 @@ bl_num:
 bl_acc:
                 ld      a,(hl)
                 cp      '0'
-                jr      c,bl_done
+                jr      c,bl_ac_blank
                 cp      '9'+1
-                jr      nc,bl_done
+                jr      nc,bl_ac_blank
                 sub     '0'
                 ld      c,a
                 push    hl                  ; DE = DE*10 + C
@@ -519,6 +519,39 @@ bl_acc:
                 pop     hl
                 inc     hl
                 jr      bl_acc
+bl_ac_blank:
+                ; D-LNBLANK R5: a blank INSIDE a line-number reference is
+                ; transparent, exactly as in the leading line number -- `GOTO 1 0`
+                ; crunches to $0E,$000A, byte-identical to `GOTO 10`, on both
+                ; references. zerobas emitted $0E,$0001 and then crunched ` 0` as a
+                ; separate literal, so `GOTO 1 0` branched to line 1.
+                ;
+                ; ⚠️ Like parse_lineno's copy, the run is only transparent when it
+                ; ENDS IN A DIGIT: blanks BEFORE the number are copied verbatim by
+                ; bl_yes and survive in the crunched bytes (`GOTO   10` keeps all
+                ; three), and so must a run that merely trails the number. Commit to
+                ; the run only after looking past it.
+                ;
+                ; This is a SECOND COPY of parse_lineno's logic and deliberately so:
+                ; the two live in different ROMs (this body is evicted to the sub-ROM,
+                ; program.asm stays in the main), so no call could be shared even if
+                ; the down-payment were worth it at two callers.
+                cp      ' '
+                jr      nz,bl_done
+                push    hl
+bl_ac_lp:
+                inc     hl
+                ld      a,(hl)
+                cp      ' '
+                jr      z,bl_ac_lp
+                cp      '0'
+                jr      c,bl_ac_end
+                cp      '9'+1
+                jr      nc,bl_ac_end
+                pop     af                  ; a digit follows -> keep the advanced HL
+                jr      bl_acc
+bl_ac_end:
+                pop     hl                  ; the run is not ours; bl_yes copies it
 bl_done:
                 ld      b,d
                 ld      c,e                 ; BC = line number
@@ -532,10 +565,23 @@ bl_done:
                 ld      a,b                 ; value high
                 ld      (de),a
                 inc     de
-                ; extend for ON…GOTO/GOSUB comma-separated lists
-                ld      a,(hl)
-                cp      ','
-                ret     nz                  ; no comma -> single target, done
+                ; Extend for ON…GOTO/GOSUB comma-separated lists.
+                ;
+                ; 🔴 A BLANK BEFORE THE COMMA USED TO END THE LIST. This tested
+                ; (HL) for `,` at the very next character, so `ON A GOTO 1 0 , 2 0`
+                ; converted the FIRST slot and left every later target as an
+                ; ordinary numeric literal -- the trap parsers then ran off the end
+                ; of their list, exactly the failure bl_num's own comment records
+                ; for an EMPTY slot, one character to the left of where that one was
+                ; fixed. Found by D-LNBLANK's `ref-oncomma` row, which the blank
+                ; rule alone does not explain.
+                ;
+                ; bl_yes already copies a run of blanks verbatim and then falls into
+                ; bl_num, which tests for `,` and returns on anything else -- so
+                ; going back there does the comma test AND the blanks, in two bytes
+                ; fewer than the test it replaces. Its digit arm is unreachable from
+                ; here: bl_acc has just consumed any blank run that ends in a digit.
+                jr      bl_yes
 bl_list:
                 ld      (de),a              ; emit the comma verbatim
                 inc     de

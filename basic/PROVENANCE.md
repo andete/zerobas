@@ -3601,3 +3601,56 @@ reached its present shape — this file is a provenance log, not a description o
 the current tree. Read any `ROM_BASE` / lean/repack framing in an entry dated
 before today as historical. The source comments, by contrast, WERE swept, since
 a comment describes the code it sits beside.
+
+## 2026-07-31 — a blank inside a line number, and the ceiling behind it (D-LNBLANK)
+
+Clean-room status: **unchanged.** Everything below is a black-box oracle
+observation of two reference machines — identical inputs typed in, the stored
+program's own bytes read back out of RAM. No disassembly, no reference-ROM
+inspection. The token values used to read the captures (`$0E` line-number
+reference, `$8F` REM, the branch keywords) were already pinned from the MSX2
+Technical Handbook (Table 2.20 / Figure 2.12), an allowed source.
+
+**Two oracles, not one.** Every row was asked of both `Philips_VG_8020` and
+`National_CF-3300`. They agree on all 54 rows byte for byte, so the contract
+below is recorded as **MSX-BASIC's**, not as one ROM's. The item had rested on a
+single row from a single machine; the second oracle is what makes it safe to
+implement rather than merely to copy.
+
+Instrument: `("stored_line", TXTTAB)` — the exact bytes of the first stored line,
+with the 2-byte link **never compared** (it is an absolute address, and the
+CF-3300's Disk BASIC text base is not the VG-8020's $8001).
+
+Contract established (measurement:
+[`docs/lnblank-msx1-characterization.md`](../docs/lnblank-msx1-characterization.md),
+spec [`docs/spec-basic-lnblank.md`](../docs/spec-basic-lnblank.md) §4):
+
+* A blank inside a **decimal number** is transparent — in the leading line
+  number, in a line-number reference after a branch keyword, and in an ordinary
+  numeric literal. Any *run* is transparent, not just one blank.
+* …but **not** inside a hex literal (`&H1 F` → `&H1`), a string literal, a REM
+  tail, or a variable name.
+* The leading line number consumes its digits plus exactly **one** blank —
+  **none when its value is zero** (`00 REMX` eats none, `01 REMX` eats one).
+* A line number past **65529** is refused: nothing stored, `Syntax error`
+  printed, `PRINT ERR` reads **2**. 65529 is accepted and leaves ERR at 0.
+* In a line-number reference, blanks *before* the number are copied verbatim and
+  a blank *inside* it leaves no byte. A blank before an `ON…GOTO` comma does not
+  end the list.
+* `LIST` / `DELETE` / `AUTO` / `RENUM` / `ELSE` also take a `$0E` line-number
+  reference (recorded; not implemented — see `TODO.md`).
+
+Implemented in `parse_lineno` + `dl_store`
+([`basic/program.asm`](program.asm)) and `bl_acc` + `bl_done`
+([`basic/tokenise.inc`](tokenise.inc)) — **two copies of the same lookahead on
+purpose**: the crunch body is evicted to the sub-ROM and `program.asm` stays in
+the main ROM, so no call could be shared. 61 B, all page 1.
+
+🔴 **A defect this fixed, recorded because the code's own comment had asserted the
+opposite was harmless:** `parse_lineno`'s header used to say the accumulator
+"wraps past 65535" and that line numbers above 65529 were "not guarded here".
+Unguarded, `99999 REM` **silently stored a line numbered 34463** and reported
+nothing. The bound is now checked, and — the part that matters — the overflow is
+caught **during** accumulation rather than after it: a ceiling tested on the
+finished value cannot see a number that already wrapped, and the first cut of the
+fix duly let 99999 through.

@@ -140,10 +140,17 @@ CASES = [_rem_case(n) for n in
 # battery used `20 ` + the literals, and its two-sided control FAILED for a reason
 # that had nothing to do with buffers: the reference read the line number as
 # **200**, storing `#` verbatim and one literal fewer. Its line-number scan SKIPS
-# THE BLANK and keeps accumulating digits, where zerobas stops at the space -- a
-# real divergence of its own (filed separately; it is not this slice's), which
-# here was purely a confound. A letter after the space stops the scan on both
-# machines, so `A=` makes the two crunch the SAME source.
+# THE BLANK and keeps accumulating digits, where zerobas stopped at the space -- a
+# real divergence of its own, which here was purely a confound. A letter after the
+# space stops the scan on both machines, so `A=` makes the two crunch the SAME
+# source.
+#
+# That divergence is now FIXED (D-LNBLANK, docs/spec-basic-lnblank.md), so the
+# `A=` is no longer load-bearing for the reason it was added -- both machines now
+# read `20 0#...` as line 200. It STAYS anyway: this battery's subject is buffer
+# capacity, and a payload whose line number changes with its content would make
+# every row's source text a second variable. Keeping it means these rows kept
+# measuring the same thing across the fix, which is why none of them moved.
 def _tok_case(k):
     return (f"tok-{k}", "tok", ["20 A=" + "0#" * k])
 

@@ -744,6 +744,13 @@ INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read cursor (1 B, alias
 ; buffers stay addressable from the tenants that fill them.
 LINEBUF         equ     $EB00   ; repack: ASCII input line from the keyboard (LINEMAX B)
 LINEMAX         equ     255     ; 254 chars + the 0 terminator (measured reference ceiling)
+; The largest STORABLE line number. Anything past this is refused outright with
+; `Syntax error` (ERR 2) at line entry -- MEASURED on both the VG-8020 and the
+; CF-3300, which agree: 65529 stores, 65530 and 99999 store NOTHING
+; (docs/lnblank-msx1-characterization.md §4 / §10.1, D-LNBLANK R4). It is the
+; documented MSX-BASIC maximum, and it is a CEILING and not a mask: unguarded,
+; `99999 REM` silently stored a line numbered 99999-65536 = 34463.
+LINENO_CEIL     equ     65529
 ; TOKBUF — the crunch destination. Sized 576 B for a 314-byte LOGICAL body limit, and
 ; the gap between those two numbers is deliberate.
 ;
