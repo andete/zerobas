@@ -1107,10 +1107,13 @@ linemax-acceptance: repack-machine
 
 # --- D-LNBLANK: a blank INSIDE a line number ---------------------------------
 # docs/spec-basic-lnblank.md, measurement docs/lnblank-msx1-characterization.md.
-# Three batteries: num (the leading line number, program.asm parse_lineno), ref
+# Four batteries: num (the leading line number, program.asm parse_lineno), ref
 # (a line-number REFERENCE inside a statement, tokenise.inc branch_lineno -- a
 # DIFFERENT code path), lit (is the rule the line-number scan's, or the number
-# scanner's?). Scope with ONLY=num,ref,lit.
+# scanner's?) and dec (D-DECBLANK, docs/spec-basic-decblank.md: the DENOMINATOR
+# of the decimal-literal scanner -- every internal seam of a literal, both other
+# radices, and the rows that say a blank run which merely TRAILS a number is
+# KEPT). Scope with ONLY=num,ref,lit,dec.
 #
 # ⚠️ TWO ORACLES. Every row is asked of the VG-8020 AND the CF-3300, because the
 # whole slice rests on one filed row from one machine and a rule only one ROM

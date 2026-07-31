@@ -308,7 +308,14 @@ than its label said.
 | `lit-float` | `20 A=1 . 5` | `A<EF><1D>A<15><00><00>` (1.5) | — |
 | `lit-exp` | `20 A=1E 2` | `A<EF><1D>C<10><00><00>` (100) | — |
 
-**Filed as its own slice, not fixed here.** The site is `tk_float`
+**Filed as its own slice, not fixed here — and LANDED as D-DECBLANK the same day**
+([`docs/spec-basic-decblank.md`](spec-basic-decblank.md),
+[`docs/decblank-msx1-characterization.md`](decblank-msx1-characterization.md)).
+⚠️ Its denominator moved the fix twice past what these five rows say: a blank run
+that merely *trails* a number is **kept** (`20 A=1 +2`), so this is not the line
+number's rule; and the `'.'`-led entry `20 A=. 5` is a **fifth site, in the other
+file**, which no change to `tk_float` could reach. The five rows below are a
+sample, not a surface. The site is `tk_float`
 ([`basic/tokenise.inc:57`](../basic/tokenise.inc:57) → the sub-ROM float pack),
 a different ROM from the two scanners the TODO names, and the change would
 affect every numeric literal in every program — it deserves its own

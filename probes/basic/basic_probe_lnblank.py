@@ -165,6 +165,152 @@ LIT = [
     ("lit-varname",  ["20 A B=1"]),
 ]
 
+# --- the `dec` battery: THE DENOMINATOR OF THE DECIMAL-LITERAL SCANNER -------
+# D-DECBLANK (docs/spec-basic-decblank.md).  The five `lit` rows above are a
+# SAMPLE, not a surface: they say the decimal scanner is blank-transparent
+# somewhere between the digits, the dot and the exponent, and they say hex is
+# not.  They do NOT say where the transparency stops on the OTHER side, and that
+# is the question that decides the SHAPE of the fix.
+#
+# TWO RULES, AND THE ROWS ARE CHOSEN TO SEPARATE THEM:
+#
+#   rule L (lookahead)  -- a blank run is transparent only when what follows it
+#                          CONTINUES the number.  A run that merely TRAILS the
+#                          number is not the number's, and its blanks survive in
+#                          the crunched bytes.  This is the shape parse_lineno /
+#                          bl_acc already have (both look past the run and commit
+#                          only when it ends in a digit).
+#   rule G (greedy)     -- the literal scan fetches through blanks unconditionally
+#                          (the MS-BASIC CHRGET shape), so a run that trails the
+#                          number is CONSUMED and disappears from the stored line.
+#
+# `dec-trail` / `dec-trail2` are the pair that decides it, and no row already in
+# this probe can: every `lit` row puts the blank BETWEEN two things that both
+# belong to the number.  Implementing L when the reference is G (or the reverse)
+# reproduces every filed row perfectly and gets the byte count wrong on programs
+# nobody in this battery typed -- the D-ERR21 trap, where the WRONG
+# implementation reproduced the filed measurement exactly.
+#
+# The rest of the battery is denominator: every place a decimal literal has an
+# internal seam (the dot, the exponent marker, the exponent's sign, the type
+# suffix), plus the two non-decimal radices `lit-hex` left unmeasured, plus the
+# classification boundary the joined value has to flow through.
+DEC = [
+    ("dec-ctl",      ["20 A=1+2"]),        # CONTROL: no blank anywhere
+    ("dec-hexctl",   ["20 A=&H12"]),       # CONTROL: pins the hex encoding, so
+                                           # lit-hex's reading is attributable
+    # ★ THE PAIR THAT SIZES THE FIX -- a blank run that does NOT end in a digit.
+    ("dec-trail",    ["20 A=1 +2"]),       # L -> `<12> <F1><13>`; G -> `<12><F1><13>`
+    ("dec-trail2",   ["20 A=1  +2"]),      # two of them: L keeps both, G eats both
+    ("dec-run2",     ["20 A=1  0"]),       # is ANY RUN transparent between digits?
+    # The internal seams.  `lit-float` put blanks on BOTH sides of the dot and
+    # `lit-exp` put one after the marker; neither says whether the seam is
+    # crossable from the LEFT, which is a different fetch in every candidate
+    # implementation.
+    ("dec-dotpre",   ["20 A=1 .5"]),       # blank before the '.'
+    ("dec-dotpost",  ["20 A=1. 5"]),       # blank after the '.'
+    ("dec-exppre",   ["20 A=1 E2"]),       # blank before the exponent marker
+    ("dec-expsgn",   ["20 A=1E- 2"]),      # blank between the sign and the digits
+    ("dec-expsgn2",  ["20 A=1E -2"]),      # blank between the marker and the sign
+    ("dec-sfxh",     ["20 A=1 #"]),        # blank before a '#' type suffix
+    ("dec-sfxp",     ["20 A=1 %"]),        # blank before a '%' type suffix
+    # ⚠️ THE CLASSIFICATION BOUNDARY, REACHED THROUGH BLANKS.  D-LNBLANK's
+    # ceiling was checked AFTER a lossy step and could not see a wrapped
+    # accumulator; the analogous question here is whether the JOINED value still
+    # decides int-vs-single.  32767 and 32768 differ by one and land on different
+    # token types, so the pair reads the classification directly instead of
+    # reasoning about where the bound sits.
+    ("dec-int5",     ["20 A=3 2 7 6 7"]),  # joined = 32767 -> integer token
+    ("dec-int6",     ["20 A=3 2 7 6 8"]),  # joined = 32768 -> single, NOT integer
+    ("dec-mix",      ["20 A=1 0E 2"]),     # both axes at once: 10E2 = 1000
+    ("dec-neg",      ["20 A=- 1"]),        # the blank is AFTER the unary minus,
+                                           # i.e. before the scanner is entered
+    # The other radices.  `lit-hex` says &H does not skip; a rule stated from one
+    # radix is a sample of three.
+    ("dec-oct",      ["20 A=&O1 7"]),      # octal (zerobas has &O: tokenise.inc:302)
+    # ⚠️ INFORMATIONAL: zerobas' tk_hex knows &H and &O only.  If the references
+    # accept &B this row measures a MISSING RADIX and not this defect -- a
+    # neighbouring gap that earns its own item with these bytes attached.
+    ("dec-bin",      ["20 A=&B1 1"]),
+    # A DATA body is stored verbatim to the ':' on zerobas (tokenise.inc
+    # tk_data_rest).  If the reference crunches numbers inside DATA the blank
+    # rule would reach there too; if it does not, this is a bounding control
+    # exactly like `lit-rem`.
+    ("dec-data",     ["20 DATA 1 0"]),
+    # --- round 2: WHAT HAPPENS WHEN THE THING PAST THE BLANK IS A FALSE START -
+    # Round 1 answered rule L over rule G (`dec-trail`) and then widened the set
+    # of characters that count as a CONTINUATION well past "a digit": the dot,
+    # the exponent marker, the exponent's sign and a type suffix are all reachable
+    # across a blank run.  That is a one-character lookahead -- and `E` is the one
+    # continuation that can turn out NOT to be one, because a malformed exponent
+    # (`1E` with no digits) has to roll back.
+    #
+    # ⚠️ SO THE LOOKAHEAD AND THE ROLLBACK ARE THE SAME DECISION, and rolling the
+    # marker back without rolling the BLANKS back is a byte-level divergence no
+    # round-1 row can see.  These rows put a false start behind every seam.
+    ("dec-expbad",   ["20 A=1 EX"]),      # 'E' reached across a blank, then no digit
+    ("dec-expbadsg", ["20 A=1 E+X"]),     # marker AND sign, still no digit
+    ("dec-expboth",  ["20 A=1 E 2"]),     # blanks on BOTH sides of the marker
+    ("dec-expblk",   ["20 A=1E 2 3"]),    # a blank INSIDE the exponent's digits
+    ("dec-dotx",     ["20 A=1 .X"]),      # dot across a blank, no fraction digit
+    ("dec-sfxb",     ["20 A=1 !"]),       # the third type suffix
+    # ⚠️ INFORMATIONAL: a trailing blank at END OF LINE.  The MSX line editor may
+    # strip it inside the input buffer, in which case this row measures the
+    # editor and not the scan -- the same caveat `num-tab` carries.  The echo
+    # guard is what tells the two apart.
+    ("dec-eol",      ["20 A=1 "]),
+    # --- round 3: the same false starts with NO BLANK IN THE WAY --------------
+    # ⚠️ ROUND 2 SAID `1 EX` STORES A SINGLE 1 FOLLOWED BY `X` -- the blank AND
+    # the marker both gone.  That is two claims at once, and only one of them is
+    # about blanks.  zerobas' tkf_try_exponent rolls a malformed exponent back and
+    # leaves the `E` for the ordinary tokeniser (sub/tkfloat.asm:~215, and its
+    # header says in as many words that this is OWN-DESIGN, not oracle-pinned) --
+    # so if the reference eats the marker with no blank present either, that is a
+    # SEPARATE live divergence sitting under this one, and attributing it to the
+    # blank rule would be the D-MFDOM trap: closing an item on a measurement that
+    # belongs to a different defect.
+    ("dec-expbad0",  ["20 A=1EX"]),       # CONTROL for dec-expbad: no blank
+    ("dec-expbadsg0",["20 A=1E+X"]),      # CONTROL for dec-expbadsg: no blank
+    ("dec-dotx0",    ["20 A=1.X"]),       # CONTROL for dec-dotx: no blank
+    # ⚠️ AND `dec-eol` CANNOT BE READ WITHOUT THIS ROW.  A trailing blank is the
+    # one payload the echo guard is structurally blind to (echo_missing rstrips
+    # every screen row), so "the blank is gone" could be the crunch, the line
+    # editor, or the injector.  REM keeps its tail VERBATIM on both references,
+    # so a trailing blank there MUST survive the crunch -- if it does not, the
+    # blank never reached the crunch and dec-eol measures the editor.
+    #
+    # ⚠️ BOTH TRAILING-BLANK ROWS ARE INFORMATIONAL *BY CONSTRUCTION*, and this
+    # is an apparatus finding, not a choice: echo_missing() rstrips every screen
+    # row, so a trailing blank can never be found in the echo no matter what the
+    # machine did with it.  A payload whose delivery cannot be verified may not
+    # gate -- it is reported, and it earns its reading only as a pair.
+    ("dec-eolctl",   ["20 REMX "]),
+    # --- round 4: the ENTRY to the literal scan, which is in the OTHER ROM ----
+    # ⚠️ EVERY ROW ABOVE ENTERS `tk_float` ON A DIGIT.  A literal may also begin
+    # with the DOT (`.5`), and that decision is taken in tk_loop's dispatch
+    # (basic/tokenise.inc:70), which looks exactly ONE character past the '.' and
+    # demands a digit.  A blank there is a cell no `tk_float` fix can reach, so a
+    # slice that measured only the scanner would ship a hole its own rule
+    # predicts -- the D-NOTOPEN2 trap, where 3 of 7 rows gave a different answer
+    # than all 7.
+    ("dec-dotlead0", ["20 A=.5"]),        # CONTROL: the '.'-led literal, no blank
+    ("dec-dotlead",  ["20 A=. 5"]),       # a blank between the '.' and its digit
+]
+
+# --- the `dir` battery: DIRECT MODE, which has no stored line to read ---------
+# ⚠️ SAY-MODE ONLY, and it is here because direct mode is an EXECUTION MODE this
+# project has repeatedly found uncovered while the verbs above it read as fully
+# covered (docs/spec-basic-direct-mode-control-flow.md).  A line typed with no
+# line number is crunched by the same tokeniser and then executed immediately, so
+# it has no entry in TXTTAB and the memory readout cannot see it at all.
+#
+# Under rule T `PRINT 1 0` prints two numbers; under S it prints one.  MSX-BASIC
+# pads a non-negative number with a leading blank and a trailing one, so the two
+# readings are ` 1  0` and ` 10` -- different lengths, not just different spacing.
+DIRB = [
+    ("dir-print",    ["PRINT 1 0"]),
+]
+
 # --- the `body` battery: WHERE THE BODY STARTS -------------------------------
 # ⚠️ THE FIRST RUN PRODUCED THREE READINGS NO SINGLE RULE FITS, and the body
 # offset is not a cosmetic detail -- it is part of the stored bytes a faithful
@@ -249,34 +395,44 @@ ERRB = [
     ("err-over",     ["65530 REMX", 'PRINT"[";ERR;"]"']),
     ("err-ctl",      ["65529 REMX", 'PRINT"[";ERR;"]"']),
 ]
-SAY_ONLY = {lb for lb, _l in ERRB}
+SAY_ONLY = {lb for lb, _l in ERRB + DIRB}
 
-CASES = NUM + BODY + LIT + REF + ERRB
+CASES = NUM + BODY + LIT + DEC + REF + ERRB + DIRB
 
 INFORMATIONAL = {"num-tab", "ref-list", "ref-delete", "ref-auto", "ref-renum",
-                 "ref-else", "lit-varname"}
+                 "ref-else", "lit-varname", "dec-bin", "dec-eol", "dec-eolctl"}
 CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
-            "lit-ctl", "lit-str", "lit-rem", "ref-ctl", "ref-sp"}
+            "lit-ctl", "lit-str", "lit-rem", "ref-ctl", "ref-sp",
+            "dec-ctl", "dec-hexctl", "dec-dotlead0"}
 
 # --- KNOWN_DIVERGE: filed, not fixed, and PINNED TO ITS EXACT VALUE ----------
-# The `lit` rows measure the GENERAL DECIMAL LITERAL SCANNER, which D-LNBLANK
-# established is the real home of blank-transparency (docs/lnblank-msx1-
-# characterization.md §11 D). It is a different ROM from the two line-number
-# scanners this slice fixes -- tk_float, in the sub-ROM float pack -- and it would
-# change every numeric literal in every program, so it is its own slice.
-#
 # ⚠️ These are not suppressions. Each entry records what zerobas ACTUALLY reads,
 # so the row passes only while it keeps diverging in EXACTLY that way. Fix the
-# literal scanner and the entry stops matching and the gate goes red, which is
-# how the allowlist gets retired instead of rotting. `lit-ctl` / `lit-str` /
-# `lit-rem` are deliberately NOT here: they are the controls that bound the
-# filed defect and they must stay green.
+# behaviour and the entry stops matching, the gate goes red, and the entry has to
+# be RETIRED instead of rotting. That is how the five `lit-` entries D-LNBLANK
+# filed here left: D-DECBLANK fixed the decimal-literal scanner and the allowlist
+# reported them as agreeing, which is the message that closed them.
+#
+# What is left is ONE neighbouring defect, D-EXPBAD (docs/spec-basic-decblank.md
+# §5.1). Both references CONSUME an exponent marker that turns out not to
+# introduce an exponent, and force the literal to SINGLE; zerobas rolls the
+# marker back and leaves it for the ordinary tokeniser (sub/tkfloat.asm
+# tkf_try_exponent, own-design and never oracle-pinned).
+#
+# 🔴 THE `0` ROWS ARE WHY IT IS NOT THIS DEFECT: `dec-expbad0` / `dec-expbadsg0`
+# carry NO BLANK AT ALL and read exactly the same as their blanked twins. A
+# measurement that belongs to another defect is the D-MFDOM trap, and pinning all
+# four here is what keeps the two apart.
+#
+# ⚠️ AND THE BLANKED PAIR IS ALSO A MUST-NOT-MOVE CELL OF D-DECBLANK. `1 EX` must
+# keep reading `<12> EX` -- a rollback that unwinds the marker has to unwind the
+# blank run in front of it too, and these two rows are the only witness that it
+# does (knife K3). If they ever read `<12>EX`, the fix ate a blank it rejected.
 KNOWN_DIVERGE = {
-    "lit-assign": "line 20 | A<EF><12> <11>",
-    "lit-print":  "line 20 | <91> <12> <11>",
-    "lit-add":    "line 20 | A<EF><12> <11><F1><13> <11>",
-    "lit-float":  "line 20 | A<EF><12> . <16>",
-    "lit-exp":    "line 20 | A<EF><12>E <13>",
+    "dec-expbad":    "line 20 | A<EF><12> EX",
+    "dec-expbadsg":  "line 20 | A<EF><12> E<F1>X",
+    "dec-expbad0":   "line 20 | A<EF><12>EX",
+    "dec-expbadsg0": "line 20 | A<EF><12>E<F1>X",
 }
 
 

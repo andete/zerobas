@@ -3654,3 +3654,73 @@ nothing. The bound is now checked, and — the part that matters — the overflo
 caught **during** accumulation rather than after it: a ceiling tested on the
 finished value cannot see a number that already wrapped, and the first cut of the
 fix duly let 99999 through.
+
+## 2026-07-31 — a blank inside a decimal LITERAL, and the two things behind it (D-DECBLANK)
+
+Clean-room status: **unchanged.** Everything below is a black-box oracle
+observation of two reference machines — identical inputs typed in, the stored
+program's own bytes read back out of RAM. No disassembly. The token values used
+to read the captures (`$0F`/`$1C` integers, `$1D`/`$1F` single/double with a
+bias-64 exponent and BCD mantissa, `$0B`/`$0C` octal/hex, `$84` DATA, `$8F` REM)
+were already pinned from the MSX2 Technical Handbook, an allowed source.
+
+**Two oracles, not one.** All 32 new rows were asked of both `Philips_VG_8020`
+and `National_CF-3300`, `--repeat 2`, across four oracle-lock rounds, every
+payload past the echo guard first. They agree on every row.
+
+Instrument: `("stored_line", TXTTAB)`, link word never compared — as D-LNBLANK.
+
+Contract established (measurement:
+[`docs/decblank-msx1-characterization.md`](../docs/decblank-msx1-characterization.md),
+spec [`docs/spec-basic-decblank.md`](../docs/spec-basic-decblank.md) §2):
+
+* **The cursor a decimal-literal scan reports is one past the last character it
+  actually CONSUMED.** Lookahead may cross any run of blanks; only consumption
+  commits them.
+* Consequently a blank run is transparent at every internal seam of the literal —
+  between digits, before *and* after the decimal point, before the exponent
+  marker, between the marker and its sign, between the sign and its digits,
+  inside the exponent's own digit run (`1E 2 3` = 1E23), and before a `!`/`#`/`%`
+  type suffix (`1 #` is a **double**).
+* …and a run that merely **TRAILS** a number is left alone, **entirely**:
+  `A=1 +2` keeps its blank and `A=1  +2` keeps both. ⚠️ This is where a decimal
+  literal differs from the leading line number, which eats exactly one separator
+  blank — so the two scanners do *not* share a rule, and only a row with a
+  non-continuation past the blanks can tell them apart.
+* The joined value flows through int/single/double classification normally
+  (`3 2 7 6 7` is a two-byte integer; `3 2 7 6 8` is a single).
+* It does not reach `&H`, `&O`, `&B` (which is not a radix on MSX1 at all —
+  `A=&B1 1` is stored verbatim on both references), string literals, `REM` tails,
+  `DATA` bodies or variable names.
+
+Implemented as one blank-skipping fetch (`tkf_fetch`) used at five sites: the
+mantissa digit runs, the decimal point, the exponent (marker/sign/digits) and the
+type suffix in [`sub/tkfloat.asm`](../sub/tkfloat.asm), plus the `'.'`-led entry
+in [`basic/tokenise.inc`](tokenise.inc). Each caller pushes the cursor first and
+either discards it (accept) or restores it (reject) — the accept/reject split
+*is* the contract above. **39 B, all sub-ROM page 0**; the main ROM came out
+byte-identical.
+
+⚠️ **The `'.'`-led entry is in a different file from the scanner, and a fix aimed
+at `tk_float` cannot reach it.** `A=. 5` is 0.5 on both references; that decision
+is taken in `tk_loop`'s dispatch before `tk_float` is entered.
+
+🔴 **Two live defects were found by this slice's denominator and are NOT fixed
+here**, both pinned in `make lnblank-acceptance`'s `KNOWN_DIVERGE` at their exact
+current bytes so the gate reddens the day either is addressed:
+
+* **D-EXPBAD** — a *malformed* exponent. Both references CONSUME a marker (and
+  its sign) that turns out not to introduce an exponent and force the literal to
+  **single** precision: `A=1EX` stores a single 1.0 then `X`, where zerobas
+  stores the integer 1 then `EX`. Measured with **no blank anywhere**, which is
+  what makes it a separate defect. zerobas' rollback is own-design and was never
+  oracle-pinned.
+* **`&B`** — zerobas crunches the digit run after an unrecognised `&B` to a
+  token; both references keep the whole tail as ASCII.
+
+A third cell is recorded as **not measurable** with the present instrument: a
+trailing blank at end of line. The references drop it and zerobas keeps it, in a
+verbatim `REM` tail as well as after a literal — which places the difference at
+line ENTRY rather than in any scanner — but the echo guard `rstrip`s every screen
+row and so is structurally blind to a trailing blank, and the row has not read
+the same way on every pass. Reported, filed, never gated.

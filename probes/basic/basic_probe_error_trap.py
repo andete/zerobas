@@ -545,8 +545,41 @@ def main() -> int:
     ncases = [c for c in sel(NUM_CASES + TRAPCLASS_CASES) if c.label in want_num]
     if ncases:
         specs = [("direct", c.lines) for c in ncases]
-        ref = omsx_repl.run_cases(args.machine, specs, batch=batch, reset=("NEW", "CLS"))
         print(f"--- numeric-fact oracle-lock ({args.machine}) ---")
+        if args.ref_only:
+            ref = omsx_repl.run_cases(args.machine, specs, batch=batch,
+                                      reset=("NEW", "CLS"))
+            zb = [None] * len(ncases)
+            verdicts = [read_R(r) == want_num[c.label]
+                        for c, r in zip(ncases, ref)]
+        else:
+            # ⚠️ run_differential, NOT two run_cases calls -- SAME REASON AS THE
+            # onelin FAMILY BELOW, and it took a screen dump to see it.
+            # `tc_next_nofor` went red here on 2026-07-31 (D-DECBLANK), 4 runs out
+            # of 4, reading `";ERR;"`. That reading is the ECHO of the case's own
+            # `100 PRINT"R<";ERR;">"`, which read_R falls back to when no result
+            # row exists -- and the screen said why:
+            #
+            #     ZBN ERROR GOTO 100      <- `10 O` was EATEN by the injector
+            #     syntax error
+            #     ZB20 NEXT
+            #     next without for in 20  <- so nothing was armed, nothing printed
+            #
+            # The line was not delivered. ⚠️ AND A DETERMINISTIC MANGLE IS STILL A
+            # MANGLE: openMSX is deterministic, so a race in the harness reproduces
+            # exactly, and "it fails every time" is NOT evidence that it is
+            # semantic. The row passes alone, passes with the whole `tc_` family,
+            # and fails only in the full numeric batch -- delivery, not behaviour.
+            # The self-heal re-runs any disagreeing row BOOT-PER-CASE and re-judges
+            # it, so the verdicts equal a full boot-per-case run: a delivery mangle
+            # costs one pair of boots and a REAL divergence still fails.
+            def num_ok(i, r, z):
+                want = want_num[ncases[i].label]
+                got_r = read_R(r)
+                return got_r == want and read_R(z) == got_r
+            verdicts, ref, zb = omsx_repl.run_differential(
+                args.machine, args.zb_machine, specs, num_ok,
+                batch=batch, reset=("NEW", "CLS"))
         ref_val = {}
         for c, r in zip(ncases, ref):
             got = read_R(r)
@@ -556,11 +589,13 @@ def main() -> int:
             ok = ok and good
             print(f"{'PASS' if good else 'FAIL':5} {c.label:24} ref={got!r} (want {want!r})")
         if not args.ref_only:
-            zb = omsx_repl.run_cases(args.zb_machine, specs, batch=batch, reset=("NEW", "CLS"))
             print(f"\n--- numeric-fact: zerobas == reference ({args.zb_machine}) ---")
             for c, r in zip(ncases, zb):
                 got = read_R(r)
                 want = ref_val.get(c.label)
+                # judged on the SELF-HEALED raws (run_differential replaced any
+                # disagreeing row's capture with its boot-per-case re-run), so
+                # this verdict equals a full boot-per-case run.
                 good = got is not None and got == want
                 ok = ok and good
                 print(f"{'PASS' if good else 'FAIL':5} {c.label:24} zb={got!r} ref={want!r}")

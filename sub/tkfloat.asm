@@ -55,9 +55,14 @@ tk_float:
                 call    tkf_scan_digits     ; integer-part digits
                 ld      a,(TKPOS)
                 ld      (TKINTLEN),a        ; P = integer-part digit count
-                ld      a,(hl)
-                cp      '.'
-                jr      nz,tkf_nodot
+                push    hl                  ; D-DECBLANK S3: the dot is reachable
+                call    tkf_fetch           ; ACROSS a blank run, from either side
+                cp      '.'                 ; (`1 .5` and `1. 5` are both 1.5)
+                jr      z,tkf_dot
+                pop     hl                  ; not ours: the run stays in the source
+                jr      tkf_nodot
+tkf_dot:
+                pop     af                  ; accept: the run belonged to the number
                 inc     hl
                 ld      a,(TKFLAGS)
                 or      1                   ; bit0 = has_dot
@@ -165,13 +170,23 @@ tkf_overflow:
 ; cursor (free during tokenise; no conflict with the evaluator's IX use).
 ; Clobbers A, B.
 tkf_scan_digits:
-                ld      a,(hl)
-                cp      '0'
-                ret     c
-                cp      '9'+1
-                ret     nc
+                push    hl                  ; D-DECBLANK S2 (docs/spec-basic-decblank.md
+                call    tkf_fetch           ; §4): the digit run is blank-transparent --
+                cp      '0'                 ; `1 0` is the single literal 10 on BOTH
+                jr      c,tksd_stop         ; references, byte-identical to `1 0`'s
+                cp      '9'+1               ; unblanked form.
+                jr      nc,tksd_stop
+                ; ⚠️ THE DISCARD COMES AFTER THE DIGIT IS EXTRACTED, AND THAT
+                ; ORDER IS THE WHOLE INSTRUCTION. `pop af` is how the pushed HL
+                ; is thrown away, but it LOADS A from the stack -- putting it
+                ; before the `sub '0'` fed the source pointer's high byte to the
+                ; accumulator, so `A=1` crunched to the integer 187 and `A=1E2`
+                ; overflowed the literal and refused the line. The gate caught it
+                ; on the first run; static reading of the diff did not.
                 sub     '0'
                 ld      b,a                 ; B = digit value 0..9
+                pop     af                  ; a digit follows: the run was the
+                                            ; number's, so keep the advanced HL
                 ld      a,(TKHAVESIG)
                 or      a
                 jr      nz,tksd_have
@@ -202,8 +217,45 @@ tksd_advance:
                 ld      a,(TKPOS)
                 inc     a
                 ld      (TKPOS),a
+                inc     hl                  ; HL is at the DIGIT (tkf_fetch left it
+                jr      tkf_scan_digits     ; there), so this is still one past it
+tksd_stop:
+                ; ⚠️ THE RUN IS NOT OURS AND EVERY BLANK OF IT STAYS. Measured:
+                ; `20 A=1 +2` stores `<12> <F1><13>` and `20 A=1  +2` keeps BOTH
+                ; blanks, on the VG-8020 and the CF-3300 alike. That is where the
+                ; decimal literal differs from the LEADING LINE NUMBER, which eats
+                ; exactly one separator blank (parse_lineno / pl_bl_end) -- so
+                ; "copy the line-number scanner" would have been wrong here, and
+                ; only a row with a NON-digit past the blanks could say so
+                ; (docs/decblank-msx1-characterization.md §1.1).
+                pop     hl
+                ret
+
+; --- tkf_fetch: the next character, SKIPPING ANY RUN OF BLANKS --------------
+; in:  HL = source cursor.
+; out: A  = the first non-blank character at or after (HL); HL = ITS address.
+; Clobbers A, HL only (IX = the TKDIG cursor and DE = the exponent accumulator
+; are both live across calls to this).
+;
+; D-DECBLANK R-D3: the cursor this scan finally reports is ONE PAST THE LAST
+; CHARACTER IT ACTUALLY CONSUMED. Lookahead may cross any number of blanks; only
+; consumption commits them. So every caller PUSHes HL first and then either
+;   pop af   -- accept: the blank run belonged to the number, and HL stays here
+;   pop hl   -- reject: the run is not ours, and the source is untouched
+; ⚠️ That split is the whole rule. A `pop af` on the reject path makes a scan
+; that finds nothing still swallow the blanks (knife K4), and a `pop hl` on the
+; accept path rewinds every iteration (K2) -- two different wrong answers that
+; a probe row without a trailing blank cannot tell apart from the right one.
+tkf_fetch:
+                ld      a,(hl)
+                cp      ' '
+                ret     nz
+tkf_f_lp:
                 inc     hl
-                jr      tkf_scan_digits
+                ld      a,(hl)
+                cp      ' '
+                jr      z,tkf_f_lp
+                ret
 
 ; --- tkf_try_exponent: consume an optional E/D exponent (§9.2 rule 6) ------
 ; HL -> the char right after the mantissa digits. If E/e/D/d is followed by
@@ -214,6 +266,15 @@ tksd_advance:
 ; classified literal), and HL advances past it. Otherwise HL is left
 ; UNCHANGED (own-design lookahead: a malformed "5E" or "5EX" leaves 'E' for
 ; the ordinary tokeniser to process as a separate token/identifier).
+;
+; 🔴 THAT ROLLBACK IS A KNOWN LIVE DIVERGENCE -- D-EXPBAD, filed 2026-07-31.
+; Both references CONSUME a marker that turns out not to introduce an exponent
+; and force the literal to SINGLE: `20 A=1EX` stores `<1D>A<10><00><00>` then
+; `X`, where zerobas stores the integer 1 then `EX`. Measured with NO BLANK
+; anywhere (docs/decblank-msx1-characterization.md §3), which is what makes it a
+; separate defect from D-DECBLANK rather than part of it. It is pinned in
+; `make lnblank-acceptance`'s KNOWN_DIVERGE at the exact bytes above, so the day
+; it is fixed the gate goes red and the entry has to be retired.
 ;
 ; Oracle-pinned quirk (S2 extra capture, 2026-07-11, same probe machinery as
 ; basic_probe_floatlit.py's --machine mode): once an exponent IS consumed, a
@@ -227,13 +288,24 @@ tksd_advance:
 ; force a precision; D forces double); tk_loop's caller in tk_float enforces
 ; this by skipping tkf_try_suffix whenever TKFLAGS bit1 is set. Clobbers
 ; A, B, C, DE.
+;
+; D-DECBLANK S4: the marker, its sign and its digits are ALL reachable across a
+; blank run -- `1 E2`, `1 E 2`, `1E -2`, `1E- 2` and `1E 2 3` (= 1E23) are all
+; measured on both references. ⚠️ THE ROLLBACK TARGET MOVED WITH IT: the `push`
+; is now at the TOP, before the marker is even fetched, so tke_fail rewinds to
+; the cursor BEFORE the blank run and not to the marker. One push covers the
+; whole routine, which is what makes `1 E+X` come out right -- a rollback that
+; unwinds the marker but leaves the blanks eaten is a byte-level divergence no
+; well-formed row can see (docs/spec-basic-decblank.md §5.1, knife K3).
 tkf_try_exponent:
-                ld      a,(hl)
+                push    hl                  ; the ROLLBACK target: pre-blank cursor
+                call    tkf_fetch
                 call    upcase
                 cp      'E'
                 jr      z,tke_mark_e
                 cp      'D'
                 jr      z,tke_mark_d
+                pop     hl                  ; no marker: the run is not ours
                 ret
 tke_mark_d:
                 ld      a,1
@@ -243,21 +315,20 @@ tke_mark_e:
                 xor     a
                 ld      (TKEXPD),a
 tke_go:
-                push    hl                  ; save the marker position (rollback)
-                inc     hl                  ; past E/D
+                inc     hl                  ; past E/D (tkf_fetch left HL on it)
                 xor     a
                 ld      (TKEXPSIGN),a       ; 0 = positive
-                ld      a,(hl)
+                call    tkf_fetch
                 cp      '+'
                 jr      z,tke_skipsign
                 cp      '-'
-                jr      nz,tke_checkdig
+                jr      nz,tke_checkdig     ; no sign: A/HL are already the candidate
                 ld      a,1
                 ld      (TKEXPSIGN),a       ; 1 = negative
 tke_skipsign:
                 inc     hl
+                call    tkf_fetch
 tke_checkdig:
-                ld      a,(hl)
                 cp      '0'
                 jr      c,tke_fail
                 cp      '9'+1
@@ -276,13 +347,15 @@ tke_checkdig:
 tke_accum:
                 ld      de,0                ; DE = exponent magnitude accumulator
 tke_dloop:
-                ld      a,(hl)
-                cp      '0'
-                jr      c,tke_ddone
+                push    hl                  ; D-DECBLANK: the EXPONENT's own digit
+                call    tkf_fetch           ; run is blank-transparent too --
+                cp      '0'                 ; `1E 2 3` is 1E23 on both references,
+                jr      c,tke_dstop         ; which the mantissa rows cannot say
                 cp      '9'+1
-                jr      nc,tke_ddone
-                sub     '0'
-                ld      c,a
+                jr      nc,tke_dstop
+                sub     '0'                 ; (extract BEFORE the discard: `pop af`
+                ld      c,a                 ;  loads A -- see tkf_scan_digits)
+                pop     af                  ; accept: commit the blank run
                 push    hl                  ; save source cursor
                 ld      h,d
                 ld      l,e
@@ -304,9 +377,15 @@ tke_clamp:
                 ld      de,9999
 tke_dnext:
                 pop     hl                  ; restore source cursor
-                inc     hl
+                inc     hl                  ; (HL is on the digit tkf_fetch found)
                 jr      tke_dloop
-tke_ddone:
+tke_dstop:
+                ; The digit run is over (and any blank run that merely trails it
+                ; is not the exponent's). This is also the only exit, so there is
+                ; no separate `tke_ddone` label any more -- pasmo warns about an
+                ; unreferenced one, and a label kept for narration is exactly the
+                ; kind of thing the dead-code gate exists to stop accumulating.
+                pop     hl
                 ld      a,(TKEXPSIGN)
                 or      a
                 jr      z,tke_esdone
@@ -324,31 +403,37 @@ tke_fail:
 ; --- tkf_try_suffix: consume an optional !/#/% type suffix -----------------
 ; Only called when tkf_try_exponent found none (see its header). Sets TKFLAGS
 ; bit3 (!) / bit4 (#) / bit5 (%) and advances HL past the char.
+;
+; D-DECBLANK S5: the suffix is reachable across a blank run, and it is not a
+; spacing detail -- `20 A=1 #` stores a DOUBLE on both references where zerobas
+; stored an integer and a stray '#', i.e. the divergence was in the token's TYPE.
+; The three arms converge on one accept tail, which costs fewer bytes than the
+; three `inc hl` / `ret` tails it replaces.
 tkf_try_suffix:
-                ld      a,(hl)
+                push    hl
+                call    tkf_fetch
                 cp      '!'
                 jr      z,tks_bang
                 cp      '#'
                 jr      z,tks_hash
                 cp      '%'
                 jr      z,tks_pct
+                pop     hl                  ; no suffix: every blank stays put
                 ret
 tks_bang:
                 ld      a,(TKFLAGS)
                 or      8
-                ld      (TKFLAGS),a
-                inc     hl
-                ret
+                jr      tks_done
 tks_hash:
                 ld      a,(TKFLAGS)
                 or      16
-                ld      (TKFLAGS),a
-                inc     hl
-                ret
+                jr      tks_done
 tks_pct:
                 ld      a,(TKFLAGS)
                 or      32
+tks_done:
                 ld      (TKFLAGS),a
+                pop     af                  ; accept: the run belonged to the number
                 inc     hl
                 ret
 

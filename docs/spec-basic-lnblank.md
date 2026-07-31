@@ -394,6 +394,13 @@ Fixing the defect does not change those rows, but the comment that explains the
 
 ## 7. Out of scope
 
+* **The general decimal-literal scanner** — the `lit` battery's own finding, the
+  half of this slice that was never filed. ✅ **Landed the same day as
+  D-DECBLANK**: [`docs/spec-basic-decblank.md`](spec-basic-decblank.md).
+  ⚠️ Its denominator showed this slice's `lit` rows were a *sample*: a blank run
+  that merely trails a literal is **kept** (so the rule is not this scanner's,
+  which eats one separator blank), and there is a fifth site in
+  `basic/tokenise.inc`'s `'.'` dispatch that no `tk_float` change could reach.
 * **`LIST`/`DELETE`/`AUTO`/`RENUM` line-number references** (§3.3). If the
   references crunch these to `$0E` and zerobas does not, that is a *missing
   feature*, not this defect, and it gets its own TODO item. Measured here

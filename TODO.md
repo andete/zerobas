@@ -3248,9 +3248,60 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       arguable. Sharpening the policy wording is a decision for the owner, not a
       sweep.
 
-- [ ] **The general DECIMAL LITERAL scanner does not skip embedded blanks.**
-      Split out of D-LNBLANK 2026-07-31, where it was the *unfiled* half of the
-      finding. Blank-transparency is **not** a property of the line-number scan;
+- [ ] 🔴 **D-EXPBAD — a MALFORMED EXPONENT: the reference eats the marker, zerobas
+      rolls it back.** Found 2026-07-31 as D-DECBLANK's denominator, and it has
+      **no blank in it at all**:
+      ```
+      20 A=1EX    ref -> A <EF> <1D>A<10><00><00> X     a SINGLE 1, the `E` EATEN
+                  zb  -> A <EF> <12> E X                the INTEGER 1, `E` left
+      20 A=1E+X   ref -> A <EF> <1D>A<10><00><00> X     the `+` eaten too
+      ```
+      Both references consume a marker (and its sign) that turns out not to
+      introduce an exponent, and its mere presence forces the literal to **single
+      precision** — so the divergence is in the token's TYPE, not its spacing.
+      zerobas' `tkf_try_exponent` rolls back and leaves the `E` for the ordinary
+      tokeniser; its own header says that lookahead is **own-design, never
+      oracle-pinned** ([`sub/tkfloat.asm`](sub/tkfloat.asm) `tkf_try_exponent`).
+      ⚠️ **The `0` rows are why this is not D-DECBLANK**: `dec-expbad0` /
+      `dec-expbadsg0` carry no blank and read identically to their blanked twins
+      (measurement [`docs/decblank-msx1-characterization.md`](docs/decblank-msx1-characterization.md) §3).
+      All four rows are live in `make lnblank-acceptance` as `KNOWN_DIVERGE`,
+      **pinned to the exact bytes zerobas produces today** — fix it and the
+      allowlist stops matching and the gate goes red.
+      ⚠️ The two blanked rows are simultaneously D-DECBLANK's must-not-move cells:
+      if `1 EX` ever reads `<12>EX`, a rollback ate a blank run it rejected.
+
+- [ ] **`&B` is not a radix on MSX1 — and zerobas half-crunches it anyway.**
+      Found 2026-07-31 in D-DECBLANK's denominator (`dec-bin`, informational).
+      ```
+      20 A=&B1 1  ref -> A <EF> & B 1 ␣ 1     VERBATIM: `B1` is just a variable
+                  zb  -> A <EF> & B 1 ␣ <12>  the trailing 1 crunched to a token
+      ```
+      Both references store the whole tail as ASCII; `tk_hex`
+      ([`basic/tokenise.inc`](basic/tokenise.inc)) knows `&H` and `&O` only and
+      falls through, after which the digit run is crunched normally. Small, but it
+      is a stored-bytes divergence in a construct real programs type by mistake.
+
+- [ ] **A TRAILING BLANK at end of line is not measurable through the keyboard.**
+      Found 2026-07-31 in D-DECBLANK (`dec-eol` / `dec-eolctl`, both
+      informational **by construction**). At `--repeat 2` the references drop a
+      trailing blank and zerobas keeps it — in a `REM` tail as well as after a
+      literal, and a `REM` tail is **verbatim**, so the difference is at **line
+      ENTRY** (the editor), not in any scanner.
+      ⚠️ But an earlier `--repeat 1` pass read the same `REM` row on zerobas
+      *without* the blank, for a payload no crunch change can touch — so the cell
+      is not stable enough to ground a rule, only to be filed.
+      ⚠️ **The echo guard cannot referee it**: `echo_missing()` `rstrip`s every
+      screen row, so a trailing blank is invisible to the guard no matter what the
+      machine did with it, and a payload whose delivery cannot be verified may not
+      gate. Resolving the cell needs a delivery path that bypasses the line editor
+      — an ASCII `LOAD"CAS:`, the way `basic_probe_floatlit.py` reaches literals.
+      Detail: [`docs/decblank-msx1-characterization.md`](docs/decblank-msx1-characterization.md) §5.
+
+- [x] ✅ **DECIMAL LITERAL SCANNER AND EMBEDDED BLANKS — LANDED 2026-07-31,
+      81/81, 39 B, all sub-ROM.** Split out of D-LNBLANK, where it was the
+      *unfiled* half of the finding. Blank-transparency is **not** a property of
+      the line-number scan;
       it is a property of the decimal number scanner, and the line number is one
       of its customers. Measured byte-exact on the VG-8020 **and** the CF-3300,
       which agree ([`docs/lnblank-msx1-characterization.md`](docs/lnblank-msx1-characterization.md) §1/§11 D):
@@ -3265,14 +3316,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       **REM** tail, and a variable name keeps its blank (`A B` stores `A B`).
       A fix written as "make the crunch's digit fetch blank-transparent" is
       therefore **wrong**, and only the hex row says so.
-      Site: `tk_float` ([`basic/tokenise.inc:57`](basic/tokenise.inc:57) → the
-      sub-ROM float pack) — a different ROM from the two scanners D-LNBLANK
-      fixed, and a change touching every numeric literal in every program, so it
-      earns its own falsification.
-      Gate: the five rows are **already live** in `make lnblank-acceptance` as
-      `KNOWN_DIVERGE`, each **pinned to the exact bytes zerobas produces today** —
-      fix the scanner and the allowlist stops matching and the gate goes red,
-      which is how the entry gets retired instead of rotting.
+      Spec [`docs/spec-basic-decblank.md`](docs/spec-basic-decblank.md),
+      measurement [`docs/decblank-msx1-characterization.md`](docs/decblank-msx1-characterization.md)
+      (32 new rows, four oracle-lock rounds, both machines agree on every one).
+      **Baseline 9/29; the five `lit-` `KNOWN_DIVERGE` entries are RETIRED.**
+      🔴 **THE FILED ROWS WERE A SAMPLE, AND THE DENOMINATOR MOVED THE FIX TWICE.**
+      1. **`20 A=1 +2` KEEPS ITS BLANK** (and `1  +2` keeps both). Every row filed
+         with the item put the blank *between two things that both belong to the
+         number*, so none could tell "skips blanks" from "skips blanks and keeps
+         the ones it did not use". The rule is **the cursor reported is one past
+         the last character actually CONSUMED** — and it is *not* the line
+         number's rule, which eats exactly one separator blank. "Copy
+         `parse_lineno`" would have been wrong, and only a row with a NON-digit
+         past the blanks says so.
+      2. **A FIFTH SITE, IN THE OTHER FILE.** `20 A=. 5` is 0.5 on both
+         references. That decision is taken in `tk_loop`'s `'.'` dispatch
+         ([`basic/tokenise.inc`](basic/tokenise.inc)) *before* `tk_float` is
+         entered, so no change inside the scanner could reach it.
+      The rule also reaches further than the item said: the dot from **either**
+      side, the exponent marker, its **sign**, its **own digit run**
+      (`1E 2 3` = 1E23), and the type suffixes — `20 A=1 #` is a **DOUBLE** on the
+      reference, i.e. the divergence was in the token's TYPE.
+      **Cost: 39 B, ALL sub-ROM page 0** (4057 → 4018 B free); main page 1 stayed
+      at 8 B and the low region at 23 B, and `basic-reloc.rom` came out
+      **byte-identical** — the whole space worry was checkable in one hash.
+      🔴 **AND THE FIRST CUT WAS CATASTROPHIC WHILE THE BUILD WAS GREEN**: `pop af`
+      is how the saved cursor is discarded, but **it LOADS A**, so placed before
+      the digit was extracted it fed the source pointer's high byte to the
+      accumulator — `A=1` crunched to the integer **187** and `A=1E2` refused the
+      line. Dead-code gate green, main ROM byte-identical, diff reads correctly.
+      The first gate run caught it.
+      Falsified on five knives (K1–K5), each with its own witness and each pairing
+      a red row with a GREEN control.
 
 - [ ] **`$0E` line-number references are missing for five verbs — and three of
       the verbs do not exist at all.** Split out of D-LNBLANK 2026-07-31 (its

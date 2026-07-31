@@ -72,7 +72,15 @@ tk_nondigit:
                 jr      nz,tk_nondot        ; §9.2); a lone '.' (no digit) stays
                 push    hl                  ; verbatim below, like today
                 inc     hl
-                ld      a,(hl)
+                ; ⚠️ D-DECBLANK S1 -- AND THIS SITE IS IN THE OTHER FILE. A literal
+                ; may BEGIN with the dot, and that decision is taken HERE, before
+                ; tk_float is entered, so no amount of blank-transparency inside
+                ; the scanner can reach it: `20 A=. 5` is 0.5 on the VG-8020 and
+                ; the CF-3300 alike, and zerobas stored '.' verbatim + a blank +
+                ; the integer 5 (docs/decblank-msx1-characterization.md §4). The
+                ; blank-skipping fetch is the co-located sub/tkfloat.asm leaf, so
+                ; the digit test is one call rather than a second copy of the loop.
+                call    tkf_fetch
                 pop     hl
                 cp      '0'
                 jr      c,tk_nondot
