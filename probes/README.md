@@ -44,6 +44,35 @@ to its own path, so it runs from anywhere with no `PYTHONPATH` set-up.
    copies into openMSX. Tape corpora (`.cas` / `.wav`) are likewise yours to
    supply via `--corpus` / `$MSX_TAPE_CORPUS` and `--wav-dir` / `$MSX_TAPE_WAVS`.
 
+## Headless conventions — ⚠️ every launch site must set BOTH
+
+An openMSX launched from `probes/` runs headless, and that takes **two** settings,
+not one:
+
+```tcl
+set renderer none          ; # no video output
+set sound_driver null      ; # no HOST AUDIO DEVICE  <- easy to forget
+```
+
+`sound_driver` defaults to `sdl`, so a probe that sets only `renderer none`
+**opens a real CoreAudio device and actively streams** PSG/keyclick output that
+nothing ever reads — hundreds of start/stop cycles per gate run, audible on the
+dev machine, and a candidate cause of the wedged-audio hang that presents as an
+intermittent probe timeout. ⚠️ **NOT `mute` / `master_volume 0`** — those silence
+the output and leave the driver churning.
+
+**No probe in this tree needs a host sound driver.** PSG work
+(`lib/psgtrace.py`, the `sound`/`play`/`beep` gates) reads the *emulated chip*
+through `debug read_block {PSG regs}`, and cassette recording (`--record`,
+`cassetteplayer new`) writes the *emulated cassette port* — **measured**: the
+same `CSAVE` produces a byte-identical 128224-byte wav under `null` and under
+`sdl`, decoding to the same tape bytes.
+
+The setting reached only `disk/omsx_session.py` when it was introduced
+(2026-07-30), leaving the other 69 launch sites — including `lib/omsx_repl.py`,
+which every BASIC acceptance gate boots through — still streaming. Fixed across
+all 70 on 2026-07-31. *(Ask at WHICH LAYER a lesson already applies.)*
+
 ## Running
 
 ```sh

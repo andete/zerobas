@@ -95,7 +95,7 @@ def run_typed(cart: str, cas_path: str, type_cmds: list[tuple[float, str]],
     out = tempfile.mktemp(suffix=".txt", prefix="casverb_")
     lines = [
         "set throttle off",
-        "set renderer none",
+        "set renderer none; set sound_driver null",
         "proc __hex {a n} { binary scan [debug read_block {memory} $a $n] H* h; return $h }",
     ]
     if poison_witness:

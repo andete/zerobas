@@ -2585,15 +2585,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ `build/sub.rom` changes legitimately: the 57 B of low region shifts
       `vars_reset`, a resident-ABI address the sub-ROM links against.
 
-- [ ] **`probes/lib/omsx_repl.py` streams audio on every boot.** The
-      `sound_driver null` fix landed in
-      [`probes/disk/omsx_session.py:127`](probes/disk/omsx_session.py:127) only;
-      the REPL driver — which EVERY BASIC acceptance gate boots through — still
-      passes only `set renderer none`. Same defect, one layer over. Found
-      2026-07-31 while running the D-ERR21 characterization (~40 boots, audible).
-      ⚠️ NOT `mute` — that leaves the CoreAudio churn; the fix is
-      `set sound_driver null` in the generated Tcl, beside `renderer none`.
-      *(Ask at WHICH LAYER a lesson already applies.)*
+- [x] **Probes streamed audio on every boot — `sound_driver null` had reached
+      only ONE of 70 launch sites.** The 2026-07-30 fix landed in
+      [`probes/disk/omsx_session.py`](probes/disk/omsx_session.py) alone; the
+      other 69 — including [`probes/lib/omsx_repl.py`](probes/lib/omsx_repl.py),
+      which EVERY BASIC acceptance gate boots through — still opened a real
+      CoreAudio device and streamed. **✅ FIXED 2026-07-31, all 70.**
+      **The denominator was the finding:** `renderer none` and the openMSX launch
+      set coincided exactly (70 files reference `-machine`; 70 now set
+      `sound_driver null`), so a single mechanical rule covered it — but nothing
+      had ever counted the sites.
+      **No probe needs a host sound driver, and the risky half of that is
+      MEASURED, not argued:** PSG work reads the emulated chip via
+      `debug read_block {PSG regs}` (`probes/lib/psgtrace.py`), and cassette
+      recording writes the emulated cassette port — the same `CSAVE` produces a
+      **byte-identical 128224-byte wav** under `sound_driver null` and `sdl`,
+      decoding to the same tape bytes. Audio gates (sound/beep/play/play-trace)
+      and the full standing suite are unchanged.
+      ⚠️ NOT `mute`/`master_volume 0` — they silence the output and leave the
+      driver churning. Convention now written down in
+      [`probes/README.md`](probes/README.md) "Headless conventions".
 
 - [ ] **`fre_abort_low`'s header cites a `ret z` that no longer exists.**
       [`basic/arrays.asm`](basic/arrays.asm) — "the loop's own normal exit is a

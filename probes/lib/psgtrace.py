@@ -41,7 +41,7 @@ def trace(machine, stmt, out, n=400, tp=5.0, arm=5.6, deadline=45.0, omsx=None):
                      deadline=deadline, stmt=stmt.replace('"', '\\"'))
     fd, tclp = tempfile.mkstemp(suffix=".tcl", prefix="psgtrace_")
     os.write(fd, tcl.encode()); os.close(fd)
-    cmd = [omsx, "-machine", machine, "-command", "set renderer none", "-script", tclp]
+    cmd = [omsx, "-machine", machine, "-command", "set renderer none; set sound_driver null", "-script", tclp]
     try:
         p = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                              start_new_session=True)

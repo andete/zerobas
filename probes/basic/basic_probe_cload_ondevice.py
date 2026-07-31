@@ -167,7 +167,7 @@ def run_cload(cart: str, cas_path: str, dump_len: int,
 
     cmd = [OMSX, "-machine", MACHINE, "-cart", cart,
            "-cassetteplayer", cas_path,
-           "-command", "set renderer none", "-script", tcl_path]
+           "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)

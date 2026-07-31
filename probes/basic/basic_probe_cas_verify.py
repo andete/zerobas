@@ -74,7 +74,7 @@ def run_typed_scr(cart, cas, type_cmds, cap_time=40.0, timeout=110.0):
     subprocess.run(["pkill", "-9", "openmsx"], capture_output=True)
     time.sleep(1.0)
     out = tempfile.mktemp(suffix=".txt", prefix="casver_")
-    lines = ["set throttle off", "set renderer none",
+    lines = ["set throttle off", "set renderer none; set sound_driver null",
              f"after time 1 {{ debug write memory 0x{WITNESS:04X} 0x11 }}"]
     for delay, text in type_cmds:
         lines.append(f"after time {delay} {{ type {_tcl_dquote(text)} }}")

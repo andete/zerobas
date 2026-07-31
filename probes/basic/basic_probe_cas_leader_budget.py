@@ -204,7 +204,7 @@ after time {cap_time} {{ __cap }}
     args = [OMSX, "-machine", machine]
     if machine == MACHINE_TAPE:
         args += ["-cart", cart]
-    args += ["-cassetteplayer", wav, "-command", "set renderer none",
+    args += ["-cassetteplayer", wav, "-command", "set renderer none; set sound_driver null",
              "-script", tcl_path]
     try:
         proc = subprocess.Popen(args, stdout=subprocess.DEVNULL,

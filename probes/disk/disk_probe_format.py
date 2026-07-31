@@ -114,7 +114,7 @@ def run(machine, choice):
     open(tcl, "w").write(build_tcl(program(choice)))
     proc = subprocess.Popen(
         [OMSX, "-machine", machine, "-diska", dsk,
-         "-command", "set renderer none", "-script", tcl],
+         "-command", "set renderer none; set sound_driver null", "-script", tcl],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     deadline = time.time() + 120
     while proc.poll() is None and time.time() < deadline:

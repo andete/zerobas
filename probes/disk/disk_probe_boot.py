@@ -98,6 +98,7 @@ def run_boot(dsk_path: str, out_path: str, timeout: float = 60.0) -> list[int]:
     last = len(SAMPLE_TIMES) - 1
     tcl = f"""set throttle off
 set renderer none
+set sound_driver null
 proc cap {{i}} {{
   set f [open {{{out_path}}} a]
   puts $f "$i [format %04X [reg PC]] [format %04X [reg SP]]"

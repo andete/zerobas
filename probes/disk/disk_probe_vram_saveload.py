@@ -197,6 +197,7 @@ def cold_boot_and_capture(machine: str, dsk: str, out_path: str,
                           timeout: float = 60.0) -> dict:
     tcl = f"""set throttle off
 set renderer none
+set sound_driver null
 proc __hex {{a l}} {{ binary scan [debug read_block memory $a $l] H* h; return $h }}
 proc poison {{}} {{
   debug write memory 0x{DONE_ADDR:04X} 0x{DONE_POISON:02X}

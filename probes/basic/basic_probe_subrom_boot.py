@@ -176,7 +176,7 @@ def run() -> dict | None:
     os.write(fd, tcl.encode())
     os.close(fd)
 
-    cmd = [OMSX, "-machine", MACHINE, "-command", "set renderer none", "-script", tcl_path]
+    cmd = [OMSX, "-machine", MACHINE, "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)

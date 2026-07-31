@@ -88,6 +88,7 @@ def run(machine: str, disk: str, log: str, settle: float, timeout: float) -> Non
     # `set renderer none` + `throttle off` = fast headless run.
     tcl = f"""set throttle off
 set renderer none
+set sound_driver null
 set printerlogfilename {{{log}}}
 catch {{ plug printerport logger }}
 after time {settle} {{ exit }}

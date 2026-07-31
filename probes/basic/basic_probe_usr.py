@@ -222,7 +222,7 @@ def run(machine, cart, arg_val, cap_at=None, timeout=80):
     cmd = [OMSX, "-machine", machine]
     if cart:
         cmd += ["-cart", cart]
-    cmd += ["-command", "set renderer none", "-script", tcl_path]
+    cmd += ["-command", "set renderer none; set sound_driver null", "-script", tcl_path]
 
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,

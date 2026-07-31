@@ -114,7 +114,7 @@ def run(machine, lines, out, cf3300=False, timeout=140.0):
         os.unlink(out)
     proc = subprocess.Popen(
         [OMSX, "-machine", machine, "-diska", dsk,
-         "-command", "set renderer none", "-script", out + ".tcl"],
+         "-command", "set renderer none; set sound_driver null", "-script", out + ".tcl"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     deadline = time.time() + timeout
     while proc.poll() is None and time.time() < deadline:

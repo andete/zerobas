@@ -192,7 +192,7 @@ def run_save(cart: str, type_cmds: list[tuple[float, str]],
     os.close(fd)
 
     cmd = [OMSX] + zb_args(cart) + [
-           "-command", "set renderer none", "-script", tcl_path]
+           "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
@@ -252,7 +252,7 @@ def run_load_zerobas(cart: str, cas_path: str, verb: str,
 
     cmd = [OMSX] + zb_args(cart) + [
            "-cassetteplayer", cas_path,
-           "-command", "set renderer none", "-script", tcl_path]
+           "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
@@ -312,7 +312,7 @@ def run_load_ref(cas_path: str, verb: str,
 
     cmd = [OMSX, "-machine", MACHINE_REF,
            "-cassetteplayer", cas_path,
-           "-command", "set renderer none", "-script", tcl_path]
+           "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)

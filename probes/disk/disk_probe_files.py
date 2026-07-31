@@ -73,7 +73,7 @@ def run(machine: str, out: str, width=None, timeout: float = 90.0):
     if os.path.exists(out):
         os.unlink(out)
     cmd = [OMSX, "-machine", machine, "-diska", dsk,
-           "-command", "set renderer none", "-script", tcl]
+           "-command", "set renderer none; set sound_driver null", "-script", tcl]
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             start_new_session=True)
     deadline = time.time() + timeout

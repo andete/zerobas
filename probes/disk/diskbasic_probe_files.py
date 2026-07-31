@@ -100,7 +100,7 @@ def main() -> int:
         os.unlink(out)
     proc = subprocess.Popen(
         [OMSX, "-machine", MACHINE, "-diska", dsk,
-         "-command", "set renderer none", "-script", out + ".tcl"],
+         "-command", "set renderer none; set sound_driver null", "-script", out + ".tcl"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     deadline = time.time() + 90
     while proc.poll() is None and time.time() < deadline:

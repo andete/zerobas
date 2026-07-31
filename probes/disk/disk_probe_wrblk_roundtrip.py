@@ -146,7 +146,7 @@ after time {end_s} {{ exit }}
     tcl_path = dsk + ".tcl"
     open(tcl_path, "w").write(tcl)
     cmd = [OMSX, "-machine", machine, "-diska", dsk,
-           "-command", "set renderer none", "-script", tcl_path]
+           "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL, start_new_session=True)
     deadline = time.time() + timeout

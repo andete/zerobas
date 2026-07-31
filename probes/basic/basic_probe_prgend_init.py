@@ -80,7 +80,7 @@ after time 20 {{ exit }}
 """)
     tcl.close()
     subprocess.run([find_omsx(), "-machine", MACHINE,
-                    "-command", "set renderer none", "-script", tcl.name],
+                    "-command", "set renderer none; set sound_driver null", "-script", tcl.name],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                    timeout=60)
     with open(out.name) as f:

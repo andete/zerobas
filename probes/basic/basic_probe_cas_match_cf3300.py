@@ -85,7 +85,7 @@ def _run(dk, tp, cap=34.0, timeout=90.0):
     subprocess.run(["pkill", "-9", "openmsx"], capture_output=True)
     time.sleep(1.0)
     out = tempfile.mktemp(suffix=".txt", prefix="cf3300_match_")
-    tcl = (f"set throttle off\nset renderer none\n"
+    tcl = (f"set throttle off\nset renderer none\nset sound_driver null\n"
            f"proc cap {{}} {{ set f [open {{{out}}} w]; "
            f"binary scan [debug read_block {{memory}} 0x{TXTBASE:04X} 8] H* p; "
            f'puts $f "prog=$p"; close $f; exit }}\n'

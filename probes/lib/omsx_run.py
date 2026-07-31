@@ -186,7 +186,7 @@ def main() -> int:
         cmd += ["-cart", args.cart]
     if args.cassette:
         cmd += ["-cassetteplayer", args.cassette]
-    cmd += ["-command", "set renderer none", "-script", tcl_path]
+    cmd += ["-command", "set renderer none; set sound_driver null", "-script", tcl_path]
 
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,

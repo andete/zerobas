@@ -119,6 +119,7 @@ def load_capture_txt(cart: str, cas_path: str, nbytes: int, verb: str,
     out = tempfile.mktemp(suffix=".txt", prefix="casascii_")
     tcl = f"""set throttle off
 set renderer none
+set sound_driver null
 proc __hex {{a n}} {{ binary scan [debug read_block {{memory}} $a $n] H* h; return $h }}
 after time 6 {{ type {_tcl_dquote(verb)} }}
 after time 8 {{ type {_tcl_dquote(chr(13))} }}

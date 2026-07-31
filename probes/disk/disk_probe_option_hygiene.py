@@ -149,6 +149,7 @@ def cold_boot_and_capture(machine: str, dsk: str, out_path: str,
                           timeout: float = 60.0) -> dict:
     tcl = f"""set throttle off
 set renderer none
+set sound_driver null
 proc poison {{}} {{
   foreach a {{0x{W1_ADDR:04X} 0x{W2_ADDR:04X} 0x{W3_ADDR:04X} 0x{DONE_ADDR:04X}}} {{
     debug write memory $a 0x{POISON:02X}

@@ -349,7 +349,7 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
         cmd += ["-cart", cart]
     if diska:
         cmd += ["-diska", diska]
-    cmd += ["-command", "set renderer none", "-script", tcl]
+    cmd += ["-command", "set renderer none; set sound_driver null", "-script", tcl]
 
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL, start_new_session=True)

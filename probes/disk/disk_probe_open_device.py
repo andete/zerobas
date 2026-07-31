@@ -90,6 +90,7 @@ def cold_boot(machine: str, dsk: str, out_path: str, prn_log: str,
               timeout: float = 90.0) -> int:
     tcl = f"""set throttle off
 set renderer none
+set sound_driver null
 set printerlogfilename {{{prn_log}}}
 catch {{ plug printerport logger }}
 after time 1 {{ debug write memory 0x{DONE_ADDR:04X} 0x{POISON:02X} }}

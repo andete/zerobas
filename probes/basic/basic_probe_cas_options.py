@@ -76,6 +76,7 @@ def load_and_capture(cart: str, cas_path: str, verb: str,
     out = tempfile.mktemp(suffix=".txt", prefix="casopt_")
     tcl = f"""set throttle off
 set renderer none
+set sound_driver null
 proc __hex {{a n}} {{ binary scan [debug read_block {{memory}} $a $n] H* h; return $h }}
 after time 1 {{ debug write memory 0x{WITNESS:04X} 0x{POISON:02X} }}
 after time 6 {{ type {_tcl_dquote(verb)} }}

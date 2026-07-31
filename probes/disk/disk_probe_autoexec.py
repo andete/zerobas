@@ -150,6 +150,7 @@ def cold_boot_and_read(machine: str, dsk: str, addr: int, poison: int,
     # cold-start init (and any possible auto-run) reaches the text area.
     tcl = f"""set throttle off
 set renderer none
+set sound_driver null
 proc poison {{}} {{ debug write memory 0x{addr:04X} 0x{poison:02X} }}
 after time 1 {{ poison }}
 proc cap {{}} {{

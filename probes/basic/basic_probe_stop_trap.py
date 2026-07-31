@@ -226,7 +226,7 @@ def run(machine, prog, presses, *, boot=6.0, step=3.0, run_gap=2.0, done_gap=3.0
     fd, tcl_path = tempfile.mkstemp(suffix=".tcl", prefix="stoptrap_")
     os.write(fd, ("\n".join(lines) + "\n").encode())
     os.close(fd)
-    cmd = [OMSX, "-machine", machine, "-command", "set renderer none", "-script", tcl_path]
+    cmd = [OMSX, "-machine", machine, "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)

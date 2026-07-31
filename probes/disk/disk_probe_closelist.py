@@ -93,6 +93,7 @@ def dir_size(dsk_path: str, name8: str, ext3: str):
 def cold_boot(machine: str, dsk: str, out_path: str, timeout: float = 60.0) -> int:
     tcl = f"""set throttle off
 set renderer none
+set sound_driver null
 after time 1 {{ debug write memory 0x{DONE_ADDR:04X} 0x{POISON:02X} }}
 proc cap {{}} {{
   set f [open {{{out_path}}} w]
