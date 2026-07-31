@@ -3131,7 +3131,7 @@ byte-identical (pinned sha256 unchanged).
 | Classification (docs/spec-basic-float-core.md §9.2): `%`→int (consumed; >32767 = crunch error); `#`/`D`-exp→double; `!`→single; else D≤5 & ≤32767→int, D≤6→single, D≥7→double (D counts typed chars incl. trailing zeros) | — | oracle-locked black-box (`basic_probe_floatlit.py`, 60+ literal matrix incl. boundary/tie cases) | sourced |
 | Rounding half-up at both precisions; carry-out-of-all-digits does NOT renormalise the exponent on the single path (`9999995!` → `1D 47 10 00 00` = 1000000) but DOES on the double path (16 nines → `1F 51 10 …` = 1E16) | — | oracle-locked (tie-breaker + carry captures, §9.2 rule 5) | sourced |
 | Exponent walls: dec_exp ≤ 63 else crunch-time rejection; dec_exp < −63 → lead byte 0, mantissa retained (value 0) | — | oracle-locked (`1e62`/`1e63`/`1e-64`/`1e-65` captures; BLOAD-leads proves the rejection precedes execution) | sourced |
-| Suffix-after-exponent is left unconsumed (`1e10#` leaves a raw `#`) | — | oracle-locked (extra S2 capture; `basic/float.asm` `tkf_try_exponent` header) | sourced |
+| Suffix-after-exponent is left unconsumed (`1e10#` leaves a raw `#`) | — | oracle-locked (extra S2 capture; `sub/tkfloat.asm` `tkf_try_exponent` header — the routine moved there in the sub-ROM wave-1 eviction, and D-EXPBAD measured that a DIGITLESS marker skips the suffix scan the same way) | sourced |
 | All algorithms: digit scan, big-decimal round, BCD pack/unpack, `flt_out` layout | — | own-design (spec §9 distils the observed contract; no disassembly anywhere) | sourced |
 
 ### PRINT formatter (`flt_out`)
@@ -3724,3 +3724,62 @@ verbatim `REM` tail as well as after a literal — which places the difference a
 line ENTRY rather than in any scanner — but the echo guard `rstrip`s every screen
 row and so is structurally blind to a trailing blank, and the row has not read
 the same way on every pass. Reported, filed, never gated.
+
+## 2026-07-31 — a MALFORMED exponent marker (D-EXPBAD)
+
+Clean-room status: **unchanged.** Black-box oracle observation of two reference
+machines — identical inputs typed in, the stored program's own bytes read back
+out of RAM. No disassembly. Token values as in the D-DECBLANK entry above.
+
+**Two oracles.** All 18 rows asked of both `Philips_VG_8020` and
+`National_CF-3300`, `--repeat 2`, two oracle-lock rounds, every payload past the
+echo guard first. They agree on every row, and every row was locked **before**
+zerobas was run on it.
+
+Contract established (measurement:
+[`docs/expbad-msx1-characterization.md`](../docs/expbad-msx1-characterization.md),
+spec [`docs/spec-basic-expbad.md`](../docs/spec-basic-expbad.md) §2):
+
+* **The exponent's digits are OPTIONAL.** The grammar is `[EeDd] [+-]? digit*`,
+  not `…digit+`: a marker at the exponent position is consumed with any
+  immediately following sign, whether or not a digit follows, and there is **no
+  rollback**. `1E` stores a single 1.0 with the marker gone; `1E+` eats the sign
+  too.
+* **The marker's PRECISION survives the failure**: `1D` is a **double**, `1E` a
+  single (the digit count decides).
+* **A consumed marker forces the literal off the INTEGER path**: `12345EX` is a
+  single even though 12345 is int-eligible (D=5, ≤32767).
+* **The type-suffix scan is skipped**, exactly as for a well-formed exponent
+  (the `1e10#` quirk already recorded): `1E#` is a single followed by a raw `#`,
+  `1E%` likewise — and `%` normally forces integer.
+* The exponent **value is zero** when no digits follow, and a lowercase `e`/`d`
+  counts as a marker.
+* Consumption obeys D-DECBLANK's cursor rule unchanged: a blank run *before* a
+  consumed character goes with it (`1E -X` loses its blank), one *behind* the
+  last consumed character stays (`1E X`, `1E- X` keep theirs).
+* It does **not** reach `branch_lineno`'s line-number scan (`GOTO 1EX` keeps
+  `EX` on both references) or a `DATA` body.
+
+Implemented by **deleting** the rollback in `tkf_try_exponent`
+([`sub/tkfloat.asm`](../sub/tkfloat.asm)): `tke_fail` and the two digit-range
+tests are gone and the commit is unconditional. The sign lookahead gained the
+same push/accept/reject shape D-DECBLANK gave every other fetch, and the
+exponent's digit fetch is left to `tke_dloop`, which already push/pops
+correctly. **NET −8 B, all sub-ROM page 0**; the main ROM came out
+byte-identical.
+
+⚠️ **The blank seam is a cell the fix itself created.** While the marker was
+never consumed, `1E X` could not distinguish "the marker was consumed and the
+blank was not" from anything else. Committing where the code stood — after the
+blank-skipping fetch — satisfies every row the defect was filed with and eats
+that blank silently; two rows measured for this slice are the only objection.
+
+🔴 **The defect was recorded here in its own header as own-design and never
+oracle-pinned.** That is the class of claim worth re-asking: the routine had
+implemented a "at least one digit" rule the language does not have, and the
+correction removed code rather than adding it.
+
+With this slice `make lnblank-acceptance`'s `KNOWN_DIVERGE` allowlist is
+**EMPTY**: both cohorts filed in it (D-LNBLANK's five `lit-` rows, D-DECBLANK's
+four `dec-expbad*` rows) were retired by the slice that fixed them, each closed
+by the allowlist reporting the row as agreeing.

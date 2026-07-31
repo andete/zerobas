@@ -3248,28 +3248,54 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       arguable. Sharpening the policy wording is a decision for the owner, not a
       sweep.
 
-- [ ] 🔴 **D-EXPBAD — a MALFORMED EXPONENT: the reference eats the marker, zerobas
-      rolls it back.** Found 2026-07-31 as D-DECBLANK's denominator, and it has
-      **no blank in it at all**:
+- [x] ✅ **D-EXPBAD — A MALFORMED EXPONENT — LANDED 2026-07-31, 99/99, NET −8 B,
+      falsified on five knives, and `KNOWN_DIVERGE` IS NOW EMPTY.**
+      Spec [`docs/spec-basic-expbad.md`](docs/spec-basic-expbad.md), measurement
+      [`docs/expbad-msx1-characterization.md`](docs/expbad-msx1-characterization.md)
+      (18 rows, two oracle-lock rounds, VG-8020 and CF-3300 agree on every one).
+      **Baseline 3/12 — the only three that agreed were the three controls.**
+      🔴 **THE RULE IS THAT THE DIGITS ARE OPTIONAL.** The exponent grammar is
+      `[EeDd] [+-]? digit*`, not `…digit+`, so there is **no failure case and no
+      rollback** — which is why the fix REMOVES code. `tke_fail` and the two
+      range tests that fed it are gone.
+      🔴 **AND THE FILED ROWS WERE A SAMPLE, THREE WAYS** — every one of them is an
+      `E` with one mantissa digit:
+      * `20 A=1D` is a **DOUBLE**: the marker's PRECISION survives a failure that
+        consumes no digits. No `E` row can distinguish "a marker was seen" from
+        "*this* marker was seen", so a fix collapsing both to single would have
+        passed all four filed rows.
+      * `20 A=12345EX` is a **SINGLE**, where zerobas stored the two-byte INTEGER
+        — the marker forces the literal off the int path, invisible at D=1.
+      * `20 A=1E#` leaves the `#` **raw** (the suffix scan is skipped exactly as
+        for a well-formed exponent), so `#` does not make it double and `%` does
+        not make it integer.
+      ⚠️ **The fix CREATED a cell that did not exist before it.** `20 A=1E X`
+      keeps its blank and `20 A=1E -X` loses it — D-DECBLANK's cursor rule
+      unchanged. Committing where the code stood (after `tkf_fetch` had already
+      crossed the blank run) satisfies **every filed row** and silently eats that
+      blank; only `dec-emarkblk` / `dec-esignblk` object.
+      🔴 **KNIFE K2 REFUTED THE SPEC'S OWN PREDICTION**: the control it named went
+      red, because clearing `has_exp` reaches the digitless case too. The real
+      control is the `D` pair, making K1/K2 exact mirrors over the two flag bits.
+      Corrected in the spec rather than dropped.
+      **Cost: NET −8 B, all sub-ROM page 0** (4018 → 4026 B free); main page 1
+      stayed at 8 B, low at 23 B, and both main ROMs came out **byte-identical**.
+      It does NOT reach `branch_lineno` (`20 GOTO 1EX` keeps `EX` on both
+      references) or a `DATA` body — measured, and pinned as controls.
+
+      **As filed** (kept because the filed measurement is what the closed entry
+      is measured against):
       ```
       20 A=1EX    ref -> A <EF> <1D>A<10><00><00> X     a SINGLE 1, the `E` EATEN
                   zb  -> A <EF> <12> E X                the INTEGER 1, `E` left
       20 A=1E+X   ref -> A <EF> <1D>A<10><00><00> X     the `+` eaten too
       ```
-      Both references consume a marker (and its sign) that turns out not to
-      introduce an exponent, and its mere presence forces the literal to **single
-      precision** — so the divergence is in the token's TYPE, not its spacing.
-      zerobas' `tkf_try_exponent` rolls back and leaves the `E` for the ordinary
-      tokeniser; its own header says that lookahead is **own-design, never
-      oracle-pinned** ([`sub/tkfloat.asm`](sub/tkfloat.asm) `tkf_try_exponent`).
-      ⚠️ **The `0` rows are why this is not D-DECBLANK**: `dec-expbad0` /
-      `dec-expbadsg0` carry no blank and read identically to their blanked twins
-      (measurement [`docs/decblank-msx1-characterization.md`](docs/decblank-msx1-characterization.md) §3).
-      All four rows are live in `make lnblank-acceptance` as `KNOWN_DIVERGE`,
-      **pinned to the exact bytes zerobas produces today** — fix it and the
-      allowlist stops matching and the gate goes red.
-      ⚠️ The two blanked rows are simultaneously D-DECBLANK's must-not-move cells:
-      if `1 EX` ever reads `<12>EX`, a rollback ate a blank run it rejected.
+      ⚠️ **The `0` rows are why it was not D-DECBLANK**: `dec-expbad0` /
+      `dec-expbadsg0` carried no blank and read identically to their blanked
+      twins ([`docs/decblank-msx1-characterization.md`](docs/decblank-msx1-characterization.md) §3).
+      All four were live in `make lnblank-acceptance` as `KNOWN_DIVERGE`, pinned
+      to their exact bytes — and the allowlist reporting them as AGREEING is the
+      message that closed them. **That allowlist is now EMPTY.**
 
 - [ ] **`&B` is not a radix on MSX1 — and zerobas half-crunches it anyway.**
       Found 2026-07-31 in D-DECBLANK's denominator (`dec-bin`, informational).

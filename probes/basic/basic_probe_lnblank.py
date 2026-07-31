@@ -297,6 +297,71 @@ DEC = [
     ("dec-dotlead",  ["20 A=. 5"]),       # a blank between the '.' and its digit
 ]
 
+# --- the `exp` battery: D-EXPBAD, a MALFORMED exponent marker ----------------
+# docs/spec-basic-expbad.md.  D-DECBLANK's denominator turned up four rows whose
+# divergence has NOTHING to do with blanks (`20 A=1EX` reads the same with or
+# without one), and filed them.  This battery is their denominator.
+#
+# TWO RULES, AND EVERY ROW IS CHOSEN TO SEPARATE THEM:
+#
+#   rule R (rollback) -- zerobas today.  A marker not followed by digits is put
+#                        BACK; the literal classifies as if no exponent were
+#                        typed, so `1EX` is the INTEGER 1 followed by `EX`.
+#   rule C (consume)  -- both references.  The marker (and its sign) is EATEN and
+#                        its mere presence forces the literal off the integer
+#                        path: `1EX` is a SINGLE 1.0 followed by `X`.
+#
+# ⚠️ THE FILED ROWS PIN R-vs-C FOR `E` ONLY, AND ONLY WITH A LETTER BEHIND IT.
+# Three things they cannot say, each of which changes the fix:
+#   * `D` is the DOUBLE marker when the exponent is well formed.  Does a MALFORMED
+#     `D` force double, or does the malformed path collapse to single?  Nothing
+#     measured so far distinguishes "the marker was seen" from "the marker's
+#     PRECISION was seen".  `dec-dmark` / `dec-dbad` are the only rows that can.
+#   * tk_float SKIPS the type-suffix scan whenever has_exp is set (an oracle-
+#     pinned quirk: `1e10#` leaves the `#` uneaten, sub/tkfloat.asm header).  If a
+#     malformed marker sets has_exp too, then `1E#` must leave its `#` behind --
+#     a consequence of the fix that no filed row tests.
+#   * every filed row has D=1, where int and single are decided by the marker
+#     alone.  `12345EX` is int-ELIGIBLE (D=5, <=32767), so R and C differ in the
+#     token TYPE for a reason the D=1 rows cannot isolate.
+EXP = [
+    ("dec-eok",      ["20 A=1E1X"]),      # CONTROL: a WELL-FORMED exponent, then a
+                                           # letter.  R and C agree -> 10, then `X`
+    ("dec-emark",    ["20 A=1E"]),        # the marker with NOTHING after it
+    ("dec-esign",    ["20 A=1E+"]),       # marker AND sign, nothing after
+    ("dec-ebadneg",  ["20 A=1E-X"]),      # the '-' sign arm (only '+' was filed)
+    # ★ THE PAIR THAT DECIDES WHETHER PRECISION SURVIVES A FAILED EXPONENT
+    ("dec-dmark",    ["20 A=1D"]),        # D at EOL: double, or single?
+    ("dec-dbad",     ["20 A=1DX"]),       # D then a letter
+    # ★ THE SUFFIX CONSEQUENCE
+    ("dec-ebadsfx",  ["20 A=1E#"]),       # '#' immediately behind the marker
+    ("dec-ebadsfx2", ["20 A=1EX#"]),      # '#' behind the letter
+    # ★ THE CLASSIFICATION CONSEQUENCE, at a digit count where it is visible
+    ("dec-ebig",     ["20 A=12345EX"]),   # D=5 and <=32767: R -> a TWO-BYTE INT,
+                                           # C -> a single.  Different token, not
+                                           # just different trailing bytes
+    ("dec-elow",     ["20 A=1ex"]),       # a LOWERCASE marker: is it a marker?
+    # The other two scanners, as denominator.  A rule stated from `A=` alone is a
+    # sample of the sites that crunch a number.
+    ("dec-eref",     ["20 GOTO 1EX"]),    # a line-number REFERENCE (branch_lineno,
+                                           # a different accumulator entirely)
+    ("dec-edata",    ["20 DATA 1EX"]),    # CONTROL: a DATA body is verbatim
+    # --- round 2: WHERE THIS RULE MEETS D-DECBLANK's -------------------------
+    # ⚠️ THESE CELLS ARE CREATED BY THE FIX ITSELF and did not exist before it.
+    # D-DECBLANK established that the cursor a literal scan reports is ONE PAST
+    # THE LAST CHARACTER IT CONSUMED, so a blank run is kept unless what follows
+    # it is consumed.  Making the marker consumable moves that boundary: in
+    # `1E X` the marker IS consumed and the blank behind it is NOT, which no row
+    # in either slice has ever asked.  Get the bookkeeping wrong and the blank
+    # disappears (or the marker survives) with every filed row still green.
+    ("dec-emarkblk", ["20 A=1E X"]),      # marker consumed, blank behind it kept?
+    ("dec-emarkbl2", ["20 A=1E -X"]),     # blank, then a sign that IS consumed
+    ("dec-esignblk", ["20 A=1E- X"]),     # sign consumed, blank behind IT kept?
+    ("dec-dmarkblk", ["20 A=1D X"]),      # the same seam on the DOUBLE marker
+    ("dec-edot",     ["20 A=1.EX"]),      # has_dot AND a failed marker together
+    ("dec-ebadpct",  ["20 A=1E%"]),       # '%' normally forces INT -- skipped?
+]
+
 # --- the `dir` battery: DIRECT MODE, which has no stored line to read ---------
 # ⚠️ SAY-MODE ONLY, and it is here because direct mode is an EXECUTION MODE this
 # project has repeatedly found uncovered while the verbs above it read as fully
@@ -397,43 +462,38 @@ ERRB = [
 ]
 SAY_ONLY = {lb for lb, _l in ERRB + DIRB}
 
-CASES = NUM + BODY + LIT + DEC + REF + ERRB + DIRB
+CASES = NUM + BODY + LIT + DEC + EXP + REF + ERRB + DIRB
 
 INFORMATIONAL = {"num-tab", "ref-list", "ref-delete", "ref-auto", "ref-renum",
                  "ref-else", "lit-varname", "dec-bin", "dec-eol", "dec-eolctl"}
 CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             "lit-ctl", "lit-str", "lit-rem", "ref-ctl", "ref-sp",
-            "dec-ctl", "dec-hexctl", "dec-dotlead0"}
+            "dec-ctl", "dec-hexctl", "dec-dotlead0",
+            "dec-eok", "dec-edata"}
 
-# --- KNOWN_DIVERGE: filed, not fixed, and PINNED TO ITS EXACT VALUE ----------
-# ⚠️ These are not suppressions. Each entry records what zerobas ACTUALLY reads,
-# so the row passes only while it keeps diverging in EXACTLY that way. Fix the
-# behaviour and the entry stops matching, the gate goes red, and the entry has to
-# be RETIRED instead of rotting. That is how the five `lit-` entries D-LNBLANK
-# filed here left: D-DECBLANK fixed the decimal-literal scanner and the allowlist
-# reported them as agreeing, which is the message that closed them.
+# --- KNOWN_DIVERGE: EMPTY, and that is a measurement --------------------------
+# ⚠️ These were never suppressions. Each entry recorded what zerobas ACTUALLY
+# read, so a row passed only while it kept diverging in EXACTLY that way -- fix
+# the behaviour and the entry stops matching, the gate goes RED, and the entry
+# has to be RETIRED instead of rotting.
 #
-# What is left is ONE neighbouring defect, D-EXPBAD (docs/spec-basic-decblank.md
-# §5.1). Both references CONSUME an exponent marker that turns out not to
-# introduce an exponent, and force the literal to SINGLE; zerobas rolls the
-# marker back and leaves it for the ordinary tokeniser (sub/tkfloat.asm
-# tkf_try_exponent, own-design and never oracle-pinned).
+# Both cohorts left that way, one slice after the other:
+#   * the five `lit-` rows D-LNBLANK filed -> retired by D-DECBLANK, when the
+#     allowlist reported them as agreeing;
+#   * the four `dec-expbad*` rows D-DECBLANK filed -> retired by D-EXPBAD
+#     (docs/spec-basic-expbad.md), same message.
 #
-# 🔴 THE `0` ROWS ARE WHY IT IS NOT THIS DEFECT: `dec-expbad0` / `dec-expbadsg0`
-# carry NO BLANK AT ALL and read exactly the same as their blanked twins. A
-# measurement that belongs to another defect is the D-MFDOM trap, and pinning all
-# four here is what keeps the two apart.
+# 🔴 THE `0` ROWS ARE WHY D-EXPBAD WAS ITS OWN SLICE: `dec-expbad0` /
+# `dec-expbadsg0` carry NO BLANK AT ALL and read exactly the same as their
+# blanked twins, so the divergence could not belong to the blank rule. Closing it
+# in D-DECBLANK would have been the D-MFDOM trap. They are ordinary gating rows
+# now and still carry that separation.
 #
-# ⚠️ AND THE BLANKED PAIR IS ALSO A MUST-NOT-MOVE CELL OF D-DECBLANK. `1 EX` must
-# keep reading `<12> EX` -- a rollback that unwinds the marker has to unwind the
-# blank run in front of it too, and these two rows are the only witness that it
-# does (knife K3). If they ever read `<12>EX`, the fix ate a blank it rejected.
-KNOWN_DIVERGE = {
-    "dec-expbad":    "line 20 | A<EF><12> EX",
-    "dec-expbadsg":  "line 20 | A<EF><12> E<F1>X",
-    "dec-expbad0":   "line 20 | A<EF><12>EX",
-    "dec-expbadsg0": "line 20 | A<EF><12>E<F1>X",
-}
+# ⚠️ KEEP THIS DICT EMPTY RATHER THAN DELETING IT. An empty allowlist is a
+# standing claim that every row in this probe agrees with both references for the
+# reason it is supposed to; the next divergence has to be filed here with its
+# exact bytes before it can pass.
+KNOWN_DIVERGE = {}
 
 
 def battery(label):

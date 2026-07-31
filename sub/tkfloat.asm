@@ -259,22 +259,28 @@ tkf_f_lp:
 
 ; --- tkf_try_exponent: consume an optional E/D exponent (§9.2 rule 6) ------
 ; HL -> the char right after the mantissa digits. If E/e/D/d is followed by
-; an optional sign then at least one digit, it is consumed: TKFLAGS bit1
-; (has_exp) [+bit2 (expD), forces double] is set, the signed magnitude is
+; an OPTIONAL sign and then ZERO OR MORE digits, all of it is consumed: TKFLAGS
+; bit1 (has_exp) [+bit2 (expD), forces double] is set, the signed magnitude is
 ; accumulated into TKEXP (16-bit, saturated at +-9999 -- far outside the
 ; legal +-63 dec_exp range, so the saturation never affects a correctly
-; classified literal), and HL advances past it. Otherwise HL is left
-; UNCHANGED (own-design lookahead: a malformed "5E" or "5EX" leaves 'E' for
-; the ordinary tokeniser to process as a separate token/identifier).
+; classified literal), and HL advances past it. Only the ABSENCE of a marker
+; leaves HL unchanged.
 ;
-; 🔴 THAT ROLLBACK IS A KNOWN LIVE DIVERGENCE -- D-EXPBAD, filed 2026-07-31.
-; Both references CONSUME a marker that turns out not to introduce an exponent
-; and force the literal to SINGLE: `20 A=1EX` stores `<1D>A<10><00><00>` then
-; `X`, where zerobas stores the integer 1 then `EX`. Measured with NO BLANK
-; anywhere (docs/decblank-msx1-characterization.md §3), which is what makes it a
-; separate defect from D-DECBLANK rather than part of it. It is pinned in
-; `make lnblank-acceptance`'s KNOWN_DIVERGE at the exact bytes above, so the day
-; it is fixed the gate goes red and the entry has to be retired.
+; 🔴 D-EXPBAD (docs/spec-basic-expbad.md, landed 2026-07-31): THE DIGITS ARE
+; OPTIONAL AND THERE IS NO ROLLBACK. This used to put a digitless marker BACK --
+; own-design, never oracle-pinned, and wrong. Measured on both references
+; (docs/expbad-msx1-characterization.md):
+;   1E     -> <1D>A<10><00><00>            a SINGLE 1.0, marker EATEN
+;   1E+    -> the same; the sign goes too
+;   1D     -> <1F>A<10>x6                  a DOUBLE -- THE PRECISION SURVIVES
+;   1E#    -> <1D>A<10><00><00> then '#'   the suffix scan is SKIPPED, as it is
+;                                          for a well-formed exponent (below)
+;   12345EX-> a SINGLE, not the two-byte INT the digit count alone would give
+; ⚠️ The last two are the rows that say has_exp must be SET rather than merely
+; "the marker consumed", and `1D` is the only row in the language that says the
+; PRECISION is remembered -- every row the defect was filed with was an `E`.
+; It does NOT reach branch_lineno's line-number scan (`GOTO 1EX` keeps `EX` on
+; both references) or a DATA body.
 ;
 ; Oracle-pinned quirk (S2 extra capture, 2026-07-11, same probe machinery as
 ; basic_probe_floatlit.py's --machine mode): once an exponent IS consumed, a
@@ -291,14 +297,11 @@ tkf_f_lp:
 ;
 ; D-DECBLANK S4: the marker, its sign and its digits are ALL reachable across a
 ; blank run -- `1 E2`, `1 E 2`, `1E -2`, `1E- 2` and `1E 2 3` (= 1E23) are all
-; measured on both references. ⚠️ THE ROLLBACK TARGET MOVED WITH IT: the `push`
-; is now at the TOP, before the marker is even fetched, so tke_fail rewinds to
-; the cursor BEFORE the blank run and not to the marker. One push covers the
-; whole routine, which is what makes `1 E+X` come out right -- a rollback that
-; unwinds the marker but leaves the blanks eaten is a byte-level divergence no
-; well-formed row can see (docs/spec-basic-decblank.md §5.1, knife K3).
+; measured on both references. The `push` at the top is what makes a run that
+; leads to NO MARKER stay in the source; D-EXPBAD then removed the only other
+; rollback this routine had.
 tkf_try_exponent:
-                push    hl                  ; the ROLLBACK target: pre-blank cursor
+                push    hl                  ; restore target if there is NO marker
                 call    tkf_fetch
                 call    upcase
                 cp      'E'
@@ -315,26 +318,49 @@ tke_mark_e:
                 xor     a
                 ld      (TKEXPD),a
 tke_go:
-                inc     hl                  ; past E/D (tkf_fetch left HL on it)
-                xor     a
+                inc     hl                  ; past E/D -- the LAST CONSUMED character
+                xor     a                   ; so far, which is what the cursor tracks
                 ld      (TKEXPSIGN),a       ; 0 = positive
+                ; D-EXPBAD: the sign lookahead gets the same push/accept/reject
+                ; shape as every other fetch (docs/spec-basic-expbad.md §4.1).
+                ; ⚠️ COMMITTING WHERE THIS CODE USED TO STAND EATS A BLANK.
+                ; `tkf_fetch` advances past a blank run, so a bare fetch followed
+                ; by an unconditional commit stores `1E X` as `…<00><00>X` -- the
+                ; blank gone -- while every filed row stays green. Measured: both
+                ; references keep it (`dec-emarkblk`), and drop it in `1E -X`
+                ; where the blank sits before a sign that IS consumed
+                ; (`dec-emarkbl2`). Those two rows are the whole reason for the
+                ; push.
+                push    hl
                 call    tkf_fetch
                 cp      '+'
-                jr      z,tke_skipsign
+                jr      z,tke_sign
                 cp      '-'
-                jr      nz,tke_checkdig     ; no sign: A/HL are already the candidate
+                jr      nz,tke_nosign
                 ld      a,1
                 ld      (TKEXPSIGN),a       ; 1 = negative
-tke_skipsign:
-                inc     hl
-                call    tkf_fetch
-tke_checkdig:
-                cp      '0'
-                jr      c,tke_fail
-                cp      '9'+1
-                jr      nc,tke_fail
-                ; valid exponent: commit
-                pop     de                  ; discard the rollback position
+tke_sign:
+                pop     af                  ; accept: any blank run before the sign
+                                            ; belonged to it. (`pop af` LOADS A --
+                                            ; safe here only because tke_commit
+                                            ; reloads it from TKFLAGS.)
+                inc     hl                  ; past the sign
+                jr      tke_commit
+tke_nosign:
+                pop     hl                  ; no sign: the blank run is not ours, and
+                                            ; the exponent's digits (if any) are
+                                            ; fetched by tke_dloop, which push/pops
+                                            ; correctly on its own
+tke_commit:
+                ; 🔴 THERE IS NO FAILURE CASE. The exponent grammar is
+                ; `[EeDd] [+-]? digit*` -- THE DIGITS ARE OPTIONAL -- measured on
+                ; both references (docs/expbad-msx1-characterization.md §1):
+                ; `1E` is a single 1.0 with the marker EATEN, `1E+` eats the sign
+                ; too, and `1D` is a DOUBLE, so the marker's PRECISION survives a
+                ; failure that consumes no digits. The rollback this used to do
+                ; (`tke_fail`) was own-design and never oracle-pinned; asking the
+                ; question retired it along with the two range tests that fed it.
+                pop     de                  ; discard the marker's rollback slot
                 ld      a,(TKFLAGS)
                 or      2                   ; bit1 = has_exp
                 ld      (TKFLAGS),a
@@ -395,9 +421,6 @@ tke_dstop:
                                              ; negate) is deliberate
 tke_esdone:
                 ld      (TKEXP),de
-                ret
-tke_fail:
-                pop     hl                  ; rollback to the marker position
                 ret
 
 ; --- tkf_try_suffix: consume an optional !/#/% type suffix -----------------
