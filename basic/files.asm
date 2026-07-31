@@ -1363,9 +1363,11 @@ nm_fail2:
 ; CLEARed. zerobas accepts 0..FCH_CEIL, which the repack build sets to the MEASURED
 ; reference ceiling of 15 (D-FCH §3.2: the blocks are carved out of the FRE(0) pool
 ; at MAXFILES time, so an unused channel costs nothing and the ceiling was free).
-; ⚠️ A larger value is still a `syntax error` where the
-; reference raises ERR 5 Illegal function call — the CLASS is wrong, and is
-; S-FCH-2's, not this statement's. Entry: HL on the MAX token.
+; The argument DOMAIN is the reference's, measured across it (D-MFDOM,
+; docs/spec-basic-maxfiles-domain.md): outside int16 -> ERR 6 `Overflow`; inside
+; int16 but outside 0..FCH_CEIL -> ERR 5 `Illegal function call` (negatives
+; included); a fractional value TRUNCATES and is then judged on the integer
+; (15.9 is accepted as 15; 2.5 becomes 2). Entry: HL on the MAX token.
 ; See basic/PROVENANCE.md §MAXFILES.
 ex_maxfiles:
                 inc     hl                  ; past MAX ($CD)
@@ -1378,9 +1380,6 @@ ex_maxfiles:
                 cp      EQ_TOKEN            ; '=' ($EF)
                 jp      nz,stmt_error
                 inc     hl
-                call    eval                ; DE = requested ceiling
-                ld      a,d
-                or      a
                 ; S-FCH-2 (first piece): the out-of-domain reject is ERR 5
                 ; `Illegal function call`, as MEASURED — `MAXFILES=16` and
                 ; `MAXFILES=255` both raise it on the CF-3300, read via
@@ -1389,14 +1388,27 @@ ex_maxfiles:
                 ; `syntax error` (ERR 2): the wrong CLASS, independently of where
                 ; the ceiling sat.
                 ;
-                ; ⚠️ AND IT COSTS ZERO BYTES, which is why it lands alone ahead of
-                ; the rest of S-FCH-2. gb_illegal (interp.asm) is the ERR 5 raiser
-                ; the byte-arg domain checks already use, so each site spends the
-                ; same 3 bytes on `jp cc,gb_illegal` that `jp cc,stmt_error` spent.
-                ; The REST of S-FCH-2 — ERR 52/59 and their messages — is 86 B
-                ; against 9 B free and needs a carve; measured, see spec §5c.
-                jp      nz,gb_illegal       ; > 255 -> ERR 5
-                ld      a,e
+                ; ⚠️ D-MFDOM: THE ARGUMENT COMES THROUGH eval_byte_arg, NOT `eval`.
+                ; This used to be `call eval` + a hand-inlined `ld a,d / or a /
+                ; jp nz,gb_illegal`, and that high-byte test could not fire for an
+                ; argument OUT OF INT16: `eval`'s silent flt_to_int16 zeroes DE for
+                ; those (interp.asm's own header says so), so `MAXFILES=65536` and
+                ; `MAXFILES=70000` arrived here as DE=0 and were accepted as an
+                ; ordinary request for ZERO channels — SILENTLY DISABLING ALL FILE
+                ; I/O where the reference raises ERR 6 `Overflow`. Measured on the
+                ; CF-3300 as `mfd_65536`/`mfd_70000` (both read mf0's FRE(0) on
+                ; zerobas against `Overflow` on the reference), not inferred.
+                ;
+                ; eval_byte_arg is get_byte_arg's eval leaf and is exactly the
+                ; reference rule: int16 stage first (ERR 6 outside the RANGE
+                ; -32768..32767 — asymmetric, and CONFIRMED for MAXFILES on the
+                ; CF-3300 by mfd_32767/32768/n32768/n32769 rather than inherited
+                ; from CHR$), then 0..255 (ERR 5). It also REPLACES nine bytes with
+                ; three: this slice is a NET SAVING, not a spend.
+                ;
+                ; The remaining ceiling test stays here because FCH_CEIL is this
+                ; statement's own bound, not a byte-argument rule.
+                call    eval_byte_arg       ; A = E = 0..255; ERR 6 >int16, ERR 5 else
                 cp      FCH_CEIL+1
                 jp      nc,gb_illegal       ; > FCH_CEIL -> ERR 5
                 push    de                  ; guard the requested value
