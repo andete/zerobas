@@ -3204,6 +3204,50 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       error/stop-trap, abort 49/49, linemax 60/60, arrdim 73/73, clearpool 52/52,
       array 149/151 (standing `ifc.instr.zero`/`ifc.instr.neg`, confirmed BY NAME).
 
+- [x] ✅ **STALE LEAN-CART CLAIMS SWEPT — 2026-07-31, docs only, 0 ROM bytes.**
+      Flagged while landing D-MFDOM (`basic/PROVENANCE.md` §MAXFILES described the
+      retired lean 16 KB cart as a LIVE constraint on channel-table work) and
+      swept as its own item. **367 hits for `lean cart|lean 16|ROM_BASE`; 7 were
+      stale; 360 were legitimate** and deliberately left alone.
+      🔴 **THE SWEEP'S OWN PREMISE WAS MOSTLY WRONG, AND THE FILE SAID SO.**
+      [`basic/PROVENANCE.md:3591`](basic/PROVENANCE.md:3591) carries an **explicit
+      standing decision**: *"EARLIER ENTRIES IN THIS FILE ARE NOT REWRITTEN,
+      DELIBERATELY … this file is a provenance log, not a description of the
+      current tree."* Rewriting its 32 hits — or the 217 in dated per-slice specs,
+      or the 48 in the retirement's OWN specs — would have **violated a documented
+      decision** and destroyed the record of how the code got here. ⚠️ **Before
+      mass-fixing a pattern, check whether the file already has a POLICY for it.**
+      ⚠️ **But the same entry makes a CHECKABLE CLAIM — *"The source comments, by
+      contrast, WERE swept"* — and that claim is what this item tested. It had
+      SURVIVORS**: [`basic/sv-bsvcas.inc:13`](basic/sv-bsvcas.inc:13) (*"the lean
+      16 KB cart **stays** byte-frozen"*), [`basic/bload.asm:71`](basic/bload.asm:71)
+      (described an `ELSE` branch that no longer exists),
+      [`Makefile:134`](Makefile:134) / [`Makefile:158`](Makefile:158) (*"the lean
+      cart **keeps** …"*) and [`Makefile:628`](Makefile:628) (*"the lean cart
+      **ships** without EQV/IMP"*, plus a `Repack-only` tag that is meaningless
+      with one build). **A completeness claim in a doc is a claim, not a
+      measurement.**
+      ⚠️ §MAXFILES is NOT covered by the log policy even though it sits above the
+      dated entry: PROVENANCE sections are **undated feature sections**, and that
+      one is demonstrably LIVE-MAINTAINED (four `2026-07-31` updates). Rewritten
+      as explicitly historical — which is what the policy itself prescribes.
+      **Left alone on purpose:** [`README.md:213`](README.md:213) and the
+      `Makefile` retirement notes (already past-tense and correct); the six
+      `Makefile` SUB_PARTS entries saying *"the lean cart's inline copy"* — those
+      are POSSESSIVE PROVENANCE identifying which body a `.inc` was carved from,
+      not a claim the cart exists, and their staleness warning is unrelated to the
+      cart and entirely current. One convention note added at the block head
+      instead of six edits, so the block does not read inconsistently.
+      **Verification proportionate to the change:** `make -n` parses, and
+      `git diff` over `basic/` contains **zero non-comment lines** — provably
+      byte-neutral, so no rebuild and no gate was run (they measure nothing about
+      a comment).
+      ⚠️ **Filed, not fixed:** the policy at `PROVENANCE.md:3591` says "earlier
+      entries", but the file is genuinely MIXED — append-only log entries *and*
+      live-maintained feature sections. That ambiguity is what made §MAXFILES
+      arguable. Sharpening the policy wording is a decision for the owner, not a
+      sweep.
+
 - [ ] **Line-number scan does not skip embedded blanks.** Found 2026-07-29 as a
       FAILING TWO-SIDED CONTROL in D-LINEMAX's `tok` battery — a confound there,
       a real divergence of its own. Byte-exact via the

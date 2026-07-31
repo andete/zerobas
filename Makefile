@@ -84,6 +84,16 @@ DISK_ROM := $(BUILD)/disk.rom
 # empty skeleton (CD header + one round-trip ping per page); real tenants arrive
 # with the eviction session. See docs/spec-basic-subrom.md.
 SUB_SRC   := sub/sub.asm
+#
+# ⚠️ NAMING NOTE, so the entries below read right: several of them identify a
+# shared `.inc` as "the lean cart's inline copy". That is PROVENANCE, not a live
+# build fact -- the lean 16 KB cart is RETIRED (2026-07-29, docs/spec-lean-
+# retire-s3-gates.md) and every one of those `.inc` files now has exactly ONE
+# home. The phrase survives because it is still the clearest way to say WHICH
+# body a file was carved out of. The staleness hazard each entry warns about is
+# unrelated to the cart and is entirely current: a sub include missing from
+# SUB_PARTS silently ships a STALE sub.rom ([[makefile-subparts-stale-tenant]]).
+#
 # basic/kwtable.inc: sub/sub.asm includes it (the sole resident copy, wave 3 --
 # see check_kwtable_identity.py); missing this prerequisite let a kwtable-only
 # edit silently ship a STALE sub.rom (caught 2026-07-12, math pack slice 1a: a
@@ -131,9 +141,9 @@ SUB_SRC   := sub/sub.asm
 # inline copies) -- same staleness hazard, same fix.
 # sub/dirverb.asm (KILL/NAME directory-verb I/O bodies, docs/spec-evict-
 # diskfile-cluster.md §12, Phase 2): a self-contained tenant (no new .inc -- it
-# reuses fatprim's already-listed primitive bodies sub-locally); the lean cart
-# keeps its verb-body copies inline in basic/files.asm -- same staleness hazard,
-# same fix.
+# reuses fatprim's already-listed primitive bodies sub-locally); until the lean
+# cart retired it kept its verb-body copies inline in basic/files.asm -- same
+# staleness hazard, same fix.
 # sub/randio.asm + basic/randio-body.inc + basic/fld-fill-body.inc (fat_rand_*
 # random-access record engine, docs/spec-eviction-g4-space.md §3, carve #1 of
 # the G4-space eviction slice): the tenant body + its two shared .inc files
@@ -155,8 +165,9 @@ SUB_SRC   := sub/sub.asm
 # copies the tenant needs sub-locally -- same staleness hazard, same fix.
 # sub/fldlook.asm (the FIELDed-variable READ hook's pure-RAM half, docs/
 # decision-clearpool-funding.md -- the D-CLP funding carve): a self-contained
-# tenant (no shared .inc; the lean cart keeps its own differently-shaped inline
-# copy in basic/field.asm) -- same staleness hazard, same fix.
+# tenant (no shared .inc; the retired lean cart had kept its own
+# differently-shaped inline copy in basic/field.asm) -- same staleness hazard,
+# same fix.
 # sub/fcbname.asm + basic/fcbname-body.inc (disk 8.3-FCB-name builder
 # build_83_name, docs/spec-basic-interrupt-traps.md §10.4, the interrupt-traps
 # T1 funding carve): the tenant body + its shared .inc file (the lean cart's
@@ -625,7 +636,7 @@ kwsweep: repack-machine
 # slice. It is falsifiable by construction: deleting the `cpl` from lg_eqv takes it
 # from 156/156 to 115/156.
 #
-# Repack-only (the lean cart ships without EQV/IMP) + oracle-dependent (boots
+# Oracle-dependent (boots
 # openMSX; needs your VG-8020 reference ROM); NOT part of `unit-test`.
 logicops-characterize: repack-machine
 	python3 probes/basic/basic_probe_logicops.py \

@@ -2114,9 +2114,13 @@ both are gone. `docs/spec-basic-filechan-alloc.md`:
 * `MAXFILES` also **CLEARs variables unconditionally**, even when the value does
   not change — measured on the CF-3300, and required for safety here anyway
   since the statement moves the variable region's ceiling.
-* ⚠️ **The lean 16 KB cart keeps the old static `[state][buffer]` table at
-  `FCH_CTX = $EA00` with `FCH_CEIL = 2`** — it is byte-full, and byte-identity
-  is a build gate. Everything above is `IF ROM_BASE < $4000`.
+* *(historical)* Until 2026-07-29 everything above was gated `IF ROM_BASE <
+  $4000`, because the lean 16 KB cart kept the old static `[state][buffer]`
+  table at `FCH_CTX = $EA00` with `FCH_CEIL = 2` and its byte-identity was a
+  build gate. **That cart is retired** and there is now one build
+  ([`docs/spec-lean-retire-s3-gates.md`](../docs/spec-lean-retire-s3-gates.md));
+  the dynamic table above is simply what ships. Nothing here constrains new
+  channel-table work.
 
 The DEFAULT is
 `MAXFILES = 1` (observed: `OPEN #1` works with no MAXFILES on the CF-3300). Like

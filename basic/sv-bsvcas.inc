@@ -9,13 +9,13 @@
 ; BLOAD's mirror, and the same mechanism: beside fatprim_tenant the FAT12 write
 ; primitives are in-page calls instead of cross-slot round trips.
 ;
-; The text is VERBATIM. basic/save.asm includes it at its ORIGINAL POSITION for
-; the repack build, so the lean 16 KB cart stays byte-frozen; the repack build
-; leaves a tenant-call stub under the SAME entry label instead, which is why the
-; `jr`/fall-through reaching it from the resident PARSE needs no edit.
+; The text is VERBATIM. It sits at its ORIGINAL POSITION — chosen so the (now
+; retired) lean 16 KB cart stayed byte-frozen when this was carved — and the
+; build leaves a tenant-call stub under the SAME entry label instead, which is
+; why the `jr`/fall-through reaching it from the resident PARSE needs no edit.
 ;
 ; `sv_load_error` is the one rebound name: resident it is a zero-byte EQU onto
-; `load_error` (so the lean bytes are unchanged), in the tenant it is the
+; `load_error` (which is what kept the then-lean bytes unchanged), in the tenant it is the
 ; sub-local reporter that sets SV_STAT and lets the resident stub report ONCE.
 ; Its `ret`-not-abort shape is preserved exactly -- see [[load-error-is-not-abort]].
 ;

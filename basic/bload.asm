@@ -67,9 +67,10 @@ load_handoff:
 ; build_83_name — convert the filename at HL into the 11-byte 8.3 field at
 ; DISK_FCB_NAME. EVICTED to a sub-ROM PAGE-1 tenant (SUBROM_IDX_FCBNAME) in the
 ; repack build to free page-1 space for the interrupt-traps T1 slice (docs/spec-
-; basic-interrupt-traps.md §10.4, D-T-8c/D-T-8d). The body is now shared
-; byte-identically via basic/fcbname-body.inc: inline here for the lean 16 KB
-; cart (ELSE, byte-frozen), sub-ROM-resident in the tenant. The casmatch /
+; basic-interrupt-traps.md §10.4, D-T-8c/D-T-8d). The body is shared
+; byte-identically via basic/fcbname-body.inc, which is now included from the
+; ONE home (sub-ROM-resident in the tenant); until 2026-07-29 an `ELSE` branch
+; also inlined it here for the byte-frozen lean 16 KB cart. The casmatch /
 ; cas_open_match precedent.
 ; --- build_83_name: resident marshalling shim (repack build) ----------------
 ; The body (build_83_name..bn_star_fill, basic/fcbname-body.inc) moved whole to
