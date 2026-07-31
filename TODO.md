@@ -2662,8 +2662,54 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `NameError` since the lean retirement, and one assertion now known wrong);
       its provenance citation in `basic/PROVENANCE.md` is corrected in place.
 
-- [ ] **Sweep `tests/` for rows that read RAM AFTER a runaway.** Found
-      2026-07-30 by D-CONTR, not aimed at: `test_poke.py`'s ERRMARK row had been
+- [x] **Sweep `tests/` for rows that read RAM AFTER a runaway.** ✅ **DONE
+      2026-07-31 — the class is EMPTY (0 of 5606 calls), so the deliverable is a
+      permanent harness invariant instead of N row fixes.** Spec + all
+      measurements: [`docs/spec-tests-runaway-sweep.md`](docs/spec-tests-runaway-sweep.md).
+      0 ROM bytes; `tests/` only.
+      🔴 **THE FILED RECIPE COULD NOT MEASURE THE CLASS.** It was a grep
+      (`grep -n "except" tests/*.py`), but **a runaway does not have to raise**:
+      wander into `PC=$FFFF` and it hits msxtest's sentinel, so `call()` returns
+      *normally* — no exception, nothing to swallow, no `except` to grep for. So
+      an instrument, not a pattern match: wrap `Z80.step` + `Machine.call` and
+      record min/max SP per call (nested frames propagate, so the sub-ROM bridge
+      cannot hide an inner excursion). Coverage is total — `grep "\.step(\|cpu\.pc *="`
+      over `tests/test_*.py` finds **0** code sites, so every instruction the
+      suite runs goes through `call()`.
+      **DENOMINATOR, AS-RUN:** 54 files (53 execute Z80 at all;
+      `test_msgenc.py` is a pure table reader), **5606 `Machine.call()`
+      invocations, 0 SP-lost, 0 unbalanced returns, 0 exceptions.** The whole
+      suite lives in `SP $F326…$F380` — a 90-byte excursion, 29 KB clear of the
+      RAM floor — and **every** call returns with `exit_sp` exactly `$F380`. The
+      `except` pass, for the record: 3 textual hits, **0 swallowing**. Exactly
+      one test traps an abort funnel: the repaired poke row.
+      🔴 **A DETECTOR WHOSE GREEN STATE IS "FOUND NOTHING" IS A CLAIM** — canary:
+      the pre-fix poke row rebuilt synthetically gives `min_sp=0` + the 2 M
+      runaway, so the detector cuts. **And it read `ERRMARK=$DD`, the value the
+      old row asserted** — the wrong apparatus still reproduces the "right"
+      answer ([[err21-no-resume-slice]] F3, in the test layer).
+      **The fix:** an unconditional SP-band invariant in `msxtest.Machine.call`
+      (`$8000 ≤ SP ≤ sp0`) raising `StackLost(RuntimeError)` that names
+      `ld sp,(SAVSTK)` and the remedy, plus **new** `tests/test_harness_guard.py`
+      — knife + GREEN control + the in-situ D-CONTR case. On the real path the
+      failure moved from `runaway: 2000001 steps, PC=0xe1c6` (arbitrary, a
+      symptom, *worth swallowing*) to `SP=0x0000 at PC=0x3d4a, step 325` —
+      **6,154× earlier, at the `ld sp` itself**. `make unit-test` **55/55**,
+      18.30 s vs an 18.16 s baseline (the per-step compare is free), per-file
+      breakdown identical by NAME.
+      🔴 **F2 REFUTED ITS OWN PREDICTION, AND ONLY THE ORACLE-LOCK COULD SEE IT.**
+      Dropping the floor to `$0000` still turned R3 red — but at `SP=$FFFE`,
+      337 steps: the runaway had **pushed at `SP=0` and wrapped**, tripping the
+      *ceiling* 12 steps behind the floor. Because R3 asserts `sp == 0x0000` —
+      the CAUSE — that read as RED. Had it asserted merely *"`StackLost` was
+      raised"*, **F2 would have read GREEN and scored the floor as unnecessary**,
+      shipping an invariant that caught the class late, by a wrapped SP, pointing
+      at the wrong address. F4 also came back narrower than predicted: the
+      `RuntimeError` base is **not** what makes a stack loss loud (`run.py` sees
+      a nonzero exit either way) — it is what keeps the *rest of the file
+      measuring* (3/3 cases reached vs dying on case 0).
+      *Original filing (2026-07-30 by D-CONTR, not aimed at):*
+      `test_poke.py`'s ERRMARK row had been
       asserting on *whatever a byte held after 2,000,000 steps of the CPU
       executing the ROM from an arbitrary entry point*, and it agreed for its
       whole life until an unrelated 19-byte page-1 shift moved where the runaway

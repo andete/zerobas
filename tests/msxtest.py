@@ -23,6 +23,44 @@ _SENTINEL = 0xFFFF          # return address that marks "the routine returned"
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SUB_CACHE = {}             # process-wide cache of the assembled sub-ROM bytes
 
+# Floor of the stack band call() owns. RAM starts at $8000 and call() puts its
+# own stack at $F380, so anything below this means SP was loaded from memory
+# that is NOT a stack. Measured headroom: the whole 54-file suite (5606 calls)
+# lives in $F326..$F380 -- a 90-byte excursion, 29 KB clear of this floor.
+# docs/spec-tests-runaway-sweep.md §2.3.
+_SP_FLOOR = 0x8000
+
+
+class StackLost(RuntimeError):
+    """SP left the band call() owns -- the row is measuring a RUNAWAY.
+
+    🔴 THIS EXISTS BECAUSE A GREEN ROW MEASURED A RUNAWAY FOR ITS WHOLE LIFE.
+    The abort funnel does `ld sp,(SAVSTK)`, and SAVSTK is 0 in this harness's
+    zeroed RAM, so the funnel's tail `ret` pops from $0000 and the CPU runs away
+    through memory. test_poke.py's ERRMARK row did `try: m.call(...) except:
+    pass` and then read RAM, i.e. it asserted on whatever a byte held after
+    2,000,000 steps of executing the ROM from an arbitrary entry point. It
+    agreed until an unrelated 19-byte page-1 shift moved where the runaway
+    landed (D-CONTR, docs/spec-basic-cont-record.md §5.5).
+
+    The 2,000,000-step guard DID fire on every one of those runs. It was
+    swallowed because its message -- `runaway: 2000001 steps, PC=$e1c6` -- names
+    the arbitrary landing address, i.e. the SYMPTOM. This fires at the `ld sp`
+    itself, names the CAUSE, and tells the reader what to do instead.
+
+    A subclass of RuntimeError on purpose: test_stmt_dispatch.py catches
+    RuntimeError around its dispatch calls and reports it as a test failure, so
+    a stack loss stays LOUD there rather than becoming an unhandled traceback.
+    Deliberately unconditional -- there is no opt-out keyword. A test that
+    legitimately models a real SAVSTK unwind sets SAVSTK to a plausible stack
+    (>= $8000, <= the call's own SP), which passes this band as it stands.
+    docs/spec-tests-runaway-sweep.md §3.1.
+    """
+
+    def __init__(self, msg, sp, pc, steps, where):
+        super().__init__(msg)
+        self.sp, self.pc, self.steps, self.where = sp, pc, steps, where
+
 
 def _build_subrom():
     """Assemble sub/sub.asm once per process -> (full 32 KB bytes, symbols). The
@@ -192,20 +230,43 @@ class Machine:
             setattr(cpu, k, v)
         if not keep_sp:
             cpu.sp = 0xF380     # keep_sp=True: reuse the caller's stack (nested run,
-        cpu.push(_SENTINEL)     #   e.g. the subrom bridge) so it doesn't stomp it
+        sp0 = cpu.sp            #   e.g. the subrom bridge) so it doesn't stomp it
+        cpu.push(_SENTINEL)     # sp0 = the frame this call owns; SP may never rise
         cpu.pc = name_or_addr if isinstance(name_or_addr, int) else self.sym[name_or_addr]
+        entry = name_or_addr if isinstance(name_or_addr, str) else f"{name_or_addr:#06x}"
         steps = 0
         while cpu.pc != _SENTINEL:
             fn = self.traps.get(cpu.pc)
             if fn is not None:
                 fn(self)               # model the trapped routine's effect
                 cpu.pc = cpu.pop()     # ...and return to the caller
+                if not _SP_FLOOR <= cpu.sp <= sp0:
+                    self._stack_lost(sp0, steps, entry, "the trap return")
                 continue
             cpu.step()
             steps += 1
+            # THE STACK-BAND INVARIANT. One range compare per step; see StackLost.
+            if not _SP_FLOOR <= cpu.sp <= sp0:
+                self._stack_lost(sp0, steps, entry, f"step {steps}")
             if steps > max_steps:
                 raise RuntimeError(f"runaway: {steps} steps, PC={cpu.pc:#06x}")
         return cpu
+
+    def _stack_lost(self, sp0, steps, entry, where):
+        """Report a band violation naming the CAUSE and the fix (see StackLost)."""
+        cpu = self.cpu
+        raise StackLost(
+            f"SP left the harness stack band [{_SP_FLOOR:#06x},{sp0:#06x}]: "
+            f"SP={cpu.sp:#06x} at PC={cpu.pc:#06x}, {where} of call({entry!r}).\n"
+            "  The routine loaded SP from memory that is not a stack -- almost "
+            "always `ld sp,(SAVSTK)`\n  with SAVSTK=0 in this harness's zeroed "
+            "RAM, i.e. the error-abort funnel. From here the CPU\n  RUNS AWAY, so "
+            "anything this row reads AFTER the call measures the runaway and not "
+            "the\n  routine under test. Fix the TEST, not the ROM: trap the funnel "
+            "(fre_abort_low /\n  raise_error) and sample the state THERE, at the "
+            "moment the row is actually about.\n"
+            "  See docs/spec-tests-runaway-sweep.md and tests/test_harness_guard.py.",
+            cpu.sp, cpu.pc, steps, where)
 
 
 # convenience flag accessors for assertions
