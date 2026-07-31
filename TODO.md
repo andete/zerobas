@@ -2728,16 +2728,80 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       is really about, sample there, and drop the guard so a real runaway is
       LOUD. See [`docs/spec-basic-cont-record.md`](docs/spec-basic-cont-record.md) §5.5.
 
-- [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
-      Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.
-      `OPEN "ZQ.DAT" FOR OUTPUT AS #1 : PRINT LOF(1)` → **0** on the CF-3300,
-      **−1** on zerobas; still −1 after `PRINT #1,"ABCDE"`. The two-sided
-      control agrees on both machines (`OPEN "HI.TXT" FOR INPUT` → **26**), so
-      this is neither apparatus nor a broken `LOF` — it is specific to a
-      channel opened FOR OUTPUT on a file that did not previously exist.
-      −1 = `$FFFF` smells like an uninitialized size field being reported.
-      Gated by `diskbasic_probe_chancost.py` case `lof_new`; see
-      [`docs/chancost-cf3300-characterization.md`](docs/chancost-cf3300-characterization.md) §7.1.
+- [x] ✅ **D-LOF — `LOF(#n)` reads −1 on a freshly-created OUTPUT channel.
+      LANDED 2026-07-31, +6 B main page 1, 16/16 rows, falsified F1–F3.**
+      Spec [`docs/spec-basic-lof-size-field.md`](docs/spec-basic-lof-size-field.md),
+      characterization [`docs/lof-cf3300-characterization.md`](docs/lof-cf3300-characterization.md),
+      gate `make lof-acceptance` (new). `make chancost-characterize` is now
+      **39 cases / 0 filed** — its `KNOWN_DIVERGE` allowlist is EMPTY.
+      🔴 **THE −1 WAS A STALE READING, NOT A SENTINEL, AND THE ROWS THAT PROVED
+      IT WERE WRITTEN TO BE ABLE TO REFUTE THE FIX.** Open a known-size file,
+      `CLOSE`, then create: zerobas printed **26** and **2048** — the previous
+      file's size. `fat_find` writes `FAT_FILESIZE` only when a file is FOUND, so
+      no create path wrote it at all and `LOF` returned whatever the previous
+      tenant of the `FCH_STATE0` span left. `$FFFF` was just the cold-boot content
+      of the cell; nothing ever stored it. Had either row also printed −1 the
+      whole diagnosis would have been wrong.
+      🔴 **THE DENOMINATOR WAS 3 SITES, NOT 1** — `fat_io_create` (OUTPUT, and
+      APPEND-of-missing which jumps into it), `fat_rand_open`'s `fro_create`
+      (RANDOM-of-missing), and `frnd_update_size` (a RANDOM `PUT` must GROW it).
+      Only the first costs main ROM; the other two live in a sub-only body. F1–F3
+      each deleted one edit and the other two rows stayed GREEN, so all three are
+      independently load-bearing — and F3's `rand_put` fell to **0**, not −1,
+      which is what showed (b) and (c) were separate facts.
+      🔴 **THE ROW DESIGNED TO SEPARATE THE TWO CANDIDATE RULES FAILED; A
+      DENOMINATOR ROW DID IT.** "0 on a new OUTPUT channel" is predicted equally
+      by "the field is zeroed at OPEN" and by "`LOF` computes from the directory".
+      `exist_out` (existing 26-byte file opened FOR OUTPUT) was written to split
+      them and could not — the reference truncates the directory entry at OPEN
+      too, so both rules predict 0 on both instruments. `rand_put` split them:
+      the reference prints **`LOF` = 256 while its directory still holds 0**.
+      🔴 **THE APPARATUS WAS WRONG THREE TIMES BEFORE THE SUBJECT WAS WRONG
+      ONCE.** (1) At the chancost cadence the CF-3300 DROPPED keystrokes after
+      any disk-busy line — `PRINT LOF(1)` arrived as `PRO)` and earned a
+      completely real `Syntax error`, reported as two reference divergences; at
+      9.0 s zerobas began DOUBLING the first character instead. (2) The echo guard
+      written to catch that flagged **10 of 16 rows with perfect screens**: the
+      name table is 32 cells but Disk BASIC boots SCREEN 1 at `linlen=$1d` = 29,
+      so long lines WRAP. (3) Slicing rows to `linlen` was wrong too — the
+      reference indents SCREEN 1 by a left margin of **2**. It is right only now
+      that it assumes no geometry at all. **And the version that "worked" still
+      passed a mangled row**: with whitespace squeezed out, `ZBPPRINT LOF(1)`
+      *contains* `PRINTLOF(1)` — **a guard against DROPPED text is not a guard
+      against INSERTED text.** It is prompt-anchored now, and was falsified RED on
+      both bad captures and GREEN on five clean ones before being believed.
+      A `MANGLED` row is fatal with or without `--gate`: two mangled sides compare
+      equal and would otherwise print `agree`.
+
+- [ ] **`OPEN … FOR APPEND` on a MISSING file creates it; the reference refuses.**
+      Found 2026-07-31 by D-LOF's denominator rows, not aimed at. Measured on the
+      CF-3300: `OPEN "ZQ.DAT" FOR APPEND AS #1` on a file that does not exist
+      raises **`File not found`**, leaves the channel CLOSED (the following
+      `LOF(1)` reports ERR 59) and — confirmed by reading the machine's own disk
+      image afterwards — **makes no directory entry at all**. zerobas creates the
+      file and opens the channel, because `fat_io_append` does
+      `jp c,fat_io_create` on a `fat_find` miss
+      ([`basic/fat.asm:286`](basic/fat.asm:286)).
+      ⚠️ [`basic/fat.asm:270`](basic/fat.asm:270) states the CURRENT behaviour as
+      settled — *"A missing file is created (append == create)"* — and cites
+      `disk_probe_append.py` for CF-3300 parity. **That probe only ever appends to
+      an EXISTING file, so it never covered this case**: the parity claim is real
+      for what it measured and simply does not reach here. Fix that comment too.
+      Likely **−2 B** (`jp c,fat_io_create` → `ret c`), but confirm the error
+      CLASS that comes out of `oo_fail`/`load_error` is `File not found` and not
+      something else — that is the whole point of the row.
+      Gated by `diskbasic_probe_lof.py` case `append_new`, allowlisted in
+      `KNOWN_DIVERGE` naming this item; see
+      [`docs/lof-cf3300-characterization.md`](docs/lof-cf3300-characterization.md) §4.
+
+- [ ] **`diskbasic_probe_chancost.py` has no echo guard.** Its rows are short
+      `PRINT FRE(0)` reads and it has been stable for many sessions, but it types
+      into the same CF-3300 that D-LOF caught dropping and doubling keystrokes,
+      at the very cadence (4.5 s) where that was measured to happen — and a
+      mangled line there would read as an `FRE(0)` finding, not as an apparatus
+      failure. Port `echo_missing` + the per-side prompt from
+      `diskbasic_probe_lof.py`. Cheap, and it makes the ladder's numbers
+      attributable rather than merely stable.
 
 - [ ] **Over-ceiling `MAXFILES` raises the wrong error class.** `MAXFILES=16` →
       reference **`Illegal function call`** (ERR 5); zerobas raises **`syntax

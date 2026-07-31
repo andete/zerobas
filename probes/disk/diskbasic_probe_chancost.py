@@ -287,10 +287,19 @@ KNOWN_DIVERGE = {
     # err_badchan was never an ERR 52 fact at all: line 20's `MAXFILES=1`
     # suppressed its handler on the reference and not on zerobas, so the
     # reference reported past the handler while zerobas trapped and printed 52.
-    # Filed separately in TODO.md: LOF on a freshly-created OUTPUT channel reads
-    # -1 where the reference reads 0. A LOF bug, not an allocation one -- its
-    # two-sided control `lof_existing` agrees at 26 on both machines.
-    "lof_new":     (0, -1),
+    #
+    # ✅ D-LOF LANDED 2026-07-31 (docs/spec-basic-lof-size-field.md): the LAST
+    # entry, `lof_new`, is gone -- `LOF` on a freshly-created OUTPUT channel now
+    # reads 0 on both machines. It was never an allocation fact either: the
+    # per-channel size field simply had no writer on any CREATE path, so `LOF`
+    # returned whatever the previous tenant of the FCH_STATE0 span left (measured
+    # at 26 and 2048 -- the -1 was only the cold-boot content of the cell). Three
+    # sites, not one; the full battery lives in `diskbasic_probe_lof.py`.
+    #
+    # ⚠️ THE LIST IS EMPTY, AND AN EMPTY ALLOWLIST IS THE POINT: an allowlist that
+    # must keep MATCHING is a control, one that only suppresses is rot. Every row
+    # in this probe must now agree, and any entry added here has to name the item
+    # that owns it.
 }
 
 

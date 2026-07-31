@@ -1969,8 +1969,21 @@ as `$FF`-prefixed function factors in `ev_f_ff`, alongside PEEK/VPEEK/INP.
 - **`EOF(#n)`** — returns -1 ($FFFF) once every byte of the open input file has
   been delivered (`FREAD_LEFT`, the read engine's 4-byte undelivered-count, == 0),
   else 0. The channel argument is parsed but ignored (single channel).
-- **`LOF(#n)`** — returns the open file's length in bytes: `FAT_FILESIZE` (set by
-  `fat_find` at OPEN), low 16 bits. Argument parsed + ignored.
+- **`LOF(#n)`** — returns the open file's length in bytes: `FAT_FILESIZE`, low 16
+  bits. Argument parsed + ignored.
+  **D-LOF (2026-07-31, `docs/spec-basic-lof-size-field.md`)**: `fat_find` sets that
+  field only when a file is FOUND, so until this slice every CREATE path left it
+  holding the previous tenant of the `FCH_STATE0` span — measured at 26 and at
+  2048, and at `$FFFF` (= −1) after a cold boot, which is where the filed
+  "`LOF` reads −1" came from. Nothing ever stored `$FFFF`. Now zeroed in
+  `fat_io_create` and in `fat_rand_open`'s create arm, and grown by
+  `frnd_update_size` on a RANDOM `PUT`. **Measured rule** (CF-3300,
+  `docs/lof-cf3300-characterization.md`): the field is in RAM, **not** read from
+  the directory — after `PUT #1,1` the reference reports `LOF` = 256 while the
+  on-disk directory entry still holds 0 — seeded at OPEN (directory size for an
+  existing file, 0 for a created one), unmoved by a sequential `PRINT #`, grown by
+  a RANDOM `PUT`. The directory is stamped from `FWR_BYTES` at CLOSE, never from
+  this field, so it cannot reach the disk.
 
 **Tokens** `EOF = $FF $AB`, `LOF = $FF $AD` — oracle-LOCKED byte-identical to the
 Philips VG-8020 crunch (`basic_probe_crunch.py`: `a=eof(1)`→`… FF AB 28 12 29`;

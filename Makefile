@@ -1112,6 +1112,38 @@ chancost-characterize: repack-machine
 	        $(if $(ONLY),--only '$(ONLY)',) $(if $(SIDE),--side $(SIDE),) \
 	        $(if $(V),-v,)
 
+# --- LOF(#n) SIZE-FIELD characterization + gate (D-LOF) -----------------------
+# docs/spec-basic-lof-size-field.md, docs/lof-cf3300-characterization.md.
+#
+# What LOF reports for EVERY way a channel can be opened -- INPUT / OUTPUT /
+# APPEND / RANDOM, on an existing file and on a missing one -- because the filed
+# TODO row walked ONE of those paths and three of them were broken. Oracle-
+# dependent: needs your CF-3300 reference ROMs.
+#
+# TWO INSTRUMENTS: the LOF reading off the screen, and the on-disk FAT12
+# DIRECTORY of the machine's own scratch image. Only the second could separate
+# "the size field is zeroed at OPEN" from "LOF computes from the directory" --
+# the reference prints 256 after a RANDOM PUT while its directory still holds 0.
+#
+# ⚠️ TYPED LINES GET MANGLED HERE and a mangled line earns a completely REAL
+# `Syntax error`. At chancost's 4.5 s cadence the CF-3300 dropped whole chunks
+# after any disk-busy line; at 9.0 zerobas doubled the first character instead.
+# The cadence is 14.0 s AND every row is echo-guarded: a typed line that is not
+# on screen returns MANGLED, which is fatal with or without --gate (two mangled
+# sides would otherwise compare equal and print `agree`).
+lof-characterize: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
+	  python3 probes/disk/diskbasic_probe_lof.py \
+	        $(if $(ONLY),--only '$(ONLY)',) $(if $(SIDE),--side $(SIDE),) \
+	        $(if $(V),-v,)
+
+# `lof-acceptance` adds --gate: oracle drift on the reference column, or any
+# divergence not in the probe's KNOWN_DIVERGE allowlist, fails the run.
+lof-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
+	  python3 probes/disk/diskbasic_probe_lof.py --gate \
+	        $(if $(ONLY),--only '$(ONLY)',) $(if $(V),-v,)
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
@@ -1267,4 +1299,5 @@ clean:
         clearpool-characterize clearpool-acceptance \
         width-characterize width-acceptance \
         arrdim-characterize arrdim-acceptance \
-        linemax-characterize linemax-acceptance chancost-characterize clean
+        linemax-characterize linemax-acceptance chancost-characterize \
+        lof-characterize lof-acceptance clean

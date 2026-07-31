@@ -169,7 +169,15 @@ every error row and bury the real findings.
 
 ## 7. Incidental findings (found by the controls, not aimed at)
 
-### 7.1 🔴 `LOF(#n)` on a freshly-created OUTPUT channel
+### 7.1 ✅ `LOF(#n)` on a freshly-created OUTPUT channel — FIXED 2026-07-31
+
+> **LANDED as D-LOF** ([`spec-basic-lof-size-field.md`](spec-basic-lof-size-field.md),
+> [`lof-cf3300-characterization.md`](lof-cf3300-characterization.md)). `lof_new`
+> now reads **0** on both machines and has left this probe's `KNOWN_DIVERGE`,
+> which is now EMPTY. The guess recorded below was right in outline and wrong in
+> its scope: the field is uninitialised on **three** create paths, not on the one
+> this row walks, and −1 is not a marker of anything — it is a **stale reading**,
+> measured at 26 and at 2048 when a known-size file was opened and closed first.
 
 | row | reference | zerobas |
 |---|---|---|

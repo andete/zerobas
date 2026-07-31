@@ -42,5 +42,17 @@ fat_io_create:
                 ld      (FWR_BUFLEN), hl
                 ld      (FWR_BYTES), hl
                 ld      (FWR_BYTES + 2), hl
+                ; D-LOF (docs/spec-basic-lof-size-field.md §4a): the LOF field
+                ; too. FAT_FILESIZE is written ONLY by fat_find, i.e. only when a
+                ; file is FOUND, so before this a created channel reported
+                ; whatever the previous tenant of the FCH_STATE0 span left --
+                ; MEASURED at 26 and at 2048 (docs/lof-cf3300-characterization.md
+                ; §2). The famous -1 was just the cold-boot content of the cell;
+                ; nothing ever stored $FFFF. A created file is 0 bytes until
+                ; CLOSE stamps the directory, and the reference agrees (0, and
+                ; still 0 after a PRINT #). All four bytes: it is a size field,
+                ; and a half-initialised one is the same defect one reader away.
+                ld      (FAT_FILESIZE), hl
+                ld      (FAT_FILESIZE + 2), hl
                 or      a                   ; Cy = 0 success
                 ret

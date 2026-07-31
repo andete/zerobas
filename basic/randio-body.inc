@@ -86,6 +86,12 @@ fro_create:
                 ld      (FWR_FIRST),hl
                 ld      (FWR_BYTES),hl
                 ld      (FWR_BYTES+2),hl
+                ; D-LOF §4b: the LOF field too. The FOUND arm above gets it from
+                ; fat_find; this arm is the RANDOM half of the same create-path
+                ; hole fat_io_create had, and it is why `OPEN "ZQ.DAT" AS #1 :
+                ; PRINT LOF(1)` read a stale size. Sub-only body -- 0 main bytes.
+                ld      (FAT_FILESIZE),hl
+                ld      (FAT_FILESIZE+2),hl
 fro_fill:
                 call    fld_fill_record     ; record buffer = spaces
                 or      a                   ; Cy = 0 success
@@ -383,8 +389,16 @@ frnd_update_size:
                 ret     c                   ; new < current -> keep
                 ret     z                   ; equal -> keep
                 ld      (FWR_BYTES),hl      ; grow to recno*reclen
+                ; D-LOF §4c: keep LOF's size field in step. MEASURED on the
+                ; CF-3300 (docs/lof-cf3300-characterization.md §3): after
+                ; `PUT #1,1` the reference reports LOF = 256 while the on-disk
+                ; DIRECTORY entry still holds 0 -- which is also the row that
+                ; refuted "LOF reads the directory". A RANDOM PUT moves the field
+                ; live; a sequential PRINT # does NOT (and must not).
+                ld      (FAT_FILESIZE),hl
                 ld      hl,0
                 ld      (FWR_BYTES+2),hl
+                ld      (FAT_FILESIZE+2),hl
                 ret
 
 ; fat_rand_get — read record GP_RECNO into the record buffer (FSECTOR_BUF[0..256)).
