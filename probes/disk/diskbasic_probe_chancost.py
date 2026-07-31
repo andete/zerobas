@@ -208,6 +208,65 @@ CASES = [
                     "40 END", "100 PRINT 7777", "RUN"]),
     ("clr_ctl",    ["10 ON ERROR GOTO 100", "20 REM CLEAR", "30 B=SQR(-1)",
                     "40 END", "100 PRINT 7777", "RUN"]),
+
+    # --- D-MFDOM: the MAXFILES ARGUMENT DOMAIN (docs/spec-basic-maxfiles-domain.md).
+    # ⚠️ `mf16`/`mf255` are the ONLY reject rows above, and BOTH have a zero high
+    # byte -- so both land on the SAME arm of ex_maxfiles (basic/files.asm):
+    #
+    #       ld a,d / or a  / jp nz,gb_illegal   <-- arm A: NEVER EXECUTED by any
+    #       ld a,e / cp 16 / jp nc,gb_illegal   <-- arm B: what 16 and 255 hit
+    #                                                test, on either machine
+    #
+    # and ex_maxfiles reaches its argument through `eval` (expr.asm), NOT through
+    # get_byte_arg. get_byte_arg is the reference-faithful path -- int16 check
+    # first (ERR 6 Overflow), then the 0..255 test (ERR 5). `eval`'s own header
+    # says "unsigned 16-bit, low-word on overflow" and has no int16 stage at all,
+    # so 65536 could WRAP TO 0 and be SILENTLY ACCEPTED. Measured, not argued.
+    #
+    # Every accept-side row asks `PRINT FRE(0)` so an accepted value is read off
+    # the SAME ladder as mf0..mf15 -- the row then distinguishes WHICH value was
+    # accepted instead of merely reporting "no error". 1.5 truncating to 1 and
+    # 1.5 rounding to 2 are different numbers; a row that could not tell them
+    # apart would agree for either reason.
+    ("mfd_300",   ["MAXFILES=300", "PRINT FRE(0)"]),      # arm A, first row ever
+    ("mfd_65536", ["MAXFILES=65536", "PRINT FRE(0)"]),    # the wrap: accept or raise?
+    ("mfd_70000", ["MAXFILES=70000", "PRINT FRE(0)"]),    # >int16, not a power of 2
+    ("mfd_neg",   ["MAXFILES=-1", "PRINT FRE(0)"]),       # negative
+    ("mfd_neg16", ["MAXFILES=-16", "PRINT FRE(0)"]),      # negative, in-range magnitude
+    # --- the FRACTIONAL rows: truncate or round? Two corrections are baked in.
+    #
+    # ⚠️ 2.5, NOT 1.5. `MAXFILES=1.5` was typed first and read 23430 on the
+    # reference -- which is mf1, and 1 IS THE BOOT DEFAULT, so that cell cannot
+    # separate "1.5 truncated to 1" from "the statement did nothing at all". It
+    # is the same hole this probe's header already flags for the `mf1` row.
+    #
+    # ⚠️ AND THE READOUT IS NOT FRE(0). Absolute FRE(0) is not comparable between
+    # machines (different RAM maps -- that is why the ladder rows are COMPARE
+    # "absfre", i.e. informational), so a fractional row read off FRE(0) would
+    # gate NOTHING on zerobas: it would print "informational" and the truncation
+    # rule -- the entire point of the row -- would go unmeasured on the very
+    # machine under test. Both rows therefore read out through the CHANNEL-NUMBER
+    # range instead, which is a CLASS on both machines:
+    #   mfd_frac   -- 2.5 truncates to 2 => #3 is Bad file number;
+    #                 2.5 rounds   to 3 => #3 opens and 7777 prints.
+    #   mfd_frac15 -- 15.9 truncates to 15 => accepted, 7777 prints;
+    #                 15.9 rounds   to 16 => over the ceiling, IFC.
+    ("mfd_frac",  ["MAXFILES=2.5", 'OPEN "HI.TXT" FOR INPUT AS #3',
+                   "PRINT 7777"]),
+    # ...and its GREEN CONTROL: the identical shape with an INTEGER 3. It must
+    # read 7777 on both machines, or mfd_frac's BFN is measuring "#3 cannot be
+    # opened here" rather than "2.5 truncated".
+    ("mfd_frac_ctl", ["MAXFILES=3", 'OPEN "HI.TXT" FOR INPUT AS #3',
+                      "PRINT 7777"]),
+    ("mfd_frac15", ["MAXFILES=15.9", "PRINT 7777"]),      # fractional AT the boundary
+    # over-ceiling reached by an EXPRESSION rather than a literal -- paired with
+    # mf16 as its control: if 8+8 reads differently from 16, the divergence is in
+    # the hand-off from eval, not in the domain test.
+    ("mfd_expr",  ["MAXFILES=8+8", "PRINT FRE(0)"]),
+    # the SYNTAX arm, and the green control for the whole battery: it proves the
+    # IFC readings above are a DOMAIN verdict and not the machine erroring at
+    # everything typed at it.
+    ("mfd_noeq",  ["MAXFILES 2", "PRINT FRE(0)"]),
 ]
 
 # The reference's own recorded answers. Re-checking that the oracle still
@@ -260,6 +319,24 @@ REF_EXPECT = {
     "mf_ctl":      7777,     # ...and with MAXFILES REMmed out it DOES run
     "clr_disarm":  "IFC",
     "clr_ctl":     7777,
+    # --- D-MFDOM: the argument domain, MEASURED on the CF-3300 2026-07-31 and
+    # written down BEFORE zerobas was run on a single one of these rows, so the
+    # oracle cannot have been back-fitted to whatever zerobas happens to do.
+    # (memory: validate-oracle-artifacts / vacuous-gate-row-steers-not-just-misses)
+    # The three rules these nine readings pin:
+    #   1. out of int16          -> ERR 6  Overflow      (65536, 70000)
+    #   2. in int16, out of 0..15-> ERR 5  Illegal fn    (300, -1, -16, 8+8)
+    #   3. fractional            -> TRUNCATES, then rule 1/2 on the integer
+    "mfd_300":     "IFC",
+    "mfd_65536":   "OVF",    # ⚠️ NOT IFC -- the reference distinguishes the two
+    "mfd_70000":   "OVF",
+    "mfd_neg":     "IFC",
+    "mfd_neg16":   "IFC",
+    "mfd_frac":    "BFN",    # 2.5 -> 2, so #3 is out of range
+    "mfd_frac_ctl": 7777,    # ...and an integer 3 DOES open #3
+    "mfd_frac15":  7777,     # 15.9 -> 15, accepted (rounding would be IFC)
+    "mfd_expr":    "IFC",
+    "mfd_noeq":    "SYNTAX",
 }
 
 # Error CLASSES, not wordings. zerobas prints its OWN lowercase messages by
@@ -274,6 +351,11 @@ ERR_CLASSES = {
     "BFN":    ("bad file number",),
     "FNO":    ("file not open",),
     "OOM":    ("out of memory",),
+    # D-MFDOM: the argument-domain rows can legitimately land on either of these
+    # and NEITHER was classifiable before. An unclassified error line reads as
+    # "no number on screen" -- see NOREAD below for why that is fatal.
+    "OVF":    ("overflow",),          # ERR 6 -- what an out-of-int16 arg raises
+    "TM":     ("type mismatch",),     # ERR 13 -- a non-numeric argument
 }
 
 # How each case is compared between the two machines:
@@ -500,6 +582,16 @@ def run_case(side: str, label: str, lines, step: float = 4.5):
     missing = echo_missing(r1 if scrmod == 1 else r0, lines, prompt)
     if missing:
         return (side, label, "MANGLED", rows + [f"NOT ECHOED: {missing!r}"], meta)
+    return side, label, read_value(rows), rows, meta
+
+
+def read_value(rows):
+    """Screen lines -> the row's reading: an error CLASS, an int, or NOREAD.
+
+    Split out of run_case so the NOREAD guard can be falsified on synthetic
+    screens without booting a machine (the same way the echo guard's K2 battery
+    is run). Nothing else about the derivation changed.
+    """
     value = None
     for r in rows:                                   # an error outranks a number
         cls = err_class(r)
@@ -507,8 +599,21 @@ def run_case(side: str, label: str, lines, step: float = 4.5):
             value = cls
     if value is None:
         nums = [int(r) for r in rows if re.fullmatch(r"-?\d+", r)]
-        value = nums[-1] if nums else None
-    return side, label, value, rows, meta
+        # ⚠️ NOREAD, not None. EVERY case in this probe is expected to put either
+        # a number or a KNOWN error class on screen -- that is what its REF_EXPECT
+        # entry is. A screen carrying neither is a screen this probe cannot read,
+        # and the overwhelmingly likely cause is an error message that is not in
+        # ERR_CLASSES (before D-MFDOM, `Overflow` and `Type mismatch` were both
+        # unclassified, and the domain rows below can raise either).
+        #
+        # Returning None for that is the SAME failure the TIMEOUT/NOCAPTURE paths
+        # above were fixed for, one layer further in: None is not distinguishable
+        # from "a clean screen with no number on it", so an unreadable ROW on BOTH
+        # machines compares EQUAL and prints `agree` -- a row that measured
+        # nothing, reported as a pass. (memory: a sentinel that also means "no
+        # reading" is not a measurement; gate-can-be-green-while-measuring-nothing)
+        value = nums[-1] if nums else "NOREAD"
+    return value
 
 
 def main() -> int:
@@ -552,8 +657,9 @@ def main() -> int:
         # print `agree` (gate-can-be-green-while-measuring-nothing), and a
         # mangled REFERENCE row would otherwise be reported as ORACLE DRIFT --
         # loud, but blaming the CF-3300 for the typing. Attribution is the point.
-        if {rv, zv} & {"MANGLED", "TIMEOUT", "NOCAPTURE"}:
-            why = "MANGLED" if "MANGLED" in (rv, zv) else "RUN FAILED"
+        if {rv, zv} & {"MANGLED", "TIMEOUT", "NOCAPTURE", "NOREAD"}:
+            why = ("MANGLED" if "MANGLED" in (rv, zv) else
+                   "UNREADABLE SCREEN" if "NOREAD" in (rv, zv) else "RUN FAILED")
             note = f"{why} (the machine did not answer THIS line -- NOT a reading)"
             mangled.append(label)
         elif "ref" in sides and label in REF_EXPECT and rv != REF_EXPECT[label]:
@@ -594,9 +700,12 @@ def main() -> int:
         print("  Either a typed line was not echoed on screen (the machine "
               "answered a line other\n  than the one this probe meant to type, and "
               "a mangled line earns a COMPLETELY\n  REAL error message), or the run "
-              "itself did not finish (TIMEOUT / NO CAPTURE).\n  Both are APPARATUS "
-              "failures, not readings: re-run, and if a MANGLED row\n  reproduces "
-              "raise --line-delay. Every derived number is suppressed below.")
+              "itself did not finish (TIMEOUT / NO CAPTURE),\n  or the screen carried "
+              "neither a number nor a KNOWN error class (NOREAD --\n  most likely an "
+              "error message missing from ERR_CLASSES; ADD IT, do not\n  widen the "
+              "row).  All are APPARATUS failures, not readings: re-run, and if a\n  "
+              "MANGLED row reproduces raise --line-delay. Every derived number is "
+              "suppressed below.")
         return 3        # ALWAYS fatal: it is not a measurement.
 
     # --- THE DERIVED ANSWER: per-channel slope + ceiling, both machines ---
