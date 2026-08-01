@@ -362,6 +362,132 @@ EXP = [
     ("dec-ebadpct",  ["20 A=1E%"]),       # '%' normally forces INT -- skipped?
 ]
 
+# --- the `nam` battery: DOES A BLANK BREAK A VARIABLE NAME? -------------------
+# The TODO filed this as "`&B` is not a radix on MSX1 and zerobas half-crunches
+# it anyway" (`dec-bin`, §1 of the characterization):
+#
+#     20 A=&B1 1   ref -> A<EF>&B1 1     VERBATIM
+#                  zb  -> A<EF>&B1 <12>  the TRAILING 1 crunched
+#
+# ⚠️ AND THE `&` IS ALMOST CERTAINLY NOT THE SUBJECT. zerobas and both references
+# AGREE about `&`: tk_hex (basic/tokenise.inc:294) knows `&H`/`&O`, and for `&B`
+# or a bare `&` it does `dec hl` / `jp tk_copy` and copies the `&` verbatim --
+# an oracle-pinned own-design descope its own header cites (`a=&b1010` ->
+# `&B1010` ASCII on the VG-8020). The divergence is one byte further right, in
+# the text `B1 1`, where `B1` is an ordinary VARIABLE NAME.
+#
+# TWO RULES, AND EVERY ROW IS CHOSEN TO SEPARATE THEM:
+#
+#   rule K (kill)   -- zerobas today. tk_loop reloads TKNAME into B and then
+#                      ZEROES it at the top of every character; a blank reaches
+#                      tk_copy, which never sets it again, so the in-a-name flag
+#                      dies at every space and the next digit STARTS A NUMERIC
+#                      CONSTANT.
+#   rule P (persist)-- a blank is COPIED but changes no state, so the digit
+#                      behind it still CONTINUES the name: `B1 1` is the single
+#                      identifier `B11` stored verbatim, and `&` never mattered.
+#
+# ⚠️ AND `dec-oct` ALREADY ARGUES FOR P WITHOUT ANYBODY NOTICING. `20 A=&O1 7`
+# reads `A<EF><0B><01><00> <18>` on BOTH references -- the octal token is not a
+# name, so no name state survives it and the reference CRUNCHES the 7 exactly as
+# zerobas does. Same shape as `dec-bin`, opposite reading, and the only
+# difference between them is whether a NAME preceded the blank. That is P.
+#
+# So the first thing this battery does is ask the filed shape with NO `&` at all
+# (`nam-digblk`). If that diverges too, the `&` in the filed row is a red herring
+# and the item is a general tokeniser rule -- which changes both the SITE and the
+# SIZE of the fix. The `&` axis is kept anyway, as denominator: a rule stated
+# from the one row that happens to carry an `&` is a sample.
+#
+# ⚠️ THE MUST-NOT-MOVE CELLS ARE IN THE `lit`/`dec` BATTERIES, NOT HERE, and any
+# knife or gate run on this battery has to carry them: `lit-assign` (`20 A=1 0`
+# is the SINGLE literal 10 -- D-DECBLANK) and `lit-varname` (`20 A B=1` keeps its
+# blank AND still crunches the 1). Scope with ONLY=nam,lit.
+NAM = [
+    ("nam-ctl",      ["20 A=B11"]),        # CONTROL: a name with digits, no blank
+    ("nam-eqnum",    ["20 A= 1"]),         # CONTROL: a blank alone makes no name
+                                           # state -- the digit still crunches
+    # ★ THE ROW THAT DECIDES WHOSE DEFECT THIS IS: the filed shape, no '&'
+    ("nam-digblk",   ["20 A=B1 1"]),       # K -> `B1 <12>`; P -> `B1 1` verbatim
+    # ★ AND THE ROW THAT SAYS WHAT SETS THE STATE. If only nam-digblk diverges,
+    # the flag is set by a DIGIT in a name; if this one diverges too, a LETTER
+    # sets it and the rule is the whole identifier scan.
+    ("nam-letblk",   ["20 A=B 1"]),
+    ("nam-two",      ["20 A=AB 1"]),       # a two-letter name, not a one-char one
+    ("nam-run",      ["20 A=B1  1"]),      # is ANY RUN of blanks transparent?
+    ("nam-more",     ["20 A=B 1 0"]),      # TWO digits across TWO blanks: does the
+                                           # whole run continue the name, or does
+                                           # the flag survive exactly one hop?
+    ("nam-op",       ["20 A=B 1+2"]),      # an operator must still BREAK the name:
+                                           # the 2 crunches under both rules
+    # ★ `$` is a type suffix, and whether it belongs to the name decides whether
+    # this row follows nam-digblk or nam-eqnum. It separates "the in-a-name flag
+    # persists" from the cruder "everything after a letter is verbatim".
+    ("nam-sfx",      ["20 A=B$ 1"]),
+    ("nam-lval",     ["20 B1 1=5"]),       # the same shape in an LVALUE position
+    ("nam-print",    ["20 PRINT B1 1"]),   # after a KEYWORD token, not after '='
+    ("nam-dot",      ["20 A=B .5"]),       # the '.'-led literal (tokenise.inc:70,
+                                           # a one-char lookahead in the OTHER
+                                           # file) reached across a name's blank
+    # --- the `&` axis: the denominator of the filed row ----------------------
+    ("nam-amp0",     ["20 A=&B11"]),       # CONTROL: the filed shape with NO blank
+    # ★ IF `&` SETS STATE OF ITS OWN, THIS IS THE ROW THAT SAYS SO: a digit
+    # DIRECTLY behind the '&', with no name in between. P -> crunched (the '&' is
+    # inert); anything else means a second rule is hiding under the filed one.
+    ("nam-amp1",     ["20 A=&1"]),
+    ("nam-ampe",     ["20 A=&"]),          # a bare '&' at end of line
+    ("nam-ampz",     ["20 A=&Z1 1"]),      # an unknown radix letter: `Z1` is a name
+    ("nam-ampl",     ["20 A=&b1 1"]),      # lowercase, the case the filed oracle
+                                           # `a=&b1010` was actually typed in
+    # --- round 2: THE ROWS THAT SAY WHICH DEFECT EACH ROUND-1 ROW BELONGS TO ---
+    # ⚠️ ROUND 1 CAME BACK P ON EVERY ROW BUT TWO, AND BOTH OF THOSE MAKE A CLAIM
+    # ABOUT SOMETHING OTHER THAN BLANKS:
+    #
+    #   nam-dot  `20 A=B .5` -> `B .5`   the `.5` is NOT a float
+    #   nam-sfx  `20 A=B$ 1` -> `B$ <12>` the digit IS crunched
+    #
+    # Read through the blank rule alone, the first says "a blank stops a literal
+    # from starting" and the second says "a blank breaks a name after all" -- and
+    # both readings are available only because nothing here pins what those rows
+    # do with NO BLANK IN THE WAY. MS-BASIC allows `.` INSIDE an identifier
+    # (`MY.VAR`), in which case `B .5` is the variable `B.5` and the row is about
+    # the identifier CHARSET, not about blanks; and `$` is a type SUFFIX, which
+    # ends an identifier wherever it appears. Attributing either to this defect
+    # without its control is the D-MFDOM trap: closing an item on a measurement
+    # that belongs to a different one.
+    ("nam-dot0",     ["20 A=B.5"]),        # CONTROL for nam-dot: no blank. If this
+                                           # reads `B.5` verbatim then '.' is an
+                                           # IDENTIFIER character and nam-dot is a
+                                           # SEPARATE defect to be filed, not fixed
+    ("nam-sfx0",     ["20 A=B$1"]),        # CONTROL for nam-sfx: no blank
+    ("nam-sfxp",     ["20 A=B% 1"]),       # a rule stated from `$` is a sample of
+                                           # four suffixes; `%` is the second
+    # ⚠️ A KEYWORD MATCH RUNS AT EVERY POSITION (tokenise.inc:93) and deliberately
+    # leaves the in-a-name flag CLEAR, so under P the flag survives the blank and
+    # is then killed by the keyword. Nothing measured says the reference agrees,
+    # and a fix that makes blanks transparent inherits whatever this row says.
+    ("nam-kw",       ["20 A=B AND 1"]),
+    # ⚠️ A CELL THE FIX ITSELF CREATES. Under P the in-a-name flag is live when
+    # the character behind the blank arrives, and three constructs are entered
+    # WITHOUT consulting it: a keyword (nam-kw), a '.'-led literal (nam-dot) and
+    # the `&H` radix scan. Two of the three are measured above; this is the third,
+    # and it is the one that says the flag did not leak into tk_hex.
+    ("nam-amph",     ["20 A=B &H1"]),
+    # --- round 3: PLAIN PUNCTUATION, and this round exists because a KNIFE ----
+    # 🔴 EVERY ROW ABOVE REACHES tk_copy THROUGH A BLANK, AN OPERATOR OR A TYPE
+    # SUFFIX. Not one of them puts ORDINARY punctuation between a name and a
+    # digit -- and tk_copy is the fallthrough target of the `is_letter` test, so
+    # it is the single busiest exit in the whole loop. Knife K2 found the hole the
+    # hard way: the first cut of this fix parked tk_blank immediately before
+    # tk_copy, which put every punctuation character through a store of a register
+    # `match_kw` had already clobbered, and all 31 rows stayed GREEN on whatever
+    # value it happened to leave (spec §5, K2). These are the rows that would have
+    # said so directly, and the ones that keep saying it.
+    ("nam-paren",    ["20 A=B(1)"]),       # a subscript: '(' must break the name
+    ("nam-parenblk", ["20 A=B( 1)"]),      # '(' THEN a blank: the '(' clears, the
+                                           # blank preserves the CLEARED state
+]
+
 # --- the `dir` battery: DIRECT MODE, which has no stored line to read ---------
 # ⚠️ SAY-MODE ONLY, and it is here because direct mode is an EXECUTION MODE this
 # project has repeatedly found uncovered while the verbs above it read as fully
@@ -373,7 +499,24 @@ EXP = [
 # pads a non-negative number with a leading blank and a trailing one, so the two
 # readings are ` 1  0` and ` 10` -- different lengths, not just different spacing.
 DIRB = [
-    ("dir-print",    ["PRINT 1 0"]),
+    # ⚠️ THE BRACKETS ARE LOAD-BEARING AND THIS ROW HAD BEEN MISSING THEM. Every
+    # SAY_ONLY row is read by `result_span_after_echo`, which returns the text
+    # between the LAST '[' and its ']' (omsx_repl.py:518) -- so a payload that
+    # prints no brackets can only ever read `<none>`, on EVERY side, which then
+    # compares EQUAL and reports `agrees`. That is the same shape as the
+    # chancost NOREAD guard: a sentinel that also means "no reading" is not a
+    # measurement. Found 2026-07-31 while adding `dir-name` below, which had
+    # inherited the same mistake. The row escaped the gate only because --say
+    # rows are filtered out of `lnblank-acceptance` entirely; it was dormant, not
+    # green. `PRINT 1 0` still asks the original question -- under K it prints two
+    # numbers (` 1  0`) and under S one (` 10`) -- it just says so readably now.
+    ("dir-print",    ['PRINT"[";1 0;"]"']),
+    # ⚠️ THE STORED BYTES DO NOT SAY WHAT THE LINE MEANS, and the `nam` battery's
+    # whole claim is that `B1 1` is the identifier `B11`. This asks the machine
+    # instead of the byte gloss: assign through the blank, read back through the
+    # joined name. Under P the two are the SAME VARIABLE and this reads 7; under
+    # K the assignment is a syntax error and `B11` reads back 0.
+    ("dir-name",     ["B1 1=7", 'PRINT"[";B11;"]"']),
 ]
 
 # --- the `body` battery: WHERE THE BODY STARTS -------------------------------
@@ -462,16 +605,24 @@ ERRB = [
 ]
 SAY_ONLY = {lb for lb, _l in ERRB + DIRB}
 
-CASES = NUM + BODY + LIT + DEC + EXP + REF + ERRB + DIRB
+CASES = NUM + BODY + LIT + DEC + EXP + NAM + REF + ERRB + DIRB
 
+# ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
+# informational because nobody had a RULE for them: `dec-bin` was the `&B`
+# half-crunch (whose `&` turned out to be inert -- nam-amp1) and `lit-varname` was
+# "MS-BASIC's blank handling may be a property of the character fetch". R-N1 is
+# that rule, so they are ordinary gating rows now: `dec-bin` is this defect's own
+# filed row, and `lit-varname` is a bounding control of R-N3 (a blank inside a
+# name is KEPT, and `=` still breaks the name).
 INFORMATIONAL = {"num-tab", "ref-list", "ref-delete", "ref-auto", "ref-renum",
-                 "ref-else", "lit-varname", "dec-bin", "dec-eol", "dec-eolctl"}
+                 "ref-else", "dec-eol", "dec-eolctl"}
 CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             "lit-ctl", "lit-str", "lit-rem", "ref-ctl", "ref-sp",
             "dec-ctl", "dec-hexctl", "dec-dotlead0",
-            "dec-eok", "dec-edata"}
+            "dec-eok", "dec-edata",
+            "nam-ctl", "nam-eqnum", "nam-amp0"}
 
-# --- KNOWN_DIVERGE: EMPTY, and that is a measurement --------------------------
+# --- KNOWN_DIVERGE: two rows, and they are a DIFFERENT DEFECT -----------------
 # ⚠️ These were never suppressions. Each entry recorded what zerobas ACTUALLY
 # read, so a row passed only while it kept diverging in EXACTLY that way -- fix
 # the behaviour and the entry stops matching, the gate goes RED, and the entry
@@ -489,11 +640,32 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 # in D-DECBLANK would have been the D-MFDOM trap. They are ordinary gating rows
 # now and still carry that separation.
 #
-# ⚠️ KEEP THIS DICT EMPTY RATHER THAN DELETING IT. An empty allowlist is a
-# standing claim that every row in this probe agrees with both references for the
-# reason it is supposed to; the next divergence has to be filed here with its
-# exact bytes before it can pass.
-KNOWN_DIVERGE = {}
+# ⚠️ AND IT IS NON-EMPTY AGAIN AS OF D-NAMBLANK, for two rows that are NOT that
+# slice's defect (docs/spec-basic-nameblank.md §3):
+#
+#     nam-dot0  20 A=B.5   ref -> A<EF>B.5   zb -> A<EF>B<1D>@P<00><00>
+#
+# 🔴 THAT ROW CARRIES NO BLANK AT ALL and diverges anyway. MS-BASIC allows a
+# period INSIDE an identifier (`MY.VAR`), so `B.5` is the variable B.5 and `B .5`
+# is the same variable reached across a blank; zerobas' tk_loop dispatch
+# (basic/tokenise.inc) looks one character past a '.' and hands it to tk_float.
+# Read through the blank rule alone, `nam-dot` says "a blank stops a literal from
+# starting" -- a rule this project would then have implemented. Its no-blank
+# CONTROL is the only thing that says otherwise, and that is the D-MFDOM trap:
+# closing an item on a measurement that belongs to a different defect.
+#
+# ⚠️ NOT A TOKENISER-ONLY FIX, which is why it is a slice of its own: a crunched
+# line storing `B.5` as name bytes needs the RUN-time variable-name scan
+# (basic/vars.asm) to accept '.' too, or the executor looks up a different
+# variable than the tokeniser stored. Filed in TODO.md with these bytes.
+#
+# Both entries are pinned to zerobas' EXACT reading, so they are controls and not
+# suppressions: fix the identifier charset and they stop matching, the gate goes
+# RED, and they have to be retired.
+KNOWN_DIVERGE = {
+    "nam-dot":  "line 20 | A<EF>B <1D>@P<00><00>",
+    "nam-dot0": "line 20 | A<EF>B<1D>@P<00><00>",
+}
 
 
 def battery(label):

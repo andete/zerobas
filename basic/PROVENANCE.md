@@ -3783,3 +3783,68 @@ With this slice `make lnblank-acceptance`'s `KNOWN_DIVERGE` allowlist is
 **EMPTY**: both cohorts filed in it (D-LNBLANK's five `lit-` rows, D-DECBLANK's
 four `dec-expbad*` rows) were retired by the slice that fixed them, each closed
 by the allowlist reporting the row as agreeing.
+
+## 2026-08-01 — a blank does not break a variable NAME (D-NAMBLANK)
+
+`basic/tokenise.inc` — **+12 B, all sub-ROM page 0** (free 4026 → 4014 B); both
+main ROMs came out **byte-identical** to the pre-slice tree. Spec
+`docs/spec-basic-nameblank.md`, measurement
+`docs/nameblank-msx1-characterization.md`, gate `make lnblank-acceptance`
+(**125/125 at `--repeat 2`**, three sides).
+
+Filed as *"`&B` is not a radix on MSX1 — and zerobas half-crunches it anyway"*.
+
+🔴 **The `&` was a red herring, and a row proves it positively rather than by
+argument.** `20 A=&1` reads `A<EF>&<12>` on the VG-8020 and the CF-3300 both — a
+digit directly behind the `&` is crunched *there* too, so `&` is inert on every
+side. The filed row's content is the text `B1 1`, in which `B1` is an ordinary
+variable name. Ten rows carrying no `&` at all diverge identically.
+
+**R-N1: a blank is COPIED but changes no tokeniser state.** The in-a-name flag
+survives a run of blanks, so a digit behind the blank continues the name: `B1 1`
+is the identifier `B11`, and `20 B1 1=7` is readable back through `B11` (` 7 ` on
+both references, ` 0 ` on zerobas before this slice). `tk_loop` reloaded `TKNAME`
+into `B` and zeroed it every character; a blank reached `tk_copy`, which never set
+it again. The fix intercepts the blank ahead of `match_kw` — where `B` is still
+live — and puts the flag back.
+
+⚠️ **`dec-oct` had been arguing for R-N1 since D-DECBLANK and nobody read it that
+way.** `20 A=&O1 7` crunches its `7` on the references too, because an octal
+*token* is not a name. Same shape as the filed row, opposite reading; the only
+difference between them is whether a NAME preceded the blank. A row that AGREES
+carried the answer to a row that diverged.
+
+🔴 **The defect was bigger than one byte, and exactly one row shows it.**
+`20 A=B 1 0`: the reference stores the identifier `B10` verbatim, zerobas stored
+`B`, a blank and **the single literal 10** — having lost the name it handed the
+run to the decimal scanner, which then correctly applied D-DECBLANK's own
+blank-transparency and joined the digits. Two rules compounding. Every other
+divergent row has a single digit behind the blank, where the two are
+indistinguishable, so sampling `B1 1` alone would have got the slice's own size
+wrong.
+
+🔴 **A KNIFE FOUND A LIVE DEFECT IN THIS SLICE'S FIRST CUT, and the flawed build
+was 29/31 GREEN.** `tk_copy` is the fallthrough target of the `is_letter` test, so
+`tk_blank` parked immediately before it put **every punctuation character** through
+a store of `B` — a register `match_kw` uses as its own compare counter and had
+long since clobbered. The build read green on whatever value happened to be left
+there: clean *by luck*. K2 (`ld a,b` → `ld a,1`) made it unmissable via
+`20 A=B$1`, **a row with no blank in it at all**, and `tk_blank` moved past
+`tk_copy_up`. That is this spec's §4.3 liveness claim violated by the code §4.3
+describes — the knife aimed at the justification hit it.
+
+⚠️ **The battery could not have caught it.** Every row written before the knife
+reached `tk_copy` through a blank, an operator or a type suffix; none put ordinary
+punctuation between a name and a digit. `nam-paren` / `nam-parenblk` were added
+because of K2 and oracle-locked on both references before zerobas was run on them.
+
+K4 was **predicted GREEN** and first reported `nam-parenblk` as `REFUSED (empty
+program)`. Run alone at `--repeat 2` on the same build it agrees — a dropped
+keystroke, which openMSX being deterministic would have reproduced on every re-run
+of that batch. The justification survives: routing a blank back through the full
+`match_kw`/operator chain changes no row.
+
+**Filed, not fixed:** `.` is an identifier character on MSX1 (`20 A=B.5` diverges
+with **no blank at all**), now two pinned `KNOWN_DIVERGE` entries — so that
+allowlist is non-empty again, deliberately. Folding it in would have needed the
+RUN-time variable-name scan too, not just the tokeniser.

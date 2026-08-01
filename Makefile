@@ -1113,7 +1113,19 @@ linemax-acceptance: repack-machine
 # scanner's?) and dec (D-DECBLANK, docs/spec-basic-decblank.md: the DENOMINATOR
 # of the decimal-literal scanner -- every internal seam of a literal, both other
 # radices, and the rows that say a blank run which merely TRAILS a number is
-# KEPT). Scope with ONLY=num,ref,lit,dec.
+# KEPT), exp (D-EXPBAD, a MALFORMED exponent marker) and nam (D-NAMBLANK,
+# docs/spec-basic-nameblank.md: a blank is COPIED but changes NO tokeniser state,
+# so `20 A=B1 1` is the single identifier B11 -- the `&` the TODO filed this
+# under turned out to be inert on every side). Scope with ONLY=num,ref,lit,dec,exp,nam.
+#
+# ⚠️ `nam` is a SUBSTRING of `lit-varname`, so ONLY=nam pulls that bounding
+# control in for free; ONLY=nam,lit is what a knife on the blank rule wants,
+# because `lit` carries the must-not-move cells (`lit-assign`: `20 A=1 0` is the
+# SINGLE literal 10, D-DECBLANK).
+#
+# ⚠️ --say rows are FILTERED OUT of this gate. Their payloads must PRINT BRACKETS
+# (`result_span_after_echo` returns the span between the last '[' and its ']'):
+# a bracketless payload reads `<none>` on every side and those compare EQUAL.
 #
 # ⚠️ TWO ORACLES. Every row is asked of the VG-8020 AND the CF-3300, because the
 # whole slice rests on one filed row from one machine and a rule only one ROM

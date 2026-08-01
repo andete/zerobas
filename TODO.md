@@ -3297,16 +3297,83 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       to their exact bytes — and the allowlist reporting them as AGREEING is the
       message that closed them. **That allowlist is now EMPTY.**
 
-- [ ] **`&B` is not a radix on MSX1 — and zerobas half-crunches it anyway.**
-      Found 2026-07-31 in D-DECBLANK's denominator (`dec-bin`, informational).
+- [x] ✅ **A BLANK DOES NOT BREAK A VARIABLE NAME — LANDED 2026-08-01,
+      125/125 at `--repeat 2`, 12 B, all sub-ROM, five knives.** Filed as
+      *"`&B` is not a radix on MSX1 — and zerobas half-crunches it anyway"*
+      (`dec-bin`, informational, from D-DECBLANK's denominator).
+      🔴 **The `&` was a RED HERRING, and one row says so positively rather than
+      by argument:** `20 A=&1` reads `A<EF>&<12>` on **both** references — a digit
+      directly behind the `&` is crunched there too. The filed row's real content
+      is `B1 1`, in which `B1` is an ordinary **variable name**:
       ```
-      20 A=&B1 1  ref -> A <EF> & B 1 ␣ 1     VERBATIM: `B1` is just a variable
-                  zb  -> A <EF> & B 1 ␣ <12>  the trailing 1 crunched to a token
+      20 A=B1 1  ref -> A<EF>B1 1     zb -> A<EF>B1 <12>    NO `&` ANYWHERE
+      20 A=B 1   ref -> A<EF>B 1      zb -> A<EF>B <12>     a LETTER sets it too
+      20 B1 1=5  ref -> B1 1<EF><16>  zb -> B1 <12><EF><16> LVALUE position
       ```
-      Both references store the whole tail as ASCII; `tk_hex`
-      ([`basic/tokenise.inc`](basic/tokenise.inc)) knows `&H` and `&O` only and
-      falls through, after which the digit run is crunched normally. Small, but it
-      is a stored-bytes divergence in a construct real programs type by mistake.
+      **R-N1: a blank is COPIED but changes no tokeniser state**, so the
+      in-a-name flag survives a run of blanks — `B1 1` is the identifier `B11`,
+      and `20 B1 1=7` reads back through `B11` as 7 on both references.
+      ⚠️ **`dec-oct` had been saying so since D-DECBLANK**: `20 A=&O1 7` crunches
+      its `7` on the references too, because an octal *token* is not a name. Same
+      shape as `dec-bin`, opposite reading, and the only difference is whether a
+      **name** preceded the blank.
+      🔴 **And the defect was bigger than one byte.** `20 A=B 1 0`: the reference
+      stores the identifier `B10` verbatim; zerobas stored `B`, a blank, and **the
+      single literal 10** — having lost the name it handed the run to the decimal
+      scanner, which then applied D-DECBLANK's joining. Two rules compounding,
+      visible in exactly one row of the battery.
+      🔴 **A KNIFE FOUND A LIVE DEFECT IN THE FIX'S OWN FIRST CUT.** `tk_copy` is
+      the fallthrough target of the `is_letter` test, so a `tk_blank` parked just
+      before it put **every punctuation character** through a store of a register
+      `match_kw` had already clobbered — and that build passed the differential
+      29/31, clean *by luck*. K2 exposed it via `20 A=B$1`, a row with **no blank
+      in it at all**. `nam-paren`/`nam-parenblk` were added and oracle-locked
+      because of it.
+      Spec [`docs/spec-basic-nameblank.md`](docs/spec-basic-nameblank.md),
+      measurement [`docs/nameblank-msx1-characterization.md`](docs/nameblank-msx1-characterization.md).
+      `dec-bin` and `lit-varname` are **gating** rows now, not informational.
+
+- [ ] **`.` IS AN IDENTIFIER CHARACTER on MSX1 — zerobas reads it as a float lead.**
+      Found 2026-08-01 in D-NAMBLANK's denominator, by the row written to be its
+      **control**. Oracle-locked on the VG-8020 and the CF-3300, which agree:
+      ```
+      20 A=B.5   ref -> A<EF>B.5   zb -> A<EF>B<1D>@P<00><00>   NO BLANK AT ALL
+      20 A=B .5  ref -> A<EF>B .5  zb -> A<EF>B <1D>@P<00><00>
+      ```
+      ⚠️ **The no-blank row is the whole point**: read through D-NAMBLANK's rule
+      alone, the blanked row says *"a blank stops a literal from starting"* — a
+      rule this project would then have implemented. MS-BASIC allows a period
+      inside an identifier (`MY.VAR`), so `B.5` is the variable `B.5`.
+      `tk_loop`'s dispatch ([`basic/tokenise.inc`](basic/tokenise.inc)) looks one
+      character past a `.` and hands it to `tk_float` on a digit, for a reason
+      that has nothing to do with the name state.
+      ⚠️ **NOT a tokeniser-only fix**, which is why it was not folded in: a
+      crunched line storing `B.5` as name bytes needs the RUN-time variable-name
+      scan ([`basic/vars.asm`](basic/vars.asm)) to accept `.` as well, or the
+      executor looks up a different variable than the tokeniser stored. Check
+      `DEFINT`/`DEFSTR` letter ranges and `VARPTR` too.
+      Both rows are live in `make lnblank-acceptance` as `KNOWN_DIVERGE`, pinned
+      to the exact bytes above — **fix the charset and the gate goes RED and the
+      entries must be retired.** ⚠️ Bounding controls that must stay green:
+      `20 A=.5` and `20 A=. 5` — a `.` at the START of an expression *does* lead a
+      literal on every side. Detail:
+      [`docs/nameblank-msx1-characterization.md`](docs/nameblank-msx1-characterization.md) §3.
+
+- [ ] **A `--say` row with no brackets cannot have a reading.**
+      Found 2026-08-01 in D-NAMBLANK. `result_span_after_echo`
+      ([`probes/lib/omsx_repl.py:518`](probes/lib/omsx_repl.py:518)) returns the
+      text between the last `[` and its `]`, so a `SAY_ONLY` payload that prints
+      no brackets reads `<none>` on **every** side — and sides that all failed
+      compare EQUAL and report *agrees*. `basic_probe_lnblank.py`'s `dir-print`
+      had been in that state since it was written (dormant rather than green: the
+      gate filters `--say` rows out). Both its payload and the new `dir-name` are
+      bracketed now and locked.
+      ⚠️ **The class is not closed** — this was found in one probe by accident.
+      Sweep every `SAY_ONLY`/`result_span` row in `probes/` for a payload that
+      cannot produce a bracketed span, and consider making the helper *fail loudly*
+      on a payload with no `[` in it rather than returning the same `None` a
+      genuine abort returns. Same shape as [`chancost` NOREAD](docs/chancost-cf3300-characterization.md):
+      a sentinel that also means "no reading" is not a measurement.
 
 - [ ] **A TRAILING BLANK at end of line is not measurable through the keyboard.**
       Found 2026-07-31 in D-DECBLANK (`dec-eol` / `dec-eolctl`, both

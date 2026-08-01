@@ -43,6 +43,16 @@ tk_loop:
                 ld      a,(hl)
                 or      a
                 jp      z,tk_end
+                ; D-NAMBLANK R-N1 (docs/spec-basic-nameblank.md): a blank is
+                ; COPIED but changes NO state, so the in-a-name flag survives a
+                ; run of blanks and the digit behind it still CONTINUES the name.
+                ; `20 A=B1 1` is the single identifier B11 on the VG-8020 and the
+                ; CF-3300 alike, and `20 B1 1=7` is readable back through `B11`.
+                ; Tested HERE, before match_kw: B is only known-live ahead of that
+                ; call (§4.3), and a blank matches no keyword and no operator, so
+                ; short-circuiting past them is behaviour-neutral (knife K4).
+                cp      ' '                 ; (`jp`, not `jr`: tk_blank sits past
+                jp      z,tk_blank          ;  tk_copy_up, out of relative range)
                 cp      '"'                 ; string literal: copy verbatim
                 jp      z,tk_string
                 cp      QUOTE_REM           ; "'" comment -> treat as REM
@@ -132,7 +142,7 @@ tk_notkw:
                 call    is_letter           ; a letter starts / continues a name
                 jr      c,tk_copy_up
 tk_copy:
-                ld      a,(hl)              ; punctuation / space: copy verbatim
+                ld      a,(hl)              ; punctuation: copy verbatim
                 ld      (de),a
                 inc     de
                 inc     hl
@@ -146,6 +156,17 @@ tk_copy_up:
                 ld      a,1
                 ld      (TKNAME),a          ; now inside a name
                 jp      tk_loop
+; ⚠️ tk_blank LIVES HERE, NOT NEXT TO tk_copy, AND THAT IS NOT COSMETIC. tk_copy
+; is entered by FALLTHROUGH from the `is_letter` test above, so a tk_blank
+; placed just before it silently puts EVERY punctuation character through this
+; store -- reading a `B` that `match_kw` (line 103) has already clobbered.
+; Knife K2 caught it: `20 A=B$1`, which contains no blank at all, kept its digit
+; verbatim. The unknifed build read green on all 31 rows by LUCK, on whatever B
+; match_kw happened to leave behind (docs/spec-basic-nameblank.md §4.3/§5).
+tk_blank:                                   ; a blank: the name survives it (R-N1),
+                ld      a,b                 ; and the blank itself is still copied
+                ld      (TKNAME),a          ; verbatim -- `20 A= 1` keeps its blank
+                jp      tk_copy             ; AND still crunches the 1 (nam-eqnum)
 tk_string:
                 ld      a,(hl)              ; opening quote
                 ld      (de),a
