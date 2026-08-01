@@ -502,10 +502,31 @@ ev_f:
                 cp      VDP_TOKEN           ; $C8 -> VDP(n) (graphics G8, graphics.asm)
                 jp      z,ev_f_vdp
     ENDIF
-                cp      HEX_TOKEN           ; $0C -> 2-byte LE value (&H)
-                jp      z,ev_f_word
-                cp      OCT_TOKEN           ; $0B -> 2-byte LE value (&O)
-                jp      z,ev_f_word
+                ; D-LNREF R-E (docs/spec-basic-lnref.md §3.2): $0B..$0E are ONE
+                ; FAMILY in the crunched stream -- a token followed by a 2-byte
+                ; little-endian value. $0B &O, $0C &H, $0D line ADDRESS, $0E line
+                ; NUMBER. A range costs 9 B where the two separate `cp/jp` pairs it
+                ; replaces cost 10, so $0E is gained at NET -1 B on main page 1 --
+                ; which had 5 B free, i.e. a third `cp/jp` pair would have taken all
+                ; of it.
+                ;
+                ; ⚠️ WHY THE EVALUATOR NEEDS $0E AT ALL: `IF ERL=100` puts a
+                ; line-number reference inside an ORDINARY EXPRESSION on both
+                ; references (docs/lnref-msx1-characterization.md §1.3). Arming ERL in
+                ; branch_lineno without this arm would BREAK a shape that works today;
+                ; `lnrd-erl` is the control that is green before and after, and knife
+                ; K4 removes this arm to show it is the row that says so.
+                ;
+                ; ⚠️ $0D RIDES ALONG AND IS UNREACHABLE. LINEADDR_TOKEN is the
+                ; post-RUN address form; zerobas never emits it (sysvars.inc is its
+                ; only mention), so no row can reach that arm. It is in because the
+                ; range IS the family -- excluding it would cost bytes to express a
+                ; distinction nothing can observe.
+                cp      OCT_TOKEN           ; below $0B -> not a 2-byte literal
+                jr      c,ev_f_notword
+                cp      LINENO_TOKEN+1      ; $0B..$0E -> 2-byte LE value
+                jp      c,ev_f_word
+ev_f_notword:
                 cp      INT2_TOKEN          ; $1C -> 2-byte LE value
                 jp      z,ev_f_word
                 cp      INT1_TOKEN          ; $0F -> 1-byte value

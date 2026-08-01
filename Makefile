@@ -1195,6 +1195,24 @@ lnblank-echo: repack-machine
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
 	        $(if $(ONLY),--only '$(ONLY)',)
 
+# --- the SAY surface, GATED (D-LNREF, docs/spec-basic-lnref.md §6) -----------
+#
+# 🔴 `lnblank-acceptance` CANNOT SEE A SAY-MODE ROW. The probe drops every
+# SAY_ONLY row from any non---say run, so the `lnrd` battery -- which carries
+# `lnrd-erl`, the control that says arming ERL did not break `IF ERL=<n>`, and
+# the `lnrd-return` pin -- would be measured by hand and gated by NOTHING. That
+# is the shape TODO.md files under `dir-name` as "the row has never gated
+# anything", and D-LNREF's load-bearing control was sitting in it.
+#
+# ⚠️ SCOPED TO `lnrd-` BY DEFAULT, AND THAT IS NOT TIMIDITY. The rest of the say
+# surface (`err`/`dir`/`dotd`/`lnld`/`cnmd`) carries `dir-name`'s KNOWN, FILED
+# divergence, so a whole-surface default would ship a red target. Widening the
+# default is the fix for THAT item; `ONLY=` selects any subset today.
+lnblank-say-acceptance: repack-machine
+	python3 probes/basic/basic_probe_lnblank.py --gate --say \
+	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        --only $(if $(ONLY),'$(ONLY)',lnrd-) --repeat $(if $(REPEAT),$(REPEAT),1)
+
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #
 # What one open channel costs on a real disk-capable MSX1, measured out of the same
@@ -1431,6 +1449,6 @@ clean:
         width-characterize width-acceptance \
         arrdim-characterize arrdim-acceptance \
         linemax-characterize linemax-acceptance chancost-characterize \
-        lnblank-characterize lnblank-acceptance lnblank-echo \
+        lnblank-characterize lnblank-acceptance lnblank-echo lnblank-say-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance clean

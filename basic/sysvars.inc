@@ -762,6 +762,15 @@ LINEMAX         equ     255     ; 254 chars + the 0 terminator (measured referen
 ; documented MSX-BASIC maximum, and it is a CEILING and not a mask: unguarded,
 ; `99999 REM` silently stored a line numbered 99999-65536 = 34463.
 LINENO_CEIL     equ     65529
+; D-LNREF R-V (docs/spec-basic-lnref.md §2): the SAME ceiling bounds a line-number
+; REFERENCE inside a statement -- with a DIFFERENT response. A leading number past
+; it is REFUSED; a reference past it is SPLIT, the digit that would overflow
+; starting a fresh $0E. bl_acc tests the accumulator BEFORE taking a digit, so the
+; bound it wants is the largest value that may still take one:
+;   v*10 + d > LINENO_CEIL  <=>  v >= (LINENO_CEIL/10)+1   for d <= 9
+; = 6553. `GOTO 65529` is one reference; `GOTO 65530` is 6553 then 0, measured on
+; both references (docs/lnref-msx1-characterization.md §2).
+LINENO_ACC_STOP equ     (LINENO_CEIL/10)+1
 ; TOKBUF — the crunch destination. Sized 576 B for a 314-byte LOGICAL body limit, and
 ; the gap between those two numbers is deliberate.
 ;

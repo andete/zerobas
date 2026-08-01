@@ -633,6 +633,38 @@ branch_lineno:
                                             ; $0E, like GOTO. RESUME NEXT / bare RESUME are
                                             ; unaffected (no digit follows, so the
                                             ; mode simply never fires).
+                ; D-LNREF R-R1 (docs/spec-basic-lnref.md §2): FOUR more, measured by
+                ; walking all 162 reserved words rather than reading a filed list --
+                ; which named five verbs, three of which zerobas has no token for and
+                ; missed these two entirely (docs/lnref-msx1-characterization.md §1).
+                ;
+                ; 🔴 THE SET IS A LIST AND CANNOT BE A RANGE OR A THRESHOLD. Every
+                ; arming token has a NON-arming neighbour: IF ($8B) sits between GOTO
+                ; ($89) and RETURN ($8E); ERROR ($A6) abuts RESUME ($A7); TO ($D9)
+                ; abuts THEN ($DA); ERR ($E2) abuts ERL ($E1). The ten `cp`s ARE the
+                ; rule. (A cpir over a 10-byte table would save ~18 B and would stop
+                ; reading as the measured set; sub page 0 is not the wall.)
+                cp      LIST_TOKEN          ; LIST [<line>[-<line>]] -- the args are still
+                jr      z,bl_yes            ; ignored (ex_list), but the BYTES are the
+                                            ; reference's and LIST round-trips them
+                cp      RETURN_TOKEN        ; RETURN <line> -- the STATEMENT is still
+                jr      z,bl_yes            ; unimplemented (ex_return ignores its
+                                            ; argument, lnrd-return); this is the crunch
+                cp      ERL_TOKEN           ; IF ERL=<line> -- the $0E lands inside an
+                jr      z,bl_yes            ; EXPRESSION, which is why ev_f grew the
+                                            ; $0B..$0E range (basic/expr.asm, R-E)
+                ; R-R2: ELSE crunches to COLON,$A1 and match_kw hands us the FIRST
+                ; token byte, so the test is `cp COLON`. Safe because branch_lineno is
+                ; reached ONLY from the match_kw success path and "ELSE" is the only
+                ; kwtable.inc entry whose first token byte is COLON -- tk_apos writes
+                ; its own COLON without coming through here, and a bare ':' typed in a
+                ; statement is copied by tk_copy, which CLEARS the mode. `lnl-colsep`
+                ; (`20 GOTO 1:5` -> `<89> <0E><01><00>:<16>`) is the cell that says so;
+                ; knife K3 moves this test into tk_copy and reddens exactly that row.
+                cp      COLON               ; ELSE <line> -- if_false (basic/interp.asm)
+                jr      z,bl_yes            ; has ALWAYS tested for the $0E this emits;
+                                            ; without it `IF 0 THEN 20 ELSE 30` is a
+                                            ; Syntax error (lnrd-else)
                 ret                         ; not a branch keyword
 bl_yes:
                 ld      a,1                 ; R-L1: arm line-number mode
@@ -650,6 +682,31 @@ bl_num:
                 push    de                  ; park dest while accumulating
                 ld      de,0                ; DE = value
 bl_acc:
+                ; D-LNREF R-V (docs/spec-basic-lnref.md §2): a reference takes another
+                ; digit only while the value would stay <= LINENO_CEIL. The digit that
+                ; would exceed it is NOT consumed -- the reference ends and, the mode
+                ; still being armed (D-LNLIST R-L2), that digit begins a NEW one.
+                ; `GOTO 99999` is $0E,9999 then $0E,9 on both references; zerobas used
+                ; to wrap at 16 bits and store line 34463, silently.
+                ;
+                ; 🔴 TESTED HERE, BEFORE THE CHARACTER IS FETCHED, AND THAT PLACEMENT
+                ; IS A MEASUREMENT. D-LNBLANK R5's blank lookahead below commits to a
+                ; whole run of blanks the moment it sees a digit past it, so a ceiling
+                ; tested ON THE DIGIT has already swallowed the blank -- and
+                ; `20 GOTO 6 5 5 3 0` KEEPS its blank between the two references on
+                ; both machines (`<0E><99><19>` ' ' `<0E><00><00>`, lnv2-blk30). Knife
+                ; K5 moves the test down and reddens exactly that one row.
+                ;
+                ; The bound is the accumulator's, not the value's: see LINENO_ACC_STOP
+                ; (basic/sysvars.inc). Knives K6/K7 bracket it from both sides.
+                ld      a,d
+                cp      high LINENO_ACC_STOP
+                jr      c,bl_ac_char
+                jr      nz,bl_done
+                ld      a,e
+                cp      low LINENO_ACC_STOP
+                jr      nc,bl_done
+bl_ac_char:
                 ld      a,(hl)
                 cp      '0'
                 jr      c,bl_ac_blank

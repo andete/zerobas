@@ -1202,6 +1202,346 @@ CNM = [
     ("cnm-ucolstmt", ["20 _X:PRINT 5"]),
 ]
 
+# --- the `lnr` battery: WHICH RESERVED WORD ARMS LINE-NUMBER MODE? -----------
+# THE VERB DENOMINATOR. Every reserved word in the project's own 162-word
+# denominator (docs/kwsweep-msx1-coverage.md), asked the SAME question in the
+# SAME shape: `20 <WORD> 10`, does the 10 become a line-number REFERENCE?
+#
+#     armed      line 20 | <tok> <0E><0A><00>
+#     not armed  line 20 | <tok> <0F><0A>          (the ordinary constant 10)
+#
+# ⚠️ WHY A WALK AND NOT THE FILED LIST. The filed item names ELEVEN verbs --
+# GOTO/GOSUB/THEN/RESTORE/RUN/RESUME (implemented) plus LIST/DELETE/AUTO/RENUM/
+# ELSE (missing) -- and that list is a SAMPLE assembled from two batteries that
+# were aimed at blanks. D-EXPKW's rule looked like "a reserved word wins" from
+# six sampled rows and was really "the letter is L or Q"; D-CNAME's looked like
+# "operators are dropped" and was really an ASCII RANGE. Neither could be seen
+# without walking the whole space. Which verbs take a line-number reference is
+# exactly that shape, so the space is walked.
+#
+# ⚠️ THE PAYLOAD CARRIES NO BLANK INSIDE THE NUMBER, ON PURPOSE. `20 GOTO 1 0`
+# diverges for TWO reasons on a machine that has neither the arm nor the blank
+# rule, and a row that can diverge for two reasons measures neither (D-EXPKW
+# §1.1a, the row this slice starts from). The subject here is ARMING alone.
+#
+# ⚠️ THREE ROWS CANNOT ANSWER, AND THEY ARE NOT "NOT ARMED". `REM` and `DATA`
+# swallow the rest of the statement verbatim and `CALL` hands it to the
+# device-name scan (D-CNAME), so no observable line number can follow any of
+# them. They stay in the walk because dropping them would turn a denominator
+# back into a sample, and they are read as UNOBSERVABLE, not as negatives.
+LNR = [
+    ("lnr-bload",          ["20 BLOAD 10"]),
+    ("lnr-bsave",          ["20 BSAVE 10"]),
+    ("lnr-save",           ["20 SAVE 10"]),
+    ("lnr-files",          ["20 FILES 10"]),
+    ("lnr-merge",          ["20 MERGE 10"]),
+    ("lnr-open",           ["20 OPEN 10"]),
+    ("lnr-input",          ["20 INPUT 10"]),
+    ("lnr-line",           ["20 LINE 10"]),
+    ("lnr-close",          ["20 CLOSE 10"]),
+    ("lnr-put",            ["20 PUT 10"]),
+    ("lnr-get",            ["20 GET 10"]),
+    ("lnr-field",          ["20 FIELD 10"]),
+    ("lnr-lset",           ["20 LSET 10"]),
+    ("lnr-rset",           ["20 RSET 10"]),
+    ("lnr-eof",            ["20 EOF 10"]),
+    ("lnr-lof",            ["20 LOF 10"]),
+    ("lnr-dskf",           ["20 DSKF 10"]),
+    ("lnr-mki",            ["20 MKI$ 10"]),
+    ("lnr-cvi",            ["20 CVI 10"]),
+    ("lnr-kill",           ["20 KILL 10"]),
+    ("lnr-name",           ["20 NAME 10"]),
+    ("lnr-max",            ["20 MAX 10"]),
+    ("lnr-csave",          ["20 CSAVE 10"]),
+    ("lnr-cload",          ["20 CLOAD 10"]),
+    ("lnr-load",           ["20 LOAD 10"]),
+    ("lnr-poke",           ["20 POKE 10"]),
+    ("lnr-peek",           ["20 PEEK 10"]),
+    ("lnr-rem",            ["20 REM 10"]),
+    ("lnr-goto",           ["20 GOTO 10"]),
+    ("lnr-gosub",          ["20 GOSUB 10"]),
+    ("lnr-return",         ["20 RETURN 10"]),
+    ("lnr-if",             ["20 IF 10"]),
+    ("lnr-then",           ["20 THEN 10"]),
+    ("lnr-else",           ["20 ELSE 10"]),
+    ("lnr-for",            ["20 FOR 10"]),
+    ("lnr-to",             ["20 TO 10"]),
+    ("lnr-step",           ["20 STEP 10"]),
+    ("lnr-next",           ["20 NEXT 10"]),
+    ("lnr-data",           ["20 DATA 10"]),
+    ("lnr-read",           ["20 READ 10"]),
+    ("lnr-restore",        ["20 RESTORE 10"]),
+    ("lnr-run",            ["20 RUN 10"]),
+    ("lnr-new",            ["20 NEW 10"]),
+    ("lnr-end",            ["20 END 10"]),
+    ("lnr-stop",           ["20 STOP 10"]),
+    ("lnr-on",             ["20 ON 10"]),
+    ("lnr-cont",           ["20 CONT 10"]),
+    ("lnr-print",          ["20 PRINT 10"]),
+    ("lnr-using",          ["20 USING 10"]),
+    ("lnr-call",           ["20 CALL 10"]),
+    ("lnr-let",            ["20 LET 10"]),
+    ("lnr-clear",          ["20 CLEAR 10"]),
+    ("lnr-defint",         ["20 DEFINT 10"]),
+    ("lnr-def",            ["20 DEF 10"]),
+    ("lnr-usr",            ["20 USR 10"]),
+    ("lnr-list",           ["20 LIST 10"]),
+    ("lnr-cls",            ["20 CLS 10"]),
+    ("lnr-screen",         ["20 SCREEN 10"]),
+    ("lnr-color",          ["20 COLOR 10"]),
+    ("lnr-width",          ["20 WIDTH 10"]),
+    ("lnr-key",            ["20 KEY 10"]),
+    ("lnr-off",            ["20 OFF 10"]),
+    ("lnr-vpoke",          ["20 VPOKE 10"]),
+    ("lnr-vpeek",          ["20 VPEEK 10"]),
+    ("lnr-out",            ["20 OUT 10"]),
+    ("lnr-inp",            ["20 INP 10"]),
+    ("lnr-varptr",         ["20 VARPTR 10"]),
+    ("lnr-base",           ["20 BASE 10"]),
+    ("lnr-and",            ["20 AND 10"]),
+    ("lnr-or",             ["20 OR 10"]),
+    ("lnr-xor",            ["20 XOR 10"]),
+    ("lnr-not",            ["20 NOT 10"]),
+    ("lnr-mod",            ["20 MOD 10"]),
+    ("lnr-eqv",            ["20 EQV 10"]),
+    ("lnr-imp",            ["20 IMP 10"]),
+    ("lnr-csrlin",         ["20 CSRLIN 10"]),
+    ("lnr-pos",            ["20 POS 10"]),
+    ("lnr-tab",            ["20 TAB( 10"]),
+    ("lnr-spc",            ["20 SPC( 10"]),
+    ("lnr-len",            ["20 LEN 10"]),
+    ("lnr-left",           ["20 LEFT$ 10"]),
+    ("lnr-right",          ["20 RIGHT$ 10"]),
+    ("lnr-mid",            ["20 MID$ 10"]),
+    ("lnr-str",            ["20 STR$ 10"]),
+    ("lnr-val",            ["20 VAL 10"]),
+    ("lnr-asc",            ["20 ASC 10"]),
+    ("lnr-chr",            ["20 CHR$ 10"]),
+    ("lnr-hex",            ["20 HEX$ 10"]),
+    ("lnr-oct",            ["20 OCT$ 10"]),
+    ("lnr-bin",            ["20 BIN$ 10"]),
+    ("lnr-fre",            ["20 FRE 10"]),
+    ("lnr-space",          ["20 SPACE$ 10"]),
+    ("lnr-string",         ["20 STRING$ 10"]),
+    ("lnr-instr",          ["20 INSTR 10"]),
+    ("lnr-inkey",          ["20 INKEY$ 10"]),
+    ("lnr-abs",            ["20 ABS 10"]),
+    ("lnr-sgn",            ["20 SGN 10"]),
+    ("lnr-int",            ["20 INT 10"]),
+    ("lnr-fix",            ["20 FIX 10"]),
+    ("lnr-cint",           ["20 CINT 10"]),
+    ("lnr-csng",           ["20 CSNG 10"]),
+    ("lnr-cdbl",           ["20 CDBL 10"]),
+    ("lnr-sqr",            ["20 SQR 10"]),
+    ("lnr-atn",            ["20 ATN 10"]),
+    ("lnr-exp",            ["20 EXP 10"]),
+    ("lnr-log",            ["20 LOG 10"]),
+    ("lnr-sin",            ["20 SIN 10"]),
+    ("lnr-cos",            ["20 COS 10"]),
+    ("lnr-tan",            ["20 TAN 10"]),
+    ("lnr-rnd",            ["20 RND 10"]),
+    ("lnr-dim",            ["20 DIM 10"]),
+    ("lnr-erase",          ["20 ERASE 10"]),
+    ("lnr-error",          ["20 ERROR 10"]),
+    ("lnr-err",            ["20 ERR 10"]),
+    ("lnr-erl",            ["20 ERL 10"]),
+    ("lnr-time",           ["20 TIME 10"]),
+    ("lnr-resume",         ["20 RESUME 10"]),
+    ("lnr-sound",          ["20 SOUND 10"]),
+    ("lnr-play",           ["20 PLAY 10"]),
+    ("lnr-beep",           ["20 BEEP 10"]),
+    ("lnr-pset",           ["20 PSET 10"]),
+    ("lnr-preset",         ["20 PRESET 10"]),
+    ("lnr-point",          ["20 POINT 10"]),
+    ("lnr-circle",         ["20 CIRCLE 10"]),
+    ("lnr-paint",          ["20 PAINT 10"]),
+    ("lnr-draw",           ["20 DRAW 10"]),
+    ("lnr-sprite",         ["20 SPRITE 10"]),
+    ("lnr-vdp",            ["20 VDP 10"]),
+    ("lnr-stick",          ["20 STICK 10"]),
+    ("lnr-strig",          ["20 STRIG 10"]),
+    ("lnr-pdl",            ["20 PDL 10"]),
+    ("lnr-pad",            ["20 PAD 10"]),
+    ("lnr-locate",         ["20 LOCATE 10"]),
+    ("lnr-swap",           ["20 SWAP 10"]),
+    ("lnr-troff",          ["20 TROFF 10"]),
+    ("lnr-tron",           ["20 TRON 10"]),
+    ("lnr-motor",          ["20 MOTOR 10"]),
+]
+
+# --- the `lnrx` battery: the same walk over the words zerobas has NO TOKEN for
+# ⚠️ INFORMATIONAL BY CONSTRUCTION, AND THAT IS AN ATTRIBUTION ARGUMENT, not a
+# convenience. `20 RENUM 10` stores `RENUM 10` verbatim on zerobas: the row is
+# red because the WORD is absent, and it would still be red if the $0E arm were
+# perfect. A row that can diverge for two reasons measures neither, so these
+# rows measure only the REFERENCE -- they are the oracle-lock the separate
+# keyword-gap item will need, and they say nothing about this defect.
+LNRX = [
+    ("lnrx-renum",         ["20 RENUM 10"]),
+    ("lnrx-delete",        ["20 DELETE 10"]),
+    ("lnrx-auto",          ["20 AUTO 10"]),
+    ("lnrx-defsng",        ["20 DEFSNG 10"]),
+    ("lnrx-defdbl",        ["20 DEFDBL 10"]),
+    ("lnrx-defstr",        ["20 DEFSTR 10"]),
+    ("lnrx-fn",            ["20 FN 10"]),
+    ("lnrx-lprint",        ["20 LPRINT 10"]),
+    ("lnrx-llist",         ["20 LLIST 10"]),
+    ("lnrx-lpos",          ["20 LPOS 10"]),
+    ("lnrx-mks",           ["20 MKS$ 10"]),
+    ("lnrx-mkd",           ["20 MKD$ 10"]),
+    ("lnrx-cvs",           ["20 CVS 10"]),
+    ("lnrx-cvd",           ["20 CVD 10"]),
+    ("lnrx-dski",          ["20 DSKI$ 10"]),
+    ("lnrx-dsko",          ["20 DSKO$ 10"]),
+    ("lnrx-copy",          ["20 COPY 10"]),
+    ("lnrx-set",           ["20 SET 10"]),
+    ("lnrx-attr",          ["20 ATTR$ 10"]),
+    ("lnrx-ipl",           ["20 IPL 10"]),
+    ("lnrx-cmd",           ["20 CMD 10"]),
+    ("lnrx-lfiles",        ["20 LFILES 10"]),
+    ("lnrx-loc",           ["20 LOC 10"]),
+    ("lnrx-wait",          ["20 WAIT 10"]),
+    ("lnrx-inputs",        ["20 INPUT$ 10"]),
+]
+
+# --- the `lnv` battery: HOW BIG MAY A LINE-NUMBER REFERENCE BE? --------------
+# The second half of the filed item: `20 GOTO 99999` tokenises THREE BYTES
+# SHORTER on zerobas (D-REHOME, from `s7-fired`'s ONELIN/ARYTAB pointers -- a
+# LENGTH, never the bytes). These rows read the bytes.
+#
+# zerobas' bl_acc has no ceiling at all: it wraps at 16 bits, so 99999 stores as
+# $0E,$869F -- line 34463, silently. The LEADING line number got its saturating
+# guard in D-LNBLANK (R4/§11E); this accumulator, the OTHER copy, never did.
+#
+# ⚠️ THE DIGIT LADDER AND THE BOUNDARY RUN ARE BOTH CONTIGUOUS. D-LNBLANK's
+# `num-max`/`num-over`/`num-huge` sampled three values and could not have said
+# where the cut is; 65528..65537 is walked one at a time instead.
+LNV = [
+    ("lnv-d1",       ["20 GOTO 1"]),          # CONTROL: 1 digit
+    ("lnv-d2",       ["20 GOTO 12"]),
+    ("lnv-d3",       ["20 GOTO 123"]),
+    ("lnv-d4",       ["20 GOTO 1234"]),
+    ("lnv-d5",       ["20 GOTO 12345"]),
+    ("lnv-d6",       ["20 GOTO 123456"]),
+    ("lnv-d7",       ["20 GOTO 1234567"]),
+    ("lnv-d8",       ["20 GOTO 12345678"]),
+    ("lnv-b28",      ["20 GOTO 65528"]),      # the contiguous boundary run
+    ("lnv-b29",      ["20 GOTO 65529"]),      # the LEADING number's ceiling
+    ("lnv-b30",      ["20 GOTO 65530"]),
+    ("lnv-b31",      ["20 GOTO 65531"]),
+    ("lnv-b32",      ["20 GOTO 65532"]),
+    ("lnv-b33",      ["20 GOTO 65533"]),
+    ("lnv-b34",      ["20 GOTO 65534"]),
+    ("lnv-b35",      ["20 GOTO 65535"]),      # the 16-bit ceiling
+    ("lnv-b36",      ["20 GOTO 65536"]),      # one past it
+    ("lnv-b37",      ["20 GOTO 65537"]),
+    ("lnv-huge",     ["20 GOTO 99999"]),      # THE FILED ROW, reproduced
+    ("lnv-huge2",    ["20 GOTO 100000"]),
+    ("lnv-mega",     ["20 GOTO 655290"]),     # the ceiling with a 0 behind it
+    ("lnv-zero",     ["20 GOTO 0"]),          # CONTROL: value 0
+    ("lnv-lead0",    ["20 GOTO 0010"]),       # leading zeros, small value
+    ("lnv-lead00",   ["20 GOTO 00000010"]),   # 8 digits, value 10
+    ("lnv-thenh",    ["20 IF A THEN 99999"]), # is the rule the ACCUMULATOR or GOTO?
+    ("lnv-elseh",    ["20 IF A THEN 1 ELSE 99999"]),
+]
+
+# --- the `lna` battery: WHERE IN THE ARGUMENT DOES THE MODE REACH? -----------
+# D-LNLIST measured that after a BRANCH keyword the mode runs to the end of the
+# STATEMENT -- every digit run becomes $0E, whatever stands between. Whether the
+# verbs this slice adds behave the same way is a separate question, and `LIST
+# 10-20` is the shape that asks it: a RANGE, whose second number is a line and
+# whose separator is an operator.
+#
+# ⚠️ The `RENUM`/`AUTO`/`DELETE` rows are INFORMATIONAL for the lnrx reason --
+# no token on zerobas -- but the REFERENCE's answer is the denominator, and
+# `AUTO 10,5` is the one payload in the language where the second number is NOT
+# a line number. If it still crunches to $0E, "line-number verb" is the wrong
+# name for the mechanism.
+LNA = [
+    ("lna-listctl",  ["20 LIST 10"]),         # CONTROL: the single-argument form
+    ("lna-listrng",  ["20 LIST 10-20"]),      # a RANGE
+    ("lna-listopen", ["20 LIST -20"]),        # open range, leading '-'
+    ("lna-listplus", ["20 LIST 10+20"]),      # does the mode run on past '+'?
+    ("lna-listkw",   ["20 LIST 10 AND 20"]),  # R-L3: a WORD disarms
+    ("lna-listcol",  ["20 LIST 10:20"]),      # R-L3: ':' disarms
+    ("lna-elsectl",  ["20 IF A THEN 10 ELSE 20"]),
+    ("lna-elseb",    ["20 IF A THEN B=1 ELSE 20"]),   # ELSE reached with the
+                                              # mode already DISARMED by a name
+    ("lna-elseplus", ["20 IF A THEN 1 ELSE 20+30"]),
+    ("lna-elsecol",  ["20 IF A THEN 1 ELSE 20:30"]),
+    ("lna-renum3",   ["20 RENUM 10,20,30"]),  # informational (no token on zb)
+    ("lna-auto2",    ["20 AUTO 10,5"]),       # informational -- the INCREMENT
+    ("lna-delrng",   ["20 DELETE 10-20"]),    # informational
+]
+
+# --- the `lnr2` battery: the walk's positives, asked in a REAL PROGRAM shape --
+# ⚠️ `20 ERL 10` AND `20 RETURN 10` ARE NOT PROGRAMS ANYONE WRITES, and a walk
+# built out of nonsense is a walk whose readings could be an artifact of the
+# nonsense. The crunch is context-free -- it never parses -- so the reading
+# should transfer unchanged; these rows are what SAY it does, in the shapes a
+# user actually types. `IF ERL=100 THEN 1` is the only shape in the language
+# where the ERL arm is observable at all.
+LNR2 = [
+    ("lnr2-goto",    ["20 A=1:GOTO 10"]),     # CONTROL: an ALREADY-armed verb in
+                                              # exactly this shape, so a red row
+                                              # here is about the verb and not
+                                              # about reaching it past a ':'
+    ("lnr2-nokw",    ["20 A=1:B=10"]),        # CONTROL: no verb at all -> <0F><0A>
+    ("lnr2-return",  ["20 A=1:RETURN 10"]),
+    ("lnr2-erl",     ["20 IF ERL=100 THEN 1"]),
+]
+
+# --- the `lnv2` battery: the split rule crossed with its neighbours ----------
+# R-V does not live alone: D-LNBLANK R5 says a blank inside a reference is
+# transparent, and D-LNLIST R-L2 says the mode survives the reference. Both meet
+# the split, and a rule measured only on bare digit runs would not know it.
+LNV2 = [
+    ("lnv2-blk29",   ["20 GOTO 6 5 5 2 9"]),  # CONTROL: R5 reaches 65529, no split
+    ("lnv2-blk30",   ["20 GOTO 6 5 5 3 0"]),  # R5 reaches 65530 -> does it SPLIT?
+    ("lnv2-listbig", ["20 LIST 99999"]),      # the split under a NEWLY-armed verb
+    ("lnv2-onbig",   ["20 ON A GOTO 99999,1"]),  # a split INSIDE a list: the
+                                              # ON..GOTO trap parsers walk this
+    ("lnv2-erlbig",  ["20 IF ERL=99999 THEN 1"]),
+]
+
+# --- the `lnrd` battery: WHAT THE MISSING $0E COSTS AT RUN TIME --------------
+# ⚠️ SAY-MODE ONLY, and the reason is that four of the five verbs this slice
+# arms are NOT merely a byte-level faithfulness question:
+#
+#   * `if_false` (basic/interp.asm) ALREADY tests `cp LINENO_TOKEN` after the
+#     $A1 and jumps to ex_goto_at -- so `IF ... ELSE <line>` is a written,
+#     reachable feature that has never fired, because the crunch never produced
+#     the $0E it waits for. `lnrd-else` is what says whether it fires.
+#   * `ERL=<n>` puts the $0E inside an EXPRESSION, and `ev_f` (basic/expr.asm)
+#     has arms for $0B/$0C/$1C/$0F but none for $0E. Arming ERL without teaching
+#     the evaluator would BREAK a shape that works today -- `lnrd-erl` is the
+#     row that would catch that, and it must be green BEFORE and AFTER.
+#   * `ex_list` walks past its argument and lands on it with `jp exec_stmt`, so
+#     changing the argument's bytes changes what exec_stmt is handed.
+#   * `RETURN <line>` is NOT implemented (ex_return ignores HL and pops the
+#     frame). `lnrd-return` measures that gap; the crunch fix does not close it
+#     and this row is expected to STAY divergent -- it is measured so the claim
+#     is a measurement instead of a guess.
+LNRD = [
+    ("lnrd-ctl",     ["10 IF 0 THEN A=1 ELSE A=2", "RUN",
+                      'PRINT"[";A;ERR;"]"']),   # CONTROL: ELSE + STATEMENTS,
+                                                # which works today -> 2, ERR 0
+    ("lnrd-then",    ["10 IF 1 THEN 20 ELSE 30", "20 A=20:END", "30 A=30:END",
+                      "RUN", 'PRINT"[";A;ERR;"]"']),   # CONTROL: the THEN arm
+                                                # already exists -> 20, ERR 0
+    ("lnrd-else",    ["10 IF 0 THEN 20 ELSE 30", "20 A=20:END", "30 A=30:END",
+                      "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("lnrd-erlctl",  ["10 ON ERROR GOTO 40", "20 ERROR 7", "30 END", "40 A=9",
+                      "RUN", 'PRINT"[";A;ERR;"]"']),   # CONTROL: the handler
+                                                # runs, no ERL compare
+    ("lnrd-erl",     ["10 ON ERROR GOTO 40", "20 ERROR 7", "30 END",
+                      "40 IF ERL=20 THEN A=1", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("lnrd-list",    ["10 A=1:LIST 20:A=2", "20 REM", "RUN",
+                      'PRINT"[";A;ERR;"]"']),
+    ("lnrd-return",  ["10 GOSUB 40", "20 A=20:END", "30 A=30:END",
+                      "40 RETURN 30", "RUN", 'PRINT"[";A;ERR;"]"']),
+]
+
 # --- the `cnmd` battery: WHAT THE EATEN CHARACTERS MEAN -----------------------
 # ⚠️ SAY-MODE ONLY. Storing `X5` instead of `X` + <F1> + <16> is only a
 # divergence worth fixing if it changes what the machine DOES, and the CALL
@@ -1289,10 +1629,11 @@ ERRB = [
     ("err-over",     ["65530 REMX", 'PRINT"[";ERR;"]"']),
     ("err-ctl",      ["65529 REMX", 'PRINT"[";ERR;"]"']),
 ]
-SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD}
+SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD + LNRD}
 
 CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + LNL + CNM
-         + ERRB + DIRB + DOTD + LNLD + CNMD)
+         + LNR + LNRX + LNR2 + LNV + LNV2 + LNA
+         + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD)
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
 # informational because nobody had a RULE for them: `dec-bin` was the `&B`
@@ -1301,8 +1642,28 @@ CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + L
 # that rule, so they are ordinary gating rows now: `dec-bin` is this defect's own
 # filed row, and `lit-varname` is a bounding control of R-N3 (a blank inside a
 # name is KEPT, and `=` still breaks the name).
-INFORMATIONAL = {"num-tab", "ref-list", "ref-delete", "ref-auto", "ref-renum",
-                 "ref-else", "dec-eol", "dec-eolctl"}
+# ⚠️ `ref-list` AND `ref-else` LEFT THIS SET IN D-LNREF. Both were filed
+# informational because zerobas had no $0E arm for LIST/ELSE; it has one now, so
+# they are ordinary gating rows. `ref-delete`/`-auto`/`-renum` did NOT heal and
+# did NOT stay informational either -- they moved to KNOWN_DIVERGE, pinned, so
+# they gate in the only direction that means anything for a missing keyword.
+#
+# 🔴 WHAT IS STILL INFORMATIONAL IS AN ATTRIBUTION ARGUMENT, NOT A CONVENIENCE.
+# The `lnrx` rows below and `lna-renum3`/`-auto2`/`-delrng` diverge because the
+# WORD is absent from kwtable.inc, and would still diverge with the $0E arm
+# perfect. Their reference answer for the ARGUMENT is `<0F><0A>` too (or is
+# unreachable behind the absent token), so they carry no arming obligation this
+# build can meet. A row that can diverge for two reasons measures neither.
+# `lnr-defint` is the same shape with a DELIBERATE cause: kwtable.inc:140 emits
+# DEF_TOKEN + literal "INT" on purpose so ex_def_type sees the ASCII mnemonic.
+INFORMATIONAL = {"num-tab", "dec-eol", "dec-eolctl",
+                 "lnr-defint", "lna-renum3", "lna-auto2", "lna-delrng",
+                 # the tokenless words that do NOT arm on the reference either
+                 "lnrx-defsng", "lnrx-defdbl", "lnrx-defstr", "lnrx-fn",
+                 "lnrx-lprint", "lnrx-lpos", "lnrx-mks", "lnrx-mkd",
+                 "lnrx-cvs", "lnrx-cvd", "lnrx-dski", "lnrx-dsko",
+                 "lnrx-copy", "lnrx-set", "lnrx-attr", "lnrx-ipl",
+                 "lnrx-cmd", "lnrx-lfiles", "lnrx-loc", "lnrx-wait"}
 CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             "lit-ctl", "lit-str", "lit-rem", "ref-ctl", "ref-sp",
             "dec-ctl", "dec-hexctl", "dec-dotlead0",
@@ -1331,7 +1692,29 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             # D-CNAME: N, S and P predict the SAME bytes for these six. The
             # `format` cell is MUST-NOT-MOVE and shipped, not merely agreeing.
             "cnm-ctl", "cnm-par", "cnm-thenctl", "cnm-noblk", "cnm-format",
-            "cnm-uctl", "cnm-upar", "cnmd-ctl", "cnmd-colctl"}
+            "cnm-uctl", "cnm-upar", "cnmd-ctl", "cnmd-colctl",
+            # D-LNREF. The six verbs that ALREADY armed, plus the token-space
+            # NEIGHBOURS of every arming token: a range or threshold
+            # implementation of R-R1 breaks exactly these and nothing else.
+            "lnr-goto", "lnr-gosub", "lnr-then", "lnr-restore", "lnr-run",
+            "lnr-resume",
+            "lnr-if", "lnr-stop", "lnr-print", "lnr-clear", "lnr-new",
+            "lnr-on", "lnr-error", "lnr-to", "lnr-err",
+            # ...and the three that CANNOT ANSWER (they swallow or re-scan the
+            # rest of the statement). Pinned BECAUSE they agree: "unobservable"
+            # is a reading, and it must not quietly become "armed".
+            "lnr-rem", "lnr-data", "lnr-call",
+            "lnr2-goto", "lnr2-nokw",
+            # R-V: values that do NOT reach the bound, so the split rule and the
+            # old wrap predict the SAME bytes. `lnv-lead00` is the one that
+            # separates R-V from a DIGIT-COUNT rule -- eight digits, no split.
+            "lnv-d1", "lnv-d2", "lnv-d3", "lnv-d4", "lnv-d5",
+            "lnv-b28", "lnv-b29", "lnv-zero", "lnv-lead0", "lnv-lead00",
+            "lnv2-blk29",
+            # D-LNREF say-mode: `lnrd-erl` is the LOAD-BEARING one. It is green
+            # BEFORE this slice and it is the row R-E exists for -- arming ERL
+            # without ev_f's $0E arm puts a $0E where the evaluator has none.
+            "lnrd-ctl", "lnrd-then", "lnrd-erlctl", "lnrd-erl", "lnrd-list"}
 
 # --- KNOWN_DIVERGE: EMPTY, and every cohort that ever sat here has retired -----
 # ⚠️ These were never suppressions. Each entry recorded what zerobas ACTUALLY
@@ -1388,7 +1771,51 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 # empty allowlist means every gating row in this probe agrees with BOTH references
 # right now. Adding an entry is how a KNOWN divergence stays measurable; leaving
 # one in after it agrees is how an allowlist rots.
-KNOWN_DIVERGE = {}
+# 🔴 D-LNREF SPENDS THE EMPTY ALLOWLIST, ON PURPOSE, TO BUY A TRIP-WIRE.
+# `DELETE` `AUTO` `RENUM` `LLIST` ARM line-number mode on both references
+# (docs/lnref-msx1-characterization.md §1) and zerobas has no kwtable.inc entry
+# for any of them, so branch_lineno deliberately carries no test for their
+# tokens -- a test no row could exercise. The failure mode that leaves is
+# obvious and silent: the keyword-gap slice adds four entries, every crunch row
+# for them goes from "no token" to "token, WRONG ARGUMENT", and this defect
+# comes back for four verbs with nothing red.
+#
+# Pinning them to zerobas' EXACT current bytes closes it. A pin passes only
+# while the row keeps diverging in exactly that way, so the moment a token lands
+# the pin stops matching, the gate goes red, and the arming byte cannot be
+# forgotten. `lnrd-return` is pinned against `ex_return` for the same reason:
+# RETURN <line> is a STATEMENT feature this slice does not implement, so the row
+# must keep reading 20 and not 30.
+#
+# ⚠️ THIS ENDS FIVE COHORTS OF AN EMPTY ALLOWLIST AND IT IS A DELIBERATE TRADE.
+# Every entry is measured, currently true, and has ONE named retirement path.
+# The alternative -- leaving them informational -- is the shape TODO.md already
+# files as a defect under `dir-name`: a row that has never gated anything.
+KNOWN_DIVERGE = {
+    # the four arming words with no zerobas token (`20 <WORD> 10`)
+    "lnrx-delete":  "line 20 | DE<88>E 10",
+    "lnrx-auto":    "line 20 | AU<D9> <0F><0A>",
+    "lnrx-renum":   "line 20 | RENUM 10",
+    # 🔴 THIS PIN MOVED INSIDE THE SLICE THAT CREATED IT, AND THE MOVE IS REAL.
+    # zerobas mangles `LLIST` into the variable `L` plus a genuine LIST token
+    # ($93) -- so the moment branch_lineno learned to arm on $93, this row's
+    # ARGUMENT started crunching to $0E as well: `L<93> <0F><0A>` became
+    # `L<93> <0E><0A><00>`. Nothing regressed (the argument is now the
+    # reference's; only the token is still wrong, and `L` + LIST is a syntax
+    # error before and after), but the value filed a minute earlier was already
+    # stale and the ALLOWLIST is what said so rather than a re-reading of the
+    # table. It will fire a THIRD time when LLIST gets a kwtable entry and the
+    # row goes fully green.
+    "lnrx-llist":   "line 20 | L<93> <0E><0A><00>",
+    # the same three words as D-LNBLANK's `ref` battery typed them (`1 0`)
+    "ref-delete":   "line 20 | DE<88>E 1 0",
+    "ref-auto":     "line 20 | AU<D9> <0F><0A>",
+    "ref-renum":    "line 20 | RENUM 1 0",
+    # say mode: RETURN <line> is not implemented -- ex_return pops the frame and
+    # never reads its argument, so this returns to the GOSUB caller (line 20)
+    # where both references go to line 30.
+    "lnrd-return":  " 20  0 ",
+}
 
 
 def battery(label):

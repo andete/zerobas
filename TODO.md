@@ -3559,16 +3559,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       its contents. ⚠️ Also note the entry field ORDER may differ from the
       reference's — unmeasured. A separate slice, not a ride-along.
 
-- [ ] **`20 GOTO 99999` TOKENISES 3 BYTES SHORTER ON ZEROBAS.** Filed 2026-08-01
-      by D-REHOME as a **side effect of rows aimed at something else**: under
-      `s7-fired` both `ONELIN` ($801C vs $8019) and `ARYTAB` ($8024 vs $8021)
-      differ by exactly 3, while the identical program with `20 STOP` agrees
-      **byte-for-byte** on both. Neither variable is at fault — the pointers are
-      right and the text they point into is shorter.
-      ⚠️ Likely related to the standing *"`$0E` refs missing for LIST/DELETE/
-      AUTO/RENUM/ELSE"* item — `99999` exceeds 16 bits, so how a line-number
-      argument is stored is exactly the question. **Measure the stored bytes
-      (`mem_indirect` from `TXTTAB`), do not reason from the length.**
+- [x] ✅ **`20 GOTO 99999` — CLOSED BY D-LNREF 2026-08-01, and the "3 bytes"
+      was a SPLIT.** Filed by D-REHOME from `s7-fired`'s `ONELIN`/`ARYTAB`
+      pointers — a LENGTH, never the bytes — and its own note that this was
+      "likely related" to the `$0E` item was right for the wrong reason.
+      🔴 **The reference does not wrap, saturate or refuse: it SPLITS the digit
+      run.** A line-number reference accumulates only while the value would stay
+      **≤ 65529**, and the first digit that would exceed it starts a NEW
+      reference, because the mode is still armed. `GOTO 99999` is
+      `$0E,9999` `$0E,9`; `GOTO 65530` is `$0E,6553` `$0E,0`. Same constant as
+      the LEADING line number's ceiling, different response.
+      Both items were ONE mechanism. Spec
+      [`docs/spec-basic-lnref.md`](docs/spec-basic-lnref.md) **R-V**,
+      measurement [`docs/lnref-msx1-characterization.md`](docs/lnref-msx1-characterization.md) §2.
 
 - [ ] **HOW MUCH OF THE 311-BYTE `NO-ORACLE` BUCKET IS A POINTER?** Filed
       2026-08-01 by D-REHOME. `FRETOP` sat in that bucket scored as *"no
@@ -3605,6 +3608,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `--say` surface is un-gated and this is what was hiding in it — the same
       shape as the SILENT-GAP class. **Ask what else the say pass says before
       fixing this one row.**
+      ⚠️ **PARTLY ADDRESSED 2026-08-01 by D-LNREF: `make lnblank-say-acceptance`
+      exists and gates `ONLY=lnrd-`.** It was added because that slice's
+      load-bearing control (`lnrd-erl`) was itself sitting in this un-gated
+      surface — knife K4 shows the regression it catches passing the MEMORY gate
+      3/3 while the program raises `Syntax error`. The default is scoped to
+      `lnrd-` precisely because THIS row is red, so a whole-surface default would
+      ship a red target. **Widening that default is the fix for this item.**
 
 - [x] ✅ **THE `CALL` DEVICE-NAME SCAN IS A RANGE TEST, NOT AN IDENTIFIER SCAN —
       LANDED 2026-08-01, 251/251 at `--repeat 2`, NET −10 B, all sub-ROM, seven
@@ -3813,20 +3823,79 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Falsified on five knives (K1–K5), each with its own witness and each pairing
       a red row with a GREEN control.
 
-- [ ] **`$0E` line-number references are missing for five verbs — and three of
-      the verbs do not exist at all.** Split out of D-LNBLANK 2026-07-31 (its
-      `ref` battery, measured as denominator). Both references crunch a line
-      number after `LIST`/`DELETE`/`AUTO`/`RENUM`/`ELSE` to `$0E,<lineno LE>`;
-      `bl_yes` ([`basic/tokenise.inc`](basic/tokenise.inc)) tests only
-      `GOTO`/`GOSUB`/`THEN`/`RESTORE`/`RUN`/`RESUME`.
-      ⚠️ **It is bigger than a missing `$0E` arm.** zerobas has no token for
-      three of these verbs whatsoever: `20 DELETE 1 0` crunches to `DE<88>E …`
-      and `20 RENUM 1 0` stores `RENUM` **verbatim** — i.e. `DELETE`, `AUTO` and
-      `RENUM` are unimplemented statements, not just unconverted arguments.
-      `LIST` (`$93`) and `ELSE` (`:`+`$A1`) exist and only lack the arm.
-      Measured bytes: [`docs/lnblank-msx1-characterization.md`](docs/lnblank-msx1-characterization.md) §6.
-      The rows are live and **informational** (non-gating) in
-      `make lnblank-acceptance`.
+- [x] ✅ **THE `$0E` LINE-NUMBER REFERENCE — CLOSED BY D-LNREF 2026-08-01.**
+      Filed as *"missing for LIST/DELETE/AUTO/RENUM/ELSE"*.
+      🔴 **THE FILED LIST WAS WRONG IN BOTH DIRECTIONS, and only a walk of all
+      162 reserved words could say so.** The reference arms on **fourteen**
+      words, not five. Three of the filed five (`DELETE` `AUTO` `RENUM`) have no
+      zerobas token at all, so their rows diverge for a SECOND reason and can
+      attribute nothing — they are the keyword-gap item below, not this one. And
+      three the item never named DO arm: **`RETURN` (`$8E`)**, **`ERL` (`$E1`)**
+      and `LLIST` (`$9E`) — the first two are tokens zerobas already emits, so
+      they were this defect and nobody had looked at them.
+      🔴 **It is a LIST, not a range or a threshold.** `IF` (`$8B`) sits
+      *between* four arming tokens; `ERROR`/`RESUME`, `TO`/`THEN`, `ERR`/`ERL`,
+      `RENUM`/`DEFSTR` are adjacent pairs split across the boundary.
+      🔴 **And one missing arm was a LIVE RUNTIME DEFECT.** `IF 0 THEN 20 ELSE
+      30` raised **`Syntax error`** — `if_false` has always tested
+      `cp LINENO_TOKEN` after the `$A1`, so the feature was written, reachable,
+      and had never fired.
+      Landed: four arms (`LIST` `ELSE` `RETURN` `ERL`) **+28 B sub page 0**, and
+      `ev_f` learned the `$0B..$0E` family at **NET −1 B on main page 1**
+      (5 → 6 B free) — `ERL=<n>` puts a `$0E` inside an expression.
+      Spec [`docs/spec-basic-lnref.md`](docs/spec-basic-lnref.md), measurement
+      [`docs/lnref-msx1-characterization.md`](docs/lnref-msx1-characterization.md).
+
+- [ ] 🔴 **`DELETE` / `AUTO` / `RENUM` / `LLIST` HAVE NO TOKEN — AND WHOEVER ADDS
+      THEM MUST ADD THE ARMING BYTE TOO.** Re-filed 2026-08-01 by D-LNREF out of
+      the item above, which conflated it with the `$0E` arm. Measured at HEAD:
+      `20 DELETE 10` → `DE<88>E 10`, `20 AUTO 10` → `AU<D9> <0F><0A>`,
+      `20 RENUM 10` → `RENUM 10`, `20 LLIST 10` → `L<93> …` — four unimplemented
+      statements, not unconverted arguments.
+      ⚠️ **ALL FOUR ARM LINE-NUMBER MODE ON THE REFERENCE** (`$A8` `$A9` `$AA`
+      `$9E`), and `branch_lineno` deliberately carries no test for their tokens
+      because no row could exercise one. So adding the keyword alone turns every
+      crunch row for them from *"no token"* into *"token, WRONG ARGUMENT"* and
+      brings D-LNREF's defect back for four verbs. `lnrx-delete`/`-auto`/
+      `-renum`/`-llist` and `ref-delete`/`-auto`/`-renum` are **pinned as
+      `KNOWN_DIVERGE`** to zerobas' exact current bytes for exactly that reason:
+      the moment a token lands the pin stops matching and the gate goes red.
+      ⚠️ The reference token bytes for these and 21 more absent words are now
+      oracle-locked — [`docs/lnref-msx1-characterization.md`](docs/lnref-msx1-characterization.md) §4.
+      ⚠️ **`INPUT$` IS NOT ABSENT** — `20 INPUT$ 10` reads `<85>$ <0F><0A>` on
+      all three sides. The reference has no distinct token either, so zerobas is
+      already byte-exact and the coverage sweep's "34 genuinely absent" is one
+      too many. The `INTERVAL` shape, found by D-LNREF's walk.
+
+- [ ] **`RETURN <line>` IS NOT IMPLEMENTED.** Filed 2026-08-01 by D-LNREF.
+      `ex_return` ([`basic/program.asm:1089`](basic/program.asm:1089)) pops the
+      GOSUB frame and never reads its argument, so `RETURN 30` resumes at the
+      caller. Measured, both references agree:
+      ```
+      10 GOSUB 40 : 20 A=20:END : 30 A=30:END : 40 RETURN 30
+          both references -> A = 30      zerobas -> A = 20
+      ```
+      The crunch is now correct (`<8E> <0E><1E><00>`); it is the STATEMENT that
+      is missing. `lnrd-return` is **pinned as `KNOWN_DIVERGE`** so the day it
+      lands the gate says so.
+      ⚠️ It re-points the GOSUB return rather than jumping, so it must POP the
+      frame *and* set the resume line — not a GOTO with extra steps.
+
+- [ ] **`DEFINT` STORES DIFFERENT BYTES FROM THE REFERENCE.** Filed 2026-08-01
+      by D-LNREF's walk. `20 DEFINT 10` reads `<AC> <0F><0A>` on both references
+      and `<97>INT <0F><0A>` on zerobas — [`basic/kwtable.inc:140`](basic/kwtable.inc:140)
+      emits `DEF_TOKEN` + literal `"INT"` **on purpose** so `ex_def_type` sees
+      the ASCII mnemonic, and `DEFSNG`/`DEFDBL`/`DEFSTR` have no entry at all.
+      Deliberate, and still a byte-level divergence a `LIST` round-trip can see.
+      Reference bytes now locked: `DEFSTR $AB`, `DEFINT $AC`, `DEFSNG $AD`,
+      `DEFDBL $AE`. Closing it means moving `ex_def_type` off the ASCII
+      mnemonic, so it is a slice and not a table edit.
+
+- [ ] **`LIST <line>` / `LIST <from>-<to>` STILL LIST THE WHOLE PROGRAM.**
+      `ex_list` ignores its argument (a documented Phase-2 divergence). D-LNREF
+      made the ARGUMENT's bytes the reference's (`<93> <0E><0A><00><F2><0E><14><00>`
+      for `LIST 10-20`), so the range is now sitting there crunched and unread.
+      `lnrd-list` pins that this did not make it worse (`1 0` on all three sides).
 
 - [x] ✅ **LINE-NUMBER SCAN AND EMBEDDED BLANKS — LANDED 2026-07-31, 52/52,
       falsified on five knives.** Was 🔴 a silently wrapped line number shipping
