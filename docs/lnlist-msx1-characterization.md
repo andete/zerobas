@@ -231,8 +231,18 @@ two-sided controls — and they are the cells that say *where* the clear belongs
 `CALL` bypasses).
 
 The three eaten rows are kept anyway: that verbatim `5` is a reading nobody had,
-and the zerobas column (`_X <16>`, `<CA> X<F1><16>`) makes the CALL device-name
+and the zerobas column (`_X <16>`, `<CA> X<F1><16>`) made the CALL device-name
 scan a separate filed item.
+
+✅ **CLOSED by D-CNAME** ([`spec-basic-cname.md`](spec-basic-cname.md),
+[`cname-msx1-characterization.md`](cname-msx1-characterization.md)). All three
+rows now agree on all three sides and their `KNOWN_DIVERGE` entries are
+**retired**. ⚠️ And the rule they suggested was wrong: a 56-row contiguous walk
+showed the scan drops `$21..$2F`, **keeps** `; < = > ? @ [ \ ] ^ _ ` ~`
+verbatim, and ends only at EOL / `:` / `(`. `+ - * /` are dropped while
+`^ \ = < >` are kept, so these three rows agreed with two different wrong rules
+— the same "one row cannot separate two rules" shape this battery was built to
+answer.
 
 **The trap-parser shapes, pinned here on purpose:**
 

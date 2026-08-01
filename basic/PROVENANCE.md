@@ -3855,6 +3855,74 @@ RUN-time variable-name scan too, not just the tokeniser.
 > shipped a divergence. Left in place — the prediction is worth re-reading next
 > to what refuted it.
 
+## 2026-08-01 — the `CALL` device-name scan is a RANGE test (D-CNAME)
+
+Spec [`docs/spec-basic-cname.md`](../docs/spec-basic-cname.md), measurement
+[`docs/cname-msx1-characterization.md`](../docs/cname-msx1-characterization.md).
+Filed by D-LNLIST from three rows that were all written to ask a *different*
+question and had their digit eaten before they could ask it. 56 rows
+oracle-locked on the **VG-8020 and the CF-3300**, which agree, `--repeat 2`, past
+the echo guard, before zerobas was run on any of them.
+
+Three rules, all landing in one loop of [`tokenise.inc`](tokenise.inc):
+
+* **R-C1** — the scan ends at **end of line**, `:` (`$3A`) or `(` (`$28`), and at
+  nothing else. The terminator is left for the ordinary crunch, which is why
+  `20 CALL X(5)` stores the `(` and crunches its 5 to `<16>`, and why
+  `20 CALL X:PRINT 5` has a second statement at all.
+* **R-C2** — a character in **`$21`..`$2F`** is **discarded** and the scan
+  continues past it. Fourteen characters (`(` is R-C1's), walked contiguously.
+* **R-C3** — everything else is **stored**: `a`..`z` upcased, the rest verbatim,
+  **including the blank**. No keyword crunch, no numeric crunch, no length bound.
+
+🔴 **THE FILED FRAMING WAS RIGHT ABOUT THE DIRECTION AND WRONG ABOUT THE RULE,
+IN BOTH DIRECTIONS.** *"The scan stops short — the reference reaches further"* is
+true, and the rule it suggests — copy identifier characters and blanks, drop
+everything else — is refuted: `; < = > ? @ [ \ ] ^ _ ` ~` are **kept** verbatim
+and the scan runs on past them. The narrow reading, *only the `+` is swallowed*,
+is refuted the other way: thirteen more characters are dropped.
+
+🔴 **AND THE OPERATORS LAND ON BOTH SIDES.** `+ - * /` are dropped; `^ \ = < >`
+are kept. Nine operators split down the middle, so neither operator-ness nor the
+token byte separates them — the same interleaving shape D-LNLIST hit, where `\`
+(`$FC`) kept the mode and `MOD` (`$FB`) cleared it. What separates them is the
+**ASCII range**, and only a contiguous walk could show it. All fifteen characters
+of `$21..$2F` and every deliverable printable character at or above `$3B` were
+read, so **both classes are denominators, not samples**. The three rows that
+filed this defect each agree with two different wrong rules.
+
+🔴 **THE FIX DELETES A SUB-ROM ROUTINE, AND THE DEAD-CODE GATE FORCED IT.**
+[`vars.asm`](vars.asm) is **not** included by `sub/sub.asm`, so `tcn_name`'s
+`call is_ident_cont` was the only caller of the sub-local clone anywhere
+sub-side. Replacing it with the range test orphaned 16 bytes and
+`make basic-reloc`'s hard dead-code gate failed the build rather than shipping
+them. Knife **K6** turns that argument into a measurement: it restores the clone
+with no caller and the **build** goes red, naming `is_ident_cont` and `siic_no`
+dead. `is_letter` survives the same edit (`tk_notkw` still calls it), and this
+file's own `is_ident_cont` keeps all three of its callers and is untouched.
+
+**NET −10 B** (+6 for the loop, −16 for the clone), **all sub-ROM page 0**
+(3998 → 4008 B free); both main ROMs **byte-identical**, asserted by hash.
+`lnblank-acceptance` **251/251** at `--repeat 2`, up from 195/195 — exactly the
+56 new rows — and `KNOWN_DIVERGE` is now **EMPTY**, the fifth cohort to retire
+from it and not one has rotted.
+
+⚠️ **THE MACHINE DOES NOT SURVIVE A MISSING END-OF-LINE TEST.** `$00` is below
+`'0'`, so without the leading `or a` it takes R-C2's discard path and the cursor
+runs past the line terminator. Knife **K7** defeats exactly that test: batched,
+*every* zerobas row came back `NOCAPTURE`, which is not a reading at all — a hung
+machine and a broken harness are the same value. Run on isolated single rows it
+separates, and that is the measurement: `20 CALL X(5)` still reads correctly
+while `20 CALL X` is `NOCAPTURE`, so the corruption is **per payload**.
+
+⚠️ **Three apparatus findings, each caught by a guard rather than by luck.**
+`{` `|` `}` are not deliverable through this harness — and the `}` row returned a
+stable, both-references-agreeing `<CA> X{5}` from a payload containing neither
+brace, a perfect fake that only the echo guard killed. The echo guard's payload
+ceiling is the display width, because it matches whole screen rows. And
+`cnm-lower` mangles **intermittently in a batch**, which `--repeat` cannot catch:
+openMSX is deterministic, so a harness race reproduces identically across boots.
+
 ## 2026-08-01 — `.` is an identifier character to the TOKENISER (D-NAMDOT)
 
 Spec [`docs/spec-basic-namedot.md`](../docs/spec-basic-namedot.md), measurement

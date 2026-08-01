@@ -192,8 +192,12 @@ sis_spin:
 ; ISR touch (leaf-audit, spec §3) — so it is a valid page-0 tenant run under DI.
 ; Its only non-RAM callees are pure leaves co-resident in this page:
 ;   * upcase / cmp16_bits / neg_de  — clones in tkfloat.asm (below).
-;   * is_letter / is_ident_cont     — clones right below (the tokeniser's
+;   * is_letter                     — clone right below (the tokeniser's
 ;                                     identifier path; not needed by the crunch).
+;                                     ⚠️ is_ident_cont USED to be cloned beside
+;                                     it and is gone — D-CNAME's CALL device-name
+;                                     range test was its last caller sub-side
+;                                     (docs/spec-basic-cname.md §3.1).
 ;   * tk_float                      — the wave-1 crunch, now reached by an ordinary
 ;                                     in-slot `jp tk_float` from tk_loop (wave 1's
 ;                                     per-literal CALSLT + disposition protocol were
@@ -256,11 +260,23 @@ sis_spin:
 ; shared .inc -- there is no resident twin of this shape.
                 include "fldlook.asm"
 
-; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
-; Resident copies stay in the main ROM (basic/interp.asm is_letter, basic/vars.asm
-; is_ident_cont) for the rest of the interpreter; a page-0 tenant can't reach them,
-; so the tokeniser's identifier path uses these co-located clones. is_letter ->
-; upcase (tkfloat.asm), is_ident_cont -> is_letter — the whole chain is here.
+; --- sub-local is_letter (byte-identical own-design clone) ------------------
+; The resident copy stays in the main ROM (basic/interp.asm) for the rest of the
+; interpreter; a page-0 tenant can't reach it, so the tokeniser's identifier path
+; uses this co-located clone. is_letter -> upcase (tkfloat.asm).
+;
+; ⚠️ THE is_ident_cont CLONE THAT USED TO SIT HERE IS GONE, AND THE DEAD-CODE
+; GATE IS WHY (D-CNAME §3.1, docs/spec-basic-cname.md). basic/vars.asm is NOT
+; included by this file, so basic/tokenise.inc's tcn_name was the clone's ONLY
+; caller anywhere sub-side; D-CNAME's range test replaced that call, which
+; orphaned 16 bytes, and `make basic-reloc`'s hard dead-code gate (0 dead, both
+; builds) fails the build rather than shipping them. The deletion was FORCED by
+; measurement, not argued -- knife K6 restores the clone with no caller and the
+; build is what goes red.
+;
+; is_letter itself keeps a caller (basic/tokenise.inc tk_notkw), which is why it
+; survives the same edit. The main ROM's own is_ident_cont (basic/vars.asm) keeps
+; all three of its callers and is untouched.
 is_letter:
                 push    af
                 call    upcase
@@ -274,18 +290,6 @@ is_letter:
 sil_no:
                 pop     af
                 or      a                   ; CF clear
-                ret
-is_ident_cont:
-                call    is_letter           ; letter -> CF set, A preserved
-                ret     c
-                cp      '0'
-                jr      c,siic_no
-                cp      '9'+1
-                jr      nc,siic_no
-                scf                          ; digit -> CF set
-                ret
-siic_no:
-                or      a                    ; CF clear
                 ret
 
 ; --- sub-local keyword table (duplicate of the resident repack copy, §4) -----

@@ -880,6 +880,236 @@ LNL = [
                                             # scanner every other battery pins.
 ]
 
+# --- the `cnm` battery: HOW FAR DOES THE `CALL` DEVICE-NAME SCAN REACH? -------
+# D-CNAME. The DENOMINATOR of the defect D-LNLIST filed and did not fix. THREE
+# rows found it, and all three were D-LNLIST rows that got EATEN -- none of them
+# was designed to measure this at all:
+#
+#     20 IF A THEN _X 5      ref -> _X 5      zb -> _X <16>
+#     20 IF A THEN CALL X 5  ref -> <CA> X 5  zb -> <CA> X <16>
+#     20 IF A THEN CALL X+5  ref -> <CA> X5   zb -> <CA> X<F1><16>
+#
+# Three rows are a SAMPLE of this surface, not the surface -- the trap D-NOTOPEN2
+# hit (3 of 7 rows gave a different answer than all 7), and D-LNLIST's own
+# headline is that sampling three operators produced an apparent contradiction
+# whose classes turned out INTERLEAVED.
+#
+# ⚠️ THESE ROWS DROP THE `IF A THEN`. The filed three carry it because they were
+# asking a LINE-NUMBER MODE question; that question is ANSWERED (lnl-callpar /
+# lnl-underpar) and carrying the mode here would put a second candidate cause in
+# every payload -- the `lnl-colon` mistake, one slice later. At statement level
+# the discriminator is crisp: a `5` the scan ate reads as ASCII `5`, a `5` the
+# scan let go reads as the ordinary integer <16>. `cnm-thenctl` is the row that
+# says the two contexts are the same scan.
+#
+# FOUR NAMED RULES, AND THE WALK BELOW SEPARATES THEM:
+#
+#   rule N (name)      -- the scan copies identifier chars (letter/digit,
+#                         upcased) and STOPS at the first other character, which
+#                         is then tokenised normally. zerobas today
+#                         (tk_call_name/tcn_name; is_ident_cont is letter-or-
+#                         digit, so not even '.' continues).
+#   rule S (skip)      -- the scan copies identifier chars and blanks and DROPS
+#                         every other character, running on until a TERMINATOR
+#                         from some set. Fits both filed rows: the blank in
+#                         `X 5` was kept, the '+' in `X+5` was dropped, and both
+#                         kept their digit.
+#   rule P (plus-only) -- rule N, except that '+' specifically is swallowed. Also
+#                         fits both filed rows. It predicts `CALL X-5` ->
+#                         `<CA> X<F2><16>` where S predicts `<CA> X5`.
+#   rule V (verbatim)  -- everything copied verbatim to a terminator. ALREADY
+#                         REFUTED by `lnl-callp` (the '+' is not in the stored
+#                         line at all); named so the walk's rows can be read
+#                         against it without re-deriving why it is dead.
+#
+# ⚠️ S AND P PREDICT THE SAME BYTES FOR EVERY ROW THAT FOUND THIS DEFECT. That is
+# the whole reason for the walk: one row proves a defect EXISTS, not what the
+# RULE is (docs/lnlist-msx1-characterization.md §1).
+#
+# ⚠️ MUST-NOT-MOVE, AND `cnm-format` IS PINNED HERE BECAUSE IT IS SHIPPED.
+# `call format` -> `CA 20 46 4F 52 4D 41 54`: the extended name is NOT
+# keyword-crunched, so FORMAT does not become FOR+MAT. Any widening of this scan
+# has to answer to that cell, and to `diskbasic-acceptance`, which RUNS it.
+CNM = [
+    # --- CONTROLS: N, S and P predict the SAME bytes -------------------------
+    ("cnm-ctl",      ["20 CALL X"]),        # name runs to EOL
+    ("cnm-par",      ["20 CALL X(5)"]),     # '(' ends an extended name on every
+                                            # rule (this is `lnl-callpar` with
+                                            # the line-number mode taken out)
+    ("cnm-thenctl",  ["20 IF A THEN CALL X"]),  # same scan after THEN?
+    ("cnm-noblk",    ["20 CALLX5"]),        # no blank at all: match_kw still
+                                            # takes CALL, then the name is `X5`
+    ("cnm-format",   ["20 CALL FORMAT"]),   # THE SHIPPED ORACLE. MUST NOT MOVE.
+    # --- the walk: `20 CALL X<c>5`, one character at a time -------------------
+    # Under N every one of these stores `<CA> X` + the ordinary tokenisation of
+    # `<c>5`; under S every one stores `<CA> X5` with <c> gone; under P only the
+    # '+' row does. The operator range is walked CONTIGUOUSLY rather than
+    # sampled, because that is exactly where D-LNLIST found the classes
+    # interleaved ($FC keeps, $FB clears, with no threshold between them).
+    ("cnm-plus",     ["20 CALL X+5"]),      # $F1 -- the filed row, at statement
+                                            # level and with no mode in the way
+    ("cnm-minus",    ["20 CALL X-5"]),      # $F2 -- S says `X5`, P says `X<F2><16>`
+    ("cnm-star",     ["20 CALL X*5"]),      # $F3
+    ("cnm-slash",    ["20 CALL X/5"]),      # $F4
+    ("cnm-pow",      ["20 CALL X^5"]),      # $F5
+    ("cnm-idiv",     ["20 CALL X\\5"]),     # $FC -- a SYMBOL above the words
+    ("cnm-eq",       ["20 CALL X=5"]),      # $EF
+    ("cnm-lt",       ["20 CALL X<5"]),      # $F0
+    ("cnm-gt",       ["20 CALL X>5"]),      # $EE
+    ("cnm-semi",     ["20 CALL X;5"]),      # pure punctuation, no operator meaning
+    ("cnm-comma",    ["20 CALL X,5"]),      # the ARGUMENT separator of an
+                                            # extended statement
+    ("cnm-colon",    ["20 CALL X:5"]),      # the STATEMENT separator: if this is
+                                            # not a terminator, `CALL X:PRINT`
+                                            # cannot work at all
+    ("cnm-dot",      ["20 CALL X.5"]),      # D-NAMDOT made '.' an identifier char
+                                            # to the tokeniser -- but NOT to
+                                            # is_ident_cont, which this scan uses
+    ("cnm-hash",     ["20 CALL X#5"]),      # type-suffix characters: a name may
+    ("cnm-dollar",   ["20 CALL X$5"]),      #  legitimately end at one of these
+    ("cnm-pct",      ["20 CALL X%5"]),
+    ("cnm-excl",     ["20 CALL X!5"]),
+    ("cnm-amp",      ["20 CALL X&5"]),      # a radix prefix with no radix letter
+    ("cnm-at",       ["20 CALL X@5"]),
+    ("cnm-quest",    ["20 CALL X?5"]),      # a SYMBOL that expands to a word
+                                            # token ($91 PRINT) -- dropped, or
+                                            # does it terminate and expand?
+    ("cnm-apos",     ["20 CALL X'5"]),      # ...and the other one ("'" -> REM,
+                                            # which swallows the rest of the line)
+    ("cnm-rpar",     ["20 CALL X)5"]),      # the CLOSING paren, unmatched
+    ("cnm-quote",    ['20 CALL X"5"']),     # a string literal
+    ("cnm-blk",      ["20 CALL X 5"]),      # the filed blank row, at statement level
+    # --- blanks: the scan copies LEADING blanks today, but past the name? -----
+    ("cnm-blk2",     ["20 CALL X  5"]),     # a RUN of blanks mid-name
+    ("cnm-blkpre",   ["20 CALL  X 5"]),     # two blanks BEFORE the name
+    ("cnm-twoword",  ["20 CALL X Y"]),      # blank between two name-ish words:
+                                            # one name, or a name and a variable?
+    ("cnm-digit1",   ["20 CALL 5X"]),       # a DIGIT as the first name character
+    # --- upcasing -------------------------------------------------------------
+    # ⚠️ `cnm-lower` MANGLES INTERMITTENTLY IN A BATCH -- RE-RUN IT ALONE BEFORE
+    # READING A FAILURE AS A DIVERGENCE. It has come back `REFUSED (empty
+    # program)` from zerobas three times (the pre-fix pass, and knives K1 and K4,
+    # neither of which can reach a payload with no $21..$2F character and no
+    # ':'), and read `<CA> ABC` every time it was re-run ALONE on the same
+    # installed build. 🔴 The flake is intermittent BETWEEN runs and deterministic
+    # WITHIN one -- openMSX is deterministic, so both boots of a `--repeat 2`
+    # batch reproduced the refusal identically and the run reported no UNSTABLE.
+    # `--repeat` cannot catch this class (docs/cname-msx1-characterization.md §3).
+    ("cnm-lower",    ["20 CALL abc"]),      # does the reference upcase at all?
+    ("cnm-lowmix",   ["20 CALL aB3d"]),     # ...through a digit, mid-name
+    ("cnm-lowplus",  ["20 CALL x+y"]),      # lower case ACROSS a dropped char:
+                                            # if S holds, is the `y` upcased too?
+    # --- is a reserved WORD crunched inside the name? -------------------------
+    ("cnm-kw",       ["20 CALL PRINT"]),    # the whole name IS a keyword
+    ("cnm-kwmid",    ["20 CALL XFORY"]),    # ...and one buried inside it
+    # --- is the name BOUNDED? -------------------------------------------------
+    # ⚠️ 34 CHARACTERS, AND THE LENGTH IS A CONSTRAINT OF THE APPARATUS. The echo
+    # guard matches whole SCREEN ROWS (echo_missing), so any payload longer than
+    # the display width wraps and can never match -- the first cut of this row
+    # was 43 chars and read `MANGLED` on BOTH references identically, which is
+    # the signature of a geometry limit rather than a machine transform. 26 name
+    # characters is still far past MSX's 16-byte PROCNM device-name buffer, so
+    # the question survives the shortening.
+    ("cnm-long",     ["20 CALL ABCDEFGHIJKLMNOPQRSTUVWXYZ"]),
+    # --- ':' with a REAL statement behind it ----------------------------------
+    # 🔴 THE MOST CONSEQUENTIAL ROW IN THE BATTERY. If ':' does not terminate the
+    # scan, `CALL X:PRINT 5` stores one long name and the second statement never
+    # exists. `cnm-colon` asks the same thing with a bare digit; this one asks it
+    # where the answer decides whether ordinary programs still run.
+    ("cnm-colstmt",  ["20 CALL X:PRINT 5"]),
+    # --- round 2: the KEEP side, walked instead of sampled --------------------
+    # 🔴 ROUND 1 SPLIT THE PUNCTUATION AND THE OPERATORS LANDED ON BOTH SIDES.
+    # `+ - * /` are DROPPED and `^ \ = < >` are KEPT, so "it is an operator"
+    # explains nothing; what separates them is the numeric range, `< '0'`. All
+    # FIFTEEN characters of $21..$2F were walked, so the drop side is a
+    # denominator. The keep side is NOT: round 1 read $3B..$40 plus $5C and $5E,
+    # eight of the ~20 non-identifier characters at or above $3B, and D-LNLIST's
+    # headline is that the classes turned out INTERLEAVED with no threshold
+    # between them. These rows read every remaining printable one.
+    ("cnm-lbrk",     ["20 CALL X[5"]),      # $5B -- between '@'..'Z' and '\'
+    ("cnm-rbrk",     ["20 CALL X]5"]),      # $5D
+    ("cnm-under",    ["20 CALL X_5"]),      # $5F -- ⚠️ '_' IS ITSELF THE CALL
+                                            # ABBREVIATION. Kept, dropped, or a
+                                            # terminator like ':' and '('?
+    ("cnm-bq",       ["20 CALL X`5"]),      # $60 -- the last one below 'a'
+    ("cnm-tilde",    ["20 CALL X~5"]),      # $7E
+    # 🔴 `{` ($7B), `|` ($7C) AND `}` ($7D) ARE NOT DELIVERABLE THROUGH THIS
+    # HARNESS AND THE ECHO GUARD IS THE ONLY REASON THAT IS KNOWN. Rows for all
+    # three were written, run, and DELETED: `{` and `|` produced <NO CAPTURE> on
+    # both references, and `}` -- the dangerous one -- produced a perfectly
+    # ordinary reading that AGREED on both machines and was stable across two
+    # boots:
+    #
+    #     cnm-rbrc   typed `20 CALL X}5`   both refs -> line 20 | <CA> X{5}
+    #
+    # A stored line containing a '{' and a '}' from a payload that had neither.
+    # Without the guard that row would have been written up as a finding about
+    # '}' in a name scan the machine never saw one in. They are recorded in
+    # docs/cname-msx1-characterization.md §7 as NOT MEASURED rather than kept as
+    # rows that cannot be delivered ([[apparatus-is-part-of-the-measurement]]).
+    # --- round 2: the rules COMPOSED, not asked one at a time -----------------
+    # Each round-1 row isolates one character. A rule that holds for each of them
+    # separately can still be wrong about what happens when a drop, a kept blank
+    # and a terminator meet in one name -- which is the shape a real extended
+    # statement has.
+    ("cnm-plpar",    ["20 CALL X+(5)"]),    # a DROPPED char immediately before
+                                            # the '(' terminator
+    ("cnm-mix",      ["20 CALL A+B C(1)"]),  # drop, kept blank and terminate,
+                                            # all in one name
+    # --- '_' parity: does the abbreviation take the SAME scan? ----------------
+    # ⚠️ ONLY `_X 5` AND `_X(5)` HAVE EVER BEEN MEASURED. zerobas falls '_'
+    # through into tk_call_name, so it is the same code -- but "the same code in
+    # zerobas" is not a reading about the reference.
+    ("cnm-uctl",     ["20 _X"]),
+    ("cnm-upar",     ["20 _X(5)"]),
+    ("cnm-uplus",    ["20 _X+5"]),
+    ("cnm-uminus",   ["20 _X-5"]),
+    ("cnm-usemi",    ["20 _X;5"]),
+    ("cnm-ucolon",   ["20 _X:5"]),
+    ("cnm-ublk",     ["20 _X 5"]),
+    ("cnm-ulow",     ["20 _abc"]),
+    ("cnm-ucolstmt", ["20 _X:PRINT 5"]),
+]
+
+# --- the `cnmd` battery: WHAT THE EATEN CHARACTERS MEAN -----------------------
+# ⚠️ SAY-MODE ONLY. Storing `X5` instead of `X` + <F1> + <16> is only a
+# divergence worth fixing if it changes what the machine DOES, and the CALL
+# dispatcher matches the stored name against the extended-statement handlers in
+# every slot -- so a name that grew a trailing `5` is a DIFFERENT name.
+#
+# ⚠️ THE PAYLOAD ABORTS ON PURPOSE, so the brackets may NOT live on the payload
+# line: an untrapped error never reaches its own ']' and `<none>` on every side
+# compares EQUAL (docs/namedot-msx1-characterization.md §4). `ERR` is asked on
+# the NEXT line, in direct mode, where it prints its brackets either way.
+#
+# ⚠️ NO `CALL FORMAT` ROW. It is a shipped verb that WRITES A DISK and prompts;
+# `cnm-format` pins its bytes and `diskbasic-acceptance` is what runs it.
+CNMD = [
+    ("cnmd-ctl",     ["10 CALL X", "RUN", 'PRINT"[";ERR;"]"']),   # CONTROL: a
+                                            # plain unknown device name
+    ("cnmd-blk",     ["10 CALL X 5", "RUN", 'PRINT"[";ERR;"]"']),
+    ("cnmd-plus",    ["10 CALL X+5", "RUN", 'PRINT"[";ERR;"]"']),
+    # 🔴 THE THREE ROWS ABOVE CANNOT SEPARATE THE RULES AND THIS PAIR IS WHY
+    # THEY ARE NOT THE WHOLE BATTERY. An unknown device raises `Syntax error`
+    # whether its name came out `X`, `X5` or `X 5`, so all three read the same on
+    # every side -- they pin that the fix does not change the error CLASS, and
+    # they measure nothing about the name. The only extended statement that
+    # EXISTS on either reference is `CALL FORMAT`, which writes a disk, so a row
+    # that reaches a live handler cannot be written (characterization §7).
+    #
+    # This pair asks the one semantic question that IS reachable: does ':' still
+    # END the statement? `ON ERROR` + `RESUME NEXT` resumes at the NEXT
+    # STATEMENT, so `A` reads 7 only if the ':' terminated the name scan and
+    # `A=7` is a statement of its own. A widened scan that swallows ':' makes
+    # line 20 a single statement and RESUME NEXT skips to line 30 with A=0.
+    # ⚠️ A MUST-NOT-MOVE CELL, not a red row: both references AND zerobas
+    # terminate at ':' today, and the pair exists to say the fix still does.
+    ("cnmd-colstmt", ["10 ON ERROR GOTO 100", "20 CALL X:A=7",
+                      '30 PRINT"[";A;ERR;"]"', "100 RESUME NEXT", "RUN"]),
+    ("cnmd-colctl",  ["10 ON ERROR GOTO 100", "20 A=0:A=7",
+                      '30 PRINT"[";A;ERR;"]"', "100 RESUME NEXT", "RUN"]),
+]
+
 # --- the `lnld` battery: WHAT A LINE-NUMBER LIST MEANS, not what it stores ----
 # ⚠️ SAY-MODE ONLY, and the byte gloss cannot substitute for it. Two extra $0E
 # bytes in a stored line are only a divergence worth fixing if the executor reads
@@ -928,10 +1158,10 @@ ERRB = [
     ("err-over",     ["65530 REMX", 'PRINT"[";ERR;"]"']),
     ("err-ctl",      ["65529 REMX", 'PRINT"[";ERR;"]"']),
 ]
-SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD}
+SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD}
 
-CASES = (NUM + BODY + LIT + DEC + EXP + NAM + DOT + REF + LNL
-         + ERRB + DIRB + DOTD + LNLD)
+CASES = (NUM + BODY + LIT + DEC + EXP + NAM + DOT + REF + LNL + CNM
+         + ERRB + DIRB + DOTD + LNLD + CNMD)
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
 # informational because nobody had a RULE for them: `dec-bin` was the `&B`
@@ -955,9 +1185,13 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             # ...and the two rows that got a digit PAST the CALL device-name
             # scan: '(' ends the extended-statement name and leaves the mode
             # armed (lnl-paren), so the <16> here is CALL/'_' clearing it.
-            "lnl-callpar", "lnl-underpar"}
+            "lnl-callpar", "lnl-underpar",
+            # D-CNAME: N, S and P predict the SAME bytes for these six. The
+            # `format` cell is MUST-NOT-MOVE and shipped, not merely agreeing.
+            "cnm-ctl", "cnm-par", "cnm-thenctl", "cnm-noblk", "cnm-format",
+            "cnm-uctl", "cnm-upar", "cnmd-ctl", "cnmd-colctl"}
 
-# --- KNOWN_DIVERGE: two rows, and they are a DIFFERENT DEFECT -----------------
+# --- KNOWN_DIVERGE: EMPTY, and every cohort that ever sat here has retired -----
 # ⚠️ These were never suppressions. Each entry recorded what zerobas ACTUALLY
 # read, so a row passed only while it kept diverging in EXACTLY that way -- fix
 # the behaviour and the entry stops matching, the gate goes RED, and the entry
@@ -992,33 +1226,27 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 # `1;5` and `1\5` included, and `1.5.7` carries three. One row could not tell
 # those rules apart, and the pin is what kept it measurable until a battery could.
 #
-# ⚠️ AND IT IS NON-EMPTY AGAIN AS OF D-LNLIST, for THREE rows that are a
-# DIFFERENT DEFECT AGAIN -- the CALL device-name scan, not the mode:
+#   * the THREE `lnl-` rows D-LNLIST filed -> RETIRED by D-CNAME
+#     (docs/spec-basic-cname.md), same message a FIFTH time: the allowlist
+#     reported all three as AGREEING and the gate went red until the entries were
+#     deleted. FIVE cohorts now, and not one of them has rotted.
 #
-#     lnl-under   20 IF A THEN _X 5       ref -> _X 5          zb -> _X <16>
-#     lnl-call    20 IF A THEN CALL X 5   ref -> <CA> X 5      zb -> <CA> X <16>
-#     lnl-callp   20 IF A THEN CALL X+5   ref -> <CA> X5       zb -> <CA> X<F1><16>
+# 🔴 AND THE `lnl-` COHORT IS THE ONE THAT SHOWS THE PIN CATCHING A RULE THAT WAS
+# WRONG IN BOTH DIRECTIONS. The three rows were filed as "the scan stops short --
+# the reference reaches further", which is true and which suggests a rule that
+# measurement REFUTED: `; < = > ? @ [ \\ ] ^ _ ` ~` are KEPT verbatim and the scan
+# runs past them, while `+ - * /` are DROPPED and `^ \\ = < >` are not, so no
+# property of the operator or its token byte separates them. The boundary is the
+# ASCII range $21..$2F, which only a contiguous walk could show
+# (docs/cname-msx1-characterization.md §2). Three rows agreed with two different
+# wrong rules; the pin is what kept them measurable until a 56-row battery could
+# tell them apart.
 #
-# 🔴 THE REFERENCE'S EXTENDED-STATEMENT NAME SCAN REACHES FURTHER THAN ZEROBAS'.
-# It keeps the trailing digit as VERBATIM ASCII across a blank, and for `X+5` it
-# drops the '+' outright. zerobas' tk_call_name stops at the first non-ident
-# character, so the digit reaches the ordinary number path and crunches.
-#
-# ⚠️ THESE THREE ATE D-LNLIST'S OWN QUESTION THREE TIMES. Each was written to ask
-# whether CALL clears line-number mode and each had its digit swallowed before any
-# numeric path could see it. `lnl-callpar`/`lnl-underpar` got past the scan with a
-# '(' terminator and answered it (CALL and '_' DO clear); these three are left
-# measuring the name scan, which is its own TODO item. Fixing it here would be the
-# D-MFDOM trap.
-#
-# Pinned to zerobas' EXACT readings, so they are controls and not suppressions:
-# they are also what says D-LNLIST did NOT move them -- the values below are
-# byte-for-byte what zerobas read BEFORE the fix.
-KNOWN_DIVERGE = {
-    "lnl-under":  "line 20 | <8B> A <DA> _X <16>",
-    "lnl-call":   "line 20 | <8B> A <DA> <CA> X <16>",
-    "lnl-callp":  "line 20 | <8B> A <DA> <CA> X<F1><16>",
-}
+# ⚠️ THE SET IS EMPTY, AND THAT IS A STATE TO DEFEND RATHER THAN A DEFAULT. An
+# empty allowlist means every gating row in this probe agrees with BOTH references
+# right now. Adding an entry is how a KNOWN divergence stays measurable; leaving
+# one in after it agrees is how an allowlist rots.
+KNOWN_DIVERGE = {}
 
 
 def battery(label):
@@ -1138,7 +1366,7 @@ def say(raw, lines, margin_lines):
     return "|".join(out) if out else "<nothing printed>"
 
 
-def run_side(side, cases, repeat, echo, saymode=False):
+def run_side(side, cases, repeat, echo, saymode=False, isolate=False):
     """Deliver `cases` to one machine and return a reading per case.
 
     ⚠️ REPEAT IS NOT OPTIONAL ON A REFERENCE PASS, AND THE REASON IS ASYMMETRIC.
@@ -1186,7 +1414,9 @@ def run_side(side, cases, repeat, echo, saymode=False):
     # SCREEN 0 scraper -- `<none>` on both rows, which would have been reported
     # as the CF-3300 declining to answer. The isolation has to carry the setup,
     # so the reset lines are prepended to the case itself.
-    batch = not any(lb in SAY_ONLY for lb, _l in cases)
+    # `isolate` forces boot-per-case: the SELF-HEAL pass (main) re-runs suspect
+    # rows this way, so a batched delivery mangle cannot be reported as a finding.
+    batch = (not isolate) and not any(lb in SAY_ONLY for lb, _l in cases)
     specs = [("direct", (list(reset) + lines) if not batch else lines)
              for _l, lines in cases]
     runs = []
@@ -1277,6 +1507,76 @@ def main():
 
     cols = {s: run_side(s, sel, args.repeat, args.echo, args.say)
             for s in sides}
+
+    # --- SELF-HEAL: re-run every SUSPECT row boot-per-case ---------------------
+    # ⚠️ A BATCHED DELIVERY MANGLE LOOKS EXACTLY LIKE A DIVERGENCE, AND `--repeat`
+    # CANNOT SEE IT. openMSX is deterministic, so a harness race reproduces
+    # IDENTICALLY on every boot: `cnm-lower` (`20 CALL abc`) read
+    # `REFUSED (empty program)` on both boots of a `--repeat 2` batch -- no
+    # UNSTABLE reported -- and read `<CA> ABC` every time it was re-run ALONE on
+    # the very same installed build (docs/cname-msx1-characterization.md §3).
+    # Repetition guards a FLICKERING fault; this guards a STICKY one.
+    #
+    # This is omsx_repl.run_differential's self-heal, ported: that helper re-runs
+    # any disagreeing case boot-per-case so its verdicts "equal a full
+    # boot-per-case run". This probe compares THREE sides, so it drives run_cases
+    # per side and never inherited it.
+    #
+    # ⚠️ THE HEAL IS ASYMMETRIC AND MAY NOT BE MISTAKEN FOR `--repeat`. It re-runs
+    # only rows that already look wrong, so it can turn a false FAIL into a pass
+    # and can NEVER catch a false PASS. In the differential direction that is
+    # exactly right (a mangle fails loudly and safely). In the ORACLE-LOCK
+    # direction a mangle is a false PASS FOREVER, and `--repeat 2` remains the
+    # only guard for it -- this changes nothing about that requirement.
+    #
+    # 🔴 INFORMATIONAL ROWS ARE HEALED TOO, AND THAT IS THE CONTROL. `ref-list`,
+    # `ref-delete`, `ref-auto`, `ref-renum`, `ref-else`, `dec-eol` and `dec-eolctl`
+    # diverge for real, measured reasons. They are re-run boot-per-case on every
+    # gate and they MUST STILL DIVERGE -- which is what says the heal re-measures
+    # a row rather than manufacturing agreement. A run in which they came back
+    # agreeing would be the heal itself failing, not seven defects fixing
+    # themselves ([[apparatus-is-part-of-the-measurement]]).
+    if not args.echo:
+        suspect = [i for i, (label, _l) in enumerate(sel)
+                   if any(is_bad(cols[s][i]) for s in sides)
+                   or len({cols[s][i] for s in sides}) > 1]
+        if suspect:
+            # ⚠️ REPORTED IN TWO GROUPS ON PURPOSE. The informational rows heal on
+            # EVERY run by construction, so folding them in with the rest would
+            # make a permanently non-empty list and drown the one line that
+            # matters: a GATING row needing the heal. That is either a delivery
+            # mangle or a real divergence, and either way a human should see it.
+            exp = [i for i in suspect if sel[i][0] in INFORMATIONAL]
+            unexp = [i for i in suspect if sel[i][0] not in INFORMATIONAL]
+            print(f"SELF-HEAL: re-running {len(suspect)} suspect row(s) "
+                  f"boot-per-case -- a batched mangle reads exactly like a "
+                  f"divergence, and --repeat cannot tell them apart.")
+            if unexp:
+                print("  ⚠️ GATING rows needing the heal (a batched mangle, or a "
+                      "real divergence -- read the healed value below):")
+                for i in unexp:
+                    print(f"      {sel[i][0]:13} batched: "
+                          + " | ".join(f"{s}={cols[s][i]}" for s in sides))
+            if exp:
+                print("  informational rows (these heal every run BY DESIGN and "
+                      "are the control: they must STILL diverge afterwards):")
+                print("      " + ", ".join(sel[i][0] for i in exp))
+            sub = [sel[i] for i in suspect]
+            for s in sides:
+                healed = run_side(s, sub, args.repeat, args.echo, args.say,
+                                  isolate=True)
+                for j, i in enumerate(suspect):
+                    cols[s][i] = healed[j]
+            laundered = [sel[i][0] for i in exp
+                         if len({cols[s][i] for s in sides}) == 1]
+            if laundered:
+                print("\n🔴 SELF-HEAL FAILURE -- these rows diverge for measured "
+                      "reasons and came back AGREEING, so the heal is "
+                      "manufacturing agreement rather than re-measuring:")
+                for lb in laundered:
+                    print(f"      {lb}")
+                return 1
+            print()
 
     wide = max(len(v) for vs in cols.values() for v in vs)
     wide = min(wide, 60)

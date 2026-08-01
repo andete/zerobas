@@ -14,8 +14,10 @@
 ; executor walks already-crunched tokens), so it fits the sub-ROM's page-0 tenant
 ; rule — pure buffer computation over page-2/3 RAM, no BIOS / low-region / ISR
 ; touch (leaf-audit, spec §3). The only non-RAM callees are pure leaves cloned
-; sub-side: upcase (sub/tkfloat.asm), is_letter / is_ident_cont (sub/sub.asm),
-; and tk_float itself, now an in-slot jump to the co-located crunch.
+; sub-side: upcase (sub/tkfloat.asm), is_letter (sub/sub.asm — the is_ident_cont
+; clone that used to sit beside it went away with D-CNAME's CALL device-name
+; range test, its last sub-side caller: docs/spec-basic-cname.md §3.1), and
+; tk_float itself, now an in-slot jump to the co-located crunch.
 ;
 ; Derived only from this project's own black-box oracle observations
 ; (basic-spec/docs/spec-tokenise.md, spec-tokens-statements.md) and the public
@@ -299,23 +301,58 @@ tk_underscore:                              ; '_' (CALL abbreviation): copy it, 
                 inc     de
                 inc     hl
                 ; fall through into tk_call_name
-tk_call_name:                               ; copy any spaces, then the device name —
-                ld      a,(hl)              ; identifier chars upcased + verbatim, NOT
-                cp      ' '                 ; keyword-crunched — then resume tokenising.
-                jr      nz,tcn_name
-                ld      (de),a              ; keep the space (oracle: `call format` ->
-                inc     de                  ;  CA 20 46 4F 52 4D 41 54)
+tk_call_name:                               ; the extended-statement device name.
+                ; D-CNAME (docs/spec-basic-cname.md). ⚠️ THIS IS A RANGE TEST, NOT
+                ; AN IDENTIFIER SCAN, and the two-phase "blanks first, then a
+                ; name" shape this replaced was itself the bug: a blank is not a
+                ; prologue, it is an ordinary STORED character that the scan runs
+                ; straight past (`20 CALL X Y` is the ONE name `X Y`).
+                ;
+                ; R-C1: the scan ends at EOL, ':' or '(' -- and at NOTHING else.
+                ; The terminator is left for the ordinary crunch, which is why
+                ; `20 CALL X(5)` stores the '(' and crunches its 5 (<16>, not
+                ; ASCII) and why `20 CALL X:PRINT 5` has a second statement.
+                ; R-C2: a character in $21..$2F is DISCARDED and the scan
+                ; CONTINUES. All fifteen of that range were walked contiguously
+                ; ('(' is the one exception, above) -- a denominator, not a
+                ; sample, and it had to be walked because the operators land on
+                ; BOTH sides: '+' '-' '*' '/' are dropped and '^' '\' '=' '<' '>'
+                ; are kept, so no property of the TOKEN separates them
+                ; (characterization §2). The three rows that filed this defect
+                ; agree with two rules that are both refuted here.
+                ; R-C3: everything else is STORED -- letters upcased, the rest
+                ; verbatim, INCLUDING the blank. No keyword crunch (oracle:
+                ; `call format` -> CA 20 46 4F 52 4D 41 54, not FOR+MAT), no
+                ; numeric crunch, and no length bound (26 chars measured).
+                ;
+                ; ⚠️ EOL IS TESTED FIRST AND MUST BE. $00 is below '0', so
+                ; without the `or a` it would take the R-C2 skip path and the
+                ; `inc hl` would run PAST the line terminator. Knife K7 defeats
+                ; exactly this test and the MACHINE DOES NOT SURVIVE: run alone,
+                ; `20 CALL X` is NOCAPTURE while `20 CALL X(5)` -- whose scan
+                ; ends at the '(' -- still reads correctly (spec §7).
+                ; ⚠️ TKNAME is deliberately NOT touched, exactly as before: it is
+                ; cleared at the top of tk_loop before the CALL token matched and
+                ; this scan never re-enters tk_loop, so the 5 behind a '(' or ':'
+                ; still BEGINS a numeric constant (cnm-par, cnm-colon).
+                ld      a,(hl)
+                or      a
+                jp      z,tk_loop           ; R-C1: EOL (tk_loop reaches tk_end)
+                cp      COLON               ; R-C1: ':' ends the scan
+                jp      z,tk_loop
+                cp      '('                 ; R-C1: '(' ends the scan
+                jp      z,tk_loop
+                cp      ' '                 ; R-C3: the blank is STORED
+                jr      z,tcn_store
+                cp      '0'                 ; R-C2: $21..$2F is DISCARDED
+                jr      c,tcn_skip
+tcn_store:
+                call    upcase              ; R-C3 (upcase touches $61..$7A only,
+                ld      (de),a              ;  so '`' and '~' pass through)
+                inc     de
+tcn_skip:
                 inc     hl
                 jr      tk_call_name
-tcn_name:
-                ld      a,(hl)
-                call    is_ident_cont       ; letter / digit continues the name
-                jp      nc,tk_loop          ; name ended -> normal tokenising for the rest
-                call    upcase
-                ld      (de),a
-                inc     de
-                inc     hl
-                jr      tcn_name
 tk_end:
                 xor     a
                 ld      (de),a              ; 0x00 terminator

@@ -160,12 +160,19 @@ gates are what say the deletion was safe.
 ## 6. Gates
 
 `make lnblank-acceptance` — three sides, `--repeat 2`: **195/195 gating rows
-agree**, 3 of them allowlisted as `KNOWN_DIVERGE` (the CALL device-name rows,
-§4) and pinned to zerobas' exact **pre-fix** bytes, so they also witness that
+agree**, 3 of them allowlisted as `KNOWN_DIVERGE` (the CALL device-name rows, §4)
+and pinned to zerobas' exact **pre-fix** bytes, so they also witness that
 this change did not move them. Up from **163/193** before the fix, with
 `dot-goto` retired from the allowlist — the gate reported it as
 *"allowlisted as divergent but the row now AGREES — retire the entry"*, which is
 the mechanism working, not a failure.
+
+✅ **Superseded 2026-08-01 by D-CNAME** ([`spec-basic-cname.md`](spec-basic-cname.md)):
+the three CALL device-name rows were retired the same way — the allowlist
+reported all three as AGREEING — and the gate now reads **251/251 with an EMPTY
+allowlist**. ⚠️ The rule those rows suggested was refuted: the scan discards
+`$21..$2F`, **keeps** `; < = > ? @ [ \ ] ^ _ ` ~` verbatim, and ends only at
+EOL / `:` / `(`.
 
 Full corpus after the change, all run: `unit-test` **ALL 55 PASSED** ·
 `badfnum` **93 cases, 0 unfiled divergence** · `lof` **45 cases, 0 drift** ·

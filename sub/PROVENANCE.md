@@ -60,11 +60,21 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   computation over page-2/3 RAM (leaf-audit: no `RST`/`CALSLT`/`CHPUT`/`ISCNTC`/
   error-jump/`IN`/`OUT`/BIOS touch anywhere in the body). Its non-RAM callees are
   all co-located pure leaves: `upcase`/`cmp16_bits`/`neg_de` (tkfloat.asm),
-  `is_letter`/`is_ident_cont` (byte-identical *own-design* clones in `sub/sub.asm`,
-  resident copies stay in `../basic/interp.asm`/`../basic/vars.asm`), the crunch
+  `is_letter` (a byte-identical *own-design* clone in `sub/sub.asm`; the resident
+  copy stays in `../basic/interp.asm`), the crunch
   `tk_float` (tkfloat.asm), and the DUPLICATED keyword table below. Reached by ONE
   page-0 entry (`SUBROM_IDX_TOKENISE`, one CALSLT per line); its main-ROM side is
   the two-line `tokenise` dispatch stub in `../basic/interp.asm`.
+  ⚠️ **An `is_ident_cont` clone used to sit beside `is_letter` and is GONE**
+  (D-CNAME, [`../docs/spec-basic-cname.md`](../docs/spec-basic-cname.md) §3.1).
+  The `CALL` device-name scan was its last caller anywhere sub-side —
+  `../basic/vars.asm` is not included by this file — so replacing that scan with
+  a range test orphaned 16 bytes and `make basic-reloc`'s hard dead-code gate
+  failed the build rather than shipping them. The deletion was **forced by the
+  gate**, not argued: knife K6 restores the clone with no caller and the *build*
+  is what goes red. `is_letter` survives the same edit because `tk_notkw` still
+  calls it, and the main ROM's own `is_ident_cont` (`../basic/vars.asm`) keeps
+  all three of its callers and is untouched.
 - **`kwtable` duplicate (S2b WAVE 2, §4).** The sub-ROM assembles its OWN copy of
   the keyword table from the SAME `../basic/kwtable.inc` under the same
   `ROM_BASE < $4000` gating as the resident repack copy, so the two are

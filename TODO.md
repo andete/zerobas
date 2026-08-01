@@ -3333,28 +3333,100 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       measurement [`docs/nameblank-msx1-characterization.md`](docs/nameblank-msx1-characterization.md).
       `dec-bin` and `lit-varname` are **gating** rows now, not informational.
 
-- [ ] **THE `CALL` DEVICE-NAME SCAN STOPS SHORT — the reference reaches further.**
-      Found 2026-08-01 by D-LNLIST, three times over: every row written to ask
-      whether `CALL` clears line-number mode had its digit eaten by this scan
-      first. Oracle-locked on the VG-8020 and the CF-3300, which agree,
-      `--repeat 2`:
+- [ ] **DOES ZEROBAS HONOUR THE OFFICIAL MSX RAM VARIABLES? THERE IS NO
+      DENOMINATOR.** Found 2026-08-01 while asking whether a `reset` line could
+      clear ERRCODE (so the `--say` batteries could stop paying boot-per-case).
+      🔴 **ONE MEMBER OF THE CLASS IS ALREADY MEASURED AND ZEROBAS DIVERGES**, on
+      both references, read AND write (`--repeat 2`, boot-per-case, controls
+      either side):
       ```
-      20 IF A THEN _X 5      ref -> _X 5       zb -> _X <16>
-      20 IF A THEN CALL X 5  ref -> <CA> X 5   zb -> <CA> X <16>
-      20 IF A THEN CALL X+5  ref -> <CA> X5    zb -> <CA> X<F1><16>
+                                    vg8020  cf3300   zb
+      POKE&HF414,0  then PRINT ERR      0       0     8   (no effect on zb)
+      PEEK(&HF414)  after an error      8       8     0
+      POKE&HE1C5,0  then PRINT ERR      8       8     0
+      PEEK(&HE1C5)  after an error      0     255     8
       ```
-      The reference keeps the trailing digit as **verbatim ASCII** across a
-      blank, and for `X+5` it **drops the `+` outright**. zerobas'
-      `tk_call_name` ([`basic/tokenise.inc`](basic/tokenise.inc)) stops at the
-      first non-`is_ident_cont` character, so the digit reaches the ordinary
-      number path and crunches to `<16>`. ⚠️ **The mode question these rows were
-      written for is ANSWERED and is not this item**: `lnl-callpar`
-      (`20 IF A THEN CALL X(5)` → `<CA> X(<16>)`) got past the scan with a `(`
-      terminator, and `CALL`/`_` do clear the mode. Live in
-      `make lnblank-acceptance` as the three `KNOWN_DIVERGE` entries, pinned to
-      zerobas' exact bytes — and pinned *pre-fix*, so they are also the cells
-      that say D-LNLIST did not move them. Detail:
-      [`docs/lnlist-msx1-characterization.md`](docs/lnlist-msx1-characterization.md) §4.
+      `$F414` **is** MSX's `ERRFLG` — measured, not taken from a sysvar map — and
+      zerobas neither reads nor writes it: it keeps the code at `$E1C5`
+      ([`basic/sysvars.inc:847`](basic/sysvars.inc:847)), in the freed `VARTAB`
+      window, whose own comment says *"own choice — just-freed RAM"*. ⚠️ `$F414`
+      appears **NOWHERE** in the repo, so the standard address was never
+      considered, not rejected. On the references `$E1C5` is ordinary RAM holding
+      different junk on each machine (0 vs 255), which is why it was free to take.
+      **What is missing is the DENOMINATOR**, exactly as it was for the keyword
+      surface before [[kwsweep-msx1-denominator]]: 162 reserved words became
+      `make kwsweep`. The MSX work-area table (Technical Handbook ch. 2 — public
+      documentation, already cited by this repo, no disassembly) is the analogous
+      list. ⚠️ **Scope it first: "uses" has THREE meanings** — does zerobas WRITE
+      what the reference writes, does a `PEEK` READ the same value, and does
+      zerobas depend on it internally. Only the middle one is observable from
+      BASIC and it is the one fidelity turns on. The list also splits into
+      BIOS-owned (C-BIOS supplies) and BASIC-owned (zerobas must); only the second
+      is this project's to answer for.
+      ⚠️ Whether `ERRFLG` should MOVE to `$F414` is a separate design question —
+      zerobas' memory map is its own, and relocating live error state is not a
+      free edit.
+
+- [ ] **`dir-name` — A BLANK INSIDE A NAME IS NOT READ BACK IN DIRECT MODE.**
+      Surfaced 2026-08-01 by the first full `--say` pass across all three sides
+      (D-CNAME ran one; nothing else does). Oracle-locked, both references agree:
+      ```
+      B1 1=7 : PRINT"[";B11;"]"    vg8020 -> 7    cf3300 -> 7    zb -> 0
+      ```
+      D-NAMBLANK's **R-N1** says a blank is copied but changes no tokeniser state,
+      so `B1 1` is the identifier `B11` and the assignment must be readable back
+      through it. The references do exactly that; zerobas reads **0**.
+      ⚠️ **NOT caused by D-CNAME** — that change touches only `tk_call_name`,
+      reachable solely from the `CALL` token dispatch and `tk_underscore`, and
+      this payload has neither. Reachability argued, **not re-measured against
+      HEAD**; do that first.
+      🔴 **THE ROW HAS NEVER GATED ANYTHING.** `--say` rows are filtered out of
+      `lnblank-acceptance` entirely, and the probe's own comment already recorded
+      that it "was dormant, not green" for a *different* reason. So the whole
+      `--say` surface is un-gated and this is what was hiding in it — the same
+      shape as the SILENT-GAP class. **Ask what else the say pass says before
+      fixing this one row.**
+
+- [x] ✅ **THE `CALL` DEVICE-NAME SCAN IS A RANGE TEST, NOT AN IDENTIFIER SCAN —
+      LANDED 2026-08-01, 251/251 at `--repeat 2`, NET −10 B, all sub-ROM, seven
+      knives.** Filed by D-LNLIST as *"the scan stops short — the reference
+      reaches further"*, from three rows that were **all** written to ask a
+      different question and had their digit eaten before they could ask it.
+      🔴 **THE DIRECTION WAS RIGHT AND THE RULE WAS WRONG, IN BOTH DIRECTIONS.**
+      The obvious rule from the filed rows — *copy identifier characters and
+      blanks, drop everything else* — is refuted, and so is the narrow *"only the
+      `+` is swallowed"*:
+      ```
+      20 CALL X+5   ref -> <CA> X5     the '+' is DROPPED
+      20 CALL X;5   ref -> <CA> X;5    the ';' is KEPT and the scan RUNS ON
+      20 CALL X:5   ref -> <CA> X:<16> the ':' TERMINATES
+      ```
+      🔴 **AND THE OPERATORS LAND ON BOTH SIDES.** `+ - * /` are dropped;
+      `^ \ = < >` are kept. Nine operators split down the middle, so neither
+      operator-ness nor the token byte separates them — the same interleaving
+      shape D-LNLIST hit. What separates them is the **ASCII range**: once EOL,
+      `:` and `(` are taken out, a character is discarded **iff `' ' < c < '0'`**.
+      All fifteen characters of `$21..$2F` were walked contiguously, and every
+      printable character at or above `$3B` that this harness can deliver — so
+      both classes are denominators, not samples. **Three rows were structurally
+      incapable of finding this**; each agrees with two different wrong rules.
+      🔴 **THE FIX DELETES A SUB-ROM ROUTINE AND THE DEAD-CODE GATE FORCED IT.**
+      `basic/vars.asm` is not included by `sub/sub.asm`, so the new range test
+      orphaned the sub-local `is_ident_cont` clone — `make basic-reloc` failed the
+      build rather than shipping 16 dead bytes. **Knife K6 is that argument turned
+      into a measurement**: it restores the clone with no caller and the *build*
+      goes red. NET **−10 B** (+6 loop, −16 clone), sub page 0 3998 → **4008 B**
+      free; both main ROMs **byte-identical**, asserted by hash.
+      ⚠️ **THE THREE `KNOWN_DIVERGE` ROWS RETIRE AND THE ALLOWLIST IS NOW EMPTY** —
+      the fifth cohort to leave it that way, and not one has rotted.
+      ⚠️ Three apparatus findings, each caught by a guard rather than by luck:
+      `{` `|` `}` are **not deliverable** (the `}` row returned a stable,
+      both-references-agreeing `<CA> X{5}` from a payload with neither brace — a
+      perfect fake the echo guard killed); the echo guard's payload ceiling is the
+      **display width**; and `cnm-lower` mangles **intermittently in a batch**,
+      which `--repeat` cannot catch.
+      Spec [`docs/spec-basic-cname.md`](docs/spec-basic-cname.md), measurement
+      [`docs/cname-msx1-characterization.md`](docs/cname-msx1-characterization.md).
 
 - [x] ✅ **A LINE-NUMBER LIST IS A MODE, NOT A LIST — LANDED 2026-08-01,
       NET +26 B, all sub-ROM, seven knives.** Filed by D-NAMDOT as *"a `.` does
