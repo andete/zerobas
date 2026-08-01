@@ -166,11 +166,19 @@ kwtable:
                 db      3,"XOR",1,XOR_TOKEN
                 db      3,"NOT",1,NOT_TOKEN
                 db      3,"MOD",1,MOD_TOKEN
-                ; EQV/IMP -- repack only:.
-                ; and ships without them (its hand-rolled ev_xor/ev_or/ev_and
-                ; chain has no level for either). Tokens oracle-measured from the
-                ; VG-8020's own crunch emission. Neither shares a prefix with an
-                ; existing keyword, so table order is free.
+                ; EQV/IMP. ⚠️ THIS COMMENT SAID "repack only:." AND THEN A
+                ; DANGLING HALF-SENTENCE about a build that no longer exists --
+                ; truncated when S3 (19e8bfd) retired the lean cart, whose frozen
+                ; ev_xor/ev_or/ev_and chain had no level for either word. There is
+                ; ONE build now and it ships both (basic/expr.asm lg_eqv/lg_imp,
+                ; landed ef098e9 at 156/156). D-EXPKW read the stale text as
+                ; evidence that they might not ship at all, which is the whole
+                ; cost of leaving a half-deleted sentence in place.
+                ; Tokens oracle-measured from the VG-8020's own crunch emission.
+                ; Neither shares a prefix with an existing keyword, so table order
+                ; is free. 🔴 But `EQV` DOES collide with the float exponent
+                ; marker: `E` in front of `Q` (or `L`, for `ELSE`) is not a marker
+                ; -- sub/tkfloat.asm tke_mark_e, docs/spec-basic-expkw.md.
                 db      3,"EQV",1,EQV_TOKEN
                 db      3,"IMP",1,IMP_TOKEN
                 ; Cursor / PRINT cluster (repack only, like everything above).

@@ -3,6 +3,19 @@
 *Status: **LANDED 2026-07-31 — 99/99 at `--repeat 2`, −8 B, all sub-ROM,
 falsified on five knives.** `KNOWN_DIVERGE` is now **EMPTY**.*
 
+> 🔴 **PARTLY SUPERSEDED 2026-08-01 by [D-EXPKW](spec-basic-expkw.md).** This
+> slice's headline — *"THE DIGITS ARE OPTIONAL AND **THERE IS NO FAILURE
+> CASE**"* — is **false**. There is exactly one, and deleting `tke_fail` for it
+> broke two acceptance suites: an `E` in front of **`L` or `Q`** is not a marker
+> at all, because `ELSE` and `EQV` are the only reserved words in the language
+> beginning with `E`. Every row below that supports the "no failure case"
+> reading — `1E`, `1E+`, `1D`, `1E#`, `12345EX` — puts a **non-word** behind the
+> marker, so the sample contained no counter-example and the generalisation ran
+> past its own denominator. ⚠️ **The rest of this document stands**: once the
+> marker IS taken, the digits really are optional and the precision really does
+> survive. Measurement of the exception:
+> [`docs/expkw-msx1-characterization.md`](expkw-msx1-characterization.md).
+
 Split out of [D-DECBLANK](spec-basic-decblank.md) on 2026-07-31, where it was
 found by the **denominator** and not by the subject: four rows whose divergence
 survives with **no blank anywhere**, so it could not be that slice's defect.

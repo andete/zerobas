@@ -4,6 +4,13 @@ Companion to [`docs/spec-basic-expbad.md`](spec-basic-expbad.md); the sequel to
 [`docs/decblank-msx1-characterization.md`](decblank-msx1-characterization.md),
 whose §3 filed the finding this measures.
 
+> 🔴 **INCOMPLETE DENOMINATOR — see [D-EXPKW](expkw-msx1-characterization.md)
+> (2026-08-01).** Every row here puts a **non-reserved-word** tail behind the
+> marker, so none of them can see the language's one exception: an `E` in front
+> of **`L`/`Q`** is not a marker (`ELSE`, `EQV`). The readings below are all
+> correct; the *rule stated from them* was not. The sequel walks the whole
+> second-letter alphabet for both markers, 52 rows, rather than sampling it.
+
 **Instrument:** `("stored_line", TXTTAB)` — the exact bytes of the stored line,
 link word dropped. Probe
 [`probes/basic/basic_probe_lnblank.py`](../probes/basic/basic_probe_lnblank.py),

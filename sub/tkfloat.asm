@@ -266,6 +266,11 @@ tkf_f_lp:
 ; classified literal), and HL advances past it. Only the ABSENCE of a marker
 ; leaves HL unchanged.
 ;
+; ⚠️ D-EXPBAD's headline below said THERE IS NO FAILURE CASE. There is exactly
+; one, and it is at the top of the routine, not here: an `E` in front of `L`/`Q`
+; is not a marker at all (D-EXPKW, tke_mark_e). Once the marker IS taken, the
+; paragraph below holds unchanged -- the digits really are optional.
+;
 ; 🔴 D-EXPBAD (docs/spec-basic-expbad.md, landed 2026-07-31): THE DIGITS ARE
 ; OPTIONAL AND THERE IS NO ROLLBACK. This used to put a digitless marker BACK --
 ; own-design, never oracle-pinned, and wrong. Measured on both references
@@ -315,8 +320,45 @@ tke_mark_d:
                 ld      (TKEXPD),a
                 jr      tke_go
 tke_mark_e:
+                ; 🔴 D-EXPKW (docs/spec-basic-expkw.md): AN `E` IN FRONT OF `L` OR
+                ; `Q` IS NOT A MARKER. `ELSE` and `EQV` are the only reserved words
+                ; in the language that begin with `E`, and both references hardcode
+                ; the two LETTERS rather than matching the words -- measured over
+                ; the whole second-letter alphabet, twice
+                ; (docs/expkw-msx1-characterization.md §2):
+                ;   1 EL / 1 EQ  -> `A<EF><12> EL`   KEPT, and neither is a keyword
+                ;   1 ERL/1 DIM  -> marker EATEN,    and both ARE keywords
+                ;   1 D<c>       -> EATEN, 26/26.    `D` has no protected letter
+                ; so `match_kw` here would be both wrong and dearer (it EMITS to
+                ; (DE), so it would need a scratch destination cursor).
+                ; ⚠️ This is the rollback D-EXPBAD deleted, re-aimed. "The digits
+                ; are optional and there is no failure case" was generalised from
+                ; five rows that all put a NON-word behind the marker; the cost was
+                ; `PRINT 0 EQV 0` reading as `0E`+`QV`+`0` and `IF..THEN..ELSE`
+                ; storing no $A1 at all, i.e. two whole acceptance suites.
+                ; The lookahead is blank-transparent and sits at the character
+                ; immediately after the marker AND NOWHERE ELSE: behind a consumed
+                ; sign the ordinary rules resume (`1 E+L` is a single 1.0 then `L`,
+                ; expb-elsign). Tested BEFORE TKEXPD is stored, so a rejected
+                ; marker writes nothing; returning with has_exp CLEAR is what
+                ; leaves `1EL%` its suffix scan (expb-elpct).
+                push    hl                  ; HL is ON the marker
+                inc     hl
+                call    tkf_fetch
+                call    upcase
+                cp      'L'
+                jr      z,tke_notmark
+                cp      'Q'
+                jr      z,tke_notmark
+                pop     hl                  ; not L/Q: the E arm runs as before
                 xor     a
                 ld      (TKEXPD),a
+                jr      tke_go
+tke_notmark:
+                pop     hl                  ; discard the lookahead cursor
+                pop     hl                  ; the routine's own pre-blank target --
+                ret                         ; blanks, marker and letter all stay in
+                                            ; the source (`1 E L` is verbatim)
 tke_go:
                 inc     hl                  ; past E/D -- the LAST CONSUMED character
                 xor     a                   ; so far, which is what the cursor tracks

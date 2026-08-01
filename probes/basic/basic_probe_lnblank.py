@@ -371,6 +371,137 @@ EXP = [
     ("dec-ebadpct",  ["20 A=1E%"]),       # '%' normally forces INT -- skipped?
 ]
 
+# --- the `expk` battery: DOES A RESERVED WORD AT THE MARKER SURVIVE? ----------
+# D-EXPKW.  ⚠️ THIS IS THE CELL THE `exp` BATTERY ABOVE COULD NOT SEE.  Its header
+# enumerates three things the filed rows cannot say; this is a FOURTH, and it is
+# the one that broke two acceptance suites.  Every row D-EXPBAD measured put a
+# NON-reserved tail behind the marker (`1E`, `1E+`, `1EX`, `12345EX`, `1E#`), so
+# "the digits are optional and THERE IS NO FAILURE CASE" was generalised over a
+# sample that contained no counter-example.  `EQV` and `ELSE` both begin with `E`:
+#
+#     PRINT 0 EQV 0     zerobas -> `0E` + variable `QV` + `0`   (three PRINT items)
+#     IF 0 THEN A=1.5 ELSE PRINT 9    zerobas -> no $A1 at all, so NEITHER arm runs
+#
+# TWO RULES, AND EVERY ROW IS CHOSEN TO SEPARATE THEM:
+#
+#   rule B (blank)   -- the blank run before the marker is what protects the word,
+#                       so `1EQV` would lose its `E` on the references too.
+#   rule W (word)    -- a RESERVED WORD starting at the marker wins over the
+#                       exponent, blank or no blank.  `1EQV` keeps `EQV`.
+#
+# The `0` rows (no blank) are the whole separation: rule B and rule W predict the
+# SAME bytes for every blank-bearing row and DIFFERENT bytes without one.
+# `expk-nonkw`/`expk-nonkwq` are the GREEN controls -- a non-reserved tail behind
+# a blank must STILL have its marker eaten, or the rule is "a blank protects
+# everything" and D-DECBLANK's `dec-expboth` (`1 E 2` -> 100) is refuted.
+EXPK = [
+    # ★ THE PAIR THAT SEPARATES B FROM W, on the operator that broke logicops
+    ("expk-eqv",     ["20 A=1 EQV 2"]),   # blank + reserved word
+    ("expk-eqv0",    ["20 A=1EQV 2"]),    # ★ NO BLANK -- B says eaten, W says kept
+    # ★ THE SAME SEAM ON THE WORD THAT BROKE float-acceptance
+    # ⚠️ THE CLAUSE IS `B=2`, NOT A BARE `2`, AND THAT IS NOT COSMETIC. The first
+    # cut typed `20 A=1 ELSE 2`, where the references store the trailing number as
+    # a line-number REFERENCE (`<0E><02><00>`, implicit GOTO) and zerobas stores
+    # the integer constant `<13>`. That is the separately-filed `$0E`-refs
+    # divergence (`ref-else`, still open), so the row diverged for TWO reasons at
+    # once and could confirm neither: with the marker bug fixed it stayed red, and
+    # with it unfixed a reader would have credited the wrong cause. An assignment
+    # clause reaches the same $A1 and carries no line-number reference.
+    ("expk-else",    ["20 A=1 ELSE B=2"]),  # ELSE crunches to COLON,$A1
+    ("expk-else0",   ["20 A=1ELSE B=2"]),
+    # ★ THE float-acceptance ROW'S OWN BYTES -- this is what ties the two suites
+    # together.  If the $A1 is absent here, `reg.C.if_skip_over_float` is not a
+    # tok_skip stride bug at all and its filed name is the wrong subject.
+    ("expk-ifelse",  ["20 IF 0 THEN A=1.5 ELSE B=2"]),
+    # 🔴 THIS WAS PINNED AS THIS BATTERY'S CONTROL AND IT MEASURED RED.  The SAME
+    # line with an INTEGER literal, written on the assumption that only a FLOAT
+    # reaches the exponent scan, so a surviving $A1 here would localise the defect
+    # to the float path.  `1` reaches tkf_try_exponent exactly as `1.5` does --
+    # that is the whole mechanism of `dec-ebig` -- so this line loses its $A1 too.
+    # Re-aimed: it is the row that says `reg.C.if_skip_over_float` is not about
+    # floats, and the fix must make BOTH lines green or it is aimed at the wrong
+    # scanner.
+    ("expk-ifelsei", ["20 IF 0 THEN A=1 ELSE B=2"]),
+    # a third E-word, and a FUNCTION token rather than a statement one
+    ("expk-erl",     ["20 A=1 ERL"]),
+    # ★ GREEN CONTROLS: a NON-reserved tail must still lose its marker (rule C
+    # from the `exp` battery), blank or not.  Without these, "a blank protects
+    # the marker" would explain every red row above and be wrong.
+    ("expk-nonkw",   ["20 A=1 EX"]),      # blank + non-reserved -> marker EATEN
+    # 🔴 THIS ROW WAS PINNED AS A GREEN CONTROL AND THE REFERENCES REFUTED IT.
+    # It was written to say "the rule is a WHOLE word, not the letters E,Q" by
+    # predicting `EQ` -- no keyword -- loses its marker.  Both references KEEP it.
+    # That single reading is what retired the keyword-match reading and sent this
+    # slice to the `expw` alphabet walk.  It is re-aimed, not deleted: it is now
+    # the bounding row that says the test is the LETTER and not the word.
+    ("expk-nonkwq",  ["20 A=1 EQ"]),
+    # the D marker has its own reserved words, and D carries PRECISION (dec-dmark)
+    ("expk-dim",     ["20 A=1 DIM B"]),
+    ("expk-dim0",    ["20 A=1DIM B"]),
+    ("expk-nonkwd",  ["20 A=1 DX"]),      # CONTROL: D + non-reserved -> eaten,
+                                          # and still a DOUBLE
+    # lowercase: match_kw upcases, so W predicts the word is still seen
+    ("expk-low",     ["20 A=1 eqv 2"]),
+    # CONTROL: a WELL-FORMED exponent with the word behind it.  The word is not
+    # at the marker, so B and W agree -- it must survive under either rule.
+    ("expk-okdig",   ["20 A=1E2 EQV 3"]),
+]
+
+# --- the `expw` battery: THE WHOLE SECOND-LETTER ALPHABET ---------------------
+# 🔴 ROUND 3 SAMPLED, AND THE SAMPLE GAVE TWO DIFFERENT WRONG RULES.  `EQV`/`ELSE`
+# keep their marker; `ERL`/`EX` lose it -- so it is not "a reserved word wins".
+# `EQ` keeps it too, and `EQ` is no word at all -- so it is not that either, and
+# `EQ` was pinned as a CONTROL predicting the opposite.  Both candidate rules
+# survive the round-3 rows; neither survives all of them.
+#
+# One row cannot separate two rules and neither can six.  This battery walks the
+# CONTIGUOUS second-letter space -- `20 A=1 E<c>` and `20 A=1 D<c>` for all 26 --
+# so the boundary is read off a complete space instead of guessed from the four
+# letters that happened to start a keyword somebody thought of.
+#
+# The readout is the literal's own TOKEN, which says everything in one byte:
+#   <12>              the marker was NOT consumed -- still the INTEGER 1
+#   <1D>A<10><00><00> consumed as an E marker -- forced to SINGLE
+#   <1F>A<10>x6       consumed as a D marker  -- forced to DOUBLE (precision kept)
+EXPW = ([(f"expw-e{c.lower()}", [f"20 A=1 E{c}"]) for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"]
+        + [(f"expw-d{c.lower()}", [f"20 A=1 D{c}"]) for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"])
+
+# --- the `expb` battery: WHERE THE TWO-LETTER LOOKAHEAD'S BOUNDARIES ARE ------
+# The walk answered the rule: the `E` marker survives iff the next character is
+# `L` or `Q`, and the `D` marker never survives (26/26 eaten).  That set is not
+# arbitrary -- `ELSE` and `EQV` are the ONLY reserved words starting with `E`
+# that can legally FOLLOW a numeric constant, and no `D` word can.  But it is
+# measurably a LETTER test and not a keyword match: `1 EQ` and `1 EL` keep the
+# marker and neither is a word, while `1 ERL` -- which IS one -- loses it.
+#
+# ⚠️ THE FIX HAS TO PUT THE TEST SOMEWHERE, AND THE BLANK RUN DECIDES WHERE.
+# D-DECBLANK established that `tkf_fetch` walks blanks transparently, and
+# D-EXPBAD's own header records that committing at the wrong point silently EATS
+# a blank while every filed row stays green.  A two-letter lookahead lands in
+# exactly that seam, and nothing measured so far says whether the `L`/`Q` is
+# reachable ACROSS a blank or only immediately behind the marker.  These rows are
+# the whole difference between two implementations that pass every row above.
+EXPB = [
+    ("expb-elblk",   ["20 A=1 E L"]),     # ★ blank BETWEEN marker and the letter
+    ("expb-eqblk",   ["20 A=1 E Q"]),     # ★ the same on the other protected letter
+    ("expb-elsign",  ["20 A=1 E+L"]),     # a sign IS consumed -- does L still protect
+                                          # behind it, or is the test only at the
+                                          # character right after the marker?
+    ("expb-elnoblk", ["20 A=1EL"]),       # no blank anywhere: protected (expk-eqv0's
+                                          # shape, on the other letter)
+    ("expb-ellow",   ["20 A=1 el"]),      # lowercase second letter, no keyword behind
+    ("expb-elq3",    ["20 A=1 ELQ"]),     # an arbitrary THIRD letter: the rule is the
+                                          # two-letter prefix, so this must be KEPT
+    ("expb-eldig",   ["20 A=1E2L"]),      # CONTROL: a WELL-FORMED exponent eats E2,
+                                          # so the L is not at a marker at all
+    ("expb-eldot",   ["20 A=.5EL"]),      # a dot-leading literal reaches the same scan
+    ("expb-elpct",   ["20 A=1EL%"]),      # marker NOT consumed -> has_exp clear -> the
+                                          # suffix scan is NOT skipped (dec-ebadsfx's
+                                          # quirk inverted).  The `%` must apply.
+    ("expb-dlblk",   ["20 A=1 D L"]),     # CONTROL: D has NO protected letter, so the
+                                          # blank seam cannot change its answer
+]
+
 # --- the `nam` battery: DOES A BLANK BREAK A VARIABLE NAME? -------------------
 # The TODO filed this as "`&B` is not a radix on MSX1 and zerobas half-crunches
 # it anyway" (`dec-bin`, §1 of the characterization):
@@ -1160,7 +1291,7 @@ ERRB = [
 ]
 SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD}
 
-CASES = (NUM + BODY + LIT + DEC + EXP + NAM + DOT + REF + LNL + CNM
+CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + LNL + CNM
          + ERRB + DIRB + DOTD + LNLD + CNMD)
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
@@ -1176,6 +1307,17 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             "lit-ctl", "lit-str", "lit-rem", "ref-ctl", "ref-sp",
             "dec-ctl", "dec-hexctl", "dec-dotlead0",
             "dec-eok", "dec-edata",
+            # D-EXPKW: B and W predict the SAME bytes for these five. The four
+            # non-reserved tails must KEEP losing their marker (rule C) or the
+            # reading "a blank protects the word" is what the reds really say.
+            # D-EXPKW. ⚠️ `expk-ifelsei` WAS PINNED HERE AND MEASURED RED. It was
+            # written to exonerate the literal scanner by using an INTEGER, on the
+            # assumption that only a float literal reaches the exponent scan. It
+            # does not: `1` reaches it too, so `IF 0 THEN A=1 ELSE B=2` loses its
+            # $A1 exactly like the float line. It is a gating row, and the one
+            # that says this defect has nothing to do with floats.
+            "expk-nonkw", "expk-nonkwd", "expk-okdig",
+            "expb-eldig", "expb-dlblk",
             "nam-ctl", "nam-eqnum", "nam-amp0",
             # D-NAMDOT: F and N predict the SAME bytes for these five.
             "dot-ctl", "dot-let", "dot-start", "dot-str", "dot-rem", "dot-data",

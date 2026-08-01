@@ -3472,28 +3472,69 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       only — `B=1+S` was not, and silently read 0 where both references raise
       ERR 13. Stopping at the top-level shape would have filed B1 as dead code.
 
-- [ ] 🔴 **TWO ACCEPTANCE SUITES ARE STANDING-RED WITH NO EXPECTATION WRITTEN
-      DOWN.** Found 2026-08-01 by D-DEFSTR's corpus run — **both falsified as NOT
-      D-DEFSTR's** by deleting the code under test (`basic/` stashed, rebuilt;
-      the failures are **byte-identical**, and `logicops` matches at 50/50 FAIL
-      lines exactly).
-      * **`float-acceptance` → `reg.C.if_skip_over_float`.**
-        `IF 0 THEN A=1.5 ELSE PRINT"[";9;"]"` prints ` 9 ` on the reference and
-        **nothing at all** on zerobas — neither branch runs; the probe's span
-        falls back to the echoed source (`";9;"`), tail empty. Likely the
-        standing *"`$0E` refs missing for LIST/DELETE/AUTO/RENUM/**ELSE**"*
-        class — the ELSE arm is exactly what this row skips over.
-      * **`logicops-acceptance` → 50 rows, all `EQV`/`IMP`.** Expected: those two
-        words are a *recommended future slice*, still unimplemented (see the
-        keyword-gaps item below). But the suite calls this block
-        **"CALIBRATION (implemented operators, ref vs zerobas must AGREE)"**,
-        which is now false of its own contents.
-      ⚠️ **The defect is the SILENCE, not the rows.** A suite expected to fail
-      teaches nothing until the expectation is pinned BY NAME, the way
-      `array-acceptance`'s 149/151 is (`ifc.instr.zero`/`ifc.instr.neg`) and the
-      way the dead-code gate's allowlist is. Until then anyone running the corpus
-      after a change cannot tell a regression from the status quo — which is
-      exactly the position this slice was in for an hour. Pin both, or fix them.
+- [x] ✅ **TWO ACCEPTANCE SUITES ARE STANDING-RED WITH NO EXPECTATION WRITTEN
+      DOWN.** Filed 2026-08-01 by D-DEFSTR, **closed the same day by D-EXPKW** —
+      [`docs/spec-basic-expkw.md`](docs/spec-basic-expkw.md), measurement
+      [`docs/expkw-msx1-characterization.md`](docs/expkw-msx1-characterization.md).
+      Neither suite was edited and neither was pinned: **both went green off one
+      22-byte change**, because they were never two failures.
+      🔴 **ALL THREE FILED CLAIMS WERE THE WRONG SUBJECT.**
+      * *"`float-acceptance` → `reg.C.if_skip_over_float`, likely the `$0E`/`ELSE`
+        class"* — not the `$0E` class, not `tok_skip`'s float stride (which
+        strides `$1D` correctly, `basic/tokskip-body.inc:31`), not
+        `if_skip_to_else`, **and not about floats**: the same line with an
+        INTEGER literal breaks identically (`expk-ifelsei`, pinned as that
+        battery's control and measured RED).
+      * *"`logicops` → 50 rows, all `EQV`/`IMP`, both unimplemented"* — `EQV`/`IMP`
+        **landed** in `ef098e9` at 156/156 (`basic/expr.asm:148`). Of the 49
+        failing rows **every one contains `EQV`; not one fails on `IMP` alone.**
+        `PRINT 0 EQV 0` printed three items: `0`, the variable `QV`, `0`.
+      * *"two unrelated standing failures"* — **one defect.** `ELSE` and `EQV` are
+        the only reserved words in the language beginning with `E`, and the
+        literal scanner was eating that `E`.
+      🔴 **AND IT WAS A REGRESSION, NOT A STATUS QUO.** `4b2202e` (D-EXPBAD)
+      deleted the rollback on the finding *"THE DIGITS ARE OPTIONAL AND THERE IS
+      NO FAILURE CASE"* — generalised from five rows (`1E`, `1E+`, `1D`, `1E#`,
+      `12345EX`) **none of which puts a reserved word behind the marker.**
+      ⚠️ D-DEFSTR's A/B could not have caught it: it stashed **`basic/`**, but
+      `tkf_try_exponent` is in **`sub/tkfloat.asm`**. The A/B answered "not mine"
+      correctly; the conclusion drawn from it — *"standing state, pin it"* — did
+      not follow. **A NOT-MINE FALSIFICATION SAYS NOTHING ABOUT WHOSE IT IS.**
+      Measured rule (76 rows, both references agree, oracle-locked first): an `E`
+      marker is **not a marker when the next character — across blanks,
+      case-folded — is `L` or `Q`**; `D` has no protected letter (26/26 eaten).
+      It is a **LETTER** test, not a keyword match: `1 EQ`/`1 EL` keep the marker
+      though neither is a word, `1 ERL`/`1 DIM` lose it though both are.
+
+- [x] ✅ **`logicops-acceptance` WAS NOT IN THE DOCUMENTED CORPUS.** Filed and
+      fixed 2026-08-01 by D-EXPKW. **This is the reason the regression above was
+      invisible for two slices**: `make logicops-acceptance` (193 rows, ~40 s) is
+      a standing gate of the same rank as `float-acceptance`, but no spec's
+      "full corpus" list named it, so nothing ran it after `4b2202e`. It is a
+      **required corpus member** from here on, alongside:
+      `unit-test` 55/55 · dead-code gate 0/0 both builds ·
+      **`lnblank-acceptance` 327/327 with `KNOWN_DIVERGE` EMPTY — note the target
+      defaults to `--repeat 1`, so the corpus run is
+      `make lnblank-acceptance REPEAT=2`** · **`logicops-acceptance` 193/193** ·
+      `float-acceptance` (exits 0) · `array-acceptance` 149/151
+      (`ifc.instr.zero`, `ifc.instr.neg` by name) · `arrdim` 73/73 ·
+      `clearpool` 52/52 · `badfnum` 93 · `lof` 45 · `chancost-characterize` ·
+      `diskbasic` 34/34 · `bdos` 12/12 · `fat-error` · `error-trap` ·
+      `abort` 49/49 · `stop`/`strig`/`key`-trap · `linemax` 60/60 ·
+      `sysvarsweep` exit 0 with all five controls green.
+      ⚠️ **A GATE NOBODY RUNS IS NOT A GATE.** It was green at 193/193 when it
+      landed and nothing re-read it; the suite reported its own failure honestly
+      for two slices to an empty room.
+
+- [ ] **`float-acceptance` HAS NO NAMED EXPECTED-FAILURE MECHANISM.** Filed
+      2026-08-01 by D-EXPKW. The suite is green today, so this is not urgent —
+      but it reports `371 PASS, 1 FAIL` and exits non-zero with **nothing naming
+      the expected count**, which is exactly what made the D-EXPKW regression
+      unreadable for a whole slice. `array-acceptance`'s 149/151 names
+      `ifc.instr.zero`/`ifc.instr.neg`, and lnblank's `KNOWN_DIVERGE` pins each
+      entry to its exact observed value so a row that silently starts passing
+      breaks the gate. `float-acceptance` has neither. ⚠️ Give it the
+      *control* shape, not the suppression shape.
 
 - [ ] **ZEROBAS HAS NO STRING `READ`.** Filed 2026-08-01 by D-DEFSTR, found by
       rows aimed at the `DEFTBL_STR` sentinel. Both references read `DATA 42`
