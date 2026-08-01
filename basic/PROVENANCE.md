@@ -3848,3 +3848,83 @@ of that batch. The justification survives: routing a blank back through the full
 with **no blank at all**), now two pinned `KNOWN_DIVERGE` entries — so that
 allowlist is non-empty again, deliberately. Folding it in would have needed the
 RUN-time variable-name scan too, not just the tokeniser.
+
+> ✅ Landed the next day as **D-NAMDOT** (section below). 🔴 The last sentence is
+> **wrong**: MSX1's executor does *not* accept `.`, the fix was tokeniser-only
+> and sub-ROM only, and making `vars.asm` accept `.` was run as a knife and
+> shipped a divergence. Left in place — the prediction is worth re-reading next
+> to what refuted it.
+
+## 2026-08-01 — `.` is an identifier character to the TOKENISER (D-NAMDOT)
+
+Spec [`docs/spec-basic-namedot.md`](../docs/spec-basic-namedot.md), measurement
+[`docs/namedot-msx1-characterization.md`](../docs/namedot-msx1-characterization.md).
+Split out of D-NAMBLANK, which filed it from two rows. 23 rows oracle-locked on
+the **VG-8020 and the CF-3300**, which agree, `--repeat 2`, past the echo guard.
+
+Two rules, both landing in one five-line dispatch arm of
+[`tokenise.inc`](tokenise.inc):
+
+* **R-D1** — a `.` arriving with the in-a-name state LIVE **continues the
+  identifier**: copied verbatim, state survives, exactly as a digit does. `B.5`
+  is the identifier `B.5`; `B .5` is the same one across a blank (R-N1).
+* **R-D2** — a `.` with the state DEAD begins a numeric constant **and the digit
+  is OPTIONAL**. A bare `.` is the single-precision literal 0
+  (`$1D,00,00,00,00`), including at end of line and straight into an exponent
+  marker (`20 A=.`, `20 A=.E5`).
+
+The one-character lookahead that used to stand there is **deleted** — R-D2 says
+there was nothing to look ahead for, and R-D1 says the question was about the
+name state. `tk_namedig` is reused rather than cloned. **NET −10 B, all sub-ROM
+page 0** (4014 → 4024 B free); both main ROMs came out **byte-identical**,
+asserted by hash.
+
+🔴 **THE FILED PRESCRIPTION WAS REFUTED, AND THAT IS THE FINDING.** D-NAMBLANK,
+`TODO.md` and this file all recorded that a crunch storing `B.5` as name bytes
+*requires* the RUN-time scan ([`vars.asm`](vars.asm) `is_ident_cont`) to accept
+`.` too. **MSX1 does the forbidden thing**: it stores name bytes it then refuses
+to resolve. `B.5=7` and `A=B.5` are `Syntax error` (ERR=2) on both references,
+against a `B5=7` control at ERR=0 — PRINT emits `B`'s value and chokes on the
+leftover `.5`. The tokeniser's identifier charset and the executor's are
+**different charsets**, and reproducing that is the charter. Knife **K4** made
+the prescribed `vars.asm` change and drove those rows ERR 2 → 0: the filed fix
+would have shipped a live divergence in the exact place the item pointed at, and
+cost 4 B of a main page-1 wall with 8 B on it. `DEFINT`/`DEFSNG`/`DEFSTR`,
+`VARPTR`, `FOR` variables, `DIM`/array names and `INPUT`/`READ` targets are all
+untouched *because they reach that one unchanged scanner*.
+
+🔴 **R-D2 WAS FOUND BY ROWS WRITTEN TO BE CONTROLS.** `20 A=.B` and `20 .A=1`
+were filed as predicted-green two-sided cells and both refuted their own
+prediction. Correcting them in place turned *"a `.`+digit leads a literal"* into
+*"a `.` leads a literal"* — and made the fix a **deletion**, the D-EXPBAD shape.
+
+🔴 **A `<none>` READING ON BOTH REFERENCES IS NOT AGREEMENT.** The first `dotd`
+payloads printed no closing `]` **because the behaviour under test aborted the
+statement**, so every side read `<none>` and compared EQUAL. Reading the SCREEN
+found the `Syntax error`; the rows were re-asked through `ERR`, which prints its
+brackets whether or not the statement aborts. Same class as the `--say`-without-
+brackets item filed one slice earlier.
+
+Five knives, all run and reverted. K1/K2 separate R-D1 from R-D2; **K3**
+(`ld a,b` → `ld a,1`) separates R-D1 from *"a `.` is always an identifier
+char"* — a distinction **neither filed row could make**, and the reason the
+bounding rows `dot-sfx`/`dot-paren`/`dot-kw` exist; K4 above; K5
+(`tk_namedig`'s `ld a,1` → `ld a,0`) shows the dot must **set** the state, with
+`dot-two` (`B..5`) the row that says so.
+
+⚠️ **K1 and K5 each reddened a row predicted GREEN, and both corrections stand.**
+A cell that is a two-sided control between the two *candidate* rules can still
+move under a knife, because **a knife is a third rule**: `20 A=B.` reads `B.`
+under the old rule (a digitless dot is copied) *and* under R-D1 (it is a name
+char), for opposite reasons — K1 is neither. And a K1 `REFUSED (empty program)`
+on `dot-eol`, a row K1 does not touch, re-ran clean **alone at `--repeat 2`** on
+the same build: a dropped keystroke, which a deterministic emulator reproduces
+exactly.
+
+`nam-dot`/`nam-dot0` **retired** from `KNOWN_DIVERGE` — the third cohort to leave
+that allowlist by going red rather than by rotting.
+
+**Filed, not fixed:** `20 GOTO 1.5` — the reference emits `$0E,0001`, copies the
+`.` verbatim and then emits a **SECOND** `$0E`. That is `branch_lineno`'s list
+continuation, **different code**, and the evidence it is independent is that this
+fix did not move the row. One pinned `KNOWN_DIVERGE` entry, `dot-goto`.

@@ -149,6 +149,17 @@ the crunched line would store `B.5` as name bytes, so the RUN-time variable-name
 scan ([`basic/vars.asm`](../basic/vars.asm)) has to accept `.` as well, or the
 executor would look up a different variable than the one the tokeniser stored.
 
+> 🔴 **REFUTED BY MEASUREMENT — D-NAMDOT, 2026-08-01**
+> ([`docs/namedot-msx1-characterization.md`](namedot-msx1-characterization.md) §4).
+> MSX1 stores name bytes it then **refuses to resolve**: `B.5=7` and `A=B.5` are
+> `Syntax error` (ERR=2) on both references against a `B5=7` control at ERR=0.
+> The tokeniser's identifier charset and the executor's are different charsets,
+> and making `vars.asm` accept `.` (run as knife K4) turned those rows ERR 2 → 0
+> — the prescribed fix would have shipped a live divergence. The landed fix is
+> tokeniser-only, sub-ROM only, and both main ROMs stayed byte-identical.
+> Kept in place: a prediction a measurement overturned is worth being able to
+> re-read.
+
 Both rows are pinned as `KNOWN_DIVERGE` entries with their exact bytes and filed
 in `TODO.md`. `lit-assign`'s `20 A=.5` and D-DECBLANK's `dec-dotlead` (`20 A=. 5`)
 remain **green** — a `.` at the *start* of an expression does lead a literal on

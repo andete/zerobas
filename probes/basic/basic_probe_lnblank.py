@@ -5,6 +5,15 @@
 
 Spec: docs/spec-basic-lnblank.md.  Measurement: docs/lnblank-msx1-characterization.md.
 
+⚠️ THIS PROBE HAS OUTGROWN ITS NAME, and every battery past `num` says so. It is
+now the crunch's whole blank/charset surface, one slice at a time: `lit`/`dec`
+(D-DECBLANK), `exp` (D-EXPBAD), `nam` (D-NAMBLANK) and `dot`/`dotd` (D-NAMDOT,
+docs/spec-basic-namedot.md -- a '.' inside an identifier, which has nothing to do
+with blanks at all: its decisive row `20 A=B.5` CONTAINS NO BLANK). Each battery
+kept its rows here rather than forking a probe because the earlier slices' cells
+are the later slices' MUST-NOT-MOVE controls, and ONLY= selects them together --
+a knife that cannot see the cells it might break is not a knife.
+
 WHY THIS EXISTS
 ===============
 D-LINEMAX's `tok` battery had a FAILING TWO-SIDED CONTROL that had nothing to do
@@ -488,6 +497,78 @@ NAM = [
                                            # blank preserves the CLEARED state
 ]
 
+# --- the `dot` battery: IS '.' AN IDENTIFIER CHARACTER? (D-NAMDOT) -----------
+# The DENOMINATOR of the defect D-NAMBLANK filed and did not fix. `nam-dot0`
+# (`20 A=B.5`, NO BLANK IN IT) diverges on both references, so the claim is not
+# about blanks at all -- and `nam-dot`/`nam-dot0` alone are a SAMPLE of two.
+#
+# TWO NAMED RULES, AND EVERY GATING ROW BELOW SEPARATES THEM:
+#
+#   rule F (float lead) -- a '.' is examined for a following digit at EVERY
+#                          position, and a digit makes it lead a numeric
+#                          constant. zerobas today (basic/tokenise.inc:81).
+#   rule N (name char)  -- a '.' behind a LIVE name state CONTINUES the
+#                          identifier; with no live name state it leads a
+#                          literal exactly as today (`MY.VAR` is one name, and
+#                          `.5` at the start of an expression is still 0.5).
+#
+# ⚠️ THE BOUNDING ROWS ARE THE POINT OF THIS BATTERY, not the divergent ones.
+# A fix that reads "'.' is an identifier character" WITHOUT consulting the name
+# state is a different rule from N, and it moves `dot-sfx`, `dot-paren` and
+# `dot-kw` -- three cells that agree on all three sides TODAY. Those are the
+# rows that tell N from "always ident", and neither filed row can.
+#
+# ⚠️ ONLY=dot ALSO SELECTS `nam-dot`/`nam-dot0` (the filed pair) AND the whole
+# `dec-dot*` cohort -- `dec-dotlead0` (`20 A=.5`), `dec-dotlead` (`20 A=. 5`),
+# `dec-dotpre`, `dec-dotpost`, `dec-dotx`, `dec-dotx0`. That is not an accident
+# to be worked around: those are exactly the MUST-NOT-MOVE cells of a '.'-led
+# literal, and a knife on this rule wants them in the same run for free.
+DOT = [
+    # --- the rows where F and N predict DIFFERENT bytes ---------------------
+    ("dot-two",      ["20 A=B..5"]),       # F -> `B.` + a float; N -> `B..5`
+    ("dot-dig",      ["20 A=B1.5"]),       # the name state set by a DIGIT carries
+                                           # the dot too, or only a letter's does
+    ("dot-many",     ["20 A=B.C.D"]),      # more than one dot in one identifier
+    ("dot-blk2",     ["20 A=B . 5"]),      # a blank on BOTH sides of the dot: is
+                                           # it the same rule across R-N1's blank?
+    ("dot-lval",     ["20 B.5=7"]),        # LVALUE position, not just after '='
+    ("dot-print",    ["20 PRINT B.5"]),    # after a KEYWORD token
+    ("dot-op",       ["20 A=B.5+1"]),      # an operator must still BREAK the name
+    # --- BOUNDING: where the name state is DEAD and the dot must still lead --
+    # ⚠️ These agree on all three sides TODAY. They are what separates rule N
+    # from "a '.' is an identifier char wherever it appears", and a fix that
+    # moves any of them has implemented the wrong rule. Same shape as
+    # `nam-paren`/`nam-parenblk`, which a KNIFE had to find in D-NAMBLANK.
+    ("dot-sfx",      ["20 A=B$.5"]),       # a type suffix ENDS the identifier
+    ("dot-paren",    ["20 A=B(.5)"]),      # '(' clears the state
+    ("dot-kw",       ["20 A=B AND .5"]),   # a keyword clears the state
+    ("dot-goto",     ["20 GOTO 1.5"]),     # a line-number REFERENCE: branch_lineno
+                                           # is different code (D-LNBLANK R5)
+    # --- CONTROLS: F and N predict the SAME bytes ---------------------------
+    ("dot-ctl",      ["20 A=B."]),         # CONTROL: a dot with NO digit behind it
+    ("dot-let",      ["20 A=B.C"]),        # CONTROL: a dot then a LETTER
+    ("dot-start",    ["20 A=.B"]),         # CONTROL: dot at expression start, no
+                                           # digit -- the `.5` cells' own control
+    ("dot-str",      ['20 A$="B.5"']),     # CONTROL: inside a string literal
+    ("dot-rem",      ["20 REM B.5"]),      # CONTROL: a REM tail is VERBATIM
+    ("dot-data",     ["20 DATA B.5"]),     # CONTROL: a DATA body is VERBATIM
+    # ⚠️ THE STORED BYTES CANNOT ANSWER THIS ONE and it is here to say so. Under
+    # F and under N alike the '.' is copied and the `A` starts a name, so both
+    # rules predict `.A<EF><12>`. Whether a name may BEGIN with a '.' is a
+    # question only the `dotd-lead` say row can reach.
+    ("dot-lead",     ["20 .A=1"]),
+    # --- round 2: THE CELLS R-D2 MAKES REACHABLE FOR THE FIRST TIME ----------
+    # ⚠️ ADDED BECAUSE THE ROUND-1 CONTROLS REFUTED THEIR OWN PREDICTION. Once a
+    # '.' no longer needs a digit behind it (spec R-D2), the literal scanner is
+    # entered on shapes nothing has ever asked it about: a '.' with NOTHING
+    # after it, and a '.' whose next character is an EXPONENT MARKER. Round 1
+    # measured a '.' followed by a LETTER and by an ASSIGNMENT, which is a
+    # sample of the entry, not its surface -- the D-NOTOPEN2 trap. A rule may
+    # not be shipped one row wider than its denominator.
+    ("dot-eol",      ["20 A=."]),          # a bare '.' with nothing behind it
+    ("dot-exp",      ["20 A=.E5"]),        # '.' straight into an exponent marker
+]
+
 # --- the `dir` battery: DIRECT MODE, which has no stored line to read ---------
 # ⚠️ SAY-MODE ONLY, and it is here because direct mode is an EXECUTION MODE this
 # project has repeatedly found uncovered while the verbs above it read as fully
@@ -517,6 +598,49 @@ DIRB = [
     # joined name. Under P the two are the SAME VARIABLE and this reads 7; under
     # K the assignment is a syntax error and `B11` reads back 0.
     ("dir-name",     ["B1 1=7", 'PRINT"[";B11;"]"']),
+]
+
+# --- the `dotd` battery: WHAT A DOTTED NAME MEANS, not what it stores ---------
+# ⚠️ SAY-MODE ONLY, and the byte gloss cannot substitute for it. `dot-lval` can
+# only show that `B.5` was STORED as name bytes; whether the executor resolves
+# those bytes to one variable -- and to WHICH one -- is a separate claim, and it
+# is the claim that decides whether the run-time name scan (basic/vars.asm
+# is_ident_cont / var_name_key) has to change at all.
+#
+# 🔴 AND THE ANSWER INVERTS THE BYTE BATTERY'S READING. The first cut of this
+# battery asked `B.5=7` then `PRINT"[";B.5;"]"`, and BOTH references read
+# `<none>` -- which compares EQUAL and would have reported `agrees`. Reading the
+# SCREEN instead of the extracted value (the standing MO) showed why:
+#
+#     B.5=7               ->  Syntax error
+#     PRINT"[";B.5;"]"    ->  `[ 0` then Syntax error   (no ']', hence no span)
+#
+# So the reference CRUNCHES `B.5` as verbatim name bytes and then REFUSES it at
+# execute time: the run-time variable scanner stops at the '.', PRINT emits B's
+# value (0) and chokes on the leftover `.5`. '.' is an identifier character to
+# the TOKENISER and NOT to the EXECUTOR -- a genuine MSX1 asymmetry, and the
+# reason `basic/vars.asm` must NOT be touched by this slice (spec §4).
+#
+# ⚠️ THE 2-SIGNIFICANT-CHARACTER QUESTION IS DISSOLVED, NOT ANSWERED. `B.5`
+# never resolves to a variable at all, so asking whether its key is (B,.) --
+# i.e. whether `B.9` is the same variable -- has no referent. That row is gone;
+# `dotd-ctl` took its slot, because ERR=2 means nothing without a row that
+# says what ERR reads when the SAME shape carries no dot.
+#
+# ⚠️ EVERY PAYLOAD PRINTS BRACKETS, AND `ERR` IS WHY THESE ROWS CAN. A payload
+# whose statement ABORTS never reaches its own ']' -- so the very behaviour
+# under test destroys the reading, and `<none>` on every side compares EQUAL
+# (docs/nameblank-msx1-characterization.md §4.1). Asking ERR on the NEXT line
+# always prints its brackets, and turns "did it abort" into a number.
+DOTD = [
+    ("dotd-var",     ["B.5=7", 'PRINT"[";ERR;"]"']),   # LVALUE: does it abort?
+    ("dotd-ctl",     ["B5=7", 'PRINT"[";ERR;"]"']),    # CONTROL: same shape, NO
+                                                       # dot -- ERR must read 0
+    ("dotd-rd",      ["A=B.5", 'PRINT"[";ERR;"]"']),   # RVALUE, not just lvalue
+    ("dotd-b5",      ["B.5=7", 'PRINT"[";B5;"]"']),    # nothing was assigned to B5
+    ("dotd-lead",    [".A=1", 'PRINT"[";.A;"]"']),     # may a name BEGIN with '.'?
+                                                       # (`.` is the NUMBER 0, so
+                                                       # this prints TWO items)
 ]
 
 # --- the `body` battery: WHERE THE BODY STARTS -------------------------------
@@ -603,9 +727,9 @@ ERRB = [
     ("err-over",     ["65530 REMX", 'PRINT"[";ERR;"]"']),
     ("err-ctl",      ["65529 REMX", 'PRINT"[";ERR;"]"']),
 ]
-SAY_ONLY = {lb for lb, _l in ERRB + DIRB}
+SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD}
 
-CASES = NUM + BODY + LIT + DEC + EXP + NAM + REF + ERRB + DIRB
+CASES = NUM + BODY + LIT + DEC + EXP + NAM + DOT + REF + ERRB + DIRB + DOTD
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
 # informational because nobody had a RULE for them: `dec-bin` was the `&B`
@@ -620,7 +744,10 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             "lit-ctl", "lit-str", "lit-rem", "ref-ctl", "ref-sp",
             "dec-ctl", "dec-hexctl", "dec-dotlead0",
             "dec-eok", "dec-edata",
-            "nam-ctl", "nam-eqnum", "nam-amp0"}
+            "nam-ctl", "nam-eqnum", "nam-amp0",
+            # D-NAMDOT: F and N predict the SAME bytes for these five.
+            "dot-ctl", "dot-let", "dot-start", "dot-str", "dot-rem", "dot-data",
+            "dotd-ctl"}
 
 # --- KNOWN_DIVERGE: two rows, and they are a DIFFERENT DEFECT -----------------
 # ⚠️ These were never suppressions. Each entry recorded what zerobas ACTUALLY
@@ -640,31 +767,35 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 # in D-DECBLANK would have been the D-MFDOM trap. They are ordinary gating rows
 # now and still carry that separation.
 #
-# ⚠️ AND IT IS NON-EMPTY AGAIN AS OF D-NAMBLANK, for two rows that are NOT that
-# slice's defect (docs/spec-basic-nameblank.md §3):
+#   * the two `nam-dot` rows D-NAMBLANK filed -> RETIRED by D-NAMDOT
+#     (docs/spec-basic-namedot.md), same message: the allowlist reported them as
+#     agreeing and the gate went red until the entries were deleted. Three
+#     cohorts now, and not one of them rotted.
 #
-#     nam-dot0  20 A=B.5   ref -> A<EF>B.5   zb -> A<EF>B<1D>@P<00><00>
+# ⚠️ AND IT IS NON-EMPTY AGAIN AS OF D-NAMDOT, for ONE row that is not that
+# slice's defect either:
 #
-# 🔴 THAT ROW CARRIES NO BLANK AT ALL and diverges anyway. MS-BASIC allows a
-# period INSIDE an identifier (`MY.VAR`), so `B.5` is the variable B.5 and `B .5`
-# is the same variable reached across a blank; zerobas' tk_loop dispatch
-# (basic/tokenise.inc) looks one character past a '.' and hands it to tk_float.
-# Read through the blank rule alone, `nam-dot` says "a blank stops a literal from
-# starting" -- a rule this project would then have implemented. Its no-blank
-# CONTROL is the only thing that says otherwise, and that is the D-MFDOM trap:
-# closing an item on a measurement that belongs to a different defect.
+#     dot-goto  20 GOTO 1.5   ref -> <89> <0E><01><00>.<0E><05><00>
+#                             zb  -> <89> <0E><01><00><1D>@P<00><00>
 #
-# ⚠️ NOT A TOKENISER-ONLY FIX, which is why it is a slice of its own: a crunched
-# line storing `B.5` as name bytes needs the RUN-time variable-name scan
-# (basic/vars.asm) to accept '.' too, or the executor looks up a different
-# variable than the tokeniser stored. Filed in TODO.md with these bytes.
+# 🔴 THE REFERENCE EMITS **TWO** LINE-NUMBER REFERENCES. It crunches `1` to
+# $0E,0001, copies the '.' VERBATIM, and then crunches `5` to a SECOND $0E --
+# its line-number LIST continuation treats a '.' as a separator that does not
+# end the list, the same family as the empty-slot and blank-before-comma bugs
+# already recorded in branch_lineno's own bl_num comment. That is
+# DIFFERENT CODE from the tk_loop dispatch D-NAMDOT changes.
 #
-# Both entries are pinned to zerobas' EXACT reading, so they are controls and not
-# suppressions: fix the identifier charset and they stop matching, the gate goes
-# RED, and they have to be retired.
+# ⚠️ AND THE EVIDENCE THAT IT IS INDEPENDENT IS THAT THE FIX DID NOT MOVE IT:
+# zerobas read exactly these bytes before D-NAMDOT and after it. Neither R-D1 nor
+# R-D2 predicts the row -- there is no name state after a line-number reference,
+# so the '.' enters tk_float and takes `.5` with it. Filed in TODO.md with these
+# bytes; closing it here would be the D-MFDOM trap.
+#
+# The entry is pinned to zerobas' EXACT reading, so it is a control and not a
+# suppression: fix branch_lineno and it stops matching, the gate goes RED, and it
+# has to be retired.
 KNOWN_DIVERGE = {
-    "nam-dot":  "line 20 | A<EF>B <1D>@P<00><00>",
-    "nam-dot0": "line 20 | A<EF>B<1D>@P<00><00>",
+    "dot-goto": "line 20 | <89> <0E><01><00><1D>@P<00><00>",
 }
 
 

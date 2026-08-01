@@ -111,9 +111,26 @@ name bytes, so the RUN-time variable-name scan
 ([`basic/vars.asm`](../basic/vars.asm)) must accept `.` too, or the executor looks
 up a different variable than the tokeniser stored. **Own slice.**
 
+> 🔴 **THAT LAST PARAGRAPH IS WRONG, AND D-NAMDOT MEASURED IT WRONG**
+> ([`docs/spec-basic-namedot.md`](spec-basic-namedot.md) §2, landed 2026-08-01).
+> `B.5=7` and `A=B.5` raise `Syntax error` (ERR=2) on **both** references,
+> against a `B5=7` control reading ERR=0: MSX1 stores name bytes it then refuses
+> to resolve, so the tokeniser's identifier charset and the executor's are
+> **different charsets**. Making `vars.asm` accept `.` — the change this
+> paragraph prescribes — was run as knife **K4** and turned both rows ERR 2 → 0,
+> i.e. it would have shipped a live divergence. The landed fix is
+> **tokeniser-only and sub-ROM only**; `vars.asm` was never touched. Left in
+> place rather than deleted, because a prediction that a measurement overturned
+> is the most useful kind of doc debt to be able to re-read.
+>
+> The rest of this section stands: it *was* its own slice, and the control
+> *was* what avoided the D-MFDOM trap.
+
 Both rows go into `KNOWN_DIVERGE` with their exact bytes plus a filed `TODO.md`
 item — the allowlist stops being empty, and that is a measurement, not a
 suppression: fix the charset and the entries stop matching and must be retired.
+**Both were retired by D-NAMDOT**, exactly that way: the gate went red reporting
+them as agreeing, and the entries were deleted.
 
 ⚠️ **The fix below must leave these two rows reading EXACTLY what they read
 today.** `tk_loop`'s `.` dispatch does not consult `TKNAME`, so it should — but

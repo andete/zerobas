@@ -3333,31 +3333,73 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       measurement [`docs/nameblank-msx1-characterization.md`](docs/nameblank-msx1-characterization.md).
       `dec-bin` and `lit-varname` are **gating** rows now, not informational.
 
-- [ ] **`.` IS AN IDENTIFIER CHARACTER on MSX1 — zerobas reads it as a float lead.**
-      Found 2026-08-01 in D-NAMBLANK's denominator, by the row written to be its
-      **control**. Oracle-locked on the VG-8020 and the CF-3300, which agree:
+- [ ] **A `.` DOES NOT END A LINE-NUMBER LIST — the reference emits TWO `$0E`s.**
+      Found 2026-08-01 by D-NAMDOT's `dot-goto` row, written as a bounding cell
+      for a rule that turned out not to reach it. Oracle-locked on the VG-8020
+      and the CF-3300, which agree, `--repeat 2`:
       ```
-      20 A=B.5   ref -> A<EF>B.5   zb -> A<EF>B<1D>@P<00><00>   NO BLANK AT ALL
-      20 A=B .5  ref -> A<EF>B .5  zb -> A<EF>B <1D>@P<00><00>
+      20 GOTO 1.5   ref -> <89> <0E><01><00>.<0E><05><00>
+                    zb  -> <89> <0E><01><00><1D>@P<00><00>
       ```
-      ⚠️ **The no-blank row is the whole point**: read through D-NAMBLANK's rule
-      alone, the blanked row says *"a blank stops a literal from starting"* — a
-      rule this project would then have implemented. MS-BASIC allows a period
-      inside an identifier (`MY.VAR`), so `B.5` is the variable `B.5`.
-      `tk_loop`'s dispatch ([`basic/tokenise.inc`](basic/tokenise.inc)) looks one
-      character past a `.` and hands it to `tk_float` on a digit, for a reason
-      that has nothing to do with the name state.
-      ⚠️ **NOT a tokeniser-only fix**, which is why it was not folded in: a
-      crunched line storing `B.5` as name bytes needs the RUN-time variable-name
-      scan ([`basic/vars.asm`](basic/vars.asm)) to accept `.` as well, or the
-      executor looks up a different variable than the tokeniser stored. Check
-      `DEFINT`/`DEFSTR` letter ranges and `VARPTR` too.
-      Both rows are live in `make lnblank-acceptance` as `KNOWN_DIVERGE`, pinned
-      to the exact bytes above — **fix the charset and the gate goes RED and the
-      entries must be retired.** ⚠️ Bounding controls that must stay green:
-      `20 A=.5` and `20 A=. 5` — a `.` at the START of an expression *does* lead a
-      literal on every side. Detail:
-      [`docs/nameblank-msx1-characterization.md`](docs/nameblank-msx1-characterization.md) §3.
+      The reference crunches `1` to `$0E,0001`, copies the `.` **verbatim**, and
+      then crunches `5` as a **SECOND** line-number reference. That is
+      `branch_lineno`'s list-continuation loop
+      ([`basic/tokenise.inc`](basic/tokenise.inc) `bl_yes`/`bl_num`) treating a
+      `.` as a separator that does not end the list — the same family as the
+      empty-slot and blank-before-comma bugs already recorded in `bl_num`'s own
+      comment, and **different code from the `tk_loop` dispatch D-NAMDOT fixed**.
+      ⚠️ **The evidence that it is independent is that the fix did not move it**:
+      zerobas read those exact bytes before D-NAMDOT and after it. Neither R-D1
+      nor R-D2 predicts the row — there is no name state after a line-number
+      reference, so the `.` enters `tk_float` and takes `.5` with it.
+      Live in `make lnblank-acceptance` as the sole `KNOWN_DIVERGE` entry, pinned
+      to the exact zerobas bytes — fix it and the gate goes RED and the entry must
+      be retired. ⚠️ Adjacent, already filed: `LIST`/`DELETE`/`AUTO`/`RENUM` emit
+      no `$0E` at all. Detail:
+      [`docs/namedot-msx1-characterization.md`](docs/namedot-msx1-characterization.md) §6.
+
+- [x] ✅ **`.` IS AN IDENTIFIER CHARACTER TO THE TOKENISER — LANDED 2026-08-01,
+      148/148, NET −10 B, all sub-ROM.** Split out of D-NAMBLANK, which filed it
+      from two rows and did not fix it. Spec
+      [`docs/spec-basic-namedot.md`](docs/spec-basic-namedot.md), measurement
+      [`docs/namedot-msx1-characterization.md`](docs/namedot-msx1-characterization.md).
+      Two rules, both in one five-line dispatch arm:
+      **R-D1** a `.` behind a LIVE name state continues the identifier;
+      **R-D2** a `.` with the state DEAD begins a numeric constant **and the
+      digit is OPTIONAL** — a bare `.` is the single literal 0.
+      🔴 **THE FILED PRESCRIPTION WAS REFUTED BY MEASUREMENT, AND THAT WAS THE
+      WHOLE SHAPE OF THE SLICE.** This item said in as many words that
+      [`basic/vars.asm`](basic/vars.asm)'s run-time scan *"has to accept `.` as
+      well, or the executor looks up a different variable than the tokeniser
+      stored"*. **The reference does exactly that forbidden thing**: `B.5=7` and
+      `A=B.5` both raise `Syntax error` (ERR=2) against a `B5=7` control reading
+      ERR=0 — the crunch's identifier charset and the executor's are *different
+      charsets* on MSX1. Knife **K4** made the prescribed change and turned both
+      rows ERR 2 → 0, i.e. **the filed fix would have shipped a live divergence
+      in the exact place the item pointed at**. So `vars.asm` was never touched,
+      neither were `DEFINT`/`DEFSNG`/`DEFSTR`, `VARPTR`, `FOR` variables,
+      `DIM`/array names or `INPUT`/`READ` targets, and the whole change is
+      **sub-ROM only** — both main ROMs byte-identical to the parent commit,
+      asserted by hash.
+      🔴 **AND THE ROWS THAT FOUND R-D2 WERE WRITTEN TO BE CONTROLS.**
+      `20 A=.B` and `20 .A=1` were filed as predicted-green two-sided cells and
+      both refuted their own prediction: the reference stores `$1D,0,0,0,0`, so a
+      `.`-led literal never needed its digit. That deleted the one-character
+      lookahead instead of extending it — the correct rule was **smaller** than
+      the wrong one, the D-EXPBAD shape.
+      🔴 **A `<none>` READING ON BOTH REFERENCES WAS NOT AGREEMENT.** The first
+      `dotd` payloads printed no closing `]` *because the behaviour under test
+      aborted the statement*, so every side read `<none>` and compared EQUAL —
+      the trap filed one item below. Reading the SCREEN found the `Syntax error`
+      that became R-D3; the rows were re-asked through `ERR`, which prints its
+      brackets whether or not the statement aborts.
+      Five knives, all run and reverted: K1/K2 separate R-D1 from R-D2, **K3**
+      separates R-D1 from *"a `.` is always an identifier char"* (a distinction
+      neither filed row could make), K4 above, K5 shows the dot must **set** the
+      name state. ⚠️ **K1 and K5 each refuted a predicted-GREEN control** —
+      corrected in place, spec §7.1 — and a K1 `REFUSED` turned out to be a
+      dropped keystroke that re-ran clean alone (§7.2).
+      `nam-dot`/`nam-dot0` retired from `KNOWN_DIVERGE`; `dot-goto` filed above.
 
 - [ ] **A `--say` row with no brackets cannot have a reading.**
       Found 2026-08-01 in D-NAMBLANK. `result_span_after_echo`

@@ -232,6 +232,11 @@ double, same value — the rule counts CHARS, not numeric significance).
    (`999999` → single, `1000000` → double).
 3. `.` and/or `E` exponent: D ≤ 6 → single, D ≥ 7 → double
    (`3.14159` → single, `3.141592`/`123456.7` → double).
+   ⚠️ **D = 0 is reachable as of D-NAMDOT** (docs/spec-basic-namedot.md R-D2):
+   a `.` no longer needs a digit behind it, so a bare `.` enters here with no
+   digits at all and rule 3 makes it the single `0` — `$1D,00,00,00,00`, which
+   is what both references store for `20 A=.`, `20 A=.B` and `20 A=.E5`. The
+   rule as written already covered it; it had simply never been entered.
 4. `D` exponent or `#` suffix → double, always. `!` suffix → single, always.
 5. Rounding to the precision's digit count is HALF-UP at both precisions
    (`1234565!`/`1234575!` → `123457`/`123458`; `…345`+`5` tail → `…35`).

@@ -71,32 +71,51 @@ tk_loop:
                                              ; (float-aware, basic/float.asm)
 tk_namedig:
                 ld      a,1
-                ld      (TKNAME),a          ; the digit extends the name
+                ld      (TKNAME),a          ; the digit (or a '.', D-NAMDOT R-D1)
+                                            ; extends the name
                 ld      a,(hl)              ; copy it verbatim
                 ld      (de),a
                 inc     de
                 inc     hl
                 jp      tk_loop
 tk_nondigit:
-                cp      '.'                 ; '.'+digit leads a float literal (spec
-                jr      nz,tk_nondot        ; §9.2); a lone '.' (no digit) stays
-                push    hl                  ; verbatim below, like today
-                inc     hl
-                ; ⚠️ D-DECBLANK S1 -- AND THIS SITE IS IN THE OTHER FILE. A literal
-                ; may BEGIN with the dot, and that decision is taken HERE, before
-                ; tk_float is entered, so no amount of blank-transparency inside
-                ; the scanner can reach it: `20 A=. 5` is 0.5 on the VG-8020 and
-                ; the CF-3300 alike, and zerobas stored '.' verbatim + a blank +
-                ; the integer 5 (docs/decblank-msx1-characterization.md §4). The
-                ; blank-skipping fetch is the co-located sub/tkfloat.asm leaf, so
-                ; the digit test is one call rather than a second copy of the loop.
-                call    tkf_fetch
-                pop     hl
-                cp      '0'
-                jr      c,tk_nondot
-                cp      '9'+1
-                jr      nc,tk_nondot
-                jp      tk_float            ; basic/float.asm
+                cp      '.'
+                jr      nz,tk_nondot
+                ; D-NAMDOT (docs/spec-basic-namedot.md). TWO rules meet in these
+                ; four instructions, and the one-character lookahead that used to
+                ; stand here is gone because BOTH of them delete it.
+                ;
+                ; R-D1: a '.' behind a LIVE name state CONTINUES the identifier.
+                ; `20 A=B.5` is the variable B.5 on the VG-8020 and the CF-3300
+                ; alike -- a row with NO BLANK IN IT, which is why D-NAMBLANK
+                ; filed this separately instead of folding it into the blank rule
+                ; (docs/nameblank-msx1-characterization.md §3). B is the in-a-name
+                ; state loaded at the top of tk_loop, and it is only known-live
+                ; AHEAD of match_kw (line 103) -- the identical liveness argument
+                ; D-NAMBLANK's K4 established for tk_blank.
+                ;
+                ; R-D2: with the state DEAD the '.' begins a numeric constant AND
+                ; THE DIGIT IS OPTIONAL -- a bare '.' is the single-precision
+                ; literal 0. `20 A=.B` stores $1D,0,0,0,0 then `B` on both
+                ; references; zerobas stored `.B` verbatim. 🔴 THAT ROW WAS
+                ; WRITTEN TO BE A TWO-SIDED CONTROL and it refuted its own
+                ; prediction, which is what turned "a '.'+digit leads a literal"
+                ; into "a '.' leads a literal" (characterization §3).
+                ;
+                ; ⚠️ tk_namedig is REUSED, not cloned: it already stores TKNAME=1,
+                ; copies (HL) verbatim and returns to tk_loop, which is exactly
+                ; what a '.' inside a name must do. And the jump is BACKWARD into
+                ; an existing label rather than a new label parked in front of
+                ; one -- the check D-NAMBLANK's K2 had to find the hard way, on a
+                ; build that read 29/31 green by LUCK (spec §3).
+                ;
+                ; ⚠️ The deleted lookahead was tkf_fetch's only caller outside
+                ; sub/tkfloat.asm; four callers remain there, so the hard
+                ; dead-code gate still sees it live.
+                ld      a,b                 ; were we inside a name?
+                or      a
+                jr      nz,tk_namedig       ; R-D1: the dot extends the name
+                jp      tk_float            ; R-D2: no digit required (sub/tkfloat.asm)
 tk_nondot:
                 cp      '&'                 ; "&H" hex constant
                 jp      z,tk_hex

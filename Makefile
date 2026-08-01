@@ -1116,12 +1116,21 @@ linemax-acceptance: repack-machine
 # KEPT), exp (D-EXPBAD, a MALFORMED exponent marker) and nam (D-NAMBLANK,
 # docs/spec-basic-nameblank.md: a blank is COPIED but changes NO tokeniser state,
 # so `20 A=B1 1` is the single identifier B11 -- the `&` the TODO filed this
-# under turned out to be inert on every side). Scope with ONLY=num,ref,lit,dec,exp,nam.
+# under turned out to be inert on every side) and dot (D-NAMDOT,
+# docs/spec-basic-namedot.md: a '.' behind a LIVE name state CONTINUES the
+# identifier, and a '.' with the state DEAD leads a numeric constant WITHOUT
+# needing a digit -- a bare '.' is the literal 0).
+# Scope with ONLY=num,ref,lit,dec,exp,nam,dot.
 #
 # ⚠️ `nam` is a SUBSTRING of `lit-varname`, so ONLY=nam pulls that bounding
 # control in for free; ONLY=nam,lit is what a knife on the blank rule wants,
 # because `lit` carries the must-not-move cells (`lit-assign`: `20 A=1 0` is the
 # SINGLE literal 10, D-DECBLANK).
+#
+# ⚠️ Likewise ONLY=dot selects the whole `dec-dot*` cohort and both `nam-dot`
+# rows for free -- exactly the must-not-move cells of a '.'-led literal. A knife
+# on the dot rule wants ONLY=dot,nam,lit,dec-dotlead; use SIDES=vg8020,zb to
+# halve it (the two references agree on every row in this probe).
 #
 # ⚠️ --say rows are FILTERED OUT of this gate. Their payloads must PRINT BRACKETS
 # (`result_span_after_echo` returns the span between the last '[' and its ']'):
