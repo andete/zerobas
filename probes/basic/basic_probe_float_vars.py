@@ -240,7 +240,60 @@ CASES = [
     # string LITERAL) must reach a deterministic error, not a wild out-of-range
     # DEFtbl read -- guarded with is_letter.
     ("reg.S3b.mid_literal_target", 'MID$("AB",1)="X"',            "abort", None),
+
+    # === D-DEFSTR: a DEFSTR'd UNSUFFIXED name in a NUMERIC position ===========
+    # docs/spec-basic-deftbl-strcode.md. The DEFtbl's string code (namespace P,
+    # sysvars.inc DEFTBL_STR) used to be 1, which is ALSO the variable chain's
+    # own string type tag (namespace C) -- so three sites that fed a P code into
+    # a C position were invisible. Both references answer every row below with
+    # Type mismatch; these are the rows that said so.
+    # ⚠️ ORACLE-LOCKED ON BOTH REFERENCES BEFORE zerobas ran on them, at
+    # --repeat 2, and vg8020 and cf3300 agreed on all 18 rows of the scout (spec
+    # §3). This probe's standing differential is vg8020-vs-zerobas, as the whole
+    # matrix is; the CF-3300 half lives in the spec, not here.
+    #
+    # 🔴 THE TOP-LEVEL ROW IS GREEN AND WAS GREEN FOR THE WRONG REASON. `B=S` is
+    # intercepted by ev_rel's own str_eval probe, which sits at the TOP of an
+    # operand only -- so it never exercised ev_f_var at all. `B=1+S`, one `1+`
+    # away, reached ev_f_var and silently read 0. Keep BOTH: the pair is what
+    # tells the interception apart from the guard, and either alone misleads.
+    ("def.str.rvalue",      'DEFSTR S:B=S:PRINT"[";B;"]"',          "abort", None),
+    ("def.str.rvalue_arr",  'DEFSTR S:B=S(1):PRINT"[";B;"]"',       "abort", None),
+    ("def.str.nested",      'DEFSTR S:B=1+S:PRINT"[";B;"]"',        "abort", None),
+    ("def.str.nested_set",  'DEFSTR S:S="AB":B=1+S:PRINT"[";B;"]"', "abort", None),
+    ("def.str.nested_arr",  'DEFSTR S:B=1+S(1):PRINT"[";B;"]"',     "abort", None),
+    # The numeric CONTROLS: identical but for the DEF mnemonic, so the DEFtbl
+    # byte is the only moving part. A fix that made everything abort would pass
+    # every row above and fail these.
+    ("def.int.nested",      'DEFINT S:B=1+S:PRINT"[";B;"]"',        "value", " 1 "),
+    ("def.int.rvalue_arr",  'DEFINT S:B=S(1):PRINT"[";B;"]"',       "value", " 0 "),
+    # 🔴 THE ROW THAT CATCHES A FIX AIMED AT THE NUMERIC LEAK BREAKING DEFSTR
+    # ITSELF: a DEFSTR'd name used as the STRING it is must keep working.
+    ("def.str.arr_store", 'DEFSTR S:S(1)="AB":PRINT"[";S(1);"]"',   "value", "AB"),
+    # var_get/var_set: the pair that had NO string guard and so corrupted memory
+    # (spec §3.2 -- one byte of FAC over a string descriptor's `len`, after which
+    # PRINT dumped RAM). Stored, because NEXT is re-entrant.
+    ("def.str.fornext",
+     'DEFSTR I:FOR I=1 TO 3:NEXT:PRINT"[";I;"]"',           "stored_abort", None),
 ]
+
+# ⚠️ NOT GATED, AND DELIBERATELY: `DEFSTR X:READ X:...:DATA 42` reads the STRING
+# "42" on both references (`[42]`, no spaces -- the missing spaces ARE the tell)
+# and `DATA AB` reads `[AB]`. zerobas has no string READ at all, so after
+# D-DEFSTR both raise a clean ERR 13 instead of corrupting memory: strictly
+# closer, still divergent. A row that can only ever be red is doc debt, not a
+# gate -- it is filed in TODO.md instead. Recorded here so the omission is a
+# decision on the record rather than a silent gap in this matrix.
+
+
+def _is_type_mismatch(tail):
+    """Is this tail a TYPE MISMATCH report? Matched on the lowercase STEM only:
+    zerobas prints its own lowercase wording by design (D-2) and the reference
+    appends a run-mode ` in 10` suffix, so neither the case nor the suffix is
+    compared -- exactly the rule basic_probe_sysvarsweep.py's own `_has_error`
+    uses for "undefined line". This is a shape test that a line of dumped RAM
+    cannot satisfy, which is the whole point (see `stored_abort` in compare)."""
+    return bool(tail) and "type mismatch" in tail.lower()
 
 
 def spec_for(line, kind):
@@ -254,18 +307,31 @@ def spec_for(line, kind):
         (omsx_repl.MAX_DIRECT = 38: def.int.list, alias.all4, the 3 varptr.*
         cases) is run as a stored program, semantically identical for those (no
         re-entrant control flow).
+      - "stored_abort": a stored program that must abort before printing (a
+        re-entrant construct whose TYPE is rejected, e.g. a DEFSTR'd FOR).
       - "abort"/"abort_or_value": direct mode."""
-    stored = kind == "stored" or (kind == "value" and len(line) > omsx_repl.MAX_DIRECT)
+    stored = (kind in ("stored", "stored_abort")
+              or (kind == "value" and len(line) > omsx_repl.MAX_DIRECT))
     return (("stored", omsx_repl.as_stored(line)) if stored
             else ("direct", [line])), stored
 
 
 def extract(raw, line, kind, stored):
     """(span, tail) from one raw capture, matching spec_for's routing. A stored
-    case has no findable tail (no direct echo row); an abort case reads its span
-    only AFTER the echo row so the echoed '[' is not misread as output."""
+    case anchors on its own `RUN` echo; a direct abort case reads its span only
+    AFTER the echo row so the echoed '[' is not misread as output.
+
+    🔴 A STORED ROW USED TO BE READ WITH A BARE result_span, AND THAT CANNOT SEE
+    AN ABORT. The screen still holds the echo of `20 PRINT"[";I;"]"`, so when RUN
+    prints nothing the span silently falls back to the echoed literal — D-DEFSTR
+    measured `'";I;"'` and `'42'` that way, both of which are the SOURCE line and
+    both of which look like plausible values. Anchoring after the `RUN` echo
+    makes "the program printed nothing" a reading instead of a fabrication, and
+    gives stored rows a real tail (so `stored_abort`, below, can exist at all).
+    Rows that DO print are unaffected: their output is after RUN either way."""
     if stored:
-        return omsx_repl.result_span(raw), None
+        return (omsx_repl.result_span_after_echo(raw, "RUN"),
+                omsx_repl.screen_tail(raw, "RUN"))
     if kind == "value":
         return omsx_repl.result_span(raw), omsx_repl.screen_tail(raw, line)
     return omsx_repl.result_span_after_echo(raw, line), omsx_repl.screen_tail(raw, line)
@@ -316,6 +382,16 @@ def main() -> int:
         zb_span, zb_tail = extract(zb_raw, line, kind, stored[i])
         if kind in ("value", "stored"):
             return ref_span is not None and ref_span == zb_span
+        if kind == "stored_abort":
+            # 🔴 "NO SPAN + A NON-EMPTY TAIL" IS VACUOUS FOR THIS ROW, AND THE
+            # PRE-FIX BUILD PROVES IT. The memory corruption def.str.fornext
+            # exists to catch ALSO produced no span and a non-empty tail -- the
+            # tail was a line of dumped RAM (`#   $  4$ ! s$ '  9   N X]`), which
+            # is indistinguishable from an error message under a mere bool()
+            # test. So the row would have passed on the broken build: green while
+            # measuring nothing. Require the abort to be a TYPE MISMATCH.
+            return (ref_span is None and zb_span is None
+                    and _is_type_mismatch(ref_tail) and _is_type_mismatch(zb_tail))
         if kind == "abort":
             return (ref_span is None and zb_span is None
                     and bool(ref_tail) and bool(zb_tail))

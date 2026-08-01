@@ -3447,16 +3447,76 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       an old address is a half-done relocation that every other check reports as
       green.
 
-- [ ] **`DEFTBL_STR` SHOULD BE `3`, NOT `1`.** Filed 2026-08-01 by D-REHOME.
-      Both references store `$03` for a `DEFSTR`'d letter
-      (`make sysvarsweep ONLY=s10-defint,s11-defstr`); zerobas stores `$01`. It
-      is the **only** one of `DEFTBL`'s 26 bytes that differs — boot `$08`×26 and
-      `DEFINT A`→`$02` are already byte-identical, which is itself a correction
-      of what [`basic/sysvars.inc`](basic/sysvars.inc) implied.
-      ⚠️ **Deliberately NOT bundled with the address move**: the type code is
-      also a value WIDTH on the numeric side (2 int / 4 single / 8 double), and
-      `3` is likewise the string DESCRIPTOR size — so this changes a
-      type-dispatch constant and deserves its own knives, not a ride-along.
+- [x] ✅ **`DEFTBL_STR` SHOULD BE `3`, NOT `1`.** Filed 2026-08-01 by D-REHOME,
+      closed 2026-08-01 by **D-DEFSTR**
+      ([`docs/spec-basic-deftbl-strcode.md`](docs/spec-basic-deftbl-strcode.md)).
+      All 26 published `DEFTBL` bytes now match both references in every measured
+      state. 🔴 **The filed reason was not the live hazard.** `1` was not an
+      own-design sentinel colliding with the numeric *widths* `2/4/8`; it was an
+      accidental collision with zerobas' **variable-chain string type tag, which
+      is also `1`** — a second, own-design namespace that overlaps the published
+      one on the numeric values. Three sites fed a published code straight into
+      the chain, and one of them was a **live memory corruption**:
+      `DEFSTR I:FOR I=1 TO 3` reached `var_store_fac` with type `1`, which is
+      simultaneously the chain's string tag *and* an `ld c,a`+`ldir` byte count —
+      so it allocated a real STRING entry and wrote one byte of FAC over its
+      descriptor's `len`. PRINT then dumped arbitrary RAM. **The coincidence at
+      `1` is what kept it quiet**, and changing the constant alone would have
+      relocated the corruption into phantom `type=3` entries, not removed it.
+      Every published→chain crossing is now checked (`deftbl_num_type` /
+      `check_vartype_num`, low region). 16 of 18 measured rows now match both
+      references, up from 12; **11 green controls held**. Cost −14 B low region,
+      −3 B page 1, exactly as the spec predicted.
+      🔴 And three rows that **agreed** agreed for the wrong reason: `B=S` is
+      caught by `ev_rel`'s `str_eval` probe, which sits at the TOP of an operand
+      only — `B=1+S` was not, and silently read 0 where both references raise
+      ERR 13. Stopping at the top-level shape would have filed B1 as dead code.
+
+- [ ] 🔴 **TWO ACCEPTANCE SUITES ARE STANDING-RED WITH NO EXPECTATION WRITTEN
+      DOWN.** Found 2026-08-01 by D-DEFSTR's corpus run — **both falsified as NOT
+      D-DEFSTR's** by deleting the code under test (`basic/` stashed, rebuilt;
+      the failures are **byte-identical**, and `logicops` matches at 50/50 FAIL
+      lines exactly).
+      * **`float-acceptance` → `reg.C.if_skip_over_float`.**
+        `IF 0 THEN A=1.5 ELSE PRINT"[";9;"]"` prints ` 9 ` on the reference and
+        **nothing at all** on zerobas — neither branch runs; the probe's span
+        falls back to the echoed source (`";9;"`), tail empty. Likely the
+        standing *"`$0E` refs missing for LIST/DELETE/AUTO/RENUM/**ELSE**"*
+        class — the ELSE arm is exactly what this row skips over.
+      * **`logicops-acceptance` → 50 rows, all `EQV`/`IMP`.** Expected: those two
+        words are a *recommended future slice*, still unimplemented (see the
+        keyword-gaps item below). But the suite calls this block
+        **"CALIBRATION (implemented operators, ref vs zerobas must AGREE)"**,
+        which is now false of its own contents.
+      ⚠️ **The defect is the SILENCE, not the rows.** A suite expected to fail
+      teaches nothing until the expectation is pinned BY NAME, the way
+      `array-acceptance`'s 149/151 is (`ifc.instr.zero`/`ifc.instr.neg`) and the
+      way the dead-code gate's allowlist is. Until then anyone running the corpus
+      after a change cannot tell a regression from the status quo — which is
+      exactly the position this slice was in for an hour. Pin both, or fix them.
+
+- [ ] **ZEROBAS HAS NO STRING `READ`.** Filed 2026-08-01 by D-DEFSTR, found by
+      rows aimed at the `DEFTBL_STR` sentinel. Both references read `DATA 42`
+      into a `DEFSTR`'d `X` as the **string** `"42"` — `[42]`, not `[ 42 ]`, so
+      the missing spaces are the tell — and `DATA AB` as `[AB]`.
+      [`ex_read`](basic/program.asm:1310) consumes one letter and calls
+      `read_one_value` for an int16, with **no `$` path anywhere**; `READ X$` is
+      unsupported by construction, so a `DEFSTR`'d target had nowhere to go.
+      D-DEFSTR turned that from **memory corruption** into a clean ERR 13, which
+      is strictly closer and still divergent. These are the only 2 of D-DEFSTR's
+      18 rows that do not match the references, and they are deliberately **not**
+      gate rows — a row that can only ever be red is doc debt, not a gate.
+
+- [ ] **THE TWO TYPE-CODE NAMESPACES SHOULD PROBABLY BECOME ONE.** Filed
+      2026-08-01 by D-DEFSTR. The references use `3` for **both** the DEFtbl code
+      and the variable-chain type byte, which makes `elsize == type` an identity
+      and [`elsize_from_type`](sub/arrays.asm:845) — plus ~7 call sites —
+      deletable. zerobas uses `1` in the chain with a `1 → 3` map.
+      ⚠️ The chain's stored type byte is **RAM-observable**, so this needs its own
+      oracle-lock on that byte before anything moves; D-REHOME measured only that
+      the string scalar entry's SIZE agrees (+6 B, `ARYTAB $8003→$8009`), never
+      its contents. ⚠️ Also note the entry field ORDER may differ from the
+      reference's — unmeasured. A separate slice, not a ride-along.
 
 - [ ] **`20 GOTO 99999` TOKENISES 3 BYTES SHORTER ON ZEROBAS.** Filed 2026-08-01
       by D-REHOME as a **side effect of rows aimed at something else**: under

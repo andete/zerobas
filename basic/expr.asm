@@ -526,6 +526,13 @@ ev_f_var:
                 push    ix
                 pop     hl                  ; HL = cursor
                 call    var_name_key        ; BC = key, HL past the (multi-char) name
+                ; D-DEFSTR (docs/spec-basic-deftbl-strcode.md §4 F3): a DEFSTR'd
+                ; unsuffixed name is a STRING, and reaching a numeric factor with
+                ; one is ERR 13 on both references. ev_rel's own str_eval probe
+                ; catches this only at the TOP of an operand, so `B=S` errored and
+                ; `B=1+S` silently read 0 -- measured, spec §3.1. Placed BEFORE the
+                ; '(' dispatch so it covers ev_f_arr too. Clobbers A only.
+                call    check_vartype_num
                 ld      a,(hl)
                 cp      '('
                 jp      z,ev_f_arr          ; array-element rvalue (arrays slice-1,

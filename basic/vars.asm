@@ -580,7 +580,8 @@ var_get:
                 call    upcase
                 ld      b,a
                 ld      c,0
-                call    deftbl_lookup       ; A = the letter's resolved default type
+                call    deftbl_num_type     ; A = the letter's resolved default type;
+                                            ; ERR 13 if it is a STRING default (D-DEFSTR)
                 jp      var_load_fac        ; FAC/FACTYP=type, DE=int16 fast path (tail)
 var_set:
                 call    upcase
@@ -592,7 +593,8 @@ var_set:
                                             ; int16 in F3) -- tag it so var_store_fac's
                                             ; target coercion widens DE via widen_int_to
                                             ; instead of misreading FAC
-                call    deftbl_lookup       ; A = the letter's resolved default type
+                call    deftbl_num_type     ; A = the letter's resolved default type;
+                                            ; ERR 13 if it is a STRING default (D-DEFSTR)
                 jp      var_store_fac       ; tail call (DE preserved across the lookup)
 
 ; --- string-variable store (own-design; see PROVENANCE.md) -----------------

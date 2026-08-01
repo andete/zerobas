@@ -2848,18 +2848,39 @@ LHS_VARTYPE     equ     $F152   ; ex_let (interp.asm): the LHS variable's resolv
 ;              three of the four codes.
 ;   COST       ZERO ROM bytes -- every access is `ld hl,DEFTBL` + index/fill.
 ;              PUB-FREE measured across all 26 bytes.
-; ⚠️ Honouring the ADDRESS does not depend on fixing the sentinel, and the two
-; are deliberately NOT bundled: 1 -> 3 changes a type-dispatch constant that is
-; also a value WIDTH on the numeric side, which deserves its own knives. Today
-; all 26 published bytes read 00; after this they read the reference's values
-; except for DEFSTR'd letters, which is strictly closer. Filed in TODO.md.
+; ✅ D-DEFSTR (docs/spec-basic-deftbl-strcode.md) CLOSED the one remaining byte:
+; DEFTBL_STR is now 3, so all 26 published bytes match both references in every
+; measured state. D-REHOME left it alone on the grounds that "3 is also a value
+; WIDTH on the numeric side (2/4/8)" -- a real hazard, but NOT the live one. The
+; live one was a collision with a STRING code: see DEFTBL_STR just below.
 DEFTBL          equ     $F6CA   ; per-letter default-type map, A..Z (26) --
                                 ; the PUBLISHED address ($F6CA..$F6E3)
-DEFTBL_STR      equ     1       ; sentinel value: an unsuffixed name is a STRING var
-                                ; (not a numeric width; distinct from 2/4/8)
-                                ; ⚠️ MEASURED DIVERGENCE: both references store
-                                ; $03 here. Not changed with the address move --
-                                ; see the note above. TODO.md carries it.
+; --- DEFTBL_STR: the DEFtbl's STRING code (namespace P) ----------------------
+; ⚠️ TWO NAMESPACES SHARE THESE NUMBERS, AND THEY USED TO SHARE THIS VALUE TOO.
+;   P (published, HERE)  the DEFtbl's float type code: 2 int / 3 string /
+;                        4 single / 8 double -- what PEEK($F6CA+letter) reads.
+;   C (chain, own)       the variable-chain entry's `type` byte, alias ARY_TYPE:
+;                        2/4/8 numeric and **1** string, with sub/arrays.asm's
+;                        elsize_from_type mapping 1 -> 3 (the [len][ptr] width).
+; On the references the two are ONE namespace -- 3 is both the code and the
+; descriptor width, so `elsize == type` is an identity and no map exists.
+; 🔴 THE OLD VALUE 1 WAS NOT A SENTINEL; IT WAS AN ACCIDENTAL COLLISION WITH C's
+; STRING TAG, AND IT WAS MASKING A LIVE MEMORY CORRUPTION. var_get/var_set fed
+; this code straight to var_load_fac/var_store_fac, which use it as the chain
+; type AND as an `ld c,a` + `ldir` BYTE COUNT: `DEFSTR I:FOR I=1 TO 3` allocated
+; a real STRING entry (because 1 == C's tag) and then wrote one byte of FAC over
+; its descriptor's `len` field -- PRINT then dumped arbitrary RAM. Because 1 is a
+; valid C code the write landed inside a legitimate entry, so it read as a wrong
+; VALUE rather than as a crash. Both references raise ERR 13 there.
+; Every namespace P -> C crossing is now CHECKED, not coincidental:
+;   var_get/var_set  -> deftbl_num_type   (basic/arrays.asm, low region)
+;   ev_f_var         -> check_vartype_num (same block; covers ev_f_arr too)
+; var_str_type (basic/vars.asm) reads this code RAW and must keep doing so: it
+; is used symmetrically by sub/deftype.asm's write and that test, which is the
+; whole reason the value can change at all without breaking DEFSTR.
+DEFTBL_STR      equ     3       ; an unsuffixed name of this letter is a STRING
+                                ; var. A namespace-P code -- NEVER hand it to
+                                ; the chain (ARY_TYPE) or to a `ldir` count.
 ; --- Math pack slice 1a RAM (repack build only) ------------------------------
 ; docs/spec-basic-math-pack.md §9.2. Own-choice free RAM, the $F16D.. tail
 ; below DRVA_DPB ($F195), immediately following DEFTBL (ends $F153+26=$F16D).

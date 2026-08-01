@@ -1050,3 +1050,54 @@ sea_have_de:
                                             ; above left, both paths do this
                 jp      str_eval_ok
 
+; =============================================================================
+; D-DEFSTR — the namespace P -> C boundary (docs/spec-basic-deftbl-strcode.md §4)
+; =============================================================================
+; A DEFtbl code (namespace P: 2/3/4/8, sysvars.inc DEFTBL_STR) and a variable-
+; CHAIN type code (namespace C: 2/4/8 numeric, 1 string) are different alphabets
+; that overlap on the numeric values. Three sites used to pass a P code into a C
+; position unchecked, and were invisible only because P's string code happened to
+; equal C's (both 1) -- see DEFTBL_STR's own header for the corruption that hid
+; behind that coincidence. These two entry points are the checked crossing: a
+; STRING default is not a numeric type, and reaching one of them with a string
+; default is ERR 13, exactly as both references answer (spec §3, and the same
+; disposition ex_for already gives the ONE shape it did guard, `FOR A$=`).
+;
+; ⚠️ SITED IN THE LOW REGION ON PURPOSE. All three callers are in PAGE 1, which
+; had 8 B free against the low region's 23 (docs/rom-region-structure-review.md:
+; the two are co-mapped slot-0 pages, so a leaf like this moves between them
+; freely and an ordinary in-slot `call` reaches it). Page 1 therefore pays only
+; for the calls -- and var_get/var_set pay NOTHING, since they merely retarget a
+; `call deftbl_lookup` they already made.
+;
+; Raising from here is depth-independent: fre_abort_low resets SP from SAVSTK as
+; its own first act (interp.asm ra_abort), so a caller with its text cursor still
+; pushed -- ex_for and ex_read both call var_set that way -- is safe. Same
+; contract ex_for's own `jp z,type_mismatch_error` already relies on.
+;
+; Clobbers A and flags ONLY. BC/DE/HL survive, which is load-bearing at all three
+; callers: var_set needs DE (the value), var_get/var_set need BC (the key), and
+; ev_f_var needs HL (the advanced cursor).
+
+; --- deftbl_num_type: B = upcased letter -> A = its NUMERIC default type -----
+; deftbl_lookup, plus the check. For var_get/var_set (basic/vars.asm), the
+; single-letter shims behind FOR/NEXT and READ -- the pair that had NO string
+; guard at all and so did the actual damage.
+deftbl_num_type:
+                call    deftbl_lookup       ; A = DEFTBL[B-'A'] (preserves BC/DE/HL)
+                jr      dnt_check
+
+; --- check_vartype_num: (VARTYPE) must not be a string default ---------------
+; For ev_f_var (basic/expr.asm), a variable read in a NUMERIC context. Placed
+; there BEFORE the `cp '('` dispatch, so this one check covers the scalar road
+; and the array-element road (ev_f_arr) both.
+; ⚠️ It reads (VARTYPE) itself rather than taking A, so page 1 pays 3 bytes for
+; the whole guard instead of 6.
+check_vartype_num:
+                ld      a,(VARTYPE)         ; var_name_key's resolved type
+dnt_check:
+                cp      DEFTBL_STR
+                jp      z,type_mismatch_error   ; ERR 13 -- a string default is not
+                                                ; a numeric type (both references)
+                ret
+
