@@ -3333,30 +3333,68 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       measurement [`docs/nameblank-msx1-characterization.md`](docs/nameblank-msx1-characterization.md).
       `dec-bin` and `lit-varname` are **gating** rows now, not informational.
 
-- [ ] **A `.` DOES NOT END A LINE-NUMBER LIST — the reference emits TWO `$0E`s.**
-      Found 2026-08-01 by D-NAMDOT's `dot-goto` row, written as a bounding cell
-      for a rule that turned out not to reach it. Oracle-locked on the VG-8020
-      and the CF-3300, which agree, `--repeat 2`:
+- [ ] **THE `CALL` DEVICE-NAME SCAN STOPS SHORT — the reference reaches further.**
+      Found 2026-08-01 by D-LNLIST, three times over: every row written to ask
+      whether `CALL` clears line-number mode had its digit eaten by this scan
+      first. Oracle-locked on the VG-8020 and the CF-3300, which agree,
+      `--repeat 2`:
       ```
-      20 GOTO 1.5   ref -> <89> <0E><01><00>.<0E><05><00>
-                    zb  -> <89> <0E><01><00><1D>@P<00><00>
+      20 IF A THEN _X 5      ref -> _X 5       zb -> _X <16>
+      20 IF A THEN CALL X 5  ref -> <CA> X 5   zb -> <CA> X <16>
+      20 IF A THEN CALL X+5  ref -> <CA> X5    zb -> <CA> X<F1><16>
       ```
-      The reference crunches `1` to `$0E,0001`, copies the `.` **verbatim**, and
-      then crunches `5` as a **SECOND** line-number reference. That is
-      `branch_lineno`'s list-continuation loop
-      ([`basic/tokenise.inc`](basic/tokenise.inc) `bl_yes`/`bl_num`) treating a
-      `.` as a separator that does not end the list — the same family as the
-      empty-slot and blank-before-comma bugs already recorded in `bl_num`'s own
-      comment, and **different code from the `tk_loop` dispatch D-NAMDOT fixed**.
-      ⚠️ **The evidence that it is independent is that the fix did not move it**:
-      zerobas read those exact bytes before D-NAMDOT and after it. Neither R-D1
-      nor R-D2 predicts the row — there is no name state after a line-number
-      reference, so the `.` enters `tk_float` and takes `.5` with it.
-      Live in `make lnblank-acceptance` as the sole `KNOWN_DIVERGE` entry, pinned
-      to the exact zerobas bytes — fix it and the gate goes RED and the entry must
-      be retired. ⚠️ Adjacent, already filed: `LIST`/`DELETE`/`AUTO`/`RENUM` emit
-      no `$0E` at all. Detail:
-      [`docs/namedot-msx1-characterization.md`](docs/namedot-msx1-characterization.md) §6.
+      The reference keeps the trailing digit as **verbatim ASCII** across a
+      blank, and for `X+5` it **drops the `+` outright**. zerobas'
+      `tk_call_name` ([`basic/tokenise.inc`](basic/tokenise.inc)) stops at the
+      first non-`is_ident_cont` character, so the digit reaches the ordinary
+      number path and crunches to `<16>`. ⚠️ **The mode question these rows were
+      written for is ANSWERED and is not this item**: `lnl-callpar`
+      (`20 IF A THEN CALL X(5)` → `<CA> X(<16>)`) got past the scan with a `(`
+      terminator, and `CALL`/`_` do clear the mode. Live in
+      `make lnblank-acceptance` as the three `KNOWN_DIVERGE` entries, pinned to
+      zerobas' exact bytes — and pinned *pre-fix*, so they are also the cells
+      that say D-LNLIST did not move them. Detail:
+      [`docs/lnlist-msx1-characterization.md`](docs/lnlist-msx1-characterization.md) §4.
+
+- [x] ✅ **A LINE-NUMBER LIST IS A MODE, NOT A LIST — LANDED 2026-08-01,
+      NET +26 B, all sub-ROM, seven knives.** Filed by D-NAMDOT as *"a `.` does
+      not end a line-number list"*, from the single `dot-goto` row.
+      🔴 **THE FILED TITLE WAS REFUTED AND THE `.` WAS NEVER THE SUBJECT.** A
+      dozen measured characters do the same thing:
+      ```
+      20 GOTO 1+5    ref -> <89> <0E><01><00><F1><0E><05><00>
+      20 GOTO 1;5    ref -> <89> <0E><01><00>;<0E><05><00>
+      20 GOTO 1.5.7  ref -> <89> <0E><01><00>.<0E><05><00>.<0E><07><00>
+      ```
+      After a branch keyword the reference is in a **MODE** that runs to the end
+      of the **statement**: every digit run that would begin a numeric constant
+      becomes `$0E,<line>` instead, whatever stands between them. Fixing it from
+      the row that found it would have added `.` to a separator test and shipped
+      a rule a dozen characters too narrow — **and `dot-goto` cannot tell the two
+      rules apart**, because both predict its exact bytes.
+      🔴 **WHAT DISARMS IT IS ALPHABETIC-vs-SYMBOLIC, AND THAT CANNOT BE TESTED
+      AS A TOKEN VALUE.** `\` is `$FC` and *keeps* the mode; `MOD` is `$FB` and
+      *clears* it; `PRINT` is `$91`, below both, and clears. The classes are
+      interleaved, so no threshold or mask separates them — words and variable
+      names clear, symbols and punctuation do not, and `:` clears.
+      🔴 **THE FIX SHRINKS `branch_lineno`.** `bl_yes`' blank loop, `bl_num`'s
+      comma test and `bl_list` are **deleted**: ordinary `tk_loop` already copies
+      blanks, commas and punctuation, which is what they were hand-rolling. The
+      empty-slot bug `bl_num`'s comment records is **dissolved** rather than
+      re-fixed — `lnl-empty`/`lnl-empty2` (`ON KEY GOSUB 100,,600`,
+      `ON STRIG GOSUB ,300`) match the reference byte-for-byte with the special
+      case gone.
+      ⚠️ **Two of my own rows were CONFOUNDED and are written up as such**:
+      `lnl-colon` carries a *name* behind its colon (so it could not measure the
+      colon at all — `lnl-colsep` does), and all three `CALL` rows had their
+      digit eaten by the device-name scan (filed above; `lnl-callpar` got past it
+      with a `(`). Seven knives, all run and reverted, each with a RED set **and**
+      surviving GREEN controls.
+      `dot-goto` **retired** from `KNOWN_DIVERGE` — the fourth cohort to leave it
+      that way, and not one has rotted.
+      Spec [`docs/spec-basic-lnlist.md`](docs/spec-basic-lnlist.md),
+      measurement [`docs/lnlist-msx1-characterization.md`](docs/lnlist-msx1-characterization.md).
+
 
 - [x] ✅ **`.` IS AN IDENTIFIER CHARACTER TO THE TOKENISER — LANDED 2026-08-01,
       148/148, NET −10 B, all sub-ROM.** Split out of D-NAMBLANK, which filed it

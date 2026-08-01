@@ -681,6 +681,17 @@ FCH_ACTIVE      equ     $E012   ; channel live in the engine globals, 0 = none (
 ; page-3 window S-FCH-1 freed by retiring the static FCH_CTX table ($EA00..$EAFF,
 ; below LINEBUF $EB00).
 FCH_MODES       equ     $EA00   ; 16 B ($EA00..$EA0F)
+; D-LNLIST (docs/spec-basic-lnlist.md R-L1..R-L3): the tokeniser's LINE-NUMBER
+; MODE. A branch keyword (GOTO/GOSUB/THEN/RESTORE/RUN/RESUME) arms it and it runs
+; to the end of the STATEMENT, turning every digit run that would begin a numeric
+; constant into a $0E,<line> reference instead -- `GOTO 1+5` is TWO line-number
+; references on both references. Cleared by anything ALPHABETIC (a reserved word
+; or a variable name), by '?'/'_' (symbols that expand to word tokens), and by
+; ':'. Lives in the free $E013..$E015 gap FCH_MODES vacated for $EA00.
+; Same aliasing argument as TKNAME/TKRADIX/TKRTOK ($E028..): a line's whole
+; tokenise pass completes BEFORE any of its tokens execute, so this is dead for
+; the entire duration of any statement's execution.
+TKLNUM          equ     $E013   ; tokeniser: 1 = line-number mode is armed (1)
 INDLR_N         equ     $E016   ; INPUT$(n,#f): remaining bytes to read (transient, 1)
 MRG_PTR         equ     $E017   ; MERGE: write cursor into LINEBUF for the current line (2)
 ; Random-access (FIELD/LSET/RSET) transient parse/store scratch (Phase 2c slice 1).

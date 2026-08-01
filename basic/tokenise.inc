@@ -34,6 +34,8 @@
 tokenise:
                 xor     a
                 ld      (TKNAME),a          ; a fresh line starts outside any name
+                ld      (TKLNUM),a          ; ...and outside line-number mode (D-LNLIST
+                                            ; R-L1, docs/spec-basic-lnlist.md)
                 ld      (TKOVF),a           ; ...and no float-literal overflow yet (F1,
 tk_loop:
                 ld      a,(TKNAME)
@@ -67,6 +69,15 @@ tk_loop:
                 ld      a,b
                 or      a
                 jr      nz,tk_namedig
+                ; D-LNLIST R-L2 (docs/spec-basic-lnlist.md): inside line-number
+                ; mode a digit run that would BEGIN a numeric constant begins a
+                ; line-number REFERENCE instead. `20 GOTO 1+5` is TWO $0E
+                ; references on the VG-8020 and the CF-3300 alike -- the mode
+                ; runs to the end of the STATEMENT, so the '.' the TODO filed
+                ; this under was never the subject (spec §1).
+                ld      a,(TKLNUM)
+                or      a
+                jp      nz,bl_num           ; -> $0E,<line LE>, then back here
                 jp      tk_float            ; '0'..'9' starting a numeric constant
                                              ; (float-aware, basic/float.asm)
 tk_namedig:
@@ -115,6 +126,14 @@ tk_nondigit:
                 ld      a,b                 ; were we inside a name?
                 or      a
                 jr      nz,tk_namedig       ; R-D1: the dot extends the name
+                ; D-LNLIST R-L2: line-number mode SUPPRESSES R-D2. `20 GOTO .5`
+                ; stores the value 5 (`<89> .<0E><05><00>`) and `20 GOTO .` stores
+                ; a bare '.', where R-D2 alone would make each of them the
+                ; single-precision literal 0. The dot is copied verbatim and the
+                ; digit run behind it is its OWN line-number reference.
+                ld      a,(TKLNUM)
+                or      a
+                jp      nz,tk_copy
                 jp      tk_float            ; R-D2: no digit required (sub/tkfloat.asm)
 tk_nondot:
                 cp      '&'                 ; "&H" hex constant
@@ -123,6 +142,21 @@ tk_nondot:
                 jr      nc,tk_notkw         ; reserved words inside a name still tokenise
                                             ; (SCORE -> SC,OR,E); TKNAME stays 0 here, so
                                             ; a keyword correctly breaks the name.
+                ; D-LNLIST R-L3: a reserved WORD disarms line-number mode --
+                ; `20 GOTO 1 AND 5` keeps its 5 as <16>, and `20 IF A THEN PRINT 5`
+                ; would otherwise crunch its 5 as a LINE NUMBER. branch_lineno
+                ; re-arms below for the six that take one.
+                ;
+                ; ⚠️ THE CLEAR LIVES HERE AND NOT INSIDE branch_lineno, and the
+                ; three lines below are why: REM, DATA and CALL are dispatched
+                ; BEFORE that call, so a clear inside it would never see them.
+                ; `20 IF A THEN CALL X(5)` stores `<CA> X(<16>)` on both
+                ; references -- a '(' leaves the mode armed (lnl-paren), so it is
+                ; the CALL token that cleared it. Knife K3 aims here.
+                push    af                  ; A = the token byte, live for the tests
+                xor     a
+                ld      (TKLNUM),a
+                pop     af
                 cp      REM_TOKEN           ; REM swallows the rest of the line
                 jp      z,tk_rem_rest
                 cp      DATA_TOKEN          ; DATA body is stored verbatim (to ':')
@@ -165,6 +199,22 @@ tk_copy:
                 ld      (de),a
                 inc     de
                 inc     hl
+                ; D-LNLIST R-L3: the statement separator disarms line-number mode.
+                ; `20 GOTO 1:5` stores $0E,0001 then ':' then <16> on both
+                ; references -- and `lnl-colsep` is the row that says so, because
+                ; `20 GOTO 1.5:A=7` cannot: the `A` behind its colon is a NAME,
+                ; which disarms the mode on its own (spec §2, characterization §2).
+                ;
+                ; ⚠️ TESTED AFTER THE COPY, ON THE CHARACTER ALREADY IN A. tk_copy
+                ; is the FALLTHROUGH target of the is_letter test above, and
+                ; D-NAMBLANK's K2 is the standing record of what a careless store
+                ; in front of it costs -- a build that read 29/31 green BY LUCK.
+                ; Nothing here reloads A or touches B, and `ld (de),a`/`inc` leave
+                ; the flags alone, so the `cp` still sees the copied byte.
+                cp      COLON
+                jp      nz,tk_loop
+                xor     a
+                ld      (TKLNUM),a
                 jp      tk_loop
 tk_copy_up:
                 ld      a,(hl)              ; a name letter, upcased (§4)
@@ -174,6 +224,13 @@ tk_copy_up:
                 inc     hl
                 ld      a,1
                 ld      (TKNAME),a          ; now inside a name
+                ; D-LNLIST R-L3: a variable NAME disarms line-number mode, exactly
+                ; as a reserved word does -- `20 GOTO X,5` stores `<89> X,<16>`
+                ; with no $0E anywhere. Only the leading LETTER needs this:
+                ; tk_namedig is reachable only once a name is already open, so it
+                ; has always run through here first.
+                xor     a
+                ld      (TKLNUM),a
                 jp      tk_loop
 ; ⚠️ tk_blank LIVES HERE, NOT NEXT TO tk_copy, AND THAT IS NOT COSMETIC. tk_copy
 ; is entered by FALLTHROUGH from the `is_letter` test above, so a tk_blank
@@ -231,6 +288,12 @@ tk_data_rest:                               ; DATA body verbatim up to ':' or EO
                 inc     hl
                 jr      tk_data_rest
 tk_underscore:                              ; '_' (CALL abbreviation): copy it, then the
+                ; D-LNLIST R-L3, the second symbol that expands to a word token.
+                ; `20 IF A THEN _X(5)` stores `_X(<16>)` on both references, like
+                ; the spelled-out CALL -- and like '?', '_' never enters match_kw,
+                ; so it needs its own clear. Knife K7.
+                xor     a
+                ld      (TKLNUM),a
                 ld      a,(hl)              ; device name verbatim (no keyword crunch).
                 ld      (de),a
                 inc     de
@@ -309,6 +372,15 @@ tk_op_emit:
                 inc     hl
                 jp      tk_loop
 tk_print_q:                                 ; '?' -> PRINT token (oracle: ? -> $91)
+                ; D-LNLIST R-L3, and this is the site rule "clear on match_kw"
+                ; alone gets WRONG. '?' is a SYMBOL that expands to a WORD token,
+                ; so it never enters match_kw -- but `20 IF A THEN ?5` stores
+                ; `<91><16>` on both references, exactly as the spelled-out PRINT
+                ; does. It cannot share tk_op_emit's path, because the symbolic
+                ; operators that DO go there ($EE..$F5, $FC) must leave the mode
+                ; ARMED (`20 GOTO 1+5` is two $0E references). Knife K5.
+                xor     a
+                ld      (TKLNUM),a
                 ld      a,PRINT_TOKEN
                 jr      tk_op_emit
 tk_op_div:
@@ -481,14 +553,33 @@ mk_none:
                 or      a                   ; CF clear (no match)
                 ret
 
-; --- branch_lineno: emit a line-number reference after a branch keyword ------
-; A = first token byte just emitted by match_kw, HL = source cursor (after the
-; keyword), DE = dest cursor. If the keyword was GOTO/GOSUB/THEN/RESTORE/RUN, copy
-; any spaces verbatim then, if a decimal number follows, emit it as the
-; line-number identification code $0E,<value LE> (Figure 2.12) instead of the
-; ordinary integer encoding. Otherwise returns unchanged. (ELSE <line> is not
-; specially handled yet.) ON…GOTO/GOSUB comma-separated lists ARE handled, empty
-; slots included — see bl_num.
+; --- branch_lineno: ARM line-number mode after a branch keyword --------------
+; A = first token byte just emitted by match_kw. If the keyword was
+; GOTO/GOSUB/THEN/RESTORE/RUN/RESUME, arm TKLNUM (D-LNLIST R-L1); otherwise
+; return unchanged. HL/DE are not touched — the mode does its work back in
+; tk_loop, one character at a time. (ELSE <line> is still not handled: it is a
+; word keyword, so it DISARMS, and `ref-else` stays the informational row it was.)
+;
+; 🔴 THIS ROUTINE USED TO WALK THE LIST ITSELF AND NO LONGER DOES. It copied a
+; run of blanks, took one number, then looked for a ',' to continue with —
+; a design that could only ever be as wide as its separator set, and the measured
+; reference has no separator set at all: after a branch keyword EVERY digit run in
+; the statement is a line-number reference, whatever stands between them
+; (`20 GOTO 1+5` -> $0E,0001 <F1> $0E,0005; `20 GOTO 1.5.7` -> three of them).
+; So bl_yes' blank loop, bl_num's comma test and bl_list are DELETED: ordinary
+; tk_loop already copies blanks, commas and punctuation verbatim, which is
+; exactly what the old code was hand-rolling.
+;
+; ⚠️ THE EMPTY-SLOT BUG bl_num's comment recorded is fixed by that deletion, not
+; regressed by it. `ON KEY GOSUB 100,,600` now works because the ',' characters
+; are simply copied and the 600 is still inside the mode — there is no list walk
+; left to fall off the end of. `lnl-empty`/`lnl-empty2` pin both shapes, and the
+; T2/T3 trap gates (which parse for $0E) are the ones that say so at run time.
+;
+; ⚠️ bl_acc..bl_done SURVIVES UNCHANGED, D-LNBLANK R5 included: it is now entered
+; from tk_loop's digit arm instead of from here, and returns there instead of
+; looping for a comma. It remains a SECOND COPY of program.asm's parse_lineno,
+; deliberately — the two live in different ROMs.
 branch_lineno:
                 cp      GOTO_TOKEN
                 jr      z,bl_yes
@@ -503,46 +594,22 @@ branch_lineno:
                 cp      RESUME_TOKEN        ; RESUME <line> / RESUME 0 (error-handling S2b,
                 jr      z,bl_yes            ; repack-only): crunch the following number as
                                             ; $0E, like GOTO. RESUME NEXT / bare RESUME are
-                                            ; unaffected (no digit follows -> bl_num returns
-                                            ; without emitting).
+                                            ; unaffected (no digit follows, so the
+                                            ; mode simply never fires).
                 ret                         ; not a branch keyword
 bl_yes:
-                ld      a,(hl)              ; copy spaces verbatim
-                cp      ' '
-                jr      nz,bl_num
-                ld      (de),a
-                inc     de
-                inc     hl
-                jr      bl_yes
+                ld      a,1                 ; R-L1: arm line-number mode
+                ld      (TKLNUM),a
+                ret
 bl_num:
-                ; AN EMPTY LIST SLOT MUST NOT END THE LIST. `ON KEY GOSUB 100,,600`
-                ; and `ON STRIG GOSUB ,300` are legal on the reference: an omitted
-                ; entry CLEARS that slot's handler and the list continues. Without
-                ; this test the list-extension loop below reached a `,` here, found
-                ; no digit and RETURNED, so every later target was crunched as an
-                ; ordinary numeric literal instead of $0E,<line> -- and the trap
-                ; parsers, which look for $0E, then ran off the end of their list
-                ; and left the executor on a bare literal: `syntax error in 10`.
-                ; Found by the T3 gate's K7 case (`ON KEY GOSUB 100,,,,,600`), but
-                ; the bug is OLDER than T3 and is NOT KEY-specific -- it is in this
-                ; SHARED crunch path, so T2's shipped `ON STRIG GOSUB ,300` had it
-                ; too. That case passes in the T2 gate only because a syntax error
-                ; and a correctly-cleared slot both leave the fire count at 0; the
-                ; T2 gate has no `done` sentinel to tell them apart, which is
-                ; exactly the "a baseline that cannot produce a non-zero answer
-                ; proves nothing" trap this arc keeps re-learning.
-                ; Placed at bl_num rather than in the loop tail so it also covers a
-                ; list whose FIRST slot is empty (`GOSUB ,600`), where the comma
-                ; follows the keyword directly and the loop has not started yet.
-                ; (These 4 bytes once overran the retired lean 16 KB cart's $8000
-                ; ceiling and were gated off there, like the RESUME crunch above --
-                ; that build kept the bug. Both gates are gone with it.)
-                cp      ','
-                jr      z,bl_list
-                cp      '0'                 ; a decimal number must follow
-                ret     c
-                cp      '9'+1
-                ret     nc
+                ; Entered from tk_loop's digit arm with the mode ARMED and HL on
+                ; the first digit; nothing here needs to test for one. The digit
+                ; gate, the ',' test and the bl_list continuation loop that used
+                ; to stand here are gone with the list walk (see the header):
+                ; tk_loop copies a ',' verbatim like any other punctuation and the
+                ; next digit run re-enters here on its own, which is what makes
+                ; `ON KEY GOSUB 100,,600` and `ON STRIG GOSUB ,300` work without a
+                ; special case for an empty slot.
                 push    de                  ; park dest while accumulating
                 ld      de,0                ; DE = value
 bl_acc:
@@ -613,27 +680,12 @@ bl_done:
                 ld      a,b                 ; value high
                 ld      (de),a
                 inc     de
-                ; Extend for ON…GOTO/GOSUB comma-separated lists.
-                ;
-                ; 🔴 A BLANK BEFORE THE COMMA USED TO END THE LIST. This tested
-                ; (HL) for `,` at the very next character, so `ON A GOTO 1 0 , 2 0`
-                ; converted the FIRST slot and left every later target as an
-                ; ordinary numeric literal -- the trap parsers then ran off the end
-                ; of their list, exactly the failure bl_num's own comment records
-                ; for an EMPTY slot, one character to the left of where that one was
-                ; fixed. Found by D-LNBLANK's `ref-oncomma` row, which the blank
-                ; rule alone does not explain.
-                ;
-                ; bl_yes already copies a run of blanks verbatim and then falls into
-                ; bl_num, which tests for `,` and returns on anything else -- so
-                ; going back there does the comma test AND the blanks, in two bytes
-                ; fewer than the test it replaces. Its digit arm is unreachable from
-                ; here: bl_acc has just consumed any blank run that ends in a digit.
-                jr      bl_yes
-bl_list:
-                ld      (de),a              ; emit the comma verbatim
-                inc     de
-                inc     hl                  ; past the comma
-                jr      bl_yes              ; loop: spaces then next slot (a number,
-                                            ; another comma = an empty slot, or
-                                            ; anything else = end of the list)
+                ; 🔴 A BLANK BEFORE THE COMMA USED TO END THE LIST, and then a
+                ; `jr bl_yes` here went back to re-copy blanks and look for the
+                ; next ',' (D-LNBLANK's `ref-oncomma`). Both the bug and its fix
+                ; are dissolved rather than kept: there is no list to continue, so
+                ; this returns to the ordinary loop and whatever stands between two
+                ; numbers -- blanks, a comma, an operator, a '.' -- is copied by the
+                ; code that already knew how. The mode is still armed, so the next
+                ; digit run comes straight back here.
+                jp      tk_loop

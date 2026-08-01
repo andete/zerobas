@@ -715,6 +715,207 @@ REF = [
     ("ref-else",     ["20 IF A THEN 1 0 ELSE 2 0"]),
 ]
 
+# --- the `lnl` battery: HOW FAR DOES A LINE-NUMBER LIST RUN? (D-LNLIST) -------
+# The DENOMINATOR of the defect D-NAMDOT filed and did not fix. `dot-goto`
+# (`20 GOTO 1.5`) is ONE row, and one row is a SAMPLE of this surface, not the
+# surface -- the trap D-NOTOPEN2 hit (3 of 7 rows gave a different answer than
+# all 7).
+#
+#     20 GOTO 1.5   ref -> <89> <0E><01><00>.<0E><05><00>
+#                   zb  -> <89> <0E><01><00><1D>@P<00><00>
+#
+# The reference crunches `1` to $0E,0001, copies the '.' VERBATIM, and crunches
+# `5` as a SECOND $0E. THREE NAMED RULES, AND EVERY ROW BELOW SEPARATES THEM:
+#
+#   rule E (end)  -- the list ends at the first character that is not a digit
+#                    and not a ','. zerobas today (tokenise.inc bl_num).
+#   rule D (dot)  -- '.' JOINS ',' as a separator that does not end the list;
+#                    everything else still ends it.
+#   rule A (any)  -- after a branch keyword the crunch STAYS in line-number
+#                    mode: every digit run becomes $0E,<v> and every other
+#                    character is copied verbatim, until some terminator. What
+#                    that terminator is (EOL? ':'? a quote? a keyword?) is
+#                    itself unmeasured, so the rows below ask.
+#
+# ⚠️ E, D AND A ALL PREDICT THE SAME BYTES FOR `dot-goto` UNDER D AND A ALIKE.
+# The filed row cannot tell D from A at all -- that is exactly why it may not be
+# fixed from the row that found it. The `lnl-plus`/`lnl-semi`/`lnl-alpha` group
+# is the only thing that can, and the `lnl-colon` group is the only thing that
+# can say where the mode STOPS.
+#
+# ⚠️ ONLY=lnl ALSO SELECTS the `lnld` say rows (what the bytes MEAN). Use
+# ONLY=lnl,ref,dot to pull in the must-not-move cells of both neighbours.
+LNL = [
+    # --- is it the '.', or ANY non-digit? -----------------------------------
+    # Under D exactly one of these (the dot, measured as `dot-goto`) grows a
+    # second $0E and all of these stay single; under A every one of them does.
+    ("lnl-plus",     ["20 GOTO 1+5"]),      # an arithmetic operator
+    ("lnl-minus",    ["20 GOTO 1-5"]),      # ...and the other sign
+    ("lnl-star",     ["20 GOTO 1*5"]),
+    ("lnl-semi",     ["20 GOTO 1;5"]),      # pure punctuation, no operator meaning
+    ("lnl-hash",     ["20 GOTO 1#5"]),      # a type suffix character
+    ("lnl-alpha",    ["20 GOTO 1X5"]),      # a LETTER: starts a name in tk_loop
+    ("lnl-paren",    ["20 GOTO 1(5)"]),
+    ("lnl-quote",    ['20 GOTO 1"5"']),     # a string literal: tk_string is
+                                            # tk_loop's, not branch_lineno's
+    # --- how far does the mode run, and what ENDS it? -----------------------
+    ("lnl-three",    ["20 GOTO 1.5.7"]),    # THREE $0E's, or does it stop at two?
+    ("lnl-colon",    ["20 GOTO 1.5:A=7"]),  # does the mode survive a STATEMENT
+                                            # separator -- is the 7 crunched too?
+    ("lnl-colctl",   ["20 GOTO 1:A=7"]),    # CONTROL for it: same shape, NO dot,
+                                            # so the mode was never extended
+    # --- blanks around the separator ----------------------------------------
+    # bl_yes copies blanks verbatim BEFORE a slot, and D-LNBLANK R5 made a blank
+    # INSIDE the number transparent. Whether the copied '.' sits inside that
+    # machinery or beside it is a different question from whether it separates.
+    ("lnl-blkl",     ["20 GOTO 1 .5"]),     # blank before the dot
+    ("lnl-blkr",     ["20 GOTO 1. 5"]),     # blank after the dot
+    ("lnl-blk2",     ["20 GOTO 1 . 5"]),    # both
+    # --- the dot with NO number in front of it ------------------------------
+    ("lnl-lead",     ["20 GOTO .5"]),       # is there a first $0E at all?
+    ("lnl-bare",     ["20 GOTO ."]),        # a dot and nothing else
+    # --- does it reach the OTHER branch keywords, or only GOTO? -------------
+    # The `ref` battery already has a `1 0` row for each of the six; these mirror
+    # them with a '.'. A rule that holds for GOTO alone is a different rule.
+    ("lnl-gosub",    ["20 GOSUB 1.5"]),
+    ("lnl-then",     ["20 IF A THEN 1.5"]),
+    ("lnl-restore",  ["20 RESTORE 1.5"]),
+    ("lnl-run",      ["20 RUN 1.5"]),
+    ("lnl-resume",   ["20 RESUME 1.5"]),
+    # --- interaction with the REAL comma list -------------------------------
+    ("lnl-on1",      ["20 ON A GOTO 1.5,2"]),   # dot in the FIRST slot
+    ("lnl-on2",      ["20 ON A GOTO 1,2.5"]),   # dot in a LATER slot
+    # --- round 2: WHAT ELSE CLEARS THE MODE? --------------------------------
+    # ⚠️ ADDED AFTER ROUND 1 REFUTED RULE D OUTRIGHT. `1+5` crunches to
+    # $0E,1 <F1> $0E,5 and `1;5` to $0E,1 ; $0E,5, so the '.' the TODO filed this
+    # under is not special at all -- rule A holds and the mode runs to the end of
+    # the STATEMENT (`lnl-colon`: after the ':' the 7 is an ordinary $18). That
+    # makes "what turns it off" the whole remaining question, and round 1 only
+    # answered ':'. A rule may not be shipped one row wider than its denominator.
+    #
+    # 🔴 `lnl-thenpr` IS THE ROW THAT MATTERS MOST IN THIS PROBE. If a statement
+    # keyword does NOT clear the mode, then `IF A THEN PRINT 5` crunches its 5 as
+    # a LINE NUMBER and every such program breaks. zerobas cannot regress here
+    # today because it has no mode at all -- an implementation of rule A can, and
+    # this is the cell that would say so.
+    ("lnl-thenpr",   ["20 IF A THEN PRINT 5"]),  # a STATEMENT keyword
+    ("lnl-kw",       ["20 GOTO 1 AND 5"]),       # an OPERATOR keyword
+    ("lnl-fnkw",     ["20 GOTO 1+ABS(5)"]),      # a FUNCTION keyword
+    ("lnl-name",     ["20 GOTO X,5"]),           # a NAME -- `lnl-alpha` showed a
+                                                 # name EATS a following digit, so
+                                                 # the ',' is what makes this ask
+                                                 # whether the mode itself survived
+    ("lnl-qtail",    ['20 GOTO 1"A"5']),         # a STRING LITERAL
+    ("lnl-hex",      ["20 GOTO &H10"]),          # a radix prefix, not a digit run
+    # --- round 3: WHERE IS THE BOUNDARY? ------------------------------------
+    # 🔴 ROUND 2 SPLIT THE TOKENS AND MY OWN `lnl-colon` TURNED OUT TO BE
+    # CONFOUNDED. `+` `-` `*` do NOT clear the mode but `AND`, `ABS` and `PRINT`
+    # do -- so it is not "a token clears it", and it is not a value threshold
+    # either ($F1..$F3 keep it, $F6 AND drops it, and $91 PRINT is BELOW all of
+    # them and drops it). And `lnl-colon` cannot say whether ':' clears the mode,
+    # because the statement after it begins `A=7` and `lnl-name` shows a NAME
+    # clears it on its own. A row whose payload carries TWO candidate causes
+    # measures neither.
+    ("lnl-colsep",   ["20 GOTO 1:5"]),      # ':' then a DIGIT -- no name in the way
+    ("lnl-namemid",  ["20 GOTO 1,X,5"]),    # a name MID-LIST, not at the start
+    # The symbol/word split, pinned across the operator range rather than
+    # sampled at three points: $EE..$FC are contiguous tokens and round 2 read
+    # only $F1/$F2/$F3 (keep) and $F6 (drop).
+    ("lnl-slash",    ["20 GOTO 1/5"]),      # $F4
+    ("lnl-pow",      ["20 GOTO 1^5"]),      # $F5
+    ("lnl-or",       ["20 GOTO 1 OR 5"]),   # $F7 -- a WORD, like AND
+    ("lnl-mod",      ["20 GOTO 1 MOD 5"]),  # $FB -- a WORD, above the symbols
+    ("lnl-idiv",     ["20 GOTO 1\\5"]),     # $FC -- a SYMBOL, above the words
+    ("lnl-eq",       ["20 GOTO 1=5"]),      # $EF
+    ("lnl-lt",       ["20 GOTO 1<5"]),      # $F0
+    ("lnl-gt",       ["20 GOTO 1>5"]),      # $EE
+    # --- round 4: the ABBREVIATIONS, which do not go through the word path ---
+    # ⚠️ ROUND 3 SAYS THE DISCRIMINATOR IS ALPHABETIC-vs-SYMBOLIC, and zerobas'
+    # tokeniser already splits exactly there: word keywords go through match_kw,
+    # symbolic operators through the tk_op_* arms. `?` and `_` are the two
+    # characters that break that alignment -- they are SYMBOLS that expand to
+    # WORD tokens ($91 PRINT, and CALL) without ever entering match_kw. If the
+    # reference clears on them, an implementation hung off match_kw is wrong on
+    # a shape as ordinary as `IF A THEN ?5`.
+    ("lnl-quest",    ["20 IF A THEN ?5"]),        # '?' -> PRINT ($91)
+    ("lnl-under",    ["20 IF A THEN _X 5"]),      # '_' -> CALL
+    ("lnl-call",     ["20 IF A THEN CALL X 5"]),  # ...and the spelled-out CALL,
+                                                  # which BYPASSES branch_lineno
+                                                  # (tokenise.inc tk_call_name)
+    # 🔴 `lnl-under` AND `lnl-call` ARE BOTH CONFOUNDED AND THE ROW BELOW IS WHY
+    # THEY STAY ANYWAY. Both read `_X 5` / <CA> X 5 -- the trailing 5 is stored
+    # as VERBATIM ASCII, so the CALL device-name scan reached across the blank
+    # and took it before any numeric path could see it. They measure the name
+    # scan, not the mode, and a row carrying two candidate causes measures
+    # neither. `+` is the way past it: round 3 pins that a SYMBOLIC operator
+    # leaves the mode armed, so a $0E here means CALL did not clear it and a
+    # <16> means it did. (They are kept because that verbatim `5` is itself a
+    # reading nobody had, and the zb column decides whether it is a new item.)
+    ("lnl-callp",    ["20 IF A THEN CALL X+5"]),
+    # 🔴 AND `lnl-callp` WAS EATEN TOO -- the reference stores `<CA> X5`, having
+    # dropped the '+' ENTIRELY and kept the 5 as verbatim ASCII. Three rows, three
+    # times the device-name scan reached the digit first. The way past it is not a
+    # different operator but a different TERMINATOR: '(' is what ends an extended
+    # statement's name (`_NAME(args)`), and round 3 already pins that a '(' on its
+    # own leaves the mode ARMED (`lnl-paren`). So a $0E here means CALL did not
+    # clear the mode and a <16> means it did -- with no name scan in the way.
+    ("lnl-callpar",  ["20 IF A THEN CALL X(5)"]),
+    ("lnl-underpar", ["20 IF A THEN _X(5)"]),
+    ("lnl-apos",     ["20 GOTO 1'5"]),            # "'" -> REM: swallows the rest
+    # 🔴 THE TRAP-PARSER SHAPES, PINNED HERE ON PURPOSE. `ON KEY GOSUB` and
+    # `ON STRIG GOSUB` walk the crunched list looking for $0E, and bl_num's own
+    # comment records what happened the last time this path emitted the wrong
+    # number of them: the parsers ran off the end of their list and the executor
+    # landed on a bare literal (`syntax error in 10`). Any change to how many
+    # $0E bytes a list carries has to answer to these two rows.
+    ("lnl-empty",    ["20 ON KEY GOSUB 100,,600"]),
+    ("lnl-empty2",   ["20 ON STRIG GOSUB ,300"]),
+    # --- CONTROLS: E, D and A predict the SAME bytes ------------------------
+    ("lnl-ctl",      ["20 GOTO 15"]),       # CONTROL: the same digits, no dot
+    ("lnl-nokw",     ["20 A=1.5"]),         # CONTROL: NO branch keyword, so `1.5`
+                                            # is an ordinary single-precision
+                                            # literal. MUST NOT MOVE: it is the
+                                            # cell that says the rule is scoped to
+                                            # branch_lineno and not to the number
+                                            # scanner every other battery pins.
+]
+
+# --- the `lnld` battery: WHAT A LINE-NUMBER LIST MEANS, not what it stores ----
+# ⚠️ SAY-MODE ONLY, and the byte gloss cannot substitute for it. Two extra $0E
+# bytes in a stored line are only a divergence worth fixing if the executor reads
+# them, and the trap parsers (ON KEY/ON STRIG GOSUB) walk a crunched list looking
+# for exactly that byte -- emitting more or fewer of them than today can run them
+# off the end of their list. These rows ask the machine which $0E it honours.
+#
+# ⚠️ EVERY PAYLOAD PRINTS BRACKETS, AND `ERR` IS WHY THEY CAN. A payload whose
+# statement ABORTS never reaches its own ']', so the very behaviour under test
+# destroys the reading and `<none>` on every side compares EQUAL
+# (docs/namedot-msx1-characterization.md §4). The target lines record WHERE the
+# branch landed in A and the trailing PRINT reads A and ERR together, so one
+# bracket span carries both "which line ran" and "did it abort".
+LNLD = [
+    # WHICH $0E does GOTO honour -- the first, or the last?
+    ("lnld-goto",    ["10 GOTO 30.40", "30 A=30:END", "40 A=40:END", "RUN",
+                      'PRINT"[";A;ERR;"]"']),
+    ("lnld-ctl",     ["10 GOTO 30", "30 A=30:END", "40 A=40:END", "RUN",
+                      'PRINT"[";A;ERR;"]"']),   # CONTROL: no dot -> 30, ERR 0
+    # ⚠️ THESE TWO ARE THE PAIR THAT ANSWERS IT. If only the FIRST reference is
+    # honoured, a missing SECOND target is harmless (30, ERR 0) and a missing
+    # FIRST one aborts (0, ERR 8 = Undefined line number). If the LAST is
+    # honoured the two readings swap. Either row ALONE is ambiguous.
+    ("lnld-und2",    ["10 GOTO 30.99", "30 A=30:END", "RUN",
+                      'PRINT"[";A;ERR;"]"']),   # second target does NOT exist
+    ("lnld-und1",    ["10 GOTO 99.30", "30 A=30:END", "RUN",
+                      'PRINT"[";A;ERR;"]"']),   # first target does NOT exist
+    # Does the '.' make a new LIST SLOT? ON 2 GOTO picks the second entry, so
+    # under "the dot separates entries" this lands on 40 and under "commas only"
+    # it lands on 50. The single most decisive row in the battery.
+    ("lnld-on",      ["10 ON 2 GOTO 30.40,50", "30 A=30:END", "40 A=40:END",
+                      "50 A=50:END", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("lnld-onctl",   ["10 ON 2 GOTO 30,50", "30 A=30:END", "40 A=40:END",
+                      "50 A=50:END", "RUN", 'PRINT"[";A;ERR;"]"']),  # CONTROL: 50
+]
+
 # --- the `err` battery: WHICH ERROR CLASS a rejected line number RAISES -------
 # ⚠️ SAY-MODE ONLY. These rows read the SCREEN, not the stored line, so they
 # cannot share the measurement run -- and their claim is not "what was stored"
@@ -727,9 +928,10 @@ ERRB = [
     ("err-over",     ["65530 REMX", 'PRINT"[";ERR;"]"']),
     ("err-ctl",      ["65529 REMX", 'PRINT"[";ERR;"]"']),
 ]
-SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD}
+SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD}
 
-CASES = NUM + BODY + LIT + DEC + EXP + NAM + DOT + REF + ERRB + DIRB + DOTD
+CASES = (NUM + BODY + LIT + DEC + EXP + NAM + DOT + REF + LNL
+         + ERRB + DIRB + DOTD + LNLD)
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
 # informational because nobody had a RULE for them: `dec-bin` was the `&B`
@@ -747,7 +949,13 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             "nam-ctl", "nam-eqnum", "nam-amp0",
             # D-NAMDOT: F and N predict the SAME bytes for these five.
             "dot-ctl", "dot-let", "dot-start", "dot-str", "dot-rem", "dot-data",
-            "dotd-ctl"}
+            "dotd-ctl",
+            # D-LNLIST: E, D and A predict the SAME bytes for these three.
+            "lnl-ctl", "lnl-nokw", "lnl-colctl", "lnld-ctl", "lnld-onctl",
+            # ...and the two rows that got a digit PAST the CALL device-name
+            # scan: '(' ends the extended-statement name and leaves the mode
+            # armed (lnl-paren), so the <16> here is CALL/'_' clearing it.
+            "lnl-callpar", "lnl-underpar"}
 
 # --- KNOWN_DIVERGE: two rows, and they are a DIFFERENT DEFECT -----------------
 # ⚠️ These were never suppressions. Each entry recorded what zerobas ACTUALLY
@@ -772,30 +980,44 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 #     agreeing and the gate went red until the entries were deleted. Three
 #     cohorts now, and not one of them rotted.
 #
-# ⚠️ AND IT IS NON-EMPTY AGAIN AS OF D-NAMDOT, for ONE row that is not that
-# slice's defect either:
+#   * the ONE `dot-goto` row D-NAMDOT filed -> RETIRED by D-LNLIST
+#     (docs/spec-basic-lnlist.md), same message a FOURTH time: the allowlist
+#     reported the row as AGREEING and the gate went red until the entry was
+#     deleted. Four cohorts now, and not one of them has rotted.
 #
-#     dot-goto  20 GOTO 1.5   ref -> <89> <0E><01><00>.<0E><05><00>
-#                             zb  -> <89> <0E><01><00><1D>@P<00><00>
+# 🔴 AND `dot-goto` IS THE ONE THAT SHOWS WHY THE PIN MATTERS MOST WHEN THE FILED
+# TITLE IS WRONG. It was filed as "a '.' does not end a line-number list". The
+# '.' turned out not to be the subject at all -- after a branch keyword the
+# reference is in a MODE in which EVERY digit run is a $0E reference, `1+5` and
+# `1;5` and `1\5` included, and `1.5.7` carries three. One row could not tell
+# those rules apart, and the pin is what kept it measurable until a battery could.
 #
-# 🔴 THE REFERENCE EMITS **TWO** LINE-NUMBER REFERENCES. It crunches `1` to
-# $0E,0001, copies the '.' VERBATIM, and then crunches `5` to a SECOND $0E --
-# its line-number LIST continuation treats a '.' as a separator that does not
-# end the list, the same family as the empty-slot and blank-before-comma bugs
-# already recorded in branch_lineno's own bl_num comment. That is
-# DIFFERENT CODE from the tk_loop dispatch D-NAMDOT changes.
+# ⚠️ AND IT IS NON-EMPTY AGAIN AS OF D-LNLIST, for THREE rows that are a
+# DIFFERENT DEFECT AGAIN -- the CALL device-name scan, not the mode:
 #
-# ⚠️ AND THE EVIDENCE THAT IT IS INDEPENDENT IS THAT THE FIX DID NOT MOVE IT:
-# zerobas read exactly these bytes before D-NAMDOT and after it. Neither R-D1 nor
-# R-D2 predicts the row -- there is no name state after a line-number reference,
-# so the '.' enters tk_float and takes `.5` with it. Filed in TODO.md with these
-# bytes; closing it here would be the D-MFDOM trap.
+#     lnl-under   20 IF A THEN _X 5       ref -> _X 5          zb -> _X <16>
+#     lnl-call    20 IF A THEN CALL X 5   ref -> <CA> X 5      zb -> <CA> X <16>
+#     lnl-callp   20 IF A THEN CALL X+5   ref -> <CA> X5       zb -> <CA> X<F1><16>
 #
-# The entry is pinned to zerobas' EXACT reading, so it is a control and not a
-# suppression: fix branch_lineno and it stops matching, the gate goes RED, and it
-# has to be retired.
+# 🔴 THE REFERENCE'S EXTENDED-STATEMENT NAME SCAN REACHES FURTHER THAN ZEROBAS'.
+# It keeps the trailing digit as VERBATIM ASCII across a blank, and for `X+5` it
+# drops the '+' outright. zerobas' tk_call_name stops at the first non-ident
+# character, so the digit reaches the ordinary number path and crunches.
+#
+# ⚠️ THESE THREE ATE D-LNLIST'S OWN QUESTION THREE TIMES. Each was written to ask
+# whether CALL clears line-number mode and each had its digit swallowed before any
+# numeric path could see it. `lnl-callpar`/`lnl-underpar` got past the scan with a
+# '(' terminator and answered it (CALL and '_' DO clear); these three are left
+# measuring the name scan, which is its own TODO item. Fixing it here would be the
+# D-MFDOM trap.
+#
+# Pinned to zerobas' EXACT readings, so they are controls and not suppressions:
+# they are also what says D-LNLIST did NOT move them -- the values below are
+# byte-for-byte what zerobas read BEFORE the fix.
 KNOWN_DIVERGE = {
-    "dot-goto": "line 20 | <89> <0E><01><00><1D>@P<00><00>",
+    "lnl-under":  "line 20 | <8B> A <DA> _X <16>",
+    "lnl-call":   "line 20 | <8B> A <DA> <CA> X <16>",
+    "lnl-callp":  "line 20 | <8B> A <DA> <CA> X<F1><16>",
 }
 
 
