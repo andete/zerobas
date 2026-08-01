@@ -133,6 +133,14 @@ it is the wrong shape here: §1.1 of the measurement says the arming set is a
 them (no `kwtable.inc` entry), so a test for them would be logic no row can
 exercise. §5 pins the trip-wire that makes the keyword-gap slice add them.
 
+⚠️ **SUPERSEDED 2026-08-01 — the four are in the chain now.** D-KWGAP4
+([`spec-basic-kwgap4.md`](spec-basic-kwgap4.md) **R-K1/R-K2**) added their
+`kwtable.inc` entries and their arms in one slice, +48 B on sub page 0, main ROM
+byte-identical. The chain is fourteen tests and stays a chain: `$A7..$AA` is now
+a contiguous arming run (`RESUME` `DELETE` `AUTO` `RENUM`) and a range test would
+save 8 B, but §1.1's walk says the set is a **list** — D-KWGAP4's knife **K6**
+records that this corpus cannot tell the two apart, so the walk is the evidence.
+
 ### 3.2 `basic/expr.asm` — main ROM page 1, and it must PAY FOR ITSELF
 
 `ev_f`'s literal dispatch ([`basic/expr.asm:505`](../basic/expr.asm:505)) has
@@ -251,11 +259,28 @@ stale**, and the allowlist is what said so rather than a re-reading of the
 table. It will fire a **third** time when `LLIST` gets a `kwtable.inc` entry and
 the row goes fully green — which is exactly the behaviour this section is buying.
 
+🎯 **IT FIRED THE THIRD TIME, AND THE WHOLE COHORT RETIRED WITH IT.** D-KWGAP4
+([`spec-basic-kwgap4.md`](spec-basic-kwgap4.md), 2026-08-01) added all four
+`kwtable.inc` entries **together with their four `branch_lineno` arms**; the
+seven pins stopped describing zerobas, the gate went red, and the entries were
+**deleted**. `lnblank-acceptance`'s allowlist is EMPTY again. The trip-wire this
+section bought did the one job it was bought for — and D-KWGAP4's knife **K1**
+(add the `DELETE` entry, withhold its arm) reproduces on demand the exact silent
+failure it was guarding against: `<A8> <0F><0A>`, token right, argument wrong.
+
 ⚠️ **This ends a five-cohort streak of an EMPTY `KNOWN_DIVERGE`, and that is a
 deliberate trade.** Every entry is measured, currently true, and has one named
 retirement path (the keyword-gap item / `RETURN <line>`). The alternative —
 leaving them informational — is the shape `TODO.md` already files as a defect
 under `dir-name`: **a row that has never gated anything.**
+
+⚠️ **AND §6's ECHO CLAIM BELOW COVERED 210 ROWS, NOT ALL OF THEM.** D-KWGAP4
+found that `--echo` shared the measurement pass's `SAY_ONLY` filter, so
+`--echo --only lnrd-` answered *"no rows selected"* — **the seven `lnrd` rows
+had never been echo-guarded at all**, nor had any other `--say` row in this
+probe. Fixed there; all seven now read `ECHOED` on all three sides, so the claim
+holds — it had simply never been tested
+([`kwgap4-msx1-characterization.md`](kwgap4-msx1-characterization.md) §5).
 
 ## 6. Gates
 

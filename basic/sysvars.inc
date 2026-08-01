@@ -1935,6 +1935,31 @@ CLEAR_TOKEN     equ     $92     ; Table 2.20 (cross-checks MSX Assembly Page tok
 DEF_TOKEN       equ     $97     ; DEF (statement; PEEK's $97 is the 2nd byte after $FF)
 USR_TOKEN       equ     $DD     ; USR (function token, single byte; DEF USR target)
 LIST_TOKEN      equ     $93     ; LIST
+; D-KWGAP4 (docs/spec-basic-kwgap4.md §2 R-K1): the four EDITOR verbs, measured
+; from the reference's own crunch emission over the whole 162-word denominator
+; (docs/lnref-msx1-characterization.md §4), not read off a table.
+;
+; ⚠️ THE TOKEN IS ONLY HALF OF EACH OF THESE. All four ARM line-number mode on
+; the reference, so branch_lineno grows a test for each one in the same slice --
+; an entry without the arm crunches `DELETE 10` to `<A8> <0F><0A>`, which is the
+; defect D-LNREF closed, reintroduced for four verbs (spec-basic-kwgap4.md §1).
+;
+; ⚠️ AND NONE OF THE FOUR IS DISPATCHED. There is no stmt_table row for any of
+; them: exec_stmt's search falls through to es_noentry -> stmt_error -> ERR 2,
+; which is the SAME class all four already raised by four different accidental
+; parses before they had tokens (characterization §3.3, the `kwgz` battery).
+; The STATEMENTS are filed with their costs in spec-basic-kwgap4.md §3.4 --
+; stmt_table lives on main page 1 at 3 B per entry and page 1 has 6 B free, so
+; the four dispatch rows alone do not fit, before one byte of handler.
+;
+; None of these four bytes was previously equated in EITHER namespace, so unlike
+; TRON/STICK ($A2) there is no same-value-different-alphabet hazard here.
+LLIST_TOKEN     equ     $9E     ; LLIST                 (arms line-number mode)
+DELETE_TOKEN    equ     $A8     ; DELETE <line>[-<line>] (arms)
+AUTO_TOKEN      equ     $A9     ; AUTO [<start>][,<inc>] (arms -- and the INCREMENT
+                                ; is stored as $0E too: lna-auto2 is why the
+                                ; mechanism is a MODE and not a typed argument)
+RENUM_TOKEN     equ     $AA     ; RENUM [<new>][,[<old>][,<inc>]] (arms)
 CLS_TOKEN       equ     $9F     ; CLS
 SCREEN_TOKEN    equ     $C5     ; SCREEN
 COLOR_TOKEN     equ     $BD     ; COLOR

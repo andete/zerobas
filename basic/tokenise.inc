@@ -147,7 +147,9 @@ tk_nondot:
                 ; D-LNLIST R-L3: a reserved WORD disarms line-number mode --
                 ; `20 GOTO 1 AND 5` keeps its 5 as <16>, and `20 IF A THEN PRINT 5`
                 ; would otherwise crunch its 5 as a LINE NUMBER. branch_lineno
-                ; re-arms below for the six that take one.
+                ; re-arms below for the FOURTEEN that take one (D-LNREF R-R1,
+                ; completed by D-KWGAP4 R-K2 -- the count was "six" until D-LNREF
+                ; walked all 162 reserved words).
                 ;
                 ; ⚠️ THE CLEAR LIVES HERE AND NOT INSIDE branch_lineno, and the
                 ; three lines below are why: REM, DATA and CALL are dispatched
@@ -591,11 +593,16 @@ mk_none:
                 ret
 
 ; --- branch_lineno: ARM line-number mode after a branch keyword --------------
-; A = first token byte just emitted by match_kw. If the keyword was
-; GOTO/GOSUB/THEN/RESTORE/RUN/RESUME, arm TKLNUM (D-LNLIST R-L1); otherwise
-; return unchanged. HL/DE are not touched — the mode does its work back in
-; tk_loop, one character at a time. (ELSE <line> is still not handled: it is a
-; word keyword, so it DISARMS, and `ref-else` stays the informational row it was.)
+; A = first token byte just emitted by match_kw. If the keyword was one of the
+; FOURTEEN measured arming words, arm TKLNUM (D-LNLIST R-L1); otherwise return
+; unchanged. HL/DE are not touched — the mode does its work back in tk_loop, one
+; character at a time.
+;
+; The list is GOTO GOSUB THEN RESTORE RUN RESUME (D-LNLIST) + LIST RETURN ERL
+; ELSE (D-LNREF R-R1) + LLIST DELETE AUTO RENUM (D-KWGAP4 R-K2), and it is a
+; LIST rather than a range or a threshold — measured over the whole 162-word
+; denominator, docs/lnref-msx1-characterization.md §1.1. ELSE is reached by its
+; FIRST token byte, which is COLON (R-R2).
 ;
 ; 🔴 THIS ROUTINE USED TO WALK THE LIST ITSELF AND NO LONGER DOES. It copied a
 ; run of blanks, took one number, then looked for a ',' to continue with —
@@ -665,6 +672,37 @@ branch_lineno:
                 jr      z,bl_yes            ; has ALWAYS tested for the $0E this emits;
                                             ; without it `IF 0 THEN 20 ELSE 30` is a
                                             ; Syntax error (lnrd-else)
+                ; D-KWGAP4 R-K2 (docs/spec-basic-kwgap4.md §2): the last FOUR of
+                ; R-R1's fourteen. D-LNREF measured that these arm and deliberately
+                ; left them out, because zerobas had no kwtable.inc entry for any of
+                ; them and a test no row could exercise is not a rule -- it pinned
+                ; lnrx-delete/-auto/-renum/-llist and ref-delete/-auto/-renum as
+                ; KNOWN_DIVERGE instead, so that adding the keywords WITHOUT these
+                ; four lines could not pass. The entries landed; these are their arms.
+                ;
+                ; 🔴 $A7..$AA IS NOW A CONTIGUOUS ARMING RUN (RESUME/DELETE/AUTO/
+                ; RENUM) AND IT STAYS FOUR SEPARATE `cp`s ANYWAY. A range test would
+                ; save 8 B and would express a rule the 162-word walk REFUTES: the
+                ; arming set is a LIST, with a non-arming neighbour on at least one
+                ; side of every boundary (ERROR $A6 under RESUME $A7, DEFSTR $AB over
+                ; RENUM $AA, IF $8B sitting BETWEEN four arming tokens). A range would
+                ; also silently arm any byte later added inside the span. Sub page 0
+                ; is not the wall; the 8 B buy nothing. Knife K6 records that this
+                ; corpus CANNOT tell the two apart -- the walk is the evidence, not a
+                ; red row.
+                ;
+                ; ⚠️ NONE OF THE FOUR HAS A stmt_table ROW. The crunch is faithful;
+                ; the STATEMENTS are filed (spec §3.4) -- kwgd-delete / kwgd-renum are
+                ; pinned so the day one lands, the gate says so.
+                cp      LLIST_TOKEN         ; LLIST [<line>[-<line>]]
+                jr      z,bl_yes
+                cp      DELETE_TOKEN        ; DELETE <line>[-<line>]
+                jr      z,bl_yes
+                cp      AUTO_TOKEN          ; AUTO [<start>][,<inc>] -- the INCREMENT
+                jr      z,bl_yes            ; is stored as $0E as well (lna-auto2):
+                                            ; nothing here knows what the digits MEAN
+                cp      RENUM_TOKEN         ; RENUM [<new>][,[<old>][,<inc>]]
+                jr      z,bl_yes
                 ret                         ; not a branch keyword
 bl_yes:
                 ld      a,1                 ; R-L1: arm line-number mode

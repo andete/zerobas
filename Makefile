@@ -1180,6 +1180,14 @@ linemax-acceptance: repack-machine
 # `make lnblank-echo` runs the echo guard instead of the measurement. It does NOT
 # squeeze whitespace the way the other probes' guards do -- blanks are the
 # subject here -- so it measures the screen's left margin per capture instead.
+#
+# ⚠️ IT GOT SLOWER IN D-KWGAP4, ON PURPOSE, AND THE COST IS THE POINT. Until then
+# `--echo` shared the measurement pass's SAY_ONLY filter, so it silently skipped
+# every `--say` payload in the probe -- `err`/`dir`/`dotd`/`lnld`/`cnmd`/`lnrd`
+# had NEVER been echo-guarded at all. They are guarded now, and say rows must
+# boot per case (`err-ctl` reads ERRCODE state `err-over` leaves behind), so this
+# target now pays ~40 extra boots per side. `run_side` splits the selection so
+# only the say rows pay it; the other 518 stay batched.
 lnblank-characterize: repack-machine
 	python3 probes/basic/basic_probe_lnblank.py \
 	        $(if $(SIDES),--sides '$(SIDES)',) \
@@ -1204,14 +1212,24 @@ lnblank-echo: repack-machine
 # is the shape TODO.md files under `dir-name` as "the row has never gated
 # anything", and D-LNREF's load-bearing control was sitting in it.
 #
-# ⚠️ SCOPED TO `lnrd-` BY DEFAULT, AND THAT IS NOT TIMIDITY. The rest of the say
-# surface (`err`/`dir`/`dotd`/`lnld`/`cnmd`) carries `dir-name`'s KNOWN, FILED
-# divergence, so a whole-surface default would ship a red target. Widening the
-# default is the fix for THAT item; `ONLY=` selects any subset today.
+# ⚠️ SCOPED TO `lnrd-,kwgd-` BY DEFAULT, AND THAT IS NOT TIMIDITY. The rest of
+# the say surface (`err`/`dir`/`dotd`/`lnld`/`cnmd`) carries `dir-name`'s KNOWN,
+# FILED divergence, so a whole-surface default would ship a red target. Widening
+# the default is the fix for THAT item; `ONLY=` selects any subset today.
+#
+# D-KWGAP4 widened it once, from `lnrd-` to `lnrd-,kwgd-`: the two new pins
+# (`kwgd-delete`, `kwgd-renum`) record that the four editor verbs still do
+# NOTHING at run time now that their crunch is byte-exact, and a pin nobody runs
+# is the `dir-name` defect itself.
+#
+# ⚠️ `kwgz-` IS DELIBERATELY NOT HERE. Those rows are SIDE_LOCKed to zerobas
+# (AUTO is interactive, LLIST drives an unplugged LPTOUT -- both hang a
+# reference), so they carry no oracle lock and gate nothing. Read them with
+#   python3 probes/basic/basic_probe_lnblank.py --say --only kwgz- --sides zb
 lnblank-say-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lnblank.py --gate --say \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
-	        --only $(if $(ONLY),'$(ONLY)',lnrd-) --repeat $(if $(REPEAT),$(REPEAT),1)
+	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-) --repeat $(if $(REPEAT),$(REPEAT),1)
 
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #

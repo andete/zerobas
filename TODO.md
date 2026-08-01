@@ -3846,26 +3846,80 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Spec [`docs/spec-basic-lnref.md`](docs/spec-basic-lnref.md), measurement
       [`docs/lnref-msx1-characterization.md`](docs/lnref-msx1-characterization.md).
 
-- [ ] 🔴 **`DELETE` / `AUTO` / `RENUM` / `LLIST` HAVE NO TOKEN — AND WHOEVER ADDS
-      THEM MUST ADD THE ARMING BYTE TOO.** Re-filed 2026-08-01 by D-LNREF out of
-      the item above, which conflated it with the `$0E` arm. Measured at HEAD:
-      `20 DELETE 10` → `DE<88>E 10`, `20 AUTO 10` → `AU<D9> <0F><0A>`,
-      `20 RENUM 10` → `RENUM 10`, `20 LLIST 10` → `L<93> …` — four unimplemented
-      statements, not unconverted arguments.
-      ⚠️ **ALL FOUR ARM LINE-NUMBER MODE ON THE REFERENCE** (`$A8` `$A9` `$AA`
-      `$9E`), and `branch_lineno` deliberately carries no test for their tokens
-      because no row could exercise one. So adding the keyword alone turns every
-      crunch row for them from *"no token"* into *"token, WRONG ARGUMENT"* and
-      brings D-LNREF's defect back for four verbs. `lnrx-delete`/`-auto`/
-      `-renum`/`-llist` and `ref-delete`/`-auto`/`-renum` are **pinned as
-      `KNOWN_DIVERGE`** to zerobas' exact current bytes for exactly that reason:
-      the moment a token lands the pin stops matching and the gate goes red.
-      ⚠️ The reference token bytes for these and 21 more absent words are now
-      oracle-locked — [`docs/lnref-msx1-characterization.md`](docs/lnref-msx1-characterization.md) §4.
+- [x] ✅ **`DELETE` / `AUTO` / `RENUM` / `LLIST` — THE TOKEN HALF CLOSED BY
+      D-KWGAP4 2026-08-01.** Filed as *"they have no token — and whoever adds
+      them must add the arming byte too."* That was right, and it was one half
+      of the surface: a missing **token** and a missing **statement**. The token
+      half is now byte-exact on all four verbs; the statement half is re-filed
+      immediately below with its numbers.
+      Landed: four equates, four `kwtable.inc` entries and four `branch_lineno`
+      arms — **+48 B, ALL sub-ROM page 0** (3958 → 3910 B free), and
+      `basic-reloc.rom` / `zerobas-main-eu.rom` **byte-identical**, which is the
+      hard equality a sub-ROM-only change allows. Low **9 B** and page 1 **6 B**
+      untouched.
+      🔴 **THE SEVEN `KNOWN_DIVERGE` PINS D-LNREF SPENT ITS EMPTY ALLOWLIST ON
+      FIRED EXACTLY AS DESIGNED, AND WERE DELETED RATHER THAN UPDATED.** Sixth
+      cohort to retire that way, none has rotted; `lnblank-acceptance`'s
+      allowlist is EMPTY again. `lna-renum3`/`-auto2`/`-delrng` also left
+      `INFORMATIONAL` — their attribution argument was precisely what this
+      closed.
+      🔴 **ADDING A TOKEN FOR AN UNDISPATCHED STATEMENT CHANGED NOTHING AT RUN
+      TIME, AND THAT WAS MEASURED ON BOTH SIDES OF THE CHANGE.** The filed
+      hazard ("a token may turn a working garbage parse into a new error class")
+      is real in general and empty here: all four already raised **ERR 2** by
+      four *different* accidental parses (`DE`+`LET`+`E`, `AU`+`TO`,
+      `RENUM` verbatim, `L`+`LIST`) and now raise it by one deliberate path
+      (`es_noentry` → `stmt_error`). New batteries `kwgd` (5 rows, three sides)
+      and `kwgz` (5 rows, **zerobas only** — `AUTO` is interactive and `LLIST`
+      hangs an unplugged `LPTOUT`, so `SIDE_LOCK` refuses a reference).
+      🔴 **AND THE ECHO GUARD HAD NEVER SEEN A `--say` PAYLOAD IN THIS PROBE.**
+      `--echo` shared the measurement pass's `SAY_ONLY` filter, so
+      `--echo --only lnrd-` answered *"no rows selected"* — D-LNREF's spec §6
+      claim covered the 210 rows the filter left. Fixed; all seven `lnrd` rows
+      now read `ECHOED` on three sides. `--echo --say` is refused (combined, the
+      say pass won inside `run_side` and `main()` printed an echo-FAILURE banner
+      over readings that were never echo verdicts).
+      Six knives, each with a predicted RED set **and** predicted GREEN
+      survivors, all matched — including two predicted-GREEN ones (K3 table
+      order, K6 list-vs-range) and K5, which aims at the *justification* and
+      measured the 3 B/entry figure the scope decision rests on.
+      Spec [`docs/spec-basic-kwgap4.md`](docs/spec-basic-kwgap4.md), measurement
+      [`docs/kwgap4-msx1-characterization.md`](docs/kwgap4-msx1-characterization.md).
       ⚠️ **`INPUT$` IS NOT ABSENT** — `20 INPUT$ 10` reads `<85>$ <0F><0A>` on
       all three sides. The reference has no distinct token either, so zerobas is
       already byte-exact and the coverage sweep's "34 genuinely absent" is one
-      too many. The `INTERVAL` shape, found by D-LNREF's walk.
+      too many. The `INTERVAL` shape, found by D-LNREF's walk. Still open.
+
+- [ ] 🔴 **`DELETE` / `AUTO` / `RENUM` / `LLIST` ARE STILL NOT EXECUTED — AND
+      NONE OF THE FOUR FITS ON MAIN PAGE 1.** Re-filed 2026-08-01 by D-KWGAP4
+      out of the item above. The crunch is now the reference's byte for byte;
+      all four are a **Syntax error** at run time. Measured, both references
+      agreeing:
+      ```
+      10 A=1 : 20 A=2 : DELETE 20 : RUN      refs -> A=1 ERR 0   zb -> A=2 ERR 2
+      10 A=1 : 20 A=2:END : RENUM 100 : GOTO 110   refs -> A=2 ERR 0   zb -> A=0 ERR 8
+      ```
+      `kwgd-delete` and `kwgd-renum` are **pinned as `KNOWN_DIVERGE`** in the
+      say gate, so the day a handler lands the gate says so.
+      🎯 **THE WALL IS MEASURED, NOT ESTIMATED.** `stmt_table` lives on main page
+      1 (`$40AF`); knife K5 added ONE dispatch row and page-1 free went
+      **6 B → 3 B**. Four rows are 12 B against 6 B — the table rows alone do not
+      fit, before a byte of handler. Low (9 B) is co-mapped with page 1 and so is
+      not relief.
+      Each verb is a slice, not a table edit: **`RENUM`** needs a two-pass
+      old→new map over every line number *and* every `$0E` reference including
+      `ON..GOTO` lists; **`AUTO`** must drive the line editor (a sub-ROM page-1
+      tenant) from a main-ROM statement; **`DELETE`** must unlink a range and
+      rebuild the link fields; **`LLIST`** is cheapest — a printer sink exists
+      ([`basic/print.asm:401`](basic/print.asm:401), `PRDEST=1` → `LPTOUT`) and
+      `ex_list` exists, so its handler is "set the sink, jump to `ex_list`" —
+      but it would inherit the filed `ex_list`-ignores-its-argument defect below.
+      ⚠️ **`AUTO` and `LLIST` CANNOT BE PUT TO A REFERENCE IN THIS HARNESS** —
+      interactive line-entry and an unplugged-`LSTOUT` hang, the same reasons the
+      keyword sweep already files them among its 18 crunch-only holes. `omsx_repl`
+      raises `SystemExit` at its 240 s cap, so such a row does not degrade a run,
+      it kills it. Whoever implements them needs a plugged printer
+      ([[openmsx-printer-pluggable]]) or a different instrument first.
 
 - [ ] **`RETURN <line>` IS NOT IMPLEMENTED.** Filed 2026-08-01 by D-LNREF.
       `ex_return` ([`basic/program.asm:1089`](basic/program.asm:1089)) pops the

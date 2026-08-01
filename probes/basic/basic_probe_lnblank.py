@@ -1542,6 +1542,75 @@ LNRD = [
                       "40 RETURN 30", "RUN", 'PRINT"[";A;ERR;"]"']),
 ]
 
+# --- the `kwgd` battery: WHAT DELETE / RENUM DO AT RUN TIME (D-KWGAP4) --------
+# ⚠️ SAY-MODE ONLY, and it exists because ADDING A TOKEN FOR A STATEMENT WITH NO
+# HANDLER IS A RUN-TIME CHANGE, not only a crunch change. Today `DELETE 20`
+# crunches to `DE<88>E 20` and the executor sees a NAME (`DE`) followed by a LET
+# token; tomorrow it sees statement token $A8 and `exec_stmt`'s table search
+# falls through to `stmt_error`. Both are expected to be a Syntax error, and
+# "expected" is exactly the word this project does not accept -- these rows are
+# what turn it into a reading, before and after.
+#
+# 🔴 THE CONTROLS ARE NOT DECORATION AND EACH ONE CAN MOVE ITS OWN SUBJECT.
+# `kwgd-delctl` reads the value `kwgd-delete` must CHANGE (A = 2 with line 20
+# still there), and `kwgd-renctl` proves the direct-mode `GOTO` instrument reads
+# ` 2  0 ` when the target line exists -- so `kwgd-renum`'s ` 0  8 ` is a missing
+# LINE and not a broken instrument. `kwgd-ctl` pins the error class this machine
+# gives a word it cannot dispatch at all, on every side, so the pinned zerobas
+# values below are a DIFFERENCE and not a number floating on its own.
+#
+# ⚠️ DIRECT MODE ON PURPOSE. `DELETE` and `RENUM` are editor commands; running
+# them from inside a RUN rewrites the program under the interpreter's own
+# cursor, which is a second variable this battery has no business carrying.
+KWGD = [
+    ("kwgd-ctl",     ["ZZTOP 10", 'PRINT"[";ERR;"]"']),   # CONTROL: a word no
+                                            # side has a token for -> the
+                                            # undispatchable-statement class
+    ("kwgd-delctl",  ["10 A=1", "20 A=2", "RUN",
+                      'PRINT"[";A;ERR;"]"']),  # CONTROL: line 20 still there -> 2
+    ("kwgd-delete",  ["10 A=1", "20 A=2", "DELETE 20", "RUN",
+                      'PRINT"[";A;ERR;"]"']),  # deleted -> A stays 1
+    ("kwgd-renctl",  ["10 A=1", "20 A=2:END", "GOTO 20",
+                      'PRINT"[";A;ERR;"]"']),  # CONTROL: the GOTO instrument
+                                            # reads 2 when the line EXISTS
+    ("kwgd-renum",   ["10 A=1", "20 A=2:END", "RENUM 100", "GOTO 110",
+                      'PRINT"[";A;ERR;"]"']),  # 20 -> 110 only if RENUM ran
+]
+
+# --- the `kwgz` battery: the SAME question for AUTO and LLIST, ZEROBAS ONLY ---
+# 🔴 THESE ROWS MAY NOT BE PUT TO A REFERENCE, AND THE PROBE REFUSES RATHER THAN
+# SAMPLING AROUND IT. `AUTO` enters interactive line-entry and `LLIST` drives
+# LPTOUT, which HANGS on a machine with no printer plugged -- both are already
+# classified `crunch-only` for exactly these reasons by the keyword sweep
+# (TODO.md, the 18 crunch-only holes). omsx_repl raises SystemExit on its 240 s
+# cap, so one such row does not degrade a run, it KILLS it.
+#
+# ⚠️ SO THE READING IS ONE-SIDED AND THAT IS SAID OUT LOUD RATHER THAN HIDDEN.
+# These four rows measure only what ZEROBAS does, before and after the token
+# lands; they carry no oracle lock and they GATE NOTHING. `SIDE_LOCK` below makes
+# the probe fail loudly if anyone points them at a reference, so the hazard is a
+# property of the instrument instead of a note somebody has to remember.
+# `kwgz-delete`/`kwgz-renum` repeat the two SAFE verbs in this one-sided shape on
+# purpose: without them the zerobas-side reading would be a SAMPLE of two verbs
+# where the question is about four.
+KWGZ = [
+    ("kwgz-ctl",     ["10 A=1", 'PRINT"[";ERR;"]"']),     # CONTROL: nothing went
+                                            # wrong -> 0, so a 2 below is a value
+                                            # this instrument can distinguish
+    ("kwgz-delete",  ["DELETE 10", 'PRINT"[";ERR;"]"']),
+    ("kwgz-auto",    ["AUTO 10", 'PRINT"[";ERR;"]"']),
+    ("kwgz-renum",   ["RENUM 10", 'PRINT"[";ERR;"]"']),
+    ("kwgz-llist",   ["LLIST 10", 'PRINT"[";ERR;"]"']),
+]
+
+# label -> the ONLY sides it may be measured on. A row named here is refused on
+# any other side, with the reason, instead of being quietly dropped or -- far
+# worse -- run.
+SIDE_LOCK = {lb: {"zb"} for lb, _l in KWGZ}
+SIDE_LOCK_WHY = ("AUTO enters interactive line-entry and LLIST drives an "
+                 "unplugged LPTOUT; both HANG a reference machine (the keyword "
+                 "sweep already files them as crunch-only for this reason)")
+
 # --- the `cnmd` battery: WHAT THE EATEN CHARACTERS MEAN -----------------------
 # ⚠️ SAY-MODE ONLY. Storing `X5` instead of `X` + <F1> + <16> is only a
 # divergence worth fixing if it changes what the machine DOES, and the CALL
@@ -1629,11 +1698,11 @@ ERRB = [
     ("err-over",     ["65530 REMX", 'PRINT"[";ERR;"]"']),
     ("err-ctl",      ["65529 REMX", 'PRINT"[";ERR;"]"']),
 ]
-SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD + LNRD}
+SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ}
 
 CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + LNL + CNM
          + LNR + LNRX + LNR2 + LNV + LNV2 + LNA
-         + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD)
+         + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ)
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
 # informational because nobody had a RULE for them: `dec-bin` was the `&B`
@@ -1646,18 +1715,37 @@ CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + L
 # informational because zerobas had no $0E arm for LIST/ELSE; it has one now, so
 # they are ordinary gating rows. `ref-delete`/`-auto`/`-renum` did NOT heal and
 # did NOT stay informational either -- they moved to KNOWN_DIVERGE, pinned, so
-# they gate in the only direction that means anything for a missing keyword.
+# they gated in the only direction that means anything for a missing keyword.
+# ⚠️ AND D-KWGAP4 THEN RETIRED THOSE PINS: the three words got their kwtable
+# entries AND their arming bytes together, so all three are plain green rows now.
 #
 # 🔴 WHAT IS STILL INFORMATIONAL IS AN ATTRIBUTION ARGUMENT, NOT A CONVENIENCE.
-# The `lnrx` rows below and `lna-renum3`/`-auto2`/`-delrng` diverge because the
-# WORD is absent from kwtable.inc, and would still diverge with the $0E arm
-# perfect. Their reference answer for the ARGUMENT is `<0F><0A>` too (or is
-# unreachable behind the absent token), so they carry no arming obligation this
-# build can meet. A row that can diverge for two reasons measures neither.
+# The `lnrx` rows below diverge because the WORD is absent from kwtable.inc, and
+# would still diverge with the $0E arm perfect. Their reference answer for the
+# ARGUMENT is `<0F><0A>` too (or is unreachable behind the absent token), so they
+# carry no arming obligation this build can meet. A row that can diverge for two
+# reasons measures neither.
+#
+# 🔴 TWO OF THEM ARE LOAD-BEARING CONTROLS FOR D-KWGAP4 AND MUST STILL DIVERGE.
+# `lnrx-lprint` (`20 LPRINT 10` -> `L<91> <0F><0A>`) is the IDENTICAL shape to the
+# old `LLIST` mangle -- a stray `L` plus a genuine keyword token -- except that
+# LPRINT does NOT arm on the reference. If the `LLIST` entry were matched at the
+# wrong position, or if a fifth entry crept in, this row moves. `lnrx-wait`
+# (`WAIT 10` stored verbatim) is the same control for `RENUM`, the other word
+# that used to store its own name. Agreement on either would mean entries were
+# added that spec-basic-kwgap4.md does not authorise.
 # `lnr-defint` is the same shape with a DELIBERATE cause: kwtable.inc:140 emits
 # DEF_TOKEN + literal "INT" on purpose so ex_def_type sees the ASCII mnemonic.
+# ⚠️ `lna-renum3`, `lna-auto2` AND `lna-delrng` LEFT THIS SET IN D-KWGAP4, and so
+# did the four `lnrx` + three `ref` rows for the same three words (they left via
+# KNOWN_DIVERGE, below). Their attribution argument was "the WORD is absent from
+# kwtable.inc, and they would still diverge with the $0E arm perfect" -- which is
+# precisely the thing D-KWGAP4 removed. They are ordinary gating rows now, and
+# `lna-auto2` is the one worth keeping an eye on: `AUTO 10,5`'s second argument
+# is an INCREMENT and is stored as $0E,5 anyway, so it is the row that says the
+# mechanism is a MODE over digit runs and not a typed line-number argument.
 INFORMATIONAL = {"num-tab", "dec-eol", "dec-eolctl",
-                 "lnr-defint", "lna-renum3", "lna-auto2", "lna-delrng",
+                 "lnr-defint",
                  # the tokenless words that do NOT arm on the reference either
                  "lnrx-defsng", "lnrx-defdbl", "lnrx-defstr", "lnrx-fn",
                  "lnrx-lprint", "lnrx-lpos", "lnrx-mks", "lnrx-mkd",
@@ -1791,30 +1879,46 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 # Every entry is measured, currently true, and has ONE named retirement path.
 # The alternative -- leaving them informational -- is the shape TODO.md already
 # files as a defect under `dir-name`: a row that has never gated anything.
+#
+# 🔴 THE D-LNREF COHORT FIRED EXACTLY AS DESIGNED AND IS RETIRED BY D-KWGAP4.
+# The seven entries above -- `lnrx-delete`/`-auto`/`-renum`/`-llist` and
+# `ref-delete`/`-auto`/`-renum` -- were pinned so that adding the four keywords
+# WITHOUT their arming bytes could not pass quietly. D-KWGAP4 added both halves;
+# all seven rows agree on all three sides, the allowlist reported them as no
+# longer describing zerobas, and the entries were **DELETED** rather than
+# updated to the new value. SIXTH cohort to leave that way, none has rotted.
+#
+# ⚠️ AND `lnrx-llist` LEFT AFTER MOVING TWICE INSIDE D-LNREF'S OWN SLICE. It was
+# filed as `L<93> <0F><0A>`, corrected to `L<93> <0E><0A><00>` minutes later when
+# arming $93 changed its ARGUMENT (zerobas mangled LLIST into the variable `L`
+# plus a genuine LIST token), and now goes fully green with the real $9E. A pin
+# that fires three times in two slices is the shape this set exists for.
+#
+# ⚠️ THE ALLOWLIST FOR `lnblank-acceptance` IS EMPTY AGAIN, AND STILL A STATE TO
+# DEFEND RATHER THAN A DEFAULT. What remains below is the SAY gate's set: three
+# rows whose divergence is a missing STATEMENT, not a missing crunch rule, each
+# with one named retirement path.
 KNOWN_DIVERGE = {
-    # the four arming words with no zerobas token (`20 <WORD> 10`)
-    "lnrx-delete":  "line 20 | DE<88>E 10",
-    "lnrx-auto":    "line 20 | AU<D9> <0F><0A>",
-    "lnrx-renum":   "line 20 | RENUM 10",
-    # 🔴 THIS PIN MOVED INSIDE THE SLICE THAT CREATED IT, AND THE MOVE IS REAL.
-    # zerobas mangles `LLIST` into the variable `L` plus a genuine LIST token
-    # ($93) -- so the moment branch_lineno learned to arm on $93, this row's
-    # ARGUMENT started crunching to $0E as well: `L<93> <0F><0A>` became
-    # `L<93> <0E><0A><00>`. Nothing regressed (the argument is now the
-    # reference's; only the token is still wrong, and `L` + LIST is a syntax
-    # error before and after), but the value filed a minute earlier was already
-    # stale and the ALLOWLIST is what said so rather than a re-reading of the
-    # table. It will fire a THIRD time when LLIST gets a kwtable entry and the
-    # row goes fully green.
-    "lnrx-llist":   "line 20 | L<93> <0E><0A><00>",
-    # the same three words as D-LNBLANK's `ref` battery typed them (`1 0`)
-    "ref-delete":   "line 20 | DE<88>E 1 0",
-    "ref-auto":     "line 20 | AU<D9> <0F><0A>",
-    "ref-renum":    "line 20 | RENUM 1 0",
     # say mode: RETURN <line> is not implemented -- ex_return pops the frame and
     # never reads its argument, so this returns to the GOSUB caller (line 20)
     # where both references go to line 30.
     "lnrd-return":  " 20  0 ",
+    # D-KWGAP4 say mode: the STATEMENT half of the four editor verbs. The crunch
+    # is now byte-exact (the rows above retired); these two say the verbs still
+    # do NOTHING, and they are pinned so the day a handler lands the gate says so.
+    #
+    # `DELETE 20` really removes line 20 on both references, so A keeps the 1
+    # line 10 gave it; on zerobas $A8 has no stmt_table row, exec_stmt falls
+    # through to stmt_error, the program stands, A reaches 2 and ERR is the 2 the
+    # failed DELETE left. `kwgd-delctl` is the control holding the ` 2  0 ` this
+    # row must change.
+    "kwgd-delete":  " 2  2 ",
+    # `RENUM 100` really renumbers, so `GOTO 110` finds what used to be line 20;
+    # on zerobas line 110 never comes into existence -> ERR 8, Undefined line
+    # number, A untouched. `kwgd-renctl` is the control proving the direct-mode
+    # GOTO instrument reads ` 2  0 ` when the target line DOES exist, so this
+    # row's ` 0  8 ` is a missing LINE and not a broken instrument.
+    "kwgd-renum":   " 0  8 ",
 }
 
 
@@ -1985,6 +2089,24 @@ def run_side(side, cases, repeat, echo, saymode=False, isolate=False):
     # so the reset lines are prepended to the case itself.
     # `isolate` forces boot-per-case: the SELF-HEAL pass (main) re-runs suspect
     # rows this way, so a batched delivery mangle cannot be reported as a finding.
+    #
+    # 🔴 AND THE BATCH DECISION IS PER-GROUP, NOT PER-RUN. `batch` is an `any()`
+    # over the WHOLE selection, so a single SAY_ONLY row forces boot-per-case on
+    # every other row too. That was invisible while say rows were filtered out of
+    # every non-say pass -- and the moment D-KWGAP4 let `--echo` see them it
+    # turned `make lnblank-echo` into a ~560-boot-per-side run. Splitting the
+    # selection gives the say rows the isolation they genuinely need (`err-ctl`
+    # reads state `err-over` leaves behind) and leaves the other 518 batched.
+    mixed = (not isolate) and 0 < sum(lb in SAY_ONLY for lb, _l in cases) < len(cases)
+    if mixed:
+        by_label = {}
+        for want_say in (False, True):
+            sub = [c for c in cases if (c[0] in SAY_ONLY) is want_say]
+            by_label.update(zip((c[0] for c in sub),
+                                run_side(side, sub, repeat, echo, saymode, isolate)))
+        if tmp:
+            os.unlink(tmp)
+        return [by_label[lb] for lb, _l in cases]
     batch = (not isolate) and not any(lb in SAY_ONLY for lb, _l in cases)
     specs = [("direct", (list(reset) + lines) if not batch else lines)
              for _l, lines in cases]
@@ -2064,9 +2186,49 @@ def main():
             return 1
     want = [t.strip() for t in (args.only or "").split(",") if t.strip()]
     sel = [c for c in CASES if not want or any(t in c[0] for t in want)]
-    # SAY_ONLY rows read the screen; they are invisible to the measurement
-    # and echo passes rather than silently reading the wrong capture.
-    sel = [c for c in sel if args.say or c[0] not in SAY_ONLY]
+    # SAY_ONLY rows read the screen; they are invisible to the MEASUREMENT pass
+    # rather than silently reading the wrong capture.
+    #
+    # 🔴 BUT NOT TO THE ECHO PASS, AND UNTIL D-KWGAP4 THEY WERE. `--echo` shared
+    # this filter, so `--echo --only lnrd-` answered "no rows selected" and NO
+    # SAY_ONLY ROW IN THIS PROBE HAD EVER BEEN ECHO-GUARDED -- not the `err`,
+    # `dir`, `dotd`, `lnld`, `cnmd` rows, and not D-LNREF's own seven `lnrd`
+    # rows, whose spec §6 nonetheless claims "every gating payload typed
+    # verbatim on every side". It claimed it of the 210 rows the filter LEFT.
+    # This is [[say-only-rows-are-ungated]] a second time, on the guard instead
+    # of on the gate: an echo guard that cannot see a payload is exactly the
+    # "delivery that cannot be verified MAY NOT GATE" shape D-DECBLANK filed.
+    # The echo pass reads its own typed lines back off the screen and needs no
+    # measurement capture at all, so there was never a reason for the filter.
+    sel = [c for c in sel if args.say or args.echo or c[0] not in SAY_ONLY]
+    # ⚠️ AND THE TWO FLAGS MAY NOT BE COMBINED. `run_side` returns the say values
+    # before it ever reaches the echo branch, so `--echo --say` silently ran the
+    # SAY pass and let main report every row as "not echoed" -- an APPARATUS
+    # FAILURE banner over a run that had measured something else entirely.
+    if args.echo and args.say:
+        print("APPARATUS FAILURE: --echo and --say are two different passes; "
+              "--say wins inside run_side, so the combination reports echo "
+              "verdicts over say readings. Run them separately.")
+        return 1
+    # 🔴 A SIDE-LOCKED ROW IS SKIPPED LOUDLY OR REFUSED -- NEVER RUN, NEVER
+    # SILENTLY DROPPED. Running it hangs the reference and kills the pass at
+    # omsx_repl's 240 s cap; dropping it quietly would let
+    # `--sides vg8020,cf3300,zb --only kwgz-` read as a clean run, which is the
+    # `dir-name` shape (a row that has never gated anything, reported as if it
+    # had). So a broad run -- `lnblank-echo` selects EVERY row -- skips them with
+    # a printed notice naming the reason, and a run that is left with nothing
+    # after the skip fails outright instead of reporting "no rows selected".
+    locked = [lb for lb, _l in sel
+              if lb in SIDE_LOCK and not set(sides) <= SIDE_LOCK[lb]]
+    if locked:
+        sel = [c for c in sel if c[0] not in set(locked)]
+        print(f"SIDE-LOCKED, NOT MEASURED on {sides}: {sorted(locked)} "
+              f"-- {SIDE_LOCK_WHY}. They are measurable only on "
+              f"{sorted(SIDE_LOCK[locked[0]])}, and they gate nothing.\n")
+        if not sel:
+            print("APPARATUS FAILURE: every selected row is side-locked away "
+                  "from these sides -- this run would measure nothing.")
+            return 1
     if not sel:
         print("APPARATUS FAILURE: no rows selected")
         return 1
@@ -2098,8 +2260,9 @@ def main():
     # direction a mangle is a false PASS FOREVER, and `--repeat 2` remains the
     # only guard for it -- this changes nothing about that requirement.
     #
-    # 🔴 INFORMATIONAL ROWS ARE HEALED TOO, AND THAT IS THE CONTROL. `ref-list`,
-    # `ref-delete`, `ref-auto`, `ref-renum`, `ref-else`, `dec-eol` and `dec-eolctl`
+    # 🔴 INFORMATIONAL ROWS ARE HEALED TOO, AND THAT IS THE CONTROL. `lnrx-lprint`,
+    # `lnrx-wait`, `lnr-defint`, `dec-eol` and `dec-eolctl` (and, until D-KWGAP4
+    # retired them, `ref-delete`/`-auto`/`-renum`)
     # diverge for real, measured reasons. They are re-run boot-per-case on every
     # gate and they MUST STILL DIVERGE -- which is what says the heal re-measures
     # a row rather than manufacturing agreement. A run in which they came back

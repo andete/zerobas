@@ -8,12 +8,23 @@
 ; PEEK is a two-byte function token ($FF $97).
 ;
 ; This table is DATA, reached only via `ld ix,kwtable` from match_kw (tokeniser)
-; and detok_kw2 (LIST detokeniser) — both scan it linearly, so BOTH directions are
-; data-driven off whichever copy the build placed. The table was extracted into its
-; own file so its PLACEMENT could be moved (string-engine arc S3, spec §5b): it is
-; included in the reclaimed low region (main.asm) rather than inline in interp.asm,
-; freeing page-1 room for the string engine. match_kw is full-keyword (not prefix),
-; so table order is free except for the documented longest-match notes below.
+; and detok_kw / detok_kw2 (LIST detokeniser) — all scan it linearly, so BOTH
+; directions are data-driven off ONE table. It was extracted into its own file so
+; its PLACEMENT could be moved (string-engine arc S3, spec §5b), first into the
+; main ROM's reclaimed low region and then out of the main ROM entirely.
+;
+; ⚠️ HOME, AND THE OLD HEADER HERE NAMED THE WRONG ONE UNTIL D-KWGAP4. The
+; resident copy was DROPPED in the sub-ROM arc's wave 3; `sub/sub.asm:299` is now
+; the SOLE include site and the table is a sub-ROM PAGE-0 tenant. That is what
+; makes an entry added here a sub-ROM change costing nothing on the main ROM's
+; 9 B / 6 B walls — a fact worth having right, since it decides whether a new
+; keyword is affordable at all. `tools/check_kwtable_identity.py` asserts
+; single-copy on every build.
+;
+; match_kw compares the FULL table keyword against the input and takes the FIRST
+; entry that matches — no longest-match, no word-boundary check — so table order
+; is free EXCEPT where one keyword is a prefix of another (see the DEFINT/DEF note
+; below, the only such pair in the table).
 ; ===========================================================================
 kwtable:
                 db      5,"BLOAD",1,BLOAD_TOKEN
@@ -141,6 +152,32 @@ kwtable:
                 db      3,"DEF",1,DEF_TOKEN
                 db      3,"USR",1,USR_TOKEN
                 db      4,"LIST",1,LIST_TOKEN
+                ; D-KWGAP4 (docs/spec-basic-kwgap4.md §2 R-K1): the four editor
+                ; verbs. Tokens oracle-locked from the reference's own crunch
+                ; emission (docs/lnref-msx1-characterization.md §4).
+                ;
+                ; ⚠️ TABLE POSITION IS FREE FOR ALL FOUR, AND THAT WAS WALKED
+                ; RATHER THAN EYEBALLED. match_kw stops at the FIRST entry that
+                ; matches and does no longest-match -- which is why DEFINT must
+                ; precede DEF above. All 137 pre-existing entries were checked in
+                ; BOTH directions: none is a prefix of these four, and none of
+                ; these four is a prefix of an existing entry (characterization
+                ; §2). The near-misses stay near-misses: DEF diverges from DELETE
+                ; at char 3 (F vs L), REM from RENUM at char 3 (M vs N), LIST
+                ; from LLIST at char 2 (I vs L) -- which is ALSO exactly why the
+                ; old mangles were DE+LET+E, AU+TO and L+LIST: the reserved word
+                ; was being found one or two positions LATE.
+                ;
+                ; 🔴 EACH OF THESE ALSO NEEDS ITS branch_lineno ARM, in the same
+                ; slice. All four arm line-number mode on the reference; an entry
+                ; on its own turns `20 DELETE 10` from "no token" into "token,
+                ; WRONG argument". `lnrx-lprint` (`L<91>`, the identical stray-L
+                ; shape that does NOT arm) is the standing control that says four
+                ; entries were added here and not five.
+                db      5,"LLIST",1,LLIST_TOKEN
+                db      6,"DELETE",1,DELETE_TOKEN
+                db      4,"AUTO",1,AUTO_TOKEN
+                db      5,"RENUM",1,RENUM_TOKEN
                 db      3,"CLS",1,CLS_TOKEN
                 db      6,"SCREEN",1,SCREEN_TOKEN
                 db      5,"COLOR",1,COLOR_TOKEN
