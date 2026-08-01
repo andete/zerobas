@@ -622,6 +622,33 @@ kwsweep: repack-machine
 	python3 probes/basic/basic_probe_kwsweep.py \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
+# --- System-variable SWEEP (the MSX work-area denominator, NOT a pass/fail gate) ---
+# The same shape as `kwsweep`, for the other surface that had no denominator: every
+# byte of the published work area $F380..$FFFE, on all three sides, in a baseline
+# state and after each stimulus -- docs/sysvar-msx1-coverage.md, spec
+# docs/spec-basic-sysvar-denominator.md.
+# It exists because zerobas keeps the last error code at $E1C5 and MSX's ERRFLG at
+# $F414 appears NOWHERE in this repo -- the standard address was never considered,
+# and that was found BY ACCIDENT while asking an unrelated question. There was no
+# list against which the question could have been asked.
+# Deliberately NOT a gate: its expected state is "N addresses diverge", so it exits
+# 0 with findings. Non-zero means the APPARATUS failed -- the echo guard (a stimulus
+# that never arrived reads as a three-way agreement and fails TOWARD "pass"),
+# C-INSTR (read_block disagreeing with a real PEEK), or C-REPRO (the sweep failing
+# to re-find the known $F414 row it was not told about).
+# ⚠️ --repeat is REFUSED below 2: it IS the volatility control, and the repeats are
+# JITTERED because openMSX is deterministic -- an unjittered repeat reports ZERO
+# volatile bytes in the whole work area, JIFFY included.
+# The denominator is generated from the pinned C-BIOS checkout's systemvars.asm
+# (CBIOS=<path>, default ~/projects/cbios), admissible for published sysvar
+# addresses per docs/allowed-sources.md:121 -- a GENERATOR ONLY; every verdict comes
+# from measurement. Repack-only + oracle-dependent (boots openMSX; needs your
+# VG-8020 and CF-3300 reference ROMs); NOT part of the emulator-free `unit-test`.
+sysvarsweep: repack-machine
+	python3 probes/basic/basic_probe_sysvarsweep.py \
+	        --zb-machine $(REPACK_MACHINE) --cbios $(CBIOS)/src/systemvars.asm \
+	        $(if $(ONLY),--only '$(ONLY)',)
+
 # --- Logical-operator characterization + gate (AND/OR/XOR/EQV/IMP/NOT) ------------
 # `logicops-characterize` is the MEASUREMENT run behind
 # docs/logicops-vg8020-characterization.md: semantics, precedence (every ordered
@@ -1395,7 +1422,7 @@ clean:
         interval-trap-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
-        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep fat-error-acceptance \
+        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep sysvarsweep fat-error-acceptance \
         logicops-characterize cursor-characterize cursor-acceptance \
         binfre-characterize binfre-acceptance \
         missing-characterize missing-acceptance \

@@ -3333,39 +3333,72 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       measurement [`docs/nameblank-msx1-characterization.md`](docs/nameblank-msx1-characterization.md).
       `dec-bin` and `lit-varname` are **gating** rows now, not informational.
 
-- [ ] **DOES ZEROBAS HONOUR THE OFFICIAL MSX RAM VARIABLES? THERE IS NO
-      DENOMINATOR.** Found 2026-08-01 while asking whether a `reset` line could
-      clear ERRCODE (so the `--say` batteries could stop paying boot-per-case).
-      🔴 **ONE MEMBER OF THE CLASS IS ALREADY MEASURED AND ZEROBAS DIVERGES**, on
-      both references, read AND write (`--repeat 2`, boot-per-case, controls
-      either side):
+- [x] ✅ **THE MSX WORK-AREA DENOMINATOR EXISTS — `make sysvarsweep`, LANDED
+      2026-08-01.** 279 named entries over `$F380..$FFFE` (3199 B), three sides,
+      `--repeat 2`, boot-per-case, jittered. NO `basic/`/`sub/` change: this
+      slice ends with a LIST, by design. Spec
+      [`docs/spec-basic-sysvar-denominator.md`](docs/spec-basic-sysvar-denominator.md),
+      measurement [`docs/sysvar-msx1-coverage.md`](docs/sysvar-msx1-coverage.md).
+      **Scoped to meaning (2)** — does a READ return the same value — signed off
+      before the probe was written; (1) is unobservable except through (2) and
+      (3) is not a fidelity question.
+      🔴 **THE FILED ROW WAS THE SMALLEST PART, AND THE NO-ERROR CONTROL IS WHAT
+      SAYS SO POSITIVELY.** 19 bytes diverge under `GOTO 99999`, and the obvious
+      write-up — *"19 bytes of error state diverge"* — is wrong by ~4×:
       ```
-                                    vg8020  cf3300   zb
-      POKE&HF414,0  then PRINT ERR      0       0     8   (no effect on zb)
-      PEEK(&HF414)  after an error      8       8     0
-      POKE&HE1C5,0  then PRINT ERR      8       8     0
-      PEEK(&HE1C5)  after an error      0     255     8
+      s1-err   DIVERGE  CSRY KBUF+1..6 BUF CONTXT CONSAV CONTYP CONLO LINTTB | ERRFLG ERRLIN ERRTXT
+      s2-noerr DIVERGE  CSRY KBUF+1..2 BUF CONTXT CONSAV CONTYP CONLO LINTTB | (+TEMP/TEMP2/TEMP3)
+               `A=1` RAISES NO ERROR and moves the SAME set --------^
       ```
-      `$F414` **is** MSX's `ERRFLG` — measured, not taken from a sysvar map — and
-      zerobas neither reads nor writes it: it keeps the code at `$E1C5`
-      ([`basic/sysvars.inc:847`](basic/sysvars.inc:847)), in the freed `VARTAB`
-      window, whose own comment says *"own choice — just-freed RAM"*. ⚠️ `$F414`
-      appears **NOWHERE** in the repo, so the standard address was never
-      considered, not rejected. On the references `$E1C5` is ordinary RAM holding
-      different junk on each machine (0 vs 255), which is why it was free to take.
-      **What is missing is the DENOMINATOR**, exactly as it was for the keyword
-      surface before [[kwsweep-msx1-denominator]]: 162 reserved words became
-      `make kwsweep`. The MSX work-area table (Technical Handbook ch. 2 — public
-      documentation, already cited by this repo, no disassembly) is the analogous
-      list. ⚠️ **Scope it first: "uses" has THREE meanings** — does zerobas WRITE
-      what the reference writes, does a `PEEK` READ the same value, and does
-      zerobas depend on it internally. Only the middle one is observable from
-      BASIC and it is the one fidelity turns on. The list also splits into
-      BIOS-owned (C-BIOS supplies) and BASIC-owned (zerobas must); only the second
-      is this project's to answer for.
-      ⚠️ Whether `ERRFLG` should MOVE to `$F414` is a separate design question —
-      zerobas' memory map is its own, and relocating live error state is not a
-      free edit.
+      **Exactly THREE variables are error-specific**: `ERRFLG $F414`,
+      `ERRLIN $F6B3`, `ERRTXT $F6B7`. `KBUF`/`BUF` and the `CONT` anchor
+      `CONTXT`/`CONSAV`/`CONTYP`/`CONLO` are rewritten on **every direct-mode
+      line** on both references and never on zerobas. The class is not "zerobas
+      ignores `ERRFLG`" but *"zerobas keeps its BASIC bookkeeping in its own RAM
+      window while the published addresses stay at power-on values."*
+      🔴 **AND LAYER 0 FOUND EIGHT MORE, WITH NO EMULATOR AT ALL.** zerobas'
+      `sysvars.inc` shares 46 names with the published map: 38 at the published
+      address, **8 RE-HOMED** — `VALTYP` `FRETOP` `SAVTXT` `SAVSTK` `ONELIN`
+      `ONEFLG` `ARYTAB` `DEFTBL`, all into the same freed `$E1Cx`/`$E2xx` window
+      with the same "own choice" provenance. ⚠️ A **LOWER BOUND**: it matches on
+      the NAME, so `ERRCODE`-vs-`ERRFLG` (different spellings) is invisible to it.
+      **Measurable surface is not 3199**: 6 B VOLATILE (`SCNCNT` `REPCNT`
+      `JIFFY` `INTCNT` — all clock-derived, all BIOS-owned), 311 B NO-ORACLE
+      (the two references are structurally different machines), ~2626 B INERT.
+      **66 named variables diverge somewhere: 45 BASIC-owned, 21 BIOS-owned.**
+      At cold boot **256 B** differ where both references agree (114 BASIC-owned)
+      — `USRTAB`'s ten `$475A` vectors, `CS120`/`CS240`, `ENDPRG`, `CURLIN`.
+      ⚠️ **Whether `ERRFLG` should MOVE to `$F414` remains a SEPARATE design
+      question** — zerobas' memory map is its own and relocating live error state
+      is not a free edit. Deliberately not started.
+      ⚠️ **Three apparatus defects, each caught by a control rather than by
+      luck** (docs §8): the volatility control was **connected to nothing**
+      (`cap_gap` is the gap AFTER the capture and this probe is boot-per-case, so
+      it reported `VOLATILE=0` over the whole work area, JIFFY included, while
+      looking like it worked — and had PUBLISHED a false `REPCNT` finding);
+      C-INSTR failed on all three sides from the payload's **own echo** supplying
+      a bracket pair; and the table parser silently dropped the 10 inline-
+      commented entries, `JIFFY` among them, then mislabelled the most volatile
+      byte in the work area `PADX+1`.
+
+- [ ] **THE RE-HOMING CLASS: 8 PUBLISHED NAMES AT PRIVATE ADDRESSES, AND NOBODY
+      DECIDED THAT.** Filed 2026-08-01 by the sysvar denominator. `VALTYP`
+      `FRETOP` `SAVTXT` `SAVSTK` `ONELIN` `ONEFLG` `ARYTAB` `DEFTBL` carry the
+      published MSX names at zerobas addresses, plus `ERRCODE`/`ERRLINE` which
+      carry the published *semantics* under different names. Every one sits in
+      the freed `VARTAB` window whose comment reads *"own choice — just-freed
+      RAM"* — i.e. each was a placement decision made for space, and **none was a
+      decision to reject the standard address**, which is the same finding
+      `$F414` produced.
+      ⚠️ **THIS IS A DESIGN QUESTION, NOT A DEFECT LIST.** Moving live state is
+      not free, low is 23 B and page 1 is 8 B, and a `PEEK`-visible address is
+      only worth honouring if something observes it. What is missing is a
+      **decision**, recorded once, per variable: honour the published address, or
+      state why not. ⚠️ A shared NAME is not shared SEMANTICS — check each before
+      treating it as the same variable.
+      ⚠️ The dynamic denominator covers **5 stimuli**; the static one covers all
+      279 entries. Widening the stimulus set is the cheap next increment
+      (`make sysvarsweep ONLY=...`).
 
 - [ ] **`dir-name` — A BLANK INSIDE A NAME IS NOT READ BACK IN DIRECT MODE.**
       Surfaced 2026-08-01 by the first full `--say` pass across all three sides
