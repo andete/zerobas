@@ -22,6 +22,24 @@ for the keyword surface until 162 reserved words became `make kwsweep`.
 
 This probe is that list. Spec: docs/spec-basic-sysvar-denominator.md.
 
+⚠️ THAT ROW IS NOW HISTORY: ERRFLG LIVES AT $F414. D-REHOME (2026-08-01,
+docs/sysvar-rehoming-decisions.md) honoured it along with ERRLIN, ONELIN, ONEFLG
+and DEFTBL, at zero ROM cost. The paragraph above is kept because it is why this
+probe exists and because the -- now failing -- shape it describes is exactly what
+the probe must keep being able to find. C-REPRO below still pins $F414 under
+s1-err with refs=08/zb=00 and IS EXPECTED TO FAIL against a build that honours
+it; see its own note. What the sweep measures did not change: it is still "does
+a READ of that address return the same value", still on 279 named entries.
+
+THE RE-HOMING TABLE (docs/spec-basic-sysvar-rehoming.md)
+=======================================================
+The census answers "is the published address honoured". It CANNOT answer "is the
+published variable the SAME VARIABLE as the one zerobas keeps privately", because
+every zerobas private cell is BELOW the swept span. PRIV_SEGS closes that: the
+published and the private cell are read by ONE instrument in ONE capture. Four
+PAIRED stimulus states (s6..s13) make each reading a DELTA rather than a value
+comparison -- which is what turns a name match into a semantics test.
+
 SCOPE (spec §2, signed off): "does a READ of that address return the same value".
 NOT "does zerobas write what the reference writes" (unobservable except through
 the read) and NOT "does zerobas depend on it internally" (a question about this
@@ -156,7 +174,88 @@ SIDES = {
     "zb":     dict(machine=ZB_MACHINE, boot=8.0, step=2.5, diska=None),
 }
 REF_SIDES = ("vg8020", "cf3300")
-ALL_SIDES = ("vg8020", "cf3300", "zb")
+ALL_SIDES = ("vg8020", "cf3300", "zb")   # narrowed by --sides (see main)
+
+# --- the RE-HOMING class: published name, private address ---------------------
+# (name, published addr, size, zerobas addr) -- docs/spec-basic-sysvar-
+# rehoming.md §1. ERRFLG/ERRLIN were spelled ERRCODE/ERRLINE on the zerobas side
+# until D-REHOME, which is exactly why name_collisions() could not see them: it
+# matches on the NAME, so the pair that STARTED this whole item was invisible to
+# the layer that found the other eight. They are still listed here BY HAND, and
+# the hand-written list is what stays honest if a future variable is re-homed
+# under yet another spelling.
+# ✅ D-REHOME (2026-08-01) honoured five of the ten, so for those the "zerobas
+# address" IS the published one and the row becomes a REGRESSION check: zerobas
+# must keep tracking the reference at that cell. The five it did not honour keep
+# their private address and their recorded reason
+# (docs/sysvar-rehoming-decisions.md §3).
+REHOMED = [
+    ("VALTYP", 0xF663,  1, 0xE0C8, "REJECT-UNOBSERVABLE"),
+    ("ERRFLG", 0xF414,  1, 0xF414, "HONOURED"),
+    ("FRETOP", 0xF69B,  2, 0xE268, "REJECT-GROUP"),
+    ("SAVTXT", 0xF6AF,  2, 0xE1CF, "REJECT-UNOBSERVABLE"),
+    ("SAVSTK", 0xF6B1,  2, 0xE1C3, "DEFER"),
+    ("ERRLIN", 0xF6B3,  2, 0xF6B3, "HONOURED"),
+    ("ONELIN", 0xF6B9,  2, 0xF6B9, "HONOURED"),
+    ("ONEFLG", 0xF6BB,  1, 0xF6BB, "HONOURED"),
+    ("ARYTAB", 0xF6C4,  2, 0xE1C0, "REJECT-GROUP"),
+    ("DEFTBL", 0xF6CA, 26, 0xF6CA, "HONOURED"),
+]
+
+# 🆕 C-VACATED. The cells the honoured five MOVED OUT OF. They are ordinary
+# unused RAM now, and they must GO QUIET: a leftover writer at an old address is
+# the classic half-completed relocation, and it is invisible to every other check
+# here -- the published cell would look perfectly honoured while a stale store
+# kept scribbling somewhere nobody reads. Captured and asserted, not assumed.
+VACATED = [("ERRCODE", 0xE1C5, 1), ("ERRLINE", 0xE1C6, 2),
+           ("ONELIN'", 0xE1C8, 2), ("ONEFLG'", 0xE1CA, 1),
+           ("DEFTBL'", 0xF153, 26)]
+
+
+def _merge_segs(spans, gap=16):
+    """[(addr,len)] -> merged, sorted segments. Adjacent cells are coalesced so
+    the capture is a handful of `debug read_block`s rather than one per cell."""
+    out = []
+    for a, ln in sorted(spans):
+        if out and a - (out[-1][0] + out[-1][1]) <= gap:
+            end = max(out[-1][0] + out[-1][1], a + ln)
+            out[-1] = (out[-1][0], end - out[-1][0])
+        else:
+            out.append((a, ln))
+    return out
+
+
+# 🔴 THE EXISTING SWEEP CANNOT SEE ZEROBAS' SIDE OF THE RE-HOMING, AND THAT IS
+# NOT A DETAIL. It reads $F380..$FFFE; EVERY zerobas private cell above is BELOW
+# that span ($E0C8, $E1C0.., $E268, $F153). So the sweep can say "the published
+# address is not honoured" and cannot say "and here is the same value, 1440 bytes
+# lower" -- which is the difference between a divergence and a RE-HOMING, i.e.
+# between a defect and a placement decision. These segments close that gap, and
+# they are read by the SAME instrument in the SAME capture, so the published and
+# the private cell are sampled at one emulated instant on each side.
+# ⚠️ ONLY cells OUTSIDE the swept span belong here. Once D-REHOME honoured five
+# addresses, their "private" address became a work-area one already covered by
+# the main capture -- and _idx resolves those through the work span, so a segment
+# for them would be read twice and indexed never. Filtering here keeps the
+# capture honest rather than relying on _idx's ordering to paper over it.
+PRIV_SEGS = _merge_segs(
+    [(a, n) for a, n in
+     [(z, n) for _s, _p, n, z, _st in REHOMED] + [(a, n) for _s, a, n in VACATED]
+     if not (WORK_LO <= a <= WORK_HI)])
+PRIV_LEN = sum(ln for _a, ln in PRIV_SEGS)
+CAP_SEGS = [(WORK_LO, WORK_LEN)] + PRIV_SEGS
+
+
+def _idx(addr):
+    """Byte index of `addr` inside one capture (work span, then PRIV_SEGS)."""
+    if WORK_LO <= addr <= WORK_HI:
+        return addr - WORK_LO
+    off = WORK_LEN
+    for a, ln in PRIV_SEGS:
+        if a <= addr < a + ln:
+            return off + (addr - a)
+        off += ln
+    raise KeyError(f"${addr:04X} is in no captured segment")
 
 # --- the common prefix -------------------------------------------------------
 # ⚠️ EVERY STATE ON EVERY SIDE STARTS WITH ONE BARE CR, INCLUDING THE BASELINE.
@@ -205,6 +304,37 @@ STATES = [
     ("s3-def",     ["DEFINT A"],         "exploratory"),
     ("s4-var",     ['A=1:B$="X"'],       "exploratory"),
     ("s5-width",   ["WIDTH 32"],         "exploratory"),
+    # --- the RE-HOMING battery (docs/spec-basic-sysvar-rehoming.md §5.2) ------
+    # Four PAIRS. Each pair differs in exactly the property under test, so the
+    # reading is a DELTA and not a value comparison -- which is what makes it a
+    # SEMANTICS test. A shared name cannot answer "is this the same variable";
+    # "does it move by 16 when 16 bytes of string are allocated" can.
+    ("s6-armed",   ["10 ON ERROR GOTO 100", "20 STOP", "100 STOP", "RUN"],
+                                         "CONTROL for s7-fired: the handler is "
+                                         "ARMED and never FIRES. A variable that "
+                                         "moves here too is not error state"),
+    ("s7-fired",   ["10 ON ERROR GOTO 100", "20 GOTO 99999", "100 STOP", "RUN"],
+                                         "the trap FIRES: ONEFLG/ERRFLG/ERRLIN "
+                                         "live, and ERRLIN is a real line number "
+                                         "(20) rather than direct mode"),
+    ("s8-str4",    ['A$=STRING$(4,66):PRINT A$'],
+                                         "CONTROL for s9-str20: 4 bytes of heap"),
+    ("s9-str20",   ['A$=STRING$(20,67):PRINT A$'],
+                                         "16 bytes MORE than s8. FRETOP moving "
+                                         "by 16 == an allocation pointer; not "
+                                         "moving == a boundary"),
+    ("s10-defint", ['DEFINT A:PRINT"[";A;"]"'],
+                                         "CONTROL for s11-defstr: DEFTBL['A'] "
+                                         "declared NUMERIC"),
+    ("s11-defstr", ['DEFSTR A:PRINT"[";A;"]"'],
+                                         "DEFTBL['A'] declared STRING -- the "
+                                         "published map encodes a FLOAT TYPE "
+                                         "CODE (2/3/4/8), zerobas a 0/1 sentinel"),
+    ("s12-scal1",  ['A=1:PRINT"[";A;"]"'],
+                                         "CONTROL for s13-scal3: one scalar"),
+    ("s13-scal3",  ['A=1:B=2:C=3:PRINT"[";C;"]"'],
+                                         "two scalars MORE than s12 -- the "
+                                         "ARYTAB/STREND pointer chain must step"),
 ]
 STATE_LINES = {k: v for k, v, _r in STATES}
 ROLE = {k: r for k, _v, r in STATES}
@@ -230,6 +360,27 @@ EVIDENCE = {
     "s3-def":   lambda t: not _has_error(t),
     "s4-var":   lambda t: not _has_error(t),
     "s5-width": lambda t: not _has_error(t),
+    # 🔴 THESE GUARDS ARE STRONGER THAN DELIVERY, AND DELIBERATELY SO. `break in
+    # 20` vs `break in 100` names the BRANCH TAKEN, so a state that arrived
+    # perfectly and did NOT trap is caught -- an ordinary "no error / an error"
+    # guard would pass s6 and s7 on a machine that ran neither handler. Matched
+    # lowercase because zerobas prints its messages lowercase by design
+    # (basic/program.asm:682 `db "break",0`), and a raw text match would VOID
+    # every zerobas row and classify nothing.
+    "s6-armed":   lambda t: "break in 20" in t.lower(),
+    "s7-fired":   lambda t: "break in 100" in t.lower(),
+    # The string pair proves its own payload LENGTH reached the heap: a dropped
+    # keystroke inside STRING$(20,67) yields a different run of Cs, not the same
+    # screen. `BBBB` cannot come from the echo (which shows `STRING$(4,66)`).
+    "s8-str4":    lambda t: "BBBB" in t,
+    "s9-str20":   lambda t: "C" * 20 in t,
+    # 🟢 DIAGNOSTIC, NOT MERELY DELIVERY: `[ 0 ]` vs `[]` IS the type decision
+    # under test, printed. A state whose DEFTBL write silently did nothing shows
+    # the other pair member's screen and is voided.
+    "s10-defint": lambda t: "[ 0 ]" in t,
+    "s11-defstr": lambda t: "[]" in t,
+    "s12-scal1":  lambda t: "[ 1 ]" in t,
+    "s13-scal3":  lambda t: "[ 3 ]" in t,
 }
 
 # --- C-INSTR: pin the instrument against a real PEEK -------------------------
@@ -255,7 +406,20 @@ CINSTR_LINES = ["SCREEN 0", "CLS"] + STATE_LINES["s1-err"] + [
     'PRINT"[";' + ";".join(f"PEEK(&H{a:04X})" for a in CINSTR_ADDRS) + ';"]"']
 
 # --- C-REPRO: the filed row, re-derived --------------------------------------
-CREPRO = dict(addr=0xF414, state="s1-err", refs=0x08, zb=0x00)
+# 🔴 THE FIX INVERTED THIS CONTROL, AND DELETING IT WOULD HAVE BEEN THE WRONG
+# ANSWER. C-REPRO was `verdict=DIVERGE, refs=08, zb=00`: the sweep had to
+# independently re-find the filed $F414 row, because a sweep that reports nothing
+# is indistinguishable from a sweep that measures nothing. D-REHOME then HONOURED
+# $F414 -- so the row it was pinned to stopped existing, and the control would
+# have failed the whole run for the best possible reason.
+#
+# The control's JOB is unchanged: assert a known-from-elsewhere answer about the
+# one byte this arc turns on. What changed is the known answer. It is now
+# HONOURED/08/08, and that is a STRICTLY STRONGER assertion than the old one --
+# the old row passed whenever zerobas did nothing at all with $F414, and this one
+# fails the moment the honouring regresses. It is the fix's own regression gate.
+CREPRO = dict(addr=0xF414, state="s1-err", verdict="HONOURED",
+              refs=0x08, zb=0x08)
 
 
 # =============================================================================
@@ -430,7 +594,7 @@ def run_side(side, keys, repeat, mode):
     cfg = SIDES[side]
     tmp = _tmpdisk(side, cfg["diska"])
     pre = list(PREFIX) + (["SCREEN 0", "CLS"] if mode == "screen" else [])
-    capture = "screen" if mode == "screen" else ("mem_abs", [(WORK_LO, WORK_LEN)])
+    capture = "screen" if mode == "screen" else ("mem_abs", CAP_SEGS)
     specs = [("direct", pre + STATE_LINES[k]) for k in keys]
 
     runs = []
@@ -465,7 +629,7 @@ def run_side(side, keys, repeat, mode):
             # is one a reader learns to skip, and this is the class the whole
             # jitter control exists to surface.
             vol = bytes(0 if all(b[j] == bs[0][j] for b in bs) else 1
-                        for j in range(WORK_LEN))
+                        for j in range(len(bs[0])))
             out[k] = (bs[0], vol, bs[-1])
     return out
 
@@ -540,6 +704,114 @@ VERDICTS = ("VOLATILE", "NO-ORACLE", "DIVERGE", "EXTRA", "HONOURED", "INERT",
             "BASE-DIFF", "NOREAD")
 
 
+# =============================================================================
+# the RE-HOMING table (docs/spec-basic-sysvar-rehoming.md §5.3)
+# =============================================================================
+def _cells(mem, side, state, addr, size):
+    """(base_bytes, cur_bytes, volatile) for one variable on one side, or None."""
+    b, c = mem[side].get(BASELINE), mem[side].get(state)
+    if b is None or c is None:
+        return None
+    j = _idx(addr)
+    vol = any(b[1][j + k] or c[1][j + k] for k in range(size))
+    return (bytes(b[0][j:j + size]), bytes(c[0][j:j + size]), vol)
+
+
+def _delta(base, cur):
+    """Signed movement of a 2-byte LE cell, baseline -> current."""
+    d = (int.from_bytes(cur, "little") - int.from_bytes(base, "little")) & 0xFFFF
+    return d - 0x10000 if d >= 0x8000 else d
+
+
+def rehome_verdict(mem, state, pub, size, zba, sides):
+    """Verdict for ONE re-homed variable under ONE stimulus.
+
+    🔴 THE QUESTION IS NOT "does zerobas honour the address" -- the sweep already
+    answers that, and answers it "no" for all ten. It is "is the PUBLISHED
+    variable the SAME VARIABLE as the one zerobas keeps privately", which needs
+    both cells read at once and cannot be answered by a name.
+
+    Returns (verdict, detail-string)."""
+    rp = {s: _cells(mem, s, state, pub, size) for s in REF_SIDES if s in sides}
+    if any(v is None for v in rp.values()) or not rp:
+        return "NOREAD", ""
+    if any(v[2] for v in rp.values()):
+        return "VOLATILE", ""
+    vals = {(v[0], v[1]) for v in rp.values()}
+    if len(vals) != 1:
+        # 🔴 NO-ORACLE IS A VERDICT ABOUT THE COMPARISON, NOT ABOUT THE VARIABLE,
+        # AND THE ORACLE-LOCK PASS PROVED IT ON FRETOP. The two references hold
+        # DIFFERENT absolute values there ($F168 vs $DC5F) because their string
+        # spaces begin in different places -- and they agree PERFECTLY on the
+        # quantity that carries the meaning: both move -4 for a 4-byte string and
+        # -20 for a 20-byte one. An absolute comparison of a POINTER into
+        # machine-dependent RAM can only ever answer "the machines disagree",
+        # which is true and is not what was asked.
+        #
+        # So a pointer-sized cell whose refs disagree absolutely gets a second
+        # question: do they agree on the DELTA from the baseline? If they do,
+        # there IS an oracle -- the movement -- and zerobas can be right or wrong
+        # about it. This strictly ADDS readings; a cell that fails here falls
+        # through to NO-ORACLE exactly as before.
+        det = "  ".join(f"{s}={rp[s][0].hex()}->{rp[s][1].hex()}" for s in rp)
+        if size != 2:
+            return "NO-ORACLE", det
+        deltas = {_delta(v[0], v[1]) for v in rp.values()}
+        if len(deltas) != 1:
+            return "NO-ORACLE", det
+        rd = next(iter(deltas))
+        det += f"   refsΔ={rd:+d}"
+        if "zb" not in sides:
+            return ("REF-DELTA" if rd else "REF-INERT"), det
+        zv = _cells(mem, "zb", state, zba, size)
+        if zv is None:
+            return "NOREAD", det
+        if zv[2]:
+            return "VOLATILE", det
+        zd = _delta(zv[0], zv[1])
+        det += f"  zb@privΔ={zd:+d} ({zv[0].hex()}->{zv[1].hex()})"
+        # 🔴 A KNIFE ON MY OWN FIX. The first cut of this branch returned
+        # DIFF-DELTA for every one-sided movement, and SAVSTK is what showed it
+        # up: the references never move it under any stimulus here (refsΔ=+0)
+        # while zerobas writes a real SP anchor (zbΔ=-3349), and "DIFF-DELTA"
+        # reads as "zerobas moves it WRONGLY" when the truth is "the references
+        # do not move it here AT ALL, so there is nothing to be wrong about."
+        # The absolute branch above has always said ZB-ONLY/REF-ONLY for exactly
+        # this shape; the delta branch disagreed with it, and the two must not
+        # answer the same question differently.
+        if rd == 0 and zd == 0:
+            return "INERT", det
+        if rd == 0:
+            return "ZB-ONLY", det
+        if zd == 0:
+            return "REF-ONLY", det
+        return ("SAME-DELTA" if rd == zd else "DIFF-DELTA"), det
+    rbase, rcur = next(iter(vals))
+    ref_moved = rcur != rbase
+    det = f"refs={rbase.hex()}->{rcur.hex()}"
+
+    if "zb" not in sides:                      # oracle-lock pass: refs only
+        return ("REF-MOVED" if ref_moved else "REF-INERT"), det
+
+    zp, zv = _cells(mem, "zb", state, pub, size), _cells(mem, "zb", state, zba, size)
+    if zp is None or zv is None:
+        return "NOREAD", det
+    if zp[2] or zv[2]:
+        return "VOLATILE", det
+    det += f"  zb@pub={zp[0].hex()}->{zp[1].hex()}  zb@priv={zv[0].hex()}->{zv[1].hex()}"
+    priv_moved = zv[1] != zv[0]
+
+    if not ref_moved and not priv_moved:
+        # ⚠️ A NON-RESULT, NEVER A PASS. It says this stimulus does not exercise
+        # this variable -- the INERT lesson, one layer up.
+        return "INERT", det
+    if ref_moved and not priv_moved:
+        return "REF-ONLY", det
+    if priv_moved and not ref_moved:
+        return "ZB-ONLY", det
+    return ("SAME-VAR" if rcur == zv[1] else "SAME-ROLE"), det
+
+
 def classify(j, mem, state):
     """Verdict for byte index `j` in `state`. `mem[side][key] = (values, vol)`.
 
@@ -575,6 +847,7 @@ def classify(j, mem, state):
 # report
 # =============================================================================
 def main() -> int:
+    global ALL_SIDES
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--zb-machine", default=ZB_MACHINE)
@@ -585,8 +858,26 @@ def main() -> int:
                     help="report only bytes C-BIOS's table names")
     ap.add_argument("--max-rows", type=int, default=60,
                     help="per-class cap on listed byte rows (0 = no cap)")
+    ap.add_argument("--sides", default=",".join(ALL_SIDES),
+                    help="comma-separated sides. 🔴 THIS IS THE ORACLE-LOCK "
+                         "MECHANISM: --sides vg8020,cf3300 runs a NEW state on "
+                         "the references ONLY, so what they do is written down "
+                         "BEFORE zerobas is run on it. Without it that "
+                         "discipline is a promise rather than a mechanism, and "
+                         "a mangle in the oracle-lock direction is a false PASS "
+                         "forever.")
     args = ap.parse_args()
     SIDES["zb"]["machine"] = args.zb_machine
+
+    want_sides = tuple(s.strip() for s in args.sides.split(",") if s.strip())
+    if any(s not in SIDES for s in want_sides) or not want_sides:
+        return _fail(f"unknown side(s) in --sides {args.sides!r}")
+    ALL_SIDES = tuple(s for s in ("vg8020", "cf3300", "zb") if s in want_sides)
+    if not set(REF_SIDES) <= set(ALL_SIDES):
+        # A run without both references has no oracle at all: every verdict in
+        # the lattice is defined against "the two references agree".
+        return _fail("--sides must include both references")
+    refs_only = "zb" not in ALL_SIDES
 
     if args.repeat < 2:
         # ⚠️ NOT a style preference. With one run per side there is no volatility
@@ -614,7 +905,13 @@ def main() -> int:
           f"({WORK_LEN} B)   repeat={args.repeat}")
     print(f"  denominator: {len(table)} named entries from {args.cbios}")
     print(f"  states     : {', '.join(keys)}")
-    print(f"  sides      : {', '.join(SIDES[s]['machine'] for s in ALL_SIDES)}\n")
+    print(f"  sides      : {', '.join(SIDES[s]['machine'] for s in ALL_SIDES)}")
+    print(f"  private    : {', '.join(f'${a:04X}+{n}' for a, n in PRIV_SEGS)}"
+          f"  ({PRIV_LEN} B of zerobas' OWN cells, read by the same instrument)")
+    if refs_only:
+        print("\n  🔒 ORACLE-LOCK PASS — references only. What they do is "
+              "recorded BEFORE zerobas runs on these states.")
+    print()
 
     # --- pass 0: STATIC — published name, private address (no emulator) -------
     sysinc = os.path.join(os.path.dirname(os.path.dirname(
@@ -624,8 +921,12 @@ def main() -> int:
     print(f"  {len(same)} at the published address, {len(moved)} RE-HOMED:")
     for n, z, c in moved:
         print(f"    {n:10} zerobas=${z:04X}   published=${c:04X}")
-    print("  ⚠️ a LOWER BOUND: matched on the NAME, so ERRCODE-vs-ERRFLG "
-          "(different spellings) is invisible here\n")
+    print("  ⚠️ STILL a LOWER BOUND: this matches on the NAME. D-REHOME renamed "
+          "ERRCODE/ERRLINE to the")
+    print("     published ERRFLG/ERRLIN so THAT pair is now visible, but a "
+          "variable re-homed under a")
+    print("     different spelling would be just as invisible as those two "
+          "were. See REHOMED above.\n")
 
     # --- pass 1: the ECHO GUARD, on every side, BEFORE any reading is trusted -
     print("=== echo guard (delivery) — a state that cannot be verified on a "
@@ -666,6 +967,50 @@ def main() -> int:
                      + " — read_block does not agree with PEEK, so NO reading "
                        "in this run is trustworthy")
     print()
+
+    # --- pass 2b: the RE-HOMING table -----------------------------------------
+    # The report the DECISION is written from. Every other pass answers "is the
+    # published address honoured" (no, for all ten); this one answers "is the
+    # published variable the SAME VARIABLE as the private one", which is the
+    # question a placement decision actually turns on.
+    stimuli = [k for k in keys if k != BASELINE]
+    print("=== the RE-HOMING table — published cell vs zerobas' PRIVATE cell ===")
+    print("  SAME-VAR  = zb's private value EQUALS the refs' published value "
+          "(same variable, wrong address)")
+    print("  SAME-ROLE = both move, values differ (same job, different "
+          "encoding/representation)")
+    print("  REF-ONLY  = the refs move it, zb's private cell does NOT -> NOT the "
+          "same variable")
+    print("  INERT     = neither moves -> ⚠️ this stimulus does not test this "
+          "variable (a NON-RESULT, never a pass)")
+    print("  SAME-DELTA= the refs disagree on the ABSOLUTE value (a pointer into "
+          "machine-dependent RAM) but")
+    print("              agree on the MOVEMENT, and zerobas moves identically — "
+          "a reading NO-ORACLE threw away\n")
+    rehome = {}
+    for name, pub, size, zba, status in REHOMED:
+        print(f"  {name:7} pub=${pub:04X}+{size:<2} zb=${zba:04X}   {status}")
+        for k in stimuli:
+            if (any((s, k) in voided for s in ALL_SIDES)
+                    or any((s, BASELINE) in voided for s in ALL_SIDES)):
+                v, det = "NOREAD", ""
+            else:
+                v, det = rehome_verdict(mem, k, pub, size, zba, ALL_SIDES)
+            rehome[(name, k)] = v
+            print(f"      {k:11} {v:10} {det}")
+        print()
+
+    if refs_only:
+        # 🔒 Nothing below this line can run without zerobas, and NOTHING here
+        # may pretend to: C-REPRO, C-PRIV and C-REPRO-2 are all zerobas-vs-refs
+        # statements. The oracle-lock pass ends by saying so rather than by
+        # printing an empty section that reads like a pass.
+        if voided:
+            return _fail(f"{len(voided)} state/side deliveries could not be "
+                         f"verified")
+        print("ORACLE-LOCK PASS COMPLETE — the reference readings above are now "
+              "pinned. Re-run with all three sides to classify zerobas.")
+        return 0
 
     # --- pass 3: the census ---------------------------------------------------
     idx = [j for j in range(WORK_LEN)
@@ -789,18 +1134,118 @@ def main() -> int:
         v = classify(j, mem, st)
         got_r = mem["vg8020"][st][0][j]
         got_z = mem["zb"][st][0][j]
-        repro_ok = (v == "DIVERGE" and got_r == CREPRO["refs"]
+        repro_ok = (v == CREPRO["verdict"] and got_r == CREPRO["refs"]
                     and got_z == CREPRO["zb"])
         print(f"  ${CREPRO['addr']:04X} {names.get(CREPRO['addr'], '-')} "
               f"under {st}: {v}  refs={got_r:02X} zb={got_z:02X}   "
-              f"(want DIVERGE refs={CREPRO['refs']:02X} zb={CREPRO['zb']:02X})")
+              f"(want {CREPRO['verdict']} refs={CREPRO['refs']:02X} "
+              f"zb={CREPRO['zb']:02X})")
         print("  " + ("OK — the apparatus finds a known row it was not told about"
                       if repro_ok else
                       "FAIL — THE APPARATUS IS BROKEN, not the finding"))
     print()
 
+    # --- C-PRIV: the private segments must be shown to be READ ----------------
+    # 🔴 A NEW INSTRUMENT NEEDS ITS OWN POSITIVE CONTROL. A segment list that is
+    # silently mis-ordered, short, or dropped renders every private cell as a
+    # plausible constant -- and a constant is exactly what most of them look like
+    # anyway, so the failure would be invisible. Pin it on a cell whose movement
+    # is INDEPENDENTLY visible on the screen guard.
+    #
+    # 🔴 AND THIS CONTROL WAS PINNED ON A CELL ITS OWN FIX VACATED. The first cut
+    # pinned DEFTBL['A'] at $F153 (s10-defint `[ 0 ]` vs s11-defstr `[]`) --
+    # then D-REHOME moved DEFTBL to the published $F6CA, so $F153 became ordinary
+    # unused RAM reading $FF in both states and C-PRIV failed, CORRECTLY, on the
+    # post-fix build. That is the third control this fix inverted; C-REPRO and
+    # C-REPRO-2 were re-aimed and this one was missed, because it was being
+    # thought of as "the DEFTBL cell" rather than as "a cell that must still be
+    # PRIVATE". A control pinned to a moving target has to be re-checked whenever
+    # the target moves -- [[control-inverted-by-its-own-fix]], learned twice.
+    #
+    # ARYTAB $E1C0 is the right anchor precisely because it is a REJECT verdict:
+    # it stays private by decision, so no future honouring can pull the rug out.
+    # Its movement is corroborated on screen by `[ 1 ]` vs `[ 3 ]` -- the scalars
+    # really were created -- and it is 2 bytes, so it exercises multi-byte
+    # indexing into the private segments as well.
+    priv_ok = True
+    print("=== C-PRIV — can the private segments be shown to MOVE? ===")
+    if not {"s12-scal1", "s13-scal3"} <= set(keys):
+        print("  SKIPPED (s12-scal1/s13-scal3 not in this run) — C-PRIV "
+              "cannot vouch for the private segments in this run")
+    else:
+        jd = _idx(0xE1C0)
+        a = bytes(mem["zb"]["s12-scal1"][0][jd:jd + 2])
+        b = bytes(mem["zb"]["s13-scal3"][0][jd:jd + 2])
+        priv_ok = a != b
+        print(f"  $E1C0 ARYTAB on zb: s12-scal1={a.hex()}  s13-scal3={b.hex()}"
+              f"   {'OK — the segment is live' if priv_ok else 'FAIL'}")
+        if not priv_ok:
+            print("  A private cell that cannot be shown to move is not a "
+                  "reading, and every SAME-VAR/REF-ONLY verdict above rests on "
+                  "these segments.")
+    print()
+
+    # --- C-REPRO-2: both halves of the filed statement ------------------------
+    # The coverage doc could only make ONE half of it ("$F414 diverges"); the
+    # other half ("...and the value is at $E1C5") is what turns a divergence into
+    # a RE-HOMING. If the new pass cannot re-derive both, the pass is broken.
+    # 🔴 D-REHOME INVERTED THIS CONTROL TOO. It used to assert "ERRFLG is
+    # SAME-VAR against $E1C5 and zerobas' $F414 must NOT move" -- the re-homing,
+    # found from both ends. $F414 is now ERRFLG's real home, so the assertion is
+    # the OTHER way round and is again strictly stronger: zerobas must TRACK the
+    # references at the published cell under the run-mode trap.
+    print("=== C-REPRO-2 — does the table confirm $F414 is now TRACKED? ===")
+    if "s7-fired" not in keys:
+        print("  SKIPPED (s7-fired not in this run)")
+        repro2_ok = True
+    else:
+        v = rehome.get(("ERRFLG", "s7-fired"))
+        jp = _idx(0xF414)
+        zpub = mem["zb"]["s7-fired"][0][jp]
+        zpub_b = mem["zb"][BASELINE][0][jp]
+        repro2_ok = (v == "SAME-VAR" and zpub == 0x08 and zpub_b == 0x00)
+        print(f"  ERRFLG under s7-fired: {v}   zb@$F414 "
+              f"{zpub_b:02X}->{zpub:02X} (want 00->08, matching the refs)")
+        print("  " + ("OK — zerobas tracks the published cell from a stored line"
+                      if repro2_ok else
+                      "FAIL — THE NEW PASS IS BROKEN, not the finding"))
+    print()
+
+    # --- C-VACATED: the addresses the honoured five moved OUT of --------------
+    # 🔴 THE FAILURE MODE NOTHING ELSE HERE CAN SEE. A half-completed relocation
+    # leaves a stale store at the old address: the published cell looks perfectly
+    # honoured, the census is green, and a dead cell is being written by code
+    # nobody knows still exists. The old homes must be INERT on every side in
+    # every state -- asserted, not assumed.
+    print("=== C-VACATED — did the old private cells go quiet? ===")
+    vac_ok = True
+    for nm, addr, size in VACATED:
+        jv = _idx(addr)
+        moved = []
+        for k in keys:
+            b, c = mem["zb"].get(BASELINE), mem["zb"].get(k)
+            if b is None or c is None:
+                continue
+            if bytes(b[0][jv:jv + size]) != bytes(c[0][jv:jv + size]):
+                moved.append(k)
+        if moved:
+            vac_ok = False
+        print(f"  {nm:9} ${addr:04X}+{size:<2} "
+              + ("QUIET" if not moved else f"🔴 STILL WRITTEN in {moved}"))
+    print("  " + ("OK — no leftover writer at any vacated address" if vac_ok else
+                  "FAIL — a relocation is only half done"))
+    print()
+
     if not repro_ok:
         return _fail("C-REPRO did not fire")
+    if not priv_ok:
+        return _fail("C-PRIV did not fire — the private segments are not a "
+                     "reading, so no re-homing verdict in this run is one")
+    if not repro2_ok:
+        return _fail("C-REPRO-2 did not fire")
+    if not vac_ok:
+        return _fail("C-VACATED failed — a vacated address is still being "
+                     "written, so a relocation is only half done")
     if voided:
         return _fail(f"{len(voided)} state/side deliveries could not be verified")
     print("apparatus OK — this is a COVERAGE REPORT, not a pass/fail gate "

@@ -3381,24 +3381,109 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       commented entries, `JIFFY` among them, then mislabelled the most volatile
       byte in the work area `PADX+1`.
 
-- [ ] **THE RE-HOMING CLASS: 8 PUBLISHED NAMES AT PRIVATE ADDRESSES, AND NOBODY
-      DECIDED THAT.** Filed 2026-08-01 by the sysvar denominator. `VALTYP`
-      `FRETOP` `SAVTXT` `SAVSTK` `ONELIN` `ONEFLG` `ARYTAB` `DEFTBL` carry the
-      published MSX names at zerobas addresses, plus `ERRCODE`/`ERRLINE` which
-      carry the published *semantics* under different names. Every one sits in
-      the freed `VARTAB` window whose comment reads *"own choice — just-freed
-      RAM"* — i.e. each was a placement decision made for space, and **none was a
-      decision to reject the standard address**, which is the same finding
-      `$F414` produced.
-      ⚠️ **THIS IS A DESIGN QUESTION, NOT A DEFECT LIST.** Moving live state is
-      not free, low is 23 B and page 1 is 8 B, and a `PEEK`-visible address is
-      only worth honouring if something observes it. What is missing is a
-      **decision**, recorded once, per variable: honour the published address, or
-      state why not. ⚠️ A shared NAME is not shared SEMANTICS — check each before
-      treating it as the same variable.
-      ⚠️ The dynamic denominator covers **5 stimuli**; the static one covers all
-      279 entries. Widening the stimulus set is the cheap next increment
-      (`make sysvarsweep ONLY=...`).
+- [x] ✅ **THE RE-HOMING CLASS: TEN DECISIONS RECORDED, FIVE ADDRESSES HONOURED
+      AT ZERO ROM COST — LANDED 2026-08-01.** Filed by the sysvar denominator as
+      *"8 published names at private addresses, and NOBODY DECIDED THAT"*.
+      Decisions: [`docs/sysvar-rehoming-decisions.md`](docs/sysvar-rehoming-decisions.md),
+      spec [`docs/spec-basic-sysvar-rehoming.md`](docs/spec-basic-sysvar-rehoming.md),
+      **recorded beside each equate in [`basic/sysvars.inc`](basic/sysvars.inc)** —
+      which was the deliverable. Four paired stimulus states added to
+      `make sysvarsweep` (5 → 13), oracle-locked on both references at
+      `--repeat 2` **before zerobas ran on any of them** (new `--sides` filter,
+      so the ordering is a mechanism and not a promise).
+      🔴 **SEVEN OF THE TEN ARE MEASURABLY THE SAME VARIABLE.** Not ten designs
+      placed for space — one design at a different address. `ERRFLG` `00→08`,
+      `ERRLIN` `→FFFF` direct / `→20` from a stored line, `ONELIN` `→$8015`,
+      `ARYTAB` byte-identical in all four direct-mode states, `DEFTBL` 25/26 B
+      identical, `FRETOP` `SAME-DELTA` −4/−20; `ONEFLG` same role with a
+      different sentinel.
+      ✅ **HONOURED (zero ROM bytes each — every access was already symbolic, so
+      an `equ` change is an assembler constant; low still 23 B, page 1 still
+      8 B):** `ERRCODE`→**`ERRFLG $F414`**, `ERRLINE`→**`ERRLIN $F6B3`** (renamed
+      too — the off-book spelling is *why* the static name-match could not see
+      the pair that started this item; the layer now reports **43 honoured / 5
+      re-homed**, was 38/8), `ONELIN $F6B9`, `ONEFLG $F6BB` (+ sentinel `1`→`$FF`,
+      measured, control-flow-neutral), `DEFTBL $F6CA`.
+      🔴 **MIRRORING WAS SIGNED OFF AND THEN REFUTED BY AN ALREADY-FILED ROW.**
+      `POKE&HF414,0 : PRINT ERR` prints `0` on both references — `ERR` **reads**
+      `$F414`, so a write-only mirror satisfies `PEEK` and **fails** `POKE`. The
+      cheap way out of *"moving live error state is not a free edit"* was
+      measurably insufficient, and the edit was free anyway.
+      ❌ **REJECT-GROUP:** `ARYTAB` and `FRETOP` — both *SAME-VAR/SAME-DELTA* and
+      still refused, because their consumers read a **chain**
+      (`TXTTAB≤VARTAB≤ARYTAB≤STREND`; `FRETOP` against `MEMSIZ`/`STKTOP`) and
+      zerobas has no stored `VARTAB`/`STREND`/`MEMSIZ`/`STKTOP`. Publishing one
+      end of a subtraction yields a **confident wrong answer** where today a
+      consumer gets `0−0` and an obviously dead reading.
+      ❌ **REJECT-UNOBSERVABLE:** `VALTYP` (refs constant `$03` in all 9 states)
+      and `SAVTXT` (refs pinned at `$F40F`) — 🔴 *"never moves"* here means the
+      question could not be PUT, not that there is nothing to honour.
+      ⏸ **DEFER:** `SAVSTK` — `NO-ORACLE` absolutely **and** `refsΔ=+0`; the
+      settling measurement is named (capture INSIDE a running statement).
+      🔴 **THE FILED TITLE WAS WRONG TWICE.** *"Nobody decided that"* is false for
+      `VALTYP`: [`basic/usr.asm:19`](basic/usr.asm:19) already carried a
+      **measured, oracle-locked** decision naming `$F663`. And *"per variable"* is
+      the wrong unit — signed off as **decide per variable, reason per group**.
+      🔴 **A knife on my own fix:** the new delta branch returned `DIFF-DELTA` for
+      every one-sided movement, so `SAVSTK` read as *"zerobas moves it wrongly"*
+      when the references never move it at all — the absolute branch had always
+      said `ZB-ONLY` for that shape, and **the two branches were answering the
+      same question differently**.
+      🔴 **THREE OF THE APPARATUS' OWN CONTROLS WERE INVERTED BY THIS FIX, AND
+      THE THIRD WAS MISSED — THE GATE CAUGHT IT, NOT THE AUTHOR.** `C-REPRO`
+      (`$F414` must DIVERGE) and `C-REPRO-2` (the value must live at `$E1C5`)
+      both asserted the state this slice deliberately ended, and were re-aimed at
+      the new known answer — each **strictly stronger** than what it replaced,
+      since the old `C-REPRO` passed whenever zerobas did *nothing at all* with
+      `$F414`. **`C-PRIV` was pinned on `DEFTBL['A']` at `$F153` — an address
+      this slice HONOURED away** — so it failed and voided the post-fix run,
+      correctly. Re-anchored on `ARYTAB $E1C0`, chosen *because* its verdict is
+      REJECT-GROUP and it therefore stays private by decision. ⚠️ The lesson was
+      written down **earlier in this same slice** than the instance that proved
+      it: a rule stated is not a rule applied.
+      New controls, all now firing: **C-PRIV** (the private segments must be
+      shown to MOVE), **C-REPRO-2**, and 🆕 **C-VACATED** — the five addresses the
+      honoured variables moved OUT of must go QUIET, because a leftover store at
+      an old address is a half-done relocation that every other check reports as
+      green.
+
+- [ ] **`DEFTBL_STR` SHOULD BE `3`, NOT `1`.** Filed 2026-08-01 by D-REHOME.
+      Both references store `$03` for a `DEFSTR`'d letter
+      (`make sysvarsweep ONLY=s10-defint,s11-defstr`); zerobas stores `$01`. It
+      is the **only** one of `DEFTBL`'s 26 bytes that differs — boot `$08`×26 and
+      `DEFINT A`→`$02` are already byte-identical, which is itself a correction
+      of what [`basic/sysvars.inc`](basic/sysvars.inc) implied.
+      ⚠️ **Deliberately NOT bundled with the address move**: the type code is
+      also a value WIDTH on the numeric side (2 int / 4 single / 8 double), and
+      `3` is likewise the string DESCRIPTOR size — so this changes a
+      type-dispatch constant and deserves its own knives, not a ride-along.
+
+- [ ] **`20 GOTO 99999` TOKENISES 3 BYTES SHORTER ON ZEROBAS.** Filed 2026-08-01
+      by D-REHOME as a **side effect of rows aimed at something else**: under
+      `s7-fired` both `ONELIN` ($801C vs $8019) and `ARYTAB` ($8024 vs $8021)
+      differ by exactly 3, while the identical program with `20 STOP` agrees
+      **byte-for-byte** on both. Neither variable is at fault — the pointers are
+      right and the text they point into is shorter.
+      ⚠️ Likely related to the standing *"`$0E` refs missing for LIST/DELETE/
+      AUTO/RENUM/ELSE"* item — `99999` exceeds 16 bits, so how a line-number
+      argument is stored is exactly the question. **Measure the stored bytes
+      (`mem_indirect` from `TXTTAB`), do not reason from the length.**
+
+- [ ] **HOW MUCH OF THE 311-BYTE `NO-ORACLE` BUCKET IS A POINTER?** Filed
+      2026-08-01 by D-REHOME. `FRETOP` sat in that bucket scored as *"no
+      reading"* while all three sides agreed **perfectly** on the movement
+      (−4/−20). The sweep now has a `SAME-DELTA` verdict, but it is only applied
+      in the re-homing table — **the 3199-byte census still classifies every byte
+      absolutely.** 🔴 `NO-ORACLE` is a verdict about the COMPARISON, not about
+      the variable, and the bucket is an over-count by an unmeasured amount.
+      ⚠️ A byte-wise delta pass needs a rule for what counts as a pointer PAIR;
+      naive per-byte deltas on a 16-bit cell will agree by luck on the high byte.
+
+- [ ] **zerobas' `VALTYP $E0C8` READS `$FF` AT COLD BOOT** — neither of its two
+      documented values (`0` numeric / `1` string). Filed 2026-08-01 by D-REHOME
+      from the new private-cell capture. Benign today (written before read at
+      every eval), so this is a *hygiene* item, not a defect — but it is exactly
+      the shape that becomes one when a new caller reads before writing.
 
 - [ ] **`dir-name` — A BLANK INSIDE A NAME IS NOT READ BACK IN DIRECT MODE.**
       Surfaced 2026-08-01 by the first full `--say` pass across all three sides

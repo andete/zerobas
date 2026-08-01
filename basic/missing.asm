@@ -572,7 +572,7 @@ trace_line:
 ; ===========================================================================
 ; rerr_sparse2 — the SECOND sparse-code arm (D-NOTOPEN2)
 ; ===========================================================================
-; in: A = ERRCODE. Reached only from rerr_sparse (basic/main.asm), which has
+; in: A = ERRFLG. Reached only from rerr_sparse (basic/main.asm), which has
 ; already failed to match 52 and 59, which in turn is reached only when the code
 ; is past the dense err_msgtab (1..25). Falls through to rerr_unprintable exactly
 ; as rerr_sparse used to, so an unknown code is unchanged.

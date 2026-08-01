@@ -88,6 +88,18 @@ hooks; the VG-8020 does not. The bucket is large and *legitimately* so. It means
 required". `$E1C5` reading `0` on one reference and `255` on the other is this
 bucket, and that is exactly why the address was free for zerobas to take.
 
+> 🔴 **RE-FILED 2026-08-01 by D-REHOME: "not measurable by this method" was the
+> right words for the WRONG REASON, and 311 is an over-count.** `NO-ORACLE` is a
+> verdict about the **comparison**, not about the variable. `FRETOP $F69B` lands
+> in this bucket because the two references hold different *absolute* values
+> ($F168 vs $DC5F) — their string spaces begin in different places — while they
+> agree **perfectly** on the quantity that carries the meaning: both move −4 for
+> a 4-byte string and −20 for a 20-byte one, and **so does zerobas**. An absolute
+> byte comparison of a pointer into machine-dependent RAM can only ever answer
+> "the machines disagree". The sweep now carries a **`SAME-DELTA`** verdict for
+> pointer-sized cells; **how much of the 311 it reclaims is unmeasured**, and
+> that is the open item, not this paragraph.
+
 ⚠️ **`INERT` is the `TAB(` trap on this surface.** Most of the work area reads
 identically on all three sides after a cold boot, much of it zero — and a machine
 that never touches a byte agrees with one that does. `PRINT TAB(99999)` raised
@@ -99,20 +111,31 @@ tally**, never counted as fidelity.
 
 ## 3. Layer 0 (static) — published NAME, private address
 
+> ✅ **SUPERSEDED 2026-08-01 by D-REHOME
+> ([`sysvar-rehoming-decisions.md`](sysvar-rehoming-decisions.md)).** All ten
+> members of this class now carry a **recorded decision beside their equate**.
+> Five were honoured (`ERRFLG`→`$F414`, `ERRLIN`→`$F6B3`, `ONELIN`→`$F6B9`,
+> `ONEFLG`→`$F6BB`, `DEFTBL`→`$F6CA`) at **zero ROM cost**; the static layer now
+> reports **43 at the published address, 5 re-homed**. The table below is the
+> state as measured for this report and is kept as the record of it.
+> 🔴 Seven of the ten turned out to be **measurably the same variable**, so the
+> class was never a set of different designs — it was one design at a different
+> address.
+
 Needs no emulator, no reference ROM and no stimulus. zerobas' `sysvars.inc`
 shares **46 symbol names** with the published map: **38 at the published address,
 8 re-homed.**
 
-| Symbol | zerobas | published |
-|---|---|---|
-| `VALTYP` | `$E0C8` | `$F663` |
-| `FRETOP` | `$E268` | `$F69B` |
-| `SAVTXT` | `$E1CF` | `$F6AF` |
-| `SAVSTK` | `$E1C3` | `$F6B1` |
-| `ONELIN` | `$E1C8` | `$F6B9` |
-| `ONEFLG` | `$E1CA` | `$F6BB` |
-| `ARYTAB` | `$E1C0` | `$F6C4` |
-| `DEFTBL` | `$F153` | `$F6CA` |
+| Symbol | zerobas | published | D-REHOME verdict |
+|---|---|---|---|
+| `VALTYP` | `$E0C8` | `$F663` | ❌ REJECT-UNOBSERVABLE |
+| `FRETOP` | `$E268` | `$F69B` | ❌ REJECT-GROUP |
+| `SAVTXT` | `$E1CF` | `$F6AF` | ❌ REJECT-UNOBSERVABLE |
+| `SAVSTK` | `$E1C3` | `$F6B1` | ⏸ DEFER |
+| `ONELIN` | `$E1C8` | `$F6B9` | ✅ **HONOURED** |
+| `ONEFLG` | `$E1CA` | `$F6BB` | ✅ **HONOURED** (+ sentinel `1`→`$FF`) |
+| `ARYTAB` | `$E1C0` | `$F6C4` | ❌ REJECT-GROUP |
+| `DEFTBL` | `$F153` | `$F6CA` | ✅ **HONOURED** |
 
 🔴 **This is the `ERRFLG` shape, eight more times, and it was sitting in the
 source the whole time** — the same freed `$E1Cx` window, the same "own choice"

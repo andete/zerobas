@@ -786,7 +786,7 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
                 ; sufficient, since STRTAB heap bodies had to survive a bare
                 ; relink; that is no longer true post-4c).
                 call    heap_reset
-                ; Error-handling S2a: ERRCODE/ERRLINE are NOT reset here. Empirically
+                ; Error-handling S2a: ERRFLG/ERRLIN are NOT reset here. Empirically
                 ; (adversarial verify pass, 2026-07-18) the reference PRESERVES ERR/ERL
                 ; across NEW/CLEAR/RUN -- they hold the last raised error's code/line
                 ; until the NEXT error, and are zeroed ONLY at cold boot. clear_vars

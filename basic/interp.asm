@@ -32,9 +32,9 @@ init:
                 ; On real hardware power-on RAM is garbage, so this explicit zero is
                 ; load-bearing (openMSX zero-fills RAM, hiding the omission).
                 xor     a
-                ld      (ERRCODE),a
+                ld      (ERRFLG),a
                 ld      hl,0
-                ld      (ERRLINE),hl
+                ld      (ERRLIN),hl
                 ; Error-handling S2b (packet §7, same cold-only hook, same
                 ; UNVERIFIED-hypothesis flag as ONELIN/ONEFLG's run_prog re-arm
                 ; above -- see sysvars.inc's own comment): a handler cannot
@@ -642,7 +642,7 @@ err_type_mismatch:                          ; D-MSGENC: 16 B -> 14 B (§4.2's
 ; Error-handling S2a (spec-basic-error-handling-s2a-packet.md §2/(c)): FPERR
 ; (1..10, this project's own internal deferred-error numbering) maps to the
 ; MSX ERR code via `fperr_to_err`, then funnels into `raise_error` (below) —
-; the single dispatcher that records ERRCODE/ERRLINE and prints the message
+; the single dispatcher that records ERRFLG/ERRLIN and prints the message
 ; (indexed from `err_msgtab` by ERR code, not FPERR). This REPLACES the old
 ; FPERR-indexed `fre_msgtab` (20 B, one dw per FPERR code) with a 10-byte
 ; byte map (FPERR -> ERR code) — every caller of fp_runtime_error has already
@@ -678,7 +678,7 @@ fp_runtime_error:
                 jp      raise_error
 ; --- fre_arymem_oom / fre_illegalfn_lc: the two FPERR codes (6/3) whose ------
 ; message can't flow through raise_error's generic err_msgtab lookup (see
-; above) -- each sets ERRCODE/record_errline with a fixed message pointer, then
+; above) -- each sets ERRFLG/record_errline with a fixed message pointer, then
 ; enters the SHARED raise_error_hl trap decision (S2b fix: they MUST go through
 ; the trap check, else SQR(x<0)/LOG (FPERR=3) and array OOM (FPERR=6) errors
 ; never trap under ON ERROR -- the bug the empirical pass caught). HL = message.
@@ -692,7 +692,7 @@ fre_illegalfn_lc:
                 ld      hl,err_illegal_fn
 fre_store_raise:                            ; shared tail (space fix): A=ERR code, HL=msg.
                 push    hl                  ; record_errline clobbers HL -- save the msg
-                ld      (ERRCODE),a
+                ld      (ERRFLG),a
                 call    record_errline
                 pop     hl
                 jp      raise_error_hl
@@ -770,7 +770,7 @@ err_resume_noerr:                           ; error-handling S2b (docs/spec-basi
 
 ; --- raise_error: the S2 dispatcher (docs/spec-basic-error-handling-s2b- ---
 ; packet.md §5.1). in: A = MSX ERR code (1..23). Never returns to its caller.
-; Records ERR/ERL (ERRCODE/ERRLINE, sysvars.inc), then decides trap vs abort:
+; Records ERR/ERL (ERRFLG/ERRLIN, sysvars.inc), then decides trap vs abort:
 ; ONELIN==0 (no handler) or ONEFLG!=0 (already inside a handler with no
 ; RESUME yet -> real-MSX forced abort with the INNER message) fall to
 ; rerr_report, the unchanged S1/S2a abort body (err_msgtab lookup -> fre_
@@ -785,7 +785,7 @@ err_resume_noerr:                           ; error-handling S2b (docs/spec-basi
 ; convention, a CURLINE-shaped value), exactly what rp_goto expects.
 ; Clobbers A, DE, HL (and SP, on the trap path only).
 raise_error:
-                ld      (ERRCODE),a
+                ld      (ERRFLG),a
                 call    record_errline
                 ; resolve the abort-fallback message FIRST (into HL), THEN decide
                 ; trap vs abort in the shared raise_error_hl tail. Message-first so
@@ -793,7 +793,7 @@ raise_error:
                 ; fre_arymem_oom) can enter raise_error_hl with THEIR OWN message and
                 ; still get the trap check (S2b fix: before this they jp'd fre_abort_
                 ; low directly, so SQR(-1)/LOG/OOM errors NEVER trapped).
-                ld      a,(ERRCODE)
+                ld      a,(ERRFLG)
                 dec     a                  ; 1-based code -> 0-based index; code 0 wraps
                                            ; to $FF (>= 25, so it too falls to unprintable
                                            ; -- ERROR n now validates 1..255 upstream, so
@@ -814,7 +814,7 @@ raise_error:
                 ld      d,(hl)
                 ex      de,hl              ; HL = the message string
 ; --- raise_error_hl: the shared S2b trap decision. in: HL = abort-fallback -----
-; message, ERRCODE/ERRLINE already set. ONELIN is read via DE so HL (the message)
+; message, ERRFLG/ERRLIN already set. ONELIN is read via DE so HL (the message)
 ; survives to the abort path. Take the trap iff a handler is armed (ONELIN!=0) and
 ; we are not already inside one (ONEFLG==0); otherwise fall to ra_abort with HL.
 raise_error_hl:
@@ -837,7 +837,13 @@ raise_error_hl:
                                              ; consumed by rp_goto's POST-exec arm, never by
                                              ; rp_lp; a plain jp rp_lp would re-run the ERRORING
                                              ; line and, ONEFLG now 1, force-abort)
-                ld      a,1
+                ld      a,$FF                ; D-REHOME: the references store $FF
+                                             ; here, MEASURED (sysvarsweep
+                                             ; s7-fired). Both readers test it
+                                             ; with `or a`, so this is a
+                                             ; zero-byte, control-flow-neutral
+                                             ; change that makes PEEK($F6BB)
+                                             ; match the reference exactly.
                 ld      (ONEFLG),a           ; inside a handler now
                 xor     a
                 ld      (RESUMEFLAG),a       ; rp_lp runs CURLINE (the handler) fresh
@@ -878,7 +884,7 @@ ex_resume_noerr:                    ; ERR 22 "resume without error" entry — fa
                                     ; fix: raise_error_forced's ONLY caller, so the
                                     ; separate `ld a,22`/`jp` block is merged in here)
 raise_error_forced:                          ; reached ONLY via ex_resume_noerr, A=22
-                ld      (ERRCODE),a
+                ld      (ERRFLG),a
                 call    record_errline
                 ld      hl,err_resume_noerr  ; ERR 22's message directly (this routine is
                 jp      ra_abort             ; ERR-22-only) -> ALWAYS abort, never trap.
@@ -889,7 +895,7 @@ raise_error_forced:                          ; reached ONLY via ex_resume_noerr,
                                              ; `10 RESUME` + RUN + CONT re-raises
                                              ; `RESUME without error in 10`.
 
-; --- record_errline: ERRLINE := run mode? CURLINE+2 : 65535 (direct) -------
+; --- record_errline: ERRLIN := run mode? CURLINE+2 : 65535 (direct) -------
 ; docs/spec-basic-error-handling-s2a-packet.md §3/(e). DIRECTF (D-2, D-1) is
 ; always valid here: it is DERIVED at rp_exec from CURLINE (program.asm,
 ; docs/spec-basic-direct-ctrl.md §5), which every line entry and every mid-line
@@ -908,11 +914,11 @@ record_errline:
                 inc     hl
                 ld      d,(hl)
                 ex      de,hl              ; HL = the erroring line number
-                ld      (ERRLINE),hl
+                ld      (ERRLIN),hl
                 ret
 rel_direct:
                 ld      hl,65535
-                ld      (ERRLINE),hl
+                ld      (ERRLIN),hl
                 ret
 
 ; --- err_msgtab: MSX ERR code (1..25) -> message string (docs/spec-basic- --
@@ -1066,13 +1072,13 @@ ex_resume:
                                             ; needed an IF/ELSE in the old dispatch
                                             ; chain; +1 B, repack-only, no behaviour.
                 xor     a                   ; RESUME resets ERR to 0 (ERL is KEPT --
-                ld      (ERRCODE),a         ; empirically pinned VG-8020, all four RESUME
+                ld      (ERRFLG),a         ; empirically pinned VG-8020, all four RESUME
                                             ; forms: `0 / 20`, not `0 / 0`). Placed on the
                                             ; trap-active path only (after the ONEFLG!=0
                                             ; check) so ex_resume_noerr (ERR 22) is
                                             ; untouched; a malformed RESUME still aborts
                                             ; with ONEFLG intact (raise_error re-sets its
-                                            ; own code, so ERRCODE=0 here is invisible).
+                                            ; own code, so ERRFLG=0 here is invisible).
                 inc     hl                  ; past RESUME_TOKEN
                 call    skip_spaces         ; A = (hl)
                 or      a                   ; bare RESUME / RESUME<EOL>?

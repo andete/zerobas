@@ -344,8 +344,8 @@ err_overflow:                               ; ERR 6 -- the shared tail, read on 
 ; arm and the error, and MAXFILES (like a plain CLEAR) DISARMS the handler on the
 ; reference. So there is no forced abort here, no ONEFLG store, and §5c's open
 ; ONEFLG question does not arise on this path at all.
-rerr_sparse:                                ; A = ERRCODE-1, CF set. Re-read the code
-                ld      a,(ERRCODE)         ; rather than compare 51/58: the table
+rerr_sparse:                                ; A = ERRFLG-1, CF set. Re-read the code
+                ld      a,(ERRFLG)         ; rather than compare 51/58: the table
                                             ; bound and this arm are already "one fact
                                             ; in two places" once (err_msgtab's own
                                             ; comment, and it DRIFTED) -- 3 bytes buys

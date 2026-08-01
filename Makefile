@@ -647,7 +647,7 @@ kwsweep: repack-machine
 sysvarsweep: repack-machine
 	python3 probes/basic/basic_probe_sysvarsweep.py \
 	        --zb-machine $(REPACK_MACHINE) --cbios $(CBIOS)/src/systemvars.asm \
-	        $(if $(ONLY),--only '$(ONLY)',)
+	        $(if $(ONLY),--only '$(ONLY)',) $(if $(SIDES),--sides '$(SIDES)',)
 
 # --- Logical-operator characterization + gate (AND/OR/XOR/EQV/IMP/NOT) ------------
 # `logicops-characterize` is the MEASUREMENT run behind

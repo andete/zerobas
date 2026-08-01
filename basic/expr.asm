@@ -589,15 +589,15 @@ ev_f_err:
 ; shape as ev_f_digit/byte/word above, so the outer eval()'s FACTYP=2 (int)
 ; setting on entry already gives these the right numeric domain; no extra
 ; widening code is needed here.
-ev_f_errfn:                                 ; ERR -> ERRCODE (1 B) widened to DE
-                ld      a,(ERRCODE)
+ev_f_errfn:                                 ; ERR -> ERRFLG (1 B) widened to DE
+                ld      a,(ERRFLG)
                 ld      e,a
                 ld      d,0
                 inc     ix
                 ret
-ev_f_erlfn:                                 ; ERL -> ERRLINE (word), widened to FAC
+ev_f_erlfn:                                 ; ERL -> ERRLIN (word), widened to FAC
                                             ; (NOT the plain-DE int16 path ev_f_digit/
-                                            ; byte/word use): ERRLINE holds an UNSIGNED
+                                            ; byte/word use): ERRLIN holds an UNSIGNED
                                             ; word 0..65535 (a real line number can
                                             ; exceed 32767, and the direct-mode sentinel
                                             ; IS 65535), which would print as a negative
@@ -614,10 +614,10 @@ ev_f_erlfn:                                 ; ERL -> ERRLINE (word), widened to 
                                             ; flt_to_int16) -- FACTYP=8 makes print.asm's
                                             ; exp_num take the float path (flt_out reads
                                             ; FAC), rendering the true unsigned value.
-                ld      hl,(ERRLINE)
+                ld      hl,(ERRLIN)
                 jr      ev_f_uword
 ; ev_f_time -- TIME (docs/spec-basic-time.md §3.2). The SAME unsigned-word-to-FAC
-; problem ERL already solves, over JIFFY instead of ERRLINE, so it shares the tail
+; problem ERL already solves, over JIFFY instead of ERRLIN, so it shares the tail
 ; below: 7 B here against 19 duplicated, with no restructuring on ERL's side
 ; (cf. [[generalisation-not-free-at-two-callers]] -- the case for sharing has to be
 ; this trivial to be free).

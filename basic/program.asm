@@ -104,7 +104,7 @@ dl_store:
                 cp      low (LINENO_CEIL+1)
                 jr      c,dl_lnok
                 ld      a,2                 ; ERR 2 -- measured, not assumed
-                ld      (ERRCODE),a
+                ld      (ERRFLG),a
                 ld      hl,err_syntax       ; low-region string pool (arrays.asm)
                 jr      dl_ovf_report       ; reports and returns to the REPL. Like
                                             ; the overflow arm above this reports
@@ -139,7 +139,7 @@ dl_overflow:
                 ; REPL, with the SAVSTK anchor of whatever ran last, that would jump
                 ; INTO a finished program on a mistyped line. The reference cannot trap
                 ; this either: it is raised by the editor, not by a running program.
-                ; ERRCODE is still set so PRINT ERR reads 25, as measured.
+                ; ERRFLG is still set so PRINT ERR reads 25, as measured.
                 ; TKOVF=25 CARRIES THE ERR CODE rather than a second constant
                 ; here -- page 1 had 10 free bytes when this landed, so the reason
                 ; code and the error code are deliberately the same byte.
@@ -147,7 +147,7 @@ dl_overflow:
                 ld      hl,err_overflow     ; the float arm's message (the fallthrough)
                 cp      1
                 jr      z,dl_ovf_report
-                ld      (ERRCODE),a         ; A = 25: PRINT ERR reads it, as measured
+                ld      (ERRFLG),a         ; A = 25: PRINT ERR reads it, as measured
                 ld      hl,err_linebuf_overflow ; low-region string pool (basic/main.asm)
 dl_ovf_report:
                 jp      print_msg           ; reports and returns to the REPL (D-MSGENC:

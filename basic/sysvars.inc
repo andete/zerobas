@@ -816,6 +816,17 @@ TOKMAX_BODY     equ     314     ; logical ceiling: a longer body is REFUSED (ERR
 ; What lives here now, low to high: ARYTAB $E1C0, DIRECTF $E1C2, SAVSTK $E1C3,
 ; SAVTXT ..$E1D1, ZTRAP $E1D1..$E207.
 ;
+; ⚠️ AND THERE IS NOW A HOLE: $E1C5..$E1CA (6 B). D-REHOME (2026-08-01,
+; docs/sysvar-rehoming-decisions.md) moved ERRCODE/ERRLINE/ONELIN/ONEFLG OUT of
+; this window to their PUBLISHED addresses ($F414/$F6B3/$F6B9/$F6BB), leaving
+; ERRRESUME $E1CB and SAVTXT $E1CF above the gap. The 6 bytes are NOT reclaimed
+; and NOT re-packed -- deliberately, because repacking this window is exactly the
+; kind of space-driven move that put the published variables here in the first
+; place. If you want them, take them as a decision, not as tidying.
+; 🔴 The probe asserts these six stay QUIET (C-VACATED in
+; probes/basic/basic_probe_sysvarsweep.py): a leftover store at a vacated address
+; is a half-done relocation that every other check would report as green.
+;
 ; ARYTAB is the ONE new STORED live cell the
 ; target model needs (§2/§4): scalar base is DERIVED as (PRGEND)+2 exactly
 ; like the array base used to be; ARYTAB = end of the scalar region = base
@@ -824,6 +835,23 @@ TOKMAX_BODY     equ     314     ; logical ceiling: a longer body is REFUSED (ERR
 ; ary_alloc, sub/strheap.asm strheap_aryend/sg_walk_arrays, basic/arrays.asm
 ; ary_reset). Homed at the foot of the now-dead VARTAB span so no new RAM
 ; claim was needed anywhere else (own choice -- just-freed RAM).
+; ❌ RE-HOMING DECISION: **REJECT-GROUP** — stays at $E1C0, published address
+; $F6C4 (docs/sysvar-rehoming-decisions.md §3). ⚠️ NOT rejected on semantics:
+;   SEMANTICS  SAME-VAR, BYTE-IDENTICAL to both references in all four
+;              direct-mode states ($8003 -> $800E -> $8024, and -> $8009 for a
+;              string scalar). zerobas' unified variable chain reproduces the
+;              reference's variable-table layout exactly. It is the same
+;              variable at a different address, measured.
+;   WHY REJECT The published contract is a CHAIN, not a cell:
+;              TXTTAB $F676 <= VARTAB $F6C2 <= ARYTAB $F6C4 <= STREND $F6C6, and
+;              a consumer computes array space as STREND-ARYTAB. zerobas has NO
+;              stored VARTAB (derived as (PRGEND)+2, below) and NO STREND at
+;              all. 🔴 Publishing a plausible ARYTAB beside two power-on ZEROS
+;              yields a large NEGATIVE length — a confident wrong answer — where
+;              today a consumer gets 0-0 and an obviously dead reading.
+;              Honouring one member of a group its consumers read as a set is
+;              WORSE than honouring none.
+;   ⚠️ To revisit, cost publishing the WHOLE chain; do not move ARYTAB alone.
 ARYTAB          equ     $E1C0   ; live 2-byte cell: scalar-region end == array
                                 ; base (repack only; VARTAB's own dead RAM)
 ; Error-handling S1 (docs/spec-basic-error-handling.md §5.5): the freed VARTAB
@@ -836,6 +864,19 @@ DIRECTF         equ     $E1C2   ; 1 = executing a DIRECT-mode line, 0 = running 
                                 ; error reads it — no cold-boot init needed.
 ; Error-handling S2b (docs/spec-basic-error-handling-s2b-packet.md §3): the
 ; trap + RESUME state. SAVSTK claims the $E1C3/C4 window S2a reserved for it.
+; ⏸ RE-HOMING DECISION: **DEFER** — stays at $E1C3, published address $F6B1
+; (docs/sysvar-rehoming-decisions.md §3). ⚠️ It is not "different", it is
+; UNMEASURED, and the difference matters:
+;   SEMANTICS  NO READING. $F6B1 is NO-ORACLE on absolute value ($F09E on the
+;              VG-8020 vs $DB95 on the CF-3300 — two different stack tops) AND
+;              refsΔ=+0 under every stimulus, so the delta route that rescued
+;              FRETOP does not rescue this one either. The references simply do
+;              not move it at any moment this instrument can capture.
+;   WHAT WOULD SETTLE IT: a capture taken INSIDE a running statement rather than
+;              at a prompt (the holds/breakpoint mechanism basic_probe_bload.py
+;              already uses). Another direct-mode line will not do it.
+;   ⚠️ Until then, "zerobas' SAVSTK is an SP anchor and the published one might
+;      not be" stays an OPEN question, not an answered one.
 SAVSTK          equ     $E1C3   ; 2 B: SP anchor for the trap unwind. Written by
                                 ; run_prog / dispatch_line's direct-exec path
                                 ; before any statement runs; raise_error's trap
@@ -844,12 +885,45 @@ SAVSTK          equ     $E1C3   ; 2 B: SP anchor for the trap unwind. Written by
                                 ; handler line (the trap fires from arbitrary
                                 ; call depth). No cold-init needed (written
                                 ; before read, same as DIRECTF).
-ERRCODE         equ     $E1C5   ; 1 B: last error's MSX ERR code (0 = none yet).
+; --- ✅ RE-HOMING DECISION (D-REHOME, docs/sysvar-rehoming-decisions.md) -----
+; These two were `ERRCODE $E1C5` / `ERRLINE $E1C6` -- the published variables
+; under private names at private addresses. DECISION: **HONOUR**, name and
+; address, and the reasons are measured, not argued:
+;   SEMANTICS  SAME-VAR, exactly. Both references and zerobas move ERRFLG 00->08
+;              under `GOTO 99999` and ERRLIN 0000->FFFF in direct mode /
+;              ->0014 (=20) from a stored line -- the 65535 direct-mode
+;              convention included (make sysvarsweep, s1-err + s7-fired).
+;   OBSERVER   🔴 `ERR` READS $F414 on a real MSX: `POKE&HF414,0 : PRINT ERR`
+;              prints 0 on BOTH references. That is a READ-BACK, so a write-only
+;              MIRROR would satisfy PEEK and FAIL POKE -- mirroring is refuted
+;              here by an already-filed measurement, and only relocation works.
+;   COST       ZERO ROM bytes: every access is through the symbol.
+;   PUB-FREE   measured -- zerobas' byte at each published address never moved
+;              in any of the 9 swept states, so nothing (zerobas or C-BIOS)
+;              claims it.
+ERRFLG          equ     $F414   ; 1 B: last error's MSX ERR code (0 = none yet).
                                 ; Set by raise_error; read by the ERR function.
-ERRLINE         equ     $E1C6   ; 2 B: last error's line number, or 65535 if it
+                                ; ⚠️ The PUBLISHED address. Do not re-home it
+                                ; back into the $E1Cx window for space: that is
+                                ; how it got there the first time, and the
+                                ; placement was never a decision to reject the
+                                ; standard address.
+ERRLIN          equ     $F6B3   ; 2 B: last error's line number, or 65535 if it
                                 ; happened in direct mode. Set by record_errline;
-                                ; read by the ERL function.
-ONELIN          equ     $E1C8   ; 2 B: ON ERROR handler line's LINK address (the
+                                ; read by the ERL function. PUBLISHED address.
+; ✅ RE-HOMING DECISION: **HONOUR** ($E1C8 -> the published $F6B9).
+;   SEMANTICS  SAME-VAR. Under `10 ON ERROR GOTO 100 / 20 STOP / 100 STOP / RUN`
+;              the references and zerobas both store $8015 -- byte-identical.
+;              🟢 And the ARMED-vs-FIRED control pair is what proves this is
+;              ONELIN's own reading: ONELIN moves in BOTH s6-armed and s7-fired
+;              (it is ARMED state) while ONEFLG/ERRFLG/ERRLIN move in s7 only.
+;              ⚠️ Under s7 the two differ ($801C vs $8019) and that is NOT an
+;              ONELIN divergence: `20 GOTO 99999` tokenises 3 bytes shorter on
+;              zerobas, so the pointer is right and the text it points into is
+;              what differs. Filed separately -- do not "fix" ONELIN for it.
+;   OBSERVER   PEEK: whether a handler is armed, and where.
+;   COST       ZERO ROM bytes (all access symbolic). PUB-FREE measured.
+ONELIN          equ     $F6B9   ; 2 B: ON ERROR handler line's LINK address (the
                                 ; find_line_bc / GOTOTGT-shaped value, NOT the
                                 ; token body) — 0 = no handler armed. Written by
                                 ; ex_on_error; read by raise_error's trap
@@ -873,7 +947,20 @@ ONELIN          equ     $E1C8   ; 2 B: ON ERROR handler line's LINK address (the
                                 ; reference disarms on an APPEND that moves
                                 ; nothing (the `onelin_edit_append` gate row is
                                 ; what falsified that reading).
-ONEFLG          equ     $E1CA   ; 1 B: 1 = currently inside a handler (no RESUME
+; ✅ RE-HOMING DECISION: **HONOUR** ($E1CA -> the published $F6BB), AND the
+; sentinel with it.
+;   SEMANTICS  SAME-ROLE, then SAME-VAR. Measured under s7-fired the references
+;              store **$FF**, not 1 -- so the address was one of two divergences
+;              and the flag VALUE was the other. Both readers here test it with
+;              `or a` (boolean), and the single setter was `ld a,1`, so matching
+;              the reference's $FF costs ZERO bytes and cannot change control
+;              flow. Honouring the address while leaving `1` would have
+;              published a value no reference ever holds.
+;   OBSERVER   PEEK: "am I inside a handler". ⚠️ NOT group-bound -- unlike the
+;              ARYTAB pointer chain, a one-byte boolean is read on its own, so
+;              the REJECT-GROUP argument does not reach it.
+;   COST       ZERO ROM bytes. PUB-FREE measured.
+ONEFLG          equ     $F6BB   ; 1 B: $FF = currently inside a handler (no RESUME
                                 ; yet) — a second error while set is a forced
                                 ; abort with the INNER message (real-MSX nested-
                                 ; error semantics, via raise_error_forced/rerr_
@@ -905,6 +992,15 @@ ERRRESUME       equ     $E1CB   ; 4 B: resume context captured at trap time —
                                 ; trap before RESUME can ever read it — ONEFLG=0
                                 ; guards a premature read via "RESUME without
                                 ; error", ERR 22).
+; ❌ RE-HOMING DECISION: **REJECT-UNOBSERVABLE** — stays at $E1CF, published
+; address $F6AF (docs/sysvar-rehoming-decisions.md §3).
+;   SEMANTICS  MEASURED: both references hold a CONSTANT $F40F at $F6AF in all
+;              nine swept states. By the time the machine is back at a prompt —
+;              the only instant this instrument captures — the reference's
+;              SAVTXT points at its own line buffer, so its LIVE value is not
+;              reachable and no BASIC-visible channel reads it.
+;   ⚠️ "Never moves" here means UNOBSERVABLE, not INERT. It reads like "nothing
+;      to honour" and it means the opposite: the question could not be put.
 SAVTXT          equ     $E1CF   ; 2 B: the CURRENT statement's text pointer,
                                 ; refreshed at every exec_stmt entry (line start
                                 ; AND after every ':' via ex_sep) — mirrors
@@ -1136,6 +1232,24 @@ STRMAX          equ     255     ; repack build: string heap (slice-4a §8)
 ; a factor, VALTYP says whether the result is a number (0; value in DE as usual)
 ; or a string (1; STRPTR points at a [len:1][bytes...] descriptor). Kept minimal:
 ; only LET and PRINT consult it; arithmetic stays numeric-only.
+; ❌ RE-HOMING DECISION: **REJECT-UNOBSERVABLE** — stays at $E0C8, published
+; address $F663 (docs/sysvar-rehoming-decisions.md §3).
+;   SEMANTICS  MEASURED: both references hold a CONSTANT $03 at $F663 in all
+;              NINE swept states. VALTYP is a TRANSIENT — its value at any
+;              instant a PEEK could run is an artifact of the line editor, not
+;              of the stimulus. There is nothing there to be right about.
+;   OBSERVER   exactly one, and its decision ALREADY EXISTS, measured: the USR
+;              calling convention (basic/usr.asm, oracle-locked by
+;              probes/basic/basic_probe_usr.py). The reference passes the arg in
+;              DAC+2..3 and sets VALTYP=$02; zerobas is integer-only, passes it
+;              in HL, and leaves DAC/VALTYP untouched — a deliberate own-design
+;              divergence. 🔴 THE ITEM WAS FILED AS "nobody decided that"; for
+;              this one variable somebody did, just not HERE. That is the whole
+;              reason this comment exists.
+;   ⚠️ Honouring the ADDRESS without the 2/3/4/8 float type ENCODING would
+;      publish a value no reference holds — worse than the dead byte today.
+;   ⚠️ Its cold-boot value here is $FF, which is NEITHER of the two documented
+;      values below. Benign (written before read), filed in TODO.md.
 VALTYP          equ     $E0C8   ; 0 = numeric result, 1 = string result (1 byte)
 STRPTR          equ     $E0C9   ; pointer to the [len][bytes] descriptor (2 bytes)
 ; PRINT output destination (Phase 2 PRINT#). 0 = screen (CHPUT), 1 = the open
@@ -1213,6 +1327,23 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ; the old STRTAB+40 B) so every other repack-side address below (RVDESC,
 ; STRSCR, SH_*, TEMPTOP, the temp pool, ISRCH_*, TMISMATCH, MIDS_DEST) stays
 ; at its EXACT pre-4c address — no reshuffle, no reflow.
+; ❌ RE-HOMING DECISION: **REJECT-GROUP** — stays at $E268, published address
+; $F69B (docs/sysvar-rehoming-decisions.md §3). ⚠️ NOT rejected on semantics:
+;   SEMANTICS  SAME-DELTA, exact. Both references AND zerobas move it by -4 for
+;              a 4-byte string and -20 for a 20-byte one (sysvarsweep s8/s9), so
+;              the published FRETOP is an ALLOCATION POINTER and so is this one.
+;              The shared name turned out to be the shared variable — measured,
+;              not assumed.
+;   WHY REJECT 🔴 The measurement itself shows the ABSOLUTE value carries no
+;              portable meaning: the two references disagree ($F168 vs $DC5F)
+;              because their string spaces begin in different places. Only the
+;              difference against MEMSIZ $F672 / STKTOP $F674 means anything,
+;              and zerobas defines NEITHER. Publishing one end of a subtraction
+;              is the ARYTAB failure again.
+;   ⚠️ This pair is also why the sweep grew a SAME-DELTA verdict: read as
+;      absolute bytes it scored NO-ORACLE, i.e. "no reading", while all three
+;      sides agreed perfectly on the movement. NO-ORACLE is a verdict about the
+;      COMPARISON, not about the variable.
 FRETOP          equ     $E268               ; heap low boundary; heap occupies
                                             ; [FRETOP,C), grows DOWN as strings alloc.
                                             ; Reset to the ceiling C at cold start/
@@ -2702,10 +2833,33 @@ LHS_VARTYPE     equ     $F152   ; ex_let (interp.asm): the LHS variable's resolv
 ; (DEFTBL_STR). Written by DEFINT/DEFSNG/DEFDBL/DEFSTR ranges (ex_def_type,
 ; usr.asm); consulted at every reference by var_name_key (numeric default type)
 ; and var_str_type (string vs numeric). Reset to all-8 (double) by clear_vars
-; at INIT/RUN. Own-choice free RAM, the $F153.. tail below DRVA_DPB ($F195).
-DEFTBL          equ     $F153   ; per-letter default-type map, A..Z (26)
+; at INIT/RUN.
+; ✅ RE-HOMING DECISION: **HONOUR** ($F153 -> the published $F6CA). It used to
+; read "own-choice free RAM, the $F153.. tail below DRVA_DPB ($F195)" -- which
+; is a SPACE decision, and there was no decision about the standard address.
+;   SEMANTICS  SAME-VAR for 25 of 26 bytes, and this REFUTED the source. The
+;              `DEFTBL_STR equ 1` sentinel below reads like an own-design 0/1
+;              encoding; MEASURED, zerobas' table is byte-identical to the
+;              references' -- boot = 26x$08 (double) on all three sides, and
+;              `DEFINT A` writes $02 on all three. Exactly ONE value differs:
+;              `DEFSTR A` gives $03 on both references and $01 here.
+;   OBSERVER   PEEK($F6CA + letter): a variable's default type. The published
+;              encoding is a FLOAT TYPE CODE and zerobas already uses it for
+;              three of the four codes.
+;   COST       ZERO ROM bytes -- every access is `ld hl,DEFTBL` + index/fill.
+;              PUB-FREE measured across all 26 bytes.
+; ⚠️ Honouring the ADDRESS does not depend on fixing the sentinel, and the two
+; are deliberately NOT bundled: 1 -> 3 changes a type-dispatch constant that is
+; also a value WIDTH on the numeric side, which deserves its own knives. Today
+; all 26 published bytes read 00; after this they read the reference's values
+; except for DEFSTR'd letters, which is strictly closer. Filed in TODO.md.
+DEFTBL          equ     $F6CA   ; per-letter default-type map, A..Z (26) --
+                                ; the PUBLISHED address ($F6CA..$F6E3)
 DEFTBL_STR      equ     1       ; sentinel value: an unsuffixed name is a STRING var
                                 ; (not a numeric width; distinct from 2/4/8)
+                                ; ⚠️ MEASURED DIVERGENCE: both references store
+                                ; $03 here. Not changed with the address move --
+                                ; see the note above. TODO.md carries it.
 ; --- Math pack slice 1a RAM (repack build only) ------------------------------
 ; docs/spec-basic-math-pack.md §9.2. Own-choice free RAM, the $F16D.. tail
 ; below DRVA_DPB ($F195), immediately following DEFTBL (ends $F153+26=$F16D).
