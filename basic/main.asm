@@ -300,72 +300,44 @@ __MEAS_LOW_END:
 ; implementation time, page 1 had 10 B free and the low region 32 B, against a
 ; 42-byte need — so the choice was not between homes, it was a split across both.
 ;
-; 🔴 THE OVERLAP IS GONE -- D-MSGEXACT (docs/spec-basic-msgexact.md §3.2) BROKE IT,
-; AND THE REFERENCE IS WHAT FORCED THAT. It used to be load-bearing: ERR 25's text
-; ENDED with ERR 6's, so `err_overflow` was a pointer 12 bytes into
-; `err_linebuf_overflow` -- 23 B (later 21 B) instead of 34. The previous comment
-; here left the correct instruction for this edit: "Split them back into two
-; independent `db`s before changing either, and re-measure both walls." Done, and
-; both walls re-measured from clean.
+; 🎯 D-MSGMIGRATE EMPTIED THIS POOL. `Line buffer overflow` (ERR 25) and
+; `Overflow` (ERR 6) are now em_linebuf_overflow / em_overflow in sub/errmsg.asm,
+; keyed on ERRFLG. Both of their readers -- err_msgtab and program.asm's
+; dl_overflow -- became ERRFLG-keyed in the same edit, which is what let BOTH go
+; rather than only the table-reached one.
 ;
-; WHY IT CANNOT SURVIVE EXACT WORDING: measured on both references, ERR 6 is
-; `Overflow` (capital) and ERR 25 is `Line buffer overflow` (lowercase tail). One
-; blob cannot spell a letter two ways, so the sharing is not a placement choice
-; any more -- it is arithmetically impossible. Cost is exactly the 9 B D-MSGENC
-; §4.4 predicted for the split (21 + 9 vs 21), and D-MSGEXACT's carve funds it.
+; 🔴 THE SECOND ONE ONLY MOVED BECAUSE A DEFECT WAS FIXED, AND THAT IS WORTH
+; KEEPING HERE. dl_overflow's float arm stored NO ERRFLG at all, so `PRINT ERR`
+; after `20 A=1E99` read a stale code -- while its sibling arm had been
+; deliberately fixed to read 25. Measured on both references 2026-08-02: they
+; read 6. The fix (TKOVF carries 6 instead of a bare flag, sub/tkfloat.asm) made
+; the arms symmetric, deleted dl_overflow's branch, and only THEN was err_overflow
+; migratable. docs/spec-basic-msgmigrate.md §6.4.
 ;
-; ⚠️ STILL TWO READERS, STILL NOT NEAR THIS LINE: `err_overflow` is read by
-; err_msgtab entry 6 AND program.asm's dl_overflow float arm. They are now
-; genuinely independent strings, so re-wording either is safe -- but re-measure
-; the walls, because neither is spare change.
-err_linebuf_overflow:
-                db      "Line buffer overflow",0    ; ERR 25 (D-LINEMAX R-2)
-err_overflow:                               ; ERR 6 -- independent since D-MSGEXACT
-                db      "Overflow",0
+; ⚠️ D-MSGEXACT's note on why these two strings cannot SHARE storage still holds
+; and now lives sub-side: ERR 6 is `Overflow` (capital) and ERR 25 is `Line buffer
+; overflow` (lowercase tail), so one blob cannot spell a letter two ways. The
+; overlap that D-LINEMAX relied on is arithmetically impossible, not merely
+; unfashionable -- do not re-attempt it in sub/errmsg.asm either.
 
-; --- S-FCH-2: the SPARSE disk-range error codes (docs/spec-basic-filechan- ---
-; alloc.md §5c, redesigned 2026-07-29). err_msgtab is DENSE and stops at 25;
-; reaching 52/59 densely would cost 34 more words. These two codes are the only
-; disk-range codes any zerobas verb raises, so raise_error's out-of-table arm
-; comes here instead of straight to `rerr_unprintable`, and a two-entry
-; straight-line compare beats both a dense extension and a walked side-table.
+; --- S-FCH-2's sparse arm: DELETED (D-MSGMIGRATE) ---------------------------
+; `rerr_sparse` (23 B here) and `rerr_sparse2` (27 B, basic/missing.asm) existed
+; only to choose between five message strings for the out-of-dense codes
+; 52/59/55/58/61. All five migrated to the sub-ROM tenant, at which point every
+; arm of both routines read `ld hl,err_subhosted / jp raise_error_hl` -- which is
+; exactly what `rerr_unprintable` (basic/interp.asm) already was. So raise_error's
+; out-of-table test now jumps straight there and 50 B of dispatch is gone.
 ;
-; Sited in the low region, whole: page 1 pays exactly ONE byte for this (the
-; `jr` -> `jp` at raise_error's range test). Both raisers live here too, so the
-; six OPEN reject sites in files.asm keep their existing 3-byte `jp cc,<label>`.
+; ⚠️ WHAT HAD TO BE SHOWN UNCHANGED WAS THE TRAP DECISION, NOT THE MESSAGE. Both
+; deleted arms ended at `jp raise_error_hl`, and so does rerr_unprintable, so
+; 52/55/58/59/61 still trap into an armed ON ERROR handler exactly as D-NOTOPEN2
+; measured on the CF-3300. The two raisers below are untouched: they enter through
+; `raise_error`, never through the selector.
 ;
-; ⚠️ BOTH CODES ARE ORDINARY TRAPPABLE ERRORS, and that is a MEASURED CORRECTION
-; to §5c, which read the gate's `err_badchan` row as "ERR 52 is not trappable"
-; and specced a raiser that forced ONEFLG=1 to reach raise_error's abort arm.
-; Measured on the CF-3300 2026-07-29, two unconfounded ways:
-;   `10 ON ERROR GOTO 100 : 20 OPEN"HI.TXT" FOR INPUT AS #2` -> handler runs, ERR 52
-;   ...AS #0                                                 -> handler runs, ERR 52
-;   `20 B=EOF(1)` on a never-opened channel                  -> handler runs, ERR 59
-; The err_badchan row's non-trap is a CONFOUND: it types `MAXFILES=1` between the
-; arm and the error, and MAXFILES (like a plain CLEAR) DISARMS the handler on the
-; reference. So there is no forced abort here, no ONEFLG store, and §5c's open
-; ONEFLG question does not arise on this path at all.
-rerr_sparse:                                ; A = ERRFLG-1, CF set. Re-read the code
-                ld      a,(ERRFLG)         ; rather than compare 51/58: the table
-                                            ; bound and this arm are already "one fact
-                                            ; in two places" once (err_msgtab's own
-                                            ; comment, and it DRIFTED) -- 3 bytes buys
-                                            ; a test that reads as the code it names.
-                ld      hl,err_bad_filenum
-                cp      52
-                jr      z,rsp_go
-                ld      hl,err_file_notopen
-                cp      59
-                jr      z,rsp_go
-                jp      rerr_sparse2        ; D-NOTOPEN2's 55/58/61, then unprintable.
-                                            ; Sited in page 1 (basic/missing.asm tail)
-                                            ; because those three cost 72 B and THIS
-                                            ; region is the hard wall -- so this line
-                                            ; is a 0-byte change to the low region.
-rsp_go:
-                jp      raise_error_hl      ; the SHARED trap decision -- so 52/59 trap
-                                            ; into an armed handler like every other
-                                            ; code, which is what the reference does
+; 🎯 AND THE SELECTOR WAS ITS OWN REFUTATION. `rerr_sparse` opened with
+; `ld a,(ERRFLG)` -- re-reading the error code rather than trusting A. That single
+; line is what refutes the filed claim that these five were unmigratable "because
+; rerr_sparse reaches them by its own `ld hl`, a different key". Same key.
 
 ; The two raisers. Sited here (not in files.asm/expr.asm) so page 1 pays nothing
 ; for them; reached by ordinary in-slot `jp` from page 1, both regions mapped.
@@ -379,28 +351,17 @@ err_notopen_raise:                          ; EOF()/LOF() on a closed channel (E
                 ld      a,59
                 jp      raise_error
 
-; D-MSGENC: new messages are phrase-encoded too. Neither of these can use any of
-; the four ORIGINAL escapes, so this slice adds the fifth, MSGESC_FILE ("file "),
-; which both of them share -- 30 B of literal text becomes 22 B plus a 6 B table
-; entry. ⚠️ THE DIRECTION OF THAT TRADE WAS DECIDED BY THE MEASUREMENT, NOT BY
-; THE ARITHMETIC: the phrase table is PAGE 1 and these strings are LOW REGION, so
-; on the FIRST clean build (page 1 19 B free, low 1 B free) it spends the roomy
-; wall to relieve the scarce one. Costed the other way round from an estimate it
-; would have read as a 2-byte loss and been declined.
-; ⚠️ D-MSGEXACT: ONLY ONE OF THESE STILL USES THE ESCAPE, AND THE REASON IS THE
-; ESCAPE'S OWN CASE. MSGESC_FILE is "file " -- lowercase, because the phrase
-; escapes deliberately exclude a message's LEADING letter so each message can
-; keep its own case (basic/sysvars.inc). ERR 52's reference text is `Bad file
-; number`, where "file " is mid-string, so it still shares the phrase. ERR 59's
-; is `File not OPEN` -- the phrase would be the FIRST thing printed, and it
-; cannot supply the capital. So 59 goes back to a plain literal: 10 B -> 14 B.
-; This is one of the three places in the whole slice where exact wording costs
-; anything (docs/spec-basic-msgexact.md §3.2); every other change is a case flip
-; inside an existing literal and is byte-neutral.
-err_bad_filenum:
-                db      "Bad ",MSGESC_FILE,"number",0   ; ERR 52 -- 16 B -> 12 B
-err_file_notopen:
-                db      "File not OPEN",0               ; ERR 59 -- lost the escape, +4 B
+; D-MSGMIGRATE: err_bad_filenum (ERR 52) and err_file_notopen (ERR 59) are gone
+; from main -- em_bad_filenum / em_file_notopen in sub/errmsg.asm. err_bad_filenum
+; was one of MSGESC_FILE's two users; err_bad_filemode (basic/missing.asm) was the
+; other, and it migrated too, so that phrase is deleted from msg_phrase_tab.
+;
+; ⚠️ D-MSGEXACT's reading about ERR 59 is preserved because it still constrains the
+; TEXT, which the move does not change: `File not OPEN` cannot use the "file "
+; phrase, because the escapes deliberately exclude a message's LEADING letter so
+; each message spells its own case, and here the phrase would be the first thing
+; printed. Sub-side the point is moot -- the tenant stores plain strings -- but it
+; is the reason the two messages ever differed in encoding.
 
 ; --- overflow guard: the image must not overrun the $8000 ceiling ----------
 ; $8000 is the top of slot-0 page 1. If a future feature pushes code past it, the

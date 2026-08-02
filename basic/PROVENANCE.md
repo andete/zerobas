@@ -2220,6 +2220,14 @@ per-verb, not one code. 🔴 And `FIELD` on a sequential channel used to be acce
 check rather than a wrong code. ERR **55**/**58**/**61** are new to zerobas and are
 served by `rerr_sparse2` (basic/missing.asm tail), a second sparse arm sited in
 page 1 so the page-0 low region paid **zero** bytes for them.
+⚠️ **`rerr_sparse2` NO LONGER EXISTS** — D-MSGMIGRATE (2026-08-02) moved all three
+messages into the sub-ROM tenant (`sub/errmsg.asm`, keyed on ERRFLG), at which
+point every arm of that routine read `ld hl,err_subhosted / jp raise_error_hl`,
+which is what `rerr_unprintable` already was, and both sparse arms were deleted.
+**The measurements in this table are unchanged and still binding** — they are what
+the tenant's rows now have to honour, and `sparse-trap`
+(`basic_probe_msgexact.py`) is what pins that these codes still TRAP rather than
+print. Only the routing moved.
 
 ✅ The OUT-OF-RANGE class **LANDED 2026-07-31** as D-BADFNUM
 (`docs/spec-basic-badfnum-channel-class.md`). It was filed as three rows and swept

@@ -38,21 +38,24 @@ LOW = 0x2812                    # basic/main-reloc.asm ROM_BASE: image offset or
 # §9.5 pins its four strings to the reference's capitalised wording, while the
 # D-2 house strings are lowercase, and MSGESC_UTOF/MSGESC_ILLFN are shared
 # ACROSS that split (each message spells its own first letter).
+# 🔴 D-MSGMIGRATE REMOVED SIXTEEN ENTRIES FROM THIS DICT, AND THAT MADE THIS TEST
+# WEAKER. Type mismatch / Division by zero / RESUME without error / Undefined
+# line number / Can't CONTINUE / RETURN without GOSUB / NEXT without FOR /
+# Out of DATA / Missing operand / Line buffer overflow / Overflow / Bad file
+# number / File not OPEN / Input past end / Sequential I/O only / Bad file mode
+# are no longer main-resident, so there is nothing here to decode.
+# ⚠️ THEY WERE NOT DROPPED, THEY WERE MOVED: every one of them is now pinned, with
+# its exact text, in tests/test_msgsub.py's EXPECT dict, which reads the SUB-ROM
+# image the same way this reads main's. The count of pinned messages did not fall.
+# That hand-off is the one place this slice could have silently lost an assertion
+# while every gate stayed green -- if you delete a row from one dict, put it in
+# the other in the same edit.
 EXPECT = {
-    "err_type_mismatch":    "Type mismatch",
-    "err_fp_divzero":       "Division by zero",
     "err_illegal_fn":       "Illegal function call",
-    "err_resume_noerr":     "RESUME without error",
     "err_unprintable":      "Unprintable error",
-    "err_line":             "Undefined line number",
     "err_io":               "load error",
     "err_verify":           "Verify error",
-    "err_cont":             "Can't CONTINUE",
     "err_mem":              "Out of memory",
-    "err_noret":            "RETURN without GOSUB",
-    "err_nofor":            "NEXT without FOR",
-    "err_data":             "Out of DATA",
-    "err_missing_operand":  "Missing operand",
     "err_too_complex":      "String formula too complex",
     "err_out_of_str":       "Out of string space",
     "msg_redo":             "?Redo from start",
@@ -62,13 +65,7 @@ EXPECT = {
     "err_illegal_fn_arr":   "Illegal function call",
     "err_mem_arr":          "Out of memory",
     "err_syntax":           "Syntax error",
-    "err_linebuf_overflow": "Line buffer overflow",
-    "err_overflow":         "Overflow",
-    # S-FCH-2's two disk-range codes (52 / 59). They are the reason MSGESC_FILE
-    # exists, and they are the only two messages that share it -- so if the fifth
-    # phrase is wrong, ONLY these two rows fail, which is exactly the signal.
-    "err_bad_filenum":      "Bad file number",
-    "err_file_notopen":     "File not OPEN",
+    "err_no_resume":        "No RESUME",
 }
 
 # The aliases must still resolve to the SAME address as their target -- the D-2
@@ -214,15 +211,16 @@ def main():
     else:
         print("PASS  adjacent err_unprintable directly follows err_subhosted")
 
-    gap = syms["err_overflow"] - syms["err_linebuf_overflow"]
-    if gap != len("Line buffer overflow") + 1:
-        fails.append(
-            f"err_overflow/err_linebuf_overflow are no longer INDEPENDENT strings "
-            f"(gap {gap}, want {len('Line buffer overflow') + 1}). A gap of "
-            f"{len('Line buffer ')} means the overlap was re-shared, which makes "
-            f"ERR 25 print `Line buffer Overflow` -- see D-MSGEXACT knife K5.")
-    else:
-        print("PASS  split    err_overflow is independent of err_linebuf_overflow")
+    # 🔴 THIS CONTROL MOVED SUB-SIDE WITH ITS SUBJECT (D-MSGMIGRATE). It used to
+    # assert that err_overflow and err_linebuf_overflow are INDEPENDENT strings,
+    # because ERR 25's text once ENDED with ERR 6's and D-MSGEXACT's exact wording
+    # made that sharing arithmetically impossible (`Overflow` capital vs a
+    # lowercase tail). Both strings are now em_overflow / em_linebuf_overflow in
+    # the sub-ROM, so the check cannot live here -- and it is NOT dropped:
+    # tests/test_msgsub.py compares each em_table row's text exactly, so a
+    # re-shared blob would spell ERR 25 as `Line buffer Overflow` and fail there.
+    # ⚠️ The reason the control exists is unchanged and still live: the pull to
+    # "spot" those 9 B in a future carve hunt is real, and nothing else notices.
 
     if fails:
         print("\n" + "\n".join(fails))

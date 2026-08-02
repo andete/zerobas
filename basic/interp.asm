@@ -635,8 +635,10 @@ type_mismatch_error:
                 jp      raise_error         ; S2a §2/(d), below) -- was ld hl,err_
                                             ; type_mismatch + jr fre_abort (byte-
                                             ; neutral: 2+3 vs 3+2)
-err_type_mismatch:                          ; D-MSGENC: 16 B -> 14 B (§4.2's
-                db      "Type mismatch",0   ; baked CRLF)
+; D-MSGMIGRATE: err_type_mismatch's TEXT now lives in the sub-ROM tenant
+; (sub/errmsg.asm em_type_mismatch, keyed on ERRFLG=13). err_msgtab entry 13 is
+; err_subhosted; type_mismatch_error above already goes through raise_error, so
+; it sets ERRFLG on the way and needs no change at all.
 
 ; --- fp_runtime_error: F2's statement-level abort for runtime numeric ------
 ; errors (spec §10.2 D-F2-1: overflow / division by zero). Mirrors
@@ -743,8 +745,9 @@ fperr_to_err:
                                             ; message (err_out_of_str, str-engine.asm) and
                                             ; flows through the generic err_msgtab lookup.
     ENDIF
-err_fp_divzero:                             ; D-MSGENC (§4.4): no phrase hit, -2 for
-                db      "Division by zero",0    ; the CRLF.  19 B -> 17 B
+; D-MSGMIGRATE: err_fp_divzero's TEXT is sub-ROM-hosted (em_fp_divzero, ERRFLG
+; = 11). fp_runtime_error reaches it through fperr_to_err -> raise_error ->
+; err_msgtab entry 11, which is now err_subhosted -- one table operand, 0 B.
 ; 🎯 err_illegal_fn IS NOW AN ALIAS, NOT A STRING. It used to be the lowercase
 ; twin of arrays' capitalised err_illegal_fn_arr ("i" vs "I" + MSGESC_ILLFN);
 ; D-MSGEXACT made both the reference's `Illegal function call`, at which point
@@ -755,14 +758,14 @@ err_fp_divzero:                             ; D-MSGENC (§4.4): no phrase hit, -
 ; "sub-ROM is missing" message must stay MAIN-resident (spec-basic-msgenc-carve.md
 ; §4.4 Q4), and err_illegal_fn_arr is in the low region, which satisfies that.
 err_illegal_fn  equ     err_illegal_fn_arr
-err_resume_noerr:                           ; error-handling S2b (docs/spec-basic-error-
-                db      "RESUME",MSGESC_WITHOUT,MSGESC_ERROR,0  ; 23 B -> 9 B
-                                            ; handling-s2b-packet.md §5.4, ERR 22): a
-                                            ; bare RESUME with ONEFLG=0 (no active trap).
-                                            ; House-style lowercase wording (D-2 policy,
-                                            ; not the arrays arc's reference-verbatim
-                                            ; capitalised text); referenced by err_msgtab
-                                            ; entry 22 below.
+; D-MSGMIGRATE: err_resume_noerr's TEXT is sub-ROM-hosted (em_resume_noerr,
+; ERRFLG = 22). ⚠️ IT HAD TWO READERS, NOT ONE -- err_msgtab entry 22 AND
+; raise_error_forced's own `ld hl` below -- and BOTH are keyed on 22, because
+; raise_error_forced stores ERRFLG before it loads the message. That second
+; reader is why `res-noerr` is a gate row: `ERROR 22` exercises the table entry
+; and nothing else, so the walk alone cannot see the direct site.
+; (docs/spec-basic-error-handling-s2b-packet.md §5.4, ERR 22: a bare RESUME with
+; ONEFLG=0, i.e. no active trap.)
 ; err_subscript/err_redim (arrays slice-1, §4.1 #3/#4/#8) live in
 ; basic/arrays.asm (the low region) instead of here: page 1 is nearly full,
 ; and these two strings (~49 B) do not need to be page-1 resident — only the
@@ -800,11 +803,16 @@ raise_error:
                                            ; -- ERROR n now validates 1..255 upstream, so
                                            ; 0 no longer reaches here, but keep it safe)
                 cp      25                 ; index >= 25  <=>  code 0 (via $FF) or code >= 26
-                jp      nc,rerr_sparse     ; S-FCH-2: past the dense table -> the SPARSE
-                                           ; disk-range arm (main.asm's low region:
-                                           ; 52 / 59, else err_unprintable). Costs one
-                                           ; byte of page 1 over the `jr` -- the low
-                                           ; region is out of `jr` reach.
+                jp      nc,rerr_unprintable ; D-MSGMIGRATE: straight to the marker.
+                                           ; S-FCH-2's rerr_sparse/rerr_sparse2 used to
+                                           ; sit here to pick 52/59/55/58/61's messages;
+                                           ; all five migrated to the tenant, at which
+                                           ; point every arm of both selectors was
+                                           ; `ld hl,err_subhosted / jp raise_error_hl`
+                                           ; -- which is what rerr_unprintable IS. 50 B
+                                           ; of dispatch deleted, trap decision
+                                           ; unchanged (both went through
+                                           ; raise_error_hl).
                 add     a,a                ; *2 (word table)
                 ld      e,a
                 ld      d,0
@@ -897,7 +905,7 @@ ex_resume_noerr:                    ; ERR 22 "resume without error" entry — fa
 raise_error_forced:                          ; reached ONLY via ex_resume_noerr, A=22
                 ld      (ERRFLG),a
                 call    record_errline
-                ld      hl,err_resume_noerr  ; ERR 22's message directly (this routine is
+                ld      hl,err_subhosted     ; ERR 22's message, sub-hosted (D-MSGMIGRATE:
                 jp      ra_abort             ; ERR-22-only) -> ALWAYS abort, never trap.
                                              ; D-CONTR: via ra_abort, not straight to
                                              ; fre_abort_low -- same 3 bytes, and the
@@ -943,30 +951,34 @@ rel_direct:
 ; arrays §9.5) -- their codes (9/10/7/5) just index this table at their own
 ; entries, same string, no new copy.
 err_msgtab:
-                dw      err_nofor           ; 1: next without for
+                dw      err_subhosted       ; 1: next without for
                 dw      err_syntax          ; 2: syntax error
-                dw      err_noret           ; 3: return without gosub
-                dw      err_data            ; 4: out of data
+                dw      err_subhosted       ; 3: return without gosub
+                dw      err_subhosted       ; 4: out of data
                 dw      err_illegal_fn_arr  ; 5: illegal function call (arrays' own
                                             ; capitalised string; §9.5 keep)
-                dw      err_overflow        ; 6: overflow (program.asm's dl_overflow
-                                            ; string, reused byte-for-byte)
+                dw      err_subhosted       ; 6: Overflow. D-MSGMIGRATE: sub-hosted
+                                            ; (em_overflow) -- and it only became
+                                            ; migratable when dl_overflow's float arm
+                                            ; was FIXED to store ERRFLG at all. Until
+                                            ; then this code had one ERRFLG-keyed reader
+                                            ; and one that was not keyed on anything.
                 dw      err_mem             ; 7: out of memory (program.asm err_mem;
                                             ; err_stack aliases it -- program.asm)
-                dw      err_line            ; 8: undefined line number (zerobas's own
+                dw      err_subhosted       ; 8: undefined line number (zerobas's own
                                             ; "undefined line" wording, spec-basic-error-
                                             ; handling.md §4)
                 dw      err_subscript       ; 9: subscript out of range (arrays' own
                                             ; capitalised string; §9.5 keep)
                 dw      err_redim           ; 10: redimensioned array (arrays' own
                                             ; capitalised string; §9.5 keep)
-                dw      err_fp_divzero      ; 11: division by zero
+                dw      err_subhosted       ; 11: division by zero
                 dw      err_subhosted       ; 12: Illegal direct. D-MSGSUB: the text
                                             ; lives in the sub-ROM tenant, keyed on
                                             ; ERRFLG. Still not RAISED by any zerobas
                                             ; site -- `ERROR 12` is the only way here --
                                             ; but it no longer prints the wrong thing.
-                dw      err_type_mismatch   ; 13: type mismatch
+                dw      err_subhosted       ; 13: type mismatch
     IF CLEARPOOL
                 dw      err_out_of_str      ; 14: out of string space (D-CLP; was a
     ELSE                                    ; hole until the pool could raise it)
@@ -976,7 +988,7 @@ err_msgtab:
                 dw      err_subhosted       ; 15: String too long (D-MSGSUB, sub-hosted;
                                             ; not raised by any zerobas site)
                 dw      err_too_complex     ; 16: string formula too complex
-                dw      err_cont            ; 17: can't continue
+                dw      err_subhosted       ; 17: can't continue
                 dw      err_subhosted       ; 18: Undefined user function (D-MSGSUB,
                                             ; sub-hosted; not raised -- DEF FN's own
                                             ; slice would be the raiser)
@@ -1000,11 +1012,11 @@ err_msgtab:
                                             ; live in basic/arrays.asm's low region;
                                             ; this entry also gives `ERROR 21` the right
                                             ; message, which it did not have)
-                dw      err_resume_noerr    ; 22: RESUME without error (raised by
+                dw      err_subhosted       ; 22: RESUME without error (raised by
                                             ; raise_error_forced, below)
                 dw      err_unprintable     ; 23: unprintable error (self; ERROR n with
                                             ; an out-of-table code, or any hole above)
-                dw      err_missing_operand ; 24: missing operand. The table used to stop
+                dw      err_subhosted       ; 24: missing operand. The table used to stop
                                             ; at 23, so this code -- ALREADY raised by
                                             ; graphics.asm g8_missing and time.asm
                                             ; tm_err24 -- printed "unprintable error" on
@@ -1016,7 +1028,7 @@ err_msgtab:
                                             ; range test moved from `cp 23` to `cp 24`
                                             ; with it -- the table bound and that test are
                                             ; one fact in two places.
-                dw      err_linebuf_overflow ; 25: line buffer overflow (D-LINEMAX R-2 --
+                dw      err_subhosted       ; 25: line buffer overflow (D-LINEMAX R-2 --
                                             ; the crunched body exceeded TOKMAX_BODY=314).
                                             ; Same two-places-one-fact pair -- and the
                                             ; SECOND place did NOT move when this entry
@@ -1325,8 +1337,8 @@ ex_goto_undef:
                 ld      (ERRMARK),a
                 ld      a,8                 ; ERR 8: undefined line number
                 jp      raise_error
-err_line:
-                db      "Undefined line number",0  ; D-MSGENC: no phrase hit, 17 B -> 15 B
+; D-MSGMIGRATE: err_line's TEXT is sub-ROM-hosted (em_line, ERRFLG = 8).
+; ex_goto_undef above reaches it through raise_error, so ERRFLG is set for it.
 
 ; --- ex_if: IF <expr> THEN <clause> [ELSE <clause>] ------------------------
 ; A clause is either a line number (implicit GOTO) or statements. Condition is

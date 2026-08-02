@@ -2717,7 +2717,10 @@ READVAR         equ     $E0BF   ; READ: name of the variable being filled (1)
 ; RAM" (like every other cell in this section), just relocated off the
 ; spec's suggested addresses to avoid the collision.
 FACTYP          equ     $F01A   ; 2=int / 4=single / 8=double (1)
-TKOVF           equ     $F01B   ; tokeniser: 1 = a crunched literal overflowed (1)
+TKOVF           equ     $F01B   ; tokeniser: 0 = ok, else the ERR CODE of the
+                                ; crunch-time reject -- 6 float literal, 25 body
+                                ; too long. dl_overflow stores it into ERRFLG
+                                ; unconditionally (D-MSGMIGRATE) (1)
 FAC             equ     $F01C   ; float accumulator: value bytes as tokenised (8)
 FOUTBUF         equ     $F024   ; flt_out formatter output scratch (24)
 TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array,
@@ -3448,8 +3451,18 @@ EXBRSA          equ     $FAF8
 MSGESC_ERROR    equ     1       ; " error"
 MSGESC_UTOF     equ     2       ; "ut of "              (leading letter dropped:
 MSGESC_ILLFN    equ     3       ; "llegal function call"  "Out of"/"out of" and
-MSGESC_WITHOUT  equ     4       ; " without"              "Illegal"/"illegal"
-MSGESC_FILE     equ     5       ; "file "   -- S-FCH-2's two disk-range messages
+; 🎯 D-MSGMIGRATE DELETED MSGESC_WITHOUT (4, " without") AND MSGESC_FILE
+; (5, "file "). Every user of both migrated into the sub-ROM tenant, where
+; strings are stored PLAIN -- MSGESC_WITHOUT had THREE (err_noret, err_nofor and,
+; the one the filed estimate missed, err_resume_noerr) and MSGESC_FILE two
+; (err_bad_filenum, err_bad_filemode). A phrase with no users is dead DATA; the
+; dead-code gate walks spans of CODE and cannot see it, so it has to be found by
+; enumerating users -- which is the same instrument that refuted the "different
+; key" claim this slice was filed under.
+; ⚠️ THEY WERE THE TOP TWO VALUES, so nothing below renumbers and MSGESC_HI simply
+; follows MSGESC_ILLFN. Re-adding a phrase must APPEND (4, then 5) and re-point
+; MSGESC_HI at it -- never insert below, which would silently re-spell every
+; message that uses a lower escape.
                                 ; ("bad file number" / "file not open") are the only
                                 ; pair in the corpus that shares a substring neither
                                 ; of the four above covers. Added rather than spelled
@@ -3458,7 +3471,7 @@ MSGESC_FILE     equ     5       ; "file "   -- S-FCH-2's two disk-range messages
                                 ; roomy wall to save 8 of the scarce one. The decoder
                                 ; needs no change -- it is bounded by MSGESC_HI.
 MSGESC_LO       equ     MSGESC_ERROR                    ; share one entry, so the
-MSGESC_HI       equ     MSGESC_FILE                     ; decoder needs NO case flag
+MSGESC_HI       equ     MSGESC_ILLFN                    ; decoder needs NO case flag
 
 ; --- D-MSGSUB: the SUB-ROM-HOSTED marker (docs/spec-basic-msgsub.md §3.1) -----
 ; NOT a phrase. A message body that is just this byte says "the text lives in the

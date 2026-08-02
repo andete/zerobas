@@ -142,19 +142,37 @@ dl_overflow:
                 ; TKOVF=25 CARRIES THE ERR CODE rather than a second constant
                 ; here -- page 1 had 10 free bytes when this landed, so the reason
                 ; code and the error code are deliberately the same byte.
+                ; 🎯 D-MSGMIGRATE: NO BRANCH LEFT. TKOVF now carries the ERR code on
+                ; BOTH arms (6 float literal, 25 body too long -- sub/tkfloat.asm), and
+                ; both messages are sub-ROM-hosted, so the reason code goes straight
+                ; into ERRFLG and the tenant picks the text off it. That deleted the
+                ; `cp 1` / `jr z` pair, one `ld hl`, and 30 B of string -- and it FIXED
+                ; a defect: the old float arm skipped the `ld (ERRFLG),a` entirely, so
+                ; `PRINT ERR` after `20 A=1E99` read whatever the previous error left.
+                ; Both references read 6 there (measured 2026-08-02, spec §6.4).
                 ld      a,(TKOVF)
-                ld      hl,err_overflow     ; the float arm's message (the fallthrough)
-                cp      1
-                jr      z,dl_ovf_report
-                ld      (ERRFLG),a         ; A = 25: PRINT ERR reads it, as measured
-                ld      hl,err_linebuf_overflow ; low-region string pool (basic/main.asm)
-dl_ovf_report:
-                jp      print_msg           ; reports and returns to the REPL (D-MSGENC:
-                                            ; this arm is repack-only, and both its
-                                            ; messages are now encoded)
-; err_overflow moved to the LOW-REGION STRING POOL (basic/main.asm), where it is the
-; shared TAIL of `Line buffer overflow` -- 11 bytes of page 1 reclaimed to pay for
-; the arm above. Read its header before editing either message.
+                ld      (ERRFLG),a          ; the reject reason IS the ERR code
+                ld      hl,err_subhosted    ; ERR 6 -> em_overflow, 25 -> em_linebuf_overflow
+dl_ovf_report:                              ; 🔴 SHARED TAIL, AND MY ENUMERATION MISSED
+                                            ; IT. The line-number-out-of-range arm above
+                                            ; (ERR 2, err_syntax) reaches print_msg by
+                                            ; `jr` to THIS label, never naming print_msg
+                                            ; -- so the D-MSGMIGRATE blast-radius sweep,
+                                            ; which grepped for `jp|call|jr .*print_msg`,
+                                            ; did not list it. The BUILD found it, by the
+                                            ; same property that catches a missed repoint:
+                                            ; the label vanished with the collapsed
+                                            ; branch. ⚠️ It passes err_syntax, a resident
+                                            ; low-region string, so it does NOT reach
+                                            ; pm_sub today -- but it WOULD have, silently,
+                                            ; if err_syntax were ever migrated. That is an
+                                            ; argument FOR pm_sub's register fence that
+                                            ; the spec did not have: an indirect reacher
+                                            ; cannot be enumerated by naming the callee.
+                jp      print_msg           ; reports and returns to the REPL
+; err_overflow and err_linebuf_overflow are GONE from main entirely (D-MSGMIGRATE)
+; -- they were page-1 residents in basic/main.asm's promoted string pool and are
+; now em_overflow / em_linebuf_overflow in sub/errmsg.asm, keyed on ERRFLG 6 / 25.
 ; --- dir_line: the VIRTUAL LINE a typed line executes under -----------------
 ; docs/spec-basic-direct-ctrl.md §3. Laid out exactly like a stored line's
 ; header -- [link:2][lineno:2] -- so the run loop needs no direct-mode special
@@ -824,15 +842,34 @@ pm_lit:         call    pchar               ; PRDEST sink (fre_abort_low zeroed 
 ; zero bytes. `pop hl` does not disturb the flags, so the CF tested below is
 ; still subrom_call's.
 ;
-; Clobbers BC/DE/IX on top of print_msg_stopcr's documented A+HL, because CALSLT
-; does. Safe at the one site that can reach it: only the ABORT path resolves a
-; message containing MSGESC_SUB, and fre_abort_low has already reset SP and
-; abandoned the statement. Every other print_msg caller passes a main-resident
-; string, which cannot contain this byte.
-pm_sub:         push    hl                  ; the fall-through pointer, not an arg
+; 🎯 D-MSGMIGRATE RETIRED THIS ROUTINE'S PRECONDITION, AND PAID FOR IT (8 B).
+; It used to read: "Clobbers BC/DE/IX on top of print_msg_stopcr's documented
+; A+HL, because CALSLT does. Safe at the one site that can reach it: only the
+; ABORT path resolves a message containing MSGESC_SUB." That is no longer true --
+; sixteen ordinary messages are sub-hosted now, so THREE sites reach here:
+;   fre_abort_low   the abort path (SP reset, statement abandoned)
+;   ex_cont_no      `jp print_msg` at statement level
+;   dl_overflow     `jp print_msg` at line ENTRY -- and its caller is `repl` OR
+;                   mrg_storeline, the ASCII LOAD/MERGE reader (basic/files.asm)
+; The reasoned argument that all three tolerate the clobber is genuinely
+; available (dispatch_line already performs a CALSLT of its own, `call tokenise`,
+; so every caller in that chain demonstrably survives one). It was declined:
+; whoever adds the FOURTH caller would have to re-derive it, and
+; print_msg_stopcr's documented "clobbers A, plus the HL walk" was ALREADY a lie.
+; The push/pop fence below makes it true again for 8 bytes, out of a 289 B carve.
+; ⚠️ Knife K5 built WITHOUT the fence and predicted -- correctly -- that NOTHING
+; reddens. This is a structural guarantee retiring a precondition, NOT a measured
+; bug repair, and recording it the other way round would be a false claim.
+pm_sub:         push    bc                  ; 🎯 D-MSGMIGRATE: THE FENCE. See below.
+                push    de
+                push    ix
+                push    hl                  ; the fall-through pointer, not an arg
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ERRMSG
                 call    subrom_call
                 pop     hl
+                pop     ix                  ; ⚠️ POP does not touch flags, so the CF
+                pop     de                  ;    tested below is still subrom_call's --
+                pop     bc                  ;    the property `pop hl` already relied on
                 ret     nc                  ; the tenant printed the body -> done
                 jr      pm_lp               ; ABSENT -> "Unprintable error", as before
 
@@ -849,8 +886,16 @@ msg_phrase_tab:
                 db      " error",0          ; MSGESC_ERROR
                 db      "ut of ",0          ; MSGESC_UTOF
                 db      "llegal function call",0 ; MSGESC_ILLFN
-                db      " without",0        ; MSGESC_WITHOUT
-                db      "file ",0           ; MSGESC_FILE (S-FCH-2)
+; 🎯 D-MSGMIGRATE deleted MSGESC_WITHOUT (" without") and MSGESC_FILE ("file "):
+; every user of both migrated to the sub-ROM tenant, where strings are stored
+; PLAIN. A phrase with no users is dead DATA, which the dead-code gate reads
+; spans of CODE and cannot see -- so it had to be found by enumerating the users,
+; and that enumeration is also what turned up the third " without" user
+; (err_resume_noerr) that the filed estimate had missed.
+; ⚠️ Both were the TOP TWO escape values, so MSGESC_HI drops 5 -> 3 and nothing
+; below renumbers. MSGESC_SUB stays 6, so `MSGESC_SUB > MSGESC_HI` (the invariant
+; tests/test_msgenc.py pins, and the reason pm_sub's test must precede the phrase
+; bound) gains slack rather than losing it.
 
 ; --- ex_stop: STOP statement — break and record a CONT resume point ----------
 ; STOP halts the program and records where to continue, so a following CONT
@@ -997,9 +1042,13 @@ ex_cont_no:
                 ; references read.
                 ld      a,17                ; ERR 17: can't continue
                 ld      (ERRFLG),a
-                ld      hl,err_cont
+                ld      hl,err_subhosted    ; D-MSGMIGRATE: em_cont, keyed on the
+                                            ; ERRFLG store two lines up. ⚠️ THAT STORE
+                                            ; IS NOW LOAD-BEARING FOR THE TEXT, not just
+                                            ; for PRINT ERR -- change the 17 and this
+                                            ; prints `Unprintable error`. Gate row
+                                            ; `cont-bare`; knife K2 cuts exactly this.
                 jp      print_msg           ; D-MSGENC: encoded body + emitted CRLF
-err_cont:       db      "Can't CONTINUE",0  ; (no phrase hit; the 2 B is §4.2's CRLF)
 
 ; --- find_line_bc: locate a stored line by number ----------------------------
 ; in: BC = line number. out: CF set + HL = the line's link-field address if
@@ -1487,8 +1536,10 @@ err_stack       equ     err_mem             ; share sl_oom's "out of memory" (D-
                                             ; identical). Saves 15 B in the page-1
                                             ; budget for the run-mode " in <line>"
                                             ; suffix (docs/spec-basic-error-handling.md S1 D-2).
-err_noret:      db      "RETURN",MSGESC_WITHOUT," GOSUB",0  ; D-MSGENC: 23 B -> 14 B
-err_nofor:      db      "NEXT",MSGESC_WITHOUT," FOR",0      ; D-MSGENC: 19 B -> 10 B
+; D-MSGMIGRATE: err_noret / err_nofor are sub-ROM-hosted (em_noret, em_nofor;
+; ERRFLG 3 / 1). Both were reached ONLY through err_msgtab, so the migration is
+; two table operands. They were also two of MSGESC_WITHOUT's three users -- the
+; third, err_resume_noerr, migrated too, which is what killed that phrase.
 
 ; --- ex_read: READ <var> [, <var> ...] ---------------------------------------
 ; Fill each variable from the next DATA item. DATA items are stored as verbatim
@@ -1521,7 +1572,9 @@ exr_nodata:
                 ld      (ERRMARK),a
                 ld      a,4                 ; ERR 4: out of data (error-handling S2a)
                 jp      raise_error
-err_data:       db      "O",MSGESC_UTOF,"DATA",0        ; D-MSGENC: 14 B -> 7 B
+; D-MSGMIGRATE: err_data is sub-ROM-hosted (em_data, ERRFLG 4). MSGESC_UTOF
+; SURVIVES this one -- it still has three low-region users (err_subscript,
+; err_mem_arr, err_out_of_str), unlike MSGESC_WITHOUT/MSGESC_FILE.
 
 ; --- ex_restore: RESTORE [<line>] --------------------------------------------
 ; Reset the DATA cursor to the program start, or to a given line. The optional

@@ -167,7 +167,19 @@ class Machine:
                 sub1.mem[0x4000:0x8000] = sub_bytes[0x4000:0x8000]    # page 1 -> sub-ROM
                 sub1.sym = {}
                 sub1.cpu = Z80(sub1.mem)
-                sub1.traps = {}
+                # 🔴 THE BORROWED IMAGE MUST BORROW THE BORROWED REGION'S TRAPS TOO.
+                # This was `sub1.traps = {}`, and it ran off the end of memory the
+                # first time a page-1 tenant called BIOS: the island borrows main's
+                # low region and BIOS ($0000..$3FFF) as MEMORY but had none of the
+                # caller's trap callbacks, so `call CHPUT` executed whatever bytes
+                # happened to sit at $00A2 instead of the test's capture hook.
+                # Nothing exercised it until D-MSGMIGRATE made ORDINARY error
+                # messages sub-hosted -- errmsg_tenant is the first page-1 tenant
+                # whose whole job is a BIOS call. (Found by test_str_compare.py, as
+                # a 2-million-step runaway at PC=$1FE4, not by the tenant's own test.)
+                # ⚠️ ONLY the borrowed range: a trap on a $4000..$7FFF address belongs
+                # to MAIN's page 1, which is exactly what this island switches OUT.
+                sub1.traps = {a: fn for a, fn in mach.traps.items() if a < 0x4000}
                 sub1.call(cpu.ix, hl=cpu.hl, de=cpu.de)
                 mach.mem[RAM_LO:STACK] = sub1.mem[RAM_LO:STACK]       # results back
                 res = sub1.cpu

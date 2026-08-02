@@ -173,11 +173,38 @@ DISK_CODES = list(range(50, 65))
 # `Verify error` (ERR 20's wording, cassette VERIFY) is STILL NOT MEASURED here:
 # it needs a tape image and the CAS: harness. It is `<not-measured>` in the
 # denominator rather than taken from a published reference.
+#
+# --- D-MSGMIGRATE's three, and WHY a 50-row code walk needed them ------------
+# 🔴 `ERROR n` ALWAYS ENTERS THROUGH raise_error -> err_msgtab. So every row
+# above exercises the TABLE path for its code and the DIRECT path for none --
+# and three messages have a second, non-table print site that no `ERROR n` row
+# can reach:
+#
+#   cont-bare   ex_cont_no      (basic/program.asm) stores ERRFLG=17 itself
+#   res-noerr   raise_error_forced (basic/interp.asm) stores ERRFLG=22 itself
+#   ovf-line    dl_overflow     (basic/program.asm) stores ERRFLG=TKOVF itself
+#
+# Before the migration those sites did `ld hl,<the string>` and the ERRFLG store
+# only fed `PRINT ERR`. Now the string is GONE from main and the store is what
+# selects the TEXT -- so a wrong constant there prints `Unprintable error` while
+# the code walk stays 100% green. That is the [[readout-blind-to-its-own-subject]]
+# shape, and these three rows are the only witnesses. Knife K2 cuts ex_cont_no's
+# `ld a,17` to `ld a,99` and predicts `cont-bare` RED with code 17 GREEN; if that
+# does not happen, these rows are decoration.
+#
+# ⚠️ `ovf-line`'s shape is lifted from basic_probe_linemax.py's `code-over`, which
+# is the MEASURED way to overrun TOKMAX_BODY: float literals EXPAND under
+# crunching, so 40 of them is 90 source characters and a 400+ byte body. Do not
+# "simplify" it to a long line of text -- crunching shrinks that and nothing
+# overflows.
 EXTRA = [
-    ("brk",     "direct", ["STOP"],                        "STOP"),
-    ("brk-run", "direct", ["10 STOP", "RUN"],              "RUN"),
-    ("redo",    "direct", ["10 INPUT A", "RUN", "X"],      "X"),
-    ("extra",   "direct", ["10 INPUT A", "RUN", "1,2"],    "1,2"),
+    ("brk",      "direct", ["STOP"],                        "STOP"),
+    ("brk-run",  "direct", ["10 STOP", "RUN"],              "RUN"),
+    ("redo",     "direct", ["10 INPUT A", "RUN", "X"],      "X"),
+    ("extra",    "direct", ["10 INPUT A", "RUN", "1,2"],    "1,2"),
+    ("cont-bare", "direct", ["CONT"],                       "CONT"),
+    ("res-noerr", "direct", ["10 RESUME", "RUN"],           "RUN"),
+    ("ovf-line",  "direct", ["20 A=" + "0#" * 40],          "0#0#"),
 ]
 
 # --- the D-MSGSUB battery: the ABORT-PATH shapes a direct-mode code walk -----
@@ -249,6 +276,17 @@ SUBX = [
     # because they all abort.
     ("hole-trap", ["10 ON ERROR GOTO 40", "20 ERROR 12", "30 END",
                    ' 40 PRINT"T";ERR', "RUN"],                "RUN",  False),
+    # 🎯 D-MSGMIGRATE: THE SAME QUESTION FOR A **SPARSE** CODE, AND NOTHING ELSE
+    # ASKS IT. Migrating 52/55/58/59/61 deleted rerr_sparse AND rerr_sparse2
+    # outright (basic/main.asm, basic/missing.asm) -- 50 B of dispatch whose arms
+    # all ended at `jp raise_error_hl`, i.e. at the TRAP DECISION. The claim that
+    # deletion is behaviour-preserving is therefore about the trap, not about the
+    # message, and every OTHER row in this file aborts. D-NOTOPEN2 measured on the
+    # CF-3300 that these codes trap like any other; if the collapse had routed
+    # them somewhere that prints instead, this row shows `Bad file number` where
+    # the handler's own output belongs, and the whole rest of the gate stays green.
+    ("sparse-trap", ["10 ON ERROR GOTO 40", "20 ERROR 52", "30 END",
+                     ' 40 PRINT"T";ERR', "RUN"],              "RUN",  False),
 ]
 SUBX_DISK_SIDES = ("cf3300", "zb")   # rows flagged needs_disk run only on these
 
@@ -276,6 +314,7 @@ SUBX_TEXT = {
     # identically, so keeping it costs nothing and pins the whole shape.
     # Asserting only the head would have thrown away the second half.
     "hole-trap": "T 12|No RESUME in 40",
+    "sparse-trap": "T 52|No RESUME in 40",
 }
 
 # --- the self-check pair: two codes whose wording is known to differ ----------
@@ -322,6 +361,10 @@ CF_ONLY_CODES = frozenset(range(60, 65))
 EXTRA_TEXT = {
     "brk": "Break", "brk-run": "Break in 10",
     "redo": "?Redo from start", "extra": "?Extra ignored",
+    # D-MSGMIGRATE's three direct-path witnesses (see EXTRA above).
+    "cont-bare": "Can't CONTINUE",
+    "res-noerr": "RESUME without error in 10",
+    "ovf-line":  "Line buffer overflow",
 }
 VERIFY_TEXT = "Verify error"
 
@@ -417,6 +460,39 @@ MSGSUB_PREDICT_GREEN = frozenset(
     set(REF_TEXT) - set(MSGSUB_PREDICT_RED)
 ) | {"brk", "brk-run", "redo", "extra", "ifc-run", "prd-ifc", "mid-ifc",
    "hole-trap"}
+
+# =============================================================================
+# D-MSGMIGRATE's predicted sets (docs/spec-basic-msgmigrate.md §7.1), locked
+# before the build. Recorded BESIDE the two above, not replacing them.
+#
+# 🔴 THE PREDICTED-RED SET IS EMPTY, AND THAT IS A CLAIM RATHER THAN AN ABSENCE.
+# The edit list is sixteen pointer operands, sixteen deleted strings, two deleted
+# selector routines, two deleted phrases, one `jp` target, one push/pop fence and
+# sixteen tenant rows -- and NOT ONE of them changes a byte of any message. So a
+# green gate here does not say "the migration happened", it says "nothing broke":
+# this whole battery is a CONTROL, and the knives (spec §8) are the instrument
+# that generates red. [[knife-that-reddens-nothing-is-the-finding]]
+#
+# ⚠️ The three EXTRA rows added with this slice are predicted GREEN like the rest,
+# but they are not decoration: they are the ONLY rows that ride the direct print
+# sites (see EXTRA's own header), and K2 predicts `cont-bare` RED with code 17
+# still GREEN. A row whose knife cannot redden it is not a row.
+MSGMIGRATE_PREDICT_RED: frozenset = frozenset()
+MSGMIGRATE_PREDICT_GREEN = frozenset(
+    set(REF_TEXT)
+) | {"brk", "brk-run", "redo", "extra", "cont-bare", "res-noerr", "ovf-line",
+     "hole-run", "ifc-run", "prd-hole", "prd-ifc", "mid-ifc", "hole-trap",
+     "sparse-trap"}
+
+# The load-bearing controls, named so a green reading cannot be over-read
+# (spec §7.3). ⚠️ THE FIRST FIVE RIDE STRINGS THIS SLICE DOES NOT TOUCH, so their
+# greenness is compatible with the migration being entirely broken -- they guard
+# the UNCHANGED half and nothing more. 26 is the only pre-existing row that rides
+# the tenant, and the three EXTRA rows are the only ones that ride the direct
+# sites. Saying which is which is the point [[one-row-cannot-separate-two-rules]].
+MSGMIGRATE_CONTROLS_RESIDENT = frozenset({5, 23, "brk", "brk-run"})
+MSGMIGRATE_CONTROLS_MECHANISM = frozenset({26, "cont-bare", "res-noerr",
+                                           "ovf-line", "mid-ifc", "sparse-trap"})
 
 
 def in_scope(code: int) -> bool:

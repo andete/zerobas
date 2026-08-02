@@ -63,6 +63,36 @@ EXPECT = {
     62: "Bad drive name",
     63: "Bad sector number",
     64: "File still open",
+
+    # --- D-MSGMIGRATE: the sixteen that MOVED here from main page 1 ----------
+    # ⚠️ THESE ARRIVED BY HAND-OFF, AND THE HAND-OFF IS THE HAZARD. Each one was
+    # deleted from tests/test_msgenc.py's EXPECT dict in the same edit that
+    # deleted its string from main. Had they only been deleted, this tree's whole
+    # error vocabulary would have gone UNPINNED while every gate stayed green --
+    # a readout losing its subject without going red. Typed out here
+    # independently, exactly as the rule above requires: these are the verbatim
+    # readings in docs/msgexact-msx1-characterization.md §1/§2, not a re-derivation
+    # of the `db` lines in sub/errmsg.asm.
+    1:  "NEXT without FOR",
+    3:  "RETURN without GOSUB",
+    4:  "Out of DATA",
+    6:  "Overflow",
+    8:  "Undefined line number",
+    11: "Division by zero",
+    13: "Type mismatch",
+    17: "Can't CONTINUE",       # ⚠️ capital CONTINUE -- measured. The published
+                                # table says `Can't continue` and is WRONG.
+    22: "RESUME without error",
+    24: "Missing operand",
+    25: "Line buffer overflow", # lowercase tail; ERR 6 above is capital `Overflow`.
+                                # They CANNOT share storage -- one blob cannot spell
+                                # a letter two ways. This pair carries the overlap
+                                # control that used to live in test_msgenc.py.
+    52: "Bad file number",
+    55: "Input past end",
+    58: "Sequential I/O only",
+    59: "File not OPEN",
+    61: "Bad file mode",
 }
 
 # What a code the tenant does NOT know must print. Main routes EVERY out-of-dense

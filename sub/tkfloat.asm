@@ -152,7 +152,21 @@ tkf_go_int:
 tkf_overflow:
                 pop     de                  ; nothing of this literal was emitted yet,
                                              ; so DE is exactly the line-truncation point
-                ld      a,1
+                ; 🔴 D-MSGMIGRATE: 6, NOT 1 -- AND THE 1 WAS A MEASURED DEFECT.
+                ; TKOVF's contract (basic/tokenise.inc tke_fits) is "the reject
+                ; reason IS the ERR code", which the LENGTH arm has always honoured
+                ; (=25). This arm stored a bare flag, so dl_overflow had to special-
+                ; case it -- and, because the special case skipped the `ld (ERRFLG),a`,
+                ; `PRINT ERR` after a float-literal overflow read whatever the LAST
+                ; error left. Measured 2026-08-02, boot-per-case on both references:
+                ; `20 A=1E99` then `PRINT ERR` reads 6 on the VG-8020 AND the CF-3300;
+                ; zerobas read 0. (Controls: a no-error line reads 0 on all three, so
+                ; the 0 was a real absence; `ERROR 6` reads 6 on all three, so the
+                ; readout could report it. The MESSAGE was always right -- `Overflow`
+                ; on all three -- which is exactly why nothing had ever noticed.)
+                ; Making it 6 costs nothing anywhere: tokenise zeroes TKOVF at entry
+                ; and tke_fits's "first reject wins" test is `or a`, a nonzero test.
+                ld      a,6
                 ld      (TKOVF),a
                 jp      tk_end              ; end the line here (TKOVF flags the reject;
                                              ; DE is the truncation point for the 0 term)

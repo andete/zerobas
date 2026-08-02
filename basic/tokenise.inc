@@ -38,7 +38,7 @@ tokenise:
                 ld      (TKNAME),a          ; a fresh line starts outside any name
                 ld      (TKLNUM),a          ; ...and outside line-number mode (D-LNLIST
                                             ; R-L1, docs/spec-basic-lnlist.md)
-                ld      (TKOVF),a           ; ...and no float-literal overflow yet (F1,
+                ld      (TKOVF),a           ; ...and no crunch-time reject yet (F1,
 tk_loop:
                 ld      a,(TKNAME)
                 ld      b,a                 ; B = were we inside a name? (digit rule)
@@ -362,9 +362,12 @@ tk_end:
                 ; Refuse a body longer than TOKMAX_BODY (314) -- the reference's measured
                 ; ceiling, where it prints `Line buffer overflow` and stores nothing
                 ; (characterization §2: 314 accepted / 315 refused, walked a byte at a
-                ; time). TKOVF=2 is the reject reason; dispatch_line adjudicates it at
-                ; line ENTRY, exactly like the =1 float-literal reject, so an over-long
-                ; line is never executed and never stored.
+                ; time). TKOVF=25 is the reject reason AND the ERR code; dispatch_line
+                ; adjudicates it at line ENTRY, exactly like the =6 float-literal
+                ; reject, so an over-long line is never executed and never stored.
+                ; (This comment read "TKOVF=2 ... the =1 float-literal reject" until
+                ; 2026-08-02: the 2 was never right, and the 1 was the defect
+                ; D-MSGMIGRATE measured -- see sub/tkfloat.asm tkf_overflow.)
                 ;
                 ; ONE site, at the true end of the crunch, and that is deliberate: the
                 ; verbatim inner loops (tk_str_loop / tk_rem_rest / tk_data_rest) never
@@ -378,7 +381,7 @@ tk_end:
                 add     hl,de               ; CF <=> DE >= TOKBUF+315, i.e. body > 314
                 pop     hl                  ; (pop preserves flags)
                 jr      nc,tke_fits
-                ld      a,(TKOVF)           ; FIRST reject wins: sub/tkfloat.asm sets =1
+                ld      a,(TKOVF)           ; FIRST reject wins: sub/tkfloat.asm sets =6
                 or      a                   ; mid-line and jumps straight here, and that
                 jr      nz,tke_fits         ; overflow happened BEFORE the body ran long
                 ld      a,25                ; the reject reason IS the ERR code (=25), so

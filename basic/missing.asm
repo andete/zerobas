@@ -65,27 +65,27 @@ mot_go:
                 jp      exec_stmt           ; continue the line (a bare `ret` would
                                             ; swallow the rest of it -- the T1 lesson)
 
-; --- err_missing_operand: the ERR 24 message --------------------------------
-; The err_msgtab in interp.asm stopped at code 23, so ERR 24 printed
-; "unprintable error" -- on all THREE of its sites, two of which
-; (graphics.asm g8_missing, time.asm tm_err24) predate this slice and had been
-; raising a code with no message. LOCATE is what surfaced it: bare `LOCATE`
-; reads `Missing operand` on the reference. House-style lowercase, like
-; "syntax error" and "type mismatch" (D-2: reference wording is not copied).
-; The string is HERE, not next to its table, because 17 bytes inserted there
-; push page 1's dense forward `jr`s out of reach.
-err_missing_operand:                        ; D-MSGENC: no phrase hit, 18 B -> 16 B.
-                db      "Missing operand",0 ; Shrinking here only IMPROVES the `jr`
-
-; err_linebuf_overflow (the ERR 25 message, D-LINEMAX R-2) is NOT here, despite
-; this file being the precedent for exactly this constraint. It did not fit: page
-; 1 had 10 free bytes against a 42-byte need, so it lives in the LOW-REGION STRING
-; POOL (basic/main.asm, before __MEAS_LOW_END) instead.
+; --- err_missing_operand / err_linebuf_overflow: both MIGRATED --------------
+; D-MSGMIGRATE. `Missing operand` (ERR 24) is em_missing_operand in
+; sub/errmsg.asm; `Line buffer overflow` (ERR 25), which this file's old note
+; explained could not fit here, is em_linebuf_overflow. Both are keyed on ERRFLG.
 ;
-; ⚠️ ITS WORDING IS THE REFERENCE'S, not house-style lowercase. Every other message
-; in this tree is deliberately our own (D-2), but `Line buffer overflow` was read
-; VERBATIM off the reference's screen by the `tokx` battery and the gate compares
-; the two machines' screens row for row -- so the measured string IS the spec.
+; ⚠️ THE CONSTRAINT THAT PUT ERR 24's STRING IN THIS FILE IS STILL LIVE, even
+; though the string is gone: bytes inserted next to err_msgtab in basic/interp.asm
+; push page 1's dense forward `jr`s out of range and pasmo rejects the build
+; outright. That is why the marker err_subhosted is ONE byte and why get_int16_
+; checked sits at the end of its own file. Do not read this deletion as the
+; constraint being relieved -- it is not, and a 289 B carve does not change it.
+;
+; ⚠️ AND ERR 25's WORDING IS STILL THE REFERENCE'S, not house-style lowercase.
+; `Line buffer overflow` was read VERBATIM off the reference's screen by D-LINEMAX's
+; `tokx` battery, and the gate compares the two machines' screens row for row, so
+; the measured string IS the spec. It now lives in sub/errmsg.asm, where every
+; string is a measured reading for the same reason.
+;
+; The three sites that RAISE ERR 24 are unchanged (graphics.asm g8_missing,
+; time.asm tm_err24, and ex_locate below); all three go through raise_error, so
+; ERRFLG is set for them and the migration is one err_msgtab operand.
 
 ; --- ex_locate: LOCATE [col][,[row][,cursor]] -------------------------------
 ; Modelled on ex_color (basic/screen.asm), the tree's other three-optional-
@@ -569,54 +569,23 @@ trace_line:
                 ret
 
 
-; ===========================================================================
-; rerr_sparse2 — the SECOND sparse-code arm (D-NOTOPEN2)
-; ===========================================================================
-; in: A = ERRFLG. Reached only from rerr_sparse (basic/main.asm), which has
-; already failed to match 52 and 59, which in turn is reached only when the code
-; is past the dense err_msgtab (1..25). Falls through to rerr_unprintable exactly
-; as rerr_sparse used to, so an unknown code is unchanged.
+; --- rerr_sparse2 and its three messages: DELETED (D-MSGMIGRATE) ------------
+; This tail used to hold the second sparse arm (ERR 55/58/61 -> `Input past end`
+; / `Sequential I/O only` / `Bad file mode`) plus the three strings, 72 B in all,
+; sited here because page 1 was the roomy wall when D-NOTOPEN2 landed and the
+; low region had 23 B.
 ;
-; WHY A SECOND ARM RATHER THAN THREE MORE LINES IN rerr_sparse: that routine and
-; its two messages live in the page-0 LOW REGION, which had 23 B free; these three
-; codes cost 72 B. Page 1 had 137 B after this slice's carve. The walls are
-; co-mapped so a `jp` across them is ordinary and free ([[promotion-funds-low-
-; region]] is the same trade in the other direction) -- so main.asm's low-region
-; tail changed by ZERO bytes (`jp rerr_unprintable` -> `jp rerr_sparse2`) and all
-; 72 B landed on the roomy wall.
+; All three messages are now sub-ROM-hosted (em_input_pastend, em_seq_only,
+; em_bad_filemode, keyed on ERRFLG), which left every arm of this routine
+; identical to `rerr_unprintable`, so the routine went with them. raise_error's
+; out-of-dense test jumps straight to rerr_unprintable now (basic/interp.asm);
+; basic/main.asm's deleted rerr_sparse header carries the rest of the reasoning.
 ;
-; Sited at the END of the last include on purpose: inserting bytes mid-page-1
-; lands between dense forward `jr`s and their targets and pasmo rejects it
-; outright (see err_unprintable's note in basic/interp.asm).
-;
-; The three codes, all MEASURED on the CF-3300 (docs/spec-basic-gpfi-notopen-
-; err59.md §2a), never guessed:
+; ⚠️ THE MEASUREMENTS THIS BLOCK RECORDED ARE NOT DELETED WITH IT -- they are what
+; the tenant's rows now have to honour, and docs/spec-basic-gpfi-notopen-err59.md
+; §2a remains their home. All three were measured on the CF-3300:
 ;   55  INPUT$ on any open channel that is not FOR INPUT, except RANDOM
 ;   58  GET/PUT on a DEVICE channel (LPT:/CRT:)
-;   61  GET/PUT/FIELD on a disk channel that is open but not RANDOM, and
-;       INPUT$ on a RANDOM channel
-; ⚠️ FIELD on a device channel is ERR 5, not 58 -- it goes through err_msgtab
-; like any dense code and needs nothing here.
-rerr_sparse2:
-                ld      hl,err_input_pastend
-                cp      55
-                jr      z,rsp2_go
-                ld      hl,err_seq_only
-                cp      58
-                jr      z,rsp2_go
-                ld      hl,err_bad_filemode
-                cp      61
-                jr      z,rsp2_go
-                jp      rerr_unprintable    ; any other out-of-table code, unchanged
-rsp2_go:
-                jp      raise_error_hl      ; the SHARED trap decision -- so 55/58/61
-                                            ; trap into an armed handler like 52/59
-; D-MSGENC: only the third of these can use a phrase escape (MSGESC_FILE = "file ").
-; The other two share no phrase with any existing message, so they are stored plain
-; -- adding an escape for a phrase with ONE user costs more than it saves.
-err_input_pastend:
-                db      "Input past end",0
-err_seq_only:
-                db      "Sequential I/O only",0
-err_bad_filemode:
-                db      "Bad ",MSGESC_FILE,"mode",0
+;   61  GET/PUT/FIELD on a disk channel open but not RANDOM, and INPUT$ on RANDOM
+; and FIELD on a device channel is ERR 5, not 58 -- a dense code that never came
+; through here at all.

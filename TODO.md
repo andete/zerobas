@@ -4071,36 +4071,70 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `ERROR n` is still the only way to reach them. "Should zerobas raise ERR 12
       for a direct-mode `INPUT`?" is a different question per code.
 
-- [ ] 🎯 **D-MSGMIGRATE — MIGRATE EXISTING MESSAGES INTO THE SUB-ROM TENANT.**
-      Filed 2026-08-02 by D-MSGSUB §8, which built the mechanism and sized the
-      prize but deliberately did not widen into it.
-      Main page 1 holds **252 B of message strings** plus the 40 B phrase table
-      (measured from the symbol table + ROM image, not estimated):
-      `err_line` 22 · `err_linebuf_overflow` 21 · `err_seq_only` 20 ·
-      `err_fp_divzero` 17 · `err_missing_operand` 16 · `err_cont` 15 ·
-      `err_input_pastend` 15 · `err_type_mismatch` 14 · `err_noret` 14 ·
-      `err_file_notopen` 14 · `err_unprintable` 13 · `err_bad_filenum` 12 ·
-      `err_nofor` 10 · `err_bad_filemode` 10 · `err_resume_noerr` 9 ·
-      `err_overflow` 9 · `err_verify` 8 · `err_data` 7 · `brk_msg` 6.
-      🎯 **A table-reached message migrates for ZERO main-side bytes** — the
-      `err_msgtab` entry becomes `dw err_subhosted` and the string is deleted.
-      Page 1 is this tree's chronic wall and sub page 1 still has **2740 B** idle.
-      ⚠️ **NOT ALL 252 B ARE MIGRATABLE, AND THAT DIFFERENCE IS THE REAL WORK.**
-      The tenant is keyed on **ERRFLG**, so a message can move only if EVERY path
-      that prints it goes through `err_msgtab`. These do not: `err_verify`
-      (cload's own `jp print_msg`), `err_mem`/`err_prog_mem` (`ctp_oom`),
-      `brk_msg`, and the five reached by `rerr_sparse`/`rerr_sparse2`'s own
-      `ld hl` (`err_bad_filenum`, `err_file_notopen`, `err_input_pastend`,
-      `err_seq_only`, `err_bad_filemode`) — those are a DIFFERENT key.
-      A second selector (`db MSGESC_SUB, <index>, 0`, 2 B per message instead of
-      0) covers them; **whether that pays is a measurement, not a claim.**
-      ⚠️ Two standing constraints any migration must respect:
-      `err_illegal_fn_arr` must stay MAIN-resident (`err_subrom_absent` aliases
-      it, and *that* message is the one that genuinely must survive an absent
-      sub-ROM), and `err_unprintable` must stay put as `err_subhosted`'s
-      fall-through neighbour (pinned by `tests/test_msgenc.py`).
-      Un-encoding a migrated message sub-side also shrinks the phrase table if it
-      was a phrase's last user — `MSGESC_FILE` has exactly two.
+- [x] 🎯 **D-MSGMIGRATE ✅ — SIXTEEN MESSAGES MIGRATED; PAGE 1 22 B -> 311 B.**
+      Done 2026-08-02, [`docs/spec-basic-msgmigrate.md`](docs/spec-basic-msgmigrate.md).
+      🎯 **THE FILED CLAIM WAS REFUTED IN THE CHEAP DIRECTION.** D-MSGSUB §8 said
+      five messages could not migrate because `rerr_sparse` reaches them "by its
+      own `ld hl` -- a different key", and proposed a 2 B/message second selector.
+      It is the SAME key: `rerr_sparse` OPENS with `ld a,(ERRFLG)`, and
+      `raise_error_forced` / `ex_cont_no` / `dl_overflow` each store ERRFLG before
+      loading their message. **No second selector was built.** Enumerating every
+      print site is what said so, and it disagreed with the filed list in BOTH
+      directions (five wrongly blocked, one wrongly cleared).
+      🎯 **AND THE SELECTOR CODE ITSELF WAS DELETABLE**: once all five sparse
+      messages pointed at `err_subhosted`, every arm of `rerr_sparse` and
+      `rerr_sparse2` read `ld hl,err_subhosted / jp raise_error_hl` -- which is
+      what `rerr_unprintable` already was. 50 B of dispatch gone, trap decision
+      unchanged (`sparse-trap`, a row added mid-slice, is what measures that).
+      Carve: 225 B of string + 50 B dispatch + 15 B of dead phrase table
+      (`MSGESC_WITHOUT` had THREE users, not the two that were filed) + 7 B of
+      collapsed branch, less 8 B for `pm_sub`'s register fence = **289 B**.
+      Sub page 1 2740 -> 2428 B. `msgexact --gate` **54/54**, unit **56/56**,
+      dead-code 0/0.
+      🔴 **A DEFECT WAS FIXED TO GET THE LAST STRING, AND FIXING IT CARVED BYTES.**
+      `dl_overflow`'s float arm stored no ERRFLG at all, so `PRINT ERR` after
+      `20 A=1E99` read a stale code while its sibling arm read 25. Measured
+      2026-08-02 on both refs (`fovf-lit` 6/6, zerobas 0; controls `fovf-ctl` 0
+      everywhere and `fovf-arm` 6 everywhere). `TKOVF`'s own contract in
+      `basic/tokenise.inc` already says "the reject reason IS the ERR code" --
+      the float arm was the one arm not honouring it. Storing 6 made both arms
+      symmetric, DELETED the branch, and only then was `err_overflow` migratable.
+      🔴 **TWO FINDINGS IN APPARATUS, NEITHER IN THE MIGRATION.** (a) The host
+      harness's page-1 sub-ROM island borrowed the caller's MEMORY but not its
+      TRAPS, so a tenant's `call CHPUT` ran off the end -- invisible until
+      `errmsg_tenant` became the first page-1 tenant a unit test reaches whose
+      whole job is a BIOS call. (b) K1's own setup disabled its delivery path
+      (`POKE &HF107,0` then typing `ERROR n` cannot tokenise), and the
+      main-resident CONTROL is what said so.
+
+- [ ] 🔴 **`err_verify` AND `brk_msg` ARE THE LAST TWO MAIN-RESIDENT MESSAGES,
+      AND THEY ARE BLOCKED FOR TWO DIFFERENT REASONS.** Filed 2026-08-02 by
+      D-MSGMIGRATE §6.2/§6.3, which measured both and declined both.
+      * `err_verify` (8 B): `verify_error` ([`basic/cload.asm:492`](basic/cload.asm:492))
+        is `ld hl,err_verify / jp print_msg` with **no `ld (ERRFLG),a`**. Adding
+        one costs 5 B to save 8 -- a net 3 B not worth taking blind, because it
+        also makes `PRINT ERR` read 20 after a `CLOAD?` mismatch, which is an
+        **observable change with no oracle reading behind it**. ⚠️ Exactly the
+        shape D-MSGMIGRATE's own §6.4 turned out to be, and there the reading
+        (both refs read 6) is what made the fix correct AND free -- so TAKE THE
+        READING FIRST. The CAS: harness is the cost; `Verify error` is still
+        `<not-measured>` in the msgexact denominator for the same reason.
+      * `brk_msg` (6 B): printed by `call print_string`, and **`print_string` has
+        no escape decoder at all** -- a `MSGESC_SUB` byte there is `pchar`'d as a
+        literal $06. And `Break` is not an error, so ERRFLG is stale. Two
+        independent blockers; this one needs a PRINTER change, not a key.
+
+- [ ] ⚠️ **AN INDIRECT REACHER CANNOT BE ENUMERATED BY NAMING THE CALLEE.**
+      Filed 2026-08-02 by D-MSGMIGRATE §9, whose blast-radius sweep grepped for
+      `jp|call|jr .*print_msg` and therefore missed a FOURTH reacher:
+      `dispatch_line`'s line-number-out-of-range arm arrives by
+      `jr dl_ovf_report`, a shared tail, and never names `print_msg`.
+      The BUILD caught it (the label vanished with a collapsed branch), not the
+      sweep. It passes a resident string so it reaches nothing sub-hosted today --
+      but it would have, silently, had that string ever migrated.
+      Worth a tool: resolve fall-through and shared-tail edges when enumerating
+      "who can reach routine X", the same way `check_tenant_closure.py` walks a
+      call graph rather than grepping for names.
 
 - [ ] ⚠️ **A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A CLASSIFIER
       NEEDLE, AND THEY LOOK IDENTICAL.** Filed 2026-08-02 by D-MSGEXACT §6b,

@@ -122,6 +122,15 @@ ENCODE_CASES = [
 
 # Crunch-time overflow (§9.2 rule 7): the literal is rejected, TKOVF set,
 # nothing emitted for it.
+# ⚠️ TKOVF IS 6, NOT 1, SINCE 2026-08-02 (D-MSGMIGRATE) -- and this expectation
+# was STALE, not broken. TKOVF's contract is "0 = ok, else the ERR CODE of the
+# crunch-time reject" (basic/tokenise.inc tke_fits already stored 25 for the
+# body-too-long arm). The float arm stored a bare flag 1, which forced
+# dl_overflow to special-case it, and that special case SKIPPED the ERRFLG store
+# -- so `PRINT ERR` after `20 A=1E99` read a stale code. Both references read 6
+# there (measured, boot-per-case, 2026-08-02). Making the two arms symmetric
+# fixed the defect AND deleted dl_overflow's branch.
+TKOVF_FLOAT_REJECT = 6          # = ERR 6, `Overflow`
 OVERFLOW_CASES = ["1e63", "65535%"]
 
 # --- format matrix: (FAC hex, FACTYP) -> printed string --------------------
@@ -486,7 +495,8 @@ def run():
         ms.poke(SRC, lit.encode("ascii") + b"\x00")
         ms.poke(TKOVF, 0)
         ms.call("tokenise", hl=SRC, de=TOKBUF)
-        ck(f"tokenise({lit!r}) sets TKOVF", ms.peek(TKOVF)[0], 1)
+        ck(f"tokenise({lit!r}) sets TKOVF", ms.peek(TKOVF)[0],
+           TKOVF_FLOAT_REJECT)
 
     print("# --- format matrix: flt_out(FAC,FACTYP) -> printed string (resident) ---")
     # flt_out stays RESIDENT in the main ROM (runtime-hot PRINT path, not evicted),
