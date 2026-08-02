@@ -71,7 +71,6 @@ puf_copied:
                 pop     hl                  ; HL = cursor past the format operand
                 ; a ';' or ',' separates the format from the value list.
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ';'
                 jr      z,puf_sep
                 cp      ','
@@ -90,7 +89,6 @@ puf_nosep:
 ; --- main loop: one value per field, cycling the format ---------------------
 pu_main:
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,pu_endlist        ; end of line
                 cp      COLON
@@ -111,7 +109,6 @@ pu_mnum:
                 call    pu_do_number
 pu_msep_chk:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ';'
                 jr      z,pu_msep
                 cp      ','
@@ -133,7 +130,6 @@ pu_endlist:
                 call    print_crlf
 pu_skipnl:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      COLON
                 jp      z,exec_stmt         ; HL on ':' -> step into the next statement
                 ret

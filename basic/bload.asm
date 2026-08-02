@@ -110,7 +110,6 @@ parse_close_run:
                 ld      (RUNFLAG),a         ; default: no ,R handoff
                 ld      (VRAM_FLAG),a       ; default: RAM load
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,pcr_ok            ; end of statement -> plain load
                 cp      COLON
@@ -120,7 +119,6 @@ parse_close_run:
                 ; --- one option flag: ,R (run) or ,S (VRAM) ----------------
                 inc     hl                  ; past the comma
                 call    skip_spaces
-                ld      a,(hl)
                 call    upcase              ; accept ,r / ,s as well
                 cp      'R'
                 jr      z,pcr_run
@@ -139,7 +137,6 @@ pcr_flag_end:
                 ; flag or a trailing ,offset is rejected (not silently ignored).
                 inc     hl                  ; past the flag letter
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,pcr_ok
                 cp      COLON

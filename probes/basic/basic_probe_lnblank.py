@@ -1698,11 +1698,207 @@ ERRB = [
     ("err-over",     ["65530 REMX", 'PRINT"[";ERR;"]"']),
     ("err-ctl",      ["65529 REMX", 'PRINT"[";ERR;"]"']),
 ]
-SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ}
+# --- the `lnrt` battery: WHAT `RETURN <line>` ACTUALLY DOES (D-RETLN) --------
+# ⚠️ SAY-MODE ONLY, for the same reason the `lnrd` rows are: the question is not
+# "what was stored" (D-LNREF already made `40 RETURN 30` crunch byte-exactly to
+# `<8E> <0E><1E><00>` on all three sides) but "where did control go, and what was
+# left on the GOSUB stack afterwards". Only a run reading can answer that.
+#
+# 🔴 EVERY ROW'S TARGET LINES ACCUMULATE (`A=A+n`) INSTEAD OF ASSIGNING, AND THAT
+# IS THE WHOLE DESIGN. `lnrd-return` (D-LNREF) used `A=20` / `A=30`, which makes
+# "the branch never happened" and "the branch happened and then control came back
+# through the caller anyway" read the SAME ` 20  0 ` -- a row with two candidate
+# causes measures neither ([[row-with-two-candidate-causes]]). Accumulating gives
+# each path its own arithmetic: 20 = never branched, 30 = branched and stopped,
+# 50 = branched AND the frame was still there to come back through. One reading,
+# one history.
+#
+# The space walked is every way the statement can be reached, not a sample:
+#   the ARGUMENT  -- absent (ctl), present, blank-separated, 0, an expression,
+#                    a line that does not exist, trailing statements after it;
+#   the STACK     -- no frame, one frame, two frames (does it pop one or all?),
+#                    and whether a FAILED branch pops;
+#   the CONTEXT   -- run mode, direct mode, and inside an ON ERROR handler,
+#                    which is what MS-BASIC documents `RETURN <line>` FOR.
+LNRT = [
+    # -- CONTROLS. Each reads a value a subject row must CHANGE, and each can
+    # move its own subject: break bare RETURN and `lnrt-ctl` goes red; break the
+    # empty-stack check and `lnrt-nogosctl` goes red; break find_line and
+    # `lnrt-undctl` goes red. They are not decoration.
+    ("lnrt-ctl",      ["10 GOSUB 40", "20 A=A+20:END", "30 A=A+30:END",
+                       "40 RETURN", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("lnrt-nogosctl", ["10 RETURN", "20 A=A+20:END", "RUN",
+                       'PRINT"[";A;ERR;"]"']),      # RETURN without GOSUB = ERR 3
+    ("lnrt-undctl",   ["10 GOSUB 99", "20 A=A+20:END", "RUN",
+                       'PRINT"[";A;ERR;"]"']),      # undefined line = ERR 8, via
+                                                    # GOSUB's own find_line
+    # -- THE SUBJECT: does the branch happen at all?
+    ("lnrt-line",     ["10 GOSUB 40", "20 A=A+20:END", "30 A=A+30:END",
+                       "40 RETURN 30", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # backwards, to a line BEFORE the GOSUB: separates "branch" from "fall to the
+    # next line" and from a forward-only search.
+    # 🔴 THE FIRST VERSION OF THIS ROW WAS VACUOUS AND READ GREEN ON ALL THREE
+    # SIDES. It opened `5 A=A+5:END`, so RUN entered at line 5 and the program
+    # ENDED before it ever reached the GOSUB -- ` 5  0 ` everywhere, agreeing
+    # because nothing under test had run ([[vacuous-gate-row-steers-not-just-
+    # misses]]). `1 GOTO 10` is what makes line 5 reachable ONLY by the branch.
+    ("lnrt-back",     ["1 GOTO 10", "5 A=A+5:END", "10 GOSUB 40",
+                       "20 A=A+20:END", "40 RETURN 5", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    # bare RETURN with a further statement on its line: the terminator that is
+    # NOT end-of-line. It must stay a bare RETURN (27 would mean the trailing
+    # statement ran; ERR 2 would mean the ':' was read as an argument).
+    ("lnrt-bcolon",   ["10 GOSUB 40", "20 A=A+20:END", "40 RETURN:A=A+7", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    # -- THE STACK. Three-way readings, no two paths share a number.
+    #   pop  : 30 then RETURN on an empty stack  -> ` 30  3 `
+    #   nopop: 30 then RETURN through the frame  -> ` 50  0 `
+    #   none : never branched                    -> ` 20  0 `
+    ("lnrt-pop",      ["10 GOSUB 40", "20 A=A+20:END", "30 A=A+30:RETURN",
+                       "40 RETURN 30", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # 🔴 AND ITS FIRST VERSION AGREED FOR THE WRONG REASON TOO. With line 40 as
+    # a bare `GOSUB 60`, "popped one and branched to 30, then RETURNed through
+    # the outer frame" and "never branched, resumed after GOSUB 60 and fell into
+    # line 50" BOTH land on ` 50  0 ` -- a row with two candidate causes measures
+    # neither. `:A=A+7:END` on line 40 gives the not-branched history its own
+    # arithmetic and its own terminator:
+    #   pops ONE : +30, RETURN through the OUTER frame -> line 20 -> ` 50  0 `
+    #   pops ALL : +30, RETURN on an empty stack       -> ` 30  3 `
+    #   pops NONE: never branched, resumes on line 40  -> ` 7  0 `
+    ("lnrt-depth",    ["10 GOSUB 40", "20 A=A+20:END", "30 A=A+30:RETURN",
+                       "40 GOSUB 60:A=A+7:END", "60 RETURN 30", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    ("lnrt-nogos",    ["10 RETURN 30", "20 A=A+20:END", "30 A=A+30:END", "RUN",
+                       'PRINT"[";A;ERR;"]"']),      # a branch with NO frame to pop
+    # -- WHICH CHECK COMES FIRST, the empty stack or the argument? `lnrt-nogos`
+    # cannot say: its line 30 EXISTS and its argument is well formed, so "pop
+    # first" and "parse first" both end at ERR 3. These two separate them, and
+    # they decide the implementation's ORDER, not just its outcome:
+    #   ERR 3 -> the stack is checked before the argument is even looked at
+    #   ERR 2 / ERR 8 -> the argument is parsed and resolved first
+    ("lnrt-nogosbad", ["10 B=1:RETURN B", "20 A=A+20:END", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    ("lnrt-nogosund", ["10 RETURN 99", "20 A=A+20:END", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    # -- A FAILED BRANCH. `lnrt-undef` says which error; `lnrt-undefp` says
+    # whether the frame was popped BEFORE the failure, by asking a handler to
+    # RETURN through it. Handler-entry pushes no frame on MS-BASIC, so:
+    #   frame survived : handler RETURNs to line 30 -> A = 3+50, ERR 8
+    #   frame popped   : handler RETURNs on empty   -> ERR 3 inside a handler
+    ("lnrt-undef",    ["10 GOSUB 40", "20 A=A+20:END", "40 RETURN 99", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    ("lnrt-undefp",   ["10 ON ERROR GOTO 50", "20 GOSUB 40", "30 A=A+3:END",
+                       "40 RETURN 99", "50 A=A+50:RETURN", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    # ...and the same question for the SYNTAX error, which is a different answer
+    # in a different implementation. The cheapest correct branch pops the frame
+    # and then hands the cursor to GOTO's own parser, which pops on ERR 2 as well
+    # as on ERR 8; a version that checks for `$0E` itself pops on neither. This
+    # row is what decides which is faithful instead of which is cheaper.
+    #   frame survived : handler RETURNs to line 30 -> A = 3+50, ERR 2
+    #   frame popped   : handler RETURNs on empty   -> A = 50,   ERR 3
+    ("lnrt-varp",     ["10 ON ERROR GOTO 50", "20 GOSUB 40", "30 A=A+3:END",
+                       "40 B=1:RETURN B", "50 A=A+50:RETURN", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    # -- THE ARGUMENT's own space.
+    ("lnrt-zero",     ["10 GOSUB 40", "20 A=A+20:END", "40 RETURN 0", "RUN",
+                       'PRINT"[";A;ERR;"]"']),      # is 0 a line, or "no argument"?
+    ("lnrt-blank",    ["10 GOSUB 40", "20 A=A+20:END", "30 A=A+30:END",
+                       "40 RETURN 3 0", "RUN", 'PRINT"[";A;ERR;"]"']),
+                                                    # R-N1: blanks inside a line
+                                                    # number are skipped -> 30
+    ("lnrt-var",      ["10 GOSUB 40", "20 A=A+20:END", "30 A=A+30:END",
+                       "40 B=30:RETURN B", "RUN", 'PRINT"[";A;ERR;"]"']),
+                                                    # NOT a $0E: an expression
+    ("lnrt-trail",    ["10 GOSUB 40", "20 A=A+20:END", "30 A=A+30:END",
+                       "40 RETURN 30:A=A+7", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # -- WHICH LINE IS THE ERROR ATTRIBUTED TO? This is not decoration either:
+    # the cheapest implementation of the branch pops the frame FIRST, and the pop
+    # writes CURLINE := the CALLER's line. If it then errors, the error is filed
+    # against the caller. These rows read ERL, so a correct outcome reached with
+    # a corrupted CURLINE cannot pass. `lnrt-erlctl` pins what ERL reads for an
+    # ordinary error on the same line 40, so the two subject rows are a
+    # DIFFERENCE and not a number floating on its own.
+    ("lnrt-erlctl",   ["10 ON ERROR GOTO 50", "20 GOSUB 40", "30 END",
+                       "40 ERROR 7", "50 A=ERL:END", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    ("lnrt-erlund",   ["10 ON ERROR GOTO 50", "20 GOSUB 40", "30 END",
+                       "40 RETURN 99", "50 A=ERL:END", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    ("lnrt-erlvar",   ["10 ON ERROR GOTO 50", "20 GOSUB 40", "30 END",
+                       "40 B=1:RETURN B", "50 A=ERL:END", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    # -- THE CONTEXT. `RETURN <line>` out of an ON ERROR handler is the shape
+    # MS-BASIC documents the feature for, and the handler is entered WITHOUT a
+    # GOSUB frame -- so this is `lnrt-nogos` in the one context where it is
+    # supposed to work. `lnrt-onerrctl` runs the identical program with RESUME
+    # 70, which DOES work today, so the ` 120 ` is a value the instrument is
+    # known to be able to read.
+    ("lnrt-onerrctl", ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 A=A+3:END",
+                       "50 A=A+50:RESUME 70", "70 A=A+70:END", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    ("lnrt-onerr",    ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 A=A+3:END",
+                       "50 A=A+50:RETURN 70", "70 A=A+70:END", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    # Does leaving a handler by RETURN <line> RE-ARM error trapping (as RESUME
+    # does)? The handler counts its own entries and stops at two, so neither
+    # answer can loop:
+    #   re-armed     : ERROR 9 traps again -> A = 2
+    #   still inside : ERROR 9 is fatal    -> A = 1, ERR 9
+    ("lnrt-retrap",   ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 END",
+                       "50 A=A+1:IF A=2 THEN END", "60 RETURN 70",
+                       "70 ERROR 9", "80 END", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # Direct mode: typed at the prompt, with the target line present.
+    ("lnrt-dir",      ["10 A=A+10:END", "30 A=A+30:END", "RETURN 30",
+                       'PRINT"[";A;ERR;"]"']),
+    # 🔴 AIMED AT THE IMPLEMENTATION'S OWN JUSTIFICATION, not at its behaviour.
+    # zerobas' ex_return pushes the token cursor before the empty-stack check and
+    # does NOT pop it on the ERR-3 arm -- deliberately, because raise_error's two
+    # exits both reset SP from SAVSTK, so the byte a `pop hl` would cost buys
+    # nothing (docs/spec-basic-retln.md §4). That argument is a CLAIM, and one
+    # RETURN-without-GOSUB cannot test it: two stray bytes are invisible. Two
+    # HUNDRED of them are 400 bytes of stack, which is not. If the reasoning is
+    # wrong this row does not read a different number, it takes the machine down.
+    # ⚠️ ITS FIRST VERSION DROVE THE 200 TRAPS FROM A `FOR` LOOP AND THEREBY
+    # MEASURED TWO THINGS: `20 FOR I=1 TO 200:RETURN:NEXT` read ` 203  0 ` on
+    # zerobas and ` 5  0 ` on both references. That is NOT a stack leak -- it is
+    # the separate divergence `lnrt-forret` below -- but this row could not say
+    # so. Driven by a counter and a branch instead, it asks only its own question.
+    ("lnrt-leak",     ["10 ON ERROR GOTO 50", "20 A=A+1:IF A>200 THEN 30",
+                       "25 RETURN", "30 A=A+3:END", "50 RESUME 20", "RUN",
+                       'PRINT"[";A;ERR;"]"']),
+    # 🔴 OUT OF SCOPE, FOUND BY THIS SLICE'S OWN APPARATUS -- AND THE FIRST
+    # ATTRIBUTION I WROTE FOR IT WAS WRONG, REFUTED BY ITS OWN CONTROL.
+    # I filed it as "an error trap destroys the reference's FOR frame" (MS-BASIC
+    # keeps FOR frames on the Z80 stack, which a trap unwinds). `lnrt-forerr` is
+    # the identical program with `ERROR 7` in place of `RETURN`, and it reads
+    # ` 103  0  4 ` on ALL THREE SIDES: the loop runs its three iterations and the
+    # FOR frame is fine. An ordinary trap is not the variable. `RETURN` is --
+    # MS-BASIC's RETURN discards the FOR entries it walks past looking for a GOSUB
+    # frame, and with no GOSUB frame at all that means the open FOR. zerobas keeps
+    # FOR and GOSUB on SEPARATE RAM stacks, so nothing is walked past and the loop
+    # survives. Architectural, nothing to do with `RETURN <line>`, filed in
+    # TODO.md and PINNED here so it cannot be forgotten.
+    #   refs   : RETURN traps (A=1), RESUME NEXT lands on NEXT, which is now
+    #            NEXT-without-FOR and traps too (A=2), and that resume falls into
+    #            line 30 -> ` 102  0  1 `
+    #   zerobas: three iterations -> ` 103  0  4 `
+    ("lnrt-forret",   ["10 ON ERROR GOTO 50", "20 FOR I=1 TO 3:RETURN:NEXT",
+                       "30 A=A+100:END", "50 A=A+1:RESUME NEXT", "RUN",
+                       'PRINT"[";A;ERR;I;"]"']),
+    # THE CONTROL, and it is the row that refuted the paragraph above. One
+    # variable changes -- `ERROR 7` for `RETURN` -- and the divergence vanishes.
+    ("lnrt-forerr",   ["10 ON ERROR GOTO 50", "20 FOR I=1 TO 3:ERROR 7:NEXT",
+                       "30 A=A+100:END", "50 A=A+1:RESUME NEXT", "RUN",
+                       'PRINT"[";A;ERR;I;"]"']),
+]
+
+SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD
+            + KWGZ + LNRT}
 
 CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + LNL + CNM
          + LNR + LNRX + LNR2 + LNV + LNV2 + LNA
-         + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ)
+         + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ + LNRT)
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
 # informational because nobody had a RULE for them: `dec-bin` was the `&B`
@@ -1875,6 +2071,13 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 # RETURN <line> is a STATEMENT feature this slice does not implement, so the row
 # must keep reading 20 and not 30.
 #
+# 🔴 AND `lnrd-return` FIRED AND RETIRED IN D-RETLN, THE SEVENTH COHORT TO LEAVE
+# THAT WAY. The statement landed (docs/spec-basic-retln.md), the allowlist
+# reported "allowlisted as divergent but the row now AGREES -- retire the entry",
+# and the entry was **DELETED** rather than updated to the new value. Seven
+# cohorts, not one of them rotted. Its successor battery (`lnrt`, 25 rows) adds
+# NO pins at all: every row agrees with both references.
+#
 # ⚠️ THIS ENDS FIVE COHORTS OF AN EMPTY ALLOWLIST AND IT IS A DELIBERATE TRADE.
 # Every entry is measured, currently true, and has ONE named retirement path.
 # The alternative -- leaving them informational -- is the shape TODO.md already
@@ -1899,10 +2102,6 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 # rows whose divergence is a missing STATEMENT, not a missing crunch rule, each
 # with one named retirement path.
 KNOWN_DIVERGE = {
-    # say mode: RETURN <line> is not implemented -- ex_return pops the frame and
-    # never reads its argument, so this returns to the GOSUB caller (line 20)
-    # where both references go to line 30.
-    "lnrd-return":  " 20  0 ",
     # D-KWGAP4 say mode: the STATEMENT half of the four editor verbs. The crunch
     # is now byte-exact (the rows above retired); these two say the verbs still
     # do NOTHING, and they are pinned so the day a handler lands the gate says so.
@@ -1919,6 +2118,15 @@ KNOWN_DIVERGE = {
     # GOTO instrument reads ` 2  0 ` when the target line DOES exist, so this
     # row's ` 0  8 ` is a missing LINE and not a broken instrument.
     "kwgd-renum":   " 0  8 ",
+    # D-RETLN say mode, and NOT about `RETURN <line>` at all -- found by this
+    # slice's apparatus while it was testing something else. MS-BASIC's `RETURN`
+    # discards the FOR entries it walks past looking for a GOSUB frame (both
+    # stacks are the Z80 stack); zerobas keeps FOR and GOSUB on separate RAM
+    # stacks, so an open FOR survives a `RETURN` that finds no frame. Its control
+    # `lnrt-forerr` -- the identical program with `ERROR 7` for `RETURN` -- agrees
+    # ` 103  0  4 ` on all three sides, so this is `RETURN`'s own doing and not
+    # the error trap's. Architectural; retirement path is the TODO.md item.
+    "lnrt-forret":  " 103  0  4 ",
 }
 
 

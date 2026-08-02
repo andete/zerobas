@@ -28,7 +28,6 @@ do_vpoke:
                                             ; domain F2 wired) -- >int16 ERR 6, 16384.. ERR 5.
                 push    de                  ; save address
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','                 ; comma required
                 jr      nz,vdp_err
                 inc     hl
@@ -52,7 +51,6 @@ do_out:
                 call    eval_addr           ; D-F2-2 A1: OUT's port/value are the checked
                 push    de                  ; save port
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','                 ; comma required
                 jr      nz,vdp_err
                 inc     hl

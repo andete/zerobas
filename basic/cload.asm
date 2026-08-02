@@ -48,7 +48,6 @@ do_cload:
                 xor     a
                 ld      (CAS_VERIFY),a      ; default: a real load (not CLOAD?)
                 call    skip_spaces
-                ld      a,(hl)
                 ; Tier-3 Item B: `CLOAD?` is the VERIFY form. Our tokeniser maps
                 ; '?' to PRINT (interp.asm), so `CLOAD?` tokenises to CLOAD_TOKEN
                 ; + PRINT_TOKEN — detect that leading PRINT_TOKEN here.
@@ -60,7 +59,6 @@ do_cload:
                 xor     a
                 ld      (CAS_VMIS),a        ; fresh verify (no mismatch yet)
                 call    skip_spaces
-                ld      a,(hl)
 dcl_name:
                 ; A = (hl); HL at the first argument char (name or terminator).
                 or      a
@@ -91,7 +89,6 @@ do_load:
                 xor     a
                 ld      (CAS_VERIFY),a      ; LOAD is a real load, never CLOAD? verify
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '"'                 ; opening quote required
                 jp      nz,load_error
                 inc     hl
@@ -171,7 +168,6 @@ do_run:
                 xor     a
                 ld      (CAS_VERIFY),a      ; RUN"CAS:" is a real load, never verify
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '"'                 ; a quoted filename -> device load+run
                 jp      nz,run_prog         ; bare RUN / RUN<lineno> -> run stored
                 inc     hl                  ; past the opening quote

@@ -150,7 +150,6 @@ exec_stmt:
                                             ; statement dispatch on $E3D4 -> syntax error
                                             ; (Fable review 2026-07-16). DE is dead on entry.
                 call    skip_spaces         ; leading spaces are skipped (spec §5)
-                ld      a,(hl)
                 or      a
                 ret     z                   ; end of line -> back to the prompt
                 ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`
@@ -495,7 +494,6 @@ ex_let:
                                             ; VARTYPE=8, mis-storing A% as double)
                 push    bc                  ; save key across '=' + eval
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN            ; '=' crunches to $EF (spec §4)
                 jr      nz,ex_let_err
                 inc     hl
@@ -532,7 +530,6 @@ ex_let_str:
                                             ; '(' peek right above
                 push    bc                  ; save key across '=' + str_eval
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN            ; '=' -> $EF
                 jr      nz,ex_let_err
                 inc     hl
@@ -1259,7 +1256,6 @@ ex_goto:
                 inc     hl                  ; past the GOTO token
 ex_goto_at:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      LINENO_TOKEN        ; $0E expected
                 jp      nz,stmt_error
                 inc     hl
@@ -1314,7 +1310,6 @@ ex_if:
                 inc     e                   ; nonzero float -> DE=1 (true)
 exif_truth_ok:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      THEN_TOKEN
                 jr      z,if_then
                 cp      GOTO_TOKEN          ; allow `IF <expr> GOTO <line>`
@@ -1343,7 +1338,6 @@ if_false:
                 ret     z                   ; no ELSE -> line done
                 inc     hl                  ; past the ELSE ($A1) token
                 call    skip_spaces
-                ld      a,(hl)
                 cp      LINENO_TOKEN
                 jr      z,if_branch
                 jp      exec_stmt           ; ELSE <statements>

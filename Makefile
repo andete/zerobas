@@ -1222,6 +1222,15 @@ lnblank-echo: repack-machine
 # NOTHING at run time now that their crunch is byte-exact, and a pin nobody runs
 # is the `dir-name` defect itself.
 #
+# D-RETLN widened it again, to `lnrd-,kwgd-,lnrt-`: the 25-row `lnrt` battery is
+# what `RETURN <line>` is gated by, and six of those rows gate the IMPLEMENTATION
+# rather than the outcome -- `lnrt-nogosbad`/`lnrt-nogosund` pin that the
+# empty-stack check runs BEFORE the argument, `lnrt-undefp`/`lnrt-varp` that both
+# failure modes pop the frame first, and `lnrt-erlund`/`lnrt-erlvar` that the
+# error is filed against the RETURN's own line. None of those can be seen by a
+# row reading only where control went. It carries NO pins: D-RETLN retired the
+# one it inherited (`lnrd-return`) instead of adding any.
+#
 # ⚠️ `kwgz-` IS DELIBERATELY NOT HERE. Those rows are SIDE_LOCKed to zerobas
 # (AUTO is interactive, LLIST drives an unplugged LPTOUT -- both hang a
 # reference), so they carry no oracle lock and gate nothing. Read them with
@@ -1229,7 +1238,7 @@ lnblank-echo: repack-machine
 lnblank-say-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lnblank.py --gate --say \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
-	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-) --repeat $(if $(REPEAT),$(REPEAT),1)
+	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-,lnrt-) --repeat $(if $(REPEAT),$(REPEAT),1)
 
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #

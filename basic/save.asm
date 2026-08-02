@@ -76,7 +76,6 @@ do_bsave:
                 xor     a
                 ld      (VRAM_FLAG),a       ; default RAM source; ",S" sets it below
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '"'                 ; opening quote required
                 jp      nz,load_error
                 inc     hl
@@ -165,7 +164,6 @@ bsv_cas_open:
 ; Entry: HL -> the bytes after the SAVE token.
 do_save:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '"'                 ; opening quote required
                 jp      nz,load_error
                 inc     hl
@@ -193,7 +191,6 @@ sav_is_disk:
                 inc     hl
                 ; --- optional ,A -> ASCII listing save; else tokenised ------
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      z,sav_ascii_flag    ; SAVE"name",<flag> -> check for ,A
                 or      a
@@ -207,13 +204,11 @@ sav_is_disk:
 sav_ascii_flag:
                 inc     hl                  ; past the ','
                 call    skip_spaces
-                ld      a,(hl)
                 call    upcase
                 cp      'A'
                 jp      nz,load_error       ; only ,A is supported
                 inc     hl                  ; past the 'A'
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jp      nz,load_error       ; trailing junk after ,A
                 ; fall through to ascii_save
@@ -248,7 +243,6 @@ sav_is_cas:
                 inc     hl                  ; past closing '"'
                 ; --- optional ,A -> ASCII listing save to tape; else tokenised ---
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      z,sav_cas_flag      ; SAVE"CAS:name",<flag> -> check for ,A
                 or      a
@@ -257,13 +251,11 @@ sav_is_cas:
 sav_cas_flag:
                 inc     hl                  ; past the ','
                 call    skip_spaces
-                ld      a,(hl)
                 call    upcase
                 cp      'A'
                 jp      nz,load_error       ; only ,A is supported
                 inc     hl                  ; past the 'A'
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jp      nz,load_error       ; trailing junk after ,A
                 ; fall into cas_ascii_save
@@ -398,7 +390,6 @@ cas_fb_lp:
 ; In:  HL -> bytes after the closing '"'.   Out: CF=0 ok (HL advanced), CF=1 bad.
 csav_speed:
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 ret     z                   ; end of statement -> no speed (CF=0)
                 cp      COLON
@@ -432,7 +423,6 @@ csav_sp_apply:
                 ; untouched. DE = the selected reference LOW word.
                 ld      (ACT_LOW),de        ; active LOW = the selected rate
                 call    skip_spaces         ; HL is past the speed (eval advanced it)
-                ld      a,(hl)
                 or      a
                 ret     z                   ; clean end -> CF=0
                 cp      COLON
@@ -450,7 +440,6 @@ csav_sp_err:
 ; ,speed clause is honoured in BOTH forms -- CSAVE"n",2 and the no-name CSAVE,2.
 do_csave:
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,csav_noname       ; bare CSAVE (no name)
                 cp      COLON
@@ -555,7 +544,6 @@ tpn_fill:
 ; flag is a lone 'S' followed by a statement terminator (NUL or ':'); "SX"/"S+1" reject.
 bsave_opt4:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      z,b4_have
                 xor     a                   ; no 4th argument (A=0, CF clear)
@@ -563,7 +551,6 @@ bsave_opt4:
 b4_have:
                 inc     hl                  ; past the comma
                 call    skip_spaces
-                ld      a,(hl)
                 call    upcase
                 cp      'S'
                 jr      z,b4_maybe_s
@@ -579,7 +566,6 @@ b4_maybe_s:
                 push    hl                  ; remember the S position
                 inc     hl
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,b4_is_s           ; S then end-of-statement -> the flag
                 cp      COLON
@@ -603,7 +589,6 @@ b4_expr:
 ; expression. DE = value, HL advanced. On a missing comma, jumps to load_error.
 expect_comma_eval:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      nz,load_error
                 inc     hl                  ; past the comma

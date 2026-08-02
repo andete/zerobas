@@ -44,7 +44,6 @@ ex_screen:
     ENDIF
                 inc     hl                  ; past the SCREEN token
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jp      z,exec_stmt         ; bare SCREEN -> mode omitted, no-op
                 cp      COLON
@@ -71,12 +70,10 @@ ex_screen:
                 pop     hl
 scr_extra:                                  ; evaluate + ignore any trailing args
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      nz,exec_stmt        ; no comma -> done
                 inc     hl                  ; past the comma
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jp      z,exec_stmt
                 cp      COLON
@@ -96,7 +93,6 @@ scr_extra:                                  ; evaluate + ignore any trailing arg
 ex_color:
                 inc     hl                  ; past the COLOR token
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jp      z,clr_apply         ; bare COLOR -> re-apply current colours
                 cp      COLON
@@ -107,13 +103,11 @@ ex_color:
                 ld      a,e
                 ld      (FORCLR),a
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      nz,clr_apply
 clr_bg:
                 inc     hl                  ; past the comma
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','                 ; "COLOR fg,,border" -> bg omitted
                 jr      z,clr_bd
                 or      a
@@ -124,13 +118,11 @@ clr_bg:
                 ld      a,e
                 ld      (BAKCLR),a
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      nz,clr_apply
 clr_bd:
                 inc     hl                  ; past the comma
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jp      z,clr_apply
                 cp      COLON
@@ -211,7 +203,6 @@ wid_missing:
 ex_key:
                 inc     hl                  ; past the KEY token
                 call    skip_spaces
-                ld      a,(hl)
     IF TRAPS_T3
                 cp      '('                 ; KEY(n) ON|OFF|STOP -- the T3 arming form.
                 jp      z,ex_key_stmt       ; Tested AHEAD of ON/OFF so the display form

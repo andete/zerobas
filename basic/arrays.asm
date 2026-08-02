@@ -393,7 +393,6 @@ apsub_lp:
                                             ; 255-char line only reaches 123)
                 push    bc                  ; [COUNT] back on top
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      z,apsub_comma
                 cp      ')'
@@ -556,7 +555,6 @@ ed_lp:
                 push    af                  ; [STR?] -- survives var_name_key
                 call    var_name_key        ; BC=key, HL past name; (VARTYPE)=type
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '('
                 jr      z,ed_haveparen
                 jr      ee_synerr_pop       ; DIM requires a bound list -- shares
@@ -586,7 +584,6 @@ ed_settype:
                                             ; frame and has already released it, so
                                             ; the old ela_parse_abort stub is gone
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,ed_done
                 inc     hl
@@ -665,7 +662,6 @@ ee_lp:
                                             ; and var_str_type's own B/DE scratch)
                 call    var_name_key        ; BC=key, HL past name; (VARTYPE)=type
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '('
                 jr      z,ee_synerr_pop     ; Tier A: 'ERASE A(' -- subscript/paren form
                                             ; (ERASE A(1)/A()) is a syntax error, not a
@@ -699,7 +695,6 @@ ee_settype:
                                             ; never reads HL, just tidy stack balance)
                 jp      nz,fp_runtime_error
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,ee_done
                 inc     hl
@@ -806,7 +801,6 @@ ex_let_arr:
                 ld      a,(ARY_TYPE)
                 push    af                  ; [TYPE]
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN
                 jp      nz,ela_err
                 inc     hl
@@ -973,7 +967,6 @@ ex_let_arr_str:
                                             ; across str_eval exactly like the
                                             ; old [ADDR] push (see header)
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN
                 jp      nz,elas_err
                 inc     hl

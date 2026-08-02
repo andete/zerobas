@@ -28,7 +28,6 @@ ex_print:
                 inc     hl                  ; past the PRINT token
                 ; PRINT #n, … (file form): redirect the item loop to the channel.
                 call    skip_spaces
-                ld      a,(hl)
                 cp      USING_TOKEN         ; PRINT USING "fmt"; values  (formatted)
                 jp      z,ex_print_using
                 cp      '#'
@@ -91,7 +90,6 @@ exp_dev_set:
                 ld      (PRDEV),a
 exp_sep:
                 call    skip_spaces         ; consume the separator after #n (','/';')
-                ld      a,(hl)
                 cp      ','
                 jr      z,exp_hash_sep
                 cp      ';'
@@ -106,13 +104,11 @@ exp_hash_go:
                 ; to the channel. The comma after #n was consumed above; USING may also
                 ; follow #n directly (no comma) — both crunch to … 23 <ch> [2C] E4 ….
                 call    skip_spaces
-                ld      a,(hl)
                 cp      USING_TOKEN
                 jp      z,ex_print_using
                 ; fall through into the shared item loop
 exp_loop:
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jp      z,exp_nl_ret        ; end of line -> newline, done (repack:
                                             ; the F2 driver checks pushed this out of
@@ -172,7 +168,6 @@ exp_strvar:
                 call    str_eval            ; STRPTR -> the var's value, HL advanced
                 jr      nc,exps_fallback    ; defensive: not a string after all
                 call    skip_spaces
-                ld      a,(hl)
                 call    relop_peek          ; ZF=1 iff (HL) is a relop token
                 jr      nz,exps_notrel      ; no relop -> maybe an operator (below)
                 pop     hl                  ; relop follows -> restore the operand START
@@ -224,7 +219,6 @@ exps_fallback:
 exp_semi:
                 inc     hl                  ; ';' = no spacing
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 ret     z                   ; trailing ';' at EOL -> no newline
                 cp      COLON
@@ -279,7 +273,6 @@ slcq_lp:
                 cp      '"'
                 jr      nz,slcq_lp          ; scan to the closing quote
                 call    skip_spaces         ; HL -> next non-space token
-                ld      a,(hl)
                 call    op_after_str_q      ; an OPERATOR ($F1..$FC) follows? ZF=1 if so.
                 jr      z,slcq_yes          ; (widened from a bare `cp PLUS_TOKEN`: every
                 ld      a,(hl)              ;  operator after a literal must leave the fast
@@ -311,7 +304,6 @@ exp_comma:
                 inc     hl
                 call    print_comma_zone    ; pad to the next 14-column zone
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 ret     z                   ; trailing ',' at EOL -> no newline
                 cp      COLON
@@ -471,7 +463,6 @@ exp_pos_arg:
                 call    get_byte_arg        ; A = n, or abort (ERR 6 / ERR 5)
                 push    af
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ')'
                 jr      nz,exp_pos_syn
                 inc     hl

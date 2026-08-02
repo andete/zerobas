@@ -44,7 +44,6 @@
 ex_clear:
                 inc     hl                  ; past the CLEAR token
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,clr_done          ; bare CLEAR (end of line)
                 cp      COLON
@@ -72,7 +71,6 @@ ex_clear:
                 ld      (POOLSIZE),de       ; the pool floor is derived sub-side
     ENDIF
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','                 ; a second (memory-top) arg?
                 jr      nz,clr_done         ; no comma -> done
 clr_himem:

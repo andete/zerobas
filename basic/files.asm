@@ -237,7 +237,6 @@ ex_open:
                 jp      do_open
 do_open:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '"'
                 jp      nz,stmt_error       ; filename string required
                 inc     hl                  ; HL -> first filename char
@@ -257,7 +256,6 @@ do_open:
                 call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
                 inc     hl                  ; past the closing '"'
                 call    skip_spaces
-                ld      a,(hl)
                 cp      FOR_TOKEN           ; FOR
                 jp      nz,oo_random        ; no FOR clause -> RANDOM mode (OPEN..AS #n)
                 inc     hl
@@ -268,7 +266,6 @@ do_open:
                 ; crunches it as the name "APP" followed by the END token (oracle:
                 ; VG-8020 + zerobas both emit $41 $50 $50 $81 — already byte-identical).
                 call    skip_spaces
-                ld      a,(hl)
                 cp      INPUT_TOKEN
                 jr      z,oo_input
                 cp      OUT_TOKEN
@@ -442,12 +439,10 @@ oodv_fn:
                 jr      nz,oodv_fn          ; consume through the closing quote
                 ; require: FOR OUTPUT AS [#]n , then end-of-statement
                 call    skip_spaces
-                ld      a,(hl)
                 cp      FOR_TOKEN
                 jp      nz,oo_fail_syn      ; device channels require FOR OUTPUT
                 inc     hl
                 call    skip_spaces
-                ld      a,(hl)
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
                 jp      nz,oo_fail_syn      ; INPUT from LPT:/CRT: is invalid
                 inc     hl
@@ -457,7 +452,6 @@ oodv_fn:
                 inc     hl
                 call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
                 call    skip_spaces         ; only a terminator may follow (no LEN=)
-                ld      a,(hl)
                 or      a
                 jr      z,oodv_ok
                 cp      COLON
@@ -495,12 +489,10 @@ oo_dev_cas:
                 inc     hl                  ; past the closing '"'
                 ; require FOR INPUT | FOR OUTPUT
                 call    skip_spaces
-                ld      a,(hl)
                 cp      FOR_TOKEN
                 jp      nz,oo_fail_syn      ; CAS: needs FOR (no RANDOM cassette)
                 inc     hl
                 call    skip_spaces
-                ld      a,(hl)
                 cp      INPUT_TOKEN
                 jr      z,oocas_in
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
@@ -521,7 +513,6 @@ oocas_setmode:
                 ld      (OO_DEVTYPE),a      ; remember the CAS mode across the AS/#n parse
                 call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
                 call    skip_spaces         ; only a terminator may follow (no LEN=)
-                ld      a,(hl)
                 or      a
                 jr      z,oocas_argsok
                 cp      COLON
@@ -606,7 +597,6 @@ dev_crt:        db      "CRT:",0
 ; Clobbers A,BC,DE,HL.
 oo_parse_reclen:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      PEEK_PREFIX         ; $FF function-token prefix?
                 jr      nz,opr_default
                 inc     hl
@@ -621,7 +611,6 @@ opr_default:
 opr_have:
                 inc     hl                  ; past $92
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN            ; '='
                 jr      nz,opr_bad
                 inc     hl
@@ -659,7 +648,6 @@ opr_bad:
 ex_line:
                 inc     hl                  ; HL -> bytes after the LINE token
                 call    skip_spaces
-                ld      a,(hl)
                 cp      INPUT_TOKEN         ; LINE must be followed by INPUT ...
                 jp      nz,ex_line_gfx      ; repack: else it's a graphics LINE (graphics.asm)
                 inc     hl                  ; HL -> after INPUT
@@ -673,7 +661,6 @@ ex_input:
 input_common:
                 ld      (FCH_RDMODE),a
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '#'                 ; file form (#n) vs the console form
                 jp      nz,input_console    ; repack: console INPUT / LINE INPUT (basic/input.asm)
                 inc     hl
@@ -728,7 +715,6 @@ inp_cas:
                 ld      (ARL_GETBYTE),de
 inp_readvar:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      nz,stmt_error
                 inc     hl
@@ -811,7 +797,6 @@ ris_done:
 ex_close:
                 inc     hl                  ; HL -> bytes after the CLOSE token
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,dc_all            ; bare CLOSE (end of line) -> close all
                 cp      COLON
@@ -820,7 +805,6 @@ ex_close:
                 ; parse one [#]expr, close it, and while the next token is ',' repeat.
 dc_listloop:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '#'
                 jr      nz,dc_num
                 inc     hl
@@ -843,7 +827,6 @@ dc_num:
 dc_done:
                 pop     hl                  ; restore the text cursor
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,dc_finish        ; no more channels in the list
                 inc     hl                  ; consume ',' and parse the next channel
@@ -1031,7 +1014,6 @@ fch_claim:
 oo_parse_as_chan:
                 ; "AS" is kept verbatim ASCII (not tokenised) -- match it.
                 call    skip_spaces
-                ld      a,(hl)
                 call    upcase
                 cp      'A'
                 jp      nz,oo_fail_syn
@@ -1042,7 +1024,6 @@ oo_parse_as_chan:
                 jp      nz,oo_fail_syn
                 inc     hl
                 call    skip_spaces
-                ld      a,(hl)              ; optional '#'
                 cp      '#'
                 jr      nz,oopac_num
                 inc     hl
@@ -1251,7 +1232,6 @@ ex_kill:
                 jp      do_kill
 do_kill:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '"'
                 jp      nz,stmt_error       ; filename string required
                 inc     hl                  ; HL -> first filename char
@@ -1294,7 +1274,6 @@ ex_name:
                 jp      do_name
 do_name:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '"'
                 jp      nz,stmt_error       ; old filename string required
                 inc     hl                  ; HL -> first char of the old name
@@ -1302,7 +1281,6 @@ do_name:
                 inc     hl                  ; past the closing '"'
                 ; "AS" (verbatim ASCII)
                 call    skip_spaces
-                ld      a,(hl)
                 call    upcase
                 cp      'A'
                 jp      nz,stmt_error
@@ -1313,7 +1291,6 @@ do_name:
                 jp      nz,stmt_error
                 inc     hl
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '"'
                 jp      nz,stmt_error       ; new filename string required
                 ld      a,(DISKSLOT_OK)
@@ -1376,7 +1353,6 @@ ex_maxfiles:
                 jp      nz,stmt_error       ; bare MAX is not a statement
                 inc     hl                  ; past FILES ($B7)
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN            ; '=' ($EF)
                 jp      nz,stmt_error
                 inc     hl
@@ -1454,7 +1430,6 @@ ex_maxfiles:
 ex_merge:
                 inc     hl                  ; HL -> bytes after the MERGE token
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '"'
                 jp      nz,stmt_error       ; filename string required
                 inc     hl                  ; HL -> first filename char (inside quotes)
@@ -1595,7 +1570,6 @@ mrg_storeline:
                 ld      (hl),0              ; terminate the accumulated line
                 ld      hl,LINEBUF
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,msl_ok            ; blank line -> skip
                 cp      '0'

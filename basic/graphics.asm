@@ -47,7 +47,6 @@ gfx_plot_stmt:
                 call    parse_coord         ; BC = x, DE = y (int16, STEP resolved); HL past ')'
                 ; --- optional ",c" colour override ---
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,gfx_plot_go      ; no ",c" -> keep the default colour
                 inc     hl                  ; consume the ','
@@ -139,7 +138,6 @@ ex_line_gfx:
                 ld      (GRPACX),bc         ; stage running ref = p1 (STEP chain, §3.3)
                 ld      (GRPACY),de
                 call    skip_spaces
-                ld      a,(hl)
                 cp      MINUS_TOKEN         ; '-' between the two coordinates is mandatory
                 jp      nz,elg_syntax
                 inc     hl                  ; consume '-'
@@ -158,12 +156,10 @@ elg_second:
                 xor     a
                 ld      (GFX_MODE),a        ; default: segment
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      nz,elg_draw         ; no options
                 inc     hl                  ; consume the 1st comma
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','                 ; ",," -> colour omitted, straight to box field
                 jr      z,elg_box_comma
                 call    is_box_kw           ; single-comma box (",B"/",BF") ?
@@ -174,7 +170,6 @@ elg_second:
                 and     $0F
                 ld      (GFX_C),a
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      nz,elg_draw         ; ",c" only
 elg_box_comma:
@@ -241,7 +236,6 @@ ibk_term:
 ; -- so the pushed x need not be balanced on the error path. Own-design.
 parse_coord:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      STEP_TOKEN          ; $DC -> relative coordinate
                 jr      nz,pc_absolute
                 inc     hl                  ; consume STEP
@@ -252,20 +246,17 @@ pc_absolute:
 pc_flag:
                 ld      (GFX_REL),a
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '('
                 jr      nz,pc_syntax
                 inc     hl
                 call    gfx_eval_int16   ; DE = x, ERR 6 if > int16 (HL guarded)
                 push    de                  ; save x across the y eval
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,pc_syntax
                 inc     hl
                 call    gfx_eval_int16   ; DE = value; ERR 6 if > int16
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ')'
                 jr      nz,pc_syntax
                 inc     hl
@@ -492,12 +483,10 @@ ex_paint:
                 ld      (GFX_C),a
                 ; --- optional ",[C][,[B]]" ---
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,ep_default_b     ; no fields at all -> C=FORCLR, B=C
                 inc     hl                  ; consume the comma
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      z,ep_c_empty        ; ",," -> C omitted; this comma intros B
                 or      a
@@ -511,7 +500,6 @@ ex_paint:
                 call    gfx_eval_int16      ; DE = value (silent int16); ERR 6 if > int16
                 call    gfx_store_colour_checked  ; ERR 5 if outside 0..15; GFX_C=value
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,ep_default_b     ; no ",B" -> B = C
                 inc     hl                  ; consume the comma introducing B
@@ -520,7 +508,6 @@ ep_c_empty:
                 inc     hl                  ; consume the shared comma
 ep_parse_b:
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,ep_default_b      ; empty B field -> B = C
                 cp      COLON
@@ -533,7 +520,6 @@ ep_parse_b:
                 ld      a,e
                 ld      (GFX_B),a           ; low byte only (spec §6: GFX_B is 1 B)
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      z,ep_syntax         ; a 4th argument -> ERR 2
                 jr      ep_draw
@@ -678,7 +664,6 @@ ex_sprite:
                 cp      '$'                 ; the `$` is separate ASCII (crunch pin)
                 jr      z,spr_assign
                 call    skip_spaces
-                ld      a,(hl)
     IF TRAPS_T4
                 ; The shared decode (program.asm onoff_decode). ⚠️ It lives behind
                 ; `IF the repack build`, and this routine is always-assembled
@@ -735,7 +720,6 @@ spr_assign:
                 jp      z,gfx_err5          ; SPRITE$= in SCREEN 0 -> ERR 5
                 call    spr_parse_index     ; GFX_SN = n; HL past ')'
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN
                 jp      nz,gfx_syntax       ; `SPRITE$(0)` with no `=` -> ERR 2
                 inc     hl
@@ -854,12 +838,10 @@ ex_put_sprite:
                 call    gfx_eval_int16      ; DE = plane (domain checked by the tenant)
                 ld      (GFX_SN),de
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      nz,gfx_syntax       ; `PUT SPRITE 0` -> ERR 2 (measured)
                 inc     hl
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '('
                 jr      z,pspr_coords
                 cp      STEP_TOKEN
@@ -878,13 +860,11 @@ pspr_coords:
                 ld      a,1                 ; bit 0 = coordinates given
                 ld      (GFX_SFLAGS),a
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,pspr_go
 pspr_optional:
                 inc     hl                  ; past the ',' before the colour
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      z,pspr_pattern      ; colour omitted -> keep the entry's colour
                 call    gfx_eval_int16      ; DE = colour (domain checked by the tenant)
@@ -893,7 +873,6 @@ pspr_optional:
                 or      $02                 ; bit 1 = colour given
                 ld      (GFX_SFLAGS),a
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,pspr_go
 pspr_pattern:
@@ -904,7 +883,6 @@ pspr_pattern:
                 or      $04                 ; bit 2 = pattern given
                 ld      (GFX_SFLAGS),a
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      z,gfx_syntax        ; a 5th argument -> ERR 2 (measured)
 pspr_go:
@@ -987,13 +965,11 @@ g8_int_result:
 ; Shared by the function forms above and the assignment forms below.
 g8_open_paren:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '('
                 jp      nz,gfx_syntax
                 inc     hl
                 call    g8_num_operand      ; DE = n (ERR 13 on a string, ERR 6 > int16)
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ')'
                 jp      nz,gfx_syntax
                 inc     hl
@@ -1027,12 +1003,10 @@ g8_assign:
                 call    g8_open_paren       ; DE = n, HL past ')'
                 ld      (GFX_G8N),de
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN
                 jp      nz,gfx_syntax       ; `VDP(0)` alone / `VDP(0),1` -> ERR 2
                 inc     hl
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,g8_missing        ; `VDP(0)=` at end of line -> ERR 24
                 cp      ':'
@@ -1040,7 +1014,6 @@ g8_assign:
                 call    g8_num_operand      ; DE = value (ERR 13 on a string)
                 ld      (GFX_G8V),de
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,g8_run
                 cp      ':'

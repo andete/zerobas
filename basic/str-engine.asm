@@ -346,7 +346,6 @@ sst_overflow:
 str_concat_tail:
                 push    hl                  ; save cursor (operand-1 end)
                 call    skip_spaces         ; HL -> next non-space
-                ld      a,(hl)
                 cp      PLUS_TOKEN          ; '+' ($F1) ?
                 jr      z,sct_go
                 pop     hl                  ; no concat -> restore exact cursor
@@ -384,7 +383,6 @@ sct_loop:
                 jr      nz,sct_append_err   ; heap OOM / overflow -> [R][cursor]
                 pop     hl                  ; HL = cursor            [R]
                 call    skip_spaces
-                ld      a,(hl)
                 cp      PLUS_TOKEN
                 jr      z,sct_loop          ; another '+': HL @ '+', [R] on stack
                 ; no more terms -> result = R
@@ -1302,7 +1300,6 @@ ev_f_instr:
                 call    eval_pos_arg        ; DE = p, 1..255 (D-MISS-2; or aborts)
                 push    de                  ; guard p                             [p]
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,efi_reject_p
                 inc     hl
@@ -1401,7 +1398,6 @@ exp_maybe_strfn:
                 call    str_eval            ; STRPTR -> value; HL advanced; CF=ok
                 jr      nc,ems_fallback     ; not a string function -> numeric factor
                 call    skip_spaces
-                ld      a,(hl)
                 call    relop_peek          ; ZF=1 iff (HL) is a relop token
                 jr      nz,ems_print        ; no relop -> plain PRINT (below)
                 pop     hl                  ; relop follows -> restore the operand START

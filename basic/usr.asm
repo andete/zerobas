@@ -56,14 +56,12 @@ cut_lp:
 ex_def:
                 inc     hl                  ; past the DEF token
                 call    skip_spaces
-                ld      a,(hl)
                 cp      USR_TOKEN           ; DEF USR -> machine-code vector
                 jp      nz,ex_def_type      ; else DEFINT/SNG/DBL/STR (or stmt_error)
                 inc     hl                  ; past USR
                 call    usr_index           ; A = vector index 0..9 (HL advanced)
                 push    af                  ; save index across '=' + eval
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN            ; '=' crunches to $EF
                 jr      nz,ex_def_err
                 inc     hl
@@ -83,7 +81,6 @@ ex_def_err:
 ; numbers, so the one-byte $0F form never arises here.)
 usr_index:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      INT_DIGIT_BASE      ; $11
                 jr      c,usi_dflt
                 cp      $1A+1               ; $11..$1A -> digits 0..9

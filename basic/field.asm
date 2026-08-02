@@ -139,7 +139,6 @@ fldf_next:
 ex_field:
                 inc     hl                  ; past the FIELD token
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '#'
                 jr      nz,exf_havech
                 inc     hl
@@ -169,7 +168,6 @@ exf_havech:
                 ld      (FLD_CUROFF+1),a
                 ; a comma separates the channel from the field list: FIELD #f , w AS v$
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jp      nz,stmt_error
                 inc     hl
@@ -178,7 +176,6 @@ exf_item:
                 call    eval                ; DE = field width; HL advanced
                 push    de                  ; save width across the "AS" + name parse
                 call    skip_spaces
-                ld      a,(hl)              ; "AS" (verbatim ASCII, not tokenised)
                 call    upcase
                 cp      'A'
                 jp      nz,exf_syn
@@ -200,7 +197,6 @@ exf_item:
                 call    fld_add             ; add [FLD_CHAN, BC, FLD_CUROFF, E]; bump offset
                 pop     hl
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      z,exf_comma
                 jp      exec_stmt           ; end of the field list
@@ -302,7 +298,6 @@ lrset_common:
                 ld      (LRSET_W),a
                 pop     hl                  ; restore cursor
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN            ; '='
                 jp      nz,stmt_error
                 inc     hl
@@ -478,7 +473,6 @@ ex_put:
                 push    hl
                 inc     hl
                 call    skip_spaces
-                ld      a,(hl)
                 cp      SPRITE_TOKEN
                 jp      z,pus_is_sprite
                 pop     hl
@@ -496,7 +490,6 @@ gp_common:
                 ld      (GP_MODE),a
                 inc     hl                  ; past the GET/PUT token
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '#'
                 jr      nz,gp_nochan
                 inc     hl
@@ -508,7 +501,6 @@ gp_nochan:
                 ld      (GP_CHAN),a
                 ; optional ", recno" (else default record 1)
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,gp_defrec
                 inc     hl

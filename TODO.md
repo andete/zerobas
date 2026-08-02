@@ -3921,19 +3921,90 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it kills it. Whoever implements them needs a plugged printer
       ([[openmsx-printer-pluggable]]) or a different instrument first.
 
-- [ ] **`RETURN <line>` IS NOT IMPLEMENTED.** Filed 2026-08-01 by D-LNREF.
-      `ex_return` ([`basic/program.asm:1089`](basic/program.asm:1089)) pops the
-      GOSUB frame and never reads its argument, so `RETURN 30` resumes at the
-      caller. Measured, both references agree:
+- [x] ✅ **`RETURN <line>` — LANDED 2026-08-02 (D-RETLN), 27/27, four knives,
+      `lnrd-return`'s pin RETIRED.** Filed 2026-08-01 by D-LNREF; spec
+      [`docs/spec-basic-retln.md`](docs/spec-basic-retln.md), measurement
+      [`docs/retln-msx1-characterization.md`](docs/retln-msx1-characterization.md).
+      The filed one-line description was right and **incomplete in four ways**,
+      and the 27-row `lnrt` walk is what found them — both references agreeing on
+      every row:
+      * **the empty-stack check comes FIRST**, before the argument is parsed *or*
+        resolved: `RETURN B` and `RETURN 99` on an empty stack are both ERR 3,
+        not ERR 2 / ERR 8 (`lnrt-nogosbad`/`-nogosund`). The filed row could not
+        have said so — its line existed and its argument was well formed;
+      * **both failure modes POP THE FRAME BEFORE THEY RAISE.** ERR 8 *and* ERR 2
+        leave the stack empty (`lnrt-undefp`/`lnrt-varp`, which read the STACK by
+        making a handler's own bare `RETURN` report on what was left);
+      * **the error is filed against the `RETURN`'s own line**, not the caller's
+        (`lnrt-erlund`/`-erlvar`, ERL = 40). 🔴 This is what rules out the
+        cheapest implementation — reusing the existing pop, whose
+        `ld (CURLINE),de` would file it against the caller. No row reading only
+        "where did control go" could see it;
+      * **trailing junk is ERR 2** — `RETURN B` is a syntax error, `RETURN 0` is
+        an ordinary failing lookup (ERR 8, no zero special case), and `:` after a
+        bare `RETURN` is a terminator (`lnrt-bcolon`).
+      ⚠️ **The filed warning "it must POP the frame *and* set the resume line —
+      not a GOTO with extra steps" was WRONG.** It is exactly a GOTO with a pop
+      in front: `RESUMEFLAG` is never set on the branch path, and setting it
+      would be the bug (the run loop consults it *before* `GOTOFLAG`).
+      🔴 **And MS-BASIC's documented use for `RETURN <line>` — leaving an
+      `ON ERROR` handler — DOES NOT EXIST ON MSX.** Both references read ERR 3: a
+      handler is entered without a GOSUB frame, so the empty-stack rule just
+      fires (`lnrt-onerr`, with `lnrt-onerrctl`'s `RESUME 70` → ` 120  0 ` as the
+      control proving the instrument can read the success case).
+      Landed **+25 B main page 1**, funded by a measured 160 B carve (below).
+      🔴 **A REGRESSION SHIPPED IN THE FIRST IMPLEMENTATION AND THE 28-ROW BATTERY
+      COULD NOT SEE IT.** `trap_return_check` destroys `HL` unconditionally, which
+      was free while `ex_return`'s next act was `ld hl,(GSP)` (HL dead across the
+      call); making the token cursor live across it inherits that clobber contract
+      silently ([[refactor-inherits-clobber-contracts]]). Caught by
+      `stop-trap-acceptance` (`C2_press_in_handler_latches`), not by any `lnrt`
+      row — all 28 `RETURN` out of ordinary code, so `TRAPSVC` is 0 in every one
+      and the clobber cannot fire. Fixed by moving the `push hl` above the trap
+      check, at **zero byte cost**.
+
+- [ ] **`RETURN` DOES NOT DISCARD AN OPEN `FOR`, AND ON THE REFERENCE IT DOES.**
+      Filed 2026-08-02 by D-RETLN, found by the apparatus while it was testing
+      something else. MS-BASIC keeps FOR and GOSUB frames on the **same** (Z80)
+      stack, so `RETURN` discards the FOR entries it walks past looking for a
+      GOSUB frame — with no GOSUB frame at all, that means the open `FOR`.
+      zerobas keeps the two on **separate RAM stacks** (`GOSUB_STK` and the FOR
+      stack), so nothing is walked past and the loop survives:
       ```
-      10 GOSUB 40 : 20 A=20:END : 30 A=30:END : 40 RETURN 30
-          both references -> A = 30      zerobas -> A = 20
+      10 ON ERROR GOTO 50 : 20 FOR I=1 TO 3:RETURN:NEXT
+      30 A=A+100:END      : 50 A=A+1:RESUME NEXT
+          both references -> A=102 ERR 0 I=1     zerobas -> A=103 ERR 0 I=4
       ```
-      The crunch is now correct (`<8E> <0E><1E><00>`); it is the STATEMENT that
-      is missing. `lnrd-return` is **pinned as `KNOWN_DIVERGE`** so the day it
-      lands the gate says so.
-      ⚠️ It re-points the GOSUB return rather than jumping, so it must POP the
-      frame *and* set the resume line — not a GOTO with extra steps.
+      🔴 **My first attribution was "an error trap destroys the FOR frame", and
+      its own control REFUTED it.** `lnrt-forerr` is the identical program with
+      `ERROR 7` in place of `RETURN` and reads ` 103  0  4 ` on **all three
+      sides** — an ordinary trap is not the variable, `RETURN` is. One row could
+      not have separated those two rules ([[one-row-cannot-separate-two-rules]]).
+      `lnrt-forret` is **pinned as `KNOWN_DIVERGE`** to zerobas' exact
+      ` 103  0  4 `, with `lnrt-forerr` alongside it as the green control.
+      This is architectural, not a parse bug: closing it means making `RETURN`
+      (and the error unwind) aware of the FOR stack, which is its own slice.
+
+- [ ] **135 MORE DEAD BYTES OF THE SAME SHAPE, IN 20 FILES.** Filed 2026-08-02
+      by D-RETLN, which carved all 160 as its funding — this entry records the
+      *shape*, because the gate that should have found it cannot.
+      `skip_spaces` ([`basic/interp.asm:574`](basic/interp.asm:574)) is
+      `ld a,(hl) / cp ' ' / ret nz / inc hl / jr skip_spaces` — it returns **only**
+      via `ret nz`, so `A = (hl)` on every exit. Every `call skip_spaces`
+      immediately followed by `ld a,(hl)` therefore reloads a register that
+      already holds that value: 1 dead byte, 160 times, `basic/graphics.asm` 27 ·
+      `basic/files.asm` 26 · `basic/program.asm` 19 · `basic/save.asm` 15 · …
+      Measured, clean `make basic-reloc`: page 1 free **6 B → 149 B**, low
+      **9 B → 23 B**.
+      🔴 **THE DEAD-CODE GATE REPORTS 0 DEAD AND IS RIGHT.** These are reachable
+      instructions computing a value already held — not unreachable code — so
+      `deadcode-gate` is structurally blind to them, and was while 160 B sat
+      there through every slice that ever said "page 1 has 6 B free". ⚠️ **Every
+      byte-budget claim made before 2026-08-02 was measured against a wall that
+      had 143 B of slack in it.** The open question this leaves is not the 160 B
+      (they are gone) but whether a gate should exist for the *shape*: a
+      redundant-load sweep is a two-line matcher, and there are certainly other
+      idioms like it. That is the item.
 
 - [ ] **`DEFINT` STORES DIFFERENT BYTES FROM THE REFERENCE.** Filed 2026-08-01
       by D-LNREF's walk. `20 DEFINT 10` reads `<AC> <0F><0A>` on both references

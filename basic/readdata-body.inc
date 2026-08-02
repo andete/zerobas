@@ -42,7 +42,6 @@ rov_at:
                 call    data_parse_int      ; DE = value, HL past the ASCII number
                 push    de                  ; guard the value
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','                 ; another item in this DATA statement?
                 jr      z,rov_comma
                 call    data_seek           ; else seek the next DATA statement
@@ -119,7 +118,6 @@ ds_none:
 ; HL stops at the first non-numeric byte. Clobbers A, BC, HL.
 data_parse_int:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '-'
                 jr      z,dp_neg
                 cp      '&'
@@ -128,7 +126,6 @@ data_parse_int:
 dp_neg:
                 inc     hl
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '&'
                 jr      z,dp_neghex
                 call    dp_decimal

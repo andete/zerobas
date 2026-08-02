@@ -56,7 +56,6 @@ ex_sound:
                 jr      nc,snd_illegal      ; 14..255 -> Illegal function call (ERR5)
                 ld      c,a                 ; C = register number (kept across the value eval)
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','                 ; comma required between register and value
                 jp      nz,stmt_error
                 inc     hl

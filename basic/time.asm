@@ -54,12 +54,10 @@
 ex_time_assign:
                 inc     hl                  ; past the TIME token
                 call    skip_spaces
-                ld      a,(hl)
                 cp      EQ_TOKEN
                 jr      nz,tm_err2          ; `TIME` bare / `TIME 5` / `TIME(1)=5` -> ERR 2
                 inc     hl
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,tm_err24          ; `TIME=` at end of line -> Missing operand
                 cp      ':'

@@ -38,7 +38,6 @@ ex_play:
                 ; empirically confirmed (basic_probe_play.py).
 pl_voice:
                 call    skip_spaces
-                ld      a,(hl)
                 or      a                   ; a separator / EOL where a string is
                 jr      z,pl_syntax         ; required -> missing operand -> Syntax error
                 cp      COLON
@@ -62,7 +61,6 @@ pl_voice:
                 ld      (AUDIO_VMASK),a
                 ; after a string, an optional ',' introduces the next voice
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,pl_dispatch      ; no separator -> argument list done
                 inc     hl                  ; consume the ',' separator

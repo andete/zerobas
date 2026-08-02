@@ -30,7 +30,6 @@
 dispatch_line:
                 ld      hl,LINEBUF
                 call    skip_spaces
-                ld      a,(hl)
                 or      a
                 ret     z                   ; blank line -> nothing to do
                 cp      '0'
@@ -820,7 +819,6 @@ msg_phrase_tab:
 ex_stop:
                 inc     hl                  ; past STOP token
                 call    skip_spaces
-                ld      a,(hl)
                 call    onoff_decode        ; STOP ON|OFF|STOP -> A = the ZTS_ state
                 jr      c,es_set
                 jp      do_break            ; bare STOP -> record + "Break in <line>"
@@ -1066,7 +1064,6 @@ gosub_stk_over:
 ex_gosub:
                 inc     hl                  ; past the GOSUB token
                 call    skip_spaces
-                ld      a,(hl)
                 cp      LINENO_TOKEN        ; $0E,<lineno LE> expected
                 jp      nz,stmt_error
                 inc     hl
@@ -1091,24 +1088,76 @@ ex_return:
                 ; RETURN's frame is the trap's own (GSP match), auto-resume it to ON
                 ; before the normal pop (spec-traps-t1-stop-reslice.md §8). The gate
                 ; is one RAM load on every RETURN in the common (no-trap) case.
+                push    hl                  ; D-RETLN: the token cursor, across BOTH
+                                            ; the trap check and the empty-stack
+                                            ; check below (each needs HL).
+                                            ; 🔴 THE PUSH MUST PRECEDE trap_return_
+                                            ; check, AND PUTTING IT AFTER SHIPPED A
+                                            ; REGRESSION. That routine destroys HL
+                                            ; unconditionally (basic/traps.asm: `ld
+                                            ; l,a / ld h,0 / add hl,hl ...`), which
+                                            ; was FREE before this slice because
+                                            ; ex_return's next act was `ld hl,(GSP)`
+                                            ; -- HL was dead across it. Making HL
+                                            ; live is exactly the clobber contract a
+                                            ; refactor inherits without being told.
+                                            ; Caught by stop-trap-acceptance
+                                            ; (C2_press_in_handler_latches), NOT by
+                                            ; this slice's own 28-row battery: no
+                                            ; lnrt row RETURNs out of a servicing
+                                            ; interrupt trap, so TRAPSVC is 0 in
+                                            ; every one of them and the clobber
+                                            ; could not fire.
                 ld      a,(TRAPSVC)
                 or      a
                 call    nz,trap_return_check
+                                            ; ⚠️ The
+                                            ; ex_ret_under arm leaves the pushed HL on
+                                            ; the stack ON PURPOSE -- raise_error's
+                                            ; two exits BOTH reset SP from SAVSTK
+                                            ; (the trap arm's `ld sp,(SAVSTK)`,
+                                            ; basic/interp.asm; the abort arm's
+                                            ; fre_abort_low as its first act), so a
+                                            ; `pop hl` there would be a byte for
+                                            ; nothing. The row `lnrt-leak` -- 200
+                                            ; RETURN-without-GOSUBs in one program --
+                                            ; is what proves it, not this comment.
                 ld      hl,(GSP)            ; empty stack -> RETURN without GOSUB
-                ld      de,GOSUB_STK
+                ld      de,GOSUB_STK        ; D-RETLN R-T1: THIS CHECK COMES FIRST,
+                or      a                   ; before the argument is parsed OR
+                sbc     hl,de               ; resolved. Measured both references:
+                jp      z,ex_ret_under      ; `RETURN B` with an empty stack is
+                                            ; ERR 3, not ERR 2 (lnrt-nogosbad), and
+                                            ; `RETURN 99` is ERR 3, not ERR 8
+                                            ; (lnrt-nogosund). lnrt-nogos alone
+                                            ; cannot tell the two orders apart.
+                pop     hl
+                inc     hl                  ; past the RETURN token
+                call    skip_spaces         ; A = (hl)
                 or      a
-                sbc     hl,de
-                jp      z,ex_ret_under
-                ld      hl,(GSP)
-                dec     hl                  ; pop 4 bytes, reading high-to-low
-                ld      b,(hl)              ; resume ptr high
-                dec     hl
-                ld      c,(hl)              ; resume ptr low   -> BC = resume ptr
-                dec     hl
-                ld      d,(hl)              ; curline high
-                dec     hl
-                ld      e,(hl)              ; curline low      -> DE = saved CURLINE
-                ld      (GSP),hl            ; GSP -= 4 (popped)
+                jr      z,ret_frame_bare    ; <EOL> -> bare RETURN
+                cp      COLON
+                jr      z,ret_frame_bare    ; ':'   -> bare RETURN, and the statement
+                                            ; after it does NOT run (lnrt-bcolon)
+                ; D-RETLN R-T2/R-T3/R-T4 (docs/spec-basic-retln.md §2): pop the
+                ; frame and hand the cursor to GOTO's own parser -- $0E branches,
+                ; anything else is ex_goto_at's own `jp nz,stmt_error` (ERR 2).
+                ; POP FIRST IS MEASURED, NOT CHOSEN FOR CHEAPNESS: both failure
+                ; modes pop before they raise, and the rows that say so read the
+                ; STACK rather than the outcome -- a handler's own bare RETURN
+                ; reports ERR 3 after `RETURN 99` (lnrt-undefp) AND after
+                ; `RETURN B` (lnrt-varp). Neither path writes CURLINE, which is
+                ; the other half: both references file the error against the
+                ; RETURN's OWN line, not the caller's (lnrt-erlund/-erlvar, ERL=40).
+                ; That is what rules out the obvious shape -- reusing the bare tail
+                ; below, whose `ld (CURLINE),de` would file it against the caller.
+                push    hl
+                call    ret_frame           ; GSP -= 4; the frame's contents are dead
+                pop     hl                  ; on this path (BC is the branch target)
+                jp      ex_goto_at          ; its own skip_spaces is a no-op here --
+                                            ; HL is already past the blanks
+ret_frame_bare:
+                call    ret_frame
                 ld      (CURLINE),de
                 ld      (RESUMEPTR),bc
 ; set_resumeflag_ret: shared tail (error-handling S2b space fix) -- ex_resume's
@@ -1125,6 +1174,24 @@ ex_ret_under:
                 ld      (ERRMARK),a
                 ld      a,3                 ; ERR 3: return without gosub (error-handling S2a)
                 jp      raise_error
+; ret_frame: pop the top GOSUB frame. out: DE = its saved CURLINE, BC = its resume
+; pointer, GSP -= 4, HL = the new GSP. The caller has ALREADY established that the
+; stack is non-empty (R-T1). Was inline in ex_return until D-RETLN; it is a
+; subroutine now because the two arms want different halves of it -- the bare arm
+; needs the contents, the `RETURN <line>` arm needs only the GSP decrement and
+; must NOT let the contents reach CURLINE.
+ret_frame:
+                ld      hl,(GSP)
+                dec     hl                  ; pop 4 bytes, reading high-to-low
+                ld      b,(hl)              ; resume ptr high
+                dec     hl
+                ld      c,(hl)              ; resume ptr low   -> BC = resume ptr
+                dec     hl
+                ld      d,(hl)              ; curline high
+                dec     hl
+                ld      e,(hl)              ; curline low      -> DE = saved CURLINE
+                ld      (GSP),hl            ; GSP -= 4 (popped)
+                ret
 
 ; --- ex_for: FOR <var> = <init> TO <limit> [STEP <step>] ---------------------
 ; Assign init to the loop variable, then push a frame
@@ -1141,14 +1208,12 @@ ex_ret_under:
 ex_for:
                 inc     hl                  ; past the FOR token
                 call    skip_spaces
-                ld      a,(hl)
                 call    is_letter
                 jp      nc,stmt_error
                 call    upcase
                 ld      (FOR_CUR),a         ; frame[0] = loop variable name
                 inc     hl                  ; consume the letter
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '$'                 ; `FOR A$=…` is ERR 13, not ERR 2 (measured
                 jp      z,type_mismatch_error ; VG-8020) -- the ONE lvalue shape in this
                                             ; statement that is a type error rather than
@@ -1162,14 +1227,12 @@ ex_for:
                 call    var_set             ; var := initial value
                 pop     hl
                 call    skip_spaces
-                ld      a,(hl)
                 cp      TO_TOKEN           ; TO -> $D9
                 jp      nz,stmt_error
                 inc     hl
                 call    eval                ; DE = limit
                 ld      (FOR_CUR+1),de      ; frame[1..2] = limit
                 call    skip_spaces
-                ld      a,(hl)
                 cp      STEP_TOKEN         ; STEP -> $DC (optional)
                 jr      z,ef_step
                 ld      de,1                ; default step = +1
@@ -1207,7 +1270,6 @@ ef_over:
 ex_next:
                 inc     hl                  ; past the NEXT token
                 call    skip_spaces
-                ld      a,(hl)
                 call    is_letter
                 jr      nc,nx_notletter     ; bare NEXT (or junk -> ERR 2 below)
                 call    upcase
@@ -1314,7 +1376,6 @@ ex_read:
                 inc     hl                  ; past the READ token
 exr_lp:
                 call    skip_spaces
-                ld      a,(hl)
                 call    is_letter
                 jp      nc,stmt_error       ; READ needs a variable
                 call    upcase
@@ -1327,7 +1388,6 @@ exr_lp:
                 call    var_set             ; var := DE
                 pop     hl                  ; restore exec cursor
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','                 ; more variables to fill?
                 jr      z,exr_more
                 jp      exec_stmt           ; READ statement done
@@ -1348,7 +1408,6 @@ err_data:       db      "o",MSGESC_UTOF,"data",0        ; D-MSGENC: 14 B -> 7 B
 ex_restore:
                 inc     hl                  ; past the RESTORE token
                 call    skip_spaces
-                ld      a,(hl)
                 cp      LINENO_TOKEN        ; $0E,<lineno LE> -> restore to a line
                 jr      z,ers_line
                 ld      hl,TXTBASE          ; bare RESTORE -> program start
@@ -1434,7 +1493,6 @@ ex_on_expr:                                 ; ON <expr> GOTO/GOSUB -- the ordina
                                             ; (>int16 ERR 6, 256.. ERR 5); DE=N, D=0 for
                                             ; eon_seek_nth. ON 0 = valid no-branch (falls thru).
                 call    skip_spaces
-                ld      a,(hl)
                 cp      GOTO_TOKEN
                 jr      z,eon_goto
                 cp      GOSUB_TOKEN
@@ -1479,7 +1537,6 @@ eon_seek_nth:
 ; Phase 1: count down to the Nth entry.
 esn_p1:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      LINENO_TOKEN        ; $0E expected
                 jr      nz,esn_nocf         ; list shorter than N -> not found
                 inc     hl
@@ -1493,7 +1550,6 @@ esn_p1:
                 jr      z,esn_found         ; DE == 0 -> this was the Nth entry
                 ; still counting: expect a comma before the next entry
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,esn_nocf         ; no comma -> list shorter than N
                 inc     hl                  ; past comma
@@ -1503,12 +1559,10 @@ esn_found:
                 push    bc                  ; guard the found line number
 esn_p2:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,esn_ok           ; no more commas -> HL past the list
                 inc     hl                  ; past comma
                 call    skip_spaces
-                ld      a,(hl)
                 cp      LINENO_TOKEN
                 jr      nz,esn_ok           ; malformed: stop here
                 inc     hl
@@ -1522,7 +1576,6 @@ esn_ok:
 ; N=0: scan past the entire list and return CF clear.
 esn_scan:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      LINENO_TOKEN
                 jr      nz,esn_nocf         ; no entries at all
                 inc     hl
@@ -1530,12 +1583,10 @@ esn_scan:
                 inc     hl                  ; skip first $0E,lo,hi
 esn_scan_lp:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      nz,esn_nocf         ; no more commas -> done
                 inc     hl                  ; past comma
                 call    skip_spaces
-                ld      a,(hl)
                 cp      LINENO_TOKEN
                 jr      nz,esn_nocf
                 inc     hl

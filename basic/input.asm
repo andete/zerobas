@@ -37,7 +37,6 @@ input_console:
                 ld      (PRDEST),a          ; INPUT is a console statement -> screen
                 ; --- optional prompt literal + separator ---
                 call    skip_spaces
-                ld      a,(hl)
                 cp      '"'
                 jr      nz,inpc_noprompt
                 inc     hl                  ; past the opening quote
@@ -52,7 +51,6 @@ inpc_plit:
                 jr      inpc_plit
 inpc_psep:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ';'
                 jr      z,inpc_psemi
                 cp      ','
@@ -142,7 +140,6 @@ inpc_vstr:
                 call    check_expr_errors_popbc
 inpc_after:
                 call    skip_spaces
-                ld      a,(hl)
                 cp      ','
                 jr      z,inpc_morevars
                 ; end of the variable list: any leftover input -> ?extra ignored.
