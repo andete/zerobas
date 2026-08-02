@@ -190,3 +190,48 @@ Three places where that does **not** hold, i.e. the only text costs:
    `…buffer overflow` (lowercase) for 25. **The shared tail cannot be both.**
 3. **ERR 8 is a wording gap, not a case gap** — `undefined line` vs
    `Undefined line number`.
+
+## 6. The ABORT-PATH shapes a direct-mode code walk cannot see
+
+Measured 2026-08-02 for [D-MSGSUB](spec-basic-msgsub.md) §5.2, `--walk subx`,
+boot-per-case. §1–§3 are **all direct mode**, so they exercise exactly one of
+`fre_abort_low`'s two arms and never the `" in <line>"` suffix, and they never
+put a message on screen with `PRDEST` non-zero. These four rows do both.
+
+| row | program | VG-8020 | CF-3300 | zerobas @ `3ffd390` |
+|---|---|---|---|---|
+| `hole-run` | `10 ERROR 12` : `RUN` | `Illegal direct in 10` | `Illegal direct in 10` | `Unprintable error in 10` |
+| `ifc-run` | `10 ERROR 5` : `RUN` | `Illegal function call in 10` | `Illegal function call in 10` | `Illegal function call in 10` ✅ |
+| `prd-hole` | `OPEN` a disk file, `PRINT#1,"[";`, then `ERROR 12` | *(no disk ROM)* | `Illegal direct in 30` | `Unprintable error in 30` |
+| `prd-ifc` | same with `ERROR 5` | *(no disk ROM)* | `Illegal function call in 30` | `Illegal function call in 30` ✅ |
+| `mid-ifc` | `20 PRINT#1,"[";ASC("")` — the error is raised **inside** the `PRINT#` | *(no disk ROM)* | `Illegal function call in 20` | `Illegal function call in 20` ✅ |
+
+🔴 **THIS SECTION FIRST CLAIMED THE `prd-*` PAIR "SETTLES `CHPUT`". IT DOES NOT,
+AND D-MSGSUB'S KNIFE K3 IS WHAT SAID SO.** The claim was that those rows raise
+their error with `PRDEST` non-zero, so the message reaching the screen proves
+`fre_abort_low`'s `ld (PRDEST),a` is what makes `pchar` and `CHPUT` agree. K3
+deleted that instruction and **neither row moved**. The reason is that
+`PRINT#1,"[";` **restores `PRDEST` when the statement ends**, so the `ERROR n` on
+the *next* statement never sees it set. Both rows were green, and green for a
+reason unrelated to the one written down — a row that cannot go red is not a
+measurement ([[gate-can-be-green-while-measuring-nothing]]).
+
+🎯 **`mid-ifc` is the rig that actually sets `PRDEST`**, and K3 measured it both
+ways: with the zero, `Illegal function call in 20` on the screen; **without it,
+the screen is EMPTY and the message went into the file.** So the PRDEST zero is
+load-bearing and now has a row holding it down — which the corpus did not have
+before this slice.
+
+⚠️ **There is no `mid-hole` row, and that is a fact about the language.** The
+fourteen sub-hosted codes are reachable only through the `ERROR n` *statement*,
+which cannot appear inside a `PRINT#` argument list — so a sub-hosted message
+can never be raised with `PRDEST` set at all. For that path the CHPUT question is
+**bounded away, not measured**. That is a weaker claim than the one this section
+originally made, and the correct one. `prd-hole` is kept because it does measure
+something real (an open print channel does not divert a sub-hosted message
+either), just not that.
+
+⚠️ The VG-8020 rows are **skipped**, not empty. The probe prints
+`<skipped:no-disk>` — a third sentinel beside `<none>` and `<empty>`, because a
+row that never ran and a machine that declined to answer are different facts
+([[readout-blind-to-its-own-subject]]).

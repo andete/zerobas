@@ -176,6 +176,44 @@ def main():
     # real -- it is worth exactly 9 B, and knife K5 measured that by restoring the
     # overlap and watching ERR 25 print `Line buffer Overflow`. A future carve hunt
     # that "spots" the 9 B would silently corrupt ERR 25; this row is what stops it.
+    # --- D-MSGSUB control 1: the new escape must stay OUTSIDE the phrase range --
+    # read_phrases() above reads exactly MSGESC_HI - MSGESC_LO + 1 entries out of
+    # msg_phrase_tab. MSGESC_SUB is not a phrase -- it has no table entry -- so
+    # folding it into the range (the obvious "tidy-up": MSGESC_HI equ MSGESC_SUB)
+    # would make that read run one entry PAST the table and compare every message
+    # against whatever bytes follow it. That fails by producing plausible garbage,
+    # not by going red, which is the failure shape this tree keeps meeting.
+    if syms["MSGESC_SUB"] <= syms["MSGESC_HI"]:
+        fails.append(
+            f"MSGESC_SUB ({syms['MSGESC_SUB']}) is inside the phrase range "
+            f"(MSGESC_LO..MSGESC_HI = {syms['MSGESC_LO']}..{syms['MSGESC_HI']}). "
+            f"It has no msg_phrase_tab entry, so read_phrases() would overrun the "
+            f"table -- and print_msg_stopcr's `cp MSGESC_HI + 1` would stop "
+            f"reaching the pm_sub arm. See basic/sysvars.inc.")
+    else:
+        print("PASS  escape   MSGESC_SUB is outside the phrase range")
+
+    # --- D-MSGSUB control 2: the ABSENT-sub-ROM fall-through ------------------
+    # err_subhosted is one byte (MSGESC_SUB) sited so that err_unprintable is the
+    # VERY NEXT byte. When there is no sub-ROM, subrom_call returns CF=1 without
+    # calling and pm_sub resumes the decode loop right there -- so the machine
+    # prints `Unprintable error`, exactly what it printed before D-MSGSUB,
+    # instead of nothing. That degradation is the reason the slice does not have
+    # to rest on "you cannot type ERROR 12 without the sub-ROM" (which is false
+    # for a program loaded already-tokenised from tape or disk).
+    # Same shape as the err_overflow control below, and for the same reason: the
+    # pull to relocate or "tidy up" a one-byte string is real, and nothing else
+    # in the tree would notice. Knife K1 measures the live behaviour.
+    subgap = syms["err_unprintable"] - syms["err_subhosted"]
+    if subgap != 1:
+        fails.append(
+            f"err_unprintable is no longer the byte AFTER err_subhosted "
+            f"(gap {subgap}, want 1). The absent-sub-ROM fall-through in "
+            f"print_msg_stopcr's pm_sub arm now decodes whatever sits between "
+            f"them -- see basic/interp.asm and docs/spec-basic-msgsub.md §3.1.")
+    else:
+        print("PASS  adjacent err_unprintable directly follows err_subhosted")
+
     gap = syms["err_overflow"] - syms["err_linebuf_overflow"]
     if gap != len("Line buffer overflow") + 1:
         fails.append(

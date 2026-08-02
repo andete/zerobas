@@ -138,6 +138,20 @@ SUBROM_IDX_TITLE        equ     17
 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FCBNAME.
 SUBROM_IDX_FCBNAME      equ     18
 
+; errmsg_tenant (sub/errmsg.asm), D-MSGSUB: the fourteen ERR codes zerobas never
+; RAISES but must still be able to PRINT -- 12/15/18/19 (dense holes) and
+; 50/51/53/54/56/57/60/62/63/64 (sparse), plus the out-of-table `Unprintable
+; error` fallback for everything else main routes here. PAGE 1 for title_tenant's
+; reason (CHPUT is page-0 BIOS) AND because main's own printer is unreachable
+; from either island -- print_string $4673 / print_msg $7717 are main page 1,
+; which a page-1 CALSLT switches out, so duplicating the emitter here is
+; contract-forced. Nothing marshals: the sole input is ERRFLG, already in RAM.
+; docs/spec-basic-msgsub.md. 22 is the next-free PAGE-1 index (21/SAVE was last;
+; the page-0 table is full to the $0038 vector). Reached sub-side by label
+; (sub_p1_table `jp errmsg_tenant`); only basic/program.asm `pm_sub` computes
+; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ERRMSG.
+SUBROM_IDX_ERRMSG       equ     22
+
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can
 ; confirm a CALSLT to each entry round-tripped through the correct page. This is

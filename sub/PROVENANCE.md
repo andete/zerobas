@@ -146,6 +146,22 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   session on) rather than the main ROM. Faithful in *mechanism*; a documented
   divergence in *placement* — real MSX kept e.g. SIN/COS in the main ROM. Accepted
   under the sub-ROM framing (spec §6 / decision §7 Q3).
+- **(b2) Error-message TEXT hosted in the sub-ROM** (`sub/errmsg.asm`, D-MSGSUB,
+  2026-08-02). Fifteen strings — the fourteen ERR codes zerobas never raises but
+  must be able to print, plus the out-of-table fallback. Same placement
+  divergence as (b), and one extra provenance point worth stating explicitly
+  because this file is *nothing but* reference text:
+  **every string is a black-box reading of a running reference machine's screen**
+  (`ERROR n` in direct mode, both machines, recorded in
+  [`../docs/msgexact-msx1-characterization.md`](../docs/msgexact-msx1-characterization.md)),
+  **not** lifted from any ROM image and **not** transcribed from a published
+  MSX-BASIC reference — the published table is measurably wrong about ERR 17's
+  capitalisation, which is why it is not the source. The full argument is in
+  [`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) under the error-message row.
+  ⚠️ The `Unprintable error` fallback here **duplicates** main's `err_unprintable`
+  on purpose: the tenant cannot signal "not my code" (`A` is not preserved across
+  CALSLT and `subrom_call`'s CF means "absent"), so it must answer every input.
+  *Source:* own design; the text itself is measured as above.
 - **(c) An own-design sub-ROM interrupt trampoline.** Real MSX2 sub-ROMs carry an
   equivalent (a valid `$0038` entry that services the interrupt in the main slot);
   ours is reconstructed from the MSX2 TH Ch.5 mechanism + our own `page0_ram_in`,

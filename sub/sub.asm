@@ -512,6 +512,21 @@ sub_p1_table:
                                                 ;   The PARSE stays resident (it uses
                                                 ;   `eval`), so nothing rides but the
                                                 ;   SV_OP selector and SV_STAT.
+                jp      errmsg_tenant           ; index 22 (SUBROM_IDX_ERRMSG): the
+                                                ;   fourteen ERR codes zerobas never
+                                                ;   RAISES but must still be able to
+                                                ;   PRINT, plus the out-of-table
+                                                ;   `Unprintable error` fallback for
+                                                ;   every other code main routes here
+                                                ;   (D-MSGSUB, docs/spec-basic-msgsub.md).
+                                                ;   PAGE 1 for title_tenant's reason --
+                                                ;   CHPUT is page-0 BIOS -- and because
+                                                ;   main's own printer is main PAGE 1 and
+                                                ;   so unreachable from EITHER island.
+                                                ;   NOTHING MARSHALS: the sole input is
+                                                ;   ERRFLG, already in RAM. Main stub is
+                                                ;   the MSGESC_SUB arm of print_msg_stopcr
+                                                ;   (basic/program.asm `pm_sub`).
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -681,6 +696,15 @@ sub_p1_ping:
 ; fatprim.asm here. Unlike BLOAD the PARSE stays resident (it uses `eval`), so
 ; nothing rides but SV_OP/SV_STAT.
                 include "save.asm"
+
+; Error-message host (index 22 = errmsg_tenant, sub/errmsg.asm), D-MSGSUB: the
+; fourteen ERR codes zerobas never RAISES but must still be able to PRINT, plus
+; the out-of-table fallback for every other code main routes here. PAGE 1 for
+; title_tenant's reason -- CHPUT is page-0 BIOS -- and because main's own printer
+; is unreachable from EITHER island (print_string/print_msg are main page 1). A
+; pure RAM+BIOS leaf with no sub-local callees, so its position here is free.
+; docs/spec-basic-msgsub.md.
+                include "errmsg.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

@@ -71,10 +71,39 @@ No quarantined items.
 | Backspace / Enter codes ($08 / $0D) | — | ASCII / MSX2 Tech Handbook (console codes) | sourced |
 | Line editor + read/eval loop algorithm | — | **own code** (original); not derived from any disassembly | sourced |
 | Prompt text "zb>" | — | **own content**, deliberately unlike MSX-BASIC's "Ok" | sourced |
-| Error text "syntax error" / "load error" | — | own wording (plain English; not copied) | sourced |
+| Error message text (all of it) | — | **black-box measurement** of a running reference machine's screen — see the note below | sourced |
 | `LINEBUF`, `LINEMAX` | — | own choice (free page-3 RAM) | sourced |
 
 No quarantined items.
+
+### ⚠️ The error-message row changed meaning on 2026-08-02, and the reason matters
+
+It used to read *"own wording (plain English; not copied)"*, and that was true of
+a tree whose messages were deliberately house-style lowercase. **D-MSGEXACT
+withdrew that policy** and **D-MSGSUB** added fourteen more messages, so zerobas
+now reproduces the reference's text **verbatim**, capitalisation included. The
+old row would have been a false attestation, which is worse than no row.
+
+**Why that is still clean-room, stated precisely** — the distinction is between
+*observing a machine* and *copying its code*:
+
+* Every string is a **reading of a screen**, taken with `ERROR n` in direct mode
+  on two running reference machines and recorded in
+  [`../docs/msgexact-msx1-characterization.md`](../docs/msgexact-msx1-characterization.md).
+  That is the same black-box instrument every other characterization in this tree
+  uses to fix behaviour, applied to output that happens to be text.
+* **No reference ROM is disassembled, read, or diffed** to obtain them. The
+  strings are not lifted from a ROM image; nothing locates them in one.
+* They are **not transcribed from a published MSX-BASIC reference** either — and
+  that is not a technicality: the published table gets ERR 17 wrong (`Can't
+  continue`; the machines say `Can't CONTINUE`). Transcribing would have been
+  both a worse source *and* a copy of someone's document.
+
+⚠️ Short user-visible strings of this kind are facts about an interface, not
+creative expression — the same status as an entry address or a work-area layout.
+Reproducing them is what "faithful" means for a message; inventing them is what
+made the old policy a divergence. Anything ORIGINAL to zerobas stays original and
+is listed as such above (`zb>`, the startup banner).
 
 ## REM / POKE / PEEK statement slice
 

@@ -768,6 +768,11 @@ pm_lp:          ld      a,(hl)
                 inc     hl
                 or      a
                 ret     z
+                cp      MSGESC_SUB          ; D-MSGSUB: the sub-ROM-hosted marker.
+                jr      z,pm_sub            ; MUST precede the phrase bound -- it is
+                                            ; ABOVE MSGESC_HI, so `jr nc,pm_lit` below
+                                            ; would pchar a raw $06 (sysvars.inc has
+                                            ; the two reasons it sits there).
                 cp      MSGESC_HI + 1       ; MSGESC_LO..MSGESC_HI -> phrase escape;
                 jr      nc,pm_lit           ; every literal is >= $20 (the baked
                                             ; 13,10 are gone), so this is exact
@@ -786,6 +791,50 @@ pm_emit:        call    print_string        ; phrases are plain NUL-terminated t
                 jr      pm_lp
 pm_lit:         call    pchar               ; PRDEST sink (fre_abort_low zeroed it)
                 jr      pm_lp
+
+; --- pm_sub: the body lives in the sub-ROM (D-MSGSUB, docs/spec-basic- --------
+; msgsub.md §3.1). The fourteen ERR codes zerobas never RAISES cost ~227 B of
+; text against a page 1 that has tens, so they live in sub-ROM PAGE 1
+; (SUBROM_IDX_ERRMSG) and are emitted there through BIOS CHPUT. The tenant reads
+; ERRFLG itself, so NOTHING marshals -- HL is guarded only for the fall-through
+; below, not to pass anything.
+;
+; ⚠️ PAGE 1, and main's own printer is why. print_string ($4673) and print_msg
+; ($7717) are main PAGE 1, which is exactly what a page-1 CALSLT switches out;
+; check_tenant_closure --page1 enforces "no main-page-1 escape". So the sub-ROM
+; CANNOT call back into this routine, and duplicating a nine-instruction CHPUT
+; loop sub-side is contract-forced, not a convenience.
+;
+; 🎯 `ret nc` / `jr pm_lp` IS THE ABSENT-SUB-ROM DEGRADATION, AND IT IS WHY
+; err_subhosted IS ONE BYTE SITED DIRECTLY BEFORE err_unprintable
+; (basic/interp.asm). subrom_call returns CF=1 without calling when there is no
+; sub-ROM; the loop then resumes at the NEXT byte, which is the `U` of
+; `Unprintable` -- i.e. the machine prints exactly what it printed before this
+; slice. D-MSGSUB §4.2 argued the absent case was unreachable (you cannot
+; tokenise `ERROR 12` without the sub-ROM, since `tokenise` is itself a tenant);
+; that argument has a hole -- a TOKENISED program can arrive from tape or disk --
+; so the design does not rest on it. Knife K1 MEASURES the degradation with a
+; plain `POKE &HF107,0` and no rebuild.
+;
+; ⚠️ NOTHING RIDES BACK BUT CF. `A` is not preserved across CALSLT (basic/
+; float-arith.asm, the SQR/ATN/EXP/LOG lesson) and subrom_call's own CF means
+; "absent", never a tenant result -- so the tenant cannot say "not my code" and
+; must answer EVERY code, out-of-table ones with its own `Unprintable error`.
+; That is what lets rerr_unprintable route the whole out-of-dense range here for
+; zero bytes. `pop hl` does not disturb the flags, so the CF tested below is
+; still subrom_call's.
+;
+; Clobbers BC/DE/IX on top of print_msg_stopcr's documented A+HL, because CALSLT
+; does. Safe at the one site that can reach it: only the ABORT path resolves a
+; message containing MSGESC_SUB, and fre_abort_low has already reset SP and
+; abandoned the statement. Every other print_msg caller passes a main-resident
+; string, which cannot contain this byte.
+pm_sub:         push    hl                  ; the fall-through pointer, not an arg
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ERRMSG
+                call    subrom_call
+                pop     hl
+                ret     nc                  ; the tenant printed the body -> done
+                jr      pm_lp               ; ABSENT -> "Unprintable error", as before
 
 print_msg:      call    print_msg_stopcr    ; direct mode: body + CRLF
                 jp      print_crlf

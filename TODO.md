@@ -4026,33 +4026,81 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       numerically. `lst-comma` was the single visible pixel of that; it is
       retired.
 
-- [ ] 🔴 **D-MSGSUB — HOST THE 14 UNIMPLEMENTED ERROR MESSAGES IN THE SUB-ROM.**
-      Filed 2026-08-02 by D-MSGEXACT §4.2, with the reference text for all 14
-      already **measured** (characterization doc §1/§2), so this starts from a
-      denominator rather than a survey.
-      Codes **12, 15, 18, 19, 50, 51, 53, 54, 56, 57, 60, 62, 63, 64** print
-      `Unprintable error` where the references print real text. Main-resident
-      they cost ≈**227 B** against ≈39 B of page 1 — not fundable. Sub page 1 has
-      ≈**3084 B** free.
-      ✅ **The D-MSGENC Q4 objection does NOT apply.** It resolved "encoding in
-      the sub-ROM?" with *no*, because the decoder runs on the abort path which
-      must work when the sub-ROM is absent. But `tokenise` is ITSELF a sub-ROM
-      page-0 tenant — with no sub-ROM you cannot tokenise a line, so `ERROR 12`
-      can never be typed. The one message that must stay main-resident is
-      `err_subrom_absent`, whose alias target `err_illegal_fn_arr` is in the low
-      region.
-      ⚠️ **The constraint that does bite**: `print_string` (`$4673`) and
-      `print_msg` (`$7717`) are **main page 1**, and a sub-ROM tenant may call
-      only main page 0 (`<$4000`) or BIOS — `check_tenant_closure --page1`
-      enforces it. So the sub-ROM cannot call main's printer.
-      🎯 **Duplicating the print code sub-side is APPROVED** (user, 2026-08-02),
-      which removes the marshalling entirely: the sub-ROM carries its own decoder
-      + phrase table (D-MSGENC measured those at 44 B + 40 B) and emits via BIOS
-      `CHPUT`, which is page 0 and inside the closure rule. Main pays only a
-      dispatch stub — no RAM staging buffer, no copy-back head.
-      🎯 **The prize is larger than the 14 holes**: if the mechanism holds,
-      EXISTING messages can migrate too. Page 1 is this tree's chronic wall and
-      ~3 KB of sub page 1 is idle.
+- [x] ✅ **D-MSGSUB — THE 14 UNIMPLEMENTED ERROR MESSAGES, SUB-ROM-HOSTED —
+      CLOSED 2026-08-02** ([`docs/spec-basic-msgsub.md`](docs/spec-basic-msgsub.md),
+      denominator [`docs/msgexact-msx1-characterization.md`](docs/msgexact-msx1-characterization.md)).
+      Codes 12/15/18/19/50/51/53/54/56/57/60/62/63/64 now print the reference's
+      own text from sub-ROM page-1 tenant `SUBROM_IDX_ERRMSG` (`sub/errmsg.asm`),
+      emitted through BIOS `CHPUT`. **`msgexact --gate` 33/49 → 50/50, zero
+      holes left.** Main page 1 **39 B → 22 B**, low region **unchanged**, sub
+      page 1 3067 → 2740 B.
+      🎯 **THE WHOLE MAIN-SIDE COST OF THE TEXT IS ONE BYTE.** `err_subhosted` is
+      a single `MSGESC_SUB` marker; the four dense `err_msgtab` holes and
+      `rerr_unprintable` just point at it — five repoints, **zero bytes**. The
+      +17 B is entirely the decoder arm and the dispatch stub. That is the
+      mechanism the follow-on below rides.
+      🎯 **THE SLICE DOES NOT REST ON "THE ABSENT CASE IS UNREACHABLE", AND IT
+      SHOULD NOT HAVE.** D-MSGEXACT §4.2 argued you cannot type `ERROR 12`
+      without a sub-ROM because `tokenise` is itself a tenant. **That argument
+      has a hole** — a *tokenised* program can arrive from tape or disk. So
+      `err_subhosted` is sited so `err_unprintable` is the very next byte, and an
+      absent sub-ROM falls through to exactly what zerobas printed before.
+      Knife K1 MEASURED it with a plain `POKE &HF107,0`, no rebuild.
+      🔴 **TWO OF THE FIVE KNIVES LANDED ON THE SLICE ITSELF.**
+      **K2** reddened nothing — and the reason was that `sub/errmsg.asm` was
+      missing from the Makefile's `SUB_PARTS`, so `make` never rebuilt the
+      sub-ROM. Nothing shipped wrong (clean builds force it), but the next
+      incremental edit to the tenant would have silently shipped a **stale
+      sub.rom** ([[makefile-subparts-stale-tenant]], met again by adding a new
+      sub file). Caught only because a knife predicted RED and got green.
+      **K3 refuted this spec's own headline measurement**: the `prd-*` rows were
+      written into the spec AND the denominator as "the reading that settles
+      CHPUT", and deleting `fre_abort_low`'s `ld (PRDEST),a` moved **neither**.
+      `PRINT#` restores PRDEST at statement end, so an `ERROR n` on the next line
+      never sees it set. Re-aimed at `mid-ifc` (the error raised *inside* the
+      `PRINT#` argument list) the cut lands both ways — without the zero the
+      screen is **empty** and the message is in the file. For the sub-hosted path
+      the question is **bounded away, not measured**: `ERROR n` is a statement and
+      cannot appear inside a `PRINT#`.
+      ⚠️ **K5 corrected the spec too**: code 26 stays green when the sparse
+      routing is reverted, because main's `Unprintable error` and the tenant's
+      fallback are the same text. 26 is a control for the mechanism being
+      *sound*, not *present*.
+      ⚠️ **This fixes the TEXT, not the RAISERS.** No zerobas site raises any of
+      the fourteen (verified by enumerating every `ld a,<n>` into `raise_error`);
+      `ERROR n` is still the only way to reach them. "Should zerobas raise ERR 12
+      for a direct-mode `INPUT`?" is a different question per code.
+
+- [ ] 🎯 **D-MSGMIGRATE — MIGRATE EXISTING MESSAGES INTO THE SUB-ROM TENANT.**
+      Filed 2026-08-02 by D-MSGSUB §8, which built the mechanism and sized the
+      prize but deliberately did not widen into it.
+      Main page 1 holds **252 B of message strings** plus the 40 B phrase table
+      (measured from the symbol table + ROM image, not estimated):
+      `err_line` 22 · `err_linebuf_overflow` 21 · `err_seq_only` 20 ·
+      `err_fp_divzero` 17 · `err_missing_operand` 16 · `err_cont` 15 ·
+      `err_input_pastend` 15 · `err_type_mismatch` 14 · `err_noret` 14 ·
+      `err_file_notopen` 14 · `err_unprintable` 13 · `err_bad_filenum` 12 ·
+      `err_nofor` 10 · `err_bad_filemode` 10 · `err_resume_noerr` 9 ·
+      `err_overflow` 9 · `err_verify` 8 · `err_data` 7 · `brk_msg` 6.
+      🎯 **A table-reached message migrates for ZERO main-side bytes** — the
+      `err_msgtab` entry becomes `dw err_subhosted` and the string is deleted.
+      Page 1 is this tree's chronic wall and sub page 1 still has **2740 B** idle.
+      ⚠️ **NOT ALL 252 B ARE MIGRATABLE, AND THAT DIFFERENCE IS THE REAL WORK.**
+      The tenant is keyed on **ERRFLG**, so a message can move only if EVERY path
+      that prints it goes through `err_msgtab`. These do not: `err_verify`
+      (cload's own `jp print_msg`), `err_mem`/`err_prog_mem` (`ctp_oom`),
+      `brk_msg`, and the five reached by `rerr_sparse`/`rerr_sparse2`'s own
+      `ld hl` (`err_bad_filenum`, `err_file_notopen`, `err_input_pastend`,
+      `err_seq_only`, `err_bad_filemode`) — those are a DIFFERENT key.
+      A second selector (`db MSGESC_SUB, <index>, 0`, 2 B per message instead of
+      0) covers them; **whether that pays is a measurement, not a claim.**
+      ⚠️ Two standing constraints any migration must respect:
+      `err_illegal_fn_arr` must stay MAIN-resident (`err_subrom_absent` aliases
+      it, and *that* message is the one that genuinely must survive an absent
+      sub-ROM), and `err_unprintable` must stay put as `err_subhosted`'s
+      fall-through neighbour (pinned by `tests/test_msgenc.py`).
+      Un-encoding a migrated message sub-side also shrinks the phrase table if it
+      was a phrase's last user — `MSGESC_FILE` has exactly two.
 
 - [ ] ⚠️ **A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A CLASSIFIER
       NEEDLE, AND THEY LOOK IDENTICAL.** Filed 2026-08-02 by D-MSGEXACT §6b,

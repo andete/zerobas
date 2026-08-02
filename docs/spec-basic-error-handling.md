@@ -180,6 +180,15 @@ Confirmed facts this pins:
 > [`docs/msgexact-msx1-characterization.md`](msgexact-msx1-characterization.md);
 > prefer it over this one, and note the "zerobas string (today)" column is now
 > stale everywhere (every message is the reference's verbatim text).
+>
+> ⚠️ **AND `*(none yet)*` IN THAT COLUMN IS STALE IN A SECOND, STRONGER WAY**
+> (D-MSGSUB, 2026-08-02, [`spec-basic-msgsub.md`](spec-basic-msgsub.md)). It used
+> to mean two things at once — "zerobas has no message for this code" *and*
+> "no zerobas site raises it". The first is no longer true of
+> **12, 15, 18, 19, 50, 51, 53, 54, 56, 57, 60, 62, 63, 64**: they all print the
+> reference's text now, hosted in the sub-ROM tenant `SUBROM_IDX_ERRMSG`. The
+> second is still true of every one of them — `ERROR n` remains the only way to
+> reach them. **Read `*(none yet)*` in the "Raised at" sense only.**
 
 Source: the published **MSX-BASIC language reference** (allowed-sources.md line 110,
 grade B — the user-visible language contract: keywords, functions, **errors**), and

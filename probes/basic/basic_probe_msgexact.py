@@ -18,11 +18,24 @@ for every error -- and that reversal needs a denominator before it needs an
 implementation. This probe is that denominator.
 
 ⚠️ IT MEASURES THE REFERENCES, NOT ZEROBAS'S CORRECTNESS. Its job is to answer
-"what exactly does an MSX1 print for error n", per machine, verbatim. The zb
-side is captured too, but as the CURRENT-STATE column of a characterization
-table, not as a pass/fail. The acceptance gate that asserts zb == ref is a
-separate, later artifact (docs/spec-basic-msgexact.md) -- writing the gate and
-the denominator in one file is how a readout ends up agreeing with itself.
+"what exactly does an MSX1 print for error n", per machine, verbatim. The default
+walk captures the zb side too, but as the CURRENT-STATE column of a
+characterization table, not as a pass/fail.
+
+🔴 THIS PARAGRAPH USED TO END: "The acceptance gate that asserts zb == ref is a
+separate, later artifact -- writing the gate and the denominator in one file is
+how a readout ends up agreeing with itself." THE GATE THEN LANDED IN THIS FILE
+ANYWAY (D-MSGEXACT `--gate`, widened by D-MSGSUB), so the warning now describes
+the file it is written in. Recorded rather than deleted, because the hazard it
+names is real and the reason it does NOT bite here is specific:
+
+  the gate does not compare zb against a FRESH reference reading. It compares zb
+  against REF_TEXT, an EMBEDDED LOCK -- and `--relock` re-measures both machines
+  and DIFFS them against that lock. So the two halves cannot drift into agreeing
+  with each other: the reference half is a constant that a separate mode has to
+  keep reproducing, not a value the gate run itself produces.
+
+Delete `--relock`, or stop running it, and the warning becomes true again.
 
 THE INSTRUMENT: `ERROR n` IN DIRECT MODE
 ========================================
@@ -167,6 +180,104 @@ EXTRA = [
     ("extra",   "direct", ["10 INPUT A", "RUN", "1,2"],    "1,2"),
 ]
 
+# --- the D-MSGSUB battery: the ABORT-PATH shapes a direct-mode code walk -----
+# cannot see (docs/spec-basic-msgsub.md §5).
+#
+# D-MSGSUB routes the 14 unimplemented codes' TEXT into a sub-ROM page-1 tenant
+# that emits through BIOS `CHPUT`, while main keeps the CRLF / " in <line>" tail
+# and the PRDEST discipline. Every row in the main walk above is DIRECT mode, so
+# it exercises exactly one of the two arms of `fre_abort_low` and never the
+# suffix. These rows exercise the other arm, each paired with a MAIN-RESIDENT
+# control of the identical shape -- the control is what says the rig is sound
+# when the subject row moves ([[apparatus-is-part-of-the-measurement]]).
+#
+#   hole-run / ifc-run    RUN mode: does the sub-emitted body get main's own
+#                         " in <line>" suffix appended, the same as a resident
+#                         message? (`ifc-run` is ERR 5, resident, same shape.)
+#   prd-hole / prd-ifc    An error raised on the statement AFTER a `PRINT#` to
+#                         an open DISK FILE: the message must still reach the
+#                         screen, for a sub-hosted code and a resident one alike.
+#   mid-ifc               An error raised *INSIDE* a `PRINT#` -- the only shape
+#                         that actually has PRDEST != 0 at raise time. See below.
+#                         ⚠️ The three disk rows need one: CF-3300 + zb only.
+#
+# 🔴 CORRECTION, AND IT IS THE POINT OF THIS COMMENT. The prd-* pair was ADDED
+# believing it measured the PRDEST question -- "pchar honours PRDEST, CHPUT
+# cannot, so does fre_abort_low's PRDEST zero make them agree?" IT DOES NOT
+# MEASURE THAT, and knife K3 is what said so: deleting `ld (PRDEST),a` from
+# fre_abort_low changed NEITHER row. The reason is that `PRINT#1,"[";` RESTORES
+# PRDEST when the statement ends, so by the time the NEXT statement raises,
+# PRDEST is already 0 and the row cannot tell the two builds apart. A green row
+# that cannot go red is not a measurement ([[gate-can-be-green-while-measuring-
+# nothing]]), and this pair was written into a spec and a characterization doc as
+# "the reading that settles CHPUT" before the knife caught it.
+#
+# `mid-ifc` is the rig that DOES set PRDEST: the error is raised inside the
+# PRINT# argument list (`ASC("")` -> ERR 5), while the channel is still the
+# print destination. K3 measured BOTH directions on it -- with the PRDEST zero
+# the message is on the screen, without it the screen is EMPTY and the message
+# went into the file. So it holds down the mechanism the sub-ROM path depends on,
+# and nothing in the corpus held it before.
+#
+# ⚠️ THERE IS NO mid-HOLE ROW, AND THAT IS A FACT ABOUT THE LANGUAGE, NOT A GAP.
+# The fourteen sub-hosted codes are reachable only through the `ERROR n`
+# STATEMENT, which cannot appear inside a `PRINT#` argument list -- so a
+# sub-hosted message can never be raised with PRDEST set. The CHPUT-vs-pchar
+# question is therefore BOUNDED AWAY for this path rather than measured, which is
+# a weaker claim than the one this battery originally made and the honest one.
+# prd-hole is kept because it still measures something real (the open-channel
+# state does not divert a sub-hosted message either), just not that.
+#
+# Boot-per-case, for exactly EXTRA's reason: each row stores a program and most
+# leave an open channel behind.
+SUBX = [
+    ("hole-run", ["10 ERROR 12", "RUN"],                      "RUN",  False),
+    ("ifc-run",  ["10 ERROR 5",  "RUN"],                      "RUN",  False),
+    ("prd-hole", ['10 OPEN"MSGP.TXT" FOR OUTPUT AS #1',
+                  '20 PRINT#1,"[";', "30 ERROR 12", "RUN"],   "RUN",  True),
+    ("prd-ifc",  ['10 OPEN"MSGQ.TXT" FOR OUTPUT AS #1',
+                  '20 PRINT#1,"[";', "30 ERROR 5",  "RUN"],   "RUN",  True),
+    ("mid-ifc",  ['10 OPEN"MSGR.TXT" FOR OUTPUT AS #1',
+                  '20 PRINT#1,"[";ASC("")', "RUN"],           "RUN",  True),
+    # 🎯 A SUB-HOSTED CODE MUST STILL **TRAP**, NOT PRINT -- the one behavioural
+    # risk of D-MSGSUB that no other row covers. A trap prints NOTHING: the
+    # message pointer is resolved before raise_error_hl decides trap-vs-abort and
+    # is DISCARDED on the trap arm, so the CALSLT must never happen. If the
+    # dispatch had been wired at resolve time instead of at print time, this row
+    # would show `Illegal direct` where the reference shows only the handler's
+    # own output -- and every other row in this battery would still be green,
+    # because they all abort.
+    ("hole-trap", ["10 ON ERROR GOTO 40", "20 ERROR 12", "30 END",
+                   ' 40 PRINT"T";ERR', "RUN"],                "RUN",  False),
+]
+SUBX_DISK_SIDES = ("cf3300", "zb")   # rows flagged needs_disk run only on these
+
+# MEASURED 2026-08-02, `--walk subx`, before the D-MSGSUB design was fixed. Both
+# references agreed on the two rows both can run; the CF-3300 is the oracle for
+# the two disk rows (the VG-8020 has no disk ROM, so it is SKIPPED, not guessed).
+#
+# ⚠️ `mid-ifc` locked 2026-08-02 in the same way, AFTER knife K3 showed the
+# prd-* pair was not measuring PRDEST at all (see the SUBX comment above). It is
+# the row that actually holds `fre_abort_low`'s PRDEST zero down: K3 measured it
+# in BOTH directions -- with the zero, `Illegal function call in 20` on screen;
+# without it, the screen is EMPTY and the message is in the file.
+SUBX_TEXT = {
+    "hole-run": "Illegal direct in 10",
+    "ifc-run":  "Illegal function call in 10",
+    "prd-hole": "Illegal direct in 30",
+    "prd-ifc":  "Illegal function call in 30",
+    "mid-ifc":  "Illegal function call in 20",
+    # 🎯 THE ONLY ROW ASSERTED ON ITS **WHOLE** TAIL, NOT ITS HEAD -- and both
+    # rows of it carry a claim. `T 12` says the handler ran and ERR is right, so
+    # `ERROR 12` TRAPPED and the sub-ROM was never called (a printed
+    # `Illegal direct` here would mean the dispatch had been wired at message-
+    # RESOLVE time instead of at PRINT time). `No RESUME in 40` is the run
+    # falling off the end still owing a RESUME -- which every side does
+    # identically, so keeping it costs nothing and pins the whole shape.
+    # Asserting only the head would have thrown away the second half.
+    "hole-trap": "T 12|No RESUME in 40",
+}
+
 # --- the self-check pair: two codes whose wording is known to differ ----------
 # If these read back EQUAL, the readout is not reading the message.
 SELFCHECK = (2, 11)
@@ -214,13 +325,26 @@ EXTRA_TEXT = {
 }
 VERIFY_TEXT = "Verify error"
 
-# --- THE 14 HOLES: codes zerobas never RAISES --------------------------------
-# Reachable only via `ERROR n`, so zerobas answers with its out-of-table string.
-# NAMED, not silently skipped: a hole that starts agreeing with the reference is
-# itself a finding (someone implemented the code, or the table grew an entry),
-# and a silent skip would swallow that. D-MSGSUB (spec §4.2) is the slice that
-# closes them, sub-ROM-side.
-HOLES = frozenset({12, 15, 18, 19, 50, 51, 53, 54, 56, 57, 60, 62, 63, 64})
+# --- THE HOLES: codes zerobas never RAISES -----------------------------------
+# Reachable only via `ERROR n`, so zerobas used to answer with its out-of-table
+# string. NAMED, never silently skipped: a hole that starts agreeing with the
+# reference is itself a finding (someone implemented the code, or the table grew
+# an entry), and a silent skip would swallow that.
+#
+# 🎯 EMPTY SINCE D-MSGSUB (docs/spec-basic-msgsub.md), 2026-08-02. The fourteen
+#    12 15 18 19 50 51 53 54 56 57 60 62 63 64
+# are hosted in the sub-ROM page-1 tenant SUBROM_IDX_ERRMSG and now print the
+# reference's own text, so every row in this walk is in scope and the gate has
+# no expected-failure list at all.
+#
+# ⚠️ KEPT AS A NAMED EMPTY SET RATHER THAN DELETED, and the machinery with it.
+# `HOLES = frozenset()` is a positive statement -- "there are none left" -- that
+# a reader can check against the row count. Deleting the mechanism would make a
+# FUTURE hole (a code someone adds to REF_TEXT but not to the tenant) fail as a
+# bare red row with no name on it, and would delete the HOLE-SURPRISE report,
+# which is the thing that says "this hole got filled" rather than "this row
+# broke". The two are opposite findings and must not collapse into one.
+HOLES: frozenset[int] = frozenset()
 
 # What a hole is REQUIRED to print instead -- the exact-cased out-of-table text.
 HOLE_TEXT = "Unprintable error"
@@ -254,6 +378,45 @@ PREDICT_RED = (frozenset({1, 2, 3, 4, 6, 7, 8, 11, 13, 14, 17, 20, 21, 22, 23,
 # the slice breaks (err_linebuf_overflow). If either reddens, the design is wrong
 # -- they are controls that can move their own subject, not decoration.
 PREDICT_GREEN = frozenset({5, 9, 10, 16, 25})
+
+# =============================================================================
+# D-MSGSUB's OWN predicted sets (docs/spec-basic-msgsub.md §5.1), locked before
+# the build. Recorded BESIDE D-MSGEXACT's rather than replacing them: a slice's
+# prediction is a record of what it believed, and overwriting the previous
+# slice's would erase the reading that its miss produced.
+#
+# ⚠️ DERIVED FROM THE EDIT LIST, NOT THE SCOPE LIST. That distinction is exactly
+# what D-MSGEXACT got wrong (25 predicted, 40 measured), and the correction it
+# filed is [[predicted-red-set-must-not-inherit-scope]]. The D-MSGSUB edit list
+# is: one new escape byte in the decoder, a 1 B marker string, four err_msgtab
+# entries, one `ld hl` operand in rerr_unprintable, and a new sub-ROM tenant.
+# What that can move is the fourteen holes and the two SUBX hole rows -- and
+# NOTHING else, because the escape byte is a value no existing message contains
+# and both repoints have a target whose text equals the tenant's fallback.
+MSGSUB_PREDICT_RED = frozenset(
+    {12, 15, 18, 19, 50, 51, 53, 54, 56, 57, 60, 62, 63, 64}
+    | {"hole-run", "prd-hole"})
+# The rows that MUST NOT move. Five are load-bearing:
+#   26           rides the NEW sparse routing (rerr_unprintable -> err_subhosted)
+#                and is answered by the TENANT's own fallback. If the dispatch,
+#                the tenant or the CALSLT is wrong, this reddens -- it is the
+#                only green row in the walk that exercises the new mechanism.
+#   23           the UNCHANGED main-resident `Unprintable error`. Pairs with 26
+#                to separate "the tenant is broken" from "the string is broken".
+#   52 59 55 58 61  matched by rerr_sparse / rerr_sparse2 BEFORE the fall-through.
+#                If the new routing swallowed them they would redden.
+# Plus D-MSGEXACT's own {5,9,10,16,25} and the four EXTRA rows, all untouched.
+#
+# ⚠️ `mid-ifc` IS NOT PART OF THE 33/49 BASELINE, and saying so matters. It was
+# added AFTER that run, when knife K3 showed the prd-* pair could not see PRDEST
+# and a row that could was needed. It was green before the edit and green after
+# (it rides a resident message), so it changes no verdict -- but a row added
+# mid-slice and then counted in a "before" figure would be a retro-fitted
+# prediction. The baseline is 33/49; the post-edit gate is 50/50.
+MSGSUB_PREDICT_GREEN = frozenset(
+    set(REF_TEXT) - set(MSGSUB_PREDICT_RED)
+) | {"brk", "brk-run", "redo", "extra", "ifc-run", "prd-ifc", "mid-ifc",
+   "hole-trap"}
 
 
 def in_scope(code: int) -> bool:
@@ -335,6 +498,44 @@ def measure_extra(side: str, *, omsx: str | None = None
             os.unlink(tmp)
     return {label: omsx_repl.screen_tail(raw, key)
             for (label, _, _, key), raw in zip(EXTRA, raws)}
+
+
+def measure_subx(side: str, *, omsx: str | None = None
+                 ) -> dict[str, str | None]:
+    """Drive the D-MSGSUB abort-path battery (SUBX). Boot-per-case, as EXTRA.
+
+    ⚠️ THE DISK ROWS FORCE A DISK ON **BOTH** SIDES, INCLUDING zb. SIDES['zb']
+    carries `diska=None` because the code walk needs none -- but `prd-hole`
+    OPENs a file, and on a machine with no disk mounted that OPEN raises its own
+    error and the row would measure THAT instead of the abort path, while still
+    printing a plausible message. Rows that need one are flagged in SUBX and the
+    VG-8020 (no disk ROM at all) is skipped for them rather than fed a disk it
+    cannot use -- a skipped row reads `<skipped>`, never `<none>`, so it can
+    never be mistaken for "the machine declined to answer".
+    """
+    cfg = dict(SIDES[side])
+    machine = cfg.pop("machine")
+    diska = cfg.pop("diska")
+    reset = cfg.pop("reset")
+    rows = [r for r in SUBX if not r[3] or side in SUBX_DISK_SIDES]
+    if not rows:
+        return {}
+    if any(r[3] for r in rows):
+        diska = diska or SRC_DSK
+    tmp = None
+    if diska:
+        tmp = tempfile.NamedTemporaryFile(suffix=".dsk", prefix=f"msgs_{side}_",
+                                          delete=False).name
+        shutil.copy(diska, tmp)
+    try:
+        cases = [("direct", list(reset) + lines) for _, lines, _, _ in rows]
+        raws = omsx_repl.run_cases(machine, cases, batch=False,
+                                   capture="screen", omsx=omsx, diska=tmp, **cfg)
+    finally:
+        if tmp and os.path.exists(tmp):
+            os.unlink(tmp)
+    return {label: omsx_repl.screen_tail(raw, key)
+            for (label, _, key, _), raw in zip(rows, raws)}
 
 
 # --- the `verify` battery: ERR 20's wording, via a REAL cassette mismatch -----
@@ -466,11 +667,22 @@ def head(v: str | None) -> str | None:
 
 def run_gate(*, omsx: str | None = None, with_verify: bool = False) -> int:
     """Assert zerobas == the measured reference text, per row. Returns 0/1."""
+    # ⚠️ GUARD THE INSTRUMENT BEFORE TRUSTING A ROW. A SUBX row added but not yet
+    # measured on a reference sits at None; `have == None` is merely False, so the
+    # row would read as an ordinary red -- "zerobas is wrong" -- when the truth is
+    # "nobody has measured what right looks like". Those are opposite findings.
+    unmeasured = [k for k, v in SUBX_TEXT.items() if v is None]
+    if unmeasured:
+        print(f"REFUSING TO GATE: SUBX rows {unmeasured} have no measured "
+              f"reference value yet. Run `--walk subx --sides vg8020,cf3300,zb` "
+              f"and lock them into SUBX_TEXT first.", file=sys.stderr)
+        return 2
     codes = MAIN_CODES + DISK_CODES
     print(f"# gate: driving zb ({SIDES['zb']['machine']}) over {len(codes)} codes"
           f" + {len(EXTRA)} extras ...", file=sys.stderr, flush=True)
     got = measure("zb", codes, omsx=omsx)
     got_x = measure_extra("zb", omsx=omsx)
+    got_s = measure_subx("zb", omsx=omsx)
 
     fails: list[str] = []
     hole_surprises: list[str] = []
@@ -496,8 +708,25 @@ def run_gate(*, omsx: str | None = None, with_verify: bool = False) -> int:
             npass += 1
         else:
             fails.append(f"  {label:8s}: want {want!r}, got {show(have)}")
+    # SUBX (D-MSGSUB §5.2): the RUN-mode arm and the PRDEST!=0 arm. Two subject
+    # rows, each with a MAIN-RESIDENT control of the identical shape -- so a
+    # green subject row that agrees for the wrong reason (a rig that prints the
+    # same thing whatever it is asked) is caught by its control moving too.
+    for label, _, _, _ in SUBX:
+        want = SUBX_TEXT[label]
+        # A `|` in the locked value means "assert every screen row", not just the
+        # first -- `head()` is the default because most rows trail machine-
+        # specific junk, but a row whose FULL tail agrees on all three sides
+        # should be held to all of it.
+        raw_s = got_s.get(label)
+        have = (raw_s.strip() if ("|" in want and raw_s is not None)
+                else head(raw_s))
+        if have == want:
+            npass += 1
+        else:
+            fails.append(f"  {label:8s}: want {want!r}, got {show(have)}")
 
-    total = len(codes) + len(EXTRA)
+    total = len(codes) + len(EXTRA) + len(SUBX)
     if with_verify:
         total += 1
         scr = measure_verify(omsx=omsx)
@@ -509,7 +738,8 @@ def run_gate(*, omsx: str | None = None, with_verify: bool = False) -> int:
 
     print()
     print(f"msgexact gate: {npass}/{total}")
-    print(f"  in-scope rows {sum(1 for n in codes if in_scope(n)) + len(EXTRA)}"
+    print(f"  in-scope rows "
+          f"{sum(1 for n in codes if in_scope(n)) + len(EXTRA) + len(SUBX)}"
           f", named holes {len(HOLES)}"
           f"{' , verify row' if with_verify else ''}")
     if hole_surprises:
@@ -520,9 +750,25 @@ def run_gate(*, omsx: str | None = None, with_verify: bool = False) -> int:
         print("\nFAIL:")
         for f in fails:
             print(f)
+        # 🔴 THE PREDICTION IS CHECKED HERE, NOT IN A COMMENT. A predicted set
+        # nobody diffs against the run is a wish. D-MSGSUB predicted 16 red rows
+        # of 49; if the pre-edit baseline disagrees, THAT is the reading and the
+        # prediction stays on record rather than being widened to fit.
+        red = {int(f.split()[1].rstrip(':')) if f.strip().startswith("code")
+               else f.split(':')[0].strip() for f in fails}
+        extra_red = red - set(MSGSUB_PREDICT_RED)
+        missing = set(MSGSUB_PREDICT_RED) - red
+        print(f"\nvs D-MSGSUB PREDICT_RED ({len(MSGSUB_PREDICT_RED)} rows): "
+              f"{len(red)} red")
+        if extra_red:
+            print(f"  UNPREDICTED red: {sorted(map(str, extra_red))}")
+        if missing:
+            print(f"  predicted red but GREEN: {sorted(map(str, missing))}")
+        if not extra_red and not missing:
+            print("  exact match")
         return 1
     print("\nALL PASS -- every message zerobas emits matches the reference "
-          "verbatim; all 14 holes still print the out-of-table string.")
+          "verbatim, and there are no named holes left.")
     return 0
 
 
@@ -562,7 +808,8 @@ def main() -> int:
                     help="comma-separated: vg8020,cf3300,zb (default both refs)")
     ap.add_argument("--walk", default="main,disk",
                     help="comma-separated: main (1..26), disk (50..64), "
-                         "extra (the non-ERROR-n messages)")
+                         "extra (the non-ERROR-n messages), subx (D-MSGSUB's "
+                         "abort-path rows)")
     ap.add_argument("--omsx", default=None)
     ap.add_argument("--boot-per-case", action="store_true",
                     help="isolation escape hatch: one boot per code")
@@ -590,6 +837,7 @@ def main() -> int:
     if "disk" in walks:
         codes += DISK_CODES
     want_extra = "extra" in walks
+    want_subx = "subx" in walks
     want_verify = "verify" in walks
     if want_verify:
         print(f"# measuring Verify error on {VERIFY_MACHINE} (cassette rig) ...",
@@ -599,14 +847,15 @@ def main() -> int:
         print(f"VERIFY ({VERIFY_MACHINE}, single-reference -- see module notes)")
         print("  screen: " + show(vscr))
         print()
-        if not codes and not want_extra:
+        if not codes and not want_extra and not want_subx:
             return 0
-    if not codes and not want_extra:
+    if not codes and not want_extra and not want_subx:
         print("no walk selected", file=sys.stderr)
         return 2
 
     readings: dict[str, dict[int, str | None]] = {}
     extras: dict[str, dict[str, str | None]] = {}
+    subxs: dict[str, dict[str, str | None]] = {}
     for s in sides:
         if codes:
             print(f"# measuring {s} ({SIDES[s]['machine']}) over {len(codes)} codes ...",
@@ -619,6 +868,10 @@ def main() -> int:
             print(f"# measuring {s} extra battery ({len(EXTRA)} cases, "
                   f"boot-per-case) ...", file=sys.stderr, flush=True)
             extras[s] = measure_extra(s, omsx=args.omsx)
+        if want_subx:
+            print(f"# measuring {s} SUBX battery (boot-per-case) ...",
+                  file=sys.stderr, flush=True)
+            subxs[s] = measure_subx(s, omsx=args.omsx)
 
     problems = []
     if "main" in walks:
@@ -641,6 +894,20 @@ def main() -> int:
             print(f"{label:7s} | " + " | ".join(cells))
         print(f"{'verify':7s} | " + " | ".join(
             "<not-measured>".ljust(28) for _ in sides))
+        print()
+    if want_subx:
+        print("SUBX     | " + " | ".join(s.ljust(34) for s in sides))
+        print("---------+-" + "-+-".join("-" * 34 for _ in sides))
+        for label, _, _, needs_disk in SUBX:
+            cells = []
+            for s in sides:
+                # ⚠️ THREE sentinels here, not two: a row this side never RAN
+                # (no disk) must not read as `<none>` ("the machine declined").
+                if needs_disk and s not in SUBX_DISK_SIDES:
+                    cells.append("<skipped:no-disk>".ljust(34))
+                else:
+                    cells.append(show(subxs[s].get(label)).ljust(34))
+            print(f"{label:8s} | " + " | ".join(cells))
         print()
 
     # Agreement summary across the two references only -- the whole point of a

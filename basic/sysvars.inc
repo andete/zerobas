@@ -3419,6 +3419,20 @@ SUBROM_IDX_SAVE      equ 21     ; save_tenant (sub/save.asm): BLOAD's mirror -- 
                                 ; fat_dir_update sub-locally. The PARSE stays resident
                                 ; (it calls `eval`), so nothing but SV_OP/SV_STAT rides;
                                 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SAVE.
+SUBROM_IDX_ERRMSG    equ 22     ; errmsg_tenant (sub/errmsg.asm): the fourteen ERR
+                                ; codes zerobas never RAISES but must still PRINT
+                                ; (D-MSGSUB, docs/spec-basic-msgsub.md). PAGE 1 for
+                                ; title_tenant's exact reason -- its only outward
+                                ; edge is CHPUT, page-0 BIOS, invisible to a page-0
+                                ; tenant -- and because main's OWN printer is
+                                ; unreachable from either island (print_string
+                                ; $4673 / print_msg $7717 are main page 1, which a
+                                ; page-1 CALSLT switches out). NOTHING MARSHALS: the
+                                ; sole input is ERRFLG, already in RAM. Reached from
+                                ; print_msg_stopcr's MSGESC_SUB arm (basic/
+                                ; program.asm `pm_sub`), which is the only site that
+                                ; computes IX = SUBROM_ENTRY_BASE_P1 +
+                                ; 3*SUBROM_IDX_ERRMSG.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch
@@ -3445,3 +3459,22 @@ MSGESC_FILE     equ     5       ; "file "   -- S-FCH-2's two disk-range messages
                                 ; needs no change -- it is bounded by MSGESC_HI.
 MSGESC_LO       equ     MSGESC_ERROR                    ; share one entry, so the
 MSGESC_HI       equ     MSGESC_FILE                     ; decoder needs NO case flag
+
+; --- D-MSGSUB: the SUB-ROM-HOSTED marker (docs/spec-basic-msgsub.md §3.1) -----
+; NOT a phrase. A message body that is just this byte says "the text lives in the
+; sub-ROM page-1 tenant SUBROM_IDX_ERRMSG, keyed on ERRFLG"; print_msg_stopcr's
+; pm_sub arm dispatches and the tenant emits through BIOS CHPUT. Main keeps the
+; CRLF and the run-mode " in <line>" suffix, so this is a BODY substitution and
+; nothing about fre_abort_low's two arms changes.
+;
+; ⚠️ DELIBERATELY ABOVE MSGESC_HI, AND THE DECODER TESTS IT **BEFORE** THE PHRASE
+; BOUND. Two separate reasons, both load-bearing:
+;   * MSGESC_HI bounds msg_phrase_tab's LENGTH, and tests/test_msgenc.py reads
+;     exactly MSGESC_HI - MSGESC_LO + 1 phrases out of the ROM. Folding this byte
+;     into the phrase range would make that read run one entry PAST the table and
+;     compare against whatever follows -- a readout that fails by producing
+;     plausible garbage rather than by going red. test_msgenc.py now asserts
+;     MSGESC_SUB > MSGESC_HI to keep a future tidy-up from doing exactly that.
+;   * Being above the bound means `cp MSGESC_HI + 1 / jr nc,pm_lit` would treat
+;     it as a LITERAL and pchar a raw $06. The pm_sub test must precede it.
+MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant

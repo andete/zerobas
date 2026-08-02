@@ -868,7 +868,17 @@ ra_abort:                                    ; the S1/S2a abort body (HL = messa
                 pop     hl
                 jp      fre_abort_low
 rerr_unprintable:
-                ld      hl,err_unprintable
+                ; 🎯 D-MSGSUB: err_subhosted, NOT err_unprintable -- and that one
+                ; changed operand is the whole sparse half of the slice. This is the
+                ; fall-through of rerr_sparse -> rerr_sparse2 (52/59, then 55/58/61),
+                ; i.e. EVERY code past the dense table. Pointing it at the marker
+                ; routes the ten sparse holes (50/51/53/54/56/57/60/62/63/64) AND
+                ; codes 26..49 / 65..255 into the tenant in ONE edit, with no
+                ; membership test main-side and ZERO bytes. The tenant answers the
+                ; codes it does not know with its own copy of `Unprintable error`,
+                ; so their text is unchanged -- which is exactly what makes ERROR 26
+                ; a live GREEN control riding the new mechanism (spec §3.2).
+                ld      hl,err_subhosted
                 jp      raise_error_hl       ; through the trap check (ERROR n with a
                                              ; wild code still traps if a handler is armed)
 
@@ -951,7 +961,11 @@ err_msgtab:
                 dw      err_redim           ; 10: redimensioned array (arrays' own
                                             ; capitalised string; §9.5 keep)
                 dw      err_fp_divzero      ; 11: division by zero
-                dw      err_unprintable     ; 12: illegal direct (hole -- not yet raised)
+                dw      err_subhosted       ; 12: Illegal direct. D-MSGSUB: the text
+                                            ; lives in the sub-ROM tenant, keyed on
+                                            ; ERRFLG. Still not RAISED by any zerobas
+                                            ; site -- `ERROR 12` is the only way here --
+                                            ; but it no longer prints the wrong thing.
                 dw      err_type_mismatch   ; 13: type mismatch
     IF CLEARPOOL
                 dw      err_out_of_str      ; 14: out of string space (D-CLP; was a
@@ -959,13 +973,17 @@ err_msgtab:
                 dw      err_unprintable     ; 14: out of string space (hole)
     ENDIF
                                             ; hole until the pool could raise it)
-                dw      err_unprintable     ; 15: string too long (hole)
+                dw      err_subhosted       ; 15: String too long (D-MSGSUB, sub-hosted;
+                                            ; not raised by any zerobas site)
                 dw      err_too_complex     ; 16: string formula too complex
                 dw      err_cont            ; 17: can't continue
-                dw      err_unprintable     ; 18: undefined user function (hole)
-                dw      err_unprintable     ; 19: device I/O error (load_error family
-                                            ; unification is its own later item, S1 §9.1;
-                                            ; hole here)
+                dw      err_subhosted       ; 18: Undefined user function (D-MSGSUB,
+                                            ; sub-hosted; not raised -- DEF FN's own
+                                            ; slice would be the raiser)
+                dw      err_subhosted       ; 19: Device I/O error (D-MSGSUB, sub-hosted).
+                                            ; The load_error family unification that would
+                                            ; RAISE it is still its own later item
+                                            ; (S1 §9.1) -- this fixes the TEXT only.
                 dw      err_verify          ; 20: Verify error. 🎯 D-MSGEXACT: this was a
                                             ; HOLE pointing at "unprintable error" while
                                             ; cload.asm's own err_verify -- already the
@@ -1014,6 +1032,22 @@ err_msgtab:
                                             ; VG-8020 before landing: `ERROR 25` ->
                                             ; `Line buffer overflow`, `ERROR 26` ->
                                             ; `Unprintable error` (so 25 IS the bound).
+; --- err_subhosted: the whole main-side cost of D-MSGSUB's message text ------
+; ONE BYTE. A body consisting of just MSGESC_SUB tells print_msg_stopcr's pm_sub
+; arm (basic/program.asm) to dispatch to the sub-ROM page-1 tenant, which reads
+; ERRFLG and emits the text itself. err_msgtab's four dense holes (12/15/18/19)
+; and rerr_unprintable (the fall-through for EVERY out-of-dense code) point here
+; instead of at err_unprintable -- five repoints, zero bytes between them.
+;
+; 🎯 ITS POSITION IS LOAD-BEARING, NOT LAYOUT. err_unprintable must be the VERY
+; NEXT BYTE: when the sub-ROM is absent, subrom_call returns CF=1 without
+; calling and pm_sub resumes the decode loop right here, so the machine prints
+; `Unprintable error` -- exactly what it printed before this slice, instead of
+; nothing. Do not insert anything between these two labels, and do not reorder
+; them. tests/test_msgenc.py asserts the adjacency (the same shape as its
+; err_overflow/err_linebuf_overflow gap control, and for the same reason: the
+; pull to "tidy up" a one-byte string is real).
+err_subhosted:  db      MSGESC_SUB          ; D-MSGSUB -- falls through, deliberately
 err_unprintable:                            ; D-MSGENC (§4.4): 20 B -> 13 B. Note this
                 db      "Unprintable",MSGESC_ERROR,0    ; SHRINKS at the very spot the
                 ; err_missing_operand itself lives in basic/missing.asm. Sited
