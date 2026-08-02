@@ -4003,26 +4003,71 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it kills it. Whoever implements them needs a plugged printer
       ([[openmsx-printer-pluggable]]) or a different instrument first.
 
-- [ ] 🔴 **ERROR-MESSAGE CAPITALISATION IS INCONSISTENT WITH ITSELF.** Filed
-      2026-08-02 by D-LSTRNG, from two rows in one corpus run pointing opposite
-      ways:
-      ```
-      lst-comma       refs 'Syntax error'            zb 'syntax error'    (lowercase)
-      ifc.instr.zero  probe wants 'illegal function call'
-                                                     zb 'Illegal function call' (CAPITALISED)
-      ```
-      [`basic/arrays.asm:608`](basic/arrays.asm:608) describes a deliberate
-      lowercase house style, *"the same documented deviation as every other
-      zerobas syntax error"* — and `ifc.instr.*` shows that is **not** true of
-      every message. ⚠️ **The two long-standing `array-acceptance` failures
-      (149/151) may therefore be a message-CASE defect rather than a wrong probe
-      expectation, and nobody has checked.** Decide one way for the whole tree:
-      match the references (capitalised) and update the ~10 probes that assert
-      lowercase, or keep lowercase and fix `Illegal function call`. Either way the
-      `lst-comma` pin retires with it.
-      ⚠️ Only surfaced because D-LSTRNG's `screen_tail` readout is the first in
-      `basic_probe_lnblank.py` to read an error MESSAGE rather than an error CODE;
-      every error class in that probe agrees numerically.
+- [x] ✅ **ERROR-MESSAGE CAPITALISATION — CLOSED 2026-08-02 by D-MSGEXACT**
+      ([`docs/spec-basic-msgexact.md`](docs/spec-basic-msgexact.md), denominator
+      [`docs/msgexact-msx1-characterization.md`](docs/msgexact-msx1-characterization.md)).
+      Resolved as **reference-exact wording, tree-wide**. Page 1 **14 B → 39 B**:
+      the policy was a **carve**, not a cost — the lowercase style was the only
+      thing paying for two duplicated strings and `fp_runtime_error`'s two
+      one-code-two-message special cases. Gate 45/45, five knives, corpus green.
+      🔴 **THIS ITEM'S OWN EVIDENCE WAS WRONG IN BOTH HALVES, AND THAT IS THE
+      LESSON.** (a) [`basic/arrays.asm:608`](basic/arrays.asm:608)'s claim is
+      scoped to **syntax** errors and is TRUE; the same comment names Tier B as
+      capitalised. The tree's inconsistency was deliberate documented policy
+      (arrays §9.5), not a defect — which is why no gate ever caught it.
+      (b) The two `array-acceptance` failures were **not** a message-case defect:
+      D-MISS-2 folded INSTR's check into `eval_pos_arg`, whose reject path is
+      `gb_illegal` → `raise_error(5)` → the capitalised string, deleting the
+      lowercase route the probe still asserted. **149/151 → 151/151 with no
+      `basic/` change.** A red row assumed stale is a row that measures nothing.
+      🎯 The real finding was structural: [`error_acceptance.py`](probes/basic/error_acceptance.py)
+      stated a policy of *not* comparing message text to the reference, so the
+      **whole corpus was blind to wording** — every error class agreed
+      numerically. `lst-comma` was the single visible pixel of that; it is
+      retired.
+
+- [ ] 🔴 **D-MSGSUB — HOST THE 14 UNIMPLEMENTED ERROR MESSAGES IN THE SUB-ROM.**
+      Filed 2026-08-02 by D-MSGEXACT §4.2, with the reference text for all 14
+      already **measured** (characterization doc §1/§2), so this starts from a
+      denominator rather than a survey.
+      Codes **12, 15, 18, 19, 50, 51, 53, 54, 56, 57, 60, 62, 63, 64** print
+      `Unprintable error` where the references print real text. Main-resident
+      they cost ≈**227 B** against ≈39 B of page 1 — not fundable. Sub page 1 has
+      ≈**3084 B** free.
+      ✅ **The D-MSGENC Q4 objection does NOT apply.** It resolved "encoding in
+      the sub-ROM?" with *no*, because the decoder runs on the abort path which
+      must work when the sub-ROM is absent. But `tokenise` is ITSELF a sub-ROM
+      page-0 tenant — with no sub-ROM you cannot tokenise a line, so `ERROR 12`
+      can never be typed. The one message that must stay main-resident is
+      `err_subrom_absent`, whose alias target `err_illegal_fn_arr` is in the low
+      region.
+      ⚠️ **The constraint that does bite**: `print_string` (`$4673`) and
+      `print_msg` (`$7717`) are **main page 1**, and a sub-ROM tenant may call
+      only main page 0 (`<$4000`) or BIOS — `check_tenant_closure --page1`
+      enforces it. So the sub-ROM cannot call main's printer.
+      🎯 **Duplicating the print code sub-side is APPROVED** (user, 2026-08-02),
+      which removes the marshalling entirely: the sub-ROM carries its own decoder
+      + phrase table (D-MSGENC measured those at 44 B + 40 B) and emits via BIOS
+      `CHPUT`, which is page 0 and inside the closure rule. Main pays only a
+      dispatch stub — no RAM staging buffer, no copy-back head.
+      🎯 **The prize is larger than the 14 holes**: if the mechanism holds,
+      EXISTING messages can migrate too. Page 1 is this tree's chronic wall and
+      ~3 KB of sub page 1 is idle.
+
+- [ ] ⚠️ **A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A CLASSIFIER
+      NEEDLE, AND THEY LOOK IDENTICAL.** Filed 2026-08-02 by D-MSGEXACT §6b,
+      which silently broke **30 comparisons across 9 files** and every one failed
+      by **agreeing**: a needle matched against an already-`.lower()`-ed screen
+      string cannot match if it is capitalised, so the row reclassifies from
+      `error:<phrase>` to `value` instead of going red.
+      ⚠️ `badfnum` was invisible to two rounds of auditing — it has no `.lower()`
+      at all; it `setdefault`s its needle into an `ERR_CLASSES` dict **imported
+      from `lof`**. The gate caught it (12 oracle drifts), not the audit.
+      Worth a lint: a capitalised message literal reaching a case-folded
+      comparison, across module boundaries. Until then the vocabularies carry
+      explicit "MUST STAY LOWERCASE" comments
+      ([`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py) has the
+      worked one).
 
 - [ ] 🔴 **`.` — THE CURRENT-LINE PSEUDO-LINE-NUMBER — IS ABSENT, AND IT IS ONE
       MECHANISM SHARED BY FIVE VERBS.** Filed 2026-08-02 by D-DELETE, which

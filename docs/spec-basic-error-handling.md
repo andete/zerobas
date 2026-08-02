@@ -172,6 +172,15 @@ Confirmed facts this pins:
 
 ## 4. The MSX error-code table
 
+> 🔴 **2026-08-02 (D-MSGEXACT): THE "MSX name" COLUMN BELOW WAS TRANSCRIBED, NOT
+> MEASURED, AND IT WAS WRONG.** Row 17 read `Can't continue`; both references
+> print **`Can't CONTINUE`**. The "black-box-verified per code" note refers to the
+> ERR *code* (`PRINT ERR`), never the message TEXT -- which is exactly the gap
+> D-MSGEXACT closed. The measured table is
+> [`docs/msgexact-msx1-characterization.md`](msgexact-msx1-characterization.md);
+> prefer it over this one, and note the "zerobas string (today)" column is now
+> stale everywhere (every message is the reference's verbatim text).
+
 Source: the published **MSX-BASIC language reference** (allowed-sources.md line 110,
 grade B — the user-visible language contract: keywords, functions, **errors**), and
 **black-box-verified** per code in S2 via `ON ERROR GOTO h : <trigger> : h PRINT ERR`
@@ -196,7 +205,7 @@ numbering, with the zerobas string + site each code funnels from today:
 | 14 | Out of string space | *(none yet)* | — |
 | 15 | String too long | *(none yet)* | — |
 | 16 | String formula too complex | `String formula too complex` | str-engine temp overflow (FPERR=9) |
-| 17 | Can't continue | `can't continue` | `program.asm` `err_cont` |
+| 17 | Can't CONTINUE | `Can't CONTINUE` | `program.asm` `err_cont` |
 | 18 | Undefined user function | *(none yet)* | — |
 | 19 | Device I/O error | (`load error` family) | tape/disk load |
 | 20 | Verify error | `Verify error` | `cload.asm` `err_verify` |

@@ -303,8 +303,9 @@ def main() -> int:
                   f"'Type mismatch'={zb_err} no-value={zb_noval}")
 
     print("\nALL PASS -- reference matches §2/§1, zerobas matches reference "
-          "(the type-mismatch message text is a documented case-wording "
-          "divergence, both sides asserted own-wording)" if ok
+          "(the type-mismatch message text is now IDENTICAL on both sides: "
+          "`Type mismatch`, D-MSGEXACT withdrew the case-wording divergence "
+          "this line used to report)" if ok
           else "\nSOME FAILED")
     return 0 if ok else 1
 

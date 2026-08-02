@@ -773,8 +773,10 @@ string-acceptance: $(DISK_ROM) repack-machine
 # separate keystroke burst after the prompt appears (spec §6 harness wrinkle). Two
 # halves: reference-lock each case on the VG-8020 (numeric/string/multi-var/LINE INPUT/
 # prompt separator/?redo/?extra), then assert zerobas==reference on the repack build.
-# The ?redo/?extra WORDING is zerobas's own lowercase (D-2), so those cases differential
-# the final VALUE, not the message. Console INPUT is repack-only, so this boots
+# The ?redo/?extra wording is now the reference's verbatim `?Redo from start` /
+# `?Extra ignored` (D-MSGEXACT withdrew the D-2 own-lowercase convention); these cases
+# still differential the final VALUE rather than the message, which is what makes them
+# robust -- basic_probe_msgexact.py is where the TEXT is asserted. Console INPUT is repack-only, so this boots
 # C-BIOS_MSX1_EU_REPACK_DISK. HEAVY + oracle-dependent (needs your VG-8020 reference
 # ROM); NOT part of the emulator-free `unit-test`. Scope with `make input-acceptance
 # ONLY=numeric`.

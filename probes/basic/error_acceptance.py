@@ -24,10 +24,17 @@ FAMILY A -- untrapped-error ABORT semantics (the D-1 fix; §1/§3/§6 of the spe
   oracle-lock asserts A==1 for every case; the differential asserts zerobas == ref.
   Pre-S1 zerobas returns A==2 for all -> the differential is RED by design.
 
-FAMILY B -- run-mode " in <line>" reporting (the D-2 fix). Wording stays house-style
-  (we don't copy MSX's verbatim text -- so we DON'T compare the message string to the
-  reference), but the *structure* is asserted on BOTH machines: a run-mode error's
-  message carries " in <erroring-line>", a direct-mode error's does not. Screen-scrape.
+FAMILY B -- run-mode " in <line>" reporting (the D-2 fix).
+  🔴 THE POLICY THIS PARAGRAPH USED TO STATE IS WITHDRAWN (D-MSGEXACT, 2026-08-02).
+  It read: "Wording stays house-style (we don't copy MSX's verbatim text -- so we
+  DON'T compare the message string to the reference)". That sentence was the reason
+  NOTHING in this corpus had ever oracle-checked a message string: every error class
+  agreed NUMERICALLY and the text was not an observable on any side. zerobas now
+  prints the reference's verbatim wording for every message it emits, and
+  probes/basic/basic_probe_msgexact.py is the gate that compares the TEXT.
+  What this family still asserts is the *structure*, on BOTH machines: a run-mode
+  error's message carries " in <erroring-line>", a direct-mode error's does not.
+  Screen-scrape.
 
 FAMILY C -- the S2a dispatcher (docs/spec-basic-error-handling-s2a-packet.md):
   `ERROR n`, and the `ERR`/`ERL` functions. `ERROR`/`ERR`/`ERL` are standard MSX-BASIC

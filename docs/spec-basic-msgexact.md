@@ -281,6 +281,48 @@ as fact): [`error_acceptance.py:24`](../probes/basic/error_acceptance.py:24) and
 the ERR table at [`spec-basic-error-handling.md:181`](spec-basic-error-handling.md:181)
 — whose row 17 (`Can't continue`) is **measurably wrong** about the case.
 
+## 6b. THE APPARATUS FINDING — a case-insensitive CLASSIFIER is not an assertion
+
+🔴 **The blast-radius sweep silently broke 30 comparisons across 9 files, and
+every one of them failed by AGREEING.**
+
+Many probes do not *assert* a message — they **classify** one, against a screen
+string they have already `.lower()`-ed:
+
+```python
+low = tail.lower()
+for phrase in ERROR_WORDS:
+    if phrase in low: return f"error:{phrase}"
+return "value"          # <-- what a capitalised needle silently returns instead
+```
+
+A capitalised needle can never match, so the row does not go red: it
+**reclassifies** from `error:<phrase>` to `value` — "the keyword ran and printed
+something". `basic_probe_kwsweep.py` would have reported 7 error classes as
+values, and nothing would have looked wrong.
+
+Sites fixed, all of them needles rather than expectations:
+
+| where | sites |
+|---|---:|
+| `kwsweep` `ERROR_WORDS` | 7 |
+| `error_trap` `E21.want_tail` (`e21_facts` lowercases at line 857) | 12 |
+| `chancost` / `lof` / `badfnum` `ERR_CLASSES` | 15 |
+| `math_conv` `_ERR_TOKENS` + its two `==` comparisons | 7 |
+| inline `"X" in y.lower()` across 6 files | 12 |
+
+⚠️ **Two of these were invisible to the obvious audit.** The first pass flagged
+only files containing `.lower()` *on the same line*, then only files containing
+`.lower()` *at all* — and `badfnum` has neither: it `setdefault`s its needle into
+an `ERR_CLASSES` dict **imported from `lof`**, where the lowercasing happens. It
+was caught by the gate (12 oracle drifts), not by the audit. The audit had to be
+widened three times.
+
+**The lesson is a distinction, not a checklist:** a message literal in a probe is
+either an ASSERTION (must be exact) or a CLASSIFIER NEEDLE (must be lowercase,
+because the subject is case-folded). They look identical. Only the comparison
+site tells them apart, and that site can be in another file.
+
 ## 7. Sign-off — answered 2026-08-02
 
 | # | question | answer |
@@ -289,5 +331,61 @@ the ERR table at [`spec-basic-error-handling.md:181`](spec-basic-error-handling.
 | 2 | `Verify error` wording | **measured** (§4.3) — already exact. |
 | 3 | ERR 8 at +7 B | **in**. |
 
-Outstanding: confirmation to begin editing `basic/` for D-MSGEXACT itself
-(§3, §5, §6 — unaffected by the D-MSGSUB decision either way).
+Confirmed 2026-08-02; implemented below.
+
+## 8. The measurement — ✅ clean `rm -rf build && make basic-reloc`
+
+| wall | before (`4d43294`) | after | predicted |
+|---|---|---|---|
+| page 1 `$4000-$7FFF` | 14 B free | **39 B free** | −25 B ✅ **exact** |
+| low region `$2812-$3FFF` | 23 B free | **23 B free** | unchanged ✅ |
+
+Dead code 0/0 both builds; all four closure checks pass; `err_msgtab` bound
+unchanged.
+
+### 8.1 Gate
+
+`basic_probe_msgexact.py --gate`: **5/45 before → 45/45 after**. The pre-edit 5
+were exactly `PREDICT_GREEN`. All 14 holes still print the out-of-table string.
+
+### 8.2 Knives — all five ran
+
+| # | claim | predicted | measured |
+|---|---|---|---|
+| K1 | leading-letter flips are byte-neutral | identical size, row 2 alone red | ✅ **identical** (low 23, page 1 39), only row 2 |
+| K2 | the deleted routines have no callers | GREEN | ✅ re-added unreferenced → **dead-code gate FAILS it** (1 span) |
+| K3 | the FPERR 3 slot is live | RED on `SQR(-1)` | ✅ `T0` instead of `T5` |
+| K4 | row 5 is a live control | RED on 5 | ✅ `Zllegal function call`, only row 5 |
+| K5 | the +9 B was NECESSARY | RED on 25 | ✅ `Line buffer Overflow`; page 1 39 → 48 B |
+
+🎯 **K5 is the one that could have embarrassed §3.2, and it did not** — restoring
+the overlap recovers exactly 9 B *and* corrupts ERR 25, so the cost is forced.
+The assertion in `tests/test_msgenc.py` that used to *require* the overlap is
+now inverted to forbid it, and kept as a live control: a future carve hunt that
+"spots" those 9 B would otherwise silently corrupt ERR 25.
+
+⚠️ **K2 was re-aimed.** As specced it was "delete `fre_illegalfn_lc` and expect
+green" — but the merge had already deleted it, and a build that links proves only
+that nothing referenced it. The sharper question is whether the *apparatus* would
+catch a revenant, so the cut re-added the routine unreferenced. The dead-code
+gate flagged it. That makes the deletion verified rather than assumed.
+
+### 8.3 A knife-adjacent finding: my trap test's expectation was wrong
+
+The first trap check used `DIM X(30000)` for array OOM and read `ERR 9`, which
+looked like a regression in the FPERR=6 → ERR 7 mapping. It is not: **the
+reference returns `ERR 9` for that input too**. `DIM X(30000)` trips the
+subscript bound before it ever reaches memory; the documented OOM trigger is
+`DIM X(5000)`, which returns `ERR 7` on both machines. Checked against the
+reference rather than assumed, which is the only reason it was not filed as a
+defect in my own change.
+
+### 8.4 Corpus
+
+`unit-test` **55/55** · `deadcode` **0/0** · `array-acceptance` **151/151**
+(was 149/151) · `error-trap-acceptance` ALL PASS · `lnblank-acceptance REPEAT=2`
+**530/530, allowlist EMPTY** · `logicops` · `float` · `arrdim` 73/73 ·
+`clearpool` 52/52 · `badfnum` 93 cases 0 drift · `lof` 45 cases · `chancost` 53
+cases · `linemax` 60/60 · `sysvarsweep` · `abort` 49/49 · `fat-error` 8/8 ·
+`diskbasic` 34/34 · `bdos` 12/12 · `stop`/`strig`/`key`-trap · `error-acceptance`
+· `input-acceptance` · `direct-ctrl` 40/40.
