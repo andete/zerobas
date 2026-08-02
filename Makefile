@@ -1242,6 +1242,17 @@ lnblank-echo: repack-machine
 # RUN. It retires `kwgd-delete`'s pin and adds two: `dlt-dot`/`dlt-dotedit`, for
 # the current-line `.` this slice measured and DECLINED (spec-basic-delete.md §6).
 #
+# D-DOTLINE widened it to add `cln-,cle-,clp-`: the 71-row `.` walk, which is
+# what the current-line pseudo-line-number is gated by. 108 -> 179 rows, and it
+# RETIRES FOUR PINS (`dlt-dot`, `dlt-dotedit`, `lst-dot`, `lse-dotedit`) while
+# adding NONE -- the first cohort here to shrink the pin set rather than grow it.
+# 🔴 The `clp-` third of it reads the PUBLISHED CELL (`DOT $F6B5`) by PEEK rather
+# than reading `.`'s behaviour, and it is not redundant with the other two: on a
+# cold machine, and after a `NEW`, the program is EMPTY, so `LIST .` prints
+# nothing whatever the cell holds and the behavioural rows are STRUCTURALLY BLIND
+# to both questions. Every `clp` row has a `cln`/`cle` twin, and the twins
+# agreeing is what makes the PEEK evidence about `.` and not about a byte.
+#
 # ⚠️ `kwgz-` IS DELIBERATELY NOT HERE. Those rows are SIDE_LOCKed to zerobas
 # (AUTO is interactive, LLIST drives an unplugged LPTOUT -- both hang a
 # reference), so they carry no oracle lock and gate nothing. Read them with
@@ -1249,7 +1260,7 @@ lnblank-echo: repack-machine
 lnblank-say-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lnblank.py --gate --say \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
-	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-,lnrt-,dlt-,lst-,lse-) --repeat $(if $(REPEAT),$(REPEAT),1)
+	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-,lnrt-,dlt-,lst-,lse-,cln-,cle-,clp-) --repeat $(if $(REPEAT),$(REPEAT),1)
 
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #

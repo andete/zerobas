@@ -141,6 +141,23 @@ le_store:
 le_delete:
                 call    prog_find_del           ; deletes a matching line if present
 le_ok:
+                ; D-DOTLINE writer (a) (spec §2 R-DOT3a): storing a line records
+                ; the line number TYPED. All THREE store forms funnel through
+                ; here and all three write it -- an insert (cln-ins -> 25), a
+                ; replacement (cln-edit -> 20), and 🔴 the BARE-LINE-NUMBER
+                ; DELETE (cln-sdel), which leaves `.` naming a line that no
+                ; longer exists so `LIST .` prints nothing.
+                ; 🔴 AND THE `DELETE` VERB DOES NOT WRITE IT (cln-del reads
+                ; `20 REM B` after `DELETE 40`). Two ways to remove a line, the
+                ; same visible effect on the program, DIFFERENT effects on `.` --
+                ; which is why le_delrange below has no write of its own and why
+                ; this one may not move anywhere more "general".
+                ; ⚠️ Here rather than at le_store's head, so an OOM store -- which
+                ; did not store anything -- leaves `.` alone. UNMEASURED (no row
+                ; fills TXTMAX and then reads `.`); the reasoning is "the line the
+                ; editor last touched", and a refused line was not touched.
+                ld      hl,(SL_NUM)
+                ld      (DOT),hl
                 xor     a
                 ld      (LE_STATUS),a           ; 0 = ok
                 jp      relink_body             ; tail: vars_reset; ret
@@ -374,12 +391,38 @@ ldr_skipsp:
 ; DELETE's behaviour is unchanged (it never tested CF, and A is re-fetched by the
 ; ldr_skipsp that follows every call) -- knife K3 scores the dlt- rows to prove
 ; that rather than assert it.
+;
+; --- D-DOTLINE: the `.` arm (docs/spec-basic-dotline.md, R-DOT1/R-DOT2) -----
+; 🎯 ONE RESOLVER, AND IT IS ALREADY SHARED. This is the single place both
+; le_delrange and le_lstrange read a line number from, so `.` lands in BOTH
+; implemented verbs at ONE site -- and AUTO/RENUM get it free the day they are
+; dispatched. That is the whole reason `.` was worth doing as its own slice
+; rather than inside DELETE (spec-basic-delete.md §6 declined exactly that).
+;
+; ⚠️ A `.` DOES NOT DISARM LINE-NUMBER MODE, AND NOTHING HAD LOCKED THAT BEFORE
+; THIS SLICE. `LIST .-30` stores `<93> . <F2><0E><1E><00>` on both references
+; (lna-listdotd): the '.' is the literal $2E and the 30 behind the '-' is still
+; an armed $0E. That is NOT the obvious answer -- '.' is a NAME character
+; everywhere else in the tokeniser (the whole `dot` battery exists because `B.5`
+; is one identifier) and a name character DISARMS. Had it disarmed, the number
+; behind the '-' would arrive as ASCII digits and the ldr_num call after the '-'
+; would parse garbage.
+;
+; ⚠️ CF SET, exactly as for a $0E: `.` IS a number for R-LS5's purposes, so
+; `LIST .-` gets the open-high-end default and not the no-number one.
 ldr_num:
                 call    ldr_skipsp
                 ld      de,0                    ; R-D5 (does not disturb the flags
                 cp      LINENO_TOKEN            ;  ldr_skipsp left in A)
                 jr      z,ldrn_yes
+                cp      '.'                     ; R-DOT1: the current-line form
+                jr      z,ldrn_dot
                 or      a                       ; CF CLEAR = no number here
+                ret
+ldrn_dot:
+                inc     hl                      ; past the '.' (one byte, not four)
+                ld      de,(DOT)
+                scf                             ; CF SET = a number was read
                 ret
 ldrn_yes:
                 inc     hl

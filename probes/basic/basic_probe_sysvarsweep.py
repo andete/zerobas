@@ -200,6 +200,20 @@ REHOMED = [
     ("ONEFLG", 0xF6BB,  1, 0xF6BB, "HONOURED"),
     ("ARYTAB", 0xF6C4,  2, 0xE1C0, "REJECT-GROUP"),
     ("DEFTBL", 0xF6CA, 26, 0xF6CA, "HONOURED"),
+    # ✅ D-DOTLINE (2026-08-02) — `DOT`, the line `.` names in LIST/DELETE.
+    # 🎯 THE FIRST ENTRY HERE THAT WAS NEVER RE-HOMED, because it was never
+    # anywhere else: the cell did not exist until this slice, so claiming the
+    # published address cost ZERO ROM bytes and no VACATED twin. Every other row
+    # above records a decision about a variable zerobas had already placed.
+    # PUB-FREE was measured BEFORE the claim: zerobas' byte at $F6B5 read 0 in
+    # all 24 states of the `clp` battery (basic_probe_lnblank.py) at HEAD
+    # 40647bd, so nothing — zerobas or C-BIOS — held it.
+    # ⚠️ This row is a REGRESSION check like the other four HONOURED ones, and
+    # the SEMANTICS behind it live in the `clp` battery, not here: this sweep
+    # asks "does the byte move with the reference", the `clp` rows ask "is the
+    # byte what `.` RESOLVES", and only the pair is evidence. See
+    # docs/spec-basic-dotline.md §3.
+    ("DOT",    0xF6B5,  2, 0xF6B5, "HONOURED"),
 ]
 
 # 🆕 C-VACATED. The cells the honoured five MOVED OUT OF. They are ordinary

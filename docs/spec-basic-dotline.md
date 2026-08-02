@@ -49,7 +49,10 @@ here is inferred from the published work-area comment.
     SAVE does not;
   * **(c) an error in a STORED line** — records the erroring line. A
     **direct-mode** error writes **nothing** (⚠️ *not* `ERRLIN`'s 65535);
-  * **(d) `RESUME`, any form** — records the line the `RESUME` is **in**.
+  * ~~**(d) `RESUME`**~~ — 🔴 **WITHDRAWN AFTER THE FACT.** This slice
+    implemented it, knife **K5** cut it and moved **zero of 139 rows**, and the
+    row written to settle that (`clp-resend`) reads **20** on both references
+    against the shipped build's 50. There is no RESUME writer; see §9.1.
 * **R-DOT4** — measured **non**-writers, each with its own row: `RUN`,
   `STOP`/break, `CONT`, `CLEAR`, **`NEW`**, the `DELETE` **verb**, a direct-mode
   statement, `GOTO`, `GOSUB`, `ON ERROR GOTO`, a direct-mode error, a tokenised
@@ -93,12 +96,17 @@ the `$E234..$E23F` free window is **not** touched.
 | 2 | [`sub/lineedit.asm`](../sub/lineedit.asm) `le_ok` | **writer (a)** — `ld hl,(SL_NUM) / ld (DOT),hl` | sub p1 | 6 B |
 | 3 | [`basic/list.asm`](../basic/list.asm) `list_walk` | **writer (b)** — `ld (DOT),de` at the emit site | main p1 | 4 B |
 | 4 | [`basic/interp.asm`](../basic/interp.asm) `record_errline` | **writer (c)** — `ld (DOT),hl` on the **run-mode arm only** | main p1 | 3 B |
-| 5 | [`basic/interp.asm`](../basic/interp.asm) `ex_resume` | **writer (d)** — the handler line into `DOT`, on the trap-active path | main p1 | ~12 B |
+| ~~5~~ | ~~`ex_resume`~~ | ~~writer (d)~~ — **REMOVED, §9.1**: the rule does not exist | — | **−14 B** |
 | 6 | [`basic/interp.asm`](../basic/interp.asm) `init` | cold init to 0 (`HL` is already 0 there) | main p1 | 3 B |
 | 7 | [`basic/sysvars.inc`](../basic/sysvars.inc) | `DOT equ $F6B5` + the §3 record | — | 0 B |
 | 8 | [`probes/basic/basic_probe_sysvarsweep.py`](../probes/basic/basic_probe_sysvarsweep.py) | the new honoured entry | — | — |
 
 **Estimated main page 1: ~22 B of 311 free. Sub page 1: ~17 B of 2428 free.**
+
+✅ **AS BUILT: main page 1 311 → 301 free (10 B), sub page 1 2428 → 2411 (17 B),
+main page-0 low 23 B unchanged, sub page 0 3913 B unchanged.** The estimate was
+12 B over because §9.1's writer (d) — 14 B of it — turned out not to be a rule
+at all. The sub-side estimate was exact.
 
 🎯 **ONE RESOLVER, AND IT IS ALREADY SHARED.** `ldr_num` is the single place both
 `le_delrange` and `le_lstrange` read a line number from — D-LSTRNG widened it to
@@ -255,11 +263,9 @@ the pre-cut baseline before concluding anything** — "the cut did nothing" and
   `10 A=A+1`** — they never wrote, so a cut to the error writer cannot move them.
   If any does, the write is on a shared path it should not be on.
 * **K5 — writer (d) (item 5)**: drop the `ex_resume` write.
-  RED: `cln-trap` `cln-reslin` `cln-res15` `clp-trap` `clp-reslin` `clp-res15` →
-  ` 20 ` (the erroring line writer (c) left).
-  GREEN: `cln-trapend` **stays** `20 ERROR 7` — its handler is `50 END` and never
-  resumes. 🎯 K4 and K5 separate the error writer from the RESUME writer in both
-  directions, which is the split `clp-trapend` discovered.
+  Predicted RED: `cln-trap` `cln-reslin` `cln-res15` + their `clp` twins.
+  🔴 **MEASURED: ZERO of 139.** §9.1 — the rule was fiction, and this is the
+  knife that found it.
 * **K6 — the cold init (item 6)**: delete `ld (DOT),hl` from `init`.
   🔴 **PREDICTED RED: ZERO ROWS.** openMSX zero-fills RAM, so an uninitialised
   `DOT` reads 0 anyway and `clp-cold` stays green. **That prediction IS the
@@ -302,3 +308,183 @@ the pre-cut baseline before concluding anything** — "the cut did nothing" and
    **Recommendation: take the published address** — it is free, it is the same
    decision D-REHOME made five times, and a private address here would be exactly
    the space-driven placement that review has twice had to undo.
+
+---
+
+## 9. 🔴 An apparatus finding the ROM-hash check caught, and nothing else would have
+
+**A `make` that skipped a rebuilt sub-ROM because the source and the ROM shared
+an mtime — to the second.**
+
+Knife K2 deleted 6 bytes from [`sub/lineedit.asm`](../sub/lineedit.asm) and
+`make basic-reloc && make repack-machine` produced **byte-identical ROMs**.
+`sub/lineedit.asm` **is** in the Makefile's `SUB_PARTS` (line 183) — the
+dependency is declared and correct. It was skipped anyway: the file and
+`build/sub.rom` both carried mtime `21:53:19`, and `make` treats an equal
+timestamp as *not newer*. A knife runner that writes a cut and rebuilds inside
+the same one-second tick hits this every time.
+
+🎯 **WITHOUT THE ROM-HASH CHECK, K2 WOULD HAVE SCORED 0 RED OF 139 AND BEEN
+WRITTEN UP AS "WRITER (a) IS GATED BY NOTHING".** That is a false finding in the
+direction that reads like a *result* — the same shape as
+[[knife-runner-false-negatives]], where a runner that failed toward "nothing to
+see" could not gate. §7's rule ("when a knife shows NO change, hash the built ROM
+against the pre-cut baseline before concluding anything") is what turned a silent
+wrong answer into a loud abort.
+
+⚠️ **This is [[makefile-subparts-stale-tenant]] arriving by a different road.**
+That entry warns that a sub include *missing* from `SUB_PARTS` silently ships a
+stale `sub.rom`. Here the entry is present and correct and the rebuild is skipped
+regardless, so the existing guard — "check the include is listed" — does not
+detect it. Clean builds hide it completely, which is why it had never surfaced.
+
+⚠️ **Deleting only `build/sub.rom` is NOT a fix**: the `.sym` then looks up to
+date, the ROM rule does not re-run in the right order and the build fails
+outright (`FileNotFoundError: build/basic-reloc.rom`). The repo's own standing
+rule is the whole fix — **always `rm -rf build` first** — and the knife runner
+now does exactly that on every build, at a cost of a few seconds per cut.
+
+**Worth filing:** any fast edit-then-build in this tree can silently reuse a
+stale `sub.rom`. A `.PHONY` force, an order-only rebuild stamp, or a
+content-hash dependency would close it for good; this slice records the shape and
+fixes its own runner rather than widening into the Makefile.
+
+---
+
+## 9.1 🔴 The knife that reddened NOTHING found a rule that does not exist — after it shipped
+
+**Knife K5 cut the `RESUME` writer and moved zero of 139 rows.** Every other
+knife in this slice hit its predicted set exactly; K5 hit nothing at all.
+
+The tempting reading is "K5 is uninformative". The filed one is the opposite:
+**a rule gated by nothing is the finding**
+([[knife-that-reddens-nothing-is-the-finding]]). So the *rule* went back under
+the microscope, and it turned out that every row supporting it had **two
+sufficient causes**:
+
+* `clp-trap` (`50 RESUME NEXT`) and `clp-reslin` (`50 RESUME 30`) resume into
+  line 30, which then **falls through into line 50 again**, where a second
+  `RESUME` with no active error raises **ERR 22 in line 50**. Writer (c) files
+  50 unaided;
+* `clp-res15` was never a `RESUME` row: its handler is at line 15, **before**
+  the erroring line, so it runs in sequence and raises the same ERR 22 there.
+  K4 moves it, K5 does not — which was visible in the knife table and read as
+  noise until K5's zero forced the question.
+
+`clp-resend` separates them — `30 A=A+4:END` stops the program before line 50 can
+be re-entered, so only a `RESUME` writer could put 50 there:
+
+| | vg8020 | cf3300 | zerobas **as shipped** |
+|---|---:|---:|---:|
+| `clp-resend` | **20** | **20** | **50** ❌ |
+
+🔴 **A DIVERGENCE, IN CODE THIS SLICE HAD ALREADY WRITTEN, THAT ALL 139 ROWS AND
+A GREEN 179/179 GATE AGREED WITH.** Writer (d) is deleted; `ex_resume` is back to
+its pre-slice bytes and **14 B of main page 1 came back** (287 → 301 free). After
+the removal `clp-trap` = 50, `clp-reslin` = 50, `clp-res15` = 15 on all three
+sides: writer (c) covers every one.
+
+⚠️ **The apparatus lesson is about ORDER, not about K5.** K5 could not have
+failed — it scored a rule that was fiction, and "0 RED" is what fiction produces.
+What converted that into a defect report was refusing to accept 0 RED as a pass
+and **constructing the case the machine would get wrong**
+([[readout-blind-to-its-own-subject]]'s discipline applied to a knife instead of
+a readout). This is the fourth time in this tree a knife has found a defect in
+the slice's own work ([[knife-found-defect-in-own-fix]]) and the first time it
+did so by finding *nothing*.
+
+⚠️ `cln-resend` / `clp-resend` join the battery as ordinary green rows, so the
+"an ordinary `RESUME` leaves `.` on the erroring line" rule is now gated by
+something rather than by an argument.
+
+---
+
+## 10. Results
+
+### 10.1 Walls — clean `rm -rf build && make basic-reloc`
+
+| | HEAD `40647bd` | as built | §3.1 predicted |
+|---|---:|---:|---:|
+| main page 1 free | 311 B | **301 B** | 289 B |
+| main page-0 low free | 23 B | **23 B** | 23 B ✅ |
+| sub page 1 free | 2428 B | **2411 B** | 2411 B ✅ |
+| sub page 0 free | 3913 B | **3913 B** | untouched ✅ |
+
+**10 B of main page 1, 17 B of sub page 1.** The sub-side estimate was **exact**;
+the main-side estimate was 12 B pessimistic *because §9.1's writer (d) turned out
+not to be a rule*. Four pins retired, none added, for 10 bytes.
+
+### 10.2 Gates — 16 targets, every one exit 0
+
+| | |
+|---|---|
+| `make unit-test` | **56/56** |
+| `deadcode`, both builds | **0 dead** |
+| `lnblank-acceptance REPEAT=2` | **536/536** (530 → 536), allowlist **EMPTY** |
+| `lnblank-say-acceptance` | **181/181** (108 → 181), pins **6 → 2** |
+| `msgexact --gate` / `--relock` | **55/55** / all 41 locked values reproduce |
+| `sysvarsweep` | green — the new `DOT $F6B5` regression row holds |
+| `error-trap` · `error` · `abort` · `stop-trap` · `direct-ctrl` | green |
+| `array` · `logicops` · `string` · `kwsweep` | green |
+
+🎯 **THE PIN SET SHRANK.** `dlt-dot`, `dlt-dotedit`, `lst-dot`, `lse-dotedit`
+**deleted, not edited** — the first cohort in this battery to retire more pins
+than it adds. The two survivors (`kwgd-renum`, `lnrt-forret`) are other items'.
+
+⚠️ `lnblank-echo`: only the three standing informational rows (`dec-eol`,
+`dec-eolctl`, `num-tab`) report MANGLED, on all three sides, as before. **No new
+mangle on any of the 73 new payloads** — the delivery guard the whole battery
+rests on.
+
+### 10.3 Knives
+
+Scored against the whole 141-row `cln`+`cle`+`clp`+`dlt`+`lst`+`lse` battery on
+zerobas; every cut rebuilt from clean, **ROM-hash-checked as actually different
+before scoring**, reverted against the build it cut, and both ROMs re-hashed back
+to baseline afterwards.
+
+| knife | predicted RED | measured | verdict |
+|---|---|---|---|
+| K1 resolver | every `.` row; **all 34 `dlt-`/`lst-`/`lse-` non-`.` rows GREEN** | **46 RED**, all four retired pins back to their exact pinned values, non-`.` rows green | ✅ |
+| K2 writer (a) | the store rows; **`cln-list` MUST STAY `40 REM D`** | **44 RED**, and `cln-list`/`clp-list` **did not move** | ✅ |
+| K3 writer (b) | `cln-list` `cln-listrng` `cln-listbare` `cln-dotthen` `clp-list`; **`cln-listmiss` MUST STAY** | **exactly those 5**; `cln-listmiss` stayed `20 REM B` | ✅ |
+| K4 writer (c) | `cln-err` `cln-trapend` + `clp` twins; `cln-stop`/`-run`/`-cont`/`-goto`/`-onerr` GREEN | **12 RED** — and see below | ✅ |
+| ~~K5~~ writer (d) | `cln-trap` `cln-reslin` `cln-res15` + twins | **0 RED** → **§9.1, the rule does not exist** | 🎯 finding |
+| K6 cold init | **ZERO — predicted in advance** | **0 RED** | ✅ prediction exact |
+
+🎯 **K4 GREW FROM 6 RED TO 12 ONCE WRITER (d) WAS GONE, AND THAT IS THE PROOF OF
+§9.1.** On the first build, `cln-trap`/`clp-trap`/`cln-reslin`/`clp-reslin` did
+not move under K4 — the phantom writer (d) was covering them. With it deleted
+they move, together with `cln-resend`/`clp-resend`: **writer (c) alone accounts
+for every one**, which is exactly what the two-sufficient-causes reading
+predicted and what no single knife could have shown.
+
+🎯 **K2 AND K3 ARE EACH OTHER'S CONTROL, MEASURED.** K2 cuts the store writer and
+`cln-list` stays `40 REM D`; K3 cuts the LIST writer and the store value shows
+through as `20 REM B`. Neither writer is doing the other's work.
+
+🎯 **K3's `cln-listmiss` STAYED GREEN, AS PREDICTED — AND THAT RULE HAS NO KNIFE.**
+"A walk that prints nothing writes nothing" is **structural** in this placement
+(the branch simply never runs), so it is held up only by its own control
+([[rule-gated-structurally-has-no-knife]]). Said out loud rather than counted as
+coverage.
+
+🎯 **K6 WAS PREDICTED TO REDDEN NOTHING AND DID.** openMSX zero-fills RAM, so the
+cold init is gated by **nothing** in this tree and rests on the same
+power-on-RAM-is-garbage argument `init`'s ERR/ERL reset already carries. Written
+down before the build so a green run could not read as coverage.
+
+### 10.4 ⚠️ Two knives in §7 were NOT run, and that is said rather than implied
+
+* **K7 (the cost justification).** The half that mattered was answered by the
+  measurement instead: §4 of the characterization shows the SAVE-excluding
+  variant of writer (b) is **measurably wrong**, so costing it would have priced
+  a defect. The other half — §3.1's estimate — is scored in §10.1: **22 B
+  predicted, 10 B as built**, and §9.1 is the entire difference. The
+  three-caller factoring of the `CURLINE+2` fetch was never needed, since writer
+  (d) is gone.
+* **K8 (the PUB-FREE claim).** Not run as specified. The evidence for it is the
+  `clp` battery's **zerobas column reading 0 in all 24 states at HEAD `40647bd`**
+  — i.e. measured *before* the claim — plus `sysvarsweep`'s new `DOT` row, which
+  gates it from here on. A `POKE`-a-sentinel-and-run-the-non-writers test would
+  be strictly stronger and was not performed.

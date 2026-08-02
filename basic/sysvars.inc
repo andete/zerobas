@@ -920,6 +920,50 @@ ERRFLG          equ     $F414   ; 1 B: last error's MSX ERR code (0 = none yet).
 ERRLIN          equ     $F6B3   ; 2 B: last error's line number, or 65535 if it
                                 ; happened in direct mode. Set by record_errline;
                                 ; read by the ERL function. PUBLISHED address.
+; --- ✅ D-DOTLINE: `.`, the current-line pseudo-line-number ------------------
+; docs/spec-basic-dotline.md, measured in docs/dotline-msx1-characterization.md.
+; The line `.` names in LIST / DELETE (and in AUTO / RENUM / EDIT, when those
+; are dispatched). `.` is NOT crunched -- it reaches every statement as the
+; literal $2E (R-DOT1) -- so the resolver is sub-side in ldr_num, the one place
+; both le_delrange and le_lstrange read a line number from.
+;
+; ✅ RE-HOMING DECISION: **HONOUR** the published name AND address, D-REHOME's
+; four-point record (docs/sysvar-rehoming-decisions.md §3):
+;   SEMANTICS  SAME-VAR, measured. 24 `clp` rows PEEK $F6B5 on both references
+;              after 24 different stimuli, and every one AGREES with its
+;              behavioural `cln`/`cle` twin -- which is what makes the PEEK
+;              evidence about `.` and not about a byte.
+;   OBSERVER   PEEK: the cold value (0) and NEW's non-reset are readable ONLY
+;              this way. ⚠️ `LIST .` is structurally blind to both -- on a cold
+;              machine, and after a NEW, the program is EMPTY, so nothing is
+;              listed whatever the cell holds. Whether POKE-then-`LIST .` reads
+;              back is NOT measured (spec §3).
+;   COST       ZERO ROM bytes: every access is through the symbol, and no
+;              existing cell moves. The free $E234..$E23F window is untouched.
+;   PUB-FREE   measured -- zerobas' byte at $F6B5 read 0 in ALL 24 swept states
+;              before this slice, so nothing (zerobas or C-BIOS) claimed it.
+;
+; 🔴 FOUR WRITERS, AND `ERRLIN` ABOVE IS *NOT* ONE OF THEIR TWINS:
+;   (a) storing a line -- insert, replace, or the bare-line-number delete --
+;       records the number TYPED, even when the line is thereby removed
+;       (sub/lineedit.asm le_ok);
+;   (b) the LIST walk records the LAST LINE IT PRINTED, and a walk that prints
+;       nothing writes nothing (basic/list.asm list_walk). ⚠️ That is the SHARED
+;       walk on purpose: an ASCII SAVE writes $F6B5 too and a tokenised SAVE
+;       does not, measured (characterization §4, cf3300 only);
+;   (c) an error in a STORED line records the erroring line (record_errline's
+;       RUN-MODE ARM ONLY). 🔴 A DIRECT-MODE error writes NOTHING -- it does not
+;       take ERRLIN's 65535 sentinel, so the two cells part company inside one
+;       routine and the write may NOT move to a shared tail;
+;   (d) RESUME, any form, records the line it is IN (ex_resume).
+; NON-writers, each measured with its own row: RUN, STOP/break, CONT, CLEAR,
+; **NEW**, the DELETE VERB, a direct-mode statement, GOTO, GOSUB, ON ERROR GOTO,
+; a direct-mode error, a tokenised SAVE.
+; ⚠️ NEW DOES NOT RESET IT (clp-new). Do not "tidy" a zero into new_prog: that
+; is the TRACEFLAG shape one line down in this file (NEW is TRON's only
+; non-statement writer) and it is measurably wrong here.
+DOT             equ     $F6B5   ; 2 B: the line `.` names. Cold value 0 (init).
+                                ; PUBLISHED address and PUBLISHED name.
 ; ✅ RE-HOMING DECISION: **HONOUR** ($E1C8 -> the published $F6B9).
 ;   SEMANTICS  SAME-VAR. Under `10 ON ERROR GOTO 100 / 20 STOP / 100 STOP / RUN`
 ;              the references and zerobas both store $8015 -- byte-identical.

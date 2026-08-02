@@ -330,7 +330,17 @@ make a **line-number lookup** the writer and have nothing to do with errors.
 | `clp-reslin` | …handler is `50 RESUME 30` | **50** | "the line RESUME goes TO" |
 | `clp-res15` | …handler moved to `15 RESUME NEXT` | **15** | "50 is a coincidence" |
 
-🎯 **BOTH HYPOTHESES ARE WRONG, AND THE WRITER IS `RESUME`.** `ON ERROR GOTO`
+> 🔴 **THE CONCLUSION BELOW WAS WRONG, AND THE SLICE'S OWN KNIFE K5 CAUGHT IT
+> AFTER THE CODE HAD SHIPPED.** It is kept, struck through by this note rather
+> than quietly rewritten, because the *reason* it was wrong is the finding:
+> every row it rested on had **two sufficient causes**. `RESUME NEXT` sends
+> control to line 30, which then **falls into line 50 again**, where a second
+> `RESUME` with no error active raises **ERR 22 in line 50** — so writer (c)
+> produces 50 unaided, and a RESUME writer would too. `clp-res15` was never a
+> RESUME row at all: its handler sits *before* the erroring line, so it runs in
+> sequence and raises the same ERR 22 there. §3.2 has the row that settles it.
+
+~~**BOTH HYPOTHESES ARE WRONG, AND THE WRITER IS `RESUME`.**~~ `ON ERROR GOTO`
 resolving line 50 leaves `.` at 10, so a line lookup is not a writer (H2 dead);
 entering the handler leaves `.` at **20**, the erroring line, so control transfer
 is not one either (H1 dead). The single variable between `clp-trapend` (20) and
@@ -338,9 +348,49 @@ is not one either (H1 dead). The single variable between `clp-trapend` (20) and
 `RESUME 30` records **50**, not its target 30, and `clp-res15` moves the handler
 to 15 and the answer moves with it.
 
-**A `RESUME` records the line it is IN.** ⚠️ `cln-trap`'s single reading would
-have been written up as "a trapped error records the handler" — a rule that is
-wrong about `50 END` and wrong about *why* — and `clp-trapend` is one row.
+~~**A `RESUME` records the line it is IN.**~~ — withdrawn, see §3.2.
+⚠️ `cln-trap`'s single reading would have been written up as "a trapped error
+records the handler" — a rule that is wrong about `50 END` and wrong about
+*why* — and `clp-trapend` is one row. The correction below is the same lesson
+one level up: `clp-trapend` was enough to kill H1 and **not** enough to
+establish what replaced it.
+
+### 3.2 🎯 There is no `RESUME` writer — the knife that reddened NOTHING said so
+
+§3.1 concluded that `RESUME` writes `.`, and D-DOTLINE **implemented it**: ~12 B
+of main page 1 in `ex_resume`. Knife **K5** cut that write and moved **zero of
+139 rows**. A rule gated by nothing is the finding, not a clean run
+([[knife-that-reddens-nothing-is-the-finding]]) — so the rule itself was put
+back under the microscope instead of the knife being called uninformative.
+
+Every row §3.1 rested on has **two sufficient causes**:
+
+* `clp-trap` (`50 RESUME NEXT`) and `clp-reslin` (`50 RESUME 30`) resume into
+  line 30, which then **falls through into line 50 again**. A second `RESUME`
+  with no error active is **ERR 22, raised in line 50** — so writer (c) files 50
+  by itself, with or without a RESUME writer;
+* `clp-res15` puts the handler at line 15, **before** the erroring line, so it
+  simply executes in sequence and raises that same ERR 22 there. K4 (cut the
+  error writer) moves it; K5 does not.
+
+**`clp-resend` is the row that separates them** — `30 A=A+4:END` stops the
+program before line 50 can be re-entered, so the only thing that could write 50
+is the `RESUME` itself:
+
+| row | program | vg8020 | cf3300 | zerobas *as first shipped* |
+|---|---|---:|---:|---:|
+| `clp-resend` | `…30 A=A+4:END / 50 RESUME NEXT` | **20** | **20** | ~~50~~ |
+
+🔴 **BOTH REFERENCES READ 20 — THE ERRORING LINE. `RESUME` IS NOT A WRITER**, and
+the first implementation of this slice was measurably wrong in a case no row in
+the 139 could see. Writer (d) is **deleted**; **14 B of main page 1 recovered**
+(287 → 301 free). After the removal `clp-trap` still reads 50, `clp-reslin` 50
+and `clp-res15` 15 on all three sides — writer (c) covers every one of them.
+
+⚠️ **The order matters and is the whole lesson.** K5 could not fail: it was
+written to score a rule, the rule was fiction, and "0 RED" is exactly what a
+fiction produces. What turned that into a defect report was *refusing to accept
+0 RED as a pass* and constructing the case the machine would get wrong.
 
 🔴 **AND THE ERROR WRITER IS NOT `ERRLIN`'S.** `clp-direrr` types `ERROR 7` at
 the prompt and `.` does not move at all, where `ERRLIN` files its measured
@@ -396,12 +446,13 @@ inheriting the earlier answer would have bought a more expensive bug.
     only); a tokenised SAVE does not;
   * **(c) an error in a STORED line** — records the erroring line (`cln-err`).
     A **direct-mode** error writes nothing (`clp-direrr`);
-  * **(d) `RESUME`, any form** — records the line the `RESUME` is **in**
-    (`clp-trap` `clp-reslin` `clp-res15`).
+  * ~~**(d) `RESUME`**~~ — **WITHDRAWN, §3.2.** There is no RESUME writer; the
+    rows that suggested one are writer (c) firing on an ERR 22 raised inside the
+    handler line. `clp-resend` reads **20** on both references.
 * **R-DOT4** — measured **non**-writers, each with its own row: `RUN`,
   `STOP`/break, `CONT`, `CLEAR`, **`NEW`**, the `DELETE` **verb**, a direct-mode
   statement, `GOTO`, `GOSUB`, `ON ERROR GOTO`, a direct-mode error, a tokenised
-  `SAVE`.
+  `SAVE`, and **`RESUME` in any form** (§3.2).
 * **R-DOT5** — once resolved, `.` is an ordinary line number in **either** end of
   **either** verb's range: DELETE's asymmetric R-D2/R-D4 and LIST's
   R-LS1/R-LS3/R-LS5 all fire on it unchanged (§2.3).

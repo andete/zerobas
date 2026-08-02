@@ -156,6 +156,28 @@ lst_lp:
                 push    hl                  ; guard the body pointer
                 ld      d,b                 ; print_number wants the value in DE
                 ld      e,c
+                ; D-DOTLINE writer (b) (docs/spec-basic-dotline.md §2 R-DOT3b):
+                ; `.` records the LAST LINE THE WALK PRINTED. Three measured
+                ; rules fall out of this ONE placement, which is why it is four
+                ; bytes and not sixteen:
+                ;   * LAST printed, not the argument and not either end --
+                ;     `LIST 10-30` records 30 (cln-listrng) and bare `LIST`
+                ;     records 40, not the 65535 high end (cln-listbare). Each
+                ;     line overwrites the one before, so the last one stands;
+                ;   * a walk that prints NOTHING writes nothing -- `LIST 25`
+                ;     leaves `.` alone (cln-listmiss). This branch simply never
+                ;     runs, so the rule is STRUCTURAL here and has no knife of
+                ;     its own (spec §7 K3 says so rather than pretending);
+                ;   * 🔴 and the ASCII SAVE paths write it TOO, which is the
+                ;     REFERENCE'S OWN BEHAVIOUR and not a leak. Measured on the
+                ;     CF-3300 (characterization §4, ONE reference): `.`=20,
+                ;     `SAVE"A:F.BAS",A` -> 40, tokenised `SAVE"A:F.BAS"` -> 20.
+                ;     ⚠️ THIS IS THE EXACT SHAPE §3.3 HAD TO *FIX* IN THIS
+                ;     ROUTINE -- a LIST range leaking into SAVE",A" was a
+                ;     data-loss bug -- and inheriting that answer here would have
+                ;     cost ~16 B to be measurably WRONG. Same routine, two
+                ;     shared-code questions, opposite answers.
+                ld      (DOT),de
                 call    list_num            ; print the line number (no extra spaces)
                 ld      a,' '               ; one space between number and body
                 call    pchar

@@ -209,6 +209,16 @@ delrange are never in flight together.
 
 ## 6. Deliberately out of scope: `.`
 
+> ✅ **NO LONGER OUT OF SCOPE — LANDED 2026-08-02 as D-DOTLINE**
+> ([`spec-basic-dotline.md`](spec-basic-dotline.md), measured in
+> [`dotline-msx1-characterization.md`](dotline-msx1-characterization.md)).
+> `dlt-dot` / `dlt-dotedit` are **retired** and green. This section is kept as
+> the record of the decision to decline, which was right: the walk found **four
+> writers** where these two rows could see one, and three of the four would have
+> been implemented wrongly from a `DELETE`-shaped reading — including the
+> `DELETE` **verb itself**, which turns out **not** to write `.` even though the
+> bare-line-number delete does.
+
 `DELETE .` works on both references and resolves `.` to **the line the editor
 last touched** — `dlt-dotedit` is the row that says "last touched" rather than
 "highest", and one row could not have. That is a pseudo-line-number MSX-BASIC

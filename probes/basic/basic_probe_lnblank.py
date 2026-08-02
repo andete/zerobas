@@ -2064,6 +2064,8 @@ CLN = [
                       "50 RESUME 30", "10 ON ERROR GOTO 50", "RUN", "LIST ."]),
     ("cln-res15",    ["10 ON ERROR GOTO 15", "15 RESUME NEXT", "20 ERROR 7",
                       "30 A=A+4", "10 ON ERROR GOTO 15", "RUN", "LIST ."]),
+    ("cln-resend",   ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 A=A+4:END",
+                      "50 RESUME NEXT", "10 ON ERROR GOTO 50", "RUN", "LIST ."]),
     # === 6. `.` IN EVERY ARGUMENT POSITION, not just alone ==================
     # All with `.` = 20. A resolver that only answers the bare `LIST .` form is
     # a rule one POSITION wide, the same mistake one verb wide would be.
@@ -2211,6 +2213,18 @@ CLP = [
                       "50 RESUME 30", "10 ON ERROR GOTO 50", "RUN"] + _CLPR),
     ("clp-res15",    ["10 ON ERROR GOTO 15", "15 RESUME NEXT", "20 ERROR 7",
                       "30 A=A+4", "10 ON ERROR GOTO 15", "RUN"] + _CLPR),
+    # 🔴 THE ROW THAT SEPARATES "RESUME WRITES `.`" FROM "AN ERR 22 RAISED IN THE
+    # HANDLER LINE DOES", AND WITHOUT IT EVERY OTHER ROW HAS TWO SUFFICIENT
+    # CAUSES. In `clp-trap`/`clp-reslin` the handler is line 50 and the RESUME
+    # sends control to line 30 -- which then FALLS INTO line 50 AGAIN, where a
+    # second `RESUME` with no error active raises ERR 22 *in line 50*. So the
+    # ERROR writer produces 50 all by itself, and so would a RESUME writer: two
+    # causes, one reading ([[row-with-two-candidate-causes]]).
+    # `:END` on line 30 stops the program before line 50 can be re-entered, so
+    # the only thing that could write 50 here is the RESUME itself.
+    #   50 -> RESUME is a writer.   20 (the erroring line) -> it is NOT.
+    ("clp-resend",   ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 A=A+4:END",
+                      "50 RESUME NEXT", "10 ON ERROR GOTO 50", "RUN"] + _CLPR),
 ]
 
 # label -> the ONLY sides it may be measured on. A row named here is refused on
@@ -2761,42 +2775,22 @@ KNOWN_DIVERGE = {
     # ` 103  0  4 ` on all three sides, so this is `RETURN`'s own doing and not
     # the error trap's. Architectural; retirement path is the TODO.md item.
     "lnrt-forret":  " 103  0  4 ",
-    # D-DELETE say mode: `.`, the CURRENT-LINE pseudo-line-number, DECLINED with
-    # its reason rather than guessed at (docs/spec-basic-delete.md §6).
-    #
-    # 🔴 THESE TWO ARE A PAIR AND NEITHER IS REDUNDANT. `dlt-dot` alone reads
-    # ` 7  0 ` on both references -- line 40, which is both the last line typed
-    # AND the highest-numbered, so one row could not say which rule it is.
-    # `dlt-dotedit` re-enters line 20 last and moves the answer to ` 13  0 `: `.`
-    # is the line the EDITOR LAST TOUCHED. That makes it editor state MSX-BASIC
-    # shares across LIST/DELETE/AUTO/RENUM/EDIT, which zerobas records nowhere,
-    # and what `.` means after a RUN / an error / a LIST / on a cold machine is
-    # unmeasured. Implementing it inside DELETE alone would ship a rule one verb
-    # wide.
-    #
-    # ⚠️ THE PINNED VALUE IS A CONSEQUENCE OF A RULE THIS SLICE DOES IMPLEMENT,
-    # WHICH IS WHY IT CANNOT DRIFT FOR AN UNRELATED REASON. `.` is NOT crunched
-    # (lna-deldot: it reaches the statement as the literal $2E), so ex_delete
-    # sees a byte that is neither $0E nor $F2 nor a statement terminator and
-    # answers ERR 2 by R-D6 -- the same trailing-junk rule `dlt-comma` gates.
-    # Retirement path: the TODO.md current-line item.
-    "dlt-dot":      " 15  2 ",
-    "dlt-dotedit":  " 15  2 ",
+    # ✅ `dlt-dot` / `dlt-dotedit` RETIRED 2026-08-02 BY D-DOTLINE, and DELETED
+    # rather than edited (the ninth cohort to go that way). They were pinned at
+    # zerobas' ` 15  2 ` -- R-D6's trailing-junk rule answering a `$2E` the verb
+    # did not know -- by a slice that measured `.` and correctly declined to ship
+    # a rule one verb wide. `.` is now resolved in ldr_num, the ONE place both
+    # DELETE and LIST read a line number from, so both rows are ordinary green
+    # rows: ` 7  0 ` and ` 13  0 `, the references' own values.
+    # 🎯 The pin was load-bearing exactly as claimed: knife K1 (drop the `cp '.'`
+    # arm) puts all four of this item's rows straight back to their pinned values.
 
-    # --- D-LSTRNG (docs/spec-basic-listrange.md §5/§6) -----------------------
-    # `.` -- MEASURED, understood, deliberately not implemented. lst-dot reads
-    # `40 REM D` on both references and lse-dotedit MOVES it to `20 REM B` when
-    # line 20 is re-entered last, so LIST's '.' is the same "line the editor last
-    # touched" dlt-dotedit measured for DELETE -- one mechanism across
-    # LIST/DELETE/AUTO/RENUM/EDIT, and zerobas records nothing of the kind.
-    #
-    # ⚠️ THE PINNED VALUE IS A CONSEQUENCE OF A RULE THIS SLICE *DOES* IMPLEMENT,
-    # which is what keeps it from drifting for an unrelated reason: '.' is not
-    # crunched (lna-listdot), so it reaches the statement as the literal $2E,
-    # which R-LS6 answers with ERR 2. Knife K4 reddens both of these rows, which
-    # is how we know the pin is load-bearing rather than inert.
-    "lst-dot":      "Syntax error",
-    "lse-dotedit":  "Syntax error",
+    # ✅ `lst-dot` / `lse-dotedit` RETIRED 2026-08-02 BY D-DOTLINE, DELETED with
+    # their `dlt-` twins above. Pinned at `Syntax error` by R-LS6 answering the
+    # unknown `$2E`; now `40 REM D` and `20 REM B`, the references' own values.
+    # 🔴 FOUR PINS IN, ZERO PINS OUT -- and that was the whole argument for doing
+    # `.` as its own cross-cutting slice BEFORE `RENUM`/`AUTO`, each of which
+    # would have added two more (docs/spec-basic-dotline.md §1).
     # ✅ `lst-comma` RETIRED 2026-08-02 BY D-MSGEXACT. It was pinned here by
     # D-LSTRNG for a divergence it correctly refused to own: the rule was right
     # (` 2 ` on all three sides, so the error CLASS agreed) and only the message

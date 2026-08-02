@@ -288,6 +288,14 @@ gate will not fire for this slice.
 
 ## 6. Deliberately out of scope: `.`
 
+> ✅ **NO LONGER OUT OF SCOPE — LANDED 2026-08-02 as D-DOTLINE**
+> ([`spec-basic-dotline.md`](spec-basic-dotline.md)). `lst-dot` / `lse-dotedit`
+> are **retired** and green. 🔴 And §3.3 of this spec — the `LIST` range that
+> would have leaked into `SAVE",A"` — has a **mirror image with the opposite
+> answer**: an ASCII `SAVE` *does* write `.`, measured, so D-DOTLINE's write
+> belongs in the shared `list_walk` this slice was at pains to split. Inheriting
+> the reasoning here would have cost ~12 B extra to be wrong.
+
 `LIST .` works on both references. `lst-dot` reads `40 REM D` — but line 40 is
 both the last line typed **and** the highest-numbered, the identical ambiguity
 `dlt-dot` had. **`lse-dotedit` re-enters line 20 last and the answer moves to

@@ -40,6 +40,18 @@ init:
                 ; above -- see sysvars.inc's own comment): a handler cannot
                 ; survive power-on RAM garbage.
                 ld      (ONELIN),hl         ; hl still 0 from just above
+                ; D-DOTLINE R-DOT2: `.` reads 0 on a cold machine (clp-cold, both
+                ; references). Same cold-only hook and the SAME power-on-RAM-is-
+                ; garbage argument as ERR/ERL above -- openMSX zero-fills RAM, so
+                ; no emulator row can see this store; spec §7 K6 predicts ZERO
+                ; red rows for cutting it and says so out loud rather than letting
+                ; a green run read as coverage.
+                ; ⚠️ COLD-BOOT ONLY. NEW does NOT reset `.` (clp-new reads 20
+                ; after a NEW that emptied the program), so this must not move
+                ; into new_prog -- which is exactly where TRACEFLAG's reset lives,
+                ; two cells apart in sysvars.inc, for a rule measured the other
+                ; way.
+                ld      (DOT),hl            ; hl still 0
                 ld      (ONEFLG),a          ; A still 0 from the xor a above (the ld hl/
                                             ; ld (nn),hl between don't touch A) -- the
                                             ; ERR-reset-on-RESUME follow-up reclaimed
@@ -934,10 +946,24 @@ record_errline:
                 ld      d,(hl)
                 ex      de,hl              ; HL = the erroring line number
                 ld      (ERRLIN),hl
+                ; D-DOTLINE writer (c) (docs/spec-basic-dotline.md §2 R-DOT3c):
+                ; an error in a STORED line records that line, which is what
+                ; makes `LIST .` after a failure -- `.`'s documented use -- show
+                ; the line that failed. `clp-trapend` says a TRAPPED error writes
+                ; it too, so this belongs here (before the trap decision), not on
+                ; the abort arm.
+                ld      (DOT),hl
                 ret
 rel_direct:
                 ld      hl,65535
                 ld      (ERRLIN),hl
+                ; 🔴 AND NOT HERE. A DIRECT-MODE ERROR WRITES `.` NOT AT ALL --
+                ; it does NOT take ERRLIN's 65535 sentinel. `clp-direrr` types
+                ; `ERROR 7` at the prompt with `.`=20 and reads 20 back, on both
+                ; references. ⚠️ That is exactly why these two stores may not be
+                ; folded into a shared tail, which is the obvious repack and
+                ; would save 4 bytes: ERRLIN and DOT are written by the same
+                ; event under DIFFERENT rules, and the cheaper shape is wrong.
                 ret
 
 ; --- err_msgtab: MSX ERR code (1..25) -> message string (docs/spec-basic- --
@@ -1132,6 +1158,26 @@ ex_resume:
                                             ; untouched; a malformed RESUME still aborts
                                             ; with ONEFLG intact (raise_error re-sets its
                                             ; own code, so ERRFLG=0 here is invisible).
+                ; 🔴 D-DOTLINE: THERE IS NO `RESUME` WRITER OF `DOT`, AND THIS
+                ; SLICE SHIPPED ONE BEFORE ITS OWN KNIFE FOUND IT.
+                ; `clp-trap` (handler `50 RESUME NEXT`) and `clp-reslin`
+                ; (`50 RESUME 30`) both read 50 and both looked like "a RESUME
+                ; records the line it is IN". They have TWO SUFFICIENT CAUSES:
+                ; the RESUME sends control to line 30, which then FALLS INTO
+                ; line 50 AGAIN, where a second RESUME with no error active
+                ; raises ERR 22 *in line 50* -- so record_errline's writer
+                ; produces 50 unaided ([[row-with-two-candidate-causes]]).
+                ; `clp-res15` was never a RESUME row at all: its handler sits
+                ; BEFORE the erroring line, so it runs in sequence and raises
+                ; the same ERR 22 there.
+                ; 🎯 THE KNIFE THAT REDDENED NOTHING IS WHAT SAID SO. Cutting
+                ; the write here moved ZERO of 139 rows -- a rule gated by
+                ; nothing ([[knife-that-reddens-nothing-is-the-finding]]) -- and
+                ; the row written to settle it, `clp-resend` (`30 A=A+4:END`, so
+                ; line 50 is never re-entered), reads **20** on both references
+                ; against this build's **50**. An ordinary RESUME leaves `.` on
+                ; the ERRORING line. ~12 B of main page 1 recovered, and the
+                ; rule withdrawn from the spec rather than pinned.
                 inc     hl                  ; past RESUME_TOKEN
                 call    skip_spaces         ; A = (hl)
                 or      a                   ; bare RESUME / RESUME<EOL>?
