@@ -1247,7 +1247,7 @@ lnblank-echo: repack-machine
 lnblank-say-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lnblank.py --gate --say \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
-	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-,lnrt-,dlt-) --repeat $(if $(REPEAT),$(REPEAT),1)
+	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-,lnrt-,dlt-,lst-,lse-) --repeat $(if $(REPEAT),$(REPEAT),1)
 
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #

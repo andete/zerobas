@@ -776,9 +776,31 @@ stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
       of the tokeniser — keyword (`detok_kw`/`detok_kw2`), operator, int/`&H`/`&O`,
       line-ref, string/REM/DATA verbatim, `:`ELSE / `'` folds. No new token; reuses
       `div10`/CHPUT. 8/8 functional probes pass `basic_probe_list.py` (VRAM screen
-      decode); crunch + all regression probes still pass. Divergence: only the
-      no-arg whole-program form — `LIST n` / `LIST n-m` range args are Phase 3,
-      a trailing argument is parsed-past + ignored.)
+      decode); crunch + all regression probes still pass.)
+- [x] ✅ **`LIST <range>` — LANDED 2026-08-02, D-LSTRNG.** `LIST n`, `LIST n-m`,
+      `LIST n-`, `LIST -m` all implemented; the argument is no longer ignored.
+      Spec [`docs/spec-basic-listrange.md`](docs/spec-basic-listrange.md),
+      measurement
+      [`docs/listrange-msx1-characterization.md`](docs/listrange-msx1-characterization.md).
+      🔴 **`DELETE`'s RANGE RULES DO NOT TRANSFER, AND FIVE OF THE TWENTY MEASURED
+      SHAPES WOULD HAVE BEEN WRONG IF THEY HAD BEEN ASSUMED TO.** D-DELETE
+      measured, one week earlier with the same grammar and the same instrument,
+      that the high end must name a stored line exactly, that a reversed range is
+      ERR 5, and that an absent number is 0 on either end. LIST has **none** of
+      those: `LIST 20-35` lists two lines, `LIST 30-20` lists nothing with ERR 0,
+      and — sharpest — **an absent HIGH end is 65535**, so `LIST 20-` lists to the
+      end of the program where `DELETE 20-` means `20-0` and raises.
+      🔴 **A LATENT BUG THE FOURTH `LE_OP` EXPOSED**: the lineedit tenant selector
+      read `dec a / jp nz,le_delrange` — *"anything that is not 1 is a delrange"* —
+      so adding `LE_OP_LSTRANGE` would have routed `LIST` into `le_delrange` and
+      **deleted the lines it was asked to print**. Now an explicit ladder.
+      🔴 **`list_walk` HAS THREE CALLERS**: `ascii_save` and `cas_ascii_save` drive
+      the same walk, so a `LIST` range had to be stopped from leaking into
+      `SAVE",A"` (a `list_all` entry does it). Knife K6a proved a one-line
+      regression there passes the dead-code gate AND the whole 34-row battery —
+      the new `list 20` in `disk_probe_save_ascii.py` is the only thing that sees
+      it. Cost 68 B of main page 1 (82 → **14 B free**); a fully resident design
+      was measured at ~128 B and never fit. `.` excepted — its own item below.
 - [x] `CONT`, Ctrl-STOP / break handling
       (basic/program.asm: the RUN loop polls BIOS `BREAKX` ($00B7) between
       statements/lines and on every FOR/NEXT iteration; a press branches to
@@ -1430,10 +1452,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       input buffer), so the user can cursor-up to any visible output, edit it
       in place, and re-enter it. Needs cursor-key handling and VDP line-readback.
       Our `repl.asm` is a deliberate simplification; full replacement is Phase 3.
-- [ ] **Editor / program management** — full `LIST`, `RENUM`, `AUTO`,
+- [ ] **Editor / program management** — `RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`, full `CLEAR` semantics (`ERASE`
       shipped 2026-07-15 with the arrays arc, slice 2; `DELETE <range>` shipped
-      2026-08-02 with D-DELETE, `.` excepted — its own item below).
+      2026-08-02 with D-DELETE and **`LIST <range>` the same day with D-LSTRNG**,
+      `.` excepted in both — its own item below).
+      ⚠️ **THE PAGE-1 WALL IS NOW 14 B**, not the 82 B D-LSTRNG started from, and
+      82 B was itself the post-carve figure. Any remaining item here needs a carve
+      or an eviction before it needs a design.
       (`SWAP` itself is still unimplemented — `SWAP A,B` is a syntax error here,
       where the reference swaps. Its MALFORMED forms already match, via the
       trap-class fix below.)
@@ -3977,6 +4003,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it kills it. Whoever implements them needs a plugged printer
       ([[openmsx-printer-pluggable]]) or a different instrument first.
 
+- [ ] 🔴 **ERROR-MESSAGE CAPITALISATION IS INCONSISTENT WITH ITSELF.** Filed
+      2026-08-02 by D-LSTRNG, from two rows in one corpus run pointing opposite
+      ways:
+      ```
+      lst-comma       refs 'Syntax error'            zb 'syntax error'    (lowercase)
+      ifc.instr.zero  probe wants 'illegal function call'
+                                                     zb 'Illegal function call' (CAPITALISED)
+      ```
+      [`basic/arrays.asm:608`](basic/arrays.asm:608) describes a deliberate
+      lowercase house style, *"the same documented deviation as every other
+      zerobas syntax error"* — and `ifc.instr.*` shows that is **not** true of
+      every message. ⚠️ **The two long-standing `array-acceptance` failures
+      (149/151) may therefore be a message-CASE defect rather than a wrong probe
+      expectation, and nobody has checked.** Decide one way for the whole tree:
+      match the references (capitalised) and update the ~10 probes that assert
+      lowercase, or keep lowercase and fix `Illegal function call`. Either way the
+      `lst-comma` pin retires with it.
+      ⚠️ Only surfaced because D-LSTRNG's `screen_tail` readout is the first in
+      `basic_probe_lnblank.py` to read an error MESSAGE rather than an error CODE;
+      every error class in that probe agrees numerically.
+
 - [ ] 🔴 **`.` — THE CURRENT-LINE PSEUDO-LINE-NUMBER — IS ABSENT, AND IT IS ONE
       MECHANISM SHARED BY FIVE VERBS.** Filed 2026-08-02 by D-DELETE, which
       measured it and declined it rather than shipping a rule one verb wide.
@@ -3999,6 +4046,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       zerobas's ` 15  2 ` — which is R-D6's trailing-junk rule answering a byte it
       does not know, i.e. a consequence of a rule that IS implemented, so the pin
       cannot drift for an unrelated reason.
+      🎯 **CONFIRMED ON A SECOND VERB 2026-08-02 by D-LSTRNG, so "one mechanism"
+      is now a reading and not an assumption.** `lst-dot` reads `40 REM D` and
+      `lse-dotedit` — line 20 re-entered last — **moves it to `20 REM B`**, the
+      exact shape `dlt-dot`/`dlt-dotedit` traced for `DELETE`. Two verbs, same
+      answer, same separator row. `lst-dot`/`lse-dotedit` are pinned the same way,
+      at zerobas's `syntax error` (R-LS6 answering the unknown `$2E`), and knife
+      K4 reddens both — so those pins are load-bearing, not inert.
+      ⚠️ **FOUR VERBS' WORTH OF PINS NOW RIDE ON THIS ITEM** (`dlt-dot`,
+      `dlt-dotedit`, `lst-dot`, `lse-dotedit`), and every further editor verb adds
+      two more. That is the argument for doing `.` as its own cross-cutting slice
+      before `RENUM`/`AUTO`, not after.
 
 - [x] ✅ **`RETURN <line>` — LANDED 2026-08-02 (D-RETLN), 27/27, four knives,
       `lnrd-return`'s pin RETIRED.** Filed 2026-08-01 by D-LNREF; spec

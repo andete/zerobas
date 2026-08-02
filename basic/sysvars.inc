@@ -2345,6 +2345,12 @@ LE_OP           equ     DISKOP_OP       ; main -> tenant: LE_OP_* selector
 ;   LE_OP_STORE    0 = ok, 1 = out of memory -> the resident head's own `ld a,7`
 ;   LE_OP_DELRANGE 0 = ok, else the ERR CODE ITSELF (2 = R-D6 trailing junk,
 ;                  5 = R-D2/R-D4 illegal function call) -> `jp raise_error`
+;   LE_OP_LSTRANGE 0 = ok, else the ERR CODE ITSELF -- only ever 2 (R-LS6). LIST
+;                  has NO range error at all: a high end naming no stored line,
+;                  a reversed range and a range past the program are all ERR 0
+;                  and simply list nothing (docs/listrange-msx1-characterization.md
+;                  §5.1). That is measured, not assumed -- it is exactly where
+;                  DELETE raises 5.
 ; The delrange head can therefore raise without a second table or a second
 ; compare. LE_OP_RELINK never fails and does not touch the cell.
 LE_STATUS       equ     DISKOP_STATUS
@@ -2352,6 +2358,14 @@ LE_OP_STORE             equ 0   ; lineedit: process SL_NUM/SL_TOK (store or dele
 LE_OP_RELINK            equ 1   ; lineedit: relink-only (cload.asm's own call sites)
 LE_OP_DELRANGE          equ 2   ; lineedit: DELETE <lo>-<hi> -- parse SL_TOK, then
                                 ; unlink every line in [SL_DELLO, SL_DELHI]
+LE_OP_LSTRANGE          equ 3   ; lineedit: LIST <lo>-<hi> -- PARSE ONLY (D-LSTRNG).
+                                ; Fills LST_LO/LST_HI from LST_PTR and returns; the
+                                ; WALK stays resident, because it prints through
+                                ; main page-1 pchar and CALSLTs the page-0
+                                ; detokeniser -- neither reachable from a page-1
+                                ; tenant (spec-basic-listrange.md §3.1, where that
+                                ; makes DELETE's whole-verb split IMPOSSIBLE here).
+                                ; Status: 0 = ok, 2 = R-LS6 trailing junk.
 ; D-DELETE §3.2: DELETE's two range ends and its statement cursor ride the SAME
 ; THREE CELLS store_line marshals -- a SECOND VALUE NAMESPACE on them, exactly
 ; like LE_OP on DISKOP_OP one screen up.
@@ -2365,6 +2379,25 @@ LE_OP_DELRANGE          equ 2   ; lineedit: DELETE <lo>-<hi> -- parse SL_TOK, th
 SL_DELLO        equ     SL_NUM          ; DELETE: low end of the range (2)
 SL_DELHI        equ     SL_SIZE         ; DELETE: high end of the range (2)
 SL_DELPTR       equ     SL_TOK          ; DELETE: the statement cursor, on the token
+
+; D-LSTRNG §3.4: LIST <range> is a THIRD namespace on the same three cells, and
+; the grep that proves it is WIDER than DELETE's had to be. DELETE's range dies
+; inside one subrom_call; LIST's must survive the whole list_walk, which CALSLTs
+; the page-0 detokeniser per line and -- through the SAME walk reached from
+; ascii_save / cas_ascii_save -- runs the FAT12 disk writer or the cassette
+; block writer. So the question is not "is a store in flight" but "does anything
+; on ANY of those three paths touch these cells".
+;
+;   grep -rn 'SL_NUM\|SL_SIZE\|SL_TOK\|SL_SLOT\|SL_DEL' basic/*.asm sub/*.asm
+;
+; returns readers in exactly two files: basic/program.asm (store_line,
+; ex_delete) and sub/lineedit.asm (le_store, le_delrange, prog_find_del,
+; delete_at, open_gap). NO detok, save, FAT or cassette path appears. One
+; subrom_call reaches exactly one LE_OP, so a store, a delrange and a listrange
+; are never in flight together.
+LST_LO          equ     SL_NUM          ; LIST: low end of the range (2)
+LST_HI          equ     SL_SIZE         ; LIST: high end of the range (2)
+LST_PTR         equ     SL_TOK          ; LIST: the statement cursor, on the token
 
 ; --- Cassette name-match/skip tenant ABI (SUBROM_IDX_CASMATCH, docs/spec-
 ; eviction-g5-space.md): reuses the SAME DISKOP_STATUS RAM cell, ANOTHER

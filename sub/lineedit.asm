@@ -72,15 +72,20 @@
 ; ===========================================================================
 
 ; --- lineedit_tenant: the SUBROM_IDX_LINEEDIT entry -------------------------
+; ⚠️ A FOURTH OP MADE THE OLD TWO-WAY `dec a / jp nz` WRONG, NOT MERELY
+; INCOMPLETE. It read "anything that is not 1 is a delrange", so LE_OP_LSTRANGE
+; would have run le_delrange and DELETED the lines a LIST was asked to print.
+; The selector is an explicit ladder now.
 lineedit_tenant:
                 ld      a,(LE_OP)
                 or      a
                 jp      z,le_store              ; LE_OP_STORE = 0
                 dec     a
-                jp      nz,le_delrange          ; LE_OP_DELRANGE = 2 (D-DELETE)
-                ; fall through -> LE_OP_RELINK = 1: relink only (cload.asm's
-                ; own call sites); tail: vars_reset; ret
-                jp      relink_body
+                jp      z,relink_body           ; LE_OP_RELINK = 1 (cload.asm's own
+                                                ; call sites); tail: vars_reset; ret
+                dec     a
+                jp      z,le_delrange           ; LE_OP_DELRANGE = 2 (D-DELETE)
+                jp      le_lstrange             ; LE_OP_LSTRANGE = 3 (D-LSTRNG)
 
 ; --- le_store: store_line's own body (empty body -> delete; else bounds-
 ; check + insert), byte-for-byte the same logic as the pre-eviction
@@ -278,6 +283,69 @@ ldr_done:
                                                 ; already reaches (dlt-vars ` 0  0 `
                                                 ; against dlt-varsctl's ` 1  0 `).
 
+; --- le_lstrange: LIST [<lo>][-[<hi>]] -- PARSE ONLY (LE_OP_LSTRANGE) -------
+; docs/spec-basic-listrange.md §2, measured in
+; docs/listrange-msx1-characterization.md. Unlike le_delrange this is the parse
+; and NOTHING ELSE: the walk stays resident because it prints through main
+; page-1 pchar and CALSLTs the page-0 detokeniser, neither of which a page-1
+; tenant can reach (spec §3.1 -- that is what makes DELETE's whole-verb split
+; impossible for LIST, rather than merely expensive).
+;   IN : LST_PTR = the statement cursor, ON the LIST token.
+;   OUT: LST_LO / LST_HI = the range; LE_STATUS = 0, or 2 for R-LS6.
+;
+; 🔴 LIST'S RANGE RULES ARE NOT DELETE'S, AND FIVE OF THE TWENTY MEASURED SHAPES
+; WOULD BE WRONG IF THEY HAD BEEN COPIED FROM le_delrange ABOVE. There is NO
+; high-end existence check (`LIST 20-35` lists two lines where `DELETE 20-35` is
+; ERR 5), NO reversal check (`LIST 30-20` lists nothing, ERR 0, where DELETE
+; raises), and -- the sharpest one -- an ABSENT HIGH END IS 65535, NOT 0, so
+; `LIST 20-` lists to the END of the program where `DELETE 20-` is ERR 5.
+le_lstrange:
+                ld      hl,(LST_PTR)
+                inc     hl                      ; past the LIST token
+                ld      de,0
+                ld      (LST_LO),de             ; R-LS5: with neither end given,
+                dec     de                      ; bare LIST is 0-65535 -- which is
+                ld      (LST_HI),de             ; what forbids "hi defaults to lo"
+                                                ; (that would make bare LIST 0-0 and
+                                                ; list nothing; lst-all lists all)
+                call    ldr_num                 ; CF set -> a $0E number was there
+                jr      nc,llr_dash
+                ld      (LST_LO),de
+                ld      (LST_HI),de             ; R-LS1: `LIST n` IS `LIST n-n`
+                                                ; (lst-one and lst-same both read B)
+llr_dash:
+                call    ldr_skipsp
+                cp      MINUS_TOKEN             ; the '-' is the ORDINARY minus token
+                jr      nz,llr_end              ; and does not disarm line-number
+                inc     hl                      ; mode, so the number behind it is
+                ld      de,$FFFF                ; another $0E (characterization §1)
+                ld      (LST_HI),de             ; R-LS5: an absent HIGH end is the END
+                call    ldr_num                 ; of the program (lst-openhi: `LIST
+                jr      nc,llr_end              ; 20-` reads B|C|D, NOT nothing)
+                ld      (LST_HI),de
+llr_end:
+                ; R-LS6: anything but end-of-statement here is ERR 2, raised
+                ; BEFORE a line is printed -- `LIST 10,30` prints `Syntax error`
+                ; and no listing, even though the tokeniser arms a $0E reference
+                ; across the comma (lna-listcomma). A ':' IS accepted, and R-LS7
+                ; then abandons the rest of the line (lse-tail: ERR 0, B unset).
+                ; This is also the rule that answers `LIST .`, whose '.' is not
+                ; crunched -- see spec §6 for why that is pinned and not fixed.
+                call    ldr_skipsp
+                or      a
+                jr      z,llr_ok
+                cp      COLON
+                ld      a,2                     ; (no flags -- the `cp` still holds)
+                jr      nz,llr_fail
+llr_ok:
+                xor     a
+llr_fail:
+                ld      (LE_STATUS),a
+                ret                             ; NOTE: no relink, no vars_reset --
+                                                ; R-LS8, LIST is not a program edit
+                                                ; (lse-vars keeps A=1, lse-cont's
+                                                ; CONT still resumes)
+
 ; --- ldr_skipsp: advance HL past blanks; A = (HL) --------------------------
 ; A sub-local clone of main page-1 `skip_spaces` ($4240), which is UNREACHABLE
 ; from here: while a page-1 tenant runs, main page 1 is switched out (this
@@ -296,16 +364,30 @@ ldr_skipsp:
 ; start), `DELETE 20-` (= 20-0, ERR 5) and bare `DELETE` (= 0-0, ERR 5) fall
 ; out of R-D2/R-D4 with no rules of their own. HL advances only if there was
 ; one. Blanks first: `DELETE 20` stores the typed blank (characterization §1).
+;
+; ⚠️ CF REPORTS *PRESENCE*, AND ONLY D-LSTRNG READS IT. DELETE cannot tell "no
+; number" from "the number 0" and does not need to -- R-D5 makes them the same
+; thing, so it reads DE and ignores CF. LIST's R-LS5 is the opposite: an absent
+; high end is 65535 and an absent low end is 0, so the two ends have DIFFERENT
+; defaults and the caller must know which case it is in. Adding CF is therefore
+; not a tidy-up, it is the whole difference between the two verbs' parses.
+; DELETE's behaviour is unchanged (it never tested CF, and A is re-fetched by the
+; ldr_skipsp that follows every call) -- knife K3 scores the dlt- rows to prove
+; that rather than assert it.
 ldr_num:
                 call    ldr_skipsp
                 ld      de,0                    ; R-D5 (does not disturb the flags
                 cp      LINENO_TOKEN            ;  ldr_skipsp left in A)
-                ret     nz
+                jr      z,ldrn_yes
+                or      a                       ; CF CLEAR = no number here
+                ret
+ldrn_yes:
                 inc     hl
                 ld      e,(hl)
                 inc     hl
                 ld      d,(hl)
                 inc     hl
+                scf                             ; CF SET = a number was read
                 ret
 
 ; --- ldr_find: does a line numbered BC exist? CF set = yes -----------------

@@ -29,21 +29,89 @@
 ; spec-tokenise.md / spec-tokens-statements.md). No constant here is new — each
 ; token byte it decodes is already defined+cited in sysvars.inc. No disassembly.
 ;
-; Line-range / line-number arguments (LIST n, LIST n-m) are a documented Phase-2
-; divergence; only the no-argument whole-program form is implemented.
+; Line-range arguments are implemented (D-LSTRNG, docs/spec-basic-listrange.md,
+; measured in docs/listrange-msx1-characterization.md):
+;
+;   LIST          the whole program        LIST n-m      lines n..m
+;   LIST n        line n only              LIST n-       line n to the END
+;   LIST -m       the start up to line m
+;
+; 🔴 AND THESE ARE **NOT** `DELETE`'s RANGE RULES, though the two verbs share a
+; byte-identical argument grammar. LIST has no high-end existence check, no
+; reversal check, and no range error of any kind: `LIST 20-35`, `LIST 30-20` and
+; `LIST 10-65529` list what is in range (or nothing) with ERR 0, where the same
+; three shapes are ERR 5 under DELETE. Sharpest of all, an ABSENT HIGH END IS
+; 65535 -- `LIST 20-` lists to the end of the program, where `DELETE 20-` means
+; 20-0 and raises. Five of the twenty measured shapes would be wrong if the
+; rules had been carried across; see spec §2.
 ;
 ; Entry: ex_list, HL -> the LIST token.
 
-; --- ex_list: LIST (whole program) -----------------------------------------
-; Walk the stored line-link chain from the text base, printing each line. Any
-; argument is ignored (Phase-2 divergence). Returns to the caller (REPL/run loop)
-; via exec_stmt so the line continues normally.
+; --- ex_list: LIST [<lo>][-[<hi>]] -------------------------------------------
+; docs/spec-basic-listrange.md, measured in
+; docs/listrange-msx1-characterization.md. HL enters on the LIST token (the
+; es_hit contract). This is the marshalling head; the ARGUMENT PARSE lives in
+; sub/lineedit.asm's le_lstrange, beside the DELETE parse it deliberately does
+; NOT resemble.
+;
+; WHY ONLY THE PARSE GOES SUB-SIDE (spec §3.1). DELETE put its WHOLE verb in the
+; page-1 tenant for 37 B of main page 1. That is IMPOSSIBLE here, and not for
+; budget reasons: list_walk prints through pchar (main page 1) and reaches the
+; detokeniser by CALSLT to a page-0 tenant, and a page-1 tenant has main page 1
+; switched out and cannot call either. So the walk stays resident and only the
+; parse -- which marshals as ONE POINTER, the grammar being `[$0E lo] [$F2 [$0E
+; hi]]` with no expression evaluation anywhere -- is evicted. A fully resident
+; parse was costed at ~107 B against 82 B free: it does not fit (knife K7).
+;
+; ⚠️ NOTHING COMES BACK BUT A STATUS, AND THAT IS R-LS7, NOT A SHORTCUT. LIST
+; ENDS the line and the program -- `LIST 20:B=9` leaves B at 0 with ERR 0
+; (lse-tail, against lse-tailctl's 9) and `20 LIST 40` inside a RUN stops the
+; program (lse-inprog reads 1, not 13). ⚠️ BOTH OF THOSE WERE PREDICTED THE
+; OTHER WAY and the measurement refuted the prediction; the reasoning was that
+; DELETE ends the run because it memmoved the text CURLINE points into and LIST
+; moves nothing. So the advanced cursor has no reader and is never marshalled
+; back -- which is also what makes the head this small.
 ex_list:
-                inc     hl                  ; past the LIST token (args ignored)
+                ld      (LST_PTR),hl        ; the statement cursor, on the token
+                ld      a,LE_OP_LSTRANGE
+                ld      (LE_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      a,(LE_STATUS)       ; the ERR CODE ITSELF; only ever 2
+                or      a                   ; (R-LS6). LIST has NO range error --
+                jp      nz,raise_error      ; a high end naming no stored line, a
+                                            ; reversed range and a range past the
+                                            ; program are all ERR 0 and list
+                                            ; nothing, exactly where DELETE raises 5.
                 xor     a
                 ld      (PRDEST),a          ; LIST always renders to the SCREEN sink
-                call    list_walk           ; walk + emit the whole program
-                jp      exec_stmt           ; LIST done -> continue the line
+                call    list_walk           ; walk + emit [LST_LO, LST_HI]
+                ; R-LS7: and then the run stops. Same mechanism as ex_end/ex_delete
+                ; -- the run loop tests ENDFLAG immediately after `exec` returns.
+                ; ⚠️ AND UNLIKE ex_delete, CONTVALID IS *NOT* CLEARED: R-LS8, LIST
+                ; is not a program edit, and lse-cont (whose CONT must still resume,
+                ; reading 5 like its control) is the row that gates the difference.
+                ld      a,1
+                ld      (ENDFLAG),a
+                ret
+
+; --- lst_setall / list_all: the WHOLE program ------------------------------
+; 🔴 list_walk HAS THREE CALLERS AND A LIST RANGE MUST NOT LEAK INTO TWO OF THEM
+; (spec §3.3). ascii_save and cas_ascii_save (basic/save.asm) drive the same walk
+; to disk and to tape; left alone, `LIST 20-30` followed by `SAVE"F",A` would
+; silently write TWO LINES -- a data-loss bug in a verb this slice never
+; mentions. They call list_all instead, which is a 3-byte call exactly like the
+; one it replaces, so the split costs the call sites nothing.
+lst_setall:
+                ld      de,0
+                ld      (LST_LO),de
+                dec     de                  ; DE = $FFFF
+                ld      (LST_HI),de
+                ret
+list_all:
+                call    lst_setall
+                ; fall into list_walk
 
 ; --- list_walk — walk the stored program, emitting each line as "number space
 ; detokenised-body CRLF" through pchar. pchar follows the PRDEST sink: the screen
@@ -68,6 +136,23 @@ lst_lp:
                 inc     hl
                 ld      b,(hl)
                 inc     hl                  ; HL -> token body
+                ; R-LS3: the range filter. Lines are stored ASCENDING, so once one
+                ; is above hi nothing further can be in range either and the walk
+                ; STOPS rather than skipping on. Both exits reuse the link this
+                ; loop has already pushed. (D-LSTRNG; for the whole-program
+                ; callers lst_setall has made this 0..65535, above.)
+                ld      de,(LST_HI)
+                ld      a,e                 ; hi - number: CF set -> past the top
+                sub     c
+                ld      a,d
+                sbc     a,b
+                jr      c,lst_stop
+                ld      de,(LST_LO)
+                ld      a,c                 ; number - lo: CF set -> not yet at the
+                sub     e                   ; range. The walk starts at the first
+                ld      a,b                 ; stored line >= lo; neither end has to
+                sbc     a,d                 ; name a stored line (lst-lomid: `LIST
+                jr      c,lst_skip          ; 25-30` prints only line 30).
                 push    hl                  ; guard the body pointer
                 ld      d,b                 ; print_number wants the value in DE
                 ld      e,c
@@ -79,6 +164,12 @@ lst_lp:
                 call    print_crlf
                 pop     hl                  ; HL = link -> next line's link field
                 jr      lst_lp
+lst_skip:
+                pop     hl                  ; below lo: the guarded link IS the next
+                jr      lst_lp              ; line's address -- step and try again
+lst_stop:
+                pop     de                  ; past hi: drop the guarded link and end
+                ret                         ; the walk (lines are ascending)
 
 ; --- list_num: print DE as an unsigned decimal line number ------------------
 ; print_number formats a *signed* value with a leading sign space and a trailing

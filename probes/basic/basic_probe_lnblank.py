@@ -1464,6 +1464,15 @@ LNA = [
     ("lna-listplus", ["20 LIST 10+20"]),      # does the mode run on past '+'?
     ("lna-listkw",   ["20 LIST 10 AND 20"]),  # R-L3: a WORD disarms
     ("lna-listcol",  ["20 LIST 10:20"]),      # R-L3: ':' disarms
+    # D-LSTRNG. The three rows above cover the shapes D-LNREF needed; the four
+    # here are the ones the STATEMENT half needs and nobody had locked. A handler
+    # written against bytes no reference confirmed is a handler written against
+    # nothing (docs/delete-msx1-characterization.md §1 made the same argument for
+    # the four DELETE shapes it added).
+    ("lna-listhi",   ["20 LIST 30-"]),        # open HIGH end: is the '-' kept?
+    ("lna-listnone", ["20 LIST"]),            # no argument at all
+    ("lna-listcomma",["20 LIST 10,30"]),      # does the mode arm across a ','?
+    ("lna-listdot",  ["20 LIST ."]),          # '.' -- crunched, or literal $2E?
     ("lna-elsectl",  ["20 IF A THEN 10 ELSE 20"]),
     ("lna-elseb",    ["20 IF A THEN B=1 ELSE 20"]),   # ELSE reached with the
                                               # mode already DISARMED by a name
@@ -1764,6 +1773,165 @@ DLT = [
                       "20 A=A+2", "DELETE .", "RUN", 'PRINT"[";A;ERR;"]"']),
 ]
 
+# --- the `lst` battery: WHICH LINES DOES `LIST <range>` PRINT? ----------------
+# D-LSTRNG round 1. `ex_list` (basic/list.asm) does `inc hl` past the LIST token
+# and IGNORES the argument entirely -- a filed Phase-2 divergence -- so every row
+# here must read the SAME full listing on zerobas and the measured sub-listing on
+# the references.
+#
+# 🔴 THE READOUT IS `screen_tail`, NOT `say()` AND NOT THE BRACKET SPAN, AND THAT
+# IS FORCED BY THE SUBJECT. say() classifies a screen row as ECHO when every
+# character in it was typed by the case -- and every line LIST prints is built
+# from the characters the case typed to STORE that line. So say() can never see a
+# listing, on any machine, for any range: it would report `<nothing printed>` for
+# a correct full listing and for a machine that printed nothing at all, which is
+# the chancost NOREAD shape (a sentinel that also means "no reading" is not a
+# measurement). The bracket span cannot see one either -- it returns ONE value,
+# and "which lines" is a SET.
+#
+# `screen_tail` (probes/lib/omsx_repl.py:539) returns the rows between the echoed
+# command and the closing prompt, '|'-joined. That is precisely and only what
+# LIST printed, it carries BOTH ends of the range in one reading, and on a row
+# that ERRORS it carries the error TEXT instead -- so one row per range answers
+# "what was listed" and "did it refuse" together. Round 2 pins the numeric ERR
+# CLASS for whichever rows turn out to refuse.
+#
+# ⚠️ THE LIST MUST BE THE CASE'S LAST TYPED LINE. screen_tail anchors on the echo
+# and stops at the first row that IS a prompt; the closing prompt is bare only
+# when nothing was typed after it. And a command line whose ECHO WRAPS breaks the
+# readout SILENTLY (basic_probe_missing.py:188) -- the longest here is
+# `LIST 10-65529` at 13 columns, against 40.
+#
+# 🔴 `lst-all` IS THE CONTROL THAT SEPARATES TWO CAUSES, and without it not one
+# row below is a reading about ranges. The tail is the DETOKENISED text, so a row
+# can differ because the range differs OR because zerobas renders `10 REM A`
+# differently from the reference. `lst-all` types the same program and lists ALL
+# of it: it is the one row whose subject zerobas already implements, so it must
+# read identically on all three sides TODAY. If it does, every other divergence
+# below is about the argument. If it does not, the argument rows measure nothing
+# and the finding is in the detokeniser instead.
+_LSTP = ["10 REM A", "20 REM B", "30 REM C", "40 REM D"]
+LST = [
+    # THE CONTROL (above). Must agree on all three sides before any row below is
+    # read as a range divergence.
+    ("lst-all",      _LSTP + ["LIST"]),
+    # R-L1: is `LIST n` the same statement as `LIST n-n`? (dlt-one/dlt-same are
+    # the DELETE precedent -- there they read identically.)
+    ("lst-one",      _LSTP + ["LIST 20"]),
+    ("lst-same",     _LSTP + ["LIST 20-20"]),
+    # 🔴 R-L2/R-L3 -- THE ASYMMETRY, WHICH MUST BE MEASURED AND NOT INHERITED.
+    # D-DELETE measured that DELETE's HIGH end must name a stored line EXACTLY
+    # (`DELETE 20-35` is ERR 5 and deletes nothing) while its LOW end need not.
+    # It would be very surprising if LIST refused `LIST 20-35` -- but nine
+    # consecutive slices in this tree found the filed title was the wrong
+    # subject, so the same four-row shape is walked here from scratch. The two
+    # rows that matter read the same on DELETE only by accident of which side of
+    # the '-' the missing number sits on.
+    ("lst-rng",      _LSTP + ["LIST 20-30"]),   # both ends real
+    ("lst-lomiss",   _LSTP + ["LIST 15-30"]),   # LOW end names nothing
+    ("lst-himiss",   _LSTP + ["LIST 20-35"]),   # HIGH end names nothing
+    ("lst-bothmiss", _LSTP + ["LIST 15-35"]),   # neither does
+    # The two rows round 1 of D-DELETE could not see: every high end it tried was
+    # reachable BEFORE the program ran out, so "hi must exist" and the far weaker
+    # "hi must not be past the last line" predicted the same answer everywhere.
+    # `LIST 10-65529` is the natural "everything from 10 on" idiom and is the row
+    # that separates them.
+    ("lst-hipast",   _LSTP + ["LIST 10-45"]),
+    ("lst-hitop",    _LSTP + ["LIST 10-65529"]),
+    # Is the low end "the first stored line >= lo"? Measured where that is a
+    # STRICT inequality (25 sits BETWEEN two stored lines) rather than below
+    # everything, which lst-lomiss cannot distinguish.
+    ("lst-lomid",    _LSTP + ["LIST 25-30"]),
+    # R-L1 continued: a single number that names NO stored line. Under DELETE
+    # this is ERR 5; under LIST it may equally well print nothing at all, and
+    # `<nothing>` and `refused` are different readings that screen_tail can tell
+    # apart (an error prints its message into the tail).
+    ("lst-miss",     _LSTP + ["LIST 25"]),
+    ("lst-zero",     _LSTP + ["LIST 0"]),
+    ("lst-below",    _LSTP + ["LIST 1-5"]),     # whole range below the program
+    ("lst-above",    _LSTP + ["LIST 60-70"]),   # whole range above it
+    # R-L4: a REVERSED range. Under DELETE this is ERR 5 even though its high end
+    # EXISTS -- so it is a rule of its own and not the high-end check firing.
+    ("lst-rev",      _LSTP + ["LIST 30-20"]),
+    # R-L5: an ABSENT number. Under DELETE it is 0 on both ends, which is what
+    # makes `DELETE 20-` (= 20-0) an ERROR. For LIST, `LIST 20-` reading as
+    # "from 20 to the END" is at least as likely as "20-0", and the two predict
+    # completely different tails -- this is the row that decides it.
+    ("lst-openlo",   _LSTP + ["LIST -30"]),
+    ("lst-openhi",   _LSTP + ["LIST 20-"]),
+    # R-L6: is a comma a separator? The tokeniser happily arms a line-number
+    # reference across it (lna-listcomma below locks the bytes), which is exactly
+    # why the run-time answer has to be asked separately.
+    ("lst-comma",    _LSTP + ["LIST 10,30"]),
+    # The degenerate case: no program at all. Under DELETE this is ERR 5.
+    ("lst-empty",    ["LIST 10"]),
+    # OUT OF SCOPE FOR THIS SLICE AND MEASURED ANYWAY, exactly as D-DELETE did
+    # with dlt-dot. '.' is NOT crunched (lna-listdot below) -- it reaches the
+    # statement as the literal $2E -- and it names the line the editor last
+    # touched, a pseudo-line-number shared by LIST/DELETE/AUTO/RENUM/EDIT that
+    # zerobas records nothing of. Pinned, not silently dropped.
+    ("lst-dot",      _LSTP + ["LIST ."]),
+]
+
+# --- the `lse` battery: D-LSTRNG ROUND 2 -- ERR, and what LIST ENDS -----------
+# Round 1 answered "which lines" for every argument shape. Three questions it
+# could not:
+#
+# 🔴 (a) `<nothing listed>` IS THE SAME READING FOR FIVE ROWS -- lst-miss,
+# lst-zero, lst-below, lst-above and lst-rev all print nothing -- so no one of
+# them says WHY. The tail readout does separate "listed nothing" from "refused"
+# (a refusal prints its message, which lands in the tail: lst-comma reads
+# `Syntax error`), but that is an argument about direct mode, not a measurement.
+# These rows ask ERR directly. `lst-rev` is the one that matters: under DELETE a
+# reversed range is a RULE (ERR 5) and not an empty walk, and if LIST had the
+# same rule while somehow not printing, round 1 could not have told.
+#
+# (b) the numeric CLASS behind `Syntax error`, which an implementation has to
+# raise by number.
+#
+# (c) DELETE ENDS the line and the program (R-D8, two separate mechanisms).
+# Whether LIST does is a different question with no reason to share an answer:
+# DELETE ends the run because it has just memmoved the text CURLINE points into,
+# and LIST moves nothing at all.
+#
+# These are ordinary bracket-span rows (SAY_ONLY, not TAIL_ONLY): each asks for
+# ONE number, which is exactly what that readout returns.
+LSE = [
+    # THE CONTROL: ERR after a LIST that everyone agrees about. Without it a 0
+    # anywhere below means nothing -- and `dlt-errctl` is the precedent for why
+    # (RUN PRESERVES ERR, so a stale code can masquerade as a fresh reading).
+    ("lse-ctl",      _LSTP + ["LIST", 'PRINT"[";ERR;"]"']),
+    ("lse-rev",      _LSTP + ["LIST 30-20", 'PRINT"[";ERR;"]"']),
+    ("lse-miss",     _LSTP + ["LIST 25", 'PRINT"[";ERR;"]"']),
+    ("lse-himiss",   _LSTP + ["LIST 20-35", 'PRINT"[";ERR;"]"']),
+    ("lse-above",    _LSTP + ["LIST 60-70", 'PRINT"[";ERR;"]"']),
+    ("lse-comma",    _LSTP + ["LIST 10,30", 'PRINT"[";ERR;"]"']),
+    ("lse-empty",    ["LIST 10", 'PRINT"[";ERR;"]"']),
+    # Does LIST end the REST OF THE TYPED LINE? dlt-tail says DELETE does, and
+    # its control says a ':'-separated second statement runs in general.
+    ("lse-tail",     _LSTP + ["LIST 20:B=9", 'PRINT"[";B;ERR;"]"']),
+    ("lse-tailctl",  _LSTP + ["C=1:B=9", 'PRINT"[";B;ERR;"]"']),
+    # Does LIST inside a RUN end the PROGRAM? dlt-inprog says DELETE does. If
+    # LIST does not, A = 1+4+8 = 13; if it does, A = 1. A bitmask, not a counter.
+    ("lse-inprog",   ["10 A=A+1", "20 LIST 40", "30 A=A+4", "40 A=A+8",
+                      "RUN", 'PRINT"[";A;ERR;"]"']),
+    # Is LIST a program EDIT? DELETE clears the variables and invalidates CONT
+    # (R-D7). LIST changes no text, so it should do neither -- but "should" is
+    # not a reading, and CONT is the half that would go unnoticed.
+    ("lse-vars",     ["10 A=1", "20 B=2", "RUN", "LIST 20",
+                      'PRINT"[";A;ERR;"]"']),
+    ("lse-cont",     ["10 A=1", "20 STOP", "30 A=A+4", "RUN", "LIST 30", "CONT",
+                      'PRINT"[";A;ERR;"]"']),
+    ("lse-contctl",  ["10 A=1", "20 STOP", "30 A=A+4", "RUN", "CONT",
+                      'PRINT"[";A;ERR;"]"']),
+    # '.' again, and this row is what makes the lst-dot pin HONEST rather than
+    # inherited. dlt-dotedit separated "last line touched" from "highest line"
+    # for DELETE; line 40 in lst-dot is BOTH, so lst-dot alone cannot say LIST
+    # shares that mechanism. Re-entering line 20 last predicts `20 REM B` under
+    # "last touched" and `40 REM D` under "highest".
+    ("lse-dotedit",  _LSTP + ["20 REM B", "LIST ."]),
+]
+
 # label -> the ONLY sides it may be measured on. A row named here is refused on
 # any other side, with the reason, instead of being quietly dropped or -- far
 # worse -- run.
@@ -2054,12 +2222,29 @@ LNRT = [
                        'PRINT"[";A;ERR;I;"]"']),
 ]
 
+# Rows whose reading is `screen_tail` -- the rows the machine PRINTED between the
+# command echo and the closing prompt -- rather than the bracket span. The `lst`
+# battery's subject is a SET of lines, which no single bracketed value can carry,
+# and say() is structurally blind to a listing (see LST's header). TAIL_ONLY is a
+# SUBSET of SAY_ONLY: these rows read the screen, so they need every bit of the
+# isolation and filtering SAY_ONLY already arranges -- only the final decode
+# differs.
+#
+# ⚠️ `lse-dotedit` LIVES IN THE `lse` BATTERY BUT READS A LISTING, so it is named
+# here explicitly. The two batteries are split by QUESTION (which lines / which
+# ERR), and the readout follows the question, not the label prefix -- getting
+# that backwards would hand a listing to the bracket-span reader, which returns
+# `<none>` for it: a value that also means "no reading", on every side, which
+# compares EQUAL.
+TAIL_ONLY = {lb for lb, _l in LST} | {"lse-dotedit"}
+
 SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD
-            + KWGZ + LNRT + DLT}
+            + KWGZ + LNRT + DLT + LSE} | TAIL_ONLY
 
 CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + LNL + CNM
          + LNR + LNRX + LNR2 + LNV + LNV2 + LNA
-         + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ + LNRT + DLT)
+         + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ + LNRT + DLT
+         + LST + LSE)
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
 # informational because nobody had a RULE for them: `dec-bin` was the `&B`
@@ -2311,6 +2496,30 @@ KNOWN_DIVERGE = {
     # Retirement path: the TODO.md current-line item.
     "dlt-dot":      " 15  2 ",
     "dlt-dotedit":  " 15  2 ",
+
+    # --- D-LSTRNG (docs/spec-basic-listrange.md §5/§6) -----------------------
+    # `.` -- MEASURED, understood, deliberately not implemented. lst-dot reads
+    # `40 REM D` on both references and lse-dotedit MOVES it to `20 REM B` when
+    # line 20 is re-entered last, so LIST's '.' is the same "line the editor last
+    # touched" dlt-dotedit measured for DELETE -- one mechanism across
+    # LIST/DELETE/AUTO/RENUM/EDIT, and zerobas records nothing of the kind.
+    #
+    # ⚠️ THE PINNED VALUE IS A CONSEQUENCE OF A RULE THIS SLICE *DOES* IMPLEMENT,
+    # which is what keeps it from drifting for an unrelated reason: '.' is not
+    # crunched (lna-listdot), so it reaches the statement as the literal $2E,
+    # which R-LS6 answers with ERR 2. Knife K4 reddens both of these rows, which
+    # is how we know the pin is load-bearing rather than inert.
+    "lst-dot":      "syntax error",
+    "lse-dotedit":  "syntax error",
+    # 🔴 NOT THIS SLICE'S DEFECT, AND NAMING THE OWNER IS THE POINT. The rule is
+    # implemented correctly -- lse-comma reads ` 2 ` on ALL THREE SIDES, so the
+    # error CLASS agrees. What differs is the message TEXT's capitalisation:
+    # zerobas prints `syntax error` where both references print `Syntax error`.
+    # That is a deliberate, documented, tree-wide house-style deviation predating
+    # this slice by a long way (basic/arrays.asm:608 states it in those words),
+    # and ten probes assert the lowercase form. It is pinned here rather than
+    # "fixed" inside a LIST slice, and rather than left as an unexplained red.
+    "lst-comma":    "syntax error",
 }
 
 
@@ -2523,7 +2732,20 @@ def run_side(side, cases, repeat, echo, saymode=False, isolate=False):
             # echo of their own last line instead and read what follows it.
             # NOCAPTURE, not None: `is_bad` treats it as fatal, and a None here
             # would crash the printer rather than report an apparatus failure.
+            # ⚠️ TAIL ROWS GET THEIR OWN "NO READING" SENTINEL, AND IT IS NOT THE
+            # EMPTY STRING. screen_tail returns None when the echo row cannot be
+            # found (an apparatus failure) and "" when the command printed
+            # NOTHING BETWEEN ITS ECHO AND THE PROMPT -- which for `lst-above` is
+            # the expected ANSWER, not a miss. Collapsing the two would make a
+            # machine that listed nothing indistinguishable from a machine the
+            # scraper lost, and both would compare EQUAL across sides. They are
+            # `<NO ECHO>` (fatal) and `<nothing listed>` (a reading).
             rd = ((lambda raw: ("NOCAPTURE" if raw is None else
+                                (lambda t: "<NO ECHO>" if t is None else
+                                           (t or "<nothing listed>"))(
+                                    omsx_repl.screen_tail(raw, lines[-1]))))
+                  if label in TAIL_ONLY else
+                  (lambda raw: ("NOCAPTURE" if raw is None else
                                 (omsx_repl.result_span_after_echo(raw, lines[-1])
                                  or "<none>")))
                   if label in SAY_ONLY else

@@ -54,6 +54,16 @@ PROGRAM = [
     "10 a=6",
     "20 a=a*7",
     '30 print"<";a;">"',      # string literal -> exercises detok's dt_string
+    # 🔴 THIS `list` IS A GATE, NOT SETUP -- D-LSTRNG, spec-basic-listrange.md §3.3.
+    # Since LIST took a range, `list_walk` honours LST_LO/LST_HI, and ascii_save
+    # drives the SAME walk. If ascii_save ever calls list_walk instead of
+    # list_all, the range this line leaves behind truncates the save to ONE LINE:
+    # the reload then restores a program with lines 10 and 30 GONE, nothing
+    # prints, and the <42> assertion below fails. Knife K6 was run precisely to
+    # find out whether anything in the tree caught that -- with the whole 34-row
+    # lnblank battery scoring ZERO red, nothing did, and this line is the answer.
+    # It must stay ABOVE the save and must name a strict sub-range of the program.
+    "list 20",
     'save"s.bas",a',          # write the ASCII listing to disk
     "20 a=999",               # corrupt the in-memory program AFTER saving
     'load"s.bas"',            # reload the ASCII file: restores 20 a=a*7, clears line 999

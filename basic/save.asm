@@ -224,7 +224,12 @@ ascii_save:
                 call    disk_write_begin    ; create/truncate; reset the write state
                 ld      a,1
                 ld      (PRDEST),a          ; route pchar (LIST's emit) to the file
-                call    list_walk           ; number + space + detok + CRLF, each line
+                call    list_all            ; number + space + detok + CRLF, each line
+                                            ; ⚠️ list_ALL, not list_walk: since
+                                            ; D-LSTRNG the walk honours LST_LO/LST_HI,
+                                            ; and a preceding `LIST 20-30` would
+                                            ; otherwise make this save TWO LINES
+                                            ; (spec-basic-listrange.md §3.3)
                 ld      a,$1A               ; Ctrl-Z soft-EOF (ASCII program terminator)
                 call    pchar
                 xor     a
@@ -277,7 +282,10 @@ cas_ascii_save:
                 ld      (PRDEST),a          ; route pchar (LIST's emit) to a sink
                 ld      a,3
                 ld      (PRDEV),a           ; sink 3 = cassette (cas_wbyte)
-                call    list_walk           ; number + space + detok body + CRLF/line
+                call    list_all            ; number + space + detok body + CRLF/line
+                                            ; (list_ALL -- see ascii_save above:
+                                            ; a preceding LIST range must not
+                                            ; truncate the tape image either)
                 call    cas_ascii_finish    ; Ctrl-Z EOF + pad the final block (flush)
                 xor     a
                 ld      (PRDEST),a          ; restore the screen sink
