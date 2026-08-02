@@ -379,6 +379,20 @@ stmt_table:
                 dw      ex_troff
                 db      LOCATE_TOKEN
                 dw      ex_locate    ; LOCATE [col][,[row][,cursor]]
+                ; --- the EDITOR class (D-DELETE, docs/spec-basic-delete.md) ----
+                ; At the tail for the MISSING class's reason and more so: DELETE
+                ; is typed by a human at the prompt, so a linear search paying
+                ; per entry examined costs it nothing anybody can perceive.
+                ; ⚠️ THIS ROW IS 3 B AND THAT FIGURE IS MEASURED, NOT COMPUTED --
+                ; D-KWGAP4's knife K5 added one row and watched page-1 free go
+                ; 6 B -> 3 B. What changed since is the WALL, not the rate: the
+                ; D-RETLN carve took page 1 to 124 B free.
+                ; ⚠️ AND AN ENTRY HERE IS NOT OPTIONAL WIRING. SWAP's note below
+                ; is the standing record of a build where the token and the code
+                ; both existed, this row did not, and every gate row read exactly
+                ; as if the verb were still absent.
+                db      DELETE_TOKEN
+                dw      ex_delete    ; DELETE [<line>][-[<line>]]
     IF SWAP_RESIDENT
                 ; ⚠️ THIS ENTRY DID NOT EXIST when SWAP was gated off, and neither
                 ; sysvars.inc's SWAP_RESIDENT block nor spec §10 noticed: both said

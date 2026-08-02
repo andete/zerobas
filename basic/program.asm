@@ -932,6 +932,22 @@ ex_cont:
 ex_cont_no:
                 ld      a,$C9               ; "can't continue" landmark (distinct byte)
                 ld      (ERRMARK),a
+                ; 🔴 THIS ARM PRINTED ITS MESSAGE AND LEFT `ERR` AT 0, AND NOTHING
+                ; HAD EVER LOOKED. Found by D-DELETE's `dlt-cont`, whose reference
+                ; answer is ` 0  17 ` -- and it is NOT DELETE's defect: `dlt-contbare`
+                ; is a bare `CONT` on a fresh machine with no DELETE anywhere, refs
+                ; 17, zerobas 0. err_msgtab already maps ERR 17 -> err_cont
+                ; (basic/interp.asm), so the code and the string were always the
+                ; pair; only the store was missing.
+                ; ⚠️ ERRFLG, NOT raise_error, AND THAT IS DELIBERATE. Like
+                ; dl_overflow's arm in this same file, the refusal is raised by the
+                ; EDITOR/prompt rather than by a running program, so it reports and
+                ; returns to the REPL; routing it through raise_error's trap branch
+                ; would jump into a finished program from the prompt. PRINT ERR is
+                ; the only observer either way, and it now reads what both
+                ; references read.
+                ld      a,17                ; ERR 17: can't continue
+                ld      (ERRFLG),a
                 ld      hl,err_cont
                 jp      print_msg           ; D-MSGENC: encoded body + emitted CRLF
 err_cont:       db      "can't continue",0  ; (no phrase hit; the 2 B is §4.2's CRLF)
@@ -1012,6 +1028,58 @@ relink:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
                 call    subrom_call
                 jp      c,subrom_absent_error
+                ret
+
+; --- ex_delete: DELETE [<lo>][-[<hi>]] ---------------------------------------
+; docs/spec-basic-delete.md, measured in docs/delete-msx1-characterization.md.
+; HL enters on the DELETE token (the es_hit contract). The WHOLE verb -- the
+; argument parse, the two validations and the delete walk -- lives in
+; sub/lineedit.asm beside the TXTTAB memmove engine it drives; this is the
+; marshalling head, and it is deliberately the third shim in this file rather
+; than a fourth thing that knows about line storage.
+;
+; WHY THE PARSE IS SUB-SIDE (spec §3.1). The grammar is `[$0E lo] [$F2 [$0E hi]]`
+; -- pure token bytes, no expression evaluation anywhere -- so the entire
+; argument marshals as ONE POINTER. Parsing it here instead would cost ~88 B of
+; main page 1 against this head's ~34; the tenant pays it out of sub page 1,
+; which had 3339 B free at D-RETLN's HEAD. Measured both ways (spec §7 K6): the
+; claim is not left as an estimate.
+;
+; ⚠️ NOTHING COMES BACK BUT A STATUS, AND THAT IS R-D8, NOT A SHORTCUT. DELETE
+; ENDS the line and the program on BOTH paths -- a succeeding one via ENDFLAG
+; below, a failing one via raise_error -- so the advanced cursor has no reader
+; and is never marshalled back. `DELETE 20:B=9` leaves B at 0 with ERR 0 on both
+; references (dlt-tail, against dlt-tailctl's 9), which is what says the ':' is
+; ACCEPTED and then abandoned rather than rejected.
+ex_delete:
+                ld      (SL_DELPTR),hl      ; the statement cursor, on the token
+                ld      a,LE_OP_DELRANGE
+                ld      (LE_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ; LE_STATUS carries the ERR CODE ITSELF for this op (basic/
+                ; sysvars.inc): 0 = ok, 2 = R-D6 trailing junk, 5 = R-D2 (the high
+                ; end names no stored line) or R-D4 (lo > hi). One compare, no
+                ; second table.
+                ld      a,(LE_STATUS)
+                or      a
+                jp      nz,raise_error
+                ; R-D7: a SUCCEEDING delete is a program EDIT. The tenant has
+                ; already run relink + vars_reset (its own tail, exactly as
+                ; store_line's op does); CONTVALID is the resident half, and it is
+                ; cleared HERE and only here -- a FAILING delete must leave the
+                ; CONT point alone, which dlt-contbad is the row for (its CONT
+                ; still resumes, reading 5 like its control).
+                xor     a
+                ld      (CONTVALID),a
+                ; R-D8: and then the run stops. Same mechanism as ex_end -- the
+                ; run loop tests ENDFLAG immediately after `exec` returns
+                ; (rp_run, above) and BEFORE it dereferences CURLINE, which
+                ; matters here more than it does for END: the text this statement
+                ; just memmoved is where CURLINE points.
+                inc     a                   ; -> 1
+                ld      (ENDFLAG),a
                 ret
 
 ; --- gosub_push: push a bounds-checked GOSUB return frame (repack golf) -------

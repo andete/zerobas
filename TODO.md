@@ -1430,9 +1430,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       input buffer), so the user can cursor-up to any visible output, edit it
       in place, and re-enter it. Needs cursor-key handling and VDP line-readback.
       Our `repl.asm` is a deliberate simplification; full replacement is Phase 3.
-- [ ] **Editor / program management** — full `LIST`, `DELETE`, `RENUM`, `AUTO`,
+- [ ] **Editor / program management** — full `LIST`, `RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`, full `CLEAR` semantics (`ERASE`
-      shipped 2026-07-15 with the arrays arc, slice 2).
+      shipped 2026-07-15 with the arrays arc, slice 2; `DELETE <range>` shipped
+      2026-08-02 with D-DELETE, `.` excepted — its own item below).
       (`SWAP` itself is still unimplemented — `SWAP A,B` is a syntax error here,
       where the reference swaps. Its MALFORMED forms already match, via the
       trap-class fix below.)
@@ -3890,36 +3891,114 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       already byte-exact and the coverage sweep's "34 genuinely absent" is one
       too many. The `INTERVAL` shape, found by D-LNREF's walk. Still open.
 
-- [ ] 🔴 **`DELETE` / `AUTO` / `RENUM` / `LLIST` ARE STILL NOT EXECUTED — AND
-      NONE OF THE FOUR FITS ON MAIN PAGE 1.** Re-filed 2026-08-01 by D-KWGAP4
-      out of the item above. The crunch is now the reference's byte for byte;
-      all four are a **Syntax error** at run time. Measured, both references
-      agreeing:
+- [x] ✅ **`DELETE <range>` — LANDED 2026-08-02 (D-DELETE), 34/34, six knives,
+      `kwgd-delete`'s pin RETIRED.** Filed 2026-08-01 by D-KWGAP4; spec
+      [`docs/spec-basic-delete.md`](docs/spec-basic-delete.md), measurement
+      [`docs/delete-msx1-characterization.md`](docs/delete-msx1-characterization.md).
+      🔴 **THE TWO ENDS OF THE RANGE ARE NOT SYMMETRIC, AND ONLY A CONTIGUOUS
+      WALK COULD SAY SO.** The HIGH end must name a stored line **exactly**; the
+      LOW end need not name anything at all. `DELETE 15-30` deletes lines 20 and
+      30 without complaint; `DELETE 20-35` deletes **NOTHING** and raises ERR 5 —
+      the same shape with the missing number moved across the `-` (` 9  0 ` vs
+      ` 15  5 `). Four more the filed one-line row could not have carried:
+      * **the existence check runs BEFORE the first deletion** — `DELETE 20-35`
+        leaves lines 20 *and* 30 standing, which an implementation that deleted
+        as it walked could not do;
+      * **a REVERSED range is a SECOND rule, not the same one.** `DELETE 30-20`
+        is ERR 5 even though line 20 exists, so R-D2 passes and a machine
+        deleting the empty range would read ` 15  0 ` (`dlt-rev`);
+      * **a FAILED `DELETE` is a COMPLETE no-op** — variables and the `CONT`
+        point both survive (`dlt-varsbad`/`dlt-contbad`). ⚠️ **No round-1 row
+        could see this**: every failure row `RUN`s afterwards and `RUN` clears
+        the variables itself. It took a round-2 cut;
+      * **`DELETE` ENDS the line and the program.** Inside a `RUN` nothing
+        further executes (`dlt-inprog`); in direct mode `DELETE 20:B=9` leaves B
+        at 0 with **ERR 0** — the `:` is accepted and then abandoned, not
+        rejected (`dlt-tail`, against `dlt-tailctl`'s ` 9  0 `).
+      🔴 **AND `DELETE 10-65529` IS ERR 5** — the natural *"everything from line
+      10 on"* idiom. Every round-1 high end that failed sat inside the program's
+      span, so *"a line numbered exactly `hi` must exist"* and the far weaker
+      *"`hi` must not be past the last line"* agreed on all of them;
+      `dlt-hipast`/`dlt-hitop` are the round-2 rows that separate them.
+      🔴 **A DEFECT IN `CONT`, NOT IN `DELETE`, AND THE ROW THAT SAYS WHOSE.**
+      `dlt-cont` read ` 0  0 ` against ` 0  17 ` the first time zerobas had a
+      handler. The obvious reading — "DELETE fails to invalidate CONT" — is
+      refuted by its own `A` of 0, which proves the edit reset *did* run.
+      `ex_cont_no` printed *can't continue* and **never set `ERRFLG`**;
+      `err_msgtab` had mapped ERR 17 → `err_cont` all along. `dlt-contbare` (a
+      bare `CONT`, no DELETE anywhere) is the attribution row. +5 B.
+      Landed: 3 B `stmt_table` row + a **34 B** marshalling head on main page 1,
+      the WHOLE verb (parse, both validations, the delete walk) as
+      `LE_OP_DELRANGE` in `sub/lineedit.asm` — **194 B of sub page 1**, which had
+      3339 B free. A resident parse would have cost ~88 B of page 1 against 34;
+      knife K6 measured that claim rather than leaving it an estimate. Page 1
+      **124 → 82 B**, low **23 B untouched**.
+      ⚠️ **`.` — the CURRENT-LINE pseudo-line-number — is MEASURED and
+      DECLINED**, not overlooked: `dlt-dotedit` says it is the line the editor
+      **last touched** (not the highest — `dlt-dot` alone could not tell those
+      apart). It is shared with `LIST`/`AUTO`/`RENUM`/`EDIT`, zerobas records
+      nothing of the kind, and what `.` means after a `RUN` / an error / a `LIST`
+      is unmeasured. Its own item is filed below; `dlt-dot`/`dlt-dotedit` are
+      pinned so it cannot be forgotten.
+
+- [ ] 🔴 **`AUTO` / `RENUM` / `LLIST` ARE STILL NOT EXECUTED — and the filed
+      reason "none of them fits on main page 1" is STALE.** Re-filed 2026-08-01
+      by D-KWGAP4, narrowed 2026-08-02 by D-DELETE. The crunch is the
+      reference's byte for byte; all three are a **Syntax error** at run time.
+      Measured, both references agreeing:
       ```
-      10 A=1 : 20 A=2 : DELETE 20 : RUN      refs -> A=1 ERR 0   zb -> A=2 ERR 2
       10 A=1 : 20 A=2:END : RENUM 100 : GOTO 110   refs -> A=2 ERR 0   zb -> A=0 ERR 8
       ```
-      `kwgd-delete` and `kwgd-renum` are **pinned as `KNOWN_DIVERGE`** in the
-      say gate, so the day a handler lands the gate says so.
-      🎯 **THE WALL IS MEASURED, NOT ESTIMATED.** `stmt_table` lives on main page
-      1 (`$40AF`); knife K5 added ONE dispatch row and page-1 free went
-      **6 B → 3 B**. Four rows are 12 B against 6 B — the table rows alone do not
-      fit, before a byte of handler. Low (9 B) is co-mapped with page 1 and so is
-      not relief.
-      Each verb is a slice, not a table edit: **`RENUM`** needs a two-pass
+      `kwgd-renum` is **pinned as `KNOWN_DIVERGE`** in the say gate, so the day a
+      handler lands the gate says so.
+      ⚠️ **THE WALL MOVED AND THE FILED VERDICT DID NOT.** D-KWGAP4 costed four
+      dispatch rows at 3 B each (its knife K5 — still the right rate) against a
+      page 1 with **6 B** free, and concluded the rows alone did not fit.
+      D-RETLN's 160 B dead-instruction carve took page 1 to 124 B; D-DELETE spent
+      42 of those and left **82 B**. Space is no longer the reason. **Re-measure
+      from a clean build before citing any byte figure written before
+      2026-08-02.**
+      What still blocks each one is its own body: **`RENUM`** needs a two-pass
       old→new map over every line number *and* every `$0E` reference including
       `ON..GOTO` lists; **`AUTO`** must drive the line editor (a sub-ROM page-1
-      tenant) from a main-ROM statement; **`DELETE`** must unlink a range and
-      rebuild the link fields; **`LLIST`** is cheapest — a printer sink exists
-      ([`basic/print.asm:401`](basic/print.asm:401), `PRDEST=1` → `LPTOUT`) and
-      `ex_list` exists, so its handler is "set the sink, jump to `ex_list`" —
-      but it would inherit the filed `ex_list`-ignores-its-argument defect below.
+      tenant) from a main-ROM statement; **`LLIST`** is cheapest — a printer sink
+      exists ([`basic/print.asm:401`](basic/print.asm:401), `PRDEST=1` →
+      `LPTOUT`) and `ex_list` exists, so its handler is "set the sink, jump to
+      `ex_list`" — but it would inherit the filed `ex_list`-ignores-its-argument
+      defect below.
+      🎯 **D-DELETE is the worked precedent for all three**: the whole verb goes
+      into an existing sub-ROM page-1 tenant and main pays a ~34 B marshalling
+      head, with `LE_STATUS` carrying the ERR code back
+      ([`docs/spec-basic-delete.md`](docs/spec-basic-delete.md) §3.1).
       ⚠️ **`AUTO` and `LLIST` CANNOT BE PUT TO A REFERENCE IN THIS HARNESS** —
       interactive line-entry and an unplugged-`LSTOUT` hang, the same reasons the
       keyword sweep already files them among its 18 crunch-only holes. `omsx_repl`
       raises `SystemExit` at its 240 s cap, so such a row does not degrade a run,
       it kills it. Whoever implements them needs a plugged printer
       ([[openmsx-printer-pluggable]]) or a different instrument first.
+
+- [ ] 🔴 **`.` — THE CURRENT-LINE PSEUDO-LINE-NUMBER — IS ABSENT, AND IT IS ONE
+      MECHANISM SHARED BY FIVE VERBS.** Filed 2026-08-02 by D-DELETE, which
+      measured it and declined it rather than shipping a rule one verb wide.
+      Both references, `--repeat 2`, agreeing:
+      ```
+      10..40 entered in order, DELETE .        refs -> line 40 gone   (dlt-dot)
+      ...then line 20 RE-ENTERED, DELETE .     refs -> line 20 gone   (dlt-dotedit)
+      ```
+      🔴 **`.` IS THE LINE THE EDITOR LAST TOUCHED, NOT THE HIGHEST — AND ONE ROW
+      COULD NOT HAVE SAID SO.** In `dlt-dot` line 40 is both, so its ` 7  0 ` fits
+      either rule; `dlt-dotedit` is what separates them.
+      ⚠️ **`.` IS NOT CRUNCHED** — it reaches the statement as the literal `$2E`
+      (`lna-deldot`, all three sides), so every verb that takes it must resolve
+      it itself. MSX-BASIC accepts it in `LIST`, `DELETE`, `AUTO`, `RENUM` and
+      `EDIT`, so this is editor state (a "last line stored" cell written by
+      `store_line`), not a `DELETE` feature.
+      What is NOT measured and must be before anything is written: what `.` reads
+      after a `RUN`, after an error, after a `LIST`, and on a cold machine with no
+      line ever entered. `dlt-dot`/`dlt-dotedit` are **pinned `KNOWN_DIVERGE`** at
+      zerobas's ` 15  2 ` — which is R-D6's trailing-junk rule answering a byte it
+      does not know, i.e. a consequence of a rule that IS implemented, so the pin
+      cannot drift for an unrelated reason.
 
 - [x] ✅ **`RETURN <line>` — LANDED 2026-08-02 (D-RETLN), 27/27, four knives,
       `lnrd-return`'s pin RETIRED.** Filed 2026-08-01 by D-LNREF; spec

@@ -174,6 +174,15 @@ EXPECTED = [
     # list's absence of SWAP would have flagged it as UNEXPECTED on the first
     # repack build -- the inverse of the real failure, and the same alarm.
     ('SWAP_TOKEN', 'ex_swap'),
+    # DELETE, 2026-08-02 (D-DELETE, docs/spec-basic-delete.md). The first of
+    # D-KWGAP4's four editor verbs to get a handler; AUTO/RENUM/LLIST still have
+    # tokens and no dispatch, so they must NOT appear here.
+    # ⚠️ AND THIS TEST DID ITS JOB ON THE FIRST CORPUS RUN, flagging $A8 as
+    # UNEXPECTED. That is the alarm SWAP's note above describes, fired in the
+    # other direction: a new statement cannot reach the dispatch without this
+    # list being told, which is exactly why adding the row here is a deliberate
+    # act and not maintenance noise.
+    ('DELETE_TOKEN', 'ex_delete'),
 ]
 
 

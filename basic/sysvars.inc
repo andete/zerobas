@@ -1944,13 +1944,19 @@ LIST_TOKEN      equ     $93     ; LIST
 ; an entry without the arm crunches `DELETE 10` to `<A8> <0F><0A>`, which is the
 ; defect D-LNREF closed, reintroduced for four verbs (spec-basic-kwgap4.md §1).
 ;
-; ⚠️ AND NONE OF THE FOUR IS DISPATCHED. There is no stmt_table row for any of
-; them: exec_stmt's search falls through to es_noentry -> stmt_error -> ERR 2,
-; which is the SAME class all four already raised by four different accidental
-; parses before they had tokens (characterization §3.3, the `kwgz` battery).
-; The STATEMENTS are filed with their costs in spec-basic-kwgap4.md §3.4 --
-; stmt_table lives on main page 1 at 3 B per entry and page 1 has 6 B free, so
-; the four dispatch rows alone do not fit, before one byte of handler.
+; ⚠️ THREE OF THE FOUR ARE STILL NOT DISPATCHED. DELETE_TOKEN got its stmt_table
+; row in D-DELETE (docs/spec-basic-delete.md); LLIST/AUTO/RENUM have none, so
+; exec_stmt's search still falls through to es_noentry -> stmt_error -> ERR 2 for
+; those three -- the SAME class all four raised by four different accidental
+; parses before they had tokens (kwgap4 characterization §3.3, the `kwgz`
+; battery).
+;
+; ⚠️ AND THE FILED REASON THEY DID NOT FIT IS STALE. spec-basic-kwgap4.md §3.4
+; costed four dispatch rows at 3 B each against a page 1 with 6 B free; D-RETLN's
+; 160 B dead-instruction carve took page 1 to 124 B. The 3 B/row figure (its
+; knife K5) still holds; the WALL does not. What still blocks the other three is
+; their own bodies -- RENUM's two-pass old->new map, and AUTO/LLIST being
+; unputtable to a reference in this harness at all.
 ;
 ; None of these four bytes was previously equated in EITHER namespace, so unlike
 ; TRON/STICK ($A2) there is no same-value-different-alphabet hazard here.
@@ -2333,11 +2339,32 @@ DISKOP_SEL_NAME_STAMP           equ 1   ; dirverb: NAME's read+overwrite+write
 ; in flight at once -- one subrom_call reaches exactly one tenant), aliased
 ; under line-editor-local names for readability at the call sites.
 LE_OP           equ     DISKOP_OP       ; main -> tenant: LE_OP_* selector
-LE_STATUS       equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 out of memory
-                                        ; (store_line's op only; relink-only
-                                        ; never fails, does not touch this)
+; LE_STATUS: tenant -> main. D-DELETE (docs/spec-basic-delete.md §4) WIDENED
+; this from a boolean to an ERR CODE, and the two ops read it differently only
+; because 1 was never a BASIC error number:
+;   LE_OP_STORE    0 = ok, 1 = out of memory -> the resident head's own `ld a,7`
+;   LE_OP_DELRANGE 0 = ok, else the ERR CODE ITSELF (2 = R-D6 trailing junk,
+;                  5 = R-D2/R-D4 illegal function call) -> `jp raise_error`
+; The delrange head can therefore raise without a second table or a second
+; compare. LE_OP_RELINK never fails and does not touch the cell.
+LE_STATUS       equ     DISKOP_STATUS
 LE_OP_STORE             equ 0   ; lineedit: process SL_NUM/SL_TOK (store or delete)
 LE_OP_RELINK            equ 1   ; lineedit: relink-only (cload.asm's own call sites)
+LE_OP_DELRANGE          equ 2   ; lineedit: DELETE <lo>-<hi> -- parse SL_TOK, then
+                                ; unlink every line in [SL_DELLO, SL_DELHI]
+; D-DELETE §3.2: DELETE's two range ends and its statement cursor ride the SAME
+; THREE CELLS store_line marshals -- a SECOND VALUE NAMESPACE on them, exactly
+; like LE_OP on DISKOP_OP one screen up.
+;
+; 🔴 THE NON-OVERLAP IS PROVED BY GREP, NOT ASSERTED. Every reader of SL_NUM /
+; SL_SIZE / SL_TOK is on the LE_OP_STORE path: le_store itself, prog_find_del
+; (SL_NUM) and open_gap (SL_SIZE). delete_at reads only SL_SLOT + PRGEND;
+; relink_body reads neither. One subrom_call reaches exactly one LE_OP, so a
+; store and a delrange are never in flight together. (SL_SLOT is NOT aliased --
+; le_delrange's walk hands it to delete_at for its real store_line meaning.)
+SL_DELLO        equ     SL_NUM          ; DELETE: low end of the range (2)
+SL_DELHI        equ     SL_SIZE         ; DELETE: high end of the range (2)
+SL_DELPTR       equ     SL_TOK          ; DELETE: the statement cursor, on the token
 
 ; --- Cassette name-match/skip tenant ABI (SUBROM_IDX_CASMATCH, docs/spec-
 ; eviction-g5-space.md): reuses the SAME DISKOP_STATUS RAM cell, ANOTHER

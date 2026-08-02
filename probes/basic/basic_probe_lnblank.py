@@ -1472,6 +1472,20 @@ LNA = [
     ("lna-renum3",   ["20 RENUM 10,20,30"]),  # informational (no token on zb)
     ("lna-auto2",    ["20 AUTO 10,5"]),       # informational -- the INCREMENT
     ("lna-delrng",   ["20 DELETE 10-20"]),    # informational
+    # --- D-DELETE: the ARGUMENT SHAPES the statement half has to parse ---------
+    # ⚠️ THE STATEMENT MAY NOT BE WRITTEN AGAINST A CRUNCH NOBODY LOCKED. Only
+    # `DELETE 10` (lnrx-delete) and `DELETE 10-20` (lna-delrng) had a reference
+    # answer; the four shapes an editor verb actually takes -- open-low, open-
+    # high, bare, and the '.' current-line form -- had none, and a run-time
+    # handler that guesses their bytes is a handler written against nothing.
+    # `lna-delcomma` is here because it is the shape the mechanism makes LOOK
+    # legal: `AUTO 10,5` proves a comma keeps the mode armed, so DELETE's second
+    # number will be a $0E too whether or not the STATEMENT accepts a comma.
+    ("lna-delopen",  ["20 DELETE -30"]),      # open low end
+    ("lna-delhi",    ["20 DELETE 30-"]),      # open high end (nothing behind '-')
+    ("lna-delnone",  ["20 DELETE"]),          # no argument at all
+    ("lna-deldot",   ["20 DELETE ."]),        # the '.' current-line form
+    ("lna-delcomma", ["20 DELETE 10,30"]),    # a comma, not a '-'
 ]
 
 # --- the `lnr2` battery: the walk's positives, asked in a REAL PROGRAM shape --
@@ -1601,6 +1615,153 @@ KWGZ = [
     ("kwgz-auto",    ["AUTO 10", 'PRINT"[";ERR;"]"']),
     ("kwgz-renum",   ["RENUM 10", 'PRINT"[";ERR;"]"']),
     ("kwgz-llist",   ["LLIST 10", 'PRINT"[";ERR;"]"']),
+]
+
+# --- the `dlt` battery: WHAT `DELETE <range>` ACTUALLY DOES (D-DELETE) --------
+# ⚠️ SAY-MODE ONLY, and it is a CONTIGUOUS WALK of the argument space rather than
+# the six shapes the item filed. `kwgd-delete` establishes that ONE shape --
+# `DELETE 20`, a single existing line -- diverges. It cannot say what the RULE
+# is: whether a missing endpoint is an error or a no-op, whether a reversed range
+# deletes nothing or everything, whether the bare verb is legal. Nine consecutive
+# slices in this project found the filed title was the wrong subject or the filed
+# list wrong in BOTH directions, every one of them by walking a space somebody
+# had sampled.
+#
+# 🔴 THE PROGRAM IS A BITMASK AND THAT IS THE WHOLE POINT. Four lines each add a
+# distinct power of two, so the single number `A` after `RUN` says exactly WHICH
+# lines survived -- 15 = all four, 13 = line 20 gone, 9 = 20 and 30 gone, 0 =
+# nothing left. A survivor COUNT could not tell `DELETE 30-20` deleting the pair
+# from it deleting one of them; the mask can.
+#
+# 🔴 AND EVERY ROW READS TWO NUMBERS, WHICH IS ONE PAYLOAD AND NOT ONE READING.
+# `A` says what was deleted; `ERR` says whether the verb refused. A row carrying
+# only the mask cannot separate "the range was empty" from "the statement
+# raised" -- both leave all four lines standing, and that is the
+# [[row-with-two-candidate-causes]] shape exactly. `dlt-errctl` is what makes the
+# pair legal: it PINS THE INSTRUMENT by asking whether `RUN` preserves ERRFLG at
+# all, because if it does not, every ERR in this battery reads 0 by construction
+# and the second number is decoration.
+#
+# ⚠️ DIRECT MODE, for the reason the kwgd battery gives: an editor verb inside a
+# RUN rewrites the program under the interpreter's own cursor. `dlt-inprog` asks
+# that question ON PURPOSE and is the ONE row here that may not be trusted to
+# terminate -- it is run isolated before it is ever run in a batch.
+DLT = [
+    # --- the two controls -----------------------------------------------------
+    # THE GREEN CONTROL, and it must be able to MOVE ITS OWN SUBJECT: it is the
+    # identical seven-line payload with the DELETE line removed, so every red row
+    # below differs from it in exactly one typed line.
+    ("dlt-ctl",      ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "RUN", 'PRINT"[";A;ERR;"]"']),
+    # INSTRUMENT PIN: does `RUN` preserve ERR? If this reads ERR 0 the second
+    # number in every row below is meaningless and the battery has to be re-cut
+    # to read ERR before the RUN.
+    ("dlt-errctl",   ["10 A=A+1", "ZZTOP", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # --- the walk: a SINGLE line number ---------------------------------------
+    ("dlt-one",      ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 20", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-miss",     ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 25", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-zero",     ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 0", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # --- the walk: a RANGE, every combination of endpoint existence -----------
+    ("dlt-rng",      ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 20-30", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-lomiss",   ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 15-30", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-himiss",   ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 20-35", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-bothmiss", ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 15-35", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-same",     ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 20-20", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-rev",      ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 30-20", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # --- the walk: OPEN ends and the BARE verb --------------------------------
+    ("dlt-openlo",   ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE -30", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-openhi",   ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 20-", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-none",     ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-comma",    ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 10,30", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-dot",      ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE .", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # --- the walk: ranges that meet the program at its EDGES ------------------
+    ("dlt-all",      ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 10-40", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-below",    ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 1-5", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-above",    ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 60-70", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # THE EMPTY PROGRAM. `kwgz-delete` asks this of zerobas alone; there is no
+    # reason it cannot be asked of a reference, and without it the "nothing in
+    # range" rule is measured only where SOMETHING is in the text.
+    ("dlt-empty",    ["DELETE 10", 'PRINT"[";ERR;"]"']),
+    # --- does DELETE reset the variable world, the way every other edit does? --
+    # `vars_reset` is reached by RUN, NEW, CLEAR/MAXFILES and EVERY PROGRAM EDIT
+    # (basic/program.asm, the note at run_prog). If DELETE is an edit it clears A;
+    # if it is not, A survives -- and the control says which reading is which.
+    ("dlt-vars",     ["10 A=1", "20 B=2", "RUN", "DELETE 20",
+                      'PRINT"[";A;ERR;"]"']),
+    ("dlt-varsctl",  ["10 A=1", "20 B=2", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # --- and does it invalidate the CONT resume point? ------------------------
+    ("dlt-cont",     ["10 A=1", "20 STOP", "30 A=A+4", "RUN", "DELETE 30",
+                      "CONT", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-contctl",  ["10 A=1", "20 STOP", "30 A=A+4", "RUN", "CONT",
+                      'PRINT"[";A;ERR;"]"']),
+    # 🔴 THE ATTRIBUTION ROW FOR `dlt-cont`, AND IT IS NOT ABOUT DELETE AT ALL.
+    # `dlt-cont` read ` 0  0 ` against the references' ` 0  17 ` the first time
+    # zerobas had a DELETE handler, and the obvious reading -- "DELETE fails to
+    # invalidate CONT" -- is REFUTED by its own A: 0, so the edit reset really
+    # did happen. A bare CONT with nothing to continue is the same shape with
+    # DELETE removed entirely. A "not mine" falsification says nothing about
+    # whose it is; this row says whose.
+    ("dlt-contbare", ["CONT", 'PRINT"[";ERR;"]"']),
+    # --- the one row that may not terminate -----------------------------------
+    # DELETE from INSIDE a running program: line 20 removes line 40 while the
+    # interpreter's cursor is inside the text being memmoved. Run isolated first.
+    ("dlt-inprog",   ["10 A=A+1", "20 DELETE 40", "30 A=A+4", "40 A=A+8",
+                      "RUN", 'PRINT"[";A;ERR;"]"']),
+    # --- round 2: THE CELLS ROUND 1's ANSWER MAKES REACHABLE -------------------
+    # ⚠️ ROUND 1 REFUTED THE OBVIOUS RULE AND ITS REPLACEMENT IS NOT YET PINNED.
+    # `DELETE 20-35` deletes NOTHING and raises ERR 5 while `DELETE 15-30`
+    # deletes two lines cleanly, so the two ends are not symmetric: the HIGH end
+    # is checked and the LOW end is not. But every round-1 high end that failed
+    # sat strictly INSIDE the program's span (25, 35, 5, 70 against lines 10..40
+    # -- 70 is above, but so is its low end). Nothing yet separates "a line
+    # numbered exactly <hi> must exist" from "<hi> must not be past the last
+    # line", and the difference is the whole `DELETE 10-65529` idiom.
+    ("dlt-hipast",   ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 10-45", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("dlt-hitop",    ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 10-65529", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # The low end where "the first line >= lo" is a STRICT inequality: 25 sits
+    # between two stored lines instead of below all of them (dlt-lomiss's 15).
+    ("dlt-lomid",    ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 25-30", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # 🔴 DOES A *FAILED* DELETE STILL RESET THE VARIABLE WORLD? `dlt-vars` says a
+    # SUCCEEDING one does. The failing path is a separate decision in the code
+    # (whether the ERR-5 exit runs vars_reset), and no round-1 row can see it:
+    # every failure row RUNs afterwards, and RUN clears the variables itself.
+    ("dlt-varsbad",  ["10 A=1", "20 B=2", "RUN", "DELETE 25",
+                      'PRINT"[";A;ERR;"]"']),
+    ("dlt-contbad",  ["10 A=1", "20 STOP", "30 A=A+4", "RUN", "DELETE 35",
+                      "CONT", 'PRINT"[";A;ERR;"]"']),
+    # Does the REST OF THE LINE run? `dlt-inprog` says a DELETE inside a RUN ends
+    # the program; direct mode is a different question and `RETURN <line>`'s own
+    # R-T4 is the precedent for asking it (a ':' there is not trailing junk).
+    # No RUN here: RUN would clear B and the reading with it.
+    ("dlt-tail",     ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "DELETE 20:B=9", 'PRINT"[";B;ERR;"]"']),
+    ("dlt-tailctl",  ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "C=1:B=9", 'PRINT"[";B;ERR;"]"']),
+    # WHAT IS "."? Round 1 read ` 7  0 ` -- line 40 went, the LAST line typed and
+    # also the HIGHEST. One row cannot separate two rules: re-enter line 20 last
+    # so "last line touched" and "highest line" predict different masks (13 vs 7).
+    ("dlt-dotedit",  ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8",
+                      "20 A=A+2", "DELETE .", "RUN", 'PRINT"[";A;ERR;"]"']),
 ]
 
 # label -> the ONLY sides it may be measured on. A row named here is refused on
@@ -1894,11 +2055,11 @@ LNRT = [
 ]
 
 SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD
-            + KWGZ + LNRT}
+            + KWGZ + LNRT + DLT}
 
 CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + LNL + CNM
          + LNR + LNRX + LNR2 + LNV + LNV2 + LNA
-         + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ + LNRT)
+         + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ + LNRT + DLT)
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
 # informational because nobody had a RULE for them: `dec-bin` was the `&B`
@@ -2101,17 +2262,19 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 # DEFEND RATHER THAN A DEFAULT. What remains below is the SAY gate's set: three
 # rows whose divergence is a missing STATEMENT, not a missing crunch rule, each
 # with one named retirement path.
+#
+# 🔴 AND `kwgd-delete` FIRED AND RETIRED IN D-DELETE, THE EIGHTH COHORT TO LEAVE
+# THAT WAY. It was pinned at ` 2  2 ` -- "$A8 has no stmt_table row, the program
+# stands, A reaches 2 and ERR is the 2 the failed DELETE left". The statement
+# landed (docs/spec-basic-delete.md), the row now reads ` 1  0 ` like both
+# references, and the entry is **DELETED** rather than updated. Eight cohorts,
+# none rotted. Its successor battery (`dlt`, 33 rows) adds two pins, and they are
+# for a feature the slice DECLINED rather than for one it half-shipped -- below.
 KNOWN_DIVERGE = {
     # D-KWGAP4 say mode: the STATEMENT half of the four editor verbs. The crunch
-    # is now byte-exact (the rows above retired); these two say the verbs still
-    # do NOTHING, and they are pinned so the day a handler lands the gate says so.
+    # is now byte-exact (the rows above retired); this one says RENUM still does
+    # NOTHING, pinned so the day a handler lands the gate says so.
     #
-    # `DELETE 20` really removes line 20 on both references, so A keeps the 1
-    # line 10 gave it; on zerobas $A8 has no stmt_table row, exec_stmt falls
-    # through to stmt_error, the program stands, A reaches 2 and ERR is the 2 the
-    # failed DELETE left. `kwgd-delctl` is the control holding the ` 2  0 ` this
-    # row must change.
-    "kwgd-delete":  " 2  2 ",
     # `RENUM 100` really renumbers, so `GOTO 110` finds what used to be line 20;
     # on zerobas line 110 never comes into existence -> ERR 8, Undefined line
     # number, A untouched. `kwgd-renctl` is the control proving the direct-mode
@@ -2127,6 +2290,27 @@ KNOWN_DIVERGE = {
     # ` 103  0  4 ` on all three sides, so this is `RETURN`'s own doing and not
     # the error trap's. Architectural; retirement path is the TODO.md item.
     "lnrt-forret":  " 103  0  4 ",
+    # D-DELETE say mode: `.`, the CURRENT-LINE pseudo-line-number, DECLINED with
+    # its reason rather than guessed at (docs/spec-basic-delete.md §6).
+    #
+    # 🔴 THESE TWO ARE A PAIR AND NEITHER IS REDUNDANT. `dlt-dot` alone reads
+    # ` 7  0 ` on both references -- line 40, which is both the last line typed
+    # AND the highest-numbered, so one row could not say which rule it is.
+    # `dlt-dotedit` re-enters line 20 last and moves the answer to ` 13  0 `: `.`
+    # is the line the EDITOR LAST TOUCHED. That makes it editor state MSX-BASIC
+    # shares across LIST/DELETE/AUTO/RENUM/EDIT, which zerobas records nowhere,
+    # and what `.` means after a RUN / an error / a LIST / on a cold machine is
+    # unmeasured. Implementing it inside DELETE alone would ship a rule one verb
+    # wide.
+    #
+    # ⚠️ THE PINNED VALUE IS A CONSEQUENCE OF A RULE THIS SLICE DOES IMPLEMENT,
+    # WHICH IS WHY IT CANNOT DRIFT FOR AN UNRELATED REASON. `.` is NOT crunched
+    # (lna-deldot: it reaches the statement as the literal $2E), so ex_delete
+    # sees a byte that is neither $0E nor $F2 nor a statement terminator and
+    # answers ERR 2 by R-D6 -- the same trailing-junk rule `dlt-comma` gates.
+    # Retirement path: the TODO.md current-line item.
+    "dlt-dot":      " 15  2 ",
+    "dlt-dotedit":  " 15  2 ",
 }
 
 

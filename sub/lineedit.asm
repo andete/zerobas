@@ -25,6 +25,14 @@
 ; relink` sites, which still need a working resident label since the loop
 ; itself no longer lives there.
 ;
+; LE_OP_DELRANGE (2) is the `DELETE <range>` STATEMENT, added whole by
+; D-DELETE (docs/spec-basic-delete.md): argument parse, both validations and
+; the delete walk, all here, because the walk drives delete_at/relink_body
+; below and the argument marshals as a single pointer. It is the one op that
+; reports an ERR CODE rather than a boolean in LE_STATUS -- basic/sysvars.inc
+; records the widened contract. Its own header (below le_oom) carries the
+; measured rules.
+;
 ; WHY vars_reset IS NOT A STRADDLE. relink's own tail (repack) calls
 ; vars_reset (arrays slice-1/4b's scalar-region re-anchor + arrays-slice-4c's
 ; string-heap reset, basic/arrays.asm) to invalidate live scalars/arrays on
@@ -68,6 +76,8 @@ lineedit_tenant:
                 ld      a,(LE_OP)
                 or      a
                 jp      z,le_store              ; LE_OP_STORE = 0
+                dec     a
+                jp      nz,le_delrange          ; LE_OP_DELRANGE = 2 (D-DELETE)
                 ; fall through -> LE_OP_RELINK = 1: relink only (cload.asm's
                 ; own call sites); tail: vars_reset; ret
                 jp      relink_body
@@ -133,6 +143,204 @@ le_oom:
                 ld      a,1
                 ld      (LE_STATUS),a           ; 1 = out of memory
                 ret
+
+; --- le_delrange: DELETE [<lo>][-[<hi>]] (LE_OP_DELRANGE, D-DELETE) --------
+; docs/spec-basic-delete.md §2, measured in
+; docs/delete-msx1-characterization.md. The WHOLE verb is here -- parse,
+; both validations and the walk -- because the walk drives the memmove engine
+; below and the parse marshals as one pointer; basic/program.asm's ex_delete
+; is a ~34 B marshalling head, against the ~88 B of main page 1 a resident
+; parse would have cost (spec §3.1).
+;   IN : SL_DELPTR = the statement cursor, ON the DELETE token (an alias of
+;        SL_TOK -- §3.2 records the proof that store_line's cells are never in
+;        flight with this op).
+;   OUT: LE_STATUS = 0 (deleted; program relinked and vars_reset run) or the
+;        ERR CODE ITSELF -- 2 (R-D6) or 5 (R-D2/R-D4).
+;
+; 🔴 THE TWO ENDS OF THE RANGE ARE NOT SYMMETRIC, AND THAT IS THE MEASURED
+; FINDING. The HIGH end must name a stored line exactly (R-D2); the LOW end
+; need not name anything at all (R-D3). `DELETE 15-30` deletes two lines
+; cleanly and `DELETE 20-35` deletes nothing and raises -- the same shape with
+; the missing number moved across the '-'.
+le_delrange:
+                ld      hl,(SL_DELPTR)
+                inc     hl                      ; past the DELETE token
+                call    ldr_num                 ; DE = lo (0 if absent -- R-D5)
+                ld      (SL_DELLO),de
+                ld      (SL_DELHI),de           ; R-D1: `DELETE n` IS `DELETE n-n`
+                                                ; (dlt-one and dlt-same read the
+                                                ; same ` 13  0 `)
+                call    ldr_skipsp
+                cp      MINUS_TOKEN             ; the '-' is the ORDINARY minus
+                jr      nz,ldr_endarg           ; token and does not disarm
+                inc     hl                      ; line-number mode, so the number
+                call    ldr_num                 ; behind it is another $0E
+                ld      (SL_DELHI),de           ; (characterization §1)
+ldr_endarg:
+                ; R-D6: anything but end-of-statement here is ERR 2, raised
+                ; BEFORE a byte is deleted -- `DELETE 10,30` reads ` 15  2 `, all
+                ; four lines still standing, even though the tokeniser happily
+                ; arms across the comma. A ':' IS accepted, and R-D8 then
+                ; abandons the rest of the line (dlt-tail: ERR 0, B unset).
+                call    ldr_skipsp
+                or      a
+                jr      z,ldr_check
+                cp      COLON
+                ld      a,2                     ; (no flags -- the `cp` still holds)
+                jr      nz,ldr_fail
+ldr_check:
+                ; R-D4: lo > hi -> ERR 5. NOT the same rule as R-D2 below, and
+                ; dlt-rev is the row that separates them: `DELETE 30-20`'s high
+                ; end 20 EXISTS, so R-D2 passes, and a machine that simply
+                ; deleted the empty range would read ` 15  0 `. It reads ` 15  5 `.
+                ld      hl,(SL_DELHI)
+                ld      de,(SL_DELLO)
+                or      a
+                sbc     hl,de
+                jr      c,ldr_fc
+                ; R-D2: a line numbered EXACTLY hi must exist, and the check runs
+                ; BEFORE the walk -- `DELETE 20-35` leaves lines 20 AND 30
+                ; standing (dlt-himiss), which an implementation that deleted as
+                ; it walked could not do. Past the last line is no exemption:
+                ; `DELETE 10-65529`, the natural "everything from 10 on" idiom, is
+                ; ERR 5 as well (dlt-hitop).
+                ld      bc,(SL_DELHI)
+                call    ldr_find
+                jr      c,ldr_walk
+ldr_fc:
+                ld      a,5                     ; ERR 5: illegal function call
+ldr_fail:
+                ld      (LE_STATUS),a
+                ret                             ; R-D7: a FAILED delete is a
+                                                ; COMPLETE no-op -- no relink, no
+                                                ; vars_reset, and the resident head
+                                                ; leaves CONTVALID alone. Measured
+                                                ; without a RUN in the way:
+                                                ; dlt-varsbad keeps A=1 and
+                                                ; dlt-contbad's CONT still resumes.
+ldr_walk:
+                ; Delete every stored line whose number is in [lo, hi].
+                ;
+                ; ⚠️ THE WALK STEPS WITH PRGEND + skip_to_eol AND NOT WITH THE LINK
+                ; CHAIN. The first delete_at makes every link from that slot on
+                ; stale -- relink does not run until ldr_done -- so a link walk
+                ; would follow a dangling pointer on the second iteration.
+                ; ldr_find above may use the chain precisely because it runs
+                ; before any of this.
+                ld      hl,TXTBASE
+ldr_lp:
+                ld      a,(PRGEND)              ; HL == PRGEND -> the end marker
+                cp      l
+                jr      nz,ldr_line
+                ld      a,(PRGEND+1)
+                cp      h
+                jr      z,ldr_done
+ldr_line:
+                inc     hl
+                inc     hl
+                ld      e,(hl)                  ; DE = this line's number
+                inc     hl
+                ld      d,(hl)
+                dec     hl
+                dec     hl
+                dec     hl                      ; HL back to the link field
+                ld      bc,(SL_DELHI)
+                ld      a,c                     ; hi - number: CF set -> past the
+                sub     e                       ; top of the range. Lines are
+                ld      a,b                     ; stored ASCENDING, so nothing
+                sbc     a,d                     ; further on can be in it either.
+                jr      c,ldr_done
+                ld      bc,(SL_DELLO)
+                ld      a,e                     ; number - lo: CF set -> not yet at
+                sub     c                       ; the range. R-D3: the low end need
+                ld      a,d                     ; not name a line; the walk starts
+                sbc     a,b                     ; at the first stored line >= lo
+                jr      c,ldr_skip              ; (dlt-lomid: `DELETE 25-30` takes
+                                                ; only line 30, not 20).
+                ld      (SL_SLOT),hl            ; in range: unlink it. delete_at
+                call    delete_at               ; shifts the tail DOWN over this
+                ld      hl,(SL_SLOT)            ; slot, so HL now addresses the
+                jr      ldr_lp                  ; NEXT line and must NOT advance.
+ldr_skip:
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl                      ; past link(2) + lineno(2)
+                call    skip_to_eol             ; -> next line (token-aware, so a
+                jr      ldr_lp                  ; float literal's $00 byte is not
+                                                ; mistaken for the terminator)
+ldr_done:
+                xor     a
+                ld      (LE_STATUS),a           ; 0 = ok
+                jp      relink_body             ; R-D7: relink, tail -> vars_reset.
+                                                ; DELETE is a program EDIT and
+                                                ; joins the tail every other edit
+                                                ; already reaches (dlt-vars ` 0  0 `
+                                                ; against dlt-varsctl's ` 1  0 `).
+
+; --- ldr_skipsp: advance HL past blanks; A = (HL) --------------------------
+; A sub-local clone of main page-1 `skip_spaces` ($4240), which is UNREACHABLE
+; from here: while a page-1 tenant runs, main page 1 is switched out (this
+; file's own header). Same reason skip_to_eol + le_tok_skip are duplicated
+; below -- and like them it is a pure leaf over RAM, so no straddle.
+ldr_skipsp:
+                ld      a,(hl)
+                cp      ' '
+                ret     nz
+                inc     hl
+                jr      ldr_skipsp
+
+; --- ldr_num: read an OPTIONAL `$0E,lo,hi` line-number reference -----------
+; out: DE = its value, or 0 when there is none -- R-D5, "an absent number is
+; 0", which is the whole of what makes `DELETE -30` (= 0-30, deletes from the
+; start), `DELETE 20-` (= 20-0, ERR 5) and bare `DELETE` (= 0-0, ERR 5) fall
+; out of R-D2/R-D4 with no rules of their own. HL advances only if there was
+; one. Blanks first: `DELETE 20` stores the typed blank (characterization §1).
+ldr_num:
+                call    ldr_skipsp
+                ld      de,0                    ; R-D5 (does not disturb the flags
+                cp      LINENO_TOKEN            ;  ldr_skipsp left in A)
+                ret     nz
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                inc     hl
+                ret
+
+; --- ldr_find: does a line numbered BC exist? CF set = yes -----------------
+; Verbatim from basic/program.asm's `find_line_bc`, duplicated for the
+; ldr_skipsp reason (it is main page-1 resident). Walks the LINK CHAIN, which
+; is legal here and only here: R-D2 runs before anything is deleted, so every
+; link is still valid. Clobbers A, DE, HL; BC is the input and survives.
+ldr_find:
+                ld      hl,TXTBASE
+ldrf_lp:
+                ld      e,(hl)                  ; DE = link
+                inc     hl
+                ld      d,(hl)
+                dec     hl
+                ld      a,d
+                or      e
+                ret     z                       ; $0000 -> not found (`or e` left
+                                                ; CF clear)
+                push    hl                      ; compare line number at HL+2,+3
+                inc     hl
+                inc     hl
+                ld      a,(hl)
+                cp      c
+                jr      nz,ldrf_next
+                inc     hl
+                ld      a,(hl)
+                cp      b
+                jr      nz,ldrf_next
+                pop     hl
+                scf
+                ret
+ldrf_next:
+                pop     hl                      ; HL = current slot; DE = its link
+                ex      de,hl
+                jr      ldrf_lp
 
 ; --- prog_find_del: locate the slot for SL_NUM, deleting an exact match ----
 ; Walks the (currently valid) link chain. Sets SL_SLOT to the first line

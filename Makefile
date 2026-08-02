@@ -1231,6 +1231,15 @@ lnblank-echo: repack-machine
 # row reading only where control went. It carries NO pins: D-RETLN retired the
 # one it inherited (`lnrd-return`) instead of adding any.
 #
+# D-DELETE widened it to `lnrd-,kwgd-,lnrt-,dlt-`: the 33-row `dlt` walk is what
+# `DELETE <range>` is gated by, and its two ROUND-2 cohorts are rows round 1
+# could not have carried -- `dlt-hipast`/`dlt-hitop` separate "a line numbered
+# exactly hi must EXIST" from the far weaker "hi must not be past the last line"
+# (every round-1 failure agreed with both), and `dlt-varsbad`/`dlt-contbad` see
+# the FAILURE path's reset, which every round-1 failure row hid behind its own
+# RUN. It retires `kwgd-delete`'s pin and adds two: `dlt-dot`/`dlt-dotedit`, for
+# the current-line `.` this slice measured and DECLINED (spec-basic-delete.md §6).
+#
 # ⚠️ `kwgz-` IS DELIBERATELY NOT HERE. Those rows are SIDE_LOCKed to zerobas
 # (AUTO is interactive, LLIST drives an unplugged LPTOUT -- both hang a
 # reference), so they carry no oracle lock and gate nothing. Read them with
@@ -1238,7 +1247,7 @@ lnblank-echo: repack-machine
 lnblank-say-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lnblank.py --gate --say \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
-	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-,lnrt-) --repeat $(if $(REPEAT),$(REPEAT),1)
+	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-,lnrt-,dlt-) --repeat $(if $(REPEAT),$(REPEAT),1)
 
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #
