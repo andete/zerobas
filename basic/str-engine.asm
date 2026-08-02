@@ -85,7 +85,7 @@ err_too_complex:                            ; D-MSGENC: no phrase hit here (the 
 ; reach (basic/missing.asm:70).
     IF CLEARPOOL
 err_out_of_str:
-                db      "o",MSGESC_UTOF,"string space",0    ; D-MSGENC: 22 B -> 15 B
+                db      "O",MSGESC_UTOF,"string space",0    ; D-MSGENC: 22 B -> 15 B
     ENDIF
 
 ; ===========================================================================

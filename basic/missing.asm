@@ -75,7 +75,7 @@ mot_go:
 ; The string is HERE, not next to its table, because 17 bytes inserted there
 ; push page 1's dense forward `jr`s out of reach.
 err_missing_operand:                        ; D-MSGENC: no phrase hit, 18 B -> 16 B.
-                db      "missing operand",0 ; Shrinking here only IMPROVES the `jr`
+                db      "Missing operand",0 ; Shrinking here only IMPROVES the `jr`
 
 ; err_linebuf_overflow (the ERR 25 message, D-LINEMAX R-2) is NOT here, despite
 ; this file being the precedent for exactly this constraint. It did not fit: page
@@ -615,8 +615,8 @@ rsp2_go:
 ; The other two share no phrase with any existing message, so they are stored plain
 ; -- adding an escape for a phrase with ONE user costs more than it saves.
 err_input_pastend:
-                db      "input past end",0
+                db      "Input past end",0
 err_seq_only:
-                db      "sequential i/o only",0
+                db      "Sequential I/O only",0
 err_bad_filemode:
-                db      "bad ",MSGESC_FILE,"mode",0
+                db      "Bad ",MSGESC_FILE,"mode",0

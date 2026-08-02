@@ -300,27 +300,28 @@ __MEAS_LOW_END:
 ; implementation time, page 1 had 10 B free and the low region 32 B, against a
 ; 42-byte need — so the choice was not between homes, it was a split across both.
 ;
-; ⚠️ THE TWO STRINGS OVERLAP, AND THAT IS LOAD-BEARING, NOT A FLOURISH. ERR 25's
-; text ENDS with ERR 6's text, so `err_overflow` is simply a pointer 12 bytes into
-; `err_linebuf_overflow`: 23 bytes total instead of 34. That 11 bytes is not spare
-; change here -- the split above needed 42 bytes against 10 free in page 1 and 32
-; in the low region, and the overlap is what closed the gap and left both walls
-; with margin instead of landing at exactly zero.
+; 🔴 THE OVERLAP IS GONE -- D-MSGEXACT (docs/spec-basic-msgexact.md §3.2) BROKE IT,
+; AND THE REFERENCE IS WHAT FORCED THAT. It used to be load-bearing: ERR 25's text
+; ENDED with ERR 6's, so `err_overflow` was a pointer 12 bytes into
+; `err_linebuf_overflow` -- 23 B (later 21 B) instead of 34. The previous comment
+; here left the correct instruction for this edit: "Split them back into two
+; independent `db`s before changing either, and re-measure both walls." Done, and
+; both walls re-measured from clean.
 ;
-; ⚠️ CONSEQUENCE FOR ANY LATER EDIT: these are ONE string with two entry points.
-; Re-wording ERR 25's tail, or ERR 6 at all, silently corrupts the other message
-; -- and err_overflow has TWO readers (err_msgtab entry 6 and program.asm's
-; dl_overflow float arm), neither of which is near this line. Split them back into
-; two independent `db`s before changing either, and re-measure both walls.
-; ⚠️ D-MSGENC (docs/spec-basic-msgenc-carve.md §4.4) DELIBERATELY LEFT THE OVERLAP
-; ALONE. Phrase-encoding these as two independent strings costs 21 + 9 = 30 B
-; against the 23 B they already share -- a 7 B LOSS sitting inside a column that
-; still reads as a saving. All the slice takes here is §4.2's baked CRLF, which
-; the overlap does not depend on: 23 B -> 21 B, and ERR 25 still falls through.
+; WHY IT CANNOT SURVIVE EXACT WORDING: measured on both references, ERR 6 is
+; `Overflow` (capital) and ERR 25 is `Line buffer overflow` (lowercase tail). One
+; blob cannot spell a letter two ways, so the sharing is not a placement choice
+; any more -- it is arithmetically impossible. Cost is exactly the 9 B D-MSGENC
+; §4.4 predicted for the split (21 + 9 vs 21), and D-MSGEXACT's carve funds it.
+;
+; ⚠️ STILL TWO READERS, STILL NOT NEAR THIS LINE: `err_overflow` is read by
+; err_msgtab entry 6 AND program.asm's dl_overflow float arm. They are now
+; genuinely independent strings, so re-wording either is safe -- but re-measure
+; the walls, because neither is spare change.
 err_linebuf_overflow:
-                db      "Line buffer "      ; ERR 25 (D-LINEMAX R-2) -- falls through
-err_overflow:                               ; ERR 6 -- the shared tail, read on its own
-                db      "overflow",0
+                db      "Line buffer overflow",0    ; ERR 25 (D-LINEMAX R-2)
+err_overflow:                               ; ERR 6 -- independent since D-MSGEXACT
+                db      "Overflow",0
 
 ; --- S-FCH-2: the SPARSE disk-range error codes (docs/spec-basic-filechan- ---
 ; alloc.md §5c, redesigned 2026-07-29). err_msgtab is DENSE and stops at 25;
@@ -386,10 +387,20 @@ err_notopen_raise:                          ; EOF()/LOF() on a closed channel (E
 ; on the FIRST clean build (page 1 19 B free, low 1 B free) it spends the roomy
 ; wall to relieve the scarce one. Costed the other way round from an estimate it
 ; would have read as a 2-byte loss and been declined.
+; ⚠️ D-MSGEXACT: ONLY ONE OF THESE STILL USES THE ESCAPE, AND THE REASON IS THE
+; ESCAPE'S OWN CASE. MSGESC_FILE is "file " -- lowercase, because the phrase
+; escapes deliberately exclude a message's LEADING letter so each message can
+; keep its own case (basic/sysvars.inc). ERR 52's reference text is `Bad file
+; number`, where "file " is mid-string, so it still shares the phrase. ERR 59's
+; is `File not OPEN` -- the phrase would be the FIRST thing printed, and it
+; cannot supply the capital. So 59 goes back to a plain literal: 10 B -> 14 B.
+; This is one of the three places in the whole slice where exact wording costs
+; anything (docs/spec-basic-msgexact.md §3.2); every other change is a case flip
+; inside an existing literal and is byte-neutral.
 err_bad_filenum:
-                db      "bad ",MSGESC_FILE,"number",0   ; ERR 52 -- 16 B -> 12 B
+                db      "Bad ",MSGESC_FILE,"number",0   ; ERR 52 -- 16 B -> 12 B
 err_file_notopen:
-                db      MSGESC_FILE,"not open",0        ; ERR 59 -- 14 B -> 10 B
+                db      "File not OPEN",0               ; ERR 59 -- lost the escape, +4 B
 
 ; --- overflow guard: the image must not overrun the $8000 ceiling ----------
 ; $8000 is the top of slot-0 page 1. If a future feature pushes code past it, the

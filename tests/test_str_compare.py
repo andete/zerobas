@@ -12,7 +12,7 @@ Covers three layers:
      operands, and the comparator-level type-mismatch signal (TMISMATCH/ERRMARK)
      for `A$<5` / `5<A$` / a bare string in numeric context.
   3. The statement-level abort (interp.asm/print.asm) -- IF/LET/PRINT each land on
-     type_mismatch_error, print zerobas's own "type mismatch" message, and the
+     type_mismatch_error, print zerobas's own "Type mismatch" message, and the
      REST OF THE LINE does not run (mirrors stmt_error's existing convention).
 
 Like test_str_engine/test_str_verbs this builds basic/main-reloc.asm (ROM_BASE=
@@ -307,7 +307,7 @@ def run():
         (20, "IF A$<5 THEN T=99"),
         (30, "U=7"),
     ])
-    check("IF A$<5 THEN ...  prints 'type mismatch'", out == b"type mismatch in 20\r\n",
+    check("IF A$<5 THEN ...  prints 'Type mismatch'", out == b"Type mismatch in 20\r\n",
           f"got {out!r}")
     check("IF A$<5 THEN ...  the THEN clause did not run (T stays 0)",
           var(mm, "T") == 0, f"T={var(mm,'T')}")
@@ -322,7 +322,7 @@ def run():
         (20, "R=A$<5:U=88"),
         (30, "V=7"),
     ])
-    check("R=A$<5:U=88  prints 'type mismatch'", out == b"type mismatch in 20\r\n",
+    check("R=A$<5:U=88  prints 'Type mismatch'", out == b"Type mismatch in 20\r\n",
           f"got {out!r}")
     check("R=A$<5:U=88  R was not assigned", var(mm, "R") == 0, f"R={var(mm,'R')}")
     check("R=A$<5:U=88  the rest of the SAME line did not run (U stays 0)",
@@ -335,8 +335,8 @@ def run():
         (10, 'A$="HI"'),
         (20, "PRINT (A$<5)"),
     ])
-    check("PRINT (A$<5)  prints 'type mismatch' (no numeric item)",
-          out == b"type mismatch in 20\r\n", f"got {out!r}")
+    check("PRINT (A$<5)  prints 'Type mismatch' (no numeric item)",
+          out == b"Type mismatch in 20\r\n", f"got {out!r}")
 
     # Control: a well-typed IF/LET/PRINT must NOT print the mismatch message and
     # must behave normally (gating does not misfire on valid comparisons).
@@ -425,8 +425,8 @@ def run():
         (10, 'A$="HI"'),
         (20, "PRINT A$<5"),
     ])
-    check("PRINT A$<5  (bare, unparenthesized) prints 'type mismatch', "
-          "NOT A$'s value", out == b"type mismatch in 20\r\n", f"got {out!r}")
+    check("PRINT A$<5  (bare, unparenthesized) prints 'Type mismatch', "
+          "NOT A$'s value", out == b"Type mismatch in 20\r\n", f"got {out!r}")
 
     # D-2: items AFTER the aborting comparison on the same physical line do
     # not run (the whole line aborts) -- same contract as the parenthesized
@@ -436,7 +436,7 @@ def run():
         (20, 'PRINT A$<5:PRINT "AFTER"'),
     ])
     check('PRINT A$<5:PRINT "AFTER"  the trailing PRINT does not run',
-          out == b"type mismatch in 20\r\n", f"got {out!r}")
+          out == b"Type mismatch in 20\r\n", f"got {out!r}")
 
     # ------------------------------------------------------------------
     print("# --- S2 regression watch: plain PRINT items unchanged when NO "

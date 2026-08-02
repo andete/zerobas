@@ -34,7 +34,7 @@ FAMILY C -- the S2a dispatcher (docs/spec-basic-error-handling-s2a-packet.md):
   (allowed-source L110), so the NUMERIC facts (ERR's code, ERL's line/65535 sentinel)
   are diffed against the reference like family A; the MESSAGE TEXT for `ERROR 5` is
   checked on zerobas only (house-style wording, same policy as family B). Cases:
-    * `ERROR 5` direct -> "illegal function call" text, no " in <n>" suffix.
+    * `ERROR 5` direct -> "Illegal function call" text, no " in <n>" suffix.
     * `ERROR 5` in a run at line 10 -> " in 10" suffix present.
     * `ERROR 5` (aborts) then a fresh direct `PRINT ERR` -> 5 (ERRCODE survives the
       abort back to the prompt; NOT cleared until the next NEW/CLEAR/RUN).
@@ -192,7 +192,7 @@ def main() -> int:
         good = got_direct_text
         ok = ok and good
         print(f"{'PASS' if good else 'FAIL':5} [zb] {C_ERROR5_DIRECT.label:14} "
-              f"message contains 'illegal function call' = {got_direct_text}")
+              f"message contains 'Illegal function call' = {got_direct_text}")
 
         got_direct_inline = in_line_number(zb_msg[0])
         good = got_direct_inline is None

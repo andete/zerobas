@@ -32,7 +32,7 @@ KNOWN ROM BUGS surfaced by this acceptance probe (S3; NOT fixed here -- this
 probe is acceptance-only, no basic/*.asm touched; see the S3 report):
 
   * `PRINT STRING$(...)` as a bare PRINT item (STRING$.num / STRING$.str below)
-    spuriously raises "type mismatch". Root cause: basic/print.asm's exp_loop
+    spuriously raises "Type mismatch". Root cause: basic/print.asm's exp_loop
     item dispatcher special-cases a `$FF`-prefixed function (Group A) and a
     `$`-suffixed string variable, but has NO case for STRING_TOKEN ($E3, Group
     B) -- so it falls through to exp_num -> eval -> ev_rel (basic/expr.asm),
@@ -45,7 +45,7 @@ probe is acceptance-only, no basic/*.asm touched; see the S3 report):
     (not routed around) so the gate keeps surfacing this defect until fixed.
 
   * `SPACE$(n)` nested as another function's ARGUMENT (e.g. `LEN(SPACE$(n))`)
-    also spuriously raises "type mismatch", via a DIFFERENT mechanism: a live
+    also spuriously raises "Type mismatch", via a DIFFERENT mechanism: a live
     readback showed TMISMATCH ($E55F) holding a stray $20 (space) byte, not
     $01 -- and the "or a / jp nz" check that gates the error treats ANY
     nonzero byte as a mismatch. The bytes from $E55D (STRCAT_R) onward were

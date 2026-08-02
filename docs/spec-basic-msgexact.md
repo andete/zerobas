@@ -209,10 +209,24 @@ Oracle-locked on both references, `--repeat 2`, echo guard on all three sides.
 
 ### 5.1 Predicted RED — exact values, written before the build
 
-25 rows, currently divergent, must go green:
-
+Predicted, 25 rows:
 `1 2 3 4 6 7 8 11 13 14 17 21 22 23 24 26 52 55 58 59 61` + `brk` `brk-run`
 `redo` `extra`
+
+🔴 **WRONG — the pre-edit gate returned FORTY red rows, and that is the reading.**
+Two omissions, both in the same direction:
+
+* **The 14 holes.** They print `err_unprintable`, which is *itself* one of the
+  strings being case-flipped. "Out of scope" in §4 means *no new text*; it does
+  **not** mean exempt from the case fix. I let a scope decision leak into a
+  prediction about a different question.
+* **Code 20.** The `err_msgtab[20]` → `err_verify` repoint **is** part of this
+  slice (§3.3, where it is called a free fix). The row was simply omitted.
+
+**The GREEN prediction was exactly right** — 5/45, precisely `{5, 9, 10, 16, 25}`,
+which is the half that guards the design. The corrected set is in the probe as
+`PREDICT_RED`; the original is kept above rather than overwritten, because a
+prediction edited after seeing the answer is not a prediction.
 
 ### 5.2 Predicted GREEN — controls that must NOT move
 

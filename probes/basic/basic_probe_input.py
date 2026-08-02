@@ -28,7 +28,7 @@ Two halves, modelled on basic_probe_str_cmp.py:
 2. ZEROBAS DIFFERENTIAL. Runs the IDENTICAL case on the repack machine
    (C-BIOS_MSX1_EU_REPACK_DISK -- console INPUT is repack-only) and asserts zerobas's
    result equals the reference's. The ?redo / ?extra *wording* differs (zerobas's own
-   lowercase "?redo from start" / "?extra ignored"; spec D-2), so those cases assert
+   lowercase "?Redo from start" / "?Extra ignored"; spec D-2), so those cases assert
    the same FINAL VALUE (both machines re-prompt / continue to it), not the message --
    the same own-wording divergence handled by the compare / mid-stmt probes.
 

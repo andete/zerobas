@@ -291,7 +291,7 @@ def _is_type_mismatch(tail):
     zerobas prints its own lowercase wording by design (D-2) and the reference
     appends a run-mode ` in 10` suffix, so neither the case nor the suffix is
     compared -- exactly the rule basic_probe_sysvarsweep.py's own `_has_error`
-    uses for "undefined line". This is a shape test that a line of dumped RAM
+    uses for "Undefined line number". This is a shape test that a line of dumped RAM
     cannot satisfy, which is the whole point (see `stored_abort` in compare)."""
     return bool(tail) and "type mismatch" in tail.lower()
 

@@ -332,9 +332,19 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
 # a silent absence (no-silent-caps).
 SKIP_EXEC = {k for k, _, ex, _, _ in SWEEP if ex is None}
 
-# Error phrases, lowercased. zerobas prints its own LOWERCASE wording by design
-# (a documented divergence), so classification lowercases both sides — the CLASS
-# is the comparable thing, not the capitalisation.
+# 🔴 EVERY ENTRY MUST STAY LOWERCASE. `classify` below does `low = tail.lower()`
+# and then `phrase in low`, so a capitalised entry can NEVER match -- it does not
+# fail loudly, it silently reclassifies that row from `error:<phrase>` to
+# `value`, which reads as "the keyword ran and printed something".
+# ⚠️ D-MSGEXACT nearly broke exactly this. A tree-wide sweep that capitalised
+# message literals hit seven of these, because they LOOK like the message
+# expectations it was updating. They are not: this is a CLASSIFIER vocabulary,
+# not an assertion, and it is deliberately case-insensitive.
+# The original reason for lowercasing -- zerobas's own lowercase wording being a
+# documented divergence -- is GONE (D-MSGEXACT made every message the
+# reference's verbatim text). The lowercasing stays anyway: the CLASS is the
+# comparable thing here, and a classifier that is insensitive to case cannot be
+# broken by a future wording change.
 ERROR_WORDS = (
     "syntax error", "type mismatch", "overflow", "illegal function call",
     "out of memory", "undefined line", "subscript out of range",

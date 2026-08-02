@@ -289,7 +289,7 @@ def main() -> int:
         good = ref_err and ref_noval
         ok = ok and good
         print(f"{'PASS' if good else 'FAIL':5} abort-mismatch  ref row={ref_row!r} "
-              f"'type mismatch'={ref_err} no-value={ref_noval}")
+              f"'Type mismatch'={ref_err} no-value={ref_noval}")
 
         if not args.ref_only:
             print(f"\n--- zerobas: unparenthesized type-mismatch abort "
@@ -300,7 +300,7 @@ def main() -> int:
             good = zb_err and zb_noval
             ok = ok and good
             print(f"{'PASS' if good else 'FAIL':5} abort-mismatch  zb row={zb_row!r} "
-                  f"'type mismatch'={zb_err} no-value={zb_noval}")
+                  f"'Type mismatch'={zb_err} no-value={zb_noval}")
 
     print("\nALL PASS -- reference matches §2/§1, zerobas matches reference "
           "(the type-mismatch message text is a documented case-wording "

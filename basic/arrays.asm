@@ -72,7 +72,7 @@ err_mem_arr:                                ; FPERR=6 (fre_msgtab entry 6) is se
                                             ; printed directly, never via FPERR) is
                                             ; untouched.
 err_syntax:                                 ; interp.asm's own stmt_error + fre_msgtab
-                db      "syntax",MSGESC_ERROR,0     ; D-MSGENC: 15 B -> 8 B
+                db      "Syntax",MSGESC_ERROR,0     ; D-MSGENC: 15 B -> 8 B
                                             ; entry 4 (D-F2-3) both reference this by
                                             ; absolute address; relocated here by the
                                             ; slice-3 space
@@ -253,7 +253,7 @@ e21_last:
 ; phrase would net 2 B across both messages and is not worth a shared-decoder
 ; change. err_msgtab entry 21 (basic/interp.asm) points here, which also makes
 ; `ERROR 21` print it (spec §2, rows a7/a8 -- it printed "unprintable error").
-err_no_resume:  db      "no resume",0
+err_no_resume:  db      "No RESUME",0
 
 ; --- vars_reset: re-anchor ARYTAB = PRGEND+2 (empty scalar region), then ---
 ; fall through into ary_reset to write the "no arrays" sentinel at the (now

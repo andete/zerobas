@@ -33,7 +33,7 @@ structure, never as the sole signal for a numeric fact):
   * ERROR_N_REGRESSION — ERROR 5 still prints the right message (S2a regression,
     matches error_acceptance.py's own C_ERROR5_DIRECT case).
   * MSGTAB_BOUND — `ERROR 23..26` message text: err_msgtab's last entry (25, "Line
-    buffer overflow") is LIVE and 26 falls to "unprintable error". raise_error's
+    buffer overflow") is LIVE and 26 falls to "Unprintable error". raise_error's
     `cp` bound and the table's length are one fact in two places; they drifted once
     (2026-07-29) and nothing noticed, because the sole raiser of 25 bypasses the
     table. Gates BOTH directions — 25 in, 26 out.
@@ -224,7 +224,7 @@ NESTED_ABORT = Case("nested_forced_abort", [
     "10 ON ERROR GOTO 100", "20 B=SQR(-1)",
     '100 PRINT"INHANDLER":C=1/0',
     "RUN",
-])  # want "INHANDLER" printed, then a forced abort with "division by zero"
+])  # want "INHANDLER" printed, then a forced abort with "Division by zero"
     # (the INNER error's message, not a re-trap into line 100) and " in 100"
 
 ON_ERROR_UNDEF = Case("on_error_undef", ["10 ON ERROR GOTO 999", "RUN"])
@@ -291,7 +291,7 @@ ONEFLG_RESUME_ZB = Case("oneflg_falloff", [
 ])  # The handler runs off the END OF THE PROGRAM, then a direct RESUME reads the
     # flag head-on. ⚠️ UPGRADED BY D-ERR21 (2026-07-31) FROM A ZB-ONLY ROW TO A
     # FULL TWO-MACHINE TEXT DIFFERENTIAL. It was zb-only for exactly one reason --
-    # the reference raised ERR 21 "No RESUME in 100" before its "RESUME without
+    # the reference raised ERR 21 "no resume in 100" before its "RESUME without
     # error" and zerobas raised nothing, so the text before the RESUME differed for
     # a SECOND reason (docs/spec-basic-oneflg-reset-scope.md §5/§8.3). zerobas now
     # raises it too, so that reason has expired and BOTH lines are compared.
@@ -661,7 +661,7 @@ def main() -> int:
             good = has_msg and in100
             ok = ok and good
             print(f"{'PASS' if good else 'FAIL':5} [zb]  nested_forced_abort "
-                  f"message contains 'division by zero'={has_msg}, in-line={in_line_number(raw)!r} "
+                  f"message contains 'Division by zero'={has_msg}, in-line={in_line_number(raw)!r} "
                   f"(want '100')")
 
     # ---------------- ON ERROR GOTO <undefined> ---------------------------------
@@ -670,10 +670,10 @@ def main() -> int:
         for machine, tag in ([(args.machine, "ref")] +
                              ([(args.zb_machine, "zb")] if not args.ref_only else [])):
             raw = omsx_repl.run_case(machine, "direct", ON_ERROR_UNDEF.lines)
-            undef = "undefined line" in (raw or "").lower()
+            undef = "undefined line number" in (raw or "").lower()
             ok = ok and undef
             print(f"{'PASS' if undef else 'FAIL':5} [{tag}] on_error_undef "
-                  f"'undefined line' present={undef} (want True)")
+                  f"'Undefined line number' present={undef} (want True)")
 
     # ---------------- RESUME without error (ERR 22), zerobas-only text ---------
     if not args.only or "resume_noerr" in (args.only or ""):
@@ -682,7 +682,7 @@ def main() -> int:
         has_msg = "resume without error" in (raw or "").lower()
         ok = ok and has_msg
         print(f"{'PASS' if has_msg else 'FAIL':5} [zb] resume_noerr "
-              f"message contains 'resume without error'={has_msg}")
+              f"message contains 'RESUME without error'={has_msg}")
 
     # ---------------- ERROR n regression (S2a) ----------------------------------
     if not args.only or "error_n_regression" in (args.only or ""):
@@ -808,11 +808,11 @@ def main() -> int:
             said = "resume without error" in (raw or "").lower()
             ok = ok and said
             print(f"{'PASS' if said else 'FAIL':5} [{tag}] oneflg_direct_resume "
-                  f"'resume without error'={said} (want True)")
+                  f"'RESUME without error'={said} (want True)")
         # oneflg_falloff -- NOW A FULL TWO-MACHINE TEXT DIFFERENTIAL (D-ERR21).
         # It was zb-only only because zerobas did not raise the ERR 21 that the
         # reference prints first; it does now, so BOTH lines are compared, on both
-        # machines, case-folded (D-2 house-style lowercase vs "No RESUME").
+        # machines, case-folded (D-2 house-style lowercase vs "no resume").
         for machine, tag in ([(args.machine, "ref")] +
                              ([(args.zb_machine, "zb")] if not args.ref_only else [])):
             low = (omsx_repl.run_case(machine, "direct",
@@ -822,7 +822,7 @@ def main() -> int:
             good = raised and said
             ok = ok and good
             print(f"{'PASS' if good else 'FAIL':5} [{tag}] oneflg_falloff "
-                  f"'no resume in 100'={raised} 'resume without error'={said} "
+                  f"'No RESUME in 100'={raised} 'RESUME without error'={said} "
                   f"(want True/True -- falling off the end while still owing a "
                   f"RESUME aborts, and the abort ends the handler context)")
 

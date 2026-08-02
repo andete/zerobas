@@ -727,27 +727,35 @@ ABC_REGRESSION = [
     # BUG C: a '+' commits to string concat but the trailing operand is numeric.
     # Old code silently re-drove numerically (" 0"); now a deferred Type mismatch.
     ("bugC.concat.typemis",
-     ['A$="HELLO"', 'PRINT A$+5'], "type mismatch"),
+     ['A$="HELLO"', 'PRINT A$+5'], "Type mismatch"),
     # BUG C: LEFT$/MID$/RIGHT$ with a missing 2nd arg. The old IX-clobber-on-NC
     # re-drove into ev_f with garbage IX and SPUN the print loop emitting " 0";
     # now ev_rel restores IX + ev_ff_strnum defers FPERR=4 -> clean syntax error.
-    ("bugC.leftmiss.syntax",  ['PRINT LEFT$("AB")'],  "syntax error"),
-    ("bugC.midmiss.syntax",   ['PRINT MID$("AB")'],   "syntax error"),
+    ("bugC.leftmiss.syntax",  ['PRINT LEFT$("AB")'],  "Syntax error"),
+    ("bugC.midmiss.syntax",   ['PRINT MID$("AB")'],   "Syntax error"),
     # regression guard: the VALID forms still work (no over-eager error).
     ("bugC.left.ok",          ['PRINT LEFT$("ABCDE",3)'], "ABC"),
     ("bugC.strcmp.ok",        ['A$="XY":PRINT A$="XY"'],  "-1"),
     # BUG C straggler (Fable pass 4): CVI without '(' -- ev_ff_cvi's missing-'('
     # exit was a bare ev_f_err (no FPERR) -> silent " 0"; now deferred syntax
     # error. ref (VG-8020) = "Syntax error"; zb house-lowercase.
-    ("bugC.cvi.noparen",      ['PRINT CVI'],             "syntax error"),
+    ("bugC.cvi.noparen",      ['PRINT CVI'],             "Syntax error"),
     ("bugC.cvi.ok",           ['B$="XY":PRINT CVI(B$)'], "22872"),
     # KNOWN RESIDUAL 2 follow-up (2026-07-17): two PRE-EXISTING function-domain
     # value errors used a bare ev_f_err (ERRMARK only, no FPERR) -> silent " 0".
-    # Now deferred FPERR=3 -> "illegal function call" (house-lowercase, like
-    # SQR(x<0)); ref (VG-8020) = capitalised "Illegal function call".
-    ("ifc.instr.zero",        ['PRINT INSTR(0,"AB","A")'],   "illegal function call"),
-    ("ifc.instr.neg",         ['PRINT INSTR(-1,"AB","A")'],  "illegal function call"),
-    ("ifc.asc.empty",         ['PRINT ASC("")'],             "illegal function call"),
+    # 🔴 THESE TWO SAT RED AT 149/151 FOR MONTHS AND THE EXPECTATION WAS THE BUG.
+    # They were filed as "zerobas prints the wrong case"; they are nothing of the
+    # kind. D-MISS-2 folded INSTR's position check into eval_pos_arg
+    # (basic/interp.asm), whose reject path is gb_illegal -> raise_error(5) ->
+    # err_msgtab[5], i.e. the CAPITALISED string -- the lowercase ev_f_ifc route
+    # these rows assert was DELETED by that slice (basic/str-engine.asm documents
+    # the deletion). The rows kept measuring a path that no longer existed, and a
+    # red row assumed stale is a red row that measures nothing.
+    # D-MSGEXACT then made `Illegal function call` the ONLY spelling tree-wide, so
+    # asc.empty (still a genuine FPERR=3 site) reads identically to the INSTR pair.
+    ("ifc.instr.zero",        ['PRINT INSTR(0,"AB","A")'],   "Illegal function call"),
+    ("ifc.instr.neg",         ['PRINT INSTR(-1,"AB","A")'],  "Illegal function call"),
+    ("ifc.asc.empty",         ['PRINT ASC("")'],             "Illegal function call"),
     # regression guards: valid INSTR/ASC unchanged (no over-eager IFC).
     ("ifc.instr.ok",          ['PRINT INSTR(1,"AB","A")'],   "1"),
     ("ifc.instr.ok2",         ['PRINT INSTR(2,"ABAB","AB")'], "3"),
@@ -757,13 +765,13 @@ ABC_REGRESSION = [
     # non-string exit -> ev_f_tmm (FPERR=10). First-error-wins SPLITS numeric-arg
     # (type mismatch) from a nested-malformed string fn (syntax error) -- the
     # latter enabled by routing str_fn_*'s structural exits through str_arg_empty.
-    ("tmm.len.num",           ['PRINT LEN(5)'],              "type mismatch"),
-    ("tmm.asc.num",           ['PRINT ASC(5)'],              "type mismatch"),
-    ("tmm.val.num",           ['PRINT VAL(5)'],              "type mismatch"),
+    ("tmm.len.num",           ['PRINT LEN(5)'],              "Type mismatch"),
+    ("tmm.asc.num",           ['PRINT ASC(5)'],              "Type mismatch"),
+    ("tmm.val.num",           ['PRINT VAL(5)'],              "Type mismatch"),
     # regression guard: a nested MALFORMED string fn stays "syntax error" (NOT
     # type mismatch) -- the case the str_arg_empty retarget protects.
-    ("tmm.len.nested.syn",    ['PRINT LEN(LEFT$("AB"))'],    "syntax error"),
-    ("tmm.rt.nested.syn",     ['PRINT LEN(RIGHT$("AB"))'],   "syntax error"),
+    ("tmm.len.nested.syn",    ['PRINT LEN(LEFT$("AB"))'],    "Syntax error"),
+    ("tmm.rt.nested.syn",     ['PRINT LEN(RIGHT$("AB"))'],   "Syntax error"),
     # regression guard: valid nested/plain string args still compute.
     ("tmm.len.chr.ok",        ['PRINT LEN(CHR$(65))'],       "1"),
     ("tmm.len.str.ok",        ['PRINT LEN("HELLO")'],        "5"),
@@ -802,7 +810,7 @@ ZBVAL_EXPECT = {
 
 # Tier-A house-style text (zerobas prints lowercase where the reference prints
 # capitalised; not differential-gateable, asserted against this literal).
-ZB_SYNTAX_ERROR = "syntax error"
+ZB_SYNTAX_ERROR = "Syntax error"
 
 # §7 D-2: zb raises this where the reference succeeds (the inline-element memory
 # cost of the signed-off slice-3 element format). Reference wording, matched

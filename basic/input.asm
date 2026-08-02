@@ -357,5 +357,5 @@ inf_bad:
 
 ; D-MSGENC (§4.2): no phrase hit in either, but both shed the baked CRLF, which
 ; print_msg now emits. Their two print sites below move to print_msg with them.
-msg_redo:       db      "?redo from start",0    ; 19 B -> 17 B
-msg_extra:      db      "?extra ignored",0      ; 17 B -> 15 B
+msg_redo:       db      "?Redo from start",0    ; 19 B -> 17 B
+msg_extra:      db      "?Extra ignored",0      ; 17 B -> 15 B

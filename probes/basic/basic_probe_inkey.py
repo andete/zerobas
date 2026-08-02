@@ -20,7 +20,7 @@ asserts INKEY$ hands it to the program. Two halves, modelled on basic_probe_str_
 Two case shapes:
   * EMPTY path -- a direct-mode `PRINT "[";INKEY$;"]"` with no key pending prints an
     empty string `[]` on both. Deterministic; no injection. (This is exactly the case
-    the S2 live smoke test found failing: PRINT INKEY$ hit "type mismatch" until the
+    the S2 live smoke test found failing: PRINT INKEY$ hit "Type mismatch" until the
     exp_loop $EC hook landed -- the same print.asm dispatch-gap class the string-
     functions slice hit with PRINT STRING$. It is kept as a literal PRINT test so the
     gate keeps guarding that hook.)

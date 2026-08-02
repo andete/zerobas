@@ -345,7 +345,7 @@ def _has_error(txt: str) -> bool:
     """An error was reported, in ANY of the three machines' wordings. zerobas
     prints lowercase by design (a documented divergence), so this matches on the
     stem only and never on capitalisation."""
-    return "undefined line" in txt.lower()
+    return "undefined line number" in txt.lower()
 
 
 EVIDENCE = {

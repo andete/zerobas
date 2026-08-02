@@ -678,7 +678,7 @@ do_break:
                 ; (the reference prints a bare "Break" for a typed STOP -- measured),
                 ; so this tail stays a single unconditional jump.
                 jp      print_in_lineno
-brk_msg:        db      "break",0           ; repack: " in " moved into print_in_lineno
+brk_msg:        db      "Break",0           ; repack: " in " moved into print_in_lineno
 
 ; --- cont_record: record a CONT resume point (D-CONTR) -----------------------
 ; docs/spec-basic-cont-record.md §3.0. THE RUN LOOP RECORDS WHERE IT STOPPED AT
@@ -950,7 +950,7 @@ ex_cont_no:
                 ld      (ERRFLG),a
                 ld      hl,err_cont
                 jp      print_msg           ; D-MSGENC: encoded body + emitted CRLF
-err_cont:       db      "can't continue",0  ; (no phrase hit; the 2 B is §4.2's CRLF)
+err_cont:       db      "Can't CONTINUE",0  ; (no phrase hit; the 2 B is §4.2's CRLF)
 
 ; --- find_line_bc: locate a stored line by number ----------------------------
 ; in: BC = line number. out: CF set + HL = the line's link-field address if
@@ -1015,12 +1015,16 @@ store_line:
                 ld      (ERRMARK),a
                 ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
                 jp      raise_error
-; err_mem: the message STRING must stay resident even though sl_oom's own
-; CODE moved sub-side -- interp.asm's err_msgtab (repack-only, ERR 7) takes
-; its ADDRESS directly (`dw err_mem`), which must resolve to a main-ROM
-; address, never a sub-ROM one. err_stack (further down this file) and
-; cload.asm's err_prog_mem both `equ err_mem` unchanged.
-err_mem:        db      "o",MSGESC_UTOF,"memory",0      ; D-MSGENC: 16 B -> 9 B
+; 🎯 err_mem IS NOW AN ALIAS, NOT A STRING. It was the lowercase twin of arrays'
+; capitalised err_mem_arr ("o" vs "O" + MSGESC_UTOF + "memory"); D-MSGEXACT made
+; both the reference's `Out of memory`, so they became byte-identical and this
+; page-1 copy is deleted (-9 B of page 1). err_mem_arr lives in arrays.asm's LOW
+; region, which still satisfies the constraint that mattered here: the message
+; STRING must stay MAIN-resident even though sl_oom's own CODE moved sub-side,
+; because interp.asm's err_msgtab takes its ADDRESS directly (`dw err_mem`) and
+; that must resolve to a main-ROM address, never a sub-ROM one. err_stack (below)
+; and cload.asm's err_prog_mem both `equ err_mem` and are unaffected.
+err_mem         equ     err_mem_arr
 
 relink:
                 ld      a,1                 ; LE_OP_RELINK
@@ -1434,8 +1438,8 @@ err_stack       equ     err_mem             ; share sl_oom's "out of memory" (D-
                                             ; identical). Saves 15 B in the page-1
                                             ; budget for the run-mode " in <line>"
                                             ; suffix (docs/spec-basic-error-handling.md S1 D-2).
-err_noret:      db      "return",MSGESC_WITHOUT," gosub",0  ; D-MSGENC: 23 B -> 14 B
-err_nofor:      db      "next",MSGESC_WITHOUT," for",0      ; D-MSGENC: 19 B -> 10 B
+err_noret:      db      "RETURN",MSGESC_WITHOUT," GOSUB",0  ; D-MSGENC: 23 B -> 14 B
+err_nofor:      db      "NEXT",MSGESC_WITHOUT," FOR",0      ; D-MSGENC: 19 B -> 10 B
 
 ; --- ex_read: READ <var> [, <var> ...] ---------------------------------------
 ; Fill each variable from the next DATA item. DATA items are stored as verbatim
@@ -1468,7 +1472,7 @@ exr_nodata:
                 ld      (ERRMARK),a
                 ld      a,4                 ; ERR 4: out of data (error-handling S2a)
                 jp      raise_error
-err_data:       db      "o",MSGESC_UTOF,"data",0        ; D-MSGENC: 14 B -> 7 B
+err_data:       db      "O",MSGESC_UTOF,"DATA",0        ; D-MSGENC: 14 B -> 7 B
 
 ; --- ex_restore: RESTORE [<line>] --------------------------------------------
 ; Reset the DATA cursor to the program start, or to a given line. The optional

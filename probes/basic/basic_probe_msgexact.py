@@ -171,6 +171,99 @@ EXTRA = [
 # If these read back EQUAL, the readout is not reading the message.
 SELFCHECK = (2, 11)
 
+# =============================================================================
+# THE ORACLE LOCK (D-MSGEXACT §5)
+# =============================================================================
+# Measured 2026-08-02, docs/msgexact-msx1-characterization.md. Embedded rather
+# than re-measured every run: booting both references costs ~4 minutes and these
+# are ROM constants. `--relock` re-measures and DIFFS against this table, so the
+# lock is falsifiable rather than merely asserted -- a captured constant nobody
+# can re-derive is indistinguishable from a guess.
+#
+# 1..59 are values BOTH references gave. 60..64 are CF-3300 only: the VG-8020
+# has no disk ROM and answers `Unprintable error` there, so the CF-3300 is the
+# oracle for that span and the table says so per-code.
+REF_TEXT = {
+    1: "NEXT without FOR",        2: "Syntax error",
+    3: "RETURN without GOSUB",    4: "Out of DATA",
+    5: "Illegal function call",   6: "Overflow",
+    7: "Out of memory",           8: "Undefined line number",
+    9: "Subscript out of range",  10: "Redimensioned array",
+    11: "Division by zero",       12: "Illegal direct",
+    13: "Type mismatch",          14: "Out of string space",
+    15: "String too long",        16: "String formula too complex",
+    17: "Can't CONTINUE",         18: "Undefined user function",
+    19: "Device I/O error",       20: "Verify error",
+    21: "No RESUME",              22: "RESUME without error",
+    23: "Unprintable error",      24: "Missing operand",
+    25: "Line buffer overflow",   26: "Unprintable error",
+    50: "FIELD overflow",         51: "Internal error",
+    52: "Bad file number",        53: "File not found",
+    54: "File already open",      55: "Input past end",
+    56: "Bad file name",          57: "Direct statement in file",
+    58: "Sequential I/O only",    59: "File not OPEN",
+    60: "Bad FAT",                61: "Bad file mode",
+    62: "Bad drive name",         63: "Bad sector number",
+    64: "File still open",
+}
+CF_ONLY_CODES = frozenset(range(60, 65))
+
+EXTRA_TEXT = {
+    "brk": "Break", "brk-run": "Break in 10",
+    "redo": "?Redo from start", "extra": "?Extra ignored",
+}
+VERIFY_TEXT = "Verify error"
+
+# --- THE 14 HOLES: codes zerobas never RAISES --------------------------------
+# Reachable only via `ERROR n`, so zerobas answers with its out-of-table string.
+# NAMED, not silently skipped: a hole that starts agreeing with the reference is
+# itself a finding (someone implemented the code, or the table grew an entry),
+# and a silent skip would swallow that. D-MSGSUB (spec §4.2) is the slice that
+# closes them, sub-ROM-side.
+HOLES = frozenset({12, 15, 18, 19, 50, 51, 53, 54, 56, 57, 60, 62, 63, 64})
+
+# What a hole is REQUIRED to print instead -- the exact-cased out-of-table text.
+HOLE_TEXT = "Unprintable error"
+
+# --- predicted sets, LOCKED BEFORE THE BUILD (spec §5.1 / §5.2) ---------------
+# Written down so the gate cannot be retro-fitted to whatever the build produced.
+#
+# 🔴 THE FIRST PREDICTION WAS WRONG, AND THE BASELINE RUN IS WHAT SAID SO.
+# Spec §5.1 predicted 25 red rows; the pre-edit gate returned FORTY. Both misses
+# were in the same direction -- rows I had reasoned about as "not part of the
+# wording change" that are:
+#
+#   the 14 HOLES  print `err_unprintable`, which is ITSELF one of the strings
+#                 being case-flipped. A hole is not exempt from the change; it
+#                 shares code 23's string. I had filed them mentally as "out of
+#                 scope" (§4) and let that leak into the PREDICTION, which is a
+#                 different question -- out-of-scope for NEW TEXT, in-scope for
+#                 the case fix.
+#   code 20       the err_msgtab[20] -> err_verify repoint IS part of this slice
+#                 (§3.3, called a free fix) and I simply omitted the row.
+#
+# The GREEN prediction was exactly right (5/45, precisely PREDICT_GREEN), which
+# is the half that guards the design. Recording the miss rather than quietly
+# widening the set: a prediction corrected after seeing the answer is not a
+# prediction, and the correction is the reading.
+PREDICT_RED = (frozenset({1, 2, 3, 4, 6, 7, 8, 11, 13, 14, 17, 20, 21, 22, 23,
+                          24, 26, 52, 55, 58, 59, 61})
+               | HOLES | {"brk", "brk-run", "redo", "extra"})
+# The five already-exact messages. 5 and 25 are LOAD-BEARING: 5 rides the string
+# the merge keeps (err_illegal_fn_arr), 25 rides the string whose fall-through
+# the slice breaks (err_linebuf_overflow). If either reddens, the design is wrong
+# -- they are controls that can move their own subject, not decoration.
+PREDICT_GREEN = frozenset({5, 9, 10, 16, 25})
+
+
+def in_scope(code: int) -> bool:
+    """A code zerobas EMITS its own message for (so the gate asserts the text)."""
+    return code in REF_TEXT and code not in HOLES
+
+
+def expected(code: int) -> str:
+    return HOLE_TEXT if code in HOLES else REF_TEXT[code]
+
 
 def cases_for(codes: list[int]) -> list[tuple[str, list[str]]]:
     return [("direct", [f"ERROR {n}"]) for n in codes]
@@ -365,6 +458,102 @@ def selfcheck(readings: dict[int, str | None], side: str) -> list[str]:
     return problems
 
 
+def head(v: str | None) -> str | None:
+    """First screen row of a reading. `redo` trails INPUT's re-prompt and the
+    function-key row, which differ between machines; the message is the head."""
+    return None if v is None else v.split("|")[0].strip()
+
+
+def run_gate(*, omsx: str | None = None, with_verify: bool = False) -> int:
+    """Assert zerobas == the measured reference text, per row. Returns 0/1."""
+    codes = MAIN_CODES + DISK_CODES
+    print(f"# gate: driving zb ({SIDES['zb']['machine']}) over {len(codes)} codes"
+          f" + {len(EXTRA)} extras ...", file=sys.stderr, flush=True)
+    got = measure("zb", codes, omsx=omsx)
+    got_x = measure_extra("zb", omsx=omsx)
+
+    fails: list[str] = []
+    hole_surprises: list[str] = []
+    npass = 0
+    for n in codes:
+        want, have = expected(n), head(got.get(n))
+        if have == want:
+            npass += 1
+            continue
+        if n in HOLES:
+            # A hole reading the REAL reference text is not a failure of this
+            # slice -- it means the code got implemented. Report it loudly and
+            # separately rather than as a red row or, worse, a silent skip.
+            if have == REF_TEXT[n]:
+                hole_surprises.append(
+                    f"  code {n}: hole now prints the REFERENCE text "
+                    f"{have!r} -- implemented? update HOLES.")
+                continue
+        fails.append(f"  code {n:3d}: want {want!r}, got {show(have)}")
+    for label, _, _, _ in EXTRA:
+        want, have = EXTRA_TEXT[label], head(got_x.get(label))
+        if have == want:
+            npass += 1
+        else:
+            fails.append(f"  {label:8s}: want {want!r}, got {show(have)}")
+
+    total = len(codes) + len(EXTRA)
+    if with_verify:
+        total += 1
+        scr = measure_verify(omsx=omsx)
+        if scr and VERIFY_TEXT in scr:
+            npass += 1
+        else:
+            fails.append(f"  verify  : want {VERIFY_TEXT!r} on screen, "
+                         f"got {show(scr)}")
+
+    print()
+    print(f"msgexact gate: {npass}/{total}")
+    print(f"  in-scope rows {sum(1 for n in codes if in_scope(n)) + len(EXTRA)}"
+          f", named holes {len(HOLES)}"
+          f"{' , verify row' if with_verify else ''}")
+    if hole_surprises:
+        print("\nHOLE SURPRISES (not failures -- but do not ignore):")
+        for h in hole_surprises:
+            print(h)
+    if fails:
+        print("\nFAIL:")
+        for f in fails:
+            print(f)
+        return 1
+    print("\nALL PASS -- every message zerobas emits matches the reference "
+          "verbatim; all 14 holes still print the out-of-table string.")
+    return 0
+
+
+def run_relock(*, omsx: str | None = None) -> int:
+    """Re-measure both references and DIFF against the embedded REF_TEXT.
+
+    The lock has to be falsifiable. Without this, REF_TEXT is a constant nobody
+    can re-derive -- indistinguishable from a guess that happened to be written
+    down confidently.
+    """
+    codes = MAIN_CODES + DISK_CODES
+    live = {s: measure(s, codes, omsx=omsx) for s in REF_SIDES}
+    bad = []
+    for n in codes:
+        vg, cf = head(live["vg8020"].get(n)), head(live["cf3300"].get(n))
+        want = REF_TEXT.get(n)
+        oracle = cf if n in CF_ONLY_CODES else vg
+        if n not in CF_ONLY_CODES and vg != cf:
+            bad.append(f"  code {n}: references DISAGREE vg={show(vg)} cf={show(cf)}")
+        elif oracle != want:
+            bad.append(f"  code {n}: locked {want!r}, machine says {show(oracle)}")
+    print()
+    if bad:
+        print("RELOCK MISMATCH:")
+        for b in bad:
+            print(b)
+        return 1
+    print(f"relock OK -- all {len(codes)} locked values reproduce on the machines")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__.split("\n")[0],
@@ -377,7 +566,16 @@ def main() -> int:
     ap.add_argument("--omsx", default=None)
     ap.add_argument("--boot-per-case", action="store_true",
                     help="isolation escape hatch: one boot per code")
+    ap.add_argument("--gate", action="store_true",
+                    help="assert zb == the locked reference text (D-MSGEXACT)")
+    ap.add_argument("--relock", action="store_true",
+                    help="re-measure both references and diff against REF_TEXT")
     args = ap.parse_args()
+
+    if args.gate:
+        return run_gate(omsx=args.omsx, with_verify="verify" in args.walk.split(","))
+    if args.relock:
+        return run_relock(omsx=args.omsx)
 
     sides = [s for s in args.sides.split(",") if s]
     walks = [w for w in args.walk.split(",") if w]

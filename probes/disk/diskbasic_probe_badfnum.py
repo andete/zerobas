@@ -82,7 +82,7 @@ from diskbasic_probe_lof import ERR_CLASSES, run_case
 
 # The scratch battery's four `None` readings were `Type mismatch` and `Overflow`.
 # Registered here so no row of this grid can ever classify as None again.
-ERR_CLASSES.setdefault("TMIS", ("type mismatch",))
+ERR_CLASSES.setdefault("TMIS", ("Type mismatch",))
 ERR_CLASSES.setdefault("OVF", ("overflow",))
 
 # The twelve channel-taking verbs, as a one-line statement with `{C}` where the

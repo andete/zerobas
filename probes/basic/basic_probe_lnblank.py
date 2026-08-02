@@ -2509,17 +2509,20 @@ KNOWN_DIVERGE = {
     # crunched (lna-listdot), so it reaches the statement as the literal $2E,
     # which R-LS6 answers with ERR 2. Knife K4 reddens both of these rows, which
     # is how we know the pin is load-bearing rather than inert.
-    "lst-dot":      "syntax error",
-    "lse-dotedit":  "syntax error",
-    # 🔴 NOT THIS SLICE'S DEFECT, AND NAMING THE OWNER IS THE POINT. The rule is
-    # implemented correctly -- lse-comma reads ` 2 ` on ALL THREE SIDES, so the
-    # error CLASS agrees. What differs is the message TEXT's capitalisation:
-    # zerobas prints `syntax error` where both references print `Syntax error`.
-    # That is a deliberate, documented, tree-wide house-style deviation predating
-    # this slice by a long way (basic/arrays.asm:608 states it in those words),
-    # and ten probes assert the lowercase form. It is pinned here rather than
-    # "fixed" inside a LIST slice, and rather than left as an unexplained red.
-    "lst-comma":    "syntax error",
+    "lst-dot":      "Syntax error",
+    "lse-dotedit":  "Syntax error",
+    # ✅ `lst-comma` RETIRED 2026-08-02 BY D-MSGEXACT. It was pinned here by
+    # D-LSTRNG for a divergence it correctly refused to own: the rule was right
+    # (` 2 ` on all three sides, so the error CLASS agreed) and only the message
+    # TEXT's capitalisation differed -- zerobas's `syntax error` against both
+    # references' `Syntax error`. Naming the owner instead of fixing it inside a
+    # LIST slice is what let the real owner be found: the house-style lowercase
+    # policy, now withdrawn tree-wide (docs/spec-basic-msgexact.md). The row is
+    # simply GREEN now and needs no entry.
+    # 🎯 It is also the row that started D-MSGEXACT. D-LSTRNG's `screen_tail`
+    # readout was the first in this probe to read an error MESSAGE rather than an
+    # error CODE -- every error class here agrees numerically -- and one pinned
+    # row was the whole visible surface of a corpus-wide blindness to wording.
 }
 
 

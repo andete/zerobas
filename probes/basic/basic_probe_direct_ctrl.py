@@ -8,7 +8,7 @@ zerobas's FOR/NEXT and GOSUB/RETURN have always been gated through STORED
 programs (basic_probe_loops.py types numbered lines and `RUN`s them; every
 trap/graphics acceptance case has the same shape). Nothing exercised the SAME
 statements typed at the prompt. On 2026-07-26 a direct-mode `FOR I=1 TO 7:NEXT`
-was found to raise "out of memory" on the repack build while the VG-8020 runs it
+was found to raise "Out of memory" on the repack build while the VG-8020 runs it
 -- a whole execution MODE with zero coverage, in verbs that had 100% gate marks.
 
 MECHANISM (measured, not inferred): `GSP` ($E041) and `FSP` ($E043), the GOSUB
@@ -212,7 +212,7 @@ def _norm(raw: str | None, with_report: bool = False) -> str:
 
     A case either prints a marker span (the value) or it does not (it errored).
     When no span printed, fall back to the LAST MEANINGFUL SCREEN ROW so the two
-    sides' ERROR TEXTS are compared -- an "out of memory" on one side and a "next
+    sides' ERROR TEXTS are compared -- an "Out of memory" on one side and a "next
     without for" on the other must NOT both reduce to "no value". Case-folded
     because the two ROMs capitalise their messages differently (`NEXT without
     FOR` vs `next without for`), a cosmetic divergence this probe is not about.
@@ -221,7 +221,7 @@ def _norm(raw: str | None, with_report: bool = False) -> str:
     the last 40 chars, and since the two ROMs' prompts then differed in SHAPE
     ("Ok" on its own row vs a `zb>` PREFIX glued to the echo) the window started
     at a different point in the echo on each side. That reported `err_after_ret`
-    as a divergence when both machines had in fact printed exactly "syntax error"
+    as a divergence when both machines had in fact printed exactly "Syntax error"
     with no line suffix. (Since 2026-07-27 zerobas's prompt is `ZB` and always
     opens a fresh line, so the two shapes now match -- but the row-based read is
     kept, because it is right for a reason that does not depend on that.)"""

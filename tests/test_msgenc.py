@@ -39,36 +39,36 @@ LOW = 0x2812                    # basic/main-reloc.asm ROM_BASE: image offset or
 # D-2 house strings are lowercase, and MSGESC_UTOF/MSGESC_ILLFN are shared
 # ACROSS that split (each message spells its own first letter).
 EXPECT = {
-    "err_type_mismatch":    "type mismatch",
-    "err_fp_divzero":       "division by zero",
-    "err_illegal_fn":       "illegal function call",
-    "err_resume_noerr":     "resume without error",
-    "err_unprintable":      "unprintable error",
-    "err_line":             "undefined line",
+    "err_type_mismatch":    "Type mismatch",
+    "err_fp_divzero":       "Division by zero",
+    "err_illegal_fn":       "Illegal function call",
+    "err_resume_noerr":     "RESUME without error",
+    "err_unprintable":      "Unprintable error",
+    "err_line":             "Undefined line number",
     "err_io":               "load error",
     "err_verify":           "Verify error",
-    "err_cont":             "can't continue",
-    "err_mem":              "out of memory",
-    "err_noret":            "return without gosub",
-    "err_nofor":            "next without for",
-    "err_data":             "out of data",
-    "err_missing_operand":  "missing operand",
+    "err_cont":             "Can't CONTINUE",
+    "err_mem":              "Out of memory",
+    "err_noret":            "RETURN without GOSUB",
+    "err_nofor":            "NEXT without FOR",
+    "err_data":             "Out of DATA",
+    "err_missing_operand":  "Missing operand",
     "err_too_complex":      "String formula too complex",
-    "err_out_of_str":       "out of string space",
-    "msg_redo":             "?redo from start",
-    "msg_extra":            "?extra ignored",
+    "err_out_of_str":       "Out of string space",
+    "msg_redo":             "?Redo from start",
+    "msg_extra":            "?Extra ignored",
     "err_subscript":        "Subscript out of range",
     "err_redim":            "Redimensioned array",
     "err_illegal_fn_arr":   "Illegal function call",
     "err_mem_arr":          "Out of memory",
-    "err_syntax":           "syntax error",
+    "err_syntax":           "Syntax error",
     "err_linebuf_overflow": "Line buffer overflow",
-    "err_overflow":         "overflow",
+    "err_overflow":         "Overflow",
     # S-FCH-2's two disk-range codes (52 / 59). They are the reason MSGESC_FILE
     # exists, and they are the only two messages that share it -- so if the fifth
     # phrase is wrong, ONLY these two rows fail, which is exactly the signal.
-    "err_bad_filenum":      "bad file number",
-    "err_file_notopen":     "file not open",
+    "err_bad_filenum":      "Bad file number",
+    "err_file_notopen":     "File not OPEN",
 }
 
 # The aliases must still resolve to the SAME address as their target -- the D-2
@@ -166,13 +166,25 @@ def main():
         else:
             print(f"PASS  alias {alias:20} == {target}")
 
-    # ERR 25's text ENDS with ERR 6's, and err_overflow is a pointer INTO
-    # err_linebuf_overflow. The slice deliberately kept that overlap (§4.4);
-    # assert it, because re-encoding them apart costs 7 B and reads as a saving.
-    if syms["err_overflow"] - syms["err_linebuf_overflow"] != len("Line buffer "):
-        fails.append("the err_linebuf_overflow -> err_overflow overlap is broken")
+    # 🔴 INVERTED BY D-MSGEXACT: THIS USED TO ASSERT THE OVERLAP, NOW IT FORBIDS IT.
+    # ERR 25's text used to END with ERR 6's, so err_overflow was a pointer 12 B
+    # INTO err_linebuf_overflow -- 21 B for both. Exact wording makes that
+    # arithmetically impossible: measured on both references, ERR 6 is `Overflow`
+    # (capital) and ERR 25 is `Line buffer overflow` (lowercase tail), and one blob
+    # cannot spell a letter two ways.
+    # Kept as a LIVE control rather than deleted, because the pull to re-share is
+    # real -- it is worth exactly 9 B, and knife K5 measured that by restoring the
+    # overlap and watching ERR 25 print `Line buffer Overflow`. A future carve hunt
+    # that "spots" the 9 B would silently corrupt ERR 25; this row is what stops it.
+    gap = syms["err_overflow"] - syms["err_linebuf_overflow"]
+    if gap != len("Line buffer overflow") + 1:
+        fails.append(
+            f"err_overflow/err_linebuf_overflow are no longer INDEPENDENT strings "
+            f"(gap {gap}, want {len('Line buffer overflow') + 1}). A gap of "
+            f"{len('Line buffer ')} means the overlap was re-shared, which makes "
+            f"ERR 25 print `Line buffer Overflow` -- see D-MSGEXACT knife K5.")
     else:
-        print("PASS  overlap  err_overflow is err_linebuf_overflow + 12")
+        print("PASS  split    err_overflow is independent of err_linebuf_overflow")
 
     if fails:
         print("\n" + "\n".join(fails))

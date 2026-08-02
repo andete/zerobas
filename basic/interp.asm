@@ -636,7 +636,7 @@ type_mismatch_error:
                                             ; type_mismatch + jr fre_abort (byte-
                                             ; neutral: 2+3 vs 3+2)
 err_type_mismatch:                          ; D-MSGENC: 16 B -> 14 B (§4.2's
-                db      "type mismatch",0   ; baked CRLF)
+                db      "Type mismatch",0   ; baked CRLF)
 
 ; --- fp_runtime_error: F2's statement-level abort for runtime numeric ------
 ; errors (spec §10.2 D-F2-1: overflow / division by zero). Mirrors
@@ -659,27 +659,25 @@ err_type_mismatch:                          ; D-MSGENC: 16 B -> 14 B (§4.2's
 ; byte map (FPERR -> ERR code) — every caller of fp_runtime_error has already
 ; confirmed FPERR is nonzero (the D-F2-1 "check right after eval()" pattern),
 ; so 1..10 is the only domain this ever sees.
+; 🎯 D-MSGEXACT DELETED THE TWO SPECIAL CASES THAT USED TO STAND HERE, AND THE
+; POLICY CHANGE IS WHAT KILLED THEM -- not a cleverer encoding.
+; FPERR=6 (ERR 7) and FPERR=3 (ERR 5) each used to be intercepted by a `cp`/`jp z`
+; pair, because ONE ERR CODE HAD TWO MESSAGES that differed only in CASE: the
+; lowercase house-style string for the shared sites, and arrays' §9.5
+; reference-verbatim capitalised string for the array sites. Now that every
+; message is the reference's own text, the two spellings ARE THE SAME STRING --
+; so the pairs, `fre_arymem_oom`, `fre_illegalfn_lc` and their shared
+; `fre_store_raise` tail are all dead, and both codes flow through the generic
+; table like every other FPERR. The lowercase policy was the ONLY thing paying
+; for that apparatus (docs/spec-basic-msgexact.md §3.1): -33 B of page 1 here,
+; plus -12 B of now-duplicate strings.
+; ⚠️ TRAPPING IS PRESERVED, AND THAT IS NOT INCIDENTAL. Those routines existed
+; partly to route FPERR=3/6 through the trap check (the S2b fix below: before it,
+; SQR(-1)/LOG and array OOM NEVER trapped under ON ERROR). `raise_error` does the
+; same check on its own path, so deleting them keeps the fix -- knife K3 cuts
+; exactly this claim.
 fp_runtime_error:
                 ld      a,(FPERR)
-                cp      6                   ; FPERR 6 is special-cased below: ERR 7's
-                jp      z,fre_arymem_oom    ; err_msgtab entry is the LOWERCASE shared
-                                            ; "out of memory" (program.asm err_mem), but
-                                            ; FPERR=6's own message must stay arrays' own
-                                            ; reference-verbatim CAPITALISED string
-                                            ; (err_mem_arr, §9.5 keep) -- one ERR code,
-                                            ; two dispositions depending on the SITE, so
-                                            ; it cannot flow through the generic code->
-                                            ; message table like every other FPERR.
-                cp      3                   ; FPERR 3 is ALSO special-cased: ERR 5's
-                jp      z,fre_illegalfn_lc  ; err_msgtab entry is arrays' CAPITALISED
-                                            ; "Illegal function call" (needed by FPERR=8
-                                            ; and a bare `ERROR 5`), but FPERR=3's own
-                                            ; sites (SQR(x<0)/LOG(x<=0), and the deferred
-                                            ; INSTR/ASC domain checks, ev_f_ifc) keep the
-                                            ; pre-existing LOWERCASE err_illegal_fn (§9.5's
-                                            ; "unlike the lowercase shared FPERR=3 SQR/LOG
-                                            ; keep") -- same one-code-two-dispositions
-                                            ; split as FPERR=6/ERR=7 above.
                 dec     a                   ; 0-based index (1..10 -> 0..9)
                 ld      e,a
                 ld      d,0
@@ -687,48 +685,32 @@ fp_runtime_error:
                 add     hl,de
                 ld      a,(hl)              ; A = MSX ERR code
                 jp      raise_error
-; --- fre_arymem_oom / fre_illegalfn_lc: the two FPERR codes (6/3) whose ------
-; message can't flow through raise_error's generic err_msgtab lookup (see
-; above) -- each sets ERRFLG/record_errline with a fixed message pointer, then
-; enters the SHARED raise_error_hl trap decision (S2b fix: they MUST go through
-; the trap check, else SQR(x<0)/LOG (FPERR=3) and array OOM (FPERR=6) errors
-; never trap under ON ERROR -- the bug the empirical pass caught). HL = message.
-; Clobbers as raise_error.
-fre_arymem_oom:
-                ld      a,7                 ; ERR 7: out of memory
-                ld      hl,err_mem_arr
-                jr      fre_store_raise
-fre_illegalfn_lc:
-                ld      a,5                 ; ERR 5: illegal function call (lowercase)
-                ld      hl,err_illegal_fn
-fre_store_raise:                            ; shared tail (space fix): A=ERR code, HL=msg.
-                push    hl                  ; record_errline clobbers HL -- save the msg
-                ld      (ERRFLG),a
-                call    record_errline
-                pop     hl
-                jp      raise_error_hl
+; (fre_arymem_oom / fre_illegalfn_lc / fre_store_raise were HERE. D-MSGEXACT
+; deleted all three -- see fp_runtime_error's header above. They existed to give
+; ONE ERR code a second message that differed only in case; exact wording made
+; the two spellings identical, so there is no second message to point at.)
 fperr_to_err:
                 db      6                   ; FPERR 1: overflow (err_overflow, program.asm's
                                             ; own string, dl_overflow -- REUSED byte-for-byte)
                 db      11                  ; FPERR 2: division by zero (err_fp_divzero)
-                db      0                   ; FPERR 3: UNUSED slot (intercepted above via
-                                            ; fre_illegalfn_lc before this table is ever
-                                            ; indexed for FPERR=3 -- math pack slice 1b
-                                            ; SQR(x<0)/LOG, and the deferred INSTR/ASC
-                                            ; domain checks, ev_f_ifc, all keep the
-                                            ; lowercase err_illegal_fn, unlike FPERR=8's
-                                            ; capitalised err_illegal_fn_arr below)
+                db      5                   ; FPERR 3: illegal function call -- math pack
+                                            ; slice 1b SQR(x<0)/LOG, and the deferred
+                                            ; ASC domain check (ev_f_ifc). A REAL ENTRY
+                                            ; since D-MSGEXACT: it was a `db 0` placeholder
+                                            ; while FPERR=3 was intercepted upstream to get
+                                            ; a LOWERCASE message. Same ERR 5, same string
+                                            ; as FPERR=8 now -- knife K3 cuts this slot.
                 db      2                   ; FPERR 4: syntax error (D-F2-3 empty
                                             ; parenthesised/argument expression; reuses
                                             ; stmt_error's own ERR-2 table entry)
                 db      9                   ; FPERR 5: subscript out of range -- arrays
                                             ; slice-1 (§4.1 #3/#8): index out of range, or
                                             ; wrong dimension count
-                db      0                   ; FPERR 6: UNUSED slot (intercepted above via
-                                            ; fre_arymem_oom before this table is ever
-                                            ; indexed for FPERR=6) -- kept as a placeholder
-                                            ; so every other FPERR's index stays FPERR-1,
-                                            ; simpler than compacting the table
+                db      7                   ; FPERR 6: out of memory (DIM/auto-dim OOM via
+                                            ; ary_errmap). A REAL ENTRY since D-MSGEXACT --
+                                            ; was a `db 0` placeholder while FPERR=6 was
+                                            ; intercepted upstream to get the CAPITALISED
+                                            ; message; that is now the only spelling.
                 db      10                  ; FPERR 7: redimensioned array -- arrays
                                             ; slice-1 (§4.1 #4): a second DIM of a live array
                 db      5                   ; FPERR 8: illegal function call -- arrays
@@ -762,11 +744,19 @@ fperr_to_err:
                                             ; flows through the generic err_msgtab lookup.
     ENDIF
 err_fp_divzero:                             ; D-MSGENC (§4.4): no phrase hit, -2 for
-                db      "division by zero",0    ; the CRLF.  19 B -> 17 B
-err_illegal_fn:                             ; the single biggest win in the corpus:
-                db      "i",MSGESC_ILLFN,0      ; 24 B -> 3 B
+                db      "Division by zero",0    ; the CRLF.  19 B -> 17 B
+; 🎯 err_illegal_fn IS NOW AN ALIAS, NOT A STRING. It used to be the lowercase
+; twin of arrays' capitalised err_illegal_fn_arr ("i" vs "I" + MSGESC_ILLFN);
+; D-MSGEXACT made both the reference's `Illegal function call`, at which point
+; they were byte-identical and one had to go. The LOW-REGION copy survives and
+; this page-1 one is deleted (-3 B of page 1): every reader is an absolute
+; address, so placement is free (see the err_subscript/err_redim note below).
+; ⚠️ subromcall.asm's err_subrom_absent aliases THIS name, deliberately -- the
+; "sub-ROM is missing" message must stay MAIN-resident (spec-basic-msgenc-carve.md
+; §4.4 Q4), and err_illegal_fn_arr is in the low region, which satisfies that.
+err_illegal_fn  equ     err_illegal_fn_arr
 err_resume_noerr:                           ; error-handling S2b (docs/spec-basic-error-
-                db      "resume",MSGESC_WITHOUT,MSGESC_ERROR,0  ; 23 B -> 9 B
+                db      "RESUME",MSGESC_WITHOUT,MSGESC_ERROR,0  ; 23 B -> 9 B
                                             ; handling-s2b-packet.md §5.4, ERR 22): a
                                             ; bare RESUME with ONEFLG=0 (no active trap).
                                             ; House-style lowercase wording (D-2 policy,
@@ -976,8 +966,14 @@ err_msgtab:
                 dw      err_unprintable     ; 19: device I/O error (load_error family
                                             ; unification is its own later item, S1 §9.1;
                                             ; hole here)
-                dw      err_unprintable     ; 20: verify error (hole -- cload.asm's own
-                                            ; err_verify is a separate, untouched path)
+                dw      err_verify          ; 20: Verify error. 🎯 D-MSGEXACT: this was a
+                                            ; HOLE pointing at "unprintable error" while
+                                            ; cload.asm's own err_verify -- already the
+                                            ; reference's exact `Verify error`, measured
+                                            ; 2026-08-02 on a real CLOAD? mismatch -- sat
+                                            ; right there on a separate path. Repointing
+                                            ; costs 0 B and is the whole fix: `ERROR 20`
+                                            ; now says what the tape path has always said.
                 dw      err_no_resume       ; 21: no resume (D-ERR21, docs/spec-basic-
                                             ; err21-no-resume.md -- was a hole until the
                                             ; run loop could raise it: falling off the
@@ -1019,7 +1015,7 @@ err_msgtab:
                                             ; `Line buffer overflow`, `ERROR 26` ->
                                             ; `Unprintable error` (so 25 IS the bound).
 err_unprintable:                            ; D-MSGENC (§4.4): 20 B -> 13 B. Note this
-                db      "unprintable",MSGESC_ERROR,0    ; SHRINKS at the very spot the
+                db      "Unprintable",MSGESC_ERROR,0    ; SHRINKS at the very spot the
                 ; err_missing_operand itself lives in basic/missing.asm. Sited
                 ; there rather than here because 17 bytes inserted at this point
                 ; land between page 1's dense forward `jr`s and their targets --
@@ -1296,7 +1292,7 @@ ex_goto_undef:
                 ld      a,8                 ; ERR 8: undefined line number
                 jp      raise_error
 err_line:
-                db      "undefined line",0  ; D-MSGENC: no phrase hit, 17 B -> 15 B
+                db      "Undefined line number",0  ; D-MSGENC: no phrase hit, 17 B -> 15 B
 
 ; --- ex_if: IF <expr> THEN <clause> [ELSE <clause>] ------------------------
 ; A clause is either a line number (implicit GOTO) or statements. Condition is

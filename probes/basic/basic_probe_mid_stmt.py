@@ -22,7 +22,7 @@ bracket-wrapped; the result is the LAST `[..]` pair (the echoed source has its o
 
 The RANGE-ERROR case (`n > LEN(A$)`) used to be a documented **divergence** --
 the reference raising `Illegal function call` and zerobas `syntax error`, on the
-premise that zerobas had no "illegal function call" in its vocabulary (spec D-3).
+premise that zerobas had no "Illegal function call" in its vocabulary (spec D-3).
 That premise had been false for a long time, and it was the reason this path
 funnelled seven distinct reference errors into one wrong one. D-MISS-2
 (docs/spec-basic-str-domain.md §3) closed it; the row is now asserted as
