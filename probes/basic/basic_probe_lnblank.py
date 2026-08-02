@@ -1495,6 +1495,23 @@ LNA = [
     ("lna-delnone",  ["20 DELETE"]),          # no argument at all
     ("lna-deldot",   ["20 DELETE ."]),        # the '.' current-line form
     ("lna-delcomma", ["20 DELETE 10,30"]),    # a comma, not a '-'
+    # --- D-DOTLINE: DOES A '.' DISARM LINE-NUMBER MODE? -----------------------
+    # 🔴 THIS IS THE ROW THE RESOLVER'S PARSE STANDS ON, AND NOTHING LOCKED IT.
+    # `lna-listdot` / `lna-deldot` say a LONE '.' reaches the statement as the
+    # literal $2E. They say NOTHING about the number on the other side of a '-'.
+    # Line-number mode is armed by the KEYWORD and disarmed by (among others) a
+    # NAME character (R-N1/R-L3), and '.' is a name character everywhere else in
+    # this probe -- the whole `dot` battery is about '.' inside identifiers. If
+    # '.' disarms, `LIST .-30`'s 30 arrives as ASCII digits, not $0E, and a
+    # resolver written against $0E parses garbage. A handler written against a
+    # crunch nobody locked is a handler written against nothing (the argument
+    # docs/delete-msx1-characterization.md §1 made for the four DELETE shapes).
+    ("lna-listdotd", ["20 LIST .-30"]),       # '.' then '-' then a NUMBER
+    ("lna-listddot", ["20 LIST 10-."]),       # a number then '-' then '.'
+    ("lna-listdotb", ["20 LIST . -30"]),      # ...with the blanks the editor keeps
+    ("lna-deldotd",  ["20 DELETE .-30"]),     # the same four for DELETE, whose
+    ("lna-delddot",  ["20 DELETE 10-."]),     # arming is its own kwtable entry
+    ("lna-deldotdd", ["20 DELETE .-."]),      # '.' on BOTH ends
 ]
 
 # --- the `lnr2` battery: the walk's positives, asked in a REAL PROGRAM shape --
@@ -1932,6 +1949,270 @@ LSE = [
     ("lse-dotedit",  _LSTP + ["20 REM B", "LIST ."]),
 ]
 
+# --- the `cln`/`cle` batteries: `.`, THE CURRENT-LINE PSEUDO-LINE-NUMBER ------
+# D-DOTLINE, docs/dotline-msx1-characterization.md. D-DELETE measured `.` on one
+# verb and declined it; D-LSTRNG confirmed the same shape on a second. Neither
+# measured WHO WRITES IT, which is the whole of what an implementation needs:
+# `dlt-dot`/`dlt-dotedit`/`lst-dot`/`lse-dotedit` prove only that STORING a line
+# writes it. What a RUN, an error, a LIST, a DELETE or a cold machine leave in it
+# is unmeasured, and a resolver that guesses is a rule written against nothing.
+#
+# ⚠️ THE PROLOGUES ARE SPLIT BY READOUT, NOT BY TASTE. `cln` rows read a LISTING
+# (TAIL_ONLY) and use REM lines, whose text names the line back; `cle` rows read
+# a bracketed value (SAY_ONLY) and use the `dlt` bitmask program, where A says
+# which lines SURVIVED. A listing cannot be read by the bracket reader (it
+# returns `<none>`, which also means "no reading" and compares EQUAL on every
+# side -- [[readout-blind-to-its-own-subject]]), so the split follows the
+# QUESTION.
+_CLNP = _LSTP                          # 10 REM A / 20 REM B / 30 REM C / 40 REM D
+_CLNE = ["20 REM B"]                   # ...line 20 RE-ENTERED: "last touched" (20)
+                                       # and "highest" (40) now differ, which is
+                                       # the only reason any row below separates
+_CLNR = ["10 A=A+1", "20 A=A+2", "30 A=A+4"]      # a program that RUNS
+_CLNX = ["10 A=A+1", "20 ERROR 7", "30 A=A+4"]    # ...that FAILS at line 20
+_CLNS = ["10 A=A+1", "20 STOP", "30 A=A+4"]       # ...that BREAKS at line 20
+_CLNRE = ["10 A=A+1"]                  # re-enter line 10 LAST -> `.` = 10, so a
+                                       # `.` that moves to 20 or 30 is visible
+_CLND = ["10 A=A+1", "20 A=A+2", "30 A=A+4", "40 A=A+8"]   # the `dlt` bitmask
+_CLNDE = ["20 A=A+2"]                  # ...with line 20 re-entered -> `.` = 20
+
+CLN = [
+    # === 1. WHO WRITES `.`? =================================================
+    # The baseline and the separator, restated inside this battery rather than
+    # inherited: a walk that reads its own subject from another battery's rows
+    # cannot be scored against its own controls.
+    ("cln-store",    _CLNP + ["LIST ."]),
+    ("cln-edit",     _CLNP + _CLNE + ["LIST ."]),
+    # An INSERT (a number that did not exist) rather than a REPLACEMENT. Both go
+    # through store_line, but only one of them displaces an existing line, and
+    # "the line the editor last touched" does not say which of those counts.
+    ("cln-ins",      _CLNP + ["25 REM E", "LIST ."]),
+    # 🔴 THE DELETE-BY-EMPTY-BODY FORM. A bare line number deletes line 20
+    # through store_line, NOT through the DELETE verb -- a different code path
+    # with the same author. If it writes `.`, `.` names a line that no longer
+    # exists and `LIST .` prints nothing; if it does not, `.` is still 40.
+    # `cln-sdelctl` is what separates "listed nothing" from "readout blind".
+    ("cln-sdel",     _CLNP + ["20", "LIST ."]),
+    ("cln-sdelctl",  _CLNP + ["20", "LIST"]),
+    # A DIRECT-MODE statement stores no line at all.
+    ("cln-direct",   _CLNP + _CLNE + ["C=1", "LIST ."]),
+    # === 2. does the DELETE VERB write it? ==================================
+    # `.` = 20; delete line 40. If DELETE writes `.`, it is 40 and gone ->
+    # nothing listed. If not, `20 REM B`.
+    ("cln-del",      _CLNP + _CLNE + ["DELETE 40", "LIST ."]),
+    ("cln-delctl",   _CLNP + _CLNE + ["DELETE 40", "LIST"]),
+    # === 3. does LIST write it? =============================================
+    # `.` = 20; list line 40. A LIST that records what it listed reads
+    # `40 REM D` back; one that does not reads `20 REM B`.
+    ("cln-list",     _CLNP + _CLNE + ["LIST 40", "LIST ."]),
+    # 🔴 `cln-list` SAYS *THAT* LIST WRITES IT AND CANNOT SAY *WHAT*. In
+    # `LIST 40`, line 40 is the argument, the low end, the high end AND the only
+    # line printed -- four candidate rules with one reading, the same shape
+    # `dlt-dot` had before `dlt-dotedit` separated it. These three walk them
+    # apart: a RANGE separates "the last line listed" (30) from "the low end"
+    # (10); a BARE LIST has no argument at all; and a LIST that prints NOTHING
+    # separates "what was listed" from "what was asked for".
+    ("cln-listrng",  _CLNP + _CLNE + ["LIST 10-30", "LIST ."]),
+    ("cln-listbare", _CLNP + _CLNE + ["LIST", "LIST ."]),
+    ("cln-listmiss", _CLNP + _CLNE + ["LIST 25", "LIST ."]),
+    # ...and the one that matters for the RESOLVER's own ordering: does `LIST .`
+    # resolve `.` BEFORE overwriting it? `.` = 20, so this lists 20 and 30; if
+    # the write happens first the second read is 30, if last it is 20-or-30 by
+    # the rule the three rows above settle.
+    ("cln-dotthen",  _CLNP + _CLNE + ["LIST .-30", "LIST ."]),
+    # === 4. does CLEAR reset it? ============================================
+    # CLEAR resets the variable world; whether the editor's cell is part of that
+    # world is a separate question with no reason to share an answer.
+    ("cln-clear",    _CLNP + _CLNE + ["CLEAR", "LIST ."]),
+    # === 5. what does RUNNING leave in it? ==================================
+    # THE CONTROL FOR THE WHOLE RUN GROUP, and it is not optional: every row
+    # below reads `.` after re-entering line 10, so a reading of `10 A=A+1`
+    # means "unchanged" only if `.` really was 10 to begin with.
+    ("cln-runctl",   _CLNR + _CLNRE + ["LIST ."]),
+    ("cln-run",      _CLNR + _CLNRE + ["RUN", "LIST ."]),
+    ("cln-err",      _CLNX + _CLNRE + ["RUN", "LIST ."]),
+    ("cln-stop",     _CLNS + _CLNRE + ["RUN", "LIST ."]),
+    ("cln-cont",     _CLNS + _CLNRE + ["RUN", "CONT", "LIST ."]),
+    # 🔴 AN ERROR WRITES `.` (cln-err) -- AND EVERY ERROR ROW SO FAR HAPPENED IN A
+    # STORED LINE. ERRLIN's own measured convention is that a DIRECT-mode error
+    # files 65535, not a line number (sysvars.inc:920), so "the erroring line" is
+    # not yet a rule an implementation can write: it does not say what happens
+    # when there is no line. If `.` takes 65535 too, `LIST .` lists nothing.
+    ("cln-direrr",   _CLNP + _CLNE + ["ERROR 7", "LIST ."]),
+    # ...and whether a TRAPPED error writes it, which is the case an ON ERROR
+    # program hits on every pass rather than once at the end.
+    ("cln-trap",     ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 A=A+4",
+                      "50 RESUME NEXT", "10 ON ERROR GOTO 50", "RUN", "LIST ."]),
+    # 🔴 `cln-trap` READS THE **HANDLER'S** LINE (50), NOT THE ERRORING LINE (20)
+    # THAT `cln-err` READ, AND TWO DIFFERENT RULES PREDICT THAT. Either (H1) a
+    # trapped error records where control WENT, or (H2) `ON ERROR GOTO 50` writes
+    # `.` when it RESOLVES ITS TARGET LINE -- i.e. a line-number LOOKUP is a
+    # writer, which would make this nothing to do with errors at all. A row with
+    # two candidate causes measures neither ([[row-with-two-candidate-causes]]),
+    # so these separate them: `cln-onerr` arms a handler and never errors (H2
+    # says 50, H1 says 10 unchanged), and `cln-goto` takes an ordinary branch
+    # with no handler and no error anywhere (H2 says 40, H1 says 10).
+    ("cln-onerr",    ["10 ON ERROR GOTO 50", "20 A=A+2", "50 END",
+                      "10 ON ERROR GOTO 50", "RUN", "LIST ."]),
+    ("cln-goto",     ["10 A=1", "20 GOTO 40", "30 A=3", "40 END",
+                      "10 A=1", "RUN", "LIST ."]),
+    # ...and whether it is ENTERING the handler or RESUME leaving it. `cln-trap`
+    # does both; this one only enters.
+    ("cln-trapend",  ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 A=A+4",
+                      "50 END", "10 ON ERROR GOTO 50", "RUN", "LIST ."]),
+    ("cln-reslin",   ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 A=A+4",
+                      "50 RESUME 30", "10 ON ERROR GOTO 50", "RUN", "LIST ."]),
+    ("cln-res15",    ["10 ON ERROR GOTO 15", "15 RESUME NEXT", "20 ERROR 7",
+                      "30 A=A+4", "10 ON ERROR GOTO 15", "RUN", "LIST ."]),
+    # === 6. `.` IN EVERY ARGUMENT POSITION, not just alone ==================
+    # All with `.` = 20. A resolver that only answers the bare `LIST .` form is
+    # a rule one POSITION wide, the same mistake one verb wide would be.
+    ("cln-lo",       _CLNP + _CLNE + ["LIST .-"]),
+    ("cln-hi",       _CLNP + _CLNE + ["LIST -."]),
+    ("cln-both",     _CLNP + _CLNE + ["LIST .-."]),
+    ("cln-lonum",    _CLNP + _CLNE + ["LIST .-30"]),
+    ("cln-numhi",    _CLNP + _CLNE + ["LIST 10-."]),
+    # lo > hi. LIST has no reversal RULE (R-LS3), so this should list nothing
+    # and not complain -- but only if `.` resolved at all.
+    ("cln-rev",      _CLNP + _CLNE + ["LIST 30-."]),
+    # ...and with the blanks the editor stores verbatim around it.
+    ("cln-blank",    _CLNP + _CLNE + ["LIST . -30"]),
+    # === 7. THE COLD MACHINE ================================================
+    # ⚠️ NOT VACUOUS, AND NOT A MEASUREMENT OF THE VALUE EITHER. On a cold
+    # machine the program is necessarily EMPTY, so no value of `.` can change
+    # what is listed. What these two DO settle is that `LIST .` cold is not a
+    # REFUSAL -- an error message would land in the tail, as `lst-comma` proved
+    # this readout can see. The value itself is bounded, not measured; see
+    # `cle-cold*` for the error-class half.
+    ("cln-cold",     ["LIST ."]),
+    ("cln-coldctl",  ["LIST 10"]),
+]
+
+CLE = [
+    # THE ERR CONTROL: `LIST .` on a program where `.` resolves. Without it a 0
+    # below means nothing (`dlt-errctl`'s argument: RUN PRESERVES ERR).
+    ("cle-ctl",      _CLNP + _CLNE + ["LIST .", 'PRINT"[";ERR;"]"']),
+    # --- the cold machine's ERROR CLASS -------------------------------------
+    # If `.` cold is simply 0, these three agree; if `.` cold is a refusal or a
+    # different number, `cle-cold`/`cle-colddel` part company with their
+    # comparators. That is a BOUND on the cold value, not a reading of it.
+    ("cle-cold",     ["LIST .", 'PRINT"[";ERR;"]"']),
+    ("cle-coldlist", ["LIST 0", 'PRINT"[";ERR;"]"']),
+    ("cle-colddel",  ["DELETE .", 'PRINT"[";ERR;"]"']),
+    ("cle-colddel0", ["DELETE 0", 'PRINT"[";ERR;"]"']),
+    # --- DELETE, `.` in every position (the bitmask readout) ----------------
+    # `.` = 20 throughout. A = the sum of the surviving lines' bits, so the
+    # answer names the SET that survived, which no listing row can do for
+    # DELETE (DELETE prints nothing at all).
+    ("cle-dctl",     _CLND + _CLNDE + ["RUN", 'PRINT"[";A;ERR;"]"']),
+    ("cle-donly",    _CLND + _CLNDE + ["DELETE .", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("cle-dlo",      _CLND + _CLNDE + ["DELETE .-40", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("cle-dhi",      _CLND + _CLNDE + ["DELETE 10-.", "RUN", 'PRINT"[";A;ERR;"]"']),
+    ("cle-dboth",    _CLND + _CLNDE + ["DELETE .-.", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # lo > hi through a `.`: R-D4 is a RULE for DELETE (ERR 5), unlike LIST.
+    ("cle-drev",     _CLND + _CLNDE + ["DELETE 30-.", "RUN", 'PRINT"[";A;ERR;"]"']),
+    # 🔴 DOES R-D2 -- "the HIGH end must name a stored line EXACTLY" -- APPLY TO A
+    # `.`-RESOLVED END? Line 20 is deleted first, so `.` (if DELETE leaves it at
+    # 20) names a line that is gone. ⚠️ COMPOUND: it reads R-D2 only if `cln-del`
+    # says DELETE does not rewrite `.`. Scored against `cln-del`, not alone.
+    ("cle-dgone",    _CLND + _CLNDE + ["DELETE 20", "DELETE 10-.", "RUN",
+                                       'PRINT"[";A;ERR;"]"']),
+]
+
+# --- the `clp` battery: THE SAME QUESTION ASKED OF THE PUBLISHED CELL --------
+# 🎯 THE PUBLISHED WORK AREA NAMES THIS VARIABLE. `DOT`, `$F6B5`, 2 B, "line
+# number of last used (changed, listed, added) line" -- C-BIOS `systemvars.asm`,
+# the same allowed source (`docs/allowed-sources.md:121`, rated B/Conditional
+# *for published sysvar addresses*) that the sysvar denominator itself is
+# generated from, and the same one D-REHOME honoured ERRFLG/ERRLIN/ONELIN/
+# ONEFLG/DEFTBL out of. It sits in the gap between two cells zerobas ALREADY
+# holds at their published addresses (ERRLIN `$F6B3`, ONELIN `$F6B9`).
+#
+# 🔴 THIS IS WHAT MAKES THE COLD MACHINE MEASURABLE, AND `LIST .` NEVER COULD.
+# On a cold machine the program is necessarily EMPTY -- the only way to get
+# program text in is a path that writes the cell -- so `LIST .` prints nothing
+# whatever `.` holds, and every behavioural row is structurally blind to the
+# cold value. A PEEK is not.
+#
+# ⚠️ AND A PEEK IS A READING OF A CELL, NOT OF THE LANGUAGE. It is evidence
+# about `.` only where it AGREES with the behavioural row asking the same
+# question, which is why every `clp` row below has a `cln`/`cle` twin. If the
+# two ever disagree, `$F6B5` is not what `.` resolves and this whole battery is
+# measuring the wrong byte -- that disagreement is the finding, not a nuisance.
+#
+# 🔴 THE READOUT IS TWO TYPED LINES BECAUSE ONE WAS EXACTLY ONE COLUMN TOO LONG,
+# AND IT FAILED BY RETURNING A SENTINEL THAT ALSO MEANS "NO READING".
+# `PRINT"[";PEEK(&HF6B5);PEEK(&HF6B6);"]"` is 38 characters -- inside the 40-byte
+# KEYBUF cap, which is why it looked safe. But the screen puts a TWO-COLUMN
+# MARGIN in front of everything (echo_missing() above measured that the hard
+# way), so the echo occupied columns 2..39 and its closing `"` WRAPPED onto the
+# next row. `_echo_idx` matches whole rows, found none carrying the command, and
+# `result_span_after_echo` returned `<none>` -- on vg8020 and zb but NOT on
+# cf3300, whose Disk BASIC lays the prompt out differently. The VALUE was on the
+# screen the whole time (`[ 0  0 ]`, one row below); only the reader lost it.
+# ⚠️ HAD cf3300 WRAPPED TOO, ALL THREE SIDES WOULD HAVE READ `<none>` AND THE
+# BATTERY WOULD HAVE REPORTED THREE-WAY AGREEMENT ON NOTHING -- the KEYBUF cap is
+# not the binding constraint here, COLS minus the margin is.
+# Split, the wire carries 31 and 14 characters and the readout anchors on the
+# SHORT line. ⚠️ The intermediate `Z=` is a DIRECT-MODE statement, which
+# `cln-direct` MEASURED does not write `.` -- the readout is kept off its own
+# subject by a reading, not by an assumption.
+_CLPR = ["Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)",      # 31 chars
+         'PRINT"[";Z;"]"']                       # 14 chars
+
+CLP = [
+    # THE COLD READ -- the row that exists only because the cell readout exists.
+    ("clp-cold",     _CLPR),
+    # --- the twins of every `cln` writer row --------------------------------
+    ("clp-store",    _CLNP + _CLPR),
+    ("clp-edit",     _CLNP + _CLNE + _CLPR),
+    ("clp-ins",      _CLNP + ["25 REM E"] + _CLPR),
+    ("clp-sdel",     _CLNP + ["20"] + _CLPR),
+    ("clp-direct",   _CLNP + _CLNE + ["C=1"] + _CLPR),
+    ("clp-del",      _CLNP + _CLNE + ["DELETE 40"] + _CLPR),
+    ("clp-list",     _CLNP + _CLNE + ["LIST 40"] + _CLPR),
+    ("clp-clear",    _CLNP + _CLNE + ["CLEAR"] + _CLPR),
+    # 🎯 NEW IS MEASURABLE HERE AND NOWHERE ELSE. After a NEW the program is
+    # empty, so `LIST .` prints nothing whether NEW reset the cell or not --
+    # the behavioural readout cannot ask this question at all.
+    ("clp-new",      _CLNP + _CLNE + ["NEW"] + _CLPR),
+    # --- and of every `cln` RUN row -----------------------------------------
+    ("clp-runctl",   _CLNR + _CLNRE + _CLPR),
+    ("clp-run",      _CLNR + _CLNRE + ["RUN"] + _CLPR),
+    ("clp-err",      _CLNX + _CLNRE + ["RUN"] + _CLPR),
+    ("clp-stop",     _CLNS + _CLNRE + ["RUN"] + _CLPR),
+    ("clp-cont",     _CLNS + _CLNRE + ["RUN", "CONT"] + _CLPR),
+    # --- the PUB-FREE control, in D-REHOME's own sense -----------------------
+    # 🔴 A cell may be claimed at the published address ONLY if nothing already
+    # writes it. On zerobas every row above is the same reading today (nothing
+    # writes $F6B5); on the REFERENCES this row is the one that says the value
+    # is `.`-shaped rather than a byte something else parks there -- it PEEKs
+    # after a stimulus that touches no line at all.
+    ("clp-untouch",  ["C=1", "D=2"] + _CLPR),
+    # the cell twins of the two error-shape rows above
+    ("clp-direrr",   _CLNP + _CLNE + ["ERROR 7"] + _CLPR),
+    ("clp-trap",     ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 A=A+4",
+                      "50 RESUME NEXT", "10 ON ERROR GOTO 50", "RUN"] + _CLPR),
+    ("clp-onerr",    ["10 ON ERROR GOTO 50", "20 A=A+2", "50 END",
+                      "10 ON ERROR GOTO 50", "RUN"] + _CLPR),
+    ("clp-goto",     ["10 A=1", "20 GOTO 40", "30 A=3", "40 END",
+                      "10 A=1", "RUN"] + _CLPR),
+    ("clp-gosub",    ["10 A=1", "20 GOSUB 40", "30 END", "40 RETURN",
+                      "10 A=1", "RUN"] + _CLPR),
+    ("clp-trapend",  ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 A=A+4",
+                      "50 END", "10 ON ERROR GOTO 50", "RUN"] + _CLPR),
+    # 🔴 `clp-trapend` (20) vs `clp-trap` (50) leaves ONE variable: `50 END`
+    # against `50 RESUME NEXT`. So RESUME is a writer -- and 50 is BOTH the line
+    # RESUME sits in AND a constant this battery has used for every handler, so
+    # neither is established. `clp-reslin` separates "RESUME's own line" (50)
+    # from "the line it resumes TO" (30); `clp-res15` moves the handler to 15 so
+    # a coincidental 50 cannot survive.
+    ("clp-reslin",   ["10 ON ERROR GOTO 50", "20 ERROR 7", "30 A=A+4",
+                      "50 RESUME 30", "10 ON ERROR GOTO 50", "RUN"] + _CLPR),
+    ("clp-res15",    ["10 ON ERROR GOTO 15", "15 RESUME NEXT", "20 ERROR 7",
+                      "30 A=A+4", "10 ON ERROR GOTO 15", "RUN"] + _CLPR),
+]
+
 # label -> the ONLY sides it may be measured on. A row named here is refused on
 # any other side, with the reason, instead of being quietly dropped or -- far
 # worse -- run.
@@ -2236,15 +2517,20 @@ LNRT = [
 # that backwards would hand a listing to the bracket-span reader, which returns
 # `<none>` for it: a value that also means "no reading", on every side, which
 # compares EQUAL.
-TAIL_ONLY = {lb for lb, _l in LST} | {"lse-dotedit"}
+# ⚠️ THE WHOLE `cln` BATTERY IS TAIL, THE WHOLE `cle` BATTERY IS NOT, and the
+# split is by READOUT rather than by prefix -- `lse-dotedit` above is the
+# precedent for why that distinction is not cosmetic. Every `cln` row's last
+# typed line is a `LIST`, whose answer is a SET of lines; every `cle` row's is a
+# `PRINT"[";...;"]"`, whose answer is one bracketed value.
+TAIL_ONLY = {lb for lb, _l in LST + CLN} | {"lse-dotedit"}
 
 SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD
-            + KWGZ + LNRT + DLT + LSE} | TAIL_ONLY
+            + KWGZ + LNRT + DLT + LSE + CLE + CLP} | TAIL_ONLY
 
 CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + LNL + CNM
          + LNR + LNRX + LNR2 + LNV + LNV2 + LNA
          + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ + LNRT + DLT
-         + LST + LSE)
+         + LST + LSE + CLN + CLE + CLP)
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
 # informational because nobody had a RULE for them: `dec-bin` was the `&B`
