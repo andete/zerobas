@@ -374,3 +374,16 @@ There is no stored program to interrogate, so the same race in a `direct`-mode
 matrix still reads as a value. The existing echo guards
 ([[decblank-echo-guard-blind]], [[lineno-blank-echo-guard]]) are the instrument
 there, and they are per-probe rather than harness-wide. Filed.
+
+🎯 **CLOSED 2026-08-03 BY D-ECHO** ([`docs/spec-probe-echo.md`](spec-probe-echo.md)).
+Every injected line is now checked against what the machine echoed, so both modes
+are covered by one oracle — the race is in the DELIVERY path, not the store path
+(phase O re-expressed in `direct` mode, byte-identical injections on
+byte-identical slots, mangles the same case on the same line). The stored-program
+oracle above **stays**, as a second opinion: each is blind exactly where the
+other sees. Six standing corpus suites turned out to be mis-delivering a case on
+every run, all `direct`-mode, all green.
+
+D-ECHO also settled §9.1's loose end in part: the swallow count is **exactly the
+length of the preceding injection including its CR** (six measurements, three of
+them predicted in advance). The *trigger* is still open.

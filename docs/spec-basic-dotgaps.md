@@ -195,7 +195,7 @@ what it cost was the measurement.
 
 | | |
 |---|---|
-| `make unit-test` | **56/56 files** — `test_program.py` grows from 8 groups to 10 |
+| `make unit-test` | **56/56 files** — `test_program.py` grows from 8 groups to 10 (**57/57** since D-ECHO added `test_echo_oracle.py`, [`spec-probe-echo.md`](spec-probe-echo.md)) |
 | `deadcode`, both builds | **0 dead** |
 | `msgexact --gate` / `--relock` | **55/55** / all 41 locked values reproduce |
 | `lnblank-acceptance REPEAT=2` | **536/536**, allowlist EMPTY |

@@ -56,8 +56,19 @@ reference -- and the loss is INVISIBLE in the capture: the two standing
 that lost its `PRINT` line, both reading as plausible semantics on both sides.
 So every stored case now reports the line-number chain the machine actually
 held, just before its `RUN`; `run_cases` re-runs a mangled case boot-per-case
-and says so, `run_batch` (which IS that path) refuses. ⚠️ `direct` mode has no
-stored program to interrogate and is NOT covered.
+and says so, `run_batch` (which IS that path) refuses.
+
+TWO INDEPENDENT ORACLES WATCH DELIVERY, AND EACH OTHER (D-ECHO,
+docs/spec-probe-echo.md). The stored-program oracle above covers `mode="stored"`
+-- 8 of the 53 probe files that drive this module. The SAME race mangles a
+`direct`-mode line: phase O re-expressed in direct mode, with byte-identical
+injections on byte-identical slots, loses the same line of the same case. So
+EVERY injected line is also checked against what the machine ECHOED: `_tcl` dumps
+SCRMOD, LINLEN and the name table after each slot, and `echo_verdicts` compares.
+Where both oracles can see they must agree, and `run_cases` announces it when
+they do not -- which is the only positive control either has, since a batch of
+IDENTICAL cases does not reproduce the race at all. `ZEROBAS_ECHOGUARD=off`
+disarms the echo half; `verify_delivery=False` opts a probe out of both.
 
 Batching became safe on 2026-07-12: the `--selftest` isolation check established
 that zerobas's `NEW`/`CLEAR` did NOT clear variables or the DEF table (the
@@ -95,6 +106,8 @@ KEYBUF = 0xFBF0
 GETPNT = 0xF3FA
 PUTPNT = 0xF3F8
 TXTTAB = 0xF676                  # -> the stored program's text base ($8001 here)
+SCRMOD = 0xFCAF                  # current screen mode (0 = 40-column text)
+LINLEN = 0xF3B0                  # width of the text window, in columns
 KEYBUF_SZ = 40
 # A 40-byte CIRCULAR buffer holds at most 39 bytes unambiguously: with 40 bytes
 # written, PUTPNT wraps to equal GETPNT (full is indistinguishable from empty),
@@ -131,6 +144,27 @@ def is_wait(line) -> bool:
 SCR_ADDR = 0x0000
 COLS, ROWS = 40, 24
 SCR_LEN = COLS * ROWS
+
+# D-ECHO (docs/spec-probe-echo.md): where in a slot the echo dump is taken --
+# after the ROM has consumed and echoed the line, before the next line is
+# written. A `puts` callback is atomic w.r.t. the emulated CPU and costs ZERO
+# emulated time, so this schedules no new alignment; splitting an injection into
+# body-then-CR to get a cleaner window WOULD, which is why it is not done.
+ECHO_GAP = 0.8
+
+
+def echo_guard_on() -> bool:
+    """False when `ZEROBAS_ECHOGUARD=off` -- emission AND judgement are skipped
+    and the delivered Tcl is byte-identical to the pre-D-ECHO one. Mirrors
+    `ZEROBAS_PREFLIGHT=off`: an operator escape hatch that is also the K1 knife."""
+    if os.environ.get("ZEROBAS_ECHOGUARD", "").lower() in ("off", "0", "no"):
+        if not getattr(echo_guard_on, "_said", False):
+            echo_guard_on._said = True
+            sys.stderr.write(
+                "⚠️  ZEROBAS_ECHOGUARD=off -- the delivery echo guard is "
+                "DISABLED; a mangled line will be reported as a value.\n")
+        return False
+    return True
 
 
 def as_stored(line: str) -> list[str]:
@@ -216,7 +250,8 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          boot: float, step: float, cap_gap: float,
          reset: tuple[str, ...], capture="screen",
          holds: list[tuple[int, int] | None] | None = None,
-         hold_secs: float = 12.0, prologue: tuple[str, ...] = ()) -> str:
+         hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
+         slots_out: list[tuple[int, str]] | None = None) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
     (CHGET drains KEYBUF into the line editor) before the next write resets it.
@@ -242,9 +277,18 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
     arkanoidpad) with no host input at all, which is the only source of teeth the
     PDL/PAD gate has: openMSX offers no mouse, so a value cannot be DRIVEN. The
     connectors exist at script start, so plugging here needs no scheduling. Cheap
-    and machine-agnostic; the interrupt-trap arc will want the same seam."""
+    and machine-agnostic; the interrupt-trap arc will want the same seam.
+
+    `slots_out` (D-ECHO, docs/spec-probe-echo.md §3.2) collects one
+    `(case_index, typed_text)` record per INJECTION SLOT, in schedule order, and
+    each such slot gets an `echo.<k>=` dump at ECHO_GAP into it. The comparison
+    downstream is therefore against what this function actually SCHEDULED, not
+    against a reconstruction of it -- a reconstruction would have to re-derive
+    the chunking and the `10 *` numbering, and would agree with a bug in either."""
     body: list[str] = []
     cap = _cap_expr(capture)
+    echo = echo_guard_on() and slots_out is not None
+    case_idx = 0
 
     def emit(t: float, s: str) -> float:
         """Schedule injection of one CR-terminated line `s` at/after time `t`;
@@ -258,18 +302,32 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         if len(s) > MAX_BUF:
             raise ValueError(f"line exceeds MSX line buffer (~{MAX_BUF}): "
                              f"{len(s)} chars {s!r}")
+
+        def slot(t: float, proc: str, text: str) -> None:
+            body.append(f'after time {t:.1f} {{ {proc} {{{text}}} }}')
+            if echo:
+                body.append(f'after time {t + ECHO_GAP * step:.2f} '
+                            f'{{ __echo {len(slots_out)} }}')
+                slots_out.append((case_idx, text))
+
         if len(s) <= MAX_DIRECT:
-            body.append(f'after time {t:.1f} {{ __inj {{{s}}} }}')
+            slot(t, "__inj", s)
             return t + step
         chunks = [s[i:i + MAX_DIRECT] for i in range(0, len(s), MAX_DIRECT)]
         for k, ch in enumerate(chunks):
-            proc = "__inj" if k == len(chunks) - 1 else "__key"  # CR only on last
-            body.append(f'after time {t:.1f} {{ {proc} {{{ch}}} }}')
+            # CR only on the last chunk; each chunk is its own slot, and each is
+            # judged on its own -- the echo ACCUMULATES, so a chunk's text is a
+            # substring of the stream whether or not the line has been submitted.
+            slot(t, "__inj" if k == len(chunks) - 1 else "__key", ch)
             t += step
         return t
 
     t = boot
     for idx, (mode, lines) in enumerate(cases):
+        # a reset line belongs to the case it precedes: a swallowed `NEW` leaks
+        # the PREVIOUS case's variables into THIS one, so this one is the reading
+        # that was spoiled and this one is what gets re-run.
+        case_idx = idx
         for r in reset:                       # power-on-clean vars + DEFtbl + screen
             t = emit(t, r)
         if mode == "stored":
@@ -348,7 +406,25 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         "  }\n"
         "  return [join $out ,]\n"
         "}\n"
+        # __echo: one injection slot's delivery evidence -- the screen mode, the
+        # width of the text window, and the SCREEN-0 name table (D-ECHO,
+        # docs/spec-probe-echo.md §3.2). SCRMOD and LINLEN travel WITH the dump
+        # because both differ per machine and per moment: the reference runs a
+        # 37-column window, zerobas a 39-column one, and a case left in SCREEN 2
+        # by an untrapped error makes this scrape read the pattern generator
+        # table instead of any text at all.
+        # ⚠️ `global __f` IS LOAD-BEARING. Every other emission here is written
+        # from an `after time` body, which runs in the global scope where `$__f`
+        # resolves; inside a proc it does not, the proc errors, and openMSX drops
+        # the callback WITHOUT A WORD -- the guard then reports nothing at all
+        # while its emission and its call site are both plainly present. That is
+        # the K2 shape by accident, and only the cross-oracle disagreement check
+        # (§3.5) caught it.
+        + (f"proc __echo {{k}} {{ global __f; puts $__f \"echo.$k="
+           f"[debug read memory {SCRMOD}],[debug read memory {LINLEN}],"
+           f"[__hex_v {SCR_ADDR} {SCR_LEN}]\"; flush $__f }}\n" if echo else "")
         # __key: write the raw bytes of `s` into KEYBUF and point GETPNT/PUTPNT at
+        +
         # them so CHGET delivers them (no CR). Cursors reset each call -- safe
         # because the per-slot step guarantees the prior chunk was consumed.
         "proc __key {s} {\n"
@@ -385,11 +461,13 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
                timeout: float = 240.0, omsx: str | None = None,
                cart: str | None = None, diska: str | None = None
-               ) -> tuple[list[str | None], dict[int, list[int]]]:
-    """One boot, `cases` driven, returning `(captures, delivered)` -- the raw
-    engine. `delivered` maps a stored-mode case index to the line-number chain
-    the machine actually held (D-DELIVER). Callers go through `run_batch` (which
-    verifies and refuses) or `run_cases` (which verifies and repairs).
+               ) -> tuple[list[str | None], dict[int, list[int]], list]:
+    """One boot, `cases` driven, returning `(captures, delivered, echo)` -- the
+    raw engine. `delivered` maps a stored-mode case index to the line-number
+    chain the machine actually held (D-DELIVER); `echo` is the D-ECHO verdict
+    list, one entry per injection slot (empty when the guard is off). Callers go
+    through `run_batch` (which verifies and refuses) or `run_cases` (which
+    verifies and repairs).
 
     Boot `machine` once and drive `cases` (each `(mode, lines)`), returning one
     capture per case (or None where that case's capture is missing). `reset`
@@ -412,9 +490,10 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     binary = find_omsx(omsx)
     out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="repl_", delete=False).name
     tcl = out + ".tcl"
+    slots: list[tuple[int, str]] = []
     with open(tcl, "w") as f:
         f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
-                     holds, hold_secs, prologue))
+                     holds, hold_secs, prologue, slots))
     if os.path.exists(out):
         os.unlink(out)
 
@@ -436,12 +515,24 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
 
     caps: dict[int, str] = {}
     delivered: dict[int, list[int]] = {}
+    echoes: dict[int, tuple[int, int, str]] = {}
     if os.path.exists(out):
         for ln in open(out):
             d = re.match(r"prog\.(\d+)=([\d,]*)$", ln.strip())
             if d:                              # D-DELIVER: what the machine STORED
                 delivered[int(d.group(1))] = [
                     int(x) for x in d.group(2).split(",") if x]
+                continue
+            e = re.match(r"echo\.(\d+)=(\d+),(\d+),([0-9a-f]*)$", ln.strip())
+            if e:                              # D-ECHO: what the machine ECHOED
+                # ⚠️ decoded EXACTLY as the `screen` capture is -- non-print ->
+                # blank -- so the comparison sees the same characters a probe's
+                # readout does. The cursor is a live cell in the name table and
+                # decodes to a blank on both machines.
+                raw = bytes.fromhex(e.group(4))
+                echoes[int(e.group(1))] = (
+                    int(e.group(2)), int(e.group(3)),
+                    "".join(chr(b) if 32 <= b < 127 else " " for b in raw))
                 continue
             m = re.match(r"case\.(\d+)=([0-9a-f]*)", ln.strip())
             # An EMPTY capture is DATA, not a missing one. `__hex_line` returns ""
@@ -462,7 +553,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     os.unlink(tcl)
     if timed_out and not caps:
         raise SystemExit(f"omsx_repl: TIMEOUT running {machine}")
-    return [caps.get(i) for i in range(len(cases))], delivered
+    return ([caps.get(i) for i in range(len(cases))], delivered,
+            echo_verdicts(slots, echoes))
 
 
 # --- D-DELIVER: the stored-program delivery oracle --------------------------
@@ -510,6 +602,210 @@ def _delivery_note(machine: str, cases, i: int, want, got) -> str:
             f"(the screen editor rejected a mangled echo). Body: {lines!r}")
 
 
+# --- D-ECHO: the per-injection echo oracle ----------------------------------
+# docs/spec-probe-echo.md. The stored-program oracle above covers `mode="stored"`
+# only -- 8 of the 53 probe files that drive this module. The SAME race mangles a
+# `direct`-mode line (MEASURED: phase O re-expressed in direct mode, byte-identical
+# injections on byte-identical slots, mangles the same case 22 on the same line),
+# and there it reads as a value. So every injected line is now checked against
+# what the machine ECHOED.
+
+
+def screen_stream(txt: str, linlen: int) -> str | None:
+    """One capture as a CONTIGUOUS text stream, so a wrapped echo is a plain
+    substring. None when the screen carries no text at all.
+
+    🔴 NEITHER THE MARGIN NOR THE WIDTH MAY BE HARD-CODED -- the two machines
+    disagree on both (spec §2.1): `Philips_VG_8020` indents every row by 2 and
+    runs a 37-column window, `C-BIOS_MSX1_EU_REPACK_DISK` indents by 1 and runs
+    39. A row is `[margin][linlen columns][pad]` and a line too long for the
+    window resumes at the MARGIN of the next row, so slicing each row to exactly
+    the window and concatenating rejoins what wrapping split.
+
+    The margin is MEASURED per capture -- the narrowest indent on the screen,
+    which the prompt row always supplies (basic_probe_lnblank.py's method, which
+    it reached after comparing against `rstrip()` reported every row mangled on
+    both references). `linlen` is READ from the machine, not assumed."""
+    rows = [txt[r * COLS:(r + 1) * COLS] for r in range(ROWS)]
+    live = [r for r in rows if r.strip()]
+    if not live or not 1 <= linlen <= COLS:
+        return None
+    margin = min(len(r) - len(r.lstrip(" ")) for r in live)
+    return "".join(r[margin:margin + linlen] for r in rows)
+
+
+def echo_verdicts(slots: list[tuple[int, str]],
+                  echoes: dict[int, tuple[int, int, str]]) -> list[tuple]:
+    """`(slot, case_index, typed, verdict)` per injection slot. Verdicts:
+
+       OK             the typed text is in the screen's text stream
+       MANGLED        it is NOT, the screen only GAINED, and a proper SUFFIX of
+                      the typed text is on it -- a truncated echo
+       BLIND/mode     SCRMOD != 0 -- this scrape is not looking at the text plane
+       BLIND/rewrote  the screen lost content, so the echo may have been erased
+                      rather than never written
+       BLIND/noecho   nothing resembling a truncated echo is on the screen
+       NODUMP         no dump arrived for this slot
+
+    🔴 A MANGLED VERDICT CARRIES ITS OWN CONTROL, AND IT HAS TO. "The typed text
+    is absent" is NOT sufficient, and every weaker control tried here was
+    MEASURED producing false positives on the corpus:
+
+      * a payload that CLEARS the screen -- `CLS`, `SCREEN n`, a `RUN` whose
+        program does either -- erases its own echo. Every case in this repo is
+        preceded by a `CLS` reset, so a bare absence test reports a mangle on
+        every case in every suite.
+      * a payload whose OUTPUT scrolls its own echo off the top. `linemax` types
+        a 254-character line and then `LIST`s it: the screen ends with MORE rows
+        than before, so a row-count growth test cannot see this -- that test
+        called it MANGLED and turned a 60/60 gate into exit 2.
+      * a payload that clears and then prints. `missing` types
+        `WIDTH 40:CLS:PRINT "AB";CHR$(35)`; afterwards the screen holds `AB#`
+        and `Ok`, and since the PREVIOUS screen held only `Ok` and the reference's
+        permanent function-key row -- both of which come BACK after a clear --
+        a "nothing was lost" test cannot see this either. It reported 59 mangles
+        in one suite.
+
+    So the positive evidence is taken from the MECHANISM instead of from the
+    shape of the screen. The race swallows a PREFIX of the injected line -- and
+    exactly as many characters as the PRECEDING injection occupied, its CR
+    included, measured at 4, 8, 9, 14 and 16 (spec §2.5) -- so what the screen
+    editor reads back, and what the machine therefore echoes, is a proper SUFFIX
+    of what was typed. `10 ON ERROR GOTO 40` echoes as `N ERROR GOTO 40`,
+    `PRINT "[";(0 AND 0) IMP 0;"]"` as `T "[";(0 AND 0) IMP 0;"]"`. A wiped echo
+    leaves no such suffix; a truncated one always does.
+
+    MANGLED therefore needs all three: the typed text absent, the screen having
+    lost nothing (so the echo was not erased or scrolled away), and a proper
+    suffix of the typed text present (so an echo WAS written, just not this
+    line's). Anything less refuses [[guard-that-cannot-judge-must-say-so]].
+
+    ⚠️ NAMED BLIND SPOTS, not hidden ones: a mangled `CLS`, a mangled
+    `SCREEN n`, a mangled `RUN` whose program clears, a mangled line on a
+    screen that scrolls, and a mangle that swallows the line ENTIRE (no suffix
+    survives to be found) are all invisible here. The stored-program oracle is
+    the second opinion for the stored-mode half of that (spec §5); the rest is a
+    stated coverage limit.
+
+    A blind slot also destroys the BASELINE, so the slot after it is blind too:
+    with no trustworthy previous screen there is nothing to compare against, and
+    guessing would manufacture exactly the false positive this function exists to
+    avoid."""
+    out: list[tuple] = []
+    prev: list[str] | None = None
+    for k, (case_idx, typed) in enumerate(slots):
+        got = echoes.get(k)
+        if got is None:
+            out.append((k, case_idx, typed, "NODUMP", []))
+            prev = None
+            continue
+        if any(not 0x20 <= ord(c) < 0x7F for c in typed):
+            # 🔴 A PAYLOAD THE SCREEN CANNOT SPELL BACK. `lnblank` types
+            # `2\t0 REMX`; the ROM RENDERS that tab as cursor movement, so the
+            # screen holds blanks where the character was and the typed text can
+            # never be a substring of it. The capture decodes every byte outside
+            # 0x20..0x7E to a blank for the same reason, so neither side of the
+            # comparison can represent one.
+            #
+            # This was caught by the ZERO-RED control, not by inspection: it
+            # fired on the REFERENCE, which mis-delivers nothing, so the guard
+            # was measuring something other than the race
+            # [[knife-that-reddens-nothing-is-the-finding]]. Refusing keeps the
+            # baseline -- the screen is perfectly readable, it is this PAYLOAD
+            # that cannot be checked -- so the next slot is judged normally.
+            out.append((k, case_idx, typed, "BLIND/unprintable", []))
+            prev = [r for r in (got[2][i * COLS:(i + 1) * COLS].strip()
+                                for i in range(ROWS)) if r]
+            continue
+        scrmod, linlen, txt = got
+        if scrmod != 0:
+            # a mode change makes the screens incomparable ACROSS this slot, not
+            # merely unreadable AT it -- hence the baseline goes too.
+            out.append((k, case_idx, typed, "BLIND/mode", []))
+            prev = None
+            continue
+        stream = screen_stream(txt, linlen)
+        rows = [r for r in (txt[i * COLS:(i + 1) * COLS].strip()
+                            for i in range(ROWS)) if r]
+        if stream is not None and typed in stream:
+            verdict = "OK"          # positive evidence; it needs no baseline
+        elif (stream is None or prev is None
+                or any(r not in stream for r in prev)):
+            verdict = "BLIND/rewrote"
+        elif echoed_suffix(typed, stream) is None:
+            verdict = "BLIND/noecho"
+        else:
+            verdict = "MANGLED"
+        out.append((k, case_idx, typed, verdict, rows))
+        prev = rows
+    return out
+
+
+# The shortest suffix worth believing. A 1-character suffix matches almost any
+# screen by chance -- `Ok`, the reference's function-key row and the case's own
+# output are all in the stream -- and would buy a false positive for nothing.
+MIN_ECHO_SUFFIX = 2
+
+
+def echoed_suffix(typed: str, stream: str) -> str | None:
+    """The LONGEST proper suffix of `typed` that is on the screen, or None.
+
+    Longest, not any: it names how many characters were swallowed, which is the
+    measurable quantity the mechanism predicts (spec §2.5 -- the count equals the
+    length of the preceding injection including its CR). Reporting the shortest
+    match would throw that away."""
+    for cut in range(1, len(typed) - MIN_ECHO_SUFFIX + 1):
+        if typed[cut:] in stream:
+            return typed[cut:]
+    return None
+
+
+def mis_echoed(echo: list[tuple]) -> list[tuple[int, int, str, list]]:
+    """`(case_index, slot, typed, screen_rows)` for every injection the machine
+    did not echo as typed. Only MANGLED counts -- a BLIND slot is a refusal to
+    judge, not a finding, and treating it as one would re-run most of every
+    suite."""
+    return [(c, k, t, rows) for k, c, t, v, rows in echo if v == "MANGLED"]
+
+
+def _echo_note(machine: str, cases, case_idx: int, slot: int, typed: str,
+               rows: list[str]) -> str:
+    """⚠️ CARRIES THE SCREEN, because the first question anyone asks of this
+    message is "is it real?" -- and answering it otherwise means re-deriving the
+    probe's matrix by hand. What the machine echoed INSTEAD is the evidence:
+    `ZBN ERROR GOTO 40` under a typed `10 ON ERROR GOTO 40` is the fault,
+    whereas a screen that simply does not hold the line is a hint that this
+    oracle has found a new blind spot rather than a new mangle."""
+    body = cases[case_idx][1] if case_idx < len(cases) else "?"
+    suffix = next((s for r in rows
+                   for s in [echoed_suffix(typed, r)] if s), None)
+    lost = f"{len(typed) - len(suffix)} leading char(s)" if suffix else "its head"
+    return (f"MIS-ECHOED case {case_idx} on {machine} (slot {slot}): typed "
+            f"{typed!r}, machine echoed {suffix!r} -- {lost} swallowed, and the "
+            f"screen lost nothing, so no clear or scroll erased them. The line "
+            f"was delivered mangled (docs/spec-probe-echo.md). Body: {body!r}\n"
+            f"            screen: {rows!r}")
+
+
+def _oracle_disagreement(machine: str, bad_stored, bad_echo) -> str | None:
+    """🔴 THE TWO ORACLES ARE THE ONLY CHECK EACH OTHER HAS (spec §3.5). They are
+    independent -- one walks the line-link chain from TXTTAB, the other reads the
+    screen -- so where both can see, they must agree. A self-contained batch of
+    IDENTICAL cases does NOT reproduce the race (predecessor content moves the
+    alignment, D-DELIVER §8.4), so there is no frozen positive control that would
+    not go silent the day a ROM change shifted it; this agreement check fires
+    exactly when the race does, whatever provoked it."""
+    s, e = {b[0] for b in bad_stored}, {b[0] for b in bad_echo}
+    if s == e:
+        return None
+    return (f"omsx_repl: ORACLES DISAGREE on {machine}: stored-program oracle "
+            f"flags {sorted(s) or '{}'}, echo oracle flags {sorted(e) or '{}'}. "
+            f"Both repairs still run. Cases only one oracle sees are EXPECTED "
+            f"where the other is structurally blind (spec §5): direct mode and "
+            f"`RUN` are echo-only; a case typed in SCREEN 2, and any line whose "
+            f"own execution clears the screen, are stored-only.\n")
+
+
 def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
               verify_delivery: bool = True, **kw) -> list[str | None]:
     """`_run_batch` plus the D-DELIVER verdict. THIS path has no repair to fall
@@ -518,15 +814,18 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     APPARATUS FAILURE and is raised, never returned as a value. A guard that
     cannot judge must say so.
 
-    `verify_delivery=False` opts out, for a probe that deliberately drives line
-    entry to refusal. No probe needs it today (spec §3.4)."""
-    caps, delivered = _run_batch(machine, cases, **kw)
+    `verify_delivery=False` opts out of BOTH oracles, for a probe that
+    deliberately drives line entry to refusal. No probe needs it today (spec
+    §3.4)."""
+    caps, delivered, echo = _run_batch(machine, cases, **kw)
     bad = mis_delivered(cases, delivered) if verify_delivery else []
-    if bad:
+    bad_echo = mis_echoed(echo) if verify_delivery else []
+    if bad or bad_echo:
         raise SystemExit(
             "omsx_repl: APPARATUS FAILURE -- boot-per-case delivery was mangled; "
             "nothing was measured.\n  "
-            + "\n  ".join(_delivery_note(machine, cases, *b) for b in bad))
+            + "\n  ".join([_delivery_note(machine, cases, *b) for b in bad]
+                          + [_echo_note(machine, cases, *b) for b in bad_echo]))
     return caps
 
 
@@ -585,16 +884,29 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
     to = timeout if timeout is not None else max(240.0, 1.5 * len(cases) + 120.0)
     if holds:                           # a held case adds hold_secs+1 to the timeline
         to += (hold_secs + 1.0) * sum(1 for h in holds if h)
-    caps, delivered = _run_batch(machine, cases, reset=reset, holds=holds,
-                                 timeout=to, **kw)
-    # D-DELIVER (docs/spec-probe-delivery.md §3.3): a batched case whose program
-    # the machine did not store as typed produced NO reading. Re-run that case
+    caps, delivered, echo = _run_batch(machine, cases, reset=reset, holds=holds,
+                                       timeout=to, **kw)
+    # D-DELIVER (docs/spec-probe-delivery.md §3.3) and D-ECHO
+    # (docs/spec-probe-echo.md §3.4): a batched case the machine did not store as
+    # typed, or did not ECHO as typed, produced NO reading. Re-run that case
     # alone, on the boot-per-case path measured immune to the race -- and SAY SO,
     # because a matrix that genuinely depends on batch context would answer
     # differently on the repair path and the operator has to be able to see it.
-    for i, want, got in (mis_delivered(cases, delivered) if verify_delivery else []):
-        sys.stderr.write("omsx_repl: " + _delivery_note(machine, cases, i, want, got)
-                         + "\n            -> re-running that case boot-per-case\n")
+    bad_stored = mis_delivered(cases, delivered) if verify_delivery else []
+    bad_echo = mis_echoed(echo) if verify_delivery else []
+    notes = ([(i, _delivery_note(machine, cases, i, want, got))
+              for i, want, got in bad_stored]
+             + [(b[0], _echo_note(machine, cases, *b)) for b in bad_echo])
+    if verify_delivery:
+        dis = _oracle_disagreement(machine, bad_stored, bad_echo)
+        if dis:
+            sys.stderr.write(dis)
+    # one re-run per CASE however many lines of it were mangled, and however many
+    # oracles saw it: the repair is a fresh boot of the whole case either way.
+    for i in sorted({i for i, _ in notes}):
+        for _, note in [n for n in notes if n[0] == i]:
+            sys.stderr.write("omsx_repl: " + note + "\n")
+        sys.stderr.write("            -> re-running that case boot-per-case\n")
         caps[i] = run_batch(machine, [cases[i]], reset=(), timeout=to_single,
                             holds=[holds[i]] if holds else None,
                             verify_delivery=verify_delivery, **kw)[0]

@@ -4051,30 +4051,68 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it kills it. Whoever implements them needs a plugged printer
       ([[openmsx-printer-pluggable]]) or a different instrument first.
 
-- [ ] 🔴 **`direct`-MODE DELIVERY IS STILL UNGUARDED, AND THE RATE IS NOT SMALL.**
-      D-DELIVER's guard interrogates the STORED PROGRAM, so it covers `mode="stored"`
-      only — 8 probe files. A `direct`-mode matrix has no stored program to
-      interrogate, so the same race still reads as a value there, and the
-      instrument is the per-probe echo guards rather than anything harness-wide
-      ([[decblank-echo-guard-blind]], [[lineno-blank-echo-guard]]). ⚠️ Measured
-      rate at the **default** `step=2.5`, on thirty identical harmless cases:
-      **1 in 30 on the zerobas machine, 0 in 30 on the reference**
-      ([`docs/spec-probe-delivery.md`](docs/spec-probe-delivery.md) §7.4). Whoever
-      picks this up: an echo-based delivery oracle in `_tcl` (compare the echoed
-      row against what was typed, per injection) would cover both modes at once.
-
-- [ ] 🔴 **THE FLOOR OF THE DELIVERY RACE IS NOT EXPLAINED.** D-DELIVER
-      characterised it and made it unmissable; it did not find it. What is known:
-      the machine consumes the first **four** characters of an injected line
-      without echoing them, the screen editor reads back the truncated remainder
-      and BASIC rejects it. The injector is exonerated by measurement (KEYBUF
-      drained before all 490 injections, `GETPNT == KEYBUF` after all 490, **in the
-      run that reproduced the fault**), and a deliberate type-ahead differential is
-      clean on both machines. Four is also the length of the preceding injection
-      (`CLS`+CR) — suggestive, unproven.
+- [ ] 🔴 **THE FLOOR OF THE DELIVERY RACE IS NOT EXPLAINED — BUT THE SIZE OF THE
+      BITE NOW IS.** D-DELIVER characterised it and made it unmissable; it did not
+      find it. **D-ECHO measured the swallow count: it is exactly the length of
+      the PRECEDING injection, its CR included** — 4, 8, 9, 14, 16 for
+      predecessors of those lengths, the last three stated as predictions before
+      the run, plus a sixth confirmation from `time-acceptance` (predecessor
+      `20 SWAP TIME,A`, 15 with CR, 15 swallowed)
+      ([`docs/echo-delivery-characterization.md`](docs/echo-delivery-characterization.md) §5).
+      So D-DELIVER's "four is also the length of `CLS`+CR — suggestive, unproven"
+      is now a **rule**. What remains open is the TRIGGER: why it fires on one
+      slot and not the next. A predecessor of 26 bytes shifts the alignment and
+      nothing mangles at all.
+      ⚠️ A mechanism that FITS — the ROM restoring a `GETPNT` it saved past the
+      previous line, which is consistent with D-DELIVER's `GETPNT == KEYBUF`
+      reading because that was taken after the HARNESS wrote the pointer, not
+      after the ROM restored one — is a **hypothesis and is not measured**.
       ⚠️ **Do not "fix" it by raising `step`.** `step=5.0` clears the graphics case
       and `step=1.2` clears the filler batch; a number that moves a race is not a
       guard [[deterministic-mangle-is-still-a-mangle]].
+
+- [ ] ⚠️ **THE DELIVERY GUARDS DO NOT COVER PROBES WITH THEIR OWN `build_tcl`.**
+      Every `probes/disk/*` script and `basic_probe_printusing.py` build their own
+      Tcl and never reach `omsx_repl._tcl`, so neither the stored-program oracle
+      nor the echo oracle sees them. Not enumerated; not known to be affected.
+
+- [x] ✅ **D-ECHO — A LINE THE MACHINE DID NOT ECHO WAS NOT DELIVERED — LANDED
+      2026-08-03.** Spec [`docs/spec-probe-echo.md`](docs/spec-probe-echo.md),
+      characterisation
+      [`docs/echo-delivery-characterization.md`](docs/echo-delivery-characterization.md).
+      **Apparatus only — `probes/lib/omsx_repl.py` and a new
+      `tests/test_echo_oracle.py`; no `basic/`, `sub/`, `disk/` or `tape/` source
+      touched, no ROM rebuilt.** Closes D-DELIVER §9.3: every injected line is now
+      checked against what the machine ECHOED, so `direct` mode — 45 of the 53
+      probe files — is guarded too, and `run_cases` re-runs a mangled case
+      boot-per-case exactly as the stored oracle does.
+      🎯 **Six standing corpus suites were mis-delivering a case on every run and
+      were GREEN**: `logicops`, `float`, `math`, `str-domain`, `time` and
+      `error-trap`, all `direct`-mode and all invisible to the stored oracle. They
+      passed because `run_differential` self-heals a disagreement — the outcome
+      was rescued, the cause unattributable, and a mangle leaving a plausible
+      value both sides agree on was never protected at all.
+      🔴 **The guard was WIRED IN AND SILENT on its first run**: `$__f` is a global
+      and does not resolve inside a Tcl `proc`, so `__echo` errored and openMSX
+      dropped the callback without a word — emission present, call site present,
+      every slot recorded, nothing reported. The **cross-oracle `ORACLES DISAGREE`
+      check** caught it, not any gate [[coverage-gate-cannot-see-a-gutted-guard]].
+      🔴 **Four false-positive classes, all found by the CORPUS, not by
+      inspection** — and two of them broke a green gate before they were found
+      (`linemax` 60/60 → exit 2 on a payload whose `LIST` scrolls its own echo
+      away; `missing` 59 fires on a payload that clears then prints). The fourth
+      fired on the **reference**, which mis-delivers nothing, and was caught by
+      the zero-RED control [[knife-that-reddens-nothing-is-the-finding]].
+      🔴 **K6 reddened NOTHING and that was the finding**: a hard-coded screen
+      margin degrades the guard to **blindness**, not to noise (`MANGLED` 1 → 0,
+      zero false fires), because a margin wrong by one eats only the prompt and
+      matters solely for a *wrapped* echo. The geometry therefore has no emulator
+      knife; `tests/test_echo_oracle.py` is its only instrument, and exits 1 on
+      four rows under that cut.
+      ⚠️ **The stored-program oracle STAYS**, as a second opinion — each oracle is
+      blind exactly where the other sees (spec §5), and the pair is the only
+      positive control either has, since a batch of *identical* cases does not
+      reproduce the race at all.
 
 - [x] ✅ **D-DELIVER — A CASE WHOSE PROGRAM WAS NEVER STORED MAY NOT REPORT A
       VALUE — LANDED 2026-08-03.** Spec
