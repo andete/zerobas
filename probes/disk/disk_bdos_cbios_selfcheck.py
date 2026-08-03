@@ -71,6 +71,12 @@ DEFAULT_CBIOS = "C-BIOS_MSX1_EU_BASIC_DISK"
 # two gates can never drift on which exercisers / anchors they cover.
 sys.path.insert(0, HERE)
 from disk_bdos_acceptance import EXERCISERS, build_and_plan, mode_of  # noqa: E402
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 
 # Documented BIOS-dependent bytes EXCUSED per exerciser (address -> provenance): a proven
 # benign, BIOS-seeded value that is correct on both hosts. Empty for now -- the CF-3300
@@ -130,7 +136,7 @@ def capture_buffer(argv: list[str], host_env: dict | None) -> tuple[list[int] | 
     env = dict(os.environ)
     if host_env:
         env.update(host_env)
-    proc = subprocess.run(["python3"] + argv, cwd=ROOT, capture_output=True, text=True,
+    proc = subprocess.run(omsx_preflight.guarded(["python3"] + argv), cwd=ROOT, capture_output=True, text=True,
                           env=env)
     raw = proc.stdout + proc.stderr
     # rc 2 = LOGICAL miss, rc 3 = APPARATUS miss (the emulator never finished); both

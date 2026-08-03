@@ -48,6 +48,11 @@ from cas_encode import build_cas_basic
 from bas_tokenise import make_multiline_program
 from basic_probe_cas_ascii import build_ascii_cas
 from omsx_run import _tcl_dquote
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 MACHINE_TAPE = "C-BIOS_MSX1_EU_TAPE"
@@ -92,7 +97,7 @@ def run_typed_scr(cart, cas, type_cmds, cap_time=40.0, timeout=110.0):
     if os.path.exists(out):
         os.unlink(out)
     cmd = [OMSX, "-machine", ZB_MACHINE, "-cart", cart, "-cassetteplayer", cas, "-script", tcl]
-    p = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    p = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          start_new_session=True)
     dl = time.time() + timeout
     while p.poll() is None and time.time() < dl:

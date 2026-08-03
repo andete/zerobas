@@ -74,6 +74,10 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from omsx_run import find_omsx  # reuse headless-binary discovery
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.dirname(_zbo.path.abspath(__file__)))
+import omsx_preflight  # noqa: E402
 
 # --- published sysvar contract (MSX2 Technical Handbook; no disasm) ----------
 KEYBUF = 0xFBF0
@@ -376,7 +380,7 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
         cmd += ["-diska", diska]
     cmd += ["-command", "set renderer none; set sound_driver null", "-script", tcl]
 
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+    proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL, start_new_session=True)
     deadline = time.time() + timeout
     while proc.poll() is None and time.time() < deadline:

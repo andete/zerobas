@@ -44,6 +44,12 @@ import argparse
 import os
 import subprocess
 import sys
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CRUNCH = os.path.join(HERE, "basic_probe_crunch.py")
@@ -58,7 +64,7 @@ REF_MACHINE = "Philips_VG_8020"
 
 def run(label, argv):
     print(f"\n===== {label} =====")
-    rc = subprocess.call([sys.executable] + argv)
+    rc = subprocess.call(omsx_preflight.guarded([sys.executable] + argv))
     print(f"----- {label}: {'PASS' if rc == 0 else 'FAIL'} -----")
     return rc == 0
 

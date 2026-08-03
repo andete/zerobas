@@ -83,6 +83,11 @@ import tempfile
 import time
 
 from omsx_repl import KEYBUF, GETPNT, PUTPNT, MAX_DIRECT  # noqa: E402
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 if not (os.path.sep in OMSX and os.path.isfile(OMSX)):
@@ -180,7 +185,7 @@ def run(machine, prog, events, *, boot=8.0, step=3.0, run_gap=2.0, poll_from=2.0
     os.close(fd)
     cmd = [OMSX, "-machine", machine, "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+        proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
         dl = time.time() + timeout
         while proc.poll() is None and time.time() < dl:

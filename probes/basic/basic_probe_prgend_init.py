@@ -31,6 +31,12 @@ import subprocess
 import sys
 import tempfile
 
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SYM = os.path.join(ROOT, "build", "basic-reloc.sym")
 MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -79,8 +85,8 @@ debug set_bp {new_prog:#06x} {{}} {{
 after time 20 {{ exit }}
 """)
     tcl.close()
-    subprocess.run([find_omsx(), "-machine", MACHINE,
-                    "-command", "set renderer none; set sound_driver null", "-script", tcl.name],
+    subprocess.run(omsx_preflight.guarded([find_omsx(), "-machine", MACHINE,
+                    "-command", "set renderer none; set sound_driver null", "-script", tcl.name]),
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                    timeout=60)
     with open(out.name) as f:

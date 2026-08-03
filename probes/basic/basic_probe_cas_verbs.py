@@ -57,6 +57,11 @@ from bas_tokenise import make_multiline_program      # noqa: E402
 from basic_probe_cas_ascii import build_ascii_cas    # noqa: E402
 from basic_probe_tape_save import run_save, find_subseq  # noqa: E402
 from omsx_run import _tcl_dquote                      # noqa: E402
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 MACHINE_TAPE = "C-BIOS_MSX1_EU_TAPE"
@@ -126,7 +131,7 @@ def run_typed(cart: str, cas_path: str, type_cmds: list[tuple[float, str]],
     if zb_machine == MACHINE_TAPE:
         cmd += ["-cart", cart]          # stock-BIOS rig: the ROM IS the cartridge
     cmd += ["-cassetteplayer", cas_path, "-script", tcl_path]
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             start_new_session=True)
     deadline = time.time() + timeout
     while proc.poll() is None and time.time() < deadline:

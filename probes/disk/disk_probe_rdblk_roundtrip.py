@@ -32,6 +32,12 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # sibling probes
 from disk_probe_bdos import fat12_add  # noqa: E402  (reuse, don't duplicate)
 
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 ASM = os.path.join(HERE, "rdblk_rt.asm")
@@ -138,7 +144,7 @@ def run_case(key: str, dos_src: str, done: int, com_base: bytearray, tmp_dir: st
     for attempt in range(1, MAX_ATTEMPTS + 1):
         t0 = time.time()
         try:
-            p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True,
+            p = subprocess.run(omsx_preflight.guarded(cmd), cwd=ROOT, capture_output=True, text=True,
                                timeout=CASE_TIMEOUT)
             rc, txt = p.returncode, p.stdout + p.stderr
         except subprocess.TimeoutExpired as e:

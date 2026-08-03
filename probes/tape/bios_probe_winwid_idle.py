@@ -65,6 +65,11 @@ _sys.path.insert(0, _os.path.join(
     _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib"))  # shared infra
 import z80probe as Z      # noqa: E402
 import omsx_run           # noqa: E402  (reuse find_omsx for the $OPENMSX override)
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 WINWID = 0xFCA5           # the byte under test
 TAPOON, TAPOUT, TAPOOF = 0x00EA, 0x00ED, 0x00F0
@@ -180,7 +185,7 @@ def run(machine: str, baud: int, keep: bool, poison: bool = False) -> dict[str, 
     cmd = [omsx, "-machine", machine, "-cart", rom_path,
            "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+        proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
         deadline = time.time() + 180.0
         while proc.poll() is None and time.time() < deadline:

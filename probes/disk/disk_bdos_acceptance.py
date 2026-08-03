@@ -44,6 +44,12 @@ import shlex
 import shutil
 import subprocess
 import sys
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -243,7 +249,7 @@ def gate(name: str, mode: str, rc: int, out: str, argv: list[str]) -> tuple[bool
 
 
 def run_probe(argv: list[str]) -> tuple[int, str]:
-    proc = subprocess.run(["python3"] + argv, cwd=ROOT, capture_output=True, text=True)
+    proc = subprocess.run(omsx_preflight.guarded(["python3"] + argv), cwd=ROOT, capture_output=True, text=True)
     return proc.returncode, proc.stdout + proc.stderr
 
 

@@ -61,6 +61,11 @@ import time
 from cas_encode import build_cas_basic, CAS_SYNC  # noqa: E402
 from bas_tokenise import Tokeniser, make_multiline_program  # noqa: E402
 from omsx_run import _tcl_dquote  # noqa: E402
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 MACHINE_TAPE = "C-BIOS_MSX1_EU_TAPE"
@@ -139,7 +144,7 @@ after time {cap_time} {{ __cap }}
     cmd += (["-cart", cart] if ZB_MACHINE == MACHINE_TAPE else [])
     cmd += [
            "-cassetteplayer", cas_path, "-script", tcl_path]
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             start_new_session=True)
     deadline = time.time() + timeout
     while proc.poll() is None and time.time() < deadline:

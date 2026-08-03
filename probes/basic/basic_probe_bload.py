@@ -33,6 +33,11 @@ import tempfile
 
 from z80probe import ld_a, sta  # noqa: E402
 from cas_encode import build_cas  # noqa: E402
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 # ---- blob parameters ----
 LOAD_ADDR = 0xC000
@@ -149,7 +154,7 @@ def main() -> int:
     print(f"cas:  {cas_path} ({len(cas)} bytes)")
     print(f"running: {' '.join(cmd)}\n")
 
-    rc = subprocess.call(cmd)
+    rc = subprocess.call(omsx_preflight.guarded(cmd))
     if rc != 0:
         print(f"\nomsx_run exited with code {rc}", file=sys.stderr)
         return rc

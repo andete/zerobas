@@ -1358,6 +1358,38 @@ badfnum-acceptance: repack-machine
 	  python3 probes/disk/diskbasic_probe_badfnum.py --gate \
 	        $(if $(ONLY),--only '$(ONLY)',) $(if $(V),-v,)
 
+# --- ERROR-MESSAGE reference-exactness gate (docs/spec-basic-msgexact.md) -----
+# 55 rows: every error code the machine can reach, read back VERBATIM from all
+# three sides. `--relock` re-measures the two references and rewrites the
+# embedded REF_TEXT lock.
+#
+# 🔴 THIS TARGET EXISTS BECAUSE THE PROBE HAD NONE, AND THAT IS HOW D-DOTGAPS
+# MEASURED A MACHINE WITH NO ROM BEHIND IT. `basic_probe_msgexact.py` is a named
+# corpus member and was one of the 94 probes with no make target, so the corpus
+# script ran it BY HAND after `rm -rf build && make basic-reloc` -- which builds
+# build/basic-reloc.rom but NOT build/zerobas-main-eu.rom, the merged ROM the
+# machine XML's absolute paths point at. All 55 rows read `<none>` and the gate
+# reported 55 red INCLUDING ITS OWN CONTROLS (docs/spec-basic-dotgaps.md §9.2).
+# Depending on `repack-machine` makes that ordering inexpressible here.
+# ⚠️ A make target only fixes the path someone remembers to use; the preflight in
+# probes/lib/omsx_preflight.py covers the one they type by hand.
+msgexact-gate: repack-machine
+	python3 probes/basic/basic_probe_msgexact.py --gate $(if $(V),--verify,)
+
+msgexact-relock: repack-machine
+	python3 probes/basic/basic_probe_msgexact.py --relock
+
+# --- COVERAGE of the openMSX preflight (docs/spec-probe-preflight.md §3.5) -----
+# The denominator, not a smoke test: every subprocess spawn site in probes/,
+# tools/ and tests/ is classified, and the only exemption is STRUCTURAL (a list
+# literal that provably carries no `-machine`). Anything else -- a literal with
+# `-machine`, a variable this checker cannot prove `-machine`-free, an expression
+# it cannot see into -- must spawn `omsx_preflight.guarded(...)`.
+# A new probe that builds its own openMSX command line fails this gate.
+# `make preflight-check LIST=1` prints every site and its verdict.
+preflight-check:
+	python3 tools/check_probe_preflight.py $(if $(LIST),--list,)
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
@@ -1516,4 +1548,5 @@ clean:
         linemax-characterize linemax-acceptance chancost-characterize \
         lnblank-characterize lnblank-acceptance lnblank-echo lnblank-say-acceptance \
         lof-characterize lof-acceptance \
-        badfnum-characterize badfnum-acceptance clean
+        badfnum-characterize badfnum-acceptance \
+        msgexact-gate msgexact-relock preflight-check clean

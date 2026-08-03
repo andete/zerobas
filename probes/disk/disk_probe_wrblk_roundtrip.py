@@ -34,6 +34,12 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from disk_probe_bdos import fat12_add  # noqa: E402  (reuse, don't duplicate)
 
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASM = os.path.join(HERE, "wrblk_rt.asm")
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
@@ -147,7 +153,7 @@ after time {end_s} {{ exit }}
     open(tcl_path, "w").write(tcl)
     cmd = [OMSX, "-machine", machine, "-diska", dsk,
            "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+    proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL, start_new_session=True)
     deadline = time.time() + timeout
     while proc.poll() is None and time.time() < deadline:

@@ -50,6 +50,12 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(REPO, "tools"))
 import openmsx_paths  # noqa: E402
 
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 SUB_ROM = os.path.join(REPO, "build", "sub.rom")
 OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 MACHINE = "ZEROBAS_SUBROM_PROBE"
@@ -178,7 +184,7 @@ def run() -> dict | None:
 
     cmd = [OMSX, "-machine", MACHINE, "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+        proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
         deadline = time.time() + 60
         while proc.poll() is None and time.time() < deadline:

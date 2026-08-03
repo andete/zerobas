@@ -35,6 +35,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from disk_probe_bdos import fat12_add  # noqa: E402  (reuse, don't duplicate)
 
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 ASM = os.path.join(HERE, "setrnd_char.asm")
@@ -85,7 +91,7 @@ def dump_one(machine: str, done: int, disk: str,
            "--keys", "\\rSETRND\\r", "--keys-at", "20", "--settle", "40",
            "--machine", machine, "--mem", f"{base:#06x}:{length:#04x}",
            "--diska", disk]
-    p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=400)
+    p = subprocess.run(omsx_preflight.guarded(cmd), cwd=ROOT, capture_output=True, text=True, timeout=400)
     txt = p.stdout + p.stderr
     if "never reached occurrence" in txt:
         return None

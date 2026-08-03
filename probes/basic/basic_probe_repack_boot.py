@@ -31,6 +31,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(REPO, "tools"))
 import openmsx_paths  # noqa: E402
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 MERGED = os.path.join(REPO, "build", "zerobas-main-eu.rom")
 # ⚠️ THE SUB-ROM IS NOT OPTIONAL SCENERY. The sub-ROM arc (wave 3) evicted the
@@ -108,7 +113,7 @@ def capture(type_events, settle):
            "--mem", f"VRAM:0x0000:{NLEN}", "--out", cap, "--timeout", "180"]
     for delay, text in type_events:
         cmd += ["--type", text, "--type-delay", str(delay)]
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     txt = open(cap).read() if os.path.exists(cap) else ""
     m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", txt)
     if not m:

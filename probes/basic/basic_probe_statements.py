@@ -40,6 +40,11 @@ import tempfile
 
 from basic_probe_bload import build_blob, LOAD_ADDR, LANDMARK  # noqa: E402
 from cas_encode import build_cas  # noqa: E402
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib", "omsx_run.py")
 # ⚠️ zerobas now runs on the REPACK machine, which carries the merged main ROM in
@@ -67,7 +72,7 @@ def run(machine, cas, line, mems, bp=None, secs=None, type_delay=8):
     for m in mems:
         cmd += ["--mem", m]
     cmd += ["--out", out_path, "--timeout", "120"]
-    rc = subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    rc = subprocess.call(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     cap = ""
     if os.path.exists(out_path):
         with open(out_path) as f:

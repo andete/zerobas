@@ -30,6 +30,11 @@ from __future__ import annotations
 import argparse, os, re, subprocess, sys, tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
 import omsx_repl  # noqa: E402
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 REF_MACHINE = "Philips_VG_8020"
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -93,7 +98,7 @@ def psg_after(machine, stmt):
         cmd = [sys.executable, OMSX_RUN, "--machine", machine,
                "--type", stmt + "\r", "--type-delay", str(delay),
                "--time", str(secs), "--mem", "PSG regs:0:14", "--out", out]
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         with open(out) as fh:
             for line in fh:
                 m = re.search(r"mem\.PSG regs:0x0000:14=([0-9a-f]+)", line)

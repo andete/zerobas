@@ -24,6 +24,12 @@ import subprocess
 import sys
 import tempfile
 
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "probes", "lib"))
+import omsx_preflight  # noqa: E402
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Applied IN ORDER; each is a tracked 0BSD description of edits to BSD C-BIOS
 # source, never a copy of its bytes (decision D1). See cbios-repack/README.md.
@@ -44,7 +50,7 @@ ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 def run(cmd, **kw):
     print("  " + " ".join(str(c) for c in cmd))
-    subprocess.run(cmd, check=True, **kw)
+    subprocess.run(omsx_preflight.guarded(cmd), check=True, **kw)
 
 
 def sha1(path: str) -> str:

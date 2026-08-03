@@ -43,6 +43,11 @@ import tempfile
 
 
 from cas_encode import build_cas  # noqa: E402
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 KBUF = 0xF41F   # crunch buffer: the tokenised line (MSX2 TH sysvar map)
 KBUF_LEN = 48
@@ -111,7 +116,7 @@ def run_case(machine: str, line: str, type_delay: float, cas_path: str) -> bytes
         "--out", out_path,
         "--timeout", "120",
     ]
-    rc = subprocess.call(cmd)
+    rc = subprocess.call(omsx_preflight.guarded(cmd))
     capture = ""
     if os.path.exists(out_path):
         with open(out_path) as f:

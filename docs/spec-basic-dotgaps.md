@@ -213,6 +213,17 @@ against a machine whose ROM file did not exist. Re-run after any
 `repack-machine` target it is 55/55. [[stale-machine-reads-as-unimplemented]],
 and the reason the corpus script now runs a `repack-machine` target first.
 
+🎯 **CLOSED 2026-08-03 BY D-PREFLIGHT**
+([`docs/spec-probe-preflight.md`](spec-probe-preflight.md)). Ordering discipline
+is no longer what stands between a probe and a machine with no ROM behind it:
+`probes/lib/omsx_preflight.py` resolves the machine XML before the first boot,
+checks every repo-built ROM it names for existence and `make -q` freshness, and
+**refuses with an `APPARATUS FAILURE` naming the file and the fix** instead of
+measuring. Knifed against this exact incident: `rm build/zerobas-main-eu.rom` now
+gives exit 2 and **zero rows** rather than 55 red. `basic_probe_msgexact.py` also
+finally has make targets (`msgexact-gate` / `msgexact-relock`), both on
+`repack-machine`, so the ordering that produced this is not expressible.
+
 ### 9.3 Knives
 
 Scored against the battery on zerobas unless noted; every cut rebuilt from clean,

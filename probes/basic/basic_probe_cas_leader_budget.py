@@ -75,6 +75,11 @@ import time
 
 import cas_decode as CD                                # noqa: E402
 import basic_probe_tape_save as TS                     # noqa: E402
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 OMSX = TS.OMSX
 MACHINE_TAPE = TS.MACHINE_TAPE
@@ -207,7 +212,7 @@ after time {cap_time} {{ __cap }}
     args += ["-cassetteplayer", wav, "-command", "set renderer none; set sound_driver null",
              "-script", tcl_path]
     try:
-        proc = subprocess.Popen(args, stdout=subprocess.DEVNULL,
+        proc = subprocess.Popen(omsx_preflight.guarded(args), stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
         deadline = time.time() + timeout
         while proc.poll() is None and time.time() < deadline:

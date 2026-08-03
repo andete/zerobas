@@ -86,6 +86,14 @@ def sub_secondary(sub_rom_abs: str) -> str:
 
 
 def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str = "") -> str:
+    # ⚠️ NO `--` ANYWHERE INSIDE AN XML COMMENT BELOW. A double hyphen is illegal
+    # there, and every machine this tool has ever written carried one (in the PSG
+    # note), which makes the WHOLE file unparseable by a conforming reader --
+    # `xml.etree.ElementTree` refuses it outright. openMSX's own parser tolerates
+    # it, so it went unnoticed until the probe preflight tried to read a config
+    # back (docs/spec-probe-preflight.md §5.2). Fixed 2026-08-03; the preflight
+    # strips comments textually anyway, because a guard that cannot read the
+    # artifact it vouches for fails open.
     """Slot 0 = merged repack main ROM (0x0000-0x7FFF) + C-BIOS logo (0x8000-0xBFFF);
     slot 3 expanded: 3-0 = 64 KB RAM, 3-1 = zerobas-disk behind a National WD2793,
     3-2 = zerobas-sub (the built-in sub-ROM, when --sub-rom is given). Hardware
@@ -148,7 +156,7 @@ def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str =
       <!-- Match the VG-8020 oracle's discrete-PSG model. openMSX DEFAULTS this to
            true (silently ignore R7's port-direction bits); the Philips_VG_8020 config
            sets it false. Leaving the default here made the two sides of every PSG
-           differential structurally different -- and specifically it blocked the only
+           differential structurally different, and specifically it blocked the only
            scriptable way to press joystick triggers 1..4 (put port A in output mode,
            then write the R14 latch), which the interrupt-trap STRIG gate needs.
            zerobas's ROM never sets the direction bits, so shipping behaviour is

@@ -56,6 +56,12 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # sibling probes
 from disk_probe_bdos import fat12_add  # noqa: E402  (reuse the FAT12 injector)
 
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 OMSX = os.environ.get("OPENMSX") or "/opt/homebrew/bin/openmsx"
@@ -98,7 +104,7 @@ after time {settle} {{ exit }}
     if os.path.exists(log):
         os.unlink(log)
     cmd = [OMSX, "-machine", machine, "-diska", disk, "-script", tcl_path]
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+    proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL, start_new_session=True)
     deadline = time.time() + timeout
     while proc.poll() is None and time.time() < deadline:

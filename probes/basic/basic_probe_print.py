@@ -50,6 +50,11 @@ import re
 import subprocess
 import sys
 import tempfile
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 
 OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib", "omsx_run.py")
@@ -83,7 +88,7 @@ def run_line(zb, line, base=6.0, tail=8.0):
             "--time", str(base + 3 + tail),
             "--mem", f"VRAM:0x0000:{NAMETBL_LEN}",
             "--out", out_path, "--timeout", "180"]
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.call(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     cap = ""
     if os.path.exists(out_path):
         with open(out_path) as f:

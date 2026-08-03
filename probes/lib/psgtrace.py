@@ -5,6 +5,10 @@
 # once per VBLANK, so the frame-by-frame PSG state IS the drain behavior we must
 # reproduce in play_service.
 import argparse, os, subprocess, sys, tempfile, signal, time
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.dirname(_zbo.path.abspath(__file__)))
+import omsx_preflight  # noqa: E402
 
 DEFAULT_OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 
@@ -43,7 +47,7 @@ def trace(machine, stmt, out, n=400, tp=5.0, arm=5.6, deadline=45.0, omsx=None):
     os.write(fd, tcl.encode()); os.close(fd)
     cmd = [omsx, "-machine", machine, "-command", "set renderer none; set sound_driver null", "-script", tclp]
     try:
-        p = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        p = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                              start_new_session=True)
         dl = time.time() + deadline + 30
         while p.poll() is None and time.time() < dl:

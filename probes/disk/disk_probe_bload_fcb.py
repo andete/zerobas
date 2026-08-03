@@ -52,6 +52,11 @@ import os
 import subprocess
 import sys
 import tempfile
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib", "omsx_run.py")
 
@@ -96,7 +101,7 @@ def run_case(machine: str, line: str, landmark: int) -> bytes:
         "--out", out_path,
         "--timeout", "120",
     ]
-    rc = subprocess.call(cmd, stdout=subprocess.DEVNULL)
+    rc = subprocess.call(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL)
     if rc != 0:
         if os.path.exists(out_path):
             os.unlink(out_path)

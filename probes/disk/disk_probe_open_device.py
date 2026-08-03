@@ -56,6 +56,12 @@ import time
 from make_test_dsk import Fat12Image  # noqa: E402
 from bas_tokenise import make_basic_file  # noqa: E402
 
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 OURS_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE")
 
@@ -106,8 +112,8 @@ after time 20 {{ cap }}
     for p in (out_path, prn_log):
         if os.path.exists(p):
             os.unlink(p)
-    proc = subprocess.Popen([OMSX, "-machine", machine, "-diska", dsk,
-                             "-script", out_path + ".tcl"],
+    proc = subprocess.Popen(omsx_preflight.guarded([OMSX, "-machine", machine, "-diska", dsk,
+                             "-script", out_path + ".tcl"]),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             start_new_session=True)
     deadline = time.time() + timeout

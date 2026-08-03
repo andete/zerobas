@@ -40,6 +40,11 @@ import subprocess
 import sys
 import tempfile
 import time
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 OMSX = shutil.which("openmsx") or "/Applications/openMSX.app/Contents/MacOS/openmsx"
 
@@ -113,8 +118,8 @@ def run(machine, choice):
     tcl = tempfile.NamedTemporaryFile(suffix=".tcl", delete=False).name
     open(tcl, "w").write(build_tcl(program(choice)))
     proc = subprocess.Popen(
-        [OMSX, "-machine", machine, "-diska", dsk,
-         "-command", "set renderer none; set sound_driver null", "-script", tcl],
+        omsx_preflight.guarded([OMSX, "-machine", machine, "-diska", dsk,
+         "-command", "set renderer none; set sound_driver null", "-script", tcl]),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     deadline = time.time() + 120
     while proc.poll() is None and time.time() < deadline:

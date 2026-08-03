@@ -34,6 +34,12 @@ import subprocess
 import tempfile
 import time
 
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
+
 DEFAULT_OPENMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 # "ours" = our disk ROM under a host BIOS. Default host is the CF-3300 (the oracle:
 # it carries a genuine stock disk ROM + MSX-DOS to diff against, so it is the machine
@@ -259,7 +265,7 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
         cmd = [self.openmsx, "-machine", self.machine, "-script", tcl_path]
         if self.diska:
             cmd += ["-diska", self.diska]
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+        proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
         self._wait(proc, timeout, stall_timeout, hbfile)
         lines: list[str] = []

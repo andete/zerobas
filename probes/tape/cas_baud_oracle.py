@@ -50,6 +50,11 @@ import re
 import subprocess
 import sys
 import tempfile
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
+import omsx_preflight  # noqa: E402
 
 # Shared infra lives in probes/lib/ (driven as a subprocess, like realtape).
 OMSX_RUN = os.path.join(
@@ -79,7 +84,7 @@ def run(machine: str, mems: list[str], types: list[tuple[str, float]], secs: int
     for m in mems:
         cmd += ["--mem", m]
     cmd += ["--time", str(secs), "--out", out.name, "--timeout", "120"]
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    subprocess.run(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
     d = {}
     for line in open(out.name):
         m = re.match(r"mem\.memory:0x([0-9A-Fa-f]+):\d+=([0-9a-f]*)", line.strip())

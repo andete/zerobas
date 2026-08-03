@@ -42,6 +42,12 @@ import tempfile
 
 import openmsx_paths
 
+# --- zerobas: the openMSX preflight guard (probes/lib) ---
+import os as _zbo, sys as _zbs  # noqa: E402
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
+    _zbo.path.dirname(_zbo.path.abspath(__file__))), "probes", "lib"))
+import omsx_preflight  # noqa: E402
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(REPO, "tools")
 PASMO = os.environ.get("PASMO", "pasmo")
@@ -51,7 +57,7 @@ PY = sys.executable  # this interpreter -- avoids assuming `python3` on PATH (Wi
 def run(cmd, **kw):
     """Run a command, echoing it; raise on failure."""
     print("  " + " ".join(cmd))
-    subprocess.run(cmd, check=True, **kw)
+    subprocess.run(omsx_preflight.guarded(cmd), check=True, **kw)
 
 
 def _sym_value(sym_path: str, label: str) -> int:
