@@ -129,6 +129,19 @@ whole matrix (~20× on the float gate). Two entry points build the pattern:
 - `--boot-per-case` on each converted probe forces `batch=False` end-to-end — the
   isolation escape hatch when a batched case looks wrong.
 
+🔴 **DELIVERY IS VERIFIED, NOT ASSUMED** (D-DELIVER,
+[`docs/spec-probe-delivery.md`](../docs/spec-probe-delivery.md)). Batching's
+*other* hazard is that a case can silently lose a whole program line to an
+alignment race — measured **1 in 30 at the default `step`** on the zerobas
+machine, **0 in 30** on the reference — and the loss reads as plausible
+semantics on both sides. So every `mode="stored"` case now reports the
+line-number chain the machine actually held, just before its `RUN`;
+`run_cases` announces a mismatch on stderr and re-runs that case boot-per-case,
+and `run_batch` (which *is* that path) raises `APPARATUS FAILURE`. Opt out with
+`verify_delivery=False` only if a probe deliberately drives line entry to
+refusal. ⚠️ **`direct` mode is NOT covered** — there is no stored program to
+interrogate; the per-probe echo guards are the instrument there.
+
 The `basic_probe_float_{fmt,arith,vars}` probes use `run_differential`; copy them
 as the template. `floatlit` and other breakpoint-synced probes (`--bp`, e.g. the
 crunch/tokenise probes) are not flaky, use `omsx_run.py`, and stay boot-per-case

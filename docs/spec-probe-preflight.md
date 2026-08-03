@@ -425,6 +425,13 @@ rebuild that followed was byte-identical, as expected for an import-only edit.)
 
 ### 8.5 `graphics-acceptance` has two standing red rows and is in nobody's corpus
 
+🎯 **CLOSED 2026-08-03 BY D-DELIVER**
+([`docs/spec-probe-delivery.md`](spec-probe-delivery.md)). Neither row was
+about sprites or `BASE(n)`: the batched delivery path was losing a whole
+program line, and the hunch below about `'ZE 5'` being the neighbouring row's
+answer turned out literally true by a mechanism nobody guessed. 290/290 now,
+and `graphics-acceptance` is a standing corpus member.
+
 `put_pat64_16` (`ref='ZE 5'`, `zb=None`) and `rd_base_s0` (`ref='ZK 6144'`,
 `zb='ZE 5'`). Attributed away from this slice two ways: identical under
 `ZEROBAS_PREFLIGHT=off`, and **identical on the stashed pre-slice tree**. It is

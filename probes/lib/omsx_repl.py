@@ -48,6 +48,17 @@ GRANULARITY -- three layers, batched by default for a whole matrix:
     driver: batched delivery to both machines + a SELF-HEAL pass that re-runs any
     disagreeing case boot-per-case, so verdicts equal a full boot-per-case run.
 
+DELIVERY IS VERIFIED, NOT ASSUMED (D-DELIVER, docs/spec-probe-delivery.md). A
+batched `mode="stored"` case can lose a whole program line to an alignment race
+-- measured 1 in 30 at the default `step` on the zerobas machine, 0 in 30 on the
+reference -- and the loss is INVISIBLE in the capture: the two standing
+`graphics-acceptance` reds were one case that lost `10 ON ERROR GOTO 40` and one
+that lost its `PRINT` line, both reading as plausible semantics on both sides.
+So every stored case now reports the line-number chain the machine actually
+held, just before its `RUN`; `run_cases` re-runs a mangled case boot-per-case
+and says so, `run_batch` (which IS that path) refuses. ⚠️ `direct` mode has no
+stored program to interrogate and is NOT covered.
+
 Batching became safe on 2026-07-12: the `--selftest` isolation check established
 that zerobas's `NEW`/`CLEAR` did NOT clear variables or the DEF table (the
 reference does -- a real divergence), now FIXED in the repack build
@@ -83,6 +94,7 @@ import omsx_preflight  # noqa: E402
 KEYBUF = 0xFBF0
 GETPNT = 0xF3FA
 PUTPNT = 0xF3F8
+TXTTAB = 0xF676                  # -> the stored program's text base ($8001 here)
 KEYBUF_SZ = 40
 # A 40-byte CIRCULAR buffer holds at most 39 bytes unambiguously: with 40 bytes
 # written, PUTPNT wraps to equal GETPNT (full is indistinguishable from empty),
@@ -261,11 +273,20 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         for r in reset:                       # power-on-clean vars + DEFtbl + screen
             t = emit(t, r)
         if mode == "stored":
-            seq = [f"{10 * (i + 1)} {ln}" for i, ln in enumerate(lines)] + ["RUN"]
+            for ln in [f"{10 * (i + 1)} {ln}" for i, ln in enumerate(lines)]:
+                t = emit(t, ln)
+            # D-DELIVER: ask the machine what it actually STORED, just before RUN
+            # (docs/spec-probe-delivery.md §3.2). Before RUN, so a case whose own
+            # program calls NEW/CLEAR cannot erase the evidence -- and before the
+            # capture, so a case that never reaches its reporting line is still
+            # attributable. A line the screen editor rejected is simply absent
+            # from the chain, which is exactly the reading this needs.
+            body.append(f'after time {max(boot, t - min(0.4, step / 5)):.2f} '
+                        f'{{ puts $__f "prog.{idx}=[__lines {TXTTAB}]"; flush $__f }}')
+            t = emit(t, "RUN")
         else:
-            seq = list(lines)
-        for ln in seq:
-            t = emit(t, ln)
+            for ln in lines:
+                t = emit(t, ln)
         hold = holds[idx] if holds else None
         if hold:
             # Press at the RUN slot itself (t - step), not after it: the program
@@ -309,6 +330,24 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         "  if {$link <= $base} { return \"\" }\n"
         "  binary scan [debug read_block memory $base [expr {$link - $base}]] H* h; return $h\n"
         "}\n"
+        # __lines: the stored program's LINE NUMBERS, comma-joined -- the
+        # delivery oracle (docs/spec-probe-delivery.md §3.2). Walks the
+        # line-link chain from the text base at $p; an empty program returns "".
+        # The 128-iteration cap and the non-advancing-link break are so a
+        # corrupted chain cannot spin the emulator instead of reporting.
+        "proc __lines {p} {\n"
+        "  set cur [expr {[debug read memory $p] + 256*[debug read memory [expr {$p+1}]]}]\n"
+        "  set out {}\n"
+        "  for {set i 0} {$i < 128} {incr i} {\n"
+        "    set link [expr {[debug read memory $cur] + 256*[debug read memory [expr {$cur+1}]]}]\n"
+        "    if {$link == 0} { break }\n"
+        "    lappend out [expr {[debug read memory [expr {$cur+2}]] +"
+        " 256*[debug read memory [expr {$cur+3}]]}]\n"
+        "    if {$link <= $cur} { break }\n"
+        "    set cur $link\n"
+        "  }\n"
+        "  return [join $out ,]\n"
+        "}\n"
         # __key: write the raw bytes of `s` into KEYBUF and point GETPNT/PUTPNT at
         # them so CHGET delivers them (no CR). Cursors reset each call -- safe
         # because the per-slot step guarantees the prior chunk was consumed.
@@ -339,14 +378,20 @@ def run_case(machine: str, mode: str, lines: list[str], **kw) -> str | None:
     return run_batch(machine, [(mode, lines)], reset=(), **kw)[0]
 
 
-def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
-              boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
-              reset: tuple[str, ...] = (), capture="screen",
-              holds: list[tuple[int, int] | None] | None = None,
-              hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
-              timeout: float = 240.0, omsx: str | None = None,
-              cart: str | None = None, diska: str | None = None) -> list[str | None]:
-    """Boot `machine` once and drive `cases` (each `(mode, lines)`), returning one
+def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
+               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
+               reset: tuple[str, ...] = (), capture="screen",
+               holds: list[tuple[int, int] | None] | None = None,
+               hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
+               timeout: float = 240.0, omsx: str | None = None,
+               cart: str | None = None, diska: str | None = None
+               ) -> tuple[list[str | None], dict[int, list[int]]]:
+    """One boot, `cases` driven, returning `(captures, delivered)` -- the raw
+    engine. `delivered` maps a stored-mode case index to the line-number chain
+    the machine actually held (D-DELIVER). Callers go through `run_batch` (which
+    verifies and refuses) or `run_cases` (which verifies and repairs).
+
+    Boot `machine` once and drive `cases` (each `(mode, lines)`), returning one
     capture per case (or None where that case's capture is missing). `reset`
     injects the given lines before EACH case; on the repack build NEW/CLEAR now DO
     reset variables and the DEF table (fixed 2026-07-12, see module docstring), so
@@ -390,8 +435,14 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
         os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
 
     caps: dict[int, str] = {}
+    delivered: dict[int, list[int]] = {}
     if os.path.exists(out):
         for ln in open(out):
+            d = re.match(r"prog\.(\d+)=([\d,]*)$", ln.strip())
+            if d:                              # D-DELIVER: what the machine STORED
+                delivered[int(d.group(1))] = [
+                    int(x) for x in d.group(2).split(",") if x]
+                continue
             m = re.match(r"case\.(\d+)=([0-9a-f]*)", ln.strip())
             # An EMPTY capture is DATA, not a missing one. `__hex_line` returns ""
             # for an empty program -- i.e. "the line was REFUSED on entry", which
@@ -411,7 +462,72 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     os.unlink(tcl)
     if timed_out and not caps:
         raise SystemExit(f"omsx_repl: TIMEOUT running {machine}")
-    return [caps.get(i) for i in range(len(cases))]
+    return [caps.get(i) for i in range(len(cases))], delivered
+
+
+# --- D-DELIVER: the stored-program delivery oracle --------------------------
+# docs/spec-probe-delivery.md. A batched case whose program the machine did not
+# store AS TYPED has produced no reading: the two standing graphics-acceptance
+# reds were one case that lost `10 ON ERROR GOTO 40` (its ERR then went
+# UNTRAPPED, leaving the machine in SCREEN 2, whose zeroed pattern table the
+# SCREEN-0 scrape reads as 960 blanks) and one that lost its `PRINT"ZK"` line
+# (falling through into the handler, which printed the PREVIOUS case's ERR).
+# Both looked like semantics on both sides. Neither was.
+
+
+def expected_lines(mode: str, lines: list[str]) -> list[int] | None:
+    """The line-number chain `_tcl` types for a case, or None when the case has
+    no stored program to interrogate (`direct` mode -- an unguarded class, §9.3)."""
+    return [10 * (i + 1) for i in range(len(lines))] if mode == "stored" else None
+
+
+def mis_delivered(cases, delivered: dict[int, list[int]]) -> list[tuple[int, list, list]]:
+    """`(index, typed, stored)` for every case whose stored program differs from
+    what was typed. A case with NO chain at all is deliberately NOT flagged: the
+    absent chain means the machine never reached the check (a wedge or a
+    timeout), which the caller already sees as a None capture -- flagging it
+    would turn one apparatus failure into a storm of re-runs that measure the
+    same wedge."""
+    bad = []
+    for i, (mode, lines) in enumerate(cases):
+        want = expected_lines(mode, lines)
+        got = delivered.get(i)
+        if want is not None and got is not None and got != want:
+            bad.append((i, want, got))
+    return bad
+
+
+def _delivery_note(machine: str, cases, i: int, want, got) -> str:
+    """Name the CAUSE and the remedy, not just the symptom: a message that only
+    says "case 22 differs" is the kind that gets an `except: pass` wrapped round
+    it ([[test-reads-ram-after-runaway]])."""
+    lines = cases[i][1]
+    missing = sorted(set(want) - set(got))
+    return (f"MIS-DELIVERED case {i} on {machine}: typed "
+            f"{','.join(map(str, want))}, machine stored "
+            f"{','.join(map(str, got)) or '<none>'}"
+            f" -- line(s) {missing or 'n/a'} never entered "
+            f"(the screen editor rejected a mangled echo). Body: {lines!r}")
+
+
+def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
+              verify_delivery: bool = True, **kw) -> list[str | None]:
+    """`_run_batch` plus the D-DELIVER verdict. THIS path has no repair to fall
+    back on -- it is the boot-per-case path itself (`run_case`, and `run_cases`
+    with batch=False), the one measured immune -- so a mis-delivery here is an
+    APPARATUS FAILURE and is raised, never returned as a value. A guard that
+    cannot judge must say so.
+
+    `verify_delivery=False` opts out, for a probe that deliberately drives line
+    entry to refusal. No probe needs it today (spec §3.4)."""
+    caps, delivered = _run_batch(machine, cases, **kw)
+    bad = mis_delivered(cases, delivered) if verify_delivery else []
+    if bad:
+        raise SystemExit(
+            "omsx_repl: APPARATUS FAILURE -- boot-per-case delivery was mangled; "
+            "nothing was measured.\n  "
+            + "\n  ".join(_delivery_note(machine, cases, *b) for b in bad))
+    return caps
 
 
 def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
@@ -421,7 +537,8 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
               hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
               timeout: float | None = None, omsx: str | None = None,
-              cart: str | None = None, diska: str | None = None) -> list[str | None]:
+              cart: str | None = None, diska: str | None = None,
+              verify_delivery: bool = True) -> list[str | None]:
     """Deliver `cases` (each `(mode, lines)`) and return one raw SCREEN-0 string
     per case, aligned with `cases`. THE DEFAULT ENTRY POINT for a whole probe
     matrix -- it picks the delivery granularity:
@@ -448,20 +565,40 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
     `plug joyporta <device>` seam. It applies to the WHOLE batch, so a matrix that
     needs several device configurations runs one `run_cases` call per
     configuration rather than mixing them in one boot.
+
+    `verify_delivery` (default True, D-DELIVER) checks every stored-mode case's
+    program against what was typed and re-runs a mangled one boot-per-case,
+    announcing it on stderr. Set it False only for a probe that deliberately
+    drives line entry to refusal.
     """
     kw = dict(boot=boot, step=step, cap_gap=cap_gap, capture=capture,
               hold_secs=hold_secs, prologue=prologue,
               omsx=omsx, cart=cart, diska=diska)
-    if batch:
-        # scale the safety-net timeout with the emulated timeline length
-        to = timeout if timeout is not None else max(240.0, 1.5 * len(cases) + 120.0)
-        if holds:                       # a held case adds hold_secs+1 to the timeline
-            to += (hold_secs + 1.0) * sum(1 for h in holds if h)
-        return run_batch(machine, cases, reset=reset, holds=holds, timeout=to, **kw)
-    to = timeout if timeout is not None else 240.0
-    return [run_batch(machine, [c], reset=(), timeout=to,
-                      holds=[holds[i]] if holds else None, **kw)[0]
-            for i, c in enumerate(cases)]
+    to_single = timeout if timeout is not None else 240.0
+    if not batch:
+        return [run_batch(machine, [c], reset=(), timeout=to_single,
+                          holds=[holds[i]] if holds else None,
+                          verify_delivery=verify_delivery, **kw)[0]
+                for i, c in enumerate(cases)]
+
+    # scale the safety-net timeout with the emulated timeline length
+    to = timeout if timeout is not None else max(240.0, 1.5 * len(cases) + 120.0)
+    if holds:                           # a held case adds hold_secs+1 to the timeline
+        to += (hold_secs + 1.0) * sum(1 for h in holds if h)
+    caps, delivered = _run_batch(machine, cases, reset=reset, holds=holds,
+                                 timeout=to, **kw)
+    # D-DELIVER (docs/spec-probe-delivery.md §3.3): a batched case whose program
+    # the machine did not store as typed produced NO reading. Re-run that case
+    # alone, on the boot-per-case path measured immune to the race -- and SAY SO,
+    # because a matrix that genuinely depends on batch context would answer
+    # differently on the repair path and the operator has to be able to see it.
+    for i, want, got in (mis_delivered(cases, delivered) if verify_delivery else []):
+        sys.stderr.write("omsx_repl: " + _delivery_note(machine, cases, i, want, got)
+                         + "\n            -> re-running that case boot-per-case\n")
+        caps[i] = run_batch(machine, [cases[i]], reset=(), timeout=to_single,
+                            holds=[holds[i]] if holds else None,
+                            verify_delivery=verify_delivery, **kw)[0]
+    return caps
 
 
 def run_differential(ref_machine: str, zb_machine: str,

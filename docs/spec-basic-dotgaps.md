@@ -205,6 +205,16 @@ what it cost was the measurement.
 | `linemax` · `arrdim` · `clearpool` · `float` | green (`linemax` 60/60) |
 | `lnblank-say-acceptance` | **204/204 gating rows agree** across all three sides (181 → 204), pins 2 → **5** |
 
+🎯 **ADMITTED TO THIS LIST 2026-08-03 BY D-DELIVER:
+[`graphics-acceptance`](spec-probe-delivery.md) — 290 rows, 2 m 58 s, on
+`repack-machine`.** It is NOT part of the D-DOTGAPS run recorded above (it was
+not a corpus member then); this note is where the standing list gains it, since
+this table is what later slices copy. It sat outside every corpus list, went red
+at an unknown date and stayed red across at least two slices — *a gate nobody
+runs is not a gate* [[expkw-marker-not-marker-slice]]. Its two reds were an
+apparatus artefact, not a ROM defect
+([`docs/spec-probe-delivery.md`](spec-probe-delivery.md) §2).
+
 ⚠️ **`msgexact --gate` FAILED 55/55 THE FIRST TIME AND THE CAUSE WAS THE
 APPARATUS, NOT THE BUILD.** It ran first in the corpus script, after
 `rm -rf build && make basic-reloc` — which rebuilds the relocated image but not

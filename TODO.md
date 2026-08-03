@@ -4051,20 +4051,88 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it kills it. Whoever implements them needs a plugged printer
       ([[openmsx-printer-pluggable]]) or a different instrument first.
 
-- [ ] 🔴 **`graphics-acceptance` HAS TWO STANDING RED ROWS AND IS IN NO CORPUS
-      LIST.** `put_pat64_16` (`ref='ZE 5'`, `zb=None`) and `rd_base_s0`
-      (`ref='ZK 6144'`, `zb='ZE 5'`). Found 2026-08-03 by D-PREFLIGHT, which ran it
-      as a blast-radius check and then attributed it away from itself **twice**:
-      byte-identical failures under `ZEROBAS_PREFLIGHT=off`, and byte-identical on
-      the **stashed pre-slice tree**. So it is pre-existing, of unknown age.
-      ⚠️ **This is the exact shape `logicops-acceptance` was in before D-EXPKW** —
-      *a gate nobody runs is not a gate* [[expkw-marker-not-marker-slice]] — and
-      there it turned out to be **one defect plus a regression**, sitting
-      undetected for two slices. `rd_base_s0` reading `'ZE 5'` (the neighbouring
-      row's answer) rather than a value of its own suggests the readout, not the
-      ROM; `put_pat64_16`'s `zb=None` is a no-capture. Diagnose before assuming
-      either. Whoever picks this up: decide whether `graphics-acceptance` joins the
-      standing corpus list, because that is why nobody saw it.
+- [ ] 🔴 **`direct`-MODE DELIVERY IS STILL UNGUARDED, AND THE RATE IS NOT SMALL.**
+      D-DELIVER's guard interrogates the STORED PROGRAM, so it covers `mode="stored"`
+      only — 8 probe files. A `direct`-mode matrix has no stored program to
+      interrogate, so the same race still reads as a value there, and the
+      instrument is the per-probe echo guards rather than anything harness-wide
+      ([[decblank-echo-guard-blind]], [[lineno-blank-echo-guard]]). ⚠️ Measured
+      rate at the **default** `step=2.5`, on thirty identical harmless cases:
+      **1 in 30 on the zerobas machine, 0 in 30 on the reference**
+      ([`docs/spec-probe-delivery.md`](docs/spec-probe-delivery.md) §7.4). Whoever
+      picks this up: an echo-based delivery oracle in `_tcl` (compare the echoed
+      row against what was typed, per injection) would cover both modes at once.
+
+- [ ] 🔴 **THE FLOOR OF THE DELIVERY RACE IS NOT EXPLAINED.** D-DELIVER
+      characterised it and made it unmissable; it did not find it. What is known:
+      the machine consumes the first **four** characters of an injected line
+      without echoing them, the screen editor reads back the truncated remainder
+      and BASIC rejects it. The injector is exonerated by measurement (KEYBUF
+      drained before all 490 injections, `GETPNT == KEYBUF` after all 490, **in the
+      run that reproduced the fault**), and a deliberate type-ahead differential is
+      clean on both machines. Four is also the length of the preceding injection
+      (`CLS`+CR) — suggestive, unproven.
+      ⚠️ **Do not "fix" it by raising `step`.** `step=5.0` clears the graphics case
+      and `step=1.2` clears the filler batch; a number that moves a race is not a
+      guard [[deterministic-mangle-is-still-a-mangle]].
+
+- [x] ✅ **D-DELIVER — A CASE WHOSE PROGRAM WAS NEVER STORED MAY NOT REPORT A
+      VALUE — LANDED 2026-08-03.** Spec
+      [`docs/spec-probe-delivery.md`](docs/spec-probe-delivery.md),
+      characterisation
+      [`docs/graphics-delivery-characterization.md`](docs/graphics-delivery-characterization.md).
+      **Apparatus only — `probes/lib/omsx_repl.py` and nothing else; no `basic/`,
+      `sub/`, `disk/` or `tape/` source touched, no ROM rebuilt.** Closes the two
+      standing `graphics-acceptance` reds D-PREFLIGHT filed (§8.5) and the corpus
+      question that came with them.
+      **Neither row was about sprites or `BASE(n)`.** Boot-per-case, both machines
+      answer identically (`ZE 5` / `ZE 5`, `ZK 6144` / `ZK 6144`). The batched
+      delivery path was **losing a whole program line**: `put_pat64_16` lost
+      `10 ON ERROR GOTO 40`, so its ERR 5 went UNTRAPPED and the RUN aborted with
+      the machine still in SCREEN 2 — whose zeroed pattern table the SCREEN-0
+      scrape reads as **960 bytes of `$00`**, i.e. `zb=None`; `rd_base_s0` lost its
+      `PRINT"ZK"` line, fell through into the handler and printed the PREVIOUS
+      case's `ERR`, which still held **5** from `rd_baseneg`.
+      🎯 **D-PREFLIGHT's hunch that `'ZE 5'` was "the neighbouring row's answer" is
+      LITERALLY TRUE — and its model was wrong.** Implementing against it would
+      have aimed a fix at the readout and looked like it worked.
+      **What landed:** `_tcl` emits `prog.<idx>=<line-number chain>` per stored
+      case (a new `__lines` Tcl walk of the line-link chain from `TXTTAB`), read
+      **before `RUN`** so a case's own `NEW` cannot erase the evidence;
+      `run_cases(batch=True)` announces any mismatch on stderr and re-runs that
+      case boot-per-case (the path measured immune); `run_batch` — which IS the
+      boot-per-case path — has no fallback and raises `APPARATUS FAILURE` instead.
+      `verify_delivery=False` is the opt-out; **no probe needs it** (measured: of
+      the 8 files using `mode="stored"`, none drives line entry to refusal).
+      🔴 **THE GUARD FOUND ROWS THE GATE COULD NOT.** The clean gate run announced
+      **four** mis-deliveries, not two: `wr_v255fr` and the phase-M `SCREEN2:DRAW"B"`
+      row had each lost their `ON ERROR GOTO 40` and **passed anyway**, being value
+      rows that never raise [[gate-can-be-green-while-measuring-nothing]]. And on
+      its first corpus run it fired in **`array-acceptance`** too (case 20,
+      `DIM C(1,1,1,1)` lost) — this is not a graphics-probe curiosity.
+      🔴 **COVERAGE IS NOT EFFICACY, AGAIN.** Knife K2 kept the `prog.N=` emission
+      AND the call and only gutted the judgement: the filed reading returned
+      **byte-identical** [[coverage-gate-cannot-see-a-gutted-guard]]. K1 (delete
+      the emission) gave the same. K3 (detect, do not repair) turned it into an
+      attributed refusal. K4 fired and repaired with all 30 verdicts unchanged. K5
+      was a deliberate **zero-RED** knife on the reference and came back 0/0/0
+      [[knife-that-reddens-nothing-is-the-finding]].
+      🔴 **MY FIRST TWO INSTRUMENTED RUNS PROVED NOTHING** — they were clean, but I
+      had not checked the fault reproduced in them. Re-run with a reproduction
+      check in the same run before their result was used
+      [[knife-runner-false-negatives]].
+      ✅ **CORPUS DECISION: `graphics-acceptance` JOINS THE STANDING LIST** (§5, and
+      [`docs/spec-basic-dotgaps.md`](docs/spec-basic-dotgaps.md) §9.2). 290 rows,
+      **2 m 58 s**, on the `repack-machine` prerequisite every emulator gate
+      already has. It is the only member ever red at admission; admission was
+      conditional on it coming back 290/290, and it did.
+      **Gates:** graphics **290/290** (was 2 FAIL; a row-by-row diff moves exactly
+      those two rows and nothing else) · unit 56/56 · deadcode 0/0 ·
+      preflight-check 0 unguarded · msgexact 55/55 · logicops 193/193 ·
+      array 151/151 · linemax 60/60 · direct-ctrl 40/40 · diskbasic 34/34 ·
+      bdos 12/12 · missing / width / string / error / error-trap / abort /
+      stop-trap / arrdim / clearpool / float / input / input-devices / time /
+      intarg / sound / play / beep / math ALL PASS.
 
 - [x] ✅ **D-PREFLIGHT — A PROBE MAY NOT MEASURE A MACHINE IT CANNOT VOUCH FOR —
       LANDED 2026-08-03.** Spec
