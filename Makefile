@@ -1257,10 +1257,26 @@ lnblank-echo: repack-machine
 # (AUTO is interactive, LLIST drives an unplugged LPTOUT -- both hang a
 # reference), so they carry no oracle lock and gate nothing. Read them with
 #   python3 probes/basic/basic_probe_lnblank.py --say --only kwgz- --sides zb
+# D-DOTGAPS widened it again, to add `cld-,csv-,dsk-,crf-`: the 23 rows that
+# close the three questions D-DOTLINE answered by reasoning (an ASCII LOAD/MERGE
+# writes `.`; the ASCII-SAVE reading on a SECOND reference and a second device; a
+# REFUSED store writes it). 181 -> 204 rows, and it is the first cohort here to
+# need HARDWARE: `cld`/`csv` mount or record a cassette, `dsk` needs a disk.
+#
+# ⚠️ IT COSTS ~1.5-2 h ON TOP OF THE ~2 h THIS TARGET ALREADY TAKES, and that was
+# a decision rather than an oversight: a row nobody runs is the `dir-name` defect
+# this file already records twice. Scope with ONLY= when iterating.
+#
+# 🔴 THE `dsk-` ROWS ARE CAPABILITY-LOCKED, NOT DROPPED. The VG-8020 has no disk,
+# so those five rows are measured on cf3300 + zb and gate ACROSS THOSE, while the
+# older `kwgz-` lock (AUTO/LLIST HANG a reference) still removes its rows from
+# the run entirely. Two kinds, per row, with per-row reasons -- before D-DOTGAPS
+# SIDE_LOCK held one global string, which is precisely why a cf3300-only reading
+# had to live in a document instead of in a gate.
 lnblank-say-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lnblank.py --gate --say \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
-	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-,lnrt-,dlt-,lst-,lse-,cln-,cle-,clp-) --repeat $(if $(REPEAT),$(REPEAT),1)
+	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-,lnrt-,dlt-,lst-,lse-,cln-,cle-,clp-,cld-,csv-,dsk-,crf-) --repeat $(if $(REPEAT),$(REPEAT),1)
 
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #

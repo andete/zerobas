@@ -585,6 +585,85 @@ def test_store_line_invalidates_cont(m, fails):
     return fails
 
 
+def _store_line_dot(m, prgend, lineno, token_bytes):
+    """Set PRGEND, store a line, and report (DOT, raised, chain).
+
+    `raise_error` is trapped: store_line's OOM arm reaches it with `jp`, so the
+    trap's RET returns to this call's own frame -- which is how the refused case
+    can be measured at all without running the REPL's error machinery."""
+    s = m.sym
+    raised = []
+    m.trap("raise_error", lambda mm: raised.append(mm.cpu.a))
+    m.poke_w(s["PRGEND"], prgend)
+    call_store_line(m, lineno=lineno, token_bytes=token_bytes)
+    dot = m.mem[s["DOT"]] | (m.mem[s["DOT"] + 1] << 8)
+    return dot, raised
+
+
+def test_store_line_oom_writes_dot(m, fails):
+    """A store REFUSED for out of memory still records the line number TYPED.
+
+    🔴 THE ONLY INSTRUMENT THIS RULE HAS. A line store is bounded by the
+    assembly-time constant TXTMAX, not by HIMEM, so no `CLEAR` and no typed line
+    can reach the OOM path on the emulator side at all -- the whole 788-row
+    probe corpus is blind to it (docs/dotgaps-msx1-characterization.md §6 D4).
+
+    Oracle: BOTH references, `--repeat 2` (characterization §4.2). With `.` = 99
+    and a line that does not fit, `crf-oom` reads the typed **20**, `crf-oomlst`
+    shows the program unchanged (`99 REM Z` alone) and `crf-oomsay` shows
+    `Out of memory`. Contrast `crf-ovr`: a line number past the 65529 ceiling is
+    refused BEFORE this routine (basic/program.asm dl_store) and writes nothing.
+    """
+    s = m.sym
+    call_new_prog(m)
+    call_store_line(m, lineno=99, token_bytes=BODY_1)      # `.` := 99, stored
+    before = m.mem[s["DOT"]] | (m.mem[s["DOT"] + 1] << 8)
+    chain_before = walk_chain(m)
+
+    # PRGEND one byte under TXTMAX: any line at all overflows the bound.
+    dot, raised = _store_line_dot(m, s["TXTMAX"] - 1, 20, BODY_2)
+    chain_after = walk_chain(m)
+
+    ok = (before == 99)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  store_line OOM: control -- `.` = 99 "
+          f"before the refused store (got {before})")
+
+    ok = (raised == [7])
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  store_line OOM: refused with ERR 7 "
+          f"(raise_error saw {raised})")
+
+    ok = (len(chain_after) == len(chain_before))
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  store_line OOM: nothing stored -- "
+          f"{len(chain_before)} line(s) before, {len(chain_after)} after")
+
+    ok = (dot == 20)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  store_line OOM: `.` = 20, the line "
+          f"number TYPED, with nothing stored (got {dot})")
+    return fails
+
+
+def test_store_line_ok_writes_dot(m, fails):
+    """…and the accepted store writes the same cell — the control that says the
+    test above is wired to `DOT` and not to a byte that happens to read 20.
+
+    Oracle: D-DOTLINE writer (a), `cln-store`/`clp-store` (spec-basic-dotline.md
+    §5 R-DOT3a), unchanged by this slice.
+    """
+    s = m.sym
+    call_new_prog(m)
+    call_store_line(m, lineno=30, token_bytes=BODY_3)
+    dot = m.mem[s["DOT"]] | (m.mem[s["DOT"] + 1] << 8)
+    ok = (dot == 30)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  store_line ok: `.` = 30, the stored "
+          f"line (got {dot})")
+    return fails
+
+
 def test_empty_program_chain(m, fails):
     """After new_prog, the program is truly empty: walk_chain returns [].
 
@@ -642,6 +721,16 @@ def run():
     m = make_machine()
     print("=== relink: standalone (wrong links corrected) ===")
     fails = test_relink_standalone(m, fails)
+    print()
+
+    m = make_machine()
+    print("=== store_line: `.` (DOT) on an ACCEPTED store ===")
+    fails = test_store_line_ok_writes_dot(m, fails)
+    print()
+
+    m = make_machine()
+    print("=== store_line: `.` (DOT) on a store REFUSED for out of memory ===")
+    fails = test_store_line_oom_writes_dot(m, fails)
     print()
 
     m = make_machine()

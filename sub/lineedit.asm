@@ -93,6 +93,36 @@ lineedit_tenant:
 ; Inputs: SL_NUM (line number), SL_TOK (crunched token-body pointer, both
 ; RAM, set by the resident head before subrom_call).
 le_store:
+                ; D-DOTGAPS writer (a), R-DOT3a/R-DOT3a' (docs/spec-basic-dotgaps.md
+                ; §2, measured in docs/dotgaps-msx1-characterization.md §4):
+                ; storing a line records the line number TYPED. All THREE store
+                ; forms funnel through here and all three write it -- an insert
+                ; (cln-ins -> 25), a replacement (cln-edit -> 20), and 🔴 the
+                ; BARE-LINE-NUMBER DELETE (cln-sdel), which leaves `.` naming a
+                ; line that no longer exists so `LIST .` prints nothing.
+                ; 🔴 AND THE `DELETE` VERB DOES NOT WRITE IT (cln-del reads
+                ; `20 REM B` after `DELETE 40`). Two ways to remove a line, the
+                ; same visible effect on the program, DIFFERENT effects on `.` --
+                ; which is why le_delrange below has no write of its own and why
+                ; this one may not move anywhere more "general".
+                ; 🔴 HERE, NOT AT `le_ok`, AND THE DIFFERENCE IS MEASURED. D-DOTLINE
+                ; put it on the SUCCESS path reasoning that "a refused line was not
+                ; touched", and marked the placement UNMEASURED. Both references
+                ; write it on an OOM-REFUSED store (`crf-oom` reads the typed 20
+                ; with nothing stored and `crf-oomlst` proving the program never
+                ; changed) and do NOT write it when the LINE NUMBER is refused
+                ; (`crf-ovr`/`crf-huge` stay at 10, `Syntax error`). The 65529
+                ; ceiling is checked in the resident head (basic/program.asm
+                ; dl_store) before store_line marshals here, so this instruction
+                ; is inside the one gap in the tree that satisfies both readings.
+                ; ⚠️ NO EMULATOR ROW ON THIS SIDE CAN SEE IT: a line store is
+                ; bounded by the CONSTANT TXTMAX below, not by HIMEM, so no CLEAR
+                ; and no typed line reaches the OOM path at all (characterization
+                ; §6 D4). tests/test_program.py's store_line OOM row is the
+                ; instrument -- a green acceptance run is NOT coverage of this
+                ; rule.
+                ld      hl,(SL_NUM)
+                ld      (DOT),hl
                 ld      hl,(SL_TOK)
                 ld      a,(hl)
                 or      a
@@ -141,23 +171,7 @@ le_store:
 le_delete:
                 call    prog_find_del           ; deletes a matching line if present
 le_ok:
-                ; D-DOTLINE writer (a) (spec §2 R-DOT3a): storing a line records
-                ; the line number TYPED. All THREE store forms funnel through
-                ; here and all three write it -- an insert (cln-ins -> 25), a
-                ; replacement (cln-edit -> 20), and 🔴 the BARE-LINE-NUMBER
-                ; DELETE (cln-sdel), which leaves `.` naming a line that no
-                ; longer exists so `LIST .` prints nothing.
-                ; 🔴 AND THE `DELETE` VERB DOES NOT WRITE IT (cln-del reads
-                ; `20 REM B` after `DELETE 40`). Two ways to remove a line, the
-                ; same visible effect on the program, DIFFERENT effects on `.` --
-                ; which is why le_delrange below has no write of its own and why
-                ; this one may not move anywhere more "general".
-                ; ⚠️ Here rather than at le_store's head, so an OOM store -- which
-                ; did not store anything -- leaves `.` alone. UNMEASURED (no row
-                ; fills TXTMAX and then reads `.`); the reasoning is "the line the
-                ; editor last touched", and a refused line was not touched.
-                ld      hl,(SL_NUM)
-                ld      (DOT),hl
+                ; (the `DOT` write moved to le_store's head -- D-DOTGAPS, above)
                 xor     a
                 ld      (LE_STATUS),a           ; 0 = ok
                 jp      relink_body             ; tail: vars_reset; ret

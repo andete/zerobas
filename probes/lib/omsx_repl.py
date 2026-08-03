@@ -87,6 +87,29 @@ KEYBUF_SZ = 40
 # the line itself is at most 38 source chars.
 MAX_DIRECT = KEYBUF_SZ - 2  # 38: longest line injectable verbatim (CR excluded)
 
+# A case "line" of the form `@WAIT<seconds>` types NOTHING and simply advances the
+# emulated timeline. It exists because the obvious way to wait -- padding the case
+# with harmless `REM` lines -- COSTS SCREEN ROWS, and the screen is 24 rows deep.
+#
+# 🔴 THAT COST IS NOT COSMETIC: IT BROKE THE ECHO GUARD. A cassette LOAD or SAVE
+# runs for ~10-30 emulated seconds while the harness keeps injecting on schedule
+# (each __key call resets GETPNT/PUTPNT, so lines delivered mid-operation collapse
+# into one), so a tape row needs the clock advanced past the operation before its
+# readout is typed. Padding with `REM` did that at two screen rows apiece, and on
+# the CF-3300 -- whose Disk BASIC prints more per row -- the case's own payload
+# scrolled off the top: `MANGLED not echoed: ['60 REM Y', ...]` for rows whose
+# VALUES were right and stable at --repeat 2 (docs/dotgaps-msx1-characterization.md
+# §1.4b). Worse, it sat exactly on the boundary, so the same row passed in one run
+# and failed in the next. A wait that types nothing is deterministic and free.
+WAIT_PREFIX = "@WAIT"
+
+
+def is_wait(line) -> bool:
+    """True for a `@WAIT<seconds>` pseudo-line (see WAIT_PREFIX). Callers that
+    iterate a case's typed lines -- echo guards, screen scrapers, alphabet
+    builders -- must skip these: nothing was typed, so nothing can be echoed."""
+    return isinstance(line, str) and line.startswith(WAIT_PREFIX)
+
 # SCREEN 0 name table (both Philips_VG_8020 and the repack disk machine boot
 # 40-column text; a stock SCREEN-1 machine would need 0x1800/768/32 instead).
 SCR_ADDR = 0x0000
@@ -214,6 +237,8 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         ROM line editor accumulates them into its own (~255-byte) buffer, so an
         arbitrarily long DIRECT line works without a tokeniser or TXTTAB. (The
         TXTTAB tokenised-injection fallback, spec s2.2, is thus still unneeded.)"""
+        if is_wait(s):
+            return t + float(s[len(WAIT_PREFIX):])   # advance the clock, type nothing
         if len(s) > MAX_BUF:
             raise ValueError(f"line exceeds MSX line buffer (~{MAX_BUF}): "
                              f"{len(s)} chars {s!r}")

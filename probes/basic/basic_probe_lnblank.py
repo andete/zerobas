@@ -2227,13 +2227,230 @@ CLP = [
                       "50 RESUME NEXT", "10 ON ERROR GOTO 50", "RUN"] + _CLPR),
 ]
 
-# label -> the ONLY sides it may be measured on. A row named here is refused on
-# any other side, with the reason, instead of being quietly dropped or -- far
-# worse -- run.
-SIDE_LOCK = {lb: {"zb"} for lb, _l in KWGZ}
-SIDE_LOCK_WHY = ("AUTO enters interactive line-entry and LLIST drives an "
-                 "unplugged LPTOUT; both HANG a reference machine (the keyword "
-                 "sweep already files them as crunch-only for this reason)")
+# --- D-DOTGAPS: the three questions D-DOTLINE recorded as CHOICES ------------
+# docs/spec-basic-dotgaps.md, measured in docs/dotgaps-msx1-characterization.md.
+# Each of the three was a decision taken without a reading:
+#
+#   `cld`  does a LINE-STORING INPUT (ASCII LOAD / MERGE) write `.`?  zerobas
+#          reaches store_line from cload.asm, so it INHERITS writer (a) whether
+#          or not the reference does -- shipped on an assumption.
+#   `csv`  the ASCII-SAVE reading was ONE REFERENCE (cf3300, disk; the vg8020
+#          has no disk) and it decided a 12 B design point.  A cassette route
+#          gives the second, on BOTH machines.
+#   `crf`  does a REFUSED store write `.`?  The write sits at `le_ok`, the
+#          SUCCESS path, deliberately -- reasoned, not measured.
+#
+# 🔴 THE READOUT IS VARIABLE-FREE, AND THAT IS NOT A STYLE CHOICE. `clp`'s
+# `Z=PEEK(...)` readout CREATES A VARIABLE, and the `crf` rows read `.` on a
+# machine with ~150 bytes of free memory: the assignment itself raises `Out of
+# memory` there, so the readout would report the state of its own failure.
+# `PRINT"[";PEEK(63157);PEEK(63158);"]"` allocates nothing and is 36 characters
+# -- inside the COLS(40)-minus-2-column-margin cap that the `clp` split was
+# forced by. DECIMAL 63157/63158 rather than `&HF6B5`, purely to fit: the hex
+# form is 39 characters and WRAPS, which returns `<none>` -- a sentinel that
+# also means "no reading".
+_DOTRD = ['PRINT"[";PEEK(63157);PEEK(63158);"]"']
+
+# The three-line program every `cld` row loads, and the pre-state that makes the
+# reading legible: `.` is 60 before the load, and no line of the loaded program
+# is numbered 60, so ANY value below is a write.
+_CLDPRE = ["60 REM Y"]
+# ⚠️ THE WAIT IS NOT DECORATION. A cassette LOAD/SAVE runs for ~10-30 emulated
+# seconds, and the harness injects one line every `step` seconds REGARDLESS --
+# each __key call resets GETPNT/PUTPNT, so two lines injected while the tape is
+# running collapse into one and the readout would be the line BEFORE it. The
+# clock has to be advanced past the operation before the readout is typed.
+#
+# 🔴 IT USED TO BE PADDING (`["REM"] * 8`) AND THAT COST SCREEN ROWS THE 24-ROW
+# DISPLAY DID NOT HAVE. Two rows per pad pushed the case's own payload off the
+# top on the CF-3300, and `lnblank-echo` reported `MANGLED not echoed:
+# ['60 REM Y', 'LOAD"CAS:DOTD"']` for rows whose VALUES were right and stable at
+# `--repeat 2` -- with the row sitting exactly on the boundary, so the same case
+# passed in one run and failed in the next (characterization §1.4b). `@WAIT<s>`
+# (omsx_repl.WAIT_PREFIX) advances the emulated timeline and types NOTHING:
+# deterministic, free, and invisible to the echo guard because there is nothing
+# to echo. The seconds below are the tape operation plus a margin -- a LOAD must
+# also seek past every earlier file on the shared tape.
+_W_LOAD = ["@WAIT20"]     # first file on the tape (~10 s)
+_W_LOAD2 = ["@WAIT35"]    # skip DOTA, then load DOTD
+_W_LOAD3 = ["@WAIT50"]    # skip DOTA + DOTD, then load DOTT
+_W_SAVE = ["@WAIT20"]     # an ASCII save of a 3-line program (~10 s)
+
+CLD = [
+    # CONTROL: the tape is mounted and nothing is loaded. Says that inserting a
+    # cassette -- which the group's prologue does for every row here -- writes
+    # nothing by itself, so a `40` below is the LOAD and not the apparatus.
+    ("cld-ctl",   _CLDPRE + _DOTRD),
+    ("cld-asc",   _CLDPRE + ['LOAD"CAS:DOTA"'] + _W_LOAD + _DOTRD),
+    # 🔴 THE ONLY ROW THAT CAN TELL A PER-LINE WRITER FROM A ONCE-AT-THE-END ONE,
+    # and every other row in this battery is blind to the difference. DOTD holds
+    # the SAME four lines in DESCENDING file order (40,30,20,10), so the last
+    # line STORED is 10 while the last line of the resulting PROGRAM is still 40.
+    # A writer that fires per stored line reads 10; one that records "the
+    # program's last line" once the load finished reads 40. Both readings are
+    # `40` on DOTA, which is why `cld-asc` alone would have established nothing.
+    ("cld-desc",  _CLDPRE + ['LOAD"CAS:DOTD"'] + _W_LOAD2 + _DOTRD),
+    ("cld-mrg",   _CLDPRE + ['MERGE"CAS:DOTA"'] + _W_LOAD + _DOTRD),
+    # The CONTRAST: a TOKENISED tape is a block read with no line walk and no
+    # store_line, so it should leave `.` alone. This is the non-writer control
+    # for the whole battery -- without it "a LOAD writes `.`" is a claim about
+    # the verb, when the measurement says it is a claim about STORING LINES.
+    # ⚠️ `CLOAD` RATHER THAN `LOAD"CAS:DOTT"`, AND THAT IS A MEASUREMENT.
+    # `LOAD"CAS:"` on a $D3 tape NEVER RETURNS on the reference -- it searches
+    # past the tokenised file to the end of the tape and waits -- so the obvious
+    # row is a HANG row (§1.2 of the characterization). zerobas answers it (its
+    # header dispatch accepts $D3 too), which is a divergence in its own right
+    # and is filed rather than measured here: a row that hangs one side cannot
+    # gate anything.
+    # 🔴 AND THE NAME IS NOT DECORATION -- A BARE `CLOAD` MEASURED THE OPPOSITE OF
+    # WHAT THIS ROW IS FOR. It takes the FIRST file on the tape, which is DOTA,
+    # the ASCII one: the non-writer control read ` 40  0 ` on zerobas (a stored
+    # program, exactly like `cld-asc`) and would have gone looking for a $D3
+    # header past the end of the tape on the references. Named, it skips both
+    # ASCII files and loads the tokenised one it is about.
+    ("cld-cload", _CLDPRE + ['CLOAD"DOTT"'] + _W_LOAD3 + _DOTRD),
+    # the behavioural twin of `cld-asc`: `.` read as `.` rather than as a cell.
+    ("cld-list",  _CLDPRE + ['LOAD"CAS:DOTA"'] + _W_LOAD + ["LIST ."]),
+]
+
+# --- the `csv` battery: the ASCII-SAVE walk, on a SECOND reference -----------
+# The program's last line is 40 and the pre-state is `5 REM E`, so `.` is 5
+# before the save and 5 is not a line the walk can emit last: a `40` is the walk.
+#
+# 🔴 THREE LINES, NOT FIVE, AND SIX PADS, NOT EIGHT -- BECAUSE THE ECHO GUARD
+# CAUGHT THE FIRST VERSION SCROLLING OFF THE CF-3300's SCREEN. `csv-asc`,
+# `csv-tok` and `csv-csave` reported `MANGLED not echoed: ['10 REM A',
+# '20 REM B']` there and nowhere else: a 24-row display, one row per stored
+# program line and TWO per direct command, and a transcript that ran to ~26 rows
+# once the tape save finished early enough for every pad to land as its own
+# command. ⚠️ The values were right and stable at `--repeat 2` on both
+# references -- what failed was the ability to VERIFY the payload, which is
+# exactly what the guard is for ([[decblank-echo-guard-blind]]: a delivery that
+# cannot be verified MAY NOT GATE). The `cld` rows survive with more padding
+# because a cassette LOAD runs long enough that most pads collapse into one
+# KEYBUF write and never echo at all.
+_CSVPROG = ["10 REM A", "40 REM D", "5 REM E"]
+CSV = [
+    ("csv-ctl",   _CSVPROG + _W_SAVE + _DOTRD),
+    ("csv-asc",   _CSVPROG + ['SAVE"CAS:D",A'] + _W_SAVE + _DOTRD),
+    # 🔴 THIS ROW IS NOT "THE TOKENISED SAVE" DESPITE ITS SHAPE, AND THE TAPE
+    # SAYS SO. `SAVE"CAS:name"` with no `,A` writes an **$EA ASCII** tape on both
+    # references -- decoded off the recorded WAV, characterization §3.2 -- so it
+    # drives the same walk `,A` does and writes `.` for the same reason. It is
+    # kept as a separate row because zerobas writes $D3 here (its own
+    # save.asm:12 says "SAVE "CAS:F" -> tape tokenised"), which is a SAVE-FORMAT
+    # divergence this battery found and does not own.
+    ("csv-tok",   _CSVPROG + ['SAVE"CAS:E"'] + _W_SAVE + _DOTRD),
+    # ...and THIS is the tokenised one. CSAVE writes $D3 on every side, walks no
+    # lines, and leaves `.` alone -- the control that keeps "an ASCII save
+    # writes it" from being read as "any cassette save writes it".
+    ("csv-csave", _CSVPROG + ['CSAVE"F"'] + _W_SAVE + _DOTRD),
+]
+
+# --- the `dsk` battery: the SAME two rules over the DISK device --------------
+# ⚠️ CAPABILITY-LOCKED to cf3300 + zb: the VG-8020 has no disk at all (§1.3).
+# These are the rows that turn the characterization's cf3300-only §4 table from
+# a doc reading into a GATING one.
+_DSKPROG = ["10 REM A", "20 REM B", "30 REM C", "40 REM D", "5 REM E"]
+DSK = [
+    ("dsk-ctl",     _DSKPROG + _DOTRD),
+    ("dsk-savasc",  _DSKPROG + ['SAVE"A:DOTX.BAS",A'] + _DOTRD),
+    ("dsk-savtok",  _DSKPROG + ['SAVE"A:DOTY.BAS"'] + _DOTRD),
+    ("dsk-load",    _DSKPROG[:4] + ['SAVE"A:DOTX.BAS",A', "NEW", "60 REM Y",
+                                    'LOAD"A:DOTX.BAS"'] + _DOTRD),
+    ("dsk-mrg",     _DSKPROG[:4] + ['SAVE"A:DOTX.BAS",A', "NEW", "60 REM Y",
+                                    'MERGE"A:DOTX.BAS"'] + _DOTRD),
+]
+
+# --- the `crf` battery: does a REFUSED store write `.`? ----------------------
+# TWO refusal shapes, and they are the point: they refuse at DIFFERENT stages.
+#
+#   `crf-ovr*`  `65530 REM B` -- past the 65529 ceiling, refused with `Syntax
+#               error` at the LINE NUMBER (lnblank-msx1-characterization §3).
+#   `crf-oom*`  a line that does not fit -- refused with `Out of memory` at the
+#               STORE, after the number has been accepted.
+#
+# If both wrote, the rule would be "the number typed, whatever happens next"; if
+# neither did, "the success path". The pair is what locates the write between
+# them, which is the only thing that can place the instruction.
+#
+# 🔴 THE SHRINK IS TWO CLEARS AND THE SECOND ONE IS THE MEASUREMENT'S OWN
+# APPARATUS. `CLEAR <strings>,<himem>` is the only knob that reaches the
+# reference's store check; the FIRST CLEAR lowers HIMEM to TXTTAB+1000 and the
+# second spends 300 of those bytes on string space, leaving ~148 free -- enough
+# for the 12-byte `99 REM Z` typed before it, not enough for the 32-byte line
+# that follows. `A` is computed from TXTTAB ($F676) rather than written as a
+# constant because the CF-3300's Disk BASIC text base is not the VG-8020's.
+# ⚠️ `CLEAR` IS A MEASURED NON-WRITER (`cln-clear`, `clp-clear`), which is the
+# only reason a row may use it as scaffolding.
+#
+# 🔴 AND THE ORDER OF THE SHRINK AND THE FIRST STORE IS NOT FREE -- WRITTEN THE
+# OTHER WAY ROUND, THE ROW REFUSES NOTHING ON EITHER REFERENCE. With `99 REM Z`
+# stored BEFORE the shrink, `CLEAR 300,A+1000` itself raises `Out of memory`, the
+# shrink never happens, and the "refused" line is an ordinary successful store --
+# free memory reads 409 instead of 148 and `crf-oomlst` lists both lines. That
+# version was written into this probe and was caught by `crf-oomlst` on the
+# REFERENCE side, which is the second time in this slice the companion row was
+# the only thing standing between a wrong shape and a green table (§1.5).
+_CRFSHRINK = ["A=PEEK(&HF676)+256*PEEK(&HF677)", "CLEAR 300,A+1000"]
+_CRFBIG = "20 REM " + "B" * 26          # 33 typed chars -> 32 stored bytes
+CRF = [
+    # --- the ceiling refusal: refused at the NUMBER -------------------------
+    ("crf-ovrctl",  ["10 REM A"] + _DOTRD),
+    ("crf-ovr",     ["10 REM A", "65530 REM B"] + _DOTRD),
+    ("crf-huge",    ["10 REM A", "99999 REM B"] + _DOTRD),
+    ("crf-ovrsay",  ["10 REM A", "65530 REM B"]),
+    # --- the store refusal: refused at the MEMORY CHECK ---------------------
+    ("crf-oomctl",  _CRFSHRINK + ["99 REM Z"] + _DOTRD),
+    ("crf-oom",     _CRFSHRINK + ["99 REM Z", _CRFBIG] + _DOTRD),
+    ("crf-oomsay",  _CRFSHRINK + ["99 REM Z", _CRFBIG]),
+    # 🔴 THE COMPANION THAT MAKES `crf-oom` A MEASUREMENT, AND WITHOUT IT THE ROW
+    # AGREED ON EVERY SIDE WHILE MEASURING NOTHING ON ONE OF THEM. In the pilot,
+    # zerobas had 646 free bytes where both references had 148 -- so the line
+    # zerobas was asked to refuse WAS STORED, and the row read ` 20  0 ` on all
+    # three sides: two writes on a refusal, one ordinary successful store, one
+    # green row (docs/dotgaps-msx1-characterization.md §4.2). This row lists the
+    # program: only `99 REM Z` may appear, on every side, or `crf-oom` is not
+    # about a refusal at all.
+    ("crf-oomlst",  _CRFSHRINK + ["99 REM Z", _CRFBIG, "LIST"]),
+]
+
+# label -> the device the row needs, which decides both the openMSX plumbing and
+# the GROUP it is delivered in (one prologue per run_cases call, so a row that
+# needs a mounted tape may not share a call with one that needs a recording
+# one).
+#   "tape-load"  a read-only .cas carrying DOTA/DOTD/DOTT is inserted
+#   "tape-save"  a fresh recording tape (`cassetteplayer new`) is created
+#   "disk"       a throwaway copy of disk/test720.dsk in drive A
+DEVICE = ({lb: "tape-load" for lb, _l in CLD}
+          | {lb: "tape-save" for lb, _l in CSV}
+          | {lb: "disk" for lb, _l in DSK})
+
+# label -> the ONLY sides it may be measured on, with a PER-ROW reason and a
+# KIND. The two kinds are not the same instruction to the runner:
+#
+#   "hang"        running the row on another side HANGS that machine, so the ROW
+#                 is dropped from any run that includes such a side. It gates
+#                 nothing, ever, and says so.
+#   "capability"  the other side simply LACKS the hardware. The row RUNS on the
+#                 sides that have it and GATES ACROSS THOSE -- which is how a
+#                 cf3300-only disk reading stops being a doc table and becomes a
+#                 gating row. A capability-locked row left with fewer than two
+#                 sides is reported as measured-but-not-gating rather than
+#                 counted as a pass.
+#
+# ⚠️ UNTIL D-DOTGAPS THIS WAS ONE GLOBAL STRING FOR ONE COHORT, and a second
+# cohort with a different reason could not be expressed at all -- which is why
+# the ASCII-SAVE reading sat in a doc for a slice and a half instead of gating.
+SIDE_LOCK = ({lb: (frozenset({"zb"}), "hang",
+               "AUTO enters interactive line-entry and LLIST drives an "
+               "unplugged LPTOUT; both HANG a reference machine (the keyword "
+               "sweep already files them as crunch-only for this reason)")
+              for lb, _l in KWGZ}
+             | {lb: (frozenset({"cf3300", "zb"}), "capability",
+                 "the VG-8020 has no disk interface, so `A:` is not a device "
+                 "there; the row gates cf3300 against zerobas")
+                for lb, _l in DSK})
 
 # --- the `cnmd` battery: WHAT THE EATEN CHARACTERS MEAN -----------------------
 # ⚠️ SAY-MODE ONLY. Storing `X5` instead of `X` + <F1> + <16> is only a
@@ -2536,15 +2753,19 @@ LNRT = [
 # precedent for why that distinction is not cosmetic. Every `cln` row's last
 # typed line is a `LIST`, whose answer is a SET of lines; every `cle` row's is a
 # `PRINT"[";...;"]"`, whose answer is one bracketed value.
-TAIL_ONLY = {lb for lb, _l in LST + CLN} | {"lse-dotedit"}
+TAIL_ONLY = ({lb for lb, _l in LST + CLN} | {"lse-dotedit"}
+             # D-DOTGAPS: three rows whose answer is a LISTING or an ERROR
+             # MESSAGE rather than a bracketed value -- the same readout split
+             # `cln` against `cle`, applied per row instead of per battery.
+             | {"cld-list", "crf-ovrsay", "crf-oomsay", "crf-oomlst"})
 
 SAY_ONLY = {lb for lb, _l in ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD
-            + KWGZ + LNRT + DLT + LSE + CLE + CLP} | TAIL_ONLY
+            + KWGZ + LNRT + DLT + LSE + CLE + CLP + CLD + CSV + DSK + CRF} | TAIL_ONLY
 
 CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + LNL + CNM
          + LNR + LNRX + LNR2 + LNV + LNV2 + LNA
          + ERRB + DIRB + DOTD + LNLD + CNMD + LNRD + KWGD + KWGZ + LNRT + DLT
-         + LST + LSE + CLN + CLE + CLP)
+         + LST + LSE + CLN + CLE + CLP + CLD + CSV + DSK + CRF)
 
 # ⚠️ `dec-bin` AND `lit-varname` LEFT THIS SET IN D-NAMBLANK. Both were filed
 # informational because nobody had a RULE for them: `dec-bin` was the `&B`
@@ -2644,7 +2865,16 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             # D-LNREF say-mode: `lnrd-erl` is the LOAD-BEARING one. It is green
             # BEFORE this slice and it is the row R-E exists for -- arming ERL
             # without ev_f's $0E arm puts a $0E where the evaluator has none.
-            "lnrd-ctl", "lnrd-then", "lnrd-erlctl", "lnrd-erl", "lnrd-list"}
+            "lnrd-ctl", "lnrd-then", "lnrd-erlctl", "lnrd-erl", "lnrd-list",
+            # D-DOTGAPS. Four of these are NON-WRITER controls rather than
+            # "same bytes either way" ones, and each is the contrast that keeps
+            # its battery's positive rows from being read one word too wide:
+            # `cld-cload` (a tokenised load stores no lines), `csv-csave` (a
+            # tokenised save walks none), `dsk-savtok` (the same over disk), and
+            # the two pre-state controls that say the apparatus itself -- a
+            # mounted tape, a `CLEAR` -- writes nothing.
+            "cld-ctl", "cld-cload", "csv-ctl", "csv-csave",
+            "dsk-ctl", "dsk-savtok", "crf-ovrctl", "crf-oomctl"}
 
 # --- KNOWN_DIVERGE: EMPTY, and every cohort that ever sat here has retired -----
 # ⚠️ These were never suppressions. Each entry recorded what zerobas ACTUALLY
@@ -2775,6 +3005,30 @@ KNOWN_DIVERGE = {
     # ` 103  0  4 ` on all three sides, so this is `RETURN`'s own doing and not
     # the error trap's. Architectural; retirement path is the TODO.md item.
     "lnrt-forret":  " 103  0  4 ",
+    # --- D-DOTGAPS: three rows that diverge for reasons this slice does NOT own,
+    # each found by measuring `.` and each pinned to zerobas' exact value so the
+    # entry rots loudly the day its owner lands
+    # (docs/dotgaps-msx1-characterization.md §6).
+    #
+    # D2. `SAVE"CAS:name"` WITHOUT `,A` WRITES A TOKENISED TAPE HERE AND AN ASCII
+    # ONE ON BOTH REFERENCES -- decoded off the recorded WAV, not inferred: the
+    # reference tape opens `ea ea ea …` and carries the program as text, zerobas'
+    # opens `d3 d3 d3 …`. So the reference's `.` moves to 40 (the ASCII walk
+    # emitted line 40 last) and zerobas' stays at 5. ⚠️ THE `.` HALF IS NOT THE
+    # DEFECT: fix the format and this row goes green with no `.` change at all.
+    # Its owner is a SAVE slice -- basic/save.asm's own header documents the
+    # tokenised behaviour, and basic_probe_tape_save.py asserts it as an oracle.
+    "csv-tok":      " 5  0 ",
+    # D4. A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM. Both
+    # references refuse a 32-byte line with ~148 free bytes after a `CLEAR`;
+    # zerobas has no HIMEM-derived bound to hit, so the line is STORED and no
+    # error is printed. These two rows are the ones that say so -- and they are
+    # also why `crf-oom` (` 20  0 ` on all three sides) may never be read as
+    # coverage: it agrees here because the store SUCCEEDED and wrote the same
+    # number the references write on a REFUSAL. The rule `crf-oom` is about is
+    # gated by tests/test_program.py, not by any row in this probe.
+    "crf-oomsay":   "<nothing listed>",
+    "crf-oomlst":   "20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB|99 REM Z",
     # ✅ `dlt-dot` / `dlt-dotedit` RETIRED 2026-08-02 BY D-DOTLINE, and DELETED
     # rather than edited (the ninth cohort to go that way). They were pinned at
     # zerobas' ` 15  2 ` -- R-D6's trailing-junk rule answering a `$2E` the verb
@@ -2886,7 +3140,11 @@ def echo_missing(raw, lines, prompt):
     margin = min(len(r) - len(r.lstrip(" ")) for r in live)
     seen = {r[margin:] for r in live}
     seen |= {r[len(prompt):] for r in seen if prompt and r.startswith(prompt)}
-    return [ln for ln in lines if ln not in seen]
+    # ⚠️ A `@WAIT<s>` pseudo-line TYPES NOTHING (omsx_repl.is_wait) -- it only
+    # advances the emulated clock past a tape operation. There is no echo to
+    # find, and treating it as a missing payload would fail every tape row.
+    return [ln for ln in lines
+            if not omsx_repl.is_wait(ln) and ln not in seen]
 
 
 # --- driving one side --------------------------------------------------------
@@ -2907,7 +3165,11 @@ def say(raw, lines, margin_lines):
     # ⚠️ `set(margin_lines)` would be a set of STRINGS, not characters, and would
     # exclude nothing -- the reset lines' own echo would then be reported as
     # machine output on every row. Join first.
-    typed = set("".join(lines)) | set("".join(margin_lines))
+    # ⚠️ `@WAIT` pseudo-lines are NOT typed, so their characters may not join the
+    # echo alphabet -- `@`, `W`, `A`, `I`, `T` and the digits would then be
+    # silently subtracted from what the machine PRINTED.
+    typed = (set("".join(l for l in lines if not omsx_repl.is_wait(l)))
+             | set("".join(margin_lines)))
     out = []
     # ⚠️ THE LAST ROW IS NOT OUTPUT -- the references draw the FUNCTION-KEY line
     # there (`color auto goto list run`) and zerobas draws nothing, so leaving it
@@ -2923,6 +3185,58 @@ def say(raw, lines, margin_lines):
     return "|".join(out) if out else "<nothing printed>"
 
 
+_TAPE = {}
+
+
+def tape_paths():
+    """Build (and cache) the two cassette images the `cld`/`csv` rows need.
+
+    ONE read-only tape carries all three files a `cld` row can ask for -- the
+    ROM searches forward by name, so `LOAD"CAS:DOTD"` skips DOTA on its own and
+    no per-row remount is needed. The recording tape is a single reused path:
+    `cassetteplayer new` truncates it at every boot, and the rows are delivered
+    boot-per-case, so no two saves ever share one.
+
+    ⚠️ THE TAPES ARE BUILT BY cas_encode/OUR OWN ENCODER, never copied from an
+    artifact -- the $EA ASCII layout is the one basic_probe_cas_ascii.py already
+    validates against a real third-party tape, so a mis-built image would fail
+    THERE rather than silently mis-measuring here."""
+    if _TAPE:
+        return _TAPE
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
+    from cas_encode import CAS_SYNC, build_cas_basic          # noqa: E402
+    prog = ["10 REM A", "20 REM B", "30 REM C", "40 REM D"]
+
+    def ascii_cas(name, lines):
+        body = b"".join(ln.encode() + b"\r\n" for ln in lines) + bytes([0x1A])
+        body = body.ljust(((len(body) + 255) // 256) * 256, b"\x1A")
+        buf = bytearray(CAS_SYNC + bytes([0xEA] * 10) + name[:6].ljust(6).encode())
+        for off in range(0, len(body), 256):
+            buf += CAS_SYNC + body[off:off + 256]
+        return bytes(buf)
+
+    def tok_image(pairs, base=0x8001):
+        out, addr = b"", base
+        for n, t in pairs:
+            body = bytes([0x8F]) + t.encode() + b"\x00"   # $8F = REM, tail verbatim
+            size = 4 + len(body)
+            out += bytes([(addr + size) & 0xFF, (addr + size) >> 8,
+                          n & 0xFF, n >> 8]) + body
+            addr += size
+        return out + b"\x00\x00"
+
+    d = tempfile.mkdtemp(prefix="lnb_tape_")
+    load = os.path.join(d, "dotgaps.cas")
+    with open(load, "wb") as f:
+        f.write(ascii_cas("DOTA", prog)
+                + ascii_cas("DOTD", list(reversed(prog)))
+                + build_cas_basic("DOTT", tok_image([(10, " A"), (20, " B"),
+                                                     (30, " C"), (40, " D")])))
+    _TAPE["tape-load"] = load
+    _TAPE["tape-save"] = os.path.join(d, "record.wav")
+    return _TAPE
+
+
 def run_side(side, cases, repeat, echo, saymode=False, isolate=False):
     """Deliver `cases` to one machine and return a reading per case.
 
@@ -2934,8 +3248,34 @@ def run_side(side, cases, repeat, echo, saymode=False, isolate=False):
     every reference pass runs twice on independent boots and any row whose two
     readings differ is UNSTABLE and fatal. The two directions do not deserve the
     same guard."""
+    # 🔴 A DEVICE REQUIREMENT IS A DELIVERY GROUP, NOT A ROW ATTRIBUTE. openMSX
+    # takes ONE prologue per run, and a row that wants a mounted tape and one
+    # that wants a recording tape cannot share it -- a `SAVE"CAS:"` onto the
+    # read-only image would be measuring the emulator's refusal, not the ROM.
+    # Same split shape as the SAY/non-SAY one below, and for the same reason.
+    devs = {DEVICE.get(lb) for lb, _l in cases}
+    if len(devs) > 1:
+        by_label = {}
+        for dev in sorted(devs, key=lambda d: (d is not None, d or "")):
+            sub = [c for c in cases if DEVICE.get(c[0]) == dev]
+            by_label.update(zip((c[0] for c in sub),
+                                run_side(side, sub, repeat, echo, saymode, isolate)))
+        return [by_label[lb] for lb, _l in cases]
+    dev = next(iter(devs))
+
     cfg = dict(SIDES[side])
     diska = cfg.pop("diska")
+    # A `dsk` row needs a disk on whichever side runs it. The CF-3300 always has
+    # one; zerobas' repack machine carries the disk ROM but no image, and giving
+    # it one PER GROUP rather than in SIDES keeps every other zb row in the boot
+    # environment its value was pinned in.
+    if dev == "disk" and not diska:
+        diska = SRC_DSK
+    prologue = ()
+    if dev == "tape-load":
+        prologue = (f"cassetteplayer insert {{{tape_paths()['tape-load']}}}",)
+    elif dev == "tape-save":
+        prologue = (f"cassetteplayer new {{{tape_paths()['tape-save']}}}",)
     tmp = None
     if diska:
         tmp = tempfile.NamedTemporaryFile(suffix=".dsk", prefix=f"lnb_{side}_",
@@ -2998,7 +3338,8 @@ def run_side(side, cases, repeat, echo, saymode=False, isolate=False):
     for _ in range(repeat):
         runs.append(omsx_repl.run_cases(
             cfg["machine"], specs, reset=reset, capture=capture,
-            boot=cfg["boot"], step=cfg["step"], diska=tmp, batch=batch))
+            boot=cfg["boot"], step=cfg["step"], diska=tmp, batch=batch,
+            prologue=prologue))
     if tmp:
         os.unlink(tmp)
 
@@ -3058,6 +3399,35 @@ def run_side(side, cases, repeat, echo, saymode=False, isolate=False):
     return out
 
 
+# The value a capability-locked row carries on a side that cannot run it. It is
+# NOT a reading and NOT a failure: `is_bad` ignores it, the comparison drops it
+# before counting, and the printer shows it verbatim so a table can never be read
+# as "all three sides agreed" when only two were asked.
+NOT_RUN = "<no device on this side>"
+
+
+def read_vals(cols, sides, i) -> set:
+    """The distinct READINGS of row `i` -- NOT_RUN is not one of them."""
+    return {cols[s][i] for s in sides if cols[s][i] != NOT_RUN}
+
+
+def side_allows(label, side) -> bool:
+    e = SIDE_LOCK.get(label)
+    return True if e is None else side in e[0]
+
+
+def run_on_side(side, cases, repeat, echo, saymode, isolate=False):
+    """run_side, with the rows this side cannot answer removed before delivery
+    and NOT_RUN spliced back in afterwards, so every column stays aligned with
+    `cases`."""
+    sub = [c for c in cases if side_allows(c[0], side)]
+    if not sub:
+        return [NOT_RUN] * len(cases)
+    got = dict(zip((c[0] for c in sub),
+                   run_side(side, sub, repeat, echo, saymode, isolate)))
+    return [got.get(lb, NOT_RUN) for lb, _l in cases]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--sides", default=",".join(REF_SIDES),
@@ -3115,17 +3485,40 @@ def main():
     # had). So a broad run -- `lnblank-echo` selects EVERY row -- skips them with
     # a printed notice naming the reason, and a run that is left with nothing
     # after the skip fails outright instead of reporting "no rows selected".
-    locked = [lb for lb, _l in sel
-              if lb in SIDE_LOCK and not set(sides) <= SIDE_LOCK[lb]]
-    if locked:
-        sel = [c for c in sel if c[0] not in set(locked)]
-        print(f"SIDE-LOCKED, NOT MEASURED on {sides}: {sorted(locked)} "
-              f"-- {SIDE_LOCK_WHY}. They are measurable only on "
-              f"{sorted(SIDE_LOCK[locked[0]])}, and they gate nothing.\n")
+    # ⚠️ AND "HANG" AND "CAPABILITY" ARE DIFFERENT INSTRUCTIONS. A hang-locked row
+    # may not be RUN on a machine it would wedge, so it leaves the run entirely
+    # the moment such a side is selected. A capability-locked row is perfectly
+    # safe to run -- the other machine simply has no such device -- so it runs on
+    # the sides that DO have it and gates across those. Collapsing the two (which
+    # is what one global SIDE_LOCK_WHY forced) is what kept the ASCII-SAVE
+    # reading in a doc: dropping it from the default three-side gate made it
+    # gate nothing, and running it on the VG-8020 would have measured a machine
+    # with no `A:` device.
+    hang = [lb for lb, _l in sel
+            if lb in SIDE_LOCK and SIDE_LOCK[lb][1] == "hang"
+            and not set(sides) <= SIDE_LOCK[lb][0]]
+    if hang:
+        sel = [c for c in sel if c[0] not in set(hang)]
+        why = SIDE_LOCK[hang[0]][2]
+        print(f"SIDE-LOCKED (hang), NOT MEASURED on {sides}: {sorted(hang)} "
+              f"-- {why}. They are measurable only on "
+              f"{sorted(SIDE_LOCK[hang[0]][0])}, and they gate nothing.\n")
         if not sel:
             print("APPARATUS FAILURE: every selected row is side-locked away "
                   "from these sides -- this run would measure nothing.")
             return 1
+    cap = {lb: SIDE_LOCK[lb] for lb, _l in sel
+           if lb in SIDE_LOCK and SIDE_LOCK[lb][1] == "capability"
+           and not set(sides) <= SIDE_LOCK[lb][0]}
+    if cap:
+        for lb, (allow, _k, why) in sorted(cap.items()):
+            run_on = sorted(set(sides) & set(allow))
+            print(f"CAPABILITY-LOCKED {lb}: measured on {run_on} only "
+                  f"-- {why}."
+                  + ("" if len(run_on) > 1 else
+                     "  ⚠️ ONE SIDE LEFT: this row is measured but GATES "
+                     "NOTHING in this run."))
+        print()
     if not sel:
         print("APPARATUS FAILURE: no rows selected")
         return 1
@@ -3133,7 +3526,7 @@ def main():
         print("APPARATUS FAILURE: --repeat must be >= 1")
         return 1
 
-    cols = {s: run_side(s, sel, args.repeat, args.echo, args.say)
+    cols = {s: run_on_side(s, sel, args.repeat, args.echo, args.say)
             for s in sides}
 
     # --- SELF-HEAL: re-run every SUSPECT row boot-per-case ---------------------
@@ -3168,7 +3561,7 @@ def main():
     if not args.echo:
         suspect = [i for i, (label, _l) in enumerate(sel)
                    if any(is_bad(cols[s][i]) for s in sides)
-                   or len({cols[s][i] for s in sides}) > 1]
+                   or len(read_vals(cols, sides, i)) > 1]
         if suspect:
             # ⚠️ REPORTED IN TWO GROUPS ON PURPOSE. The informational rows heal on
             # EVERY run by construction, so folding them in with the rest would
@@ -3192,12 +3585,12 @@ def main():
                 print("      " + ", ".join(sel[i][0] for i in exp))
             sub = [sel[i] for i in suspect]
             for s in sides:
-                healed = run_side(s, sub, args.repeat, args.echo, args.say,
-                                  isolate=True)
+                healed = run_on_side(s, sub, args.repeat, args.echo, args.say,
+                                     isolate=True)
                 for j, i in enumerate(suspect):
                     cols[s][i] = healed[j]
             laundered = [sel[i][0] for i in exp
-                         if len({cols[s][i] for s in sides}) == 1]
+                         if len(read_vals(cols, sides, i)) == 1]
             if laundered:
                 print("\n🔴 SELF-HEAL FAILURE -- these rows diverge for measured "
                       "reasons and came back AGREEING, so the heal is "
@@ -3229,7 +3622,7 @@ def main():
         soft, hard = [], []
         for i, (label, _l) in enumerate(sel):
             for s in sides:
-                if cols[s][i] != "ECHOED":
+                if cols[s][i] not in ("ECHOED", NOT_RUN):
                     (soft if label in INFORMATIONAL else hard).append(
                         f"{label} on {s}: {cols[s][i]}")
         if soft:
@@ -3267,9 +3660,21 @@ def main():
     # oracles agree with each other"; with zerobas in the list it is the
     # differential. Informational rows are reported but never gate.
     npass = ngate = 0
-    diverge, stale = [], []
+    diverge, stale, ungated = [], [], []
     for i, (label, _l) in enumerate(sel):
-        vals = {cols[s][i] for s in sides}
+        # 🔴 A ROW MEASURED ON ONE SIDE HAS NOTHING TO AGREE WITH, AND THE
+        # OBVIOUS TEST FOR IT IS WRONG. Counting DISTINCT VALUES cannot tell "one
+        # side answered" from "two sides answered the same thing" -- both are a
+        # set of size 1 -- and the first cut of this guard reported all 22 rows
+        # of a two-reference walk as ungated. Count the SIDES THAT ANSWERED.
+        # That is the `dir-name` shape (a row reported as if it had gated)
+        # reached through the capability lock instead of through a --only
+        # filter: counted nowhere, printed by name.
+        answered = [s for s in sides if cols[s][i] != NOT_RUN]
+        if len(answered) < 2:
+            ungated.append(label)
+            continue
+        vals = {cols[s][i] for s in answered}
         ok = len(vals) == 1
         # ⚠️ AN ALLOWLIST THAT MUST KEEP MATCHING IS A CONTROL; ONE THAT ONLY
         # SUPPRESSES IS ROT. A KNOWN_DIVERGE row passes only if it STILL diverges
@@ -3279,7 +3684,8 @@ def main():
         # must still agree with each other either way.
         if label in KNOWN_DIVERGE and "zb" in sides:
             ngate += 1
-            refs = {cols[s][i] for s in sides if s != "zb"}
+            refs = {cols[s][i] for s in sides
+                    if s != "zb" and cols[s][i] != NOT_RUN}
             want = KNOWN_DIVERGE[label]
             if ok:
                 stale.append(f"{label}: allowlisted as divergent but the row now "
@@ -3303,6 +3709,12 @@ def main():
         for m in stale:
             print(f"  {m}")
 
+    if ungated:
+        print("\nMEASURED BUT NOT GATING -- fewer than two sides could answer "
+              "(capability-locked; run with the side that has the device):")
+        for lb in ungated:
+            print(f"  {lb}")
+
     print(f"\n{npass}/{ngate} gating rows agree across {sides} "
           f"({len([l for l in KNOWN_DIVERGE if any(c[0] == l for c in sel)])} "
           f"of them allowlisted as KNOWN_DIVERGE, pinned to their exact value)")
@@ -3315,6 +3727,15 @@ def main():
                 print(f"      {s:8} {v}")
 
     if stale:
+        return 1
+    # ⚠️ 0/0 IS NOT A PASS. A `--gate` run in which every selected row turned out
+    # to gate nothing -- every one capability-locked away, or filtered down to a
+    # single side -- reported exit 0 with `0/0 gating rows agree`, which is
+    # [[gate-can-be-green-while-measuring-nothing]] with the count printed right
+    # there. It is an apparatus failure, not a green run.
+    if args.gate and ngate == 0:
+        print("\nAPPARATUS FAILURE: this gate run measured NOTHING -- 0 gating "
+              f"rows out of {len(sel)} selected. Check --only and --sides.")
         return 1
     return 1 if (args.gate and npass != ngate) else 0
 

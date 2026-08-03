@@ -460,6 +460,20 @@ inheriting the earlier answer would have bought a more expensive bug.
 
 ### 5.1 What is still NOT measured
 
+✅ **ALL THREE OF THESE WERE MEASURED BY D-DOTGAPS, 2026-08-03** —
+[`dotgaps-msx1-characterization.md`](dotgaps-msx1-characterization.md),
+[`spec-basic-dotgaps.md`](spec-basic-dotgaps.md). Two of the three reasoned
+answers were right and one was wrong, which is the reason the exercise was worth
+doing at all:
+
+| | answer |
+|---|---|
+| ASCII LOAD/MERGE | **writes it, per stored line**, from cassette and from disk — zerobas' inherited behaviour was correct (§2). The last line in FILE order wins (`cld-desc` = 10), which no row of this slice could have said |
+| §4's one reference | **confirmed on a second** (VG-8020, cassette) and a second device — and the tape decode showed `SAVE"CAS:name"` is itself an ASCII save, so the walk rule got simpler rather than wider (§3) |
+| the OOM store | 🔴 **WRONG — the reference WRITES it**, to the line number typed, with nothing stored (§4). A line-number refusal does not, so the write sits between the two checks. Fixed by moving one instruction; the placement below is superseded |
+
+The **cold** value is the one item still not measured, for the reason given here.
+
 * whether an **ASCII LOAD/MERGE** (which stores each line through the editor)
   writes `.` per line. zerobas's `cload.asm` reaches `store_line`, so it will
   inherit writer (a) whether or not the reference does. **Unmeasured, and the

@@ -1680,6 +1680,54 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         they say otherwise. The full acceptance corpus was re-run, not just this
         slice's gate.
 
+- [ ] 🔴 **`SAVE"CAS:name"` WRITES A TOKENISED TAPE; BOTH REFERENCES WRITE
+      ASCII.** Found 2026-08-03 by D-DOTGAPS
+      ([`docs/dotgaps-msx1-characterization.md`](docs/dotgaps-msx1-characterization.md)
+      §3.2), while measuring which SAVE forms write `.` — the row that looked
+      like a cassette-specific `.` divergence turned out to be a **format**
+      divergence, and the tape says so rather than an argument: recorded to WAV
+      and decoded, the VG-8020's `SAVE"CAS:E"` opens `ea ea ea …` and carries
+      the program as **text**, zerobas' opens `d3 d3 d3 …`. On MSX1 `CSAVE` is
+      the tokenised cassette write and `SAVE"CAS:"` is the ASCII one, `,A` or
+      not. zerobas already HAS the ASCII cassette save (`SAVE"CAS:",A`, M2 of
+      `spec-cas-ascii-saveload.md`), so the fix is a dispatch default in
+      [`basic/save.asm`](basic/save.asm) `sav_is_cas` — but it re-specifies a
+      shipped save format and **inverts an assertion in
+      [`probes/basic/basic_probe_tape_save.py`](probes/basic/basic_probe_tape_save.py)**,
+      whose format oracle is `build_cas_basic` (tokenised) for this very verb.
+      That probe's expectation is the thing to fix first; the header comment at
+      [`basic/save.asm:12`](basic/save.asm:12) documents the wrong behaviour as
+      intended. **Pinned** as `csv-tok` = ` 5  0 ` in `lnblank`'s
+      `KNOWN_DIVERGE`, so the day it lands the pin rots loudly.
+      ⚠️ Consequence for `.`: the reference writes `.` = the last line the ASCII
+      walk emitted; zerobas writes nothing there. **Fixing the format fixes the
+      `.` row with no `.` change at all** — the writer is already correct.
+
+- [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
+      Found 2026-08-03 by D-DOTGAPS (§1.2). With only a $D3 file on the tape the
+      VG-8020 printed no `Found:` and no error and sat there — it searches past
+      a non-ASCII header to the end of the tape and waits. zerobas answers, via
+      the 3-way header dispatch in [`basic/cload.asm`](basic/cload.asm).
+      ⚠️ **NO ROW CAN CARRY THIS**: the faithful behaviour is a HANG, and a row
+      that hangs one side gates nothing (the same reason `kwgz-`'s AUTO/LLIST
+      rows are side-locked). Filed for the judgement call — bug-for-bug fidelity
+      here costs a working feature — not for a fix.
+
+- [ ] 🔴 **A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM.**
+      Found 2026-08-03 by D-DOTGAPS (§4.2/§6 D4). After
+      `CLEAR 300,TXTTAB+1000` both references have **148** free bytes and refuse
+      a 32-byte line with `Out of memory`; zerobas has **646**, stores it, and
+      prints nothing — `CLEAR`'s HIMEM argument does not reach the store check
+      at [`sub/lineedit.asm:115`](sub/lineedit.asm:115), which compares
+      `PRGEND + size` against a fixed `$BB00`. **Pinned** as `crf-oomsay` /
+      `crf-oomlst`.
+      🔴 **AND IT IS WHY D-DOTGAPS' OWN RULE HAS NO EMULATOR GATE.** No typed row
+      can reach the OOM path on this side, so `crf-oom` agrees at ` 20  0 ` for
+      the wrong reason (a *successful* store writing the same number the
+      references write on a *refusal*), and R-DOT3a′ is gated by
+      [`tests/test_program.py`](tests/test_program.py) alone. Fixing this bound
+      would give that rule a real row.
+
 - [ ] 🔴 **`DIM Q(20000)` → `Out of memory`, reference says `Subscript out of
       range`.** Found 2026-07-28 as a calibration row in the D-CLP matrix
       (`oos-vs-oom`), aimed at proving `Out of string space` was distinct — the

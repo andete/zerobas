@@ -153,13 +153,34 @@ class Machine:
         sub0.cpu = Z80(sub0.mem)
         sub0.traps = {}
         RAM_LO, STACK = 0x8000, 0xF300         # shuttle $8000..stack; leave stacks private
+        # 🔴 AND THE WORK AREA ABOVE THE STACK MUST COME BACK TOO -- IT DID NOT, AND
+        # THAT MADE EVERY SUB-SIDE SYSVAR WRITE INVISIBLE TO THIS HARNESS.
+        # The copy-back window used to be [$8000,$F300) alone, chosen to keep the
+        # island's stack (SP starts at $F380 and grows DOWN) out of the caller's.
+        # But the MSX work area sits ABOVE that stack: `DOT` $F6B5, and the cells
+        # D-REHOME moved to their published addresses -- ERRFLG $F6B2, ERRLIN
+        # $F6B3, ONELIN $F6B9, ONEFLG $F6BB, DEFTBL $F6C2 -- are all past $F380.
+        # A page-1 tenant writing any of them wrote it in the ISLAND and the
+        # caller read the value from BEFORE the call, with no error anywhere:
+        # tests/test_program.py's `.` control (an ACCEPTED store must set DOT to
+        # the stored line) read 0 with a correct implementation under it. The
+        # window is now [$8000,$F300) + [$F380,$10000), i.e. everything except the
+        # 128-byte stack the two machines genuinely may not share -- which is what
+        # a real CALSLT does, since both slots see the same RAM.
+        # ⚠️ A test that asserts a sub-tenant left a work-area cell ALONE is now
+        # measuring that for real; before this it could not have failed.
+        STACK_TOP = 0xF380
+
+        def copy_back(dst, src):
+            dst[RAM_LO:STACK] = src[RAM_LO:STACK]
+            dst[STACK_TOP:0x10000] = src[STACK_TOP:0x10000]
 
         def bridge(mach):
             cpu = mach.cpu
             if cpu.ix < 0x4000:
                 sub0.mem[RAM_LO:0x10000] = mach.mem[RAM_LO:0x10000]  # args/scratch in
                 sub0.call(cpu.ix, hl=cpu.hl, de=cpu.de)               # own stack + low mem
-                mach.mem[RAM_LO:STACK] = sub0.mem[RAM_LO:STACK]       # results back
+                copy_back(mach.mem, sub0.mem)                         # results back
                 res = sub0.cpu
             else:
                 sub1 = object.__new__(Machine)     # page-1 half over the CALLER's own image
@@ -181,7 +202,7 @@ class Machine:
                 # to MAIN's page 1, which is exactly what this island switches OUT.
                 sub1.traps = {a: fn for a, fn in mach.traps.items() if a < 0x4000}
                 sub1.call(cpu.ix, hl=cpu.hl, de=cpu.de)
-                mach.mem[RAM_LO:STACK] = sub1.mem[RAM_LO:STACK]       # results back
+                copy_back(mach.mem, sub1.mem)                         # results back
                 res = sub1.cpu
             cpu.hl, cpu.de, cpu.a = res.hl, res.de, res.a
             cpu.f &= ~0x01                     # CF=0: dispatch completed (never "absent" here)
