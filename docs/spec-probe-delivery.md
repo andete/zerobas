@@ -387,3 +387,14 @@ every run, all `direct`-mode, all green.
 D-ECHO also settled §9.1's loose end in part: the swallow count is **exactly the
 length of the preceding injection including its CR** (six measurements, three of
 them predicted in advance). The *trigger* is still open.
+
+🎯 **§9.1 CLOSED IN FULL 2026-08-04 BY D-LATCH**
+([`docs/spec-probe-latch.md`](spec-probe-latch.md)). The trigger is the one
+instruction boundary at `$1197` — between C-BIOS `chget`'s `ld hl,(GETPNT)` and
+`ld de,(PUTPNT)` — where this module's injector moved `GETPNT` **backwards**
+under a CPU that had already latched it. §8.1's readings stand exactly as
+recorded and were never wrong: nothing *was* lost in the injector, and `GETPNT`
+*was* `KEYBUF` after every injection. The pointer the machine used was in a
+register. The injector now writes at the current `GETPNT` and never moves it, so
+the class no longer occurs; both oracles stay armed, and `make latch-check`
+forces the race so they keep a live subject.

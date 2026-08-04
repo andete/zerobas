@@ -4051,30 +4051,73 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it kills it. Whoever implements them needs a plugged printer
       ([[openmsx-printer-pluggable]]) or a different instrument first.
 
-- [ ] 🔴 **THE FLOOR OF THE DELIVERY RACE IS NOT EXPLAINED — BUT THE SIZE OF THE
-      BITE NOW IS.** D-DELIVER characterised it and made it unmissable; it did not
-      find it. **D-ECHO measured the swallow count: it is exactly the length of
-      the PRECEDING injection, its CR included** — 4, 8, 9, 14, 16 for
-      predecessors of those lengths, the last three stated as predictions before
-      the run, plus a sixth confirmation from `time-acceptance` (predecessor
-      `20 SWAP TIME,A`, 15 with CR, 15 swallowed)
-      ([`docs/echo-delivery-characterization.md`](docs/echo-delivery-characterization.md) §5).
-      So D-DELIVER's "four is also the length of `CLS`+CR — suggestive, unproven"
-      is now a **rule**. What remains open is the TRIGGER: why it fires on one
-      slot and not the next. A predecessor of 26 bytes shifts the alignment and
-      nothing mangles at all.
-      ⚠️ A mechanism that FITS — the ROM restoring a `GETPNT` it saved past the
-      previous line, which is consistent with D-DELIVER's `GETPNT == KEYBUF`
-      reading because that was taken after the HARNESS wrote the pointer, not
-      after the ROM restored one — is a **hypothesis and is not measured**.
-      ⚠️ **Do not "fix" it by raising `step`.** `step=5.0` clears the graphics case
-      and `step=1.2` clears the filler batch; a number that moves a race is not a
-      guard [[deterministic-mangle-is-still-a-mangle]].
+- [x] ✅ **D-LATCH — THE TRIGGER IS ONE INSTRUCTION WIDE — LANDED 2026-08-04.**
+      Spec [`docs/spec-probe-latch.md`](docs/spec-probe-latch.md),
+      characterisation
+      [`docs/latch-trigger-characterization.md`](docs/latch-trigger-characterization.md).
+      **Apparatus only — `probes/lib/omsx_repl.py`, a new
+      `probes/lib/latch_check.py` and one Makefile target; no `basic/`, `sub/`,
+      `disk/` or `tape/` source touched, no ROM rebuilt.** Closes D-DELIVER §9.1 /
+      D-ECHO §6, the last open half of the delivery race.
+      🎯 **The trigger is the instruction boundary at `$1197`** — between C-BIOS
+      `chget`'s `ld hl,(GETPNT)` (`$1194`) and `ld de,(PUTPNT)`. An injector that
+      moves GETPNT BACKWARDS is invisible to a CPU that latched it one
+      instruction earlier, so `ld a,(hl)` reads the fresh buffer from
+      `KEYBUF + N`. That is the swallow law, the alignment sensitivity, and why
+      `step` "fixes" one case and not another, all from one register.
+      **2039 slots across seven instrumented batches: 6 at `$1197`, 6
+      mis-deliveries, none anywhere else.** Forced with a breakpoint at that
+      address it mangles **every** time (4 predecessor lengths, 4 exact hits) and
+      the three neighbouring boundaries deliver intact.
+      🔴 **The hypothesis on file was inverted.** Nothing saves or restores a
+      `GETPNT` — C-BIOS writes it in exactly three places and none of them is a
+      restore. What survives the injection is a **register copy**. Right
+      arithmetic, wrong object, and it would have sent the fix at a save site
+      that does not exist ([[latch-trigger-is-a-register-not-a-save]]).
+      🔴 **D-ECHO's "26-byte predecessor delivers clean" row was a PARTIAL
+      READING.** It hits the trigger too (`HL = KEYBUF+26`); the swallow simply
+      exceeds the payload, so the line arrives after garbage and the ECHO oracle
+      cannot see it — the STORED oracle flags a spurious line `0`. The oracle
+      that was asked was the blind one ([[readout-blind-to-its-own-subject]]).
+      **Fixed at source:** `key_proc` writes at the current GETPNT and never
+      moves it — immune by construction, not by alignment. Forced at `$1197`:
+      100 % mangled → **0 %**. Phases O and Q2 go from 3 mis-deliveries to **0**.
+      **`make latch-check` is the replacement positive control** and it is not
+      optional: cross-oracle disagreement was the only live subject either
+      delivery oracle had (D-ECHO §3.5), and fixing the race silences it forever
+      ([[fixing-the-fault-silences-the-control]]).
+
+- [ ] ⚠️ **`lnblank-say-acceptance` (204 rows, ~3.5–4 h) WAS NOT RUN FOR D-LATCH.**
+      Every other standing corpus member was. The injector change touches
+      delivery for every probe in the tree, so this suite is in the blast radius
+      on principle; it was left out on cost, not on an argument that it is safe.
+      Run it before the next slice that touches `omsx_repl._tcl`.
+
+- [ ] ⚠️ **THE SECOND LATCH WINDOW IS OPEN AND HAS NEVER BEEN OBSERVED.** A CPU
+      inside C-BIOS `chget_char` (`$11A2`–`$119D`) holds an `HL` it is about to
+      write back to `GETPNT`; an injection landing there advances GETPNT past the
+      new payload by `HL - KEYBUF + 1`. It needs a NON-drained buffer, and the
+      buffer was measured drained before **2039/2039** injections (D-LATCH) and
+      490/490 (D-DELIVER) — but that is a measurement, not a proof, and it is why
+      both delivery oracles stay armed after the fix
+      ([`docs/spec-probe-latch.md`](docs/spec-probe-latch.md) §2.5).
 
 - [ ] ⚠️ **THE DELIVERY GUARDS DO NOT COVER PROBES WITH THEIR OWN `build_tcl`.**
       Every `probes/disk/*` script and `basic_probe_printusing.py` build their own
       Tcl and never reach `omsx_repl._tcl`, so neither the stored-program oracle
       nor the echo oracle sees them. Not enumerated; not known to be affected.
+      🔴 **D-LATCH promoted this from a COVERAGE item to a CORRECTNESS one.** A
+      local copy of the pre-D-LATCH `__key` — write at `KEYBUF`, reset `GETPNT` —
+      still has the race the shared injector no longer has, and still has no
+      oracle that would notice.
+      ✅ **The five trap probes are DONE** (`interval`, `key`, `sprite`, `strig`,
+      `stop`): each held a byte-identical copy, each now calls
+      `omsx_repl.key_proc()`, and all five gates were re-run green.
+      ⚠️ **`probes/disk/disk_probe_getput.py` is LEFT ALONE ON PURPOSE** — no
+      Makefile target runs it, so the change could not be scored, and an
+      unverifiable edit to a probe is worse than a filed one. Gate it first, then
+      re-point it. `basic_probe_printusing.py` builds its own Tcl but injects
+      nothing through KEYBUF, so it is not in this class.
 
 - [x] ✅ **D-ECHO — A LINE THE MACHINE DID NOT ECHO WAS NOT DELIVERED — LANDED
       2026-08-03.** Spec [`docs/spec-probe-echo.md`](docs/spec-probe-echo.md),

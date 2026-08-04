@@ -65,7 +65,7 @@ import subprocess
 import tempfile
 import time
 
-from omsx_repl import KEYBUF, GETPNT, PUTPNT, MAX_DIRECT  # noqa: E402
+from omsx_repl import MAX_DIRECT, key_proc  # noqa: E402
 # --- zerobas: the openMSX preflight guard (probes/lib) ---
 import os as _zbo, sys as _zbs  # noqa: E402
 _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
@@ -96,23 +96,17 @@ PHCTL = 0xD00F         # written by the EMULATOR, polled by BASIC: 1 = end phase
 
 # The KEYBUF line driver, shared by both runners (probes/lib/omsx_repl.py,
 # docs/spec-acceptance-harness-rework.md): write the bytes into the 40-byte
-# type-ahead buffer and point GETPNT/PUTPNT at them, so CHGET delivers the line
+# type-ahead buffer where the machine is already looking, so CHGET delivers it
 # with no matrix scan and no per-character typing schedule to race. openMSX
 # `type` cost the T3 gate three rounds to flake -- and every flake looked like a
 # semantic failure.
 _INJECT_TCL = [
-    "proc __key {s} {\n"
-    "  set n [string length $s]\n"
-    "  for {set i 0} {$i < $n} {incr i} {\n"
-    f"    debug write memory [expr {{{KEYBUF} + $i}}] "
-    "[scan [string index $s $i] %c]\n"
-    "  }\n"
-    f"  debug write memory {GETPNT} [expr {{{KEYBUF} & 0xFF}}]\n"
-    f"  debug write memory [expr {{{GETPNT}+1}}] [expr {{({KEYBUF} >> 8) & 0xFF}}]\n"
-    f"  set p [expr {{{KEYBUF} + $n}}]\n"
-    f"  debug write memory {PUTPNT} [expr {{$p & 0xFF}}]\n"
-    f"  debug write memory [expr {{{PUTPNT}+1}}] [expr {{($p >> 8) & 0xFF}}]\n"
-    "}",
+    # D-LATCH (docs/spec-probe-latch.md): IMPORTED, not copied. The copy this
+    # replaced wrote at KEYBUF and RESET GETPNT -- moving GETPNT BACKWARDS
+    # under a CPU that may have latched it, which is the whole delivery
+    # race. `make latch-check` scores the shared proc; a copy here would
+    # have sat outside that gate and kept the race.
+    key_proc(),
     "proc __inj {s} { append s \"\\r\"; __key $s }",
 ]
 

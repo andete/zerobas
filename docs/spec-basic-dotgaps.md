@@ -215,6 +215,16 @@ runs is not a gate* [[expkw-marker-not-marker-slice]]. Its two reds were an
 apparatus artefact, not a ROM defect
 ([`docs/spec-probe-delivery.md`](spec-probe-delivery.md) §2).
 
+🎯 **ADMITTED 2026-08-04 BY D-LATCH: [`latch-check`](spec-probe-latch.md) — nine
+boots, ~40 s, on `repack-machine`.** It forces the batched-injection race onto
+its own trigger with a CPU breakpoint and scores the shipped injector against the
+frozen pre-fix one. It is admitted for a reason no other member has: D-LATCH
+*removed* the fault the two delivery oracles watch for, and cross-oracle
+disagreement — D-ECHO §3.5's only positive control — fires exactly when that
+fault does. Without this gate, both oracles run on every suite in this table and
+nothing could tell you if they had stopped working
+[[fixing-the-fault-silences-the-control]].
+
 ⚠️ **`msgexact --gate` FAILED 55/55 THE FIRST TIME AND THE CAUSE WAS THE
 APPARATUS, NOT THE BUILD.** It ran first in the corpus script, after
 `rm -rf build && make basic-reloc` — which rebuilds the relocated image but not

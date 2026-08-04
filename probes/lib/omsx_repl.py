@@ -70,6 +70,16 @@ they do not -- which is the only positive control either has, since a batch of
 IDENTICAL cases does not reproduce the race at all. `ZEROBAS_ECHOGUARD=off`
 disarms the echo half; `verify_delivery=False` opts a probe out of both.
 
+THE RACE ITSELF IS GONE AT SOURCE (D-LATCH, docs/spec-probe-latch.md). Its
+trigger is one instruction wide: a callback landing between C-BIOS `chget`'s
+`ld hl,(GETPNT)` and `ld de,(PUTPNT)` sees an injector that has moved GETPNT
+BACKWARDS under a CPU that already latched it. `key_proc` therefore writes at
+the current GETPNT and never moves it -- immune by construction, verified by
+forcing the injection onto that exact boundary with a breakpoint (100% mangled
+before, 0% after: `make latch-check`). BOTH ORACLES STAY ARMED. A fix removes a
+fault; it does not remove the need to detect one, and spec §2.5 names a second,
+never-observed window this does not close.
+
 Batching became safe on 2026-07-12: the `--selftest` isolation check established
 that zerobas's `NEW`/`CLEAR` did NOT clear variables or the DEF table (the
 reference does -- a real divergence), now FIXED in the repack build
@@ -122,8 +132,9 @@ MAX_DIRECT = KEYBUF_SZ - 2  # 38: longest line injectable verbatim (CR excluded)
 #
 # 🔴 THAT COST IS NOT COSMETIC: IT BROKE THE ECHO GUARD. A cassette LOAD or SAVE
 # runs for ~10-30 emulated seconds while the harness keeps injecting on schedule
-# (each __key call resets GETPNT/PUTPNT, so lines delivered mid-operation collapse
-# into one), so a tape row needs the clock advanced past the operation before its
+# (each __key call OVERWRITES whatever is still pending, so lines delivered
+# mid-operation collapse into one -- D-LATCH changed WHERE that write lands, not
+# that it discards), so a tape row needs the clock advanced past the operation before its
 # readout is typed. Padding with `REM` did that at two screen rows apiece, and on
 # the CF-3300 -- whose Disk BASIC prints more per row -- the case's own payload
 # scrolled off the top: `MANGLED not echoed: ['60 REM Y', ...]` for rows whose
@@ -246,6 +257,59 @@ def _cap_expr(capture) -> str:
     raise ValueError(f"unknown capture spec: {capture!r}")
 
 
+def key_proc() -> str:
+    """The Tcl `__key` proc: write the raw bytes of `s` into KEYBUF so CHGET
+    delivers them (no CR).
+
+    🔴 IT WRITES AT THE CURRENT GETPNT AND NEVER MOVES GETPNT (D-LATCH,
+    docs/spec-probe-latch.md §3.2). The obvious injector -- write at KEYBUF,
+    set GETPNT=KEYBUF, PUTPNT=KEYBUF+n -- moves GETPNT BACKWARDS, and that is
+    the entire delivery race D-DELIVER and D-ECHO characterised:
+
+      C-BIOS `chget` is  ld hl,(GETPNT) / ld de,(PUTPNT) / rst $20 / ...
+                         ^ $1194         ^ $1197
+
+    an `after time` callback that lands on the ONE instruction boundary at
+    $1197 leaves HL holding the PRE-injection GETPNT -- which the drained
+    predecessor left at KEYBUF+len(that line incl. CR) -- while `ld de` reads
+    the fresh PUTPNT. The compare then says "a key is waiting" and `ld a,(hl)`
+    starts reading at KEYBUF+N. That is why the swallow count is exactly the
+    length of the preceding injection, and why the race is alignment-sensitive:
+    one boundary out of a whole `step`. Measured, forced with a breakpoint at
+    that address, and 100% -> 0% under this proc (spec §4.2 K1/K5).
+
+    Writing at GETPNT is immune BY CONSTRUCTION, not by alignment: C-BIOS only
+    ever holds a stale GETPNT in HL while it still equals its in-memory value,
+    so a latched HL points exactly at the first byte written here. The discard
+    semantics are unchanged (anything pending is overwritten, PUTPNT is moved
+    to the end of the new payload) and so is the 39-byte limit.
+
+    ⚠️ The buffer is CIRCULAR, so successive injections walk it and wrap at
+    KEYBUF+KEYBUF_SZ; `chget` wraps on exactly that address. A payload is at
+    most MAX_DIRECT+1 = 39 bytes, so `g + i` never exceeds one wrap.
+
+    ⚠️ It does NOT close the second window (spec §2.5): a CPU inside
+    `chget_char` holds an HL it is about to write back to GETPNT. That needs a
+    NON-drained buffer, measured absent before 2039/2039 injections here and
+    490/490 in D-DELIVER -- but it is why both delivery oracles stay armed."""
+    end = KEYBUF + KEYBUF_SZ
+    return (
+        "proc __key {s} {\n"
+        "  set n [string length $s]\n"
+        f"  set g [expr {{[debug read memory {GETPNT}]"
+        f" + 256*[debug read memory {GETPNT + 1}]}}]\n"
+        "  for {set i 0} {$i < $n} {incr i} {\n"
+        "    set a [expr {$g + $i}]\n"
+        f"    if {{$a >= {end}}} {{ incr a -{KEYBUF_SZ} }}\n"
+        "    debug write memory $a [scan [string index $s $i] %c]\n"
+        "  }\n"
+        "  set p [expr {$g + $n}]\n"
+        f"  if {{$p >= {end}}} {{ incr p -{KEYBUF_SZ} }}\n"
+        f"  debug write memory {PUTPNT} [expr {{$p & 0xFF}}]\n"
+        f"  debug write memory {PUTPNT + 1} [expr {{($p >> 8) & 0xFF}}]\n"
+        "}\n")
+
+
 def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          boot: float, step: float, cap_gap: float,
          reset: tuple[str, ...], capture="screen",
@@ -254,7 +318,8 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          slots_out: list[tuple[int, str]] | None = None) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
-    (CHGET drains KEYBUF into the line editor) before the next write resets it.
+    (CHGET drains KEYBUF into the line editor) before the next write overwrites
+    it. Measured drained before 1794/1794 injections across six batches (D-LATCH).
 
     `holds` (input-devices arc I1, docs/spec-basic-input-devices.md §8 phase C)
     optionally holds a KEY-MATRIX bit down while a case RUNs: one `(row, mask)`
@@ -423,25 +488,10 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         + (f"proc __echo {{k}} {{ global __f; puts $__f \"echo.$k="
            f"[debug read memory {SCRMOD}],[debug read memory {LINLEN}],"
            f"[__hex_v {SCR_ADDR} {SCR_LEN}]\"; flush $__f }}\n" if echo else "")
-        # __key: write the raw bytes of `s` into KEYBUF and point GETPNT/PUTPNT at
-        +
-        # them so CHGET delivers them (no CR). Cursors reset each call -- safe
-        # because the per-slot step guarantees the prior chunk was consumed.
-        "proc __key {s} {\n"
-        "  set n [string length $s]\n"
-        "  for {set i 0} {$i < $n} {incr i} {\n"
-        f"    debug write memory [expr {{{KEYBUF} + $i}}] "
-        "[scan [string index $s $i] %c]\n"
-        "  }\n"
-        f"  debug write memory {GETPNT} [expr {{{KEYBUF} & 0xFF}}]\n"
-        f"  debug write memory [expr {{{GETPNT}+1}}] [expr {{({KEYBUF} >> 8) & 0xFF}}]\n"
-        f"  set p [expr {{{KEYBUF} + $n}}]\n"
-        f"  debug write memory {PUTPNT} [expr {{$p & 0xFF}}]\n"
-        f"  debug write memory [expr {{{PUTPNT}+1}}] [expr {{($p >> 8) & 0xFF}}]\n"
-        "}\n"
+        + key_proc()
         # __inj: __key plus the submitting CR (appended here so a literal CR byte
         # never has to survive Tcl brace-quoting).
-        "proc __inj {s} { append s \"\\r\"; __key $s }\n"
+        + "proc __inj {s} { append s \"\\r\"; __key $s }\n"
         + "\n".join(body) + "\n")
 
 

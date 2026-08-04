@@ -1390,6 +1390,21 @@ msgexact-relock: repack-machine
 preflight-check:
 	python3 tools/check_probe_preflight.py $(if $(LIST),--list,)
 
+# --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
+# Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
+# the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
+# write is invisible to the machine -- and scores both injectors there.
+#   row A  the frozen pre-D-LATCH injector -> must still MANGLE (the control)
+#   row B  omsx_repl.key_proc              -> must DELIVER (the fix)
+#   row C  key_proc on the three neighbouring, never-fatal boundaries
+# Row A is why this cannot pass vacuously: once the race is fixed, the two
+# delivery oracles have no live subject left, and cross-oracle disagreement --
+# D-ECHO's only positive control -- goes silent forever. Nine boots, ~40 s.
+# Needs `make repack-machine`; SUBJECT-ONLY (the reference is not driven, see
+# the module docstring). Exits NON-ZERO if it cannot identify the trigger.
+latch-check:
+	python3 probes/lib/latch_check.py
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
@@ -1549,4 +1564,4 @@ clean:
         lnblank-characterize lnblank-acceptance lnblank-echo lnblank-say-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
-        msgexact-gate msgexact-relock preflight-check clean
+        msgexact-gate msgexact-relock preflight-check latch-check clean

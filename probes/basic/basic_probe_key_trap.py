@@ -74,7 +74,7 @@ import subprocess
 import tempfile
 import time
 
-from omsx_repl import KEYBUF, GETPNT, PUTPNT, MAX_DIRECT  # noqa: E402
+from omsx_repl import MAX_DIRECT, key_proc  # noqa: E402
 # --- zerobas: the openMSX preflight guard (probes/lib) ---
 import os as _zbo, sys as _zbs  # noqa: E402
 _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
@@ -149,20 +149,14 @@ def run(machine, prog, events, *, boot=8.0, step=4.0, poll_from=2.0,
         f'proc __poll {{}} {{ if {{[debug read memory {DONE}] != 0}} {{ __cap }}'
         f' else {{ after time 1 __poll }} }}',
         # KEYBUF injection (probes/lib/omsx_repl.py): write the bytes into the
-        # 40-byte type-ahead buffer and point GETPNT/PUTPNT at them, so CHGET
+        # 40-byte type-ahead buffer where the machine is already looking, so CHGET
         # delivers the line with no matrix scan and no typing schedule.
-        "proc __key {s} {\n"
-        "  set n [string length $s]\n"
-        "  for {set i 0} {$i < $n} {incr i} {\n"
-        f"    debug write memory [expr {{{KEYBUF} + $i}}] "
-        "[scan [string index $s $i] %c]\n"
-        "  }\n"
-        f"  debug write memory {GETPNT} [expr {{{KEYBUF} & 0xFF}}]\n"
-        f"  debug write memory [expr {{{GETPNT}+1}}] [expr {{({KEYBUF} >> 8) & 0xFF}}]\n"
-        f"  set p [expr {{{KEYBUF} + $n}}]\n"
-        f"  debug write memory {PUTPNT} [expr {{$p & 0xFF}}]\n"
-        f"  debug write memory [expr {{{PUTPNT}+1}}] [expr {{($p >> 8) & 0xFF}}]\n"
-        "}",
+        # D-LATCH (docs/spec-probe-latch.md): IMPORTED, not copied. The copy this
+        # replaced wrote at KEYBUF and RESET GETPNT -- moving GETPNT BACKWARDS
+        # under a CPU that may have latched it, which is the whole delivery
+        # race. `make latch-check` scores the shared proc; a copy here would
+        # have sat outside that gate and kept the race.
+        key_proc(),
         "proc __inj {s} { append s \"\\r\"; __key $s }",
     ]
     # PROGRAM ENTRY GOES THROUGH KEYBUF INJECTION, NOT openMSX `type`.

@@ -337,3 +337,20 @@ Retiring it would also cost the only independent check the echo oracle has (§3.
 * The **floor** of the race is still not explained — D-DELIVER §9.1 stands
   unchanged. This slice makes the class unmissable in one more mode; it does not
   find the cause.
+
+  🎯 **CLOSED 2026-08-04 BY D-LATCH** ([`docs/spec-probe-latch.md`](spec-probe-latch.md)).
+  The trigger is the single instruction boundary at `$1197`, between C-BIOS
+  `chget`'s `ld hl,(GETPNT)` and `ld de,(PUTPNT)`: the injector moved `GETPNT`
+  **backwards** under a CPU that had already latched it into `HL`. 2039 slots
+  across seven instrumented batches, 6 at `$1197`, 6 mis-deliveries, none
+  anywhere else — and forcing the injection onto that address with a breakpoint
+  reproduces it every time while the neighbouring boundaries deliver intact.
+  §2.5's hypothesis was **inverted**: nothing saves or restores a pointer; what
+  survives is a register copy. The injector now writes at the current `GETPNT`
+  and never moves it, so the race cannot fire; `make latch-check` replaces the
+  positive control §3.5 says these oracles would otherwise lose.
+
+  ⚠️ **§2.5's "26-byte predecessor: the batch delivered clean" row was a PARTIAL
+  READING** — taken from the echo oracle alone. It hits the trigger too; the
+  swallow simply exceeds the payload, so the line arrives after garbage and the
+  *stored* oracle flags a spurious line `0` (D-LATCH characterisation §4.1).

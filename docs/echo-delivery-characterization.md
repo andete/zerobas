@@ -226,9 +226,16 @@ this, and would have stayed green while the guard quietly stopped working.
 
 ## 9. Open
 
-* **The floor of the race** — why it fires on one slot and not the next. §5 gives
-  the *size* of the bite, not the trigger.
-* **The mechanism behind §5** is a hypothesis, unmeasured.
+* ~~**The floor of the race**~~ · ~~**the mechanism behind §5**~~ — 🎯 **BOTH
+  CLOSED 2026-08-04 BY D-LATCH**
+  ([`docs/latch-trigger-characterization.md`](latch-trigger-characterization.md)).
+  The trigger is one instruction boundary, `$1197` in C-BIOS `chget`; the
+  mechanism is a **latched `HL`**, not a saved-and-restored pointer — §5's
+  hypothesis was inverted. ⚠️ And §5's last table row, `CLS:REM123456789012345678`
+  → *"the batch delivered clean"*, is a **partial reading**: it hits the trigger
+  too, but the swallow (26) exceeds the payload (20), so the line arrives after
+  garbage and only the *stored* oracle sees it — a spurious line `0`. That row
+  was read from `mis_echoed` alone.
 * **Probes with their own `build_tcl`** (every `probes/disk/*`,
   `basic_probe_printusing.py`) bypass `omsx_repl._tcl` and are uncovered.
 * **A trailing blank** is still not distinguishable by a substring search
