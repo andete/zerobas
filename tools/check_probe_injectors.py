@@ -73,6 +73,16 @@ EXEMPT = {
         "mangle or `make latch-check` goes red",
     "tools/check_probe_injectors.py":
         "this file -- it holds the same frozen body as its own self-test",
+    # 🔴 A GATE THAT DETECTS INJECTORS CLASSIFIES ITS OWN DETECTOR AS ONE.
+    # This file emits no Tcl and boots nothing: the `debug write memory` in it
+    # is the NEEDLE of a regex that asserts about `key_proc()`'s output, and it
+    # names GETPNT/PUTPNT because those are the addresses it checks are not
+    # written. Same shape as the echo guard's false-positive classes, found the
+    # same way -- by running the corpus [[echo-guard-false-positives-found-by-corpus]].
+    "tests/test_key_drain_guard.py":
+        "host-side ASSERTIONS about key_proc()'s two rules (D-LATCH2); it "
+        "names the cursors and the write in order to check them, and emits no "
+        "Tcl at all",
 }
 
 # --- the self-test bodies, frozen ------------------------------------------

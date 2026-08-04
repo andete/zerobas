@@ -292,6 +292,17 @@ carries the attribution is A1 and A2: the changed tree, twice, clean.
   holds an `HL` it is about to write back to `GETPNT`; that needs a non-drained
   buffer, measured absent before **2039/2039** injections here and 490/490 in
   D-DELIVER, but it is a hole and both oracles stay armed because of it.
+  🔴 **CLOSED 2026-08-04 BY D-LATCH2 — the window is real and §7's fix WAS
+  VULNERABLE TO IT** ([`docs/latch2-window-characterization.md`](latch2-window-characterization.md)).
+  The 2039/2039 reading was sound and the conclusion drawn from it was not: the
+  buffer is drained at every *scheduled* injection, so the window is unreachable
+  by waiting — and reachable at will by breakpointing inside `chget_char`, which
+  the CPU enters **only** when `GETPNT != PUTPNT`. §7's injector swallows
+  **exactly 1** there (not the `HL - KEYBUF + 1` filed, which is §5's injector's
+  number), and it opened a `$11AA` wrap sub-window the old body could not reach.
+  Fixed by refusing to write into a buffer the machine is still consuming; rows
+  D/E/F of `make latch-check` force it, with **this** era's injector frozen as
+  the subject.
 * **The reference is an outcome control only.** Locating the same boundary in a
   Philips VG-8020 would need a disassembly this project does not do
   [[no-reference-rom-disasm]]. That it mis-delivers zero with either injector is

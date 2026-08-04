@@ -126,6 +126,25 @@ KEYBUF_SZ = 40
 # the line itself is at most 38 source chars.
 MAX_DIRECT = KEYBUF_SZ - 2  # 38: longest line injectable verbatim (CR excluded)
 
+# D-LATCH2 (docs/spec-probe-latch2.md §5.5): how long `__key` will wait for a
+# NON-DRAINED buffer before injecting anyway.
+#
+# THE WORST CASE IS A PROPERTY OF THE BUFFER, NOT OF USAGE, so it can be priced
+# exactly: 40 circular bytes hold at most 39 (MAX_DIRECT + CR), and a pending
+# line of exactly that length drains in **10 retries / 20 ms** measured
+# (11 B -> 3, 20 B -> 6, 39 B -> 10; ~0.5 ms per echoed character). 40 retries
+# is 4x that worst case.
+#
+# The ceiling is ECHO_GAP (0.8 s) below -- the echo guard dumps the screen that
+# long after the scheduled injection, so a deferral approaching it would make
+# the guard judge a line that had not landed yet -- and the 2.5 s default
+# `step`. 40 x 2 ms = 80 ms is 10% of the tighter one.
+#
+# Exhausting the bound is not a failure mode: it injects anyway, which is
+# byte-for-byte the behaviour that shipped for the whole D-LATCH era.
+KEY_DEFER_STEP = 0.002
+KEY_DEFER_MAX = 40
+
 # A case "line" of the form `@WAIT<seconds>` types NOTHING and simply advances the
 # emulated timeline. It exists because the obvious way to wait -- padding the case
 # with harmless `REM` lines -- COSTS SCREEN ROWS, and the screen is 24 rows deep.
@@ -288,16 +307,70 @@ def key_proc() -> str:
     KEYBUF+KEYBUF_SZ; `chget` wraps on exactly that address. A payload is at
     most MAX_DIRECT+1 = 39 bytes, so `g + i` never exceeds one wrap.
 
-    ⚠️ It does NOT close the second window (spec §2.5): a CPU inside
-    `chget_char` holds an HL it is about to write back to GETPNT. That needs a
-    NON-drained buffer, measured absent before 2039/2039 injections here and
-    490/490 in D-DELIVER -- but it is why both delivery oracles stay armed."""
+    🔴 AND IT MAY NOT WRITE INTO A BUFFER THE MACHINE IS STILL CONSUMING
+    (D-LATCH2, docs/spec-probe-latch2.md §5.5). Writing at GETPNT is immune at
+    $1197 but NOT inside `chget_char`:
+
+      $11A2  chget_char  ld a,(hl)       <-- still safe: HL == GETPNT, and the
+      $11A3              push af             payload was written AT GETPNT
+      $11A4              inc hl          <-- the window: A already holds the
+      $11A5              ld a,l              PRE-injection byte, and HL is
+      ...                                    about to be stored one PAST the
+      $11AD              ld (GETPNT),hl  <-- payload's first byte
+
+    a callback landing anywhere in $11A3..$11AD is overwritten by that store,
+    so the machine reads the fresh payload from offset 1 and the head of the
+    line is lost. Measured, forced at every boundary: this proc swallowed
+    EXACTLY 1 byte at 7 boundaries out of 9, k-independent (the pre-D-LATCH
+    injector swallows k there, and D-LATCH's own fix OPENED the `ld hl,KEYBUF`
+    wrap sub-window at $11AA, which the pre-D-LATCH body could not reach at
+    all -- spec §4.1). The stray leading character is NOT fixable by any
+    injector: the machine received it before the injection existed.
+
+    The precondition is exact and it is the whole fix: `chget_char` is reached
+    ONLY when GETPNT != PUTPNT, so a NON-DRAINED buffer is the necessary and
+    sufficient condition for this window, and both pointers are published
+    sysvars readable on ANY machine (a PC-range test would not be: locating
+    `chget` in the reference needs a disassembly this project does not do).
+    So: while the buffer is non-drained, DEFER.
+
+    ⚠️ THE RETRY BOUND IS LOAD-BEARING, NOT DECORATION. Line 133 records a
+    standing contract: during a cassette LOAD/SAVE the harness keeps injecting
+    for 10-30 emulated seconds while the machine is NOT reading the keyboard,
+    and each __key OVERWRITES whatever is still pending. An UNBOUNDED wait
+    would turn that documented collapse into a hang. After KEY_DEFER_MAX
+    attempts this injects anyway, restoring the old behaviour exactly -- and
+    the states in which the bound is exhausted are the states in which the CPU
+    is not inside `chget_char` at all. KEY_DEFER_STEP * KEY_DEFER_MAX must stay
+    far below ECHO_GAP (0.8 s), or the echo guard would dump the screen before
+    the line it is judging has landed.
+
+    On a DRAINED buffer -- 2039/2039 injections in D-LATCH, 490/490 in
+    D-DELIVER -- this defers zero times and costs one extra `debug read
+    memory`, which is zero emulated time, so no existing probe's alignment
+    moves. `::__zbdefer` / `::__zbforced` count the two paths so a gate can
+    prove the guard FIRED rather than merely that it was present
+    ([[wired-in-and-silent-tcl-global]])."""
     end = KEYBUF + KEYBUF_SZ
     return (
-        "proc __key {s} {\n"
+        "set ::__zbdefer 0\n"
+        "set ::__zbforced 0\n"
+        "proc __key {s {tries 0}} {\n"
         "  set n [string length $s]\n"
         f"  set g [expr {{[debug read memory {GETPNT}]"
         f" + 256*[debug read memory {GETPNT + 1}]}}]\n"
+        # --- the drain guard (D-LATCH2 §5.5) -------------------------------
+        f"  set q [expr {{[debug read memory {PUTPNT}]"
+        f" + 256*[debug read memory {PUTPNT + 1}]}}]\n"
+        "  if {$g != $q} {\n"
+        f"    if {{$tries < {KEY_DEFER_MAX}}} {{\n"
+        "      incr ::__zbdefer\n"
+        f"      after time {KEY_DEFER_STEP} "
+        "[list __key $s [expr {$tries + 1}]]\n"
+        "      return\n"
+        "    }\n"
+        "    incr ::__zbforced\n"
+        "  }\n"
         "  for {set i 0} {$i < $n} {incr i} {\n"
         "    set a [expr {$g + $i}]\n"
         f"    if {{$a >= {end}}} {{ incr a -{KEYBUF_SZ} }}\n"

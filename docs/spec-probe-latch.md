@@ -140,6 +140,28 @@ It has never been observed, because the buffer was measured drained before
 longer than a line takes to consume. It is a real hole in the rule below and it
 is stated, not assumed away.
 
+🔴 **CLOSED 2026-08-04 BY D-LATCH2, AND TWO OF THE THREE NUMBERS ABOVE ARE
+WRONG** ([`docs/spec-probe-latch2.md`](spec-probe-latch2.md),
+[`docs/latch2-window-characterization.md`](latch2-window-characterization.md)).
+The window is real and §3.2's injector **was vulnerable to it**. Manufactured by
+breakpointing inside `chget_char` — which is reachable *only* when
+`GETPNT != PUTPNT`, so the manufacture and the force are one instrument — and
+walked boundary by boundary:
+
+* the range is **`$11A3`–`$11AD`**; `$11A2`–`$119D` is not a range at all, and
+  `$11A2` is on the **safe** side (the payload is written *at* `HL`);
+* the swallow `HL - KEYBUF + 1` is the **pre-D-LATCH** injector's. §3.2's
+  injector swallows **exactly 1, independent of `k`** — nothing on file
+  predicted that number [[filed-justification-is-a-claim]];
+* 🎯 §3.2's fix **opened** a sub-window at `$11AA` (`ld hl,KEYBUF`) that the
+  pre-D-LATCH body could not reach at all, because that body reset
+  `GETPNT := KEYBUF` on every injection.
+
+Fixed at source: `__key` will not write into a buffer the machine is still
+consuming (bounded deferral). `make latch-check` grew rows D/E/F and forces both
+windows; row D freezes **this era's** injector as its subject, exactly as row A
+freezes the previous one.
+
 ---
 
 ## 3. Design
@@ -354,7 +376,13 @@ already needs.
 
 ## 6. Coverage limits, stated
 
-* **The second window is open** (§2.5) and both oracles stay armed because of it.
+* ~~**The second window is open** (§2.5) and both oracles stay armed because of
+  it.~~ ✅ **CLOSED 2026-08-04 by D-LATCH2** (§2.5). The oracles stay armed on
+  **different** grounds — this one is spent, and
+  [`spec-probe-latch2.md`](spec-probe-latch2.md) §8 states the real ones.
+* ⚠️ **This spec's cost figure for its own gate is stale by 13×.** §5 says
+  *"nine boots, ~40 s"*; timed on this file, unchanged, it is **2.05 s**
+  [[stale-cost-estimate-defers-gates]].
 * **One probe file still carries its own pre-D-LATCH `__key`.** Six did. The five
   trap probes (`interval`, `key`, `sprite`, `strig`, `stop`) each held a
   byte-identical copy of the old injector; each now calls `key_proc()` and their

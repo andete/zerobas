@@ -77,6 +77,57 @@ WAIT_OFF = 5
 SIG = "2afaf3ed5bf8f3"
 TARGET = '10 PRINT"ABCDEFG"'         # stored line 10; a mangle rejects it outright
 
+# --- D-LATCH2: the SECOND window (docs/spec-probe-latch2.md) ----------------
+# chget_char, 14 bytes past chget_wait:
+#   $11A2 ld a,(hl) / push af / inc hl / ld a,l / cp $18 / jr nz /
+#   $11AA ld hl,KEYBUF / $11AD ld (GETPNT),hl / pop af / pop de / pop hl / ret
+# The signature spans the whole window and embeds KEYBUF ($FBF0) and GETPNT
+# ($F3FA), so it vouches for the sysvar contract as well as the addresses.
+CHAR_OFF = 19                        # chget -> chget_char
+SIG2 = "7ef5237dfe18200321f0fb22faf3f1d1e1c9"
+# Offsets from chget_char to the boundaries this scores.
+B_PUSHAF = 1                         # $11A3 -- first FATAL boundary
+B_WRAP = 8                           # $11AA -- ld hl,KEYBUF (wrap path only)
+B_STORE = 11                         # $11AD -- ld (GETPNT),hl, last FATAL one
+B_POPAF = 14                         # $11B0 -- past the store: SAFE again
+# Ten spaces: the tokeniser skips leading blanks, so the prefix the machine has
+# already consumed is invisible and the STORED LINE NUMBER is the swallow count
+# (0 -> 54321, 1 -> 4321, 2 -> 321 ...). No screen decoding, no new oracle.
+TARGET2 = '54321 PRINT"X"'
+PRED2 = " " * 10
+# 31 spaces + CR walks GETPNT to $FC14, so the predecessor's 4th character sits
+# at $FC17 and `inc hl` there takes the wrap path. Only an injector that writes
+# at GETPNT can get there: OLD_KEY resets GETPNT := KEYBUF every time and a
+# payload is at most 39 B, so D-LATCH's own fix OPENED this sub-window.
+FILLER2 = " " * 31
+# ⚠️ Every row below fires on the FIRST hit. For $11AA that is not a choice:
+# the wrap path is entered only when the consuming pointer crosses KEYBUF+40,
+# so the first time that breakpoint is reached IS the wrap. Asking for a later
+# hit there gets `NO HIT` -- which is what the row reports, rather than scoring.
+HIT = 1
+
+# The D-LATCH-era injector, FROZEN -- verified character-identical to the
+# `key_proc()` shipped at 53825bf. Same role as OLD_KEY one era later: it is the
+# fault, kept only so rows D have a subject that must still fail. Fixing this
+# fault would otherwise leave the new rows with nothing to measure, which is
+# exactly how D-LATCH lost the delivery oracles' only positive control
+# ([[fixing-the-fault-silences-the-control]]).
+GETPNT_KEY = """proc __key {s} {
+  set n [string length $s]
+  set g [expr {[debug read memory %(GP)d] + 256*[debug read memory %(GP1)d]}]
+  for {set i 0} {$i < $n} {incr i} {
+    set a [expr {$g + $i}]
+    if {$a >= %(END)d} { incr a -%(SZ)d }
+    debug write memory $a [scan [string index $s $i] %%c]
+  }
+  set p [expr {$g + $n}]
+  if {$p >= %(END)d} { incr p -%(SZ)d }
+  debug write memory %(PP)d [expr {$p & 0xFF}]
+  debug write memory %(PP1)d [expr {($p >> 8) & 0xFF}]
+}
+""" % dict(GP=R.GETPNT, GP1=R.GETPNT + 1, PP=R.PUTPNT, PP1=R.PUTPNT + 1,
+           END=R.KEYBUF + R.KEYBUF_SZ, SZ=R.KEYBUF_SZ)
+
 # The pre-D-LATCH injector, FROZEN. Not imported, not maintained: it is the
 # fault, kept only so the gate has a subject that must still fail.
 OLD_KEY = """proc __key {s} {
@@ -159,6 +210,132 @@ def _run(key_body: str, addr: str | None, pred: str) -> dict:
     return got
 
 
+# D-LATCH2's probe. It differs from _PROBE in ONE structural way: the
+# breakpoint is armed in the SAME atomic callback that injects the predecessor,
+# because the window it forces exists only WHILE a line is being consumed.
+# `chget_char` is reached only when GETPNT != PUTPNT, so a hit IS the
+# non-drained precondition -- and the probe reads both pointers back anyway, so
+# a run that measured a drained buffer says so instead of scoring.
+_PROBE2 = """set throttle off
+set f [open {%(OUT)s} w]
+%(KEY)s
+proc __inj {s} { append s "\\r"; __key $s }
+proc __ptr {p} { return [expr {[debug read memory $p] + 256*[debug read memory [expr {$p+1}]]}] }
+proc __lines {p} {
+  set cur [__ptr $p]
+  set out {}
+  for {set i 0} {$i < 128} {incr i} {
+    set link [expr {[debug read memory $cur] + 256*[debug read memory [expr {$cur+1}]]}]
+    if {$link == 0} { break }
+    lappend out [expr {[debug read memory [expr {$cur+2}]] + 256*[debug read memory [expr {$cur+3}]]}]
+    if {$link <= $cur} { break }
+    set cur $link }
+  return [join $out ,] }
+proc fire {} {
+  global f bpid hits
+  incr hits
+  if {$hits != %(K)d} { return }
+  puts $f "pc=[format %%04X [reg pc]]"
+  puts $f "hl=[format %%04X [reg hl]]"
+  puts $f "getpnt=[format %%04X [__ptr %(GP)d]]"
+  puts $f "putpnt=[format %%04X [__ptr %(PP)d]]"
+  flush $f
+  __inj {%(TARGET)s}
+  debug remove_bp $bpid }
+after time  8.0 {
+  set e [debug read memory %(ENTRY)d]
+  set b [expr {[debug read memory %(ENTRY1)d] + 256*[debug read memory %(ENTRY2)d]}]
+  binary scan [debug read_block memory [expr {$b + %(CHAR)d}] 18] H* sig
+  puts $f "entry=$e"
+  puts $f "chget=$b"
+  puts $f "sig=$sig"
+  flush $f
+  __inj {NEW} }
+after time  9.0 { %(FILL)s }
+after time 10.0 {
+  global bpid hits
+  set hits 0
+  set bpid [debug set_bp %(ADDR)s {} { fire }]
+  __inj {%(PRED)s} }
+after time 15.0 {
+  puts $f "defer=[expr {[info exists ::__zbdefer] ? $::__zbdefer : -1}]"
+  puts $f "hits=$hits"
+  puts $f "chain=[__lines %(TXTTAB)d]"
+  flush $f; close $f; exit }
+"""
+
+
+def _run2(key_body: str, addr: int, k: int, filler: str = "") -> dict:
+    """One boot of the second-window probe. `k` selects which consumed
+    character the breakpoint interrupts."""
+    out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="latch2_",
+                                      delete=False).name
+    tcl = out + ".tcl"
+    with open(tcl, "w") as f:
+        f.write(_PROBE2 % dict(
+            OUT=out, KEY=key_body, TARGET=TARGET2, PRED=PRED2, K=k,
+            ADDR=hex(addr), ENTRY=CHGET_ENTRY, ENTRY1=CHGET_ENTRY + 1,
+            ENTRY2=CHGET_ENTRY + 2, CHAR=CHAR_OFF, GP=R.GETPNT, PP=R.PUTPNT,
+            TXTTAB=R.TXTTAB,
+            FILL=("" if not filler else "__inj {%s}" % filler)))
+    if os.path.exists(out):
+        os.unlink(out)
+    cmd = [find_omsx(None), "-machine", MACHINE,
+           "-command", "set renderer none; set sound_driver null",
+           "-script", tcl]
+    subprocess.run(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL, timeout=180)
+    got: dict = {}
+    if os.path.exists(out):
+        for ln in open(out):
+            key, _, v = ln.strip().partition("=")
+            got[key] = v
+        os.unlink(out)
+    os.unlink(tcl)
+    return got
+
+
+def _row2(label: str, key_body: str, addr: int, k: int, want: str,
+          filler: str = "", need_defer: bool = False) -> tuple[str, bool]:
+    """Score one second-window row. The PRECONDITION is read, never assumed: a
+    run whose buffer was drained at the hit measured nothing and fails saying
+    so, rather than reporting the absence of a fault it could not have seen."""
+    got = _run2(key_body, addr, k, filler)
+    gp, pp = got.get("getpnt"), got.get("putpnt")
+    if not gp or not pp:
+        return f"{label}  -- NO HIT (breakpoint never fired)", False
+    if gp == pp:
+        return f"{label}  -- BUFFER WAS DRAINED ({gp}); measures nothing", False
+    chain = got.get("chain")
+    ok = chain == want
+    verdict = "DELIVERED" if want == "54321" else "MANGLED"
+    if need_defer and int(got.get("defer", "-1")) < 1:
+        return (f"{label}  -- the drain guard NEVER FIRED (defer=0, "
+                f"chain {chain!r})"), False
+    if not ok:
+        return f"{label} -> want {verdict} ({want}), GOT chain {chain!r}", False
+    d = int(got.get("defer", "-1"))
+    # A frozen body has no counter to report; only `key_proc` carries one.
+    how = f"{d} deferrals" if d >= 0 else "frozen body, no drain guard"
+    return f"{label} -> {verdict} (swallow {5 - len(want)}, " \
+           f"chain {chain!r}, {how})", ok
+
+
+def address2(base: int) -> int:
+    """Locate `chget_char` and vouch for the whole window, or raise SystemExit.
+    A gate that cannot identify its subject may not score a guessed address."""
+    got = _run2(R.key_proc(), base + CHAR_OFF + B_POPAF, 1)   # a SAFE boundary
+    if got.get("sig") != SIG2:
+        raise SystemExit(
+            f"latch-check: CANNOT JUDGE -- chget_char "
+            f"({base + CHAR_OFF:#06x}) reads {got.get('sig')!r}, not the "
+            f"{SIG2!r} this gate was written against (ld a,(hl) / push af / "
+            "inc hl / ld a,l / cp $18 / jr nz / ld hl,KEYBUF / "
+            "ld (GETPNT),hl). The second window this scores may have moved; "
+            "re-derive it before trusting either delivery oracle.")
+    return base + CHAR_OFF
+
+
 def address() -> tuple[int, str]:
     """Locate `chget_wait` and vouch for it, or raise SystemExit."""
     got = _run(R.key_proc(), None, "CLS")         # locate only: no breakpoint
@@ -206,6 +383,42 @@ def main() -> int:
         got = _run(R.key_proc(), hex(addr), "CLS:REM123456")
         rows.append((f"C  key_proc,     forced at ${addr:04X} ({what})"
                      f"{'':<3}-> DELIVERED", got.get("chain") == "10"))
+
+    # --- D-LATCH2: the SECOND window ---------------------------------------
+    # Rows D/E/F force a window that exists ONLY while the machine is consuming
+    # a line, which no `after time` schedule reaches: the buffer was measured
+    # drained before 2039/2039 injections in D-LATCH. A breakpoint inside
+    # `chget_char` manufactures the precondition and forces the boundary at the
+    # same time (docs/spec-probe-latch2.md §3).
+    char = address2(int(base))
+    print(f"latch-check: chget_char ${char:04X}  window "
+          f"${char + B_PUSHAF:04X}-${char + B_STORE:04X}")
+
+    # Row D -- the positive control, one era later. The D-LATCH injector, which
+    # is race-free at $1197, loses the head of the line here.
+    for off, what in [(B_PUSHAF, "push af"), (B_STORE, "ld (GETPNT),hl"),
+                      (B_WRAP, "ld hl,KEYBUF (wrap)")]:
+        rows.append(_row2(
+            f"D  D-LATCH injector, forced at ${char + off:04X} ({what})",
+            GETPNT_KEY, char + off, HIT, "4321",
+            FILLER2 if off == B_WRAP else ""))
+
+    # Row E -- the fix. `need_defer` is the anti-vacuity clause for the guard
+    # itself: green because the guard FIRED, not because the boundary was
+    # missed.
+    for off, what in [(B_PUSHAF, "push af"), (B_STORE, "ld (GETPNT),hl"),
+                      (B_WRAP, "ld hl,KEYBUF (wrap)")]:
+        rows.append(_row2(
+            f"E  key_proc,          forced at ${char + off:04X} ({what})",
+            R.key_proc(), char + off, HIT, "54321",
+            FILLER2 if off == B_WRAP else "", need_defer=True))
+
+    # Row F -- the far-side GREEN control. One instruction past the store the
+    # SAME frozen injector delivers, so rows D are the latch and not merely
+    # "we injected into a buffer that was being consumed".
+    rows.append(_row2(
+        f"F  D-LATCH injector, forced at ${char + B_POPAF:04X} (pop af)",
+        GETPNT_KEY, char + B_POPAF, HIT, "54321"))
 
     for label, ok in rows:
         print(f"  {'PASS' if ok else 'FAIL'}  {label}")

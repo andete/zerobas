@@ -4147,7 +4147,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       argument once already: it is why D-LATCH skipped this suite. Corrected in
       [`Makefile`](Makefile) and here rather than left to be re-derived.
 
-- [ ] ⚠️ **THE SECOND LATCH WINDOW IS OPEN AND HAS NEVER BEEN OBSERVED.** A CPU
+- [x] ⚠️ **THE SECOND LATCH WINDOW IS OPEN AND HAS NEVER BEEN OBSERVED.** A CPU
       inside C-BIOS `chget_char` (`$11A2`–`$119D`) holds an `HL` it is about to
       write back to `GETPNT`; an injection landing there advances GETPNT past the
       new payload by `HL - KEYBUF + 1`. It needs a NON-drained buffer, and the
@@ -4155,6 +4155,49 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       490/490 (D-DELIVER) — but that is a measurement, not a proof, and it is why
       both delivery oracles stay armed after the fix
       ([`docs/spec-probe-latch.md`](docs/spec-probe-latch.md) §2.5).
+      ✅ **CLOSED 2026-08-04 BY D-LATCH2**
+      ([`docs/spec-probe-latch2.md`](docs/spec-probe-latch2.md),
+      [`docs/latch2-window-characterization.md`](docs/latch2-window-characterization.md)).
+      🔴 **THE WINDOW IS REAL AND `key_proc` WAS VULNERABLE TO IT.** Manufactured
+      by breakpointing INSIDE `chget_char`, which the CPU enters **only** when
+      `GETPNT != PUTPNT` — so the precondition and the force are ONE instrument,
+      and the thing that made this unobservable for 2529 injections made it
+      reproducible on demand. **44 of 46 predicted values hit exactly**; both
+      misses were mine and both are recorded.
+      🔴 **AND THREE FILED NUMBERS WERE WRONG.** (1) `$11A2`–`$119D` is not a
+      range — it is `$11A3`–`$11AD`, and `$11A2` is on the SAFE side. (2)
+      `HL - KEYBUF + 1` is the PRE-D-LATCH injector's swallow; the shipped one
+      swallows **exactly 1, independent of k**, a number nothing on file
+      predicted [[filed-justification-is-a-claim]]. (3) `latch-check`'s own
+      *"~40 s"* is **2.05 s**, timed on HEAD — and that stale figure propagated
+      straight into this slice's own ≈20 s estimate (measured **3.1 s** for 16
+      rows) [[stale-cost-estimate-defers-gates]].
+      🎯 **D-LATCH's fix OPENED a sub-window its predecessor could not reach**:
+      `$11AA` (`ld hl,KEYBUF`) needs the consuming pointer to cross `KEYBUF+40`,
+      which an injector that resets `GETPNT := KEYBUF` every time can never do.
+      Fixed at source — `__key` will not write into a buffer the machine is
+      still consuming (bounded deferral; the bound is **4× the buffer's own
+      worst-case drain**, measured 10 retries / 20 ms for the maximum 39-byte
+      pending line, and **10 % of `ECHO_GAP`**, past which the echo guard would
+      judge a line that had not landed). `make latch-check` **16/16**, rows
+      D/E/F, with THIS era's injector frozen as row D's subject
+      [[fixing-the-fault-silences-the-control]] and row E scoring the deferral
+      COUNT so the guard is green because it FIRED. Knives K2–K5 all cut
+      (13/16 exit 1, or `CANNOT JUDGE`). New host pin `tests/test_key_drain_guard.py`
+      — the D-LATCH invariant had **no** host-level test at all until now.
+
+- [ ] ⚠️ **`make injector-check` CLASSIFIES ITS OWN DETECTOR AS AN INJECTOR.**
+      D-LATCH2's host test went red on it: the test emits no Tcl and boots
+      nothing, but its `debug write memory` is the **needle of a regex** that
+      asserts `key_proc()` does not write GETPNT, and it names the cursors
+      because those are the addresses it checks. Closed for now as a fourth
+      named structural exemption — the mechanism that gate provides — rather
+      than by renaming the needle to slip past it, which would leave the next
+      reader unable to tell evasion from innocence. **The open question is
+      whether the classifier should distinguish a literal that is EMITTED from
+      one that is MATCHED AGAINST**; it fails closed today, which is the right
+      direction, but every future assertion-about-injectors file will need an
+      exemption ([`docs/latch2-window-characterization.md`](docs/latch2-window-characterization.md) §10.1).
 
 - [ ] ⚠️ **THE DELIVERY GUARDS DO NOT COVER PROBES WITH THEIR OWN `build_tcl`.**
       Every `probes/disk/*` script and `basic_probe_printusing.py` build their own
