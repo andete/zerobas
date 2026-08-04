@@ -1263,9 +1263,15 @@ lnblank-echo: repack-machine
 # REFUSED store writes it). 181 -> 204 rows, and it is the first cohort here to
 # need HARDWARE: `cld`/`csv` mount or record a cassette, `dsk` needs a disk.
 #
-# ⚠️ IT COSTS ~1.5-2 h ON TOP OF THE ~2 h THIS TARGET ALREADY TAKES, and that was
-# a decision rather than an oversight: a row nobody runs is the `dir-name` defect
-# this file already records twice. Scope with ONLY= when iterating.
+# 🔴 THE "~1.5-2 h ON TOP OF ~2 h" THAT USED TO BE WRITTEN HERE WAS WRONG BY ~25x.
+# MEASURED 2026-08-04 (D-LASTINJ): the whole 204-row three-side walk, `repack-machine`
+# included, takes **8 min 58 s** -- 612 boot-per-case runs at ~0.9 s each, which is
+# what an unthrottled `renderer none` openMSX costs ([[emulator-gates-are-fast-dont-
+# sleep-poll]]). The old figure predates the harness dropping sleep-polling, and it
+# was never re-measured. That is not harmless documentation: it is a standing
+# argument for not running a gate, and it won that argument in D-LATCH, which
+# skipped this suite on cost and filed the gap. Scope with ONLY= when iterating,
+# but do not skip it -- it is nine minutes.
 #
 # 🔴 THE `dsk-` ROWS ARE CAPABILITY-LOCKED, NOT DROPPED. The VG-8020 has no disk,
 # so those five rows are measured on cf3300 + zb and gate ACROSS THOSE, while the
@@ -1404,6 +1410,31 @@ preflight-check:
 # the module docstring). Exits NON-ZERO if it cannot identify the trigger.
 latch-check:
 	python3 probes/lib/latch_check.py
+
+# --- ONE type-ahead injector in the tree (docs/spec-probe-lastinj.md §3.4) ----
+# The DENOMINATOR behind latch-check, not a duplicate of it. `latch-check` proves
+# the SHIPPED injector is race-free; this proves nothing else in the tree ships a
+# copy of the one that is not. SIX probe files had composed their own pre-D-LATCH
+# body -- write at KEYBUF, reset GETPNT -- and fixing `omsx_repl.key_proc()` did
+# nothing for any of them. D-ECHO filed the class as a coverage limit, D-LATCH
+# promoted it to a correctness limit, and both times it was closed by hand from a
+# list nobody generated. This is the generator.
+#
+# A `.py` under probes/, tools/, tests/ is an offender when its STRING LITERALS
+# emit `debug write memory` AND it names a type-ahead cursor. AST, not grep --
+# this tree explains the mechanism in prose constantly, and prose is not a
+# subject. Three structural exemptions, each named with its role. Fails CLOSED.
+#
+# 🔴 IT SCORES ITSELF FIRST, and that is the whole design. After the last copy
+# was re-pointed this walk has ZERO offenders, so a gutted classifier would
+# certify a clean tree exactly the way fixing the D-LATCH race silenced the only
+# live subject the delivery oracles had. Two frozen bodies are classified on
+# every run -- the pre-D-LATCH injector (must be COMPOSES) and a probe that pokes
+# RAM without touching the cursors (must be CLEAN) -- so "flag nothing" and "flag
+# everything" both REFUSE TO JUDGE instead of reporting a tally. Emulator-free.
+# `make injector-check LIST=1` prints every file and its verdict.
+injector-check:
+	python3 tools/check_probe_injectors.py $(if $(LIST),--list,)
 
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
@@ -1564,4 +1595,4 @@ clean:
         lnblank-characterize lnblank-acceptance lnblank-echo lnblank-say-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
-        msgexact-gate msgexact-relock preflight-check latch-check clean
+        msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

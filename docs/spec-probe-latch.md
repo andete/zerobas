@@ -364,5 +364,15 @@ already needs.
   filed one [[gate-can-be-green-while-measuring-nothing]]. D-ECHO §6 filed this
   class as a *coverage* limit; it is a **correctness** limit now, because the
   shared injector no longer has the race and a copy still does.
+
+  🔴 **CLOSED 2026-08-04 BY D-LASTINJ, AND THE REASON ABOVE WAS WRONG.**
+  `make diskbasic-acceptance` runs that file — registry row `GET/PUT` in
+  `probes/disk/diskbasic_acceptance.py`, plus a second row (`OPEN(LEN=)`) that
+  imports its driver — so it was scored all along, and it sat inside this
+  slice's own corpus under the name `diskbasic`. The question asked was *"is
+  there a target called `getput`?"*; the load-bearing question was *"is this file
+  scored?"*. It is re-pointed at `key_proc()` now, and `make injector-check`
+  is the standing gate that would have generated the list by itself
+  ([`docs/spec-probe-lastinj.md`](spec-probe-lastinj.md) §2.1, §3.4).
 * **`$1197` is not a stable number.** It is derived per run and signature-checked;
   a C-BIOS bump moves it and the gate says so.

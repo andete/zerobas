@@ -303,6 +303,12 @@ carries the attribution is A1 and A2: the changed tree, twice, clean.
   have been scored. `basic_probe_printusing.py` turned out **not** to be in this
   class at all — it drives openMSX `type`, not KEYBUF. D-ECHO §6 filed this as a
   coverage limit; for the copies it is a *correctness* limit.
+  🔴 **CLOSED 2026-08-04 by D-LASTINJ, and "no Makefile target runs it" was
+  FALSE.** `make diskbasic-acceptance` dispatches that file as registry row
+  `GET/PUT`, and a second row (`OPEN(LEN=)`) imports its driver — it was inside
+  this slice's own corpus under the name `diskbasic`. Re-pointed at `key_proc()`;
+  `make injector-check` now generates the list instead of a reader maintaining it
+  ([`docs/lastinj-characterization.md`](lastinj-characterization.md) §1, §6).
 * **`$1197` is not a stable number.** It is derived per run by `latch-check` and
   vouched for by a byte signature; a C-BIOS bump moves it, and the gate says so
   rather than scoring the wrong address.

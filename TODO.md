@@ -4051,6 +4051,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it kills it. Whoever implements them needs a plugged printer
       ([[openmsx-printer-pluggable]]) or a different instrument first.
 
+- [x] ✅ **D-LASTINJ — THE LAST INJECTOR COPY, AND THE SUITE NOBODY PRICED —
+      LANDED 2026-08-04.** Spec
+      [`docs/spec-probe-lastinj.md`](docs/spec-probe-lastinj.md),
+      characterisation
+      [`docs/lastinj-characterization.md`](docs/lastinj-characterization.md).
+      **Apparatus only — one probe file, a new `tools/check_probe_injectors.py`,
+      one Makefile target; no `basic/`, `sub/`, `disk/` or `tape/` source touched,
+      no ROM rebuilt (`make -q build/zerobas-main-eu.rom` exit 0 throughout).**
+      Closes the two items D-LATCH §6 filed and did not do.
+      🔴 **BOTH FILED ITEMS RESTED ON A NUMBER OR A CLAIM NOBODY HAD CHECKED.**
+      Item B's stated reason ("no Makefile target runs it") was FALSE — three
+      structural readings falsify it without booting anything. Item A's stated
+      cost (~3.5–4 h) was wrong by ~25× — the run is **8 min 58 s**. Two filed
+      items, two justifications, neither measured, both wrong in the direction
+      that deferred work.
+      🎯 **204/204 gating rows agree**, exit 0, **zero** delivery announcements
+      (stderr 0 bytes), and the guard was proven ARMED on say rows by a knife
+      before that zero was read as a finding.
+      🎯 **The copy was the frozen fault verbatim** — character-identical (after
+      constant folding) to `latch_check.OLD_KEY`. Measured **latent, not
+      harmless**: 0 of 16 slots at `$1197`, but slot 11 landed at `$119B` inside
+      `chget`'s wait loop and the swallow law's precondition held **15/15**.
+      🔴 **K2 says where `diskbasic-acceptance`'s sensitivity comes from.** With
+      delivery mangled and only the probes' `== EXPECT` gutted, the runner reports
+      `34/34`-shaped `ALL CONVERGED`, exit 0, over `records: []`. It checks an
+      exit code and that `CF-3300` appeared; **all 34 registry rows inherit that**.
+      🔴 **A knife of this slice's own failed to cut, and that was the finding**
+      ([[knife-found-defect-in-own-fix]]): `injector-check`'s negative control
+      emitted no `debug write memory` at all, so it was clean for a trivial reason
+      and the "flag everything" half of its two-sided self-test was decorative.
+      Rebuilt as a probe that pokes an unrelated address; both halves bite now.
+      **K5's prediction was wrong in the safe direction** and is recorded as wrong
+      rather than rewritten: gutting the verdict trips the frozen self-test first
+      (`CANNOT JUDGE`, rc 2) instead of producing a green walk over a dirty tree.
+      **Corpus:** unit 57/57 · preflight-check 0 unguarded · injector-check 0
+      offenders · latch-check 9/9 · diskbasic-acceptance 34/34 ·
+      lnblank-say-acceptance 204/204.
+
 - [x] ✅ **D-LATCH — THE TRIGGER IS ONE INSTRUCTION WIDE — LANDED 2026-08-04.**
       Spec [`docs/spec-probe-latch.md`](docs/spec-probe-latch.md),
       characterisation
@@ -4087,11 +4125,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       delivery oracle had (D-ECHO §3.5), and fixing the race silences it forever
       ([[fixing-the-fault-silences-the-control]]).
 
-- [ ] ⚠️ **`lnblank-say-acceptance` (204 rows, ~3.5–4 h) WAS NOT RUN FOR D-LATCH.**
-      Every other standing corpus member was. The injector change touches
-      delivery for every probe in the tree, so this suite is in the blast radius
-      on principle; it was left out on cost, not on an argument that it is safe.
-      Run it before the next slice that touches `omsx_repl._tcl`.
+- [x] ✅ **`lnblank-say-acceptance` WAS NOT RUN FOR D-LATCH — RUN 2026-08-04 BY
+      D-LASTINJ, AND THE COST THAT DEFERRED IT WAS WRONG BY ~25×.**
+      **204/204 gating rows agree** across `vg8020,cf3300,zb`, exit 0, and
+      **zero** `MIS-ECHOED` / `MIS-DELIVERED` / `ORACLES DISAGREE` /
+      `APPARATUS FAILURE` lines — stderr was **0 bytes**. No row moved, so the
+      attribution path against `HEAD~1`'s injector was never needed. The D-LATCH
+      injector change is priced across the last corpus member that had not seen
+      it, and it costs nothing.
+      🔴 **The zero was not accepted on its own.** This probe's own history is
+      [[echo-guard-never-saw-say-rows]] — the `SAY_ONLY` filter once removed every
+      one of these rows from the echo pass, so the guard reported zero BY
+      CONSTRUCTION. With `key_proc` monkeypatched to swallow one byte per
+      injection the same `--say --gate` rows produce `APPARATUS FAILURE` + five
+      `MIS-ECHOED` announcements and rc 1; the identical unpatched subset is
+      silent, rc 0. Knife fires, control silent, same session.
+      🎯 **~3.5–4 h on file; 8 min 58 s measured**, `repack-machine` included —
+      612 boot-per-case runs at ~0.9 s each. The figure predates the harness
+      dropping sleep-polling and had never been re-measured. **A stale cost
+      estimate is a standing argument for not running a gate**, and it won that
+      argument once already: it is why D-LATCH skipped this suite. Corrected in
+      [`Makefile`](Makefile) and here rather than left to be re-derived.
 
 - [ ] ⚠️ **THE SECOND LATCH WINDOW IS OPEN AND HAS NEVER BEEN OBSERVED.** A CPU
       inside C-BIOS `chget_char` (`$11A2`–`$119D`) holds an `HL` it is about to
@@ -4113,11 +4167,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ✅ **The five trap probes are DONE** (`interval`, `key`, `sprite`, `strig`,
       `stop`): each held a byte-identical copy, each now calls
       `omsx_repl.key_proc()`, and all five gates were re-run green.
-      ⚠️ **`probes/disk/disk_probe_getput.py` is LEFT ALONE ON PURPOSE** — no
-      Makefile target runs it, so the change could not be scored, and an
-      unverifiable edit to a probe is worse than a filed one. Gate it first, then
-      re-point it. `basic_probe_printusing.py` builds its own Tcl but injects
-      nothing through KEYBUF, so it is not in this class.
+      ✅ **CLOSED 2026-08-04 BY D-LASTINJ**
+      ([`docs/spec-probe-lastinj.md`](docs/spec-probe-lastinj.md),
+      [`docs/lastinj-characterization.md`](docs/lastinj-characterization.md)).
+      🔴 **AND "no Makefile target runs it" WAS FALSE.** `make diskbasic-acceptance`
+      dispatches `disk_probe_getput.py` as registry row `GET/PUT`
+      (`probes/disk/diskbasic_acceptance.py:81`), and a SECOND row (`OPEN(LEN=)`)
+      imports its driver — so it was scored all along and sat inside D-LATCH's own
+      corpus under the name `diskbasic`. The question asked was *"is there a target
+      called `getput`?"*; the load-bearing question was *"is this file scored?"*
+      ([[readout-blind-to-its-own-subject]] reached through a naming convention).
+      Its `__inj` was **character-identical** (after constant folding) to
+      `latch_check.OLD_KEY` — the body row A forces and requires to MANGLE.
+      🎯 **Measured latent, not harmless:** 0 of 16 slots at the trigger, but slot
+      11 landed at `$119B` INSIDE `chget`'s wait loop, and the swallow law's
+      precondition held at **15/15** slots with a predecessor. Re-pointed at
+      `key_proc()`; `2/2` before and after, `34/34` full gate.
+      🔴 **`make injector-check` now GENERATES the list** instead of a reader
+      maintaining it (`tools/check_probe_injectors.py`, spec §3.4): AST, not grep
+      — a file offends when its STRING LITERALS emit `debug write memory` and it
+      NAMES a type-ahead cursor. 256 files, 3 structural exemptions, fails CLOSED.
+      It found the one copy that existed (exit 1) BEFORE it was allowed to report
+      zero, and it scores its classifier against two frozen bodies on every run so
+      that an empty walk cannot certify itself [[fixing-the-fault-silences-the-control]].
+      `basic_probe_printusing.py` builds its own Tcl but injects nothing through
+      KEYBUF, so it is not in this class — the new gate classifies it CLEAN
+      independently.
 
 - [x] ✅ **D-ECHO — A LINE THE MACHINE DID NOT ECHO WAS NOT DELIVERED — LANDED
       2026-08-03.** Spec [`docs/spec-probe-echo.md`](docs/spec-probe-echo.md),

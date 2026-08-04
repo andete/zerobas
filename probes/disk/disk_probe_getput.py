@@ -51,6 +51,7 @@ import os as _zbo, sys as _zbs  # noqa: E402
 _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
     _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
 import omsx_preflight  # noqa: E402
+import omsx_repl  # noqa: E402  (the ONE injector -- see build_tcl)
 
 OMSX = shutil.which("openmsx") or "/Applications/openMSX.app/Contents/MacOS/openmsx"
 ZEROBAS = os.environ.get("ZEROBAS", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -85,27 +86,41 @@ EXPECT = ["alpha|  bet", "gamma|delta"]   # record 1 (RSET "bet"), record 2 (LSE
 # timing — e.g. adding one real BASIC keyword costs an extra match_kw scan per word,
 # which silently tipped this into failure. Injection is deterministic and content-
 # insensitive: the interpreter reads these bytes through CHGET exactly as typed, but
-# no matrix scan is involved, so nothing can double. Uses only the PUBLISHED MSX BIOS
-# contract (MSX2 Technical Handbook system-variable map) — no ROM disassembly:
-#   KEYBUF $FBF0 (40-byte circular type-ahead buffer), GETPNT $F3FA / PUTPNT $F3F8
-#   (the read / write cursors CHSNS+CHGET consult; empty when GETPNT==PUTPNT).
-# Verified black-box that C-BIOS honours it (a real MSX1 like the CF-3300 does by
-# construction — this is where the standard comes from).
-_KEYBUF = 0xFBF0
-_GETPNT = 0xF3FA
-_PUTPNT = 0xF3F8
-_KEYBUF_SZ = 40
+# no matrix scan is involved, so nothing can double.
+#
+# 🔴 THE INJECTOR ITSELF COMES FROM `omsx_repl.key_proc()` AND IS NOT COMPOSED HERE
+# (D-LASTINJ, docs/spec-probe-lastinj.md §3.3). This file used to carry its own copy
+# of the pre-D-LATCH body — write the payload at KEYBUF, set GETPNT := KEYBUF — which
+# is the delivery race D-LATCH characterised: an `after time` callback landing on the
+# ONE instruction boundary at C-BIOS `chget`'s `ld de,(PUTPNT)` leaves HL holding the
+# PRE-injection GETPNT, so `ld a,(hl)` starts reading at KEYBUF + len(previous line).
+# The copy here was byte-equivalent to the frozen body `make latch-check` row A forces
+# and requires to MANGLE, so this file shipped the fault after the shared injector had
+# been fixed. It was measured latent rather than harmless: 0 of 16 slots landed on the
+# trigger, but the swallow law's PRECONDITION (GETPNT left at KEYBUF + len(predecessor)
+# by the drained previous line) held at 15/15 slots that have a predecessor, and slot 11
+# landed at $119B — inside `chget`'s wait loop, one boundary off the fatal one
+# (docs/lastinj-characterization.md §4). `key_proc` writes at the CURRENT GETPNT and
+# never moves it, which is immune by construction rather than by alignment.
+#
+# The addresses live in `omsx_repl` too, so this file no longer carries a second copy
+# of the memory map. Uses only the PUBLISHED MSX BIOS contract (MSX2 Technical Handbook
+# system-variable map) — no ROM disassembly: KEYBUF $FBF0 (40-byte circular type-ahead
+# buffer), GETPNT $F3FA / PUTPNT $F3F8 (the read / write cursors CHSNS+CHGET consult;
+# empty when GETPNT==PUTPNT). Verified black-box that C-BIOS honours it (a real MSX1
+# like the CF-3300 does by construction — this is where the standard comes from).
 
 
 def build_tcl(out_path, lines, cf3300):
     for ln in lines:
-        if len(ln) + 1 > _KEYBUF_SZ:            # +1 for the trailing CR
-            raise ValueError(f"REPL line too long for KEYBUF ({len(ln)+1}>{_KEYBUF_SZ}): {ln!r}")
+        if len(ln) + 1 > omsx_repl.KEYBUF_SZ:   # +1 for the trailing CR
+            raise ValueError(f"REPL line too long for KEYBUF "
+                             f"({len(ln)+1}>{omsx_repl.KEYBUF_SZ}): {ln!r}")
     body = []
     t = 12 if cf3300 else 8
     step = 8 if cf3300 else 5      # emulated seconds per line: enough to consume +
                                    # execute (disk PUT/GET are slow) before the next
-                                   # inject resets KEYBUF. CF-3300 is slower.
+                                   # inject overwrites the buffer. CF-3300 is slower.
     if cf3300:
         body.append('after time 11 { __inj "" }')   # initial CR to reach the prompt
     for ln in lines:
@@ -120,21 +135,13 @@ def build_tcl(out_path, lines, cf3300):
             f"set __f [open {{{out_path}}} w]\n"
             "proc __hex_v {a l} { binary scan [debug read_block VRAM $a $l] H* h;"
             " return $h }\n"
-            # __inj: write "<line>\r" into KEYBUF and point GETPNT/PUTPNT at it so
-            # CHGET delivers it. Both cursors are reset each call — safe because the
-            # per-line step guarantees the prior line was fully consumed (buffer empty).
-            "proc __inj {s} {\n"
-            "  append s \"\\r\"\n"
-            "  set n [string length $s]\n"
-            "  for {set i 0} {$i < $n} {incr i} {\n"
-            f"    debug write memory [expr {{{_KEYBUF} + $i}}] [scan [string index $s $i] %c]\n"
-            "  }\n"
-            f"  debug write memory {_GETPNT} [expr {{{_KEYBUF} & 0xFF}}]\n"
-            f"  debug write memory [expr {{{_GETPNT}+1}}] [expr {{({_KEYBUF} >> 8) & 0xFF}}]\n"
-            f"  set p [expr {{{_KEYBUF} + $n}}]\n"
-            f"  debug write memory {_PUTPNT} [expr {{$p & 0xFF}}]\n"
-            f"  debug write memory [expr {{{_PUTPNT}+1}}] [expr {{($p >> 8) & 0xFF}}]\n"
-            "}\n"
+            # __key: the ONE injector, imported rather than copied, so what runs
+            # here cannot drift from what `make latch-check` scores.
+            + omsx_repl.key_proc()
+            # __inj: __key plus the submitting CR (appended here so a literal CR
+            # byte never has to survive Tcl brace-quoting) — the same two-proc
+            # split omsx_repl itself emits.
+            + "proc __inj {s} { append s \"\\r\"; __key $s }\n"
             + "\n".join(body) + "\n")
 
 
