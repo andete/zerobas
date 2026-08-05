@@ -383,6 +383,32 @@ def key_proc() -> str:
         "}\n")
 
 
+def tcl_writes(body: str, addr: int) -> bool:
+    """True if this Tcl `body` carries a memory write aimed at `addr`.
+
+    THE WIRE FORMAT BELONGS TO THE MODULE THAT WRITES IT (D-INJSINK,
+    docs/spec-probe-injsink.md §3.2). A host test asserting that `key_proc()`
+    does not move GETPNT has to know what a write to GETPNT looks like -- and a
+    test that RESTATES that format is a file whose string literals compose an
+    injector's vocabulary, which is exactly what `make injector-check`
+    classifies. D-LATCH2 hit that and closed it with an exemption; the exemption
+    was not forced. Stating the format once, here, is the non-evasive close:
+    every future assertion-about-the-injector file names this predicate and
+    needs no exemption at all.
+
+    🔴 IT RETURNS A BOOL, AND THAT IS WHY IT IS SAFE TO NAME. A *string* exported
+    from this module would be a laundering channel -- §2.2 measures one that
+    already existed -- because a caller can concatenate a string into the Tcl it
+    hands to openMSX. Nothing can be composed out of a predicate.
+
+    The address is a decimal literal in the Tcl this module generates. The
+    detector is knifed by its caller: `tests/test_key_drain_guard.py` row R4
+    scores it against `latch_check.OLD_KEY`, the frozen pre-D-LATCH body that
+    DOES move GETPNT, so a gutted predicate reddens rather than passing
+    everything [[coverage-gate-cannot-see-a-gutted-guard]]."""
+    return bool(re.search(rf"debug write memory\s+{addr}\b", body))
+
+
 def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          boot: float, step: float, cap_gap: float,
          reset: tuple[str, ...], capture="screen",

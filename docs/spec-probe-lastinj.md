@@ -138,6 +138,11 @@ type-ahead cursors composes an injector. Two exemptions, both structural and
 named: `probes/lib/omsx_repl.py` (the one shipped injector) and
 `probes/lib/latch_check.py` (the frozen fault, which is that gate's subject).
 
+> ⚠️ **Superseded 2026-08-05 by D-INJSINK** ([`spec-probe-injsink.md`](spec-probe-injsink.md)):
+> this is now rule **(a)** of two, and the exemptions are **four**, each stating a
+> class. Rule (b) closes what this one could not see — a frozen injector body
+> named across a module boundary, which shipped `ALL PASS` past this gate.
+
 🔴 **And it needs its own row A.** After the re-point this checker has **zero**
 offenders in the tree, so it would pass with its judgement deleted — the exact
 failure D-LATCH hit when fixing the fault silenced the only control the delivery

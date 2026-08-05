@@ -4186,7 +4186,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (13/16 exit 1, or `CANNOT JUDGE`). New host pin `tests/test_key_drain_guard.py`
       — the D-LATCH invariant had **no** host-level test at all until now.
 
-- [ ] ⚠️ **`make injector-check` CLASSIFIES ITS OWN DETECTOR AS AN INJECTOR.**
+- [x] ⚠️ **`make injector-check` CLASSIFIES ITS OWN DETECTOR AS AN INJECTOR.**
       D-LATCH2's host test went red on it: the test emits no Tcl and boots
       nothing, but its `debug write memory` is the **needle of a regex** that
       asserts `key_proc()` does not write GETPNT, and it names the cursors
@@ -4198,6 +4198,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       one that is MATCHED AGAINST**; it fails closed today, which is the right
       direction, but every future assertion-about-injectors file will need an
       exemption ([`docs/latch2-window-characterization.md`](docs/latch2-window-characterization.md) §10.1).
+      ✅ **CLOSED 2026-08-05 BY D-INJSINK**
+      ([`docs/spec-probe-injsink.md`](docs/spec-probe-injsink.md)).
+      🔴 **BOTH filed claims were wrong, and the second one was hiding a live
+      false negative.** The host test *could* be written non-evasively — the
+      write format is `omsx_repl`'s to own, not the test's, and moving it to
+      `omsx_repl.tcl_writes()` (a **bool**-returning predicate, so nothing can
+      be composed out of it) leaves the test classifying `CLEAN` on the literal
+      rule with zero residual occurrences (§2.1). Fourth filed justification
+      running to be wrong [[filed-justification-is-a-claim]].
+      🔴 **And "emitted vs matched against" is the wrong axis.** Measured
+      (§2.3): the host test has **two** WRITE-bearing literals — the regex
+      needle *and the docstring sentence beside it*. A per-literal sink
+      whitelist clears the needle and not the prose, so it does not clear the
+      file it was for; the all-uses rule that would clear prose is defeated by
+      `return build([..., OLD_KEY])`, an ordinary probe shape. **No emit/match
+      rule shipped**, and §2.3 says why in measurements rather than prose.
+      🔴 **The real defect: the gate was blind across module boundaries.**
+      `import latch_check; return latch_check.OLD_KEY` ships the pre-D-LATCH
+      injector **verbatim** — the body `latch-check` row A requires to MANGLE —
+      and the gate at `07e9c0a` scored that planted file **`ALL PASS`, 258
+      files, 0 offenders, rc 0** (K3b). Closed by rule (b): naming a
+      frozen-body symbol defined in another module IS the offence, no use
+      analysis to fool. The registry is **generated** (5 symbols, 2 modules,
+      basename-collision-free over 257 files) and **pinned** — an empty
+      registry is `CANNOT JUDGE`, not a clean walk.
+      🎯 **The exemption list does NOT shrink; it stops growing, and each entry
+      now states a CLASS that is partly machine-checked** — `SHIPS` (1),
+      `HOLDS` (2), `HANDLES` (1). A `HANDLES` file must carry no
+      `debug write memory` literal of its own, and K5 shows the check bites:
+      plant one back and the run is `BAD EXEMPTION`, rc 1; remove the
+      validation and the identical plant scores `0 offenders`, rc 0.
+      Self-test is now **four** frozen bodies, two per rule, each pair
+      two-sided. Knives K1–K6 all cut, each with a GREEN control in the same
+      session; **K1's prediction was wrong in its mechanism and is recorded as
+      wrong** (§4bis.3). Corpus: `unit-test` **58/58** · `injector-check` 0
+      offenders / 257 · `preflight-check` 0 unguarded · **`latch-check` 16/16**
+      · **`diskbasic-acceptance` 34/34** · `deadcode` 0/0. `key_proc()` output
+      **byte-identical** (730 B, sha `f936ab2a…`), so no probe's delivery
+      alignment moved.
 
 - [ ] ⚠️ **THE DELIVERY GUARDS DO NOT COVER PROBES WITH THEIR OWN `build_tcl`.**
       Every `probes/disk/*` script and `basic_probe_printusing.py` build their own

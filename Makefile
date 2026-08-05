@@ -1420,10 +1420,17 @@ latch-check:
 # promoted it to a correctness limit, and both times it was closed by hand from a
 # list nobody generated. This is the generator.
 #
-# A `.py` under probes/, tools/, tests/ is an offender when its STRING LITERALS
-# emit `debug write memory` AND it names a type-ahead cursor. AST, not grep --
-# this tree explains the mechanism in prose constantly, and prose is not a
-# subject. Three structural exemptions, each named with its role. Fails CLOSED.
+# TWO rules. (a) COMPOSES: a `.py` under probes/, tools/, tests/ whose STRING
+# LITERALS emit `debug write memory` AND which names a type-ahead cursor. AST,
+# not grep -- this tree explains the mechanism in prose constantly, and prose is
+# not a subject. (b) HANDLES (D-INJSINK, docs/spec-probe-injsink.md): it names a
+# FROZEN-BODY symbol defined in another module. `import latch_check; return
+# latch_check.OLD_KEY` shipped the whole pre-D-LATCH injector past rule (a) with
+# no literal of its own, and this gate reported ALL PASS over it. Rule (b)'s
+# registry is GENERATED and PINNED: an empty registry is CANNOT JUDGE.
+# Four structural exemptions, each stating a CLASS -- SHIPS / HOLDS / HANDLES --
+# and a HANDLES claim is machine-checked (no write literal of its own). Fails
+# CLOSED.
 #
 # 🔴 IT SCORES ITSELF FIRST, and that is the whole design. After the last copy
 # was re-pointed this walk has ZERO offenders, so a gutted classifier would

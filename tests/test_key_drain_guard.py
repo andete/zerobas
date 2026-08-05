@@ -47,10 +47,12 @@ def check(label, got, want):
     print(f"  {'PASS' if got == want else 'FAIL'}  {label:<52} {got!r}")
 
 
-def writes(body: str, addr: int) -> bool:
-    """True if this Tcl body has a `debug write memory` aimed at `addr`. The
-    address is a decimal literal in the generated Tcl."""
-    return bool(re.search(rf"debug write memory\s+{addr}\b", body))
+# THE WRITE FORMAT IS NOT THIS FILE'S TO RESTATE (D-INJSINK,
+# docs/spec-probe-injsink.md §3.2). Spelling the injector's own vocabulary out
+# here is what made `make injector-check` classify this test as an injector;
+# naming the predicate its owner publishes is the non-evasive close. R4 below
+# still knifes the predicate, so moving it did not move the judgement.
+writes = omsx_repl.tcl_writes
 
 
 key = omsx_repl.key_proc()

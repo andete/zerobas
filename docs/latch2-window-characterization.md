@@ -314,6 +314,15 @@ have left the next reader unable to tell evasion from innocence. Same class, and
 found the same way, as D-ECHO's four
 [[echo-guard-false-positives-found-by-corpus]].
 
+🔴 **CLOSED 2026-08-05 BY D-INJSINK** ([`docs/spec-probe-injsink.md`](spec-probe-injsink.md)),
+**and both claims above were wrong.** The exemption was not forced — the write
+format belongs to `omsx_repl`, and naming its `tcl_writes()` predicate leaves
+this test `CLEAN` on the literal rule. And "emitted vs matched against" is the
+wrong axis: the test's *docstring* is a WRITE-bearing literal too, so a sink
+whitelist does not clear it. What the false positive was hiding is a false
+negative — `import latch_check; return latch_check.OLD_KEY` shipped the
+pre-D-LATCH injector verbatim past this gate, `ALL PASS`, rc 0.
+
 ### 10.2 `lof-acceptance` did not drift
 
 D-LATCH recorded one unreproduced `ORACLE DRIFT` (`wm_app_put`, recorded 61, live
