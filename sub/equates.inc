@@ -152,6 +152,19 @@ SUBROM_IDX_FCBNAME      equ     18
 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ERRMSG.
 SUBROM_IDX_ERRMSG       equ     22
 
+; --- D-EVLNO (docs/spec-rom-region-evict-lineno.md) ---------------------------
+; index 23 = parseln_tenant (sub/lineno.asm): the ASCII line-number scanner
+; dl_store runs once per typed/loaded numbered line, evicted from main page 1 to
+; open rank 4 of the ROM REGION STRUCTURE REVIEW (73 B out, 18 B stub back).
+; PAGE 1 for a reason unlike every tenant above it: the body calls NOTHING AT ALL
+; -- no BIOS, no main low region, no main page 1 -- so it is legal on EITHER
+; island, and the tie is broken by capacity, the page-0 table being full to the
+; $0038 vector. Marshals BC/HL out through PLN_NUM/PLN_PTR; HL rides in.
+; Reached sub-side by label (sub_p1_table `jp parseln_tenant`); only
+; basic/program.asm `parse_lineno` computes
+; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PARSELN.
+SUBROM_IDX_PARSELN      equ     23
+
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can
 ; confirm a CALSLT to each entry round-tripped through the correct page. This is

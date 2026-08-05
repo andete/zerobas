@@ -41,6 +41,32 @@ NOTE the distinction that matters: plumbing reached DIRECTLY from cluster code i
 re-expressible; plumbing reached THROUGH a main page-1 routine you are NOT moving
 is NOT -- you cannot rewrite `tokenise`'s call to `subrom_call` from the sub side.
 The report separates these.
+
+DATA REFERENCES COUNT AS ESCAPES (D-EVLNO, 2026-08-05). Question 2 used to walk
+`call|jp|jr|djnz` only -- the exact blind spot D-PINDATA found in
+check_tenant_closure.py and promote_scout.py and fixed there
+(docs/spec-rom-region-promote-input.md §2.3). This tool was the third sibling and
+was NOT audited then. It graded `basic/playsvc.asm` "page-0-tenant CLEAN, 0
+absent-region callees" while basic/playsvc.asm:59 does `ld hl,htimi_guard`
+($3C7E, main low region) -- the same shape as the `ld hl,zkey_hook` reference that
+made the review build a data-aware closure in the first place. A tenant READS
+those bytes with page 0 switched out just as surely as it would execute a callee,
+so this now reuses the SHIPPED pass (build_datagraph / data_targets) rather than
+modelling it a fourth time. Its two rules, each falsified by the flood it
+prevents, are documented on build_datagraph.
+
+⚠️ A DIRECT data escape is a weaker "re-expressible" than a direct call escape,
+and the tool cannot tell the two apart: moving a `db` TABLE with the cluster
+satisfies the reference, but a HOOK ADDRESS installed into H.TIMI/$0038 must keep
+naming the low-region location and cannot move at all. So a direct data escape
+downgrades the verdict to CONDITIONAL and is never reported as clean.
+
+⚠️ COVERAGE LIMIT, same one check_tenant_closure.py records: a symbol imported by
+`equ` is a VALUE to the label-only rule, so a data reference to BIOS ROM data
+(`ld hl,CGTABL`) is unclassifiable here. It cannot be widened without the 63-way
+false-positive flood spec §2.5 measured (token numbers, PSG ports, capacities all
+read as "< $4000, therefore an escape"). Classify a candidate's equ mentions by
+hand; `--equ-mentions` lists them for exactly that.
 """
 from __future__ import annotations
 import argparse
@@ -51,7 +77,8 @@ import sys
 from collections import deque
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from check_tenant_closure import build_callgraph, load_syms  # noqa: E402
+from check_tenant_closure import (build_callgraph, build_datagraph,  # noqa: E402
+                                  data_targets, load_syms)
 
 PAGE1 = 0x4000
 LOWREGION = 0x2812
@@ -113,6 +140,10 @@ def main() -> int:
     ap.add_argument("--sources", default="basic/*.asm", help="main call-graph glob")
     ap.add_argument("--plumbing", default=",".join(DEFAULT_PLUMBING))
     ap.add_argument("--members", action="store_true", help="list moved labels, largest first")
+    ap.add_argument("--equ-mentions", action="store_true",
+                    help="with --entries: list the non-transfer identifiers in the "
+                         "closure that are NOT `label:` definitions, for the hand "
+                         "classification the label-only rule cannot do")
     ap.add_argument("--census", action="store_true",
                     help="with --files: split the file into SHARED service routines "
                          "(called from outside it, so they must stay resident) and the "
@@ -120,7 +151,9 @@ def main() -> int:
     args = ap.parse_args()
 
     syms = load_syms(args.sym)
-    graph = build_callgraph(sorted(glob.glob(args.sources)))
+    sources = sorted(glob.glob(args.sources))
+    graph = build_callgraph(sources)
+    data = build_datagraph(sources)
     span = sizes_by_symbol(syms)
     plumbing = {s for s in args.plumbing.split(",") if s}
 
@@ -190,9 +223,19 @@ def main() -> int:
     direct = [n for n in escapes if any(n in graph.get(m, ()) for m in inner)]
     indirect = [n for n in escapes if n not in direct]
 
+    # DATA references out of the same closure. `set(graph)` is the label universe
+    # -- an `equ` is a value, only a `label:` is a location (build_datagraph rule
+    # 1). A data edge marks its target and does NOT propagate (rule 2), so these
+    # are drawn from the CONTROL closure, not walked through.
+    dref = data_targets(closure, data, set(graph))
+    desc = sorted(n for n in dref if n in syms and syms[n] < PAGE1)
+    d_direct = [n for n in desc if any(n in data.get(m, ()) for m in inner)]
+    d_indirect = [n for n in desc if n not in d_direct]
+
     print(f"=== page-0-tenant legality: {', '.join(entries)}")
     print(f"    closure {len(closure)} labels; "
-          f"{len(escapes)} absent-region callees ({len(bios)} of them BIOS)")
+          f"{len(escapes)} absent-region callees ({len(bios)} of them BIOS)"
+          f"; {len(desc)} absent-region DATA targets")
     print(f"    directly called by the moved code : {len(direct)}"
           f" ({sum(1 for n in direct if n in plumbing)} plumbing, re-expressible)")
     for n in sorted(direct):
@@ -206,8 +249,41 @@ def main() -> int:
     if len(indirect) > 12:
         print(f"        ... and {len(indirect)-12} more")
 
-    verdict = "NOT page-0-evictable" if indirect else "page-0-tenant CLEAN"
+    # A data target is READ with page 0 switched out; same contract as a callee.
+    print(f"    DATA-referenced by the moved code : {len(d_direct)}"
+          f"  <- CONDITIONAL: a table can move with the cluster, a HOOK ADDRESS cannot")
+    for n in sorted(d_direct):
+        print(f"        DATA      {n} @ ${syms[n]:04X}")
+    print(f"    DATA-referenced THROUGH resident main page-1 : {len(d_indirect)}"
+          f"  <- FATAL if > 0")
+    for n in sorted(d_indirect)[:12]:
+        print(f"        DATA      {n} @ ${syms[n]:04X}")
+    if len(d_indirect) > 12:
+        print(f"        ... and {len(d_indirect)-12} more")
+
+    if indirect or d_indirect:
+        verdict = "NOT page-0-evictable"
+    elif d_direct:
+        verdict = (f"CONDITIONAL -- {len(d_direct)} data escape(s) need hand "
+                   f"classification, NOT clean")
+    else:
+        verdict = "page-0-tenant CLEAN"
     print(f"    VERDICT: {verdict}")
+
+    if args.equ_mentions:
+        # The coverage limit made inspectable rather than left as prose: every
+        # non-transfer identifier in the closure that is NOT a `label:` def. Most
+        # are equ VALUES (token numbers, capacities) and RAM sysvars >= $8000;
+        # what needs an eye is an equ naming BIOS ROM data below $2812.
+        mentioned = set()
+        for n in closure:
+            mentioned |= data.get(n, set())
+        unclassified = sorted(mentioned - set(graph))
+        low = [n for n in unclassified if n in syms and syms[n] < PAGE1]
+        print(f"\n    equ-mentions not classifiable by the label-only rule: "
+              f"{len(unclassified)} ({len(low)} with a value < ${PAGE1:04X})")
+        for n in sorted(low, key=lambda x: syms[x]):
+            print(f"        ${syms[n]:04X}  {n}")
 
     if args.why:
         p = shortest_path(graph, entries, args.why)

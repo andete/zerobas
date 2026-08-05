@@ -244,105 +244,27 @@ ic_yes:
 run_kw:         db      "RUN",0
 new_kw:         db      "NEW",0
 
-; --- parse_lineno: ASCII decimal at (HL) -> BC, HL advanced past the number ---
-; Accumulates BC = BC*10 + digit (16-bit; dl_store rejects anything past 65529
-; before the value is used, so the wrap this used to document is unreachable).
-; Clobbers A, HL.
+; --- parse_lineno: the resident stub for the sub-ROM line-number scanner ------
+; D-EVLNO (docs/spec-rom-region-evict-lineno.md): the 73 B body -- the whole
+; D-LNBLANK blank/zero-separator scan -- moved VERBATIM to sub/lineno.asm as
+; page-1 tenant SUBROM_IDX_PARSELN, opening rank 4 of the ROM REGION STRUCTURE
+; REVIEW §7. 73 B out, 18 B back: 55 B at the wall that binds.
 ;
-; D-LNBLANK (docs/spec-basic-lnblank.md): A BLANK INSIDE THE NUMBER IS
-; TRANSPARENT. `2 0 REMX` stores line 20, `2 0 0 REMX` stores line 200 -- measured
-; byte-exact on BOTH the VG-8020 and the CF-3300, which agree on all 54 rows
-; (docs/lnblank-msx1-characterization.md §1). zerobas stopped at the blank and
-; stored line 2, with the leftover digits crunched into the BODY: same source
-; text, different line number AND different body.
+; PAGE 1 rather than the review's preferred page 0 because the body calls NOTHING
+; -- it needs neither island's privilege -- and the page-0 entry table is FULL
+; (13 rows $0010..$0036, one spare byte before the $0038 vector; sub/sub.asm).
 ;
-; ⚠️ A BLANK IS ONLY TRANSPARENT WHEN A DIGIT FOLLOWS IT. Consuming blanks
-; greedily gives the right line number and the WRONG BODY: the reference keeps
-; every blank of the run except one, so `20  REMX` stores ` REM X` and not
-; `REM X`. The scan therefore looks ahead across the run and only commits to it
-; when it ends in a digit.
-;
-; ⚠️ AND THE SEPARATOR IT EATS DEPENDS ON THE VALUE, NOT THE TEXT. Exactly one
-; blank separates the number from the body -- unless the line number is ZERO, when
-; none is eaten (`0 REMX` -> ` REM X`, `00 REMX` -> ` REM X`, but `01 REMX` ->
-; `REM X`). `00`/`01` differ only in VALUE, both have two digits and both start
-; with `0`, so the discriminator is the value; `0 0 REMX` reaches zero THROUGH a
-; blank and still eats none, which is the row that rules out "the digit run".
-; That rule lives here rather than in dl_store because it is the same decision:
-; the run of blanks that did NOT end in a digit is where the body begins.
-; (Folding it in also pays for itself -- dl_store's `call skip_spaces` is gone.)
+; Contract UNCHANGED for dl_store: HL -> the first digit in; BC = the number and
+; HL at the body out; A clobbered. HL rides IN through subrom_call/CALSLT; the two
+; results ride back in PLN_NUM/PLN_PTR, because CALSLT owns the registers on the
+; way out (the same reason fatprim_bounce reloads DISKOP_HL/DISKOP_A).
 parse_lineno:
-                ld      bc,0
-pl_lp:
-                ld      a,(hl)
-                cp      '0'
-                jr      c,pl_blank
-                cp      '9'+1
-                jr      nc,pl_blank
-                sub     '0'
-                push    hl                  ; BC = BC*10 + A
-                ld      h,b
-                ld      l,c
-                add     hl,hl               ; 2*acc
-                jr      c,pl_sat
-                add     hl,hl               ; 4*acc
-                jr      c,pl_sat
-                add     hl,bc               ; 5*acc
-                jr      c,pl_sat
-                add     hl,hl               ; 10*acc
-                jr      c,pl_sat
-                ld      c,a
-                ld      b,0
-                add     hl,bc               ; + digit
-                jr      c,pl_sat
-                ld      b,h
-                ld      c,l
-                pop     hl
-                inc     hl
-                jr      pl_lp
-pl_sat:
-                ; 🔴 THE CEILING CHECK IN dl_store CANNOT SEE AN ACCUMULATOR THAT
-                ; ALREADY WRAPPED. `99999` is 99999-65536 = 34463 in 16 bits, which
-                ; is comfortably UNDER the ceiling -- so a bound tested on the
-                ; finished value passed it, and `99999 REM` still stored line 34463
-                ; with the range check in place. Measured, not reasoned: the gate
-                ; row stayed red after the first cut of the fix.
-                ;
-                ; So the overflow is caught WHERE IT HAPPENS. Any carry out of the
-                ; BC*10+digit chain means the number has passed 65535, and 65535 is
-                ; already past the ceiling -- saturating to $FFFF hands dl_store a
-                ; value its own bound rejects, and the two checks together cover
-                ; both halves (wrapped values here, 65530..65535 there).
-                ;
-                ; No need to consume the remaining digits: the caller refuses the
-                ; line outright and never reads HL again. The `pop` only balances
-                ; the push above.
-                pop     hl
-                ld      bc,$FFFF
-                ret
-pl_blank:
-                ; Not a digit. Only a blank can continue the number; anything else
-                ; ends it here, with HL on it (`20REMX`, `2 X=1`).
-                cp      ' '
-                ret     nz
-                push    hl                  ; where the run of blanks starts
-pl_bl_lp:
-                inc     hl
-                ld      a,(hl)
-                cp      ' '
-                jr      z,pl_bl_lp          ; ANY run is transparent, not just one
-                cp      '0'
-                jr      c,pl_bl_end
-                cp      '9'+1
-                jr      nc,pl_bl_end
-                pop     af                  ; a digit follows -> the run belonged to
-                jr      pl_lp               ; the number; keep the advanced HL
-pl_bl_end:
-                pop     hl                  ; back to the first blank of the run
-                ld      a,b                 ; the number/body separator: exactly one
-                or      c                   ; blank, and NONE when the value is zero
-                ret     z
-                inc     hl
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PARSELN
+                call    subrom_call         ; HL = the first digit, in
+                jp      c,subrom_absent_error   ; reduced build w/o sub-ROM (never on
+                                            ; the merged machine, which always ships it)
+                ld      bc,(PLN_NUM)        ; the parsed number ($FFFF if it saturated)
+                ld      hl,(PLN_PTR)        ; LINEBUF pointer at the body
                 ret
 
 ; --- new_prog: clear the stored program (NEW) --------------------------------

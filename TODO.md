@@ -2127,11 +2127,60 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ **Naming an assembler label in a `tools/*.py` comment immunises it from the
       dead-code sweep** (`external_names` scans `tools/`; the main seed count moved
       283 → 284 on a comment mentioning `dcc_dexp5`). Nothing masked here — 0 dead
-      before and after — but the hazard is real and unfixed.
-      **STILL NOT OPENED:** per-file eviction to a sub **page-0** tenant (prefer
-      page 0: a page-0 tenant may call main page 1, which is why page-1 tenants force
-      the 457 B of duplication). **It is now the ONLY move in the tier that CREATES
-      bytes** — promotion only redistributes them.
+      before and after — but the hazard is real and unfixed. **WIDENED by D-EVLNO
+      below: `sub/` is scanned too, and the trigger there was a comment naming two
+      REJECTED candidates (284 → 285).**
+      ✅ **RANK 4 OPENED AND COSTED 2026-08-05 — D-EVLNO**,
+      [`docs/spec-rom-region-evict-lineno.md`](docs/spec-rom-region-evict-lineno.md).
+      The tier's first per-file eviction, costed by BUILDING it as §7 demanded:
+      `parse_lineno` (the D-LNBLANK line-number scanner, `basic/program.asm`) is now
+      sub-ROM page-1 tenant index 23 (`sub/lineno.asm`). **73 B body out, 18 B stub
+      back, 55 B NET** — main page 1 **301 -> 356 B free**, low unchanged at 23 B,
+      sub page 1 2411 -> 2324 B. The 73 B body is **BYTE-IDENTICAL** at its new
+      address, so the move is provably verbatim.
+      🔴 **THE SUB PAGE-0 ENTRY TABLE IS FULL, AND THE REVIEW'S OWN RANK-4 RULE
+      CONTRADICTS THAT.** 13 rows `$0010..$0036`, **ONE spare byte** before the fixed
+      `$0038` IM1 vector (`$0037` = `FF`, `$0038` = `C3 0A F1`; measured, and
+      `sub/sub.asm` + `sub/equates.inc` both already said so — nothing had connected
+      it to "prefer page 0"). **A 14th page-0 tenant does not fit.** So a future
+      rank-4 candidate that genuinely needs to call main page 1 is BLOCKED until
+      `SUBROM_ENTRY_BASE_P0` is relocated past `$0038` — two `equ` sites plus the
+      `IF $ - SUBROM_ENTRY_BASE_P0` header assert, every call site symbolic, so the
+      move is mechanical. Cheap, but an ABI move and NOT costed. This candidate did
+      not need it: the body calls **nothing at all**, so it is legal on either island
+      and free bytes decided nothing — the *table* did.
+      🔴 **`tools/carve_scout.py` HAD THE SAME BLIND SPOT D-PINDATA FIXED IN ITS TWO
+      SIBLINGS**, and it was a live wrong verdict, not a theoretical one: it graded
+      `basic/playsvc.asm` **`page-0-tenant CLEAN`, 0 escapes** while
+      `basic/playsvc.asm:59` does `ld hl,htimi_guard` (`$3C7E`, main low region) —
+      the same shape as the `ld hl,zkey_hook` reference that made the review build a
+      data-aware closure in the first place. It now reuses the SHIPPED pass
+      (`build_datagraph`/`data_targets`) and a direct data escape downgrades the
+      verdict to CONDITIONAL, because a table can move with the cluster and a HOOK
+      ADDRESS cannot. Falsified both ways: playsvc CLEAN -> CONDITIONAL, and
+      `parse_lineno` CLEAN -> CLEAN (the green control), three `NOT
+      page-0-evictable` sets unchanged.
+      🔴 **A KNIFE CAME BACK GREEN AND THE GREEN WAS THE FINDING.**
+      `check_tenant_closure --page1` cannot see a sub tenant calling a **main-only**
+      page-1 label (`call new_prog`): the closure grew 522 -> 523 so the edge WAS
+      walked, but `new_prog` is absent from `build/sub.sym` so it is dropped at
+      classification. **The ASSEMBLER is the gate for that case** (`ERROR: Symbol
+      'new_prog' is undefined`), the same division of labour as `disk_putword` in §4.1
+      above, arrived at from the other side and previously unwritten. A name that
+      exists on BOTH sides (`call skip_spaces`) IS caught by the walk.
+      ⚠️ **RANK 4 IS NOW COSTED AND THE TIER IS THIN.** A per-label closure sweep of
+      all of page 1 leaves no other candidate that is both single-entry and free of
+      interrupt/gate hazard: `play_service` (217 B) runs from H.TIMI (already rejected
+      in `sub/beep.asm`'s header), `fat.asm`+`field.asm` (193 B) needs 9 stubs AND
+      reaches a PAGE-1 tenant, `trap_return_check` (78 B) is measured in jiffies by
+      T4/T5. The structural reason will not change: every statement-shaped entry
+      reaches `eval` -> the float pack, every printing path reaches `pchar` -> CHPUT.
+      ⚠️ **THE DEAD-CODE SWEEP'S SEED SET MOVES ON PROSE, AND `tools/` WAS TOO NARROW
+      A FILING.** `external_names` scans `sub/` too, comments included: naming
+      `fatprim_bounce` and `trap_return_check` in `sub/lineno.asm`'s header — while
+      explaining why they were REJECTED — seeded both, and the main seed count went
+      284 -> 285. Nothing masked (0 dead before and after). Widens the D-PINDATA
+      filing below; still unfixed.
       Closed as answered: the 473 B duplication tax (**457 B contract-forced**), the
       split/ABI/three-gates question (**leave them alone** — the page-0 walk's vacuous
       pass is enforcement, not absent coverage), and merging the two regions (never on

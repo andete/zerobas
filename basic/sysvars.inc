@@ -1253,7 +1253,18 @@ POOLSIZE        equ     $E232   ; 2 B: the size CLEAR recorded. Written ONLY by
 ; derived boundary here; it is computed sub-side instead (see heap_reset's
 ; comment in basic/str-engine.asm) because the low region is the scarce ROM and
 ; the sub-ROM is not. $E234 stays free.
-; ($E234..$E23F still free; STRTAB/VAREND begin at $E240.)
+; --- D-EVLNO: the line-number scanner's tenant result pair --------------------
+; parse_lineno (basic/program.asm) is a sub-ROM PAGE-1 tenant from D-EVLNO on
+; (docs/spec-rom-region-evict-lineno.md). Its two results cannot ride back in
+; registers -- subrom_call passes HL/DE IN, but CALSLT owns everything on the way
+; out, which is why fatprim_bounce reloads DISKOP_HL/DISKOP_A rather than trusting
+; them. So the tenant writes them here and the resident stub reads them straight
+; back. Own choice, in the free window this comment block used to describe.
+PLN_NUM         equ     $E234   ; 2 B: the parsed line number (BC), $FFFF if the
+                                ; BC*10+digit chain carried (pl_sat's saturation --
+                                ; dl_store's ceiling check rejects it)
+PLN_PTR         equ     $E236   ; 2 B: LINEBUF pointer at the body (HL)
+; ($E238..$E23F still free; STRTAB/VAREND begin at $E240.)
 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) claims NO new RAM:
 ; the virtual line header a typed line executes under (`dir_line`, program.asm) is
 ; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct
@@ -3480,6 +3491,19 @@ SUBROM_IDX_ERRMSG    equ 22     ; errmsg_tenant (sub/errmsg.asm): the fourteen E
                                 ; program.asm `pm_sub`), which is the only site that
                                 ; computes IX = SUBROM_ENTRY_BASE_P1 +
                                 ; 3*SUBROM_IDX_ERRMSG.
+SUBROM_IDX_PARSELN   equ 23     ; parseln_tenant (sub/lineno.asm): the ASCII
+                                ; line-number scanner `dl_store` runs once per
+                                ; typed/loaded numbered line (D-EVLNO, docs/
+                                ; spec-rom-region-evict-lineno.md -- rank 4 of
+                                ; the ROM REGION STRUCTURE REVIEW). PAGE 1 for a
+                                ; reason neither title_tenant's nor errmsg's: the
+                                ; body calls NOTHING AT ALL, so it needs neither
+                                ; island's privilege -- and the page-0 table is
+                                ; full to the $0038 vector (sub/sub.asm), so the
+                                ; review's "prefer page 0" rule has no room to
+                                ; apply. Marshals BC/HL back through PLN_NUM/
+                                ; PLN_PTR; HL rides IN through subrom_call.
+                                ; Sole caller basic/program.asm `parse_lineno`.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

@@ -527,6 +527,18 @@ sub_p1_table:
                                                 ;   ERRFLG, already in RAM. Main stub is
                                                 ;   the MSGESC_SUB arm of print_msg_stopcr
                                                 ;   (basic/program.asm `pm_sub`).
+                jp      parseln_tenant          ; index 23 (SUBROM_IDX_PARSELN): the ASCII
+                                                ;   line-number scanner dl_store runs once
+                                                ;   per typed/loaded numbered line, evicted
+                                                ;   from main page 1 to open rank 4 of the
+                                                ;   ROM REGION STRUCTURE REVIEW (D-EVLNO,
+                                                ;   docs/spec-rom-region-evict-lineno.md).
+                                                ;   PAGE 1 for a reason unlike any row
+                                                ;   above: the body calls NOTHING AT ALL,
+                                                ;   so it is legal on either island -- and
+                                                ;   the PAGE-0 TABLE ABOVE IS FULL, which
+                                                ;   is what actually decides it. Marshals
+                                                ;   BC/HL out through PLN_NUM/PLN_PTR.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -705,6 +717,14 @@ sub_p1_ping:
 ; pure RAM+BIOS leaf with no sub-local callees, so its position here is free.
 ; docs/spec-basic-msgsub.md.
                 include "errmsg.asm"
+
+; ASCII line-number scanner (index 23 = parseln_tenant, sub/lineno.asm), D-EVLNO:
+; the first per-file eviction of the ROM REGION STRUCTURE REVIEW's rank-4 tier,
+; costed by building it (docs/spec-rom-region-evict-lineno.md). A CLOSED leaf --
+; it calls nothing at all, sub-local or otherwise -- so its position here is free
+; and it would be legal on page 0 too; it is here because the page-0 table is full
+; to the $0038 vector. Marshals BC/HL through PLN_NUM/PLN_PTR.
+                include "lineno.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

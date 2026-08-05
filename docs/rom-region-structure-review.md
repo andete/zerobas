@@ -345,6 +345,15 @@ Interrogated, and the recommendation is **leave them alone**. Measured reasons:
   where main's bulk lives; a page-1 tenant may only call the low region, which is
   what forces the §3.1 duplication). **Future evictions should prefer page 0** —
   that is a costing rule, not a restructure.
+  🔴 **AND THE RULE IS UNUSABLE AS WRITTEN** ([D-EVLNO](spec-rom-region-evict-lineno.md),
+  2026-08-05). Free *bytes* were the wrong measure: the page-0 **entry table** is
+  full — 13 rows `$0010..$0036`, **one spare byte** before the fixed `$0038` IM1
+  vector (`$0037` reads `FF`, `$0038` reads `C3 0A F1`; measured, and
+  `sub/sub.asm` + `sub/equates.inc` both already said so). A 14th row would
+  overwrite the vector. So a rank-4 candidate that genuinely needs to call main
+  page 1 is **blocked** until `SUBROM_ENTRY_BASE_P0` is relocated past `$0038` —
+  two `equ` sites plus the header assert, every call site being symbolic. Cheap,
+  mechanical, an ABI move, and nobody had connected it to the rule above.
 
 ---
 
@@ -355,7 +364,7 @@ Interrogated, and the recommendation is **leave them alone**. Measured reasons:
 | 1 | **C1+C2+C3 dead-code carve** (§4) | **122 B** | page 1 | **0** | none — unreachable code, falsified sweep | ✅ **R1 LANDED** |
 | 2 | **promote the 80 B message pool** (§5) | **80 B** | **low (the hard wall)** | 80 B of page 1 | low — pressure-placed, all readers page-1, 0 sub refs | ✅ **R1 LANDED** |
 | 3 | promote `input.asm` (**458 B**, pressure-placed whole) | 458 B | low | 458 B of page 1 | low | 🔴 **DECLINED** — [D-PINDATA](spec-rom-region-promote-input.md). Short 157 B, and the premise is inverted: low moved 3× in 31 commits, page 1 moved 20+ |
-| 4 | evict a page-1 file to a sub **page-0** tenant (§6) | body − stub | page 1 | 12–42 B stub | medium — needs a closure-clean seam | open, not costed per-file |
+| 4 | evict a page-1 file to a sub **page-0** tenant (§6) | body − stub | page 1 | 12–42 B stub | medium — needs a closure-clean seam | ✅ **OPENED + COSTED** — [D-EVLNO](spec-rom-region-evict-lineno.md). `parse_lineno`: **73 B body, 18 B stub, 55 B net**, page 1 **301 → 356 B**. 🔴 And the **page-0 island is FULL** (13 rows, one spare byte before `$0038`), so "prefer page 0" below is unusable until `SUBROM_ENTRY_BASE_P0` moves |
 | 5 | de-evict any tenant (§3) | **nothing** | — | **35–155 B loss** | — | **REFUTED, closed** |
 | 6 | reclaim the 473 B duplication tax (§3.1) | 16 B (taken as C3) | page 1 | — | — | **457 B contract-forced, closed** |
 | 7 | merge the two main regions | — | — | — | — | **not on the table** — `$4000` is a hardware contract |
