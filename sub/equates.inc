@@ -11,7 +11,13 @@
 ; IX = base + 3*index. Page 0 tenants see main BASIC (slot-0 page 1) but not the
 ; BIOS and run under DI; page 1 tenants see the BIOS but not main BASIC. The two
 ; pages are opposite islands (§3b). Entry 0 of each is the S2a round-trip PING.
-SUBROM_ENTRY_BASE_P0    equ     $0010   ; page-0 table (clear of the CD header)
+; ⚠️ $0040, NOT $0010: the page-0 table sits ABOVE the fixed $0038 IM1 vector
+; (D-P0BASE, docs/spec-rom-region-p0base.md). At $0010 it grew UP into that
+; vector and capped the island at 13 tenants -- with 3913 B of page-0 space
+; free. Keep this in sync with basic/sysvars.inc's IFNDEF mirror BY HAND;
+; nothing cross-checks them, and a one-sided edit ships a main ROM dispatching
+; into pad (docs/spec-rom-region-p0base.md §5.1).
+SUBROM_ENTRY_BASE_P0    equ     $0040   ; page-0 table (above the $0038 vector)
 SUBROM_ENTRY_BASE_P1    equ     $4010   ; page-1 table (mirrors the $4010 disk DSKIO)
 
 ; --- Page-0 tenant indices (append-only; IX = SUBROM_ENTRY_BASE_P0 + 3*index) --
@@ -159,7 +165,12 @@ SUBROM_IDX_ERRMSG       equ     22
 ; PAGE 1 for a reason unlike every tenant above it: the body calls NOTHING AT ALL
 ; -- no BIOS, no main low region, no main page 1 -- so it is legal on EITHER
 ; island, and the tie is broken by capacity, the page-0 table being full to the
-; $0038 vector. Marshals BC/HL out through PLN_NUM/PLN_PTR; HL rides in.
+; $0038 vector. ⚠️ THAT TIE-BREAK NO LONGER APPLIES: D-P0BASE (docs/spec-rom-
+; region-p0base.md) moved the base to $0040 and reopened page 0. This tenant is
+; left where it is -- an index is an ABI, never renumbered -- but it is the one
+; recorded case of a tenant DISPLACED by the cap, and the measurement that
+; justified reopening the island. Marshals BC/HL out through PLN_NUM/PLN_PTR;
+; HL rides in.
 ; Reached sub-side by label (sub_p1_table `jp parseln_tenant`); only
 ; basic/program.asm `parse_lineno` computes
 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PARSELN.
@@ -181,7 +192,7 @@ SUB_PING_P1             equ     $C1     ; written by the page-1 ping
 ; index 8 = graphics_selftest / the SCREEN-2 geometry engine's page-0 island
 ; (sub/graphics.asm). Page-0 (EI-capable via the RAM interrupt trampoline) so a
 ; long draw keeps interrupts live -- music keeps playing (arc D1). Reached by
-; IX = SUBROM_ENTRY_BASE_P0 + 3*8 = $0028; G1 ships only the floor (VDP port I/O
+; IX = SUBROM_ENTRY_BASE_P0 + 3*8 = $0058; G1 ships only the floor (VDP port I/O
 ; primitives + the interrupt-under-draw self-test), no statement/token yet.
 SUBROM_IDX_GRAPHICS     equ     8
 
@@ -208,10 +219,12 @@ SUBROM_IDX_BEEP         equ     11
 ; keeps fld_find + fch_select (shared services that could not move anyway) and
 ; passes the located entry pointer in HL. Page-0 CLEAN: RAM only -- mk_rvdesc,
 ; the one low-region callee of the original body, is inlined sub-side.
-; ⚠️ THIS IS THE LAST PAGE-0 INDEX THAT FITS. The table starts at $0010 and the
-; $0038 interrupt-trampoline vector is fixed, so 13 rows x 3 B = $0010..$0036
-; leaves exactly ONE spare byte. Index 13 needs the table relocated (or the
-; vector reached by a `jp` from a row), not just another line.
+; ⚠️ This USED to be the last page-0 index that fits: with the table based at
+; $0010, 13 rows x 3 B = $0010..$0036 left exactly ONE spare byte before the
+; fixed $0038 interrupt-trampoline vector, so index 13 was blocked. D-P0BASE
+; (docs/spec-rom-region-p0base.md) relocated the base to $0040, above the
+; vector. INDEX 13 IS FREE and the table has no cap -- appending a row is now
+; just another line, on either island.
 SUBROM_IDX_FLDLOOK      equ     12
 
 ; GFX_UNGUARDED: the G1 "teeth check" toggle (spec §4). Default 0 = the DI guard

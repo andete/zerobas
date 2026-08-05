@@ -3241,7 +3241,11 @@ JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (M
 ; these first), so the guard lets the sub build reuse those and the main build
 ; (no equates.inc) define its own — one ABI, no double-definition.
     IFNDEF SUBROM_ENTRY_BASE_P0
-SUBROM_ENTRY_BASE_P0 equ $0010  ; sub-ROM page-0 jp-table base
+SUBROM_ENTRY_BASE_P0 equ $0040  ; sub-ROM page-0 jp-table base (ABOVE the fixed
+                                ; $0038 IM1 vector -- D-P0BASE, docs/spec-rom-
+                                ; region-p0base.md. Mirrors sub/equates.inc;
+                                ; NOTHING cross-checks the two, so a one-sided
+                                ; edit builds clean and dispatches into pad)
 SUBROM_IDX_TOKENISE  equ 1      ; the WHOLE tokeniser tenant (sub/tokenise.inc +
                                 ; sub/tkfloat.asm); wave 2 replaced wave 1's
                                 ; per-literal tk_float entry (the crunch is now an

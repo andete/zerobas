@@ -16,7 +16,7 @@ Then it injects a tiny stub into RAM ($C000) and redirects the CPU to it:
 
     di
     ld iy,$8B00          ; slot 3-2 ($8B), CALSLT reads the slot from IYh
-    ld ix,$0019          ; page-0 entry index 3 = $0010 + 3*3 (SUBROM_IDX_INTTEST)
+    ld ix,$0049          ; page-0 entry index 3 = $0040 + 3*3 (SUBROM_IDX_INTTEST)
     call $001C           ; CALSLT -> sub_int_selftest
     ld a,($F14D)         ; SUB_INT_DELTA (JIFFY ticks the tenant saw under EI)
     ld ($C100),a         ; stash the result
@@ -28,9 +28,23 @@ timer interrupt fires into the sub-ROM's own $0038 (`jp SUB_INT_RAM`), which map
 the BIOS back into page 0, runs the real ISR (JIFFY++), and returns. So a delta
 >= 1 proves the trampoline serviced the interrupt through the paged-out BIOS. With
 the trampoline broken the machine would instead execute garbage at sub-ROM $0038
-and hang — the safety-net capture then yields delta 0 and the gate FAILs. There is
-no storm-or-hang path that still reports delta >= 1, so this single assertion is
-the whole proof.
+and hang — the safety-net capture then yields delta 0 and the gate FAILs.
+
+🔴 THE DELTA IS BOUNDED ON BOTH SIDES, AND THE UPPER BOUND IS NOT DECORATION.
+This docstring used to claim "there is no storm-or-hang path that still reports
+delta >= 1, so this single assertion is the whole proof". That is FALSE, measured:
+D-P0BASE (docs/spec-rom-region-p0base.md §5.4 K4b) pointed this stub's CALSLT at
+an address that is $FF PAD — the exact defect a page-0 entry-table move can
+introduce — and the gate reported `delta = 255 ticks` and PASSED. Executing pad is
+`rst 38h` over and over; the timer keeps ticking while the CPU never runs the
+tenant at all, so a one-sided `>= 1` cannot tell "the trampoline worked" from
+"the CPU spent longer than the tenant would have, somewhere else entirely".
+
+The tenant's spin is FIXED-LENGTH (65536 iterations, ~1.7 M cycles), so its delta
+cannot legitimately be large: measured 28, 28, 28 on three consecutive runs of the
+merged machine (openMSX is deterministic), and ~23 at 50 Hz against ~28 at 60 Hz.
+DELTA_MAX = 64 is a bit over 2x the measured value — generous room for a frame
+rate change or a tweak to the spin, and nowhere near the 255 a runaway reads.
 
 Needs the merged machine installed (make repack-machine) and openMSX. Run:
 
@@ -61,20 +75,24 @@ OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 MACHINE = os.environ.get("ZEROBAS_SUBROM_INTTEST_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 
 # The CALSLT stub. Loaded at $C000; halt sentinel at $C012; result (JIFFY delta)
-# at $C100. Index 3 lives at page-0 entry $0010 + 3*3 = $0019.
+# at $C100. Index 3 lives at page-0 entry $0040 + 3*3 = $0049.
 STUB_ADDR = 0xC000
 STUB_HALT = 0xC012
 RES = 0xC100
 STUB_BYTES = bytes([
     0xF3,                    # di
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)
-    0xDD, 0x21, 0x19, 0x00,  # ld ix,$0019                (page-0 index 3)
+    0xDD, 0x21, 0x49, 0x00,  # ld ix,$0049                (page-0 index 3)
     0xCD, 0x1C, 0x00,        # call $001C                 (CALSLT -> sub_int_selftest)
     0x3A, 0x4D, 0xF1,        # ld a,($F14D)               (SUB_INT_DELTA)
     0x32, 0x00, 0xC1,        # ld ($C100),a               (stash result)
     0x76,                    # halt                       (capture bp)
 ])
 assert len(STUB_BYTES) == 19, f"stub size changed: {len(STUB_BYTES)}"
+
+# Upper bound on the JIFFY delta. The tenant's spin is fixed-length, so a LARGE
+# delta means the CALSLT never reached it -- see the module docstring. Measured 28.
+DELTA_MAX = 64
 
 
 def run() -> int | None:
@@ -141,10 +159,14 @@ def main() -> int:
     if delta is None:
         print("subrom interrupt gate: FAIL (no capture)")
         return 1
-    ok = delta >= 1
+    ok = 1 <= delta <= DELTA_MAX
     print(f"page-0 EI tenant: JIFFY delta = {delta} ticks "
-          f"(expect >= 1, serviced via the sub-ROM $0038 trampoline): "
+          f"(expect 1..{DELTA_MAX}, serviced via the sub-ROM $0038 trampoline): "
           f"{'PASS' if ok else 'FAIL'}")
+    if delta > DELTA_MAX:
+        print(f"  ^ TOO LARGE: the tenant's spin is fixed-length (~28 ticks). A "
+              f"delta this big means the CALSLT did NOT reach it — check the "
+              f"page-0 entry address against sub/equates.inc SUBROM_ENTRY_BASE_P0.")
     print("-------------------")
     print("subrom interrupt-trampoline gate:", "PASS" if ok else "FAIL")
     return 0 if ok else 1

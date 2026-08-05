@@ -65,13 +65,62 @@ SUB_BUILD       equ     1   ; shared body .inc files that differ by side test th
                 dw      0,0,0,0                  ; $0008-$000F: reserved (RST area,
                                                  ;   unused — tenants run under DI)
 
-; --- Page-0 entry table (append-only jp table; base $0010, §3c/D-5) --------
-; IX = SUBROM_ENTRY_BASE_P0 + 3*index dispatches here. Index 0 = the S2a PING.
-; Future page-0 tenants (float.asm's tokeniser+formatter first) append below and
-; never move an existing entry, so a main-ROM stub hard-codes only its index.
-    IF $ - SUBROM_ENTRY_BASE_P0
-                db      SUB_P0_TABLE_NOT_AT_0010__HEADER_SIZE_DRIFT
+; --- $0038 interrupt trampoline entry (subrom trampoline slice) ------------
+; The maskable-interrupt vector for the page-0 island. While a page-0 tenant runs
+; EI, an IRQ lands here with page 0 = sub-ROM; jump to the RAM-resident stub, which
+; maps the BIOS back into page 0, runs the real ISR, and returns (see
+; basic/subromcall.asm sub_int_template, docs/spec-basic-subrom-trampoline.md). One
+; instruction, executed BEFORE any slot switch, so it never pages out its own
+; continuation. SUB_INT_RAM is a fixed RAM address, so this `jp` is byte-identical
+; every build and needs no relocation.
+;
+; ⚠️ THIS VECTOR IS WHY THE ENTRY TABLE NOW SITS ABOVE IT (D-P0BASE, docs/spec-
+; rom-region-p0base.md). The table used to start at $0010 and grow UP INTO this
+; fixed address: 13 rows filled $0010..$0036 and a 14th would have ended at $0039,
+; on top of the vector. That capped the page-0 island at 13 tenants while 3913 B
+; of its space sat free -- a capacity wall nobody had connected to the ROM REGION
+; STRUCTURE REVIEW's "future evictions should prefer page 0" rule
+; (docs/rom-region-structure-review.md §6). The base moved to $0040 instead.
+    IF $ > $0038
+                db      SUB_P0_HEADER_OVERRAN_0038__RESERVED_AREA_TOO_BIG
     ENDIF
+                ds      $0038 - $, $FF          ; pad the reserved header up to the vector
+                jp      SUB_INT_RAM             ; $0038: -> the RAM trampoline
+
+; --- Page-0 entry table (append-only jp table; base $0040, §3c/D-5) --------
+; IX = SUBROM_ENTRY_BASE_P0 + 3*index dispatches here. Index 0 = the S2a PING.
+; Future page-0 tenants append below and never move an existing entry, so a
+; main-ROM stub hard-codes only its index. The base is $0040, not $0010: past the
+; fixed $0038 vector (see above), and a round number so `base + 3*index` is
+; checkable by hand -- index 8 = $0058, index 12 = $0064. $003B..$003F is dead
+; pad; so is $0010..$0037, which has the side benefit that the RST addresses
+; $10/$18/$20/$28/$30 now land on $FF rather than mid-instruction inside a row.
+;
+; TWO ASSERTS, and they guard different things.
+;
+;  * the BASE assert is new with D-P0BASE: it is what stops the base being set
+;    back below the vector, the only remaining way to re-create the collision
+;    this layout exists to remove. Nothing checked that before.
+;  * the DRIFT assert is the one the table has always carried -- the header above
+;    must not push the table off its published base, because every main-ROM stub
+;    computes the entry address from that base and NOTHING cross-checks the two
+;    `equ` mirrors (sub/equates.inc and basic/sysvars.inc).
+;
+; ⚠️ THE DRIFT ASSERT IS `>`, NOT `-`, AND THAT IS LOAD-BEARING. It used to read
+; `IF $ - SUBROM_ENTRY_BASE_P0` because the table began immediately after the
+; 16-byte header, so `$` was either exactly the base or wrong. There is a `ds`
+; pad in front of it now, and a pad FORCES `$` to the base -- which would make an
+; equality test true by construction and the assert vacuous
+; (docs/spec-rom-region-p0base.md §5.2 K2: the knife that found this was aimed at
+; something else). `>` still judges: it is what a header growing past $0040 trips,
+; and it fires before the `ds` is asked for a negative count.
+    IF SUBROM_ENTRY_BASE_P0 <= $003A
+                db      SUB_P0_BASE_BELOW_0038_VECTOR__TABLE_WOULD_CLOBBER_IT
+    ENDIF
+    IF $ > SUBROM_ENTRY_BASE_P0
+                db      SUB_P0_HEADER_OVERRAN_ITS_BASE__TABLE_WOULD_DRIFT
+    ENDIF
+                ds      SUBROM_ENTRY_BASE_P0 - $, $FF   ; $003B..$003F: dead pad
 sub_p0_table:
                 jp      sub_p0_ping             ; index 0 (SUBROM_IDX_PING)
                 jp      tokenise                ; index 1 (SUBROM_IDX_TOKENISE): the WHOLE
@@ -127,35 +176,22 @@ sub_p0_table:
                                                 ;   half (sub/fldlook.asm) -- carved out
                                                 ;   of basic/field.asm to fund D-CLP.
                                                 ;   HL = the located field-table entry.
-                                                ; ⚠️ 13 rows = $0010..$0036: this is the
-                                                ;   LAST row that fits before the fixed
-                                                ;   $0038 vector (ONE spare byte left).
-
-; --- $0038 interrupt trampoline entry (subrom trampoline slice) ------------
-; The maskable-interrupt vector for the page-0 island. While a page-0 tenant runs
-; EI, an IRQ lands here with page 0 = sub-ROM; jump to the RAM-resident stub, which
-; maps the BIOS back into page 0, runs the real ISR, and returns (see
-; basic/subromcall.asm sub_int_template, docs/spec-basic-subrom-trampoline.md). One
-; instruction, executed BEFORE any slot switch, so it never pages out its own
-; continuation. SUB_INT_RAM is a fixed RAM address, so this `jp` is byte-identical
-; every build and needs no relocation. Reserving $0038 costs 3 bytes of page-0 body.
-    IF $ > $0038
-                db      SUB_P0_OVERRAN_0038__ENTRY_TABLE_OR_PING_TOO_BIG
-    ENDIF
-                ds      $0038 - $, $FF          ; pad the $001x tenants gap up to the vector
-                jp      SUB_INT_RAM             ; $0038: -> the RAM trampoline
+                                                ; ⚠️ 13 rows = $0040..$0066. The next
+                                                ;   index is 13 and there is NO CAP on
+                                                ;   it any more: the table grew up into
+                                                ;   the fixed $0038 vector until
+                                                ;   D-P0BASE moved the base above it.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
-; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
-; reachable from there: stamp SUB_PING with the page-0 tag and return. The
-; distinct tag ($C0 vs the page-1 $C1) is what proves page-correct mapping — the
-; two pings live in different pages of the same subslot, so only a page-selective
-; CALSLT reaches each.
+; Proves a CALSLT to SUBROM_ENTRY_BASE_P0 mapped slot 3-2 into PAGE 0 and that
+; page-3 RAM is reachable from there: stamp SUB_PING with the page-0 tag and
+; return. The distinct tag ($C0 vs the page-1 $C1) is what proves page-correct
+; mapping — the two pings live in different pages of the same subslot, so only a
+; page-selective CALSLT reaches each.
 ;
-; PLACED AFTER the $0038 vector since the I1 funding carve (beep_tenant, index 11)
-; filled the $0010..$0037 gap: 12 entry rows = 36 B leave only 4 B before the
-; vector, and this body needs 6. Its address is immaterial -- it is reached only
-; through its own `jp` row in the table above.
+; Its address is immaterial -- it is reached only through its own `jp` row in the
+; table above. (It used to carry a note explaining why it sat AFTER the $0038
+; vector; the table sits after the vector now too, so the note said nothing.)
 sub_p0_ping:
                 ld      a,SUB_PING_P0
                 ld      (SUB_PING),a

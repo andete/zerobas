@@ -2144,11 +2144,56 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `sub/sub.asm` + `sub/equates.inc` both already said so — nothing had connected
       it to "prefer page 0"). **A 14th page-0 tenant does not fit.** So a future
       rank-4 candidate that genuinely needs to call main page 1 is BLOCKED until
-      `SUBROM_ENTRY_BASE_P0` is relocated past `$0038` — two `equ` sites plus the
-      `IF $ - SUBROM_ENTRY_BASE_P0` header assert, every call site symbolic, so the
-      move is mechanical. Cheap, but an ABI move and NOT costed. This candidate did
+      `SUBROM_ENTRY_BASE_P0` is relocated past `$0038`. This candidate did
       not need it: the body calls **nothing at all**, so it is legal on either island
       and free bytes decided nothing — the *table* did.
+      ✅ **DONE 2026-08-05 — D-P0BASE**, [`docs/spec-rom-region-p0base.md`](docs/spec-rom-region-p0base.md).
+      `SUBROM_ENTRY_BASE_P0` is **`$0040`**, above the vector. **Index 13 is free and
+      the table has no cap.** Cost **44 B of sub page 0** (3913 -> 3869); main walls
+      unchanged (low 23 B, page 1 356 B), `sub.rom` page 1 **byte-identical**,
+      `basic-reloc.rom` differs in **exactly 18 bytes** (every `ld ix` low byte,
+      each +`$30`), and a relocation-aware page-0 diff explains **every** differing
+      byte as a 16-bit operand moved by +`$2C` — **0 unexplained**.
+      🔴 **AND THE REVIEW'S STATED JUSTIFICATION FOR "PREFER PAGE 0" IS THE WRONG
+      ONE.** The visibility argument (a page-0 tenant may call main page 1) is worth
+      **at most 95 B**, is claimed by **zero** candidates, lands on **sub**-ROM
+      space rather than main, and is structurally unreachable: 777 of 1045 main
+      page-1 labels are page-0-ILLEGAL, and all 268 legal ones are leaves, because
+      anything reaching into main page 1 transitively reaches `eval` (low region) or
+      `pchar` -> `CHPUT` (BIOS) and becomes illegal in the same step. The rule is
+      right for a **capacity** reason nobody had measured: the table filled at
+      `6c72931` (2026-07-29) and sub page 0 has been **frozen at 3913 B free for the
+      last 9 commits** while page 1 absorbed **1015 B** — page 0 held **63 %** of the
+      sub-ROM's free space and could accept no new tenant.
+      🔴 **The filed justification was wrong twice.** "Free space starts at `$003B`"
+      — no: `$003B..$0040` is `sub_p0_ping`, and basing the table there would have
+      overwritten the tenant every boot gate calls. "Every call site is symbolic" —
+      true of `basic/*.asm` (18 sites) and **false of the harness**: three probes
+      carry the entry address as a hardcoded *byte* in injected machine code.
+      ⚠️ **FOUR THINGS D-P0BASE FOUND — (a)-(c) UNFIXED, (d) fixed in-slice:**
+      (a) 🔴 **`pasmo` answers a NEGATIVE `ds` count with a WARNING and EXIT 0**,
+      writing a **zero-byte** file, and the whole `make basic-reloc` gate chain then
+      passes the padded result at rc 0. `tools/pad_rom.py` now refuses an EMPTY
+      input, which closes the total case — but a **partially truncated** ROM would
+      still be laundered, and nothing bounds that.
+      (b) 🔴 **`tools/check_kwtable_identity.py` PRINTS ITS OWN DENOMINATOR AND DOES
+      NOT JUDGE IT.** On the all-`$00` sub.rom above it reported
+      `OK: … the sole source (1 B)` against **1041 B** on a healthy tree. It needs a
+      lower bound on the table size, falsified by shrinking the table.
+      (c) ⚠️ **the three probe entry addresses stay HARDCODED** —
+      `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
+      (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). They inject raw bytes
+      into a bare machine deliberately, so deriving them from `sub/equates.inc`
+      needs its own falsification. All three ARE now scored — note that the third
+      is scored by **`graphics-floor-acceptance`**, NOT `graphics-acceptance`
+      (which reaches the tenant through the symbolic main stub and is blind to a
+      hardcoded probe address; D-P0BASE's K4a knife failed to cut until re-aimed).
+      (d) 🔴 **`subrom-inttest` had a live FALSE NEGATIVE**: its assertion was
+      `delta >= 1`, and with the CALSLT pointed at `$FF` pad it read
+      `delta = 255` and **PASSED**. Its docstring claimed "there is no storm-or-hang
+      path that still reports delta >= 1". FIXED here (`DELTA_MAX = 64`, measured
+      28/28/28, falsified both ways) — recorded because it is the sixth filed
+      justification checked in this arc and the sixth found wrong.
       🔴 **`tools/carve_scout.py` HAD THE SAME BLIND SPOT D-PINDATA FIXED IN ITS TWO
       SIBLINGS**, and it was a live wrong verdict, not a theoretical one: it graded
       `basic/playsvc.asm` **`page-0-tenant CLEAN`, 0 escapes** while

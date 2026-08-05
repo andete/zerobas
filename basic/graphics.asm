@@ -70,7 +70,7 @@ gfx_plot_go:
                 ld      a,1                 ; GFX_OP = 1 -> tenant plot (PSET/PRESET)
                 ld      (GFX_OP),a
                 push    hl                  ; guard the token cursor -- CALSLT clobbers HL
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS   ; page-0 index 8 = $0028
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS   ; page-0 index 8 = $0058
                 call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
                 pop     hl
                 jp      c,gfx_absent        ; defensive: merged ROM always ships the tenant

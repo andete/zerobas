@@ -15,14 +15,14 @@ The stub does the two CALSLTs the sub-ROM ABI defines (spec §3c), each under DI
 
     di
     xor a / ld ($F105),a          ; clear SUB_PING
-    ld iy,$8B00 / ld ix,$0010     ; slot 3-2 ($8B), page-0 entry $0010
+    ld iy,$8B00 / ld ix,$0040     ; slot 3-2 ($8B), page-0 entry $0040
     call $001C                    ; CALSLT -> sub_p0_ping writes SUB_PING=$C0
     ld a,($F105) / ld ($C100),a   ; stash the page-0 result
     ... repeat with ix=$4010      ; page-1 entry -> sub_p1_ping writes $C1
     ld a,($F105) / ld ($C101),a   ; stash the page-1 result
     halt                          ; capture breakpoint
 
-A CALSLT to $0010 in slot 3-2 maps that subslot into PAGE 0 (main-BASIC-visible
+A CALSLT to $0040 in slot 3-2 maps that subslot into PAGE 0 (main-BASIC-visible
 island) and runs the page-0 ping; a CALSLT to $4010 maps it into PAGE 1 (the
 BIOS-visible island) and runs the page-1 ping. The two pings write distinct tags
 ($C0 / $C1), so a correct round-trip proves BOTH pages are present and dispatch
@@ -70,7 +70,7 @@ STUB_BYTES = bytes([
     0xF3,                    # di
     0xAF, 0x32, 0x05, 0xF1,  # xor a ; ld ($F105),a       (clear SUB_PING)
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)
-    0xDD, 0x21, 0x10, 0x00,  # ld ix,$0010                (page-0 entry)
+    0xDD, 0x21, 0x40, 0x00,  # ld ix,$0040                (page-0 entry)
     0xCD, 0x1C, 0x00,        # call $001C                 (CALSLT)
     0x3A, 0x05, 0xF1,        # ld a,($F105)
     0x32, 0x00, 0xC1,        # ld ($C100),a               (page-0 result)
@@ -219,7 +219,7 @@ def main() -> int:
     p0, p1 = res.get("p0"), res.get("p1")
     p0_ok = p0 == EXPECT_P0
     p1_ok = p1 == EXPECT_P1
-    print(f"page-0 CALSLT $0010 -> SUB_PING = ${p0:02X} (expect ${EXPECT_P0:02X}): "
+    print(f"page-0 CALSLT $0040 -> SUB_PING = ${p0:02X} (expect ${EXPECT_P0:02X}): "
           f"{'PASS' if p0_ok else 'FAIL'}")
     print(f"page-1 CALSLT $4010 -> SUB_PING = ${p1:02X} (expect ${EXPECT_P1:02X}): "
           f"{'PASS' if p1_ok else 'FAIL'}")

@@ -13,7 +13,7 @@ The probe injects a stub at $C000 and redirects the CPU into it:
 
     di
     ld iy,$8B00          ; slot 3-2 ($8B); CALSLT reads the slot from IYh
-    ld ix,$0028          ; page-0 entry index 8 = $0010 + 3*8 (SUBROM_IDX_GRAPHICS)
+    ld ix,$0058          ; page-0 entry index 8 = $0040 + 3*8 (SUBROM_IDX_GRAPHICS)
     call $001C           ; CALSLT -> graphics_selftest (GFX_OP=0)
     halt                 ; capture breakpoint
 
@@ -63,7 +63,7 @@ OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 MACHINE = os.environ.get("ZEROBAS_SUBROM_INTTEST_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 
 # The CALSLT stub. Loaded at $C000; halt sentinel at $C00E. Index 8 lives at
-# page-0 entry $0010 + 3*8 = $0028. Results are written by the tenant itself into
+# page-0 entry $0040 + 3*8 = $0058. Results are written by the tenant itself into
 # GFX_DJ ($C120) / GFX_BAD ($C121), so the stub only needs to make the call.
 STUB_ADDR = 0xC000
 STUB_HALT = 0xC00E
@@ -73,7 +73,7 @@ GFX_OP = 0xE030   # G2: index 8 is now selector-dispatched; 0 = the floor self-t
 STUB_BYTES = bytes([
     0xF3,                    # di
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)
-    0xDD, 0x21, 0x28, 0x00,  # ld ix,$0028                (page-0 index 8)
+    0xDD, 0x21, 0x58, 0x00,  # ld ix,$0058                (page-0 index 8)
     0xCD, 0x1C, 0x00,        # call $001C                 (CALSLT -> graphics_selftest)
     0x76,                    # halt                       (capture bp)
 ])

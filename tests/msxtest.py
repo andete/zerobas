@@ -120,7 +120,7 @@ class Machine:
     def _install_subrom_bridge(self):
         """Bridge the sub-ROM dispatch the flat harness can't page (subrom S2b).
         On the real machine `subrom_call` does a CALSLT into ONE sub-ROM page,
-        chosen by whether IX is a page-0 ($0010+) or page-1 ($4010+) entry-table
+        chosen by whether IX is a page-0 ($0040+) or page-1 ($4010+) entry-table
         address (sub/equates.inc SUBROM_ENTRY_BASE_P0/P1). The flat host harness
         can't page, so each direction gets its own bridge machine, run separately
         so the tenant's own low memory/stack never collides with the caller's:
