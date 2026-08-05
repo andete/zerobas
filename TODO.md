@@ -4238,6 +4238,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       **byte-identical** (730 B, sha `f936ab2a…`), so no probe's delivery
       alignment moved.
 
+- [ ] ⚠️ **`injector-check` IS STILL A TEXT CLASSIFIER, and D-INJSINK narrowed
+      that without closing it** ([`docs/spec-probe-injsink.md`](docs/spec-probe-injsink.md) §6).
+      What passes, measured on the shipped gate rather than assumed:
+      a **split literal** (`"debug write" + f" memory {G} 0"` → `CLEAN`), and any
+      body that reaches the cursors by a spelling neither rule knows. Neither is
+      a careless-author shape — the six real copies were all verbatim — so this
+      is a stated limit, not a filed defect.
+      🎯 What is NOT a hole, re-measured after the coverage note first claimed it
+      was: a frozen body laundered through a local call
+      (`return build([…, OLD_KEY])`) **is caught**, `HANDLES`, along with
+      `import M as L`, `from M import N as K` and `from M import *`. Rule (b) is
+      blunt on purpose — the offence is naming the body, not what happens to it
+      afterwards.
+      ⚠️ **An EXEMPT file is trusted by construction.** `HANDLES` is machine-
+      checked (no write literal of its own); `SHIPS` and `HOLDS` are not, and
+      cannot be — they exist to hold injector bodies. The mitigation is that
+      there are three of them and each is a slice-sized decision
+      [[exemption-as-a-checked-claim]].
+      ⚠️ **Rule (b) resolves modules by BASENAME.** Collision-free across all 257
+      files today, and measured so on every run; a future duplicate basename
+      resolves to both, which is the eager direction.
+
 - [ ] ⚠️ **THE DELIVERY GUARDS DO NOT COVER PROBES WITH THEIR OWN `build_tcl`.**
       Every `probes/disk/*` script and `basic_probe_printusing.py` build their own
       Tcl and never reach `omsx_repl._tcl`, so neither the stored-program oracle

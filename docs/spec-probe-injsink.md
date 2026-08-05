@@ -371,9 +371,18 @@ because the alternative was to claim a drop the measurements do not support:
 ## 6. Coverage limits, stated in advance
 
 * **The classifier is still a text classifier.** A split literal
-  (`"debug write" + " memory"`) passes, as it did before; so does a frozen body
-  laundered through a local call (§2.3). Neither is narrowed here, and neither is
-  a careless-author shape — but both are stated rather than implied.
+  (`"debug write" + " memory"`) passes, as it did before — measured `CLEAN`. Not
+  narrowed here, not a careless-author shape, and stated rather than implied.
+
+  ⚠️ **This bullet said more than that when it was first written, and it was
+  wrong.** It claimed a frozen body laundered through a local call
+  (`return build([…, OLD_KEY])`) also passes. It does not: §2.3's local-call hole
+  is a property of the *all-uses emit/match rule that was NOT shipped*, and rule
+  (b) is blunt precisely so that it does not care what happens to the value after
+  the file names it. Re-measured against the shipped classifier, all four
+  spellings are caught — `import M` / `import M as L` / `from M import N as K` /
+  `from M import *` — each **HANDLES**. Corrected rather than left standing: a
+  coverage limit that overstates the hole is as misleading as one that hides it.
 * **The registry is module-basename-resolved.** Measured collision-free over 257
   files today; a future duplicate basename would resolve to both, which is the
   eager direction.
