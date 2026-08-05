@@ -354,7 +354,7 @@ Interrogated, and the recommendation is **leave them alone**. Measured reasons:
 |---|---|---|---|---|---|---|
 | 1 | **C1+C2+C3 dead-code carve** (§4) | **122 B** | page 1 | **0** | none — unreachable code, falsified sweep | ✅ **R1 LANDED** |
 | 2 | **promote the 80 B message pool** (§5) | **80 B** | **low (the hard wall)** | 80 B of page 1 | low — pressure-placed, all readers page-1, 0 sub refs | ✅ **R1 LANDED** |
-| 3 | promote `input.asm` (446 B, pressure-placed whole) | 446 B | low | 446 B of page 1 | low | **blocked**: needs 446 B of page 1 that does not exist |
+| 3 | promote `input.asm` (**458 B**, pressure-placed whole) | 458 B | low | 458 B of page 1 | low | 🔴 **DECLINED** — [D-PINDATA](spec-rom-region-promote-input.md). Short 157 B, and the premise is inverted: low moved 3× in 31 commits, page 1 moved 20+ |
 | 4 | evict a page-1 file to a sub **page-0** tenant (§6) | body − stub | page 1 | 12–42 B stub | medium — needs a closure-clean seam | open, not costed per-file |
 | 5 | de-evict any tenant (§3) | **nothing** | — | **35–155 B loss** | — | **REFUTED, closed** |
 | 6 | reclaim the 473 B duplication tax (§3.1) | 16 B (taken as C3) | page 1 | — | — | **457 B contract-forced, closed** |
@@ -366,6 +366,18 @@ dominated by **siting, not substance** (D-FCH S-FCH-1: 43 → 9 → 5 B for the 
 fix), so a per-file eviction estimate made from reading code would be a hypothesis
 presented as a measurement. Rank 4 should be opened only when ranks 1–2 are spent,
 and then one candidate at a time, costed by **building** it.
+
+🔴 **AND §0.1's ERROR 3 FIX NEVER REACHED THE SHIPPED TOOLS**
+([D-PINDATA](spec-rom-region-promote-input.md), 2026-08-05). The data-reference
+closure this review had to build to stop nominating `keytrap.asm` went into
+`check_dead_code.py` and nowhere else: `tools/check_tenant_closure.py` — named
+above as **the feasibility oracle for this review** — and `tools/promote_scout.py`
+both matched only `call|jp|jr|djnz`. `basic/float.asm`'s three `tkf_ref*` bound
+tables (15 B) sit in the resident-ABI closure via `ld de,tkf_ref32768` alone, so
+the scout graded them `PROMOTABLE` and relocating them into page 1 left the gate
+printing `OK`. **§2's own table had `float.asm` right** ("MIXED, effectively
+forced") — the shipped tool disagreed with the review that commissioned it, and
+the tool is what a later slice would run. Both now carry a data pass.
 
 ---
 

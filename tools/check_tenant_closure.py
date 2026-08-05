@@ -67,6 +67,7 @@ _LBL = re.compile(r'^([A-Za-z_]\w*):')
 _XFER = re.compile(
     r'\b(?:call|jp|jr|djnz)\s+(?:(?:nz|z|nc|c|p|m|pe|po)\s*,\s*)?([A-Za-z_]\w*)')
 _INC_SYM = re.compile(r'^\s*([A-Za-z_]\w*)\s+equ\b', re.IGNORECASE)
+_IDENT = re.compile(r'[A-Za-z_]\w*')
 
 
 def load_syms(path):
@@ -136,6 +137,93 @@ def build_callgraph(files):
     return graph
 
 
+def build_datagraph(files):
+    """label -> set(identifiers its LINEAR SPAN mentions that are NOT transfer
+    targets). Same spans as build_callgraph; the complement of its edge set.
+
+    These are DATA references -- `ld de,tkf_ref32768`, `dw handler`, `ld hl,tbl`.
+    A tenant that reaches such a span READS THE BYTES at that address with a page
+    switched out, so a data target is subject to exactly the same region contract
+    as a callee. Walking only call/jp/jr/djnz cannot see them, which is the error
+    the ROM REGION STRUCTURE REVIEW hit with `ld hl,zkey_hook` (§0.1 error 3) and
+    fixed only in check_dead_code.py -- so this gate, the review's own named
+    feasibility oracle, stayed blind to the whole class. D-PINDATA,
+    docs/spec-rom-region-promote-input.md §2.3.
+
+    TWO rules, and both are load-bearing (spec §2.5 measured what breaks without
+    each):
+
+      * AN `equ` IS A VALUE, ONLY A `label:` IS A LOCATION. Callers filter this
+        set against a label universe. Treating every symbol as an address reports
+        63 spurious page-0 escapes on a clean tree -- token numbers, PSG ports,
+        buffer capacities.
+      * A DATA EDGE DOES NOT PROPAGATE CONTROL FLOW. Callers must not walk
+        THROUGH a data target. Reading the 5 bytes of `tkf_ref32768` does not
+        enter the routine that happens to follow it; propagating falls out of that
+        `db` table into `flt_out` and pins 482 B of formatter nothing executes.
+
+    ⚠️ A data reference to CODE (a hook whose address is installed, then called by
+    the BIOS) IS executed, and this pass under-pins it: it marks the hook span and
+    stops. Hooks stay explicitly seeded -- see DEFAULT_ISR_SEEDS in
+    promote_scout.py, and `zkey_hook`."""
+    data = {}
+    for f in files:
+        if not os.path.exists(f):
+            continue
+        lines = [ln.split(';', 1)[0] for ln in open(f)]
+        labels = [(i, m.group(1)) for i, c in enumerate(lines)
+                  if (m := _LBL.match(c))]
+        for _, n in labels:
+            data.setdefault(n, set())
+        for i, name in labels:
+            j = i
+            while j < len(lines):
+                code = lines[j]
+                xfer = {m.group(1) for m in _XFER.finditer(code)}
+                for t in _IDENT.finditer(code):
+                    g = t.group(0)
+                    if g not in xfer and g != name:
+                        data[name].add(g)
+                if j > i and _is_terminator(code):
+                    break
+                j += 1
+    return data
+
+
+def data_targets(seen, data, universe):
+    """The labels reached by a DATA reference from the control closure `seen` and
+    not already in it. `universe` is the set of `label:` definitions that count as
+    locations (see build_datagraph's first rule)."""
+    out = set()
+    for n in seen:
+        out |= {g for g in data.get(n, ()) if g in universe}
+    return out - set(seen)
+
+
+_ABI_INC = os.path.join("sub", "basic-resident-abi.inc")
+
+
+def _abi_data_hole(seen, data):
+    """The one hole build_datagraph's label-only rule leaves, made CHECKABLE.
+
+    Main-ROM routines enter the sub build as `equ` addresses via
+    sub/basic-resident-abi.inc, so they are VALUES to the label-only rule and a
+    DATA reference to one would be silently unclassified. That is stated as a
+    coverage limit in docs/spec-rom-region-promote-input.md §3.3 -- and stated
+    with a measurement, "empty today", which is only worth something if the tree
+    keeps re-measuring it. This returns the ABI names a walked span mentions
+    non-transfer; a non-empty result means the exemption stopped being true and
+    the case needs classifying by hand, not that the gate should widen."""
+    if not os.path.exists(_ABI_INC):
+        return set()
+    abi = {m.group(1) for line in open(_ABI_INC)
+           if (m := _INC_SYM.match(line))}
+    hit = set()
+    for n in seen:
+        hit |= (data.get(n, set()) & abi)
+    return hit
+
+
 def seeds_from_inc(inc_path):
     return [m.group(1) for line in open(inc_path)
             if (m := _INC_SYM.match(line))]
@@ -200,7 +288,8 @@ def page1_seeds(sub_asm):
 
 def check_page1(argv) -> int:
     syms = load_syms(argv[0])
-    graph = build_callgraph(sorted(glob.glob("basic/*.asm")))
+    files = sorted(glob.glob("basic/*.asm"))
+    graph = build_callgraph(files)
     seeds = seeds_from_inc(argv[1])
     if not seeds:
         print(f"FAIL: no seed symbols in {argv[1]}", file=sys.stderr)
@@ -215,19 +304,28 @@ def check_page1(argv) -> int:
         seen.add(n)
         stack.extend(c for c in graph.get(n, ()) if c not in seen)
 
-    escapes = sorted((n, syms[n]) for n in seen
+    # DATA references out of that closure: bytes the tenant READS with main
+    # page 1 switched out, so the same >= $4000 test applies (spec §2.4 —
+    # basic/float.asm's tkf_ref* bound tables are reached this way and no gate
+    # could see them before).
+    dref = data_targets(seen, build_datagraph(files), set(graph))
+
+    escapes = sorted((n, syms[n], "called") for n in seen
                      if n in syms and syms[n] >= PAGE1)
+    escapes += sorted((n, syms[n], "DATA-referenced") for n in dref
+                      if n in syms and syms[n] >= PAGE1)
     if escapes:
         print("FAIL: page-1 escapes in the tenant's resident closure — these "
-              "routines are switched OUT while the page-1 tenant runs, so "
-              "calling them hangs/crashes. Relocate each to the page-0 low "
-              "region (see cmp16_bits/div10 in basic/float-arith.asm):",
+              "routines/bytes are switched OUT while the page-1 tenant runs, so "
+              "calling or reading them hangs/crashes. Relocate each to the "
+              "page-0 low region (see cmp16_bits/div10 in basic/float-arith.asm):",
               file=sys.stderr)
-        for n, a in escapes:
-            print(f"  {n} = {a:04X}", file=sys.stderr)
+        for n, a, how in escapes:
+            print(f"  {n} = {a:04X}  <- {how}", file=sys.stderr)
         return 1
     print(f"OK: {len(seen)} routines in the resident closure of {len(seeds)} "
-          f"ABI seeds, all page-0 (< ${PAGE1:04X}). No page-1 escapes.")
+          f"ABI seeds, + {len(dref)} data-referenced label(s), all page-0 "
+          f"(< ${PAGE1:04X}). No page-1 escapes.")
     return 0
 
 
@@ -256,19 +354,32 @@ def check_page0(argv) -> int:
     # code + main page-1 + RAM are fine; escapes are (a) an external/main import
     # < $4000 (main low region / BIOS, paged out), or (b) a sub-local label
     # >= $4000 (the sub's OWN page 1, not mapped during a page-0 call).
+    dref = data_targets(seen, build_datagraph(sources), sub_local)
+    bad = _abi_data_hole(seen, build_datagraph(sources))
+    if bad:
+        print(f"FAIL: a page-0 tenant DATA-references resident-ABI symbol(s) "
+              f"{sorted(bad)}. Those arrive as `equ` addresses, so the "
+              f"label-only rule in build_datagraph cannot classify them "
+              f"(docs/spec-rom-region-promote-input.md §3.3 records this hole as "
+              f"CHECKED EMPTY). It is no longer empty — classify by hand.",
+              file=sys.stderr)
+        return 1
+
     escapes = []
-    for n in sorted(seen):
+    for n in sorted(seen) + sorted(dref):
         addr = syms.get(n)
         if addr is None:
             continue                              # constant / not a placed label
+        how = "called" if n in seen else "DATA-referenced"
         if n in sub_local:
             if addr >= PAGE1:
-                escapes.append((n, addr, "sub page-1 (own $4000+ island, unmapped "
-                                         "during a page-0 call)"))
+                escapes.append((n, addr, f"sub page-1 (own $4000+ island, unmapped "
+                                         f"during a page-0 call), {how}"))
         elif addr < PAGE1:
             where = ("main low region $2812-$3FFF" if addr >= LOWREGION
                      else "main BIOS < $2812")
-            escapes.append((n, addr, f"{where} (switched out under a page-0 call)"))
+            escapes.append((n, addr,
+                            f"{where} (switched out under a page-0 call), {how}"))
 
     if escapes:
         print("FAIL: page-0 escapes — a page-0 tenant runs with slot-0 page 0 "
@@ -279,8 +390,9 @@ def check_page0(argv) -> int:
             print(f"  {n} = {a:04X}  <- {why}", file=sys.stderr)
         return 1
     print(f"OK: {len(seen)} routines in the closure of {len(seeds)} page-0 "
-          f"tenants ({', '.join(seeds)}); every callee is sub-local page-0, "
-          f"main page-1, or RAM. No low-region/BIOS escape.")
+          f"tenants ({', '.join(seeds)}), + {len(dref)} data-referenced label(s); "
+          f"every callee and data target is sub-local page-0, main page-1, or "
+          f"RAM. No low-region/BIOS escape.")
     return 0
 
 
@@ -320,18 +432,29 @@ def check_page1_tenant(argv) -> int:
     # (a) a sub-local label < $4000 (the sub's OWN page-0 island, not mapped
     # during a page-1 call), or (b) an external/main import >= $4000
     # (main-BASIC page 1, switched out under a page-1 call).
+    dref = data_targets(seen, build_datagraph(sources), sub_local)
+    bad = _abi_data_hole(seen, build_datagraph(sources))
+    if bad:
+        print(f"FAIL: a page-1 tenant DATA-references resident-ABI symbol(s) "
+              f"{sorted(bad)}, which arrive as `equ` addresses and cannot be "
+              f"classified by the label-only rule "
+              f"(docs/spec-rom-region-promote-input.md §3.3, CHECKED EMPTY — no "
+              f"longer). Classify by hand.", file=sys.stderr)
+        return 1
+
     escapes = []
-    for n in sorted(seen):
+    for n in sorted(seen) + sorted(dref):
         addr = syms.get(n)
         if addr is None:
             continue                              # constant / not a placed label
+        how = "called" if n in seen else "DATA-referenced"
         if n in sub_local:
             if addr < PAGE1:
-                escapes.append((n, addr, "sub page-0 (own island, unmapped "
-                                         "during a page-1 call)"))
+                escapes.append((n, addr, f"sub page-0 (own island, unmapped "
+                                         f"during a page-1 call), {how}"))
         elif addr >= PAGE1:
-            escapes.append((n, addr, "main-BASIC page-1 (switched out under "
-                                     "a page-1 call)"))
+            escapes.append((n, addr, f"main-BASIC page-1 (switched out under "
+                                     f"a page-1 call), {how}"))
 
     if escapes:
         print("FAIL: page-1 escapes — a page-1 tenant runs with slot-0 page 1 "
@@ -342,8 +465,9 @@ def check_page1_tenant(argv) -> int:
             print(f"  {n} = {a:04X}  <- {why}", file=sys.stderr)
         return 1
     print(f"OK: {len(seen)} routines in the closure of {len(seeds)} page-1 "
-          f"tenants ({', '.join(seeds)}); every callee is sub-local page-1, "
-          f"main low-region/BIOS (< ${PAGE1:04X}), or RAM. No main-page-1 escape.")
+          f"tenants ({', '.join(seeds)}), + {len(dref)} data-referenced label(s); "
+          f"every callee and data target is sub-local page-1, main "
+          f"low-region/BIOS (< ${PAGE1:04X}), or RAM. No main-page-1 escape.")
     return 0
 
 

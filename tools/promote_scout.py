@@ -53,7 +53,8 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from check_tenant_closure import build_callgraph, load_syms  # noqa: E402
+from check_tenant_closure import (build_callgraph, build_datagraph,  # noqa: E402
+                                  data_targets, load_syms)
 from carve_scout import reachable, shortest_path, sizes_by_symbol  # noqa: E402
 
 PAGE1 = 0x4000
@@ -100,7 +101,16 @@ def main() -> int:
 
     abi_seeds = sorted(load_syms(args.abi))
     isr_seeds = [s for s in args.isr_seeds.split(',') if s and s in graph]
-    pinned = reachable(graph, abi_seeds) | reachable(graph, isr_seeds)
+    control = reachable(graph, abi_seeds) | reachable(graph, isr_seeds)
+    # A pinning caller does not only CALL -- it also READS. `ld de,tkf_ref32768`
+    # in dcc_dexp5 puts basic/float.asm's three bound tables under a page-1
+    # tenant's eyes with main page 1 switched out, and until D-PINDATA this
+    # scout graded those 15 B PROMOTABLE while check_tenant_closure.py, the gate
+    # that would have had to catch the move, was blind to them too. The scout
+    # that decides what to ATTEMPT must not be looser than the check that decides
+    # what may SHIP (docs/spec-rom-region-promote-input.md §2.3/§2.4).
+    dref = data_targets(control, build_datagraph(files), set(graph))
+    pinned = control | dref
 
     def is_low(lbl):
         a = syms.get(lbl)
@@ -118,6 +128,15 @@ def main() -> int:
                 print(f"{lbl}: PINNED via the {name}: "
                       f"{' -> '.join(p) if p else lbl + ' (a seed)'}")
                 return 0
+        if lbl in dref:
+            readers = sorted(n for n in control
+                             if lbl in build_datagraph(files).get(n, ()))
+            print(f"{lbl}: PINNED by a DATA REFERENCE — its BYTES are read from "
+                  f"{', '.join(readers) or '?'}, which a page-1 tenant reaches "
+                  f"with main page 1 switched out. Not a call: no control edge "
+                  f"leads here, which is why a call-graph-only walk calls it "
+                  f"promotable.")
+            return 0
         print(f"{lbl}: PINNED (seed itself)")
         return 0
 

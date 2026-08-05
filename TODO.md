@@ -2084,10 +2084,54 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Also: a conditional `jp nc,`/`ret nz` read as an unconditional terminator
       (falsely killed `ei_set`/`spr_set`); lines before a file's first label belonged
       to no span (falsely killed `sp_done`).
-      **NEXT TIER, costed but NOT opened** (review §7): promote `input.asm` (446 B,
-      pressure-placed whole) — blocked on 446 B of page 1 that does not exist; then
-      per-file eviction to a sub **page-0** tenant (prefer page 0: a page-0 tenant may
-      call main page 1, which is why page-1 tenants force the 457 B of duplication).
+      **NEXT TIER — ✅ ANSWERED 2026-08-05 by D-PINDATA, and the answer is DON'T.**
+      [`docs/spec-rom-region-promote-input.md`](docs/spec-rom-region-promote-input.md).
+      Re-measured from clean, instrument controlled by ROM byte-identity:
+      **`input.asm` is 458 B, not the filed 446** (it grew 12 B), page 1 holds
+      **301 B**, low holds **23 B** — so the promotion is **short by 157 B**, not by
+      the 439 the stale note implies.
+      🔴 **AND THE PREMISE IS INVERTED.** The item's rationale is that low is "the
+      binding wall". Assembling every commit that touched `basic/` since the review
+      landed (31 builds, pasmo is 0.1 s) says otherwise: **low moved 3 times, page 1
+      moved 20+.** Low has sat at exactly 23 B for 25 of the 31 and never went below
+      9; page 1 has ranged **5 B → 311 B** and spent **six consecutive commits at
+      ≤ 8 B**. Promoting `input.asm` would drive **page 1 — the wall that actually
+      binds — to zero** to add 458 B to the wall that sits. Structural reason, also
+      measured: only **1643 B of the low region's 6126 B is contract-forced**, so
+      "low free = 23 B" measures a PACKING CHOICE, not a contract, and the split can
+      be re-cut on demand. **The promotion is DECLINED, not blocked** — that outlives
+      the 157 B. Re-open only against a measured low-region need.
+      🔴 **THE SAFETY CHECK FOUND A LIVE BLIND SPOT IN THE GATE, NOT IN `input.asm`.**
+      The review's §0.1 error 3 fix (a call-graph-only closure missed
+      `ld hl,zkey_hook`, a DATA reference) reached `check_dead_code.py` and **NOT**
+      `tools/check_tenant_closure.py` — the gate that decides what may SHIP and the
+      review's own named feasibility oracle — nor `tools/promote_scout.py`, the scout
+      that decides what to ATTEMPT. Both matched only `call|jp|jr|djnz`. Measured
+      instance: `tkf_ref32767/65535/32768` (15 B of bound tables at
+      [`basic/float.asm:29`](basic/float.asm:29)) are reached by `ld de,tkf_ref32768`
+      in `dcc_dexp5`, inside the closure of `flt_to_int16`, a **resident-ABI export**.
+      `promote_scout` graded them **`PROMOTABLE` rc 0**; relocating them into page 1
+      left the old gate printing **`OK … No page-1 escapes`, rc 0**. Fixed: a data
+      pass on all three walks, on two rules that are each falsified — an `equ` is a
+      VALUE (dropping that rule = **63** spurious page-0 escapes) and a data edge does
+      NOT propagate control flow (dropping that = **482 B / 35 labels** over-pinned).
+      🔴 **K1d PREDICTED RED AND MEASURED GREEN, and the green was the finding.** The
+      tenant does NOT read those bytes at runtime: `cpt_round`
+      ([`sub/circleparse.asm:309`](sub/circleparse.asm:309)) only ever converts
+      `ratio*256` with `ratio <= 1`, so dexp <= 3 and the dexp==5 arm is **unreachable
+      from the only tenant caller**. The pin is a CLOSURE-CONTRACT pin, not a live
+      fault, and the spec says so. Separated by the K1/K1e knife PAIR, which also
+      localised the real reader as main-side and corrected the probe's own row labels.
+      New gate `make dexp5-pin` — **16/16 vs the VG-8020 in 6.0 s**, and the 15 bytes
+      had **no gate at all** before (graphics CIRCLE corpus tops at coord 80 = dexp 2).
+      ⚠️ **Naming an assembler label in a `tools/*.py` comment immunises it from the
+      dead-code sweep** (`external_names` scans `tools/`; the main seed count moved
+      283 → 284 on a comment mentioning `dcc_dexp5`). Nothing masked here — 0 dead
+      before and after — but the hazard is real and unfixed.
+      **STILL NOT OPENED:** per-file eviction to a sub **page-0** tenant (prefer
+      page 0: a page-0 tenant may call main page 1, which is why page-1 tenants force
+      the 457 B of duplication). **It is now the ONLY move in the tier that CREATES
+      bytes** — promotion only redistributes them.
       Closed as answered: the 473 B duplication tax (**457 B contract-forced**), the
       split/ABI/three-gates question (**leave them alone** — the page-0 walk's vacuous
       pass is enforcement, not absent coverage), and merging the two regions (never on
@@ -3129,6 +3173,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `File not open` is the witness that the `CLOSE` actually ran — a row whose
       only reading is `dir` cannot tell "stamped 0" from "the line never
       arrived").
+      ⚠️ **INTERMITTENT ORACLE DRIFT — SECOND SIGHTING 2026-08-05 (D-PINDATA
+      corpus), AND THE DIAGNOSTIC WAS DESTROYED.** The run reported
+      `45 cases, 0 unfiled divergence(s), 1 oracle drift(s), 0 mangled` and exited
+      non-zero. **Four immediately following runs were all clean** (0 drifts,
+      rc 0). Sighting 1 was `wm_app_put` (recorded 61, live `None`) during
+      D-LATCH's corpus, then five clean. 🔴 **I cannot name the row this time: the
+      gate was run through `| tail -6`, and the `ORACLE DRIFT (recorded …)` line
+      is in the BODY.** ⇒ **a gate with a known intermittent must be captured in
+      FULL, never tailed** — a rare finding has exactly one copy. Still a flake,
+      still not written off; the next sighting needs the whole log.
 
 - [ ] **UNMEASURED: a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`.**
       Filed 2026-07-31 by D-RNDDIR as the one thing its rows do not reach. In

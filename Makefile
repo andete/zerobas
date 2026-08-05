@@ -604,6 +604,19 @@ graphics-floor-teeth: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 graphics-acceptance: repack-machine
 	python3 probes/basic/basic_probe_graphics.py
 
+# --- dexp==5 bound-table acceptance (D-PINDATA) --------------------------------
+# The three 5-byte unpacked-digit bound tables in basic/float.asm (tkf_ref32767 /
+# tkf_ref65535 / tkf_ref32768) had NO gate: graphics-acceptance's CIRCLE corpus
+# tops out at coordinate 80 (dexp 2), and intarg-acceptance covers the POKE/VPOKE/
+# OUT domains but not the graphics reader. This walks the dexp==5 arm of
+# domain_convert_core through every reader that reaches it -- CIRCLE coords/radius,
+# POKE/VPOKE/OUT, and the sub-ROM tenant's aspect path -- as a VG-8020 differential.
+# Falsified: a five-byte edit to tkf_ref32767 (3,2,7,6,7 -> 9,9,9,9,9) moves five
+# rows, so it is a gate that has been shown to MOVE.
+# docs/spec-rom-region-promote-input.md §5.
+dexp5-pin: repack-machine
+	python3 probes/basic/basic_probe_dexp5_pin.py
+
 # --- Keyword-completeness SWEEP (the coverage denominator, NOT a pass/fail gate) ---
 # Sweeps the whole MSX1 reserved-word set in two layers and reports which words are
 # absent and what a program actually observes -- docs/kwsweep-msx1-coverage.md.
