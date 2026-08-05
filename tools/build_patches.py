@@ -113,19 +113,6 @@ def verify_all_variants(tape_sym: str) -> None:
 FREE_ORG_ADDR = 0x09EE   # D5 revision 2026-07-11: was 0x3A72 (see tape/tape.asm FREE_ORG)
 
 
-def ensure_basic_rom() -> str:
-    """The page-1 patch needs build/basic.rom. When invoked via the Makefile it is
-    already built (a prerequisite); assemble it here too so the script also works
-    standalone, with no `make` dependency."""
-    rom = os.path.join(REPO, "build", "basic.rom")
-    if not os.path.isfile(rom):
-        print("building build/basic.rom...")
-        os.makedirs(os.path.dirname(rom), exist_ok=True)
-        run([PASMO, "--bin", os.path.join(REPO, "basic", "main.asm"), rom])
-        run([PY, os.path.join(TOOLS, "pad_rom.py"), rom, "16384"])
-    return rom
-
-
 def resolve_stock(explicit, names) -> str | None:
     stock = openmsx_paths.find_cbios_rom(names, explicit)
     if stock and not os.path.isfile(stock):
@@ -149,23 +136,20 @@ def build_page1(explicit_stock):
         "       The cassette patch is unaffected:  build_patches.py --tape")
 
 
-def _build_page1_retired(explicit_stock):
-    rom = ensure_basic_rom()
-    stock = resolve_stock(explicit_stock, "cbios_main_msx1.rom")
-    if not stock:
-        sys.exit("error: stock C-BIOS main ROM not found.\n"
-                 "       pass it: python3 tools/build_patches.py /path/to/cbios_main_msx1.rom")
-
-    patch = os.path.join(TOOLS, "rom_patch.py")
-    overlay = os.path.join(TOOLS, "overlay_page1.py")
-    with tempfile.TemporaryDirectory() as work:
-        combined = os.path.join(work, "combined.rom")
-        print("splicing zerobas into C-BIOS page 1...")
-        run([PY, overlay, stock, rom, combined])
-        print("making patches...")
-        run([PY, patch, "make", stock, combined, os.path.join(REPO, "zerobas-msx1.ips")])
-        run([PY, patch, "make", stock, combined, os.path.join(REPO, "zerobas-msx1.bps")])
-    print("done.")
+# DELETED 2026-08-05 (D-DSKJUDGE §3.3, docs/spec-rom-gate-diskrom.md): the body of
+# the retired lean page-1 mode, `_build_page1_retired()`, and the `ensure_basic_rom()`
+# helper that only it called. Neither had a caller: `build_page1()` above `sys.exit`s
+# the mode, and nothing anywhere calls `_build_page1_retired` (grepped across tools/,
+# probes/, tests/ and both Makefiles). It was kept as a reference body when the lean
+# cart was retired on 2026-07-29; a year of `git log` is a better reference than a
+# function that cannot run.
+#
+# 🔴 AND IT WOULD HAVE FAILED IF IT RAN. `ensure_basic_rom()` assembled basic/main.asm
+# and called `pad_rom.py <rom> 16384` -- but basic/main.asm has assembled at
+# BASIC_ORG = $2812, spanning to $8000, since the same retirement: 22510 bytes, which
+# pad_rom now answers with `exceeds target 16384`. Dead code does not rot quietly; it
+# rots into a call that takes the build down the first time anything reaches it.
+# The retired mode itself is documented in docs/spec-lean-retire-s2-switch.md.
 
 
 def build_tape(explicit_stock):

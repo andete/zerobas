@@ -2224,13 +2224,58 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       run each. Its comment's claim that the delta *"stays 0"* on that path is also
       wrong — a runaway `rst 38h` walks the stack and lands a **stack byte** in the
       result cell.
-      ⚠️ **STILL OPEN, filed by D-ROMJUDGE:** `build/disk.rom` has **no
-      content-reading gate at all** (and carries 68 of the 74 `ds <fixed> - $`
-      sites); pad-only damage stays invisible **deliberately** (closing it needs a
-      whole-image digest, which pins the ROM against every legitimate change too);
-      and `tools/build_patches.py:125`'s `pad_rom` call is **unreachable dead code**
-      — `ensure_basic_rom()` is called only by `_build_page1_retired()`, which
-      nothing calls since `build_page1()` `sys.exit`s (lean retirement 2026-07-29).
+      ✅ **DONE 2026-08-05 — D-DSKJUDGE**,
+      [`docs/spec-rom-gate-diskrom.md`](docs/spec-rom-gate-diskrom.md).
+      🔴 **THE GATE IS DECLINED, MEASURED — and the filed claims were RIGHT but
+      pointed at the wrong risk.** "No content-reading gate at all" is true of the
+      HOST side (zero tools read `build/disk.rom`'s bytes and judge them; one reads
+      all 16384 and only fingerprints them, `basic_probe_kwsweep.py:433`) and
+      **irrelevant**, because `install-repack-machine.py` writes its absolute path
+      into slot 3-1 and **four gate families execute every byte**. Corruption ×
+      gate, six images: **6 of 6 caught**, every one by at least two gates — the
+      inverse of D-ROMJUDGE's sub.rom result (5 of 6 passed at rc 0). `probe` is a
+      DSKIO instrument (red on a flipped `$4010`, green on a flipped `$5006`);
+      `bdos-acceptance` is the deep one (the only gate that catches a displaced
+      `$5006` SNEXT, and the only one that catches a 43-byte truncation of
+      `conout_emit_e`). **"68 of 74 `ds` sites" is confirmed exactly and is not a
+      risk**: all 68 have positive slack (min **1 B**, max 3464 B) and a pad is
+      SELF-ANCHORING — a body that grows shrinks the pad, and one that overruns
+      gives a negative `ds` → 0 bytes → `pad_rom` EMPTY refusal. Falsified on the
+      **disk** rule specifically, each knife run **twice**: short assembly → rc 2 +
+      `Deleting file build/disk.rom` both times; negative `ds` at the tightest pad
+      (`$4C29`, 1 B) → `pasmo` **exit 0**, **0 bytes**, refused both times. The one
+      producer-blind edit — deleting a pad LINE, which displaces `snext` `$5006` →
+      `$4FBB` while `pad_rom` still reports `16384 (exact)` — is caught by
+      `bdos-acceptance` (10/12, the two dir-search captures MISALIGNED). Blind
+      window for a short `disk.rom` = the trailing pad = **2 B** (vs sub.rom's
+      2324); the image is full to its ceiling.
+      🔴 **AND THE MEASUREMENT FOUND A LIVE FALSE NEGATIVE, in a gate nobody had
+      named: `make fat-error-acceptance` reports `ALL PASS 8/8` on an entirely-`$00`
+      `build/disk.rom`** — and on all five other corruptions. **Red in 0 of 6.** The
+      battery's expected observable is an ERROR, so a dead disk subsystem satisfies
+      every row for the wrong reason, and the directory check passes too (a machine
+      that cannot write cannot create `NOSUCH.DAT`). ⚠️ **The probe's own comment
+      already named this class and closed one INSTANCE of it** — D-APPMISS found it
+      running with no disk mounted and fixed it by mounting one; but a dead disk
+      ROM, an unhooked HPHYD and a `pageenv` regression all answer `load error` too.
+      Fixed with the **PRECONDITION** the harness never had: a first batched row
+      `FILES"A:HI.TXT"` that must print POSITIVE text (`HI` + `TXT`, not
+      "no `load error`" — a broken tail returns SILENTLY, so absence-of-error is
+      what a broken build reads as). Falsified both ways: real control on all-`$00`
+      → **rc 2, "NOT MEASURED (precondition failed)"**; K2 (emission + call site
+      intact, only `ctl_ok` gutted) → **rc 0, ALL PASS**, reproducing the defect
+      exactly. **rc 2 ≠ rc 1**: the instrument was broken, not the disposition.
+      Also DELETED: `tools/build_patches.py`'s `ensure_basic_rom()` +
+      `_build_page1_retired()`, unreachable since the 2026-07-29 lean retirement —
+      and it **would have failed if it ran**, padding a now-22510-byte
+      `basic/main.asm` to the retired lean 16384. ROM-neutral, proved by hash (all
+      six `build/*.rom` byte-identical to `fd58b3a`); dead-code seeds unmoved at
+      **285**/**102**.
+      ⚠️ **STILL OPEN, deliberately: pad-only damage stays invisible.** 9543 of
+      `disk.rom`'s 16384 bytes (**58.2 %**) are `$00` pad in 252 runs; a corruption
+      confined to them is caught by nothing. Closing it needs a whole-image digest,
+      which would pin the ROM against every legitimate `disk/*.asm` change — every
+      `ds`-anchored ROM here is *supposed* to move when its source moves.
       (c) ⚠️ **the three probe entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). They inject raw bytes
