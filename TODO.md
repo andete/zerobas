@@ -2170,16 +2170,67 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       overwritten the tenant every boot gate calls. "Every call site is symbolic" —
       true of `basic/*.asm` (18 sites) and **false of the harness**: three probes
       carry the entry address as a hardcoded *byte* in injected machine code.
-      ⚠️ **FOUR THINGS D-P0BASE FOUND — (a)-(c) UNFIXED, (d) fixed in-slice:**
+      ⚠️ **FOUR THINGS D-P0BASE FOUND — (a)+(b) CLOSED by D-ROMJUDGE, (c) UNFIXED,
+      (d) fixed in-slice:**
       (a) 🔴 **`pasmo` answers a NEGATIVE `ds` count with a WARNING and EXIT 0**,
       writing a **zero-byte** file, and the whole `make basic-reloc` gate chain then
       passes the padded result at rc 0. `tools/pad_rom.py` now refuses an EMPTY
       input, which closes the total case — but a **partially truncated** ROM would
       still be laundered, and nothing bounds that.
+      ✅ **DONE 2026-08-05 — D-ROMJUDGE**,
+      [`docs/spec-rom-gate-judge.md`](docs/spec-rom-gate-judge.md).
+      🔴 **AND THE FILED ROUTE WAS THE WRONG ONE.** A negative `ds` never produces a
+      partial file — measured three source shapes, **all 0 bytes** — so that route
+      was already closed. The reachable route is a **short assembly**: comment out
+      `sub/sub.asm`'s final `ds $8000 - $, $FF` and pasmo emits **30444 B**,
+      `pad_rom` invented the missing **2324** and printed a line indistinguishable
+      from a healthy build, `make basic-reloc` rc 0, `subrom-acceptance` PASS. Also
+      **74** such `ds <fixed> - $` sites in 8 files, not "at least three" —
+      **68 of them under `disk/`**. Fixed: padding is now **opt-in** (`--pad`);
+      every live caller measured **exact** (sub 32768/32768, disk 16384/16384,
+      sub-unguarded 32768/32768), so the rule has zero slack.
+      🔴 **AND K3 FOUND THE REAL DEFECT: a refusal that leaves the bad artifact on
+      disk is DEFEATED BY RUNNING `make` TWICE.** First `make` refuses and leaves
+      the 30444-byte file with a fresh mtime; the second says *"up to date"* and the
+      chain passes at rc 0. **Same for D-P0BASE's one-day-old empty-input refusal**
+      (0-byte artifact survives its own refusal). Closed with **`.DELETE_ON_ERROR:`**
+      — one line, covering every rule in the Makefile. ⇒ **ask of any new refusal:
+      what does the SECOND `make` do?**
       (b) 🔴 **`tools/check_kwtable_identity.py` PRINTS ITS OWN DENOMINATOR AND DOES
       NOT JUDGE IT.** On the all-`$00` sub.rom above it reported
       `OK: … the sole source (1 B)` against **1041 B** on a healthy tree. It needs a
       lower bound on the table size, falsified by shrinking the table.
+      ✅ **DONE 2026-08-05 — D-ROMJUDGE.** 🔴 **A LOWER BOUND IS THE WRONG SHAPE**:
+      one flipped byte moves the reported size **UP**, 1041 → **6140 B**, and a floor
+      passes that ([[one-sided-bound-passes-a-runaway]] one slice later). The match
+      is **EXACT** — size **and** `sha256`, pinned at `9bfcfb9`, a control that must
+      keep matching. The walk is now **bounded** (an all-`$FF` image used to die of
+      an `IndexError`, not a judgement), and the **`RELOC.rom` argument, which was
+      read and never used**, became a real content check: the table's bytes must
+      occur **0** times in the main image and **exactly 1** in the sub image — the
+      gate's own "single-copy" name, finally measured.
+      ⚠️ **AND IT STILL CANNOT CLOSE (a).** The table is **1041 of 32768 bytes
+      (3.2 %)** at `$2CD2`, so a truncation at 50 % **or** 99 % leaves it intact and
+      it reports its healthy 1041. Measured: **5 of 6** corrupted sub.roms passed the
+      whole chain at rc 0 before this. The blind window for a short `sub.rom` is
+      exactly the trailing pad length, **2324 B** — below that no gate anywhere can
+      see it, which is why the length question is answered in `pad_rom`.
+      🔴 **(b) ALSO FOUND A LIVE FALSE NEGATIVE IN (d)'s ONE-DAY-OLD FIX**:
+      `subrom-inttest` on an **entirely-`$FF`** sub-ROM reads `delta = 57` — inside
+      the new `1..64` band — and **PASSED**. `DELTA_MAX` was sized from a *partial*
+      pad (255); a *total* pad reads 57. Fixed by asserting the **precondition** the
+      harness already had and was discarding: **which capture path fired** (`bp` =
+      the tenant returned, `net` = the 12 s safety net). Falsified both ways in one
+      run each. Its comment's claim that the delta *"stays 0"* on that path is also
+      wrong — a runaway `rst 38h` walks the stack and lands a **stack byte** in the
+      result cell.
+      ⚠️ **STILL OPEN, filed by D-ROMJUDGE:** `build/disk.rom` has **no
+      content-reading gate at all** (and carries 68 of the 74 `ds <fixed> - $`
+      sites); pad-only damage stays invisible **deliberately** (closing it needs a
+      whole-image digest, which pins the ROM against every legitimate change too);
+      and `tools/build_patches.py:125`'s `pad_rom` call is **unreachable dead code**
+      — `ensure_basic_rom()` is called only by `_build_page1_retired()`, which
+      nothing calls since `build_page1()` `sys.exit`s (lean retirement 2026-07-29).
       (c) ⚠️ **the three probe entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). They inject raw bytes

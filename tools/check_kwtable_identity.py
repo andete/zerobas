@@ -12,24 +12,62 @@ too, so BOTH readers are now sub-side and the resident copy is DROPPED — the s
 copy is the sole source of truth (recovering wave 2's duplication and removing the
 drift risk R-W2-3 entirely).
 
-This gate enforces that end state:
-  * the RELOC (repack main ROM) must have NO `kwtable` symbol — the resident copy
-    is gone;
-  * the SUB image must carry a structurally valid `kwtable` — the sole copy.
-
     python3 tools/check_kwtable_identity.py RELOC.rom RELOC.sym SUB.rom SUB.sym
 
-The SUB image is based at $0000. The `kwtable` label gives the table start; it is
-walked by its own [klen][chars][tlen][tokens] structure to its 0-length terminator,
-so no length constant is hardcoded here.
+Four gates. The SUB image is based at $0000; the table is walked by its own
+[klen][chars][tlen][tokens] structure to its 0-length terminator.
+
+  1a  (RELOC.sym)  no `kwtable` symbol — the resident copy is gone.
+  1a' (RELOC.rom)  and it is gone in BYTES, not merely in symbols: the table's
+                   bytes occur ZERO times in the relocated image.
+  1b  (SUB.rom)    the sole copy is structurally valid AND matches the pinned
+                   baseline EXACTLY, in both length and content.
+  1c  (SUB.rom)    the table occurs EXACTLY ONCE in the sub image — the gate's own
+                   name, finally measured. It doubles as the in-run positive
+                   control for the byte search 1a' depends on: if the search stops
+                   finding things, this goes red in the same run.
+
+🔴 THIS IS THE ONLY GATE IN `make basic-reloc` THAT READS sub.rom's CONTENT AT
+ALL, and until D-ROMJUDGE (2026-08-05, docs/spec-rom-gate-judge.md) it printed its
+own denominator without judging it. Measured, seven corrupted images through the
+whole chain — FIVE passed at rc 0:
+
+    all-$00 sub.rom           reported "1 B"     -> OK, rc 0   (the D-P0BASE incident)
+    table terminated early    reported "9 B"     -> OK, rc 0
+    ONE byte flipped in it    reported "6140 B"  -> OK, rc 0
+    truncated to 50% / 99%    reported "1041 B"  -> OK, rc 0
+    all-$FF sub.rom           IndexError traceback, not a judgement
+
+⚠️ WHICH IS WHY THE MATCH IS EXACT AND NOT A FLOOR. A lower bound would catch the
+1 B and 9 B rows and PASS the 6140 B one — a single flipped byte moves the size
+UP. Same shape as the one-sided `delta >= 1` that passed a runaway in
+basic_probe_subrom_inttest.py.
+
+⚠️ AND THE TRUNCATION ROWS ARE WHY THIS GATE CANNOT BE THE WHOLE ANSWER: the table
+is 1041 of 32768 bytes (3.2%) and sits at $2CD2, so a truncation at 50% or 99%
+leaves it perfectly intact. The length of the image is answered in
+tools/pad_rom.py, where the assembler's own output is still in hand.
+
+THE PINNED BASELINE IS A CONTROL THAT MUST KEEP MATCHING, not a suppression —
+same standing as tools/deadcode-allow.txt and check_reloc.py's SIZE. Adding a
+keyword to basic/kwtable.inc moves it; the failure text prints the new values
+ready to paste, and that bump is the point: it makes the crunch table's content a
+REVIEWED change instead of a silent one.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 import sys
 
 RELOC_BASE = 0x2812
 SUB_BASE = 0x0000
+
+# Measured from `rm -rf build && make basic-reloc` at 9bfcfb9 (2026-08-05),
+# kwtable @ $2CD2. Bump BOTH when basic/kwtable.inc changes; the FAIL text below
+# prints the replacements.
+KWTABLE_SIZE = 1041
+KWTABLE_SHA = "8f120510b13498746029962b833146a37d6d1ed88a812212b662fa649d28f397"
 
 
 def load_syms(path):
@@ -44,19 +82,39 @@ def load_syms(path):
 
 
 def kwtable_bytes(rom, base, sym):
-    """Return the keyword table bytes, walked from `kwtable` to its 0 terminator."""
+    """The keyword table bytes, walked from `kwtable` to its 0 terminator.
+
+    BOUNDED: an image whose bytes do not form a valid table walks off the end, and
+    that must be a judgement with a message rather than an IndexError traceback
+    (measured on an all-$FF sub.rom, which is exactly what an unassembled or
+    unmapped image looks like)."""
     if "kwtable" not in sym:
         raise SystemExit("FAIL: no `kwtable` symbol in the sub-ROM — the sole copy is missing")
     start = sym["kwtable"] - base
+    if not 0 <= start < len(rom):
+        raise SystemExit(f"FAIL: `kwtable` resolves to offset {start:#x}, outside "
+                         f"the {len(rom)}-byte sub image")
     i = start
+
+    def at(j):
+        if j >= len(rom):
+            raise SystemExit(
+                f"FAIL: the `kwtable` walk ran off the end of the {len(rom)}-byte "
+                f"sub image (started at {start:#x}). The bytes at `kwtable` are not "
+                f"a [klen][chars][tlen][tokens] table — the image is corrupt, "
+                f"truncated, or was never assembled.")
+        return rom[j]
+
     while True:
-        klen = rom[i]
+        klen = at(i)
         if klen == 0:            # 0-length entry = table terminator
             i += 1               # include the terminator byte
             break
         i += 1 + klen            # [klen][chars]
-        tlen = rom[i]
+        tlen = at(i)
         i += 1 + tlen            # [tlen][tokens]
+        if i - start > len(rom):
+            raise SystemExit("FAIL: the `kwtable` walk exceeded the sub image size")
     return rom[start:i]
 
 
@@ -74,10 +132,44 @@ def main() -> int:
               "should have dropped it (both readers are sub-side now)", file=sys.stderr)
         return 1
 
-    # Gate 1b: the sub-ROM must carry the sole, structurally valid copy.
+    # Gate 1b: the sub-ROM must carry the sole, structurally valid copy, and it
+    # must be the table this gate was pinned against.
     b = kwtable_bytes(sub, SUB_BASE, sub_sym)
-    print(f"OK: kwtable single-copy — resident dropped (wave 3), sub-ROM copy is the "
-          f"sole source ({len(b)} B)")
+    got_sha = hashlib.sha256(b).hexdigest()
+    if len(b) != KWTABLE_SIZE or got_sha != KWTABLE_SHA:
+        print(f"FAIL: the sub-ROM `kwtable` is not the pinned table.\n"
+              f"       pinned : {KWTABLE_SIZE} B  sha256 {KWTABLE_SHA}\n"
+              f"       walked : {len(b)} B  sha256 {got_sha}\n"
+              f"       If you edited basic/kwtable.inc, this is expected — re-read the\n"
+              f"       diff, then update KWTABLE_SIZE/KWTABLE_SHA in this file to the\n"
+              f"       walked values above. If you did NOT, build/sub.rom does not hold\n"
+              f"       what the assembler produced: check tools/pad_rom.py's report and\n"
+              f"       rebuild from clean.", file=sys.stderr)
+        return 1
+
+    # Gate 1c: exactly one copy in the sub image (and the positive control for the
+    # byte search gate 1a' below relies on).
+    n_sub = sub.count(bytes(b))
+    if n_sub != 1:
+        why = ("the byte search found NOTHING, so gate 1a' below would be vacuous"
+               if n_sub == 0 else
+               "either a real duplicate is back, or the walked table is degenerate "
+               "and gate 1b above should have caught it first")
+        print(f"FAIL: the {len(b)}-byte `kwtable` occurs {n_sub} times in the "
+              f"{len(sub)}-byte sub-ROM, expected exactly 1 — {why}", file=sys.stderr)
+        return 1
+
+    # Gate 1a': and the resident copy is gone in BYTES, not merely in symbols.
+    n_reloc = reloc.count(bytes(b))
+    if n_reloc != 0:
+        print(f"FAIL: the `kwtable` bytes occur {n_reloc} time(s) in the repack main "
+              f"ROM even though no `kwtable` symbol does — a resident copy is back "
+              f"under another name (or no name at all)", file=sys.stderr)
+        return 1
+
+    print(f"OK: kwtable single-copy — resident dropped (wave 3) in symbols AND in bytes "
+          f"(0 occurrences in the {len(reloc)} B main image), sub-ROM copy is the sole "
+          f"source, 1 occurrence, {len(b)} B matching the pinned sha256")
     return 0
 
 

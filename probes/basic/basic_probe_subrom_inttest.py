@@ -46,6 +46,26 @@ merged machine (openMSX is deterministic), and ~23 at 50 Hz against ~28 at 60 Hz
 DELTA_MAX = 64 is a bit over 2x the measured value — generous room for a frame
 rate change or a tweak to the spin, and nowhere near the 255 a runaway reads.
 
+🔴 AND DELTA_MAX WAS STILL NOT ENOUGH — THE PRECONDITION IS. D-ROMJUDGE
+(docs/spec-rom-gate-judge.md §2.4) ran this gate against an ENTIRELY $FF sub-ROM,
+i.e. no zerobas code at all, and it reported `delta = 57 ticks` and PASSED, one day
+after DELTA_MAX landed. 255 was the reading for a PARTIAL pad; with the whole image
+pad the reading lands inside the band. A bound sized from one sample of one failure
+mode cannot cover the others.
+
+What separates them is already observable and was being thrown away: WHICH CAPTURE
+PATH FIRED. On a healthy tree the stub reaches its `halt` and the breakpoint
+captures (`path=bp`, delta 28). With the tenant unreachable the CPU never returns
+and only the 12 s safety net captures (`path=net`, delta 57). "The tenant returned"
+is a PRECONDITION of the delta meaning anything, so it is asserted first and the
+delta is not consulted at all when it fails.
+
+⚠️ The safety net's own comment used to claim the delta "stays 0" on that path. It
+does not: executing $FF is `rst 38h` recursing forever, and the stack walks down
+through the whole address space and overwrites the result cell. The 57 was a STACK
+BYTE, not a timer reading — which is why zeroing $C100 before the run does not save
+this, and why the readout cannot be trusted to be self-evidently broken.
+
 Needs the merged machine installed (make repack-machine) and openMSX. Run:
 
     python3 probes/basic/basic_probe_subrom_inttest.py
@@ -104,9 +124,13 @@ def run() -> int | None:
         "proc __hex {addr} {",
         "  binary scan [debug read_block memory $addr 1] H* h; return $h",
         "}",
-        "proc __cap {} {",
+        # `why` records WHICH path captured: bp = the stub reached its halt (the
+        # tenant returned), net = the safety net fired (it did not). See the
+        # docstring -- this is the precondition, not a diagnostic.
+        "proc __cap {why} {",
         f"  set f [open {{{os.path.abspath(out_path)}}} w]",
         f'  puts $f "delta=[__hex {RES}]"',
+        '  puts $f "path=$why"',
         "  close $f",
         "  exit",
         "}",
@@ -117,12 +141,16 @@ def run() -> int | None:
         "after time 6.0 {",
         f"  debug write_block memory {STUB_ADDR} [binary format H* {{{stub_hex}}}]",
         f"  debug write memory {RES} 0x00",
-        f"  debug set_bp {STUB_HALT} {{}} {{ __cap }}",
+        f"  debug set_bp {STUB_HALT} {{}} {{ __cap bp }}",
         f"  reg PC {STUB_ADDR}",
         "}",
         # Safety net: a broken trampoline hangs (garbage at sub-ROM $0038), so
-        # capture anyway (delta stays 0) rather than let the watchdog kill us.
-        "after time 12.0 { __cap }",
+        # capture anyway rather than let the watchdog kill us -- but tagged `net`,
+        # because the delta it reports is NOT a timer reading. Measured: a runaway
+        # `rst 38h` walks the stack through the whole address space and lands a
+        # stack byte in the result cell (57 on an all-$FF image, well inside the
+        # 1..DELTA_MAX band). The tag is what makes that row red.
+        "after time 12.0 { __cap net }",
     ]
     tcl = "\n".join(lines) + "\n"
     fd, tcl_path = tempfile.mkstemp(suffix=".tcl", prefix="subrom_int_")
@@ -144,29 +172,48 @@ def run() -> int | None:
         os.unlink(tcl_path)
 
     if not os.path.exists(out_path):
-        return None
-    delta = None
+        return None, None
+    delta, path = None, None
     for ln in open(out_path):
         if ln.startswith("delta="):
             v = ln.strip().split("=", 1)[1]
             delta = int(v, 16) if v else None
+        elif ln.startswith("path="):
+            path = ln.strip().split("=", 1)[1] or None
     os.unlink(out_path)
-    return delta
+    return delta, path
 
 
 def main() -> int:
-    delta = run()
+    delta, path = run()
     if delta is None:
         print("subrom interrupt gate: FAIL (no capture)")
         return 1
-    ok = 1 <= delta <= DELTA_MAX
+
+    # PRECONDITION, asserted before the delta is consulted at all: the stub must
+    # have reached its own halt, i.e. the CALSLT returned. See the docstring --
+    # the safety-net path reports a stack byte, not a JIFFY delta.
+    returned = path == "bp"
+    print(f"page-0 EI tenant returned to the stub: capture path = {path} "
+          f"(expect bp, NOT the 12 s safety net): {'PASS' if returned else 'FAIL'}")
+    if not returned:
+        print(f"  ^ THE TENANT NEVER RETURNED: the CALSLT did not reach it and the "
+              f"machine was still wedged when the safety net fired. The reported "
+              f"delta ({delta}) is whatever a runaway `rst 38h` left in the result "
+              f"cell, NOT a timer reading — do not read it as a near miss. Check "
+              f"the page-0 entry address against sub/equates.inc "
+              f"SUBROM_ENTRY_BASE_P0, and check build/sub.rom actually holds the "
+              f"assembled image (tools/pad_rom.py's report).")
+
+    in_band = 1 <= delta <= DELTA_MAX
     print(f"page-0 EI tenant: JIFFY delta = {delta} ticks "
           f"(expect 1..{DELTA_MAX}, serviced via the sub-ROM $0038 trampoline): "
-          f"{'PASS' if ok else 'FAIL'}")
+          f"{'PASS' if in_band else 'FAIL'}")
     if delta > DELTA_MAX:
         print(f"  ^ TOO LARGE: the tenant's spin is fixed-length (~28 ticks). A "
               f"delta this big means the CALSLT did NOT reach it — check the "
               f"page-0 entry address against sub/equates.inc SUBROM_ENTRY_BASE_P0.")
+    ok = returned and in_band
     print("-------------------")
     print("subrom interrupt-trampoline gate:", "PASS" if ok else "FAIL")
     return 0 if ok else 1

@@ -33,6 +33,18 @@
 # are an INSTALL into your openMSX user dir, not a build output. `make install`
 # does `all` then `machines`.
 
+# 🔴 A REFUSAL THAT LEAVES THE BAD ARTIFACT ON DISK IS DEFEATED BY RUNNING `make`
+# TWICE. Without this, a recipe step that fails AFTER its target file exists (the
+# pad_rom.py assert behind every $(PASMO) line is exactly that shape) leaves the
+# broken ROM in build/ with a fresh mtime -- so the next `make` reports it
+# "up to date", never re-runs the step that refused, and the whole gate chain
+# proceeds on it. Measured twice, D-ROMJUDGE 2026-08-05
+# (docs/spec-rom-gate-judge.md §6.3): a 30444-byte truncated sub.rom took
+# `make basic-reloc` to rc 0 with every gate OK, and a 0-byte one -- the artifact
+# D-P0BASE's empty-input refusal exists to stop -- survived its own refusal the
+# same way. GNU make deletes the target of a failed recipe only when asked.
+.DELETE_ON_ERROR:
+
 # Build artifacts (ROMs) go under build/ -- a gitignored scratch dir -- so a
 # stale copy never lingers in the repo root where tools/probes pick it up. The
 # tracked patch deliverables (zerobas-main-eu.ips/.bps) stay at the root.
