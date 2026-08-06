@@ -1999,19 +1999,31 @@ LIST_TOKEN      equ     $93     ; LIST
 ; an entry without the arm crunches `DELETE 10` to `<A8> <0F><0A>`, which is the
 ; defect D-LNREF closed, reintroduced for four verbs (spec-basic-kwgap4.md §1).
 ;
-; ⚠️ THREE OF THE FOUR ARE STILL NOT DISPATCHED. DELETE_TOKEN got its stmt_table
-; row in D-DELETE (docs/spec-basic-delete.md); LLIST/AUTO/RENUM have none, so
-; exec_stmt's search still falls through to es_noentry -> stmt_error -> ERR 2 for
-; those three -- the SAME class all four raised by four different accidental
-; parses before they had tokens (kwgap4 characterization §3.3, the `kwgz`
-; battery).
+; ✅ ALL FOUR ARE DISPATCHED. DELETE_TOKEN got its stmt_table row in D-DELETE
+; (docs/spec-basic-delete.md, 2026-08-02); LLIST/AUTO/RENUM got theirs in
+; D-EDITVERB (docs/spec-basic-editverb.md, 2026-08-06) -- ex_llist sharing
+; ex_list's body, ex_renum, ex_auto, gated at 61 rows on three sides by
+; `make editverb-acceptance`. No token in this block falls through to
+; es_noentry -> stmt_error any more.
 ;
-; ⚠️ AND THE FILED REASON THEY DID NOT FIT IS STALE. spec-basic-kwgap4.md §3.4
-; costed four dispatch rows at 3 B each against a page 1 with 6 B free; D-RETLN's
-; 160 B dead-instruction carve took page 1 to 124 B. The 3 B/row figure (its
-; knife K5) still holds; the WALL does not. What still blocks the other three is
-; their own bodies -- RENUM's two-pass old->new map, and AUTO/LLIST being
-; unputtable to a reference in this harness at all.
+; 🔴 AND THIS COMMENT IS WHY. Until 2026-08-06 the paragraph above read "THREE OF
+; THE FOUR ARE STILL NOT DISPATCHED", which was true when written and false from
+; the day D-DELETE landed -- and D-EDITVERB opened by CITING these very lines as
+; the two places the tree said so while TODO.md's index did not follow. The index
+; was then corrected and this comment was not, so for one commit the tree carried
+; the same defect pointing the other way. A comment that states a COUNT of what is
+; implemented dates the moment it was written, not the code; if a fifth verb ever
+; joins this block, restate the count here in the same commit.
+;
+; ⚠️ THE FILED REASON THEY DID NOT FIT WAS STALE TWICE OVER. spec-basic-kwgap4.md
+; §3.4 costed four dispatch rows at 3 B each against a page 1 with 6 B free;
+; D-RETLN's 160 B dead-instruction carve took page 1 to 124 B, and by D-EDITVERB
+; it was 356 B. The 3 B/row figure (its knife K5) held; the WALL did not. The
+; second half of that reason -- "AUTO/LLIST are unputtable to a reference in this
+; harness at all" -- was REFUTED, not outgrown: a plugged openMSX `printerport
+; logger` reports READY unconditionally so LLIST cannot block, and Ctrl-STOP is a
+; key-matrix combination (row 6 bit 1 + row 7 bit 4) that keymatrixdown delivers
+; and BREAKX sees (docs/editverb-msx1-characterization.md §1).
 ;
 ; None of these four bytes was previously equated in EITHER namespace, so unlike
 ; TRON/STICK ($A2) there is no same-value-different-alphabet hazard here.
