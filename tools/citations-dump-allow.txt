@@ -1,0 +1,27 @@
+# Hex-dump-row allowlist for tools/audit_citations.py check 6 —
+# docs/spec-audit-citations-bytes.md §3.3.
+#
+# Format:  <relpath>  <sha256[:12] of the matched run>  <reason>
+#          A MISSING REASON IS A PARSE ERROR.
+#
+# 🔴 THIS FILE IS A CONTROL, NOT A SUPPRESSION LIST — the same idea as
+# tools/deadcode-allow.txt and tools/citations-listing-allow.txt. The gate asserts
+# that every digest below is STILL PRODUCED by the sweep. If one stops being
+# produced, either the text changed (delete the line) or the sweep has gone BLIND
+# and is reporting a clean tree while measuring nothing. Both exit 2.
+#
+# ⚠️ THIS CHECK'S GREEN STATE IS "FOUND NOTHING", AND THE ENTRY BELOW IS WHY THAT
+# IS SAFE. Check 6 has zero real members: the shape occurs nowhere in the tree and
+# occurred in exactly one file across all 979 commits of its history (the 16-byte
+# loader dump remediated by e8558c2, 2026-07-07). A sweep-style gate with no
+# members cannot tell a clean tree from a broken pattern, so the check's own
+# synthetic self-test vector is deliberately left detectable and pinned here as a
+# permanent canary [[deadcode-gate]].
+#
+# The bar for any FURTHER entry: the dumped bytes must come from an ADMISSIBLE
+# source per docs/allowed-sources.md. A dump of a proprietary binary (reference
+# BIOS / BASIC ROM / disk ROM / MSXDOS.SYS / COMMAND.COM) is ✗ and does not get an
+# entry — it gets regrounded on the black-box observation it actually rests on,
+# the 2026-07-04 M20 §11.1 pattern. This list should stay at one line.
+
+tools/audit_citations.py  0c30593198a1  The check's own synthetic self-test vector (_DUMP_VEC). INVENTED bytes — no provenance, no derivation, not decoded from anything — so recording it forbids nothing; a REAL positive vector would be the artifact this check refuses and would make the tool its own first finding. Unlike check 5's LISTING_LINE this rule is not anchored at line start (a dump lives inside a markdown table cell), so the vector is necessarily a hit on this file. That is turned into the canary rather than worked around: if this line stops matching, check 6 has gone blind and exits 2 rather than printing "clean".

@@ -39,10 +39,10 @@ duplicating (and drifting from) what is written below.
 **Language / verb surface**
 
 - [ ] `AUTO` / `RENUM` / `LLIST` / `DELETE` — **the STATEMENT half.** Tokens are
-      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4312); nothing
-      executes them. Detail: *“Editor / program management”*, line 1555.
+      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4334); nothing
+      executes them. Detail: *“Editor / program management”*, line 1577.
 - [ ] **No string `READ`.** Filed by D-DEFSTR — detail:
-      *“ZEROBAS HAS NO STRING `READ`”*, line 4002.
+      *“ZEROBAS HAS NO STRING `READ`”*, line 4024.
 
 **Own-design hazards carried out of closed slices**
 
@@ -51,26 +51,26 @@ duplicating (and drifting from) what is written below.
       three sites that crossed them (one was a live memory corruption) but the two
       namespaces still overlap on the numeric values, so the next site that feeds
       one into the other reintroduces the class. Collapse to ONE. Detail:
-      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3913.
+      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3935.
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
 
 - [ ] ⚠️ **`injector-check` is still a TEXT classifier.** A split literal passes.
-      Already an open item — detail: line 4629.
+      Already an open item — detail: line 4651.
 - [ ] ⚠️ **An asm label named in a `tools/*.py` or `sub/` comment is immune to the
       dead-code sweep** — `check_dead_code.py`'s `external_names` scans those
       directories *including comments*, so writing a label's name in prose seeds it
       as reachable. Every slice that edits `tools/` prose must predict the seed
-      counts and treat movement as a finding. Detail: lines 2228 and 2464.
+      counts and treat movement as a finding. Detail: lines 2250 and 2486.
 - [ ] ⚠️ **Three probe page-0 entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
       deriving them from `sub/equates.inc` needs its own falsification because they
-      inject raw bytes into a bare machine deliberately. Detail: line 2423.
+      inject raw bytes into a bare machine deliberately. Detail: line 2445.
 - [ ] ⚠️ **`build/disk.rom` pad-only damage is invisible ON PURPOSE** — 9543 of
       16384 bytes (58.2 %) are `$00` pad in 252 runs. Closing it needs a whole-image
       digest, which would pin the ROM against every legitimate `disk/*.asm` change.
-      Re-open only with an argument that answers that. Detail: line 2418.
+      Re-open only with an argument that answers that. Detail: line 2440.
 - [x] ✅ **`make audit-citations` was RED at HEAD and nothing ran it — CLOSED
       2026-08-06 by D-CITEJUDGE**,
       [`docs/spec-audit-citations-gate.md`](docs/spec-audit-citations-gate.md).
@@ -90,13 +90,34 @@ duplicating (and drifting from) what is written below.
       (692 files), which found one **live unremediated** site the 2026-07-07
       full-verify missed in a file it edited. §3.1 records what a future slice
       must produce to re-open the vocabulary widening.
-- [ ] ⚠️ **Raw opcode-BYTE renderings are still uncovered** — `CD 54 54`,
-      `DB A8 C9`, and the C-BIOS locator signatures in `probes/lib/latch_check.py`
-      (`SIG`/`SIG2`). Check 5 keys on the *listing shape*; a hex byte run is a
-      different shape and its false-positive surface is UNMEASURED (our own ROM's
-      bytes appear throughout our own docs). Measure before proposing a rule —
-      the same discipline that declined the vocabulary widening. Detail:
-      `docs/spec-audit-citations-docs.md` §6.5.
+- [x] ✅ **Raw opcode-BYTE renderings — CLOSED 2026-08-06 by D-BYTEJUDGE as a
+      measured DECLINE + one narrow gate**,
+      [`docs/spec-audit-citations-bytes.md`](docs/spec-audit-citations-bytes.md).
+      The class **is** uncovered — 20 offender lines from the two remediation
+      commits carry a hex-byte run and checks 1 and 5 flag **0** of them, one of
+      them in `disk/kernel.asm` which check 1 has scanned since day one. It is
+      declined anyway, **on a proof rather than a threshold**: on
+      `tier2-a3-spec.md:20` the offender and its hand-reviewed replacement are
+      **byte-identical in the hex run** (only the decoded body was removed), so no
+      line rule can separate them; 15 live lines attribute a hex run to the
+      reference machine and all were read and KEPT by the 2026-07-07 sweep; and
+      `allowed-sources.md` forbids proprietary bytes *"read as anything other than
+      an oracle"* — **provenance, not text**. Cost of every variant: **393–1326**
+      live lines over 692 files (the landed check 5 had 2). The filed third
+      example was already covered: `probes/lib/latch_check.py` is an allowlisted
+      check-5 finding already flagged for the human confirm. Landed instead:
+      **check 6**, the hex-dump **ROW** — deliberately named for the shape and not
+      the class, recall **1 of 20**, **0** hits over 692 files and over all 979
+      commits except the range where a 16-byte loader dump actually lived. §3.1
+      records what a future slice must produce to re-open the general rule.
+- [ ] ⚠️ **The raw-byte class beyond the dump row has NO mechanical floor, by
+      measurement** — check 6 covers 1 of the 20 residue lines. The other 19 are
+      the human full-verify trail's job, exactly like the inline decoded form
+      below. Re-open only with a discriminator scoring **0** on all three of the
+      179-line replacement corpus, the **984-line kept-context corpus** (the new
+      and harder bar) and the 15 live reference-attributed lines, while still
+      firing on ≥1 residue line. Detail:
+      `docs/spec-audit-citations-bytes.md` §3.1.
 - [ ] ⚠️ **The INLINE decoded form is measured UNDECIDABLE, and that is a standing
       hole, not a closed item** — `$0246: LD A,(…) / AND A / CALL Z,…`. Every
       threshold that catches any of it fires on the hand-reviewed prose that
@@ -119,10 +140,11 @@ duplicating (and drifting from) what is written below.
       matching is a control; 7 justifications to write. Detail:
       `docs/spec-audit-citations-gate.md` §2.5.
 - [ ] ⚠️ **`lof-acceptance` intermittent oracle drift — two sightings, nothing
-      since.** Sighting 3 has not occurred across SIX consecutive slices
-      (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE, D-DOCJUDGE). A third IS a finding to
+      since.** Sighting 3 has not occurred across SEVEN consecutive slices
+      (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE, D-DOCJUDGE,
+      D-BYTEJUDGE — the last at 45 cases, 0 oracle drift). A third IS a finding to
       chase; capture the **whole** log (`> file 2>&1`), because sighting 1's row
-      identity was lost to a `tail -6`. Detail: line 3519.
+      identity was lost to a `tail -6`. Detail: line 3541.
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 

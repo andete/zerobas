@@ -351,6 +351,20 @@ theirs 2026-06-24). Phase A = paper trail (read); Phase B = empirical re-check.
   `tier2-a3-spec.md`, `tier2-f338-default-spec.md`, `tier2-m17-spec.md`, `tier2-m21-spec.md`,
   `tier2-phase1-spec.md`, `tier2-architecture-audit.md`). `tier2-m20-spec.md` §11.1 and
   `tier2-conin-spec.md` re-confirmed still clean (prior remediations held).
+  ⚠️ **The "raw stock opcode-byte renderings are FORBIDDEN" clause does not describe
+  what this pass actually did, and that was measured on 2026-08-06 (D-BYTEJUDGE,
+  [`spec-audit-citations-bytes.md`](spec-audit-citations-bytes.md) §2.2–§2.3).** The
+  diff keeps raw reference-machine bytes in **2** of its own replacement lines and in
+  **16** unchanged lines inside the very hunks it edited — `C3 AE DD`, `C3 57 DF`,
+  `95 E5 01 F9 …`, `D0 C9` — and **15** such lines are live in the tree today. On
+  `tier2-a3-spec.md:20` the leading bytes are **byte-identical across the edit**; only
+  the mnemonics decoding the target's body were removed. ⇒ the operative rubric was
+  **body-vs-vector/data**, and the bytes rode along with it. This is not a criticism of
+  the remediation — every one of those keeps is defensible under the ✗ list, which
+  forbids proprietary bytes *"read as anything other than an oracle"*, i.e. by
+  **provenance of the reading**, not by the presence of hex. It is recorded because a
+  reader taking the clause literally will try to build a mechanical rule for it, and
+  §2.2 proves no line-level rule can exist.
 - **Method note.** Classification was delegated (3 parallel read-only agents) + application
   delegated (1 agent), but **every edit was reviewed by hand against the full `git diff`** —
   the forbidden-source scanner does NOT catch decoded-mnemonic prose, so manual review is the
@@ -369,6 +383,18 @@ theirs 2026-06-24). Phase A = paper trail (read); Phase B = empirical re-check.
   The floor that landed instead keys on the listing **shape** (check 5). See the
   2026-08-06 entry above, which also records that **this pass missed one site of
   its own class**, in a file it edited.
+  ⚠️ **The raw-opcode-BYTE half of the same class was measured on 2026-08-06 and is
+  DECLINED as undecidable** (D-BYTEJUDGE,
+  [`spec-audit-citations-bytes.md`](spec-audit-citations-bytes.md) §3.1). It is
+  genuinely uncovered — 20 offender lines from these two remediations carry a hex-byte
+  run and checks 1 and 5 flag **0** of them — but every rule that catches them fires on
+  the hand-reviewed replacements, on lines this pass kept, and on **393–1326** honest
+  lines of our own; and `allowed-sources.md` turns the question on the *provenance of
+  the reading*, which no text scanner can see (this file's own §(a) adjudication of
+  `D8 19 3E 40 0A` is the worked example). **This class's backstop is the human
+  full-verify trail**, like the inline decoded form. What landed instead is **check 6**,
+  the hex-dump ROW — narrow on purpose, recall 1 of 20, 0 hits across all 979 commits
+  except the one range where a 16-byte loader dump actually lived.
 
 ### 2026-07-04 — disk, FULL-VERIFY (empirical), BDOS surface — ✅ standing gate, 6/6 converge vs stock
 

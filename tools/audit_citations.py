@@ -44,6 +44,20 @@ GATING checks (a finding => exit 1):
      2026-07-07 full-verify found the class in both. Allowlisted entries are
      content-anchored and must KEEP matching; see the allowlist file.
 
+  6. HEX-DUMP-ROW SCAN — a run of consecutive 8-hex-character groups (not all
+     identical) is a hex DUMP of somebody's binary. Deliberately narrow, and
+     deliberately NOT named "raw opcode bytes": docs/spec-audit-citations-bytes.md
+     measures that the general raw-byte class is UNDECIDABLE from text. The
+     offender and the hand-reviewed replacement of the 2026-07-07 sweep carry the
+     same bytes on the same line (§2.2), and the ✗ rule itself forbids proprietary
+     bytes "read as anything other than an oracle" — i.e. it turns on the
+     PROVENANCE of the reading, which no text scanner can see (§2.4). Every
+     variant that catches the class fires on 393-1326 honest lines of our own.
+     What IS decidable is the dump ROW: 0 hits over the whole tree and over all
+     979 commits, except the one commit range where a 16-byte dump of a
+     proprietary loader actually lived. Recall against the class is 1 of 20 and
+     the check says so; the rest of the class is the human full-verify's job.
+
 ADVISORY check (reported, does NOT affect exit code):
 
   3. SECTION-CITATION PRESENCE — disk.asm uses inline `; --- name (§cite) ---`
@@ -352,7 +366,96 @@ def listing_selftest_failures():
     return bad
 
 
-def parse_listing_allow():
+# --- check 6: hex-dump rows ------------------------------------------------------
+# ⚠️ THIS CHECK IS NARROWER THAN THE CLASS IT COMES FROM, ON PURPOSE, AND ITS NAME
+# SAYS SO. The residual it closes asked for "raw opcode-BYTE renderings".
+# docs/spec-audit-citations-bytes.md measures why that cannot be a rule:
+#
+#   * the class IS uncovered -- 20 offender lines from the two remediation
+#     commits carry a hex-byte run and checks 1 and 5 flag 0 of them, one of them
+#     in disk/kernel.asm which check 1 has scanned since day one (§2.1);
+#   * and it is still undecidable, by proof rather than by threshold. On
+#     tier2-a3-spec.md:20 the remediation KEPT the row's leading three bytes
+#     byte-for-byte and removed only the mnemonics that decoded the target
+#     routine's body. Offender and hand-reviewed innocent are lexically identical
+#     in the hex run, so no line rule can separate them (§2.2);
+#   * 15 live lines attribute a hex run to the reference machine and all 15 were
+#     read and KEPT by the 2026-07-07 sweep; 2 of them are in this tool's own
+#     governance documents (§2.3);
+#   * allowed-sources.md forbids proprietary bytes "read as anything other than an
+#     oracle" -- provenance, not text. clean-room-audit.md:495 adjudicates a
+#     5-byte hex run as legal because it was OBSERVED output (§2.4);
+#   * and the lexical class cannot even tell hex from decimal: "10, 20, 30, 40"
+#     is a run of hex byte pairs (§2.5).
+#
+# What survives is the DUMP row. "Not all groups identical" is not fitting: it
+# drops a uniform fill ("00000000 00000000 ...", our own empty region annotated as
+# such), which carries no information about anyone's code.
+#
+# ⚠️ UNLIKE LISTING_LINE THIS IS NOT ANCHORED AT LINE START -- a dump lives inside
+# a markdown table cell. That is why the rule cannot go genre-blind the way check
+# 5's first cut did (no prefix class to get wrong), and ALSO why this check's own
+# self-test vector is a hit on this file. See DUMP_ALLOW below: that is turned
+# into the canary rather than worked around.
+DUMP_GROUPS = re.compile(
+    r"(?<![0-9A-Za-z])[0-9A-Fa-f]{8}(?:\s+[0-9A-Fa-f]{8})+(?![0-9A-Za-z])")
+
+
+def dump_hits(lines):
+    """(lineno, matched_text) for each hex-dump row. Extracted so the self-test
+    exercises the SAME code path the sweep does."""
+    out = []
+    for i, line in enumerate(lines):
+        for m in DUMP_GROUPS.finditer(line):
+            if len({g.upper() for g in m.group(0).split()}) > 1:
+                out.append((i + 1, m.group(0)))
+                break
+    return out
+
+
+# The single synthetic vector. INVENTED bytes -- no provenance, no derivation, so
+# writing it down forbids nothing ([[a-selftest-vector-can-be-the-forbidden-artifact]]:
+# a real positive here would BE the artifact, and this check would find its own
+# source). It is the only line in this repo that carries a dump run, which is
+# exactly what makes it a usable canary.
+_DUMP_VEC = "a1b2c3d4 e5f60718 293a4b5c"
+
+# Positives cover every genre the check claims, built by PREFIXING the one vector
+# so the genre coverage is auditable and only one source line is a hit
+# ([[a-rule-for-two-corpora-must-be-knifed-in-both]] -- check 5 shipped with all
+# five positives drawn from one genre and was blind to the other).
+# Negatives are REAL forms from our own prose: digests, uniform fills, decimal
+# case-index lists, a lone group.
+DUMP_SELFTEST = [
+    (_DUMP_VEC, True),                                   # bare prose
+    (f"; {_DUMP_VEC}", True),                            # asm comment
+    (f"# {_DUMP_VEC}", True),                            # python comment
+    (f"| `$50A9` | `{_DUMP_VEC}` | note |", True),       # markdown table cell
+    (f"    {_DUMP_VEC}  ; trailing comment", True),      # indented + suffixed
+    ("2c630d3dfeec727b5ec87c3c3140cfa5fdedc6b6a144d346467e6142b6e33c27  build/disk.rom",
+     False),                                             # a sha256 + a path
+    ("probes/lib/latch_check.py  5565467e6422  C-BIOS, same window", False),
+    ("| Tier-1 | `00000000 00000000 00000000 00000000` (empty) | 6 |", False),
+    ("the pad reads FFFFFFFF FFFFFFFF to the end of the region", False),
+    ("inserting 10, 20, 30, 40 in that order and re-listing", False),
+    ("#    12 15 18 19 50 51 53 54 56 57 60 62 63 64", False),
+    ("SIG2 = \"7ef5237dfe18200321f0fb22faf3f1d1e1c9\"", False),  # one long group
+]
+
+
+def dump_selftest_failures():
+    bad = []
+    for text, want in DUMP_SELFTEST:
+        got = bool(dump_hits([text]))
+        if got != want:
+            bad.append((text, want, got))
+    return bad
+
+
+DUMP_ALLOW = ROOT / "tools" / "citations-dump-allow.txt"
+
+
+def parse_listing_allow(path=None):
     """(digest -> (relpath, reason)), or an error string.
 
     🔴 THIS IS A CONTROL, NOT A SUPPRESSION LIST -- the same idea as
@@ -361,16 +464,17 @@ def parse_listing_allow():
     has gone blind, and both exit 2. Entries are anchored on the DIGEST of the
     run's text, never on a line number: line numbers rot, and a path-level entry
     would blind the whole file to a second, real listing."""
+    path = path or LISTING_ALLOW
     out = {}
-    if not LISTING_ALLOW.exists():
+    if not path.exists():
         return out
-    for n, raw in enumerate(LISTING_ALLOW.read_text().splitlines(), 1):
+    for n, raw in enumerate(path.read_text().splitlines(), 1):
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
         parts = line.split(None, 2)
         if len(parts) < 3:
-            return f"{LISTING_ALLOW.name}:{n}: need '<path> <digest> <reason>'"
+            return f"{path.name}:{n}: need '<path> <digest> <reason>'"
         rel, digest, reason = parts
         out[digest] = (rel, reason)
     return out
@@ -495,6 +599,16 @@ def main(argv):
         print("Nothing below this was measured. Fix LISTING_LINE.", file=sys.stderr)
         return 2
 
+    bad = dump_selftest_failures()
+    if bad:
+        print("INSTRUMENT NOT WORKING — check 6's hex-dump self-test misclassified:",
+              file=sys.stderr)
+        for text, want, got in bad:
+            print(f"  expected {'FLAG' if want else 'pass'}, got "
+                  f"{'FLAG' if got else 'pass'}: {text!r}", file=sys.stderr)
+        print("Nothing below this was measured. Fix DUMP_GROUPS.", file=sys.stderr)
+        return 2
+
     short = [(t, len(TARGETS[t]), MIN_FILES[t]) for t in targets
              if len(TARGETS[t]) < MIN_FILES.get(t, 0)]
     if short:
@@ -508,7 +622,8 @@ def main(argv):
 
     print("clean-room citation audit (mechanical half — not a full paper trail)")
     print(f"rule self-test {len(RULE_SELFTEST)}/{len(RULE_SELFTEST)}, "
-          f"listing self-test {len(LISTING_SELFTEST)}/{len(LISTING_SELFTEST)}\n")
+          f"listing self-test {len(LISTING_SELFTEST)}/{len(LISTING_SELFTEST)}, "
+          f"dump self-test {len(DUMP_SELFTEST)}/{len(DUMP_SELFTEST)}\n")
     gating_total = advisory_total = 0
     for target in targets:
         print(f"== {target} == ({len(TARGETS[target])} files scanned, "
@@ -586,6 +701,51 @@ def main(argv):
     if listing_gate == 0:
         print("  clean — no unallowlisted decoded-instruction listings")
     gating_total += listing_gate
+    print()
+
+    # check 6: hex-dump rows — same sweep (so MIN_SWEEP_FILES already guards it).
+    dump_allow = parse_listing_allow(DUMP_ALLOW)
+    if isinstance(dump_allow, str):
+        print(f"INSTRUMENT NOT WORKING — {dump_allow}", file=sys.stderr)
+        return 2
+    print(f"== hex-dump rows == ({len(swept)} files swept, "
+          f"{len(dump_allow)} allowlisted)")
+    dump_gate = 0
+    seen_dump = set()
+    for rel in swept:
+        try:
+            lines = (ROOT / rel).read_text(errors="replace").splitlines()
+        except OSError as e:
+            print(f"  [ERROR] {rel}: cannot read: {e}")
+            dump_gate += 1
+            continue
+        for lineno, text in dump_hits(lines):
+            digest = run_digest([text])
+            seen_dump.add(digest)
+            if digest in dump_allow:
+                print(f"  [allowed] {rel}:{lineno}: hex-dump row ({digest}) — "
+                      f"{dump_allow[digest][1]}")
+                continue
+            print(f"  [DUMP] {rel}:{lineno}: a run of 8-hex-character groups — a "
+                  f"hex dump of a binary. If it dumps a proprietary binary "
+                  f"(reference ROM / MSXDOS.SYS / COMMAND.COM) it is ✗ and must be "
+                  f"regrounded on the black-box observation it rests on; if it is "
+                  f"ours or an admissible source, allowlist it with a reason in "
+                  f"{DUMP_ALLOW.name} (digest {digest}).")
+            dump_gate += 1
+    stale = [d for d in dump_allow if d not in seen_dump]
+    if stale:
+        print("INSTRUMENT NOT WORKING — allowlisted hex-dump row(s) no longer "
+              "detected:", file=sys.stderr)
+        for d in stale:
+            print(f"  {dump_allow[d][0]} ({d}) — either the text changed (delete "
+                  f"the line) or the sweep has gone blind.", file=sys.stderr)
+        return 2
+    if dump_gate == 0:
+        print("  clean — no unallowlisted hex-dump rows  (narrow by design: this "
+              "is the dump ROW only, not the raw-byte class — "
+              "docs/spec-audit-citations-bytes.md §3.1)")
+    gating_total += dump_gate
     print()
 
     if advisory_total:
