@@ -2420,6 +2420,14 @@ DISKOP_SEL_FCH_DETACH           equ 20  ; the inverse: flush the dirty partial
 ; fatprim's READ_SECTOR/WRITE_SECTOR despite sharing the numeric value.
 DISKOP_SEL_KILL                 equ 0   ; dirverb: KILL's fat_delete loop
 DISKOP_SEL_NAME_STAMP           equ 1   ; dirverb: NAME's read+overwrite+write
+; D-LFILES (docs/spec-basic-lfiles.md §2/§3): the directory LISTING, the third
+; body of this tenant and the eviction Phase 2 dropped. ⚠️ THESE TWO ARE NOT ONLY
+; A SELECTOR. The same cell picks the tenant's SINK (CHPUT vs LPTOUT, df_out) and
+; its LAYOUT (packed rows vs one entry per line, df_emit/df_end), which is why
+; LFILES needed no mode cell of its own and why nothing may write DISKOP_OP
+; between the head's store and the tenant's return.
+DISKOP_SEL_FILES                equ 2   ; dirverb: FILES  -> screen, packed rows
+DISKOP_SEL_LFILES               equ 3   ; dirverb: LFILES -> printer, one per line
 
 ; --- Line-editor tenant ABI (SUBROM_IDX_LINEEDIT, docs/spec-eviction-g4-
 ; space.md §4, carve #2): reuses the SAME DISKOP_OP/DISKOP_STATUS RAM cells,

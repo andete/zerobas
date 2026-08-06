@@ -1379,18 +1379,22 @@ lptverb-characterize: repack-machine
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
 	        $(if $(ONLY),--only '$(ONLY)',) --repeat $(if $(REPEAT),$(REPEAT),1)
 
-# The GATED form. 🔴 ONLY DEFAULTS TO THE THREE IMPLEMENTED BATTERIES, AND THE
-# EXCLUSION IS PRINTED RATHER THAN SILENT. LFILES has its token equate but no
-# kwtable entry and no dispatch row: page 1 ended this slice at 7 B and the ~42 B
-# it needs did not fit (docs/spec-basic-lptverb.md §6). Gating it would mean a
-# PERMANENTLY RED gate, and a permanently red gate is one that gets ignored --
-# which is worse than a named hole. So the probe prints `NOT GATED: lfl- (LFILES)`
-# with the reason on every run, and `make lptverb-acceptance ONLY=lfl-` is how the
-# slice that implements it picks the battery up.
+# The GATED form. ✅ ALL FOUR BATTERIES, 39 ROWS, SINCE D-LFILES (2026-08-06,
+# docs/spec-basic-lfiles.md). This target used to carry `--only lpr-,lps-,scr-`
+# because LFILES had a token equate and nothing else -- page 1 ended D-LPTVERB at
+# 7 B and the verb did not fit -- and the probe PRINTED `NOT GATED: lfl- (LFILES)`
+# with the reason on every run rather than dropping the battery silently, on the
+# ground that a permanently red gate is one that gets ignored but a printed hole is
+# not. The hole is closed: the walk moved to the sub-ROM dirverb tenant, which paid
+# for the verb (page 1 7 -> 194 B), so the default `ONLY` is gone with it.
+#
+# ⚠️ THE `lfl-` BATTERY IS STILL TWO-SIDED, and that is scored per row, not by
+# dropping it: a row is judged over the sides that CAN measure it, so LFILES's
+# missing VG-8020 column prints `[not measurable on: vg8020]` instead of DIFF.
 lptverb-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lptverb.py --gate \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
-	        --only '$(if $(ONLY),$(ONLY),lpr-,lps-,scr-)' \
+	        $(if $(ONLY),--only '$(ONLY)',) \
 	        --repeat $(if $(REPEAT),$(REPEAT),1)
 
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)

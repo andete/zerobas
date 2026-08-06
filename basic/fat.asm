@@ -205,23 +205,19 @@ fatprim_bounce:
                 scf
                 ret
 
-; name_cmp — Z-based (not Cy), so it gets its own tail: see basic/
-; fat-prim-body.inc for the full contract ("Z set if equal"). DISKOP_STATUS
-; is reused as the Z surrogate (0 = match/Z, nonzero = no-match/NZ) — same
-; polarity as the Cy convention, just tested with `or a` for Z instead of
-; branching on Cy.
-name_cmp:
-                ld      a,DISKOP_SEL_NAME_CMP
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                jr      c,ncm_absent        ; absent -> defensive "no match" (NZ)
-                ld      a,(DISKOP_STATUS)
-                or      a                   ; Z set iff STATUS==0 (tenant's match)
-                ret
-ncm_absent:
-                or      1                   ; force NZ regardless of A's value
-                ret
+; 🎯 THE `name_cmp` SHIM IS GONE, AND ITS DEATH IS A CARVE THIS SLICE DID NOT
+; PLAN FOR (D-LFILES, docs/spec-basic-lfiles.md §6). It marshalled a Z result
+; through DISKOP_STATUS for exactly ONE main-side caller — do_files's filespec
+; filter — and D-LFILES moved that walk into the dirverb tenant, where `name_cmp`
+; resolves to the sub-local primitive BODY instead. Main's every other user of
+; the pattern match reaches it inside fat_find, which is itself a tenant call.
+;
+; The dead-code gate is what would have said so: leaving the shim here fails
+; `make basic-reloc` with an unreachable span, which is the difference between a
+; carve and a leak. DISKOP_SEL_NAME_CMP and the tenant's own dispatch arm
+; (sub/fatprim.asm) are KEPT — the selector namespace is a published numbering and
+; renumbering it to reclaim six sub-ROM bytes would be a drift risk against a wall
+; that is not the binding one.
 
 
 

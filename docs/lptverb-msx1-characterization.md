@@ -207,6 +207,8 @@ tree**: `pch_lpt` calls `LPTOUT` and tracks nothing. A counter has to be
 
 Measured on the **CF-3300 only** (§0), against `disk/test720.dsk`, whose
 directory is `TEST.BIN`, `HI.TXT`, `PROG.BIN`, `PROG.BAS`, `PROG2.BAS`.
+**Eight rows** — R-LF1..R-LF5 taken by D-LPTVERB (2026-08-06), R-LF6 added by
+D-LFILES (§4.1).
 
 | # | rule | evidence |
 |---|---|---|
@@ -215,6 +217,29 @@ directory is `TEST.BIN`, `HI.TXT`, `PROG.BIN`, `PROG.BAS`, `PROG2.BAS`.
 | **R-LF3** | A filespec argument filters, with wildcards. | `LFILES"*.BAS"` → `PROG.BAS` and `PROG2.BAS` only |
 | **R-LF4** | 🔴 No match prints **nothing to the printer** and `File not found` **to the screen**. | `LFILES"NOSUCH.XXX"` → empty log (`lfl-none`) + `File not found` (`lfl-noneb`) |
 | **R-LF5** | The screen sink is restored for the next statement. | `LFILES:PRINT"SCR"` → the log holds the listing only |
+| **R-LF6** | 🔴 **`FILES` says `File not found` too**, so the message belongs to the shared directory walk and not to the printer verb. | `FILES"NOSUCH.XXX"` → `File not found` (`lfl-nonef`) |
+
+### 4.1 R-LF6 was added by D-LFILES, and it was added BEFORE the design chose
+
+R-LF6 is the only rule in this document taken after the implementing slice
+started, and the reason is worth keeping: R-LF4 is a rule about `LFILES`, but the
+cheapest place to implement it is the directory walk **`FILES` also runs** — so
+the change would land on a verb this battery did not measure. A change to an
+unmeasured verb is a change made blind.
+
+So `lfl-nonef` was written as a **fork with two named dispositions** before the
+reading was taken ([`spec-basic-lfiles.md`](spec-basic-lfiles.md) §2.2): a
+`File not found` answer puts the message in the shared walk; a silent answer puts
+it behind the `LFILES` op alone and leaves `FILES` silent. The reference answered
+**`File not found`**, and zerobas answered **nothing at all** — so this is not
+only a design input but a previously unmeasured divergence in a verb that has
+shipped since Phase 2.
+
+⚠️ It also puts a caveat on `lfl-none`, the one `LFILES` row that **already
+agreed** at the D-LPTVERB baseline: an empty printer log is what a machine with no
+`LFILES` prints for every input. It agreed for the wrong reason, exactly the class
+[[kwsweep-msx1-denominator]] records, and only `lfl-noneb`/`lfl-nonef` separate the
+two readings.
 
 🔴 **R-LF1 is the rule that costs bytes.** `ex_files`
 ([`basic/files.asm`](../basic/files.asm)) is main-ROM and packs three columns; a

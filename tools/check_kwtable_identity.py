@@ -66,13 +66,14 @@ SUB_BASE = 0x0000
 # Measured from `rm -rf build && make basic-reloc`. Bump BOTH when
 # basic/kwtable.inc changes; the FAIL text below prints the replacements.
 #
-# D-LPTVERB (2026-08-06): 1041 -> 1058 B, and the DELTA IS THE REVIEW. +17 is
-# exactly the two entries added -- LPRINT is 1+6+1+1 = 9 B and LPOS is 1+4+1+2 =
-# 8 B ([klen][chars][tlen][tokens]) -- so the arithmetic itself says the table
-# gained nothing else. A bump that matched no expected delta would be the finding.
-# Previous pin: 1041 B / 8f120510… at 9bfcfb9 (2026-08-05), kwtable @ $2CD2.
-KWTABLE_SIZE = 1058
-KWTABLE_SHA = "334b29c43718340b19ac4cf9e3530d8146f059abbb8225b743b219ada8ef5c61"
+# D-LFILES (2026-08-06): 1058 -> 1067 B, and the DELTA IS THE REVIEW. +9 is
+# exactly the ONE entry added -- LFILES is 1+6+1+1 = 9 B ([klen][chars][tlen]
+# [tokens]) -- so the arithmetic itself says the table gained nothing else. A bump
+# that matched no expected delta would be the finding.
+# Previous pins: 1058 B / 334b29c4… at b5f4135 (D-LPTVERB, +17 = LPRINT 9 + LPOS
+# 8); 1041 B / 8f120510… at 9bfcfb9 (2026-08-05), kwtable @ $2CD2.
+KWTABLE_SIZE = 1067
+KWTABLE_SHA = "4472e2f91c58219b72356538ffa3cfac2f4a10ae08bb994efc4f8c718aa28ae3"
 
 
 def load_syms(path):

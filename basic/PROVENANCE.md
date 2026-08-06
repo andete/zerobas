@@ -1776,16 +1776,52 @@ needed beyond the fat.asm scratch — the dir-walk position lives in
 `FILES_ENTIDX` after each `CHPUT` (which clobbers every register). Placed in the
 free `$E0FC..` gap below `LINEBUF ($E100)`, collision-checked.
 
+**`LFILES` — the printer twin (D-LFILES, 2026-08-06,
+docs/spec-basic-lfiles.md).** Token `LFILES = $BB`, oracle-LOCKED from D-LNREF's
+crunch walk. `ex_lfiles` and `ex_files` are the SAME head: they differ in one byte
+of immediate data, the `DISKOP_SEL_*` op, which is simultaneously the tenant
+selector, the **sink** selector and the **layout** selector.
+
+🎯 `LFILES` is **not** `FILES` with the sink moved, and that is a MEASURED rule
+(R-LF1, docs/lptverb-msx1-characterization.md §4, National CF-3300): the screen
+form packs three 12-char fields per row, the printer form prints **one entry per
+line**, each field followed by a trailing space (R-LF2) and CR/LF. The wrap
+arithmetic reads `CSRX`/`LINLEN` — the *screen* cursor and the *screen* width — and
+a printer moves neither, so on the printer it does not merely produce the wrong
+layout: with `CSRX` frozen it collapses to no separator and no line break at all,
+which is a layout that exists on neither device. Measured directly by knife K3.
+
+A filespec filters with 8.3 `'*'`/`'?'` wildcards (R-LF3), and a filespec that
+matches nothing prints nothing and raises **ERR 53 `File not found`** (R-LF4) — on
+the SCREEN, since the message resolves through `raise_error` and the sub-hosted
+`em_file_notfound`, not through the listing's sink. R-LF6 measured the same answer
+for `FILES`, so the message lives in the shared walk.
+
+**Home.** The directory walk and the entry emit are **not** main-resident: they are
+`tnt_files` in the sub-ROM page-1 `dirverb_tenant` (`sub/dirverb.asm`,
+`DISKOP_SEL_FILES`/`DISKOP_SEL_LFILES`), the eviction Phase 2 listed and dropped.
+What stays in `basic/files.asm` is the head the head/body split forces: the
+`DISKSLOT_OK` test, the eval-side `parse_disk_fcb`, one `subrom_call`, and the
+statement tail. The move is behaviour-preserving for `FILES` because `print_crlf`
+is `pchar(13)+pchar(10)` and `pchar` with `PRDEST=0` — which `exec_stmt` guarantees
+at the top of every statement — *is* `call CHPUT`.
+
 **Divergences (own design, quarantined):**
-- An optional `<filespec>` pattern argument is **parsed-past and IGNORED** — `FILES`
-  always lists the whole directory. The argument-skip is not string-aware (a `:`
-  inside a quoted pattern would terminate early); both are acceptable because the
-  pattern is unimplemented. Pattern matching is a later Phase-2 item.
-- On a missing disk slot / mount / I-O error `FILES` reuses the loader's
+- On a missing disk slot / mount / I-O error `FILES`/`LFILES` reuse the loader's
   `load_error` path ("load error"), not a Disk-BASIC-specific "Disk offline"
-  message — own-design error wording, consistent with the other disk verbs.
+  message — own-design error wording, consistent with the other disk verbs. Only
+  the **no-match** disposition is reference-exact (`File not found`).
+- A bare `FILES`/`LFILES` over an **empty** directory prints nothing rather than
+  `File not found`. Unmeasured: R-LF6 was taken with a pattern, and separating the
+  two needs an empty-disk fixture the battery does not have.
 - The disk-name header / "Ok" framing around the listing is the REPL's, not emitted
   by `do_files`.
+- ⚠️ The paragraph that used to stand here — *"an optional `<filespec>` pattern
+  argument is parsed-past and IGNORED; pattern matching is a later Phase-2 item"* —
+  was **stale**, and had been since the wildcard work landed (`build_83_name`'s
+  `'*'` expansion + `name_cmp`'s `'?'`). `basic/files.asm`'s own header carried the
+  same dead sentence directly above code that parses and applies the pattern.
+  Corrected by D-LFILES, which had to read both to size the carve.
 
 Clean-room: original code; FILES *semantics* + the 8.3 field layout from the public
 MSX-BASIC language reference and black-box CF-3300 observation; the directory walk

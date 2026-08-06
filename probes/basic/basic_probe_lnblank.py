@@ -2810,11 +2810,25 @@ CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + L
 # gating row, exactly as `lna-renum3`/`lna-auto2`/`lna-delrng` did in D-KWGAP4.
 # `lnrx-lpos` graduated with it (`<FF><9C> <0F><0A>`).
 #
-# ⚠️ `lnrx-lfiles` STAYS, and that is the slice's own boundary showing up in the
-# apparatus: LFILES got a token EQUATE but no `kwtable.inc` entry and no dispatch
-# row, because page 1 came out at 15 B and it did not fit. It still crunches as a
-# stray `L` plus the genuine FILES token, so it still diverges, and it is now the
-# standing trip-wire for "someone added LFILES without the rest of that work".
+# ✅ `lnrx-lfiles` LEFT TOO, IN D-LFILES (2026-08-06, docs/spec-basic-lfiles.md).
+# It was the standing trip-wire for "someone added LFILES without the rest of that
+# work", and the rest of that work is done: `20 LFILES 10` went from
+# `L<B7> <0F><0A>` -- a stray `L` plus the genuine FILES token, the same shape
+# LLIST and LPRINT had -- to the reference's own `<BB> <0F><0A>`. Tenth cohort to
+# fire and be GRADUATED rather than updated.
+#
+# 🔴 AND THAT SLICE FOUND THE PREVIOUS ONE'S GRADUATION HAD NEVER REACHED THE
+# CODE. D-LPTVERB's spec §6.5, its commit message and the paragraph directly above
+# all state that `lnrx-lprint` and `lnrx-lpos` "left INFORMATIONAL to become
+# ordinary gating rows". They did not: both were still listed below, and the
+# `if label not in INFORMATIONAL` in the verdict loop is what decides whether a row
+# counts -- so for a whole slice those two rows AGREED and GATED NOTHING. Three
+# independent documents asserted a change that one set literal quietly
+# contradicted, which is the same stale-count class as `basic/sysvars.inc`'s
+# D-EDITVERB note pointing the other way ([[review-fix-that-never-reached-the-tool]]).
+# Corrected in the slice that found it, and the lesson is that a graduation is a
+# DELETION FROM THIS LITERAL, never prose about one.
+#
 # `lnr-defint` is the same shape with a DELIBERATE cause: kwtable.inc:140 emits
 # DEF_TOKEN + literal "INT" on purpose so ex_def_type sees the ASCII mnemonic.
 # ⚠️ `lna-renum3`, `lna-auto2` AND `lna-delrng` LEFT THIS SET IN D-KWGAP4, and so
@@ -2829,10 +2843,10 @@ INFORMATIONAL = {"num-tab", "dec-eol", "dec-eolctl",
                  "lnr-defint",
                  # the tokenless words that do NOT arm on the reference either
                  "lnrx-defsng", "lnrx-defdbl", "lnrx-defstr", "lnrx-fn",
-                 "lnrx-lprint", "lnrx-lpos", "lnrx-mks", "lnrx-mkd",
+                 "lnrx-mks", "lnrx-mkd",
                  "lnrx-cvs", "lnrx-cvd", "lnrx-dski", "lnrx-dsko",
                  "lnrx-copy", "lnrx-set", "lnrx-attr", "lnrx-ipl",
-                 "lnrx-cmd", "lnrx-lfiles", "lnrx-loc", "lnrx-wait"}
+                 "lnrx-cmd", "lnrx-loc", "lnrx-wait"}
 CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
             "lit-ctl", "lit-str", "lit-rem", "ref-ctl", "ref-sp",
             "dec-ctl", "dec-hexctl", "dec-dotlead0",
@@ -3566,9 +3580,10 @@ def main():
     # direction a mangle is a false PASS FOREVER, and `--repeat 2` remains the
     # only guard for it -- this changes nothing about that requirement.
     #
-    # 🔴 INFORMATIONAL ROWS ARE HEALED TOO, AND THAT IS THE CONTROL. `lnrx-lprint`,
-    # `lnrx-wait`, `lnr-defint`, `dec-eol` and `dec-eolctl` (and, until D-KWGAP4
-    # retired them, `ref-delete`/`-auto`/`-renum`)
+    # 🔴 INFORMATIONAL ROWS ARE HEALED TOO, AND THAT IS THE CONTROL. `lnrx-wait`,
+    # `lnr-defint`, `dec-eol` and `dec-eolctl` (and, until D-KWGAP4 retired them,
+    # `ref-delete`/`-auto`/`-renum`; and until D-LFILES, `lnrx-lprint`/`lnrx-lpos`/
+    # `lnrx-lfiles`, all three of which now AGREE and gate)
     # diverge for real, measured reasons. They are re-run boot-per-case on every
     # gate and they MUST STILL DIVERGE -- which is what says the heal re-measures
     # a row rather than manufacturing agreement. A run in which they came back

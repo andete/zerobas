@@ -199,11 +199,20 @@ EXPECTED = [
     # $FF-prefixed FUNCTION dispatched from basic/expr.asm's ev_f_ff chain, and
     # its token value $9C is ALSO OUT_TOKEN in this statement alphabet. A row for
     # it here would assert the wrong table.
-    # LFILES is not here either: it has a token equate but NO kwtable entry and NO
-    # stmt_table row this slice -- page 1 came out at 15 B and it does not fit
-    # (spec §6). So $BB must still be absent from the dispatch, and this test is
-    # what says so.
     ('LPRINT_TOKEN', 'ex_lprint'),
+    # D-LFILES 2026-08-06 (docs/spec-basic-lfiles.md): the LAST word of the
+    # printer surface. This row is where the previous slice's line "LFILES is not
+    # here either: it has a token equate but NO kwtable entry and NO stmt_table
+    # row -- page 1 came out at 7 B and it does not fit" used to stand; it is
+    # replaced rather than left standing, because a comment that says a shipped
+    # verb is absent is the stale-count defect this project has now paid for
+    # twice (see basic/sysvars.inc's D-EDITVERB note).
+    #
+    # ⚠️ `ex_lfiles` IS NOT ITS OWN ROUTINE. It is a 2-byte `ld a,DISKOP_SEL_LFILES`
+    # that falls into `do_files`, so this row asserts the DISPATCH and not the
+    # body; what makes LFILES differ from FILES is the op byte those two entry
+    # points load, and the lfl- battery is what reads that difference out.
+    ('LFILES_TOKEN', 'ex_lfiles'),
 ]
 
 

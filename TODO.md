@@ -75,30 +75,65 @@ duplicating (and drifting from) what is written below.
       everywhere. `--repeat` cannot catch that: openMSX is deterministic.
       Retires the `kwgd-renum` pin (ninth cohort to fire and be DELETED rather
       than updated; `lnblank`'s allowlist is EMPTY again).
-- [ ] ⚠️ **`LFILES` — the LAST of the printer surface. `LPRINT` + `LPOS` CLOSED
-      2026-08-06 by D-LPTVERB**, [`docs/spec-basic-lptverb.md`](docs/spec-basic-lptverb.md),
+- [x] ✅ **`LFILES` — the LAST of the printer surface, CLOSED 2026-08-06 by
+      D-LFILES**, [`docs/spec-basic-lfiles.md`](docs/spec-basic-lfiles.md),
       measured in
-      [`docs/lptverb-msx1-characterization.md`](docs/lptverb-msx1-characterization.md),
-      gated by `make lptverb-acceptance` at **31/31 rows on three sides**.
-      🔴 **`LFILES` DID NOT FIT, WITH A NUMBER: ≈42 B needed against 10 B of
-      combined headroom.** Page 1 ended at **7 B** and the low region at **3 B**,
-      so **the next slice to touch main BASIC must carve before it can add** —
-      scout is [`docs/rom-region-structure-review.md`](docs/rom-region-structure-review.md).
-      What is already done for it: `LFILES_TOKEN equ $BB` (oracle-locked from
-      D-LNREF's crunch walk), all **seven** `lfl-` rows measured on the CF-3300,
-      and the exclusion PRINTED by the gate (`NOT GATED: lfl- (LFILES)`) rather
-      than silently dropped. `make lptverb-acceptance ONLY=lfl-` picks it up.
-      🎯 **It is NOT a sink re-point**, unlike the two that landed: `df_emit`
-      calls `CHPUT` directly and its wrap reads `CSRX`/`LINLEN`, and **R-LF1** says
-      the printer form is ONE ENTRY PER LINE where the screen packs three per row —
-      so a sink re-point alone would put the screen layout on the printer and pass
-      any battery that only checked which DEVICE got the bytes.
-      ⚠️ `lnrx-lfiles` is the standing trip-wire for "someone added `LFILES`
-      without the rest of the work", and `tests/test_stmt_dispatch.py` holds the
-      line that `$BB` stays undispatched.
-      ⚠️ **R-LS4 (`LPOS`'s argument takes no domain check) is measured but
-      UNKNIFED** — spec §6.7.3: the cut that would isolate it changes argument
-      CONSUMPTION and returns garbage, so no sound falsification exists yet.
+      [`docs/lptverb-msx1-characterization.md`](docs/lptverb-msx1-characterization.md)
+      §4 (R-LF1..R-LF6), gated by `make lptverb-acceptance` at **39/39 rows**, the
+      `lfl-` battery included and its printed `NOT GATED` line gone with it.
+      🎯 **THE CARVE WAS THE SLICE.** D-LPTVERB filed ≈42 B against 10 B; the item
+      was funded by evicting the FILES directory walk + entry emit into the sub-ROM
+      page-1 `dirverb_tenant` — the eviction Phase 2 listed and DROPPED because
+      *"its emit loop interleaves CHPUT + main-resident `print_crlf`, a head/body
+      fork"*. That reason is spent: a page-1 tenant keeps page 0 mapped, so CHPUT
+      and LPTOUT are both reachable, and `print_crlf` is `pchar(13)+pchar(10)` over
+      a sink that is CHPUT whenever `PRDEST=0`, which `exec_stmt` guarantees.
+      **Page 1 7 → 194 B; low 3 B untouched.** 237 B out, 69 B of head back, 3 B of
+      `stmt_table`, and a ~29 B `name_cmp` shim that died with its last caller.
+      🔴 **AND ≈9 B OF THE FILED ≈42 WAS ALREADY WRONG**: `basic/kwtable.inc` has
+      not been main-resident since the sub-ROM arc's wave 3, so a keyword entry
+      costs **zero** main bytes and lands in sub page 0 instead.
+      🔴 **A ROW ADDED TO KEEP THE FIX HONEST FOUND A DIVERGENCE IN A SHIPPED
+      VERB.** R-LF4 is about `LFILES`, but the cheapest place for it is the walk
+      `FILES` also runs — so `lfl-nonef` was written as a FORK WITH TWO NAMED
+      DISPOSITIONS before the reading. The CF-3300 answers `File not found` to
+      `FILES"NOSUCH.XXX"`; zerobas answered **nothing at all**. Recorded as
+      **R-LF6** and fixed for 5 B, because ERR 53 already prints (D-MSGSUB hosts
+      `em_file_notfound` and `err_msgtab[53]` is the 1-byte `err_subhosted`).
+      🔴 **K3 SAYS THE NAIVE IMPLEMENTATION IS WORSE THAN THE SPEC PREDICTED.** A
+      sink re-point does not put the screen layout on the printer — with `CSRX`
+      frozen the wrap logic collapses to no separator and no line break at all
+      (`TEST    .BINHI      .TXTPROG    .BIN…`), a layout that exists on neither
+      device, because it reads a cursor that is not its own.
+      Six knives CUT at exactly their predicted RED **and** GREEN sets, each run
+      twice; K7 missed as **predicted in writing beforehand**.
+      🔴 **AND IT FOUND D-LPTVERB'S OWN GRADUATION HAD NEVER REACHED THE CODE**:
+      `lnrx-lprint`/`lnrx-lpos` were still in `INFORMATIONAL` while three documents
+      said they had left it, so for a slice they agreed and gated nothing.
+      `lnblank` **536 → 539** — +3, not +1, which is the proof.
+      ⚠️ Carried out of it: **R-LS4 is measured but UNKNIFED** (spec-basic-lptverb
+      §6.7.3 — the cut changes argument CONSUMPTION and returns garbage), and the
+      three items in `docs/spec-basic-lfiles.md` §6.8.
+- [ ] 🔴 **THE SUB-ROM WALLS HAVE NO GATED READOUT, AND THE RECORDED FIGURES DO
+      NOT REPRODUCE.** `check_reloc.py` prints both MAIN walls on every build from
+      `__MEAS_LOW_END`/`__MEAS_PAGE1_END`; the sub ROM has no such labels, so every
+      sub figure in this repo is hand-carried. D-LFILES rebuilt `b5f4135` and
+      measured **3852 / 1821** where the record says **3869 / 1824** — by TWO
+      instruments that agree exactly with each other (an `$FF` tail scan, and
+      zero-byte labels injected before each `ds $4000-$,$FF` / `ds $8000-$,$FF`,
+      the method `docs/rom-region-structure-review.md` prescribes). Adding the two
+      labels costs **zero bytes**; the work is the readout plus re-deriving which
+      historical figures were affected, which is why it is filed rather than done
+      in a slice that would otherwise leave two conflicting numbers in the record.
+      Detail: [`docs/spec-basic-lfiles.md`](docs/spec-basic-lfiles.md) §6.3.
+- [ ] ⚠️ **`do_kill`'s no-match prints `load error` where its own comment says
+      `File not found`.** D-LFILES made `FILES`/`LFILES` reference-exact for that
+      disposition (ERR 53, R-LF4/R-LF6) and deliberately did NOT re-point `KILL`:
+      the message is UNMEASURED for `KILL`, and `fat-error-acceptance` pins
+      `kill-missing` to `load error` on purpose. Changing it on the strength of a
+      reading taken for a different verb is the thing this project does not do.
+      The fix is **0 B** (`jp z,df_notfound`) once someone takes the reading.
+      Detail: [`docs/spec-basic-lfiles.md`](docs/spec-basic-lfiles.md) §2.3.
 - [x] ✅ **`LPRINT` / `LPOS` — the rest of the printer surface.** All
       three lacked a `kwtable.inc` entry, so they were `Syntax error` on zerobas,
       and [`docs/kwsweep-msx1-coverage.md`](docs/kwsweep-msx1-coverage.md)

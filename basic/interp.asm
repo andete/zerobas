@@ -239,6 +239,13 @@ stmt_table:
                 dw      ex_save
                 db      FILES_TOKEN
                 dw      ex_files
+                ; D-LFILES (docs/spec-basic-lfiles.md). LFILES shares do_files's
+                ; whole head and the dirverb tenant's whole walk -- only the sink
+                ; and the layout differ, and both ride the op selector -- so this
+                ; row plus a 2-byte `ld a,n` IS the main-side cost of the verb.
+                ; The listing itself is sub-ROM page 1 (sub/dirverb.asm tnt_files).
+                db      LFILES_TOKEN
+                dw      ex_lfiles    ; LFILES ["<filespec>"] -- FILES to LPT:
                 db      MERGE_TOKEN
                 dw      ex_merge
                 db      OPEN_TOKEN

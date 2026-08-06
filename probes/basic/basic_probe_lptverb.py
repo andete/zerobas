@@ -216,11 +216,25 @@ LFL = [
     # message was printed. Same blindness as `scr-lpr*` above.
     ("lfl-noneb",   ['LFILES"NOSUCH.XXX"']),
     ("lfl-sink",    ['LFILES:PRINT"SCR"']),
+    # 🔴 THE EIGHTH ROW, ADDED BY D-LFILES (docs/spec-basic-lfiles.md §2.2), AND
+    # IT IS ABOUT `FILES`, NOT `LFILES`. R-LF4 says LFILES's no-match prints
+    # `File not found`; zerobas raises no message at all on a no-match, and the
+    # cheapest place to fix that is the SHARED walk both verbs run. So the change
+    # lands on `FILES` too -- and a change to a verb this battery does not measure
+    # is a change made blind. This row measures it: it asks the SCREEN what the
+    # reference's own `FILES` says when the pattern matches nothing.
+    #
+    # It is also the row that decides a DESIGN FORK. If the reference answers
+    # `File not found` here, the message belongs in the shared walk; if it answers
+    # nothing, it belongs behind the LFILES op alone and `FILES` must keep its
+    # silence. Written down as a fork BEFORE the reading, so the implementation
+    # cannot be what decides it ([[filed-justification-is-a-claim]]).
+    ("lfl-nonef",   ['FILES"NOSUCH.XXX"']),
 ]
 
 # Rows in the LFILES battery whose readout is the SCREEN, not the printer log.
 # Named explicitly: deriving it from the label would make adding a row a guess.
-LFL_SCREEN = {"lfl-ctlf", "lfl-noneb"}
+LFL_SCREEN = {"lfl-ctlf", "lfl-noneb", "lfl-nonef"}
 
 PROMPTS = omsx_repl.PROMPTS
 
@@ -471,16 +485,17 @@ def main() -> int:
     print(f"LFILES battery sides: {','.join(LFILES_SIDES)} — the VG-8020 has no "
           "disk ROM and CANNOT measure it (stated, not silently dropped)")
     # 🔴 NO SILENT CAPS. If a battery was not selected, say which and why, so a
-    # green headline can never be mistaken for whole-surface coverage. LFILES has
-    # a token equate but no kwtable entry and no dispatch row -- page 1 came out
-    # at 7 B and it did not fit (docs/spec-basic-lptverb.md §6) -- so gating it
-    # would mean a permanently red gate, and a red gate is one that gets ignored.
-    # The exclusion is PRINTED instead, and `ONLY=lfl-` is how it is picked up.
+    # green headline can never be mistaken for whole-surface coverage.
+    #
+    # ✅ THE `lfl-` HOLE IS CLOSED (D-LFILES, docs/spec-basic-lfiles.md). It read
+    # "NOT IMPLEMENTED this slice — no kwtable entry, no stmt_table row; page 1
+    # ended at 7 B", and the whole point of printing it rather than dropping the
+    # battery silently was that the next slice would have to walk past it. It did.
+    # The entry is REMOVED rather than reworded to "implemented", because a list of
+    # exclusions that contains a non-exclusion stops being read as a list of holes.
     ran = {l for l in labels}
     for name, rows, why in (
-            ("lfl- (LFILES)", LFL,
-             "NOT IMPLEMENTED this slice — no kwtable entry, no stmt_table row; "
-             "page 1 ended at 7 B. Re-run with ONLY=lfl- to see it fail."),
+            ("lfl- (LFILES)", LFL, "excluded by --only"),
             ("lpr- (LPRINT)", LPR, "excluded by --only"),
             ("lps- (LPOS)", LPS, "excluded by --only"),
             ("scr- (screen halves)", SCR, "excluded by --only")):

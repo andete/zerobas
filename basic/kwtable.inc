@@ -48,6 +48,24 @@ kwtable:
                 ; Disk BASIC: FILES (list the directory). Token oracle-locked
                 ; ($B7; MSX2 TH Table 2.20). Shares no prefix with another entry.
                 db      5,"FILES",1,FILES_TOKEN
+                ; D-LFILES (docs/spec-basic-lfiles.md): FILES' printer twin. Token
+                ; $BB oracle-locked from D-LNREF's crunch walk and equated since
+                ; D-LPTVERB, which measured the verb in full and could not afford
+                ; it. ⚠️ POSITION IS FREE BUT NOT OBVIOUSLY SO: "LFILES" CONTAINS
+                ; "FILES", and this entry sits AFTER it. That is harmless because
+                ; match_kw anchors at the input position it was called with and
+                ; compares the FULL table keyword -- it is not a substring search --
+                ; so at the 'L' of "LFILES" the "FILES" entry simply does not match
+                ; and the scan continues to this one. The hazard match_kw DOES have
+                ; is PREFIX (DEFINT/DEF), and neither word is a prefix of the other.
+                ; Before this entry existed the sequence crunched as the variable
+                ; `L` plus the genuine FILES token -- `L<B7>`, the same stray-letter
+                ; shape LLIST and LPRINT had -- which is what `lnrx-lfiles` pinned.
+                ;
+                ; ⚠️ LIKE LPRINT AND UNLIKE THE FOUR EDITOR VERBS, LFILES DOES NOT
+                ; ARM LINE-NUMBER MODE, so it needs no branch_lineno arm: its
+                ; argument is a quoted filespec, never a line number.
+                db      6,"LFILES",1,LFILES_TOKEN
                 ; MERGE (merge an ASCII program from disk). Token oracle-locked
                 ; ($B6; MSX2 TH Table 2.20) — in the main ROM table like FILES.
                 db      5,"MERGE",1,MERGE_TOKEN
