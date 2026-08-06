@@ -145,6 +145,18 @@ duplicating (and drifting from) what is written below.
       directories *including comments*, so writing a label's name in prose seeds it
       as reachable. Every slice that edits `tools/` prose must predict the seed
       counts and treat movement as a finding. Detail: lines 2343 and 2579.
+      🔴 **IT FIRED FOR THE FIRST TIME, WITH A NUMBER, IN D-EDITVERB (2026-08-06)**
+      — main seeds **285 → 286**, the one gained seed being `list_num`, named in
+      `sub/lineedit.asm`'s new report-loop comment. So the mechanism is not
+      hypothetical and it is not confined to `tools/`: **`sub/` prose seeds too**,
+      which is what this item's own title says and what
+      [`docs/spec-basic-editverb.md`](docs/spec-basic-editverb.md) §4.4 predicted
+      away regardless. That slice measured the cost rather than assuming it —
+      dropping the seed leaves the live closure identical, 0 dead either way — so
+      what is open is not a hole in the sweep but the fact that **a seed count can
+      drift on prose alone**, and the next slice to see 287 has no way to tell a
+      real seed from a sentence. §6.7.1 records the method for deciding: re-run the
+      closure without the seed and diff the live set.
 - [ ] ⚠️ **Three probe page-0 entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
