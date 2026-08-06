@@ -242,6 +242,23 @@ says exactly what it is, its output is stable across 575 commits, and a human ma
 the judgement it declines to make. **Advisory is the right call and stays.** §3.6
 records the one residual risk and why it is not closed here.
 
+> 🔴 **CORRECTED 2026-08-06 by D-REVJUDGE — `docs/spec-audit-citations-review.md`.**
+> *"Advisory is the right call"* survives. *"The same 7 headers"* does not: **4 of the
+> 7 are the instrument.** They carry a document citation at offset 7, 10, 10 and 11 of
+> their own comment block, and `SECTION_CITE_LOOKAHEAD = 6` could not reach it — the
+> `HEADER_BLOCK_LINES = 45` defect of §2.4, one check over in the same file. Measuring
+> the block gives **3**, with no `.asm` edited.
+>
+> Two method errors of my own, both cheap to have avoided:
+> * I measured **two endpoints** (`4c14006` and HEAD) and reported stability. Walking all
+>   980 commits — the method §2.1 uses for check 1 — shows the set moved **10 times** and
+>   has been stable since `5225a29` (2026-07-01), **617** commits, not 575 from the
+>   triage. Two agreeing endpoints say nothing about what happened between them.
+> * §3.6 declined the advisory allowlist on the grounds that the set was "stable and
+>   triaged". The load-bearing question was not *stability* but *what notices if the
+>   check goes blind*: measured, **nothing** — check 3 was the only check here with no
+>   self-test, and deleting it outright leaves `rc 0` and a green `basic-reloc`.
+
 ### 2.6 Why nothing runs it — the reason IS recorded, and the record is false
 
 The filed item says *"the reason it is not there is not recorded anywhere."*
@@ -384,6 +401,10 @@ repaired. Comment-only.
   `deadcode-allow.txt` style — the right shape, but it needs 7 written
   justifications and this slice already writes 24 attestations. **Filed, with the
   stability measurement that would justify it.**
+  > ✅ **CLOSED 2026-08-06 by D-REVJUDGE** — and the shape was right, the count was
+  > not: **3 justifications, not 7.** Writing all seven as filed would have frozen a
+  > rule defect into a control that must keep matching. The rule fix had to come
+  > first. `docs/spec-audit-citations-review.md`.
 * **The negation window stays a 3-line `NEGATION.search`.** It is loose — "this is
   NOT the fast path; derived by disassembly of the reference" would pass — but
   that is the evasion axis, where no keyword scan holds, and it is doing its job
@@ -572,4 +593,6 @@ captured (`> file 2>&1`), not tailed.
 * **Did not build an advisory allowlist** — §2.5 measured the advisory set stable
   and triaged; the residual (a *new* advisory header landing unnoticed) is filed
   with the stability measurement that would justify closing it.
+  ✅ **Closed 2026-08-06 by D-REVJUDGE**, at 3 entries — and the "stability
+  measurement" cited here was two endpoints, not a walk. See the §2.5 correction.
 * **Did not touch the negation window** (§3.6).

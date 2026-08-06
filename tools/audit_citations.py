@@ -62,9 +62,16 @@ ADVISORY check (reported, does NOT affect exit code):
 
   3. SECTION-CITATION PRESENCE — disk.asm uses inline `; --- name (§cite) ---`
      section headers; basic/tape instead cite per-feature PROVENANCE.md sections,
-     so this convention is disk-only. Headers here without an inline citation are
-     surfaced as review candidates for the human auditor (some, e.g. the ROM
-     skeleton / padding, legitimately have no provenance), not as failures.
+     so this convention is disk-only (measured: the same rule over basic + sub
+     would report 348 headers against disk's 3). Headers here without an inline
+     citation are surfaced as review candidates for the human auditor (some, e.g.
+     the ROM skeleton / padding, legitimately have no provenance), not failures.
+     The FINDING is advisory; the SET is pinned by citations-advisory-allow.txt,
+     and a set that no longer matches what was triaged exits 2. Until 2026-08-06
+     the rule scanned a fixed 6 comment lines below a header and 4 of the 7 it
+     reported were compliant sections whose citation sat at offset 7-11; those
+     four had stood for 617 commits and through a human triage. See
+     docs/spec-audit-citations-review.md.
 
 Exit status: 0 = clean, 1 = gating findings, 2 = the INSTRUMENT is not working
 (usage/IO error, the rule self-test misclassifying, or a scan list that has
@@ -493,11 +500,150 @@ CITATION = re.compile(
 # carry a provenance citation.
 STRUCTURAL_HDR = re.compile(r"skeleton|pad to|ROM header|cartridge|entry.?point",
                             re.I)
-SECTION_CITE_LOOKAHEAD = 6  # comment lines under a header that may hold the cite
+ADVISORY_ALLOW = ROOT / "tools" / "citations-advisory-allow.txt"
 
 
 def is_comment(line: str) -> bool:
     return line.lstrip().startswith(";")
+
+
+def section_findings(lines):
+    """(lineno, name, verdict) for every `; --- name ---` header in one file.
+
+    verdict is one of:
+      "rule"       a bare divider — names nothing, so nothing to cite
+      "structural" STRUCTURAL_HDR — layout, never expected to carry provenance
+      "on-header"  the citation is on the header line itself
+      "cited"      the citation is in the header's own comment block
+      "REVIEW"     no citation anywhere in that block — a review candidate
+
+    🔴 THERE IS DELIBERATELY NO LINE CAP. This scanned a fixed 6 comment lines
+    until 2026-08-06 (D-REVJUDGE), which is the same magic-number defect as
+    check 2's old HEADER_BLOCK_LINES = 45: FOUR of the seven headers it reported
+    carry a proper document citation at offset 7, 10, 10 and 11 of their own
+    uninterrupted comment block. Those four had been reported for 617 commits and
+    survived a human triage that wrote down, in docs/clean-room-audit.md, that
+    their "bodies carry full citations". The block is bounded by the code that
+    follows it, not by a constant — measure the block, never guess its length.
+    See docs/spec-audit-citations-review.md §2.2.
+
+    The scan stops at the NEXT section header too, so a header can never borrow
+    the citation belonging to the section below it. Blank lines do not stop it:
+    a `;` header block is routinely broken by bare `;` and by empty lines.
+
+    Extracted so the self-test, the sweep and any historical walker exercise the
+    SAME code path — the reason check 5 has listing_runs()."""
+    out = []
+    for i, line in enumerate(lines):
+        m = SECTION_HDR.match(line)
+        if not m:
+            continue
+        name = m.group(1)
+        if not name or set(name) <= {"-", "=", " "}:
+            out.append((i + 1, name, "rule"))
+            continue
+        if STRUCTURAL_HDR.search(name):
+            out.append((i + 1, name, "structural"))
+            continue
+        if CITATION.search(line):
+            out.append((i + 1, name, "on-header"))
+            continue
+        verdict = "REVIEW"
+        for j in range(i + 1, len(lines)):
+            if SECTION_HDR.match(lines[j]):
+                break                       # next section — no borrowing
+            if not is_comment(lines[j]) and lines[j].strip():
+                break                       # code before a cite
+            if CITATION.search(lines[j]):
+                verdict = "cited"
+                break
+        out.append((i + 1, name, verdict))
+    return out
+
+
+def advisory_digest(rel: str, name: str) -> str:
+    """Anchor for the acknowledged list: the header's NAME, never its line number.
+
+    Line numbers rot on every edit above them, and a path-level entry would blind
+    a whole file to a second, real uncited header."""
+    return run_digest([f"{rel}|{name}"])
+
+
+# The control check 3 never had. Checks 1, 5 and 6 all self-test; this one did
+# not, and its green state is "here are N things, all fine" — a reading that is
+# identical whether the rule works or not, which is exactly how the line-cap
+# defect above survived 617 commits (docs/spec-audit-citations-review.md §2.4).
+#
+# Unlike check 5's, these positive vectors are safe to write down: check 3
+# refuses a PROPERTY (no citation present), not a KIND OF TEXT, so a positive
+# vector is just a header with nothing to cite. They are synthetic anyway —
+# pinning real tree text would make them rot on every comment edit, and one
+# vector per SHAPE is cheaper than one per instance.
+def _hdr(name):
+    return f"; --- {name} " + "-" * max(2, 60 - len(name))
+
+
+_FILL = ["; this line carries no citation of any kind",
+         "; nor does this one, it is only continuation prose",
+         "; still nothing citable here",
+         "; more of the same",
+         "; and more",
+         "; and yet more",
+         "; padding continues",
+         "; padding continues further",
+         "; nearly there now",
+         "; last of the filler"]
+
+SECTION_SELFTEST = [
+    # (label, lines, expected verdicts in order)
+    ("cite at offset 1",
+     [_hdr("fdc reset"), "; grounded on the WD2793 datasheet, table 4", "  xor a"],
+     ("cited",)),
+    ("cite at offset 6 — the old cap's boundary",
+     [_hdr("media byte")] + _FILL[:5] + ["; see PROVENANCE.md for the derivation"],
+     ("cited",)),
+    ("cite at offset 7 — the class the 6-line cap could not see",
+     [_hdr("media byte")] + _FILL[:6] + ["; see PROVENANCE.md for the derivation"],
+     ("cited",)),
+    ("cite at offset 11 — the deepest real case in the tree",
+     [_hdr("media byte")] + _FILL[:10] + ["; see PROVENANCE.md for the derivation"],
+     ("cited",)),
+    ("blank and bare-; lines do not break the block",
+     [_hdr("sector map"), ";", "", "; prose", ";",
+      "; derived from the FAT spec, section 3"],
+     ("cited",)),
+    ("cite on the header line itself",
+     [_hdr("boot record (Microsoft FAT spec §3.1)"), "; prose", "  ld a,1"],
+     ("on-header",)),
+    ("structural header needs no citation",
+     [_hdr("ROM skeleton"), "  org $4000"],
+     ("structural",)),
+    ("no cite, then code",
+     [_hdr("write path"), "; prose", "; more prose", "; still more", "  ld a,b"],
+     ("REVIEW",)),
+    ("code on the very next line",
+     [_hdr("stub table"), "  ret"],
+     ("REVIEW",)),
+    ("must not borrow the NEXT section's citation",
+     [_hdr("write path"), "; prose",
+      _hdr("read path (PROVENANCE.md §FDC)"), "; prose", "  ld a,b"],
+     ("REVIEW", "on-header")),
+    ("a bare divider names nothing",
+     ["; " + "-" * 70, "  nop"],
+     ("rule",)),
+    ("an ordinary comment is not a section header",
+     ["; write path — an ordinary comment, not a header", "  ld a,b"],
+     ()),
+]
+
+
+def section_selftest_failures():
+    bad = []
+    for label, lines, want in SECTION_SELFTEST:
+        got = tuple(v for _, _, v in section_findings(lines))
+        if got != want:
+            bad.append((label, want, got))
+    return bad
 
 
 def audit_file(rel: str, check_sections: bool):
@@ -529,25 +675,11 @@ def audit_file(rel: str, check_sections: bool):
 
     # check 3: section-citation presence (advisory, disk-style headers only)
     if check_sections:
-        for i, line in enumerate(lines):
-            m = SECTION_HDR.match(line)
-            if not m:
-                continue
-            name = m.group(1)
-            if not name or set(name) <= {"-", "=", " "}:
-                continue
-            if STRUCTURAL_HDR.search(name) or CITATION.search(line):
-                continue
-            cited = False
-            for j in range(i + 1, min(len(lines), i + 1 + SECTION_CITE_LOOKAHEAD)):
-                if not is_comment(lines[j]) and lines[j].strip():
-                    break  # code before a cite
-                if CITATION.search(lines[j]):
-                    cited = True
-                    break
-            if not cited:
+        for ln, name, verdict in section_findings(lines):
+            if verdict == "REVIEW":
                 advisory.append(
-                    ("REVIEW", i + 1, f"section header without inline citation: {name!r}")
+                    ("REVIEW", ln, f"section header without inline citation: {name!r}",
+                     advisory_digest(rel, name))
                 )
 
     return gating, advisory
@@ -609,6 +741,16 @@ def main(argv):
         print("Nothing below this was measured. Fix DUMP_GROUPS.", file=sys.stderr)
         return 2
 
+    bad = section_selftest_failures()
+    if bad:
+        print("INSTRUMENT NOT WORKING — check 3's section self-test misclassified:",
+              file=sys.stderr)
+        for label, want, got in bad:
+            print(f"  {label}: expected {want}, got {got}", file=sys.stderr)
+        print("Nothing below this was measured. Fix section_findings().",
+              file=sys.stderr)
+        return 2
+
     short = [(t, len(TARGETS[t]), MIN_FILES[t]) for t in targets
              if len(TARGETS[t]) < MIN_FILES.get(t, 0)]
     if short:
@@ -620,11 +762,18 @@ def main(argv):
                   file=sys.stderr)
         return 2
 
+    adv_allow = parse_listing_allow(ADVISORY_ALLOW)
+    if isinstance(adv_allow, str):
+        print(f"INSTRUMENT NOT WORKING — {adv_allow}", file=sys.stderr)
+        return 2
+
     print("clean-room citation audit (mechanical half — not a full paper trail)")
     print(f"rule self-test {len(RULE_SELFTEST)}/{len(RULE_SELFTEST)}, "
           f"listing self-test {len(LISTING_SELFTEST)}/{len(LISTING_SELFTEST)}, "
-          f"dump self-test {len(DUMP_SELFTEST)}/{len(DUMP_SELFTEST)}\n")
+          f"dump self-test {len(DUMP_SELFTEST)}/{len(DUMP_SELFTEST)}, "
+          f"section self-test {len(SECTION_SELFTEST)}/{len(SECTION_SELFTEST)}\n")
     gating_total = advisory_total = 0
+    adv_unacked, adv_seen = [], set()
     for target in targets:
         print(f"== {target} == ({len(TARGETS[target])} files scanned, "
               f"{len(provenance_files(target))} provenance-bearing)")
@@ -634,8 +783,16 @@ def main(argv):
             for sev, ln, msg in gating:
                 print(f"  [{sev}] {rel}:{ln}: {msg}")
                 t_gate += 1
-            for sev, ln, msg in advisory:
-                print(f"  [{sev}] {rel}:{ln}: {msg}")
+            for sev, ln, msg, digest in advisory:
+                adv_seen.add(digest)
+                if digest in adv_allow:
+                    print(f"  [acknowledged] {rel}:{ln}: {msg} ({digest}) — "
+                          f"{adv_allow[digest][1]}")
+                else:
+                    print(f"  [{sev}] {rel}:{ln}: {msg} ({digest}) — NOT "
+                          f"acknowledged. Triage it, then record the judgement in "
+                          f"{ADVISORY_ALLOW.name}.")
+                    adv_unacked.append((rel, ln, digest))
                 t_adv += 1
         # check 4: private-reference scan across all provenance-bearing files
         for rel in provenance_files(target):
@@ -748,10 +905,42 @@ def main(argv):
     gating_total += dump_gate
     print()
 
+    # The acknowledged advisory set. The FINDING stays advisory — the tool still
+    # makes no judgement about whether an uncited header is a defect, which is a
+    # call docs/clean-room-audit.md reserves for a human. What is pinned is the
+    # SET: it must still be exactly what was triaged. Both directions exit 2, not
+    # 1, because a moved set means "nothing below was measured against a current
+    # triage", not "the tree regressed".
+    #
+    # ⚠️ Checking BOTH directions is what keeps a missing allowlist FILE loud.
+    # D-BYTEJUDGE's K3b found check 6 degrading to rc 1 when its file is deleted,
+    # because "no entries" reads as "nothing to be stale about". Here the entries
+    # then read as unacknowledged instead, which is still 2.
+    if INLINE_CITE_TARGETS <= set(targets):
+        stale = [d for d in adv_allow if d not in adv_seen]
+        if stale:
+            print("INSTRUMENT NOT WORKING — acknowledged advisory header(s) no "
+                  "longer reported:", file=sys.stderr)
+            for d in stale:
+                print(f"  {adv_allow[d][0]} ({d}) — either the header gained a "
+                      f"citation (delete the line) or check 3 has gone blind.",
+                      file=sys.stderr)
+            return 2
+    if adv_unacked:
+        print("INSTRUMENT NOT WORKING — the advisory set no longer matches what "
+              "was triaged:", file=sys.stderr)
+        for rel, ln, d in adv_unacked:
+            print(f"  {rel}:{ln} ({d}) — a section header with no inline citation "
+                  f"that nobody has judged. Triage it against "
+                  f"docs/clean-room-audit.md's chain, then record the judgement "
+                  f"in {ADVISORY_ALLOW.name}.", file=sys.stderr)
+        return 2
+
     if advisory_total:
         print(f"ADVISORY: {advisory_total} section header(s) without an inline "
-              "citation — review candidates for the human paper trail, not gate "
-              "failures.\n")
+              "citation, all acknowledged — review candidates for the human paper "
+              "trail, not gate failures. The SET is pinned "
+              f"({ADVISORY_ALLOW.name}); the judgement is not.\n")
 
     if gating_total:
         print(f"GATING FINDINGS: {gating_total}. Mechanical floor breached — fix "

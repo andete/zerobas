@@ -39,10 +39,10 @@ duplicating (and drifting from) what is written below.
 **Language / verb surface**
 
 - [ ] `AUTO` / `RENUM` / `LLIST` / `DELETE` — **the STATEMENT half.** Tokens are
-      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4334); nothing
-      executes them. Detail: *“Editor / program management”*, line 1577.
+      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4360); nothing
+      executes them. Detail: *“Editor / program management”*, line 1603.
 - [ ] **No string `READ`.** Filed by D-DEFSTR — detail:
-      *“ZEROBAS HAS NO STRING `READ`”*, line 4024.
+      *“ZEROBAS HAS NO STRING `READ`”*, line 4050.
 
 **Own-design hazards carried out of closed slices**
 
@@ -51,26 +51,26 @@ duplicating (and drifting from) what is written below.
       three sites that crossed them (one was a live memory corruption) but the two
       namespaces still overlap on the numeric values, so the next site that feeds
       one into the other reintroduces the class. Collapse to ONE. Detail:
-      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3935.
+      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3961.
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
 
 - [ ] ⚠️ **`injector-check` is still a TEXT classifier.** A split literal passes.
-      Already an open item — detail: line 4651.
+      Already an open item — detail: line 4677.
 - [ ] ⚠️ **An asm label named in a `tools/*.py` or `sub/` comment is immune to the
       dead-code sweep** — `check_dead_code.py`'s `external_names` scans those
       directories *including comments*, so writing a label's name in prose seeds it
       as reachable. Every slice that edits `tools/` prose must predict the seed
-      counts and treat movement as a finding. Detail: lines 2250 and 2486.
+      counts and treat movement as a finding. Detail: lines 2276 and 2512.
 - [ ] ⚠️ **Three probe page-0 entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
       deriving them from `sub/equates.inc` needs its own falsification because they
-      inject raw bytes into a bare machine deliberately. Detail: line 2445.
+      inject raw bytes into a bare machine deliberately. Detail: line 2471.
 - [ ] ⚠️ **`build/disk.rom` pad-only damage is invisible ON PURPOSE** — 9543 of
       16384 bytes (58.2 %) are `$00` pad in 252 runs. Closing it needs a whole-image
       digest, which would pin the ROM against every legitimate `disk/*.asm` change.
-      Re-open only with an argument that answers that. Detail: line 2440.
+      Re-open only with an argument that answers that. Detail: line 2466.
 - [x] ✅ **`make audit-citations` was RED at HEAD and nothing ran it — CLOSED
       2026-08-06 by D-CITEJUDGE**,
       [`docs/spec-audit-citations-gate.md`](docs/spec-audit-citations-gate.md).
@@ -132,19 +132,45 @@ duplicating (and drifting from) what is written below.
       for a human; the tool deliberately does not make it. Reasons are written in
       `tools/citations-listing-allow.txt`. Detail:
       `docs/spec-audit-citations-docs.md` §2.6.
-- [ ] ⚠️ **The 7 `[REVIEW]` advisory headers are stable but unwatched** — the same
-      7 files and names across 575 commits, triaged once
-      (`docs/clean-room-audit.md`, 2026-07-04). Advisory is the right call, but a
-      NEW one would land unnoticed in a list nobody diffs. The fix is a
-      `deadcode-allow.txt`-style acknowledged list — an allowlist that must keep
-      matching is a control; 7 justifications to write. Detail:
-      `docs/spec-audit-citations-gate.md` §2.5.
+- [x] ✅ **The 7 `[REVIEW]` advisory headers — CLOSED 2026-08-06 by D-REVJUDGE, at
+      3 entries, not 7**,
+      [`docs/spec-audit-citations-review.md`](docs/spec-audit-citations-review.md).
+      🔴 **Four of the seven were the instrument, not the tree**: they carry a
+      document citation at offset 7, 10, 10 and 11 of their own uninterrupted
+      comment block, and `SECTION_CITE_LOOKAHEAD = 6` could not reach it — the
+      `HEADER_BLOCK_LINES = 45` defect of D-CITEJUDGE, one check over in the same
+      file. Writing the 7 justifications as filed would have frozen that defect
+      into a control that must keep matching. Measuring the block gives **3**, with
+      no `.asm` edited. The 2026-07-04 triage recorded the refutation in its own
+      voice (*"whose bodies carry full citations"*) and its own commit fixed the
+      **vocabulary** half of the same defect (11 → 7) while triaging the
+      **distance** half as genuine. Walked over all 980 commits: the set moved 10
+      times (7 under the fixed rule) and has been unchanged since `5225a29`,
+      2026-07-01 — **617** commits, and `disk/*.asm|inc` untouched for **300**. So
+      recall alone did not justify the list; **what did** is that check 3 was the
+      only check in the tool with no self-test, and deleting it outright leaves
+      `rc 0` and a green `basic-reloc` (K0). Landed: the block rule, a 12-vector
+      section self-test, and `tools/citations-advisory-allow.txt` — two independent
+      controls, only removing both is silent (K1d). Promotion to GATING measured
+      and declined: it would have been red in **918 of 980** commits.
+- [ ] ⚠️ **Check 3 exempts on a token, with no negation window** — 3 of the 48
+      exempt disk headers are exempted by a weak or negated match (`"no oracle
+      bytes"` ×2, the word `VDP` in ordinary prose), not by a citation. All three
+      are substantively attested (each names a public source or standard in
+      prose), so the class has **0 real members today** — but the mechanism is the
+      same one that made a knife plant saying *"no provenance at all"* exempt
+      itself. Check 1 has a negation window; check 3 does not. Re-open with a
+      discriminator that leaves those three exempt for the *right* reason while
+      still catching a header whose only citation token is negated; note its effect
+      is to GROW the acknowledged list, so it needs its own falsification. Detail:
+      `docs/spec-audit-citations-review.md` §2.6.
 - [ ] ⚠️ **`lof-acceptance` intermittent oracle drift — two sightings, nothing
-      since.** Sighting 3 has not occurred across SEVEN consecutive slices
+      since.** Sighting 3 has not occurred across EIGHT consecutive slices
       (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE, D-DOCJUDGE,
-      D-BYTEJUDGE — the last at 45 cases, 0 oracle drift). A third IS a finding to
+      D-BYTEJUDGE, D-REVJUDGE — the last at 45 cases, 0 oracle drift, whole log
+      captured, 59 lines). A third IS a finding to
       chase; capture the **whole** log (`> file 2>&1`), because sighting 1's row
-      identity was lost to a `tail -6`. Detail: line 3541.
+      identity was lost to a `tail -6`. Detail: line 3567.
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 

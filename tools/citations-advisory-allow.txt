@@ -1,0 +1,31 @@
+# Acknowledged check-3 advisory headers — `<path> <digest> <reason>`.
+#
+# 🔴 THIS IS A CONTROL, NOT A SUPPRESSION LIST (the tools/deadcode-allow.txt idea).
+# Every entry must STILL be reported by check 3. An entry that stops matching is
+# either stale (the header gained a citation — delete the line) or proof the rule
+# has gone blind, and both exit 2. So does a reported header that is not here.
+#
+# What is pinned is the SET, not the judgement: check 3 still does not claim that
+# an uncited header is a defect. That call belongs to the human paper trail
+# (docs/clean-room-audit.md). This file records that the call was made, and by
+# what reasoning, so the next reader does not re-derive it — and so a NEW one
+# cannot arrive unnoticed inside a list nobody diffs.
+#
+# The digest is sha256("<path>|<header name>")[:12]. Anchored on the NAME, never
+# on a line number: line numbers rot on every edit above them, and a path-level
+# entry would blind a whole file to a second, real uncited header.
+#
+# ⚠️ This list is 3 entries, not the 7 the residual was filed for. Four of the
+# seven were an artefact of the old 6-comment-line lookahead and carry a proper
+# document citation at offset 7, 10, 10 and 11 of their own comment block.
+# Acknowledging those four would have frozen the instrument's defect into a
+# control that must keep matching. See docs/spec-audit-citations-review.md §2.2.
+#
+# Triaged 2026-07-04 (docs/clean-room-audit.md, disk whole-target paper trail) and
+# re-derived 2026-08-06 (D-REVJUDGE).
+
+disk/driver.asm aa89e15851ff 'write path' — the write twin of the read path in the same file. Its body cites nothing itself because it mirrors dskio's read loop instruction for instruction ("Mirrors the read loop's structure exactly"), and the read path's own header block carries the PROVENANCE.md §FDC / §DSKIO interface citation that both rest on. A single shared citation for a mirrored pair is the honest shape; duplicating it would be prose written to satisfy a scanner. Human judgement, 2026-07-04, re-confirmed 2026-08-06.
+
+disk/kernel.asm 77d4c39b0be0 'MSX-DOS-1 kernel SETDTA-time entry: $5058 (M19)' — attested in full, in vocabulary CITATION does not carry: 12 comment lines naming the finding (M19), the probes (callseq / capture / callwatch causal pin), the black-box contract (entry register, write target, the register-identical 51-call comparison) and the clean-room line ("no stock routine internals decoded"). Widening CITATION with black-box was measured and DECLINED — docs/spec-audit-citations-review.md §2.5 records the numbers and the bar to re-open it. Kept as a review candidate deliberately: what counts as a citation is a judgement this tool declines to make.
+
+disk/kernel.asm b7535589959f 'contract bodies (stubs; filled in milestone 4; added as each veneer lands)' — a table of bare `ret` stubs at pinned kernel addresses. It names no derived behaviour, so there is nothing to cite; each stub acquires its own citation in the comment block above it as the milestone that fills it lands (see the k_47B2 block immediately below, which cites tier2-m31-rdblk-randrecord-spec.md). Structural in substance but not in STRUCTURAL_HDR's vocabulary, and widening that regex to catch it would exempt far more than this one header.

@@ -492,6 +492,19 @@ audit taken now that the DOS-boot goal is MET and the surface has settled.
   headers that DO cite a spec inline; added `-spec\.md`/`tier2-` (advisory check-3 only —
   cannot mask a forbidden-source breach). 7 genuine advisory headers remain (structural
   headers whose bodies carry full citations — judged individually, all acceptable).
+  🔴 **CORRECTED 2026-08-06 (D-REVJUDGE): 3, not 7 — and the sentence above contains its
+  own refutation.** *"whose bodies carry full citations"* is exactly right, and it is the
+  reason four of them should never have been reported: `init.asm` `'INIT'`,
+  `runtime.asm` `'shared page-0 … helpers'`, `runtime.asm` `'dos_handoff …'` and
+  `kernel.asm` `'_GDATE entry …'` carry a document citation at offset 7, 10, 10 and 11 of
+  their own uninterrupted comment block, and `audit_citations.py` scanned a fixed **6**
+  comment lines. This pass fixed the *vocabulary* half of that defect (the `tier2-` /
+  `-spec.md` regex gap, 11 → 7) and triaged the *distance* half as genuine; both are one
+  defect — the rule not reaching the citation. Measuring the block instead of a constant
+  takes it to **3** with no `.asm` edited. The remaining three are acknowledged, with the
+  reasoning, in [`tools/citations-advisory-allow.txt`](../tools/citations-advisory-allow.txt);
+  the set is now pinned and a new one exits 2 instead of printing as advisory #8.
+  Full measurement: [`docs/spec-audit-citations-review.md`](spec-audit-citations-review.md).
 - **Verdict: after remediation, disk is WHOLE-TARGET paper-trail CLEAN.** The asm surface
   was clean throughout; the single break was doc-only and is now quarantined+regrounded.
   Whole-repo baseline (disk/basic/tape) is paper-trail CLEAN again. Not run: the disk
