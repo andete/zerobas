@@ -415,6 +415,12 @@ stmt_table:
                 dw      ex_renum     ; RENUM [<new>][,[<old>][,<inc>]]
                 db      AUTO_TOKEN
                 dw      ex_auto      ; AUTO [<start>][,<inc>]
+                ; D-LPTVERB (docs/spec-basic-lptverb.md). LPRINT shares ex_print's
+                ; whole item loop -- only the SINK differs -- so this row costs 3 B
+                ; and the head costs 20. ⚠️ $9D is BIN$ in the $FF alphabet; LPOS
+                ; ($FF,$9C) is dispatched from expr.asm's chain, NOT from here.
+                db      LPRINT_TOKEN
+                dw      ex_lprint    ; LPRINT [<items>] -- PRINT to LPT:
     IF SWAP_RESIDENT
                 ; ⚠️ THIS ENTRY DID NOT EXIST when SWAP was gated off, and neither
                 ; sysvars.inc's SWAP_RESIDENT block nor spec §10 noticed: both said

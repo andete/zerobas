@@ -194,6 +194,16 @@ EXPECTED = [
     ('LLIST_TOKEN', 'ex_llist'),
     ('RENUM_TOKEN', 'ex_renum'),
     ('AUTO_TOKEN', 'ex_auto'),
+    # D-LPTVERB 2026-08-06 (docs/spec-basic-lptverb.md): LPRINT, the statement
+    # half of the printer surface. LPOS is NOT here and must not be -- it is an
+    # $FF-prefixed FUNCTION dispatched from basic/expr.asm's ev_f_ff chain, and
+    # its token value $9C is ALSO OUT_TOKEN in this statement alphabet. A row for
+    # it here would assert the wrong table.
+    # LFILES is not here either: it has a token equate but NO kwtable entry and NO
+    # stmt_table row this slice -- page 1 came out at 15 B and it does not fit
+    # (spec §6). So $BB must still be absent from the dispatch, and this test is
+    # what says so.
+    ('LPRINT_TOKEN', 'ex_lprint'),
 ]
 
 

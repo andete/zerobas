@@ -29,6 +29,24 @@
 ; points (CHGET, CHPUT). No disassembly.
 
 repl:
+                ; --- D-LPTVERB R-LP16: flush a partial PRINTER line -------------
+                ; MEASURED, and it took three rows to establish: `LPRINT"A";`
+                ; leaves a trailing CR/LF in the printer log, while
+                ; `LPRINT"ABC";:PRINT LPOS(0)` reads 3 -- no CR/LF had been sent at
+                ; that point IN THE SAME LINE. Asking LPOS from a SEPARATE command
+                ; reads 0. So the flush happens on the return to COMMAND LEVEL, not
+                ; at the end of the statement, and this is the only place that is.
+                ;
+                ; ⚠️ THE BODY IS IN THE LOW REGION (basic/str-engine.asm,
+                ; `lpt_flush`), not inline here: inline it cost ~20 B and the image
+                ; overran the $8000 ceiling by ~9 B. Page 1 and the low region are
+                ; co-mapped, so this is an in-slot call for 3 B.
+                ;
+                ; ⚠️ ORDER vs THE "Ok" PROMPT IS UNMEASURED: the printer log and
+                ; the screen are captured separately, so no row can see which came
+                ; first. Flushing first is the choice; it is not a measured rule.
+                ; Knife K3 deletes this call and predicts `lpr-trsemi` alone.
+                call    lpt_flush
                 xor     a                   ; the prompt + any output go to the
                 ld      (PRDEST),a          ; screen (defensive after a PRINT#)
                 ld      (RL_AUTO),a         ; ...and the line editor blocks again

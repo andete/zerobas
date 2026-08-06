@@ -224,6 +224,35 @@ psv_lp:
                 djnz    psv_lp
                 ret
 
+; --- lpt_flush (D-LPTVERB R-LP16): end a partial PRINTER line ----------------
+; If the printer head is mid-line, send CR/LF and return it to column 0. Called
+; from `repl` on every return to command level -- the measured rule is that a
+; partial line is flushed THERE and not at the end of the statement
+; (docs/lptverb-msx1-characterization.md §2.9: `LPRINT"A";` then a SEPARATE
+; `PRINT LPOS(0)` reads 0, while the same two on ONE line read 3).
+;
+; ⚠️ HOMED IN THE LOW REGION FOR PRESSURE, exactly like print_strval above, and
+; this slice is where that stopped being optional: inline in `repl` the block cost
+; ~20 B of main page 1 and the image OVERRAN $8000 by ~9 B. Page 1 and the low
+; region are co-mapped slot-0 pages, so a leaf moves between them freely and the
+; two walls are coupled (basic/main.asm, docs/rom-region-structure-review.md §5);
+; `repl` reaches it by in-slot call for 3 B.
+;
+; ⚠️ CALLS LPTOUT DIRECTLY, NOT pchar, on purpose: it must not depend on the sink
+; cells, because `repl` clears PRDEST immediately afterwards and the flush has to
+; work whatever the last statement left behind.
+lpt_flush:
+                ld      a,(LPTPOS)
+                or      a
+                ret     z                   ; already at column 0 -> nothing to end
+                ld      a,13
+                call    LPTOUT
+                ld      a,10
+                call    LPTOUT
+                xor     a
+                ld      (LPTPOS),a
+                ret
+
 
 ; --- str_temp_alloc: A=length(0..255) -> push a temp-descriptor-stack ------
 ; entry owning a FRESH heap body of that length (§6/§7). Thin main-ROM glue

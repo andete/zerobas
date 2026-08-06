@@ -2033,6 +2033,22 @@ AUTO_TOKEN      equ     $A9     ; AUTO [<start>][,<inc>] (arms -- and the INCREM
                                 ; is stored as $0E too: lna-auto2 is why the
                                 ; mechanism is a MODE and not a typed argument)
 RENUM_TOKEN     equ     $AA     ; RENUM [<new>][,[<old>][,<inc>]] (arms)
+; D-LPTVERB: the rest of the printer surface. Same provenance as the four above --
+; D-LNREF's walk oracle-locked these bytes from the REFERENCE'S OWN CRUNCH
+; EMISSION over the 162-word denominator (docs/lnref-msx1-characterization.md §4),
+; not read off a published table. None of the three arms line-number mode, so
+; unlike the editor verbs there is no branch_lineno work here.
+;
+; 🔴 BOTH NEW TOKENS COLLIDE BY VALUE WITH AN EQUATE IN THE OTHER ALPHABET, which
+; is the TRON/STICK ($A2) shape this file already warns about -- safe, and only
+; safe because the two namespaces are dispatched by different tables:
+;   LPRINT $9D  (statement)  vs  BIND_TOKEN $9D  = BIN$, an $FF-prefixed FUNCTION
+;   LPOS $FF,$9C (function)  vs  OUT_TOKEN  $9C  = OUT, a bare STATEMENT
+; So LPOS must join the `ev_ff_argtab` / `ev_f_ff` chain in basic/expr.asm and
+; LPRINT the `stmt_table` in basic/interp.asm. Cross them and each would answer
+; the other's verb. $BB was equated in NEITHER namespace.
+LPRINT_TOKEN    equ     $9D     ; LPRINT [<items>]      (statement; PRINT to LPT)
+LFILES_TOKEN    equ     $BB     ; LFILES ["<filespec>"] (statement; Disk BASIC)
 CLS_TOKEN       equ     $9F     ; CLS
 SCREEN_TOKEN    equ     $C5     ; SCREEN
 COLOR_TOKEN     equ     $BD     ; COLOR
@@ -2069,6 +2085,11 @@ NOT_TOKEN       equ     $E0     ; NOT  (bitwise complement, unary)
 ; '(' IN THE KEYWORD, which is what keeps a variable named TAB a variable.
 CSRLIN_TOKEN    equ     $E8     ; CSRLIN — bare pseudo-variable, 0-based cursor ROW
 POS_TOKEN       equ     $91     ; POS(n) — $FF-prefixed; 0-based COLUMN, arg discarded
+; D-LPTVERB: LPOS(n) is POS(n)'s printer twin -- same $FF alphabet, same dummy
+; argument, same required parentheses (docs/lptverb-msx1-characterization.md
+; R-LS4/R-LS5), different SOURCE: the printer column LPTPOS, not the screen's
+; CSRX. ⚠️ $9C is also OUT_TOKEN in the STATEMENT alphabet -- see LPRINT_TOKEN.
+LPOS_TOKEN      equ     $9C     ; LPOS(n) — $FF-prefixed; 0-based PRINTER column
 TAB_TOKEN       equ     $DB     ; TAB(n) — PRINT item, ABSOLUTE column
 SPC_TOKEN       equ     $DF     ; SPC(n) — PRINT item, RELATIVE n spaces
 ; Runtime control-flow state (page $E0).
@@ -2523,6 +2544,26 @@ AU_INC          equ     RN_INC          ; AUTO: the increment (2)
 ; arrive through CHGET -- R-AU8. Cleared defensively at the top of `repl`, so a
 ; line that ERRORS out of an AUTO session cannot leave the prompt polling.
 RL_AUTO         equ     $EA38           ; read_line: 1 = AUTO's polling mode (1)
+
+; --- D-LPTVERB: the printer column ------------------------------------------
+; LPOS(n)'s source, and LPRINT's flush condition. 0-based: 0 = the printer head
+; is at the start of a line.
+;
+; 🔴 MAINTAINED IN THE SINK (pch_lpt), NOT IN THE STATEMENT, and R-LS6 is why:
+; `LPRINT TAB(10);` leaves LPOS reading 10, and that padding is emitted through
+; pchar by the PRINT item loop -- ex_lprint never sees those ten bytes. A counter
+; incremented in the statement head reads 0 there. Knife K5 is that pair.
+;
+; ⚠️ AND IT IS NOT CSRX. ev_ff_lpos is written by copying ev_ff_pos, whose body
+; reads CSRX; on a fresh machine the screen column and the printer column are
+; BOTH 0, so `lps-init` cannot tell them apart. `lps-after`/`lps-tab`/`lps-multi`
+; are the rows that can, and knife K6 is the cut.
+;
+; Zeroed on CR ($0D). ⚠️ A LONE LF IS UNMEASURED: no reference row asks it, and
+; both "zero on CR only" and "zero on CR or LF" satisfy R-LS3 (after CR/LF the
+; count is 0 either way). LF is simply not counted as an advance here; that is a
+; CHOICE, recorded as one, not a measured rule.
+LPTPOS          equ     $EA39           ; printer head column, 0-based (1)
 
 ; --- Cassette name-match/skip tenant ABI (SUBROM_IDX_CASMATCH, docs/spec-
 ; eviction-g5-space.md): reuses the SAME DISKOP_STATUS RAM cell, ANOTHER

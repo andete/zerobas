@@ -1379,6 +1379,20 @@ lptverb-characterize: repack-machine
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
 	        $(if $(ONLY),--only '$(ONLY)',) --repeat $(if $(REPEAT),$(REPEAT),1)
 
+# The GATED form. 🔴 ONLY DEFAULTS TO THE THREE IMPLEMENTED BATTERIES, AND THE
+# EXCLUSION IS PRINTED RATHER THAN SILENT. LFILES has its token equate but no
+# kwtable entry and no dispatch row: page 1 ended this slice at 7 B and the ~42 B
+# it needs did not fit (docs/spec-basic-lptverb.md §6). Gating it would mean a
+# PERMANENTLY RED gate, and a permanently red gate is one that gets ignored --
+# which is worse than a named hole. So the probe prints `NOT GATED: lfl- (LFILES)`
+# with the reason on every run, and `make lptverb-acceptance ONLY=lfl-` is how the
+# slice that implements it picks the battery up.
+lptverb-acceptance: repack-machine
+	python3 probes/basic/basic_probe_lptverb.py --gate \
+	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        --only '$(if $(ONLY),$(ONLY),lpr-,lps-,scr-)' \
+	        --repeat $(if $(REPEAT),$(REPEAT),1)
+
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #
 # What one open channel costs on a real disk-capable MSX1, measured out of the same
@@ -1713,7 +1727,7 @@ clean:
         arrdim-characterize arrdim-acceptance \
         linemax-characterize linemax-acceptance chancost-characterize \
         lnblank-characterize lnblank-acceptance lnblank-echo lnblank-say-acceptance \
-        editverb-acceptance lptverb-characterize \
+        editverb-acceptance lptverb-characterize lptverb-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

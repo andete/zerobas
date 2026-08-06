@@ -75,8 +75,32 @@ duplicating (and drifting from) what is written below.
       everywhere. `--repeat` cannot catch that: openMSX is deterministic.
       Retires the `kwgd-renum` pin (ninth cohort to fire and be DELETED rather
       than updated; `lnblank`'s allowlist is EMPTY again).
-- [ ] **`LPRINT` / `LPOS` / `LFILES` — the rest of the printer surface.** All
-      three lack a `kwtable.inc` entry, so they are `Syntax error` on zerobas,
+- [ ] ⚠️ **`LFILES` — the LAST of the printer surface. `LPRINT` + `LPOS` CLOSED
+      2026-08-06 by D-LPTVERB**, [`docs/spec-basic-lptverb.md`](docs/spec-basic-lptverb.md),
+      measured in
+      [`docs/lptverb-msx1-characterization.md`](docs/lptverb-msx1-characterization.md),
+      gated by `make lptverb-acceptance` at **31/31 rows on three sides**.
+      🔴 **`LFILES` DID NOT FIT, WITH A NUMBER: ≈42 B needed against 10 B of
+      combined headroom.** Page 1 ended at **7 B** and the low region at **3 B**,
+      so **the next slice to touch main BASIC must carve before it can add** —
+      scout is [`docs/rom-region-structure-review.md`](docs/rom-region-structure-review.md).
+      What is already done for it: `LFILES_TOKEN equ $BB` (oracle-locked from
+      D-LNREF's crunch walk), all **seven** `lfl-` rows measured on the CF-3300,
+      and the exclusion PRINTED by the gate (`NOT GATED: lfl- (LFILES)`) rather
+      than silently dropped. `make lptverb-acceptance ONLY=lfl-` picks it up.
+      🎯 **It is NOT a sink re-point**, unlike the two that landed: `df_emit`
+      calls `CHPUT` directly and its wrap reads `CSRX`/`LINLEN`, and **R-LF1** says
+      the printer form is ONE ENTRY PER LINE where the screen packs three per row —
+      so a sink re-point alone would put the screen layout on the printer and pass
+      any battery that only checked which DEVICE got the bytes.
+      ⚠️ `lnrx-lfiles` is the standing trip-wire for "someone added `LFILES`
+      without the rest of the work", and `tests/test_stmt_dispatch.py` holds the
+      line that `$BB` stays undispatched.
+      ⚠️ **R-LS4 (`LPOS`'s argument takes no domain check) is measured but
+      UNKNIFED** — spec §6.7.3: the cut that would isolate it changes argument
+      CONSUMPTION and returns garbage, so no sound falsification exists yet.
+- [x] ✅ **`LPRINT` / `LPOS` — the rest of the printer surface.** All
+      three lacked a `kwtable.inc` entry, so they were `Syntax error` on zerobas,
       and [`docs/kwsweep-msx1-coverage.md`](docs/kwsweep-msx1-coverage.md)
       §“Not executed” lists them as *“printer-bound with the known unplugged-
       `LSTOUT` hang hazard”*. 🔴 **That reason is REFUTED** — D-EDITVERB measured

@@ -849,6 +849,16 @@ init_filechan:
                 ld      (FCH_MODE),a
                 ld      (PRDEST),a
                 ld      (PRDEV),a           ; default PRINT# sink = disk file
+                ; 🔴 D-LPTVERB: THE PRINTER COLUMN MUST BE COLD-STARTED, and the
+                ; CONTROL row is what caught this. LPTPOS is plain RAM, so at
+                ; power-on it holds garbage; `repl`'s R-LP16 flush fires whenever it
+                ; is non-zero, so an uninitialised cell made the machine emit a
+                ; spurious CR/LF to the printer on the FIRST prompt. Every printer
+                ; log then read `\r\n` + the expected bytes -- including `lpr-ctl`,
+                ; which exercises only OPEN"LPT:" and no new code at all. That is
+                ; exactly why that control exists: the defect was in this slice's
+                ; new code and showed up on a row that is not about its subject.
+                ld      (LPTPOS),a          ; printer head at column 0
                 ld      (FCH_ACTIVE),a      ; no channel live in the engine globals
                 ld      hl,fat_io_getbyte
                 ld      (ARL_GETBYTE),hl    ; default ascii_read_lines source (D2)

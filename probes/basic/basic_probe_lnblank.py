@@ -2795,14 +2795,26 @@ CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + L
 # carry no arming obligation this build can meet. A row that can diverge for two
 # reasons measures neither.
 #
-# 🔴 TWO OF THEM ARE LOAD-BEARING CONTROLS FOR D-KWGAP4 AND MUST STILL DIVERGE.
-# `lnrx-lprint` (`20 LPRINT 10` -> `L<91> <0F><0A>`) is the IDENTICAL shape to the
-# old `LLIST` mangle -- a stray `L` plus a genuine keyword token -- except that
-# LPRINT does NOT arm on the reference. If the `LLIST` entry were matched at the
-# wrong position, or if a fifth entry crept in, this row moves. `lnrx-wait`
-# (`WAIT 10` stored verbatim) is the same control for `RENUM`, the other word
-# that used to store its own name. Agreement on either would mean entries were
-# added that spec-basic-kwgap4.md does not authorise.
+# 🔴 ONE OF THEM IS STILL A LOAD-BEARING CONTROL FOR D-KWGAP4 AND MUST STILL
+# DIVERGE, AND IT USED TO BE TWO. `lnrx-wait` (`WAIT 10` stored verbatim) is the
+# control for `RENUM`, the word that used to store its own name: agreement there
+# would mean entries were added that no spec authorises.
+#
+# ✅ `lnrx-lprint` WAS THE OTHER ONE, AND D-LPTVERB IS THE SLICE THAT AUTHORISED
+# IT TO MOVE (2026-08-06, docs/spec-basic-lptverb.md). Its whole point was to fire
+# if "a fifth entry crept in" beside D-KWGAP4's four, and a fifth entry has now
+# been added ON PURPOSE: `20 LPRINT 10` went from `L<91> <0F><0A>` -- the identical
+# stray-L-plus-real-keyword shape as the old LLIST mangle -- to the reference's own
+# `<9D> <0F><0A>`. So it AGREES now, and an agreeing row does not belong in a set
+# whose members are listed because they cannot agree. It graduated to an ordinary
+# gating row, exactly as `lna-renum3`/`lna-auto2`/`lna-delrng` did in D-KWGAP4.
+# `lnrx-lpos` graduated with it (`<FF><9C> <0F><0A>`).
+#
+# ⚠️ `lnrx-lfiles` STAYS, and that is the slice's own boundary showing up in the
+# apparatus: LFILES got a token EQUATE but no `kwtable.inc` entry and no dispatch
+# row, because page 1 came out at 15 B and it did not fit. It still crunches as a
+# stray `L` plus the genuine FILES token, so it still diverges, and it is now the
+# standing trip-wire for "someone added LFILES without the rest of that work".
 # `lnr-defint` is the same shape with a DELIBERATE cause: kwtable.inc:140 emits
 # DEF_TOKEN + literal "INT" on purpose so ex_def_type sees the ASCII mnemonic.
 # ⚠️ `lna-renum3`, `lna-auto2` AND `lna-delrng` LEFT THIS SET IN D-KWGAP4, and so

@@ -792,6 +792,7 @@ ev_ff_argtab:
                 db      LOF_TOKEN           ; $AD
                 db      DSKF_TOKEN          ; $A6
                 db      POS_TOKEN           ; $91  (cursor cluster; arg DISCARDED)
+                db      LPOS_TOKEN          ; $9C  (D-LPTVERB; arg DISCARDED too)
     IF I1_RESIDENT
                 db      STICK_TOKEN         ; $A2  (input devices, slice I1)
                 db      STRIG_TOKEN         ; $A3
@@ -919,6 +920,8 @@ ev_ff_ckdone:
                 jp      z,ev_ff_dskf
                 cp      POS_TOKEN
                 jr      z,ev_ff_pos
+                cp      LPOS_TOKEN
+                jr      z,ev_ff_lpos
     IF I1_RESIDENT
                 cp      STICK_TOKEN
                 jr      z,ev_ff_stick
@@ -947,6 +950,29 @@ ev_ff_pos:                                  ; POS(n): the cursor COLUMN, 0-based
                 ; already produces.
                 ld      a,(CSRX)
                 dec     a                   ; CSRX is 1-based, POS 0-based
+                ld      e,a
+                ld      d,0
+                ret
+ev_ff_lpos:                                 ; LPOS(n): the PRINTER column, 0-based.
+                ; D-LPTVERB, docs/lptverb-msx1-characterization.md §3. Every rule
+                ; POS's comment above states holds here too and was re-measured
+                ; rather than inherited: the argument is parsed and DISCARDED
+                ; (LPOS(0)/LPOS(1)/LPOS(255)/LPOS(-1) all answer the same, R-LS4,
+                ; so LPOS is absent from the ev_ff_ck* domain chain ON PURPOSE and
+                ; `LPOS(-1)` must not raise -- knife K7), and the parentheses are
+                ; still REQUIRED (R-LS5, from ev_ff_arg's missing-'(' path).
+                ;
+                ; 🔴 THE SOURCE IS LPTPOS, NOT CSRX, AND THAT IS THE WHOLE DEFECT
+                ; THIS BODY CAN HAVE. It is written by copying ev_ff_pos, three
+                ; lines up, whose source IS CSRX -- and on a fresh machine the
+                ; screen column and the printer column are BOTH 0, so `lps-init`
+                ; cannot tell a correct body from that copy. `lps-after` (3),
+                ; `lps-tab` (10) and `lps-multi` (14) are the rows that can, and
+                ; knife K6 is exactly that cut.
+                ;
+                ; No `dec a` either: LPTPOS is already 0-based, where CSRX is
+                ; 1-based. A copied `dec a` would read 255 at line start.
+                ld      a,(LPTPOS)
                 ld      e,a
                 ld      d,0
                 ret

@@ -24,6 +24,47 @@
 ;
 ; Entry: ex_print, HL -> the PRINT token.
 
+; --- ex_lprint: LPRINT — PRINT with the sink re-pointed at LPT: ---------------
+; D-LPTVERB, docs/spec-basic-lptverb.md §3.1. The whole item loop is ex_print's;
+; only the two sink cells differ, exactly as LLIST shares ex_list (basic/list.asm).
+;
+; 🔴 THE SINK IS TWO CELLS, NOT ONE. PRDEST=1 alone routes pchar to pch_file,
+; whose PRDEV then selects DISK -- so LPRINT would write into whatever file
+; channel was last used. PRDEV=1 is what names the printer. Knife K2 is that cut,
+; and its predicted RED is an empty log with a file-sink write, not just silence.
+;
+; ⚠️ NO SINK RESTORE, AND THAT WAS VERIFIED RATHER THAN ASSUMED: exec_stmt
+; (basic/interp.asm) opens EVERY statement with `xor a / ld (PRDEST),a`, so
+; R-LP10's "the next statement prints to the screen" is already the machine's
+; behaviour. `scr-lprsink` is the row that would catch it if that ever changed.
+; (D-EDITVERB's K3 note credits `repl` for this property; repl is the
+; prompt-level half, exec_stmt the statement-level one.)
+;
+; ⚠️ AND UNLIKE LLIST, LPRINT DOES NOT END THE LINE (R-LP9) -- no ENDFLAG store
+; here. `scr-lprtail` reads B=9 after `LPRINT"A":B=9`; with an ENDFLAG store it
+; would read 0.
+ex_lprint:
+                inc     hl                  ; past the LPRINT token
+                ld      a,1
+                ld      (PRDEV),a           ; 1 = LPT: printer
+                ld      (PRDEST),a          ; stream items to it
+                call    skip_spaces
+                cp      USING_TOKEN         ; LPRINT USING "fmt"; values (R-LP11)
+                jp      z,ex_print_using
+                ; 🔴 THE '#' TEST IS EXPLICIT, AND THE SPEC PREDICTED IT WOULD NOT
+                ; NEED TO BE. §3.1 assumed that falling into the item loop with '#'
+                ; in A would produce R-LP14's Syntax error "because the expression
+                ; parser rejects it". It does not: measured, `LPRINT#1,"A"` printed
+                ; a run of several hundred ` 0` values to the printer -- the parser
+                ; read '#' as something evaluable and looped. An assumption the spec
+                ; flagged AS an assumption, refuted by the row written to check it.
+                ; `lpr-hash` (the log) alone could not have said so either: an empty
+                ; log is equally consistent with a silent accept, and this log was
+                ; not even empty. `scr-lprhash` is the row that names the message.
+                cp      '#'
+                jp      z,exp_pos_syn       ; ERR 2, and nothing printed
+                jp      exp_loop
+
 ex_print:
                 inc     hl                  ; past the PRINT token
                 ; PRINT #n, … (file form): redirect the item loop to the channel.
@@ -410,6 +451,31 @@ pch_crt:
 pch_lpt:
                 ld      a,c
                 call    LPTOUT
+                ; --- D-LPTVERB: maintain the printer column (LPOS's source) -----
+                ; R-LS2/R-LS6: LPOS counts the bytes ACTUALLY SENT, which is why
+                ; the counter lives here and not in ex_lprint -- TAB/SPC padding
+                ; reaches the printer through this sink and never passes through
+                ; the statement head. Knife K5 moves it to ex_lprint and predicts
+                ; `lps-tab` reads 0 instead of 10 while `lps-after` still reads 3.
+                ;
+                ; R-LS3: a CR returns the head to column 0. LF is NOT counted as
+                ; an advance -- see LPTPOS in basic/sysvars.inc for why a lone LF
+                ; is a recorded CHOICE and not a measured rule.
+                ld      a,c
+                cp      13                  ; CR -> column 0
+                jr      z,pch_lpt_home
+                cp      10                  ; LF -> no advance, no reset
+                jr      z,pch_done
+                ld      a,(LPTPOS)
+                inc     a
+                jr      z,pch_done          ; 255 saturates rather than wrapping to
+                                            ; 0, which would read as "line start"
+                                            ; and suppress the R-LP16 flush
+                ld      (LPTPOS),a
+                jr      pch_done
+pch_lpt_home:
+                xor     a
+                ld      (LPTPOS),a
                 jr      pch_done
 pch_disk:
                 ld      a,c
@@ -487,8 +553,26 @@ exp_pos_syn:
 ; at 28 and 28+14=42 exceeds every legal SCREEN 0 width, so both predict a wrap
 ; everywhere. The two-item row is what settles it.
 print_comma_zone:
+                ; 🔴 D-LPTVERB: THE ZONE IS COUNTED FROM THE *ACTIVE SINK'S* COLUMN.
+                ; This read CSRX unconditionally, which is the SCREEN cursor -- and
+                ; printing to the printer moves neither CSRX nor LINLEN. Measured,
+                ; `LPRINT"A","B"` padded to 14 spaces where both references pad to
+                ; 13, because the screen cursor was still at column 0 while the
+                ; printer head was at 1. R-LP5 says the zones are PRINT's, and that
+                ; means PRINT's arithmetic over the printer's own column.
+                ld      a,(PRDEST)
+                or      a
+                jr      z,pcz_screen        ; screen sink -> CSRX
+                ld      a,(PRDEV)
+                dec     a                   ; PRDEV 1 = LPT:
+                jr      nz,pcz_screen       ; a FILE/CRT/tape channel keeps CSRX,
+                                            ; which is what it did before this slice
+                ld      a,(LPTPOS)          ; already 0-based
+                jr      pcz_col
+pcz_screen:
                 ld      a,(CSRX)
                 dec     a                   ; 0-based column
+pcz_col:
                 ld      c,a                 ; C = current column (for the fit test
 pcz_mod:
                 cp      14

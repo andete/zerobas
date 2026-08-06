@@ -470,6 +470,22 @@ def main() -> int:
     print(f"{agree}/{agree + dis} rows agree")
     print(f"LFILES battery sides: {','.join(LFILES_SIDES)} — the VG-8020 has no "
           "disk ROM and CANNOT measure it (stated, not silently dropped)")
+    # 🔴 NO SILENT CAPS. If a battery was not selected, say which and why, so a
+    # green headline can never be mistaken for whole-surface coverage. LFILES has
+    # a token equate but no kwtable entry and no dispatch row -- page 1 came out
+    # at 7 B and it did not fit (docs/spec-basic-lptverb.md §6) -- so gating it
+    # would mean a permanently red gate, and a red gate is one that gets ignored.
+    # The exclusion is PRINTED instead, and `ONLY=lfl-` is how it is picked up.
+    ran = {l for l in labels}
+    for name, rows, why in (
+            ("lfl- (LFILES)", LFL,
+             "NOT IMPLEMENTED this slice — no kwtable entry, no stmt_table row; "
+             "page 1 ended at 7 B. Re-run with ONLY=lfl- to see it fail."),
+            ("lpr- (LPRINT)", LPR, "excluded by --only"),
+            ("lps- (LPOS)", LPS, "excluded by --only"),
+            ("scr- (screen halves)", SCR, "excluded by --only")):
+        if not any(r[0] in ran for r in rows):
+            print(f"NOT GATED: {name} — {why}")
     if a.gate and dis:
         sys.stderr.write(f"lptverb: {dis} row(s) diverge\n")
         return 1

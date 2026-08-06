@@ -184,6 +184,28 @@ kwtable:
                 db      6,"DELETE",1,DELETE_TOKEN
                 db      4,"AUTO",1,AUTO_TOKEN
                 db      5,"RENUM",1,RENUM_TOKEN
+                ; D-LPTVERB (docs/spec-basic-lptverb.md): the FIFTH entry the
+                ; comment above says would move `lnrx-lprint`. It does, and this
+                ; slice is what authorises it -- that row went from DIVERGE
+                ; (`L<91> <0F><0A>`, a stray L plus the genuine PRINT token) to
+                ; AGREEING with the reference's `<9D> <0F><0A>`, and left
+                ; INFORMATIONAL to become an ordinary gating row. `lnrx-wait`
+                ; survives as the control of that shape, because WAIT is still
+                ; tokenless.
+                ;
+                ; ⚠️ UNLIKE THE FOUR ABOVE, LPRINT DOES *NOT* ARM LINE-NUMBER
+                ; MODE, so it needs NO branch_lineno arm -- `20 LPRINT 10` stores
+                ; the argument as the ordinary numeric literal `<0F><0A>` on the
+                ; reference, not as `$0E,lo,hi`. Adding an arm here would be the
+                ; D-LNREF defect inverted: a line-number reference invented where
+                ; the reference has a plain constant.
+                ;
+                ; Position is free: match_kw compares the FULL keyword, and
+                ; neither new word is a prefix of any entry nor has one as a
+                ; prefix. The near-misses stay near-misses -- LPRINT vs LPOS
+                ; diverge at char 3 (R vs O), LPRINT vs LLIST at char 2 (P vs L),
+                ; LPOS vs LOF at char 2 (P vs O).
+                db      6,"LPRINT",1,LPRINT_TOKEN
                 db      3,"CLS",1,CLS_TOKEN
                 db      6,"SCREEN",1,SCREEN_TOKEN
                 db      5,"COLOR",1,COLOR_TOKEN
@@ -232,6 +254,17 @@ kwtable:
                 ; lead is not a keyword.
                 db      6,"CSRLIN",1,CSRLIN_TOKEN
                 db      3,"POS",2,PEEK_PREFIX,POS_TOKEN
+                ; D-LPTVERB: POS's printer twin. Same $FF alphabet and the same
+                ; two-byte shape, so it belongs HERE and not beside LPRINT --
+                ; LPOS $FF,$9C is a FUNCTION, LPRINT $9D a STATEMENT, and $9C is
+                ; ALSO OUT_TOKEN in the statement alphabet (basic/sysvars.inc).
+                ; Cross the two tables and each word answers the other's verb.
+                ; ⚠️ MUST PRECEDE NOTHING IN PARTICULAR but must EXIST before
+                ; `POS` can be reached inside `LPOS`: with no entry, the sequence
+                ; crunches as the variable `L` plus the function `POS`, which is
+                ; not an error and quietly prints two numbers
+                ; (docs/lptverb-msx1-characterization.md §6).
+                db      4,"LPOS",2,PEEK_PREFIX,LPOS_TOKEN
                 db      4,"TAB(",1,TAB_TOKEN
                 db      4,"SPC(",1,SPC_TOKEN
                 ; --- string engine (repack build only) — string-engine arc S3 -----
