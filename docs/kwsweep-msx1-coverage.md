@@ -194,7 +194,22 @@ unconditionally, so an `LSTOUT` poll cannot block, and the log file is a better
 readout than any screen scrape. `LLIST` is now measured on **both** references
 that way and implemented (`make editverb-acceptance`). `LPRINT`, `LPOS` and
 `LFILES` remain unexecuted — but for the ordinary reason that they have no
-`kwtable.inc` entry, NOT because they cannot be put to a reference. `AUTO` is
+`kwtable.inc` entry, NOT because they cannot be put to a reference.
+
+🔴 **THAT LAST SENTENCE IS TRUE OF TWO OF THE THREE, NOT ALL THREE** (narrowed
+2026-08-06 while scouting D-LPTVERB). `LPRINT` and `LPOS` are in the printer
+group above and the refutation covers them wholly — both are now measured on
+**both** references, 16 and 10 rows, in
+[`lptverb-msx1-characterization.md`](lptverb-msx1-characterization.md). `LFILES`
+is **not in that group**: this probe carries it among the Disk-BASIC words with
+**two** reasons, `NEEDS-DISK` *and* printer-bound, and only the printer half
+fell. The VG-8020 has no disk ROM, so asking it `LFILES` measures the absence of
+a disk interface rather than of a language feature — the identical trap this
+document already records for the `MKS$`/`MKD$`/`CVS`/`CVD` family two sections
+up. ⇒ `LFILES` is measurable on the **CF-3300 only**, which is a narrower claim
+than "it can be put to a reference" and has to stay narrower.
+
+`AUTO` is
 refuted too: Ctrl-STOP is a key-matrix combination (row 6 bit 1 + row 7 bit 4),
 which `keymatrixdown` delivers and `BREAKX` sees. The remaining crunch-only
 count is **18 minus the two now executed**; the three printer words are filed as

@@ -1349,6 +1349,36 @@ editverb-acceptance: repack-machine
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
 	        $(if $(ONLY),--only '$(ONLY)',) --repeat $(if $(REPEAT),$(REPEAT),1)
 
+# --- D-LPTVERB: the REST of the printer surface (LPRINT / LPOS / LFILES) -------
+# docs/lptverb-msx1-characterization.md. 38 rows in four batteries, and they do
+# NOT share a readout or even a SIDE SET:
+#   lpr-  the printer log      LPRINT   vg8020 + cf3300 + zb
+#   lps-  the screen           LPOS     vg8020 + cf3300 + zb
+#   scr-  the screen           the halves a printer-log row CANNOT see
+#   lfl-  the printer log      LFILES   🔴 cf3300 + zb ONLY
+#
+# 🔴 LFILES IS TWO-SIDED BY CONSTRUCTION, NOT BY OMISSION. It is a Disk-BASIC
+# word and the VG-8020 has no disk ROM, so that side would measure the absence of
+# a disk interface rather than of a language feature. This is the half of the
+# filed printer reason D-EDITVERB did NOT refute: basic_probe_kwsweep.py's
+# `lfiles` row carries NEEDS-DISK *and* printer-bound, and only the second fell.
+# The probe prints the side set rather than letting a reader infer it.
+#
+# ⚠️ EVERY BATTERY PLUGS A PRINTER, INCLUDING THE SCREEN ONES -- with none
+# plugged the VG-8020's LSTOUT tight-polls port $90 forever and the machine hangs
+# (D-EDITVERB hung a screen row on an LLIST exactly that way). A `logger`
+# pluggable is READY unconditionally and changes no screen output.
+#
+# ⚠️ AND EVERY BATTERY BOOTS PER CASE. The printer log is truncated once per BOOT,
+# so a batch makes each capture a delta -- fine until one case is re-run
+# boot-per-case, after which every later delta is silently wrong. And the printer
+# COLUMN survives a case, so a batched `lps-init` ("a fresh head is at 0") reads
+# whatever the previous case left. Deterministic, so --repeat cannot catch it.
+lptverb-characterize: repack-machine
+	python3 probes/basic/basic_probe_lptverb.py \
+	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',) --repeat $(if $(REPEAT),$(REPEAT),1)
+
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #
 # What one open channel costs on a real disk-capable MSX1, measured out of the same
@@ -1683,7 +1713,7 @@ clean:
         arrdim-characterize arrdim-acceptance \
         linemax-characterize linemax-acceptance chancost-characterize \
         lnblank-characterize lnblank-acceptance lnblank-echo lnblank-say-acceptance \
-        editverb-acceptance \
+        editverb-acceptance lptverb-characterize \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

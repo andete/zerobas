@@ -85,6 +85,20 @@ duplicating (and drifting from) what is written below.
       on zerobas today (`OPEN"LPT:"` writes to the printer, the `llt-ctl` row).
       So the sweep is carrying a stale reason for FOUR words and the other three
       are simply absent. Whoever adds them gets the readout for free.
+      🔴 **BUT NOT UNIFORMLY, AND THIS ITEM SAID SO TOO BROADLY (corrected
+      2026-08-06 while scouting D-LPTVERB).** `LFILES` does not live in that
+      battery: [`probes/basic/basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py)
+      carries it in the **Disk-BASIC** group with **TWO** reasons, `NEEDS-DISK`
+      *and* printer-bound, and D-EDITVERB refuted only the second. The first
+      stands — the VG-8020 has no disk ROM, so putting `LFILES` to it measures
+      the absence of a disk interface, not of a language feature (the same trap
+      already recorded for the `MKS$`/`CVS` family). ⇒ **`LPRINT` and `LPOS` are
+      three-sided; `LFILES` is CF-3300 + zb by construction**, and any gate must
+      SAY that rather than let a reader infer it from a silent absence.
+      ⚠️ And `LPOS` is not a sink re-point like the other two: no printer column
+      counter exists anywhere in the tree (`pch_lpt` calls `LPTOUT` and tracks
+      nothing), so it needs new state maintained in the hot path of every printed
+      byte, plus a measured reset rule. Cost it separately from `LPRINT`.
 - [ ] **No string `READ`.** Filed by D-DEFSTR — detail:
       *“ZEROBAS HAS NO STRING `READ`”*, line 4161.
 
