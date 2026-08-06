@@ -1,0 +1,24 @@
+# Decoded-listing allowlist for tools/audit_citations.py check 5 —
+# docs/spec-audit-citations-docs.md §3.3.
+#
+# Format:  <relpath>  <sha256[:12] of the run's text>  <reason>
+#          A MISSING REASON IS A PARSE ERROR.
+#
+# 🔴 THIS FILE IS A CONTROL, NOT A SUPPRESSION LIST. The gate asserts that every
+# digest below is STILL PRODUCED by the sweep. If one stops being produced, either
+# the text was regrounded (delete the line) or the sweep has gone BLIND and is
+# reporting a clean tree while measuring nothing (fix the sweep). Both exit 2.
+#
+# Entries are anchored on the DIGEST of the run's text, never on a line number:
+# line numbers rot, editing an allowed run re-opens it, and a path-level entry
+# would blind the whole file to a second, real listing.
+#
+# The bar for an entry: the decoded code must come from an ADMISSIBLE source per
+# docs/allowed-sources.md. A listing of a proprietary binary (reference BIOS /
+# BASIC ROM / disk ROM / MSXDOS.SYS / COMMAND.COM) is ✗ and does not get an entry
+# — it gets regrounded on the black-box observation it actually rests on, the
+# 2026-07-04 M20 §11.1 pattern. This list should stay very short.
+
+probes/lib/latch_check.py  5565467e6422  C-BIOS, same window and same adjudication as the omsx_repl.py entry below: the two comment lines restate the chget_char boundaries this checker scores (D-LATCH2, docs/spec-probe-latch2.md). Surfaced only after knife K1b forced the comment leaders `; # //` into the prefix class — under the first cut this file was invisible, which is the whole reason that fix landed.
+
+probes/lib/omsx_repl.py  edb676f694b2  C-BIOS, not a proprietary reference ROM: allowed-sources.md grades C-BIOS source B/Conditional — a peer clean-room reimplementation under BSD-2 whose source this project already patches (cbios-repack/), and NOT the reference implementation zerobas reimplements. The run is 3 instructions of the keyboard-buffer path, in a docstring explaining the D-LATCH2 injection window (docs/spec-probe-latch2.md §5.5); the same docstring is explicit about the line it stays on ("locating chget in the reference needs a disassembly this project does not do"). Probe source, not shipped ROM source. Flagged for the human paper trail 2026-08-06 (D-DOCJUDGE §2.6) — a judgement docs/clean-room-audit.md reserves for a human, which is why it is written down here rather than decided by the tool.

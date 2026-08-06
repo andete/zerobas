@@ -1596,8 +1596,9 @@ bdos-cbios-selfcheck: $(DISK_ROM)
 	python3 probes/disk/disk_bdos_cbios_selfcheck.py $(if $(ONLY),--only '$(ONLY)',)
 
 # The mechanical half of the clean-room paper-trail audit: forbidden-source scan
-# + per-file attestation (gating) and disk section-citation presence (advisory).
-# Cheap (0.27 s), read-only, no emulator, no reference ROMs. It does NOT replace
+# + per-file attestation + decoded-listing sweep (gating) and disk
+# section-citation presence (advisory).
+# Cheap (0.8 s), read-only, no emulator, no reference ROMs. It does NOT replace
 # the human paper trail (the "is each probe black-box?" judgement); see
 # docs/clean-room-audit.md. `make audit-citations TARGET="disk"` scopes it.
 #
@@ -1609,6 +1610,15 @@ bdos-cbios-selfcheck: $(DISK_ROM)
 # written in a comment is a habit, and a habit is not a control. It is now a step
 # of `basic-reloc` above (the target every slice runs, beside check_dead_code.py)
 # and a step of .github/workflows/ci.yml. Spec: docs/spec-audit-citations-gate.md.
+#
+# ⚠️ CHECK 5 IS REPO-WIDE AND IGNORES $(TARGET). D-DOCJUDGE (2026-08-06) measured
+# that the forbidden-VOCABULARY scan is structurally blind to decoded-instruction
+# listings -- 0 recall on every breach in the project's record -- and that the
+# class lives in shipped asm comments as much as in prose. So the listing sweep
+# runs over every first-party text file on every invocation, scoped or not.
+# Allowlist: tools/citations-listing-allow.txt (digest-anchored; entries must KEEP
+# matching, so a stale entry and a blind sweep are both exit 2).
+# Spec: docs/spec-audit-citations-docs.md.
 audit-citations:
 	python3 tools/audit_citations.py $(TARGET)
 

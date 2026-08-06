@@ -129,6 +129,28 @@ that pins check 1's rule against the four false positives it produced in its
 first 761 commits. **Exit 2 means the instrument is not working and nothing
 below it was measured; exit 1 means the tree regressed.**
 
+**The decoded-listing floor (2026-08-06, D-DOCJUDGE — [`spec-audit-citations-docs.md`](spec-audit-citations-docs.md)).**
+Check 5 sweeps **every** first-party text file — prose *and* asm comments, 692 of
+them — for a run of ≥2 consecutive `<address>  <mnemonic>` lines, the shape a
+decoded listing takes. It exists because the forbidden-vocabulary scan is
+**structurally blind** to this class, and that is now measured rather than
+asserted: every decoded-code breach in this log contains **zero** forbidden-source
+tokens, so check 1's recall on the class is **0 of 4**. Extending check 1 to
+`docs/` was measured and **DECLINED** — it would have stayed green for the whole
+34-commit life of the 2026-07-04 listing and then fired on the remediation, at a
+cost of 26 affirmative false positives over 278 doc files, 16 of them inside this
+file, [`allowed-sources.md`](allowed-sources.md) and the check's own spec. The
+2026-07-07 entry's follow-on suggestion (*"mnemonic adjacent to a non-`$4xxx-$7xxx`
+address"*) was implemented literally and **also declined**: 738 hits over 137
+files, because stock's disk ROM occupies the same `$4000–$7FFF` window ours does,
+so the address cannot say whose code it is. Allowlist:
+[`tools/citations-listing-allow.txt`](../tools/citations-listing-allow.txt) —
+digest-anchored, reasons mandatory, and every entry must **keep** matching (a
+stale entry and a blind sweep are both exit 2). ⚠️ **The inline form
+(`$0246: LD A,(…) / AND A / CALL Z,…`) stays uncovered** — measured undecidable:
+every threshold that catches any of it also fires on the hand-reviewed prose that
+replaced it. The human full-verify remains the only backstop for that shape.
+
 ### The one hop in paper trail that is *not* mechanical
 
 Paper trail trusts the finding and probe docs. A finding can cite a real probe
@@ -233,7 +255,52 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
-### 2026-07-07 — disk, FULL-VERIFY TRAIL (whole-target, FIRST for disk) — ⚠→✅ correctness green; a systemic decoded-stock-code residue found across shipped comments + legacy docs and fully remediated (this commit)
+### 2026-08-06 — whole-repo, MECHANICAL (check 5 built + its first catch) — ⚠→✅ one unremediated site of the 2026-07-07 class found and remediated; the 2026-07-07 "fully remediated" verdict was INCOMPLETE (at `da93f0c`, fix rides this commit)
+
+Not a paper trail — a **mechanical** pass, logged here because it corrects a
+verdict below. D-DOCJUDGE ([`spec-audit-citations-docs.md`](spec-audit-citations-docs.md))
+picked up the filed *"the floor does not scan `docs/`"* residual, measured it, and
+declined the rule it implied (§ above); the instrument the measurement produced
+instead — check 5, the decoded-listing shape — was then walked back over **all 978
+commits** of this repo's history.
+
+- **THE FINDING — one live site, in a file the 2026-07-07 sweep itself edited.**
+  [`tier2-f338-default-spec.md`](../disk/docs/tier2-f338-default-spec.md) §1
+  carried a hand-decoded **three-instruction listing of COMMAND.COM's resident
+  startup** at `$C26B`–`$C26F` — the ✗ class of the 2026-06-30 M12 incident and
+  the 2026-07-04 M20 §11.1 remediation. Introduced `18116c6` (2026-06-27) and
+  **still present 673 commits later**. `e8558c2` removed an *inline* rendering of
+  **the same instruction body** from the asm-comment block quoted at lines 58–63
+  of that same file and walked past the column listing 36 lines above it.
+  ⇒ **the 2026-07-07 verdict below is corrected from "fully remediated" to
+  "remediated except this site".** Nothing shipped rested on it (prose only;
+  all four `build/*.rom` byte-identical across this commit); the section's
+  conclusion always rested on the poke test cited in its next paragraph.
+  Remediated to behavioural form with a dated quarantine note, the M20 §11.1
+  pattern.
+- **The gate's whole-life record: 3 files in 978 commits, 4 transitions.** It goes
+  red on the exact commit that introduced the 2026-07-04 breach (`a1cf7ad`) and
+  green on the exact commit that remediated it (`4c14006`) — a 34-commit window,
+  no false transitions. A human whole-target audit found that one in two days;
+  this finds it in 0.5 s, on the commit. The third file
+  (`probes/lib/omsx_repl.py`, D-LATCH2) is **C-BIOS** — B/Conditional per
+  [`allowed-sources.md`](allowed-sources.md), not a proprietary reference ROM —
+  and is **allowlisted with its reason**, flagged for a human paper-trail confirm
+  rather than decided by the tool.
+- **What was DECLINED, with the measurement** (so it is not re-derived): extending
+  the forbidden-vocabulary scan to `docs/` — 0 recall on every recorded breach, 26
+  affirmative false positives; and this log's own 2026-07-07 follow-on candidate —
+  738 hits. Both written up in the spec §2.1–§2.3 with what a future slice would
+  have to produce to re-open them.
+- ⚠️ **Coverage limit, stated not approximated:** the **inline** decoded form is
+  undecidable by a host-side text scanner (every threshold that catches any of it
+  fires on the hand-reviewed prose that replaced it, and on 25–464 honest lines).
+  Manual full-verify review remains the only backstop for that shape.
+- **Verdict: mechanical floor extended, one break found and remediated.** This is
+  a floor pass, **not** a provenance verdict — no paper trail was run, and the
+  next whole-target pass still owes the non-mechanical hop.
+
+### 2026-07-07 — disk, FULL-VERIFY TRAIL (whole-target, FIRST for disk) — ⚠→✅ correctness green; a systemic decoded-stock-code residue found across shipped comments + legacy docs and ALMOST fully remediated (this commit; ⚠️ **one site missed — see the 2026-08-06 entry above**)
 
 The deliberate **tier-closure ritual**, deferred since 2026-06-24 ("disk's full-verify
 back-half is gated to its tier closure — deferred until its active work settles"). Disk
@@ -296,6 +363,12 @@ theirs 2026-06-24). Phase A = paper trail (read); Phase B = empirical re-check.
   pre-release history-squash item. Follow-on hardening candidate: teach `audit_citations.py`
   a heuristic for "instruction mnemonic adjacent to a non-`$4xxx-$7xxx` address" so this class
   gets a mechanical floor, not only the manual read.
+  ⚠️ **That candidate was implemented literally on 2026-08-06 and DECLINED on
+  measurement — 738 hits over 137 files**, because stock's disk ROM occupies the
+  same `$4000–$7FFF` window ours does, so an address cannot say whose code it is.
+  The floor that landed instead keys on the listing **shape** (check 5). See the
+  2026-08-06 entry above, which also records that **this pass missed one site of
+  its own class**, in a file it edited.
 
 ### 2026-07-04 — disk, FULL-VERIFY (empirical), BDOS surface — ✅ standing gate, 6/6 converge vs stock
 

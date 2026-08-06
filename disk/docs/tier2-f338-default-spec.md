@@ -18,11 +18,20 @@ real boot, then re-trace for blocker #2. Supersedes the parked phase-1 option-A 
 `disk_probe_diff trace` (anchored on the FOPEN return `$C24E`) showed COMMAND.COM's n=3
 STROUT-vs-SELDSK fork is a data-driven branch on `$F338`:
 
-```
-C26B  ld a,($F338)
-C26E  and a
-C26F  jr nz,$C274      ; $F338==0 -> STROUT/prompt (stock) ; !=0 -> SELDSK/loop (ours)
-```
+> **Stated black-box (observed read + branch outcome), not decoded.** Across the exit-PC
+> range `$C26B`–`$C26F` COMMAND.COM's resident startup **reads `$F338`** (watchpointed) and
+> branches on its value: **`$F338` == 0** → falls through to the STROUT/prompt path (stock's
+> behaviour); **`$F338` != 0** → branches to `$C274`, the SELDSK/loop path (ours).
+>
+> **Clean-room note (2026-08-06, D-DOCJUDGE — [`spec-audit-citations-docs.md`](../../docs/spec-audit-citations-docs.md) §2.5).**
+> An earlier revision of this section reproduced a hand-decoded three-instruction Z80
+> listing of that range — that is disassembly of the proprietary COMMAND.COM image (✗ per
+> [`allowed-sources.md`](../../docs/allowed-sources.md)), the same class as the 2026-06-30
+> M12 incident and the 2026-07-04 M20 §11.1 remediation. It was **quarantined** and
+> re-grounded on the poke test it already rested on (next paragraph); no asm ever depended
+> on it. It survived the 2026-07-07 whole-target sweep that remediated ~50 sites of this
+> class — including one in this very file, 36 lines below — and was found mechanically by
+> check 5 of `make audit-citations`, which this commit adds.
 
 Poking `$F338`=0 into ours at the read advanced it **54 instrs** onto stock's exact path (to
 `$D885 call $F368`). So `$F338`=0 is necessary and effective. Stock builds it during disk-ROM

@@ -39,10 +39,10 @@ duplicating (and drifting from) what is written below.
 **Language / verb surface**
 
 - [ ] `AUTO` / `RENUM` / `LLIST` / `DELETE` — **the STATEMENT half.** Tokens are
-      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4283); nothing
-      executes them. Detail: *“Editor / program management”*, line 1526.
+      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4312); nothing
+      executes them. Detail: *“Editor / program management”*, line 1555.
 - [ ] **No string `READ`.** Filed by D-DEFSTR — detail:
-      *“ZEROBAS HAS NO STRING `READ`”*, line 3973.
+      *“ZEROBAS HAS NO STRING `READ`”*, line 4002.
 
 **Own-design hazards carried out of closed slices**
 
@@ -51,37 +51,66 @@ duplicating (and drifting from) what is written below.
       three sites that crossed them (one was a live memory corruption) but the two
       namespaces still overlap on the numeric values, so the next site that feeds
       one into the other reintroduces the class. Collapse to ONE. Detail:
-      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3884.
+      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3913.
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
 
 - [ ] ⚠️ **`injector-check` is still a TEXT classifier.** A split literal passes.
-      Already an open item — detail: line 4600.
+      Already an open item — detail: line 4629.
 - [ ] ⚠️ **An asm label named in a `tools/*.py` or `sub/` comment is immune to the
       dead-code sweep** — `check_dead_code.py`'s `external_names` scans those
       directories *including comments*, so writing a label's name in prose seeds it
       as reachable. Every slice that edits `tools/` prose must predict the seed
-      counts and treat movement as a finding. Detail: lines 2199 and 2435.
+      counts and treat movement as a finding. Detail: lines 2228 and 2464.
 - [ ] ⚠️ **Three probe page-0 entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
       deriving them from `sub/equates.inc` needs its own falsification because they
-      inject raw bytes into a bare machine deliberately. Detail: line 2394.
+      inject raw bytes into a bare machine deliberately. Detail: line 2423.
 - [ ] ⚠️ **`build/disk.rom` pad-only damage is invisible ON PURPOSE** — 9543 of
       16384 bytes (58.2 %) are `$00` pad in 252 runs. Closing it needs a whole-image
       digest, which would pin the ROM against every legitimate `disk/*.asm` change.
-      Re-open only with an argument that answers that. Detail: line 2389.
+      Re-open only with an argument that answers that. Detail: line 2418.
 - [x] ✅ **`make audit-citations` was RED at HEAD and nothing ran it — CLOSED
       2026-08-06 by D-CITEJUDGE**,
       [`docs/spec-audit-citations-gate.md`](docs/spec-audit-citations-gate.md).
       Green; a step of `make basic-reloc` and of CI; denominator **49 → 116**
       files. Two of the four filed claims were wrong.
-- [ ] ⚠️ **`audit_citations.py` does not scan `docs/`** — and the project's only
-      recorded clean-room breach lived there (a hand-decoded Z80 listing,
-      remediated at `4c14006`), found by a human paper trail, not by the floor.
-      Narrative prose legitimately *discusses* forbidden methods, so the
-      negation-context false-positive surface is large and UNMEASURED. Measure it
-      before proposing a rule. Detail: `docs/spec-audit-citations-gate.md` §1.3.
+- [x] ✅ **`audit_citations.py` does not scan `docs/` — CLOSED 2026-08-06 by
+      D-DOCJUDGE as a measured DECLINE + a different gate**,
+      [`docs/spec-audit-citations-docs.md`](docs/spec-audit-citations-docs.md).
+      Scanning `docs/` with the **vocabulary** rule was declined: the quarantined
+      text contains **zero** forbidden tokens (its *remediation* is what carries
+      one), so recall on every recorded breach is **0**, at a cost of **26**
+      affirmative false positives over 278 files — 16 inside the three documents
+      that define and record the policy. The filed *"only recorded breach"* was
+      wrong (four events; ~50 sites on 2026-07-07), and **6 of those sat in
+      `disk/*.asm`, files the tool already scanned** — so it was never a scope
+      problem. Landed instead: **check 5**, the decoded-listing shape, repo-wide
+      (692 files), which found one **live unremediated** site the 2026-07-07
+      full-verify missed in a file it edited. §3.1 records what a future slice
+      must produce to re-open the vocabulary widening.
+- [ ] ⚠️ **Raw opcode-BYTE renderings are still uncovered** — `CD 54 54`,
+      `DB A8 C9`, and the C-BIOS locator signatures in `probes/lib/latch_check.py`
+      (`SIG`/`SIG2`). Check 5 keys on the *listing shape*; a hex byte run is a
+      different shape and its false-positive surface is UNMEASURED (our own ROM's
+      bytes appear throughout our own docs). Measure before proposing a rule —
+      the same discipline that declined the vocabulary widening. Detail:
+      `docs/spec-audit-citations-docs.md` §6.5.
+- [ ] ⚠️ **The INLINE decoded form is measured UNDECIDABLE, and that is a standing
+      hole, not a closed item** — `$0246: LD A,(…) / AND A / CALL Z,…`. Every
+      threshold that catches any of it fires on the hand-reviewed prose that
+      replaced it, and on 25–464 honest lines (four variants measured). The human
+      full-verify is the only backstop; re-open only with a discriminator that
+      scores 0 on the 156-line replacement corpus. Detail:
+      `docs/spec-audit-citations-docs.md` §2.2.
+- [ ] ⚠️ **Both check-5 allowlist entries need a HUMAN paper-trail confirm** —
+      `probes/lib/{omsx_repl,latch_check}.py` render C-BIOS instructions.
+      `allowed-sources.md` grades C-BIOS **B/Conditional** ("we don't lift its
+      code/expression"), which is a judgement `docs/clean-room-audit.md` reserves
+      for a human; the tool deliberately does not make it. Reasons are written in
+      `tools/citations-listing-allow.txt`. Detail:
+      `docs/spec-audit-citations-docs.md` §2.6.
 - [ ] ⚠️ **The 7 `[REVIEW]` advisory headers are stable but unwatched** — the same
       7 files and names across 575 commits, triaged once
       (`docs/clean-room-audit.md`, 2026-07-04). Advisory is the right call, but a
@@ -90,10 +119,10 @@ duplicating (and drifting from) what is written below.
       matching is a control; 7 justifications to write. Detail:
       `docs/spec-audit-citations-gate.md` §2.5.
 - [ ] ⚠️ **`lof-acceptance` intermittent oracle drift — two sightings, nothing
-      since.** Sighting 3 has not occurred across FIVE consecutive slices
-      (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE). A third IS a finding to
+      since.** Sighting 3 has not occurred across SIX consecutive slices
+      (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE, D-DOCJUDGE). A third IS a finding to
       chase; capture the **whole** log (`> file 2>&1`), because sighting 1's row
-      identity was lost to a `tail -6`. Detail: line 3490.
+      identity was lost to a `tail -6`. Detail: line 3519.
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 

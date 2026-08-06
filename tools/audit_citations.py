@@ -36,6 +36,14 @@ GATING checks (a finding => exit 1):
      (a pointer to a private investigation note is acceptable there) or the
      boundary-policy files (PUBLISHING.md etc.).
 
+  5. DECODED-LISTING SCAN — a run of consecutive `<address>  <mnemonic>` lines is
+     a rendered instruction listing. Check 1 cannot see this class at all: a
+     decoded listing contains none of its vocabulary, and the prose around the
+     one the project actually shipped said "byte-identical", which check 1
+     deliberately exempts. Repo-wide (prose AND asm comments), because the
+     2026-07-07 full-verify found the class in both. Allowlisted entries are
+     content-anchored and must KEEP matching; see the allowlist file.
+
 ADVISORY check (reported, does NOT affect exit code):
 
   3. SECTION-CITATION PRESENCE — disk.asm uses inline `; --- name (§cite) ---`
@@ -53,6 +61,7 @@ Usage:
   python3 tools/audit_citations.py [target ...]   # default: disk basic tape
 """
 
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -225,6 +234,148 @@ def header_block(lines):
         i += 1
     return "\n".join(lines[start:i])
 
+# --- check 5: decoded-instruction listings --------------------------------------
+# ⚠️ THIS CHECK EXISTS BECAUSE CHECK 1 IS STRUCTURALLY BLIND TO ITS CLASS, NOT
+# BECAUSE ITS DENOMINATOR WAS TOO SMALL. Measured over the project's whole
+# provenance record (docs/spec-audit-citations-docs.md §2.1): every recorded
+# decoded-code breach contains ZERO forbidden-vocabulary tokens -- an address
+# column plus mnemonics names no method -- so check 1's recall on the class is 0
+# of 4. The prose around the one shipped in 2026-07 even said "byte-identical",
+# which check 1 exempts on purpose. Widening check 1 to docs/ was measured and
+# DECLINED: 0 recall, 26 affirmative false positives over 278 files, 16 of them
+# inside the three documents that define and record the clean-room policy itself.
+#
+# What IS decidable is the SHAPE. A run of consecutive `<addr>  <mnemonic>` lines
+# is a rendered listing whatever it says, and over all 978 commits of this repo's
+# history the shape appears in exactly three files -- twice as a genuine breach of
+# the forbidden class, once as an admissible peer source. The inline variant
+# ("$0246: LD A,($F340) / AND A / CALL Z,$0317") is NOT decidable and is a stated
+# coverage limit: every threshold that catches any of it also fires on the
+# hand-reviewed prose that replaced it, and on 25-464 honest lines of our own.
+#
+# The threshold of 2 is not arbitrary. It is the 2026-07-07 remediation's own
+# rubric: single call/branch TARGETS stay allowed, multi-instruction bodies do
+# not. Two is a multi-instruction body.
+LISTING_MNEM = (
+    r"ld|ldir|lddr|ldi|ldd|jp|jr|call|ret|reti|retn|push|pop|inc|dec|add|adc|"
+    r"sub|sbc|and|or|xor|cp|cpir|cpdr|cpi|cpd|rst|ex|exx|out|in|bit|set|res|"
+    r"rlc|rrc|rla|rra|rlca|rrca|rl|rr|sla|sra|srl|neg|cpl|scf|ccf|daa|djnz|im|"
+    r"rrd|rld|ini|ind|outi|otir|nop|halt|di|ei"
+)
+# An address column, then a mnemonic. The prefix class absorbs indentation, the
+# markdown a listing is usually pasted inside, AND the comment leaders `; # //`.
+#
+# ⚠️ THE COMMENT LEADERS ARE LOAD-BEARING AND WERE MISSING FROM THE FIRST CUT.
+# Without them this rule could not see a listing in an .asm comment -- i.e. it was
+# blind to exactly the half of the corpus that justified building it (6 of the ~50
+# sites the 2026-07-07 full-verify remediated were comments in disk/*.asm, files
+# check 1 had scanned all along). Knife K1b caught it by planting there and
+# getting a green. Cost of the fix, measured over all 692 files: one additional
+# finding, and it is genuine.
+LISTING_LINE = re.compile(
+    rf"^[\s>|*`;#/]*\$?[0-9A-Fa-f]{{4}}[:.]?\s+({LISTING_MNEM})\b", re.I)
+LISTING_MIN_RUN = 2
+
+# The files swept. Verified equal to `git ls-files` filtered to these suffixes
+# (690 files, zero difference either way), so the sweep cannot drift away from
+# what is actually tracked without the floor below noticing.
+SWEEP_EXTS = (".md", ".asm", ".inc", ".py", ".tcl", ".txt", ".bas", ".yml")
+SWEEP_SKIP = {"build", "scratchpad", ".git", ".claude", "__pycache__", ".vscode"}
+MIN_SWEEP_FILES = 600
+LISTING_ALLOW = ROOT / "tools" / "citations-listing-allow.txt"
+
+
+def sweep_files() -> list[str]:
+    out = []
+    for p in ROOT.rglob("*"):
+        if p.suffix not in SWEEP_EXTS or not p.is_file():
+            continue
+        rel = p.relative_to(ROOT)
+        if SWEEP_SKIP & set(rel.parts):
+            continue
+        out.append(str(rel))
+    return sorted(out)
+
+
+def listing_runs(lines):
+    """Maximal runs of >= LISTING_MIN_RUN consecutive listing-shaped lines.
+
+    Returns (first_lineno, run_lines). Extracted so the self-test exercises the
+    SAME code path the sweep does."""
+    runs, cur, first = [], [], 0
+    for i, line in enumerate(lines):
+        if LISTING_LINE.match(line):
+            if not cur:
+                first = i + 1
+            cur.append(line)
+        else:
+            if len(cur) >= LISTING_MIN_RUN:
+                runs.append((first, cur))
+            cur = []
+    if len(cur) >= LISTING_MIN_RUN:
+        runs.append((first, cur))
+    return runs
+
+
+def run_digest(run_lines) -> str:
+    return hashlib.sha256("\n".join(run_lines).encode()).hexdigest()[:12]
+
+
+# The control. Check 1 pins its four historical false positives VERBATIM; this
+# check cannot -- its true-positive vectors ARE the forbidden artifact, and
+# quoting a real one here would reproduce a proprietary listing in a second file
+# and make this tool its own first finding. So the positive vectors are INVENTED:
+# synthetic address/mnemonic runs with no provenance at all. The negative vectors
+# are real forms from our own honest prose that must never fire. Each vector is
+# one SOURCE line, so this table is not itself a listing run.
+LISTING_SELFTEST = [
+    (["1234  ld a,($5678)", "1237  or a", "1238  jr z,$1240"], True),
+    (["$A100  push af", "$A101  inc hl"], True),                    # the >=2 boundary
+    (["> C000: call $C123", "> C003: ret nz"], True),               # markdown-quoted
+    (["  9000.  xor a", "  9001.  ld (hl),a", "  9002.  inc hl"], True),
+    (["`B200  di`", "`B201  halt`"], True),                         # backticked
+    (["; 7000  ld a,($7A10)", "; 7003  or a"], True),               # an ASM COMMENT (K1b)
+    (["4010  jp $4020"], False),                                    # ONE branch target
+    (["the handler must set a flag and or it in", "before it can ret"], False),
+    (["ary_alloc:  ld a,(hl)", "            inc hl"], False),       # our own asm source
+    (["the window is $11A3..$11AD, 10 bytes", "and both ends are published"], False),
+    (["1234  ld a,($5678)", "some prose in between", "1238  jr z,$1240"], False),
+]
+
+
+def listing_selftest_failures():
+    bad = []
+    for lines, want in LISTING_SELFTEST:
+        got = bool(listing_runs(lines))
+        if got != want:
+            bad.append((lines, want, got))
+    return bad
+
+
+def parse_listing_allow():
+    """(digest -> (relpath, reason)), or an error string.
+
+    🔴 THIS IS A CONTROL, NOT A SUPPRESSION LIST -- the same idea as
+    tools/deadcode-allow.txt. Every entry must STILL be produced by the sweep. An
+    entry that stops matching is either stale (delete the line) or proof the sweep
+    has gone blind, and both exit 2. Entries are anchored on the DIGEST of the
+    run's text, never on a line number: line numbers rot, and a path-level entry
+    would blind the whole file to a second, real listing."""
+    out = {}
+    if not LISTING_ALLOW.exists():
+        return out
+    for n, raw in enumerate(LISTING_ALLOW.read_text().splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split(None, 2)
+        if len(parts) < 3:
+            return f"{LISTING_ALLOW.name}:{n}: need '<path> <digest> <reason>'"
+        rel, digest, reason = parts
+        out[digest] = (rel, reason)
+    return out
+
+
 # --- check 3: section-citation presence (advisory, disk-only) -------------------
 SECTION_HDR = re.compile(r"^;\s*-{2,}\s*(.+?)\s*-{2,}\s*$")
 CITATION = re.compile(
@@ -334,6 +485,16 @@ def main(argv):
               file=sys.stderr)
         return 2
 
+    bad = listing_selftest_failures()
+    if bad:
+        print("INSTRUMENT NOT WORKING — check 5's listing self-test misclassified:",
+              file=sys.stderr)
+        for lines, want, got in bad:
+            print(f"  expected {'FLAG' if want else 'pass'}, got "
+                  f"{'FLAG' if got else 'pass'}: {lines!r}", file=sys.stderr)
+        print("Nothing below this was measured. Fix LISTING_LINE.", file=sys.stderr)
+        return 2
+
     short = [(t, len(TARGETS[t]), MIN_FILES[t]) for t in targets
              if len(TARGETS[t]) < MIN_FILES.get(t, 0)]
     if short:
@@ -346,7 +507,8 @@ def main(argv):
         return 2
 
     print("clean-room citation audit (mechanical half — not a full paper trail)")
-    print(f"rule self-test {len(RULE_SELFTEST)}/{len(RULE_SELFTEST)}\n")
+    print(f"rule self-test {len(RULE_SELFTEST)}/{len(RULE_SELFTEST)}, "
+          f"listing self-test {len(LISTING_SELFTEST)}/{len(LISTING_SELFTEST)}\n")
     gating_total = advisory_total = 0
     for target in targets:
         print(f"== {target} == ({len(TARGETS[target])} files scanned, "
@@ -371,6 +533,60 @@ def main(argv):
         gating_total += t_gate
         advisory_total += t_adv
         print()
+
+    # check 5: decoded-instruction listings — repo-wide, never per-target, because
+    # the class was found in shipped asm comments AND in prose by the same sweep.
+    allow = parse_listing_allow()
+    if isinstance(allow, str):
+        print(f"INSTRUMENT NOT WORKING — {allow}", file=sys.stderr)
+        return 2
+    swept = sweep_files()
+    if len(swept) < MIN_SWEEP_FILES:
+        print("INSTRUMENT NOT WORKING — the listing sweep collapsed below its "
+              f"floor: {len(swept)} file(s), floor {MIN_SWEEP_FILES}. A glob "
+              "stopped matching, so a smaller sweep would have read as a cleaner "
+              "tree.", file=sys.stderr)
+        return 2
+
+    print(f"== listing shape == ({len(swept)} files swept, "
+          f"{len(allow)} allowlisted)")
+    listing_gate = 0
+    seen_digests = set()
+    for rel in swept:
+        try:
+            lines = (ROOT / rel).read_text(errors="replace").splitlines()
+        except OSError as e:
+            print(f"  [ERROR] {rel}: cannot read: {e}")
+            listing_gate += 1
+            continue
+        for start, run in listing_runs(lines):
+            digest = run_digest(run)
+            seen_digests.add(digest)
+            if digest in allow:
+                print(f"  [allowed] {rel}:{start}: {len(run)}-line listing "
+                      f"({digest}) — {allow[digest][1]}")
+                continue
+            print(f"  [LISTING] {rel}:{start}: {len(run)} consecutive "
+                  f"<address> <mnemonic> lines — a rendered instruction listing. "
+                  f"If this is our own or an admissible source, allowlist it with "
+                  f"a reason in {LISTING_ALLOW.name} (digest {digest}); if it "
+                  f"decodes a proprietary binary, reground it on the black-box "
+                  f"observation it rests on.")
+            listing_gate += 1
+    # The allowlist as canary: an entry that stops matching is a stale entry OR a
+    # blind sweep, and both are the instrument, not the tree.
+    stale = [d for d in allow if d not in seen_digests]
+    if stale:
+        print("INSTRUMENT NOT WORKING — allowlisted listing(s) no longer detected:",
+              file=sys.stderr)
+        for d in stale:
+            print(f"  {allow[d][0]} ({d}) — either the text was regrounded "
+                  f"(delete the line) or the sweep has gone blind.", file=sys.stderr)
+        return 2
+    if listing_gate == 0:
+        print("  clean — no unallowlisted decoded-instruction listings")
+    gating_total += listing_gate
+    print()
 
     if advisory_total:
         print(f"ADVISORY: {advisory_total} section header(s) without an inline "

@@ -79,6 +79,18 @@ basic-reloc` and of CI. It was on-demand-only for its first 761 commits and spen
 ⚠️ It exits **2**, not 1, when its own rule self-test or its file-count floor
 fails — that means the instrument is broken and nothing below it was measured.
 
+**Never paste a decoded instruction listing into a doc or a comment**, whatever
+its source. Since 2026-08-06 the same target sweeps **every** first-party text
+file for the shape — a run of ≥2 consecutive `<address>  <mnemonic>` lines — and
+refuses. State the observation instead: the PC range, the watchpointed read, the
+observed value, the branch **target**. The forbidden-word scan is blind to
+listings (measured: 0 recall on every recorded breach), so this is the only
+mechanical thing standing between a hand-decode and the tree
+([`spec-audit-citations-docs.md`](spec-audit-citations-docs.md)). If the decoded
+code is genuinely from an admissible source, allowlist it **with the reason
+written down** in `tools/citations-listing-allow.txt` — do not reword around the
+gate.
+
 ### Delegating asm to a sub-agent — embed the firewall in the brief
 
 The one provenance breach we have had (`provider-oracle-scope.md` §8.37) came
