@@ -24,6 +24,75 @@ item — do **one item per session** to keep context lean.
 | **2 — full disk (Disk BASIC integration)** | the full file-channel verb surface (sequential + random-access + dir mgmt + `CALL FORMAT`), all oracle-validated | **✅ verb surface complete** — only the Tier-2 provider oracle (a distinct DOS-boot sub-track) + a few Phase-3-gated verbs remain |
 | **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | **active charter** (raised from loader-stub) — landed: string engine, float pack, math pack, **arrays/DIM arc CONCLUDED** (through slice-4c string-scalar unification — the faithful unified variable area; no fixed variable pool remains) |
 
+## Open — standing residuals (INDEX; this is the pickup list)
+
+⚠️ **This section exists so a residual cannot be lost by being written up inside a
+`- [x]` block.** Several of the items below were filed that way — accurate, dated,
+and invisible to anyone scanning for `- [ ]`. Each line here is a **one-line
+pointer**: the detail stays where the slice wrote it, at the cited line. Keep this
+list short — close items, do not restate them.
+
+Also the reason `MEMORY.md` no longer carries a copy of this list: the memory index
+is loaded every session and must stay compact, so it points here instead of
+duplicating (and drifting from) what is written below.
+
+**Language / verb surface**
+
+- [ ] `AUTO` / `RENUM` / `LLIST` / `DELETE` — **the STATEMENT half.** Tokens are
+      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4237); nothing
+      executes them. Detail: *“Editor / program management”*, line 1524.
+- [ ] **No string `READ`.** Filed by D-DEFSTR — detail:
+      *“ZEROBAS HAS NO STRING `READ`”*, line 3927.
+
+**Own-design hazards carried out of closed slices**
+
+- [ ] 🔴 **Two type-code namespaces share the value `1`** — the published `DEFTBL`
+      string code and zerobas's own variable-chain string tag. D-DEFSTR fixed the
+      three sites that crossed them (one was a live memory corruption) but the two
+      namespaces still overlap on the numeric values, so the next site that feeds
+      one into the other reintroduces the class. Collapse to ONE. Detail:
+      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3838.
+
+**Apparatus / gate limits (each is a stated limit, not a filed defect)**
+
+- [ ] ⚠️ **`injector-check` is still a TEXT classifier.** A split literal passes.
+      Already an open item — detail: line 4554.
+- [ ] ⚠️ **An asm label named in a `tools/*.py` or `sub/` comment is immune to the
+      dead-code sweep** — `check_dead_code.py`'s `external_names` scans those
+      directories *including comments*, so writing a label's name in prose seeds it
+      as reachable. Every slice that edits `tools/` prose must predict the seed
+      counts and treat movement as a finding. Detail: lines 2197 and 2389.
+- [ ] ⚠️ **Three probe page-0 entry addresses stay HARDCODED** —
+      `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
+      (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
+      deriving them from `sub/equates.inc` needs its own falsification because they
+      inject raw bytes into a bare machine deliberately. Detail: line 2348.
+- [ ] ⚠️ **`build/disk.rom` pad-only damage is invisible ON PURPOSE** — 9543 of
+      16384 bytes (58.2 %) are `$00` pad in 252 runs. Closing it needs a whole-image
+      digest, which would pin the ROM against every legitimate `disk/*.asm` change.
+      Re-open only with an argument that answers that. Detail: line 2343.
+- [ ] 🔴 **`make audit-citations` is RED at HEAD, and nothing in the standing
+      corpus runs it.** Measured 2026-08-06 (D-DSKJUDGE follow-up): rc 1, *"GATING
+      FINDINGS: 2 — mechanical floor breached"*, on two files no recent slice
+      touched (last change `40647bd`, so this has been red for a while).
+      `docs/dev-workflow.md:72` calls a clean run **the floor**, and the target is
+      "on demand / CI" only — which is how it went red unnoticed.
+      **(i)** `basic/fat.asm:81` looks like a **false positive**: the flagged
+      sentence is about zerobas's own thirteen duplicated shim bodies, not about
+      any reference material, and the scanner's rule is token-plus-affirmative-
+      context. Fix the sentence or teach the rule, but decide which — silencing it
+      by rewording is only right if the rule genuinely cannot see the difference.
+      **(ii)** `basic/missing.asm:1` is a **real gap**: no clean-room / PROVENANCE
+      attestation in its header block, unlike every other scanned `.asm`.
+      ⚠️ Whoever picks this up: also decide whether `audit-citations` belongs in the
+      standing corpus. It is cheap, read-only and needs no emulator — the reason it
+      is not there is not recorded anywhere.
+- [ ] ⚠️ **`lof-acceptance` intermittent oracle drift — two sightings, nothing
+      since.** Sighting 3 has not occurred across four consecutive slices
+      (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE). A third IS a finding to
+      chase; capture the **whole** log (`> file 2>&1`), because sighting 1's row
+      identity was lost to a `tail -6`. Detail: line 3444.
+
 ## Phase 1 — committed loader-stub target (✅ closed)
 
 The charter (README) is deliberate: *just enough MSX-BASIC to run the `.BAS` /
