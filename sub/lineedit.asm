@@ -76,6 +76,13 @@
 ; INCOMPLETE. It read "anything that is not 1 is a delrange", so LE_OP_LSTRANGE
 ; would have run le_delrange and DELETED the lines a LIST was asked to print.
 ; The selector is an explicit ladder now.
+; ⚠️ AND D-EDITVERB MADE THE *LAST ARM* THE SAME SHAPE AGAIN. `jp le_lstrange`
+; as the tail meant "anything that is not 0/1/2 is a listrange" -- true while 3
+; was the highest op, and wrong the moment ops 4/5/6 exist. Every op is an
+; explicit `jp z` now and the tail is an UNREACHABLE GUARD, not a verb: a future
+; op added here without an arm raises Syntax error instead of silently running
+; whichever verb happens to sit last. Six bytes of sub page 1 to convert a
+; silent mis-route into a loud one.
 lineedit_tenant:
                 ld      a,(LE_OP)
                 or      a
@@ -85,7 +92,24 @@ lineedit_tenant:
                                                 ; call sites); tail: vars_reset; ret
                 dec     a
                 jp      z,le_delrange           ; LE_OP_DELRANGE = 2 (D-DELETE)
-                jp      le_lstrange             ; LE_OP_LSTRANGE = 3 (D-LSTRNG)
+                dec     a
+                jp      z,le_lstrange           ; LE_OP_LSTRANGE = 3 (D-LSTRNG)
+                dec     a
+                jp      z,le_lstrange           ; LE_OP_LLSTRANGE = 4 (D-EDITVERB) --
+                                                ; the SAME parse, byte for byte; only
+                                                ; the resident head's sink differs
+                dec     a
+                jp      z,le_renum              ; LE_OP_RENUM = 5 (D-EDITVERB)
+                dec     a
+                jp      z,le_renum_next         ; LE_OP_RENUM_NEXT = 6 (resume)
+                dec     a
+                jp      z,le_auto               ; LE_OP_AUTO = 7 (D-EDITVERB) --
+                                                ; ARGUMENT PARSE ONLY; the modal loop
+                                                ; is main-resident (it drives the line
+                                                ; editor and dispatch_line)
+                ld      a,2                     ; unreachable: an op with no arm
+                ld      (LE_STATUS),a           ; reports Syntax error rather than
+                ret                             ; running the verb that sits last
 
 ; --- le_store: store_line's own body (empty body -> delete; else bounds-
 ; check + insert), byte-for-byte the same logic as the pre-eviction
@@ -719,4 +743,432 @@ skip_to_eol:
                 jr      skip_to_eol
 ste_done:
                 inc     hl                      ; advance past the 00 terminator
+                ret
+
+; ===========================================================================
+; --- le_renum: RENUM [<new>][,[<old>][,<inc>]]  (LE_OP_RENUM / _NEXT) ------
+; ===========================================================================
+; docs/spec-basic-editverb.md §3.2, measured in
+; docs/editverb-msx1-characterization.md §2.
+;   IN : RN_PTR = the statement cursor, ON the RENUM token (op 5 only).
+;   OUT: LE_STATUS = 0 (done) / 1 (RN_TGT + RN_LINE hold ONE undefined-line
+;        report; the resident head prints it and re-enters with op 6) / else
+;        the ERR CODE ITSELF -- 2 (R-RN14, R-RN15) or 5 (R-RN11..R-RN13).
+;
+; 🎯 RENUM NEVER CHANGES A LINE'S LENGTH, AND THAT IS THE WHOLE DESIGN. A line
+; number is a fixed 2-byte header field and a reference is a fixed 3-byte
+; `$0E,lo,hi`, so every rewrite is IN PLACE: no gap to open, no tail to memmove,
+; no relink, and -- R-RN17, measured -- no vars_reset either. That is why this
+; verb sits in a page-1 tenant beside the memmove engine and uses NONE of it,
+; and why `RENUM` leaves both the variables and the CONT point standing where
+; `DELETE` clears them (dlt-vars reads ` 0  0 `; rnm-vars reads ` 7 `).
+;
+; 🔴 THE REFERENCE PASS RUNS BEFORE THE HEADER PASS, AND THE ORDER IS FORCED.
+; A reference names an OLD line number, so it can only be resolved while the
+; headers still hold old numbers. Renumber the headers first and every reference
+; resolves against the new numbering -- which for the measured `1 GOTO 3` would
+; silently produce `10 GOTO 10` instead of `10 GOTO 30`. Pass 2 therefore
+; rewrites every reference against untouched headers; pass 3 then rewrites the
+; headers. Nothing in between reads either.
+;
+; 🔴 AND THE WALK IS TOKEN-AWARE, WHICH IS A MEASURED RULE AND NOT A TIDINESS
+; CHOICE (R-RN19). `1 A=&H0E0E` stores `$0C $0E $0E`: a byte scan for $0E finds
+; the constant's own low byte, reads the next two bytes as a line number,
+; resolves 14, finds no line 14 and prints `Undefined line 14 in 1` -- and then
+; corrupts the constant. Both references print NOTHING and leave the value at
+; 3598. le_tok_skip is what makes that true here; the same primitive skip_to_eol
+; already needed for float mantissas.
+le_renum:
+                ld      hl,(RN_PTR)             ; the statement cursor, on the token
+                inc     hl                      ; past it
+                ld      de,10                   ; R-RN5: an ABSENT new start is 10,
+                ld      (RN_NEW),de             ; NOT 0 -- `RENUM ,,5` renumbers to
+                ld      (RN_INC),de             ; 10,15 and `RENUM ,3` puts line 3
+                ld      de,0                    ; at 10. ⚠️ AUTO's R-AU4 is the
+                ld      (RN_OLD),de             ; OPPOSITE (`AUTO ,7` starts at 0);
+                                                ; the two verbs do NOT share this.
+                call    ldr_num                 ; [<new>]
+                jr      nc,lrn_c1
+                ld      (RN_NEW),de
+lrn_c1:
+                call    ldr_skipsp
+                cp      ','
+                jr      nz,lrn_end
+                inc     hl
+                call    ldr_num                 ; [<old>]
+                jr      nc,lrn_c2
+                ld      (RN_OLD),de
+lrn_c2:
+                call    ldr_skipsp
+                cp      ','
+                jr      nz,lrn_end
+                inc     hl
+                call    ldr_num                 ; [<inc>]
+                jr      nc,lrn_end
+                ld      (RN_INC),de
+lrn_end:
+                ; R-RN15: a fourth argument is Syntax error, and nothing is
+                ; renumbered -- `RENUM 10,1,10,7` leaves line 1 standing. A ':'
+                ; IS accepted and R-RN16 then abandons the rest of the line.
+                call    ldr_skipsp
+                or      a
+                jr      z,lrn_valid
+                cp      COLON
+                ld      a,2
+                jr      nz,lrn_fail
+lrn_valid:
+                ; R-RN11: increment 0 is ERR 5. Checked before anything is read
+                ; from the program, so `RENUM 10,,0` is a complete no-op.
+                ld      hl,(RN_INC)
+                ld      a,h
+                or      l
+                jr      z,lrn_fc
+                call    lrn_order               ; R-RN12 + R-RN13 (below); CF set = ok
+                jr      c,lrn_start
+lrn_fc:
+                ld      a,5                     ; ERR 5: illegal function call
+lrn_fail:
+                ld      (LE_STATUS),a
+                ret                             ; a REFUSED renum is a complete no-op
+lrn_start:
+                ; Pass 2 begins at the FIRST stored line, not at RN_OLD -- R-RN7:
+                ; a reference in a line that is NOT itself renumbered is rewritten
+                ; too (`RENUM 100,3` turns `1 GOTO 3` into `1 GOTO 100`).
+                ld      hl,TXTBASE
+lrn_line:
+                ; HL = a line's link field. Step with PRGEND like ldr_walk, not
+                ; with the link chain: nothing here moves a byte, so either would
+                ; work -- PRGEND is used because the resume path (op 6) re-enters
+                ; in the MIDDLE of a body and has no link in hand.
+                ld      a,(PRGEND)
+                cp      l
+                jr      nz,lrn_body0
+                ld      a,(PRGEND+1)
+                cp      h
+                jr      z,lrn_pass3             ; end of program -> renumber headers
+lrn_body0:
+                inc     hl
+                inc     hl
+                ld      e,(hl)                  ; this line's OLD number -- R-RN8, the
+                inc     hl                      ; report says `in 1`, the number the
+                ld      d,(hl)                  ; line has NOW, not the one it is
+                inc     hl                      ; about to get
+                ld      (RN_LINE),de
+                ld      (RN_PTR),hl             ; ⚠️ LOAD-BEARING: the resume entry
+                                                ; below RE-READS RN_PTR, so falling
+                                                ; through with the body pointer held
+                                                ; only in HL would have it replaced
+                                                ; by the PREVIOUS line's cursor
+le_renum_next:
+                ; op 6 re-enters HERE, with RN_PTR mid-body and RN_LINE already
+                ; standing. Everything pass 2 needs across the round trip is in
+                ; RAM; the head ran print_msg and list_num in between.
+                ld      hl,(RN_PTR)
+lrn_scan:
+                ld      (RN_PTR),hl
+                ld      a,(hl)
+                or      a
+                jr      z,lrn_eol
+                cp      LINENO_TOKEN
+                jr      z,lrn_ref
+                call    le_tok_skip             ; R-RN19: whole tokens, so a &H/&O
+                jr      lrn_scan                ; value, a string body, a DATA body
+                                                ; and a REM body are stepped OVER
+lrn_eol:
+                inc     hl                      ; past the 00 -> next line's link
+                jr      lrn_line
+lrn_ref:
+                inc     hl                      ; -> the operand's low byte
+                ld      c,(hl)
+                inc     hl
+                ld      b,(hl)
+                dec     hl                      ; HL back on the low byte
+                push    hl
+                call    lrn_map                 ; BC = old target -> CF set + DE = new
+                pop     hl
+                jr      nc,lrn_undef
+                ld      (hl),e                  ; rewrite the reference in place
+                inc     hl
+                ld      (hl),d
+                inc     hl
+                jr      lrn_scan
+lrn_undef:
+                ; R-RN8/R-RN9/R-RN10: report ONE dangling reference and hand back.
+                ; NOT an error -- ERR stays 0 and ON ERROR does not trap it, which
+                ; is why this returns status 1 and not an ERR code. The renumbering
+                ; STILL HAPPENS: the reference is left at its original value and the
+                ; walk continues past it, so `1 GOTO 77` ends up as `10 GOTO 77`.
+                ; RN_TGT was written by lrn_map on the way in, so there is nothing
+                ; to store here: BC has been the WALK's line number since then.
+                inc     hl
+                inc     hl                      ; resume PAST this reference, or the
+                ld      (RN_PTR),hl             ; re-entry reports it again forever
+                ld      a,1
+                ld      (LE_STATUS),a
+                ret
+lrn_pass3:
+                ; Pass 3 -- the headers, now that every reference is resolved.
+                ld      hl,TXTBASE
+                ld      de,(RN_NEW)
+lrn_p3lp:
+                ld      a,(PRGEND)
+                cp      l
+                jr      nz,lrn_p3line
+                ld      a,(PRGEND+1)
+                cp      h
+                jr      z,lrn_done
+lrn_p3line:
+                push    hl
+                inc     hl
+                inc     hl
+                ld      c,(hl)                  ; BC = this line's old number
+                inc     hl
+                ld      b,(hl)
+                call    lrn_inspan              ; CF set = at or past RN_OLD
+                jr      nc,lrn_p3next
+                ld      (hl),d                  ; write the new number (HL is on the
+                dec     hl                      ; high byte)
+                ld      (hl),e
+                ld      hl,(RN_INC)
+                add     hl,de
+                ex      de,hl                   ; DE = the next number to assign
+lrn_p3next:
+                pop     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                call    skip_to_eol
+                jr      lrn_p3lp
+lrn_done:
+                xor     a
+                ld      (LE_STATUS),a           ; 0 = done. No relink, no vars_reset:
+                ret                             ; nothing moved and R-RN17 says the
+                                                ; variables and the CONT point stand.
+
+; --- lrn_inspan: CF set when BC is at or past RN_OLD -----------------------
+; The one place "is this line renumbered" is decided, so R-RN3's boundary has a
+; single site. Preserves HL and DE.
+lrn_inspan:
+                push    hl
+                ld      hl,(RN_OLD)
+                ld      a,c
+                sub     l
+                ld      a,b
+                sbc     a,h                     ; BC - RN_OLD: CF set -> below it
+                pop     hl
+                ccf
+                ret
+
+; --- lrn_map: old line number BC -> its NEW number in DE -------------------
+; CF set = the line exists (DE = the number it will have); CF clear = there is
+; no such line, i.e. a dangling reference. A line BELOW RN_OLD keeps its number
+; (R-RN3), which is why `RENUM 100,3` leaves `ON 1 GOTO 2,110`'s first element
+; at 2 while rewriting its second.
+;
+; ⚠️ THIS RESOLVES AGAINST THE HEADERS AS THEY STAND, so it is only correct
+; while pass 3 has not run. See the header.
+lrn_map:
+                ld      (RN_TGT),bc             ; the target -- and the cell the
+                                                ; report reads if it is UNDEFINED,
+                                                ; so lrn_undef needs no store of
+                                                ; its own and BC is free to become
+                                                ; the walk's own line number
+                ld      hl,TXTBASE
+                ld      de,(RN_NEW)             ; the next number to be assigned
+lrnm_lp:
+                ld      a,(PRGEND)
+                cp      l
+                jr      nz,lrnm_line
+                ld      a,(PRGEND+1)
+                cp      h
+                jr      nz,lrnm_line
+                or      a                       ; end of program -> CF clear = there
+                ret                             ; is no such line (R-RN8/R-RN22)
+lrnm_line:
+                inc     hl
+                inc     hl
+                ld      c,(hl)                  ; BC = the WALKED line's number
+                inc     hl
+                ld      b,(hl)
+                inc     hl                      ; HL -> this line's token body
+                push    hl
+                ld      hl,(RN_TGT)
+                ld      a,l
+                cp      c
+                jr      nz,lrnm_no
+                ld      a,h
+                cp      b
+                jr      z,lrnm_hit
+lrnm_no:
+                pop     hl                      ; HL -> the body again
+                call    lrn_inspan              ; is the WALKED line renumbered?
+                jr      nc,lrnm_step            ; no -> it consumes no increment
+                push    hl
+                ld      hl,(RN_INC)
+                add     hl,de
+                ex      de,hl
+                pop     hl
+lrnm_step:
+                call    skip_to_eol             ; -> the next line's link field
+                jr      lrnm_lp
+lrnm_hit:
+                pop     hl                      ; drop the body pointer, balancing
+                                                ; the push above on this path too
+                call    lrn_inspan              ; BC is the FOUND line's number
+                ret     c                       ; renumbered -> DE already holds the
+                                                ; number it will be given
+                ld      d,b                     ; below RN_OLD -> it keeps its own,
+                ld      e,c                     ; which is what leaves `ON 1 GOTO 2,4`
+                scf                             ; reading `2,110` after `RENUM 100,3`
+                ret
+
+; --- lrn_order: R-RN12 + R-RN13, both validations, one walk ---------------
+; CF set = the renumbering is legal.
+;
+; R-RN12: the new numbering must stay STRICTLY ABOVE the last line left alone.
+; `RENUM 20,30` on 10/20/30 is ERR 5 and `RENUM 21,30` is fine -- equal is
+; refused, which is why this is a `sub` + carry test and not a "<".
+; R-RN13: and the LAST number assigned must not pass LINENO_CEIL. That is a
+; COMPUTED overflow and it is ERR 5 (`RENUM 65520,,10` on two lines), which the
+; literal ceiling in ldr_num does NOT cover -- `RENUM 65530` is a Syntax error
+; from the tokeniser instead (R-RN14). Two rules, two messages, one verb.
+lrn_order:
+                ld      hl,TXTBASE
+                ld      de,(RN_NEW)
+lrno_lp:
+                ld      a,(PRGEND)
+                cp      l
+                jr      nz,lrno_line
+                ld      a,(PRGEND+1)
+                cp      h
+                jr      z,lrno_ok               ; walked it all without overflowing
+lrno_line:
+                push    hl
+                inc     hl
+                inc     hl
+                ld      c,(hl)
+                inc     hl
+                ld      b,(hl)
+                call    lrn_inspan
+                jr      c,lrno_span
+                ; a line left alone: R-RN12 wants RN_NEW STRICTLY above it, and
+                ; lines are ascending, so testing every one of them is the same
+                ; test as testing the last.
+                ld      hl,(RN_NEW)
+                ld      a,l
+                sub     c
+                ld      a,h
+                sbc     a,b                     ; RN_NEW - number: CF set -> below,
+                jr      c,lrno_bad              ; and equal falls through to the
+                ld      a,l                     ; explicit equality test
+                cp      c
+                jr      nz,lrno_next
+                ld      a,h
+                cp      b
+                jr      z,lrno_bad              ; RN_NEW == a kept line's number
+                jr      lrno_next
+lrno_span:
+                ; a renumbered line: DE is its number. Refuse past the ceiling.
+                ld      a,d
+                cp      high (LINENO_CEIL+1)
+                jr      c,lrno_inc
+                ld      a,e
+                cp      low (LINENO_CEIL+1)
+                jr      nc,lrno_bad
+lrno_inc:
+                ; 🔴 THE OVERFLOW BELONGS TO THE LINE THAT NEEDS THE NUMBER, NOT
+                ; TO THE ADDITION. Failing on the carry here rejected `RENUM 65529`
+                ; on a ONE-LINE program: 65529 is a legal number, it was assigned,
+                ; and then the increment for a SECOND line that does not exist
+                ; wrapped and condemned the first. Both references renumber that
+                ; line to 65529 and print Ok. So a wrap parks DE at $FFFF -- above
+                ; the ceiling, so the NEXT line's test above rejects it, and
+                ; harmless if there is no next line.
+                ld      hl,(RN_INC)
+                add     hl,de
+                jr      nc,lrno_set
+                ld      hl,$FFFF
+lrno_set:
+                ex      de,hl
+lrno_next:
+                pop     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                call    skip_to_eol
+                jr      lrno_lp
+lrno_bad:
+                pop     hl
+                or      a                       ; CF clear = refuse
+                ret
+lrno_ok:
+                scf
+                ret
+
+; --- le_auto: AUTO [<start>][,<inc>] -- PARSE ONLY (LE_OP_AUTO) ------------
+; docs/spec-basic-editverb.md §3.3. Only the ARGUMENT is here; AUTO's modal
+; prompt loop is main-resident, because it drives read_line, dispatch_line and
+; CHPUT -- all main page 1, none reachable from a page-1 tenant. This is the
+; same head/body split LIST uses, with the halves the other way round.
+;   IN : RN_PTR = the statement cursor, ON the AUTO token.
+;   OUT: AU_NUM / AU_INC; LE_STATUS = 0, or the ERR CODE (2 or 5).
+;
+; 🔴 AUTO'S DEFAULTS ARE NOT RENUM'S, AND COPYING THEM WOULD BE WRONG IN BOTH
+; DIRECTIONS. `RENUM ,,5` starts at 10 (R-RN5) and `AUTO ,7` starts at **0**
+; (R-AU4) -- the same absent field, the same comma form, opposite answers. Bare
+; `AUTO` is 10 all the same, so 10 is a WHOLE-ARGUMENT-ABSENT rule here and a
+; per-field default there. Measured on both references; this is the sibling trap
+; D-LSTRNG hit when DELETE's range rules did not transfer to LIST.
+le_auto:
+                ld      hl,(RN_PTR)
+                inc     hl                      ; past the AUTO token
+                ld      de,10
+                ld      (AU_INC),de             ; R-AU1/R-AU2: the increment is 10
+                ld      (AU_NUM),de             ; unless a comma form changes it, and
+                                                ; bare AUTO starts at 10
+                ld      b,0                     ; B = 1 once a START has been seen
+                call    ldr_num                 ; (ldr_num preserves BC)
+                jr      nc,lau_comma
+                ld      (AU_NUM),de
+                inc     b
+lau_comma:
+                call    ldr_skipsp
+                cp      ','
+                jr      nz,lau_end
+                inc     hl
+                ; R-AU4: with a comma present and no start typed, the start is 0.
+                ld      a,b
+                or      a
+                jr      nz,lau_inc
+                ld      de,0
+                ld      (AU_NUM),de
+lau_inc:
+                ; R-AU5: and an absent increment AFTER the comma is 0, which the
+                ; check below turns into ERR 5 -- that is the whole of why bare
+                ; `AUTO ,` is `Illegal function call` and needs no rule of its own.
+                ld      de,0
+                ld      (AU_INC),de
+                call    ldr_num
+                jr      nc,lau_end
+                ld      (AU_INC),de
+lau_end:
+                ; R-AU9: a ':' tail is accepted and then abandoned (`AUTO 10:B=9`
+                ; prompts at 10 and leaves B at 0); anything else is ERR 2.
+                call    ldr_skipsp
+                or      a
+                jr      z,lau_ok
+                cp      COLON
+                ld      a,2
+                jr      nz,lau_fail
+lau_ok:
+                ld      hl,(AU_INC)             ; R-AU5: increment 0 is ERR 5
+                ld      a,h
+                or      l
+                ld      a,5
+                jr      z,lau_fail
+                xor     a
+lau_fail:
+                ld      (LE_STATUS),a
                 ret

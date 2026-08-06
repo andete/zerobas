@@ -1310,6 +1310,45 @@ lnblank-say-acceptance: repack-machine
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
 	        --only $(if $(ONLY),'$(ONLY)',lnrd-,kwgd-,lnrt-,dlt-,lst-,lse-,cln-,cle-,clp-,cld-,csv-,dsk-,crf-) --repeat $(if $(REPEAT),$(REPEAT),1)
 
+# --- D-EDITVERB: RENUM / AUTO / LLIST (docs/spec-basic-editverb.md) ----------
+#
+# The three editor verbs whose STATEMENT half TODO.md carried as open. 60 rows,
+# three sides, three DIFFERENT readouts -- which is why this is its own probe
+# and not more rows in basic_probe_lnblank.py:
+#
+#   `rnm-`  the screen, anchored on the RENUM command itself and NOT on the
+#           trailing LIST. Anchoring on the LIST made the reading the listing
+#           only, so `Undefined line N in M`, `Illegal function call` vs
+#           `Syntax error`, and AUTO's whole session were outside the window --
+#           a machine that printed no message at all would have passed.
+#   `aut-`  the same readout, but the case presses Ctrl-STOP mid-way (`@BREAK`,
+#           omsx_repl): an AUTO session cannot be left by typing, because
+#           Ctrl-STOP is not a character and never rides KEYBUF.
+#   `llt-`  🔴 the PRINTER LOG. `plug printerport logger` reports READY
+#           unconditionally, so LLIST cannot block -- which is what refutes
+#           D-KWGAP4's filed "LLIST hangs an unplugged LPTOUT, so SIDE_LOCK
+#           refuses a reference". The reading is the byte stream the program
+#           sent, CR/LF included.
+#
+# ⚠️ THE `aut-` AND `llt-` BATTERIES RUN BOOT-PER-CASE, FOR TWO DIFFERENT
+# REASONS, AND BOTH WERE MEASURED RATHER THAN ASSUMED. AUTO is MODAL: batched,
+# `aut-nocomma` read `0` on BOTH references (an AUTO prompt left over from the
+# case before) and `aut-plain` read `<NO ECHO>`; alone, `aut-nocomma` is
+# `Illegal function call` on all three sides. The printer log is TRUNCATED once
+# per boot and accumulates within one, so a batched case's output is a delta --
+# correct right up until run_differential self-heals one case boot-per-case,
+# after which every later delta is silently wrong.
+#
+# ⚠️ AND THE RESET HAS TO BE CARRIED INTO EACH CASE on that path: run_cases
+# IGNORES `reset` when batch=False, and the CF-3300's reset answers its boot
+# date prompt and sets SCREEN 0. Without it every CF-3300 row read `<NO ECHO>`
+# while the other two sides agreed -- an apparatus failure shaped exactly like
+# one machine disagreeing.
+editverb-acceptance: repack-machine
+	python3 probes/basic/basic_probe_editverb.py --gate \
+	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',) --repeat $(if $(REPEAT),$(REPEAT),1)
+
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #
 # What one open channel costs on a real disk-capable MSX1, measured out of the same
@@ -1644,6 +1683,7 @@ clean:
         arrdim-characterize arrdim-acceptance \
         linemax-characterize linemax-acceptance chancost-characterize \
         lnblank-characterize lnblank-acceptance lnblank-echo lnblank-say-acceptance \
+        editverb-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

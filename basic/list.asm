@@ -71,10 +71,27 @@
 ; DELETE ends the run because it memmoved the text CURLINE points into and LIST
 ; moves nothing. So the advanced cursor has no reader and is never marshalled
 ; back -- which is also what makes the head this small.
+; --- ex_llist: LLIST [<lo>][-[<hi>]] (D-EDITVERB) ---------------------------
+; 🎯 `LLIST` IS `LIST` WITH A DIFFERENT SINK, AND THAT IS A MEASUREMENT, NOT AN
+; ASSUMPTION. docs/editverb-msx1-characterization.md §4 re-asked every one of the
+; twenty shapes D-LSTRNG characterized -- the range grammar, the 65535 open high
+; end, the absent range error, the `,` Syntax error, the accepted-then-abandoned
+; `:` tail -- on the printer, on both references, and all twenty agree. So this
+; shares the parse, the validation, the walk and the ENDFLAG tail; the ONLY
+; difference is which sink pchar feeds, and the only new code is the two
+; instructions that say so.
+;
+; The verb is carried in LE_OP, which the tenant does not write, so the head
+; reads it BACK after the call rather than spending a RAM flag on it -- see
+; basic/sysvars.inc at LE_OP_LLSTRANGE.
+ex_llist:
+                ld      a,LE_OP_LLSTRANGE
+                jr      exl_entry
 ex_list:
-                ld      (LST_PTR),hl        ; the statement cursor, on the token
                 ld      a,LE_OP_LSTRANGE
+exl_entry:
                 ld      (LE_OP),a
+                ld      (LST_PTR),hl        ; the statement cursor, on the token
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
                 call    subrom_call
                 jp      c,subrom_absent_error
@@ -84,9 +101,33 @@ ex_list:
                                             ; reversed range and a range past the
                                             ; program are all ERR 0 and list
                                             ; nothing, exactly where DELETE raises 5.
-                xor     a
-                ld      (PRDEST),a          ; LIST always renders to the SCREEN sink
+                ; ⚠️ THE SINK IS CHOSEN *AFTER* THE PARSE, DELIBERATELY. Set it
+                ; before, and an `LLIST 10,20` (R-LL4, Syntax error) raised inside
+                ; a program with a live `ON ERROR` would jump into the handler
+                ; with PRDEST still 1 -- and the handler's own PRINT would go to
+                ; the printer. Every exit above this point leaves PRDEST alone.
+                ld      a,(LE_OP)
+                sub     LE_OP_LSTRANGE      ; LIST -> 0 = the SCREEN sink;
+                ld      (PRDEST),a          ; LLIST -> 1 = the file-channel sink
+                jr      z,exl_walk
+                ld      (PRDEV),a           ; ...and A is 1 == LPT: the printer
+exl_walk:
                 call    list_walk           ; walk + emit [LST_LO, LST_HI]
+                ; R-LL6 -- the screen sink IS restored, and NOT here.
+                ;
+                ; 🔴 KNIFE K3 DELETED THE `xor a / ld (PRDEST),a` THAT STOOD HERE
+                ; AND `llt-sink` DID NOT MOVE. The justification written with it
+                ; was FALSE: it claimed to cover `10 LLIST:...` whose ON ERROR
+                ; handler runs first, and no such path exists. Every exit from
+                ; this verb reaches the REPL -- the ENDFLAG below stops the run,
+                ; and the raise above happens BEFORE the sink is ever set -- and
+                ; `repl` opens with its own defensive `ld (PRDEST),a`. Four bytes
+                ; of main page 1 that bought nothing measurable, removed.
+                ;
+                ; ⚠️ THAT MAKES THE RESET repl.asm's JOB, WHICH IS A CROSS-FILE
+                ; INVARIANT WITH NO GATE OF ITS OWN. If LLIST ever stops ending
+                ; the run, the sink leaks into the next statement and `llt-sink`
+                ; is the row that would catch it.
                 ; R-LS7: and then the run stops. Same mechanism as ex_end/ex_delete
                 ; -- the run loop tests ENDFLAG immediately after `exec` returns.
                 ; ⚠️ AND UNLIKE ex_delete, CONTVALID IS *NOT* CLEARED: R-LS8, LIST

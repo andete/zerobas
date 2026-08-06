@@ -38,11 +38,55 @@ duplicating (and drifting from) what is written below.
 
 **Language / verb surface**
 
-- [ ] `AUTO` / `RENUM` / `LLIST` / `DELETE` — **the STATEMENT half.** Tokens are
-      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4427); nothing
-      executes them. Detail: *“Editor / program management”*, line 1670.
+- [x] ✅ **`AUTO` / `RENUM` / `LLIST` — the STATEMENT half, CLOSED 2026-08-06 by
+      D-EDITVERB**, [`docs/spec-basic-editverb.md`](docs/spec-basic-editverb.md),
+      measured in
+      [`docs/editverb-msx1-characterization.md`](docs/editverb-msx1-characterization.md),
+      gated by `make editverb-acceptance` at **61/61 rows on three sides**.
+      🔴 **THE ITEM SAID FOUR VERBS, AND BOTH OF ITS CLAUSES WERE WRONG.**
+      `DELETE` has executed since 2026-08-02 (D-DELETE) — `basic/sysvars.inc`
+      and the slice memory both said so and this index never followed, so the
+      denominator was 3, not 4. And D-KWGAP4's *“`AUTO` is interactive and
+      `LLIST` hangs an unplugged `LPTOUT`, so `SIDE_LOCK` refuses a reference”*
+      is **true about a mechanism and answers the wrong question**: openMSX's
+      `plug printerport logger` reports READY unconditionally so `LLIST` cannot
+      block, and Ctrl-STOP is a KEY MATRIX combination (row 6 bit 1 + row 7
+      bit 4) that `keymatrixdown` delivers and `BREAKX` sees. Both verbs are now
+      measured on both references.
+      Landed: three `stmt_table` rows, `ex_llist`/`ex_renum`/`ex_auto`, four new
+      tenant ops, **262 B of main page 1** (356 → **94 B**) and 500 B of sub
+      page 1; low **23 B untouched**. D-KWGAP4's *“does not fit”* was measured
+      against a **6 B** wall and was two carves stale.
+      🎯 **`RENUM` NEVER CHANGES A LINE'S LENGTH** — a number is a fixed 2-byte
+      header field and a reference a fixed 3-byte `$0E,lo,hi` — so it is an
+      in-place rewrite with no memmove, no relink and **no `vars_reset`**, which
+      is exactly what R-RN17 measured: variables AND the `CONT` point survive a
+      `RENUM` where `DELETE` clears both.
+      🔴 **`Undefined line N in M` is a REPORT, not an error** — `ERR` stays 0
+      and `ON ERROR` does not trap it — emitted once per REFERENCE (`1 ON 1
+      GOTO 77,88` prints two, both `in 1`), so the page-1 tenant stops at each
+      one and the resident head prints and re-enters.
+      🔴 **The readout was blind to its own subject and the first version
+      passed**: anchored on the trailing `LIST` it saw the LISTING ONLY, so every
+      `Undefined line` message and AUTO's whole session including the `*` marker
+      were outside the window. And a **batched MODAL verb measures the case
+      before it** — batched, `aut-nocomma` read `0` on BOTH references and
+      `aut-plain` read `<NO ECHO>`; alone it is `Illegal function call`
+      everywhere. `--repeat` cannot catch that: openMSX is deterministic.
+      Retires the `kwgd-renum` pin (ninth cohort to fire and be DELETED rather
+      than updated; `lnblank`'s allowlist is EMPTY again).
+- [ ] **`LPRINT` / `LPOS` / `LFILES` — the rest of the printer surface.** All
+      three lack a `kwtable.inc` entry, so they are `Syntax error` on zerobas,
+      and [`docs/kwsweep-msx1-coverage.md`](docs/kwsweep-msx1-coverage.md)
+      §“Not executed” lists them as *“printer-bound with the known unplugged-
+      `LSTOUT` hang hazard”*. 🔴 **That reason is REFUTED** — D-EDITVERB measured
+      `LLIST` on both references through a plugged `logger`, which never blocks
+      (`docs/editverb-msx1-characterization.md` §1.1), and the sink itself works
+      on zerobas today (`OPEN"LPT:"` writes to the printer, the `llt-ctl` row).
+      So the sweep is carrying a stale reason for FOUR words and the other three
+      are simply absent. Whoever adds them gets the readout for free.
 - [ ] **No string `READ`.** Filed by D-DEFSTR — detail:
-      *“ZEROBAS HAS NO STRING `READ`”*, line 4117.
+      *“ZEROBAS HAS NO STRING `READ`”*, line 4161.
 
 **Own-design hazards carried out of closed slices**
 
@@ -51,7 +95,7 @@ duplicating (and drifting from) what is written below.
       three sites that crossed them (one was a live memory corruption) but the two
       namespaces still overlap on the numeric values, so the next site that feeds
       one into the other reintroduces the class. Collapse to ONE. Detail:
-      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 4028.
+      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 4072.
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
 
@@ -105,11 +149,11 @@ duplicating (and drifting from) what is written below.
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
       deriving them from `sub/equates.inc` needs its own falsification because they
-      inject raw bytes into a bare machine deliberately. Detail: line 2538.
+      inject raw bytes into a bare machine deliberately. Detail: line 2582.
 - [ ] ⚠️ **`build/disk.rom` pad-only damage is invisible ON PURPOSE** — 9543 of
       16384 bytes (58.2 %) are `$00` pad in 252 runs. Closing it needs a whole-image
       digest, which would pin the ROM against every legitimate `disk/*.asm` change.
-      Re-open only with an argument that answers that. Detail: line 2533.
+      Re-open only with an argument that answers that. Detail: line 2577.
 - [x] ✅ **`make audit-citations` was RED at HEAD and nothing ran it — CLOSED
       2026-08-06 by D-CITEJUDGE**,
       [`docs/spec-audit-citations-gate.md`](docs/spec-audit-citations-gate.md).
@@ -237,7 +281,7 @@ duplicating (and drifting from) what is written below.
       D-BYTEJUDGE, D-REVJUDGE — the last at 45 cases, 0 oracle drift, whole log
       captured, 59 lines). A third IS a finding to
       chase; capture the **whole** log (`> file 2>&1`), because sighting 1's row
-      identity was lost to a `tail -6`. Detail: line 3634.
+      identity was lost to a `tail -6`. Detail: line 3678.
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 

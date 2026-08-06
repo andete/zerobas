@@ -162,12 +162,42 @@ KEY_DEFER_MAX = 40
 # and failed in the next. A wait that types nothing is deterministic and free.
 WAIT_PREFIX = "@WAIT"
 
+# `@BREAK` -- press Ctrl-STOP, mid-case (D-EDITVERB). A second pseudo-line, and
+# it exists for the same reason `holds` does: KEYBUF injection writes DECODED
+# CHARACTERS, and Ctrl-STOP is not a character. It is a key-matrix combination
+# (row 6 bit 1 = CTRL, row 7 bit 4 = STOP), so only `keymatrixdown` can deliver
+# it and only a routine that SCANS the matrix (BREAKX $00B7) can see it.
+#
+# ⚠️ NOT the same seam as `holds`. `holds` presses ONE (row, mask) after a case's
+# LAST line and releases it just before the capture, which suits a program
+# sampling a joystick for its whole run. A modal statement has to be broken
+# BETWEEN typed lines and then typed at again -- an AUTO session is entered,
+# fed, broken, and only then asked to LIST -- so this rides the line list where
+# the ordering is explicit.
+BREAK_PREFIX = "@BREAK"
+BREAK_KEYS = ((6, 0x02), (7, 0x10))     # CTRL, STOP
+# ⚠️ HOLD IT BRIEFLY. MEASURED: at 1.5 emulated seconds the VG-8020 emits about
+# ELEVEN blank lines after leaving the session, which scrolls the AUTO command's
+# own echo off a 24-row screen -- so the readout loses its anchor and every
+# `aut-` row reads `<NO ECHO>`. The break itself works at both values; only the
+# screen differs, which is why this was invisible until the readout was widened
+# to span the session (basic_probe_editverb.anchor_for). 0.4 s is ~24 VDP frames,
+# far more than any matrix poll needs, and leaves the screen clean.
+BREAK_HOLD = 0.4                        # emulated seconds the pair is held down
+
 
 def is_wait(line) -> bool:
     """True for a `@WAIT<seconds>` pseudo-line (see WAIT_PREFIX). Callers that
     iterate a case's typed lines -- echo guards, screen scrapers, alphabet
     builders -- must skip these: nothing was typed, so nothing can be echoed."""
     return isinstance(line, str) and line.startswith(WAIT_PREFIX)
+
+
+def is_break(line) -> bool:
+    """True for a `@BREAK` pseudo-line. Like `is_wait`, callers that iterate a
+    case's typed lines MUST skip these -- nothing is typed, so nothing can be
+    echoed and nothing can appear in an alphabet."""
+    return isinstance(line, str) and line.startswith(BREAK_PREFIX)
 
 # SCREEN 0 name table (both Philips_VG_8020 and the repack disk machine boot
 # 40-column text; a stock SCREEN-1 machine would need 0x1800/768/32 instead).
@@ -268,6 +298,27 @@ def _cap_expr(capture) -> str:
         # as one hex string (graphics tenant RAM: GFX_*, GXPOS/GYPOS, CLOC/CMASK).
         _, segs = capture
         return "".join(f"[__hex_m {a} {l}]" for a, l in segs)
+    if isinstance(capture, tuple) and capture and capture[0] == "screen_printer":
+        # ("screen_printer", PATH) -> the SCREEN-0 name table, a "7c" ('|')
+        # separator, and the whole of openMSX's printer log file so far, all as
+        # one hex string (D-EDITVERB).
+        #
+        # WHY A FILE AND NOT A PORT TRACE. `plug printerport logger` reports
+        # READY unconditionally and flushes one byte per strobe edge, so LLIST
+        # cannot block and the log is complete the instant the statement ends.
+        # The reading is the byte stream the program SENT -- no 40-column wrap,
+        # no scroll-off, no cursor, and CR/LF visible as bytes -- which is a
+        # strictly better readout than a screen scrape, not a workaround for a
+        # worse one.
+        #
+        # ⚠️ THE LOG ACCUMULATES ACROSS A BATCH AND IS NEVER TRUNCATED. openMSX
+        # holds the file open for writing, so truncating it from a second Tcl
+        # handle would leave the emulator writing at its old offset into a
+        # sparse file. Each case therefore captures the WHOLE log and the probe
+        # takes the per-case DELTA, which needs no cooperation from the
+        # emulator and cannot desynchronise.
+        _, path = capture
+        return "[__hex_v %d %d]7c[__file_hex {%s}]" % (SCR_ADDR, SCR_LEN, path)
     if isinstance(capture, tuple) and capture and capture[0] == "vram_segs":
         # ("vram_segs", [(addr,len),...]) -> the segments concatenated as one hex
         # string (Tcl concatenates bracketed exprs inside the "case.N=..." string).
@@ -463,6 +514,15 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         TXTTAB tokenised-injection fallback, spec s2.2, is thus still unneeded.)"""
         if is_wait(s):
             return t + float(s[len(WAIT_PREFIX):])   # advance the clock, type nothing
+        if is_break(s):
+            for row, mask in BREAK_KEYS:
+                body.append(f'after time {t:.1f} {{ keymatrixdown {row} {mask} }}')
+                t += 0.5
+            t += BREAK_HOLD
+            for row, mask in reversed(BREAK_KEYS):
+                body.append(f'after time {t:.1f} {{ keymatrixup {row} {mask} }}')
+                t += 0.5
+            return t + step
         if len(s) > MAX_BUF:
             raise ValueError(f"line exceeds MSX line buffer (~{MAX_BUF}): "
                              f"{len(s)} chars {s!r}")
@@ -534,6 +594,13 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         " return $h }\n"
         "proc __hex_m {a l} { binary scan [debug read_block memory $a $l] H* h;"
         " return $h }\n"
+        # __file_hex: a HOST file as hex -- the printer-log readout (D-EDITVERB).
+        # A missing file is the empty string, which is DATA ("the machine printed
+        # nothing"), not a failure: it is the correct reading for `LLIST 30-20`.
+        "proc __file_hex {p} {\n"
+        "  if {[catch {set h [open $p rb]; set d [read $h]; close $h}]} { return {} }\n"
+        "  binary scan $d H* x; return $x\n"
+        "}\n"
         # __hex_mi: dereference a 2-byte LE pointer at $p, dump $l bytes from
         # that base as hex (e.g. TXTTAB $F676 -> the stored program).
         "proc __hex_mi {p l} {\n"

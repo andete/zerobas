@@ -183,6 +183,17 @@ EXPECTED = [
     # list being told, which is exactly why adding the row here is a deliberate
     # act and not maintenance noise.
     ('DELETE_TOKEN', 'ex_delete'),
+    # D-EDITVERB 2026-08-06: the other THREE editor verbs. 🔴 AND THIS TEST FIRED
+    # AGAIN, on this slice's first corpus run, naming all three as UNEXPECTED --
+    # the second cohort it has caught and the second time the alarm was the
+    # correct behaviour rather than noise. Declaring them is the deliberate act.
+    # The comment above ("AUTO/RENUM/LLIST still have tokens and no dispatch, so
+    # they must NOT appear here") was true until this slice and is now the line
+    # directly above these three; it is left standing as the record of what
+    # changed.
+    ('LLIST_TOKEN', 'ex_llist'),
+    ('RENUM_TOKEN', 'ex_renum'),
+    ('AUTO_TOKEN', 'ex_auto'),
 ]
 
 

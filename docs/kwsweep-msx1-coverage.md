@@ -187,6 +187,19 @@ than silently dropped: destructive (`DSKO$`, `IPL`), interactive (`AUTO`,
 (`COPY`, `SET`, `ATTR$`, `DSKI$`, `LOC`), or already covered elsewhere
 (`INTERVAL` → the T5 slice probe).
 
+🔴 **THE PRINTER REASON IS REFUTED, AND IT COVERED FOUR OF THOSE WORDS**
+(2026-08-06, D-EDITVERB — [`editverb-msx1-characterization.md`](editverb-msx1-characterization.md)
+§1.1). openMSX's `printerport` takes a `logger` pluggable whose status is READY
+unconditionally, so an `LSTOUT` poll cannot block, and the log file is a better
+readout than any screen scrape. `LLIST` is now measured on **both** references
+that way and implemented (`make editverb-acceptance`). `LPRINT`, `LPOS` and
+`LFILES` remain unexecuted — but for the ordinary reason that they have no
+`kwtable.inc` entry, NOT because they cannot be put to a reference. `AUTO` is
+refuted too: Ctrl-STOP is a key-matrix combination (row 6 bit 1 + row 7 bit 4),
+which `keymatrixdown` delivers and `BREAKX` sees. The remaining crunch-only
+count is **18 minus the two now executed**; the three printer words are filed as
+an open item in `TODO.md`.
+
 **`INPUT$` is the one to watch here:** it crunches *identically* to the reference
 (because `INPUT` is a keyword and `$` follows), so Layer 1 says "present" while
 support is untested — the exact `INTERVAL` shape. It is tracked as open in

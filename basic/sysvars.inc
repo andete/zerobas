@@ -2421,6 +2421,27 @@ LE_OP_LSTRANGE          equ 3   ; lineedit: LIST <lo>-<hi> -- PARSE ONLY (D-LSTR
                                 ; tenant (spec-basic-listrange.md §3.1, where that
                                 ; makes DELETE's whole-verb split IMPOSSIBLE here).
                                 ; Status: 0 = ok, 2 = R-LS6 trailing junk.
+; --- D-EDITVERB (docs/spec-basic-editverb.md) -------------------------------
+; 🎯 LLIST SHARES LIST'S PARSE BYTE-FOR-BYTE. All twenty range shapes D-LSTRNG
+; measured answer identically under LLIST (R-LL2/R-LL3, characterization §4), so
+; op 4 routes to the SAME tenant body; it exists only so the RESIDENT head can
+; read LE_OP BACK and choose the sink. That read-back is why this is an op and
+; not a new RAM flag -- LE_OP is already marshalled and already survives the
+; call, so the sink costs ZERO cells.
+LE_OP_LLSTRANGE         equ 4   ; lineedit: LLIST <lo>-<hi> -- le_lstrange verbatim
+; RENUM. Op 5 parses, validates and runs the reference pass; it returns
+; LE_STATUS = 1 with RN_TGT/RN_LINE set for EACH dangling reference (R-RN9 --
+; one message per reference, and `1 ON 1 GOTO 77,88` emits two from ONE line),
+; because the message must be printed by the head: `Undefined line` renders
+; through main page-1 print_msg/list_num, which a page-1 tenant cannot reach.
+; Op 6 resumes that walk at RN_PTR. Status: 0 = done, 1 = report and re-enter,
+; else the ERR CODE ITSELF (2 = R-RN14/R-RN15, 5 = R-RN11/R-RN12/R-RN13).
+LE_OP_RENUM             equ 5   ; lineedit: RENUM [<new>][,[<old>][,<inc>]]
+LE_OP_RENUM_NEXT        equ 6   ; lineedit: resume the reference pass at RN_PTR
+; AUTO parses its argument here and runs its MODAL LOOP in main -- the mirror of
+; LIST's split, and for the mirror reason: the loop drives read_line/
+; dispatch_line/CHPUT, all main page 1.
+LE_OP_AUTO              equ 7   ; lineedit: AUTO [<start>][,<inc>] -- PARSE ONLY
 ; D-DELETE §3.2: DELETE's two range ends and its statement cursor ride the SAME
 ; THREE CELLS store_line marshals -- a SECOND VALUE NAMESPACE on them, exactly
 ; like LE_OP on DISKOP_OP one screen up.
@@ -2453,6 +2474,43 @@ SL_DELPTR       equ     SL_TOK          ; DELETE: the statement cursor, on the t
 LST_LO          equ     SL_NUM          ; LIST: low end of the range (2)
 LST_HI          equ     SL_SIZE         ; LIST: high end of the range (2)
 LST_PTR         equ     SL_TOK          ; LIST: the statement cursor, on the token
+
+; --- D-EDITVERB: RENUM's namespace ------------------------------------------
+; The two REPORT cells are a FOURTH value namespace on SL_NUM/SL_SIZE, on the
+; same argument the block above makes for DELETE and LIST: one subrom_call
+; reaches exactly one LE_OP, and the grep at the head of that block still
+; returns readers in exactly two files.
+RN_TGT          equ     SL_NUM          ; RENUM: the UNDEFINED target being reported (2)
+RN_LINE         equ     SL_SIZE         ; RENUM: the OLD number of the line it is in --
+                                        ; R-RN8, the message says `in 1`, not `in 10` (2)
+; 🔴 THE OTHER FOUR MAY NOT BE ALIASES, AND THAT IS THE WHOLE REASON THIS BLOCK
+; EXISTS. They are live ACROSS the report/re-enter round trip (LE_OP_RENUM ->
+; the head prints `Undefined line N in M` -> LE_OP_RENUM_NEXT), and the head
+; runs print_msg + list_num in between. list_num goes through ln_div_entry,
+; which formats into NUMBUF; print_msg walks the message pool. Neither touches
+; $EAxx -- but neither can be relied on to leave the SL_* block alone across a
+; call the DELETE and LIST heads never make, because those two verbs report
+; nothing and re-enter nothing.
+;
+; ⚠️ HOMED IN THE $EA30 WINDOW THE TREE ITSELF DOCUMENTS AS FREE (FCH_RECLENS,
+; "$EA30..$EAFF free"), NOT in the $E00x gap below CURPTR. That gap looked free
+; to a grep and is not: $E000 is the demo blob's "JONG" marker / POKE test
+; target (the RAM-scratch header above says so in as many words), and a 2-byte
+; cell at $E00F runs straight over ERRMARK at $E010.
+RN_PTR          equ     $EA30           ; RENUM: the reference-pass cursor (2)
+RN_NEW          equ     $EA32           ; RENUM: first new line number (2)
+RN_OLD          equ     $EA34           ; RENUM: old line to start renumbering at (2)
+RN_INC          equ     $EA36           ; RENUM: increment (2)
+; AUTO's two values, a FIFTH namespace on RENUM's own cells: one subrom_call
+; reaches one LE_OP, and an AUTO session and a RENUM cannot be in flight
+; together (each ends the line and the program on its way out).
+AU_NUM          equ     RN_NEW          ; AUTO: the line number being prompted (2)
+AU_INC          equ     RN_INC          ; AUTO: the increment (2)
+; read_line's mode flag. 0 = block in CHGET (the REPL); 1 = poll CHSNS and
+; BREAKX (an AUTO session), because Ctrl-STOP is NOT a character and can never
+; arrive through CHGET -- R-AU8. Cleared defensively at the top of `repl`, so a
+; line that ERRORS out of an AUTO session cannot leave the prompt polling.
+RL_AUTO         equ     $EA38           ; read_line: 1 = AUTO's polling mode (1)
 
 ; --- Cassette name-match/skip tenant ABI (SUBROM_IDX_CASMATCH, docs/spec-
 ; eviction-g5-space.md): reuses the SAME DISKOP_STATUS RAM cell, ANOTHER
@@ -2684,7 +2742,10 @@ FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:
 ; ⚠️ D-FCH §3.2: with FCH_CEIL=15 the repack array is 32 B and would run over
 ; GP_RECLEN/OO_RECLEN_CHAN/FILES_HASPAT/CAS_WANT at $F006..; it moves into the
 ; same freed $EA00 page-3 window as FCH_MODES.
-FCH_RECLENS     equ     $EA10   ; 32 B ($EA10..$EA2F); $EA30..$EAFF free
+FCH_RECLENS     equ     $EA10   ; 32 B ($EA10..$EA2F); $EA39..$EAFF free
+                                ; (D-EDITVERB took $EA30..$EA38: the RENUM
+                                ; round-trip cells RN_PTR/RN_NEW/RN_OLD/RN_INC
+                                ; and read_line's RL_AUTO mode flag)
 GP_RECLEN       equ     $F006   ; active channel's record length (word), loaded per calc
 OO_RECLEN_CHAN  equ     $F008   ; OPEN scratch: channel # stashed across the LEN= eval (1)
 FILES_HASPAT    equ     $F009   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)

@@ -31,6 +31,14 @@
 repl:
                 xor     a                   ; the prompt + any output go to the
                 ld      (PRDEST),a          ; screen (defensive after a PRINT#)
+                ld      (RL_AUTO),a         ; ...and the line editor blocks again
+                                            ; (defensive after an AUTO session:
+                                            ; a typed line that ERRORS out of one
+                                            ; unwinds straight to here, so clearing
+                                            ; the flag only in ex_auto's own exit
+                                            ; would leave the PROMPT polling and a
+                                            ; Ctrl-STOP there dispatching a stale
+                                            ; buffer -- D-EDITVERB §3.3)
                 ld      a,(CSRX)            ; CSRX is 1-BASED, so 1 == column 0 ==
                 dec     a                   ; already at the start of a line
                 call    nz,print_crlf       ; mid-row -> open a line first
@@ -56,10 +64,34 @@ print_string:
 ; CHGET delivers $7F rather than $08 -- both are treated as erase-left here.)
 ; HL is the write cursor; it is guarded across every BIOS call (CHGET/CHPUT
 ; make no register guarantees).
+; ⚠️ TWO ENTRY POINTS. `read_line` starts a fresh line at LINEBUF; `rl_loop` is
+; entered with HL ALREADY SET, which is how AUTO prepends its line number -- the
+; digits are written at LINEBUF and the user's body accumulates after them, so
+; the buffer dispatch_line finally sees is an ordinary `<number> <body>` and
+; needs no second parser. rl_bs's floor is still LINEBUF, so backspacing can
+; erase the number itself; that matches a screen editor where the whole row is
+; editable, but it is NOT measured -- see the spec's pin list.
+;
+; CF ON RETURN: clear = the line was ended with Enter; SET = the poll below saw
+; Ctrl-STOP (only reachable with RL_AUTO set).
 read_line:
                 ld      hl,LINEBUF
 rl_loop:
                 push    hl
+                ld      a,(RL_AUTO)
+                or      a
+                jr      z,rl_get            ; REPL: block in CHGET as before
+                ; R-AU8: an AUTO session may NOT block. Ctrl-STOP is not a
+                ; character and never arrives through CHGET, so a blocking read
+                ; can only be left by typing something -- the session would be
+                ; unbreakable. CHSNS says whether a key is waiting; BREAKX scans
+                ; the key matrix directly, which is the only thing that can see it.
+rl_poll:
+                call    BREAKX              ; CF set = Ctrl-STOP is down
+                jr      c,rl_break
+                call    CHSNS               ; ZF set = nothing waiting yet
+                jr      z,rl_poll
+rl_get:
                 call    CHGET               ; wait for a key -> A
                 pop     hl
                 cp      13                  ; Enter -> finish
@@ -96,13 +128,19 @@ rl_bs:
                 call    CHPUT
                 pop     hl
                 jr      rl_loop
+rl_break:
+                pop     hl                  ; Ctrl-STOP: hand the session back
+                scf                         ; UNTERMINATED -- ex_auto discards it
+                ret
 rl_enter:
                 ld      (hl),0              ; terminate the line
                 ld      a,13                ; echo CR/LF
                 call    CHPUT
                 ld      a,10
                 call    CHPUT
-                ret
+                or      a                   ; CF CLEAR = a normal Enter finish.
+                ret                         ; CHPUT makes no flag guarantee, and
+                                            ; ex_auto branches on this carry.
 
 prompt_text:
                 db      "ZB",0

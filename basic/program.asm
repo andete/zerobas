@@ -1106,6 +1106,170 @@ ex_delete:
                 ld      (ENDFLAG),a
                 ret
 
+; --- ex_renum: RENUM [<new>][,[<old>][,<inc>]] (D-EDITVERB) -------------------
+; docs/spec-basic-editverb.md §3.2, measured in
+; docs/editverb-msx1-characterization.md §2. HL enters on the RENUM token (the
+; es_hit contract). The whole verb -- parse, both validations, the reference pass
+; and the header pass -- lives in sub/lineedit.asm (le_renum), for the same
+; reason DELETE's does: it drives the stored program text and marshals as one
+; pointer. This is the marshalling head PLUS the one thing the tenant cannot do.
+;
+; 🔴 THE LOOP IS THE POINT. `Undefined line <n> in <m>` is emitted ONCE PER
+; DANGLING REFERENCE (R-RN9 -- `1 ON 1 GOTO 77,88` prints two, both `in 1`), and
+; rendering it needs print_string + list_num, which are main PAGE-1 resident and
+; therefore unreachable from a page-1 tenant. So the tenant STOPS at each one,
+; hands back the pair in RN_TGT/RN_LINE, and this head prints it and re-enters
+; with LE_OP_RENUM_NEXT. The tenant's cursor lives in RN_PTR across the round
+; trip, which is why that cell may not be an alias of the SL_* block.
+;
+; 🔴 AND IT IS NOT AN ERROR (R-RN10). ERR stays 0, ON ERROR does not trap it, and
+; the renumbering HAPPENS ANYWAY -- `1 GOTO 77` becomes `10 GOTO 77`. That is why
+; status 1 is a REPORT and only status >= 2 reaches raise_error.
+ex_renum:
+                ld      (RN_PTR),hl         ; the statement cursor, on the token
+                ld      a,LE_OP_RENUM
+exr_call:
+                ld      (LE_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      a,(LE_STATUS)
+                or      a
+                jr      z,exr_done          ; 0 = the whole renumbering is done
+                dec     a
+                jr      nz,exr_raise        ; >= 2 is the ERR CODE ITSELF: 2 for
+                                            ; R-RN14/R-RN15, 5 for R-RN11/12/13
+                ld      hl,rn_undefined     ; 1 = report one dangling reference
+                call    print_string
+                ld      de,(RN_TGT)
+                call    list_num            ; the target, bare unsigned decimal
+                ld      hl,rn_in
+                call    print_string
+                ld      de,(RN_LINE)        ; R-RN8: the containing line's OLD
+                call    list_num            ; number -- `in 1`, not `in 10`
+                call    print_crlf
+                ld      a,LE_OP_RENUM_NEXT
+                jr      exr_call
+exr_raise:
+                ld      a,(LE_STATUS)
+                jp      raise_error
+exr_done:
+                ; R-RN16: and then the run stops, exactly as DELETE and LIST do.
+                ; ⚠️ CONTVALID IS DELIBERATELY NOT CLEARED AND vars_reset IS
+                ; DELIBERATELY NOT RUN -- R-RN17, measured on both references with
+                ; a program whose lines actually MOVE: `1 A=7/RUN/RENUM/PRINT A`
+                ; reads 7, and `1 STOP/2 PRINT 5/RUN/RENUM/CONT` still prints 5.
+                ; RENUM is not a program EDIT in the sense DELETE is: no byte
+                ; changes length, so nothing the variables or the CONT point
+                ; address has moved.
+                ld      a,1
+                ld      (ENDFLAG),a
+                ret
+
+; The two halves of the report. Plain ASCII rather than the D-MSGENC pool: the
+; pool encodes whole messages and this one has two NUMBERS spliced into it, so
+; there is no message to look up -- and `Undefined line` is not a prefix of
+; err_undefined's text in any form the decoder could share.
+rn_undefined:   db      "Undefined line ",0
+rn_in:          db      " in ",0
+
+; --- ex_auto: AUTO [<start>][,<inc>] (D-EDITVERB) ----------------------------
+; docs/spec-basic-editverb.md §3.3, measured in
+; docs/editverb-msx1-characterization.md §3. The ARGUMENT is parsed sub-side
+; (le_auto); the MODAL LOOP is here, because it drives read_line, dispatch_line,
+; find_line_bc, list_num and CHPUT -- all main page 1, none of them reachable
+; from a page-1 tenant. LIST's split with the halves reversed.
+;
+; 🎯 THE LOOP STORES NOTHING ITSELF. It writes the line number's own digits at
+; the FRONT of LINEBUF, points read_line's cursor just past them, and hands the
+; finished buffer to dispatch_line -- which sees an ordinary `<number> <body>`
+; and takes the path a typed line already takes. No second parser, no second
+; store, and every rule dispatch_line already enforces (the 65529 refusal, the
+; crunch overflow, D-DOTGAPS's `.` write) applies here for free.
+;
+; 🔴 THE `*` IS SCREEN-ONLY. R-AU6: the prompt reads `10*` when a line 10 already
+; exists and `10 ` when it does not -- but the STORED line is `10 REM X` either
+; way, so the marker goes to CHPUT and the SPACE goes to the buffer. Putting the
+; measured character into LINEBUF would store `10*REM X`, whose body crunches to
+; something else entirely.
+ex_auto:
+                ld      (RN_PTR),hl         ; the statement cursor, on the token
+                ld      a,LE_OP_AUTO
+                ld      (LE_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      a,(LE_STATUS)       ; 2 = R-AU9 trailing junk, 5 = R-AU5
+                or      a                   ; (increment 0, which is also what bare
+                jp      nz,raise_error      ; `AUTO ,` reduces to)
+                inc     a                   ; -> 1: read_line polls from here on
+                ld      (RL_AUTO),a
+exa_loop:
+                ld      de,(AU_NUM)
+                call    list_num            ; print the digits -- and leave them
+                                            ; 0-terminated in NUMBUF, which is what
+                                            ; makes the buffer copy below free
+                ld      bc,(AU_NUM)
+                call    find_line_bc        ; CF set = that line already exists
+                ld      a,' '
+                jr      nc,exa_mark
+                ld      a,'*'               ; R-AU6
+exa_mark:
+                call    CHPUT               ; SCREEN ONLY (see the header)
+                ld      hl,NUMBUF
+                ld      de,LINEBUF
+exa_copy:
+                ld      a,(hl)
+                ld      (de),a
+                inc     hl
+                inc     de
+                or      a
+                jr      nz,exa_copy
+                dec     de                  ; DE -> the terminator just written
+                ld      a,' '               ; the ONE separator blank parse_lineno
+                ld      (de),a              ; eats (D-LNBLANK R3)
+                inc     de                  ; DE = where the typed body begins
+                push    de
+                ex      de,hl               ; HL = read_line's write cursor
+                call    rl_loop             ; the second entry point: HL preset
+                pop     de
+                jr      c,exa_stop          ; R-AU8: Ctrl-STOP ends the session, and
+                                            ; the half-typed line is DISCARDED
+                ; R-AU7: an EMPTY entry stores NOTHING. ⚠️ That is NOT the same as
+                ; storing an empty body -- dispatch_line would read that as the
+                ; bare-line-number form and DELETE the line. The separating row is
+                ; `au-emptykill`: Enter at a prompt whose line EXISTS leaves it
+                ; standing on both references. Round 3's case pressed Enter at a
+                ; prompt whose line did not exist, where skip and delete agree.
+                ld      a,l
+                cp      e
+                jr      nz,exa_store
+                ld      a,h
+                cp      d
+                jr      z,exa_next
+exa_store:
+                call    dispatch_line       ; store / replace, exactly as if typed
+exa_next:
+                ld      hl,(AU_NUM)
+                ld      de,(AU_INC)
+                add     hl,de
+                jr      c,exa_stop          ; a 16-bit wrap ends the session
+                ld      a,h                 ; R-AU11: and so does passing the same
+                cp      high (LINENO_CEIL+1)    ; 65529 ceiling a typed line obeys --
+                jr      c,exa_ok            ; `AUTO 65525,10` prompts once and stops
+                ld      a,l                 ; (LINENO_CEIL+1 is $FFFA, so H can never
+                cp      low (LINENO_CEIL+1) ; be ABOVE its high byte and the two-step
+                jr      nc,exa_stop         ; compare is exact)
+exa_ok:
+                ld      (AU_NUM),hl
+                jp      exa_loop
+exa_stop:
+                xor     a
+                ld      (RL_AUTO),a         ; the prompt blocks again
+                inc     a
+                ld      (ENDFLAG),a         ; R-AU9: AUTO ends the line and the run
+                ret
+
 ; --- gosub_push: push a bounds-checked GOSUB return frame (repack golf) -------
 ; The 4-byte frame is [CURLINE:2][resume-ptr:2]; resume = the token position to
 ; run when RETURN pops it. Factored out of ex_gosub / eon_gosub (which each used

@@ -1618,11 +1618,17 @@ KWGD = [
 ]
 
 # --- the `kwgz` battery: the SAME question for AUTO and LLIST, ZEROBAS ONLY ---
-# 🔴 THESE ROWS MAY NOT BE PUT TO A REFERENCE, AND THE PROBE REFUSES RATHER THAN
-# SAMPLING AROUND IT. `AUTO` enters interactive line-entry and `LLIST` drives
-# LPTOUT, which HANGS on a machine with no printer plugged -- both are already
-# classified `crunch-only` for exactly these reasons by the keyword sweep
-# (TODO.md, the 18 crunch-only holes). omsx_repl raises SystemExit on its 240 s
+# ⚠️ THESE ROWS STAY ZEROBAS-ONLY, BUT THE REASON WRITTEN HERE WAS REFUTED BY
+# D-EDITVERB (docs/editverb-msx1-characterization.md §1). "`AUTO` is interactive
+# and `LLIST` hangs an unplugged LPTOUT" is TRUE of THIS probe and was never the
+# load-bearing question: `plug printerport logger` reports READY unconditionally
+# so LLIST cannot block, and Ctrl-STOP rides the KEY MATRIX (row 6 bit 1 + row 7
+# bit 4), so both verbs are now measured on three sides by
+# `make editverb-acceptance`. What keeps them zerobas-only HERE is that THIS
+# probe plugs no printer and has no matrix seam -- a property of this apparatus,
+# not of the verbs. They gate nothing either way.
+# (The keyword sweep still repeats the old reason for `LPRINT`/`LPOS`/`LFILES`;
+# that is filed in TODO.md.) omsx_repl raises SystemExit on its 240 s
 # cap, so one such row does not degrade a run, it KILLS it.
 #
 # ⚠️ SO THE READING IS ONE-SIDED AND THAT IS SAID OUT LOUD RATHER THAN HIDDEN.
@@ -2985,17 +2991,15 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 # references, and the entry is **DELETED** rather than updated. Eight cohorts,
 # none rotted. Its successor battery (`dlt`, 33 rows) adds two pins, and they are
 # for a feature the slice DECLINED rather than for one it half-shipped -- below.
+# 🔴 AND `kwgd-renum` FIRED AND RETIRED IN D-EDITVERB, THE NINTH COHORT TO LEAVE
+# THAT WAY, three days after the eighth. It was pinned at ` 0  8 ` -- "$AA has no
+# stmt_table row, so `RENUM 100` renumbers nothing, `GOTO 110` finds no line 110
+# and raises ERR 8 with A untouched". The statement landed
+# (docs/spec-basic-editverb.md), the row now reads ` 2  0 ` like both references
+# and like its own `kwgd-renctl` control, and the entry is **DELETED** rather
+# than updated. Nine cohorts, none rotted. Its successor is a whole GATE
+# (`make editverb-acceptance`, 61 rows, three sides) rather than more pins.
 KNOWN_DIVERGE = {
-    # D-KWGAP4 say mode: the STATEMENT half of the four editor verbs. The crunch
-    # is now byte-exact (the rows above retired); this one says RENUM still does
-    # NOTHING, pinned so the day a handler lands the gate says so.
-    #
-    # `RENUM 100` really renumbers, so `GOTO 110` finds what used to be line 20;
-    # on zerobas line 110 never comes into existence -> ERR 8, Undefined line
-    # number, A untouched. `kwgd-renctl` is the control proving the direct-mode
-    # GOTO instrument reads ` 2  0 ` when the target line DOES exist, so this
-    # row's ` 0  8 ` is a missing LINE and not a broken instrument.
-    "kwgd-renum":   " 0  8 ",
     # D-RETLN say mode, and NOT about `RETURN <line>` at all -- found by this
     # slice's apparatus while it was testing something else. MS-BASIC's `RETURN`
     # discards the FOR entries it walks past looking for a GOSUB frame (both

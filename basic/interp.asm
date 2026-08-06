@@ -405,6 +405,16 @@ stmt_table:
                 ; as if the verb were still absent.
                 db      DELETE_TOKEN
                 dw      ex_delete    ; DELETE [<line>][-[<line>]]
+                ; D-EDITVERB: the other three editor verbs. Three rows at 3 B is
+                ; the figure D-KWGAP4's knife K5 measured against a 6 B page-1
+                ; wall, which is why it filed them instead of landing them; the
+                ; wall is 356 B now (spec-basic-editverb.md §1.2).
+                db      LLIST_TOKEN
+                dw      ex_llist     ; LLIST [<line>][-[<line>]] -- LIST to LPT:
+                db      RENUM_TOKEN
+                dw      ex_renum     ; RENUM [<new>][,[<old>][,<inc>]]
+                db      AUTO_TOKEN
+                dw      ex_auto      ; AUTO [<start>][,<inc>]
     IF SWAP_RESIDENT
                 ; ⚠️ THIS ENTRY DID NOT EXIST when SWAP was gated off, and neither
                 ; sysvars.inc's SWAP_RESIDENT block nor spec §10 noticed: both said
