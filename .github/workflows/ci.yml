@@ -10,6 +10,9 @@
 #   * make unit-test -- the emulator-free Z80 unit tests (tests/): an embedded Z80
 #     core, no openMSX, no reference ROMs. The portable regression layer.
 #   * a smoke import of the host tooling, so the build scripts are checked to load.
+#   * make audit-citations -- the clean-room mechanical floor (0.27 s, pure python3,
+#     read-only). It is here because "run it on demand" left it RED for 268 of its
+#     first 761 commits; see docs/spec-audit-citations-gate.md.
 #
 # What does NOT run: the .ips/.bps patch build (needs a stock C-BIOS main ROM to
 # stamp against -- see tools/build_patches.py) and the openMSX oracle probes (need
@@ -78,6 +81,9 @@ jobs:
           python3 tools/build_patches.py --help > /dev/null
           python3 tools/install-openmsx-machine.py --help > /dev/null
           python3 -c "import sys; sys.path.insert(0, 'tools'); import openmsx_paths; print('openmsx_paths OK')"
+
+      - name: Clean-room mechanical floor
+        run: make audit-citations
 
       - name: Run the emulator-free unit tests
         run: make unit-test
@@ -151,6 +157,9 @@ jobs:
           python3 tools/build_patches.py --help > /dev/null
           python3 tools/install-openmsx-machine.py --help > /dev/null
           python3 -c "import sys; sys.path.insert(0, 'tools'); import openmsx_paths; print('openmsx_paths OK')"
+
+      - name: Clean-room mechanical floor
+        run: make audit-citations
 
       - name: Run the emulator-free unit tests
         run: make unit-test

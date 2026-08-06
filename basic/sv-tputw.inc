@@ -3,6 +3,10 @@
 
 ; sv-tputw.inc -- tape_putword, the 16-bit LE word emitter used by the BSAVE tape header.
 ; ===========================================================================
+; Clean-room: own design. Twelve instructions emitting a 16-bit little-endian
+; word through the documented TAPOUT BIOS entry; nothing here is derived from a
+; disassembly or byte-copy of any reference ROM. Basis: basic/PROVENANCE.md.
+; ===========================================================================
 
 ; tape_putword — emit a 16-bit little-endian word stored at address HL via
 ; TAPOUT (low byte then high byte). TAPOUT clobbers every register, so the

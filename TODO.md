@@ -39,10 +39,10 @@ duplicating (and drifting from) what is written below.
 **Language / verb surface**
 
 - [ ] `AUTO` / `RENUM` / `LLIST` / `DELETE` — **the STATEMENT half.** Tokens are
-      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4237); nothing
-      executes them. Detail: *“Editor / program management”*, line 1524.
+      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4283); nothing
+      executes them. Detail: *“Editor / program management”*, line 1526.
 - [ ] **No string `READ`.** Filed by D-DEFSTR — detail:
-      *“ZEROBAS HAS NO STRING `READ`”*, line 3927.
+      *“ZEROBAS HAS NO STRING `READ`”*, line 3973.
 
 **Own-design hazards carried out of closed slices**
 
@@ -51,47 +51,49 @@ duplicating (and drifting from) what is written below.
       three sites that crossed them (one was a live memory corruption) but the two
       namespaces still overlap on the numeric values, so the next site that feeds
       one into the other reintroduces the class. Collapse to ONE. Detail:
-      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3838.
+      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3884.
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
 
 - [ ] ⚠️ **`injector-check` is still a TEXT classifier.** A split literal passes.
-      Already an open item — detail: line 4554.
+      Already an open item — detail: line 4600.
 - [ ] ⚠️ **An asm label named in a `tools/*.py` or `sub/` comment is immune to the
       dead-code sweep** — `check_dead_code.py`'s `external_names` scans those
       directories *including comments*, so writing a label's name in prose seeds it
       as reachable. Every slice that edits `tools/` prose must predict the seed
-      counts and treat movement as a finding. Detail: lines 2197 and 2389.
+      counts and treat movement as a finding. Detail: lines 2199 and 2435.
 - [ ] ⚠️ **Three probe page-0 entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
       deriving them from `sub/equates.inc` needs its own falsification because they
-      inject raw bytes into a bare machine deliberately. Detail: line 2348.
+      inject raw bytes into a bare machine deliberately. Detail: line 2394.
 - [ ] ⚠️ **`build/disk.rom` pad-only damage is invisible ON PURPOSE** — 9543 of
       16384 bytes (58.2 %) are `$00` pad in 252 runs. Closing it needs a whole-image
       digest, which would pin the ROM against every legitimate `disk/*.asm` change.
-      Re-open only with an argument that answers that. Detail: line 2343.
-- [ ] 🔴 **`make audit-citations` is RED at HEAD, and nothing in the standing
-      corpus runs it.** Measured 2026-08-06 (D-DSKJUDGE follow-up): rc 1, *"GATING
-      FINDINGS: 2 — mechanical floor breached"*, on two files no recent slice
-      touched (last change `40647bd`, so this has been red for a while).
-      `docs/dev-workflow.md:72` calls a clean run **the floor**, and the target is
-      "on demand / CI" only — which is how it went red unnoticed.
-      **(i)** `basic/fat.asm:81` looks like a **false positive**: the flagged
-      sentence is about zerobas's own thirteen duplicated shim bodies, not about
-      any reference material, and the scanner's rule is token-plus-affirmative-
-      context. Fix the sentence or teach the rule, but decide which — silencing it
-      by rewording is only right if the rule genuinely cannot see the difference.
-      **(ii)** `basic/missing.asm:1` is a **real gap**: no clean-room / PROVENANCE
-      attestation in its header block, unlike every other scanned `.asm`.
-      ⚠️ Whoever picks this up: also decide whether `audit-citations` belongs in the
-      standing corpus. It is cheap, read-only and needs no emulator — the reason it
-      is not there is not recorded anywhere.
+      Re-open only with an argument that answers that. Detail: line 2389.
+- [x] ✅ **`make audit-citations` was RED at HEAD and nothing ran it — CLOSED
+      2026-08-06 by D-CITEJUDGE**,
+      [`docs/spec-audit-citations-gate.md`](docs/spec-audit-citations-gate.md).
+      Green; a step of `make basic-reloc` and of CI; denominator **49 → 116**
+      files. Two of the four filed claims were wrong.
+- [ ] ⚠️ **`audit_citations.py` does not scan `docs/`** — and the project's only
+      recorded clean-room breach lived there (a hand-decoded Z80 listing,
+      remediated at `4c14006`), found by a human paper trail, not by the floor.
+      Narrative prose legitimately *discusses* forbidden methods, so the
+      negation-context false-positive surface is large and UNMEASURED. Measure it
+      before proposing a rule. Detail: `docs/spec-audit-citations-gate.md` §1.3.
+- [ ] ⚠️ **The 7 `[REVIEW]` advisory headers are stable but unwatched** — the same
+      7 files and names across 575 commits, triaged once
+      (`docs/clean-room-audit.md`, 2026-07-04). Advisory is the right call, but a
+      NEW one would land unnoticed in a list nobody diffs. The fix is a
+      `deadcode-allow.txt`-style acknowledged list — an allowlist that must keep
+      matching is a control; 7 justifications to write. Detail:
+      `docs/spec-audit-citations-gate.md` §2.5.
 - [ ] ⚠️ **`lof-acceptance` intermittent oracle drift — two sightings, nothing
-      since.** Sighting 3 has not occurred across four consecutive slices
-      (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE). A third IS a finding to
+      since.** Sighting 3 has not occurred across FIVE consecutive slices
+      (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE). A third IS a finding to
       chase; capture the **whole** log (`> file 2>&1`), because sighting 1's row
-      identity was lost to a `tail -6`. Detail: line 3444.
+      identity was lost to a `tail -6`. Detail: line 3490.
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 
@@ -2340,6 +2342,50 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `basic/main.asm` to the retired lean 16384. ROM-neutral, proved by hash (all
       six `build/*.rom` byte-identical to `fd58b3a`); dead-code seeds unmoved at
       **285**/**102**.
+      ✅ **DONE 2026-08-06 — D-CITEJUDGE**,
+      [`docs/spec-audit-citations-gate.md`](docs/spec-audit-citations-gate.md).
+      The follow-up item this slice filed, and **two of its four claims were
+      wrong.** 🔴 **The gate had been red for 144 commits, turned by `6f8ac0f`
+      (2026-07-27), not by `40647bd`** — measured by walking *each commit's own
+      tool over its own tree* across all **761** commits of the tool's life: red
+      in **268 of 761 (35 %)**, five separate reds, the longest 90 commits, and
+      **every green return came from a human happening to run it**. 🔴 **Check 1's
+      precision over that whole life is 0 of 4** — all four findings it has ever
+      produced are the same false positive, `byte[- ]?cop` matching across the
+      boundary of a *qualified* `byte` ("a 65536-byte copy", "record/byte copy
+      loop", "an independent 34-byte copy", "(18-byte copy)"). Two of them were
+      already "fixed" once by REWORDING the prose (`4c14006`, 2026-07-04) and the
+      class came straight back. So the filed *"(i) looks like a false positive"*
+      is right and its reason is wrong: the distinction is not own-code-vs-
+      reference (semantic, out of a regex's reach) but **lexical**, and one
+      lookbehind decides it — `(?<![\w/-])byte[- ]?cop`, 99 → 96 token hits, 2 → 0
+      affirmative, all six genuine-derivation forms still caught. 🔴 **And the
+      denominator was blind to its own subject: 49 of 116 shipped first-party
+      asm/inc files were scanned — the whole `sub/` tree and 30 shared `.inc`
+      bodies were outside it**, not deliberately but because `sub/` was created a
+      week *after* the scan list was last edited, and nothing recorded it. Widened
+      to 116; check 4 also picks up `probes/**/*.asm` (0 findings). 🔴 **A second
+      rule defect of the same shape, found by writing the fix:** the fixed
+      45-line attestation window reported 9 files as unattested that carry a
+      proper `CLEAN-ROOM:` line at lines 46–78 of their own header — measure the
+      header BLOCK, not a magic 45, and 9 of 24 findings vanish without editing a
+      file. 15 attestations written (2 of them into the GENERATORS, since the
+      `.inc` would be overwritten by the next `make`). 🔴 **The filed *"the reason
+      it is not in the corpus is not recorded anywhere"* is also wrong** — it is
+      recorded twice, *"run it on demand / in CI"*, and both clauses are false:
+      `ci.yml` did not run it and is `workflow_dispatch`-only. Now a step of
+      `make basic-reloc` (0.27 s, beside `check_dead_code.py`) and of CI. The tool
+      gained the two things that separate "clean tree" from "blind instrument",
+      both **exit 2** not 1: a **rule self-test** pinned to the four historical
+      false positives, and a per-target **file-count floor**. K2b/K5b are the
+      controls — with either removed, a fully gutted rule and a 37-file-smaller
+      sweep both report **exit 0 and "clean"**. ⚠️ K4 came back GREEN first and
+      had not cut (that header attests TWICE, lines 56 and 61); ⚠️ and the knife
+      script's `git checkout --` cleanup **restored from HEAD and destroyed the
+      slice's own uncommitted tool edits**, so three knives silently scored the
+      OLD tool. ROM-neutral, proved by hash (all four `build/*.rom` byte-identical
+      to `0a9bd89`); dead-code seeds unmoved at **285**/**102** despite prose added
+      to three files under `tools/`.
       ⚠️ **STILL OPEN, deliberately: pad-only damage stays invisible.** 9543 of
       `disk.rom`'s 16384 bytes (**58.2 %**) are `$00` pad in 252 runs; a corruption
       confined to them is caught by nothing. Closing it needs a whole-image digest,

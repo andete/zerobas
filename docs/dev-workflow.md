@@ -73,6 +73,12 @@ silently lapse between manual passes. A clean `make audit-citations` is the floo
 not the audit: it cannot make the "is each probe genuinely black-box?" judgement,
 which is still a human paper-trail pass.
 
+You do not have to remember to run it: since 2026-08-06 it is a step of `make
+basic-reloc` and of CI. It was on-demand-only for its first 761 commits and spent
+268 of them red ([`spec-audit-citations-gate.md`](spec-audit-citations-gate.md)).
+⚠️ It exits **2**, not 1, when its own rule self-test or its file-count floor
+fails — that means the instrument is broken and nothing below it was measured.
+
 ### Delegating asm to a sub-agent — embed the firewall in the brief
 
 The one provenance breach we have had (`provider-oracle-scope.md` §8.37) came

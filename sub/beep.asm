@@ -4,6 +4,11 @@
 ; beep.asm -- BEEP as a PAGE-0 sub-ROM tenant (SUBROM_IDX_BEEP).
 ; docs/spec-basic-input-devices.md §7 (the I1 funding carve).
 ;
+; Clean-room: own design -- direct PSG port I/O against the public register
+; documentation, with the audible result black-box checked on the VG-8020.
+; Nothing here is derived from a disassembly or byte-copy of any reference ROM.
+; Basis: basic/PROVENANCE.md.
+;
 ; WHY THIS ONE. Input-devices slice I1 needed 44 B of page-1 tail that did not
 ; exist (6 B free at the arc's start, and the ev_f_ff dispatch golf recovered only
 ; part of it). scratchpad/g7_carve_scout.py shortlisted ex_beep at 71 B: the only

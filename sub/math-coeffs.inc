@@ -5,6 +5,10 @@
 ; (own decimal minimax + constants; cross-checked vs Cody & Waite METHOD,
 ; NEVER the MSX ROM). docs/spec-basic-mathpack-slice2.md §11.3.
 ;
+; Clean-room: own design. Every constant is produced here, by our own
+; decimal minimax fit; none is derived from a disassembly or byte-copy of
+; any reference ROM's coefficient tables.
+;
 ; FPNUM 18-byte records: sign(1) + dexp LE word(2) + dig[0..13] + guard(1).
 
 ATAN_DEG        equ 8

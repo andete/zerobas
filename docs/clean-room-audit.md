@@ -111,10 +111,23 @@ The cheap, scriptable part of this is mechanized as `make audit-citations`
 forbidden-source scan (every `disassembl` / byte-copy / reverse-engineer / Red
 Book mention must sit in a negation/attestation context — `byte-identical`, the
 legitimate oracle-match outcome, is *not* flagged) plus a per-file clean-room
-attestation check, and an advisory disk section-citation presence report. Run it
-on demand / in CI so the citation scaffolding cannot silently lapse between the
-manual passes. It is the mechanical floor, **not** a substitute for either check
-below — it cannot make the one non-mechanical judgement (next section).
+attestation check, and an advisory disk section-citation presence report. It is
+the mechanical floor, **not** a substitute for either check below — it cannot
+make the one non-mechanical judgement (next section).
+
+**Where it runs (2026-08-06, D-CITEJUDGE — [`spec-audit-citations-gate.md`](spec-audit-citations-gate.md)).**
+A step of `make basic-reloc` and a step of `.github/workflows/ci.yml`. This
+paragraph used to say *"run it on demand / in CI"*; both clauses were measured
+false — CI did not run it, and *on demand* left the gate **red for 268 of its
+first 761 commits**, one stretch of them 144 commits long, with every green
+return coming from a human happening to run it. It also scans **116** shipped
+first-party `.asm`/`.inc` files, up from 49: the whole sub-ROM tree and the
+shared `.inc` bodies were outside it, because they were created after the scan
+list was last edited. The tool now prints its per-target file count, refuses
+(exit **2**) if a scan list collapses below a floor, and carries a self-test
+that pins check 1's rule against the four false positives it produced in its
+first 761 commits. **Exit 2 means the instrument is not working and nothing
+below it was measured; exit 1 means the tree regressed.**
 
 ### The one hop in paper trail that is *not* mechanical
 

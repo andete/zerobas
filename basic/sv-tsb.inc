@@ -3,6 +3,12 @@
 
 ; sv-tsb.inc -- the shared cassette tokenised-BASIC writer (tape_save_basic .. tsb_fin).
 ; ===========================================================================
+; Clean-room: own code. The cassette container format (the $D3 leader, the
+; 6-character name field, the header-then-data block pair) is from the public
+; MSX2 Technical Handbook cassette chapter and round-trip validated against our
+; own encoder; nothing here is derived from a disassembly or byte-copy of any
+; reference ROM. Basis: basic/PROVENANCE.md.
+; ===========================================================================
 
 ; tape_save_basic — shared cassette tokenised-BASIC save path.
 ; Writes a two-block cassette file: header block ($D3 ×10 + 6-char name in

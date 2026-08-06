@@ -3,6 +3,12 @@
 
 ; missing.asm — LOCATE / SWAP / TRON / TROFF / MOTOR, the MISSING class.
 ; ===========================================================================
+; Clean-room: own design. Every one of the five words' behaviours -- including
+; the MOTOR STOP oddity and the LOCATE row/column edges -- is a BLACK-BOX
+; VG-8020 measurement recorded in the two documents cited below, taken by typing
+; at the machine and reading the screen. Nothing here is derived from a
+; disassembly or byte-copy of any reference ROM. Basis: basic/PROVENANCE.md.
+;
 ; The five MSX1 reserved words that this BASIC did not have at all: the
 ; tokeniser did not crunch them and exec_stmt had nowhere to send them, so each
 ; one was a Syntax error on a line the reference runs. They are collected here
@@ -14,11 +20,17 @@
 ;   docs/spec-basic-missing-class.md          (signed off S-MC-1..6)
 ;   docs/missing-vg8020-characterization.md   (175 cases + the locrow battery)
 ;
-; ⚠️ REPACK-ONLY, deliberately (S-MC-5). The whole file is behind one
-; (The retired lean 16 KB cart assembled NOTHING from this file, so its five words
-; did not exist there at all -- knowingly: that build was byte-full and its kwtable
-; was inline in page 1, where the
-; kwtable is a sub.rom tenant with ~8 KB free.
+; ⚠️ HISTORICAL, AND THIS PARAGRAPH WAS LEFT MID-SENTENCE FOR 59 COMMITS. This
+; file was once REPACK-ONLY (S-MC-5): all of it sat behind one
+; `IF ROM_BASE < $4000`, so the retired lean 16 KB cart assembled NOTHING from it
+; and its five words did not exist there at all -- knowingly, because that build
+; was byte-full and carried its kwtable inline in page 1, where this build's
+; kwtable is a sub.rom tenant with ~8 KB free. The lean cart was retired on
+; 2026-07-30 (`19e8bfd`) and the guard went with it. There is ONE build now and
+; this file is included unconditionally (basic/main.asm); the only conditional
+; left inside it is SWAP_RESIDENT (basic/sysvars.inc), which is 1. Two sentences
+; of the original note were truncated by that same edit and are restored here --
+; found by D-CITEJUDGE, docs/spec-audit-citations-gate.md §2.4.
 ; ===========================================================================
 
 

@@ -2,6 +2,12 @@
 ; SPDX-License-Identifier: 0BSD
 
 ; =============================================================================
+; Clean-room: own design. Where this tenant is reference-IDENTICAL it is so BY
+; CONSTRUCTION and BLACK-BOX CONFIRMED -- our own reference-identical multiply
+; composed in a loop shape pinned by observed outputs, never by reading the
+; reference's code. Coefficients: tools/gen_math_coeffs.py, our own fit. Nothing
+; here is derived from a disassembly or byte-copy of any reference ROM.
+; ---------------------------------------------------------------------------
 ; fp_pow -- math pack slice 2c: `^` (power operator) primitive
 ; (docs/spec-basic-mathpack-slice2.md §13.5). Two dispositions, chosen
 ; MAIN-SIDE by combine_pow (basic/float-arith.asm) and handed in via

@@ -2,6 +2,12 @@
 ; SPDX-License-Identifier: 0BSD
 
 ; =============================================================================
+; Clean-room: own design. The range reduction and both polynomials are this
+; project's own (docs/spec-basic-mathpack-slice2.md §14); the coefficients come
+; from our own decimal minimax fitter, tools/gen_math_coeffs.py -- never the
+; reference ROM's own coefficients. Agreement with the reference is a black-box
+; characterization result, not a copied one.
+; ---------------------------------------------------------------------------
 ; fp_sin -- math pack slice 2d: SIN(x)/COS(x)/TAN(x) (docs/spec-basic-
 ; mathpack-slice2.md §14). ONE shared reduction (sincos_kernel) produces BOTH
 ; sv=sin(r) and cv=cos(r) for a range-reduced r; SIN/COS/TAN differ only in a

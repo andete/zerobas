@@ -3,6 +3,11 @@
 
 ; pdfcb-body.inc — parse_disk_fcb, the disk drive-letter + 8.3-name parser.
 ; ===========================================================================
+; Clean-room: zerobas's own code, split verbatim out of basic/bload.asm's parse
+; layer so the resident and tenant copies cannot drift. The 8.3 name rules are
+; the public FAT12 ones; nothing here is derived from a disassembly or byte-copy
+; of any reference ROM. Basis: basic/PROVENANCE.md.
+; ===========================================================================
 ; Split out of bload-body.inc because it has NINE external callers (do_files,
 ; do_kill, do_name, do_open, do_run, ex_merge, bsv_is_disk, sav_is_disk,
 ; dl_is_disk) and so must stay RESIDENT in the repack build even though the

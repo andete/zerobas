@@ -331,6 +331,7 @@ basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
 	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
 	python3 tools/check_tenant_closure.py --page1 $(SUB_SYM) sub/sub.asm
 	python3 tools/check_dead_code.py $(RELOC_SYM) $(SUB_SYM)
+	python3 tools/audit_citations.py
 
 # Transitive dead-code sweep, BOTH builds (docs/spec-deadcode-gate.md). A step of
 # `basic-reloc` above, since unreachable code is exactly the finding that goes
@@ -1596,10 +1597,18 @@ bdos-cbios-selfcheck: $(DISK_ROM)
 
 # The mechanical half of the clean-room paper-trail audit: forbidden-source scan
 # + per-file attestation (gating) and disk section-citation presence (advisory).
-# Cheap, read-only, no emulator -- run it on demand / in CI so the citation
-# scaffolding cannot silently lapse between the manual paper-trail passes. It does
-# NOT replace the human paper trail (the "is each probe black-box?" judgement);
-# see docs/clean-room-audit.md. `make audit-citations TARGET="disk"` scopes it.
+# Cheap (0.27 s), read-only, no emulator, no reference ROMs. It does NOT replace
+# the human paper trail (the "is each probe black-box?" judgement); see
+# docs/clean-room-audit.md. `make audit-citations TARGET="disk"` scopes it.
+#
+# ⚠️ WHERE IT RUNS, AND WHY THAT IS WIRED RATHER THAN WRITTEN DOWN. This comment
+# used to say "run it on demand / in CI", and D-CITEJUDGE (2026-08-06) measured
+# both clauses false: ci.yml did not run it, and "on demand" left the gate RED for
+# 268 of its first 761 commits -- including one unbroken 144-commit stretch --
+# with every green return coming from a human happening to run it. A cadence
+# written in a comment is a habit, and a habit is not a control. It is now a step
+# of `basic-reloc` above (the target every slice runs, beside check_dead_code.py)
+# and a step of .github/workflows/ci.yml. Spec: docs/spec-audit-citations-gate.md.
 audit-citations:
 	python3 tools/audit_citations.py $(TARGET)
 

@@ -9,6 +9,11 @@
 ; bug the DATA scanner would hide (a float literal's $00 mantissa byte read as a
 ; line terminator). sub/lineedit.asm keeps its own page-1 copy under `le_`
 ; labels -- page 0 and page 1 are never mapped together, so each page needs one.
+;
+; Clean-room: zerobas's own code, extracted verbatim from basic/interp.asm so
+; the resident and tenant copies cannot drift. Token strides follow this
+; project's own token table (kwtable.inc, oracle-sourced by observation);
+; nothing here is derived from a disassembly or byte-copy of any reference ROM.
 
 ; --- tok_skip: advance HL past one token, including its operand bytes -------
 tok_skip:

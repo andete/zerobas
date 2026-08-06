@@ -105,6 +105,10 @@ def generate(sym_path: str, out_path: str) -> str:
         "; tools/gen_resident_abi.py from build/basic-reloc.sym (Makefile rule);",
         "; regenerated on every build so a page-0-low shift can never leave this",
         "; sub-ROM calling stale addresses. docs/spec-basic-subrom-mathpack.md §4.",
+        ";",
+        "; Clean-room: every value below is an address inside THIS project's own",
+        "; main ROM, read out of our own build's symbol file. Nothing here is derived",
+        "; from a disassembly or byte-copy of any reference ROM.",
         "",
     ]
     for name in REQUIRED:

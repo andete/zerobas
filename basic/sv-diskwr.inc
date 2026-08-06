@@ -3,6 +3,11 @@
 
 ; sv-diskwr.inc -- the sequential DISK write helpers (disk_write_begin/putword/putbyte/write_end).
 ; ===========================================================================
+; Clean-room: zerobas's own code, built on this project's own FAT12 engine over
+; the STANDARD $4010 DSKIO entry -- the public FAT12 format, no disk-ROM
+; internals. Nothing here is derived from a disassembly or byte-copy of any
+; reference ROM. Basis: basic/PROVENANCE.md.
+; ===========================================================================
 
 ; Shared disk-write helper (the WRITE analogue of the read side's fat_io_open /
 ; fat_io_getbyte). Built on the loader-side FAT12 engine over the STANDARD $4010

@@ -3,6 +3,12 @@
 
 ; kwtable.inc — the keyword -> token crunch table (extracted from interp.asm).
 ; ===========================================================================
+; Clean-room: the tokens are ORACLE-SOURCED, not lifted -- each was read off a
+; live VG-8020 by crunching the keyword and observing the bytes the machine
+; stored (probes/basic/basic_probe_crunch.py, byte-identity verified). The
+; table's layout is this project's own. Nothing here is derived from a
+; disassembly or byte-copy of any reference ROM. Basis: basic/PROVENANCE.md.
+; ===========================================================================
 ; Entry layout: [klen][UPPERCASE chars][tlen][token...]. Terminated by a 0 length
 ; byte. Tokens are oracle-sourced (spec-tokenise.md, spec-tokens-statements.md).
 ; PEEK is a two-byte function token ($FF $97).

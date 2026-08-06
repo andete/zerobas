@@ -399,6 +399,9 @@ HEADER = ("; Copyright (c) 2026 Joost Yervante Damad\n"
           "; GENERATED FILE -- do not hand-edit. Produced by tools/gen_math_coeffs.py\n"
           "; (own decimal minimax + constants; cross-checked vs Cody & Waite METHOD,\n"
           "; NEVER the MSX ROM). docs/spec-basic-mathpack-slice2.md §11.3.\n;\n"
+          "; Clean-room: own design. Every constant is produced here, by our own\n"
+          "; decimal minimax fit; none is derived from a disassembly or byte-copy of\n"
+          "; any reference ROM's coefficient tables.\n;\n"
           "; FPNUM 18-byte records: sign(1) + dexp LE word(2) + dig[0..13] + guard(1).\n\n")
 
 def emit_coef_table(out, name, deg, coeffs, comment):

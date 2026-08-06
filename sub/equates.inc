@@ -3,6 +3,11 @@
 
 ; zerobas-sub — equates.inc
 ; ===========================================================================
+; Clean-room: own design. Every constant here is a zerobas layout decision --
+; our own entry-table bases, our own tenant indices, our own RAM cells -- fixed
+; by docs/spec-basic-subrom.md. Nothing is derived from a disassembly or
+; byte-copy of any reference ROM.
+; ===========================================================================
 ; Shared constants for the built-in MSX2-style sub-ROM (docs/spec-basic-subrom.md).
 ; ===========================================================================
 

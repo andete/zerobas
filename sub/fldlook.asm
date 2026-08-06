@@ -5,6 +5,11 @@
 ; (SUBROM_IDX_FLDLOOK). docs/decision-clearpool-funding.md §6.1 -- the D-CLP
 ; funding carve.
 ;
+; Clean-room: zerobas's own code, promoted verbatim out of the main ROM's
+; FIELD/string layer to fund the CLEAR string-pool partition. Nothing here is
+; derived from a disassembly or byte-copy of any reference ROM.
+; Basis: basic/PROVENANCE.md.
+;
 ; WHY THIS ONE. The CLEAR string-pool partition (docs/spec-basic-clearpool.md)
 ; measured 25 B of main page 1 against 3 B free -- a 22 B shortfall -- and
 ; clone_scout.py reports ZERO clone groups, so the only lever left is a

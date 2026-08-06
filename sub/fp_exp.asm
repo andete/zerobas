@@ -2,6 +2,12 @@
 ; SPDX-License-Identifier: 0BSD
 
 ; =============================================================================
+; Clean-room: own design. The reduction and the polynomial shape are this
+; project's own (docs/spec-basic-mathpack-slice2.md); the coefficients come from
+; our own decimal minimax fitter, tools/gen_math_coeffs.py -- never the
+; reference ROM's own constants. Agreement with the reference is a black-box
+; characterization result, not a copied one.
+; ---------------------------------------------------------------------------
 ; fp_exp -- math pack slice 2b: EXP(x) primitive (docs/spec-basic-mathpack-
 ; slice2.md §12.4). Classic table-assisted range reduction: n8 := nearest-int
 ; (x*8/ln10) splits x into a decade part n (n8>>3) and an eighth-of-a-decade
