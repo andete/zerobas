@@ -329,6 +329,22 @@ name a public source or a standard, so all three *should* be exempt — they are
 simply exempt for the wrong reason, and `map.grauw.nl`, the public artifact two of
 them actually cite, is not in `CITATION`'s vocabulary at all.
 
+> ✅ **CLOSED 2026-08-06 by D-NEGJUDGE — the negation window is DECLINED and the
+> table above is wrong on one row.**
+> [`docs/spec-audit-citations-negation.md`](spec-audit-citations-negation.md).
+> Walked over all **981** commits: a 3-line negation window adds **38** findings
+> the shipped rule does not make and **0 of the 38** lack a document citation
+> (precision **0**), while disagreeing with the shipped rule in **760** commits.
+> It fails structurally — `CLEAN-ROOM` is a `NEGATION` token *and* the prefix of
+> this project's citation convention, so the window discards the citation on every
+> header in house style; and `\bno\b` matches inside `NO-OP`.
+> 🔴 **The `runtime.asm:423` row above is wrong: that header is NOT substantively
+> attested.** It names *"the MSX1 standard"* — a standard, not a document — and had
+> been exempt on the word `VDP` in ordinary prose for **708** commits. It is now
+> the 4th acknowledged entry. The class had **1** real member, not 0, and the
+> negation window **does not catch it** while flagging the two that should stay
+> exempt. `map.grauw.nl` was measured: **0** changed verdicts in 981 commits.
+
 **Not fixed here, and the reason is a measurement, not fatigue.** Adding
 `map.grauw.nl` would change no count in this tree — a rule with no observable
 effect is [[gate-can-be-green-while-measuring-nothing]]. Adding a negation window

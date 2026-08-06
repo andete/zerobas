@@ -15,17 +15,25 @@
 # on a line number: line numbers rot on every edit above them, and a path-level
 # entry would blind a whole file to a second, real uncited header.
 #
-# ⚠️ This list is 3 entries, not the 7 the residual was filed for. Four of the
-# seven were an artefact of the old 6-comment-line lookahead and carry a proper
+# ⚠️ This list started at 3 entries, not the 7 the residual was filed for. Four of
+# the seven were an artefact of the old 6-comment-line lookahead and carry a proper
 # document citation at offset 7, 10, 10 and 11 of their own comment block.
 # Acknowledging those four would have frozen the instrument's defect into a
 # control that must keep matching. See docs/spec-audit-citations-review.md §2.2.
 #
-# Triaged 2026-07-04 (docs/clean-room-audit.md, disk whole-target paper trail) and
-# re-derived 2026-08-06 (D-REVJUDGE).
+# The 4th entry (2026-08-06, D-NEGJUDGE) arrived the other way round: it is a
+# header the rule had been EXEMPTING for 708 commits on the word "VDP" used as an
+# ordinary noun. See docs/spec-audit-citations-negation.md — and note that the
+# negation window filed to catch that class would have missed this very header
+# while flagging eight properly cited ones.
+#
+# Triaged 2026-07-04 (docs/clean-room-audit.md, disk whole-target paper trail),
+# re-derived 2026-08-06 (D-REVJUDGE), extended 2026-08-06 (D-NEGJUDGE).
 
 disk/driver.asm aa89e15851ff 'write path' — the write twin of the read path in the same file. Its body cites nothing itself because it mirrors dskio's read loop instruction for instruction ("Mirrors the read loop's structure exactly"), and the read path's own header block carries the PROVENANCE.md §FDC / §DSKIO interface citation that both rest on. A single shared citation for a mirrored pair is the honest shape; duplicating it would be prose written to satisfy a scanner. Human judgement, 2026-07-04, re-confirmed 2026-08-06.
 
 disk/kernel.asm 77d4c39b0be0 'MSX-DOS-1 kernel SETDTA-time entry: $5058 (M19)' — attested in full, in vocabulary CITATION does not carry: 12 comment lines naming the finding (M19), the probes (callseq / capture / callwatch causal pin), the black-box contract (entry register, write target, the register-identical 51-call comparison) and the clean-room line ("no stock routine internals decoded"). Widening CITATION with black-box was measured and DECLINED — docs/spec-audit-citations-review.md §2.5 records the numbers and the bar to re-open it. Kept as a review candidate deliberately: what counts as a citation is a judgement this tool declines to make.
+
+disk/runtime.asm d8340dfd8ba4 'int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) — SUPERSEDED by A-3' — a genuinely uncited header, and the only one this project has ever had that was hidden by the vocabulary rather than by the distance rule. Its block attests in prose — "the MSX1 standard, BIOS-agnostic" — which names a standard but no document: no §, no spec filename, no URL, no datasheet. It was exempt only because the sentence "A bare VDP ack is not enough" contains the word VDP, which was a CITATION token until 2026-08-06. The finding it restates DOES exist: provider-oracle-scope.md §8.70 (O-2, the KEYINT chaining contract — the stock $0038 handler, the main-ROM KEYINT body, the H.KEYI/H.TIMI hooks, all from black-box probe runs). The header's own name once carried the reference, "(A-2/8.70)", a bare number the rule cannot match either, and lost it in the A-3 rename (71b1096). The human's remedy is to name §8.70 in the block, or to delete the dead body this header describes (it says DEAD/SUPERSEDED itself, kept net-zero pending removal). Which of those is right is a judgement this tool declines to make.
 
 disk/kernel.asm b7535589959f 'contract bodies (stubs; filled in milestone 4; added as each veneer lands)' — a table of bare `ret` stubs at pinned kernel addresses. It names no derived behaviour, so there is nothing to cite; each stub acquires its own citation in the comment block above it as the milestone that fills it lands (see the k_47B2 block immediately below, which cites tier2-m31-rdblk-randrecord-spec.md). Structural in substance but not in STRUCTURAL_HDR's vocabulary, and widening that regex to catch it would exempt far more than this one header.

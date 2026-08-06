@@ -39,10 +39,10 @@ duplicating (and drifting from) what is written below.
 **Language / verb surface**
 
 - [ ] `AUTO` / `RENUM` / `LLIST` / `DELETE` — **the STATEMENT half.** Tokens are
-      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4360); nothing
-      executes them. Detail: *“Editor / program management”*, line 1603.
+      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4388); nothing
+      executes them. Detail: *“Editor / program management”*, line 1631.
 - [ ] **No string `READ`.** Filed by D-DEFSTR — detail:
-      *“ZEROBAS HAS NO STRING `READ`”*, line 4050.
+      *“ZEROBAS HAS NO STRING `READ`”*, line 4078.
 
 **Own-design hazards carried out of closed slices**
 
@@ -51,26 +51,26 @@ duplicating (and drifting from) what is written below.
       three sites that crossed them (one was a live memory corruption) but the two
       namespaces still overlap on the numeric values, so the next site that feeds
       one into the other reintroduces the class. Collapse to ONE. Detail:
-      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3961.
+      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3989.
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
 
 - [ ] ⚠️ **`injector-check` is still a TEXT classifier.** A split literal passes.
-      Already an open item — detail: line 4677.
+      Already an open item — detail: line 4705.
 - [ ] ⚠️ **An asm label named in a `tools/*.py` or `sub/` comment is immune to the
       dead-code sweep** — `check_dead_code.py`'s `external_names` scans those
       directories *including comments*, so writing a label's name in prose seeds it
       as reachable. Every slice that edits `tools/` prose must predict the seed
-      counts and treat movement as a finding. Detail: lines 2276 and 2512.
+      counts and treat movement as a finding. Detail: lines 2304 and 2540.
 - [ ] ⚠️ **Three probe page-0 entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
       deriving them from `sub/equates.inc` needs its own falsification because they
-      inject raw bytes into a bare machine deliberately. Detail: line 2471.
+      inject raw bytes into a bare machine deliberately. Detail: line 2499.
 - [ ] ⚠️ **`build/disk.rom` pad-only damage is invisible ON PURPOSE** — 9543 of
       16384 bytes (58.2 %) are `$00` pad in 252 runs. Closing it needs a whole-image
       digest, which would pin the ROM against every legitimate `disk/*.asm` change.
-      Re-open only with an argument that answers that. Detail: line 2466.
+      Re-open only with an argument that answers that. Detail: line 2494.
 - [x] ✅ **`make audit-citations` was RED at HEAD and nothing ran it — CLOSED
       2026-08-06 by D-CITEJUDGE**,
       [`docs/spec-audit-citations-gate.md`](docs/spec-audit-citations-gate.md).
@@ -153,24 +153,52 @@ duplicating (and drifting from) what is written below.
       section self-test, and `tools/citations-advisory-allow.txt` — two independent
       controls, only removing both is silent (K1d). Promotion to GATING measured
       and declined: it would have been red in **918 of 980** commits.
-- [ ] ⚠️ **Check 3 exempts on a token, with no negation window** — 3 of the 48
-      exempt disk headers are exempted by a weak or negated match (`"no oracle
-      bytes"` ×2, the word `VDP` in ordinary prose), not by a citation. All three
-      are substantively attested (each names a public source or standard in
-      prose), so the class has **0 real members today** — but the mechanism is the
-      same one that made a knife plant saying *"no provenance at all"* exempt
-      itself. Check 1 has a negation window; check 3 does not. Re-open with a
-      discriminator that leaves those three exempt for the *right* reason while
-      still catching a header whose only citation token is negated; note its effect
-      is to GROW the acknowledged list, so it needs its own falsification. Detail:
-      `docs/spec-audit-citations-review.md` §2.6.
+- [x] ✅ **Check 3's missing negation window — CLOSED 2026-08-06 by D-NEGJUDGE as
+      a measured DECLINE + a one-token vocabulary fix**,
+      [`docs/spec-audit-citations-negation.md`](docs/spec-audit-citations-negation.md).
+      🔴 **The filed fix has precision 0 over the whole history**: walked across
+      all **981** commits, a 3-line negation window adds **38** findings the
+      shipped rule does not make and **0 of the 38** lack a document citation,
+      while disagreeing with the shipped rule in **760** commits. It fails
+      structurally, not by tuning — `CLEAN-ROOM` is a `NEGATION` token *and* the
+      prefix of this project's citation convention (*"CLEAN-ROOM: published CONST
+      contract (map.grauw.nl); no oracle bytes"*), so the window discards the
+      citation on every header written in house style; and `\bno\b` matches inside
+      `NO-OP`, throwing away a `§5.3` for a hyphen. Check 1's own window was
+      knifed first and **is** sound (109 hits, 109 suppressed, all 26
+      lookback-only ones read and genuine) — it does not transfer because its
+      vocabulary is rare and confined to attestations while check 3's is common
+      and sits *next to* the negation. 🔴 **And the filed premise was wrong in
+      both directions**: *"all three substantively attested, 0 real members"* is
+      **2 of 3** — `runtime.asm:423` (`int_h_body`) cites no document at all and
+      had been exempt on the word `VDP` in ordinary prose for **708** commits —
+      and the negation window **does not catch that one**, while flagging the two
+      that should stay exempt. The real axis was vocabulary: sweeping `CITATION`
+      one alternative at a time shows **22 of 25** exempt nothing, and removing
+      `VDP` alone scores **9 of 9** genuine over the same 981 commits. Landed:
+      `VDP` dropped, a 2-vector class pin (self-test 12 → **14**), the 4th
+      acknowledged entry, and a floor on **all four** self-test tables — because
+      an emptied table printed `section self-test 0/0` and exited **0**.
+      `map.grauw.nl` was measured and DECLINED: **0** changed verdicts in 981
+      commits, and the "swap `oracle` for the URL" repair is byte-for-byte
+      identical to the shipped fix at every commit.
+- [ ] ⚠️ **`disk/runtime.asm:423` `int_h_body` awaits a HUMAN decision** — newly
+      visible (D-NEGJUDGE) and acknowledged in `tools/citations-advisory-allow.txt`,
+      not resolved. Its block attests in prose (*"the MSX1 standard,
+      BIOS-agnostic"*) but names no document; the finding it restates is
+      `disk/docs/provider-oracle-scope.md` **§8.70** (O-2, the KEYINT chaining
+      contract), and the header's own name carried *"(A-2/8.70)"* until the A-3
+      rename (`71b1096`) dropped it. Remedy is to name §8.70 in the block **or**
+      to delete the dead body the header itself calls `SUPERSEDED` — a judgement
+      the tool declines to make. Detail:
+      `docs/spec-audit-citations-negation.md` §2.5.
 - [ ] ⚠️ **`lof-acceptance` intermittent oracle drift — two sightings, nothing
       since.** Sighting 3 has not occurred across EIGHT consecutive slices
       (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE, D-DOCJUDGE,
       D-BYTEJUDGE, D-REVJUDGE — the last at 45 cases, 0 oracle drift, whole log
       captured, 59 lines). A third IS a finding to
       chase; capture the **whole** log (`> file 2>&1`), because sighting 1's row
-      identity was lost to a `tail -6`. Detail: line 3567.
+      identity was lost to a `tail -6`. Detail: line 3595.
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 

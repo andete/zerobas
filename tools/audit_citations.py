@@ -489,10 +489,41 @@ def parse_listing_allow(path=None):
 
 # --- check 3: section-citation presence (advisory, disk-only) -------------------
 SECTION_HDR = re.compile(r"^;\s*-{2,}\s*(.+?)\s*-{2,}\s*$")
+# ⚠️ THIS RULE EXEMPTS ON A TOKEN AND HAS NO NEGATION WINDOW, DELIBERATELY.
+# Check 1 has one; borrowing it here was filed as a residual and MEASURED, over
+# all 981 commits, in docs/spec-audit-citations-negation.md:
+#
+#   * a 3-line NEGATION window adds 38 findings the shipped rule does not make,
+#     and 0 of the 38 lack a document citation -- precision 0, over the whole
+#     history of the tree;
+#   * it fails structurally, not by tuning. CLEAN-ROOM is a NEGATION token AND
+#     the prefix of this project's citation convention ("CLEAN-ROOM: published
+#     CONST contract (map.grauw.nl) + CHSNS; no oracle bytes"), so the window
+#     discards the citation on every header that follows the house style; and
+#     \bno\b matches inside NO-OP, which throws away a §5.3 for a hyphen;
+#   * check 1's window IS sound where it lives -- 109 hits, 109 suppressed, all
+#     26 lookback-only suppressions read individually and all genuine. It does
+#     not transfer because check 1's vocabulary is rare and confined to
+#     attestations, while this one's is common and sits NEXT TO the negation.
+#
+# What the residual was really about is VOCABULARY, and one token carried all of
+# it. Sweeping this regex one alternative at a time (the D-REVJUDGE distance
+# sweep, on the other axis) shows 22 of the 25 alternatives exempt nothing at
+# all; only §, "oracle" and "VDP" are load-bearing. VDP -- a subsystem
+# abbreviation, ordinary English in a sentence about what an implementation must
+# do -- was single-handedly exempting one uncited header for 708 commits, so it
+# is gone. Removing it adds 9 findings over the same 981 commits and 9 of 9 are
+# genuine: they are that one header, tracked across its moves and its rename.
+#
+# Z80/TMS9918/WD2793 STAY: they are part numbers whose datasheets are
+# chain-terminating sources per docs/clean-room-audit.md, not prose. PSG stays
+# too -- it has never exempted anything in any commit, so removing it would be a
+# rule change with no observable effect. Adding map.grauw.nl was measured as
+# EXACTLY that: 0 changed verdicts in 981 commits (negation spec §2.7).
 CITATION = re.compile(
     r"§|PROVENANCE|provider-oracle|spec-|-spec\.md|tier2-|datasheet|data book|"
     r"ECMA|FAT spec|WD179|WD2793|MB887|Technical Handbook|MSX2 TH|Z80|TMS9918|"
-    r"oracle|own[- ]?design|own[- ]?choice|own code|hardware fact|PSG|VDP|"
+    r"oracle|own[- ]?design|own[- ]?choice|own code|hardware fact|PSG|"
     r"Microsoft FAT",
     re.I,
 )
@@ -634,6 +665,19 @@ SECTION_SELFTEST = [
     ("an ordinary comment is not a section header",
      ["; write path — an ordinary comment, not a header", "  ld a,b"],
      ()),
+    # D-NEGJUDGE. The pair that pins the vocabulary edge: a subsystem
+    # abbreviation used as an ordinary noun is NOT a citation, but a real
+    # hardware document still is. Re-adding VDP to CITATION fails the first;
+    # over-applying the removal to `datasheet` fails the second.
+    ("a bare subsystem abbreviation in prose is not a citation",
+     [_hdr("interrupt shim"),
+      "; a bare VDP ack is not enough here: the caller needs the timer hooks",
+      "; too, which only the main BIOS runs.", "  ei"],
+     ("REVIEW",)),
+    ("a real hardware document still exempts",
+     [_hdr("interrupt shim"),
+      "; timing grounded on the TMS9918 datasheet, section 2.1", "  ei"],
+     ("cited",)),
 ]
 
 
@@ -702,12 +746,69 @@ def audit_private(rel: str):
     return findings
 
 
+# --- the control on the controls ------------------------------------------------
+# 🔴 EVERY SELF-TEST TABLE PRINTED "0/0" AND EXITED 0 WHEN EMPTIED, until
+# D-NEGJUDGE measured it. `section self-test 0/0` in the header line reads exactly
+# like `12/12` to anyone scanning the output, and none of the four tables had a
+# floor. That is the "0/0 tally printed ALL CONVERGED" shape, and it is the same
+# defect MIN_FILES closes one level out: a collapsed denominator reads as success.
+#
+# The acknowledged list does NOT cover it. Emptying a table blinds the CONTROL,
+# not the RULE -- the findings are unchanged, so every allowlist entry still
+# matches and the run is green. What goes unnoticed is the NEXT rule change.
+#
+# ⚠️ WHAT THIS DOES NOT CATCH, STATED: trimming 14 vectors to 9 still passes. The
+# failure mode closed here is a blinded control reading as green, not vector
+# attrition. Attrition's defence is that each vector is here because a knife or a
+# measurement put it there -- see docs/spec-audit-citations-negation.md §3.4.
+MIN_SELFTEST_ROWS = 8
+
+
+def selftest_table_failures():
+    """Tables too small, or missing a whole sense. Both mean the control is not
+    controlling anything, which is an INSTRUMENT verdict (exit 2), not a tree one."""
+    bad = []
+    tables = [
+        ("check 1 rule", RULE_SELFTEST,
+         [w for _, w in RULE_SELFTEST], [True, False]),
+        ("check 5 listing", LISTING_SELFTEST,
+         [w for _, w in LISTING_SELFTEST], [True, False]),
+        ("check 6 dump", DUMP_SELFTEST,
+         [w for _, w in DUMP_SELFTEST], [True, False]),
+        # check 3 classifies into verdicts, not booleans: it must keep at least
+        # one vector that must be FLAGGED and one that must be EXEMPTED.
+        ("check 3 section", SECTION_SELFTEST,
+         [v for _, _, want in SECTION_SELFTEST for v in want],
+         ["REVIEW", "cited"]),
+    ]
+    for label, table, senses, needed in tables:
+        if len(table) < MIN_SELFTEST_ROWS:
+            bad.append(f"{label}: {len(table)} vector(s), floor "
+                       f"{MIN_SELFTEST_ROWS} — a gutted table classifies "
+                       f"nothing and still prints N/N.")
+        missing = [s for s in needed if s not in senses]
+        if missing:
+            bad.append(f"{label}: no vector expecting {missing} — a table of one "
+                       f"sense passes however the rule is broken in the other.")
+    return bad
+
+
 def main(argv):
     targets = argv[1:] or ["disk", "basic", "tape"]
     unknown = [t for t in targets if t not in TARGETS]
     if unknown:
         print(f"unknown target(s): {', '.join(unknown)}", file=sys.stderr)
         print(f"known: {', '.join(TARGETS)}", file=sys.stderr)
+        return 2
+
+    bad = selftest_table_failures()
+    if bad:
+        print("INSTRUMENT NOT WORKING — a self-test table has been gutted:",
+              file=sys.stderr)
+        for msg in bad:
+            print(f"  {msg}", file=sys.stderr)
+        print("Nothing below this was measured. Restore the vectors.",
+              file=sys.stderr)
         return 2
 
     bad = selftest_failures()
