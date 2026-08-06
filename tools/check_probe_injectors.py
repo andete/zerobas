@@ -65,17 +65,40 @@ JUDGE rather than reporting a tally.
 IT. Three symbols that exist by construction are PINNED; their absence is
 `CANNOT JUDGE`, not a clean walk -- the same reasoning as "0 files scanned is not
 a clean tree, it is a broken walk".
+
+🔴 AND THE DENOMINATOR IS DERIVED, NOT LISTED (D-INJJUDGE,
+docs/spec-probe-injjudge.md §2.4). Until 2026-08-06 this walked three named
+directories and said "ALL PASS -- one injector in the tree". That sentence was
+FALSE: 67 of the tree's 325 `.py` files were outside those three names, and
+THREE of them compose the pre-D-LATCH body -- one of them character-for-character
+the frozen `latch_check.OLD_KEY`. The rule classified all three correctly the
+moment it was shown them; it had simply never been shown them. A gate whose
+subject is "this tree" derives its file list from the tree.
+
+Those three are frozen characterization records cited from PROVENANCE documents,
+so they may not be rewritten -- see the RECORD class below.
 """
 from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-SCAN_DIRS = ("probes", "tools", "tests")
+
+# Everything in the repository EXCEPT generated output and tool state. Shaped
+# after audit_citations.SWEEP_SKIP -- minus `scratchpad`, which is exactly where
+# the three unseen bodies were.
+SKIP_DIRS = {"build", ".git", ".claude", ".vscode", "__pycache__", "node_modules"}
+
+# ⚠️ 0 files scanned is not a clean tree, and neither is 200. The walk is 325
+# files today; PINNED catches the loss of probes/lib/, but deleting probes/disk/
+# (25 files) or tests/ (63) would otherwise leave a green ALL PASS over a
+# denominator quietly a quarter smaller (spec §2.7).
+MIN_FILES = 300
 
 # The Tcl primitive that actually moves a byte into the emulated machine.
 WRITE = "debug write memory"
@@ -93,6 +116,9 @@ CURSORS = ("GETPNT", "PUTPNT", "0xF3FA", "0xF3F8", "0xf3fa", "0xf3f8",
 #            it. 🎯 A NARROW CLAIM, AND IT IS CHECKED: a HANDLES file must carry
 #            no `debug write memory` literal of its own. Restate the injector's
 #            vocabulary here and the exemption stops covering you.
+#
+# A fourth class, RECORD, is NOT here: it lives in tools/injector-record-allow.txt
+# because its members are data, not structure -- see RECORD_ALLOW below.
 #
 # ⚠️ Adding an entry: state the class, the symbols it names, and why they cannot
 # reach the machine. The gate checks the first half; the reviewer of the slice
@@ -179,6 +205,37 @@ FROZEN_REGISTRY = {"latch_check": {"OLD_KEY": "probes/lib/latch_check.py",
 PINNED = (("latch_check", "OLD_KEY"),
           ("latch_check", "GETPNT_KEY"),
           ("check_probe_injectors", "FROZEN_FAULT"))
+
+# --- the RECORD class ------------------------------------------------------
+# 🔴 A FILE CAN COMPOSE THE BODY AND STILL NOT BE FIXABLE. The three offenders
+# the derived denominator exposed are one-shot characterization scripts, each
+# landed in a single commit and untouched since, and each CITED from a
+# provenance document as the apparatus behind a landed spec (spec §2.6). A
+# provenance record is a statement about WHAT WAS RUN: rewriting the injector
+# inside one makes the file no longer that, and deleting them breaks six
+# citations. So they are acknowledged rather than repaired.
+#
+# 🔴 TWO-DIRECTIONAL, LIKE tools/citations-advisory-allow.txt. An entry that
+# stops being reported is STALE and exits 2; a composer that is not listed exits
+# 1. A list that only suppresses is rot; one that must keep matching is a
+# control.
+#
+# 🎯 AND THE CLASS IS MACHINE-CHECKED ON BOTH ITS CLAIMS:
+#   FROZEN      the entry carries sha256(contents)[:12]. Edit the file at all --
+#               including to "fix" the injector -- and the entry goes stale.
+#   UNREACHABLE no scanned file may IMPORT a record's module. An import makes
+#               the body reachable from live code, which is the promotion
+#               hazard this tree has already run once (a scratchpad sweep became
+#               tools/check_dead_code.py, a hard gate).
+RECORD_ALLOW = os.path.join(HERE, "injector-record-allow.txt")
+
+# 🔴 THE SELF-TEST TABLE COULD BE EMPTIED SILENTLY. Set `rows` to () before
+# 2026-08-06 and this gate printed "self-test PASS (rows A-D: ...)" and exited 0
+# -- a sentence naming four rows it had not run. It did not even print a count,
+# so there was no 0/0 to notice. The floor bars that, and the polarity bar below
+# it bars trimming the table down to one sense (D-NEGJUDGE, same shape, one tool
+# over).
+MIN_SELFTEST_ROWS = 4
 
 
 def _emitted_strings(tree: ast.AST) -> str:
@@ -296,31 +353,86 @@ def classify(src: str, registry: dict[str, dict[str, str]] | None = None,
     return "CLEAN", why_a
 
 
+SELFTEST_ROWS = (
+    ("A", FROZEN_FAULT, "COMPOSES", "the FROZEN pre-D-LATCH injector",
+     "this classifier no longer recognises the fault it exists for, so a "
+     "clean walk would prove nothing"),
+    ("B", FROZEN_CLEAN, "CLEAN", "the FROZEN re-pointed body",
+     "this classifier flags the FIX, so every walk is noise"),
+    ("C", FROZEN_LAUNDER, "HANDLES",
+     "the FROZEN body shipped by import, with no literal of its own",
+     "rule (b) is decoration: the pre-D-LATCH injector can be emitted "
+     "verbatim past this gate (docs/spec-probe-injsink.md §2.2)"),
+    ("D", FROZEN_IMPORT_OK, "CLEAN",
+     "an ordinary import from the same module",
+     "rule (b) flags every importer of probes/lib, so every walk is noise"),
+)
+
+
+def selftest_table_failures() -> list[str]:
+    """The table too small, or missing a whole sense. Either way the control is
+    not controlling anything, which is an INSTRUMENT verdict, not a tree one."""
+    bad = []
+    if len(SELFTEST_ROWS) < MIN_SELFTEST_ROWS:
+        bad.append(f"SELFTEST_ROWS has {len(SELFTEST_ROWS)} rows, floor is "
+                   f"{MIN_SELFTEST_ROWS} -- an emptied table used to print a "
+                   f"PASS naming rows it never ran")
+    senses = {want for _t, _b, want, _w, _h in SELFTEST_ROWS}
+    for need in ("COMPOSES", "HANDLES", "CLEAN"):
+        if need not in senses:
+            bad.append(f"no self-test row expects {need} -- that sense of the "
+                       f"classifier is uncontrolled")
+    return bad
+
+
 def self_test() -> list[str]:
     """Rows A-D: two per rule, each pair two-sided. Returns the failures; empty
     means the classifier still recognises both faults AND still clears both
     fixes."""
     bad = []
-    rows = (
-        ("A", FROZEN_FAULT, "COMPOSES", "the FROZEN pre-D-LATCH injector",
-         "this classifier no longer recognises the fault it exists for, so a "
-         "clean walk would prove nothing"),
-        ("B", FROZEN_CLEAN, "CLEAN", "the FROZEN re-pointed body",
-         "this classifier flags the FIX, so every walk is noise"),
-        ("C", FROZEN_LAUNDER, "HANDLES",
-         "the FROZEN body shipped by import, with no literal of its own",
-         "rule (b) is decoration: the pre-D-LATCH injector can be emitted "
-         "verbatim past this gate (docs/spec-probe-injsink.md §2.2)"),
-        ("D", FROZEN_IMPORT_OK, "CLEAN",
-         "an ordinary import from the same module",
-         "rule (b) flags every importer of probes/lib, so every walk is noise"),
-    )
-    for tag, body, want, what, hurt in rows:
+    for tag, body, want, what, hurt in SELFTEST_ROWS:
         v, why = classify(body, FROZEN_REGISTRY, own_module="_selftest")
         if v != want:
             bad.append(f"row {tag}: {what} classifies {v} ({why}), want {want} "
                        f"-- {hurt}")
     return bad
+
+
+# --- the RECORD list -------------------------------------------------------
+def parse_record_allow() -> dict[str, tuple[str, str]] | str:
+    """`<path> <sha256(contents)[:12]> <reason>` per line. Returns a message
+    instead of a dict when the file itself is unusable -- the list is a control,
+    so it may not fail open."""
+    if not os.path.exists(RECORD_ALLOW):
+        return f"{os.path.basename(RECORD_ALLOW)} is missing"
+    out: dict[str, tuple[str, str]] = {}
+    with open(RECORD_ALLOW, encoding="utf-8") as f:
+        for n, line in enumerate(f, 1):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split(None, 2)
+            if len(parts) < 3:
+                return f"{os.path.basename(RECORD_ALLOW)}:{n}: expected " \
+                       f"`<path> <digest> <reason>`"
+            out[parts[0]] = (parts[1], parts[2])
+    return out
+
+
+def digest(src: str) -> str:
+    return hashlib.sha256(src.encode("utf-8")).hexdigest()[:12]
+
+
+def _imported_modules(tree: ast.AST) -> set[str]:
+    """Every module basename this file imports, however it spells it."""
+    mods = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for a in node.names:
+                mods.add(a.name.split(".")[-1])
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            mods.add(node.module.split(".")[-1])
+    return mods
 
 
 def frozen_registry() -> dict[str, dict[str, str]]:
@@ -340,19 +452,24 @@ def frozen_registry() -> dict[str, dict[str, str]]:
 
 
 def _sources():
-    for d in SCAN_DIRS:
-        for root, _dirs, files in os.walk(os.path.join(REPO, d)):
-            for fn in sorted(files):
-                if not fn.endswith(".py"):
-                    continue
-                path = os.path.join(root, fn)
-                with open(path, encoding="utf-8", errors="replace") as f:
-                    yield os.path.relpath(path, REPO), f.read()
+    """Every `.py` in the repository. DERIVED, not a list of directory names --
+    the three bodies this gate had never seen were outside the three names it
+    used to carry (spec §2.4)."""
+    for root, dirs, files in os.walk(REPO):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+        for fn in sorted(files):
+            if not fn.endswith(".py"):
+                continue
+            path = os.path.join(root, fn)
+            with open(path, encoding="utf-8", errors="replace") as f:
+                yield os.path.relpath(path, REPO), f.read()
 
 
-def walk(registry) -> list[tuple[str, str, str]]:
+def walk(registry) -> tuple[list[tuple[str, str, str]], dict[str, str]]:
     out = []
+    srcs: dict[str, str] = {}
     for rel, src in _sources():
+        srcs[rel] = src
         verdict, why = classify(registry=registry, src=src,
                                 own_module=os.path.basename(rel)[:-3])
         if rel in EXEMPT:
@@ -368,7 +485,7 @@ def walk(registry) -> list[tuple[str, str, str]]:
             else:
                 verdict, why = f"EXEMPT/{cls}", why_x
         out.append((rel, verdict, why))
-    return out
+    return out, srcs
 
 
 def main() -> int:
@@ -378,6 +495,21 @@ def main() -> int:
                     help="print every scanned file and its verdict")
     args = ap.parse_args()
 
+    table = selftest_table_failures()
+    if table:
+        sys.stdout.flush()
+        print("injector-check: CANNOT JUDGE -- the self-test table is not a "
+              "control:", file=sys.stderr)
+        for m in table:
+            print(f"  {m}", file=sys.stderr)
+        return 2
+
+    records = parse_record_allow()
+    if isinstance(records, str):
+        sys.stdout.flush()
+        print(f"injector-check: CANNOT JUDGE -- {records}", file=sys.stderr)
+        return 2
+
     failures = self_test()
     if failures:
         sys.stdout.flush()
@@ -386,9 +518,11 @@ def main() -> int:
         for m in failures:
             print(f"  {m}", file=sys.stderr)
         return 2
-    print("injector-check: self-test PASS  (rows A-D: the frozen pre-D-LATCH "
-          "body COMPOSES, the re-pointed body is CLEAN, the imported frozen "
-          "body HANDLES, an ordinary import is CLEAN)")
+    print(f"injector-check: self-test {len(SELFTEST_ROWS)}/"
+          f"{len(SELFTEST_ROWS)}  (rows "
+          f"{', '.join(r[0] for r in SELFTEST_ROWS)}: the frozen pre-D-LATCH "
+          f"body COMPOSES, the re-pointed body is CLEAN, the imported frozen "
+          f"body HANDLES, an ordinary import is CLEAN)")
 
     registry = frozen_registry()
     missing = [f"{m}.{n}" for m, n in PINNED if n not in registry.get(m, {})]
@@ -404,15 +538,47 @@ def main() -> int:
     print(f"injector-check: frozen-body registry: {n_sym} symbols across "
           f"{len(registry)} modules, all {len(PINNED)} pinned symbols present")
 
-    files = walk(registry)
-    offenders = [f for f in files
-                 if f[1] in ("COMPOSES", "HANDLES", "UNPARSEABLE",
-                             "BAD EXEMPTION")]
+    files, srcs = walk(registry)
+    reported = [f for f in files
+                if f[1] in ("COMPOSES", "HANDLES", "UNPARSEABLE",
+                            "BAD EXEMPTION")]
     exempt = [f for f in files if f[1].startswith("EXEMPT/")]
+
+    # --- the RECORD list, both directions ----------------------------------
+    acked = [f for f in reported if f[0] in records]
+    offenders = [f for f in reported if f[0] not in records]
+    instrument: list[str] = []
+    reported_paths = {f[0] for f in reported}
+    for path, (dg, _reason) in sorted(records.items()):
+        if path not in reported_paths:
+            instrument.append(
+                f"{path}: acknowledged as a RECORD but this walk does not "
+                f"report it -- either the file is gone, or the rule stopped "
+                f"seeing it. A list that no longer matches is not a control.")
+            continue
+        have = digest(srcs[path])
+        if have != dg:
+            instrument.append(
+                f"{path}: contents changed ({dg} -> {have}). A RECORD's whole "
+                f"claim is that it is FROZEN; re-verify what it now is and "
+                f"update or delete the entry.")
+    # UNREACHABLE: no scanned file may import a record's module.
+    record_mods = {os.path.basename(p)[:-3]: p for p in records}
+    reachable = []
+    for rel, src in sorted(srcs.items()):
+        if rel in records:
+            continue
+        try:
+            mods = _imported_modules(ast.parse(src))
+        except SyntaxError:
+            continue
+        for m in sorted(mods & set(record_mods)):
+            reachable.append((rel, record_mods[m]))
 
     if args.list:
         for rel, verdict, why in files:
-            print(f"  {verdict:<14} {rel}\n{'':18}{why}")
+            tag = "RECORD" if rel in records else verdict
+            print(f"  {tag:<14} {rel}\n{'':18}{why}")
         print("\n  frozen-body registry:")
         for mod in sorted(registry):
             for sym in sorted(registry[mod]):
@@ -420,6 +586,7 @@ def main() -> int:
 
     print(f"\nfiles scanned                      : {len(files)}")
     print(f"  exempt (named, structural)       : {len(exempt)}")
+    print(f"  acknowledged RECORDs (frozen)    : {len(acked)}")
     print(f"  compose their own injector       : "
           f"{sum(1 for f in offenders if f[1] == 'COMPOSES')}")
     print(f"  handle a frozen injector body    : "
@@ -429,11 +596,34 @@ def main() -> int:
     print(f"  exemption claimed too wide       : "
           f"{sum(1 for f in offenders if f[1] == 'BAD EXEMPTION')}")
 
-    # ⚠️ 0 files scanned is not a clean tree, it is a broken walk.
-    if not files:
-        print("\nAPPARATUS FAILURE: this gate scanned NOTHING -- check SCAN_DIRS.",
+    # ⚠️ 0 files scanned is not a clean tree, and neither is 200.
+    if len(files) < MIN_FILES:
+        sys.stdout.flush()
+        print(f"\nAPPARATUS FAILURE: this gate scanned {len(files)} files, "
+              f"floor is {MIN_FILES}. A shrunken walk reads as a clean tree.",
               file=sys.stderr)
         return 2
+
+    if instrument:
+        sys.stdout.flush()
+        print("\ninjector-check: CANNOT JUDGE -- the RECORD list has stopped "
+              "matching the tree (tools/injector-record-allow.txt):",
+              file=sys.stderr)
+        for m in instrument:
+            print(f"  {m}", file=sys.stderr)
+        return 2
+
+    if reachable:
+        sys.stdout.flush()
+        print("\nA RECORD IS REACHABLE FROM LIVE CODE -- the acknowledgement "
+              "covers a frozen, undispatched characterization script, not a "
+              "module something imports:", file=sys.stderr)
+        for rel, rec in reachable:
+            print(f"  {rel} imports {rec}", file=sys.stderr)
+        print("\nFIX: re-point the importer at `omsx_repl.key_proc()`, or "
+              "promote the record properly and drop its allowlist entry "
+              "(docs/spec-probe-injjudge.md §3.3).", file=sys.stderr)
+        return 1
 
     if offenders:
         sys.stdout.flush()
@@ -449,8 +639,11 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
-    print("\nALL PASS -- one injector in the tree, and it is the one "
-          "`make latch-check` scores.")
+    # 🔴 THE HEADLINE COUNTS WHAT IS THERE. Until 2026-08-06 this said "one
+    # injector in the tree" while three more sat outside the walk (spec §2.4).
+    print(f"\nALL PASS -- one LIVE injector across {len(files)} files, and it "
+          f"is the one `make latch-check` scores; {len(acked)} frozen "
+          f"characterization record(s) acknowledged and unreachable.")
     return 0
 
 

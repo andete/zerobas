@@ -39,10 +39,10 @@ duplicating (and drifting from) what is written below.
 **Language / verb surface**
 
 - [ ] `AUTO` / `RENUM` / `LLIST` / `DELETE` — **the STATEMENT half.** Tokens are
-      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4388); nothing
-      executes them. Detail: *“Editor / program management”*, line 1631.
+      byte-exact (D-KWGAP4, *“THE TOKEN HALF CLOSED BY”*, line 4427); nothing
+      executes them. Detail: *“Editor / program management”*, line 1670.
 - [ ] **No string `READ`.** Filed by D-DEFSTR — detail:
-      *“ZEROBAS HAS NO STRING `READ`”*, line 4078.
+      *“ZEROBAS HAS NO STRING `READ`”*, line 4117.
 
 **Own-design hazards carried out of closed slices**
 
@@ -51,26 +51,65 @@ duplicating (and drifting from) what is written below.
       three sites that crossed them (one was a live memory corruption) but the two
       namespaces still overlap on the numeric values, so the next site that feeds
       one into the other reintroduces the class. Collapse to ONE. Detail:
-      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 3989.
+      *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 4028.
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
 
-- [ ] ⚠️ **`injector-check` is still a TEXT classifier.** A split literal passes.
-      Already an open item — detail: line 4705.
+- [x] ✅ **`injector-check` is still a TEXT classifier — CLOSED 2026-08-06 by
+      D-INJJUDGE as a measured DECLINE + a denominator fix**,
+      [`docs/spec-probe-injjudge.md`](docs/spec-probe-injjudge.md).
+      🔴 **The filed fix has recall 0 and so does its maximal generalisation.**
+      Walked the shipped rule over all **982** commits with the tool *imported*:
+      a concatenation-folding predicate differs from the shipped one in **0**
+      commits, and so does **literal soup** — every string literal in a module
+      glued together with whitespace stripped, which subsumes the entire *"any
+      spelling neither rule knows"* class. The residual's own premise (*"the six
+      real copies were all verbatim"*) holds not just for the six but for every
+      `.py` this repository has ever contained. The crude alternative was priced
+      too: raw text with comments counting flags **12** files and is red in
+      **486 of 982** commits, one of them `COMPOSES` on a compliant probe.
+      🔴 **What was actually open was the DENOMINATOR, and the gate's headline
+      was FALSE.** `SCAN_DIRS` listed three directory names, so **67 of the
+      tree's 325** `.py` were never walked — and **three of them compose the
+      pre-D-LATCH body**, one character-for-character the frozen
+      `latch_check.OLD_KEY` that `make latch-check` row A requires to MANGLE.
+      The shipped classifier scores all three `COMPOSES` the moment it is shown
+      them: the rule was never at fault. They were invisible for **252, 237 and
+      229** commits while the gate printed *"ALL PASS — one injector in the
+      tree"*. Widening costs **0** false positives over 982 commits.
+      They are **not repaired**: all three are frozen characterization scripts
+      cited from `PROVENANCE.md` and two specs, and rewriting a provenance
+      record makes it no longer the record. Landed: the denominator **derived**
+      from the tree (258 → **325**), a `RECORD` class in
+      `tools/injector-record-allow.txt` — two-directional, keyed by path so
+      promotion goes stale, with both its claims machine-checked (a content
+      digest for FROZEN, an import scan for UNREACHABLE) — an honest headline,
+      `MIN_FILES = 300`, and `MIN_SELFTEST_ROWS = 4` plus a polarity bar,
+      because **the self-test table could be emptied and still print
+      `self-test PASS (rows A-D: …)` and exit 0**, naming four rows it had not
+      run. K5 and K9 both read `rc 0` at `6270177`. §6.5 records the re-open
+      bar.
+- [ ] ⚠️ **`check_probe_preflight.py` carries the IDENTICAL `SCAN_DIRS`** — the
+      denominator D-INJJUDGE derived for `injector-check` was left hand-listed
+      here, and **6** out-of-scope `.py` launch openMSX. Same shape, different
+      rule, and **that rule has not been walked**: widening it on the strength of
+      the sibling's measurement is exactly [[a-borrowed-window-inherits-its-corpus]].
+      Re-open by walking preflight's own rule over its subject's life first.
+      Detail: `docs/spec-probe-injjudge.md` §3.6.
 - [ ] ⚠️ **An asm label named in a `tools/*.py` or `sub/` comment is immune to the
       dead-code sweep** — `check_dead_code.py`'s `external_names` scans those
       directories *including comments*, so writing a label's name in prose seeds it
       as reachable. Every slice that edits `tools/` prose must predict the seed
-      counts and treat movement as a finding. Detail: lines 2304 and 2540.
+      counts and treat movement as a finding. Detail: lines 2343 and 2579.
 - [ ] ⚠️ **Three probe page-0 entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
       deriving them from `sub/equates.inc` needs its own falsification because they
-      inject raw bytes into a bare machine deliberately. Detail: line 2499.
+      inject raw bytes into a bare machine deliberately. Detail: line 2538.
 - [ ] ⚠️ **`build/disk.rom` pad-only damage is invisible ON PURPOSE** — 9543 of
       16384 bytes (58.2 %) are `$00` pad in 252 runs. Closing it needs a whole-image
       digest, which would pin the ROM against every legitimate `disk/*.asm` change.
-      Re-open only with an argument that answers that. Detail: line 2494.
+      Re-open only with an argument that answers that. Detail: line 2533.
 - [x] ✅ **`make audit-citations` was RED at HEAD and nothing ran it — CLOSED
       2026-08-06 by D-CITEJUDGE**,
       [`docs/spec-audit-citations-gate.md`](docs/spec-audit-citations-gate.md).
@@ -198,7 +237,7 @@ duplicating (and drifting from) what is written below.
       D-BYTEJUDGE, D-REVJUDGE — the last at 45 cases, 0 oracle drift, whole log
       captured, 59 lines). A third IS a finding to
       chase; capture the **whole** log (`> file 2>&1`), because sighting 1's row
-      identity was lost to a `tail -6`. Detail: line 3595.
+      identity was lost to a `tail -6`. Detail: line 3634.
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 
@@ -4702,8 +4741,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       **byte-identical** (730 B, sha `f936ab2a…`), so no probe's delivery
       alignment moved.
 
-- [ ] ⚠️ **`injector-check` IS STILL A TEXT CLASSIFIER, and D-INJSINK narrowed
-      that without closing it** ([`docs/spec-probe-injsink.md`](docs/spec-probe-injsink.md) §6).
+- [x] ✅ **`injector-check` IS STILL A TEXT CLASSIFIER — CLOSED 2026-08-06 by
+      D-INJJUDGE** ([`docs/spec-probe-injjudge.md`](docs/spec-probe-injjudge.md)),
+      as a measured DECLINE on the predicate plus a denominator fix. Over all
+      **982** commits a folding predicate and a maximally eager literal-soup
+      predicate each differ from the shipped rule in **0** commits, so the class
+      below has never been exercised and no text rule improves on what shipped.
+      What WAS open is one level out: `SCAN_DIRS` named three directories, and
+      **three files outside them compose the pre-D-LATCH body** — invisible for
+      252, 237 and 229 commits while this gate printed *"ALL PASS — one injector
+      in the tree"*. See the index entry at the top of this file. The stated
+      limits below stand as written; they are simply not the load-bearing ones.
+      Original filing:
+      ([`docs/spec-probe-injsink.md`](docs/spec-probe-injsink.md) §6).
       What passes, measured on the shipped gate rather than assumed:
       a **split literal** (`"debug write" + f" memory {G} 0"` → `CLEAN`), and any
       body that reaches the cursors by a spelling neither rule knows. Neither is

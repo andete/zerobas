@@ -1,0 +1,46 @@
+# Acknowledged type-ahead injector RECORDs — `<path> <digest> <reason>`.
+#
+# 🔴 THIS IS A CONTROL, NOT A SUPPRESSION LIST (the tools/deadcode-allow.txt
+# idea). Every entry must STILL be reported as composing by the walk. An entry
+# the walk stops reporting is either stale (the file is gone, or was rewritten)
+# or proof the classifier has gone blind, and both exit 2. So does a composer
+# that is not listed here — that one exits 1.
+#
+# The digest is sha256(file contents)[:12]. Anchored on the WHOLE FILE, not on a
+# line or a name, because the claim being recorded is precisely that the file is
+# FROZEN. Any edit at all — including a well-meaning one that re-points the
+# injector — moves the digest and forces a human back to this list.
+#
+# WHAT `RECORD` MEANS, and why these three are not simply fixed
+# (docs/spec-probe-injjudge.md §2.6):
+#
+#   A one-shot characterization script that composed its own type-ahead injector
+#   before the class was closed; landed in a single commit and untouched since;
+#   dispatched by no Makefile target and imported by nothing; and CITED from a
+#   provenance document as the apparatus behind a landed spec.
+#
+# A provenance record is a statement about WHAT WAS RUN. Rewriting the injector
+# inside one makes the file no longer that, and deleting the three would break
+# six citations across basic/PROVENANCE.md, tape/PROVENANCE.md,
+# docs/spec-basic-input-devices.md, docs/spec-basic-graphics-g4.md and
+# tests/test_graphics.py. So the body is acknowledged and BOUNDED rather than
+# repaired — the second bound being that no scanned file may import these
+# modules, which the gate checks (spec §3.3).
+#
+# ⚠️ THESE THREE WERE INVISIBLE FOR 252, 237 AND 229 COMMITS. Not because the
+# rule was too weak — it classifies all three COMPOSES the moment it is shown
+# them — but because the walk read three hard-coded directory names and
+# `scratchpad` was not one of them, while the gate printed "ALL PASS — one
+# injector in the tree". The denominator is derived from the tree now.
+#
+# ⚠️ AN ENTRY HERE IS NOT A LICENCE TO PROMOTE. Moving one of these into
+# `probes/` changes its path, so the entry goes stale and the run exits 2 — which
+# is the intended noise. This tree has promoted a scratchpad script into a hard
+# gate before (tools/check_dead_code.py), and promotion carries whatever body the
+# script holds. That is how six copies of the pre-D-LATCH injector came to exist.
+
+scratchpad/g4_hang_probe.py 0963dd708ff9 G4 hang characterization (907d5b6, 2026-07-22, untouched since). Composes the pre-D-LATCH __key/__inj pair from R.KEYBUF/R.GETPNT/R.PUTPNT. Cited by docs/spec-basic-graphics-g4.md:191 and tests/test_graphics.py:879 as the apparatus that located the CIRCLE/DRAW hang dynamically.
+
+scratchpad/i1_input_char2.py 508918c38319 I1 live key-matrix characterization (8409408, 2026-07-23, untouched since). Composes the same body; its own docstring explains why it had to bypass the shared driver (a matrix read cannot be exercised through the keyboard buffer at all). Cited by basic/PROVENANCE.md:3569 and docs/spec-basic-input-devices.md:18.
+
+scratchpad/i2_frame.py b73bec183fb8 I2 Z80-speed bit-bang harness (559e15d, 2026-07-23, untouched since). Its __key is the pre-D-LATCH body character-for-character modulo whitespace and decimal-vs-symbolic addresses — the same body probes/lib/latch_check.py freezes as OLD_KEY and `make latch-check` row A requires to MANGLE. Cited by docs/spec-basic-input-devices.md:351 and tape/PROVENANCE.md:88.
