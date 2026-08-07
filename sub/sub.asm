@@ -164,8 +164,12 @@ sub_p0_table:
                 jp      readdata_tenant         ; index 10 (SUBROM_IDX_READVAL): the READ/DATA
                                                 ;   value engine (sub/readdata.asm) -- carved
                                                 ;   out to fund G7 sprites. Result rides back
-                                                ;   in RDV_ST/RDV_VAL (CF cannot).
-                                                ;   docs/spec-eviction-g7-space.md.
+                                                ;   in RDV_ST/RDV_VAL (registers cannot);
+                                                ;   D-READVAR added the RDV_MODE INPUT cell
+                                                ;   (numeric int16 / raw span -> STRSCR) and a
+                                                ;   third RDV_ST value, 2 = not a number.
+                                                ;   docs/spec-eviction-g7-space.md,
+                                                ;   docs/spec-basic-readvar.md.
                 jp      beep_tenant             ; index 11 (SUBROM_IDX_BEEP): the BEEP
                                                 ;   body (sub/beep.asm) -- carved out to
                                                 ;   fund input-devices slice I1. No args,

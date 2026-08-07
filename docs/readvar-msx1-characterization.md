@@ -121,3 +121,28 @@ recording, where the loud defects are fixed and the quiet one survives.
 **24 rows, 3 sides. Both references agree on all 24 (0 rows without an oracle).
 zerobas agrees on 2** — `a.one` (the positive control) and `a.defint`.
 **22 divergences: 21 refusals and 1 over-acceptance.**
+
+---
+
+## After D-READVAR — 22 of the 24 closed, and the other two are named
+
+Measured 2026-08-07 on the same three sides, `make readvar-acceptance`:
+**22/22 scored readings agree**, `a.one` holding as the positive control.
+
+Every zerobas column above now reads its **"both references"** neighbour, with
+exactly two exceptions:
+
+| row | both references | zerobas after | status |
+|---|---|---|---|
+| `a.ary` | ` 7 ` | **Syntax error** | **DEFERRED** — printed `....`, not scored |
+| `a.arystr` | `HI` | **Syntax error** | **DEFERRED** — printed `....`, not scored |
+
+Those two need `ex_let`'s array lvalue path (`ary_op0_resolve` /
+`ary_store_write`), which is outside the `INPUT` twin the fix was priced against —
+`basic/input.asm` has no array handling at all — so they are measured, printed and
+**excluded from the tally in both directions**. A row that can only ever be red is
+doc debt, not a gate. Re-filed in `TODO.md` with its price.
+
+⚠️ **The zerobas columns above are kept as MEASURED AT `16ba60f`**, not rewritten.
+They are the reading the fix was written from, and a characterization table that
+edits its own before-column stops being one.

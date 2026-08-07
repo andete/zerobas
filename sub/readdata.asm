@@ -15,9 +15,13 @@
 ; no float work and no BIOS. It is warm rather than hot -- one CALSLT per READ
 ; item, and a READ loop's cost is dominated by the variable store around it.
 ;
-; The body is basic/readdata-body.inc. Only the (CF, DE)
-; return contract changes shape: CF cannot ride back through subrom_call, so the
-; tenant lands it in RDV_ST/RDV_VAL and the resident stub rebuilds it.
+; The body is basic/readdata-body.inc. Only the (A, DE) return contract changes
+; shape: registers cannot ride back through subrom_call, so the tenant lands it in
+; RDV_ST/RDV_VAL and the resident stub rebuilds it. D-READVAR added RDV_MODE, an
+; INPUT cell, and turned the CF into a three-valued status -- the string arm fills
+; STRSCR (page-3 RAM, reachable from page 0) and ex_read wraps it main-side,
+; because strscr_desc is in the main LOW region and is switched OUT while this
+; tenant runs (docs/spec-basic-readvar.md §4.1).
 ;
 ; Three shared callees stay resident and are duplicated sub-locally below:
 ; skip_spaces, upcase (the page-0 tokeniser's own `upcase` is reused instead) and
@@ -26,12 +30,8 @@
 ; Clean-room: this is our own code, relocated. No disassembly.
 
 readdata_tenant:
-                call    read_one_value      ; CF set + DE = value, else out of data
+                call    read_one_value      ; A = status, DE = value (numeric mode)
                 ld      (RDV_VAL),de
-                ld      a,0
-                jr      nc,rdt_status
-                inc     a                   ; 1 = a value was read
-rdt_status:
                 ld      (RDV_ST),a
                 ret
 

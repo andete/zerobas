@@ -1630,21 +1630,67 @@ err_stack       equ     err_mem             ; share sl_oom's "out of memory" (D-
 ; --- ex_read: READ <var> [, <var> ...] ---------------------------------------
 ; Fill each variable from the next DATA item. DATA items are stored as verbatim
 ; ASCII (oracle), so read_one_value parses ASCII from the program text.
+;
+; D-READVAR (docs/spec-basic-readvar.md, 22 of 24 measured rows): a READ target is
+; an ordinary VARIABLE REFERENCE -- any name, any type suffix, the DEFtbl default
+; when there is none -- exactly what LET and INPUT accept. This used to consume ONE
+; letter into READVAR and store through var_get/var_set, the single-letter int16
+; shim, so `READ AB` / `READ A%` / `READ A$` were all Syntax error while both
+; references read the item. The shape below IS ex_input's (basic/input.asm
+; inpc_vloop/inpc_vstr/inpc_after), routine for routine; the twin is the RIGHT
+; shape rather than a convenient one, because ex_input already carries the sub/main
+; split this needs -- STRSCR is filled where the bytes are and wrapped where
+; strscr_desc lives.
+;
+; 🎯 var_str_type ALREADY RETURNS THE ITEM MODE. It answers 1 for a string target
+; and 0 for a numeric one, which is RDV_MODE's encoding, so the branch is stored
+; once and re-read after the DATA read instead of being decided twice.
+;
+; ⚠️ ARRAY TARGETS ARE NOT HERE. `READ A(1)` needs ex_let's lvalue path
+; (ary_op0_resolve / ary_store_write) and is outside this twin -- basic/input.asm
+; has no array handling either. Deferred with its measurement (spec §5.1, TODO.md).
 ex_read:
                 inc     hl                  ; past the READ token
 exr_lp:
                 call    skip_spaces
                 call    is_letter
                 jp      nc,stmt_error       ; READ needs a variable
-                call    upcase
-                ld      (READVAR),a         ; remember the target name
-                inc     hl                  ; consume the letter
-                push    hl                  ; guard exec cursor across the DATA read
-                call    read_one_value      ; CF set + DE = value, else out of data
-                jr      nc,exr_nodata
-                ld      a,(READVAR)
-                call    var_set             ; var := DE
-                pop     hl                  ; restore exec cursor
+                call    var_str_type        ; A = 1 iff the name carries a '$' (or its
+                ld      (RDV_MODE),a        ; DEFtbl default is a string) -- and that
+                                            ; is exactly the DATA-item read mode
+                call    var_name_key        ; BC = key, HL past the name + suffix;
+                                            ; (VARTYPE) = the resolved type (F3)
+                push    bc                  ; [stack: key]
+                push    hl                  ; [stack: key, exec cursor]
+                call    read_one_value      ; A = status; DE / STRSCR = the item
+                dec     a
+                jr      nz,exr_bad          ; 0 -> out of data, 2 -> not a number
+                pop     hl                  ; exec cursor
+                pop     bc                  ; key
+                push    hl                  ; guard the cursor across the store
+                ld      a,(RDV_MODE)
+                or      a
+                jr      nz,exr_str
+                ld      a,2
+                ld      (FACTYP),a          ; read_one_value's DE is a plain int16
+                                            ; (F3: var_store_fac widens it per the
+                                            ; variable's resolved type)
+                ld      a,(VARTYPE)
+                call    var_store_fac       ; var[key] := DE, coerced (vars.asm)
+                pop     hl
+                jr      exr_after
+exr_str:
+                call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
+                ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
+                call    str_set_key         ; var$[key] = the DATA item's bytes
+                pop     hl
+                ; The same arrays slice-4c (§7.3) hazard ex_input guards: a
+                ; scalar-CHAIN OOM in str_set_key sets FPERR without aborting on
+                ; its own, and would otherwise be cleared at the next exec_stmt.
+                ; Both guard words are already popped, so this is the SP-clean
+                ; site variant (TMISMATCH is always 0 -- READ never sets it).
+                call    check_expr_errors
+exr_after:
                 call    skip_spaces
                 cp      ','                 ; more variables to fill?
                 jr      z,exr_more
@@ -1652,8 +1698,13 @@ exr_lp:
 exr_more:
                 inc     hl
                 jr      exr_lp
-exr_nodata:
-                pop     hl                  ; discard exec cursor (balance the stack)
+exr_bad:
+                pop     hl                  ; discard the exec cursor and the key
+                pop     hl                  ; (balance the stack; A/flags survive)
+                dec     a                   ; status 2 -> 0 here
+                jp      z,stmt_error        ; the item is not a NUMBER: `DATA HELLO` /
+                                            ; `READ A` is ERR 2 on both references,
+                                            ; where this tree used to store a silent 0
                 ld      a,$CA               ; "out of data" landmark
                 ld      (ERRMARK),a
                 ld      a,4                 ; ERR 4: out of data (error-handling S2a)
@@ -1696,20 +1747,19 @@ ers_undef:
 ; --- READ/DATA value engine (read_one_value / data_seek / data_parse_int) ---
 ; Carved out to a PAGE-0 sub-ROM tenant to fund graphics G7
 ; (docs/spec-eviction-g7-space.md). The body itself is basic/readdata-body.inc.
-; Resident stub: CALSLT the tenant, then rebuild the (CF, DE) contract from the
-; RDV_ST/RDV_VAL cells -- CF cannot ride back through subrom_call.
+; Resident stub: CALSLT the tenant, then rebuild the (A, DE) contract from the
+; RDV_ST/RDV_VAL cells -- registers cannot ride back through subrom_call.
+; in:  (RDV_MODE) 0 = numeric / 1 = string (the caller sets it).
+; out: A = 0 out of data / 1 item read / 2 the item is not a number (D-READVAR);
+;      DE = the value in numeric mode, STRSCR = [len][bytes] in string mode.
 read_one_value:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_READVAL
                 call    subrom_call         ; CF=1 iff the sub-ROM is absent
                 ld      de,(RDV_VAL)
-                jr      c,rov_stub_none     ; defensive: no tenant -> out of data
+                ld      a,0                 ; NOT `xor a` -- subrom_call's CF is the
+                ret     c                   ; test below and xor would clear it.
+                                            ; Defensive: no tenant -> out of data
                 ld      a,(RDV_ST)
-                or      a
-                ret     z                   ; 0 = out of data (CF clear)
-                scf
-                ret
-rov_stub_none:
-                or      a                   ; CF clear -> out of data
                 ret
 
 ; --- ex_on: ON <expr> GOTO/GOSUB <line>[,<line>...] -------------------------

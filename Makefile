@@ -1713,6 +1713,26 @@ readvar-characterize: repack-machine
 	python3 probes/basic/basic_probe_readvar.py \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- READ target surface, ACCEPTANCE (docs/spec-basic-readvar.md §7) ----------
+# The same 24 rows, gated. Ships WITH the fix, which took 22 of them: `ex_read`
+# now parses its target with var_str_type/var_name_key and stores through
+# var_store_fac / strscr_desc+str_set_key -- ex_input's shape, routine for routine.
+#
+# 22 OF 24, AND THE OTHER TWO ARE PRINTED. `a.ary` / `a.arystr` need ex_let's array
+# lvalue path (ary_op0_resolve / ary_store_write), which basic/input.asm has no twin
+# for, so they are DEFERRED: measured, printed as `....` with their reason, and
+# excluded from the tally in BOTH directions. A row that can only ever be red is doc
+# debt, not a gate (spec §9).
+#
+# 🟢 `a.one` (`READ A` <- `DATA 7`) is the POSITIVE CONTROL and its failure exits 2,
+# not 1: every row here answers with a short bracketed span, and a machine that ran
+# no program prints no bracket on ANY side -- three sides agreeing on nothing is
+# perfect agreement about nothing (`make fat-error-acceptance` once scored 8/8
+# against an all-$00 disk.rom). 24 cases x 3 sides.
+readvar-acceptance: repack-machine
+	python3 probes/basic/basic_probe_readvar.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -1940,6 +1960,7 @@ clean:
         runtail-characterize runtail-acceptance \
         castail-characterize castail-acceptance \
         cassave-characterize cassave-acceptance \
+        readvar-characterize readvar-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

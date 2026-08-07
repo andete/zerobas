@@ -206,7 +206,10 @@ SUBROM_IDX_GRAPHICS     equ     8
 ; index 10 = readdata_tenant (sub/readdata.asm): the READ/DATA value engine
 ; (read_one_value + data_seek + data_parse_int), carved out of the resident to
 ; fund G7's sprite statements. Page-0 CLEAN: tokenised program RAM + ASCII
-; parsing only -- no eval, no float pack, no BIOS.
+; parsing only -- no eval, no float pack, no BIOS. D-READVAR added a STRING mode
+; (RDV_MODE): the item's RAW ASCII span is copied into STRSCR, which is page-3 RAM
+; and therefore still page-0 clean -- the descriptor WRAP stays main-side because
+; strscr_desc is in the main low region (docs/spec-basic-readvar.md §4.1).
 SUBROM_IDX_READVAL      equ     10
 
 ; --- I1 funding carve (page-0 tenant; docs/spec-basic-input-devices.md §7) ---

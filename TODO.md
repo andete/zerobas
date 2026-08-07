@@ -547,13 +547,38 @@ duplicating (and drifting from) what is written below.
       counter exists anywhere in the tree (`pch_lpt` calls `LPTOUT` and tracks
       nothing), so it needs new state maintained in the hot path of every printed
       byte, plus a measured reset rule. Cost it separately from `LPRINT`.
-- [ ] **`READ` accepts only a single-letter, unsuffixed, non-array target.**
-      Filed by D-DEFSTR as *"no string `READ`"*; **scouted 2026-08-07 and it is
-      ONE FACE OF FIVE** — `READ A$` / `READ AB` / `READ A%` / `READ A(1)` all
-      raise **Syntax error** where both references read the item. One root cause
-      (`ex_read` uses the single-letter int16 shim, not `var_name_key`), so one
-      slice. Detail + the measured three-sided table:
-      *“ZEROBAS HAS NO STRING `READ`”*, §"Own-design hazards".
+- [x] ✅ **`READ` accepts only a single-letter, unsuffixed, non-array target —
+      CLOSED 2026-08-07 by D-READVAR**,
+      [`docs/spec-basic-readvar.md`](docs/spec-basic-readvar.md). **22 of the 24
+      measured rows**, `make readvar-acceptance` **22/22 with 1 positive
+      control**, **+32 B main page 1** (158 → 126) and **−74 B sub p0**.
+      `ex_read` now parses its target with `var_str_type`/`var_name_key` and
+      stores through `var_store_fac` / `strscr_desc`+`str_set_key` — ex_input's
+      shape, routine for routine. The over-acceptance `c.strnum` closed WITH the
+      21 refusals, in the DATA engine, not in the target parse.
+      ➡️ **The array face is re-filed below as its own item, with its price.**
+- [ ] **`READ A(1)` / `READ A$(1)` are still `Syntax error`** — the **2 of 24**
+      rows D-READVAR deferred, measured on both references (` 7 ` and `HI`) and
+      printed by `readvar-acceptance` as `....`, excluded from its tally in BOTH
+      directions. They need `ex_let`'s array **lvalue** path
+      (`ary_op0_resolve` / `ary_store_write`, `basic/arrays.asm:773/721`), which
+      is outside the `INPUT` twin D-READVAR was priced against —
+      `basic/input.asm` has **no array handling whatsoever**, so `var_name_key`
+      parses a name and a suffix and never a subscript.
+      💰 **PRICE — not carve-scouted; this is a BOUND from the twin that does
+      exist, `ex_let`'s own lvalue head, and a filed cost is a claim
+      [[filed-justification-is-a-claim]].** `ex_let`'s array store
+      (`basic/interp.asm` → `ary_op0_resolve`/`ary_store_write`) is the analogous
+      code; a `cp '('` test plus the two calls plus the string/numeric fork is
+      **~25…40 B of main page 1**, against **126 B free after D-READVAR**. It is
+      not obviously affordable *and* not obviously unaffordable, which is exactly
+      why it needs its own scout (`python3 tools/carve_scout.py
+      build/basic-reloc.sym --files basic/program.asm`, 2375 B of reservoir)
+      before a byte moves.
+      ⚠️ **ASK WHETHER `INPUT A(1)` DIVERGES TOO** — still **UNMEASURED**, and
+      D-READVAR did not measure it either. If it does, the array lvalue work is
+      shared between two verbs and is worth more than it looks; if it does not,
+      the reason is itself a finding. Two boots on each reference answer it.
 
 **Own-design hazards carried out of closed slices**
 
@@ -4644,109 +4669,47 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       breaks the gate. `float-acceptance` has neither. ⚠️ Give it the
       *control* shape, not the suppression shape.
 
-- [ ] **ZEROBAS HAS NO STRING `READ`.** Filed 2026-08-01 by D-DEFSTR, found by
-      rows aimed at the `DEFTBL_STR` sentinel. Both references read `DATA 42`
-      into a `DEFSTR`'d `X` as the **string** `"42"` — `[42]`, not `[ 42 ]`, so
-      the missing spaces are the tell — and `DATA AB` as `[AB]`.
-      [`ex_read`](basic/program.asm:1310) consumes one letter and calls
-      `read_one_value` for an int16, with **no `$` path anywhere**; `READ X$` is
-      unsupported by construction, so a `DEFSTR`'d target had nowhere to go.
-      D-DEFSTR turned that from **memory corruption** into a clean ERR 13, which
-      is strictly closer and still divergent. These are the only 2 of D-DEFSTR's
-      18 rows that do not match the references, and they are deliberately **not**
-      gate rows — a row that can only ever be red is doc debt, not a gate.
-      🔴 **SCOUTED AND MEASURED 2026-08-07: THE ITEM IS ONE FACE OF FIVE, AND
-      THE TITLE UNDER-CLAIMS IT.** `ex_read` does not merely lack a `$` path — it
-      parses its target with `var_get`/`var_set`, the **single-letter int16
-      shim** (`basic/vars.asm:586`), while every other variable reference in the
-      tree goes through `var_name_key`, which handles a second character *and* a
-      type suffix. Six rows typed on **three sides** (`Philips_VG_8020`,
-      `National_CF-3300`, repack); **both references agree row for row**:
-
-      | row | `DATA` | both references | zerobas |
-      |---|---|---|---|
-      | `READ A`    | `7`     | ` 7 ` | ` 7 ` 🟢 **positive control** |
-      | `READ A$`   | `HELLO` | `HELLO` | **Syntax error** |
-      | `READ A$`   | `42`    | `42` (no spaces — a STRING) | **Syntax error** |
-      | `READ AB`   | `7`     | ` 7 ` | **Syntax error** |
-      | `READ A%`   | `7`     | ` 7 ` | **Syntax error** |
-      | `READ A(1)` | `7`     | ` 7 ` | **Syntax error** |
-
-      ⚠️ **Five divergences, ONE root cause**, so this is one slice and not five:
-      make `ex_read`'s target parsing what `ex_input`'s already is. The string
-      machinery is **already resident and already exercised** —
-      `var_str_type` → `var_name_key` → `strscr_desc` → `str_set_key` is the
-      literal sequence at `basic/input.asm:117`; the typed numeric store is
-      `var_store_fac` at `:104`. The only genuinely NEW code is a string variant
-      of `read_one_value` that captures the DATA item's raw ASCII span instead of
-      parsing it as an int — and `read_one_value` **already positions HL at the
-      item start** and already owns the comma/`data_seek` walk
-      (`basic/readdata-body.inc:38-51`).
-      💰 **CARVE-SCOUTED 2026-08-07. VERDICT: GO for four of the five faces, and
-      the array face is NOT one of them.** Every number off `basic-reloc.sym`:
-
-      | measurement | value |
-      |---|---|
-      | main page 1 free — **the binding wall** | **158 B** |
-      | `INPUT` twin dispatch: head + NUMERIC arm | **45 B** (`$2F42-$2F6F`) |
-      | `INPUT` twin dispatch: STRING arm | **22 B** (`$2F6F-$2F85`) |
-      | `READ`'s current loop body, the thing replaced | **39 B** (`$7A38-$7A5F`) |
-      | existing page-0 tenant stub `exr_call..exr_done` | **61 B** |
-      | sub page 0 free, for the item-span capture | **3843 B** |
-      | carve reservoir if ever needed: `basic/program.asm` | **2375 B** leaves page 1 |
-
-      ⇒ the four twin-covered faces cost about **(67 − 39) = +28 B** of dispatch,
-      plus a few bytes to give the existing stub a mode flag rather than build a
-      second 61 B one: call it **+35…+45 B against 158 B free**. Fits with ~110 B
-      to spare, and **no carve is needed** — which is the answer the scout
-      existed to get, since a carve would have made this a two-slice job.
-      🔴 **THE SUB/MAIN SPLIT IS FORCED, NOT CHOSEN**: `strscr_desc` is at
-      `$2896`, in the **LOW region**, which a page-0 tenant cannot call at all.
-      The tenant may therefore only fill `STRSCR`; the descriptor wrap and
-      `str_set_key` must stay main-side — exactly what `ex_input` already does,
-      which is why the twin is the right shape and not merely a convenient one.
-      🔴 **`READ A(1)` IS OUTSIDE THE TWIN AND UNPRICED.** `basic/input.asm` has
-      **no array handling whatsoever** — `var_name_key` parses a name and a
-      suffix, never a subscript — so the array face needs `ex_let`'s lvalue path
-      (`ary_op0_resolve` / `ary_store_write`, `basic/arrays.asm:773/721`).
-      Recommend taking the four faces and pricing the array face as its own step;
-      it may also turn out that **`INPUT A(1)` diverges too**, in which case the
-      work is shared between two verbs and worth more. **Unmeasured either way.**
-      ⚠️ **These are byte counts of ANALOGOUS code, not of code that exists.**
-      The real number comes from a build; stated as a bound from a measured twin
-      so it cannot later be quoted as a measured cost
-      [[filed-justification-is-a-claim]].
-      💰 **THE COST SPLITS ACROSS TWO WALLS WITH VERY DIFFERENT PRESSURE**, which
-      is the whole reason to scout before proposing: the dispatch lives in
-      `basic/program.asm` (**main page 1, 158 B free — the binding wall**), while
-      the item-span capture belongs in the READ/DATA engine, already a **page-0
-      sub-ROM tenant** (`sub p0, 3843 B free`). ⚠️ **Not yet priced in bytes** —
-      no carve scout has been run, and a filed cost line is a claim
-      [[filed-justification-is-a-claim]].
-      📏 **CHARACTERIZED 2026-08-07, 24 rows x 3 sides**, committed as
-      `probes/basic/basic_probe_readvar.py` (`make readvar-characterize`),
-      table in [`docs/readvar-msx1-characterization.md`](docs/readvar-msx1-characterization.md),
-      spec in [`docs/spec-basic-readvar.md`](docs/spec-basic-readvar.md).
-      **Both references agree on all 24** (0 rows without an oracle);
-      zerobas agrees on 2 (`a.one` the control, `a.defint`). **22
-      divergences: 21 refusals and ONE OVER-ACCEPTANCE.**
-      🔴 **`c.strnum` POINTS THE OTHER WAY and the residual never mentioned
-      it**: `DATA HELLO` / `READ A` is a **Syntax error** on both
-      references, and zerobas answers ` 0 ` — `data_parse_int` parses no
-      digits, yields 0 and stores it silently. Re-routing the target parse
-      does NOT touch this row; it is separate work in the DATA engine, and
-      a fix that closed the other 21 would leave the quiet wrong answer.
-      🔴 **`b.trailsp`: trailing spaces are PRESERVED** (`DATA PAD  ,X` ->
-      `'PAD  '`) while LEADING ones are stripped. The symmetric rule is the
-      obvious one and it is wrong on both references — an implementation
-      written from `b.leadsp` alone would have been plausible and
-      divergent, and no numeric row could ever have caught it. The row
-      exists because the denominator was re-read for what it had not
-      ASKED (22 rows -> 24), not because a defect was suspected.
-      ⚠️ **`readvar-characterize` is deliberately NOT an acceptance gate**:
-      22 of 24 rows are red until the fix lands, and a row that can only
-      ever be red is doc debt, not a gate. `readvar-acceptance` ships WITH
-      the fix, gating 22 of 24 with `a.ary`/`a.arystr` printed as deferred.
+- [x] ✅ **ZEROBAS HAS NO STRING `READ` — CLOSED 2026-08-07 by D-READVAR**,
+      [`docs/spec-basic-readvar.md`](docs/spec-basic-readvar.md),
+      [`docs/readvar-msx1-characterization.md`](docs/readvar-msx1-characterization.md),
+      gate `make readvar-acceptance` (**22/22, 1 positive control, 2 deferred**).
+      Filed 2026-08-01 by D-DEFSTR from rows aimed at the `DEFTBL_STR` sentinel;
+      **scouted 2026-08-07 and the title under-claimed it by a factor of five** —
+      `ex_read` did not merely lack a `$` path, it parsed its target with
+      `var_get`/`var_set`, the single-letter int16 shim, while every other
+      variable reference in the tree goes through `var_name_key`.
+      **THE FIX:** `ex_read` is now `ex_input`'s shape routine for routine —
+      `var_str_type` → `var_name_key` → (numeric: `var_store_fac`) / (string:
+      `strscr_desc` → `str_set_key`) — and the READ/DATA page-0 tenant gained an
+      item MODE: numeric parses an int16, string captures the item's RAW ASCII
+      span into `STRSCR`. **+32 B main page 1 (158 → 126), −74 B sub p0
+      (3843 → 3769)**; low and sub p1 unmoved. The +35…45 B scouted bound held.
+      🎯 **`c.strnum` — THE ONE DIVERGENCE THAT POINTED THE OTHER WAY — CLOSED
+      WITH THE OTHER 21, AND IT WAS SEPARATE WORK.** `DATA HELLO` / `READ A` is a
+      **Syntax error** on both references; zerobas answered ` 0 ` because
+      `data_parse_int` parsed no digits, yielded 0 and stored it silently.
+      Re-routing the target parse does not touch that row: it is fixed in the
+      DATA ENGINE, by giving `read_one_value` a third return status (the old
+      contract was one carry bit, which is why the third answer had nowhere to
+      go). Fixing the 21 loud rows and leaving the quiet one is the failure mode
+      this project keeps recording, and it is the reason that status exists.
+      🔴 **`b.trailsp` — the row that paid for having been measured.** `DATA
+      PAD  ,X` reads back `'PAD  '` on **both references**: leading spaces are
+      stripped, trailing ones are **not**. The symmetric rule is the obvious one
+      and it is wrong; knife **K-RV4** builds it and reddens `b.trailsp` **alone**.
+      That row exists only because the denominator was re-read for what it had
+      not ASKED (22 rows → 24).
+      🔴 **AND THE LEADING-SPACE RULE HAS NO ONE-ROW KNIFE, WHICH IS ITSELF THE
+      FINDING.** It is implemented TWICE — `data_seek`'s `ds_sp` and the item
+      capture's own `skip_spaces` — and every B row is its statement's FIRST
+      item, so cutting the capture's skip alone reddens **nothing** (K-RV3a, a
+      confirmed predicted MISS on a build whose ROMs demonstrably moved). Cutting
+      both reddens **13 of the 22**, because `tk_data_rest` copies a `DATA` body
+      verbatim from the character after the keyword and every unquoted item then
+      gains a leading space. [[rule-gated-structurally-has-no-knife]]
+      ➡️ **`READ A(1)` / `READ A$(1)` are DEFERRED and re-filed as their own open
+      item** in §"Open — standing residuals", with their price and with the
+      unmeasured question that decides how much the work is worth (`INPUT A(1)`).
       🔴 The scout's own first readout was **blind to its subject** — it scanned
       the whole screen, so when zerobas printed no output the `[` inside the ECHO
       of `30 PRINT"[";A$;"]"` matched and every zerobas row read `'";A$;"'`, an

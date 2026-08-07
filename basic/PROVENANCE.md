@@ -4345,3 +4345,66 @@ that allowlist by going red rather than by rotting.
 `.` verbatim and then emits a **SECOND** `$0E`. That is `branch_lineno`'s list
 continuation, **different code**, and the evidence it is independent is that this
 fix did not move the row. One pinned `KNOWN_DIVERGE` entry, `dot-goto`.
+
+## 2026-08-07 — a `READ` target is a VARIABLE REFERENCE, and a DATA item is not trimmed at the end (D-READVAR)
+
+Spec [`docs/spec-basic-readvar.md`](../docs/spec-basic-readvar.md), measurement
+[`docs/readvar-msx1-characterization.md`](../docs/readvar-msx1-characterization.md),
+gate `make readvar-acceptance`. **24 rows on three sides — `Philips_VG_8020`,
+`National_CF-3300` and the repack — and both references agree on all 24**, so
+every row has an oracle and the reference column IS the specification. Clean-room:
+observed screen output only; both reference ROMs are black boxes.
+
+The residual this closes was filed as *"zerobas has no string `READ`"*. It is one
+face of five: [`ex_read`](program.asm) consumed **one letter** and stored through
+`var_get`/`var_set`, the single-letter int16 shim in [`vars.asm`](vars.asm), while
+every other variable reference in the tree goes through `var_name_key`.
+
+**Three row classes, newly sourced, each stated as the references answer it:**
+
+* **A — the target grammar.** A `READ` target is *any* variable reference:
+  1- or 2-character names, a letter+digit name, each of `%` `!` `#` `$`, and the
+  DEFtbl default when there is no suffix — exactly what `LET` and `INPUT` accept.
+  `DATA 7` / `READ AB` / `READ A%` / `READ A1` all read ` 7 `; `DATA HELLO` /
+  `READ A$` reads `HELLO`; `DEFSTR Z` / `READ Z` reads `HELLO`. Sourced from both
+  references, 10 rows. ⚠️ `READ A(1)` is **also** accepted on both references
+  (` 7 `) and is **NOT implemented here** — deferred with its measurement, see
+  below.
+* **B — how a DATA item lexes into a string.** 🔴 **This surface was INVISIBLE to
+  this tree until a string target existed at all** — an int16 parse cannot tell
+  `DATA HELLO` from `DATA "HELLO"` from `DATA HI THERE` — so these 11 rows are
+  characterization of something never before read here, not a regression check.
+  The rule, stated from the rows: **skip leading spaces, then take bytes verbatim
+  to the next comma or the end of the statement; a leading `"` delimits instead
+  and the closing `"` ends it, so a comma inside quotes is content; NOTHING is
+  trimmed from the end.** `DATA 42` into `A$` answers `42`, not ` 42 ` — the
+  missing `PRINT` spaces are the tell that the value is a string. `DATA ,X` reads
+  the empty string.
+  🔴 **`DATA PAD  ,X` reads back `'PAD  '`, two trailing spaces intact.** The
+  symmetric rule — trim both ends, since the leading spaces plainly are trimmed —
+  is the obvious one, and it is **wrong on both references**. It was measured only
+  because the denominator was re-examined for what it had not asked; no numeric row
+  could ever have caught it, and knife K-RV4 builds the symmetric rule and reddens
+  `b.trailsp` alone.
+* **C — the reverse cross.** `DATA HELLO` / `READ A` is a **`Syntax error`** on
+  both references. 🔴 **This is the one divergence that pointed the OTHER way:**
+  every other row was zerobas refusing what the references accept, while here
+  zerobas *accepted* what they refuse — `data_parse_int` parsed no digits, yielded
+  0 and stored it silently. Sourced as an error, and implemented in the DATA
+  engine (a third return status), not in the target parse.
+
+**Own design, not sourced** — the shapes these rules are implemented *in*:
+
+| | |
+|---|---|
+| `RDV_MODE` ($E554), the main→tenant item-mode cell, and `RDV_ST`'s third value | own choice — the READ/DATA engine is a page-0 sub-ROM tenant here (a zerobas-specific eviction), so its ABI is ours |
+| the sub/main split — the tenant FILLS `STRSCR`, `ex_read` wraps it with `strscr_desc` and stores with `str_set_key` | **forced**, not chosen: `strscr_desc` ($2896) is in the main LOW region, switched OUT while the sub-ROM's page 0 is in. Same split `ex_input` already carries |
+| the "trailing junk ⇒ not a number" test (`,` or end-of-line, nothing else) | own rule for a sourced *behaviour*. The reference's internal test is unobserved; what is measured is that `DATA HELLO` / `READ A` is ERR 2. A `:` arm is unnecessary rather than omitted — `tk_data_rest` ([`tokenise.inc`](tokenise.inc)) ends a `DATA` body **at** a `:`, so a stored body never contains one |
+
+**Deferred with its evidence, not silently dropped:** `READ A(1)` / `READ A$(1)`
+(`a.ary` / `a.arystr`) need `ex_let`'s array lvalue path (`ary_op0_resolve` /
+`ary_store_write`, [`arrays.asm`](arrays.asm)) and are outside the `INPUT` twin
+this slice was priced against — [`input.asm`](input.asm) has **no array handling
+whatsoever**. Both rows stay measured and printed by the probe, marked `....` with
+their reason, and are excluded from the gate's tally in **both** directions: a row
+that can only ever be red is doc debt, not a gate. Re-filed in `TODO.md`.

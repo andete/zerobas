@@ -15,8 +15,19 @@
 ; Clean-room: this is our own code, relocated verbatim. No disassembly.
 
 ; --- read_one_value: fetch the next DATA item -------------------------------
-; out: CF set + DE = value (DATA cursor advanced to the following item); CF clear
-; if no DATA remains. Clobbers A, BC, HL.
+; in:  (RDV_MODE) 0 = NUMERIC (parse the item as an int16), 1 = STRING (capture
+;      the item's raw ASCII span into STRSCR). D-READVAR, docs/spec-basic-readvar.md.
+; out: A = status -- 0 = out of data, 1 = an item was read (DE = the value in
+;      numeric mode, STRSCR = [len][bytes] in string mode; the DATA cursor is
+;      advanced to the following item), 2 = the item is NOT A NUMBER (numeric mode
+;      only; the cursor is NOT advanced, the caller raises ERR 2).
+; Clobbers A, BC, DE, HL.
+;
+; ⚠️ THE STATUS REPLACED A CARRY FLAG. It used to be (CF, DE), which is one bit and
+; therefore could not carry the third answer -- and the third answer is the one the
+; characterization found pointing the OTHER way (`DATA HELLO` / `READ A` is a Syntax
+; error on both references; this engine used to parse no digits, yield 0 and store
+; it silently). A two-valued return is why that divergence had nowhere to go.
 read_one_value:
                 ld      a,(DATASTATE)
                 cp      2
@@ -39,12 +50,29 @@ read_one_value:
                 jr      nc,rov_none
 rov_at:
                 ld      hl,(DATAPTR)
+                ld      a,(RDV_MODE)
+                or      a
+                jr      nz,rov_str          ; string target -> capture the raw span
                 call    data_parse_int      ; DE = value, HL past the ASCII number
                 push    de                  ; guard the value
                 call    skip_spaces
                 cp      ','                 ; another item in this DATA statement?
                 jr      z,rov_comma
-                call    data_seek           ; else seek the next DATA statement
+                or      a                   ; end of line ends the item too -- and it is
+                jr      z,rov_seek          ; the ONLY other legal terminator: the
+                                            ; tokeniser ends a DATA body AT a ':'
+                                            ; (tk_data_rest), so a stored body never
+                                            ; contains one and this needs no ':' arm
+                ; Anything else is TRAILING JUNK, i.e. the item was never a number
+                ; (`DATA HELLO` leaves data_parse_int sitting on the 'H'). Both
+                ; references answer Syntax error; report it and leave the cursor
+                ; alone. ⚠️ An EMPTY item is NOT junk -- `DATA ,X` parses zero
+                ; digits and lands ON the comma, so it still reads back as 0.
+                pop     de
+                ld      a,2
+                ret
+rov_seek:
+                call    data_seek           ; seek the next DATA statement
                 jr      nc,rov_exhaust
                 jr      rov_ok              ; DATAPTR updated, DATASTATE set below
 rov_comma:
@@ -54,16 +82,71 @@ rov_ok:
                 ld      a,1
                 ld      (DATASTATE),a
                 pop     de                  ; DE = value
-                scf
-                ret
+                ret                         ; A = 1: an item was read
 rov_exhaust:
                 ld      a,2                 ; this was the last item
                 ld      (DATASTATE),a
                 pop     de                  ; DE = value (this read still succeeds)
-                scf
+                ld      a,1
                 ret
 rov_none:
-                or      a                   ; CF clear -> out of data
+                xor     a                   ; 0 -> out of data
+                ret
+
+; --- rov_str: the item's RAW ASCII span -> STRSCR ([len][bytes]) ------------
+; in: HL at the item start (DATAPTR). out: HL at the item's terminator, joining
+; the numeric path's own comma / data_seek tail. STRSCR is page-3 RAM, so a page-0
+; tenant may fill it; wrapping it as a descriptor may not happen here (RDV_MODE).
+;
+; 🔴 THE LEXING RULE IS MEASURED AND IT IS NOT SYMMETRIC (spec §6.1, both
+; references): skip LEADING spaces, then take bytes VERBATIM to the next comma or
+; the end of the statement -- `DATA PAD  ,X` reads back as 'PAD  ', two trailing
+; spaces intact. Trimming the tail as well is the obvious rule and it is WRONG.
+; A leading '"' delimits instead, so a comma inside quotes is content.
+rov_str:
+                call    skip_spaces         ; LEADING spaces are not part of the item
+                ld      de,STRSCR+1         ; DE -> the byte buffer
+                ld      b,0                 ; B = length so far
+                cp      '"'
+                jr      nz,rovs_lp
+                inc     hl                  ; past the opening quote
+rovs_qlp:
+                ld      a,(hl)
+                or      a
+                jr      z,rovs_done         ; unterminated -> the EOL ends the item
+                inc     hl
+                cp      '"'
+                jr      z,rovs_done         ; the closing quote ends it, and is eaten
+                ld      c,a
+                call    rovs_put
+                jr      rovs_qlp
+rovs_lp:
+                ld      a,(hl)
+                or      a
+                jr      z,rovs_done
+                cp      ','                 ; the separator is NOT consumed here --
+                jr      z,rovs_done         ; the shared tail below steps over it
+                inc     hl
+                ld      c,a
+                call    rovs_put
+                jr      rovs_lp
+rovs_done:
+                ld      a,b
+                ld      (STRSCR),a          ; STRSCR = [len][bytes]
+                push    de                  ; the tail pops a value; there is none in
+                                            ; string mode, so keep its stack shape
+                call    skip_spaces
+                cp      ','
+                jr      z,rov_comma
+                jr      rov_seek
+rovs_put:
+                ld      a,b                 ; C = the byte. STRSCR holds STRMAX bytes;
+                cp      STRMAX              ; a DATA item cannot reach that (LINEMAX is
+                ret     nc                  ; 255 and crunching only shrinks), so this
+                ld      a,c                 ; is a structural bound, not a live clamp
+                ld      (de),a
+                inc     de
+                inc     b
                 ret
 
 ; --- data_seek: scan forward for the next DATA statement --------------------

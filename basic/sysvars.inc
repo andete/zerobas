@@ -1693,13 +1693,26 @@ GFX_SFLAGS      equ     GFX_SARGN + 1   ; $E41F: which arguments were GIVEN --
 DEFT_PTR        equ     GFX_DSP + 2     ; $E54F: token cursor in AND out (2)
 DEFT_STATUS     equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 = stmt_error
 ; --- READ/DATA tenant ABI (SUBROM_IDX_READVAL, docs/spec-eviction-g7-space.md) -
-; read_one_value's (CF, DE) contract cannot ride back through subrom_call, so the
+; read_one_value's (A, DE) contract cannot ride back through subrom_call, so the
 ; tenant lands it here and basic/program.asm's stub rebuilds it. Same window and
 ; the same one-statement-at-a-time aliasing argument as DEFT_PTR above (a READ and
 ; a graphics statement are never in flight together), and clear of the PERSISTENT
 ; GFX_DSCALE/GFX_DANGLE pair below.
 RDV_VAL         equ     DEFT_PTR + 2    ; $E551: the value read (int16 LE) (2)
-RDV_ST          equ     RDV_VAL + 2     ; $E553: 1 = value read, 0 = out of data (1)
+RDV_ST          equ     RDV_VAL + 2     ; $E553: tenant -> main STATUS (1):
+                                        ;   0 = out of data      (ERR 4)
+                                        ;   1 = an item was read (RDV_VAL / STRSCR)
+                                        ;   2 = the item is not a NUMBER (ERR 2) --
+                                        ;       D-READVAR's c.strnum, numeric mode only
+RDV_MODE        equ     RDV_ST + 1      ; $E554: main -> tenant MODE (1), D-READVAR:
+                                        ;   0 = numeric, data_parse_int -> RDV_VAL
+                                        ;   1 = string, the item's RAW ASCII span ->
+                                        ;       STRSCR ([len][bytes]); RDV_VAL undefined
+                                        ; 🔴 A PAGE-0 TENANT CANNOT WRAP IT: strscr_desc
+                                        ; ($2896) is in the main LOW region, switched out
+                                        ; while the sub-ROM's page 0 is in. The tenant
+                                        ; FILLS STRSCR; ex_read wraps + stores main-side,
+                                        ; exactly as ex_input does (spec §4.1).
 ;
 GFX_DSCALE      equ     GFX_PSTK_END    ; $E55A: persistent scale, quarter units (1)
 GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E55B: persistent angle 0..3 (1)
@@ -2875,13 +2888,18 @@ DATASTATE       equ     $E0B8   ; 0 = unpositioned (RESTORE), 1 = ready, 2 = exh
 DATAPTR         equ     $E0B9   ; next unread DATA item (ASCII) in the program (2)
 DATALINE        equ     $E0BB   ; link-field of the line holding DATAPTR (2)
 RESTORE_LINE    equ     $E0BD   ; link-field a READ seeks DATA from when unpositioned (2)
-READVAR         equ     $E0BF   ; READ: name of the variable being filled (1)
+; $E0BF was READVAR — the ONE letter ex_read latched as its target name. D-READVAR
+; (docs/spec-basic-readvar.md) routes READ's target through var_name_key, which
+; carries the whole (name, suffix) key in BC across the DATA read, so there is no
+; name to stash. The byte is FREE; it is left named here rather than reused so the
+; map above stays contiguous with the $E010-$E0FF audit recorded below.
 
 ; --- Math float pack, slice F1 RAM (repack build only) ----------------------
 ; docs/spec-basic-float-core.md §9.4 suggests FACTYP $E0BB / TKOVF $E0BC /
 ; FAC $E0C8 / FOUTBUF $E0D0 / TKDIG $E0E8, but every byte of $E010-$E0FF is
 ; ALREADY claimed (verified against this file 2026-07-11): DATALINE/
-; RESTORE_LINE/READVAR own $E0BB-$E0BF, VALTYP/STRPTR/PRDEST/PRDEV/
+; RESTORE_LINE own $E0BB-$E0BE (+ the byte $E0BF that READVAR held until
+; D-READVAR retired it, still not re-let), VALTYP/STRPTR/PRDEST/PRDEV/
 ; OO_DEVTYPE/ARL_GETBYTE own $E0C8-$E0CF, and CONTLINE/CONTPTR/CONTVALID/
 ; SCAN_*/DISK_FCB/DISKSLOT* own $E0D0-$E0E8 — none of it is free. Genuinely
 ; free own-choice RAM instead: the window starting at $F01A, between basic's
