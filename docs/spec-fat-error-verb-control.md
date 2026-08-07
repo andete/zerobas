@@ -502,11 +502,31 @@ machine were **not run**.
 
 ### 8.6 Still open
 
-* **`run-missing` reads `'load error|Illegal function call in 3346'`** — two
-  messages on one row, seen since this battery was written, unexplained by any
-  document, and untouched by any slice here. It is now a *measured* row (its verb
-  control passes), which makes the oddity a fact about `RUN"missing"` rather than
-  a possible artefact.
+* ✅ **CLOSED 2026-08-07 by D-RUNTAIL** ([`spec-basic-runtail.md`](spec-basic-runtail.md),
+  measured in [`runtail-msx1-characterization.md`](runtail-msx1-characterization.md)).
+  Filed here as *"`run-missing` reads `'load error|Illegal function call in
+  3346'` — two messages on one row"*; this row now reads **`'load error'`**.
+
+  🔴 **AND THE FILED ODDITY WAS A THIRD OF IT.** The second message was never a
+  property of the MISS: `RUN"A:PROG.BAS"` — the SUCCESS path, file present,
+  program demonstrably run — printed it too, on every build this battery has
+  ever scored. **`run-alive` could not see it**, because a verb control reads
+  the tail of its LAST typed line (`PRINT PEEK`) and the stray message lands on
+  the `RUN` line above it. Six rows of the new two-sided battery diverged from
+  the CF-3300, three of them hits.
+
+  The mechanism: `RUN"file"` is a crunched STATEMENT, so `jp run_prog` entered
+  the run loop **nested**, clobbered `CURLINE`, and on return the enclosing
+  loop walked off the loaded program's end marker into `CURLINE := $0000` and
+  dispatched the page-0 ROM at `$0004` as BASIC. `3346` is the word at `$0002`
+  (`$0D12`) printed as `CURLINE+2`. A second, independent defect rode with it:
+  a FAILED load still ran whatever program was resident, which the CF-3300 does
+  not.
+
+  ⚠️ **A battery written from this bullet alone would have shipped half the
+  defect green.** `run-missing` has no resident program, so "refused to run"
+  and "ran an empty store" print the identical string — measured, under two
+  knives ([[an-empty-program-hides-a-wrong-run]]).
 * **No knife separates `bload-alive`, `open-alive` or `append-alive` from the
   shared read layer** (§8.3). Each would need a verb-local cut.
 * **The controls' second-verb dependencies** (§8.2) are a coupling, not a defect,

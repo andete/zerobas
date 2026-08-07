@@ -174,6 +174,16 @@ landed defect, not advice.
   traceback there is invisible to every green run and to the whole corpus. Knives
   are the only thing that executes a gate's failure paths — expect to find bugs
   in the *gate* there, not only in the tree.
+* 🔴 **AND THE GUARD MUST KNOW EVERY SHAPE THE PROBE PRINTS, NOT JUST THE GREEN
+  ONE.** Measured 2026-08-07 (D-RUNTAIL, `spec-basic-runtail.md` §6.3): a probe
+  that exits **2** on a failed positive control prints a *complete* report in a
+  DIFFERENT shape — every row as `....  <label>  side=..  side=..  (not scored)`,
+  a banner, and **no tally line**. A runner scraping only the scored `ok /DIFF`
+  rows sees none, concludes "prefix", and aborts — and the knife it kills is
+  precisely the one whose purpose was to fail a control. Enumerate the probe's
+  exit codes and parse all of them. Corollary: **put the restore in a `finally`**
+  — an ABORT is exactly when the tree is left cut, and
+  `[[knife-cleanup-restores-from-head]]` assumed the happy path.
 * **A failed build ABORTS rather than scoring** — a knife scored against a stale
   ROM reads as a CUT.
 * **Score a predicted GREEN set as well as a predicted RED set.** A run where

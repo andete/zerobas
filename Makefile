@@ -1443,6 +1443,34 @@ dskmsg-acceptance: repack-machine $(DISK_TEST_DSK)
 	        $(if $(ONLY),--only '$(ONLY)',) \
 	        --repeat $(if $(REPEAT),$(REPEAT),1)
 
+# --- what a machine prints AFTER RUN"file" / LOAD"file",R ---------------------
+# D-RUNTAIL: docs/spec-basic-runtail.md, measured in
+# docs/runtail-msx1-characterization.md. Closes
+# docs/spec-fat-error-verb-control.md §8.6 -- `run-missing`'s SECOND screen row.
+# Two-sided by construction (cf3300, zb): RUN"A:name" needs a disk interface and
+# a diskless MSX1 answers `Syntax error`, so the probe REFUSES a vg8020 side
+# rather than dropping it. HEAVY + oracle-dependent (needs your CF-3300 reference
+# ROMs); NOT part of the emulator-free `unit-test`.
+#
+# ⚠️ Every row is a WHOLE-TAIL match, never a substring -- the subject IS an
+# extra screen row, and a substring `want` is exactly why the divergence survived
+# in `fat-error-acceptance` for the whole life of that battery. THREE rows expect
+# `<nothing>` and TWO expect an error message, both of which a machine that runs
+# no program at all produces for free, so three POSITIVE controls (`run-hit`,
+# `bare-run`, `load-plain:listing`) require program output / a listing in the
+# agreed reading and the probe exits 2 -- not 1 -- when one fails. Knife K-DONE
+# (spec §5) is the build that proves they are load-bearing.
+runtail-characterize: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_runtail.py \
+	        --sides $(if $(SIDES),'$(SIDES)',cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',)
+
+runtail-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_runtail.py --gate \
+	        --sides $(if $(SIDES),'$(SIDES)',cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',) \
+	        --repeat $(if $(REPEAT),$(REPEAT),1)
+
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #
 # What one open channel costs on a real disk-capable MSX1, measured out of the same
@@ -1779,6 +1807,7 @@ clean:
         lnblank-characterize lnblank-acceptance lnblank-echo lnblank-say-acceptance \
         editverb-acceptance lptverb-characterize lptverb-acceptance \
         dskmsg-characterize dskmsg-acceptance \
+        runtail-characterize runtail-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

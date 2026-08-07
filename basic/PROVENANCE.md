@@ -1062,7 +1062,7 @@ for the transport.
 | Filename → 8.3 parse | `BLOAD"A:name"` (shared by all) | n/a (parses `"A:"`/`"B:"`/bare → `DISK_FCB_NAME`) | — (parse only) | §disk-BLOAD scratch FCB |
 | Binary image load | `BLOAD"A:name"[,R]` | BSAVE binary, `$FE` header | standard DSKIO $4010 + loader FAT12 (`fat_io_open`/`fat_io_getbyte`) | §disk DSKIO host engine, §disk BLOAD execute |
 | Tokenised program load | `LOAD"A:name"[,R]` | tokenised BASIC, `$FF` marker | same DSKIO/FAT12 read path; streams line-link image | §disk DSKIO host engine, §disk LOAD |
-| Load-then-run | `RUN"A:name"` | tokenised BASIC, `$FF` marker | reuses `disk_prog_load` (§disk LOAD), always runs | §disk RUN |
+| Load-then-run | `RUN"A:name"` | tokenised BASIC, `$FF` marker | reuses `disk_prog_load` (§disk LOAD); runs iff the load SUCCEEDED (D-RUNTAIL — "always runs" was this table's own wrong claim, §disk RUN) | §disk RUN |
 | Binary / tokenised SAVE | `SAVE"A:name"` / `BSAVE"A:name",s,e[,x]` | `$FF` / `$FE` markers | standard DSKIO $4010 + loader FAT12 (`fat_io_create`/`fat_io_putbyte`/`fat_io_close`) | §disk DSKIO host engine |
 
 **Constants the disk-extension path introduces (all `sourced`; see the named
@@ -1378,9 +1378,10 @@ path (that path never produces a `RUN_TOKEN` reaching the executor).
   parse_disk_fcb` (build `DISK_FCB`; on a malformed drive/name it routes to
   `load_error` itself), `call parse_close_run` (consume the closing quote — and
   tolerate a stray `,R` harmlessly; `CF`→`load_error`), `call disk_prog_load`
-  (the SAME reusable load `LOAD"name"` uses), then `jp run_prog`. Net effect:
-  load the tokenised program, then run it. This mirrors `do_load`'s disk path
-  exactly, minus the `RUNFLAG` test — RUN always runs.
+  (the SAME reusable load `LOAD"name"` uses), then — **`ret c` and
+  `jp run_prog_top`** (D-RUNTAIL, see below). Net effect: load the tokenised
+  program, then run it. This mirrors `do_load`'s disk path exactly, minus the
+  `RUNFLAG` test.
 - anything else (a bare tokenised `RUN`, or `RUN<lineno>` which the tokeniser
   stored as `RUN_TOKEN` + a line-ref token) → `jp run_prog`: run the stored
   program from the start, matching the existing bare-RUN semantics (a line
@@ -1397,6 +1398,41 @@ stays byte-identical (Philips VG-8020).
 | `RUN` statement token (reused, no new token) | $8A | oracle-confirmed via `basic_probe_crunch.py` | sourced |
 | `RUN"A:PROG.BAS"` crunch = `8A 22 41 3A 50 52 4F 47 2E 42 41 53 22 00` (`RUN_TOKEN` + the quoted filename verbatim, no line-number conversion) | — | oracle-confirmed byte-identical vs Philips VG-8020 (`basic_probe_crunch.py`) | sourced |
 | load logic (FCB parse, `$FF` marker, line-link stream) | — | reused unchanged from disk LOAD (§disk LOAD) — no duplication | sourced |
+
+### 🔴 D-RUNTAIL — this section was wrong on BOTH halves, and both were measured
+
+`docs/spec-basic-runtail.md`, measured in
+`docs/runtail-msx1-characterization.md` on the National CF-3300 (2026-08-07).
+Gate: `make runtail-acceptance` (9/9 readings agree across cf3300 + zb).
+
+**(1) "RUN always runs" was false about the machine.** After a load that FAILED,
+the CF-3300 prints its message and stops — it does **not** run whatever program
+happens to be resident. zerobas did: `load_error` prints and **returns**, and
+`do_run`'s next instruction was `jp run_prog`. `disk_prog_load` now carries a
+CF-out contract (CF set = the load failed and has already reported) and both
+callers `ret c`. The contract is stated on `disk_prog_load`'s own exits and
+**not** inside `load_error`, which has ~50 sites across `files`/`save`/`print`/
+`field`/`format`/`bload`/`cload`, several of which resume into their caller on
+purpose.
+
+**(2) `jp run_prog` from a statement entered the run loop NESTED.** `RUN"A:name"`
+is not the REPL's `RUN` command (`is_cmd` needs a delimiter after "RUN" and this
+one is `"`), so it reaches `do_run` as a crunched statement, inside the enclosing
+line's own run loop. `run_prog` overwrites `CURLINE`; when the loaded program
+ended, its `ret` landed back in `exec` and the **enclosing** loop resumed with
+`CURLINE` pointing at the loaded program's end marker, walked off it into
+`CURLINE := $0000`, found the page-0 ROM's own non-zero `DI / JP` there and
+dispatched the byte at `$0004` as a BASIC statement — in RUN mode. Observable:
+`Illegal function call in 3346` after **every** `RUN"file"` and `LOAD"file",R`,
+hit and miss alike, `3346` being the word at `$0002` printed as `CURLINE+2`.
+Both sites now `jp run_prog_top`, which restores `SAVSTK` — the prompt-clean
+depth `dispatch_line` records before any statement runs — so `run_prog`'s `ret`
+returns to the REPL exactly as the bare-`RUN` command path's always did.
+
+⚠️ The tape twins (`dl_cas_close`, `dr_is_cas`) have defect (2) structurally and
+are deliberately unchanged: no cassette instrument scores them and
+`do_tape_prog` has no measured CF contract. Filed in `TODO.md`;
+`spec-basic-runtail.md` §9 carries the one-word edit.
 
 **Functional validation (openMSX, `disk_probe_run_disk.py`).**
 On `C-BIOS_MSX1_BASIC_DISK` with `-diska disk/test720.dsk` (carrying the real

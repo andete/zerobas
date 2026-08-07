@@ -303,17 +303,28 @@ duplicating (and drifting from) what is written below.
       reds ALL SIX with both reference-exact rows still scored; **K-PL** and
       **K-MG** separate `load`/`run` and `merge` as verb-specific. Probe + doc
       only — all four ROM hashes unchanged.
-- [ ] ⚠️ **Three `fat-error` gaps left by the 8-of-8 closure** — (1) no knife
+- [ ] ⚠️ **Two `fat-error` gaps left by the 8-of-8 closure** — (1) no knife
       separates `bload-alive`, `open-alive` or `append-alive` from the shared
       `fat_io_getbyte` layer, so each is shown to see its READ PATH die but not
       proven verb-specific; (2) `merge-alive`, `append-alive` and `kill-alive`
       lean on a SECOND verb (`SAVE",A"`, OPEN/OUTPUT+INPUT, FILES), so a break
-      elsewhere can mark their row NOT MEASURED — loud, but not their own verb;
-      (3) **`run-missing` reads `'load error|Illegal function call in 3346'`** —
-      two messages on one row, unexplained by any document, now a *measured* row
-      so the oddity is a fact about `RUN"missing"` rather than a possible
-      artefact. Detail:
+      elsewhere can mark their row NOT MEASURED — loud, but not their own verb.
+      Detail:
       [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §8.6.
+      *(Item (3), `run-missing`'s second message, is CLOSED — see D-RUNTAIL
+      below.)*
+- [ ] ⚠️ **The tape twins of D-RUNTAIL are the same defect, and nothing scores
+      them.** `basic/cload.asm`'s `dl_cas_close` (`LOAD"CAS:x",R`) and
+      `dr_is_cas` (`RUN"CAS:x"`) still end in `jp run_prog` from a **statement**
+      context, which is defect A verbatim: the nested `run_prog` returns into the
+      enclosing line's loop with `CURLINE` destroyed, and the loop walks off into
+      `$0000`. They were left alone on purpose — this battery mounts a disk, not
+      a `.cas`, so no row reads them before OR after, and defect B's half needs a
+      **measured** CF-out contract on `do_tape_prog` that nothing has read.
+      The edit is `jp run_prog` → `jp run_prog_top` at both sites, *once a
+      cassette row exists to score it*; `do_tape_prog`'s success exits must be
+      read first. Detail:
+      [`docs/spec-basic-runtail.md`](docs/spec-basic-runtail.md) §9.
 - [x] ✅ **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD —
       CLOSED 2026-08-07**, and **the remedy I filed was DECLINED on a read of the
       record** ([[a-recommendation-in-the-record-is-still-a-claim]] — the filer

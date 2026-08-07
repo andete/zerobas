@@ -136,11 +136,18 @@ dl_is_disk:
                 call    parse_close_run     ; closing quote + optional ,R -> RUNFLAG
                 jp      c,load_error
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
+                ret     c                   ; D-RUNTAIL defect B (docs/spec-basic-
+                                            ; runtail.md §3.2): the load FAILED and has
+                                            ; already reported. LOAD"missing",R must not
+                                            ; then run whatever was resident -- the
+                                            ; CF-3300 prints its message and stops
+                                            ; (characterization §4, loadr-miss-res)
                 ; ,R ? -> run the freshly loaded program; else back to the REPL.
                 ld      a,(RUNFLAG)
                 or      a
                 ret     z
-                jp      run_prog            ; RUN the loaded program (program.asm)
+                jp      run_prog_top        ; RUN the loaded program (program.asm) --
+                                            ; at TOP LEVEL, never nested (§3.1)
 
 ; --- do_run: RUN | RUN <lineno> | RUN "A:name" ------------------------------
 ; Entry: HL -> the bytes after the RUN token (verbatim ASCII args).
@@ -181,7 +188,11 @@ do_run:
                 call    parse_close_run     ; consume closing quote (and any ,R)
                 jp      c,load_error
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
-                jp      run_prog            ; ...and run it (running is implicit)
+                ret     c                   ; D-RUNTAIL defect B: the load FAILED and has
+                                            ; already reported -- RUN"missing" must run
+                                            ; NOTHING, not the resident program
+                jp      run_prog_top        ; ...and run it (running is implicit), at
+                                            ; TOP LEVEL -- see run_prog_top below
 dr_is_cas:
                 ; HL is inside the quotes, past "CAS:". Tier-3: CAPTURE the quoted
                 ; filename into CAS_WANT (cas_open_match finds the named tape file,
@@ -194,6 +205,49 @@ dr_cas_close:
                 call    do_tape_prog        ; load the program off tape (tokenised OR
                                             ; $EA ASCII — do_tape_prog's 3-way dispatch)
                 jp      run_prog            ; ...and run it
+                                            ; ⚠️ NOT run_prog_top, and NOT because the
+                                            ; tape path is exempt: it has the IDENTICAL
+                                            ; defect A. It is unchanged because this
+                                            ; slice has no cassette instrument to score
+                                            ; it with, and defect B's half needs a
+                                            ; MEASURED CF contract on do_tape_prog that
+                                            ; nothing has read (docs/spec-basic-
+                                            ; runtail.md §9; filed in TODO.md). Same at
+                                            ; dl_cas_close above.
+
+; --- run_prog_top: enter run_prog at TOP LEVEL, from a statement context ------
+; D-RUNTAIL (docs/spec-basic-runtail.md §3.1), measured in
+; docs/runtail-msx1-characterization.md.
+;
+; 🔴 `RUN"A:name"` IS NOT THE REPL'S `RUN` COMMAND. dispatch_line's is_cmd needs
+; the byte after "RUN" to be end/space/':' and this one is '"', so the line is
+; crunched and reaches do_run as a STATEMENT -- inside the enclosing line's own
+; run loop. A plain `jp run_prog` there enters the loop NESTED and overwrites
+; CURLINE; when the loaded program ends, run_prog's `ret` lands back in `exec`
+; and the ENCLOSING loop resumes with CURLINE pointing at the loaded program's
+; end marker. Its "fall through to the next line" then walks off that into
+; CURLINE := $0000, finds a NON-zero link there ($C3F3 -- the page-0 ROM's own
+; `DI / JP`), re-derives DIRECTF as RUN mode and dispatches the byte at $0004 as
+; a BASIC statement. Measured symptom: `Illegal function call in 3346` after
+; EVERY RUN"file"/LOAD"file",R -- hit and miss alike -- where 3346 is the word at
+; $0002 printed as CURLINE+2 by print_in_lineno. The reference prints nothing.
+;
+; The REPL's own bare RUN never had this: dl_run's `jp run_prog` is reached at
+; dispatch_line's depth, which is the depth whose `ret` returns TO THE PROMPT.
+; SAVSTK is exactly that depth -- dispatch_line records it before any statement
+; runs (basic/program.asm) -- so restoring it here reproduces the command path's
+; shape from a statement context. A stored line's RUN"file" inherits the
+; enclosing run_prog's anchor, which is the SAME value for the same reason.
+;
+; Discarding any GOSUB/FOR context between here and the prompt is not a side
+; effect to be tolerated: it is what RUN means.
+;
+; ⚠️ autoexec_run (below) keeps a plain `jp run_prog` DELIBERATELY: it is called
+; from `init`, before the REPL, where SAVSTK has never been written -- and it has
+; no enclosing loop to corrupt, so it has no defect A to fix.
+run_prog_top:
+                ld      sp,(SAVSTK)         ; the prompt-clean depth
+                jp      run_prog            ; ...its `ret` now returns to the REPL
 
 ; --- cas_capture_name: parse a quoted tape name into CAS_WANT -----------------
 ; Entry: HL -> the first char of the name (inside the quotes, past the opening
@@ -661,14 +715,27 @@ cig_eof:
 ; (disk-ROM-independent): fat_io_open (mount + find + prime) and fat_io_getbyte
 ; (the file byte stream). Mirrors do_tape_prog's ctp_line/ctp_body/ctp_done
 ; line-for-line, but sourcing bytes from fat_io_getbyte. No Close on the read side.
+; ⚠️ CF-OUT CONTRACT (D-RUNTAIL, docs/spec-basic-runtail.md §3.2): CF clear =
+; a program is loaded; CF SET = the load failed and has ALREADY REPORTED. The
+; callers that RUN what was loaded (do_run, do_load's ,R arm) refuse on CF, so a
+; RUN"missing" runs NOTHING -- it used to print its message and then run whatever
+; program happened to be resident (measured on the CF-3300: it does not,
+; docs/runtail-msx1-characterization.md §4).
+;
+; 🔴 THE CONTRACT IS STATED ON THIS ROUTINE'S OWN EXITS, NOT INSIDE load_error.
+; load_error is `jp`ed to from ~50 sites across files/save/print/field/format/
+; bload/cload, several of which RESUME into their caller on purpose (see
+; save.asm's bsave_opt4 header). An `scf` in load_error would change the returned
+; CF for every one of them. So the failure exits below funnel through dpl_err,
+; which calls load_error and sets CF itself.
 disk_prog_load:
                 ; (1) disk ROM slot must have been recorded by the INIT scan.
                 ld      a,(DISKSLOT_OK)
                 or      a
-                jp      z,load_error
+                jp      z,dpl_err
                 ; (2) open the file via the FAT12 engine (mount + find + prime).
                 call    fat_io_open
-                jp      c,load_error       ; not found / mount / I-O error
+                jp      c,dpl_err          ; not found / mount / I-O error
                 ; (3) first byte selects the format: $FF = tokenised BASIC; anything
                 ; else = an ASCII (SAVE",A") program (ASCII text never starts $FF).
                 call    fat_io_getbyte
@@ -800,13 +867,20 @@ dpl_done:
                 ld      (TXTTAB),hl
                 ; --- relink: recompute every line's absolute link pointer ---
                 call    relink
+                or      a                   ; D-RUNTAIL: CF clear = LOADED. relink's own
+                                            ; carry is not a result, so it may not be
+                                            ; passed off as one
                 ret
 
 ; dpl_err — take the normal error path. Reached on an unexpected EOF mid-program,
-; a wrong marker, or an Open after the file vanished. (No Close: read side has no
-; dirty state.)
+; a wrong marker, an Open after the file vanished, a missing disk slot, or any
+; ascii_load failure. (No Close: read side has no dirty state.)
+; D-RUNTAIL: `call` + `scf`, not `jp` — this IS the CF-set half of the contract
+; above, and load_error's own return carry belongs to its other ~50 callers.
 dpl_err:
-                jp      load_error
+                call    load_error
+                scf
+                ret
 
 ; dpl_oom — store overflow: leave a clean (empty) program, report "out of memory".
 ; Mirrors ctp_oom for the disk store-overflow case. (No Close: read side is clean.)
@@ -815,7 +889,10 @@ dpl_oom:
                 ld      a,$CC               ; out-of-memory landmark (as store_line)
                 ld      (ERRMARK),a
                 ld      hl,err_prog_mem
-                jp      print_msg           ; D-MSGENC (as ctp_oom above)
+                call    print_msg           ; D-MSGENC (as ctp_oom above)
+                scf                         ; D-RUNTAIL: a store overflow is a FAILED
+                ret                         ; load too -- RUN"file" must not then run the
+                                            ; empty program new_prog just left
 
 ; --- ascii_load — LOAD of an ASCII (SAVE",A") program ------------------------
 ; Reached from disk_prog_load when the first byte is NOT the $FF tokenised marker.
@@ -830,10 +907,12 @@ dpl_oom:
 ascii_load:
                 call    new_prog            ; LOAD replaces the current program
                 call    fat_io_open         ; re-prime: reset the read to offset 0
-                jp      c,load_error        ; file vanished between opens -> error
+                jp      c,dpl_err           ; file vanished between opens -> error
                 call    ascii_read_lines    ; tokenise + store; CF set = bad line
-                jp      c,load_error        ; non-numbered line / not an ASCII program
+                jp      c,dpl_err           ; non-numbered line / not an ASCII program
                 ret                         ; caller handles ,R / returns to the REPL
+                                            ; (D-RUNTAIL: CF is clear here -- the `jp c`
+                                            ; two lines up did not fire)
 
 ; --- autoexec_run: cold-start AUTOEXEC.BAS auto-run (disk/docs/autoexec-bas-spec.md) ---
 ; Called once from interp.asm's `init`, between the startup banner (show_title)
