@@ -335,6 +335,20 @@ sil_no:
                 include "basic/kwtable.inc"
 
 ; --- pad page 0 to the $4000 boundary --------------------------------------
+; __MEAS_SUB_P0_END is a ZERO-BYTE measurement label: page-0 free space is
+; $4000 - __MEAS_SUB_P0_END, read out of build/sub.sym by
+; tools/check_sub_walls.py on every `make basic-reloc` (docs/spec-subwall-
+; readout.md). It is the sub-ROM twin of basic/'s __MEAS_LOW_END /
+; __MEAS_PAGE1_END, and it lands here because for the sub ROM's whole life the
+; two walls had no gated readout at all: every figure was hand-measured per
+; slice, and two of them were wrong -- D-LPTVERB's own `kwtable` entries cost
+; 17 B of THIS page while its as-built table recorded "sub sides unchanged".
+;
+; ⚠️ THE LABEL, NOT A TRAILING-$FF SCAN, IS THE MEASUREMENT. This page pads with
+; $FF, not $00, so a byte scan cannot tell pad from content that happens to end
+; in $FF and can only ever OVER-report. The checker prints both and treats
+; scan < label as proof the .sym and the .rom are from different builds.
+__MEAS_SUB_P0_END:
                 ds      $4000 - $, $FF
 
 ; ===========================================================================
@@ -763,4 +777,8 @@ sub_p1_ping:
                 include "lineno.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
+; __MEAS_SUB_P1_END: page-1 free space is $8000 - __MEAS_SUB_P1_END. Same
+; mechanism and same reasons as __MEAS_SUB_P0_END above; both are read by
+; tools/check_sub_walls.py as a step of `make basic-reloc`.
+__MEAS_SUB_P1_END:
                 ds      $8000 - $, $FF

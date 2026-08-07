@@ -445,6 +445,22 @@ costs zero bytes but belongs in a slice that can also fix the readout and re-der
 the historical series, rather than in one that would leave two conflicting numbers
 in the record with no account of which past figures were affected.
 
+✅ **ANSWERED 2026-08-07 by D-SUBWALL**
+([`spec-subwall-readout.md`](spec-subwall-readout.md)). The two labels landed,
+`make basic-reloc` now prints all four walls, and the series was re-derived by
+building all 436 commits since `sub/sub.asm` existed (424 built):
+
+* the **17** is D-LPTVERB's own `LPRINT`+`LPOS` `kwtable` entries — which that
+  slice measured, in the row below the one where it wrote "sub sides unchanged";
+* the **3** is not a mis-measurement of anything: `p1 = 1824` occurs at **0 of 424**
+  commits, and a different page end, a different pad convention, a stale
+  `sub/basic-resident-abi.inc`, a stale `build/` and 2324−500 arithmetic are each
+  tested and refuted. The true D-EDITVERB carve is **−503**;
+* **the drift does not go back** — 104 of the 112 recorded sub-wall sites in this
+  repo reproduce to the byte, including every figure from D-P0BASE backwards.
+  Exactly two slices carry a wrong one, and this spec's own baseline table is where
+  they stopped.
+
 ### 6.4 🔴 The seed prediction was wrong, and it was two errors cancelling
 
 §1.2 predicted main seeds **286 → 287**, "the one new seed being `do_files`, named
@@ -517,7 +533,8 @@ exists for).
 ### 6.8 What is left open
 
 * **R-LS4 is still UNKNIFED** (D-LPTVERB §6.7.3) — untouched here.
-* **The sub-ROM walls have no gated readout** (§6.3).
+* ~~**The sub-ROM walls have no gated readout** (§6.3).~~ ✅ **CLOSED 2026-08-07 by
+  D-SUBWALL**, [`spec-subwall-readout.md`](spec-subwall-readout.md).
 * **`do_kill`'s no-match still prints `load error`** where its own comment says
   `File not found` (§2.3), and `fat-error-acceptance` pins it. Unmeasured for
   `KILL`; the fix is 0 B once someone takes the reading.

@@ -114,18 +114,37 @@ duplicating (and drifting from) what is written below.
       ⚠️ Carried out of it: **R-LS4 is measured but UNKNIFED** (spec-basic-lptverb
       §6.7.3 — the cut changes argument CONSUMPTION and returns garbage), and the
       three items in `docs/spec-basic-lfiles.md` §6.8.
-- [ ] 🔴 **THE SUB-ROM WALLS HAVE NO GATED READOUT, AND THE RECORDED FIGURES DO
-      NOT REPRODUCE.** `check_reloc.py` prints both MAIN walls on every build from
-      `__MEAS_LOW_END`/`__MEAS_PAGE1_END`; the sub ROM has no such labels, so every
-      sub figure in this repo is hand-carried. D-LFILES rebuilt `b5f4135` and
-      measured **3852 / 1821** where the record says **3869 / 1824** — by TWO
-      instruments that agree exactly with each other (an `$FF` tail scan, and
-      zero-byte labels injected before each `ds $4000-$,$FF` / `ds $8000-$,$FF`,
-      the method `docs/rom-region-structure-review.md` prescribes). Adding the two
-      labels costs **zero bytes**; the work is the readout plus re-deriving which
-      historical figures were affected, which is why it is filed rather than done
-      in a slice that would otherwise leave two conflicting numbers in the record.
-      Detail: [`docs/spec-basic-lfiles.md`](docs/spec-basic-lfiles.md) §6.3.
+- [x] ✅ **THE SUB-ROM WALLS HAVE NO GATED READOUT — CLOSED 2026-08-07 by
+      D-SUBWALL**, [`docs/spec-subwall-readout.md`](docs/spec-subwall-readout.md).
+      `sub/sub.asm` carries `__MEAS_SUB_P0_END`/`__MEAS_SUB_P1_END` and
+      `tools/check_sub_walls.py` runs from `make basic-reloc` beside
+      `check_reloc.py`, so **all four walls print on every build**. The labels emit
+      nothing: **all four ROM hashes byte-identical**, which is the instrument's own
+      control.
+      🎯 **THE 17 WAS D-LPTVERB'S OWN COST, AND D-LPTVERB MEASURED IT.** Sub page 0
+      went 3869 → **3852** at `b5f4135` for the `LPRINT`+`LPOS` entries in
+      `basic/kwtable.inc` — a sub **page-0** tenant — and that slice's as-built table
+      records *"+17 is exactly the 9 B LPRINT + 8 B LPOS entries"* two rows below
+      *"sub sides unchanged ✅"*. The number was not mis-measured; **it was not
+      measured at all** — the prediction was copied into the result column.
+      🔴 **THE 3 IS A NUMBER NO TREE HAS EVER HAD.** All 436 commits since
+      `sub/sub.asm` existed were built (424 succeeded): **`p1=1824` occurs at 0 of
+      them.** A different page end, a different pad convention, a stale
+      `sub/basic-resident-abi.inc` (four vintages tried), a stale `build/`, and
+      2324−500 arithmetic are each TESTED and refuted. D-EDITVERB's true carve is
+      **−503**, not −500.
+      ✅ **THE DRIFT DOES NOT GO BACK**: 104 of the 112 recorded sub-wall sites
+      reproduce to the byte — the review's 4054/3357, D-P0BASE's −44, D-EVLNO's −87,
+      D-MSGSUB, D-MSGMIGRATE, D-DOTLINE, the whole JUDGE arc. **Exactly two slices**
+      carry a wrong figure, and they are the last two before the one that noticed.
+      🔴 Carried out of it: **K6 found a defect in this slice's own tool** (a
+      negative "over-report" printed as a measurement sentence — fixed, re-knifed);
+      **K5 relocated its own finding** (an overrun never reaches the wall check,
+      `pad_rom.py` refuses the empty image first); **the knife runner reverted the
+      Makefile wiring** and the resulting green read as a missed knife; and 🔴 **two
+      of D-SUBWALL's own predictions were stale copied figures** — `preflight-check`
+      is **181/86** not 180/85, and the page-1 closure is **582** not 522, both at
+      `0cbf495` as well. The copy-forward habit is not a sub-ROM problem.
 - [ ] ⚠️ **`do_kill`'s no-match prints `load error` where its own comment says
       `File not found`.** D-LFILES made `FILES`/`LFILES` reference-exact for that
       disposition (ERR 53, R-LF4/R-LF6) and deliberately did NOT re-point `KILL`:

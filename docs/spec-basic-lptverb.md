@@ -57,6 +57,13 @@ consequence.
 | sub page 0 | 3869 B |
 | sub page 1 | 1824 B |
 
+🔴 **CORRECTED 2026-08-07 (D-SUBWALL).** At `a89e43f` the sub walls are
+**3869 / 1821**. The `1824` was copied from D-EDITVERB, not measured here, despite
+this section's heading — and this slice then *moved* sub page 0 to **3852** and
+recorded it as unchanged (§4.2 / §6.1). See
+[`spec-subwall-readout.md`](spec-subwall-readout.md) §3.3. Both figures are left as
+written, because they are the evidence for that finding.
+
 Page 1 binds, and it binds *hard*: D-EDITVERB spent 262 B of the 356 B it
 inherited. There is no sub-ROM escape for any of this — `pchar`, `repl`,
 `ex_print` and `do_files` are all main-resident, and a page-1 tenant cannot reach
@@ -265,6 +272,7 @@ so `lps-init` cannot see it, and neither can any row taken before the first
 |---|---|---|
 | 4.1 | page 1 **94 → 15..40 B** | **94 → 7 B** ⚠️ — over the estimate, and §6.3 is why |
 | 4.2 | low **23 B unchanged**; sub p0 3869 / p1 1824 unchanged | 🔴 **low 23 → 3 B** — the prediction was WRONG (§6.3); sub sides unchanged ✅ |
+| — | 🔴 **CORRECTED 2026-08-07 (D-SUBWALL): "sub sides unchanged" is FALSE.** Sub page 0 went **3869 → 3852**, and the −17 is the `kwtable` row three lines below in this very table: `LPRINT` (9 B) + `LPOS` (8 B), in `basic/kwtable.inc`, whose sole include site is `sub/sub.asm` — so they land on sub **page 0**. The 17 B were measured here and connected to nothing; "unchanged" was the prediction copied into the result column. [`spec-subwall-readout.md`](spec-subwall-readout.md) §3.3 | |
 | 4.3 | **`LFILES` does not fit** | ✅ — not implemented; the shortfall is measured, not assumed (§6.4) |
 | 4.5 | `deadcode` main **286** → 0, sub **102** → 0 | **286 / 102**, 0 dead both ✅ — no movement, as predicted |
 | 4.7 | `test_stmt_dispatch` **79** entries if LFILES does not land | **79 entries, 79 dispatch OK** ✅ |

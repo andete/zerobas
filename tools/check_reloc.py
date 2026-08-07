@@ -32,6 +32,12 @@ REQUIRED argument for exactly that reason: it used to be optional, and an
 optional sym is precisely the shape in which a wall readout silently stops
 printing while the gate still exits 0 ([[gate-can-be-green-while-measuring-nothing]]).
 
+⚠️ THIS TOOL READS THE MAIN IMAGE ONLY -- it is TWO of the project's FOUR walls.
+The sub ROM's pair is tools/check_sub_walls.py (docs/spec-subwall-readout.md),
+added 2026-08-07 after two recorded sub figures turned out not to reproduce; it
+runs from the same `make basic-reloc` recipe, immediately after this one, so all
+four walls print together.
+
 REMOVED 2026-07-29 (RETIRE THE LEAN 16 KB CART, S2 --
 docs/spec-lean-retire-s2-switch.md): a 4th check pinned the lean 16 KB basic.rom
 to a frozen LEAN_SHA256 baseline, proving the co-maintained lean build never

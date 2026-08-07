@@ -325,6 +325,7 @@ subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM) $(SUB_ROM)
 # $(RELOC_SYM).
 basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
 	python3 tools/check_reloc.py $(RELOC_ROM) $(RELOC_SYM)
+	python3 tools/check_sub_walls.py $(SUB_ROM) $(SUB_SYM)
 	python3 tools/check_kwtable_identity.py $(RELOC_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB_SYM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc

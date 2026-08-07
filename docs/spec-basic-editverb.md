@@ -292,6 +292,7 @@ The runner reads the **probe's** exit code, not `make`'s.
 |---|---|---|
 | 4.1 | low 23 B unchanged; page 1 356 → 60..130 B | **23 B**; **356 → 94 B** ✅ (262 B for three verbs) |
 | 4.2 | sub p0 3869 unchanged; sub p1 → ~1800 | **3869**; **2324 → 1824** ✅ |
+| — | 🔴 **CORRECTED 2026-08-07 (D-SUBWALL).** The `3869` is right. **`1824` is wrong: this commit measures `2324 → 1821`, a carve of −503, not −500.** `1824` occurs at 0 of the 424 buildable commits in the sub ROM's history — it is not a reading of any tree that has ever existed. Left in place rather than edited, because it is the evidence. [`spec-subwall-readout.md`](spec-subwall-readout.md) §3.2/§3.4 | |
 | 4.3 | **702** files swept | **702** ✅ |
 | 4.4 | `deadcode` main **285** seeds → 0 | **286** → 0 🔴 **the prediction is off by one** — §6.7.1 |
 | 4.5 | `injector-check` **326** files, 4 exempt, 3 RECORDs, 0 offenders | **326 / 4 / 3 / 0** ✅ |
@@ -386,6 +387,8 @@ Full corpus, run **sequentially from a removed `build/`**, one emulator gate at 
 time, every log captured whole (never tailed):
 
 `basic-reloc` low **23 B** / page 1 **94 B** / sub p0 **3869** / sub p1 **1824** ·
+🔴 *the sub p1 figure is wrong — measured **1821** on rebuild; see §4.2's correction
+row and [`spec-subwall-readout.md`](spec-subwall-readout.md) §3.4* ·
 `repack-machine` OK ·
 **`unit-test` ALL 58 test files PASSED**, `test_stmt_dispatch.py` **78 table
 entries, 78 dispatch OK** ·
