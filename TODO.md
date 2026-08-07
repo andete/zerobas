@@ -198,27 +198,70 @@ duplicating (and drifting from) what is written below.
       286 → **287**, because this slice's own `sub/dirverb.asm` COMMENT names the
       main label `df_notfound`. Seeds are a function of the WORDS a slice writes
       under `sub/`+`tools/`, not of the code it adds.
-- [ ] ⚠️ **`NAME`'s missing-old-file message is `load error` where the CF-3300
-      says `File not found`** — **R-DK2**, measured 2026-08-07 by D-DSKMSG and
-      deliberately NOT acted on. Three reasons, and the third is a number:
-      `do_name`'s divergence is one `basic/PROVENANCE.md` §NAME **states**, with
-      code and comment agreeing (where `do_kill`'s was one its own comment
-      contradicted); retiring a quarantined divergence one verb at a time on a
-      neighbour's reading is the failure this residual family exists to prevent;
-      and `nm_fail` is a **shared exit** for the `fat_mount` failure and the
-      `fat_find` miss, so the fix is an arm split of ≈5 B, not a target swap.
-      Printed on every `make dskmsg-acceptance` run as an explicitly not-gated
-      characterization row. Detail:
+- [x] ✅ **`NAME`'s missing-old-file message — R-DK2, CLOSED 2026-08-07 by
+      D-DKNAME**, [`docs/spec-basic-dkname.md`](docs/spec-basic-dkname.md),
+      measured in
       [`docs/dskmsg-msx1-characterization.md`](docs/dskmsg-msx1-characterization.md)
-      §4 and [`docs/spec-basic-dskmsg.md`](docs/spec-basic-dskmsg.md) §4.5.
+      §2. `dsk-namenone` moved from the printed characterization list into the
+      gated set — `make dskmsg-acceptance` **5/5**, with the `NOT GATED:` line
+      deleted with it (a list of exclusions holding a non-exclusion stops being
+      read as a list of holes) — and `fat-error-acceptance`'s `name-missing` pin
+      moved to `File not found` in the same commit as the code, its second
+      reference-exact row of eight.
+      🎯 **THE FILED ≈5 B WAS 4, AND THE FILED REASON WAS SHORT BY ONE LEVEL.**
+      `nm_fail` was indeed a shared exit for the `fat_mount` failure and the
+      `fat_find` miss, so the fix was an arm split (`nm_notfound`) and not the
+      target swap — but the miss arm is **itself two dispositions**, because
+      `fat_find`'s own contract is `Cy = 1 not found / error` (`ret c` on a
+      `read_sector` failure mid-scan). So an I-O error during the
+      root-directory walk now reads as `File not found` too: `KILL`'s residual
+      one primitive over, accepted and named rather than hidden.
+      **+4 B main page 1 (190 → 186 B), 0 B sub**; low **3 B** untouched.
+      `disk.rom` **and `sub.rom`** both byte-identical — `NAME`'s tenant is the
+      stamp only, so "did this need a tenant change?" is answered by a hash.
+      🔴 **K-NAMECTL IS THE FINDING, AND IT IS BIGGER THAN THE ROW IT REDS.**
+      With `tnt_name_stamp` re-reading the dir sector instead of writing it back
+      — `NAME` reports success and renames nothing — `dsk-namenone` still reads
+      `File not found` on **both** sides, `dsk-ctl` and `dsk-killhit` hold
+      byte-for-byte, and `make fat-error-acceptance` scores **8/8 ALL PASS at
+      exit 0** with its own PRECONDITION green. Two instruments reporting a clean
+      run over a provably broken verb. Only the NEW control `dsk-namehit` reds
+      (probe exit 2, the four rows below it printed `(not scored)`). ⇒ **one
+      positive control per gated VERB**, not per battery
+      ([[gate-whose-answer-is-an-error-passes-a-dead-subject]]).
+      ⚠️ **K-NAME2 is a PREDICTED MISS and says so**, exactly as K-KILL2 was:
+      re-pointing the mount arm at `df_notfound` moved **nothing**, both
+      instruments, both rounds. Seed prediction held at **287** for the first
+      time in four slices, and for the stated reason — nothing under `sub/` or
+      `tools/` was touched.
 - [ ] ⚠️ **`KILL`/`NAME` at an unmounted or unreadable volume has NO row** —
-      D-DSKMSG's knife **K-KILL2** is the written-down predicted miss that proves
-      it. `do_kill`'s new STATUS=2 arm and `do_name`'s `nm_fail` both keep
-      `load error` there by design (the quarantined class), and an I-O error
-      *inside* `fat_delete` after a successful mount still reads as "nothing
-      matched" — separating that needs a status out of `fat_delete` itself, a
-      primitive-layer change. Detail:
-      [`docs/spec-basic-dskmsg.md`](docs/spec-basic-dskmsg.md) §4.2/§6.6.
+      D-DSKMSG's **K-KILL2** and D-DKNAME's **K-NAME2** are two written-down
+      predicted misses that prove it: each re-points its verb's mount arm at
+      `df_notfound` and reddens **nothing**. `do_kill`'s STATUS=2 arm and
+      `do_name`'s `nm_fail` both keep `load error` there by design (the
+      quarantined class), and an I-O error *inside* `fat_delete` — or inside
+      `fat_find`'s root-directory scan — still reads as "nothing matched" /
+      "not found"; separating either needs a status out of the primitive.
+      🎯 **AND THE CHEAP HALF NEEDS NO REFERENCE READING** (D-DKNAME §3.4/§6.5).
+      `fat-error-acceptance` is explicitly a **self-check against zerobas's own
+      pinned wording**, not an oracle differential — so a row driving
+      `KILL`/`NAME` at an **empty drive**, pinned to zerobas's own documented
+      `load error`, would convert both knives into real cuts without measuring
+      the CF-3300 at all. Changing what zerobas *prints* there is the expensive
+      half: that needs a reading, and that reading opens the whole `load error`
+      wording divergence for `LOAD`/`RUN`/`BLOAD`/`OPEN`/`APPEND`/`MERGE` — six
+      verbs nothing has measured. Detail:
+      [`docs/spec-basic-dskmsg.md`](docs/spec-basic-dskmsg.md) §4.2/§6.6 and
+      [`docs/spec-basic-dkname.md`](docs/spec-basic-dkname.md) §3.4/§6.5/§6.7.
+- [ ] ⚠️ **`fat-error-acceptance` has no positive control that executes `NAME`**
+      — its one PRECONDITION is `FILES"A:HI.TXT"`, which proves the FAT layer is
+      alive (what it was written for) but never runs the verb whose row is now
+      reference-exact. D-DKNAME's K-NAMECTL measured the consequence: the whole
+      battery scores **8/8 ALL PASS, exit 0**, over a `NAME` that renames
+      nothing. `basic_probe_dskmsg.py` catches that build (`dsk-namehit`); this
+      one does not. Adding a WRITING row changes what the battery mounts, so it
+      is separate work. Detail:
+      [`docs/spec-basic-dkname.md`](docs/spec-basic-dkname.md) §6.4.
 - [x] ✅ **`LPRINT` / `LPOS` — the rest of the printer surface.** All
       three lacked a `kwtable.inc` entry, so they were `Syntax error` on zerobas,
       and [`docs/kwsweep-msx1-coverage.md`](docs/kwsweep-msx1-coverage.md)

@@ -432,11 +432,27 @@ difference (K-KILL2) is exactly why the claim survived being written down.
 
 ### 6.6 What is left open
 
-* **R-DK2 — `NAME`'s missing-old-file message.** Measured `File not found` on the
-  CF-3300, still `load error` on zerobas, deliberately not changed (§4.5). Filed
-  in `TODO.md`; printed on every `make dskmsg-acceptance` run.
+* ✅ **R-DK2 — `NAME`'s missing-old-file message. CLOSED 2026-08-07 by
+  D-DKNAME** ([`spec-basic-dkname.md`](spec-basic-dkname.md)). It read: measured
+  `File not found` on the CF-3300, still `load error` on zerobas, deliberately
+  not changed (§4.5), filed in `TODO.md`, printed on every
+  `make dskmsg-acceptance` run.
+  `do_name`'s shared `nm_fail` was split (`nm_notfound`, **+4 B main / 0 B
+  sub** — §4.5 filed ≈5 B), `dsk-namenone` is gated and the printed `NOT GATED:`
+  line is gone with it, and `fat-error`'s `name-missing` pin moved in the same
+  commit as the code.
+  🔴 **AND §4.5's third reason was right about the mechanism and short by one
+  level**: `nm_fail` was a shared exit, and the miss arm it hid is *itself* two
+  dispositions, because `fat_find` returns `Cy = 1` for **not found OR a
+  `read_sector` error**. The split makes the measured half reference-exact and
+  names the other; `KILL` has the identical residual one primitive over (below).
 * **`KILL`/`NAME` at an unmounted or unreadable volume** — no row, K-KILL2's
-  predicted miss (§6.3).
+  predicted miss (§6.3), **and D-DKNAME's K-NAME2 reproduced that verdict for
+  `NAME`**: nothing moved, both instruments, both rounds.
+  🎯 D-DKNAME §3.4 records what would close it **without a reference reading** —
+  `fat-error-acceptance` is a self-check against zerobas's own pinned wording, so
+  a row at an **empty drive** pinned to zerobas's own `load error` would turn
+  both knives from predicted misses into real cuts.
 * **An I-O error inside `fat_delete` after a successful mount** still reads as
   "nothing matched" (§4.2). Separating it is a primitive-layer change.
 * **A directory holding only deleted or volume-label entries** takes the empty

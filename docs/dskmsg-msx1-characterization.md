@@ -51,16 +51,27 @@ than the absence of an error string:
 |---|---|---|
 | `dsk-ctl` — `FILES"HI.TXT"` | the reading contains `HI` **and** `TXT` | the volume mounts, the root-directory walk runs and a named file is FOUND — the Cy=0 half of the path `dsk-killnone` is the Cy=1 half of |
 | `dsk-killhit` — `KILL"HI.TXT"` then `FILES` | `HI      .TXT` **absent** and `TEST`/`BIN` **present** | `KILL` reached the FAT layer and SUCCEEDED. The absence half alone is a negative assertion a machine that cannot read a directory also satisfies; the survivors are what make it positive evidence |
+| `dsk-namehit` — `NAME"HI.TXT" AS "BYE.TXT"` then `FILES` (added 2026-08-07, D-DKNAME) | `BYE`, `TXT` **and** `TEST` **present**, `HI      .TXT` **absent** | the same shape for the verb the other two say nothing about. **ONE CONTROL PER GATED VERB** — §4 is why it arrived a slice after the other two |
 
 Without `dsk-killhit`, a build whose `KILL` was a no-op that always errored would
 score a perfect run: `dsk-ctl` green (KILL untouched) and `dsk-killnone` green
 (it errors, which is the want). The control is what separates *"KILL refuses a
 no-match"* from *"KILL refuses"*.
 
-⚠️ **`dsk-killhit` writes, so it gets a private copy of the image.**
-Boot-per-case reboots the machine but keeps handing openMSX the same file; shared
-with the read-only rows it would delete `HI.TXT` out from under `dsk-ctl` on a
-`--repeat 2` second pass.
+🔴 **AND THAT SENTENCE WAS MEASURED FOR `NAME`, NOT ARGUED** (D-DKNAME's knife
+K-NAMECTL, [`spec-basic-dkname.md`](spec-basic-dkname.md) §6.4). With
+`tnt_name_stamp` re-reading the directory sector instead of writing it back —
+`NAME` reports success and renames nothing — `dsk-namenone` still reads
+`File not found` **on both sides**, `dsk-ctl` and `dsk-killhit` hold
+byte-for-byte, and `make fat-error-acceptance` scores **8/8 ALL PASS at exit 0**
+with its own PRECONDITION green. Only `dsk-namehit` reds. Two instruments
+reporting a clean run over a provably broken verb is what a per-verb control
+costs, and what it buys.
+
+⚠️ **`dsk-killhit` and `dsk-namehit` write, so each gets a private copy of the
+image.** Boot-per-case reboots the machine but keeps handing openMSX the same
+file; shared with the read-only rows they would delete or rename `HI.TXT` out
+from under `dsk-ctl` on a `--repeat 2` second pass.
 
 ## 2. Measured rules
 
@@ -84,7 +95,16 @@ green, **before** any zerobas change.
 `load error` is zerobas's own lowercase wording, a divergence
 `basic/PROVENANCE.md` quarantines for the whole no-disk / mount / I-O class.
 
-## 4. 🔴 R-DK2 is MEASURED and deliberately NOT ACTED ON
+## 4. 🔴 R-DK2 was MEASURED and deliberately NOT ACTED ON — for ONE SLICE
+
+✅ **CLOSED 2026-08-07 by D-DKNAME**
+([`spec-basic-dkname.md`](spec-basic-dkname.md)). `dsk-namenone` is a **gated**
+row and reads `File not found` on both sides; the printed `NOT GATED:` line is
+gone with it, and `basic/files.asm` has a `nm_notfound` arm.
+**The section below is kept as written**, because the reason the two verbs moved
+a slice apart is the finding — and because the third bullet was **right about the
+mechanism and wrong about the size**: §2.2 of the new spec shows the shared exit
+was only the first of two conflations, and the arm split cost **4 B**, not ≈5.
 
 Both verbs answer the same on the reference, and only one is changed by
 [`spec-basic-dskmsg.md`](spec-basic-dskmsg.md). The distinction is not
@@ -113,9 +133,16 @@ row, and filed in `TODO.md`.
 
 * **`KILL` / `NAME` with no disk mounted, or on an unreadable volume.** Nothing
   here drives that arm, and the spec's knife K-KILL2 is a written-down predicted
-  MISS for exactly that reason. What zerobas prints there is `load error` by
-  design (the quarantined class above); what the CF-3300 prints is **not
-  claimed**.
+  MISS for exactly that reason — as is D-DKNAME's **K-NAME2**, which re-pointed
+  `NAME`'s mount arm at `df_notfound` and moved **nothing** on either instrument,
+  in both rounds. What zerobas prints there is `load error` by design (the
+  quarantined class above); what the CF-3300 prints is **not claimed**.
+* ⚠️ **AND AN I-O ERROR DURING THE DIRECTORY SCAN IS NOT SEPARATED EITHER.**
+  `fat_find`'s own contract is `Cy = 1 not found / error`, so since D-DKNAME a
+  `read_sector` failure mid-walk reaches `NAME`'s `File not found` arm. `KILL`
+  has the same shape one primitive over (an I-O error inside `fat_delete` reads
+  as "nothing matched"). Stated, not measured; separating either needs a status
+  out of the primitive.
 * **`ERR` / `ON ERROR` behaviour of the new disposition.** `File not found`
   arrives through `raise_error` with code 53, so `ERR` reads 53 and `ON ERROR`
   traps it where `load error` did neither. That is a consequence of the

@@ -4,9 +4,10 @@
 
 """D-DSKMSG — what a directory-MUTATING disk verb says when nothing matched.
 
-Measurement `docs/dskmsg-msx1-characterization.md`, spec
-`docs/spec-basic-dskmsg.md`. This is the reference reading D-LFILES's residual
-was blocked on, and nothing else:
+Measurement `docs/dskmsg-msx1-characterization.md`; specs
+`docs/spec-basic-dskmsg.md` (KILL, R-DK1) and `docs/spec-basic-dkname.md`
+(NAME, R-DK2). This is the reference reading D-LFILES's residual was blocked on,
+and nothing else:
 
     do_kill's no-match prints `load error` where its own comment (basic/files.asm)
     says `File not found`. The message is UNMEASURED for KILL, and
@@ -17,6 +18,17 @@ was blocked on, and nothing else:
 D-LFILES made `FILES`/`LFILES` reference-exact for that disposition (R-LF4/R-LF6,
 ERR 53 `File not found`) and deliberately did NOT re-point `KILL`. So the open
 question is a fact about a machine, and this probe asks it.
+
+⚠️ BOTH VERBS ARE GATED NOW, AND THEY LANDED ONE SLICE APART ON PURPOSE.
+D-DSKMSG (2026-08-07) took both readings and moved `KILL` only, printing
+`dsk-namenone` as an explicitly NOT-GATED characterization row: `do_kill`'s
+divergence was one its own comment CONTRADICTED, `do_name`'s was one
+basic/PROVENANCE.md §NAME STATED, and -- the reason that was a number rather
+than a preference -- `nm_fail` was a SHARED exit for the fat_mount failure and
+the fat_find miss, so the fix was an arm split, not a jump-target swap.
+D-DKNAME made the split (basic/files.asm's `nm_notfound`), moved this row into
+the gated set, and deleted the printed `NOT GATED:` line with it: a list of
+exclusions holding a non-exclusion stops being read as a list of holes.
 
 🔴 THE VG-8020 CANNOT MEASURE ANY ROW HERE, and that is a fact about the
 hardware, not a gap to be silently dropped. `KILL`, `NAME` and `FILES` are
@@ -31,9 +43,9 @@ WHAT A DEAD SUBJECT PRINTS. `make fat-error-acceptance` scored 8/8 on a
 16384-byte all-$00 `build/disk.rom`
 ([[gate-whose-answer-is-an-error-passes-a-dead-subject]]): when the disk
 subsystem is dead every file is missing, so the expected observable arrives for a
-reason that has nothing to do with the disposition under test. Two POSITIVE
-controls run in the same invocation, on the same mounted image, and both assert
-POSITIVE TEXT rather than the absence of an error string:
+reason that has nothing to do with the disposition under test. THREE POSITIVE
+controls run in the same invocation, on the same mounted image, and all three
+assert POSITIVE TEXT rather than the absence of an error string:
 
   `dsk-ctl`      `FILES"HI.TXT"` must LIST `HI`/`TXT` -- the volume mounts, the
                  root-directory walk runs, and a named file is FOUND. This is
@@ -43,11 +55,20 @@ POSITIVE TEXT rather than the absence of an error string:
                  machine that cannot read a directory also fails to list HI); the
                  second half is what makes it positive evidence, and together
                  they say KILL reached the FAT layer and SUCCEEDED.
+  `dsk-namehit`  `NAME"HI.TXT" AS "BYE.TXT"` then `FILES` must show `BYE`/`TXT`
+                 PRESENT, `TEST` still there and `HI      .TXT` gone -- the same
+                 shape, for the verb `dsk-killhit` says nothing about.
 
-Without `dsk-killhit`, a build whose KILL was a no-op that always errored would
-score a perfect run: `dsk-ctl` green (KILL untouched), `dsk-killnone` green (it
-errors, which is the want). The control is what separates "KILL refuses a
-no-match" from "KILL refuses".
+ONE CONTROL PER GATED VERB, AND THAT IS THE POINT. Without `dsk-killhit`, a
+build whose KILL was a no-op that always errored would score a perfect run:
+`dsk-ctl` green (KILL untouched), `dsk-killnone` green (it errors, which is the
+want). `dsk-namehit` closes the identical hole for NAME, which stood open for as
+long as `dsk-namenone` was ungated and would have shipped with it -- neither of
+the first two controls executes NAME at all. Knife K-NAMECTL
+(docs/spec-basic-dkname.md §5) is that build made real: `tnt_name_stamp` re-reads
+the directory sector instead of writing it back, so NAME reports success and
+renames nothing; `dsk-namehit` reds and every other row holds, `dsk-namenone`
+included.
 
 ⚠️ THE READOUT IS BORROWED AND RE-JUSTIFIED, NOT BORROWED AND ASSUMED
 ([[a-borrowed-window-inherits-its-corpus]] -- a guard proven in one check is an
@@ -103,36 +124,43 @@ NO_DISK_SIDES = ("vg8020",)
 CASES = [
     ("dsk-ctl",      ['FILES"HI.TXT"']),
     ("dsk-killhit",  ['KILL"HI.TXT"', "FILES"]),
-    # THE SUBJECT. basic/files.asm's `jp z,load_error` at do_kill's tail, whose
-    # own comment on the same line reads "nothing matched -> File not found".
+    # 🔴 NAME's OWN POSITIVE CONTROL, and it is not optional (D-DKNAME,
+    # docs/spec-basic-dkname.md §3.2). Gating `dsk-namenone` puts a second
+    # ERROR-expecting row in a battery a DEAD subject already passes, and
+    # NEITHER existing control can see NAME: under a NAME that silently renames
+    # nothing, `dsk-ctl` is green (NAME untouched), `dsk-killhit` is green (KILL
+    # untouched) and `dsk-namenone` is green too, because it errors, which is
+    # the want. Knife K-NAMECTL is that build, and this is the row that reds.
+    ("dsk-namehit",  ['NAME"HI.TXT" AS "BYE.TXT"', "FILES"]),
+    # THE SUBJECT of D-DSKMSG. basic/files.asm's do_kill tail, whose own comment
+    # read "nothing matched -> File not found" while the code said load_error.
     ("dsk-killnone", ['KILL"NOSUCH.XXX"']),
-]
-
-# CHARACTERIZATION ONLY -- measured, printed, and NOT gated.
-#
-# 🔴 THE REASON IS A DISTINCTION, NOT A CONVENIENCE. `do_kill`'s divergence is
-# one its own inline comment CONTRADICTS; `do_name`'s is one basic/PROVENANCE.md
-# §NAME states outright ("Errors ... reuse load_error"), with the code and the
-# comment agreeing. Fixing the first needs a reading; changing the second would
-# be retiring a documented, quarantined divergence on no evidence at all -- and
-# retiring it silently, one verb at a time, is how a divergence register stops
-# describing the tree. So NAME is MEASURED here, so that "why KILL and not
-# NAME?" has a number behind it, and filed rather than fixed.
-CHARACTERIZE = [
+    # 🔴 THE SUBJECT of D-DKNAME -- R-DK2, GATED SINCE 2026-08-07. This row was
+    # a printed, explicitly NOT-GATED characterization row for one slice: the
+    # reading existed (the CF-3300 answers `File not found`) but `nm_fail` was a
+    # SHARED exit for the fat_mount failure and the fat_find miss, so acting on
+    # it was an arm split rather than a jump-target swap. The split landed
+    # (basic/files.asm's nm_notfound), and the row moved here WITH the printed
+    # `NOT GATED:` line deleted -- a list of exclusions that contains a
+    # non-exclusion stops being read as a list of holes.
     ("dsk-namenone", ['NAME"NOSUCH.BAS" AS "ZZ.BAS"']),
 ]
 
 # Rows that WRITE to the image they mount, and therefore get a private copy.
 # Boot-per-case reboots the machine but keeps handing openMSX the SAME file.
-WRITES = {"dsk-killhit"}
+# Shared, `dsk-namehit` would rename HI.TXT out from under `dsk-ctl` on a
+# `--repeat 2` second pass, exactly as `dsk-killhit` would delete it.
+WRITES = {"dsk-killhit", "dsk-namehit"}
 
 # --- the CONTROL assertions, as (row, must-contain, must-NOT-contain) --------
-# Positive text on both sides of each. `dsk-killhit` asserts the survivors as
-# well as the casualty on purpose: "HI is absent" alone is satisfied by a
-# machine that cannot list a directory at all.
+# Positive text on both sides of each. `dsk-killhit`/`dsk-namehit` assert the
+# SURVIVORS as well as the casualty on purpose: "HI is absent" alone is
+# satisfied by a machine that cannot list a directory at all, so the absence
+# half is a negative assertion and the survivors are what make it evidence.
 CONTROLS = {
     "dsk-ctl":     (("HI", "TXT"), ()),
     "dsk-killhit": (("TEST", "BIN"), ("HI      .TXT",)),
+    "dsk-namehit": (("BYE", "TXT", "TEST"), ("HI      .TXT",)),
 }
 
 VERBS = ("KILL", "NAME", "FILES", "PRINT")
@@ -152,7 +180,7 @@ def anchor_for(lines):
 def run_side(side, only):
     cfg = SIDES[side]
     out = {}
-    rows = [r for r in CASES + CHARACTERIZE
+    rows = [r for r in CASES
             if not only or any(r[0].startswith(o) for o in only)]
     if not rows:
         return out
@@ -234,9 +262,9 @@ def main() -> int:
             results[s] = got
 
     gated = [r[0] for r in CASES if any(r[0] in results[s] for s in sides)]
-    chars = [r[0] for r in CHARACTERIZE if any(r[0] in results[s] for s in sides)]
 
-    print(f"D-DSKMSG — KILL's no-match message   sides: {', '.join(sides)}")
+    print(f"D-DSKMSG/D-DKNAME — KILL's and NAME's no-match message   "
+          f"sides: {', '.join(sides)}")
     print("=" * 78)
 
     bad = check_controls(results, sides)
@@ -258,7 +286,7 @@ def main() -> int:
               "    the mounted image, THEN re-read the rows.\n"
               "    Exit 2 (not 1) = the instrument was broken, NOT a message "
               "regression.")
-        for label in gated + chars:
+        for label in gated:
             vals = {s: results[s][label] for s in sides if label in results[s]}
             print(f"  ....  {label:14} "
                   + "  ".join(f"{s}={v!r}" for s, v in vals.items())
@@ -266,12 +294,12 @@ def main() -> int:
         return 2
 
     if len(sides) < 2:
-        for label in gated + chars:
+        for label in gated:
             for s in sides:
                 if label in results[s]:
                     print(f"     {label:<14} {results[s][label]!r}")
         print("=" * 78)
-        print(f"{len(gated + chars)} row(s) measured on {sides[0]} — "
+        print(f"{len(gated)} row(s) measured on {sides[0]} — "
               "CHARACTERIZATION, no agreement verdict is possible from one side")
         if a.gate:
             sys.stderr.write("dskmsg: --gate needs at least two sides\n")
@@ -293,19 +321,6 @@ def main() -> int:
                  if not ok else repr(next(iter(vals.values())))) + note)
     print("=" * 78)
     print(f"{agree}/{agree + dis} gated rows agree")
-
-    for label in chars:
-        vals = {s: results[s][label] for s in sides if label in results[s]}
-        same = len(set(vals.values())) == 1
-        print(f"     {label:<14} "
-              + "  ".join(f"{s}={vals[s]!r}" for s in vals)
-              + f"   [CHARACTERIZATION, not gated — {'agrees' if same else 'DIVERGES'}]")
-    if chars:
-        print("NOT GATED: dsk-namenone (NAME) — do_name's `load error` is a "
-              "divergence basic/PROVENANCE.md §NAME states, with code and "
-              "comment agreeing; do_kill's is one its own comment contradicts. "
-              "Measured so the distinction has a number, filed not fixed "
-              "(TODO.md).")
     print(f"SIDES: {','.join(SIDES)} — the VG-8020 has no disk ROM and CANNOT "
           "measure any row here (stated, not silently dropped)")
     if a.gate and dis:

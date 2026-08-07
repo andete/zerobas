@@ -26,12 +26,19 @@ is deliberately a SELF-CHECK against zerobas's pinned wording, not an oracle
 differential: an oracle comparison here would fail on the divergence, not on the
 disposition.
 
-⚠️ SEVEN OF THE EIGHT.  `kill-missing` is pinned to `File not found` since
-2026-08-07 (D-DSKMSG, docs/spec-basic-dskmsg.md §4.3) because that verb's
-no-match disposition was MEASURED on the CF-3300 and made reference-exact; the
-other seven remain the quarantined divergence.  The want is therefore PER CASE,
-and a row that carries its own is printed with `[reference-exact: ...]` so the
-report never reads as if the whole battery had been re-pinned.
+⚠️ SIX OF THE EIGHT.  `kill-missing` (D-DSKMSG, docs/spec-basic-dskmsg.md §4.3)
+and `name-missing` (D-DKNAME, docs/spec-basic-dkname.md §3.3) are pinned to
+`File not found` since 2026-08-07, because those two verbs' no-match disposition
+was MEASURED on the CF-3300 (R-DK1/R-DK2) and made reference-exact; the other six
+remain the quarantined divergence.  The want is therefore PER CASE, and a row
+that carries its own is printed with `[reference-exact: ...]` so the report never
+reads as if the whole battery had been re-pinned.
+
+⚠️ AND THE TWO STILL DID NOT MOVE TOGETHER.  Both readings were taken in one
+session; `kill-missing` moved a slice earlier because `do_kill`'s no-match arm
+was reachable on its own once the tenant separated the mount, while `do_name`'s
+shared `nm_fail` had to be SPLIT first.  A pin that drifts verb by verb on its
+neighbours' evidence stops being a pin -- so each one waited for its own code.
 
 FALSIFICATION RECORD (this is the evidence the gate measures its subject).  With
 the error tail neutered, four of the cases below SILENTLY REPORT NOTHING --
@@ -95,7 +102,17 @@ CASES = [
     # know zerobas's `load error` wording. `append-missing` red with `open-missing`
     # green means the APPEND path reached a different class.
     ("append-missing", 'OPEN"A:NOSUCH.DAT" FOR APPEND AS #1'),
-    ("name-missing",  'NAME"A:NOSUCH.BAS" AS "B.BAS"'),
+    # 🔴 THE SECOND ROW OFF `load error`, SINCE 2026-08-07 (D-DKNAME,
+    # docs/spec-basic-dkname.md). Same reading as `kill-missing` and taken in the
+    # same CF-3300 session (R-DK2) -- but it moved one slice LATER, because
+    # `nm_fail` (basic/files.asm, do_name) was a SHARED exit for the fat_mount
+    # failure and the fat_find miss. Re-pointing it would have moved a
+    # disk-offline NAME to a trappable ERR 53 on no reading at all, so the arm
+    # was SPLIT first (nm_notfound) and only the measured half moved.
+    #
+    # ⚠️ WHAT DID NOT MOVE: a NAME at an unmounted or unreadable volume still
+    # answers `load error`, and no row here or anywhere drives it.
+    ("name-missing",  'NAME"A:NOSUCH.BAS" AS "B.BAS"', "File not found"),
     ("merge-missing", 'MERGE"A:NOSUCH.BAS"'),
 ]
 WANT = "load error"

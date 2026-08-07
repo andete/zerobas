@@ -1238,10 +1238,18 @@ do_kill:
 ; with the NEW name (no FAT change — same clusters). Both names use the shared
 ; parse_disk_fcb (drive prefix + 8.3); "AS" is verbatim ASCII. The OLD file is
 ; found FIRST (recording its location in FWR_DIRSEC/FWR_DIROFF) because building
-; the NEW name reuses DISK_FCB_NAME. Errors (no disk / old not found / I-O) reuse
-; load_error. Divergences: no "new already exists" check (own design); single
-; drive (the drive prefix on either name is accepted + ignored for the stamp).
-; See basic/PROVENANCE.md §NAME.
+; the NEW name reuses DISK_FCB_NAME.
+;
+; ✅ A MISSING OLD FILE RAISES ERR 53 `File not found` SINCE 2026-08-07
+; (D-DKNAME, R-DK2 — docs/spec-basic-dkname.md). This header used to read
+; "Errors (no disk / old not found / I-O) reuse load_error"; the reading was
+; taken on the CF-3300 and the miss got its own exit (nm_notfound below). The
+; REST of that sentence stands: no disk / mount / stamp I-O still reuse
+; load_error, and no row anywhere measures what the reference says there.
+;
+; Divergences: no "new already exists" check (own design); single drive (the
+; drive prefix on either name is accepted + ignored for the stamp); the no-disk /
+; mount / I-O wording (quarantined). See basic/PROVENANCE.md §NAME.
 ex_name:
                 inc     hl                  ; HL -> bytes after the NAME token
                 jp      do_name
@@ -1276,7 +1284,7 @@ do_name:
                 jr      c,nm_fail
                 ld      hl,DISK_FCB_NAME
                 call    fat_find            ; old located; sets the entry location
-                jr      c,nm_fail           ; old not found
+                jr      c,nm_notfound       ; old not found -> ERR 53 (R-DK2)
                 pop     hl                  ; HL -> new name's '"'
                 inc     hl                  ; -> first char of the new name
                 call    parse_disk_fcb      ; new -> DISK_FCB_NAME; HL -> closing '"'
@@ -1297,6 +1305,32 @@ do_name:
                 jr      nz,nm_fail2         ; tenant I/O error
                 pop     hl                  ; restore text cursor
                 jp      exec_stmt
+; D-DKNAME (docs/spec-basic-dkname.md), R-DK2: the CF-3300 answers `File not
+; found` to a NAME whose OLD file is missing, exactly as it does to a KILL that
+; matched nothing (R-DK1). The message already ships — D-MSGSUB hosts ERR 53 —
+; so this is 4 B and a real MSX error: ERR reads 53 and ON ERROR traps it, where
+; load_error did neither.
+;
+; 🔴 AND IT IS AN ARM SPLIT, NOT THE TARGET SWAP THE RESIDUAL FILED. nm_fail was
+; a SHARED exit for the fat_mount failure AND the fat_find miss, so re-pointing
+; it would have moved a disk-offline NAME to a trappable ERR 53 on no reading at
+; all — the same conflation D-DSKMSG found in do_kill. The mount keeps
+; load_error (the quarantined no-disk / mount / I-O class, unmeasured on the
+; reference), and only the miss becomes reference-exact.
+;
+; ⚠️ STILL CONFLATED, said out loud: fat_find's own contract is `Cy = 1 not
+; found / error` — it does `ret c` on a read_sector FDC failure mid-scan — so an
+; I-O error during the root-directory walk now reads as `File not found` too.
+; That is KILL's residual one verb over (an I-O error inside fat_delete reads as
+; "nothing matched"); separating it needs a status OUT OF fat_find, a
+; primitive-layer change touching every caller in the tree. tnt_files is the
+; sibling that HAS separated all three, and NAME is not it. Spec §2.2.
+nm_notfound:
+                pop     hl                  ; balance the guarded cursor
+                jp      df_notfound         ; ERR 53 `File not found`
+; The two remaining exits keep load_error, and stay two labels because they name
+; two different dispositions: nm_fail is the mount/no-disk failure above, nm_fail2
+; the stamp tenant's I-O error (or an absent sub-ROM) below.
 nm_fail:
                 pop     hl                  ; balance the guarded cursor
                 jp      load_error

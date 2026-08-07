@@ -2018,13 +2018,12 @@ disposition is reference-exact. An I-O error inside `fat_delete` after a
 successful mount and before any deletion still reads as "nothing matched" — stated,
 not measured.
 
-⚠️ **`NAME` was measured at the same time and deliberately NOT changed.** R-DK2:
-the CF-3300 answers `File not found` to `NAME` at a missing old file too, and
-zerobas still answers `load error` (see §NAME's own divergence note, which the
-code and its comment agree on). `nm_fail` is a shared exit for the mount failure
-and the not-found miss, so making it reference-exact is an arm split, not a target
-swap. Filed in `TODO.md`, printed by `make dskmsg-acceptance` as a not-gated
-characterization row.
+⚠️ **`NAME` was measured at the same time and deliberately NOT changed** — for
+**one slice**. R-DK2: the CF-3300 answers `File not found` to `NAME` at a missing
+old file too, and `nm_fail` was a shared exit for the mount failure and the
+not-found miss, so making it reference-exact was an arm split, not a target swap.
+✅ **That split landed 2026-08-07 (D-DKNAME); see §NAME below.** The row is gated
+and the printed not-gated line is gone with it.
 
 Clean-room: original code; KILL semantics + the `$E5` deleted-marker / chain-free
 rules from the public MSX-BASIC reference + Microsoft FAT spec, validated by the
@@ -2054,9 +2053,37 @@ zerobas-disk!\r\n"); and the resulting **disk image is byte-identical to the rea
 CF-3300** after the same NAME (rename rewrites only the one entry's 8.3 field).
 Full crunch + 16 unit-test files + the FILES/read/write/KILL probes still pass.
 
+**Missing-old-file wording (2026-08-07, D-DKNAME).** ✅ `NAME` whose OLD file
+does not exist raises **ERR 53 `File not found`** through `raise_error` —
+reference-exact, measured as **R-DK2** on the CF-3300
+([`dskmsg-msx1-characterization.md`](../docs/dskmsg-msx1-characterization.md) §2,
+taken by D-DSKMSG one slice earlier). It used to reuse `load_error`, which this
+section stated outright; the reading settled it and
+`make fat-error-acceptance`'s `name-missing` pin moved in the same commit as the
+code. `ERR` now reads 53 and `ON ERROR` traps it, where neither happened before.
+
+🔴 **That was an ARM SPLIT, not the jump-target swap the residual filed**
+([`spec-basic-dkname.md`](../docs/spec-basic-dkname.md) §2). `nm_fail` was a
+SHARED exit for the `fat_mount` failure *and* the `fat_find` miss — both reached
+it via `jr c,nm_fail` — so re-pointing it would have moved a disk-offline `NAME`
+to a trappable ERR 53 on no reading at all, the same conflation D-DSKMSG found in
+`do_kill`. The miss got its own exit (`nm_notfound`), the mount kept
+`load_error`. **+4 B of main page 1, 0 B of sub-ROM** — `NAME`'s tenant is the
+stamp only, so `sub.rom` is byte-identical across the change.
+
+⚠️ **And the conflation went one level deeper than the residual said.**
+`fat_find`'s own contract is `Cy = 1 not found / error` — it does `ret c` on a
+`read_sector` failure mid-scan — so an I-O error during the root-directory walk
+now reads as `File not found` too. Stated, not measured; `KILL` has the identical
+residual one primitive over. Separating either needs a status out of the
+primitive, which `tnt_files` has and `NAME` does not.
+
 **Divergences (own design, quarantined):** no "new name already exists" check (a
 later refinement); the drive prefix on either name is accepted and ignored for the
-stamp (single drive); errors (no disk / old not found / I-O) reuse `load_error`.
+stamp (single drive); a missing disk / mount failure / stamp I-O error still
+reuses `load_error`, and no row anywhere drives that arm (D-DKNAME's knife
+K-NAME2 is the written-down predicted miss that proves it). Only the
+**missing-old-file** disposition is reference-exact.
 
 Clean-room: original code; NAME semantics + the 8.3 dir-field layout from the public
 MSX-BASIC reference + Microsoft FAT spec, validated by the byte-identical CF-3300

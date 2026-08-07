@@ -1415,18 +1415,23 @@ lptverb-acceptance: repack-machine $(DISK_TEST_DSK) $(DISK_EMPTY_DSK)
 	        $(if $(ONLY),--only '$(ONLY)',) \
 	        --repeat $(if $(REPEAT),$(REPEAT),1)
 
-# --- KILL's no-match MESSAGE (docs/spec-basic-dskmsg.md) ----------------------
-# The oracle differential D-LFILES's residual was blocked on. Two-sided by
-# construction (cf3300, zb): KILL/NAME/FILES are Disk-BASIC words and a diskless
-# MSX1 answers `Syntax error` to all three, so the VG-8020 would measure the
-# absence of a disk interface. HEAVY + oracle-dependent (needs your CF-3300
+# --- KILL's and NAME's no-match MESSAGE ---------------------------------------
+# docs/spec-basic-dskmsg.md (KILL, R-DK1) + docs/spec-basic-dkname.md (NAME,
+# R-DK2). The oracle differential D-LFILES's residual was blocked on. Two-sided
+# by construction (cf3300, zb): KILL/NAME/FILES are Disk-BASIC words and a
+# diskless MSX1 answers `Syntax error` to all three, so the VG-8020 would measure
+# the absence of a disk interface. HEAVY + oracle-dependent (needs your CF-3300
 # reference ROMs); NOT part of the emulator-free `unit-test`.
 #
 # ⚠️ Its subject rows all expect an ERROR MESSAGE, the disposition that passes a
-# totally dead subject, so the probe runs TWO positive controls in the same
-# invocation and exits 2 -- not 1 -- when one fails: `dsk-ctl` (a named file is
-# FOUND) and `dsk-killhit` (a KILL that must SUCCEED, asserted on the survivors
-# as well as the casualty).
+# totally dead subject, so the probe runs a positive control PER GATED VERB in
+# the same invocation and exits 2 -- not 1 -- when one fails: `dsk-ctl` (a named
+# file is FOUND), `dsk-killhit` (a KILL that must SUCCEED) and `dsk-namehit` (a
+# NAME that must SUCCEED), each asserted on the SURVIVORS as well as the
+# casualty. One per verb is not belt-and-braces: knife K-NAMECTL measured a NAME
+# that renames nothing scoring GREEN on both other controls, on `dsk-namenone`
+# itself, and on all 8 rows of `fat-error-acceptance`
+# (docs/spec-basic-dkname.md §6.4).
 dskmsg-characterize: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_dskmsg.py \
 	        --sides $(if $(SIDES),'$(SIDES)',cf3300,zb) \
