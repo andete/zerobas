@@ -340,10 +340,28 @@ duplicating (and drifting from) what is written below.
       ⚠️ **PINNED, not blessed**: `castail-acceptance`'s `cas-load-plain:search`
       row holds all three sides' readings verbatim and FAILS the gate if any of
       them moves, which is what keeps the probe's search-row filter from being a
-      normalisation that quietly excuses the silence. The fix is a print in
-      `cas_open_match`'s match/skip arms and it costs main page-1 bytes; it is
-      the search's own divergence, not the tail-after-a-load question D-CASTAIL
-      answers, which is why it is filed rather than folded in.
+      normalisation that quietly excuses the silence. It is the search's own
+      divergence, not the tail-after-a-load question D-CASTAIL answers, which is
+      why it is filed rather than folded in.
+      🔴 **AND THE COST LINE THIS ENTRY FIRST CARRIED — "a print in
+      `cas_open_match`'s match/skip arms, costing main page-1 bytes" — IS
+      WITHDRAWN, UNMEASURED, ON THE SAME DAY IT WAS WRITTEN**
+      ([[filed-justification-is-a-claim]]; the filer was me, one commit
+      earlier, in a slice whose own lesson was
+      [[a-filed-blocker-can-name-the-wrong-obstacle]]). The match/skip loop is
+      **not** in `cas_open_match` — that is a marshalling shim; the loop lives in
+      the SUB ROM (`sub/casmatch.asm` + `basic/casmatch-body.inc`,
+      `SUBROM_IDX_CASMATCH`), where the skip arm the `Skip :` line belongs to is
+      not visible from main at all. So the site is a page-1 sub tenant with
+      **1540 B free**, not main page 1 with 165.
+      ⚠️ **What has to be scouted before anyone prices it:** `print_msg` is at
+      `$7687`, i.e. **main page 1**, which the p1-closure rule forbids a page-1
+      tenant to call — so the tenant would have to print through a BIOS entry
+      (`CHPUT`, `< $4000`, legal for a tenant) and carry its own two strings,
+      OR the shim prints `Found:` on the way out while `Skip :` needs the
+      tenant. Those are different slices with different prices. **Scout the
+      carve first** [[carve-scout-before-proposing]]; do not inherit either
+      number from this entry.
 - [x] ✅ **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD —
       CLOSED 2026-08-07**, and **the remedy I filed was DECLINED on a read of the
       record** ([[a-recommendation-in-the-record-is-still-a-claim]] — the filer
