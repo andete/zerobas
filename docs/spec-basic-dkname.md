@@ -360,6 +360,16 @@ hash**, not by an argument.
 
 | # | verdict |
 |---|---|
+⚠️ **RE-RUN 2026-08-07 UNDER A ROM-HASH GUARD, and the verdicts stand.**
+D-FEVERB §6.2 found this runner's *"a failed build ABORTS"* guard is the wrong
+one: `make` can exit 0 having rebuilt **nothing** (one-second mtime granularity,
+[[make-mtime-race-skips-subrom]]), and a knife scored against the pre-cut ROM
+reads as a **MISS** — which is exactly what K-NAME2 was recorded as. All three
+knives were therefore re-run with every cut build hash-checked against the
+baseline ROMs. Every cut reached the ROM in every round; **K-NAME1 CUT, K-NAME2
+MISS, K-NAMECTL CUT, unchanged**. The conclusions were right and now have the
+guard behind them, which they did not when they were first written.
+
 | **K-NAME1** | **CUT** on both instruments, exactly the predicted set — `dsk-namenone` splits to `cf3300='File not found'  zb='load error'` (probe rc **1**) and `fat-error`'s `name-missing` alone goes `FAIL … 'load error'`. All three controls, `dsk-killnone`, the other seven `fat-error` rows, its PRECONDITION and its directory check **held** |
 | **K-NAME2** | **PREDICTED MISS, as filed** — re-pointing the `fat_mount` arm at `df_notfound` (the target swap §2.1 exists to prevent) moved **NOTHING**, on either instrument, in both rounds. rc 0 / rc 0 |
 | **K-NAMECTL** | **CUT** — `dsk-namehit` reads `… HI      .TXT …` (the rename never happened) and the probe exits **rc 2**. §6.4 is what it found |
@@ -393,6 +403,13 @@ was written for, but its `name-missing` row is now reference-exact and rests on
 a control that never runs the verb. Filed in `TODO.md` rather than fixed here —
 adding a *writing* row to that battery changes what it mounts and is a separate
 piece of work.
+
+✅ **CLOSED the same day by D-FEVERB**
+([`spec-fat-error-verb-control.md`](spec-fat-error-verb-control.md)). The battery
+grew a per-verb control (`name-alive`, on a screen instrument **and** a directory
+instrument), and this exact cut now scores **`7/7 scored, 1 NOT MEASURED`, exit
+2** where it scored 8/8 exit 0 above. Seven of the eight rows still have no verb
+control, and the gate prints that count on every run.
 
 ### 6.5 K-NAME2's green, stated rather than smoothed over
 

@@ -253,15 +253,55 @@ duplicating (and drifting from) what is written below.
       verbs nothing has measured. Detail:
       [`docs/spec-basic-dskmsg.md`](docs/spec-basic-dskmsg.md) §4.2/§6.6 and
       [`docs/spec-basic-dkname.md`](docs/spec-basic-dkname.md) §3.4/§6.5/§6.7.
-- [ ] ⚠️ **`fat-error-acceptance` has no positive control that executes `NAME`**
-      — its one PRECONDITION is `FILES"A:HI.TXT"`, which proves the FAT layer is
-      alive (what it was written for) but never runs the verb whose row is now
-      reference-exact. D-DKNAME's K-NAMECTL measured the consequence: the whole
-      battery scores **8/8 ALL PASS, exit 0**, over a `NAME` that renames
-      nothing. `basic_probe_dskmsg.py` catches that build (`dsk-namehit`); this
-      one does not. Adding a WRITING row changes what the battery mounts, so it
-      is separate work. Detail:
-      [`docs/spec-basic-dkname.md`](docs/spec-basic-dkname.md) §6.4.
+- [x] ✅ **`fat-error-acceptance`'s missing `NAME` control — CLOSED 2026-08-07 by
+      D-FEVERB**,
+      [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md).
+      A case may now name a **VERB CONTROL** that must succeed in the same run
+      before the case is scored; if it fails, THAT case prints `NOT MEASURED` and
+      the run exits **2**, while the others are still scored (its blast radius is
+      its verb — a second battery-wide PRECONDITION was rejected as over-broad).
+      `name-alive` = `NAME"A:PROG2.BAS" AS "REN2.BAS"` + `FILES"A:REN2.BAS"`, on
+      **two instruments**: positive screen text, and the host parsing the
+      machine's own image for `REN2    BAS` present / `PROG2   BAS` gone — the
+      half a convincing screen cannot fool.
+      🎯 **THE SAME KNIFE, BEFORE AND AFTER.** D-DKNAME's K-NAMECTL (`NAME`
+      reports success, renames nothing) scored this battery **8/8 ALL PASS,
+      exit 0**; it now scores **7/7 scored, 1 NOT MEASURED, exit 2**. K-FE2 is
+      its green control — undo D-DKNAME's fix instead and the row goes red at
+      exit **1**, *scored*, with `name-alive` still green. Two ways to break
+      `NAME`, two different exit codes, which is the point.
+      ⚠️ **1 OF 8 ROWS, AND THE GATE PRINTS THAT COUNT EVERY RUN** — see the next
+      item. All four ROM hashes UNCHANGED (probe + docs only), so the emulator
+      gates that can only re-drive the same machine were **not run**, stated
+      rather than folded into "corpus green".
+- [ ] ⚠️ **Seven of `fat-error-acceptance`'s eight rows still have NO verb-success
+      control** — `load-missing`, `run-missing`, **`kill-missing`**,
+      `bload-missing`, `open-missing`, `append-missing`, `merge-missing`. Each is
+      satisfied by a verb that always errors; the gate prints the count on every
+      run so the number cannot rot silently. **`kill-missing` is the one that
+      matters**: it is the other REFERENCE-EXACT row (pinned to a measured
+      CF-3300 answer, not to zerobas's quarantined `load error`), so it carries
+      the same weight `name-missing` does and has the same hole — and it is one
+      `CASES` tuple plus one `VERB_CONTROLS` entry away on machinery that now
+      exists. Left out of D-FEVERB because widening a residual while closing it
+      is how a pickup list stops being one. Detail:
+      [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §4.
+- [ ] 🔴 **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD, and
+      every runner in this tree is written without the right one.** `make` can
+      exit **0 having rebuilt nothing** — GNU make 3.81 compares mtimes at
+      one-second granularity, so an edit-then-build inside one tick is silently
+      skipped ([[make-mtime-race-skips-subrom]]). The knife then scores against
+      the **pre-cut** ROM and reads as a **MISS**, which is the reading that means
+      "the battery cannot see this" — the conclusion a slice writes down.
+      **Measured 2026-08-07:** D-FEVERB's K-FE1 scored CUT in round 1 and MISS in
+      round 2 from the identical cut; only the run-it-twice rule caught it. The
+      remedy is four lines — hash all four ROMs after each cut build, require one
+      to differ, `rm -rf build` and rebuild on a match, abort if it still matches
+      — and it lives in a **scratchpad runner**, so the next runner will be
+      written without it. Make it shared (`probes/lib/`?) or the trap is
+      permanent. ⚠️ D-DKNAME's knives were re-run under the guard and all three
+      verdicts stand — **K-NAME2's "predicted miss" is real**, not a stale build.
+      Detail: [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §6.2.
 - [x] ✅ **`LPRINT` / `LPOS` — the rest of the printer surface.** All
       three lacked a `kwtable.inc` entry, so they were `Syntax error` on zerobas,
       and [`docs/kwsweep-msx1-coverage.md`](docs/kwsweep-msx1-coverage.md)

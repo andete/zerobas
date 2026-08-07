@@ -57,10 +57,29 @@ whose expected answer is an error passes a dead subject.  Closed with the
 PRECONDITION row below (CONTROL), which asserts the FAT layer can reach a SUCCESS
 disposition before any of the eight failures is believed.
 
+🔴 AND THE PRECONDITION WAS NOT ENOUGH EITHER -- IT IS BATTERY-SCOPED, AND TWO
+ROWS HERE PIN ONE VERB'S MESSAGE (D-FEVERB 2026-08-07,
+docs/spec-fat-error-verb-control.md).  `fat-alive` proves the FAT LAYER is alive.
+It never runs NAME, whose failure path and success path share almost nothing --
+so D-DKNAME's knife K-NAMECTL (NAME reports success and renames NOTHING) scored
+this whole battery `8/8 ALL PASS` at exit 0, precondition green.  A verb-scoped
+claim needs a verb-scoped control, so a case may now name one (VERB_CONTROLS): if
+it fails, THAT case prints NOT MEASURED and the run exits 2, while the others are
+still scored.
+
+⚠️ 1 OF 8 ROWS HAS ONE, AND THE GATE PRINTS THAT COUNT ON EVERY RUN.  The other
+seven -- `kill-missing`, the second reference-exact row, among them -- are still
+satisfied by a verb that always errors.  Closing one hole and saying ALL PASS
+louder is how a gate stops describing itself; the denominator is the deliverable
+next to the fix ([[a-hand-listed-denominator-is-a-scope-claim]]).
+
   python3 probes/disk/disk_probe_fat_error_disposition.py [--machine NAME]
 
-Exit codes: 0 = all rows converged; 1 = a real error-disposition regression;
-2 = the PRECONDITION failed, so nothing below it was measured.
+Exit codes: 0 = every scored row converged; 1 = a real error-disposition
+regression; 2 = an instrument failure and nothing below it was measured -- the
+PRECONDITION failed (no row measured), or a VERB CONTROL failed (its row not
+measured).  2 dominates 1: a run that is part measurement and part noise must say
+so before anything in it is read.
 """
 from __future__ import annotations
 import argparse, os, shutil, struct, sys, tempfile
@@ -112,16 +131,22 @@ CASES = [
     #
     # ⚠️ WHAT DID NOT MOVE: a NAME at an unmounted or unreadable volume still
     # answers `load error`, and no row here or anywhere drives it.
-    ("name-missing",  'NAME"A:NOSUCH.BAS" AS "B.BAS"', "File not found"),
+    ("name-missing",  'NAME"A:NOSUCH.BAS" AS "B.BAS"', "File not found",
+     "name-alive"),
     ("merge-missing", 'MERGE"A:NOSUCH.BAS"'),
 ]
 WANT = "load error"
 
-# A row is `(key, line)` -- pinned to WANT -- or `(key, line, want)` when its
-# disposition has been MEASURED on the reference and is reference-exact.
-# Normalised here so the default stays visible in the table above rather than
+# A row is `(key, line)` -- pinned to WANT, no verb control -- or
+# `(key, line, want)` when its disposition has been MEASURED on the reference and
+# is reference-exact -- or `(key, line, want, verb_control)` when a control in
+# THIS run must show the verb reaching a SUCCESS disposition before the row is
+# scored at all (D-FEVERB, docs/spec-fat-error-verb-control.md §2.1).
+# Normalised here so the defaults stay visible in the table above rather than
 # being repeated eight times.
-CASES = [c if len(c) == 3 else (c[0], c[1], WANT) for c in CASES]
+CASES = [(c[0], c[1],
+          c[2] if len(c) > 2 else WANT,
+          c[3] if len(c) > 3 else None) for c in CASES]
 
 # --- THE PRECONDITION (D-DSKJUDGE, docs/spec-rom-gate-diskrom.md §3.2) --------
 # 🔴 EVERY ROW ABOVE PASSES ON A DEAD DISK ROM.  Measured: with `build/disk.rom`
@@ -161,6 +186,50 @@ CONTROL = ("fat-alive", 'FILES"A:HI.TXT"')
 # would red this gate on someone else's slice.  A `load error` tail -- or an empty
 # one -- contains neither token, which is all this row has to separate.
 CONTROL_WANT = ("HI", "TXT")
+
+# --- THE PER-VERB CONTROLS (D-FEVERB, docs/spec-fat-error-verb-control.md) ----
+# 🔴 THE PRECONDITION ABOVE IS BATTERY-SCOPED AND CANNOT COVER A ROW THAT PINS
+# ONE VERB'S MESSAGE.  `fat-alive` proves the FAT LAYER reaches a success
+# disposition -- the volume mounts, the walk runs, fat_find hits.  It says
+# nothing about any particular verb, and NAME's failure path (fat_mount ->
+# fat_find miss -> nm_notfound) shares almost nothing with NAME's success path
+# (the DISKOP_SEL_NAME_STAMP tenant: read the sector, LDIR the 8.3 field, write
+# it back).
+#
+# MEASURED, not argued (D-DKNAME's knife K-NAMECTL, docs/spec-basic-dkname.md
+# §6.4): with `tnt_name_stamp` re-reading the directory sector instead of writing
+# it back -- NAME reports success and renames NOTHING -- this whole battery
+# scored `8/8 ALL PASS` at exit 0, `fat-alive` green, directory check green.
+# `basic_probe_dskmsg.py` caught that build through its own per-verb control;
+# this one did not have one.
+#
+# So a case may now name a control that must SUCCEED in this same run before the
+# case is scored at all.  The control's blast radius is its VERB: if it fails,
+# that one case prints NOT MEASURED and the run exits 2, while the other cases
+# are still scored.  Making it a second PRECONDITION was rejected -- that would
+# blank all eight rows on a NAME bug, over-claiming in the other direction.
+#
+# ⚠️ TWO INSTRUMENTS, and the second is the one a convincing screen cannot fool.
+# The SCREEN half asserts positive text (a NAME that renamed nothing prints
+# `File not found` here, which holds neither token).  The DIRECTORY half is
+# parsed by the host from the machine's own image after openMSX exits, and is
+# what says the sector was actually written back.
+#
+# ⚠️ PROG2.BAS, NOT HI.TXT.  The battery is BATCHED on one image, and `fat-alive`
+# lists HI.TXT -- renaming it would break the precondition on the very run this
+# control is evidence about.  PROG2.BAS is on disk/test720.dsk (TEST.BIN, HI.TXT,
+# PROG.BIN, PROG.BAS, PROG2.BAS) and no row here reads it; `REN2` appears nowhere
+# else in the tree, so the screen assertion cannot match by accident.
+VERB_CONTROLS = {
+    "name-alive": dict(
+        lines=['NAME"A:PROG2.BAS" AS "REN2.BAS"', 'FILES"A:REN2.BAS"'],
+        shown='NAME"A:PROG2.BAS" AS "REN2.BAS" : FILES',
+        want=("REN2", "BAS"),                 # screen: positive text
+        dir_present=b"REN2    BAS",           # directory: the rename LANDED
+        dir_absent=b"PROG2   BAS",            # directory: and the old one went
+        guards="name-missing",
+    ),
+}
 
 # The file `append-missing` must NOT leave behind, and where to look for it.
 SRC_DSK = os.path.join(os.path.dirname(os.path.dirname(
@@ -224,15 +293,20 @@ def main() -> int:
         shutil.copy(SRC_DSK, tmp)
         dsk = tmp
 
-    # The control runs FIRST, in the same batch: same machine, same mounted
+    # The controls run FIRST, in the same batch: same machine, same mounted
     # image, same boot -- so a green control is evidence about the run the eight
     # rows below were measured in, not about a separate one.
-    specs = [("direct", [CONTROL[1]])] + [("direct", [line]) for _, line, _ in CASES]
+    vkeys = list(VERB_CONTROLS)
+    specs = ([("direct", [CONTROL[1]])]
+             + [("direct", VERB_CONTROLS[k]["lines"]) for k in vkeys]
+             + [("direct", [line]) for _, line, _, _ in CASES])
     raws = omsx_repl.run_cases(args.machine, specs,
                                batch=not args.boot_per_case,
                                reset=("NEW", "CLS"), capture="screen",
                                diska=dsk)
-    ctl_raw, raws = raws[0], raws[1:]
+    ctl_raw = raws[0]
+    vraws = dict(zip(vkeys, raws[1:1 + len(vkeys)]))
+    raws = raws[1 + len(vkeys):]
 
     ok = True
     print("=" * 72)
@@ -260,7 +334,7 @@ def main() -> int:
               f"rows.\n"
               f"    Exit 2 (not 1) = the instrument was broken, NOT an "
               f"error-disposition regression.")
-        for (key, line, _), raw in zip(CASES, raws):
+        for (key, line, _, _), raw in zip(CASES, raws):
             tail = omsx_repl.screen_tail(raw, line)
             got = " | ".join(t.strip() for t in str(tail or "").split("\n") if t.strip())
             print(f"  ....  {key:14} {line:38} -> {got[:60]!r}  (not scored)")
@@ -269,30 +343,77 @@ def main() -> int:
             os.unlink(tmp)
         return 2
 
-    for (key, line, want), raw in zip(CASES, raws):
+    # ONE read of the machine's own image, after openMSX exited. It is the
+    # second instrument for BOTH the per-verb controls (did the rename reach the
+    # sector?) and `append-missing` (was the file created anyway?).
+    names = dir_names(dsk)
+
+    # --- the per-verb controls (D-FEVERB §2.2), screen AND directory ----------
+    vok = {}
+    for k in vkeys:
+        vc = VERB_CONTROLS[k]
+        tail = omsx_repl.screen_tail(vraws[k], vc["lines"][-1])
+        got = " | ".join(t.strip() for t in str(tail or "").split("\n") if t.strip())
+        scr = all(w in (tail or "") for w in vc["want"])
+        dpres = names is not None and vc["dir_present"] in names
+        dabs = names is not None and vc["dir_absent"] not in names
+        vok[k] = scr and dpres and dabs
+        print(f"  {'PASS' if vok[k] else 'FAIL'}  {k:14} {vc['shown']:38} "
+              f"-> {got[:60]!r}   [VERB CONTROL for {vc['guards']}]")
+        if not vok[k]:
+            print(f"        screen wanted {' + '.join(vc['want'])}: "
+                  f"{'ok' if scr else 'MISSING'};  directory wanted "
+                  f"{vc['dir_present'].decode()!r} present "
+                  f"({'ok' if dpres else 'ABSENT'}) and "
+                  f"{vc['dir_absent'].decode()!r} absent "
+                  f"({'ok' if dabs else 'STILL THERE'})"
+                  + ("  [the image was unreadable]" if names is None else ""))
+            print(f"        => the verb never reached a SUCCESS disposition, so "
+                  f"{vc['guards']!r} below is NOT a measurement: its error is "
+                  f"what a\n        DEAD verb prints too. Exit 2, not 1.")
+
+    instrument_fault = not all(vok.values())
+
+    scored = 0
+    for (key, line, want, vc_key), raw in zip(CASES, raws):
         tail = omsx_repl.screen_tail(raw, line)
         got = " | ".join(t.strip() for t in str(tail or "").split("\n") if t.strip())
+        pin = "" if want == WANT else f"   [reference-exact: {want!r}]"
+        if vc_key and not vok[vc_key]:
+            print(f"  ....  {key:14} {line:38} -> {got[:60]!r}"
+                  f"   NOT MEASURED (verb control {vc_key!r} failed)")
+            continue
         good = want in (tail or "")
         ok &= good
-        pin = "" if want == WANT else f"   [reference-exact: {want!r}]"
-        print(f"  {'PASS' if good else 'FAIL'}  {key:14} {line:38} -> {got[:60]!r}{pin}")
+        scored += 1
+        guard = f"   [verb control: {vc_key}]" if vc_key else ""
+        print(f"  {'PASS' if good else 'FAIL'}  {key:14} {line:38} "
+              f"-> {got[:60]!r}{pin}{guard}")
         if not good:
             print(f"        want {want!r} -- a SILENT return here is the exact "
                   f"signature of a broken error tail")
 
-    npass = sum(1 for (k, l, w), r in zip(CASES, raws)
-                if w in (omsx_repl.screen_tail(r, l) or ""))
+    npass = sum(1 for (k, l, w, v), r in zip(CASES, raws)
+                if (not v or vok[v]) and w in (omsx_repl.screen_tail(r, l) or ""))
 
-    # THE SECOND INSTRUMENT, for `append-missing` only: a refusal that still
-    # created the file is not a refusal. The screen alone cannot say this -- a
-    # build that printed `load error` and created the entry anyway would pass the
-    # text check above -- so the machine's own image is parsed after it exits.
-    names = dir_names(dsk)
+    # THE SECOND INSTRUMENT, for `append-missing`: a refusal that still created
+    # the file is not a refusal. The screen alone cannot say this -- a build that
+    # printed `load error` and created the entry anyway would pass the text check
+    # above -- so the machine's own image is parsed after it exits.
     if names is None:
         print(f"\n*** could not read the directory of {dsk} -- the "
               f"created-anyway check did not run")
         ok = False
     else:
+        for k in vkeys:
+            vc = VERB_CONTROLS[k]
+            dpres, dabs = vc["dir_present"] in names, vc["dir_absent"] not in names
+            print(f"\n  {'PASS' if dpres and dabs else 'FAIL'}  {k} (directory) "
+                  f"-> {vc['dir_present'].decode()!r} "
+                  f"{'present' if dpres else 'ABSENT'}, "
+                  f"{vc['dir_absent'].decode()!r} "
+                  f"{'gone' if dabs else 'STILL THERE'}"
+                  f"   [the rename reached the SECTOR, not just the screen]")
         made = MUST_NOT_EXIST in names
         print(f"\n  {'FAIL' if made else 'PASS'}  append-missing (directory) "
               f"-> {MUST_NOT_EXIST.decode()!r} "
@@ -301,8 +422,28 @@ def main() -> int:
     if tmp:
         os.unlink(tmp)
 
-    print(f"\n===== FAT error disposition: {npass}/{len(CASES)} "
-          f"+ directory check, over a LIVE FAT layer =====")
+    ndirs = 1 + len(vkeys)
+    print(f"\n===== FAT error disposition: {npass}/{scored} scored "
+          f"({len(CASES)} rows, {len(CASES) - scored} NOT MEASURED) "
+          f"+ {ndirs} directory checks, over a LIVE FAT layer =====")
+
+    # 🔴 THE DENOMINATOR, PRINTED EVERY RUN (D-FEVERB §4). Closing one hole and
+    # saying ALL PASS louder is how a gate stops describing itself. A row with no
+    # verb control is satisfied by a verb that ALWAYS errors -- measured, not
+    # supposed: K-NAMECTL scored this battery 8/8 at exit 0 over a NAME that
+    # renamed nothing, back when name-missing had no control either.
+    uncovered = [k for k, _, _, v in CASES if not v]
+    print(f"VERB-SUCCESS CONTROLS: {len(CASES) - len(uncovered)} of {len(CASES)} "
+          f"rows. The other {len(uncovered)} are satisfied by a verb that always "
+          f"errors:\n  {', '.join(uncovered)}\n"
+          f"  ('kill-missing' among them is the other REFERENCE-EXACT row, so it "
+          f"carries the same\n   weight 'name-missing' does and has the same "
+          f"hole. TODO.md / docs/spec-fat-error-verb-control.md §4)")
+
+    if instrument_fault:
+        print("SOME NOT MEASURED -- exit 2 = the instrument was broken, NOT an "
+              "error-disposition regression")
+        return 2
     print("ALL PASS" if ok else "SOME FAILED")
     return 0 if ok else 1
 
