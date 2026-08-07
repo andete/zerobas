@@ -293,6 +293,20 @@ Measured on both sides of the change by the same runner, in the same session.
 * **`run-missing`'s reading is `'load error|Illegal function call in 3346'`** —
   two messages on one row, unchanged by this slice and unexplained by any
   document. Noted where it was seen; not investigated.
-* **The knife-runner ROM-hash guard lives in the scratchpad, not the tree.**
+* ~~**The knife-runner ROM-hash guard lives in the scratchpad, not the tree.**
   Every future knife runner needs it and will be written without it unless it
-  becomes shared. Filed.
+  becomes shared.~~ ✅ **Closed the same day, and this filing was wrong on three
+  counts** — the guard was already derived (`spec-basic-dotline.md` §7) and
+  productionised as a **DID-NOT-HAPPEN** verdict (`spec-basic-msgmigrate.md`
+  §8), so the failure was RECALL not availability; knife runners are scratchpad
+  **by design** (`spec-probe-injjudge.md` §1.3), so a shared module has no
+  committed consumer; and a preflight for this class was **built, knifed and
+  REMOVED** as undetectable ([[preflight-slice]]). Closed instead by a new
+  **"Knives — falsification runners"** section in
+  [`dev-workflow.md`](dev-workflow.md), which had none.
+  🎯 Two measurements went with it: a cut landing in a **comment** yields
+  byte-identical ROMs **from a clean build**, so `rm -rf build` is *not* the
+  whole fix that §7 of `spec-basic-dotline.md` calls it — only the hash
+  separates "reddened nothing" from "never reached the artifact"; and a clean
+  rebuild costs **5.1 s** vs 0.08 s incremental, so there was no reason to
+  prefer incremental in the first place.

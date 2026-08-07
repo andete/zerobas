@@ -344,6 +344,19 @@ outright (`FileNotFoundError: build/basic-reloc.rom`). The repo's own standing
 rule is the whole fix — **always `rm -rf build` first** — and the knife runner
 now does exactly that on every build, at a cost of a few seconds per cut.
 
+🔴 **CORRECTION 2026-08-07 (D-FEVERB): `rm -rf build` is NOT "the whole fix".**
+Measured — a cut that lands in a **comment** (the ordinary mis-siting, since cut
+strings usually carry their trailing comment) produces **byte-identical ROMs from
+a clean build**, and a runner without the ROM-hash check scores it as a MISS.
+Clean building fixes the **race**; only the hash separates *"the cut reached the
+artifact and reddened nothing"* — a finding — from *"the cut never reached the
+artifact"* — nothing measured. The two guards are complementary and the hash
+strictly dominates for the scoring question. §7's rule here is the one that
+generalises; this paragraph's is the one that does not. The cost argument is also
+void: a clean rebuild measures **5.1 s** against 0.08 s incremental, so there was
+never a reason to choose. See [`dev-workflow.md`](dev-workflow.md) §Knives and
+[`spec-fat-error-verb-control.md`](spec-fat-error-verb-control.md) §6.2.
+
 **Worth filing:** any fast edit-then-build in this tree can silently reuse a
 stale `sub.rom`. A `.PHONY` force, an order-only rebuild stamp, or a
 content-hash dependency would close it for good; this slice records the shape and

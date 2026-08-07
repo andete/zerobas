@@ -286,22 +286,42 @@ duplicating (and drifting from) what is written below.
       exists. Left out of D-FEVERB because widening a residual while closing it
       is how a pickup list stops being one. Detail:
       [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §4.
-- [ ] 🔴 **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD, and
-      every runner in this tree is written without the right one.** `make` can
-      exit **0 having rebuilt nothing** — GNU make 3.81 compares mtimes at
-      one-second granularity, so an edit-then-build inside one tick is silently
-      skipped ([[make-mtime-race-skips-subrom]]). The knife then scores against
-      the **pre-cut** ROM and reads as a **MISS**, which is the reading that means
-      "the battery cannot see this" — the conclusion a slice writes down.
-      **Measured 2026-08-07:** D-FEVERB's K-FE1 scored CUT in round 1 and MISS in
-      round 2 from the identical cut; only the run-it-twice rule caught it. The
-      remedy is four lines — hash all four ROMs after each cut build, require one
-      to differ, `rm -rf build` and rebuild on a match, abort if it still matches
-      — and it lives in a **scratchpad runner**, so the next runner will be
-      written without it. Make it shared (`probes/lib/`?) or the trap is
-      permanent. ⚠️ D-DKNAME's knives were re-run under the guard and all three
-      verdicts stand — **K-NAME2's "predicted miss" is real**, not a stale build.
-      Detail: [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §6.2.
+- [x] ✅ **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD —
+      CLOSED 2026-08-07**, and **the remedy I filed was DECLINED on a read of the
+      record** ([[a-recommendation-in-the-record-is-still-a-claim]] — the filer
+      was me, one commit earlier). `make` can exit **0 having rebuilt nothing**
+      (GNU Make 3.81, one-second mtime granularity,
+      [[make-mtime-race-skips-subrom]]), so the knife scores the **pre-cut** ROM
+      and reads as a **MISS** — the reading that means "the tree cannot see
+      this", which is a conclusion slices write down. D-FEVERB's K-FE1 scored CUT
+      then MISS from the identical cut; only run-it-twice caught it.
+      🔴 **THE FILED REMEDY — "make it shared (`probes/lib/`?) or the trap is
+      permanent" — WAS WRONG ON THREE COUNTS, ALL OF THEM ALREADY IN THE TREE.**
+      (1) The guard is **not missing**: `spec-basic-dotline.md` §7 derived it and
+      `spec-basic-msgmigrate.md` §8 productionised it as a distinct
+      **DID-NOT-HAPPEN** verdict — it was not carried into my runner, which is a
+      RECALL failure, not an availability one. (2) Knife runners are
+      **scratchpad by design** (`spec-probe-injjudge.md` §1.3, 0 swept files), so
+      a shared module has no committed consumer. (3) A **preflight check for this
+      exact class was built, knifed and REMOVED** as undetectable from mtimes
+      alone ([[preflight-slice]]) — the one place it would have been automatic.
+      ⇒ closed by writing the discipline where a runner author actually reads it:
+      a new **"Knives — falsification runners"** section in
+      [`docs/dev-workflow.md`](docs/dev-workflow.md), which carried **no** knife
+      content at all despite four spec docs describing it.
+      🎯 **AND TWO MEASUREMENTS CORRECTED A STANDING CLAIM.**
+      `spec-basic-dotline.md` §7 says *"the repo's own standing rule is the whole
+      fix — always `rm -rf build` first"*. **It is not.** A cut landing in a
+      **comment** (the ordinary mis-siting, since cut strings carry their
+      trailing comment) yields byte-identical ROMs **from clean** — measured —
+      and scores as a MISS. `rm -rf build` fixes the *race*; only the hash
+      separates "reddened nothing" from "never reached the artifact". And a clean
+      rebuild costs **5.1 s** against 0.08 s incremental, so there was never a
+      performance reason to skip it: do both.
+      ⚠️ D-DKNAME's knives were re-run under the guard and all three verdicts
+      stand — **K-NAME2's "predicted miss" is real**, not a stale build.
+      Detail: [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §6.2
+      and [`docs/dev-workflow.md`](docs/dev-workflow.md).
 - [x] ✅ **`LPRINT` / `LPOS` — the rest of the printer surface.** All
       three lacked a `kwtable.inc` entry, so they were `Syntax error` on zerobas,
       and [`docs/kwsweep-msx1-coverage.md`](docs/kwsweep-msx1-coverage.md)

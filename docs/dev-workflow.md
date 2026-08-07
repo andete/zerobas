@@ -140,6 +140,80 @@ release config.
 Assembler is pasmo. A linter hook auto-adds SPDX / copyright headers to new
 source files — don't hand-write them.
 
+## Knives — falsification runners (READ THIS BEFORE WRITING ONE)
+
+Every slice here falsifies its own claim by **deleting the code under test** and
+re-running the gate. The runner that does it is a throwaway script in the
+scratchpad, never committed (`docs/spec-probe-injjudge.md` §1.3) — which is why
+its discipline lives *here* instead of in a shared module, and why the same
+faults keep being re-derived one runner at a time. The rules below are each a
+landed defect, not advice.
+
+**The runner:**
+
+* **The subject is the PROBE, invoked directly — never `make <gate>`.** `make`
+  exits **2** for any failed recipe, so a runner reading `make`'s status cannot
+  tell rc 1 (the tree regressed) from rc 2 (the instrument broke). 8 of 11
+  knives once scored CUT for that reason alone (`spec-probe-injjudge.md` §6.2).
+* **Restore from a scratchpad SNAPSHOT, never `git checkout --`** — a knife run
+  in a dirty tree otherwise reverts the slice instead of the cut
+  (`spec-basic-lnref.md` §7.0).
+* **Build BEFORE taking the baseline.** Restoring a snapshot touches mtimes, and
+  `omsx_preflight` then (correctly) refuses the run as stale.
+* **Capture the baseline through the probe's own parse path, and refuse a SHORT
+  one** — a runner whose row set comes back empty cannot distinguish that from
+  "the knife moved nothing" (`[[knife-runner-false-negatives]]`).
+* **A failed build ABORTS rather than scoring** — a knife scored against a stale
+  ROM reads as a CUT.
+* **Score a predicted GREEN set as well as a predicted RED set.** A run where
+  *nothing* moved, greens included, is an apparatus result, not a measurement.
+* **Run every knife TWICE.** D-FEVERB's K-FE1 scored CUT in round 1 and MISS in
+  round 2 from the identical cut; nothing else caught it.
+
+🔴 **AND THE ONE THAT IS NOT OPTIONAL: HASH THE ROMs AFTER EVERY CUT BUILD.**
+*"A failed build aborts"* is the wrong guard, because **`make` can exit 0 having
+rebuilt nothing.** GNU Make 3.81 (what macOS ships, and what this tree builds
+with — there is no 4.x here) compares mtimes at **one-second granularity**, so
+any edit-then-build completing inside one tick is silently skipped and the knife
+scores the **pre-cut** ROM.
+
+```python
+def assert_cut_reached(name, base_hashes):        # base_hashes: all four ROMs
+    if rom_hashes() != base_hashes:
+        return "incremental"
+    subprocess.run(["rm", "-rf", "build"], cwd=REPO)   # make skipped it
+    build()
+    if rom_hashes() == base_hashes:
+        sys.exit(f"ABORT {name}: the cut reached no ROM -- nothing was measured")
+    return "CLEAN REBUILD (mtime race)"
+```
+
+⚠️ **`rm -rf build` alone is NOT the whole fix, and the record says it is.**
+`spec-basic-dotline.md` §7 concluded *"the repo's own standing rule is the whole
+fix — always `rm -rf build` first"*. **Measured 2026-08-07 (D-FEVERB): it is
+not.** A cut that lands in a **comment** — the ordinary mis-siting, since cut
+strings usually carry their trailing comment — produces byte-identical ROMs
+**from a clean build**, and a runner without the hash check scores it as a MISS.
+Clean building fixes the *race*; only the hash separates *"the cut reached the
+artifact and reddened nothing"* (a finding) from *"the cut never reached the
+artifact"* (nothing was measured). The distinction has a name in
+`spec-basic-msgmigrate.md` §8: report it as **DID-NOT-HAPPEN**, not as
+"reddened nothing".
+
+⚠️ **A clean rebuild costs 5.1 s here** (measured; incremental is 0.08 s), so
+there is no performance reason to prefer an incremental build in a runner. Do
+both: `rm -rf build` per cut *and* the hash check.
+
+**Prefer byte-neutral cut sites** — a `jr`/`call` target swap, or an
+equal-length instruction. Inserting bytes pushes everything below down and takes
+some nearby `jr` out of range; D-DSKMSG lost two knife sitings to exactly that,
+and a build that fails is a knife that scored nothing.
+
+⚠️ **A knife whose predicted result is "nothing moves" is indistinguishable from
+a build that did not happen.** Those are the ones the hash check exists for. If
+the miss is genuine, say so as a **predicted miss** and record what the tree
+cannot see (`[[rule-gated-structurally-has-no-knife]]`).
+
 ## The validation harness (probes/)
 
 The emulator-driven oracle harness lives **in this repo**, under `probes/`
