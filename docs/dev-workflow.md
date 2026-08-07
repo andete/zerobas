@@ -184,6 +184,23 @@ landed defect, not advice.
   exit codes and parse all of them. Corollary: **put the restore in a `finally`**
   — an ABORT is exactly when the tree is left cut, and
   `[[knife-cleanup-restores-from-head]]` assumed the happy path.
+* 🔴 **AND "KNOW EVERY SHAPE" MEANS THE LAYOUT AND THE PER-ROW CONTENT, NOT JUST
+  WHICH ROWS APPEAR.** Measured 2026-08-07 (D-CASOPEN, `spec-basic-casopen.md`
+  §7.3): the bullet above was already written, already read, and the runner still
+  aborted K-CO1 on a **complete 32-row** exit-2 report. Two separate reasons, and
+  a runner has to survive both:
+  * **Layout.** `basic_probe_castail.py` prints `ok `/`DIFF` rows at column 0 and
+    exit-2 `....` rows indented two spaces. An `^`-anchored row regex therefore
+    matches every GREEN run and **no knifed one** — so the guard that exists to
+    detect a truncated report fires on the complete one.
+  * 🔴 **Content, which is worse because it does NOT abort.** The same row is
+    printed as `ok  label  'value'` when the sides agree and as
+    `....  label  vg8020='..'  zb='..'` when nothing is scored. A runner diffing
+    report **LINES** therefore scores **every** row as moved — a spectacular
+    false CUT, silently.
+  **Parse rows into `(label → the side-under-test's VALUE)` and diff THAT.** A cut
+  in zerobas can only move zerobas; the references are constants, and comparing
+  their formatting is comparing the printer.
 * **A failed build ABORTS rather than scoring** — a knife scored against a stale
   ROM reads as a CUT.
 * 🔴 **AND "BUILD BEFORE THE BASELINE" IS REALLY "BUILD BEFORE EVERY PROBE RUN

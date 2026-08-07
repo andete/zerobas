@@ -63,7 +63,9 @@ the wrong file reads `ZQ8` and is caught.
 | `cas2-open:echo` 📌 | (`INPUT#1,A$` / `PRINT A$`) | `10 PRINT"ZQ9"` | `10 PRINT"ZQ9"` | **`10 PRINT"ZQ8"`** |
 
 🟢 = a **positive control**. 📌 = a **pinned divergence**, §5 — and it is not
-the one this slice is about.
+the one this slice is about. ⚠️ **The `zb` column is the reading at `cc1e20e`,
+which is history**: both 📌 rows were closed by D-CASOPEN on 2026-08-07 and now
+read what the references read; §5 carries the closure.
 
 **The two references agree row for row on all ten readings**, which is what
 promotes each of them from "what a CF-3300 does" to "what an MSX1 does". The
@@ -136,6 +138,15 @@ it needs its own reference battery — bare `OPEN"CAS:"`, case sensitivity, and
 the `FOR OUTPUT` naming half are all unmeasured. Folding it in would be the
 [[a-rule-can-claim-more-than-its-evidence]] mistake with the evidence pointing
 the right way, which is the easy version to make.
+
+✅ **CLOSED 2026-08-07 by D-CASOPEN** — [casopen-msx1-characterization.md](casopen-msx1-characterization.md)
+is that battery, and every one of the three unmeasured readings changed something:
+the compare is **case-sensitive** (a THIRD symptom this row could not see, because
+it asks a name that matches), the bare form takes the next file (so the fix must
+NOT arm matching unconditionally), and `FOR OUTPUT` was **already correct** — the
+name was parsed on the OPEN path all along, and only the hand-off to the search
+was missing. Fixed for **7 B in main page 1**; the two pins here are
+**reclassified** to scored agreement rows with a `ZQ9` control, not re-pinned.
 
 🟢 **The pin is also that row's positive evidence.** A per-side EXACT value is
 strictly stronger than the containment controls the other rows use: a dead

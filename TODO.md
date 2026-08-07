@@ -337,7 +337,7 @@ duplicating (and drifting from) what is written below.
       `do_tape_prog` consumed by `ret c` — whose producer is the **existing**
       `dpl_err`, so defect B's producer cost **0 B**. Gate
       `make castail-acceptance` **9/9 + 1 pinned divergence** at the time
-      (**17/17 + 3 pins** since D-CASSEARCH extended the same gate), three-sided
+      (**31/31 + 1 pin** since D-CASSEARCH and D-CASOPEN extended the same gate), three-sided
       (vg8020, cf3300, zb), 7 knives run twice.
       🔴 **The filed blocker was wrong on one half and understated on the other.**
       "`omsx_repl.run_cases` mounts a disk, not a `.cas`" is true of its
@@ -359,8 +359,9 @@ duplicating (and drifting from) what is written below.
       and the p1-closure rule forbids it. The scout confirmed that, so the
       "shim prints `Found:` on the way out" split this entry offered as the
       alternative was **not needed and not taken**. Gate `make
-      castail-acceptance` **17/17 + 3 pinned divergences**, three-sided, 4
-      knives run twice.
+      castail-acceptance` **17/17 + 3 pinned divergences** at the time (**31/31
+      + 1 pin** since D-CASOPEN closed two of them), three-sided, 4 knives run
+      twice.
       🎯 **THE SITE WAS DECIDED BY A MEASUREMENT NOBODY HAD TAKEN, AND THIS ENTRY
       DID NOT KNOW TO ASK FOR IT.** It named `LOAD`/`RUN`/`CLOAD`, but
       `cas_open_match` has **three** callers: `MERGE"CAS:"` and `OPEN"CAS:" FOR
@@ -372,31 +373,54 @@ duplicating (and drifting from) what is written below.
       could have said so. Detail:
       [`docs/spec-basic-cassearch.md`](docs/spec-basic-cassearch.md),
       [`docs/cassearch-msx1-characterization.md`](docs/cassearch-msx1-characterization.md).
-- [ ] 📌 **`OPEN"CAS:name" FOR INPUT` IGNORES THE NAME and opens the NEXT file on
-      the tape — so it delivers the WRONG FILE'S BYTES.** Found 2026-08-07 by
-      D-CASSEARCH, by the two-file-tape rows built to measure the progress line;
-      nothing in the record had it. Both references **name-match on OPEN** — they
-      step over `SK` and open `RT` — and read back `10 PRINT"ZQ9"`; zerobas opens
-      `SK` and reads back `10 PRINT"ZQ8"`.
-      🔴 **zerobas does this DELIBERATELY, and the source says so**:
-      `basic/files.asm` `oo_dev_cas` writes `xor a` / `ld (CAS_WANT_ON),a` under
-      the comment *"name-matching is Item A's CLOAD/LOAD/RUN/MERGE scope, not
-      OPEN"*. That scoping decision is now **measured to be wrong** — it was a
-      guess about the reference that no row had ever checked.
-      ⚠️ **PINNED, not blessed**: `castail-acceptance`'s `cas2-open` and
-      `cas2-open:echo` rows hold all three sides' readings verbatim and FAIL the
-      gate if any of them moves. The pin is also those rows' positive evidence —
-      a per-side EXACT value is stronger than a containment control, and a dead
-      machine reads `<nothing>` and rots it.
-      ⚠️ **What has to be measured before anyone prices it** — and the lesson of
-      the entry above is that the cost line is the LAST thing to write, not the
-      first ([[carve-scout-before-proposing]], [[filed-justification-is-a-claim]]):
-      the fix is in `basic/files.asm` (**main page 1, 165 B free** — a different
-      wall from D-CASSEARCH's), and three reference readings are missing, each of
-      which can change the shape: bare `OPEN"CAS:"` (no name), whether the
-      compare is case-sensitive as it is for `LOAD`/`CLOAD`, and what
-      `FOR OUTPUT` does with a name. **Do not inherit a byte count from this
-      entry — it deliberately carries none.**
+- [x] ✅ **`OPEN"CAS:name" FOR INPUT` IGNORED THE NAME and opened the NEXT file on
+      the tape — so it delivered the WRONG FILE'S BYTES. CLOSED 2026-08-07
+      (D-CASOPEN) for 7 B in main page 1** (165 → 158 B free). Found by
+      D-CASSEARCH's two-file-tape rows; nothing in the record had it. Both
+      references **name-match on OPEN** — they step over `SK` and open `RT` — and
+      read back `10 PRINT"ZQ9"`; zerobas opened `SK` and read back
+      `10 PRINT"ZQ8"`. `basic/files.asm` `oo_dev_cas` now calls
+      `cas_capture_name`; the search engine needed **no change at all**.
+      🎯 **THE THREE MISSING READINGS WERE TAKEN FIRST, AND THEY MADE THE DEFECT
+      NARROWER THAN IT WAS FILED.** The name was ALREADY parsed on the OPEN path
+      (which is why `FOR OUTPUT` writes it into the `$EA` header correctly, and
+      always did — measured off a decoded recording on all three sides); what was
+      missing was the hand-off to the search. The compare is **case-sensitive**
+      (`OPEN"CAS:rt"` does not find `RT`) and bare `OPEN"CAS:"` takes the next
+      file — a **third face** of the divergence that the pinned row could not
+      see, because that row asks a name which matches.
+      🎯 **The entry deliberately carried NO byte count, and the scout is why
+      that paid** ([[carve-scout-before-proposing]]): the fix's whole 7 B is the
+      `CAS_WANT` → `TSV_NAME` copy the OUTPUT arm needs — the INPUT half is
+      byte-**negative**.
+      ✅ **The two pins are RECLASSIFIED, not re-pinned**: all three sides now
+      agree, so `cas2-open` / `cas2-open:echo` join the SCORED set with a `ZQ9`
+      control, and `castail-acceptance` reads **31/31 + 1 pin**. Detail:
+      [`docs/spec-basic-casopen.md`](docs/spec-basic-casopen.md),
+      [`docs/casopen-msx1-characterization.md`](docs/casopen-msx1-characterization.md).
+- [ ] 📌 **A KNIFE RUNNER READ A COMPLETE 32-ROW EXIT-2 REPORT AS TRUNCATED,
+      BECAUSE THE TWO REPORT SHAPES ARE INDENTED DIFFERENTLY.** Found 2026-08-07
+      by D-CASOPEN's K-CO1 round 1. `dev-workflow.md` §Knives already says *"the
+      guard must know every shape the probe prints"* and D-RUNTAIL already
+      enumerated the exit codes — and the runner still aborted, because the rule
+      was applied to the *content* of the exit-2 report (`....` rows, no tally)
+      and not to its *layout*: `basic_probe_castail.py` prints `ok `/`DIFF` rows
+      at column 0 and `....` rows indented two spaces, so an `^`-anchored regex
+      matches every green run and no knifed one.
+      🔴 **AND THE SECOND HALF OF THE SAME FAULT IS WORSE, BECAUSE IT DOES NOT
+      ABORT**: the two shapes also print different CONTENT per row (`ok  label
+      'value'` vs `....  label  vg8020='..'  zb='..'`), so a runner diffing raw
+      lines scores **every** row as moved — a spectacular false CUT. The fix is
+      to compare the side under test's VALUE, not the line.
+      ✅ **The runner-side rule is LANDED** in `docs/dev-workflow.md` §Knives:
+      *parse rows into (label → the side-under-test's VALUE) and diff that; never
+      diff report LINES.*
+      ⚠️ **What is still OPEN is the probe-side half**: whether a probe should
+      print ONE row format on every exit path, so a runner cannot be caught by
+      the layout at all. That is a change to several probes with their own
+      recorded tallies, and it needs its own walk and its own knife — the rule
+      above makes runners correct, it does not make the *reason* they had to be
+      careful go away. **Not priced, and no byte count is implied.**
 - [x] ✅ **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD —
       CLOSED 2026-08-07**, and **the remedy I filed was DECLINED on a read of the
       record** ([[a-recommendation-in-the-record-is-still-a-claim]] — the filer

@@ -738,8 +738,8 @@ oracle-validated against both the reference's own CLOAD and an on-device load.
 Measured 2026-08-07 against **two** references — the Philips VG-8020 and the
 National CF-3300, which agree row for row — by
 `probes/basic/basic_probe_castail.py` (`make castail-acceptance`, 9/9 + 1 pinned
-divergence at the time; the same gate reads **17/17 + 3 pins** since D-CASSEARCH
-extended it, below). Spec `docs/spec-basic-castail.md`, reading
+divergence at the time; the same gate reads **31/31 + 1 pin** since D-CASSEARCH
+and D-CASOPEN extended it, below). Spec `docs/spec-basic-castail.md`, reading
 `docs/castail-msx1-characterization.md`. This closes the residual
 `docs/spec-basic-runtail.md` §9 filed, and it is the **tape twin of D-RUNTAIL**:
 the same two defects, on the two `basic/cload.asm` sites that reach `run_prog`
@@ -782,7 +782,8 @@ an operator Ctrl-STOP. Filed in `TODO.md`.
 ### 🔴 D-CASSEARCH — what an MSX1 prints WHILE the tape search runs
 
 **Closed 2026-08-07.** Gate `probes/basic/basic_probe_castail.py`
-(`make castail-acceptance`, **17/17 + 3 pinned divergences**), spec
+(`make castail-acceptance`, **17/17 + 3 pinned divergences** at the time; the
+same gate reads **31/31 + 1 pin** since D-CASOPEN closed two of them, below), spec
 `docs/spec-basic-cassearch.md`, reading
 `docs/cassearch-msx1-characterization.md`. Closes the residual D-CASTAIL filed
 above; measured on the **Philips VG-8020** and the **National CF-3300**, which
@@ -808,14 +809,16 @@ forbids a page-1 tenant to call. `CHPUT` (`$00A2`, page-0 BIOS) is legal for one
 — the same reason `sub/title.asm` is a page-1 tenant — so the two prefixes are
 the tenant's own bytes and the sink is BIOS.
 
-⚠️ **A SECOND divergence was found by these rows and is NOT fixed.**
-`OPEN"CAS:name" FOR INPUT` **name-matches on both references** — it steps over a
-non-matching file and opens the named one. zerobas deliberately does not
-(`basic/files.asm` `oo_dev_cas` writes `CAS_WANT_ON = 0`, commented *"name-matching
-is Item A's CLOAD/LOAD/RUN/MERGE scope, not OPEN"*), so it opens the **next**
-file and delivers the **wrong file's bytes**. That scoping decision is now
-measured to be wrong. **Pinned** per side by the gate and filed in `TODO.md`; it
-is the OPEN verb's name handling, in a different file, and needs its own battery.
+✅ **A SECOND divergence was found by these rows and is now CLOSED by D-CASOPEN,
+below.** `OPEN"CAS:name" FOR INPUT` **name-matches on both references** — it steps
+over a non-matching file and opens the named one. zerobas deliberately did not
+(`basic/files.asm` `oo_dev_cas` wrote `CAS_WANT_ON = 0`, commented *"name-matching
+is Item A's CLOAD/LOAD/RUN/MERGE scope, not OPEN"*), so it opened the **next**
+file and delivered the **wrong file's bytes**. That scoping decision was measured
+wrong; it was **pinned** per side by the gate and filed in `TODO.md` rather than
+folded in, because it is the OPEN verb's name handling, in a different file, and
+three reference readings it needed were unmeasured. D-CASOPEN took those three
+readings and closed it for **7 B in main page 1**.
 
 | item | value | how established | status |
 |------|-------|------------------|--------|
@@ -824,7 +827,54 @@ is the OPEN verb's name handling, in a different file, and needs its own battery
 | All four searching verbs print it — `LOAD"CAS:"`, `CLOAD`, `MERGE"CAS:"`, `OPEN"CAS:"` | — | oracle, both references (`castail` `cas2-*`) | sourced |
 | The emit is sited in the shared search engine, through `CHPUT`, in the page-1 tenant | — | **own code**; not derived from any disassembly | sourced |
 | Whether the reference pads the name to 6 on screen | **not decidable** | a trailing pad space is indistinguishable from unwritten screen, and a CR/LF follows | **non-claim** (recorded, not measured) |
-| `OPEN"CAS:name"` ignores the name and opens the NEXT file | diverges | oracle, both references name-match (`castail` `cas2-open`, `cas2-open:echo`) | **quarantined** (pinned + filed) |
+| `OPEN"CAS:name"` ignores the name and opens the NEXT file | diverges | oracle, both references name-match (`castail` `cas2-open`, `cas2-open:echo`) | ✅ **CLOSED by D-CASOPEN** (below) — was quarantined (pinned + filed) |
+
+### 🔴 D-CASOPEN — `OPEN"CAS:name" FOR INPUT` honours the name
+
+**Closed 2026-08-07.** Gate `probes/basic/basic_probe_castail.py`
+(`make castail-acceptance`, **31/31 + 1 pinned divergence**), spec
+`docs/spec-basic-casopen.md`, reading
+`docs/casopen-msx1-characterization.md`. Closes the residual D-CASSEARCH pinned
+and filed above; measured on the **Philips VG-8020** and the **National CF-3300**,
+which agree on all twelve new readings.
+
+`oo_dev_cas`'s `FOR INPUT` arm wrote `CAS_WANT_ON = 0` before every search, so a
+named cassette OPEN opened whatever file came next and the channel then delivered
+the **wrong file's bytes**. It now captures the name with `cas_capture_name` — the
+shared cassette-name parser `LOAD`/`RUN`/`CLOAD`/`MERGE` already use — for **7 B
+in main page 1** (165 → 158 B free). The search engine is unchanged.
+
+🎯 **The defect is NARROWER than it was filed, and only opening the file could say
+so.** The name was already parsed on the OPEN path (`tape_parse_name` → `TSV_NAME`,
+before the `FOR INPUT`/`FOR OUTPUT` dispatch) — which is why `FOR OUTPUT` had a
+name to write into its `$EA` header, correctly, all along. What was missing was
+the hand-off to the search on the INPUT arm. So the fix is a **re-routing of an
+existing capture**, and its whole 7 B is the `CAS_WANT` → `TSV_NAME` copy that
+gives the OUTPUT arm back what it expects; the INPUT half is byte-**negative**.
+
+🔴 **A THIRD face of the divergence that the pinned row could not see.** The pin
+asks a name that MATCHES, and a machine that never compares answers it the same as
+one that compares case-insensitively. `OPEN"CAS:rt"` for a tape holding `RT`
+separates them: both references compare, miss both files, run off the tape and
+answer the Ctrl-STOP with a message; zerobas answered **nothing**, having opened
+the first file. The reference compare is **byte-exact**, the same rule
+`CAS_WANT` already implemented for `LOAD`/`CLOAD`.
+
+🎯 **`FOR OUTPUT` is read off the TAPE THE MACHINE WROTE.** The screen cannot
+answer what an OPEN records — it prints nothing whether it writes the name, six
+spaces or garbage — so those rows run on a `cassetteplayer new` recording and
+`probes/lib/cas_decode.py` decodes the WAV. Signal edges only, the same decoder on
+all three sides, no reference ROM disassembled.
+
+| item | value | how established | status |
+|------|-------|------------------|--------|
+| `OPEN"CAS:name" FOR INPUT` name-matches: it steps over non-matching files and opens the named one | — | oracle, both references (`castail` `cas2-open` + `:echo`) | sourced |
+| Bare `OPEN"CAS:"` takes the NEXT file, exactly as bare `LOAD"CAS:"` does | — | oracle, both references (`castail` `cas2-openbare` + `:echo`) | sourced |
+| The cassette name compare is **case-sensitive**: `OPEN"CAS:rt"` does not find `RT` | — | oracle, both references (`castail` `cas2-opencase` + `:alive`) | sourced |
+| `OPEN"CAS:WX" FOR OUTPUT` writes `'WX    '`, space-padded to six, into the `$EA` header | — | oracle, both references, decoded off the recording (`castail` `cas-openout:tape`) | sourced |
+| Bare `OPEN"CAS:" FOR OUTPUT` writes six spaces | — | oracle, both references, decoded off the recording (`castail` `cas-openoutbare:tape`) | sourced |
+| `cas_capture_name` reused at `oo_dev_cas`; `CAS_WANT` → `TSV_NAME` copy on the OUTPUT arm | — | **own code** (`merge_cas` is the landed precedent for a `files.asm` caller); not derived from any disassembly | sourced |
+| Whether a name longer than six characters is truncated or refused on `OPEN"CAS:"` | **not measured** | no row asks; the shared capture truncates on every verb | **non-claim** |
 
 ## Phase 1: minimal string variables for PRINT (basic/strvar.asm, basic/vars.asm, basic/print.asm, basic/interp.asm, basic/sysvars.inc)
 

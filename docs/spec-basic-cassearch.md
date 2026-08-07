@@ -402,12 +402,20 @@ statement, not a reason to skip them.
 
 * **`OPEN"CAS:name" FOR INPUT` ignores the name** and opens the next file on the
   tape, delivering the wrong file's bytes — found by these rows, **pinned** by
-  the gate on both halves, filed in `TODO.md`, not fixed. It is the OPEN verb's
-  name handling (`basic/files.asm`, **main page 1** — a different wall), and
-  three reference readings it needs are unmeasured: bare `OPEN"CAS:"`, case
+  the gate on both halves, filed in `TODO.md`, not fixed here. It is the OPEN
+  verb's name handling (`basic/files.asm`, **main page 1** — a different wall),
+  and three reference readings it needs are unmeasured: bare `OPEN"CAS:"`, case
   sensitivity, and `FOR OUTPUT` naming. **This entry carries no byte count on
   purpose** — the whole first half of §1 is what happens when one is written
   before the scout.
+  ✅ **CLOSED 2026-08-07 by D-CASOPEN** ([spec-basic-casopen.md](spec-basic-casopen.md),
+  reading [casopen-msx1-characterization.md](casopen-msx1-characterization.md))
+  for **7 B in main page 1**. All three readings were taken first and all three
+  mattered: the compare is case-sensitive, the bare form takes the next file, and
+  `FOR OUTPUT` was **already correct** — so the defect was narrower than filed
+  (the name was parsed all along; only the hand-off to the search was missing).
+  🎯 **Refusing to price it here is what made that possible**: an inherited byte
+  count would have been a number for the wrong fix.
 * **Whether the reference pads the name to 6 on screen** — a non-claim, not a
   measurement (characterization §6). No screen-scraping battery can answer it and
   no behaviour depends on it.

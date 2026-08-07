@@ -427,8 +427,18 @@ oodv_ok:
 ; tape option-surface audit. A cassette channel must not be interleaved with a disk
 ; file channel (they share the $E600 block buffer) — documented (single tape file).
 ; Entry: HL -> the char after "CAS:" (dev_cmp advanced it), inside the quotes.
+;
+; D-CASOPEN (docs/spec-basic-casopen.md, reading docs/casopen-msx1-characterization.md):
+; the name is captured by `cas_capture_name` — cload.asm's shared cassette-name
+; parser — rather than by `tape_parse_name`, so it lands in CAS_WANT and arms
+; CAS_WANT_ON for the search. The two parsers produce byte-identical six-byte
+; space-padded fields and leave HL in the same place; what the shared one adds is
+; the "was a name given?" flag, which is precisely the two behaviours MEASURED on
+; both references: the compare is byte-exact (`OPEN"CAS:rt"` does NOT find `RT`)
+; and the bare form takes the next file. `merge_cas` below is the landed
+; precedent for a files.asm caller.
 oo_dev_cas:
-                call    tape_parse_name     ; fill TSV_NAME[0..5]; HL -> closing '"'
+                call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
                 ld      a,(hl)
                 cp      '"'
                 jp      nz,oo_fail_syn
@@ -472,11 +482,17 @@ oocas_argsok:
                 cp      CAS_OUT_MODE
                 jr      z,oocas_do_out
                 ; --- FOR INPUT: re-lock the tape, verify $EA, prime data block 1 ---
-                ; OPEN"CAS:" opens the NEXT file (name-matching is Item A's CLOAD/
-                ; LOAD/RUN/MERGE scope, not OPEN) — so match off, then cas_open_match
-                ; consumes the full header and cas_ascii_setup primes block 1.
-                xor     a
-                ld      (CAS_WANT_ON),a     ; load next file (no name-match on OPEN)
+                ; ✅ D-CASOPEN: the name is HONOURED. This arm used to write
+                ; `xor a` / `ld (CAS_WANT_ON),a` under the comment "OPEN"CAS:" opens
+                ; the NEXT file (name-matching is Item A's CLOAD/LOAD/RUN/MERGE
+                ; scope, not OPEN)". That scoping was a GUESS about the reference
+                ; that no row had ever checked, and it is measured WRONG: both the
+                ; VG-8020 and the CF-3300 step over a non-matching file and open the
+                ; named one, so zerobas was handing back the WRONG FILE'S BYTES.
+                ; cas_capture_name above has already armed CAS_WANT/CAS_WANT_ON
+                ; (0 for a bare OPEN"CAS:" = load next, which the references also
+                ; do), so the suppression is simply GONE — the search engine needed
+                ; no change at all.
                 call    cas_open_match      ; TAPION header + read id/name; CF = tape end
                 jr      c,oocas_ioerr
                 ld      a,(CAS_HDRID)
@@ -487,6 +503,19 @@ oocas_argsok:
                 jr      oocas_mark
 oocas_do_out:
                 ; --- FOR OUTPUT: write the $EA header block; arm the data buffer ---
+                ; D-CASOPEN: cas_write_ea_header emits TSV_NAME (it is shared with
+                ; SAVE"CAS:"/CSAVE, which fill it from tape_parse_name), so the name
+                ; captured above has to be put back where it expects it. This copy
+                ; is the WHOLE cost of the slice — the INPUT half is byte-negative.
+                ; MEASURED unchanged on all three sides by castail's
+                ; `cas-openout:tape` ('WX    ') and `cas-openoutbare:tape` (six
+                ; spaces), which are also the first rows in this tree ever to read
+                ; what a cassette OPEN actually WRITES. HL/DE/BC are free: both
+                ; pushes are above and oocas_mark pops them.
+                ld      hl,CAS_WANT
+                ld      de,TSV_NAME
+                ld      bc,6
+                ldir
                 call    cas_write_ea_header ; TAPOON long + $EA*10 + TSV_NAME + TAPOOF
                 jr      c,oocas_ioerr       ; CAS_WCNT reset to 0 on success
 oocas_mark:

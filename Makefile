@@ -1495,11 +1495,20 @@ runtail-acceptance: repack-machine $(DISK_TEST_DSK)
 # D-CASTAIL tails, where they are not the subject, and read UNFILTERED by the
 # cas2-* rows, where they are. zerobas printed NEITHER until D-CASSEARCH
 # (docs/spec-basic-cassearch.md): it now prints both, for 57 B in SUB page 1, and
-# `cas-load-plain:search` is RE-MEASURED and re-pinned rather than loosened.
-# THREE pins remain, and two of them are a DIFFERENT divergence: OPEN"CAS:name"
-# name-matches on both references and zerobas does not, so it opens the NEXT file
-# and returns the wrong file's bytes (filed in TODO.md). A pin that moves FAILS
-# the gate.
+# `cas-load-plain:search` is RE-MEASURED and re-pinned rather than loosened. ONE
+# pin remains and it is that one. A pin that moves FAILS the gate.
+#
+# ✅ D-CASOPEN (docs/spec-basic-casopen.md) closed the other two, for 7 B in MAIN
+# page 1: OPEN"CAS:name" FOR INPUT name-matches on both references and zerobas
+# did not, so it opened the NEXT file and returned the WRONG FILE'S BYTES. All
+# three sides now agree, so `cas2-open` / `cas2-open:echo` are RECLASSIFIED to
+# scored rows with a ZQ9 control rather than re-pinned at a value all three share.
+# That slice also adds the OPEN verb's own readings: the bare form (takes the next
+# file), CASE SENSITIVITY (`OPEN"CAS:rt"` does not find `RT`), and — read off the
+# TAPE THE MACHINE WROTE, because the screen cannot answer it — what FOR OUTPUT
+# records in its $EA header. Those two rows use a `cassetteplayer new` recording
+# and probes/lib/cas_decode.py; each needs its OWN boot, since `cassetteplayer
+# new` is a prologue and truncates the file at every boot.
 #
 # ⚠️ Three fixtures, and the reference forces each one. LOAD/RUN/MERGE/OPEN get
 # $EA ASCII tapes: those verbs search for an ASCII file and skip a tokenised

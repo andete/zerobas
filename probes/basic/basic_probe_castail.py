@@ -96,13 +96,29 @@ subject. Unfiltered, every abort row's tail would be `Skip :RT` PLUS the
 message, nothing would normalise, and all three abort rows would DIFF on the
 quarantined WORDING divergence this battery exists to hold out of scope.
 
-🔴 TWO DIVERGENCES REMAIN PINNED HERE, AND NEITHER IS THE PROGRESS LINE.
-`OPEN"CAS:name" FOR INPUT` NAME-MATCHES on both references -- it steps over a
-non-matching file and opens the named one -- and zerobas deliberately does not
-(basic/files.asm `oo_dev_cas` writes `CAS_WANT_ON = 0`), so it opens the NEXT
-file and hands back the WRONG FILE'S BYTES. `cas2-open` and `cas2-open:echo` pin
-that per side. Filed in TODO.md; it is the OPEN verb's name handling, in another
-file, and it needs its own battery.
+D-CASOPEN adds the rows that read the OPEN verb's NAME handling, and closes the
+divergence the two `cas2-open` pins held (docs/spec-basic-casopen.md):
+
+  `cas2-openbare`    `OPEN"CAS:"` with no name takes the NEXT file, exactly like
+                     bare `LOAD"CAS:"` -- the arm that reaches the match WITHOUT
+                     the compare loop, and the row that says a fix did not arm
+                     matching unconditionally
+  `cas2-opencase`    the compare is CASE-SENSITIVE: `OPEN"CAS:rt"` does NOT find
+                     `RT`. Read FILTERED, deliberately -- see its comment
+  `cas-openout`      🎯 `FOR OUTPUT` with a name, read off the TAPE THE MACHINE
+  `cas-openoutbare`  WROTE (a `cassetteplayer new` recording, decoded by
+                     probes/lib/cas_decode.py). The screen cannot answer this
+                     one: OPEN"CAS:WX" FOR OUTPUT prints nothing whatever it
+                     records
+
+✅ ONE DIVERGENCE REMAINS PINNED HERE, AND IT IS THE PROGRESS LINE'S
+(`cas-load-plain:search`). `OPEN"CAS:name" FOR INPUT` NAME-MATCHES on both
+references -- it steps over a non-matching file and opens the named one -- and
+zerobas deliberately did not (basic/files.asm `oo_dev_cas` wrote
+`CAS_WANT_ON = 0`), so it opened the NEXT file and handed back the WRONG FILE'S
+BYTES. `cas2-open` / `cas2-open:echo` pinned that per side until D-CASOPEN closed
+it; they are now SCORED rows with a `ZQ9` control, which is the reclassification
+that spec §4.1 argues for rather than a loosened pin.
 
 🟢 AND UNLIKE THE DISK BATTERY, THE VG-8020 IS A LEGITIMATE SIDE. `RUN"A:name"`
 needs a disk interface, which is why `basic_probe_runtail` refuses a vg8020 run;
@@ -140,6 +156,7 @@ import omsx_repl                                                 # noqa: E402
 from basic_probe_cas_ascii import build_ascii_cas                # noqa: E402
 from cas_encode import CAS_SYNC, BASIC_ID, build_cas_basic       # noqa: E402
 from bas_tokenise import make_multiline_program                  # noqa: E402
+import cas_decode                                                # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
                             "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -186,6 +203,18 @@ TXTBASE = 0x8001
 SKIP_NAME = "SK"
 SKIP_PROG = ['10 PRINT"ZQ8"']
 
+# --- D-CASOPEN: the OUTPUT half, read off the tape the machine ACTUALLY WROTE -
+# `OPEN"CAS:name" FOR OUTPUT` writes an $EA header carrying the 6-char name and
+# then the text; nothing on the SCREEN says what went into that header. So the
+# reading is taken from the RECORDING: the row runs on a `cassetteplayer new`
+# tape and `probes/lib/cas_decode.py` turns the WAV back into bytes, exactly the
+# write->read round-trip that module was built for. Signal edges only -- no
+# reference disassembly, and the same decoder on all three sides.
+REC_NAME = "WX"
+REC_TEXT = "ZQ7"
+ALIVE = "ZQ6"
+ASCII_ID = 0xEA          # the $EA ASCII-file id, ten times, ahead of the name
+
 # A tape read runs for ~10-30 EMULATED seconds while the harness keeps injecting
 # on schedule, and each injection overwrites whatever is still pending, so the
 # clock must be advanced past the operation before the next line is typed
@@ -194,6 +223,8 @@ W_LOAD = "@WAIT25"       # find + read the first file on the tape
 W_SEEK = "@WAIT12"       # let the search run before breaking it
 W_AFTER = "@WAIT8"       # let the abort report land
 W_LOAD2 = "@WAIT45"      # SKIP the first file, then find + read the second
+W_HDR = "@WAIT10"        # FOR OUTPUT writes the $EA header block's long leader
+W_FLUSH = "@WAIT14"      # CLOSE flushes the 256-byte data block behind it
 
 # Each row is (label, lines, subject_index, extra), `extra` = None or a tuple of
 # (index, name, drop_search) triples naming FURTHER lines of the same case that
@@ -264,6 +295,40 @@ CASES_T2 = [
     ("cas2-open",  ["MAXFILES=1", f'OPEN"CAS:{CAS_NAME}" FOR INPUT AS #1',
                     W_LOAD2, "INPUT#1,A$", "CLOSE", "PRINT A$"],       1,
      ((5, "echo", True),)),
+    # --- D-CASOPEN: the two INPUT readings the D-CASSEARCH residual named -----
+    # `cas2-open` above asks whether OPEN name-matches AT ALL. These two ask what
+    # a FIX has to know, and neither answer is derivable from that row:
+    #
+    #   `cas2-openbare`  Does bare `OPEN"CAS:"` take the NEXT file, the way bare
+    #                    `LOAD"CAS:"` does (`cas2-bare`)? That is the arm which
+    #                    reaches the match WITHOUT the compare loop, so a fix
+    #                    that turns matching ON for OPEN must leave it alone --
+    #                    and this is the only row that can say whether it did.
+    #                    Its `:echo` control wants ZQ8, the FIRST file: on this
+    #                    tape taking the wrong file means taking the SECOND.
+    #   `cas2-opencase`  Is the compare CASE-SENSITIVE, as it is for LOAD/CLOAD
+    #                    (`CAS_WANT` is byte-exact, CF-3300-confirmed,
+    #                    docs/spec-cas-tier3-cload.md A.5)? The tape holds `RT`
+    #                    and this row asks for `rt`.
+    #
+    # WARNING: `cas2-opencase` IS READ FILTERED, AND THAT IS WHY IT CAN BE SCORED
+    # AT ALL. A case-SENSITIVE machine steps over BOTH files, runs off the end of
+    # the tape, waits on silence, and is broken out of with Ctrl-STOP -- so its
+    # tail is `Skip :SK / Skip :RT` PLUS the side's own aborted-load message.
+    # Read UNFILTERED that tail is not EXACTLY the message, `<load-failed>` would
+    # not fire, and the row would DIFF on the quarantined WORDING divergence
+    # instead of on the question it asks. Filtered it is a clean two-valued
+    # discriminator: `<load-failed>` = the name was compared and missed,
+    # `<nothing>` = something was opened. Its `:alive` half is the positive
+    # control -- a row whose answer is an error message is otherwise satisfied by
+    # a machine that has stopped answering at all.
+    ("cas2-openbare", ["MAXFILES=1", 'OPEN"CAS:" FOR INPUT AS #1', W_LOAD,
+                       "INPUT#1,A$", "CLOSE", "PRINT A$"],            1,
+     ((5, "echo", True),)),
+    ("cas2-opencase", ["MAXFILES=1",
+                       f'OPEN"CAS:{CAS_NAME.lower()}" FOR INPUT AS #1',
+                       W_LOAD2, "@BREAK", W_AFTER, f'PRINT"{ALIVE}"'], 1,
+     ((5, "alive", True),)),
     # The BARE form -- `LOAD"CAS:"` with no name -- takes the FIRST file on the
     # tape without comparing anything. It is a SEPARATE arm of the match (a
     # `CAS_WANT_ON = 0` shortcut straight to `com_match`, never through the
@@ -278,13 +343,50 @@ CASES_T2T = [
      ((2, "listing", True),)),
 ]
 
+# --- D-CASOPEN: the THIRD reading -- what `FOR OUTPUT` does with a name -------
+# 🔴 THE SCREEN CANNOT ANSWER THIS ONE. `OPEN"CAS:WX" FOR OUTPUT` prints nothing
+# on any of the three sides whether it records the name, records six spaces, or
+# records garbage; the only witness is the TAPE. So these rows run on a RECORDING
+# tape (`cassetteplayer new`) and the reading is taken off the recording:
+# `probes/lib/cas_decode.py` turns the WAV back into bytes, and the six bytes
+# after the ten-byte $EA run ARE the header name. Signal edges only, the same
+# decoder on all three sides, no reference disassembly.
+#
+# Each row needs its OWN boot and its OWN recording (`cassetteplayer new`
+# truncates the file at every boot), so unlike the groups above each gets its own
+# `run_cases` call -- the shape `basic_probe_lnblank`'s `tape-save` rows use.
+#
+#   `cas-openout`      a NAMED output file: is the name in the header?
+#   `cas-openoutbare`  the bare form: what name does an UNNAMED output file get?
+#
+# Four readings each: the OPEN line (must print nothing -- no error), `:alive`
+# (the machine reached the next prompt and printed), `:tape` (the decoded 6-byte
+# header name) and `:data` (the decoded text, up to the Ctrl-Z terminator). The
+# last two are what says the tape was WRITTEN, not merely that nothing errored.
+_REC_TAIL = [W_HDR, f'PRINT#1,"{REC_TEXT}"', "CLOSE", W_FLUSH,
+             f'PRINT"{ALIVE}"']
+
+CASES_REC = [
+    ("cas-openout",     ["MAXFILES=1", f'OPEN"CAS:{REC_NAME}" FOR OUTPUT AS #1']
+                        + _REC_TAIL,                                   1,
+     ((6, "alive", True),)),
+    ("cas-openoutbare", ["MAXFILES=1", 'OPEN"CAS:" FOR OUTPUT AS #1']
+                        + _REC_TAIL,                                   1,
+     ((6, "alive", True),)),
+]
+
+# The two readings each recording row takes off the HOST file rather than off the
+# screen, in the order `run_rec_group` produces them.
+REC_READINGS = ("tape", "data")
+
 # Labels whose SUBJECT line is read with the `SEARCH_ROWS` filter OFF -- for
 # these rows the progress line IS the subject, so filtering it would leave them
 # measuring nothing at all ([[gate-can-be-green-while-measuring-nothing]]).
+# `cas2-opencase` is deliberately NOT here -- see its comment above.
 UNFILTERED_SUBJECTS = {"cas2-load", "cas2-merge", "cas2-open", "cas2-cload",
-                       "cas2-bare"}
+                       "cas2-bare", "cas2-openbare"}
 
-ALL_CASES = CASES + CASES_T2 + CASES_T2T
+ALL_CASES = CASES + CASES_T2 + CASES_T2T + CASES_REC
 
 # 🔴 THE PINNED DIVERGENCE. Not an agreement row: the three sides are EXPECTED to
 # differ, and each side's exact reading is written down so the day any of them
@@ -302,28 +404,22 @@ PINNED = {
         "cf3300": f"Found:{CAS_NAME}",
         "zb":     f"Found:{CAS_NAME}",
     },
-    # 🔴 A SECOND DIVERGENCE, FOUND BY THESE ROWS AND NOT FIXED HERE.
-    # `OPEN"CAS:name" FOR INPUT` NAME-MATCHES on both references -- it steps over
-    # `SK` and opens `RT`. zerobas deliberately does not: basic/files.asm
-    # `oo_dev_cas` writes `CAS_WANT_ON = 0` ("name-matching is Item A's
-    # CLOAD/LOAD/RUN/MERGE scope, not OPEN") and opens whatever file comes next.
-    # So it prints ONE `Found:SK` where a reference prints `Skip :SK / Found:RT`,
-    # and reads back the WRONG FILE's text. That is a defect of the OPEN verb's
-    # name handling, not of the progress line this slice closes, and it lives in
-    # a different file; pinned and filed rather than folded in.
-    # 🟢 THE PIN IS ALSO THIS ROW'S POSITIVE EVIDENCE. A per-side EXACT value is
-    # strictly stronger than a containment control: a dead machine reads
-    # `<nothing>` on both halves and ROTS the pin.
-    "cas2-open": {
-        "vg8020": f"Skip :{SKIP_NAME} / Found:{CAS_NAME}",
-        "cf3300": f"Skip :{SKIP_NAME} / Found:{CAS_NAME}",
-        "zb":     f"Found:{SKIP_NAME}",
-    },
-    "cas2-open:echo": {
-        "vg8020": '10 PRINT"ZQ9"',
-        "cf3300": '10 PRINT"ZQ9"',
-        "zb":     '10 PRINT"ZQ8"',
-    },
+    # ✅ D-CASOPEN CLOSED THE SECOND DIVERGENCE, AND ITS TWO PINS ARE GONE FROM
+    # HERE ON PURPOSE -- RECLASSIFIED, NOT LOOSENED. `cas2-open` and
+    # `cas2-open:echo` pinned `zb='Found:SK'` / `zb='10 PRINT"ZQ8"'` against both
+    # references' `Skip :SK / Found:RT` / `10 PRINT"ZQ9"`: OPEN"CAS:name" ignored
+    # the name and handed back the WRONG FILE's bytes. basic/files.asm
+    # `oo_dev_cas` now captures into CAS_WANT (docs/spec-basic-casopen.md), all
+    # three sides read the same thing, and a pin whose three values are IDENTICAL
+    # is a hand-written want -- which is the one thing this battery says it does
+    # not score by ("the references define the answer"). Both rows therefore join
+    # the SCORED set, where they are structurally identical to their three
+    # siblings `cas2-load` / `cas2-merge` / `cas2-cload`.
+    # 🟢 AND THE STRICTNESS IS REPLACED, NOT DROPPED. `cas2-open:echo` becomes a
+    # CONTROL asserting `ZQ9` -- the SECOND file's text. A machine that takes the
+    # wrong file reads ZQ8 and fails it; a dead one reads `<nothing>` and fails
+    # it. That is the degenerate case a bare agreement row is open to, and it is
+    # covered, so neither row is left without positive evidence.
 }
 
 # Rows whose agreed reading must additionally carry POSITIVE TEXT: proof that a
@@ -342,8 +438,34 @@ CONTROLS = {
     "cas2-load:listing":      ("ZQ9",),
     "cas2-merge:listing":     ("ZQ9", "ZQ1"),
     "cas2-cload:listing":     ("ZQ9",),
+    # ✅ D-CASOPEN: the fourth verb's control, and the row that used to be half of
+    # a pinned divergence (see PINNED). ZQ9 is the SECOND file -- the whole claim
+    # of `cas2-open` is that the search stepped over the first.
+    "cas2-open:echo":         ("ZQ9",),
     # The bare form takes the FIRST file, so ZQ8 -- not ZQ9 -- is the proof.
     "cas2-bare:listing":      ("ZQ8",),
+    # --- D-CASOPEN ---------------------------------------------------------
+    # The bare OPEN takes the FIRST file too, so ZQ8 is its proof and ZQ9 would
+    # be the failure. `cas2-opencase` answers with an ERROR MESSAGE, which a
+    # machine that has stopped answering produces for free, so its liveness half
+    # is what says the Ctrl-STOP returned to a working prompt.
+    "cas2-openbare:echo":     ("ZQ8",),
+    "cas2-opencase:alive":    (ALIVE,),
+    # The recording rows. `:tape` and `:data` come off the DECODED tape, so they
+    # are the rows that say something was actually WRITTEN -- the screen halves
+    # of these two rows are `<nothing>` and would be produced by an OPEN that
+    # silently did nothing at all.
+    "cas-openout:alive":      (ALIVE,),
+    "cas-openout:tape":       (REC_NAME,),
+    "cas-openout:data":       (REC_TEXT,),
+    "cas-openoutbare:alive":  (ALIVE,),
+    # 🔴 NO CONTROL ON `cas-openoutbare:tape`, DELIBERATELY, AND THE REASON IS
+    # THAT ITS EXPECTED VALUE CARRIES NO TEXT: an unnamed output file's header
+    # name is SIX SPACES, and "the reading contains six spaces" is satisfied by
+    # every blank and every failure. Its positive evidence is `:data` from the
+    # SAME decode of the SAME recording -- if the WAV decoded to `ZQ7` then the
+    # six bytes ahead of it are a real header field and not an absence.
+    "cas-openoutbare:data":   (REC_TEXT,),
 }
 
 ROWS = 24
@@ -450,6 +572,32 @@ def tape_path(kind: str = "one") -> str:
     return _TAPE[kind]
 
 
+def tape_readback(wav):
+    """(header name, text) actually WRITTEN, decoded from the recording.
+
+    Two DISTINCT apparatus sentinels, and both start with `<NO ` / `<BAD ` so the
+    scorer's own rule ("an apparatus sentinel is NEVER agreement") catches them:
+    two sides that both fail to record must not read as a reading they share.
+    """
+    if not os.path.exists(wav) or os.path.getsize(wav) < 1024:
+        return "<NO TAPE>", "<NO TAPE>"
+    try:
+        data, _info = cas_decode.decode_file(wav)
+    except Exception as exc:                                # pragma: no cover
+        return f"<BAD WAV {exc}>", "<BAD WAV>"
+    blob = bytes(data)
+    run = bytes([ASCII_ID] * 10)
+    i = blob.find(run)
+    if i < 0:
+        return "<NO $EA HEADER>", "<NO $EA HEADER>"
+    j = i + len(run)
+    name = blob[j:j + 6].decode("latin-1")
+    body = blob[j + 6:]
+    k = body.find(b"\x1a")                    # Ctrl-Z ends the ASCII text
+    text = (body[:k] if k >= 0 else body).decode("latin-1")
+    return name, " / ".join(t for t in text.split("\r\n") if t) or "<nothing>"
+
+
 # (fixture kind, the rows that mount it) -- one `run_cases` call each.
 GROUPS = (("one", CASES), ("two", CASES_T2), ("twot", CASES_T2T))
 
@@ -458,6 +606,47 @@ def run_side(side, only):
     out = {}
     for kind, group in GROUPS:
         run_group(side, only, kind, group, out)
+    for row in CASES_REC:
+        run_rec_group(side, only, row, out)
+    return out
+
+
+def run_rec_group(side, only, row, out):
+    """One recording row: its own boot, its own `cassetteplayer new` tape.
+
+    🔴 ONE ROW PER CALL IS NOT TIDINESS. `cassetteplayer new` is a PROLOGUE, and
+    a prologue applies to the whole `run_cases` batch -- and it TRUNCATES the
+    file at every boot. Two recording rows sharing one call would leave one
+    recording on disk and both rows would read it.
+    """
+    label, lines, subj, extra = row
+    if only and not any(label.startswith(o) for o in only):
+        return out
+    cfg = SIDES[side]
+    kw = {}
+    if cfg["diska"]:
+        if not os.path.exists(TEST_DSK):
+            for name in [label] + [f"{label}:{n}" for _, n, _ in (extra or ())] \
+                    + [f"{label}:{n}" for n in REC_READINGS]:
+                out[name] = "<NO DISK FIXTURE>"
+            return out
+        dsk = os.path.join(tempfile.gettempdir(), f"zb_castail_{side}_{label}.dsk")
+        shutil.copy(TEST_DSK, dsk)
+        kw["diska"] = dsk
+    wav = os.path.join(tempfile.mkdtemp(prefix=f"zb_castail_rec_{side}_"),
+                       f"{label}.wav")
+    caps = omsx_repl.run_cases(
+        cfg["machine"], [("direct", list(cfg["reset"]) + list(lines))],
+        batch=False, boot=cfg["boot"], step=cfg["step"],
+        prologue=(f"cassetteplayer new {{{wav}}}",), **kw)
+    raw = caps[0]
+    out[label] = tail_after(raw, lines[subj], cfg["failmsg"])
+    for i, name, drop in (extra or ()):
+        out[f"{label}:{name}"] = tail_after(raw, lines[i], cfg["failmsg"],
+                                            drop_search=drop)
+    tape, text = tape_readback(wav)
+    out[f"{label}:tape"] = tape
+    out[f"{label}:data"] = text
     return out
 
 
@@ -498,7 +687,10 @@ def run_group(side, only, kind, group, out):
 
 def labels_of(row):
     label, _, _, extra = row
-    return [label] + [f"{label}:{n}" for _, n, _ in (extra or ())]
+    names = [n for _, n, _ in (extra or ())]
+    if any(row is r for r in CASES_REC):
+        names += list(REC_READINGS)     # the two HOST-file readings
+    return [label] + [f"{label}:{n}" for n in names]
 
 
 def main() -> int:
