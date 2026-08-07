@@ -733,6 +733,53 @@ register clobber (fixed; see above), and on-device CLOAD/LOAD now load correctly
 The CLOAD/LOAD interpreter half is complete, crunch byte-identical, and
 oracle-validated against both the reference's own CLOAD and an on-device load.
 
+### 🔴 D-CASTAIL — what `RUN"CAS:x"` / `LOAD"CAS:x",R` do AFTER the load
+
+Measured 2026-08-07 against **two** references — the Philips VG-8020 and the
+National CF-3300, which agree row for row — by
+`probes/basic/basic_probe_castail.py` (`make castail-acceptance`, 9/9 + 1 pinned
+divergence). Spec `docs/spec-basic-castail.md`, reading
+`docs/castail-msx1-characterization.md`. This closes the residual
+`docs/spec-basic-runtail.md` §9 filed, and it is the **tape twin of D-RUNTAIL**:
+the same two defects, on the two `basic/cload.asm` sites that reach `run_prog`
+from a statement context.
+
+**(1) A failed tape load ran the resident program anyway.** `do_tape_prog`'s
+failure exits `jp load_error`, `load_error` prints and **returns**, and both call
+sites' next instruction was `jp run_prog`. Measured: after a Ctrl-STOP-aborted
+`RUN"CAS:NOSUCH"` with `10 PRINT"ZQ1"` resident, both references print their
+message and stop; zerobas printed the message and then **ran `ZQ1`**.
+`do_tape_prog` now carries the same CF-out contract `disk_prog_load` has (CF set
+= the load failed and has already reported), consumed by `ret c` at
+`dl_cas_close` and `dr_is_cas`. Its producer is `dpl_err` — **shared with the
+disk half**, so the producer cost **0 B** — and `load_error` itself is still not
+touched, for the same ~50-call-site reason. `verify_error` **is** edited in
+place, and that is safe because both of its callers are inside `do_tape_prog`.
+
+**(2) `jp run_prog` from a statement entered the run loop NESTED.** Identical to
+D-RUNTAIL's defect (2) above and with the identical symptom —
+`Illegal function call in 3346` after **every** `RUN"CAS:x"` / `LOAD"CAS:x",R`,
+hit and abort alike, on the **success path of a shipped verb**. Both sites now
+`jp run_prog_top`. ⚠️ `basic_probe_cas_verbs.py`'s `RUN"CAS:"` tests could not
+see this: they assert a **memory witness** (`$D0FF` → `$99`), and a witness byte
+cannot see an extra screen row.
+
+⚠️ **Two divergences of the tape SEARCH are recorded here and NOT fixed.**
+zerobas prints no `Found:`/`Skip :` tape-search progress line where both
+references do (new, found by building this instrument — **pinned** per side by
+the gate so it cannot drift silently); and a missing tape file is not an error on
+an MSX1 at all — the reference searches past the end of the tape and waits
+forever, which is why the only failure row here is an operator Ctrl-STOP. Both
+filed in `TODO.md`.
+
+| item | value | how established | status |
+|------|-------|------------------|--------|
+| Nothing is printed after a successful `RUN"CAS:x"` / `LOAD"CAS:x",R` beyond the loaded program's own output | — | oracle, **two** references agreeing (`castail` `cas-run-hit` / `cas-run-hit-res` / `cas-loadr-hit`) | sourced |
+| A failed tape load runs **nothing**, not the resident program | — | oracle, both references (`castail` `cas-run-brk-res` / `cas-loadr-brk-res`) | sourced |
+| `LOAD"CAS:x"` without `,R` loads and does not run | — | oracle, both references (`castail` `cas-load-plain` + its listing) | sourced |
+| `do_tape_prog` CF-out contract; `run_prog_top` at both tape sites | — | **own code** (mirrors `disk_prog_load`'s, D-RUNTAIL §3.2); not derived from any disassembly | sourced |
+| No `Found:`/`Skip :` tape-search progress line | diverges | oracle, both references print it | **quarantined** (pinned + filed) |
+
 ## Phase 1: minimal string variables for PRINT (basic/strvar.asm, basic/vars.asm, basic/print.asm, basic/interp.asm, basic/sysvars.inc)
 
 "Enough for PRINT": a `$`-suffixed variable (e.g. `A$`) can hold a short string,
@@ -1429,10 +1476,12 @@ Both sites now `jp run_prog_top`, which restores `SAVSTK` — the prompt-clean
 depth `dispatch_line` records before any statement runs — so `run_prog`'s `ret`
 returns to the REPL exactly as the bare-`RUN` command path's always did.
 
-⚠️ The tape twins (`dl_cas_close`, `dr_is_cas`) have defect (2) structurally and
-are deliberately unchanged: no cassette instrument scores them and
-`do_tape_prog` has no measured CF contract. Filed in `TODO.md`;
-`spec-basic-runtail.md` §9 carries the one-word edit.
+✅ **The tape twins are CLOSED by D-CASTAIL** (`docs/spec-basic-castail.md`,
+measured in `docs/castail-msx1-characterization.md`). `dl_cas_close` and
+`dr_is_cas` had **both** defects, not only (2), and both are fixed the same way:
+`jp run_prog_top`, and a CF-out contract on `do_tape_prog` consumed by `ret c`.
+See §cassette program load below. This paragraph previously said they were
+"deliberately unchanged"; that was true at `3e84afa` and is no longer.
 
 **Functional validation (openMSX, `disk_probe_run_disk.py`).**
 On `C-BIOS_MSX1_BASIC_DISK` with `-diska disk/test720.dsk` (carrying the real

@@ -313,6 +313,19 @@ was predicted correctly at **287**: this slice writes under `basic/`, `docs/`,
 
 ## 9. Residual — the tape twins are the same defect, unmeasured here
 
+> ✅ **CLOSED 2026-08-07 by D-CASTAIL** —
+> [spec-basic-castail.md](spec-basic-castail.md), measured in
+> [castail-msx1-characterization.md](castail-msx1-characterization.md).
+> Both defects were present on both tape sites; fixed for **+7 B** and gated by
+> `make castail-acceptance` (9/9 + 1 pinned divergence, three-sided).
+> 🔴 **The first bullet below is WRONG and is left standing as written.**
+> `omsx_repl` already mounts cassettes through its `prologue` seam — the claim
+> is true of `run_cases`'s *signature* and false of the module, so **no library
+> change was needed**. The real blocker was not the instrument: on an MSX1 a
+> **missing tape file is not an error** (the reference searches past the end of
+> the tape and waits forever), so there is no tape twin of `run-miss` and the
+> only failure a reference reports and returns from is an operator Ctrl-STOP.
+
 `basic/cload.asm`'s `dl_cas_close` (`LOAD"CAS:x",R`) and `dr_is_cas`
 (`RUN"CAS:x"`) end in the identical `jp run_prog` from a statement context, so
 defect A is structurally present there too. They are **not** changed by this

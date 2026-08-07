@@ -313,18 +313,37 @@ duplicating (and drifting from) what is written below.
       [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §8.6.
       *(Item (3), `run-missing`'s second message, is CLOSED — see D-RUNTAIL
       below.)*
-- [ ] ⚠️ **The tape twins of D-RUNTAIL are the same defect, and nothing scores
-      them.** `basic/cload.asm`'s `dl_cas_close` (`LOAD"CAS:x",R`) and
-      `dr_is_cas` (`RUN"CAS:x"`) still end in `jp run_prog` from a **statement**
-      context, which is defect A verbatim: the nested `run_prog` returns into the
-      enclosing line's loop with `CURLINE` destroyed, and the loop walks off into
-      `$0000`. They were left alone on purpose — this battery mounts a disk, not
-      a `.cas`, so no row reads them before OR after, and defect B's half needs a
-      **measured** CF-out contract on `do_tape_prog` that nothing has read.
-      The edit is `jp run_prog` → `jp run_prog_top` at both sites, *once a
-      cassette row exists to score it*; `do_tape_prog`'s success exits must be
-      read first. Detail:
-      [`docs/spec-basic-runtail.md`](docs/spec-basic-runtail.md) §9.
+- [x] ✅ **The tape twins of D-RUNTAIL are the same defect — CLOSED 2026-08-07 by
+      D-CASTAIL.** `dl_cas_close` (`LOAD"CAS:x",R`) and `dr_is_cas`
+      (`RUN"CAS:x"`) had **both** defects, not just A, and both are fixed for
+      **+7 B**: `jp run_prog_top` at each site, and a CF-out contract on
+      `do_tape_prog` consumed by `ret c` — whose producer is the **existing**
+      `dpl_err`, so defect B's producer cost **0 B**. Gate
+      `make castail-acceptance` **9/9 + 1 pinned divergence**, three-sided
+      (vg8020, cf3300, zb), 7 knives run twice.
+      🔴 **The filed blocker was wrong on one half and understated on the other.**
+      "`omsx_repl.run_cases` mounts a disk, not a `.cas`" is true of its
+      *signature* and false of the *module* — the `prologue` seam already mounts
+      tapes for `basic_probe_lnblank`, so **no library change was needed at
+      all**. What was actually hard is that **a missing tape file is not an error
+      on an MSX1**: the reference searches past the end of the tape and waits
+      forever, so there is no tape twin of `run-miss`, and the only failure a
+      reference reports and returns from is an operator **Ctrl-STOP**. Detail:
+      [`docs/spec-basic-castail.md`](docs/spec-basic-castail.md),
+      [`docs/castail-msx1-characterization.md`](docs/castail-msx1-characterization.md).
+- [ ] 📌 **zerobas prints NO tape-search progress line (`Found:` / `Skip :`).**
+      Found 2026-08-07 by D-CASTAIL while building the cassette instrument
+      (characterization §5); nothing in the record had it. Both references print
+      `Found:NAME` when the tape search takes a file and `Skip :NAME` when it
+      steps over one; zerobas prints neither, on any row, so a user watching a
+      tape load sees nothing until it finishes.
+      ⚠️ **PINNED, not blessed**: `castail-acceptance`'s `cas-load-plain:search`
+      row holds all three sides' readings verbatim and FAILS the gate if any of
+      them moves, which is what keeps the probe's search-row filter from being a
+      normalisation that quietly excuses the silence. The fix is a print in
+      `cas_open_match`'s match/skip arms and it costs main page-1 bytes; it is
+      the search's own divergence, not the tail-after-a-load question D-CASTAIL
+      answers, which is why it is filed rather than folded in.
 - [x] ✅ **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD —
       CLOSED 2026-08-07**, and **the remedy I filed was DECLINED on a read of the
       record** ([[a-recommendation-in-the-record-is-still-a-claim]] — the filer

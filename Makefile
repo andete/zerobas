@@ -1471,6 +1471,47 @@ runtail-acceptance: repack-machine $(DISK_TEST_DSK)
 	        $(if $(ONLY),--only '$(ONLY)',) \
 	        --repeat $(if $(REPEAT),$(REPEAT),1)
 
+# --- what a machine prints AFTER RUN"CAS:x" / LOAD"CAS:x",R -------------------
+# D-CASTAIL: docs/spec-basic-castail.md, measured in
+# docs/castail-msx1-characterization.md. Closes docs/spec-basic-runtail.md §9 --
+# the TAPE TWINS of D-RUNTAIL's two defects, which that slice left unscored
+# because it had no cassette instrument.
+#
+# 🟢 THREE-SIDED, and the VG-8020 is a full side here BY MEASUREMENT, not by
+# habit: RUN"A:name" needs a disk interface (which is why runtail-acceptance
+# REFUSES a vg8020 run), but RUN"CAS:x" needs a CASSETTE PORT, which every MSX1
+# has. The two references agree row for row, which is what says these readings
+# are the MSX1 rule rather than a property of one machine's Disk BASIC.
+#
+# ⚠️ Every row is a WHOLE-TAIL match, never a substring -- the subject IS an
+# extra screen row. ONE row expects `<nothing>` and THREE expect an error
+# message, all of which a machine that runs no program at all produces for free,
+# so three POSITIVE controls (`cas-run-hit`, `bare-run`,
+# `cas-load-plain:listing`) require program output / a listing in the agreed
+# reading and the probe exits 2 -- not 1 -- when one fails. Knife K-ASC (spec §5)
+# is the build that proves they are load-bearing.
+#
+# 📌 The tape-search progress rows (`Found:`/`Skip :`), which zerobas does not
+# print, are dropped from every scored tail and PINNED verbatim per side by
+# `cas-load-plain:search` -- a divergence found by building this instrument, so
+# the filter cannot hide what it removes. A pin that moves FAILS the gate.
+#
+# ⚠️ The tape fixture is $EA ASCII and the reference forces that: LOAD"CAS:" on a
+# tokenised ($D3) tape searches past the end of the tape and waits forever on
+# both references (docs/dotgaps-msx1-characterization.md §1.2), so a $D3 fixture
+# would hang them and gate nothing. HEAVY + oracle-dependent (needs your CF-3300
+# reference ROMs); NOT part of the emulator-free `unit-test`.
+castail-characterize: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_castail.py \
+	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',)
+
+castail-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_castail.py --gate \
+	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',) \
+	        --repeat $(if $(REPEAT),$(REPEAT),1)
+
 # --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
 #
 # What one open channel costs on a real disk-capable MSX1, measured out of the same
@@ -1808,6 +1849,7 @@ clean:
         editverb-acceptance lptverb-characterize lptverb-acceptance \
         dskmsg-characterize dskmsg-acceptance \
         runtail-characterize runtail-acceptance \
+        castail-characterize castail-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

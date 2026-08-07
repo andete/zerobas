@@ -120,10 +120,17 @@ dl_cas_close:
                 call    parse_close_run     ; closing quote + optional ,R -> RUNFLAG
                 jp      c,load_error
                 call    do_tape_prog        ; load the tokenised program off tape
+                ret     c                   ; D-CASTAIL defect B (docs/spec-basic-
+                                            ; castail.md §3.2): the tape load FAILED and
+                                            ; has already reported. LOAD"CAS:x",R must
+                                            ; not then run whatever was resident -- both
+                                            ; references print their message and stop
+                                            ; (characterization §4, cas-loadr-brk-res)
                 ld      a,(RUNFLAG)          ; ,R ? -> run it; else back to the REPL
                 or      a
                 ret     z
-                jp      run_prog
+                jp      run_prog_top        ; RUN the loaded program -- at TOP LEVEL,
+                                            ; never nested (§3.1, and see run_prog_top)
 
 ; --- do_load disk path: LOAD "A:name"[,R] -----------------------------------
 ; HL was advanced partway through the "CAS:" compare and must NOT be trusted —
@@ -204,16 +211,16 @@ dr_cas_close:
                 jp      c,load_error
                 call    do_tape_prog        ; load the program off tape (tokenised OR
                                             ; $EA ASCII — do_tape_prog's 3-way dispatch)
-                jp      run_prog            ; ...and run it
-                                            ; ⚠️ NOT run_prog_top, and NOT because the
-                                            ; tape path is exempt: it has the IDENTICAL
-                                            ; defect A. It is unchanged because this
-                                            ; slice has no cassette instrument to score
-                                            ; it with, and defect B's half needs a
-                                            ; MEASURED CF contract on do_tape_prog that
-                                            ; nothing has read (docs/spec-basic-
-                                            ; runtail.md §9; filed in TODO.md). Same at
-                                            ; dl_cas_close above.
+                ret     c                   ; D-CASTAIL defect B: the load FAILED and has
+                                            ; already reported -- RUN"CAS:x" must run
+                                            ; NOTHING, not the resident program
+                jp      run_prog_top        ; ...and run it, at TOP LEVEL -- see
+                                            ; run_prog_top below. D-CASTAIL closes the
+                                            ; D-RUNTAIL §9 residual: this site had the
+                                            ; IDENTICAL defect A and was left alone only
+                                            ; because nothing scored the tape paths.
+                                            ; docs/spec-basic-castail.md, measured in
+                                            ; docs/castail-msx1-characterization.md.
 
 ; --- run_prog_top: enter run_prog at TOP LEVEL, from a statement context ------
 ; D-RUNTAIL (docs/spec-basic-runtail.md §3.1), measured in
@@ -325,25 +332,44 @@ cas_open_match:
 ; ASCII (SAVE"CAS:",A) program handed to cas_ascii_load. TAPIN trashes every
 ; register, so all state lives in RAM. CLOAD, LOAD"CAS:" and RUN"CAS:" all reach
 ; here, so all three accept either format and honour the filename transparently.
+;
+; --- D-CASTAIL: THE CF-OUT CONTRACT (docs/spec-basic-castail.md §3.2) ---------
+;   out: CF set = the load FAILED and has ALREADY reported.
+; Consumed by `ret c` at dl_cas_close (LOAD"CAS:x",R) and dr_is_cas (RUN"CAS:x"),
+; which must then run NOTHING: both references print their message and stop,
+; where zerobas ran whatever program was resident (castail characterization §4).
+; do_cload reaches here by `jp` and has no ,R, so it consumes no carry.
+;
+; 🔴 load_error IS NOT TOUCHED, for the reason spec-basic-runtail.md §3.2 gives:
+; ~50 jp/call sites across seven files, several of which resume into their caller
+; on purpose. The contract is stated on THIS routine's exits, and its producer is
+; dpl_err (below) -- `call load_error` + `scf` + `ret`, already written for the
+; disk half, so every failure exit here repoints at ZERO delta.
+;
+; ⚠️ COVERAGE, EXACTLY: only the cas_open_match exit is scored by a row (the
+; Ctrl-STOP abort -- the ONLY tape failure a reference reports and returns from;
+; a missing tape file just searches past the end of the tape and waits forever,
+; characterization §6). The rest carry the contract for COMPLETENESS, and the
+; tokenised ($D3) exits are unreachable from every row in the battery.
 do_tape_prog:
                 call    cas_open_match      ; find the (named) file; header consumed
-                jp      c,load_error        ; not found / tape error
+                jp      c,dpl_err           ; not found / tape error / Ctrl-STOP abort
                 ld      a,(CAS_HDRID)
                 cp      BASIC_ID            ; tokenised BASIC -> the store/compare loop
                 jr      z,ctp_data_tokenised
                 cp      ASCII_ID            ; ASCII program -> cas_ascii_load
-                jp      nz,load_error       ; neither id -> unrecognised file
+                jp      nz,dpl_err          ; neither id -> unrecognised file
                 ; $EA ASCII: CLOAD? verify is tokenised-only (spec §B) -> reject
                 ld      a,(CAS_VERIFY)
                 or      a
-                jp      nz,load_error
+                jp      nz,dpl_err
                 jp      cas_ascii_load
 ctp_data_tokenised:
                 ; --- data block: skip its leader tone -----------------------
                 ; Like BLOAD, the program data is a SEPARATE tape block, so it
                 ; needs its own TAPION to re-lock onto the data block's leader.
                 call    TAPION
-                jp      c,load_error
+                jp      c,dpl_err           ; D-CASTAIL CF contract
 
                 ; --- start a fresh program: store cursor at the text base ---
                 ld      hl,TXTBASE
@@ -377,7 +403,7 @@ ctp_data_tokenised:
                 ; relink (token-aware) recomputes them below.
 ctp_line:
                 call    TAPIN               ; link low
-                jp      c,load_error
+                jp      c,dpl_err           ; D-CASTAIL CF contract
                 push    af                  ; preserve link-low: TAPIN clobbers C
                 call    TAPIN               ; link high
                 jp      c,ctp_link_err      ; must pop before leaving
@@ -449,13 +475,13 @@ ctp_body:
 ; the stack from the push before that call.  Pop it to restore balance, then error.
 ctp_link_err:
                 pop     af
-                jp      load_error
+                jp      dpl_err             ; D-CASTAIL CF contract
 
 ; ctp_err_pop / ctp_oom_pop — body length / remaining count is on the stack; drop
 ; it before taking the shared error / out-of-memory path so the stack stays balanced.
 ctp_err_pop:
                 pop     de
-                jp      load_error
+                jp      dpl_err             ; D-CASTAIL CF contract
 ctp_oom_pop:
                 pop     de
                 jp      ctp_oom
@@ -481,7 +507,8 @@ ctp_done:
                 ; relink (program.asm) recomputes them from the loaded bytes, so
                 ; the program is now byte-identical to one typed in.
                 call    relink
-                ret
+                or      a                   ; D-CASTAIL: the SUCCESS half of the CF
+                ret                         ; contract -- CF clear = loaded, run it
 
 ; --- ctp_verify_done: CLOAD? end-of-tape -> report Ok / Verify error ----------
 ; Verify is NON-DESTRUCTIVE: no marker, no PRGEND, no relink — CAS_VMIS holds the
@@ -507,7 +534,11 @@ ctp_oom:
                 ld      a,$CC               ; out-of-memory landmark (as store_line)
                 ld      (ERRMARK),a
                 ld      hl,err_prog_mem
-                jp      print_msg           ; D-MSGENC: err_prog_mem aliases err_mem,
+                call    print_msg           ; D-MSGENC: err_prog_mem aliases err_mem,
+                scf                         ; D-CASTAIL: a store overflow is a FAILED
+                ret                         ; load -- RUN"CAS:x" must not then run the
+                                            ; empty program new_prog just left (mirrors
+                                            ; dpl_oom on the disk half)
 err_prog_mem    equ     err_mem             ; repack: share sl_oom's "out of memory"
                                             ; (program.asm) — identical bytes. Part of
                                             ; D-2's self-funding string dedup (S1).
@@ -542,9 +573,14 @@ cput_adv:
                 ret
 
 ; --- verify_error: report a CLOAD? mismatch (memory left untouched) -----------
+; D-CASTAIL: this one IS edited in place, unlike load_error, and the reason is a
+; COUNT not a principle -- its only two callers (ctp_verify_done, ctp_oom) are
+; both inside do_tape_prog, so `scf` here cannot reach anyone else's carry.
 verify_error:
                 ld      hl,err_verify
-                jp      print_msg                       ; D-MSGENC
+                call    print_msg                       ; D-MSGENC
+                scf                             ; a mismatch is a FAILED load: CF out
+                ret                             ; (docs/spec-basic-castail.md §3.2)
 err_verify:     db      "Verify",MSGESC_ERROR,0         ; 15 B -> 8 B
 
 ; --- cas_ascii_load: LOAD of an ASCII (SAVE"CAS:",A) cassette program --------
@@ -595,11 +631,14 @@ err_verify:     db      "Verify",MSGESC_ERROR,0         ; 15 B -> 8 B
 ; LOAD"CAS:",R / do_cload) applies RUNFLAG exactly as the tokenised path's `ret`.
 cas_ascii_load:
                 call    cas_ascii_setup     ; skip the rest of the header + prime block 1
-                jp      c,load_error        ; header / block-1 unreadable -> load error
+                jp      c,dpl_err           ; header / block-1 unreadable -> load error
                 call    new_prog            ; LOAD replaces the current program
                 call    cas_ascii_drive     ; read+tokenise+store via the tape source
-                jp      c,load_error        ; non-numbered line -> abort
-                ret                         ; caller handles ,R / returns to the REPL
+                jp      c,dpl_err           ; non-numbered line -> abort
+                ret                         ; caller handles ,R / returns to the REPL.
+                                            ; D-CASTAIL: CF is ALREADY CLEAR here (the
+                                            ; `jp c` above did not take), so the ASCII
+                                            ; success path needs no `or a` -- 0 bytes
 
 ; --- cas_ascii_setup: prime data block 1 of an $EA cassette file --------------
 ; The whole 16-byte header (id + name) is now consumed upstream by cas_open_match
@@ -877,6 +916,12 @@ dpl_done:
 ; ascii_load failure. (No Close: read side has no dirty state.)
 ; D-RUNTAIL: `call` + `scf`, not `jp` — this IS the CF-set half of the contract
 ; above, and load_error's own return carry belongs to its other ~50 callers.
+;
+; ⚠️ D-CASTAIL: SHARED WITH do_tape_prog. Every tape failure exit repoints here
+; too (docs/spec-basic-castail.md §3.2), so defect B's PRODUCER costs 0 B on the
+; tape path -- these five bytes already say exactly 'reported, and failed'. The
+; `dpl_` prefix is therefore no longer disk-only; renaming it would churn eight
+; disk call sites and make spec-basic-runtail.md §3.2's table stale for nothing.
 dpl_err:
                 call    load_error
                 scf
