@@ -274,18 +274,26 @@ duplicating (and drifting from) what is written below.
       item. All four ROM hashes UNCHANGED (probe + docs only), so the emulator
       gates that can only re-drive the same machine were **not run**, stated
       rather than folded into "corpus green".
-- [ ] ⚠️ **Seven of `fat-error-acceptance`'s eight rows still have NO verb-success
-      control** — `load-missing`, `run-missing`, **`kill-missing`**,
-      `bload-missing`, `open-missing`, `append-missing`, `merge-missing`. Each is
-      satisfied by a verb that always errors; the gate prints the count on every
-      run so the number cannot rot silently. **`kill-missing` is the one that
-      matters**: it is the other REFERENCE-EXACT row (pinned to a measured
-      CF-3300 answer, not to zerobas's quarantined `load error`), so it carries
-      the same weight `name-missing` does and has the same hole — and it is one
-      `CASES` tuple plus one `VERB_CONTROLS` entry away on machinery that now
-      exists. Left out of D-FEVERB because widening a residual while closing it
-      is how a pickup list stops being one. Detail:
-      [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §4.
+- [ ] ⚠️ **SIX of `fat-error-acceptance`'s eight rows still have NO verb-success
+      control** — `load-missing`, `run-missing`, `bload-missing`, `open-missing`,
+      `append-missing`, `merge-missing`. Each is satisfied by a verb that always
+      errors; the gate prints the count, the names, and whether any of them is
+      reference-exact **derived from `CASES`** on every run, so the number cannot
+      rot silently.
+      ✅ **`kill-missing` closed 2026-08-07** (`kill-alive`, spec §7) — it was the
+      one that mattered, being the other REFERENCE-EXACT row. **None of the
+      remaining six is reference-exact**; all are pinned to zerobas's own
+      quarantined `load error`, which is why they rank below the two now covered
+      — not why they are safe.
+      🔴 **DO NOT COPY `name-alive` FOR THEM.** `KILL` needed a different shape
+      and the knife proved it: under a `KILL` that deletes nothing, the screen
+      reading is `'TEST    .BIN PROG    .BIN'`, which **contains the positive
+      tokens** — only the new `absent` half reds it. Any verb whose success is an
+      ABSENCE needs survivors AND casualty asserted.
+      Feasible on today's fixture: `LOAD`/`BLOAD`/`OPEN`/`MERGE` (`PROG.BAS`,
+      `PROG.BIN`, `HI.TXT`). `RUN` executes a program and `APPEND` writes, so
+      those two need thought about ordering on the shared batched image. Detail:
+      [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §4/§7.5.
 - [x] ✅ **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD —
       CLOSED 2026-08-07**, and **the remedy I filed was DECLINED on a read of the
       record** ([[a-recommendation-in-the-record-is-still-a-claim]] — the filer

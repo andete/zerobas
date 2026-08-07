@@ -150,18 +150,21 @@ itself ([[a-hand-listed-denominator-is-a-scope-claim]]). So the count is
 | rows | verb-success control | what a verb that ALWAYS errors scores |
 |---|---|---|
 | `name-missing` | ✅ `name-alive` | **red** (exit 2, NOT MEASURED) |
-| `kill-missing` | ❌ none | **PASS** |
+| `kill-missing` | ❌ none → ✅ `kill-alive` **since §7** | **PASS** → **red** |
 | `load-missing`, `run-missing`, `bload-missing`, `open-missing`, `append-missing`, `merge-missing` | ❌ none | **PASS** |
 
-**1 of 8.** `kill-missing` is named first among the seven because it is the other
-**reference-exact** row — pinned to a measured CF-3300 answer rather than to
-zerobas's own quarantined `load error` — so it carries the same weight
-`name-missing` does and has the same hole. It is one `CASES` tuple and one
-control away, on machinery this slice builds; it is left out because the filed
-item was `NAME`'s, and widening a residual while closing it is how a pickup list
-stops being a pickup list.
+**1 of 8 when this section was written; 2 of 8 since §7.** `kill-missing` was
+named first among the seven because it is the other **reference-exact** row —
+pinned to a measured CF-3300 answer rather than to zerobas's own quarantined
+`load error` — so it carries the same weight `name-missing` does and had the same
+hole. It was left out of the first commit because the filed item was `NAME`'s,
+and widening a residual while closing it is how a pickup list stops being a
+pickup list; it was picked up next, as its own step, on the machinery §2 built.
 
-`TODO.md` carries the remaining seven as one item, with `kill-missing` called out.
+⚠️ **The gate DERIVES this paragraph's live version rather than printing a typed
+one** — see §7.2, where a hard-coded copy of it went stale within one commit.
+
+`TODO.md` carries the remaining six as one item.
 
 ---
 
@@ -286,10 +289,8 @@ Measured on both sides of the change by the same runner, in the same session.
 
 ### 6.5 What is left open
 
-* **Seven of the eight rows still have no verb-success control** (§4), printed by
-  the gate on every run. `kill-missing` is the one that matters most — the other
-  reference-exact row, same hole, one `CASES` tuple and one control away on the
-  machinery this slice built. Filed in `TODO.md`, not widened into this slice.
+* ~~**Seven of the eight rows still have no verb-success control**~~ — ✅
+  `kill-missing` closed in §7; **six** remain, printed by the gate every run.
 * **`run-missing`'s reading is `'load error|Illegal function call in 3346'`** —
   two messages on one row, unchanged by this slice and unexplained by any
   document. Noted where it was seen; not investigated.
@@ -310,3 +311,87 @@ Measured on both sides of the change by the same runner, in the same session.
   separates "reddened nothing" from "never reached the artifact"; and a clean
   rebuild costs **5.1 s** vs 0.08 s incremental, so there was no reason to
   prefer incremental in the first place.
+
+---
+
+## 7. Increment — `kill-alive`, the other reference-exact row
+
+§4 filed `kill-missing` as the one of the seven that mattered: pinned to a
+measured CF-3300 answer (R-DK1), with no control behind the verb. Picked up next,
+as its own step, on §2's machinery.
+
+### 7.1 🔴 KILL is ASYMMETRIC, and that is a design change, not a copy
+
+`NAME`'s success is **positive on screen** — a name that was not there before is.
+**`KILL`'s success is an ABSENCE**, and an absence is satisfied by a machine that
+cannot list a directory at all. A control asserting only *"`PROG.BIN` is gone"*
+would be the negative assertion this whole gate exists to avoid.
+
+So `kill-alive` types `KILL"A:PROG.BIN"` then `FILES"*.BIN"` and asserts **both
+halves**:
+
+| half | assertion | what it alone cannot do |
+|---|---|---|
+| `want` | `TEST` **and** `BIN` present | prove the casualty went — a build that deleted nothing still lists `TEST    .BIN` |
+| `absent` (new field) | `PROG    .BIN` **not** in the reading | prove the listing ran at all — an empty screen satisfies it |
+| directory | `TEST    BIN` present, `PROG    BIN` gone | (independent of the screen entirely) |
+
+`FILES"*.BIN"` and not a bare `FILES`: it keeps the reading to the two entries
+that matter, and `_echo_idx` matches an anchor by `endswith`, so a bare `FILES`
+is a weaker anchor than a distinctive one.
+
+⚠️ `PROG.BIN` is free — `bload-missing` drives `NOSUCH.BIN`, `fat-alive` drives
+`HI.TXT`, `name-alive` drives `PROG2.BAS`. Three writing rows now share the one
+batched `/tmp` image and touch three disjoint files.
+
+### 7.2 ⚠️ The denominator paragraph went stale within one commit, and now DERIVES
+
+The first version printed a typed footnote: *"'kill-missing' among them is the
+other REFERENCE-EXACT row"*. True when written; **false one commit later**, when
+`kill-missing` got a control and left the list the footnote annotates — and still
+printed by the gate as though measured.
+
+That is the defect this slice's predecessor fixed in `basic_probe_dskmsg.py`
+(a `NOT GATED:` list holding a non-exclusion), arriving **inverted**: a footnote
+naming a row that has *left* the list. Every clause of it is now computed from
+`CASES` — the count, the names, and whether any uncovered row is reference-exact
+— so it reads `none of the 6 is reference-exact -- every one is pinned to
+zerobas's own 'load error', the quarantined divergence`, and cannot survive its
+own subject moving.
+
+### 7.3 Predicted GREEN, and measured
+
+| predicted | measured | |
+|---|---|---|
+| `8/8 scored + 3 directory checks`, exit 0, `VERB-SUCCESS CONTROLS: 2 of 8` | exactly that, with the six named and the derived reference-exact clause | ✅ |
+| `kill-alive` → `TEST    .BIN`; directory `TEST    BIN` present / `PROG    BIN` gone | exactly that | ✅ |
+| all four ROM hashes unchanged | `disk.rom 2c630d3d…`, `sub.rom 6ea374de…`, `basic-reloc.rom 849d661e…`, `zerobas-main-eu.rom 4952fb9e…` | ✅ |
+
+### 7.4 🎯 The knives — 3 run, each twice, both rounds identical
+
+Runner built to [`dev-workflow.md`](dev-workflow.md) §Knives in full: `rm -rf
+build` per cut **and** the ROM-hash check, which are two different faults.
+
+| # | cut | verdict |
+|---|---|---|
+| **K-KA1** | `tnt_kill`'s `call fat_delete` → `scf`/`nop`/`nop` (byte-neutral, and the loop still TERMINATES — a neutered write-back would spin) so `KILL` always reports "nothing matched" | **CUT** — `kill-alive` FAIL on both instruments, `kill-missing` **NOT MEASURED**, rc **2**. `fat-alive`, `name-alive` + its directory, `name-missing` and the other six rows all held |
+| **K-KA2** | `do_kill`'s `jp z,df_notfound` → `jp z,load_error` — the **disposition** regresses, the verb still works | **CUT, the GREEN CONTROL** — `kill-missing` FAIL at `'load error'`, rc **1**, row **scored**; `kill-alive` and its directory check both green |
+| **K-FE1** | `tnt_name_stamp`'s write → read (re-run from §5) | **CUT** — `name-alive` reds, **`kill-alive` and `kill-missing` stay GREEN**: the two controls are independent, neither is a proxy for the other |
+
+🔴 **K-KA1 IS THE MEASUREMENT THAT JUSTIFIES §7.1, AND IT IS NARROW.** Under the
+cut, `kill-alive`'s screen reading is **`'TEST    .BIN PROG    .BIN'`** — which
+**contains `TEST` and `BIN`**. The `want` half alone **passes**. Only the
+`absent` half reds the row. Had `kill-alive` been written as a copy of
+`name-alive` (positive tokens only), it would have been green over a `KILL` that
+deletes nothing — the exact failure the control exists to prevent, reproduced
+one field away.
+
+### 7.5 Still open
+
+* **Six of eight rows have no verb control**: `load-missing`, `run-missing`,
+  `bload-missing`, `open-missing`, `append-missing`, `merge-missing`. None is
+  reference-exact — all six are pinned to zerobas's own `load error` — which is
+  why they rank below the two that are now covered, not why they are safe.
+  `LOAD`/`BLOAD`/`OPEN`/`MERGE` all have a feasible success control on this
+  fixture (`PROG.BAS`, `PROG.BIN`, `HI.TXT`); `RUN` executes a program and
+  `APPEND` writes, so those two need thought about ordering on the shared image.

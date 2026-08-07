@@ -108,7 +108,7 @@ CASES = [
     # quarantined wording divergence basic/PROVENANCE.md records for the whole
     # no-disk / mount / I-O class, and NOTHING in D-DSKMSG measured them. A pin
     # that drifts verb by verb on its neighbours' evidence stops being a pin.
-    ("kill-missing",  'KILL"A:NOSUCH.BAS"', "File not found"),
+    ("kill-missing",  'KILL"A:NOSUCH.BAS"', "File not found", "kill-alive"),
     ("bload-missing", 'BLOAD"A:NOSUCH.BIN"'),
     ("open-missing",  'OPEN"A:NOSUCH.DAT" FOR INPUT AS #1'),
     # D-APPMISS (docs/spec-basic-append-missing-refuse.md §5c). APPEND used to
@@ -220,14 +220,32 @@ CONTROL_WANT = ("HI", "TXT")
 # control is evidence about.  PROG2.BAS is on disk/test720.dsk (TEST.BIN, HI.TXT,
 # PROG.BIN, PROG.BAS, PROG2.BAS) and no row here reads it; `REN2` appears nowhere
 # else in the tree, so the screen assertion cannot match by accident.
+#
+# ⚠️ KILL IS THE ASYMMETRIC ONE, and it is why `absent` exists. NAME's success is
+# POSITIVE on screen -- a name that was not there before is. KILL's success is an
+# ABSENCE, and an absence is satisfied by a machine that cannot list a directory
+# at all. So `kill-alive` asserts the SURVIVORS by name (positive text, the
+# listing demonstrably ran) AND the casualty gone, which together are evidence;
+# either half alone is not. Same reasoning `dsk-killhit` carries in
+# basic_probe_dskmsg.py, and the directory instrument settles it independently.
 VERB_CONTROLS = {
     "name-alive": dict(
         lines=['NAME"A:PROG2.BAS" AS "REN2.BAS"', 'FILES"A:REN2.BAS"'],
         shown='NAME"A:PROG2.BAS" AS "REN2.BAS" : FILES',
         want=("REN2", "BAS"),                 # screen: positive text
+        absent=(),
         dir_present=b"REN2    BAS",           # directory: the rename LANDED
         dir_absent=b"PROG2   BAS",            # directory: and the old one went
         guards="name-missing",
+    ),
+    "kill-alive": dict(
+        lines=['KILL"A:PROG.BIN"', 'FILES"*.BIN"'],
+        shown='KILL"A:PROG.BIN" : FILES"*.BIN"',
+        want=("TEST", "BIN"),                 # screen: the survivor, by name
+        absent=("PROG    .BIN",),             # screen: the casualty, 8.3-rendered
+        dir_present=b"TEST    BIN",           # directory: the volume still has files
+        dir_absent=b"PROG    BIN",            # directory: the delete LANDED
+        guards="kill-missing",
     ),
 }
 
@@ -354,15 +372,17 @@ def main() -> int:
         vc = VERB_CONTROLS[k]
         tail = omsx_repl.screen_tail(vraws[k], vc["lines"][-1])
         got = " | ".join(t.strip() for t in str(tail or "").split("\n") if t.strip())
-        scr = all(w in (tail or "") for w in vc["want"])
+        scr = (all(w in (tail or "") for w in vc["want"])
+               and not any(u in (tail or "") for u in vc["absent"]))
         dpres = names is not None and vc["dir_present"] in names
         dabs = names is not None and vc["dir_absent"] not in names
         vok[k] = scr and dpres and dabs
         print(f"  {'PASS' if vok[k] else 'FAIL'}  {k:14} {vc['shown']:38} "
               f"-> {got[:60]!r}   [VERB CONTROL for {vc['guards']}]")
         if not vok[k]:
-            print(f"        screen wanted {' + '.join(vc['want'])}: "
-                  f"{'ok' if scr else 'MISSING'};  directory wanted "
+            print(f"        screen wanted {' + '.join(vc['want'])}"
+                  + (f" and NOT {' / '.join(vc['absent'])}" if vc["absent"] else "")
+                  + f": {'ok' if scr else 'MISSING'};  directory wanted "
                   f"{vc['dir_present'].decode()!r} present "
                   f"({'ok' if dpres else 'ABSENT'}) and "
                   f"{vc['dir_absent'].decode()!r} absent "
@@ -413,7 +433,8 @@ def main() -> int:
                   f"{'present' if dpres else 'ABSENT'}, "
                   f"{vc['dir_absent'].decode()!r} "
                   f"{'gone' if dabs else 'STILL THERE'}"
-                  f"   [the rename reached the SECTOR, not just the screen]")
+                  f"   [{vc['guards'].split('-')[0].upper()} reached the SECTOR, "
+                  f"not just the screen]")
         made = MUST_NOT_EXIST in names
         print(f"\n  {'FAIL' if made else 'PASS'}  append-missing (directory) "
               f"-> {MUST_NOT_EXIST.decode()!r} "
@@ -432,13 +453,25 @@ def main() -> int:
     # verb control is satisfied by a verb that ALWAYS errors -- measured, not
     # supposed: K-NAMECTL scored this battery 8/8 at exit 0 over a NAME that
     # renamed nothing, back when name-missing had no control either.
+    # ⚠️ EVERY CLAUSE OF THIS PARAGRAPH IS DERIVED, none of it typed. The first
+    # version hard-coded "'kill-missing' among them is the other reference-exact
+    # row" -- true when it was written, FALSE one commit later when kill-missing
+    # got a control, and printed by the gate as if measured. That is the same
+    # defect as a NOT-GATED list holding a non-exclusion, inverted: a footnote
+    # naming a row that has LEFT the list it annotates.
     uncovered = [k for k, _, _, v in CASES if not v]
+    exact = [k for k, _, w, v in CASES if not v and w != WANT]
     print(f"VERB-SUCCESS CONTROLS: {len(CASES) - len(uncovered)} of {len(CASES)} "
           f"rows. The other {len(uncovered)} are satisfied by a verb that always "
-          f"errors:\n  {', '.join(uncovered)}\n"
-          f"  ('kill-missing' among them is the other REFERENCE-EXACT row, so it "
-          f"carries the same\n   weight 'name-missing' does and has the same "
-          f"hole. TODO.md / docs/spec-fat-error-verb-control.md §4)")
+          f"errors:\n  {', '.join(uncovered)}")
+    if exact:
+        note = ("REFERENCE-EXACT and still uncovered: " + ", ".join(exact)
+                + " -- pinned to a MEASURED reference answer with no control "
+                  "behind the verb, which is the pairing that matters most")
+    else:
+        note = (f"none of the {len(uncovered)} is reference-exact -- every one is "
+                f"pinned to zerobas's own {WANT!r}, the quarantined divergence")
+    print(f"  ({note}. TODO.md / docs/spec-fat-error-verb-control.md §4)")
 
     if instrument_fault:
         print("SOME NOT MEASURED -- exit 2 = the instrument was broken, NOT an "
