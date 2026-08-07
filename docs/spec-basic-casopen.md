@@ -321,6 +321,13 @@ and neither is visible on any green run:
    them was being stripped. A false CUT, silently, on the one row in the battery
    that asserts a value.
 
+✅ **BOTH SHAPES DESCRIBED ABOVE ARE HISTORY SINCE D-ROWSHAPE (2026-08-07).**
+`basic_probe_castail.py` now prints one grammar on every exit path — a
+fixed-width tag at a constant column, every side named on every row, and a
+`ROWS:` terminator — and `make rowshape-check` holds it there for the five
+probes in that class. The description is kept verbatim because it is the
+measurement that motivated the fix; see `docs/spec-probe-rowshape.md`.
+
 Both are the same underlying mistake: **diffing report LINES instead of readings.**
 A cut in zerobas can only move zerobas, so the reading is *the side-under-test's
 value*, and everything else on the line is the printer. That rule is now in

@@ -87,6 +87,7 @@ import argparse, os, shutil, struct, sys, tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", "lib"))
 import omsx_repl  # noqa: E402
+import probe_report  # noqa: E402
 
 # zerobas's own lowercase wording for the whole no-disk / mount / I-O class -- the
 # quarantined divergence, and the default `want` for a row that has not been
@@ -418,6 +419,12 @@ def dir_names(dsk_path: str):
 
 
 def main() -> int:
+    # docs/spec-probe-rowshape.md I3: every exit path that prints report rows
+    # ends with ONE terminator stating how many, so a knife runner reads a
+    # COUNT instead of guessing this report's layout. The rows themselves are
+    # deliberately NOT touched -- this probe already satisfied I1 and I2 before
+    # the slice that added them, and is the gate's positive control for both.
+    nrows = 0
     ap = argparse.ArgumentParser()
     ap.add_argument("--machine", default="C-BIOS_MSX1_EU_REPACK_DISK")
     ap.add_argument("--diska", default=None,
@@ -488,6 +495,7 @@ def main() -> int:
     ctl_ok = all(w in (ctl_tail or "") for w in CONTROL_WANT)
     print(f"  {'PASS' if ctl_ok else 'FAIL'}  {CONTROL[0]:14} {CONTROL[1]:38} "
           f"-> {ctl_got[:60]!r}   [PRECONDITION]")
+    nrows += 1
     if not ctl_ok:
         want = " + ".join(CONTROL_WANT)
         print(f"\n*** THE PRECONDITION FAILED: {CONTROL[1]} did not list "
@@ -508,7 +516,10 @@ def main() -> int:
             tail = omsx_repl.screen_tail(raw, line)
             got = " | ".join(t.strip() for t in str(tail or "").split("\n") if t.strip())
             print(f"  ....  {key:14} {line:38} -> {got[:60]!r}  (not scored)")
+            nrows += 1
         print("\n===== FAT error disposition: NOT MEASURED (precondition failed) =====")
+        print(probe_report.footer(nrows, 0,
+                                  "NOT MEASURED (the precondition failed)"))
         if tmp:
             os.unlink(tmp)
         return 2
@@ -536,6 +547,7 @@ def main() -> int:
         vok[k] = scr and dpres is not False and dabs is not False
         print(f"  {'PASS' if vok[k] else 'FAIL'}  {k:14} {vc['shown']:38} "
               f"-> {got[:60]!r}   [VERB CONTROL for {vc['guards']}]")
+        nrows += 1
         if not vok[k]:
             # ⚠️ EVERY FIELD HERE IS OPTIONAL, AND THIS BRANCH ONLY RUNS WHEN THE
             # CONTROL FAILS. An earlier version formatted `dir_present.decode()`
@@ -568,6 +580,7 @@ def main() -> int:
         if vc_key and not vok[vc_key]:
             print(f"  ....  {key:14} {line:38} -> {got[:60]!r}"
                   f"   NOT MEASURED (verb control {vc_key!r} failed)")
+            nrows += 1
             continue
         good = want in (tail or "")
         ok &= good
@@ -575,6 +588,7 @@ def main() -> int:
         guard = f"   [verb control: {vc_key}]" if vc_key else ""
         print(f"  {'PASS' if good else 'FAIL'}  {key:14} {line:38} "
               f"-> {got[:60]!r}{pin}{guard}")
+        nrows += 1
         if not good:
             print(f"        want {want!r} -- a SILENT return here is the exact "
                   f"signature of a broken error tail")
@@ -611,12 +625,14 @@ def main() -> int:
         if not mlive_ok:
             print(f"  ....  {key:14} {line:38} -> {got[:60]!r}"
                   f"   NOT MEASURED (liveness failed)")
+            nrows += 1
             continue
         if not pinned:
             mscored += 1
             ok = False
             print(f"  FAIL  {key:14} {line:38} -> {got[:60]!r}"
                   f"   [MOUNT arm, pinned {WANT!r}]")
+            nrows += 1
             print(f"        want {WANT!r} at an EMPTY DRIVE -- this row exists "
                   f"because K-KILL2/K-NAME2 reddened nothing without it")
             continue
@@ -624,6 +640,7 @@ def main() -> int:
         if not differs:
             print(f"  ....  {key:14} {line:38} -> {got[:60]!r}"
                   f"   NOT MEASURED (reads the same as {twin!r})")
+            nrows += 1
             print(f"        the mounted twin answers the SAME string, so this "
                   f"machine cannot distinguish a MOUNT miss from a FIND miss --\n"
                   f"        which is what a dead disk ROM looks like. Exit 2, "
@@ -633,6 +650,7 @@ def main() -> int:
         mpass += 1
         print(f"  PASS  {key:14} {line:38} -> {got[:60]!r}"
               f"   [MOUNT arm; twin {twin!r} answers differently]")
+        nrows += 1
     mount_fault = (not mlive_ok) or mscored < len(MOUNT_CASES)
 
     # THE SECOND INSTRUMENT, for `append-missing`: a refusal that still created
@@ -734,6 +752,8 @@ def main() -> int:
           "K-NAME2 real cuts instead of predicted misses -- "
           "docs/spec-fat-error-mount-row.md)")
 
+    print(probe_report.footer(nrows, scored + mscored,
+                              "ALL PASS" if ok else "SOME FAILED"))
     if instrument_fault or mount_fault:
         print("SOME NOT MEASURED -- exit 2 = the instrument was broken, NOT an "
               "error-disposition regression")

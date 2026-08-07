@@ -398,7 +398,7 @@ duplicating (and drifting from) what is written below.
       control, and `castail-acceptance` reads **31/31 + 1 pin**. Detail:
       [`docs/spec-basic-casopen.md`](docs/spec-basic-casopen.md),
       [`docs/casopen-msx1-characterization.md`](docs/casopen-msx1-characterization.md).
-- [ ] 📌 **A KNIFE RUNNER READ A COMPLETE 32-ROW EXIT-2 REPORT AS TRUNCATED,
+- [x] 📌 **A KNIFE RUNNER READ A COMPLETE 32-ROW EXIT-2 REPORT AS TRUNCATED,
       BECAUSE THE TWO REPORT SHAPES ARE INDENTED DIFFERENTLY.** Found 2026-08-07
       by D-CASOPEN's K-CO1 round 1. `dev-workflow.md` §Knives already says *"the
       guard must know every shape the probe prints"* and D-RUNTAIL already
@@ -415,12 +415,78 @@ duplicating (and drifting from) what is written below.
       ✅ **The runner-side rule is LANDED** in `docs/dev-workflow.md` §Knives:
       *parse rows into (label → the side-under-test's VALUE) and diff that; never
       diff report LINES.*
-      ⚠️ **What is still OPEN is the probe-side half**: whether a probe should
-      print ONE row format on every exit path, so a runner cannot be caught by
-      the layout at all. That is a change to several probes with their own
-      recorded tallies, and it needs its own walk and its own knife — the rule
-      above makes runners correct, it does not make the *reason* they had to be
-      careful go away. **Not priced, and no byte count is implied.**
+      ✅ **THE PROBE-SIDE HALF IS CLOSED 2026-08-07 by D-ROWSHAPE, for ZERO ROM
+      bytes** — [`docs/spec-probe-rowshape.md`](docs/spec-probe-rowshape.md).
+      All four walls (3 / 158 / 3843 / 1483) and all four ROM hashes came back
+      byte-identical from clean; no `.asm` or `.inc` was touched.
+      🎯 **"ONE ROW FORMAT" WAS DECLINED AS FILED, AND THE FILED QUESTION IS WHY.**
+      The exit-2 report prints every side's value and `(not scored)` *because
+      nothing was measured*; collapsing it into the agreed-value form deletes the
+      information it exists to carry. What ships is one row **GRAMMAR** — a
+      fixed-width tag at a constant column (I1), every side named on every row on
+      every path (I2), and a `ROWS: n printed` terminator on every exit path (I3)
+      — so a runner reads a stated COUNT instead of guessing a layout.
+      📏 **THE DENOMINATOR WAS WALKED AND THE HAND-LIST WAS WRONG IN BOTH
+      DIRECTIONS.** 175 probe `.py` files; 29 print a machine-parseable report
+      row; **5** print rows on an exit-2 path AND another path — the only shape
+      in which a runner meets two renderings of the same reading. Of the eight
+      probes the residual guessed at, **four are not in the class at all**
+      (`lnblank`, `diskbasic`, `lptverb`, `editverb` — `editverb` has exactly ONE
+      row site), and the walk found **two it missed**, one of which is the green
+      control.
+      🟢 **THE REMEDY WAS ALREADY IN THE TREE, UNDER KNIVES.**
+      `disk_probe_fat_error_disposition.py` already satisfied I1 and I2 on all
+      five of its blocks, which is why D-FEVERB's and D-MOUNTROW's knives were
+      caught by neither fault. Its **rows are not touched** by this slice — it
+      gains only I3's terminator — so `rowshape-check` green is not the slice
+      grading its own homework.
+      🔴 **THE FIRST CUT OF THE GATE WENT BLIND TO ITS OWN SUBJECT BY FIXING IT**:
+      the checker only recognised inline f-strings, so migrating `castail` to the
+      shared formatter DROPPED it out of the contract (5 → 4) and a fully
+      migrated tree would have scored `0 in contract`. Caught by watching the
+      denominator move [[readout-blind-to-its-own-subject]].
+      🔴 **A GATE THAT DELEGATES TO A SHARED MODULE INHERITS A BLIND SPOT EXACTLY
+      THE WIDTH OF THAT MODULE.** K-RS1 (delete the tag pad *inside*
+      `probe_report.row`) leaves `rowshape-check` GREEN by construction — the
+      checker reads `TAG_W`, not the format string. The knife's predicted RED was
+      **rewritten before it was run** to `unit-test`, and
+      `tests/test_probe_report.py` is the grammar's own oracle. Two gates, two
+      subjects; neither alone covers the claim.
+      ✅ Runners no longer write the parser: `probe_report.parse()` ships, matches
+      `side=<repr>` positively, and **raises** on a missing or disagreeing
+      terminator. `docs/dev-workflow.md` §Knives now points at it.
+      📊 7 knives × 2 rounds, **14/14 EXACT** (K-RS2/3/4 redden `castail` ONLY,
+      K-RS7 reddens `fat_error` ONLY, K-RS5 exits **3** APPARATUS FAILURE).
+      Corpus green; every predicted count hit on the nose — `unit-test` 58→**59**,
+      `audit-citations` 727→**731**, `injector-check` 332→**335**,
+      `preflight-check` 181/86/95/95/0 unchanged, `rowshape-check`
+      **176 walked / 29 report-row / 5 in contract / 5 conform / 0 violations**.
+      💰 **The other 25 gated multi-shape probes are PRICED AND DECLINED**: they
+      print one shape *per exit path*, so a runner's baseline and its knifed run
+      meet the same shapes and the fault needs two paths. Bringing them in would
+      be 25 bespoke edits across ~19,000 lines (only 6 of 30 share a data model)
+      plus a re-run of each one's emulator gate — see spec §10, and re-open it
+      with evidence if a runner is ever actually caught by one.
+- [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
+      EXIT-2 PATH PRINTS A DIFFERENT TABLE ENTIRELY.** Found 2026-08-07 by
+      D-ROWSHAPE's walk ([`docs/spec-probe-rowshape.md`](docs/spec-probe-rowshape.md)
+      §2.4) — the hand-list in the residual above did not have it, and the walk
+      did. `kwsweep`'s scored rows print `{state:5}  {key:9} {body}` with the
+      body **undelimited**: no `repr()`, so a value containing a space cannot be
+      recovered from the line by any parser, whatever the layout. It is
+      therefore **out of the row-grammar contract by definition, not by
+      exemption**, and `make rowshape-check` does not watch it.
+      Its `return 2` block prints `    {k:9} {n} chars` — a *probe-defect* table
+      (keywords whose direct-mode exec line exceeds one screen row), not its
+      readings — so a runner holding a `kwsweep` baseline sees **zero** rows
+      under that knife.
+      ⚠️ **That abort is CORRECT** (the probe genuinely measured nothing) and the
+      landed §Knives rule *"enumerate the probe's exit codes and parse all of
+      them"* already covers it, which is why this is filed rather than fixed.
+      **Priced:** de-tabulating the defect list is one line; giving the scored
+      rows a parseable encoding is a format change to a **162-word** sweep whose
+      re-run is the real cost, bought to prevent a fault the runner rule already
+      prevents. **No byte count is implied.**
 - [x] ✅ **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD —
       CLOSED 2026-08-07**, and **the remedy I filed was DECLINED on a read of the
       record** ([[a-recommendation-in-the-record-is-still-a-claim]] — the filer

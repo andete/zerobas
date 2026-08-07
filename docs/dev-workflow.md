@@ -188,7 +188,10 @@ landed defect, not advice.
   WHICH ROWS APPEAR.** Measured 2026-08-07 (D-CASOPEN, `spec-basic-casopen.md`
   §7.3): the bullet above was already written, already read, and the runner still
   aborted K-CO1 on a **complete 32-row** exit-2 report. Two separate reasons, and
-  a runner has to survive both:
+  a runner has to survive both. ⚠️ **The two shapes quoted below are HISTORY —
+  D-ROWSHAPE unified them; see the ✅ bullet that follows.** They are kept
+  verbatim because they are the measurement, and because 24 gated probes outside
+  that fix still print more than one shape:
   * **Layout.** `basic_probe_castail.py` prints `ok `/`DIFF` rows at column 0 and
     exit-2 `....` rows indented two spaces. An `^`-anchored row regex therefore
     matches every GREEN run and **no knifed one** — so the guard that exists to
@@ -201,6 +204,27 @@ landed defect, not advice.
   **Parse rows into `(label → the side-under-test's VALUE)` and diff THAT.** A cut
   in zerobas can only move zerobas; the references are constants, and comparing
   their formatting is comparing the printer.
+* ✅ **AND SINCE D-ROWSHAPE (2026-08-07) YOU DO NOT HAVE TO WRITE THAT PARSER.**
+  `docs/spec-probe-rowshape.md` closed the probe-side half: the five probes that
+  print report rows on more than one exit path now print **one grammar** on all
+  of them, gated statically by `make rowshape-check`, and the parser ships:
+
+  ```python
+  sys.path.insert(0, "probes/lib")
+  import probe_report
+  rows = probe_report.parse(out)        # raises ReportTruncated
+  now  = {r.label: r.vals["zb"] for r in rows if "zb" in r.vals}
+  ```
+
+  `parse()` matches `side=<python repr>` positively — it never anchors on a
+  column, never strips a note, and **raises** rather than returning a short list
+  when the `ROWS:` terminator is missing or disagrees with the rows it parsed.
+  That terminator is the point: a runner now detects a truncated report by
+  reading a **count** the probe states, instead of by guessing a layout. Use it;
+  a hand-rolled row regex is how both faults above were re-derived.
+  ⚠️ **Only 5 probes are in that contract** (the ones with rows on an exit-2 path
+  *and* another path — `make rowshape-check LIST=1` prints the walk). For any
+  other probe you are still on your own, and every rule above still applies.
 * **A failed build ABORTS rather than scoring** — a knife scored against a stale
   ROM reads as a CUT.
 * 🔴 **AND "BUILD BEFORE THE BASELINE" IS REALLY "BUILD BEFORE EVERY PROBE RUN

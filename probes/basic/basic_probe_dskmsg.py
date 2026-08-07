@@ -103,6 +103,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))    # sibling prob
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_repl                                                 # noqa: E402
+import probe_report                                              # noqa: E402
 from basic_probe_lptverb import reading                          # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
@@ -224,6 +225,12 @@ def check_controls(results, sides):
     return bad
 
 
+# The label pad for every report row this probe prints, on every exit path.
+# docs/spec-probe-rowshape.md: ONE grammar, so a knife runner's baseline taken
+# on one path can be read against another.
+LABEL_W = 14
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--sides", default="cf3300,zb")
@@ -270,7 +277,8 @@ def main() -> int:
     bad = check_controls(results, sides)
     if bad:
         for label, s, got, miss, hit in bad:
-            print(f"  FAIL  {label:14} [{s}] -> {got!r}")
+            print(probe_report.row("FAIL", label, LABEL_W, {s: got},
+                                   "   [POSITIVE CONTROL]"))
             if miss:
                 print(f"        wanted {miss} in the reading")
             if hit:
@@ -288,16 +296,21 @@ def main() -> int:
               "regression.")
         for label in gated:
             vals = {s: results[s][label] for s in sides if label in results[s]}
-            print(f"  ....  {label:14} "
-                  + "  ".join(f"{s}={v!r}" for s, v in vals.items())
-                  + "  (not scored)")
+            print(probe_report.row("....", label, LABEL_W, vals,
+                                   "   (not scored)"))
+        print(probe_report.footer(len(bad) + len(gated), 0,
+                                  "NOT MEASURED (a positive control failed)"))
         return 2
 
     if len(sides) < 2:
+        n = 0
         for label in gated:
             for s in sides:
                 if label in results[s]:
-                    print(f"     {label:<14} {results[s][label]!r}")
+                    print(probe_report.row("--", label, LABEL_W,
+                                           {s: results[s][label]}))
+                    n += 1
+        print(probe_report.footer(n, 0, "CHARACTERIZATION (one side)"))
         print("=" * 78)
         print(f"{len(gated)} row(s) measured on {sides[0]} — "
               "CHARACTERIZATION, no agreement verdict is possible from one side")
@@ -316,9 +329,10 @@ def main() -> int:
         agree += ok
         dis += not ok
         note = "   [CONTROL]" if label in CONTROLS else ""
-        print(f"{'ok ' if ok else 'DIFF'} {label:<14} "
-              + ("  ".join(f"{s}={vals[s]!r}" for s in vals)
-                 if not ok else repr(next(iter(vals.values())))) + note)
+        print(probe_report.row("ok" if ok else "DIFF", label, LABEL_W,
+                               vals, note))
+    print(probe_report.footer(len(gated), len(gated),
+                              f"{agree} agree, {dis} diverge"))
     print("=" * 78)
     print(f"{agree}/{agree + dis} gated rows agree")
     print(f"SIDES: {','.join(SIDES)} — the VG-8020 has no disk ROM and CANNOT "

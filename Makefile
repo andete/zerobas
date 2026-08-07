@@ -1673,6 +1673,27 @@ msgexact-relock: repack-machine
 preflight-check:
 	python3 tools/check_probe_preflight.py $(if $(LIST),--list,)
 
+# --- REPORT-ROW GRAMMAR gate (docs/spec-probe-rowshape.md) --------------------
+# A knife runner parses a probe's report to decide whether a cut reddened
+# anything, and twice in one session (D-CASOPEN, 2026-08-07) it was defeated by
+# the report's SHAPE: an `^`-anchored row regex matched every green run and NO
+# knifed one (the exit-2 rows are indented two spaces), and a runner diffing
+# report LINES scored every row as moved (the same reading prints as
+# `ok  label  'value'` when the sides agree and `....  label  a='..'  b='..'`
+# when nothing is scored). Both cost real re-measures.
+#
+# ⚠️ THIS GATE IS STATIC BECAUSE ITS SUBJECT IS UNREACHABLE AT RUNTIME. A probe's
+# failure-formatting branch only ever executes under a KNIFE -- no acceptance
+# gate has printed the `....` shape, ever -- so four probes carried the fault for
+# months underneath a fully green corpus, and a behavioural gate would have to
+# fail a positive control to see it at all.
+#
+# In contract: a probe printing report rows on an exit-2 path AND another path,
+# computed structurally over probes/**/*.py -- never a name list. Five today.
+# `make rowshape-check LIST=1` prints every site and its verdict.
+rowshape-check:
+	python3 tools/check_report_shape.py $(if $(LIST),--list,)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT

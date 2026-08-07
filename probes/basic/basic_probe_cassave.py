@@ -73,6 +73,7 @@ import tempfile
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_repl                                                 # noqa: E402
+import probe_report                                              # noqa: E402
 import cas_decode                                                # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
@@ -218,6 +219,12 @@ def run_side(side, only):
     return out
 
 
+# The label pad for every report row this probe prints, on every exit path.
+# docs/spec-probe-rowshape.md: ONE grammar, so a knife runner's baseline taken
+# on one path can be read against another.
+LABEL_W = 20
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="D-CASSAVE")
     ap.add_argument("--sides", default="cf3300,zb")
@@ -267,7 +274,8 @@ def main() -> int:
                 bad.append((lab, s, got, miss))
     if bad:
         for lab, s, got, miss in bad:
-            print(f"  FAIL  {lab:20} [{s}] -> {got!r}")
+            print(probe_report.row("FAIL", lab, LABEL_W, {s: got},
+                                   "   [POSITIVE CONTROL]"))
             print(f"        wanted {miss} in the reading")
         print("\n*** A POSITIVE CONTROL FAILED, so nothing below it was "
               "measured.\n"
@@ -286,16 +294,21 @@ def main() -> int:
               "    (not 1) = the instrument was broken, NOT a regression.")
         for lab in present:
             vals = {s: results[s][lab] for s in sides if lab in results[s]}
-            print(f"  ....  {lab:20} "
-                  + "  ".join(f"{s}={v!r}" for s, v in vals.items())
-                  + "  (not scored)")
+            print(probe_report.row("....", lab, LABEL_W, vals,
+                                   "   (not scored)"))
+        print(probe_report.footer(len(bad) + len(present), 0,
+                                  "NOT MEASURED (a positive control failed)"))
         return 2
 
     if len(sides) < 2:
+        n = 0
         for lab in present:
             for s in sides:
                 if lab in results[s]:
-                    print(f"     {lab:<20} {results[s][lab]!r}")
+                    print(probe_report.row("--", lab, LABEL_W,
+                                           {s: results[s][lab]}))
+                    n += 1
+        print(probe_report.footer(n, 0, "CHARACTERIZATION (one side)"))
         print("=" * 78)
         print(f"{len(present)} reading(s) on {sides[0]} — CHARACTERIZATION, "
               "no agreement verdict is possible from one side")
@@ -314,9 +327,10 @@ def main() -> int:
         agree += ok
         dis += not ok
         note = "   [CONTROL]" if lab in CONTROLS else ""
-        print(f"{'ok ' if ok else 'DIFF'} {lab:<20} "
-              + ("  ".join(f"{s}={vals[s]!r}" for s in vals)
-                 if not ok else repr(next(iter(vals.values())))) + note)
+        print(probe_report.row("ok" if ok else "DIFF", lab, LABEL_W,
+                               vals, note))
+    print(probe_report.footer(len(present), len(present),
+                              f"{agree} agree, {dis} diverge"))
 
     print("=" * 78)
     print(f"{agree}/{agree + dis} readings agree "
