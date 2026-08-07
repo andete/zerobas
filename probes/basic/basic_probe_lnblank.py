@@ -3040,15 +3040,18 @@ KNOWN_DIVERGE = {
     # entry rots loudly the day its owner lands
     # (docs/dotgaps-msx1-characterization.md §6).
     #
-    # D2. `SAVE"CAS:name"` WITHOUT `,A` WRITES A TOKENISED TAPE HERE AND AN ASCII
-    # ONE ON BOTH REFERENCES -- decoded off the recorded WAV, not inferred: the
-    # reference tape opens `ea ea ea …` and carries the program as text, zerobas'
-    # opens `d3 d3 d3 …`. So the reference's `.` moves to 40 (the ASCII walk
-    # emitted line 40 last) and zerobas' stays at 5. ⚠️ THE `.` HALF IS NOT THE
-    # DEFECT: fix the format and this row goes green with no `.` change at all.
-    # Its owner is a SAVE slice -- basic/save.asm's own header documents the
-    # tokenised behaviour, and basic_probe_tape_save.py asserts it as an oracle.
-    "csv-tok":      " 5  0 ",
+    # ✅ D2 IS CLOSED (D-CASSAVE, 2026-08-07) AND ITS ENTRY IS GONE FROM HERE ON
+    # PURPOSE. `csv-tok` pinned zerobas' ` 5  0 ` against both references' ` 40  0 `:
+    # `SAVE"CAS:name"` without `,A` wrote a TOKENISED tape here and an ASCII one
+    # there, so the reference's ASCII walk emitted line 40 last and moved `.`
+    # while zerobas' tokenised write left it alone. basic/save.asm now writes
+    # ASCII (docs/spec-basic-cassave.md), and the row went green with NO `.`
+    # CHANGE AT ALL -- which is the prediction this comment used to carry, and
+    # scoring the row is how it got tested.
+    # 🔴 DELETING A `KNOWN_DIVERGE` ENTRY IS THE STRICTER MOVE, NOT THE LOOSER
+    # ONE: an entry here SUPPRESSES its row from the agreement verdict, so
+    # removing it puts `csv-tok` back under the same cross-side scoring its
+    # neighbours `csv-asc` and `csv-csave` have always had.
     # D4. A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM. Both
     # references refuse a 32-byte line with ~148 free bytes after a `CLEAR`;
     # zerobas has no HIMEM-derived bound to hit, so the line is STORED and no

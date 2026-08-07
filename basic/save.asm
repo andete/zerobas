@@ -9,9 +9,21 @@
 ;   BSAVE "CAS:F",start,end[,exec]  -> tape binary: 10x$D0 + 6-char name (header
 ;                                       block); then start/end/exec + data (data block).
 ;   SAVE "A:F"                       -> disk tokenised: [$FF] + program image.
-;   SAVE "CAS:F"                     -> tape tokenised: 10x$D3 + 6-char name (header
-;                                       block); then program image (data block).
-;   CSAVE "F"                        -> tape tokenised (same as SAVE"CAS:F").
+;   SAVE "CAS:F"                     -> tape ASCII: 10x$EA + 6-char name (header
+;                                       block); then the LISTING in 256-byte data
+;                                       blocks, Ctrl-Z terminated. ✅ D-CASSAVE:
+;                                       `,A` OR NOT — this line said "tape
+;                                       tokenised: 10x$D3" until 2026-08-07 and
+;                                       the code matched it. Both references write
+;                                       $EA here (docs/cassave-msx1-characterization.md,
+;                                       decoded off the recorded tape on a VG-8020
+;                                       and a CF-3300); CSAVE is the tokenised one.
+;   CSAVE "F"                        -> tape tokenised: 10x$D3 + 6-char name, then
+;                                       the program image. NOT the same as
+;                                       SAVE"CAS:F" — measured $D3 on all three
+;                                       sides, and it is the control that keeps
+;                                       "SAVE"CAS:" is ASCII" from being read as
+;                                       "every cassette save is ASCII".
 ;
 ; All tape writes use the TAPOON/TAPOUT/TAPOOF BIOS entry points at $00EA/$00ED/$00F0
 ; (zerobas-tape; sysvars.inc). TAPOUT CLOBBERS EVERY REGISTER: every loop counter
@@ -20,7 +32,7 @@
 ; Cassette file format: two logical blocks per file (MSX2 TH cassette file format;
 ; cross-checked by cas_encode.py which mirrors what a real CSAVE writes):
 ;   Block 1 header: TAPOON(long) + 10x file-type-id + 6-char filename + TAPOOF.
-;     file-type-id = $D3 (BASIC_ID) for tokenised (CSAVE / SAVE"CAS:").
+;     file-type-id = $D3 (BASIC_ID) for tokenised (CSAVE only -- D-CASSAVE).
 ;     file-type-id = $D0 (BINARY_ID) for binary (BSAVE"CAS:").
 ;   Block 2 data: TAPOON(short) + payload + TAPOOF.
 ;     Tokenised payload = program image TXTBASE..PRGEND+1 (same line-link image
@@ -252,7 +264,18 @@ sav_is_cas:
                 jr      z,sav_cas_flag      ; SAVE"CAS:name",<flag> -> check for ,A
                 or      a
                 jp      nz,load_error       ; trailing junk after the name
-                jp      tape_save_basic     ; no flag -> tokenised (jp: out of jr range)
+                ; ✅ D-CASSAVE: NO FLAG IS THE SAME AS `,A` — an ASCII ($EA) tape.
+                ; This arm used to `jp tape_save_basic` (tokenised, $D3), which
+                ; basic/save.asm's own header table documented as intended. It is
+                ; measured WRONG on BOTH references (docs/cassave-msx1-characterization.md):
+                ; `SAVE"CAS:x"` writes `EA` + the full listing on a VG-8020 and a
+                ; CF-3300 alike, and `,A` writes the byte-identical thing — the two
+                ; spellings are one behaviour, which is what makes routing them to
+                ; one path faithful rather than a conflation. `CSAVE` is the
+                ; tokenised cassette write and reaches tape_save_basic by its own
+                ; two paths, unchanged and MEASURED unchanged (`csave:id` = D3 on
+                ; all three sides). Costs 0 B: one absolute jump for another.
+                jp      cas_ascii_save      ; no flag -> ASCII, exactly as ,A does
 sav_cas_flag:
                 inc     hl                  ; past the ','
                 call    skip_spaces
@@ -265,7 +288,7 @@ sav_cas_flag:
                 jp      nz,load_error       ; trailing junk after ,A
                 ; fall into cas_ascii_save
 
-; cas_ascii_save — write the current program as an ASCII (SAVE"CAS:",A) listing to
+; cas_ascii_save — write the current program as an ASCII (SAVE"CAS:" / ",A") listing to
 ; cassette. Header block = TAPOON(long) + 10x$EA + 6-char name (TSV_NAME) + TAPOOF,
 ; mirroring tape_save_basic's $D3 header. Body = the LIST detokeniser walk
 ; (list_walk) piped through a new tape sink (PRDEST=1, PRDEV=3 -> cas_wbyte), framed
@@ -295,7 +318,7 @@ cas_ascii_save:
 ; cas_write_ea_header — write the $EA cassette header block for the file named in
 ; TSV_NAME: TAPOON(long leader) + 10x $EA (ASCII id) + 6-char name (tape_name_emit)
 ; + TAPOOF, then reset the data-block fill counter CAS_WCNT to 0 (the first data
-; byte opens block 1). Shared by cas_ascii_save (SAVE"CAS:",A) and oo_dev_cas
+; byte opens block 1). Shared by cas_ascii_save (SAVE"CAS:", ,A or not) and oo_dev_cas
 ; (OPEN"CAS:" FOR OUTPUT). All loops are tight (uniform inter-byte gaps).
 ;   out: CF set = a TAPOON/TAPOUT error (caller aborts).
 cas_write_ea_header:
@@ -485,7 +508,8 @@ csav_sp:
 ; ===========================================================================
 tape_save_basic:
                 ld      a,SV_OP_SAV_CAS
-                jp      sv_tenant           ; SAVE"CAS:" / CSAVE -> tape, tokenised
+                jp      sv_tenant           ; CSAVE -> tape, tokenised (D-CASSAVE:
+                                            ; SAVE"CAS:" no longer arrives here)
 
 ; ===========================================================================
 ; tape_parse_name — extract up to 6 filename chars from the token stream.

@@ -6,9 +6,16 @@
 
 Validates all three cassette write verbs on zerobas, three oracle dimensions:
 
-  1. FORMAT ORACLE: zerobas CSAVE / SAVE"CAS:" / BSAVE"CAS:" writes a cassette
-     WAV that decodes (via cas_decode.py) to the same byte sequence that
-     cas_encode.py's build_cas_basic / build_cas would produce.
+  1. FORMAT ORACLE: zerobas CSAVE / BSAVE"CAS:" writes a cassette WAV that
+     decodes (via cas_decode.py) to the same byte sequence that cas_encode.py's
+     build_cas_basic / build_cas would produce.
+     ✅ D-CASSAVE 2026-08-07: SAVE"CAS:" is NOT in that list any more, and this
+     probe is why it took so long. `SAVE"CAS:name"` writes an ASCII ($EA) tape on
+     an MSX1 -- `,A` or not, measured on a VG-8020 AND a CF-3300
+     (docs/cassave-msx1-characterization.md) -- and `test_save_cas_format` below
+     asserted the tokenised form, so the tree carried a GREEN oracle for the
+     defect. CSAVE keeps `build_cas_basic`: it IS the tokenised cassette write,
+     and that is the contrast which keeps the correction from over-reaching.
 
   2. REFERENCE LOAD: the Philips VG-8020 can CLOAD / BLOAD a tape zerobas wrote
      (the recorded WAV) and recover the correct program / binary image.
@@ -425,11 +432,31 @@ def test_csave_format(cart: str, program: bytes) -> bool:
 # ---------------------------------------------------------------------------
 
 def test_save_cas_format(cart: str, program: bytes) -> bool:
-    """SAVE\"CAS:PROG\" emits same format as CSAVE."""
-    print("\n== oracle 1b: SAVE\"CAS:PROG\" format (same as CSAVE) ==")
+    """SAVE\"CAS:PROG\" emits an ASCII ($EA) tape -- NOT CSAVE's format.
 
-    expected_hdr = bytes([0xD3] * 10) + b"PROG  "
-    expected_data = program
+    ✅ D-CASSAVE (docs/spec-basic-cassave.md, reading
+    docs/cassave-msx1-characterization.md). This test asserted
+    `10x$D3 + 'PROG  '` + the tokenised image, and its name was "same format as
+    CSAVE"; `basic/save.asm`'s own header table said the same thing. Both were
+    WRONG, and this probe's expectation is why the divergence survived: it was
+    the ORACLE for the very verb it got backwards, so the tree had a green gate
+    asserting the defect.
+
+    Measured on a Philips VG-8020 AND a National CF-3300, decoded off the
+    recorded tape: `SAVE"CAS:name"` writes `$EA` and the LISTING, `,A` or not.
+    `CSAVE` is the tokenised cassette write -- `test_csave_format` above is that
+    verb's oracle and is unchanged, which is what keeps this correction from
+    being read as "every cassette save is ASCII".
+
+    🔴 The expectation is the LISTING TEXT, not a re-derived image. `program` is
+    the tokenised bytes and is deliberately NOT used for the body here -- an
+    ASCII save writes what LIST would print.
+    """
+    print("\n== oracle 1b: SAVE\"CAS:PROG\" format (ASCII $EA, NOT CSAVE's) ==")
+
+    expected_hdr = bytes([0xEA] * 10) + b"PROG  "
+    # The detokenised listing the two typed lines produce, CRLF per line.
+    expected_data = b"10 A=5\r\n20 B=7\r\n"
 
     wav_fd, wav_path = tempfile.mkstemp(suffix=".wav", prefix="savcas_fmt_")
     os.close(wav_fd)
@@ -455,10 +482,10 @@ def test_save_cas_format(cart: str, program: bytes) -> bool:
         data_ok = find_subseq(data, list(expected_data))
 
         ok = True
-        ok &= check("SAVE\"CAS:\" format: header (10x$D3 + 'PROG  ') present",
+        ok &= check("SAVE\"CAS:\" format: header (10x$EA + 'PROG  ') present",
                     hdr_ok,
                     f"expected: {expected_hdr.hex(' ')}")
-        ok &= check("SAVE\"CAS:\" format: data block (program image) present",
+        ok &= check("SAVE\"CAS:\" format: data block (ASCII LISTING) present",
                     data_ok,
                     f"expected: {expected_data.hex(' ')}")
         return ok

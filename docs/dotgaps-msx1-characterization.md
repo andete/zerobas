@@ -229,8 +229,17 @@ Recorded to WAV and decoded ([`cas_decode.py`](../probes/lib/cas_decode.py)):
 | vg8020 `SAVE"CAS:D",A` | `ea ea ea …` | $EA, ASCII |
 | **zb `SAVE"CAS:E"`** | `d3 d3 d3 … 45 20 20 20 20 20 09 80 05 00 8f …` | **$D3, tokenised** |
 
+✅ **CLOSED 2026-08-07 by D-CASSAVE** ([spec-basic-cassave.md](spec-basic-cassave.md),
+reading [cassave-msx1-characterization.md](cassave-msx1-characterization.md)) for
+**0 B**. That battery decoded the **CF-3300** too (this table is the VG-8020
+alone, which is not enough to re-specify a shipped format), decoded `,A` and
+`CSAVE` as well, and confirmed what this section could only infer: `CSAVE` really
+is `$D3` on all three sides, and `SAVE"CAS:x"` and `SAVE"CAS:x",A` are one
+behaviour. `csv-tok` now reads ` 40  0 ` and is **de-pinned into the scored set**
+— green with no `.` change at all, exactly as predicted below.
+
 🔴 **`SAVE"CAS:name"` IS AN ASCII SAVE ON MSX1.** It drives the same walk `,A`
-does, which is why it writes `.`; `CSAVE` is the tokenised one. zerobas writes a
+does, which is why it writes `.`; `CSAVE` is the tokenised one. zerobas wrote a
 tokenised tape there — its own [`basic/save.asm:12`](../basic/save.asm:12) says
 *"SAVE "CAS:F" -> tape tokenised"* — so **`csv-tok`'s `.` divergence is a
 symptom of a SAVE-FORMAT divergence, not of a `.` defect** (§6, D2). The rule

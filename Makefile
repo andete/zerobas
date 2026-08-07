@@ -1519,6 +1519,37 @@ runtail-acceptance: repack-machine $(DISK_TEST_DSK)
 # the three hold TWO files, so the SKIP arm has something to step over -- a
 # one-file tape can only ever produce a `Found:`. HEAVY + oracle-dependent (needs
 # your CF-3300 reference ROMs); NOT part of the emulator-free `unit-test`.
+# D-CASSAVE: docs/spec-basic-cassave.md, measured in
+# docs/cassave-msx1-characterization.md. Closes the residual D-DOTGAPS filed
+# (docs/dotgaps-msx1-characterization.md §3.2) and pinned as `csv-tok`.
+#
+# 🔴 THE SCREEN IS NOT A WITNESS. Every cassette SAVE verb prints NOTHING,
+# whatever format it writes -- which is why the divergence was found sideways, by
+# a `.` reading, and had to be confirmed by decoding a tape. Each row here runs on
+# a FRESH RECORDING TAPE (`cassetteplayer new`) and probes/lib/cas_decode.py turns
+# the WAV back into bytes: the ten-byte id run, the 6-char name, and the printable
+# runs of the data block.
+#
+# 🟢 THREE-SIDED, and `csave` is the CONTROL that keeps the claim narrow:
+# SAVE"CAS:name" is the ASCII ($EA) write on an MSX1 -- `,A` or not -- and CSAVE
+# is the tokenised ($D3) one. Without that row, "SAVE"CAS:" is ASCII" reads as
+# "every cassette save is ASCII", which is measurably false.
+#
+# ⚠️ ONE ROW PER BOOT, one recording each: `cassetteplayer new` is a prologue and
+# TRUNCATES the file at every boot, so two rows sharing a run would both read one
+# recording. HEAVY + oracle-dependent (needs your CF-3300 reference ROMs); NOT
+# part of the emulator-free `unit-test`.
+cassave-characterize: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_cassave.py \
+	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',)
+
+cassave-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_cassave.py --gate \
+	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',) \
+	        --repeat $(if $(REPEAT),$(REPEAT),1)
+
 castail-characterize: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_castail.py \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
@@ -1868,6 +1899,7 @@ clean:
         dskmsg-characterize dskmsg-acceptance \
         runtail-characterize runtail-acceptance \
         castail-characterize castail-acceptance \
+        cassave-characterize cassave-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

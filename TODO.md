@@ -2347,28 +2347,35 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         they say otherwise. The full acceptance corpus was re-run, not just this
         slice's gate.
 
-- [ ] 🔴 **`SAVE"CAS:name"` WRITES A TOKENISED TAPE; BOTH REFERENCES WRITE
-      ASCII.** Found 2026-08-03 by D-DOTGAPS
+- [x] ✅ **`SAVE"CAS:name"` WROTE A TOKENISED TAPE; BOTH REFERENCES WRITE ASCII —
+      CLOSED 2026-08-07 (D-CASSAVE) for 0 B.** Found 2026-08-03 by D-DOTGAPS
       ([`docs/dotgaps-msx1-characterization.md`](docs/dotgaps-msx1-characterization.md)
-      §3.2), while measuring which SAVE forms write `.` — the row that looked
-      like a cassette-specific `.` divergence turned out to be a **format**
-      divergence, and the tape says so rather than an argument: recorded to WAV
-      and decoded, the VG-8020's `SAVE"CAS:E"` opens `ea ea ea …` and carries
-      the program as **text**, zerobas' opens `d3 d3 d3 …`. On MSX1 `CSAVE` is
-      the tokenised cassette write and `SAVE"CAS:"` is the ASCII one, `,A` or
-      not. zerobas already HAS the ASCII cassette save (`SAVE"CAS:",A`, M2 of
-      `spec-cas-ascii-saveload.md`), so the fix is a dispatch default in
-      [`basic/save.asm`](basic/save.asm) `sav_is_cas` — but it re-specifies a
-      shipped save format and **inverts an assertion in
-      [`probes/basic/basic_probe_tape_save.py`](probes/basic/basic_probe_tape_save.py)**,
-      whose format oracle is `build_cas_basic` (tokenised) for this very verb.
-      That probe's expectation is the thing to fix first; the header comment at
-      [`basic/save.asm:12`](basic/save.asm:12) documents the wrong behaviour as
-      intended. **Pinned** as `csv-tok` = ` 5  0 ` in `lnblank`'s
-      `KNOWN_DIVERGE`, so the day it lands the pin rots loudly.
-      ⚠️ Consequence for `.`: the reference writes `.` = the last line the ASCII
-      walk emitted; zerobas writes nothing there. **Fixing the format fixes the
-      `.` row with no `.` change at all** — the writer is already correct.
+      §3.2) while measuring which SAVE forms write `.` — the row that looked like
+      a cassette-specific `.` divergence was a **format** divergence, and the
+      tape said so rather than an argument. On MSX1 `CSAVE` is the tokenised
+      cassette write and `SAVE"CAS:"` is the ASCII one, `,A` or not.
+      `basic/save.asm` `sav_is_cas`'s no-flag arm now `jp cas_ascii_save`: one
+      absolute jump for another, **all four walls unmoved**.
+      🔴 **A 0-BYTE FIX IS THE SHAPE THAT HIDES A CONFLATION**
+      ([[a-filed-zero-byte-fix-can-hide-a-conflation]]), and here it was
+      nameable: the fix makes `SAVE"CAS:x"` and `SAVE"CAS:x",A` **one code
+      path**. A one-line diff cannot say whether that merged two behaviours that
+      should stay apart — only decoding **both forms on both references** can,
+      and `,A` had never been decoded. Same id, same name field, identical
+      payload text: refuted, not assumed.
+      🔴 **AND THE FILED READING WAS ONE MACHINE, on a SHIPPED format.** §3.2
+      decoded the VG-8020 only. The CF-3300 now agrees on all twenty readings.
+      🟢 **`CSAVE` is the control** — `$D3` on all three sides, untouched, which
+      is what keeps *"`SAVE"CAS:"` is ASCII"* from becoming *"every cassette save
+      is ASCII"*.
+      ⚠️ **The tree carried a GREEN ORACLE FOR THE DEFECT**:
+      `basic_probe_tape_save.py`'s `test_save_cas_format` asserted `10x$D3` for
+      this very verb, and `basic/save.asm:12` documented it. Both corrected in
+      the same commit. `lnblank`'s `csv-tok` pin ROTTED as designed and the row
+      is **de-pinned into the scored set** — deleting a `KNOWN_DIVERGE` entry
+      makes a row stricter, not weaker. Detail:
+      [`docs/spec-basic-cassave.md`](docs/spec-basic-cassave.md),
+      [`docs/cassave-msx1-characterization.md`](docs/cassave-msx1-characterization.md).
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
       Found 2026-08-03 by D-DOTGAPS (§1.2). With only a $D3 file on the tape the

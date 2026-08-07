@@ -1870,7 +1870,8 @@ drive that proven BDOS write subset.
 ## tape SAVE / CSAVE — cassette write side (basic/save.asm, basic/interp.asm, basic/sysvars.inc)
 
 The WRITE complement of *§Phase 1 cassette load* (CLOAD/LOAD"CAS:"). `CSAVE"name"`,
-`SAVE"CAS:name"` (both tokenised) and `BSAVE"CAS:name",start,end[,exec]` (binary)
+`SAVE"CAS:name"` (✅ **ASCII since D-CASSAVE, `,A` or not** — see below) and
+`BSAVE"CAS:name",start,end[,exec]` (binary)
 write a real cassette file through the zerobas-tape **write** signal layer
 (`TAPOON $00EA` / `TAPOUT $00ED` / `TAPOOF $00F0`, already implemented in
 `tape/tape.asm`, reached via the cassette BIOS vectors). Same two-block cassette
@@ -1878,7 +1879,8 @@ file layout the read side consumes and that `cas_encode.py` (`build_cas` /
 `build_cas_basic`) documents:
 
 - **Header block** (`TAPOON` long): the file-type id ×10 — `$D3` for tokenised
-  (CSAVE / SAVE"CAS:"), `$D0` for binary (BSAVE) — then the 6-char space-padded
+  (CSAVE — **not** `SAVE"CAS:"`, D-CASSAVE), `$EA` for the ASCII listing
+  (`SAVE"CAS:"`, `,A` or not), `$D0` for binary (BSAVE) — then the 6-char space-padded
   filename; `TAPOOF`.
 - **Data block** (`TAPOON` short): for binary, `start`/`end`/`exec` (LE) then
   `RAM[start..end]`; for tokenised, the line-link program image `TXTBASE..PRGEND+1`
@@ -1898,14 +1900,48 @@ holds the parsed name — the same discipline `disk_putword` uses on the disk si
 | Header block = file-type id ×10 + 6-char name; data block = payload | `$D3`/`$D0` | MSX2 TH cassette file format; cross-checks `cas_encode.py` + a real VG-8020 recording (oracle) | sourced |
 | tokenised data block = `TXTBASE..PRGEND+1` line-link image (ends in `$0000`) | — | program.asm line-link layout (already sourced); identical to the disk/tape read image | sourced |
 | binary data block = `start`/`end`/`exec` (LE) + `RAM[start..end]` | — | MSX-BASIC binary cassette format (already sourced, §disk BLOAD execute) | sourced |
-| `SAVE"CAS:"` / `CSAVE` write the **tokenised** ($D3) format (no ASCII save) | — | own-design descope (matches zerobas's tokenised disk SAVE; ASCII detokeniser is Phase 2) | quarantined |
+| `SAVE"CAS:"` / `CSAVE` write the **tokenised** ($D3) format (no ASCII save) | diverged | own-design descope (matches zerobas's tokenised disk SAVE; ASCII detokeniser is Phase 2) | ✅ **WITHDRAWN by D-CASSAVE** — was quarantined |
+| `SAVE"CAS:name"` writes the **ASCII** ($EA) format — the full listing, `,A` or not | — | oracle, **both** references, decoded off the recorded tape (`cassave` `sav-cas:id`/`:text`, `sav-cas-bare:*`) | sourced |
+| `CSAVE"name"` writes the **tokenised** ($D3) format, and is NOT the same verb | — | oracle, both references, same decode (`cassave` `csave:id`/`:text`) | sourced |
+| `SAVE"CAS:name"` and `SAVE"CAS:name",A` are ONE behaviour (same id, name field and payload text) | — | oracle, both references (`cassave` `sav-cas*` vs `sav-cas-a*`) — the reading that says routing them to one path is faithful and not a conflation | sourced |
 | 6-char filename truncation / space-pad; bare `CSAVE` → 6 spaces | — | MSX cassette format (6-char name); bare-name default is own design | sourced |
 | `TSV_PTR`/`TSV_END`/`TSV_CNT`/`TSV_NAME` tape-write scratch | $E0F1/$E0F3/$E0F5/$E0F6 | own choice (free page-$E0 RAM, collision-checked clear of `DSV_*`/read-side scratch) | sourced |
+
+### 🔴 D-CASSAVE — `SAVE"CAS:name"` writes an ASCII tape
+
+**Closed 2026-08-07.** Gate `probes/basic/basic_probe_cassave.py`
+(`make cassave-acceptance`, **20/20 readings**), spec
+`docs/spec-basic-cassave.md`, reading `docs/cassave-msx1-characterization.md`.
+Closes the residual D-DOTGAPS filed (`docs/dotgaps-msx1-characterization.md`
+§3.2) and pinned as `csv-tok`.
+
+On an MSX1 `CSAVE` is the tokenised cassette write and `SAVE"CAS:"` is the ASCII
+one, **`,A` or not**. zerobas wrote `$D3` there, and its own `basic/save.asm`
+header table *documented that as intended* — so the row that first looked like a
+cassette-specific `.` defect was the symptom of a **format** divergence. Fixed for
+**0 B**: `sav_is_cas`'s no-flag arm now `jp cas_ascii_save` instead of
+`jp tape_save_basic`, one absolute jump for another.
+
+🔴 **A 0-BYTE FIX IS THE SHAPE THAT HIDES A CONFLATION, and this one was
+nameable**: it makes `SAVE"CAS:x"` and `SAVE"CAS:x",A` literally one code path,
+and a one-line diff cannot say whether that merged two things which should stay
+apart. Measured instead — both forms, both references, decoded off the recorded
+tape: same id, same name field, identical payload text. Refuted, not assumed.
+
+🔴 **AND THE FILED READING WAS ONE MACHINE.** §3.2 decoded the VG-8020 only.
+Re-specifying a **shipped** save format on one machine's word is what the
+two-reference rule exists to stop; the CF-3300 agrees on all twenty readings.
+
+🟢 **`CSAVE` is the control that keeps the claim narrow** — `$D3` on all three
+sides, untouched — and `basic_probe_tape_save.py`'s `test_save_cas_format`
+asserted the *tokenised* form for `SAVE"CAS:"`, i.e. the tree carried a GREEN
+oracle for the defect. That expectation is inverted in the same commit.
 
 Oracle confirmation: `basic_probe_tape_save.py`, three independent
 oracles on `C-BIOS_MSX1_EU_TAPE` (zerobas-tape write layer) with `basic.rom` as a
 cart — (1) **format**: zerobas writes a tape, openMSX records the CAS-out, `cas_decode`
-yields bytes byte-identical to `build_cas`/`build_cas_basic`; (2) **cross-read**: the
+yields bytes byte-identical to `build_cas`/`build_cas_basic` (CSAVE / BSAVE; the
+`SAVE"CAS:"` oracle is the ASCII listing since D-CASSAVE); (2) **cross-read**: the
 reference Philips VG-8020 `CLOAD`s zerobas's recorded `.cas` to the correct image; (3)
 **self round-trip**: `CSAVE`→`CLOAD` and `BSAVE"CAS:"`→`BLOAD"CAS:"` byte-identical
 (using the just-fixed read path). Crunch stays byte-identical and the five basic
