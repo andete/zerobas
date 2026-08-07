@@ -413,6 +413,15 @@ control, and the gate prints that count on every run.
 
 ### 6.5 K-NAME2's green, stated rather than smoothed over
 
+> ✅ **CLOSED 2026-08-07 by D-MOUNTROW** ([spec-fat-error-mount-row.md](spec-fat-error-mount-row.md)).
+> `fat-error-acceptance` now carries `name-nodisk` — `NAME` at an EMPTY DRIVE,
+> pinned to zerobas's own `load error` — and **K-NAME2 is a real cut**: it reds
+> that row and nothing else. §3.4's "it needs no reference reading" was right.
+> ⚠️ One correction to the cut AS FILED: `jr c,nm_fail` → `jr c,nm_notfound`
+> **does not build** — it orphans `nm_fail`, whose only reference it is, and
+> `check_dead_code` refuses it. Re-sited at `nm_fail`'s body.
+
+
 No row in this tree drives `NAME` at an unmounted or unreadable volume, so the
 arm split in §2 rests on the **call graph plus the divergence register**, not on
 a measurement — the disposition D-DSKMSG's K-KILL2 got, one verb over

@@ -186,6 +186,23 @@ landed defect, not advice.
   `[[knife-cleanup-restores-from-head]]` assumed the happy path.
 * **A failed build ABORTS rather than scoring** — a knife scored against a stale
   ROM reads as a CUT.
+* 🔴 **AND "BUILD BEFORE THE BASELINE" IS REALLY "BUILD BEFORE EVERY PROBE RUN
+  THAT FOLLOWS A RESTORE."** Measured 2026-08-07 (D-MOUNTROW,
+  `spec-fat-error-mount-row.md` §6.4): restoring knife N's snapshot touches its
+  **mtime**, so at knife N+1 the ROMs are stale w.r.t. sources and
+  `omsx_preflight` **correctly refuses** the run — and a runner reads that
+  refusal as an EMPTY report, i.e. a truncated one, and aborts. The bullet above
+  scoped the rule to the baseline; it applies to every iteration. Rebuild inside
+  the loop, not once at the top.
+* 🔴 **A CUT CAN BE REFUSED BY A GATE OTHER THAN THE ONE IT TARGETS.** The
+  build-failure warning below is about the *assembler*; this is not. Measured
+  2026-08-07 (D-MOUNTROW §6.3): re-pointing a `jr` away from a label that has
+  exactly ONE reference **orphans** it, and `make` stops in
+  `check_dead_code.py` (`1 unreachable span: nm_fail`) — a knife aimed at the
+  message gate refused by the dead-code gate. **Cut the label's BODY instead of
+  its reference** (`jp load_error` → `jp df_notfound`): byte-neutral, orphans
+  nothing, tests the identical claim. This is why D-DKNAME's K-NAME2 was
+  unbuildable exactly as filed.
 * **Score a predicted GREEN set as well as a predicted RED set.** A run where
   *nothing* moved, greens included, is an apparatus result, not a measurement.
 * **Run every knife TWICE.** D-FEVERB's K-FE1 scored CUT in round 1 and MISS in

@@ -234,7 +234,24 @@ duplicating (and drifting from) what is written below.
       instruments, both rounds. Seed prediction held at **287** for the first
       time in four slices, and for the stated reason — nothing under `sub/` or
       `tools/` was touched.
-- [ ] ⚠️ **`KILL`/`NAME` at an unmounted or unreadable volume has NO row** —
+- [x] ✅ **`KILL`/`NAME` at an unmounted volume — THE ROW EXISTS, CLOSED
+      2026-08-07 by D-MOUNTROW**, in exactly the form D-DKNAME §3.4 sharpened it
+      to: `fat-error-acceptance` gained `kill-nodisk` / `name-nodisk`, driven at
+      an **EMPTY DRIVE** in a second boot and pinned to zerobas's own
+      `load error` — **no reference reading, no ROM byte**. K-KILL2 **at its own
+      filed site** (the tenant mount-separation deletion) now reds `kill-nodisk`
+      and nothing else, so the predicted miss is a **cut**.
+      ⚠️ **Two things the closure does NOT cover, and they stay open below**:
+      what zerobas *prints* there (needs the reading, opens six verbs), and an
+      **UNREADABLE** volume as distinct from an empty drive — the row keys say
+      `nodisk` precisely so the narrower claim is the one written down.
+      🔴 **And K-NAME2 AS FILED does not build**: `jr c,nm_fail` →
+      `jr c,nm_notfound` orphans `nm_fail`, whose only reference it is, and
+      `check_dead_code` refuses it — a knife aimed at the message gate refused by
+      the dead-code gate. Re-sited at `nm_fail`'s body; the rule is now in
+      `docs/dev-workflow.md` §Knives. Detail:
+      [`docs/spec-fat-error-mount-row.md`](docs/spec-fat-error-mount-row.md).
+      *Superseded filing, kept for the trail:* —
       D-DSKMSG's **K-KILL2** and D-DKNAME's **K-NAME2** are two written-down
       predicted misses that prove it: each re-points its verb's mount arm at
       `df_notfound` and reddens **nothing**. `do_kill`'s STATUS=2 arm and

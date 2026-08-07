@@ -154,6 +154,43 @@ CASES = [(c[0], c[1],
           c[2] if len(c) > 2 else WANT,
           c[3] if len(c) > 3 else None) for c in CASES]
 
+# --- THE MOUNT GROUP (D-MOUNTROW, docs/spec-fat-error-mount-row.md) ----------
+# Every row above runs with a disk MOUNTED, and reaches `fat_find`. These two run
+# in a SECOND boot with NO disk at all, so they reach only `fat_mount` -- the arm
+# D-DSKMSG's K-KILL2 and D-DKNAME's K-NAME2 both re-pointed while reddening
+# NOTHING, because no row in this tree drove it. They are the reason those two
+# written-down predicted misses are now real cuts.
+#
+# 🔴 A SEPARATE GROUP, NEVER A WIDENED `CASES`. Until 2026-07-31 this probe ran
+# with no disk mounted at all, so EVERY case failed in `fat_mount` and never
+# reached `fat_find`: the battery measured the MOUNT miss while its docstring
+# claimed the FIND miss, and the two are indistinguishable by their answer
+# (`load error` either way). Mounting a disk is what fixed that. Re-introducing
+# an unmounted boot as anything but its own labelled group would rebuild exactly
+# the conflation that history removed.
+#
+# 🎯 AND THE POSITIVE EVIDENCE IS THE CONTRAST, WHICH COSTS NOTHING. `twin` names
+# the MOUNTED row typing the same verb: measured, `KILL"A:NOSUCH.BAS"` answers
+# `File not found` with a disk and `load error` without one. A verb that always
+# errors -- and a dead disk ROM -- produce ONE answer, so two different answers
+# from one verb is evidence no dead subject can fake
+# ([[gate-whose-answer-is-an-error-passes-a-dead-subject]]).
+MOUNT_CASES = [
+    ("kill-nodisk", 'KILL"A:NOSUCH.BAS"', "kill-missing"),
+    ("name-nodisk", 'NAME"A:NOSUCH.BAS" AS "B.BAS"', "name-missing"),
+]
+
+# ⚠️ THE BATTERY'S OWN PRECONDITION CANNOT RUN IN THAT BOOT -- `FILES"A:HI.TXT"`
+# is precisely what an empty drive cannot do. So the mount group carries its own
+# liveness control, chosen to need no disk: if the machine did not boot, or the
+# harness delivered nothing, this reads `<none>` and the group is NOT MEASURED
+# rather than passing on two rows of silence.
+MOUNT_LIVE = ("mount-live", "PRINT 6*7", "42")
+
+assert {t for _, _, t in MOUNT_CASES} <= {k for k, *_ in CASES}, \
+    "a MOUNT_CASES twin names a row that is not in CASES"
+
+
 # --- THE PRECONDITION (D-DSKJUDGE, docs/spec-rom-gate-diskrom.md §3.2) --------
 # 🔴 EVERY ROW ABOVE PASSES ON A DEAD DISK ROM.  Measured: with `build/disk.rom`
 # replaced by 16384 bytes of $00 -- no disk ROM at all -- this probe reported
@@ -428,6 +465,19 @@ def main() -> int:
     vraws = dict(zip(vkeys, raws[1:1 + len(vkeys)]))
     raws = raws[1 + len(vkeys):]
 
+    # --- the MOUNT group: a SECOND boot, with NO disk (D-MOUNTROW §3) --------
+    # `diska` is omitted entirely rather than pointed at a blank image: an empty
+    # DRIVE is the configuration the residual names, and a blank-but-valid image
+    # would reach fat_mount successfully and measure the find miss again.
+    mspecs = ([("direct", [MOUNT_LIVE[1]])]
+              + [("direct", [line]) for _, line, _ in MOUNT_CASES])
+    mraws = omsx_repl.run_cases(args.machine, mspecs,
+                                batch=not args.boot_per_case,
+                                reset=("NEW", "CLS"), capture="screen")
+    mlive_tail = omsx_repl.screen_tail(mraws[0], MOUNT_LIVE[1])
+    mlive_ok = MOUNT_LIVE[2] in (mlive_tail or "")
+    mraws = mraws[1:]
+
     ok = True
     print("=" * 72)
     print("FAT-primitive ERROR disposition (Cy=1 out of fatprim_bounce)")
@@ -532,6 +582,59 @@ def main() -> int:
     npass = sum(1 for (k, l, w, v), r in zip(CASES, raws)
                 if (not v or vok[v]) and w in (omsx_repl.screen_tail(r, l) or ""))
 
+    # --- the MOUNT group, scored (D-MOUNTROW §3) -----------------------------
+    # ORDER IS LOAD-BEARING. A tail that is not the pinned string is a real
+    # disposition REGRESSION (exit 1) and is checked FIRST; only a row that still
+    # reads the pin can then fail the CONTRAST, which means the machine cannot
+    # tell a mount miss from a find miss -- the dead-disk-ROM signature (exit 2).
+    # Reversed, the knives this group exists for (K-KILL2 / K-NAME2, which move
+    # the mount arm to `File not found`) would be reported as an instrument fault
+    # instead of as the regression they are.
+    mtails = {}
+    print(f"\n  {'PASS' if mlive_ok else 'FAIL'}  {MOUNT_LIVE[0]:14} "
+          f"{MOUNT_LIVE[1]:38} -> "
+          f"{str(mlive_tail or '<none>').strip()[:60]!r}   "
+          f"[LIVENESS for the no-disk boot]")
+    if not mlive_ok:
+        print(f"        want {MOUNT_LIVE[2]!r} -- the no-disk boot never reached "
+              f"a working interpreter, so the mount rows below are two rows of\n"
+              f"        silence, not a measurement. Exit 2, not 1.")
+    mscored = mpass = 0
+    for (key, line, twin), raw in zip(MOUNT_CASES, mraws):
+        tail = omsx_repl.screen_tail(raw, line)
+        got = " | ".join(t.strip() for t in str(tail or "").split("\n") if t.strip())
+        twin_tail = omsx_repl.screen_tail(
+            raws[[c[0] for c in CASES].index(twin)],
+            [c[1] for c in CASES][[c[0] for c in CASES].index(twin)])
+        mtails[key] = got
+        pinned = WANT in (tail or "")
+        if not mlive_ok:
+            print(f"  ....  {key:14} {line:38} -> {got[:60]!r}"
+                  f"   NOT MEASURED (liveness failed)")
+            continue
+        if not pinned:
+            mscored += 1
+            ok = False
+            print(f"  FAIL  {key:14} {line:38} -> {got[:60]!r}"
+                  f"   [MOUNT arm, pinned {WANT!r}]")
+            print(f"        want {WANT!r} at an EMPTY DRIVE -- this row exists "
+                  f"because K-KILL2/K-NAME2 reddened nothing without it")
+            continue
+        differs = (tail or "") != (twin_tail or "")
+        if not differs:
+            print(f"  ....  {key:14} {line:38} -> {got[:60]!r}"
+                  f"   NOT MEASURED (reads the same as {twin!r})")
+            print(f"        the mounted twin answers the SAME string, so this "
+                  f"machine cannot distinguish a MOUNT miss from a FIND miss --\n"
+                  f"        which is what a dead disk ROM looks like. Exit 2, "
+                  f"not 1.")
+            continue
+        mscored += 1
+        mpass += 1
+        print(f"  PASS  {key:14} {line:38} -> {got[:60]!r}"
+              f"   [MOUNT arm; twin {twin!r} answers differently]")
+    mount_fault = (not mlive_ok) or mscored < len(MOUNT_CASES)
+
     # THE SECOND INSTRUMENT, for `append-missing`: a refusal that still created
     # the file is not a refusal. The screen alone cannot say this -- a build that
     # printed `load error` and created the entry anyway would pass the text check
@@ -571,8 +674,9 @@ def main() -> int:
     ndirs = 1 + sum(1 for k in vkeys
                     if VERB_CONTROLS[k]["dir_present"]
                     or VERB_CONTROLS[k]["dir_absent"])
-    print(f"\n===== FAT error disposition: {npass}/{scored} scored "
+    print(f"\n===== FAT error disposition: {npass}/{scored} FIND scored "
           f"({len(CASES)} rows, {len(CASES) - scored} NOT MEASURED) "
+          f"+ {mpass}/{mscored} MOUNT scored ({len(MOUNT_CASES)} rows) "
           f"+ {ndirs} directory checks, over a LIVE FAT layer =====")
 
     # 🔴 THE DENOMINATOR, PRINTED EVERY RUN (D-FEVERB §4). Closing one hole and
@@ -614,7 +718,23 @@ def main() -> int:
                     f"divergence")
         print(f"  ({note}. TODO.md / docs/spec-fat-error-verb-control.md §4)")
 
-    if instrument_fault:
+    # 🔴 THE MOUNT GROUP'S OWN DENOMINATOR (D-MOUNTROW). Its rows have no
+    # VERB_CONTROLS entry and cannot have one: at an empty drive neither verb can
+    # reach a SUCCESS disposition, which is the whole point of the
+    # configuration. What stands in for it is stated here rather than left to be
+    # assumed -- one liveness row for the boot, and a per-row CONTRAST against
+    # the mounted twin.
+    print(f"MOUNT-ARM ROWS: {len(MOUNT_CASES)} ({', '.join(k for k, _, _ in MOUNT_CASES)}), "
+          f"at an EMPTY DRIVE, pinned to zerobas's own {WANT!r}.")
+    print(f"  (no verb control is possible there -- neither verb CAN succeed at "
+          f"an empty drive. In its place: {MOUNT_LIVE[0]!r} proves the boot, and "
+          f"each row\n   must answer DIFFERENTLY from its mounted twin "
+          + ", ".join(f"{k}<>{t}" for k, _, t in MOUNT_CASES)
+          + ". These rows are what make D-DSKMSG's K-KILL2 and\n   D-DKNAME's "
+          "K-NAME2 real cuts instead of predicted misses -- "
+          "docs/spec-fat-error-mount-row.md)")
+
+    if instrument_fault or mount_fault:
         print("SOME NOT MEASURED -- exit 2 = the instrument was broken, NOT an "
               "error-disposition regression")
         return 2

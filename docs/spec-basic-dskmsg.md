@@ -446,7 +446,14 @@ difference (K-KILL2) is exactly why the claim survived being written down.
   dispositions, because `fat_find` returns `Cy = 1` for **not found OR a
   `read_sector` error**. The split makes the measured half reference-exact and
   names the other; `KILL` has the identical residual one primitive over (below).
-* **`KILL`/`NAME` at an unmounted or unreadable volume** — no row, K-KILL2's
+* ✅ **`KILL`/`NAME` at an unmounted or unreadable volume — CLOSED 2026-08-07 by
+  D-MOUNTROW** ([`spec-fat-error-mount-row.md`](spec-fat-error-mount-row.md)).
+  `fat-error-acceptance` now carries `kill-nodisk` / `name-nodisk` at an EMPTY
+  DRIVE, pinned to zerobas's own `load error`, and **K-KILL2 re-run at its own
+  site — the tenant mount-separation deletion, exactly as filed above — reds
+  `kill-nodisk` and nothing else**. The predicted miss is a cut. (What is still
+  open is only what zerobas PRINTS there, which needs the reference reading.)
+  *Superseded text, kept for the trail:* — no row, K-KILL2's
   predicted miss (§6.3), **and D-DKNAME's K-NAME2 reproduced that verdict for
   `NAME`**: nothing moved, both instruments, both rounds.
   🎯 D-DKNAME §3.4 records what would close it **without a reference reading** —
