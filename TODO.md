@@ -4682,6 +4682,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       parsing it as an int — and `read_one_value` **already positions HL at the
       item start** and already owns the comma/`data_seek` walk
       (`basic/readdata-body.inc:38-51`).
+      💰 **CARVE-SCOUTED 2026-08-07. VERDICT: GO for four of the five faces, and
+      the array face is NOT one of them.** Every number off `basic-reloc.sym`:
+
+      | measurement | value |
+      |---|---|
+      | main page 1 free — **the binding wall** | **158 B** |
+      | `INPUT` twin dispatch: head + NUMERIC arm | **45 B** (`$2F42-$2F6F`) |
+      | `INPUT` twin dispatch: STRING arm | **22 B** (`$2F6F-$2F85`) |
+      | `READ`'s current loop body, the thing replaced | **39 B** (`$7A38-$7A5F`) |
+      | existing page-0 tenant stub `exr_call..exr_done` | **61 B** |
+      | sub page 0 free, for the item-span capture | **3843 B** |
+      | carve reservoir if ever needed: `basic/program.asm` | **2375 B** leaves page 1 |
+
+      ⇒ the four twin-covered faces cost about **(67 − 39) = +28 B** of dispatch,
+      plus a few bytes to give the existing stub a mode flag rather than build a
+      second 61 B one: call it **+35…+45 B against 158 B free**. Fits with ~110 B
+      to spare, and **no carve is needed** — which is the answer the scout
+      existed to get, since a carve would have made this a two-slice job.
+      🔴 **THE SUB/MAIN SPLIT IS FORCED, NOT CHOSEN**: `strscr_desc` is at
+      `$2896`, in the **LOW region**, which a page-0 tenant cannot call at all.
+      The tenant may therefore only fill `STRSCR`; the descriptor wrap and
+      `str_set_key` must stay main-side — exactly what `ex_input` already does,
+      which is why the twin is the right shape and not merely a convenient one.
+      🔴 **`READ A(1)` IS OUTSIDE THE TWIN AND UNPRICED.** `basic/input.asm` has
+      **no array handling whatsoever** — `var_name_key` parses a name and a
+      suffix, never a subscript — so the array face needs `ex_let`'s lvalue path
+      (`ary_op0_resolve` / `ary_store_write`, `basic/arrays.asm:773/721`).
+      Recommend taking the four faces and pricing the array face as its own step;
+      it may also turn out that **`INPUT A(1)` diverges too**, in which case the
+      work is shared between two verbs and worth more. **Unmeasured either way.**
+      ⚠️ **These are byte counts of ANALOGOUS code, not of code that exists.**
+      The real number comes from a build; stated as a bound from a measured twin
+      so it cannot later be quoted as a measured cost
+      [[filed-justification-is-a-claim]].
       💰 **THE COST SPLITS ACROSS TWO WALLS WITH VERY DIFFERENT PRESSURE**, which
       is the whole reason to scout before proposing: the dispatch lives in
       `basic/program.asm` (**main page 1, 158 B free — the binding wall**), while
