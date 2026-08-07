@@ -547,8 +547,13 @@ duplicating (and drifting from) what is written below.
       counter exists anywhere in the tree (`pch_lpt` calls `LPTOUT` and tracks
       nothing), so it needs new state maintained in the hot path of every printed
       byte, plus a measured reset rule. Cost it separately from `LPRINT`.
-- [ ] **No string `READ`.** Filed by D-DEFSTR — detail:
-      *“ZEROBAS HAS NO STRING `READ`”*, line 4161.
+- [ ] **`READ` accepts only a single-letter, unsuffixed, non-array target.**
+      Filed by D-DEFSTR as *"no string `READ`"*; **scouted 2026-08-07 and it is
+      ONE FACE OF FIVE** — `READ A$` / `READ AB` / `READ A%` / `READ A(1)` all
+      raise **Syntax error** where both references read the item. One root cause
+      (`ex_read` uses the single-letter int16 shim, not `var_name_key`), so one
+      slice. Detail + the measured three-sided table:
+      *“ZEROBAS HAS NO STRING `READ`”*, §"Own-design hazards".
 
 **Own-design hazards carried out of closed slices**
 
@@ -4650,6 +4655,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       is strictly closer and still divergent. These are the only 2 of D-DEFSTR's
       18 rows that do not match the references, and they are deliberately **not**
       gate rows — a row that can only ever be red is doc debt, not a gate.
+      🔴 **SCOUTED AND MEASURED 2026-08-07: THE ITEM IS ONE FACE OF FIVE, AND
+      THE TITLE UNDER-CLAIMS IT.** `ex_read` does not merely lack a `$` path — it
+      parses its target with `var_get`/`var_set`, the **single-letter int16
+      shim** (`basic/vars.asm:586`), while every other variable reference in the
+      tree goes through `var_name_key`, which handles a second character *and* a
+      type suffix. Six rows typed on **three sides** (`Philips_VG_8020`,
+      `National_CF-3300`, repack); **both references agree row for row**:
+
+      | row | `DATA` | both references | zerobas |
+      |---|---|---|---|
+      | `READ A`    | `7`     | ` 7 ` | ` 7 ` 🟢 **positive control** |
+      | `READ A$`   | `HELLO` | `HELLO` | **Syntax error** |
+      | `READ A$`   | `42`    | `42` (no spaces — a STRING) | **Syntax error** |
+      | `READ AB`   | `7`     | ` 7 ` | **Syntax error** |
+      | `READ A%`   | `7`     | ` 7 ` | **Syntax error** |
+      | `READ A(1)` | `7`     | ` 7 ` | **Syntax error** |
+
+      ⚠️ **Five divergences, ONE root cause**, so this is one slice and not five:
+      make `ex_read`'s target parsing what `ex_input`'s already is. The string
+      machinery is **already resident and already exercised** —
+      `var_str_type` → `var_name_key` → `strscr_desc` → `str_set_key` is the
+      literal sequence at `basic/input.asm:117`; the typed numeric store is
+      `var_store_fac` at `:104`. The only genuinely NEW code is a string variant
+      of `read_one_value` that captures the DATA item's raw ASCII span instead of
+      parsing it as an int — and `read_one_value` **already positions HL at the
+      item start** and already owns the comma/`data_seek` walk
+      (`basic/readdata-body.inc:38-51`).
+      💰 **THE COST SPLITS ACROSS TWO WALLS WITH VERY DIFFERENT PRESSURE**, which
+      is the whole reason to scout before proposing: the dispatch lives in
+      `basic/program.asm` (**main page 1, 158 B free — the binding wall**), while
+      the item-span capture belongs in the READ/DATA engine, already a **page-0
+      sub-ROM tenant** (`sub p0, 3843 B free`). ⚠️ **Not yet priced in bytes** —
+      no carve scout has been run, and a filed cost line is a claim
+      [[filed-justification-is-a-claim]].
+      Scout rows + apparatus: this entry; not committed (a scratchpad scout).
+      🔴 The scout's own first readout was **blind to its subject** — it scanned
+      the whole screen, so when zerobas printed no output the `[` inside the ECHO
+      of `30 PRINT"[";A$;"]"` matched and every zerobas row read `'";A$;"'`, an
+      artifact shaped like a reading. Read the tail after `RUN`, never the screen.
 
 - [ ] **THE TWO TYPE-CODE NAMESPACES SHOULD PROBABLY BECOME ONE.** Filed
       2026-08-01 by D-DEFSTR. The references use `3` for **both** the DEFtbl code
