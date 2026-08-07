@@ -151,7 +151,10 @@ itself ([[a-hand-listed-denominator-is-a-scope-claim]]). So the count is
 |---|---|---|
 | `name-missing` | ✅ `name-alive` | **red** (exit 2, NOT MEASURED) |
 | `kill-missing` | ❌ none → ✅ `kill-alive` **since §7** | **PASS** → **red** |
-| `load-missing`, `run-missing`, `bload-missing`, `open-missing`, `append-missing`, `merge-missing` | ❌ none | **PASS** |
+| `load-missing`, `run-missing`, `bload-missing`, `open-missing`, `append-missing`, `merge-missing` | ❌ none → ✅ **all six, since §8** | **PASS** → **red** |
+
+**⇒ 8 of 8 since §8.** The rest of this section is the record of how it got
+there, and is kept because the *order* was the argument.
 
 **1 of 8 when this section was written; 2 of 8 since §7.** `kill-missing` was
 named first among the seven because it is the other **reference-exact** row —
@@ -395,3 +398,117 @@ one field away.
   `LOAD`/`BLOAD`/`OPEN`/`MERGE` all have a feasible success control on this
   fixture (`PROG.BAS`, `PROG.BIN`, `HI.TXT`); `RUN` executes a program and
   `APPEND` writes, so those two need thought about ordering on the shared image.
+
+---
+
+## 8. The remaining six — the denominator closes at 8 of 8
+
+§7.5 left `load`/`run`/`bload`/`open`/`append`/`merge` uncovered, ranked below
+the two reference-exact rows but not safe. All six now have a control.
+
+### 8.1 🎯 Every line was SCOUTED on the machine before it was written down
+
+A control asserting something no build ever prints is worse than no control, so
+each candidate was typed at zerobas first and designed from the reading:
+
+| control | types | reading (measured) |
+|---|---|---|
+| `load-alive` | `LOAD"A:PROG.BAS"` / `LIST` | `10 POKE &HD002,123` |
+| `run-alive` | `POKE &HD002,0` / `RUN"A:PROG.BAS"` / `PRINT PEEK(&HD002)` | `123` |
+| `bload-alive` | `POKE &HC000,0` / `BLOAD"A:PROG.BIN"` / `PRINT PEEK(&HC000)` | `62` (`$3E`, the blob's first opcode) |
+| `open-alive` | `OPEN"A:HI.TXT" FOR INPUT` / `LINE INPUT#1,A$` / `PRINT A$` | `Hello from zerobas-disk!` |
+| `append-alive` | OUTPUT `"AA"` / APPEND `"BB"` / read both back | `AABB` |
+| `merge-alive` | `10 REM MG` / `SAVE",A"` / `NEW` / `20 REM ZQ` / `MERGE` / `LIST` | `10 REM MG\|20 REM ZQ` |
+
+🔴 **AND THE SCOUT REFUTED THE OBVIOUS DESIGN.** `MERGE"A:PROG.BAS"` — merging
+the *tokenised* fixture — raises **`Syntax error`** and merges nothing; MERGE
+wants an ASCII (`SAVE",A"`) file. A control written from the assumption would
+have asserted a listing that never appears. Hence the round trip.
+
+⚠️ **`merge-alive` asserts BOTH lines, and that is MERGE's whole point.** `20 REM
+ZQ` is typed *after* the `NEW` and must **survive**: `MG` proves the file
+arrived, `ZQ` proves the resident program was not replaced. A control asserting
+only `MG` would be green on a MERGE that behaved like LOAD.
+
+⚠️ **RAM IS PRE-POISONED WHERE THE EVIDENCE IS A `PEEK`.** The battery is batched
+— one boot, `NEW`/`CLS` between cases — so page-3 RAM **survives from case to
+case** and a landmark left by an earlier case would read as this one's success.
+`run-alive` and `bload-alive` write 0 first; scouted at `'0'`.
+
+### 8.2 Two structural facts, asserted in code rather than commented
+
+* **`dir_present`/`dir_absent` are optional.** LOAD, RUN, BLOAD and OPEN change
+  no directory entry, so **four of the eight controls are screen-only** and the
+  gate says so in its footer. `None` means *not applicable*, never *passed*.
+* **The control ORDER is load-bearing**: `bload-alive` reads `PROG.BIN`, which
+  `kill-alive` deletes. That is an `assert` at import, not a comment, so a
+  reorder stops the probe instead of reddening BLOAD for a reason that is not
+  BLOAD. A second `assert` pins `CASES`' control names to `VERB_CONTROLS`, so a
+  typo cannot leave a row ungated while the denominator counts it.
+
+⚠️ **Three controls lean on a SECOND verb** — `merge-alive` on `SAVE",A"`,
+`append-alive` on OPEN/OUTPUT+INPUT, `kill-alive` on FILES. Acceptable **only**
+because the failure is loud: the row prints `NOT MEASURED` at exit 2 — an
+instrument fault, which is what it is — and never a silent PASS.
+
+### 8.3 🎯 The knives — 3 run, each twice, both rounds identical
+
+| # | cut (all byte-neutral) | verdict |
+|---|---|---|
+| **K-GB** | `fat_io_getbyte`'s `ld hl,(FREAD_LEFT)` → `scf`/`ret`/`nop` — the SHARED sequential read layer returns immediate EOF | **CUT** — **all six** new controls red, their six rows `NOT MEASURED`, rc **2**, tally `2/2 scored (8 rows, 6 NOT MEASURED)`. Held: `fat-alive`, `name-alive`, `kill-alive` and **both reference-exact rows still scored** |
+| **K-PL** | `disk_prog_load`'s `jp nz,ascii_load` → `jp ascii_load` — the TOKENISED branch only | **CUT** — `load-alive` + `run-alive` only; `merge-alive`, `open-alive`, `append-alive`, `bload-alive` all held. Separates the program loader from the read layer |
+| **K-MG** | `ex_merge`'s `call ascii_read_lines` → `or a`/`nop`/`nop` — MERGE opens the file and stores nothing, Cy=0 so no error | **CUT** — `merge-alive` **only**; every other control held |
+
+🎯 **K-GB SPLIT THE TWO INSTRUMENTS, WHICH IS THE EVIDENCE THEY ARE INDEPENDENT.**
+Under it, `append-alive` and `merge-alive` fail on the **screen** while
+`append-alive (directory)` and `merge-alive (directory)` **stay PASS** — the
+write half still created `AP.TXT` and `M.BAS`; only the read-back died. The
+control requires both, so it reds. Under **K-MG** the same asymmetry names
+MERGE's evidence precisely: `M       BAS` is present (that is `SAVE",A"`, not
+MERGE), and only the screen half can see that nothing was merged.
+
+⚠️ **Coverage, stated exactly:** K-GB shows all six controls see their READ PATH
+die. K-PL and K-MG additionally show `load`/`run` and `merge` are
+**verb-specific**. `bload-alive`, `open-alive` and `append-alive` are covered by
+the shared-layer cut only — no knife here separates them from `fat_io_getbyte`.
+Not claimed as more than that.
+
+### 8.4 🔴 The knives found a bug in the GATE, on a path no green run can reach
+
+Round 1 scored all three cuts as enormous CUTs — twenty-odd rows "moved". They
+had not. The probe was raising `AttributeError`: the verb-control **failure**
+branch formatted `dir_present.decode()` unconditionally, and four of the eight
+controls now carry `None` there. It printed a prefix of its report and exited 1.
+
+**That branch only ever runs under a knife.** The whole corpus is green runs, so
+a latent traceback in a gate's failure path is invisible to every gate, every
+row, and every review — and it surfaces as the most flattering possible reading,
+a knife that reddens everything.
+
+Two fixes, both kept: the formatter now walks only the fields that exist, and the
+runner **requires the probe's own tally line in every knifed run** and aborts
+without it — *"refuse a short reading"* applied to the knifed run and not only to
+the baseline. Both are now in [`dev-workflow.md`](dev-workflow.md) §Knives.
+
+### 8.5 As-built
+
+`8/8 scored + 5 directory checks`, exit 0, `VERB-SUCCESS CONTROLS: 8 of 8 rows`
+with the four screen-only controls named. All four ROM hashes unchanged
+(`disk.rom 2c630d3d…`, `sub.rom 6ea374de…`, `basic-reloc.rom 849d661e…`,
+`zerobas-main-eu.rom 4952fb9e…`) — probe and doc only. `unit-test` 58,
+`audit-citations` 713, `preflight-check` ALL PASS, `injector-check` 329, walls
+and `deadcode` unmoved. The emulator gates that can only re-drive the same
+machine were **not run**.
+
+### 8.6 Still open
+
+* **`run-missing` reads `'load error|Illegal function call in 3346'`** — two
+  messages on one row, seen since this battery was written, unexplained by any
+  document, and untouched by any slice here. It is now a *measured* row (its verb
+  control passes), which makes the oddity a fact about `RUN"missing"` rather than
+  a possible artefact.
+* **No knife separates `bload-alive`, `open-alive` or `append-alive` from the
+  shared read layer** (§8.3). Each would need a verb-local cut.
+* **The controls' second-verb dependencies** (§8.2) are a coupling, not a defect,
+  but they mean three rows can be marked NOT MEASURED by a break that is not
+  their own verb's.

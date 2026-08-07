@@ -274,26 +274,46 @@ duplicating (and drifting from) what is written below.
       item. All four ROM hashes UNCHANGED (probe + docs only), so the emulator
       gates that can only re-drive the same machine were **not run**, stated
       rather than folded into "corpus green".
-- [ ] ⚠️ **SIX of `fat-error-acceptance`'s eight rows still have NO verb-success
-      control** — `load-missing`, `run-missing`, `bload-missing`, `open-missing`,
-      `append-missing`, `merge-missing`. Each is satisfied by a verb that always
-      errors; the gate prints the count, the names, and whether any of them is
-      reference-exact **derived from `CASES`** on every run, so the number cannot
-      rot silently.
-      ✅ **`kill-missing` closed 2026-08-07** (`kill-alive`, spec §7) — it was the
-      one that mattered, being the other REFERENCE-EXACT row. **None of the
-      remaining six is reference-exact**; all are pinned to zerobas's own
-      quarantined `load error`, which is why they rank below the two now covered
-      — not why they are safe.
-      🔴 **DO NOT COPY `name-alive` FOR THEM.** `KILL` needed a different shape
-      and the knife proved it: under a `KILL` that deletes nothing, the screen
-      reading is `'TEST    .BIN PROG    .BIN'`, which **contains the positive
-      tokens** — only the new `absent` half reds it. Any verb whose success is an
-      ABSENCE needs survivors AND casualty asserted.
-      Feasible on today's fixture: `LOAD`/`BLOAD`/`OPEN`/`MERGE` (`PROG.BAS`,
-      `PROG.BIN`, `HI.TXT`). `RUN` executes a program and `APPEND` writes, so
-      those two need thought about ordering on the shared batched image. Detail:
-      [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §4/§7.5.
+- [x] ✅ **`fat-error-acceptance`'s verb-success denominator CLOSES AT 8 of 8 —
+      2026-08-07**,
+      [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md)
+      §8. Every row's verb is now shown reaching a SUCCESS disposition in the same
+      run; the gate prints the count and the four SCREEN-ONLY controls
+      (`LOAD`/`RUN`/`BLOAD`/`OPEN` change no directory entry) derived from its own
+      tables, so the number cannot rot silently.
+      🎯 **EVERY CONTROL LINE WAS SCOUTED ON THE MACHINE FIRST, AND THE SCOUT
+      REFUTED THE OBVIOUS DESIGN**: `MERGE` of the TOKENISED fixture raises
+      `Syntax error` and merges nothing — MERGE wants an ASCII `SAVE",A"` file —
+      so `merge-alive` does the round trip and asserts **both** lines, because
+      merging INTO an existing program is the property that separates MERGE from
+      LOAD. RAM is pre-poisoned where the evidence is a `PEEK` (batched = page-3
+      RAM survives between cases).
+      🔴 **THE KNIVES FOUND A BUG IN THE GATE, ON A PATH NO GREEN RUN CAN REACH.**
+      Round 1 scored all three cuts as enormous CUTs — twenty rows "moved". They
+      had not: the probe was raising `AttributeError` in the verb-control FAILURE
+      branch (it formatted `dir_present.decode()` unconditionally, and four
+      controls now carry `None`), printing a prefix and exiting 1. **A gate's
+      failure path only ever runs under a knife**, so a traceback there is
+      invisible to the whole corpus and surfaces as the most flattering possible
+      reading. Fixed both ends: the formatter walks only the fields that exist,
+      and the runner now REQUIRES the probe's own tally line in a knifed run —
+      "refuse a short reading" applied to the knifed run, not only the baseline.
+      Both are in [`docs/dev-workflow.md`](docs/dev-workflow.md) §Knives.
+      3 knives, twice each, identical: **K-GB** (shared `fat_io_getbyte` → EOF)
+      reds ALL SIX with both reference-exact rows still scored; **K-PL** and
+      **K-MG** separate `load`/`run` and `merge` as verb-specific. Probe + doc
+      only — all four ROM hashes unchanged.
+- [ ] ⚠️ **Three `fat-error` gaps left by the 8-of-8 closure** — (1) no knife
+      separates `bload-alive`, `open-alive` or `append-alive` from the shared
+      `fat_io_getbyte` layer, so each is shown to see its READ PATH die but not
+      proven verb-specific; (2) `merge-alive`, `append-alive` and `kill-alive`
+      lean on a SECOND verb (`SAVE",A"`, OPEN/OUTPUT+INPUT, FILES), so a break
+      elsewhere can mark their row NOT MEASURED — loud, but not their own verb;
+      (3) **`run-missing` reads `'load error|Illegal function call in 3346'`** —
+      two messages on one row, unexplained by any document, now a *measured* row
+      so the oddity is a fact about `RUN"missing"` rather than a possible
+      artefact. Detail:
+      [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §8.6.
 - [x] ✅ **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD —
       CLOSED 2026-08-07**, and **the remedy I filed was DECLINED on a read of the
       record** ([[a-recommendation-in-the-record-is-still-a-claim]] — the filer

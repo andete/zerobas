@@ -163,6 +163,17 @@ landed defect, not advice.
 * **Capture the baseline through the probe's own parse path, and refuse a SHORT
   one** — a runner whose row set comes back empty cannot distinguish that from
   "the knife moved nothing" (`[[knife-runner-false-negatives]]`).
+* 🔴 **AND APPLY THAT TO THE KNIFED RUN, NOT ONLY THE BASELINE.** A probe that
+  **crashes mid-report** prints a *prefix* of its rows and exits 1 — which a diff
+  against the baseline renders as *"twenty rows moved"*, i.e. a spectacular CUT.
+  Require the probe's own tally/footer line in every knifed run and **abort**
+  without it. Measured 2026-08-07: a knife set scored three cuts as enormous CUTs
+  when the probe was actually raising `AttributeError`.
+  ⚠️ **The reason that lands here and not in the probe:** a control's
+  FAILURE-formatting branch only ever runs **under a knife**, so a latent
+  traceback there is invisible to every green run and to the whole corpus. Knives
+  are the only thing that executes a gate's failure paths — expect to find bugs
+  in the *gate* there, not only in the tree.
 * **A failed build ABORTS rather than scoring** — a knife scored against a stale
   ROM reads as a CUT.
 * **Score a predicted GREEN set as well as a predicted RED set.** A run where

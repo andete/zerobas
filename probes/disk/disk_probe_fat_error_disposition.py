@@ -88,12 +88,17 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", "lib"))
 import omsx_repl  # noqa: E402
 
+# zerobas's own lowercase wording for the whole no-disk / mount / I-O class -- the
+# quarantined divergence, and the default `want` for a row that has not been
+# measured on the reference.  Defined BEFORE the table that cites it.
+WANT = "load error"
+
 # Each verb must route a "not found" through the FAT primitive shim layer and
 # surface zerobas's load_error.  Kept to DIRECT-mode one-liners so the failure
 # lands on the line right below the echoed command.
 CASES = [
-    ("load-missing",  'LOAD"A:NOSUCH.BAS"'),
-    ("run-missing",   'RUN"A:NOSUCH.BAS"'),
+    ("load-missing",  'LOAD"A:NOSUCH.BAS"', WANT, "load-alive"),
+    ("run-missing",   'RUN"A:NOSUCH.BAS"', WANT, "run-alive"),
     # 🔴 THE ONE ROW THAT IS NOT PINNED TO `load error`, SINCE 2026-08-07
     # (D-DSKMSG, docs/spec-basic-dskmsg.md §4.3). This row pinned KILL's no-match
     # to zerobas's own `load error` ON PURPOSE while the message was UNMEASURED
@@ -109,8 +114,9 @@ CASES = [
     # no-disk / mount / I-O class, and NOTHING in D-DSKMSG measured them. A pin
     # that drifts verb by verb on its neighbours' evidence stops being a pin.
     ("kill-missing",  'KILL"A:NOSUCH.BAS"', "File not found", "kill-alive"),
-    ("bload-missing", 'BLOAD"A:NOSUCH.BIN"'),
-    ("open-missing",  'OPEN"A:NOSUCH.DAT" FOR INPUT AS #1'),
+    ("bload-missing", 'BLOAD"A:NOSUCH.BIN"', WANT, "bload-alive"),
+    ("open-missing",  'OPEN"A:NOSUCH.DAT" FOR INPUT AS #1', WANT,
+     "open-alive"),
     # D-APPMISS (docs/spec-basic-append-missing-refuse.md §5c). APPEND used to
     # CREATE the missing file -- `fat_io_append` jumped into `fat_io_create` on a
     # `fat_find` miss -- where the CF-3300 raises `File not found`, opens no
@@ -120,7 +126,8 @@ CASES = [
     # statement whatever OPEN raised, and `err_class` there deliberately does not
     # know zerobas's `load error` wording. `append-missing` red with `open-missing`
     # green means the APPEND path reached a different class.
-    ("append-missing", 'OPEN"A:NOSUCH.DAT" FOR APPEND AS #1'),
+    ("append-missing", 'OPEN"A:NOSUCH.DAT" FOR APPEND AS #1', WANT,
+     "append-alive"),
     # 🔴 THE SECOND ROW OFF `load error`, SINCE 2026-08-07 (D-DKNAME,
     # docs/spec-basic-dkname.md). Same reading as `kill-missing` and taken in the
     # same CF-3300 session (R-DK2) -- but it moved one slice LATER, because
@@ -133,9 +140,8 @@ CASES = [
     # answers `load error`, and no row here or anywhere drives it.
     ("name-missing",  'NAME"A:NOSUCH.BAS" AS "B.BAS"', "File not found",
      "name-alive"),
-    ("merge-missing", 'MERGE"A:NOSUCH.BAS"'),
+    ("merge-missing", 'MERGE"A:NOSUCH.BAS"', WANT, "merge-alive"),
 ]
-WANT = "load error"
 
 # A row is `(key, line)` -- pinned to WANT, no verb control -- or
 # `(key, line, want)` when its disposition has been MEASURED on the reference and
@@ -228,7 +234,90 @@ CONTROL_WANT = ("HI", "TXT")
 # listing demonstrably ran) AND the casualty gone, which together are evidence;
 # either half alone is not. Same reasoning `dsk-killhit` carries in
 # basic_probe_dskmsg.py, and the directory instrument settles it independently.
+#
+# ⚠️ EVERY LINE BELOW WAS SCOUTED ON THE MACHINE BEFORE IT WAS WRITTEN DOWN, and
+# one candidate was refused by the reading: `MERGE"A:PROG.BAS"` (the TOKENISED
+# fixture) raises `Syntax error` and merges nothing -- MERGE wants an ASCII-saved
+# file -- so `merge-alive` does the SAVE",A" round trip instead. Designing a
+# control from what a verb is assumed to print is how a control ends up asserting
+# something no build ever produces.
+#
+# ⚠️ RAM IS PRE-POISONED WHERE THE EVIDENCE IS A PEEK. The battery is BATCHED --
+# one boot, `NEW`/`CLS` between cases -- so page-3 RAM SURVIVES from case to case
+# and a landmark left by an earlier case would read as this one's success.
+# `run-alive` and `bload-alive` write 0 to their landmark first; scouted at `'0'`.
+#
+# ⚠️ dir_present/dir_absent are OPTIONAL (None = no directory instrument). The
+# read-only verbs -- LOAD, RUN, BLOAD, OPEN -- change no directory entry, so
+# there is nothing for a second instrument to read and their evidence is
+# screen-only. Said out loud rather than implied by a missing column.
+#
+# ⚠️ THREE CONTROLS LEAN ON A SECOND VERB: `merge-alive` on `SAVE",A"`,
+# `append-alive` on OPEN/OUTPUT + OPEN/INPUT, and `kill-alive` on FILES. If one
+# of those breaks, the control reds for a reason that is not its own verb. That
+# is acceptable HERE and only here, because the failure is LOUD: the row prints
+# NOT MEASURED at exit 2 -- an instrument fault, which is exactly what it is --
+# and never a silent PASS.
 VERB_CONTROLS = {
+    # --- read-only / creating controls run FIRST; the two MUTATING ones last ---
+    "load-alive": dict(
+        lines=['LOAD"A:PROG.BAS"', "LIST"],
+        shown='LOAD"A:PROG.BAS" : LIST',
+        want=("POKE", "123"),                 # the fixture line, detokenised
+        absent=(),
+        dir_present=None, dir_absent=None,
+        guards="load-missing",
+    ),
+    "run-alive": dict(
+        lines=["POKE &HD002,0", 'RUN"A:PROG.BAS"', "PRINT PEEK(&HD002)"],
+        shown='POKE 0 : RUN"A:PROG.BAS" : PRINT PEEK',
+        want=("123",),                        # PROG.BAS is `10 POKE &HD002,123`
+        absent=(),
+        dir_present=None, dir_absent=None,
+        guards="run-missing",
+    ),
+    "bload-alive": dict(
+        lines=["POKE &HC000,0", 'BLOAD"A:PROG.BIN"', "PRINT PEEK(&HC000)"],
+        shown='POKE 0 : BLOAD"A:PROG.BIN" : PRINT PEEK',
+        want=("62",),                         # $3E = the blob's first opcode
+        absent=(),
+        dir_present=None, dir_absent=None,
+        guards="bload-missing",
+    ),
+    "open-alive": dict(
+        lines=['OPEN"A:HI.TXT" FOR INPUT AS #1', "LINE INPUT#1,A$", "CLOSE",
+               "PRINT A$"],
+        shown='OPEN"A:HI.TXT" INPUT : LINE INPUT# : PRINT',
+        want=("Hello", "zerobas-disk"),       # HI.TXT's actual first line
+        absent=(),
+        dir_present=None, dir_absent=None,
+        guards="open-missing",
+    ),
+    "append-alive": dict(
+        lines=['OPEN"A:AP.TXT" FOR OUTPUT AS #1', 'PRINT#1,"AA"', "CLOSE",
+               'OPEN"A:AP.TXT" FOR APPEND AS #1', 'PRINT#1,"BB"', "CLOSE",
+               'OPEN"A:AP.TXT" FOR INPUT AS #1', "LINE INPUT#1,A$",
+               "LINE INPUT#1,B$", "CLOSE", "PRINT A$;B$"],
+        shown='OUTPUT "AA" : APPEND "BB" : read both back',
+        want=("AABB",),                       # APPEND kept AA and added BB
+        absent=(),
+        dir_present=b"AP      TXT", dir_absent=None,
+        guards="append-missing",
+    ),
+    "merge-alive": dict(
+        # MERGE's DISTINGUISHING property is that it merges INTO an existing
+        # program where LOAD replaces it. So line 20 is typed AFTER the NEW and
+        # must SURVIVE the merge: `MG` proves the file arrived, `ZQ` proves the
+        # resident program was not replaced. A control asserting only `MG` would
+        # be green on a MERGE that behaved like LOAD.
+        lines=["10 REM MG", 'SAVE"A:M.BAS",A', "NEW", "20 REM ZQ",
+               'MERGE"A:M.BAS"', "LIST"],
+        shown='SAVE",A" : NEW : 20 REM ZQ : MERGE : LIST',
+        want=("MG", "ZQ"),
+        absent=(),
+        dir_present=b"M       BAS", dir_absent=None,
+        guards="merge-missing",
+    ),
     "name-alive": dict(
         lines=['NAME"A:PROG2.BAS" AS "REN2.BAS"', 'FILES"A:REN2.BAS"'],
         shown='NAME"A:PROG2.BAS" AS "REN2.BAS" : FILES',
@@ -248,6 +337,19 @@ VERB_CONTROLS = {
         guards="kill-missing",
     ),
 }
+
+# 🔴 THE ORDER IS LOAD-BEARING, SO IT IS ASSERTED RATHER THAN COMMENTED.
+# `bload-alive` READS PROG.BIN; `kill-alive` DELETES it. Reordering the dict
+# would make bload-alive red for a reason that is not BLOAD -- loudly (exit 2),
+# but for the wrong reason. This turns a silent reorder into an import-time stop.
+assert (list(VERB_CONTROLS).index("bload-alive")
+        < list(VERB_CONTROLS).index("kill-alive")), \
+    "bload-alive reads PROG.BIN, which kill-alive DELETES -- order is load-bearing"
+
+# Every case that names a control must name one that exists, and vice versa: a
+# typo would silently leave a row ungated while the denominator counted it.
+assert {v for *_, v in CASES if v} == set(VERB_CONTROLS), \
+    "CASES' verb-control names and VERB_CONTROLS disagree"
 
 # The file `append-missing` must NOT leave behind, and where to look for it.
 SRC_DSK = os.path.join(os.path.dirname(os.path.dirname(
@@ -374,20 +476,34 @@ def main() -> int:
         got = " | ".join(t.strip() for t in str(tail or "").split("\n") if t.strip())
         scr = (all(w in (tail or "") for w in vc["want"])
                and not any(u in (tail or "") for u in vc["absent"]))
-        dpres = names is not None and vc["dir_present"] in names
-        dabs = names is not None and vc["dir_absent"] not in names
-        vok[k] = scr and dpres and dabs
+        # The directory instrument is OPTIONAL: a read-only verb changes no
+        # directory entry, so there is nothing for a second instrument to read.
+        # `None` means "not applicable", never "passed".
+        dpres = (names is not None and vc["dir_present"] in names
+                 if vc["dir_present"] else None)
+        dabs = (names is not None and vc["dir_absent"] not in names
+                if vc["dir_absent"] else None)
+        vok[k] = scr and dpres is not False and dabs is not False
         print(f"  {'PASS' if vok[k] else 'FAIL'}  {k:14} {vc['shown']:38} "
               f"-> {got[:60]!r}   [VERB CONTROL for {vc['guards']}]")
         if not vok[k]:
-            print(f"        screen wanted {' + '.join(vc['want'])}"
-                  + (f" and NOT {' / '.join(vc['absent'])}" if vc["absent"] else "")
-                  + f": {'ok' if scr else 'MISSING'};  directory wanted "
-                  f"{vc['dir_present'].decode()!r} present "
-                  f"({'ok' if dpres else 'ABSENT'}) and "
-                  f"{vc['dir_absent'].decode()!r} absent "
-                  f"({'ok' if dabs else 'STILL THERE'})"
-                  + ("  [the image was unreadable]" if names is None else ""))
+            # ⚠️ EVERY FIELD HERE IS OPTIONAL, AND THIS BRANCH ONLY RUNS WHEN THE
+            # CONTROL FAILS. An earlier version formatted `dir_present.decode()`
+            # unconditionally and crashed with AttributeError on the read-only
+            # controls, whose dir fields are None -- a latent traceback on the one
+            # path that matters, invisible to every green run. The knives found it.
+            why = [f"screen wanted {' + '.join(vc['want'])}"
+                   + (f" and NOT {' / '.join(vc['absent'])}" if vc["absent"] else "")
+                   + f": {'ok' if scr else 'MISSING'}"]
+            if vc["dir_present"]:
+                why.append(f"directory wanted {vc['dir_present'].decode()!r} "
+                           f"present: {'ok' if dpres else 'ABSENT'}")
+            if vc["dir_absent"]:
+                why.append(f"directory wanted {vc['dir_absent'].decode()!r} "
+                           f"absent: {'ok' if dabs else 'STILL THERE'}")
+            if names is None:
+                why.append("the image was unreadable")
+            print("        " + ";  ".join(why))
             print(f"        => the verb never reached a SUCCESS disposition, so "
                   f"{vc['guards']!r} below is NOT a measurement: its error is "
                   f"what a\n        DEAD verb prints too. Exit 2, not 1.")
@@ -427,12 +543,21 @@ def main() -> int:
     else:
         for k in vkeys:
             vc = VERB_CONTROLS[k]
-            dpres, dabs = vc["dir_present"] in names, vc["dir_absent"] not in names
-            print(f"\n  {'PASS' if dpres and dabs else 'FAIL'}  {k} (directory) "
-                  f"-> {vc['dir_present'].decode()!r} "
-                  f"{'present' if dpres else 'ABSENT'}, "
-                  f"{vc['dir_absent'].decode()!r} "
-                  f"{'gone' if dabs else 'STILL THERE'}"
+            if not (vc["dir_present"] or vc["dir_absent"]):
+                continue                    # read-only verb: no second instrument
+            bits, good = [], True
+            if vc["dir_present"]:
+                hit = vc["dir_present"] in names
+                good &= hit
+                bits.append(f"{vc['dir_present'].decode()!r} "
+                            f"{'present' if hit else 'ABSENT'}")
+            if vc["dir_absent"]:
+                gone = vc["dir_absent"] not in names
+                good &= gone
+                bits.append(f"{vc['dir_absent'].decode()!r} "
+                            f"{'gone' if gone else 'STILL THERE'}")
+            print(f"\n  {'PASS' if good else 'FAIL'}  {k} (directory) "
+                  f"-> {', '.join(bits)}"
                   f"   [{vc['guards'].split('-')[0].upper()} reached the SECTOR, "
                   f"not just the screen]")
         made = MUST_NOT_EXIST in names
@@ -443,7 +568,9 @@ def main() -> int:
     if tmp:
         os.unlink(tmp)
 
-    ndirs = 1 + len(vkeys)
+    ndirs = 1 + sum(1 for k in vkeys
+                    if VERB_CONTROLS[k]["dir_present"]
+                    or VERB_CONTROLS[k]["dir_absent"])
     print(f"\n===== FAT error disposition: {npass}/{scored} scored "
           f"({len(CASES)} rows, {len(CASES) - scored} NOT MEASURED) "
           f"+ {ndirs} directory checks, over a LIVE FAT layer =====")
@@ -461,17 +588,31 @@ def main() -> int:
     # naming a row that has LEFT the list it annotates.
     uncovered = [k for k, _, _, v in CASES if not v]
     exact = [k for k, _, w, v in CASES if not v and w != WANT]
+    nodir = [k for k in vkeys if not (VERB_CONTROLS[k]["dir_present"]
+                                      or VERB_CONTROLS[k]["dir_absent"])]
     print(f"VERB-SUCCESS CONTROLS: {len(CASES) - len(uncovered)} of {len(CASES)} "
-          f"rows. The other {len(uncovered)} are satisfied by a verb that always "
-          f"errors:\n  {', '.join(uncovered)}")
-    if exact:
-        note = ("REFERENCE-EXACT and still uncovered: " + ", ".join(exact)
-                + " -- pinned to a MEASURED reference answer with no control "
-                  "behind the verb, which is the pairing that matters most")
+          f"rows.")
+    if not uncovered:
+        # ⚠️ The all-covered branch is written out rather than left to a format
+        # string that would print "The other 0 are satisfied by:" and an empty
+        # list. A denominator line that degrades into nonsense at its own
+        # boundary is not a denominator line.
+        print(f"  (every row's verb is shown reaching a SUCCESS disposition in "
+              f"this same run. {len(nodir)} of the {len(vkeys)} controls are "
+              f"SCREEN-ONLY --\n   {', '.join(nodir)} -- because a read-only verb "
+              f"changes no directory entry for a second instrument to read.)")
     else:
-        note = (f"none of the {len(uncovered)} is reference-exact -- every one is "
-                f"pinned to zerobas's own {WANT!r}, the quarantined divergence")
-    print(f"  ({note}. TODO.md / docs/spec-fat-error-verb-control.md §4)")
+        print(f"  The other {len(uncovered)} are satisfied by a verb that always "
+              f"errors:\n  {', '.join(uncovered)}")
+        if exact:
+            note = ("REFERENCE-EXACT and still uncovered: " + ", ".join(exact)
+                    + " -- pinned to a MEASURED reference answer with no control "
+                      "behind the verb, which is the pairing that matters most")
+        else:
+            note = (f"none of the {len(uncovered)} is reference-exact -- every one "
+                    f"is pinned to zerobas's own {WANT!r}, the quarantined "
+                    f"divergence")
+        print(f"  ({note}. TODO.md / docs/spec-fat-error-verb-control.md §4)")
 
     if instrument_fault:
         print("SOME NOT MEASURED -- exit 2 = the instrument was broken, NOT an "
