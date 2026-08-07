@@ -53,8 +53,12 @@ ROM hashes at `0cbf495`: `disk.rom 2c630d3d…`, `sub.rom 01805491…`,
 
 Baselines this slice must not move: `deadcode` main **1564 spans / 286 seeds → 0**,
 sub **1510 spans / 102 seeds → 0 (+1 allowlisted)**; `injector-check` **327 files**;
-`audit-citations` **706 files swept**; `preflight-check` **180 spawn sites, 95
-guarded, 0 UNGUARDED**.
+`audit-citations` **706 files swept**; `preflight-check` **181 spawn sites, 86
+exempt, 95 guarded, 0 UNGUARDED**; page-1 tenant closure **582+41**.
+
+⚠️ The last two are corrected from the draft, which carried **180/85** and **522+41**
+— see §6.5. Both are the newest figure anyone *recorded*, and neither is the figure
+at `0cbf495`.
 
 ---
 
@@ -301,10 +305,14 @@ the only evidence for §3.3's finding. Instead:
    Self-tests 10/10 11/11 12/12 14/14, 4 advisory all acknowledged.
 7. `injector-check`: **327 → 328** files (`_sources()` yields every `.py` in the
    repo), 4 exempt, 3 RECORDs, 0 offenders.
-8. `preflight-check`: **180 spawn sites, 85 exempt, 95 require a guard, 95 guarded,
-   0 UNGUARDED** — unchanged; the new tool spawns no process.
+8. `preflight-check`: ~~**180 spawn sites, 85 exempt**~~ → **181 / 86**, 95 require a
+   guard, 95 guarded, 0 UNGUARDED — unchanged; the new tool spawns no process.
 9. The three closure walks, `check_resident_abi`, `check_kwtable_identity`: OK,
-   unchanged (122+4 / 718+15 / 522+41).
+   unchanged (122+4 / 718+15 / ~~522~~ **582**+41).
+
+   ⚠️ §8 and §9 as first written are struck out above: they were **predictions
+   copied from the newest RECORDED figure, not measured at the baseline** — §6.5.
+   The claim in both ("unchanged") is correct; the numbers were not.
 10. Every emulator gate at its recorded value: `unit-test` **58**, `latch-check`
     **16/16**, `lnblank-acceptance REPEAT=2` **539/539**, `lnblank-say-acceptance`
     **204/204**, `logicops-acceptance` **193**, `float-acceptance` ALL PASS,
@@ -366,8 +374,8 @@ apparatus, and the one §2.1 predicted.
 | 4.5 | main **1564** spans, **286** seeds, **and the SET unchanged** | **1564 / 286**, and the set diff is `added []  dropped []` ✅ |
 | 4.6 | `audit-citations` **706 → 708** | **708**, self-tests 10/10 11/11 12/12 14/14, 4 advisory ✅ |
 | 4.7 | `injector-check` **327 → 328** | **328**, 4 exempt, 3 RECORDs, 0 offenders ✅ |
-| 4.8 | `preflight-check` **180** spawn sites, **85** exempt | 🔴 **181 / 86** — §6.5 |
-| 4.9 | closure `122+4 / 718+15 / `**`522`**`+41` | 🔴 **122+4 / 718+15 / 582+41** — §6.5 |
+| 4.8 | `preflight-check` **180** spawn sites, **85** exempt | 🔴 **181 / 86**, at `0cbf495` too — the prediction was `grep`-ed from the record, not measured; §6.5 |
+| 4.9 | closure `122+4 / 718+15 / `**`522`**`+41` | 🔴 **122+4 / 718+15 / 582+41**, at `0cbf495` too — same cause; §6.5 |
 | 4.10 | every emulator gate at its recorded value | `unit-test` **58** ✅, `latch-check` **16/16** ✅, `lnblank REPEAT=2` **539/539** ✅; the rest **DELIBERATELY NOT RUN** — §6.6 |
 
 ### 6.3 The knives — 7 of 7 cut, both rounds, and one cut the instrument itself
@@ -424,23 +432,42 @@ landed labels, reads **3852 / 1821** — a third independent instrument (after
 D-LFILES's `$FF` scan and its injected labels) agreeing to the byte, and refuting the
 recorded 3869 / 1824 for the third time.
 
-### 6.5 🔴 Two of this spec's own predictions were copied figures, not measurements
+### 6.5 🔴 Two of this spec's own predictions were copied figures — and the first diagnosis of WHY was wrong
 
-§4.8 and §4.9 are wrong, and they are wrong in exactly the way §3.3 is about.
+§4.8 and §4.9 predicted `preflight-check` **180 / 85** and the page-1 closure
+**522+41**. Measured: **181 / 86** and **582+41**, at HEAD *and at `0cbf495`*. Neither
+gate moved (95 require a guard, 95 guarded, 0 UNGUARDED; abi and page-0 walks
+unchanged) — only the numbers I wrote down were wrong.
 
-* **`preflight-check`**: predicted 180 spawn sites / 85 exempt. Measured **181 / 86**
-  — *and it measures 181 / 86 at `0cbf495` too*. The gate did not move (95 require a
-  guard, 95 guarded, 0 UNGUARDED, unchanged). The **record** was stale:
-  `spec-basic-editverb.md` §6.7 is the only place the pair is written down, and
-  neither D-LPTVERB nor D-LFILES recorded it, so nothing ever noticed it moving.
-* **the page-1 tenant closure**: predicted 522 routines, from `MEMORY.md`'s JUDGE-arc
-  line. Measured **582**, at HEAD and at `0cbf495` alike — D-EDITVERB's four tenant
-  ops and D-LFILES's `dirverb` walk both grew it and neither figure reached the index.
+**The first version of this section blamed the record, and that was wrong.** Both
+series were swept the same way §3.1 swept the walls — every commit checked out, built,
+and both gates run:
 
-⇒ **The copy-forward habit is not a sub-ROM problem.** It is a habit, and I committed
-it twice inside the spec written to remove it. Both are now measured; neither is a
-regression. The general corrective is the one this slice implements for the walls
-only: a number that prints on every build cannot be copied.
+| gate | series | recorded where | verdict |
+|---|---|---|---|
+| `preflight-check` | 178/85 `4243343`…`121b05b` → 179/85 `76ea851`…`53825bf` → **180/85 `07e9c0a`…`b5f4135`** → **181/86 `0cbf495`** | 178/85 in [`spec-probe-preflight.md`](spec-probe-preflight.md)+[[preflight-slice]]; 180/85 in [`spec-basic-editverb.md`](spec-basic-editverb.md) §6.7 | **every recorded figure is CORRECT at its own commit** |
+| `--page1` closure | 515+41 `a191119` → **522+41 `52b2386`…`0b31baa`** → 564+41 `fa0b952`…`b5f4135` → **582+41 `0cbf495`** | 515+41 in [`spec-rom-region-promote-input.md`](spec-rom-region-promote-input.md); 522+41 in all six JUDGE-arc specs + `spec-rom-gate-diskrom.md` + `spec-rom-gate-judge.md` | **every recorded figure is CORRECT at its own commit** |
+
+🎯 **So this is NOT §3.3's defect.** Nothing in the record is stale in the sense the
+walls were: no slice wrote a figure it had not measured. D-EDITVERB moved the closure
+(522 → **564**, leaving preflight at 180/85) and D-LFILES moved both (→ **181/86**,
+→ **582**) — and neither slice recorded either gate at all. **A gap, not an error.**
+
+⇒ **The defect is mine, and it is a different one: I treated the newest RECORDED
+figure as the CURRENT baseline.** §1's baseline table should have come from running the
+gates at `0cbf495`, which takes seconds; instead two of its rows were `grep`-ed out of
+the last spec that happened to mention them, four and two commits stale respectively.
+That is a *reading* failure where §3.3 is a *writing* failure, and the two compose:
+an unrecorded number and a copied number are indistinguishable to the next slice.
+
+Both corrections point the same way, and it is the one thing this slice actually
+builds: **a figure that prints on every build can be neither forgotten nor copied.**
+The four walls now do. `preflight-check` and the closure walks already print on every
+`make basic-reloc` — they were simply never read off it.
+
+⚠️ Corollary for the next slice: **do not populate a baseline table by `grep`.** Run
+the gates. This spec's §1 now carries 181/86 and 582+41 because they were measured
+here, not because a document said so.
 
 **And K5 relocates its own finding.** An overrun does not reach check 4: pasmo emits
 nothing for a negative `ds`, and `tools/pad_rom.py` refuses the empty image with

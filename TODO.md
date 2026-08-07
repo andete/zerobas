@@ -141,10 +141,16 @@ duplicating (and drifting from) what is written below.
       negative "over-report" printed as a measurement sentence — fixed, re-knifed);
       **K5 relocated its own finding** (an overrun never reaches the wall check,
       `pad_rom.py` refuses the empty image first); **the knife runner reverted the
-      Makefile wiring** and the resulting green read as a missed knife; and 🔴 **two
-      of D-SUBWALL's own predictions were stale copied figures** — `preflight-check`
-      is **181/86** not 180/85, and the page-1 closure is **582** not 522, both at
-      `0cbf495` as well. The copy-forward habit is not a sub-ROM problem.
+      Makefile wiring** and the resulting green read as a missed knife.
+      🔴 **AND TWO OF D-SUBWALL'S OWN BASELINE ROWS WERE `grep`-ED, NOT MEASURED** —
+      `preflight-check` is **181/86** not 180/85, the page-1 closure **582+41** not
+      522+41, both at `0cbf495` as well. ⚠️ **The first write-up blamed the record and
+      that was WRONG**: swept the same way, *every* recorded figure of both is CORRECT
+      at its own commit (preflight 178/85 → 179/85 → 180/85 → **181/86 at D-LFILES**;
+      closure 515 → 522 → **564 at D-EDITVERB** → **582 at D-LFILES**). Those two
+      slices simply never recorded either gate — **a gap, not an error**, and the
+      reading failure was mine: **do not populate a baseline table by `grep`. Run the
+      gates.** Both already print on every `make basic-reloc`.
 - [ ] ⚠️ **`do_kill`'s no-match prints `load error` where its own comment says
       `File not found`.** D-LFILES made `FILES`/`LFILES` reference-exact for that
       disposition (ERR 53, R-LF4/R-LF6) and deliberately did NOT re-point `KILL`:
