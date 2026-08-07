@@ -336,7 +336,8 @@ duplicating (and drifting from) what is written below.
       **+7 B**: `jp run_prog_top` at each site, and a CF-out contract on
       `do_tape_prog` consumed by `ret c` — whose producer is the **existing**
       `dpl_err`, so defect B's producer cost **0 B**. Gate
-      `make castail-acceptance` **9/9 + 1 pinned divergence**, three-sided
+      `make castail-acceptance` **9/9 + 1 pinned divergence** at the time
+      (**17/17 + 3 pins** since D-CASSEARCH extended the same gate), three-sided
       (vg8020, cf3300, zb), 7 knives run twice.
       🔴 **The filed blocker was wrong on one half and understated on the other.**
       "`omsx_repl.run_cases` mounts a disk, not a `.cas`" is true of its
@@ -348,37 +349,54 @@ duplicating (and drifting from) what is written below.
       reference reports and returns from is an operator **Ctrl-STOP**. Detail:
       [`docs/spec-basic-castail.md`](docs/spec-basic-castail.md),
       [`docs/castail-msx1-characterization.md`](docs/castail-msx1-characterization.md).
-- [ ] 📌 **zerobas prints NO tape-search progress line (`Found:` / `Skip :`).**
-      Found 2026-08-07 by D-CASTAIL while building the cassette instrument
-      (characterization §5); nothing in the record had it. Both references print
-      `Found:NAME` when the tape search takes a file and `Skip :NAME` when it
-      steps over one; zerobas prints neither, on any row, so a user watching a
-      tape load sees nothing until it finishes.
-      ⚠️ **PINNED, not blessed**: `castail-acceptance`'s `cas-load-plain:search`
-      row holds all three sides' readings verbatim and FAILS the gate if any of
-      them moves, which is what keeps the probe's search-row filter from being a
-      normalisation that quietly excuses the silence. It is the search's own
-      divergence, not the tail-after-a-load question D-CASTAIL answers, which is
-      why it is filed rather than folded in.
-      🔴 **AND THE COST LINE THIS ENTRY FIRST CARRIED — "a print in
-      `cas_open_match`'s match/skip arms, costing main page-1 bytes" — IS
-      WITHDRAWN, UNMEASURED, ON THE SAME DAY IT WAS WRITTEN**
-      ([[filed-justification-is-a-claim]]; the filer was me, one commit
-      earlier, in a slice whose own lesson was
-      [[a-filed-blocker-can-name-the-wrong-obstacle]]). The match/skip loop is
-      **not** in `cas_open_match` — that is a marshalling shim; the loop lives in
-      the SUB ROM (`sub/casmatch.asm` + `basic/casmatch-body.inc`,
-      `SUBROM_IDX_CASMATCH`), where the skip arm the `Skip :` line belongs to is
-      not visible from main at all. So the site is a page-1 sub tenant with
-      **1540 B free**, not main page 1 with 165.
-      ⚠️ **What has to be scouted before anyone prices it:** `print_msg` is at
-      `$7687`, i.e. **main page 1**, which the p1-closure rule forbids a page-1
-      tenant to call — so the tenant would have to print through a BIOS entry
-      (`CHPUT`, `< $4000`, legal for a tenant) and carry its own two strings,
-      OR the shim prints `Found:` on the way out while `Skip :` needs the
-      tenant. Those are different slices with different prices. **Scout the
-      carve first** [[carve-scout-before-proposing]]; do not inherit either
-      number from this entry.
+- [x] ✅ **zerobas printed NO tape-search progress line (`Found:` / `Skip :`) —
+      CLOSED 2026-08-07 by D-CASSEARCH** for **57 B, all of it in SUB page 1**
+      (1540 → 1483 B free; main low, main page 1 and sub page 0 all unmoved, and
+      **three of the four ROM hashes hold** — only `sub.rom` moves).
+      `basic/casmatch-body.inc` now emits the row at `com_match` / `com_miss`
+      through `CHPUT` — page-0 BIOS, legal for a page-1 tenant, the
+      `sub/title.asm` precedent — because `print_msg` at `$7687` is main page 1
+      and the p1-closure rule forbids it. The scout confirmed that, so the
+      "shim prints `Found:` on the way out" split this entry offered as the
+      alternative was **not needed and not taken**. Gate `make
+      castail-acceptance` **17/17 + 3 pinned divergences**, three-sided, 4
+      knives run twice.
+      🎯 **THE SITE WAS DECIDED BY A MEASUREMENT NOBODY HAD TAKEN, AND THIS ENTRY
+      DID NOT KNOW TO ASK FOR IT.** It named `LOAD`/`RUN`/`CLOAD`, but
+      `cas_open_match` has **three** callers: `MERGE"CAS:"` and `OPEN"CAS:" FOR
+      INPUT` (`basic/files.asm`) share the same search engine, so a print sited
+      there prints for them too. Measured: **all four verbs print the identical
+      rows on both references** — so the shared engine is not merely the cheap
+      site, it is the correct one. Had any one been silent, this siting would
+      have closed one divergence by **opening two**, and no reading of the code
+      could have said so. Detail:
+      [`docs/spec-basic-cassearch.md`](docs/spec-basic-cassearch.md),
+      [`docs/cassearch-msx1-characterization.md`](docs/cassearch-msx1-characterization.md).
+- [ ] 📌 **`OPEN"CAS:name" FOR INPUT` IGNORES THE NAME and opens the NEXT file on
+      the tape — so it delivers the WRONG FILE'S BYTES.** Found 2026-08-07 by
+      D-CASSEARCH, by the two-file-tape rows built to measure the progress line;
+      nothing in the record had it. Both references **name-match on OPEN** — they
+      step over `SK` and open `RT` — and read back `10 PRINT"ZQ9"`; zerobas opens
+      `SK` and reads back `10 PRINT"ZQ8"`.
+      🔴 **zerobas does this DELIBERATELY, and the source says so**:
+      `basic/files.asm` `oo_dev_cas` writes `xor a` / `ld (CAS_WANT_ON),a` under
+      the comment *"name-matching is Item A's CLOAD/LOAD/RUN/MERGE scope, not
+      OPEN"*. That scoping decision is now **measured to be wrong** — it was a
+      guess about the reference that no row had ever checked.
+      ⚠️ **PINNED, not blessed**: `castail-acceptance`'s `cas2-open` and
+      `cas2-open:echo` rows hold all three sides' readings verbatim and FAIL the
+      gate if any of them moves. The pin is also those rows' positive evidence —
+      a per-side EXACT value is stronger than a containment control, and a dead
+      machine reads `<nothing>` and rots it.
+      ⚠️ **What has to be measured before anyone prices it** — and the lesson of
+      the entry above is that the cost line is the LAST thing to write, not the
+      first ([[carve-scout-before-proposing]], [[filed-justification-is-a-claim]]):
+      the fix is in `basic/files.asm` (**main page 1, 165 B free** — a different
+      wall from D-CASSEARCH's), and three reference readings are missing, each of
+      which can change the shape: bare `OPEN"CAS:"` (no name), whether the
+      compare is case-sensitive as it is for `LOAD`/`CLOAD`, and what
+      `FOR OUTPUT` does with a name. **Do not inherit a byte count from this
+      entry — it deliberately carries none.**
 - [x] ✅ **A KNIFE RUNNER'S "a failed build ABORTS" GUARD IS THE WRONG GUARD —
       CLOSED 2026-08-07**, and **the remedy I filed was DECLINED on a read of the
       record** ([[a-recommendation-in-the-record-is-still-a-claim]] — the filer

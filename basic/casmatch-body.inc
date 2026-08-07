@@ -75,9 +75,13 @@ com_cmp:
                 inc     de
                 djnz    com_cmp
 com_match:
+                ld      hl,cm_s_found       ; D-CASSEARCH: the progress row
+                call    cm_say
                 or      a                   ; CF clear = matched
                 ret
 com_miss:
+                ld      hl,cm_s_skip        ; D-CASSEARCH: ...before the skip, as
+                call    cm_say              ; the reference orders its rows
                 call    cas_skip_data       ; consume the non-matching file's data
                 ret     c                   ; tape error while skipping -> fail
                 jr      com_next            ; ...and try the next file
@@ -163,3 +167,58 @@ csd_tok_perr:
 csd_tok_err:
                 scf                         ; tape read error while skipping
                 ret
+
+; --- cm_say: the tape-search progress row (docs/spec-basic-cassearch.md) ------
+; Both references print one row per decision of the loop above while a tape
+; search runs -- `Found:NAME` at com_match, `Skip :NAME` at com_miss, the name
+; being the HEADER just read, not the name the user asked for. Measured on the
+; Philips VG-8020 and the National CF-3300, which agree row for row, for all
+; FOUR verbs that reach this loop: LOAD"CAS:" / RUN"CAS:", CLOAD, MERGE"CAS:"
+; and OPEN"CAS:" FOR INPUT (docs/cassearch-msx1-characterization.md §1-§3).
+; That is why the emit is sited HERE, in the shared search engine, rather than
+; at any one verb: a verb-sited print would have to be written four times, and
+; a reference silent on any one of them would have made this siting wrong. None
+; is.
+;
+; 🔴 print_msg IS UNREACHABLE FROM HERE AND THAT IS THE POINT. It lives at $7687
+; -- MAIN page 1 -- and tools/check_tenant_closure.py --page1 forbids a page-1
+; sub tenant to call it. CHPUT ($00A2) is page-0 BIOS, i.e. < $4000, which a
+; page-1 tenant may call and a page-0 one may not: the same reason sub/title.asm
+; is a page-1 tenant, and the same edge class this body already uses for
+; TAPION/TAPIN. So the two prefixes are the tenant's OWN bytes and the sink is
+; BIOS.
+;
+;   in: HL -> a SIX-character prefix. Both prefixes are exactly six characters
+;       (the reference's own spacing) and CAS_HDRNAME is exactly six bytes, so
+;       ONE count-6 loop serves both halves and no terminator byte is needed.
+; Clobbers AF/BC/HL -- safe at both call sites: com_match's `or a` runs AFTER
+; the call so the published CF-clear contract is unchanged, and com_miss's
+; cas_skip_data takes all its state from RAM (TAPIN clobbers everything anyway,
+; which is the discipline this whole body is written to).
+;
+; The 6 name bytes are emitted VERBATIM, pad spaces included. A trailing pad
+; space is indistinguishable from unwritten screen -- a CR/LF follows, so
+; nothing can land beside it -- so no battery can score trimmed against padded
+; (characterization §6), and trimming would only cost bytes.
+cm_say:
+                call    cm_six              ; the 6-char prefix
+                ld      hl,CAS_HDRNAME
+                call    cm_six              ; the 6-char tape header name
+                ld      a,13                ; CR/LF: the row stands alone, as on
+                call    CHPUT               ; the reference
+                ld      a,10
+                jp      CHPUT
+cm_six:
+                ld      b,6
+cm_six_ch:
+                push    bc                  ; guard the counter AND the pointer
+                push    hl                  ; across the BIOS call (title-body
+                ld      a,(hl)              ; st_loop's precedent)
+                call    CHPUT
+                pop     hl
+                pop     bc
+                inc     hl
+                djnz    cm_six_ch
+                ret
+cm_s_found:     db      "Found:"
+cm_s_skip:      db      "Skip :"

@@ -1491,16 +1491,25 @@ runtail-acceptance: repack-machine $(DISK_TEST_DSK)
 # reading and the probe exits 2 -- not 1 -- when one fails. Knife K-ASC (spec §5)
 # is the build that proves they are load-bearing.
 #
-# 📌 The tape-search progress rows (`Found:`/`Skip :`), which zerobas does not
-# print, are dropped from every scored tail and PINNED verbatim per side by
-# `cas-load-plain:search` -- a divergence found by building this instrument, so
-# the filter cannot hide what it removes. A pin that moves FAILS the gate.
+# 📌 The tape-search progress rows (`Found:`/`Skip :`) are dropped from the six
+# D-CASTAIL tails, where they are not the subject, and read UNFILTERED by the
+# cas2-* rows, where they are. zerobas printed NEITHER until D-CASSEARCH
+# (docs/spec-basic-cassearch.md): it now prints both, for 57 B in SUB page 1, and
+# `cas-load-plain:search` is RE-MEASURED and re-pinned rather than loosened.
+# THREE pins remain, and two of them are a DIFFERENT divergence: OPEN"CAS:name"
+# name-matches on both references and zerobas does not, so it opens the NEXT file
+# and returns the wrong file's bytes (filed in TODO.md). A pin that moves FAILS
+# the gate.
 #
-# ⚠️ The tape fixture is $EA ASCII and the reference forces that: LOAD"CAS:" on a
-# tokenised ($D3) tape searches past the end of the tape and waits forever on
-# both references (docs/dotgaps-msx1-characterization.md §1.2), so a $D3 fixture
-# would hang them and gate nothing. HEAVY + oracle-dependent (needs your CF-3300
-# reference ROMs); NOT part of the emulator-free `unit-test`.
+# ⚠️ Three fixtures, and the reference forces each one. LOAD/RUN/MERGE/OPEN get
+# $EA ASCII tapes: those verbs search for an ASCII file and skip a tokenised
+# ($D3) one past the end of the tape, where they wait forever
+# (docs/dotgaps-msx1-characterization.md §1.2), so a $D3 fixture would hang them
+# and gate nothing. CLOAD is the exception and gets a $D3 tape, because it
+# searches for a tokenised file and an ASCII tape would hang it instead. Two of
+# the three hold TWO files, so the SKIP arm has something to step over -- a
+# one-file tape can only ever produce a `Found:`. HEAVY + oracle-dependent (needs
+# your CF-3300 reference ROMs); NOT part of the emulator-free `unit-test`.
 castail-characterize: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_castail.py \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \

@@ -738,7 +738,8 @@ oracle-validated against both the reference's own CLOAD and an on-device load.
 Measured 2026-08-07 against **two** references — the Philips VG-8020 and the
 National CF-3300, which agree row for row — by
 `probes/basic/basic_probe_castail.py` (`make castail-acceptance`, 9/9 + 1 pinned
-divergence). Spec `docs/spec-basic-castail.md`, reading
+divergence at the time; the same gate reads **17/17 + 3 pins** since D-CASSEARCH
+extended it, below). Spec `docs/spec-basic-castail.md`, reading
 `docs/castail-msx1-characterization.md`. This closes the residual
 `docs/spec-basic-runtail.md` §9 filed, and it is the **tape twin of D-RUNTAIL**:
 the same two defects, on the two `basic/cload.asm` sites that reach `run_prog`
@@ -764,13 +765,11 @@ hit and abort alike, on the **success path of a shipped verb**. Both sites now
 see this: they assert a **memory witness** (`$D0FF` → `$99`), and a witness byte
 cannot see an extra screen row.
 
-⚠️ **Two divergences of the tape SEARCH are recorded here and NOT fixed.**
-zerobas prints no `Found:`/`Skip :` tape-search progress line where both
-references do (new, found by building this instrument — **pinned** per side by
-the gate so it cannot drift silently); and a missing tape file is not an error on
-an MSX1 at all — the reference searches past the end of the tape and waits
-forever, which is why the only failure row here is an operator Ctrl-STOP. Both
-filed in `TODO.md`.
+⚠️ **Two divergences of the tape SEARCH were recorded here and not fixed by
+D-CASTAIL. The first is now CLOSED by D-CASSEARCH, below.** The second stands: a
+missing tape file is not an error on an MSX1 at all — the reference searches past
+the end of the tape and waits forever, which is why the only failure row here is
+an operator Ctrl-STOP. Filed in `TODO.md`.
 
 | item | value | how established | status |
 |------|-------|------------------|--------|
@@ -778,7 +777,54 @@ filed in `TODO.md`.
 | A failed tape load runs **nothing**, not the resident program | — | oracle, both references (`castail` `cas-run-brk-res` / `cas-loadr-brk-res`) | sourced |
 | `LOAD"CAS:x"` without `,R` loads and does not run | — | oracle, both references (`castail` `cas-load-plain` + its listing) | sourced |
 | `do_tape_prog` CF-out contract; `run_prog_top` at both tape sites | — | **own code** (mirrors `disk_prog_load`'s, D-RUNTAIL §3.2); not derived from any disassembly | sourced |
-| No `Found:`/`Skip :` tape-search progress line | diverges | oracle, both references print it | **quarantined** (pinned + filed) |
+| No `Found:`/`Skip :` tape-search progress line | diverges | oracle, both references print it | ✅ **CLOSED by D-CASSEARCH** (below) — was quarantined (pinned + filed) |
+
+### 🔴 D-CASSEARCH — what an MSX1 prints WHILE the tape search runs
+
+**Closed 2026-08-07.** Gate `probes/basic/basic_probe_castail.py`
+(`make castail-acceptance`, **17/17 + 3 pinned divergences**), spec
+`docs/spec-basic-cassearch.md`, reading
+`docs/cassearch-msx1-characterization.md`. Closes the residual D-CASTAIL filed
+above; measured on the **Philips VG-8020** and the **National CF-3300**, which
+agree row for row.
+
+**Both references print one progress row per decision of the tape search** —
+`Found:NAME` when it takes a file, `Skip :NAME` when it steps over one, the name
+being the **header just read**. zerobas printed neither, so a user watching a
+tape load saw nothing until it finished. `basic/casmatch-body.inc` now emits the
+row at `com_match` and `com_miss`, through `CHPUT`, for **57 B in sub page 1**.
+
+🔴 **The site was decided by measurement, not by reading the code.** The residual
+named `LOAD` / `RUN` / `CLOAD`, but `cas_open_match` has **three** callers —
+`MERGE"CAS:"` and `OPEN"CAS:" FOR INPUT` (`basic/files.asm`) share the same
+search engine, so a print sited there prints for them too. Measured: **all four
+verbs print the identical rows** on both references. Had any one been silent,
+this siting would have closed one divergence by opening two.
+
+🔴 **`print_msg` is unreachable from the emit and that is structural.** The
+match/skip loop is a sub-ROM **page-1 tenant** (`SUBROM_IDX_CASMATCH`);
+`print_msg` is at `$7687`, main page 1, which `check_tenant_closure.py --page1`
+forbids a page-1 tenant to call. `CHPUT` (`$00A2`, page-0 BIOS) is legal for one
+— the same reason `sub/title.asm` is a page-1 tenant — so the two prefixes are
+the tenant's own bytes and the sink is BIOS.
+
+⚠️ **A SECOND divergence was found by these rows and is NOT fixed.**
+`OPEN"CAS:name" FOR INPUT` **name-matches on both references** — it steps over a
+non-matching file and opens the named one. zerobas deliberately does not
+(`basic/files.asm` `oo_dev_cas` writes `CAS_WANT_ON = 0`, commented *"name-matching
+is Item A's CLOAD/LOAD/RUN/MERGE scope, not OPEN"*), so it opens the **next**
+file and delivers the **wrong file's bytes**. That scoping decision is now
+measured to be wrong. **Pinned** per side by the gate and filed in `TODO.md`; it
+is the OPEN verb's name handling, in a different file, and needs its own battery.
+
+| item | value | how established | status |
+|------|-------|------------------|--------|
+| A tape search prints `Found:NAME` when it takes a file | — | oracle, both references (`castail` `cas2-bare`, `cas-load-plain:search`) | sourced |
+| ...and `Skip :NAME` once per stepped-over file, naming the SKIPPED file | — | oracle, both references (`castail` `cas2-load`) | sourced |
+| All four searching verbs print it — `LOAD"CAS:"`, `CLOAD`, `MERGE"CAS:"`, `OPEN"CAS:"` | — | oracle, both references (`castail` `cas2-*`) | sourced |
+| The emit is sited in the shared search engine, through `CHPUT`, in the page-1 tenant | — | **own code**; not derived from any disassembly | sourced |
+| Whether the reference pads the name to 6 on screen | **not decidable** | a trailing pad space is indistinguishable from unwritten screen, and a CR/LF follows | **non-claim** (recorded, not measured) |
+| `OPEN"CAS:name"` ignores the name and opens the NEXT file | diverges | oracle, both references name-match (`castail` `cas2-open`, `cas2-open:echo`) | **quarantined** (pinned + filed) |
 
 ## Phase 1: minimal string variables for PRINT (basic/strvar.asm, basic/vars.asm, basic/print.asm, basic/interp.asm, basic/sysvars.inc)
 

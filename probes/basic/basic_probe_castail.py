@@ -34,6 +34,22 @@ the subject IS an extra screen row):
   `cas-load-plain`     🟢 CONTROL: `LOAD"CAS:x"` without `,R` loads and does NOT
                        run -- its `:listing` half proves the tape arrived
 
+D-CASSEARCH adds the rows that read the SEARCH itself, on a TWO-file tape
+(docs/spec-basic-cassearch.md). Their subject is the progress line, so they read
+their verb's line UNFILTERED:
+
+  `cas2-load`          `LOAD"CAS:RT"` steps over `SK` and takes `RT`
+  `cas2-merge`         ...so does `MERGE"CAS:"`, a DIFFERENT caller of the same
+                       search engine
+  `cas2-cload`         ...so does `CLOAD`, on the TOKENISED tape
+  `cas2-bare`          `LOAD"CAS:"` with no name takes the FIRST file: a
+                       separate arm of the match, reached without the compare
+                       loop, and the only row that can HOLD when the skip arm is
+                       knifed
+  `cas2-open`          📌 `OPEN"CAS:" FOR INPUT` -- the fourth caller, and a
+                       PINNED divergence for a reason that is NOT the progress
+                       line (see below)
+
 🔴 THE `-res` ROWS EXIST BECAUSE AN EMPTY PROGRAM HIDES A WRONG RUN. Measured in
 D-RUNTAIL under two separate knives ([[an-empty-program-hides-a-wrong-run]]):
 `run-miss` -- a failed load with NOTHING resident -- held GREEN over a machine
@@ -56,23 +72,37 @@ sides, so the rows are scored on SHAPE -- how many messages, and did the
 resident program run -- without re-opening the wording. A tail that merely
 CONTAINS it is not normalised: the extra row is the subject.
 
-🔴 AND ONE CLASS OF ROW IS FILTERED OUT, WHICH IS A DIVERGENCE, SO IT GETS ITS
-OWN PINNED ROW RATHER THAN A SILENT NORMALISATION. Both references print the
-BIOS tape-search progress line -- `Found:RT` when the search takes a file,
-`Skip :RT` when it steps over one -- and zerobas prints NEITHER. That is a
-previously unrecorded divergence, found here (docs/castail-msx1-characterization
-.md §5, filed in TODO.md); it is about the SEARCH, not about what the verb does
-after the load, so scoring it inside every row would DIFF all six subject rows
-for a reason none of them is asking about. `SEARCH_ROWS` therefore drops those
-two EXACT strings from a tail -- and `cas-load-plain:search` reads the SAME
-case's LOAD line UNFILTERED and pins all three sides' readings verbatim
-(PINNED). So the filter cannot hide the thing it removes: the day either side
-moves, the pin rots and the gate fails.
+🔴 AND ONE CLASS OF ROW IS FILTERED OUT OF THE SIX SUBJECT ROWS, AND IT IS A
+SUBJECT IN ITS OWN RIGHT -- SO IT GETS ITS OWN ROWS RATHER THAN A SILENT
+NORMALISATION. Every machine here prints the BIOS tape-search progress line --
+`Found:NAME` when the search takes a file, `Skip :NAME` when it steps over one.
+It is about the SEARCH, not about what the verb does after the load, so scoring
+it inside the D-CASTAIL rows would DIFF all six of them for a reason none is
+asking about. `SEARCH_ROWS` therefore drops those EXACT strings from those
+tails, and the `cas2-*` rows below read the search line UNFILTERED -- it is
+their whole subject.
 
-⚠️ THE FILTER ONLY EVER FIRES ON A REFERENCE, WHICH IS EXACTLY WHY THE PIN IS
-NOT OPTIONAL. A normalisation that is a no-op on the side under test is a
-normalisation that blesses one machine's silence ([[readout-blind-to-its-own-
-subject]]).
+⚠️ THE FILTER USED TO FIRE ONLY ON A REFERENCE, WHICH IS WHY IT NEEDED A PIN.
+Until D-CASSEARCH (docs/spec-basic-cassearch.md) zerobas printed NEITHER row, so
+the filter was a normalisation that was a NO-OP on the side under test -- one
+that blesses one machine's silence ([[readout-blind-to-its-own-subject]]) --
+and `cas-load-plain:search` pinned all three sides verbatim so it could not.
+zerobas now prints both rows, the pin is RE-MEASURED to `Found:RT` rather than
+loosened, and the filter now fires on all three sides: it normalises an
+AGREEMENT, which is the honest use of one. It is KEPT rather than deleted, and
+the reason is `<load-failed>`: that normalisation fires only when the tail is
+EXACTLY the side's own message, deliberately, so that an extra row is always the
+subject. Unfiltered, every abort row's tail would be `Skip :RT` PLUS the
+message, nothing would normalise, and all three abort rows would DIFF on the
+quarantined WORDING divergence this battery exists to hold out of scope.
+
+🔴 TWO DIVERGENCES REMAIN PINNED HERE, AND NEITHER IS THE PROGRESS LINE.
+`OPEN"CAS:name" FOR INPUT` NAME-MATCHES on both references -- it steps over a
+non-matching file and opens the named one -- and zerobas deliberately does not
+(basic/files.asm `oo_dev_cas` writes `CAS_WANT_ON = 0`), so it opens the NEXT
+file and hands back the WRONG FILE'S BYTES. `cas2-open` and `cas2-open:echo` pin
+that per side. Filed in TODO.md; it is the OPEN verb's name handling, in another
+file, and it needs its own battery.
 
 🟢 AND UNLIKE THE DISK BATTERY, THE VG-8020 IS A LEGITIMATE SIDE. `RUN"A:name"`
 needs a disk interface, which is why `basic_probe_runtail` refuses a vg8020 run;
@@ -81,12 +111,14 @@ VG-8020 answers these rows out of its own main ROM. It is a side here, and its
 agreement with the CF-3300 is what says a reading is the MSX1 rule rather than a
 property of one machine's Disk BASIC.
 
-⚠️ THE TAPE FIXTURE IS $EA ASCII, AND THAT IS FORCED BY THE REFERENCE.
-`LOAD"CAS:"`/`RUN"CAS:"` on a real MSX search the tape for an ASCII file and
-SKIP a tokenised ($D3) one -- past it, to the end of the tape, where they wait
-forever (measured in docs/dotgaps-msx1-characterization.md §1.2; zerobas accepts
-both, a divergence filed there, not re-opened here). A $D3 fixture would
-therefore HANG both references and gate nothing.
+⚠️ THE `LOAD`/`RUN`/`MERGE`/`OPEN` FIXTURES ARE $EA ASCII, AND THAT IS FORCED BY
+THE REFERENCE. `LOAD"CAS:"`/`RUN"CAS:"` on a real MSX search the tape for an
+ASCII file and SKIP a tokenised ($D3) one -- past it, to the end of the tape,
+where they wait forever (measured in docs/dotgaps-msx1-characterization.md §1.2;
+zerobas accepts both, a divergence filed there, not re-opened here). A $D3
+fixture would therefore HANG both references and gate nothing. `CLOAD` is the
+exception and gets the `twot` tape: it searches for a TOKENISED file, so $D3 is
+what the reference needs there and an ASCII tape would hang it instead.
 
 Clean-room: typed inputs and observed outputs only, no reference-ROM
 disassembly. See CONTRIBUTING.md.
@@ -102,8 +134,12 @@ import tempfile
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "disk"))
 import omsx_repl                                                 # noqa: E402
 from basic_probe_cas_ascii import build_ascii_cas                # noqa: E402
+from cas_encode import CAS_SYNC, BASIC_ID, build_cas_basic       # noqa: E402
+from bas_tokenise import make_multiline_program                  # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
                             "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -122,10 +158,15 @@ SIDES = {
 
 FAILED = "<load-failed>"
 
-# The BIOS tape-search progress rows, dropped from every scored tail and PINNED
-# verbatim by `cas-load-plain:search`. Two EXACT strings, never a prefix match:
-# a rule wide enough to catch `Found:`-anything is wide enough to eat a program's
-# output, and the whole point of this battery is that an extra row is the subject.
+# The BIOS tape-search progress rows, dropped from the D-CASTAIL tails (where
+# they are not the subject) and read UNFILTERED by every `cas2-*` row (where they
+# are). EXACT strings, never a prefix match: a rule wide enough to catch
+# `Found:`-anything is wide enough to eat a program's output, and the whole point
+# of this battery is that an extra row is the subject. Knife K-NAME
+# (spec-basic-cassearch.md §5) is what proves the exactness is load-bearing --
+# under it the emitted row becomes `Found:Skip :`, which a PREFIX rule would
+# still have eaten, leaving six subject rows green over a search printing
+# garbage. They red.
 SEARCH_ROWS = ("Found:{n}", "Skip :{n}")
 
 # The tape this battery writes and reads back. It PRINTS, and that is the whole
@@ -133,6 +174,17 @@ SEARCH_ROWS = ("Found:{n}", "Skip :{n}")
 # it, in ONE string -- the disk battery's trick, for the same reason.
 CAS_NAME = "RT"
 CAS_PROG = ['10 PRINT"ZQ9"']
+TXTBASE = 0x8001
+
+# --- D-CASSEARCH: the SECOND and THIRD fixtures ------------------------------
+# A TWO-file tape, so the SKIP arm of the search has something to step over. The
+# one-file tape above can only ever produce a `Found:`; `Skip :` is a different
+# arm of `com_miss` and nothing in this tree had ever read it on a reference.
+# File 1 is `SK` (prints ZQ8), file 2 is `RT` (prints ZQ9) -- so every `:listing`
+# / `:echo` half is a POSITIVE CONTROL that says the search stepped over the
+# FIRST file and took the SECOND, not merely that a tape arrived.
+SKIP_NAME = "SK"
+SKIP_PROG = ['10 PRINT"ZQ8"']
 
 # A tape read runs for ~10-30 EMULATED seconds while the harness keeps injecting
 # on schedule, and each injection overwrites whatever is still pending, so the
@@ -141,6 +193,7 @@ CAS_PROG = ['10 PRINT"ZQ9"']
 W_LOAD = "@WAIT25"       # find + read the first file on the tape
 W_SEEK = "@WAIT12"       # let the search run before breaking it
 W_AFTER = "@WAIT8"       # let the abort report land
+W_LOAD2 = "@WAIT45"      # SKIP the first file, then find + read the second
 
 # Each row is (label, lines, subject_index, extra), `extra` = None or a tuple of
 # (index, name, drop_search) triples naming FURTHER lines of the same case that
@@ -182,15 +235,94 @@ CASES = [
      ((3, "listing", True), (1, "search", False))),
 ]
 
+# --- D-CASSEARCH: the TWO-file-tape rows, every subject read UNFILTERED -------
+# 🔴 THESE ROWS ASK WHAT NOTHING IN THIS TREE HAD EVER ASKED. The battery above
+# reads the search only through ONE pinned row on ONE verb with ONE file on the
+# tape, so three separate questions were open, and each of them decides what a
+# fix may print:
+#
+#   1. Does a `Skip :` row appear, once PER stepped-over file, carrying the
+#      SKIPPED file's name -- or is the progress line a `Found:`-only affair?
+#   2. Does `CLOAD` (the TOKENISED search) print the same rows as the ASCII
+#      `LOAD"CAS:"` search?
+#   3. 🔴 DO THE OTHER TWO CALLERS OF `cas_open_match` PRINT IT TOO? `MERGE"CAS:"`
+#      (basic/files.asm merge_cas) and `OPEN"CAS:" FOR INPUT` (oo_dev_cas) share
+#      the SAME search engine, so a print sited inside it prints for them as
+#      well. If a reference is silent there, siting the fix in the shared engine
+#      would CLOSE one divergence by OPENING two, and only a measurement can say.
+#
+# Every subject here is the SEARCH line read UNFILTERED (`UNFILTERED_SUBJECTS`);
+# the `:listing` / `:echo` halves are the positive controls, and they are
+# controls of the SKIP, not merely of the mount: the tape's first file prints
+# ZQ8 and the second ZQ9, so a machine that took the wrong file reads ZQ8.
+CASES_T2 = [
+    ("cas2-load",  [f'LOAD"CAS:{CAS_NAME}"', W_LOAD2, "LIST"],         0,
+     ((2, "listing", True),)),
+    ("cas2-merge", ['20 PRINT"ZQ1"', f'MERGE"CAS:{CAS_NAME}"', W_LOAD2,
+                    "LIST"],                                           1,
+     ((3, "listing", True),)),
+    ("cas2-open",  ["MAXFILES=1", f'OPEN"CAS:{CAS_NAME}" FOR INPUT AS #1',
+                    W_LOAD2, "INPUT#1,A$", "CLOSE", "PRINT A$"],       1,
+     ((5, "echo", True),)),
+    # The BARE form -- `LOAD"CAS:"` with no name -- takes the FIRST file on the
+    # tape without comparing anything. It is a SEPARATE arm of the match (a
+    # `CAS_WANT_ON = 0` shortcut straight to `com_match`, never through the
+    # compare loop), so a fix sited at `com_match` serves it and no row above
+    # reads it. Its reading must therefore be measured, not assumed to follow.
+    ("cas2-bare",  ['LOAD"CAS:"', W_LOAD, "LIST"],                     0,
+     ((2, "listing", True),)),
+]
+
+CASES_T2T = [
+    ("cas2-cload", [f'CLOAD"{CAS_NAME}"', W_LOAD2, "LIST"],            0,
+     ((2, "listing", True),)),
+]
+
+# Labels whose SUBJECT line is read with the `SEARCH_ROWS` filter OFF -- for
+# these rows the progress line IS the subject, so filtering it would leave them
+# measuring nothing at all ([[gate-can-be-green-while-measuring-nothing]]).
+UNFILTERED_SUBJECTS = {"cas2-load", "cas2-merge", "cas2-open", "cas2-cload",
+                       "cas2-bare"}
+
+ALL_CASES = CASES + CASES_T2 + CASES_T2T
+
 # 🔴 THE PINNED DIVERGENCE. Not an agreement row: the three sides are EXPECTED to
 # differ, and each side's exact reading is written down so the day any of them
 # moves the pin ROTS and this gate fails. This is what keeps `SEARCH_ROWS` from
 # being a normalisation that quietly blesses zerobas's silence.
 PINNED = {
+    # D-CASSEARCH: this row was the pin that said zerobas printed NOTHING. It is
+    # re-pinned to the reading the fix produces -- the pin did its job (it ROTS
+    # the moment any side moves, which is exactly what closing the divergence
+    # does), and re-pinning is a RE-MEASUREMENT, never a loosening: it is still a
+    # per-side EXACT match, and it is now the only row in the battery that
+    # asserts the search line by VALUE rather than by cross-side agreement.
     "cas-load-plain:search": {
         "vg8020": f"Found:{CAS_NAME}",
         "cf3300": f"Found:{CAS_NAME}",
-        "zb":     "<nothing>",
+        "zb":     f"Found:{CAS_NAME}",
+    },
+    # 🔴 A SECOND DIVERGENCE, FOUND BY THESE ROWS AND NOT FIXED HERE.
+    # `OPEN"CAS:name" FOR INPUT` NAME-MATCHES on both references -- it steps over
+    # `SK` and opens `RT`. zerobas deliberately does not: basic/files.asm
+    # `oo_dev_cas` writes `CAS_WANT_ON = 0` ("name-matching is Item A's
+    # CLOAD/LOAD/RUN/MERGE scope, not OPEN") and opens whatever file comes next.
+    # So it prints ONE `Found:SK` where a reference prints `Skip :SK / Found:RT`,
+    # and reads back the WRONG FILE's text. That is a defect of the OPEN verb's
+    # name handling, not of the progress line this slice closes, and it lives in
+    # a different file; pinned and filed rather than folded in.
+    # 🟢 THE PIN IS ALSO THIS ROW'S POSITIVE EVIDENCE. A per-side EXACT value is
+    # strictly stronger than a containment control: a dead machine reads
+    # `<nothing>` on both halves and ROTS the pin.
+    "cas2-open": {
+        "vg8020": f"Skip :{SKIP_NAME} / Found:{CAS_NAME}",
+        "cf3300": f"Skip :{SKIP_NAME} / Found:{CAS_NAME}",
+        "zb":     f"Found:{SKIP_NAME}",
+    },
+    "cas2-open:echo": {
+        "vg8020": '10 PRINT"ZQ9"',
+        "cf3300": '10 PRINT"ZQ9"',
+        "zb":     '10 PRINT"ZQ8"',
     },
 }
 
@@ -203,6 +335,15 @@ CONTROLS = {
     "cas-run-hit":            ("ZQ9",),
     "bare-run":               ("ZQ1",),
     "cas-load-plain:listing": ("ZQ9",),
+    # 🟢 The two-file tape's four controls. Each is a control of the SKIP: the
+    # tape's FIRST file prints ZQ8, so `ZQ9` in the reading says the search
+    # stepped over one file and took the next. A machine whose search is broken
+    # reads ZQ8, and a dead one reads nothing -- both caught here.
+    "cas2-load:listing":      ("ZQ9",),
+    "cas2-merge:listing":     ("ZQ9", "ZQ1"),
+    "cas2-cload:listing":     ("ZQ9",),
+    # The bare form takes the FIRST file, so ZQ8 -- not ZQ9 -- is the proof.
+    "cas2-bare:listing":      ("ZQ8",),
 }
 
 ROWS = 24
@@ -232,7 +373,11 @@ def tail_after(raw, cmdline, failmsg, drop_search=True):
             idx = i                              # keep the LAST occurrence
     if idx is None:
         return "<NO ECHO>"
-    search = [s.format(n=CAS_NAME) for s in SEARCH_ROWS]
+    # Both fixture names, not just the matched one: on the one-file tape the
+    # ABORT rows step over `RT` itself (`RUN"CAS:NOSUCH"` matches nothing), and
+    # on the two-file tape the skipped file is `SK`.
+    search = [s.format(n=n) for s in SEARCH_ROWS
+              for n in (CAS_NAME, SKIP_NAME)]
     out = []
     for r in rows[idx + 1:]:
         if any(r == p or r.startswith(p) for p in omsx_repl.PROMPTS):
@@ -250,21 +395,75 @@ def tail_after(raw, cmdline, failmsg, drop_search=True):
 _TAPE: dict[str, str] = {}
 
 
-def tape_path() -> str:
-    """Build (and cache) the one $EA ASCII cassette every row mounts."""
-    if "p" not in _TAPE:
-        d = tempfile.mkdtemp(prefix="zb_castail_")
-        p = os.path.join(d, "castail.cas")
+def _tok_file_nopad(name: str, program: bytes) -> bytes:
+    """A tokenised .cas file whose data block ends EXACTLY at the program's
+    $0000 end-link, with NO trailing in-block padding -- what our own CSAVE
+    writes. `cas_encode.build_cas_basic` appends 16 $00 pad bytes for
+    single-file framing, and on a MULTI-file tape those unread pad bytes leave a
+    skipped file mid-block so the next TAPION cannot relock
+    (basic/casmatch-body.inc `csd_tok`). The same fixture shape
+    `basic_probe_cas_match.tok_file_nopad` builds, for the same reason."""
+    return (CAS_SYNC + bytes([BASIC_ID] * 10)
+            + name[:6].ljust(6).encode("ascii") + CAS_SYNC + program)
+
+
+def tape_path(kind: str = "one") -> str:
+    """Build (and cache) a cassette fixture.
+
+      `one`  -- the ONE $EA ASCII file every row of `CASES` mounts.
+      `two`  -- $EA `SK` then $EA `RT`: the ASCII search has to SKIP one file.
+      `twot` -- the tokenised ($D3) twin of `two`, for `CLOAD`.
+
+    🔴 THE TWO TAPES ARE SEPARATE FIXTURES ON PURPOSE, not one tape for
+    everything. Putting `SK` in front of `RT` on the shared tape would move all
+    nine readings of `CASES` -- every subject row would grow a `Skip :SK` -- for
+    a question none of them is asking. `run_cases`' `prologue` applies to a whole
+    batch, so each fixture gets its own call (the documented shape).
+    """
+    if kind not in _TAPE:
+        d = tempfile.mkdtemp(prefix=f"zb_castail_{kind}_")
+        p = os.path.join(d, f"castail_{kind}.cas")
+        if kind == "one":
+            blob = build_ascii_cas(CAS_NAME, CAS_PROG)
+        elif kind == "two":
+            blob = (build_ascii_cas(SKIP_NAME, SKIP_PROG)
+                    + build_ascii_cas(CAS_NAME, CAS_PROG))
+        elif kind == "twot":
+            # ⚠️ THE TWO FILES NEED DIFFERENT FRAMING, AND THE FIRST READING OF
+            # THIS FIXTURE PROVED IT. The SKIPPED file must have NO trailing pad
+            # (a skip walks the link chain and stops at the $0000 end-link, so
+            # unread pad bytes leave the tape mid-block and the next TAPION
+            # cannot relock); the MATCHED file must HAVE one, because the device
+            # half blocks on silence once a block's data runs out and the loader
+            # needs the pad to frame the final byte (cas_encode.build_cas_basic).
+            # Built no-pad, BOTH references read the search rows correctly and
+            # then never returned to the prompt -- `<NO ECHO>` on the LIST half.
+            blob = (_tok_file_nopad(SKIP_NAME, make_multiline_program(
+                        [(10, 'PRINT"ZQ8"')], TXTBASE))
+                    + build_cas_basic(CAS_NAME, make_multiline_program(
+                        [(10, 'PRINT"ZQ9"')], TXTBASE)))
+        else:
+            raise ValueError(kind)
         with open(p, "wb") as f:
-            f.write(build_ascii_cas(CAS_NAME, CAS_PROG))
-        _TAPE["p"] = p
-    return _TAPE["p"]
+            f.write(blob)
+        _TAPE[kind] = p
+    return _TAPE[kind]
+
+
+# (fixture kind, the rows that mount it) -- one `run_cases` call each.
+GROUPS = (("one", CASES), ("two", CASES_T2), ("twot", CASES_T2T))
 
 
 def run_side(side, only):
-    cfg = SIDES[side]
     out = {}
-    rows = [c for c in CASES if not only or any(c[0].startswith(o)
+    for kind, group in GROUPS:
+        run_group(side, only, kind, group, out)
+    return out
+
+
+def run_group(side, only, kind, group, out):
+    cfg = SIDES[side]
+    rows = [c for c in group if not only or any(c[0].startswith(o)
                                                 for o in only)]
     if not rows:
         return out
@@ -279,16 +478,18 @@ def run_side(side, only):
             for label, *_ in rows:
                 out[label] = "<NO DISK FIXTURE>"
             return out
-        dsk = os.path.join(tempfile.gettempdir(), f"zb_castail_{side}.dsk")
+        dsk = os.path.join(tempfile.gettempdir(),
+                           f"zb_castail_{side}_{kind}.dsk")
         shutil.copy(TEST_DSK, dsk)
         kw["diska"] = dsk
     cases = [("direct", list(cfg["reset"]) + list(lines))
              for _, lines, _, _ in rows]
     caps = omsx_repl.run_cases(
         cfg["machine"], cases, batch=False, boot=cfg["boot"], step=cfg["step"],
-        prologue=(f"cassetteplayer insert {{{tape_path()}}}",), **kw)
+        prologue=(f"cassetteplayer insert {{{tape_path(kind)}}}",), **kw)
     for (label, lines, subj, extra), raw in zip(rows, caps):
-        out[label] = tail_after(raw, lines[subj], cfg["failmsg"])
+        out[label] = tail_after(raw, lines[subj], cfg["failmsg"],
+                                drop_search=label not in UNFILTERED_SUBJECTS)
         for i, name, drop in (extra or ()):
             out[f"{label}:{name}"] = tail_after(raw, lines[i], cfg["failmsg"],
                                                 drop_search=drop)
@@ -331,7 +532,7 @@ def main() -> int:
                 return 2
             results[s] = got
 
-    present = [lab for row in CASES for lab in labels_of(row)
+    present = [lab for row in ALL_CASES for lab in labels_of(row)
                if any(lab in results[s] for s in sides)]
     scored = [lab for lab in present if lab not in PINNED]
     pins = [lab for lab in present if lab in PINNED]
@@ -419,7 +620,7 @@ def main() -> int:
 
     print("=" * 78)
     print(f"{agree}/{agree + dis} scored readings agree "
-          f"({len(CASES)} cases, {len(CONTROLS)} positive controls, "
+          f"({len(ALL_CASES)} cases, {len(CONTROLS)} positive controls, "
           f"{len(pins)} pinned divergence row(s))")
     print(f"SIDES: {','.join(SIDES)} — every MSX1 has a CASSETTE PORT, so "
           "unlike the disk battery the VG-8020 is a legitimate reference here")
@@ -427,10 +628,13 @@ def main() -> int:
           f"message reads {FAILED!r} "
           f"({', '.join(f'{s}={SIDES[s]['failmsg']!r}' for s in SIDES)}) — "
           "the quarantined wording divergence, not re-opened here")
-    print(f"PINNED: the BIOS tape-search progress rows "
-          f"({', '.join(repr(s.format(n=CAS_NAME)) for s in SEARCH_ROWS)}) are "
-          "dropped from every scored tail — zerobas prints NEITHER, a "
-          "divergence of the SEARCH that is pinned above, not blessed")
+    print(f"PINNED: the tape-search progress rows "
+          f"({', '.join(repr(s.format(n=CAS_NAME)) for s in SEARCH_ROWS)}, and "
+          f"the same pair for {SKIP_NAME!r}) are dropped from the D-CASTAIL "
+          "tails, where they are not the subject, and read UNFILTERED by every "
+          "cas2-* row, where they are. All three sides print them since "
+          "D-CASSEARCH, so the filter now normalises an AGREEMENT rather than "
+          "blessing one machine's silence")
     if a.gate and (dis or rotted):
         if dis:
             sys.stderr.write(f"castail: {dis} reading(s) diverge\n")

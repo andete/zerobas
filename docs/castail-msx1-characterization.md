@@ -127,6 +127,24 @@ on the side under test is a normalisation that blesses one machine's silence
 ([[readout-blind-to-its-own-subject]]), and the pin is what makes it a
 measurement instead. Filed as a residual in `TODO.md`; **not** fixed here.
 
+✅ **CLOSED 2026-08-07 by D-CASSEARCH** —
+[cassearch-msx1-characterization.md](cassearch-msx1-characterization.md),
+[spec-basic-cassearch.md](spec-basic-cassearch.md). zerobas now prints both rows,
+for **57 B in sub page 1**, and the pin above is **re-measured and re-pinned** to
+`zb='Found:RT'` rather than loosened. Three things this section could not have
+told a fix, all measured there: `Skip :` appears **once per stepped-over file**
+naming the **skipped** file; `CLOAD` prints the identical rows; and **all four**
+verbs that reach this search print them — including `MERGE"CAS:"` and
+`OPEN"CAS:" FOR INPUT`, which this section never named and which decide whether
+the shared search engine is a legal site at all. The filter above **keeps** its
+shape, for the reason `spec-basic-cassearch.md` §6.1 gives.
+
+🔴 **And the rows built to close it found a SECOND divergence:**
+`OPEN"CAS:name" FOR INPUT` name-matches on both references and zerobas
+deliberately does not, so it opens the **next** file and delivers the wrong
+file's bytes. Pinned and filed, not fixed — same disposition this section gave
+the progress line.
+
 ## 6. 🎯 The only tape failure a reference can be asked about is Ctrl-STOP
 
 This is the design constraint the whole failure half of the battery turns on,

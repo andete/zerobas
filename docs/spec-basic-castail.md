@@ -318,6 +318,10 @@ under `sub/` or `tools/`.
 * **The tape-search progress line** (`Found:`/`Skip :`), which zerobas does not
   print. Found by this slice, **pinned** by the gate, filed in `TODO.md`, not
   fixed: it is a property of the search, not of the tail after a load.
+  ✅ **CLOSED 2026-08-07 by D-CASSEARCH** ([spec-basic-cassearch.md](spec-basic-cassearch.md)),
+  for **57 B in sub page 1** — not the main page-1 bytes this slice's residual
+  first guessed at. §6.4's pin ROTTED on the fix, exactly as designed, and was
+  **re-measured and re-pinned**, never loosened.
 * **`LOAD"CAS:"` accepting a tokenised tape**, the divergence D-DOTGAPS filed —
   the faithful behaviour is a hang, so no row can carry it.
 * **The wording of the failure message.** Quarantined; normalised to one token
