@@ -376,6 +376,47 @@ The head measured **69 B** against §2.1.1's 68 B estimate (`ex_files` 4 +
 carve is **237 B out, 69 B back, 3 B for the `stmt_table` row, and ~29 B of dead
 `name_cmp` shim** (§6.6).
 
+### 6.1.1 ➕ Two gate figures this slice did NOT record — added 2026-08-07 by D-SUBWALL
+
+⚠️ **Not a correction and not part of the original run.** This slice moved both of
+the figures below and recorded neither, so the last documents that mention them —
+[`spec-basic-editverb.md`](spec-basic-editverb.md) §6.7 and the six JUDGE-arc specs —
+became the newest *recorded* values while no longer being the *current* ones. That gap
+is what sent D-SUBWALL's own baseline table two and four commits stale
+([`spec-subwall-readout.md`](spec-subwall-readout.md) §6.5), so it is filled here
+rather than left for the next slice to trip over.
+
+**Measured at `0cbf495` from a removed `build/` on 2026-08-07, by D-SUBWALL, not by
+D-LFILES:**
+
+| gate | at `0cbf495` | previous recorded value |
+|---|---|---|
+| `check_tenant_closure` (resident ABI) | **122 + 4** | 122+4, unchanged since D-PINDATA |
+| `check_tenant_closure --page0` | **718 + 15** | 718+15, unchanged |
+| `check_tenant_closure --page1` | **582 + 41** | **564+41** at `b5f4135`; 522+41 through the JUDGE arc — **this slice's `dirverb_tenant` walk is the 564 → 582** |
+| `preflight-check` | **181** spawn sites, **86** exempt, **95** require a guard, **95 guarded, 0 UNGUARDED** | 180 / 85 / 95 / 95 / 0 at `b5f4135` — **this slice is the 180 → 181** |
+
+Both moves are this slice's own, and neither gate's verdict changed (0 escapes,
+0 UNGUARDED):
+
+* **the closure +18** is the evicted `FILES` walk entering the page-1 closure. An
+  independent re-walk of `sub_p1_table` names **17** of them and no removals —
+  `tnt_files`, `df_secloop`, `df_entloop`, `df_do_emit`, `df_nextent`, `df_end`,
+  `df_entptr`, `df_crlf`, `df_emit`, `df_out`, `dfo_lpt`, `dfo_done`, `de_sep`,
+  `de_field`, `de_name`, `de_ext`, `tf_ioerr`. ⚠️ That re-walk is not
+  `check_tenant_closure.py` and its absolute counts differ from the tool's by a
+  seed-handling offset, so **it accounts for 17 of the 18 and the residual was not
+  chased**. Stated rather than rounded off.
+* **the spawn site +1** is [`tests/test_wildcard.py:65`](../tests/test_wildcard.py:65),
+  the second `pasmo` call added by §6.6 when `name_cmp`'s test was re-pointed at the
+  `$0000`-based sub image. Classified `EXEMPT` (list literal, no `-machine`), which is
+  why "require a guard" stays at 95.
+
+🔴 **The lesson is the one D-SUBWALL had to learn twice**: an *un-recorded* number and
+a *copied* number are indistinguishable to the next slice, because both look like a
+number in a document. `preflight-check` and all three closure walks already print on
+every `make basic-reloc` — the figures were simply never read off it.
+
 ### 6.2 🎯 The carve worked, and the knives say the verb is real
 
 Six knives CUT at **exactly** the predicted RED set with **exactly** the predicted

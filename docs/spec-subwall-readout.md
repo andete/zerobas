@@ -510,3 +510,22 @@ Per §3.5, additions and never substitutions in the two as-built sections:
   not history.
 
 104 of the 112 recorded sites needed no change.
+
+**And one GAP filled rather than corrected** (2026-08-07): §6.5's two figures had no
+wrong site to fix — they had no site at all. [`spec-basic-lfiles.md`](spec-basic-lfiles.md)
+**§6.1.1** now records the `preflight-check` and three closure-walk figures at
+`0cbf495`, measured here and attributed here, marked as *not part of that slice's own
+run*. It names the two moves as D-LFILES's own: the page-1 closure **564 → 582** (the
+evicted `FILES` walk) and the spawn site **180 → 181**
+([`tests/test_wildcard.py:65`](../tests/test_wildcard.py:65), the second `pasmo` call
+its §6.6 added). ⚠️ Both of those mechanisms were asserted from plausibility first and
+**both were wrong on the first pass** — the spawn site was attributed to the `lfl-`
+battery, and the closure delta to a routine set an independent re-walk accounts for
+only **17** of **18**. Measured, then written; the residual is stated, not rounded off.
+
+⚠️ **The same gap is still open one and two slices back**: neither
+[`spec-basic-lptverb.md`](spec-basic-lptverb.md) (`b5f4135`: closure **564+41**,
+preflight **180/85**) nor [`spec-basic-editverb.md`](spec-basic-editverb.md)
+(`fa0b952`: closure **564+41**; its preflight 180/85 *is* recorded and correct) carries
+the closure figure. Left alone deliberately — `0cbf495` is the baseline the next slice
+will read, and filling the two older ones is retro-annotation with no reader.
