@@ -292,7 +292,20 @@ are misses, not surprises:
 |---|---|---|---|
 | `injector-check` files | 329 | **330** | the new probe is a file under `probes/` |
 | `deadcode` main spans | 1565 | **1566** | `run_prog_top` is a new span |
-| `audit-citations` `basic` provenance-bearing | 184 | **185** | `cload.asm`'s new blocks cite `spec-basic-runtail.md` |
+| `audit-citations` `basic` provenance-bearing | 184 | **185** | ~~`cload.asm`'s new blocks cite `spec-basic-runtail.md`~~ 🔴 **WRONG CAUSE — see below** |
+
+🔴 **CORRECTION 2026-08-07 (D-CASSEARCH §7.5): the last row's NUMBER was right and
+its EXPLANATION was wrong, which is worse than a plain miss** — it was scored ✅
+and the wrong mechanism propagated. `provenance-bearing` does not count comment
+blocks at all. `tools/audit_citations.py:141` `provenance_files()` returns a list
+of **FILES**: the target's `.asm`, its `PROVENANCE.md`, and
+`probes/<target>/*.py` + `**/*.asm`. Measured: `basic` = 107 sources + 1
+`PROVENANCE.md` + 78 probe files. `cload.asm` was **already** in that list, so a
+new comment block inside it cannot move the count by construction. The real cause
+of 184 → 185 is `probes/basic/basic_probe_runtail.py` — **the same cause the row
+directly above already names for `injector-check`**. D-CASTAIL inherited this
+explanation, repeated it, and D-CASSEARCH then mispredicted in the *opposite*
+direction from it ([[a-count-is-predicted-by-reading-its-definition]]).
 
 The one that is genuinely hard to predict — `deadcode`'s main **seed** count,
 which is a function of the WORDS a slice writes under `sub/` and `tools/` —

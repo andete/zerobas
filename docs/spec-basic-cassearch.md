@@ -358,6 +358,15 @@ THE NEXT SLICE IN THE OPPOSITE DIRECTION** ([[a-recommendation-in-the-record-is-
 [[filed-justification-is-a-claim]]). D-CASTAIL missed by predicting no change;
 this slice missed by predicting a change, from the same file, one slice apart.
 
+✅ **BOTH WRONG RECORDS ARE NOW CORRECTED IN PLACE** — `spec-basic-runtail.md`
+§6.5's table row and `spec-basic-castail.md` §6.5 both carried the comment-block
+explanation, and both now carry the measurement instead. Leaving them would have
+mispredicted the next slice too, which is exactly what they did to this one.
+The disproof is one line: `cload.asm` was ALREADY in the file list, so a comment
+block added inside it cannot move the count by construction — and D-RUNTAIL's own
+table names the real cause ("the new probe is a file under `probes/`") **one row
+above** the row that got it wrong.
+
 🎯 **AND (a) AND (b) TOGETHER ARE THE ACTUAL LESSON.** I inherited D-CASTAIL's
 "don't say unchanged" habit, spent it on the counter where it did not apply, and
 then said *unchanged* on the closure counter where it did. Swapping one habit for

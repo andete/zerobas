@@ -302,16 +302,32 @@ directory checks, 8 of 8 verb controls** · `runtail-acceptance` **9/9** ·
 `castail-acceptance` **9/9 + 1 pin**.
 
 ⚠️ **One corpus count moved and §4 predicted it unchanged.** `audit-citations`
-reports `basic` **186** provenance-bearing blocks where §4 said 185. It is the
-slice's own footprint — `cload.asm`'s new `do_tape_prog` contract block cites
-`spec-basic-castail.md` — and it was derivable before the run, so it is a miss,
-not a surprise. **D-RUNTAIL made the identical miss one slice ago** (184 → 185,
-its §6.5); predicting "unchanged" for a count whose definition is *"comment
-blocks that cite a document"*, in a slice that writes comment blocks citing a new
-document, is a habit rather than a prediction. The counts that were genuinely
-hard — `deadcode`'s span and seed counts — were both predicted exactly, because
-this slice adds **no new label** (the producer is reused) and writes nothing
-under `sub/` or `tools/`.
+reports `basic` **186** provenance-bearing where §4 said 185. It was derivable
+before the run, so it is a miss, not a surprise. **D-RUNTAIL made the identical
+miss one slice ago** (184 → 185, its §6.5). The counts that were genuinely hard —
+`deadcode`'s span and seed counts — were both predicted exactly, because this
+slice adds **no new label** (the producer is reused) and writes nothing under
+`sub/` or `tools/`.
+
+🔴 **CORRECTION 2026-08-07 (D-CASSEARCH §7.5). THE CAUSE STATED HERE WAS WRONG,
+AND SO WAS THE LESSON DRAWN FROM IT.** This section originally said the +1 was
+*"the slice's own footprint — `cload.asm`'s new `do_tape_prog` contract block
+cites `spec-basic-castail.md`"*, and concluded that predicting "unchanged" for a
+count of *"comment blocks that cite a document"* is a habit rather than a
+prediction. **`provenance-bearing` is not a count of comment blocks.**
+`tools/audit_citations.py:141` `provenance_files()` returns a list of **FILES** —
+the target's `.asm`, its `PROVENANCE.md`, and `probes/<target>/*.py` +
+`**/*.asm`. Measured: `basic` = 107 sources + 1 `PROVENANCE.md` + 78 probe files.
+`cload.asm` was **already** in that list, so a comment block added inside it
+cannot move the count by construction. The +1 was
+`probes/basic/basic_probe_castail.py`, this slice's new **probe file** — exactly
+what §4 was already predicting one row away for `injector-check` (330 → 331).
+
+The wrong lesson then did real damage: D-CASSEARCH applied it, predicted **187**
+for a slice that adds no file under `basic/` or `probes/basic/`, and missed in
+the opposite direction. A count whose definition is one line of Python is
+predicted by reading that line
+([[a-count-is-predicted-by-reading-its-definition]]).
 
 ## 7. Out of scope, said explicitly
 
