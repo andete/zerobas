@@ -43,6 +43,13 @@ break there and confirm the ,R exec handoff fired. A deterministic data tail
 after the code is trivially checkable byte-for-byte at [start..end].
 
     python3 tools/make_test_dsk.py [out.dsk]      # default: disk/test720.dsk
+    python3 tools/make_test_dsk.py --empty [out.dsk]   # default: disk/empty720.dsk
+
+`--empty` writes the SAME geometry with NO files at all -- the empty-directory
+fixture the FILES/LFILES walk had no row for until D-DSKMSG
+(docs/spec-basic-dskmsg.md §3; docs/spec-basic-lfiles.md §2.4 is the arm it
+opens). It is a MOUNTABLE, WRITABLE volume that happens to hold nothing, which
+is what separates "the directory is empty" from "there is no disk".
 """
 from __future__ import annotations
 
@@ -358,9 +365,40 @@ def relinked_image(body: bytes | None = None) -> bytes:
 
 
 def main():
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+    argv = [a for a in sys.argv[1:] if a != "--empty"]
+    empty = "--empty" in sys.argv[1:]
+    out = argv[0] if argv else os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "disk", "test720.dsk")
+        "disk", "empty720.dsk" if empty else "test720.dsk")
+
+    if empty:
+        # --- THE EMPTY-DIRECTORY FIXTURE (D-DSKMSG, docs/spec-basic-dskmsg.md
+        # §3) --------------------------------------------------------------
+        # Same geometry, same boot sector, same FAT reserved entries -- and NO
+        # files, so the first root-directory entry is $00 and the FILES walk
+        # ends on its very first `ld a,(hl) / or a`.
+        #
+        # 🔴 IT IS EMPTY, NOT ABSENT, AND THAT DISTINCTION IS THE WHOLE POINT.
+        # "No files at all on the disk" and "no file matches the filespec" are
+        # DIFFERENT dispositions (docs/spec-basic-lfiles.md §2.4 vs R-LF6), and
+        # both differ again from "no disk / no mount", which is the reading a
+        # battery gets for free when its subject is dead
+        # ([[gate-whose-answer-is-an-error-passes-a-dead-subject]]). This image
+        # mounts, has a valid BPB and a writable FAT -- the `lfl-emptyctl` row
+        # SAVEs to it and lists the result -- so a bare listing that prints
+        # nothing here is a fact about the DIRECTORY.
+        #
+        # No volume label either: a label entry is skipped by the walk's
+        # attribute filter ($18) and would put a second variable in a row whose
+        # subject is "the walk emitted nothing".
+        open(out, "wb").write(Fat12Image().finish())
+        print(f"wrote {out} ({TOTAL_SECTORS * SECTOR} bytes)")
+        print("  (no files: root directory entry 0 is $00 -> the walk ends "
+              "immediately; BPB + both FAT copies are valid and the volume "
+              "mounts + writes)")
+        print(f"  geometry : firstFAT={FIRST_FAT} firstRoot={FIRST_ROOT} "
+              f"rootSecs={ROOT_SECS} firstData={FIRST_DATA}")
+        return
 
     img = Fat12Image()
     # TEST.BIN: 16 records of 128 bytes; record r = 128 * byte(r+1).

@@ -101,8 +101,27 @@ dv_err:
 ; Input: DISK_FCB_NAME holds the 8.3 wildcard pattern. fat_delete frees + $E5-
 ; marks the FIRST match per call (name_cmp honours '?'/'*'), so loop until no
 ; match remains. C accumulates the deleted-any flag; DISKOP_STATUS carries it
-; back (0 -> the head raises "File not found").
+; back (0 = nothing matched -> the head raises ERR 53 "File not found";
+; 1 = deleted at least one; 2 = mount error -> the head does load_error).
+;
+; 🔴 THE MOUNT IS SEPARATED FROM THE MISS ON PURPOSE, AND IT IS WHY THE FILED
+; "the fix is 0 B" WAS WRONG (D-DSKMSG, docs/spec-basic-dskmsg.md §4.1).
+; fat_delete's own contract is `Cy = 1 not found / mount / I-O error` -- it calls
+; fat_mount itself -- so before this the deleted-any flag was 0 for ALL THREE, and
+; simply re-pointing the head's `jp z` at df_notfound would have turned a
+; disk-offline KILL into a TRAPPABLE ERR 53 on no reading at all. Mounting here
+; and taking tf_ioerr gives KILL the same three-way DISKOP_STATUS disposition
+; tnt_files already has (0 = nothing matched -> ERR 53; 1 = deleted at least one;
+; 2 = mount error -> load_error). fat_delete still mounts; a second mount of a
+; mounted volume re-reads the BPB and is idempotent.
+;
+; ⚠️ STILL CONFLATED, said out loud: an I-O error INSIDE fat_delete, after the
+; mount and before anything was deleted, still returns C=0 and reads as "nothing
+; matched". Separating that needs a status out of fat_delete itself, a
+; primitive-layer change D-DSKMSG does not make.
 tnt_kill:
+                call    fat_mount               ; sub-local primitive body
+                jp      c,tf_ioerr              ; STATUS = 2 -> head does load_error
                 ld      c,0                     ; C = deleted-any flag
 dvk_loop:
                 push    bc
@@ -151,14 +170,27 @@ dvk_done:
 ;      FILES_HASPAT = 1 if DISK_FCB_NAME holds an 8.3 wildcard pattern
 ; out: DISKOP_STATUS = 0 nothing matched / 1 ok / 2 mount or DSKIO error
 tnt_files:
-                ; Seed the matched-any flag. A filespec starts at "nothing matched"
-                ; so a miss can raise ERR 53; a BARE listing starts at "ok", because
-                ; an EMPTY directory is not `File not found` on this build and that
-                ; arm is unmeasured (spec §2.4 — it needs an empty-disk fixture this
-                ; battery does not have). FILES_HASPAT is 0 or 1 only, so one `xor`
-                ; inverts it.
-                ld      a,(FILES_HASPAT)
-                xor     1
+                ; Seed the matched-any flag at "nothing matched", ALWAYS: the walk
+                ; itself sets it to 1 at df_do_emit the first time it emits an
+                ; entry, so a listing that emits nothing raises ERR 53 whether the
+                ; caller gave a filespec or not.
+                ;
+                ; 🔴 IT USED TO SEED A *BARE* LISTING AT "ok"
+                ; (`ld a,(FILES_HASPAT) / xor 1`), which made an EMPTY DIRECTORY
+                ; silent -- docs/spec-basic-lfiles.md §2.4 called that arm
+                ; unmeasured and left it alone, and its knife K7 predicted the miss
+                ; before the run. D-DSKMSG measured it (R-LF7,
+                ; docs/lptverb-msx1-characterization.md §4.2): the CF-3300 raises
+                ; `File not found` for a bare FILES *and* a bare LFILES over a
+                ; mounted, WRITABLE, empty volume -- the same disposition as a
+                ; filespec that matched nothing, not a different one. 4 B saved.
+                ;
+                ; The filespec rows are bit-identical either way: HASPAT=1 -> the
+                ; old `xor 1` wrote the same 0 this writes unconditionally.
+                ; A directory holding only deleted or volume-label entries now
+                ; takes this arm too -- the same disposition (the walk emitted
+                ; nothing), stated rather than measured; no fixture has one.
+                xor     a
                 ld      (DISKOP_STATUS),a
                 ; (2) mount the volume (BPB geometry into the fat.asm scratch).
                 call    fat_mount               ; sub-local primitive body

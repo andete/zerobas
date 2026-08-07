@@ -43,10 +43,18 @@
 ; head the split forces: the DISKSLOT_OK test, the eval-side filespec parse, one
 ; subrom_call and the statement tail. docs/spec-basic-lfiles.md §2.
 ;
+; ✅ AN EMPTY DIRECTORY TAKES THE SAME ARM SINCE 2026-08-07 (D-DSKMSG, R-LF7,
+; docs/lptverb-msx1-characterization.md §4.2). A bare FILES/LFILES over a
+; mounted, writable, EMPTY volume raises `File not found` on both references and
+; on zerobas; the divergence listed below used to read "prints nothing rather
+; than `File not found` — an arm no row measures (spec §2.4), left as it was",
+; and it is gone because the fixture now exists (`make_test_dsk.py --empty`).
+;
 ; Divergences (own design, documented in basic/PROVENANCE.md §FILES):
 ;   * the disk-name / "Ok" framing is the REPL's, not emitted here;
-;   * a bare FILES/LFILES over an EMPTY directory prints nothing rather than
-;     `File not found` — an arm no row measures (spec §2.4), left as it was.
+;   * on a missing disk slot / mount / I-O error FILES/LFILES reuse load_error,
+;     not a Disk-BASIC-specific message. Only the no-match / empty disposition is
+;     reference-exact.
 ;
 ; Clean-room: original code. FILES/LFILES *semantics* + the 8.3 field layout and
 ; the one-entry-per-line printer form from the MSX-BASIC language reference and
@@ -124,10 +132,14 @@ df_nofilespec:
 ; ERR reads 53 and ON ERROR traps it. Neither is measured by any row here; stated
 ; as a consequence of the mechanism, not claimed as a rule.
 ;
-; ⚠️ do_kill's no-match is deliberately NOT re-pointed here. Its comment says
-; "File not found" and its code says load_error, and fat-error-acceptance pins
-; `kill-missing` to `load error` on purpose; changing it would move an UNMEASURED
-; verb on the strength of a reading taken for a different one. Filed, not fixed.
+; ✅ do_kill's no-match REACHES HERE SINCE 2026-08-07 (D-DSKMSG,
+; docs/spec-basic-dskmsg.md §4). This note used to read "deliberately NOT
+; re-pointed here ... changing it would move an UNMEASURED verb on the strength
+; of a reading taken for a different one. Filed, not fixed." The reading was
+; taken (R-DK1, docs/dskmsg-msx1-characterization.md): the CF-3300 answers
+; `File not found` for KILL too, and fat-error-acceptance's `kill-missing` pin
+; moved in the same commit as the code. `NAME` was measured at the same time and
+; deliberately NOT changed — §4.5 of the spec has the three reasons.
 df_notfound:
                 ld      a,53
                 jp      raise_error
@@ -1192,16 +1204,33 @@ do_kill:
                 ; name simply matches once, exactly as before.
                 ; repack: the loop runs in the dirverb_tenant (sub page 1),
                 ; calling fat_delete sub-locally; DISKOP_STATUS returns the
-                ; deleted-any flag (docs/spec-evict-diskfile-cluster.md §12).
+                ; three-way disposition (docs/spec-evict-diskfile-cluster.md §12,
+                ; widened to three by D-DSKMSG — sub/dirverb.asm's tnt_kill).
                 ld      a,DISKOP_SEL_KILL
                 ld      (DISKOP_OP),a
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB
                 call    subrom_call
                 pop     hl                  ; restore text cursor
                 jp      c,load_error        ; sub-ROM absent -> error
+                ; D-DSKMSG (docs/spec-basic-dskmsg.md §4), R-DK1: the CF-3300
+                ; answers `File not found` to a KILL that matched nothing, which
+                ; is what the line below USED to say in a comment while the code
+                ; said load_error. The message ships already (D-MSGSUB hosts ERR
+                ; 53), so the miss now goes through df_notfound / raise_error: a
+                ; real MSX error, ERR reads 53 and ON ERROR traps it.
+                ;
+                ; 🔴 AND THAT IS *NOT* A 0 B JUMP-TARGET SWAP, which is what the
+                ; residual filed. tnt_kill used to return 0 for "not found",
+                ; "mount failed" AND "I-O error" alike (fat_delete's own contract),
+                ; so the swap alone would have re-pointed a disk-offline KILL at a
+                ; trappable ERR 53 with no reading behind it. The tenant now
+                ; separates the mount (STATUS = 2) exactly as tnt_files does, and
+                ; these two lines are the head half of that: +4 B, not 0.
                 ld      a,(DISKOP_STATUS)
                 or      a
-                jp      z,load_error        ; nothing matched -> File not found
+                jp      z,df_notfound       ; 0 = nothing matched -> ERR 53
+                dec     a
+                jp      nz,load_error       ; 2 = mount / DSKIO error
                 jp      exec_stmt
 
 ; --- NAME "old" AS "new" — rename a file -----------------------------------

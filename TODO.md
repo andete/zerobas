@@ -113,7 +113,9 @@ duplicating (and drifting from) what is written below.
       `lnblank` **536 → 539** — +3, not +1, which is the proof.
       ⚠️ Carried out of it: **R-LS4 is measured but UNKNIFED** (spec-basic-lptverb
       §6.7.3 — the cut changes argument CONSUMPTION and returns garbage), and the
-      three items in `docs/spec-basic-lfiles.md` §6.8.
+      three items in `docs/spec-basic-lfiles.md` §6.8. ✅ **ALL CLOSED 2026-08-07
+      by D-DSKMSG** — see the `- [x]` entry below and
+      [`docs/spec-basic-dskmsg.md`](docs/spec-basic-dskmsg.md).
 - [x] ✅ **THE SUB-ROM WALLS HAVE NO GATED READOUT — CLOSED 2026-08-07 by
       D-SUBWALL**, [`docs/spec-subwall-readout.md`](docs/spec-subwall-readout.md).
       `sub/sub.asm` carries `__MEAS_SUB_P0_END`/`__MEAS_SUB_P1_END` and
@@ -151,14 +153,72 @@ duplicating (and drifting from) what is written below.
       slices simply never recorded either gate — **a gap, not an error**, and the
       reading failure was mine: **do not populate a baseline table by `grep`. Run the
       gates.** Both already print on every `make basic-reloc`.
-- [ ] ⚠️ **`do_kill`'s no-match prints `load error` where its own comment says
-      `File not found`.** D-LFILES made `FILES`/`LFILES` reference-exact for that
-      disposition (ERR 53, R-LF4/R-LF6) and deliberately did NOT re-point `KILL`:
-      the message is UNMEASURED for `KILL`, and `fat-error-acceptance` pins
-      `kill-missing` to `load error` on purpose. Changing it on the strength of a
-      reading taken for a different verb is the thing this project does not do.
-      The fix is **0 B** (`jp z,df_notfound`) once someone takes the reading.
-      Detail: [`docs/spec-basic-lfiles.md`](docs/spec-basic-lfiles.md) §2.3.
+- [x] ✅ **THE THREE D-LFILES RESIDUALS — CLOSED 2026-08-07 by D-DSKMSG**,
+      [`docs/spec-basic-dskmsg.md`](docs/spec-basic-dskmsg.md), measured in
+      [`docs/dskmsg-msx1-characterization.md`](docs/dskmsg-msx1-characterization.md)
+      (R-DK1/R-DK2) and
+      [`docs/lptverb-msx1-characterization.md`](docs/lptverb-msx1-characterization.md)
+      §3.4 + §4.2 (R-LS4's fourth value, R-LF7). All three were blocked on a
+      **reference reading, not tooling**, and each reading changed the answer.
+      Gated by `make lptverb-acceptance` at **44/44** (39 → +1 `lps-argover`,
+      +4 `lfl-empty*`) and the new `make dskmsg-acceptance` at **3/3 + 1 printed
+      characterization row**; `fat-error-acceptance` still 8/8 with its
+      `kill-missing` pin MOVED in the same commit as the code.
+      🎯 **R-LS4's KNIFE EXISTS, AND ITS OWN CLAIM HAD NO ROW.** The rule says
+      "no domain check — not even for a negative or an **out-of-byte** value" and
+      its evidence was `LPOS(1)/(255)/(-1)` — **255 is IN byte range**.
+      `lps-argover` (`LPOS(300)`) reads `0` on both references. K-LS4a (argument
+      as a selector with domain {0}) and K-LS4b (byte domain only) then CUT at
+      exactly their predicted sets — and the point is the SURVIVORS: **3, 10 and
+      14**, real columns, where D-LPTVERB's unsound K7 returned 195 and 243. The
+      cut site is after `flt_int_result`, so it cannot change argument
+      CONSUMPTION, which was K7's whole fault.
+      🔴 **THE EMPTY DIRECTORY WAS A DIVERGENCE, NOT AN UNEXERCISED ARM.** The
+      CF-3300 raises `File not found` for a bare `FILES` **and** a bare `LFILES`
+      over a mounted, writable, empty volume; zerobas printed nothing. Fixed by
+      dropping `tnt_files`'s `FILES_HASPAT / xor 1` seed — **−4 B of sub page 1**.
+      Needed a second fixture (`make_test_dsk.py --empty`) and, because "the
+      listing printed nothing" is what a DEAD disk prints, its own positive
+      control on that image (`lfl-emptyctl` SAVEs and lists `CTL     .BAS`).
+      🔴 **AND THE FILED "the fix is 0 B" WAS FALSE.** `fat_delete` returns
+      `Cy=1` for *not found / mount / I-O error* alike, so `tnt_kill`'s
+      deleted-any flag was 0 for all three: the jump-target swap would have turned
+      a disk-offline `KILL` into a **trappable ERR 53** on no reading at all — the
+      exact move the residual was filed to prevent. `tnt_kill` now mounts first
+      and returns STATUS=2, as `tnt_files` already did. Real cost **+4 B main /
+      +6 B sub**; page 1 194 → **190 B**, sub p1 1542 → **1540 B**, low **3 B**
+      untouched. `disk.rom` hash unchanged, the other three moved.
+      ⚠️ **K-KILL2 is a PREDICTED MISS and says so**: deleting that mount
+      separation reddens nothing, because no row drives `KILL` at a broken volume.
+      ⚠️ Two apparatus refusals paid for themselves — the knife runner refused a
+      **failed build** twice (the naive cut site took `jr z,ev_ff_lof` out of
+      range), and `omsx_preflight` refused a **stale ROM** after an out-of-band
+      restore touched mtimes.
+      🔴 **Seed prediction wrong for the third slice running**: main seeds
+      286 → **287**, because this slice's own `sub/dirverb.asm` COMMENT names the
+      main label `df_notfound`. Seeds are a function of the WORDS a slice writes
+      under `sub/`+`tools/`, not of the code it adds.
+- [ ] ⚠️ **`NAME`'s missing-old-file message is `load error` where the CF-3300
+      says `File not found`** — **R-DK2**, measured 2026-08-07 by D-DSKMSG and
+      deliberately NOT acted on. Three reasons, and the third is a number:
+      `do_name`'s divergence is one `basic/PROVENANCE.md` §NAME **states**, with
+      code and comment agreeing (where `do_kill`'s was one its own comment
+      contradicted); retiring a quarantined divergence one verb at a time on a
+      neighbour's reading is the failure this residual family exists to prevent;
+      and `nm_fail` is a **shared exit** for the `fat_mount` failure and the
+      `fat_find` miss, so the fix is an arm split of ≈5 B, not a target swap.
+      Printed on every `make dskmsg-acceptance` run as an explicitly not-gated
+      characterization row. Detail:
+      [`docs/dskmsg-msx1-characterization.md`](docs/dskmsg-msx1-characterization.md)
+      §4 and [`docs/spec-basic-dskmsg.md`](docs/spec-basic-dskmsg.md) §4.5.
+- [ ] ⚠️ **`KILL`/`NAME` at an unmounted or unreadable volume has NO row** —
+      D-DSKMSG's knife **K-KILL2** is the written-down predicted miss that proves
+      it. `do_kill`'s new STATUS=2 arm and `do_name`'s `nm_fail` both keep
+      `load error` there by design (the quarantined class), and an I-O error
+      *inside* `fat_delete` after a successful mount still reads as "nothing
+      matched" — separating that needs a status out of `fat_delete` itself, a
+      primitive-layer change. Detail:
+      [`docs/spec-basic-dskmsg.md`](docs/spec-basic-dskmsg.md) §4.2/§6.6.
 - [x] ✅ **`LPRINT` / `LPOS` — the rest of the printer surface.** All
       three lacked a `kwtable.inc` entry, so they were `Syntax error` on zerobas,
       and [`docs/kwsweep-msx1-coverage.md`](docs/kwsweep-msx1-coverage.md)

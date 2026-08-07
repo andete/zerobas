@@ -445,7 +445,18 @@ DISK_TEST_DSK := disk/test720.dsk
 $(DISK_TEST_DSK): tools/make_test_dsk.py
 	python3 tools/make_test_dsk.py $(DISK_TEST_DSK)
 
-test-dsk: $(DISK_TEST_DSK)
+# The EMPTY-directory fixture (D-DSKMSG, docs/spec-basic-dskmsg.md §3): the same
+# geometry with NO files, so a bare `FILES`/`LFILES` walk ends on its first
+# directory entry. It is a MOUNTABLE, WRITABLE volume -- which is the whole point,
+# because "the directory is empty", "no file matches the filespec" and "there is
+# no disk" are three dispositions that all print nothing or an error and are
+# otherwise indistinguishable ([[gate-whose-answer-is-an-error-passes-a-dead-subject]]).
+DISK_EMPTY_DSK := disk/empty720.dsk
+
+$(DISK_EMPTY_DSK): tools/make_test_dsk.py
+	python3 tools/make_test_dsk.py --empty $(DISK_EMPTY_DSK)
+
+test-dsk: $(DISK_TEST_DSK) $(DISK_EMPTY_DSK)
 
 # Host-side unit tests: execute the real assembled Z80 against an embedded Z80
 # core — no emulator. Each test assembles to /tmp itself, so this needs no other
@@ -1392,9 +1403,38 @@ lptverb-characterize: repack-machine
 # ⚠️ THE `lfl-` BATTERY IS STILL TWO-SIDED, and that is scored per row, not by
 # dropping it: a row is judged over the sides that CAN measure it, so LFILES's
 # missing VG-8020 column prints `[not measurable on: vg8020]` instead of DIFF.
-lptverb-acceptance: repack-machine
+#
+# ⚠️ BOTH DISK FIXTURES ARE PREREQUISITES SINCE D-DSKMSG. The `lfl-` battery
+# mounts test720.dsk, and its empty-directory rows mount empty720.dsk; the probe
+# answers `<NO DISK FIXTURE>` for a missing one, which the gate scores as a
+# divergence rather than as agreement -- loud, but the loudness is a fallback,
+# not the plan. `lptverb-acceptance` used to name neither.
+lptverb-acceptance: repack-machine $(DISK_TEST_DSK) $(DISK_EMPTY_DSK)
 	python3 probes/basic/basic_probe_lptverb.py --gate \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',) \
+	        --repeat $(if $(REPEAT),$(REPEAT),1)
+
+# --- KILL's no-match MESSAGE (docs/spec-basic-dskmsg.md) ----------------------
+# The oracle differential D-LFILES's residual was blocked on. Two-sided by
+# construction (cf3300, zb): KILL/NAME/FILES are Disk-BASIC words and a diskless
+# MSX1 answers `Syntax error` to all three, so the VG-8020 would measure the
+# absence of a disk interface. HEAVY + oracle-dependent (needs your CF-3300
+# reference ROMs); NOT part of the emulator-free `unit-test`.
+#
+# ⚠️ Its subject rows all expect an ERROR MESSAGE, the disposition that passes a
+# totally dead subject, so the probe runs TWO positive controls in the same
+# invocation and exits 2 -- not 1 -- when one fails: `dsk-ctl` (a named file is
+# FOUND) and `dsk-killhit` (a KILL that must SUCCEED, asserted on the survivors
+# as well as the casualty).
+dskmsg-characterize: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_dskmsg.py \
+	        --sides $(if $(SIDES),'$(SIDES)',cf3300,zb) \
+	        $(if $(ONLY),--only '$(ONLY)',)
+
+dskmsg-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_dskmsg.py --gate \
+	        --sides $(if $(SIDES),'$(SIDES)',cf3300,zb) \
 	        $(if $(ONLY),--only '$(ONLY)',) \
 	        --repeat $(if $(REPEAT),$(REPEAT),1)
 
@@ -1733,6 +1773,7 @@ clean:
         linemax-characterize linemax-acceptance chancost-characterize \
         lnblank-characterize lnblank-acceptance lnblank-echo lnblank-say-acceptance \
         editverb-acceptance lptverb-characterize lptverb-acceptance \
+        dskmsg-characterize dskmsg-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

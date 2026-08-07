@@ -188,6 +188,13 @@ conservative arm is the one that changes nothing, and this is the note that says
 which arm that is ([[a-hand-listed-denominator-is-a-scope-claim]] — the rows the
 battery cannot reach are part of its scope claim).
 
+✅ **MEASURED AND CHANGED 2026-08-07 by D-DSKMSG** (R-LF7,
+[`lptverb-msx1-characterization.md`](lptverb-msx1-characterization.md) §4.2):
+the CF-3300 raises `File not found` there too, so the seed is now unconditional
+and the `xor` is gone (−4 B of sub page 1). **"The conservative arm" was the
+WRONG arm** — which is the useful part of this note, because it was written
+without a way to know, and said so.
+
 ---
 
 ## 3. Design
@@ -573,11 +580,20 @@ exists for).
 
 ### 6.8 What is left open
 
-* **R-LS4 is still UNKNIFED** (D-LPTVERB §6.7.3) — untouched here.
+✅ **ALL FOUR CLOSED** — the sub-ROM walls by D-SUBWALL (2026-08-07) and the
+other three by **D-DSKMSG** the same day,
+[`spec-basic-dskmsg.md`](spec-basic-dskmsg.md). Each was blocked on a reference
+reading, and every reading changed the answer: R-LS4's own "out-of-byte" clause
+had no row; the empty directory turned out to be a **divergence**, not merely an
+unexercised arm; and *"the fix is 0 B"* below is **false** (§4.1 there —
+`fat_delete` collapses not-found, mount and I-O into one `Cy=1`, so the swap
+would have re-pointed all three).
+
+* ~~**R-LS4 is still UNKNIFED**~~ (D-LPTVERB §6.7.3) — untouched here.
 * ~~**The sub-ROM walls have no gated readout** (§6.3).~~ ✅ **CLOSED 2026-08-07 by
   D-SUBWALL**, [`spec-subwall-readout.md`](spec-subwall-readout.md).
-* **`do_kill`'s no-match still prints `load error`** where its own comment says
+* ~~**`do_kill`'s no-match still prints `load error`**~~ where its own comment says
   `File not found` (§2.3), and `fat-error-acceptance` pins it. Unmeasured for
-  `KILL`; the fix is 0 B once someone takes the reading.
-* **The empty-directory arm** (§2.4, K7) has no row and needs an empty-disk
-  fixture.
+  `KILL`; ~~the fix is 0 B~~ once someone takes the reading.
+* ~~**The empty-directory arm** (§2.4, K7) has no row and needs an empty-disk
+  fixture.~~

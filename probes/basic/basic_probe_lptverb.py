@@ -17,7 +17,11 @@ Three batteries, three DIFFERENT readouts and three different side sets:
   `lps-`  the SCREEN. `LPOS(n)` returns a number, so the reading is what `PRINT`
           put on screen -- but its SUBJECT is accumulated printer state, which
           is why this battery boots per case (below).
-  `lfl-`  the PRINTER LOG, on **two sides only**. See LFILES_SIDES.
+  `lfl-`  the PRINTER LOG *and* the SCREEN (LFL_SCREEN says which per row), on
+          **two sides only** (LFILES_SIDES), over **two disk fixtures**
+          (LFL_EMPTY says which per row) -- the populated `test720.dsk` and the
+          empty-directory `empty720.dsk` D-DSKMSG added
+          (docs/spec-basic-dskmsg.md §3).
 
 ⚠️ EVERY BATTERY PLUGS A PRINTER, INCLUDING THE SCREEN ONE. With no printer
 plugged the VG-8020's `LSTOUT` tight-polls port $90 forever and the machine
@@ -50,6 +54,14 @@ so every other empty reading is attributable to the verb alone. `lfl-ctlf` does
 the same job for the DISK: it proves the fixture is readable before any LFILES
 row is believed.
 
+⚠️ AND A CONTROL IS ABOUT THE IMAGE IT MOUNTS, NOT ABOUT "the disk". The
+empty-directory rows read `File not found` / `<nothing>` on a fixture `lfl-ctlf`
+never touches, so they carry their own control, `lfl-emptyctl`, which SAVEs to
+the empty volume and lists the result. Its `CTL     .BAS` is the positive text
+that separates "this directory is empty" from "this machine cannot mount or
+write" -- the class that scores 8/8 on a dead disk ROM
+([[gate-whose-answer-is-an-error-passes-a-dead-subject]]).
+
 Clean-room: typed inputs and observed outputs only, no reference-ROM
 disassembly. See CONTRIBUTING.md.
 """
@@ -57,6 +69,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import sys
 import tempfile
 
@@ -67,6 +80,9 @@ import omsx_repl                                                 # noqa: E402
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
                             "C-BIOS_MSX1_EU_REPACK_DISK")
 TEST_DSK = os.environ.get("ZEROBAS_TEST_DSK", "disk/test720.dsk")
+# The EMPTY-directory fixture (D-DSKMSG, docs/spec-basic-dskmsg.md §3):
+# `python3 tools/make_test_dsk.py --empty`. Same geometry, no files.
+EMPTY_DSK = os.environ.get("ZEROBAS_EMPTY_DSK", "disk/empty720.dsk")
 
 SIDES = {
     "vg8020": dict(machine="Philips_VG_8020", boot=8.0, step=2.5,
@@ -148,6 +164,19 @@ LPS = [
     ("lps-arg1",    ["L=7", "PRINT LPOS(1)"]),
     ("lps-argbig",  ["L=7", "PRINT LPOS(255)"]),
     ("lps-argneg",  ["L=7", "PRINT LPOS(-1)"]),
+    # 🔴 THE ELEVENTH ROW, ADDED BY D-DSKMSG (docs/spec-basic-dskmsg.md §2),
+    # AND IT EXISTS BECAUSE R-LS4 CLAIMED SOMETHING NO ROW MEASURED.
+    # R-LS4 reads "there is no domain check -- not even for a negative or an
+    # OUT-OF-BYTE value", and its evidence is `LPOS(1)`, `LPOS(255)`,
+    # `LPOS(-1)`. **255 is IN byte range.** So the clause about an out-of-byte
+    # value rested on a row that cannot separate it from a byte-legal one, and
+    # `lps-argneg` alone cannot either -- a `ld a,d / or a` byte-domain check
+    # reddens the negative and the 300 identically, which is precisely why the
+    # two of them together are what knife K-LS4b cuts against. 300 is int16,
+    # positive, and outside 0..255: the smallest case that separates "no domain
+    # check at all" from "a byte-domain check that a negative also happens to
+    # trip". Three sides -- LPOS is core MSX BASIC, not Disk BASIC.
+    ("lps-argover", ["L=7", "PRINT LPOS(300)"]),
     ("lps-noparen", ["L=7", "PRINT LPOS"]),
     ("lps-tab",     ["L=7", 'LPRINT TAB(10);:PRINT LPOS(0)']),
     # 🔴 THIS ROW TOOK THREE TRIES AND THE SECOND ONE SILENTLY CHANGED SUBJECT.
@@ -203,7 +232,10 @@ SCR = [
 
 # --- the LFILES battery: readout is the PRINTER LOG, two sides ----------------
 LFL = [
-    # 🔴 TWO CONTROLS, BECAUSE THIS BATTERY HAS TWO WAYS TO READ EMPTY.
+    # 🔴 THREE CONTROLS, BECAUSE THIS BATTERY HAS THREE WAYS TO READ EMPTY —
+    # no verb, no printer, and (since D-DSKMSG) no DISK. The third is
+    # `lfl-emptyctl`, at the bottom, and it is not interchangeable with
+    # `lfl-ctlf`: it mounts the OTHER fixture.
     # `lfl-ctlf`: the DISK fixture is readable at all (screen FILES).
     ("lfl-ctlf",    ["FILES"]),
     # `lfl-ctlp`: the PRINTER path works on this side.
@@ -230,11 +262,50 @@ LFL = [
     # silence. Written down as a fork BEFORE the reading, so the implementation
     # cannot be what decides it ([[filed-justification-is-a-claim]]).
     ("lfl-nonef",   ['FILES"NOSUCH.XXX"']),
+
+    # --- the EMPTY-DIRECTORY arm (D-DSKMSG, docs/spec-basic-dskmsg.md §3) ----
+    # 🔴 "NO FILES AT ALL ON THE DISK" IS NOT "NO FILE MATCHES THE FILESPEC".
+    # R-LF4/R-LF6 above were both taken WITH a pattern, and D-LFILES's §2.4 said
+    # so and left the other arm alone; its knife K7 then predicted the miss
+    # BEFORE the run -- an unexercised arm, written down, rather than an
+    # undiscovered one. These three rows are that arm, and they mount a
+    # DIFFERENT fixture (EMPTY_DSK) from every row above.
+    #
+    # 🔴 AND THE SUBJECT ROWS' EXPECTED ANSWER MAY BE *NOTHING*, WHICH IS ALSO
+    # WHAT A DEAD DISK PRINTS. An unmounted drive, an all-$00 disk ROM and an
+    # empty directory are indistinguishable by "the listing was empty"
+    # ([[gate-whose-answer-is-an-error-passes-a-dead-subject]] -- 8/8 on a dead
+    # disk ROM). `lfl-ctlf` does NOT close that: it mounts the OTHER image.
+    # `lfl-emptyctl` is the positive control ON THIS IMAGE -- it SAVEs a program
+    # to it and lists the result, so the row asserts POSITIVE TEXT (`CTL`) and a
+    # silent build cannot satisfy it. It runs on its own /tmp copy for the
+    # obvious reason: it writes.
+    ("lfl-emptyctl", ["10 REM", 'SAVE"CTL.BAS"', "FILES"]),
+    ("lfl-emptyf",  ["FILES"]),
+    ("lfl-emptyp",  ["LFILES"]),
+    # 🔴 THE SCREEN HALF OF `lfl-emptyp`, AND IT IS NOT OPTIONAL -- the same
+    # blindness `lfl-none`/`lfl-noneb` exists for, one arm over. The CF-3300
+    # answers an EMPTY listing on the printer (measured: `<nothing printed>`)
+    # because R-LF4's message resolves through `raise_error` to the SCREEN, not
+    # through the listing's sink. So the printer row alone cannot tell "LFILES
+    # refused with a message" from "LFILES did nothing at all", and it is the
+    # row a build with no empty-directory disposition would pass.
+    ("lfl-emptypb", ["LFILES"]),
 ]
 
 # Rows in the LFILES battery whose readout is the SCREEN, not the printer log.
 # Named explicitly: deriving it from the label would make adding a row a guess.
-LFL_SCREEN = {"lfl-ctlf", "lfl-noneb", "lfl-nonef"}
+LFL_SCREEN = {"lfl-ctlf", "lfl-noneb", "lfl-nonef",
+              "lfl-emptyctl", "lfl-emptyf", "lfl-emptypb"}
+# Rows that mount the EMPTY fixture instead of test720.dsk. Also named
+# explicitly -- a battery whose rows disagree about which DISK they are looking
+# at is one where a divergence has two candidate causes.
+LFL_EMPTY = {"lfl-emptyctl", "lfl-emptyf", "lfl-emptyp", "lfl-emptypb"}
+# Rows that WRITE to the image they mount. Each gets a private copy, because
+# boot-per-case reboots the machine but keeps mounting the SAME file: a control
+# that SAVEs would otherwise make the "empty" directory non-empty for every
+# later row in its group, and for the whole of a `--repeat 2` second pass.
+LFL_WRITES = {"lfl-emptyctl"}
 
 PROMPTS = omsx_repl.PROMPTS
 
@@ -384,25 +455,53 @@ def run_side(side, only):
         for (label, lines), raw in zip(scr_rows, caps):
             out[label] = reading(raw, anchor_for(lines))
 
+    def scr_battery(rows, diska=None):
+        """A screen-readout battery on a mounted image: boot-per-case."""
+        cases = [("direct", list(cfg["reset"]) + list(lines))
+                 for _, lines in rows]
+        caps = omsx_repl.run_cases(
+            cfg["machine"], cases, batch=False, boot=cfg["boot"],
+            step=cfg["step"], prologue=plug, diska=diska)
+        for (label, lines), raw in zip(rows, caps):
+            out[label] = reading(raw, anchor_for(lines))
+
     lfl = sel(LFL)
     if lfl and side in LFILES_SIDES:
-        dsk = TEST_DSK if os.path.exists(TEST_DSK) else None
-        if dsk is None:
-            for label, _ in lfl:
-                out[label] = "<NO DISK FIXTURE>"
-        else:
-            scr = [r for r in lfl if r[0] in LFL_SCREEN]
-            prn = [r for r in lfl if r[0] not in LFL_SCREEN]
-            if scr:
-                cases = [("direct", list(cfg["reset"]) + list(lines))
-                         for _, lines in scr]
-                caps = omsx_repl.run_cases(
-                    cfg["machine"], cases, batch=False, boot=cfg["boot"],
-                    step=cfg["step"], prologue=plug, diska=dsk)
-                for (label, lines), raw in zip(scr, caps):
-                    out[label] = reading(raw, anchor_for(lines))
-            if prn:
-                prn_battery(prn, diska=dsk)
+        # TWO fixtures, and which one a row mounts is data, not a guess.
+        for src, rows in ((TEST_DSK, [r for r in lfl if r[0] not in LFL_EMPTY]),
+                          (EMPTY_DSK, [r for r in lfl if r[0] in LFL_EMPTY])):
+            if not rows:
+                continue
+            if not os.path.exists(src):
+                # A DISTINCT sentinel, and it is not an agreement: the gate
+                # treats any `<NO ...>` as a divergence, so a missing fixture
+                # can never read as "both sides printed nothing".
+                for label, _ in rows:
+                    out[label] = "<NO DISK FIXTURE>"
+                continue
+            tag = os.path.basename(src).replace(".dsk", "")
+            ro = [r for r in rows if r[0] not in LFL_WRITES]
+            # Read-only rows share ONE working copy; the committed fixture is
+            # never the file openMSX is handed.
+            if ro:
+                dsk = os.path.join(tempfile.gettempdir(),
+                                   f"zb_lptverb_{side}_{tag}.dsk")
+                shutil.copy(src, dsk)
+                scr = [r for r in ro if r[0] in LFL_SCREEN]
+                prn = [r for r in ro if r[0] not in LFL_SCREEN]
+                if scr:
+                    scr_battery(scr, diska=dsk)
+                if prn:
+                    prn_battery(prn, diska=dsk)
+            # Every WRITING row gets a fresh copy of its own.
+            for row in [r for r in rows if r[0] in LFL_WRITES]:
+                dsk = os.path.join(tempfile.gettempdir(),
+                                   f"zb_lptverb_{side}_{tag}_{row[0]}.dsk")
+                shutil.copy(src, dsk)
+                if row[0] in LFL_SCREEN:
+                    scr_battery([row], diska=dsk)
+                else:
+                    prn_battery([row], diska=dsk)
     return out
 
 

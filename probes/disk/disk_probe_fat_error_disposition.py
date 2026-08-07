@@ -26,6 +26,13 @@ is deliberately a SELF-CHECK against zerobas's pinned wording, not an oracle
 differential: an oracle comparison here would fail on the divergence, not on the
 disposition.
 
+⚠️ SEVEN OF THE EIGHT.  `kill-missing` is pinned to `File not found` since
+2026-08-07 (D-DSKMSG, docs/spec-basic-dskmsg.md §4.3) because that verb's
+no-match disposition was MEASURED on the CF-3300 and made reference-exact; the
+other seven remain the quarantined divergence.  The want is therefore PER CASE,
+and a row that carries its own is printed with `[reference-exact: ...]` so the
+report never reads as if the whole battery had been re-pinned.
+
 FALSIFICATION RECORD (this is the evidence the gate measures its subject).  With
 the error tail neutered, four of the cases below SILENTLY REPORT NOTHING --
 load-missing, run-missing, open-missing, merge-missing.  Restoring the tail
@@ -61,7 +68,21 @@ import omsx_repl  # noqa: E402
 CASES = [
     ("load-missing",  'LOAD"A:NOSUCH.BAS"'),
     ("run-missing",   'RUN"A:NOSUCH.BAS"'),
-    ("kill-missing",  'KILL"A:NOSUCH.BAS"'),
+    # 🔴 THE ONE ROW THAT IS NOT PINNED TO `load error`, SINCE 2026-08-07
+    # (D-DSKMSG, docs/spec-basic-dskmsg.md §4.3). This row pinned KILL's no-match
+    # to zerobas's own `load error` ON PURPOSE while the message was UNMEASURED
+    # for KILL -- basic/files.asm said `File not found` in a comment and
+    # load_error in the code, and moving it on the strength of D-LFILES's reading
+    # for a DIFFERENT verb is the thing this project does not do. The reading was
+    # then taken for KILL itself (R-DK1,
+    # docs/dskmsg-msx1-characterization.md): the CF-3300 answers `File not
+    # found`, so the pin moved in the same commit as the code.
+    #
+    # ⚠️ THE OTHER SEVEN ARE UNTOUCHED AND STAY `load error`. They are the
+    # quarantined wording divergence basic/PROVENANCE.md records for the whole
+    # no-disk / mount / I-O class, and NOTHING in D-DSKMSG measured them. A pin
+    # that drifts verb by verb on its neighbours' evidence stops being a pin.
+    ("kill-missing",  'KILL"A:NOSUCH.BAS"', "File not found"),
     ("bload-missing", 'BLOAD"A:NOSUCH.BIN"'),
     ("open-missing",  'OPEN"A:NOSUCH.DAT" FOR INPUT AS #1'),
     # D-APPMISS (docs/spec-basic-append-missing-refuse.md §5c). APPEND used to
@@ -78,6 +99,12 @@ CASES = [
     ("merge-missing", 'MERGE"A:NOSUCH.BAS"'),
 ]
 WANT = "load error"
+
+# A row is `(key, line)` -- pinned to WANT -- or `(key, line, want)` when its
+# disposition has been MEASURED on the reference and is reference-exact.
+# Normalised here so the default stays visible in the table above rather than
+# being repeated eight times.
+CASES = [c if len(c) == 3 else (c[0], c[1], WANT) for c in CASES]
 
 # --- THE PRECONDITION (D-DSKJUDGE, docs/spec-rom-gate-diskrom.md §3.2) --------
 # 🔴 EVERY ROW ABOVE PASSES ON A DEAD DISK ROM.  Measured: with `build/disk.rom`
@@ -183,7 +210,7 @@ def main() -> int:
     # The control runs FIRST, in the same batch: same machine, same mounted
     # image, same boot -- so a green control is evidence about the run the eight
     # rows below were measured in, not about a separate one.
-    specs = [("direct", [CONTROL[1]])] + [("direct", [line]) for _, line in CASES]
+    specs = [("direct", [CONTROL[1]])] + [("direct", [line]) for _, line, _ in CASES]
     raws = omsx_repl.run_cases(args.machine, specs,
                                batch=not args.boot_per_case,
                                reset=("NEW", "CLS"), capture="screen",
@@ -216,7 +243,7 @@ def main() -> int:
               f"rows.\n"
               f"    Exit 2 (not 1) = the instrument was broken, NOT an "
               f"error-disposition regression.")
-        for (key, line), raw in zip(CASES, raws):
+        for (key, line, _), raw in zip(CASES, raws):
             tail = omsx_repl.screen_tail(raw, line)
             got = " | ".join(t.strip() for t in str(tail or "").split("\n") if t.strip())
             print(f"  ....  {key:14} {line:38} -> {got[:60]!r}  (not scored)")
@@ -225,18 +252,19 @@ def main() -> int:
             os.unlink(tmp)
         return 2
 
-    for (key, line), raw in zip(CASES, raws):
+    for (key, line, want), raw in zip(CASES, raws):
         tail = omsx_repl.screen_tail(raw, line)
         got = " | ".join(t.strip() for t in str(tail or "").split("\n") if t.strip())
-        good = WANT in (tail or "")
+        good = want in (tail or "")
         ok &= good
-        print(f"  {'PASS' if good else 'FAIL'}  {key:14} {line:38} -> {got[:60]!r}")
+        pin = "" if want == WANT else f"   [reference-exact: {want!r}]"
+        print(f"  {'PASS' if good else 'FAIL'}  {key:14} {line:38} -> {got[:60]!r}{pin}")
         if not good:
-            print(f"        want {WANT!r} -- a SILENT return here is the exact "
+            print(f"        want {want!r} -- a SILENT return here is the exact "
                   f"signature of a broken error tail")
 
-    npass = sum(1 for (k, l), r in zip(CASES, raws)
-                if WANT in (omsx_repl.screen_tail(r, l) or ""))
+    npass = sum(1 for (k, l, w), r in zip(CASES, raws)
+                if w in (omsx_repl.screen_tail(r, l) or ""))
 
     # THE SECOND INSTRUMENT, for `append-missing` only: a refusal that still
     # created the file is not a refusal. The screen alone cannot say this -- a

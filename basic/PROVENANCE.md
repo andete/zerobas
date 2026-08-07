@@ -1811,9 +1811,14 @@ at the top of every statement — *is* `call CHPUT`.
   `load_error` path ("load error"), not a Disk-BASIC-specific "Disk offline"
   message — own-design error wording, consistent with the other disk verbs. Only
   the **no-match** disposition is reference-exact (`File not found`).
-- A bare `FILES`/`LFILES` over an **empty** directory prints nothing rather than
-  `File not found`. Unmeasured: R-LF6 was taken with a pattern, and separating the
-  two needs an empty-disk fixture the battery does not have.
+- ~~A bare `FILES`/`LFILES` over an **empty** directory prints nothing rather than
+  `File not found`.~~ ✅ **CLOSED 2026-08-07 by D-DSKMSG.** The fixture now exists
+  (`tools/make_test_dsk.py --empty`) and the reading is **R-LF7**
+  ([`lptverb-msx1-characterization.md`](../docs/lptverb-msx1-characterization.md)
+  §4.2): the reference raises `File not found` for a bare `FILES` *and* a bare
+  `LFILES` over a mounted, writable, empty volume — the SAME disposition as a
+  filespec that matched nothing, not a different one. `tnt_files` now seeds
+  `DISKOP_STATUS` at "nothing matched" unconditionally (−4 B of sub page 1).
 - The disk-name header / "Ok" framing around the listing is the REPL's, not emitted
   by `do_files`.
 - ⚠️ The paragraph that used to stand here — *"an optional `<filespec>` pattern
@@ -1988,11 +1993,38 @@ they do). Full crunch + 16 unit-test files + the FILES/read/write probes still p
 **Wildcard (2026-07-08, option-closure Item 4):** `KILL "*.BAK"` deletes EVERY
 matching file — `do_kill` loops `fat_delete` (whose `fat_find`/`name_cmp` now honour
 the `?` wildcard; `build_83_name` expands `*`→`?`) until no match remains, and raises
-File-not-found (`load_error`) only if nothing matched. Byte-identical to the real
+File-not-found only if nothing matched. Byte-identical to the real
 CF-3300 after the same wildcard KILL (`disk_probe_kill_wildcard.py`), confirming
-CF-3300 wildcards identically. **Divergence (own design, quarantined):** a missing
-file / I-O error reuses the loader's `load_error` ("load error") path, not a
-Disk-BASIC "File not found" message.
+CF-3300 wildcards identically.
+
+**No-match wording (2026-08-07, D-DSKMSG).** ✅ `KILL` at a filespec that matches
+nothing raises **ERR 53 `File not found`** through `raise_error` — reference-exact,
+measured as **R-DK1** on the CF-3300
+([`dskmsg-msx1-characterization.md`](../docs/dskmsg-msx1-characterization.md)).
+It used to reuse `load_error` ("load error") while the code's own comment said
+`File not found`; the reading settled which was right, and
+`make fat-error-acceptance`'s `kill-missing` pin moved in the same commit.
+`ERR` now reads 53 and `ON ERROR` traps it, where neither happened before.
+
+🔴 **That was NOT the 0 B jump-target swap it was filed as**
+([`spec-basic-dskmsg.md`](../docs/spec-basic-dskmsg.md) §4.1). `fat_delete`
+returns `Cy = 1` for *not found / mount / I-O error* alike, so `tnt_kill`'s
+deleted-any flag was 0 for all three; re-pointing the head alone would have turned
+a disk-offline `KILL` into a trappable ERR 53 on no evidence. The tenant now
+mounts first and returns `DISKOP_STATUS = 2` for a mount failure, exactly as
+`tnt_files` does. **Divergence (own design, quarantined, NARROWED):** a missing
+disk / mount / I-O error still reuses `load_error`; only the **no-match**
+disposition is reference-exact. An I-O error inside `fat_delete` after a
+successful mount and before any deletion still reads as "nothing matched" — stated,
+not measured.
+
+⚠️ **`NAME` was measured at the same time and deliberately NOT changed.** R-DK2:
+the CF-3300 answers `File not found` to `NAME` at a missing old file too, and
+zerobas still answers `load error` (see §NAME's own divergence note, which the
+code and its comment agree on). `nm_fail` is a shared exit for the mount failure
+and the not-found miss, so making it reference-exact is an arm split, not a target
+swap. Filed in `TODO.md`, printed by `make dskmsg-acceptance` as a not-gated
+characterization row.
 
 Clean-room: original code; KILL semantics + the `$E5` deleted-marker / chain-free
 rules from the public MSX-BASIC reference + Microsoft FAT spec, validated by the

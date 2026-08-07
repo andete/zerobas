@@ -441,6 +441,18 @@ over.** The rule itself is measured on both references (`LPOS(-1)`/`LPOS(255)`
 answer normally, three sides, `lps-argneg`/`lps-argbig` green in the gate); what is
 missing is a *falsification* that isolates it. Filed.
 
+✅ **CLOSED 2026-08-07 by D-DSKMSG** ([`spec-basic-dskmsg.md`](spec-basic-dskmsg.md)
+§2). The fault was the **cut site**: the `ev_ff_ck*` chain runs *before*
+`flt_int_result` and its arms re-coerce FAC. Cutting instead at `ev_ff_lpos`,
+where the argument is already consumed and sits in DE, gives two sound knives —
+K-LS4a (argument as a selector with domain {0}) and K-LS4b (byte domain only) —
+which CUT at exactly their predicted sets while the survivors return **3, 10 and
+14**, real columns rather than 195 and 243.
+
+⚠️ **And R-LS4's own "out-of-byte" clause had no row**: `255` is IN byte range.
+`lps-argover` (`LPOS(300)`) was added and measured `0` on both references before
+either knife ran.
+
 #### 6.7.4 ⚠️ Two apparatus faults in the knife runner itself
 
 * 🔴 **The first runner compared hand-written baselines against `repr()` output**,

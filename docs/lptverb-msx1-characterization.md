@@ -157,10 +157,26 @@ with `L=7` for the reason in §6.
 | **R-LS1** | `LPOS(n)` is the printer head's **column**, and it is **0** on a fresh head. | `lps-init` → `0` |
 | **R-LS2** | It advances by the characters actually sent. | `LPRINT"ABC";:PRINT LPOS(0)` → **3** |
 | **R-LS3** | A completed `LPRINT` (one that sent CR/LF) leaves it at **0**. | `LPRINT"ABC":PRINT LPOS(0)` → **0** |
-| **R-LS4** | 🔴 The argument is a **DUMMY**: every value answers the same, and there is **no domain check** — not even for a negative or an out-of-byte value. | `LPOS(1)`, `LPOS(255)`, `LPOS(-1)` → `0`, `0`, `0` |
+| **R-LS4** | 🔴 The argument is a **DUMMY**: every value answers the same, and there is **no domain check** — not even for a negative or an out-of-byte value. | `LPOS(1)`, `LPOS(255)`, `LPOS(-1)`, `LPOS(300)` → `0`, `0`, `0`, `0` |
 | **R-LS5** | 🔴 The parentheses are **required**; `LPOS` bare is a `Syntax error`. | `PRINT LPOS` → `Syntax error` |
 | **R-LS6** | `TAB(n)` moves the counter, so it tracks padding and not just literal bytes. | `LPRINT TAB(10);:PRINT LPOS(0)` → **10** |
 | **R-LS7** | It tracks a multi-character write into two digits. | `LPRINT"01234567890123";:PRINT LPOS(0)` → **14** |
+
+### 3.4 ➕ R-LS4's fourth value, added 2026-08-07 by D-DSKMSG
+
+🔴 **THE RULE CLAIMED MORE THAN ITS EVIDENCE COVERED, FOR A DAY.** R-LS4 says
+"not even for a negative or an **out-of-byte** value", and its three values were
+`1`, `255`, `-1`. **255 is IN byte range.** So the out-of-byte half of the claim
+rested on a case that cannot separate it from a byte-legal one, and the only row
+that could have caught a byte-domain check was `lps-argneg` — one row, whose
+`$FFFF` a `ld a,d / or a` test trips for the *negative* reason.
+
+`lps-argover` (`LPOS(300)`: int16, positive, outside 0..255) closes it. Measured
+**before** the knives, on both references, and both answer **`0`** — R-LS4 stands
+as written, now with evidence for each clause. See
+[`spec-basic-dskmsg.md`](spec-basic-dskmsg.md) §2; the pair
+`lps-argneg`+`lps-argover` is what knife K-LS4b reddens while `lps-arg1`/
+`lps-argbig` survive, which is the falsification D-LPTVERB §6.7.3 could not run.
 
 ⚠️ **R-LS2 and R-LS3 are only readable on ONE line.** Asked as a separate
 command, every one of them reads `0` — the command-level flush of **R-LP16** has
@@ -218,6 +234,7 @@ D-LFILES (§4.1).
 | **R-LF4** | 🔴 No match prints **nothing to the printer** and `File not found` **to the screen**. | `LFILES"NOSUCH.XXX"` → empty log (`lfl-none`) + `File not found` (`lfl-noneb`) |
 | **R-LF5** | The screen sink is restored for the next statement. | `LFILES:PRINT"SCR"` → the log holds the listing only |
 | **R-LF6** | 🔴 **`FILES` says `File not found` too**, so the message belongs to the shared directory walk and not to the printer verb. | `FILES"NOSUCH.XXX"` → `File not found` (`lfl-nonef`) |
+| **R-LF7** | 🔴 **An EMPTY directory is the SAME disposition as a filespec that matched nothing** — a *bare* `FILES`/`LFILES` over a mounted, writable volume holding no files raises `File not found`, on the screen, with the printer log empty. | `FILES` → `File not found` (`lfl-emptyf`); `LFILES` → empty log (`lfl-emptyp`) + `File not found` (`lfl-emptypb`); control `lfl-emptyctl` → `CTL     .BAS` |
 
 ### 4.1 R-LF6 was added by D-LFILES, and it was added BEFORE the design chose
 
@@ -240,6 +257,29 @@ agreed** at the D-LPTVERB baseline: an empty printer log is what a machine with 
 `LFILES` prints for every input. It agreed for the wrong reason, exactly the class
 [[kwsweep-msx1-denominator]] records, and only `lfl-noneb`/`lfl-nonef` separate the
 two readings.
+
+### 4.2 ➕ R-LF7 was added 2026-08-07 by D-DSKMSG, and it needed a SECOND fixture
+
+R-LF4 and R-LF6 were both taken **with a pattern**, so neither says anything
+about a disk with no files on it at all. [`spec-basic-lfiles.md`](spec-basic-lfiles.md)
+§2.4 said so and left that arm alone; its knife K7 then predicted the miss
+**before** the run. This is the arm, and closing it needed
+`tools/make_test_dsk.py --empty` — the same geometry with an empty root
+directory.
+
+🔴 **THE ROW IS IN THE CLASS THAT PASSES A DEAD SUBJECT.** "The listing printed
+nothing" is what an unmounted drive, an all-$00 disk ROM and an empty directory
+all produce ([[gate-whose-answer-is-an-error-passes-a-dead-subject]] — 8/8 on a
+dead disk ROM), and `lfl-ctlf` does **not** close it because it mounts the other
+image. `lfl-emptyctl` is the control on *this* image: it `SAVE`s a program to the
+empty volume and lists the result, so the row asserts the positive text
+`CTL     .BAS` and a machine that could not mount or write cannot satisfy it. It
+passes on **both** sides, which is what licenses reading the other three rows.
+
+⚠️ And `lfl-emptyp` is the second instance of the blindness §4.1 records for
+`lfl-none`: the printer log is empty on the reference **and** on the pre-fix
+zerobas, because R-LF4's message resolves through `raise_error` to the SCREEN and
+not through the listing's sink. `lfl-emptypb` is the row that can see it.
 
 🔴 **R-LF1 is the rule that costs bytes.** `ex_files`
 ([`basic/files.asm`](../basic/files.asm)) is main-ROM and packs three columns; a
