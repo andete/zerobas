@@ -4723,7 +4723,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       sub-ROM tenant** (`sub p0, 3843 B free`). ⚠️ **Not yet priced in bytes** —
       no carve scout has been run, and a filed cost line is a claim
       [[filed-justification-is-a-claim]].
-      Scout rows + apparatus: this entry; not committed (a scratchpad scout).
+      📏 **CHARACTERIZED 2026-08-07, 24 rows x 3 sides**, committed as
+      `probes/basic/basic_probe_readvar.py` (`make readvar-characterize`),
+      table in [`docs/readvar-msx1-characterization.md`](docs/readvar-msx1-characterization.md),
+      spec in [`docs/spec-basic-readvar.md`](docs/spec-basic-readvar.md).
+      **Both references agree on all 24** (0 rows without an oracle);
+      zerobas agrees on 2 (`a.one` the control, `a.defint`). **22
+      divergences: 21 refusals and ONE OVER-ACCEPTANCE.**
+      🔴 **`c.strnum` POINTS THE OTHER WAY and the residual never mentioned
+      it**: `DATA HELLO` / `READ A` is a **Syntax error** on both
+      references, and zerobas answers ` 0 ` — `data_parse_int` parses no
+      digits, yields 0 and stores it silently. Re-routing the target parse
+      does NOT touch this row; it is separate work in the DATA engine, and
+      a fix that closed the other 21 would leave the quiet wrong answer.
+      🔴 **`b.trailsp`: trailing spaces are PRESERVED** (`DATA PAD  ,X` ->
+      `'PAD  '`) while LEADING ones are stripped. The symmetric rule is the
+      obvious one and it is wrong on both references — an implementation
+      written from `b.leadsp` alone would have been plausible and
+      divergent, and no numeric row could ever have caught it. The row
+      exists because the denominator was re-read for what it had not
+      ASKED (22 rows -> 24), not because a defect was suspected.
+      ⚠️ **`readvar-characterize` is deliberately NOT an acceptance gate**:
+      22 of 24 rows are red until the fix lands, and a row that can only
+      ever be red is doc debt, not a gate. `readvar-acceptance` ships WITH
+      the fix, gating 22 of 24 with `a.ary`/`a.arystr` printed as deferred.
       🔴 The scout's own first readout was **blind to its subject** — it scanned
       the whole screen, so when zerobas printed no output the `[` inside the ECHO
       of `30 PRINT"[";A$;"]"` matched and every zerobas row read `'";A$;"'`, an

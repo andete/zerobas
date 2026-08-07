@@ -1694,6 +1694,25 @@ preflight-check:
 rowshape-check:
 	python3 tools/check_report_shape.py $(if $(LIST),--list,)
 
+# --- READ target surface, CHARACTERIZATION (docs/spec-basic-readvar.md) -------
+# 24 rows on three sides. `TODO.md` filed ONE face -- "zerobas has no string
+# READ" -- but `ex_read` consumes a bare letter and stores through the
+# SINGLE-LETTER int16 shim, while every other variable reference in the tree uses
+# var_name_key (whole name + type suffix). Measured 2026-08-07: both references
+# agree on all 24 rows, zerobas agrees on 2, so 22 divergences -- 21 refusals and
+# ONE OVER-ACCEPTANCE (`DATA HELLO` / `READ A` is a Syntax error on both
+# references; zerobas silently stores 0).
+#
+# ⚠️ THIS IS DELIBERATELY *NOT* AN ACCEPTANCE GATE YET. 22 of its 24 rows are red
+# until the fix lands, and a row that can only ever be red is doc debt, not a
+# gate. `readvar-acceptance` (the --gate form) ships WITH the fix; until then
+# this target characterises and the table lives in
+# docs/readvar-msx1-characterization.md.
+#   make readvar-characterize ONLY=b.trailsp,b.qspace   # scope to rows
+readvar-characterize: repack-machine
+	python3 probes/basic/basic_probe_readvar.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
