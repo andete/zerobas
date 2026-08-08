@@ -65,12 +65,23 @@ def run_prog_cap(m, lines):
 
 
 def var(m, name):
-    # ⚠️ var_get, NOT var_get_key: var_get_key walks the fixed VARTAB pool, the
+    # ⚠️ for_get, NOT var_get_key: var_get_key walks the fixed VARTAB pool, the
     # LEAN build's int-only store. On the shipped image scalars live in the
     # contiguous chain the ARY sub-ROM tenant manages, so var_get_key reads back 0
     # for everything a program set. This test ran on the lean build until S3
     # (docs/spec-lean-retire-s3-gates.md §5, F-U) and so never noticed.
-    return m.call("var_get", a=ord(name)).de
+    # ⚠️ AND IT TAKES A KEY, NOT A LETTER, SINCE D-FORVAR: the FOR frame carries
+    # the loop variable's whole identity as [name1][name0][type] (the order
+    # `LD (nn),BC` lays BC down in, so name0 is at +1). Type from DEFTBL, not
+    # hardcoded -- the retired shim looked it up, and a hardcoded 8 would lie
+    # under DEFINT. docs/spec-basic-forvar.md §4.5.
+    s = m.sym
+    letter = ord(name.upper())
+    m.poke(s["FOR_CUR"], 0)                     # name1: a single-char name
+    m.poke(s["FOR_CUR"] + 1, letter)            # name0
+    m.poke(s["FOR_CUR"] + 2,
+           m.peek(s["DEFTBL"] + letter - ord("A"))[0])
+    return m.call("for_get").de
 
 
 def run():

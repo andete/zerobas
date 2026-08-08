@@ -581,10 +581,13 @@ duplicating (and drifting from) what is written below.
       on the row set that existed before the knives were written it would have
       reddened **none** — the gate would have shipped unable to tell `ARY_TYPE`
       from `VARTYPE`.
-      ➡️ **Still open below:** `ex_for`'s single-letter name shim, the
-      `ex_let_arr_str` string-space finding, and the four further lvalue parse
-      sites — which are **no longer unmeasured**: all four diverge, measured
-      2026-08-08, [`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md).
+      ➡️ **Still open below:** the `ex_let_arr_str` string-space finding, and the
+      four further lvalue parse sites — which are **no longer unmeasured**: all
+      four diverge, measured 2026-08-08,
+      [`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md).
+      ✅ **`ex_for`'s single-letter name shim CLOSED 2026-08-08 by D-FORVAR**
+      ([`docs/spec-basic-forvar.md`](docs/spec-basic-forvar.md)) — and it left
+      one row of its own behind: the multi-variable `NEXT`, filed below.
       📄 **The pre-fix filing is NOT archived here.** It ran to 50 lines and this
       section is the PICKUP LIST -- a closed item's superseded text is doc debt in
       it. Everything it said is in the two documents linked above, which are the
@@ -793,27 +796,86 @@ duplicating (and drifting from) what is written below.
       verbatim at `76685e9`; the 2×2 argument it carried is
       [`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md)
       §3, which is the record.
-- [ ] 🔴 **`ex_for` STILL PARSES ITS LOOP VARIABLE WITH THE SINGLE-LETTER SHIM
-      `ex_read` STOPPED USING — D-READVAR's own defect, in a verb that slice
-      never re-checked.** Measured 2026-08-08 by the D-ARYLV scout,
-      `make arylv-characterize`, both references agreeing:
+- [x] ✅ **`ex_for`'s SINGLE-LETTER LOOP-VARIABLE SHIM — CLOSED 2026-08-08 by
+      D-FORVAR**, [`docs/spec-basic-forvar.md`](docs/spec-basic-forvar.md),
+      measured in
+      [`docs/forvar-msx1-characterization.md`](docs/forvar-msx1-characterization.md),
+      gated by `make forvar-acceptance` at **31/31 on three sides**, with
+      **BOTH references agreeing on all 33 rows** — a stronger oracle than the
+      whole lvalue/FIELD arc, which rested on the CF-3300 alone.
+      `make arylv-acceptance` **16/16 → 18/18**: `f.two` and `f.pct` were
+      deferred there *for this slice* and are now ordinary scored rows.
+      🔴 **THREE READINGS WERE NOT A RULE, AND FOUR OF THE 33 DECIDED THE
+      DESIGN** — none of them inferable from the filed rows:
+      `n.xtype` (`FOR A%=1 TO 3` / `NEXT A` → **NEXT without FOR**) puts the
+      resolved **TYPE** in the match key, so the frame holds
+      `(name0, name1, type)` and the compare is **three** bytes;
+      `n.prefix` (`FOR AB` / `NEXT A` → NEXT without FOR) says the shipped
+      one-char shim was not too strict but too **LOOSE**;
+      `n.strnx` (`FOR A` / `NEXT A$` → NEXT without FOR, **not** Type mismatch)
+      says a `$` NEXT name must **MISS**, not error — the obvious symmetry with
+      `FOR`'s own guard answers the wrong message, so `ex_next` gained no error
+      path at all; and `f.defstr` puts the guard on the **resolved type** rather
+      than on the `$` character.
+      Landed: a shared `for_name`, an 11-byte frame, `var_get`/`var_set` →
+      `for_get`/`for_set`, `deftbl_num_type` deleted. **+1 B of main page 1
+      (6 → 5) and the low region ends 5 B RICHER (6 → 11), NO CARVE** — 20/20
+      predicted spans and all five walls exact, because the counter was
+      calibrated 18/18 against the `.sym` first. All four ROM hashes predicted,
+      including the two that **HOLD**: `sub.rom` is byte-identical because every
+      one of its 11 imported addresses lies below the only low-region edit.
+      🎯 **WIDENING THE KEY IS WHAT PAID FOR WIDENING THE KEY** — the
+      `upcase`/`ld c,0`/`deftbl_num_type` prologue dies in both shims (−9),
+      `FOR_NEW` dies with it (−7), and `ex_for`'s bespoke `cp '$'` folds into a
+      type check the DEFtbl path needed anyway. Inlining `for_name` at both
+      sites instead of sharing it would have been **+13** against 6.
+      🔴 **`FOR_DEPTH` STAYS 8 AND THE CROWDED `$E0` PAGE GAINS 72 BYTES.**
+      8 × 11 does not fit at `$E070`, so the honest choices were "relocate" or
+      "6 nested loops instead of 8"; `f.dep8` is the green-before/green-after row
+      that makes that a measurement. The stack moved to `$EA3A` — and the comment
+      claiming that window starts at `$EA39` was **one byte stale** (D-LPTVERB
+      took `$EA39` for `LPTPOS` and never said so).
+      🔴 **THE GATE FOUND A DEFECT IN THIS SLICE'S OWN FIRST DRAFT.**
+      `LD (nn),BC` writes **C** first and `var_name_key` returns B = name0, so
+      the frame's byte 0 is **name1** — which is **0** for every single-character
+      name. The bare-`NEXT` sentinel sat on that byte, so `NEXT A` read as a bare
+      `NEXT` and took the top frame whatever its name. Every row whose top frame
+      happened to BE the right one passed anyway; only `n.xtype`, `n.prefix` and
+      `n.strnx` could see it. Fixed byte-neutrally.
+      🎯 **AND THE KNIVES DEMANDED A ROW THE GATE HAD NOT ASKED FOR.** K-FV1
+      (match on one byte) and K-FV2 (two) reddened the **identical** set, because
+      every mismatching row differed in `name1` and nothing said whether `name0`
+      was compared at all. `n.samen1` (`FOR AB` / `NEXT CB`) separates them, and
+      it exists because the cuts were drafted first.
+      9 cuts × 2 rounds, **both rounds identical**, 7 exact; the two misses are
+      findings recorded in [`docs/spec-basic-forvar.md`](docs/spec-basic-forvar.md)
+      §10.5. `f.ary` (`FOR A(1)=`) stayed `Syntax error` on all three sides
+      throughout — the negative control did its job.
+- [ ] 🔴 **`NEXT` PARSES ONLY ONE VARIABLE — `NEXT B,A` is a LIST defect,
+      MEASURED 2026-08-08 and SEPARATED from the name rule by its own row.**
+      `make forvar-characterize`, both references agreeing:
 
-      | row | both references | zerobas |
-      |---|---|---|
-      | `FOR AB=1 TO 3` / `NEXT` (`f.two`) | ` 4 ` | **Syntax error** |
-      | `FOR A%=1 TO 3` / `NEXT` (`f.pct`) | ` 4 ` | **Syntax error** |
+      | row | program | both references | zerobas |
+      |---|---|---|---|
+      | `n.multi` | `FOR AB=1 TO 2` / `FOR CD=1 TO 2` / `NEXT CD,AB` / `PRINT AB;CD` | ` 3  3 ` | **Syntax error** |
+      | `n.multi1` | `FOR A=1 TO 2` / `FOR B=1 TO 2` / `NEXT B,A` / `PRINT A;B` | ` 3  3 ` | **Syntax error** |
 
-      `ex_for` (`basic/program.asm`) takes ONE `upcase`d char into `FOR_CUR` and
-      stores through `var_set`, so any 2+ character name and any type suffix is a
-      syntax error — exactly what `exr_lp` did before D-READVAR. `ex_for` also
-      needs `NEXT`'s own `FOR_CUR` matching to move with it, which `ex_read` had
-      no equivalent of, so this is **not** a copy of D-READVAR's diff.
-      ⚠️ **This is a NAME residual, not an array one, and must not be folded into
-      D-ARYLV** — one row could not then separate the two rules
-      [[one-row-cannot-separate-two-rules]]. 🔴 **`FOR A(1)=` must keep failing**
-      (`f.ary`, measured on both references): whatever generalises the name here,
-      the array form stays a syntax error.
-      💰 Not carve-scouted. The `ex_for`/`ef_havestep` pair is 118 B of page 1.
+      🎯 **`n.multi1` IS THE PROOF, NOT THE ASSERTION.** It is the identical comma
+      with the SINGLE-LETTER names `ex_for` has always parsed, and it is still
+      `Syntax error` — so this is a LIST rule and D-FORVAR's name fix could not
+      reach it ([[one-row-cannot-separate-two-rules]]). Both rows are **measured,
+      printed and scored in NEITHER direction** by `forvar-acceptance`; a deferred
+      row that started agreeing would itself be a finding.
+      **MECHANISM:** `nx_end` (`basic/program.asm`) runs `jp exec_stmt` once its
+      frame is closed, so the `,` arrives in statement position. The loop-CONTINUES
+      path is already correct — it jumps back to the body and never sees the comma.
+      💰 Not carve-scouted, and page 1 is at **5 B**. A sketch is ≈+11 B at
+      `nx_end` (`skip_spaces` / `cp ','` / re-enter the name parse), which does
+      **not** fit without a carve. Same family as the `INPUT #n` single-target
+      residual filed above.
+      ⚠️ **`NEXT A(1)` is unmeasured** and inherits this shape rather than having
+      an answer of its own — `for_name` parses the name and the `(` then reaches
+      statement position.
 - [ ] 🔴 **`ex_let_arr_str` SWALLOWS AN OUT-OF-STRING-SPACE AND THE PROGRAM RUNS
       ON — MEASURED 2026-08-08, the claim is now a FINDING, and it is WORSE than
       filed.** Three rows × 3 sides, both references agreeing on all three:

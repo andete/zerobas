@@ -68,14 +68,28 @@ def run_program(m, lines):
 def var(m, name):
     """Integer variable `name` (single letter) -> its 16-bit value.
 
-    ⚠️ READ THROUGH var_get, NOT var_get_key. var_get_key walks the fixed VARTAB
+    ⚠️ READ THROUGH for_get, NOT var_get_key. var_get_key walks the fixed VARTAB
     pool, which is the LEAN build's int-only store; on the shipped image scalars
     live in the contiguous chain the ARY sub-ROM tenant manages, so var_get_key
     reads back 0 for every variable a program actually set. This test used to run
     on the lean build (msxtest.Machine's rom_base defaulted to $4000) and so never
-    noticed. var_get resolves the letter's default type through deftbl_lookup and
-    returns the int16 fast path in DE. docs/spec-lean-retire-s3-gates.md §5, F-U."""
-    return m.call("var_get", a=ord(name)).de
+    noticed. docs/spec-lean-retire-s3-gates.md §5, F-U.
+
+    ⚠️ AND IT TAKES A KEY, NOT A LETTER, SINCE D-FORVAR (spec-basic-forvar.md).
+    This was `var_get`, a single-letter shim that upcased its argument and asked
+    deftbl_num_type for the letter's default type. The FOR frame now carries the
+    loop variable's WHOLE identity, so the caller supplies it in FOR_CUR as
+    [name1][name0][type] -- the order `LD (nn),BC` lays BC down in, which is why
+    name0 is at +1. The type is still the letter's DEFtbl default, read from
+    DEFTBL here rather than hardcoded: that is exactly what the retired lookup
+    did, and hardcoding 8 would make this helper lie under DEFINT."""
+    s = m.sym
+    letter = ord(name.upper())
+    m.poke(s["FOR_CUR"], 0)                     # name1: a single-char name
+    m.poke(s["FOR_CUR"] + 1, letter)            # name0
+    m.poke(s["FOR_CUR"] + 2,
+           m.peek(s["DEFTBL"] + letter - ord("A"))[0])
+    return m.call("for_get").de
 
 
 def check(fails, label, got, want):

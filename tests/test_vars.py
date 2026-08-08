@@ -71,6 +71,9 @@ def run():
     # The KEYING rules under test are unchanged, so every case below asserts the
     # same property against the store the shipped build actually uses.
     TYPE_INT = 2                  # VARTYPE: 2/4/8 = int16/single/double, 1 = string
+    DEFTBL_STR = s["DEFTBL_STR"]  # the DEFtbl's STRING code (namespace P), read
+                                  # from the image rather than hardcoded: it has
+                                  # moved once already (1 -> 3, D-DEFSTR)
 
     fails = 0
 
@@ -222,33 +225,104 @@ def run():
     print(f"{'PASS' if ok_abs else 'FAIL'}  var_str_type 'AB$' → A={cpu_abs.a}, CF={int(carry(cpu_abs))}")
 
     # ==================================================================
-    # Case 8: var_get / var_set single-letter shims (used by FOR/READ).
-    # Contract: A = single-letter name; DE = value for set. Maps to key
-    # (upcase(A), 0), interoperable with var_set_key/var_get_key.
-    # Oracle: var_get/var_set header "A = name (one char). Map to key
-    # (upcased name, 0) — identical to the key a 1-char name produces via
-    # var_name_key, so single-letter variables set here are fully interoperable".
+    # Case 8: for_name / for_get / for_set — the FOR frame's loop variable.
+    # These were var_get/var_set, single-letter shims taking ONE upcased char in
+    # A. D-FORVAR (docs/spec-basic-forvar.md §4.3/§4.5) retired the shim: both
+    # references match a NEXT on the loop variable's WHOLE identity -- both
+    # significant name characters AND the resolved type (row n.xtype) -- so the
+    # key arrives whole in FOR_CUR and for_name is what parses it.
+    #
+    # 🔴 THE KEY IS [name1][name0][type], NOT [name0][name1][type]. `LD (nn),BC`
+    # writes C first and var_name_key returns B = name0, so this IS the layout --
+    # and it is asserted here rather than assumed, because the slice's first
+    # draft put the bare-NEXT sentinel on the wrong byte and only three of 33
+    # emulator rows could see it. name1 is 0 for every single-character name,
+    # which is exactly why it cannot be the byte a 0 sentinel lives in.
     # ==================================================================
+    def for_key(name0, name1, vtype):
+        m.poke(s["FOR_CUR"], name1)
+        m.poke(s["FOR_CUR"] + 1, name0)
+        m.poke(s["FOR_CUR"] + 2, vtype)
+
     reset_tables()
-    m.call("var_set", a=ord("a"), de=0x7777)   # lowercase 'a' → upcased to 'A'
-    cpu_g = m.call("var_get", a=ord("A"))
+    poke_name(m, NAMEBUF, "ab%=1")
+    cpu_fn = m.call("for_name", hl=NAMEBUF)
+    got_key = bytes(m.peek(s["FOR_CUR"], 3))
+    want_key = bytes([ord("B"), ord("A"), TYPE_INT])   # name1, name0, type
+    ok_fn = (got_key == want_key
+             and cpu_fn.hl == NAMEBUF + 3       # past "ab%", stopped at '='
+             and cpu_fn.a == TYPE_INT)
+    fails += not ok_fn
+    print(f"{'PASS' if ok_fn else 'FAIL'}  for_name 'ab%' → FOR_CUR="
+          f"{got_key.hex()} (want {want_key.hex()}: name1,name0,type), "
+          f"HL+{cpu_fn.hl - NAMEBUF}, A={cpu_fn.a}")
+
+    # A `$` name resolves to DEFTBL_STR, and THAT is what makes `NEXT A$` match no
+    # frame at all (spec §4.2). It is unit-tested here because the cell itself is
+    # what carries the rule -- a screen row can only see the consequence.
+    reset_tables()
+    poke_name(m, NAMEBUF, "a$=1")
+    cpu_fs = m.call("for_name", hl=NAMEBUF)
+    ok_fs = (cpu_fs.a == DEFTBL_STR
+             and m.peek(s["FOR_CUR"] + 2)[0] == DEFTBL_STR)
+    fails += not ok_fs
+    print(f"{'PASS' if ok_fs else 'FAIL'}  for_name 'a$' → type={cpu_fs.a} "
+          f"(want DEFTBL_STR={DEFTBL_STR}, NOT 8 — a `$` name is not a double)")
+
+    # Round-trip through the frame key, single-char name at the DEFtbl default.
+    reset_tables()
+    for_key(ord("A"), 0, 8)                    # clear_vars leaves every letter DOUBLE
+    m.call("for_set", de=0x7777)
+    cpu_g = m.call("for_get")
     ok_shim = (cpu_g.de == 0x7777)
     fails += not ok_shim
-    print(f"{'PASS' if ok_shim else 'FAIL'}  var_set/var_get shim 'a'→'A'=0x7777: DE={cpu_g.de:#06x}")
+    print(f"{'PASS' if ok_shim else 'FAIL'}  for_set/for_get round-trip "
+          f"'A'=0x7777: DE={cpu_g.de:#06x}")
 
-    # Cross-check: a keyed store and the single-letter shim see the SAME cell.
-    # ⚠️ The shim resolves its type through deftbl_lookup, so the keyed store has
-    # to use the letter's DEFAULT type or the two address different entries --
-    # var_find_typed keys on (name, TYPE), and a mismatch reads back an unset 0
-    # rather than failing loudly (vars.asm var_get header calls this out as the
-    # S3b regression). clear_vars resets every letter's default to DOUBLE (8).
+    # A 2-CHARACTER loop variable is a different cell from its first letter --
+    # the whole point of the slice, and invisible to the case above.
+    reset_tables()
+    for_key(ord("A"), ord("B"), 8)
+    m.call("for_set", de=0x1111)
+    for_key(ord("A"), 0, 8)
+    m.call("for_set", de=0x2222)
+    for_key(ord("A"), ord("B"), 8)
+    ab = m.call("for_get").de
+    for_key(ord("A"), 0, 8)
+    a1 = m.call("for_get").de
+    ok_two = (ab == 0x1111 and a1 == 0x2222)
+    fails += not ok_two
+    print(f"{'PASS' if ok_two else 'FAIL'}  'AB' and 'A' are distinct loop "
+          f"variables: AB={ab:#06x}, A={a1:#06x}")
+
+    # ...and so is the same NAME at a different TYPE, which is what n.xtype says
+    # the reference matches on.
+    reset_tables()
+    for_key(ord("A"), 0, TYPE_INT)
+    m.call("for_set", de=0x0444)
+    for_key(ord("A"), 0, 8)
+    m.call("for_set", de=0x0555)
+    for_key(ord("A"), 0, TYPE_INT)
+    ai = m.call("for_get").de
+    for_key(ord("A"), 0, 8)
+    ad = m.call("for_get").de
+    ok_typed = (ai == 0x0444 and ad == 0x0555)
+    fails += not ok_typed
+    print(f"{'PASS' if ok_typed else 'FAIL'}  'A%' and 'A#' are distinct loop "
+          f"variables: A%={ai:#06x}, A#={ad:#06x}")
+
+    # Cross-check: a keyed store and the frame key see the SAME cell.
+    # ⚠️ var_find_typed keys on (name, TYPE), so the keyed store has to use the
+    # same type or the two address different entries and the read-back is an
+    # unset 0 rather than a loud failure.
     reset_tables()
     m.poke(s["FACTYP"], 2)
     m.call("var_store_fac", b=ord("A"), c=0, a=8, de=0x3333)   # 8 = DOUBLE default
-    cpu_cross = m.call("var_get", a=ord("A"))
+    for_key(ord("A"), 0, 8)
+    cpu_cross = m.call("for_get")
     ok_cross = (cpu_cross.de == 0x3333)
     fails += not ok_cross
-    print(f"{'PASS' if ok_cross else 'FAIL'}  keyed store + var_get('A') interop: DE={cpu_cross.de:#06x}")
+    print(f"{'PASS' if ok_cross else 'FAIL'}  keyed store + for_get('A') interop: DE={cpu_cross.de:#06x}")
 
     print()
     print("ALL PASS — vars.asm scalar store + type detection" if not fails

@@ -18,7 +18,14 @@ first `RUN` they hold power-on RAM garbage; openMSX leaves $FFFF there, which is
 above both `GOSUB_STK_END` and `FOR_STK_END`, so the very first direct `FOR` or
 `GOSUB` takes the depth-overflow arm and raises ERR 7. Read them at the prompt:
 
-    PRINT PEEK(&HE043)+256*PEEK(&HE044)   -> 65535 at boot, 57456 after any RUN
+    PRINT PEEK(&HE043)+256*PEEK(&HE044)   -> 65535 at boot, 59962 after any RUN
+
+⚠️ THAT SECOND NUMBER WAS 57456 ($E070) UNTIL 2026-08-08. D-FORVAR
+(docs/spec-basic-forvar.md §4.6) widened the FOR frame to 11 bytes for the loop
+variable's whole identity, which no longer fits below DATASTATE, so FOR_STK moved
+to $EA3A (59962) and FOR_DEPTH stayed 8. Nothing in the tree hardcodes the
+address -- clear_vars resets FSP through the SYMBOL -- so this docstring was the
+only place it was written down.
 
 ⚠️ THIS MATRIX IS BOOT-PER-CASE BY DEFAULT AND MUST STAY THAT WAY.
 The defect is a COLD-BOOT-STATE defect. In a batched run the first case that

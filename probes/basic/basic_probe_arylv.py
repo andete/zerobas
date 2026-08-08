@@ -145,23 +145,20 @@ CONTROL_WANT = {"c.read": " 7 ", "c.let": " 7 ", "c.for": " 4 "}
 LABEL_W = 10
 
 # --- DEFERRED rows: measured, printed, NEVER scored -------------------------
-# ⚠️ "A row that can only ever be red is doc debt, not a gate." These two belong
-# to a DIFFERENT residual: `ex_for` still parses its loop variable with the
-# single-letter shim `ex_read` stopped using at D-READVAR, so `FOR AB=` and
-# `FOR A%=` are Syntax error here and ` 4 ` on both references. That is a NAME
-# rule, not an array one, and folding it into D-ARYLV would leave no row able to
-# separate the two ([[one-row-cannot-separate-two-rules]]). They stay MEASURED
-# and PRINTED -- a deferral has to carry its evidence -- and are excluded from
-# the tally in both directions. Filed in TODO.md as its own item.
+# ✅ EMPTY SINCE 2026-08-08, AND THAT IS THE DEFERRAL BEING HONOURED RATHER THAN
+# FORGOTTEN. `f.two` and `f.pct` sat here because `ex_for` still parsed its loop
+# variable with the single-letter shim `ex_read` stopped using at D-READVAR --
+# a NAME rule, not an array one, and folding it into D-ARYLV would have left no
+# row able to separate the two ([[one-row-cannot-separate-two-rules]]).
+# D-FORVAR (docs/spec-basic-forvar.md) is that slice: it measured 33 rows on
+# three sides with BOTH references agreeing, found that NEXT matches on the
+# resolved TYPE as well as on both name characters, and closed the residual. The
+# two rows are now ordinary SCORED rows and this battery goes 16/16 -> 18/18.
 #
-# 🔴 `f.ary` IS NOT HERE, AND THAT IS THE POINT. `FOR A(1)=1 TO 3` is Syntax
-# error on BOTH references, so it is SCORED, as a NEGATIVE control: this slice
-# must not make it work, and neither may the ex_for slice that clears the two
-# rows below.
-DEFERRED = {
-    "f.two": "DEFERRED — ex_for's single-letter NAME shim, not an array target",
-    "f.pct": "DEFERRED — ex_for's single-letter NAME shim, not an array target",
-}
+# 🔴 `f.ary` WAS NEVER HERE, AND THAT IS THE POINT. `FOR A(1)=1 TO 3` is Syntax
+# error on BOTH references, so it is SCORED, as a NEGATIVE control: neither this
+# slice nor D-FORVAR may make it work. It is still green on all three sides.
+DEFERRED = {}
 
 # A row that answers one of these is NEVER agreement, however many sides answer
 # it -- two machines that both failed to print agree perfectly about nothing.

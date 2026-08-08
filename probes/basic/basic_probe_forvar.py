@@ -134,6 +134,13 @@ CASES = [
     # does not. The old shim answers the first, and nothing measured says which.
     ("n.prefix", ['FOR AB=1 TO 3', 'NEXT A', 'PRINT"[OK]"']),
     ("n.wrong",  ['FOR AB=1 TO 3', 'NEXT CD', 'PRINT"[OK]"']),
+    # 🔴 THE ROW THE KNIVES DEMANDED. n.wrong differs from the frame in BOTH
+    # name characters, and every other mismatching row differs in name1 — so
+    # nothing in the set could say whether name0 is compared at all. K-FV1
+    # (match on one byte) and K-FV2 (match on two) reddened the IDENTICAL rows
+    # for exactly that reason, which is a missing row and not a bad cut. This
+    # one holds name1 fixed at 'B' and moves ONLY name0.
+    ("n.samen1", ['FOR AB=1 TO 3', 'NEXT CB', 'PRINT"[OK]"']),
     ("n.strnx",  ['FOR A=1 TO 3', 'NEXT A$', 'PRINT"[OK]"']),
     ("n.multi",  ['FOR AB=1 TO 2', 'FOR CD=1 TO 2', 'NEXT CD,AB',
                   'PRINT"[";AB;CD;"]"']),

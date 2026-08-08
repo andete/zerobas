@@ -4,9 +4,14 @@
 `probes/basic/basic_probe_forvar.py`. Three sides: Philips VG-8020, National
 CF-3300, zerobas repack.*
 
-🎯 **BOTH REFERENCES AGREE ON ALL 32 ROWS.** `FOR`/`NEXT` is core BASIC, present
+🎯 **BOTH REFERENCES AGREE ON ALL 33 ROWS.** `FOR`/`NEXT` is core BASIC, present
 on every MSX1, so every row here has **two** independent oracles — a stronger
 footing than the whole lvalue/FIELD arc, which rested on the CF-3300 alone.
+
+⚠️ **32 of the 33 were measured BEFORE the fix; `n.samen1` was added AFTER it**,
+because a knife proved the denominator was one row short (§5). Its zerobas
+column below is therefore the post-fix reading only, marked as such — a value
+nobody measured is not a value this document may print.
 
 ---
 
@@ -31,6 +36,7 @@ footing than the whole lvalue/FIELD arc, which rested on the CF-3300 alone.
 | `n.pct` | `FOR A%=1 TO 3` / `NEXT A%` / `PRINT A%` | ` 4 ` | **Syntax error** |
 | `n.prefix` | `FOR AB=1 TO 3` / `NEXT A` / `PRINT"[OK]"` | **NEXT without FOR** | **Syntax error** |
 | `n.wrong` | `FOR AB=1 TO 3` / `NEXT CD` / `PRINT"[OK]"` | **NEXT without FOR** | **Syntax error** |
+| `n.samen1` | `FOR AB=1 TO 3` / `NEXT CB` / `PRINT"[OK]"` | **NEXT without FOR** | *(added post-fix, §5)* **NEXT without FOR** ✅ |
 | `n.strnx` | `FOR A=1 TO 3` / `NEXT A$` / `PRINT"[OK]"` | **NEXT without FOR** | **Syntax error** |
 | `n.multi` | `FOR AB=1 TO 2` / `FOR CD=1 TO 2` / `NEXT CD,AB` / `PRINT AB;CD` | ` 3  3 ` | **Syntax error** ⏸ **DEFERRED** |
 | `n.multi1` | `FOR A=1 TO 2` / `FOR B=1 TO 2` / `NEXT B,A` / `PRINT A;B` | ` 3  3 ` | **Syntax error** ⏸ **DEFERRED** |
@@ -47,7 +53,8 @@ footing than the whole lvalue/FIELD arc, which rested on the CF-3300 alone.
 | `x.numstr` | `A$="X"` / `B=1+A$` / `PRINT B` | **Type mismatch** | **` 1 `** 🔴 |
 | `x.strtop` | `A$="X"` / `B=A$` / `PRINT B` | **Type mismatch** | **Type mismatch** ✅ |
 
-**8 of 30 scored rows agree** (2 rows deferred, see §3).
+**8 of the 30 scored rows agreed** at `79f6bdb` (2 rows deferred, see §3).
+After D-FORVAR the battery is **31/31** — 33 cases, 2 deferred.
 
 ---
 
@@ -132,7 +139,23 @@ that is measured is a finding; one that is not is a regression**.
 
 ---
 
-## 5. Denominator
+## 5. 🔴 `n.samen1` — the row a KNIFE demanded, not the row set
+
+Every mismatching `NEXT` row above differs from its frame in **`name1`**:
+`n.wrong` moves both characters, `n.prefix` drops the second, `n.xtype` and
+`n.strnx` move the type. So **nothing in the battery said whether `name0` is
+compared at all** — and the knives said so out loud: K-FV1 (match on one byte)
+and K-FV2 (match on two) reddened the **identical** set.
+
+*A cut with no row of its own is a missing row, not a bad cut.* `n.samen1` holds
+`name1` fixed at `B` and moves only `name0`; both references answer **NEXT
+without FOR**, and re-running the two cuts against it separates them cleanly —
+K-FV1 reddens it, K-FV2 does not
+([[draft-the-knives-before-freezing-the-row-set]]).
+
+---
+
+## 6. Denominator
 
 **(NAME FORM: 1-char / 2-char / 3+-char / letter+digit) × (TYPE SUFFIX: none /
 `%` / `!` / `#` / `$`) × (NEXT FORM: bare / named-matching / named-mismatching /
