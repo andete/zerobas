@@ -195,21 +195,15 @@ CONTROL_WANT = {"c.for": " 4 ", "c.next": " 4 ", "c.let": " 7 "}
 NEGATIVE = ("f.ary",)
 LABEL_W = 9
 
-# --- DEFERRED rows: measured, printed, NEVER scored -------------------------
-# ⚠️ "A row that can only ever be red is doc debt, not a gate." A MULTI-VARIABLE
-# `NEXT` is a LIST rule, not a NAME rule, and `n.multi1` is the row that proves
-# it: it holds the name fixed at the single letter `ex_for` already parses and is
-# STILL `Syntax error` here against ` 3  3 ` on both references. `ex_next` runs
-# `jp exec_stmt` past a closed frame and the `,` lands in statement position.
-# Folding it in would leave no row able to separate the two rules
-# ([[one-row-cannot-separate-two-rules]]). Both stay MEASURED and PRINTED -- a
-# deferral has to carry its evidence -- and are excluded from the tally in BOTH
-# directions. Filed in TODO.md as its own residual.
-DEFERRED = {
-    "n.multi":  "DEFERRED — multi-variable NEXT is a LIST rule; see n.multi1",
-    "n.multi1": "DEFERRED — the SAME comma with a single-letter name: the "
-                "comma, not the name",
-}
+# --- DEFERRED rows: none left ------------------------------------------------
+# ✅ `n.multi` / `n.multi1` were DEFERRED here for one slice and are SCORED again
+# as of D-NXLIST (docs/spec-basic-nxlist.md), which took the multi-variable
+# `NEXT` as its own subject: `nx_end` now reads the `,` on the path where a frame
+# CLOSES and re-enters the name parse with a sentinel that makes a variable-less
+# comma match nothing. The deferral did its job -- it kept two measured rows
+# printed and honest while the NAME rule shipped without them
+# ([[one-row-cannot-separate-two-rules]]).
+DEFERRED: dict[str, str] = {}
 
 # A row that answers one of these is NEVER agreement, however many sides answer
 # it -- two machines that both failed to print agree perfectly about nothing.

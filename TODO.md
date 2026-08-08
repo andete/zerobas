@@ -851,31 +851,72 @@ duplicating (and drifting from) what is written below.
       findings recorded in [`docs/spec-basic-forvar.md`](docs/spec-basic-forvar.md)
       §10.5. `f.ary` (`FOR A(1)=`) stayed `Syntax error` on all three sides
       throughout — the negative control did its job.
-- [ ] 🔴 **`NEXT` PARSES ONLY ONE VARIABLE — `NEXT B,A` is a LIST defect,
-      MEASURED 2026-08-08 and SEPARATED from the name rule by its own row.**
-      `make forvar-characterize`, both references agreeing:
+- [x] ✅ **`NEXT` PARSES ONLY ONE VARIABLE — CLOSED 2026-08-08 by D-NXLIST**,
+      [`docs/spec-basic-nxlist.md`](docs/spec-basic-nxlist.md), measured in
+      [`docs/nxlist-msx1-characterization.md`](docs/nxlist-msx1-characterization.md)
+      at **28 rows on three sides, BOTH references agreeing on all 28**, gated by
+      `make nxlist-acceptance` at **25/25** (from 9/25) with 3 deferred, and
+      `forvar-acceptance` **31/31 → 33/33** with an empty `DEFERRED`.
+      🔴 **THE FILED SKETCH WAS RIGHT ABOUT `nx_end` AND WRONG ABOUT THE LEDGER.**
+      `nx_end` really does grow by **+8 B** — but the same 200 bytes of `ex_next`
+      carried its frame-stack bound test **twice** (`nx_find` "is the stack
+      empty?" and `nx_miss` "did the walk run out?") and its limit comparison
+      **twice** (`nx_have` / `nx_neg`). Merging both — with the frame-base
+      computation folded into the surviving subtraction, so `nx_scan` stops
+      reloading `(FSP)` — is **−22 B**. **Net −10 B: page 1 5 → 15 B**, 0 low,
+      0 sub, 0 RAM, **13/13 spans and all 4 hashes exact**, `sub.rom` and
+      `disk.rom` byte-identical. *"Does not fit without a carve"* was a claim
+      about a ledger nobody had opened ([[which-wall-binds-is-a-history-question]]).
+      🎯 **THE LIST STATE IS THE BARE-`NEXT` SENTINEL'S VALUE — TWO BYTES.**
+      `nx_scan` already reads `FOR_CUR+1 = 0` as *"match the top frame"* and any
+      other non-letter as *"match nothing"*, so `ex_next` parks 0 and `nx_comma`
+      parks 1. No flag, no RAM cell, no second parse head.
+      🔴 **AND THE MEASUREMENT REFUTED THE DESIGN TWICE, EACH TIME KILLING A
+      CHEAPER ONE.** Round 1 (21 rows) yielded a complete rule and a design that
+      fit. **`m.trail`** (`FOR A` / `FOR B` / `NEXT B,` → **NEXT without FOR**)
+      killed the zero-byte *"a trailing comma is a bare `NEXT`"* reading — with an
+      OUTER frame standing a bare `NEXT` would have closed it and the program
+      would have finished. ⚠️ **`m.trail1` cannot say that**: its stack is empty
+      at the comma, so both rules predict the same answer, and K-NL4 confirms it
+      stays GREEN under its own knife. Then **`m.trailnum`** (`NEXT B,1` →
+      **Syntax error**, not ERR 1) killed the replacement, and forced the fix onto
+      `nx_notletter`'s *existing* terminator/not-a-name split — which is what made
+      it two bytes instead of thirteen.
+      🎯 **`n.nofor` / `n.barenofor` ARE THE CARVE'S OWN ROWS.** No row in the
+      33-row D-FORVAR battery enters through `nx_find`'s bound test: every
+      mismatching row there has exactly one frame, so it errors from `nx_miss`. A
+      `NEXT` with no `FOR` **at all** is the only program that takes the other
+      entry, and the merge was unguarded until this battery existed.
+      Knives **7 cuts × 2 rounds, 7 EXACT, both rounds identical**, two of them
+      one-row (K-NL3 `m.space`, K-NL6 `m.step`). Corpus **29/29 in 14 min 52 s**.
+- [ ] 🔴 **`NEXT A(1)` — A `NEXT` OPERAND IS A FULL VARIABLE REFERENCE AND THE
+      REFERENCE EVALUATES THE SUBSCRIPT. Filed 2026-08-08 by D-NXLIST, DECLINED
+      WITH A PRICE, three rows measured on both references:**
 
       | row | program | both references | zerobas |
       |---|---|---|---|
-      | `n.multi` | `FOR AB=1 TO 2` / `FOR CD=1 TO 2` / `NEXT CD,AB` / `PRINT AB;CD` | ` 3  3 ` | **Syntax error** |
-      | `n.multi1` | `FOR A=1 TO 2` / `FOR B=1 TO 2` / `NEXT B,A` / `PRINT A;B` | ` 3  3 ` | **Syntax error** |
+      | `m.ary` | `FOR A=1 TO 2` / `NEXT A(1)` / `PRINT"[OK]"` | **NEXT without FOR** | **Syntax error** |
+      | `m.ary9` | `FOR A=1 TO 2` / `NEXT A(99)` / `PRINT"[OK]"` | **Subscript out of range** | **Syntax error** |
+      | `m.aryspc` | `FOR A=1 TO 2` / `NEXT A (1)` / `PRINT"[OK]"` | **NEXT without FOR** | **Syntax error** |
 
-      🎯 **`n.multi1` IS THE PROOF, NOT THE ASSERTION.** It is the identical comma
-      with the SINGLE-LETTER names `ex_for` has always parsed, and it is still
-      `Syntax error` — so this is a LIST rule and D-FORVAR's name fix could not
-      reach it ([[one-row-cannot-separate-two-rules]]). Both rows are **measured,
-      printed and scored in NEITHER direction** by `forvar-acceptance`; a deferred
-      row that started agreeing would itself be a finding.
-      **MECHANISM:** `nx_end` (`basic/program.asm`) runs `jp exec_stmt` once its
-      frame is closed, so the `,` arrives in statement position. The loop-CONTINUES
-      path is already correct — it jumps back to the body and never sees the comma.
-      💰 Not carve-scouted, and page 1 is at **5 B**. A sketch is ≈+11 B at
-      `nx_end` (`skip_spaces` / `cp ','` / re-enter the name parse), which does
-      **not** fit without a carve. Same family as the `INPUT #n` single-target
-      residual filed above.
-      ⚠️ **`NEXT A(1)` is unmeasured** and inherits this shape rather than having
-      an answer of its own — `for_name` parses the name and the `(` then reaches
-      statement position.
+      🎯 **`m.ary9` IS WHAT PRICED THE DECLINE, AND IT EXISTS ONLY BECAUSE THE
+      CHEAP FIX WAS COSTED FIRST.** That fix is **8 B**: after `for_name`, a `(`
+      in the cursor makes the parsed key unmatchable, `nx_scan` walks the stack
+      out and `nx_nofor` raises ERR 1 — D-FORVAR's own `n.strnx` trick, and
+      exactly `m.ary`'s answer. But 99 is outside an auto-DIMmed `0..10` and the
+      references answer **Subscript out of range**, so they run a complete
+      variable-reference parse *before* matching anything. The 8-byte fix would
+      **trade one red row for another** ([[a-priced-decline-is-a-claim-about-a-design]]),
+      and `m.aryspc` adds that the `(` is not even lexically contiguous, so the
+      test would need `skip_spaces` too.
+      **The faithful fix is an array-element reference parse in `ex_next`** — the
+      D-ARYLV / lvalue family, not the LIST family. Unpriced: it needs a subscript
+      evaluator at a site that today has none, and its own error-face rows (what
+      does `NEXT A$(1)` answer? `NEXT A(B)` with `B` unset?).
+      All three rows are **measured, printed and scored in NEITHER direction** by
+      `nxlist-acceptance`; a deferred row that started agreeing would itself be a
+      finding. 💰 Page 1 is at **15 B** after D-NXLIST, so this one is not blocked
+      on bytes — it is blocked on being a different rule.
 - [ ] 🔴 **`ex_let_arr_str` SWALLOWS AN OUT-OF-STRING-SPACE AND THE PROGRAM RUNS
       ON — MEASURED 2026-08-08, the claim is now a FINDING, and it is WORSE than
       filed.** Three rows × 3 sides, both references agreeing on all three:

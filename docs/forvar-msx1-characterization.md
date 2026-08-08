@@ -108,9 +108,20 @@ independent defect: `ex_next`'s `nx_end` runs `jp exec_stmt` once its frame is
 closed, and the `,` then arrives in statement position. Fixing the NAME cannot
 turn either row green.
 
-Both rows are **measured, printed and never scored**, in either direction — a
+Both rows were **measured, printed and never scored**, in either direction — a
 deferred row that started agreeing would itself be a finding. Filed in `TODO.md`
 as its own residual ([[one-row-cannot-separate-two-rules]]).
+
+✅ **CLOSED 2026-08-08 by D-NXLIST** ([`spec-basic-nxlist.md`](spec-basic-nxlist.md),
+measured in [`nxlist-msx1-characterization.md`](nxlist-msx1-characterization.md)
+at 28 rows on three sides). Both rows are **scored again** and
+`forvar-acceptance` reads **33/33 with an empty `DEFERRED`**. 🎯 The separation
+`n.multi1` bought was real: the fix is entirely in `nx_end`/`ex_next`'s comma
+path and touches no part of the NAME rule this document is about. ⚠️ And it took
+**three** measurement rounds — a trailing comma is not a bare `NEXT`, `NEXT B,1`
+is `Syntax error` where `NEXT B,` is `NEXT without FOR`, and `NEXT A(1)` turned
+out to be a THIRD rule (the reference evaluates the subscript) which D-NXLIST
+declined with a price.
 
 ---
 

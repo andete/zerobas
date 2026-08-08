@@ -1932,6 +1932,29 @@ forvar-acceptance: repack-machine
 	python3 probes/basic/basic_probe_forvar.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-NXLIST: NEXT takes a LIST of loop variables (docs/spec-basic-nxlist.md)
+# `nx_end` runs `jp exec_stmt` once its frame is closed, so the `,` of
+# `NEXT B,A` arrives in statement position and is Syntax error where both
+# references read ` 3  3 `. D-FORVAR measured it and DEFERRED it, because
+# `n.multi1` -- the same comma with the single-letter names `ex_for` already
+# parsed -- proves it is a LIST rule and not a NAME rule.
+# 🎯 m.count is the row for the path a fix is most likely to break: the
+# loop-CONTINUES path (`nx_again`) must NOT see the comma, and only an inner
+# body COUNT can say so.
+# 🔴 n.nofor / n.barenofor are the CARVE's rows -- the funding merges
+# nx_find's empty-stack test with nx_miss's, and no forvar row enters through
+# nx_find's.
+# 🔴 n.num is a NEGATIVE control: `NEXT 1` is Syntax error on BOTH references
+# and must STAY so.
+#   make nxlist-characterize ONLY=m.count SIDES=zb      # scope rows / sides
+nxlist-characterize: repack-machine
+	python3 probes/basic/basic_probe_nxlist.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+nxlist-acceptance: repack-machine
+	python3 probes/basic/basic_probe_nxlist.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2166,6 +2189,7 @@ clean:
         fldary-characterize fldary-acceptance \
         lrvar-characterize lrvar-acceptance \
         forvar-characterize forvar-acceptance \
+        nxlist-characterize nxlist-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

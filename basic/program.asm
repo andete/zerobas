@@ -1569,6 +1569,17 @@ ef_over:
 ; D-FORVAR: the name parse is for_name's, shared with ex_for, and the match is a
 ; THREE-byte compare against FOR_CUR[0..2] -- name0, name1 AND the resolved type.
 ;
+; D-NXLIST (docs/spec-basic-nxlist.md, 25 of 28 measured rows, BOTH references
+; agreeing on all 28): NEXT takes a comma-separated LIST, and `NEXT B,A` is
+; exactly `NEXT B : NEXT A`. nx_end reads the `,` and re-enters at nx_comma; the
+; loop-CONTINUES exit (nx_again) resumes at the frame's own body and never sees
+; it, which row m.count measures as ` 6 ` inner-body executions.
+; 🎯 THE LIST STATE IS THE SENTINEL'S VALUE, NOT A FLAG AND NOT A RAM CELL.
+; nx_scan already treats FOR_CUR+1 = 0 as "match the top frame" and any other
+; non-letter as "match nothing", so ex_next parks 0 and nx_comma parks 1 -- and
+; that one byte is the whole of `NEXT B,` being NEXT without FOR (m.trail) while
+; a bare `NEXT` takes the top frame (c.for).
+;
 ; 🎯 A `$` NEXT NAME IS NOT REJECTED HERE, AND THAT IS A MEASUREMENT.
 ; `FOR A=1 TO 3` / `NEXT A$` is NEXT without FOR on both references (row
 ; n.strnx), NOT Type mismatch -- so the symmetry with ex_for's own guard would
@@ -1577,39 +1588,66 @@ ef_over:
 ; matches nothing, walks the stack out and raises ERR 1 with no guard and no
 ; bytes spent here at all.
 ex_next:
-                inc     hl                  ; past the NEXT token
+                xor     a                   ; 0 = "a bare NEXT here matches the TOP
+                jr      nx_head             ; frame" -- the D-FORVAR sentinel
+nx_comma:
+                ; D-NXLIST: reached ONLY from nx_end, with HL on the `,` of a list.
+                ; 🔴 1 = "a bare NEXT here matches NOTHING". A trailing comma is NOT a
+                ; bare NEXT: `FOR A / FOR B / NEXT B,` is NEXT without FOR on both
+                ; references (row m.trail) even though an OUTER frame is standing and a
+                ; bare NEXT would have closed it. 1 is not 0 and is not a letter, so
+                ; nx_scan's 3-byte compare walks the whole stack out and nx_nofor
+                ; raises ERR 1 -- the measured answer, for TWO bytes and no guard.
+                ; ⚠️ m.trail1 (`FOR B / NEXT B,`) cannot say this: its stack is empty by
+                ; then, so a bare NEXT misses there too and agrees for the wrong reason.
+                ld      a,1
+nx_head:
+                ld      (FOR_CUR+1),a       ; park the sentinel; for_name overwrites it
+                inc     hl                  ; past the NEXT token (or past the `,`)
                 call    skip_spaces
                 call    is_letter
-                jr      nc,nx_notletter     ; bare NEXT (or junk -> ERR 2 below)
+                jr      nc,nx_notletter     ; no variable -- the parked sentinel stands
                 call    for_name            ; FOR_CUR[0..2] = the key being matched
                 jr      nx_find
 nx_notletter:
-                ; `NEXT 1` is ERR 2 on the reference, not "next without for" --
-                ; only a genuine BARE next (statement terminator) takes the top
-                ; frame. Measured with the rest of the trap-class family.
+                ; `NEXT 1` is ERR 2 on the reference, not "next without for" -- only a
+                ; statement TERMINATOR is a variable-less NEXT. D-NXLIST: this one test
+                ; now serves both entries, and the parked sentinel decides what a
+                ; terminator MEANS -- `NEXT` takes the top frame, `NEXT B,` matches
+                ; nothing. `NEXT B,1` lands on the same ERR 2 as `NEXT 1` (rows n.num
+                ; and m.trailnum, both references), which is why this is a shared test
+                ; and not a guard in nx_comma.
                 or      a
-                jr      z,nx_top
+                jr      z,nx_find
                 cp      COLON
                 jp      nz,stmt_error
-nx_top:
-                xor     a                   ; name0 := 0 -> match the top frame. No real
-                ld      (FOR_CUR+1),a       ; name0 can be 0 (is_letter gated the parse),
-                                            ; and it is at +1 -- see for_name's header:
-                                            ; FOR_CUR+0 is name1, which IS 0 for every
-                                            ; single-character name.
+                                            ; falls through to nx_find
 nx_find:
                 push    hl                  ; save the post-NEXT cursor
-                ld      hl,(FSP)            ; empty stack -> NEXT without FOR
-                ld      de,FOR_STK
-                or      a
-                sbc     hl,de
-                jp      z,nx_nofor
-nx_scan:
                 ld      hl,(FSP)
-                ld      de,-FOR_FRAME       ; HL = top frame base. Arithmetic, not a
-                add     hl,de               ; comparison -- the two FOR_STK bound tests
-                                            ; keep or a/sbc hl,de because there the Z
-                                            ; flag IS the result.
+                jr      nx_bound
+nx_miss:
+                pop     hl
+                ld      (FSP),hl            ; mismatch -> close this inner frame
+nx_bound:
+                ; D-NXLIST §4.3: ONE frame-stack bound test, entered from nx_find ("is
+                ; the stack empty?") and from nx_miss ("did the walk run out?"). Both
+                ; arrive with HL = FSP and both answer NEXT without FOR at zero, so the
+                ; test was written twice. The subtraction that answers it also CONTINUES
+                ; into the frame-base computation, which is why nx_scan no longer
+                ; reloads (FSP).
+                ; ⚠️ No cut can separate the two entries any more, so the ROWS do:
+                ; n.nofor / n.barenofor take nx_find's (a NEXT with no FOR at all --
+                ; a program no D-FORVAR row contains) and m.wrong / m.typex take
+                ; nx_miss's.
+                ld      de,-FOR_STK
+                add     hl,de               ; HL = FSP - FOR_STK
+                ld      a,h
+                or      l
+                jp      z,nx_nofor          ; ...zero -> no frame left at all
+                ld      de,FOR_STK-FOR_FRAME
+                add     hl,de               ; ...else HL = the top frame's base
+nx_scan:
                 ld      a,(FOR_CUR+1)       ; name0 (for_name's header: +1, not +0)
                 or      a
                 jr      z,nx_have           ; bare NEXT accepts the top frame
@@ -1623,16 +1661,7 @@ nx_cmp:                                     ; `FOR A%` / `NEXT A` is NEXT withou
                 inc     de                  ; survives to the JR below.
                 jr      nz,nx_miss
                 djnz    nx_cmp
-                pop     hl
-                jr      nx_have             ; named NEXT matches this frame
-nx_miss:
-                pop     hl
-                ld      (FSP),hl            ; mismatch -> close this inner frame
-                ld      de,FOR_STK
-                or      a
-                sbc     hl,de
-                jp      z,nx_nofor          ; ran out -> no matching FOR
-                jr      nx_scan
+                pop     hl                  ; matched -- falls through to nx_have
 nx_have:
                 push    hl                  ; save the frame base (for pop / keep)
                 ld      de,FOR_CUR          ; work on a copy of the frame
@@ -1648,15 +1677,19 @@ nx_have:
                 bit     7,h
                 pop     hl                  ; HL = stepped value (POP touches no flag)
                 jr      nz,nx_neg
-                ld      de,(FOR_CUR+3)      ; step >= 0: end when value > limit
-                call    cmp16_bits          ; 1=<, 2==, 4=>
-                cp      4
-                jr      z,nx_end
-                jr      nx_again
+                ; D-NXLIST §4.4: the two arms differ ONLY in which cmp16_bits verdict
+                ; ends the loop, and cmp16_bits touches A, HL, DE and the flags and
+                ; nothing else -- so the verdict rides in B and the limit load and the
+                ; call are written once. Row m.step (`FOR A=3 TO 1 STEP -1` inside a
+                ; list) is what guards the negative arm in THIS battery.
+                ld      b,4                 ; step >= 0: end when value > limit
+                jr      nx_limit
 nx_neg:
-                ld      de,(FOR_CUR+3)      ; step < 0: end when value < limit
-                call    cmp16_bits
-                cp      1
+                ld      b,1                 ; step <  0: end when value < limit
+nx_limit:
+                ld      de,(FOR_CUR+3)      ; the limit
+                call    cmp16_bits          ; 1=<, 2==, 4=>
+                cp      b
                 jr      z,nx_end
 nx_again:
                 pop     hl                  ; frame stays on the stack
@@ -1672,6 +1705,16 @@ nx_end:
                 pop     hl                  ; frame base -> pop the frame
                 ld      (FSP),hl
                 pop     hl                  ; restore the post-NEXT cursor
+                ; D-NXLIST: `NEXT B,A` is `NEXT B : NEXT A`, and THIS is the only path
+                ; that may read the comma. The loop-CONTINUES exit (nx_again) resumes at
+                ; the frame's own body and never reaches the terminator, which is what
+                ; makes the rest of the list invisible while the inner loop runs -- row
+                ; m.count reads 3x2 = ` 6 ` inner-body executions and is the only row
+                ; that can see a comma test placed one fork too early.
+                ; `call skip_spaces` is here for `NEXT B , A` (row m.space).
+                call    skip_spaces
+                cp      ','
+                jp      z,nx_comma
                 jp      exec_stmt           ; run on past NEXT
 nx_nofor:
                 pop     hl                  ; discard the saved cursor
