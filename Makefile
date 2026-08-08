@@ -1955,6 +1955,28 @@ nxlist-acceptance: repack-machine
 	python3 probes/basic/basic_probe_nxlist.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-NXARY: a NEXT operand is a full variable REFERENCE (spec-basic-nxary.md)
+# D-NXLIST measured three rows and DECLINED the fix with a price: `NEXT A(1)`
+# is NEXT without FOR but `NEXT A(99)` is Subscript out of range, so the
+# reference EVALUATES the subscript before matching anything and the cheap
+# "a `(` makes the key unmatchable" fix answers the wrong error.
+# 🎯 a.autodim is the row no DIRECT reading can take: whether the resolve
+# creates an array is a side effect on a row that ERRORS, so it traps the error
+# and then DIMs -- a created array reads `Redimensioned array`.
+# 🎯 a.str / a.pct are the TWO-NAMESPACE rows: tgt_parse takes a MODE and
+# for_name returns a TYPE CODE, and they are not the same number.
+# 🔴 f.ary is a NEGATIVE control: `FOR A(1)=` is Syntax error on BOTH
+# references, and the danger of teaching ex_next to resolve a subscript is that
+# the same reach lands in ex_for.
+#   make nxary-characterize ONLY=a.autodim SIDES=zb      # scope rows / sides
+nxary-characterize: repack-machine
+	python3 probes/basic/basic_probe_nxary.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+nxary-acceptance: repack-machine
+	python3 probes/basic/basic_probe_nxary.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2190,6 +2212,7 @@ clean:
         lrvar-characterize lrvar-acceptance \
         forvar-characterize forvar-acceptance \
         nxlist-characterize nxlist-acceptance \
+        nxary-characterize nxary-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

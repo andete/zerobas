@@ -1472,11 +1472,18 @@ ret_frame:
 ; only ex_for and nx_have write, and nx_have writes it AFTER the match -- so
 ; ex_next parks its parsed key here and nx_scan compares each frame against it
 ; in place; the ldir that follows a match rewrites the same three bytes.
+;
+; D-NXARY: for_key is the second entry point, and it costs NOTHING because
+; for_name falls into it. ex_next no longer parses with var_name_key -- it uses
+; tgt_parse, which resolves a subscript too -- but the frame-key store is the
+; same three fields either way, so the two verbs share the tail instead of the
+; head. ⚠️ ex_for must NOT switch to tgt_parse: spec-basic-nxary.md §5.2.
 for_name:
                 call    var_name_key        ; BC = key, HL past name + suffix,
-                ld      (FOR_CUR),bc        ; (VARTYPE) = the resolved type (F3/S3b:
-                ld      a,(VARTYPE)         ; the suffix, or the DEFtbl default for
-                ld      (FOR_CUR+2),a       ; name0 when there is none)
+for_key:                                    ; (VARTYPE) = the resolved type (F3/S3b:
+                ld      (FOR_CUR),bc        ; the suffix, or the DEFtbl default for
+                ld      a,(VARTYPE)         ; name0 when there is none)
+                ld      (FOR_CUR+2),a
                 ret
 
 ; --- ex_for: FOR <var> = <init> TO <limit> [STEP <step>] ---------------------
@@ -1531,29 +1538,41 @@ ex_for:
                 call    eval                ; DE = limit
                 ld      (FOR_CUR+3),de      ; frame[3..4] = limit
                 call    skip_spaces
-                cp      STEP_TOKEN         ; STEP -> $DC (optional)
-                jr      z,ef_step
+                ; D-NXARY: the default is loaded FIRST and eval overwrites it, so the
+                ; two arms stop needing a join (-2 B). `ld de,nn` touches no flag, so
+                ; the CP below still reads skip_spaces' char. Guarded in both
+                ; directions by rows that already exist: f.step (forvar, `STEP -3` ->
+                ; `-2 `) and m.step (nxlist, a negative step inside a list) take the
+                ; STEP arm, every other loop row takes the default.
                 ld      de,1                ; default step = +1
-                jr      ef_havestep
-ef_step:
+                cp      STEP_TOKEN         ; STEP -> $DC (optional)
+                jr      nz,ef_havestep
                 inc     hl
                 call    eval                ; DE = step
 ef_havestep:
                 ld      (FOR_CUR+5),de      ; frame[5..6] = step
                 ld      (FOR_CUR+9),hl      ; frame[9..10] = resume ptr (loop body)
+                push    hl                  ; D-NXARY: and it rides the stack to the
+                                            ; tail below instead of being re-loaded --
+                                            ; ldir does not touch the stack (-1 B)
                 ld      de,(CURLINE)
                 ld      (FOR_CUR+7),de      ; frame[7..8] = CURLINE
-                ld      hl,(FSP)            ; bounds: FSP must stay below FOR_STK_END
-                ld      de,FOR_STK_END
-                or      a
-                sbc     hl,de
-                jr      nc,ef_over          ; too many nested FORs
+                ; D-NXARY §4.3: the bound test used to destroy HL with `sbc hl,de` and
+                ; then re-load (FSP) into DE for the ldir. One `add` answers both --
+                ; CF is set iff FSP >= FOR_STK_END, and DE is left holding the ldir
+                ; destination (-5 B).
+                ; ⚠️ THIS IS THE SENSE OF A COMPARISON, the edit most likely to pass
+                ; every row that never reaches it: row a.dep8 (8 nested loops) is the
+                ; only one in the battery that does, and K-NA4 is its knife.
+                ld      de,(FSP)            ; the ldir destination, loaded ONCE
+                ld      hl,-FOR_STK_END
+                add     hl,de
+                jr      c,ef_over           ; too many nested FORs
                 ld      hl,FOR_CUR          ; push the FOR_FRAME-byte frame
-                ld      de,(FSP)
                 ld      bc,FOR_FRAME
                 ldir
                 ld      (FSP),de            ; advance FSP by FOR_FRAME
-                ld      hl,(FOR_CUR+9)      ; HL = loop body -> run it
+                pop     hl                  ; HL = loop body -> run it
                 jp      exec_stmt
 ef_over:
                 ld      a,$CE
@@ -1607,7 +1626,39 @@ nx_head:
                 call    skip_spaces
                 call    is_letter
                 jr      nc,nx_notletter     ; no variable -- the parked sentinel stands
-                call    for_name            ; FOR_CUR[0..2] = the key being matched
+                ; D-NXARY (docs/spec-basic-nxary.md, 21 rows, BOTH references
+                ; agreeing on all 21): a NEXT operand is an ordinary variable
+                ; REFERENCE, subscript and all. `NEXT A(1)` is NEXT without FOR but
+                ; `NEXT A(99)` is Subscript out of range, so the subscript is
+                ; EVALUATED -- and row a.autodim (trap the error, then DIM) reads
+                ; Redimensioned array on both references, so the resolve also
+                ; AUTO-DIMS. That is exactly tgt_parse's ary_op0_resolve op=0; this
+                ; is its seventh call site and ex_read has reached it from page 1
+                ; since D-ARYLV.
+                call    var_str_type        ; A = mode (0 num / 1 str); HL NOT advanced.
+                                            ; The $ arm must pick the STRING array --
+                                            ; a.stroob, and a.str agrees WITHOUT it
+                call    tgt_parse           ; BC=key, (VARTYPE)=type, (TGT_ADDR)=elem
+                jp      nz,fp_runtime_error ; Subscript out of range -- a.oob/a.rank
+                call    for_key             ; FOR_CUR[0..2] = (BC, VARTYPE)
+                ; ⚠️ AND THAT SENTENCE IS ONLY TRUE ON THE SCALAR PATH. On the array
+                ; path BC and (VARTYPE) are whatever ary_op0_resolve left behind, so
+                ; the key stored here is not the name's -- it does not matter, because
+                ; the store below makes it unmatchable either way, and it is cheaper
+                ; to call for_key unconditionally than to branch around it. K-NA2
+                ; found this: with the element test cut, `NEXT A$(1)` MATCHES a
+                ; `FOR A` frame, which the "its type is DEFTBL_STR" reasoning says is
+                ; impossible. The type is not DEFTBL_STR by then.
+                ; 🎯 AN ELEMENT MATCHES NO FRAME, AND THE TEST'S OWN ANSWER IS THE
+                ; KEY THAT SAYS SO. (TGT_ADDR) is 0 for a scalar and an array element
+                ; lives in RAM above $8000, so the high byte is 0 iff scalar -- and
+                ; when it is not, it is >= $80, which no is_letter-gated name0 can be.
+                ; Same trick as D-FORVAR's DEFTBL_STR and D-NXLIST's list sentinel:
+                ; make the key unmatchable and ERR 1 falls out with no error path.
+                ld      a,(TGT_ADDR+1)
+                or      a
+                jr      z,nx_find           ; a scalar keeps its real key
+                ld      (FOR_CUR+1),a
                 jr      nx_find
 nx_notletter:
                 ; `NEXT 1` is ERR 2 on the reference, not "next without for" -- only a

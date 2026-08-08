@@ -889,7 +889,79 @@ duplicating (and drifting from) what is written below.
       entry, and the merge was unguarded until this battery existed.
       Knives **7 cuts × 2 rounds, 7 EXACT, both rounds identical**, two of them
       one-row (K-NL3 `m.space`, K-NL6 `m.step`). Corpus **29/29 in 14 min 52 s**.
-- [ ] 🔴 **`NEXT A(1)` — A `NEXT` OPERAND IS A FULL VARIABLE REFERENCE AND THE
+- [x] ✅ **`NEXT A(1)` — CLOSED 2026-08-08 by D-NXARY**,
+      [`docs/spec-basic-nxary.md`](docs/spec-basic-nxary.md), measured in
+      [`docs/nxary-msx1-characterization.md`](docs/nxary-msx1-characterization.md)
+      at **22 rows on three sides, BOTH references agreeing on all 22**, gated by
+      `make nxary-acceptance` at **21/21** (from 6/21) with 1 deferred.
+      **+10 B of main page 1 (15 → 5 B), 0 low, 0 sub, 0 RAM**; `sub.rom` and
+      `disk.rom` byte-identical.
+      🎯 **THE EXPENSIVE PART WAS ALREADY BUILT.** `tgt_parse` (`basic/vars.asm`)
+      is the whole rule — name, suffix, subscripts, `ary_op0_resolve` op=0 — and
+      `ex_read` has reached it from page 1 since D-ARYLV. This is its **seventh**
+      call site, not a new mechanism.
+      🎯 **AND THE UNMATCHABLE KEY IS FREE, FOR THE THIRD SLICE RUNNING.**
+      `(TGT_ADDR)`'s high byte is 0 iff the target is a scalar, and when it is
+      not it is ≥ `$80` — which no `is_letter`-gated `name0` can be. So the byte
+      that ANSWERS *"is this an element?"* **is** the byte that makes the key
+      match nothing, and ERR 1 falls out with no error path. D-FORVAR did it with
+      `DEFTBL_STR`, D-NXLIST with the list sentinel
+      ([[the-existing-split-is-cheaper-than-a-new-guard]]).
+      🔴 **`a.autodim` IS THE ROW NO DIRECT READING COULD TAKE.** Whether the
+      resolve creates the array is a side effect on a row that ERRORS: trap the
+      error, then `DIM A(3)`, and both references answer **Redimensioned array**.
+      The resolve auto-DIMs, so the fix must use the auto-dimming one.
+      🔴 **AND `a.str` WAS ALREADY GREEN FOR THE WRONG REASON.** `NEXT A$(1)`
+      agreed here before the fix — D-FORVAR made a `$` name resolve to
+      `DEFTBL_STR`, a type no frame holds, so ERR 1 fell out *without the
+      subscript being looked at*. `a.stroob` (`NEXT A$(99)`) separates them.
+      Knives 5 × 2, **4 EXACT**; two misses are findings (spec §10.5(c),(d)),
+      and one of them demanded a row — **`a.strpick`**, which is what proves
+      `var_str_type` is load-bearing.
+      ⚠️ Carried out of it: the two `- [ ]` items directly below.
+- [ ] 🔴 **`NEXT A (1)` — A SPACE BEFORE THE `(`. Filed 2026-08-08 by D-NXARY,
+      DEFERRED AND *NOT* FOR SPACE.** `a.spc` reads **NEXT without FOR** on both
+      references and **Syntax error** here. `tgt_parse` (`basic/vars.asm:242`)
+      tests for the subscript with a bare `ld a,(hl)` straight after
+      `var_name_key`, so its `(` is **lexically contiguous**: `A (1)` reads as
+      the scalar `A` and ` (1)` then reaches statement position.
+      💰 **The fix is `call skip_spaces`, 3 bytes, and page 1 has 5.** The
+      blocker is EVIDENCE, not budget: `tgt_parse` has **seven** call sites —
+      `READ`, console `INPUT`, `LINE INPUT`, `MID$(…)=`, `FIELD`, `LSET`/`RSET`
+      and `files.asm` — and the change decides what `READ A (1)` and
+      `LSET A (1)=` *mean* at the six D-NXARY did not measure
+      ([[a-shared-engine-fix-must-measure-its-other-callers]]). MS-BASIC's own
+      CHRGOT skips spaces, so it is very likely right everywhere, and *very
+      likely* is what this tree does not ship.
+      ⚠️ The row is **measured, printed and scored in neither direction** by
+      `nxary-acceptance`; a deferred row that started agreeing would be a
+      finding. The work is one characterization of ~6 rows across those six
+      sites, then a 3-byte edit.
+- [ ] 🔴 **`ON ERROR GOTO 0` INSIDE A HANDLER MUST RE-RAISE THE CURRENT ERROR,
+      AND ZEROBAS RUNS ON. Filed 2026-08-08 by D-NXARY, found by a row that was
+      measuring something else.** Both references agreeing:
+
+      | program | both references | zerobas |
+      |---|---|---|
+      | `10 ON ERROR GOTO 50` / `20 FOR A=1 TO 2` / `30 NEXT A(1)` / `40 END` / `50 ON ERROR GOTO 0` / `60 DIM A(3)` / `70 PRINT"[OK]"` | **NEXT without FOR** | **`OK`** |
+
+      🎯 **THE REFERENCE NEVER REACHES LINE 60.** `ON ERROR GOTO 0` executed
+      *inside* an active handler disables trapping **and re-raises the error that
+      entered the handler**, so the program stops with the original message.
+      zerobas disarms and runs on, printing `[OK]` — an untrapped error that
+      never surfaces, the same shape as a swallowed error.
+      ⚠️ **This is the error-handling surface, not `FOR`/`NEXT`** — it was found
+      because D-NXARY's first `a.autodim` used that idiom to disarm before a
+      `DIM`, and the row read as a clean 3-side divergence while answering a
+      question nobody asked ([[readout-blind-to-its-own-subject]]). Recorded in
+      [`docs/nxary-msx1-characterization.md`](docs/nxary-msx1-characterization.md)
+      §3.
+      💰 Not scouted and not priced. ⚠️ Needs its own denominator first:
+      `RESUME` vs falling off the end of a handler, `ERR`/`ERL` after the
+      re-raise, and whether a *second* `ON ERROR GOTO n` inside a handler
+      re-arms rather than re-raising.
+- [x] ✅ *(superseded — the original filing, kept for its measurements)*
+      **`NEXT A(1)` — A `NEXT` OPERAND IS A FULL VARIABLE REFERENCE AND THE
       REFERENCE EVALUATES THE SUBSCRIPT. Filed 2026-08-08 by D-NXLIST, DECLINED
       WITH A PRICE, three rows measured on both references:**
 
