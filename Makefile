@@ -1801,6 +1801,31 @@ arylv-acceptance: repack-machine
 	python3 probes/basic/basic_probe_arylv.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- The four lvalue parse sites D-ARYLV did NOT measure ----------------------
+# D-ARYLV closed READ/INPUT/LINE INPUT against an array-element target and
+# recorded that its own "four parse sites" figure was a HAND-LIST: the count of
+# sites MEASURED to diverge, not of sites that parse an lvalue. Walking
+# var_name_key's callers outside vars.asm finds four more -- `INPUT #n`
+# (files.asm), `FIELD` and `LSET`/`RSET` (field.asm), `MID$(...)=`
+# (str-engine.asm, whose own header already says "array lvalues deferred").
+#
+# 🔴 SIX OF THE EIGHT ROWS HAVE ONE REFERENCE, NOT TWO. INPUT #n / FIELD / LSET
+# are Disk BASIC, and a diskless VG-8020 answers Syntax error to all of them --
+# it cannot express the question, so recording its answer would manufacture an
+# agreement out of an absent disk controller. Those rows rest on the CF-3300
+# alone, which is a WEAKER oracle than every row D-ARYLV measured, and the probe
+# prints that per row rather than saying "both references agree".
+#
+# ⚠️ MEASUREMENT ONLY, not an acceptance gate: nothing is implemented for these
+# four sites. Each site carries its own SCALAR positive control on the same
+# fixture, because a red array row otherwise has two candidate causes -- the
+# target parse, or a fixture that never mounted/opened/wrote. Controls exit 2.
+# Table: docs/lvsites-msx1-characterization.md.
+#   make lvsites-characterize ONLY=d.ary          # scope to rows
+lvsites-characterize: repack-machine
+	python3 probes/basic/basic_probe_lvsites.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2030,7 +2055,7 @@ clean:
         cassave-characterize cassave-acceptance \
         readvar-characterize readvar-acceptance \
         inputary-characterize inputary-acceptance \
-        arylv-characterize arylv-acceptance \
+        arylv-characterize arylv-acceptance lvsites-characterize \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

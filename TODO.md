@@ -582,14 +582,56 @@ duplicating (and drifting from) what is written below.
       reddened **none** — the gate would have shipped unable to tell `ARY_TYPE`
       from `VARTYPE`.
       ➡️ **Still open below:** `ex_for`'s single-letter name shim, the
-      `ex_let_arr_str` OOM claim, and the four UNMEASURED lvalue parse sites
-      (`INPUT #n`, `FIELD`, `LSET`/`RSET`, `MID$(…)=`) named in §3 of the spec.
+      `ex_let_arr_str` string-space finding, and the four further lvalue parse
+      sites — which are **no longer unmeasured**: all four diverge, measured
+      2026-08-08, [`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md).
       📄 **The pre-fix filing is NOT archived here.** It ran to 50 lines and this
       section is the PICKUP LIST -- a closed item's superseded text is doc debt in
       it. Everything it said is in the two documents linked above, which are the
       record: the scout carries the 18-row table, the four-site walk and the price;
       the spec carries the design, the forced constraints, the knives and §11
       As-built. Recoverable verbatim at `54f6e62` if it is ever wanted.
+- [ ] 🔴 **FOUR MORE LVALUE PARSE SITES REFUSE AN ARRAY ELEMENT — ALL FOUR
+      MEASURED 2026-08-08, ALL FOUR DIVERGE.** D-ARYLV fixed `READ`/`INPUT`/
+      `LINE INPUT` and recorded that its own "four parse sites" was a HAND-LIST.
+      The walk's other four are now measured, 10 rows,
+      [`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md),
+      `make lvsites-characterize`:
+
+      | site | statement | reference | zerobas |
+      |---|---|---|---|
+      | `ex_mid_stmt` (`basic/str-engine.asm:957`) | `MID$(A$(1),1,2)="XY"` | `XYLLO` (**2 refs**) | **Syntax error** |
+      | `inp_readvar` (`basic/files.asm:702`) | `INPUT#1,A$(1)` | `HI` | **Syntax error** |
+      | `ex_field` (`basic/field.asm:194`) | `FIELD#1,10 AS A$(1)` | `OK` | **Syntax error** |
+      | `lrset_common` (`basic/field.asm:283`) | `FIELD#1,10 AS A$` / `LSET A$(1)="HI"` | `HI        ` | **Syntax error** |
+
+      All four are the SAME shape D-ARYLV fixed — `var_str_type` → `var_name_key`
+      → use the KEY, no `(` peek — so `tgt_parse` (`basic/vars.asm`) is the fix,
+      already shipped and already shared by four other sites.
+      🎯 **`FIELD` was the genuinely unobvious one.** A FIELD target is a buffer
+      ALIAS, not a value, so refusing arrays would have been defensible language
+      design. It is accepted. (`MID$=`'s own header already conceded its half in
+      writing — *"array lvalues deferred"* — so that gap was known and unpriced.)
+      🔴 **8 OF THE 10 ROWS HAVE ONE REFERENCE, NOT TWO** — `INPUT #n`/`FIELD`/
+      `LSET` are Disk BASIC and a diskless VG-8020 cannot express the question.
+      That is a **weaker oracle than every row D-ARYLV had**, and a slice acting
+      on these rows inherits it. Only the `MID$` rows have two.
+      💰 **NOT carve-scouted, and it cannot be assumed to fit**: main page 1 is at
+      **49 B** after D-ARYLV. `tgt_parse` already exists, so the cost is per-site
+      (a call + an abort + a store swap), but four sites against 49 B is a scout
+      question. ⚠️ Numeric `INPUT #n` cannot be measured at all until the
+      *"numeric INPUT# = Phase 3"* stub goes; `RSET` and `LINE INPUT #n` share
+      their parse sites with rows above and are not separately measured.
+- [ ] 🔴 **`LSET`/`RSET` ON A NON-FIELDED VARIABLE IS `Syntax error` — a
+      documented limit, MEASURED for the first time 2026-08-08.** `LSET A$="HI"`
+      with `A$="XXXXX"` and no `FIELD` reads `HI   ` on the CF-3300 and is
+      `Syntax error` here (`s.ctl`). `lrset_notfld` (`basic/field.asm`) is a bare
+      `jp stmt_error` commented *"slice-1 limit"*. ONE reference (Disk BASIC).
+      ⚠️ **This is NOT the array residual above and must not be folded into it** —
+      the FIELDed arm (`s.fld`) is GREEN on zerobas, which is what makes the
+      array row beside it (`s.fldary`) real evidence about the subscript. A pair
+      of rows would have filed *"the array question is unanswerable at this
+      site"*, which the 2×2 shows is wrong.
 - [ ] 🔴 **`ex_for` STILL PARSES ITS LOOP VARIABLE WITH THE SINGLE-LETTER SHIM
       `ex_read` STOPPED USING — D-READVAR's own defect, in a verb that slice
       never re-checked.** Measured 2026-08-08 by the D-ARYLV scout,
