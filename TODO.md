@@ -558,43 +558,85 @@ duplicating (and drifting from) what is written below.
       21 refusals, in the DATA engine, not in the target parse.
       ➡️ **The array face is re-filed below as its own item, with its price.**
 - [ ] **AN ARRAY ELEMENT IS NOT ACCEPTABLE AS AN LVALUE TARGET TO `READ` OR
-      `INPUT` — 6 divergent rows across TWO verbs and FOUR parse sites.**
-      D-READVAR deferred `READ A(1)` / `READ A$(1)` (the **2 of 24** rows
-      `readvar-acceptance` prints as `....`, excluded from its tally in BOTH
-      directions). They need `ex_let`'s array **lvalue** path (`ary_op0_resolve` /
-      `ary_store_write`, `basic/arrays.asm:773/721`), because `var_name_key`
-      parses a name and a type suffix and **never a subscript**.
-      📏 **MEASURED 2026-08-08 — `INPUT` DIVERGES TOO, AND ON ALL THREE OF ITS
-      ARMS.** `probes/basic/basic_probe_inputary.py`
-      (`make inputary-characterize`), 7 rows x 3 sides, **both references agree on
-      all 7**, table in
-      [`docs/inputary-msx1-characterization.md`](docs/inputary-msx1-characterization.md):
+      `INPUT` — 18 divergent rows, TWO verbs, FOUR parse sites. ✅ SCOUTED AND
+      SPEC'D 2026-08-08: GO, +77 B page 1 / −7 B low, NO CARVE, ONE SLICE.**
+      Spec: [`docs/spec-basic-arylv.md`](docs/spec-basic-arylv.md). Measurement:
+      [`docs/arylv-msx1-scout.md`](docs/arylv-msx1-scout.md),
+      `make arylv-characterize` — **18 rows x 3 sides, both references agreeing
+      on all 18, 0 rows without an oracle** — on top of the 6 rows already filed
+      by `readvar` / `inputary`. `var_name_key` parses a name and a type suffix
+      and **never a subscript**; the fix is `ex_let`/`SWAP`'s existing lvalue path
+      (`ary_op0_resolve` / `ary_store_write`).
+      💰 **PRICE — CARVE-SCOUTED, AND THE OLD ~25…40 B BOUND IS RETIRED.**
+      Three page-1 helpers in `basic/vars.asm` (`tgt_parse` 32 B,
+      `tgt_store_num` 24 B, `tgt_store_str` 30 B) minus 12 B the page-1 site
+      gives back = **+77 B against 126 B free**. 🎯 **AND THE LOW REGION GAINS
+      7 B (3 → ≈10).** `basic/input.asm` — three of the four sites — is the LOW
+      region, **3 B free**, which is the wall the old bound never named; putting
+      the shared code in page 1 makes all three low sites *shorter than the
+      sequences they replace*. +2 B RAM (`TGT_ADDR` `$E555`, the `RDV_*`/`DRAW`
+      aliasing window). A bound, not a measured cost — but the hand-counter was
+      calibrated against **313 B of the very routines the change edits, 8/8
+      exact** [[filed-justification-is-a-claim]].
+      🎯 **THE FIX ALREADY EXISTS IN THIS TREE, TWICE.** `A(1)=7` works (`c.let`)
+      and `SWAP A,Q(0)` works; `sw_operand`/`sw_array` (`basic/missing.asm`) is
+      the shape to copy and its own header already records `SWAP A,Q(9)` →
+      *Subscript out of range*, which is `r.aryoor`'s oracle. So every red row is
+      a missing **parse**, not a missing store — an inconsistency between verbs,
+      not a missing capability.
+      🔴 **`FOR` IS NOT A FIFTH ARRAY SITE — MEASURED.** `FOR A(1)=1 TO 3` is
+      `Syntax error` on **both references** (`f.ary`), so `ex_for` must keep
+      refusing it; the row is carried as a **negative control** and a pin. The
+      claim rests on the reference column alone — zerobas says `Syntax error` to
+      everything here [[gate-whose-answer-is-an-error-passes-a-dead-subject]].
+      🔴 **WHAT THE SIX FILED ROWS COULD NOT SAY.** All six use the literal
+      `A(1)`. Both references also take `A(I)`, `A(1+1)`, `A(1,2)`, `A%(I)`,
+      `A$(I)`, the array at **either** end of a mixed list, and answer
+      *Subscript out of range* — not *Syntax error* — to `A(9)`. A fix that
+      special-cases a literal subscript, one index, or routes the resolve failure
+      to `stmt_error` is measurably wrong, and only the error row can catch the
+      last one (its wrong answer is what the tree already says).
+      🔴 **"FOUR PARSE SITES" WAS A HAND-LIST.** It is the count of sites
+      MEASURED to diverge. Walking `var_name_key`'s callers finds four more
+      lvalue-shaped ones this scout did **not** measure — `INPUT #n`
+      (`basic/files.asm:702`), `FIELD` and `LSET`/`RSET` (`basic/field.asm:194`,
+      `:283`), `MID$(…)=` (`basic/str-engine.asm:957`, whose header already says
+      *"array lvalues deferred"*). Each needs a file/`FIELD` fixture, not a bare
+      boot [[a-hand-listed-denominator-is-a-scope-claim]].
+      ➡️ **Gate after the fix: `arylv-acceptance` 16/16 + 2 deferred**
+      (`f.two`/`f.pct` belong to the `ex_for` residual below), `readvar-acceptance`
+      **24/24 with 0 deferred**, `inputary-characterize` 7/7 and promotable.
+- [ ] 🔴 **`ex_for` STILL PARSES ITS LOOP VARIABLE WITH THE SINGLE-LETTER SHIM
+      `ex_read` STOPPED USING — D-READVAR's own defect, in a verb that slice
+      never re-checked.** Measured 2026-08-08 by the D-ARYLV scout,
+      `make arylv-characterize`, both references agreeing:
 
       | row | both references | zerobas |
       |---|---|---|
-      | `INPUT A(1)` | ` 7 ` | **Syntax error** |
-      | `INPUT A$(1)` | `HI` | **Syntax error** |
-      | `LINE INPUT A$(1)` | `HI` | **Syntax error** |
-      | `INPUT A(1)` with **no `DIM`** | ` 7 ` | **Syntax error** |
+      | `FOR AB=1 TO 3` / `NEXT` (`f.two`) | ` 4 ` | **Syntax error** |
+      | `FOR A%=1 TO 3` / `NEXT` (`f.pct`) | ` 4 ` | **Syntax error** |
 
-      🔴 **FOUR PARSE SITES, NOT ONE.** `basic/input.asm` parses its target in
-      **three** separate places — `inpc_vloop` (numeric), `inpc_vstr` (string) and
-      `inpc_line` (`LINE INPUT` re-parses its own) — and all three diverge, plus
-      `ex_read`'s. The D-READVAR price was written against one.
-      🎯 **THE unDIMmed ROW NAMES THE CAUSE.** An MSX auto-dimensions to 10 on
-      first reference and both references read ` 7 ` there, so the refusal is in
-      the **PARSE**, not a complaint about a missing array — the same root cause
-      as `READ`'s, which is why ONE lvalue path closes all six rows.
-      💰 **PRICE — NOT carve-scouted, and the earlier bound is now known to be
-      short.** D-READVAR filed ~25…40 B of main page 1 against **126 B free**,
-      written for ONE site; at four sites a shared helper plus four call sites is
-      plainly more, and how much more depends entirely on whether the four can
-      share one head. **That is a scout question, not an arithmetic one**
-      (`python3 tools/carve_scout.py build/basic-reloc.sym --files
-      basic/program.asm`, 2375 B of reservoir). A filed cost is a claim
-      [[filed-justification-is-a-claim]] — do not quote the 25…40 back.
-      ✅ **The value rose with the price**: one lvalue path, reused four times,
-      closes **six** measured divergences instead of two.
+      `ex_for` (`basic/program.asm`) takes ONE `upcase`d char into `FOR_CUR` and
+      stores through `var_set`, so any 2+ character name and any type suffix is a
+      syntax error — exactly what `exr_lp` did before D-READVAR. `ex_for` also
+      needs `NEXT`'s own `FOR_CUR` matching to move with it, which `ex_read` had
+      no equivalent of, so this is **not** a copy of D-READVAR's diff.
+      ⚠️ **This is a NAME residual, not an array one, and must not be folded into
+      D-ARYLV** — one row could not then separate the two rules
+      [[one-row-cannot-separate-two-rules]]. 🔴 **`FOR A(1)=` must keep failing**
+      (`f.ary`, measured on both references): whatever generalises the name here,
+      the array form stays a syntax error.
+      💰 Not carve-scouted. The `ex_for`/`ef_havestep` pair is 118 B of page 1.
+- [ ] ⚠️ **`ex_let_arr_str` may SWALLOW an out-of-memory — READ FROM THE SOURCE,
+      NOT MEASURED.** Its `call ary_engine_call` is followed by `pop hl` /
+      `jp exec_stmt` with no `FPERR` check, under a comment reading *"always Z
+      (op=3 cannot fail)"* — which `aeng_copy_str`'s own header (`sub/arrays.asm`)
+      contradicts in as many words (*"UNLIKE slice-3 … this now CAN fail"*,
+      `ARY_ERR=4` on `heap_alloc` OOM), and `exec_stmt` clears `FPERR` at the next
+      statement. If so, `A$(1)=<a big string>` under a tight `CLEAR` prints
+      nothing and stores nothing. **A claim, not a finding** — it needs one probe
+      row before it is worth a byte. Found by the D-ARYLV scout while reading the
+      tail it copies.
 
 **Own-design hazards carried out of closed slices**
 

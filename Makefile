@@ -1754,6 +1754,33 @@ inputary-characterize: repack-machine
 	python3 probes/basic/basic_probe_inputary.py \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-ARYLV CARVE SCOUT: how WIDE is the array-lvalue target surface? --------
+# inputary-characterize established the CLASS (6 divergent rows, two verbs, four
+# parse sites). Every one of those rows is the literal form `A(1)`, so they say
+# nothing about the subscript FORM (`A(I)`, `A(1+1)`), the RANK (`A(1,2)`), the
+# POSITION in the variable list (`READ A(1),B` vs `READ B,A(1)`), or the one row
+# whose reference answer should be an ERROR rather than a value (`A(9)` against
+# `DIM A(3)`) -- and a fix scoped to the rows that happened to be measured is a
+# fix scoped to a hand-picked denominator.
+#
+# 🔴 IT ALSO ASKS ABOUT `FOR`, which no row in the class ever did. `ex_for`
+# (basic/program.asm) still parses its loop variable with the SINGLE-LETTER shim
+# `ex_read` stopped using at D-READVAR, so `FOR A(1)=`, `FOR AB=` and `FOR A%=`
+# all fail to parse here. Whether they DIVERGE decides whether the array work has
+# four parse sites or five -- and whether `FOR` is an array residual at all, or a
+# re-run of D-READVAR's own name class in a verb nobody re-checked.
+#
+# ⚠️ DELIBERATELY NOT AN ACCEPTANCE GATE, same disposition as
+# inputary-characterize: rows that can only ever be red until the work lands are
+# doc debt, not a gate. The 3 controls ARE gating -- c.let (`A(1)=7`) in
+# particular, because it is what says the element-address MACHINERY is present,
+# so every red row is a missing PARSE and not a missing store. Controls exit 2.
+# Table: docs/arylv-msx1-scout.md.
+#   make arylv-characterize ONLY=f.ary            # scope to rows
+arylv-characterize: repack-machine
+	python3 probes/basic/basic_probe_arylv.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -1982,6 +2009,7 @@ clean:
         castail-characterize castail-acceptance \
         cassave-characterize cassave-acceptance \
         readvar-characterize readvar-acceptance inputary-characterize \
+        arylv-characterize \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean
