@@ -611,16 +611,38 @@ duplicating (and drifting from) what is written below.
       (`f.ary`, measured on both references): whatever generalises the name here,
       the array form stays a syntax error.
       💰 Not carve-scouted. The `ex_for`/`ef_havestep` pair is 118 B of page 1.
-- [ ] ⚠️ **`ex_let_arr_str` may SWALLOW an out-of-memory — READ FROM THE SOURCE,
-      NOT MEASURED.** Its `call ary_engine_call` is followed by `pop hl` /
-      `jp exec_stmt` with no `FPERR` check, under a comment reading *"always Z
-      (op=3 cannot fail)"* — which `aeng_copy_str`'s own header (`sub/arrays.asm`)
-      contradicts in as many words (*"UNLIKE slice-3 … this now CAN fail"*,
-      `ARY_ERR=4` on `heap_alloc` OOM), and `exec_stmt` clears `FPERR` at the next
-      statement. If so, `A$(1)=<a big string>` under a tight `CLEAR` prints
-      nothing and stores nothing. **A claim, not a finding** — it needs one probe
-      row before it is worth a byte. Found by the D-ARYLV scout while reading the
-      tail it copies.
+- [ ] 🔴 **`ex_let_arr_str` SWALLOWS AN OUT-OF-STRING-SPACE AND THE PROGRAM RUNS
+      ON — MEASURED 2026-08-08, the claim is now a FINDING, and it is WORSE than
+      filed.** Three rows × 3 sides, both references agreeing on all three:
+
+      | row | program | both references | zerobas |
+      |---|---|---|---|
+      | `s.ctl` | `CLEAR 200` / `DIM A$(5)` / `B$=STRING$(25,"A")` / `A$(1)=B$` / `PRINT LEN(A$(1))` | ` 25 ` | ` 25 ` 🟢 **control** |
+      | `s.aryoom` | `CLEAR 60` / `DIM A$(5)` / `B$=STRING$(25,"A")` / `A$(1)=B$` / `A$(2)=B$` / `PRINT"[OK]"` | **Out of string space** | **`OK`** 🔴 |
+      | `s.scalar` | `CLEAR 60` / `B$=STRING$(25,"A")` / `C$=B$` / `D$=B$` / `PRINT"[OK]"` | **Out of string space** | **Out of string space** ✅ |
+
+      🔴 **NOT "prints nothing and stores nothing" — the program CONTINUES.**
+      `[OK]` is printed by the line AFTER the failed store, so the error is not
+      merely unreported: execution carries on with the array element unwritten.
+      🎯 **`s.scalar` IS WHAT MAKES IT A FINDING.** zerobas gets the SCALAR store's
+      pool exhaustion exactly right, so this is specific to the ARRAY-ELEMENT
+      store — not "zerobas has no string-space error", which one row could not
+      have separated [[one-row-cannot-separate-two-rules]].
+      🔴 **AND THE OBVIOUS FIX IS WRONG, WHICH THE SOURCE READING DID NOT
+      PREDICT.** Adding the missing `FPERR` check raises `ARY_ERR=4` → (`ary_errmap`)
+      → `FPERR=6` → (`fperr_to_err`) → **ERR 7 "Out of memory"**, where both
+      references say **"Out of string space"** (ERR 14) — the wording the scalar
+      path already produces. So the 4-byte check would trade a swallowed error
+      for a WRONG MESSAGE, and score green on any gate that only asks "did it
+      error".
+      🔴 **The root is a CONFLATION in `ARY_ERR=4`**: it serves both the array
+      ALLOCATION OOM (`DIM` — genuinely ERR 7) and `aeng_copy_str`'s string-heap
+      OOM (ERR 14). They need different codes. ⚠️ The `DIM` half is **UNMEASURED**
+      — assumed ERR 7 from the language reference, not from a reading.
+      💰 Not carve-scouted. ⚠️ **Main page 1 is down to 49 B** after D-ARYLV, so
+      this one needs `tools/carve_scout.py` before a byte moves, unlike the last.
+      Spike script was scratchpad-only; the three programs above ARE the
+      reproduction. Found by the D-ARYLV scout while reading the tail it copies.
 
 **Own-design hazards carried out of closed slices**
 
