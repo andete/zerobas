@@ -9,9 +9,14 @@
 ; left/right-justified and space-padded; reading a fielded variable yields its
 ; current slice of the buffer.
 ;
-; zerobas stores string variables INLINE in STRTAB ([name0][name1][len][bytes]) —
-; it has NO MS-BASIC-style descriptor that could simply point into the record
-; buffer. So a fielded variable is recorded in a SIDE TABLE (FLD_TAB): each entry
+; zerobas stores a string variable as a [len:1][ptr:2] descriptor in the unified
+; variable chain (arrays slice-4c; an array ELEMENT slot is the identical 3-byte
+; shape) — it has NO MS-BASIC-style descriptor that a FIELD could simply re-point
+; into the record buffer, because the ptr is a string-HEAP root that the GC owns.
+; ⚠️ This header said "INLINE in STRTAB ([name0][name1][len][bytes])" until
+; D-LRVAR; that was the PRE-slice-4c layout and reading it is what made a
+; non-FIELDed LSET look like two different stores (docs/spec-basic-lrvar.md §5.1).
+; So a fielded variable is recorded in a SIDE TABLE (FLD_TAB): each entry
 ; maps a 2-char var key to a (channel, offset, width) slice. The record buffer is
 ; the channel's FSECTOR_BUF (the same 512-byte buffer the write-back cache swaps
 ; per channel, basic/files.asm §channel manager), so a field's bytes live in the
@@ -46,8 +51,10 @@
 ; reads FAT into FSECTOR_BUF and would clobber the record). fat.asm is untouched.
 ;
 ; Scope / documented divergences (PROVENANCE.md):
-;   * LSET/RSET require a FIELDed target; on a non-fielded var they error (real
-;     MSX-BASIC left-justifies into the var's current value — a Phase-3 nicety).
+;   * (closed by D-LRVAR 2026-08-08) LSET/RSET no longer require a FIELDed target:
+;     a non-fielded one is overwritten IN PLACE at its CURRENT length, space-padded
+;     and left/right-justified, a longer source keeping its first len(target) bytes
+;     — all measured on the CF-3300, docs/spec-basic-lrvar.md §1.
 ;   * a fielded READ takes precedence over a plain STRTAB value; assigning a fielded
 ;     name with plain LET does not "disconnect" the field (real MSX-BASIC does).
 ;   * field widths are 1..255; FIELD overflow past the record length is not checked.
@@ -368,47 +375,132 @@ lrset_common:
                 jp      nc,stmt_error
                 call    var_str_type        ; A=1 if `$`
                 or      a
-                jp      z,stmt_error        ; must be a string var
+                jp      z,type_mismatch_error
+                                            ; D-LRVAR spec §4.4: a NUMERIC target is
+                                            ; ERR 13, not ERR 2 -- measured, `A=1` /
+                                            ; `LSET A=2` is `Type mismatch` on the
+                                            ; CF-3300 and was `Syntax error` here.
+                                            ; Byte-neutral: same `jp cc,nn`.
                 call    tgt_parse_fld       ; BC = key (name, or the ARYTAB-relative
                                             ; element key -- D-FLDARY); HL advanced
                                             ; past the name + `$` + any `(subs)`
                 push    hl                  ; guard cursor across the lookup
-                call    fld_find            ; CF set -> HL -> entry
-                jr      nc,lrset_notfld
+                call    fld_find            ; CF set -> HL -> entry (BC preserved)
+                jr      nc,lrset_notfld     ; D-LRVAR: no field -> the variable's own
+                                            ; bytes, NOT an error any more
+                ; --- FIELDed arm: channel, width and DESTINATION from the entry ---
+                ; D-LRVAR §4.1(b): the store's destination cell used to hold a bare
+                ; OFFSET and the tenant added FSECTOR_BUF itself. It now holds the
+                ; ADDRESS, because the non-FIELDed arm's destination is a variable
+                ; body in an entirely different page and no offset names it. So this
+                ; arm does the addition -- 3 B here, 4 B back sub-side, and one cell
+                ; with one meaning on both arms.
+                ; ⚠️ FSECTOR_BUF is a FIXED address ($E5C0): fch_select swaps the
+                ; buffer's CONTENTS per channel, never its location, so computing the
+                ; sum here (before the select, which happens after str_eval) is safe.
+                ; ⚠️ The width is read BEFORE the address is built, because building
+                ; it needs HL and HL is the entry walk.
                 ld      a,(hl)              ; chan
-                ld      (FLD_CHAN),a
+                ld      (FLD_CHAN),a        ; non-zero: fld_find never returns a free
+                                            ; slot, so this doubles as the arm flag
                 inc     hl
                 inc     hl
                 inc     hl                  ; -> off lo
                 ld      e,(hl)
                 inc     hl
                 ld      d,(hl)              ; DE = off
-                ld      (LRSET_OFF),de
                 inc     hl
                 ld      a,(hl)              ; width
                 ld      (LRSET_W),a
+                ld      hl,FSECTOR_BUF
+                add     hl,de
+                ld      (LRSET_DEST),hl     ; = the field's first byte
+lrs_haveeq:
+                ; --- shared by BOTH arms: `=` and the whole RHS evaluation --------
+                ; 🎯 The non-FIELDed arm re-enters HERE rather than duplicating the
+                ; 19 B of `=` parse + str_eval + error tail. That sharing is where
+                ; D-LRVAR's byte budget comes from (spec §4.2).
                 pop     hl                  ; restore cursor
                 call    skip_spaces
                 cp      EQ_TOKEN            ; '='
                 jp      nz,stmt_error
                 inc     hl
                 call    skip_spaces
-                call    str_eval            ; STRPTR -> [len][bytes]; HL advanced
+                call    str_eval            ; STRPTR -> [len][ptr]; HL advanced
                 jp      nc,stmt_error       ; RHS not a string operand
                 push    hl                  ; guard cursor across select + store
                 ld      a,(FLD_CHAN)
+                or      a
+                jr      z,lrs_var           ; 0 -> non-FIELDed (spec §4.2)
                 call    fch_select          ; FSECTOR_BUF = this channel's record buffer
+                jr      lrs_store
+lrs_var:
+                ; --- non-FIELDed arm: the target's OWN bytes, in place ------------
+                ; 🔴 THIS RUNS AFTER str_eval AND THAT ORDERING IS FORCED (spec
+                ; §5.2). The target's body lives in the string heap; the RHS can
+                ; allocate a temp, an allocation can run strheap_gc, and a GC
+                ; COMPACTS bodies and rewrites every root DESCRIPTOR's ptr. The
+                ; descriptor is a GC root, the body address is not -- so the
+                ; descriptor is snapshotted before the RHS (lrset_notfld below) and
+                ; dereferenced only here.
+                ; 🎯 AND THE WIDTH IS READ FROM THE SAME DESCRIPTOR, BEFORE the
+                ; deref consumes HL. That is what makes an UNSET target safe: it
+                ; resolves to STR_EMPTY (a `db 0` in ROM) or to a [0][garbage] slot,
+                ; whose ptr points at nothing -- and a width of 0 makes the store
+                ; return before it ever uses the pointer. Measured: `LSET A$="HI"`
+                ; on a never-assigned A$ is a NO-OP on the CF-3300, not an
+                ; assignment and not an error (spec §1, n.unset/n.empty).
+                call    tgt_desc_fix        ; HL = the descriptor, corrected for any
+                                            ; ARYTAB move the RHS caused (vars.asm;
+                                            ; a scalar comes back verbatim)
+                ld      a,(hl)              ; the target's CURRENT length IS the width
+                ld      (LRSET_W),a         ; -- it never changes (measured: n.len)
+                call    pu_deref_body       ; HL = the body (main LOW region)
+                ld      (LRSET_DEST),hl
+lrs_store:
                 call    lrset_store
                 pop     hl
                 jp      exec_stmt
+; --- lrset_notfld: the target has no field -> store into the VARIABLE ---------
+; D-LRVAR (docs/spec-basic-lrvar.md). Until this slice this was a bare
+; `jp stmt_error` commented "slice-1 limit" -- measured 2026-08-08 as the last two
+; red rows of docs/lvsites-msx1-characterization.md.
+;
+; 🎯 NO STORE ENGINE IS WRITTEN. The measured rule is "overwrite the target's
+; CURRENT bytes in place, space-padded to its CURRENT length, left- or
+; right-justified, a longer source keeping its FIRST len(target) bytes for BOTH
+; verbs" -- which is lrset_store_tenant's existing behaviour with the width set to
+; the target's length and the destination set to its body. Eight rows of §1 fall
+; out of that with no semantic code at all; spec §4.3 walks each one.
+;
+; The DESCRIPTOR (not the body) is snapshotted here, through the same
+; tgt_desc/tgt_desc_fix pair D-LVFIX built for ex_mid_stmt: a scalar's address is
+; stashed verbatim, an element's as its ARYTAB-RELATIVE offset, so an ARYTAB move
+; inside the RHS cannot alias a neighbouring element (spec §5.3). ⚠️ MIDS_DEST is
+; the cell that pair is hardcoded on, so this is its SECOND tenant -- safe because
+; the other one (ex_mid_stmt) is a statement head and str_eval cannot reach a
+; statement head, the same walk tgt_desc's own header already requires.
 lrset_notfld:
-                pop     hl
-                jp      stmt_error          ; LSET/RSET on a non-fielded var (slice-1 limit)
+                call    tgt_desc            ; HL = the STRTAB descriptor (scalar) or
+                                            ; elem - ARYTAB (element); clobbers BC,
+                                            ; which is dead now that fld_find has run
+                ld      (MIDS_DEST),hl
+                xor     a
+                ld      (FLD_CHAN),a        ; 0 = "not fielded" -- never a legal
+                                            ; channel (fch_check rejects 0 with
+                                            ; ERR 59), and already the free-slot
+                                            ; marker throughout FLD_TAB
+                jr      lrs_haveeq
 
-; lrset_store — copy the [len][bytes] string at STRPTR into the record-buffer field
-; FSECTOR_BUF+(LRSET_OFF), width (LRSET_W), justify (LRSET_JUST). The field is first
+; lrset_store — copy the [len][ptr] string at STRPTR into the destination
+; (LRSET_DEST), width (LRSET_W), justify (LRSET_JUST). The destination is first
 ; space-filled, then min(srclen,width) bytes are copied (left- or right-aligned);
 ; a longer source truncates from the right.
+;
+; ⚠️ D-LRVAR: (LRSET_DEST) is an ADDRESS, not the field OFFSET the cell used to
+; hold. Both callers now compute it: the FIELDed arm as FSECTOR_BUF + the entry's
+; offset, the non-FIELDed arm as the target variable's own heap body. The tenant
+; got 4 B smaller for it (docs/spec-basic-lrvar.md §4.1).
 ;
 ; --- repack: a resident stub over the SUBROM_IDX_LRSETST page-0 tenant ------
 ; docs/spec-basic-fldary.md §6.4 — the D-FLDARY FUNDING CARVE. The body (68 B of
@@ -423,7 +515,7 @@ lrset_notfld:
 ; (fld_add,fld_find,fld_clear_chan,fld_init,lrset_store) is page-0-tenant CLEAN
 ; with ONE blocker, and of that set lrset_store is the one taken:
 ;   * 68 B in ONE contiguous span, six labels, ONE caller (lrset_common below);
-;   * 🎯 ZERO REGISTER MARSHALLING. Every input is a RAM cell — LRSET_OFF,
+;   * 🎯 ZERO REGISTER MARSHALLING. Every input is a RAM cell — LRSET_DEST,
 ;     LRSET_W, LRSET_JUST, STRPTR, FSECTOR_BUF ($E5C0, page 3) — and it returns
 ;     nothing. fld_find, by contrast, returns CF+HL, and CF collides with
 ;     subrom_call's own CF (which means "sub-ROM absent", never "found"), so it

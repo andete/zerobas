@@ -591,28 +591,41 @@ duplicating (and drifting from) what is written below.
       record: the scout carries the 18-row table, the four-site walk and the price;
       the spec carries the design, the forced constraints, the knives and §11
       As-built. Recoverable verbatim at `54f6e62` if it is ever wanted.
-- [ ] 🔴 **AN `ERASE`D FIELDED ARRAY LEAVES A STALE `FLD_TAB` ENTRY — a NEW named
-      limit created by D-FLDARY 2026-08-08, with a price and NO ORACLE.**
-      An element's field key is its ARYTAB-relative offset
-      ([`docs/spec-basic-fldary.md`](docs/spec-basic-fldary.md) §4.2/§5.4), which
-      is invariant under scalar allocation, a new `DIM` and a string GC — but
-      **`aeng_erase` (`sub/arrays.asm`) COMPACTS** the descriptor list, so an
-      element key above the erased array goes stale and the next `LSET A$(1)`
-      writes into a different variable's field. Scalar-keyed entries are immune
-      (a name key does not move), so this class is new.
-      💰 **Priced and declined deliberately: an `fld_clear_ary` sweep (clear every
-      entry whose `k0 >= $80`) is ≈20 B of page 1 + 3 B of LOW at `ex_erase`'s
-      call.** 🔴 **The reason it is not taken is NOT the bytes — it is that there
-      is no oracle.** Whether the CF-3300 drops, keeps or dangles a field across
-      `ERASE` is unmeasured; "drop the entries" and "leave them" are both guesses,
-      and 23 B is not spent to pick between two unmeasured answers. **The row that
-      would settle it:** `DIM A$(3),B$(3)` / `FIELD#1,10 AS B$(1)` / `ERASE A$` /
-      `LSET B$(1)="HI"` / `PRINT B$(1)` on the CF-3300. ONE reference (Disk BASIC).
-      ⚠️ The neighbouring PRE-EXISTING version is deliberately left alone: a bare
-      program EDIT reaches `vars_reset` (which re-anchors `ARYTAB`) without
+- [x] ✅ **~~AN `ERASE`D FIELDED ARRAY LEAVES A STALE `FLD_TAB` ENTRY~~ — CLOSED
+      2026-08-08 (D-LRVAR), AND THE ORACLE REFUTED THE FIX THAT HAD BEEN PRICED
+      FOR IT.** The settling row D-FLDARY named was taken, with the same program
+      MINUS the `ERASE` as its own positive control:
+
+      | row | CF-3300 | zerobas before |
+      |---|---|---|
+      | `e.ctl` (no `ERASE`) | `HI␣␣␣␣␣␣␣␣` | `HI␣␣␣␣␣␣␣␣` 🟢 control |
+      | `e.erase` | **`HI␣␣␣␣␣␣␣␣`** | **Syntax error** 🔴 |
+
+      🎯 **THE REFERENCE KEEPS THE FIELD ALIVE, SO THE PRICED SWEEP WAS THE WRONG
+      FIX.** `fld_clear_ary` — *clear every entry whose `k0 >= $80`*, ≈20 B page 1
+      + 3 B LOW — implements **drop**; the reference does not drop, so it would
+      have left `e.erase` red for 23 bytes. Declining it for want of an oracle was
+      right; the price was a claim about a design the oracle rejects
+      ([[a-priced-decline-is-a-claim-about-a-design]]).
+      🔴 **AND CLOSING IT WAS FORCED, NOT OPPORTUNISTIC.** D-LRVAR makes
+      `lrset_notfld` a real store, so a stale element key stops being a LOUD
+      `Syntax error` and becomes a **SILENT no-op** (K-LV7b reads exactly that:
+      `HI␣␣␣␣␣␣␣␣` → empty). The slice could not ship the rule and leave the
+      observability behind.
+      💰 **THE SITING WAS THE EXPENSIVE PART, NOT THE SWEEP.** The real fix is to
+      **fix the keys up** (`off -= stride` above the erased array; free the slot
+      inside it), and `aeng_erase` (`sub/arrays.asm`) is **already a page-0
+      tenant** that already holds both ends of the compaction and already reaches
+      RAM, where `FLD_TAB` lives. Sited there: **0 B of main page 1**, 96 B of sub
+      page 0 (3604 left). `aer_fldfix`; knife K-LV7b reddens `e.erase` and nothing
+      else, ×2. [`docs/spec-basic-lrvar.md`](docs/spec-basic-lrvar.md) §5.4/§10.5.
+      ⚠️ The neighbouring PRE-EXISTING version is still deliberately left alone: a
+      bare program EDIT reaches `vars_reset` (which re-anchors `ARYTAB`) without
       reaching `clear_vars` (which is what calls `fld_init`), so a field entry can
       already outlive the variables it names — true of scalar entries today and
-      not D-FLDARY's to change.
+      not this slice's to change. ⚠️ **`ERASE` of the array a field names ITSELF**
+      frees the slot, and the reference's answer for THAT arrangement is still
+      unmeasured — named in the spec's §9 denominator, not claimed.
 - [ ] ⚠️ **`s.fldarymix` IS A GATE ROW NO KNIFE CAN REDDEN, and that is recorded
       rather than fixed** (D-FLDARY, spec §10.6). A scalar field and an
       array-element field coexisting in one `FIELD` is the row that makes §4.2's
@@ -737,16 +750,49 @@ duplicating (and drifting from) what is written below.
       ⚠️ Removing it makes `ex_mid_stmt` the one caller that trusts a *callee's*
       error check — weigh that against the bytes
       ([[rule-gated-structurally-has-no-knife]]).
-- [ ] 🔴 **`LSET`/`RSET` ON A NON-FIELDED VARIABLE IS `Syntax error` — a
-      documented limit, MEASURED for the first time 2026-08-08.** `LSET A$="HI"`
-      with `A$="XXXXX"` and no `FIELD` reads `HI   ` on the CF-3300 and is
-      `Syntax error` here (`s.ctl`). `lrset_notfld` (`basic/field.asm`) is a bare
-      `jp stmt_error` commented *"slice-1 limit"*. ONE reference (Disk BASIC).
-      ⚠️ **This is NOT the array residual above and must not be folded into it** —
-      the FIELDed arm (`s.fld`) is GREEN on zerobas, which is what makes the
-      array row beside it (`s.fldary`) real evidence about the subscript. A pair
-      of rows would have filed *"the array question is unanswerable at this
-      site"*, which the 2×2 shows is wrong.
+- [x] ✅ **~~`LSET`/`RSET` ON A NON-FIELDED VARIABLE IS `Syntax error`~~ — SHIPPED
+      2026-08-08 (D-LRVAR), AND THE LVALUE/FIELD SURFACE IS NOW CLOSED:**
+      [`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md)
+      reads **10/10** and has no red row left.
+      [`docs/spec-basic-lrvar.md`](docs/spec-basic-lrvar.md); gate
+      `make lrvar-acceptance` **21/21** (from 5/21), with `fldary-acceptance`
+      13/13 and `lvfix-acceptance` 18/18 + 4 deferred both unchanged.
+      **+29 B main page 1** (35 → 6), **0 B LOW, 0 RAM, NO CARVE NEEDED** —
+      D-FLDARY's 57 B carve funded this slice too.
+      🔴 **ONE DATA POINT IS NOT A RULE, and this item had exactly one.** The rule
+      was MEASURED FIRST, over 21 rows, and three readings the single filed one
+      could not have predicted are what decided the design: the target's **`LEN`
+      never changes**; an **UNSET or EMPTY target is a NO-OP**, not an assignment
+      and not an error; and **`RSET A$="HELLO"` on `A$="AB"` reads `HE`, not
+      `LO`** — `RSET` truncates from the same end `LSET` does.
+      🎯 **NO STORE ENGINE WAS WRITTEN.** That rule is byte for byte what
+      `lrset_store_tenant` already did. The slice generalises the destination cell
+      (`LRSET_OFF` → `LRSET_DEST`, an ADDRESS, same 2 bytes, 0 RAM) and takes the
+      width from the target's own descriptor; **the tenant got 4 B SMALLER.**
+      🎯 **AND THE TWO ARMS DO NOT STORE DIFFERENTLY.** The framing above assumed
+      a scalar is inline `[name0][name1][len][bytes]` and an element a
+      `[len][ptr]` descriptor, i.e. two stores — that is the **PRE-slice-4c**
+      layout. Both are `[len][ptr]` now, `tgt_desc` already forks on how the
+      descriptor is FOUND, and the stale `basic/field.asm` header that said
+      otherwise is corrected (spec §5.1).
+      💰 **A `Type mismatch` fell out for 0 BYTES:** `A=1` / `LSET A=2` is
+      **`Type mismatch`** on the CF-3300 and was `Syntax error` here — a
+      divergence nobody had listed, fixed by a byte-neutral `jp` target swap.
+      Knives 10 cuts × 2 rounds, **7 EXACT** (K-LV2/K-LV7b/K-LV8 each redden
+      exactly ONE row). 🔴 **THREE of the misses are findings**: `FLD_CHAN` is
+      **uninitialised**, not 0, so the arm reset is load-bearing on EVERY
+      non-FIELDed `LSET`; a stale WIDTH is **invisible** on a left-justified
+      target's own bytes, so only the neighbour / `RSET` / unset rows can see it
+      (which is what proves §4.3's width-0 safety); and `tgt_desc_fix` is
+      **mandatory arithmetic, not a drift guard** — a "predicted miss" copied
+      from D-LVFIX's framing rather than derived, which reddened five rows.
+      ⚠️ ONE REFERENCE for every row (Disk BASIC; a diskless VG-8020 cannot
+      express the question). Carried forward, not upgraded.
+      📄 **The pre-fix filing is NOT archived here** — this section is the PICKUP
+      LIST and a closed item's superseded text is doc debt in it. Recoverable
+      verbatim at `76685e9`; the 2×2 argument it carried is
+      [`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md)
+      §3, which is the record.
 - [ ] 🔴 **`ex_for` STILL PARSES ITS LOOP VARIABLE WITH THE SINGLE-LETTER SHIM
       `ex_read` STOPPED USING — D-READVAR's own defect, in a verb that slice
       never re-checked.** Measured 2026-08-08 by the D-ARYLV scout,

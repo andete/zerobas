@@ -40,6 +40,9 @@ row is a weaker claim, and any slice acting on these rows inherits that.
 | `d.ary` | `FIELD#1,10 AS A$(1)` | *no disk* | `OK` | **Syntax error** 🔴 |
 | `s.ctl` | `A$="XXXXX"` / `LSET A$="HI"` (**not** FIELDed) | *no disk* | `HI   ` | **Syntax error** 🔴 |
 | `s.ary` | `LSET A$(1)="HI"` (not FIELDed) | *no disk* | `HI   ` | **Syntax error** ⚠️ |
+<!-- The zerobas column above is the ORIGINAL measurement, left as recorded.
+     All ten rows read their reference's value as of D-LRVAR — see §6. -->
+
 | `s.fld` | `FIELD#1,10 AS A$` / `LSET A$="HI"` | *no disk* | `HI        ` | `HI        ` 🟢 **control** |
 | `s.fldary` | `FIELD#1,10 AS A$(1)` / `LSET A$(1)="HI"` | *no disk* | `HI        ` | **Syntax error** 🔴 |
 
@@ -135,8 +138,8 @@ false pass — applied without asking *who* failed.
 
 ## 6. Status
 
-✅ **ALL FOUR SITES ARE CLOSED as of 2026-08-08**, in two slices, and this table
-now reads **8/10** (up from the 4/10 it was measured at):
+✅ **EVERY ROW IS CLOSED as of 2026-08-08**, in three slices, and this table now
+reads **10/10** (up from the 4/10 it was measured at):
 
 * **D-LVFIX** ([`spec-basic-lvsites.md`](spec-basic-lvsites.md)) shipped
   `ex_mid_stmt` and `inp_readvar` — `m.ary`, `f.ary` — for +31 B of main page 1,
@@ -153,19 +156,28 @@ now reads **8/10** (up from the 4/10 it was measured at):
   half that turns `s.fldary` green — plus the fact that the halved price still
   did not fit 18 B.
 
-`s.ctl`/`s.ary` remain the separate non-FIELDed `LSET` residual of §3, and they
-are the only two rows still red. Everything below is the ORIGINAL measurement and
-is left as it was recorded.
+* **D-LRVAR** ([`spec-basic-lrvar.md`](spec-basic-lrvar.md)) shipped the last two
+  — `s.ctl` and `s.ary`, the §3 non-FIELDed `LSET` residual — for **+29 B of main
+  page 1**, **0 B of the low region and no carve of its own**.
+  🎯 **The rule was MEASURED over 21 rows before it was designed**, and one filed
+  reading was not enough to state it: the target's `LEN` never changes, an unset
+  or empty target is a **no-op**, and `RSET A$="HELLO"` on `A$="AB"` reads `HE`,
+  not `LO`. No store engine was written — that rule is what `lrset_store_tenant`
+  already did, once the destination cell became an ADDRESS and the width came
+  from the target's own descriptor.
 
 ⚠️ **THIS DOCUMENT WAS MEASUREMENT ONLY. No byte moved for it**, and
 `make lvsites-characterize` is deliberately **not** an acceptance gate: 6 of its
 10 rows could only be red until the work landed, and a row that can only ever be
 red is doc debt, not a gate. At the time it was written all four ROMs hashed
 identically to `acfcfd7` (`basic-reloc 7d78c4b6…`, `sub de1ad5d0…`,
-`disk 2c630d3d…`, `main-eu 85da929d…`). ⚠️ **It is still not a gate now that 8 of
-10 pass** — the remaining two are the §3 non-FIELDed `LSET` residual, so the same
-argument applies in the other direction. The gates for what landed are
-`lvfix-acceptance` (18/18) and `fldary-acceptance` (13/13).
+`disk 2c630d3d…`, `main-eu 85da929d…`). ⚠️ **It is still not a gate now that all
+10 pass**, and the reason has changed rather than gone away: this table is a
+sampled cross-section of four sites, and the DENOMINATOR for each of them lives
+in its own slice's gate — `lvfix-acceptance` (18/18 + 4 deferred),
+`fldary-acceptance` (13/13) and `lrvar-acceptance` (21/21), 52 scored rows
+between them against these 10. Promoting the cross-section would gate the sample
+and not the surface.
 
 The static counters this moves, predicted from each check's own definition and
 then measured:

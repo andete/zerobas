@@ -241,7 +241,7 @@ SUBROM_IDX_FLDLOOK      equ     12
 ; or right-aligned. Carved out of basic/field.asm to fund the array-element face
 ; of FIELD/LSET/RSET (38 B of main page 1 against 18 B free; this returns 57).
 ; Page-0 CLEAN: RAM only. 🎯 NOTHING MARSHALS -- every input is already a RAM
-; cell (LRSET_OFF/W/JUST, STRPTR, FSECTOR_BUF) and there is no return value, so
+; cell (LRSET_DEST/W/JUST, STRPTR) and there is no return value, so
 ; the resident stub is the minimum 11 B shape and no cell was invented for it.
 ; pu_deref_body, the one low-region callee of the original body, is inlined
 ; sub-side in 5 B. ⚠️ THE FIRST INDEX PAST THE OLD $0038 CEILING to be used:

@@ -185,7 +185,7 @@ sub_p0_table:
                                                 ;   (sub/lrsetst.asm) -- carved out of
                                                 ;   basic/field.asm to fund D-FLDARY.
                                                 ;   No args, no result: every input is
-                                                ;   already a RAM cell (LRSET_OFF/W/
+                                                ;   already a RAM cell (LRSET_DEST/W/
                                                 ;   JUST, STRPTR, FSECTOR_BUF).
                                                 ; ⚠️ 14 rows = $0040..$0069. This is the
                                                 ;   FIRST index past the old $0038

@@ -241,6 +241,22 @@ aer_top:
                 ex      de,hl               ; HL = SRC (was DE); DE = COUNT
                                             ; (dead -- already latched in BC)
                 pop     de                  ; DE = DST (desc) restored
+                ; --- D-LRVAR: fix up FLD_TAB's ELEMENT keys before the slide ----
+                ; docs/spec-basic-lrvar.md §5.4. An element's field key is its
+                ; ARYTAB-relative offset (D-FLDARY §4.2), and the LDIR below moves
+                ; every descriptor above the erased one DOWN by exactly `stride` --
+                ; so an untouched key would name a different variable's bytes.
+                ; MEASURED, CF-3300: the reference KEEPS the field alive across
+                ; `ERASE` of a sibling array (probe row e.erase), so the fix is to
+                ; MOVE the keys, not to drop them -- which is what D-FLDARY priced
+                ; and declined for want of exactly this reading.
+                push    bc                  ; [COUNT]
+                push    de                  ; [DST]
+                push    hl                  ; [SRC]
+                call    aer_fldfix
+                pop     hl
+                pop     de
+                pop     bc
                 ldir                        ; slide [SRC..SRC+COUNT) down onto
                                             ; DST -- moves every following
                                             ; descriptor AND the terminator in
@@ -255,6 +271,88 @@ aer_top:
 aer_notfound:
                 ld      a,2
                 ld      (ARY_ERR),a         ; 2 -> IFC (ary_errmap -> FPERR=8)
+                ret
+
+; --- aer_fldfix: slide FLD_TAB's ELEMENT keys over an ERASE compaction ------
+; D-LRVAR, docs/spec-basic-lrvar.md §5.4. Called from aeng_erase with the
+; compaction about to happen and both of its ends still in registers.
+;
+; in:  HL = SRC (absolute, the first descriptor that will move DOWN)
+;      DE = DST (absolute, the erased array's own descriptor = where SRC lands)
+; out: every FLD_TAB entry re-keyed. Clobbers AF,BC,DE,HL,IX -- the caller has
+;      SRC/DST/COUNT on the stack across the call.
+;
+; A FIELD entry's key is (k0,k1); a SCALAR's k0 is an upcased letter ($41..$5A)
+; and an ELEMENT's is (offset>>8)|$80, where offset = elem - (ARYTAB). The two
+; spaces are disjoint by construction (D-FLDARY §4.2), so `bit 7` alone says
+; which entries this can possibly concern -- a name key never moves.
+;
+;   offset  <  DST-ARYTAB   below the erased array          -> untouched
+;   offset in [DST,SRC)     INSIDE the erased array          -> free the slot
+;   offset  >= SRC-ARYTAB   above it, about to slide down    -> offset -= stride
+;
+; 🎯 THIS COSTS 0 B OF MAIN PAGE 1, WHICH IS THE WHOLE REASON IT IS HERE. D-FLDARY
+; priced the fix as a resident `fld_clear_ary` called from ex_erase -- ~20 B of
+; page 1 plus 3 B of the LOW region, on the two walls that bind. But aeng_erase is
+; ALREADY a page-0 tenant, it ALREADY holds both ends of the compaction, and a
+; page-0 tenant reaches RAM, which is where FLD_TAB ($EE64) lives. Sited here the
+; sweep spends sub page 0, which has thousands of bytes free. The expensive thing
+; was never the sweep -- it was the siting.
+;
+; ⚠️ ARY_KEY and ARY_IDXP are borrowed as 2-byte scratch, which costs 0 RAM and is
+; safe HERE and nowhere by default: they are the tenant's INPUT cells (main fills
+; ARY_OP..ARY_IDXP, calls, then reads only ARY_ADDR/ARY_ERR -- basic/sysvars.inc
+; §ARY block), aeng_erase consumes ARY_KEY in its own first instruction and never
+; reads it again, and ARY_IDXP belongs to aeng_dim alone. Every call site writes
+; both before every call, so nothing carries across.
+aer_fldfix:
+                or      a
+                sbc     hl,de               ; HL = stride (SRC - DST)
+                ld      (ARY_KEY),hl        ; scratch: STRIDE
+                ld      hl,(ARYTAB)
+                ex      de,hl               ; HL = DST, DE = ARYTAB
+                or      a
+                sbc     hl,de               ; HL = LO = DST - ARYTAB
+                ld      (ARY_IDXP),hl       ; scratch: LO
+                ld      ix,FLD_TAB
+                ld      b,FLD_SLOTS
+afx_lp:
+                ld      a,(ix+0)            ; chan
+                or      a
+                jr      z,afx_next          ; free slot
+                ld      a,(ix+1)            ; k0
+                bit     7,a
+                jr      z,afx_next          ; a NAME key -- never moves
+                and     $7F
+                ld      h,a
+                ld      l,(ix+2)            ; HL = the element's ARYTAB offset
+                ld      de,(ARY_IDXP)       ; DE = LO
+                or      a
+                sbc     hl,de               ; HL = offset - LO
+                jr      c,afx_next          ; below the erased array -> untouched
+                ld      de,(ARY_KEY)        ; DE = stride
+                or      a
+                sbc     hl,de               ; HL = offset - LO - stride
+                jr      c,afx_kill          ; inside the erased array -> the variable
+                                            ; it names is gone
+                ld      de,(ARY_IDXP)
+                add     hl,de               ; HL = the compacted offset
+                ld      a,h
+                or      $80                 ; back into the element half of the key
+                                            ; space (the offset only ever shrinks
+                                            ; here, so bit 7 is the only bit to
+                                            ; restore)
+                ld      (ix+1),a
+                ld      (ix+2),l
+                jr      afx_next
+afx_kill:
+                ld      (ix+0),0            ; chan = 0 -> the slot is free again,
+                                            ; exactly as fld_init/fld_clear_chan
+                                            ; leave one
+afx_next:
+                ld      de,FLD_ENTSZ
+                add     ix,de
+                djnz    afx_lp
                 ret
 
 ; --- aeng_copy_str: ARY_OP=3 (slice-3 COPY_STR, docs/spec-basic-arrays- ----

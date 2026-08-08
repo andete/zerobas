@@ -2796,8 +2796,24 @@ variable behave like one:
 - `OPEN "name" AS #n` (RANDOM, mode 4 in FCH_MODES) opens-or-creates the file on disk
   and seeds the channel's record state; the buffer is space-filled. (Slice 1 stubbed
   this as an in-RAM buffer only; slice 2 — §GET/PUT below — made it real.)
-- LSET/RSET require a FIELDed target; on a non-fielded variable they error (real MSX-
-  BASIC left-justifies into the variable's current value — a Phase-3 nicety).
+- ~~LSET/RSET require a FIELDed target~~ — **closed 2026-08-08 (D-LRVAR,
+  docs/spec-basic-lrvar.md).** A non-FIELDed target's CURRENT bytes are overwritten
+  IN PLACE: the width is its own current length, that length NEVER changes, the
+  value is space-padded and left- (LSET) or right-justified (RSET), a source longer
+  than the target keeps its FIRST len(target) bytes **for both verbs**, and a target
+  of length 0 — never assigned or assigned `""` — is a **no-op**, not an assignment
+  and not an error. All 21 rows measured on the National **CF-3300** first
+  (`make lrvar-acceptance`, 21/21); a diskless VG-8020 answers `Syntax error` to
+  both words and cannot express the question, so every row rests on ONE reference.
+  Array elements included — `LSET A$(2)="HI"` leaves `A$(1)` alone.
+- `LSET`/`RSET` on a NUMERIC target is **Type mismatch** (ERR 13), not the ERR 2 it
+  used to raise — measured on the CF-3300 (`A=1 : LSET A=2`), D-LRVAR.
+- An `ERASE` that compacts the descriptor list **re-keys** the field table rather
+  than dropping it: `aeng_erase` (sub/arrays.asm `aer_fldfix`) slides every
+  ARYTAB-relative element key above the erased array down by its stride and frees
+  any entry inside it, so a field on a surviving array keeps working. Measured: the
+  CF-3300 KEEPS the field across `ERASE` of a sibling array (D-LRVAR §5.4 — this
+  refuted the "drop every element entry" sweep D-FLDARY had priced for it).
 - A fielded READ takes precedence over a plain STRTAB value; assigning a fielded name
   with a plain `LET` does not "disconnect" the field (real MSX-BASIC does).
 - Field widths are 1..255; FIELD overflow past the record length is not checked. Up to

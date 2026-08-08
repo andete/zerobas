@@ -99,11 +99,19 @@ def run():
     report("fld_find missing-key CF", carry(cpu), False)
 
     # -----------------------------------------------------------------------
-    # lrset_store: copy STRPTR's [len][bytes] into FSECTOR_BUF+LRSET_OFF, width
-    # LRSET_W, justify LRSET_JUST (0=LSET left, 1=RSET right). The field is first
+    # lrset_store: copy STRPTR's [len][ptr] into (LRSET_DEST), width LRSET_W,
+    # justify LRSET_JUST (0=LSET left, 1=RSET right). The destination is first
     # space-filled, then min(srclen,width) bytes copied; an over-long source
     # truncates from the right.
-    # Oracle: documented LSET/RSET semantics (field.asm lrset_store header).
+    # Oracle: documented LSET/RSET semantics (field.asm lrset_store header) plus,
+    # since D-LRVAR, the CF-3300 readings in docs/spec-basic-lrvar.md §1.
+    #
+    # ⚠️ D-LRVAR: the cell holds the destination ADDRESS, not the field OFFSET it
+    # held while FSECTOR_BUF was the only possible destination. `off` below is
+    # still an offset into the record buffer for the FIELDed cases -- the test
+    # does the addition the resident FIELDed arm now does -- and the two
+    # non-FIELDed cases at the end point it somewhere else entirely, which is the
+    # whole claim the generalisation makes.
     # -----------------------------------------------------------------------
     FBUF = s["FSECTOR_BUF"]
 
@@ -121,7 +129,7 @@ def run():
         m.poke_w(SBUF + 1, SBODY)
         m.poke_w(s["STRPTR"], SBUF)
         m.poke(s["LRSET_W"], width)
-        m.poke_w(s["LRSET_OFF"], off)
+        m.poke_w(s["LRSET_DEST"], FBUF + off)
         m.poke(s["LRSET_JUST"], just)
         # poison the field region so space-fill is observable
         m.mem[FBUF + off:FBUF + off + width] = b"\xee" * width
@@ -139,6 +147,40 @@ def run():
     lrset_case("RSET w3 'HELLO'", "HELLO", 3, 0,  1, b"HEL")   # truncate right
     # offset placement: write into the middle of the record buffer
     lrset_case("LSET w4 'AB' @off8", "AB",  4, 8,  0, b"AB  ")
+
+    # -----------------------------------------------------------------------
+    # D-LRVAR: the non-FIELDed arm. Two claims the FIELDed cases above cannot
+    # make, because every one of them lands inside FSECTOR_BUF.
+    # -----------------------------------------------------------------------
+    # 1. THE DESTINATION IS AN ADDRESS, not an offset into the record buffer.
+    #    DBUF is a scratch buffer nowhere near FSECTOR_BUF, standing in for a
+    #    string-heap body; the store must land there and nowhere else.
+    DBUF = SBODY + 0x40
+    m.mem[DBUF:DBUF + 8] = b"\xee" * 8
+    src = b"HI"
+    m.mem[SBODY:SBODY + len(src)] = src
+    m.mem[SBUF] = len(src)
+    m.poke_w(SBUF + 1, SBODY)
+    m.poke_w(s["STRPTR"], SBUF)
+    m.poke(s["LRSET_W"], 5)
+    m.poke_w(s["LRSET_DEST"], DBUF)
+    m.poke(s["LRSET_JUST"], 0)
+    m.call("lrset_store")
+    report("LSET w5 'HI' -> a non-FSECTOR_BUF address",
+           bytes(m.mem[DBUF:DBUF + 6]), b"HI   \xee")
+
+    # 2. WIDTH 0 IS A NO-OP AND THE POINTER IS NEVER FOLLOWED (spec §4.3). This
+    #    is what makes `LSET A$="HI"` on a NEVER-ASSIGNED A$ safe: such a target
+    #    resolves to a [0][garbage] descriptor, so the store must return before
+    #    it dereferences anything. The destination is deliberately poisoned and
+    #    must come back untouched -- measured on the CF-3300 as a no-op
+    #    (n.unset / n.empty), not as an assignment and not as an error.
+    m.mem[DBUF:DBUF + 8] = b"\xee" * 8
+    m.poke(s["LRSET_W"], 0)
+    m.poke_w(s["LRSET_DEST"], DBUF)
+    m.call("lrset_store")
+    report("LSET w0 'HI' -> nothing written (unset target)",
+           bytes(m.mem[DBUF:DBUF + 4]), b"\xee\xee\xee\xee")
 
     print()
     print("ALL PASS — FIELD layout + LSET/RSET store match the documented contract"

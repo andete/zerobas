@@ -1877,6 +1877,39 @@ fldary-acceptance: repack-machine
 	python3 probes/basic/basic_probe_fldary.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-LRVAR: LSET / RSET on a NON-FIELDed variable ---------------------------
+# docs/spec-basic-lrvar.md. The last open item of the lvalue/FIELD surface --
+# lrset_notfld was a bare `jp stmt_error` commented "slice-1 limit", and the two
+# rows it owned (s.ctl / s.ary) were the only ones still red in
+# docs/lvsites-msx1-characterization.md.
+#
+# 🔴 ONE DATA POINT IS NOT A RULE, and the filed residual had exactly one. The
+# rule was MEASURED FIRST, over 21 rows: the target's CURRENT bytes are
+# overwritten IN PLACE, its LENGTH never changes, an UNSET or EMPTY target is a
+# NO-OP, and a longer source keeps its FIRST len(target) bytes for BOTH verbs --
+# `RSET A$="HELLO"` on `A$="AB"` reads `HE`, not `LO`.
+# 🎯 NO STORE ENGINE WAS WRITTEN: that rule is exactly what lrset_store_tenant
+# already did, with the width set to the target's length and the destination to
+# its own heap body. The slice is a destination generalisation, not a store.
+# 🎯 n.fld2 / n.mix / n.arysep exist because K-LV2/K-LV1/K-LV6 were DRAFTED
+# BEFORE the row set was frozen -- each of those three cuts reddened NO row
+# against the obvious row set.
+# 🔴 THE ERASE RESIDUAL IS CLOSED HERE AND IT WAS FORCED: this slice turns a
+# stale element key from a LOUD `Syntax error` into a SILENT no-op, and the
+# oracle (e.erase) says the reference KEEPS the field across ERASE -- which
+# REFUTES the `fld_clear_ary` sweep D-FLDARY priced for it.
+# 🔴 EVERY ROW HAS ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express
+# the question). Not upgraded.
+# ⚠️ A CONTROL PER ARM: n.fldctl (FIELDed), n.ctl (non-FIELDed), e.ctl (ERASE).
+#   make lrvar-characterize ONLY=n.arysep SIDES=zb      # scope rows / sides
+lrvar-characterize: repack-machine
+	python3 probes/basic/basic_probe_lrvar.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+lrvar-acceptance: repack-machine
+	python3 probes/basic/basic_probe_lrvar.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2109,6 +2142,7 @@ clean:
         arylv-characterize arylv-acceptance lvsites-characterize \
         lvfix-characterize lvfix-acceptance \
         fldary-characterize fldary-acceptance \
+        lrvar-characterize lrvar-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

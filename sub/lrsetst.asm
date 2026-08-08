@@ -26,7 +26,7 @@
 ;     labels, ONE caller (lrset_common, basic/field.asm);
 ;   * 🎯 NOTHING MARSHALS THROUGH REGISTERS, and nothing new is invented to carry
 ;     anything. Every input is already a RAM cell that survives CALSLT --
-;     LRSET_OFF, LRSET_W, LRSET_JUST, STRPTR, and FSECTOR_BUF ($E5C0, page 3) --
+;     LRSET_DEST, LRSET_W, LRSET_JUST and STRPTR --
 ;     and the routine returns nothing at all. Its sibling fld_find could NOT have
 ;     moved on the same terms: it returns CF + HL, and CF collides with
 ;     subrom_call's own CF (which means "sub-ROM absent", never "found"), so it
@@ -47,20 +47,25 @@
 ; no DATA target outside this file.
 
 ; --- lrset_store_tenant ----------------------------------------------------
-; in:  (LRSET_OFF) = the field's byte offset into the record buffer
-;      (LRSET_W)   = the field width, 0..255
+; in:  (LRSET_DEST)= the destination ADDRESS -- FSECTOR_BUF + the field's offset on
+;                    the FIELDed arm, the target variable's own heap body on the
+;                    non-FIELDed one (D-LRVAR, docs/spec-basic-lrvar.md §4.1)
+;      (LRSET_W)   = the destination width, 0..255. On the non-FIELDed arm this is
+;                    the target's CURRENT length, and a width of 0 is what makes an
+;                    UNSET target a NO-OP rather than a wild write through a body
+;                    pointer that points at nothing (spec §4.3) -- the `jr z` and
+;                    the `ret z` below are both load-bearing for that.
 ;      (LRSET_JUST)= 0 left-justify (LSET) / 1 right-justify (RSET)
 ;      (STRPTR)   -> the source [len][ptr] descriptor
-;      FSECTOR_BUF = the channel's record buffer (the resident stub's fch_select
-;                    has already selected it)
-; out: the field is space-filled and then min(srclen,width) bytes are copied into
-;      it, left- or right-aligned. No failure mode.
+; out: the destination is space-filled and then min(srclen,width) bytes are copied
+;      into it, left- or right-aligned. No failure mode.
 ; Clobbers AF,BC,DE,HL (tenant convention).
+;
+; ⚠️ D-LRVAR made this 4 B SMALLER: it used to add FSECTOR_BUF to a stored OFFSET,
+; which only ever named a record buffer. The callers compute the address now.
 lrset_store_tenant:
-                ld      hl,(LRSET_OFF)
-                ld      de,FSECTOR_BUF
-                add     hl,de               ; HL = field start
-                ; space-fill the whole field
+                ld      hl,(LRSET_DEST)     ; HL = destination start
+                ; space-fill the whole destination
                 push    hl
                 ld      a,(LRSET_W)
                 or      a

@@ -701,7 +701,14 @@ FLD_CUROFF      equ     $E019   ; FIELD: running byte offset into the record buf
 FLD_CHAN        equ     $E01B   ; FIELD/LSET/RSET: the channel being fielded (1)
 LRSET_JUST      equ     $E01C   ; LSET/RSET: 0 = left-justify, 1 = right-justify (1)
 LRSET_W         equ     $E01D   ; LSET/RSET: destination field width (1)
-LRSET_OFF       equ     $E01E   ; LSET/RSET: destination field offset in the buffer (2)
+LRSET_DEST      equ     $E01E   ; LSET/RSET: destination ADDRESS of the store (2).
+                                ; D-LRVAR renamed this from LRSET_OFF (same address,
+                                ; 0 RAM): it held the field's OFFSET while the only
+                                ; destination was FSECTOR_BUF + off, but a
+                                ; non-FIELDed LSET writes into the target variable's
+                                ; own heap body, which no offset into a record buffer
+                                ; names. Both callers now compute the address and
+                                ; sub/lrsetst.asm just loads it (spec §4.1).
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
 CLPTR           equ     $E02B   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK           equ     $E02D   ; CLOAD/LOAD: saved link word of the current line
@@ -3579,7 +3586,7 @@ SUBROM_IDX_LRSETST   equ 13     ; lrset_store_tenant (sub/lrsetst.asm): the LSET
                                 ; §6.4; the carve returns 57). PAGE-0 table index 13
                                 ; -- IX = SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST.
                                 ; 🎯 NOTHING MARSHALS AT ALL: every input is already a
-                                ; RAM cell (LRSET_OFF/W/JUST, STRPTR, FSECTOR_BUF) and
+                                ; RAM cell (LRSET_DEST/W/JUST, STRPTR) and
                                 ; there is no return value, which is exactly why this
                                 ; member of the cluster was the one taken.
 SUBROM_IDX_DEFTYPE   equ 9      ; deftype_tenant (sub/deftype.asm): DEFINT/DEFSNG/
