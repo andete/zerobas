@@ -120,6 +120,17 @@ CHRGOT skips spaces, so the change is very likely right everywhere — and "very
 likely" is what this tree does not ship. Filed in `TODO.md` with the six sites
 named.
 
+✅ **CLOSED 2026-08-08 by D-TGTSPC** ([`spec-basic-tgtspc.md`](spec-basic-tgtspc.md),
+measured in [`tgtspc-msx1-characterization.md`](tgtspc-msx1-characterization.md),
+`make tgtspc-acceptance` 26/26) — and **both numbers in the paragraph above are
+wrong**. The fix is **2 bytes**, not 3: it *replaces* a one-byte `ld a,(hl)`, and
+a price that forgets what it displaces is a price for an insertion. And
+`tgt_parse` has **EIGHT `call` sites from NINE statement surfaces**, not seven —
+the list is seven *other* surfaces and forgot to count `ex_next`, the site that
+wrote it, and it folds the console `INPUT`'s two arms (two distinct `call`s) into
+one ([[a-hand-listed-denominator-is-a-scope-claim]]). `a.spc` is now an ordinary
+scored row and this battery is **22/22**.
+
 ---
 
 ## 5. 🔴 `a.strpick` — the row a KNIFE demanded, not the row set

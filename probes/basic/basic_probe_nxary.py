@@ -161,23 +161,26 @@ NEGATIVE = ("f.ary",)
 LABEL_W = 10
 
 # --- DEFERRED: measured, printed, NEVER scored ------------------------------
-# 🔴 `NEXT A (1)` — A SPACE BEFORE THE `(`. `tgt_parse` tests for the subscript
-# with a bare `ld a,(hl)` right after `var_name_key`, so its `(` is LEXICALLY
-# CONTIGUOUS: `A (1)` reads as the scalar `A` and the ` (1)` then reaches
-# statement position as Syntax error. Both references answer NEXT without FOR.
-# 💰 THE FIX IS THREE BYTES AND PAGE 1 HAS FIVE — this is NOT declined for
-# space. `tgt_parse` has SEVEN call sites (READ, console INPUT, LINE INPUT,
-# `MID$(…)=`, FIELD, LSET/RSET, files.asm) and a `call skip_spaces` there
-# changes what `READ A (1)` / `INPUT A (1)` / `LSET A (1)=` mean at all six
-# others — none of which is measured
-# ([[a-shared-engine-fix-must-measure-its-other-callers]]). MS-BASIC's own
-# CHRGOT skips spaces, so the change is very likely right everywhere, and
-# "very likely" is exactly what this tree does not ship. Filed in TODO.md with
-# the six sites named; a deferred row that started agreeing would be a finding.
-DEFERRED = {
-    "a.spc": "DEFERRED — tgt_parse's `(` is lexically contiguous; the 3-byte "
-             "fix changes SIX other call sites, all unmeasured",
-}
+# ✅ EMPTY SINCE 2026-08-08, AND THAT IS THE DEFERRAL BEING HONOURED RATHER THAN
+# FORGOTTEN ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
+# 🔴 `a.spc` — `NEXT A (1)`, A SPACE BEFORE THE `(` — sat here because
+# `tgt_parse` tested for the subscript with a bare `ld a,(hl)` right after
+# `var_name_key`, so its `(` was LEXICALLY CONTIGUOUS: `A (1)` read as the scalar
+# `A` and the ` (1)` then reached statement position as Syntax error.
+# 💰 THE FIX WAS NEVER BLOCKED ON BYTES (it is +2 B and page 1 had 5). It was
+# blocked on EVIDENCE: `tgt_parse` is the lvalue family's SHARED target parse, and
+# the change decides what `READ A (1)`, `INPUT A (1)`, `LINE INPUT A$ (1)`,
+# `MID$(A$ (1),1,2)=`, `INPUT#1,A$ (1)`, `FIELD..AS A$ (1)` and `LSET A$ (1)=`
+# MEAN ([[a-shared-engine-fix-must-measure-its-other-callers]]).
+# D-TGTSPC (docs/spec-basic-tgtspc.md) is that slice: 28 rows across all NINE
+# statement surfaces on three sides, BOTH references agreeing on every one -- plus
+# the row that reads the STORED LINE BYTES to prove the space survives the crunch
+# at all, which is what says the fix belongs to the PARSER and not the tokeniser.
+# `a.spc` is now an ordinary SCORED row and this battery goes 21/21 -> 22/22.
+# 🔴 AND THE FILED CALL-SITE COUNT WAS WRONG. `tgt_parse` has EIGHT `call`
+# sites from NINE statement surfaces, not seven: the hand list forgot to count
+# `ex_next` itself ([[a-hand-listed-denominator-is-a-scope-claim]]).
+DEFERRED = {}
 
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>")
 

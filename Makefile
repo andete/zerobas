@@ -1977,6 +1977,33 @@ nxary-acceptance: repack-machine
 	python3 probes/basic/basic_probe_nxary.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-TGTSPC: a SPACE before the `(` (docs/spec-basic-tgtspc.md) -------------
+# D-NXARY measured ONE row (`NEXT A (1)`) and DEFERRED it -- NOT for space. The
+# fix is one instruction in `tgt_parse`, which is the lvalue family's SHARED
+# target parse, so it decides what a target MEANS at NINE statement surfaces:
+# NEXT, READ, console INPUT (both arms), LINE INPUT, MID$()=, INPUT #n, FIELD
+# and LSET/RSET. All nine are measured here, each with the CONTIGUOUS form of
+# its own statement as its own positive control, on its own fixture.
+# 🎯 t.ctl/t.spc read the STORED LINE BYTES through TXTTAB, not the screen: if
+# the reference's CRUNCH stripped the space, a parser-side fix would spend every
+# byte in the wrong file -- and both cases look identical on screen.
+# 🎯 m.trail is the SCALAR path: `MID$(A$ ,1,2)="XY"` is XYLLO on both
+# references, so the trailing-space consumption is a second FIX, not a caveat.
+# 🔴 x.dollar / x.name are DEFERRED: a space inside the NAME or before the `$`
+# suffix is var_name_key's rule, not tgt_parse's, and it is far wider.
+# 🔴 z.for is a NEGATIVE control: `FOR A (1)=` is Syntax error on BOTH
+# references and ex_for must not gain tgt_parse's reach.
+# ⚠️ ORACLE STRENGTH IS NOT UNIFORM: the INPUT#n / FIELD / LSET rows are Disk
+# BASIC and rest on the CF-3300 alone. The probe says so per row.
+#   make tgtspc-characterize ONLY=m.trail SIDES=zb      # scope rows / sides
+tgtspc-characterize: repack-machine
+	python3 probes/basic/basic_probe_tgtspc.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+tgtspc-acceptance: repack-machine
+	python3 probes/basic/basic_probe_tgtspc.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2213,6 +2240,7 @@ clean:
         forvar-characterize forvar-acceptance \
         nxlist-characterize nxlist-acceptance \
         nxary-characterize nxary-acceptance \
+        tgtspc-characterize tgtspc-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

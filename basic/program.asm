@@ -1632,9 +1632,13 @@ nx_head:
                 ; `NEXT A(99)` is Subscript out of range, so the subscript is
                 ; EVALUATED -- and row a.autodim (trap the error, then DIM) reads
                 ; Redimensioned array on both references, so the resolve also
-                ; AUTO-DIMS. That is exactly tgt_parse's ary_op0_resolve op=0; this
-                ; is its seventh call site and ex_read has reached it from page 1
-                ; since D-ARYLV.
+                ; AUTO-DIMS. That is exactly tgt_parse's ary_op0_resolve op=0, and
+                ; ex_read has reached it from page 1 since D-ARYLV.
+                ; ⚠️ THIS COMMENT SAID "its SEVENTH call site" AND THAT WAS WRONG --
+                ; D-TGTSPC walked it: EIGHT `call tgt_parse` from NINE statement
+                ; surfaces, and the seven was a hand list that forgot to count this
+                ; site ([[a-hand-listed-denominator-is-a-scope-claim]]). The table is
+                ; in tgt_parse's own header (basic/vars.asm).
                 call    var_str_type        ; A = mode (0 num / 1 str); HL NOT advanced.
                                             ; The $ arm must pick the STRING array --
                                             ; a.stroob, and a.str agrees WITHOUT it

@@ -386,6 +386,11 @@ that the `(` is not even lexically contiguous, so the test would need
 its design**. 💰 Deferred rather than fixed, and **not for space**: the fix is 3
 bytes with 5 free, but `tgt_parse` has **seven** call sites and the other six are
 unmeasured ([[a-shared-engine-fix-must-measure-its-other-callers]]). Filed.
+✅ **CLOSED 2026-08-08 by D-TGTSPC** ([`spec-basic-tgtspc.md`](spec-basic-tgtspc.md)),
+and **both numbers in that sentence are wrong**: the fix is **2 B** (it replaces
+a one-byte `ld a,(hl)`), and there are **EIGHT `call` sites from NINE statement
+surfaces** — the hand list forgot to count `ex_next` itself. `a.spc` is now
+scored and `nxary-acceptance` is **22/22**.
 
 **(c) K-NA2 REDDENED `a.str`, WHICH §8 PREDICTED GREEN — AND THE PREDICTION'S
 REASONING WAS WRONG ABOUT THE SHIPPED CODE.** §8 argued `a.str`'s key "is

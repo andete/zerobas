@@ -230,22 +230,57 @@ vst_yes:
 ; in:  HL = cursor at the name's first letter (the caller has already checked
 ;           is_letter);
 ;      A  = the mode, exactly var_str_type's own return: 0 numeric / 1 string.
-;           🎯 ALL FOUR CALL SITES ALREADY HAVE IT IN A at the call -- the same
-;           reuse that funded 17 of D-READVAR's 32 bytes.
+;           🎯 EVERY CALL SITE ALREADY HAS IT IN A at the call -- the same reuse
+;           that funded 17 of D-READVAR's 32 bytes.
 ; out: Z  = ok / NZ = the array resolve failed, FPERR already mapped+set by
 ;           ary_engine_call (the caller aborts with `jp nz,fp_runtime_error`);
 ;      BC = the key (a SCALAR target's store argument);
-;      HL = cursor past the whole reference (past `)` for an array);
+;      HL = cursor past the whole reference (past `)` for an array; on the SCALAR
+;           path, past any TRAILING SPACES too -- D-TGTSPC, see below);
 ;      (TGT_ADDR) = the element address, or 0 for a scalar.
 ; Clobbers A,BC,DE,HL. ⚠️ DE is NOT preserved (var_name_key alone did preserve
-; it); checked at all four sites -- none has DE live across this call.
+; it); checked at every site -- none has DE live across this call.
+;
+; ⚠️ THE CALL-SITE COUNT IN THIS TREE'S DOCS WAS WRONG UNTIL D-TGTSPC WALKED IT.
+; This header said FOUR (D-ARYLV's), TODO.md and spec-basic-nxary.md said SEVEN.
+; There are EIGHT `call tgt_parse` instructions from NINE statement surfaces:
+;   ex_next (program.asm) NEXT · ex_read (program.asm) READ · inpc_vloop
+;   (input.asm) console INPUT numeric · inpc_vstr (input.asm) console INPUT
+;   string · inpc_line (input.asm) LINE INPUT · ex_mid_stmt (str-engine.asm)
+;   MID$()= · inp_readvar (files.asm) INPUT #n · tgt_parse_fld (field.asm) ->
+;   FIELD..AS and LSET/RSET.
+; A rule changed here changes what a target MEANS at all nine
+; ([[a-shared-engine-fix-must-measure-its-other-callers]]).
 tgt_parse:
                 push    af                  ; the mode must survive var_name_key
                 call    var_name_key        ; BC=key, HL past name+suffix, (VARTYPE)
-                ld      a,(hl)
-                cp      '('                 ; a `(` right after a name is unambiguously
-                jr      z,tp_ary            ; a subscript -- ev_f_var/str_eval_one rely
-                                            ; on the same disambiguation (arrays §9.4)
+                ; D-TGTSPC (docs/spec-basic-tgtspc.md, 28 rows on three sides with
+                ; BOTH references agreeing): the `(` may be separated from the name
+                ; by SPACES. `NEXT A (1)` / `READ A (1)` / `LSET A$ (1)=` all target
+                ; the ELEMENT on both references, and the space is genuinely THERE
+                ; -- row t.spc reads the STORED LINE BYTES and the $20 survives the
+                ; crunch byte for byte on all three sides, which is what says the
+                ; fix belongs to the parser and not to the tokeniser.
+                ; 🎯 ONE INSTRUCTION, IN THE ONE PLACE ALL NINE SURFACES SHARE. This
+                ; is +2 B (skip_spaces returns exactly what `ld a,(hl)` returned when
+                ; there is no space, with HL on the byte in A); eight per-caller
+                ; skips would be >= 16 B into a 5 B wall and would still be wrong for
+                ; the next caller anyone adds.
+                ; ⚠️ AND IT CONSUMES A TRAILING SPACE ON THE SCALAR PATH TOO, WHICH IS
+                ; A SECOND FIX AND NOT A SIDE EFFECT. Eight of the nine callers cannot
+                ; see it -- each does its own skip_spaces before its next delimiter.
+                ; ex_mid_stmt is the exception (`pop hl` / `ld a,(hl)` / `cp ','`), and
+                ; row m.trail says `MID$(A$ ,1,2)="XY"` is XYLLO on both references and
+                ; was Syntax error here. Spec §4.3.
+                ; ⚠️ NOT EARLIER THAN var_name_key: a space INSIDE the name or before
+                ; the `$` suffix is a different and far wider rule (rows x.dollar /
+                ; x.name, both DEFERRED -- the reference's whole name scan skips
+                ; spaces, so `NEXT A B` closes a `FOR AB` loop). Spec §5.2.
+                call    skip_spaces         ; A = the first non-space, HL on it
+                cp      '('                 ; a `(` after a name (spaces aside) is
+                jr      z,tp_ary            ; unambiguously a subscript -- ev_f_var/
+                                            ; str_eval_one rely on the same
+                                            ; disambiguation (arrays §9.4)
                 pop     af
                 ld      de,0                ; 0 = "scalar; store through the key"
                 xor     a                   ; Z = ok

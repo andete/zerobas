@@ -919,24 +919,89 @@ duplicating (and drifting from) what is written below.
       and one of them demanded a row — **`a.strpick`**, which is what proves
       `var_str_type` is load-bearing.
       ⚠️ Carried out of it: the two `- [ ]` items directly below.
-- [ ] 🔴 **`NEXT A (1)` — A SPACE BEFORE THE `(`. Filed 2026-08-08 by D-NXARY,
-      DEFERRED AND *NOT* FOR SPACE.** `a.spc` reads **NEXT without FOR** on both
-      references and **Syntax error** here. `tgt_parse` (`basic/vars.asm:242`)
-      tests for the subscript with a bare `ld a,(hl)` straight after
-      `var_name_key`, so its `(` is **lexically contiguous**: `A (1)` reads as
-      the scalar `A` and ` (1)` then reaches statement position.
-      💰 **The fix is `call skip_spaces`, 3 bytes, and page 1 has 5.** The
-      blocker is EVIDENCE, not budget: `tgt_parse` has **seven** call sites —
-      `READ`, console `INPUT`, `LINE INPUT`, `MID$(…)=`, `FIELD`, `LSET`/`RSET`
-      and `files.asm` — and the change decides what `READ A (1)` and
-      `LSET A (1)=` *mean* at the six D-NXARY did not measure
-      ([[a-shared-engine-fix-must-measure-its-other-callers]]). MS-BASIC's own
-      CHRGOT skips spaces, so it is very likely right everywhere, and *very
-      likely* is what this tree does not ship.
-      ⚠️ The row is **measured, printed and scored in neither direction** by
-      `nxary-acceptance`; a deferred row that started agreeing would be a
-      finding. The work is one characterization of ~6 rows across those six
-      sites, then a 3-byte edit.
+- [x] ✅ **`NEXT A (1)` — A SPACE BEFORE THE `(`, CLOSED 2026-08-08 by
+      D-TGTSPC**, [`docs/spec-basic-tgtspc.md`](docs/spec-basic-tgtspc.md),
+      measured in
+      [`docs/tgtspc-msx1-characterization.md`](docs/tgtspc-msx1-characterization.md),
+      gated by `make tgtspc-acceptance` at **26/26 rows on three sides** (28
+      cases, 2 deferred), with **BOTH references agreeing on all 28**.
+      D-NXARY deferred it for EVIDENCE, not budget, and the evidence is now all
+      **NINE** statement surfaces that reach `tgt_parse`, each with the
+      CONTIGUOUS form of its own statement as its own positive control on its
+      own fixture: `NEXT`, `READ`, console `INPUT` (both arms), `LINE INPUT`,
+      `MID$()=`, `INPUT #n`, `FIELD`, `LSET`/`RSET`. **12/26 → 26/26**, and
+      `nxary-acceptance` **21/21 + 1 deferred → 22/22** with `a.spc` un-deferred
+      ([[a-deferral-honoured-is-worth-more-than-one-filed]]). The fix is
+      `call skip_spaces` in place of `ld a,(hl)`, **one instruction, +2 B**;
+      page 1 **5 → 3 B**, low/sub/RAM untouched, `sub.rom` and `disk.rom`
+      byte-identical.
+      🎯 **THE FIRST QUESTION WAS NOT *"DOES THE REFERENCE SKIP THE SPACE"* BUT
+      *"IS THE SPACE STILL THERE"*.** If the reference's CRUNCH stripped it, a
+      parser-side fix would have spent every byte in the wrong file — and on
+      screen the two hypotheses are identical (both give `NEXT without FOR`).
+      Row `t.spc` reads the STORED LINE BYTES through `TXTTAB`, the instrument
+      `basic_probe_crunch.py` uses: `1 NEXT A (1)` crunches to
+      `83 20 41 **20** 28 12 29 00` on the VG-8020, the CF-3300 and here, byte
+      for byte. The `$20` survives. ⇒ the parser skips it.
+      🔴 **AND THE FILED ITEM WAS WRONG ON BOTH OF ITS NUMBERS.** The price said
+      **3 bytes**; it is **2** — a cost that forgets what it DISPLACES is a cost
+      for an insertion, not a substitution. And `tgt_parse` does not have
+      **seven** call sites: it has **EIGHT `call` instructions from NINE
+      statement surfaces**. The hand list is seven *other* surfaces and forgot
+      to count `ex_next`, the site that filed the residual; it also folds the
+      console `INPUT`'s two arms — two distinct `call`s — into one
+      ([[a-hand-listed-denominator-is-a-scope-claim]]). Three documents carried
+      the seven, `ex_next`'s own code comment included.
+      🔴 **`m.trail` TURNED THE PREDICTED SIDE EFFECT INTO A SECOND FIX.**
+      Skipping spaces also consumes a TRAILING space on the SCALAR path, and
+      `ex_mid_stmt` is the only caller that then reads its delimiter with a bare
+      `ld a,(hl)` — the other eight do their own `skip_spaces`. `MID$(A$ ,1,2)=`
+      `"XY"` is **`XYLLO`** on both references and was **Syntax error** here, so
+      the consumption is REQUIRED, not tolerated: one instruction closes two
+      divergences at that site.
+      🔴 **K-TS4 REDDENED A ROW THE PREDICTION EXCLUDED, BECAUSE THE PREDICTION
+      SAID "SCORED" AND A KNIFE DIFFS WHAT THE PROBE *PRINTS*.** `probe_report.`
+      `parse()` returns DEFERRED rows like any other. The extra row is
+      corroboration rather than noise: `x.dollar` moving under a cut that
+      touches nothing but the scalar marker proves zerobas really parses
+      `NEXT A $(1)` as the scalar `A`, which is the deferral's own stated cause.
+      Knives 5 × 2, **4 EXACT, both rounds identical**; K-TS2/K-TS3 are the same
+      cut at two different callers and separate to one row each, which is the
+      measurement a shared-engine slice owes.
+      ⚠️ Carried out of it: the `- [ ]` item directly below.
+- [ ] 🔴 **A SPACE INSIDE A VARIABLE REFERENCE'S NAME OR BEFORE ITS `$`
+      SUFFIX IS INSIGNIFICANT ON THE REFERENCE, AND IS NOT HERE. Filed
+      2026-08-08 by D-TGTSPC, MEASURED, and it is WIDER than the slice that
+      found it.** Two rows, both references agreeing:
+
+      | row | program | both references | zerobas |
+      |---|---|---|---|
+      | `x.dollar` | `FOR A=1 TO 2` / `NEXT A $(1)` / `PRINT"[OK]"` | **NEXT without FOR** | **Syntax error** |
+      | `x.name` | `FOR AB=1 TO 2` / `NEXT A B` / `PRINT"[OK]"` | **`OK`** | **NEXT without FOR** |
+
+      🎯 **`x.name` IS THE BIG ONE: `NEXT A B` CLOSES THE `FOR AB` LOOP.** The
+      reference treats a space *inside a variable name* as insignificant — its
+      name scan is CHRGET-based all the way down. That is `var_name_key` /
+      `var_str_type` (`basic/vars.asm`), a cursor position one step BEFORE the
+      one D-TGTSPC touches, and it reaches **every variable reference in every
+      expression**, not just the nine lvalue targets. The `call skip_spaces`
+      D-TGTSPC added runs after `var_name_key` has already stopped at the space,
+      so it cannot reach either row — which K-TS4 confirmed from the other
+      direction.
+      ⚠️ Both rows are **measured, printed and scored in neither direction** by
+      `tgtspc-acceptance`; a deferred row that started agreeing would be a
+      finding.
+      💰 **NOT SCOUTED AND NOT PRICED, and page 1 is at 3 B** — carve-scout
+      before assuming a budget ([[which-wall-binds-is-a-history-question]]).
+      ⚠️ Needs its own denominator first, and it is NOT the lvalue one: where
+      the space may fall inside a name (before the second letter, before a digit,
+      before `%`/`!`/`#`/`$`), whether it works in an r-value EXPRESSION as well
+      as a target (`PRINT A B`, `A B=1`), whether it survives the crunch the way
+      the `(` space does, whether two names can be run together, and what
+      `var_name_key`'s two-character key does with a space in the middle. It also
+      has to answer whether the tokeniser is involved at all — D-TGTSPC's `t.*`
+      rows are the instrument for that and would need their own pair here.
+
 - [ ] 🔴 **`ON ERROR GOTO 0` INSIDE A HANDLER MUST RE-RAISE THE CURRENT ERROR,
       AND ZEROBAS RUNS ON. Filed 2026-08-08 by D-NXARY, found by a row that was
       measuring something else.** Both references agreeing:
