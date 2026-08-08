@@ -1910,6 +1910,28 @@ lrvar-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lrvar.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-FORVAR: what a FOR/NEXT LOOP VARIABLE may be (docs/spec-basic-forvar.md)
+# `ex_for` parses its loop variable with the SINGLE-LETTER shim `ex_read`
+# stopped using at D-READVAR, so `FOR AB=` / `FOR A%=` are Syntax error where
+# both references read the loop. D-ARYLV measured three rows of that; three
+# readings are not a rule, and FOR differs from READ in the one way that
+# matters -- NEXT MATCHES ON THE STORED NAME, so widening the name moves the
+# MATCH, the frame layout and the nesting DEPTH with it.
+# 🔴 f.ary is a NEGATIVE control: `FOR A(1)=` is Syntax error on BOTH
+# references and must STAY that way -- this is a NAME residual, not an array
+# one.
+# ⚠️ THREE positive controls, and each names a different thing that could
+# break: c.for (the shape ex_for handles), c.next (the NAMED match, a separate
+# parse), c.let (the 2-char name STORE a fix reuses).
+#   make forvar-characterize ONLY=n.xtype SIDES=zb      # scope rows / sides
+forvar-characterize: repack-machine
+	python3 probes/basic/basic_probe_forvar.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+forvar-acceptance: repack-machine
+	python3 probes/basic/basic_probe_forvar.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2143,6 +2165,7 @@ clean:
         lvfix-characterize lvfix-acceptance \
         fldary-characterize fldary-acceptance \
         lrvar-characterize lrvar-acceptance \
+        forvar-characterize forvar-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

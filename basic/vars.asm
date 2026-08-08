@@ -124,9 +124,22 @@ vnk_hash:
                 ld      (VARTYPE),a
                 jr      vnk_eat
 vnk_dollar:
-                ld      a,8                 ; VARTYPE is unused by the string store (the
-                ld      (VARTYPE),a         ; `$` path never reads it) — kept defined so a
-                                            ; stray read never sees garbage
+                ; D-FORVAR (docs/spec-basic-forvar.md §4.2): this used to write 8
+                ; — byte for byte a default-double `A` — and five comments in
+                ; this tree existed to warn readers that (VARTYPE) LIES for a `$`
+                ; name. DEFTBL_STR is the code this SAME cell already carries for
+                ; a DEFSTR'd unsuffixed name, so the value lands in an
+                ; equivalence class every reader already handles rather than in a
+                ; new one. It buys three measured rows: `NEXT A$` now matches no
+                ; FOR frame (n.strnx — a MISS, which is what both references
+                ; answer, not a type error), `FOR A$=` shares one guard with
+                ; `DEFSTR A` / `FOR AB=` (f.str + f.defstr), and ev_f_var's
+                ; check_vartype_num finally SEES a `$` name in a numeric factor
+                ; — `A$="X" : B=1+A$` read ` 1 ` here against Type mismatch on
+                ; both references (x.numstr), D-DEFSTR's own silent-wrong-answer
+                ; class in the explicitly-suffixed form that slice did not cover.
+                ld      a,DEFTBL_STR
+                ld      (VARTYPE),a
 vnk_eat:
                 inc     hl
                 ret
@@ -750,41 +763,37 @@ elas_abort_fp:
                 pop     de                  ; discard [OFFSET]
                 jp      fp_runtime_error
 
-; --- var_get / var_set: single-letter compatibility shims ------------------
-; A = name (one char). Map to key (upcased name, 0) — identical to the key a
-; 1-char name produces via var_name_key, so single-letter variables set here are
-; fully interoperable with multi-character ones. Used by FOR/NEXT and READ, whose
-; loop/target variables are single-letter. var_set preserves DE (the value).
+; --- for_get / for_set: the FOR frame's loop variable ------------------------
+; D-FORVAR (docs/spec-basic-forvar.md §4.5). in: FOR_CUR[0..2] = the frame's key
+; (name0, name1, resolved type), exactly as for_name (basic/program.asm) parsed
+; it or as nx_have's ldir copied it back down. for_set preserves DE (the value).
 ;
-; F3 S3a/S3b (repack build): both shims route through the typed store at the
-; letter's RESOLVED default type -- S3a hardcoded double; S3b resolves it via
-; deftbl_lookup so DEFINT/SNG/DBL/STR reach FOR/NEXT and READ too. This is
-; load-bearing: every unsuffixed REFERENCE resolves through the DEFtbl, and
-; var_find_typed keys on (name,type), so a loop/READ variable stored under a
-; DIFFERENT type than its references resolve to would read back as an unset 0
-; (the S3b regression the shims must match). The loop math itself stays plain
-; int16 (D-D: a typed/float loop variable is deferred); var_set tags DE as int16
-; (FACTYP=2) so var_store_fac coerces the int value into the resolved type.
-var_get:
-                call    upcase
-                ld      b,a
-                ld      c,0
-                call    deftbl_num_type     ; A = the letter's resolved default type;
-                                            ; ERR 13 if it is a STRING default (D-DEFSTR)
-                jp      var_load_fac        ; FAC/FACTYP=type, DE=int16 fast path (tail)
-var_set:
-                call    upcase
-                ld      b,a
-                ld      c,0
+; These were `var_get`/`var_set`, "single-letter compatibility shims" that took
+; ONE upcased char in A, keyed it as (name, 0) and asked deftbl_num_type for the
+; letter's DEFAULT type. D-READVAR retired READ's use of them and D-FORVAR
+; retires the shim itself: the key now arrives whole, so the upcase, the
+; hardcoded `ld c,0` and the DEFtbl lookup all go -- and with them
+; deftbl_num_type, whose "ERR 13 on a DEFSTR letter" job moved to PARSE time,
+; where row f.defstr says both references put it.
+;
+; The loop math itself stays plain int16 (D-D: a typed/float loop variable is
+; deferred); for_set tags DE as int16 (FACTYP=2) so var_store_fac coerces the
+; int value into the target's own resolved type -- which is what makes
+; `FOR A#=1 TO 3` store into the double entry `PRINT A#` reads back (row f.hash),
+; and `FOR A%=` into the int one `A` does not (row f.coll).
+for_get:
+                ld      bc,(FOR_CUR)        ; name0, name1
+                ld      a,(FOR_CUR+2)       ; the resolved type -- var_find_typed keys on
+                jp      var_load_fac        ; all three (FAC/FACTYP=type, DE=int16 tail)
+for_set:
+                ld      bc,(FOR_CUR)
                 ld      a,2
-                ld      (FACTYP),a          ; FOR/NEXT & READ always hand var_set a plain
-                                            ; int16 value (D-D: the loop math itself stays
-                                            ; int16 in F3) -- tag it so var_store_fac's
-                                            ; target coercion widens DE via widen_int_to
-                                            ; instead of misreading FAC
-                call    deftbl_num_type     ; A = the letter's resolved default type;
-                                            ; ERR 13 if it is a STRING default (D-DEFSTR)
-                jp      var_store_fac       ; tail call (DE preserved across the lookup)
+                ld      (FACTYP),a          ; FOR/NEXT always hand for_set a plain int16
+                                            ; value -- tag it so var_store_fac's target
+                                            ; coercion widens DE via widen_int_to instead
+                                            ; of misreading FAC
+                ld      a,(FOR_CUR+2)
+                jp      var_store_fac       ; tail call (DE preserved throughout)
 
 ; --- string-variable store (own-design; see PROVENANCE.md) -----------------
 ; Parallel to the numeric var_find/get/set, but over STRTAB, whose entries are

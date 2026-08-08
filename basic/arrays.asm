@@ -1059,34 +1059,33 @@ str_eval_arr:
 ; that overlap on the numeric values. Three sites used to pass a P code into a C
 ; position unchecked, and were invisible only because P's string code happened to
 ; equal C's (both 1) -- see DEFTBL_STR's own header for the corruption that hid
-; behind that coincidence. These two entry points are the checked crossing: a
-; STRING default is not a numeric type, and reaching one of them with a string
-; default is ERR 13, exactly as both references answer (spec §3, and the same
-; disposition ex_for already gives the ONE shape it did guard, `FOR A$=`).
+; behind that coincidence. This entry point is the checked crossing: a STRING
+; default is not a numeric type, and reaching it with one is ERR 13, exactly as
+; both references answer (spec §3).
 ;
-; ⚠️ SITED IN THE LOW REGION ON PURPOSE. All three callers are in PAGE 1, which
-; had 8 B free against the low region's 23 (docs/rom-region-structure-review.md:
-; the two are co-mapped slot-0 pages, so a leaf like this moves between them
-; freely and an ordinary in-slot `call` reaches it). Page 1 therefore pays only
-; for the calls -- and var_get/var_set pay NOTHING, since they merely retarget a
-; `call deftbl_lookup` they already made.
+; ⚠️ SITED IN THE LOW REGION ON PURPOSE. Its caller is in PAGE 1, which had 8 B
+; free against the low region's 23 (docs/rom-region-structure-review.md: the two
+; are co-mapped slot-0 pages, so a leaf like this moves between them freely and
+; an ordinary in-slot `call` reaches it). Page 1 therefore pays only for the call.
 ;
 ; Raising from here is depth-independent: fre_abort_low resets SP from SAVSTK as
 ; its own first act (interp.asm ra_abort), so a caller with its text cursor still
-; pushed -- ex_for and ex_read both call var_set that way -- is safe. Same
-; contract ex_for's own `jp z,type_mismatch_error` already relies on.
+; pushed is safe. Same contract ex_for's own `jp z,type_mismatch_error` relies on.
 ;
-; Clobbers A and flags ONLY. BC/DE/HL survive, which is load-bearing at all three
-; callers: var_set needs DE (the value), var_get/var_set need BC (the key), and
-; ev_f_var needs HL (the advanced cursor).
-
-; --- deftbl_num_type: B = upcased letter -> A = its NUMERIC default type -----
-; deftbl_lookup, plus the check. For var_get/var_set (basic/vars.asm), the
-; single-letter shims behind FOR/NEXT and READ -- the pair that had NO string
-; guard at all and so did the actual damage.
-deftbl_num_type:
-                call    deftbl_lookup       ; A = DEFTBL[B-'A'] (preserves BC/DE/HL)
-                jr      dnt_check
+; Clobbers A and flags ONLY. BC/DE/HL survive, which is load-bearing at its
+; caller: ev_f_var needs HL (the advanced cursor).
+;
+; 🔴 THERE USED TO BE A SECOND ENTRY POINT HERE. `deftbl_num_type` (deftbl_lookup
+; + this check) served var_get/var_set, the single-letter FOR/NEXT/READ shims,
+; which took a LETTER and had to look its default type up. D-FORVAR
+; (docs/spec-basic-forvar.md §4.5) gave the FOR frame a whole (name, name, type)
+; key parsed by var_name_key, so the type arrives resolved and the lookup is
+; gone; D-READVAR had already retired READ's use of it. With no callers left it
+; is DELETED rather than left for the dead-code sweep to refuse -- and the
+; fallthrough label `dnt_check` went with it, folded into the body below, because
+; a label reachable only by fallthrough is exactly what that gate cannot see.
+; The "ERR 13 on a DEFSTR letter" disposition did not disappear: it moved to
+; PARSE time, where row f.defstr says both references put it.
 
 ; --- check_vartype_num: (VARTYPE) must not be a string default ---------------
 ; For ev_f_var (basic/expr.asm), a variable read in a NUMERIC context. Placed
@@ -1094,9 +1093,13 @@ deftbl_num_type:
 ; and the array-element road (ev_f_arr) both.
 ; ⚠️ It reads (VARTYPE) itself rather than taking A, so page 1 pays 3 bytes for
 ; the whole guard instead of 6.
+; 🎯 D-FORVAR WIDENED WHAT THIS SEES WITHOUT TOUCHING IT. var_name_key used to
+; resolve a `$` name's type to 8 -- indistinguishable from a default-double `A`
+; -- so `B=1+A$` sailed past here and silently read the numeric `A` as 0
+; (row x.numstr: ` 1 ` here, Type mismatch on both references). vnk_dollar now
+; writes DEFTBL_STR, so the guard finally sees it.
 check_vartype_num:
                 ld      a,(VARTYPE)         ; var_name_key's resolved type
-dnt_check:
                 cp      DEFTBL_STR
                 jp      z,type_mismatch_error   ; ERR 13 -- a string default is not
                                                 ; a numeric type (both references)

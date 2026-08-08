@@ -2840,7 +2840,14 @@ FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:
 ; ⚠️ D-FCH §3.2: with FCH_CEIL=15 the repack array is 32 B and would run over
 ; GP_RECLEN/OO_RECLEN_CHAN/FILES_HASPAT/CAS_WANT at $F006..; it moves into the
 ; same freed $EA00 page-3 window as FCH_MODES.
-FCH_RECLENS     equ     $EA10   ; 32 B ($EA10..$EA2F); $EA39..$EAFF free
+FCH_RECLENS     equ     $EA10   ; 32 B ($EA10..$EA2F); $EA92..$EAFF free (110 B)
+                                ; ⚠️ THIS LINE READ "$EA39..$EAFF free" UNTIL
+                                ; D-FORVAR, AND IT WAS ONE BYTE STALE: D-LPTVERB
+                                ; took $EA39 for LPTPOS and never updated it. A
+                                ; comment claiming free RAM is a claim like any
+                                ; other, and this one was measured before it was
+                                ; spent. D-FORVAR then took $EA3A..$EA92 for the
+                                ; relocated FOR stack (see FOR_STK above).
                                 ; (D-EDITVERB took $EA30..$EA38: the RENUM
                                 ; round-trip cells RN_PTR/RN_NEW/RN_OLD/RN_INC
                                 ; and read_line's RL_AUTO mode flag)
@@ -2891,20 +2898,43 @@ CAL_BUF         equ     $E600   ; cassette ASCII load: 256-byte tape block buffe
 ; and both sit in the idle FSECTOR_BUF (no disk I/O during either), below any stack
 ; descent. Same rationale as CAL_BUF above.
 CAS_WBUF        equ     $E600   ; cassette ASCII save: 256-byte tape block buffer (overlays CAL_BUF)
-; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
-; pointer addresses the next free slot, and the stack is empty when it equals
-; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =
-; [var:1][limit:2][step:2][curline:2][resume:2] (9 bytes).
+; Control stacks. Both grow upward; the pointer addresses the next free slot,
+; and the stack is empty when it equals its base. GOSUB frame =
+; [curline:2][resume:2] (4 bytes). FOR frame =
+; [name0:1][name1:1][type:1][limit:2][step:2][curline:2][resume:2] (11 bytes).
+;
+; D-FORVAR (docs/spec-basic-forvar.md §4.1/§4.6): the FOR frame's variable field
+; was ONE character. Both references match a NEXT on the loop variable's whole
+; identity -- both significant name characters AND the resolved type (row
+; n.xtype: `FOR A%=1 TO 3` / `NEXT A` is NEXT without FOR) -- so the field is now
+; the same (name0, name1, type) triple var_find_typed keys on, and the frame is
+; 11 bytes.
+;
+; 🔴 AND THAT IS WHY THE FOR STACK LEFT THIS PAGE. 8 frames x 11 = 88 B does not
+; fit at $E070 (DATASTATE is at $E0B8) and page $E0 is otherwise full, so the
+; honest choices were "relocate the stack" or "6 nested loops instead of 8". Row
+; f.dep8 (8 nested FOR/NEXT pairs, OK on all three sides) is what makes that a
+; measurement rather than a preference. $E070..$E0B8 -- 72 B of this crowded
+; page -- is now FREE.
 GSP             equ     $E041   ; GOSUB return-stack pointer (2)
 FSP             equ     $E043   ; FOR-stack pointer (2)
-FOR_CUR         equ     $E045   ; scratch: a working copy of one FOR frame (9)
-FOR_NEW         equ     $E04E   ; scratch: NEXT's freshly-stepped loop value (2)
+FOR_FRAME       equ     11      ; FOR frame size, in bytes (see the layout above)
+FOR_CUR         equ     $E045   ; scratch: a working copy of one FOR frame (11), and
+                                ; ALSO the key a NEXT parses into before it matches
+                                ; (spec §4.3 -- nx_have only writes it after the
+                                ; match, so the two uses cannot collide). Ends at
+                                ; $E04F: exactly the span the retired FOR_NEW frees,
+                                ; so GOSUB_STK below is untouched.
+; $E04E was FOR_NEW — NEXT's freshly-stepped loop value, parked in RAM across the
+; var_set call. D-FORVAR keeps it on the STACK instead (one push/pop replaces one
+; store and two loads on mutually exclusive branches), and FOR_CUR grew over it.
 GOSUB_STK       equ     $E050   ; GOSUB return-stack base
 GOSUB_DEPTH     equ     8
 GOSUB_STK_END   equ     GOSUB_STK + GOSUB_DEPTH*4   ; $E070
-FOR_STK         equ     $E070   ; FOR-stack base
-FOR_DEPTH       equ     8
-FOR_STK_END     equ     FOR_STK + FOR_DEPTH*9       ; $E0B8 (stays below LINEBUF)
+; $E070..$E0B8 was FOR_STK — 72 B, FREE since D-FORVAR relocated the stack (above).
+FOR_STK         equ     $EA3A   ; FOR-stack base, in the page-3 window S-FCH-1 freed
+FOR_DEPTH       equ     8       ; (see FCH_RECLENS below). 8 x 11 = 88 B.
+FOR_STK_END     equ     FOR_STK + FOR_DEPTH*FOR_FRAME   ; $EA92
 ; DATA / READ / RESTORE state. The reference stores DATA items as verbatim ASCII
 ; text (oracle: `data 5,6` -> $84 $20 '5' ',' '6'), so READ parses ASCII from the
 ; stored program at run time and a DATA cursor walks the $84-tagged statements.
@@ -3189,8 +3219,21 @@ DEFTBL          equ     $F6CA   ; per-letter default-type map, A..Z (26) --
 ; valid C code the write landed inside a legitimate entry, so it read as a wrong
 ; VALUE rather than as a crash. Both references raise ERR 13 there.
 ; Every namespace P -> C crossing is now CHECKED, not coincidental:
-;   var_get/var_set  -> deftbl_num_type   (basic/arrays.asm, low region)
-;   ev_f_var         -> check_vartype_num (same block; covers ev_f_arr too)
+;   ev_f_var         -> check_vartype_num (basic/arrays.asm, low region; covers
+;                                          ev_f_arr too)
+;   FOR/NEXT         -> ex_for's own `cp DEFTBL_STR` (basic/program.asm). The
+;                       crossing MOVED there at D-FORVAR: the frame now carries a
+;                       type var_name_key resolved rather than a letter for
+;                       deftbl_num_type to look up, so the check happens once at
+;                       PARSE time -- which is also where both references put it
+;                       (`DEFSTR A` / `FOR AB=1 TO 3` is ERR 13, row f.defstr).
+;                       deftbl_num_type had no callers left and is deleted.
+; 🎯 AND D-FORVAR WIDENED WHAT THE FIRST ONE CATCHES. var_name_key's vnk_dollar
+; used to resolve an EXPLICIT `$` suffix to type 8, so `B=1+A$` crossed into the
+; numeric road unchecked and silently read the numeric `A` as 0 (` 1 ` here
+; against Type mismatch on both references, row x.numstr) -- the identical
+; silent-wrong-answer this block describes for the DEFSTR form, in the one form
+; D-DEFSTR did not cover. vnk_dollar now writes DEFTBL_STR.
 ; var_str_type (basic/vars.asm) reads this code RAW and must keep doing so: it
 ; is used symmetrically by sub/deftype.asm's write and that test, which is the
 ; whole reason the value can change at all without breaking DEFSTR.

@@ -1449,45 +1449,87 @@ ret_frame:
                 ld      (GSP),hl            ; GSP -= 4 (popped)
                 ret
 
+; --- for_name: parse a FOR/NEXT loop variable into the frame key -------------
+; D-FORVAR (docs/spec-basic-forvar.md §4.3), shared by ex_for and ex_next.
+; in:  HL = cursor at the name's first letter (the caller has run is_letter).
+; out: FOR_CUR[0..2] = the frame's KEY; A = the resolved type; HL advanced past
+;      the whole name AND its type suffix.
+; Clobbers A, BC, DE, HL (var_name_key's own contract).
+;
+; 🔴 THE KEY IS [name1][name0][type], NOT [name0][name1][type], AND THE ORDER IS
+; LOAD-BEARING RATHER THAN ARBITRARY. `LD (nn),BC` writes C first, and
+; var_name_key returns B = name0 / C = name1 -- so this IS the layout, and
+; for_get/for_set read it straight back with `ld bc,(FOR_CUR)`. Getting a byte
+; order for free is worth more than a tidier one for 4 bytes.
+; ⚠️ Which means name0 lives at FOR_CUR+1, and every reader below says +1
+; DELIBERATELY. The first draft of this slice put the bare-NEXT sentinel on
+; FOR_CUR+0 and the gate caught it in three rows: name1 is 0 for any
+; SINGLE-CHARACTER name, so `NEXT A` read as a bare NEXT and matched the top
+; frame whatever its name. Every row whose top frame happened to BE the right one
+; passed regardless -- only n.xtype, n.prefix and n.strnx could see it.
+;
+; 🎯 FOR_CUR IS ALSO NEXT'S KEY, AND THAT COSTS NO RAM. FOR_CUR is scratch that
+; only ex_for and nx_have write, and nx_have writes it AFTER the match -- so
+; ex_next parks its parsed key here and nx_scan compares each frame against it
+; in place; the ldir that follows a match rewrites the same three bytes.
+for_name:
+                call    var_name_key        ; BC = key, HL past name + suffix,
+                ld      (FOR_CUR),bc        ; (VARTYPE) = the resolved type (F3/S3b:
+                ld      a,(VARTYPE)         ; the suffix, or the DEFtbl default for
+                ld      (FOR_CUR+2),a       ; name0 when there is none)
+                ret
+
 ; --- ex_for: FOR <var> = <init> TO <limit> [STEP <step>] ---------------------
 ; Assign init to the loop variable, then push a frame
-; [var:1][limit:2][step:2][CURLINE:2][resume-ptr:2] and fall through to run the
-; loop body (the statements following FOR). NEXT consults the top frame.
+; [name0:1][name1:1][type:1][limit:2][step:2][CURLINE:2][resume-ptr:2] and fall
+; through to run the loop body (the statements following FOR). NEXT consults the
+; top frame.
 ;
-; DOCUMENTED DIVERGENCE (PROVENANCE.md): the FOR/NEXT loop variable is a SINGLE
-; letter only — the frame stores it in one byte (frame[0]) and NEXT matches on
-; one char. LET/PRINT/READ honour 2-significant-char names (var_name_key), so a
-; `FOR INDEX=…` reads only 'I' and then fails the '=' check (it sees 'N'). The
-; keying is consistent — `FOR I` and `I=` address the same cell, no aliasing —
-; this is purely a parse limit. Game-loader stubs use `FOR I=…`/`FOR X=…`, so
-; single-letter loop vars suffice; multi-char loop vars are Phase-2 scope.
+; D-FORVAR (docs/spec-basic-forvar.md, 30 of 32 measured rows, BOTH references
+; agreeing on all 32): a FOR loop variable is an ordinary scalar variable
+; REFERENCE -- any name (2 significant chars), any type suffix, the DEFtbl
+; default when there is none -- exactly what LET and READ and INPUT accept. This
+; used to consume ONE upcased letter into a 1-byte frame field and store through
+; var_get/var_set, the single-letter int16 shim, so `FOR AB=`, `FOR A1=`,
+; `FOR A%=` and `FOR INDEX=` were all Syntax error while both references ran the
+; loop. It is exactly what exr_lp did before D-READVAR, in the verb that slice
+; never re-checked.
+;
+; 🎯 AND THE TYPE IS IN THE FRAME BECAUSE THE REFERENCES PUT IT IN THE MATCH.
+; `FOR A%=1 TO 3` / `NEXT A` is NEXT without FOR on both machines (row n.xtype),
+; so the loop variable's identity is (name0, name1, type) and nx_scan compares
+; all three. One field then serves both the match and the store: var_find_typed
+; keys on exactly that triple.
+;
+; 🔴 `FOR A(1)=` STAYS A SYNTAX ERROR (row f.ary, both references). var_name_key
+; walks a name and a suffix and never a subscript, so it leaves HL on the `(`
+; and the EQ_TOKEN test below rejects it -- this is a NAME residual, not an
+; array one, and tgt_parse (which resolves subscripts) is the wrong tool.
 ex_for:
                 inc     hl                  ; past the FOR token
                 call    skip_spaces
                 call    is_letter
                 jp      nc,stmt_error
-                call    upcase
-                ld      (FOR_CUR),a         ; frame[0] = loop variable name
-                inc     hl                  ; consume the letter
+                call    for_name            ; FOR_CUR[0..2] = the key; A = the type
+                cp      DEFTBL_STR          ; `FOR A$=` -- and `DEFSTR A` / `FOR AB=` --
+                jp      z,type_mismatch_error ; are ERR 13, not ERR 2 (rows f.str and
+                                            ; f.defstr, both references). The test is on
+                                            ; the RESOLVED type, not on the `$` char,
+                                            ; because f.defstr says the rule is.
                 call    skip_spaces
-                cp      '$'                 ; `FOR A$=…` is ERR 13, not ERR 2 (measured
-                jp      z,type_mismatch_error ; VG-8020) -- the ONE lvalue shape in this
-                                            ; statement that is a type error rather than
-                                            ; a syntax error.
                 cp      EQ_TOKEN            ; '=' -> $EF
                 jp      nz,stmt_error
                 inc     hl
                 call    eval                ; DE = initial value, HL advanced
-                ld      a,(FOR_CUR)
-                push    hl                  ; guard cursor across var_set
-                call    var_set             ; var := initial value
+                push    hl                  ; guard cursor across for_set
+                call    for_set             ; var := initial value
                 pop     hl
                 call    skip_spaces
                 cp      TO_TOKEN           ; TO -> $D9
                 jp      nz,stmt_error
                 inc     hl
                 call    eval                ; DE = limit
-                ld      (FOR_CUR+1),de      ; frame[1..2] = limit
+                ld      (FOR_CUR+3),de      ; frame[3..4] = limit
                 call    skip_spaces
                 cp      STEP_TOKEN         ; STEP -> $DC (optional)
                 jr      z,ef_step
@@ -1497,21 +1539,21 @@ ef_step:
                 inc     hl
                 call    eval                ; DE = step
 ef_havestep:
-                ld      (FOR_CUR+3),de      ; frame[3..4] = step
-                ld      (FOR_CUR+7),hl      ; frame[7..8] = resume ptr (loop body)
+                ld      (FOR_CUR+5),de      ; frame[5..6] = step
+                ld      (FOR_CUR+9),hl      ; frame[9..10] = resume ptr (loop body)
                 ld      de,(CURLINE)
-                ld      (FOR_CUR+5),de      ; frame[5..6] = CURLINE
+                ld      (FOR_CUR+7),de      ; frame[7..8] = CURLINE
                 ld      hl,(FSP)            ; bounds: FSP must stay below FOR_STK_END
                 ld      de,FOR_STK_END
                 or      a
                 sbc     hl,de
                 jr      nc,ef_over          ; too many nested FORs
-                ld      hl,FOR_CUR          ; push the 9-byte frame
+                ld      hl,FOR_CUR          ; push the FOR_FRAME-byte frame
                 ld      de,(FSP)
-                ld      bc,9
+                ld      bc,FOR_FRAME
                 ldir
-                ld      (FSP),de            ; advance FSP by 9
-                ld      hl,(FOR_CUR+7)      ; HL = loop body -> run it
+                ld      (FSP),de            ; advance FSP by FOR_FRAME
+                ld      hl,(FOR_CUR+9)      ; HL = loop body -> run it
                 jp      exec_stmt
 ef_over:
                 ld      a,$CE
@@ -1523,14 +1565,23 @@ ef_over:
 ; Step the loop variable of the matching FOR frame, test against the limit, and
 ; either resume at the frame's body (loop continues) or pop the frame and run on
 ; (loop ends). A named NEXT closes any inner frames above the matching one.
+;
+; D-FORVAR: the name parse is for_name's, shared with ex_for, and the match is a
+; THREE-byte compare against FOR_CUR[0..2] -- name0, name1 AND the resolved type.
+;
+; 🎯 A `$` NEXT NAME IS NOT REJECTED HERE, AND THAT IS A MEASUREMENT.
+; `FOR A=1 TO 3` / `NEXT A$` is NEXT without FOR on both references (row
+; n.strnx), NOT Type mismatch -- so the symmetry with ex_for's own guard would
+; answer the wrong error. var_name_key resolves a `$` name's type to DEFTBL_STR
+; (D-FORVAR spec §4.2), a code ex_for refuses to put in a frame, so such a key
+; matches nothing, walks the stack out and raises ERR 1 with no guard and no
+; bytes spent here at all.
 ex_next:
                 inc     hl                  ; past the NEXT token
                 call    skip_spaces
                 call    is_letter
                 jr      nc,nx_notletter     ; bare NEXT (or junk -> ERR 2 below)
-                call    upcase
-                ld      c,a                 ; C = named loop variable
-                inc     hl                  ; consume the letter
+                call    for_name            ; FOR_CUR[0..2] = the key being matched
                 jr      nx_find
 nx_notletter:
                 ; `NEXT 1` is ERR 2 on the reference, not "next without for" --
@@ -1541,7 +1592,11 @@ nx_notletter:
                 cp      COLON
                 jp      nz,stmt_error
 nx_top:
-                ld      c,0                 ; 0 = match the top frame (no letter)
+                xor     a                   ; name0 := 0 -> match the top frame. No real
+                ld      (FOR_CUR+1),a       ; name0 can be 0 (is_letter gated the parse),
+                                            ; and it is at +1 -- see for_name's header:
+                                            ; FOR_CUR+0 is name1, which IS 0 for every
+                                            ; single-character name.
 nx_find:
                 push    hl                  ; save the post-NEXT cursor
                 ld      hl,(FSP)            ; empty stack -> NEXT without FOR
@@ -1550,18 +1605,29 @@ nx_find:
                 sbc     hl,de
                 jp      z,nx_nofor
 nx_scan:
-                ld      hl,(FSP)            ; HL = top frame base (FSP - 9)
-                ld      de,9
-                or      a
-                sbc     hl,de
-                ld      a,c
+                ld      hl,(FSP)
+                ld      de,-FOR_FRAME       ; HL = top frame base. Arithmetic, not a
+                add     hl,de               ; comparison -- the two FOR_STK bound tests
+                                            ; keep or a/sbc hl,de because there the Z
+                                            ; flag IS the result.
+                ld      a,(FOR_CUR+1)       ; name0 (for_name's header: +1, not +0)
                 or      a
                 jr      z,nx_have           ; bare NEXT accepts the top frame
-                ld      a,(hl)              ; frame's loop variable
-                cp      c
-                jr      z,nx_have           ; named NEXT matches this frame
+                push    hl
+                ld      de,FOR_CUR
+                ld      b,3                 ; name0, name1 AND the TYPE -- row n.xtype:
+nx_cmp:                                     ; `FOR A%` / `NEXT A` is NEXT without FOR on
+                ld      a,(de)              ; both references, so the type is part of the
+                cp      (hl)                ; identity and not just of the store.
+                inc     hl                  ; INC touches no flag, so the CP result
+                inc     de                  ; survives to the JR below.
+                jr      nz,nx_miss
+                djnz    nx_cmp
+                pop     hl
+                jr      nx_have             ; named NEXT matches this frame
+nx_miss:
+                pop     hl
                 ld      (FSP),hl            ; mismatch -> close this inner frame
-                ld      hl,(FSP)
                 ld      de,FOR_STK
                 or      a
                 sbc     hl,de
@@ -1570,36 +1636,33 @@ nx_scan:
 nx_have:
                 push    hl                  ; save the frame base (for pop / keep)
                 ld      de,FOR_CUR          ; work on a copy of the frame
-                ld      bc,9
+                ld      bc,FOR_FRAME
                 ldir
-                ld      a,(FOR_CUR)         ; var := var + step
-                call    var_get             ; DE = current value
-                ld      hl,(FOR_CUR+3)      ; step
+                call    for_get             ; DE = current value  (var := var + step)
+                ld      hl,(FOR_CUR+5)      ; step
                 add     hl,de               ; HL = stepped value
-                ld      (FOR_NEW),hl
-                ex      de,hl               ; DE = stepped value
-                ld      a,(FOR_CUR)
-                call    var_set
-                ld      hl,(FOR_CUR+3)      ; loop test depends on the step sign
+                push    hl                  ; [stepped] -- the stack is the scratch the
+                ex      de,hl               ; retired FOR_NEW cell used to be
+                call    for_set
+                ld      hl,(FOR_CUR+5)      ; loop test depends on the step sign
                 bit     7,h
+                pop     hl                  ; HL = stepped value (POP touches no flag)
                 jr      nz,nx_neg
-                ld      hl,(FOR_NEW)        ; step >= 0: end when value > limit
-                ld      de,(FOR_CUR+1)
+                ld      de,(FOR_CUR+3)      ; step >= 0: end when value > limit
                 call    cmp16_bits          ; 1=<, 2==, 4=>
                 cp      4
                 jr      z,nx_end
                 jr      nx_again
 nx_neg:
-                ld      hl,(FOR_NEW)        ; step < 0: end when value < limit
-                ld      de,(FOR_CUR+1)
+                ld      de,(FOR_CUR+3)      ; step < 0: end when value < limit
                 call    cmp16_bits
                 cp      1
                 jr      z,nx_end
 nx_again:
                 pop     hl                  ; frame stays on the stack
-                ld      hl,(FOR_CUR+5)      ; resume at the loop body
+                ld      hl,(FOR_CUR+7)      ; resume at the loop body
                 ld      (CURLINE),hl
-                ld      hl,(FOR_CUR+7)
+                ld      hl,(FOR_CUR+9)
                 ld      (RESUMEPTR),hl
                 ld      a,1
                 ld      (RESUMEFLAG),a
