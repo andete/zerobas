@@ -132,6 +132,93 @@ fldf_next:
 ; now (see below), so no resident shim is needed for the repack build.
 
 ; ===========================================================================
+; D-FLDARY — an ARRAY ELEMENT as a FIELD / LSET / RSET target
+; (docs/spec-basic-fldary.md §4.1/§4.2)
+; ===========================================================================
+; Both parse sites below used to `call var_name_key` and use the 2-byte NAME key
+; verbatim, so a `(` after the name stopped the cursor dead and the statement was
+; `Syntax error` (measured, CF-3300: `FIELD#1,10 AS A$(1)` is `OK` there).
+;
+; 🎯 THE TABLE DOES NOT CHANGE, AND THAT IS THE WHOLE PRICE DIFFERENCE. D-LVFIX
+; §7 declined this pair partly because an element needs a stable discriminator
+; BESIDE the name key -- FLD_ENTSZ 6 -> 8, i.e. 128 B into the 96 B hole below
+; GP_RECNO, costing FLD_SLOTS 16 -> 12 or 32 B of rehomed RAM. It costs neither,
+; because the discriminator does not have to sit beside the key: IT CAN BE THE
+; KEY. fld_find matches on (k0,k1) alone, so an element entry stores
+;   k0 = ((elem_addr - ARYTAB) >> 8) | $80 ,  k1 = (elem_addr - ARYTAB) & $FF
+; and a scalar entry stores today's name key. fld_init / fld_clear_chan /
+; fld_find / fld_add / fld_lookup and the sub/fldlook.asm page-0 tenant are all
+; UNTOUCHED; FLD_ENTSZ stays 6, FLD_SLOTS stays 16, no RAM grows and the tenant
+; ABI (basic/PROVENANCE.md §random-access records) does not move.
+;
+; 🔴 THE TWO KEY SPACES ARE DISJOINT BY CONSTRUCTION, AND THE PROOF IS AN ASSERT.
+; A scalar's k0 is the UPCASED FIRST CHARACTER of a name whose is_letter every
+; caller has already checked, so k0 is $41..$5A -- always < $80. An element's k0
+; is >= $80 iff the ARYTAB-relative offset fits 15 bits, and the variable region
+; is bounded below by TXTBASE ($8001) and above by min(HIMEM,TXTMAX) = TXTMAX
+; ($BB00): at most 15103 B, a factor of 2.17 inside the bound. That is a fact
+; about the MEMORY MAP, not about this code, so it is checked at assembly time
+; right here rather than assumed.
+;
+; ⚠️ `set 7,h` IS NOT FALSIFIABLE BY ANY ROW, and that is stated rather than
+; defended (spec §4.2). Without it the spaces are STILL disjoint today, because
+; offset>>8 <= $3A < $41; a colliding program needs an array-region offset of at
+; least $4100 = 16640 B, which the 15103 B ceiling forbids. The two bytes buy the
+; margin from 1.1x to 2.17x and survive a memory-map change the bare `< $41`
+; argument would not. Its knife is the ASSERT below (spec §8 K-FA7), not a row.
+    IF (TXTMAX - TXTBASE) > $7FFF
+                db      FLD_ELEMENT_KEY_BIT15_NOT_FREE__ARRAY_REGION_MAY_EXCEED_32K
+    ENDIF
+
+; --- tgt_parse_fld: parse an lvalue target -> its FLD_TAB key ---------------
+; in:  HL = cursor at the name's first letter (the caller has already checked
+;           is_letter); A = var_str_type's mode, exactly as tgt_parse wants it.
+;           🎯 BOTH call sites already hold it: each does `call var_str_type` /
+;           `or a` / `jp z,<syntax>`, which leaves A = 1.
+; out: BC = the key to add/match; HL = cursor past the whole reference (past `)`
+;      for an element). A failed array resolve does NOT return (spec §5.3).
+; Clobbers A,BC,DE (and HL, which is the advanced cursor).
+tgt_parse_fld:
+                call    tgt_parse           ; BC=key, (TGT_ADDR)=elem addr or 0
+                jp      nz,fp_runtime_error ; FPERR already mapped by
+                                            ; ary_op0_resolve -> the reference's
+                                            ; own `Subscript out of range`.
+                                            ; 🎯 FALSIFIABLE here, unlike D-LVFIX's
+                                            ; two aborts: exec_stmt CLEARS FPERR at
+                                            ; the statement boundary (interp.asm)
+                                            ; and ex_field runs no check between,
+                                            ; so cutting this makes FIELD..A$(9)
+                                            ; print OK. Spec §8 K-FA5.
+                ld      de,(TGT_ADDR)
+                ld      a,d
+                or      e
+                ret     z                   ; scalar: BC is already the name key
+                                            ; fall through with DE = elem addr
+
+; --- fld_key_de: DE = an element address -> BC = its FLD_TAB key ------------
+; Preserves HL (the caller's text cursor -- both parse sites need it, and so does
+; nothing at the read hook, which simply does not care). Clobbers A, DE.
+; 🔴 ARYTAB-RELATIVE, NOT ABSOLUTE (spec §5.1): a FIELD and the LSET that uses it
+; are different statements, and every scalar allocation in between moves the
+; whole array region up (arrays slice-4b §13a). ARYTAB moves by the same delta,
+; so the offset is invariant under it -- and under a new DIM (arrays append
+; above) and under a string GC (which compacts bodies, not element slots).
+; ⚠️ NOT invariant under ERASE, which compacts the descriptor list. A named limit
+; with a price and no oracle -- spec §5.4.
+fld_key_de:
+                push    hl                  ; guard the caller's cursor
+                ex      de,hl               ; HL = the element address
+                ld      de,(ARYTAB)
+                or      a                   ; (A is d|e, non-zero; this clears CF)
+                sbc     hl,de               ; HL = ARYTAB-relative offset
+                set     7,h                 ; -> the half of the key space no
+                                            ; var_name_key key can reach
+                ld      b,h
+                ld      c,l
+                pop     hl
+                ret
+
+; ===========================================================================
 ; FIELD #f, w1 AS v1$, w2 AS v2$, ...
 ; ===========================================================================
 ; HL = cursor at the FIELD token. Drops any prior fields on the channel, then walks
@@ -191,7 +278,9 @@ exf_item:
                 call    var_str_type        ; A=1 if `$` suffix
                 or      a
                 jp      z,exf_syn           ; must be a string var
-                call    var_name_key        ; BC = key; HL past name + `$`
+                call    tgt_parse_fld       ; BC = key (name, or the ARYTAB-relative
+                                            ; element key -- D-FLDARY); HL past the
+                                            ; name + `$` + any `(subs)`
                 pop     de                  ; DE = width (E = width, D = 0 for w<=255)
                 push    hl                  ; guard cursor across the table write
                 call    fld_add             ; add [FLD_CHAN, BC, FLD_CUROFF, E]; bump offset
@@ -280,7 +369,9 @@ lrset_common:
                 call    var_str_type        ; A=1 if `$`
                 or      a
                 jp      z,stmt_error        ; must be a string var
-                call    var_name_key        ; BC = key; HL advanced past name + `$`
+                call    tgt_parse_fld       ; BC = key (name, or the ARYTAB-relative
+                                            ; element key -- D-FLDARY); HL advanced
+                                            ; past the name + `$` + any `(subs)`
                 push    hl                  ; guard cursor across the lookup
                 call    fld_find            ; CF set -> HL -> entry
                 jr      nc,lrset_notfld
@@ -317,61 +408,38 @@ lrset_notfld:
 ; lrset_store — copy the [len][bytes] string at STRPTR into the record-buffer field
 ; FSECTOR_BUF+(LRSET_OFF), width (LRSET_W), justify (LRSET_JUST). The field is first
 ; space-filled, then min(srclen,width) bytes are copied (left- or right-aligned);
-; a longer source truncates from the right. Clobbers A,BC,DE,HL.
+; a longer source truncates from the right.
+;
+; --- repack: a resident stub over the SUBROM_IDX_LRSETST page-0 tenant ------
+; docs/spec-basic-fldary.md §6.4 — the D-FLDARY FUNDING CARVE. The body (68 B of
+; main page 1) moved whole to sub/lrsetst.asm; this stub is 11 B, so the carve
+; returns 57 B, against D-FLDARY's measured 38 B requirement.
+;
+; WHY THIS ONE, and it is not "because it is the biggest". D-LVFIX's cluster
+; attempt (--entries ex_field,ex_lset,ex_rset,fld_add,fld_find) came back NOT
+; page-0-evictable — 313 absent-region callees reached through resident main
+; page 1, because the statement HEADS drag stmt_error/eval and thus the whole
+; interpreter behind them. The leaf-only re-run
+; (fld_add,fld_find,fld_clear_chan,fld_init,lrset_store) is page-0-tenant CLEAN
+; with ONE blocker, and of that set lrset_store is the one taken:
+;   * 68 B in ONE contiguous span, six labels, ONE caller (lrset_common below);
+;   * 🎯 ZERO REGISTER MARSHALLING. Every input is a RAM cell — LRSET_OFF,
+;     LRSET_W, LRSET_JUST, STRPTR, FSECTOR_BUF ($E5C0, page 3) — and it returns
+;     nothing. fld_find, by contrast, returns CF+HL, and CF collides with
+;     subrom_call's own CF (which means "sub-ROM absent", never "found"), so it
+;     would have had to invent a cell. Nothing here does.
+;   * its ONE blocker is 8 bytes: pu_deref_body (main LOW region, switched out
+;     under a page-0 CALSLT) is inlined sub-side in 5 B — the caller's A does not
+;     need preserving here, since `ld a,(LRSET_W)` reloads it two instructions
+;     later. Exactly the disposition sub/fldlook.asm gives mk_rvdesc.
+;
+; COLD ENOUGH: one CALSLT per LSET/RSET statement, already downstream of
+; fch_select's 512-byte LDIR pair when the channel changes. Same argument the
+; fld_lookup carve made one document earlier.
 lrset_store:
-                ld      hl,(LRSET_OFF)
-                ld      de,FSECTOR_BUF
-                add     hl,de               ; HL = field start
-                ; space-fill the whole field
-                push    hl
-                ld      a,(LRSET_W)
-                or      a
-                jr      z,lrs_filled
-                ld      b,a
-lrs_fill:
-                ld      (hl),' '
-                inc     hl
-                djnz    lrs_fill
-lrs_filled:
-                pop     hl                  ; HL = field start
-                ld      de,(STRPTR)
-                ld      a,(de)              ; source length
-                ld      c,a                 ; C = source length
-                push    hl                  ; guard field start
-                ld      h,d
-                ld      l,e                 ; HL = source descriptor addr
-                call    pu_deref_body       ; HL -> source bytes (arrays
-                                            ; slice-4a; shared with
-                                            ; printusing.asm — page 1 has no
-                                            ; slack for a 3rd duplicate)
-                ex      de,hl               ; DE = source bytes
-                pop     hl                  ; HL = field start (restored)
-                ld      a,(LRSET_W)
-                cp      c
-                jr      nc,lrs_ncopy        ; width >= len -> copy len
-                ld      c,a                 ; width < len -> copy width (truncate)
-lrs_ncopy:
-                ld      a,(LRSET_JUST)
-                or      a
-                jr      z,lrs_copy          ; left: dest = field start
-                ; right: dest = field start + (width - ncopy)
-                ld      a,(LRSET_W)
-                sub     c
-                add     a,l
-                ld      l,a
-                jr      nc,lrs_copy
-                inc     h
-lrs_copy:
-                ld      a,c
-                or      a
-                ret     z                   ; nothing to copy
-                ld      b,c
-lrs_cp:
-                ld      a,(de)
-                ld      (hl),a
-                inc     de
-                inc     hl
-                djnz    lrs_cp
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST
+                call    subrom_call         ; no args, no result, cannot fail
+                jp      c,subrom_absent_error
                 ret
 
 ; ===========================================================================

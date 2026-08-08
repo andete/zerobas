@@ -89,6 +89,45 @@ sev_have:
 str_eval_no:
                 or      a                   ; CF clear -> not a string operand
                 ret
+
+; --- sea_fld: the FIELDed-READ hook for an ARRAY ELEMENT --------------------
+; D-FLDARY (docs/spec-basic-fldary.md §4.3). 🔴 THE READ PATH IS A THIRD SITE AND
+; NOBODY HAD LISTED IT. A fielded variable behaves only because the SCALAR path
+; above calls fld_lookup; str_eval_arr (basic/arrays.asm) points STRPTR straight
+; at the element and never consults FLD_TAB, so before this hook `LSET A$(1)`
+; could not be read back whatever FIELD recorded -- and a fix that taught only
+; the two PARSE sites about subscripts would have turned `d.ary` green for the
+; wrong reason and left `s.fldary` red (spec §5.2).
+;
+; ⚠️ SITED IN PAGE 1 ON PURPOSE. str_eval_arr's own file is the LOW region, which
+; had 7 B; carve_scout reports basic/arrays.asm as 0 of 46 labels in page 1. So
+; the low side pays ONE byte for `jr z` -> `jp z` and the hook lives here, beside
+; the scalar twin it mirrors. Placed between str_eval_no and str_eval_ok so the
+; tail FALLS THROUGH (worth 3 B).
+;
+; 🎯 PUBLISHING STRPTR FIRST IS WHAT MAKES THIS 10 B INSTEAD OF 14. fld_lookup is
+; `call fld_find` / `ret nc`: on a miss it touches nothing. So write the element
+; address first and let a hit overwrite it -- the whole not-found branch goes.
+;
+; in:  DE = the resolved element address (str_eval_arr's success arm only -- the
+;      deferred-error arm keeps its own STR_EMPTY tail and deliberately does NOT
+;      look up: there is no element, and a lookup on a garbage offset is exactly
+;      the wild read that arm exists to prevent).
+;
+; ⚠️ HL IS THE LIVE TEXT CURSOR HERE AND fld_lookup CLOBBERS IT. str_eval_one's
+; SCALAR arm above guards it with its own push/pop for exactly this reason, and
+; the array arm has no such guard of its own -- str_eval_arr advances HL past the
+; subscripts and str_eval_ok returns it. Omitting these two bytes made every
+; FIELDed array-element read return a wrecked cursor; the gate read `<NO OUTPUT>`
+; on all six s.*/r.* rows while every d.* row stayed green, which is what pointed
+; at the READ hook rather than at the parse sites.
+sea_fld:
+                ld      (STRPTR),de         ; default: the element itself, verbatim
+                push    hl                  ; the text cursor -- see above
+                call    fld_key_de          ; BC = the ARYTAB-relative element key
+                call    fld_lookup          ; FIELDed? -> STRPTR = FLD_DESC slice
+                pop     hl
+                                            ; fall through into str_eval_ok
 str_eval_ok:
                 ld      a,1
                 ld      (VALTYP),a

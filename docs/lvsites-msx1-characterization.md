@@ -135,21 +135,37 @@ false pass — applied without asking *who* failed.
 
 ## 6. Status
 
-✅ **ACTED ON 2026-08-08 by D-LVFIX** ([`spec-basic-lvsites.md`](spec-basic-lvsites.md)),
-which shipped **two** of the four sites and **DECLINED the other two with
-numbers**. This table now reads **6/10** (up from 4/10): `m.ary` and `f.ary` are
-closed; `d.ary` and `s.fldary` are the declined `FIELD`/`LSET` pair (the blocker
-is a **third** site — the FIELDed-READ hook on `str_eval_arr` — plus a `FLD_TAB`
-that cannot identify an element, spec §7); `s.ctl`/`s.ary` remain the separate
-non-FIELDed `LSET` residual of §3. Everything below is the ORIGINAL measurement
-and is left as it was recorded.
+✅ **ALL FOUR SITES ARE CLOSED as of 2026-08-08**, in two slices, and this table
+now reads **8/10** (up from the 4/10 it was measured at):
 
-⚠️ **MEASUREMENT ONLY. No byte has moved for it**, and
+* **D-LVFIX** ([`spec-basic-lvsites.md`](spec-basic-lvsites.md)) shipped
+  `ex_mid_stmt` and `inp_readvar` — `m.ary`, `f.ary` — for +31 B of main page 1,
+  and **DECLINED the other two WITH NUMBERS** (§7).
+* **D-FLDARY** ([`spec-basic-fldary.md`](spec-basic-fldary.md)) shipped that
+  declined pair — `d.ary`, `s.fldary` — for +40 B of main page 1, **funded by a
+  carve** (`lrset_store` → a page-0 sub-ROM tenant, which returns 57 B).
+  🎯 Re-pricing the decline against a DESIGN found **three of its four reasons
+  did not survive**: `FLD_TAB` never had to grow (the element discriminator does
+  not sit beside the name key — it IS the key, and the two key spaces are
+  disjoint by construction), the price was half the sketch, and a carve WAS
+  available once the cluster was re-run **leaf-only**. What stood is reason 1 —
+  the FIELDed-READ hook on `str_eval_arr` is a real third site, and it is the
+  half that turns `s.fldary` green — plus the fact that the halved price still
+  did not fit 18 B.
+
+`s.ctl`/`s.ary` remain the separate non-FIELDed `LSET` residual of §3, and they
+are the only two rows still red. Everything below is the ORIGINAL measurement and
+is left as it was recorded.
+
+⚠️ **THIS DOCUMENT WAS MEASUREMENT ONLY. No byte moved for it**, and
 `make lvsites-characterize` is deliberately **not** an acceptance gate: 6 of its
-10 rows can only be red until the work lands, and a row that can only ever be red
-is doc debt, not a gate. All four ROMs hash identically to `acfcfd7`
-(`basic-reloc 7d78c4b6…`, `sub de1ad5d0…`, `disk 2c630d3d…`,
-`main-eu 85da929d…`).
+10 rows could only be red until the work landed, and a row that can only ever be
+red is doc debt, not a gate. At the time it was written all four ROMs hashed
+identically to `acfcfd7` (`basic-reloc 7d78c4b6…`, `sub de1ad5d0…`,
+`disk 2c630d3d…`, `main-eu 85da929d…`). ⚠️ **It is still not a gate now that 8 of
+10 pass** — the remaining two are the §3 non-FIELDed `LSET` residual, so the same
+argument applies in the other direction. The gates for what landed are
+`lvfix-acceptance` (18/18) and `fldary-acceptance` (13/13).
 
 The static counters this moves, predicted from each check's own definition and
 then measured:

@@ -591,8 +591,75 @@ duplicating (and drifting from) what is written below.
       record: the scout carries the 18-row table, the four-site walk and the price;
       the spec carries the design, the forced constraints, the knives and §11
       As-built. Recoverable verbatim at `54f6e62` if it is ever wanted.
-- [ ] 🔴 **`FIELD` AND `LSET`/`RSET` STILL REFUSE AN ARRAY ELEMENT — DECLINED
-      WITH NUMBERS 2026-08-08 (D-LVFIX), and NOT on bytes alone.** The four
+- [ ] 🔴 **AN `ERASE`D FIELDED ARRAY LEAVES A STALE `FLD_TAB` ENTRY — a NEW named
+      limit created by D-FLDARY 2026-08-08, with a price and NO ORACLE.**
+      An element's field key is its ARYTAB-relative offset
+      ([`docs/spec-basic-fldary.md`](docs/spec-basic-fldary.md) §4.2/§5.4), which
+      is invariant under scalar allocation, a new `DIM` and a string GC — but
+      **`aeng_erase` (`sub/arrays.asm`) COMPACTS** the descriptor list, so an
+      element key above the erased array goes stale and the next `LSET A$(1)`
+      writes into a different variable's field. Scalar-keyed entries are immune
+      (a name key does not move), so this class is new.
+      💰 **Priced and declined deliberately: an `fld_clear_ary` sweep (clear every
+      entry whose `k0 >= $80`) is ≈20 B of page 1 + 3 B of LOW at `ex_erase`'s
+      call.** 🔴 **The reason it is not taken is NOT the bytes — it is that there
+      is no oracle.** Whether the CF-3300 drops, keeps or dangles a field across
+      `ERASE` is unmeasured; "drop the entries" and "leave them" are both guesses,
+      and 23 B is not spent to pick between two unmeasured answers. **The row that
+      would settle it:** `DIM A$(3),B$(3)` / `FIELD#1,10 AS B$(1)` / `ERASE A$` /
+      `LSET B$(1)="HI"` / `PRINT B$(1)` on the CF-3300. ONE reference (Disk BASIC).
+      ⚠️ The neighbouring PRE-EXISTING version is deliberately left alone: a bare
+      program EDIT reaches `vars_reset` (which re-anchors `ARYTAB`) without
+      reaching `clear_vars` (which is what calls `fld_init`), so a field entry can
+      already outlive the variables it names — true of scalar entries today and
+      not D-FLDARY's to change.
+- [ ] ⚠️ **`s.fldarymix` IS A GATE ROW NO KNIFE CAN REDDEN, and that is recorded
+      rather than fixed** (D-FLDARY, spec §10.6). A scalar field and an
+      array-element field coexisting in one `FIELD` is the row that makes §4.2's
+      disjoint-key-space argument a measurement — but **no reachable program can
+      collide the two spaces** (a scalar `k0` is an upcased letter `$41..$5A`; an
+      element `k0` is `>= $80`), so K-FA1 moved `s.fldary2` and left this one
+      green. Its falsifier is the assembly-time **assert** (K-FA7, which does
+      refuse the build), not a cut. Anyone re-reading the knife table should not
+      "fix" the row or the cut — the claim is structural
+      ([[rule-gated-structurally-has-no-knife]]).
+- [x] ✅ **`FIELD` AND `LSET`/`RSET` NOW ACCEPT AN ARRAY ELEMENT — SHIPPED
+      2026-08-08 (D-FLDARY), and THREE of the four reasons the decline gave DID
+      NOT SURVIVE A DESIGN.**
+      [`docs/spec-basic-fldary.md`](docs/spec-basic-fldary.md); gate
+      `make fldary-acceptance` **13/13**, `lvfix-acceptance` **18/18** with
+      `d.ary`/`s.fldary` promoted out of DEFERRED,
+      [`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md)
+      **8/10** — all four lvalue parse sites closed.
+      **+40 B main page 1** (18 → 35 free) and **+1 B LOW** (7 → 6),
+      **FUNDED BY A CARVE**: `lrset_store`'s 68 B moved whole to a page-0 sub-ROM
+      tenant (`SUBROM_IDX_LRSETST`, `sub/lrsetst.asm`) behind an 11 B stub, +57 B.
+      **0 RAM, `FLD_TAB` byte-identical, `FLD_SLOTS` still 16.**
+      🎯 **The decline's reason 2 was the expensive one and it was wrong.** It
+      said an element needs a discriminator BESIDE the name key (`FLD_ENTSZ` 6→8,
+      so `FLD_SLOTS` 16→12 or +32 B RAM). It does not: `fld_find` matches on
+      `(k0,k1)` alone, so the discriminator can BE the key — a scalar stores its
+      name, an element stores `(elem − ARYTAB) | $8000` — and the two spaces are
+      disjoint by construction (a name's `k0` is an upcased letter; an element's
+      is `>= $80`, guaranteed by an assembly-time assert on `TXTMAX − TXTBASE`).
+      Reason 4 fell too: the cluster carve was refused, but the **leaf-only**
+      re-run is page-0-tenant CLEAN. **Reason 1 stood and was load-bearing** — the
+      READ hook on `str_eval_arr` is a real third site (`sea_fld`, page 1).
+      🔴 **The gate found a defect the spec draft had: `sea_fld` omitted `push hl`
+      / `pop hl`, and `fld_lookup` clobbers the live text cursor.** Six `s.*`/`r.*`
+      rows read `<NO OUTPUT>` while every `d.*` row stayed green — which is what
+      pointed at the read hook rather than at either parse site. 2 B.
+      Knives 8 cuts × 2 rounds: 6 EXACT, 1 PARTIAL (K-FA1 — the second predicted
+      row is structurally unreddenable, filed above), 1 re-sited (a knife may only
+      name symbols the side it edits can SEE: `SUBROM_IDX_PING` is sub-only).
+      🎯 K-FA5 is the abort knife D-LVFIX could NOT get, and the difference was
+      **predicted from reading `exec_stmt`** rather than found by the run.
+      ⚠️ ONE REFERENCE for every row (Disk BASIC; a diskless VG-8020 cannot
+      express the question). Carried forward, not upgraded.
+- [x] 🔴 **~~`FIELD` AND `LSET`/`RSET` STILL REFUSE AN ARRAY ELEMENT~~ — DECLINED
+      WITH NUMBERS 2026-08-08 (D-LVFIX), ✅ SUPERSEDED BY THE ENTRY ABOVE. Kept
+      only for the record of what a priced decline looked like before it was
+      re-priced; nothing here is open.** The four
       lvalue parse sites D-ARYLV never measured all diverge
       ([`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md)).
       **D-LVFIX shipped two of them** — `ex_mid_stmt` (`MID$(…)=`) and

@@ -12,11 +12,18 @@ parse sites D-ARYLV never checked diverge on an array element. The carve scout
   ex_mid_stmt   basic/str-engine.asm   `MID$(<target>,n,m) = <expr>`   -- LOW region
   inp_readvar   basic/files.asm        `INPUT #n` / `LINE INPUT #n`    -- page 1
 
-and DECLINES the other two WITH NUMBERS (spec §7): `FIELD` and `LSET`/`RSET`
+and DECLINED the other two WITH NUMBERS (spec §7): `FIELD` and `LSET`/`RSET`
 need a FLD_TAB identity change AND a third site nobody had listed -- the
-FIELDed-READ hook, which lives on `str_eval_arr` and does not exist. Their two
-rows are carried here as DEFERRED: printed every run, scored in neither
-direction, so a declined half stays visible in a GATE and not only in a document.
+FIELDed-READ hook, which lives on `str_eval_arr` and did not exist. Their two
+rows rode here as DEFERRED so a declined half stayed visible in a GATE and not
+only in a document.
+
+✅ AND THAT IS WHY THEY ARE SCORED NOW. D-FLDARY (docs/spec-basic-fldary.md,
+2026-08-08) re-priced the decline against a design and shipped it: `d.ary` and
+`s.fldary` are promoted in place, with `d.ctl` / `s.fld` added beside them as a
+control PER ARM. The full denominator of that half -- element identity, RANK, the
+error faces, RSET -- is basic_probe_fldary.py; these four are what THIS probe
+measured while the half was declined, kept so the promotion is visible here too.
 
 🔴 THE ORACLE IS NOT UNIFORM AND THIS PROBE REFUSES TO PRETEND IT IS. The `MID$`
 rows need no disk and have TWO references. `INPUT #n`, `FIELD` and `LSET` are
@@ -158,20 +165,30 @@ CASES = [
                                       'PRINT"[";A$;"]"']),
     ("f.lineary",  True,  wr("HI") + ['DIM A$(3)', 'LINE INPUT#1,A$(1)',
                                       'CLOSE#1', 'PRINT"[";A$(1);"]"']),
-    # --- DECLINED, spec §7: carried so the declined half stays in a GATE -----
+    # --- WAS DECLINED (spec §7), SHIPPED 2026-08-08 by D-FLDARY --------------
+    # These two rode here as DEFERRED for one slice, which is exactly what a
+    # priced decline in a GATE is for: they are promoted in place, with a
+    # control PER ARM added beside them (docs/spec-basic-fldary.md). The full
+    # denominator of that half -- element identity, RANK, the error faces, RSET
+    # -- is basic_probe_fldary.py; these two are the rows THIS probe measured
+    # while the half was declined, and they now have to stay green here too.
+    ("d.ctl",      True,  ['OPEN"LV.DAT"AS #1', 'FIELD#1,10 AS A$', 'CLOSE#1',
+                           'PRINT"[OK]"']),
     ("d.ary",      True,  ['DIM A$(3)', 'OPEN"LV.DAT"AS #1',
                            'FIELD#1,10 AS A$(1)', 'CLOSE#1', 'PRINT"[OK]"']),
+    ("s.fld",      True,  ['OPEN"LV.DAT"AS #1', 'FIELD#1,10 AS A$',
+                           'LSET A$="HI"', 'PRINT"[";A$;"]"']),
     ("s.fldary",   True,  ['DIM A$(3)', 'OPEN"LV.DAT"AS #1',
                            'FIELD#1,10 AS A$(1)', 'LSET A$(1)="HI"',
                            'PRINT"[";A$(1);"]"']),
 ]
 
-CONTROLS = ("m.ctl", "f.ctl", "f.linectl")
+CONTROLS = ("m.ctl", "f.ctl", "f.linectl", "d.ctl", "s.fld")
 # f.mixctl is a control for f.arymix but NOT a member of CONTROLS: it is a
 # DEFERRED row (see below), so it must never exit 2 — it is a known-red scalar
 # twin whose job is to say WHICH defect its array partner is blocked on.
 CONTROL_WANT = {"m.ctl": "XYLLO", "f.ctl": "HI", "f.linectl": "HI",
-                "f.mixctl": "HILO"}
+                "f.mixctl": "HILO", "d.ctl": "OK", "s.fld": "HI        "}
 # Which control scopes which row. `LINE INPUT #n` has its own arm, so a red
 # `INPUT #n` control must not be allowed to explain away `f.lineary` (the
 # lvsites LSET site is where that lesson was measured).
@@ -183,16 +200,24 @@ SITE_CONTROL = {
     "f.aryoor": "f.ctl", "f.aryoortrap": "f.ctl",
     "f.arymix": "f.mixctl",             # NOT f.ctl — see DEFERRED below
     "f.lineary": "f.linectl",
+    # The FIELD/LSET half has TWO ARMS and gets a control per arm: a red `d.ctl`
+    # must not be allowed to explain away `s.fldary`, whose own control is the
+    # FIELDed scalar `s.fld` (docs/lvsites-msx1-characterization.md §3).
+    "d.ary": "d.ctl", "s.fldary": "s.fld",
 }
 
 # --- DEFERRED rows: measured, printed, NEVER scored -------------------------
-# ⚠️ "A row that can only ever be red is doc debt, not a gate." These two belong
-# to the DECLINED half (spec §7) and are red for a reason this slice priced and
-# did not take: FIELD/LSET need FLD_TAB to identify an ELEMENT (entry 6 -> 8 B,
-# which does not fit the 96-byte table without cutting FLD_SLOTS 16 -> 12) AND a
-# FIELDed-read hook on str_eval_arr, which is a third site and lives in the LOW
-# region. They stay MEASURED and PRINTED -- a deferral has to carry its evidence
-# -- and are excluded from the tally in both directions.
+# ⚠️ "A row that can only ever be red is doc debt, not a gate."
+#
+# ✅ d.ary / s.fldary WERE HERE AND ARE NOT ANY MORE (2026-08-08, D-FLDARY,
+# docs/spec-basic-fldary.md). They are now SCORED, with d.ctl / s.fld beside them
+# as a control per arm. This is what carrying a priced decline in a gate is for:
+# the two rows stayed visible for exactly one slice, and the re-pricing found
+# that THREE of the four reasons for the decline did not survive a design --
+# FLD_TAB does not grow (the discriminator IS the key, and the two key spaces are
+# disjoint by construction), the price was +38 B not ~+80, and a carve WAS
+# available (lrset_store -> a page-0 tenant, +57 B). What survived is that 38
+# does not fit 18, which is why that slice is funded rather than free.
 #
 # 🔴 f.mixctl / f.arymix ARE DEFERRED FOR A DIFFERENT REASON, AND ONLY A CONTROL
 # COULD HAVE TOLD THE TWO APART. The spec predicted `f.arymix` GREEN (HILO) on
@@ -224,8 +249,6 @@ SITE_CONTROL = {
 # and nothing else in the zb column. A deferral has to carry its evidence
 # ([[a-pinned-divergence-is-a-live-detector]]).
 DEFERRED = {
-    "d.ary": "DEFERRED — FIELD: declined with numbers, spec §7",
-    "s.fldary": "DEFERRED — LSET on a FIELDed array element, spec §7",
     "f.mixctl": "DEFERRED — `INPUT #n` parses only ONE target; a LIST defect, "
                 "not an array one",
     "f.arymix": "DEFERRED — blocked by f.mixctl: the same LIST defect, so this "
@@ -408,16 +431,18 @@ def main() -> int:
           "MID$= / INPUT #n / LINE INPUT #n), plus the out-of-range row at EACH "
           "site (whose oracle is an ERROR, not a value), plus the "
           "mid-statement-allocation PAIR that arrays §13a forces on ex_mid_stmt "
-          "— and the DEFERRED rows of the DECLINED FIELD/LSET half, carried so "
-          "a priced decline stays visible in a gate.")
+          "— and the FIELD/LSET pair this probe carried DEFERRED while that half "
+          "was declined, now SCORED with a control per arm (D-FLDARY).")
     print("NOT COVERED, named rather than implied: POSITION for `INPUT #n` "
           "(f.mixctl shows the site parses only ONE target — a LIST defect, "
           "filed separately); the arrays-§13a mid-statement ARYTAB shift "
           "(m.ctldrift/m.arydrift — NOT oracle-able: the only eval-time scalar "
           "allocator is VARPTR, which both references REFUSE on an unset "
           "variable, so no program they accept can shift ARYTAB mid-statement); "
-          "FIELD / LSET / RSET (spec §7); numeric `INPUT #n` (rejected before "
-          "any target parse); and a subscript that is itself an array element.")
+          "the FIELD/LSET half's own DENOMINATOR — element identity, RANK, the "
+          "error faces, RSET — which is basic_probe_fldary.py, not this probe; "
+          "numeric `INPUT #n` (rejected before any target parse); and a "
+          "subscript that is itself an array element.")
     if a.gate and dis:
         sys.stderr.write(f"lvfix: {dis} reading(s) diverge\n")
         return 1

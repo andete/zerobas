@@ -180,11 +180,20 @@ sub_p0_table:
                                                 ;   half (sub/fldlook.asm) -- carved out
                                                 ;   of basic/field.asm to fund D-CLP.
                                                 ;   HL = the located field-table entry.
-                                                ; ⚠️ 13 rows = $0040..$0066. The next
-                                                ;   index is 13 and there is NO CAP on
-                                                ;   it any more: the table grew up into
-                                                ;   the fixed $0038 vector until
-                                                ;   D-P0BASE moved the base above it.
+                jp      lrset_store_tenant      ; index 13 (SUBROM_IDX_LRSETST): the
+                                                ;   LSET/RSET record-field STORE
+                                                ;   (sub/lrsetst.asm) -- carved out of
+                                                ;   basic/field.asm to fund D-FLDARY.
+                                                ;   No args, no result: every input is
+                                                ;   already a RAM cell (LRSET_OFF/W/
+                                                ;   JUST, STRPTR, FSECTOR_BUF).
+                                                ; ⚠️ 14 rows = $0040..$0069. This is the
+                                                ;   FIRST index past the old $0038
+                                                ;   ceiling: the table grew up into the
+                                                ;   fixed vector until D-P0BASE moved
+                                                ;   the base above it, and index 12's
+                                                ;   note ("INDEX 13 IS FREE and the
+                                                ;   table has no cap") is now cashed.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to SUBROM_ENTRY_BASE_P0 mapped slot 3-2 into PAGE 0 and that
@@ -299,6 +308,13 @@ sis_spin:
 ; copies the record slice into FLD_DESC and builds the RVDESC descriptor. No
 ; shared .inc -- there is no resident twin of this shape.
                 include "fldlook.asm"
+; --- LSET/RSET record-field STORE (D-FLDARY funding carve, docs/spec-basic-
+; fldary.md §6.4). The other pure RAM leaf of the same FIELD layer: the resident
+; stub (basic/field.asm) has already selected the channel, so this side only
+; space-fills the field and copies the value in. No shared .inc -- there is no
+; resident twin of this shape any more; pu_deref_body, its one low-region
+; callee, is inlined here in 5 B.
+                include "lrsetst.asm"
 
 ; --- sub-local is_letter (byte-identical own-design clone) ------------------
 ; The resident copy stays in the main ROM (basic/interp.asm) for the rest of the

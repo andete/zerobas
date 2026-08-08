@@ -3567,7 +3567,21 @@ SUBROM_IDX_FLDLOOK   equ 12     ; fld_lookup_tenant (sub/fldlook.asm): the FIELD
                                 ; located field-table entry rides in HL (subrom_call
                                 ; passes it through CALSLT); the result is STRPTR, so
                                 ; nothing marshals through a param block.
-                                ; ⚠️ LAST index that fits before the $0038 vector.
+                                ; ⚠️ Used to be the LAST index that fits before the
+                                ; $0038 vector; D-P0BASE moved the table base to
+                                ; $0040, above it, and index 13 below is that note
+                                ; being cashed.
+SUBROM_IDX_LRSETST   equ 13     ; lrset_store_tenant (sub/lrsetst.asm): the LSET/RSET
+                                ; record-field STORE (space-fill the field, then copy
+                                ; min(srclen,width) bytes in left- or right-aligned),
+                                ; carved out of basic/field.asm to fund D-FLDARY's
+                                ; 38 B of main page 1 (docs/spec-basic-fldary.md
+                                ; §6.4; the carve returns 57). PAGE-0 table index 13
+                                ; -- IX = SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST.
+                                ; 🎯 NOTHING MARSHALS AT ALL: every input is already a
+                                ; RAM cell (LRSET_OFF/W/JUST, STRPTR, FSECTOR_BUF) and
+                                ; there is no return value, which is exactly why this
+                                ; member of the cluster was the one taken.
 SUBROM_IDX_DEFTYPE   equ 9      ; deftype_tenant (sub/deftype.asm): DEFINT/DEFSNG/
                                 ; DEFDBL/DEFSTR, carved out of basic/usr.asm to fund
                                 ; G6 DRAW's resident half (docs/spec-eviction-g6-

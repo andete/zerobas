@@ -1029,18 +1029,26 @@ str_eval_arr:
                 ld      a,1                 ; type = 1 (string, always)
                 call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
                                             ; HL=cursor, FPERR already set
-                jr      z,sea_have_de       ; success: DE already = elem_addr,
-                                            ; the [len][bytes] descriptor itself
-                                            ; (zero-copy) -- skip past the override
+                jp      z,sea_fld           ; success: DE already = elem_addr, the
+                                            ; [len][bytes] descriptor itself
+                                            ; (zero-copy). D-FLDARY: the FIELDed-read
+                                            ; hook (basic/strvar.asm, PAGE 1 -- this
+                                            ; file is the LOW region and had 7 B)
+                                            ; publishes STRPTR and joins str_eval_ok.
+                                            ; The two arms stopped sharing a tail for
+                                            ; that ONE byte (`jr` -> `jp`), which is
+                                            ; the whole low-region cost of the slice.
                 ld      de,STR_EMPTY        ; deferred error: DE, not HL (HL still
                                             ; holds the cursor, untouched since
                                             ; ary_op0_resolve's own NZ return, which
                                             ; str_eval_ok needs) -- STR_EMPTY so a
                                             ; pre-FPERR-check read (if any) can't
-                                            ; see garbage
-sea_have_de:
-                ld      (STRPTR),de         ; shared tail: whichever DE the branch
-                                            ; above left, both paths do this
+                                            ; see garbage. ⚠️ This arm deliberately
+                                            ; does NOT consult FLD_TAB: there is no
+                                            ; element, and a lookup keyed on a
+                                            ; garbage offset is the wild read the
+                                            ; arm exists to prevent.
+                ld      (STRPTR),de
                 jp      str_eval_ok
 
 ; =============================================================================

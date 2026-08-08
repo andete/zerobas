@@ -235,6 +235,20 @@ SUBROM_IDX_BEEP         equ     11
 ; just another line, on either island.
 SUBROM_IDX_FLDLOOK      equ     12
 
+; --- D-FLDARY funding carve (page-0 tenant; docs/spec-basic-fldary.md §6.4) ---
+; index 13 = lrset_store_tenant (sub/lrsetst.asm): the LSET/RSET record-field
+; STORE -- space-fill the field, then copy min(srclen,width) bytes into it left-
+; or right-aligned. Carved out of basic/field.asm to fund the array-element face
+; of FIELD/LSET/RSET (38 B of main page 1 against 18 B free; this returns 57).
+; Page-0 CLEAN: RAM only. 🎯 NOTHING MARSHALS -- every input is already a RAM
+; cell (LRSET_OFF/W/JUST, STRPTR, FSECTOR_BUF) and there is no return value, so
+; the resident stub is the minimum 11 B shape and no cell was invented for it.
+; pu_deref_body, the one low-region callee of the original body, is inlined
+; sub-side in 5 B. ⚠️ THE FIRST INDEX PAST THE OLD $0038 CEILING to be used:
+; D-P0BASE moved the table base to $0040 and the note on index 12 says "INDEX 13
+; IS FREE and the table has no cap" -- this is that note being cashed.
+SUBROM_IDX_LRSETST      equ     13
+
 ; GFX_UNGUARDED: the G1 "teeth check" toggle (spec §4). Default 0 = the DI guard
 ; around the 2-byte VDP address latch is present (shipped). Building the sub-ROM
 ; with `pasmo --equ GFX_UNGUARDED=1` strips the guard, so the floor gate can

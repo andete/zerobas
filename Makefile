@@ -1850,6 +1850,33 @@ lvfix-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lvfix.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-FLDARY: an ARRAY ELEMENT as a FIELD / LSET / RSET target ---------------
+# docs/spec-basic-fldary.md. The half D-LVFIX declined, re-priced against a
+# design: THREE of its four reasons did not survive. FLD_TAB does NOT grow (the
+# discriminator does not sit beside the name key -- it IS the key, and the two
+# key spaces are disjoint by construction, spec §4.2), the price is +38 B of
+# main page 1 rather than ~+80, and a carve IS available -- lrset_store moves
+# whole to a page-0 sub-ROM tenant and returns 57 B. What survived is that 38
+# does not fit 18, which is why this slice is FUNDED rather than free.
+#
+# 🔴 THREE SITES, and the third is the one nobody had listed: str_eval_arr's
+# FIELDed-READ hook. Teaching only the two PARSE sites about subscripts turns
+# `d.ary` green FOR THE WRONG REASON and leaves `s.fldary` red.
+# 🔴 EVERY ROW HAS ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express
+# the question). Weaker than anything D-ARYLV rested on; not upgraded.
+# 🎯 s.fldary2 / s.fldarymix exist because K-FA1 was DRAFTED BEFORE the row set
+# was frozen: with ONE fielded element, a FIELD and an LSET that agree on the
+# WRONG key still agree with each other, so the discriminator reddens no row.
+# ⚠️ A CONTROL PER ARM (d.ctl for FIELD, s.fld for FIELDed LSET), not per site.
+#   make fldary-characterize ONLY=s.fldary2 SIDES=zb    # scope rows / sides
+fldary-characterize: repack-machine
+	python3 probes/basic/basic_probe_fldary.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+fldary-acceptance: repack-machine
+	python3 probes/basic/basic_probe_fldary.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2081,6 +2108,7 @@ clean:
         inputary-characterize inputary-acceptance \
         arylv-characterize arylv-acceptance lvsites-characterize \
         lvfix-characterize lvfix-acceptance \
+        fldary-characterize fldary-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean
