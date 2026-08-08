@@ -194,6 +194,33 @@ its evidence. ⚠️ It is also worth asking whether **`INPUT A(1)` diverges too
 if it does, the array work is shared between two verbs and is worth more than it
 looks. **Unmeasured; not assumed in either direction.**
 
+### 5.1.1 ✅ MEASURED 2026-08-08 — it does, and on THREE arms
+
+[`docs/inputary-msx1-characterization.md`](inputary-msx1-characterization.md),
+`make inputary-characterize`. 7 rows × 3 sides, **both references agree on all 7**.
+`INPUT A(1)` → ` 7 `, `INPUT A$(1)` → `HI`, **`LINE INPUT A$(1)` → `HI`** on both
+references; all three are `Syntax error` here.
+
+🔴 **The sentence above says "two verbs"; the measurement says two verbs and FOUR
+PARSE SITES.** `basic/input.asm` parses its target in three separate places —
+`inpc_vloop`, `inpc_vstr`, and `inpc_line`, which re-parses its own rather than
+sharing the list driver — and all three diverge, alongside `ex_read`'s. §5.1's own
+framing ("outside the `INPUT` twin", "`input.asm` has no array handling") was
+correct about the code and **understated the surface**: no array handling in
+`input.asm` means `INPUT` is a *fellow victim*, not merely a twin that lacks the
+feature.
+
+🎯 **`i.arynodim` is what makes that a cause rather than a coincidence.** An MSX
+auto-dimensions an unDIMmed array to 10 on first reference, and both references
+read ` 7 ` there — so the refusal is in the **parse**, not in a missing array, and
+it is therefore the *same* `var_name_key`-has-no-subscript defect `READ` has. One
+lvalue path closes all six rows.
+
+⚠️ **This RAISES the deferred item's price and its value together**, and the
+~25…40 B bound in §5/`TODO.md` was written for ONE site. It is not re-derived
+here; four sites need a carve scout, not arithmetic
+([[filed-justification-is-a-claim]]).
+
 ---
 
 ## 6. Characterization — MEASURED

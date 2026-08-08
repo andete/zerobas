@@ -1733,6 +1733,27 @@ readvar-acceptance: repack-machine
 	python3 probes/basic/basic_probe_readvar.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- Does INPUT take an ARRAY ELEMENT target? (D-READVAR follow-up) -----------
+# D-READVAR deferred `READ A(1)` / `READ A$(1)` and said in as many words that
+# their PRICE depended on an unmeasured question: does `INPUT A(1)` diverge too?
+# Measured 2026-08-08, 7 rows x 3 sides, both references agreeing on all 7:
+# IT DOES, on all THREE of INPUT's target-parse arms -- `INPUT A(1)`,
+# `INPUT A$(1)` and `LINE INPUT A$(1)` all read the value on both references and
+# are Syntax error here. The unDIMmed row (`i.arynodim`) is what says the refusal
+# is in the PARSE and not a complaint about a missing array: an MSX
+# auto-dimensions to 10 on first reference, and both references read ` 7 ` there.
+# Table: docs/inputary-msx1-characterization.md.
+#
+# ⚠️ DELIBERATELY NOT AN ACCEPTANCE GATE. 4 of its 7 rows are red until the array
+# lvalue work lands, and a row that can only ever be red is doc debt, not a gate.
+# The 3 controls ARE gating in the sense that matters -- their failure exits 2,
+# because every row here needs a typed response to reach a blocked INPUT, and a
+# response that never arrives makes all three sides agree about nothing.
+#   make inputary-characterize ONLY=i.lineary   # scope to rows
+inputary-characterize: repack-machine
+	python3 probes/basic/basic_probe_inputary.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -1960,7 +1981,7 @@ clean:
         runtail-characterize runtail-acceptance \
         castail-characterize castail-acceptance \
         cassave-characterize cassave-acceptance \
-        readvar-characterize readvar-acceptance \
+        readvar-characterize readvar-acceptance inputary-characterize \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

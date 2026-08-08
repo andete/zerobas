@@ -557,28 +557,44 @@ duplicating (and drifting from) what is written below.
       shape, routine for routine. The over-acceptance `c.strnum` closed WITH the
       21 refusals, in the DATA engine, not in the target parse.
       ➡️ **The array face is re-filed below as its own item, with its price.**
-- [ ] **`READ A(1)` / `READ A$(1)` are still `Syntax error`** — the **2 of 24**
-      rows D-READVAR deferred, measured on both references (` 7 ` and `HI`) and
-      printed by `readvar-acceptance` as `....`, excluded from its tally in BOTH
-      directions. They need `ex_let`'s array **lvalue** path
-      (`ary_op0_resolve` / `ary_store_write`, `basic/arrays.asm:773/721`), which
-      is outside the `INPUT` twin D-READVAR was priced against —
-      `basic/input.asm` has **no array handling whatsoever**, so `var_name_key`
-      parses a name and a suffix and never a subscript.
-      💰 **PRICE — not carve-scouted; this is a BOUND from the twin that does
-      exist, `ex_let`'s own lvalue head, and a filed cost is a claim
-      [[filed-justification-is-a-claim]].** `ex_let`'s array store
-      (`basic/interp.asm` → `ary_op0_resolve`/`ary_store_write`) is the analogous
-      code; a `cp '('` test plus the two calls plus the string/numeric fork is
-      **~25…40 B of main page 1**, against **126 B free after D-READVAR**. It is
-      not obviously affordable *and* not obviously unaffordable, which is exactly
-      why it needs its own scout (`python3 tools/carve_scout.py
-      build/basic-reloc.sym --files basic/program.asm`, 2375 B of reservoir)
-      before a byte moves.
-      ⚠️ **ASK WHETHER `INPUT A(1)` DIVERGES TOO** — still **UNMEASURED**, and
-      D-READVAR did not measure it either. If it does, the array lvalue work is
-      shared between two verbs and is worth more than it looks; if it does not,
-      the reason is itself a finding. Two boots on each reference answer it.
+- [ ] **AN ARRAY ELEMENT IS NOT ACCEPTABLE AS AN LVALUE TARGET TO `READ` OR
+      `INPUT` — 6 divergent rows across TWO verbs and FOUR parse sites.**
+      D-READVAR deferred `READ A(1)` / `READ A$(1)` (the **2 of 24** rows
+      `readvar-acceptance` prints as `....`, excluded from its tally in BOTH
+      directions). They need `ex_let`'s array **lvalue** path (`ary_op0_resolve` /
+      `ary_store_write`, `basic/arrays.asm:773/721`), because `var_name_key`
+      parses a name and a type suffix and **never a subscript**.
+      📏 **MEASURED 2026-08-08 — `INPUT` DIVERGES TOO, AND ON ALL THREE OF ITS
+      ARMS.** `probes/basic/basic_probe_inputary.py`
+      (`make inputary-characterize`), 7 rows x 3 sides, **both references agree on
+      all 7**, table in
+      [`docs/inputary-msx1-characterization.md`](docs/inputary-msx1-characterization.md):
+
+      | row | both references | zerobas |
+      |---|---|---|
+      | `INPUT A(1)` | ` 7 ` | **Syntax error** |
+      | `INPUT A$(1)` | `HI` | **Syntax error** |
+      | `LINE INPUT A$(1)` | `HI` | **Syntax error** |
+      | `INPUT A(1)` with **no `DIM`** | ` 7 ` | **Syntax error** |
+
+      🔴 **FOUR PARSE SITES, NOT ONE.** `basic/input.asm` parses its target in
+      **three** separate places — `inpc_vloop` (numeric), `inpc_vstr` (string) and
+      `inpc_line` (`LINE INPUT` re-parses its own) — and all three diverge, plus
+      `ex_read`'s. The D-READVAR price was written against one.
+      🎯 **THE unDIMmed ROW NAMES THE CAUSE.** An MSX auto-dimensions to 10 on
+      first reference and both references read ` 7 ` there, so the refusal is in
+      the **PARSE**, not a complaint about a missing array — the same root cause
+      as `READ`'s, which is why ONE lvalue path closes all six rows.
+      💰 **PRICE — NOT carve-scouted, and the earlier bound is now known to be
+      short.** D-READVAR filed ~25…40 B of main page 1 against **126 B free**,
+      written for ONE site; at four sites a shared helper plus four call sites is
+      plainly more, and how much more depends entirely on whether the four can
+      share one head. **That is a scout question, not an arithmetic one**
+      (`python3 tools/carve_scout.py build/basic-reloc.sym --files
+      basic/program.asm`, 2375 B of reservoir). A filed cost is a claim
+      [[filed-justification-is-a-claim]] — do not quote the 25…40 back.
+      ✅ **The value rose with the price**: one lvalue path, reused four times,
+      closes **six** measured divergences instead of two.
 
 **Own-design hazards carried out of closed slices**
 
