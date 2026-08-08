@@ -43,9 +43,36 @@
 ; REVIEW (TODO.md) rather than taken with the gate deletion, which had to stay
 ; byte-identical.
 
-; --- is_ident_cont: CF set if A is an identifier continuation char ----------
-; (a letter 'A'..'Z'/'a'..'z' or a digit '0'..'9'). A preserved.
+; --- is_ident_cont: skip spaces at (HL), then CF set iff an ident-cont char --
+; 🔴 THIS IS A CURSOR SCAN, NOT A PREDICATE ON A. It used to be "CF set if A is
+; an identifier continuation char, A preserved", and its three callers each did
+; their own `ld a,(hl)` first. D-NAMSPC (docs/spec-basic-namspc.md, 55 rows on
+; three sides with BOTH references agreeing) moved that load in here and put a
+; space skip in front of it:
+;   in:  HL = cursor.
+;   out: HL on the first NON-SPACE byte, A = that byte, CF set iff it is a
+;        letter 'A'..'Z'/'a'..'z' or a digit '0'..'9'. A is an OUTPUT now.
+; 🎯 A SPACE INSIDE A VARIABLE NAME IS INSIGNIFICANT ON THE REFERENCE, AND THIS
+; IS THE WHOLE RULE. `AB=7 : PRINT A B` reads ` 7 ` -- ONE value, the variable
+; AB -- on both a VG-8020 and a CF-3300; `NEXT A B` closes a `FOR AB` loop;
+; `A B C=7`, `AB CD` and `A B$` all key exactly what their contiguous spellings
+; key. It reaches EVERY variable reference in every expression, which is why it
+; lives in the one routine all three name-scan read points share rather than at
+; the callers ([[a-shared-engine-fix-must-measure-its-other-callers]]).
+; 🎯 AND IT IS FREE: all three callers were already loading the byte, so the
+; three deleted `ld a,(hl)` pay for the `call skip_spaces` exactly (spec §6.3).
+; ⚠️ THE SPACE IS GENUINELY THERE -- rows t.name / t.dollar / t.dig read the
+; STORED LINE BYTES and the $20 survives the crunch on all three sides, in every
+; position, INCLUDING before a digit (`1 A 1=1` -> 41 20 31 ..., the digit still
+; verbatim). That is what says the fix belongs to the parser and not to the
+; tokeniser, and a screen reading cannot tell the two apart.
+; ⚠️ THE CHARACTER SET IS UNCHANGED, AND THAT DISTINCTION IS LOAD-BEARING.
+; D-NAMDOT's knife K4 made the filed "accept `.` too" change here and drove
+; `B.5=7` from ERR 2 to ERR 0 -- MSX1's tokeniser charset and its executor
+; charset really are different charsets (PROVENANCE.md). This skips $20 BEFORE
+; the same test; `B .5` stays Syntax error.
 is_ident_cont:
+                call    skip_spaces         ; A = first non-space, HL on it
                 call    is_letter           ; letter -> CF set, A preserved
                 ret     c
                 cp      '0'
@@ -62,6 +89,14 @@ iic_no:
 ; in:  HL = cursor at the first name char (guaranteed a letter).
 ; out: B = name0 (upcased), C = name1 (upcased letter / digit, or 0). HL is
 ;      advanced past the whole name + any type-suffix char. Clobbers A.
+; ⚠️ D-NAMSPC: the name may contain SPACES at any position inside it, and on the
+;      NO-SUFFIX path HL comes back past the name's TRAILING spaces too -- the
+;      skip in is_ident_cont runs before vnk_more decides the name has ended.
+;      That is the same widening D-TGTSPC made one cursor position later, now at
+;      all 11 call sites; rows w.let / w.print / w.for / w.comma are green BEFORE
+;      and AFTER and are what catch a scan that eats one delimiter too many.
+;      The SUFFIX path (vnk_eat) does NOT skip, so tgt_parse's own skip_spaces
+;      is still load-bearing for `A$ (1)`.
 ; In the crunched stream a name's letters are already upcased and its digits are
 ; kept verbatim (see the tokeniser's identifier path), so this walks plain ASCII.
 var_name_key:
@@ -70,24 +105,26 @@ var_name_key:
                 ld      b,a                 ; name0
                 inc     hl
                 ld      c,0                 ; name1 default (single-char name)
-                ld      a,(hl)
-                call    is_ident_cont
-                jr      nc,vnk_suffix       ; only one char
+                call    is_ident_cont       ; D-NAMSPC: skips spaces first, so
+                jr      nc,vnk_suffix       ; `A B` reaches name1 = 'B'
                 call    is_letter
-                jr      nc,vnk_dig2
+                ; D-NAMSPC carve: this used to branch to a `vnk_dig2` that did
+                ; `ld a,(hl)` / `jr vnk_set2` -- a RELOAD OF WHAT A ALREADY
+                ; HOLDS. is_letter is `push af` .. `pop af` on both exits and
+                ; is_ident_cont only `cp`s, so a DIGIT second char is still in A
+                ; here; the only thing vnk_set2's `upcase` would have done to it
+                ; is nothing. −3 B, and rows r.digctl / r.dig / a.dig are what
+                ; fail if that register reading is wrong (knife K-NS2).
+                jr      nc,vnk_set2         ; digit second char -> verbatim, no upcase
                 call    upcase
 vnk_set2:
                 ld      c,a                 ; name1
                 inc     hl
 vnk_more:
-                ld      a,(hl)              ; consume (ignore) any 3rd+ chars
-                call    is_ident_cont
-                jr      nc,vnk_suffix
+                call    is_ident_cont       ; consume (ignore) any 3rd+ chars --
+                jr      nc,vnk_suffix       ; and any spaces between them
                 inc     hl
                 jr      vnk_more
-vnk_dig2:
-                ld      a,(hl)              ; digit second char, verbatim
-                jr      vnk_set2
 ; F3 S3a: the suffix now additionally RESOLVES the variable's type into
 ; (VARTYPE), sysvars.inc — replacing an earlier "consume and ignore" vnk_suffix. Consuming behaviour (which chars advance HL) is UNCHANGED:
 ; `%`/`!`/`#`/`$` are all still eaten; no suffix leaves HL on the following
@@ -151,7 +188,8 @@ vnk_eat:
 ;      uses B/DE as scratch for the DEFtbl lookup -- no caller relies on those
 ;      across this call: each follows with eval() or var_name_key, which reset
 ;      BC/DE).
-; Walks the identifier (letters/digits) to the first non-identifier char. A name
+; Walks the identifier (letters/digits -- and, D-NAMSPC, across any SPACES inside
+; the name: `A B$` is a STRING) to the first non-identifier char. A name
 ; is a string variable if it carries a `$` suffix OR (repack, S3b) it is
 ; unsuffixed and its first letter's DEFtbl default is DEFTBL_STR (DEFSTR). An
 ; explicit `% ! #` suffix is always numeric. Used by LET / PRINT / the factor
@@ -163,9 +201,8 @@ var_str_type:
                 ld      b,a                 ; B); repack-only scratch use of B/DE
                 push    hl
 vst_walk:
-                ld      a,(hl)
-                call    is_ident_cont
-                jr      nc,vst_suffix
+                call    is_ident_cont       ; D-NAMSPC: spaces inside the name are
+                jr      nc,vst_suffix       ; skipped here too, so `A B$` is a STRING
                 inc     hl
                 jr      vst_walk
 vst_suffix:

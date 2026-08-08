@@ -2004,6 +2004,35 @@ tgtspc-acceptance: repack-machine
 	python3 probes/basic/basic_probe_tgtspc.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-NAMSPC: a SPACE inside a variable NAME (docs/spec-basic-namspc.md) -----
+# D-TGTSPC closed the `(` position and DEFERRED two rows it could not reach.
+# 🎯 THE RULE IS UNIVERSAL, NOT AN LVALUE ONE, AND `r.name` IS WHAT SAYS SO:
+# `AB=7 : PRINT A B` reads ` 7 ` -- ONE value, the variable AB -- on BOTH
+# references, and `PRINT` never touches tgt_parse. So the fix is one instruction
+# in `is_ident_cont` (basic/vars.asm), the routine all three name-scan read
+# points share, and it reaches all 11 var_name_key + 16 var_str_type call sites.
+# 🎯 t.* read the STORED LINE BYTES: the $20 survives the crunch in every
+# position INCLUDING before a digit (`1 A 1=1` -> 41 20 31 ...), which is what
+# says the fix is the parser's and not the tokeniser's -- and the TKNAME hazard
+# that could have moved this whole slice into basic/interp.asm is refuted there.
+# 🔴 THE KEYWORD CONSTRAINT prices the design: this tokeniser matches keywords at
+# every position mid-identifier, so `SC ORE` carries an `OR` token (t.kw) and
+# `z.kw` is the negative control that says such a name must STAY refused.
+# 🔴 z.miss is the other negative control: `FOR A=1 TO 2 : NEXT A B` is NEXT
+# without FOR, because the joined name is a DIFFERENT variable, not junk.
+# 🟢 w.* are green BEFORE and must stay green: the scan now eats a name's
+# TRAILING spaces, and they are the only rows that can catch one delimiter too
+# many. ⚠️ z.fldvar / z.fldstr are DEFERRED -- `ex_field` never type-checks its
+# width, which z.fldstr measures with NO SPACE IN IT AT ALL.
+#   make namspc-characterize ONLY=r.name SIDES=zb      # scope rows / sides
+namspc-characterize: repack-machine
+	python3 probes/basic/basic_probe_namspc.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+namspc-acceptance: repack-machine
+	python3 probes/basic/basic_probe_namspc.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2241,6 +2270,7 @@ clean:
         nxlist-characterize nxlist-acceptance \
         nxary-characterize nxary-acceptance \
         tgtspc-characterize tgtspc-acceptance \
+        namspc-characterize namspc-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

@@ -261,12 +261,13 @@ LABEL_W = 10
 # rules ([[one-row-cannot-separate-two-rules]]).
 # Filed in TODO.md with these two readings as its denominator; a deferred row
 # that started AGREEING would itself be a finding.
-DEFERRED = {
-    "x.dollar": "DEFERRED — a space before the `$` SUFFIX is var_name_key's "
-                "cursor position, not tgt_parse's",
-    "x.name":   "DEFERRED — the reference's NAME SCAN skips spaces too "
-                "(`NEXT A B` closes `FOR AB`); a wider rule, filed separately",
-}
+# ✅ CLOSED 2026-08-08 BY D-NAMSPC (docs/spec-basic-namspc.md), and the dict is
+# EMPTY. The wider rule was measured on 55 rows of its own -- a space inside a
+# variable NAME is insignificant at EVERY reference, not just at these nine
+# lvalue targets -- and the fix is one `call skip_spaces` inside `is_ident_cont`
+# (basic/vars.asm), the routine all three name-scan read points share. Both rows
+# below now SCORE like any other ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
+DEFERRED = {}
 
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>", "<NO DISK ON THIS SIDE>",
              "<NOT STORED>")

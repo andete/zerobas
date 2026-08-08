@@ -969,38 +969,97 @@ duplicating (and drifting from) what is written below.
       cut at two different callers and separate to one row each, which is the
       measurement a shared-engine slice owes.
       ⚠️ Carried out of it: the `- [ ]` item directly below.
-- [ ] 🔴 **A SPACE INSIDE A VARIABLE REFERENCE'S NAME OR BEFORE ITS `$`
-      SUFFIX IS INSIGNIFICANT ON THE REFERENCE, AND IS NOT HERE. Filed
-      2026-08-08 by D-TGTSPC, MEASURED, and it is WIDER than the slice that
-      found it.** Two rows, both references agreeing:
+- [x] ✅ **A SPACE INSIDE A VARIABLE REFERENCE'S NAME OR BEFORE ITS `$` SUFFIX
+      IS INSIGNIFICANT — CLOSED 2026-08-08 by D-NAMSPC**,
+      [`docs/spec-basic-namspc.md`](docs/spec-basic-namspc.md), measured in
+      [`docs/namspc-msx1-characterization.md`](docs/namspc-msx1-characterization.md),
+      gated by `make namspc-acceptance` at **56/56** (58 rows, 3 sides, both
+      references agreeing on all 56 they can express) — from **29/56**. D-TGTSPC's
+      `x.dollar` / `x.name` leave `DEFERRED` and `tgtspc-acceptance` goes
+      **26/26 → 28/28**, its dict now EMPTY.
+      🎯 **THE RULE IS UNIVERSAL, AND `r.name` IS THE ROW THAT SIZED THE SLICE.**
+      `AB=7 : PRINT A B` reads ` 7 ` — **one** value, the variable `AB` — on both
+      references, and `PRINT` never touches `tgt_parse`. So it is the NAME SCAN's
+      rule, reaching all 11 `var_name_key` + 16 `var_str_type` call sites, not the
+      nine lvalue targets D-TGTSPC fixed.
+      🎯 **AND IT COST −3 B: THE SLICE FUNDS THE BINDING WALL INSTEAD OF SPENDING
+      IT.** All three name-scan read points already did `ld a,(hl)` immediately
+      before `call is_ident_cont`, so moving the load into the callee pays for the
+      `call skip_spaces` exactly — three deletions for one insertion, **the rule
+      itself is 0 B** — and deleting `vnk_dig2` (a reload of what `A` already
+      holds; `is_letter` is `push af`..`pop af` on both exits) gives 3 B back.
+      **Page 1 3 → 6 B**, low 11 B untouched, both sub ROMs byte-identical.
+      A price of *"three `call skip_spaces` insertions, +6 B"* — the obvious
+      shape — would have DECLINED this. Walking the callers before pricing is what
+      made the difference.
+      🔴 **THE `TKNAME` HAZARD THAT COULD HAVE MOVED THE WHOLE SLICE INTO THE
+      TOKENISER IS REFUTED BY THE ARTIFACT.** A digit is copied verbatim only
+      while the in-name flag is set, so `1 A 1=1` could have stored a numeric
+      constant no parser could rejoin. It stores `41 20 **31**` — verbatim — on
+      all three sides. Twelve `t.*` rows read the STORED LINE BYTES and are green
+      **before** the fix in every position, which is what says the fix is the
+      parser's ([[read-the-artifact-when-the-screen-cannot-witness]]).
+      🔴 **THE KEYWORD CONSTRAINT IS REAL AND POINTS BOTH WAYS.** `SC ORE` still
+      carries the `OR` token ($F7) and must STAY refused (`z.kw`, green before and
+      after); `A ND` and `A BS` carry **no** token and are ordinary names reading
+      ` 7 ` on both references. The match is POSITIONAL, and a name scan may not
+      be cleverer than the tokeniser that ran first.
+      🔴 **A PREDICTION WRONG IN THE DIRECTION THAT PRODUCED A FINDING.** §3.3
+      predicted `FIELD#1,N AS A$(1)` would land on the CF-3300's `Type mismatch`;
+      it landed on `Syntax error` (54/55). Isolating it needed rows that did not
+      exist, and one of them has **no space in it at all** — see the new item
+      below. Two rows added, two deferred, and §8's whole knife table recomputed:
+      **a row set that grows invalidates every prediction written against it.**
+      🔴 **AND FIVE ROWS WERE NOT AN ERROR BUT A HANG.** `PRINT A 1` / `AB %` /
+      `!` / `#` / `$` filled the screen with ` 0 ` forever; the probe's first
+      reader called that `<NO OUTPUT>`, the exact opposite of what happened,
+      because `RUN` had scrolled off and the anchor search returned `None`.
+      Knives 5 × 2, **3 EXACT, both rounds identical**. 🔴 Both misses are one row
+      and one mistake: `z.join` is decided by `var_str_type`, not `var_name_key`,
+      and **the `$` is tested in two independent places** (`vst_suffix` and
+      `vnk_suffix`) so no single byte-neutral cut separates them — a fact about
+      the code the battery established and the source reading did not.
+      ⚠️ Carried out of it: the two `- [ ]` items directly below.
 
-      | row | program | both references | zerobas |
+- [ ] 🔴 **`ex_field` NEVER TYPE-CHECKS ITS FIELD WIDTH, AND THE ROW THAT SAYS
+      SO HAS NO SPACE IN IT. Filed 2026-08-08 by D-NAMSPC, MEASURED.**
+      CF-3300 vs zerobas, both rows contiguous or otherwise as written:
+
+      | row | program | CF-3300 | zerobas |
       |---|---|---|---|
-      | `x.dollar` | `FOR A=1 TO 2` / `NEXT A $(1)` / `PRINT"[OK]"` | **NEXT without FOR** | **Syntax error** |
-      | `x.name` | `FOR AB=1 TO 2` / `NEXT A B` / `PRINT"[OK]"` | **`OK`** | **NEXT without FOR** |
+      | `z.fldstr` | `FIELD#1,B$ AS A$(1)` — **no space anywhere** | **Type mismatch** | **`OK`** |
+      | `z.fldvar` | `FIELD#1,N AS A$(1)` | **Type mismatch** | **Syntax error** |
 
-      🎯 **`x.name` IS THE BIG ONE: `NEXT A B` CLOSES THE `FOR AB` LOOP.** The
-      reference treats a space *inside a variable name* as insignificant — its
-      name scan is CHRGET-based all the way down. That is `var_name_key` /
-      `var_str_type` (`basic/vars.asm`), a cursor position one step BEFORE the
-      one D-TGTSPC touches, and it reaches **every variable reference in every
-      expression**, not just the nine lvalue targets. The `call skip_spaces`
-      D-TGTSPC added runs after `var_name_key` has already stopped at the space,
-      so it cannot reach either row — which K-TS4 confirmed from the other
-      direction.
-      ⚠️ Both rows are **measured, printed and scored in neither direction** by
-      `tgtspc-acceptance`; a deferred row that started agreeing would be a
-      finding.
-      💰 **NOT SCOUTED AND NOT PRICED, and page 1 is at 3 B** — carve-scout
-      before assuming a budget ([[which-wall-binds-is-a-history-question]]).
-      ⚠️ Needs its own denominator first, and it is NOT the lvalue one: where
-      the space may fall inside a name (before the second letter, before a digit,
-      before `%`/`!`/`#`/`$`), whether it works in an r-value EXPRESSION as well
-      as a target (`PRINT A B`, `A B=1`), whether it survives the crunch the way
-      the `(` space does, whether two names can be run together, and what
-      `var_name_key`'s two-character key does with a space in the middle. It also
-      has to answer whether the tokeniser is involved at all — D-TGTSPC's `t.*`
-      rows are the instrument for that and would need their own pair here.
+      🎯 **`ex_field`'s `call eval` ([`basic/field.asm:270`](basic/field.asm:270))
+      never checks what the width evaluates TO**, so a STRING is accepted as a
+      field width. The CF-3300 refuses the width *before* it ever looks for its
+      literal `AS`.
+      ⚠️ **`z.fldvar` IS NOT A D-NAMSPC DEFECT AND `z.join` / `z.joinnum` PROVE
+      IT** — with `FIELD` taken out of the picture, `X=N AS A$(1)` is
+      `Type mismatch` and `NAS=4 : X=N AS A` is ` 4 ` on **all three sides**. The
+      join is exact; what diverges is FIELD's error CLASSIFICATION. `AS` is not
+      in `basic/kwtable.inc` and is read as two literal characters, which is why
+      a variable width and a space-blind name scan interact at all.
+      Both rows are DEFERRED in `probes/basic/basic_probe_namspc.py` — measured,
+      printed, never scored; a deferred row that started AGREEING would itself be
+      a finding. ⚠️ zerobas *moved* on `z.fldvar` (`OK` → `Syntax error`): the
+      program is now refused as on the reference, but not with the right error.
+      💰 Not scouted and not priced.
+
+- [ ] 🔴 **`OPEN A$ AS #1` IS `Syntax error` HERE AND `OK` ON THE CF-3300.**
+      Filed 2026-08-08 by D-NAMSPC, found while measuring something else
+      ([[readout-blind-to-its-own-subject]]). A **variable** filename in `OPEN`:
+      ```
+      10 A$="TS.DAT" : 20 OPEN A$ AS #1 : 30 CLOSE#1 : 40 PRINT"[OK]"
+      cf3300 -> [OK]     zb -> Syntax error in 20
+      ```
+      ⚠️ **NOTHING TO DO WITH SPACES** and unaffected by D-NAMSPC — the `$`
+      suffix terminates the name scan before the ` AS`, so this reads the same
+      before and after. It is a filename-argument question (literal vs
+      expression), and it is one row: **it needs its own denominator** —
+      `OPEN` / `KILL` / `NAME` / `SAVE` / `LOAD` / `BLOAD` × (literal /
+      variable / expression), plus whether the same holds for `FOR INPUT`/
+      `OUTPUT`/`APPEND` forms. 💰 Not scouted and not priced.
 
 - [ ] 🔴 **`ON ERROR GOTO 0` INSIDE A HANDLER MUST RE-RAISE THE CURRENT ERROR,
       AND ZEROBAS RUNS ON. Filed 2026-08-08 by D-NXARY, found by a row that was
