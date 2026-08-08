@@ -1021,30 +1021,105 @@ duplicating (and drifting from) what is written below.
       the code the battery established and the source reading did not.
       ⚠️ Carried out of it: the two `- [ ]` items directly below.
 
-- [ ] 🔴 **`ex_field` NEVER TYPE-CHECKS ITS FIELD WIDTH, AND THE ROW THAT SAYS
-      SO HAS NO SPACE IN IT. Filed 2026-08-08 by D-NAMSPC, MEASURED.**
-      CF-3300 vs zerobas, both rows contiguous or otherwise as written:
+- [x] ✅ **`ex_field` NEVER TYPE-CHECKS ITS FIELD WIDTH — CLOSED 2026-08-08 by
+      D-FLDWIDTH**, [`docs/spec-basic-fldwidth.md`](docs/spec-basic-fldwidth.md),
+      measured in
+      [`docs/fldwidth-msx1-characterization.md`](docs/fldwidth-msx1-characterization.md),
+      gated by `make fldwidth-acceptance` at **40/40 (2 deferred, 42 cases)**
+      from **24/42**. `namspc-acceptance` 56/56 + 2 deferred → **58/58 with its
+      `DEFERRED` dict EMPTY** — the deferral was honoured, not merely filed
+      ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
+      🎯 **THE RULE IS NOT "TYPE-CHECK THE WIDTH", IT IS `get_byte_arg`, AND THE
+      DENOMINATOR IS WHAT SAID SO.** The item arrived with two rows and one
+      clause. 42 rows later: a width is a **BYTE ARGUMENT** — a string is
+      `Type mismatch`, a deferred `1/0` is `Division by zero`, **70000 is
+      `Overflow` (ERR 6) while −1/256/257 are `Illegal function call` (ERR 5)**,
+      a fraction TRUNCATES, and the checks are **PER ITEM with no rollback**
+      (`m.trap` reads ` 13  5 ` — ERR 13, and the first field is still 5 wide).
+      Two different error codes is exactly `get_byte_arg`'s two stages
+      (`get_int16_checked`, then the 0..255 test) — code that already ships and
+      is already the reference's rule — so the whole domain half cost **3 bytes
+      of `call`** instead of a hand-rolled bound.
+      🎯 **THE OBVIOUS PRICE WAS +6 AND THE REAL ONE IS +3.** `exf_item`'s own
+      `call skip_spaces` is **dead**: `eval` reaches `ev_f`
+      ([`basic/expr.asm:461`](basic/expr.asm:461)), whose first instruction is
+      `call ev_sp`. Two calls in, one out. **Page 1 6 → 3 B**; low **11 B**, sub
+      p0 **3604**, sub p1 **1483**, RAM all untouched; `sub.rom` **and**
+      `disk.rom` byte-identical.
+      🔴 **`basic/field.asm`'s OWN HEADER SAID "field widths are 1..255" AND IT
+      WAS WRONG.** `d.zero` measured `FIELD#1,0 AS A$` as **accepted**, LEN 0, on
+      the CF-3300. A design built on the source comment would have shipped a
+      divergence the comment invented; the header is corrected in the same commit.
+      🔴 **AND THE PROBE'S READER WAS BLIND TO ITS OWN SUBJECT.** `Overflow` is a
+      SUBSTRING of `FIELD overflow`, listed earlier in the needle tuple — so a
+      screen reading `FIELD overflow in 30` scored as `<Overflow>`, and the one
+      error name this battery exists to find was invisible to it. It failed by
+      **agreeing with a plausible answer**; what exposed it was `d.big` (70000)
+      returning the same string for a genuinely different fault. Needles are now
+      sorted longest-first ([[readout-blind-to-its-own-subject]]).
+      🎯 **A SECOND FIX RODE ALONG FOR 0 B**: `FIELD#1,10 AS A` is `Type
+      mismatch` on the CF-3300 and was `Syntax error` here — D-LRVAR's move one
+      statement over, the same `jp cc,nn`. ⚠️ Only **one** of `ex_field`'s FOUR
+      `exf_syn` arms moves, and `t.noas` / `t.nonm` are the negative controls
+      that bound it ([[a-rule-can-claim-more-than-its-evidence]]).
+      🎯 **`o.dt` IS THE ROW THAT ORDERS THE CHECKS AND `o.wt` CANNOT BE**:
+      `FIELD#1,-1 AS A` has two faults and the reference answers `Illegal
+      function call`, not ERR 13 — where `o.wt`'s two faults are BOTH ERR 13 and
+      it agrees whichever fires ([[one-row-cannot-separate-two-rules]]).
+      **Knives 5 × 2, ALL TEN EXACT, both rounds identical** — and K-FW1/K-FW2
+      are PARTIAL reverts (`check_fperr_only` is `check_expr_errors`' own
+      fall-in entry point; `get_byte_arg` is `get_int16_checked` plus two
+      instructions), so each removes exactly one clause of the rule: `d.div`
+      survives K-FW1 and **`d.big` survives K-FW2**, which is what says the ERR 6
+      and the ERR 5 come from different stages.
+      ⚠️ Carried out of it: the `- [ ]` item directly below.
+
+- [ ] 🔴 **`FIELD overflow` (ERR 50) AGAINST THE RECORD LENGTH IS NOT CHECKED.
+      Filed 2026-08-08 by D-FLDWIDTH, MEASURED and DECLINED WITH NUMBERS.**
+      CF-3300 vs zerobas, over the default 256-byte RANDOM record:
 
       | row | program | CF-3300 | zerobas |
       |---|---|---|---|
-      | `z.fldstr` | `FIELD#1,B$ AS A$(1)` — **no space anywhere** | **Type mismatch** | **`OK`** |
-      | `z.fldvar` | `FIELD#1,N AS A$(1)` | **Type mismatch** | **Syntax error** |
+      | `d.sumok` | `FIELD#1,200 AS A$,56 AS B$` — total **256** | ` 200  56 ` | ` 200  56 ` 🟢 **control** |
+      | `d.sum1` | `FIELD#1,200 AS A$,57 AS B$` — total **257** | **FIELD overflow** | ` 200  57 ` |
+      | `d.sum` | `FIELD#1,200 AS A$,100 AS B$` — total **300** | **FIELD overflow** | ` 200  100 ` |
 
-      🎯 **`ex_field`'s `call eval` ([`basic/field.asm:270`](basic/field.asm:270))
-      never checks what the width evaluates TO**, so a STRING is accepted as a
-      field width. The CF-3300 refuses the width *before* it ever looks for its
-      literal `AS`.
-      ⚠️ **`z.fldvar` IS NOT A D-NAMSPC DEFECT AND `z.join` / `z.joinnum` PROVE
-      IT** — with `FIELD` taken out of the picture, `X=N AS A$(1)` is
-      `Type mismatch` and `NAS=4 : X=N AS A` is ` 4 ` on **all three sides**. The
-      join is exact; what diverges is FIELD's error CLASSIFICATION. `AS` is not
-      in `basic/kwtable.inc` and is read as two literal characters, which is why
-      a variable width and a space-blind name scan interact at all.
-      Both rows are DEFERRED in `probes/basic/basic_probe_namspc.py` — measured,
-      printed, never scored; a deferred row that started AGREEING would itself be
-      a finding. ⚠️ zerobas *moved* on `z.fldvar` (`OK` → `Syntax error`): the
-      program is now refused as on the reference, but not with the right error.
-      💰 Not scouted and not priced.
+      🎯 **THE BOUNDARY IS PINNED TO THE BYTE, AND NO PER-ITEM DOMAIN RULE CAN
+      REACH IT** — both individual widths are inside 0..255, so D-FLDWIDTH's
+      byte-argument rule is blind to these three by construction. That is why
+      they are a separate rule and not a conflation.
+      💰 **PRICED AT ≈27 B AGAINST A 6 B WALL** (`docs/spec-basic-fldwidth.md`
+      §6.5): 14 B to fetch `FCH_RECLENS[ch]` main-side, 10 B for the 16-bit
+      compare, 4 B to raise. There is no accessor to borrow — `load_reclen`
+      ([`basic/randio-body.inc:270`](basic/randio-body.inc:270)) is **sub-ROM**
+      (`sub/randio.asm:47`) and not callable from `ex_field`, and `GP_RECLEN` is
+      only loaded at GET/PUT time so reading it here reads a stale cell.
+      🔴 **AND ITS DENOMINATOR IS NOT BUILT.** Every row above uses the
+      **DEFAULT** 256-byte record, so nothing measured separates *"checked
+      against the record length"* from *"checked against a constant 256"*. It
+      needs `OPEN … LEN=r` rows — the disk-BASIC option surface — before any
+      byte is spent.
+      Both rows are DEFERRED in `probes/basic/basic_probe_fldwidth.py` —
+      measured, printed, never scored; a deferred row that started AGREEING
+      would itself be a finding.
+      ⚠️ ERR 50's message text already exists (`sub/errmsg.asm em_field_ovf`)
+      and **no zerobas site raises it**, so this is a raiser, not a message.
+
+- [ ] 💰 **A −10 B FUNDING CARVE EXISTS IN `ex_width` AND IS DECLINED ON A
+      MISSING READING. Filed 2026-08-08 by D-FLDWIDTH.**
+      [`basic/screen.asm:160`](basic/screen.asm:160) is `call eval` / `ld
+      a,(TMISMATCH)` / `or a` / `jp nz,type_mismatch_error` / `call
+      get_byte_arg` — **13 B** written out inline, which is exactly what
+      `ex_field` now does in **6**. A shared
+      `eval_byte_checked: call eval / call check_expr_errors / jp get_byte_arg`
+      (9 B) would collapse both call sites to 3 B each: **−1 B here, −10 B
+      there**.
+      ⚠️ **DECLINED BECAUSE IT MOVES ANOTHER VERB'S ERROR FACE.**
+      `check_expr_errors` raises on **FPERR** as well as TMISMATCH, so folding
+      `ex_width` in changes `WIDTH 1/0`'s answer — and nobody has measured what
+      the reference says to it. A byte saving is not a licence to move a surface
+      whose reading has not been taken. One row on the CF-3300 (`WIDTH 1/0`,
+      plus `WIDTH 70000` to check the int16 stage agrees) unblocks it.
 
 - [ ] 🔴 **`OPEN A$ AS #1` IS `Syntax error` HERE AND `OK` ON THE CF-3300.**
       Filed 2026-08-08 by D-NAMSPC, found while measuring something else

@@ -57,7 +57,19 @@
 ;     — all measured on the CF-3300, docs/spec-basic-lrvar.md §1.
 ;   * a fielded READ takes precedence over a plain STRTAB value; assigning a fielded
 ;     name with plain LET does not "disconnect" the field (real MSX-BASIC does).
-;   * field widths are 1..255; FIELD overflow past the record length is not checked.
+;   * (corrected by D-FLDWIDTH 2026-08-08) field widths are **0..255**, not
+;     1..255: the CF-3300 accepts `FIELD#1,0 AS A$` and reports LEN(A$) = 0
+;     (row d.zero). The old claim was this file's own invention and a fix built
+;     on it would have shipped a divergence -- see docs/spec-basic-fldwidth.md
+;     §1. The domain is now enforced by get_byte_arg at exf_item (ERR 6 past
+;     int16, ERR 5 outside 0..255), which is the reference's own two-stage rule.
+;   * FIELD overflow past the RECORD LENGTH (ERR 50) is still not checked --
+;     MEASURED and priced at ~27 B against a 6 B page-1 wall, DECLINED with
+;     numbers (spec §6.5; rows d.sum / d.sum1 / d.sumok pin the boundary to the
+;     byte). Its own denominator also needs `OPEN .. LEN=r` rows, which nothing
+;     has measured: every row so far uses the default 256-byte record, so
+;     "checked against the record length" and "checked against a constant 256"
+;     are not yet separated. Filed in TODO.md as its own residual.
 ;   * record numbers are 1..255 (file < 64 KB — the same 16-bit size ceiling the
 ;     loader text path documents); bare GET/PUT (no record number) default to record
 ;     1 — the auto-incrementing "current record" is not tracked.
@@ -266,8 +278,42 @@ exf_havech:
                 jp      nz,stmt_error
                 inc     hl
 exf_item:
-                call    skip_spaces
+                ; D-FLDWIDTH (docs/spec-basic-fldwidth.md): THE WIDTH IS A BYTE
+                ; ARGUMENT, and it is the ordinary two-stage one every other
+                ; numeric argument in this tree already uses. Until this slice
+                ; the `call eval` below was followed by NOTHING -- no type check,
+                ; no coercion, no domain test -- so `pop de` took whatever eval
+                ; left in E: type_mismatch_set's hard 0 for a STRING (measured:
+                ; `FIELD#1,B$ AS A$` was accepted at width 0, not merely "OK"),
+                ; and the low byte of anything out of range (`-1` -> 255,
+                ; `256` -> 0, `257` -> 1).
+                ; ⚠️ THE `call skip_spaces` THAT USED TO BE HERE IS GONE, AND IT
+                ; WAS DEAD: eval reaches ev_f (basic/expr.asm), whose very first
+                ; instruction is `call ev_sp` -- the identical $20 loop. The
+                ; neighbouring exf_havech already proved the pattern from the
+                ; other side (it `call eval`s with no skip at all). Rows c.wsp /
+                ; c.wsp2 are green before and after and K-FW4 is the knife; the
+                ; 3 bytes pay for half of what follows.
                 call    eval                ; DE = field width; HL advanced
+                ; ORDER IS FORCED, NOT CHOSEN (spec §4.1): on a TMISMATCH state
+                ; type_mismatch_set has hard-zeroed DE and left FAC untouched, so
+                ; coercing first would fault on a value that means nothing. This
+                ; is eval_chan's documented constraint at the identical join.
+                call    check_expr_errors   ; string -> ERR 13; a deferred `1/0`
+                                            ; -> ERR 11 via fp_runtime_error's
+                                            ; fperr_to_err. HL survives (the
+                                            ; routine reads two RAM bytes and
+                                            ; rets; its abort arms never return).
+                call    get_byte_arg        ; ERR 6 past int16 (70000), ERR 5
+                                            ; outside 0..255 -- and 0 IS INSIDE,
+                                            ; measured, against this file's own
+                                            ; header claim of "1..255" (now
+                                            ; corrected above). Returns D=0,
+                                            ; E=width and PRESERVES HL
+                                            ; (get_int16_checked push/pops it),
+                                            ; which is what the comment on the
+                                            ; `pop de` below always claimed and
+                                            ; nothing enforced.
                 push    de                  ; save width across the "AS" + name parse
                 call    skip_spaces
                 call    upcase
@@ -284,7 +330,23 @@ exf_item:
                 jp      nc,exf_syn
                 call    var_str_type        ; A=1 if `$` suffix
                 or      a
-                jp      z,exf_syn           ; must be a string var
+                jp      z,type_mismatch_error
+                                            ; D-FLDWIDTH spec §4.3: a NUMERIC
+                                            ; TARGET is ERR 13, not ERR 2 --
+                                            ; measured, `FIELD#1,10 AS A` is
+                                            ; `Type mismatch` on the CF-3300 and
+                                            ; was `Syntax error` here. Exactly
+                                            ; D-LRVAR's move one statement over:
+                                            ; lrset_common, in this same file,
+                                            ; already answers 13 to the identical
+                                            ; test. Byte-neutral (same `jp cc,nn`).
+                                            ; 🔴 ONLY THIS ONE of ex_field's FOUR
+                                            ; exf_syn arms moves: t.noas
+                                            ; (`FIELD#1,10 A$`) and t.nonm
+                                            ; (`FIELD#1,10 AS 5`) are the negative
+                                            ; controls that keep the rule from
+                                            ; widening to "anything ex_field
+                                            ; dislikes" (spec §3.2).
                 call    tgt_parse_fld       ; BC = key (name, or the ARYTAB-relative
                                             ; element key -- D-FLDARY); HL past the
                                             ; name + `$` + any `(subs)`

@@ -318,13 +318,13 @@ SITE_CONTROL = {
 # leave no row able to separate them ([[one-row-cannot-separate-two-rules]]).
 # Filed in TODO.md as its own residual with these four readings as its
 # denominator; a deferred row that started AGREEING would itself be a finding.
-DEFERRED = {
-    "z.fldvar": "DEFERRED — the JOIN is right (see z.join); what diverges is "
-                "ex_field's missing width TYPE check, which z.fldstr measures "
-                "with no space in it at all",
-    "z.fldstr": "DEFERRED — no space anywhere: `ex_field` does not type-check "
-                "its width. A shipped defect this slice only made VISIBLE",
-}
+# ✅ EMPTY SINCE D-FLDWIDTH (2026-08-08). Both rows are now ORDINARY SCORED
+# ROWS: `ex_field` type-checks and domain-checks its width (a byte argument --
+# docs/spec-basic-fldwidth.md), so `z.fldstr` and `z.fldvar` both read
+# `Type mismatch`, which is what the CF-3300 has answered all along. The
+# deferral was honoured rather than merely filed
+# ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
+DEFERRED: dict[str, str] = {}
 
 
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>", "<NOT STORED>",

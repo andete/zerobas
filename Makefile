@@ -2033,6 +2033,35 @@ namspc-acceptance: repack-machine
 	python3 probes/basic/basic_probe_namspc.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-FLDWIDTH: a FIELD width is a BYTE ARGUMENT (docs/spec-basic-fldwidth.md)
+# D-NAMSPC deferred two rows and filed them as a residual: `ex_field` never
+# type-checked its width, so `FIELD#1,B$ AS A$` -- NO SPACE IN IT -- was `OK`
+# here and `Type mismatch` on the CF-3300.
+# 🎯 THE READING IS `LEN(A$)`, NOT `OK`: the whole subject lives between
+# "accepted as 10" and "accepted as 0", and an [OK] fixture cannot tell those
+# apart. Every accepting row reads the width BACK out of the field table.
+# 🎯 d.big vs d.neg/d.256/d.257 NAME THE RULE: 70000 is `Overflow` and
+# -1/256/257 are `Illegal function call`, which is exactly get_byte_arg's TWO
+# STAGES -- code that already ships and is already the reference's rule -- so
+# the whole domain fix is 3 bytes of `call`. And d.zero says 0 IS LEGAL,
+# against this file's own header claim of "1..255".
+# 🎯 m.trap says the check is PER ITEM with NO ROLLBACK (` 13  5 `: ERR 13, and
+# the first field is still 5 wide), and o.dt ORDERS the checks (a bad-DOMAIN
+# width with a numeric target is ERR 5, not ERR 13 -- o.wt CANNOT say that,
+# both its faults are ERR 13).
+# 🔴 t.noas / t.nonm are the NEGATIVE controls that bound the ERR-13 change:
+# only ONE of ex_field's four exf_syn arms moves.
+# ⏸ d.sum / d.sum1 are DEFERRED -- the RECORD-LENGTH rule (ERR 50) is a
+# separate rule, priced at ~27 B against a 6 B wall and declined with numbers.
+#   make fldwidth-characterize ONLY=d.big SIDES=zb      # scope rows / sides
+fldwidth-characterize: repack-machine
+	python3 probes/basic/basic_probe_fldwidth.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+fldwidth-acceptance: repack-machine
+	python3 probes/basic/basic_probe_fldwidth.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2271,6 +2300,7 @@ clean:
         nxary-characterize nxary-acceptance \
         tgtspc-characterize tgtspc-acceptance \
         namspc-characterize namspc-acceptance \
+        fldwidth-characterize fldwidth-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean
