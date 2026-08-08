@@ -591,37 +591,85 @@ duplicating (and drifting from) what is written below.
       record: the scout carries the 18-row table, the four-site walk and the price;
       the spec carries the design, the forced constraints, the knives and §11
       As-built. Recoverable verbatim at `54f6e62` if it is ever wanted.
-- [ ] 🔴 **FOUR MORE LVALUE PARSE SITES REFUSE AN ARRAY ELEMENT — ALL FOUR
-      MEASURED 2026-08-08, ALL FOUR DIVERGE.** D-ARYLV fixed `READ`/`INPUT`/
-      `LINE INPUT` and recorded that its own "four parse sites" was a HAND-LIST.
-      The walk's other four are now measured, 10 rows,
-      [`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md),
-      `make lvsites-characterize`:
+- [ ] 🔴 **`FIELD` AND `LSET`/`RSET` STILL REFUSE AN ARRAY ELEMENT — DECLINED
+      WITH NUMBERS 2026-08-08 (D-LVFIX), and NOT on bytes alone.** The four
+      lvalue parse sites D-ARYLV never measured all diverge
+      ([`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md)).
+      **D-LVFIX shipped two of them** — `ex_mid_stmt` (`MID$(…)=`) and
+      `inp_readvar` (`INPUT #n` / `LINE INPUT #n`) — for **+31 B of main page 1
+      and +3 B of the low region**, measured
+      ([`docs/spec-basic-lvsites.md`](docs/spec-basic-lvsites.md)). These two are
+      what is left, and they are ONE slice, not two rows of the old one:
 
-      | site | statement | reference | zerobas |
+      | site | statement | CF-3300 | zerobas |
       |---|---|---|---|
-      | `ex_mid_stmt` (`basic/str-engine.asm:957`) | `MID$(A$(1),1,2)="XY"` | `XYLLO` (**2 refs**) | **Syntax error** |
-      | `inp_readvar` (`basic/files.asm:702`) | `INPUT#1,A$(1)` | `HI` | **Syntax error** |
-      | `ex_field` (`basic/field.asm:194`) | `FIELD#1,10 AS A$(1)` | `OK` | **Syntax error** |
-      | `lrset_common` (`basic/field.asm:283`) | `FIELD#1,10 AS A$` / `LSET A$(1)="HI"` | `HI        ` | **Syntax error** |
+      | `ex_field` (`basic/field.asm`) | `FIELD#1,10 AS A$(1)` | `OK` | **Syntax error** |
+      | `lrset_common` (`basic/field.asm`) | `FIELD#1,10 AS A$(1)` / `LSET A$(1)="HI"` | `HI        ` | **Syntax error** |
 
-      All four are the SAME shape D-ARYLV fixed — `var_str_type` → `var_name_key`
-      → use the KEY, no `(` peek — so `tgt_parse` (`basic/vars.asm`) is the fix,
-      already shipped and already shared by four other sites.
-      🎯 **`FIELD` was the genuinely unobvious one.** A FIELD target is a buffer
-      ALIAS, not a value, so refusing arrays would have been defensible language
-      design. It is accepted. (`MID$=`'s own header already conceded its half in
-      writing — *"array lvalues deferred"* — so that gap was known and unpriced.)
-      🔴 **8 OF THE 10 ROWS HAVE ONE REFERENCE, NOT TWO** — `INPUT #n`/`FIELD`/
-      `LSET` are Disk BASIC and a diskless VG-8020 cannot express the question.
-      That is a **weaker oracle than every row D-ARYLV had**, and a slice acting
-      on these rows inherits it. Only the `MID$` rows have two.
-      💰 **NOT carve-scouted, and it cannot be assumed to fit**: main page 1 is at
-      **49 B** after D-ARYLV. `tgt_parse` already exists, so the cost is per-site
-      (a call + an abort + a store swap), but four sites against 49 B is a scout
-      question. ⚠️ Numeric `INPUT #n` cannot be measured at all until the
-      *"numeric INPUT# = Phase 3"* stub goes; `RSET` and `LINE INPUT #n` share
-      their parse sites with rows above and are not separately measured.
+      🔴 **THE READ PATH IS A THIRD SITE AND NOBODY HAD LISTED IT.** `FLD_TAB`
+      maps a 2-byte variable KEY to a (channel, offset, width) slice, and a
+      fielded variable behaves only because `str_eval_one`
+      (`basic/strvar.asm:79`) calls `fld_lookup` **on the scalar path**.
+      `str_eval_arr` (`basic/arrays.asm`, **LOW region**) points `STRPTR` straight
+      at the element and never consults the table — so `LSET A$(1)` can never be
+      READ BACK, whatever `FIELD` records. Teaching only the two parse sites about
+      subscripts would turn `d.ary` green **for the wrong reason** (subscript
+      parsed and discarded, so `A$(1)` and `A$(2)` collide in the table) and leave
+      `s.fldary` red.
+      🔴 **AND THE TABLE CANNOT IDENTIFY AN ELEMENT.** A stable discriminator is
+      the ARYTAB-relative offset (`FLD_ENTSZ` 6 → 8), but `FLD_TAB` is
+      `$EE64..$EEC3` and `GP_RECNO` sits at `$EEC4` — so it costs `FLD_SLOTS`
+      16 → 12 (a user-visible capacity cut) or +32 B of RAM rehomed.
+      💰 **Design sketch, NOT a calibrated hand count: ≈ +80 B page 1, ≈ +5 B
+      low**, against **18 B** and **7 B** free. And
+      `carve_scout --entries ex_field,ex_lset,ex_rset,fld_add,fld_find` returns
+      **NOT page-0-evictable** (313 absent-region callees, 7 DATA), so there is no
+      ready carve either. **This slice needs its own carve scout before anything
+      else.**
+      🔴 **ONE REFERENCE ONLY** — Disk BASIC; a diskless VG-8020 cannot express
+      the question. Weaker than anything D-ARYLV rested on. ⚠️ `RSET` shares
+      `lrset_common` and is not separately measurable even after the fix.
+- [ ] 🔴 **`INPUT #n` PARSES ONLY ONE TARGET — a LIST defect, MEASURED
+      2026-08-08 (D-LVFIX).** `INPUT#1,A$,B$` reads `HILO` on the CF-3300 and is
+      `Syntax error` here (`f.mixctl`), and so is the array form `INPUT#1,A$,B$(1)`
+      (`f.arymix`). `inp_readvar` (`basic/files.asm`) has **no variable-list loop
+      at all**: it parses ONE target and falls into `jp exec_stmt`, so the
+      leftover `,` is what errors. Both rows are carried DEFERRED in
+      `lvfix-acceptance`.
+      🎯 **Only the SCALAR control could tell the two apart.** The probe's first
+      draft had only the array half, which would have scored a LIST defect as an
+      array failure and blamed D-LVFIX for a gap it does not own
+      ([[row-with-two-candidate-causes]]). ⚠️ POSITION is therefore **not covered
+      for `INPUT #n`** by any gate. ONE reference (Disk BASIC).
+- [ ] 🔴 **`VARPTR(<unset variable>)` IS `Illegal function call` ON BOTH
+      REFERENCES AND SUCCEEDS HERE — MEASURED 2026-08-08 (D-LVFIX).** Isolated
+      away from any other verb: `X=VARPTR(Q)` with `Q` unset is IFC on the
+      VG-8020 and `OK` on zerobas, which allocates `Q`. **TWO references.**
+      🎯 **The consequence is bigger than the row.** Arrays slice-4b §13a names
+      `VARPTR` as *the only* eval-time scalar allocator, so on the **reference**
+      the entire §13a stale-array-element corruption class is **not expressible**
+      — it exists in this tree only because zerobas's `VARPTR` accepts a domain
+      the reference rejects. That makes every §13a guard (`ex_let_arr`'s
+      `ary_snapshot_offset`/`ary_apply_offset`, and D-LVFIX's own `tgt_desc`
+      correction) **correct and reachable but NOT oracle-able**: no program both
+      references accept can shift `ARYTAB` mid-statement. ⚠️ Anyone narrowing
+      `VARPTR`'s domain should price what that makes dead — but the guards are
+      cheap and the argument is static, so **do not delete them on this note
+      alone**. `m.ctldrift`/`m.arydrift` carry the evidence, DEFERRED, in
+      `lvfix-acceptance`.
+- [ ] ⚠️ **3 B carve candidate: `ex_mid_stmt`'s resolve abort is SHADOWED.**
+      D-LVFIX's `jp nz,fp_runtime_error` at `ex_mid_stmt` is **not falsifiable**:
+      K-LV3 cut it and reddened nothing, because `eval_pos_arg` →
+      `get_int16_checked` → `check_fperr_only` re-raises the same `FPERR` on the
+      very next instruction, so the message is identical. The same is true of
+      `inp_readvar`'s (K-LV4), and the row added to make its wild store
+      observable (`f.aryoortrap`) missed too — `ary_op0_resolve` clobbers `BC`,
+      so the store lands where no row looks. Kept for uniformity with the five
+      other `tgt_parse` callers (at `exr_lp` the equivalent abort **is**
+      one-row-knifeable, D-ARYLV K-AL3). 3 B of the low region, which has 7.
+      ⚠️ Removing it makes `ex_mid_stmt` the one caller that trusts a *callee's*
+      error check — weigh that against the bytes
+      ([[rule-gated-structurally-has-no-knife]]).
 - [ ] 🔴 **`LSET`/`RSET` ON A NON-FIELDED VARIABLE IS `Syntax error` — a
       documented limit, MEASURED for the first time 2026-08-08.** `LSET A$="HI"`
       with `A$="XXXXX"` and no `FIELD` reads `HI   ` on the CF-3300 and is

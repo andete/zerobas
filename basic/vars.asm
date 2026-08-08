@@ -296,17 +296,80 @@ tss_ary:
                 ; argument rather than an omission (spec §5.1): ex_let_arr_str
                 ; needs the ARYTAB-delta correction because `str_eval` runs
                 ; between its resolve and its store and can allocate a scalar
-                ; (VARPTR). Nothing on any of these four paths can --
+                ; (VARPTR). Nothing on any of these FIVE store paths can --
                 ; read_one_value is a subrom_call plus RAM reads, and
-                ; read_into_strscr calls only arl_getbyte. The source descriptor
-                ; points into STRSCR, a fixed buffer, so a GC inside heap_alloc
-                ; cannot move it either.
+                ; read_into_strscr (console AND inp_readvar's file channel,
+                ; D-LVFIX) calls only arl_getbyte. The source descriptor points
+                ; into STRSCR, a fixed buffer, so a GC inside heap_alloc cannot
+                ; move it either. ⚠️ ex_mid_stmt is the site where that argument
+                ; does NOT hold -- see tgt_desc below.
                 ld      (STRPTR),hl         ; source descriptor (aeng_copy_str's input)
                 ld      (ARY_ADDR),de       ; dest element slot
                 ld      a,3
                 ld      (ARY_OP),a          ; op = 3 (COPY_STR)
                 jp      ary_engine_call     ; NZ + FPERR on OOM; every caller runs a
                                             ; check_expr_errors* right after
+
+; --- tgt_desc / tgt_desc_fix: a target HELD ACROSS AN EVALUATION -------------
+; D-LVFIX (docs/spec-basic-lvsites.md §4.1/§5.1). ex_mid_stmt does not STORE
+; through its target -- it stashes the target's DESCRIPTOR ADDRESS in MIDS_DEST,
+; then parses n, m and the whole RHS, and only then hands the address to the
+; sub-ROM tenant. Every one of those three evaluations can run VARPTR(<new
+; var>), which arrays slice-4b §13a names as THE ONLY eval-time scalar allocator
+; and which shifts the entire array region up by one scalar entry.
+;
+; 🔴 §13a's site audit EXEMPTED ex_mid_stmt in as many words -- "targets a SCALAR
+; string in the fixed STRTAB pool ... so unaffected" -- and that exemption is a
+; statement about the TARGET. Giving it an array element makes it the third site
+; of the class, so the delta correction is forced, not defensive hardening: the
+; symptom without it is a silent write to a neighbouring element.
+;
+; 🎯 THE OFFSET IS THE SNAPSHOT. ex_let_arr must push a separate [OFFSET] word
+; (ary_snapshot_offset) because it keeps the raw address as well. Here the stash
+; cell already exists, so storing an ARYTAB-RELATIVE offset in it instead of an
+; address costs no stack word, no error-tail pop and no second RAM cell.
+;
+; ⚠️ The SCALAR arm is deliberately left uncorrected (§5.2): a scalar-chain
+; insert shifts only the entries ABOVE the insertion point, so the ARYTAB delta
+; is the wrong correction for it and applying it uniformly would turn a
+; sometimes-stale address into an always-wrong one. Whether the scalar arm is
+; stale today is a separate, pre-existing question -- the probe's m.ctldrift row
+; measures it and does not fix it.
+;
+; ⚠️ (TGT_ADDR) is the arm discriminator and must survive the whole argument
+; parse, so nothing between tgt_desc and tgt_desc_fix may call tgt_parse. It
+; cannot today: all six tgt_parse callers are statement heads, and no statement
+; head runs inside an eval. A future EXPRESSION-level caller breaks this
+; silently.
+
+; tgt_desc — in:  BC = key, (TGT_ADDR) = element address, or 0 for a scalar.
+;            out: HL = scalar: the STRTAB descriptor address, verbatim;
+;                      array : elem_addr - ARYTAB, an ARYTAB-relative offset.
+tgt_desc:
+                ld      hl,(TGT_ADDR)
+                ld      a,h
+                or      l
+                jp      z,str_get_key       ; scalar: today's instruction, today's
+                                            ; register contract, today's value
+                ld      de,(ARYTAB)
+                or      a
+                sbc     hl,de               ; the §13a snapshot, folded into the value
+                ret
+
+; tgt_desc_fix — in:  (MIDS_DEST) as tgt_desc left it, (TGT_ADDR).
+;                out: HL = the descriptor address, corrected for any ARYTAB move
+;                     since. Keyed on the DELTA regardless of cause, so an
+;                     auto-DIM or a string GC inside the RHS is covered by the
+;                     same arithmetic.
+tgt_desc_fix:
+                ld      hl,(MIDS_DEST)
+                ld      de,(TGT_ADDR)
+                ld      a,d
+                or      e
+                ret     z                   ; scalar: unchanged (§5.2)
+                ld      de,(ARYTAB)
+                add     hl,de               ; offset + ARYTAB_now = §13a corrected
+                ret
 ; =============================================================================
 
 ; --- (removed) the retired lean cart's int-only fixed-pool scalar store -----

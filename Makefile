@@ -1826,6 +1826,30 @@ lvsites-characterize: repack-machine
 	python3 probes/basic/basic_probe_lvsites.py \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-LVFIX: an ARRAY ELEMENT as a MID$(...)= / INPUT #n target --------------
+# docs/spec-basic-lvsites.md. The slice that ACTS on the measurement above --
+# and it ships TWO of its four sites. `ex_mid_stmt` (str-engine.asm, the LOW
+# region) and `inp_readvar` (files.asm, page 1) are +31 B of main page 1 and
+# +3 B of the low region; `ex_field` and `lrset_common` are DECLINED WITH
+# NUMBERS (spec §7) -- they need FLD_TAB to identify an ELEMENT and a
+# FIELDed-READ hook on str_eval_arr, a third site nobody had listed, for ~+80 B
+# against the 18 B that is left. Their two rows ride here as DEFERRED so a
+# priced decline stays visible in a GATE, not only in a document.
+#
+# 🔴 THE ORACLE IS NOT UNIFORM. Only the MID$ rows have TWO references; INPUT #n
+# / FIELD / LSET are Disk BASIC and a diskless VG-8020 cannot express them, so
+# those rows rest on the CF-3300 alone. Carried forward, not upgraded.
+# 🎯 m.arydrift / m.ctldrift exist because K-LV5 was DRAFTED BEFORE the row set
+# was frozen: cutting the arrays-§13a correction reddens NO row without them.
+#   make lvfix-characterize ONLY=m.ary SIDES=zb      # scope rows / sides
+lvfix-characterize: repack-machine
+	python3 probes/basic/basic_probe_lvfix.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+lvfix-acceptance: repack-machine
+	python3 probes/basic/basic_probe_lvfix.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2056,6 +2080,7 @@ clean:
         readvar-characterize readvar-acceptance \
         inputary-characterize inputary-acceptance \
         arylv-characterize arylv-acceptance lvsites-characterize \
+        lvfix-characterize lvfix-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

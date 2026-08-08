@@ -135,6 +135,15 @@ false pass — applied without asking *who* failed.
 
 ## 6. Status
 
+✅ **ACTED ON 2026-08-08 by D-LVFIX** ([`spec-basic-lvsites.md`](spec-basic-lvsites.md)),
+which shipped **two** of the four sites and **DECLINED the other two with
+numbers**. This table now reads **6/10** (up from 4/10): `m.ary` and `f.ary` are
+closed; `d.ary` and `s.fldary` are the declined `FIELD`/`LSET` pair (the blocker
+is a **third** site — the FIELDed-READ hook on `str_eval_arr` — plus a `FLD_TAB`
+that cannot identify an element, spec §7); `s.ctl`/`s.ary` remain the separate
+non-FIELDed `LSET` residual of §3. Everything below is the ORIGINAL measurement
+and is left as it was recorded.
+
 ⚠️ **MEASUREMENT ONLY. No byte has moved for it**, and
 `make lvsites-characterize` is deliberately **not** an acceptance gate: 6 of its
 10 rows can only be red until the work lands, and a row that can only ever be red

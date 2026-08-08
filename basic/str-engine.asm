@@ -926,14 +926,21 @@ sfm_reject2:
 ; note is precisely why this path funnelled SEVEN distinct reference errors into
 ; one wrong one. Two of them were not even errors: MID$(A$,1,256)="X" performed
 ; the assignment and MID$(A$,1,99999)="X" silently did nothing.
-; Target is a plain $-suffixed string var (FIELDed /
-; array lvalues deferred). Reuses var_str_type/var_name_key (LHS), str_get_key (the
-; in-place STRTAB descriptor), eval (n/m), str_eval (RHS). Clean-room: original code;
-; SEMANTICS from the public MSX-BASIC ref. No disassembly.
+; Target is any string variable REFERENCE -- a plain $-suffixed name OR an array
+; element with a full subscript list (D-LVFIX, docs/spec-basic-lvsites.md;
+; measured on BOTH references, docs/lvsites-msx1-characterization.md m.ary).
+; FIELDed lvalues are still deferred, and that half is DECLINED WITH NUMBERS
+; rather than merely unpriced -- spec §7 (the FIELDed-READ hook is a third site,
+; on str_eval_arr, which nobody had listed). Reuses var_str_type/tgt_parse (LHS),
+; tgt_desc (the in-place descriptor, or the element's ARYTAB-relative offset),
+; eval (n/m), str_eval (RHS). Clean-room: original code; SEMANTICS from the
+; public MSX-BASIC ref. No disassembly.
 ;
-; The dest descriptor address is stashed in MIDS_DEST (aliases NUMBUF, dead here) so
-; the token cursor stays in HL through the whole arg parse. Entered with HL ON the
-; $FF (PEEK_PREFIX). Clobbers A, BC, DE, HL.
+; The dest descriptor address is stashed in MIDS_DEST so the token cursor stays in
+; HL through the whole arg parse. ⚠️ MIDS_DEST does NOT alias NUMBUF -- this header
+; said it did until D-LVFIX; arrays slice-4a rehomed it to TMISMATCH+1 precisely
+; because HEX$/OCT$ moved their digit build INTO NUMBUF (basic/sysvars.inc).
+; Entered with HL ON the $FF (PEEK_PREFIX). Clobbers A, BC, DE, HL.
 ;
 ; Arrays slice-4a REVISION: A$/B$ are now [len:1][ptr:2] descriptors, not inline
 ; [len][bytes]. The write target is A$'s CURRENT body (dereferenced from MIDS_DEST,
@@ -954,10 +961,18 @@ ex_mid_sel:                                 ; (traps T2) entry with HL already o
                 call    var_str_type        ; A=1 iff `$`-suffixed (HL unmoved)
                 or      a
                 jp      z,stmt_error         ; not a string var -> error
-                call    var_name_key        ; BC = key, HL past name + `$`
-                push    hl                  ; [cursor] guard across str_get_key
-                call    str_get_key         ; HL -> dest descriptor (STRTAB, or STR_EMPTY)
-                ld      (MIDS_DEST),hl      ; stash dest addr; cursor kept on the stack
+                ; D-LVFIX (docs/spec-basic-lvsites.md §4.2): the target is any
+                ; string variable REFERENCE, array element included -- measured
+                ; on BOTH references (docs/lvsites-msx1-characterization.md,
+                ; m.ary), which is the one row of that document with two.
+                call    tgt_parse           ; BC = key, (TGT_ADDR) = elem addr or 0
+                jp      nz,fp_runtime_error ; resolve failed -- FPERR already mapped
+                push    hl                  ; [cursor] guard across the lookup
+                call    tgt_desc            ; HL -> dest descriptor (STRTAB / STR_EMPTY),
+                                            ; or the ARYTAB-RELATIVE OFFSET of the
+                                            ; element (§5.1 -- an array target must
+                                            ; survive the arg parse's VARPTR)
+                ld      (MIDS_DEST),hl      ; stash dest; cursor kept on the stack
                 pop     hl                  ; HL = cursor
                 ld      a,(hl)
                 cp      ','
@@ -1005,7 +1020,9 @@ ems_close:
                                             ; checks 1..255 itself)
                 ld      hl,(STRPTR)
                 ld      (SH_SRC),hl         ; B$ descriptor address
-                ld      hl,(MIDS_DEST)
+                call    tgt_desc_fix        ; HL = the stashed dest, corrected for any
+                                            ; ARYTAB move the arg parse caused (§5.1);
+                                            ; a scalar target comes back verbatim
                 ld      (SH_DEST),hl        ; A$ descriptor address
                 ld      a,9
                 ld      (SH_OP),a           ; op = 9 (MID_STORE)
