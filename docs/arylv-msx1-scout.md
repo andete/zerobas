@@ -318,8 +318,35 @@ doc debt, not a gate. The design, the constraints, the knives and the gate live 
 [`spec-basic-arylv.md`](spec-basic-arylv.md).
 
 **All four ROMs hash identically to `112f569`** (`basic-reloc.rom 38d79ffd…`,
-`sub.rom 33af21eb…`, `disk.rom 2c630d3d…`, `zerobas-main-eu.rom 87afd9ea…`),
-which is the whole claim a measurement-only change has to support.
+`sub.rom 33af21eb…`, `disk.rom 2c630d3d…`, `zerobas-main-eu.rom 87afd9ea…`) and
+all four walls are unmoved (low **3 B**, page 1 **126 B**, sub p0 **3769 B**, sub
+p1 **1483 B**), which is the whole claim a measurement-only change has to
+support. `unit-test` **59/59**, `deadcode` main **1567/289 → 0** and sub
+**1522/102 → 0** (+1 allowlisted), `latch-check` **16/16** — all at their filed
+values.
+
+### 6.1 The apparatus was exercised on every path it will be used on
+
+A probe's failure branches only ever run under a knife, so a latent traceback
+there is invisible to every green run and to the whole corpus (D-RUNTAIL
+§6.3, D-CASOPEN §7.3). All four paths of the new probe were run before this
+document was committed, not left for the slice that will depend on them:
+
+| path | how | result |
+|---|---|---|
+| three sides, all rows | `make arylv-characterize` | 18 rows, §1 |
+| the `make` target itself, with `ONLY=` / `SIDES=` | `make arylv-characterize ONLY=c.read SIDES=zb` | rc 0, one row |
+| ONE side (no agreement verdict) | `--sides zb` | rc 0, `CHARACTERIZATION (one side)` |
+| `--gate`, the acceptance form the fix will use | `--only c.read,r.aryvar --sides vg8020,zb --gate` | **rc 1**, one `DIFF` |
+| **exit 2** — a positive control failing | `CONTROL_WANT` monkeypatched in memory (no repo file touched) | **rc 2**, complete report, and **`probe_report.parse()` reads all 3 rows** |
+
+🔴 **The exit-2 run found one property a knife runner has to expect: the failed
+control is printed TWICE** — once as its `FAIL` row, once again in the `....`
+not-scored block — so a runner keying rows by label collides on that one label.
+Benign (both rows read the same `results[side][control]` and can never disagree)
+and **pre-existing** — `basic_probe_readvar.py` and `basic_probe_inputary.py`
+have the identical branch. Written down here rather than rediscovered by the
+runner that trips on it.
 
 ---
 

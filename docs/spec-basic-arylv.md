@@ -290,6 +290,17 @@ cut build** ([[knife-runner-needs-a-rom-hash-guard]]).
 
 Subject = the probe invoked directly (`--sides zb`), never `make`.
 
+⚠️ **K-AL7's shape is already verified, so the runner does not have to discover
+it.** The exit-2 branch was exercised before this spec was written (scout §6.1):
+it exits **2**, prints a **complete** report in the one grammar, and
+`probe_report.parse()` reads it. One property to expect: **the failed control is
+printed TWICE** — once as its `FAIL` row and again in the `....` not-scored block
+— so a runner keying rows by label gets a collision on that one label. It is
+benign (both rows read the same `results[side][control]`, so the two entries can
+never disagree) and it is **pre-existing and shared** by
+`basic_probe_readvar.py` and `basic_probe_inputary.py`, not new here. Expect it;
+do not treat it as a truncated or doubled report.
+
 | # | cut (byte-neutral unless noted) | predicted RED | predicted GREEN |
 |---|---|---|---|
 | **K-AL1** | `tgt_parse`: `cp '('` → `cp $01` | all 12 array rows + the 6 filed rows | `c.read`, `c.let`, `c.for`, `f.ary` — *and `f.ary` staying green is the point*: the fix must not have touched `FOR` |
