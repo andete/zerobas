@@ -75,6 +75,12 @@ follows a named one; nesting DEPTH; the `A`/`A%`/`A$` identity; and — forced b
   turn it green. `nx_end`'s `jp exec_stmt` puts the `,` in statement position.
   Both rows stay **measured and printed, never scored**; filed as its own
   residual ([[one-row-cannot-separate-two-rules]]).
+  ✅ **CLOSED 2026-08-08 by D-NXLIST** ([`spec-basic-nxlist.md`](spec-basic-nxlist.md)),
+  which measured 28 rows on three sides and shipped for **−10 B of page 1**.
+  Both rows are scored again and this slice's gate is **33/33** (§10.4).
+  🎯 The deferral was worth more than a fold-in: the fix lives entirely in
+  `nx_end`/`ex_next`'s comma path and touches nothing in §4's name rule
+  ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
 * **`FOR A(1)=`** — `Syntax error` on both references, and it must **stay** so.
   Carried as a NEGATIVE control (`f.ary`).
 * **A float-valued loop** (`STEP .5`) — the loop MATH is int16 in this tree by
@@ -82,6 +88,14 @@ follows a named one; nesting DEPTH; the `A`/`A%`/`A$` identity; and — forced b
 * **`NEXT A(1)`** — unmeasured; `for_name` parses the name and the `(` then
   reaches statement position, i.e. it inherits the multi-variable residual's
   shape rather than getting an answer of its own.
+  📏 **MEASURED 2026-08-08 by D-NXLIST, and it is a THIRD rule, not this
+  shape.** `NEXT A(1)` is **NEXT without FOR** and `NEXT A(99)` is **Subscript
+  out of range** on both references — so a `NEXT` operand is a complete variable
+  REFERENCE whose subscript is EVALUATED before any frame is matched. That
+  refutes the 8-byte "unmatchable key on `(`" fix (it would answer the wrong
+  error) and moves the item into the D-ARYLV / lvalue family. Three rows
+  deferred in `nxlist-acceptance`; residual in `TODO.md`
+  ([[a-priced-decline-is-a-claim-about-a-design]]).
 * **A space between the name and its suffix** (`FOR A $=1`) — the shipped code
   runs `skip_spaces` before its `cp '$'` and this one does not (`var_name_key`
   is lexically contiguous). Unmeasured on either side; named, not fixed.
@@ -579,8 +593,10 @@ plus the DEFtbl default, plus `STEP`, plus three positive controls and one
 negative control, plus the two rows §4.2 forces outside `FOR` entirely.
 
 **Not covered, and named rather than implied:** the multi-variable `NEXT` (§3 —
-measured, divergent, DEFERRED with its own separating row and its own residual);
-a float-valued loop (`STEP .5`, D-D); `NEXT A(1)`; a loop variable modified
+measured, divergent, DEFERRED with its own separating row and its own residual;
+✅ **closed 2026-08-08 by D-NXLIST**, and this gate is **33/33** since); a
+float-valued loop (`STEP .5`, D-D); `NEXT A(1)` (📏 measured by D-NXLIST and a
+THIRD rule — §3); a loop variable modified
 inside its own body; a loop variable that is also a `DEF FN` parameter; `NEXT`
 reached inside a `GOSUB` called from the loop body; a space between a name and
 its type suffix (`FOR A $=1`, unmeasured on either reference); and nesting
@@ -647,7 +663,7 @@ exported addresses (`$3279`…`$3DAD`) lie below it
 
 | gate | before | predicted | measured |
 |---|---|---|---|
-| **`forvar-acceptance`** | 8/30 | 30/30 | **31/31 agree, 0 diverge, 2 deferred** ✅ (§10.5(c)) |
+| **`forvar-acceptance`** | 8/30 | 30/30 | **31/31 agree, 0 diverge, 2 deferred** ✅ (§10.5(c)) — ✅ **33/33, 0 deferred since D-NXLIST** |
 | **`arylv-acceptance`** | 16/16 + 2 def | **18/18** | **18/18, 0 deferred** ✅ |
 | `unit-test` | 59 | 59 | **59** ✅ (§10.5(d)) |
 | `audit-citations` swept / basic | 748 / 195 | 751 / 196 | **751 / 196** ✅ |
