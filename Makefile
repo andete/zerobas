@@ -1744,14 +1744,24 @@ readvar-acceptance: repack-machine
 # auto-dimensions to 10 on first reference, and both references read ` 7 ` there.
 # Table: docs/inputary-msx1-characterization.md.
 #
-# ⚠️ DELIBERATELY NOT AN ACCEPTANCE GATE. 4 of its 7 rows are red until the array
-# lvalue work lands, and a row that can only ever be red is doc debt, not a gate.
-# The 3 controls ARE gating in the sense that matters -- their failure exits 2,
+# ✅ PROMOTED TO AN ACCEPTANCE GATE 2026-08-08 BY D-ARYLV. It was deliberately
+# characterization-only while 4 of its 7 rows could only ever be red -- "a row
+# that can only ever be red is doc debt, not a gate". The array-lvalue work
+# landed (docs/spec-basic-arylv.md) and all 7 now agree, so the condition that
+# blocked the promotion is gone and the rows become a REGRESSION gate: they are
+# the only ones in the tree that score `INPUT`'s three arms against an array
+# target, and the unDIMmed row is the only one anywhere that scores auto-dim
+# through a target parse.
+# The 3 controls stay gating in the sense that matters -- their failure exits 2,
 # because every row here needs a typed response to reach a blocked INPUT, and a
 # response that never arrives makes all three sides agree about nothing.
 #   make inputary-characterize ONLY=i.lineary   # scope to rows
 inputary-characterize: repack-machine
 	python3 probes/basic/basic_probe_inputary.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+inputary-acceptance: repack-machine
+	python3 probes/basic/basic_probe_inputary.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
 # --- D-ARYLV CARVE SCOUT: how WIDE is the array-lvalue target surface? --------
@@ -1770,15 +1780,25 @@ inputary-characterize: repack-machine
 # four parse sites or five -- and whether `FOR` is an array residual at all, or a
 # re-run of D-READVAR's own name class in a verb nobody re-checked.
 #
-# ⚠️ DELIBERATELY NOT AN ACCEPTANCE GATE, same disposition as
-# inputary-characterize: rows that can only ever be red until the work lands are
-# doc debt, not a gate. The 3 controls ARE gating -- c.let (`A(1)=7`) in
-# particular, because it is what says the element-address MACHINERY is present,
-# so every red row is a missing PARSE and not a missing store. Controls exit 2.
+# ✅ IMPLEMENTED 2026-08-08 (docs/spec-basic-arylv.md), so this now has an
+# ACCEPTANCE form as well: 16 rows scored, 2 DEFERRED. The two deferrals are
+# `f.two`/`f.pct` -- `ex_for`'s single-letter NAME shim, a different residual --
+# and they are printed with their readings rather than deleted, because a
+# deferral has to carry its evidence.
+# 🔴 `f.ary` IS SCORED, as a NEGATIVE control: `FOR A(1)=1 TO 3` is Syntax error
+# on BOTH references, so neither this slice nor the ex_for slice that clears the
+# two deferrals may make it work.
+# The 3 positive controls exit 2 on failure -- c.let (`A(1)=7`) in particular,
+# because it is what says the element-address MACHINERY is present, so a red row
+# is a missing PARSE and not a missing store.
 # Table: docs/arylv-msx1-scout.md.
 #   make arylv-characterize ONLY=f.ary            # scope to rows
 arylv-characterize: repack-machine
 	python3 probes/basic/basic_probe_arylv.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+arylv-acceptance: repack-machine
+	python3 probes/basic/basic_probe_arylv.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
@@ -2008,8 +2028,9 @@ clean:
         runtail-characterize runtail-acceptance \
         castail-characterize castail-acceptance \
         cassave-characterize cassave-acceptance \
-        readvar-characterize readvar-acceptance inputary-characterize \
-        arylv-characterize \
+        readvar-characterize readvar-acceptance \
+        inputary-characterize inputary-acceptance \
+        arylv-characterize arylv-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

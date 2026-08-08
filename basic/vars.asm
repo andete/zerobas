@@ -183,6 +183,132 @@ vst_yes:
                 scf                          ; string (A=1, CF set)
                 ret
 
+; =============================================================================
+; D-ARYLV — the lvalue TARGET layer for READ / INPUT / LINE INPUT.
+; docs/spec-basic-arylv.md. Measured surface: docs/arylv-msx1-scout.md, 18 rows
+; x 3 sides with BOTH references agreeing on all 18.
+;
+; A READ/INPUT target is any VARIABLE REFERENCE, which includes an ARRAY ELEMENT
+; with a full subscript list -- any rank, any expression per subscript, at any
+; position in the variable list. var_name_key above walks a name and a type
+; suffix and never a subscript, so all four target-parse sites (ex_read's exr_lp,
+; and input.asm's inpc_vloop / inpc_vstr / inpc_line) answered Syntax error where
+; both references read the value.
+;
+; 🎯 THE FIX ALREADY EXISTED IN THIS TREE, TWICE: `A(1)=7` works (ex_let_arr /
+; ex_let_arr_str, basic/arrays.asm) and `SWAP A,Q(0)` works (sw_operand/sw_array,
+; basic/missing.asm). This was an inconsistency BETWEEN VERBS, not a missing
+; capability -- which is why the scout's `c.let` row is a positive control: it is
+; what says every red row was a missing PARSE and not a missing STORE.
+;
+; WHAT THE FOUR SITES SHARE IS ONE HEAD AND *TWO* STORES, not one head. The store
+; forks by TYPE (numeric/string) and independently by TARGET FORM (scalar key /
+; element address) -- a 2x2 of which the four sites use three combinations -- so
+; folding the store into the parse would have been the mistake.
+;
+; 🔴 THESE LIVE IN PAGE 1 BECAUSE THREE OF THE FOUR SITES CANNOT AFFORD THEM.
+; basic/input.asm is the LOW REGION, which had 3 B free; basic/program.asm is
+; page 1. Low -> page-1 calls are already what inpc_vloop does for var_name_key /
+; var_store_fac / str_set_key. Homing the shared code here makes all three low
+; sites SHORTER than the sequences they replace, so the change spends page 1 and
+; GIVES BACK low (spec §5.4 / scout §5).
+
+; --- tgt_parse: a variable REFERENCE -- name, type suffix, optional (subs) ---
+; in:  HL = cursor at the name's first letter (the caller has already checked
+;           is_letter);
+;      A  = the mode, exactly var_str_type's own return: 0 numeric / 1 string.
+;           🎯 ALL FOUR CALL SITES ALREADY HAVE IT IN A at the call -- the same
+;           reuse that funded 17 of D-READVAR's 32 bytes.
+; out: Z  = ok / NZ = the array resolve failed, FPERR already mapped+set by
+;           ary_engine_call (the caller aborts with `jp nz,fp_runtime_error`);
+;      BC = the key (a SCALAR target's store argument);
+;      HL = cursor past the whole reference (past `)` for an array);
+;      (TGT_ADDR) = the element address, or 0 for a scalar.
+; Clobbers A,BC,DE,HL. ⚠️ DE is NOT preserved (var_name_key alone did preserve
+; it); checked at all four sites -- none has DE live across this call.
+tgt_parse:
+                push    af                  ; the mode must survive var_name_key
+                call    var_name_key        ; BC=key, HL past name+suffix, (VARTYPE)
+                ld      a,(hl)
+                cp      '('                 ; a `(` right after a name is unambiguously
+                jr      z,tp_ary            ; a subscript -- ev_f_var/str_eval_one rely
+                                            ; on the same disambiguation (arrays §9.4)
+                pop     af
+                ld      de,0                ; 0 = "scalar; store through the key"
+                xor     a                   ; Z = ok
+                jr      tp_set
+tp_ary:
+                pop     af                  ; A = mode
+                or      a
+                jr      nz,tp_res           ; string -> ary type 1, already in A
+                ld      a,(VARTYPE)         ; numeric -> the resolved type (F3)
+tp_res:
+                call    ary_op0_resolve     ; op=0 RESOLVE, auto-dims on first
+                                            ; reference -- which is what makes the
+                                            ; scout's unDIMmed row read a value
+                ret     nz                  ; FPERR set; HL = cursor, nothing to unwind
+tp_set:
+                ld      (TGT_ADDR),de       ; (LD (nn),rr touches no flag, so the Z
+                ret                         ; from either path survives to the caller)
+
+; --- tgt_store_num: an int16 -> the resolved target -------------------------
+; in:  BC = key (scalar targets only), DE = the value, (TGT_ADDR) per tgt_parse.
+; Clobbers everything. Both arms coerce into the target's own resolved type.
+tgt_store_num:
+                ld      a,2
+                ld      (FACTYP),a          ; DE is a plain int16 (F3: the store widens
+                                            ; it per the target's type, e.g. double)
+                ld      hl,(TGT_ADDR)
+                ld      a,h
+                or      l
+                jr      nz,tsn_ary
+                ld      a,(VARTYPE)
+                jp      var_store_fac       ; scalar: var[key] := DE, coerced
+tsn_ary:
+                ld      a,(ARY_TYPE)        ; 🔴 NOT (VARTYPE) -- spec §5.2. Resolving
+                                            ; A%(I) evaluates the subscript, which
+                                            ; re-runs var_name_key for I and OVERWRITES
+                                            ; (VARTYPE) with I's type. ary_parse_call
+                                            ; latches the target's own type in ARY_TYPE
+                                            ; for exactly this reason. With an untyped
+                                            ; A(I) both cells hold the DEFtbl double and
+                                            ; the substitution is INVISIBLE, which is why
+                                            ; the scout carries r.arypct (and why K-AL4
+                                            ; is a one-row knife rather than a no-op).
+                jp      ary_store_write     ; array: element := DE, coerced
+
+; --- tgt_store_str: the STRSCR field -> the resolved target -----------------
+; in:  BC = key (scalar targets only), STRSCR = [len][bytes], (TGT_ADDR).
+; Clobbers everything -- every caller already guards its text cursor on the
+; stack across the store it replaces.
+tgt_store_str:
+                call    strscr_desc         ; HL = RVDESC -> [len][ptr] over STRSCR
+                ld      de,(TGT_ADDR)
+                ld      a,d
+                or      e
+                jr      nz,tss_ary
+                ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
+                jp      str_set_key         ; scalar: var$[key] = the bytes
+tss_ary:
+                ; ex_let_arr_str's own shipped tail, byte for byte (call+pop ->
+                ; jp): re-publish the element address as op=3's input and copy.
+                ; 🎯 NO ary_snapshot_offset/ary_apply_offset HERE, and that is an
+                ; argument rather than an omission (spec §5.1): ex_let_arr_str
+                ; needs the ARYTAB-delta correction because `str_eval` runs
+                ; between its resolve and its store and can allocate a scalar
+                ; (VARPTR). Nothing on any of these four paths can --
+                ; read_one_value is a subrom_call plus RAM reads, and
+                ; read_into_strscr calls only arl_getbyte. The source descriptor
+                ; points into STRSCR, a fixed buffer, so a GC inside heap_alloc
+                ; cannot move it either.
+                ld      (STRPTR),hl         ; source descriptor (aeng_copy_str's input)
+                ld      (ARY_ADDR),de       ; dest element slot
+                ld      a,3
+                ld      (ARY_OP),a          ; op = 3 (COPY_STR)
+                jp      ary_engine_call     ; NZ + FPERR on OOM; every caller runs a
+                                            ; check_expr_errors* right after
+; =============================================================================
+
 ; --- (removed) the retired lean cart's int-only fixed-pool scalar store -----
 ; `var_find` / `var_get_key` / `var_set_key` lived here: a linear walk over the
 ; fixed 4-byte VARTAB pool, keyed on (name0,name1) with no type. Arrays slice-4b

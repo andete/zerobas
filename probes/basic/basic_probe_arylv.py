@@ -144,6 +144,25 @@ CONTROLS = ("c.read", "c.let", "c.for")
 CONTROL_WANT = {"c.read": " 7 ", "c.let": " 7 ", "c.for": " 4 "}
 LABEL_W = 10
 
+# --- DEFERRED rows: measured, printed, NEVER scored -------------------------
+# ⚠️ "A row that can only ever be red is doc debt, not a gate." These two belong
+# to a DIFFERENT residual: `ex_for` still parses its loop variable with the
+# single-letter shim `ex_read` stopped using at D-READVAR, so `FOR AB=` and
+# `FOR A%=` are Syntax error here and ` 4 ` on both references. That is a NAME
+# rule, not an array one, and folding it into D-ARYLV would leave no row able to
+# separate the two ([[one-row-cannot-separate-two-rules]]). They stay MEASURED
+# and PRINTED -- a deferral has to carry its evidence -- and are excluded from
+# the tally in both directions. Filed in TODO.md as its own item.
+#
+# 🔴 `f.ary` IS NOT HERE, AND THAT IS THE POINT. `FOR A(1)=1 TO 3` is Syntax
+# error on BOTH references, so it is SCORED, as a NEGATIVE control: this slice
+# must not make it work, and neither may the ex_for slice that clears the two
+# rows below.
+DEFERRED = {
+    "f.two": "DEFERRED — ex_for's single-letter NAME shim, not an array target",
+    "f.pct": "DEFERRED — ex_for's single-letter NAME shim, not an array target",
+}
+
 # A row that answers one of these is NEVER agreement, however many sides answer
 # it -- two machines that both failed to print agree perfectly about nothing.
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>")
@@ -263,27 +282,38 @@ def main() -> int:
         return 0
 
     agree = dis = 0
-    refsplit = 0
+    refsplit = deferred = 0
     for lab in present:
         vals = {s: results[s][lab] for s in sides if lab in results[s]}
         ok = len(set(vals.values())) == 1 and len(vals) > 1
         if any(v in SENTINELS for v in vals.values()):
             ok = False              # an apparatus sentinel is NEVER agreement
+        refs = {vals[s] for s in ("vg8020", "cf3300") if s in vals}
+        if lab in DEFERRED:
+            # Printed, not scored — in EITHER direction. A deferred row that
+            # started agreeing would be a finding, so it still shows its reading.
+            deferred += 1
+            print(probe_report.row("....", lab, LABEL_W, vals,
+                                   f"   [{DEFERRED[lab]}]"))
+            continue
         agree += ok
         dis += not ok
         note = "   [POSITIVE CONTROL]" if lab in CONTROLS else ""
-        refs = {vals[s] for s in ("vg8020", "cf3300") if s in vals}
+        if lab == "f.ary":
+            note = "   [NEGATIVE CONTROL — both references REFUSE this]"
         if len(refs) > 1:
             refsplit += 1
             note += "   [REFERENCES DISAGREE — no oracle for this row]"
         print(probe_report.row("ok" if ok else "DIFF", lab, LABEL_W, vals, note))
 
-    print(probe_report.footer(len(present), len(present),
-                              f"{agree} agree, {dis} diverge"))
+    print(probe_report.footer(len(present), len(present) - deferred,
+                              f"{agree} agree, {dis} diverge, "
+                              f"{deferred} deferred (not scored)"))
     print("=" * 78)
     print(f"{agree}/{agree + dis} readings agree "
           f"({len(CASES)} cases, {len(CONTROLS)} positive controls, "
-          f"{refsplit} row(s) with no oracle)")
+          f"1 negative control, {refsplit} row(s) with no oracle, "
+          f"{len(DEFERRED)} DEFERRED row(s) measured but not scored)")
     print("SIDES: vg8020,cf3300,zb — READ/INPUT/FOR and DIM are core BASIC, "
           "present on every MSX1, so both references are legitimate oracles here")
     print("DENOMINATOR: (subscript FORM: literal / variable / expression) x "

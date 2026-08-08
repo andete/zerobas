@@ -1713,6 +1713,20 @@ RDV_MODE        equ     RDV_ST + 1      ; $E554: main -> tenant MODE (1), D-READ
                                         ; while the sub-ROM's page 0 is in. The tenant
                                         ; FILLS STRSCR; ex_read wraps + stores main-side,
                                         ; exactly as ex_input does (spec §4.1).
+; --- D-ARYLV: the resolved lvalue TARGET of a READ / INPUT / LINE INPUT -------
+; docs/spec-basic-arylv.md §4.3. tgt_parse (basic/vars.asm) writes it; the two
+; tgt_store_* helpers read it to pick their destination:
+;   0        -> a SCALAR: store through the key in BC (var_store_fac/str_set_key)
+;   nonzero  -> an ARRAY ELEMENT at that address (ary_store_write / ARY_OP=3)
+; A resolved element address is never 0, so the cell needs no separate flag byte.
+; Same window and the same one-statement-at-a-time aliasing argument as the RDV_*
+; cells above -- a READ/INPUT and a DRAW are never in flight together.
+; ⚠️ REUSING ARY_ADDR FOR THIS WAS CONSIDERED AND REJECTED (spec §4.3): it would
+; work today (nothing between the target parse and the store calls the array
+; engine), but its failure mode is a SCALAR store writing to a stale element
+; address -- silent memory corruption, not an error -- guarded only by a property
+; nothing enforces. 2 B buys that away.
+TGT_ADDR        equ     RDV_MODE + 1    ; $E555: element address, or 0 = scalar (2)
 ;
 GFX_DSCALE      equ     GFX_PSTK_END    ; $E55A: persistent scale, quarter units (1)
 GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E55B: persistent angle 0..3 (1)
@@ -1724,6 +1738,9 @@ GFX_G8N         equ     GFX_DANGLE + 1  ; $E55C: written index n (int16 LE) (2)
 GFX_G8V         equ     GFX_G8N + 2     ; $E55E: written value (int16 LE) (2)
     IF GFX_DSP + 2 > GFX_PSTK_END
                 db      DRAW_SCRATCH_OVERRAN_THE_PERSISTENT_STATE_CELLS
+    ENDIF
+    IF TGT_ADDR + 2 > GFX_DSCALE
+                db      TGT_ADDR_OVERRAN_THE_PERSISTENT_DRAW_STATE_CELLS
     ENDIF
     IF GFX_G8V + 2 > $E560
                 db      G8_MARSHALLING_OVERRAN_E560_DISK_WBUF_WALL

@@ -9,8 +9,15 @@
 depends on an UNMEASURED question: *does `INPUT A(1)` diverge too?* If it does,
 the array-lvalue work is shared between two verbs and is worth more than it looks;
 if it does not, the reason is itself a finding. This probe answers it, and nothing
-else -- it is a MEASUREMENT, not a gate (§"a row that can only ever be red is doc
+else -- it was a MEASUREMENT, not a gate (§"a row that can only ever be red is doc
 debt, not a gate" -- see the Makefile comment on `inputary-characterize`).
+
+✅ IT IS A GATE NOW. D-ARYLV landed the array-lvalue target parse
+(docs/spec-basic-arylv.md, 2026-08-08) and all 7 rows agree, so the condition
+that blocked the promotion is gone: `make inputary-acceptance` scores 7/7. These
+are the only rows in the tree that exercise `INPUT`'s three separate arms against
+an array target, and `i.arynodim` is the only row anywhere that scores auto-dim
+reached THROUGH a target parse.
 
 WHY THE QUESTION IS NOT ALREADY ANSWERED BY READING THE CODE. It is tempting to
 say "both verbs call var_name_key, which never parses a subscript, so both

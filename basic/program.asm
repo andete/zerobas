@@ -1646,9 +1646,12 @@ err_stack       equ     err_mem             ; share sl_oom's "out of memory" (D-
 ; and 0 for a numeric one, which is RDV_MODE's encoding, so the branch is stored
 ; once and re-read after the DATA read instead of being decided twice.
 ;
-; ⚠️ ARRAY TARGETS ARE NOT HERE. `READ A(1)` needs ex_let's lvalue path
-; (ary_op0_resolve / ary_store_write) and is outside this twin -- basic/input.asm
-; has no array handling either. Deferred with its measurement (spec §5.1, TODO.md).
+; D-ARYLV (docs/spec-basic-arylv.md, 18 more measured rows): and an ARRAY ELEMENT
+; is a target too -- any rank, any expression per subscript, at any position in
+; the list. The three tgt_* helpers (basic/vars.asm) are shared verbatim with
+; input.asm's three sites; this one differs only in reading its value from a DATA
+; item instead of a console field, which is why the SHARED thing is the target
+; parse and the two stores, and not a single "READ/INPUT" head.
 ex_read:
                 inc     hl                  ; past the READ token
 exr_lp:
@@ -1658,8 +1661,17 @@ exr_lp:
                 call    var_str_type        ; A = 1 iff the name carries a '$' (or its
                 ld      (RDV_MODE),a        ; DEFtbl default is a string) -- and that
                                             ; is exactly the DATA-item read mode
-                call    var_name_key        ; BC = key, HL past the name + suffix;
-                                            ; (VARTYPE) = the resolved type (F3)
+                call    tgt_parse           ; D-ARYLV: BC = key, HL past the whole
+                                            ; reference, (TGT_ADDR) = element address or
+                                            ; 0; (VARTYPE) = the resolved type (F3).
+                                            ; A already holds the mode tgt_parse wants.
+                jp      nz,fp_runtime_error ; a bad subscript aborts with the ARRAY
+                                            ; engine's own error (`READ A(9)` on
+                                            ; `DIM A(3)` is Subscript out of range on
+                                            ; both references, NOT Syntax error --
+                                            ; routing this to stmt_error would answer
+                                            ; what the tree said BEFORE the fix, so the
+                                            ; row would read as untouched, spec §5.3)
                 push    bc                  ; [stack: key]
                 push    hl                  ; [stack: key, exec cursor]
                 call    read_one_value      ; A = status; DE / STRSCR = the item
@@ -1671,18 +1683,13 @@ exr_lp:
                 ld      a,(RDV_MODE)
                 or      a
                 jr      nz,exr_str
-                ld      a,2
-                ld      (FACTYP),a          ; read_one_value's DE is a plain int16
-                                            ; (F3: var_store_fac widens it per the
-                                            ; variable's resolved type)
-                ld      a,(VARTYPE)
-                call    var_store_fac       ; var[key] := DE, coerced (vars.asm)
+                call    tgt_store_num       ; D-ARYLV: var[key] := DE, or the resolved
+                                            ; ELEMENT := DE, coerced either way (vars.asm)
                 pop     hl
                 jr      exr_after
 exr_str:
-                call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
-                ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
-                call    str_set_key         ; var$[key] = the DATA item's bytes
+                call    tgt_store_str       ; D-ARYLV: var$[key] = the DATA item's bytes,
+                                            ; or the resolved element (op=3 COPY_STR)
                 pop     hl
                 ; The same arrays slice-4c (§7.3) hazard ex_input guards: a
                 ; scalar-CHAIN OOM in str_set_key sets FPERR without aborting on

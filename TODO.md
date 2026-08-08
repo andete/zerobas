@@ -557,55 +557,39 @@ duplicating (and drifting from) what is written below.
       shape, routine for routine. The over-acceptance `c.strnum` closed WITH the
       21 refusals, in the DATA engine, not in the target parse.
       ➡️ **The array face is re-filed below as its own item, with its price.**
-- [ ] **AN ARRAY ELEMENT IS NOT ACCEPTABLE AS AN LVALUE TARGET TO `READ` OR
-      `INPUT` — 18 divergent rows, TWO verbs, FOUR parse sites. ✅ SCOUTED AND
-      SPEC'D 2026-08-08: GO, +77 B page 1 / −7 B low, NO CARVE, ONE SLICE.**
-      Spec: [`docs/spec-basic-arylv.md`](docs/spec-basic-arylv.md). Measurement:
-      [`docs/arylv-msx1-scout.md`](docs/arylv-msx1-scout.md),
-      `make arylv-characterize` — **18 rows x 3 sides, both references agreeing
-      on all 18, 0 rows without an oracle** — on top of the 6 rows already filed
-      by `readvar` / `inputary`. `var_name_key` parses a name and a type suffix
-      and **never a subscript**; the fix is `ex_let`/`SWAP`'s existing lvalue path
-      (`ary_op0_resolve` / `ary_store_write`).
-      💰 **PRICE — CARVE-SCOUTED, AND THE OLD ~25…40 B BOUND IS RETIRED.**
-      Three page-1 helpers in `basic/vars.asm` (`tgt_parse` 32 B,
-      `tgt_store_num` 24 B, `tgt_store_str` 30 B) minus 12 B the page-1 site
-      gives back = **+77 B against 126 B free**. 🎯 **AND THE LOW REGION GAINS
-      7 B (3 → ≈10).** `basic/input.asm` — three of the four sites — is the LOW
-      region, **3 B free**, which is the wall the old bound never named; putting
-      the shared code in page 1 makes all three low sites *shorter than the
-      sequences they replace*. +2 B RAM (`TGT_ADDR` `$E555`, the `RDV_*`/`DRAW`
-      aliasing window). A bound, not a measured cost — but the hand-counter was
-      calibrated against **313 B of the very routines the change edits, 8/8
-      exact** [[filed-justification-is-a-claim]].
-      🎯 **THE FIX ALREADY EXISTS IN THIS TREE, TWICE.** `A(1)=7` works (`c.let`)
-      and `SWAP A,Q(0)` works; `sw_operand`/`sw_array` (`basic/missing.asm`) is
-      the shape to copy and its own header already records `SWAP A,Q(9)` →
-      *Subscript out of range*, which is `r.aryoor`'s oracle. So every red row is
-      a missing **parse**, not a missing store — an inconsistency between verbs,
-      not a missing capability.
-      🔴 **`FOR` IS NOT A FIFTH ARRAY SITE — MEASURED.** `FOR A(1)=1 TO 3` is
-      `Syntax error` on **both references** (`f.ary`), so `ex_for` must keep
-      refusing it; the row is carried as a **negative control** and a pin. The
-      claim rests on the reference column alone — zerobas says `Syntax error` to
-      everything here [[gate-whose-answer-is-an-error-passes-a-dead-subject]].
-      🔴 **WHAT THE SIX FILED ROWS COULD NOT SAY.** All six use the literal
-      `A(1)`. Both references also take `A(I)`, `A(1+1)`, `A(1,2)`, `A%(I)`,
-      `A$(I)`, the array at **either** end of a mixed list, and answer
-      *Subscript out of range* — not *Syntax error* — to `A(9)`. A fix that
-      special-cases a literal subscript, one index, or routes the resolve failure
-      to `stmt_error` is measurably wrong, and only the error row can catch the
-      last one (its wrong answer is what the tree already says).
-      🔴 **"FOUR PARSE SITES" WAS A HAND-LIST.** It is the count of sites
-      MEASURED to diverge. Walking `var_name_key`'s callers finds four more
-      lvalue-shaped ones this scout did **not** measure — `INPUT #n`
-      (`basic/files.asm:702`), `FIELD` and `LSET`/`RSET` (`basic/field.asm:194`,
-      `:283`), `MID$(…)=` (`basic/str-engine.asm:957`, whose header already says
-      *"array lvalues deferred"*). Each needs a file/`FIELD` fixture, not a bare
-      boot [[a-hand-listed-denominator-is-a-scope-claim]].
-      ➡️ **Gate after the fix: `arylv-acceptance` 16/16 + 2 deferred**
-      (`f.two`/`f.pct` belong to the `ex_for` residual below), `readvar-acceptance`
-      **24/24 with 0 deferred**, `inputary-characterize` 7/7 and promotable.
+- [x] ✅ **CLOSED 2026-08-08 — AN ARRAY ELEMENT IS NOW A LEGAL LVALUE TARGET TO
+      `READ`, `INPUT` AND `LINE INPUT`. All 18 divergent rows green.**
+      `make arylv-acceptance` **16/16 + 2 deferred**, `readvar-acceptance`
+      **24/24 (0 deferred**, up from 22/22 + 2), `inputary-acceptance` **7/7 and
+      PROMOTED** from characterization — the "rows that can only ever be red"
+      condition that blocked it is gone. Knives **14/14 rounds exact**, three of
+      them reddening exactly ONE row. As-built:
+      [`docs/spec-basic-arylv.md`](docs/spec-basic-arylv.md) §11.
+      🎯 **THE SCOUT'S PRICE WAS EXACT ON EVERY ONE OF ITS TWELVE NUMBERS** —
+      `tgt_parse` 32 B, `tgt_store_num` 24 B, `tgt_store_str` 30 B, all five site
+      deltas, and both walls: main page 1 **126 → 49 B** (+77) and the low region
+      **3 → 10 B** (7 B FREED). Not luck: the hand-counter was calibrated against
+      313 B of the same routines first, and §4.1 drafted the helpers as the
+      assembly that was later assembled.
+      🔴 **`sub.rom` MOVED WHILE ITS WALLS DID NOT** (`33af21eb` → `de1ad5d0`),
+      because `sub/basic-resident-abi.inc` is generated from main's `.sym` and
+      main page 1 shifted. *"The sub walls held, so sub.rom held"* is a wrong
+      inference; a wall is a size, a hash is an identity. Neither §6 nor §7
+      predicted the hashes at all — a gap in the prediction, recorded as one.
+      🔴 **K-AL4 justified the two rows the SCOUT added after drafting the
+      knives.** Its class prediction names seven rows; it reddened **one**, and
+      on the row set that existed before the knives were written it would have
+      reddened **none** — the gate would have shipped unable to tell `ARY_TYPE`
+      from `VARTYPE`.
+      ➡️ **Still open below:** `ex_for`'s single-letter name shim, the
+      `ex_let_arr_str` OOM claim, and the four UNMEASURED lvalue parse sites
+      (`INPUT #n`, `FIELD`, `LSET`/`RSET`, `MID$(…)=`) named in §3 of the spec.
+      📄 **The pre-fix filing is NOT archived here.** It ran to 50 lines and this
+      section is the PICKUP LIST -- a closed item's superseded text is doc debt in
+      it. Everything it said is in the two documents linked above, which are the
+      record: the scout carries the 18-row table, the four-site walk and the price;
+      the spec carries the design, the forced constraints, the knives and §11
+      As-built. Recoverable verbatim at `54f6e62` if it is ever wanted.
 - [ ] 🔴 **`ex_for` STILL PARSES ITS LOOP VARIABLE WITH THE SINGLE-LETTER SHIM
       `ex_read` STOPPED USING — D-READVAR's own defect, in a verb that slice
       never re-checked.** Measured 2026-08-08 by the D-ARYLV scout,

@@ -363,6 +363,172 @@ re-read, but no row asks).
 
 ## 11. As-built
 
-*(empty — nothing is implemented. The implementing slice fills this in with the
-walls measured from clean, the four ROM hashes, the knife results and the corpus,
-following [`spec-basic-readvar.md`](spec-basic-readvar.md) §10.)*
+Implemented 2026-08-08 on `main`, based on `09fbe3b`.
+
+### 11.1 What landed
+
+| file | change |
+|---|---|
+| [`basic/vars.asm`](../basic/vars.asm) | the three new helpers — `tgt_parse`, `tgt_store_num`, `tgt_store_str` — exactly as §4.1 drafts them |
+| [`basic/sysvars.inc`](../basic/sysvars.inc) | `TGT_ADDR` (`$E555`, 2 B) + the `IF TGT_ADDR + 2 > GFX_DSCALE` assert |
+| [`basic/program.asm`](../basic/program.asm) `exr_lp` | `var_name_key` → `tgt_parse` + `jp nz,fp_runtime_error`; both stores → `tgt_store_num` / `tgt_store_str` |
+| [`basic/input.asm`](../basic/input.asm) `inpc_vloop` / `inpc_vstr` / `inpc_line` | the same three edits per site |
+| [`probes/basic/basic_probe_arylv.py`](../probes/basic/basic_probe_arylv.py) | the `DEFERRED` mechanism (`f.two`/`f.pct`) + `f.ary` labelled the NEGATIVE control |
+| [`probes/basic/basic_probe_readvar.py`](../probes/basic/basic_probe_readvar.py) | `DEFERRED` is now **empty** — `a.ary`/`a.arystr` are scored |
+| [`probes/basic/basic_probe_inputary.py`](../probes/basic/basic_probe_inputary.py) | promoted: it is a gate now, not a characterization |
+| [`Makefile`](../Makefile) | `arylv-acceptance` and `inputary-acceptance`, both `.PHONY` |
+
+### 11.2 The walls, measured from clean
+
+`rm -rf build && make basic-reloc`:
+
+| wall | at `09fbe3b` | §6 predicted | as built | |
+|---|---|---|---|---|
+| main low region | 3 B | ≈10 B | **10 B** | ✅ **7 B FREED** |
+| **main page 1** | 126 B | ≈49 B | **49 B** | ✅ **+77 B used** |
+| sub page 0 | 3769 B | unchanged | **3769 B** | ✅ |
+| sub page 1 | 1483 B | unchanged | **1483 B** | ✅ |
+
+🎯 **EVERY BYTE PREDICTION WAS EXACT — all twelve of them**, helper by helper and
+site by site, off `build/basic-reloc.sym`:
+
+| | scouted | as built |
+|---|---|---|
+| `tgt_parse` | 32 B | **32** (16+7+4+5) ✅ |
+| `tgt_store_num` | 24 B | **24** (18+6) ✅ |
+| `tgt_store_str` | 30 B | **30** (15+15) ✅ |
+| `exr_lp` | 49 → 44 | **44** ✅ |
+| `exr_str` | 11 → 7 | **7** ✅ |
+| `inpc_vloop` | 45 → 40 | **40** ✅ |
+| `inpc_vstr` | 22 → 21 | **21** ✅ |
+| `inpc_line` | 53 → 52 | **52** ✅ |
+
+⚠️ **This is not luck and it is not a reason to trust the next hand count.** The
+instrument was calibrated against 313 B of these same routines *before* the
+estimate was quoted (scout §5.2, 8/8 exact), and the three helper bodies were
+written out in §4.1 as the assembly that was later assembled. A hand count of
+code drafted to the instruction, checked against a counter proven on the
+surrounding code, is a different object from a hand count of code imagined.
+
+### 11.3 🔴 `sub.rom` MOVED WHILE ITS WALLS DID NOT, AND THE SPEC NEVER SAID EITHER WAY
+
+| ROM | at `09fbe3b` | as built |
+|---|---|---|
+| `basic-reloc.rom` | `38d79ffd…` | **`7d78c4b6…`** |
+| `sub.rom` | `33af21eb…` | **`de1ad5d0…`** |
+| `disk.rom` | `2c630d3d…` | `2c630d3d…` (unmoved) |
+| `zerobas-main-eu.rom` | `87afd9ea…` | **`85da929d…`** |
+
+**No sub-side byte was written by this slice** — sub page 0 and page 1 are free
+to the byte — and `sub.rom` still moved. `sub/basic-resident-abi.inc` is
+generated from main's `.sym`, so shifting main page 1 rewrites the addresses the
+sub ROM calls back through: same size, different bytes.
+
+⚠️ **"The sub walls did not move, so `sub.rom` did not move" is a wrong
+inference, and this slice is the row that shows it.** §7 predicted the gate
+tallies and §6 the walls; **neither predicted the ROM hashes at all**, so this is
+a gap in the prediction rather than a missed one — recorded as such. D-READVAR
+§10.2 got the same answer from the other direction (it *did* move sub bytes, and
+its conditional prediction held). The general rule is: a wall is a size, a hash
+is an identity, and a relocation changes the second without the first.
+
+### 11.4 The gates
+
+| gate | before | after |
+|---|---|---|
+| `arylv-acceptance` | — (characterization, 4/18) | **16/16 agree, 2 deferred, 0 diverge** |
+| `readvar-acceptance` | 22/22 + 2 deferred | **24/24, 0 deferred** |
+| `inputary-acceptance` | — (3/7, gate refused) | **7/7**, promoted |
+
+All 18 measured array-lvalue divergences are closed. `r.aryoor` / `i.aryoor`
+answer **`Subscript out of range`**, the references' own wording, not
+`Syntax error` — which §5.3 said was the failure mode with no observable
+difference, and is why it was routed through `fp_runtime_error`.
+
+🔴 **`f.ary` held at `Syntax error` on all three sides**, as the negative
+control. `f.two` / `f.pct` are printed and DEFERRED, still divergent, still the
+`ex_for` residual.
+
+### 11.5 Knives — 7 cuts × 2 rounds, **14/14 rounds EXACT**
+
+Runner: throwaway in the scratchpad, never committed. Subject = the probe invoked
+directly (`--sides zb`); snapshot restore in a `finally`; `rm -rf build` + full
+rebuild + repack before every run including each baseline; **ROM-hash guard per
+knife** (6 cuts must move the ROMs, K-AL7 must not); rows parsed with
+`probe_report.parse()`, compared as `{label → zb value}`, with a short-report
+refusal.
+
+| # | cut | predicted RED | measured | |
+|---|---|---|---|---|
+| **K-AL1** | `cp '(' → cp $01` | 12 array rows | **12, exact** | ✅ ×2 |
+| **K-AL2** | `jr nz,tsn_ary → jr z` | 10 numeric rows incl. the control `c.read` | **10, exact**, rc 2 | ✅ ×2 |
+| **K-AL3** | `exr_lp`'s abort → 3 × `nop` | 🎯 **`r.aryoor` only** | **`r.aryoor` only** | ✅ ×2 |
+| **K-AL4** | `ld a,(ARY_TYPE) → ld a,(VARTYPE)` | 🎯 **`r.arypct` only** | **`r.arypct` only** | ✅ ×2 |
+| **K-AL5** | `ld de,0 → ld de,1` | 4 scalar-target rows incl. `c.read` | **4, exact**, rc 2 | ✅ ×2 |
+| **K-AL6** | `ld a,3 → ld a,0` (op RESOLVE, not COPY_STR) | 🎯 **`r.arystrv` only** | **`r.arystrv` only** | ✅ ×2 |
+| **K-AL7** | delete `c.read`'s `DATA` line | exit **2**, 0 scored | **rc 2**, ROMs correctly did **not** move | ✅ ×2 |
+
+**Three cuts reddened exactly ONE row**, which is more than §8 demanded and more
+than D-READVAR's set could produce.
+
+🎯 **K-AL4 IS THE ONE THAT JUSTIFIES THE SCOUT'S LAST TWO ROWS.** Its *class*
+prediction — "substituting `VARTYPE` for `ARY_TYPE` breaks numeric array stores"
+— names seven rows. It broke **one**, exactly as §8 said it would, because
+`r.arypct` is the only row where the two cells differ. On the row set that
+existed before the knives were drafted it would have broken **none**, and the
+gate would have shipped unable to tell the two cells apart (scout §2.6). The
+knife did not merely falsify the fix; it had already fixed the denominator.
+
+🟢 **The GREEN sets held in all 14 rounds** — no cut moved a row outside its
+predicted set, so the rounds are exact on the whole 18-row report, not just on
+the red half.
+
+### 11.6 Corpus
+
+See §11.7. ⚠️ `lnblank REPEAT` defaults to 1; write the loop in **bash**, not zsh,
+so `make $t` word-splits.
+
+### 11.7 The fix, as a program
+
+Both columns are readings from the runs above — "before" is the scout's zerobas
+column at `112f569`, "after" is this slice's `arylv-acceptance`.
+
+```basic
+10 DATA 7
+20 DIM A(3)
+30 I=1
+40 READ A(I)
+50 PRINT"[";A(1);"]"
+```
+
+| | screen after `RUN` |
+|---|---|
+| VG-8020 / CF-3300 | `[ 7 ]` |
+| zerobas **before** | `Syntax error in 40` |
+| zerobas **after** | `[ 7 ]` |
+
+```basic
+10 DIM A$(3)
+20 LINE INPUT A$(1)
+30 PRINT"[";A$(1);"]"
+```
+→ both references `[HI]`, zerobas **before** `Syntax error in 20`, **after**
+`[HI]`.
+
+And the row that is the point of having measured the ERROR face rather than
+assumed it:
+
+```basic
+10 DATA 7
+20 DIM A(3)
+30 READ A(9)
+```
+
+| | screen after `RUN` |
+|---|---|
+| both references | `Subscript out of range in 30` |
+| zerobas **before** | `Syntax error in 30` |
+| zerobas **after** | `Subscript out of range in 30` |
+
+A fix that answered `Syntax error` here would have printed **exactly what the
+tree printed before it**, and the row would have read as untouched.

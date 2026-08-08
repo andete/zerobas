@@ -1,5 +1,14 @@
 # The ARRAY-LVALUE target surface (MSX1, measured) — D-ARYLV carve scout
 
+> ✅ **IMPLEMENTED 2026-08-08.** The zerobas column below is the **before**
+> reading, at `112f569`. All 12 divergent array-lvalue rows here (and the 6 filed
+> by `readvar`/`inputary`) are now green: `make arylv-acceptance` **16/16 + 2
+> deferred**, `readvar-acceptance` **24/24**, `inputary-acceptance` **7/7**.
+> As-built, walls and knives: [`spec-basic-arylv.md`](spec-basic-arylv.md) §11.
+> 🎯 **Every byte prediction in §5 was exact** — three helper sizes, five site
+> deltas, both walls. §5.5's *"the real number comes from a build"* still stands
+> as the rule; this is what it looks like when a calibrated instrument is right.
+
 Measured 2026-08-08 against **two** references — the Philips VG-8020 and the
 National CF-3300 — by `probes/basic/basic_probe_arylv.py`
 (`make arylv-characterize`). **Both references agree on all 18 rows**, so every

@@ -13,8 +13,13 @@
 ;   read_line (repl.asm)              keyboard -> LINEBUF, 0-terminated ASCII
 ;   read_into_strscr + ARL_GETBYTE    field/line splitter -> STRSCR (files.asm);
 ;     + FCH_RDMODE                      re-pointed here at `linebuf_getbyte`
-;   var_name_key / var_set_key /      variable assignment (vars.asm), exactly as
-;     str_set_key / var_str_type        ex_let / ex_let_str / the file ex_input
+;   tgt_parse / tgt_store_num /       lvalue TARGET parse + store (vars.asm),
+;     tgt_store_str / var_str_type      shared verbatim with ex_read (D-ARYLV,
+;                                       docs/spec-basic-arylv.md). These wrap
+;                                       var_name_key / var_store_fac / str_set_key,
+;                                       which is what this file called directly
+;                                       until an ARRAY ELEMENT became a legal
+;                                       target on all THREE of its arms.
 ; The only genuinely new code is `linebuf_getbyte` (the LINEBUF byte source), the
 ; prompt/var-list driver, the strict numeric-field validator `input_num_field`, and
 ; the D-2 re-prompt loop (?redo from start / ?extra ignored).
@@ -94,8 +99,17 @@ inpc_vloop:
                 or      a
                 jr      nz,inpc_vstr
                 ; --- numeric variable ---
-                call    var_name_key        ; BC = key, HL past the name; (VARTYPE) =
-                                            ; the resolved type (F3)
+                call    tgt_parse           ; D-ARYLV: BC = key, HL past the whole
+                                            ; reference, (TGT_ADDR) = element address or
+                                            ; 0; (VARTYPE) = the resolved type (F3).
+                                            ; A already holds the mode (0) it wants.
+                jp      nz,fp_runtime_error ; a bad subscript raises the ARRAY engine's
+                                            ; own error. [varstart] is still on the
+                                            ; stack and that is FINE: fre_abort_low does
+                                            ; `ld sp,(SAVSTK)` as its own first act
+                                            ; (D-CUR-D), so raising here is
+                                            ; DEPTH-INDEPENDENT -- and the ON ERROR trap
+                                            ; branch resets SP the same way.
                 push    bc                  ; [stack: varstart, key]
                 push    hl                  ; [stack: varstart, key, textcur]
                 call    read_into_strscr    ; STRSCR <- the next field (mode 0)
@@ -104,26 +118,25 @@ inpc_vloop:
                 pop     hl                  ; textcur
                 pop     bc                  ; key
                 push    hl                  ; guard textcur across the store
-                ld      a,2
-                ld      (FACTYP),a          ; input_num_field's DE is a plain int16 value
-                                            ; (F3: var_store_fac widens it per the
-                                            ; variable's resolved type, e.g. double)
-                ld      a,(VARTYPE)
-                call    var_store_fac       ; var[key] := DE, coerced (vars.asm)
+                call    tgt_store_num       ; D-ARYLV: var[key] := DE, or the resolved
+                                            ; ELEMENT := DE, coerced either way (vars.asm)
                 pop     hl
                 jr      inpc_after
 inpc_vstr:
                 ; --- string variable ---
-                call    var_name_key        ; BC = key, HL past the name + '$'
+                call    tgt_parse           ; D-ARYLV: BC = key, HL past the whole
+                                            ; reference, (TGT_ADDR) per above; A already
+                                            ; holds the mode (1) it wants
+                jp      nz,fp_runtime_error ; same depth-independent abort as the numeric
+                                            ; arm above
                 push    bc
                 push    hl
                 call    read_into_strscr    ; STRSCR <- the next field (mode 0)
                 pop     hl
                 pop     bc
-                push    hl                  ; guard textcur across str_set_key
-                call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
-                ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
-                call    str_set_key         ; var$[key] = the field bytes
+                push    hl                  ; guard textcur across the store
+                call    tgt_store_str       ; D-ARYLV: var$[key] = the field bytes, or
+                                            ; the resolved element (op=3 COPY_STR)
                 pop     hl
                 ; arrays slice-4c (§7.3) follow-up: a scalar-CHAIN OOM here
                 ; sets FPERR (str_set_key's own ARY_OP=5 path) but does not
@@ -184,7 +197,16 @@ inpc_line:
                 call    var_str_type
                 or      a
                 jp      z,stmt_error        ; LINE INPUT requires a string variable
-                call    var_name_key        ; BC = key, HL past the name + '$'
+                call    tgt_parse           ; D-ARYLV: BC = key, HL past the whole
+                                            ; reference, (TGT_ADDR) = element address or
+                                            ; 0; A already holds the mode (1) it wants.
+                                            ; ⚠️ LINE INPUT re-parses its own target
+                                            ; rather than sharing the list driver above,
+                                            ; which is why it was a THIRD divergent
+                                            ; INPUT arm and needs its own call here.
+                jp      nz,fp_runtime_error ; the stack is clean at this point --
+                                            ; inpc_dispatch pushes [varstart] only on the
+                                            ; INPUT path, AFTER the branch to here
                 push    hl                  ; guard the text cursor across the read
                 push    bc                  ; save the key
                 call    read_line           ; LINEBUF <- typed line
@@ -194,9 +216,8 @@ inpc_line:
                 ld      (ARL_GETBYTE),de
                 call    read_into_strscr    ; STRSCR <- the whole line (mode 1)
                 pop     bc                  ; key
-                call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
-                ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
-                call    str_set_key
+                call    tgt_store_str       ; D-ARYLV: var$[key] = the line, or the
+                                            ; resolved element (op=3 COPY_STR)
                 pop     hl                  ; text cursor after the variable
                 ; arrays slice-4c (§7.3) follow-up, same disposition as
                 ; console INPUT's own check just above: a scalar-CHAIN OOM

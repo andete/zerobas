@@ -37,11 +37,12 @@ this battery can go red at once for a reason that has nothing to do with READ
 fat-error-acceptance` once scored 8/8 on an all-$00 disk.rom. `a.one` is the
 positive text that says READ reached a variable at all.
 
-⚠️ TWO ROWS ARE DEFERRED AND THEREFORE NOT SCORED (`DEFERRED`, below). `READ A(1)`
-needs ex_let's array lvalue path, which is outside the `INPUT` twin D-READVAR was
-priced against, so the fix took 22 of these 24 rows. The two array rows stay
-MEASURED and PRINTED -- a deferral has to carry its evidence -- but a row that can
-only ever be red is doc debt, not a gate, so `make readvar-acceptance` gates 22.
+✅ ALL 24 ROWS ARE SCORED SINCE D-ARYLV (2026-08-08). `a.ary` / `a.arystr` were
+deferred and printed but not scored, because `READ A(1)` needed ex_let's array
+lvalue path, which was outside the `INPUT` twin D-READVAR was priced against.
+That work landed (docs/spec-basic-arylv.md): the target parse and the two stores
+are now shared with all three of `INPUT`'s arms, and this gate is 24/24 with an
+empty DEFERRED set.
 
 Clean-room: observed outputs only; both reference ROMs are black boxes.
 """
@@ -109,17 +110,16 @@ CONTROL = "a.one"
 LABEL_W = 10
 
 # --- DEFERRED rows: measured, printed, NEVER scored -------------------------
-# ⚠️ "A row that can only ever be red is doc debt, not a gate." Array targets need
-# ex_let's lvalue path (ary_op0_resolve / ary_store_write, basic/arrays.asm), which
-# is outside the `INPUT` twin this slice was priced against -- basic/input.asm has
-# no array handling at all, so `var_name_key` parses a name and a suffix and never
-# a subscript. D-READVAR took 22 of the 24 rows; these two stay MEASURED and
-# PRINTED (a deferral has to carry its evidence) and are excluded from the tally
-# in both directions. Re-filed in TODO.md with its own price.
-DEFERRED = {
-    "a.ary":    "DEFERRED — array lvalue path (ex_let), outside the INPUT twin",
-    "a.arystr": "DEFERRED — array lvalue path (ex_let), outside the INPUT twin",
-}
+# ✅ EMPTY SINCE D-ARYLV (2026-08-08, docs/spec-basic-arylv.md). `a.ary` /
+# `a.arystr` were deferred here because an array target needed ex_let's lvalue
+# path (ary_op0_resolve / ary_store_write), which was outside the `INPUT` twin
+# D-READVAR was priced against. That work landed: `tgt_parse` / `tgt_store_num` /
+# `tgt_store_str` (basic/vars.asm) are shared by ex_read and all three of
+# input.asm's arms, so both rows are now SCORED and this gate is 24/24.
+# ⚠️ The mechanism is deliberately KEPT rather than deleted with its last entry --
+# it is 6 lines, and the next deferral is otherwise re-invented by whoever needs
+# one. An empty dict scores every row, which is the correct behaviour here.
+DEFERRED: dict[str, str] = {}
 
 # Sentinels. A row that answers one of these is NEVER agreement, however many
 # sides answer it -- two machines that both failed to print agree perfectly.
