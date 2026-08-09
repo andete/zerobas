@@ -2199,6 +2199,32 @@ penderr-acceptance: repack-machine
 	python3 probes/basic/basic_probe_penderr.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-STMTPEND: a fault that already happened outranks the rest of the -------
+# statement (docs/spec-basic-stmtpend.md). D-PENDERR made every WRITER into the
+# pending-error cell set-if-empty, so the FIRST fault is the one recorded. It did
+# not make anything read the cell that was not already reading it -- and TWO
+# places drop the recorded code on the floor:
+#   exec_stmt   clears the cell unconditionally at the top of every statement,
+#               so a fault raised by a driver that never calls
+#               check_expr_errors is FORGOTTEN. `SCREEN 0*(1/0)` and
+#               `DEFUSR=0*(1/0)` print nothing at all here and
+#               `Division by zero` on both references.
+#   stmt_error  raises ERR 2 over a live code, so a statement whose own
+#               delimiter check fails reports `Syntax error` instead of the
+#               fault that already happened.
+# 🎯 The slice that found it was chasing D-TMFP's "defect 1", the token cursor
+# stranded on the RHS operand after a string compare -- which is one ROUTE into
+# both holes and not the rule. The cursor is measured (by freezing the machine
+# and reading IX, docs/stmtpend-msx1-characterization.md §3) and left alone.
+# 50 rows x 3 sides, ~14 min.
+stmtpend-characterize: repack-machine
+	python3 probes/basic/basic_probe_stmtpend.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+stmtpend-acceptance: repack-machine
+	python3 probes/basic/basic_probe_stmtpend.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2442,6 +2468,7 @@ clean:
         locarg-characterize locarg-acceptance \
         tmfp-characterize tmfp-acceptance \
         penderr-acceptance \
+        stmtpend-characterize stmtpend-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

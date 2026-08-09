@@ -117,6 +117,11 @@ CASES = [
     # aborts this one IS falsifiable: exec_stmt CLEARS FPERR at the statement
     # boundary and ex_field runs no check between the resolve and it, so with the
     # abort cut this row prints OK instead of the reference's error.
+    # ⚠️ D-STMTPEND (docs/spec-basic-stmtpend.md §6.3) removed that premise: the
+    # statement boundary now READS the pending cell and raises instead of
+    # clearing it, so a cut falls through to a report rather than to OK. The row
+    # is unchanged and still green; what K-FA5 now reads is UNMEASURED (filed in
+    # TODO.md) and is deliberately not predicted here.
     ("d.aryoor",    True, ['DIM A$(3)', OPEN, 'FIELD#1,10 AS A$(9)']),
     # --- LSET / RSET: what the field actually HOLDS --------------------------
     ("s.fld",       True, [OPEN, 'FIELD#1,10 AS A$', 'LSET A$="HI"',

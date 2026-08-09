@@ -33,6 +33,16 @@ init:
                 ; load-bearing (openMSX zero-fills RAM, hiding the omission).
                 xor     a
                 ld      (ERRFLG),a
+                ; D-STMTPEND: the pending-error cell needs the same cold-only
+                ; zero, and for the same reason. exec_stmt used to clear it
+                ; before anything could read it; now exec_stmt READS it first,
+                ; so power-on RAM garbage would raise a bogus error out of the
+                ; very first statement. openMSX zero-fills RAM, so -- exactly
+                ; like `ld (DOT),hl` below -- NO emulator row can see this
+                ; store: knife K-SP4 predicts ZERO red rows for cutting it and
+                ; says so out loud rather than letting a green run read as
+                ; coverage.
+                ld      (FPERR),a
                 ld      hl,0
                 ld      (ERRLIN),hl
                 ; Error-handling S2b (packet §7, same cold-only hook, same
@@ -148,21 +158,30 @@ exec_stmt:
                                             ; ':' via ex_sep) -- the ONLY clean source
                                             ; since raise_error fires from arbitrary
                                             ; call depth, not the statement head.
-                ld      (FPERR),a           ; A is still 0: clear the PENDING-ERROR code
-                                            ; (a stale set would misfire a later
-                                            ; statement's check). D-PENDERR: this used to
-                                            ; clear TWO cells here, and their common clear
-                                            ; at this one point is what made merging them
-                                            ; legal -- one lifetime, one statement.
-                                            ; ⚠️ THE ONLY UNCONDITIONAL STORE INTO THE CELL
-                                            ; IN THE TREE, and it has to be: all 23 code-
-                                            ; raising writers go through penderr_set
-                                            ; (str-engine.asm), which by contract refuses
-                                            ; to write when a code is pending -- so it
-                                            ; could not perform a CLEAR. (The only other
-                                            ; direct stores are penderr_set's own, and
-                                            ; type_mismatch_set's, which sits two
-                                            ; instructions after proving the cell is 0.)
+                ; D-STMTPEND (docs/spec-basic-stmtpend.md): THE STATEMENT
+                ; BOUNDARY IS A READER, NOT A CLEAR. This was an unconditional
+                ; `ld (FPERR),a` -- and since exec_stmt is where EVERY driver
+                ; ends (`jp exec_stmt`), it was the point at which a fault
+                ; raised by a driver that never calls check_expr_errors got
+                ; silently discarded. Measured: `SCREEN 0*(1/0)` and
+                ; `DEFUSR=0*(1/0)` printed NOTHING here and `Division by zero`
+                ; on both references; `FOR I=0*(1/0) TO 3` ran the loop.
+                ; A pending code at a statement boundary means the statement
+                ; that just finished faulted and nobody looked, so REPORT it.
+                ; 🎯 THE CLEAR IS THEN FREE: A is 0 on the fall-through exactly
+                ; when the cell already is, so the store it replaces is
+                ; redundant and the whole reader costs 4 bytes, not 7. The
+                ; "cleared once per statement" invariant is unchanged -- it is
+                ; now proved by the test instead of imposed by the store, and
+                ; the CONSUME moved to record_errline (the one routine every
+                ; raise passes through), so a trapped error's handler cannot
+                ; re-raise the code that entered it.
+                ; ⚠️ Cold boot must still zero the cell (power-on RAM is
+                ; garbage) -- see the cold-only hook above.
+                ld      a,(FPERR)
+                or      a
+                jp      nz,fp_runtime_error ; the FIRST fault outranks the rest
+                                            ; of the statement, including its end
                 ld      de,TEMPBASE         ; arrays slice-4a §6: the temp-descriptor
                 ld      (TEMPTOP),de        ; stack is emptied at every statement
                                             ; boundary (mirrors the old STRTMP ring's
@@ -658,6 +677,18 @@ stmt_error:
                 ld      (PRDEST),a          ; screen, not the half-written file
                 ld      a,$DD               ; distinct from BLOAD's $EE tape error
                 ld      (ERRMARK),a
+                ; D-STMTPEND: A SYNTAX ERROR MUST NOT OUTRANK A FAULT THAT
+                ; ALREADY HAPPENED. `FOR I=0*(1/0) STEP 2` reaches here with
+                ; the division-by-zero code live, and reported `Syntax error`
+                ; where both references report `Division by zero`; so did every
+                ; statement whose delimiter check landed on a token a
+                ; string-compare mismatch had stranded the cursor short of
+                ; (`FOR I=(A$<5) TO 3`, `POKE (A$<5),0`). This is D-PENDERR's
+                ; first-error-wins rule at the one READER that raises a code of
+                ; its own instead of reading the cell. It is a `call`, not a
+                ; reorder: with nothing pending it returns and ERR 2 is raised
+                ; exactly as before -- which is what the n.syn.* rows hold.
+                call    check_expr_errors
                 ld      a,2                 ; -> trap if armed, else the identical
                 jp      raise_error         ; message + abort (fre_abort_low tail)
     ; repack build: err_syntax now lives in the low region (basic/arrays.asm,
@@ -983,6 +1014,18 @@ raise_error_forced:                          ; reached ONLY via ex_resume_noerr,
 ; sentinel (spec-basic-error-handling-s2.md §9 Q2, black-box-pinned GW/MSX
 ; convention). Clobbers A, DE, HL.
 record_errline:
+                ; D-STMTPEND: CONSUME the pending-error code. Every raise passes
+                ; through here exactly once (raise_error, and arrays.asm's
+                ; e21_last `No RESUME` abort), and `rerr_msg` -- D-ONERR0's
+                ; re-raise entry, which deliberately skips this routine -- is
+                ; re-raising a code that was already consumed. Without this the
+                ; statement-boundary reader in exec_stmt would see the SAME code
+                ; again at the handler's first statement and raise it a second
+                ; time, with ONEFLG set, i.e. forced abort: the handler would
+                ; never run. Knife K-SP3 cuts it and reddens every trapped fault
+                ; row in the gate, including rows this slice did not touch.
+                xor     a
+                ld      (FPERR),a
                 ld      a,(DIRECTF)
                 or      a
                 jr      nz,rel_direct

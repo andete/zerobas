@@ -1879,6 +1879,9 @@ exr_str:
                 ; The same arrays slice-4c (§7.3) hazard ex_input guards: a
                 ; scalar-CHAIN OOM in str_set_key sets FPERR without aborting on
                 ; its own, and would otherwise be cleared at the next exec_stmt.
+                ; ⚠️ D-STMTPEND: the boundary now REPORTS a live code rather than
+                ; clearing it, so this check decides WHERE the abort lands, not
+                ; whether there is one (spec-basic-stmtpend.md §6.3).
                 ; Both guard words are already popped, so this is the SP-clean
                 ; site variant (TMISMATCH is always 0 -- READ never sets it).
                 call    check_expr_errors

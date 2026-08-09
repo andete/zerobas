@@ -1431,7 +1431,9 @@ ev_mc_arg:
 ; clobber FPERR=4 -> a wrong `illegal function call`/`overflow` message) and, for
 ; RND, no fp_rnd (which would mutate the persistent seed). A deferred TYPE
 ; mismatch (e.g. `RND("A")`) means the same thing and is caught by the same test.
-; exec_stmt clears the cell per statement, so a clean arg leaves it 0 here and
+; the cell holds at most one code per statement (D-STMTPEND: exec_stmt now
+; proves that by TESTING it rather than by storing a zero), so a clean arg
+; leaves it 0 here and
 ; the body runs unchanged. Returns Z iff no error is pending. Clobbers only A
 ; (every evmc_* reloads it); DE/FAC/FACTYP are ev_mc_arg's.
 ; D-PENDERR: this routine used to read TWO cells and its header called them "the

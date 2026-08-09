@@ -1302,27 +1302,84 @@ list. **When a slice lands, grep this list for what it just shipped.**
       deferred → 50 scored, 50 agree, deferred dict EMPTY**. Knife K-PE4 restores
       the bare store and reddens exactly those five rows and nothing else.
 
-- [ ] 🔴 **`str_fn_radix`'S CURSOR DOES NOT LAND ON `)` AFTER A STRING-COMPARE
-      MISMATCH — AND ITS ROW IS NOW GREEN ANYWAY, WHICH IS THE TRAP.** Filed
-      2026-08-09 by D-TMFP (§8 defect 1), **RESTATED 2026-08-09 by D-PENDERR**
-      ([`docs/spec-basic-penderr.md`](docs/spec-basic-penderr.md) §8) because the
-      symptom it used to produce is gone while the defect is not.
+- [x] ✅ **`str_fn_radix`'S CURSOR AFTER A STRING-COMPARE MISMATCH —
+      CHARACTERISED, AND DELIBERATELY LEFT ALONE.** Filed 2026-08-09 by D-TMFP
+      (§8 defect 1), restated by D-PENDERR (§8), **CLOSED 2026-08-09 by
+      D-STMTPEND** ([`docs/spec-basic-stmtpend.md`](docs/spec-basic-stmtpend.md)
+      §2,
+      [`docs/stmtpend-msx1-characterization.md`](docs/stmtpend-msx1-characterization.md)
+      §2).
 
-      In `Q2$=HEX$(0*(1/0)+(Q$<5))` the mismatch leaves the cursor short of the
-      closing `)`, `str_fn_radix`'s `cp ')'` fails, and the function bails
-      through `str_arg_empty` without computing anything. That is still true.
-      What changed is that bailing no longer REWRITES the pending code, so the
-      division by zero that happened first survives to the statement boundary and
-      is reported — the reference's answer, reached by accident.
+      **MEASURED, not inferred.** Freezing zerobas at `type_mismatch_set` and
+      reading `IX` out of `TOKBUF` puts the cursor on the RHS **operand** — `Q$`
+      and `<` consumed, `5` not — where the coherent landing place is the inner
+      `)` one token later. `ers_rhs_mismatch` restores the cursor it pushed
+      *before* asking `str_eval` to read the RHS; `evr_mismatch` (`5<A$`) does
+      the same. The bare-LHS form `HEX$(A$)` lands correctly and is the control.
 
-      ⚠️ **DO NOT READ `r.hex`'S GREEN ROW AS EVIDENCE THIS IS FIXED.** Closing
-      defect 2 made defect 1 unobservable *through the error code*; whether it is
-      observable another way is exactly what is unmeasured. Two independent
-      knives (K-PE2, K-PE4) land the parser on `str_arg_empty` for
-      `HEX$((Q$<5)+0*(1/0))`, which is corroboration that the cursor really is
-      misplaced. **Characterise the cursor first** — a row that needs its own
-      cursor denominator is its own slice, and it now has no failing row to
-      anchor it, which makes the characterisation the whole job.
+      🎯 **AND IT SETTLED THE QUESTION `spec-basic-penderr.md` §3.2 DECLINED TO
+      ANSWER.** Breaking at `penderr_set`, the FIRST code written for
+      `HEX$((A$<5)+0*(1/0))` is 4 (`str_arg_empty`) and never 2 (`fp_div`); for
+      `WIDTH (A$<5)+0*(1/0)` `penderr_set` is never called at all, against
+      controls where it is. So after a deferred type fault **the rest of the
+      expression is never evaluated** — not "evaluated and did not fault".
+
+      🔴 **THE CURSOR IS A ROUTE, NOT THE RULE, WHICH IS WHY IT IS NOT FIXED.**
+      A stranded cursor makes a well-formed statement look malformed; what
+      happened next was decided by two places that threw the pending code away,
+      and *those* are what D-STMTPEND fixed. Take the string out entirely and the
+      same holes are there (`SCREEN 0*(1/0)` lost a division by zero with no
+      comparison anywhere). Straightening the cursor would need the mismatch path
+      to consume an arbitrary trailing operand — which the references never do
+      either, since they raise eagerly — and would close none of the `s.*` rows.
+      Held by `make stmtpend-acceptance` (56/58 scored + 2 deferred; 36/58
+      before).
+
+- [ ] 🔴 **THE STATEMENT BOUNDARY IS TOO LATE FOR A DRIVER WITH A SIDE EFFECT.**
+      Filed 2026-08-09 by D-STMTPEND
+      ([`docs/spec-basic-stmtpend.md`](docs/spec-basic-stmtpend.md) §5), the
+      `u.scr.dz` deferred row. `exec_stmt`'s new pending-error reader reports the
+      RIGHT code for `SCREEN 0*(1/0)` (`Division by zero in 20`, read directly
+      off the name table) — but SCREEN has already run `CHGMOD` by the time
+      `jp exec_stmt` raises, so the screen is reinitialised before the message
+      and the `RUN` echo the untrapped reading anchors on is gone. The references
+      never apply the mode. 💰 The fix is per-driver (SCREEN checking before
+      `CHGMOD`), not another boundary reader; not scouted. The trapped twin
+      `s.scr.dz` agrees, so the CODE is right and only the ORDERING is not.
+
+- [ ] 🔴 **`LINE (0,0)-((A$<5),1)` IS ERR 5 HERE AND ERR 13 ON BOTH REFERENCES.**
+      Filed 2026-08-09 by D-STMTPEND, the `c.line.tm` deferred row. LINE raises
+      its own `Illegal function call` eagerly from inside its coordinate parse,
+      so it reaches NEITHER of D-STMTPEND's two writers and the fix does not move
+      it. A per-driver fix in `graphics.asm`; not scouted.
+
+- [ ] 🔴 **`SCREEN (1<5)` IS `Syntax error` HERE AND `Illegal function call` ON
+      THE VG-8020.** Filed 2026-08-09 by D-STMTPEND, found while building the
+      denominator and unrelated to pending codes: `ex_screen`'s two range rejects
+      (`mode > 255`, `mode >= 4`) `jp stmt_error` instead of raising ERR 5.
+      `SCREEN -1` is the readable case. Cheap — two `jp` targets — but it needs
+      its own rows: the whole `SCREEN n` domain is unmeasured.
+
+- [ ] 🔴 **`FIELD #(A$<5),1 AS Z$` IS `Type mismatch` HERE AND `Illegal function
+      call` ON THE VG-8020.** Filed 2026-08-09 by D-STMTPEND. The reference
+      evidently classifies the CHANNEL before it classifies the expression, i.e.
+      the opposite order from `fch_check`'s. One row; the rest of the FIELD
+      channel domain is `make badfnum-acceptance`'s.
+
+- [ ] 🔴 **K-FA5's FALSIFIABILITY PREMISE IS STALE, AND SO ARE FOUR OTHER
+      COMMENTS.** Filed 2026-08-09 by D-STMTPEND
+      ([`docs/spec-basic-stmtpend.md`](docs/spec-basic-stmtpend.md) §6.3).
+      `basic/field.asm` (`tgt_parse_fld`) and
+      `probes/basic/basic_probe_fldary.py` both argued that an abort is
+      falsifiable *because* "exec_stmt CLEARS FPERR at the statement boundary
+      ... so cutting this makes FIELD..A$(9) print OK". The boundary is a READER
+      now, so a cut would fall through to a report rather than to silence — the
+      check still earns its place (it raises BEFORE `ex_field`'s side effects,
+      which the boundary is by construction too late for), but the stated reason
+      no longer holds. All five comments were reworded to say so; **what has NOT
+      been done is re-running K-FA5 to measure what the cut now reads.** Same
+      shape at `basic/input.asm`, `basic/program.asm` (`exr_str`) and
+      `basic/expr.asm` (`ev_mc_arg_checked`).
 
 - [ ] ⚠️ **K-PE1's FOUR UNEXPLAINED ROWS: SOMETHING RAISES ERR 5 WITHOUT THE
       WRITER.** Filed 2026-08-09 by D-PENDERR

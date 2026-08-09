@@ -208,6 +208,18 @@ tgt_parse_fld:
                                             ; and ex_field runs no check between,
                                             ; so cutting this makes FIELD..A$(9)
                                             ; print OK. Spec §8 K-FA5.
+                                            ; ⚠️ D-STMTPEND (spec-basic-stmtpend.md
+                                            ; §6.3): THE PREMISE OF THAT SENTENCE IS
+                                            ; GONE. exec_stmt no longer clears the
+                                            ; cell -- it READS it and raises -- so a
+                                            ; cut here falls through to a report,
+                                            ; not to silence. This abort still earns
+                                            ; its place because it raises BEFORE
+                                            ; ex_field's side effects, which the
+                                            ; statement boundary is by construction
+                                            ; too late for. What K-FA5 now reads is
+                                            ; UNMEASURED and filed in TODO.md; it is
+                                            ; not predicted here.
                 ld      de,(TGT_ADDR)
                 ld      a,d
                 or      e

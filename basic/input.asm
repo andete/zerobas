@@ -142,7 +142,12 @@ inpc_vstr:
                 ; sets FPERR (str_set_key's own ARY_OP=5 path) but does not
                 ; itself abort (var_alloc_or_find's contract) -- was silently
                 ; swallowed (FPERR cleared at the next exec_stmt) before this
-                ; check. Reuses check_expr_errors_popbc (interp.asm) rather
+                ; check. ⚠️ D-STMTPEND: that swallow no longer exists anywhere --
+                ; the statement boundary REPORTS a live code instead of clearing
+                ; it -- so this check is now about WHERE the abort lands (here,
+                ; with the stack contract below honoured) rather than about
+                ; whether one happens at all. Reuses check_expr_errors_popbc
+                ; (interp.asm) rather
                 ; than a bespoke checker: [stack: varstart] is live here
                 ; (pushed at inpc_dispatch, line 83), matching that routine's
                 ; own "discard our return addr + ONE caller word" abort
