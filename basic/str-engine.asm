@@ -62,11 +62,50 @@ sha_oom:
                 or      a                   ; CF clear
                 ret
 
+; --- penderr_set: FIRST-ERROR-WINS, AS A PROPERTY OF THE WRITE --------------
+; (D-PENDERR, docs/spec-basic-penderr.md §4.) FPERR is the interpreter's single
+; PENDING-ERROR CODE cell: a deferred fault records its code here and the
+; statement boundary reports it. The reference raises EAGERLY -- the first fault
+; aborts on the spot and the second never happens (D-TMFP, spec-basic-tmfp.md
+; §2, measured on both machines) -- so of two faults pending in one statement the
+; FIRST one is what must be reported. zerobas cannot raise eagerly (eval has no
+; mid-expression unwind), so it emulates with this sticky cell.
+;
+; 🎯 THAT RULE IS ENFORCED HERE, ONCE, INSTEAD OF AT EVERY READER. Before this
+; slice it was a house rule stated in comments and implemented ad-hoc at exactly
+; two of the twenty-four writers (ev_f_defer in expr.asm, sfr_argok below); every
+; other writer was a bare `ld (FPERR),a`, i.e. LAST-error-wins, and the type
+; fault was kept safe from them only by living in a SEPARATE cell (TMISMATCH)
+; that every reader had to test first. Collapsing the two cells is only sound
+; once the write itself is set-if-empty -- otherwise `WIDTH (A$<5)+0*(1/0)`
+; loses its type-mismatch code to fp_div's clobber (spec §3.2).
+;
+; in:  A = the deferred-error code (1..11, interp.asm's fperr_to_err domain).
+; out: FPERR := A iff FPERR was still 0; otherwise the pending code is kept.
+; ⚠️ PRESERVES EVERY REGISTER **AND THE FLAGS**, which is what makes it a
+; drop-in for the bare `ld (FPERR),a` it replaces -- 3 bytes for 3 bytes at all
+; twenty-three sites. The trailing `pop af` restores the CALLER's F (pushed on
+; entry), not the `or a` this routine performs, so sites that carry flags across
+; the store are unaffected: arrays.asm's ary_engine_call tail documents in prose
+; that its NZ survives the write, and str-engine's sct_ae_set does `scf` after it.
+penderr_set:
+                push    af                  ; [the code + the CALLER's flags]
+                ld      a,(FPERR)
+                or      a
+                jr      nz,pes_pending      ; a fault is already pending: it happened
+                                            ; FIRST, and first-error-wins keeps it
+                pop     af                  ; A = the code again, F = the caller's
+                ld      (FPERR),a
+                ret
+pes_pending:
+                pop     af
+                ret
+
 ; --- str_heap_oom_error: raise "Out of memory" (FPERR=6 — the SAME code ----
 ; arrays' own OOM uses; the shared fre_msgtab entry, no new message).
 str_heap_oom_error:
                 ld      a,FPERR_STROOM
-                ld      (FPERR),a
+                call    penderr_set
                 jp      fp_runtime_error
 
 ; err_too_complex: fre_msgtab entry 9's string (interp.asm). MSX-authentic
@@ -279,7 +318,7 @@ str_temp_alloc:
                 cp      2
                 jr      z,sta_overflow
                 ld      a,FPERR_STROOM
-                ld      (FPERR),a           ; the heap-OOM code (sysvars.inc):
+                call    penderr_set         ; the heap-OOM code (sysvars.inc):
                                             ; ERR 14 with the partition on, ERR 7
                                             ; without. The tenant still hands back
                                             ; a valid (neutralised) slot here.
@@ -292,7 +331,7 @@ sta_ok:
                 ret
 sta_overflow:
                 ld      a,9
-                ld      (FPERR),a           ; "String formula too complex"
+                call    penderr_set         ; "String formula too complex"
                 ld      hl,STR_EMPTY        ; no slot was reserved -- STR_EMPTY is
                                             ; always a safe, never-a-GC-root fallback
                 ld      de,0
@@ -336,7 +375,7 @@ sst_op:
                 cp      2
                 jr      z,sst_overflow
                 ld      a,FPERR_STROOM
-                ld      (FPERR),a           ; heap OOM (sysvars.inc)
+                call    penderr_set         ; heap OOM (sysvars.inc)
                 ld      hl,(SH_PTR)
                 ld      (STRPTR),hl
                 ret
@@ -346,7 +385,7 @@ sst_ok:
                 ret
 sst_overflow:
                 ld      a,9
-                ld      (FPERR),a           ; "String formula too complex"
+                call    penderr_set         ; "String formula too complex"
                 ld      hl,STR_EMPTY
                 ld      (STRPTR),hl
                 ret
@@ -449,7 +488,7 @@ sct_append_err:
                 jr      nz,sct_ae_set
                 ld      a,9                 ; SH_ERR=2 -> "String formula too complex"
 sct_ae_set:
-                ld      (FPERR),a
+                call    penderr_set
                 scf                         ; CF set (a string operand WAS recognised;
                                             ; only its VALUE errored, deferred via FPERR)
                 ret
@@ -729,9 +768,16 @@ sfs_finish:
 ; or a leading ','). Raise the deferred "syntax error" (D-F2-3) like ev_f's ')'/','
 ; gate, then take the ordinary str_eval_no "not a string operand" exit -- the PRINT/
 ; LET driver's FPERR check (ems_print / check_expr_errors) then aborts the statement.
+; 🎯 D-PENDERR: THIS SITE'S CLOBBER IS WHAT D-TMFP FILED AS THE `r.hex` RESIDUAL
+; (spec-basic-tmfp.md §8, defect 2) -- `ld a,4` / `ld (FPERR),a` UNCONDITIONALLY,
+; over the top of a pending Division-by-zero. It needed no guard of its own here:
+; routing the write through penderr_set fixed it with the same three bytes every
+; other writer spends. ⚠️ Defect 1 (the cursor not landing on the closing `)`
+; after a string-compare mismatch, which is what sends `HEX$(...)` down this exit
+; at all) is UNTOUCHED -- see spec-basic-penderr.md §8.
 str_arg_empty:
                 ld      a,4
-                ld      (FPERR),a
+                call    penderr_set
                 jp      str_eval_no
 str_fn_left:
                 inc     hl                  ; past the selector
@@ -1103,21 +1149,16 @@ str_fn_radix:
                 pop     bc                  ; eval's silent DE when n was a float.
                                             ; D-BF-2: OCT$ never had this, so
                                             ; OCT$(65536) silently printed OCT$(0).
-                ; D-BF-1: adopt ev_mc_arg_checked's rule (basic/expr.asm) — an
-                ; argument error is EITHER flag, and a deferred TMISMATCH alone
-                ; is invisible to the PRINT item driver, which checks only FPERR.
-                ; That is why `PRINT HEX$("A")` printed a silent 0 while
-                ; `X=HEX$("A")` correctly said "type mismatch". Promote it, so
-                ; the ordinary FPERR path aborts the statement for both.
-                ld      a,(TMISMATCH)
-                or      a
-                jr      z,sfr_argok
-                ld      a,(FPERR)
-                or      a                   ; first-error-wins: an inner error keeps
-                jr      nz,sfr_argok        ; its own (more specific) message
-                ld      a,10                ; fre_msgtab 10 = type mismatch
-                ld      (FPERR),a
-sfr_argok:
+                ; D-BF-1 stood HERE and is GONE with D-PENDERR (-17 B, low region).
+                ; It promoted a deferred TMISMATCH into FPERR=10 -- "an argument error
+                ; is EITHER flag, and a deferred TMISMATCH alone is invisible to the
+                ; PRINT item driver, which checks only FPERR" (`PRINT HEX$("A")`
+                ; printed a silent 0 while `X=HEX$("A")` said "type mismatch") -- and
+                ; it hand-rolled first-error-wins around the promotion.
+                ; 🎯 THAT WAS THE MERGE, WRITTEN OUT AT ONE CALLER. The mapping it
+                ; encoded (TMISMATCH == FPERR 10) is now the only representation there
+                ; is, and the guard it hand-rolled is penderr_set's contract, so both
+                ; halves are the normal case and neither costs a byte here.
                 ld      a,(hl)
                 cp      ')'
                 jp      nz,str_arg_empty
@@ -1143,7 +1184,7 @@ shx_finish:
                 cp      2
                 jr      z,shxf_overflow
                 ld      a,FPERR_STROOM
-                ld      (FPERR),a           ; heap OOM (sysvars.inc)
+                call    penderr_set         ; heap OOM (sysvars.inc)
                 ld      hl,(SH_PTR)
                 ld      (STRPTR),hl
                 ret
@@ -1153,7 +1194,7 @@ shxf_ok:
                 ret
 shxf_overflow:
                 ld      a,9
-                ld      (FPERR),a           ; "String formula too complex"
+                call    penderr_set         ; "String formula too complex"
                 ld      hl,STR_EMPTY
                 ld      (STRPTR),hl
                 ret
@@ -1558,16 +1599,37 @@ str_cmp_bits:
 ; D-LOCARG then measured the second and third and could not fix them, because
 ; no static order satisfies both.
 ;
-; 🎯 THE ORDER IS RECORDED WHERE IT IS KNOWN, WHICH IS HERE. This is TMISMATCH's
-; ONLY writer, and exec_stmt (interp.asm) clears both flags together, so a
-; non-zero FPERR at THIS instant means the numeric fault came first. It wins, and
-; the type fault simply does not arm. Every reader of TMISMATCH then reports the
-; fault that really did come first -- including the two hand-rolled copies of the
-; ordering that a fix to check_expr_errors would not have moved
-; (check_expr_errors_popbc for ex_let, ex_let_arr in arrays.asm) and the four
-; readers that test TMISMATCH and never test FPERR at all (fch_check in
-; files.asm, ev_ff_ckpdl and ev_mc_arg_checked in expr.asm, sfr_argok in
-; str-engine.asm). 21 rows across nine callers, +5 B, one site.
+; 🎯 THE ORDER IS RECORDED WHERE IT IS KNOWN, WHICH IS HERE. This is the type
+; fault's ONLY writer, and exec_stmt (interp.asm) clears the pending-error cell at
+; every statement boundary, so a non-zero FPERR at THIS instant means the numeric
+; fault came first. It wins, and the type fault simply does not arm.
+;
+; --- D-PENDERR: AND THE TYPE FAULT IS NOT A SECOND CONCEPT ------------------
+; (docs/spec-basic-penderr.md.) D-TMFP wrote the guard below against a SEPARATE
+; 1-byte flag, TMISMATCH ($E3E5), that fourteen readers had to test ahead of
+; FPERR. That flag was only ever a boolean shorthand for ONE FPERR value --
+; sfr_argok (above) already promoted it to `FPERR := 10` by hand, and
+; fperr_to_err's entry 10 is the same ERR 13 type_mismatch_error raises. So the
+; cell is gone and this routine writes the code straight into FPERR, set-if-empty:
+; the readers collapse to a single test (-56 B) and the guard below IS that
+; set-if-empty write, spelled out rather than delegated to penderr_set only
+; because both of this routine's published register contracts differ per path
+; (see the `A = 1` note below; delegating costs the same 3 bytes and would make
+; both exits identical, which is a change nobody measured).
+;
+; ⚠️ THE MERGE IS ONLY SOUND BECAUSE EVERY OTHER WRITER IS SET-IF-EMPTY TOO.
+; While the type fault lived in its own cell it was structurally immune to the
+; two dozen bare `ld (FPERR),a` clobbers; in one cell it is not. penderr_set
+; (top of this file) is what pays for that, once -- 17 rows of
+; make penderr-acceptance depend on it (spec §3.2).
+; 🔴 NOT, HOWEVER, THIS ROUTINE'S OWN ROWS, WHICH IS NOT WHAT THE DESIGN SAID.
+; The argument for penderr_set was that `WIDTH (A$<5)+0*(1/0)` would otherwise
+; lose its ERR 13 to fp_div's `ld a,2`. Knife K-PE2 deletes set-if-empty
+; outright and that row STAYS at 13: after a deferred TYPE fault zerobas never
+; raises a second fault from the rest of the expression, so there is no clobber
+; to prevent here. The rows that need the write rule are the numeric-vs-numeric
+; pairs, the HEX$/OCT$/STR$ family and the widened readers -- see spec §3.2. The
+; guard above is still correct and still required; only its reason moved.
 ;
 ; ⚠️ THE HARD 0 IS PART OF THE CONTRACT ON BOTH PATHS, so it is hoisted above the
 ; guard: FIELD (field.asm) and eval_chan (float-arith.asm) both rely on a
@@ -1596,9 +1658,13 @@ type_mismatch_set:
                 ret     nz                  ; D-TMFP: a numeric fault is ALREADY
                                             ; pending, so it happened FIRST and is
                                             ; the one the reference reports -- leave
-                                            ; TMISMATCH clear and let every reader
+                                            ; the cell alone and let every reader
                                             ; surface that one instead
-                ld      (TMISMATCH),a       ; A is still 1
+                ld      a,FPERR_TYPEMM      ; D-PENDERR: the type fault IS a pending-
+                ld      (FPERR),a           ; error code (fperr_to_err 10 -> ERR 13),
+                                            ; not a second flag. Written direct, not
+                                            ; via penderr_set: FPERR is provably 0 on
+                                            ; this path (the `ret nz` above tested it).
                 ld      a,$DD               ; expression-error marker (ev_f_err convention)
                 ld      (ERRMARK),a
                 ret

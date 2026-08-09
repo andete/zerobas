@@ -815,10 +815,9 @@ ela_err:
                 pop     af
                 pop     hl                  ; discard [TYPE],[OFFSET]
                 jp      stmt_error
-ela_abort_tm:
-                pop     af
-                pop     hl
-                jp      type_mismatch_error
+; (`ela_abort_tm` — `pop af; pop hl; jp type_mismatch_error` — stood HERE and is
+; GONE with D-PENDERR: ex_let_arr's type-fault arm and its numeric arm are the
+; same arm now, so the two tails collapsed into ela_abort_fp below. -5 B, page 1.)
 ela_abort_fp:
                 pop     af
                 pop     hl

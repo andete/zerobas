@@ -508,7 +508,7 @@ ary_engine_call:
                                             ; `or a` this comment replaces was
                                             ; therefore provably redundant
                 ld      a,(hl)
-                ld      (FPERR),a
+                call    penderr_set
                 ret
 ary_errmap:                                 ; ARY_ERR 1..4 -> FPERR (§4.1 dispositions)
                 db      5                   ; 1 Subscript-oor  -> 5 Subscript out of range
@@ -805,12 +805,12 @@ ex_let_arr:
                 jp      nz,ela_err
                 inc     hl
                 call    eval                ; DE=RHS value, HL=cursor advanced
-                ld      a,(TMISMATCH)
-                or      a
-                jp      nz,ela_abort_tm
-                ld      a,(FPERR)
-                or      a
-                jp      nz,ela_abort_fp
+                ld      a,(FPERR)           ; D-PENDERR: the THIRD hand-rolled copy of the
+                or      a                   ; TMISMATCH-then-FPERR ordering stood here and
+                jp      nz,ela_abort_fp     ; is now one test (-7 B, low region). A type
+                                            ; fault reaches ela_abort_fp as FPERR_TYPEMM,
+                                            ; and fp_runtime_error maps it to the same
+                                            ; ERR 13 ela_abort_tm used to raise directly.
                 push    hl                  ; [CURSOR]
                 pop     ix                  ; IX = cursor (free to reuse here — nothing
                                             ; in this statement chain relies on the

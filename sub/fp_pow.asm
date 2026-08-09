@@ -257,7 +257,7 @@ fpw_done:
                                             ; tail be the sole authority.
 fpw_recip_zero:
                 ld      a,1
-                ld      (FPERR),a           ; reciprocal of underflowed 0 =
+                call    penderr_set         ; reciprocal of underflowed 0 =
                                             ; Overflow (pinned .5^-2000)
                 ret
 
@@ -339,5 +339,5 @@ fpwf_huge:
                 ret                         ; (no error -- matches EXP(-huge))
 fpwf_overflow:
                 ld      a,1
-                ld      (FPERR),a           ; t >= 1000: e^t overflows
+                call    penderr_set         ; t >= 1000: e^t overflows
                 ret

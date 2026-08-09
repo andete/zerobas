@@ -112,15 +112,16 @@ def run():
 
     def stmt_boundary():
         """Mirror exec_stmt (interp.asm:129): at each statement boundary clear
-        the deferred numeric-error flags (TMISMATCH, FPERR) AND empty the temp-
+        the deferred pending-error cell FPERR AND empty the temp-
         descriptor stack, so neither error state nor temps accumulate across the
         many direct str_eval/eval calls this test makes (they bypass exec_stmt).
         FPERR matters since D-F2-2 stage B: STRING$/SPACE$ route their count/char
         through get_byte_arg, whose check_fperr_only aborts on a set FPERR — a
         stale FPERR=4 left by a prior deferred-error case (e.g. STRING$(3,""))
         would otherwise misfire the next case's coercion (exec_stmt clears it)."""
-        m.poke(s["TMISMATCH"], 0)
-        m.poke(s["FPERR"], 0)
+        m.poke(s["FPERR"], 0)   # D-PENDERR: ONE cell now -- the separate
+                                # TMISMATCH byte this used to clear beside it is
+                                # retired (docs/spec-basic-penderr.md)
         m.poke_w(TEMPTOP, TEMPBASE)
 
     def set_var(name, value):

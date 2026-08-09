@@ -545,7 +545,7 @@ fexp_scale_zero:
                                             ; evmc_exp sets FACTYP/DE.
 fexp_overflow:
                 ld      a,1
-                ld      (FPERR),a
+                call    penderr_set
                 xor     a
                 ld      (FAC),a
                 ret

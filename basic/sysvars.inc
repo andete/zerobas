@@ -438,6 +438,14 @@ FPERR_STROOM    equ     11      ; -> ERR 14 "out of string space"
     ELSE
 FPERR_STROOM    equ     6       ; -> ERR 7 "Out of memory" (pre-partition)
     ENDIF
+; D-PENDERR (docs/spec-basic-penderr.md §4): the pending-error code a DEFERRED
+; TYPE MISMATCH records. Named because it is now written from two places that
+; used to speak in different currencies -- basic/str-engine.asm's
+; type_mismatch_set (which used to arm the separate TMISMATCH flag) and
+; basic/expr.asm's ev_f_tmm (which always deferred through FPERR). Both mean the
+; same thing and always did; fperr_to_err entry 10 maps it to ERR 13, the SAME
+; table entry type_mismatch_error raises directly (basic/interp.asm).
+FPERR_TYPEMM    equ     10      ; -> ERR 13 "Type mismatch"
 ; Graphics G8 (docs/spec-basic-graphics-g8.md). VDP(n) and BASE(n) are single-byte
 ; FUNCTION tokens, and their assignment form has no statement token of its own: a
 ; statement whose first token is $C8/$C9 IS the assignment (crunch-pinned,
@@ -723,7 +731,7 @@ NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term
 ; MID$-statement: the destination var's descriptor address, stashed for one
 ; MID$(A$,n,m)=B$ so the token cursor can stay in HL through the arg parse.
 ; Repack (arrays slice-4a): a DEDICATED cell in the freed STRTAB window
-; (ABOVE the last-used byte TMISMATCH $E3E5, below the $E560 WBUF wall) — it
+; (ABOVE the last-used byte STRENG_SPARE $E3E5, below the $E560 WBUF wall) — it
 ; can NO LONGER alias NUMBUF, because slice-4a moved HEX$/OCT$'s digit-building
 ; into NUMBUF (sub-side sh_hex_build/sh_oct_build), so `MID$(A$,1)=HEX$(N)`
 ; would clobber the stashed dest across the RHS str_eval. 2 B.
@@ -733,9 +741,11 @@ NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term
 ; TEMPPOOL $E381..TEMPBASE $E3E1 and $E3D9 lands INSIDE the 3rd temp slot's ptr
 ; field ($E3D8-$E3DA). Any MID$(A$,..)=RHS whose RHS pushed >=3 temps overwrote
 ; the stashed dest -> sh_mid_store LDIR'd through a garbage pointer (silent
-; corruption). Now anchored SYMBOLICALLY to TMISMATCH+1 so it tracks the real
-; top of the block; $E3E6, 378 B under the wall.
-MIDS_DEST       equ     TMISMATCH + 1
+; corruption). Now anchored SYMBOLICALLY to STRENG_SPARE+1 so it tracks the real
+; top of the block; $E3E6, 378 B under the wall. (That anchor was TMISMATCH+1
+; until D-PENDERR retired the TMISMATCH cell; STRENG_SPARE is the same address,
+; deliberately left standing so MIDS_DEST does NOT move -- see its definition.)
+MIDS_DEST       equ     STRENG_SPARE + 1
 ; Console INPUT (repack build only): the LINEBUF read cursor for linebuf_getbyte
 ; (basic/input.asm). LINEBUF is one PAGE (page-aligned, <= 256 B), so a single low
 ; byte suffices. Aliases NUMBUF like MIDS_DEST — dead during INPUT, which formats no
@@ -1385,7 +1395,7 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ;   TEMPTOP   $E37F .. $E381      2 B            temp-descriptor stack cursor
 ;   (pool)    $E381 .. $E3E1     96 B            TEMPD=32 * 3 B temp-stack slots
 ;   ISRCH_*   $E3E1 .. $E3E5      4 B            INSTR resolved-body-base scratch
-;   TMISMATCH $E3E5 .. $E3E6      1 B            string-compare D-2 flag (S2)
+;   STRENG_SPARE $E3E5 .. $E3E6   1 B            FREE (was the D-2 flag, D-PENDERR)
 ;   MIDS_DEST $E3E6 .. $E3E8      2 B            MID$-statement stashed dest desc
 ;   -> top $E3E8, well below the disk WBUF wall at $E560 (376 B spare).
 ; NOTE: these addresses are the ACTUAL assembled values (verify in build/
@@ -1396,7 +1406,7 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ; pool it used to derive from (via STREND) no longer exists on the repack
 ; path (dissolved into the unified scalar chain). Value UNCHANGED ($E268,
 ; the old STRTAB+40 B) so every other repack-side address below (RVDESC,
-; STRSCR, SH_*, TEMPTOP, the temp pool, ISRCH_*, TMISMATCH, MIDS_DEST) stays
+; STRSCR, SH_*, TEMPTOP, the temp pool, ISRCH_*, STRENG_SPARE, MIDS_DEST) stays
 ; at its EXACT pre-4c address — no reshuffle, no reflow.
 ; ❌ RE-HOMING DECISION: **REJECT-GROUP** — stays at $E268, published address
 ; $F69B (docs/sysvar-rehoming-decisions.md §3). ⚠️ NOT rejected on semantics:
@@ -1512,10 +1522,18 @@ TEMPBASE        equ     TEMPPOOL + TEMPD*3  ; $E3E1: high boundary = the empty-
 ; search loop.
 ISRCH_A         equ     TEMPBASE            ; $E3E1: resolved A-operand body base (2 B)
 ISRCH_B         equ     ISRCH_A + 2         ; $E3E3: resolved B-operand body base (2 B)
-; TMISMATCH: string-comparison D-2 marker (spec-basic-string-compare.md §3c) --
-; unchanged in role from pre-4a, just re-homed after the heap layout above.
-TMISMATCH       equ     ISRCH_B + 2         ; $E3E5: D-2 type-mismatch flag (1 B)
-; MIDS_DEST ($E3E6, 2 B, TMISMATCH+1, defined above) sits right above here — the
+; TMISMATCH ($E3E5, 1 B) STOOD HERE -- the string-comparison D-2 marker
+; (spec-basic-string-compare.md §3c), a boolean read by fourteen sites ahead of
+; FPERR. D-PENDERR (docs/spec-basic-penderr.md) retired it: it was only ever a
+; shorthand for the one FPERR value FPERR_TYPEMM (=10, -> ERR 13), and the
+; interpreter now carries a SINGLE pending-error code cell written set-if-empty.
+; ⚠️ THE BYTE IS LEFT UNCLAIMED ON PURPOSE, NOT RECLAIMED. MIDS_DEST is anchored
+; symbolically one byte above it, so deleting the equ would silently relocate a
+; LIVE cell belonging to a different subsystem (the MID$()= statement) — a real
+; regression surface bought for nothing, since RAM is not a wall this project is
+; anywhere near and both ROM walls are. Spend it when something needs a byte.
+STRENG_SPARE    equ     ISRCH_B + 2         ; $E3E5: 1 B free (was TMISMATCH)
+; MIDS_DEST ($E3E6, 2 B, STRENG_SPARE+1, defined above) sits right above here — the
 ; last claimed cell in the freed STRTAB window; up to $E560 (disk WBUF) is spare.
     IF MIDS_DEST + 2 > $E560
                 db      STRING_HEAP_LAYOUT_OVERRAN_E560_DISK_WBUF_WALL
@@ -1532,7 +1550,7 @@ TMISMATCH       equ     ISRCH_B + 2         ; $E3E5: D-2 type-mismatch flag (1 B
 ;     $F959+, MSX-JIFFY at $FC9E) -- this window is entirely below that, so a
 ;     PAINT running EI (music-plays-during-draw, spec §2) never races it.
 ;   * NOT live interpreter state that must survive PAST this one PAINT
-;     statement's execution: MIDS_DEST above (TMISMATCH+1, ends $E3E8) is the
+;     statement's execution: MIDS_DEST above (STRENG_SPARE+1, ends $E3E8) is the
 ;     LAST cell the repack string engine currently claims out of its own
 ;     originally-reserved $E240..$E560 (800 B) window -- TEMPTOP's own header
 ;     already documents "~290 B of further headroom in the historical 800 B

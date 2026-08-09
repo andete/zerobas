@@ -9,8 +9,12 @@ Covers three layers:
      first-diff-byte both directions, empty-vs-nonempty both directions, both empty).
   2. The full ev_rel path via `eval` (basic/expr.asm) -- all six operators, the
      compound-form merge (<=/>=/<>), literal/variable/concat/nested-function
-     operands, and the comparator-level type-mismatch signal (TMISMATCH/ERRMARK)
-     for `A$<5` / `5<A$` / a bare string in numeric context.
+     operands, and the comparator-level type-mismatch signal (FPERR/ERRMARK)
+     for `A$<5` / `5<A$` / a bare string in numeric context. D-PENDERR
+     (docs/spec-basic-penderr.md): that signal used to be a dedicated 1-byte
+     TMISMATCH flag set to 1; it is now the pending-error CODE cell FPERR set to
+     FPERR_TYPEMM (10), which fperr_to_err maps to the same ERR 13. These
+     assertions are the host-side proof of exactly that mapping.
   3. The statement-level abort (interp.asm/print.asm) -- IF/LET/PRINT each land on
      type_mismatch_error, print zerobas's own "Type mismatch" message, and the
      REST OF THE LINE does not run (mirrors stmt_error's existing convention).
@@ -106,7 +110,8 @@ def run():
     STRPTR = s["STRPTR"]
     VALTYP = s["VALTYP"]
     ERRMARK = s["ERRMARK"]
-    TMISMATCH = s["TMISMATCH"]
+    FPERR = s["FPERR"]
+    FPERR_TYPEMM = 10       # sysvars.inc; -> ERR 13 via interp.asm fperr_to_err
     TEMPBASE = s["TEMPBASE"]
     TEMPTOP = s["TEMPTOP"]
 
@@ -140,7 +145,7 @@ def run():
 
     def clear_markers():
         m.poke(ERRMARK, 0)
-        m.poke(TMISMATCH, 0)
+        m.poke(FPERR, 0)
 
     def num_expr(text):
         """Evaluate a NUMERIC expression through the full ev_rel path -> DE.
@@ -238,9 +243,9 @@ def run():
         if extra_setup:
             extra_setup()
         got = num_expr(text)
-        ok = (got == 0 and m.mem[ERRMARK] == 0xDD and m.mem[TMISMATCH] == 1)
-        detail = "" if ok else f"DE={got} ERRMARK={m.mem[ERRMARK]:#04x} TMISMATCH={m.mem[TMISMATCH]}"
-        check(f"{label}: DE=0, ERRMARK=$DD, TMISMATCH=1", ok, detail)
+        ok = (got == 0 and m.mem[ERRMARK] == 0xDD and m.mem[FPERR] == FPERR_TYPEMM)
+        detail = "" if ok else f"DE={got} ERRMARK={m.mem[ERRMARK]:#04x} FPERR={m.mem[FPERR]}"
+        check(f"{label}: DE=0, ERRMARK=$DD, FPERR=10", ok, detail)
 
     ck_mismatch('"A"<5  (string LHS, numeric RHS)', '"A"<5')
     ck_mismatch('5<"A"  (numeric LHS, string RHS)', '5<"A"')
@@ -252,9 +257,9 @@ def run():
 
     # control: a well-typed comparison must NOT set the markers.
     got = num_expr('"A"="A"')
-    ok = got == 0xFFFF and m.mem[ERRMARK] == 0 and m.mem[TMISMATCH] == 0
-    check('"A"="A" leaves ERRMARK/TMISMATCH clear (control)', ok,
-          f"DE={got:#06x} ERRMARK={m.mem[ERRMARK]} TMISMATCH={m.mem[TMISMATCH]}")
+    ok = got == 0xFFFF and m.mem[ERRMARK] == 0 and m.mem[FPERR] == 0
+    check('"A"="A" leaves ERRMARK/FPERR clear (control)', ok,
+          f"DE={got:#06x} ERRMARK={m.mem[ERRMARK]} FPERR={m.mem[FPERR]}")
 
     # ------------------------------------------------------------------
     print("# --- statement-level abort (ex_if / ex_let / PRINT-item) ---")

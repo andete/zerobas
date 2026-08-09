@@ -148,9 +148,21 @@ exec_stmt:
                                             ; ':' via ex_sep) -- the ONLY clean source
                                             ; since raise_error fires from arbitrary
                                             ; call depth, not the statement head.
-                ld      (TMISMATCH),a       ; A is still 0: clear the D-2 flag (a stale
-                ld      (FPERR),a           ; set would misfire a later statement's check
-                                            ; -- FPERR (F2 D-F2-1) mirrors TMISMATCH here
+                ld      (FPERR),a           ; A is still 0: clear the PENDING-ERROR code
+                                            ; (a stale set would misfire a later
+                                            ; statement's check). D-PENDERR: this used to
+                                            ; clear TWO cells here, and their common clear
+                                            ; at this one point is what made merging them
+                                            ; legal -- one lifetime, one statement.
+                                            ; ⚠️ THE ONLY UNCONDITIONAL STORE INTO THE CELL
+                                            ; IN THE TREE, and it has to be: all 23 code-
+                                            ; raising writers go through penderr_set
+                                            ; (str-engine.asm), which by contract refuses
+                                            ; to write when a code is pending -- so it
+                                            ; could not perform a CLEAR. (The only other
+                                            ; direct stores are penderr_set's own, and
+                                            ; type_mismatch_set's, which sits two
+                                            ; instructions after proving the cell is 0.)
                 ld      de,TEMPBASE         ; arrays slice-4a §6: the temp-descriptor
                 ld      (TEMPTOP),de        ; stack is emptied at every statement
                                             ; boundary (mirrors the old STRTMP ring's
@@ -1303,10 +1315,10 @@ res_setptr:
                                             ; own tail (program.asm) -- run loop's
                                             ; rp_resume jumps to (RESUMEPTR)
 
-; --- check_expr_errors: shared TMISMATCH+FPERR post-eval() check for ------
+; --- check_expr_errors: shared post-eval() PENDING-ERROR check for --------
 ; drivers that need no extra stack cleanup before erroring (ex_if, exp_num
-; via print.asm). Falls through (returns) if neither flag is set. On error,
-; type_mismatch_error/fp_runtime_error print the message and, via print_
+; via print.asm). Falls through (returns) if no code is pending. On error,
+; fp_runtime_error prints the message and, via print_
 ; string's own final "ret", return not to us but to OUR caller (ex_if/
 ; exp_num) -- a full statement-abort, matching the ORIGINAL inline-check
 ; shape this routine replaced (a direct "jp nz,type_mismatch_error" right
@@ -1321,47 +1333,45 @@ res_setptr:
 ; leftover logic running when it should not have). Fixed the same way as
 ; check_preexp_bounds's identical hazard (float-arith.asm): discard our
 ; own return address before jumping into the abort chain. Clobbers A.
+;
+; --- D-PENDERR: THIS ROUTINE AND check_fperr_only ARE NOW THE SAME ROUTINE ---
+; (docs/spec-basic-penderr.md §5.1.) It used to open with a TMISMATCH test and a
+; second abort tail of its own, and check_fperr_only was the fall-in entry point
+; that skipped them. With one pending-error cell there is nothing to skip: both
+; names are kept (twelve callers between them, and the DISTINCTION IS STILL
+; MEANINGFUL PROSE at each site) but they are the same three instructions, and
+; the -10 B is the TMISMATCH test plus the dead `cee_abort_tm` tail.
+; ⚠️ The two names are NOT redundant documentation. A caller that entered at
+; check_fperr_only was asserting "a type fault cannot be pending here, and if one
+; were, aborting on it would be a behaviour change" -- see program.asm's READ site
+; and input.asm's, each of which says so in its own comment. That assertion is
+; still worth reading even though it is now free.
 check_expr_errors:
-                ld      a,(TMISMATCH)
-                or      a
-                jr      nz,cee_abort_tm
-; check_fperr_only — same SP-clean-site shape as check_expr_errors above, but
-; skips the TMISMATCH check (fall-in entry point, adds no bytes). For a caller
-; where a TMISMATCH here would be a behaviour change vs that caller's own
-; ordering.
-; ⚠️ eval_chan (float-arith.asm) USED TO BE THAT CALLER and is NOT one any more:
-; D-BADFNUM §6 measured `PRINT #A$,"X"` as `Type mismatch` on the CF-3300, so it
-; now tails into check_expr_errors instead -- a 0-byte change, since the two are
-; one routine with two entry points. The ordering preserved here was preserving a
-; derail to "load error", which was never the reference's answer.
 check_fperr_only:
                 ld      a,(FPERR)
                 or      a
                 jr      nz,cee_abort_fp
                 ret
-cee_abort_tm:
-                pop     hl                  ; discard our own dead resume addr
-                jp      type_mismatch_error
 cee_abort_fp:
                 pop     hl                  ; discard our own dead resume addr
-                jp      fp_runtime_error
+                jp      fp_runtime_error    ; D-PENDERR: the type fault arrives here too
+                                            ; now, as FPERR_TYPEMM -> fperr_to_err 10 ->
+                                            ; ERR 13, the SAME code and the SAME
+                                            ; err_msgtab entry type_mismatch_error raises
 
 ; --- check_expr_errors_popbc: the same check for drivers that must POP a --
-; saved key (BC) off the stack before erroring (ex_let: both flags; ex_let_
+; saved key (BC) off the stack before erroring (ex_let; ex_let_
 ; str enters at cepb_fp directly — str_eval already handles its own D-2
-; case via its own `jr nc` to `ex_let_err`), so only FPERR
-; applies there, e.g. `A$=HEX$(65536.)`). Falls through (returns, BC
-; untouched) if clear. Same
+; case via its own `jr nc` to `ex_let_err`, e.g. `A$=HEX$(65536.)`).
+; Falls through (returns, BC untouched) if clear. Same
 ; own-return-address hazard as check_expr_errors above, PLUS the caller's
 ; own saved key sitting just beneath it -- both must be discarded (in that
 ; order: ours first, since it's on top) before the abort chain fires.
+; D-PENDERR: this was the SECOND hand-rolled copy of the TMISMATCH-then-FPERR
+; ordering -- one a fix to check_expr_errors could never have reached, which is
+; half of why D-TMFP's reorder was the wrong shape (spec-basic-tmfp.md §3). Its
+; TMISMATCH half and its type-mismatch abort tail are gone: -11 B.
 check_expr_errors_popbc:
-                ld      a,(TMISMATCH)
-                or      a
-                jr      z,cepb_fp
-                pop     hl                  ; discard our own dead resume addr
-                pop     bc                  ; discard the caller's saved key
-                jp      type_mismatch_error
 cepb_fp:
                 ld      a,(FPERR)
                 or      a

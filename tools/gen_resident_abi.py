@@ -42,6 +42,13 @@ import sys
 # heap reset, page-0-low-region resident (basic/arrays.asm). Never add a
 # symbol here without updating the spec + the calling tenant's own header
 # comment that documents its exact resident-ABI list.
+# penderr_set (D-PENDERR, docs/spec-basic-penderr.md §4) is the interpreter's
+# single set-if-empty writer for the pending-error cell FPERR. sub/fp_pow.asm
+# and sub/fp_exp.asm each raise deferred codes into that cell from page-1
+# tenant code, so they must go through the same writer as the twenty main-ROM
+# ones or first-error-wins would hold everywhere EXCEPT `x^y` and `EXP(x)`.
+# It is page-0-resident by construction (basic/str-engine.asm, low region),
+# which is exactly the property this file's LOW_CEILING check enforces.
 REQUIRED = [
     "fp_add",
     "fp_sub",
@@ -54,6 +61,7 @@ REQUIRED = [
     "widen_uint_to",
     "flt_to_int16",
     "vars_reset",
+    "penderr_set",
 ]
 
 # Page-0-resident ceiling (basic/main.asm __MEAS_LOW_END — the reclaimed low

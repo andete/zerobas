@@ -595,15 +595,19 @@ ev_f_empty:                                 ; D-F2-3: the empty parenthesised/ar
                                             ; unchanged, but the flag makes the driver abort.
                 ld      e,4
 ev_f_defer:                                 ; shared tail: E = FPERR code to defer.
-                ld      a,(FPERR)           ; D-F2-4 first-error-wins: if the argument
-                or      a                   ; expression ALREADY raised a hard error
-                jr      nz,ev_f_err         ; (div0/overflow/illegal), keep THAT -- the
+                ld      a,e                 ; D-F2-4 first-error-wins: if the argument
+                call    penderr_set         ; expression ALREADY raised a hard error
+                                            ; (div0/overflow/illegal), keep THAT -- the
                                             ; reference reports the first error, not the
                                             ; later reject (e.g. SIN(1/0,2) -> Division by
-                                            ; zero, NOT syntax error). Only a still-clean
-                                            ; FPERR takes E's deferred code.
-                ld      a,e
-                ld      (FPERR),a
+                                            ; zero, NOT syntax error).
+                                            ; 🎯 D-PENDERR: THIS SITE IS WHERE THE RULE WAS
+                                            ; FIRST WRITTEN DOWN, and it was one of only
+                                            ; two of the twenty-one writers that honoured
+                                            ; it. Now that the write itself enforces it,
+                                            ; the hand-rolled guard is -6 B of page 1 and
+                                            ; the remaining two instructions say the same
+                                            ; thing (str-engine.asm penderr_set).
                 ; fall into ev_f_err for the $DD landmark.
 ev_f_err:
                 ld      a,$DD               ; expression error marker
@@ -876,12 +880,16 @@ ev_ff_ckpad:
 ev_ff_ckpdl:
                 call    get_byte_arg
                 ; PDL's domain excludes 0, but a string arg coerces to 0 with a
-                ; DEFERRED type mismatch pending (error-handling arc: TMISMATCH set,
-                ; surfaced at the statement boundary). The reference reports THAT
-                ; (ERR 13), so don't let PDL's ERR-5 domain check preempt it --
-                ; STICK/STRIG/PAD need no such guard because 0 is legal for them, so
-                ; their deferred TMISMATCH already surfaces on its own.
-                ld      a,(TMISMATCH)
+                ; DEFERRED type mismatch pending (error-handling arc), surfaced at
+                ; the statement boundary. The reference reports THAT (ERR 13), so
+                ; don't let PDL's ERR-5 domain check preempt it -- STICK/STRIG/PAD
+                ; need no such guard because 0 is legal for them, so their deferred
+                ; fault already surfaces on its own.
+                ; D-PENDERR: was `ld a,(TMISMATCH)`, byte for byte, and widened to
+                ; ANY pending code for the same reason -- `PDL(1/0)` has the same
+                ; shape (a hard zero standing in for a fault that already happened),
+                ; and PDL's domain check must not preempt that one either.
+                ld      a,(FPERR)
                 or      a
                 jr      nz,ev_ff_ckdone
                 ld      a,e                 ; the byte get_byte_arg left in E
@@ -1421,19 +1429,20 @@ ev_mc_arg:
 ; expression. In ALL those cases the reference has already aborted the statement,
 ; so the caller must NOT run its body: no domain/overflow check (which would
 ; clobber FPERR=4 -> a wrong `illegal function call`/`overflow` message) and, for
-; RND, no fp_rnd (which would mutate the persistent seed). The D-2 TMISMATCH flag
-; (e.g. `RND("A")`) is checked the same way -- it too means the reference aborted.
-; exec_stmt clears BOTH flags per statement, so a clean arg leaves them 0 here and
-; the body runs unchanged. Returns Z iff FPERR==0 AND TMISMATCH==0. Clobbers only A
+; RND, no fp_rnd (which would mutate the persistent seed). A deferred TYPE
+; mismatch (e.g. `RND("A")`) means the same thing and is caught by the same test.
+; exec_stmt clears the cell per statement, so a clean arg leaves it 0 here and
+; the body runs unchanged. Returns Z iff no error is pending. Clobbers only A
 ; (every evmc_* reloads it); DE/FAC/FACTYP are ev_mc_arg's.
+; D-PENDERR: this routine used to read TWO cells and its header called them "the
+; OTHER deferred flag" -- the clearest statement in the tree that they were one
+; concept spelled twice. -5 B, and the surviving test is bit-identical for every
+; row: `RND("A")` now sets FPERR_TYPEMM where it used to set TMISMATCH.
 ev_mc_arg_checked:
                 call    ev_mc_arg
                 ld      a,(FPERR)
                 or      a
-                ret     nz                  ; a deferred numeric error is pending
-                ld      a,(TMISMATCH)       ; ...and the OTHER deferred flag (D-2 type
-                or      a                   ; mismatch, e.g. RND("A")) equally means the
-                ret                         ; reference already aborted -> Z iff BOTH clean
+                ret                         ; Z iff no deferred error is pending
 
 ; --- evconv_pack_same_type: ARGA (already truncated by the caller — exact, --
 ; no guard-digit rounding pending) -> FAC, preserving FACTYP exactly as it
@@ -1660,7 +1669,7 @@ evmc_sqr:
                 jp      evmc_dispatch
 evmc_sqr_err:
                 ld      a,3
-                ld      (FPERR),a
+                call    penderr_set
                 ld      de,0
                 ret
 
@@ -1740,7 +1749,7 @@ evmc_log:
                 jp      evmc_dispatch
 evmc_log_err:
                 ld      a,3
-                ld      (FPERR),a
+                call    penderr_set
                 ld      de,0
                 ret
 
@@ -1779,7 +1788,7 @@ evmc_exp_huge:
                 jp      flt_to_int16
 evmc_exp_overflow:
                 ld      a,1
-                ld      (FPERR),a
+                call    penderr_set
                 ld      de,0
                 ret
 

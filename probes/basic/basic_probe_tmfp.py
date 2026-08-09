@@ -308,11 +308,24 @@ LABEL_W = 10
 # a guard that fixes defect 2 and leaves defect 1 (the cursor) unmeasured and
 # unexplained. A row that needs its own cursor characterisation is its own slice
 # with its own denominator, not a rider on this one. Filed in TODO.md.
-DEFERRED: dict[str, str] = {
-    "r.hex": "DEFERRED — exposed, not caused: str_arg_empty overwrites a "
-             "pending FPERR with the deferred syntax error (4), and the cursor "
-             "did not reach ')' in the first place",
-}
+#
+# ✅ CLOSED BY D-PENDERR (docs/spec-basic-penderr.md §8), AND FOR LESS THAN THE
+# PRICE ABOVE. Merging TMISMATCH into the pending-error cell required making the
+# cell set-if-empty at EVERY writer, which is one shared 14 B routine
+# (`penderr_set`) and a byte-neutral `call` at each of the twenty-four stores --
+# so defect 2's guard cost ZERO marginal bytes instead of the +6 B priced here.
+# `r.hex` reads ` 11 ` on all three sides and is SCORED again: 49 scored + 1
+# deferred -> 50 scored, 50 agree.
+#
+# 🔴 AND DEFECT 1 IS STILL THERE. The cursor still does not land on the closing
+# `)`, `str_fn_radix` still takes the `str_arg_empty` exit, and HEX$ still does
+# not compute. What changed is that the exit no longer REWRITES the pending code,
+# so the Division-by-zero that happened first survives to the statement boundary
+# and is what gets reported. The row is green with the defect present: closing
+# defect 2 made defect 1 unobservable THROUGH THE ERROR CODE, which is not the
+# same as fixing it. It stays filed in TODO.md as a cursor question, and this
+# note is here so nobody reads a green row as evidence that it is gone.
+DEFERRED: dict[str, str] = {}
 
 SENTINELS = ("<NO CAPTURE>", "<NO ECHO>")
 

@@ -1105,9 +1105,17 @@ fch_check_d:
                 ; ⚠️ Only four of the twelve reach eval_chan, whose check_expr_errors
                 ; tail (§6) raises this one step earlier; the other eight call plain
                 ; `eval` and have no such check. This is the site that covers all 12.
-                ld      a,(TMISMATCH)
+                ; D-PENDERR: was `ld a,(TMISMATCH)` / `jp nz,type_mismatch_error`,
+                ; byte for byte. The type fault now arrives as FPERR_TYPEMM and
+                ; fp_runtime_error maps it to the same ERR 13. WIDENED for the same
+                ; reason and at the same price as eval_chan's: a hard-zeroed channel
+                ; expression must not be read as channel 0 whatever zeroed it, so a
+                ; pending div0/overflow is surfaced here too instead of derailing to
+                ; ERR 59 -- the exact failure mode this site was added to stop, one
+                ; fault class over. Rows p.lof.dz / p.lof.ov (spec §5.3).
+                ld      a,(FPERR)
                 or      a
-                jp      nz,type_mismatch_error
+                jp      nz,fp_runtime_error
                 ld      a,d
                 or      a
                 jr      nz,fchk_ifc

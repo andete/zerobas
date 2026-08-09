@@ -1261,77 +1261,80 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rows across nine callers closed; `locarg-acceptance` 44/45 → **45/45** with
       its DEFERRED dict emptied.
 
-- [ ] 🎯 **THE TWO DEFERRED-ERROR FLAGS ARE ONE CONCEPT — COLLAPSE THEM INTO A
-      SINGLE SET-IF-EMPTY `PENDERR` CODE.** Filed 2026-08-09 by D-TMFP
-      ([`docs/spec-basic-tmfp.md`](docs/spec-basic-tmfp.md) §3). Scouted from
-      the denominator, **not yet priced — scout the byte delta FIRST, it may
-      fund itself.**
+- [x] ✅ **THE TWO DEFERRED-ERROR FLAGS ARE ONE CONCEPT — COLLAPSED INTO A
+      SINGLE SET-IF-EMPTY PENDING-ERROR CODE.** Filed 2026-08-09 by D-TMFP,
+      **DONE 2026-08-09 by D-PENDERR**
+      ([`docs/spec-basic-penderr.md`](docs/spec-basic-penderr.md),
+      [`docs/penderr-msx1-characterization.md`](docs/penderr-msx1-characterization.md)).
+      `TMISMATCH` retired; new gate `make penderr-acceptance` **61/61 on three
+      sides** (44/61 before the slice — 17 rows moved, all from wrong to right).
+      **−48 B: low 6 → 14, page 1 22 → 62**, hand count exact on both walls.
 
-      🎯 **`FPERR` IS ALREADY A CODE CELL, AND THE TREE ALREADY PROMOTES A TYPE
-      MISMATCH INTO IT.** `sfr_argok` (`basic/str-engine.asm`) does
-      `ld a,10` / `ld (FPERR),a` with the comment *"fre_msgtab 10 = type
-      mismatch"*. So `TMISMATCH` is not a second concept — it is a **boolean
-      shorthand for one particular `FPERR` code**, and the mapping exists in
-      the tree already.
+      🎯 **IT FUNDED ITSELF SEVERAL TIMES OVER, AND THE SCOUT MATTERED.** The
+      collapse alone is −56 B of readers, but it is only SOUND once every writer
+      is set-if-empty, which is one shared 14 B routine (`penderr_set`) and a
+      `call` that is byte-for-byte the size of the `ld (FPERR),a` it replaces at
+      all twenty-four stores. Pricing the deletion without the writer rule would
+      have priced a 17-row regression.
 
-      🎯 **D-TMFP CREATED THE INVARIANT THAT MAKES THE MERGE LEGAL**: since
-      `type_mismatch_set` refuses to arm when `FPERR` is pending, `TMISMATCH`
-      set ⟹ **it came first**. So `TMISMATCH` ≡ "`PENDERR := 13`, if empty".
-      Write the cell **set-if-empty** and *first-error-wins stops being a rule
-      every reader implements and becomes a property of the WRITE*.
+      🔴 **AND THE REASON GIVEN FOR THE WRITER RULE WAS WRONG.** Both this item
+      and the spec's first draft argued the merge would regress `dfe-tmfp`
+      (`WIDTH (A$<5)+0*(1/0)`) to ERR 11. Knife K-PE2 deletes set-if-empty
+      entirely and that row **stays at 13** — after a deferred TYPE fault zerobas
+      never raises a second one from the rest of the expression, so there was
+      never a clobber to prevent. The 17 rows that do need it are the
+      numeric-vs-numeric pairs, the `r.hex` family, the parse-time rows and the
+      three widened readers. Right conclusion, wrong evidence; see
+      `spec-basic-penderr.md` §3.2.
 
-      🔴 **WHAT IT DELETES.** The identical `TMISMATCH`-then-`FPERR` sequence is
-      hand-rolled **three times** (`check_expr_errors`,
-      `check_expr_errors_popbc`, `ex_let_arr` in `basic/arrays.asm`), differing
-      only in how many stack words the abort discards; four further readers
-      re-decide the policy ad hoc (`fch_check`, `ev_ff_ckpdl`,
-      `ev_mc_arg_checked`, `sfr_argok`). The merge deletes the TM test from all
-      three copies, deletes `sfr_argok`'s promotion outright, halves
-      `ev_mc_arg_checked` — and **fixes `str_arg_empty`'s clobber by
-      construction**, i.e. closes half the residual below without its +6 B.
+      ⚠️ Two temperings in this item's own text were also wrong on measurement:
+      the KIND-needing readers did **not** become `cp 10` (all three are WIDENED
+      to "is anything pending", byte-neutral, and both references agree that is
+      the correct reading — `PRINT LOF(0*(1/0)+1)` is ERR 11, not ERR 59); and
+      `ERRMARK` was left out, as directed, correctly.
 
-      ⚠️ **TEMPER IT.** Some readers need the KIND, not just presence
-      (`eval_chan` skips its coercion only for a type fault; `ev_ff_ckpdl`
-      defers only to one) — those become `cp 10`, cheap but not free. The cells
-      live in different RAM regions (`$E3E5` vs `$F069`) and only their common
-      clear at `exec_stmt` aligns the lifetimes. ~22 writers + ~18 readers is a
-      real refactor. **Leave `ERRMARK` OUT** — a third marker with its own
-      semantics, and D-TMFP's K-TF3 showed it is not load-bearing for any row
-      in this class.
+- [x] ✅ **`str_arg_empty` OVERWRITES A PENDING `FPERR`** — the clobber half.
+      Filed 2026-08-09 by D-TMFP (§8 defect 2), **DONE 2026-08-09 by D-PENDERR**
+      for **zero marginal bytes** instead of the +6 B priced here: routing that
+      store through `penderr_set` like every other writer is what fixed it.
+      `r.hex` reads ` 11 ` on all three sides, `r.oct` / `r.str` /
+      `PRINT HEX$(…)` with it, and `make tmfp-acceptance` goes **49 scored + 1
+      deferred → 50 scored, 50 agree, deferred dict EMPTY**. Knife K-PE4 restores
+      the bare store and reddens exactly those five rows and nothing else.
 
-      🟢 **THE REGRESSION NET ALREADY EXISTS**, which is the unusual part:
-      `tmfp-acceptance` 50 + `width-acceptance` 94 + `locarg-acceptance` 45 +
-      `missing-acceptance` 214 + `namspc` 58 + `fldwidth` 40. A refactor of this
-      shape would normally have to build that denominator first.
+- [ ] 🔴 **`str_fn_radix`'S CURSOR DOES NOT LAND ON `)` AFTER A STRING-COMPARE
+      MISMATCH — AND ITS ROW IS NOW GREEN ANYWAY, WHICH IS THE TRAP.** Filed
+      2026-08-09 by D-TMFP (§8 defect 1), **RESTATED 2026-08-09 by D-PENDERR**
+      ([`docs/spec-basic-penderr.md`](docs/spec-basic-penderr.md) §8) because the
+      symptom it used to produce is gone while the defect is not.
 
-- [ ] 💰 **`str_arg_empty` OVERWRITES A PENDING `FPERR`, AND THE CURSOR DID NOT
-      REACH `)` IN THE FIRST PLACE.** Filed 2026-08-09 by D-TMFP
-      ([`docs/spec-basic-tmfp.md`](docs/spec-basic-tmfp.md) §8), DEFERRED in
-      `make tmfp-acceptance` as row `r.hex`:
+      In `Q2$=HEX$(0*(1/0)+(Q$<5))` the mismatch leaves the cursor short of the
+      closing `)`, `str_fn_radix`'s `cp ')'` fails, and the function bails
+      through `str_arg_empty` without computing anything. That is still true.
+      What changed is that bailing no longer REWRITES the pending code, so the
+      division by zero that happened first survives to the statement boundary and
+      is reported — the reference's answer, reached by accident.
 
-      | program | VG-8020 | CF-3300 | zerobas |
-      |---|---|---|---|
-      | `Q2$=HEX$(0*(1/0)+(Q$<5))` | **ERR 11** | **ERR 11** | **ERR 2** |
-      | `PRINT HEX$((Q$<5))` | ERR 13 | ERR 13 | ERR 13 🟢 control |
-      | `PRINT HEX$(0*(1/0))` | ERR 11 | ERR 11 | ERR 11 🟢 control |
+      ⚠️ **DO NOT READ `r.hex`'S GREEN ROW AS EVIDENCE THIS IS FIXED.** Closing
+      defect 2 made defect 1 unobservable *through the error code*; whether it is
+      observable another way is exactly what is unmeasured. Two independent
+      knives (K-PE2, K-PE4) land the parser on `str_arg_empty` for
+      `HEX$((Q$<5)+0*(1/0))`, which is corroboration that the cursor really is
+      misplaced. **Characterise the cursor first** — a row that needs its own
+      cursor denominator is its own slice, and it now has no failing row to
+      anchor it, which makes the characterisation the whole job.
 
-      🔴 **EXPOSED BY D-TMFP, NOT CAUSED BY IT** — the row was already wrong
-      (ERR 13) and is now wrong differently. It needs **both** faults inside a
-      string function's parentheses; `STR$` and `OCT$` do it too, and `PRINT`
-      shows it as well as assignment, so it is neither `HEX$`'s nor the
-      assignment driver's. Two pre-existing defects that `TMISMATCH` was masking:
-      (1) after a string-compare mismatch the cursor does not land on the closing
-      `)`, so `str_fn_radix`'s `cp ')'` falls into `str_arg_empty`; (2)
-      `str_arg_empty` (`basic/str-engine.asm`) then does `ld a,4` /
-      `ld (FPERR),a`, **overwriting** the pending Division-by-zero 11 with the
-      deferred syntax-error code — which is a first-error-wins violation of
-      exactly the kind D-TMFP fixed, fifteen lines from `sfr_argok`'s own comment
-      stating the rule ("an inner error keeps its own (more specific) message").
-      💰 **PRICE +6 B for defect (2) alone**, and the main low region has
-      **exactly 6 B** free after D-TMFP — the entire remaining budget, for a
-      guard that leaves defect (1) unmeasured. **Carve-scout the low region
-      before taking this**, and characterise the cursor first: a row that needs
-      its own cursor denominator is its own slice.
+- [ ] ⚠️ **K-PE1's FOUR UNEXPLAINED ROWS: SOMETHING RAISES ERR 5 WITHOUT THE
+      WRITER.** Filed 2026-08-09 by D-PENDERR
+      ([`docs/spec-basic-penderr.md`](docs/spec-basic-penderr.md) §9.1). With
+      `penderr_set` cut so that NO deferred code can be recorded, four rows keep
+      answering ERR 5 — `o.nn.5dz`, `o.nn.5ov`, `o.sub.5ex`, `u.nn.5dz`, all with
+      `0*SQR(-1)` as their FIRST operand — while `n.5.w` (same first operand,
+      nothing after it) correctly loses its error. So the SQR-domain error can
+      reach ERR 5 by a route that does not pass through the pending-error cell,
+      but only when another operand follows. This is a property of a CUT tree, so
+      it does not bear on shipped correctness; it is filed because an unexplained
+      knife result is a gap in the model of the error surface, not a curiosity.
 
 - [ ] 💰 **`loc_next`'S PARKED FRAME (`LOC_RET`) IS NOW UNNECESSARY, ~9 B, AND
       DELIBERATELY NOT TAKEN.** Filed 2026-08-09 by D-LOCARG

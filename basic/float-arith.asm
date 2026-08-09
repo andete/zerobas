@@ -779,7 +779,7 @@ check_preexp_bounds:
                 cp      4
                 jr      nz,cpb_check_uf
                 ld      a,1
-                ld      (FPERR),a
+                call    penderr_set
                 jr      cpb_abort
 cpb_check_uf:
                 ld      hl,(FP_TMP_B)
@@ -954,7 +954,7 @@ fp_div:
                 call    dig15_iszero
                 jr      nz,fpd_go
                 ld      a,2
-                ld      (FPERR),a
+                call    penderr_set
                 jp      raf_zero_ok         ; shared zero-pack tail (round_and_finalize)
 fpd_go:
                 ld      hl,(ARGA+FPNUM_DEXP)
@@ -1255,7 +1255,7 @@ fac_to_int_go:
                 call    domain_convert_core
                 ret     nc
                 ld      a,1
-                ld      (FPERR),a
+                call    penderr_set
                 ret
 
 ; --- eval_addr: HL(cursor) -> DE = a checked ADDRESS-domain int value, ----
@@ -1286,9 +1286,16 @@ eval_addr:
 ; fac_to_int_addr.
 eval_chan:
                 call    eval
-                ld      a,(TMISMATCH)
-                or      a
-                jr      nz,evc_check        ; string channel -> derail as-is (no coerce)
+                ld      a,(FPERR)           ; D-PENDERR: was `ld a,(TMISMATCH)`, byte-for-
+                or      a                   ; byte. WIDENED, and deliberately: the coercion
+                jr      nz,evc_check        ; is skipped for ANY pending fault, not only a
+                                            ; type one. It was only ever skipped to keep a
+                                            ; hard-zeroed type-mismatch state from
+                                            ; faulting spuriously; the same argument covers
+                                            ; a pending div0/overflow, and skipping stops
+                                            ; fac_to_int_addr writing Overflow OVER an
+                                            ; earlier code. penderr_set would refuse that
+                                            ; write anyway -- this makes it moot AND free.
                 push    hl
                 call    fac_to_int_addr     ; out-of-int-domain channel -> FPERR=1 (overflow)
                 pop     hl
@@ -1821,7 +1828,7 @@ cpow_y_nonzero:
                 or      a
                 jr      z,cpow_x0_pos
                 ld      a,2
-                ld      (FPERR),a           ; Division by zero
+                call    penderr_set         ; Division by zero
 cpow_x0_pos:
                 xor     a
                 ld      (FAC),a             ; FAC := 0 (double lead byte)
@@ -1902,7 +1909,7 @@ cpow_frac:
                 or      a
                 jr      z,cpow_frac_ok
                 ld      a,3
-                ld      (FPERR),a           ; illegal function call
+                call    penderr_set         ; illegal function call
                 ld      de,0
                 ret
 cpow_frac_ok:
@@ -1972,7 +1979,7 @@ sdivmod_zerocheck:
                                             ; signed_mod_de_bc (own-design early-out; see
                                             ; header)
                 ld      a,2
-                ld      (FPERR),a
+                call    penderr_set
                 ld      de,0
                 ret
 

@@ -2182,6 +2182,23 @@ tmfp-acceptance: repack-machine
 	python3 probes/basic/basic_probe_tmfp.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-PENDERR: first-error-wins as a property of the WRITE -------------------
+# (docs/spec-basic-penderr.md.) D-TMFP kept the type fault safe from twenty bare
+# `ld (FPERR),a` clobbers by giving it a CELL of its own that every reader tested
+# first. This slice collapses the two cells into one pending-error CODE and pays
+# for that by routing every writer through `penderr_set` (basic/str-engine.asm),
+# a set-if-empty store that is byte-for-byte the size of the bare one it
+# replaces. -48 B (low 6 -> 14, page 1 22 -> 62).
+#
+# What this gate holds that `tmfp-acceptance` cannot: NUMERIC-vs-NUMERIC order
+# (the same rule, generalised past the type/numeric pair), the two SUB-ROM
+# tenants that raise into the cell through the resident ABI, the three readers
+# widened from "is a TYPE fault pending" to "is anything pending", and the
+# `r.hex` family that D-TMFP deferred. 61 rows x 3 sides, ~9 min.
+penderr-acceptance: repack-machine
+	python3 probes/basic/basic_probe_penderr.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2424,6 +2441,7 @@ clean:
         onerr0-characterize onerr0-acceptance \
         locarg-characterize locarg-acceptance \
         tmfp-characterize tmfp-acceptance \
+        penderr-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean
