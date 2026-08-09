@@ -1178,8 +1178,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `width-acceptance` 91/94 → **94/94** on three sides; knives 5×2 **all
       twelve exact**.
 
-- [ ] 💰 **A −29 B CARVE EXISTS IN `loc_next`, IT FIXES A MEASURED DIVERGENCE,
-      AND IT IS DECLINED ON SCOPE — NOT ON A MISSING READING.** Filed
+- [x] ✅ **A −29 B CARVE EXISTED IN `loc_next` — TAKEN 2026-08-09 BY D-LOCARG**
+      ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md),
+      [`docs/locarg-msx1-characterization.md`](docs/locarg-msx1-characterization.md)),
+      at **exactly −29 B**, and it funded the +7 B `DIRECTF` derive below: main
+      page 1 **0 B → 22 B**. `make locarg-acceptance` is a new 45-row gate,
+      **38/45 → 44/45**, and `make missing-acceptance` held at 214/214.
+      🔴 **THE DENOMINATOR THIS ITEM DEMANDS WAS ALREADY BUILT WHEN IT WAS
+      FILED.** Every axis named below as missing — row/column, omitted
+      arguments, the `CON_LASTROW` clamp, `CSRLIN`/`POS` read-back — was already
+      in `make missing-acceptance`, 214 recorded rows. The one axis that
+      genuinely did not exist was the deferred expression error itself, and
+      `grep LOCATE probes/` is the command that would have said so. **A declined
+      carve's stated blocker can name work that already exists**, because the
+      person pricing it is reading the file the carve is in, not the gate list.
+      🎯 `LOCATE 70000+0*SQR(-1),3` is what made it a rule rather than "division
+      by zero is special": it faults with a **different** code (5, not 11)
+      through the identical shape, and both references report that code.
+      **The original filing, for the record:**
+
+- [x] 💰 ~~**A −29 B CARVE EXISTS IN `loc_next`, IT FIXES A MEASURED DIVERGENCE,
+      AND IT IS DECLINED ON SCOPE — NOT ON A MISSING READING.**~~ Filed
       2026-08-09 by D-EVALCHK
       ([`docs/spec-basic-evalchk.md`](docs/spec-basic-evalchk.md) §6.6).
       [`basic/missing.asm:237`](basic/missing.asm:237) is the FOURTH copy of
@@ -1214,6 +1233,66 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and `Overflow` here, with `LOCATE 1/0,1`, `LOCATE 70000,1` and
       `LOCATE "5",3` green on all three sides.
 
+- [ ] 💰 **A PENDING NUMERIC FAULT OUTRANKS `TMISMATCH` TOO, AND THE ORDER THAT
+      SAYS OTHERWISE WAS FROZEN BY A ROW THAT CANNOT TEST IT.** Filed 2026-08-09
+      by D-LOCARG ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §7),
+      DEFERRED in `make locarg-acceptance` as row `t.tmfp`:
+
+      | program | VG-8020 | CF-3300 | zerobas |
+      |---|---|---|---|
+      | `LOCATE STR$(1/0),3` | **ERR 11** | **ERR 11** | **ERR 13** |
+      | `LOCATE "5",3` | ERR 13 | ERR 13 | ERR 13 🟢 control |
+
+      Both deferred flags are live at the coercion — a numeric fault (`FPERR`=11,
+      from the `1/0` inside `STR$`) and a type fault (`TMISMATCH`, from the
+      string that came back). The references report the **numeric** one; zerobas
+      reports the type one, **before and after D-LOCARG's carve alike**, because
+      the order is the same either way. The second row is what makes the claim
+      narrow rather than a glitch: a type fault with **no** pending numeric one
+      is 13 everywhere.
+      💰 **PRICE +7..+9 B, AND THE PRICE IS NOT THE REASON.** `check_expr_errors`
+      and `check_fperr_only` are one routine with two entry points, the second a
+      **fall-in** — which is what makes the pair cost nothing extra; testing
+      `FPERR` first breaks the fall-in and needs that test written twice.
+      🔴 **THE REASON IS THE DENOMINATOR.** `check_expr_errors` has four other
+      callers (`ex_if`, `exp_num` via print.asm, `ex_let`, and `eval_chan` since
+      D-BADFNUM, whose header records that its ordering was CHANGED on a
+      measurement), and the order may not move until each has a
+      both-flags-pending row of its own.
+      ⚠️ [`docs/spec-basic-evalchk.md`](docs/spec-basic-evalchk.md) §5.1 froze
+      this order as a **forced constraint** on the strength of `PRINT #A$,"X"` —
+      a row with a type fault and no pending numeric one, i.e. a row that cannot
+      discriminate. **A constraint can be frozen by a row that does not test it.**
+
+- [ ] 💰 **`loc_next`'S PARKED FRAME (`LOC_RET`) IS NOW UNNECESSARY, ~9 B, AND
+      DELIBERATELY NOT TAKEN.** Filed 2026-08-09 by D-LOCARG
+      ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §3.1). The park
+      exists because the abort chain used to PRINT AND RETURN; `4d35b6d` made
+      aborts depth-independent (`fre_abort_low` resets `SP` from `SAVSTK`), which
+      is what licensed the −29 B carve above. The same refutation licenses
+      deleting `pop de` / `ld (LOC_RET),de` and `loc_ret`'s three-instruction
+      re-push in favour of an ordinary `call`/`ret` — but that changes the depth
+      of `loc_more`, `loc_missing` and the apply-then-reject ordering as well as
+      the domain check, and **D-LOCARG deliberately moved one thing at a time**.
+      📏 The instrument already exists: `make locarg-acceptance`'s 11 `u.*` rows
+      run every abort class untrapped and read the whole screen tail, which is
+      exactly the "two messages for one statement" failure the park prevents.
+      💰 ~9 B, denominator already built, not scouted.
+
+- [ ] 🔴 **`t.zero` IS BLIND TO A CUT THAT ALSO DISABLES ITS SEED, AND THE PROBE
+      CLAIMS OTHERWISE.** Filed 2026-08-09 by D-LOCARG
+      ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §8.3), found by
+      knife K-LA5. Every `t.*` program in `basic_probe_locarg.py` opens with
+      `CLS:LOCATE 7,4` so that "the cursor did not move" reads ` 4  7 ` and is
+      distinguishable from the CLS home position ` 0  0 ` — the probe's `SEED`
+      comment says so. That holds for every row **except the one whose target IS
+      home**: `t.zero` (`LOCATE 0,0`) reads ` 0  0  0 ` whether both `LOCATE`s
+      applied or neither did. Harmless in the shipped tree (where the seed
+      applies) and **not** a reason to change the row — `LOCATE 0` being a VALUE
+      and not an omission is what it is for. Recorded because the comment
+      currently over-claims, and because the same shape will recur in any probe
+      that seeds a cell it also tests.
+
 - [ ] 🔴 **`OPEN A$ AS #1` IS `Syntax error` HERE AND `OK` ON THE CF-3300.**
       Filed 2026-08-08 by D-NAMSPC, found while measuring something else
       ([[readout-blind-to-its-own-subject]]). A **variable** filename in `OPEN`:
@@ -1234,9 +1313,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       §4.5): CF-3300 `[OK]`, zerobas `Syntax error in 20`, against an
       `OPEN"TS.DAT"AS #1` literal control reading `[OK]` on both.
 
-- [ ] 💰 **THE RE-RAISE NAMES THE WRONG LINE WHEN THE TWO CONTEXTS DISAGREE ON
+- [x] ✅ **THE RE-RAISE NAMED THE WRONG LINE WHEN THE TWO CONTEXTS DISAGREED ON
+      *MODE* — CLOSED 2026-08-09 by D-LOCARG**
+      ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §5), at
+      **exactly the +7 B priced here**, funded by the −29 B `loc_next` carve
+      above. `derive_directf` (basic/program.asm) is extracted from `rp_exec` and
+      called from `oe_reraise`; `make onerr0-acceptance` is **24 rows / 24
+      SCORED / 0 deferred** and its `DEFERRED` dict is EMPTY — emptied by fixing
+      the rows, not by rescoring them. Knife **K-LA4** reddens exactly these two
+      rows and nothing else, both rounds; **K-LA3** forces the constant this
+      item says cannot serve and reddens exactly one, `d.dirtrap`.
+      🔴 **AND THE FIRST PLACEMENT OF THE NEW ROUTINE DID NOT ASSEMBLE**: 14 B
+      dropped inside the run loop pushed a backward `jr rp_lp` past −128 — the
+      identical failure D-CONTR recorded two instructions below the same span,
+      whose remedy costs 1 B. Siting the routine **outside** the span costs 0.
+      **Where a routine goes is a price.**
+      **The original filing, for the record:**
+
+- [x] 💰 ~~**THE RE-RAISE NAMES THE WRONG LINE WHEN THE TWO CONTEXTS DISAGREE ON
       *MODE* — `DIRECTF` IS NEVER RE-DERIVED. Filed 2026-08-09 by D-ONERR0,
-      PRICED AT +7 B AGAINST A 0 B WALL.** Two rows, both references agreeing,
+      PRICED AT +7 B AGAINST A 0 B WALL.**~~ Two rows, both references agreeing,
       failing in **opposite** directions:
 
       | row | shape | both references | zerobas |

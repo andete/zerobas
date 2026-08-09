@@ -233,52 +233,44 @@ loc_next:
                 jr      z,loc_missing       ; `LOCATE :` / `LOCATE 5,3,:`
                 cp      ','
                 jr      z,loc_omit
-                call    eval
-                ld      a,(TMISMATCH)       ; `LOCATE "5",3` -> Type mismatch (measured)
-                or      a
-                jp      nz,type_mismatch_error
-                ; --- the two-stage domain check, INLINE and not `call get_byte_arg` --
-                ; 🔴 THE REASON THIS IS INLINE IS NO LONGER TRUE, AND SAYING SO
-                ; HERE IS THE POINT (D-EVALCHK, docs/spec-basic-evalchk.md §6.6).
-                ; What this block used to say: get_byte_arg CANNOT be called
+                ; --- ONE CHECKED COERCION, and it used to be 29 bytes of inline --
+                ; (D-LOCARG, docs/spec-basic-locarg.md §4.) An argument position is
+                ; a BYTE ARGUMENT: `eval`, then the DEFERRED-error test, then the
+                ; int16 stage (ERR 6 past int16), then the byte stage (ERR 5
+                ; outside 0..255) -- which is exactly `eval_byte_checked`
+                ; (basic/interp.asm), the leaf D-EVALCHK built for WIDTH and FIELD.
+                ; A = E = the accepted byte on return; HL has advanced; both domain
+                ; rejects and the TYPE reject abort from inside it.
+                ;
+                ; 🔴 THE REASON THIS WAS 29 BYTES OF INLINE WAS A COMMENT THAT HAD
+                ; BEEN FALSE FOR TWO MONTHS. It said get_byte_arg CANNOT be called
                 ; here, because its reject `jp raise_error`s into an abort chain
                 ; that PRINTS AND RETURNS -- consuming the caller's own frame and
                 ; landing back inside the caller with A = the error code, which is
                 ; how `WIDTH 300` once printed nothing and corrupted the display.
-                ; ⚠️ THAT WAS FIXED BY `4d35b6d` (D-CUR-D, spec-basic-abort-
-                ; depth.md §4): fre_abort_low now does `ld sp,(SAVSTK)` before it
-                ; prints, and raise_error_hl's trap arm always did. The abort is
-                ; DEPTH-INDEPENDENT, so a helper `call`ed from here is safe -- and
-                ; ex_width, ex_clear and exf_item all now do exactly that.
-                ;
-                ; 💰 So this block is a ~29 B carve (17 B here + `call eval` and
-                ; the TMISMATCH test above + the orphaned loc_illegal), and it is
-                ; DECLINED rather than overlooked. It is also a measured
-                ; divergence: `LOCATE 70000+0*(1/0),1` is ERR 11 on both the
-                ; VG-8020 and the CF-3300 and ERR 6 here, the same clause
-                ; D-EVALCHK fixed at the other three sites. Taking it means
-                ; DELETING a defensive apparatus (LOC_RET, the parked frame) on
-                ; the strength of the refutation above -- a claim that needs its
-                ; own knife and LOCATE's own denominator, neither of which the
-                ; width probe has. Filed in TODO.md with all four readings.
-                ;
-                ; Inline, at the handler's own depth (loc_next parked its frame),
-                ; the same two `jp`s abort correctly: they return to the run loop.
-                push    hl                  ; fac_to_int_strict clobbers HL
-                call    fac_to_int_strict   ; DE = int16; FPERR set if |x| > 32767
-                pop     hl
-                ld      a,(FPERR)
-                or      a
-                jp      nz,fp_runtime_error ; stage 1: beyond int16 -> Overflow (ERR 6)
-                ld      a,d
-                or      a
-                jr      nz,loc_illegal      ; stage 2: outside 0..255 -> ERR 5
-                ld      a,e                 ; A = the accepted byte
+                ; `4d35b6d` (D-CUR-D, spec-basic-abort-depth.md §4) retired that:
+                ; fre_abort_low does `ld sp,(SAVSTK)` before it prints, and
+                ; raise_error_hl's trap arm always did. The abort is
+                ; DEPTH-INDEPENDENT, so a helper `call`ed from here is safe.
+                ; ⚠️ THE APPARATUS THE COMMENT DESCRIBED IS STILL TESTED, because a
+                ; refuted claim is not the same as an unmeasured one: `make
+                ; locarg-acceptance`'s ENTIRE `u.*` battery runs every abort class
+                ; UNTRAPPED and reads the whole screen tail, so the exact failure it
+                ; warned about -- `LOCATE "5",3` printing `Type mismatch` and THEN
+                ; `Missing operand`, the handler carrying on parsing after the abort
+                ; -- is a red row and not a silent one. It is green on all three
+                ; sides through this call.
+                ; ⚠️ LOC_RET STAYS. The parked frame is what makes loc_more, the
+                ; apply-then-reject ordering and `loc_missing` run at the handler's
+                ; own depth; only the DOMAIN CHECK moved. Deleting the park too is a
+                ; separate ~9 B carve with a separate claim (TODO.md).
+                call    eval_byte_checked   ; A = E = 0..255, or aborts:
+                                            ;   ERR 13 string, ERR 6 past int16,
+                                            ;   ERR 5 outside 0..255, and a DEFERRED
+                                            ;   expression error IN PREFERENCE to the
+                                            ;   coercion's own overflow (the rule)
                 scf
                 jr      loc_ret
-loc_illegal:
-                ld      a,5
-                jp      raise_error         ; Illegal function call
 loc_omit:
                 inc     hl                  ; consume the comma
                 or      a                   ; A is ',' -> CF = 0

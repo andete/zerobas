@@ -428,6 +428,7 @@ rp_notend:
                 or      a
                 call    nz,trace_line       ; preserves HL (the token cursor)
                 jr      rp_exec
+
 rp_resume:
                 xor     a
                 ld      (RESUMEFLAG),a
@@ -439,28 +440,11 @@ rp_exec:
                 ; (the statement about to run), CURLINE already correct.
                 push    hl                  ; guard the resume pointer across BREAKX
                 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §5):
-                ; DIRECTF is DERIVED here, not carried. It is exactly "the line I
-                ; am about to run is the typed one", and this is the single point
-                ; every line entry AND every mid-line resume passes through, so it
-                ; cannot go stale. A sticky flag would be wrong in both directions
-                ; and both were MEASURED on the VG-8020: a direct `GOSUB 10` into a
-                ; broken line 10 reports "Syntax error IN 10" (run mode), and the
-                ; RETURN back into the rest of the typed line reports a bare
-                ; "Syntax error" (direct mode again).
-                ; The HIGH BYTE alone decides it. CURLINE's value set is small and
-                ; enumerable: a stored line's link address, always in [TXTBASE
-                ; $8001, TXTMAX $BE00); dir_line; and dir_line+2 (what the loop's
-                ; fall-through leaves behind after a typed line ends). ROM and the
-                ; text area are disjoint, so the only address sharing dir_line's
-                ; page is dir_line+2 -- and rp_lp returns to the REPL on that one
-                ; before ever reaching here.
-                ld      a,(CURLINE+1)
-                cp      dir_line >> 8
-                ld      a,0                 ; (xor a would clobber the flags)
-                jr      nz,rpe_mode
-                inc     a
-rpe_mode:
-                ld      (DIRECTF),a
+                ; DIRECTF is DERIVED, not carried, and this is the point every
+                ; line entry AND every mid-line resume passes through. The derive
+                ; itself moved to derive_directf just above; see its header for
+                ; why the high byte alone decides it.
+                call    derive_directf
                 call    BREAKX
                 pop     hl
                 jr      c,rp_break
@@ -521,6 +505,46 @@ rp_goto:
                                             ; behaviour. (The assembler CAUGHT it and
                                             ; the build failed, which is why the probe
                                             ; never ran on a stale machine.)
+; --- derive_directf: DIRECTF := "the line CURLINE names is the TYPED one" ----
+; Clobbers A (and the flags). Everything else is preserved -- rp_exec calls it
+; with the resume pointer live in HL.
+;
+; DIRECTF is DERIVED, never carried. A sticky flag would be wrong in BOTH
+; directions and both were MEASURED on the VG-8020: a direct `GOSUB 10` into a
+; broken line 10 reports "Syntax error IN 10" (run mode), and the RETURN back
+; into the rest of the typed line reports a bare "Syntax error" (direct mode
+; again). docs/spec-basic-direct-ctrl.md §5.
+; The HIGH BYTE alone decides it. CURLINE's value set is small and enumerable:
+; a stored line's link address, always in [TXTBASE $8001, TXTMAX $BE00);
+; dir_line; and dir_line+2 (what the run loop's fall-through leaves behind after
+; a typed line ends). ROM and the text area are disjoint, so the only address
+; sharing dir_line's page is dir_line+2 -- and rp_lp returns to the REPL on that
+; one before ever reaching rp_exec.
+;
+; 🔴 IT IS A ROUTINE, AND NOT INLINE IN rp_exec, BECAUSE rp_exec IS NOT THE ONLY
+; PLACE THAT NEEDS IT (D-LOCARG, docs/spec-basic-locarg.md §5). D-ONERR0's
+; re-raise restores the ERRORING statement's CURLINE and then aborts through
+; rerr_msg, which never passes rp_exec -- so the mode cell kept whatever the
+; RE-RAISING statement had, and the two rows where those disagree failed in
+; OPPOSITE directions (`make onerr0-acceptance` d.instop / d.dirtrap):
+;   d.instop   the disarm is TYPED but the error was a STORED line -> the
+;              " in <line>" suffix was suppressed when it must be printed
+;   d.dirtrap  the disarm is in a STORED handler but the error was TYPED -> a
+;              suffix was printed (`in 0`, dir_line's own never-initialised
+;              lineno field) when there must be none
+; 🎯 OPPOSITE DIRECTIONS IS WHAT SAYS THE ANSWER IS THIS DERIVE AND NOT A
+; CONSTANT: forcing DIRECTF := 0 fixes the first and breaks the second, and
+; forcing 1 does the reverse. Both readings were predicted before the fix was
+; measured (docs/spec-basic-onerr0.md §7).
+derive_directf:
+                ld      a,(CURLINE+1)
+                cp      dir_line >> 8
+                ld      a,0                 ; (xor a would clobber the flags)
+                jr      nz,dd_mode
+                inc     a
+dd_mode:
+                ld      (DIRECTF),a
+                ret
 rp_break:
                 ld      a,(DIRECTF)         ; direct mode: no trap machinery (see
                 or      a                   ; rp_trapchk) -> always the classic break,
@@ -2155,6 +2179,13 @@ oe_reraise:
                 ; was drafted first (spec §4.1).
                 call    res_ctx
                 ld      (SAVTXT),hl
+                ; D-LOCARG: and the MODE too, derived from the CURLINE res_ctx
+                ; just restored. rerr_msg does not pass rp_exec, so without this
+                ; the report carries the RE-RAISING statement's mode and the
+                ; " in <line>" suffix is wrong in one direction or the other --
+                ; see derive_directf's header for the two rows and why a constant
+                ; cannot serve. Clobbers A only; HL is already spent.
+                call    derive_directf
                 jp      rerr_msg
 
 ; --- ex_on_stop: ON STOP GOSUB <line> -- arm the STOP interrupt trap ----------

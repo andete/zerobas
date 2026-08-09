@@ -2104,9 +2104,11 @@ fldwidth-acceptance: repack-machine
 # 🔴 r.line agrees on its error TEXT for the wrong reason -- zerobas used to run
 # on and raise a FRESH error at the same line -- and only the `[RANON]` prefix
 # separates them. Keep the reading as the screen TAIL, never a `[...]` span.
-# 💰 d.instop / d.dirtrap are DEFERRED and priced (+7 B, main page 1 has 0 B):
-# they need `DIRECTF` DERIVED from the restored CURLINE, and they fail in
-# OPPOSITE directions, which is what says a constant will not do.
+# ✅ d.instop / d.dirtrap WERE DEFERRED and priced at +7 B against a 0 B wall;
+# D-LOCARG carved -29 B out of `loc_next` and spent 7 of it on `derive_directf`
+# (basic/program.asm), so this gate is 24 rows / 24 SCORED and its DEFERRED dict
+# is EMPTY. They failed in OPPOSITE directions, which is what said a constant
+# would not do -- knife K-LA3 falsifies the constant live.
 #   make onerr0-characterize ONLY=r.reexec SIDES=zb      # scope rows / sides
 onerr0-characterize: repack-machine
 	python3 probes/basic/basic_probe_onerr0.py \
@@ -2114,6 +2116,37 @@ onerr0-characterize: repack-machine
 
 onerr0-acceptance: repack-machine
 	python3 probes/basic/basic_probe_onerr0.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+# --- D-LOCARG: LOCATE's three arguments are CHECKED COERCIONS -----------------
+# (docs/spec-basic-locarg.md, measured in docs/locarg-msx1-characterization.md)
+# The denominator for the -29 B `loc_next` carve D-EVALCHK declined at
+# docs/spec-basic-evalchk.md §6.6 with four rows and no denominator.
+# 🔴 THE OTHER HALF OF THAT DENOMINATOR ALREADY EXISTED: `missing-acceptance`
+# (batteries locate/locerr/locrow/xchk, 214 recorded rows) covers every axis
+# §6.6 listed as missing -- row/column, omitted arguments, the CON_LASTROW and
+# LINLEN clamps, the CSRLIN/POS read-back. It is this gate's GREEN control set
+# and is deliberately NOT duplicated here; run BOTH after touching LOCATE.
+# 🎯 The subject is RANK: `70000+0*(1/0)` both faults (11) and overflows (6),
+# and `70000+0*SQR(-1)` faults with a DIFFERENT code (5) and overflows the same
+# way -- two codes, one shape, which is what makes it a rule about rank rather
+# than about division. `256+0*(1/0)` is the negative control: a fault that does
+# NOT overflow was already reported correctly and must stay so.
+# 🎯 EVERY t.* row reads the CURSOR as well as ERR, because "the abort left the
+# cursor alone" is exactly what `loc_next`'s parked-frame apparatus is for, and
+# an error code alone is blind to it. The u.* battery is the apparatus test
+# proper: untrapped, whole screen tail, so a SECOND message is visible.
+# 💰 t.tmfp is DEFERRED: `LOCATE STR$(1/0),3` leaves a numeric AND a type fault
+# pending, references report the numeric one, zerobas the type one -- before and
+# after the carve alike. The order is `check_expr_errors`', shared with four
+# other callers, and it does not move until each has a row of its own.
+#   make locarg-characterize ONLY=t.c.ovdiv SIDES=zb     # scope rows / sides
+locarg-characterize: repack-machine
+	python3 probes/basic/basic_probe_locarg.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+locarg-acceptance: repack-machine
+	python3 probes/basic/basic_probe_locarg.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
@@ -2356,6 +2389,7 @@ clean:
         namspc-characterize namspc-acceptance \
         fldwidth-characterize fldwidth-acceptance \
         onerr0-characterize onerr0-acceptance \
+        locarg-characterize locarg-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

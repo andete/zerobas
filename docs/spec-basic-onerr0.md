@@ -171,6 +171,15 @@ here.
 
 ## 7. 💰 DEFERRED with a price: the two direct-mode rows
 
+> ✅ **BOTH LANDED 2026-08-09 IN D-LOCARG**
+> ([`spec-basic-locarg.md`](spec-basic-locarg.md)), at **exactly the +7 B priced
+> below**, funded by the −29 B `loc_next` carve. `make onerr0-acceptance` is now
+> **24 rows / 24 scored / 0 deferred** and its `DEFERRED` dict is empty — emptied
+> by fixing the rows, not by rescoring them. Knife **K-LA4** cuts the new
+> `call derive_directf` out of `oe_reraise` and reddens **exactly these two rows
+> and nothing else**, both rounds; **K-LA3** forces the constant this section
+> says cannot serve and reddens **exactly one**, `d.dirtrap`.
+
 | row | zerobas | both references |
 |---|---|---|
 | `d.instop` | `Out of memory` | `Out of memory in 20` |

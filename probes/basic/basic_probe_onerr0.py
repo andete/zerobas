@@ -359,31 +359,27 @@ NEGATIVE = {
 LABEL_W = 11
 
 # --- DEFERRED: measured, printed, NEVER scored ------------------------------
-# 💰 BOTH ARE THE SAME MISSING PIECE, AND IT IS PRICED: `DIRECTF`.
-# The fix restores the erroring statement's CURLINE and SAVTXT and then aborts
-# through `rerr_msg`, which never passes `rp_exec` — and `rp_exec` is the ONLY
-# place that DERIVES `DIRECTF` from `CURLINE`'s high byte (basic/program.asm).
-# So the mode cell keeps whatever the RE-RAISING statement had, and the two rows
-# where those disagree are exactly these:
+# ✅ EMPTY SINCE D-LOCARG (2026-08-09) — and emptied by FIXING the two rows, not
+# by rescoring them. `d.instop` and `d.dirtrap` were the same missing piece,
+# `DIRECTF`: the re-raise restores the erroring statement's CURLINE and SAVTXT
+# and aborts through `rerr_msg`, which never passes `rp_exec` — and `rp_exec`
+# was the ONLY place that DERIVED `DIRECTF` from `CURLINE`'s high byte. So the
+# mode cell kept whatever the RE-RAISING statement had:
 #   d.instop   the disarm is TYPED (DIRECTF=1) but the error was a STORED line,
-#              so the suffix is suppressed:  `Out of memory`  vs  `... in 20`.
+#              so the suffix was suppressed:  `Out of memory`  vs  `... in 20`.
 #   d.dirtrap  the disarm is in a STORED handler (DIRECTF=0) but the error was
-#              TYPED, so a suffix is printed from the direct line's own lineno
+#              TYPED, so a suffix was printed from the direct line's own lineno
 #              field:  `Out of memory in 0`  vs a bare `Out of memory`.
-# 🎯 THEY FAIL IN OPPOSITE DIRECTIONS, which is what says the answer is a DERIVE
-# and not a constant: forcing DIRECTF:=0 fixes d.instop and breaks d.dirtrap,
-# and forcing 1 does the reverse. Both were PREDICTED before the fix was
-# measured and both landed exactly (spec §10.5).
-# 💰 THE PRICE IS +7 B: extract `rp_exec`'s six-instruction derive as a shared
-# `derive_directf` (+14 B routine, -13 B inlined, +3 B call back = net +4) and
-# `call` it from `oe_reraise` (+3). MAIN PAGE 1 HAS **0 B** after this slice, so
-# it does not fit, and the -29 B `loc_next` carve that would fund it belongs to
-# its own slice (docs/spec-basic-evalchk.md §6.6) and is deliberately NOT ridden
-# along here. Filed in TODO.md with this price.
-DEFERRED = {
-    "d.instop":  "DEFERRED — the DIRECTF derive, +7 B against a 0 B wall",
-    "d.dirtrap": "DEFERRED — the DIRECTF derive, +7 B against a 0 B wall",
-}
+# 🎯 THEY FAILED IN OPPOSITE DIRECTIONS, which is what said the answer was a
+# DERIVE and not a constant: forcing DIRECTF:=0 fixed d.instop and broke
+# d.dirtrap, and forcing 1 did the reverse. `derive_directf` (basic/program.asm)
+# is that derive, extracted and called from both places; the constant is
+# falsified live by knife K-LA3 (docs/spec-basic-locarg.md §8).
+# 💰 THE PRICE WAS PREDICTED AT +7 B AND LANDED AT +7 B, funded by the -29 B
+# `loc_next` carve in the same slice (docs/spec-basic-locarg.md §6).
+# An EMPTY dict is a CLAIM — "nothing here is measured-but-unscored" — and the
+# footer states it on every run, so it cannot lapse quietly.
+DEFERRED: dict[str, str] = {}
 
 SENTINELS = ("<NO CAPTURE>", "<NO ECHO>")
 

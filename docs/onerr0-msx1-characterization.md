@@ -239,7 +239,16 @@ the only thing that separated them was the `[RANON]` the reference never prints.
 A reading that had kept only the error text would have scored this row green
 ([[readout-blind-to-its-own-subject]]).
 
-### 5.1 💰 The two deferred rows, priced
+### 5.1 💰 The two deferred rows, priced — ✅ AND LANDED
+
+> **CLOSED 2026-08-09 by D-LOCARG** ([`spec-basic-locarg.md`](spec-basic-locarg.md)):
+> `derive_directf` (basic/program.asm) is the derive this section predicted, at
+> exactly the +7 B priced, funded by the −29 B `loc_next` carve. Both rows now
+> read identically on all three sides — `d.instop`
+> `Break in 40 >> Out of memory in 20 >> [OK]`, `d.dirtrap`
+> ` >> Out of memory >> [AFTER]` — and the gate is **24/24 scored, 0 deferred**.
+> The prediction below that a **constant cannot serve** is now falsified live by
+> knife K-LA3, which forces `DIRECTF := 0` and reddens `d.dirtrap` alone.
 
 Both are the same missing piece, and they fail in **opposite directions**:
 

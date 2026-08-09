@@ -311,6 +311,18 @@ nothing in this slice changes the other two blockers:
 
 ### 6.6 💰 `loc_next` (LOCATE) — DECLINED AT **−29 B**, WITH ITS READING TAKEN
 
+> ✅ **TAKEN 2026-08-09 BY D-LOCARG** ([`spec-basic-locarg.md`](spec-basic-locarg.md)),
+> at exactly −29 B, and it funded the +7 B `DIRECTF` derive
+> [`spec-basic-onerr0.md`](spec-basic-onerr0.md) §7 had deferred: main page 1
+> **0 B → 22 B**.
+> 🔴 **AND THE DENOMINATOR THIS SECTION ASKED FOR WAS ALREADY BUILT.** Every axis
+> named below as missing — row/column, omitted arguments, the `CON_LASTROW`
+> clamp, `CSRLIN`/`POS` read-back — was already in `make missing-acceptance`,
+> 214 recorded rows. The one axis that genuinely did not exist was the deferred
+> expression error itself. The decline was right on the arithmetic (four rows are
+> not a denominator) and wrong on the inventory, and `grep LOCATE probes/` is the
+> command that would have said so.
+
 The fourth site, and the largest carve in this walk. Measured on the same three
 sides (`plain()` fixture, scratch run 2026-08-09):
 
