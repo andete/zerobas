@@ -560,6 +560,7 @@ DATA disk (both reach Disk BASIC — a confound-free baseline), (b) the DOS disk
 **disk ROM** sets up that zerobas-disk does not.
 
 **Baseline result (data disk → BASIC, the decisive one).**
+
 | work-area cell | stock CF-3300 | Tier-1 (zerobas-disk) | who sets it |
 |---|---|---|---|
 | `EXPTBL $FCC1-4` | `00 00 00 80` | `00 00 00 80` | **base BIOS** (identical) |

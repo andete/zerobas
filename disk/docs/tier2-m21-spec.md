@@ -326,6 +326,7 @@ resolves symbols — but moving the whole run is the smallest diff).
 
 **Free-tail budget available** (own-ROM zero-run scan, `disk.rom`, all unused `$00` pad —
 none of these are "guessed," each is read directly off our built ROM):
+
 | region | free bytes | currently reserved for |
 |---|---|---|
 | `$4C77-$4E4B` | 468 | (free, pre-M19) |

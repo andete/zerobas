@@ -3985,6 +3985,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       assuming it is large** — these are small routines, and page 1 is the 7 B wall.
       🔴 **THE FRAMING MEASUREMENT: the main ROM is jammed shut next to 7411 B of
       unused sub-ROM.** Measured at `4cdb69b`:
+
       | region | free |
       |---|---|
       | main low `$2812-$3FFF` | **0 B** (hard wall) |

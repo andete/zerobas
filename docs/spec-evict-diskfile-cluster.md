@@ -312,6 +312,7 @@ The ▶START measurement is done. **Q-A is resolved to a third shape, not either
 `fat_io_*` byte cursor resident. Rationale is empirical:
 
 **Measured layer split of `fat.asm` (2121 B, from `build/basic-reloc.sym`):**
+
 | Layer | Span | Bytes | Profile |
 |---|---|---:|---|
 | FAT12 primitive/sector | `dskio_calslt $58E0` → `fat_io_open $5F0E`, + `fat_delete $60D5`→`$6129` | **~1666 (79%)** | coarse (per-sector/cluster/dir), CALSLT-pure, RAM-interfaced, no `eval`/vector coupling |

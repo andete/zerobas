@@ -440,6 +440,7 @@ Working hypothesis (to be confirmed, not implemented blind): `ONELIN`/`ONEFLG`:=
 **Measured now:** page-1 **17 B** free, low region **3 B** (`tools/check_reloc.py`).
 
 Rough S2b additions (page-1 unless noted):
+
 | item | est. |
 |---|---|
 | `RESUME` kwtable entry | +8 B |
