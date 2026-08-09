@@ -44,7 +44,10 @@ and on zerobas from a clean build (164 case-runs, 48 s). **6 were STALE** and ar
 closed below with the measurement that closed them; **11 are LIVE** and carry a
 `RE-MEASURED 2026-08-09` line; **3** more are behavioural but not reachable by this
 instrument and say so; the remaining 36 are apparatus, carve prices, doc debt or
-scope and were excluded **by kind**, listed by line in §6 of that document.
+scope and were excluded **by kind**, listed by line in §6 of that document —
+and the partition is **machine-checked complete and disjoint** against this
+file's own `- [ ]` lines (§1.1), so no open item was skipped without leaving a
+trace.
 🔴 **Two of the eleven live items no longer read as filed** — see the `ON ERROR
 GOTO 0` and `DEFINT` entries. 🔴 **And five of the six stale ones were closable
 from evidence already in this file or in a gate that runs on every build**: a

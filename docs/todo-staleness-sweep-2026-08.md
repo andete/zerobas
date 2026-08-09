@@ -43,6 +43,31 @@ statement about the instrument; doc debt is doc debt. None of them has the shape
 "program P reads X here and Y there", which is the only shape this sweep can
 falsify. They are listed by line in §6 so the exclusion is auditable.
 
+### 1.1 The partition is machine-checked, not asserted
+
+"Auditable" is a weaker claim than "audited", so the audit was run: the line
+numbers written into §3–§6 were read back out of this document and set against
+the `- [ ]` lines of `TODO.md` at `e2810c6`.
+
+| check | result |
+|---|---|
+| `- [ ]` lines at `e2810c6` | **56** |
+| §3–§4 measured (17) + §5 not-measurable (3) + §6 excluded (36) | **56** |
+| listed line numbers that are NOT a `- [ ]` at `e2810c6` | **0** |
+| open items mentioned in NO section | **0** |
+| items appearing in more than one bucket | **0** |
+
+So the three buckets are **complete and disjoint over the real file**, not over a
+list retyped from one. This is the check a hand-listed denominator normally
+cannot pass [[a-hand-listed-denominator-is-a-scope-claim]]: the failure mode is
+not a miscount, it is an item that was never looked at and leaves no trace of
+having been skipped.
+
+Every reading quoted below was likewise checked back against the raw captures —
+**131 screen readings, 9 crunched-byte rows and 1 memory read**, each present
+verbatim in this document (allowing for markdown pipe-escaping). No number here
+was transcribed by hand.
+
 ⚠️ One item **outside** the 56 was measured anyway: the parenthetical inside line
 2904 (*"`SWAP` itself is still unimplemented — `SWAP A,B` is a syntax error here,
 where the reference swaps"*). It has the right shape and it is stale (§3.7).
