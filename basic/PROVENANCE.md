@@ -3179,9 +3179,21 @@ and `jp` to `type_mismatch_error`. For `IF A$<5 THEN…` / `R=(A$<5)` the compar
 first thing evaluated, so the line aborts with the message before any clause runs —
 observably identical to MSX.
 
+⚠️ **THE PARAGRAPH ABOVE IS HISTORY AS OF D-PENDERR (2026-08-09, `34a6efe`,
+[`docs/spec-basic-penderr.md`](../docs/spec-basic-penderr.md)).** The mechanism is
+unchanged — deferred marker, statement-boundary abort, same message — but there is no
+longer a *distinct* `TMISMATCH` marker. It was only ever a boolean shorthand for one
+value of the pending-error **code** cell `FPERR` (`sfr_argok` already promoted it by hand,
+and `fperr_to_err` entry 10 is the same ERR 13 `type_mismatch_error` raises), so the two
+cells were merged into one, written **set-if-empty** so first-error-wins is a property of
+the write. The comparator now records `FPERR := FPERR_TYPEMM (10)`; every former reader
+of `TMISMATCH` reads the one cell. **No behaviour in this section changed**, which
+`make tmfp-acceptance` (50/50) and `tests/test_str_compare.py` — now asserting
+`FPERR == 10` where it asserted `TMISMATCH == 1` — are the standing evidence for.
+
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
-| `TMISMATCH` D-2 marker | `$E55F` (the last free byte below disk's WBUF `$E560`, repack-only page-3 RAM) | own choice (free RAM; the byte the string engine's layout deliberately left) | sourced |
+| D-2 marker: the deferred type-mismatch **code** `FPERR_TYPEMM` = 10 in the pending-error cell `FPERR` (`$F069`), mapped to ERR 13 by `fperr_to_err`. ⚠️ **Was a dedicated 1-byte `TMISMATCH` cell until D-PENDERR (2026-08-09).** 🔴 **AND THIS ROW'S ADDRESS WAS ALREADY STALE BEFORE THAT**: it read `$E55F`, which arrays slice-4a had re-homed to `$E3E5` (`basic/sysvars.inc` says so in as many words — "unchanged in role from pre-4a, just re-homed after the heap layout above"). Recorded rather than silently corrected: a provenance row naming a *retired* cell is visible, one naming a *moved* one is not | `FPERR` `$F069`, code 10 | own choice (the code cell and its `fperr_to_err` entry both predate this; the merge adds no new RAM and frees a byte, `STRENG_SPARE $E3E5`, deliberately left unclaimed so `MIDS_DEST` does not move) | sourced |
 | `type_mismatch_error` reports the reference-verbatim `"Type mismatch"` + aborts the line (mirrors `stmt_error`). ⚠️ **Was zerobas's own lowercase wording until D-MSGEXACT (2026-08-02)**; the statement-level abort remains own design | — | **black-box oracle measurement** on Philips_VG_8020 + National_CF-3300 (`probes/basic/basic_probe_msgexact.py`, `docs/msgexact-msx1-characterization.md`), corroborated by the published MSX-BASIC reference (allowed-sources, grade B, "the user-visible language contract ... errors"). NOT from any disassembly; statement-level abort is **own design** (§3c) | sourced |
 
 ### Documented divergences (own design)
@@ -3210,8 +3222,10 @@ The fix is *only* in PRINT's dispatch — the comparison engine is untouched. It
 `str_eval` as the one string-subexpression parser (it already advances past the whole
 operand + any `+`-concat chain) and then **peeks** the next token: a relop ⇒ the item is
 the LHS of a comparison ⇒ restore the cursor to the operand start and re-drive via
-`eval`→`ev_rel` (which yields -1/0, or sets `TMISMATCH` so `exp_num`'s existing check
-aborts `PRINT A$<5` with nothing printed); no relop ⇒ print the descriptor `str_eval`
+`eval`→`ev_rel` (which yields -1/0, or records the deferred type-mismatch code so
+`exp_num`'s existing check aborts `PRINT A$<5` with nothing printed — a distinct
+`TMISMATCH` cell until D-PENDERR, the `FPERR_TYPEMM` code in the shared pending-error
+cell since); no relop ⇒ print the descriptor `str_eval`
 already produced, exactly as before (so plain `PRINT A$` pays no re-parse).
 
 | Item | Value | Source (allowed) | Status |
@@ -3568,7 +3582,7 @@ only, lean 16 KB `basic.rom` byte-identical (pinned).
 
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
-| New `FPERR` cell (0 none / 1 overflow / 2 division-by-zero); statement drivers (`ex_if`/`ex_let`/`exp_num`) check it right after `eval()`/`ev_rel` and abort the WHOLE statement, mirroring D-2's `TMISMATCH`/`type_mismatch_error` pattern exactly | — | own design, D-2's established abort shape reused verbatim for the new flag | sourced |
+| New `FPERR` cell (0 none / 1 overflow / 2 division-by-zero); statement drivers (`ex_if`/`ex_let`/`exp_num`) check it right after `eval()`/`ev_rel` and abort the WHOLE statement, mirroring D-2's `TMISMATCH`/`type_mismatch_error` pattern exactly. ⚠️ **D-PENDERR (2026-08-09) finished the sentence**: the codes now run 1..11, D-2's marker became one of them (`FPERR_TYPEMM` = 10), the separate cell is retired, and the write is **set-if-empty** (`penderr_set`, `basic/str-engine.asm`) so of two faults pending in one statement the FIRST is the one reported — measured on both references, `docs/penderr-msx1-characterization.md` §1 | — | own design, D-2's established abort shape reused verbatim for the new flag; the first-error-wins ORDER is **black-box oracle measurement** (`probes/basic/basic_probe_penderr.py`, `make penderr-acceptance`, 61 rows on VG-8020 + CF-3300) | sourced |
 | Abort wording: `Overflow` REUSES `program.asm`'s crunch-time `err_overflow` string byte-for-byte (not duplicated); `Division by zero` is its own string. ⚠️ **Both were zerobas's own lowercase until D-MSGEXACT (2026-08-02)** | — | **black-box oracle measurement** on Philips_VG_8020 + National_CF-3300 (`probes/basic/basic_probe_msgexact.py`, `docs/msgexact-msx1-characterization.md`), corroborated by the published MSX-BASIC reference (allowed-sources, grade B, "the user-visible language contract ... errors"). NOT from any disassembly | sourced |
 | `POKE`/`VPOKE` switch to `fac_to_int_addr` (checked, FPERR on overflow) instead of the silent eager conversion every other int-argument statement still uses (D-F2-2 residue, listed below) | — | own design; POKE/VPOKE are the two statements whose argument IS the address domain by definition (spec §10.3) | sourced |
 | `HEX$`'s argument conversion also switches to `fac_to_int_addr`, so `PRINT HEX$(65536.)` aborts the whole PRINT line (checked live: `[` never prints) | — | oracle-pinned (§10.2: "in `print "[";1/0;"]"` the `[` prints, then the message, never the value or `]`") | sourced |

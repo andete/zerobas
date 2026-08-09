@@ -415,12 +415,16 @@ nothing until someone says which side broke.
 778 → 781 all grow with the corpus, so last slice's figure is a prediction, not a
 baseline. These were scored, not assumed.
 
-🔴 **`badfnum-acceptance` (not a corpus target) exited 2 on ONE oracle drift:
-`FIELD #-1,10 AS A$` captured nothing on `vg8020` while `cf3300` and the recorded
-oracle both said `IFC`.** A `None` on a REFERENCE side is a broken fixture, not a
-regression — and the row is a negative channel, which reaches `fchk_ifc` without
-ever consulting the pending-error cell, so this slice cannot have moved it. Not
-re-run; flagged here rather than folded in.
+⚠️ **`badfnum-acceptance` (not a corpus target, but `eval_chan`'s own gate, so it
+was run) exited 2 the first time on ONE oracle drift:** `FIELD #-1,10 AS A$`
+captured nothing on `vg8020` while `cf3300` and the recorded oracle both said
+`IFC`. Classified on the spot as a broken fixture rather than a regression — a
+`None` is on a REFERENCE side, and the row is a *negative* channel, which reaches
+`fchk_ifc` without ever consulting the pending-error cell — and then **re-run to
+check that classification instead of resting on it: rc=0, 93 cases, 0 oracle
+drift.** A flake. 🔴 The first draft of this section said "not re-run; flagged
+here"; that is exactly the shape of a reference-side failure being *assumed*
+benign, and one re-run is cheaper than the assumption.
 
 ### 10.5 What went differently
 1. 🔴 **The design's stated justification was refuted by its own knife** (§3.2).
