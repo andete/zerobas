@@ -2149,6 +2149,39 @@ locarg-acceptance: repack-machine
 	python3 probes/basic/basic_probe_locarg.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-TMFP: of two pending faults, the one that happened FIRST is reported ---
+# (docs/spec-basic-tmfp.md, docs/tmfp-msx1-characterization.md.)
+# A type fault (TMISMATCH) and a numeric fault (FPERR) can BOTH be pending at the
+# statement boundary. Which one the reference reports is decided by nothing but
+# WHICH HAPPENED FIRST -- because the reference raises EAGERLY, so the first
+# fault aborts on the spot and the second never occurs:
+#   WIDTH (A$<5)+0*(1/0)    type first     -> ERR 13
+#   WIDTH 0*(1/0)+(A$<5)    numeric first  -> ERR 11
+#   WIDTH 0*SQR(-1)+(A$<5)  numeric first  -> ERR  5
+# 🎯 THE SQR PAIR IS WHAT MAKES IT ORDER AND NOT RANK: the winning code changes
+# with the OPERAND, not the operator. D-EVALCHK §5.1 froze TMISMATCH-first on the
+# first row and D-LOCARG measured the second; no STATIC test order satisfies
+# both, which is why the filed `check_expr_errors` reorder is declined here.
+# 🎯 The order is recorded where it is KNOWN -- type_mismatch_set is TMISMATCH's
+# only writer and exec_stmt clears both flags together, so a non-zero FPERR at
+# arming time means the numeric fault came first. One site, +5 B, and it moves
+# all fourteen readers including the two hand-rolled copies of the ordering
+# (check_expr_errors_popbc, ex_let_arr) that a check_expr_errors fix cannot
+# reach, and the four readers that test TMISMATCH and never test FPERR.
+# 💰 r.hex is DEFERRED: `Q2$=HEX$(0*(1/0)+(Q$<5))` was wrong before (13) and is
+# wrong differently now (2). It EXPOSED two pre-existing defects TMISMATCH was
+# masking -- the cursor does not reach `)`, and str_arg_empty then overwrites the
+# pending FPERR with the deferred syntax error. +6 B for half of it, which is the
+# low region's entire remaining budget; its own slice. See TODO.md.
+#   make tmfp-characterize ONLY=o.w.fp SIDES=zb          # scope rows / sides
+tmfp-characterize: repack-machine
+	python3 probes/basic/basic_probe_tmfp.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+tmfp-acceptance: repack-machine
+	python3 probes/basic/basic_probe_tmfp.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2390,6 +2423,7 @@ clean:
         fldwidth-characterize fldwidth-acceptance \
         onerr0-characterize onerr0-acceptance \
         locarg-characterize locarg-acceptance \
+        tmfp-characterize tmfp-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

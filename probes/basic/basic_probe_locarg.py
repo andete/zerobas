@@ -242,10 +242,20 @@ LABEL_W = 11
 # both-flags-pending row of its own. D-EVALCHK §5.1 froze this order as a
 # forced constraint on the strength of `PRINT #A$,"X"` -- a row with a type
 # fault and NO pending numeric one, which cannot discriminate. Filed in TODO.md.
-DEFERRED = {
-    "t.tmfp": "DEFERRED — a pending numeric fault outranks TMISMATCH too; "
-              "that order is check_expr_errors', with 4 other callers",
-}
+# ✅ CLOSED 2026-08-09 BY D-TMFP (docs/spec-basic-tmfp.md). `t.tmfp` is now
+# SCORED and agrees on all three sides. The dict is deliberately kept, empty,
+# rather than deleted: the machinery that prints a measured-but-unscored row is
+# what makes the next deferral cheap to file.
+# 🔴 THE FILED RULE WAS WRONG AND SO WAS ITS DENOMINATOR. It is not that a
+# numeric fault OUTRANKS a type fault -- it is that whichever fault happened
+# FIRST is reported, because the reference raises eagerly. `WIDTH (A$<5)+0*(1/0)`
+# has both flags pending and reads 13 on both references, and D-EVALCHK §5.1
+# froze the opposite order on it; no static test order satisfies both rows. The
+# fix is not in check_expr_errors at all (nor in its "four other callers" -- the
+# tree has twelve, plus two further hand-rolled copies of the ordering and four
+# readers that never test FPERR): it is one guard at type_mismatch_set,
+# TMISMATCH's only writer, for +5 B.
+DEFERRED: dict[str, str] = {}
 
 SENTINELS = ("<NO CAPTURE>", "<NO ECHO>")
 

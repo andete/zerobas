@@ -1233,36 +1233,105 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and `Overflow` here, with `LOCATE 1/0,1`, `LOCATE 70000,1` and
       `LOCATE "5",3` green on all three sides.
 
-- [ ] 💰 **A PENDING NUMERIC FAULT OUTRANKS `TMISMATCH` TOO, AND THE ORDER THAT
-      SAYS OTHERWISE WAS FROZEN BY A ROW THAT CANNOT TEST IT.** Filed 2026-08-09
-      by D-LOCARG ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §7),
-      DEFERRED in `make locarg-acceptance` as row `t.tmfp`:
+- [x] ✅ **CLOSED 2026-08-09 BY D-TMFP — AND THE FILED RULE WAS WRONG.**
+      ([`docs/spec-basic-tmfp.md`](docs/spec-basic-tmfp.md),
+      [`docs/tmfp-msx1-characterization.md`](docs/tmfp-msx1-characterization.md),
+      gate `make tmfp-acceptance`, 50 rows / 3 sides, 49 scored + 1 deferred.)
+      It is **not** that a numeric fault outranks a type fault — it is that
+      **whichever fault happened FIRST is reported**, because the reference
+      raises eagerly and the second fault never occurs. `WIDTH 0*(1/0)+(A$<5)`
+      reads 11 and `WIDTH (A$<5)+0*(1/0)` reads 13 on **both** references; swap
+      the operands and the answer swaps. `WIDTH 0*SQR(-1)+(A$<5)` reads **5**, a
+      different code, which is what makes it order and not rank.
+      🔴 **THE FILED DECLINE WAS WRONG ON BOTH CLAUSES.** (a) §5.1 of
+      `spec-basic-evalchk.md` was **not** frozen on `PRINT #A$,"X"` — that is
+      D-BADFNUM §6's row, about `eval_chan`. §5.1's row is
+      `WIDTH (A$<5)+0*(1/0)`, which discriminates perfectly, and it **refutes**
+      the filed reorder: no static test order satisfies both rows. (b) The
+      denominator was not four callers but **eighteen sites** — twelve
+      `check_expr_errors` call sites, two further hand-rolled copies of the same
+      ordering (`check_expr_errors_popbc`, `ex_let_arr`) that a
+      `check_expr_errors` fix cannot reach, and four readers of `TMISMATCH` that
+      never consult `FPERR` (`fch_check`, `ev_ff_ckpdl`, `ev_mc_arg_checked`,
+      `sfr_argok`).
+      🎯 Fixed at the **writer**, not the readers: `type_mismatch_set` is
+      `TMISMATCH`'s only writer and `exec_stmt` clears both flags together, so a
+      non-zero `FPERR` at arming time means the numeric fault came first — it
+      does not arm. **One site, +5 B**, main low region (11 → 6 B). 21 divergent
+      rows across nine callers closed; `locarg-acceptance` 44/45 → **45/45** with
+      its DEFERRED dict emptied.
+
+- [ ] 🎯 **THE TWO DEFERRED-ERROR FLAGS ARE ONE CONCEPT — COLLAPSE THEM INTO A
+      SINGLE SET-IF-EMPTY `PENDERR` CODE.** Filed 2026-08-09 by D-TMFP
+      ([`docs/spec-basic-tmfp.md`](docs/spec-basic-tmfp.md) §3). Scouted from
+      the denominator, **not yet priced — scout the byte delta FIRST, it may
+      fund itself.**
+
+      🎯 **`FPERR` IS ALREADY A CODE CELL, AND THE TREE ALREADY PROMOTES A TYPE
+      MISMATCH INTO IT.** `sfr_argok` (`basic/str-engine.asm`) does
+      `ld a,10` / `ld (FPERR),a` with the comment *"fre_msgtab 10 = type
+      mismatch"*. So `TMISMATCH` is not a second concept — it is a **boolean
+      shorthand for one particular `FPERR` code**, and the mapping exists in
+      the tree already.
+
+      🎯 **D-TMFP CREATED THE INVARIANT THAT MAKES THE MERGE LEGAL**: since
+      `type_mismatch_set` refuses to arm when `FPERR` is pending, `TMISMATCH`
+      set ⟹ **it came first**. So `TMISMATCH` ≡ "`PENDERR := 13`, if empty".
+      Write the cell **set-if-empty** and *first-error-wins stops being a rule
+      every reader implements and becomes a property of the WRITE*.
+
+      🔴 **WHAT IT DELETES.** The identical `TMISMATCH`-then-`FPERR` sequence is
+      hand-rolled **three times** (`check_expr_errors`,
+      `check_expr_errors_popbc`, `ex_let_arr` in `basic/arrays.asm`), differing
+      only in how many stack words the abort discards; four further readers
+      re-decide the policy ad hoc (`fch_check`, `ev_ff_ckpdl`,
+      `ev_mc_arg_checked`, `sfr_argok`). The merge deletes the TM test from all
+      three copies, deletes `sfr_argok`'s promotion outright, halves
+      `ev_mc_arg_checked` — and **fixes `str_arg_empty`'s clobber by
+      construction**, i.e. closes half the residual below without its +6 B.
+
+      ⚠️ **TEMPER IT.** Some readers need the KIND, not just presence
+      (`eval_chan` skips its coercion only for a type fault; `ev_ff_ckpdl`
+      defers only to one) — those become `cp 10`, cheap but not free. The cells
+      live in different RAM regions (`$E3E5` vs `$F069`) and only their common
+      clear at `exec_stmt` aligns the lifetimes. ~22 writers + ~18 readers is a
+      real refactor. **Leave `ERRMARK` OUT** — a third marker with its own
+      semantics, and D-TMFP's K-TF3 showed it is not load-bearing for any row
+      in this class.
+
+      🟢 **THE REGRESSION NET ALREADY EXISTS**, which is the unusual part:
+      `tmfp-acceptance` 50 + `width-acceptance` 94 + `locarg-acceptance` 45 +
+      `missing-acceptance` 214 + `namspc` 58 + `fldwidth` 40. A refactor of this
+      shape would normally have to build that denominator first.
+
+- [ ] 💰 **`str_arg_empty` OVERWRITES A PENDING `FPERR`, AND THE CURSOR DID NOT
+      REACH `)` IN THE FIRST PLACE.** Filed 2026-08-09 by D-TMFP
+      ([`docs/spec-basic-tmfp.md`](docs/spec-basic-tmfp.md) §8), DEFERRED in
+      `make tmfp-acceptance` as row `r.hex`:
 
       | program | VG-8020 | CF-3300 | zerobas |
       |---|---|---|---|
-      | `LOCATE STR$(1/0),3` | **ERR 11** | **ERR 11** | **ERR 13** |
-      | `LOCATE "5",3` | ERR 13 | ERR 13 | ERR 13 🟢 control |
+      | `Q2$=HEX$(0*(1/0)+(Q$<5))` | **ERR 11** | **ERR 11** | **ERR 2** |
+      | `PRINT HEX$((Q$<5))` | ERR 13 | ERR 13 | ERR 13 🟢 control |
+      | `PRINT HEX$(0*(1/0))` | ERR 11 | ERR 11 | ERR 11 🟢 control |
 
-      Both deferred flags are live at the coercion — a numeric fault (`FPERR`=11,
-      from the `1/0` inside `STR$`) and a type fault (`TMISMATCH`, from the
-      string that came back). The references report the **numeric** one; zerobas
-      reports the type one, **before and after D-LOCARG's carve alike**, because
-      the order is the same either way. The second row is what makes the claim
-      narrow rather than a glitch: a type fault with **no** pending numeric one
-      is 13 everywhere.
-      💰 **PRICE +7..+9 B, AND THE PRICE IS NOT THE REASON.** `check_expr_errors`
-      and `check_fperr_only` are one routine with two entry points, the second a
-      **fall-in** — which is what makes the pair cost nothing extra; testing
-      `FPERR` first breaks the fall-in and needs that test written twice.
-      🔴 **THE REASON IS THE DENOMINATOR.** `check_expr_errors` has four other
-      callers (`ex_if`, `exp_num` via print.asm, `ex_let`, and `eval_chan` since
-      D-BADFNUM, whose header records that its ordering was CHANGED on a
-      measurement), and the order may not move until each has a
-      both-flags-pending row of its own.
-      ⚠️ [`docs/spec-basic-evalchk.md`](docs/spec-basic-evalchk.md) §5.1 froze
-      this order as a **forced constraint** on the strength of `PRINT #A$,"X"` —
-      a row with a type fault and no pending numeric one, i.e. a row that cannot
-      discriminate. **A constraint can be frozen by a row that does not test it.**
+      🔴 **EXPOSED BY D-TMFP, NOT CAUSED BY IT** — the row was already wrong
+      (ERR 13) and is now wrong differently. It needs **both** faults inside a
+      string function's parentheses; `STR$` and `OCT$` do it too, and `PRINT`
+      shows it as well as assignment, so it is neither `HEX$`'s nor the
+      assignment driver's. Two pre-existing defects that `TMISMATCH` was masking:
+      (1) after a string-compare mismatch the cursor does not land on the closing
+      `)`, so `str_fn_radix`'s `cp ')'` falls into `str_arg_empty`; (2)
+      `str_arg_empty` (`basic/str-engine.asm`) then does `ld a,4` /
+      `ld (FPERR),a`, **overwriting** the pending Division-by-zero 11 with the
+      deferred syntax-error code — which is a first-error-wins violation of
+      exactly the kind D-TMFP fixed, fifteen lines from `sfr_argok`'s own comment
+      stating the rule ("an inner error keeps its own (more specific) message").
+      💰 **PRICE +6 B for defect (2) alone**, and the main low region has
+      **exactly 6 B** free after D-TMFP — the entire remaining budget, for a
+      guard that leaves defect (1) unmeasured. **Carve-scout the low region
+      before taking this**, and characterise the cursor first: a row that needs
+      its own cursor denominator is its own slice.
 
 - [ ] 💰 **`loc_next`'S PARKED FRAME (`LOC_RET`) IS NOW UNNECESSARY, ~9 B, AND
       DELIBERATELY NOT TAKEN.** Filed 2026-08-09 by D-LOCARG

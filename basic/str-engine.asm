@@ -1536,13 +1536,71 @@ str_cmp_bits:
 ; at the STATEMENT boundary, once eval() returns, via the repack-gated
 ; post-eval check in ex_if / the numeric-assignment / PRINT-item drivers
 ; jumping to type_mismatch_error (interp.asm).
-; out: DE = 0; ret. Clobbers A.
+;
+; --- D-TMFP: OF TWO PENDING FAULTS, THE ONE THAT HAPPENED FIRST IS REPORTED --
+; (docs/spec-basic-tmfp.md.) A type fault and a numeric fault can BOTH be
+; pending at the statement boundary, and which one the reference reports is
+; decided by nothing more than WHICH HAPPENED FIRST -- because the reference
+; raises EAGERLY, so the first fault aborts on the spot and the second never
+; occurs at all (measured on both references, spec §1):
+;
+;   WIDTH (A$<5)+0*(1/0)     type first     -> ERR 13
+;   WIDTH 0*(1/0)+(A$<5)     numeric first  -> ERR 11
+;   WIDTH 0*SQR(-1)+(A$<5)   numeric first  -> ERR  5   (a DIFFERENT code, which
+;                                                        is what makes it ORDER
+;                                                        and not "div-zero wins")
+;
+; zerobas cannot raise eagerly -- ev_rel has no mid-expression unwind, which is
+; this routine's whole reason to exist -- so it emulates with two sticky flags
+; read at the statement boundary. A STATIC test order in those readers can only
+; ever approximate a rule about time, and it approximated it wrongly in one
+; direction: D-EVALCHK §5.1 froze TMISMATCH-first on the first row above and
+; D-LOCARG then measured the second and third and could not fix them, because
+; no static order satisfies both.
+;
+; 🎯 THE ORDER IS RECORDED WHERE IT IS KNOWN, WHICH IS HERE. This is TMISMATCH's
+; ONLY writer, and exec_stmt (interp.asm) clears both flags together, so a
+; non-zero FPERR at THIS instant means the numeric fault came first. It wins, and
+; the type fault simply does not arm. Every reader of TMISMATCH then reports the
+; fault that really did come first -- including the two hand-rolled copies of the
+; ordering that a fix to check_expr_errors would not have moved
+; (check_expr_errors_popbc for ex_let, ex_let_arr in arrays.asm) and the four
+; readers that test TMISMATCH and never test FPERR at all (fch_check in
+; files.asm, ev_ff_ckpdl and ev_mc_arg_checked in expr.asm, sfr_argok in
+; str-engine.asm). 21 rows across nine callers, +5 B, one site.
+;
+; ⚠️ THE HARD 0 IS PART OF THE CONTRACT ON BOTH PATHS, so it is hoisted above the
+; guard: FIELD (field.asm) and eval_chan (float-arith.asm) both rely on a
+; type-mismatched expression yielding 0, whether or not it armed the flag.
+;
+; 🔴 AND SO IS `A = 1`, WHICH IS NOT WHAT THIS ROUTINE'S OWN HEADER SAID. The
+; header promised only "DE = 0; ret. Clobbers A", but str_cat's sct_err2 (above,
+; the `A$+5` path) does `call type_mismatch_set` / `or a` / `ret` and its comment
+; names the value out loud -- "A=1 -> CF clear (malformed operand)". The FIRST
+; draft of this guard returned early with A = FPERR's value instead of 1, and the
+; gate caught it on one row out of fifty: `Q2$=HEX$(0*(1/0)+(Q$<5))` turned from
+; the wrong ERR 13 into a wrong ERR 2, because a string FUNCTION ARGUMENT that
+; both faults inside its parentheses re-drives through the concatenation path,
+; and a stray A left the cursor probe reading a malformed operand. STR$ and OCT$
+; did it too; each fault ALONE did not. So `ld a,1` is hoisted above the `ret nz`
+; and both exits publish it (docs/spec-basic-tmfp.md §4.3).
+; out: DE = 0; A = 1; ret.
 type_mismatch_set:
+                ld      de,0                ; the D-2 contract's hard 0 -- yielded
+                                            ; on BOTH paths below
+                ld      a,(FPERR)
+                or      a
+                ld      a,1                 ; ⚠️ A=1 ON BOTH PATHS -- see below; `ld a,n`
+                                            ; does not touch the flags, so the `ret nz`
+                                            ; still tests FPERR
+                ret     nz                  ; D-TMFP: a numeric fault is ALREADY
+                                            ; pending, so it happened FIRST and is
+                                            ; the one the reference reports -- leave
+                                            ; TMISMATCH clear and let every reader
+                                            ; surface that one instead
+                ld      (TMISMATCH),a       ; A is still 1
                 ld      a,$DD               ; expression-error marker (ev_f_err convention)
                 ld      (ERRMARK),a
-                ld      a,1
-                ld      (TMISMATCH),a
-                ld      de,0
                 ret
 
 ; --- ev_rel_str: the string-compare path of ev_rel --------------------------

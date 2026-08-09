@@ -179,30 +179,45 @@ Recorded so it is not re-derived.
 **Hand-counted before the build, and EXACT: page 1 free 0 B → 22 B.**
 Low region 11 B, sub page 0 3604 B, sub page 1 1483 B — all unchanged.
 
-## 7. 💰 DEFERRED with a price: `t.tmfp`
+## 7. ✅ CLOSED BY D-TMFP — and the rule filed here was WRONG
 
-| row | zerobas | both references |
-|---|---|---|
-| `t.tmfp` — `LOCATE STR$(1/0),3` | ` 13  4  7 ` | ` 11  4  7 ` |
+> **Superseded 2026-08-09** by [`spec-basic-tmfp.md`](spec-basic-tmfp.md)
+> (`3bf52cb`). `t.tmfp` is now SCORED and agrees on all three sides;
+> `make locarg-acceptance` is **45/45 with its DEFERRED dict empty**. The
+> section is kept rather than deleted because what it got wrong is the
+> instructive part.
 
-A numeric fault (`FPERR` = 11) and a type fault (`TMISMATCH`) are both pending
-at the coercion; the references report the numeric one. Unmoved by the carve —
-the order is the same before (`loc_next`'s own inline `ld a,(TMISMATCH)`) and
-after (`check_expr_errors`).
+| row | zerobas @ `887e78a` | zerobas @ `3bf52cb` | both references |
+|---|---|---|---|
+| `t.tmfp` — `LOCATE STR$(1/0),3` | ` 13  4  7 ` | ` 11  4  7 ` ✅ | ` 11  4  7 ` |
 
-💰 **The price is +7..+9 B and is NOT the reason.** `check_expr_errors` and
-`check_fperr_only` are one routine with two entry points, the second a
-**fall-in**, which is what makes the pair cost nothing extra; testing `FPERR`
-first breaks the fall-in and needs that test written twice.
+**What this section claimed:** *a pending numeric fault outranks `TMISMATCH`*,
+fixable by reordering `check_expr_errors`, priced +7..+9 B, declined for want of
+a denominator across "four other callers".
 
-🔴 **The reason is the denominator.** `check_expr_errors` has four other callers
-— `ex_if`, `exp_num` (print.asm), `ex_let`, and `eval_chan` since D-BADFNUM,
-whose own header records that its ordering was **changed on a measurement** —
-and the order may not move until each has a both-flags-pending row of its own.
-D-EVALCHK §5.1 froze this order as a forced constraint on the strength of
-`PRINT #A$,"X"`: a row with a type fault and **no** pending numeric one, which
-cannot discriminate. **A constraint can be frozen by a row that does not test
-it.** Filed in `TODO.md`.
+🔴 **BOTH CLAUSES WERE WRONG.**
+
+1. **The rule is not a rank.** D-EVALCHK §5.1's `dfe-tmfp`
+   (`WIDTH (A$<5)+0*(1/0)`) has **both** flags pending and reads ` 13 ` on both
+   references — green in the shipped `width-acceptance`. Two rows, both flags,
+   opposite answers: **no static test order satisfies both**, so the reorder
+   would have traded one for the other. The real rule is that whichever fault
+   occurred **FIRST** is reported, because the references raise **eagerly**;
+   swap the operands and the answer swaps, and `0*SQR(-1)+(A$<5)` reads ` 5 `,
+   a different code, which is what makes it order rather than rank.
+2. **§5.1 was not frozen on `PRINT #A$,"X"`.** That is D-BADFNUM §6's row,
+   about `eval_chan`. §5.1's row discriminates perfectly. This section read the
+   *citing prose* instead of the *cited section* — **read the cited §**.
+3. **The denominator was 4 here and 18 in the tree**: twelve
+   `check_expr_errors` sites, two further hand-rolled copies of the same
+   ordering a reorder could never reach (`check_expr_errors_popbc`,
+   `ex_let_arr`), and four readers that test `TMISMATCH` and never test `FPERR`
+   (`fch_check`, `ev_ff_ckpdl`, `ev_mc_arg_checked`, `sfr_argok`).
+
+🎯 **AND THE FIX WAS NOT IN `check_expr_errors` AT ALL.** It is one guard at
+`type_mismatch_set` — `TMISMATCH`'s only writer — for **+5 B**, which moves all
+eighteen sites at once. *When a rule must hold at N readers, look for the single
+writer.*
 
 ## 8. Knives
 
@@ -374,8 +389,7 @@ new docs and one new probe — **the sweep counts docs, not just code**) ·
 `clearpool-acceptance` **52/52** · `width-acceptance` **94/94** — **plus the
 three gates this slice touches**: **`onerr0-acceptance` 24 printed / 24 SCORED /
 24 agree** (was 22 scored + 2 deferred), **`missing-acceptance` 214/214 as
-recorded** (the carve's green control set, unmoved) and **`locarg-acceptance`
-44/45** (45 cases, 1 deferred).
+recorded** (the carve's green control set, unmoved) and **`locarg-acceptance` 44/45** (45 cases, 1 deferred) — ⚠️ **now 45/45 with 0 deferred since D-TMFP (`3bf52cb`); see §7**.
 
 ⚠️ **`rowshape-check` reads 21, not D-EVALCHK's 19**, and both the new probe and
 `basic_probe_locarg.py` are why: a probe that prints report rows on an exit-2

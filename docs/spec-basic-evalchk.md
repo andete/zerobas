@@ -191,6 +191,31 @@ None. No new sysvar, no new scratch byte.
 both references. `check_expr_errors` tests `TMISMATCH` first; `check_fperr_only`
 is the same routine minus that test. This is what K-EV1 cuts.
 
+> ⚠️ **CORRECTED 2026-08-09 BY D-TMFP** (`docs/spec-basic-tmfp.md`). The row and
+> its reading are right; the **generalisation was one row wide**. Both flags
+> being set does not mean `TMISMATCH` outranks `FPERR` — it means the *type*
+> fault happened **first** in this particular expression. Swap the operands and
+> both references swap their answer:
+>
+> | program | fault order | vg8020 | cf3300 |
+> |---|---|---|---|
+> | `WIDTH (A$<5)+0*(1/0)` | type, then numeric | ` 13 ` | ` 13 ` |
+> | `WIDTH 0*(1/0)+(A$<5)` | numeric, then type | ` 11 ` | ` 11 ` |
+> | `WIDTH 0*SQR(-1)+(A$<5)` | numeric, then type | ` 5 ` | ` 5 ` |
+>
+> The winning code changes with the **operand** (11 vs 5), not the operator, so
+> this is order and not rank. The reference raises **eagerly**: the first fault
+> aborts the statement and the second never occurs. No static test order in
+> `check_expr_errors` can satisfy both halves, which is why D-LOCARG's filed
+> reorder is declined and the order is instead recorded at `type_mismatch_set`,
+> `TMISMATCH`'s only writer.
+>
+> 🎯 **THE CONSTRAINT ITSELF STILL HOLDS AND K-EV1 STILL CUTS IT** — with
+> `type_mismatch_set` refusing to arm when a numeric fault is already pending,
+> `TMISMATCH` is only ever set when the type fault came first, so testing it
+> first is exactly right. The rule this section states is now *derived* rather
+> than assumed.
+
 ### 5.2 The check must stay AHEAD of the coercion
 That is the whole rule (§1). `dfe-ovfdiv`/`dfe-ovfsqr`/`cl-ovfdiv`.
 
