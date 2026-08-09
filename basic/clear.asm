@@ -50,7 +50,6 @@ ex_clear:
                 jr      z,clr_done          ; bare CLEAR before ':'
                 cp      ','                 ; "CLEAR ,himem" — string-space omitted
                 jr      z,clr_himem
-                call    eval                ; <string-space>
     IF CLEARPOOL
                 ; --- D-CLP: the argument is RECORDED, and checked first ---------
                 ; It used to be evaluated and thrown away, so `CLEAR -1`,
@@ -61,14 +60,24 @@ ex_clear:
                 ; Illegal function call inside it -- plus a type check. Both
                 ; rejects run at ex_clear's OWN depth (exec_stmt `jp`s here), so
                 ; neither needs return-address parking.
-                ld      a,(TMISMATCH)       ; `CLEAR "200"` -> Type mismatch
-                or      a
-                jp      nz,type_mismatch_error
-                call    get_int16_checked   ; DE = int16, or aborts with Overflow
+                ; D-EVALCHK (docs/spec-basic-evalchk.md): the THIRD verbatim copy
+                ; of `call eval` / inline TMISMATCH test / checked coercion, now
+                ; one 3-byte call. 13 B -> 3 B, and -- as at ex_width -- the
+                ; inline shape ran the check AFTER the coercion, so
+                ; `CLEAR 70000+0*(1/0)` answered Overflow where both references
+                ; answer Division by zero. `CLEAR "200"` -> Type mismatch and
+                ; the Overflow-past-int16 stage are unchanged.
+                ; ⚠️ THE int16 ENTRY POINT, NOT THE BYTE ONE: `CLEAR 500` is
+                ; accepted on both references (probe row cl-500), so narrowing
+                ; this to eval_byte_checked would be a regression -- which is
+                ; exactly what knife K-EV3 cuts.
+                call    eval_int16_checked  ; DE = int16, or aborts
                 bit     7,d                 ; the sign bit, tested in place: 2 B
                 jp      nz,gb_illegal       ; against `ld a,d`/`rla`/`jr c` + a
                                             ; local `jp` (7 B). Negative -> ERR 5.
                 ld      (POOLSIZE),de       ; the pool floor is derived sub-side
+    ELSE
+                call    eval                ; <string-space>, evaluated and ignored
     ENDIF
                 call    skip_spaces
                 cp      ','                 ; a second (memory-top) arg?

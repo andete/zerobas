@@ -1554,6 +1554,51 @@ get_vram_arg:
 ; SPACE$/STRING$'s out-of-domain rows from tests/test_str_fn.py). The openMSX
 ; differential `make str-domain-acceptance` is the only instrument.
 ;
+; --- D-EVALCHK: the CHECKED leaves — eval + the DEFERRED-ERROR test + coerce --
+; (docs/spec-basic-evalchk.md.) The two leaves below differ from eval_byte_arg /
+; eval_pos_arg by ONE call, and that call is the whole slice: a statement handler
+; must surface an error the ARGUMENT EXPRESSION already raised BEFORE it coerces,
+; not after.
+;
+; 🎯 THE ORDER IS THE RULE, MEASURED ON TWO REFERENCES (spec §1, characterization
+; §2). fac_to_int_strict does not CLEAR FPERR, so a deferred `1/0` reaches
+; get_int16_checked's own check_fperr_only tail and is reported correctly --
+; which is why `WIDTH 1/0` was never wrong. But it does WRITE FPERR=1 on an
+; out-of-int16 magnitude, OVER THE TOP of the pending FPERR=2, so a value that
+; both faulted and overflows reported whichever was written LAST:
+;
+;   WIDTH 70000+0*(1/0)      VG-8020 / CF-3300: ERR 11    was ERR 6 here
+;   WIDTH 70000+0*SQR(-1)    VG-8020 / CF-3300: ERR  5    was ERR 6 here
+;   CLEAR 70000+0*(1/0)      VG-8020 / CF-3300: ERR 11    was ERR 6 here
+;
+; TWO ENTRY POINTS BECAUSE THERE ARE TWO COERCIONS -- WIDTH/FIELD want a byte,
+; CLEAR wants an int16 with a sign test -- and they NEST, because get_byte_arg is
+; get_int16_checked plus a two-instruction byte stage. So the byte leaf costs 5 B
+; rather than 8 ([[the-existing-split-is-cheaper-than-a-new-guard]]).
+;
+; ⚠️ THE INTERPOSED FRAME IS SAFE, AND THAT WAS CHECKED RATHER THAN ASSUMED
+; (spec §3.2). Each call site used to test at the STATEMENT HANDLER's own depth
+; and now aborts one frame deeper. Both abort arms reset SP from SAVSTK before
+; printing -- raise_error_hl's `ld sp,(SAVSTK)` on the trap path, fre_abort_low's
+; on the untrapped one (4d35b6d, docs/spec-basic-abort-depth.md §4, added
+; precisely because get_byte_arg's reject used to return INTO ex_width with A =
+; the error code). type_mismatch_error and fp_runtime_error both funnel through
+; raise_error, so both are covered. The standing detectors are the width probe's
+; s0-300 / s0-256 / unt-300 rows: "the error fired AND LINLEN was not scribbled".
+;
+; Clobbers A. HL (cursor) and DE (the value) survive -- see spec §4.2.
+eval_int16_checked:
+                call    eval
+                call    check_expr_errors   ; TMISMATCH -> ERR 13; a deferred
+                                            ; FPERR -> its OWN code, BEFORE the
+                                            ; coercion can overwrite it
+                jr      get_int16_checked   ; -25, in range (spec §6.2)
+; eval_byte_checked: the same, narrowed to 0..255. `jr gba_byte` rather than a
+; second `call get_byte_arg`, so the int16 stage is not run twice.
+eval_byte_checked:
+                call    eval_int16_checked  ; DE = int16 (or aborts)
+                jr      gba_byte            ; +17, in range (spec §6.2)
+
 ; eval_pos_arg: eval + a 1..255 POSITION. MID$'s p and INSTR's p are the
 ; family's only 1-based arguments (measured: MID$("abc",0) raises where
 ; MID$("abc",255) does not), so 0 is rejected on top of get_byte_arg's rule.
@@ -1581,6 +1626,9 @@ eval_byte_arg:
 ; THIS routine before D-MISS-2 was written (probe battery `bnd`).
 get_byte_arg:
                 call    get_int16_checked
+; gba_byte — the BYTE stage alone, for a caller that has already run the int16
+; one (eval_byte_checked above). A label, not a routine: 0 bytes.
+gba_byte:
                 ld      a,d
                 or      a                   ; high byte set -> >255 or negative
                 jr      nz,gb_illegal

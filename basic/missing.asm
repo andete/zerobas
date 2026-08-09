@@ -238,16 +238,29 @@ loc_next:
                 or      a
                 jp      nz,type_mismatch_error
                 ; --- the two-stage domain check, INLINE and not `call get_byte_arg` --
-                ; ⚠️ get_byte_arg implements exactly this rule and CANNOT BE CALLED
-                ; here, for a reason that turned out to be a live bug in the tree
-                ; rather than a nicety. Its reject is `jp raise_error`, and the
-                ; abort chain PRINTS AND RETURNS -- consuming the caller's own
-                ; `call get_byte_arg` frame and landing back INSIDE the caller,
-                ; just past the call, with A = the error code. Its existing
-                ; caller ex_width therefore does `ld (LINLEN),a` with A=5 and
-                ; re-inits the screen: `WIDTH 300` on this build prints nothing
-                ; and CORRUPTS THE DISPLAY. Measured as the control while
-                ; debugging LOCATE, recorded in TODO.md, not fixed here.
+                ; 🔴 THE REASON THIS IS INLINE IS NO LONGER TRUE, AND SAYING SO
+                ; HERE IS THE POINT (D-EVALCHK, docs/spec-basic-evalchk.md §6.6).
+                ; What this block used to say: get_byte_arg CANNOT be called
+                ; here, because its reject `jp raise_error`s into an abort chain
+                ; that PRINTS AND RETURNS -- consuming the caller's own frame and
+                ; landing back inside the caller with A = the error code, which is
+                ; how `WIDTH 300` once printed nothing and corrupted the display.
+                ; ⚠️ THAT WAS FIXED BY `4d35b6d` (D-CUR-D, spec-basic-abort-
+                ; depth.md §4): fre_abort_low now does `ld sp,(SAVSTK)` before it
+                ; prints, and raise_error_hl's trap arm always did. The abort is
+                ; DEPTH-INDEPENDENT, so a helper `call`ed from here is safe -- and
+                ; ex_width, ex_clear and exf_item all now do exactly that.
+                ;
+                ; 💰 So this block is a ~29 B carve (17 B here + `call eval` and
+                ; the TMISMATCH test above + the orphaned loc_illegal), and it is
+                ; DECLINED rather than overlooked. It is also a measured
+                ; divergence: `LOCATE 70000+0*(1/0),1` is ERR 11 on both the
+                ; VG-8020 and the CF-3300 and ERR 6 here, the same clause
+                ; D-EVALCHK fixed at the other three sites. Taking it means
+                ; DELETING a defensive apparatus (LOC_RET, the parked frame) on
+                ; the strength of the refutation above -- a claim that needs its
+                ; own knife and LOCATE's own denominator, neither of which the
+                ; width probe has. Filed in TODO.md with all four readings.
                 ;
                 ; Inline, at the handler's own depth (loc_next parked its frame),
                 ; the same two `jp`s abort correctly: they return to the run loop.

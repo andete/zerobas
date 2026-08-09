@@ -1012,14 +1012,25 @@ str-domain-acceptance: repack-machine
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
 	        $(if $(BOOTPC),--boot-per-case,)
 
-# --- WIDTH valid-domain gate (docs/spec-basic-width-domain.md, D-WID) ---------
-# VG-8020 differential over `WIDTH n`'s DOMAIN: which n each screen mode accepts,
-# which of four errors it raises otherwise, and which per-mode default it records.
-# The last residue of the abort-depth slice -- 4d35b6d fixed how `WIDTH 300`
-# FAILS and left open what `WIDTH` should ACCEPT (spec-basic-abort-depth.md §7).
-# Five divergences, every one of them a SILENT screen-destroyer: no bound at all
-# (`WIDTH 0` and `WIDTH 41..255` accepted in every mode), the wrong per-mode slot
-# in graphics modes, and no Type-mismatch / Missing-operand check.
+# --- WIDTH valid-domain gate (docs/spec-basic-width-domain.md, D-WID; -----------
+# --- docs/spec-basic-evalchk.md, D-EVALCHK) -----------------------------------
+# THREE-SIDED differential (VG-8020 + CF-3300 + zb) over `WIDTH n`'s DOMAIN:
+# which n each screen mode accepts, which of four errors it raises otherwise, and
+# which per-mode default it records. The last residue of the abort-depth slice --
+# 4d35b6d fixed how `WIDTH 300` FAILS and left open what `WIDTH` should ACCEPT
+# (spec-basic-abort-depth.md §7). Five divergences, every one of them a SILENT
+# screen-destroyer: no bound at all (`WIDTH 0` and `WIDTH 41..255` accepted in
+# every mode), the wrong per-mode slot in graphics modes, and no Type-mismatch /
+# Missing-operand check.
+#
+# 🔴 D-EVALCHK ADDED THE SECOND REFERENCE AND THE `dfe`/`cl` BATTERIES. `WIDTH`
+# is not Disk BASIC, so the CF-3300 can express every row here and a row the two
+# machines answer DIFFERENTLY has NO ORACLE (printed, never scored). The new rows
+# ask which of TWO PENDING errors the reference reports when the argument
+# expression has already faulted AND the value it left is also out of int16 --
+# the ordering the shared `eval_byte_checked`/`eval_int16_checked` helper has to
+# keep. `cl-*` measure the SAME rule at `CLEAR`, the third verbatim copy of the
+# same five instructions; `CLEAR`'s own DOMAIN stays with D-CLP.
 #
 # ⚠️ THE SUBJECT UNDER TEST MOVES THE INSTRUMENT. Every other probe here reads
 # the SCREEN-0 name table at a fixed 40-byte stride; `WIDTH`'s whole job is to
@@ -1030,11 +1041,17 @@ str-domain-acceptance: repack-machine
 # RESTORES SCREEN 0 + WIDTH 40, and only then prints. Readout is
 # `[ ERR LINLEN LINL40 LINL32 ]`, width-independent by construction.
 #
-# ⚠️ THE INSTRUMENT IS PINNED ON EVERY ROW (lines 10-20 of the program). The two
-# machines boot at different text widths (reference 37, zerobas 39); unpinned,
+# ⚠️ THE INSTRUMENT IS PINNED ON EVERY ROW (lines 10-20 of the program). The
+# machines boot at different text widths (VG-8020 37, zerobas 39); unpinned,
 # three control rows that execute no WIDTH at all diverged on width alone while
 # their ERR codes agreed. The pin also gives every reject row a KNOWN prior
 # LINLEN, which is what makes "did the reject write anything anyway?" answerable.
+#
+# ⚠️ `CLEAR` CANNOT USE THAT FIXTURE: a CLEAR that SUCCEEDS wipes every variable,
+# so the four captured numbers would read back as zeros. The `cl` rows use a
+# trapped-ERR-only program, which is sound because CLEAR touches none of the
+# three width sysvars. The `unt` battery stays VG-8020 + zb: it reads the raw
+# screen tail, the one place the CF-3300's disk-boot banner is not pinned away.
 #
 # ⚠️ THESE BATTERIES ARM `ON ERROR` ON PURPOSE -- the opposite of the rule in
 # abort-acceptance / str-domain-acceptance. Those measure the UNWIND, which a
@@ -1044,19 +1061,18 @@ str-domain-acceptance: repack-machine
 #
 # ⚠️ The in-domain rows are NOT padding, for the same reason str-domain's are not.
 #
-# Repack-only; oracle-dependent. `make width-acceptance ONLY=s1-` to scope one
-# battery. Boot-per-case by default (a WIDTH row leaves the machine unusable by
-# construction); BATCH=1 shares one boot, which is sound only because every
-# trapped row restores SCREEN 0/WIDTH 40 itself.
+# Repack-only; oracle-dependent. `make width-acceptance ONLY=dfe-` to scope one
+# battery, `SIDES=cf3300,zb` to scope the machines. Boot-per-case always (a WIDTH
+# row leaves the machine unusable by construction).
 width-characterize: repack-machine
 	python3 probes/basic/basic_probe_width.py \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
-	        $(if $(BATCH),--batch,)
+	        $(if $(SIDES),--sides '$(SIDES)',)
 
 width-acceptance: repack-machine
 	python3 probes/basic/basic_probe_width.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
-	        $(if $(BATCH),--batch,)
+	        $(if $(SIDES),--sides '$(SIDES)',)
 
 # --- CLEAR string-pool partition (docs/spec-basic-clearpool.md, D-CLP) --------
 # VG-8020 differential over the two-pool model. ✅ LANDED: `clearpool-acceptance`

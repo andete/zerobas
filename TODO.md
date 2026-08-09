@@ -1090,7 +1090,13 @@ duplicating (and drifting from) what is written below.
       they are a separate rule and not a conflation.
       💰 **PRICED AT ≈27 B AGAINST A 6 B WALL** (`docs/spec-basic-fldwidth.md`
       §6.5): 14 B to fetch `FCH_RECLENS[ch]` main-side, 10 B for the 16-bit
-      compare, 4 B to raise. There is no accessor to borrow — `load_reclen`
+      compare, 4 B to raise.
+      💰 **RE-PRICED 2026-08-09 by D-EVALCHK** (`docs/spec-basic-evalchk.md`
+      §6.5): main page 1 is now **16 B**, not 6 — so the byte half of this
+      decline is **narrower but still short by 11 B**, and neither of the other
+      two blockers moved. **Bytes alone were never the whole blocker and are
+      still not.**
+      There is no accessor to borrow — `load_reclen`
       ([`basic/randio-body.inc:270`](basic/randio-body.inc:270)) is **sub-ROM**
       (`sub/randio.asm:47`) and not callable from `ex_field`, and `GP_RECLEN` is
       only loaded at GET/PUT time so reading it here reads a stale cell.
@@ -1105,21 +1111,60 @@ duplicating (and drifting from) what is written below.
       ⚠️ ERR 50's message text already exists (`sub/errmsg.asm em_field_ovf`)
       and **no zerobas site raises it**, so this is a raiser, not a message.
 
-- [ ] 💰 **A −10 B FUNDING CARVE EXISTS IN `ex_width` AND IS DECLINED ON A
-      MISSING READING. Filed 2026-08-08 by D-FLDWIDTH.**
-      [`basic/screen.asm:160`](basic/screen.asm:160) is `call eval` / `ld
-      a,(TMISMATCH)` / `or a` / `jp nz,type_mismatch_error` / `call
-      get_byte_arg` — **13 B** written out inline, which is exactly what
-      `ex_field` now does in **6**. A shared
-      `eval_byte_checked: call eval / call check_expr_errors / jp get_byte_arg`
-      (9 B) would collapse both call sites to 3 B each: **−1 B here, −10 B
-      there**.
-      ⚠️ **DECLINED BECAUSE IT MOVES ANOTHER VERB'S ERROR FACE.**
-      `check_expr_errors` raises on **FPERR** as well as TMISMATCH, so folding
-      `ex_width` in changes `WIDTH 1/0`'s answer — and nobody has measured what
-      the reference says to it. A byte saving is not a licence to move a surface
-      whose reading has not been taken. One row on the CF-3300 (`WIDTH 1/0`,
-      plus `WIDTH 70000` to check the int16 stage agrees) unblocks it.
+- [x] ✅ **THE `ex_width` FUNDING CARVE LANDED AT −13 B, AND THE READING
+      INVERTED THE DECLINE.** Filed 2026-08-08 by D-FLDWIDTH, closed 2026-08-09
+      by **D-EVALCHK** ([`docs/spec-basic-evalchk.md`](docs/spec-basic-evalchk.md),
+      [`docs/evalchk-msx1-characterization.md`](docs/evalchk-msx1-characterization.md)).
+      The decline rested on *"folding `ex_width` in changes `WIDTH 1/0`'s
+      answer"*. **It does not.** `get_int16_checked` already ends
+      `jp check_fperr_only`, so a deferred FPERR was surfaced one step later
+      with the same code — `WIDTH 1/0` read **ERR 11** on the VG-8020, the
+      CF-3300 **and** zerobas before a byte moved.
+      🎯 **THE ROW NOBODY HAD WRITTEN WAS THE FINDING.** `WIDTH 70000+0*(1/0)`
+      — a deferred fault **and** an int16 overflow in one expression — was
+      `Overflow` here and `Division by zero` on **both** references, because
+      `fac_to_int_strict` writes `FPERR=1` over the pending one. Same at
+      `WIDTH 70000+0*SQR(-1)` (→ `Illegal function call`, a **different** code,
+      which is what makes it a rule rather than "div-zero is special"), and at
+      `CLEAR` and `LOCATE`. **The carve was not free — it was a fix that also
+      returns bytes.**
+      Landed: `eval_int16_checked` (8 B) + `eval_byte_checked` (5 B) +
+      `gba_byte` (a label, 0 B) — **two entry points because there are two
+      coercions**, and they nest. Folded `ex_width` (−10 B), `ex_clear` (−10 B)
+      and `exf_item` (−6 B). **Net −13 B; main page 1 3 B → 16 B.**
+      `width-acceptance` 91/94 → **94/94** on three sides; knives 5×2 **all
+      twelve exact**.
+
+- [ ] 💰 **A −29 B CARVE EXISTS IN `loc_next`, IT FIXES A MEASURED DIVERGENCE,
+      AND IT IS DECLINED ON SCOPE — NOT ON A MISSING READING.** Filed
+      2026-08-09 by D-EVALCHK
+      ([`docs/spec-basic-evalchk.md`](docs/spec-basic-evalchk.md) §6.6).
+      [`basic/missing.asm:237`](basic/missing.asm:237) is the FOURTH copy of
+      `call eval` / inline `TMISMATCH` test / checked coercion — except the
+      coercion is **written out in full** (17 B) instead of called. Replacing
+      the lot with `call eval_byte_checked` is **−24 B**, and orphans
+      `loc_illegal` for **−5 B** more.
+      🔴 **AND IT IS A DIVERGENCE, MEASURED ON BOTH REFERENCES:**
+
+      | program | VG-8020 | CF-3300 | zerobas |
+      |---|---|---|---|
+      | `LOCATE 70000+0*(1/0),1` | **ERR 11** | **ERR 11** | **ERR 6** |
+      | `LOCATE 1/0,1` | ERR 11 | ERR 11 | ERR 11 🟢 control |
+      | `LOCATE 70000,1` | ERR 6 | ERR 6 | ERR 6 🟢 control |
+      | `LOCATE "5",3` | ERR 13 | ERR 13 | ERR 13 🟢 control |
+
+      ⚠️ **WHY IT IS NOT IN D-EVALCHK.** The 17 B block exists because that
+      file's header claimed `get_byte_arg` *"CANNOT BE CALLED here"* — the
+      abort chain "PRINTS AND RETURNS". `4d35b6d` retired that (`fre_abort_low`
+      does `ld sp,(SAVSTK)`; `raise_error_hl`'s trap arm always did), and **the
+      header is corrected in D-EVALCHK's commit** — but taking the bytes means
+      DELETING a defensive apparatus (`LOC_RET`, the parked frame,
+      `loc_illegal`) on the strength of that refutation. That needs its own
+      knife — put the frame back and show the aborts still land — and LOCATE's
+      own denominator: row/column, omitted arguments, the `CON_LASTROW` clamp,
+      `CSRLIN`/`POS` read-back. The width probe has none of it. A −29 B carve
+      is exactly the size that should not ride along in someone else's slice.
+      💰 Priced, reading taken, denominator NOT built.
 
 - [ ] 🔴 **`OPEN A$ AS #1` IS `Syntax error` HERE AND `OK` ON THE CF-3300.**
       Filed 2026-08-08 by D-NAMSPC, found while measuring something else

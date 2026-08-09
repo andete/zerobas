@@ -157,12 +157,22 @@ ex_width:
                 jr      z,wid_missing       ; bare `WIDTH` -> Missing operand (ERR 24)
                 cp      COLON
                 jr      z,wid_missing       ; `WIDTH :` likewise -- both measured
-                call    eval                ; DE = column count
-                ld      a,(TMISMATCH)       ; `WIDTH "40"` -> Type mismatch (measured)
-                or      a
-                jp      nz,type_mismatch_error
-                call    get_byte_arg        ; D-F2-2 stage B: WIDTH n is a byte 0..255
-                ld      b,a                 ; (>int16 ERR 6, 256.. ERR 5); A = width
+                ; D-EVALCHK (docs/spec-basic-evalchk.md): eval + the deferred-
+                ; error check + the byte coercion, in ONE call. This was 13 B
+                ; written out inline -- `call eval`, a hand-rolled TMISMATCH
+                ; test, `call get_byte_arg` -- and the inline shape had the
+                ; CHECK AFTER THE COERCION, which is a divergence and not just
+                ; five spare bytes: fac_to_int_strict writes FPERR=1 over the
+                ; FPERR the expression already set, so `WIDTH 70000+0*(1/0)`
+                ; answered Overflow where both references answer Division by
+                ; zero (and `WIDTH 70000+0*SQR(-1)` answered Overflow where both
+                ; answer Illegal function call -- a DIFFERENT code, which is
+                ; what says the rule is "the expression's error wins" and not
+                ; "division by zero is special").
+                ; `WIDTH "40"` -> Type mismatch and the two domain stages
+                ; (>int16 ERR 6, 256.. ERR 5) are unchanged; A = width.
+                call    eval_byte_checked
+                ld      b,a
                 ; --- the MODE-DEPENDENT bound, and the slot that goes with it ---
                 ; Measured on the VG-8020: the legal width is 1..32 in SCREEN 1
                 ; and 1..40 in EVERY other mode, and the per-mode default written

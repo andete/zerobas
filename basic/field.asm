@@ -294,26 +294,27 @@ exf_item:
                 ; other side (it `call eval`s with no skip at all). Rows c.wsp /
                 ; c.wsp2 are green before and after and K-FW4 is the knife; the
                 ; 3 bytes pay for half of what follows.
-                call    eval                ; DE = field width; HL advanced
                 ; ORDER IS FORCED, NOT CHOSEN (spec §4.1): on a TMISMATCH state
                 ; type_mismatch_set has hard-zeroed DE and left FAC untouched, so
                 ; coercing first would fault on a value that means nothing. This
                 ; is eval_chan's documented constraint at the identical join.
-                call    check_expr_errors   ; string -> ERR 13; a deferred `1/0`
-                                            ; -> ERR 11 via fp_runtime_error's
-                                            ; fperr_to_err. HL survives (the
-                                            ; routine reads two RAM bytes and
-                                            ; rets; its abort arms never return).
-                call    get_byte_arg        ; ERR 6 past int16 (70000), ERR 5
-                                            ; outside 0..255 -- and 0 IS INSIDE,
-                                            ; measured, against this file's own
-                                            ; header claim of "1..255" (now
-                                            ; corrected above). Returns D=0,
-                                            ; E=width and PRESERVES HL
-                                            ; (get_int16_checked push/pops it),
-                                            ; which is what the comment on the
-                                            ; `pop de` below always claimed and
-                                            ; nothing enforced.
+                ; 🎯 D-EVALCHK (docs/spec-basic-evalchk.md) turned the three
+                ; calls this used to be -- `eval`, `check_expr_errors`,
+                ; `get_byte_arg` -- into ONE, and the collapse is BEHAVIOUR-
+                ; IDENTICAL here: this site already had the check ahead of the
+                ; coercion, which is why FIELD was the one of the four sites
+                ; with no divergence to fix. It is also why that ordering is the
+                ; helper's, rather than the inline one ex_width/ex_clear had.
+                ; -6 B; the shipped `fldwidth-acceptance` is the guard and knife
+                ; K-EV4 is the falsification.
+                ;   string -> ERR 13; a deferred `1/0` -> ERR 11 via
+                ;   fp_runtime_error's fperr_to_err; ERR 6 past int16 (70000),
+                ;   ERR 5 outside 0..255 -- and 0 IS INSIDE, measured, against
+                ;   this file's own header claim of "1..255" (corrected above).
+                ; Returns D=0, E=width and PRESERVES HL (get_int16_checked
+                ; push/pops it), which is what the comment on the `pop de` below
+                ; always claimed and nothing enforced.
+                call    eval_byte_checked   ; DE = field width; HL advanced
                 push    de                  ; save width across the "AS" + name parse
                 call    skip_spaces
                 call    upcase
