@@ -2118,13 +2118,44 @@ oe_undef:
 oe_disable:
                 ld      de,0                ; (DE, not HL -- HL still holds the cursor
                 ld      (ONELIN),de         ; to continue the line with)
-                ld      (ONEFLG),a          ; GOTO 0 inside a handler clears the in-
-                                            ; handler state (re-enables normal aborts).
-                                            ; A is already 0 (the `or c` that branched
-                                            ; here left it 0; ld de,0/ld (nn),de don't
-                                            ; touch A) -- ERR-reset-on-RESUME follow-up
-                                            ; reclaimed the redundant xor a
+                ; --- D-ONERR0: INSIDE AN ACTIVE HANDLER, THIS RE-RAISES ---------
+                ; docs/spec-basic-onerr0.md; measured on both references, 23 rows,
+                ; docs/onerr0-msx1-characterization.md. `ON ERROR GOTO 0` executed
+                ; while ONEFLG is set does NOT merely disarm and run on: it puts
+                ; the erroring statement's context back and re-raises the error
+                ; that entered the handler, untrapped (ONELIN is 0 by the two
+                ; instructions above, so raise_error_hl can only abort).
+                ; 🎯 THE TEST IS ON `GOTO 0` AND NOT ON `ON ERROR`, and that is
+                ; MEASURED, not assumed: `ON ERROR GOTO <n>` inside a handler
+                ; RE-ARMS and runs on, identically on all three sides
+                ; (characterization row `r.rearm`). Disarming is special.
+                ld      a,(ONEFLG)
+                or      a
+                jr      nz,oe_reraise
+                ; ONEFLG was ALREADY 0 on this arm, so the store that used to
+                ; stand here was writing 0 over 0. Deleting it is a 3-byte carve
+                ; the re-raise test pays for itself with, and it is only visible
+                ; once the two states are split (the old single path had to
+                ; clear the flag because it served both).
                 jp      exec_stmt
+oe_reraise:
+                ; res_ctx (basic/interp.asm) is RESUME's own leave-the-handler
+                ; restore: ONEFLG:=0, CURLINE:=the erroring statement's line,
+                ; HL:=its text pointer. The re-raise wants exactly that context
+                ; and then an ABORT instead of a resume -- so SAVTXT gets the
+                ; pointer (ra_abort hands it to cont_record, and a CONT after
+                ; the re-raise re-raises at the ERRORING statement: row `k.cont`)
+                ; and rerr_msg raises ERRFLG's code without re-recording ERRLIN.
+                ; 🔴 NOT "disarm, then RESUME". That design is 14 bytes cheaper
+                ; -- it would get CURLINE, SAVTXT and even DIRECTF back for free
+                ; by handing the statement to the run loop -- and row `r.reexec`
+                ; REFUTES it: `PRINT"[X]";ASC("")` prints `[X]` ONCE on both
+                ; references, so the reference does not re-execute the statement
+                ; it re-raises from. The row exists only because the cheap design
+                ; was drafted first (spec §4.1).
+                call    res_ctx
+                ld      (SAVTXT),hl
+                jp      rerr_msg
 
 ; --- ex_on_stop: ON STOP GOSUB <line> -- arm the STOP interrupt trap ----------
 ; Reached from ex_on's sibling peek (HL on the STOP token). Stores the resolved

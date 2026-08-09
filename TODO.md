@@ -1234,9 +1234,74 @@ list. **When a slice lands, grep this list for what it just shipped.**
       §4.5): CF-3300 `[OK]`, zerobas `Syntax error in 20`, against an
       `OPEN"TS.DAT"AS #1` literal control reading `[OK]` on both.
 
-- [ ] 🔴 **`ON ERROR GOTO 0` INSIDE A HANDLER MUST RE-RAISE THE CURRENT ERROR,
-      AND ZEROBAS RUNS ON. Filed 2026-08-08 by D-NXARY, found by a row that was
-      measuring something else.** Both references agreeing:
+- [ ] 💰 **THE RE-RAISE NAMES THE WRONG LINE WHEN THE TWO CONTEXTS DISAGREE ON
+      *MODE* — `DIRECTF` IS NEVER RE-DERIVED. Filed 2026-08-09 by D-ONERR0,
+      PRICED AT +7 B AGAINST A 0 B WALL.** Two rows, both references agreeing,
+      failing in **opposite** directions:
+
+      | row | shape | both references | zerobas |
+      |---|---|---|---|
+      | `d.instop` | handler SUSPENDED by `STOP`, `ON ERROR GOTO 0` **typed** at the prompt | `Out of memory in 20` | **`Out of memory`** |
+      | `d.dirtrap` | the ERRORING statement was **typed**, the disarm is in a stored handler | `Out of memory` | **`Out of memory in 0`** |
+
+      🎯 **THAT THEY FAIL IN OPPOSITE DIRECTIONS IS THE FINDING.** D-ONERR0's
+      re-raise restores `CURLINE` and `SAVTXT` and aborts through `rerr_msg`,
+      which never passes `rp_exec` — the **only** place that DERIVES `DIRECTF`
+      from `CURLINE`'s high byte ([`basic/program.asm`](basic/program.asm), the
+      `rpe_mode` block). So the mode cell keeps whatever the *re-raising*
+      statement had. Forcing `DIRECTF := 0` fixes `d.instop` and breaks
+      `d.dirtrap`; forcing `1` does the reverse — **so the answer is a derive,
+      not a constant, and a 4-byte fix is refuted before it is written.**
+      💰 **PRICE: +7 B.** Extract `rp_exec`'s six-instruction derive as a shared
+      `derive_directf` (+14 B routine, −13 B inlined, +3 B call back = net +4)
+      and `call` it from `oe_reraise` (+3). ⚠️ **MAIN PAGE 1 HAS 0 B FREE** after
+      D-ONERR0, so this needs a carve first; the nearest funded one is the −29 B
+      `loc_next` carve ([`docs/spec-basic-evalchk.md`](docs/spec-basic-evalchk.md)
+      §6.6), which has its own denominator to build.
+      ⚠️ `d.dirtrap`'s `in 0` is not garbage — it is the direct line's own
+      lineno field, which `basic/program.asm`'s `dir_line` comment already says
+      is a constant 0 precisely so a missed gate prints `in 0` rather than
+      nonsense. Both readings were PREDICTED before the fix was measured and
+      both landed exactly.
+      📏 Measured by `make onerr0-characterize`, rows `d.instop` / `d.dirtrap`,
+      DEFERRED in the gate (`21/23` scored, these two printed and not scored) —
+      [`docs/spec-basic-onerr0.md`](docs/spec-basic-onerr0.md) §7,
+      [`docs/onerr0-msx1-characterization.md`](docs/onerr0-msx1-characterization.md)
+      §5.1.
+
+- [x] ✅ **DONE 2026-08-09 (D-ONERR0) — `ON ERROR GOTO 0` INSIDE A HANDLER
+      RE-RAISES. 13/23 → 21/23 (+2 deferred, priced above), +16 B, main page 1
+      16 B → 0 B.** Spec [`docs/spec-basic-onerr0.md`](docs/spec-basic-onerr0.md),
+      23 rows on three sides in
+      [`docs/onerr0-msx1-characterization.md`](docs/onerr0-msx1-characterization.md),
+      gate `make onerr0-acceptance`.
+      🎯 **THE SCOPE CAME FROM A ROW NOBODY HAD FILED.** `ON ERROR GOTO <n>`
+      inside a handler **RE-ARMS and runs on** (`r.rearm`, all three sides), so
+      the rule is about `GOTO 0` and not about `ON ERROR` — which is what keeps
+      the fix at one test on the existing disable arm.
+      🔴 **THE CHEAPER DESIGN WAS REFUTED BY THE ROW WRITTEN TO TEST IT.**
+      "Disarm, then RESUME" costs **+7 B instead of +16 B** and would have closed
+      the two rows above as well, because returning through `rp_exec` re-derives
+      `DIRECTF` for free. `r.reexec` (`PRINT"[X]";ASC("")`) prints `[X]` **once**
+      on both references: the reference restores context and aborts, it does not
+      re-execute. **Every other row in the battery answers both designs
+      identically** — had the row set been frozen before the design, the cheap
+      one would have shipped green.
+      🔴 **`r.line` AGREED ON ITS ERROR TEXT FOR THE WRONG REASON** — zerobas ran
+      on and raised a *fresh* error at the same line, same code, same message,
+      same number; only the `[RANON]` prefix separated them
+      ([[readout-blind-to-its-own-subject]]).
+      🔴 **AND `e.reraise`'s `ERR`/`ERL` HALF WAS GREEN THROUGHOUT** the defect,
+      because `ERRFLG`/`ERRLIN` were written at the original raise and nothing
+      reset them. Read forwards, that is the proof the re-raise must **not**
+      re-record `ERRLIN` — which is why the entry point is `rerr_msg`, past
+      `record_errline`.
+      *(original filing kept below for its measurements)*
+
+- [x] ✅ *(superseded by D-ONERR0 above — the original filing, kept for its
+      measurements)* 🔴 **`ON ERROR GOTO 0` INSIDE A HANDLER MUST RE-RAISE THE
+      CURRENT ERROR, AND ZEROBAS RUNS ON. Filed 2026-08-08 by D-NXARY, found by
+      a row that was measuring something else.** Both references agreeing:
 
       | program | both references | zerobas |
       |---|---|---|
@@ -1276,6 +1341,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `50 PRINT"[TRAPPED]"`: it reads `[TRAPPED]` then `No RESUME in 50` on all
       three sides, so the trap itself is not the variable — `ON ERROR GOTO 0`
       is.
+      ✅ **CLOSED 2026-08-09 by D-ONERR0**, which took that warning: every
+      program in its 23-row battery is ARRAY-FREE (the error comes from
+      `ERROR n`), so no slice of the arrays arc can rot it again.
 - [x] ✅ *(superseded — the original filing, kept for its measurements)*
       **`NEXT A(1)` — A `NEXT` OPERAND IS A FULL VARIABLE REFERENCE AND THE
       REFERENCE EVALUATES THE SUBSCRIPT. Filed 2026-08-08 by D-NXLIST, DECLINED

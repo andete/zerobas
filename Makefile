@@ -2088,6 +2088,34 @@ fldwidth-acceptance: repack-machine
 	python3 probes/basic/basic_probe_fldwidth.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-ONERR0: ON ERROR GOTO 0 inside a handler RE-RAISES ---------------------
+# (docs/spec-basic-onerr0.md, measured in docs/onerr0-msx1-characterization.md)
+# D-NXARY filed this from ONE row that was measuring something else, and by the
+# time anyone came back the row had ROTTED without the rule moving (D-NXARY's own
+# auto-DIM turned its `[OK]` into `Redimensioned array`). So every program here
+# is ARRAY-FREE: the error comes from `ERROR n`.
+# 🎯 r.rearm is the SCOPE row and a negative control: `ON ERROR GOTO <n>` inside
+# a handler RE-ARMS and runs on, all three sides. Disarming is special, so the
+# fix is one test on the GOTO-0 arm and not a change to `ON ERROR`.
+# 🎯 r.reexec is the row that REFUTED the 7-byte design. `PRINT"[X]";ASC("")`
+# prints `[X]` ONCE on both references, so the reference restores context and
+# aborts rather than handing the statement back to the run loop. Every OTHER row
+# in the battery answers both designs identically.
+# 🔴 r.line agrees on its error TEXT for the wrong reason -- zerobas used to run
+# on and raise a FRESH error at the same line -- and only the `[RANON]` prefix
+# separates them. Keep the reading as the screen TAIL, never a `[...]` span.
+# 💰 d.instop / d.dirtrap are DEFERRED and priced (+7 B, main page 1 has 0 B):
+# they need `DIRECTF` DERIVED from the restored CURLINE, and they fail in
+# OPPOSITE directions, which is what says a constant will not do.
+#   make onerr0-characterize ONLY=r.reexec SIDES=zb      # scope rows / sides
+onerr0-characterize: repack-machine
+	python3 probes/basic/basic_probe_onerr0.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+onerr0-acceptance: repack-machine
+	python3 probes/basic/basic_probe_onerr0.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2327,6 +2355,7 @@ clean:
         tgtspc-characterize tgtspc-acceptance \
         namspc-characterize namspc-acceptance \
         fldwidth-characterize fldwidth-acceptance \
+        onerr0-characterize onerr0-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

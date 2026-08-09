@@ -832,6 +832,19 @@ raise_error:
                 ; fre_arymem_oom) can enter raise_error_hl with THEIR OWN message and
                 ; still get the trap check (S2b fix: before this they jp'd fre_abort_
                 ; low directly, so SQR(-1)/LOG/OOM errors NEVER trapped).
+rerr_msg:                                  ; D-ONERR0 (docs/spec-basic-onerr0.md §4.3):
+                                           ; a LABEL, zero bytes. `ON ERROR GOTO 0`
+                                           ; inside a handler re-raises the error that
+                                           ; entered it, and must enter HERE rather
+                                           ; than at raise_error -- past the ERRFLG
+                                           ; store (the code is already the one being
+                                           ; re-raised) and past record_errline, which
+                                           ; would rewrite ERRLIN/DOT from the line the
+                                           ; re-raise is IN. Measured: ERR/ERL after
+                                           ; the re-raise are the ORIGINAL 7 / 20
+                                           ; (characterization row `e.reraise`), so
+                                           ; skipping the record is the behaviour, not
+                                           ; an optimisation.
                 ld      a,(ERRFLG)
                 dec     a                  ; 1-based code -> 0-based index; code 0 wraps
                                            ; to $FF (>= 25, so it too falls to unprintable
@@ -1258,18 +1271,32 @@ res_next:
                 jr      z,ex_goto_undef     ; degenerate (see header) -- reuses GOTO's
                                             ; own "Undefined line number" report
                 jr      res_setptr
+; --- res_ctx: LEAVE the handler and restore the erroring statement's context -
+; ONEFLG:=0, CURLINE:=the erroring statement's CURLINE, HL:=its own text pointer
+; (SAVTXT, as captured into ERRRESUME at trap time). Clobbers A, HL.
+;
+; 🔴 THIS WAS A SHARED ROUTINE, WAS INLINED WHEN ITS SECOND CALLER WENT AWAY,
+; AND IS NOW SHARED AGAIN -- the comment that used to sit here said "inlined now
+; that this is the only remaining site that needs CURLINE restored", and
+; D-ONERR0 (docs/spec-basic-onerr0.md §4.2) is the site that makes that false.
+; `ON ERROR GOTO 0` inside an active handler needs the IDENTICAL restore before
+; it re-raises: the reference reports the ERRORING line, not the handler's, and
+; a later CONT resumes at the ERRORING statement -- both measured, three sides
+; (docs/onerr0-msx1-characterization.md rows `r.line` and `k.cont`). Re-sharing
+; it is a 4-byte routine cost against 6 bytes saved at the new caller, which is
+; what let the whole fix land inside main page 1's wall.
+; ⚠️ The RESUME <line> arm above still does NOT come here -- it needs ONEFLG:=0
+; and nothing else (rp_goto sets CURLINE from GOTOTGT), so it keeps its own
+; 4-byte pair rather than paying for a restore it discards.
+res_ctx:
+                xor     a
+                ld      (ONEFLG),a
+                ld      hl,(ERRRESUME)
+                ld      (CURLINE),hl
+                ld      hl,(ERRRESUME+2)
+                ret
 res_same:                                   ; RESUME / RESUME 0 -> re-run the erroring
-                xor     a                   ; statement. Formerly a shared res_ctx
-                ld      (ONEFLG),a          ; (called from here AND the RESUME <line>
-                ld      hl,(ERRRESUME)      ; arm above); inlined now that this is the
-                ld      (CURLINE),hl        ; only remaining site that needs CURLINE
-                ld      hl,(ERRRESUME+2)    ; restored too (RESUME NEXT's res_next does
-                                            ; the equivalent prep itself, sub-side; the
-                                            ; RESUME <line> arm only needs ONEFLG:=0,
-                                            ; above) -- ONEFLG:=0, CURLINE:=the erroring
-                                            ; statement's CURLINE, HL:=its own text ptr
-                                            ; (SAVTXT, as captured into ERRRESUME at
-                                            ; trap time), falls through to res_setptr.
+                call    res_ctx             ; statement; falls through to res_setptr
 res_setptr:
                 ld      (RESUMEPTR),hl
                 jp      set_resumeflag_ret  ; shares RESUMEFLAG:=1 + ret with RETURN's
