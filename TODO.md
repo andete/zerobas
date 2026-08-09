@@ -36,6 +36,21 @@ Also the reason `MEMORY.md` no longer carries a copy of this list: the memory in
 is loaded every session and must stay compact, so it points here instead of
 duplicating (and drifting from) what is written below.
 
+📏 **DATED 2026-08-09 BY A STALENESS SWEEP**,
+[`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md).
+All **56** open items were enumerated mechanically and classified; the **17** that
+assert a concrete, checkable behavioural divergence were re-run on both references
+and on zerobas from a clean build (164 case-runs, 48 s). **6 were STALE** and are
+closed below with the measurement that closed them; **11 are LIVE** and carry a
+`RE-MEASURED 2026-08-09` line; **3** more are behavioural but not reachable by this
+instrument and say so; the remaining 36 are apparatus, carve prices, doc debt or
+scope and were excluded **by kind**, listed by line in §6 of that document.
+🔴 **Two of the eleven live items no longer read as filed** — see the `ON ERROR
+GOTO 0` and `DEFINT` entries. 🔴 **And five of the six stale ones were closable
+from evidence already in this file or in a gate that runs on every build**: a
+residual gets closed by a slice aiming at something else, and nothing re-reads the
+list. **When a slice lands, grep this list for what it just shipped.**
+
 **Language / verb surface**
 
 - [x] ✅ **`AUTO` / `RENUM` / `LLIST` — the STATEMENT half, CLOSED 2026-08-06 by
@@ -724,6 +739,18 @@ duplicating (and drifting from) what is written below.
       array failure and blamed D-LVFIX for a gap it does not own
       ([[row-with-two-candidate-causes]]). ⚠️ POSITION is therefore **not covered
       for `INPUT #n`** by any gate. ONE reference (Disk BASIC).
+      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, exactly as filed**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.1): `INPUT#1,A$,B$` over a `HI,LO` file reads `HILO` on the CF-3300 and
+      `Syntax error in 50` here, against an `INPUT#1,A$` control reading `HI` on
+      both. `lvfix-acceptance`'s own DEFERRED `f.mixctl` row printed the same
+      pair in the same session.
+      ⚠️ **AND THE SWEEP'S FIRST PASS SCORED IT STALE, ON A READOUT FAULT.**
+      Driven as DIRECT lines with the reporting `PRINT` last, the abort lands on
+      a line that is NOT the last one, so a tail anchored on the `PRINT` cannot
+      see it and zerobas read `[HI]` — a value consistent with the wrong
+      hypothesis [[readout-blind-to-its-own-subject]]. Re-drive as a stored
+      program with `RUN`, where the abort IS the tail.
 - [ ] 🔴 **`VARPTR(<unset variable>)` IS `Illegal function call` ON BOTH
       REFERENCES AND SUCCEEDS HERE — MEASURED 2026-08-08 (D-LVFIX).** Isolated
       away from any other verb: `X=VARPTR(Q)` with `Q` unset is IFC on the
@@ -740,6 +767,12 @@ duplicating (and drifting from) what is written below.
       cheap and the argument is static, so **do not delete them on this note
       alone**. `m.ctldrift`/`m.arydrift` carry the evidence, DEFERRED, in
       `lvfix-acceptance`.
+      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, exactly as filed**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.2): `X=VARPTR(Q)` with `Q` unset is `Illegal function call` on the
+      VG-8020 **and** the CF-3300 and raises nothing here, against a `Q=1` /
+      `X=VARPTR(Q)` control silent on all three. `lvfix-acceptance` printed its
+      two DEFERRED rows the same way in the same session.
 - [ ] ⚠️ **3 B carve candidate: `ex_mid_stmt`'s resolve abort is SHADOWED.**
       D-LVFIX's `jp nz,fp_runtime_error` at `ex_mid_stmt` is **not falsifiable**:
       K-LV3 cut it and reddened nothing, because `eval_pos_arg` →
@@ -1110,6 +1143,13 @@ duplicating (and drifting from) what is written below.
       would itself be a finding.
       ⚠️ ERR 50's message text already exists (`sub/errmsg.asm em_field_ovf`)
       and **no zerobas site raises it**, so this is a raiser, not a message.
+      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, all three rows exactly as filed**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.3): `d.sumok` ` 200  56 ` on both sides, `d.sum1` and `d.sum`
+      **`FIELD overflow in 20`** on the CF-3300 against ` 200  57 ` / ` 200  100 `
+      here. ⚠️ Same readout trap as the `INPUT #n` item above — driven as DIRECT
+      lines the CF-3300 read ` 200  0 `, an abort between the two bindings
+      wearing the shape of a value. Stored program + `RUN`.
 
 - [x] ✅ **THE `ex_width` FUNDING CARVE LANDED AT −13 B, AND THE READING
       INVERTED THE DECLINE.** Filed 2026-08-08 by D-FLDWIDTH, closed 2026-08-09
@@ -1165,6 +1205,11 @@ duplicating (and drifting from) what is written below.
       `CSRLIN`/`POS` read-back. The width probe has none of it. A −29 B carve
       is exactly the size that should not ride along in someone else's slice.
       💰 Priced, reading taken, denominator NOT built.
+      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, all four rows exactly as filed**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.4): `LOCATE 70000+0*(1/0),1` is `Division by zero` on both references
+      and `Overflow` here, with `LOCATE 1/0,1`, `LOCATE 70000,1` and
+      `LOCATE "5",3` green on all three sides.
 
 - [ ] 🔴 **`OPEN A$ AS #1` IS `Syntax error` HERE AND `OK` ON THE CF-3300.**
       Filed 2026-08-08 by D-NAMSPC, found while measuring something else
@@ -1180,6 +1225,11 @@ duplicating (and drifting from) what is written below.
       `OPEN` / `KILL` / `NAME` / `SAVE` / `LOAD` / `BLOAD` × (literal /
       variable / expression), plus whether the same holds for `FOR INPUT`/
       `OUTPUT`/`APPEND` forms. 💰 Not scouted and not priced.
+      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, exactly as filed, down to the
+      line number in the message**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.5): CF-3300 `[OK]`, zerobas `Syntax error in 20`, against an
+      `OPEN"TS.DAT"AS #1` literal control reading `[OK]` on both.
 
 - [ ] 🔴 **`ON ERROR GOTO 0` INSIDE A HANDLER MUST RE-RAISE THE CURRENT ERROR,
       AND ZEROBAS RUNS ON. Filed 2026-08-08 by D-NXARY, found by a row that was
@@ -1204,6 +1254,25 @@ duplicating (and drifting from) what is written below.
       `RESUME` vs falling off the end of a handler, `ERR`/`ERL` after the
       re-raise, and whether a *second* `ON ERROR GOTO n` inside a handler
       re-arms rather than re-raising.
+      🔴 **RE-MEASURED 2026-08-09 — STILL LIVE, AND THE ZEROBAS READING ABOVE IS
+      NOT**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.6). Both references still stop at **`NEXT without FOR in 30`**.
+      zerobas no longer prints `OK` — it prints **`Redimensioned array in 60`**.
+      🎯 **Both readings say the same thing about the RULE and different things
+      about the PROGRAM.** The references never reach line 60; zerobas does. What
+      moved underneath is **D-NXARY** (2026-08-08): `NEXT A(1)` now AUTO-DIMS
+      `A(0..10)` at line 30, so line 60's `DIM A(3)` is a redimension. The
+      swallow is intact — the handler disarmed and execution continued — it now
+      trips a *different, wrong* error two lines later instead of running clean
+      to `[OK]`.
+      ⚠️ **SO IT IS NO LONGER A SILENT-SWALLOW ROW, AND A GATE WRITTEN AGAINST
+      THE FILED `OK` WOULD FAIL ON AN UNCHANGED TREE.** Whoever builds the
+      denominator must pick a payload after line 60 that D-NXARY's auto-DIM does
+      not touch. The control that keeps this honest is the same program with
+      `50 PRINT"[TRAPPED]"`: it reads `[TRAPPED]` then `No RESUME in 50` on all
+      three sides, so the trap itself is not the variable — `ON ERROR GOTO 0`
+      is.
 - [x] ✅ *(superseded — the original filing, kept for its measurements)*
       **`NEXT A(1)` — A `NEXT` OPERAND IS A FULL VARIABLE REFERENCE AND THE
       REFERENCE EVALUATES THE SUBSCRIPT. Filed 2026-08-08 by D-NXLIST, DECLINED
@@ -1242,6 +1311,11 @@ duplicating (and drifting from) what is written below.
       | `s.ctl` | `CLEAR 200` / `DIM A$(5)` / `B$=STRING$(25,"A")` / `A$(1)=B$` / `PRINT LEN(A$(1))` | ` 25 ` | ` 25 ` 🟢 **control** |
       | `s.aryoom` | `CLEAR 60` / `DIM A$(5)` / `B$=STRING$(25,"A")` / `A$(1)=B$` / `A$(2)=B$` / `PRINT"[OK]"` | **Out of string space** | **`OK`** 🔴 |
       | `s.scalar` | `CLEAR 60` / `B$=STRING$(25,"A")` / `C$=B$` / `D$=B$` / `PRINT"[OK]"` | **Out of string space** | **Out of string space** ✅ |
+
+      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, all three rows exactly as filed**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.7), including the `s.scalar` half that makes it a finding rather than
+      "zerobas has no string-space error".
 
       🔴 **NOT "prints nothing and stores nothing" — the program CONTINUES.**
       `[OK]` is printed by the line AFTER the failed store, so the error is not
@@ -2880,7 +2954,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Also newly visible in the falsified run, worse than anything in the
       original table: `PRINT "[";STRIG(9);"]"` printed **`-21821`** — the
       statement carried on with uninitialised memory as its value.
-- [ ] **The prompt does not open a fresh line** — MEASURED 2026-07-27, found
+- [x] ✅ **~~The prompt does not open a fresh line~~ — MEASURED FALSE
+      2026-08-09** by the TODO staleness sweep,
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §3.6. Screen rows 0–1 after each line:
+
+      | row | program | VG-8020 | CF-3300 | zerobas |
+      |---|---|---|---|---|
+      | `p.nofresh` | `CLS:PRINT "A";` | `A` ｜ `Ok` | `A` ｜ `Ok` | **`A` ｜ `ZB`** |
+      | `p.ctl` 🟢 | `CLS:PRINT "A"` | `A` ｜ `Ok` | `A` ｜ `Ok` | `A` ｜ `ZB` |
+      | `p.long` | `CLS:PRINT "AAAAAAAAAA";` | `AAAAAAAAAA` ｜ `Ok` | idem | **`AAAAAAAAAA` ｜ `ZB`** |
+
+      The prompt is on the NEXT row on all three sides. `Azb>` on one row does
+      not happen.
+      🎯 **`p.ctl` IS WHAT MAKES THIS A MEASUREMENT AND NOT A COINCIDENCE.** With
+      the `;` gone the cursor is already at column 0, so an *unconditional*
+      newline would leave a BLANK ROW between the payload and the prompt. No
+      side has one. Both the references and zerobas therefore emit the newline
+      **conditionally** — which is this entry's own rule. Neither row alone can
+      separate "conditional" from "always"
+      ([[one-row-cannot-separate-two-rules]]); the 2×2 can. `p.long` exists so
+      that a prompt painted at the cursor could not be mistaken for a
+      one-column scrape offset.
+      ⚠️ **This is the one stale entry that needed the machine.** Five of the
+      other six were derivable from a document or a gate that already existed.
+      **What was believed, kept as the record of why:** MEASURED 2026-07-27, found
       while gating `TRON`. **The reference emits a newline before its prompt
       whenever the cursor is not at column 0; zerobas prints its prompt where
       the cursor stands.** `CLS:PRINT "A";` is the whole reproducer: the
@@ -2909,9 +3007,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ **THE PAGE-1 WALL IS NOW 14 B**, not the 82 B D-LSTRNG started from, and
       82 B was itself the post-carve figure. Any remaining item here needs a carve
       or an eviction before it needs a design.
-      (`SWAP` itself is still unimplemented — `SWAP A,B` is a syntax error here,
+      ~~(`SWAP` itself is still unimplemented — `SWAP A,B` is a syntax error here,
       where the reference swaps. Its MALFORMED forms already match, via the
-      trap-class fix below.)
+      trap-class fix below.)~~
+      ✅ **THAT PARENTHETICAL IS STALE — MEASURED FALSE 2026-08-09**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §3.7): `A=1` / `B=2` / `SWAP A,B` / `PRINT"[";A;B;"]"` reads ` 2  1 ` on
+      **all three sides**, against a ` 1  2 ` control with the `SWAP` removed.
+      `SWAP` swaps. 🎯 The control is load-bearing: had `SWAP` errored, the
+      direct-mode `PRINT` would still have run and printed ` 1  2 `, so
+      "swapped" and "did nothing" are only distinguishable because the control
+      pins what "did nothing" looks like. The BUCKET stays open — `TRON`/`TROFF`,
+      `WAIT`, `FRE`, full `CLEAR` semantics are not re-measured here.
       **All of these are now measured, not estimated** — see the keyword sweep
       item directly below.
 
@@ -3168,6 +3275,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       that hangs one side gates nothing (the same reason `kwgz-`'s AUTO/LLIST
       rows are side-locked). Filed for the judgement call — bug-for-bug fidelity
       here costs a working feature — not for a fix.
+      ⚠️ **CONSIDERED AND NOT RE-MEASURED, 2026-08-09** — NOT MEASURABLE THIS
+      WAY, for the reason the entry gives itself: the faithful behaviour is a
+      HANG, and `omsx_repl` raises `SystemExit` at its 240 s cap, so such a row
+      does not degrade a run, it kills it. Recorded in
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §5 so the skip is a decision and not an omission.
 
 - [ ] 🔴 **A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM.**
       Found 2026-08-03 by D-DOTGAPS (§4.2/§6 D4). After
@@ -3183,9 +3296,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       references write on a *refusal*), and R-DOT3a′ is gated by
       [`tests/test_program.py`](tests/test_program.py) alone. Fixing this bound
       would give that rule a real row.
+      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, both numbers exactly as filed**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.8): after `CLEAR 300,TXTTAB+1000`, `FRE(0)` reads ` 148 ` on both
+      references and ` 646 ` here, and the 32-byte line the references refuse is
+      LISTED here beside the `99 REM Z` that fits.
 
-- [ ] 🔴 **`DIM Q(20000)` → `Out of memory`, reference says `Subscript out of
-      range`.** Found 2026-07-28 as a calibration row in the D-CLP matrix
+- [x] ✅ **~~`DIM Q(20000)` → `Out of memory`, reference says `Subscript out of
+      range`~~ — MEASURED FALSE 2026-08-09** by the TODO staleness sweep,
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §3.5:
+
+      | row | program | VG-8020 | CF-3300 | zerobas |
+      |---|---|---|---|---|
+      | `dm.ctl` 🟢 | `DIM Q(10)` / `PRINT"[OK]"` | `OK` | `OK` | `OK` |
+      | `dm.big` | `DIM Q(20000)` | `Subscript out of range` | idem | **`Subscript out of range`** |
+
+      zerobas bounds the dimension BEFORE it allocates, which is the very thing
+      the entry says it does not do.
+      🎯 **AND THE GATE HAS SAID SO SINCE `9a9a4c7`.** This row is `oos-dim-huge`
+      in `clearpool-acceptance`; it GRADUATED from *reported-never-gated* to
+      *gated and passing* there, which is why that gate reads **52/52 (5 never
+      gated)** and not 51/51 — a figure the `Makefile` header itself got wrong
+      for two months and which is corrected in the same commit. Two records of
+      one fact, both stale, neither noticed until the gate was RUN.
+      **What was believed, kept as the record of why:**
+      Found 2026-07-28 as a calibration row in the D-CLP matrix
       (`oos-vs-oom`), aimed at proving `Out of string space` was distinct — the
       **sixth consecutive slice** whose calibration turned up a live defect in
       code already marked implemented. The reference bounds a dimension
@@ -4747,6 +4883,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       not agree with the analogy — `LPT:` itself answers **two different codes**
       (58 to `GET`, 5 to `FIELD`), which is the local evidence that device handling
       here is per-verb and not a single rule.
+      ⚠️ **CONSIDERED AND NOT RE-MEASURED, 2026-08-09** — NOT MEASURABLE THIS
+      WAY, on two counts: no harness on either side drives a tape and a disk at
+      once (the entry's own blocker, unchanged), and there is **no reading to
+      falsify** — the item records that modes 7/8 are INFERRED, which is a gap
+      rather than a divergence. Still open, still correct as filed.
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §5.
 
 - [x] ✅ **A REJECTED channel number answers the reference's error class, on every
       verb.** LANDED 2026-07-31, D-BADFNUM,
@@ -4886,6 +5029,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       direction, because "zerobas is more robust here" and "zerobas leaves a
       dangling entry here" are both plausible from what is known and neither has
       been typed.
+      ⚠️ **CONSIDERED AND NOT RE-MEASURED, 2026-08-09** — NOT MEASURABLE THIS
+      WAY: it needs power cut mid-program, and the harness reads the image after
+      the machine exits normally. Filed as UNMEASURED, and it still is.
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §5.
 
 - [x] ✅ **`diskbasic_probe_chancost.py` IS ECHO-GUARDED — LANDED 2026-07-31,
       39/39, falsified both ways.** Apparatus only, **0 ROM bytes**, walls
@@ -5441,8 +5589,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       from the new private-cell capture. Benign today (written before read at
       every eval), so this is a *hygiene* item, not a defect — but it is exactly
       the shape that becomes one when a new caller reads before writing.
+      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE: `E0C8 = $ff`**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.9). ⚠️ Read as MEMORY (`capture=("mem_abs",[(0xE0C8,1)])`) on a case
+      whose only line is `REM`, because `PRINT PEEK(&HE0C8)` cannot answer this
+      question: evaluating PEEK's own argument writes `VALTYP` before PEEK reads
+      it. One-sided by construction — the cell is zerobas's own private one and
+      has no reference column.
 
-- [ ] **`dir-name` — A BLANK INSIDE A NAME IS NOT READ BACK IN DIRECT MODE.**
+- [x] ✅ **~~`dir-name` — A BLANK INSIDE A NAME IS NOT READ BACK IN DIRECT
+      MODE~~ — MEASURED FALSE 2026-08-09** by the TODO staleness sweep,
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §3.3. The entry's own payload, verbatim, with a no-blank control:
+
+      | row | program | VG-8020 | CF-3300 | zerobas |
+      |---|---|---|---|---|
+      | `n.ctl` 🟢 | `B11=7 : PRINT"[";B11;"]"` | ` 7 ` | ` 7 ` | ` 7 ` |
+      | `n.blank` | `B1 1=7 : PRINT"[";B11;"]"` | ` 7 ` | ` 7 ` | **` 7 `** |
+
+      🎯 **CLOSED BY D-NAMSPC ON 2026-08-08**, whose rule is exactly this one — a
+      space inside a variable NAME is insignificant at *every* reference, not
+      just at the 9 lvalue targets ([`docs/spec-basic-namspc.md`](docs/spec-basic-namspc.md),
+      `namspc-acceptance` 58/58). The residual predates it by a week and named
+      the right mechanism (D-NAMBLANK's R-N1) without ever being re-run against
+      HEAD — which its own ⚠️ below asked for.
+      ⚠️ **THE SECOND HALF OF THIS ENTRY IS NOT CLOSED BY THAT ROW** and is
+      re-filed below as its own item: the `--say` surface is still un-gated
+      outside `ONLY=lnrd-`, and "ask what else the say pass says" was never
+      answered. A payload that now agrees says nothing about the rows nobody
+      looks at.
+      **What was believed, kept as the record of why:**
       Surfaced 2026-08-01 by the first full `--say` pass across all three sides
       (D-CNAME ran one; nothing else does). Oracle-locked, both references agree:
       ```
@@ -5468,6 +5644,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       3/3 while the program raises `Syntax error`. The default is scoped to
       `lnrd-` precisely because THIS row is red, so a whole-surface default would
       ship a red target. **Widening that default is the fix for this item.**
+
+- [ ] ⚠️ **THE `--say` SURFACE IS STILL UN-GATED OUTSIDE `ONLY=lnrd-`.** Split
+      out 2026-08-09 from the `dir-name` item above, whose *payload* is now green
+      (D-NAMSPC) but whose *apparatus* half never was. `--say` rows are filtered
+      out of `lnblank-acceptance` entirely; `make lnblank-say-acceptance` exists
+      but is scoped to `lnrd-` because THIS surface is where `dir-name` was
+      hiding, and a whole-surface default would have shipped a red target.
+      ✅ **That reason is now spent** — the row that made the default narrow
+      reads ` 7 ` on all three sides — so widening the default is unblocked, and
+      it is the fix. ⚠️ **A payload that now agrees says nothing about the rows
+      nobody looks at** [[echo-guard-never-saw-say-rows]]: ask what else the say
+      pass says BEFORE widening, because the answer decides whether widening is
+      a one-line Makefile change or a slice.
 
 - [x] ✅ **THE `CALL` DEVICE-NAME SCAN IS A RANGE TEST, NOT AN IDENTIFIER SCAN —
       LANDED 2026-08-01, 251/251 at `--repeat 2`, NET −10 B, all sub-ROM, seven
@@ -5793,8 +5982,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       is unmeasured. Its own item is filed below; `dlt-dot`/`dlt-dotedit` are
       pinned so it cannot be forgotten.
 
-- [ ] 🔴 **`AUTO` / `RENUM` / `LLIST` ARE STILL NOT EXECUTED — and the filed
-      reason "none of them fits on main page 1" is STALE.** Re-filed 2026-08-01
+- [x] ✅ **~~`AUTO` / `RENUM` / `LLIST` ARE STILL NOT EXECUTED~~ — MEASURED
+      FALSE 2026-08-09** by the TODO staleness sweep,
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §3.2. **All three execute.** The entry's OWN program, re-run on three
+      sides:
+
+      | row | program | VG-8020 | CF-3300 | zerobas |
+      |---|---|---|---|---|
+      | `e.ctl` 🟢 | `10 A=1` / `20 A=2:END` / `GOTO 20` / `PRINT"[";A;ERR;"]"` | ` 2  0 ` | ` 2  0 ` | ` 2  0 ` |
+      | `e.renum` | …`RENUM 100` / `GOTO 110` / `PRINT"[";A;ERR;"]"` | ` 2  0 ` | ` 2  0 ` | **` 2  0 `** |
+      | `e.renumlst` | …`RENUM 100` / `LIST` | `100 A=1｜110 A=2:END` | idem | **idem** |
+
+      `AUTO` and `LLIST` cannot be put to a REFERENCE in this harness (see the
+      ⚠️ at the foot of this entry), so they are settled by the gate that owns
+      them: **`make editverb-acceptance` → 61/61 rows across 3 sides (2
+      reference)**, run at `e2810c6`, eleven `aut-` rows and twelve `llt-`
+      printer rows included.
+      🔴 **AND ITS OWN CLOSURE HAS BEEN AT THE TOP OF THIS FILE SINCE
+      2026-08-06.** D-EDITVERB's `- [x]` entry in §"Open — standing residuals"
+      says *"`AUTO` / `RENUM` / `LLIST` — the STATEMENT half, CLOSED 2026-08-06
+      … gated by `make editverb-acceptance` at 61/61 rows on three sides"*. The
+      open item and its own closure coexisted for three days, in one document,
+      because nothing re-reads the pickup list.
+      **What was believed, kept as the record of why:** re-filed 2026-08-01
       by D-KWGAP4, narrowed 2026-08-02 by D-DELETE. The crunch is the
       reference's byte for byte; all three are a **Syntax error** at run time.
       Measured, both references agreeing:
@@ -5828,6 +6039,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       raises `SystemExit` at its 240 s cap, so such a row does not degrade a run,
       it kills it. Whoever implements them needs a plugged printer
       ([[openmsx-printer-pluggable]]) or a different instrument first.
+      ✅ That last ⚠️ is the one clause of this entry that survived: D-EDITVERB
+      resolved it rather than refuting it — openMSX's `plug printerport logger`
+      reports READY unconditionally so `LLIST` cannot block, and Ctrl-STOP is a
+      key-matrix combination `keymatrixdown` can deliver. Both verbs are now
+      measured on both references, which is what the 61/61 is.
 
 - [x] ✅ **D-LASTINJ — THE LAST INJECTOR COPY, AND THE SUITE NOBODY PRICED —
       LANDED 2026-08-04.** Spec
@@ -6544,6 +6760,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ` 103  0  4 `, with `lnrt-forerr` alongside it as the green control.
       This is architectural, not a parse bug: closing it means making `RETURN`
       (and the error unwind) aware of the FOR stack, which is its own slice.
+      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, both rows exactly as filed**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.10): ` 102  0  1 ` on both references and ` 103  0  4 ` here, with the
+      `ERROR 7` control reading ` 103  0  4 ` on all three sides.
 
 - [ ] **135 MORE DEAD BYTES OF THE SAME SHAPE, IN 20 FILES.** Filed 2026-08-02
       by D-RETLN, which carved all 160 as its funding — this entry records the
@@ -6575,12 +6795,48 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Reference bytes now locked: `DEFSTR $AB`, `DEFINT $AC`, `DEFSNG $AD`,
       `DEFDBL $AE`. Closing it means moving `ex_def_type` off the ASCII
       mnemonic, so it is a slice and not a table edit.
+      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, and WIDER than filed**
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.11). Body tokens from a `("stored_line", TXTTAB)` capture, after the
+      4-byte header:
 
-- [ ] **`LIST <line>` / `LIST <from>-<to>` STILL LIST THE WHOLE PROGRAM.**
-      `ex_list` ignores its argument (a documented Phase-2 divergence). D-LNREF
-      made the ARGUMENT's bytes the reference's (`<93> <0E><0A><00><F2><0E><14><00>`
-      for `LIST 10-20`), so the range is now sitting there crunched and unread.
-      `lnrd-list` pins that this did not make it worse (`1 0` on all three sides).
+      | typed | both references | zerobas |
+      |---|---|---|
+      | `20 PRINT 10` 🟢 | `91 20 0F 0A 00` | `91 20 0F 0A 00` |
+      | `20 DEFINT 10` | `AC 20 0F 0A 00` | **`97 49 4E 54 20 0F 0A 00`** |
+      | `20 DEFSTR 10` | `AB 20 0F 0A 00` | **`97 53 54 52 20 31 30 00`** |
+
+      🔴 **`DEFSTR` IS WORSE THAN THIS ENTRY SAYS.** The filed claim is only that
+      `DEFSNG`/`DEFDBL`/`DEFSTR` have no `kwtable.inc` entry and work via
+      `DEF_TOKEN` + ASCII. But the ARGUMENT diverges too: zerobas stores `10` as
+      **ASCII `31 30`**, where `DEFINT` on the same tree crunches the identical
+      argument to the integer literal `0F 0A`. So the divergence is not one
+      substituted token — after `DEFSTR` the line is not being crunched at all,
+      and a `LIST` round-trip is not the only thing that can see it. Whoever
+      closes this owns both halves.
+
+- [x] ✅ **~~`LIST <line>` / `LIST <from>-<to>` STILL LIST THE WHOLE PROGRAM~~ —
+      MEASURED FALSE 2026-08-09** by the TODO staleness sweep,
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §3.1. Program `10 A=1 / 20 B=2 / 30 C=3 / 40 D=4`, reading the screen
+      between the echo and the prompt:
+
+      | row | command | VG-8020 | CF-3300 | zerobas |
+      |---|---|---|---|---|
+      | `l.all` 🟢 | `LIST` | `10 A=1｜20 B=2｜30 C=3｜40 D=4` | idem | idem |
+      | `l.line` | `LIST 20` | `20 B=2` | `20 B=2` | **`20 B=2`** |
+      | `l.range` | `LIST 20-30` | `20 B=2｜30 C=3` | idem | **idem** |
+      | `l.from` | `LIST 30-` | `30 C=3｜40 D=4` | idem | **idem** |
+
+      🔴 **WHAT WAS BELIEVED, AND WHY IT WAS WRONG.** The entry says *"`ex_list`
+      ignores its argument … the range is now sitting there crunched and
+      unread"*. **`LIST <range>` shipped 2026-08-02 with D-LSTRNG**, and the
+      Editor/program-management bucket 4000 lines further down this same file
+      says so in as many words. The pin `lnrd-list` reads `1 0` on all three
+      sides because it is about the CRUNCH, not the execution — a pin that
+      cannot see the thing that changed. `make editverb-acceptance` corroborates
+      from the printer side: `llt-one` / `llt-from` / `llt-upto` / `llt-range`
+      all list a RANGE, 61/61 on three sides.
 
 - [x] ✅ **LINE-NUMBER SCAN AND EMBEDDED BLANKS — LANDED 2026-07-31, 52/52,
       falsified on five knives.** Was 🔴 a silently wrapped line number shipping
@@ -6799,7 +7055,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       are deleted, so that asymmetry is what proves the call site rather than
       the deletion is doing the work.
 
-- [ ] **Numeric → string assignment raises the wrong error** (D-MISS-1, same
+- [x] ✅ **~~Numeric → string assignment raises the wrong error~~ — MEASURED
+      FALSE 2026-08-09** by the TODO staleness sweep,
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §3.4. **All seven forms answer `Type mismatch` on zerobas**, matching both
+      references — `A$=1`, `A=5`/`A$=A`, `A$=1+1`, `A$=LEN("x")`, `A=5`/`LET
+      A$=A`, `DIM Q$(3)`/`Q$(0)=1`, with `A$="x"` → `x` as the positive control
+      and the already-correct mirror `A="x"` → `Type mismatch` alongside.
+      🔴 **THE ENTRY CARRIED ITS OWN CLOSURE ON ITS LAST LINE** — *"✅ D-MC-2
+      SIGNED OFF: folded into the MISSING-class slice"* — and the MISSING class
+      is recorded EMPTY. The checkbox is the only thing that never moved. A
+      `- [ ]` whose body ends in a ✅ is exactly the shape this sweep exists to
+      find.
+      **What was believed, kept as the record of why:** (D-MISS-1, same
       battery). `A$=1`, `A$=A`, `A$=1+1`, `A$=LEN("x")`, `LET A$=A`, `A$=A%` and
       `Q$(0)=1` all raise **`syntax error`** where the reference raises
       **`Type mismatch`** — so `ON ERROR` sees the wrong code. The numeric-lvalue
