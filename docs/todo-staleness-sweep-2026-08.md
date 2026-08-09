@@ -491,17 +491,35 @@ something else, and nobody re-reads the list".** Every one of the six stale entr
 was closable from evidence already inside `TODO.md` or inside a gate that runs on
 every build:
 
-| stale item | what already knew | where |
-|---|---|---|
-| 5796 AUTO/RENUM/LLIST | D-EDITVERB, 61/61 | same file, line ~40 |
-| 6579 `LIST <range>` | D-LSTRNG shipped it 2026-08-02 | same file, line 2904 |
-| 6802 numeric→string | *"D-MC-2 SIGNED OFF"* | the entry's own last line |
-| 5445 blank in a name | D-NAMSPC's rule | memory index |
-| 3187 `DIM Q(20000)` | `clearpool` 52/52 | the gate |
-| 2883 the prompt | — | only a measurement could |
-| 2904 `SWAP` | — | only a measurement could |
+**Each row below was verified to exist at `e2810c6`** — the pointer was read out
+of the tree at that commit, not recalled:
+
+| stale item | what already knew, in the tree at `e2810c6` | where | ✔ |
+|---|---|---|---|
+| 5796 AUTO/RENUM/LLIST | the D-EDITVERB `- [x]`, *"CLOSED 2026-08-06 … 61/61"* | same file, line ~40 | ✅ |
+| 6579 `LIST <range>` | *"`LIST <range>` the same day with D-LSTRNG"* | same file, line 2904 | ✅ |
+| 6802 numeric→string | *"D-MC-2 SIGNED OFF: folded into the MISSING-class slice"* | the entry's own last line | ✅ |
+| 5445 blank in a name | `docs/spec-basic-namspc.md` + a `namspc-acceptance` target | the tree | ✅ |
+| 3187 `DIM Q(20000)` | *"`arr` IS GONE (2026-07-29): … `oos-dim-huge` graduated into the gated `oos` battery"* | `basic_probe_clearpool.py:90` | ✅ |
+| 2883 the prompt | — | only a measurement could | — |
+| 2904 `SWAP` | — | only a measurement could | — |
 
 Five of the seven were **derivable without booting an emulator**; two needed the
 machine. So the cheap half of this sweep is a cross-check a slice could run at
 landing time — *does anything in the pickup list name what I just shipped?* — and
 the expensive half is what this document is for.
+
+🔴 **AND THE `DIM Q(20000)` ROW IS THE SHARPEST OF THE FIVE, BECAUSE THE TREE
+CONTRADICTED ITSELF ABOUT IT FOR TWO MONTHS.** `basic_probe_clearpool.py` has
+said since 2026-07-29, in prose, that `arr` is gone and `oos-dim-huge` graduated
+— `UNGATED = ("rep", "share")`, two buckets. The `Makefile` header six lines away
+said *"6 reported-never-gated … `arr` (1)"*. One fact, two records, one of them
+wrong, sitting side by side. Reading either one alone was enough to be confident
+and wrong; only running the gate separates them
+[[a-prediction-copied-into-the-result-column]].
+
+🎯 **And that probe comment names this document's own conclusion, eleven days
+early:** *"A never-gated bucket that outlives its reason is a gate that has
+quietly stopped measuring what it claims to."* Swap "never-gated bucket" for
+"open residual" and it is §8's thesis. The lesson was already written down by a
+slice aiming at something else — which is, exactly, the failure mode.
