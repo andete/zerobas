@@ -811,13 +811,26 @@ spr_mode_restore:
 ; spr_extra_arg: one evaluated trailing SCREEN argument (DE = its value). Only the
 ; FIRST is the sprite size; the rest (key click, baud, printer) stay ignored.
 spr_extra_arg:
+                ; D-SCRERR: the slot NUMBER is maintained by ex_screen at each
+                ; comma (screen.asm), because an OMITTED argument never reaches
+                ; here to be counted. Slot 1 is the sprite size; 2+ are ignored.
                 ld      a,(GFX_SARGN)
-                inc     a
-                ld      (GFX_SARGN),a
                 dec     a
                 ret     nz
+                ; D-SCRERR (docs/spec-basic-screenerr.md §2.2): the sprite size has
+                ; its OWN domain and it is 0..3, not "the low two bits of whatever
+                ; you passed". `SCREEN 1,99` and `SCREEN 1,-1` are Illegal function
+                ; call on both references where the `and $03` silently accepted 99
+                ; as size 3; `SCREEN 1,70000` is Overflow, which the caller's
+                ; eval_byte_checked now raises before we are reached. +3 B.
+                ; ⚠️ ONLY `SCREEN 1,99` TESTS THIS TEST. Knife K-SE4 cut it and
+                ; `SCREEN 1,-1` did not move -- a negative sprite size never
+                ; reaches here at all, because the caller's byte stage rejects a
+                ; set high byte first. The two rows look like one class and are
+                ; caught by two different stages (spec-basic-screenerr.md §8).
                 ld      a,e
-                and     $03
+                cp      4
+                jp      nc,gb_illegal       ; ERR 5 -- sizes are 0..3
                 ld      (GFX_SSIZE),a
                 ld      a,12                ; tenant: apply the size bits to register 1
                 jr      spr_tenant

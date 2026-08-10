@@ -1335,17 +1335,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Held by `make stmtpend-acceptance` (56/58 scored + 2 deferred; 36/58
       before).
 
-- [ ] 🔴 **THE STATEMENT BOUNDARY IS TOO LATE FOR A DRIVER WITH A SIDE EFFECT.**
-      Filed 2026-08-09 by D-STMTPEND
-      ([`docs/spec-basic-stmtpend.md`](docs/spec-basic-stmtpend.md) §5), the
-      `u.scr.dz` deferred row. `exec_stmt`'s new pending-error reader reports the
-      RIGHT code for `SCREEN 0*(1/0)` (`Division by zero in 20`, read directly
-      off the name table) — but SCREEN has already run `CHGMOD` by the time
-      `jp exec_stmt` raises, so the screen is reinitialised before the message
-      and the `RUN` echo the untrapped reading anchors on is gone. The references
-      never apply the mode. 💰 The fix is per-driver (SCREEN checking before
-      `CHGMOD`), not another boundary reader; not scouted. The trapped twin
-      `s.scr.dz` agrees, so the CODE is right and only the ORDERING is not.
+- [x] 🔴 **THE STATEMENT BOUNDARY IS TOO LATE FOR A DRIVER WITH A SIDE EFFECT.**
+      Filed 2026-08-09 by D-STMTPEND; ✅ **CLOSED 2026-08-10 by D-SCRERR**
+      ([`docs/spec-basic-screenerr.md`](docs/spec-basic-screenerr.md)).
+      `ex_screen` validates the mode through `eval_byte_checked` **before**
+      `CHGMOD`, so a deferred fault never applies the mode and the `RUN` echo
+      the untrapped reading anchors on survives. `u.scr.dz` is **un-deferred**:
+      `make stmtpend-acceptance` is now **57/57 scored + 1 deferred** (was 56/58
+      + 2). ⚠️ **The general statement stands** — the boundary is still by
+      construction too late for any driver with a side effect; what changed is
+      that `ex_screen` no longer leans on it. `DEFUSR`/`FOR` have no side effect
+      to be too late for; a future driver that does will need the same
+      per-driver treatment.
+
+- [ ] ⚠️ **THE THIRD TRAILING `SCREEN` ARGUMENT'S DOMAIN IS UNMEASURED.**
+      Filed 2026-08-10 by D-SCRERR. Slot 1 (sprite size) is pinned to 0..3 and
+      slot 2 (key click) to 0..255; `scr_extra` treats slots 3+ identically to
+      slot 2, so the open risk is a reference that narrows a later one.
+      `SCREEN 1,,,300` — one row, no scouting done.
+
+- [ ] ⚠️ **`a.spr` IS BLIND TO A CUT THAT STOPS THE SPRITE SIZE BEING APPLIED.**
+      Filed 2026-08-10 by D-SCRERR ([`docs/spec-basic-screenerr.md`](docs/spec-basic-screenerr.md)
+      §9), found by knife K-SE5, which reddened `a.sprslot1` and left `a.spr`
+      untouched. `SCREEN 1,3` reads only the ERROR CODE, and a size that is
+      never applied raises nothing. Harmless — `a.sprslot1` reads
+      `LEN(SPRITE$(0))` and covers it — and **not** a reason to change `a.spr`,
+      which is the row that says an in-domain size is accepted. Recorded because
+      the same shape recurs in any row that tests an effect by its absence of an
+      error.
 
 - [ ] 🔴 **`LINE (0,0)-((A$<5),1)` IS ERR 5 HERE AND ERR 13 ON BOTH REFERENCES.**
       Filed 2026-08-09 by D-STMTPEND, the `c.line.tm` deferred row. LINE raises
@@ -1353,12 +1370,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       so it reaches NEITHER of D-STMTPEND's two writers and the fix does not move
       it. A per-driver fix in `graphics.asm`; not scouted.
 
-- [ ] 🔴 **`SCREEN (1<5)` IS `Syntax error` HERE AND `Illegal function call` ON
-      THE VG-8020.** Filed 2026-08-09 by D-STMTPEND, found while building the
-      denominator and unrelated to pending codes: `ex_screen`'s two range rejects
-      (`mode > 255`, `mode >= 4`) `jp stmt_error` instead of raising ERR 5.
-      `SCREEN -1` is the readable case. Cheap — two `jp` targets — but it needs
-      its own rows: the whole `SCREEN n` domain is unmeasured.
+- [x] 🔴 **`SCREEN (1<5)` IS `Syntax error` HERE AND `Illegal function call` ON
+      THE VG-8020.** Filed 2026-08-09 by D-STMTPEND; ✅ **CLOSED 2026-08-10 by
+      D-SCRERR** ([`docs/spec-basic-screenerr.md`](docs/spec-basic-screenerr.md),
+      `make screenerr-acceptance` **61/61 from 22/61**, both references agreeing
+      on every row). Both range rejects replaced by the shared checked-byte
+      coercion plus one `cp 4`.
+      🎯 **"CHEAP — TWO `jp` TARGETS" WAS WRONG IN THE CHEAP DIRECTION**: it is
+      **−6 B**, because `call eval` + two hand-rolled rejects is 14 B and the
+      shared leaf is 8 B. A price that counts only what it INSERTS misses what it
+      DISPLACES, in both directions.
+      🎯 **"IT NEEDS ITS OWN ROWS" WAS EXACTLY RIGHT** — the domain held FOUR
+      more divergences the item did not know about: `SCREEN 70000` silently set
+      SCREEN 0 (no error at all), bare `SCREEN` / `SCREEN 2,` were silent no-ops
+      where both references say `Missing operand`, the sprite size had no domain,
+      and no trailing argument was range-checked.
+      🔴 And closing it EXPOSED a fifth, older defect — `ex_screen` counted the
+      argument slot at the VALUE, so an omitted argument was never counted and
+      `SCREEN 1,,3` applied 3 as the SPRITE SIZE. Measured on the **base** ROM
+      (`a.sprskip` reads ` 99 , 2 ` at `3dc1e7b`), i.e. it was shipping, not
+      introduced by the fix. Fixed in the same slice, §4.
 
 - [ ] 🔴 **`FIELD #(A$<5),1 AS Z$` IS `Type mismatch` HERE AND `Illegal function
       call` ON THE VG-8020.** Filed 2026-08-09 by D-STMTPEND. The reference

@@ -94,15 +94,43 @@ def run():
               f" -> CHGMOD(A={log[0]['a'] if log else 'never called'})"
               f"  (want A={mode})")
 
-    # ex_screen with no mode argument (bare SCREEN) -> no CHGMOD call
+    # ex_screen with no mode argument (bare SCREEN) -> Missing operand, ERR 24.
+    # 🔴 THIS ROW USED TO ASSERT THE OPPOSITE ("bare SCREEN -> no CHGMOD call",
+    # i.e. a silent no-op) AND IT WAS THE ONLY THING IN THE TREE THAT DID.
+    # D-SCRERR measured both references: an argument list that ENDS where a value
+    # was required is Missing operand (docs/spec-basic-screenerr.md §2.2). The
+    # old row passed because a no-op returns cleanly; the new contract goes
+    # `jp z,loc_missing` -> `jp raise_error`, whose `ld sp,(SAVSTK)` funnel the
+    # host harness cannot follow (SAVSTK is 0 in zeroed RAM -> the CPU runs
+    # away). So sample AT the funnel, exactly as test_poke.py's ERRMARK row does
+    # -- no except-guard, so a genuine runaway stays LOUD.
     log = m.record("CHGMOD", regs=("a",))
+    raised = []
+    m.trap("raise_error", lambda mm: raised.append(mm.cpu.a))
     stream = bytes([s["SCREEN_TOKEN"], 0x00])    # bare SCREEN, no operand
     m.poke(BUF, stream)
     m.call("ex_screen", hl=BUF)
-    ok = len(log) == 0
+    ok = raised == [24] and len(log) == 0
     fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  SCREEN (bare) -> CHGMOD not called"
-          f"  (got {len(log)} call(s))")
+    print(f"{'PASS' if ok else 'FAIL'}  SCREEN (bare) -> ERR 24 Missing operand,"
+          f" CHGMOD not called  (raise_error saw {raised},"
+          f" {len(log)} CHGMOD call(s))")
+
+    # ...and the mode DOMAIN reject, the other half of D-SCRERR: 4 is a valid
+    # BYTE, so `cp 4` is a test of its own on top of the shared byte coercion,
+    # and it must raise ERR 5 (Illegal function call) BEFORE CHGMOD rather than
+    # the ERR 2 Syntax error it used to `jp stmt_error` for.
+    log = m.record("CHGMOD", regs=("a",))
+    raised = []
+    m.trap("raise_error", lambda mm: raised.append(mm.cpu.a))
+    stream = bytes([s["SCREEN_TOKEN"], 0x11 + 4, 0x00])   # SCREEN 4 (MSX2 only)
+    m.poke(BUF, stream)
+    m.call("ex_screen", hl=BUF)
+    ok = raised == [5] and len(log) == 0
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  SCREEN 4 -> ERR 5 Illegal function call,"
+          f" CHGMOD not called  (raise_error saw {raised},"
+          f" {len(log)} CHGMOD call(s))")
 
     # =========================================================================
     # ex_color: COLOR fg,bg,border -> writes FORCLR/BAKCLR/BDRCLR, calls CHGCLR

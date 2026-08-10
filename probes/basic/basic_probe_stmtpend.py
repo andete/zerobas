@@ -246,14 +246,12 @@ DEFERRED = {
         "inside its coordinate parse, so it reaches NEITHER of this slice's "
         "two writers; ERR 5 here vs 13 on both references. A per-driver fix "
         "in graphics.asm",
-    "u.scr.dz":
-        "DEFERRED — the statement boundary is TOO LATE for a driver with a "
-        "side effect. zerobas prints the RIGHT message ('Division by zero in "
-        "20', measured directly off the name table) but SCREEN has already "
-        "run CHGMOD by the time `jp exec_stmt` raises, so the screen -- "
-        "including the RUN echo this reading anchors on -- is reinitialised "
-        "and screen_tail has nothing to find. The references never apply the "
-        "mode. The trapped twin s.scr.dz agrees",
+    # 🎯 `u.scr.dz` WAS DEFERRED HERE AND IS NOW SCORED. D-SCRERR (2026-08-10,
+    # docs/spec-basic-screenerr.md) closed it: SCREEN's mode is a checked byte
+    # and the check runs BEFORE CHGMOD, so the mode is never applied and the
+    # `RUN` echo this reading anchors on survives. The statement boundary is
+    # still by construction too late for a driver with a side effect -- what
+    # changed is that ex_screen no longer relies on it.
 }
 
 SENTINELS = ("<NO CAPTURE>", "<NO ECHO>")

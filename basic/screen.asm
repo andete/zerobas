@@ -20,8 +20,10 @@
 ; CHGMOD so the change takes effect.
 ;
 ; Divergences from full MSX-BASIC (Phase 2 scope), accepted here:
-;   - SCREEN's extra arguments (sprite size, key-click, baud, printer) are
-;     evaluated and ignored — only the display mode is applied.
+;   - SCREEN's extra arguments past the FIRST are evaluated (and range-checked
+;     as bytes — D-SCRERR) and then ignored: the key-click, baud and printer
+;     arguments have no effect. The first one, the sprite size, IS applied and
+;     domain-checked (G7, docs/spec-basic-graphics-g7.md).
 ;   - COLOR applies the colours via CHGCLR but does not repaint already-drawn
 ;     text; omitted arguments leave that colour unchanged.
 ;   - KEY only recognises OFF / ON; `KEY <n>,"str"` (redefine) and `KEY LIST`
@@ -45,18 +47,62 @@ ex_screen:
                 inc     hl                  ; past the SCREEN token
                 call    skip_spaces
                 or      a
-                jp      z,exec_stmt         ; bare SCREEN -> mode omitted, no-op
-                cp      COLON
-                jp      z,exec_stmt
+                jp      z,loc_missing       ; bare `SCREEN` -> Missing operand (ERR
+                cp      COLON               ; 24); `SCREEN :` likewise -- both
+                jp      z,loc_missing       ; measured, D-SCRERR spec §2.1. An
+                                            ; ARGUMENT LIST THAT ENDS WHERE A VALUE
+                                            ; WAS REQUIRED is ERR 24 at every one of
+                                            ; this routine's four such slots; the
+                                            ; other two are in scr_extra below.
                 cp      ','                 ; "SCREEN ,x" -> mode omitted
                 jr      z,scr_extra
-                call    eval                ; DE = mode
-                ld      a,d
-                or      a
-                jp      nz,stmt_error       ; mode must be 0..3 (MSX1)
-                ld      a,e
+                ; D-SCRERR (docs/spec-basic-screenerr.md): the mode is a CHECKED
+                ; BYTE, and it is checked BEFORE CHGMOD. This was `call eval` and
+                ; two hand-rolled range rejects that `jp stmt_error` -- a GRAMMAR
+                ; verdict on a DOMAIN fault -- and the shape had TWO divergences
+                ; in it, not one:
+                ;   `SCREEN -1` / `SCREEN 256` / `SCREEN (1<5)` answered Syntax
+                ;   error where both references answer Illegal function call, and
+                ;   `SCREEN 70000` answered NOTHING AT ALL -- eval's silent
+                ;   flt_to_int16 zeroed DE, so an out-of-int16 mode SET SCREEN 0
+                ;   where both references answer Overflow.
+                ;   `SCREEN 0*(1/0)` reported the right code at the wrong TIME:
+                ;   the range tests pass, CHGMOD runs, and only then does
+                ;   `jp exec_stmt` read the pending cell -- so the screen was
+                ;   reinitialised before the message. Both references never apply
+                ;   the mode (measured as SCRMOD over a `SCREEN 1` seed).
+                ; eval_byte_checked is exactly the reference contract and closes
+                ; both: the DEFERRED expression error first (ERR 11/6/5/13 --
+                ; `SCREEN 70000+0*(1/0)` is 11 and `70000+0*SQR(-1)` is 5, a
+                ; DIFFERENT code, which is what says the expression's error wins
+                ; rather than that division by zero is special), then ERR 6 past
+                ; int16 (-32769 and 32768; -32768 is IN range and is ERR 5),
+                ; then ERR 5 outside 0..255.
+                ; 🔴 BUT NOT BECAUSE THE CHEAPER eval_byte_arg WOULD ANSWER
+                ; DIFFERENTLY HERE -- knife K-SE2 swapped them and moved NOTHING,
+                ; twice, INCLUDING the two 70000+fault rows written specifically
+                ; to discriminate. The reason is D-PENDERR: every writer into the
+                ; pending cell is SET-IF-EMPTY, so fac_to_int_strict's own ERR 6
+                ; can no longer overwrite a live code, and D-EVALCHK's stated
+                ; justification for the checked leaf (spec-basic-evalchk.md: "it
+                ; writes FPERR=1 OVER THE TOP of the pending FPERR=2") was true
+                ; when written and made FALSE by D-PENDERR a few commits later.
+                ; The checked leaf is kept because it is the same 3 bytes, is
+                ; what WIDTH/FIELD/CLEAR use, and states the ordering explicitly
+                ; -- NOT because a row here can tell the two apart. The o.dzov /
+                ; o.5ov rows still earn their place: they pin the RULE (a fault
+                ; that already happened outranks the coercion), they just do not
+                ; pin the ROUTINE. See spec-basic-screenerr.md §8.
+                ; It also TRUNCATES rather than
+                ; rounding, which `SCREEN 1.6` -> mode 1 and `SCREEN 3.6` -> mode
+                ; 3 require (PROVENANCE.md: fac_to_int_strict is oracle-pinned
+                ; truncating -- checked before the substitution, not after).
+                ; -6 B: 14 B of eval + two hand-rolled rejects for 8 B.
+                call    eval_byte_checked   ; A = E = the mode, 0..255, or aborts
                 cp      4
-                jp      nc,stmt_error
+                jp      nc,gb_illegal       ; an MSX1 has modes 0..3 -> ERR 5. `4`
+                                            ; is a VALID byte, so this test cannot
+                                            ; be folded into the coercion.
                 push    hl                  ; A = mode -> switch the VDP mode
     IF G7_RESIDENT
                 push    af
@@ -68,19 +114,43 @@ ex_screen:
                 call    CHGMOD
     ENDIF
                 pop     hl
-scr_extra:                                  ; evaluate + ignore any trailing args
+scr_extra:                                  ; the trailing arguments
                 call    skip_spaces
                 cp      ','
-                jp      nz,exec_stmt        ; no comma -> done
+                jp      nz,exec_stmt        ; no comma -> done (the ONLY legal way
+                                            ; out of this loop)
                 inc     hl                  ; past the comma
+    IF G7_RESIDENT
+                ; 🔴 D-SCRERR: COUNT THE SLOT AT THE COMMA, NOT AT THE VALUE.
+                ; The ",," arm below loops back WITHOUT evaluating anything, so
+                ; a counter bumped by spr_extra_arg never sees an OMITTED
+                ; argument and every argument after one is off by one position:
+                ; `SCREEN 1,,99` applied 99 as the SPRITE SIZE. That was already
+                ; wrong before this slice and NO row could see it -- the old
+                ; `and $03` quietly turned it into size 3, and a wrong sprite
+                ; size does not show up in SCRMOD. It became visible only when
+                ; the domain check below turned it into an ERROR the reference
+                ; does not raise (row a.clk). Commas and argument slots are 1:1,
+                ; so counting here is both correct and cheaper than counting at
+                ; the value: spr_extra_arg's own increment goes away (-4 B).
+                ld      a,(GFX_SARGN)
+                inc     a
+                ld      (GFX_SARGN),a
+    ENDIF
                 call    skip_spaces
-                or      a
-                jp      z,exec_stmt
-                cp      COLON
-                jp      z,exec_stmt
+                or      a                   ; a comma PROMISED an argument, so a
+                jp      z,loc_missing       ; statement end here is ERR 24 --
+                cp      COLON               ; `SCREEN 2,` and `SCREEN 2,:`, and via
+                jp      z,loc_missing       ; the ",," arm `SCREEN ,` too. Measured
+                                            ; on both references (spec §2.1).
                 cp      ','                 ; an omitted argument (",,")
                 jr      z,scr_extra
-                call    eval                ; DE = the argument
+                ; D-SCRERR: the trailing arguments are CHECKED BYTES as well --
+                ; `SCREEN 1,,70000` is ERR 6 and `SCREEN 1,,300` is ERR 5 on both
+                ; references, so the int16 AND the byte stage are both live here
+                ; and not only on the mode. Free: it replaces a `call eval` that
+                ; was already there.
+                call    eval_byte_checked   ; DE = the argument (D=0, E=byte)
     IF G7_RESIDENT
                 push    hl
                 call    spr_extra_arg       ; G7: the first one is the sprite size; the

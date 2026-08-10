@@ -2225,6 +2225,37 @@ stmtpend-acceptance: repack-machine
 	python3 probes/basic/basic_probe_stmtpend.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-SCRERR: SCREEN's mode is a CHECKED BYTE, checked BEFORE it is applied --
+# (docs/spec-basic-screenerr.md.) D-STMTPEND filed two ex_screen divergences and
+# could close neither, because SCREEN's ERROR surface had never been measured --
+# `make missing-acceptance` and the graphics gates cover the MODES, not the
+# REJECTS. This is that denominator, and it found four more:
+#   the mode was `call eval` + two hand-rolled range rejects that `jp
+#   stmt_error`, so `SCREEN -1` / `SCREEN 256` / `SCREEN (1<5)` answered Syntax
+#   error for a DOMAIN fault, and `SCREEN 70000` answered nothing at all --
+#   eval's silent flt_to_int16 zeroed DE, so an out-of-int16 mode SET SCREEN 0
+#   where both references answer Overflow;
+#   the range tests passed BEFORE CHGMOD but the pending-error read happened
+#   after it, so `SCREEN 0*(1/0)` applied the mode and then reported;
+#   an argument list that ENDS where a value was required is Missing operand
+#   (ERR 24) on both references at all four of ex_screen's such slots, and was
+#   a silent no-op here;
+#   the sprite size has its own 0..3 domain (`SCREEN 1,99` -> ERR 5) where an
+#   `and $03` silently accepted it, and every trailing argument is a checked
+#   byte (`SCREEN 1,,300` -> ERR 5, `SCREEN 1,,70000` -> ERR 6).
+# 🎯 THE SCREEN IS THE INSTRUMENT HERE, so trapped rows read `[ ERR , SCRMOD ]`
+# -- the code AND the mode the statement left behind, captured in the handler
+# over a `SCREEN 1` seed. Scraping the screen for a row whose subject IS the
+# screen mode is how `u.scr.dz` came to be deferred rather than scored.
+# 59 rows x 3 sides, ~17 min.
+screenerr-characterize: repack-machine
+	python3 probes/basic/basic_probe_screenerr.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+screenerr-acceptance: repack-machine
+	python3 probes/basic/basic_probe_screenerr.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2469,6 +2500,7 @@ clean:
         tmfp-characterize tmfp-acceptance \
         penderr-acceptance \
         stmtpend-characterize stmtpend-acceptance \
+        screenerr-characterize screenerr-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean
