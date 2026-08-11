@@ -263,9 +263,22 @@ Pinned behavior (§11.8):
 - **`POINT STEP(dx,dy)` is accepted — MEASURED (G2-g, RESOLVED).** VG-8020 capture:
   `PSET(50,50),9 : C = POINT STEP(0,0)` runs (no error) and returns `9` — the color
   at the last point. So POINT reuses the shared §4 coordinate parser (STEP resolved
-  against `GRPACX/GRPACY`) exactly like PSET. Whether POINT itself then *re-writes*
-  `GRPAC` is unpinned and low-value; implement POINT **read-only** (does not move the
-  last point) and note it.
+  against `GRPACX/GRPACY`) exactly like PSET.
+  ⚠️ **SUPERSEDED 2026-08-11 by D-GIRDOM**
+  ([`spec-basic-lineerr.md`](spec-basic-lineerr.md) §10). Kept, not deleted:
+
+  > ~~Whether POINT itself then *re-writes* `GRPAC` is unpinned and low-value;
+  > implement POINT **read-only** (does not move the last point) and note it.~~
+
+  It is now **pinned, on both references, and it was not low-value**: `POINT`
+  moves **neither half** of the work area — not `GRPACX/GRPACY` and not
+  `GXPOS/GYPOS` — on-screen, off-screen, or through `STEP` (rows `g.pt.on`,
+  `g.pt.step`, `w.pt.on`, `w.pt.off`). 🔴 **And the half this sentence did not
+  think to mention is the one the implementation got wrong.** "Read-only" was
+  taken as a statement about `GRPAC` alone, so `ev_f_point` marshalled its target
+  to the tenant through `GXPOS/GYPOS` — a BASIC-visible cell — and shipped a
+  measurable side effect that the G2 gate's `POINT` rows could not see, because
+  they read `GRPAC`. The marshalling moved to `GFX_PTX/GFX_PTY`, byte-neutral.
 
 ---
 
@@ -280,6 +293,14 @@ equates). Per **every** `PSET`/`PRESET` — drawn **or** no-op (G2-d measured):
 - `CLOC=$F92A` ← the computed pattern-byte VRAM address `P`; `CMASK=$F92C` ← `M` —
   these two only on a **drawn** pixel (the tenant computes them; a no-op never enters
   the tenant, and `CLOC/CMASK` of an off-screen pixel are meaningless).
+
+⚠️ **AND PER EVERY `POINT`: NOTHING.** D-GIRDOM, measured on both references —
+`POINT` writes neither pair, in any mode, on-screen or off, plain or through
+`STEP`. That is a contract of this section and not a footnote to §5, because
+`GXPOS/GYPOS` doubles as the tenant marshalling channel for `GFX_OP=1`, and
+reusing it for `GFX_OP=2` made the marshalling *observable*. `POINT` therefore
+has its own pair, `GFX_PTX/GFX_PTY` — the one op in the block whose parameters
+must not be a work-area cell.
 
 These are the standard MSX work-area addresses ([basic/sysvars.inc:54](basic/sysvars.inc)),
 the same faithfulness choice as the audio arc's VCB cells. Whether they are written

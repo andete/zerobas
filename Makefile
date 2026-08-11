@@ -2263,7 +2263,7 @@ screenerr-acceptance: repack-machine
 # anywhere in parse_coord. The refusal was `ex_line_gfx`'s own opening `cp 2`,
 # three instructions in, and the filed row runs in the boot default SCREEN 0 --
 # so zerobas answered ERR 5 to a statement whose coordinates it never looked at.
-# The rule the 124 rows here measure is an ORDERING one, and it is not LINE's:
+# The rule the 142 rows here measure is an ORDERING one, and it is not LINE's:
 #   a graphics statement moves the WORK AREA to the point its MANDATORY
 #   arguments resolve to, and refuses a wrong SCREEN mode IMMEDIATELY AFTER
 #   THAT -- after every fault the mandatory arguments can raise, and BEFORE the
@@ -2292,14 +2292,23 @@ screenerr-acceptance: repack-machine
 # -- `PAINT(300,100)` leaves GRPAC on the raw unclipped (300,100) before raising
 # -- so the seed test moved BELOW `gfx_point_gate`. Net zero bytes; 13 of the 16
 # new rows were red before it.
+# 🎯 D-GIRDOM then measured the SAME LEAF at its two SILENT callers, which is
+# where D-PAINTSEED's own residual pointed: the domain (0..255 x 0..191, edge
+# (255,191) accepted) agrees at PSET/PRESET and POINT too -- but two rows nobody
+# had ever read did not. `ev_f_point` marshalled POINT's target to the tenant
+# through GXPOS/GYPOS, a BASIC-VISIBLE cell, so `V=POINT(20,21)` MOVED half the
+# work area where both references move neither half. 🔴 `v.point0` could never
+# have caught it: that row reads GRPAC, which POINT does not touch on any side.
+# POINT now marshals through its own GFX_PTX/GFX_PTY; net zero bytes on BOTH
+# sides of the slot boundary (rows g.* / w.pt.*, knives K-GD1..K-GD3).
 # ⚠️ `c.32767`/`c.m32768` need a WIDER WINDOW, not a bug report: zerobas
 # rasterises the true int16 span and masks per pixel (spec-basic-graphics-g3.md
 # §3.4/§4.4) where the references clip first, so a 32767-pixel span really is
 # walked. At step=12 it answers exactly what both references answer.
-# 124 rows x 3 sides. MEASURED 205 s (2026-08-11, D-PAINTSEED; it was 108 rows
-# / 168 s at D-LINERR, and the 16 rows the p.* class added cost 37 s -- a figure
-# stated because the previous one was carried forward without being re-measured
-# when the row set grew) -- real host wall time for three unthrottled boots, not
+# 142 rows x 3 sides. MEASURED 236 s (2026-08-11, D-GIRDOM). The lineage, stated
+# because the FIRST of these figures was carried forward unmeasured when the row
+# set grew: 108 rows / 168 s at D-LINERR, 124 / 205 at D-PAINTSEED, 142 / 236
+# here -- real host wall time for three unthrottled boots, not
 # emulated MSX time, and not reproducible to the second on a loaded machine.
 # ⚠️ This comment previously read "~35 min", a figure NOBODY EVER MEASURED: it
 # is the wall time of the WHOLE 52-target corpus (2014 s), inherited from an

@@ -433,6 +433,38 @@ CASES = [
     ("p.ok2",     "t", S2, "LINE(30,30)-(10,10),15,B:PAINT(20,20)"),
     ("p.edge2",   "t", S2, "LINE(255,191)-(250,186),15,B:PAINT(255,191)"),
 
+    # === g.* `gfx_in_range`'s DOMAIN AT ITS **SILENT** CALLERS =============
+    # 🔴 D-PAINTSEED pinned the 0..255 x 0..191 domain at `ex_paint` — the ONE
+    # caller that RAISES. The same leaf decides a SILENT outcome at the other
+    # two, and a shared engine's other callers are exactly what a fix (or a
+    # pin) must measure [[a-shared-engine-fix-must-measure-its-other-callers]]:
+    #
+    #   gfx_plot_go (PSET/PRESET)  off-screen -> no plot, work area ALREADY moved
+    #   ev_f_point  (POINT)        off-screen -> -1
+    #
+    # POINT's RETURN VALUE is read into this probe's existing instrument as
+    # `PSET(V+1,V+1)`: -1 lands the work area on (0,0), a colour c on (c+1,c+1).
+    # The +1 keeps it on the ACCEPTED PSET path, so the encoding does not lean
+    # on the clip rule the g.ps.* rows are testing.
+    ("g.ps.off",  "t", S2, "PSET(300,100)"),
+    ("g.ps.x256", "t", S2, "PSET(256,191)"),
+    ("g.ps.y192", "t", S2, "PSET(255,192)"),
+    ("g.ps.edge", "t", S2, "PSET(255,191)"),
+    ("g.ps.neg",  "t", S2, "PSET(-1,100)"),
+    ("g.pr.off",  "t", S2, "PRESET(300,100)"),
+    ("g.pt.off",  "t", S2, "V=POINT(300,100):PSET(V+1,V+1)"),
+    ("g.pt.x256", "t", S2, "V=POINT(256,191):PSET(V+1,V+1)"),
+    ("g.pt.y192", "t", S2, "V=POINT(255,192):PSET(V+1,V+1)"),
+    ("g.pt.neg",  "t", S2, "V=POINT(-1,100):PSET(V+1,V+1)"),
+    # 🟢 …and the two rows that say POINT returns a REAL COLOUR and not just
+    # -1-or-0, without which every row above agrees with a POINT that is broken
+    # in the same direction.
+    ("g.pt.edge", "t", S2, "PSET(255,191):V=POINT(255,191):PSET(V+1,V+1)"),
+    ("g.pt.clear", "t", S2, "V=POINT(100,100):PSET(V+1,V+1)"),
+    # POINT does not move the LAST-REFERENCED point, plain or through STEP.
+    ("g.pt.on",   "t", S2, "V=POINT(20,21)"),
+    ("g.pt.step", "t", S2, "V=POINT STEP(1,1)"),
+
     # === w.* THE OTHER HALF OF THE WORK AREA ===============================
     # Identical statements to rows above, read through GXPOS/GYPOS instead of
     # GRPACX/GRPACY. spec-basic-graphics-g3.md §11.5 claims a LINE sets both to
@@ -450,6 +482,19 @@ CASES = [
     # same two-halves reading here that they got there.
     ("w.paint0.off", "t", S0, "PAINT(300,100)"),
     ("w.paint2.off", "t", S2, "PAINT(300,100)"),
+    # 🔴 …AND THE HALF `v.point0` CANNOT SEE. `ev_f_point`'s own comment says
+    # "POINT is READ-ONLY: it resolves STEP against the last point but does NOT
+    # move it" — and three lines below it writes GXPOS/GYPOS as the tenant's
+    # marshal target, on the ON-SCREEN path only. `v.point0` reads GRPAC, which
+    # POINT provably does not touch on either side, so that row is blind to the
+    # claim its own comment makes. If a reference's coordinate scan writes GXPOS
+    # BEFORE the range test — which is exactly what D-PAINTSEED just measured
+    # `PAINT` doing — then `w.pt.off` diverges and zerobas's write is on the
+    # wrong side of the test. This is K-LE3's shape a third time.
+    ("w.pt.on",   "t", S2, "V=POINT(20,21)"),
+    ("w.pt.off",  "t", S2, "V=POINT(300,100)"),
+    ("w.pt.step", "t", S2, "V=POINT STEP(1,1)"),
+    ("w.ps.off",  "t", S2, "PSET(300,100)"),
 
     # === n.* NEGATIVE CONTROLS =============================================
     ("n.zork",    "t", S2, "ZORK 1,2"),
@@ -496,6 +541,12 @@ NEGATIVE = {
                "lands in the work area (the box left it elsewhere)",
     "p.edge2": "NEGATIVE CONTROL — (255,191) is ON-screen: the domain edge from "
                "INSIDE, so p.x256/p.y192 are an edge and not 'all refuse'",
+    "g.ps.edge": "NEGATIVE CONTROL — the same edge from inside at the SILENT "
+                 "caller: (255,191) plots",
+    "g.pt.edge": "NEGATIVE CONTROL — POINT returns a REAL COLOUR (15+1), not "
+                 "just -1-or-0, so the g.pt.* readings mean something",
+    "g.pt.clear": "NEGATIVE CONTROL — POINT reads the BACKGROUND (4+1) on an "
+                  "untouched pixel",
     "n.zork":  "NEGATIVE CONTROL — a syntax error outside LINE stays ERR 2",
     "n.dzw":   "NEGATIVE CONTROL — one numeric fault at a checking reader",
     "n.tmw":   "NEGATIVE CONTROL — a type fault at a checking reader is 13",
@@ -536,7 +587,8 @@ def clip_at_prompt(tail: str) -> str:
 
 
 GXPOS_ROWS = frozenset(("w.s2", "w.s0", "w.s0.tm", "w.s2.col",
-                        "w.paint0.off", "w.paint2.off"))
+                        "w.paint0.off", "w.paint2.off",
+                        "w.pt.on", "w.pt.off", "w.pt.step", "w.ps.off"))
 
 # 🔴 A ROW THAT IS MERELY SLOW READS AS A DIVERGENCE, AND DID. `c.32767` and
 # `c.m32768` came back `<NO CAPTURE>` on zb in the first sweep and would have

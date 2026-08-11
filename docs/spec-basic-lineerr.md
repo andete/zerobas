@@ -2,15 +2,22 @@
 
 Measurement notebook:
 [`lineerr-msx1-characterization.md`](lineerr-msx1-characterization.md).
-Gate: `make lineerr-acceptance` (**124** rows × 3 sides). Landed 2026-08-11.
+Gate: `make lineerr-acceptance` (**142** rows × 3 sides). Landed 2026-08-11.
 Clean-room: observed screen output and published MSX system-variable reads only;
 both reference ROMs are black boxes.
 
-**§9 is a second landing on the same rule** — D-PAINTSEED, 2026-08-11, which
-measured the residual §8.2 filed and moved `PAINT`'s off-screen-seed test below
-the gate. §§1–8 are as they were the day D-LINERR landed, except for §8.2's
-closure marker; the row counts and gate timings in §6 are that day's and are
-superseded by §9's.
+**§§9–10 are two further landings on the same gate**, both 2026-08-11 and each
+the residual of the one before it:
+
+* **§9 D-PAINTSEED** — measured the residual §8.2 filed and moved `PAINT`'s
+  off-screen-seed test below the gate.
+* **§10 D-GIRDOM** — measured `gfx_in_range`'s domain at its two **silent**
+  callers, which §9.3 had left unmeasured, and found `POINT` leaking its tenant
+  marshalling into `GXPOS/GYPOS`.
+
+§§1–8 are as they were the day D-LINERR landed, except for §8.2's closure
+marker. **Row counts and gate timings in §6 and §9 are their own day's** —
+§10's are the current ones.
 
 ---
 
@@ -594,3 +601,159 @@ its seed". It is kept because that weaker statement is still worth having, and
 because the miss is the useful part: at a verb whose marshalling *is* the work
 area, "cut the instrument" and "cut the subject" are the same cut. K-PS1 and
 K-PS2 carry the falsification.
+
+---
+
+## 10. D-GIRDOM — the shared leaf's OTHER callers, 2026-08-11
+
+`make lineerr-acceptance` is now **142 rows × 3 sides, 140 scored + 2 deferred,
+236 s**.
+
+### 10.1 Why this followed D-PAINTSEED
+
+§9 pinned `gfx_in_range`'s domain at `ex_paint` — the one caller that **raises**.
+The identical leaf decides a **silent** outcome at the other two, and this
+project has already paid for the general form of that gap
+(`[[a-shared-engine-fix-must-measure-its-other-callers]]`): it applies to an
+engine's **domain** exactly as it does to a fix.
+
+    gfx_plot_go (PSET/PRESET)   off-screen -> no plot, work area already moved
+    ev_f_point  (POINT)         off-screen -> -1
+
+`POINT`'s return value is read into the existing `[ ERR , X , Y ]` instrument as
+`PSET(V+1,V+1)`: −1 lands the work area on (0,0), a colour *c* on (*c*+1,*c*+1).
+The `+1` keeps the encoding on the **accepted** `PSET` path, so it does not lean
+on the clip rule the `g.ps.*` rows are testing.
+
+### 10.2 The domain agreed at all three callers — and that is a result
+
+| row | statement (SCREEN 2) | all three sides |
+|---|---|---|
+| `g.ps.off` | `PSET(300,100)` | ` 0 , 300 , 100 ` |
+| `g.ps.x256` / `g.ps.y192` | `PSET(256,191)` / `PSET(255,192)` | ` 0 , 256 , 191 ` / ` 0 , 255 , 192 ` |
+| 🟢 `g.ps.edge` | `PSET(255,191)` | ` 0 , 255 , 191 ` |
+| `g.ps.neg` | `PSET(-1,100)` | ` 0 , 65535 , 100 ` |
+| `g.pr.off` | `PRESET(300,100)` | ` 0 , 300 , 100 ` |
+| `g.pt.off` / `.x256` / `.y192` / `.neg` | `V=POINT(…):PSET(V+1,V+1)` | ` 0 , 0 , 0 ` (−1) |
+| 🟢 `g.pt.edge` | on a pixel just set to 15 | ` 0 , 16 , 16 ` |
+| 🟢 `g.pt.clear` | on an untouched pixel | ` 0 , 5 , 5 ` (background 4) |
+
+One domain, `0..255 × 0..191`, at a refusing caller and at two silent ones, with
+the edge pinned from inside at both. The two colour-returning controls are what
+make the four −1 rows mean something: without them a `POINT` that returned −1 for
+*everything* would score green.
+
+### 10.3 🔴 The row that diverged is one NOBODY HAD EVER READ
+
+`ev_f_point`'s own comment says
+
+    ; POINT is READ-ONLY: it resolves STEP against the last point but does NOT move it
+
+and three lines below it writes `GXPOS`/`GYPOS` — a BASIC-visible work-area cell
+— to marshal the target to the tenant. Measured:
+
+| row | statement | both references | zerobas BEFORE |
+|---|---|---|---|
+| `w.pt.on` | `V=POINT(20,21)` via **GXPOS** | ` 0 , 7 , 4 ` | ` 0 , 20 , 21 ` |
+| `w.pt.step` | `V=POINT STEP(1,1)` via GXPOS | ` 0 , 7 , 4 ` | ` 0 , 8 , 5 ` |
+| `w.pt.off` | `V=POINT(300,100)` via GXPOS | ` 0 , 7 , 4 ` | ` 0 , 7 , 4 ` |
+
+**`POINT` moves neither half of the work area on either reference.** The comment
+was right, and the code contradicted it in a cell the comment did not name.
+
+**`v.point0` is the row that should have caught this and structurally cannot.**
+It reads `GRPACX/GRPACY` — which `POINT` provably does not touch on any of the
+three sides — so it is green under the defect, green under the fix, and green
+under the knife that reinstates the defect (K-GD1). It was even *promoted* in
+§2/§4.2 as the control that keeps the whole `v.*` class honest, and it is: about
+the **mode precheck**. It says nothing whatever about the work area.
+
+This is [[readout-blind-to-its-own-subject]] at the level of a *cell*: the K-LE3
+shape a third time, and the first time it has bitten a **function** rather than a
+statement.
+
+### 10.4 🔴 The G2 spec called this question "low-value" in writing
+
+[`spec-basic-graphics-g2.md`](spec-basic-graphics-g2.md) §5, G2-g:
+
+> *"Whether POINT itself then re-writes `GRPAC` is unpinned and low-value;
+> implement POINT read-only (does not move the last point) and note it."*
+
+Three things went wrong in one sentence, and only the first is the obvious one:
+
+1. It was **not** low-value — it is a PEEK-visible divergence in a core function.
+2. It named `GRPAC`, so "read-only" was implemented and reviewed as a claim about
+   `GRPAC` alone. `GXPOS` was never in the sentence, so nothing ever asked.
+3. **The cell it did not name is the one the implementation then used**, because
+   the `$E030` block header says *"coordinates are marshalled through the pinned
+   GXPOS/GYPOS cells (the resident stub writes them anyway)"* — true of every op
+   in the block except this one. A parameter channel chosen because "the stub
+   writes it anyway" is safe only for ops that write it **as their contract**.
+
+The generalisation is worth more than the byte: **an "unpinned, low-value"
+disposal is a prediction that nothing observable depends on the answer, and it
+is exactly as checkable as any other prediction in the tree** — one row, on a
+gate that already existed.
+
+### 10.5 The fix and its price — NET ZERO on both sides
+
+`POINT` marshals through its own `GFX_PTX/GFX_PTY` (`$E158/$E159`, 1 byte each:
+the resident only reaches the write after `gfx_in_range` passed, so both
+coordinates are `0..255`). Resident `ld a,c` + `ld (nn),a` is the same 4 bytes as
+`ld (nn),bc`; the tenant's `ld a,(nn)` is unchanged in length. **All four walls
+identical: 14 / 74 / 3604 / 1483.** `GFX_OP=1` keeps `GXPOS/GYPOS`, because
+`PSET`/`PRESET` write them as their contract anyway — there the free ride is
+earned.
+
+⚠️ This is the first change in the arc that moves `sub.rom`. ROMs after:
+`basic-reloc 0cb6ed7a`, `sub 10045c3d`, `disk 2c630d3d`,
+`zerobas-main-eu 4b6c931c` (§9's were `8ac6f1ee / 5d7c837a / 2c630d3d /
+f2313ae7`); `disk.rom` is untouched, as expected.
+
+Corpus: **21 targets from clean, every one rc=0** — the mechanical gates plus the
+graphics floor, the sub-ROM ABI and closure checks (which is where a tenant edit
+belongs), `graphics-acceptance`, and the error-surface neighbourhood.
+
+### 10.6 Knives — 3 cuts, each run twice, 6 of 6 EXACT
+
+| | cut | RED / predicted | GREEN moved | r1 | r2 |
+|---|---|---|---|---|---|
+| **K-GD1** | the leak reinstated: POINT marshals through `GXPOS/GYPOS` again (both files) | 2/2 | 0/23 | EXACT | EXACT |
+| **K-GD2** | the marshal write **deleted** (4 × `nop`) — the tenant reads stale RAM | 2/2 | 0/23 | EXACT | EXACT |
+| **K-GD3** | the DOMAIN cut at the shared leaf: `cp 192` → `cp 193` | 2/2 | 0/23 | EXACT | EXACT |
+
+**K-GD1 rebuilds `basic-reloc` AND `sub.rom` to `8ac6f1ee / 5d7c837a` — the
+D-PAINTSEED pair, byte for byte**, which is what proves the swap is byte-neutral
+across the slot boundary and not merely on one side of it.
+
+🎯 **Two of the three RED sets had to be corrected while the prediction was being
+written**, and both times the naive set contained rows that *cannot see the cut*:
+
+* K-GD2's obvious set was "the `g.pt.*` rows". But four of them are off-screen,
+  and the resident answers −1 from `pt_offscreen` **without calling the tenant**,
+  so deleting the marshal cannot reach them. Only the two colour-returning
+  controls move (both to ` 0 , 1 , 1 `).
+* K-GD3's obvious row was `g.ps.y192`. But its reading is `GRPAC`, which moves to
+  the raw coordinate whether the pixel plots or not — the clip is invisible
+  there. The rows that see it are `g.pt.y192` (−1 → a colour) and `p.y192`
+  (`PAINT` stops refusing, and floods: `<NO CAPTURE>`), and `p.y192` had to be
+  **added to the union** to be scorable at all.
+
+Writing the predictions is what surfaced both. Run-then-rationalise would have
+scored two misses as insight.
+
+### 10.7 🔴 The prediction that MISSED, and why it was wrong
+
+Written before the run: *"`w.pt.off` DIVERGES — if a reference's coordinate scan
+writes `GXPOS/GYPOS` before any range test, which is exactly what D-PAINTSEED
+just measured `PAINT` doing, then an off-screen `POINT` leaves GXPOS on
+(300,100)."* It was flagged in the prediction file as "the row most likely to be
+wrong", and it was: `w.pt.off` **agrees**, and the two rows predicted to agree
+are the ones that diverged.
+
+**15 of 18 row predictions exact; 3 wrong, including the one singled out as the
+sharp one.** The reasoning was an analogy from a rule measured at five
+**statements** to a **function**, and the analogy does not hold: the work-area
+write is not something the coordinate scan does to everything it parses, it is
+something the *statement* does with what the scan returned. `POINT` parses the
+same coordinate and writes nothing. A rule's blast radius is a claim too.

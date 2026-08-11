@@ -6,8 +6,8 @@ trail — what was asked, on what, and what came back, including the readings th
 refuted the question.
 
 Sides: **Philips VG-8020** and **National CF-3300** (both black-box oracles) and
-the zerobas repack. **124** rows, `make lineerr-characterize` (108 at D-LINERR;
-§8 is D-PAINTSEED's 16). `LINE`, `PSET`,
+the zerobas repack. **142** rows, `make lineerr-characterize` (108 at D-LINERR;
+§8 is D-PAINTSEED's 16 and §9 is D-GIRDOM's 18). `LINE`, `PSET`,
 `CIRCLE`, `PAINT`, `SCREEN`, `ON ERROR`, `ERR`, `RESUME` and `PEEK` are core
 MSX-BASIC, present on every MSX1, so both references are legitimate oracles for
 every row.
@@ -158,7 +158,9 @@ cheaper one-site reading survives — and it is wrong.
 in any mode by construction
 ([`spec-basic-graphics-g2.md`](spec-basic-graphics-g2.md) §11.8 / G2-e), so the
 divergences above are about the **precheck** and not about "graphics in
-SCREEN 0" generally.
+SCREEN 0" generally. ⚠️ **And about the PRECHECK only** — §9.3 found a live
+`POINT` defect this row is structurally blind to, because it reads `GRPAC` and
+the defect was in `GXPOS`. A control is honest about the cell it reads.
 
 ### 4.3 Two corollaries that fell out of the sweep
 
@@ -368,3 +370,81 @@ how the seed is **marshalled to the tenant** (`spec-basic-graphics-g5.md` §6), 
 cutting the write cuts the argument passing too and the fill runs from stale
 cells. At a verb whose ABI *is* the work area, "cut the instrument" and "cut the
 subject" are the same cut.
+
+---
+
+## 9. D-GIRDOM — the same leaf at its SILENT callers (2026-08-11)
+
+Contract: [`spec-basic-lineerr.md`](spec-basic-lineerr.md) §10. 18 rows added;
+the gate is now 142 rows, 140 scored.
+
+### 9.1 The question §8 left behind
+
+§8 pinned `gfx_in_range`'s domain at `ex_paint`, the caller that **raises**. Two
+callers decide a **silent** outcome from the identical leaf — `PSET`/`PRESET`
+(off-screen → no plot) and `POINT` (off-screen → −1) — and nothing had asked
+whether the references put the edge in the same place there.
+
+`POINT`'s return value goes into the existing instrument as `PSET(V+1,V+1)`:
+−1 → (0,0), a colour *c* → (*c*+1,*c*+1). The `+1` keeps it on the accepted
+`PSET` path, so the encoding does not depend on the clip rule under test.
+
+### 9.2 The domain agreed, and that answer is worth the rows
+
+`0..255 × 0..191` at all three callers, with `(255,191)` accepted at each and
+both off-by-ones refused, on both references. `PSET(-1,100)` leaves GRPAC on
+`65535`, the same raw int16 storage §4.4 pinned at `LINE`. Sixteen of the
+eighteen rows are a **confirmation**, and they were run because a shared leaf's
+other callers are not covered by a measurement at one of them — the answer being
+"the same" is a result, not a wasted sweep.
+
+### 9.3 🔴 The two rows that diverged read a cell nobody had read
+
+`ev_f_point`'s own comment says *"POINT is READ-ONLY: it resolves STEP against
+the last point but does NOT move it"*, and three lines below it writes
+`GXPOS/GYPOS` to marshal the target to the tenant.
+
+```
+w.pt.on     V=POINT(20,21)      GXPOS   refs  0 , 7 , 4    zb was  0 , 20 , 21
+w.pt.step   V=POINT STEP(1,1)   GXPOS   refs  0 , 7 , 4    zb was  0 , 8 , 5
+w.pt.off    V=POINT(300,100)    GXPOS   refs  0 , 7 , 4    zb      0 , 7 , 4
+```
+
+**`POINT` moves neither half of the work area on either reference.** The comment
+was right and the code contradicted it in a cell the comment did not name.
+
+⚠️ **`v.point0` cannot see this and never could.** It reads `GRPACX/GRPACY`,
+which `POINT` does not touch on any of the three sides, so it is green under the
+defect, under the fix, and under the knife that reinstates the defect. §4.2
+promotes it as "the control that keeps the whole `v.*` class honest" — and it is,
+about the **mode precheck**. A control is honest about the thing it reads.
+
+### 9.4 🔴 My sharpest prediction was wrong, and wrong the other way
+
+Written before the run: *"`w.pt.off` DIVERGES — if a reference's coordinate scan
+writes GXPOS before the range test, which is exactly what §8 measured `PAINT`
+doing, then an off-screen POINT leaves GXPOS on (300,100)."* Flagged in the same
+file as "the row most likely to be wrong". It was: `w.pt.off` **agrees**, and the
+two rows predicted to agree are the ones that diverged.
+
+**15 of 18 exact; 3 wrong, including the one singled out.** The error was
+extrapolating a rule measured at five **statements** to a **function**. The
+work-area write is not something the coordinate scan does to everything it
+parses — it is something the *statement* does with what the scan returned.
+`POINT` parses the identical coordinate and writes nothing. **A rule's blast
+radius is a claim too**, and this one was made by analogy rather than measured.
+
+### 9.5 Two RED sets had to be corrected while being written
+
+* **K-GD2** deletes the marshal write. The obvious RED set is "the `g.pt.*`
+  rows" — but four of them are off-screen and the resident answers −1 *without
+  calling the tenant*, so the cut cannot reach them. Only the two
+  colour-returning controls move.
+* **K-GD3** cuts the domain (`cp 192` → `cp 193`). The obvious row is
+  `g.ps.y192` — but its reading is GRPAC, which moves to the raw coordinate
+  whether the pixel plots or not, so the clip is *invisible* there. The rows
+  that see it are `g.pt.y192` and `p.y192`, and `p.y192` had to be added to the
+  knife's union to be scorable at all.
+
+Both were caught by writing the prediction down before running. A runner that
+scored first would have produced two MISSES and an explanation.

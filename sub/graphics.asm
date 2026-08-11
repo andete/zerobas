@@ -363,14 +363,20 @@ gp_clear:
 ; ===========================================================================
 ; gfx_point — GFX_OP=2: read one pixel's colour into GFX_RES (POINT). The resident
 ; stub has range-checked (off-screen -> -1 without calling us) and marshalled the
-; target into GXPOS/GYPOS. Reads the pattern bit and the group colour byte and
+; target into GFX_PTX/GFX_PTY. Reads the pattern bit and the group colour byte and
 ; returns the fg nibble if the bit is set, else the bg nibble. Read-only: writes
 ; no work-area cell (POINT does not move the last-referenced point).
+; ⚠️ D-GIRDOM: this arm used to read GXPOS/GYPOS, like GFX_OP=1 still does. It
+; does not any more, and the difference is not cosmetic: GXPOS/GYPOS is
+; BASIC-visible, so the resident write that fed this read was a MEASURABLE side
+; effect of a function that both references keep read-only (rows w.pt.on /
+; w.pt.step). GFX_OP=1 keeps GXPOS/GYPOS because PSET/PRESET move the work area
+; anyway -- the cells are the marshalling AND the contract there.
 ; ===========================================================================
 gfx_point:
-                ld      a,(GXPOS)
+                ld      a,(GFX_PTX)
                 ld      e,a
-                ld      a,(GYPOS)
+                ld      a,(GFX_PTY)
                 ld      d,a
                 call    gfx_calc_addr       ; HL = pattern addr, C = mask
                 call    gfx_rd_raw          ; A = pattern byte (HL/BC/DE preserved -> C=mask)

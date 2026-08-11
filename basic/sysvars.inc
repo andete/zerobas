@@ -534,6 +534,14 @@ STAR_TOKEN      equ     $F3     ; '*'
 ; GXPOS/GYPOS cells (the resident stub writes them anyway, §6); only the op selector,
 ; the resolved colour, and the POINT result need own bytes. All dead outside a GFX
 ; call. GFX_OP=0 is still G1's floor self-test (the floor probe now sets it).
+; 🔴 D-GIRDOM 2026-08-11: "THE RESIDENT STUB WRITES THEM ANYWAY" IS FALSE FOR ONE
+; OP. It holds for GFX_OP=1/3/5 (PSET/PRESET, LINE, PAINT) -- STATEMENTS that move
+; the work area, so the marshalling and the contract are the same write. GFX_OP=2
+; is POINT, a read-only FUNCTION that both references leave the work area untouched
+; by, so the "anyway" was doing work it had not earned and the free ride shipped a
+; BASIC-VISIBLE side effect (rows w.pt.on / w.pt.step). POINT now marshals through
+; GFX_PTX/GFX_PTY below. ⚠️ Before reusing a pinned cell as a parameter, ask whether
+; THIS op writes it as part of its contract -- not whether the block does.
 GFX_OP          equ     $E030   ; main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1)
 GFX_C           equ     $E031   ; main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1)
 GFX_RES         equ     $E032   ; tenant->main: POINT result colour 0..15 (1)
@@ -639,6 +647,19 @@ GFX_ENEG        equ     $E155   ; resident: end angle was negative -> spoke pend
 ; (GFX_PSTK).
 GFX_B           equ     $E156   ; border colour B (raw comparison value 0..255,
                                 ; NOT range-checked -- spec §3) (1) -> ends $E157
+; D-GIRDOM: POINT's OWN marshal cells. POINT used to hand the tenant its target
+; through GXPOS/GYPOS, which is a BASIC-VISIBLE work-area cell -- and MEASURED
+; (rows w.pt.on / w.pt.step) both references leave GXPOS/GYPOS untouched by a
+; POINT, on-screen or off. `v.point0` could not see it: that row reads GRPACX/
+; GRPACY, which POINT does not touch on either side, so the leak sat behind a
+; green row for the whole life of G2. ⚠️ THE $E030 BLOCK HEADER'S "coordinates
+; are marshalled through the pinned GXPOS/GYPOS cells (the resident stub writes
+; them anyway)" IS EXACTLY THE ASSUMPTION THAT WAS WRONG -- true for PSET/
+; PRESET/LINE/PAINT, which are statements that MOVE the work area, and false for
+; POINT, which is a read-only function. One byte each: the resident only reaches
+; here after gfx_in_range passed, so both coordinates are 0..255.
+GFX_PTX         equ     $E158   ; main->tenant: POINT target X, 0..255 (1)
+GFX_PTY         equ     $E159   ; main->tenant: POINT target Y, 0..191 (1) -> ends $E15A
 GFX_CPHASE      equ     $E157   ; CIRCLE-parse co-routine phase (sub/circleparse.asm):
                                 ; which arg the tenant last requested, so it resumes at
                                 ; the right point after each resident eval-bounce

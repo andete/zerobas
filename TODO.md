@@ -1371,9 +1371,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `make lineerr-acceptance` **106/106 from 55/106** + 2 deferred, both
       references agreeing on every scored row; `stmtpend-acceptance`'s DEFERRED
       dict is now EMPTY). ⚠️ Those are the figures **on the day this closed**;
-      the gate is **122/122 + 2 deferred over 124 rows** since D-PAINTSEED the
-      same evening. A row count quoted in a closed item is a timestamp, not a
-      baseline — run the gate.
+      the gate is **140/140 + 2 deferred over 142 rows** since D-PAINTSEED and
+      D-GIRDOM the same evening. A row count quoted in a closed item is a
+      timestamp, not a baseline — run the gate.
       🔴 **AND THE DIAGNOSIS FILED HERE WAS WRONG.** This entry said *"LINE
       raises its own `Illegal function call` eagerly from inside its coordinate
       parse"*. **There is no ERR 5 anywhere in `parse_coord`.** The refusal was
@@ -1439,17 +1439,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       deliberately throwaway (`spec-probe-injjudge.md` §1.3), so where it should
       live is the open question, not what it should do.
 
-- [ ] ⚠️ **`gfx_in_range`'s DOMAIN IS UNMEASURED AT ITS OTHER TWO CALLERS.**
-      Filed 2026-08-11 by D-PAINTSEED. The `p.*` rows pinned `0..255 × 0..191`
-      with the accepted edge `(255,191)` and both off-by-ones — but only through
-      `PAINT`, which is the one caller that REFUSES. The other two
-      (`basic/graphics.asm` l.81 / l.104, the `PSET`/`PRESET` clip and `POINT`'s
-      −1) use the identical leaf to decide a SILENT no-op, and no row asks
-      whether the references agree about the edge there. `c.300` says off-screen
-      is legal at `LINE`; nothing says `PSET(255,192)` and `PSET(256,191)` are
-      no-ops rather than something else. A shared leaf's other callers decide
-      the site ([[a-shared-engine-fix-must-measure-its-other-callers]]) — that
-      applies to its DOMAIN as much as to a fix.
+- [x] ✅ **`gfx_in_range`'s DOMAIN AT ITS OTHER TWO CALLERS.** Filed 2026-08-11
+      by D-PAINTSEED, CLOSED the same day by **D-GIRDOM**
+      ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md) §10). The
+      domain AGREES at all three callers — `0..255 × 0..191`, edge `(255,191)`
+      accepted, both off-by-ones refused, negatives stored raw as `65535` — on
+      both references. 🔴 **But two rows added alongside it did NOT agree, and
+      they are about `POINT`, not the domain:** `ev_f_point` marshalled its
+      target to the tenant through `GXPOS/GYPOS`, a BASIC-visible work-area
+      cell, so `V=POINT(20,21)` moved half the work area where both references
+      move neither half (`w.pt.on`, `w.pt.step`). Now marshalled through its own
+      `GFX_PTX/GFX_PTY`; **net zero bytes on both sides of the slot boundary**;
+      3 knives, 6/6 EXACT. 🔴 `v.point0` — promoted as the control that keeps
+      the `v.*` class honest — could never have caught it: it reads `GRPAC`,
+      which `POINT` does not touch on any of the three sides.
+      🔴 **AND `docs/spec-basic-graphics-g2.md` §5 CALLED THIS QUESTION
+      "unpinned and low-value" IN WRITING**, naming only `GRPAC`; the cell it did
+      not name is the one the implementation then used, because the `$E030` block
+      header says coordinates are marshalled through `GXPOS/GYPOS` since "the
+      resident stub writes them anyway" — true of every op in that block except
+      the read-only one. Corrected in place.
+
+- [ ] ⚠️ **`GFX_OP=1`'s MARSHALLING IS STILL ALIASED TO THE WORK AREA, AND THAT
+      IS A DECISION NOTHING RE-EXAMINES.** Filed 2026-08-11 by D-GIRDOM.
+      `PSET`/`PRESET` hand the tenant their target through `GXPOS/GYPOS` and it
+      is currently correct — those verbs write those cells as their contract, so
+      the aliasing is invisible. But it is invisible by COINCIDENCE of the two
+      values being equal, not by construction: nothing asserts that the
+      marshalled value and the contracted value can never diverge, and the same
+      coincidence at `GFX_OP=2` is what D-GIRDOM just paid for. Cheap to settle
+      (`GFX_PTX/GFX_PTY` exist now and the write is the same size), but it is a
+      change with no failing row behind it — so it is filed, not folded in.
+      ⚠️ Whoever picks it up must produce the row FIRST; a fix with no row is
+      how the G2-g disposal happened in the first place.
 
 - [ ] ⚠️ **`DRAW`'s mode gate was left alone, with a green row behind it.**
       Filed 2026-08-11 by D-LINERR. `v.draw0` (`DRAW"U10"` in SCREEN 0) reads

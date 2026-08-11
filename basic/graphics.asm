@@ -103,8 +103,20 @@ ev_f_point:
                 push    hl                  ; save the advanced cursor across the call
                 call    gfx_in_range        ; CF = 1 iff on-screen
                 jr      nc,pt_offscreen
-                ld      (GXPOS),bc          ; marshal target (POINT does NOT touch GRPAC)
-                ld      (GYPOS),de
+                ; D-GIRDOM: marshal through POINT'S OWN cells, NOT GXPOS/GYPOS.
+                ; This used to be `ld (GXPOS),bc / ld (GYPOS),de` -- and GXPOS/
+                ; GYPOS is BASIC-visible. MEASURED: both references leave BOTH
+                ; halves of the work area untouched by a POINT, on-screen
+                ; (`w.pt.on`), through STEP (`w.pt.step`) and off-screen
+                ; (`w.pt.off`); zerobas moved GXPOS on the first two. The
+                ; comment two lines up was RIGHT about GRPAC and that is why
+                ; `v.point0` stayed green over it for the whole life of G2 --
+                ; the row read the half POINT does not touch. Byte-neutral swap
+                ; (`ld a,c`+`ld (nn),a` = `ld (nn),bc`), 2 B of RAM.
+                ld      a,c                 ; x, 0..255 (gfx_in_range passed)
+                ld      (GFX_PTX),a
+                ld      a,e                 ; y, 0..191
+                ld      (GFX_PTY),a
                 ld      a,2                 ; GFX_OP = 2 -> tenant point read
                 ld      (GFX_OP),a
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
