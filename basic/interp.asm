@@ -75,9 +75,18 @@ init:
                 ; above: openMSX zero-fills RAM and would hide the omission. ATRBYT
                 ; joins them -- it is the shared graphics attribute a colourless DRAW
                 ; reads (§6), so it must start at FORCLR, not at RAM garbage.
-                ld      (GFX_DANGLE),a      ; A still 0: angle 0
-                ld      a,4
-                ld      (GFX_DSCALE),a      ; scale 4 = 1:1
+                ld      (GFX_DANGLE),a      ; A still 0: angle 0 -- and MEASURED
+                                            ; to be the same state an explicit
+                                            ; `A0` leaves behind (d.a0.32k), so
+                                            ; this cell needs no sentinel
+                ld      (GFX_DSCALE),a      ; A still 0: the NEVER-SET scale
+                                            ; state, which is NOT `S4` (D-DSCALE,
+                                            ; spec-basic-lineerr.md §12). From
+                                            ; boot both references move the FULL
+                                            ; count; `S4` wraps. 0 is a sentinel
+                                            ; `gdo_s` cannot write -- it maps S0
+                                            ; to 4 (measured) -- so "never set"
+                                            ; and every explicit S are distinct.
                 ld      a,(FORCLR)
                 ld      (ATRBYT),a
     ENDIF

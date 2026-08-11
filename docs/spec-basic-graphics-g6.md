@@ -60,6 +60,28 @@ That single rule produces every large-count wrap observed (`U32767` → *down* 1
 the negative rounding (`S3U-10` → 7, not 8). A negative count therefore moves in
 the opposite direction, and `+` may prefix a count.
 
+🔴 **TWO CORRECTIONS TO THAT RULE — D-DSCALE, 2026-08-11**
+([`spec-basic-lineerr.md`](spec-basic-lineerr.md) §12). Neither is visible
+without a **large** count, which is why twelve fitted-and-falsified points
+missed both:
+
+1. **It does not apply until an `S` has been executed.** The power-on state is
+   not `S4`; it is a distinct never-set state in which the multiply and the
+   divide do not run at all — see §4.
+2. **The sign boundary is `$8001`, not `$8000`.** `signed16` above is right for
+   `$FFFC` (`S4U32767` → down 1) and **wrong for `$8000` alone**, which both
+   references read as **+32768**: `S4U8192` moves **up** 8192, and so do
+   `S2U16384`, `S8U4096`, `S1U32768`, `S4U24576` and `S4U-8192` — five more
+   `(n,S)` pairs reaching the same product, plus the neighbours `$7FFC`
+   (`S4U8191`) and `$8004` (`S4U8193`) that pin it as a boundary and not a
+   special case. `$8000` is the one 16-bit value that is its own two's-complement
+   negation, so a `negate → shift → negate` magnitude divide returns it negative
+   when the references return it positive.
+
+So the corrected rule reads: **distance = n when no `S` has run; otherwise
+`f((n × S) mod 65536) ÷ 4` with the product negative iff it is ≥ `$8001`,
+truncating toward zero.**
+
 **Angle `A n`** (`0..3` = 0/90/180/270°) rotates **relative** motion only — the
 eight letters and relative `M`, including under `B`/`N` — and never absolute `M`.
 
@@ -94,6 +116,23 @@ states.** zerobas initialises `GFX_DSCALE = 4` and therefore wraps from boot;
 rows `d.def32k` / `d.lit2` are deferred in `make lineerr-acceptance` and the
 work is filed in `TODO.md`. The rest of this section — that the cells are
 cold-boot-only and survive everything else — is unaffected and still measured.
+
+✅ **CLOSED by D-DSCALE, 2026-08-11** ([`spec-basic-lineerr.md`](spec-basic-lineerr.md)
+§12). The never-set state is now zerobas's boot state: `GFX_DSCALE` starts at
+**0**, a sentinel `gdo_s` can never write because it maps `S0` to 4, and
+`gdrw_scale` returns the count untouched when it reads 0. Both rows above are
+undeferred and green.
+
+**And the `A` half of this sentence is now measured too, rather than assumed.**
+The angle cannot be asked directly — its domain is a checked `0..3` and
+rotate-by-zero is the identity in any implementation — so `d.a0.32k` borrows the
+*scale's* wrap as its readout: `DRAW"A0BU32767"` still moves the full count on
+both references, as does `DRAW"C1BU32767"`, and `DRAW"BU32767S4"` does not let a
+trailing `S` reach back over the `U`. **An explicit `A0` and the boot default
+are the same state, and no command other than an already-executed `S` arms the
+scale**, so `GFX_DANGLE` correctly needs no sentinel. `DRAW"S4":DRAW"BU32767"`
+wraps, which is this section's persistence claim asked at the one place it is
+observable.
 
 ⇒ their cells must live in the graphics block's own RAM (§6), be initialised
 **once at cold boot**, and be touched by nothing else. Any "reset it at statement

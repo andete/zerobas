@@ -1774,8 +1774,14 @@ RDV_MODE        equ     RDV_ST + 1      ; $E554: main -> tenant MODE (1), D-READ
 ; nothing enforces. 2 B buys that away.
 TGT_ADDR        equ     RDV_MODE + 1    ; $E555: element address, or 0 = scalar (2)
 ;
-GFX_DSCALE      equ     GFX_PSTK_END    ; $E55A: persistent scale, quarter units (1)
-GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E55B: persistent angle 0..3 (1)
+GFX_DSCALE      equ     GFX_PSTK_END    ; $E55A: persistent scale, quarter units,
+                                        ; 0 = NEVER SET (D-DSCALE): a distinct
+                                        ; state from S4, in which no scaling runs
+                                        ; at all. `gdo_s` maps S0 to 4, so no
+                                        ; explicit S can write the sentinel. (1)
+GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E55B: persistent angle 0..3 (1). Boot 0
+                                        ; and an explicit `A0` are the SAME state
+                                        ; (measured, d.a0.32k): no sentinel here.
 ; G8 marshalling (docs/spec-basic-graphics-g8.md §5): the index and the value of a
 ; `VDP(n)=v` / `BASE(n)=v` write, handed to the tenant, which owns the domain checks
 ; and the register programming. Dead outside such a statement -- the last 4 B before

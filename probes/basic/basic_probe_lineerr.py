@@ -567,6 +567,87 @@ CASES = [
     ("d.s4.32k",  "t", S2, 'DRAW"S4BU32767"'),
     ("d.s4.40k",  "t", S2, 'DRAW"S4BU40000"'),
     ("d.def32k",  "t", S2, 'DRAW"BU32767"'),
+    # === D-DSCALE — THE BOOT-DEFAULT SCALE STATE, SWEPT ====================
+    # 🟢 the control that explains why five correct measurements supported a
+    # wrong rule: at a SMALL count the two states are indistinguishable, because
+    # the multiply is the identity for every n where n*4 stays inside 16 bits.
+    # If `d.def10` ever diverges, the claim is not "the default is unscaled" but
+    # "the default is something else entirely", and the whole class changes.
+    ("d.def10",   "t", S2, 'DRAW"BU10"'),
+    # 🔴 …and the SMALLEST count that separates them: 8192*4 = 32768 is the
+    # first product to reach bit 15, so this is the exact edge of the blindness
+    # above. Its explicit-S4 twin is the control that says the divergence is
+    # about the STATE and not about large counts being mishandled generally.
+    ("d.def8k",   "t", S2, 'DRAW"BU8192"'),
+    ("d.s4.8k",   "t", S2, 'DRAW"S4BU8192"'),
+    # 🔴 …and the same default state in the OTHER axis sign and the OTHER AXIS.
+    # Every reading of this state so far has been an upward Y move; `gdrw_axis`
+    # negates for U and does not for D, and a sentinel that only worked through
+    # the negating path would be green on every row filed so far.
+    ("d.defd40k", "t", S2, 'DRAW"BD40000"'),
+    ("d.defr40k", "t", S2, 'DRAW"BR40000"'),
+    # === WHERE THE BOOT STATE LIVES — the fork the fix's SHAPE depends on ===
+    # 🔴 `GFX_DANGLE` is initialised at the SAME cold-boot hook and `A0` is
+    # writable explicitly, and NOTHING has ever asked whether the boot default
+    # and an explicit `A0` differ. The angle cannot be asked directly — its
+    # domain is a CHECKED 0..3 and rotate-by-zero is the identity in any
+    # implementation — so these rows BORROW THE SCALE'S WRAP as the readout: if
+    # an `A0` (or a `C1`) reads 5 where `d.def32k` reads the full count, then
+    # the boot state is a SHARED "no transform yet" flag that any command arms,
+    # the sentinel must be written by gdo_a and gdo_c too, and a scale-cell-only
+    # fix is wrong. If they read the full count, the two cells are independent
+    # and the angle question is closed by DOMAIN rather than left unasked.
+    ("d.a0.32k",  "t", S2, 'DRAW"A0BU32767"'),
+    ("d.c1.32k",  "t", S2, 'DRAW"C1BU32767"'),
+    # 🟢 …with the two angle rows that say the readout above is honest: A0 is
+    # accepted and does nothing, A1 turns U into L (measured, notes §1). Without
+    # them `d.a0.32k` agreeing is equally explained by `A0` being ignored.
+    ("d.a0.10",   "t", S2, 'DRAW"A0BU10"'),
+    ("d.a1.10",   "t", S2, 'DRAW"A1BU10"'),
+    # 🔴 WHEN the state is consulted, in both directions. `d.prev32k` is §4's
+    # persistence claim asked at the wrap — the only place it is observable —
+    # and it is the row that forbids a fix that re-arms per statement.
+    # `d.post32k` puts the `S4` AFTER the move: the state is read at the
+    # COMMAND, so a trailing S must not reach back over the U.
+    ("d.prev32k", "t", S2, 'DRAW"S4":DRAW"BU32767"'),
+    ("d.post32k", "t", S2, 'DRAW"BU32767S4"'),
+    # === ROUND 2 — 🔴 `d.s4.8k` DIVERGED, AND IT WAS WRITTEN AS THE CONTROL ==
+    # It was there to say "the divergence is about the STATE, not about large
+    # counts". It is not green: at an EXPLICIT S4 both references move the full
+    # 8192 and zerobas moves -8192. Decomposing the three S4 readings into their
+    # 16-bit products —  $8000 -> +8192,  $FFFC -> -1,  $7100 -> +7232 — says
+    # the product IS signed ($FFFC reads as -4) but the sign boundary is at
+    # $8001: `$8000` is +32768 on both references. It is the ONE 16-bit value
+    # that is its own two's-complement negation, which is why twelve fitted and
+    # falsified points in g6_draw_notes.md §3 never saw it, and
+    # `gdrw_scale`'s `bit 7,h` puts it on the wrong side.
+    # ⚠️ A SEPARATE DEFECT from the boot default, in the EXPLICIT-S arithmetic.
+    # These four reach the SAME product from four different (n,S) pairs, so a
+    # green run cannot be "8192 is special".
+    ("d.p8.s2",   "t", S2, 'DRAW"S2BU16384"'),
+    ("d.p8.s8",   "t", S2, 'DRAW"S8BU4096"'),
+    ("d.p8.s1",   "t", S2, 'DRAW"S1BU32768"'),
+    ("d.p8.s4b",  "t", S2, 'DRAW"S4BU24576"'),
+    # …and the same product reached through a NEGATIVE count: the count's sign
+    # is already gone by the time the product is judged.
+    ("d.p8.neg",  "t", S2, 'DRAW"S4BU-8192"'),
+    # 🟢 THE TWO ROWS THAT MAKE IT A BOUNDARY AND NOT A SPECIAL CASE: one step
+    # below $8000 is positive on both sides, one step above is negative on both
+    # sides. Without them "the references treat $8000 as positive" is equally
+    # explained by "the references do not wrap at all up here".
+    ("d.p7ffc",   "t", S2, 'DRAW"S4BU8191"'),
+    ("d.p8004",   "t", S2, 'DRAW"S4BU8193"'),
+    # 🟢 …and the product that wraps to ZERO, with an R5 AFTER it so "the U
+    # moved nothing" is distinguishable from "the statement died".
+    ("d.p0",      "t", S2, 'DRAW"S4BU16384R5"'),
+    # 🔴 …AND THE TRUE MINIMAL DISCRIMINATOR, which is 8193 and NOT 8192.
+    # `d.def8k` was designed as the sharpest separation of the two scale states
+    # and landed on the single count where they COINCIDE — because at S4 the
+    # product is exactly $8000. 8193 is the first count genuinely past the
+    # boundary. 🟢 `d.defneg` is its negative-count control: the DEFAULT state
+    # passes a negative count straight through, with no sign question at all.
+    ("d.def8193", "t", S2, 'DRAW"BU8193"'),
+    ("d.defneg",  "t", S2, 'DRAW"BU-8192"'),
     # 🟢 …and the control that says STR$ reaches a DRAW argument at all, so the
     # d.dz2/d.ov2 divergence is about the PENDING FAULT and not about STR$.
     ("d.str2",    "t", S2, 'DRAW"R"+STR$(10)'),
@@ -748,32 +829,15 @@ _S3 = ("DEFERRED — SCREEN 3 (multicolour) DRAWS on both references; zerobas "
        "happens, and the refusal itself is correct for every mode zerobas "
        "implements. Measured, priced at nothing, filed in TODO.md")
 
-_SCALE = ("DEFERRED — the BOOT-DEFAULT DRAW SCALE STATE IS NOT `S4`. From boot "
-          "both references move the FULL count; after an explicit `S4` they "
-          "wrap exactly as scratchpad/g6_draw_notes.md §3 models, and zerobas "
-          "agrees with them THERE (rows d.s4.32k / d.s4.40k / d.s8.10 / "
-          "d.s2.10). zerobas initialises GFX_DSCALE=4 at cold boot, so it wraps "
-          "from boot. 🔴 The notebook's five fitted points are each CORRECT and "
-          "the generalisation is not: every one was taken after an explicit "
-          "`S`, and the multiply is the identity everywhere except the wrap, so "
-          "a LARGE COUNT is the only observable that separates the two states. "
-          "Out of D-DRAWERR's reach for two reasons: it changes what DRAW DRAWS "
-          "rather than what it REFUSES (graphics-acceptance and G6 own that "
-          "surface), and `never set` needs a sentinel `S4` cannot collide with "
-          "— GFX_DSCALE starts at 4 and gdo_s maps S0 to 4. Measured, printed, "
-          "excluded from the tally in BOTH directions, filed in TODO.md")
-
 DEFERRED: dict[str, str] = {
     # Measured, not scored, each with the reason it is out of this slice's reach.
     "m.s3": _S3,
     "v.pset3": _S3,
-    # 🔴 D-DRAWERR. ⚠️ These two were RED before they were deferred, so the
-    # headline is stated BOTH ways in the spec (§6.1's rule: recategorising a
-    # red row as deferred and then quoting the improvement against the new
-    # denominator is how a fix flatters itself). They are deferred because
-    # nothing in this slice's diff can move them, not because they are awkward.
-    "d.lit2": _SCALE,
-    "d.def32k": _SCALE,
+    # 🎯 `d.lit2` and `d.def32k` were deferred here by D-DRAWERR and are
+    # UNDEFERRED by D-DSCALE (docs/spec-basic-lineerr.md §12) — they are the
+    # rows the fix was written against, so leaving them deferred would mean the
+    # fix was never scored. Both are green from the SAME diff that greens the
+    # d.p8.* set; see §12 for why the two defects are separate.
 }
 
 SENTINELS = ("<NO CAPTURE>", "<NO ECHO>")

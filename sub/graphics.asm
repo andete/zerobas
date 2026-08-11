@@ -2200,7 +2200,10 @@ gdo_c:
                 jr      gdo_next
 
 ; --- S n: scale, quarter units; S0 means 4 (measured against a pre-set S8 AND
-; S2, so it is a real reset to 4, not "leave unchanged").
+; S2, so it is a real reset to 4, not "leave unchanged"). ⚠️ THAT MAPPING IS
+; WHAT MAKES 0 A USABLE SENTINEL for the never-set state `gdrw_scale` reads: no
+; explicit `S` can ever store it, so "never set" and "S0" stay distinct even
+; though S0 is otherwise indistinguishable from S4.
 gdo_s:
                 call    gdrw_arg_req
                 ld      hl,(GFX_DARG)
@@ -2546,20 +2549,36 @@ gdrw_negate_hl:
 ;
 ; in/out: GFX_DARG. The product is taken mod 65536 deliberately -- that wrap is
 ; exactly what makes `U32767` move DOWN one pixel on the reference.
+;
+; TWO measured departures from that one-line model, both D-DSCALE
+; (docs/spec-basic-lineerr.md §12), neither one visible without a LARGE count:
+;
+;   * S = 0 is the NEVER-SET state, not `S4`. From boot both references move the
+;     full count -- `DRAW"BU40000"` moves 40000, `DRAW"S4BU40000"` moves 7232 --
+;     so the multiply does not run at all until an `S` has been executed. The
+;     cell starts at 0 (basic/interp.asm cold-boot hook) and `gdo_s` maps `S0`
+;     to 4, so 0 is a sentinel no explicit `S` can collide with.
+;   * The sign boundary is $8001, NOT $8000. `$FFFC` reads as -4 (S4U32767
+;     moves DOWN 1) but `$8000` reads as +32768 (S4U8192 moves UP 8192, and so
+;     do S2U16384 / S8U4096 / S1U32768 / S4U24576 / S4U-8192 -- five (n,S) pairs
+;     at the same product). $8000 is the ONE 16-bit value that is its own two's
+;     -complement negation, which is why the twelve points §3's model was fitted
+;     and falsified on never saw it.
 ; ---------------------------------------------------------------------------
 gdrw_scale:
-                ld      de,(GFX_DARG)
                 ld      a,(GFX_DSCALE)
-                ld      hl,0
                 or      a
-                jr      z,gdrw_sc_div       ; S=0 cannot reach here (gdo_s maps it to 4)
+                ret     z                   ; NEVER SET: no multiply, no divide --
+                                            ; GFX_DARG passes straight through
+                ld      de,(GFX_DARG)
+                ld      hl,0
                 ld      b,a
 gdrw_sc_mul:
                 add     hl,de               ; HL = n * S, mod 65536 by construction
                 djnz    gdrw_sc_mul
-gdrw_sc_div:
                 bit     7,h
                 jr      nz,gdrw_sc_neg
+gdrw_sc_pos:
                 srl     h                   ; non-negative: a plain logical >>2
                 rr      l
                 srl     h
@@ -2567,6 +2586,10 @@ gdrw_sc_div:
                 jr      gdrw_sc_store
 gdrw_sc_neg:
                 call    gdrw_negate_hl      ; negative: divide the MAGNITUDE, then negate
+                bit     7,h                 ; ...unless the magnitude is STILL
+                jr      nz,gdrw_sc_pos      ; negative, which happens for $8000
+                                            ; alone: both references read that
+                                            ; product as +32768 (measured)
                 srl     h                   ; -> truncation toward zero (measured:
                 rr      l                   ;    S3U-10 gives 7, not floor's 8)
                 srl     h

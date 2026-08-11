@@ -4579,3 +4579,73 @@ excluded from the tally in **both** directions, and filed in `TODO.md`.
 [`docs/spec-basic-graphics-g6.md`](../docs/spec-basic-graphics-g6.md) §4's
 *"resets them, to `S = 4`"* and §5's two error rows are corrected in place with
 SUPERSEDED pointers rather than deleted.
+
+## 2026-08-11 — `DRAW`'s scale state has THREE values, and `$8000` is positive (D-DSCALE)
+
+Spec [`docs/spec-basic-lineerr.md`](../docs/spec-basic-lineerr.md) §12,
+measurement
+[`docs/lineerr-msx1-characterization.md`](../docs/lineerr-msx1-characterization.md)
+§11, gate `make lineerr-acceptance`. **210 rows on the same three sides, 208
+scored and both references agreeing on every one** (2 deferred — SCREEN 3 only;
+the previous entry's two scale rows are **undeferred here and green**).
+Clean-room: observed screen output and published MSX system-variable reads only;
+both reference ROMs are black boxes. The `DRAW` *language* remains the public
+MSX-BASIC language reference, every behavioural rule our own black-box
+measurement, no disassembly.
+
+**The rule, newly sourced:** *`DRAW`'s scale state has three values — never-set,
+explicit `S4`, and explicit `Sn`.* From boot neither the multiply nor the divide
+runs, so both references move the FULL count (`DRAW"BU40000"` → 40000); after
+any explicit `S`, including `S4` and `S0`, the count wraps (`DRAW"S4BU40000"` →
+7232). **Nothing else arms it:** `DRAW"A0BU32767"`, `DRAW"C1BU32767"` and
+`DRAW"BU32767S4"` all still move the full count, and `DRAW"S4":DRAW"BU32767"`
+wraps — so the arming is an already-executed `S`, it persists into the next
+statement, and the cells are independent.
+
+**`GFX_DANGLE` was asked the same question and needs no sentinel — measured, not
+assumed.** The angle has no wrap of its own (domain a checked `0..3`,
+rotate-by-zero the identity), so `d.a0.32k` borrows the scale's wrap as its
+readout. Both branches of the design fork were written down and priced before
+the run; the rows chose the cheap one.
+
+**Routines touched:**
+
+* `init`'s cold-boot G6 hook (`basic/interp.asm`) — `ld a,4` deleted, so
+  `GFX_DSCALE` starts at the **never-set sentinel 0**. 0 is a usable sentinel
+  only because `gdo_s` maps `S0` to 4 (measured against a pre-set `S8` *and*
+  `S2`), so no explicit `S` can ever store it. **−2 B, page 1.**
+* `gdrw_scale` (`sub/graphics.asm`) — the `jr z` arm marked *"S=0 cannot reach
+  here"* becomes `ret z`, passing `GFX_DARG` through untouched. The old arm fell
+  into the divide with `HL = 0`, which returns a distance of 0, not "no
+  scaling". **−1 B.**
+* `gdrw_sc_neg` (`sub/graphics.asm`) — after the magnitude negation, `bit 7,h`
+  still set can only mean the product was `$8000`, which takes the positive
+  shift path. **+4 B.**
+
+**Net −2 B page 1, +3 B sub page 0.** Walls: low **14 B**, page 1 **73 B**, sub
+p0 **3604 B**, sub p1 **1483 B**.
+
+🔴 **A SECOND DEFECT, FOUND BY A ROW WRITTEN AS A CONTROL — the previous entry's
+shape, again.** `d.s4.8k` (`DRAW"S4BU8192"`) was the green control saying the
+divergence was about the *state* and not about large counts. It diverged: the
+16-bit product `$8000` is **+32768** on both references and −32768 in
+`gdrw_scale`, so the sign boundary is `$8001`. `$8000` is the one 16-bit value
+that is its own two's-complement negation. Pinned at five `(n,S)` pairs reaching
+the same product (`S2U16384`, `S8U4096`, `S1U32768`, `S4U24576`, `S4U-8192`)
+with `$7FFC` and `$8004` as the neighbours that make it a boundary.
+
+🔴 **And the row designed as the sharpest discriminator reads nothing.**
+`d.def8k` (`DRAW"BU8192"`) was written as *"the smallest count that separates the
+two scale states"*; at a **correct** `S4` the two states coincide there, because
+the product is exactly `$8000`. The minimal discriminator is **8193**. Its three
+predicted values were right and its stated justification was wrong.
+
+🔴 **And `d.defneg` (`DRAW"BU-8192"`) is green on the UNFIXED tree, for the
+wrong reason** — the two defects cancel exactly there. Only a knife reinstating
+one of them makes it move, which K-DS1 does.
+
+`scratchpad/g6_draw_notes.md` §2's *"a fresh boot measures S=4"* and §3's model,
+and [`docs/spec-basic-graphics-g6.md`](../docs/spec-basic-graphics-g6.md) §3/§4,
+are corrected in place with pointers rather than deleted: nineteen readings
+fitted and falsified that model and not one of them was at `$8000` or at the
+boot default.

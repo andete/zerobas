@@ -2319,16 +2319,23 @@ screenerr-acceptance: repack-machine
 # and nothing else (n.drawvar); and the tenant ignored whitespace only BETWEEN
 # commands, so `DRAW"R 10"` and every STR$ -- which emits a leading blank --
 # refused (d.spc2 / d.sp.num). +3 B page 1, -3 B sub p0.
-# ⚠️ d.lit2/d.def32k are DEFERRED, not green: the boot-default DRAW scale state
-# is not `S4` (both references move the FULL count from boot and wrap only after
-# an explicit S), which changes what DRAW DRAWS rather than what it refuses.
-# Measured, printed, filed in TODO.md.
-# 189 rows x 3 sides. MEASURED 309 s (2026-08-11, D-DRAWERR). The lineage,
+# ⚠️ d.lit2/d.def32k were DEFERRED here at D-DRAWERR and are UNDEFERRED and
+# GREEN since D-DSCALE (2026-08-11, spec-basic-lineerr.md §12): DRAW's scale
+# state has THREE values, not two -- never-set, explicit S4, explicit Sn -- and
+# GFX_DSCALE now boots at the sentinel 0, which gdo_s can never write because it
+# maps S0 to 4. 🔴 THAT SWEEP FOUND A SECOND DEFECT, in the arithmetic the
+# residual called correct, and a row written as a CONTROL found it: the 16-bit
+# product $8000 is +32768 on both references and was -32768 in gdrw_scale, so
+# the sign boundary is $8001. Pinned at five (n,S) pairs reaching that product
+# plus the $7FFC/$8004 neighbours. 🔴 And d.def8k, written as "the smallest
+# count that separates the two states", lands on the ONE count where they
+# COINCIDE -- the minimum is 8193.
+# 210 rows x 3 sides. MEASURED 358 s (2026-08-11, D-DSCALE). The lineage,
 # stated because the FIRST of these figures was carried forward unmeasured when
 # the row set grew: 108 rows / 168 s at D-LINERR, 124 / 205 at D-PAINTSEED,
-# 142 / 236 at D-GIRDOM, 189 / 309 here -- real host wall time for three
-# unthrottled boots, not emulated MSX time, and not reproducible to the second
-# on a loaded machine.
+# 142 / 236 at D-GIRDOM, 189 / 309 at D-DRAWERR, 210 / 358 here -- real host
+# wall time for three unthrottled boots, not emulated MSX time, and not
+# reproducible to the second on a loaded machine.
 # ⚠️ This comment previously read "~35 min", a figure NOBODY EVER MEASURED: it
 # is the wall time of the WHOLE 52-target corpus (2014 s), inherited from an
 # earlier session's estimate and misattributed to this one gate. An estimate

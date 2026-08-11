@@ -1460,9 +1460,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       resident stub writes them anyway" — true of every op in that block except
       the read-only one. Corrected in place.
 
-- [ ] 🔴 **`DRAW`'s BOOT-DEFAULT SCALE STATE IS NOT `S4`, AND ZEROBAS TREATS IT
-      AS IF IT WERE.** Filed 2026-08-11 by D-DRAWERR, with two rows already in
-      `make lineerr-acceptance` and printing RED:
+- [x] 🔴 **`DRAW`'s BOOT-DEFAULT SCALE STATE IS NOT `S4`, AND ZEROBAS TREATS IT
+      AS IF IT WERE.** Filed 2026-08-11 by D-DRAWERR; ✅ **CLOSED 2026-08-11 by
+      D-DSCALE** ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md)
+      §12, `make lineerr-acceptance` **210 rows, 208/208 + 2 deferred**).
+      `GFX_DSCALE` now boots at **0**, a sentinel `gdo_s` can never write
+      because it maps `S0` to 4, and `gdrw_scale` returns the count untouched
+      when it reads 0. Both rows below are **undeferred and green**.
+      🎯 **THE `GFX_DANGLE` HALF WAS ASKED AND THE ANSWER IS NO SENTINEL.** The
+      angle has no wrap of its own, so `d.a0.32k` borrows the SCALE's wrap:
+      `DRAW"A0BU32767"` still moves the full count on both references, as does
+      `DRAW"C1BU32767"`, and `DRAW"BU32767S4"` does not let a trailing `S` reach
+      back over the `U`. The cells are independent and an explicit `A0` is the
+      boot state. The fork was written down with both branches priced BEFORE the
+      run, and the rows chose the cheap one.
+      🔴 **THE SWEEP FOUND A SECOND DEFECT, IN THE ARITHMETIC THE RESIDUAL
+      CALLED CORRECT, AND IT WAS A ROW WRITTEN AS A CONTROL THAT FOUND IT.**
+      `d.s4.8k` (`DRAW"S4BU8192"`) was the green control for the new default
+      rows and diverged: the product `$8000` is **+32768** on both references
+      and −32768 in `gdrw_scale`, so the sign boundary is `$8001`. Pinned at
+      five `(n,S)` pairs reaching the same product plus the neighbours `$7FFC`
+      and `$8004`. +4 B.
+      🔴 **AND THE ROW DESIGNED AS THE SHARPEST DISCRIMINATOR READS NOTHING.**
+      `d.def8k` (`BU8192`) was written as "the smallest count that separates the
+      two states"; at a *correct* `S4` the two states COINCIDE there. The
+      minimal discriminator is **8193**. A model has a blast radius too — the
+      notebook's nineteen readings never landed on `$8000`.
+      🔴 **AND `d.defneg` WAS GREEN AT HEAD FOR THE WRONG REASON** — the two
+      defects cancel exactly at `DRAW"BU-8192"`. Only a knife reinstating ONE of
+      them can say so.
+      The original filing follows, unedited:
 
           d.def32k  DRAW"BU32767"    refs  0 , 7 , 32773    zb  0 , 7 , 5
           d.lit2    DRAW"BU40000"    refs  0 , 7 , 25540    zb  0 , 7 , 58308
@@ -1482,6 +1509,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       at cold boot (`basic/interp.asm`) and `gdo_s` maps `S0` to 4, so
       "never set" currently has nowhere to live. `gdrw_scale` already has a
       `jr z` arm for a zero cell, which is the natural home.
+
+- [ ] 🔴 **NOTHING SWEEPS THE `$8000` FIXED POINT AT THE OTHER SIGNED-16
+      DIVIDES.** Filed 2026-08-11 by D-DSCALE. `gdrw_scale` divided a signed
+      product by 4 with `negate → shift → negate`, which is correct for every
+      16-bit value except `$8000` — the sole fixed point of two's-complement
+      negation — where it returns `-8192` and both references return `+8192`.
+      That was found only because a control row happened to land on it. **The
+      same `negate → shift → negate` shape is a common idiom and this tree has
+      other signed right-shifts**; none of them has a row at `$8000`, and the
+      value is unreachable from any small-count test by construction.
+      ⚠️ Whoever picks this up must FIRST enumerate the signed divides (grep for
+      `gdrw_negate_hl` / `srl h` / `sra h` pairs and the float pack's shifts),
+      then ask of each: *is `$8000` reachable at this input, and what does the
+      reference answer?* A denominator before a fix — the sweep is the
+      deliverable even if every site turns out to be unreachable, because
+      "unreachable" is currently an assumption at all of them.
+      💰 Not priced: the enumeration has not been done, so any byte figure would
+      be invented. `lineerr-acceptance` is the wrong gate for most of the
+      candidates — the arithmetic ones belong to `graphics-acceptance` and the
+      float ones to `intarg`/`missing`.
+
+- [ ] ⚠️ **THE THREE SCALE STATES ARE NOT SWEPT THROUGH `X` SUBSTRINGS OR
+      `=var;` SUBSTITUTION.** Filed 2026-08-11 by D-DSCALE. §12 measured the
+      never-set / `S4` / `Sn` distinction at literal counts only. `DRAW"XA$;"`
+      and `DRAW"BU=V;"` reach `gdrw_scale` by different argument paths, and
+      `d.sub2` already showed the substitution path has a NARROWER domain than
+      the literal one (int16 vs 65535 — measured, on the references too). So
+      `V=40000:DRAW"BU=V;"` cannot even express the count that exposes the
+      default state, and whether a large count reachable through substitution
+      (`V=-25536`, the int16 face of 40000) scales the same way is **unasked**.
+      One row each would settle it; both are cheap and neither is expected to
+      diverge, which is exactly why nobody has run them.
 
 - [ ] ⚠️ **`GFX_OP=1`'s MARSHALLING IS STILL ALIASED TO THE WORK AREA, AND THAT
       IS A DECISION NOTHING RE-EXAMINES.** Filed 2026-08-11 by D-GIRDOM.

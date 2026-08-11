@@ -922,6 +922,11 @@ a diff "could" reach (§6.3's adjacent sweep, one step further).
 
 ### 11.6 Filed, not folded in
 
+✅ **CLOSED by D-DSCALE, 2026-08-11 — §12.** Both rows below are undeferred and
+green. 🔴 And the sweep that closed it found a **second** defect in the same
+routine, in the *explicit*-`S` arithmetic this section calls correct: `d.s4.8k`,
+written as the green control for the new default rows, diverged. See §12.2.
+
 **`DRAW`'s boot-default scale state is not `S4`.** From boot both references move
 the full count; after an explicit `S4` they wrap exactly as
 `scratchpad/g6_draw_notes.md` §3 models, and zerobas matches them *there*.
@@ -1052,3 +1057,295 @@ closure-check` — the one that caught §11.5's `equ`** · `lineerr-acceptance`
 `rowshape-check`, `injector-check` and `audit-citations` all grow with the
 corpus, and this slice added no files, so their being unchanged is a measurement
 and not an assumption.
+
+## 12. D-DSCALE — the scale state §11.6 filed, and a second defect beside it, 2026-08-11
+
+`make lineerr-acceptance` is now **210 rows × 3 sides, 208 scored + 2 deferred**
+— the 2 are SCREEN 3; §11.6's two are **undeferred here and green**, which is
+the only way a fix written against them can be said to have been scored.
+
+### 12.1 The rule
+
+> **`DRAW`'s scale state has THREE values, not two: never-set, explicit `S4`,
+> and explicit `Sn`.** From boot the multiply and the divide do not run at all —
+> both references move the FULL count. After any explicit `S`, including `S4`
+> and including `S0` (a real reset to 4), the count wraps as
+> `scratchpad/g6_draw_notes.md` §3 models. **Nothing else arms it:** an `A`, a
+> `C`, or an `S` placed *after* the move all leave the never-set state intact,
+> and the arming survives into the next statement.
+
+| row | statement | both references | zerobas before |
+|---|---|---|---|
+| `d.def32k` | `DRAW"BU32767"` | ` 0 , 7 , 32773 ` | ` 0 , 7 , 5 ` |
+| `d.lit2` | `DRAW"BU40000"` | ` 0 , 7 , 25540 ` | ` 0 , 7 , 58308 ` |
+| `d.def8193` | `DRAW"BU8193"` | ` 0 , 7 , 57347 ` | ` 0 , 7 , 8195 ` |
+| `d.defd40k` | `DRAW"BD40000"` | ` 0 , 7 , 40004 ` | ` 0 , 7 , 7236 ` |
+| `d.defr40k` | `DRAW"BR40000"` | ` 0 , 40007 , 4 ` | ` 0 , 7239 , 4 ` |
+| `d.a0.32k` | `DRAW"A0BU32767"` | ` 0 , 7 , 32773 ` | ` 0 , 7 , 5 ` |
+| `d.c1.32k` | `DRAW"C1BU32767"` | ` 0 , 7 , 32773 ` | ` 0 , 7 , 5 ` |
+| `d.post32k` | `DRAW"BU32767S4"` | ` 0 , 7 , 32773 ` | ` 0 , 7 , 5 ` |
+| 🟢 `d.prev32k` | `DRAW"S4":DRAW"BU32767"` | ` 0 , 7 , 5 ` | agrees |
+| 🟢 `d.def10` | `DRAW"BU10"` | ` 0 , 7 , 65530 ` | agrees |
+| 🟢 `d.a0.10` / `d.a1.10` | `DRAW"A0BU10"` / `"A1BU10"` | ` 0 , 7 , 65530 ` / ` 0 , 65533 , 4 ` | agree |
+
+**`GFX_DANGLE` was asked the same question and does NOT need a sentinel**, and
+that is a measurement rather than the assumption it would have been. The angle
+cannot be asked directly — its domain is a checked `0..3` and rotate-by-zero is
+the identity in any implementation — so `d.a0.32k` **borrows the scale's wrap as
+its readout**: if the boot state were a shared "no transform yet" flag that any
+command arms, an `A0` would arm it and the row would read ` 0 , 7 , 5 `. It
+reads the full count, so does `d.c1.32k`, and `d.post32k` says a trailing `S`
+does not reach back over the `U`. The cells are independent; an explicit `A0`
+and never-set are the same state. 🎯 **The fork was written down before the run
+with both branches priced**, and the rows chose the cheap one.
+
+### 12.2 🔴 The green control was not green, and it found a SECOND defect
+
+`d.s4.8k` (`DRAW"S4BU8192"`) was added as the control for `d.def8k`: *"the
+divergence is about the STATE, not about large counts being mishandled
+generally."* It diverged. Decomposing the three explicit-`S4` readings into
+their 16-bit products:
+
+| n | product | reference distance | `signed16 ÷ 4` | logical `>>2` |
+|---|---|---|---|---|
+| 8192 | `$8000` | **+8192** | −8192 | +8192 |
+| 32767 | `$FFFC` | −1 | −1 | +16383 |
+| 40000 | `$7100` | +7232 | +7232 | +7232 |
+
+`$FFFC` is read as −4, so the product **is** signed; `$8000` is read as
+**+32768**, so **the sign boundary is `$8001`, not `$8000`**. `$8000` is the one
+16-bit value that is its own two's-complement negation, so `gdrw_scale`'s
+`negate → shift → negate` returns it negative where both references return it
+positive.
+
+⚠️ **This is a defect in the EXPLICIT-`S` arithmetic — nothing to do with the
+boot default, and not what the residual filed.** One data point is not a rule
+([[lrvar-slice]]), so the boundary was pinned from both sides at five `(n,S)`
+pairs reaching the same product before anything was edited:
+
+| row | statement | product | all three sides |
+|---|---|---|---|
+| `d.s4.8k` | `DRAW"S4BU8192"` | `$8000` | ` 0 , 7 , 57348 ` |
+| `d.p8.s2` | `DRAW"S2BU16384"` | `$8000` | ` 0 , 7 , 57348 ` |
+| `d.p8.s8` | `DRAW"S8BU4096"` | `$8000` | ` 0 , 7 , 57348 ` |
+| `d.p8.s1` | `DRAW"S1BU32768"` | `$8000` | ` 0 , 7 , 57348 ` |
+| `d.p8.s4b` | `DRAW"S4BU24576"` | `$8000` | ` 0 , 7 , 57348 ` |
+| `d.p8.neg` | `DRAW"S4BU-8192"` | `$8000` | ` 0 , 7 , 57348 ` |
+| 🟢 `d.p7ffc` | `DRAW"S4BU8191"` | `$7FFC` | ` 0 , 7 , 57349 ` |
+| 🟢 `d.p8004` | `DRAW"S4BU8193"` | `$8004` | ` 0 , 7 , 8195 ` |
+| 🟢 `d.p0` | `DRAW"S4BU16384R5"` | `$0000` | ` 0 , 12 , 4 ` |
+
+`d.p7ffc` and `d.p8004` are what make it a **boundary** and not a special case:
+one step below is positive on both sides, one step above is negative on both
+sides, and only `$8000` moves. `d.p8.neg` says the count's own sign is already
+gone by the time the product is judged. `d.p0` carries an `R5` **after** the
+no-op so "the `U` moved nothing" is distinguishable from "the statement died"
+([[an-empty-program-hides-a-wrong-run]]).
+
+### 12.3 🔴 And the row designed as the sharpest instrument reads NOTHING
+
+`d.def8k` (`DRAW"BU8192"`) was written as *"the SMALLEST count that separates
+the two scale states — `8192 × 4 = 32768` is the first product to reach bit
+15"*. Its three values were predicted exactly. **Its justification was wrong**:
+at a *correct* `S4`, `$8000` passes the full 8192 through, so the two states
+**coincide** at exactly the count chosen to separate them. The minimal
+discriminator is **8193** (`d.def8193`), the first product genuinely past the
+boundary.
+
+The row could only ever have been sharp because a second defect happened to live
+underneath it. Stated as the generalisation, one layer below §11.8's:
+
+🔴 **A MODEL HAS A BLAST RADIUS TOO.** §11.8 recorded that predictions traced
+through the *source* were exact and predictions reached by *analogy* were wrong.
+Here the zb column of `d.s4.8k` was traced through `sub/graphics.asm` and was
+exact; the reference column was extrapolated from `g6_draw_notes.md` §3's fitted
+model and was wrong. That model was fitted on five points and falsified on seven
+fresh pairs — **nineteen readings across two rounds, none of them at `$8000`**,
+because a fit-then-falsify method finds a single-value exception only by landing
+on it. Correct measurements, correct model, wrong domain.
+
+### 12.4 🔴 A row that was green at HEAD, for the wrong reason
+
+`d.defneg` (`DRAW"BU-8192"`) reads ` 0 , 7 , 8196 ` on all three sides — before
+the fix **and** after it. It is green at HEAD because the two defects **cancel
+exactly there**: the boot state is wrongly `S4`, which sends the count through a
+multiply it should never see, and the product is `$8000`, whose sign is also
+wrong — and `−(−8192)` lands on the answer the never-set path reaches directly.
+
+Only a knife that reinstates **one** of the two can say so, which is why it sits
+in K-DS1's predicted-RED set and in neither K-DS2's nor K-DS3's. A green row is
+not a fixed defect ([[penderr-slice]]); this is the sharper form — **a green row
+can be two defects in superposition**, and the gate that scores it cannot tell.
+
+### 12.5 The price — −2 B main, +3 B sub, on both sides of the slot boundary
+
+Three edits, each attested at its site:
+
+* **`basic/interp.asm`, the cold-boot hook** — `ld a,4` deleted. `A` is already
+  0 there (it is what `GFX_DANGLE` is initialised from two instructions above),
+  so `GFX_DSCALE` starts at the **never-set sentinel**. **−2 B**, page 1 free
+  **71 → 73 B**. ⚠️ The hook's own header explains why it must stay cold-boot
+  only, and nothing about that moves: §4 of the G6 spec measured that `RUN`,
+  `NEW`, `CLEAR`, `CLS`, `COLOR` and `SCREEN` all leave the state alone.
+* **`sub/graphics.asm`, `gdrw_scale`'s head** — the `jr z,gdrw_sc_div` arm that
+  was marked *"S=0 cannot reach here"* becomes `ret z`, and the two loads it
+  used to fall past move below it. The zero cell now means **no multiply and no
+  divide**, with `GFX_DARG` passing straight through. ⚠️ The old arm fell into
+  the divide with `HL = 0`, which returns a distance of 0 — not what "no
+  scaling" means, and the reason the residual said the arm was *the natural
+  home* rather than the finished answer. **−1 B**.
+* **`sub/graphics.asm`, `gdrw_sc_neg`** — after the magnitude negation, `bit
+  7,h` still set can only mean the product was `$8000`, so the value takes the
+  positive shift path (`$8000 >> 2 = $2000`). **+4 B**, and one label
+  (`gdrw_sc_pos`) on a path that already existed.
+
+**Net: sub page 0 free 3607 → 3604 B (+3 B spent), main page 1 free 71 → 73 B
+(−2 B given back).** Low region unchanged at **14 B**, sub page 1 unchanged at
+**1483 B**. Both figures were predicted exactly before the build.
+
+🎯 **0 is a sentinel because a *measured* behaviour makes it one.** `gdo_s` maps
+`S0` to 4 — verified against a pre-set `S8` **and** `S2`, so it is a real reset
+and not "leave unchanged" — which means no explicit `S` can ever store 0. The
+three states stay distinct without a second cell, and `S0` remains
+indistinguishable from `S4`, exactly as measured.
+
+### 12.6 Knives — 3 cuts, each run twice, 6 of 6 EXACT
+
+Union of 37 labels (every `d.*` row plus the four positive controls); baseline
+through `probe_report.parse()`; every cut scoped to its own routine's region
+with the occurrence count asserted **== 1**; restore from a scratchpad snapshot
+in a `finally`; `rm -rf build` and all four ROMs hashed inside the loop.
+Predictions written before the runner was executed.
+
+| | cut | RED / predicted | GREEN moved | r1 | r2 |
+|---|---|---|---|---|---|
+| **K-DS1** | `ld a,4` reinstated before `ld (GFX_DSCALE),a` | 9/9 | 0/28 | EXACT | EXACT |
+| **K-DS2** | `bit 7,h / jr nz,gdrw_sc_pos` deleted from `gdrw_sc_neg` | 6/6 | 0/31 | EXACT | EXACT |
+| **K-DS3** | both files restored to their `7693787` content | 15/15 | 0/22 | EXACT | EXACT |
+
+🎯 **K-DS1 rebuilds `basic-reloc b37e5055` and `zerobas-main-eu a122f666` — the
+shipped HEAD hashes, byte for byte, while `sub.rom` stays at the fixed
+`3740108c`.** That is the strongest single fact about the main-side change: the
+whole page-1 diff of this slice is those two bytes and nothing else. K-DS2 is
+the mirror image — `sub.rom` moves to `6e61509d` and `basic-reloc` stays at the
+fixed `04100bfe`. Neither touches `disk.rom`. **Two defects, two sides of the
+slot boundary, one row set.**
+
+⚠️ **The three RED counts are 9, 6 and 15, and the membership is NOT the
+union** — that is the arithmetic worth reading:
+
+* `d.def8k` is RED under K-DS3 and **GREEN under either cut alone**. It needs
+  *both* defects: with only the boot state wrong, a correct `$8000` returns
+  +8192, which is what never-set returns anyway; with only the sign wrong, the
+  never-set path runs no divide. It is D-DRAWERR's `n.drawsp` shape, but reached
+  by cancellation rather than by two fixes being needed in sequence.
+* 🔴 `d.defneg` is the mirror: RED under K-DS1 alone, **GREEN at HEAD** — and
+  that is a measurement, not a prediction, because round 2 read it green on the
+  unfixed tree before any of this was written.
+
+So 9 + 6 = 15, and K-DS3's set is that union with `d.defneg` swapped out for
+`d.def8k`. The three counts are mutually consistent only if each cut reddens its
+own rows and no others — and one row's green-ness at HEAD is two errors
+cancelling, which no gate can see and only a single-defect knife can state.
+**Measured: K-DS3's moved set contains `d.def8k` and does NOT contain
+`d.defneg`,** which is the swap stated as a reading rather than as arithmetic.
+
+🎯 **And K-DS3 rebuilds all four ROMs to `b37e5055 / c7d61d6d / 2c630d3d /
+a122f666` — the shipped `7693787` quadruple, byte for byte.** The diff of this
+slice is exactly these two fixes and nothing else, across the slot boundary.
+
+⚠️ **The runner gates on `rc`, never on the tag.** In this probe a `....` tag
+means DEFERRED on an rc=0 run and NOT-SCORED on an rc=2 run; a runner keying on
+the tag alone aborts every cut with a false REFUSED-TO-SCORE. This is written
+down because the gate now has *two* meanings for one glyph, which it did not
+when the rule was first recorded.
+
+### 12.7 What this slice cost in wrong predictions, stated as a number
+
+**20 of 21 row predictions exact on the first attempt**, plus **4 of 4** on the
+price and the walls (−2 B main, +3 B sub, low and sub-p1 unchanged) and **6 of
+6** on the knives. Round 1 scored 10/11 and round 2 scored 10/10.
+
+The single miss is `d.s4.8k`, and its two halves split exactly the way §11.8
+said they would:
+
+* the **zb** column was traced through `sub/graphics.asm` — `gdo_dir →
+  gdrw_arg_opt → gdrw_scale → gdrw_axis → gdrw_rotate → gdrw_move_rel`, with the
+  `PSET(7,4)` seed and the `U` sign's negation carried through — and was
+  **exact**;
+* the **reference** column was extrapolated from `scratchpad/g6_draw_notes.md`
+  §3's fitted model, and was **wrong**.
+
+§11.8 generalised that as *"the blast radius of a MEASUREMENT and the blast
+radius of a READING are different sizes"*. This slice adds the layer below it:
+
+🔴 **A MODEL HAS A BLAST RADIUS, AND IT IS NOT THE SET OF POINTS THAT
+CONFIRMED IT.** §3's model was fitted on five points and then *falsified* on
+seven fresh pairs — the strongest form of confirmation this project has — and it
+is still wrong at one input. Nineteen readings, not one at `$8000`, because a
+fit-then-falsify method finds a single-value exception only by landing on it
+exactly. **Twelve of those nineteen also shared a property nobody had noticed
+they shared** (every one set `S` first), which is what hid the boot default.
+Two different blind spots, one notebook, both invisible from inside its own row
+set — and a notebook is exactly where a denominator is supposed to be visible.
+
+The practical form: **when a rule is fitted over a domain, ask which inputs the
+fit never contained, and name them.** Here that is one value (`$8000`, the sole
+16-bit fixed point of negation) and one state (never-set). Both were reachable
+by inspection of the *domain*, not of the data.
+
+### 12.8 As-built
+
+`make lineerr-acceptance` — **210 rows × 3 sides, 208 scored, 2 deferred.**
+
+⚠️ **The headline is stated both ways, because two rows were UNDEFERRED by this
+slice** — the mirror of §11.9's warning, and it cuts the same way. Quoting
+"208/208" against a denominator this slice *grew* by re-admitting two rows it
+then fixed would flatter the fix if the two had been left out:
+
+* **before: 187 agree / 21 diverge**, over the **208** rows this slice scores,
+  measured on the HEAD tree with `7693787`'s four hashes reproduced (`b37e5055 /
+  c7d61d6d / 2c630d3d / a122f666` — K-DS3 rebuilt exactly that quadruple);
+* **after, on that same 208-row denominator: 208 / 208** — the 2 rows D-DRAWERR
+  deferred plus the 19 this slice's own rounds turned red are all green;
+* **deferred, as printed: 2** — the SCREEN-3 rows only, unchanged, still a
+  whole-feature gap and still filed.
+
+Nothing was re-scored to improve the column: the two rows the fix was written
+against are **in** the tally, which is the only way a fix aimed at them can be
+said to have been scored at all.
+
+**Walls: low region 14 B · page 1 73 B · sub p0 3604 B · sub p1 1483 B**, all
+four printed by `make basic-reloc` on the final tree.
+
+**Corpus: 21 targets from clean (`rm -rf build`, `repack-machine` first, bash),
+every one rc=0, 945 s.** ROMs `04100bfe / 3740108c / 2c630d3d / 6addbc28`.
+`unit-test` **59** · `audit-citations` CLEAN (**790** files) · `preflight-check`
+**181 spawn sites, 95 require a guard, 95 guarded / 0 unguarded** ·
+`injector-check` **355** files · `rowshape-check` **26** probes · `deadcode`
+**main 1588 spans / 295 seeds → 0 dead (+0 allowlisted), sub 1532 / 104 → 0 dead
+(+1 allowlisted)** · `latch-check` **16/16** · `subrom-abi-check` ·
+`subrom-closure-check` · `lineerr-acceptance` **208/208 + 2 deferred (347 s)** ·
+`stmtpend` **58/58** · `screenerr` **61/61** · `penderr` **61/61** · `tmfp`
+**50/50** · `missing` **214/214** · **`graphics-acceptance` PASS (179 s — the
+gate that owns what DRAW *draws*, and the one this slice could not skip, since
+it moves exactly that surface)** · `graphics-floor` · `subrom-acceptance` ·
+`error` · `error-trap` · `intarg`.
+
+⚠️ Every counter above was **read from this run's logs**, not carried forward,
+and the `deadcode` span counts are quoted in full rather than as "0/0" because
+the denominator is what says the sweep was not blind.
+
+⚠️ **`audit-citations` swept 790 files before and after, and that is NOT because
+this slice added none.** It added `scratchpad/dscale_predictions.md` — and
+`scratchpad` is in the tool's `SWEEP_SKIP` set, so the count *could not* have
+moved. The unchanged figure is therefore a weaker statement than it looks, and
+saying so is the point: an unchanged counter is evidence only once you know what
+would have changed it. The five static gates were **re-run on the final tree**
+after the corpus, because §12.7 and §12.8 and two `TODO.md` entries were written
+*after* the corpus swept the docs — all five rc=0.
+
+⏱️ `lineerr-acceptance` measured **347 s** inside the corpus and **358 s**
+standalone, at the same 210 rows. Both are real host wall time on a loaded
+machine; neither is reproducible to the second, which is why the lineage in the
+Makefile records rows *and* seconds together.

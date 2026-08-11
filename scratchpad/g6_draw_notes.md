@@ -58,6 +58,12 @@ Round 2 `P1` then tried to find something that resets them: `RUN`, `NEW`,
 `SCREEN 2`, `SCREEN 0`+`SCREEN 2`, `CLS`, `CLEAR`, `COLOR` — **none** reset the
 state. Only a power-on does: a fresh boot measures `S=4, A=0` (`P1b`).
 
+🔴 **`S=4` HERE IS AN INFERENCE, NOT A READING — see §3 round 5.** `P1b` observed
+1:1 motion at a small count and *named* it `S4`; the never-set state produces the
+identical motion there. What `P1b` actually measured is "the state is not `S8` or
+`S2`", which is true and is all it can support. `A=0` survives: an explicit `A0`
+and the boot default are measured to be the same state (`d.a0.32k`).
+
 ## 3. Scale + the count arithmetic (rounds 3–4)
 
 The scale is quarter-units and *truncates*: `S1U10` → 2, `S2U10` → 5, `S3U10` → 7,
@@ -74,6 +80,38 @@ Round 4 falsified it on seven *fresh* pairs (`S3/S5/S7/S9/S255`, n up to 20000) 
 all seven predicted exactly. The negative cases discriminate the rounding:
 `S3U-10` → 7 (not 8), `S1U-2` → 0, `S3U-2` → 1 — **truncate toward zero**, not
 floor. A count above 65535 (`U99999`) → `ERR 5`.
+
+🔴 **ROUND 5 (2026-08-11, D-DSCALE) — ALL TWELVE POINTS ABOVE ARE CORRECT AND
+THE MODEL DRAWN FROM THEM IS WRONG IN TWO PLACES.** Both are invisible in this
+notebook's own class, and the reason is the same each time: *what the twelve
+points have in common is not a property of `DRAW`, it is a property of how I
+happened to sample it.*
+
+1. **Every one of the twelve set `S` explicitly first**, so the class never
+   contained the power-on state — and §2 above recorded that state as `S = 4`
+   from a *fresh boot* reading (`P1b`) that could only ever have measured 1:1
+   motion, which the never-set state also produces. `DRAW"BU40000"` from boot
+   moves the full **40000**; `DRAW"S4BU40000"` moves **7232**. The multiply is
+   the identity for every `n` where `n × S` stays inside 16 bits, so **a large
+   count is the only observable that separates them**, and no row here had one
+   at the default.
+2. **None of the twelve produced the product `$8000`.** `S4U8192` moves **up**
+   8192 on both references, where the model above predicts down 8192. So does
+   `S2U16384`, `S8U4096`, `S1U32768`, `S4U24576`, `S4U-8192`. One step either
+   side behaves as the model says (`S4U8191` → up 8191, `S4U8193` → down 8191),
+   so the sign boundary is **`$8001`**, not `$8000`. `$8000` is the single
+   16-bit value that is its own two's-complement negation — a "fit it, then
+   falsify it on fresh pairs" method finds it only by landing on it exactly, and
+   nineteen points across two rounds did not.
+
+Corrected rule, and the corrections are now gated in
+`make lineerr-acceptance` (`d.def*`, `d.p8.*`, `d.p7ffc`, `d.p8004`):
+
+> **distance = n if no `S` has been executed; otherwise
+> `f((n × S) mod 65536) ÷ 4`, where the product is negative iff ≥ `$8001`,
+> truncating toward zero.**
+
+See [`../docs/spec-basic-lineerr.md`](../docs/spec-basic-lineerr.md) §12.
 
 Consequences that fall out of the model and are worth stating separately:
 

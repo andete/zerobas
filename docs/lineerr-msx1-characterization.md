@@ -6,8 +6,9 @@ trail — what was asked, on what, and what came back, including the readings th
 refuted the question.
 
 Sides: **Philips VG-8020** and **National CF-3300** (both black-box oracles) and
-the zerobas repack. **189** rows, `make lineerr-characterize` (108 at D-LINERR;
-§8 is D-PAINTSEED's 16, §9 is D-GIRDOM's 18 and §10 is D-DRAWERR's 47). `LINE`,
+the zerobas repack. **210** rows, `make lineerr-characterize` (108 at D-LINERR;
+§8 is D-PAINTSEED's 16, §9 is D-GIRDOM's 18, §10 is D-DRAWERR's 47 and §11 is
+D-DSCALE's 21). `LINE`,
 `PSET`, `CIRCLE`, `PAINT`, `DRAW`, `SCREEN`, `ON ERROR`, `ERR`, `RESUME`,
 `STR$` and `PEEK` are core MSX-BASIC, present on every MSX1, so both references
 are legitimate oracles for every row.
@@ -546,6 +547,10 @@ was the same "anywhere" comment already caught being false — and it was exact.
 
 ### 10.5 The scale default, measured and filed
 
+✅ **Answered in §11 (D-DSCALE, 2026-08-11).** The rule below holds; what this
+section did not know is that `S4` is *also* wrong at one product, so the two
+states coincide at `n = 8192` and the minimal discriminator is `8193`.
+
 ```
 d.def32k   DRAW"BU32767"      refs  0 , 7 , 32773   zb  0 , 7 , 5
 d.lit2     DRAW"BU40000"      refs  0 , 7 , 25540   zb  0 , 7 , 58308
@@ -568,3 +573,97 @@ as a control — `d.sub2` is ERR 6 on all three sides, so the two paths really d
 have different domains on the references too — and it diverged on its *value*
 while agreeing on its *verdict*. A control that pins one axis can be a witness on
 another.
+
+---
+
+## 11. D-DSCALE — §10.5's residual, and the defect underneath it (2026-08-11)
+
+**210 rows** (§10 left 189; this slice adds 21 in two rounds). The question:
+*where does the never-set scale state live, and does `GFX_DANGLE` have the same
+question?*
+
+### 11.1 Round 1 — 10 of 11 exact, and the miss is the finding
+
+Every value below was written down before the run
+(`scratchpad/dscale_predictions.md`), traced through `sub/graphics.asm`'s
+`gdo_dir → gdrw_arg_opt → gdrw_scale → gdrw_axis → gdrw_rotate → gdrw_move_rel`
+chain over the probe's `PSET(7,4)` seed.
+
+```
+d.def10     DRAW"BU10"          all three   0 , 7 , 65530     ✓ predicted
+d.def8k     DRAW"BU8192"        refs  0 , 7 , 57348   zb  0 , 7 , 8196    ✓
+d.s4.8k     DRAW"S4BU8192"      refs  0 , 7 , 57348   zb  0 , 7 , 8196    🔴 MISS
+d.defd40k   DRAW"BD40000"       refs  0 , 7 , 40004   zb  0 , 7 , 7236    ✓
+d.defr40k   DRAW"BR40000"       refs  0 , 40007 , 4   zb  0 , 7239 , 4    ✓
+d.a0.32k    DRAW"A0BU32767"     refs  0 , 7 , 32773   zb  0 , 7 , 5       ✓
+d.c1.32k    DRAW"C1BU32767"     refs  0 , 7 , 32773   zb  0 , 7 , 5       ✓
+d.post32k   DRAW"BU32767S4"     refs  0 , 7 , 32773   zb  0 , 7 , 5       ✓
+d.prev32k   DRAW"S4":DRAW"BU32767"   all three   0 , 7 , 5                ✓
+d.a0.10     DRAW"A0BU10"        all three   0 , 7 , 65530                 ✓
+d.a1.10     DRAW"A1BU10"        all three   0 , 65533 , 4                 ✓
+```
+
+`d.s4.8k` was predicted ` 0 , 7 , 8196 ` **on all three sides** — a green
+control. It is not green, and §12.2 of the spec is what came out of it.
+
+### 11.2 The `GFX_DANGLE` fork, written down before the run
+
+The brief asked for the angle question to be produced as a row *before* the
+shape of the fix was chosen. The angle has no wrap of its own — its domain is a
+checked `0..3`, and rotate-by-zero is the identity in any implementation — so
+there is no way to ask it directly. `d.a0.32k` asks it **through the scale's
+wrap** instead, and the two branches were priced in advance:
+
+* full count ⇒ the cells are independent, the sentinel is `GFX_DSCALE = 0`, and
+  `GFX_DANGLE` needs nothing;
+* ` 0 , 7 , 5 ` ⇒ the boot state is a shared "no transform yet" flag any command
+  arms, the sentinel must be written by `gdo_a` and `gdo_c` too, and the cheap
+  edit is wrong.
+
+Both references read the full count, and `d.c1.32k` says a `C` does not arm it
+either. The cheap branch is the measured one. 🎯 **A fork with both branches
+priced before the run is the cheapest form of "produce the row first"**: the
+measurement chose the design instead of confirming it.
+
+### 11.3 Round 2 — 10 of 10 exact, pinning `$8000` as a boundary
+
+Round 1's miss gave exactly **one** data point ("`$8000` reads +32768"), and one
+data point is not a rule. Round 2 reached the same product from five different
+`(n,S)` pairs and put a green control one step to either side:
+
+```
+d.p8.s2    DRAW"S2BU16384"    $8000   refs 57348   zb 8196    DIFF
+d.p8.s8    DRAW"S8BU4096"     $8000   refs 57348   zb 8196    DIFF
+d.p8.s1    DRAW"S1BU32768"    $8000   refs 57348   zb 8196    DIFF
+d.p8.s4b   DRAW"S4BU24576"    $8000   refs 57348   zb 8196    DIFF
+d.p8.neg   DRAW"S4BU-8192"    $8000   refs 57348   zb 8196    DIFF
+d.p7ffc    DRAW"S4BU8191"     $7FFC   all three 57349         ok
+d.p8004    DRAW"S4BU8193"     $8004   all three  8195         ok
+d.p0       DRAW"S4BU16384R5"  $0000   all three  0 , 12 , 4   ok
+d.def8193  DRAW"BU8193"       —       refs 57347   zb 8195    DIFF
+d.defneg   DRAW"BU-8192"      —       all three  8196         ok
+```
+
+All ten exact. The two neighbours are what turn "the references treat `$8000` as
+positive" into a boundary claim rather than "the references do not wrap up
+here".
+
+### 11.4 🔴 `d.defneg` was measured GREEN on the UNFIXED tree
+
+It is green after the fix too, and its agreement at HEAD is **two defects
+cancelling**: the boot state wrongly multiplies by 4, and the resulting `$8000`
+gets the wrong sign, and the two errors compose to the right answer. The row
+carries no information about either defect on its own — only about their
+product. It is in K-DS1's predicted-RED set and in neither of the other two
+cuts', which is the only way the tree can state that.
+
+### 11.5 What this slice cost in wrong predictions, as a number
+
+**20 of 21 row predictions exact on the first attempt**, plus 4 of 4 on the
+price and the walls. The single miss is `d.s4.8k`, and its two halves split the
+way §10.8 predicted they would: **the zb column, traced through the source, was
+exact; the reference column, extrapolated from a fitted model, was wrong.** The
+model in question (`scratchpad/g6_draw_notes.md` §3) was fitted on five points
+and falsified on seven fresh pairs — nineteen readings, not one of them at
+`$8000`, because a fit-then-falsify method finds a single-value exception only
+by landing on it exactly.
