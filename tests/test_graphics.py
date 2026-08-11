@@ -452,6 +452,30 @@ ABS_CASES = [
     (-1, 1, 0xFF), (-5, 5, 0xFF), (-0x8000, 0x8000, 0xFF), (-100, 100, 0xFF),
 ]
 
+# --- gfx_bres_init at the $8000 fixed point (D-NEG8K) -------------------------
+# docs/fixpoint8000-msx1-sweep.md §4.1. gfx_abs16($8000) returns $8000 -- the
+# value is its own two's-complement negation, and ABS_CASES above already
+# asserts that. This block asserts the half that makes it CORRECT rather than a
+# defect: every consumer in gfx_bres_init reads that result as an UNSIGNED
+# magnitude. GFX_CNT counts down with `dec hl` + an or-zero test, GFX_ERR is a
+# LOGICAL `srl h / rr l`, and the steep test compares with `sbc hl,de` + CF. So
+# a 32768-wide span is a real 32768 steps, not a wrapped -32768.
+#
+# Reachable from `LINE(-32768,0)-(0,0)`, which the emulator probe deliberately
+# does NOT run (32768 masked plot steps -- see basic_probe_graphics.py's
+# ovf_ok_min note, which picks a one-pixel span for exactly that reason). Here
+# it costs one call and draws nothing.
+# (x1, y1, x2, y2, dmaj, dmin, cnt, err, steep)
+BRES_8000_CASES = [
+    (-0x8000, 0, 0, 0, 0x8000, 0, 0x8000, 0x4000, 0),   # dx = +$8000, x-major
+    (0, 0, -0x8000, 0, 0x8000, 0, 0x8000, 0x4000, 0),   # dx = -$8000, same magnitude
+    # y-major: the swap makes DMAJ the LARGER of the two (ady), DMIN adx --
+    # this row's expectation was written INVERTED first and the test corrected
+    # it; the source says so in as many words ("steep (y-major): DMAJ=ady,
+    # DMIN=adx (swap)") and the prediction was made without re-reading it.
+    (0, -0x8000, 0, 0, 0x8000, 0, 0x8000, 0x4000, 1),   # dy = $8000 -> y-major
+]
+
 # --- gfx_bres_init/next (G3): the Bresenham point set -------------------------
 # Oracle: the VG-8020 captured bitmaps (scratchpad/g3_line_char.out). pybres()
 # replicates the fitted variant (err=dmaj>>1, step when err>=dmaj, major sorted
@@ -733,6 +757,19 @@ def run():
         check(cpu.hl == want_abs and cpu.a == want_sign,
               f"gfx_abs16 {v:>7} -> |{cpu.hl}| (want {want_abs}) "
               f"sign=${cpu.a:02X} (want ${want_sign:02X})")
+
+    # --- gfx_bres_init at $8000 (D-NEG8K) ---
+    for x1, y1, x2, y2, dmaj, dmin, cnt, err, steep in BRES_8000_CASES:
+        for nm, v in (("GFX_X1", x1), ("GFX_Y1", y1), ("GFX_X2", x2), ("GFX_Y2", y2)):
+            m.poke_w(m.addr(nm), v & 0xFFFF)
+        m.call("gfx_bres_init")
+        got = tuple(int.from_bytes(m.peek(m.addr(n), 2), "little")
+                    for n in ("GFX_DMAJ", "GFX_DMIN", "GFX_CNT", "GFX_ERR"))
+        got_steep = m.peek(m.addr("GFX_STEEP"), 1)[0]
+        want = (dmaj, dmin, cnt, err)
+        check(got == want and got_steep == steep,
+              f"gfx_bres_init ({x1},{y1})-({x2},{y2}) -> dmaj/dmin/cnt/err="
+              f"{got} steep={got_steep} (want {want} steep={steep})")
 
     # --- pybres == the VG-8020 captured bitmaps (locks the oracle generator) ---
     for line, want in CAPTURED.items():

@@ -1695,6 +1695,26 @@ caddsub_int_sub:
                 sbc     hl,de
 caddsub_int_check:
                 jp      po,caddsub_ok       ; P/V clear -> no signed overflow
+                ; Overflowed. The reference promotes to a double — EXCEPT for a
+                ; SUBTRACT whose RHS is $8000, where its own int subtract wraps
+                ; mod 65536 and never promotes: `0-cint(-32768)` prints -32768,
+                ; `1-cint(-32768)` prints -32767, `100-cint(-32768)` prints
+                ; -32668, `32767-cint(-32768)` prints -1 (MEASURED at all four,
+                ; docs/fixpoint8000-msx1-sweep.md §5.4). $8000 is its own two's-
+                ; complement negation, so an `a + neg16(b)` subtract cannot see
+                ; the overflow at all. `sbc hl,de` has ALREADY produced exactly
+                ; the wrapped value, so the whole quirk is a SUPPRESSED
+                ; promotion — no arithmetic changes. '+' is NOT exempt:
+                ; `(-32768\1)+(-32768\1)` promotes to -65536 (measured), which
+                ; is why the operation mode is tested and not just DE.
+                or      a                   ; A still holds FP_OPMODE — nothing
+                                            ; between its load and here touches A
+                jr      z,caddsub_ovf       ; '+' -> always promote
+                ld      a,d
+                xor     $80
+                or      e
+                jr      z,caddsub_ok        ; '-' with RHS $8000 -> stay int
+caddsub_ovf:
                 call    caddsub_widen_both
                 ld      a,(FP_OPMODE)
                 or      a

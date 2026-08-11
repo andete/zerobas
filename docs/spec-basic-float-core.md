@@ -443,6 +443,31 @@ truncation can then land ON the bound.
   `-7\-2` → `3`; `32767\-1` → `-32767`.
 - Quirk: `-32768\-1` → `32768` printed — the result ESCAPES int16 without
   error (promoted; the int16 bit pattern $8000 would have printed −32768).
+
+### 10.4b The `$8000` fixed point at `-` and unary `-` (D-NEG8K, 2026-08-11)
+
+`$8000` is the only 16-bit value that is its own two's-complement negation, so
+every magnitude-by-negation site in the tree needed an answer. The sweep is
+[fixpoint8000-msx1-sweep.md](fixpoint8000-msx1-sweep.md); two of its sites are
+contract, and they point **opposite ways**:
+
+- **Binary `-` with an int16 RHS of `$8000` WRAPS mod 65536 and does NOT
+  promote**, even though the true result escapes int16. Measured at four
+  overflowing inputs: `0-cint(-32768)` → `-32768`, `1-cint(-32768)` →
+  `-32767`, `100-cint(-32768)` → `-32668`, `32767-cint(-32768)` → `-1`.
+  The reference computes `a + neg16(b)` and `neg16($8000) = $8000`, so the
+  overflow is invisible to it.
+  **Not exempt:** `$8000` on the LHS (`cint(-32768)-1` → `-32769`, promoted),
+  a non-`$8000` RHS (`1-cint(-32767)` → `32768`, `32767-cint(-32767)` →
+  `65534`, both promoted), and `+` (`(-32768\1)+(-32768\1)` → `-65536`,
+  promoted). ⚠️ `-1-cint(-32768)` and `(-32768\1)-(-32768\1)` do NOT overflow
+  (32767 and 0 both fit), so they are silent on this rule — they look like
+  evidence and are not.
+- **Unary `-` at an int16 `$8000` PROMOTES** to the double `+32768`:
+  `-cint(-32768)` → `32768`, `-(-32768\1)` → `32768`. It joins
+  `ABS(-32768%)` (§9.1), `-32768\-1` (above) and `-32768*-1` (§10.2 int
+  overflow) as the fourth operator carrying that escape. The float arm is
+  unaffected (`-cdbl(-32768)` → `32768` on both).
 - `MOD` takes the DIVIDEND's sign: `7 mod 2` → `1`, `-7 mod 2` → `-1`,
   `7 mod -2` → `1`, `-7 mod -2` → `-1` (identity a = (a\b)*b + (a mod b)
   holds with truncation).

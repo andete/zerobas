@@ -743,14 +743,32 @@ ev_f_neg:
                                             ; 2^-3^2=2^-(3^2) fall out for free)
                 ld      hl,0
                 or      a
-                sbc     hl,de               ; HL = 0 - operand
+                sbc     hl,de               ; HL = 0 - operand. P/V is set for
+                                            ; EXACTLY one int16 operand: $8000
+                                            ; (0-(-32768) = +32768, out of range).
+                                            ; $8000 is its own two's-complement
+                                            ; negation, so without the arm below
+                                            ; the operand comes back UNCHANGED and
+                                            ; `-A%` prints -32768 for A%=-32768.
+                push    af                  ; carry P/V across the FACTYP read --
+                                            ; `cp 2` overwrites it with parity
                 ex      de,hl
                 ld      a,(FACTYP)
                 cp      2
-                jr      z,evfn_ret
-                call    flt_neg
-evfn_ret:
-                ret
+                jr      nz,evfn_flt
+                pop     af
+                ret     po                  ; int, no overflow -> DE is the answer
+                jp      evabs_esc           ; int $8000: the true value is +32768,
+                                            ; which escapes int16 -> promote to a
+                                            ; double, exactly as ABS(-32768%),
+                                            ; -32768\-1 and -32768*-1 already do.
+                                            ; MEASURED: the reference prints 32768
+                                            ; for -cint(-32768) AND for -(-32768\1)
+                                            ; (docs/fixpoint8000-msx1-sweep.md §4.6)
+evfn_flt:
+                pop     af
+                jp      flt_neg             ; float: the sign lives in FAC, and DE's
+                                            ; int16 view is already 0-operand
 
 ev_f_paren:
                 inc     ix                  ; '('
@@ -1489,6 +1507,9 @@ evmc_abs:
                 or      a
                 jr      nz,evabs_noesc
                 ; DE == -32768: escapes int16 -> promote to double +32768.0
+                ; Shared with ev_f_neg's unary-minus arm (D-NEG8K) -- the SAME
+                ; escape, at the second operator that can produce +32768.
+evabs_esc:
                 ld      hl,ARGA
                 xor     a
                 ld      de,32768

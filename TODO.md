@@ -1510,7 +1510,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       "never set" currently has nowhere to live. `gdrw_scale` already has a
       `jr z` arm for a zero cell, which is the natural home.
 
-- [ ] 🔴 **NOTHING SWEEPS THE `$8000` FIXED POINT AT THE OTHER SIGNED-16
+- [x] 🔴 **NOTHING SWEEPS THE `$8000` FIXED POINT AT THE OTHER SIGNED-16
+      DIVIDES.** ✅ **CLOSED 2026-08-11 by D-NEG8K**
+      ([`docs/fixpoint8000-msx1-sweep.md`](docs/fixpoint8000-msx1-sweep.md),
+      `make float-acceptance` + `make math-acceptance` both rc=0).
+      **THE DENOMINATOR IS MACHINE-PRODUCED, NOT HAND-LISTED**
+      (`scratchpad/negscan.py`): 97 asm files / 51 301 lines scanned, **18
+      files with >=1 candidate, 79 files with a MEASURED ZERO** (incl.
+      `program.asm` 2705, `str-engine.asm` 1754, `interp.asm` 1728). 15 negate
+      sites + 25 shift sites, every one classified in writing.
+      🎯 **THE STORAGE HALF IS AN EMPTY CLASS** — all 21 disk/tape/FAT shifts
+      are on genuinely unsigned quantities and not one is preceded by a
+      negate. The tree's ONE `sra` (`fp_exp`, `n8>>3`) is the single place a
+      signed shift was written as a signed shift.
+      🎯 **THE TREE ALREADY KNEW ABOUT `$8000` IN FOUR PLACES** and none of
+      them was reachable from the residual's own grep: `ABS(-32768%)`,
+      `-32768\-1`, `combine_mul`'s asymmetric 32767/32768 bound, and
+      `combine_pow`'s. The gap was **unary minus**, which sits between them
+      and had no escape.
+      🔴 **AND THE ROW WRITTEN AS THE CONTROL THAT WOULD INDICT THE DEFECT
+      DIVERGED THE OTHER WAY** — `0-cint(-32768)`: reference `-32768`,
+      zerobas `32768`. Binary `-` with an `$8000` RHS **wraps and never
+      promotes** on the reference (measured at a = 0/1/100/32767), while
+      unary `-` **does** promote. zerobas had BOTH backwards. Two defects
+      either side of one fixed point; the second would never have been
+      looked for. Fixed at both: **+6 B page 1, +9 B low region** (walls
+      14→**5** / 73→**67**, predicted exactly).
+      🔴 **TWO OF THE FOUR DISCRIMINATORS WERE VACUOUS** —
+      `-1-(-32768)`=32767 and `$8000-$8000`=0 do not overflow at all, so no
+      promotion decision is reached and neither row could speak. I predicted
+      values for both by pushing them through the fitted MODEL of the
+      reference instead of computing the subtraction. D-DSCALE's own lesson,
+      landing again inside the slice written to apply it.
+      🔴 **`sub.rom`'s hash was predicted UNCHANGED and MOVED** — a
+      low-region insertion shifts every resident symbol after it, and the sub
+      ROM's tenants link against those by address. **A low-region edit is
+      never sub-ROM-neutral.**
+      The original filing follows, unedited:
+
+      🔴 **NOTHING SWEEPS THE `$8000` FIXED POINT AT THE OTHER SIGNED-16
       DIVIDES.** Filed 2026-08-11 by D-DSCALE. `gdrw_scale` divided a signed
       product by 4 with `negate → shift → negate`, which is correct for every
       16-bit value except `$8000` — the sole fixed point of two's-complement
@@ -1529,6 +1567,42 @@ list. **When a slice lands, grep this list for what it just shipped.**
       be invented. `lineerr-acceptance` is the wrong gate for most of the
       candidates — the arithmetic ones belong to `graphics-acceptance` and the
       float ones to `intarg`/`missing`.
+
+- [ ] ⚠️ **FOUR `$8000` VERDICTS REST ON ONE COMMENT, AND IT IS AN OVERFLOW
+      BOUND, NOT A `$8000` BOUND.** Filed 2026-08-11 by D-NEG8K
+      ([`docs/fixpoint8000-msx1-sweep.md`](docs/fixpoint8000-msx1-sweep.md)
+      §4.2). `gfx_circ_scale`, `gfx_circ_bvec_nudge`, `gcbv_y` and
+      `gfx_neg16_bc`/`gfx_neg16_de` were all classified "`$8000` unreachable"
+      on the SAME stated bound — `gfx_circ_scale`'s header,
+      "Bounded-domain: `|v|*ASPS` assumed `<=65535` (true for `|v|<=255` …)".
+      That is one assumption doing four rows' work, it is written as an
+      *overflow* bound rather than a `$8000` bound, and **the sweep did not
+      re-derive where the `r <= 255` domain is actually enforced**. It clearly
+      is somewhere — `CIRCLE(0,0),32768` is already a probe row
+      (`basic_probe_graphics.py` `ovf_radius`) — but "already a row" is not the
+      same as "the negate sites can never see `$8000`". The cheap version is a
+      reading, not a fix: find the enforcing site and cite it from the four
+      headers, or measure a large-radius/large-aspect `CIRCLE` and see what
+      reaches `gfx_circ_scale`. ⚠️ Belongs to `graphics-acceptance`, NOT to
+      `float-acceptance`.
+      💰 Not priced: if the domain holds, the cost is four citations and zero
+      bytes; if it does not, the fix is a `$8000` arm per site and nobody has
+      measured which sites would need one.
+
+- [ ] ⚠️ **`fp_exp`/`fp_log`'s `$8000` REACHABILITY WAS REASONED, NOT
+      MEASURED.** Filed 2026-08-11 by D-NEG8K (same doc, §4.4). Both take a
+      magnitude by negation (`DE := |n8|` / `DE := |e'|`) and both are
+      **correct at `$8000` either way**, because the following
+      `widen_uint_to` reads the magnitude as UNSIGNED and the sign is poked
+      separately — so `$8000` widens to 32768 and comes back as −32768, the
+      original value. That verdict is sound from the source. What was NOT
+      done is establishing whether `n8` or `e'` can BE `$8000` for any
+      `EXP(x)`/`LOG(x)`. Low value precisely because both branches are
+      correct — but it is an unmeasured reachability claim sitting in a table
+      of measured ones, and D-NEG8K's own lesson is that a claim reached by
+      reasoning about a site reads exactly like one reached by measuring it.
+      ⚠️ `math-acceptance` owns this surface.
+      💰 Zero bytes either way; the cost is one reading.
 
 - [ ] ⚠️ **THE THREE SCALE STATES ARE NOT SWEPT THROUGH `X` SUBSTRINGS OR
       `=var;` SUBSTITUTION.** Filed 2026-08-11 by D-DSCALE. §12 measured the

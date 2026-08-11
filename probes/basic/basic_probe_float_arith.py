@@ -137,6 +137,60 @@ EXPRS = [
     "2+(-5e-14)",               # '+' token, opposite signs -> effective subtract
     "-1-5e-14", "2-(-5e-14)",   # '-' token, like signs -> effective add (regression)
     "2-4e-14", "2-6e-14",       # near-tie both sides, unchanged on both machines
+    # --- round-6: the $8000 fixed point at UNARY MINUS (D-NEG8K, docs/
+    # fixpoint8000-msx1-sweep.md §4.6). $8000 is its own two's-complement
+    # negation, so `0 - $8000` = $8000 and an int16 unary minus returns the
+    # operand unchanged where the true value is +32768. Three siblings already
+    # promote that value to a double -- `-32768\-1` (spec §10.4), `-32768*-1`
+    # (combine_mul's sign-dependent 32767/32768 bound) and `ABS(-32768%)`
+    # (evmc_abs) -- and unary minus has no such arm. R1/R2 are the two routes
+    # to an int16 $8000 operand; C1 is the control that indicts them (the SAME
+    # value through combine_sub, whose `sbc hl,de` P/V test does promote).
+    "-cint(-32768)",            # R1
+    "-(-32768\\1)",             # R2 -- no CINT involved
+    "0-cint(-32768)",           # C1 -- same value, promotes
+    "cint(-32768)",             # C2 -- the operand itself
+    "-32768\\1",                # C3 -- R2's operand
+    "-cint(-32767)",            # C4 -- one below the fixed point
+    "-cint(32767)",             # C5 -- the other side of zero
+    "abs(cint(-32768))",        # C6 -- the sibling that already escapes
+    "-cdbl(-32768)",            # C7 -- the FLOAT arm (flt_neg), must be green
+    # --- round-7: C1 (`0-cint(-32768)`) REFUTED its own prediction -- the
+    # reference prints -32768 there, so binary subtract does NOT promote when
+    # the RHS is $8000, while unary minus DOES. Hypothesis H1: the reference
+    # computes a-b as a + neg16(b), and neg16($8000) = $8000, so the overflow
+    # is invisible to it for EVERY a, not just a=0. H2: a special case at
+    # exactly +32768. These rows decide it; D1/D2 are the discriminators
+    # (H1 -> -32767 / -1 ; H2 -> 32769 / 65535).
+    "1-cint(-32768)",           # D1
+    "32767-cint(-32768)",       # D2
+    "0-(-32768\\1)",            # D3 -- same $8000 from a different producer
+    "1-cint(-32767)",           # C8 -- RHS one off the fixed point: 32768,
+                                #       proves subtract DOES promote normally
+    "0-cint(-32767)",           # C9
+    "0-cint(32767)",            # C10
+    "0+cint(-32768)",           # C11 -- '+' never negates its RHS
+    # --- round-8: H1 held at a=0/1/32767. Its blast radius: does the ADD the
+    # reference substitutes still CHECK overflow? D6 decides -- $8000+$8000
+    # wraps to 0 (the true a-b) but overflows as a signed add, so H1-with-check
+    # predicts -65536 and H1-without-check predicts 0.
+    "-1-cint(-32768)",          # D4
+    "100-cint(-32768)",         # D5
+    # D6/D7 use the `\` spelling of an int16 $8000, NOT cint(): the cint()
+    # form makes a 39-char PRINT line, and at width 40 the probe's echo-line
+    # locator loses the tail (captured as None on BOTH sides -- a FAIL with
+    # identical spans is the apparatus failing, not the subject).
+    "(-32768\\1)-(-32768\\1)",  # D6
+    "cint(-32768)-1",           # C12 -- $8000 on the LHS is not the fixed point
+    # --- round-9: D4/D6 above turned out VACUOUS (-1-(-32768)=32767 and
+    # $8000-$8000=0 do not overflow at all, so neither could discriminate).
+    # The four rows that DO overflow (a=0,1,100,32767) all say the same thing:
+    # `a - $8000` WRAPS mod 65536 and never promotes. These two decide the
+    # PRICE of the fix: D7 says whether '+' wraps too (if it does, the guard
+    # needs no operation-mode test and costs 3 B less), C13 re-confirms that a
+    # large overflow with a NON-$8000 rhs still promotes.
+    "(-32768\\1)+(-32768\\1)",  # D7 -- decides the guard's shape
+    "32767-cint(-32767)",       # C13
 ]
 
 # Full-line cases (multi-item PRINT: pins that the accumulator type resets

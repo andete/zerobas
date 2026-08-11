@@ -18,7 +18,7 @@ fp_cmp equ 03738H
 dig15_iszero equ 032D4H
 arga_pack_fac equ 033D4H
 widen_fac_to equ 0387AH
-widen_uint_to equ 03BE3H
+widen_uint_to equ 03BECH
 flt_to_int16 equ 0327DH
-vars_reset equ 03DB1H
+vars_reset equ 03DBAH
 penderr_set equ 02834H
