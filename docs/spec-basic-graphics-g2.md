@@ -149,6 +149,26 @@ So the ONE resident difference between the two verbs is the default-color source
 (`FORCLR` vs `BAKCLR`); both marshal into the identical `GFX_OP=1` tenant op with
 `c` already resolved.
 
+**3.5 The `c` argument's DOMAIN — added 2026-08-11 (D-LINERR).** 🔴 **This
+section exists because nothing stated the domain and the code invented one.**
+§3.4 above covers only the *default*; §6 marshals `c` "already resolved"; and
+until D-LINERR the implementation silently masked with `and $0F`, carrying the
+comment *"see G2 gate note"* — **a note that does not exist**. By the time that
+pointer reached a second reader it had been restated as *"documented as a silent
+mask, measured on the VG-8020"*. It never was. Measured now, on the VG-8020 **and**
+the CF-3300 ([`spec-basic-lineerr.md`](spec-basic-lineerr.md) §4.3, rows `k.*`):
+
+- **`c` is a RANGE-CHECKED 0..15 → ERR 5 outside**, the same rule `CIRCLE` and
+  `PAINT` already carried. `PSET(20,21),16` → `Illegal function call`, and so
+  are `,-1` and `,255`. There is **no** silent nibble mask at any of the five
+  verbs.
+- **The int16 coercion runs FIRST**, so an out-of-int16 colour is ERR 6, not
+  ERR 5: `LINE (11,12)-(20,21),70000` → `Overflow`.
+- A fractional colour truncates (`,1.6` → 1, accepted).
+
+Knife **K-LE6** restores the mask byte-for-byte and reddens exactly the five
+out-of-domain rows, `k.15`/`k.frac`/`k.big` staying green.
+
 ---
 
 ## 4. Coordinate parsing (own-design, resident) — `(x,y)` + `STEP`
@@ -192,9 +212,22 @@ parse_coord:            ; HL = cursor after the verb token; on return DE=x, ...=
   resolved target ALWAYS`, drawn or not; only the *pixel plot* is gated by the range
   test. (A drawn plot writes both cell pairs to the target too: `PSET(10,20)` →
   `GRPAC=(10,20)`, `GXPOS=(10,20)`.)
-- **`SCREEN 0/1 → ERR 5 (Illegal function call)`** (§11.4). Precheck `(SCRMOD)==2`
-  resident (`SCRMOD`, [basic/screen.asm:125](basic/screen.asm)); else `raise_error`
-  with ERR 5. (Arc is SCREEN-2-only, D4; SCREEN 3+ deferred.)
+- **`SCREEN 0/1 → ERR 5 (Illegal function call)`** (§11.4). ⚠️ **The word
+  "precheck" here is SUPERSEDED 2026-08-11 by D-LINERR**
+  ([`spec-basic-lineerr.md`](spec-basic-lineerr.md) §2); the refusal itself is
+  correct and unchanged. Kept as a pointer rather than reworded away, because a
+  retired claim that simply vanishes is invisible on the next grep (`bf0dab5`).
+  ~~Precheck `(SCRMOD)==2` resident (`SCRMOD`,
+  [basic/screen.asm:125](basic/screen.asm)); else `raise_error` with ERR 5.~~
+  The test is the same; its **position** is not. Measured on both references:
+  the mode is refused **after** the mandatory coordinate has resolved and after
+  the work-area write, and **before** the optional colour —
+  `PSET((Q$<5),21)` in SCREEN 0 is ERR **13**, `PSET(20,21),0*(1/0)` is ERR
+  **5**, and the latter leaves `GRPAC`/`GXPOS` on (20,21). One shared leaf,
+  `gfx_point_gate` ([basic/graphics.asm](basic/graphics.asm)), at all five verbs
+  that have the test. (Arc is SCREEN-2-only, D4; SCREEN 3+ deferred — and
+  SCREEN 3 is now **measured** as drawing on both references, filed in
+  `TODO.md`.)
 
 **Work-area writes (§6): unconditional — MEASURED (G2-d, RESOLVED above).** Both a
 drawn and a no-op `PSET` write `GXPOS/GYPOS/GRPACX/GRPACY` to the resolved

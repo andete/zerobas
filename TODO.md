@@ -1364,11 +1364,69 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the same shape recurs in any row that tests an effect by its absence of an
       error.
 
-- [ ] 🔴 **`LINE (0,0)-((A$<5),1)` IS ERR 5 HERE AND ERR 13 ON BOTH REFERENCES.**
-      Filed 2026-08-09 by D-STMTPEND, the `c.line.tm` deferred row. LINE raises
-      its own `Illegal function call` eagerly from inside its coordinate parse,
-      so it reaches NEITHER of D-STMTPEND's two writers and the fix does not move
-      it. A per-driver fix in `graphics.asm`; not scouted.
+- [x] 🔴 **`LINE (0,0)-((A$<5),1)` IS ERR 5 HERE AND ERR 13 ON BOTH REFERENCES.**
+      Filed 2026-08-09 by D-STMTPEND, the `c.line.tm` deferred row.
+      ✅ **CLOSED 2026-08-11 by D-LINERR**
+      ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md),
+      `make lineerr-acceptance` **106/106 from 55/106** + 2 deferred, both
+      references agreeing on every scored row; `stmtpend-acceptance`'s DEFERRED
+      dict is now EMPTY).
+      🔴 **AND THE DIAGNOSIS FILED HERE WAS WRONG.** This entry said *"LINE
+      raises its own `Illegal function call` eagerly from inside its coordinate
+      parse"*. **There is no ERR 5 anywhere in `parse_coord`.** The refusal was
+      `ex_line_gfx`'s own opening `cp 2`, three instructions in, before any
+      coordinate was looked at, and the row runs in the boot default SCREEN 0 —
+      so zerobas answered ERR 5 to a statement whose coordinates it never
+      evaluated. **Reading the site was enough to refute it**; no emulator and
+      no reference were needed. The wrong diagnosis also pointed at the wrong
+      shape of fix — a per-driver patch in a coordinate walk — where the real
+      rule is an ORDERING one at **five** verbs: *a graphics statement moves the
+      work area to the point its MANDATORY arguments resolve to and refuses a
+      wrong SCREEN mode immediately after that, before the first OPTIONAL
+      argument is looked at.*
+      🔴 **It became a five-verb rule because a NEGATIVE CONTROL diverged**:
+      `n.pset0` was written as "the same question at a verb this slice claims
+      nothing about" and came back identical, so the fix is one shared leaf
+      (`gfx_point_gate`) and not one edit at LINE. **−26 B** (page 1 48 → 74 B),
+      because the old code said the same thing five times.
+      🎯 Two corollaries fell out: a LINE/PSET colour is a **0..15 range check**
+      (`PSET(20,21),16` → ERR 5 on both references), not the silent `and $0F`
+      mask that shipped; and a list that ENDS where the colour was required is
+      **Missing operand (ERR 24)** — but one field along, at the box slot, the
+      same two shapes are ERR 2.
+
+- [ ] 🔴 **SCREEN 3 DRAWS ON BOTH REFERENCES; zerobas raises ERR 5.**
+      Filed 2026-08-11 by D-LINERR
+      ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md) §6.4), rows
+      `m.s3` and `v.pset3` of `make lineerr-acceptance`, both **measured and
+      deferred**: `LINE (11,12)-(20,21)` and `PSET(20,21)` in SCREEN 3 read
+      ` 0 , 20 , 21 ` on the VG-8020 and the CF-3300 and ` 5 , 20 , 21 ` here.
+      A **WHOLE-FEATURE gap**, not an error-surface defect — zerobas has no
+      SCREEN-3 pixel op at all, so its `cp 2` refuses the mode, and the refusal
+      is correct for every mode zerobas implements. Closing it needs a second
+      rasteriser and a second address/clash model (SCREEN 3 is 64×48
+      multicolour, not a bitmap), i.e. a graphics slice of its own. Priced at
+      nothing; not scouted. Both rows stay printed and marked `....`, excluded
+      from the tally in **both** directions.
+
+- [ ] ⚠️ **PAINT'S OFF-SCREEN-SEED ERR 5 AND ITS WRONG-MODE ERR 5 ARE
+      UNORDERED — no row can tell them apart.** Filed 2026-08-11 by D-LINERR
+      ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md) §8). `PAINT`
+      raises `Illegal function call` for an off-screen seed **and** for a wrong
+      SCREEN mode, so the error code is blind to which fired; only the WORK AREA
+      could separate them, and D-LINERR's fix writes it **between** the two.
+      `ex_paint` keeps the seed test above the gate, which is where it already
+      was — nothing measured says that is right. The row that would settle it is
+      `PAINT(300,100)` in SCREEN 0 read through GRPAC, and it was not run.
+
+- [ ] ⚠️ **`DRAW`'s mode gate was left alone, with a green row behind it.**
+      Filed 2026-08-11 by D-LINERR. `v.draw0` (`DRAW"U10"` in SCREEN 0) reads
+      ` 5 , 7 , 4 ` on all three sides, so DRAW already agrees and D-LINERR did
+      not touch it. But DRAW's argument is a STRING parsed by a tenant, so "after
+      the mandatory arguments" means something different there, and the one
+      agreeing row does not say the ordering rule holds inside a DRAW command
+      string. Not a known defect — an unmeasured corner named rather than
+      assumed.
 
 - [x] 🔴 **`SCREEN (1<5)` IS `Syntax error` HERE AND `Illegal function call` ON
       THE VG-8020.** Filed 2026-08-09 by D-STMTPEND; ✅ **CLOSED 2026-08-10 by

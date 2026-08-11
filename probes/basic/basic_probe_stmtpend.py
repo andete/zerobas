@@ -239,13 +239,22 @@ NEGATIVE = {
 }
 LABEL_W = 11
 
-DEFERRED = {
-    # Measured, not scored, each with the reason it is out of this slice's reach.
-    "c.line.tm":
-        "DEFERRED — LINE raises its OWN Illegal function call eagerly from "
-        "inside its coordinate parse, so it reaches NEITHER of this slice's "
-        "two writers; ERR 5 here vs 13 on both references. A per-driver fix "
-        "in graphics.asm",
+DEFERRED: dict[str, str] = {
+    # 🎯 THE DICT IS EMPTY. Both rows this probe deferred are now scored.
+    #
+    # 🎯 `c.line.tm` WAS DEFERRED HERE AND IS NOW SCORED. D-LINERR (2026-08-11,
+    # docs/spec-basic-lineerr.md) closed it -- and the reason recorded here was
+    # WRONG. This dict used to say "LINE raises its OWN Illegal function call
+    # eagerly from inside its coordinate parse". There is no ERR 5 in
+    # parse_coord: the refusal was `ex_line_gfx`'s own opening `cp 2`, three
+    # instructions in, BEFORE any coordinate was looked at, and this row runs in
+    # the boot default SCREEN 0. Reading the site was enough to refute the
+    # filed diagnosis; the real rule is an ORDERING one, measured at five verbs
+    # (spec-basic-lineerr.md §2) -- a graphics statement moves the work area to
+    # the point its MANDATORY arguments resolve to and refuses a wrong SCREEN
+    # mode immediately after that, so every coordinate fault outranks the mode
+    # and no optional argument does.
+    #
     # 🎯 `u.scr.dz` WAS DEFERRED HERE AND IS NOW SCORED. D-SCRERR (2026-08-10,
     # docs/spec-basic-screenerr.md) closed it: SCREEN's mode is a checked byte
     # and the check runs BEFORE CHGMOD, so the mode is never applied and the

@@ -41,10 +41,15 @@ ex_preset:
 gfx_plot_stmt:
                 and     $0F                 ; colour is a 4-bit nibble
                 ld      (GFX_C),a           ; provisional default (overridden by ,c below)
-                ld      a,(SCRMOD)
-                cp      2                   ; SCREEN 2 only (arc D4)
-                jp      nz,gfx_err5         ; SCREEN 0/1 -> Illegal function call (ERR 5)
                 call    parse_coord         ; BC = x, DE = y (int16, STEP resolved); HL past ')'
+                ; --- D-LINERR: work area := the point, THEN the SCREEN-2 gate ---
+                ; Both used to sit elsewhere: the gate opened the routine (so
+                ; `PSET((Q$<5),21)` in SCREEN 0 answered ERR 5 where both
+                ; references answer 13) and the work-area write was below the
+                ; colour parse (so `PSET(20,21),0*(1/0)` left GRPAC on the seed
+                ; where both references leave it on the point). One call now
+                ; does both, in the measured order -- spec-basic-lineerr.md §2.
+                call    gfx_point_gate      ; BC/DE/HL preserved
                 ; --- optional ",c" colour override ---
                 call    skip_spaces
                 cp      ','
@@ -53,17 +58,25 @@ gfx_plot_stmt:
                 push    bc                  ; save x across the colour eval (eval clobbers all)
                 push    de                  ; save y
                 call    gfx_eval_int16   ; DE = colour, ERR 6 if > int16
-                ld      a,e
-                and     $0F                 ; use the low nibble (0..15); see G2 gate note
-                ld      (GFX_C),a
+                ; 🔴 D-LINERR: a RANGE CHECK, not the `and $0F` mask that used to
+                ; be here. `PSET(20,21),16` is Illegal function call on BOTH
+                ; references (row k.pset16) -- the same 0..15 rule CIRCLE and
+                ; PAINT already used, so this is one shared leaf and not a
+                ; PSET-specific quirk.
+                ; 🔴 THE MASK'S OWN CITATION NEVER RESOLVED. The line this
+                ; replaces read `and $0F ; use the low nibble (0..15); see G2
+                ; gate note` -- and there is no "G2 gate note", nor any doc in
+                ; this tree that states a domain for the colour argument at all
+                ; (spec-basic-graphics-g2.md §3.4 covers only the DEFAULT,
+                ; FORCLR/BAKCLR). The mask was own design carrying a dangling
+                ; pointer, and by its second reader the pointer had been
+                ; restated as a measurement on a named machine. The domain is
+                ; now stated where it belongs, spec-basic-graphics-g2.md §3.5,
+                ; with the rows behind it -- spec-basic-lineerr.md §5.1.
+                call    gfx_store_colour_checked   ; ERR 5 outside 0..15; GFX_C=value
                 pop     de                  ; restore y
                 pop     bc                  ; restore x
 gfx_plot_go:
-                ; --- work area: unconditional (drawn OR no-op) -- G2-d ---
-                ld      (GXPOS),bc          ; pending-target X = resolved x
-                ld      (GRPACX),bc         ; last-referenced point X = resolved x
-                ld      (GYPOS),de          ; pending-target Y
-                ld      (GRPACY),de         ; last-referenced point Y
                 ; --- range test decides plot vs silent no-op ---
                 call    gfx_in_range        ; CF = 1 iff 0<=x<=255 and 0<=y<=191
                 jp      nc,exec_stmt        ; off-screen -> no plot (work area already moved)
@@ -122,9 +135,6 @@ pt_return:
 ; then set GRPAC = p2 at the end. Off-screen endpoints are legal (the tenant clips
 ; per pixel, §3.4); only |coord| > int16 (in parse_coord) or SCREEN 0/1 raises.
 ex_line_gfx:
-                ld      a,(SCRMOD)
-                cp      2                   ; SCREEN 2 only (arc D4)
-                jp      nz,gfx_err5         ; SCREEN 0/1 -> Illegal function call
                 ld      a,(FORCLR)
                 and     $0F
                 ld      (GFX_C),a           ; default colour = foreground (overridden by ,c)
@@ -135,8 +145,15 @@ ex_line_gfx:
                 call    parse_coord         ; BC = x1, DE = y1 (STEP rel current GRPAC)
                 ld      (GFX_X1),bc
                 ld      (GFX_Y1),de
-                ld      (GRPACX),bc         ; stage running ref = p1 (STEP chain, §3.3)
-                ld      (GRPACY),de
+                ; stage running ref = p1 (STEP chain, §3.3). 🔴 D-LINERR: this
+                ; used to write GRPACX/GRPACY ONLY, and the row that caught it
+                ; is `w.s0.tm` -- `LINE (11,12)-((Q$<5),21)`, whose GRPAC twin
+                ; `m.s0.tm` was already GREEN. Both references stage p1 into
+                ; GXPOS/GYPOS as well, so a reading that only looked at the
+                ; last-referenced point could not see the difference. Using the
+                ; shared leaf writes all four cells and is 5 bytes SHORTER than
+                ; the two writes it replaces.
+                call    gfx_work_area
                 call    skip_spaces
                 cp      MINUS_TOKEN         ; '-' between the two coordinates is mandatory
                 jp      nz,elg_syntax
@@ -152,6 +169,19 @@ elg_second:
                 call    parse_coord         ; BC = x2, DE = y2 (STEP rel GRPAC = p1)
                 ld      (GFX_X2),bc
                 ld      (GFX_Y2),de
+                ; --- D-LINERR: work area := p2, THEN the SCREEN-2 gate ---
+                ; This is the whole filed defect. The gate used to be the first
+                ; thing ex_line_gfx did, so `LINE (0,0)-((Q$<5),1)` in SCREEN 0
+                ; answered ERR 5 without evaluating a coordinate, where both
+                ; references answer ERR 13. Here, EVERY fault the two endpoints
+                ; can raise -- a type fault, a deferred numeric one, an int16
+                ; overflow, a missing `-`, a missing `(` -- has already been
+                ; reported, and the colour/box fields have not been touched.
+                ; ⚠️ The tenant ALSO writes the work area from GFX_X2/GFX_Y2
+                ; (sub/graphics.asm gfx_line_op) and that write is KEPT: the
+                ; CIRCLE spokes call that op internally and rely on it, so this
+                ; is a deliberate duplicate on the drawn path, not dead code.
+                call    gfx_point_gate      ; BC/DE/HL preserved
                 ; --- optional ",[c][,B|BF]" ---
                 xor     a
                 ld      (GFX_MODE),a        ; default: segment
@@ -162,13 +192,26 @@ elg_second:
                 call    skip_spaces
                 cp      ','                 ; ",," -> colour omitted, straight to box field
                 jr      z,elg_box_comma
+                ; 🔴 D-LINERR: a list that ENDS where the colour was required is
+                ; `Missing operand` (ERR 24), not Syntax error -- `LINE (0,0)-
+                ; (9,9),` and `LINE (0,0)-(9,9),:V=1` are both 24 on BOTH
+                ; references (rows a.trailc / a.trailcolon). Same rule D-SCRERR
+                ; measured at all four of ex_screen's such slots. The `:` arm is
+                ; MEASURED here rather than copied from ex_screen's shape -- and
+                ; it does NOT extend to the box slot one field along, which is
+                ; ERR 2 for the same two shapes (a.boxc / a.boxcolon).
+                or      a                   ; end of line -> Missing operand
+                jp      z,loc_missing
+                cp      COLON               ; next statement -> the same
+                jp      z,loc_missing
                 call    is_box_kw           ; single-comma box (",B"/",BF") ?
                 jr      z,elg_box_read
                 ; --- colour expression ---
                 call    gfx_eval_int16   ; ERR 6 if > int16
-                ld      a,e
-                and     $0F
-                ld      (GFX_C),a
+                ; 🔴 D-LINERR: 0..15 RANGE CHECK, not the old `and $0F` mask --
+                ; `LINE (0,0)-(9,9),16` is ERR 5 on both references (k.16 /
+                ; k.b16), matching CIRCLE/PAINT and now PSET.
+                call    gfx_store_colour_checked
                 call    skip_spaces
                 cp      ','
                 jp      nz,elg_draw         ; ",c" only
@@ -314,6 +357,58 @@ gfx_typeerr:
                 ld      a,13                ; Type mismatch (G5 PAINT's MSX2 tile$ form, §5)
                 jp      raise_error
 
+; --- gfx_point_gate / gfx_mode_gate / gfx_work_area -------------------------
+; D-LINERR (docs/spec-basic-lineerr.md). THE ORDERING RULE, in one place:
+;
+;   a graphics statement moves the WORK AREA to the point its MANDATORY
+;   arguments resolve to, and refuses a wrong SCREEN mode IMMEDIATELY AFTER
+;   THAT -- after every fault the mandatory arguments can raise, and BEFORE the
+;   first OPTIONAL argument is even looked at.
+;
+; Measured on the VG-8020 AND the CF-3300, at all five verbs that have a
+; precheck, with the gate sited from BOTH sides (spec §2.1): in SCREEN 0
+; `PSET((Q$<5),21)` is ERR 13 and `PSET(20,21),0*(1/0)` is ERR 5, so the gate
+; lies strictly between the coordinate and the colour; and the second of those
+; leaves GRPACX/GRPACY *and* GXPOS/GYPOS on (20,21), so the work-area write
+; lies before the gate rather than after it. The same pair holds for LINE
+; (`m.s0.tm` / `m.s0.col`), for CIRCLE across its TWO mandatory arguments
+; (`v.circ0.rt` is ERR 13 for a bad radius, `v.circ0.c` ERR 5 for a bad colour)
+; and for PAINT (`v.paint0.tm` / `v.paint0.c`).
+;
+; 🔴 THIS WAS FILED AS A LINE DEFECT AND IS NOT ONE. `TODO.md` had it as "LINE
+; raises its own Illegal function call eagerly from inside its coordinate
+; parse" -- but there is no ERR 5 in parse_coord, the refusal was `ex_line_gfx`'s
+; own opening `cp 2`, and the identical opening `cp 2` at PSET/PRESET, CIRCLE
+; and PAINT diverges identically. It is one rule at five verbs, which is why it
+; is one routine and not five edits.
+;
+; THREE ENTRY POINTS BECAUSE CIRCLE'S TWO MANDATORY ARGUMENTS ARE RESOLVED AT
+; TWO DIFFERENT REQUEST SITES, and they NEST, so the extra two cost 4 bytes
+; between them: the common case wants both halves (gfx_point_gate), CIRCLE's
+; centre wants the work area alone (gfx_work_area) and CIRCLE's radius the gate
+; alone (gfx_mode_gate). ⚠️ The radius site gates on EVERY int request, not just
+; the first, and that is deliberate: gating twice is the same as gating once
+; (the second test can only pass), so it buys the rule without a "which
+; argument am I on" flag.
+;
+; in:  BC = x, DE = y (the resolved point). BC, DE and HL are all preserved --
+; every caller still holds the cursor in HL, and PSET's caller still needs the
+; point in BC/DE for its own range test. Clobbers A only. Own-design.
+gfx_point_gate:
+                call    gfx_work_area
+                ; fall through into the gate
+gfx_mode_gate:
+                ld      a,(SCRMOD)
+                cp      2                   ; SCREEN 2 only (arc D4)
+                ret     z
+                jp      gfx_err5            ; SCREEN 0/1/3 -> Illegal function call
+gfx_work_area:
+                ld      (GXPOS),bc          ; pending pixel target X
+                ld      (GRPACX),bc         ; last-referenced point X
+                ld      (GYPOS),de
+                ld      (GRPACY),de
+                ret
+
 ; --- gfx_eval_int16: "evaluate + strict-int16-check" pair -------------------
 ; (spec-basic-graphics-g5.md §8 D4 DRY lever). IN: HL = cursor at the
 ; expression. OUT: DE = value, HL advanced past the expression (ERR 6 aborts
@@ -396,9 +491,12 @@ ex_circle:
                 ; the resident GFX_OP=4 geometry call (page-0 tenant -- the parse tenant
                 ; can't nest-call it). HL enters just past the CIRCLE token.
                 inc     hl                  ; past the CIRCLE token
-                ld      a,(SCRMOD)
-                cp      2                   ; SCREEN 2 only (arc D4)
-                jp      nz,gfx_err5
+                ; D-LINERR: the SCREEN-2 gate is NOT here any more. CIRCLE has
+                ; TWO mandatory arguments and the gate belongs after the second
+                ; of them, so it moved into cp_req_int below -- measured:
+                ; `CIRCLE(20,21),(Q$<5)` in SCREEN 0 is ERR 13 (the radius fault
+                ; wins) while `CIRCLE(20,21),5,0*(1/0)` is ERR 5 (the colour
+                ; fault does not). Rows v.circ0.rt / v.circ0.c.
                 ld      (GFX_DPTR),hl       ; seed the shared token cursor
                 xor     a
                 ld      (GFX_DRESUME),a     ; first entry is a fresh parse
@@ -425,10 +523,17 @@ cp_req_coord:
                 call    parse_coord         ; BC=cx, DE=cy (STEP resolved), HL advanced
                 ld      (GFX_CXC),bc
                 ld      (GFX_CYC),de
+                call    gfx_work_area       ; D-LINERR: work area := the CENTRE, before
+                                            ; the radius is even requested (v.circ0.rt
+                                            ; reads ' 13 , 20 , 21 ' on both references)
                 ld      (GFX_DPTR),hl
                 jr      cp_resume
 cp_req_int:
                 call    gfx_eval_int16      ; DE=value, HL advanced (ERR 6 if > int16)
+                call    gfx_mode_gate       ; D-LINERR: the gate, AFTER the value. Runs on
+                                            ; every int request rather than only the
+                                            ; radius: gating twice is gating once, and
+                                            ; that is cheaper than a "which argument" flag
                 ld      (GFX_DPTR),hl
                 ld      (GFX_DVAL),de
 cp_resume:
@@ -468,15 +573,22 @@ cp_done:
 ; =============================================================================
 ex_paint:
                 inc     hl                  ; past the PAINT token
-                ld      a,(SCRMOD)
-                cp      2                   ; SCREEN 2 only (arc D4)
-                jp      nz,gfx_err5         ; SCREEN 0/1 -> Illegal function call
                 call    parse_coord         ; BC = seed x, DE = seed y (STEP resolved)
                 call    gfx_in_range        ; CF = 1 iff 0<=x<=255 and 0<=y<=191
                 jp      nc,gfx_err5         ; off-screen seed -> ERR 5 (spec §3 --
                                             ; NOT a silent clip like PSET/LINE)
-                push    bc                  ; guard the seed across the C/B field
-                push    de                  ; parses (eval/str_eval_one clobber all)
+                ; --- D-LINERR: work area := the seed, THEN the SCREEN-2 gate ---
+                ; The gate used to open the routine; the work-area write used to
+                ; sit at ep_draw, AFTER every field. Both are refuted by
+                ; measurement: `PAINT((Q$<5),21)` in SCREEN 0 is ERR 13 on both
+                ; references (so the gate is not first) and `PAINT(20,21),
+                ; 0*(1/0)` leaves GRPAC/GXPOS on (20,21) (so the write is not
+                ; last) -- rows v.paint0.tm / v.paint2.c. ⚠️ THIS SUPERSEDES
+                ; spec-basic-graphics-g5.md §6's "deferred to AFTER every field
+                ; is parsed", which was a design choice never measured against
+                ; the reference. The gate stays BELOW the off-screen-seed test,
+                ; which is untouched and still ERR 5 with the work area unmoved.
+                call    gfx_point_gate      ; BC/DE/HL preserved
                 ; --- default colour = FORCLR ---
                 ld      a,(FORCLR)
                 and     $0F
@@ -527,12 +639,10 @@ ep_default_b:
                 ld      a,(GFX_C)
                 ld      (GFX_B),a
 ep_draw:
-                pop     de                  ; seed y
-                pop     bc                  ; seed x
-                ld      (GXPOS),bc          ; work area (spec §6): unconditional, AFTER
-                ld      (GRPACX),bc         ; every field is parsed (unlike PSET's
-                ld      (GYPOS),de          ; "unconditional as soon as the seed is
-                ld      (GRPACY),de         ; known" -- both already validated on-screen)
+                ; D-LINERR: the work area moved UP to gfx_point_gate, above the
+                ; field parses (measured -- see the entry comment), which is
+                ; also what retires the push/pop pair that used to guard the
+                ; seed across them: nothing below here needs BC/DE any more.
                 ld      a,5                 ; GFX_OP = 5 -> tenant PAINT
                 ld      (GFX_OP),a
                 push    hl                  ; guard the token cursor -- CALSLT clobbers HL

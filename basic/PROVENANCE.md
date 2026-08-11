@@ -4439,3 +4439,86 @@ this slice was priced against — [`input.asm`](input.asm) has **no array handli
 whatsoever**. Both rows stay measured and printed by the probe, marked `....` with
 their reason, and are excluded from the gate's tally in **both** directions: a row
 that can only ever be red is doc debt, not a gate. Re-filed in `TODO.md`.
+
+## 2026-08-11 — a graphics statement gates the SCREEN mode AFTER its mandatory arguments (D-LINERR)
+
+Spec [`docs/spec-basic-lineerr.md`](../docs/spec-basic-lineerr.md), measurement
+[`docs/lineerr-msx1-characterization.md`](../docs/lineerr-msx1-characterization.md),
+gate `make lineerr-acceptance`. **108 rows on three sides — `Philips_VG_8020`,
+`National_CF-3300` and the repack — 106 scored and both references agreeing on
+every one of them** (2 deferred, §SCREEN 3 below), so every scored row has an
+oracle and the reference column IS the specification. Clean-room: observed screen
+output and published MSX system-variable reads only; both reference ROMs are
+black boxes.
+
+**The rule, newly sourced:** *a graphics statement moves the WORK AREA to the
+point its MANDATORY arguments resolve to, and refuses a wrong SCREEN mode
+IMMEDIATELY AFTER THAT — after every fault the mandatory arguments can raise, and
+BEFORE the first OPTIONAL argument is looked at.* Sourced from both references at
+`PSET`, `PRESET`, `LINE`, `CIRCLE` and `PAINT`, each sited by a **pair** of rows
+that bracket the gate from both directions (a mandatory argument's fault wins, an
+optional one's does not), and independently by the work-area reading over a
+`PSET(7,4)` seed. `DRAW` already agreed; `POINT` has no gate by construction and
+is the control that says the class is about the PRECHECK and not about "graphics
+in SCREEN 0" generally.
+
+**Two corollaries, also sourced from both references:**
+
+* a `LINE`/`PSET` colour is a **0..15 range check → ERR 5**, the rule `CIRCLE`
+  and `PAINT` already carried — `PSET(20,21),16` is `Illegal function call` on
+  both references. An out-of-int16 colour is ERR 6 from the coercion first.
+* a `LINE` argument list that **ENDS where the COLOUR was required is `Missing
+  operand` (ERR 24)**, at end-of-line and at a `:` alike — D-SCRERR's rule at a
+  second verb. ⚠️ It does **not** extend one field along: at the box slot the
+  identical two shapes are ERR 2. The `:` arm was therefore MEASURED here, not
+  copied from `ex_screen`'s shape; a guard written by analogy would have made all
+  four ERR 24 and been half wrong with no row to say so.
+
+🔴 **THE FILED DIAGNOSIS WAS WRONG AND THE FILE REFUTED IT.** `TODO.md` and the
+deferring probe both recorded *"LINE raises its own `Illegal function call`
+eagerly from inside its coordinate parse"*. There is no ERR 5 anywhere in
+`parse_coord`; the refusal was `ex_line_gfx`'s own opening `cp 2`, three
+instructions in, and the row runs in the boot default SCREEN 0. Recorded because
+the wrong diagnosis named the wrong SHAPE of fix — a per-driver patch — where the
+answer is one shared leaf at five verbs.
+
+🔴 **AND IT BECAME A FIVE-VERB RULE BECAUSE A NEGATIVE CONTROL DIVERGED.**
+`n.pset0` was written as *"the wrong-mode rule at a DIFFERENT verb, which this
+slice claims nothing about"* and diverged identically. A fix at LINE alone would
+have shipped a partial rule under a green gate.
+
+**Own design, not sourced** — the shapes these rules are implemented *in*:
+
+| | |
+|---|---|
+| `gfx_point_gate` / `gfx_mode_gate` / `gfx_work_area`, three nesting entry points into 29 B beside `gfx_err5`, preserving `BC`/`DE`/`HL` and clobbering only `A` | own choice. The BEHAVIOUR is measured at five verbs; that the five share one leaf is ours. The register contract is forced by the callers: each still holds the token cursor in `HL`, and `gfx_plot_stmt` still needs the point in `BC`/`DE` for its own range test |
+| `ex_circle` gates on **every** int request rather than only the radius | own rule for a sourced behaviour. Gating twice is the same as gating once — the second test can only pass — and it buys the measured ordering without a "which argument am I on" flag in the coroutine's resume state. `v.circ0.rt` is the row that forces the gate below the radius at all |
+| the ERR-24 guard's `:` arm at the colour slot, and its ABSENCE at the box slot | both MEASURED (`a.trailcolon` → 24, `a.boxcolon` → 2), not chosen |
+| `ex_line_gfx`'s p2 work-area write duplicating the tenant's own (`sub/graphics.asm` `gfx_line_op`) | deliberate, not dead. The CIRCLE spokes call that op internally and rely on its write; knife K-LE3's green `w.s2` is the row that shows a LINE which DRAWS takes its work area from the tenant |
+
+⚠️ **SUPERSEDED BY THIS SLICE, kept as pointers rather than deleted** (`bf0dab5`:
+a retired claim that simply vanishes is invisible on the next grep):
+[`docs/spec-basic-graphics-g5.md`](../docs/spec-basic-graphics-g5.md) §6's
+`ex_paint` order (**both** ends wrong — the gate was not first and the work-area
+write was not last), and the word *"precheck"* in
+[`docs/spec-basic-graphics-g2.md`](../docs/spec-basic-graphics-g2.md) §4's
+SCREEN 0/1 bullet (the test is right, its position was not).
+
+🔴 **AND ONE SUPERSEDED CLAIM TURNED OUT NEVER TO HAVE EXISTED.** The `and $0F`
+colour mask shipped with the comment *"see G2 gate note"* — there is no such
+note — and by its second reader that dangling pointer had been restated as
+*"documented as a silent mask, **measured on the VG-8020**
+(spec-basic-graphics-g2.md §11.9)"*. `spec-basic-graphics-g2.md` has no §11.9; it
+has no §11 at all. Nothing mechanical could catch this: a dangling `§11.9` is not
+a forbidden source, so `make audit-citations` is silent on it, and no gate ever
+asked what `PSET(20,21),16` does. The domain is now stated where it belongs, with
+its rows, as `spec-basic-graphics-g2.md` §3.5. **A citation that does not resolve
+gets UPGRADED on the way to its second reader.**
+
+**Deferred with its evidence, not silently dropped:** `m.s3` / `v.pset3` —
+SCREEN 3 **draws** on both references where zerobas raises ERR 5. A whole-feature
+gap (a second rasteriser and a second address/clash model), not an error-surface
+defect: this slice moved *where* the refusal happens, and the refusal itself is
+correct for every mode zerobas implements. Both rows stay measured, printed
+`....`, and excluded from the gate's tally in **both** directions. Re-filed in
+`TODO.md`, with PAINT's two unordered ERR 5s and DRAW.

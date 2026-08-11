@@ -155,10 +155,36 @@ Reuse the shared tenant block. New/used cells:
 - Seed marshalled via `GXPOS/GYPOS` (`$FCB3/$FCB5`).
 - The span-stack RAM window (D3).
 
-Resident `ex_paint`: SCREEN-2 precheck → `parse_coord` (seed) → off-screen-seed
-→ ERR 5 → parse optional `C` (default FORCLR, range 0..15 → ERR 5) → parse
-optional `B` (default = C) → 4th-arg → ERR 2 → set GRPAC/GXPOS = seed → marshal →
-`subrom_call IX=$0028` (`SUBROM_IDX_GRAPHICS`) → chain.
+⚠️ **SUPERSEDED 2026-08-11 by D-LINERR**
+([`spec-basic-lineerr.md`](spec-basic-lineerr.md) §5). The order below was a
+design choice, never measured against a reference, and **both of its ends are
+wrong**. Kept rather than deleted, because a retired claim that simply vanishes
+is invisible on the next grep (`bf0dab5`):
+
+> ~~Resident `ex_paint`: **SCREEN-2 precheck** → `parse_coord` (seed) →
+> off-screen-seed → ERR 5 → parse optional `C` (default FORCLR, range 0..15 →
+> ERR 5) → parse optional `B` (default = C) → 4th-arg → ERR 2 → **set
+> GRPAC/GXPOS = seed** → marshal → `subrom_call IX=$0028` → chain.~~
+
+The gate is **not** a precheck: `PAINT((Q$<5),21)` in SCREEN 0 is `Type
+mismatch` on both references, so the seed's own fault outranks the mode. And the
+work-area write is **not** deferred past every field: `PAINT(20,21),0*(1/0)`
+leaves `GRPAC`/`GXPOS` on (20,21) on both references. The measured order is
+
+    ex_paint: parse_coord (seed) → off-screen-seed → ERR 5 → work area := seed
+              → SCREEN-2 gate → optional C (0..15 → ERR 5) → optional B
+              (default = C) → 4th-arg → ERR 2 → marshal
+              → `subrom_call IX=$0028` (`SUBROM_IDX_GRAPHICS`) → chain.
+
+Both moves are one `call gfx_point_gate` (`basic/graphics.asm`), and hoisting the
+write **retires the `push bc`/`push de` pair** that existed only to guard the
+seed across the `C`/`B` parses — which is why the change gives 25 bytes back at
+this verb. Rows `v.paint0.tm` / `v.paint0.c` / `v.paint2.c`; knife **K-LE4a**.
+
+⚠️ The off-screen-seed ERR 5 stays **above** the gate and is untouched. Both
+faults raise ERR 5, so no row in the sweep can order those two against each
+other — only the work area could, and it is written between them. Filed
+unmeasured in `TODO.md`.
 
 ---
 

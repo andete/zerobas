@@ -2256,6 +2256,55 @@ screenerr-acceptance: repack-machine
 	python3 probes/basic/basic_probe_screenerr.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-LINERR: WHERE in a graphics statement the wrong-mode refusal happens ---
+# (docs/spec-basic-lineerr.md.) D-STMTPEND filed `c.line.tm` as "LINE raises its
+# OWN Illegal function call eagerly from inside its coordinate parse".
+# 🔴 THAT DIAGNOSIS IS WRONG AND READING THE SITE REFUTES IT: there is no ERR 5
+# anywhere in parse_coord. The refusal was `ex_line_gfx`'s own opening `cp 2`,
+# three instructions in, and the filed row runs in the boot default SCREEN 0 --
+# so zerobas answered ERR 5 to a statement whose coordinates it never looked at.
+# The rule the 108 rows here measure is an ORDERING one, and it is not LINE's:
+#   a graphics statement moves the WORK AREA to the point its MANDATORY
+#   arguments resolve to, and refuses a wrong SCREEN mode IMMEDIATELY AFTER
+#   THAT -- after every fault the mandatory arguments can raise, and BEFORE the
+#   first OPTIONAL argument is looked at.
+# 🔴 IT IS ONE RULE AT FIVE VERBS, and a NEGATIVE CONTROL is what said so:
+# `n.pset0` was written as "the same question at a verb this slice claims
+# nothing about" and diverged identically, so it became the v.* class and the
+# fix became one shared leaf (gfx_point_gate) across PSET/PRESET/LINE/CIRCLE/
+# PAINT rather than one edit at LINE. Two corollaries fell out, each refuting a
+# shipped doc claim: a LINE/PSET colour is a 0..15 RANGE CHECK (`PSET(20,21),16`
+# -> ERR 5 on both references), not spec-basic-graphics-g2.md §11.9's silent
+# nibble mask; and PAINT's work-area write is NOT deferred past every field, as
+# spec-basic-graphics-g5.md §6 had it.
+# 🎯 THE WORK AREA IS THE INSTRUMENT, so trapped rows read `[ ERR , X , Y ]`
+# over a `PSET(7,4)` seed -- the code AND how far the statement got: (7,4) = it
+# moved nothing, (11,12) = the first endpoint was staged and it then died,
+# (20,21) = it ran to completion. Every row changes the SCREEN mode, so a screen
+# scrape would be blind to its own subject. The w.* rows read GXPOS/GYPOS
+# instead of GRPACX/GRPACY and earned their place: after the first fix `m.s0.tm`
+# was green while its GXPOS twin `w.s0.tm` was still red on the identical
+# statement, because LINE's p1 staging wrote only the last-referenced point.
+# ⚠️ `c.32767`/`c.m32768` need a WIDER WINDOW, not a bug report: zerobas
+# rasterises the true int16 span and masks per pixel (spec-basic-graphics-g3.md
+# §3.4/§4.4) where the references clip first, so a 32767-pixel span really is
+# walked. At step=12 it answers exactly what both references answer.
+# 108 rows x 3 sides. MEASURED 168 s (2026-08-11 corpus, `lineerr-acceptance`
+# from clean) -- real host wall time for three unthrottled openMSX boots, not
+# emulated MSX time, and not reproducible to the second on a loaded machine.
+# ⚠️ This comment previously read "~35 min", a figure NOBODY EVER MEASURED: it
+# is the wall time of the WHOLE 52-target corpus (2014 s), inherited from an
+# earlier session's estimate and misattributed to this one gate. An estimate
+# copied forward is indistinguishable from a reading once it is in the tree --
+# the same fault as a prediction copied into the result column.
+lineerr-characterize: repack-machine
+	python3 probes/basic/basic_probe_lineerr.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+lineerr-acceptance: repack-machine
+	python3 probes/basic/basic_probe_lineerr.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- DELIVERY-RACE trigger gate (docs/spec-probe-latch.md §5) -----------------
 # Forces the batched-injection race onto its own trigger -- a CPU breakpoint on
 # the ONE instruction boundary inside C-BIOS `chget` where a backwards GETPNT
@@ -2501,6 +2550,7 @@ clean:
         penderr-acceptance \
         stmtpend-characterize stmtpend-acceptance \
         screenerr-characterize screenerr-acceptance \
+        lineerr-characterize lineerr-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean
