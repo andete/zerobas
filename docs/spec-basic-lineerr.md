@@ -2,11 +2,11 @@
 
 Measurement notebook:
 [`lineerr-msx1-characterization.md`](lineerr-msx1-characterization.md).
-Gate: `make lineerr-acceptance` (**142** rows × 3 sides). Landed 2026-08-11.
+Gate: `make lineerr-acceptance` (**189** rows × 3 sides). Landed 2026-08-11.
 Clean-room: observed screen output and published MSX system-variable reads only;
 both reference ROMs are black boxes.
 
-**§§9–10 are two further landings on the same gate**, both 2026-08-11 and each
+**§§9–11 are three further landings on the same gate**, all 2026-08-11 and each
 the residual of the one before it:
 
 * **§9 D-PAINTSEED** — measured the residual §8.2 filed and moved `PAINT`'s
@@ -14,10 +14,13 @@ the residual of the one before it:
 * **§10 D-GIRDOM** — measured `gfx_in_range`'s domain at its two **silent**
   callers, which §9.3 had left unmeasured, and found `POINT` leaking its tenant
   marshalling into `GXPOS/GYPOS`.
+* **§11 D-DRAWERR** — measured §8.3's `DRAW` exclusion. **The rule does NOT
+  extend to `DRAW`**, so §1's "five verbs" is the final count and not a
+  way-station; the sweep found two unrelated defects on the way.
 
-§§1–8 are as they were the day D-LINERR landed, except for §8.2's closure
-marker. **Row counts and gate timings in §6 and §9 are their own day's** —
-§10's are the current ones.
+§§1–8 are as they were the day D-LINERR landed, except for §8.2's and §8.3's
+closure markers. **Row counts and gate timings in §6, §9 and §10 are their own
+day's** — §11's are the current ones.
 
 ---
 
@@ -39,8 +42,14 @@ Two corollaries, measured in the same sweep:
   shapes.
 
 It is **one rule at five verbs** (`PSET`, `PRESET`, `LINE`, `CIRCLE`, `PAINT`),
-which is why it is one shared routine and not five edits. `DRAW` already agreed;
-`POINT` has no mode gate at all, by construction.
+which is why it is one shared routine and not five edits. `POINT` has no mode
+gate at all, by construction.
+
+⚠️ **`DRAW` is NOT a sixth verb, and that is measured (§11), not inherited.**
+This section originally read *"`DRAW` already agreed"* on the strength of one
+row that could not see the question. It agrees for the opposite reason: `DRAW`
+refuses the mode **before** evaluating its string expression, so at that verb
+the ordering is the one this whole slice removed everywhere else.
 
 ---
 
@@ -424,10 +433,14 @@ against garbage and outruns the window.
    where it already was; nothing measured says that is right.")* The work area
    answered: it moves **before** the refusal, so the seed test moved below the
    gate. The residual's own framing was half wrong, and §9.2 says how.
-3. **DRAW was left alone.** `v.draw0` agrees on all three sides already. Its
-   argument is a string parsed by a tenant, so "the mandatory arguments" means
-   something different there; naming it out of scope with a green row behind it
-   beats guessing.
+3. ✅ **CLOSED 2026-08-11 by D-DRAWERR — see §11.** *(as filed: "DRAW was left
+   alone. `v.draw0` agrees on all three sides already. Its argument is a string
+   parsed by a tenant, so 'the mandatory arguments' means something different
+   there; naming it out of scope with a green row behind it beats guessing.")*
+   **The decline was right and the row behind it was blind.** `DRAW` refuses the
+   mode *before* evaluating its argument, so the rule does not extend — and
+   `v.draw0`'s literal could never have shown that either way. Two unrelated
+   defects turned up in the sweep (§11.4).
 4. **`ex_line_gfx`'s p2 work-area write is duplicated in the tenant**
    (`sub/graphics.asm` `gfx_line_op` writes `GXPOS`/`GRPAC` = p2 again on the
    drawn path). Deliberate, not dead: the CIRCLE spokes call that op internally
@@ -757,3 +770,285 @@ sharp one.** The reasoning was an analogy from a rule measured at five
 write is not something the coordinate scan does to everything it parses, it is
 something the *statement* does with what the scan returned. `POINT` parses the
 same coordinate and writes nothing. A rule's blast radius is a claim too.
+
+---
+
+## 11. D-DRAWERR — the residual §8.3 filed, and the rule does NOT extend, 2026-08-11
+
+`make lineerr-acceptance` is now **189 rows × 3 sides, 187 scored + 2 deferred**.
+
+### 11.1 The answer to the residual, which is a NEGATIVE one
+
+> **`DRAW` refuses a wrong SCREEN mode BEFORE it evaluates its string
+> expression.** D-LINERR's rule — mandatory arguments first, then the gate —
+> holds at `PSET`, `PRESET`, `LINE`, `CIRCLE` and `PAINT`, and **not at
+> `DRAW`**. `ex_draw`'s opening `cp 2` was correct for the whole life of G6.
+
+The pair that sites it, the same bracketing shape §2 used at the other five:
+
+| row | statement | mode | all three sides |
+|---|---|---|---|
+| `d.tm0` | `DRAW 5` | 0 | ` 5 , 7 , 4 ` — the MODE wins |
+| `d.tm2` | `DRAW 5` | 2 | ` 13 , 7 , 4 ` — …and the type fault exists |
+| `d.tm1` | `DRAW 5` | 1 | ` 5 , 7 , 4 ` |
+| `d.tmx0` / `d.mt0` | `DRAW (Q$<5)` / `DRAW (5<Q$)` | 0 | ` 5 , 7 , 4 ` at both type-mismatch sites |
+| `d.dz0` / `d.ov0` | `DRAW STR$(0*(1/0))` / `…(1E38*1E38)` | 0 | ` 5 , 7 , 4 ` |
+
+`d.tm2` is what makes the column mean anything: without it, `d.tm0` answering 5
+is equally explained by "the references never answer 13 to a DRAW".
+
+**Two halves of D-LINERR's rule transfer differently, and the difference is the
+result.** The gate half inverts. The WORK-AREA half is **vacuous**: DRAW's
+mandatory argument is a string, not a point, so there is no point for the
+statement to move the work area to — `w.draw0` reads ` 5 , 7 , 4 `, and so does
+`v.draw0`, on all three sides.
+
+### 11.2 🔴 The filed decline was RIGHT and the row behind it was still BLIND
+
+§8.3 excluded DRAW on `v.draw0` — `DRAW"U10"` in SCREEN 0, green on all three
+sides. That row **cannot see the question it was cited for**: a string LITERAL
+raises nothing, so it reads ERR 5 whether the gate sits above `str_eval` or
+below it. The six `d.*0`/`d.*1` rows above are the ones that can, and they had
+to carry a fault the string expression could raise.
+
+What `v.draw0` *does* measure, and nobody had said: **B < C**, the gate above the
+tenant's walk. If the string were walked in SCREEN 0 the work area would have
+moved, and it does not.
+
+This is D-PAINTSEED §9.2 at the verb whose residual D-PAINTSEED's own predecessor
+filed: **a filed row is a guess about which reading carries the evidence.** The
+difference here is the direction — there the class found a row that worked and
+the conclusion changed; here the class confirmed the decline and the *reason*
+changed. A green row that agrees for an unexamined reason is worth re-deriving
+either way.
+
+### 11.3 🔴 And my own diagnosis was wrong, refuted by the file, one slice after §3
+
+The design written before the measurement said: *"`ex_draw` opens with
+`ld a,(SCRMOD) / cp 2 / jp nz,gfx_err5`, byte for byte the form D-LINERR deleted
+from `ex_line_gfx`, still shipping at DRAW"* — and predicted six divergences from
+it. All six agree. §10.7 had just recorded *"a rule's blast radius is a claim
+too"* after extrapolating from five statements to a function; this extrapolated
+from five statements to a sixth **statement**, which felt safer and was not.
+
+**15 of 26 first-round predictions exact, 11 wrong — and the split is not
+random.** Every value traced in the SOURCE was exact (15/15): the `B`/`N` prefix
+asymmetry, `gdrw_gxpos`'s greater-y residue, the incremental walk, the whole
+string domain, `d.sub2`'s zerobas value. Every value reached by ANALOGY was
+wrong (0/11).
+
+### 11.4 What the sweep found instead — two defects, neither one the subject
+
+Both were caught by rows written as **controls**.
+
+**Defect 1 — `DRAW A$` was `Type mismatch`.** `ex_draw` did `inc hl` past the
+token and went straight to `str_eval` with **no `skip_spaces`**. `str_eval` was
+handed HL on the space after the token, `is_letter` failed on it, and
+`str_eval_no`'s CF=0 became `gfx_typeerr`. So DRAW accepted a string **literal**
+and nothing else — the argument of every other form was never evaluated at all.
+
+| row | statement | both references | zerobas BEFORE |
+|---|---|---|---|
+| `n.drawvar` | `A$="R10":DRAW A$` | ` 0 , 17 , 4 ` | ` 13 , 7 , 4 ` |
+| `d.dz2` | `DRAW STR$(0*(1/0))` | ` 11 , 7 , 4 ` | ` 13 , 7 , 4 ` |
+| `d.ov2` | `DRAW STR$(0*(1E38*1E38))` | ` 6 , 7 , 4 ` | ` 13 , 7 , 4 ` |
+
+🔴 **`d.tm2` — the control promoted in §11.1 — is GREEN FOR THE WRONG REASON
+under the old code.** `DRAW 5` is ERR 13 on the references because the argument
+is numeric, and was ERR 13 here because the space stopped the parse. It is the
+`v.point0` shape a third time in one gate, and this time on a row this slice
+itself had just promoted.
+
+🎯 **The sibling site was checked before the fix, and said "one verb".**
+`spr_assign` (`SPRITE$(n)=`) has the byte-identical `str_eval` /
+`jp nc,gfx_typeerr` / `call check_expr_errors` sequence, so the D-LINERR reflex
+was to expect a shared rule. `n.sprdz` (`SPRITE$(0)=STR$(0*(1/0))`) **agrees** —
+because `spr_assign` calls `skip_spaces` and `ex_draw` did not. The §2.2 question
+was worth asking and the answer was no.
+
+**Defect 2 — whitespace was ignorable only BETWEEN commands.** The tenant's own
+header claims spaces and TABs are *"both measured to be ignorable anywhere"*;
+`gdrw_skipws` had exactly four call sites, all between commands, and
+`gdrw_arg_try` peeked with no skip in front of it.
+
+| row | statement | both references | zerobas BEFORE |
+|---|---|---|---|
+| `d.spc2` | `DRAW"R 10"` | ` 0 , 17 , 4 ` | ` 5 , 8 , 4 ` |
+| `d.sp.num` | `DRAW"R1 0"` | ` 0 , 17 , 4 ` | ` 5 , 8 , 4 ` |
+| `d.sp.sgn` | `DRAW"R -5"` | ` 0 , 2 , 4 ` | ` 5 , 8 , 4 ` |
+| `d.sp.m1` | `DRAW"M 53,37"` | ` 0 , 53 , 37 ` | ` 5 , 7 , 4 ` |
+| 🟢 `d.sp.m2` | `DRAW"M53 ,37"` | ` 0 , 53 , 37 ` | agreed (`gdo_m` skips at its comma) |
+
+**`d.sp.num` is the decisive one**: a space INSIDE a number is ignored, so
+`R1 0` is `R10`. The rule is not "skip before an argument" but **skip before
+every character fetch**, which is why the fix belongs in `gdrw_peek` itself and
+not at the call sites. It was also the row flagged in the prediction file as the
+one least trusted — the claim it rested on was the same "anywhere" comment this
+slice had already caught being false.
+
+The two defects compound: `STR$` emits a **leading blank**, so every `STR$` row
+needed both fixes. `d.avar2` (`A$="R"+STR$(10):DRAW A$`) is the row that made
+this legible, because it fitted neither theory alone.
+
+### 11.5 The price — the fix pays for itself on the tenant side
+
+| site | Δ |
+|---|---:|
+| `ex_draw`: `call skip_spaces` (page 1) | **+3** |
+| `gdrw_peek` skips whitespace (sub p0) | +13 |
+| the `gdrw_skipws` body, now an `equ` | **−16** |
+| **net, sub p0** | **−3** |
+
+Page 1 free **74 → 71 B**; sub p0 **3604 → 3607 B**; low region **14 B** and sub
+p1 **1483 B** untouched. Both hand counts EXACT. ROMs after: `basic-reloc
+b37e5055`, `sub c7d61d6d`, `disk 2c630d3d` (untouched, as expected),
+`zerobas-main-eu a122f666`.
+
+🔴 **`make subrom-closure-check` REFUSED THE FIRST SHAPE OF FIX B, AND WAS RIGHT
+TO.** The tenant half first shipped as `gdrw_skipws equ gdrw_peek`, keeping the
+old name for its four callers. That checker classifies a callee by whether it is
+a **LABEL defined in the sub sources**; an `equ` carries no section, so the alias
+resolved to a bare address and read as *"main BIOS < $2812 — switched out under a
+page-0 call"*. Its own docstring already records this hole for resident-ABI
+`equ`s. The remedy is not to widen the checker but not to create an
+unclassifiable symbol: the four sites call `gdrw_peek` directly and the name is
+retired. **Byte-identical** — `call nn` either way — so the ROM hashes above, the
+knives and the 189-row gate were all measured on the artifact that shipped.
+
+⚠️ **It was caught at corpus target 9, by a gate no reading of the diff would
+have nominated**: nothing in a whitespace fix suggests a page-0 escape check.
+That is the standing argument for running the whole corpus rather than the gates
+a diff "could" reach (§6.3's adjacent sweep, one step further).
+
+### 11.6 Filed, not folded in
+
+**`DRAW`'s boot-default scale state is not `S4`.** From boot both references move
+the full count; after an explicit `S4` they wrap exactly as
+`scratchpad/g6_draw_notes.md` §3 models, and zerobas matches them *there*.
+
+| row | statement | both references | zerobas |
+|---|---|---|---|
+| `d.def32k` | `DRAW"BU32767"` | ` 0 , 7 , 32773 ` | ` 0 , 7 , 5 ` |
+| `d.lit2` | `DRAW"BU40000"` | ` 0 , 7 , 25540 ` | ` 0 , 7 , 58308 ` |
+| 🟢 `d.s4.32k` / `d.s4.40k` | the same with `S4` first | ` 0 , 7 , 5 ` / ` 0 , 7 , 58308 ` | agree |
+| 🟢 `d.s8.10` / `d.s2.10` | `DRAW"S8BU10"` / `"S2BU10"` | ` 0 , 7 , 65520 ` / ` 0 , 7 , 65535 ` | agree |
+
+🔴 **The G6 notebook's five fitted points are every one correct, and the
+generalisation drawn from them is not.** All five were taken after an explicit
+`S`, so the class never contained the default — and `S4` was assumed to *be* the
+default because the multiply is the identity everywhere except the wrap. **A
+large count is the only observable that separates the two states**, which is
+exactly why five correct measurements supported a wrong rule. Round 4 of that
+notebook even falsified the model on seven fresh pairs; every one of those also
+set `S` first.
+
+Not folded in: it changes what DRAW **draws** rather than what it refuses, and it
+needs a sentinel `S4` cannot collide with (`GFX_DSCALE` is initialised to 4 at
+cold boot and `gdo_s` maps `S0` to 4, so "never set" has nowhere to live).
+Filed in `TODO.md` with both rows already printing red in this gate.
+
+**Also measured and NOT a defect:** `d.sub2` (`V=40000:DRAW"BU=V;"`) is ERR 6 on
+all three sides. The literal count path accepts up to 65535 and the substitution
+path coerces to int16 — two different domains for one DRAW count, on the
+references as well. The sibling question §11's brief raised is closed by
+measurement, and `d.lit2` is what makes it meaningful rather than "40000 is
+refused".
+
+### 11.7 Knives — 3 cuts, each run twice, 6 of 6 EXACT
+
+Union of 36 labels; baseline through `probe_report.parse()`; every cut scoped to
+its own routine's region with the occurrence count asserted **== 1**; restore
+from a scratchpad snapshot in a `finally`; `rm -rf build` and all four ROMs
+hashed inside the loop.
+
+| | cut | RED / predicted | GREEN moved | r1 | r2 |
+|---|---|---|---|---|---|
+| **K-DR1** | `ex_draw`'s `call skip_spaces` → 3 × `nop` (byte-neutral) | 5/5 | 0/25 | EXACT | EXACT |
+| **K-DR2** | `gdrw_peek`'s whitespace test re-pointed at the upcase path (byte-neutral) | 9/9 | 0/24 | EXACT | EXACT |
+| **K-DR3** | both files restored to their `af9e4f5` content | 11/11 | 0/25 | EXACT | EXACT |
+
+⚠️ **The scored GREEN set is a FIXED union of 25 controls and unrelated rows, so
+it does not include the OTHER fix's rows.** Under K-DR1 nothing checked that
+`d.spc2` stayed put. What covers that gap is arithmetic rather than a claim:
+5 + 9 − 2 (the rows needing both fixes, counted twice) − 1 (K-DR2's `d.sp.m2`
+over-reach) = **11**, exactly K-DR3's union. The three counts are only mutually
+consistent if each cut reddens its own rows and no others.
+
+🎯 **K-DR3 rebuilds all four ROMs to `0cb6ed7a / 10045c3d / 2c630d3d /
+4b6c931c` — the shipped `af9e4f5` quadruple, byte for byte.** That is the
+strongest single fact here: the diff is exactly these two fixes and nothing
+else, across the slot boundary.
+
+🎯 **And K-DR1 and K-DR2 prove the two fixes are ORTHOGONAL, from the hashes
+alone.** K-DR1 moves `basic-reloc` (`3b552500`) and leaves `sub.rom` at
+`c7d61d6d`; K-DR2 moves `sub.rom` (`ac3a4e4f`) and leaves `basic-reloc` at
+`b37e5055`. Neither touches `disk.rom`. Two defects, two sides of the slot
+boundary, one row set.
+
+**The RED sets had to be corrected while being written, in both directions:**
+
+* K-DR1's naive set was "every row that answered 13", which puts `n.drawsp` and
+  `d.avar2` in fix A's set alone. They need **both** fixes — their strings are
+  `"R 10"`, so A is needed to get the string to the tenant and B to walk it — so
+  they belong to K-DR1 *and* K-DR2 and to neither one's exclusive credit.
+* K-DR2 was predicted to be **STRONGER than the defect it reinstates**, and it
+  is: `gdrw_skipws` is now `gdrw_peek`, so the cut also disarms the four
+  between-command sites, and `d.sp.m2` — green *before* this slice — goes red.
+  Said in the prediction file before the run, because a cut that over-reaches is
+  still a falsification but must not be reported as "the defect reinstated".
+* 🟢 **`d.tm2` is in every predicted-GREEN set on purpose.** `DRAW 5` is ERR 13
+  with or without the skip, so the row this slice promoted as its control is
+  exactly the row a knife cannot move. That is the §11.4 point stated as a
+  prediction rather than as hindsight.
+
+### 11.8 What this slice cost in wrong predictions, stated as a number
+
+**19 of 47 row predictions exact on the first attempt.** Rounds 1–6 scored
+15/26, 5/8, 0/1, 0/2, 0/2 and 4/4 — and the 4/4 came after the cause was found
+by *reading*, while the 0-for-5 rounds are the ones that reasoned from a
+neighbouring measurement. The knives, whose predictions were written after the
+mechanism was understood, are 6/6.
+
+The generalisation this slice adds to §10.7's *"a rule's blast radius is a claim
+too"*: **the blast radius of a MEASUREMENT and the blast radius of a READING are
+different sizes.** Everything traced through the source was exact — twice, before
+and after the surprise. Everything extrapolated from a rule measured one verb
+over was wrong, including the extrapolation that this gate's own subject would
+be where the defects were.
+
+### 11.9 As-built
+
+`make lineerr-acceptance` — **189 rows × 3 sides, 185 scored, 4 deferred.**
+
+⚠️ **The headline is stated both ways, because two rows were RECATEGORISED as
+deferred by this slice** (§6.1's rule: quoting an improvement against a
+denominator the fix itself shrank is how a fix flatters itself).
+
+* **before: 174 agree / 13 diverge**, over the **187** rows scored under the old
+  DEFERRED dict (189 rows, the 2 SCREEN-3 rows deferred), measured on a tree
+  rebuilt from clean with `af9e4f5`'s four hashes reproduced (`0cb6ed7a /
+  10045c3d / 2c630d3d / 4b6c931c`);
+* **after, on that same 187-row denominator: 185 agree / 2 diverge** — 11 rows
+  turned green and the 2 scale rows did not move;
+* **after, as printed: 185 / 185, with 4 deferred** — the 2 SCREEN-3 rows plus
+  the 2 scale rows, all measured, all printed `....`, all excluded from the
+  tally in **both** directions and filed in `TODO.md`.
+
+Nothing was re-scored to improve the column. Of the 13 that diverged, 11 are
+fixed and 2 are deferred with their reason and their rows.
+
+**Corpus: 21 targets from clean (`rm -rf build`, `repack-machine` first, bash),
+every one rc=0, 927 s.** `unit-test` **59** · `audit-citations` CLEAN (**790**
+files) · `preflight-check` **95 guarded / 0 unguarded** · `injector-check`
+**355** files · `rowshape-check` **26** probes · `deadcode` **0/0 main, 0/0 sub
+(+1 allowlisted)** · `latch-check` **16/16** · `subrom-abi-check` · **`subrom-
+closure-check` — the one that caught §11.5's `equ`** · `lineerr-acceptance`
+**185/185 + 4 deferred (315 s)** · `stmtpend` **58/58** · `screenerr` **61/61** ·
+`penderr` **61/61** · `tmfp` **50/50** · `missing` **214/214** ·
+`graphics-acceptance` PASS (177 s — the gate that owns what DRAW *draws*) ·
+`graphics-floor` · `subrom-acceptance` · `error` · `error-trap` · `intarg`.
+
+⚠️ Every counter above was **read from this run's logs**, not carried forward:
+`rowshape-check`, `injector-check` and `audit-citations` all grow with the
+corpus, and this slice added no files, so their being unchanged is a measurement
+and not an assumption.

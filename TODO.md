@@ -1460,6 +1460,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       resident stub writes them anyway" — true of every op in that block except
       the read-only one. Corrected in place.
 
+- [ ] 🔴 **`DRAW`'s BOOT-DEFAULT SCALE STATE IS NOT `S4`, AND ZEROBAS TREATS IT
+      AS IF IT WERE.** Filed 2026-08-11 by D-DRAWERR, with two rows already in
+      `make lineerr-acceptance` and printing RED:
+
+          d.def32k  DRAW"BU32767"    refs  0 , 7 , 32773    zb  0 , 7 , 5
+          d.lit2    DRAW"BU40000"    refs  0 , 7 , 25540    zb  0 , 7 , 58308
+
+      From boot both references move the FULL count; after an explicit `S4` they
+      wrap exactly as `scratchpad/g6_draw_notes.md` §3 models
+      (`distance = signed16((n×S) mod 65536) ÷ 4`), and zerobas matches them
+      there — rows `d.s4.32k` / `d.s4.40k` / `d.s8.10` / `d.s2.10` all AGREE.
+      🔴 **THE G6 NOTEBOOK'S FIVE FITTED POINTS ARE ALL CORRECT AND THE
+      GENERALISATION IS NOT**: every one was taken after an explicit `S`, so the
+      class it fitted never contained the default, and `S4` was assumed to *be*
+      the default because the multiply is the identity everywhere except the
+      wrap. A large count is the ONLY observable that separates the two states.
+      ⚠️ Not folded into D-DRAWERR: it changes what DRAW **draws**, not what it
+      refuses (`graphics-acceptance` and G6 own that surface), and it needs a
+      sentinel that `S4` cannot collide with — `GFX_DSCALE` is initialised to 4
+      at cold boot (`basic/interp.asm`) and `gdo_s` maps `S0` to 4, so
+      "never set" currently has nowhere to live. `gdrw_scale` already has a
+      `jr z` arm for a zero cell, which is the natural home.
+
 - [ ] ⚠️ **`GFX_OP=1`'s MARSHALLING IS STILL ALIASED TO THE WORK AREA, AND THAT
       IS A DECISION NOTHING RE-EXAMINES.** Filed 2026-08-11 by D-GIRDOM.
       `PSET`/`PRESET` hand the tenant their target through `GXPOS/GYPOS` and it
@@ -1473,14 +1496,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ Whoever picks it up must produce the row FIRST; a fix with no row is
       how the G2-g disposal happened in the first place.
 
-- [ ] ⚠️ **`DRAW`'s mode gate was left alone, with a green row behind it.**
-      Filed 2026-08-11 by D-LINERR. `v.draw0` (`DRAW"U10"` in SCREEN 0) reads
-      ` 5 , 7 , 4 ` on all three sides, so DRAW already agrees and D-LINERR did
-      not touch it. But DRAW's argument is a STRING parsed by a tenant, so "after
-      the mandatory arguments" means something different there, and the one
-      agreeing row does not say the ordering rule holds inside a DRAW command
-      string. Not a known defect — an unmeasured corner named rather than
-      assumed.
+- [x] ⚠️ **`DRAW`'s mode gate was left alone, with a green row behind it.**
+      Filed 2026-08-11 by D-LINERR; ✅ **CLOSED 2026-08-11 by D-DRAWERR**
+      ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md) §11,
+      `make lineerr-acceptance` **189 rows**).
+      🎯 **THE DECLINE WAS RIGHT AND THE ROW BEHIND IT WAS STILL BLIND.**
+      Measured: `DRAW 5` in SCREEN 0 is **ERR 5** on both references while the
+      same statement in SCREEN 2 is ERR 13, so DRAW refuses the mode **BEFORE**
+      evaluating its string expression — D-LINERR's five-verb ordering rule does
+      **NOT** extend to it, and `ex_draw`'s opening `cp 2` was correct all along.
+      `v.draw0` could never have said so: a string LITERAL raises nothing, so it
+      reads ERR 5 whichever side of `str_eval` the gate sits on.
+      🔴 **AND THE SWEEP FOUND TWO DEFECTS THE RESIDUAL WAS NOT ABOUT.**
+      `ex_draw` had no `skip_spaces`, so **`DRAW A$` was `Type mismatch`** —
+      DRAW took a string literal and nothing else (`ex_let_str` and `spr_assign`
+      both skip; `ex_draw` was the only one of the three that did not, which is
+      why the `SPRITE$` sibling row `n.sprdz` never diverged). And the tenant
+      ignored whitespace only BETWEEN commands, so `DRAW"R 10"` — and every
+      `STR$`, which emits a leading blank — refused. Both fixed: **+3 B** page 1,
+      **−3 B** sub p0.
 
 - [x] 🔴 **`SCREEN (1<5)` IS `Syntax error` HERE AND `Illegal function call` ON
       THE VG-8020.** Filed 2026-08-09 by D-STMTPEND; ✅ **CLOSED 2026-08-10 by

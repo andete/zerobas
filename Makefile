@@ -2305,11 +2305,30 @@ screenerr-acceptance: repack-machine
 # rasterises the true int16 span and masks per pixel (spec-basic-graphics-g3.md
 # §3.4/§4.4) where the references clip first, so a 32767-pixel span really is
 # walked. At step=12 it answers exactly what both references answer.
-# 142 rows x 3 sides. MEASURED 236 s (2026-08-11, D-GIRDOM). The lineage, stated
-# because the FIRST of these figures was carried forward unmeasured when the row
-# set grew: 108 rows / 168 s at D-LINERR, 124 / 205 at D-PAINTSEED, 142 / 236
-# here -- real host wall time for three unthrottled boots, not
-# emulated MSX time, and not reproducible to the second on a loaded machine.
+# 🎯 D-DRAWERR (2026-08-11) then closed D-LINERR's LAST residual, and the answer
+# is a NEGATIVE one: `DRAW` refuses the mode BEFORE evaluating its string
+# expression, so the five-verb rule does NOT extend to it and `ex_draw`'s
+# opening `cp 2` was right all along. `DRAW 5` is ERR 5 in SCREEN 0 and ERR 13
+# in SCREEN 2 on both references (d.tm0 / d.tm2). 🔴 The row DRAW had been
+# excluded on could never have said so: `v.draw0` uses a string LITERAL, whose
+# evaluation raises nothing, so it reads ERR 5 whichever side of `str_eval` the
+# gate is on -- and the WORK-AREA half of the rule is vacuous at a verb whose
+# mandatory argument is a string. 🔴 THE SWEEP FOUND TWO DEFECTS THE RESIDUAL
+# WAS NOT ABOUT, both caught by rows written as CONTROLS: `ex_draw` had no
+# `skip_spaces`, so `DRAW A$` was Type mismatch and DRAW took a string LITERAL
+# and nothing else (n.drawvar); and the tenant ignored whitespace only BETWEEN
+# commands, so `DRAW"R 10"` and every STR$ -- which emits a leading blank --
+# refused (d.spc2 / d.sp.num). +3 B page 1, -3 B sub p0.
+# ⚠️ d.lit2/d.def32k are DEFERRED, not green: the boot-default DRAW scale state
+# is not `S4` (both references move the FULL count from boot and wrap only after
+# an explicit S), which changes what DRAW DRAWS rather than what it refuses.
+# Measured, printed, filed in TODO.md.
+# 189 rows x 3 sides. MEASURED 309 s (2026-08-11, D-DRAWERR). The lineage,
+# stated because the FIRST of these figures was carried forward unmeasured when
+# the row set grew: 108 rows / 168 s at D-LINERR, 124 / 205 at D-PAINTSEED,
+# 142 / 236 at D-GIRDOM, 189 / 309 here -- real host wall time for three
+# unthrottled boots, not emulated MSX time, and not reproducible to the second
+# on a loaded machine.
 # ⚠️ This comment previously read "~35 min", a figure NOBODY EVER MEASURED: it
 # is the wall time of the WHOLE 52-target corpus (2014 s), inherited from an
 # earlier session's estimate and misattributed to this one gate. An estimate

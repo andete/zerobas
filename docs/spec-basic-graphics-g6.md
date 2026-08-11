@@ -82,6 +82,19 @@ nothing.
 `DRAW"S8A1"` in one program is still in force in the *next* program run. Only a
 power-on resets them, to `S = 4`, `A = 0`.
 
+🔴 **"to `S = 4`" IS REFUTED — D-DRAWERR, 2026-08-11**
+([`spec-basic-lineerr.md`](spec-basic-lineerr.md) §11.6). The power-on state is
+**not** `S4`; it is a distinct state in which the scale multiply does not run at
+all. `DRAW"BU40000"` from boot moves the full 40000 on both references, while
+`DRAW"S4BU40000"` moves 7232 — the wrap §3's model predicts. Every point that
+model was fitted and falsified on was taken **after an explicit `S`**, so the
+class never contained the default, and the multiply is the identity everywhere
+except the wrap: **a large count is the only observable that separates the two
+states.** zerobas initialises `GFX_DSCALE = 4` and therefore wraps from boot;
+rows `d.def32k` / `d.lit2` are deferred in `make lineerr-acceptance` and the
+work is filed in `TODO.md`. The rest of this section — that the cells are
+cold-boot-only and survive everything else — is unaffected and still measured.
+
 ⇒ their cells must live in the graphics block's own RAM (§6), be initialised
 **once at cold boot**, and be touched by nothing else. Any "reset it at statement
 entry / at `SCREEN 2`" convenience would be measurably wrong.
@@ -95,7 +108,24 @@ entry / at `SCREEN 2`" convenience would be measurably wrong.
 | `M` missing its 2nd operand; `=var` or `X var` without `;` | `ERR 5` |
 | leading `;`, doubled `;;`, `,` between commands, junk character | `ERR 5` |
 | `SCREEN 0` / `SCREEN 1` | `ERR 5` |
-| numeric argument (`DRAW 5`) | `ERR 13` |
+| numeric argument (`DRAW 5`) | `ERR 13` — **in SCREEN 2 only**, see below |
+
+⚠️ **SUPERSEDED IN PART by D-DRAWERR** (2026-08-11,
+[`spec-basic-lineerr.md`](spec-basic-lineerr.md) §11): those last two rows are
+**ordered**, and the order is the opposite of the other five graphics verbs'.
+`DRAW 5` is **`ERR 5` in SCREEN 0/1** and `ERR 13` in SCREEN 2 — the mode is
+refused **before** the string expression is evaluated, so the `ERR 13` row holds
+only where the mode is legal. The same applies to every fault the argument can
+carry (`ERR 11` / `ERR 6` through a deferred numeric fault). Rows `d.tm0` /
+`d.tm1` / `d.tm2` of `make lineerr-acceptance`.
+
+🔴 **AND WHITESPACE WAS NOT "IGNORABLE ANYWHERE".** §3's grammar and the tenant's
+own header both said it was; `gdrw_skipws` was called only *between* commands, so
+`DRAW"R 10"`, `DRAW"R1 0"`, `DRAW"R -5"` and `DRAW"M 53,37"` all refused where
+both references accept. Fixed by moving the skip into `gdrw_peek` — the rule is
+**skip before every character fetch**, which `DRAW"R1 0"` = `R10` is what pins.
+Separately, `ex_draw` had no `skip_spaces` before `str_eval`, so **`DRAW A$` was
+`Type mismatch`** and `DRAW` accepted a string *literal* and nothing else.
 
 Accepted (no error): off-screen motion of any size, counts ≤65535, absolute `M`
 operands up to 65535, empty string, bare `B`/`N`, `S0`, `S255`, negative counts.

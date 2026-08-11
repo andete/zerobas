@@ -6,11 +6,11 @@ trail — what was asked, on what, and what came back, including the readings th
 refuted the question.
 
 Sides: **Philips VG-8020** and **National CF-3300** (both black-box oracles) and
-the zerobas repack. **142** rows, `make lineerr-characterize` (108 at D-LINERR;
-§8 is D-PAINTSEED's 16 and §9 is D-GIRDOM's 18). `LINE`, `PSET`,
-`CIRCLE`, `PAINT`, `SCREEN`, `ON ERROR`, `ERR`, `RESUME` and `PEEK` are core
-MSX-BASIC, present on every MSX1, so both references are legitimate oracles for
-every row.
+the zerobas repack. **189** rows, `make lineerr-characterize` (108 at D-LINERR;
+§8 is D-PAINTSEED's 16, §9 is D-GIRDOM's 18 and §10 is D-DRAWERR's 47). `LINE`,
+`PSET`, `CIRCLE`, `PAINT`, `DRAW`, `SCREEN`, `ON ERROR`, `ERR`, `RESUME`,
+`STR$` and `PEEK` are core MSX-BASIC, present on every MSX1, so both references
+are legitimate oracles for every row.
 
 ---
 
@@ -146,7 +146,7 @@ The control was reclassified into a new `v.*` class and the class was swept:
 | `v.circ0.c` | `CIRCLE(20,21),5,0*(1/0)` | ` 5 , 20 , 21 ` | …its colour does not |
 | `v.paint0.tm` | `PAINT((Q$<5),21)` | ` 13 , 7 , 4 ` | PAINT's seed outranks it |
 | `v.paint0.c` | `PAINT(20,21),0*(1/0)` | ` 5 , 20 , 21 ` | …its colour does not |
-| `v.draw0` | `DRAW"U10"` | ` 5 , 7 , 4 ` | DRAW already agrees |
+| `v.draw0` | `DRAW"U10"` | ` 5 , 7 , 4 ` | DRAW already agrees ⚠️ **and NOT for this reason — §10** |
 | `v.point0` | `V=POINT(20,21)` | ` 0 , 7 , 4 ` | POINT has no precheck at all |
 
 **`v.circ0.rt` is the row the design turns on.** CIRCLE has TWO mandatory
@@ -284,6 +284,8 @@ writer knew it was a note-to-self; the second read "measured on the VG-8020".
   was left alone. Its argument is a string parsed by a tenant, so "the mandatory
   arguments" means something different there; naming it out of scope with a
   green row behind it is cheaper than guessing.
+  ✅ **Measured 2026-08-11 — §10. The rule does NOT extend, and `v.draw0` could
+  not have said so either way: its string is a LITERAL.**
 
 ---
 
@@ -448,3 +450,121 @@ radius is a claim too**, and this one was made by analogy rather than measured.
 
 Both were caught by writing the prediction down before running. A runner that
 scored first would have produced two MISSES and an explanation.
+
+---
+
+## 10. D-DRAWERR — the sixth verb, where the rule does NOT hold (2026-08-11)
+
+Contract: [`spec-basic-lineerr.md`](spec-basic-lineerr.md) §11. 47 rows added
+across six measured rounds; the gate is now 189 rows, 187 scored.
+
+### 10.1 The question §7's third bullet left, and why one green row could not answer it
+
+§7 recorded *"`v.draw0` agrees already (` 5 , 7 , 4 ` on all three sides), so
+DRAW was left alone"*. `DRAW"U10"` is a string **literal**, and a literal's
+evaluation can raise nothing — so that row reads ERR 5 whether the mode gate
+sits above `str_eval` or below it. It is blind to the question it was cited for,
+in exactly the way §8.3's `PAINT(300,100)` was.
+
+Six rows can see it, and they only work by carrying a fault the string
+expression can raise: `DRAW 5`, `DRAW (Q$<5)`, `DRAW (5<Q$)`,
+`DRAW STR$(0*(1/0))`, `DRAW STR$(0*(1E38*1E38))` in the refusing modes, against
+`DRAW 5` in SCREEN 2 as the control that the 13 exists at all.
+
+### 10.2 The answer is NO, and a negative answer is a result
+
+**`DRAW 5` in SCREEN 0 is ERR 5 on both references; in SCREEN 2 it is ERR 13.**
+The mode is refused before the argument is evaluated. All six A-vs-B rows agree
+across all three sides, `ex_draw`'s opening `cp 2` was right for the whole life
+of G6, and D-LINERR's decline to touch it was right too.
+
+⚠️ **Only ONE HALF of the rule was even askable here.** Its work-area half —
+"moves the work area to the point its mandatory arguments resolve to" — is
+vacuous at a verb whose mandatory argument is a string. `w.draw0` was added as
+the GXPOS twin `v.draw0` never had (D-GIRDOM §9.3's lesson, applied before the
+defect rather than after it) and reads ` 5 , 7 , 4 ` too.
+
+### 10.3 🔴 The prediction that failed was mine, and the file refuted it
+
+Written before the run: *"`ex_draw` still opens with the three instructions
+D-LINERR deleted from `ex_line_gfx`; six rows predicted to diverge."* Zero did.
+§9.4 had recorded *"a rule's blast radius is a claim too"* one slice earlier
+after extrapolating from five statements to a function; this extrapolated to a
+sixth **statement**, which felt like the safe direction and was not.
+
+**15 of 26 exact in round 1.** The pattern is the useful part: every value
+traced in the source was exact — the `B`/`N` prefix asymmetry, `gdrw_gxpos`'s
+greater-y residue, `d.part2`'s incremental walk, the string domain — and every
+value reached by analogy was wrong. Reading the artifact and reasoning from a
+neighbouring measurement are not the same activity, and this slice priced the
+difference at 11 rows.
+
+### 10.4 What the controls found
+
+**`DRAW A$` was `Type mismatch`.** `ex_draw` had no `skip_spaces`, so `str_eval`
+was handed HL on the space after the token and returned "not a string operand".
+DRAW took a literal and nothing else.
+
+```
+n.drawvar  A$="R10":DRAW A$            refs  0 , 17 , 4    zb  13 , 7 , 4
+d.dz2      DRAW STR$(0*(1/0))          refs  11 , 7 , 4    zb  13 , 7 , 4
+d.ov2      DRAW STR$(0*(1E38*1E38))    refs   6 , 7 , 4    zb  13 , 7 , 4
+```
+
+The route to it is worth recording because it was not a straight line. `d.dz2`
+and `d.ov2` were written as GREEN CONTROLS and diverged; the obvious reading was
+an ordering fault (`jp nc,gfx_typeerr` consulted before `check_expr_errors`), and
+a fix for that was one edit away from being committed. Three rows stopped it:
+`n.strdz`/`n.strov` (`A$=STR$(0*(1/0))`) **agree**, so the pending fault is
+reported correctly everywhere else; `n.sprdz` **agrees**, so the byte-identical
+sequence at `SPRITE$(n)=` does not have the defect; and `d.avar2` fitted neither
+theory. `n.drawvar` was written only because of that misfit, and it is the row
+that names the cause.
+
+🔴 **`d.tm2` was green for the wrong reason**, and it is a row this slice had
+just promoted as the control keeping §10.2's column honest. `DRAW 5` is 13 on
+the references because the argument is numeric and was 13 here because the space
+stopped the parse. A control is honest about the mechanism it exercises, not
+about the answer it prints.
+
+**Whitespace was ignorable only between commands.** The tenant header says
+spaces and TABs are *"both measured to be ignorable anywhere"*; `gdrw_skipws`
+had four call sites, all between commands.
+
+```
+d.spc2     DRAW"R 10"        refs  0 , 17 , 4    zb  5 , 8 , 4
+d.sp.num   DRAW"R1 0"        refs  0 , 17 , 4    zb  5 , 8 , 4
+d.sp.sgn   DRAW"R -5"        refs  0 ,  2 , 4    zb  5 , 8 , 4
+d.sp.m1    DRAW"M 53,37"     refs  0 , 53 , 37   zb  5 , 7 , 4
+d.sp.m2    DRAW"M53 ,37"     ALL THREE  0 , 53 , 37
+```
+
+`d.sp.num` says a space inside a NUMBER is ignored, so the rule is "skip before
+every fetch" and the fix belongs in `gdrw_peek`. It was flagged in the
+prediction file as the least-trusted row, on the grounds that its only support
+was the same "anywhere" comment already caught being false — and it was exact.
+
+### 10.5 The scale default, measured and filed
+
+```
+d.def32k   DRAW"BU32767"      refs  0 , 7 , 32773   zb  0 , 7 , 5
+d.lit2     DRAW"BU40000"      refs  0 , 7 , 25540   zb  0 , 7 , 58308
+d.s4.32k   DRAW"S4BU32767"    ALL THREE  0 , 7 , 5
+d.s4.40k   DRAW"S4BU40000"    ALL THREE  0 , 7 , 58308
+```
+
+**`S4` and the boot default are different states on both references.** §3 of
+`scratchpad/g6_draw_notes.md` fitted `distance = signed16((n×S) mod 65536) ÷ 4`
+on five points and falsified it on seven more, and every one of those twelve set
+`S` first. The model is right; the class it was fitted on never contained the
+default, and the multiply is the identity everywhere except the wrap — so a
+LARGE COUNT is the only observable that separates them. Filed, not fixed: it
+changes what DRAW draws, and "never set" needs a sentinel `S4` cannot collide
+with.
+
+⚠️ `d.lit2` was written as a NEGATIVE CONTROL ("a 40000 count on the literal
+path is accepted, so `d.sub2` is about the substitution path"). It is still true
+as a control — `d.sub2` is ERR 6 on all three sides, so the two paths really do
+have different domains on the references too — and it diverged on its *value*
+while agreeing on its *verdict*. A control that pins one axis can be a witness on
+another.

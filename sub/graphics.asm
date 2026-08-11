@@ -2135,7 +2135,7 @@ gdo_loop:
                 ld      (GFX_DSUBN),a       ; a NEW command: no banked values carry over
                                             ; (a resume enters at gdo_loop_cmd instead, so
                                             ; M's two substitutions do accumulate)
-                call    gdrw_skipws
+                call    gdrw_peek     
                 jp      c,gdo_frame_end     ; end of this frame
 gdo_loop_cmd:
                 ld      hl,(GFX_DPTR)
@@ -2157,7 +2157,7 @@ gdo_notb:
                 ld      a,1
                 ld      (GFX_DFN),a         ; N = draw, then restore the position
 gdo_pfx_next:
-                call    gdrw_skipws
+                call    gdrw_peek     
                 jp      c,gdo_frame_end     ; a bare trailing B / N is accepted (measured)
                 jr      gdo_pfx
                 ; --- command letter dispatch ---
@@ -2257,7 +2257,7 @@ gdo_dir:
 ; doubled ';;' or a ',' between commands is ERR 5 (measured) -- which falls out
 ; of consuming at most one here and letting the next dispatch reject the rest.
 gdo_next:
-                call    gdrw_skipws
+                call    gdrw_peek     
                 jp      c,gdo_frame_end
                 call    gdrw_peek
                 cp      ';'
@@ -2437,7 +2437,7 @@ gdo_m:
                 ld      hl,(GFX_DARG)
                 ld      (GFX_DTX),hl        ; provisional: absolute target X
                 push    af
-                call    gdrw_skipws
+                call    gdrw_peek     
                 jr      c,gdo_m_syn
                 call    gdrw_getc
                 cp      ','
@@ -2653,11 +2653,36 @@ gdrw_gx_start:
 ;   gdrw_getc  -- the same, and consumes it (a fetch past the end is ERR 5, not
 ;                 a silent stop: the only way to reach it is a command whose
 ;                 required argument ran off the end)
-;   gdrw_skipws-- skip spaces and TABs (both measured to be ignorable anywhere);
-;                 CF=1 if the buffer is exhausted
+;   (gdrw_skipws-- RETIRED by D-DRAWERR: `gdrw_peek` skips whitespace itself
+;                 now, so "skip then peek" and "peek" are the same call.)
 ; Both preserve BC/DE/HL -- the decimal accumulator in gdrw_arg_try runs in DE
 ; ACROSS these calls, so a helper that clobbered it would corrupt every
 ; multi-digit count.
+;
+; 🔴 D-DRAWERR: "IGNORABLE ANYWHERE" WAS WRITTEN HERE AND IMPLEMENTED NOWHERE
+; NEAR ANYWHERE. `gdrw_skipws` had exactly FOUR call sites, all of them BETWEEN
+; commands, and `gdrw_arg_try` peeked with no skip in front of it -- so a space
+; before, inside or after an argument ended the number. Measured on both
+; references, three rows that each fail differently under the old code:
+;
+;     DRAW"R 10"    -> 17,4   (a space before the argument)      row d.sp.sgn's twin d.spc2
+;     DRAW"R1 0"    -> 17,4   (a space INSIDE the number: R10)   row d.sp.num
+;     DRAW"M 53,37" -> 53,37  (a space before an M operand)      row d.sp.m1
+;
+; `DRAW"R1 0"` is the decisive one -- it says the rule is not "skip before an
+; argument" but **skip before every character fetch**, which is why the skip
+; belongs in `gdrw_peek` itself rather than at the call sites. Its four callers
+; now call `gdrw_peek` directly and the separate 16-byte body is gone.
+; ⚠️ THE ALIAS `gdrw_skipws equ gdrw_peek` WAS TRIED FIRST AND `make
+; subrom-closure-check` REFUSED IT -- correctly. That checker classifies a
+; callee by whether it is a LABEL defined in the sub sources, and an `equ`
+; carries no section, so the alias resolved to a bare address that read as
+; "main BIOS < $2812". Its own docstring already records this hole for
+; resident-ABI `equ`s; the remedy is not to widen the checker but not to
+; introduce an unclassifiable symbol.
+; ⚠️ `gdrw_peek_raw` deliberately does NOT skip: `gdrw_sub_scan` walks a `=var;`
+; expression with it, and that text is DATA whose spaces the resident's own
+; evaluator must see.
 ; ---------------------------------------------------------------------------
 gdrw_peek_raw:
                 push    hl
@@ -2678,6 +2703,10 @@ gdrw_pk_out:
 gdrw_peek:
                 call    gdrw_peek_raw
                 ret     c
+                cp      ' '                 ; D-DRAWERR: whitespace is ignorable
+                jr      z,gdrw_pk_ws        ; before EVERY fetch, not just between
+                cp      9                   ; commands -- `DRAW"R1 0"` is R10 on
+                jr      z,gdrw_pk_ws        ; both references (row d.sp.num)
                 cp      'a'
                 jr      c,gdrw_pk_ok
                 cp      'z'+1
@@ -2686,6 +2715,9 @@ gdrw_peek:
 gdrw_pk_ok:
                 or      a                   ; CF=0
                 ret
+gdrw_pk_ws:
+                call    gdrw_bump           ; consume it and look again
+                jr      gdrw_peek
 gdrw_bump:
                 push    hl
                 ld      hl,(GFX_DPTR)
@@ -2700,16 +2732,6 @@ gdrw_getc:
                 call    gdrw_bump
                 pop     af
                 ret
-gdrw_skipws:
-                call    gdrw_peek
-                ret     c
-                cp      ' '
-                jr      z,gdrw_skip_one
-                cp      9                   ; TAB
-                ret     nz
-gdrw_skip_one:
-                call    gdrw_getc
-                jr      gdrw_skipws
 
 ; ---------------------------------------------------------------------------
 ; Argument parsing.

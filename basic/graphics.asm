@@ -717,6 +717,34 @@ ep_syntax:
 ; ===========================================================================
 ex_draw:
                 inc     hl                  ; past the DRAW token
+                ; ⚠️ THE MODE GATE IS FIRST HERE, AND THAT IS MEASURED, NOT
+                ; INHERITED. D-LINERR moved the identical three instructions
+                ; DOWN at PSET/PRESET/LINE/CIRCLE/PAINT, because at those five a
+                ; mandatory-argument fault outranks the mode. At DRAW it does
+                ; NOT: `DRAW 5` in SCREEN 0 is ERR 5 on both references while
+                ; the same statement in SCREEN 2 is ERR 13 (rows d.tm0/d.tm2),
+                ; so the mode is refused BEFORE the string expression is
+                ; evaluated. D-DRAWERR swept the six A-vs-B rows to say so;
+                ; `v.draw0` -- the one row D-LINERR excluded DRAW on -- uses a
+                ; string LITERAL and is blind to the question.
+                ; docs/spec-basic-lineerr.md §11.
+                call    skip_spaces         ; 🔴 D-DRAWERR: WITHOUT THIS, `DRAW A$`
+                                            ; IS ERR 13. str_eval was handed HL on
+                                            ; the space after the token, is_letter
+                                            ; failed on it, and str_eval_no's CF=0
+                                            ; became Type mismatch below -- so DRAW
+                                            ; took a string LITERAL and nothing
+                                            ; else, and the argument was never
+                                            ; evaluated at all. ex_let_str
+                                            ; (interp.asm) and spr_assign below
+                                            ; both skip here; ex_draw was the only
+                                            ; one of the three that did not, which
+                                            ; is exactly why `SPRITE$(0)=STR$(...)`
+                                            ; (row n.sprdz) never had the defect.
+                                            ; Rows n.drawvar / n.drawsp / d.avar2,
+                                            ; and it is what made d.dz2/d.ov2
+                                            ; answer 13 where the references
+                                            ; answer the pending fault (11 / 6).
                 ld      a,(SCRMOD)
                 cp      2                   ; SCREEN 2 only (arc D4)
                 jp      nz,gfx_err5         ; SCREEN 0/1 -> ERR 5 (measured)

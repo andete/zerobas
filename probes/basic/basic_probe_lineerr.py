@@ -86,6 +86,14 @@ THE ROW CLASSES:
        ERR 5, so the CODE cannot say which fired; only the WORK AREA can,
        because D-LINERR's fix writes it BETWEEN the two. See the block above
        CASES for what each row can and cannot distinguish.
+  d.*  DRAW'S GATE — the SIXTH verb, excluded by D-LINERR on ONE green row.
+       `v.draw0` is `DRAW"U10"`, a string LITERAL whose evaluation can raise
+       NOTHING, so it reads ERR 5 whether the gate sits above the string
+       expression or below it. It is blind to the question it was cited for,
+       and reading `ex_draw` was enough to see why: it still opens with the
+       three-instruction `cp 2` D-LINERR deleted from `ex_line_gfx`. DRAW's
+       mandatory argument is a STRING, so only the GATE half of the rule
+       transfers — there is no point to move the work area to.
   n.*  NEGATIVE CONTROLS, each agreeing for a reason INDEPENDENT of the claim.
   u.*  THE UNTRAPPED FACE: message text, its line, printed once, and whether
        the following line ran.
@@ -465,6 +473,113 @@ CASES = [
     ("g.pt.on",   "t", S2, "V=POINT(20,21)"),
     ("g.pt.step", "t", S2, "V=POINT STEP(1,1)"),
 
+    # === d.* DRAW'S MODE GATE — THE SIXTH VERB, AND ITS RULE IS DIFFERENT ==
+    # 🔴 D-LINERR EXCLUDED `DRAW` ON THE STRENGTH OF ONE ROW, AND THAT ROW IS
+    # BLIND TO THE QUESTION IT WAS CITED FOR. `v.draw0` is `DRAW"U10"` — a
+    # string LITERAL, whose evaluation can raise NOTHING — so it reads ERR 5
+    # whether the mode gate sits above the string expression or below it.
+    # Reading `ex_draw` was enough to see it (no emulator, the §1/§3 shape a
+    # third time): it opens with `ld a,(SCRMOD) / cp 2 / jp nz,gfx_err5`,
+    # byte for byte the form D-LINERR deleted from `ex_line_gfx`, ABOVE its
+    # `call str_eval`. A filed row is a guess about which reading carries the
+    # evidence [[a-filed-row-is-a-guess]] — D-PAINTSEED §8.3's lesson, arriving
+    # one residual later at the verb that residual named.
+    #
+    # ⚠️ THE THREE EVENTS ARE NOT THE FIVE VERBS' THREE:
+    #
+    #     A = the STRING EXPRESSION is evaluated   (can raise 13 / 11 / 6)
+    #     B = the MODE gate                        (ERR 5)
+    #     C = the TENANT's walk of the string      (ERR 5, moves the work area)
+    #
+    # B < C is ALREADY PINNED, by `v.draw0` itself: if C ran in SCREEN 0 the
+    # work area would have moved, and it reads (7,4) on all three sides. So
+    # that row measures something real — just not what it was cited for. A vs B
+    # is the open question and the ERROR CODE is what sees it.
+    #
+    # ⚠️ AND THE WORK-AREA HALF OF THE RULE IS VACUOUS HERE. DRAW's mandatory
+    # argument is a STRING, not a point, so there is no point for the statement
+    # to move the work area to. Only the gate half of D-LINERR's rule transfers,
+    # and saying which half does not is part of the answer.
+    ("d.tm0",     "t", S0, "DRAW 5"),
+    ("d.tm1",     "t", S1, "DRAW 5"),
+    ("d.tmx0",    "t", S0, f"DRAW {TM}"),
+    ("d.mt0",     "t", S0, f"DRAW {MT}"),
+    # 🔴 THE RISKY PAIR, NAMED AS SUCH BEFORE THE RUN. These test DRAW's
+    # ordering ONLY IF the deferred fault survives `STR$` and is surfaced by
+    # `ex_draw`'s own `check_expr_errors`. If `STR$` consults the pending cell
+    # itself, the fault is raised before `ex_draw` is entered and both rows read
+    # 11 / 6 on ALL THREE SIDES — agreeing while measuring nothing. That is
+    # blindness, not a refutation, and it gets recorded as blindness.
+    ("d.dz0",     "t", S0, f"DRAW STR$({DZ})"),
+    ("d.ov0",     "t", S0, f"DRAW STR$({OV})"),
+    # 🟢 …and the SCREEN-2 controls that say the fault class exists at all.
+    # Without them a divergence above is equally explained by "the references
+    # never answer 13 to a DRAW", which would make the whole class meaningless.
+    ("d.tm2",     "t", S2, "DRAW 5"),
+    ("d.dz2",     "t", S2, f"DRAW STR$({DZ})"),
+    ("d.ov2",     "t", S2, f"DRAW STR$({OV})"),
+    # 🟢 THE POSITIVE CONTROL FOR THE WHOLE CLASS: a DRAW that COMPLETES moves
+    # the work area. Without it every row above is a refusal, and a machine
+    # where DRAW does nothing at all would pass the lot.
+    ("d.ok2",     "t", S2, 'DRAW"R10"'),
+    # THE PREFIXES, which are the only shapes where the two halves of the work
+    # area DISAGREE — see the w.d.* twins below. B = move without drawing,
+    # N = draw then restore the position (spec-basic-graphics-g6.md §3).
+    ("d.b2",      "t", S2, 'DRAW"BR10"'),
+    ("d.n2",      "t", S2, 'DRAW"NR10"'),
+    ("d.up2",     "t", S2, 'DRAW"D20U10"'),
+    # THE STRING DOMAIN, in SCREEN 2 so only C can fire. `d.part2` is the row
+    # nobody has ever run: it says the walk is INCREMENTAL — the R10 takes
+    # effect and only then does the Z fail, so a DRAW string is not validated
+    # before it is executed.
+    ("d.bad2",    "t", S2, 'DRAW"Z"'),
+    ("d.part2",   "t", S2, 'DRAW"R10Z"'),
+    ("d.marg2",   "t", S2, 'DRAW"M53"'),
+    ("d.empty2",  "t", S2, 'DRAW""'),
+    # 🟢 …and the empty string in the WRONG mode, which is the control that the
+    # fix does not move the gate TOO FAR down: an empty string has no command
+    # that could fail, so if this ever stops being ERR 5 the gate has fallen
+    # past C. It also says the gate is not per-command.
+    ("d.empty0",  "t", S0, 'DRAW""'),
+    # 🔴 ONE DRAW COUNT, TWO DOMAINS — read off the file, not guessed. The
+    # LITERAL path (`sub/graphics.asm gdrw_arg_try`) accumulates UNSIGNED and
+    # refuses only past 65535; the SUBSTITUTION path leaves the tenant for the
+    # resident `gdw_want_int` -> `gfx_eval_int16` -> `get_int16_checked`, whose
+    # domain is -32768..32767 (basic/interp.asm:1596). So `DRAW"BU40000"` and
+    # `V=40000:DRAW"BU=V;"` should be the same statement and are not.
+    # ⚠️ THIS IS A SIBLING QUESTION, NOT THIS SLICE'S RULE: if it diverges it is
+    # FILED with the row behind it, not folded in. `d.lit2` is what makes
+    # `d.sub2` mean "the substitution path is narrower" and not "40000 is
+    # refused" — the p.edge2 shape, pinning a domain from inside.
+    ("d.lit2",    "t", S2, 'DRAW"BU40000"'),
+    ("d.sub2",    "t", S2, 'V=40000:DRAW"BU=V;"'),
+    # 🔴 ROUND 2 — `d.lit2` DIVERGED, and it was written as a control. Both
+    # references move the full 40000 (GRPACY 25540); zerobas moves 7232 (58308).
+    # 7232 is exactly `signed16(40000*4 mod 65536)/4`, the SCALE model
+    # scratchpad/g6_draw_notes.md §3 fitted -- and that notebook's own row says
+    # `40000 -> up 7232`, MEASURED AT AN EXPLICIT `S4`. Nothing ever asked the
+    # BOOT DEFAULT, so the model was fitted on a class that never contained it.
+    # ⚠️ `S4` and "the default" are only distinguishable through the WRAP: the
+    # multiply is the identity for every n where n*4 does not exceed 65535, so
+    # a large count is the ONLY observable that separates them.
+    ("d.s8.10",   "t", S2, 'DRAW"S8BU10"'),
+    ("d.s2.10",   "t", S2, 'DRAW"S2BU10"'),
+    ("d.s4.32k",  "t", S2, 'DRAW"S4BU32767"'),
+    ("d.s4.40k",  "t", S2, 'DRAW"S4BU40000"'),
+    ("d.def32k",  "t", S2, 'DRAW"BU32767"'),
+    # 🟢 …and the control that says STR$ reaches a DRAW argument at all, so the
+    # d.dz2/d.ov2 divergence is about the PENDING FAULT and not about STR$.
+    ("d.str2",    "t", S2, 'DRAW"R"+STR$(10)'),
+    # 🔴 ROUND 3 — `d.str2` DIVERGED TOO, and in a third direction again
+    # (refs ` 0 , 17 , 4 `, zb ` 5 , 8 , 4 `: the R moves one pixel and then the
+    # walk refuses). These four separate the candidate causes rather than
+    # guessing between them — concat-in-a-DRAW-argument at all, the leading
+    # blank STR$ emits, the concat itself, and a temp descriptor specifically.
+    ("d.cat2",    "t", S2, 'DRAW"R"+"10"'),
+    ("d.spc2",    "t", S2, 'DRAW"R 10"'),
+    ("d.avar2",   "t", S2, 'A$="R"+STR$(10):DRAW A$'),
+    ("d.strv2",   "t", S2, 'A$=STR$(10):DRAW"R"+A$'),
+
     # === w.* THE OTHER HALF OF THE WORK AREA ===============================
     # Identical statements to rows above, read through GXPOS/GYPOS instead of
     # GRPACX/GRPACY. spec-basic-graphics-g3.md §11.5 claims a LINE sets both to
@@ -495,11 +610,73 @@ CASES = [
     ("w.pt.off",  "t", S2, "V=POINT(300,100)"),
     ("w.pt.step", "t", S2, "V=POINT STEP(1,1)"),
     ("w.ps.off",  "t", S2, "PSET(300,100)"),
+    # 🔴 …AND THE TWIN `v.draw0` NEVER HAD. D-GIRDOM's lesson, applied in
+    # advance this time: a control is honest about the CELL IT READS, so the
+    # GRPAC row that cleared DRAW for a whole slice gets its GXPOS face here
+    # rather than after the next defect.
+    ("w.draw0",   "t", S0, 'DRAW"U10"'),
+    # 🎯 THE ONLY SHAPES WHERE THE TWO HALVES DISAGREE, which is exactly why
+    # they are the rows worth spending. `sub/graphics.asm gdrw_gxpos` is an
+    # OWN-DESIGN match of a quirk recorded only in a scratchpad notebook
+    # ("the pending-target cells end at whichever endpoint has the GREATER y,
+    # ties going to the target"), and no gate has ever asked a reference about
+    # it. An UPWARD move is the only shape that separates the two arms:
+    #   d.ok2 / w.d.ok2   a plain move   -> both halves take the target
+    #   d.b2  / w.d.b2    B (blank)      -> GRPAC moves, GXPOS does NOT
+    #   d.n2  / w.d.n2    N (restore)    -> GXPOS moves, GRPAC does NOT
+    #   d.up2 / w.d.up2   an UP segment  -> GRPAC = target, GXPOS = the START
+    # Each half is therefore pinned on a statement where the OTHER half stays
+    # put, which is the reading K-LE3 and D-GIRDOM each cost a defect to learn.
+    ("w.d.ok2",   "t", S2, 'DRAW"R10"'),
+    ("w.d.b2",    "t", S2, 'DRAW"BR10"'),
+    ("w.d.n2",    "t", S2, 'DRAW"NR10"'),
+    ("w.d.up2",   "t", S2, 'DRAW"D20U10"'),
 
     # === n.* NEGATIVE CONTROLS =============================================
     ("n.zork",    "t", S2, "ZORK 1,2"),
     ("n.dzw",     "t", S2, f"WIDTH {DZ}+1"),
     ("n.tmw",     "t", S2, "WIDTH Q$"),
+    # 🔴 ROUND 2 — THE ROWS THAT TAKE DRAW OUT OF THE PICTURE. `d.dz2`/`d.ov2`
+    # showed zerobas answering 13 where both references answer the DEFERRED
+    # numeric fault (11 / 6). `ex_draw` can only reach ERR 13 through
+    # `jp nc,gfx_typeerr`, i.e. `str_eval` reporting "not a string operand" --
+    # which a well-formed `STR$(...)` cannot be. So the 13 is predicted to come
+    # from UPSTREAM, and these two rows carry the SAME expression with no
+    # graphics statement anywhere near it. This is the `n.pset0` shape (§2.2)
+    # pointed the other way: a control written to say whether the claim belongs
+    # at the verb I found it at. If they diverge, the defect is the STRING
+    # ENGINE's, DRAW is only where it surfaced, and it gets FILED with its rows
+    # rather than fixed inside a DRAW slice.
+    ("n.strdz",   "t", S2, f"A$=STR$({DZ})"),
+    ("n.strov",   "t", S2, f"A$=STR$({OV})"),
+    # 🔴 …and they AGREED, which put DRAW back in the picture: every ordinary
+    # checking reader in zerobas reports the pending fault correctly, so
+    # `ex_draw` is the only one that does not. THE SIBLING SITE is what decides
+    # whether the fix is one edit or a shared rule: `SPRITE$(n)=` (G7,
+    # basic/graphics.asm:868) has the IDENTICAL order, `jp nc,gfx_typeerr` with
+    # `call check_expr_errors` only after it. §2.2's lesson is that a verb the
+    # slice claims nothing about is exactly where the rule's real scope shows up.
+    ("n.sprdz",   "t", S2, f"SPRITE$(0)=STR$({DZ})"),
+    # 🔴 ROUND 4 — `n.sprdz` AGREED, so the pending-fault defect is DRAW's ALONE
+    # and not a shared rule. But `d.avar2` came back ERR 13 on a statement whose
+    # DRAW never runs, so the CONCAT is a separate finding and needs a row with
+    # no graphics statement in it at all to be filed honestly.
+    ("n.cat13",   "t", S2, 'A$="R"+STR$(10):V=1'),
+    ("n.catl",    "t", S2, 'A$="R"+"10":V=1'),
+    # 🔴 ROUND 5 — the LET is green, so `d.avar2`'s ERR 13 is neither the concat
+    # nor (per d.spc2) the space. These two ask whether a bare string VARIABLE
+    # reaches DRAW at all, and whether one holding a space behaves like the
+    # literal that holds one.
+    ("n.drawvar", "t", S2, 'A$="R10":DRAW A$'),
+    ("n.drawsp",  "t", S2, 'A$="R 10":DRAW A$'),
+    # 🔴 ROUND 6 — how far does the tenant's "ignorable anywhere" actually go?
+    # These four bound the whitespace rule a fix has to match: inside a number,
+    # between a letter and a sign, before an M operand, and before M's comma
+    # (the one site `gdo_m` already skips at).
+    ("d.sp.num",  "t", S2, 'DRAW"R1 0"'),
+    ("d.sp.sgn",  "t", S2, 'DRAW"R -5"'),
+    ("d.sp.m1",   "t", S2, 'DRAW"M 53,37"'),
+    ("d.sp.m2",   "t", S2, 'DRAW"M53 ,37"'),
 
     # === u.* THE UNTRAPPED FACE ============================================
     # No seed, so these run in the boot mode -- SCREEN 0, i.e. exactly the
@@ -509,6 +686,7 @@ CASES = [
     ("u.s0.dz",   "u", "", f"LINE {P1}-({DZ},21)"),
     ("u.s0.col",  "u", "", f"LINE {P1}-{P2},{DZ}"),
     ("u.bare",    "u", "", "LINE"),
+    ("u.draw0",   "u", "", "DRAW 5"),
     ("u.zork",    "u", "", "ZORK 1,2"),
 ]
 
@@ -547,6 +725,13 @@ NEGATIVE = {
                  "just -1-or-0, so the g.pt.* readings mean something",
     "g.pt.clear": "NEGATIVE CONTROL — POINT reads the BACKGROUND (4+1) on an "
                   "untouched pixel",
+    "d.ok2":   "NEGATIVE CONTROL — a DRAW that COMPLETES moves the work area, "
+               "so the d.* refusals are not 'DRAW does nothing'",
+    "d.tm2":   "NEGATIVE CONTROL — the references DO answer 13 to a numeric "
+               "DRAW argument, in the mode where the gate is out of the way",
+    "d.empty2": "NEGATIVE CONTROL — an empty DRAW string is ACCEPTED",
+    "d.empty0": "NEGATIVE CONTROL — …and still refused in the wrong mode: the "
+                "gate must not fall below the tenant walk",
     "n.zork":  "NEGATIVE CONTROL — a syntax error outside LINE stays ERR 2",
     "n.dzw":   "NEGATIVE CONTROL — one numeric fault at a checking reader",
     "n.tmw":   "NEGATIVE CONTROL — a type fault at a checking reader is 13",
@@ -563,10 +748,32 @@ _S3 = ("DEFERRED — SCREEN 3 (multicolour) DRAWS on both references; zerobas "
        "happens, and the refusal itself is correct for every mode zerobas "
        "implements. Measured, priced at nothing, filed in TODO.md")
 
+_SCALE = ("DEFERRED — the BOOT-DEFAULT DRAW SCALE STATE IS NOT `S4`. From boot "
+          "both references move the FULL count; after an explicit `S4` they "
+          "wrap exactly as scratchpad/g6_draw_notes.md §3 models, and zerobas "
+          "agrees with them THERE (rows d.s4.32k / d.s4.40k / d.s8.10 / "
+          "d.s2.10). zerobas initialises GFX_DSCALE=4 at cold boot, so it wraps "
+          "from boot. 🔴 The notebook's five fitted points are each CORRECT and "
+          "the generalisation is not: every one was taken after an explicit "
+          "`S`, and the multiply is the identity everywhere except the wrap, so "
+          "a LARGE COUNT is the only observable that separates the two states. "
+          "Out of D-DRAWERR's reach for two reasons: it changes what DRAW DRAWS "
+          "rather than what it REFUSES (graphics-acceptance and G6 own that "
+          "surface), and `never set` needs a sentinel `S4` cannot collide with "
+          "— GFX_DSCALE starts at 4 and gdo_s maps S0 to 4. Measured, printed, "
+          "excluded from the tally in BOTH directions, filed in TODO.md")
+
 DEFERRED: dict[str, str] = {
     # Measured, not scored, each with the reason it is out of this slice's reach.
     "m.s3": _S3,
     "v.pset3": _S3,
+    # 🔴 D-DRAWERR. ⚠️ These two were RED before they were deferred, so the
+    # headline is stated BOTH ways in the spec (§6.1's rule: recategorising a
+    # red row as deferred and then quoting the improvement against the new
+    # denominator is how a fix flatters itself). They are deferred because
+    # nothing in this slice's diff can move them, not because they are awkward.
+    "d.lit2": _SCALE,
+    "d.def32k": _SCALE,
 }
 
 SENTINELS = ("<NO CAPTURE>", "<NO ECHO>")
@@ -588,7 +795,8 @@ def clip_at_prompt(tail: str) -> str:
 
 GXPOS_ROWS = frozenset(("w.s2", "w.s0", "w.s0.tm", "w.s2.col",
                         "w.paint0.off", "w.paint2.off",
-                        "w.pt.on", "w.pt.off", "w.pt.step", "w.ps.off"))
+                        "w.pt.on", "w.pt.off", "w.pt.step", "w.ps.off",
+                        "w.draw0", "w.d.ok2", "w.d.b2", "w.d.n2", "w.d.up2"))
 
 # 🔴 A ROW THAT IS MERELY SLOW READS AS A DIVERGENCE, AND DID. `c.32767` and
 # `c.m32768` came back `<NO CAPTURE>` on zb in the first sweep and would have
@@ -660,7 +868,20 @@ DENOMINATOR = (
     "boundary in a slot where truncate-vs-round is visible in GRPAC. NOT "
     "swept: what LINE DRAWS once it is accepted (`make graphics-acceptance` "
     "owns that, spec-basic-graphics-g3.md), the box tenant's clipping, and "
-    "PAINT/CIRCLE's own colour domains (spec-basic-graphics-g4/g5)."
+    "PAINT/CIRCLE's own colour domains (spec-basic-graphics-g4/g5). The d.* "
+    "class extends the POSITION axis to the one verb whose mandatory argument "
+    "is not a coordinate: DRAW's grammar is `DRAW <string expression>`, so the "
+    "slots are the EXPRESSION (swept for all three fault kinds it can carry -- "
+    "13 from a numeric literal and from both type-mismatch sites, 11 and 6 "
+    "through STR$) and the STRING's own command language (an unknown letter, a "
+    "command whose operand is missing, a partial walk that faults after a move "
+    "has already taken effect, and the empty string), crossed with the modes "
+    "DRAW is legal and illegal in. Its work area is swept through BOTH halves "
+    "on the three shapes where they DISAGREE -- the B prefix, the N prefix and "
+    "an upward segment. NOT swept: what DRAW DRAWS once accepted "
+    "(spec-basic-graphics-g6.md and its notebook own that), the A/S/C/X "
+    "commands' own argument domains, and the coroutine's second and later "
+    "substitution round trips."
 )
 
 

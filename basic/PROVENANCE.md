@@ -4522,3 +4522,60 @@ defect: this slice moved *where* the refusal happens, and the refusal itself is
 correct for every mode zerobas implements. Both rows stay measured, printed
 `....`, and excluded from the gate's tally in **both** directions. Re-filed in
 `TODO.md`, with PAINT's two unordered ERR 5s and DRAW.
+
+## 2026-08-11 — `DRAW` gates the mode BEFORE its argument, and two whitespace defects (D-DRAWERR)
+
+Spec [`docs/spec-basic-lineerr.md`](../docs/spec-basic-lineerr.md) §11,
+measurement
+[`docs/lineerr-msx1-characterization.md`](../docs/lineerr-msx1-characterization.md)
+§10, gate `make lineerr-acceptance`. **189 rows on the same three sides, 187
+scored and both references agreeing on every one** (4 deferred — SCREEN 3, and
+the DRAW scale default below). Clean-room: observed screen output and published
+MSX system-variable reads only; both reference ROMs are black boxes. The `DRAW`
+*language* remains the public MSX-BASIC language reference, every behavioural
+rule our own black-box measurement, no disassembly.
+
+**The rule, newly sourced, and it is a NEGATIVE result:** *`DRAW` refuses a wrong
+SCREEN mode BEFORE evaluating its string expression.* `DRAW 5` is **ERR 5** in
+SCREEN 0/1 and **ERR 13** in SCREEN 2, on both references — the opposite order to
+the five verbs D-LINERR sourced above, which is why the count there is five and
+not six. Sourced from six rows carrying every fault the argument can raise (a
+numeric literal, both type-mismatch sites, and deferred 11/6 through `STR$`),
+against the SCREEN-2 control that says the ERR 13 exists at all.
+
+🔴 **The row DRAW had been excluded on could not see the question.** `v.draw0`
+is `DRAW"U10"` — a string LITERAL, whose evaluation raises nothing — so it reads
+ERR 5 whichever side of `str_eval` the gate is on. It does pin one thing nobody
+had stated: the gate sits above the tenant's walk, since a walk in SCREEN 0 would
+have moved the work area.
+
+**Routines touched, and neither had a provenance row before:**
+
+* `ex_draw` (`basic/graphics.asm`) — gained `call skip_spaces` before
+  `str_eval`. Without it `str_eval` was handed HL on the space after the token
+  and returned "not a string operand", so **`DRAW A$` was `Type mismatch`** and
+  `DRAW` accepted a string *literal* and nothing else. `ex_let_str` and
+  `spr_assign` both already skipped, which is why the `SPRITE$(n)=` sibling row
+  `n.sprdz` never diverged. **+3 B, page 1.**
+* `gdrw_peek` (`sub/graphics.asm`) — now skips spaces and TABs itself, and
+  `gdrw_skipws` is an `equ` onto it. The old arrangement called `gdrw_skipws`
+  at four sites, all *between commands*, while the block header claimed
+  whitespace was "ignorable anywhere". `DRAW"R1 0"` is `R10` on both references,
+  so the rule is **skip before every character fetch**. `gdrw_peek_raw`
+  deliberately still does not skip: `gdrw_sub_scan` walks `=var;` text with it
+  and those spaces are DATA. **−3 B, sub page 0** (the 16-byte `gdrw_skipws`
+  body is gone).
+
+**Deferred with its evidence, not silently dropped:** `d.lit2` / `d.def32k` —
+the boot-default DRAW **scale** state is not `S4`. Both references move the full
+count from boot and wrap only after an explicit `S`; zerobas initialises
+`GFX_DSCALE = 4` and wraps from boot. `scratchpad/g6_draw_notes.md` §3's model is
+correct and its generalisation is not — all twelve points it was fitted and
+falsified on set `S` first, and the multiply is the identity everywhere except
+the wrap, so a large count is the only observable that separates the two states.
+Out of this slice's reach (it changes what DRAW *draws*, and "never set" needs a
+sentinel `S4` cannot collide with); both rows stay measured, printed `....`,
+excluded from the tally in **both** directions, and filed in `TODO.md`.
+[`docs/spec-basic-graphics-g6.md`](../docs/spec-basic-graphics-g6.md) §4's
+*"resets them, to `S = 4`"* and §5's two error rows are corrected in place with
+SUPERSEDED pointers rather than deleted.
