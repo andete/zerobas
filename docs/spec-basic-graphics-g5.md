@@ -137,7 +137,7 @@ dead-during-graphics window and measure).
 |---|---|
 | SCREEN 0 / 1 | ERR 5 (Illegal function call) |
 | paint colour `C < 0` or `C > 15` | ERR 5 |
-| seed off-screen (in-int16, `x∉0..255`/`y∉0..191`, incl. negative) | ERR 5 |
+| seed off-screen (in-int16, `x∉0..255`/`y∉0..191`, incl. negative) | ERR 5 — **and the work area is moved to the raw seed first** (D-PAINTSEED; `(255,191)` is the last accepted point, `(256,191)` and `(255,192)` are not) |
 | any coordinate `> int16` | ERR 6 (Overflow) |
 | `PAINT(x,y),tile$,B` (string paint colour) | ERR 13 (Type mismatch) |
 | `PAINT(x,y),C,B,n` (4th arg) | ERR 2 (Syntax error) |
@@ -171,9 +171,9 @@ mismatch` on both references, so the seed's own fault outranks the mode. And the
 work-area write is **not** deferred past every field: `PAINT(20,21),0*(1/0)`
 leaves `GRPAC`/`GXPOS` on (20,21) on both references. The measured order is
 
-    ex_paint: parse_coord (seed) → off-screen-seed → ERR 5 → work area := seed
-              → SCREEN-2 gate → optional C (0..15 → ERR 5) → optional B
-              (default = C) → 4th-arg → ERR 2 → marshal
+    ex_paint: parse_coord (seed) → work area := seed → SCREEN-2 gate
+              → off-screen-seed → ERR 5 → optional C (0..15 → ERR 5)
+              → optional B (default = C) → 4th-arg → ERR 2 → marshal
               → `subrom_call IX=$0028` (`SUBROM_IDX_GRAPHICS`) → chain.
 
 Both moves are one `call gfx_point_gate` (`basic/graphics.asm`), and hoisting the
@@ -181,10 +181,29 @@ write **retires the `push bc`/`push de` pair** that existed only to guard the
 seed across the `C`/`B` parses — which is why the change gives 25 bytes back at
 this verb. Rows `v.paint0.tm` / `v.paint0.c` / `v.paint2.c`; knife **K-LE4a**.
 
-⚠️ The off-screen-seed ERR 5 stays **above** the gate and is untouched. Both
-faults raise ERR 5, so no row in the sweep can order those two against each
-other — only the work area could, and it is written between them. Filed
-unmeasured in `TODO.md`.
+⚠️ **SUPERSEDED 2026-08-11 by D-PAINTSEED**
+([`spec-basic-lineerr.md`](spec-basic-lineerr.md) §9), hours after the paragraph
+above was written. Kept rather than deleted, per the same rule:
+
+> ~~The off-screen-seed ERR 5 stays **above** the gate and is untouched. Both
+> faults raise ERR 5, so no row in the sweep can order those two against each
+> other — only the work area could, and it is written between them. Filed
+> unmeasured in `TODO.md`.~~
+
+The last sentence is right and the first is wrong, and the second is the reason:
+*"no row can order those two"* is true of the **gate**, and the paragraph then
+used it to leave the **work-area write** unmeasured as well. Those are different
+comparisons. `PAINT(300,100)` in SCREEN **2** — where the gate cannot fire at all
+— raises ERR 5 with `GRPACX/GRPACY` **and** `GXPOS/GYPOS` already on the raw,
+unclipped `(300,100)` on both references. So the seed test is **below** the
+work-area write, hence below `gfx_point_gate`, and the order above is corrected
+to match. Measured across the whole seed domain, both axes, both signs, both
+off-by-one edges and through `STEP`: rows `p.*` / `w.paint*.off`, knives
+K-PS1..K-PS3, net zero bytes.
+
+⚠️ The seed test versus the **gate** remains genuinely unordered, and nothing
+now claims otherwise: when a seed is off-screen *and* the mode is wrong, both
+raise ERR 5 with the same work area whichever runs first.
 
 ---
 
@@ -248,6 +267,14 @@ coord ovf → ERR6, tile$ → ERR13, 4th-arg → ERR2, border unchecked), the
 harness-budget trap (PAINT slow in emulated time — not a hang), and the
 `C==B`-bounded / `C!=B`-flood dichotomy (POINT-verified across thin box + thick
 arena, with a fill=15 control proving the arena encloses).
+
+⚠️ **C6's off-screen pin was the ERROR CODE, on ONE machine.** It never asked
+where the work area stood, and that gap is what let §6 ship the seed test above
+the write for the whole life of G5. D-PAINTSEED (2026-08-11) re-measured the seed
+domain on **both** references through `GRPACX/GRPACY` *and* `GXPOS/GYPOS`, added
+the accepted edge `(255,191)` that C6 had no row for, and moved the test — 16
+rows in `make lineerr-acceptance`, [`spec-basic-lineerr.md`](spec-basic-lineerr.md)
+§9. The code C6 pinned is unchanged; what it did not pin is what moved.
 
 ## Appendix — sources
 Public MSX-BASIC language reference for `PAINT` grammar/semantics; all

@@ -81,6 +81,11 @@ THE ROW CLASSES:
        was required (D-SCRERR found all four of SCREEN's are ERR 24, and
        nothing has ever checked whether LINE agrees), every missing delimiter,
        and the ,B/,BF suffixes as the accepting controls.
+  p.*  PAINT'S OFF-SCREEN SEED versus ITS WRONG-MODE REFUSAL — the residual
+       D-LINERR filed and did not run (spec-basic-lineerr.md §8.2). BOTH raise
+       ERR 5, so the CODE cannot say which fired; only the WORK AREA can,
+       because D-LINERR's fix writes it BETWEEN the two. See the block above
+       CASES for what each row can and cannot distinguish.
   n.*  NEGATIVE CONTROLS, each agreeing for a reason INDEPENDENT of the claim.
   u.*  THE UNTRAPPED FACE: message text, its line, printed once, and whether
        the following line ran.
@@ -368,6 +373,66 @@ CASES = [
     # the PRECHECK and not about "graphics in SCREEN 0" generally.
     ("v.point0",  "t", S0, "V=POINT(20,21)"),
 
+    # === p.* PAINT'S OFF-SCREEN SEED versus ITS WRONG-MODE REFUSAL =========
+    # 🔴 THE RESIDUAL D-LINERR FILED AND DID NOT RUN (spec-basic-lineerr.md
+    # §8.2). `PAINT` answers ERR 5 to an off-screen seed AND to a wrong SCREEN
+    # mode, so the code is blind to which one fired. Name the three events:
+    #
+    #     A = the WORK-AREA write   B = the MODE gate   C = the SEED range test
+    #
+    # D-LINERR pinned A < B (`v.paint0.c`: `PAINT(20,21),0*(1/0)` in SCREEN 0
+    # is ERR 5 with GRPAC already on (20,21)). C was never sited against either:
+    # `ex_paint` tests the seed FIRST because that is where G5 put it, and
+    # spec-basic-graphics-g5.md §5's off-screen rule is a VG-8020 pin of the
+    # ERROR CODE only (§11 C6) — it never asked where the work area stood.
+    #
+    # ⚠️ WHAT THESE ROWS CAN AND CANNOT DECIDE. C-vs-A is observable: a seed
+    # that never reaches A leaves GRPAC on the (7,4) seed, one that passes it
+    # leaves GRPAC on the raw unclipped coordinate (§4.4 of the notebook: LINE
+    # already stores 300 as 300 and -1 as 65535). C-vs-B is NOT observable
+    # through this instrument and no row here claims it: when a seed is BOTH
+    # off-screen AND in the wrong mode, B and C raise the same code with the
+    # same work area whichever runs first. So the measurable question is
+    # "does the work area move before the off-screen refusal", and the answer
+    # puts C below A — which, A and B being one `call gfx_point_gate`, puts it
+    # below the gate. The residual is settled to exactly that extent.
+    #
+    # 🔴 NOT ADDED, DELIBERATELY: the SCREEN-3 face. Both references DRAW in
+    # SCREEN 3 (rows m.s3 / v.pset3) but an off-screen seed refuses there too,
+    # so `PAINT(300,100)` in SCREEN 3 would be ERR 5 on all three sides — a row
+    # that AGREES for the WRONG REASON (zerobas's `cp 2`, the references' seed
+    # test). A green row bought that way is worse than no row.
+    ("p.off0",    "t", S0, "PAINT(300,100)"),
+    # ...and the same statement in the mode where PAINT is LEGAL, so only C can
+    # fire. THIS is the row that sites C against A with no mode confound.
+    ("p.off2",    "t", S2, "PAINT(300,100)"),
+    ("p.off1",    "t", S1, "PAINT(300,100)"),
+    # the domain, so the class is not one coordinate: y past 191 but still a
+    # legal byte, and the negative face (which §4.4 says reads back as 65535).
+    ("p.oy0",     "t", S0, "PAINT(20,200)"),
+    ("p.oy2",     "t", S2, "PAINT(20,200)"),
+    ("p.neg0",    "t", S0, "PAINT(-1,100)"),
+    ("p.neg2",    "t", S2, "PAINT(-1,100)"),
+    ("p.negy2",   "t", S2, "PAINT(20,-1)"),
+    # 🎯 THE EDGE, PINNED FROM BOTH SIDES. p.edge2 is the LAST on-screen point
+    # and must be ACCEPTED; these two are its off-by-one neighbours in each
+    # axis. Without p.edge2 the domain is claimed from outside only, and
+    # "everything refuses" would score green.
+    ("p.x256",    "t", S2, "PAINT(256,191)"),
+    ("p.y192",    "t", S2, "PAINT(255,192)"),
+    # 🟢 the coercion still outranks BOTH: past int16 is ERR 6 with the work
+    # area unmoved, exactly as at LINE's `c.70000` / `k.big`.
+    ("p.ov0",     "t", S0, "PAINT(70000,100)"),
+    # the work area takes the RESOLVED point, not the literal: STEP off (7,4).
+    ("p.step0",   "t", S0, "PAINT STEP(300,100)"),
+    # 🟢 THE ACCEPTING CONTROLS. Both draw their own bounded box FIRST and
+    # leave GRPAC on the box's SECOND endpoint, so the reading can only be the
+    # seed if PAINT itself wrote it. Neither contains a reject, so no ordering
+    # claim can make them fail — and without them every p.* row above is a
+    # refusal, which a machine where PAINT does nothing at all would also pass.
+    ("p.ok2",     "t", S2, "LINE(30,30)-(10,10),15,B:PAINT(20,20)"),
+    ("p.edge2",   "t", S2, "LINE(255,191)-(250,186),15,B:PAINT(255,191)"),
+
     # === w.* THE OTHER HALF OF THE WORK AREA ===============================
     # Identical statements to rows above, read through GXPOS/GYPOS instead of
     # GRPACX/GRPACY. spec-basic-graphics-g3.md §11.5 claims a LINE sets both to
@@ -378,6 +443,13 @@ CASES = [
     ("w.s0",      "t", S0, f"LINE {P1}-{P2}"),
     ("w.s0.tm",   "t", S0, f"LINE {P1}-({TM},21)"),
     ("w.s2.col",  "t", S2, f"LINE {P1}-{P2},{DZ}"),
+    # 🔴 …and the p.* rows' GXPOS twins. `gfx_work_area` writes both halves
+    # together, so zerobas CANNOT split them — but that is the claim, not the
+    # evidence: K-LE3 found LINE's p1 staging writing only GRPAC, on a row whose
+    # GRPAC twin was already green. The references are black boxes and get the
+    # same two-halves reading here that they got there.
+    ("w.paint0.off", "t", S0, "PAINT(300,100)"),
+    ("w.paint2.off", "t", S2, "PAINT(300,100)"),
 
     # === n.* NEGATIVE CONTROLS =============================================
     ("n.zork",    "t", S2, "ZORK 1,2"),
@@ -420,6 +492,10 @@ NEGATIVE = {
     "a.b":     "NEGATIVE CONTROL — the ,B form is reachable and accepted",
     "a.cont":  "NEGATIVE CONTROL — the '-' continuation form is accepted",
     "w.s2":    "NEGATIVE CONTROL — the GXPOS instrument: a drawn LINE moves it",
+    "p.ok2":   "NEGATIVE CONTROL — a legal PAINT completes and the SEED is what "
+               "lands in the work area (the box left it elsewhere)",
+    "p.edge2": "NEGATIVE CONTROL — (255,191) is ON-screen: the domain edge from "
+               "INSIDE, so p.x256/p.y192 are an edge and not 'all refuse'",
     "n.zork":  "NEGATIVE CONTROL — a syntax error outside LINE stays ERR 2",
     "n.dzw":   "NEGATIVE CONTROL — one numeric fault at a checking reader",
     "n.tmw":   "NEGATIVE CONTROL — a type fault at a checking reader is 13",
@@ -459,7 +535,8 @@ def clip_at_prompt(tail: str) -> str:
     return "|".join(out)
 
 
-GXPOS_ROWS = frozenset(("w.s2", "w.s0", "w.s0.tm", "w.s2.col"))
+GXPOS_ROWS = frozenset(("w.s2", "w.s0", "w.s0.tm", "w.s2.col",
+                        "w.paint0.off", "w.paint2.off"))
 
 # 🔴 A ROW THAT IS MERELY SLOW READS AS A DIVERGENCE, AND DID. `c.32767` and
 # `c.m32768` came back `<NO CAPTURE>` on zb in the first sweep and would have

@@ -2263,7 +2263,7 @@ screenerr-acceptance: repack-machine
 # anywhere in parse_coord. The refusal was `ex_line_gfx`'s own opening `cp 2`,
 # three instructions in, and the filed row runs in the boot default SCREEN 0 --
 # so zerobas answered ERR 5 to a statement whose coordinates it never looked at.
-# The rule the 108 rows here measure is an ORDERING one, and it is not LINE's:
+# The rule the 124 rows here measure is an ORDERING one, and it is not LINE's:
 #   a graphics statement moves the WORK AREA to the point its MANDATORY
 #   arguments resolve to, and refuses a wrong SCREEN mode IMMEDIATELY AFTER
 #   THAT -- after every fault the mandatory arguments can raise, and BEFORE the
@@ -2285,12 +2285,21 @@ screenerr-acceptance: repack-machine
 # instead of GRPACX/GRPACY and earned their place: after the first fix `m.s0.tm`
 # was green while its GXPOS twin `w.s0.tm` was still red on the identical
 # statement, because LINE's p1 staging wrote only the last-referenced point.
+# 🎯 D-PAINTSEED (2026-08-11) closed the residual D-LINERR filed against this
+# same gate: the p.* class (14 rows + 2 GXPOS twins) asks where PAINT's
+# OFF-SCREEN-SEED ERR 5 stands relative to the work-area write, since it and the
+# wrong-mode ERR 5 are the same code. The references write the work area FIRST
+# -- `PAINT(300,100)` leaves GRPAC on the raw unclipped (300,100) before raising
+# -- so the seed test moved BELOW `gfx_point_gate`. Net zero bytes; 13 of the 16
+# new rows were red before it.
 # ⚠️ `c.32767`/`c.m32768` need a WIDER WINDOW, not a bug report: zerobas
 # rasterises the true int16 span and masks per pixel (spec-basic-graphics-g3.md
 # §3.4/§4.4) where the references clip first, so a 32767-pixel span really is
 # walked. At step=12 it answers exactly what both references answer.
-# 108 rows x 3 sides. MEASURED 168 s (2026-08-11 corpus, `lineerr-acceptance`
-# from clean) -- real host wall time for three unthrottled openMSX boots, not
+# 124 rows x 3 sides. MEASURED 205 s (2026-08-11, D-PAINTSEED; it was 108 rows
+# / 168 s at D-LINERR, and the 16 rows the p.* class added cost 37 s -- a figure
+# stated because the previous one was carried forward without being re-measured
+# when the row set grew) -- real host wall time for three unthrottled boots, not
 # emulated MSX time, and not reproducible to the second on a loaded machine.
 # ⚠️ This comment previously read "~35 min", a figure NOBODY EVER MEASURED: it
 # is the wall time of the WHOLE 52-target corpus (2014 s), inherited from an

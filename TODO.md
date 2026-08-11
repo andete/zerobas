@@ -1370,7 +1370,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md),
       `make lineerr-acceptance` **106/106 from 55/106** + 2 deferred, both
       references agreeing on every scored row; `stmtpend-acceptance`'s DEFERRED
-      dict is now EMPTY).
+      dict is now EMPTY). ⚠️ Those are the figures **on the day this closed**;
+      the gate is **122/122 + 2 deferred over 124 rows** since D-PAINTSEED the
+      same evening. A row count quoted in a closed item is a timestamp, not a
+      baseline — run the gate.
       🔴 **AND THE DIAGNOSIS FILED HERE WAS WRONG.** This entry said *"LINE
       raises its own `Illegal function call` eagerly from inside its coordinate
       parse"*. **There is no ERR 5 anywhere in `parse_coord`.** The refusal was
@@ -1409,15 +1412,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       nothing; not scouted. Both rows stay printed and marked `....`, excluded
       from the tally in **both** directions.
 
-- [ ] ⚠️ **PAINT'S OFF-SCREEN-SEED ERR 5 AND ITS WRONG-MODE ERR 5 ARE
-      UNORDERED — no row can tell them apart.** Filed 2026-08-11 by D-LINERR
-      ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md) §8). `PAINT`
-      raises `Illegal function call` for an off-screen seed **and** for a wrong
-      SCREEN mode, so the error code is blind to which fired; only the WORK AREA
-      could separate them, and D-LINERR's fix writes it **between** the two.
-      `ex_paint` keeps the seed test above the gate, which is where it already
-      was — nothing measured says that is right. The row that would settle it is
-      `PAINT(300,100)` in SCREEN 0 read through GRPAC, and it was not run.
+- [x] ✅ **PAINT'S OFF-SCREEN-SEED ERR 5 versus ITS WRONG-MODE ERR 5.** Filed
+      2026-08-11 by D-LINERR, CLOSED the same day by **D-PAINTSEED**
+      ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md) §9). The work
+      area moves FIRST: `PAINT(300,100)` leaves GRPAC *and* GXPOS on the raw
+      unclipped (300,100) on both references before raising ERR 5, in SCREEN 2
+      as well as SCREEN 0 — so the seed test moved BELOW `gfx_point_gate`. 16
+      rows added (`p.*`, `w.paint*.off`), 13 of them red before; net **zero
+      bytes**; 3 knives, 6 of 6 EXACT. ⚠️ The seed test versus the GATE stays
+      genuinely unordered and is not claimed: both raise ERR 5 with the same
+      work area whichever runs first. 🔴 And the row this item NAMED could not
+      have settled it — K-PS2 deletes the seed test and `PAINT(300,100)` in
+      SCREEN 0 stays green, because the mode gate above the hole answers the
+      same; the SCREEN-2 twin is what carries the measurement.
+
+- [ ] ⚠️ **A KNIFE RUNNER STILL HAS NO SHARED WAY TO SCOPE A CUT TO ONE
+      ROUTINE.** Filed 2026-08-11 by D-PAINTSEED
+      ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md) §9.6). K-PS1's
+      first runner did `src.replace("call gfx_point_gate  ; BC/DE/HL preserved",
+      …, 1)` — a line that occurs THREE times in `basic/graphics.asm` — and cut
+      `gfx_plot_stmt`'s copy, i.e. the probe's own `PSET(7,4)` seed. It was
+      caught only because the runner read the report TAG. `docs/dev-workflow.md`
+      §Knives has eight rules about how a runner reads a report and none about
+      how it makes a cut. The mechanical remedy is one helper — scope to the
+      routine's region, assert the occurrence count is 1 — but knife runners are
+      deliberately throwaway (`spec-probe-injjudge.md` §1.3), so where it should
+      live is the open question, not what it should do.
+
+- [ ] ⚠️ **`gfx_in_range`'s DOMAIN IS UNMEASURED AT ITS OTHER TWO CALLERS.**
+      Filed 2026-08-11 by D-PAINTSEED. The `p.*` rows pinned `0..255 × 0..191`
+      with the accepted edge `(255,191)` and both off-by-ones — but only through
+      `PAINT`, which is the one caller that REFUSES. The other two
+      (`basic/graphics.asm` l.81 / l.104, the `PSET`/`PRESET` clip and `POINT`'s
+      −1) use the identical leaf to decide a SILENT no-op, and no row asks
+      whether the references agree about the edge there. `c.300` says off-screen
+      is legal at `LINE`; nothing says `PSET(255,192)` and `PSET(256,191)` are
+      no-ops rather than something else. A shared leaf's other callers decide
+      the site ([[a-shared-engine-fix-must-measure-its-other-callers]]) — that
+      applies to its DOMAIN as much as to a fix.
 
 - [ ] ⚠️ **`DRAW`'s mode gate was left alone, with a green row behind it.**
       Filed 2026-08-11 by D-LINERR. `v.draw0` (`DRAW"U10"` in SCREEN 0) reads

@@ -565,18 +565,18 @@ cp_done:
 ; surfaced here as ERR 7 (Out of memory) -- spec §4 D3, measured on the
 ; reference.
 ;
-; Unlike PSET/LINE/CIRCLE, the work-area write (GRPAC/GXPOS/GYPOS = seed) is
-; deferred to AFTER every field is parsed (spec §6) -- so a syntax error in
-; the C/B fields leaves the work area untouched (raise_error resets SP
-; anyway, so this is really just spec-fidelity bookkeeping, not a correctness
-; requirement of the abort path itself).
+; 🔴 THIS HEADER USED TO SAY the work-area write is "deferred to AFTER every
+; field is parsed (spec §6), UNLIKE PSET/LINE/CIRCLE". D-LINERR moved the write
+; to the top of the routine and D-PAINTSEED moved the seed test below it, so
+; the header outlived both edits by describing the code it replaced -- with the
+; body three lines down already saying the opposite. PAINT is NOT unlike its
+; siblings: it is `gfx_point_gate` at the same site as the other four verbs,
+; and the ONLY thing that distinguishes it is the extra off-screen-seed reject
+; underneath (spec §3), which no sibling has.
 ; =============================================================================
 ex_paint:
                 inc     hl                  ; past the PAINT token
                 call    parse_coord         ; BC = seed x, DE = seed y (STEP resolved)
-                call    gfx_in_range        ; CF = 1 iff 0<=x<=255 and 0<=y<=191
-                jp      nc,gfx_err5         ; off-screen seed -> ERR 5 (spec §3 --
-                                            ; NOT a silent clip like PSET/LINE)
                 ; --- D-LINERR: work area := the seed, THEN the SCREEN-2 gate ---
                 ; The gate used to open the routine; the work-area write used to
                 ; sit at ep_draw, AFTER every field. Both are refuted by
@@ -586,9 +586,28 @@ ex_paint:
                 ; last) -- rows v.paint0.tm / v.paint2.c. ⚠️ THIS SUPERSEDES
                 ; spec-basic-graphics-g5.md §6's "deferred to AFTER every field
                 ; is parsed", which was a design choice never measured against
-                ; the reference. The gate stays BELOW the off-screen-seed test,
-                ; which is untouched and still ERR 5 with the work area unmoved.
+                ; the reference.
                 call    gfx_point_gate      ; BC/DE/HL preserved
+                ; --- D-PAINTSEED: the OFF-SCREEN-SEED test is BELOW the work
+                ; area, not above it. D-LINERR left this ordering where G5 had
+                ; put it and filed it unmeasured, because BOTH conditions raise
+                ; ERR 5 and the code cannot tell them apart. The WORK AREA can,
+                ; and it says the seed is written FIRST: `PAINT(300,100)` leaves
+                ; GRPACX/GRPACY *and* GXPOS/GYPOS on the RAW UNCLIPPED (300,100)
+                ; on both references before raising ERR 5 -- in SCREEN 2 as well
+                ; as SCREEN 0, so it is not the mode gate doing it. Measured
+                ; across the whole seed domain (x>255, 192<=y<=255, negatives
+                ; read back as 65535, and both off-by-one edges against an
+                ; ACCEPTED (255,191)) and through STEP, which writes the
+                ; RESOLVED point: rows p.* / w.paint*.off, knives K-PS1..K-PS3.
+                ; ⚠️ The seed test versus the MODE gate stays UNORDERED and no
+                ; row here claims otherwise: when a seed is off-screen AND the
+                ; mode is wrong, both raise ERR 5 with the same work area
+                ; whichever runs first. What is measured is the seed test
+                ; against the work-area WRITE, and that puts it here.
+                call    gfx_in_range        ; CF = 1 iff 0<=x<=255 and 0<=y<=191
+                jp      nc,gfx_err5         ; off-screen seed -> ERR 5 (spec §3 --
+                                            ; NOT a silent clip like PSET/LINE)
                 ; --- default colour = FORCLR ---
                 ld      a,(FORCLR)
                 and     $0F

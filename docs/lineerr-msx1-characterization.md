@@ -6,7 +6,8 @@ trail — what was asked, on what, and what came back, including the readings th
 refuted the question.
 
 Sides: **Philips VG-8020** and **National CF-3300** (both black-box oracles) and
-the zerobas repack. 108 rows, `make lineerr-characterize`. `LINE`, `PSET`,
+the zerobas repack. **124** rows, `make lineerr-characterize` (108 at D-LINERR;
+§8 is D-PAINTSEED's 16). `LINE`, `PSET`,
 `CIRCLE`, `PAINT`, `SCREEN`, `ON ERROR`, `ERR`, `RESUME` and `PEEK` are core
 MSX-BASIC, present on every MSX1, so both references are legitimate oracles for
 every row.
@@ -276,8 +277,94 @@ writer knew it was a note-to-self; the second read "measured on the VG-8020".
 * **PAINT's off-screen-seed ERR 5 versus the mode ERR 5.** `ex_paint` tests the
   seed's range before the mode gate. Both faults raise ERR 5, so the error code
   cannot tell them apart and only the work area could — and the work area is
-  written between them. Unmeasured; filed.
+  written between them. Unmeasured; filed. ✅ **Measured 2026-08-11 — §8.**
 * **DRAW.** `v.draw0` agrees already (` 5 , 7 , 4 ` on all three sides), so DRAW
   was left alone. Its argument is a string parsed by a tenant, so "the mandatory
   arguments" means something different there; naming it out of scope with a
   green row behind it is cheaper than guessing.
+
+---
+
+## 8. D-PAINTSEED — §7's second bullet, measured (2026-08-11)
+
+Contract: [`spec-basic-lineerr.md`](spec-basic-lineerr.md) §9. Same three sides,
+same `[ ERR , X , Y ]` instrument over the same `PSET(7,4)` seed; 16 rows added,
+the gate is now 124 rows.
+
+### 8.1 The question, restated so it is answerable
+
+`PAINT` answers ERR 5 to an off-screen seed **and** to a wrong SCREEN mode. Three
+events are in play — the work-area write **A**, the mode gate **B**, the seed
+test **C** — and D-LINERR had already pinned **A < B**.
+
+🔴 **§7 asked for C versus B, and no row can answer that.** When a seed is both
+off-screen and in the wrong mode, B and C raise the same code and leave the same
+work area in either order. What a row *can* answer is **C versus A**: a seed that
+never reaches A leaves GRPAC on (7,4), one that passes it leaves GRPAC on the raw
+unclipped coordinate — the storage §4.4 already pinned at `LINE` (300 stays 300,
+−1 reads back 65535). Since A and B are one call, C-below-A is C-below-the-gate,
+and that is the whole of what was fixed.
+
+### 8.2 What came back
+
+Both references, identically, on all 16 rows:
+
+```
+p.off2    PAINT(300,100)      SCREEN 2     5 , 300 , 100        zb was  5 , 7 , 4
+p.off0    PAINT(300,100)      SCREEN 0     5 , 300 , 100        zb was  5 , 7 , 4
+p.neg2    PAINT(-1,100)       SCREEN 2     5 , 65535 , 100      zb was  5 , 7 , 4
+p.oy2     PAINT(20,200)       SCREEN 2     5 , 20 , 200         zb was  5 , 7 , 4
+p.step0   PAINT STEP(300,100) SCREEN 0     5 , 307 , 104        zb was  5 , 7 , 4
+p.x256    PAINT(256,191)      SCREEN 2     5 , 256 , 191        zb was  5 , 7 , 4
+p.y192    PAINT(255,192)      SCREEN 2     5 , 255 , 192        zb was  5 , 7 , 4
+p.edge2   …,15,B:PAINT(255,191)            0 , 255 , 191        zb agreed
+p.ov0     PAINT(70000,100)    SCREEN 0     6 , 7 , 4            zb agreed
+```
+
+**The work area moves first.** `p.off2` is the row that carries it: SCREEN 2 is
+the mode where `PAINT` is legal, so the mode gate is out of the way and the only
+thing that can raise there is the seed test — and it raises with GRPAC *and*
+GXPOS already on (300,100). 13 of the 16 rows were red before the fix; every one
+of the 16 readings was predicted exactly, value for value, before the run.
+
+### 8.3 🔴 The row that was FILED could not have settled it
+
+§7 named `PAINT(300,100)` in SCREEN 0. Knife **K-PS2** deletes the off-screen
+test outright — and that row stays **green**, along with every other SCREEN-0/1
+row in the class, because the mode gate above the hole answers with the same
+code and the same work area. Only the seven SCREEN-2 rows move (all to
+`<NO CAPTURE>`: an unchecked flood from an off-screen seed runs away).
+
+So the named row measures "C is not above A" and nothing else; the row that keeps
+the seed test alive is its SCREEN-2 twin, which nobody had named. **A filed row
+is a guess about which reading carries the evidence** — the same class of claim
+as a filed diagnosis (§1), and worth checking for the same reason.
+
+### 8.4 🔴 A knife cut a different routine, and the tag is what caught it
+
+The first K-PS1 runner replaced the first occurrence of
+
+    call    gfx_point_gate      ; BC/DE/HL preserved
+
+in `basic/graphics.asm`. That line occurs **three times**, and the first belongs
+to `gfx_plot_stmt` — the path `PSET` takes. The knife aimed at `PAINT` removed
+the work-area write from the probe's own **`PSET(7,4)` seed**.
+
+§7.1's lesson, from a new cause: there the cut site was genuinely shared, here it
+merely *looked* unique. The runner survived because it reads the **tag**, not the
+values: `n.zork` failed, the probe exited 2 with every row marked `....`, and the
+runner aborted with "the probe REFUSED TO SCORE" instead of reporting 29
+movements. Every cut is now scoped to the routine's own region with its
+occurrence count asserted — `replace(old, new, 1)` on a whole assembly file is a
+guess, and a DRY'd file is exactly where that guess is wrong.
+
+### 8.5 What K-PS3 could not separate, recorded as a MISS
+
+K-PS3 (PAINT gates but never writes the work area) had its RED/GREEN sets exact,
+but two per-row **value** predictions written with them were wrong: `p.ok2` and
+`p.edge2` were predicted to fall back to the box's own last point and both came
+back `<NO CAPTURE>`. `GXPOS/GYPOS` is not just this probe's instrument — it is
+how the seed is **marshalled to the tenant** (`spec-basic-graphics-g5.md` §6), so
+cutting the write cuts the argument passing too and the fill runs from stale
+cells. At a verb whose ABI *is* the work area, "cut the instrument" and "cut the
+subject" are the same cut.

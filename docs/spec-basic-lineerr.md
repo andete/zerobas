@@ -2,9 +2,15 @@
 
 Measurement notebook:
 [`lineerr-msx1-characterization.md`](lineerr-msx1-characterization.md).
-Gate: `make lineerr-acceptance` (108 rows × 3 sides). Landed 2026-08-11.
+Gate: `make lineerr-acceptance` (**124** rows × 3 sides). Landed 2026-08-11.
 Clean-room: observed screen output and published MSX system-variable reads only;
 both reference ROMs are black boxes.
+
+**§9 is a second landing on the same rule** — D-PAINTSEED, 2026-08-11, which
+measured the residual §8.2 filed and moved `PAINT`'s off-screen-seed test below
+the gate. §§1–8 are as they were the day D-LINERR landed, except for §8.2's
+closure marker; the row counts and gate timings in §6 are that day's and are
+superseded by §9's.
 
 ---
 
@@ -404,10 +410,13 @@ against garbage and outruns the window.
 
 1. **SCREEN 3 draws on both references** (`m.s3`, `v.pset3`) — a whole-feature
    gap, priced at nothing here (§6.4).
-2. **PAINT's off-screen-seed ERR 5 versus the mode ERR 5 is unordered.** Both
-   raise ERR 5, so the code cannot separate them and only the work area could —
-   and it is written between them. `ex_paint` keeps the seed test above the
-   gate, which is where it already was; nothing measured says that is right.
+2. ✅ **CLOSED 2026-08-11 by D-PAINTSEED — see §9.** *(as filed: "PAINT's
+   off-screen-seed ERR 5 versus the mode ERR 5 is unordered. Both raise ERR 5,
+   so the code cannot separate them and only the work area could — and it is
+   written between them. `ex_paint` keeps the seed test above the gate, which is
+   where it already was; nothing measured says that is right.")* The work area
+   answered: it moves **before** the refusal, so the seed test moved below the
+   gate. The residual's own framing was half wrong, and §9.2 says how.
 3. **DRAW was left alone.** `v.draw0` agrees on all three sides already. Its
    argument is a string parsed by a tenant, so "the mandatory arguments" means
    something different there; naming it out of scope with a green row behind it
@@ -418,3 +427,170 @@ against garbage and outruns the window.
    and rely on it. K-LE3's green `w.s2` is the row that shows the duplicate is
    load-bearing — a LINE that *draws* gets its work area from the tenant, which
    is exactly why only the rows that never reach the draw can see K-LE3's cut.
+
+---
+
+## 9. D-PAINTSEED — §8.2 measured, 2026-08-11
+
+Same probe, same notebook, same gate. `make lineerr-acceptance` is now **124
+rows × 3 sides, 122 scored + 2 deferred, 205 s**.
+
+### 9.1 The rule
+
+> **A `PAINT` whose seed is off the screen still moves the WORK AREA to that
+> seed — the RAW, UNCLIPPED, STEP-resolved point — and only then refuses it.**
+
+`GRPACX/GRPACY` *and* `GXPOS/GYPOS`, both halves, on both references, in the
+mode where `PAINT` is legal as well as in the modes where it is not. So the
+off-screen-seed test belongs **below** `gfx_point_gate`, not above it, and
+`ex_paint` was wrong for the whole life of G5.
+
+### 9.2 🔴 What is observable here, and the residual asked for the half that is not
+
+Name the three events:
+
+    A = the WORK-AREA write        B = the MODE gate        C = the SEED test
+
+§8.2 asked for **C versus B**, and that pair is **not observable through this
+instrument at all** — when a seed is both off-screen and in the wrong mode, B
+and C raise the same code and leave the same work area whichever runs first. It
+is not that no row was run; it is that no row *can* be. What is observable is
+**C versus A**, and that is what the fix rests on: A and B are one
+`call gfx_point_gate`, so putting C below A puts it below the gate.
+
+🔴 **And the row §8.2 named — `PAINT(300,100)` in SCREEN 0 — cannot see the seed
+test at all.** Knife **K-PS2** deletes the test outright and that row stays
+**GREEN**, because the mode gate sits above the hole and answers with the same
+code and the same work area. The row that carries the measurement is its
+**SCREEN-2 twin** `p.off2`, where the statement is legal and only C can fire.
+The residual named the row it could think of; the class is what found the one
+that works.
+
+The generalisation is the one the `n.pset0` control already paid for once in
+§2.2, pointed the other way: **a filed row is a guess about which reading
+carries the evidence, and it is as checkable as a filed diagnosis.** Sweeping
+the class costs 16 rows and settles which row was load-bearing; running the one
+named row would have produced the right answer for a reason that does not hold.
+
+### 9.3 The measurement — 16 rows × 3 sides, all 16 predictions EXACT
+
+The before column is the shipped `c0fc46b` tree (`basic-reloc 6db65a59`), and
+the knife that reinstates the order rebuilds **that same hash byte for byte**
+(§9.5), so "before" here is the artifact and not a memory of it.
+
+| row | statement | mode | both references | zerobas BEFORE |
+|---|---|---|---:|---:|
+| `p.off0` | `PAINT(300,100)` | 0 | ` 5 , 300 , 100 ` | ` 5 , 7 , 4 ` |
+| `p.off1` | `PAINT(300,100)` | 1 | ` 5 , 300 , 100 ` | ` 5 , 7 , 4 ` |
+| `p.off2` | `PAINT(300,100)` | **2** | ` 5 , 300 , 100 ` | ` 5 , 7 , 4 ` |
+| `p.oy0` / `p.oy2` | `PAINT(20,200)` | 0 / 2 | ` 5 , 20 , 200 ` | ` 5 , 7 , 4 ` |
+| `p.neg0` / `p.neg2` | `PAINT(-1,100)` | 0 / 2 | ` 5 , 65535 , 100 ` | ` 5 , 7 , 4 ` |
+| `p.negy2` | `PAINT(20,-1)` | 2 | ` 5 , 20 , 65535 ` | ` 5 , 7 , 4 ` |
+| `p.x256` | `PAINT(256,191)` | 2 | ` 5 , 256 , 191 ` | ` 5 , 7 , 4 ` |
+| `p.y192` | `PAINT(255,192)` | 2 | ` 5 , 255 , 192 ` | ` 5 , 7 , 4 ` |
+| `p.step0` | `PAINT STEP(300,100)` | 0 | ` 5 , 307 , 104 ` | ` 5 , 7 , 4 ` |
+| `w.paint0.off` / `w.paint2.off` | the same, read through **GXPOS** | 0 / 2 | ` 5 , 300 , 100 ` | ` 5 , 7 , 4 ` |
+| `p.ov0` | `PAINT(70000,100)` | 0 | ` 6 , 7 , 4 ` | ` 6 , 7 , 4 ` |
+| 🟢 `p.ok2` | box, then `PAINT(20,20)` | 2 | ` 0 , 20 , 20 ` | ` 0 , 20 , 20 ` |
+| 🟢 `p.edge2` | box, then `PAINT(255,191)` | 2 | ` 0 , 255 , 191 ` | ` 0 , 255 , 191 ` |
+
+**13 diverge, 3 agree — exactly as predicted, value for value, before the run.**
+
+Four things the class buys that the one named row does not:
+
+* the **domain** is swept, not sampled: `x>255`, `192≤y≤255` (a legal byte that
+  is still off-screen), and both negatives, which read back as `65535` — the
+  same raw-int16 storage §4.4 measured at `LINE`;
+* the **edge is pinned from both sides**. `p.edge2` proves `(255,191)` is
+  *accepted*, so `p.x256`/`p.y192` are an off-by-one and not "everything
+  refuses";
+* `p.step0` says the work area takes the **resolved** point (307,104), not the
+  literal — so the write is downstream of `parse_coord`'s STEP arithmetic;
+* `p.ov0` says the int16 **coercion still outranks both**, unchanged.
+
+🔴 **The SCREEN-3 face was deliberately NOT added.** Both references draw in
+SCREEN 3 (§6.4) but refuse an off-screen seed there too, so `PAINT(300,100)` in
+SCREEN 3 would be ERR 5 on all three sides — zerobas's `cp 2` agreeing with the
+references' seed test. A row that agrees for the wrong reason is worse than no
+row.
+
+### 9.4 The price — NET ZERO, and the header that outlived two edits
+
+Two instructions moved down. No byte changed anywhere: low **14 B**, page 1
+**74 B**, sub p0 **3604**, sub p1 **1483**, all four identical to `c0fc46b`.
+`sub.rom` and `disk.rom` hash unchanged (`5d7c837a` / `2c630d3d`), as a
+resident-only reorder must.
+
+🔴 **`ex_paint`'s header comment still described the code from before
+D-LINERR** — *"unlike PSET/LINE/CIRCLE, the work-area write is deferred to
+AFTER every field is parsed"* — with the body three lines below it already
+saying the opposite, in D-LINERR's own words. A header that survives the edit it
+describes is the `and $0F` shape of §5.1 in miniature: the next reader has two
+statements and no way to tell which is the measurement. Corrected here. And the
+"unlike" was doubly wrong: after both edits `PAINT` is `gfx_point_gate` at
+exactly the site the other four verbs use, and the only thing that distinguishes
+it is the extra reject underneath.
+
+### 9.5 Knives — 3 cuts, each run twice, 6 of 6 EXACT
+
+Union of 29 labels (every PAINT row, plus five non-PAINT witnesses and all four
+positive controls); baseline through `probe_report.parse()`; restore from a
+scratchpad snapshot in a `finally`; rebuild inside the loop.
+
+| | cut | RED / predicted | GREEN moved | r1 | r2 |
+|---|---|---|---|---|---|
+| **K-PS1** | the shipped order reinstated — the seed test back above the gate | 13/13 | 0/16 | EXACT | EXACT |
+| **K-PS2** | the off-screen test **deleted** (`call`+`jp` → 6 × `nop`) | 7/7 | 0/22 | EXACT | EXACT |
+| **K-PS3** | `gfx_point_gate` → `gfx_mode_gate`: PAINT gates, never moves the work area | 18/18 | 0/11 | EXACT | EXACT |
+
+**K-PS1 rebuilds `basic-reloc` to `6db65a59` — the shipped `c0fc46b` ROM, byte
+for byte.** That is the strongest single fact in this slice: it says the change
+is a pure reorder *and* that the knife reinstates the real defect rather than an
+approximation of it.
+
+**K-PS2 is the one worth reading.** Deleting the code under test reddens only
+the **seven SCREEN-2 rows**; the six SCREEN-0/1 rows — `p.off0` among them —
+stay green, because the mode gate above the hole answers identically. All seven
+go to `<NO CAPTURE>`: a `PAINT` let loose from an off-screen seed floods against
+garbage and outruns the window, the same way §7.3's `v.paint0` does under K-LE1.
+
+### 9.6 🔴 A knife cut a DIFFERENT ROUTINE, and the cut site LOOKED unique
+
+K-PS1's first runner did `src.replace("call gfx_point_gate ; BC/DE/HL preserved",
+…, 1)`. That exact line, comment and all, occurs **three times** in
+`basic/graphics.asm`, and the first is `gfx_plot_stmt`'s — the line **`PSET`**
+goes through. So the knife aimed at `ex_paint` silently removed the work-area
+write from the probe's own **`PSET(7,4)` seed**.
+
+This is §7.1's failure with a new cause. There, K-LE4 cut a leaf the seed
+genuinely shared; here nothing was shared — the cut site merely *looked* unique
+because it was distinctive-looking text. The tag guard is what caught it: the
+probe failed `n.zork`, exited 2, and the runner **read the tag** instead of
+diffing the values, so it aborted with *"the probe REFUSED TO SCORE"* rather
+than reporting 29 spectacular movements.
+
+The remedy is mechanical and belongs in the next runner: **scope every cut to
+the routine's own region and assert the occurrence count is exactly 1.**
+A `replace(old, new, 1)` on a whole file is a *guess* that the first match is
+the intended one, and an assembly file is precisely where that guess is wrong —
+shared idiom is what a DRY pass leaves behind, so the better the file, the more
+duplicate call lines it has.
+
+### 9.7 🔴 What K-PS3 cannot separate — recorded because the prediction MISSED
+
+K-PS3's RED/GREEN sets were exact, but two **per-row value** predictions written
+alongside them were wrong: `p.ok2` and `p.edge2` were predicted to read the
+box's own last point (` 0 , 10 , 10 ` and ` 0 , 250 , 186 `) and both came back
+`<NO CAPTURE>`.
+
+The reason is a fact about the ABI that the knife's framing ignored:
+`GXPOS/GYPOS` is not only *this probe's instrument*, it is **how the seed
+reaches the tenant** (`spec-basic-graphics-g5.md` §6). So cutting PAINT's
+work-area write does not cut the reading alone — it cuts the argument passing,
+and the fill runs from whatever those cells last held. **K-PS3 is therefore not
+a clean instrument-only knife at this verb**, and it cannot distinguish "the
+rows depend on the work-area write" from "the rows depend on PAINT being handed
+its seed". It is kept because that weaker statement is still worth having, and
+because the miss is the useful part: at a verb whose marshalling *is* the work
+area, "cut the instrument" and "cut the subject" are the same cut. K-PS1 and
+K-PS2 carry the falsification.
