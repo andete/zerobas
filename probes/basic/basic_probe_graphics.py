@@ -136,10 +136,54 @@ LINIT = "COLOR15,1,1:SCREEN2:CLS"
 
 
 def band_segs(xr, yr, color=False):
+    """Segments covering the character cells spanned by the pixel ranges.
+
+    🔴 CLAMPED to the plane (D-CIRCDOM). SCREEN 2 has 32 columns x 24 rows; an
+    unclamped band for a figure wider than the screen walks off the end of the
+    pattern plane and reads the NAME TABLE at $1800 as if it were pixels, which
+    diffs as a spectacular divergence with nothing to do with the drawing. The
+    clamp is a NO-OP for every row that predates it -- the widest was x 0..102,
+    y 0..102 (asserted by _assert_band_clamp_is_noop below)."""
     off = 0x2000 if color else 0
-    cols = range(xr[0] >> 3, (xr[1] >> 3) + 1)
-    rows = range(yr[0] >> 3, (yr[1] >> 3) + 1)
-    return [(off + cr * 256 + cc * 8, 8) for cr in rows for cc in cols]
+    c0, c1 = max(0, xr[0] >> 3), min(31, xr[1] >> 3)
+    rows = range(max(0, yr[0] >> 3), min(23, yr[1] >> 3) + 1)
+    if c1 < c0:
+        return []
+    # One segment per character ROW, not per cell: the cells of a row are
+    # contiguous, so this captures the IDENTICAL byte sequence in the identical
+    # order while turning a full-plane read from 768 reads into 24. Asserted
+    # equal to the per-cell form in _assert_band_clamp_is_noop.
+    return [(off + cr * 256 + c0 * 8, (c1 - c0 + 1) * 8) for cr in rows]
+
+
+def _assert_band_clamp_is_noop() -> None:
+    """The clamp AND the row-merge change how band_segs is written, so prove
+    they capture the same BYTES for every pre-existing row rather than asserting
+    it in a comment. Compares the flattened address sequence, which is what the
+    captured hex string is built from -- not the segment list, which the merge
+    deliberately changes."""
+    def old_addrs(xr, yr, color=False):
+        off = 0x2000 if color else 0
+        cols = range(xr[0] >> 3, (xr[1] >> 3) + 1)
+        rows = range(yr[0] >> 3, (yr[1] >> 3) + 1)
+        return [off + cr * 256 + cc * 8 + i
+                for cr in rows for cc in cols for i in range(8)]
+
+    def new_addrs(xr, yr, color=False):
+        return [a + i for a, n in band_segs(xr, yr, color) for i in range(n)]
+
+    for label, _, xr, yr, col in LINE_CASES:
+        assert new_addrs(xr, yr, col) == old_addrs(xr, yr, col), f"band moved {label}"
+    for label, _, (cx, cy), h, col in CIRCLE_CASES:
+        if label in _CIRCDOM_ROWS:          # the new rows are deliberately wider
+            continue
+        xr = (max(0, cx - h), cx + h)
+        yr = (max(0, cy - h), cy + h)
+        assert new_addrs(xr, yr, col) == old_addrs(xr, yr, col), f"band moved {label}"
+    # And the clamp must actually clamp: a full-screen band stays inside the
+    # 6144-byte pattern plane instead of reading the name table at $1800.
+    hi = max(a + n for a, n in band_segs((0, 256), (0, 224)))
+    assert hi == 6144, f"full-screen band ends at {hi}, not 6144"
 
 
 # label, ops, x-range, y-range, read-colour-plane?  (each a pinned §11 fact)
@@ -248,7 +292,40 @@ CIRCLE_CASES = [
     ("spoke_wedge2", "CIRCLE(60,60),15,15,-0.1,-1.57", (60, 60), 17, False),
     ("clash_circle", "CIRCLE(40,40),8,6", (40, 40), 10, True),   # colour plane
     ("r_zero",       "CIRCLE(50,50),0,15", (50, 50), 2, False),
+
+    # --- D-CIRCDOM: the radius/aspect domain, measured instead of assumed ------
+    # Until this slice the largest radius any GATE drew was 20 (circ_r20 /
+    # ell_a*), so the "blessed r<=255 domain" that four $8000 verdicts and five
+    # headers cited had never been tested anywhere near its claimed edge -- and
+    # it turned out not to exist: the radius is 0..32767 (basic/graphics.asm
+    # cp_req_int + sub/circleparse.asm cpt_after_r). These read the WHOLE plane
+    # (h=128 at the screen centre, clamped by band_segs) because the figures are
+    # wider than the screen. docs/circdom-msx1-characterization.md.
+    #
+    # The three ASPS rows are the D-CIRCDOM fix: the reference TRUNCATES
+    # aspect*256 where zerobas rounded half-up. Each is a one-pixel minor
+    # half-axis difference, and each was RED before cpt_asp_scale256 changed
+    # `call cpt_round` to `call flt_to_int16`.
+    ("ell_a03r128",  "CIRCLE(128,96),128,15,,,.3",  (128, 96), 128, False),
+    ("ell_a055r128", "CIRCLE(128,96),128,15,,,.55", (128, 96), 128, False),
+    ("ell_a01r255",  "CIRCLE(128,96),255,15,,,.1",  (128, 96), 128, False),
+    # Controls for the three above: aspect*256 is 179.2 and 64.0, so floor and
+    # round-half-up predict the SAME picture. They were GREEN before the fix and
+    # must stay green after it -- that is what makes the three DIFFs above
+    # attributable to the rounding rule and not to the rig or to the radius.
+    ("ell_a07r128",  "CIRCLE(128,96),128,15,,,.7",  (128, 96), 128, False),
+    ("ell_a025r128", "CIRCLE(128,96),128,15,,,.25", (128, 96), 128, False),
+    # The product-bound row. r=700 is 2.7x outside the retired "r<=255" claim and
+    # matches the reference BYTE FOR BYTE (421 px) because |v|*ASPS = 24500 fits
+    # in 16 bits. This is the row that says the bound is the PRODUCT, not the
+    # radius -- and it raises the gate's largest drawn radius from 20 to 700.
+    ("ell_r700a0137", "CIRCLE(128,96),700,15,,,.137", (128, 96), 128, False),
 ]
+
+# Rows added by D-CIRCDOM that deliberately span more than the screen, so the
+# band clamp is load-bearing for them rather than a no-op.
+_CIRCDOM_ROWS = {"ell_a03r128", "ell_a055r128", "ell_a01r255", "ell_a07r128",
+                 "ell_a025r128", "ell_r700a0137"}
 
 
 def phase_e() -> int:
@@ -1160,6 +1237,7 @@ def phase_q_teeth() -> int:
 
 
 def main() -> int:
+    _assert_band_clamp_is_noop()      # D-CIRCDOM: the clamp must not move old rows
     fails = (phase_a() + phase_b() + phase_c() + phase_d()
               + phase_e() + phase_f() + phase_g_rneg()
               + phase_h() + phase_i_aliasing() + phase_j()

@@ -175,6 +175,29 @@ one assumption doing four rows' work, and it is an *overflow* bound, not a
 somewhere; this sweep did not re-derive where. **Filed as a residual, not
 closed.**
 
+✅ **RESOLVED 2026-08-16 by D-CIRCDOM**
+([`docs/circdom-msx1-characterization.md`](circdom-msx1-characterization.md)).
+The verdicts in this table and in §4.1's last two rows **all hold**, but the
+`r <= 255` domain they cite **does not exist**. The radius is **0..32767**,
+enforced at `basic/graphics.asm` `cp_req_int` (`gfx_eval_int16`, ERR 6) and
+`sub/circleparse.asm` `cpt_after_r` (`jp m,cpt_err5`, ERR 5) — measured:
+`CIRCLE(128,96),1000` is accepted on both references. The correct per-site
+reasons, now written into the headers themselves:
+
+* `gfx_neg16_bc`/`gfx_neg16_de` and `gfx_circ_scale`'s `gfx_abs16` — bounded by
+  that int16 coercion (`|v| <= r <= 32767`), **not** by 255.
+* `gfx_circ_scale`'s re-negate, `gfx_circ_bvec_nudge`, `gcbv_y`, and
+  `gfx_cross_ge0`'s four `gfx_abs16` calls — bounded to **0..255 by
+  construction**, by a `ld l,h / ld h,0` byte truncation that needs no domain
+  claim at all and would survive the domain widening.
+
+🔴 The **overflow** half of the same comment is **false and reachable**:
+`|v|*ASPS >= 65536` from r=256 with the default ASPS, measured as real pixel
+divergence against VG-8020. Filed in `TODO.md`. 🔴 And the two halves are
+coupled — repairing the overflow makes `$8000` **reachable** at
+`gfx_circ_scale`'s re-negate (`(32767*256+128)>>8 = 32768`), so the `$8000` arm
+this sweep priced becomes necessary exactly when the overflow is fixed.
+
 ### 4.3 `abs16` (`basic/float-arith.asm:1598`) — the int-arithmetic magnitude
 
 `abs16($8000)` returns `HL=$8000, A=$80`, same fixed point. Four callers, and

@@ -1568,7 +1568,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       candidates — the arithmetic ones belong to `graphics-acceptance` and the
       float ones to `intarg`/`missing`.
 
-- [ ] ⚠️ **FOUR `$8000` VERDICTS REST ON ONE COMMENT, AND IT IS AN OVERFLOW
+- [x] ⚠️ **FOUR `$8000` VERDICTS REST ON ONE COMMENT, AND IT IS AN OVERFLOW
       BOUND, NOT A `$8000` BOUND.** Filed 2026-08-11 by D-NEG8K
       ([`docs/fixpoint8000-msx1-sweep.md`](docs/fixpoint8000-msx1-sweep.md)
       §4.2). `gfx_circ_scale`, `gfx_circ_bvec_nudge`, `gcbv_y` and
@@ -1588,6 +1588,67 @@ list. **When a slice lands, grep this list for what it just shipped.**
       💰 Not priced: if the domain holds, the cost is four citations and zero
       bytes; if it does not, the fix is a `$8000` arm per site and nobody has
       measured which sites would need one.
+      ✅ **CLOSED 2026-08-16 by D-CIRCDOM**
+      ([`docs/circdom-msx1-characterization.md`](docs/circdom-msx1-characterization.md)).
+      **THERE IS NO `r <= 255` DOMAIN AND THERE NEVER WAS.** The radius is
+      enforced at exactly two sites and it is **0..32767**:
+      [`basic/graphics.asm`](basic/graphics.asm) `cp_req_int` → `gfx_eval_int16`
+      (ERR 6 at `|r|>=32768`) and [`sub/circleparse.asm`](sub/circleparse.asm)
+      `cpt_after_r` `jp m,cpt_err5` (ERR 5 at `r<0`). `CIRCLE(128,96),1000` is
+      **K on both references**, measured. All five (six, with `gfx_cross_ge0`)
+      verdicts **HOLD — and not one of them for the stated reason**: three are
+      safe by a `ld l,h / ld h,0` **byte truncation** that needs no domain claim
+      at all, three by the int16 coercion, which is 128× looser than the bound
+      cited. Six citations, **0 B**, exactly as priced.
+      🔴 **THE RE-DERIVATION FOUND TWO DEFECTS THE `$8000` QUESTION WAS NOT
+      LOOKING FOR** — see the two entries below; the second is fixed, the first
+      is filed. 🔴 And they are coupled: site 3 (`gfx_circ_scale`'s re-negate) is
+      safe *because the multiply truncates*, so **fixing the overflow makes
+      `$8000` reachable there for the first time**.
+
+- [ ] 🔴 **THE PRODUCT BOUND IS REAL AND REACHABLE: `CIRCLE` WITH r ≥ 256
+      DRAWS PIXELS THE REFERENCE DOES NOT.** Filed 2026-08-16 by D-CIRCDOM
+      ([`docs/circdom-msx1-characterization.md`](docs/circdom-msx1-characterization.md)
+      §4.1). `gfx_mul16u` truncates at 16 bits, so `gfx_circ_scale`'s
+      `|v|*ASPS` wraps once the product reaches 65536 — first reachable at
+      **r=256 with the default ASPS=256**, and the radius domain allows 32767.
+      Measured on the whole pattern plane, VG-8020 vs zerobas: at
+      `CIRCLE(128,96),256` / `,300` / `,300,,,,.9` / `,900,,,,.3` /
+      `,1900,,,,.137` **the reference draws 0 px on screen and zerobas draws
+      31 / 512 / 376 / 512 / 512**. The control that settles which bound is
+      real: `CIRCLE(128,96),700,,,,.137` — r 2.7× outside the retired claim,
+      product 24500 — is **byte-identical, 421 px, sha1 `2f6257f6`**. Never
+      crashes (13/13 rows K on both). ⚠️ The old header said a large radius
+      "may mis-rasterise the **arc mask**"; `gfx_circ_scale` runs on **every
+      point of every circle**, arc or not, aspect or not — four of the six DIFF
+      rows are plain circles. ⚠️ `graphics-acceptance` owns this.
+      ⚠️ **WHOEVER FIXES THIS MUST ADD THE `$8000` ARM AT `gfx_circ_scale`'s
+      RE-NEGATE IN THE SAME SLICE**: an exact `(32767*256+128)>>8` is `32768` =
+      `$8000`, and the truncation being removed is the only thing that
+      currently makes that site unreachable (D-CIRCDOM §6).
+      💰 Not priced: needs a 24-bit product or an overflow arm in
+      `gfx_circ_scale` + `gfx_circ_bvec_mag` + `gfx_cross_ge0`, plus the
+      `$8000` arm. Sub page 1 had **1483 B** free at D-CIRCDOM. Nobody has
+      measured what the reference does at r ≥ 256 for a figure that is
+      *partly* on screen — every measured DIFF has the reference drawing
+      nothing at all, so the fix has no positive oracle yet. **That oracle is
+      the first thing to measure, not the fix.**
+
+- [ ] ⚠️ **`ASPS` TRUNCATION IS MEASURED FOR `aspect < 1` ONLY.** Filed
+      2026-08-16 by D-CIRCDOM (§5). The fix (`cpt_asp_scale256`:
+      `call cpt_round` → `call flt_to_int16`, **0 B**) is backed by 3/3
+      discriminating aspects and 2/2 byte-identical controls — **all of them
+      `aspect < 1`**, i.e. the `cpt_asp_le1` branch where `minor_ratio = aspect`
+      directly. The `aspect >= 1` branch computes `minor_ratio = 1/aspect`
+      through `fp_div` FIRST, and no measured row distinguishes floor from
+      round there: the gate's two such rows are `,,,2` (→ .5 → 128 exact) and
+      `,,,3` (→ 1/3 → 85.33, floor == round). A discriminating row exists —
+      `CIRCLE(128,96),128,15,,,1.7` gives `1/1.7*256 = 150.59`, floor 150 vs
+      round 151 — and it would also say whether `fp_div`'s own precision
+      matches the reference's, which is a *different* question the truncation
+      fix does not answer. ⚠️ `graphics-acceptance`.
+      💰 Zero bytes expected; the cost is two rows (one discriminator, one
+      control). If it diverges, the cause is `fp_div`, not the rounding.
 
 - [ ] ⚠️ **`fp_exp`/`fp_log`'s `$8000` REACHABILITY WAS REASONED, NOT
       MEASURED.** Filed 2026-08-11 by D-NEG8K (same doc, §4.4). Both take a

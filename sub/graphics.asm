@@ -904,12 +904,37 @@ gfx_box_stash:
 ; whole (the resident marshals two separate int16 cells, never subtracts
 ; them itself).
 ;
-; Bounded-domain note (mirrors spec §4.1's own 16-bit-clean domain, r<=255):
-; gfx_mul16u / gfx_cross_ge0 keep only the LOW 16 bits of each product, which
-; is exact as long as no factor pair exceeds 65535 -- guaranteed for the
-; blessed r<=255 domain (offsets and boundary-vector magnitudes both <=255).
-; A radius far outside that domain may mis-rasterise the arc mask (never
-; crash) -- the same documented residual as G3's off-screen-span perf note.
+; 🔴 BOUNDED-DOMAIN NOTE -- REWRITTEN BY D-CIRCDOM, WHICH MEASURED IT FALSE.
+; It used to read "guaranteed for the blessed r<=255 domain", and there is no
+; r<=255 anywhere in the tree. The radius domain is enforced at exactly two
+; sites and it is 0..32767:
+;
+;   UPPER  basic/graphics.asm cp_req_int -> gfx_eval_int16   ERR 6 for |r|>=32768
+;   LOWER  sub/circleparse.asm cpt_after_r `jp m,cpt_err5`   ERR 5 for r<0
+;
+; gfx_mul16u / gfx_cross_ge0 keep only the LOW 16 bits of each product, so the
+; real precondition is on the PRODUCT: |v|*ASPS <= 65535 with |v| <= r and
+; ASPS <= 256. That is REACHABLE and it is WRONG when reached -- measured, whole
+; pattern plane, VG-8020 vs zerobas (docs/circdom-msx1-characterization.md §4):
+;
+;   CIRCLE(128,96),256        product 65536  ref draws 0 px, zerobas draws 31
+;   CIRCLE(128,96),300        product 76800  ref draws 0 px, zerobas draws 512
+;   CIRCLE(128,96),300,,,,.9  product 69000  ref draws 0 px, zerobas draws 376
+;   CIRCLE(128,96),700,,,,.137 product 24500 IDENTICAL, 421 px, sha1 2f6257f6
+;
+; The last row is the one that settles which bound is real: r=700 is 2.7x
+; outside the retired "r<=255" claim and matches the reference BYTE FOR BYTE,
+; because its product fits. The bound is the PRODUCT, not the radius.
+;
+; ⚠️ The old note also understated its own blast radius: it said a large radius
+; "may mis-rasterise the ARC MASK", i.e. gfx_cross_ge0. But gfx_circ_scale runs
+; on EVERY point of EVERY circle -- arc or not, aspect or not -- so the same
+; truncation mis-places the whole figure, which is exactly what the four DIFF
+; rows above show. Never crashes; that half of the old note survived.
+; Filed, priced, NOT fixed here -- TODO.md "the product bound is real and
+; reachable". ⚠️ Fixing it would make `$8000` REACHABLE at gfx_circ_scale's
+; re-negate (v=32767, ASPS=256 -> exact (32767*256+128)>>8 = 32768 = $8000),
+; which the truncation is currently the only thing preventing.
 ; ===========================================================================
 gfx_circle_op:
                 ei                          ; interrupts LIVE for the (possibly long) draw
@@ -1060,16 +1085,23 @@ gfx_qtab_lookup:
                 ret
 
 ; ---------------------------------------------------------------------------
-; gfx_circ_bvec_mag -- IN: A = tab (0..255, unsigned QTAB value). Uses GFX_R
-; (radius, 0..255 domain). OUT: HL = round(r*tab/256) = (r*tab+128)>>8,
-; unsigned. The SAME round-half-up 8.8-style shape as gfx_circ_scale.
-; Clobbers A, BC, DE.
+; gfx_circ_bvec_mag -- IN: A = tab (0..255, unsigned QTAB value). Uses GFX_R.
+; OUT: HL = round(r*tab/256) = (r*tab+128)>>8, unsigned. The SAME round-half-up
+; 8.8-style shape as gfx_circ_scale. Clobbers A, BC, DE.
+; 🔴 D-CIRCDOM: the input line used to say "GFX_R (radius, 0..255 domain)". It
+; is 0..32767 -- see sub/circleparse.asm cpt_after_r for the two tests that are
+; the actual enforcement. The `bounded: <=255*255` on the mul below is false for
+; the same reason (r*tab overflows once r*tab >= 65536, i.e. r >= 258 at tab=255).
+; ⚠️ The OUTPUT is bounded 0..255 regardless, and by construction rather than by
+; domain: `ld l,h / ld h,0` keeps only the high byte of a 16-bit register. That
+; -- not any radius claim -- is why gfx_circ_bvec_nudge can never see $8000.
 ; ---------------------------------------------------------------------------
 gfx_circ_bvec_mag:
                 ld      e,a
                 ld      d,0
                 ld      hl,(GFX_R)
-                call    gfx_mul16u          ; HL := r * tab (bounded: <=255*255)
+                call    gfx_mul16u          ; HL := r * tab (TRUNCATED at 16 bits;
+                                            ; wraps for r >= 258 -- see the header)
                 ld      de,128
                 add     hl,de
                 ld      l,h
@@ -1081,6 +1113,13 @@ gfx_circ_bvec_mag:
 ; ($01/$FF/$00). OUT: HL = the signed, nudged component: 0 if sign=0;
 ; sign*HL if HL!=0; else +-1 (the near-cardinal nudge, spec §5.4/§5.2.1).
 ; Clobbers A, BC.
+; 🔴 $8000 REACHABILITY (D-CIRCDOM; docs/fixpoint8000-msx1-sweep.md §4.2 used to
+; charge this to "the blessed r<=255 domain", which does not exist). The negate
+; below cannot see $8000 for a reason that needs NO domain claim at all: the only
+; caller is gfx_circ_bvec, and the only two values it passes are
+; gfx_circ_bvec_mag's output -- 0..255, bounded by its `ld l,h / ld h,0` byte
+; truncation -- and the literal 1 written by gcbn_zero's sibling path below.
+; A magnitude of $8000 is not representable at this input however large r gets.
 ; ---------------------------------------------------------------------------
 gfx_circ_bvec_nudge:
                 ld      a,(GFX_CS_T1)
@@ -1163,6 +1202,14 @@ gcbv_x_store:
                 jr      nz,gcbv_y_scaled
                 call    gfx_circ_scale      ; Y is minor iff ASPMAJ=0 (incl. default)
 gcbv_y_scaled:
+                ; 🔴 $8000 REACHABILITY (D-CIRCDOM): this negate's input is either
+                ; gfx_circ_bvec_nudge's output (-255..255) or that value through
+                ; gfx_circ_scale (+-0..255) -- BOTH bounded to a byte magnitude by
+                ; the `ld l,h / ld h,0` in gfx_circ_bvec_mag and gfx_circ_scale, not
+                ; by any radius claim. |input| <= 255, so $8000 is unreachable here
+                ; for every r in the real 0..32767 domain (sub/circleparse.asm
+                ; cpt_after_r). Retires one of the four verdicts that used to rest
+                ; on gfx_circ_scale's "blessed r<=255" comment.
                 xor     a                   ; screen convention: Vy = -(sin component)
                 sub     l
                 ld      l,a
@@ -1360,9 +1407,36 @@ gcep_test:
 
 ; ---------------------------------------------------------------------------
 ; gfx_circ_scale -- IN: HL=v (signed raw offset). OUT: HL = sign(v) *
-; ((|v|*GFX_ASPS+128)>>8), the 8.8 minor scale (spec §4.2). Bounded-domain:
-; |v|*ASPS assumed <=65535 (true for |v|<=255, ASPS<=256 -- the blessed
-; r<=255 domain). Clobbers A, BC, DE.
+; ((|v|*GFX_ASPS+128)>>8), the 8.8 minor scale (spec §4.2). Clobbers A, BC, DE.
+;
+; 🔴 THE "BOUNDED-DOMAIN" LINE THAT USED TO BE HERE IS RETIRED (D-CIRCDOM). It
+; read "|v|*ASPS assumed <=65535 (true for |v|<=255, ASPS<=256 -- the blessed
+; r<=255 domain)", and docs/fixpoint8000-msx1-sweep.md §4.2 rested FOUR $8000
+; verdicts on it. One comment, four rows, and it stated an OVERFLOW bound while
+; being cited for a $8000 bound. Both halves are now separated and sited:
+;
+;  * DOMAIN. There is no r<=255 rule anywhere. The radius is 0..32767, enforced
+;    at basic/graphics.asm cp_req_int (gfx_eval_int16, ERR 6 at |r|>=32768) and
+;    sub/circleparse.asm cpt_after_r (`jp m,cpt_err5`, ERR 5 at r<0). ASPS is
+;    0..256 by construction (minor_ratio = aspect if aspect<1 else 1/aspect).
+;
+;  * $8000 AT gfx_abs16 (the call below). Input is GFX_PX/GFX_PY = +-GFX_QX /
+;    +-GFX_QY from gco_emit8, and gfx_circ_init seeds QY=r with QY only ever
+;    decrementing and QX climbing while QX<=QY -- so |v| <= r <= 32767.
+;    $8000 UNREACHABLE, by the int16 coercion above, NOT by 255.
+;
+;  * $8000 AT THE RE-NEGATE (the `xor a / sub l / ...` tail below). Input is the
+;    value after
+;    `ld l,h / ld h,0`, i.e. 0..255 BY CONSTRUCTION -- no domain claim needed,
+;    and true even where the multiply wraps. $8000 UNREACHABLE.
+;
+;  * OVERFLOW. |v|*ASPS <= 65535 is FALSE and reachable: gfx_mul16u truncates at
+;    16 bits, so any |v|*ASPS >= 65536 wraps and the point is mis-placed. First
+;    reachable at r=256 with the default ASPS=256. MEASURED against VG-8020 in
+;    docs/circdom-msx1-characterization.md §4 -- the reference draws nothing on
+;    screen at these radii and zerobas draws spurious pixels. Filed in TODO.md,
+;    NOT fixed here; see gfx_circle_op's header for the row table and for why
+;    fixing it would make $8000 reachable at the re-negate for the first time.
 ; ---------------------------------------------------------------------------
 gfx_circ_scale:
                 call    gfx_abs16           ; HL=|v|, A=sign ($01 pos / $FF neg)
@@ -1377,7 +1451,9 @@ gfx_circ_scale:
                 pop     af
                 cp      $01
                 ret     z                   ; was non-negative -> done
-                ; negate HL (own-design two's-complement negate, gfx_abs16's idiom)
+                ; negate HL (own-design two's-complement negate, gfx_abs16's idiom).
+                ; HL is 0..255 here BY CONSTRUCTION (the `ld l,h / ld h,0` two lines
+                ; up), so this negate cannot meet $8000 -- D-CIRCDOM, see header.
                 xor     a
                 sub     l
                 ld      l,a
@@ -1456,6 +1532,13 @@ gck_reject:
 ; iff cross(A,B)>=0. Sign-magnitude decomposition (gfx_abs16 + gfx_mul16u,
 ; own 16x16->16 unsigned multiply) -- bounded-domain (see this section's
 ; header). Clobbers AF, BC, DE, HL.
+; 🔴 D-CIRCDOM: the four gfx_abs16 calls below are the fifth group the retired
+; "blessed r<=255" comment was covering (sweep §4.1's last table row). Verdict
+; unchanged, reason restated: GFX_CS_AX/AY/BX/BY hold boundary-vector and point
+; components, every one of which came through gfx_circ_bvec_nudge or
+; gfx_circ_scale and is therefore |value| <= 255 BY CONSTRUCTION. $8000 cannot
+; reach an abs16 here. The PRODUCTS are the reachable-overflow half, unchanged
+; and filed -- see this section's header.
 ; ---------------------------------------------------------------------------
 gfx_cross_ge0:
                 ; term1 = |Ax|*|By|, sign1 = sign(Ax) xor sign(By)
@@ -1546,6 +1629,17 @@ gmu_skip:
 ; ---------------------------------------------------------------------------
 ; gfx_neg16_bc / gfx_neg16_de -- two's-complement negate BC / DE in place
 ; (gfx_abs16's own idiom). Clobbers A.
+; 🔴 $8000 REACHABILITY (D-CIRCDOM). docs/fixpoint8000-msx1-sweep.md §4.2 marked
+; these "out of domain, callers are the circle/arc vectors, same bound" -- citing
+; gfx_circ_scale's "blessed r<=255" comment, which never existed as a rule. The
+; verdict stands; the reason is different and is worth stating because it is the
+; ONLY one of the five sites bounded by the radius rather than by a truncation:
+; the ONLY callers are gco_emit8's eight mirror emits, which pass GFX_QX / GFX_QY
+; and nothing else. gfx_circ_init seeds QY=r, gfx_circ_next only ever decrements
+; QY and increments QX, and gco_loop stops once QX>QY -- so both are in -1..r,
+; and r is 0..32767 (sub/circleparse.asm cpt_after_r). The largest magnitude that
+; can arrive here is $7FFF, one short of the fixed point. If the radius domain
+; ever widens, THIS is the site that needs a $8000 arm first.
 ; ---------------------------------------------------------------------------
 gfx_neg16_bc:
                 xor     a

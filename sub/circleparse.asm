@@ -74,6 +74,17 @@ cpt_after_center:
                 ret
 
 ; --- after r: r>=0 check, defaults, then the optional ",c" -----------------
+; 🔴 THIS IS THE RADIUS DOMAIN, AND IT IS 0..32767 -- NOT 0..255 (D-CIRCDOM).
+; Five `$8000` verdicts in docs/fixpoint8000-msx1-sweep.md §4.2 and four
+; headers in sub/graphics.asm used to cite a "blessed r<=255 domain" that is
+; enforced NOWHERE. The actual enforcement is exactly two tests, in two files:
+;
+;   UPPER  basic/graphics.asm cp_req_int -> gfx_eval_int16   ERR 6 for |r|>=32768
+;   LOWER  the `jp m,cpt_err5` three lines below              ERR 5 for r<0
+;
+; so GFX_R is any value in 0..32767 and `CIRCLE(128,96),1000` is accepted (K on
+; BOTH references, measured -- circdom §4 phase S). Cite THIS pair, not "r<=255",
+; anywhere a graphics routine needs the radius domain.
 cpt_after_r:
                 ld      hl,(GFX_DVAL)       ; r
                 ld      a,h
@@ -305,14 +316,42 @@ cpt_angle_from_arga:
                 ld      (GFX_ARCF),a        ; actually GIVEN -> arc mode
                 ret
 
-; cpt_asp_scale256: S := round(minor_ratio*256) -> GFX_ASPS (verbatim). -------
+; cpt_asp_scale256: S := TRUNC(minor_ratio*256) -> GFX_ASPS. -----------------
+; 🔴 D-CIRCDOM: this used to say "round(...)" and to `call cpt_round`, and the
+; reference TRUNCATES. Measured (docs/circdom-msx1-characterization.md §5), all
+; at CIRCLE(128,96),r -- whole-pattern-plane differential, minor half-axis read
+; off the bounding box:
+;
+;   aspect  aspect*256  floor  round  VG-8020  zerobas-before
+;     .3       76.80      76     77     76         77          <- DIFF
+;     .55     140.80     140    141    140        141          <- DIFF
+;     .1       25.60      25     26     25         26          <- DIFF (r=255)
+;     .7      179.20     179    179    179        179          control, byte-identical
+;     .25      64.00      64     64     64         64          control, byte-identical
+;
+; 3/3 discriminating aspects say TRUNCATE; 2/2 controls (where floor==round, so
+; both models predict the SAME picture) came back byte-identical, which is what
+; makes the 3 DIFFs attributable to the rounding and not to the rig.
+;
+; ⚠️ WHY NOT FIX `cpt_round` ITSELF: it is shared with cpt_boundary_prep, whose
+; brad = round(|angle|*128/pi) is separately pinned (spec §5.2.1 REVISED) and
+; gated GREEN by the arc rows. Only the ASPS caller truncates. The swap is
+; `call cpt_round` -> `call flt_to_int16`, the very routine cpt_round itself
+; tail-uses, so it is BYTE-NEUTRAL (0 B) -- and safe unsigned because
+; cpt_after_aspect has already refused aspect<0 and 1/aspect is positive.
+;
+; ⚠️ THE CORPUS COULD NOT SEE THIS: every aspect the tree had ever drawn
+; (.25 -> 64, .5 -> 128, 2 -> 128, 3 -> 85.33, .01/1/100 via dexp5-pin) has
+; floor == round. .3 is the first literal in the tree's history where the two
+; models come apart -- and it needs r >= 128 for the 1/256 to reach a whole
+; pixel, while the gate's largest drawn radius was 20.
 cpt_asp_scale256:
                 ld      hl,ARGB
                 xor     a
                 ld      de,256
                 call    widen_uint_to       ; ARGB := 256.0
                 call    fp_mul              ; ARGA/FAC := minor_ratio*256
-                call    cpt_round
+                call    flt_to_int16        ; DE := TRUNC(...) -- not cpt_round
                 ld      (GFX_ASPS),de
                 ret
 
