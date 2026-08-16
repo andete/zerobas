@@ -1634,7 +1634,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       nothing at all, so the fix has no positive oracle yet. **That oracle is
       the first thing to measure, not the fix.**
 
-- [ ] ⚠️ **`ASPS` TRUNCATION IS MEASURED FOR `aspect < 1` ONLY.** Filed
+- [x] ⚠️ **`ASPS` TRUNCATION IS MEASURED FOR `aspect < 1` ONLY.** Filed
       2026-08-16 by D-CIRCDOM (§5). The fix (`cpt_asp_scale256`:
       `call cpt_round` → `call flt_to_int16`, **0 B**) is backed by 3/3
       discriminating aspects and 2/2 byte-identical controls — **all of them
@@ -1649,6 +1649,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       fix does not answer. ⚠️ `graphics-acceptance`.
       💰 Zero bytes expected; the cost is two rows (one discriminator, one
       control). If it diverges, the cause is `fp_div`, not the rounding.
+      ✅ **CLOSED 2026-08-16 by D-CIRCDOM round 3** (same slice, same day;
+      §5.1 of the characterization). **0/5 divergences, prediction EXACT.**
+      Three independent discriminators — `1.7`→150.59, `1.3`→196.92,
+      `1.1`→232.73 — all measured **floor** (x-half **75 / 98 / 116**, where
+      round-half-up gives 76 / 99 / 117), with two exact controls (`2`, `4`)
+      byte-identical. So the truncation is right on the `aspect >= 1` branch
+      too, **and** `fp_div`'s precision matches the reference at three
+      non-trivial reciprocals — the second claim was riding along unmeasured
+      and is now pinned. 🔴 It also measures something no earlier row could:
+      the **pre-fix tree was wrong on this branch as well**, which K-CD1
+      confirms by reddening these three alongside the three from §5. Five rows
+      added to `graphics-acceptance`, **0 B**.
 
 - [ ] ⚠️ **`fp_exp`/`fp_log`'s `$8000` REACHABILITY WAS REASONED, NOT
       MEASURED.** Filed 2026-08-11 by D-NEG8K (same doc, §4.4). Both take a

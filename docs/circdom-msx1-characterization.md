@@ -189,6 +189,37 @@ what makes the three DIFFs attributable to the rounding rule rather than to the
 rig, the radius, or the clip. Two data points would have been an inference;
 five rows with two controls is a measurement.
 
+### 5.1 Round 3 — the other branch, because the fix shipped where the rule was never read
+
+The five rows above are **all `aspect < 1`**: the `cpt_asp_le1` branch, where
+`minor_ratio = aspect` lands in `ARGA` directly. `aspect >= 1` reaches the *same*
+`cpt_asp_scale256` call, but only after `minor_ratio = 1/aspect` through
+`fp_div` — and the gate's two such rows were `,,,2` (1/2 → 128.0) and `,,,3`
+(1/3 → 85.33), **both `floor == round`**. So the fix went in at a caller where
+its rule had never been read. Filed as a residual, then measured
+([`scratchpad/circdom_char3.py`](../scratchpad/circdom_char3.py)) — with
+`ASPMAJ=1` the scaled axis is **X**, so the half-axis read off the box is
+horizontal:
+
+| row | aspect | `1/a*256` | floor | round | VG-8020 | zerobas | |
+|---|---|---|---|---|---|---|---|
+| `a17_r128` | 1.7 | 150.59 | 150 → **75** | 151 → 76 | **75** | **75** | agree |
+| `a13_r128` | 1.3 | 196.92 | 196 → **98** | 197 → 99 | **98** | **98** | agree |
+| `a11_r128` | 1.1 | 232.73 | 232 → **116** | 233 → 117 | **116** | **116** | agree |
+| `a2_r128` | 2 | 128.00 | 128 → 64 | 128 → 64 | 64 | 64 | control, sha1 identical |
+| `a4_r128` | 4 | 64.00 | 64 → 32 | 64 → 32 | 32 | 32 | control, sha1 identical |
+
+**0/5 divergences; prediction EXACT.** Three independent discriminators all land
+on **floor**, so the truncation is right on this branch too — **and** `fp_div`'s
+precision matches the reference at three non-trivial reciprocals, which was a
+separate claim riding along and is now measured rather than assumed.
+
+These rows also say something about the *pre-fix* tree that no earlier row
+could: round-half-up would have given 76 / 99 / 117, so **zerobas was wrong on
+the `aspect >= 1` branch as well**, and had been all along. That is a
+measurement, not an inference — K-CD1 reverts the fix and reddens exactly these
+three alongside the three from §5 (see §9).
+
 **Why the corpus could not see it.** Every aspect the tree had ever drawn has
 `floor == round`: `.25`→64, `.5`→128, `2`→1/2→128, `3`→1/3→85.33, and
 `dexp5-pin`'s `.01`/`1`/`100`. `.3` is the first value in the tree's history
@@ -251,13 +282,15 @@ moment the overflow it was conflated with is repaired.** Recorded in
 
 ## §7 Gate rows
 
-Six rows added to `CIRCLE_CASES` / phase E of
+Eleven rows added to `CIRCLE_CASES` / phase E of
 [`probes/basic/basic_probe_graphics.py`](../probes/basic/basic_probe_graphics.py):
 `ell_a03r128`, `ell_a055r128`, `ell_a01r255` (the three §5 DIFFs, now green),
 `ell_a07r128`, `ell_a025r128` (the two §5 controls, green before *and* after),
 and `ell_r700a0137` (the §4.1 product-bound row).
 
-**This raises the gate's largest drawn radius from 20 to 700.**
+and five more from §5.1 covering the `aspect >= 1` branch: `ell_a17r128`, `ell_a13r128`, `ell_a11r128` (discriminators) and `ell_a2r128`, `ell_a4r128` (exact controls).
+
+**This raises the gate's largest drawn radius from 20 to 700**, and takes `graphics-acceptance` from 290 to **301 PASS / 0 FAIL**.
 
 `band_segs` gained a clamp to the 32×24 plane: an unclamped band for a figure
 wider than the screen walks off the pattern plane and reads the **name table**
@@ -361,3 +394,40 @@ The consequence is in the slice's favour: K-CD3 is a **stronger** knife than
 designed. It shows that *every* aspect row in the gate, old and new, is a live
 detector of `gfx_circ_scale`'s rounding constant — which is more than
 `ell_r700a0137` was recruited to prove.
+
+### §9A Round 3 — all four re-run, because the row set grew
+
+Adding five rows invalidates every prediction written against the old set, so
+the whole knife battery was re-run rather than just the one that changed.
+Baseline 301 PASS / 0 FAIL (294 keys after the label collapse noted above).
+
+| knife | predicted | measured | |
+|---|---|---|---|
+| **K-CD1** | **6 rows** — three per branch of `cpt_asp_scale256` | exactly those 6: `ell_a03r128`, `ell_a055r128`, `ell_a01r255`, `ell_a17r128`, `ell_a13r128`, `ell_a11r128` — footer `FAIL (6)` | **EXACT** |
+| **K-CD2** | 15 rows (hand-typed) | **16** — `missing = []`, `extra = ['ell_a2r128']` | 🔴 **MISS by one** |
+| **K-CD3** | the round-2 measured set (11), round-3 rows deliberately excluded | 16 — the round-2 half reproduced **exactly**, and all five round-3 rows moved | **not a prediction** — see below |
+| **K-CD4** | abort in the guard, no footer | `AssertionError`, no footer, rc 1 | **EXACT** |
+
+**K-CD1 again rebuilt `sub.rom` to `c2292117`, the pre-slice hash, byte for
+byte** — and this time it carries the round-3 finding: the three `aspect >= 1`
+rows go red under the reverted fix, so **the pre-fix tree was wrong on that
+branch too**. That was an inference in §5.1 and is a measurement here.
+
+🔴 **K-CD2's miss has no modelling content, and that is the lesson.** The model
+— *"every row carrying an aspect field moves"* — is right, and the 16 rows
+measured are **exactly** the set derived mechanically from `CIRCLE_CASES`. What
+failed was that the prediction was a **hand-typed list that I extended by hand**
+when the five round-3 rows landed, and I dropped `ell_a2r128` while remembering
+`ell_a4r128`. A hand-maintained prediction set is a pure transcription risk, and
+it fails **in the direction that looks like a real finding** — an "extra" row
+reads as a discovery when it is a typo. K-CD2's prediction is now **derived from
+the probe** (`_aspect_rows()`), so adding a gate row can no longer leave it
+stale. The miss stands as scored; the runner was fixed for the next reader
+rather than re-run until the prediction looked right.
+
+⚠️ **K-CD3 should not be scored EXACT or MISS at all.** Its prediction was
+deliberately the round-2 *measurement* copied forward — a regression check on a
+known answer — with the round-3 rows left out so that whatever they did was new
+information. They all moved. The runner's binary EXACT/MISS verdict has no
+meaning for a knife of that shape and reported "MISS" for a knife that did
+exactly what it was designed to do; it needs a third state.

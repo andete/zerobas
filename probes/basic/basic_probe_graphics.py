@@ -320,12 +320,33 @@ CIRCLE_CASES = [
     # in 16 bits. This is the row that says the bound is the PRODUCT, not the
     # radius -- and it raises the gate's largest drawn radius from 20 to 700.
     ("ell_r700a0137", "CIRCLE(128,96),700,15,,,.137", (128, 96), 128, False),
+
+    # --- D-CIRCDOM round 3: the OTHER branch of cpt_asp_scale256 --------------
+    # The truncation fix landed on evidence that was entirely `aspect < 1`
+    # (cpt_asp_le1, where minor_ratio = aspect directly). `aspect >= 1` reaches
+    # the same call only after minor_ratio = 1/aspect through fp_div, and the
+    # gate's two such rows were ,,,2 (1/2 -> 128.0) and ,,,3 (1/3 -> 85.33),
+    # both floor == round. The rule shipped at a caller where it was never read.
+    # These three discriminate (1/1.7 -> 150.59, 1/1.3 -> 196.92, 1/1.1 ->
+    # 232.73) and all three measured FLOOR: x-half 75/98/116, where round-half-up
+    # gives 76/99/117. They pin TWO things at once -- the truncation on this
+    # branch, and that fp_div's precision matches the reference at three
+    # non-trivial reciprocals. ASPMAJ=1 here, so the scaled axis is X, not Y.
+    ("ell_a17r128", "CIRCLE(128,96),128,15,,,1.7", (128, 96), 128, False),
+    ("ell_a13r128", "CIRCLE(128,96),128,15,,,1.3", (128, 96), 128, False),
+    ("ell_a11r128", "CIRCLE(128,96),128,15,,,1.1", (128, 96), 128, False),
+    # Controls: 1/2 and 1/4 are exact, so floor and round predict the SAME
+    # picture and a pass cannot come from the rounding rule.
+    ("ell_a2r128",  "CIRCLE(128,96),128,15,,,2",   (128, 96), 128, False),
+    ("ell_a4r128",  "CIRCLE(128,96),128,15,,,4",   (128, 96), 128, False),
 ]
 
 # Rows added by D-CIRCDOM that deliberately span more than the screen, so the
 # band clamp is load-bearing for them rather than a no-op.
 _CIRCDOM_ROWS = {"ell_a03r128", "ell_a055r128", "ell_a01r255", "ell_a07r128",
-                 "ell_a025r128", "ell_r700a0137"}
+                 "ell_a025r128", "ell_r700a0137",
+                 "ell_a17r128", "ell_a13r128", "ell_a11r128",
+                 "ell_a2r128", "ell_a4r128"}
 
 
 def phase_e() -> int:

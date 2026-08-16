@@ -40,23 +40,49 @@ POST_SLICE_SUB_SHA = "8161c1a2"    # sub.rom with the slice applied
 ROW = re.compile(r"^\s*(PASS|FAIL)\s+(\S+)")
 FOOTER = re.compile(r"^graphics-acceptance:\s+(PASS|FAIL \((\d+)\))\s*$", re.M)
 
+def _aspect_rows() -> set:
+    """Every CIRCLE_CASES row that carries an aspect field, read off the probe
+    itself. Derived so that adding a row to the gate cannot silently leave a
+    knife's prediction stale -- see the K-CD2 note below for the miss that
+    motivated this."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_gfxprobe", PROBE)
+    mod = importlib.util.module_from_spec(spec)
+    sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
+    spec.loader.exec_module(mod)
+    return {lbl for lbl, ops, _, _, _ in mod.CIRCLE_CASES
+            if len(ops.split(",")) >= 7 and ops.split(",")[-1].strip()}
+
+
 # label -> (file, find, replace, predicted FAIL labels, note)
 KNIVES = {
     "K-CD1": (
         CIRCLEPARSE,
         "                call    flt_to_int16        ; DE := TRUNC(...) -- not cpt_round",
         "                call    cpt_round",
-        {"ell_a03r128", "ell_a055r128", "ell_a01r255"},
+        {"ell_a03r128", "ell_a055r128", "ell_a01r255",
+         "ell_a17r128", "ell_a13r128", "ell_a11r128"},
         "the exact inverse of the slice's only functional edit: ASPS rounds "
-        "half-up again. Must also rebuild sub.rom to the PRE-SLICE hash.",
+        "half-up again. Must also rebuild sub.rom to the PRE-SLICE hash. "
+        "ROUND 3: now predicts SIX rows, three per branch of cpt_asp_scale256 "
+        "-- and the three aspect>=1 rows going red is the MEASUREMENT that the "
+        "pre-fix tree was wrong on that branch too, not an inference from it. "
+        "The four controls (ell_a07r128, ell_a025r128, ell_a2r128, ell_a4r128) "
+        "must stay GREEN: floor == round at their aspects.",
     ),
     "K-CD2": (
         CIRCLEPARSE,
         "                call    flt_to_int16        ; DE := TRUNC(...) -- not cpt_round",
         "                ld      de,256",
-        {"ell_a03r128", "ell_a055r128", "ell_a01r255", "ell_a07r128",
-         "ell_a025r128", "ell_r700a0137",
-         "ell_a025", "ell_a05", "ell_a2", "ell_a3", "ell_a05r15"},
+        # 🔴 DERIVED, NOT HAND-LISTED -- and that is a landed defect, not tidiness.
+        # Round 3 scored this knife a MISS by exactly one row: the prediction was
+        # a hand-typed set that I extended by hand when five rows were added, and
+        # I dropped `ell_a2r128` while remembering `ell_a4r128`. The MODEL was
+        # right -- "every row carrying an aspect field moves" -- and the measured
+        # 16 is precisely the derived set below. A prediction set maintained by
+        # hand is a transcription risk with no modelling content, and it fails
+        # silently in the direction that looks like a real finding.
+        _aspect_rows(),
         "pin ASPS at 256 (no scaling at all). Falsifies that these rows read "
         "GFX_ASPS: every aspect row in the gate, old and new, must move.",
     ),
@@ -68,10 +94,18 @@ KNIVES = {
         "                ld      de,0\n                add     hl,de\n"
         "                ld      l,h\n                ld      h,0                 "
         "; HL = (|v|*ASPS+128) >> 8",
-        {"ell_a3", "ell_a05r15", "ell_a01r255", "ell_a07r128", "ell_r700a0137"},
-        "gfx_circ_scale rounds down instead of half-up. Hand-computed per row: "
-        "only the five whose (v*ASPS)>>8 differs from (v*ASPS+128)>>8 may move -- "
-        "so this is a prediction about WHICH rows, not just how many.",
+        {"ell_a3", "ell_a05r15", "ell_a01r255", "ell_a07r128", "ell_r700a0137",
+         "ell_a025", "ell_a025r128", "ell_a03r128", "ell_a05", "ell_a055r128",
+         "ell_a2"},   # <- ROUND 2 MEASURED, not re-derived: see the note
+        "gfx_circ_scale rounds down instead of half-up. ROUND 2 SCORED THIS A "
+        "MISS: the hand-computed prediction was five rows and eleven moved, a "
+        "strict superset, because it was computed from the BOUNDING BOX while "
+        "the gate compares the whole 6144-byte plane. The set above is therefore "
+        "the round-2 MEASUREMENT copied forward, NOT a re-derivation -- it is a "
+        "regression check on a known answer, and it must not be read as a "
+        "second successful prediction. The round-3 rows are deliberately left "
+        "OUT of it, so they are the only genuinely predictive part: whatever "
+        "they do is new information.",
     ),
     "K-CD4": (
         PROBE,
