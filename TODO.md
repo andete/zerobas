@@ -1634,6 +1634,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       nothing at all, so the fix has no positive oracle yet. **That oracle is
       the first thing to measure, not the fix.**
 
+- [ ] 🔴 **TWO KNIFE-RUNNER DEFECTS, BOTH FOUND BY READING THE RUNNER'S OWN
+      OUTPUT RATHER THAN THE TREE'S.** Filed 2026-08-16 by D-CIRCDOM
+      ([`docs/circdom-msx1-characterization.md`](docs/circdom-msx1-characterization.md)
+      §9 and §9A). Neither is specific to that slice; both are shapes the
+      *next* runner will reproduce, and `docs/dev-workflow.md` §Knives is where
+      they belong once confirmed a second time.
+      **(a) ROWS KEYED BY LABEL COLLAPSE DUPLICATES.** The runner reported
+      `rows=289` where the probe printed **296** `PASS` lines, because it keyed
+      a dict on the row label and five labels repeat across phases (`Philips`,
+      `C-BIOS`, `after`, `colour16_err`, `scr0_err`). **A move confined to one
+      instance of a duplicated label is silently under-reported** — the knife
+      scores CUT NOTHING and the reader concludes "missing row". Key on
+      `(phase, index, label)`. ⚠️ The `>= 250 rows` short-report guard is the
+      only reason the discrepancy was visible at all; a runner without one
+      never prints the number to notice.
+      **(b) THE SCORER HAS NO STATE FOR A REGRESSION-CHECK KNIFE.** K-CD3's
+      round-3 prediction was deliberately the round-2 **measurement copied
+      forward** — a check on a known answer — and the binary EXACT/MISS verdict
+      reported **MISS** for a knife doing exactly what it was designed to do.
+      A copied-forward set is honest only if labelled, and the scorer needs a
+      third state (`REGRESSION`) so the label survives into the scorecard.
+      ⚠️ Related but distinct, and already fixed in that runner: **a
+      hand-maintained prediction set is a pure transcription risk** — K-CD2
+      missed by one row with **zero modelling content** because a hand-typed
+      list was extended by hand. Derive prediction sets from the probe.
+      💰 Zero bytes (scratchpad tooling only). The cost is one runner rewrite,
+      and it is worth doing at the START of the next knife-bearing slice rather
+      than after, since (a) can turn a real finding into a silent pass.
+
 - [x] ⚠️ **`ASPS` TRUNCATION IS MEASURED FOR `aspect < 1` ONLY.** Filed
       2026-08-16 by D-CIRCDOM (§5). The fix (`cpt_asp_scale256`:
       `call cpt_round` → `call flt_to_int16`, **0 B**) is backed by 3/3
