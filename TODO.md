@@ -1708,7 +1708,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       string, including the "does this row draw anything on screen at all"
       filter — nothing is hand-typed.
 
-- [ ] 🔴 **THE ARC MASK DIVERGES AT LARGE RADII, AND IT IS NOT THE PRODUCT
+- [x] 🔴 **THE ARC MASK DIVERGES AT LARGE RADII, AND IT IS NOT THE PRODUCT
       BOUND.** Filed 2026-08-16 by D-CIRCOVF
       ([`docs/circovf-msx1-oracle.md`](docs/circovf-msx1-oracle.md) §6.1).
       Measured on the whole pattern plane, VG-8020 vs zerobas:
@@ -1803,10 +1803,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (3539 B free); net bytes look ≤0 but **price by editing, not by paper**
       — walk the callers of cross_ge0/mul16u32/cmp32 first. ⚠️ Closing this
       **also closes the arc-performance residual below** by construction.
-      ⚠️ `graphics-acceptance` owns it; the three rows above are NOT in the gate
-      because they are red.
+      ✅ **CLOSED 2026-08-17, same slice, third pass** (docs §5.6): the
+      step-index wedge SHIPPED — `gfx_circ_wedge_prep` + the pair-compare
+      `gfx_circ_keep`, single-precision `(oct,u14)` marshalling, octant-point
+      spokes; QTAB, the bvec family, `gfx_cross_ge0` and `gfx_circ_arcbig_calc`
+      DELETED. Net **−120 B** (sub p0 +33, sub p1 −153). Verified: **18/18
+      previously-red rows byte-identical** (`scratchpad/arcmask_verify.py`),
+      `graphics-acceptance` **317/0** with seven new rows the gate now owns
+      (incl. `arcmask_r200`, this residual's own row), `unit-test` 59/59 with
+      the ported arc suite, three source knives cut as predicted
+      (`scratchpad/arcmask_knives.md`; the misses are scored there).
 
-- [ ] 🔴 **THE REFERENCE EVALUATES THE ARC ANGLE IN SINGLE PRECISION — the
+- [x] 🔴 **THE REFERENCE EVALUATES THE ARC ANGLE IN SINGLE PRECISION — the
       "nudge defect" filed here earlier was MY WRONG DIAGNOSIS.** Filed
       2026-08-17 by D-ARCMASK (§4.3), REDIAGNOSED the same day (§5.4). The row:
 
@@ -1822,9 +1830,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       whole planes, holds all four r=15 point sets AND the near-cardinal
       1.50..1.60 sweep (the nudge's own pin), and its deletion is knifed at
       exactly the one row (53→52, `scratchpad/arcmask_asmsim2.py`).
-      **Folded into the rewrite below** — P1 of the marshalling pipeline.
+      ✅ **CLOSED 2026-08-17**: shipped as P1 of `cpt_boundary_prep`;
+      `ctl_card_r95` byte-identical (135 px `7babb12d` both machines), in the
+      gate as `arcmask_card95`, unit teeth pin the round AND the carry chain,
+      knife K-AM1 reddens exactly this row and restores zerobas-before's plane
+      byte for byte.
 
-- [ ] 🔴 **ZEROBAS'S SPOKE ENDPOINT DIVERGES FROM THE REFERENCE AT NEAR-ZERO
+- [x] 🔴 **ZEROBAS'S SPOKE ENDPOINT DIVERGES FROM THE REFERENCE AT NEAR-ZERO
       ANGLES — LATENT, measured from BANKED data, no gate row covers it.**
       Filed 2026-08-17 by D-ARCMASK (§5.4). The G4-arcbnd round-3 capture
       (`scratchpad/g4_arc_boundary_capture.json`, `PSET(75,60),9:`
@@ -1838,11 +1850,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       octant-point spoke still reproduces ZEROBAS's plane there (76352feb),
       not the reference's — that row's divergence is in the spoke LINE
       rasterisation or clipping at an off-screen endpoint, still open.
-      **Folded into the rewrite below** — G5 replaces the QTAB vector with the
-      octant point, which matches round 3 and every gate-green spoke
-      (endpoints verified SAME at 1.57/r15, 0.1/r15). 💰 Not priced alone.
+      ✅ **CLOSED 2026-08-17**: `gwp_spoke_vec` ships the octant point; the
+      round-3 row is byte-identical and in the gate (`arcmask_spoke`); the
+      QTAB 255-cap shortening at r=400 went with QTAB itself; unit rows pin
+      six endpoints incl. `(1,-400)` at r=400. The `arc_big_r400` LINE
+      divergence is a SEPARATE item, re-filed sharpened below.
 
-- [ ] ⚠️ **ZEROBAS DRAWS ARCS 5–6× SLOWER THAN THE REFERENCE, AND FULL CIRCLES
+- [ ] 🔴 **THE REFERENCE'S SPOKE LINE ADVANCES ITS MINOR AXIS BEFORE THE
+      MIDPOINT — the last `arc_big_r400` divergence, now isolated to the LINE
+      RASTERISER.** Filed 2026-08-17 by D-ARCMASK (docs §5.6), the sharpened
+      remainder of D-CIRCOVF §6.1's third row:
+
+          CIRCLE(128,96),400,15,-1.57,0   ref 97 px cd7e5368 bbox (128,0,129,96)
+                                          zb  97 px 76352feb bbox (128,0,128,96)
+
+      Same pixel count, same endpoint (the octant point (1,−400) — verified:
+      bvec, octant-point AND the shipped rewrite all produce the identical
+      zerobas plane). The bboxes say what differs: drawing centre→(129,−304),
+      the reference has pixels in column 129 INSIDE the visible band (y 0..96),
+      i.e. its line steps x early; our Bresenham's midpoint rule crosses at
+      y≈−104, off screen, so the visible run is all x=128. ⚠️ This is a
+      **`gfx_line_op` tie/rounding question at an extreme slope with an
+      off-screen endpoint** — nothing to do with arcs; LINE itself may show it
+      with a bare `LINE (128,96)-(129,-304)` if the reference accepts that
+      form, which would be the cheaper probe. 💰 Not priced. The G3 line was
+      host-fit on on-screen segments only.
+
+- [x] ⚠️ **ZEROBAS DRAWS ARCS 5–6× SLOWER THAN THE REFERENCE, AND FULL CIRCLES
       1.5× FASTER.** Filed 2026-08-17 by D-ARCMASK (§6), measured in VDP frames
       via `TIME` with the empty `FOR` loop measured per machine and subtracted
       (`scratchpad/arcmask_time.py`, `arcmask_time2.py`):
@@ -1863,8 +1897,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 Round 1 of this measurement reported three `None`s at N=20; they were
       the CAPTURE WINDOW, not the machine. Re-run at N=5/step 45 s, with the
       `r95` row reproducing round 1 to within one frame as the cross-check.
+      ✅ **CLOSED 2026-08-17 by the wedge rewrite, re-measured**
+      (`arcmask_time2.py` on `sub.rom e4fbf667`): r=95 arc **1272 → 204 ms**
+      (0.91× the reference), r=200 arc **2600 → 368 ms** (0.84×), arc+aspect
+      **1384 → 236 ms** — arcs now beat the reference like every other CIRCLE
+      form. The full-circle control rows are unchanged (292/340 ms), which is
+      what says the win is the mask and not the rig. ⚠️ Still true: **no gate
+      measures time** — this closure is a hand-run probe, not a standing gate.
 
-- [ ] ⚠️ **THE 32-BIT CROSS PRODUCT HAS NO GREEN ROW THAT CAN SEE IT.** Filed
+- [x] ⚠️ **THE 32-BIT CROSS PRODUCT HAS NO GREEN ROW THAT CAN SEE IT.** Filed
       2026-08-16 by D-CIRCOVF (§5.2, and K-CO3 in
       [`scratchpad/circovf_knives.py`](scratchpad/circovf_knives.py)).
       `gfx_cross_ge0` was widened to `gfx_mul16u32` + `gfx_cmp32` because the
@@ -1877,9 +1918,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       K-CO3 is declared `kind="nothing"` for exactly this reason and its
       scorecard line is the number that stands in for the missing row.
       💰 Zero bytes. Blocked on the arc-mask item above: close that first and
-      these rows become available. **Until then the widening is correct by
-      construction and untested by the gate, and that sentence should not be
-      quietly dropped from the next reader's summary.**
+      these rows become available.
+      ✅ **DISSOLVED 2026-08-17**: the arc-mask rewrite DELETED
+      `gfx_cross_ge0` outright — there is no 32-bit cross compare left to be
+      untested. `gfx_mul16u32`/`gfx_cmp32` survive as `gfx_circ_wedge_prep`'s
+      once-per-CIRCLE init arithmetic, exercised by every arc row in the gate
+      and by the unit M-battery. K-CO3's target no longer exists; the
+      D-CIRCOVF knife runner's ROM-hash guard refuses `e4fbf667` by design.
 
 - [x] ⚠️ **`ASPS` TRUNCATION IS MEASURED FOR `aspect < 1` ONLY.** Filed
       2026-08-16 by D-CIRCDOM (§5). The fix (`cpt_asp_scale256`:

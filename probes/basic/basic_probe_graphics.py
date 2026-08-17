@@ -376,6 +376,28 @@ CIRCLE_CASES = [
     # separate, pre-existing reason: see TODO.md, filed by this slice.
     ("arc_ovf_r260",     "CIRCLE(128,96),260,15,0,1.57", (128, 96), 128, False),
     ("arc_ovf_wrap300",  "CIRCLE(128,96),300,15,3,1",    (128, 96), 128, False),
+
+    # --- D-ARCMASK: the step-index wedge, at radii that can SEE it ------------
+    # (docs/arcmask-msx1-characterization.md). The retired cross-product mask
+    # diverged by up to 0.037 rad -- invisible at the gate's old r=15 (0.5 px),
+    # 6 px at r=200. Every row here was measured RED before the rewrite and
+    # byte-identical after it (scratchpad/arcmask_verify.py, 18/18):
+    #   arcmask_r200    -- the D-CIRCOVF §6.1 row that filed the residual
+    #   arcmask_sw*     -- both rays of the r=95 wedge at non-cardinal angles
+    #   arcmask_lad190  -- the fine-sweep radius, off-screen centre
+    #   arcmask_card95  -- the SINGLE-PRECISION pin: 1.5707963 IS pi/2 to the
+    #                      reference (6 digits), so the axis point is kept
+    #   arcmask_a137    -- the aspect path: mask on the RAW point, pre-scale
+    #   arcmask_spoke   -- the round-3 spoke: endpoint = the octant point
+    #                      (15,0), not the retired QTAB vector's (15,-1)
+    ("arcmask_r200",   "CIRCLE(128,352),200,15,1.1,2.04",  (128, 96), 128, False),
+    ("arcmask_sw1",    "CIRCLE(128,96),95,15,0.5,2.2",     (128, 96), 128, False),
+    ("arcmask_sw2",    "CIRCLE(128,96),95,15,2.4,5.7",     (128, 96), 128, False),
+    ("arcmask_lad190", "CIRCLE(128,280),190,15,1.1,2.04",  (128, 96), 128, False),
+    ("arcmask_card95", "CIRCLE(128,96),95,15,0,1.5707963", (128, 96), 128, False),
+    ("arcmask_a137",   "CIRCLE(128,96),700,15,0,1.57,.137", (128, 96), 128, False),
+    ("arcmask_spoke",  "PSET(75,60),9:CIRCLE(60,60),15,6,-0.01,1.57",
+     (60, 60), 64, False),
 ]
 
 # Rows added by D-CIRCDOM that deliberately span more than the screen, so the
@@ -391,7 +413,12 @@ _CIRCOVF_ROWS = {"circ_ovf_r284", "circ_ovf_r300", "ell_ovf_a05r528",
                  "ell_ovf_a2r528", "circ_ovfc_r255", "circ_ovfc_r200",
                  "ell_ovfc_a05r500", "ell_ovfc_a2r500",
                  "arc_ovf_r260", "arc_ovf_wrap300"}
-_WIDE_ROWS = _CIRCDOM_ROWS | _CIRCOVF_ROWS
+# D-ARCMASK's wide rows: every row centred at (128,96) with the h=128 band
+# reaches x=256, so the clamp bites; r200/lad190 add off-screen centres and
+# a137 spans the whole width. Only the (60,60) spoke row fits unclamped.
+_ARCMASK_WIDE = {"arcmask_r200", "arcmask_lad190", "arcmask_a137",
+                 "arcmask_sw1", "arcmask_sw2", "arcmask_card95"}
+_WIDE_ROWS = _CIRCDOM_ROWS | _CIRCOVF_ROWS | _ARCMASK_WIDE
 
 
 def phase_e() -> int:

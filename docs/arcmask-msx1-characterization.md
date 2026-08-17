@@ -6,12 +6,13 @@ AT LARGE RADII, AND IT IS NOT THE PRODUCT BOUND"*
 
 Baseline: `d404240`, `sub.rom` `bc7573df`, tree green.
 
-**This slice ships a measurement and a retraction, not a fix.** The rule the arc
-boundary rests on is measured FALSE (§3), and the reference's real rule is
-**solved** (§5): a parameter-free, octant-asymmetric step-index threshold that
-reproduces **52 of 54** measured reference planes byte for byte, against 2–4 for
-the rule the source asserts. No code changes: the fix is a rewrite of
-`gfx_circ_keep` *and* `gfx_circ_bvec`, unpriced, and it lands next (§5.3).
+**This slice went measurement → retraction → solved rule → shipped rewrite,
+in three passes on one day.** The rule the arc boundary rested on is measured
+FALSE (§3); the reference's real rule is a parameter-free, octant-asymmetric
+step-index threshold (§5), reproducing 53 of 54 measured reference planes with
+the single-precision angle model; and the implementation (§5.6) landed at
+net −120 B with **18/18 previously-red rows now byte-identical** and
+`graphics-acceptance` grown to **317 rows** to own them.
 
 ---
 
@@ -268,6 +269,79 @@ in the next slice, not this one.
 
 ---
 
+## §5.6 The implementation — landed the same day
+
+The pipeline of §5.5 shipped as `sub.rom` `e4fbf667` (main/disk/merged ROMs
+byte-identical — a sub-tenant edit). What changed:
+
+* [`sub/circleparse.asm`](../sub/circleparse.asm) `cpt_boundary_prep` — the
+  single-precision `(oct_raw, u14)` marshal (P1–P5). **Deleted**: the three
+  quadrant `fp_cmp` compares and their three 18-byte constants, `cpt_round`,
+  `cpt_build_half`. `GFX_K_4PI` is the one new constant.
+* [`sub/graphics.asm`](../sub/graphics.asm) — `gfx_circ_wedge_prep` (M with
+  the floor correction, both boundaries, WRAPF/FULLW, octant-point spoke
+  vectors) and the new `gfx_circ_keep` (normalized pair compare, at most
+  three 16-bit compares per point). **Deleted**: QTAB + fold + lookup, the
+  whole `gfx_circ_bvec` family and its `±1` nudge, `gfx_circ_arcbig_calc`,
+  `gfx_cross_ge0`. `gco_emit8` passes each mirror's **static octant** as a
+  literal — the direction decomposition costs one `ld a,N` per mirror.
+* [`basic/sysvars.inc`](../basic/sysvars.inc) — the records keep their cells
+  (`GFX_SOCT/SU14/EOCT/EU14` at the old brad/sign addresses); the wedge cells
+  live in space freed by the retired cross-product scratch.
+
+Cost: **sub p0 +33 B** (3539→3506), **sub p1 −153 B** (1483→1636) — net
+**−120 B**. Low region and main p1 untouched.
+
+### Verified
+
+* **The oracle, re-run** ([`arcmask_verify.py`](../scratchpad/arcmask_verify.py)):
+  **18/18 rows byte-identical to the VG-8020**, including every row measured
+  red before — `arcctl_r200` (170 px `386f8fb8`), `ctl_card_r95` (135 px
+  `7babb12d`), `arc_r700_a137` (the aspect path), the fine-sweep and r-ladder
+  rows, and the round-3 spoke. zerobas matched the model's predicted plane on
+  every row. The one predicted DIFF is the one measured DIFF (below).
+* **`graphics-acceptance` 317 PASS / 0 FAIL** — the 310 existing rows plus
+  seven new D-ARCMASK rows the gate now owns: `arcmask_r200` (the residual's
+  own row), the two sweep rows, `lad190`, `card95` (the single-precision
+  pin), `a137` (the aspect path), and the round-3 spoke.
+  `graphics-floor-acceptance` PASS; `unit-test` 59/59 with the
+  [`test_graphics.py`](../tests/test_graphics.py) arc suite ported to the new
+  pipeline (marshalling battery incl. the carry chain, M exactness incl.
+  three corrected radii, keep normalization edges, spoke octant points, and
+  the captured-arc integrations through the real prep + real keep).
+* **Knives, predictions written first**
+  ([`arcmask_knives.md`](../scratchpad/arcmask_knives.md)): K-AM1 (delete the
+  6-digit round) reddens exactly `ctl_card_r95`, restoring zerobas-before's
+  plane `e3a10d24`→`e3e10d24` byte for byte, with `arcctl_r200` still green —
+  scored on the emulator; the carry-teeth sub-prediction MISSED (1.5707999 is
+  above π/2, so truncation lands octant 2 anyway). K-AM2 (delete the M
+  correction) fails exactly the three listed corrected radii — with two of my
+  three predicted value-pairs off by one (right rows, wrong numbers, scored).
+  K-AM3 (delete the odd-octant flip) fails 11 rows across the integrations
+  and the sweep; my "all six integrations" overcounted — the near-full-circle
+  rows absorb the flip.
+
+### What the rewrite closed beyond the mask
+
+* The **single-precision defect** (§5.4): `ctl_card_r95` byte-identical.
+* The **spoke endpoint defect** (§5.4): the round-3 row byte-identical, and
+  the QTAB-cap shortening at r=400 gone with QTAB itself.
+* The **cross-product widening's untestability** (D-CIRCOVF §5.2): dissolved
+  — `gfx_cross_ge0` no longer exists, so there is no untested 32-bit compare
+  left to have a missing row. K-CO3's target is deleted; the D-CIRCOVF knife
+  runner's ROM-hash guard refuses the new `sub.rom` by design.
+
+### The one row still open, sharpened again
+
+`arc_big_r400` still differs — as predicted. The bbox now says why precisely:
+ref `(128,0,129,96)` vs zerobas `(128,0,128,96)`. Same 97 px, same endpoint —
+but **the reference's spoke LINE advances to x=129 inside the visible band**,
+where our Bresenham (midpoint rule, dx=1 over dy=400) crosses at y≈−104, off
+screen. A line-rasterisation tie-break at an off-screen endpoint, nothing to
+do with the arc. Filed.
+
+---
+
 ## §6 Aside, measured on request: what CIRCLE costs
 
 `TIME` is the VDP interrupt counter; both machines are EU/50 Hz, so the units
@@ -296,6 +370,12 @@ The mask dominates: `gfx_circ_keep` runs two `gfx_cross_ge0` per emitted point,
 and D-CIRCOVF widened each to two 16×16→32 multiplies plus a 32-bit compare —
 eight times per octant step, plotted or not.
 
+**Re-measured after the §5.6 rewrite** (`sub.rom e4fbf667`): r=95 arc
+**1272 → 204 ms** (0.91× the reference), r=200 arc **2600 → 368 ms** (0.84×),
+arc+aspect **1384 → 236 ms**, with the full-circle control rows unchanged
+(292 / 340 ms) — the win is the mask, and arcs now beat the reference like
+every other CIRCLE form.
+
 ⚠️ **ROUND 1 REPORTED THREE `None`s AND THEY WERE A RIG FAILURE, NOT A READING.**
 At N=20 the arc rows simply did not finish inside the capture window. They are
 reported here from round 2 (N=5, step 45 s), whose `r95` row reproduces round 1
@@ -303,9 +383,9 @@ to within one frame — which is what makes the round-2 numbers usable at all.
 
 ---
 
-## §7 Cost
+## §7 Cost (superseded by §5.6 for the implementation pass)
 
-No source logic changed. The edits are the §3 retraction, in the two places that
+Characterization passes: no source logic changed. The edits are the §3 retraction, in the two places that
 assert the false rule. Walls and ROM identity unchanged:
 low **5 B**, main p1 **67 B**, sub p0 **3539 B**, sub p1 **1483 B**;
 `basic-reloc 8e5391b3`, `sub bc7573df`, `disk 2c630d3d`, `zerobas-main-eu 01ab88f1`.

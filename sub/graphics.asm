@@ -877,32 +877,19 @@ gfx_box_stash:
 ; off' = sign(off)*((|off|*ASPS+128)>>8) to whichever offset GFX_ASPMAJ
 ; selects, for EVERY mirrored point (gfx_circ_scale).
 ;
-; Arc mask (§5.2): when GFX_ARCF=1, a mirrored+scaled point P=(GFX_PX,GFX_PY)
-; (the offset from centre, BEFORE the centre is added back) is kept iff it
-; lies in the CCW wedge from the boundary vectors S (GFX_SVX/SVY) to E
-; (GFX_EVX/EVY): cross(S,P)>=0 AND cross(P,E)>=0 when the sweep is <=pi
-; (GFX_ARCBIG=0), OR when >pi (GFX_ARCBIG=1). All cross-product sign tests
-; are INTEGER (gfx_cross_ge0, own 16x16 unsigned multiply + sign-magnitude
-; decomposition) -- the tenant has no float, per the arc's own "no tenant
-; float" rule (spec §5.2/§9 G4-e). S/E share the SAME r-scaled (and, where
-; applicable, minor-scaled) magnitude used for the spoke endpoints (spec
-; §5.3) -- an implementation choice where the spec leaves the S/E scale
-; unspecified ("scaled to small integers"); see the G4 slice report for the
-; rationale (untested combined ellipse+arc case).
-;
-; REVISED 2026-07-21 (spec §5.2.1): S/E and GFX_ARCBIG are now TENANT-
-; computed (gfx_circ_bvec_prep, below), from the resident-marshalled
-; GFX_SBRAD/EBRAD (brad) + GFX_SSGNC/SSGNS/ESGNC/ESGNS (quadrant signs) --
-; the TRIG-FREE replacement for the original float SIN/COS pipeline, which
-; infinite-looped in the sub-ROM math pack's own series fp_mul. Own-design,
-; host-fit against every captured arc + boundary re-capture BEFORE coding
-; (scratchpad/g4_trigfree_final_model.py: ALL MATCH); ARCBIG's own wrap-
-; around fix (gfx_circ_arcbig_calc) is the reason it moved tenant-side too:
-; a naive mod-256 boundary diff collapses a near-2*pi sweep (e.g. 0->6.28)
-; to a false zero when BOTH ends round to the same 256-bucket, so the
-; resolution needs the RAW (unmasked) brad pair, which only the tenant sees
-; whole (the resident marshals two separate int16 cells, never subtracts
-; them itself).
+; Arc mask (D-ARCMASK, 2026-08-17, docs/arcmask-msx1-characterization.md):
+; when GFX_ARCF=1, a point is kept iff its (octant, in-octant step index)
+; pair lies in the CLOSED cyclic interval between the two marshalled
+; boundaries -- the STEP-INDEX WEDGE (gfx_circ_keep). The octant is STATIC
+; per mirror position (gco_emit8 passes it as a literal), the step index is
+; the loop's own qx, and the test runs on the RAW point BEFORE the minor
+; scale -- measured: the reference masks pre-scale (the r=700 ASPS=35 arc row
+; is byte-exact only that way). Boundaries, wrap flag and pending-spoke
+; endpoint vectors are computed once per CIRCLE by gfx_circ_wedge_prep from
+; the (oct_raw, u14) records sub/circleparse.asm marshals. This RETIRES the
+; 2026-07-21 cross-product wedge (gfx_cross_ge0, the QTAB boundary vectors,
+; GFX_ARCBIG) -- see the section header above gwp_pos for the measurement
+; that refuted it and the rule that replaced it.
 ;
 ; 🔴 BOUNDED-DOMAIN NOTE -- REWRITTEN BY D-CIRCDOM, WHICH MEASURED IT FALSE.
 ; It used to read "guaranteed for the blessed r<=255 domain", and there is no
@@ -916,9 +903,11 @@ gfx_box_stash:
 ; found it FALSE and reachable, because the multiply kept only the low 16 bits.
 ;
 ; 🔴 THAT HALF IS FIXED (D-CIRCOVF, docs/circovf-msx1-oracle.md). There is now
-; no precondition on the product at all: gfx_circ_scale and gfx_circ_bvec_mag
-; carry it at full width through gfx_mul16r, and gfx_cross_ge0 at 32 bits
-; through gfx_mul16u32 + gfx_cmp32. The whole 0..32767 radius domain is honest.
+; no precondition on the product at all: gfx_circ_scale carries it at full
+; width through gfx_mul16r. (D-CIRCOVF also widened gfx_cross_ge0 to 32 bits
+; for the same reason; D-ARCMASK then retired that routine outright -- the
+; arc mask no longer multiplies at all.) The whole 0..32767 radius domain is
+; honest.
 ;
 ; THE ORACLE THAT WAS MISSING, AND WHY IT WAS MISSING. D-CIRCDOM's six DIFF rows
 ; all have the REFERENCE drawing 0 px on screen -- they say "zerobas paints where
@@ -951,15 +940,17 @@ gfx_box_stash:
 ; re-negate. The arithmetic is right and the conclusion is design-dependent:
 ; ASPS=256 is the only value that reaches 32768 and the only value for which the
 ; scale is the IDENTITY, so four bytes of branch cap the result at 32767 there
-; and 32639 on the multiply arm. What DID become reachable is gfx_cross_ge0's
-; products -- see its header.
+; and 32639 on the multiply arm. What DID become reachable was gfx_cross_ge0's
+; products -- widened by D-CIRCOVF, then retired with the whole routine by
+; D-ARCMASK (the step-index mask has no products).
 ; ===========================================================================
 gfx_circle_op:
                 ei                          ; interrupts LIVE for the (possibly long) draw
                 ld      a,(GFX_ARCF)
                 or      a
-                jr      z,gco_noarc         ; full circle/ellipse -- S/E/ARCBIG unused
-                call    gfx_circ_bvec_prep  ; S/E/ARCBIG from GFX_SBRAD/EBRAD (§5.2.1)
+                jr      z,gco_noarc         ; full circle/ellipse -- wedge unused
+                call    gfx_circ_wedge_prep ; M + S/E wedge + spoke vectors
+                                            ; from GFX_SOCT/EOCT (D-ARCMASK)
 gco_noarc:
                 call    gfx_circ_init
 gco_loop:
@@ -1040,296 +1031,267 @@ gco_spoke:
                 jp      gfx_line_op         ; tail call: its ret serves ours
 
 ; ===========================================================================
-; G4 arc boundary -- TRIG-FREE (spec §5.2.1 REVISED 2026-07-21). Own-design,
-; host-fit against every captured VG-8020 arc + boundary re-capture BEFORE
-; coding (scratchpad/g4_trigfree_final_model.py: ALL MATCH).
+; G4 arc boundary -- D-ARCMASK STEP-INDEX WEDGE (2026-08-17). Replaces the
+; 2026-07-21 trig-free QTAB boundary-VECTOR design and its cross-product mask
+; (docs/arcmask-msx1-characterization.md).
 ;
-; 🔴 D-ARCMASK (2026-08-17, docs/arcmask-msx1-characterization.md): THAT
-; "ALL MATCH" IS A STATEMENT ABOUT A CORPUS, NOT ABOUT A RULE, AND THE RULE IT
-; WAS READ AS CONFIRMING IS MEASURED FALSE. The corpus is scratchpad/
-; g4_pointsets.json -- radii 4,7,8,12,15,20, and every ARC row in it is r=15.
-; The design it confirmed is "the reference's boundary vector is the EXACT ray,
-; round(r*|cos|) / round(r*|sin|)". Measured on 51 whole reference planes at
-; radii up to 200, that rule reproduces 2-4 of them. What the reference does
-; instead, with o = floor(theta/(pi/4)) the octant and u the fraction into it:
+; The retired design computed S/E as rounded exact rays (round(r*|cos|),
+; -round(r*|sin|)) and kept a point iff it lay in the cross-product wedge.
+; Its "host-fit ALL MATCH" evidence was real and its corpus could not see the
+; question: radii 4..20, every arc row r=15, where the divergence is 0.5 px.
+; Measured on 54 whole reference planes at radii to 700, the exact-ray rule
+; reproduces 2-4; the rule below reproduces 53 (the 54th is the spoke-line
+; row, filed separately). With o = floor(theta/(pi/4)) and u the fraction
+; into that octant, the reference's boundary is the octant loop's STEP INDEX
+; distributed LINEARLY over the angle:
 ;
 ;     M   = floor(r/sqrt(2))     the octant's top step index
 ;     pos = floor(u*M)           position along the octant, always
 ;     k   = pos                  in an EVEN octant (step rises with theta)
 ;     k   = M - pos              in an ODD octant  (step falls with theta)
 ;
-; both boundaries inclusive -- no fitted constant, no per-side offset. Scored on
-; whole 6144-byte planes: 52/54, vs 2-4/54 for the exact-ray rule above.
-; THE REFERENCE IS THE LESS ACCURATE MACHINE: zerobas's rays land within one
-; QTAB step (0.012 rad); the reference's are out by 0.037. At r=15 that whole
-; divergence is 0.5 px, which is why no row here could ever see it.
-; NOT FIXED, AND NOT A CONSTANT TO TWEAK: the reference compares a STEP INDEX
-; against a per-octant threshold, so matching it retires the cross-product wedge
-; in gfx_circ_keep and stops gfx_circ_bvec computing a vector at all. Unpriced.
-; ⚠️ That rewrite would also address the arc's cost: zerobas draws arcs 5-6x
-; SLOWER than the reference (r=95 arc: ref 224 ms, zb 1272 ms) precisely because
-; gfx_circ_keep runs two gfx_cross_ge0 -- four 16x16->32 multiplies and two
-; 32-bit compares -- for every one of the 8 points per octant step, plotted or
-; not. A byte compare against the loop counter replaces all of it.
-;
-; Replaces the
-; original float SIN/COS pipeline, whose series fp_mul infinite-looped in the
-; CIRCLE call context (scratchpad/g4_hang_probe.py). The resident half
-; (basic/graphics.asm gfx_circ_boundary_prep) marshals, per boundary (start
-; and end): brad = round(|angle|*128/pi) as a RAW/unmasked int16 (ONE bounded
-; fp_mul -- not a series), and the quadrant signs sign_c/sign_s ($01/$FF/$00)
-; from THREE bounded fp_cmp compares (continuous, NOT derived from brad --
-; a brad-derived quadrant collapses the near-cardinal 1.57-vs-1.58 precision
-; the reference is shown to preserve, since both round to the identical
-; brad=64). This tenant half turns (brad, sign_c, sign_s) into the actual
-; vector via an integer quarter-wave sine table (QTAB) -- genuinely no float
-; here, per the arc's "no tenant float" rule (spec §5.2/§9 G4-e).
+; both boundaries INCLUSIVE, and the angle marshalled at SINGLE precision
+; (sub/circleparse.asm cpt_boundary_prep). Every arithmetic choice below was
+; simulated at width against the banked planes before this asm existed
+; (scratchpad/arcmask_asmsim2.py) -- the circovf_asmsim discipline.
 ; ===========================================================================
 
 ; ---------------------------------------------------------------------------
-; QTAB -- 65-entry quarter-wave magnitude table: QTAB[i] = round(256*sin(2*pi*
-; i/256)) for i=0..64, CAPPED at 255 (i=62/63/64 round to 256, which overflows
-; an unsigned byte -- capping loses <0.4% relative magnitude at those 3
-; entries only, verified harmless against the round-to-pixel domain: r=15's
-; capped-vs-uncapped magnitude at i=64 both round to 15 -- scratchpad/
-; g4_trigfree_final_model.py). Folded via symmetry (gfx_qtab_fold) to cover
-; the full 256-entry circle from a 65-byte table -- the letter's "64-entry
-; quarter + symmetry" option, chosen to keep the page-0 tenant lean.
+; gwp_pos -- IN: HL = u14 (0..16383). OUT: HL = (u14*M)>>14, 0..M-1.
+; Uses GFX_M. Clobbers A, BC, DE.
 ; ---------------------------------------------------------------------------
-QTAB:
-                db      0,   6,  13,  19,  25,  31,  38,  44,  50,  56
-                db      62,  68,  74,  80,  86,  92,  98, 104, 109, 115
-                db      121, 126, 132, 137, 142, 147, 152, 157, 162, 167
-                db      172, 177, 181, 185, 190, 194, 198, 202, 206, 209
-                db      213, 216, 220, 223, 226, 229, 231, 234, 237, 239
-                db      241, 243, 245, 247, 248, 250, 251, 252, 253, 254
-                db      255, 255, 255, 255, 255
-
-; ---------------------------------------------------------------------------
-; gfx_qtab_fold -- IN: A = b (any byte 0..255). OUT: A = fold index 0..64
-; s.t. QTAB[fold(b)] = round(256*|sin(2*pi*b/256)|) (own-design quarter-wave
-; symmetry: m = b mod 128; if m>64 then m := 128-m). Clobbers B.
-; ---------------------------------------------------------------------------
-gfx_qtab_fold:
-                and     $7F
-                cp      65
-                ret     c                   ; m<=64 -> keep as-is
-                ld      b,a
-                ld      a,128
-                sub     b
-                ret
-
-; ---------------------------------------------------------------------------
-; gfx_qtab_lookup -- IN: A = b (any byte 0..255). OUT: A = QTAB[fold(b)] =
-; round(256*|sin(2*pi*b/256)|), 0..255. Clobbers B, HL, DE.
-; ---------------------------------------------------------------------------
-gfx_qtab_lookup:
-                call    gfx_qtab_fold
-                ld      l,a
-                ld      h,0
-                ld      de,QTAB
+gwp_pos:
+                ld      de,(GFX_M)
+                call    gfx_mul16u32        ; DE:HL = u14*M (<= 16383*23169 < 2^29)
+                ld      a,h                 ; >>14 == (high<<2) | (H>>6)
+                rlca
+                rlca
+                and     3
+                ex      de,hl               ; HL = high word (<= 5791)
+                add     hl,hl
+                add     hl,hl               ; HL = high<<2
+                ld      e,a
+                ld      d,0
                 add     hl,de
-                ld      a,(hl)
                 ret
 
 ; ---------------------------------------------------------------------------
-; gfx_circ_bvec_mag -- IN: A = tab (0..255, unsigned QTAB value). Uses GFX_R.
-; OUT: HL = round(r*tab/256) = (r*tab+128)>>8, unsigned. The SAME round-half-up
-; 8.8-style shape as gfx_circ_scale. Clobbers A, BC, DE.
-; 🔴 D-CIRCDOM: the input line used to say "GFX_R (radius, 0..255 domain)". It
-; is 0..32767 -- see sub/circleparse.asm cpt_after_r for the two tests that are
-; the actual enforcement. The `bounded: <=255*255` on the mul below is false for
-; the same reason (r*tab overflows once r*tab >= 65536, i.e. r >= 258 at tab=255).
-; 🔴 D-CIRCOVF FIXED BOTH HALVES. The multiply is gfx_mul16r, which carries r*tab
-; in a 24-bit accumulator, so nothing wraps for any r in the domain.
-; ⚠️ AND THE OUTPUT IS NO LONGER BOUNDED TO A BYTE. It used to be 0..255 by
-; construction, via a `ld l,h / ld h,0` that kept only a high byte, and D-CIRCDOM
-; charged gfx_circ_bvec_nudge's and gcbv_y's $8000 verdicts to exactly that. The
-; bound is now (32767*255+128)>>8 = 32639 -- still short of $8000, so both
-; verdicts hold, but they hold on a number 128x larger and no longer on a byte.
-; The site that actually cared is gfx_cross_ge0, whose products are sized off
-; this bound: see its header.
+; gfx_circ_wedge_prep -- once per arc CIRCLE, BEFORE the octant loop:
+;   GFX_M      = floor(r/sqrt(2))
+;   GFX_WS_O/P = start boundary (octant, pos); GFX_WE_O/P = end boundary
+;   GFX_WRAPF  = pair S > pair E lexicographically (the wedge crosses 0)
+;   GFX_FULLW  = pairs equal but the RAW (oct,u14) records differ -- a
+;                near-2*pi sweep, keep everything (the old ARCBIG wrap case)
+;   GFX_SVX/EVX = pending spokes' endpoint vectors: the OCTANT POINT at the
+;                boundary, minor-scaled. Measured (G4-arcbnd round 3, banked
+;                since July, read by D-ARCMASK): the reference's spoke at
+;                -0.01 lands on the octant point (15,0), NOT on the retired
+;                QTAB vector's nudged (15,-1).
+; Clobbers everything incl. GFX_QX/QY/QD (gfx_circle_op re-inits after) and
+; GFX_PX/PY/GFX_CS_AX as walk scratch (dead until the draw starts).
 ; ---------------------------------------------------------------------------
-gfx_circ_bvec_mag:
-                ld      de,(GFX_R)
-                jp      gfx_mul16r          ; tail: HL = (r*tab+128)>>8, A = tab
-                                            ; already. D-CIRCOVF: was gfx_mul16u
-                                            ; + `ld l,h / ld h,0`, which wrapped
-                                            ; for r >= 258 and then narrowed the
-                                            ; result to a byte on top.
-
-; ---------------------------------------------------------------------------
-; gfx_circ_bvec_nudge -- IN: HL = unsigned magnitude; (GFX_CS_T1) = sign
-; ($01/$FF/$00). OUT: HL = the signed, nudged component: 0 if sign=0;
-; sign*HL if HL!=0; else +-1 (the near-cardinal nudge, spec §5.4/§5.2.1).
-; Clobbers A, BC.
-; 🔴 $8000 REACHABILITY (D-CIRCDOM; docs/fixpoint8000-msx1-sweep.md §4.2 used to
-; charge this to "the blessed r<=255 domain", which does not exist). The negate
-; below cannot see $8000 for a reason that needs NO domain claim at all: the only
-; caller is gfx_circ_bvec, and the only two values it passes are
-; gfx_circ_bvec_mag's output and the literal 1 written by gcbn_zero's sibling
-; path below.
-; 🔴 D-CIRCOVF: that output used to be 0..255, bounded by a `ld l,h / ld h,0`
-; byte truncation which is now DELETED. The verdict is unchanged and the number
-; is not: the bound is gfx_mul16r's own ceiling, (32767*255+128)>>8 = 32639.
-; A magnitude of $8000 is still not representable here however large r gets --
-; but it is 32639 that says so now, not 255.
-; ---------------------------------------------------------------------------
-gfx_circ_bvec_nudge:
-                ld      a,(GFX_CS_T1)
-                or      a
-                jr      z,gcbn_zero
-                ld      b,h
-                ld      c,l
-                ld      a,c
-                or      b
-                jr      nz,gcbn_apply       ; magnitude != 0 -> apply the sign
-                ld      hl,1                ; magnitude==0, sign!=0 -> nudge to +-1
-gcbn_apply:
-                ld      a,(GFX_CS_T1)
-                or      a
-                ret     p                   ; sign>=0 ($01) -> HL already correct
-                xor     a                   ; negative: two's-complement negate HL
-                sub     l
-                ld      l,a
-                sbc     a,a
-                sub     h
-                ld      h,a
-                ret
-gcbn_zero:
-                ld      hl,0
-                ret
-
-; ---------------------------------------------------------------------------
-; gfx_circ_bvec -- compute ONE boundary vector (S or E) from its resident-
-; marshalled record. IN: HL = src record base (GFX_SBRAD or GFX_EBRAD:
-; brad_lo,brad_hi,signc,signs -- 4 bytes); DE = dest vector base (GFX_SVX or
-; GFX_EVX; Y half at dest+2). OUT: (dest)/(dest+2) = the minor-scaled Vx,Vy.
-; Magnitude: round(r*QTAB[fold(brad)]/256); cos = sin folded at (brad+64).
-; Sign: the resident's continuous quadrant compare (NOT re-derived here --
-; see basic/graphics.asm gfx_circ_boundary_prep for why). Nudge: magnitude
-; rounds to 0 but sign!=0 -> +-1. Screen convention: Vy = -(sin component).
-; The minor-axis 8.8 scale (gfx_circ_scale) is applied to whichever of Vx/Vy
-; GFX_ASPMAJ selects -- the SAME rule gfx_circ_emit_point uses for octant
-; points. Clobbers everything + GFX_CS_AX/AY/BX/BY/T1 scratch (dead here,
-; called only before the octant loop starts).
-; ---------------------------------------------------------------------------
-gfx_circ_bvec:
-                ld      (GFX_CS_AY),de      ; stash dest base
-                ld      a,(hl)
-                ld      (GFX_CS_AX),a       ; stash bradlo (only byte that matters)
-                inc     hl
-                inc     hl                  ; skip bradhi
-                ld      a,(hl)
-                ld      (GFX_CS_BX),a       ; sign_c
-                inc     hl
-                ld      a,(hl)
-                ld      (GFX_CS_BY),a       ; sign_s
-                ; --- X = cos component ---
-                ld      a,(GFX_CS_AX)
-                add     a,64                ; b_cos = bradlo+64 (mod 256, byte wrap)
-                call    gfx_qtab_lookup     ; A = |cos| table value
-                call    gfx_circ_bvec_mag   ; HL = round(r*A/256)
-                ld      a,(GFX_CS_BX)
-                ld      (GFX_CS_T1),a
-                call    gfx_circ_bvec_nudge ; HL = signed nudged X
-                ld      a,(GFX_ASPMAJ)
-                or      a
-                jr      z,gcbv_x_store
-                call    gfx_circ_scale      ; X is minor iff ASPMAJ=1 (y-major)
-gcbv_x_store:
-                ld      de,(GFX_CS_AY)
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a
-                ; --- Y = sin component ---
-                ld      a,(GFX_CS_AX)
-                call    gfx_qtab_lookup     ; A = |sin| table value
-                call    gfx_circ_bvec_mag   ; HL = round(r*A/256)
-                ld      a,(GFX_CS_BY)
-                ld      (GFX_CS_T1),a
-                call    gfx_circ_bvec_nudge ; HL = signed nudged (pre-negate) Y
-                ld      a,(GFX_ASPMAJ)
-                or      a
-                jr      nz,gcbv_y_scaled
-                call    gfx_circ_scale      ; Y is minor iff ASPMAJ=0 (incl. default)
-gcbv_y_scaled:
-                ; 🔴 $8000 REACHABILITY (D-CIRCDOM, RENUMBERED BY D-CIRCOVF): this
-                ; negate's input is either gfx_circ_bvec_nudge's output or that
-                ; value through gfx_circ_scale. Both used to be byte magnitudes,
-                ; bounded by the `ld l,h / ld h,0` pairs D-CIRCOVF deleted; both
-                ; are now bounded by gfx_mul16r's ceiling instead, 32639, and by
-                ; gfx_circ_scale's identity arm, 32767. |input| <= 32767, so
-                ; $8000 is still unreachable for every r in the real 0..32767
-                ; domain (sub/circleparse.asm cpt_after_r) -- one short of the
-                ; fixed point rather than 128x clear of it.
-                xor     a                   ; screen convention: Vy = -(sin component)
-                sub     l
-                ld      l,a
-                sbc     a,a
-                sub     h
-                ld      h,a
-                ld      de,(GFX_CS_AY)
-                inc     de
-                inc     de                  ; dest+2 = Vy cell
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a
-                ret
-
-; ---------------------------------------------------------------------------
-; gfx_circ_arcbig_calc -- sets GFX_ARCBIG from GFX_SBRAD/GFX_EBRAD (spec
-; §5.2.1 REVISED). diff8 = (brad_e - brad_s) mod 256; ARCBIG = diff8>128,
-; EXCEPT: if diff8==0 but the RAW (unmasked) brad_e != brad_s -- a near-full-
-; turn wrap where BOTH ends round to the SAME 256-bucket (e.g. start=0,
-; end=6.28 -> brad_e=256, brad_s=0; a naive mod-256 diff collapses this to a
-; falsely-zero sweep) -- ARCBIG is forced true (a near-2*pi sweep IS >pi).
-; Host-fit + validated: scratchpad/g4_trigfree_final_model.py (arc_full628,
-; arc_wrap both MATCH only with this fix). Clobbers everything.
-; ---------------------------------------------------------------------------
-gfx_circ_arcbig_calc:
-                ld      hl,(GFX_EBRAD)
-                ld      de,(GFX_SBRAD)
-                or      a
-                sbc     hl,de               ; HL = raw_e - raw_s (16-bit, may be negative)
-                ld      a,l                 ; A = diff8 (mod-256 wrap; correct regardless
-                                            ; of HL's sign via two's complement)
-                or      a
-                jr      nz,gac_have_diff8
-                ld      a,h
-                or      a
-                jr      z,gac_small         ; HL==0 exactly -> truly coincident -> small
-                ld      a,1                 ; HL!=0 but low byte 0 -> exact-256-wrap -> big
-                ld      (GFX_ARCBIG),a
-                ret
-gac_have_diff8:
-                cp      129
-                jr      c,gac_small         ; diff8 in 1..128 -> not big
-                ld      a,1
-                ld      (GFX_ARCBIG),a
-                ret
-gac_small:
+gfx_circ_wedge_prep:
+                ; M = floor(r/sqrt2): candidate (r*46341)>>16, then ONE floor
+                ; correction -- 46341/65536 > 1/sqrt2, so the candidate only
+                ; ever OVERSHOOTS, by at most 1; it is wrong on 410 of the
+                ; 32768 radii (arcmask_asmsim2.py, exhaustive), and M is right
+                ; iff 2*M*M <= r*r (both fit 32 bits).
+                ld      hl,(GFX_R)
+                ld      de,46341
+                call    gfx_mul16u32        ; DE:HL = r*46341
+                ex      de,hl               ; HL = candidate M = bits 16..31
+                ld      (GFX_M),hl
+                ld      d,h
+                ld      e,l
+                call    gfx_mul16u32        ; DE:HL = M*M
+                add     hl,hl
+                rl      e
+                rl      d                   ; DE:HL = 2*M*M (< 2^31, no carry out)
+                ld      (GFX_CS_M1),hl
+                ld      (GFX_CS_M1+2),de
+                ld      hl,(GFX_R)
+                ld      d,h
+                ld      e,l
+                call    gfx_mul16u32        ; DE:HL = r*r
+                ld      (GFX_CS_M2),hl
+                ld      (GFX_CS_M2+2),de
+                ld      hl,GFX_CS_M2
+                ld      de,GFX_CS_M1
+                call    gfx_cmp32           ; CF=1 iff r*r < 2*M*M -> overshoot
+                jr      nc,gwp_mok
+                ld      hl,(GFX_M)
+                dec     hl
+                ld      (GFX_M),hl
+gwp_mok:
+                ; --- the two wedge boundaries -------------------------------
+                ld      hl,(GFX_SU14)
+                call    gwp_pos
+                ld      (GFX_WS_P),hl
+                ld      a,(GFX_SOCT)
+                and     7
+                ld      (GFX_WS_O),a
+                ld      hl,(GFX_EU14)
+                call    gwp_pos
+                ld      (GFX_WE_P),hl
+                ld      a,(GFX_EOCT)
+                and     7
+                ld      (GFX_WE_O),a
+                ; --- WRAPF / FULLW ------------------------------------------
                 xor     a
-                ld      (GFX_ARCBIG),a
-                ret
+                ld      (GFX_WRAPF),a
+                ld      (GFX_FULLW),a
+                ld      a,(GFX_WE_O)
+                ld      b,a
+                ld      a,(GFX_WS_O)
+                cp      b                   ; OS vs OE
+                jr      c,gwp_spokes        ; OS < OE -> plain wedge
+                jr      nz,gwp_wrap         ; OS > OE -> wraps 0
+                ld      hl,(GFX_WE_P)
+                ld      de,(GFX_WS_P)
+                or      a
+                sbc     hl,de               ; PE - PS
+                jr      c,gwp_wrap          ; PE < PS -> wraps 0
+                ld      a,h
+                or      l
+                jr      nz,gwp_spokes       ; PE > PS -> plain wedge
+                ; pairs EQUAL: FULLW iff the RAW records differ (near-2*pi)
+                ld      hl,GFX_SOCT
+                ld      de,GFX_EOCT
+                ld      b,4
+gwp_raw:
+                ld      a,(de)
+                cp      (hl)
+                jr      nz,gwp_full
+                inc     hl
+                inc     de
+                djnz    gwp_raw
+                jr      gwp_spokes          ; raw-identical -> zero-width wedge
+gwp_full:
+                ld      a,1
+                ld      (GFX_FULLW),a
+                jr      gwp_spokes
+gwp_wrap:
+                ld      a,1
+                ld      (GFX_WRAPF),a
+gwp_spokes:
+                ; --- pending spokes: endpoint := octant point at boundary ---
+                ld      a,(GFX_SNEG)
+                or      a
+                jr      z,gwp_no_s
+                ld      a,(GFX_WS_O)
+                ld      hl,(GFX_WS_P)
+                ld      de,GFX_SVX
+                call    gwp_spoke_vec
+gwp_no_s:
+                ld      a,(GFX_ENEG)
+                or      a
+                ret     z
+                ld      a,(GFX_WE_O)
+                ld      hl,(GFX_WE_P)
+                ld      de,GFX_EVX
+                ; fall through into gwp_spoke_vec; its ret serves ours
 
 ; ---------------------------------------------------------------------------
-; gfx_circ_bvec_prep -- compute S, E (GFX_SVX/SVY/EVX/EVY) and GFX_ARCBIG from
-; the resident-marshalled brad/sign records, once per CIRCLE arc call, BEFORE
-; the octant loop starts (spec §5.2.1 REVISED). Clobbers everything.
+; gwp_spoke_vec -- IN: A = boundary octant (0..7), HL = boundary pos,
+; DE = dest vector base (X at +0, Y at +2). Walks the midpoint loop to step
+; k = pos (even octant) / M-pos (odd), mirrors (qx,qy) into the octant,
+; applies the minor scale, stores the (vx,vy) the spoke line will draw to.
+; Clobbers everything + GFX_QX/QY/QD + GFX_PX/PY/GFX_CS_AX scratch.
 ; ---------------------------------------------------------------------------
-gfx_circ_bvec_prep:
-                ld      hl,GFX_SBRAD
-                ld      de,GFX_SVX
-                call    gfx_circ_bvec
-                ld      hl,GFX_EBRAD
-                ld      de,GFX_EVX
-                call    gfx_circ_bvec
-                jp      gfx_circ_arcbig_calc    ; tail call: ret serves both
+gwp_spoke_vec:
+                push    de                  ; [dest base]
+                push    af                  ; [octant]
+                bit     0,a
+                jr      z,gsv_keven
+                ex      de,hl
+                ld      hl,(GFX_M)
+                or      a
+                sbc     hl,de               ; k = M - pos (pos <= M-1 -> k >= 1)
+gsv_keven:
+                ld      (GFX_PX),hl         ; PX = k (walk target)
+                call    gfx_circ_init
+gsv_walk:
+                ld      hl,(GFX_QX)
+                ld      de,(GFX_PX)
+                or      a
+                sbc     hl,de
+                jr      z,gsv_have          ; qx == k -> found
+                ld      hl,(GFX_QX)
+                ld      (GFX_PY),hl         ; prev qx
+                ld      hl,(GFX_QY)
+                ld      (GFX_CS_AX),hl      ; prev qy
+                call    gfx_circ_next
+                ld      hl,(GFX_QY)
+                ld      de,(GFX_QX)
+                or      a
+                sbc     hl,de               ; still qx <= qy ?
+                jp      p,gsv_walk
+                ld      hl,(GFX_PY)         ; walked off the end (k beyond the
+                ld      (GFX_QX),hl         ; octant, e.g. M-0 at r=24 where the
+                ld      hl,(GFX_CS_AX)      ; loop tops out at M+1) -> use the
+                ld      (GFX_QY),hl         ; LAST emitted step
+gsv_have:
+                pop     af                  ; octant
+                ; mirror (qx,qy) into the octant. From the static map:
+                ;   x-source is qy (swapped) for octants 0,3,4,7 <=> (o+1)&2=0
+                ;   vx negative for octants 2,3,4,5             <=> (o+2)&4!=0
+                ;   vy negative for octants 0,1,2,3             <=> o<4
+                ld      c,a
+                inc     a
+                and     2
+                jr      nz,gsv_noswap
+                ld      hl,(GFX_QY)
+                ld      de,(GFX_QX)
+                jr      gsv_signs
+gsv_noswap:
+                ld      hl,(GFX_QX)
+                ld      de,(GFX_QY)
+gsv_signs:
+                ld      a,c
+                add     a,2
+                and     4
+                jr      z,gsv_xpos          ; vx stays positive
+                xor     a                   ; negate HL (vx)
+                sub     l
+                ld      l,a
+                sbc     a,a
+                sub     h
+                ld      h,a
+gsv_xpos:
+                ld      a,c
+                and     4
+                jr      nz,gsv_ypos         ; octant >= 4 -> vy positive
+                call    gfx_neg16_de        ; vy := -vy
+gsv_ypos:
+                ld      (GFX_PX),hl         ; vx
+                ld      (GFX_PY),de         ; vy
+                ld      a,(GFX_ASPMAJ)
+                or      a
+                jr      z,gsv_scy
+                ld      hl,(GFX_PX)
+                call    gfx_circ_scale      ; minor is X (y-major)
+                ld      (GFX_PX),hl
+                jr      gsv_store
+gsv_scy:
+                ld      hl,(GFX_PY)
+                call    gfx_circ_scale      ; minor is Y (x-major, default)
+                ld      (GFX_PY),hl
+gsv_store:
+                pop     de                  ; dest base
+                ld      hl,(GFX_PX)
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                inc     de
+                ld      hl,(GFX_PY)
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                ret
 
 ; ---------------------------------------------------------------------------
 ; gfx_circ_init -- IN: GFX_R (radius). OUT: GFX_QX=0, GFX_QY=r, GFX_QD=1-r
@@ -1390,50 +1352,68 @@ gco_incx:
 ; (+-x,+-y) and (+-y,+-x), each through gfx_circ_emit_point. Clobbers
 ; everything.
 ; ---------------------------------------------------------------------------
+; Each mirror carries its STATIC octant (D-ARCMASK): the octant of a mirror
+; position never depends on the point, so the mask needs no per-point atan --
+; the `ld a,N` immediately before each call IS the direction decomposition.
+; (BASIC angle = atan2(-dy, dx); octant o covers [o*pi/4, (o+1)*pi/4).)
 gco_emit8:
                 ld      bc,(GFX_QX)
                 ld      de,(GFX_QY)
-                call    gfx_circ_emit_point ; (+x,+y)
+                ld      a,6
+                call    gfx_circ_emit_point ; (+x,+y)  octant 6
                 ld      bc,(GFX_QX)
                 ld      de,(GFX_QY)
                 call    gfx_neg16_de
-                call    gfx_circ_emit_point ; (+x,-y)
+                ld      a,1
+                call    gfx_circ_emit_point ; (+x,-y)  octant 1
                 ld      bc,(GFX_QX)
                 call    gfx_neg16_bc
                 ld      de,(GFX_QY)
-                call    gfx_circ_emit_point ; (-x,+y)
+                ld      a,5
+                call    gfx_circ_emit_point ; (-x,+y)  octant 5
                 ld      bc,(GFX_QX)
                 call    gfx_neg16_bc
                 ld      de,(GFX_QY)
                 call    gfx_neg16_de
-                call    gfx_circ_emit_point ; (-x,-y)
+                ld      a,2
+                call    gfx_circ_emit_point ; (-x,-y)  octant 2
                 ld      bc,(GFX_QY)
                 ld      de,(GFX_QX)
-                call    gfx_circ_emit_point ; (+y,+x)
+                ld      a,7
+                call    gfx_circ_emit_point ; (+y,+x)  octant 7
                 ld      bc,(GFX_QY)
                 ld      de,(GFX_QX)
                 call    gfx_neg16_de
-                call    gfx_circ_emit_point ; (+y,-x)
+                ld      a,0
+                call    gfx_circ_emit_point ; (+y,-x)  octant 0
                 ld      bc,(GFX_QY)
                 call    gfx_neg16_bc
                 ld      de,(GFX_QX)
-                call    gfx_circ_emit_point ; (-y,+x)
+                ld      a,4
+                call    gfx_circ_emit_point ; (-y,+x)  octant 4
                 ld      bc,(GFX_QY)
                 call    gfx_neg16_bc
                 ld      de,(GFX_QX)
                 call    gfx_neg16_de
-                call    gfx_circ_emit_point ; (-y,-x)
+                ld      a,3
+                call    gfx_circ_emit_point ; (-y,-x)  octant 3
                 ret
 
 ; ---------------------------------------------------------------------------
-; gfx_circ_emit_point -- IN: BC=dx (raw octant offset, signed), DE=dy (raw).
-; Applies the minor-axis 8.8 scale (GFX_ASPMAJ selects which of dx/dy), the
-; arc mask (gfx_circ_keep), and if kept, plots (GFX_CXC+dx',GFX_CYC+dy') via
-; gfx_plot_cur (its own clip + DI-guarded RMW). Clobbers everything.
+; gfx_circ_emit_point -- IN: A = the mirror's static octant (0..7), BC=dx
+; (raw octant offset, signed), DE=dy (raw). The arc mask (gfx_circ_keep) runs
+; FIRST, on the RAW point -- the octant plus the loop's own qx -- because the
+; reference masks BEFORE the minor scale: the r=700 ASPS=35 arc row is
+; byte-exact only pre-scale (D-ARCMASK, arcmask_refmodel2.py). Then the
+; minor-axis 8.8 scale (GFX_ASPMAJ selects which of dx/dy), then the plot at
+; (GFX_CXC+dx',GFX_CYC+dy') via gfx_plot_cur (its own clip + DI-guarded RMW).
+; Clobbers everything.
 ; ---------------------------------------------------------------------------
 gfx_circ_emit_point:
                 ld      (GFX_PX),bc
                 ld      (GFX_PY),de
+                call    gfx_circ_keep       ; CF=1 iff this point survives (A=octant)
+                ret     nc
                 ld      a,(GFX_ASPMAJ)
                 or      a
                 jr      z,gcep_scaley
@@ -1441,15 +1421,13 @@ gfx_circ_emit_point:
                 ld      hl,(GFX_PX)
                 call    gfx_circ_scale
                 ld      (GFX_PX),hl
-                jr      gcep_test
+                jr      gcep_plot
 gcep_scaley:
                 ; x-major (aspect<=1, incl. the no-scale default): minor is y
                 ld      hl,(GFX_PY)
                 call    gfx_circ_scale
                 ld      (GFX_PY),hl
-gcep_test:
-                call    gfx_circ_keep       ; CF=1 iff this point survives the arc mask
-                ret     nc
+gcep_plot:
                 ld      hl,(GFX_CXC)
                 ld      de,(GFX_PX)
                 add     hl,de
@@ -1533,172 +1511,105 @@ gcs_signed:
                 ret
 
 ; ---------------------------------------------------------------------------
-; gfx_circ_keep -- IN: GFX_PX/PY = the current (scaled) point P. OUT: CF=1
-; iff P should be plotted: always when GFX_ARCF=0 (full circle/ellipse); else
-; the arc mask (spec §5.2) -- cross(S,P)>=0 AND cross(P,E)>=0 when
-; GFX_ARCBIG=0 (sweep<=pi), OR when GFX_ARCBIG=1 (sweep>pi). Clobbers
-; everything + GFX_CS_*/GFX_CS_T1 scratch.
+; gfx_circ_keep -- the D-ARCMASK step-index wedge test. IN: A = the current
+; mirror's STATIC octant (0..7); reads GFX_QX (the loop's step index -- always
+; min(|dx|,|dy|)), GFX_M and the wedge cells. OUT: CF=1 iff the point is
+; plotted: always when GFX_ARCF=0 or GFX_FULLW=1; else iff the point's
+; normalized (octant,pos) pair lies in the CLOSED cyclic interval from
+; (GFX_WS_O,GFX_WS_P) to (GFX_WE_O,GFX_WE_P) -- lexicographic pair compares,
+; wrap decided once per CIRCLE (GFX_WRAPF). Pure 16-bit RAM arithmetic: this
+; replaces two gfx_cross_ge0 calls per point -- four 16x16->32 multiplies and
+; two 32-bit compares -- with at most three 16-bit compares, which is the
+; whole of the 5-6x arc slowdown D-ARCMASK measured against the reference.
+; Clobbers A, BC, DE, HL.
 ; ---------------------------------------------------------------------------
-; G4-arcbnd (pinned, scratchpad/g4_arc_boundary_capture.py): BOTH boundary
-; tests are INCLUSIVE (<=0), matched exact (0 diffs) on every pinned arc +
-; a 7-point boundary sweep, once combined with the resident's near-zero
-; nudge (gfx_round_nonzero, basic/graphics.asm) that keeps S/E direction
-; information the reference itself is shown to preserve at near-cardinal
-; angles. cross(S,P)<=0 == cross(P,S)>=0 and cross(P,E)<=0 == cross(E,P)>=0
-; (anticommutativity), so both reuse gfx_cross_ge0 with swapped arguments --
-; no separate "<=0" primitive needed.
 gfx_circ_keep:
+                ld      c,a                 ; C = octant
                 ld      a,(GFX_ARCF)
                 or      a
-                jr      z,gck_keep
-                ; --- S-side: cross(S,P)<=0  <=>  cross(P,S)>=0 ---
-                ld      hl,(GFX_PX)
-                ld      (GFX_CS_AX),hl
-                ld      hl,(GFX_PY)
-                ld      (GFX_CS_AY),hl
-                ld      hl,(GFX_SVX)
-                ld      (GFX_CS_BX),hl
-                ld      hl,(GFX_SVY)
-                ld      (GFX_CS_BY),hl
-                call    gfx_cross_ge0
-                sbc     a,a                 ; A = $FF if CF=1 else $00
-                ld      (GFX_CS_T1),a
-                ; --- E-side: cross(P,E)<=0  <=>  cross(E,P)>=0 ---
-                ld      hl,(GFX_EVX)
-                ld      (GFX_CS_AX),hl
-                ld      hl,(GFX_EVY)
-                ld      (GFX_CS_AY),hl
-                ld      hl,(GFX_PX)
-                ld      (GFX_CS_BX),hl
-                ld      hl,(GFX_PY)
-                ld      (GFX_CS_BY),hl
-                call    gfx_cross_ge0
-                sbc     a,a
-                ld      b,a                 ; B = cross(P,E)<=0 flag
-                ld      a,(GFX_CS_T1)       ; A = cross(S,P)<=0 flag
-                ld      c,a
-                ld      a,(GFX_ARCBIG)
+                jr      z,gck_keep          ; full circle/ellipse -> keep
+                ld      a,(GFX_FULLW)
                 or      a
+                jr      nz,gck_keep         ; near-2*pi wedge -> keep
+                ; pos = qx (even octant) / M - qx (odd octant)
+                ld      hl,(GFX_QX)
+                bit     0,c
+                jr      z,gck_norm
+                ex      de,hl
+                ld      hl,(GFX_M)
+                or      a
+                sbc     hl,de               ; M - qx (may be -1: qx tops at M+1)
+gck_norm:
+                ; normalize (C,HL) to 0 <= pos <= M-1. One step each way
+                ; suffices (qx <= M+1); M=0 (r<=1) skips -- pos is 0 either
+                ; way, matching arcmask_asmsim2's draw_pair exactly.
+                ld      de,(GFX_M)
+                ld      a,d
+                or      e
+                jr      z,gck_pair
+                bit     7,h
+                jr      z,gck_n2
+                add     hl,de               ; pos<0 -> borrow an octant
+                dec     c
+                jr      gck_pair
+gck_n2:
+                or      a
+                sbc     hl,de
+                jr      c,gck_n2u           ; pos < M -> in range; undo
+                inc     c                   ; pos >= M -> carry an octant
+                jr      gck_pair
+gck_n2u:
+                add     hl,de
+gck_pair:
+                ld      a,c
+                and     7
+                ld      c,a                 ; C = octant 0..7, HL = pos
+                ; B := 1 iff P >= S  (octant compare, pos breaks the tie)
+                ld      b,1
+                ld      a,(GFX_WS_O)
+                cp      c
+                jr      c,gck_e             ; OS < Po -> P > S
+                jr      nz,gck_plt_s        ; OS > Po -> P < S
+                ld      de,(GFX_WS_P)
+                push    hl
+                or      a
+                sbc     hl,de               ; pos - PS
+                pop     hl
+                jr      nc,gck_e            ; pos >= PS -> P >= S
+gck_plt_s:
+                ld      b,0
+gck_e:
+                ; A := 1 iff P <= E
+                ld      a,(GFX_WE_O)
+                cp      c
+                jr      c,gck_pgt_e         ; OE < Po -> P > E
+                jr      nz,gck_ple          ; OE > Po -> P < E
+                ld      de,(GFX_WE_P)
+                or      a
+                sbc     hl,de               ; pos - PE (HL dead afterwards)
+                jr      z,gck_ple
+                jr      c,gck_ple
+gck_pgt_e:
+                xor     a
+                jr      gck_comb
+gck_ple:
+                ld      a,1
+gck_comb:
+                ld      d,a
+                ld      a,(GFX_WRAPF)
+                or      a
+                ld      a,d
                 jr      nz,gck_or
-                ld      a,c
-                and     b
-                jr      gck_final
+                and     b                   ; plain wedge: P>=S AND P<=E
+                jr      gck_fin
 gck_or:
-                ld      a,c
-                or      b
-gck_final:
+                or      b                   ; wraps 0:     P>=S OR  P<=E
+gck_fin:
                 or      a
-                jr      z,gck_reject
+                jr      nz,gck_keep
+                ret                         ; CF=0 (the `or a` cleared it) -> reject
 gck_keep:
                 scf
-                ret
-gck_reject:
-                or      a
-                ret
-
-; ---------------------------------------------------------------------------
-; gfx_cross_ge0 -- cross(A,B) = Ax*By - Ay*Bx, reading vector A from
-; GFX_CS_AX/AY and vector B from GFX_CS_BX/BY (caller-populated). OUT: CF=1
-; iff cross(A,B)>=0. Sign-magnitude decomposition (gfx_abs16 + gfx_mul16u32,
-; own 16x16->32 unsigned multiply, compared with gfx_cmp32). Magnitudes are
-; parked in GFX_CS_M1/M2, which alias the PAINT span stack -- 8 contiguous
-; bytes, and the G3/G4/G5 sysvar window has 6 left (basic/sysvars.inc).
-; Clobbers AF, BC, DE, HL.
-;
-; 🔴 THIS ROUTINE WAS NOT BROKEN BEFORE D-CIRCOVF AND WOULD HAVE BEEN BROKEN BY
-; IT. D-CIRCDOM charged the four gfx_abs16 calls below to "|value| <= 255 BY
-; CONSTRUCTION", the construction being the `ld l,h / ld h,0` truncations in
-; gfx_circ_scale and gfx_circ_bvec_mag -- which is correct, and is exactly why
-; the two 16-bit PRODUCTS were safe: 255*255 = 65025 fits. D-CIRCOVF deletes
-; those truncations, so components reach 32767 and the products reach 2^30. The
-; widening below is not an improvement, it is the other half of that fix.
-; ⚠️ A BOUND STATED "BY CONSTRUCTION" IS OWNED BY WHOEVER DELETES THE
-; CONSTRUCTION. D-CIRCDOM predicted a coupling into gfx_circ_scale's re-negate,
-; which turned out not to bind; the one that did bind is this, and the fact it
-; needed was already written down one bullet above the conclusion nobody drew.
-; The $8000 verdict on the four gfx_abs16 calls still holds -- |value| <= 32767,
-; via the int16 radius coercion, not via 255.
-;
-; ⚠️ NO GREEN GATE ROW CAN SEE THE 32-BIT COMPARE. Every row that would (an arc,
-; at a radius where the products pass 16 bits, with pixels on screen) is RED for
-; a separate pre-existing reason -- measured: CIRCLE(128,352),200,15,1.1,2.04 is
-; byte-identical pre- and post-slice and diverges on both. Filed in TODO.md.
-; K-CO3 in scratchpad/circovf_knives.py undoes this widening and is declared
-; kind="nothing" for exactly that reason: it reddens nothing, as predicted, and
-; that number is what stands in for the missing row.
-; ---------------------------------------------------------------------------
-gfx_cross_ge0:
-                ; term1 = |Ax|*|By|, sign1 = sign(Ax) xor sign(By)
-                ld      hl,(GFX_CS_AX)
-                call    gfx_abs16           ; HL=|Ax|, A=sign1a
-                ld      b,a
-                ex      de,hl               ; DE=|Ax|
-                ld      hl,(GFX_CS_BY)
-                call    gfx_abs16           ; HL=|By|, A=sign1b
-                xor     b                   ; A=0 (same sign) or nonzero (differ)
-                push    af                  ; [stack: sign1 flag]
-                ex      de,hl               ; HL=|Ax|, DE=|By|
-                call    gfx_mul16u32        ; DE:HL := |Ax| * |By| = mag1 (32-bit)
-                push    de
-                push    hl                  ; [stack: sign1 flag, mag1hi, mag1lo]
-                ; term2 = |Ay|*|Bx|, sign2 = sign(Ay) xor sign(Bx)
-                ld      hl,(GFX_CS_AY)
-                call    gfx_abs16
-                ld      b,a
-                ex      de,hl
-                ld      hl,(GFX_CS_BX)
-                call    gfx_abs16
-                xor     b                   ; A = sign2 flag
-                push    af                  ; stash it -- the multiply clobbers BC,
-                                            ; so C cannot hold it across the call
-                ex      de,hl               ; HL=|Ay|, DE=|Bx|
-                call    gfx_mul16u32        ; DE:HL := mag2 (32-bit)
-                ld      (GFX_CS_M2),hl
-                ld      (GFX_CS_M2+2),de    ; mag2 parked; the stack holds mag1
-                pop     af
-                ld      c,a                 ; C = sign2 flag (restored AFTER the mul)
-                pop     hl
-                ld      (GFX_CS_M1),hl      ; mag1 low
-                pop     hl
-                ld      (GFX_CS_M1+2),hl    ; mag1 high
-                pop     af                  ; A = sign1 flag
-                or      a
-                jr      nz,gcx_1neg
-                ; --- sign1 non-negative (term1 >= 0) ---
-                ld      a,c
-                or      a
-                jr      nz,gcx_keep         ; term1>=0, term2<0 -> sum always >=0
-                ; both non-negative: keep iff mag1>=mag2
-                ld      hl,GFX_CS_M1
-                ld      de,GFX_CS_M2
-                call    gfx_cmp32           ; CF=1 iff (HL)<(DE)
-                ccf
-                ret
-gcx_1neg:
-                ld      a,c
-                or      a
-                jr      z,gcx_negpos
-                ; both negative: keep iff mag2>=mag1
-                ld      hl,GFX_CS_M2
-                ld      de,GFX_CS_M1
-                call    gfx_cmp32
-                ccf
-                ret
-gcx_negpos:
-                ; term1<0, term2>=0: keep only if BOTH magnitudes are zero
-                ld      hl,GFX_CS_M1
-                ld      b,8                 ; both 4-byte magnitudes, back to back
-                xor     a
-gcx_zlp:
-                or      (hl)
-                inc     hl
-                djnz    gcx_zlp
-                jr      nz,gcx_reject
-gcx_keep:
-                scf
-                ret
-gcx_reject:
-                or      a
                 ret
 
 ; ---------------------------------------------------------------------------
@@ -1707,14 +1618,11 @@ gcx_reject:
 ; the main-ROM low region, which is swapped OUT for the duration of this
 ; CALSLT). Clobbers A, BC.
 ;
-; D-CIRCOVF. This replaces gfx_mul16u, which kept only the low 16 bits and is
-; now unreferenced (deleted). ⚠️ ITS ONLY CALLER, gfx_cross_ge0, WAS NOT BROKEN
-; BEFORE THIS SLICE and is broken BY it if left alone: its inputs used to be
-; byte-bounded by the very `ld l,h / ld h,0` truncation that this slice removes
-; from gfx_circ_scale and gfx_circ_bvec_mag, so |v| <= 255 and no product could
-; exceed 65025. With the scale computed exactly the components reach 32767 and
-; the products reach 2^30. The coupling runs the other way round from the one
-; D-CIRCDOM predicted -- see gfx_circ_scale's header.
+; D-CIRCOVF replaced gfx_mul16u (low-16-only) with this full-width form for
+; gfx_cross_ge0's 2^30 products. D-ARCMASK then RETIRED gfx_cross_ge0 -- the
+; arc mask is a step-index wedge now -- and the callers of this multiply are
+; gfx_circ_wedge_prep's three init-time products (M candidate, M*M, r*r) and
+; gwp_pos's u14*M, all once per CIRCLE, none per point.
 ; ---------------------------------------------------------------------------
 ; OUT: DE = product HIGH word, HL = product LOW word.
 gfx_mul16u32:
@@ -1776,7 +1684,8 @@ gcm_lp:
 ; pair this replaces at both callers was the reason three of D-CIRCDOM's five
 ; `$8000` verdicts held "by construction" (§6). They still hold -- see
 ; gfx_circ_scale's header for the arithmetic -- but they now hold on a bound
-; of 32767, not 255, and gfx_cross_ge0's products are sized off that bound.
+; of 32767, not 255. (gfx_cross_ge0, whose products were sized off that
+; bound, is retired -- D-ARCMASK.)
 ; ---------------------------------------------------------------------------
 gfx_mul16r:
                 ld      hl,0

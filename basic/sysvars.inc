@@ -599,43 +599,45 @@ GFX_SVX         equ     $E130   ; start boundary vector X, screen-offset scaled 
 GFX_SVY         equ     $E132   ; start boundary vector Y (2)
 GFX_EVX         equ     $E134   ; end boundary vector X (2)
 GFX_EVY         equ     $E136   ; end boundary vector Y (2)
-GFX_ARCBIG      equ     $E138   ; sweep > pi flag (0/1); TENANT-computed (§5.2.1 REVISED --
-                                ; trig-free: gfx_circ_arcbig_calc, sub/graphics.asm) (1)
+GFX_FULLW       equ     $E138   ; full-wrap flag (0/1): the two boundaries land in the
+                                ; SAME (octant,pos) cell but their RAW (oct,u14) records
+                                ; differ -- a near-2*pi sweep, keep everything. Replaces
+                                ; GFX_ARCBIG: the D-ARCMASK wedge test needs no big/small
+                                ; split, the cyclic pair compare covers both. (1)
 GFX_QX          equ     $E139   ; midpoint-circle octant state: x (2)
 GFX_QY          equ     $E13B   ; midpoint-circle octant state: y (2)
 GFX_QD          equ     $E13D   ; midpoint-circle octant state: d (signed) (2)
 GFX_PX          equ     $E13F   ; tenant scratch: current (mirrored+scaled) offset X,
                                 ; used as the arc cross-product test point P (2)
 GFX_PY          equ     $E141   ; tenant scratch: current offset Y (2)
-GFX_CS_AX       equ     $E143   ; gfx_cross_ge0 input: vector A.x; ALSO reused as
-                                ; gfx_circ_bvec scratch (dead there before the octant
-                                ; loop starts) (2)
-GFX_CS_AY       equ     $E145   ; gfx_cross_ge0 input: vector A.y; ALSO gfx_circ_bvec's
-                                ; dest-vector-base scratch (2)
-GFX_CS_BX       equ     $E147   ; gfx_cross_ge0 input: vector B.x; ALSO gfx_circ_bvec's
-                                ; sign_c scratch (2)
-GFX_CS_BY       equ     $E149   ; gfx_cross_ge0 input: vector B.y; ALSO gfx_circ_bvec's
-                                ; sign_s scratch (2)
-GFX_CS_T1       equ     $E14B   ; gfx_circ_keep scratch: cross(S,P)>=0 flag ($00/$FF);
-                                ; ALSO gfx_circ_bvec_nudge's sign-byte scratch (1)
-; --- G4 REVISED (2026-07-21, spec §5.2.1): trig-free arc boundary. Replaces the
-; original float SIN/COS resident pipeline (which infinite-looped in the sub-ROM
-; math pack's series fp_mul -- root-caused via scratchpad/g4_hang_probe.py) with a
-; resident brad+quadrant-sign marshal (ONE bounded fp_mul + 3 bounded fp_cmp
-; compares -- no series, cannot hang) and a tenant integer table lookup
-; (sub/graphics.asm gfx_circ_bvec). GFX_ATMP (the old FAC-repack stash, 18 bytes)
-; is retired -- these 8 bytes replace it, net -10 bytes.
-GFX_SBRAD       equ     $E14C   ; start angle: round(|a0|*128/pi), RAW/unmasked int16
-                                ; (only the low byte is a mod-256 table index; the
-                                ; full word feeds gfx_circ_arcbig_calc's wrap fix) (2)
-GFX_SSGNC       equ     $E14E   ; start: cos-component quadrant sign ($01/$FF/$00) (1)
-GFX_SSGNS       equ     $E14F   ; start: sin-component quadrant sign ($01/$FF/$00) (1)
-GFX_EBRAD       equ     $E150   ; end angle: round(|a1|*128/pi), RAW/unmasked (2)
-GFX_ESGNC       equ     $E152   ; end: cos-component quadrant sign (1)
-GFX_ESGNS       equ     $E153   ; end: sin-component quadrant sign (1)
+GFX_CS_AX       equ     $E143   ; circleparse scratch: cpt_angle_from_arga's neg-flag
+                                ; cell address stash (was gfx_cross_ge0's A.x -- that
+                                ; routine is retired, D-ARCMASK) (2)
+GFX_CS_AY       equ     $E145   ; circleparse scratch: cpt_angle_from_arga /
+                                ; cpt_boundary_prep's dest-record-base stash (2)
+GFX_M           equ     $E147   ; D-ARCMASK: M = floor(r/sqrt(2)), the octant's top
+                                ; step index; gfx_circ_wedge_prep, once per CIRCLE (2)
+GFX_WS_P        equ     $E149   ; wedge START boundary: in-octant position, 0..M-1 (2)
+GFX_WS_O        equ     $E14B   ; wedge START boundary: octant 0..7 (1)
+; --- D-ARCMASK (2026-08-17, docs/arcmask-msx1-characterization.md §5.5): the arc
+; boundary records are (oct_raw, u14) pairs -- the angle's octant count and its
+; 14-bit fraction into the octant, both trunc'd, from a SINGLE-precision-rounded
+; angle. Replaces the 2026-07-21 (brad, sign_c, sign_s) records: the boundary is
+; the octant loop's STEP INDEX distributed linearly over the in-octant angle,
+; measured against 54 whole reference planes, not a rounded exact ray. The
+; records keep the old cells' addresses and 4-byte-per-boundary size.
+GFX_SOCT        equ     $E14C   ; start: trunc(|a0|*4/pi), RAW/unmasked int16 (the
+                                ; full word feeds the full-wrap detector; only the
+                                ; low 3 bits are the octant) (2)
+GFX_SU14        equ     $E14E   ; start: trunc(frac * 16384), 0..16383 (2)
+GFX_EOCT        equ     $E150   ; end: trunc(|a1|*4/pi), RAW/unmasked (2)
+GFX_EU14        equ     $E152   ; end: trunc(frac * 16384) (2)
 GFX_SNEG        equ     $E154   ; resident: start angle was negative -> spoke pending (1)
 GFX_ENEG        equ     $E155   ; resident: end angle was negative -> spoke pending (1)
-                                ; -> ends $E156 (the G3/G4/G5 window ends $E15F
+GFX_WE_P        equ     $E156   ; wedge END boundary: in-octant position, 0..M-1 (2)
+GFX_WE_O        equ     $E158   ; wedge END boundary: octant 0..7 (1)
+GFX_WRAPF       equ     $E159   ; wedge wraps 0: pair S > pair E lexicographically (1)
+                                ; -> ends $E15A (the G3/G4/G5 window ends $E15F
                                 ; inclusive; well within the G3 header's budget note)
 ; G5 PAINT (docs/spec-basic-graphics-g5.md §6). ONE new cell in the same window:
 ; the resident-marshalled border colour (the raw, NOT range-checked comparison
@@ -1665,8 +1667,9 @@ GFX_PSTK_END    equ     GFX_PSTK + GFX_PSTK_CAP*GFX_PSTK_ENTSZ
 ; CIRCLE's parse co-routine is done. That co-routine borrows GFX_DPTR ($E4F2),
 ; 256 B clear of these 8, and basic/graphics.asm reads GFX_DPTR again AFTER the
 ; draw to continue the statement stream, so the two must not and do not overlap.
-GFX_CS_M1       equ     GFX_PSTK        ; $E3F2: |Ax|*|By|, 4 B LE (4)
-GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $E3F6: |Ay|*|Bx|, 4 B LE, CONTIGUOUS with
+GFX_CS_M1       equ     GFX_PSTK        ; $E3F2: D-ARCMASK: 2*M*M during the M
+                                        ; floor-correction (was cross_ge0's mag1) (4)
+GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $E3F6: r*r for the same compare, CONTIGUOUS with
                                         ; M1 -- gcx_zlp tests both as one 8-byte run (4)
 GFX_DBUF        equ     GFX_PSTK        ; $E3F2: frame text (concatenated), 256 B
 GFX_DBUF_CAP    equ     256

@@ -144,7 +144,7 @@ cpt_at_start:
 ; --- after start angle: boundary prep, then the optional ",end" ------------
 cpt_after_start:
                 ld      bc,GFX_SNEG
-                ld      de,GFX_SBRAD
+                ld      de,GFX_SOCT
                 call    cpt_angle_from_arga
                 call    cpt_skipsp
                 cp      ','
@@ -170,7 +170,7 @@ cpt_start_empty:
 ; --- after end angle: boundary prep, then the optional ",aspect" -----------
 cpt_after_end:
                 ld      bc,GFX_ENEG
-                ld      de,GFX_EBRAD
+                ld      de,GFX_EOCT
                 call    cpt_angle_from_arga
                 call    cpt_skipsp
                 cp      ','
@@ -283,25 +283,22 @@ cpt_defaults:
                 ld      (GFX_ENEG),a
                 ret
 
-; cpt_angle_defaults: eager brad=0/signc=+1/signs=0 for BOTH boundaries -------
-; (verbatim from circ_start_intro -- angle 0, the same vector an omitted end
-; (2*pi) yields by periodicity, spec §5.2.1 REVISED).
+; cpt_angle_defaults: eager (oct,u14)=(0,0) for BOTH boundaries -------------
+; (angle 0, the same boundary an omitted end (2*pi) yields by periodicity --
+; D-ARCMASK: the all-zero record IS angle 0's marshalling, no special case).
 cpt_angle_defaults:
                 xor     a
-                ld      (GFX_SBRAD),a
-                ld      (GFX_SBRAD+1),a
-                ld      (GFX_EBRAD),a
-                ld      (GFX_EBRAD+1),a
-                ld      (GFX_SSGNS),a
-                ld      (GFX_ESGNS),a
-                ld      a,1
-                ld      (GFX_SSGNC),a
-                ld      (GFX_ESGNC),a
+                ld      hl,GFX_SOCT
+                ld      b,8                 ; SOCT..EU14, two 4-byte records
+cad_lp:
+                ld      (hl),a
+                inc     hl
+                djnz    cad_lp
                 ret
 
 ; cpt_angle_from_arga: the tail of the old circ_parse_given_angle, from ARGA ---
 ; canonical (the resident already did eval+widen_rhs_operand). IN: BC=neg-flag
-; cell (GFX_SNEG/ENEG), DE=dest record base (GFX_SBRAD/EBRAD), ARGA=canonical
+; cell (GFX_SNEG/ENEG), DE=dest record base (GFX_SOCT/EOCT), ARGA=canonical
 ; angle. Sets the neg flag, forces |angle|, fills the boundary record, ARCF:=1.
 cpt_angle_from_arga:
                 ld      (GFX_CS_AX),bc      ; stash neg-flag cell addr
@@ -333,12 +330,12 @@ cpt_angle_from_arga:
 ; both models predict the SAME picture) came back byte-identical, which is what
 ; makes the 3 DIFFs attributable to the rounding and not to the rig.
 ;
-; ⚠️ WHY NOT FIX `cpt_round` ITSELF: it is shared with cpt_boundary_prep, whose
-; brad = round(|angle|*128/pi) is separately pinned (spec §5.2.1 REVISED) and
-; gated GREEN by the arc rows. Only the ASPS caller truncates. The swap is
-; `call cpt_round` -> `call flt_to_int16`, the very routine cpt_round itself
-; tail-uses, so it is BYTE-NEUTRAL (0 B) -- and safe unsigned because
-; cpt_after_aspect has already refused aspect<0 and 1/aspect is positive.
+; ⚠️ WHY THIS TRUNCATES DIRECTLY: D-CIRCDOM measured the reference truncating
+; here while the boundary marshalling rounded, so the two callers split; the
+; shared `cpt_round` that forced the choice was retired by D-ARCMASK when the
+; boundary marshalling moved to trunc as well (both its trunc sites are
+; flt_to_int16). Safe unsigned because cpt_after_aspect has already refused
+; aspect<0 and 1/aspect is positive.
 ;
 ; ⚠️ THE CORPUS COULD NOT SEE THIS: every aspect the tree had ever drawn
 ; (.25 -> 64, .5 -> 128, 2 -> 128, 3 -> 85.33, .01/1/100 via dexp5-pin) has
@@ -355,130 +352,94 @@ cpt_asp_scale256:
                 ld      (GFX_ASPS),de
                 ret
 
-; cpt_boundary_prep: |angle| -> (brad, sign_c, sign_s) record at (GFX_CS_AY). --
-; Verbatim from gfx_circ_boundary_prep (spec §5.2.1 REVISED, trig-free). Three
-; bounded fp_cmp compares pin the quadrant signs; one fp_mul + round gives brad.
+; cpt_boundary_prep: |angle| -> (oct_raw, u14) record at (GFX_CS_AY). ---------
+; D-ARCMASK (2026-08-17, docs/arcmask-msx1-characterization.md §5.5): the
+; reference's arc boundary is the octant loop's STEP INDEX distributed
+; LINEARLY over the in-octant angle, evaluated in SINGLE precision. Measured:
+; 53/54 whole reference planes (arcmask_refmodel2.py), the exact-ray rule this
+; replaces scores 2-4/54. The marshalling:
+;   P1  round ARGA to 6 significant digits, half-up. ⚠️ LOAD-BEARING: without
+;       it the 1.5707963-vs-pi/2 row diverges (53->52, arcmask_asmsim2.py) --
+;       the reference keeps the axis point because to 6 digits 1.5707963 IS
+;       pi/2. Digits 6..14 (incl. the guard) are zeroed either way.
+;   P2  q = theta6 * (4/pi)              one bounded fp_mul -- no series
+;   P3  oct_raw = trunc(q)               flt_to_int16 is silent out of domain,
+;                                        same contract as the brad it replaces
+;   P4  f = q - oct_raw                  ARGB := -oct_raw via widen_uint_to's
+;                                        sign argument; ARGA survives P3
+;                                        (domain_convert_core unpacks FAC into
+;                                        CVT, not ARGA)
+;   P5  u14 = trunc(f * 16384)           0..16383
+; Replaces the (brad, sign_c, sign_s) marshal, its three quadrant fp_cmp
+; compares and their three 18-byte constants, cpt_round and cpt_build_half --
+; the quadrant signs are implicit in the octant index.
 cpt_boundary_prep:
-                ld      hl,GFX_HALF_PI
-                ld      de,ARGB
-                ld      bc,18
-                ldir
-                call    fp_cmp              ; A = 1(<half_pi) / 2(==) / 4(>)
-                ld      (GFX_CS_T1),a       ; stash (the 2nd ldir clobbers B)
-                ld      hl,GFX_THREE_HALF_PI
-                ld      de,ARGB
-                ld      bc,18
-                ldir
-                call    fp_cmp              ; A = cmp vs THREE_HALF_PI
-                ld      c,a
-                ld      a,(GFX_CS_T1)
-                ld      b,a                 ; B = cmp vs HALF_PI (after both ldir)
-                cp      2
-                jr      z,cpt_signc_zero
-                ld      a,c
-                cp      2
-                jr      z,cpt_signc_zero
-                ld      a,b
-                cp      1
-                jr      z,cpt_signc_pos
-                ld      a,c
-                cp      4
-                jr      z,cpt_signc_pos
-                ld      a,$FF               ; HALF_PI < theta < THREE_HALF_PI
-                jr      cpt_signc_store
-cpt_signc_pos:
-                ld      a,1
-                jr      cpt_signc_store
-cpt_signc_zero:
-                xor     a
-cpt_signc_store:
-                ld      hl,(GFX_CS_AY)
+                ; --- P1: 6-significant-digit round, half-up, in place -------
+                ld      hl,ARGA+FPNUM_DIG+6
+                ld      a,(hl)
+                cp      5
+                push    af                  ; CF=1 -> digit 6 < 5, no carry
+                ld      b,9                 ; zero digits 6..14 (guard incl.)
+cbp_zlp:
+                ld      (hl),0
                 inc     hl
-                inc     hl                  ; dest+2 = signc
-                ld      (hl),a
+                djnz    cbp_zlp
+                pop     af
+                jr      c,cbp_mul           ; truncation WAS the rounding
+                ld      hl,ARGA+FPNUM_DIG+5
+                ld      b,6
+cbp_carry:
+                ld      a,(hl)
+                inc     a
+                cp      10
+                jr      c,cbp_cst           ; no overflow -> store, done
+                ld      (hl),0
+                dec     hl
+                djnz    cbp_carry
+                ; 0.999999 -> 1.000000: dig0=1 (rest already 0), dexp+1
                 ld      hl,ARGA+FPNUM_DIG
-                call    dig15_iszero        ; Z=1 iff theta is exactly 0
-                jr      z,cpt_signs_zero
-                ld      hl,GFX_PI_CONST
-                ld      de,ARGB
-                ld      bc,18
-                ldir
-                call    fp_cmp              ; A = theta vs PI
-                cp      2
-                jr      z,cpt_signs_zero
-                cp      1
-                jr      z,cpt_signs_pos
-                ld      a,$FF               ; theta > PI
-                jr      cpt_signs_store
-cpt_signs_pos:
-                ld      a,1
-                jr      cpt_signs_store
-cpt_signs_zero:
-                xor     a
-cpt_signs_store:
-                ld      hl,(GFX_CS_AY)
+                ld      (hl),1
+                ld      hl,(ARGA+FPNUM_DEXP)
                 inc     hl
-                inc     hl
-                inc     hl                  ; dest+3 = signs
+                ld      (ARGA+FPNUM_DEXP),hl
+                jr      cbp_mul
+cbp_cst:
                 ld      (hl),a
-                ld      hl,GFX_K_128_PI
+cbp_mul:
+                ; --- P2: q := theta6 * (4/pi) -------------------------------
+                ld      hl,GFX_K_4PI
                 ld      de,ARGB
                 ld      bc,18
                 ldir
-                call    fp_mul              ; ARGA/FAC := theta * (128/pi)
-                call    cpt_round           ; DE := round(...)
+                call    fp_mul              ; ARGA/FAC := theta6 * 4/pi
+                ; --- P3: oct_raw -> record +0/+1 ----------------------------
+                call    flt_to_int16        ; DE := trunc(q), silent
                 ld      hl,(GFX_CS_AY)
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                ; --- P4: f := q - oct_raw -----------------------------------
+                ld      hl,ARGB
+                ld      a,$80               ; sign: ARGB := -oct_raw
+                call    widen_uint_to
+                call    fp_add              ; ARGA/FAC := q - oct_raw
+                ; --- P5: u14 -> record +2/+3 --------------------------------
+                ld      hl,ARGB
+                xor     a
+                ld      de,16384
+                call    widen_uint_to       ; ARGB := 16384.0
+                call    fp_mul              ; ARGA/FAC := f * 16384
+                call    flt_to_int16        ; DE := trunc, 0..16383
+                ld      hl,(GFX_CS_AY)
+                inc     hl
+                inc     hl
                 ld      (hl),e
                 inc     hl
                 ld      (hl),d
                 ret
 
-; cpt_round: DE := round-half-away-from-zero(ARGA) as int16 (verbatim from ----
-; gfx_round_arga_de: abs, +0.5, trunc, reapply sign).
-cpt_round:
-                ld      a,(ARGA+FPNUM_SIGN)
-                push    af
-                xor     a
-                ld      (ARGA+FPNUM_SIGN),a ; ARGA := |value|
-                ld      hl,ARGB
-                call    cpt_build_half      ; ARGB := 0.5
-                call    fp_add              ; ARGA/FAC := |value| + 0.5
-                call    flt_to_int16        ; DE := trunc(|value|+0.5)
-                pop     af
-                or      a
-                ret     z                   ; non-negative -> DE correct
-                xor     a                   ; negate DE
-                sub     e
-                ld      e,a
-                ld      a,0
-                sbc     a,d
-                ld      d,a
-                ret
-
-; cpt_build_half: write the 18-byte 0.5 FPNUM at HL (verbatim from gfx_build_half).
-cpt_build_half:
-                xor     a
-                ld      (hl),a              ; sign
-                inc     hl
-                ld      (hl),a              ; dexp lo
-                inc     hl
-                ld      (hl),a              ; dexp hi
-                inc     hl
-                ld      (hl),5              ; dig[0] = 5
-                inc     hl
-                ld      b,14
-cpt_gbh_lp:
-                ld      (hl),0
-                inc     hl
-                djnz    cpt_gbh_lp
-                ret
-
-; --- FPNUM constants (18-byte records; moved verbatim from the resident) -----
-GFX_HALF_PI:
-                db      0, 1,0, 1,5,7,0,7,9,6,3,2,6,7,9,4,8,9
-GFX_PI_CONST:
-                db      0, 1,0, 3,1,4,1,5,9,2,6,5,3,5,8,9,7,9
-GFX_THREE_HALF_PI:
-                db      0, 1,0, 4,7,1,2,3,8,8,9,8,0,3,8,4,6,8
-GFX_K_128_PI:
-                db      0, 2,0, 4,0,7,4,3,6,6,5,4,3,1,5,2,5,2
+; --- FPNUM constant (18-byte record) -----------------------------------------
+; 4/pi = 1.2732395447351|6...: 14 significant digits + the guard digit, the
+; same layout as the retired K_128_PI it replaces.
+GFX_K_4PI:
+                db      0, 1,0, 1,2,7,3,2,3,9,5,4,4,7,3,5,1,6
