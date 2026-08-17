@@ -199,14 +199,64 @@ and the model landing on **zerobas's own answer** in the first is what says so:
   arc mask is right; only the **deferred spoke's endpoint** is not. The residual
   that guessed "spoke endpoints" was right about that row and about nothing else.
 
+### 5.4 The two misses, re-run against the rule — one dissolves, one sharpens
+
+**`ctl_card_r95` is not a nudge defect — my §4.3 diagnosis was wrong.** The
+mechanism is upstream of the mask entirely: 1.5707963 differs from π/2 by
+3×10⁻⁸, and the reference keeps the axis point — so it cannot be resolving that
+difference. Round the angle to **6 significant BCD digits (half-up)** — single
+precision — and the step-index rule reproduces the row exactly, *without any
+nudge*: **53/54**, all r=15 sets and the 1.50..1.60 near-cardinal sweep (the
+nudge's own pin) still green, and deleting the rounding is knifed at exactly
+that one row (53→52).
+
+**The spoke finding was sitting in banked data since G4.** The round-3 capture
+(`PSET(75,60),9:CIRCLE(60,60),15,6,-0.01,1.57`) has colour 6 in the y=60 row —
+the reference's spoke endpoint at θ=−0.01 is **(15,0), the octant point at the
+boundary**, where zerobas's nudged QTAB vector gives (15,−1). Latent: no gate
+row covers it. At r=400 the QTAB 255-cap also shortens today's endpoint to
+(1,−398). **Neither explains `arc_big_r400`** — the octant-point spoke still
+reproduces *zerobas's* plane there, so that row's divergence is in the spoke
+LINE rasterisation or clipping at an off-screen endpoint. It stays open,
+sharpened.
+
+### 5.5 The integer pipeline, simulated exact before any asm
+
+[`arcmask_asmsim2.py`](../scratchpad/arcmask_asmsim2.py) runs the whole design
+at tenant widths — 14-digit BCD fp_mul, int16 marshalling, 24-bit wedge test —
+and scores **53/54 planes, 4/4 r=15 sets, 7/7 sweep, round-3 spoke**:
+everything the float model achieves.
+
+    P1  theta6 = angle rounded to 6 BCD digits, half-up      (knifed: 53→52)
+    P2  q  = fp_mul(theta6, 4/pi)                             14-digit BCD
+    P3  o  = flt_to_int16(q)          raw octant count, unmasked (wrap detect)
+    P4  f  = q − o
+    P5  u  = flt_to_int16(fp_mul(f, 16384))                   u14, per boundary
+    G1  M  = (r·46341)>>16, then if 2M² > r²: M−1
+        — exact floor(r/√2) on ALL 32768 radii; the bare multiply is wrong on
+          410 of them, caught by the exhaustive check, not by the corpus
+    G2  OM[o] = o·M, eight 24-bit adds, once per CIRCLE
+    G3  pos = (u·M)>>14 (gfx_mul16u32), g = OM[o&7]+pos, span = (ge−gs) mod 8M
+        (gs==ge with raw records differing → span = 8M, the full-wrap case)
+    G4  per point: octant STATIC per mirror, step = the loop's own qx;
+        keep iff (OM[o]±qx − gs) mod 8M ≤ span            — 24-bit, replacing
+        four 16×16→32 multiplies and two 32-bit compares per emitted point
+    G5  spoke endpoint = the octant point at the boundary (midpoint walk to
+        step k) — matches round 3 and every gate-green spoke endpoint
+
+Unpinned by the corpus, checked by knives: fp_mul round-vs-trunc and the
+constant's last digit change nothing. The 13th bit of `u` is the last one the
+corpus can see (12 bits: 51/54).
+
 ## §5.3 Why no code ships anyway
 
-The rule is now known; the **fix is not written and not priced**. It is not a
-tweak to a constant — the current mask is a cross-product wedge
-(`gfx_circ_keep`, two `gfx_cross_ge0` per emitted point) and the reference's is
-a **step-index comparison against a per-octant threshold**. That is a different
-shape of code in `gfx_circ_keep` *and* in `gfx_circ_bvec`, which would stop
-computing a vector at all.
+The rule is known and the pipeline is simulated exact; the **asm is not written
+and not priced**. It is not a tweak to a constant — the mask moves from a
+cross-product wedge to a step-index threshold, the marshalling from
+(brad, signs) to (o, u14), and the spoke endpoint from the QTAB vector to the
+octant point. Once landed, QTAB+fold+lookup, the bvec family, arcbig_calc and
+gfx_cross_ge0 become deletable in p0, and the three quadrant constants, the
+sign tree, cpt_round and cpt_build_half in p1.
 
 💰 Unpriced, and it needs a carve estimate before it is even a candidate —
 `graphics_tenant` is a **page-0** sub tenant and sub p0 has 3539 B.

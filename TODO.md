@@ -1779,34 +1779,68 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (134 px e3e10d24) vs ref 135 — the near-cardinal nudge below; and
       `arc_big_r400` model and ref **both 97 px** with planes differing — the arc
       is right, only the deferred SPOKE endpoint is not.
-      💰 **NEXT: DESIGN AND PRICE THE FIX — it is a rewrite, not a constant.**
-      The current mask is a cross-product wedge (`gfx_circ_keep`, two
-      `gfx_cross_ge0` per emitted point); the reference's is a step-index compare
-      against a per-octant threshold, so `gfx_circ_bvec` would stop computing a
-      vector at all. Unpriced; `graphics_tenant` is a **page-0** sub tenant
-      (3539 B). ⚠️ **It would very likely also close the arc-performance residual
-      below** — a byte compare against a loop counter replaces two 16×16→32
-      multiplies and a 32-bit compare per point.
+      💰 **THE FIX IS DESIGNED AND SIMULATED EXACT — implementation is the
+      remaining work.** `scratchpad/arcmask_asmsim2.py` runs the whole pipeline
+      at tenant widths and scores **53/54 planes, 4/4 r=15 point sets, 7/7
+      near-cardinal sweep, round-3 spoke** — everything the float model
+      achieves (the 54th is the spoke-line row, a separate open item). The
+      pipeline: **P1** round the angle to 6 BCD digits (half-up; knifed, 53→52
+      without it) · **P2–P5** one fp_mul by 4/π, trunc to int16 `o`, subtract,
+      one fp_mul by 16384, trunc to `u14` — replaces the (brad, sign_c, sign_s)
+      marshalling and the three quadrant fp_cmp · **G1** `M=(r·46341)>>16` then
+      `if 2M²>r²: M−=1` — **exact floor(r/√2) on ALL 32768 radii, verified
+      exhaustively; the uncorrected multiply is wrong on 410 of them** ·
+      **G2–G3** OM[o]=o·M table + `pos=(u·M)>>14` (gfx_mul16u32, once per
+      boundary) · **G4** per point: octant is STATIC per mirror, step is the
+      loop's own qx; keep iff `(OM[o]±qx − gs) mod 8M ≤ span`, 24-bit — replaces
+      four 16×16→32 multiplies + two 32-bit compares per point · **G5** spoke
+      endpoint = octant point at the boundary (walk the midpoint loop to step
+      k), replacing the QTAB vector. Deletable once landed: QTAB+fold+lookup,
+      bvec/bvec_mag/bvec_nudge, arcbig_calc, gfx_cross_ge0 (p0); the three
+      quadrant constants (54 B), the sign tree, cpt_round, cpt_build_half (p1).
+      Unpinned by the corpus (implement however the mathpack does): fp_mul
+      round-vs-trunc, C14's last digit. `graphics_tenant` is **page-0** sub
+      (3539 B free); net bytes look ≤0 but **price by editing, not by paper**
+      — walk the callers of cross_ge0/mul16u32/cmp32 first. ⚠️ Closing this
+      **also closes the arc-performance residual below** by construction.
       ⚠️ `graphics-acceptance` owns it; the three rows above are NOT in the gate
       because they are red.
 
-- [ ] 🔴 **THE ±1 NEAR-CARDINAL NUDGE REJECTS THE AXIS POINT THE REFERENCE
-      KEEPS.** Filed 2026-08-17 by D-ARCMASK (§4.3). A SECOND defect, separate
-      from the one above and not explained by it — found by a row written as a
-      GREEN CONTROL and scoped by it:
+- [ ] 🔴 **THE REFERENCE EVALUATES THE ARC ANGLE IN SINGLE PRECISION — the
+      "nudge defect" filed here earlier was MY WRONG DIAGNOSIS.** Filed
+      2026-08-17 by D-ARCMASK (§4.3), REDIAGNOSED the same day (§5.4). The row:
 
           CIRCLE(128,96),95,15,0,1.5707963   ref 135 px 7babb12d / zb 134 px e3e10d24
 
-      `ctl_card_r95` was written to be green: at a CARDINAL boundary QTAB is
-      exact and any shrink about π/2 is zero by construction. It came back RED.
-      At θ=1.5707963 the cosine magnitude rounds to 0, and because θ ≠ HALF_PI
-      to 14 digits the quadrant sign is +1, so `gfx_circ_bvec_nudge` forces
-      Ex=+1 and `gfx_circ_keep` rejects the top point (0,−95); the reference
-      keeps it. **1 px, r-INDEPENDENT** (unlike the arc-mask defect), so it is
-      reachable at any radius. ⚠️ The nudge is pinned by G4-arcbnd at r=15,
-      where it is CORRECT (it is what distinguishes 1.57 from 1.58) — so this
-      is not "delete the nudge", it is "the nudge has a domain and nobody
-      measured its edge". 💰 Not priced.
+      First diagnosis said the ±1 near-cardinal nudge had an unmeasured domain
+      edge. Measured against the whole corpus, the actual mechanism is simpler
+      and upstream: **1.5707963 differs from π/2 by 3×10⁻⁸, which a 6-digit
+      single-precision evaluation cannot resolve** — round the angle to 6
+      significant BCD digits (half-up) and the solved step-index rule keeps the
+      axis point exactly as the reference does, **without any nudge at all**.
+      Scored: 6-digit rounding takes the reference model from 52/54 to 53/54
+      whole planes, holds all four r=15 point sets AND the near-cardinal
+      1.50..1.60 sweep (the nudge's own pin), and its deletion is knifed at
+      exactly the one row (53→52, `scratchpad/arcmask_asmsim2.py`).
+      **Folded into the rewrite below** — P1 of the marshalling pipeline.
+
+- [ ] 🔴 **ZEROBAS'S SPOKE ENDPOINT DIVERGES FROM THE REFERENCE AT NEAR-ZERO
+      ANGLES — LATENT, measured from BANKED data, no gate row covers it.**
+      Filed 2026-08-17 by D-ARCMASK (§5.4). The G4-arcbnd round-3 capture
+      (`scratchpad/g4_arc_boundary_capture.json`, `PSET(75,60),9:`
+      `CIRCLE(60,60),15,6,-0.01,1.57`) has colour 6 in the y=60 row of the
+      (72..79) cell — the reference's spoke reaches **(75,60)**, i.e. endpoint
+      = offset **(15,0), the OCTANT POINT at the boundary**. zerobas's
+      `gfx_circ_bvec` at θ=0.01 rounds the sine magnitude to 0 and the nudge
+      makes it **(15,−1)** — a different line. ⚠️ At r=400 the QTAB 255-cap
+      also shortens today's endpoint to (1,−398) vs the octant point's
+      (1,−400). ⚠️ **NEITHER explains `arc_big_r400`**: the simulated
+      octant-point spoke still reproduces ZEROBAS's plane there (76352feb),
+      not the reference's — that row's divergence is in the spoke LINE
+      rasterisation or clipping at an off-screen endpoint, still open.
+      **Folded into the rewrite below** — G5 replaces the QTAB vector with the
+      octant point, which matches round 3 and every gate-green spoke
+      (endpoints verified SAME at 1.57/r15, 0.1/r15). 💰 Not priced alone.
 
 - [ ] ⚠️ **ZEROBAS DRAWS ARCS 5–6× SLOWER THAN THE REFERENCE, AND FULL CIRCLES
       1.5× FASTER.** Filed 2026-08-17 by D-ARCMASK (§6), measured in VDP frames
