@@ -211,13 +211,16 @@ boundary re-captures MATCH).
 > The premise above — *the reference's boundary vector is the exact ray
 > `round(r·|cos|)` / `round(r·|sin|)`* — is **measured false**: against 51 whole
 > reference pattern planes at radii up to 200 it reproduces **2–4**. Measured
-> instead: fold the angle to the nearest axis (`f ∈ [0, π/4]`); the reference's
-> boundary is the octant loop's **step index distributed linearly over `f`** —
-> exact at `f=0` and `f=π/4`, up to **0.032 rad** wrong in between, which at
-> r=15 is **0.5 px**. So **the reference is the less accurate machine**:
-> zerobas's rays land within one QTAB step (0.012 rad), the reference's are out
-> by 0.037. A step-index-linear model reaches **22/51** — right in kind, not
-> shippable (it would redden 29 currently byte-identical rows).
+> instead, with `o = ⌊θ/(π/4)⌋` the octant and `u` the fraction into it:
+> `M = ⌊r/√2⌋`, `pos = ⌊u·M⌋`, and the boundary step index is `k = pos` in an
+> **even** octant, `k = M − pos` in an **odd** one, both ends inclusive — no
+> fitted constant, no per-side offset. Scored on whole 6144-byte planes:
+> **52/54**, against **2–4/54** for the exact-ray rule above. So **the reference
+> is the less accurate machine**: zerobas's rays land within one QTAB step
+> (0.012 rad), the reference's are out by 0.037 — which at r=15 is **0.5 px**.
+> **Not fixed, and not a constant to tweak**: matching it retires the
+> cross-product wedge in `gfx_circ_keep` and stops `gfx_circ_bvec` computing a
+> vector at all. Unpriced.
 > A **second**, separate 1-px defect is filed with it: at a *near-cardinal*
 > boundary the `±1` nudge below rejects the axis point the reference keeps
 > (`CIRCLE(128,96),95,15,0,1.5707963` — ref 135 px, zerobas 134). **Placement:** the sine table + boundary math live in the

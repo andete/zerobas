@@ -1051,13 +1051,26 @@ gco_spoke:
 ; The design it confirmed is "the reference's boundary vector is the EXACT ray,
 ; round(r*|cos|) / round(r*|sin|)". Measured on 51 whole reference planes at
 ; radii up to 200, that rule reproduces 2-4 of them. What the reference does
-; instead: fold the angle to the nearest axis, f in [0,pi/4], and its boundary
-; is the octant loop's STEP INDEX distributed LINEARLY over f -- exact at f=0
-; and f=pi/4, and up to 0.032 rad wrong in between. A step-index-linear model
-; reproduces 22/51. THE REFERENCE IS THE LESS ACCURATE MACHINE: zerobas's rays
-; land within one QTAB step (0.012 rad); the reference's are out by 0.037.
-; At r=15 that whole divergence is 0.5 px, which is why no row here could see
-; it. NOT FIXED -- 22/51 would redden 29 rows that are byte-identical today.
+; instead, with o = floor(theta/(pi/4)) the octant and u the fraction into it:
+;
+;     M   = floor(r/sqrt(2))     the octant's top step index
+;     pos = floor(u*M)           position along the octant, always
+;     k   = pos                  in an EVEN octant (step rises with theta)
+;     k   = M - pos              in an ODD octant  (step falls with theta)
+;
+; both boundaries inclusive -- no fitted constant, no per-side offset. Scored on
+; whole 6144-byte planes: 52/54, vs 2-4/54 for the exact-ray rule above.
+; THE REFERENCE IS THE LESS ACCURATE MACHINE: zerobas's rays land within one
+; QTAB step (0.012 rad); the reference's are out by 0.037. At r=15 that whole
+; divergence is 0.5 px, which is why no row here could ever see it.
+; NOT FIXED, AND NOT A CONSTANT TO TWEAK: the reference compares a STEP INDEX
+; against a per-octant threshold, so matching it retires the cross-product wedge
+; in gfx_circ_keep and stops gfx_circ_bvec computing a vector at all. Unpriced.
+; ⚠️ That rewrite would also address the arc's cost: zerobas draws arcs 5-6x
+; SLOWER than the reference (r=95 arc: ref 224 ms, zb 1272 ms) precisely because
+; gfx_circ_keep runs two gfx_cross_ge0 -- four 16x16->32 multiplies and two
+; 32-bit compares -- for every one of the 8 points per octant step, plotted or
+; not. A byte compare against the loop counter replaces all of it.
 ;
 ; Replaces the
 ; original float SIN/COS pipeline, whose series fp_mul infinite-looped in the

@@ -1754,16 +1754,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       0.037 — so under the faithful-MSX1 charter our accuracy is the defect.
       Error in pixels grows with r: 1 step at r=24, 2 at 48, 2–3 at 95, 4–5 at
       190, 5–6 at 200.
-      💰 **PRICED AS A DECLINE.** A forward model of that rule
-      (`scratchpad/arcmask_refmodel.py`) reaches **22/51** whole planes against
-      2–4 for the rule in the source — right in kind, **not shippable**: it
-      would redden 29 rows that are byte-identical today. The residual misses
-      are ±1 px and do not close under one constant — solving the boundary
-      interval for `c` in `k = c·r·f` conflicts across radii (r=24 needs
-      `c<0.888`, r≥95 needs `c>0.895`), and so does `c·N·f/(π/4)` against the
-      octant step count `N`. **NEXT: find the r-dependent term.** The data to do
-      it with is already banked; no new emulator run is needed to test a
-      candidate.
+      🎯 **THE RULE IS SOLVED (same slice, second pass).** The axis-folded
+      model's residuals were not noise: at r=190 they ALTERNATE between the rays
+      just below π/2 and those just above — **the reference is not symmetric
+      about the axis**, and folding to |θ−axis| is what threw that away.
+      Restated in OCTANTS, with `o = ⌊θ/(π/4)⌋` and `u` the fraction into it:
+
+          M   = ⌊r/√2⌋            the octant's top step index
+          pos = ⌊u·M⌋             position along the octant, always
+          k   = pos               in an EVEN octant   (step rises with θ)
+          k   = M − pos           in an ODD octant    (step falls with θ)
+
+      both boundaries inclusive. **No fitted constant, no per-side offset.**
+      `scratchpad/arcmask_refmodel2.py` scores it on whole 6144-byte planes:
+      **52/54**, against 22/54 axis-folded and 2–4/54 for the exact-ray rule the
+      source asserts. ⚠️ 80/80 on the integer boundaries it was FITTED on is the
+      shape to distrust — 52/54 is the independent score, and it includes the
+      three D-CIRCOVF §6.1 rows the fit never saw, among them `arc_r700_a137`
+      (r=700, ASPS=35, a different code path in both machines) byte-exact.
+      Falsified by deletion: octant asymmetry removed **52→11**, `floor`→`round`
+      **52→19**, `M=ceil(r/√2)` **52→32**, `M=r/2` **52→2**.
+      🎯 **THE TWO ROWS IT MISSES ARE THE TWO OTHER FILED DEFECTS**, which is
+      what says they are separate: `ctl_card_r95` model = **zerobas's own plane**
+      (134 px e3e10d24) vs ref 135 — the near-cardinal nudge below; and
+      `arc_big_r400` model and ref **both 97 px** with planes differing — the arc
+      is right, only the deferred SPOKE endpoint is not.
+      💰 **NEXT: DESIGN AND PRICE THE FIX — it is a rewrite, not a constant.**
+      The current mask is a cross-product wedge (`gfx_circ_keep`, two
+      `gfx_cross_ge0` per emitted point); the reference's is a step-index compare
+      against a per-octant threshold, so `gfx_circ_bvec` would stop computing a
+      vector at all. Unpriced; `graphics_tenant` is a **page-0** sub tenant
+      (3539 B). ⚠️ **It would very likely also close the arc-performance residual
+      below** — a byte compare against a loop counter replaces two 16×16→32
+      multiplies and a 32-bit compare per point.
       ⚠️ `graphics-acceptance` owns it; the three rows above are NOT in the gate
       because they are red.
 
