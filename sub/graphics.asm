@@ -912,29 +912,47 @@ gfx_box_stash:
 ;   UPPER  basic/graphics.asm cp_req_int -> gfx_eval_int16   ERR 6 for |r|>=32768
 ;   LOWER  sub/circleparse.asm cpt_after_r `jp m,cpt_err5`   ERR 5 for r<0
 ;
-; gfx_mul16u / gfx_cross_ge0 keep only the LOW 16 bits of each product, so the
-; real precondition is on the PRODUCT: |v|*ASPS <= 65535 with |v| <= r and
-; ASPS <= 256. That is REACHABLE and it is WRONG when reached -- measured, whole
-; pattern plane, VG-8020 vs zerobas (docs/circdom-msx1-characterization.md §4):
+; D-CIRCDOM also measured a PRODUCT precondition -- |v|*ASPS <= 65535 -- and
+; found it FALSE and reachable, because the multiply kept only the low 16 bits.
 ;
-;   CIRCLE(128,96),256        product 65536  ref draws 0 px, zerobas draws 31
-;   CIRCLE(128,96),300        product 76800  ref draws 0 px, zerobas draws 512
-;   CIRCLE(128,96),300,,,,.9  product 69000  ref draws 0 px, zerobas draws 376
-;   CIRCLE(128,96),700,,,,.137 product 24500 IDENTICAL, 421 px, sha1 2f6257f6
+; 🔴 THAT HALF IS FIXED (D-CIRCOVF, docs/circovf-msx1-oracle.md). There is now
+; no precondition on the product at all: gfx_circ_scale and gfx_circ_bvec_mag
+; carry it at full width through gfx_mul16r, and gfx_cross_ge0 at 32 bits
+; through gfx_mul16u32 + gfx_cmp32. The whole 0..32767 radius domain is honest.
 ;
-; The last row is the one that settles which bound is real: r=700 is 2.7x
-; outside the retired "r<=255" claim and matches the reference BYTE FOR BYTE,
-; because its product fits. The bound is the PRODUCT, not the radius.
+; THE ORACLE THAT WAS MISSING, AND WHY IT WAS MISSING. D-CIRCDOM's six DIFF rows
+; all have the REFERENCE drawing 0 px on screen -- they say "zerobas paints where
+; the reference paints nothing" and cannot say what right looks like. That is a
+; theorem, not a gap in the corpus: an overflowing point has a scaled minor
+; offset >= 256 and the screen is 192 tall, so no overflowing point can be on
+; screen WHILE THE CENTRE IS -- and every CIRCLE row in the tree's history is
+; centred at (128,96). Moving the centre off screen along the MINOR axis puts
+; the overflowing part of the figure on the visible band, and the reference then
+; draws it. Measured, whole pattern plane, VG-8020 vs zerobas-before:
 ;
-; ⚠️ The old note also understated its own blast radius: it said a large radius
-; "may mis-rasterise the ARC MASK", i.e. gfx_cross_ge0. But gfx_circ_scale runs
-; on EVERY point of EVERY circle -- arc or not, aspect or not -- so the same
-; truncation mis-places the whole figure, which is exactly what the four DIFF
-; rows above show. Never crashes; that half of the old note survived.
-; Filed, priced, NOT fixed here -- TODO.md "the product bound is real and
-; reachable". ⚠️ Fixing it would make `$8000` REACHABLE at gfx_circ_scale's
-; re-negate (v=32767, ASPS=256 -> exact (32767*256+128)>>8 = 32768 = $8000),
-; which the truncation is currently the only thing preventing.
+;   CIRCLE(128,445),284         ref 256 px 05f66505   zerobas-before   9 px
+;   CIRCLE(128,445),300         ref 256 px 328ae002   zerobas-before   0 px
+;   CIRCLE(128,448),528,,,,.5   ref 253 px 2f2dda11   zerobas-before   0 px
+;   CIRCLE(262,96),528,,,,2     ref  71 px 345fa7bd   zerobas-before 121 px
+;   CIRCLE(128,445),255         ref  55 px 72c98b29   CONTROL, identical
+;   CIRCLE(128,346),500,,,,.5   ref 256 px 722d4c19   CONTROL, identical
+;
+; All four DIFF rows match a FULL-WIDTH, ROUND-HALF-UP product byte for byte; a
+; saturating model and the wrapping model are both refuted at sha1 level. Note
+; the fourth row: zerobas painted MORE than the reference there, the opposite
+; direction to all six of D-CIRCDOM's. Never crashes, before or after.
+;
+; ⚠️ D-CIRCDOM already corrected the old note's blast radius (it said a large
+; radius "may mis-rasterise the ARC MASK"; gfx_circ_scale runs on EVERY point of
+; EVERY circle). That correction stands.
+;
+; 🔴 AND THE `$8000` COUPLING THIS HEADER USED TO WARN ABOUT DOES NOT BIND. It
+; said fixing the overflow would make `$8000` reachable at gfx_circ_scale's
+; re-negate. The arithmetic is right and the conclusion is design-dependent:
+; ASPS=256 is the only value that reaches 32768 and the only value for which the
+; scale is the IDENTITY, so four bytes of branch cap the result at 32767 there
+; and 32639 on the multiply arm. What DID become reachable is gfx_cross_ge0's
+; products -- see its header.
 ; ===========================================================================
 gfx_circle_op:
                 ei                          ; interrupts LIVE for the (possibly long) draw
@@ -1092,21 +1110,23 @@ gfx_qtab_lookup:
 ; is 0..32767 -- see sub/circleparse.asm cpt_after_r for the two tests that are
 ; the actual enforcement. The `bounded: <=255*255` on the mul below is false for
 ; the same reason (r*tab overflows once r*tab >= 65536, i.e. r >= 258 at tab=255).
-; ⚠️ The OUTPUT is bounded 0..255 regardless, and by construction rather than by
-; domain: `ld l,h / ld h,0` keeps only the high byte of a 16-bit register. That
-; -- not any radius claim -- is why gfx_circ_bvec_nudge can never see $8000.
+; 🔴 D-CIRCOVF FIXED BOTH HALVES. The multiply is gfx_mul16r, which carries r*tab
+; in a 24-bit accumulator, so nothing wraps for any r in the domain.
+; ⚠️ AND THE OUTPUT IS NO LONGER BOUNDED TO A BYTE. It used to be 0..255 by
+; construction, via a `ld l,h / ld h,0` that kept only a high byte, and D-CIRCDOM
+; charged gfx_circ_bvec_nudge's and gcbv_y's $8000 verdicts to exactly that. The
+; bound is now (32767*255+128)>>8 = 32639 -- still short of $8000, so both
+; verdicts hold, but they hold on a number 128x larger and no longer on a byte.
+; The site that actually cared is gfx_cross_ge0, whose products are sized off
+; this bound: see its header.
 ; ---------------------------------------------------------------------------
 gfx_circ_bvec_mag:
-                ld      e,a
-                ld      d,0
-                ld      hl,(GFX_R)
-                call    gfx_mul16u          ; HL := r * tab (TRUNCATED at 16 bits;
-                                            ; wraps for r >= 258 -- see the header)
-                ld      de,128
-                add     hl,de
-                ld      l,h
-                ld      h,0                 ; HL = (r*tab+128) >> 8
-                ret
+                ld      de,(GFX_R)
+                jp      gfx_mul16r          ; tail: HL = (r*tab+128)>>8, A = tab
+                                            ; already. D-CIRCOVF: was gfx_mul16u
+                                            ; + `ld l,h / ld h,0`, which wrapped
+                                            ; for r >= 258 and then narrowed the
+                                            ; result to a byte on top.
 
 ; ---------------------------------------------------------------------------
 ; gfx_circ_bvec_nudge -- IN: HL = unsigned magnitude; (GFX_CS_T1) = sign
@@ -1117,9 +1137,13 @@ gfx_circ_bvec_mag:
 ; charge this to "the blessed r<=255 domain", which does not exist). The negate
 ; below cannot see $8000 for a reason that needs NO domain claim at all: the only
 ; caller is gfx_circ_bvec, and the only two values it passes are
-; gfx_circ_bvec_mag's output -- 0..255, bounded by its `ld l,h / ld h,0` byte
-; truncation -- and the literal 1 written by gcbn_zero's sibling path below.
-; A magnitude of $8000 is not representable at this input however large r gets.
+; gfx_circ_bvec_mag's output and the literal 1 written by gcbn_zero's sibling
+; path below.
+; 🔴 D-CIRCOVF: that output used to be 0..255, bounded by a `ld l,h / ld h,0`
+; byte truncation which is now DELETED. The verdict is unchanged and the number
+; is not: the bound is gfx_mul16r's own ceiling, (32767*255+128)>>8 = 32639.
+; A magnitude of $8000 is still not representable here however large r gets --
+; but it is 32639 that says so now, not 255.
 ; ---------------------------------------------------------------------------
 gfx_circ_bvec_nudge:
                 ld      a,(GFX_CS_T1)
@@ -1202,14 +1226,15 @@ gcbv_x_store:
                 jr      nz,gcbv_y_scaled
                 call    gfx_circ_scale      ; Y is minor iff ASPMAJ=0 (incl. default)
 gcbv_y_scaled:
-                ; 🔴 $8000 REACHABILITY (D-CIRCDOM): this negate's input is either
-                ; gfx_circ_bvec_nudge's output (-255..255) or that value through
-                ; gfx_circ_scale (+-0..255) -- BOTH bounded to a byte magnitude by
-                ; the `ld l,h / ld h,0` in gfx_circ_bvec_mag and gfx_circ_scale, not
-                ; by any radius claim. |input| <= 255, so $8000 is unreachable here
-                ; for every r in the real 0..32767 domain (sub/circleparse.asm
-                ; cpt_after_r). Retires one of the four verdicts that used to rest
-                ; on gfx_circ_scale's "blessed r<=255" comment.
+                ; 🔴 $8000 REACHABILITY (D-CIRCDOM, RENUMBERED BY D-CIRCOVF): this
+                ; negate's input is either gfx_circ_bvec_nudge's output or that
+                ; value through gfx_circ_scale. Both used to be byte magnitudes,
+                ; bounded by the `ld l,h / ld h,0` pairs D-CIRCOVF deleted; both
+                ; are now bounded by gfx_mul16r's ceiling instead, 32639, and by
+                ; gfx_circ_scale's identity arm, 32767. |input| <= 32767, so
+                ; $8000 is still unreachable for every r in the real 0..32767
+                ; domain (sub/circleparse.asm cpt_after_r) -- one short of the
+                ; fixed point rather than 128x clear of it.
                 xor     a                   ; screen convention: Vy = -(sin component)
                 sub     l
                 ld      l,a
@@ -1425,29 +1450,44 @@ gcep_test:
 ;    decrementing and QX climbing while QX<=QY -- so |v| <= r <= 32767.
 ;    $8000 UNREACHABLE, by the int16 coercion above, NOT by 255.
 ;
-;  * $8000 AT THE RE-NEGATE (the `xor a / sub l / ...` tail below). Input is the
-;    value after
-;    `ld l,h / ld h,0`, i.e. 0..255 BY CONSTRUCTION -- no domain claim needed,
-;    and true even where the multiply wraps. $8000 UNREACHABLE.
+;  * $8000 AT THE RE-NEGATE (the `xor a / sub l / ...` tail below). 🔴 THE
+;    REASON CHANGED IN D-CIRCOVF AND THE VERDICT DID NOT. It used to be 0..255
+;    BY CONSTRUCTION, via a `ld l,h / ld h,0` that also caused the overflow
+;    below; removing that truncation is exactly what D-CIRCDOM predicted would
+;    make $8000 reachable here for the first time. It did not, because of the
+;    branch above: ASPS is 0..256, and ASPS=256 -- the ONLY value whose exact
+;    (32767*256+128)>>8 is 32768 -- is also the only value for which this whole
+;    routine is the IDENTITY, so it never reaches the multiply. The two arms
+;    cap at |v| <= 32767 and at (32767*255+128)>>8 = 32639 respectively.
+;    $8000 UNREACHABLE, now by a 32767 bound rather than a 255 one.
+;    ⚠️ THAT MAKES THE IDENTITY ARM LOAD-BEARING FOR CORRECTNESS, not just for
+;    speed. Deleting it reinstates the fixed point. Knifed: K-CO2 in
+;    scratchpad/circovf_knives.py reddens 19 rows, EXACT against a prediction
+;    derived from the gate's own case list.
 ;
-;  * OVERFLOW. |v|*ASPS <= 65535 is FALSE and reachable: gfx_mul16u truncates at
-;    16 bits, so any |v|*ASPS >= 65536 wraps and the point is mis-placed. First
-;    reachable at r=256 with the default ASPS=256. MEASURED against VG-8020 in
-;    docs/circdom-msx1-characterization.md §4 -- the reference draws nothing on
-;    screen at these radii and zerobas draws spurious pixels. Filed in TODO.md,
-;    NOT fixed here; see gfx_circle_op's header for the row table and for why
-;    fixing it would make $8000 reachable at the re-negate for the first time.
+;  * OVERFLOW. FIXED (D-CIRCOVF, docs/circovf-msx1-oracle.md). gfx_mul16r
+;    carries |v|*ASPS in a 24-bit accumulator, so there is no product bound left
+;    to state. The reference was MEASURED to compute this product at full width
+;    and round half-up: four rows on three code paths, byte-identical across the
+;    whole 6144-byte plane, with a saturating model and the old wrapping model
+;    both refuted at sha1 level. See gfx_circle_op's header for the row table.
 ; ---------------------------------------------------------------------------
 gfx_circ_scale:
                 call    gfx_abs16           ; HL=|v|, A=sign ($01 pos / $FF neg)
                 push    af
-                ex      de,hl               ; DE=|v|
-                ld      hl,(GFX_ASPS)
-                call    gfx_mul16u          ; HL = ASPS * |v|  (HL:=HL*DE)
-                ld      de,128
-                add     hl,de
-                ld      l,h
-                ld      h,0                 ; HL = (|v|*ASPS+128) >> 8
+                ld      de,(GFX_ASPS)
+                ld      a,d
+                or      a
+                jr      nz,gcs_signed       ; ASPS=256 (D=1) -> scale is the
+                                            ; IDENTITY: (|v|*256+128)>>8 = |v|,
+                                            ; and HL is already |v|. This is the
+                                            ; default and every aspect of exactly
+                                            ; 1; it also keeps the result at
+                                            ; <= 32767 -- see the header.
+                ld      a,e                 ; A = ASPS, 0..255
+                ex      de,hl               ; DE = |v|
+                call    gfx_mul16r          ; HL = (|v|*ASPS+128)>>8, full width
+gcs_signed:
                 pop     af
                 cp      $01
                 ret     z                   ; was non-negative -> done
@@ -1529,16 +1569,33 @@ gck_reject:
 ; ---------------------------------------------------------------------------
 ; gfx_cross_ge0 -- cross(A,B) = Ax*By - Ay*Bx, reading vector A from
 ; GFX_CS_AX/AY and vector B from GFX_CS_BX/BY (caller-populated). OUT: CF=1
-; iff cross(A,B)>=0. Sign-magnitude decomposition (gfx_abs16 + gfx_mul16u,
-; own 16x16->16 unsigned multiply) -- bounded-domain (see this section's
-; header). Clobbers AF, BC, DE, HL.
-; 🔴 D-CIRCDOM: the four gfx_abs16 calls below are the fifth group the retired
-; "blessed r<=255" comment was covering (sweep §4.1's last table row). Verdict
-; unchanged, reason restated: GFX_CS_AX/AY/BX/BY hold boundary-vector and point
-; components, every one of which came through gfx_circ_bvec_nudge or
-; gfx_circ_scale and is therefore |value| <= 255 BY CONSTRUCTION. $8000 cannot
-; reach an abs16 here. The PRODUCTS are the reachable-overflow half, unchanged
-; and filed -- see this section's header.
+; iff cross(A,B)>=0. Sign-magnitude decomposition (gfx_abs16 + gfx_mul16u32,
+; own 16x16->32 unsigned multiply, compared with gfx_cmp32). Magnitudes are
+; parked in GFX_CS_M1/M2, which alias the PAINT span stack -- 8 contiguous
+; bytes, and the G3/G4/G5 sysvar window has 6 left (basic/sysvars.inc).
+; Clobbers AF, BC, DE, HL.
+;
+; 🔴 THIS ROUTINE WAS NOT BROKEN BEFORE D-CIRCOVF AND WOULD HAVE BEEN BROKEN BY
+; IT. D-CIRCDOM charged the four gfx_abs16 calls below to "|value| <= 255 BY
+; CONSTRUCTION", the construction being the `ld l,h / ld h,0` truncations in
+; gfx_circ_scale and gfx_circ_bvec_mag -- which is correct, and is exactly why
+; the two 16-bit PRODUCTS were safe: 255*255 = 65025 fits. D-CIRCOVF deletes
+; those truncations, so components reach 32767 and the products reach 2^30. The
+; widening below is not an improvement, it is the other half of that fix.
+; ⚠️ A BOUND STATED "BY CONSTRUCTION" IS OWNED BY WHOEVER DELETES THE
+; CONSTRUCTION. D-CIRCDOM predicted a coupling into gfx_circ_scale's re-negate,
+; which turned out not to bind; the one that did bind is this, and the fact it
+; needed was already written down one bullet above the conclusion nobody drew.
+; The $8000 verdict on the four gfx_abs16 calls still holds -- |value| <= 32767,
+; via the int16 radius coercion, not via 255.
+;
+; ⚠️ NO GREEN GATE ROW CAN SEE THE 32-BIT COMPARE. Every row that would (an arc,
+; at a radius where the products pass 16 bits, with pixels on screen) is RED for
+; a separate pre-existing reason -- measured: CIRCLE(128,352),200,15,1.1,2.04 is
+; byte-identical pre- and post-slice and diverges on both. Filed in TODO.md.
+; K-CO3 in scratchpad/circovf_knives.py undoes this widening and is declared
+; kind="nothing" for exactly that reason: it reddens nothing, as predicted, and
+; that number is what stands in for the missing row.
 ; ---------------------------------------------------------------------------
 gfx_cross_ge0:
                 ; term1 = |Ax|*|By|, sign1 = sign(Ax) xor sign(By)
@@ -1551,8 +1608,9 @@ gfx_cross_ge0:
                 xor     b                   ; A=0 (same sign) or nonzero (differ)
                 push    af                  ; [stack: sign1 flag]
                 ex      de,hl               ; HL=|Ax|, DE=|By|
-                call    gfx_mul16u          ; HL := |Ax| * |By| = mag1
-                push    hl                  ; [stack: sign1 flag, mag1]
+                call    gfx_mul16u32        ; DE:HL := |Ax| * |By| = mag1 (32-bit)
+                push    de
+                push    hl                  ; [stack: sign1 flag, mag1hi, mag1lo]
                 ; term2 = |Ay|*|Bx|, sign2 = sign(Ay) xor sign(Bx)
                 ld      hl,(GFX_CS_AY)
                 call    gfx_abs16
@@ -1561,13 +1619,18 @@ gfx_cross_ge0:
                 ld      hl,(GFX_CS_BX)
                 call    gfx_abs16
                 xor     b                   ; A = sign2 flag
-                push    af                  ; stash it -- gfx_mul16u clobbers BC, so C
-                                            ; cannot hold it across the call below
+                push    af                  ; stash it -- the multiply clobbers BC,
+                                            ; so C cannot hold it across the call
                 ex      de,hl               ; HL=|Ay|, DE=|Bx|
-                call    gfx_mul16u          ; HL := mag2
+                call    gfx_mul16u32        ; DE:HL := mag2 (32-bit)
+                ld      (GFX_CS_M2),hl
+                ld      (GFX_CS_M2+2),de    ; mag2 parked; the stack holds mag1
                 pop     af
-                ld      c,a                 ; C = sign2 flag (restored AFTER mul16u)
-                pop     de                  ; DE = mag1
+                ld      c,a                 ; C = sign2 flag (restored AFTER the mul)
+                pop     hl
+                ld      (GFX_CS_M1),hl      ; mag1 low
+                pop     hl
+                ld      (GFX_CS_M1+2),hl    ; mag1 high
                 pop     af                  ; A = sign1 flag
                 or      a
                 jr      nz,gcx_1neg
@@ -1575,27 +1638,31 @@ gfx_cross_ge0:
                 ld      a,c
                 or      a
                 jr      nz,gcx_keep         ; term1>=0, term2<0 -> sum always >=0
-                ; both non-negative: keep iff mag1>=mag2.  HL=mag2, DE=mag1
-                ex      de,hl               ; HL=mag1, DE=mag2
-                or      a
-                sbc     hl,de               ; mag1-mag2 ; CF=1 iff mag1<mag2
+                ; both non-negative: keep iff mag1>=mag2
+                ld      hl,GFX_CS_M1
+                ld      de,GFX_CS_M2
+                call    gfx_cmp32           ; CF=1 iff (HL)<(DE)
                 ccf
                 ret
 gcx_1neg:
                 ld      a,c
                 or      a
                 jr      z,gcx_negpos
-                ; both negative: keep iff mag2>=mag1.  HL=mag2, DE=mag1
-                or      a
-                sbc     hl,de               ; mag2-mag1 ; CF=1 iff mag2<mag1
+                ; both negative: keep iff mag2>=mag1
+                ld      hl,GFX_CS_M2
+                ld      de,GFX_CS_M1
+                call    gfx_cmp32
                 ccf
                 ret
 gcx_negpos:
                 ; term1<0, term2>=0: keep only if BOTH magnitudes are zero
-                ld      a,h
-                or      l
-                or      d
-                or      e
+                ld      hl,GFX_CS_M1
+                ld      b,8                 ; both 4-byte magnitudes, back to back
+                xor     a
+gcx_zlp:
+                or      (hl)
+                inc     hl
+                djnz    gcx_zlp
                 jr      nz,gcx_reject
 gcx_keep:
                 scf
@@ -1605,25 +1672,103 @@ gcx_reject:
                 ret
 
 ; ---------------------------------------------------------------------------
-; gfx_mul16u -- HL := HL * DE, low 16 bits, unsigned (own copy of expr.asm's
-; mul16 -- a page-0 tenant cannot reach the main-ROM low region, which is
-; swapped OUT for the duration of this CALSLT). Clobbers A, BC, DE.
+; gfx_mul16u32 -- HL:DE := HL * DE, the FULL 32-bit unsigned product (own copy
+; of the classic shift-out-the-multiplier form -- a page-0 tenant cannot reach
+; the main-ROM low region, which is swapped OUT for the duration of this
+; CALSLT). Clobbers A, BC.
+;
+; D-CIRCOVF. This replaces gfx_mul16u, which kept only the low 16 bits and is
+; now unreferenced (deleted). ⚠️ ITS ONLY CALLER, gfx_cross_ge0, WAS NOT BROKEN
+; BEFORE THIS SLICE and is broken BY it if left alone: its inputs used to be
+; byte-bounded by the very `ld l,h / ld h,0` truncation that this slice removes
+; from gfx_circ_scale and gfx_circ_bvec_mag, so |v| <= 255 and no product could
+; exceed 65025. With the scale computed exactly the components reach 32767 and
+; the products reach 2^30. The coupling runs the other way round from the one
+; D-CIRCDOM predicted -- see gfx_circ_scale's header.
 ; ---------------------------------------------------------------------------
-gfx_mul16u:
+; OUT: DE = product HIGH word, HL = product LOW word.
+gfx_mul16u32:
                 ld      b,h
-                ld      c,l                 ; BC = original HL (multiplicand)
-                ld      hl,0
+                ld      c,l                 ; BC = multiplicand
+                ld      hl,0                ; DE:HL = multiplier:accumulator
                 ld      a,16
-gmu_lp:
+gm32_lp:
                 add     hl,hl
-                ex      de,hl
-                add     hl,hl
-                ex      de,hl
-                jr      nc,gmu_skip
+                rl      e
+                rl      d                   ; DE:HL <<= 1; the bit leaving D is
+                                            ; the next multiplier bit, MSB first
+                jr      nc,gm32_skip
                 add     hl,bc
-gmu_skip:
+                jr      nc,gm32_skip
+                inc     de                  ; carry from the low word into the high
+gm32_skip:
                 dec     a
-                jr      nz,gmu_lp
+                jr      nz,gm32_lp
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_cmp32 -- unsigned compare of two 4-byte little-endian magnitudes.
+; IN: HL -> a, DE -> b. OUT: CF=1 iff a < b. Clobbers A, B, DE, HL.
+; A borrow-propagating subtract from the LSB up; ex/inc/djnz all leave CF
+; alone, so the final borrow IS the comparison.
+; ---------------------------------------------------------------------------
+gfx_cmp32:
+                ld      b,4
+                or      a                   ; CF = 0 going in
+gcm_lp:
+                ld      a,(hl)
+                ex      de,hl
+                sbc     a,(hl)
+                ex      de,hl
+                inc     hl
+                inc     de
+                djnz    gcm_lp
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_mul16r -- HL := (DE * A + 128) >> 8, the 8.8 round-half-up scale, with
+; the product carried at FULL WIDTH. IN: DE = 0..32767, A = 0..255.
+; OUT: HL = 0..32639. Clobbers A, BC, DE.
+;
+; D-CIRCOVF. This exists because `(|v|*ASPS+128)>>8` computed through
+; gfx_mul16u WRAPS: that routine keeps the low 16 bits, and |v|*ASPS reaches
+; 8355585. The 24-bit accumulator below is C:HL, shifted left once per
+; multiplier bit (MSB first, `add a,a` supplying the bit), so it never
+; discards one. 32767*255 = 8355585 < 2^24, so C cannot carry out.
+;
+; MEASURED, not assumed: the reference computes this product exactly and
+; rounds half-up. Four rows on three code paths (default aspect, aspect<1,
+; aspect>1) matched a full-width prediction BYTE FOR BYTE across the whole
+; 6144-byte pattern plane, while a saturating model and the wrapping model
+; were both refuted -- docs/circovf-msx1-oracle.md §3.
+;
+; ⚠️ THE OUTPUT IS DELIBERATELY NOT NARROWED TO A BYTE. The `ld l,h / ld h,0`
+; pair this replaces at both callers was the reason three of D-CIRCDOM's five
+; `$8000` verdicts held "by construction" (§6). They still hold -- see
+; gfx_circ_scale's header for the arithmetic -- but they now hold on a bound
+; of 32767, not 255, and gfx_cross_ge0's products are sized off that bound.
+; ---------------------------------------------------------------------------
+gfx_mul16r:
+                ld      hl,0
+                ld      c,l                 ; C:HL = 0, the 24-bit accumulator
+                ld      b,8
+gmr_lp:
+                add     hl,hl
+                rl      c                   ; C:HL <<= 1
+                add     a,a                 ; next multiplier bit (MSB first)
+                jr      nc,gmr_skip
+                add     hl,de
+                jr      nc,gmr_skip
+                inc     c                   ; carry into the top byte
+gmr_skip:
+                djnz    gmr_lp
+                ld      de,128
+                add     hl,de               ; round half-up
+                jr      nc,gmr_rnd
+                inc     c
+gmr_rnd:
+                ld      l,h
+                ld      h,c                 ; HL = (product + 128) >> 8
                 ret
 
 ; ---------------------------------------------------------------------------

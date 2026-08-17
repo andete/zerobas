@@ -198,6 +198,23 @@ coupled — repairing the overflow makes `$8000` **reachable** at
 `gfx_circ_scale`'s re-negate (`(32767*256+128)>>8 = 32768`), so the `$8000` arm
 this sweep priced becomes necessary exactly when the overflow is fixed.
 
+> 🔴 **REFUTED 2026-08-16 by D-CIRCOVF** — the overflow was repaired and the arm
+> was **not** needed ([`circovf-msx1-oracle.md`](circovf-msx1-oracle.md) §5.1).
+> `(32767*256+128)>>8 = 32768` is arithmetic, but `ASPS = 256` is the one value
+> that reaches it *and* the one value for which the whole scale is the
+> **identity**. Skipping the multiply on that arm caps the result at `|v| ≤
+> 32767` there and at 32639 on the multiply arm — `$8000` is never met. Measured
+> over 600 000 cases, `scratchpad/circovf_asmsim.py`.
+>
+> ⚠️ **The generalisable half is the sentence's shape, not its site.** "Fixing
+> the truncation makes X reachable" was correct; X was not the fixed point in a
+> negate but the **overflow of `gfx_cross_ge0`'s two 16-bit products**, whose
+> inputs this very list charges to "0..255 **by construction**, by a
+> `ld l,h / ld h,0` byte truncation". That construction is what the fix removes.
+> A bound stated as "by construction" is a bound owned by whoever deletes the
+> construction — and this sweep already had the fact written down one bullet
+> above the conclusion it did not draw.
+
 ### 4.3 `abs16` (`basic/float-arith.asm:1598`) — the int-arithmetic magnitude
 
 `abs16($8000)` returns `HL=$8000, A=$80`, same fixed point. Four callers, and

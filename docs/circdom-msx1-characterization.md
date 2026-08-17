@@ -278,6 +278,24 @@ was needed and the answer today is no — **but the arm becomes necessary the
 moment the overflow it was conflated with is repaired.** Recorded in
 `gfx_circle_op`'s header and filed in `TODO.md`.
 
+> 🔴 **SUPERSEDED 2026-08-16 by D-CIRCOVF**
+> ([`circovf-msx1-oracle.md`](circovf-msx1-oracle.md) §5.1). The arithmetic in
+> the paragraph above is right and the conclusion is **design-dependent, which
+> this paragraph does not say**. `ASPS` is 0..256, and `ASPS = 256` is the only
+> value that can reach 32768 — it is also the only value for which the scale is
+> the **identity**, so four bytes of branch skip the multiply altogether. On
+> that arm the result is `|v| ≤ 32767`; on the multiply arm `ASPS ≤ 255` gives
+> at most `(32767*255+128)>>8 = 32639`. **The overflow was repaired and no
+> `$8000` arm was needed** (600 000-case sweep,
+> `scratchpad/circovf_asmsim.py`).
+>
+> A coupling *does* bind, at a site this table does not name. Row 6,
+> `gfx_cross_ge0`, is charged here to "byte truncation" — correctly — and that
+> is exactly why its two 16-bit **products** stop being safe when the truncation
+> is removed. It was not broken before D-CIRCOVF and would have been broken *by*
+> it. Right structural claim, wrong site, opposite direction: what the fix makes
+> reachable is not a fixed point in a negate, it is an overflow in a multiply.
+
 ---
 
 ## §7 Gate rows

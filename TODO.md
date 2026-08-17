@@ -1606,7 +1606,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       safe *because the multiply truncates*, so **fixing the overflow makes
       `$8000` reachable there for the first time**.
 
-- [ ] 🔴 **THE PRODUCT BOUND IS REAL AND REACHABLE: `CIRCLE` WITH r ≥ 256
+- [x] 🔴 **THE PRODUCT BOUND IS REAL AND REACHABLE: `CIRCLE` WITH r ≥ 256
       DRAWS PIXELS THE REFERENCE DOES NOT.** Filed 2026-08-16 by D-CIRCDOM
       ([`docs/circdom-msx1-characterization.md`](docs/circdom-msx1-characterization.md)
       §4.1). `gfx_mul16u` truncates at 16 bits, so `gfx_circ_scale`'s
@@ -1633,8 +1633,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       *partly* on screen — every measured DIFF has the reference drawing
       nothing at all, so the fix has no positive oracle yet. **That oracle is
       the first thing to measure, not the fix.**
+      ✅ **CLOSED 2026-08-16 by D-CIRCOVF**
+      ([`docs/circovf-msx1-oracle.md`](docs/circovf-msx1-oracle.md)).
+      **The oracle exists and the answer is a FULL-WIDTH PRODUCT, ROUNDED
+      HALF-UP.** The geometry that had blocked it is a theorem, not bad luck:
+      an overflowing point has a scaled minor offset ≥ 256 and the screen is
+      192 tall, so no overflowing point can be on screen *while the centre is*
+      — and every CIRCLE row in the tree's history is centred at (128,96).
+      Moving the centre off screen **along the minor axis** puts the
+      overflowing part of the figure on the visible band. Four such rows, on
+      all three code paths (default `ASPS=256`, `cpt_asp_le1`, and the `fp_div`
+      branch), matched a full-width model **byte for byte across the whole
+      6144-byte plane**; a saturating model and the wrapping model were both
+      refuted at sha1 level; four controls at the same off-screen geometry with
+      products that FIT were byte-identical. 8/8 whole-plane predictions exact.
+      Fix: `gfx_mul16r` (24-bit accumulator) at `gfx_circ_scale` +
+      `gfx_circ_bvec_mag`, `gfx_mul16u32`+`gfx_cmp32` at `gfx_cross_ge0`,
+      `gfx_mul16u` deleted. **+65 B, and it lands in sub page 0, not the sub
+      page 1 this entry priced it against** — `graphics_tenant` is a page-0
+      tenant. Ten gate rows added; `sub.rom` `8161c1a2` → `bc7573df`, the other
+      three ROMs byte-identical.
+      🔴 **THE `$8000` COUPLING THIS ENTRY ASSERTS DOES NOT BIND, AND A
+      DIFFERENT ONE DOES.** The arithmetic above is right — an exact
+      `(32767*256+128)>>8` *is* `$8000` — but the conclusion is
+      design-dependent. `ASPS` is 0..256 and `ASPS=256` is the only value that
+      can reach 32768; it is also the value for which the scale is the
+      **identity**, so 4 bytes of branch skip the multiply entirely. On that arm
+      the result is `|v| ≤ 32767`; on the multiply arm `ASPS ≤ 255` gives at
+      most 32639. **No `$8000` arm was needed** (600 000-case sweep,
+      `scratchpad/circovf_asmsim.py`). What DOES bind is `gfx_cross_ge0`: its
+      two products **were not broken before the slice** and are broken *by* it,
+      because their inputs were byte-bounded by exactly the truncation being
+      removed. Right structural claim, wrong site, opposite direction.
 
-- [ ] 🔴 **TWO KNIFE-RUNNER DEFECTS, BOTH FOUND BY READING THE RUNNER'S OWN
+- [x] 🔴 **TWO KNIFE-RUNNER DEFECTS, BOTH FOUND BY READING THE RUNNER'S OWN
       OUTPUT RATHER THAN THE TREE'S.** Filed 2026-08-16 by D-CIRCDOM
       ([`docs/circdom-msx1-characterization.md`](docs/circdom-msx1-characterization.md)
       §9 and §9A). Neither is specific to that slice; both are shapes the
@@ -1662,6 +1694,66 @@ list. **When a slice lands, grep this list for what it just shipped.**
       💰 Zero bytes (scratchpad tooling only). The cost is one runner rewrite,
       and it is worth doing at the START of the next knife-bearing slice rather
       than after, since (a) can turn a real finding into a silent pass.
+      ✅ **CLOSED 2026-08-16 by D-CIRCOVF**, at the start of the slice as this
+      entry asked. [`scratchpad/circovf_knives.py`](scratchpad/circovf_knives.py)
+      keys rows on `(phase, index, label)` and **asserts that key count against
+      the probe's own PASS/FAIL line count**, so the two can never drift again —
+      the assertion, not the keying, is what makes it stay fixed. `kind` now
+      carries the scorer state: `predict` (EXACT/MISS), `regress` (HOLD/BROKEN,
+      never scored EXACT), and a third the residual did not anticipate,
+      `nothing` — a knife PREDICTED to redden nothing, where the missing row IS
+      the finding. K-CO3 is that case: it undoes the 32-bit cross-product
+      widening and no green gate row can see it. Every prediction set is derived
+      from the probe's own `CIRCLE_CASES` at run time, from each row's `ops`
+      string, including the "does this row draw anything on screen at all"
+      filter — nothing is hand-typed.
+
+- [ ] 🔴 **THE ARC MASK DIVERGES AT LARGE RADII, AND IT IS NOT THE PRODUCT
+      BOUND.** Filed 2026-08-16 by D-CIRCOVF
+      ([`docs/circovf-msx1-oracle.md`](docs/circovf-msx1-oracle.md) §6.1).
+      Measured on the whole pattern plane, VG-8020 vs zerobas:
+
+          CIRCLE(128,352),200,15,1.1,2.04    ref 170 px 386f8fb8 / zb 181 px 7956e005
+          CIRCLE(128,96),700,15,0,1.57,.137  ref 127 px ebfd085b / zb 126 px 752131e6
+          CIRCLE(128,96),400,15,-1.57,0      ref  97 px cd7e5368 / zb  97 px 76352feb
+
+      ⚠️ **ALL THREE ARE PRE-EXISTING AND THAT IS MEASURED, NOT ARGUED**:
+      `scratchpad/circovf_prefix.py` reverts the slice's source edits, rebuilds
+      the pre-slice `sub.rom` **`8161c1a2` byte for byte**, and re-asks the same
+      rows. `arcctl_r200` reads **byte-identically on both builds** (`7956e005`
+      either side) — at r=200 every cross product is 40000, inside 16 bits on
+      both arithmetics, and `ASPS=256` makes the scale the identity on both, so
+      nothing D-CIRCOVF touched can reach it.
+      🎯 **THE ROW THAT SETS THE SCOPE IS THE ONE WRITTEN AS A CONTROL.**
+      `arcctl_r200` was written to be green — same shape, same off-screen-centre
+      geometry, products that fit — and came back red, which is what says the
+      divergence is angular rather than arithmetic. The gate's own arc rows
+      (`arc_0_hpi` and friends, r=15) are green, so the defect needs a radius
+      well past 15 AND non-cardinal angles; `CIRCLE(128,96),120,15,1.1,2.04` is
+      blank on both and settles nothing.
+      💰 Not priced. Candidates, none walked: `gfx_circ_bvec`'s QTAB lookup and
+      the `brad = round(|angle|*128/pi)` rounding (spec §5.2.1 REVISED), and the
+      deferred-spoke line endpoints — the r=400 row is a spoke and differs by
+      one COLUMN over 97 rows, which is an endpoint question, not a mask one.
+      ⚠️ `graphics-acceptance` owns it; the three rows above are NOT in the gate
+      because they are red.
+
+- [ ] ⚠️ **THE 32-BIT CROSS PRODUCT HAS NO GREEN ROW THAT CAN SEE IT.** Filed
+      2026-08-16 by D-CIRCOVF (§5.2, and K-CO3 in
+      [`scratchpad/circovf_knives.py`](scratchpad/circovf_knives.py)).
+      `gfx_cross_ge0` was widened to `gfx_mul16u32` + `gfx_cmp32` because the
+      slice makes its inputs reach 32767 and its products 2³⁰ — **forced by
+      arithmetic, not by a measurement.** The rows that would exercise it (an
+      arc, at a radius where the products pass 16 bits, with pixels on screen)
+      are all red for the separate pre-existing reason filed above, so the two
+      arc rows that DID go green (`arc_ovf_r260`, `arc_ovf_wrap300`) are blank
+      on both machines and are one-sided regression detectors only.
+      K-CO3 is declared `kind="nothing"` for exactly this reason and its
+      scorecard line is the number that stands in for the missing row.
+      💰 Zero bytes. Blocked on the arc-mask item above: close that first and
+      these rows become available. **Until then the widening is correct by
+      construction and untested by the gate, and that sentence should not be
+      quietly dropped from the next reader's summary.**
 
 - [x] ⚠️ **`ASPS` TRUNCATION IS MEASURED FOR `aspect < 1` ONLY.** Filed
       2026-08-16 by D-CIRCDOM (§5). The fix (`cpt_asp_scale256`:

@@ -1655,6 +1655,19 @@ GFX_PSTK_END    equ     GFX_PSTK + GFX_PSTK_CAP*GFX_PSTK_ENTSZ
 ; Strings are COPIED into GFX_DBUF frame by frame, because the resident's eval
 ; between round trips can reuse the temp-string pool a DRAW argument may live in
 ; -- reading the body in place across an eval would be a use-after-free.
+; D-CIRCOVF: CIRCLE's arc cross-product magnitudes are 32-bit once the minor
+; scale is computed exactly (sub/graphics.asm gfx_cross_ge0 / gfx_mul16u32), and
+; the G3/G4/G5 window above has only 6 B left ($E15A-$E15F) against the 8 these
+; need. They ALIAS the same span-stack window on the same argument DRAW's frame
+; buffer already uses below: one graphics tenant is ever in flight, and PAINT's
+; stack and DRAW's buffer are both dead for the whole of a CIRCLE. ⚠️ These are
+; live only INSIDE gfx_cross_ge0, which runs in the octant loop -- long after
+; CIRCLE's parse co-routine is done. That co-routine borrows GFX_DPTR ($E4F2),
+; 256 B clear of these 8, and basic/graphics.asm reads GFX_DPTR again AFTER the
+; draw to continue the statement stream, so the two must not and do not overlap.
+GFX_CS_M1       equ     GFX_PSTK        ; $E3F2: |Ax|*|By|, 4 B LE (4)
+GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $E3F6: |Ay|*|Bx|, 4 B LE, CONTIGUOUS with
+                                        ; M1 -- gcx_zlp tests both as one 8-byte run (4)
 GFX_DBUF        equ     GFX_PSTK        ; $E3F2: frame text (concatenated), 256 B
 GFX_DBUF_CAP    equ     256
 GFX_DPTR        equ     GFX_DBUF + GFX_DBUF_CAP   ; $E4F2: parse cursor in the current frame (2)

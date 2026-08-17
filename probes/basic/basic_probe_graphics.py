@@ -175,7 +175,7 @@ def _assert_band_clamp_is_noop() -> None:
     for label, _, xr, yr, col in LINE_CASES:
         assert new_addrs(xr, yr, col) == old_addrs(xr, yr, col), f"band moved {label}"
     for label, _, (cx, cy), h, col in CIRCLE_CASES:
-        if label in _CIRCDOM_ROWS:          # the new rows are deliberately wider
+        if label in _WIDE_ROWS:             # these rows are deliberately wider
             continue
         xr = (max(0, cx - h), cx + h)
         yr = (max(0, cy - h), cy + h)
@@ -339,6 +339,43 @@ CIRCLE_CASES = [
     # picture and a pass cannot come from the rounding rule.
     ("ell_a2r128",  "CIRCLE(128,96),128,15,,,2",   (128, 96), 128, False),
     ("ell_a4r128",  "CIRCLE(128,96),128,15,,,4",   (128, 96), 128, False),
+
+    # --- D-CIRCOVF: the product bound, with a POSITIVE ORACLE -----------------
+    # D-CIRCDOM measured six rows where |v|*ASPS overflows 16 bits, and in every
+    # one the REFERENCE draws 0 px on screen -- they say "zerobas paints where
+    # the reference paints nothing" and cannot say what right looks like. The
+    # reason is geometric: an overflowing point has a scaled minor offset >= 256
+    # and the screen is 192 tall, so no overflowing point can be on screen while
+    # the CENTRE is. These rows move the centre off screen along the MINOR axis,
+    # which puts the overflowing part of the figure on the visible band -- and
+    # the reference then draws it. All four matched a FULL-WIDTH product model
+    # byte for byte across the whole 6144-byte plane, refuting both a saturating
+    # model and the wrapping one. docs/circovf-msx1-oracle.md §3.
+    ("circ_ovf_r284",    "CIRCLE(128,445),284,15",      (128, 96), 128, False),
+    ("circ_ovf_r300",    "CIRCLE(128,445),300,15",      (128, 96), 128, False),
+    ("ell_ovf_a05r528",  "CIRCLE(128,448),528,15,,,.5", (128, 96), 128, False),
+    ("ell_ovf_a2r528",   "CIRCLE(262,96),528,15,,,2",   (128, 96), 128, False),
+    # Controls for the four above, at the SAME off-screen-centre geometry but
+    # with products that FIT: r=255 (65280), r=200 (51200), and the two aspect
+    # branches at r=500 (64000). All four were green BEFORE the fix and must
+    # stay green after it -- without them, a blank zerobas above is explained
+    # equally well by "the reference refused an off-screen centre". That is not
+    # hypothetical: round 1 of this slice read ~5115 px on the reference in all
+    # eight rows, and these controls are what caught it (docs §4).
+    ("circ_ovfc_r255",   "CIRCLE(128,445),255,15",      (128, 96), 128, False),
+    ("circ_ovfc_r200",   "CIRCLE(128,352),200,15",      (128, 96), 128, False),
+    ("ell_ovfc_a05r500", "CIRCLE(128,346),500,15,,,.5", (128, 96), 128, False),
+    ("ell_ovfc_a2r500",  "CIRCLE(260,96),500,15,,,2",   (128, 96), 128, False),
+    # Two arc rows the slice FIXED: before it, zerobas painted 47 px and 447 px
+    # of wrapped arc where the reference draws nothing.
+    # ⚠️ THESE TWO ARE ONE-SIDED DETECTORS, NOT EVIDENCE OF CORRECTNESS. They
+    # are blank on BOTH machines now, and a both-blank row is vacuous about what
+    # the mask draws (D-CIRCDOM §4.2, `r200`/`r255`). They catch exactly one
+    # regression -- zerobas starting to paint again -- and nothing else. The
+    # rows that WOULD speak to the arc mask at these radii are red for a
+    # separate, pre-existing reason: see TODO.md, filed by this slice.
+    ("arc_ovf_r260",     "CIRCLE(128,96),260,15,0,1.57", (128, 96), 128, False),
+    ("arc_ovf_wrap300",  "CIRCLE(128,96),300,15,3,1",    (128, 96), 128, False),
 ]
 
 # Rows added by D-CIRCDOM that deliberately span more than the screen, so the
@@ -347,6 +384,14 @@ _CIRCDOM_ROWS = {"ell_a03r128", "ell_a055r128", "ell_a01r255", "ell_a07r128",
                  "ell_a025r128", "ell_r700a0137",
                  "ell_a17r128", "ell_a13r128", "ell_a11r128",
                  "ell_a2r128", "ell_a4r128"}
+# D-CIRCOVF's rows are wider still AND off-centre: their centres are off screen
+# by design, so cy-h is negative and the band clamp is doing real work on every
+# one of them.
+_CIRCOVF_ROWS = {"circ_ovf_r284", "circ_ovf_r300", "ell_ovf_a05r528",
+                 "ell_ovf_a2r528", "circ_ovfc_r255", "circ_ovfc_r200",
+                 "ell_ovfc_a05r500", "ell_ovfc_a2r500",
+                 "arc_ovf_r260", "arc_ovf_wrap300"}
+_WIDE_ROWS = _CIRCDOM_ROWS | _CIRCOVF_ROWS
 
 
 def phase_e() -> int:
