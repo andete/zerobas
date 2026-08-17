@@ -787,6 +787,30 @@ def run():
         want = gfx_scale_off(off, S)
         check(got == want, f"gfx_circ_scale v={off:4d} S={S:3d} -> {got} (want {want})")
 
+    # --- gfx_clamp_coords (D-SPOKELINE): every line endpoint clamps to the --
+    # screen, X to 0..255, Y to 0..191 -- measured against the VG-8020 on 14
+    # discriminating rows over all four edges (LINE, spokes, box outlines).
+    CLAMP_CASES = [
+        # (x1, y1, x2, y2) -> clamped
+        ((10, 20, 200, 150), (10, 20, 200, 150)),      # on-screen: unchanged
+        ((-40, 20, 100, 80), (0, 20, 100, 80)),        # x1 < 0
+        ((300, 20, 100, 80), (255, 20, 100, 80)),      # x1 > 255
+        ((50, 250, 120, 100), (50, 191, 120, 100)),    # y1 > 191
+        ((128, 96, 129, -304), (128, 96, 129, 0)),     # the arc_big_r400 spoke
+        ((300, 300, 400, 400), (255, 191, 255, 191)),  # fully off -> corner
+        ((-50, -50, 305, 241), (0, 0, 255, 191)),      # both endpoints off
+        ((0, 0, 255, 191), (0, 0, 255, 191)),          # exact bounds: unchanged
+        ((256, 192, -1, -32768), (255, 191, 0, 0)),    # one-off + extremes
+        ((32767, 0, 0, 32767), (255, 0, 0, 191)),      # int16 max both axes
+    ]
+    for coords, want in CLAMP_CASES:
+        for name, v in zip(("GFX_X1", "GFX_Y1", "GFX_X2", "GFX_Y2"), coords):
+            m.poke_w(m.addr(name), _w16(v))
+        m.call("gfx_clamp_coords")
+        got = tuple(_rd16s(m, n) for n in ("GFX_X1", "GFX_Y1", "GFX_X2",
+                                           "GFX_Y2"))
+        check(got == want, f"gfx_clamp_coords {coords} -> {got} (want {want})")
+
     # --- gfx_circ_keep: the D-ARCMASK step-index wedge, driven point by ------
     # point against the Python oracle (py_keep, the pre-asm simulation).
     # Battery covers: both parities, both wrap states, FULLW, ARCF=0, the two

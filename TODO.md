@@ -1856,7 +1856,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       six endpoints incl. `(1,-400)` at r=400. The `arc_big_r400` LINE
       divergence is a SEPARATE item, re-filed sharpened below.
 
-- [ ] 🔴 **THE REFERENCE'S SPOKE LINE ADVANCES ITS MINOR AXIS BEFORE THE
+- [x] 🔴 **THE REFERENCE'S SPOKE LINE ADVANCES ITS MINOR AXIS BEFORE THE
       MIDPOINT — the last `arc_big_r400` divergence, now isolated to the LINE
       RASTERISER.** Filed 2026-08-17 by D-ARCMASK (docs §5.6), the sharpened
       remainder of D-CIRCOVF §6.1's third row:
@@ -1875,6 +1875,50 @@ list. **When a slice lands, grep this list for what it just shipped.**
       with a bare `LINE (128,96)-(129,-304)` if the reference accepts that
       form, which would be the cheaper probe. 💰 Not priced. The G3 line was
       host-fit on on-screen segments only.
+      ✅ **CLOSED 2026-08-17 by D-SPOKELINE**
+      ([`docs/spokeline-msx1-characterization.md`](docs/spokeline-msx1-characterization.md))
+      — and the diagnosis above was a CORNER of the real rule: **the reference
+      CLAMPS BOTH endpoints of every line to the screen** (X→0..255, Y→0..191)
+      before rasterising — LINE, spokes (the CENTRE clamps too) and box
+      outlines alike. Solved offline from the banked sha1 (the ref plane is
+      uniquely the y=47-seam pair, = clamp-then-draw), then measured on 23
+      whole-plane rows over all four edges: `clamp_both` unique on nine,
+      **a fully off-screen LINE lights exactly (255,191) on a VG-8020** — the
+      pixel G3's `clip_alloff` band was blind to, and `clip_frac` is PROVABLY
+      vacuous (all hypotheses one plane). Fix: `gfx_clamp_coords`, 52 B in sub
+      p0, one call in `gfx_line_op`. All 23 rows byte-identical after;
+      `graphics-acceptance` **323/0** with six new rows; knife K-SL1 restores
+      the old planes byte for byte. 🔴 Two model errors owned on the way: the
+      python line model's direction convention was wrong about BOTH machines
+      (gfx_bres_init sorts the major axis ascending — direction was never a
+      divergence), and the first zline transcription GUESSED the stepping rule
+      and was refuted 8/16 by banked planes before being corrected to
+      gfx_bres_next's actual accumulator form (then 16/16).
+
+- [ ] ⚠️ **`DRAW` WITH OFF-SCREEN COORDINATES IS UNMEASURED, AND THE CLAMP
+      DOES NOT COVER IT.** Filed 2026-08-17 by D-SPOKELINE (§3.2). `gdrw`
+      calls `gfx_draw_seg` directly, bypassing `gfx_line_op` and therefore
+      `gfx_clamp_coords`. Whether the reference clamps DRAW's `M` targets the
+      same way is unknown; zerobas still per-pixel clips there. The
+      apparatus to answer it is `scratchpad/spokeline_char2.py`'s pattern
+      with `DRAW "BM-40,20;M100,80"`-style rows. 💰 Not priced.
+
+- [ ] ⚠️ **THE WORK AREA AFTER AN OFF-SCREEN LINE IS UNMEASURED.** Filed
+      2026-08-17 by D-SPOKELINE (§4). `gfx_line_op` writes `GXPOS/GRPACX` =
+      the RAW p2 before the clamp, so a following `LINE STEP` continues from
+      the unclamped point. Whether the reference stores raw or clamped there
+      is unknown — a `LINE(0,0)-(300,250):LINE STEP(10,0)-STEP(0,10)` pair
+      row would say. 💰 Zero bytes either way (move the clamp call above or
+      below the work-area writes).
+
+- [ ] 🔴 **A RE-RUN PROBE THAT BANKS TO A FIXED JSON PATH OVERWRITES ITS OWN
+      PRE-FIX MEASUREMENT.** Filed 2026-08-17 by D-SPOKELINE (§6). The
+      post-fix verification re-run of `spokeline_char.py` clobbered
+      `spokeline_char.json`'s pre-fix planes (recoverable from the parent
+      commit; the reduced readings survive in the doc). The arcmask sweeps
+      have the same hazard. Version the bank path (`*.pre.json` /
+      `*.post.json`) or refuse to overwrite an existing bank. 💰 A few lines
+      per probe.
 
 - [x] ⚠️ **ZEROBAS DRAWS ARCS 5–6× SLOWER THAN THE REFERENCE, AND FULL CIRCLES
       1.5× FASTER.** Filed 2026-08-17 by D-ARCMASK (§6), measured in VDP frames

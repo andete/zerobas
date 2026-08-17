@@ -473,6 +473,11 @@ gfx_line_op:
                 ld      hl,(GFX_Y2)
                 ld      (GYPOS),hl
                 ld      (GRPACY),hl
+                call    gfx_clamp_coords    ; D-SPOKELINE: clamp all four endpoint
+                                            ; coords to the screen BEFORE drawing
+                                            ; (after the work-area writes above,
+                                            ; which keep the RAW p2 -- the
+                                            ; on-screen-measured behaviour)
                 ei                          ; interrupts LIVE for the (possibly long) draw
                 ld      a,(GFX_MODE)
                 or      a
@@ -3578,4 +3583,57 @@ g8_gr_done:
 ; their own; SCREEN 1 reads group 2 and SCREEN 2 reads group 3. The reference's
 ; whole off-by-one is this one table (spec §4.4, poison-tested).
 g8_gmap:        db      0, 2, 3, 3
-g8_graintab:    dw      $03FF, $007F, $07FF, $007F, $07FF
+g8_graintab:    dw      $03FF, $007F, $07FF, $007F, $07FF; ---------------------------------------------------------------------------
+; gfx_clamp_coords -- clamp GFX_X1/Y1/X2/Y2 in place: X to 0..255, Y to
+; 0..191. D-SPOKELINE (2026-08-17, docs/spokeline-msx1-characterization.md):
+; the reference CLAMPS BOTH endpoints of every line to the screen before
+; rasterising, it does not clip the ideal line per pixel -- measured on 14
+; discriminating whole-plane rows across all four screen edges, for LINE
+; segments, CIRCLE spokes (the centre clamps too) and BOX outlines alike
+; (box FILL is clamp-invariant by construction). The loudest consequence,
+; measured twice: a fully off-screen LINE or BOX lights exactly one pixel at
+; (255,191) on the reference. G4-arcbnd round 3's spoke and D-CIRCOVF §6.1's
+; arc_big_r400 were both this defect. ⚠️ DRAW is NOT this path: gdrw calls
+; gfx_draw_seg directly, bypassing gfx_line_op -- its off-screen behaviour is
+; unmeasured and deliberately unchanged. Clobbers A, B, C, DE, HL.
+; ---------------------------------------------------------------------------
+gfx_clamp_coords:
+                ld      hl,GFX_X1           ; X1,Y1,X2,Y2 -- contiguous int16s
+                ld      b,4
+gcc_lp:
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = coord, HL -> its high byte
+                ld      a,255               ; max: the X rows (b=4, b=2)
+                bit     0,b
+                jr      z,gcc_max
+                ld      a,191               ; max: the Y rows (b=3, b=1)
+gcc_max:
+                bit     7,d
+                jr      nz,gcc_zero         ; negative -> clamp to 0
+                inc     d
+                dec     d
+                jr      nz,gcc_hi           ; high byte set -> definitely > max
+                ld      c,a
+                ld      a,e
+                cp      c
+                ld      a,c
+                jr      c,gcc_next          ; low < max -> in range
+                jr      z,gcc_next          ; low == max -> in range
+gcc_hi:
+                ld      (hl),0              ; clamp to max: high 0, low max
+                dec     hl
+                ld      (hl),a
+                inc     hl
+                jr      gcc_next
+gcc_zero:
+                ld      (hl),0              ; clamp to 0
+                dec     hl
+                ld      (hl),0
+                inc     hl
+gcc_next:
+                inc     hl                  ; -> the next cell's low byte
+                djnz    gcc_lp
+                ret
+
+

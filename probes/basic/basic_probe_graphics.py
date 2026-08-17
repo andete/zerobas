@@ -205,6 +205,18 @@ LINE_CASES = [
     ("clip_negTL",  "LINE(-100,-100)-(50,50),15",     (0, 24), (0, 24), False),  # clip = masking
     ("clip_frac",   "LINE(-7,-2)-(60,18),15",         (0, 24), (0, 8),  False),  # frac-slope off-start
     ("clip_alloff", "LINE(300,300)-(400,400),15",     (0, 24), (0, 24), False),  # fully-off = blank
+                                                                                 # in THIS band -- see
+                                                                                 # clampL_corner below
+
+    # --- D-SPOKELINE (docs/spokeline-msx1-characterization.md): the reference
+    # CLAMPS both line endpoints to the screen; it does not clip the ideal
+    # line. Every row here was RED before the clamp landed. clampL_corner is
+    # the loud one: a fully off-screen LINE lights exactly (255,191) -- the
+    # pixel clip_alloff's top-left band was blind to since G3.
+    ("clampL_diag",   "LINE(-50,-50)-(305,241),15",   (0, 255), (0, 191), False),
+    ("clampL_corner", "LINE(300,300)-(400,400),15",   (232, 255), (168, 191), False),
+    ("clampL_start",  "LINE(-40,20)-(100,80),15",     (0, 104), (16, 88), False),
+    ("clampL_box",    "LINE(-40,20)-(100,80),15,B",   (0, 104), (16, 88), False),
 ]
 
 
@@ -398,6 +410,13 @@ CIRCLE_CASES = [
     ("arcmask_a137",   "CIRCLE(128,96),700,15,0,1.57,.137", (128, 96), 128, False),
     ("arcmask_spoke",  "PSET(75,60),9:CIRCLE(60,60),15,6,-0.01,1.57",
      (60, 60), 64, False),
+    # --- D-SPOKELINE: spokes whose LINE crosses or starts off screen --------
+    #   clampS_wide  -- endpoint (46,-296): the clamp redraws the slope by
+    #                   ~20 columns vs the old per-pixel clip
+    #   clampS_start -- the spoke's START (the centre) is off screen and
+    #                   clamps too, like any other line endpoint
+    ("clampS_wide",  "CIRCLE(128,96),400,15,-1.8,0",   (128, 96), 128, False),
+    ("clampS_start", "CIRCLE(128,-60),200,15,-4.71,0", (128, 96), 128, False),
 ]
 
 # Rows added by D-CIRCDOM that deliberately span more than the screen, so the
@@ -417,7 +436,8 @@ _CIRCOVF_ROWS = {"circ_ovf_r284", "circ_ovf_r300", "ell_ovf_a05r528",
 # reaches x=256, so the clamp bites; r200/lad190 add off-screen centres and
 # a137 spans the whole width. Only the (60,60) spoke row fits unclamped.
 _ARCMASK_WIDE = {"arcmask_r200", "arcmask_lad190", "arcmask_a137",
-                 "arcmask_sw1", "arcmask_sw2", "arcmask_card95"}
+                 "arcmask_sw1", "arcmask_sw2", "arcmask_card95",
+                 "clampS_wide", "clampS_start"}
 _WIDE_ROWS = _CIRCDOM_ROWS | _CIRCOVF_ROWS | _ARCMASK_WIDE
 
 
