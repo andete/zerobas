@@ -1495,6 +1495,36 @@ WORKAREA_RD = ('SCREEN0:PRINT"W";PEEK(&HFCB7)+256*PEEK(&HFCB8);'
                'PEEK(&HFCB5)+256*PEEK(&HFCB6)')
 
 
+# 🔴 D-GATEBLIND round 5: THE ERROR PATH, because on the DRAWN path LINE writes
+# the work area TWICE and no row could tell the two writers apart. The resident
+# (gfx_work_area, via gfx_point_gate) writes p2 BEFORE the SCREEN-2 gate refuses;
+# the tenant (gfx_line_op) writes it again from GFX_X2/GFX_Y2 once it runs. Cut
+# either one on the drawn path and the other supplies the value: M-GRPAC reddened
+# five rows and none of the three named grpac_*, and M-GRPAC2 reddened NOTHING
+# while w_line_off still read `W 300 250 300 250`. A mutation battery cannot see a
+# value that is written twice.
+#
+# In SCREEN 0 the tenant NEVER RUNS -- gfx_point_gate raises ERR 5 first -- so
+# these rows read a cell only the RESIDENT writer can fill. That is the D-LINERR
+# rule ("work area := p2, THEN the gate") turned into coverage of its own
+# mechanism rather than of its error code, which D/scr0_err already owns.
+# ⚠️ A THIRD CASE WAS DESIGNED AND DROPPED BEFORE IT SHIPPED:
+# `SCREEN0:LINE(0,0)-(300,250),15,BF` would have looked like box-field coverage,
+# but gfx_point_gate raises ERR 5 the instant p2 is staged -- the `,15,BF` field
+# is never parsed -- so its failure surface is byte-for-byte `w_err_scr0`'s. A row
+# whose geometry cannot reach the case it is named for is what this whole slice is
+# about; it is not worth shipping one to make the count look better.
+WORKAREA_ERR_CASES = [
+    ("w_err_scr0",  "LINE(0,0)-(300,250),15"),
+    ("w_err_step",  "LINE(10,20)-STEP(30,40),15"),   # STEP resolves vs the staged p1
+]
+
+WORKAREA_ERR_RD = ('SCREEN0:PRINT"W";PEEK(&HFCB7)+256*PEEK(&HFCB8);'
+                   'PEEK(&HFCB9)+256*PEEK(&HFCBA);'
+                   'PEEK(&HFCB3)+256*PEEK(&HFCB4);'
+                   'PEEK(&HFCB5)+256*PEEK(&HFCB6);ERR')
+
+
 def phase_r_workarea() -> int:
     fails = 0
     print("=== PHASE R: work-area residue after off-screen coordinates ===")
@@ -1507,6 +1537,21 @@ def phase_r_workarea() -> int:
     ref = omsx_repl.run_cases(REF, specs, batch=False, step=30.0)
     zb = omsx_repl.run_cases(ZB, specs, batch=False, step=30.0)
     for (label, _), r, z in zip(WORKAREA_CASES, ref, zb):
+        ra, za = _answer(r, "W"), _answer(z, "W")
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:18} ref={ra!r} zb={za!r}")
+
+    # The error-path rows carry ERR in the same tagged answer, so an
+    # accepted<->raised flip cannot pass as a work-area match (the Phase-L
+    # pattern); the `W -1` line catches "no error raised at all".
+    especs = [("stored", ["ON ERROR GOTO 40", "SCREEN0:" + ops,
+                          'SCREEN0:PRINT"W";-1:END',   # reached only if NO error
+                          WORKAREA_ERR_RD])
+              for _, ops in WORKAREA_ERR_CASES]
+    eref = omsx_repl.run_cases(REF, especs, batch=False, step=30.0)
+    ezb = omsx_repl.run_cases(ZB, especs, batch=False, step=30.0)
+    for (label, _), r, z in zip(WORKAREA_ERR_CASES, eref, ezb):
         ra, za = _answer(r, "W"), _answer(z, "W")
         ok = ra is not None and ra == za
         fails += not ok

@@ -1995,25 +1995,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       repeated one round later on `F/ovf_radius`, whose overflow check is also the
       circle parse tenant's rather than `gfx_eval_int16`'s.
 
-- [ ] 🔴 **THE GATE HAS NO ROW THAT SEPARATES LINE'S *TWO* WORK-AREA WRITERS, SO
+- [x] 🔴 **THE GATE HAS NO ROW THAT SEPARATES LINE'S *TWO* WORK-AREA WRITERS, SO
       NINE ROWS CANNOT BE REDDENED BY ANY SINGLE-SITE MUTATION.** Filed
-      2026-08-17 by D-GATEBLIND round 5 (§19) —
-      [`docs/gate-blindness-sweep.md`](docs/gate-blindness-sweep.md). A drawn LINE
-      writes `GRPACX`/`GRPACY` **twice**: the resident's `gfx_work_area` (via
-      `gfx_point_gate`, before the SCREEN-2 gate) and the tenant's in
-      `gfx_line_op`. `M-GRPAC` cut the first and `M-GRPAC2` the second; the first
-      reddened 5 rows, none of them the `grpac_*` ones, and the second reddened
-      **ZERO** — under it `w_line_off` still reads `W 300 250 300 250`, so the
-      cell is right with the store deleted. 🎯 **A MUTATION BATTERY CANNOT SEE A
-      VALUE THAT IS WRITTEN TWICE**; the roster then reports the ROW as suspect
-      when the truth is that the CODE is doubled. The duplicate is NOT dead — the
-      resident write is load-bearing on the **error** path (D-LINERR: the work
-      area moves, THEN the gate refuses, so in SCREEN 0 the tenant never runs) and
-      the tenant's on the **spoke** path (CIRCLE calls `gfx_line_op` internally).
-      They coincide on exactly one path — the drawn, non-error one — which is the
-      only path all nine rows exercise. 💰 **A work-area row on the ERROR path**
-      (`SCREEN0:LINE(0,0)-(300,250)` then PEEK `GRPACX`) would separate them, and
-      a two-site mutation would confirm it.
+      2026-08-17 by D-GATEBLIND round 5 (§19); **CLOSED THE SAME DAY** (§21) —
+      two rows on the **ERROR path**, where the tenant never runs because
+      `gfx_point_gate` is `call gfx_work_area` followed by the mode gate:
+      `w_err_scr0` and `w_err_step` (gate **358 → 360/0**). They measure what
+      nothing measured before — the work area holds the **raw p2 in all four
+      cells even though ERR 5 was raised** (`W 300 250 300 250 5`), and a STEP
+      target resolved against the staged p1 lands there too before the statement
+      fails. Knives both **EXACT**: **K-GR3** (resident) reddens **7** — the two
+      new rows plus M-GRPAC's five, with all nine drawn-path rows holding —
+      and **K-GR4** (tenant) reddens **0 of 360**. ⚠️ A third case
+      (`SCREEN0:LINE(0,0)-(300,250),15,BF`) was designed and **dropped before it
+      shipped**: the gate fires before the box field is ever parsed, so its
+      failure surface is byte-for-byte `w_err_scr0`'s.
+
+- [ ] ⚠️ **NOTHING IN 360 ROWS PINS THE TENANT'S `GRPACX` STORE.** Filed
+      2026-08-17 by D-GATEBLIND round 5 (§21.2). `K-GR4` diverts
+      `gfx_line_op`'s `ld (GRPACX),hl` and **not one row of 360 moves** — the
+      resident's write covers the drawn path and the tenant never runs on the
+      error path. 💰 It may still be load-bearing for **CIRCLE's spokes**, which
+      call `gfx_line_op` internally (`gco_done` writes the circle's own work-area
+      values AFTER the spokes, so the ordering matters); before removing ~3 B of
+      sub p0, READ that path rather than trusting the gate's silence — the gate
+      having no row for it is exactly what this residual says. ⚠️ The claim is
+      narrow: only the `GRPACX` store was diverted, not `GXPOS`/`GYPOS`/`GRPACY`.
 
 - [ ] ⚠️ **NINE ACCEPTANCE ROWS STILL NEED A REFUSAL CUT, ONE PER PATH.** Filed
       2026-08-17 by D-GATEBLIND round 5 (§20). `M-PSETOFF` and `M-DRWSCALE` proved

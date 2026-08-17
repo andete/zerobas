@@ -201,6 +201,16 @@
    "R",
    "w_bf_on",
    1
+  ],
+  [
+   "R",
+   "w_err_scr0",
+   1
+  ],
+  [
+   "R",
+   "w_err_step",
+   1
   ]
  ],
  "measured": {
@@ -561,7 +571,9 @@
   "R|w_draw_left_down|1": 35,
   "R|w_draw_blank_off|1": 35,
   "R|w_draw_on|1": 35,
-  "R|w_step_after|1": 35
+  "R|w_step_after|1": 35,
+  "R|w_err_scr0|1": 0,
+  "R|w_err_step|1": 0
  },
  "reddened": {
   "Q1|s1_name|1": [

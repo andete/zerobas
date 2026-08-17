@@ -571,3 +571,56 @@ is what to fix.
 Nothing in the roster is now unexplained. Five rounds took it from "232 rows and a
 shrug" to a classified list in which the largest single entry is a statement about
 the *code*, not the gate.
+
+## §21 The fix for §19: two rows on the ERROR path, and the pair of knives that prove they separate the writers
+
+§19 said the thing to fix was not the rows but the gate's inability to tell LINE's
+two work-area writers apart. In SCREEN 0 the tenant **never runs** — the resident's
+`gfx_point_gate` is literally `call gfx_work_area` followed by the mode gate — so a
+row that reads the work area after ERR 5 reads a cell only the **resident** can
+fill.
+
+    w_err_scr0   ON ERROR GOTO ...  SCREEN0:LINE(0,0)-(300,250),15
+    w_err_step   ON ERROR GOTO ...  SCREEN0:LINE(10,20)-STEP(30,40),15
+
+Both carry `ERR` in the same tagged answer as the four work-area numbers, so an
+accepted↔raised flip cannot pass as a work-area match, and a `W -1` line catches
+"no error raised at all". **Gate 358 → 360 PASS / 0 FAIL.**
+
+⚠️ **A third case was designed and dropped before it shipped.**
+`SCREEN0:LINE(0,0)-(300,250),15,BF` looks like box-field coverage, but the gate
+fires the instant p2 is staged and the `,15,BF` field is never parsed — its
+failure surface is byte-for-byte `w_err_scr0`'s. A row whose geometry cannot reach
+the case it is named for is what this whole slice is about; shipping one to make
+the count look better would be the defect, not the fix.
+
+### 21.1 What they measure, which nothing measured before
+
+| row | both machines |
+|---|---|
+| `w_err_scr0` | `W 300 250 300 250 5` |
+| `w_err_step` | `W 40 60 40 60 5` |
+
+The work area holds the **raw p2 in all four cells even though the statement
+raised ERR 5** — D-LINERR pinned the *ordering and the code*; this pins the
+*values*. And `w_err_step` shows the STEP target resolved against the staged p1
+lands there too, then the statement fails.
+
+### 21.2 The knives, both exact
+
+| knife | cut | predicted | measured |
+|---|---|---|---|
+| **K-GR3** | resident `gfx_work_area`: `ld (GRPACX),bc` → `,de` | 7 red: the 2 new rows + M-GRPAC's 5; the nine drawn-path rows hold | **7 red**, exactly those; `w_err_scr0` zb `W 250 250 300 250 5` — GRPACX took the Y while GXPOS stayed 300 |
+| **K-GR4** | tenant `gfx_line_op`: `ld (GRPACX),hl` → `(GRPACY)` | **0** red, `w_err_*` included | **0 of 360** |
+
+So the three paths are now separated: **the drawn path pins the pair, the error
+path pins the resident, and nothing in 360 rows pins the tenant's `GRPACX` store
+at all.** That last one is now a measured statement rather than a suspicion — and
+it is deliberately *not* acted on here: the store may still be load-bearing for
+CIRCLE's spokes, which call `gfx_line_op` internally, and that is a code-reading
+question this gate cannot answer. Filed.
+
+The aggregate makes the provenance explicit: both new rows print as **measured by
+0 of 35** mutations, because they postdate the battery entirely and are pinned by
+the knives instead. That is §7's honesty mechanism doing its job on rows added
+after the fact.
