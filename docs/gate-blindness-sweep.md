@@ -480,3 +480,94 @@ three from §14.
 `gfx_bf_gxpos` / the `GRPAC` stores for the work area, `gfx_eval_int16`'s bound
 for the overflow tail, and — for the acceptance rows — a cut that *narrows* a
 domain the reference allows, which is the one shape this battery has never used.
+
+---
+
+# Rounds 4 and 5 — the three classes, and a limitation of the method itself
+
+## §17 The two unfound error sites were closed at the desk, not by more cuts
+
+§15 reported five rows whose error site the battery had provably not found. Both
+sites turned out to be in files rounds 1–3 never opened:
+
+* **CIRCLE's parse is a SUB-ROM TENANT** with its own error tail,
+  `cpt_err5` in `sub/circleparse.asm` — a **fourth** error-code site.
+  `M-CIRCERR5` (`ld a,5` → `ld a,6`): **exactly** `G/rneg_err`,
+  `F/aspect_neg_err`, `F/colour16_err`.
+* **LINE has its own `elg_syntax`**, distinct from `gfx_syntax`. `M-LINESYN`:
+  **exactly** `D/badsuffix`, `D/nodash`.
+
+Both predictions exact. A code cut that reddens *nothing you expected* is a map:
+it says the raiser is elsewhere, and grep finishes the job.
+
+## §18 The three classes, measured
+
+| mutation | class | rows |
+|---|---|---|
+| `M-DRWSCALE` | acceptance — `gdo_s` tests the LOW byte, so every `S` but `S0` is ERR 5 | 34 |
+| `M-OVFCHK` | ERR 6 — `gfx_eval_int16` drops the strict int16 check | 12 |
+| `M-GRPAC` | work area — `gfx_work_area` feeds `GRPACX` the Y value | 5 |
+| `M-CIRCERR5` | the unfound CIRCLE site | 3 |
+| `M-LINESYN` | the unfound LINE site | 2 |
+| `M-PSETOFF` | acceptance — an off-screen `PSET` raises instead of no-op | 1 |
+| `M-GRPAC2` | work area — the TENANT's `GRPACX` write | **0** |
+
+**Battery of 35: 325 of 358 rows reddened, 33 never** (232 → 93 → 51 → 33).
+
+`M-PSETOFF` is exact including its **negative** prediction: the three
+`A/clip_noop_*` rows did **not** move, because an untrapped ERR 5 aborts before
+the hold loop but the cells they read stay blank either way — which is what those
+rows are for. `M-OVFCHK` got 4 of its 5 named rows and cascaded to 12 exactly as
+its written caveat said it might (`FPERR` is left set, and phase Q2 is batched);
+🔴 it missed `F/ovf_radius`, whose overflow check is the **circle parse tenant's**,
+not `gfx_eval_int16`'s — the same lesson as §17, one round later.
+
+## §19 🔴 A mutation battery is blind to REDUNDANCY, and that is a false blindness signal
+
+`M-GRPAC` was written for the work-area class and reddened five rows — none of
+them the three *named* `grpac_*` rows. `M-GRPAC2` cut the other writer and
+reddened **nothing at all**. Neither zero means the rows are blind, and the gate
+log proves it: under `M-GRPAC2`, `w_line_off` still reads
+`W 300 250 300 250`. **The cell holds the right value with the store deleted.**
+
+There are **two writers** of `GRPACX`/`GRPACY` on a drawn LINE — the resident's
+`gfx_work_area` (via `gfx_point_gate`, before the SCREEN-2 gate) and the tenant's
+in `gfx_line_op` — and `basic/graphics.asm` says so in a comment written long
+before this sweep: *"the tenant ALSO writes the work area … a deliberate
+duplicate on the drawn path, not dead code."* Each cut removed one writer and the
+other supplied the value.
+
+So for these nine rows — `D/grpac_line`, `D/grpac_box`, `F/grpac_step` and
+phase R's six LINE/BOX rows — **no single-site mutation can ever redden them**,
+and the roster lists them next to genuinely blind rows with no way to tell the two
+apart. That is a limitation of the method, not of the gate:
+
+> **A mutation battery cannot see a value that is written twice.** Where two
+> writers mask each other, the roster reports the ROW as suspect when the truth is
+> that the CODE is doubled.
+
+And the duplicate is **not** dead: the resident write is load-bearing on the
+**error** path (D-LINERR: the work area moves to the raw p2 and *then* the gate
+refuses, so on `SCREEN 0` the tenant never runs), the tenant write on the **spoke**
+path (CIRCLE calls `gfx_line_op` internally). They are redundant on exactly one
+path — the drawn, non-error one — which is the only path all nine rows exercise.
+**The gate has no row that separates the two writers**, and that, not blindness,
+is what to fix.
+
+## §20 Where this leaves the sweep
+
+**33 rows never reddened by 35 mutations**, and every one is now classified:
+
+| what | rows | why it never moved |
+|---|---|---|
+| the LINE/BOX work area | 9 | §19 — two writers mask each other |
+| acceptance rows | 9 | `off_ok`, `clip_neg_ok`, `clip_offscr_ok`, `border16_flood_ok`, `bare_b`, `empty`, `offscreen`, `arc_ovf_r260`, `arc_ovf_wrap300` — still need a cut that refuses what the reference allows, per path |
+| `bfbyte_*` + `clip_alloff` | 5 | `clip_alloff` is D-SPOKELINE's documented keep-with-a-twin |
+| `A/clip_noop_*` | 3 | **known live** — K-CN2 and K-Y192 redden them; flagged as measured by fewer than the whole battery |
+| the reference-side floor | 2 | §10 — no mutation of our ROM can ever move them |
+| `init_p31` | 1 | §12 — blind, kept, twinned |
+| `ovf_radius`, `fourth_arg_err`, `work_quirk`, `after#2` | 4 | single rows in the circle-parse tenant and the DRAW/PAINT tails |
+
+Nothing in the roster is now unexplained. Five rounds took it from "232 rows and a
+shrug" to a classified list in which the largest single entry is a statement about
+the *code*, not the gate.

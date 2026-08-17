@@ -1976,44 +1976,54 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the whole DRAW §5 table is one byte), J **9 → 2**, D **9 → 7**, B **3 → 2**.
       What remains is three NAMED classes, refiled below, not "the rest".
 
-- [ ] ⚠️ **THE 51-ROW RESIDUE IS ACCEPTANCE, THE WORK AREA, AND THE ERR 6 TAIL —
-      AND NOTHING ELSE.** Filed 2026-08-17 by D-GATEBLIND round 3 (§16) —
-      [`docs/gate-blindness-sweep.md`](docs/gate-blindness-sweep.md). 28 cuts now
-      pin every **refusal** in the graphics surface; the residue is (a) ~13 rows
-      asserting **ACCEPTANCE** (`pset_offscr_ok`, `clip_neg_ok`, `clip_offscr_ok`,
-      `off_ok`, `ovf_ok_min`, `border16_flood_ok`, and phase L's `scale255ok` /
-      `scale0` / `offscreen` / `empty` / `bare_b`) — every cut so far made the
-      machine refuse MORE, so these need a cut that **narrows a domain the
-      reference allows**, the one shape this battery has never used; (b) ~14
-      **WORK-AREA** rows (all ten of phase R plus `grpac_box`, `grpac_line`,
-      `grpac_step`, `work_quirk`) which read `GRPACX`/`GXPOS` as a NUMBER —
-      `gdrw_gxpos`, `gfx_bf_gxpos` and the `GRPAC` stores are the sites; (c) ~7
-      **ERR 6 / overflow** rows (`pset_ovf_err`, `ovf_end`, `ovf_centre`,
-      `ovf_radius`, `ovf_err`, `arc_ovf_r260`, `arc_ovf_wrap300`) whose site is
-      `gfx_eval_int16`'s bound. 💰 Three cuts, one per class, would probably close
-      most of it. Roster in `scratchpad/gate_blindness.json`.
+- [x] ⚠️ **THE 51-ROW RESIDUE IS ACCEPTANCE, THE WORK AREA, AND THE ERR 6 TAIL.**
+      Filed 2026-08-17 by D-GATEBLIND round 3; **CLOSED 2026-08-17 by rounds 4–5**
+      (§17–§20). Seven more cuts, one per class: `M-DRWSCALE` 34 rows,
+      `M-OVFCHK` 12, `M-GRPAC` 5, `M-CIRCERR5` 3, `M-LINESYN` 2, `M-PSETOFF` 1,
+      `M-GRPAC2` **0**. **Battery of 35: 325 of 358 reddened, 33 never**
+      (232 → 93 → 51 → 33), and **every one of the 33 is now classified**.
 
-- [ ] 🔴 **THREE ROWS' ERROR SITE HAS PROVABLY NOT BEEN FOUND.** Filed 2026-08-17
-      by D-GATEBLIND round 3 (§15). `M-ERR5` moved `gfx_err5`'s code and
-      `G/rneg_err`, `F/aspect_neg_err` and `F/colour16_err` **did not move**,
-      against prediction — their ERR 5 is raised somewhere else entirely; the same
-      for `D/badsuffix` and `D/nodash` under `M-SYNERR`'s ERR 2. **A code cut is a
-      probe for where the code LIVES**, and five rows have just said "not here",
-      which is sharper than a red row. 💰 Grep the CIRCLE/LINE tails for their
-      raisers (`gb_illegal`? a tenant `GFX_RES`?) and cut those instead.
+- [x] 🔴 **THREE ROWS' ERROR SITE HAS PROVABLY NOT BEEN FOUND.** Filed 2026-08-17
+      by D-GATEBLIND round 3; **CLOSED 2026-08-17 by round 4** (§17) — at the
+      DESK, not by more cuts. Both sites were in files rounds 1–3 never opened:
+      **CIRCLE's parse is a SUB-ROM TENANT with its own `cpt_err5`**
+      (`sub/circleparse.asm`, a fourth error-code site) → `M-CIRCERR5` reddened
+      exactly `G/rneg_err`, `F/aspect_neg_err`, `F/colour16_err`; and **LINE has
+      its own `elg_syntax`** → `M-LINESYN` reddened exactly `D/badsuffix`,
+      `D/nodash`. Both predictions exact. 🎯 **A code cut that reddens nothing you
+      expected is a MAP: it says the raiser is elsewhere.** ⚠️ The same lesson
+      repeated one round later on `F/ovf_radius`, whose overflow check is also the
+      circle parse tenant's rather than `gfx_eval_int16`'s.
 
-- [x] 🔴 **THE 11 SURVIVING PHASE-O ROWS NEED A MUTATION THAT *ACCEPTS* A
-      MALFORMED FORM, NOT ONE THAT REFUSES A GOOD ONE.** Filed 2026-08-17 by
-      D-GATEBLIND round 2; **CLOSED 2026-08-17 by round 3** (§14/§15) — **phase O
-      is now 0**. `M-SYNERR` (`gfx_syntax` `ld a,2` → `ld a,3`) took the ERR-2
-      assertions, `M-SPRONOFF` the four ON/OFF/STOP no-ops, `M-PUTSCR0`
-      `put_scr0`. 🔴 **AND THE FRAMING AS FILED WAS TOO NARROW**: `put_halfxy`
-      moved under `M-PUTSCR0`, because inverting the SCREEN-0 gate raises ERR 5
-      **before** the grammar check — a malformed-form row also moves when an
-      EARLIER stage starts refusing it, not only when a later one starts accepting.
-      Two more owned misses: `spr_bare` moved under `M-SYNERR`, not the decode cut
-      I predicted, and `L/empty` + `L/bare_b` never moved because they are
-      ACCEPTED forms I had filed as errors.
+- [ ] 🔴 **THE GATE HAS NO ROW THAT SEPARATES LINE'S *TWO* WORK-AREA WRITERS, SO
+      NINE ROWS CANNOT BE REDDENED BY ANY SINGLE-SITE MUTATION.** Filed
+      2026-08-17 by D-GATEBLIND round 5 (§19) —
+      [`docs/gate-blindness-sweep.md`](docs/gate-blindness-sweep.md). A drawn LINE
+      writes `GRPACX`/`GRPACY` **twice**: the resident's `gfx_work_area` (via
+      `gfx_point_gate`, before the SCREEN-2 gate) and the tenant's in
+      `gfx_line_op`. `M-GRPAC` cut the first and `M-GRPAC2` the second; the first
+      reddened 5 rows, none of them the `grpac_*` ones, and the second reddened
+      **ZERO** — under it `w_line_off` still reads `W 300 250 300 250`, so the
+      cell is right with the store deleted. 🎯 **A MUTATION BATTERY CANNOT SEE A
+      VALUE THAT IS WRITTEN TWICE**; the roster then reports the ROW as suspect
+      when the truth is that the CODE is doubled. The duplicate is NOT dead — the
+      resident write is load-bearing on the **error** path (D-LINERR: the work
+      area moves, THEN the gate refuses, so in SCREEN 0 the tenant never runs) and
+      the tenant's on the **spoke** path (CIRCLE calls `gfx_line_op` internally).
+      They coincide on exactly one path — the drawn, non-error one — which is the
+      only path all nine rows exercise. 💰 **A work-area row on the ERROR path**
+      (`SCREEN0:LINE(0,0)-(300,250)` then PEEK `GRPACX`) would separate them, and
+      a two-site mutation would confirm it.
+
+- [ ] ⚠️ **NINE ACCEPTANCE ROWS STILL NEED A REFUSAL CUT, ONE PER PATH.** Filed
+      2026-08-17 by D-GATEBLIND round 5 (§20). `M-PSETOFF` and `M-DRWSCALE` proved
+      the shape works — an off-screen `PSET` made to raise reddens
+      `pset_offscr_ok`, and a narrowed `S` bound reddens `scale255ok`/`scale0` —
+      but each remaining acceptance row sits on its own path: `off_ok` (LINE),
+      `clip_neg_ok` / `clip_offscr_ok` (CIRCLE), `border16_flood_ok` (PAINT),
+      `bare_b` / `empty` / `offscreen` (DRAW), `arc_ovf_r260` /
+      `arc_ovf_wrap300` (the arc mask). 💰 Six or seven cuts, one each; there is no
+      shared site the way `gdrw_err5` was for phase L.
 
 - [ ] 🔴 **PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT, SO THE PAIR CANNOT
       TELL THE TWO FAILURES APART.** Filed 2026-08-17 by D-GATEBLIND round 2

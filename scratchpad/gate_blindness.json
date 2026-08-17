@@ -4,13 +4,20 @@
   "M-BASEGRAIN",
   "M-BASESHIFT",
   "M-BRESERR",
+  "M-CIRCERR5",
   "M-CLAMPX",
   "M-CLAMPY",
   "M-COLOUR",
   "M-DRWERR5",
+  "M-DRWSCALE",
   "M-ERR5",
   "M-G8PAREN",
   "M-G8RDLIM",
+  "M-GRPAC2",
+  "M-GRPAC",
+  "M-LINESYN",
+  "M-OVFCHK",
+  "M-PSETOFF",
   "M-PUTCOMMA",
   "M-PUTSCR0",
   "M-SPRECLK",
@@ -46,16 +53,6 @@
    1
   ],
   [
-   "B",
-   "pset_ovf_err",
-   1
-  ],
-  [
-   "B",
-   "pset_offscr_ok",
-   1
-  ],
-  [
    "C",
    "clip_alloff",
    1
@@ -78,26 +75,6 @@
   [
    "C",
    "bfbyte_c0",
-   1
-  ],
-  [
-   "D",
-   "ovf_end",
-   1
-  ],
-  [
-   "D",
-   "ovf_ok_min",
-   1
-  ],
-  [
-   "D",
-   "nodash",
-   1
-  ],
-  [
-   "D",
-   "badsuffix",
    1
   ],
   [
@@ -127,22 +104,7 @@
   ],
   [
    "F",
-   "ovf_centre",
-   1
-  ],
-  [
-   "F",
    "ovf_radius",
-   1
-  ],
-  [
-   "F",
-   "colour16_err",
-   1
-  ],
-  [
-   "F",
-   "aspect_neg_err",
    1
   ],
   [
@@ -166,28 +128,13 @@
    1
   ],
   [
-   "G",
-   "rneg_err",
-   1
-  ],
-  [
    "H",
    "border16_flood_ok",
    1
   ],
   [
    "J",
-   "ovf_err",
-   1
-  ],
-  [
-   "J",
    "fourth_arg_err",
-   1
-  ],
-  [
-   "L",
-   "scale255ok",
    1
   ],
   [
@@ -203,16 +150,6 @@
   [
    "L",
    "offscreen",
-   1
-  ],
-  [
-   "L",
-   "scale0",
-   1
-  ],
-  [
-   "M",
-   "after",
    1
   ],
   [
@@ -264,387 +201,367 @@
    "R",
    "w_bf_on",
    1
-  ],
-  [
-   "R",
-   "w_draw_up_off",
-   1
-  ],
-  [
-   "R",
-   "w_draw_blank_off",
-   1
-  ],
-  [
-   "R",
-   "w_draw_on",
-   1
-  ],
-  [
-   "R",
-   "w_step_after",
-   1
   ]
  ],
  "measured": {
-  "A|pset_single|1": 28,
-  "A|pset_clash|1": 28,
-  "A|pset_clear_bg|1": 28,
-  "A|preset_erase|1": 28,
-  "A|preset_color|1": 28,
-  "A|pset_step|1": 28,
-  "A|pset_mid|1": 28,
-  "A|pset_default|1": 28,
-  "A|clip_noop_x300|1": 23,
-  "A|clip_noop_xneg|1": 23,
-  "A|clip_noop_y192|1": 7,
-  "B|pset_scr0_err|1": 28,
-  "B|pset_ovf_err|1": 28,
-  "B|pset_offscr_ok|1": 28,
-  "B|point_vals|1": 28,
-  "B|point_step|1": 28,
-  "C|shallow|1": 28,
-  "C|steep|1": 28,
-  "C|diag45|1": 28,
-  "C|negslope|1": 28,
-  "C|rev_shallow|1": 28,
-  "C|horiz|1": 28,
-  "C|vert|1": 28,
-  "C|degenerate|1": 28,
-  "C|continuation|1": 28,
-  "C|step_chain|1": 28,
-  "C|box_b|1": 28,
-  "C|box_bf|1": 28,
-  "C|box_rev|1": 28,
-  "C|clash_line|1": 28,
-  "C|clip_negTL|1": 28,
-  "C|clip_frac|1": 28,
-  "C|clip_alloff|1": 28,
-  "C|clampL_diag|1": 28,
-  "C|clampL_corner|1": 28,
-  "C|clampL_start|1": 28,
-  "C|clampL_box|1": 28,
-  "C|bfbyte_cell|1": 28,
-  "C|bfbyte_cell_c|1": 28,
-  "C|bfbyte_span|1": 28,
-  "C|bfbyte_span_c|1": 28,
-  "C|bfbyte_rev|1": 28,
-  "C|bfbyte_tall|1": 28,
-  "C|bfbyte_c0|1": 28,
-  "C|bfbyte_teeth|1": 28,
-  "C|bfbyte_teeth_c|1": 28,
-  "C|bfbyte_unalign|1": 28,
-  "C|bfbyte_x255|1": 28,
-  "C|clampD_diag|1": 28,
-  "C|clampD_corner|1": 28,
-  "C|clampD_start|1": 28,
-  "C|clampD_dir|1": 28,
-  "C|clampD_scaled|1": 28,
-  "C|clampD_rot|1": 28,
-  "C|clampD_two|1": 28,
-  "C|ctlD_clipleft|1": 28,
-  "D|ovf_end|1": 28,
-  "D|ovf_ok_min|1": 28,
-  "D|scr0_err|1": 28,
-  "D|bf_scr0|1": 28,
-  "D|nodash|1": 28,
-  "D|badsuffix|1": 28,
-  "D|grpac_line|1": 28,
-  "D|grpac_box|1": 28,
-  "D|off_ok|1": 28,
-  "E|circ_r4|1": 28,
-  "E|circ_r7|1": 28,
-  "E|circ_r8|1": 28,
-  "E|circ_r12|1": 28,
-  "E|circ_r15|1": 28,
-  "E|circ_r20|1": 28,
-  "E|ell_a025|1": 28,
-  "E|ell_a05|1": 28,
-  "E|ell_a2|1": 28,
-  "E|ell_a3|1": 28,
-  "E|ell_a05r15|1": 28,
-  "E|arc_0_hpi|1": 28,
-  "E|arc_hpi_pi|1": 28,
-  "E|arc_wrap|1": 28,
-  "E|arc_full628|1": 28,
-  "E|spoke_270|1": 28,
-  "E|spoke_wedge2|1": 28,
-  "E|clash_circle|1": 28,
-  "E|r_zero|1": 28,
-  "E|ell_a03r128|1": 28,
-  "E|ell_a055r128|1": 28,
-  "E|ell_a01r255|1": 28,
-  "E|ell_a07r128|1": 28,
-  "E|ell_a025r128|1": 28,
-  "E|ell_r700a0137|1": 28,
-  "E|ell_a17r128|1": 28,
-  "E|ell_a13r128|1": 28,
-  "E|ell_a11r128|1": 28,
-  "E|ell_a2r128|1": 28,
-  "E|ell_a4r128|1": 28,
-  "E|circ_ovf_r284|1": 28,
-  "E|circ_ovf_r300|1": 28,
-  "E|ell_ovf_a05r528|1": 28,
-  "E|ell_ovf_a2r528|1": 28,
-  "E|circ_ovfc_r255|1": 28,
-  "E|circ_ovfc_r200|1": 28,
-  "E|ell_ovfc_a05r500|1": 28,
-  "E|ell_ovfc_a2r500|1": 28,
-  "E|arc_ovf_r260|1": 28,
-  "E|arc_ovf_wrap300|1": 28,
-  "E|arcmask_r200|1": 28,
-  "E|arcmask_sw1|1": 28,
-  "E|arcmask_sw2|1": 28,
-  "E|arcmask_lad190|1": 28,
-  "E|arcmask_card95|1": 28,
-  "E|arcmask_a137|1": 28,
-  "E|arcmask_spoke|1": 28,
-  "E|clampS_wide|1": 28,
-  "E|clampS_start|1": 28,
-  "F|ovf_centre|1": 28,
-  "F|ovf_radius|1": 28,
-  "F|scr0_err|1": 28,
-  "F|colour16_err|1": 28,
-  "F|aspect_neg_err|1": 28,
-  "F|clip_offscr_ok|1": 28,
-  "F|clip_neg_ok|1": 28,
-  "F|grpac_step|1": 28,
-  "F|work_quirk|1": 28,
-  "G|rneg_err|1": 28,
-  "H|box_bounded_c15b15|1": 28,
-  "H|box_flood_c4b15|1": 28,
-  "H|box_bounded_c9b9|1": 28,
-  "H|step_form|1": 28,
-  "H|defaults_c_and_b|1": 28,
-  "H|comma_empty_c|1": 28,
-  "H|border16_flood_ok|1": 28,
-  "H|seed_on_border_still_floods|1": 28,
-  "H|seed_on_wall_pixel|1": 28,
-  "I|paint_after_string_heavy|1": 28,
-  "J|scr0_err|1": 28,
-  "J|scr1_err|1": 28,
-  "J|colour16_err|1": 28,
-  "J|colour_neg_err|1": 28,
-  "J|offscreen_pos_err|1": 28,
-  "J|offscreen_neg_err|1": 28,
-  "J|ovf_err|1": 28,
-  "J|tile_str_err|1": 28,
-  "J|fourth_arg_err|1": 28,
-  "K|box_udlr|1": 28,
-  "K|diag_e|1": 28,
-  "K|m_line_identity|1": 28,
-  "K|line_for_compare|1": 28,
-  "K|blank_move|1": 28,
-  "K|no_update|1": 28,
-  "K|scale_s8|1": 28,
-  "K|scale_s2|1": 28,
-  "K|angle_a1|1": 28,
-  "K|angle_abs_m_unrotated|1": 28,
-  "K|eqvar|1": 28,
-  "K|xsub|1": 28,
-  "K|xnest|1": 28,
-  "K|clip_left|1": 28,
-  "K|neg_and_chain|1": 28,
-  "K|c_sets|1": 28,
-  "K|c_persists_next_draw|1": 28,
-  "K|inherits_from_line|1": 28,
-  "K|colourless_line_restamps|1": 28,
-  "L|badletter|1": 28,
-  "L|bare_s|1": 28,
-  "L|bare_a|1": 28,
-  "L|bare_c|1": 28,
-  "L|bare_m|1": 28,
-  "L|angle4|1": 28,
-  "L|colour16|1": 28,
-  "L|colour_neg|1": 28,
-  "L|scale256|1": 28,
-  "L|scale255ok|1": 28,
-  "L|count_big|1": 28,
-  "L|m_missing|1": 28,
-  "L|eq_nosemi|1": 28,
-  "L|x_nosemi|1": 28,
-  "L|lead_semi|1": 28,
-  "L|dbl_semi|1": 28,
-  "L|comma_sep|1": 28,
-  "L|junk|1": 28,
-  "L|screen0|1": 28,
-  "L|screen1|1": 28,
-  "L|numeric|1": 28,
-  "L|empty|1": 28,
-  "L|bare_b|1": 28,
-  "L|offscreen|1": 28,
-  "L|scale0|1": 28,
-  "M|after|1": 28,
-  "M|after|2": 28,
-  "N|pat_8_full|1": 28,
-  "N|pat_8_short|1": 28,
-  "N|pat_8_long|1": 28,
-  "N|pat_8_empty|1": 28,
-  "N|pat_8_n255|1": 28,
-  "N|pat_16_full|1": 28,
-  "N|pat_16_short|1": 28,
-  "N|pat_16_wrap|1": 28,
-  "N|read_8|1": 28,
-  "N|read_16|1": 28,
-  "N|read_scr0|1": 28,
-  "N|attr_full|1": 28,
-  "N|attr_plane5|1": 28,
-  "N|attr_neg_x|1": 28,
-  "N|attr_neg_x32|1": 28,
-  "N|attr_ec_clear|1": 28,
-  "N|attr_wrap_x|1": 28,
-  "N|attr_wrap_y|1": 28,
-  "N|attr_y209|1": 28,
-  "N|attr_omit_c|1": 28,
-  "N|attr_omit_p|1": 28,
-  "N|attr_omit_xy|1": 28,
-  "N|attr_omit_all|1": 28,
-  "N|attr_step|1": 28,
-  "N|attr_float|1": 28,
-  "N|attr_work|1": 28,
-  "N|attr_16_pat1|1": 28,
-  "N|attr_16_pat63|1": 28,
-  "N|attr_scr1|1": 28,
-  "O|spr_n256|1": 28,
-  "O|spr_n_neg|1": 28,
-  "O|spr_n255|1": 28,
-  "O|spr_numeric|1": 28,
-  "O|spr_scr0_wr|1": 28,
-  "O|spr_scr1_wr|1": 28,
-  "O|spr_read_s0|1": 28,
-  "O|spr_read256|1": 28,
-  "O|spr_noparen|1": 28,
-  "O|spr_noeq|1": 28,
-  "O|spr_bare|1": 28,
-  "O|spr_on|1": 28,
-  "O|spr_off|1": 28,
-  "O|spr_stop|1": 28,
-  "O|spr_on_s0|1": 28,
-  "O|put_plane32|1": 28,
-  "O|put_plane31|1": 28,
-  "O|put_planeneg|1": 28,
-  "O|put_col16|1": 28,
-  "O|put_colneg|1": 28,
-  "O|put_pat255|1": 28,
-  "O|put_pat256|1": 28,
-  "O|put_pat64_16|1": 28,
-  "O|put_pat63_16|1": 28,
-  "O|put_patneg|1": 28,
-  "O|put_x40000|1": 28,
-  "O|put_x300|1": 28,
-  "O|put_scr0|1": 28,
-  "O|put_scr1|1": 28,
-  "O|put_bare|1": 28,
-  "O|put_comma|1": 28,
-  "O|put_5args|1": 28,
-  "O|put_trailing|1": 28,
-  "O|put_steponly|1": 28,
-  "O|put_halfxy|1": 28,
-  "P|init_planes|1": 28,
-  "P|init_forclr|1": 28,
-  "P|init_p31|1": 28,
-  "P|init_p31_x|1": 7,
-  "P|cls_keeps|1": 28,
-  "P|pat_survives|1": 28,
-  "P|size_persist|1": 28,
-  "P|size_persist0|1": 28,
-  "P|size_back|1": 28,
-  "P|size_mag|1": 28,
-  "P|size_mag3|1": 28,
-  "Q1|s0_name|1": 28,
-  "Q1|s0_satr|1": 28,
-  "Q1|s0_spat|1": 28,
-  "Q1|s1_name|1": 28,
-  "Q1|s1_satr|1": 28,
-  "Q1|s2_name|1": 28,
-  "Q1|s2_satr|1": 28,
-  "Q1|s2_spat|1": 28,
-  "Q1|s1_poison|1": 28,
-  "Q1|s2_poison|1": 28,
-  "Q1|s2_poison2|1": 28,
-  "Q1|s0_desync|1": 28,
-  "Q1|s2_desync|1": 28,
-  "Q1|s2_size|1": 28,
-  "Q1|s2_r1poke|1": 28,
-  "Q1|x_s0_g2|1": 28,
-  "Q1|x_s2_g1|1": 28,
-  "Q1|x_s2_g3|1": 28,
-  "Q1|vdp_r7|1": 28,
-  "Q1|vdp_r2|1": 28,
-  "Q2|rd_vdp1|1": 28,
-  "Q2|rd_vdp8|1": 28,
-  "Q2|rd_vdp9|1": 28,
-  "Q2|rd_vdpneg|1": 28,
-  "Q2|rd_vdp256|1": 28,
-  "Q2|rd_vdpfrac|1": 28,
-  "Q2|rd_vdpnegfr|1": 28,
-  "Q2|rd_base0|1": 28,
-  "Q2|rd_base10|1": 28,
-  "Q2|rd_base19|1": 28,
-  "Q2|rd_base20|1": 28,
-  "Q2|rd_baseneg|1": 28,
-  "Q2|rd_base_s0|1": 28,
-  "Q2|rd_bare|1": 28,
-  "Q2|rd_nopar|1": 28,
-  "Q2|wr_vdp8|1": 28,
-  "Q2|wr_vdpneg|1": 28,
-  "Q2|wr_vdp9|1": 28,
-  "Q2|wr_v256|1": 28,
-  "Q2|wr_vneg|1": 28,
-  "Q2|wr_vfrac|1": 28,
-  "Q2|wr_vnegfrac|1": 28,
-  "Q2|wr_v255fr|1": 28,
-  "Q2|b_name_ok|1": 28,
-  "Q2|b_name_odd|1": 28,
-  "Q2|b_name_80|1": 28,
-  "Q2|b_colr_80|1": 28,
-  "Q2|b_colr_g2|1": 28,
-  "Q2|b_colr_g2ok|1": 28,
-  "Q2|b_patt_g2|1": 28,
-  "Q2|b_patt_g1|1": 28,
-  "Q2|b_satr_80|1": 28,
-  "Q2|b_spat_400|1": 28,
-  "Q2|b_spat_800|1": 28,
-  "Q2|b_big|1": 28,
-  "Q2|b_top|1": 28,
-  "Q2|b_neg|1": 28,
-  "Q2|b_n20|1": 28,
-  "Q2|b_nneg|1": 28,
-  "Q2|g_let_vdp|1": 28,
-  "Q2|g_let_base|1": 28,
-  "Q2|g_bare_stmt|1": 28,
-  "Q2|g_name_eq|1": 28,
-  "Q2|g_base_eq|1": 28,
-  "Q2|g_no_rhs|1": 28,
-  "Q2|g_no_paren|1": 28,
-  "Q2|g_two_args|1": 28,
-  "Q2|g_list_rhs|1": 28,
-  "Q2|g_self|1": 28,
-  "Q2|g_base_self|1": 28,
-  "Q2|g_str_val|1": 28,
-  "Q2|g_str_idx|1": 28,
-  "Q2|g_str_base|1": 28,
-  "Q2|g_for_lhs|1": 28,
-  "Q2|g_swap_lhs|1": 28,
-  "Q2|g_mid_stmt|1": 28,
-  "Q2|g_if_stmt|1": 28,
-  "Q3|Philips/ie_off|1": 28,
-  "Q3|Philips/control|1": 28,
-  "Q3|C-BIOS/ie_off|1": 28,
-  "Q3|C-BIOS/control|1": 28,
-  "R|w_line_off|1": 28,
-  "R|w_line_neg|1": 28,
-  "R|w_line_on|1": 28,
-  "R|w_box_off|1": 28,
-  "R|w_bf_off|1": 28,
-  "R|w_bf_topleft|1": 28,
-  "R|w_bf_on|1": 28,
-  "R|w_draw_m_off|1": 28,
-  "R|w_draw_up_off|1": 28,
-  "R|w_draw_left_down|1": 28,
-  "R|w_draw_blank_off|1": 28,
-  "R|w_draw_on|1": 28,
-  "R|w_step_after|1": 28
+  "A|pset_single|1": 35,
+  "A|pset_clash|1": 35,
+  "A|pset_clear_bg|1": 35,
+  "A|preset_erase|1": 35,
+  "A|preset_color|1": 35,
+  "A|pset_step|1": 35,
+  "A|pset_mid|1": 35,
+  "A|pset_default|1": 35,
+  "A|clip_noop_x300|1": 30,
+  "A|clip_noop_xneg|1": 30,
+  "A|clip_noop_y192|1": 14,
+  "B|pset_scr0_err|1": 35,
+  "B|pset_ovf_err|1": 35,
+  "B|pset_offscr_ok|1": 35,
+  "B|point_vals|1": 35,
+  "B|point_step|1": 35,
+  "C|shallow|1": 35,
+  "C|steep|1": 35,
+  "C|diag45|1": 35,
+  "C|negslope|1": 35,
+  "C|rev_shallow|1": 35,
+  "C|horiz|1": 35,
+  "C|vert|1": 35,
+  "C|degenerate|1": 35,
+  "C|continuation|1": 35,
+  "C|step_chain|1": 35,
+  "C|box_b|1": 35,
+  "C|box_bf|1": 35,
+  "C|box_rev|1": 35,
+  "C|clash_line|1": 35,
+  "C|clip_negTL|1": 35,
+  "C|clip_frac|1": 35,
+  "C|clip_alloff|1": 35,
+  "C|clampL_diag|1": 35,
+  "C|clampL_corner|1": 35,
+  "C|clampL_start|1": 35,
+  "C|clampL_box|1": 35,
+  "C|bfbyte_cell|1": 35,
+  "C|bfbyte_cell_c|1": 35,
+  "C|bfbyte_span|1": 35,
+  "C|bfbyte_span_c|1": 35,
+  "C|bfbyte_rev|1": 35,
+  "C|bfbyte_tall|1": 35,
+  "C|bfbyte_c0|1": 35,
+  "C|bfbyte_teeth|1": 35,
+  "C|bfbyte_teeth_c|1": 35,
+  "C|bfbyte_unalign|1": 35,
+  "C|bfbyte_x255|1": 35,
+  "C|clampD_diag|1": 35,
+  "C|clampD_corner|1": 35,
+  "C|clampD_start|1": 35,
+  "C|clampD_dir|1": 35,
+  "C|clampD_scaled|1": 35,
+  "C|clampD_rot|1": 35,
+  "C|clampD_two|1": 35,
+  "C|ctlD_clipleft|1": 35,
+  "D|ovf_end|1": 35,
+  "D|ovf_ok_min|1": 35,
+  "D|scr0_err|1": 35,
+  "D|bf_scr0|1": 35,
+  "D|nodash|1": 35,
+  "D|badsuffix|1": 35,
+  "D|grpac_line|1": 35,
+  "D|grpac_box|1": 35,
+  "D|off_ok|1": 35,
+  "E|circ_r4|1": 35,
+  "E|circ_r7|1": 35,
+  "E|circ_r8|1": 35,
+  "E|circ_r12|1": 35,
+  "E|circ_r15|1": 35,
+  "E|circ_r20|1": 35,
+  "E|ell_a025|1": 35,
+  "E|ell_a05|1": 35,
+  "E|ell_a2|1": 35,
+  "E|ell_a3|1": 35,
+  "E|ell_a05r15|1": 35,
+  "E|arc_0_hpi|1": 35,
+  "E|arc_hpi_pi|1": 35,
+  "E|arc_wrap|1": 35,
+  "E|arc_full628|1": 35,
+  "E|spoke_270|1": 35,
+  "E|spoke_wedge2|1": 35,
+  "E|clash_circle|1": 35,
+  "E|r_zero|1": 35,
+  "E|ell_a03r128|1": 35,
+  "E|ell_a055r128|1": 35,
+  "E|ell_a01r255|1": 35,
+  "E|ell_a07r128|1": 35,
+  "E|ell_a025r128|1": 35,
+  "E|ell_r700a0137|1": 35,
+  "E|ell_a17r128|1": 35,
+  "E|ell_a13r128|1": 35,
+  "E|ell_a11r128|1": 35,
+  "E|ell_a2r128|1": 35,
+  "E|ell_a4r128|1": 35,
+  "E|circ_ovf_r284|1": 35,
+  "E|circ_ovf_r300|1": 35,
+  "E|ell_ovf_a05r528|1": 35,
+  "E|ell_ovf_a2r528|1": 35,
+  "E|circ_ovfc_r255|1": 35,
+  "E|circ_ovfc_r200|1": 35,
+  "E|ell_ovfc_a05r500|1": 35,
+  "E|ell_ovfc_a2r500|1": 35,
+  "E|arc_ovf_r260|1": 35,
+  "E|arc_ovf_wrap300|1": 35,
+  "E|arcmask_r200|1": 35,
+  "E|arcmask_sw1|1": 35,
+  "E|arcmask_sw2|1": 35,
+  "E|arcmask_lad190|1": 35,
+  "E|arcmask_card95|1": 35,
+  "E|arcmask_a137|1": 35,
+  "E|arcmask_spoke|1": 35,
+  "E|clampS_wide|1": 35,
+  "E|clampS_start|1": 35,
+  "F|ovf_centre|1": 35,
+  "F|ovf_radius|1": 35,
+  "F|scr0_err|1": 35,
+  "F|colour16_err|1": 35,
+  "F|aspect_neg_err|1": 35,
+  "F|clip_offscr_ok|1": 35,
+  "F|clip_neg_ok|1": 35,
+  "F|grpac_step|1": 35,
+  "F|work_quirk|1": 35,
+  "G|rneg_err|1": 35,
+  "H|box_bounded_c15b15|1": 35,
+  "H|box_flood_c4b15|1": 35,
+  "H|box_bounded_c9b9|1": 35,
+  "H|step_form|1": 35,
+  "H|defaults_c_and_b|1": 35,
+  "H|comma_empty_c|1": 35,
+  "H|border16_flood_ok|1": 35,
+  "H|seed_on_border_still_floods|1": 35,
+  "H|seed_on_wall_pixel|1": 35,
+  "I|paint_after_string_heavy|1": 35,
+  "J|scr0_err|1": 35,
+  "J|scr1_err|1": 35,
+  "J|colour16_err|1": 35,
+  "J|colour_neg_err|1": 35,
+  "J|offscreen_pos_err|1": 35,
+  "J|offscreen_neg_err|1": 35,
+  "J|ovf_err|1": 35,
+  "J|tile_str_err|1": 35,
+  "J|fourth_arg_err|1": 35,
+  "K|box_udlr|1": 35,
+  "K|diag_e|1": 35,
+  "K|m_line_identity|1": 35,
+  "K|line_for_compare|1": 35,
+  "K|blank_move|1": 35,
+  "K|no_update|1": 35,
+  "K|scale_s8|1": 35,
+  "K|scale_s2|1": 35,
+  "K|angle_a1|1": 35,
+  "K|angle_abs_m_unrotated|1": 35,
+  "K|eqvar|1": 35,
+  "K|xsub|1": 35,
+  "K|xnest|1": 35,
+  "K|clip_left|1": 35,
+  "K|neg_and_chain|1": 35,
+  "K|c_sets|1": 35,
+  "K|c_persists_next_draw|1": 35,
+  "K|inherits_from_line|1": 35,
+  "K|colourless_line_restamps|1": 35,
+  "L|badletter|1": 35,
+  "L|bare_s|1": 35,
+  "L|bare_a|1": 35,
+  "L|bare_c|1": 35,
+  "L|bare_m|1": 35,
+  "L|angle4|1": 35,
+  "L|colour16|1": 35,
+  "L|colour_neg|1": 35,
+  "L|scale256|1": 35,
+  "L|scale255ok|1": 35,
+  "L|count_big|1": 35,
+  "L|m_missing|1": 35,
+  "L|eq_nosemi|1": 35,
+  "L|x_nosemi|1": 35,
+  "L|lead_semi|1": 35,
+  "L|dbl_semi|1": 35,
+  "L|comma_sep|1": 35,
+  "L|junk|1": 35,
+  "L|screen0|1": 35,
+  "L|screen1|1": 35,
+  "L|numeric|1": 35,
+  "L|empty|1": 35,
+  "L|bare_b|1": 35,
+  "L|offscreen|1": 35,
+  "L|scale0|1": 35,
+  "M|after|1": 35,
+  "M|after|2": 35,
+  "N|pat_8_full|1": 35,
+  "N|pat_8_short|1": 35,
+  "N|pat_8_long|1": 35,
+  "N|pat_8_empty|1": 35,
+  "N|pat_8_n255|1": 35,
+  "N|pat_16_full|1": 35,
+  "N|pat_16_short|1": 35,
+  "N|pat_16_wrap|1": 35,
+  "N|read_8|1": 35,
+  "N|read_16|1": 35,
+  "N|read_scr0|1": 35,
+  "N|attr_full|1": 35,
+  "N|attr_plane5|1": 35,
+  "N|attr_neg_x|1": 35,
+  "N|attr_neg_x32|1": 35,
+  "N|attr_ec_clear|1": 35,
+  "N|attr_wrap_x|1": 35,
+  "N|attr_wrap_y|1": 35,
+  "N|attr_y209|1": 35,
+  "N|attr_omit_c|1": 35,
+  "N|attr_omit_p|1": 35,
+  "N|attr_omit_xy|1": 35,
+  "N|attr_omit_all|1": 35,
+  "N|attr_step|1": 35,
+  "N|attr_float|1": 35,
+  "N|attr_work|1": 35,
+  "N|attr_16_pat1|1": 35,
+  "N|attr_16_pat63|1": 35,
+  "N|attr_scr1|1": 35,
+  "O|spr_n256|1": 35,
+  "O|spr_n_neg|1": 35,
+  "O|spr_n255|1": 35,
+  "O|spr_numeric|1": 35,
+  "O|spr_scr0_wr|1": 35,
+  "O|spr_scr1_wr|1": 35,
+  "O|spr_read_s0|1": 35,
+  "O|spr_read256|1": 35,
+  "O|spr_noparen|1": 35,
+  "O|spr_noeq|1": 35,
+  "O|spr_bare|1": 35,
+  "O|spr_on|1": 35,
+  "O|spr_off|1": 35,
+  "O|spr_stop|1": 35,
+  "O|spr_on_s0|1": 35,
+  "O|put_plane32|1": 35,
+  "O|put_plane31|1": 35,
+  "O|put_planeneg|1": 35,
+  "O|put_col16|1": 35,
+  "O|put_colneg|1": 35,
+  "O|put_pat255|1": 35,
+  "O|put_pat256|1": 35,
+  "O|put_pat64_16|1": 35,
+  "O|put_pat63_16|1": 35,
+  "O|put_patneg|1": 35,
+  "O|put_x40000|1": 35,
+  "O|put_x300|1": 35,
+  "O|put_scr0|1": 35,
+  "O|put_scr1|1": 35,
+  "O|put_bare|1": 35,
+  "O|put_comma|1": 35,
+  "O|put_5args|1": 35,
+  "O|put_trailing|1": 35,
+  "O|put_steponly|1": 35,
+  "O|put_halfxy|1": 35,
+  "P|init_planes|1": 35,
+  "P|init_forclr|1": 35,
+  "P|init_p31|1": 35,
+  "P|init_p31_x|1": 14,
+  "P|cls_keeps|1": 35,
+  "P|pat_survives|1": 35,
+  "P|size_persist|1": 35,
+  "P|size_persist0|1": 35,
+  "P|size_back|1": 35,
+  "P|size_mag|1": 35,
+  "P|size_mag3|1": 35,
+  "Q1|s0_name|1": 35,
+  "Q1|s0_satr|1": 35,
+  "Q1|s0_spat|1": 35,
+  "Q1|s1_name|1": 35,
+  "Q1|s1_satr|1": 35,
+  "Q1|s2_name|1": 35,
+  "Q1|s2_satr|1": 35,
+  "Q1|s2_spat|1": 35,
+  "Q1|s1_poison|1": 35,
+  "Q1|s2_poison|1": 35,
+  "Q1|s2_poison2|1": 35,
+  "Q1|s0_desync|1": 35,
+  "Q1|s2_desync|1": 35,
+  "Q1|s2_size|1": 35,
+  "Q1|s2_r1poke|1": 35,
+  "Q1|x_s0_g2|1": 35,
+  "Q1|x_s2_g1|1": 35,
+  "Q1|x_s2_g3|1": 35,
+  "Q1|vdp_r7|1": 35,
+  "Q1|vdp_r2|1": 35,
+  "Q2|rd_vdp1|1": 35,
+  "Q2|rd_vdp8|1": 35,
+  "Q2|rd_vdp9|1": 35,
+  "Q2|rd_vdpneg|1": 35,
+  "Q2|rd_vdp256|1": 35,
+  "Q2|rd_vdpfrac|1": 35,
+  "Q2|rd_vdpnegfr|1": 35,
+  "Q2|rd_base0|1": 35,
+  "Q2|rd_base10|1": 35,
+  "Q2|rd_base19|1": 35,
+  "Q2|rd_base20|1": 35,
+  "Q2|rd_baseneg|1": 35,
+  "Q2|rd_base_s0|1": 35,
+  "Q2|rd_bare|1": 35,
+  "Q2|rd_nopar|1": 35,
+  "Q2|wr_vdp8|1": 35,
+  "Q2|wr_vdpneg|1": 35,
+  "Q2|wr_vdp9|1": 35,
+  "Q2|wr_v256|1": 35,
+  "Q2|wr_vneg|1": 35,
+  "Q2|wr_vfrac|1": 35,
+  "Q2|wr_vnegfrac|1": 35,
+  "Q2|wr_v255fr|1": 35,
+  "Q2|b_name_ok|1": 35,
+  "Q2|b_name_odd|1": 35,
+  "Q2|b_name_80|1": 35,
+  "Q2|b_colr_80|1": 35,
+  "Q2|b_colr_g2|1": 35,
+  "Q2|b_colr_g2ok|1": 35,
+  "Q2|b_patt_g2|1": 35,
+  "Q2|b_patt_g1|1": 35,
+  "Q2|b_satr_80|1": 35,
+  "Q2|b_spat_400|1": 35,
+  "Q2|b_spat_800|1": 35,
+  "Q2|b_big|1": 35,
+  "Q2|b_top|1": 35,
+  "Q2|b_neg|1": 35,
+  "Q2|b_n20|1": 35,
+  "Q2|b_nneg|1": 35,
+  "Q2|g_let_vdp|1": 35,
+  "Q2|g_let_base|1": 35,
+  "Q2|g_bare_stmt|1": 35,
+  "Q2|g_name_eq|1": 35,
+  "Q2|g_base_eq|1": 35,
+  "Q2|g_no_rhs|1": 35,
+  "Q2|g_no_paren|1": 35,
+  "Q2|g_two_args|1": 35,
+  "Q2|g_list_rhs|1": 35,
+  "Q2|g_self|1": 35,
+  "Q2|g_base_self|1": 35,
+  "Q2|g_str_val|1": 35,
+  "Q2|g_str_idx|1": 35,
+  "Q2|g_str_base|1": 35,
+  "Q2|g_for_lhs|1": 35,
+  "Q2|g_swap_lhs|1": 35,
+  "Q2|g_mid_stmt|1": 35,
+  "Q2|g_if_stmt|1": 35,
+  "Q3|Philips/ie_off|1": 35,
+  "Q3|Philips/control|1": 35,
+  "Q3|C-BIOS/ie_off|1": 35,
+  "Q3|C-BIOS/control|1": 35,
+  "R|w_line_off|1": 35,
+  "R|w_line_neg|1": 35,
+  "R|w_line_on|1": 35,
+  "R|w_box_off|1": 35,
+  "R|w_bf_off|1": 35,
+  "R|w_bf_topleft|1": 35,
+  "R|w_bf_on|1": 35,
+  "R|w_draw_m_off|1": 35,
+  "R|w_draw_up_off|1": 35,
+  "R|w_draw_left_down|1": 35,
+  "R|w_draw_blank_off|1": 35,
+  "R|w_draw_on|1": 35,
+  "R|w_step_after|1": 35
  },
  "reddened": {
   "Q1|s1_name|1": [
@@ -743,35 +660,43 @@
    "M-CLAMPX",
    "M-CLAMPY",
    "M-COLOUR",
+   "M-DRWSCALE",
    "M-YBOUND"
   ],
   "C|clampD_start|1": [
    "M-BRESERR",
    "M-CLAMPX",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "C|clampD_dir|1": [
    "M-BRESERR",
    "M-CLAMPX",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE",
+   "M-GRPAC"
   ],
   "C|clampD_scaled|1": [
    "M-BRESERR",
    "M-CLAMPX",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "C|clampD_rot|1": [
    "M-BRESERR",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "C|clampD_two|1": [
    "M-BRESERR",
    "M-CLAMPX",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "C|ctlD_clipleft|1": [
    "M-BRESERR",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "E|spoke_270|1": [
    "M-BRESERR",
@@ -795,7 +720,8 @@
   ],
   "K|m_line_identity|1": [
    "M-BRESERR",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|line_for_compare|1": [
    "M-BRESERR",
@@ -803,27 +729,42 @@
   ],
   "K|blank_move|1": [
    "M-BRESERR",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|no_update|1": [
    "M-BRESERR",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|scale_s2|1": [
    "M-BRESERR",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|xsub|1": [
    "M-BRESERR",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|clip_left|1": [
    "M-BRESERR",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|neg_and_chain|1": [
    "M-BRESERR",
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
+  ],
+  "F|colour16_err|1": [
+   "M-CIRCERR5"
+  ],
+  "F|aspect_neg_err|1": [
+   "M-CIRCERR5"
+  ],
+  "G|rneg_err|1": [
+   "M-CIRCERR5"
   ],
   "C|clampL_corner|1": [
    "M-CLAMPX",
@@ -835,6 +776,7 @@
    "M-CLAMPX",
    "M-CLAMPY",
    "M-COLOUR",
+   "M-DRWSCALE",
    "M-YBOUND"
   ],
   "R|w_bf_off|1": [
@@ -843,10 +785,13 @@
   ],
   "R|w_draw_m_off|1": [
    "M-CLAMPX",
-   "M-CLAMPY"
+   "M-CLAMPY",
+   "M-DRWSCALE"
   ],
   "R|w_draw_left_down|1": [
-   "M-CLAMPY"
+   "M-CLAMPY",
+   "M-DRWSCALE",
+   "M-GRPAC"
   ],
   "A|pset_single|1": [
    "M-COLOUR"
@@ -1087,37 +1032,47 @@
    "M-COLOUR"
   ],
   "K|box_udlr|1": [
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|diag_e|1": [
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|scale_s8|1": [
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|angle_a1|1": [
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|angle_abs_m_unrotated|1": [
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|eqvar|1": [
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|xnest|1": [
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|c_sets|1": [
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|c_persists_next_draw|1": [
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "K|inherits_from_line|1": [
    "M-COLOUR"
   ],
   "K|colourless_line_restamps|1": [
-   "M-COLOUR"
+   "M-COLOUR",
+   "M-DRWSCALE"
   ],
   "L|badletter|1": [
    "M-DRWERR5"
@@ -1144,7 +1099,8 @@
    "M-DRWERR5"
   ],
   "L|scale256|1": [
-   "M-DRWERR5"
+   "M-DRWERR5",
+   "M-DRWSCALE"
   ],
   "L|count_big|1": [
    "M-DRWERR5"
@@ -1169,6 +1125,25 @@
   ],
   "L|junk|1": [
    "M-DRWERR5"
+  ],
+  "L|scale255ok|1": [
+   "M-DRWSCALE"
+  ],
+  "L|scale0|1": [
+   "M-DRWSCALE"
+  ],
+  "M|after|1": [
+   "M-DRWSCALE"
+  ],
+  "R|w_draw_up_off|1": [
+   "M-DRWSCALE",
+   "M-GRPAC"
+  ],
+  "R|w_draw_blank_off|1": [
+   "M-DRWSCALE"
+  ],
+  "R|w_draw_on|1": [
+   "M-DRWSCALE"
   ],
   "B|pset_scr0_err|1": [
    "M-ERR5"
@@ -1420,10 +1395,12 @@
   ],
   "Q2|rd_vdpfrac|1": [
    "M-G8PAREN",
+   "M-OVFCHK",
    "M-VDPMIRR"
   ],
   "Q2|rd_vdpnegfr|1": [
    "M-G8PAREN",
+   "M-OVFCHK",
    "M-VDPMIRR"
   ],
   "Q2|rd_base0|1": [
@@ -1463,13 +1440,16 @@
   ],
   "Q2|wr_vfrac|1": [
    "M-G8PAREN",
+   "M-OVFCHK",
    "M-VDPMIRR"
   ],
   "Q2|wr_vnegfrac|1": [
-   "M-G8PAREN"
+   "M-G8PAREN",
+   "M-OVFCHK"
   ],
   "Q2|wr_v255fr|1": [
    "M-G8PAREN",
+   "M-OVFCHK",
    "M-VDPMIRR"
   ],
   "Q2|b_name_ok|1": [
@@ -1567,6 +1547,48 @@
   "Q3|C-BIOS/control|1": [
    "M-G8PAREN"
   ],
+  "N|attr_step|1": [
+   "M-GRPAC",
+   "M-PUTCOMMA",
+   "M-PUTSCR0"
+  ],
+  "R|w_step_after|1": [
+   "M-GRPAC"
+  ],
+  "D|nodash|1": [
+   "M-LINESYN"
+  ],
+  "D|badsuffix|1": [
+   "M-LINESYN"
+  ],
+  "B|pset_ovf_err|1": [
+   "M-OVFCHK"
+  ],
+  "D|ovf_end|1": [
+   "M-OVFCHK"
+  ],
+  "D|ovf_ok_min|1": [
+   "M-OVFCHK"
+  ],
+  "F|ovf_centre|1": [
+   "M-OVFCHK"
+  ],
+  "J|ovf_err|1": [
+   "M-OVFCHK"
+  ],
+  "N|attr_float|1": [
+   "M-OVFCHK",
+   "M-PUTCOMMA",
+   "M-PUTSCR0"
+  ],
+  "O|put_x40000|1": [
+   "M-OVFCHK",
+   "M-PUTCOMMA",
+   "M-PUTSCR0"
+  ],
+  "B|pset_offscr_ok|1": [
+   "M-PSETOFF"
+  ],
   "N|attr_full|1": [
    "M-PUTCOMMA",
    "M-PUTSCR0"
@@ -1614,14 +1636,6 @@
    "M-PUTSCR0"
   ],
   "N|attr_omit_all|1": [
-   "M-PUTCOMMA",
-   "M-PUTSCR0"
-  ],
-  "N|attr_step|1": [
-   "M-PUTCOMMA",
-   "M-PUTSCR0"
-  ],
-  "N|attr_float|1": [
    "M-PUTCOMMA",
    "M-PUTSCR0"
   ],
@@ -1680,10 +1694,6 @@
   ],
   "O|put_patneg|1": [
    "M-PUTCOMMA"
-  ],
-  "O|put_x40000|1": [
-   "M-PUTCOMMA",
-   "M-PUTSCR0"
   ],
   "O|put_x300|1": [
    "M-PUTCOMMA",

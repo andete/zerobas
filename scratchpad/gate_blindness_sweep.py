@@ -62,6 +62,7 @@ REPO = os.path.dirname(HERE)
 OUT = os.path.join(HERE, "gate_blindness.json")
 
 SUB = os.path.join(REPO, "sub", "graphics.asm")
+CIRC = os.path.join(REPO, "sub", "circleparse.asm")
 MAIN = os.path.join(REPO, "basic", "graphics.asm")
 ROM = {"sub": os.path.join(REPO, "build", "sub.rom"),
        "main": os.path.join(REPO, "build", "basic-reloc.rom")}
@@ -276,6 +277,63 @@ MUTS3 = {
         "                ld      b,1                 ; MUTANT\ngsxr_lp:\n"),
 }
 
+# ROUND 4 -- the three classes round 3's §16 named, plus the five rows whose error
+# SITE round 3 proved it had not found. Those five were closed at the desk, not by
+# more cuts: CIRCLE's parse is a SUB-ROM TENANT with its OWN error tail
+# (sub/circleparse.asm cpt_err5), and LINE has its own `elg_syntax` distinct from
+# `gfx_syntax` -- two error-code sites in files the round-3 battery never opened.
+MUTS4 = {
+    "M-CIRCERR5": (
+        "cpt_err5: the CIRCLE PARSE TENANT's own ERR 5 raised as ERR 6 -- a "
+        "fourth error-code site, in a file rounds 1-3 never touched",
+        CIRC, "sub",
+        "cpt_err5:\n                ld      a,5\n",
+        "cpt_err5:\n                ld      a,6                 ; MUTANT\n"),
+    "M-LINESYN": (
+        "elg_syntax: LINE's OWN Syntax error tail (not gfx_syntax) raised as ERR 3",
+        MAIN, "main",
+        "elg_syntax:\n                ld      a,2                 ; Syntax error (bad LINE form)\n",
+        "elg_syntax:\n                ld      a,3                 ; MUTANT\n"),
+    "M-GRPAC": (
+        "gfx_work_area: GRPACX fed the Y value -- the last-referenced point's x "
+        "is wrong for every statement that sets it",
+        MAIN, "main",
+        "                ld      (GRPACX),bc         ; last-referenced point X\n",
+        "                ld      (GRPACX),de         ; MUTANT\n"),
+    "M-PSETOFF": (
+        "gfx_plot_go: an off-screen PSET RAISES ERR 5 instead of being a silent "
+        "no-op -- the acceptance class needs a cut that refuses what the "
+        "reference allows",
+        MAIN, "main",
+        "                jp      nc,exec_stmt        ; off-screen -> no plot (work area already moved)\n",
+        "                jp      nc,gfx_err5         ; MUTANT\n"),
+    "M-DRWSCALE": (
+        "gdo_s: DRAW's scale bound tested on the LOW byte, so every S but S0 is "
+        "ERR 5 (S255 included -- the accepted edge)",
+        SUB, "sub",
+        "                ld      a,h\n                or      a\n"
+        "                jp      nz,gdrw_err5        ; S > 255 -> ERR 5 (measured: S255 ok, S256 not)\n",
+        "                ld      a,l                 ; MUTANT\n                or      a\n"
+        "                jp      nz,gdrw_err5        ; S > 255 -> ERR 5 (measured: S255 ok, S256 not)\n"),
+    "M-GRPAC2": (
+        "gfx_line_op: LINE's FINAL work-area write fed GRPACX the Y value. "
+        "M-GRPAC cut the RESIDENT gfx_work_area and the grpac_* rows held, "
+        "because LINE only STAGES p1 there -- the p2 write that those rows "
+        "actually read moved INTO THE TENANT with G8's space carve. Right "
+        "routine, later writer wins.",
+        SUB, "sub",
+        "                ld      hl,(GFX_X2)\n                ld      (GXPOS),hl\n"
+        "                ld      (GRPACX),hl\n",
+        "                ld      hl,(GFX_X2)\n                ld      (GXPOS),hl\n"
+        "                ld      (GRPACY),hl         ; MUTANT\n"),
+    "M-OVFCHK": (
+        "gfx_eval_int16: the STRICT int16 check dropped -- every graphics "
+        "argument beyond int16 truncates instead of raising ERR 6",
+        MAIN, "main",
+        "                jp      get_int16_checked   ; tail call: ret serves both\n",
+        "                jp      fac_to_int_strict   ; MUTANT\n"),
+}
+
 # Predictions written BEFORE the run (scored in docs/gate-blindness-sweep.md).
 # A row NOT listed here that reddens is as interesting as one listed that does
 # not: the whole point of the exercise is which rows can move at all.
@@ -339,6 +397,31 @@ PREDICT = {
                    "accepted no-ops on the reference) and spr_bare.",
     "M-PUTSCR0":   "O put_scr0. put_scr1 and the attr_* rows move too but round "
                    "2 already reddened them.",
+    # --- round 4: the three named classes + the two unfound sites ----------
+    "M-CIRCERR5":  "G rneg_err, F aspect_neg_err, F colour16_err -- the three "
+                   "rows M-ERR5 proved were NOT raised by gfx_err5. Plus any "
+                   "other CIRCLE domain row, though most are already red.",
+    "M-LINESYN":   "D badsuffix and D nodash -- the two rows M-SYNERR proved "
+                   "were NOT raised by gfx_syntax.",
+    "M-GRPAC":     "the WORK-AREA class: D grpac_line, D grpac_box, F "
+                   "grpac_step, and phase R's w_line_*/w_box_*/w_bf_*/"
+                   "w_step_after (STEP resolves against GRPAC). The w_draw_* "
+                   "rows go through gdrw's own cursor and may hold.",
+    "M-PSETOFF":   "B pset_offscr_ok. ⚠️ The three A/clip_noop_* rows should NOT "
+                   "move: an untrapped ERR 5 aborts before the hold loop, but "
+                   "the cells they read stay blank either way -- which is the "
+                   "whole point of those rows.",
+    "M-DRWSCALE":  "L scale255ok and L scale0 (both end with DRAW\"S4\", now "
+                   "ERR 5), plus every K/C row carrying an S command "
+                   "(scale_s2, scale_s8, clampD_scaled).",
+    "M-GRPAC2":    "the LINE/BOX half of the WORK-AREA class: D grpac_line, D "
+                   "grpac_box, R w_line_off, w_line_neg, w_line_on, w_box_off, "
+                   "w_bf_on, w_bf_topleft, and F grpac_step if CIRCLE's spokes "
+                   "route through gfx_line_op.",
+    "M-OVFCHK":    "the ERR 6 class: B pset_ovf_err, D ovf_end, F ovf_centre, "
+                   "F ovf_radius, J ovf_err. ⚠️ FPERR is left SET, so a batched "
+                   "phase may cascade the way M-VDPMIRR did -- if the count is "
+                   "far above 5, that is the reason, not the targeting.",
     "M-XRCOUNT":   "P init_p31_x only -- K-XR1 measured exactly this, and the "
                    "cut is now a permanent battery member so the row cannot go "
                    "quietly blind again.",
@@ -363,13 +446,15 @@ def build():
 
 
 def main() -> int:
-    table = dict(MUTS3)
+    table = dict(MUTS4)
     if "--round1" in sys.argv:
         table = dict(ROUND1)
     elif "--round2" in sys.argv:
         table = dict(MUTS)
+    elif "--round3" in sys.argv:
+        table = dict(MUTS3)
     elif "--all" in sys.argv:
-        table = {**ROUND1, **MUTS, **MUTS3}
+        table = {**ROUND1, **MUTS, **MUTS3, **MUTS4}
     want = [k for k in sys.argv[1:] if k in table] or list(table)
 
     print("=== D-GATEBLIND: which gate rows can a mutation redden? ===\n")

@@ -1,20 +1,8 @@
 {
  "battery": [
-  "M-ERR5",
-  "M-DRWERR5",
-  "M-SYNERR",
-  "M-TYPERR",
-  "M-SPRONOFF",
-  "M-PUTSCR0",
-  "M-XRCOUNT"
+  "M-GRPAC2"
  ],
  "predict": {
-  "M-ERR5": "every row asserting an ERR 5 raised by the RESIDENT graphics surface: B pset_scr0_err, D bf_scr0/scr0_err, F scr0_err and the aspect/colour domain rows, G rneg_err, J's scr0/scr1 and colour rows, L screen0/screen1, O put_scr0. NOT the tenant's own ERR 5s (spr_tenant re-raises GFX_RES, a different byte).",
-  "M-DRWERR5": "most of phase L: badletter, bare_s/a/c/m, angle4, colour16, colour_neg, scale256, count_big, m_missing, eq_nosemi, x_nosemi, lead_semi, dbl_semi, comma_sep, junk, empty, bare_b. The ACCEPTED edges (scale255ok, scale0, offscreen) must NOT move, and screen0/screen1/numeric belong to the resident tails, not this one.",
-  "M-SYNERR": "the ERR 2 assertions from gfx_syntax: O put_bare, put_comma, put_5args, put_trailing, put_halfxy, spr_bare; Q2 rd_nopar; D badsuffix, nodash.",
-  "M-TYPERR": "J tile_str_err and L numeric (the others -- O spr_numeric, Q2 g_str_* -- are already reddened by round 2).",
-  "M-SPRONOFF": "O spr_on, spr_off, spr_stop, spr_on_s0 (all four are accepted no-ops on the reference) and spr_bare.",
-  "M-PUTSCR0": "O put_scr0. put_scr1 and the attr_* rows move too but round 2 already reddened them.",
-  "M-XRCOUNT": "P init_p31_x only -- K-XR1 measured exactly this, and the cut is now a permanent battery member so the row cannot go quietly blind again."
+  "M-GRPAC2": "the LINE/BOX half of the WORK-AREA class: D grpac_line, D grpac_box, R w_line_off, w_line_neg, w_line_on, w_box_off, w_bf_on, w_bf_topleft, and F grpac_step if CIRCLE's spokes route through gfx_line_op."
  }
 }
