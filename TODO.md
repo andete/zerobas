@@ -1937,17 +1937,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       an existing bank exits 3 — not by asserting it. ⚠️ The arcmask sweeps
       still write fixed paths and were left alone.
 
-- [ ] ⚠️ **ZEROBAS'S FULL-SCREEN `BF` FILL OUTRUNS A 20 s EMULATED STEP WHERE
-      THE REFERENCE COMPLETES.** Filed 2026-08-17 by D-DRAWCLAMP (§7).
-      `LINE(0,0)-(300,250),,BF` — whose clamped box is the WHOLE screen,
-      49152 pixels — returned NO reading at all on zerobas boot-per-case at
-      step 20, while the VG-8020 answered; batched at step 2.5 it also
-      desynchronised every case after it. A 56×42 fill is fine, so this is
-      slowness, not a hang, but the factor is **unquantified**: no gate
-      measures time, same blind spot D-ARCMASK's arc-performance row names.
-      `gfx_box_fill` runs one `gfx_draw_seg` per row and every pixel pays a
-      di-guarded VDP read-modify-write. 💰 Not priced — measure it first, with
-      `scratchpad/arcmask_time.py`'s `TIME`-difference method.
+- [ ] 🔴 **A BOX FILL WRITES A FULLY-COVERED BYTE AS *BACKGROUND*, AND WE WRITE
+      IT AS FOREGROUND — A VISIBLE DIVERGENCE, AND THE REASON WE ARE 23×
+      SLOWER.** Filed 2026-08-17 by D-DRAWCLAMP as an unquantified performance
+      note; **MEASURED 2026-08-17 by D-BFPERF and it is a CORRECTNESS defect** —
+      [`docs/bffill-msx1-characterization.md`](docs/bffill-msx1-characterization.md).
+      When a fill covers all 8 pixels of a cell row the VG-8020 writes
+      **pattern `$00` and the colour in the BACKGROUND nibble** (`fg` forced
+      to 0): `…,15,BF` → `00`/`$0f`, `…,6,BF` → `00`/`$06` (two colours, so
+      the encoding is pinned). Partial runs keep the per-pixel path and both
+      machines agree. 👁️ **VISIBLE**: `LINE(0,0)-(7,7),15,BF:PSET(0,0),6`
+      leaves ONE pixel in 6 on the reference and repaints **all eight** on
+      zerobas — the clash differs because the storage differs.
+      ⏱️ Timing, empty-loop control subtracted at every N: full screen
+      **860 ms ref vs 20040 ms zb (23.3×)**, a filled scanline 15.0×, and
+      **`line_diag` at 1.00×** — our segment rasteriser is exactly the
+      reference's speed, so the entire gap is the fill.
+      🔴 **`box_bf`, the gate's only BF row, CANNOT SEE IT**: `LINE(1,1)-(14,10)`
+      spans 7 px in each of two cells, so **not one whole byte is covered**,
+      and it is pattern-plane only. Third blind gate row found this week.
+      💰 **PRICED: 120–180 B** in sub p0 (3416 free) — per scanline
+      `[left partial][whole bytes][right partial]`, ends via `gfx_rmw_at`, the
+      middle two blind writes and no reads. Needs its own slice: COLOUR-plane
+      gate rows, a `span_partial_ends` boundary row, the teeth row, host tests
+      for the run splitting, and knives.
 
 - [x] ⚠️ **ZEROBAS DRAWS ARCS 5–6× SLOWER THAN THE REFERENCE, AND FULL CIRCLES
       1.5× FASTER.** Filed 2026-08-17 by D-ARCMASK (§6), measured in VDP frames
