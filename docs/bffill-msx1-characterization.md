@@ -1,11 +1,13 @@
 # A box fill writes whole bytes as BACKGROUND, and that is why it is 23× faster
 
-D-BFPERF (measurement only), 2026-08-17. Opened from the residual D-DRAWCLAMP
-filed the same day — *"zerobas's full-screen `BF` fill outruns a 20 s emulated
-step where the reference completes"* — which said **"not priced, measure it
-first"**. Measured. It is not a performance residual.
+D-BFPERF (measurement) + D-BFBYTE (implementation), 2026-08-17. Opened from the
+residual D-DRAWCLAMP filed the same day — *"zerobas's full-screen `BF` fill
+outruns a 20 s emulated step where the reference completes"* — which said
+**"not priced, measure it first"**. Measured, and it was not a performance
+residual: it is a fidelity defect whose faithful fix is also the fast one.
 
 Baseline: `5d9f1d8`, `sub.rom` `81b952f6`, `graphics-acceptance` 344/0.
+Shipped: `sub.rom` `aeed6276`, **355/0**, sub p0 3416 → 3263 (**153 B**).
 
 ---
 
@@ -100,16 +102,73 @@ trusting it — after G3's three clip rows (D-SPOKELINE) and G6's `clip_left`
 (D-DRAWCLAMP). The common shape: **a row written to cover a case, whose
 geometry cannot reach the case.**
 
-## §5 Priced, not implemented
+## §5 The fix: 153 bytes, three routines
 
-Per scanline, split the run into `[left partial][whole bytes][right partial]`:
-the ends keep `gfx_rmw_at`, the middle writes pattern `$00` and colour `C`
-blind, no reads. Estimated **120–180 B** in sub p0 (3416 B free).
+Priced at 120–180 B before it was written; **spent 153 B**, sub p0 3416 → 3263.
 
-**Not landed in this pass, deliberately** — it needs its own slice: new
-COLOUR-plane gate rows (the current BF row has none), a `span_partial_ends`-
-shaped boundary row, the teeth row from §3, host tests for the run-splitting
-arithmetic, and knives. Filed in `TODO.md`.
+* [`gbf_split`](../sub/graphics.asm) — the per-scanline split, `fl = (xl+7)>>3`
+  and `fr = ((xr+1)>>3)-1`, returning the whole-byte count in `B` and the first
+  whole cell's x in `D`. **Pure**, so it is host-driven in
+  `tests/test_graphics.py`.
+* [`gbf_row`](../sub/graphics.asm) — whole bytes first (two blind writes each,
+  no reads, `di` once per byte rather than once per bit), then the two partial
+  ends through the landed per-pixel rasteriser. The fast pass runs first
+  because the split is a pure function of `TX1/TX2` but `gfx_draw_seg` clobbers
+  every register, so running it last would mean computing it twice.
+* [`gfx_box_fill`](../sub/graphics.asm) — sorts the corners (`gfx_box_stash`
+  does not, and the old code did not care because `gfx_draw_seg` sorts
+  internally) and no longer preloads `GFX_X1/X2`, which `gbf_row` now rewrites
+  per partial.
+
+### 5.1 ⚠️ Both halves of the split are 16-bit ON PURPOSE
+
+`xl+7` overflows a byte for `xl > 248` (255+7 = 262) and `fr` reaches −1 for
+`xr < 7`. Computed in 8 bits, `LINE(255,0)-(255,0),,BF` would report `fl=0`,
+`fr=31` and blind-fill the entire scanline — **one pixel asked for, 256
+destroyed.** That row is in the gate as `bfbyte_x255` and in the host tests as
+`gbf_split (255,255) -> 0`.
+
+## §6 Verified
+
+* **355 PASS / 0 FAIL** (344 + 11 new rows), including the teeth row and both
+  splitter controls. Every previously divergent reading is now byte-identical.
+* All 7 edge rows and all 9 colour rows agree; the 6 that were DIFF are gone.
+* `unit-test` — 19 new host cases over `gbf_split` and `gbf_shr3`, covering
+  both 8-bit traps directly.
+* Simulated before a line of Z80 was written
+  ([`bfbyte_sim.py`](../scratchpad/bfbyte_sim.py)): the model reproduced **all
+  11 measured reference readings** first, and the first build was green.
+
+### 6.1 ⏱️ And the speed, which was the consequence
+
+| row | before | after | reference |
+|---|---|---|---|
+| `bf_full` (whole screen) | 20040 ms | **560 ms** | 860 ms (**0.65×**) |
+| `bf_1row` (256×1) | 112.5 ms | 10.0 ms | 7.5 ms |
+| `bf_64` | 1685 ms | 290 ms | 115 ms |
+| **`bf_1col` (1×192)** | **120 ms** | **145 ms** | 92.5 ms |
+
+**35.8× on the full screen, and we are now faster than the VG-8020 — but
+`bf_1col` got 21% SLOWER and that is reported, not buried.** A 1-pixel-wide
+fill has no whole byte in any of its 192 rows, so every row pays `gbf_split`
+(~130 µs) and gets nothing back. It is a real, measured regression on the
+narrowest case, accepted against 35.8× on the common one.
+
+## §7 Knives — 3 predicted, 3 exact
+
+Predictions in [`bfbyte_knives.md`](../scratchpad/bfbyte_knives.md), written
+first. 🔴 **Every cut corrupts a value in place rather than deleting a call** —
+K-DC3 one commit earlier taught that lesson the hard way: removing the only
+call to a routine leaves it unreachable, `check_dead_code.py` fails the build,
+and the knife scores nothing because no ROM exists.
+
+* **K-BB1** (`pattern := $FF`) — reddens the three pattern rows and **leaves
+  every colour twin green**, including `bfbyte_teeth_c`.
+* **K-BB2** (colour from `GFX_TX1`) — reddens the five colour rows, leaves the
+  pattern rows green, and leaves **`bfbyte_c0` green by coincidence** (its
+  colour and its `xl` are both 0). Predicted as a coincidence in advance.
+* **K-BB3** (invert the corner sort) — reddens all nine discriminating rows,
+  leaving only the two splitter controls green.
 
 ## §6 Apparatus, and one retraction
 

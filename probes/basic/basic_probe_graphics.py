@@ -217,6 +217,37 @@ LINE_CASES = [
     ("clampL_corner", "LINE(300,300)-(400,400),15",   (232, 255), (168, 191), False),
     ("clampL_start",  "LINE(-40,20)-(100,80),15",     (0, 104), (16, 88), False),
     ("clampL_box",    "LINE(-40,20)-(100,80),15,B",   (0, 104), (16, 88), False),
+
+    # --- D-BFBYTE (docs/bffill-msx1-characterization.md): a box fill that
+    # covers ALL EIGHT pixels of a cell row writes pattern $00 with the colour
+    # in the BACKGROUND nibble, not pattern $FF with it in the foreground.
+    #
+    # ⚠️ `box_bf` ABOVE CANNOT SEE ANY OF THIS. `LINE(1,1)-(14,10)` spans seven
+    # pixels in each of two cells, so not ONE whole byte is covered and the
+    # fast path never engages -- and it reads the pattern plane only, so even a
+    # covered byte would have hidden the colour half. Every row here that can
+    # discriminate therefore has a COLOUR twin; the colour plane is where this
+    # rule mostly lives.
+    ("bfbyte_cell",     "LINE(0,0)-(7,7),15,BF",     (0, 7),   (0, 7),  False),
+    ("bfbyte_cell_c",   "LINE(0,0)-(7,7),15,BF",     (0, 7),   (0, 7),  True),
+    ("bfbyte_span",     "LINE(3,0)-(20,0),15,BF",    (0, 23),  (0, 7),  False),
+    ("bfbyte_span_c",   "LINE(3,0)-(20,0),15,BF",    (0, 23),  (0, 7),  True),
+    ("bfbyte_rev",      "LINE(20,0)-(3,0),15,BF",    (0, 23),  (0, 7),  True),
+    ("bfbyte_tall",     "LINE(0,0)-(15,15),15,BF",   (0, 15),  (0, 15), True),
+    ("bfbyte_c0",       "LINE(0,0)-(7,7),0,BF",      (0, 7),   (0, 7),  True),
+    # ⭐ THE TEETH: the fill renders identically under both rules, and then the
+    # next draw into the cell diverges. One pixel in 6 over seven still in 15
+    # on the reference; all eight repainted 6 under the old storage.
+    ("bfbyte_teeth",    "LINE(0,0)-(7,7),15,BF:PSET(0,0),6", (0, 7), (0, 7), False),
+    ("bfbyte_teeth_c",  "LINE(0,0)-(7,7),15,BF:PSET(0,0),6", (0, 7), (0, 7), True),
+    # CONTROLS: both are green before AND after the fix by construction, and
+    # both go red if the run splitter is wrong. `bfbyte_unalign` is 8 px with
+    # ZERO whole bytes (a splitter counting pixels instead of cell boundaries
+    # fails it); `bfbyte_x255` is the 8-bit overflow row -- xl+7 = 262, so a
+    # splitter doing that in one byte reports 32 whole bytes and blind-fills
+    # the entire scanline where one pixel was asked for.
+    ("bfbyte_unalign",  "LINE(4,0)-(11,0),15,BF",    (0, 15),  (0, 7),  True),
+    ("bfbyte_x255",     "LINE(255,0)-(255,0),15,BF", (248, 255), (0, 7), True),
 ]
 
 # --- D-DRAWCLAMP (docs/drawclamp-msx1-characterization.md): DRAW OBEYS THE

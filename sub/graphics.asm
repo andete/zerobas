@@ -808,11 +808,25 @@ gfx_box_outline:
 ; ---------------------------------------------------------------------------
 gfx_box_fill:
                 call    gfx_box_stash
-                ; X extent is constant across rows: X1=TX1, X2=TX2
-                ld      hl,(GFX_TX1)
-                ld      (GFX_X1),hl
-                ld      hl,(GFX_TX2)
-                ld      (GFX_X2),hl
+                ; --- D-BFBYTE: the run splitter needs xl <= xr, and
+                ; gfx_box_stash does not sort -- the old code did not care
+                ; because gfx_draw_seg sorts internally. Both corners are
+                ; post-clamp 0..255 with a zero high byte, so one byte compare
+                ; and one byte swap does it. `LINE(20,0)-(3,0),,BF` is measured
+                ; byte-identical to the forward box on both machines, and
+                ; gfx_bf_gxpos takes the per-axis MAX, which a swap cannot move.
+                ld      a,(GFX_TX1)
+                ld      hl,GFX_TX2
+                cp      (hl)
+                jr      c,gbf_xsorted
+                jr      z,gbf_xsorted
+                ld      b,(hl)
+                ld      (hl),a
+                ld      a,b
+                ld      (GFX_TX1),a
+gbf_xsorted:
+                ; X1/X2 are NOT preloaded any more: gbf_row rewrites them per
+                ; scanline, once per partial end.
                 ; row step = sign(TY2-TY1) ; count = |TY2-TY1| + 1
                 ld      hl,(GFX_TY2)
                 ld      de,(GFX_TY1)
@@ -834,7 +848,7 @@ gbf_ystep_set:
 gbf_loop:
                 ld      hl,(GFX_Y1)
                 ld      (GFX_Y2),hl         ; horizontal segment: Y2 = Y1
-                call    gfx_draw_seg
+                call    gbf_row
                 ld      hl,(GFX_FILLCNT)
                 dec     hl
                 ld      (GFX_FILLCNT),hl
@@ -846,6 +860,158 @@ gbf_loop:
                 add     hl,de
                 ld      (GFX_Y1),hl
                 jr      gbf_loop
+
+; ---------------------------------------------------------------------------
+; gbf_row -- ONE SCANLINE of a box fill, split into
+;
+;       [ left partial ] [ whole bytes ] [ right partial ]
+;
+; D-BFBYTE (docs/bffill-msx1-characterization.md). A fill that covers all eight
+; pixels of a cell row does NOT set the pattern bits on a VG-8020: it writes
+; pattern $00 and puts the colour in the BACKGROUND nibble, forcing fg to 0.
+; Measured for two colours (15 -> $0f, 6 -> $06, so the encoding is pinned by
+; more than one point), over a pre-stained cell (fg 6 still ends $0f, so the
+; foreground nibble is FORCED, not inherited), and for colour 0 ($00/$00, so no
+; special case). Partial runs keep the per-pixel path and both machines already
+; agreed there.
+;
+; 🔴 THIS IS A FIDELITY FIX THAT HAPPENS TO BE FAST, not an optimisation. The
+; two storages render identically, and then diverge on the NEXT draw into the
+; cell: `LINE(0,0)-(7,7),15,BF : PSET(0,0),6` leaves one pixel in 6 on the
+; reference (the cell was all background, so the PSET claims the free foreground
+; nibble) and repaints ALL EIGHT here (the cell was all foreground, so the PSET
+; collides with it). The speed -- two blind writes per byte instead of eight
+; read-modify-writes, each of which costs two VDP reads and two VDP writes -- is
+; a consequence, and it is the whole 23x.
+;
+; in:  GFX_TX1 = xl, GFX_TX2 = xr (SORTED, 0..255), GFX_Y1 = GFX_Y2 = y
+; The partials go through gfx_draw_seg, which reads GFX_X1/GFX_X2, so this
+; rewrites those two cells -- which is why gfx_box_fill no longer preloads them.
+;
+; The WHOLE bytes are done FIRST, while the split is still in registers.
+; Everything the split needs is a pure function of TX1/TX2, but gfx_draw_seg
+; clobbers every register, so running the fast pass last would mean computing
+; it twice.
+; ---------------------------------------------------------------------------
+gbf_row:
+                call    gbf_split           ; B = whole-byte count (0 = none)
+                                            ; D = x of the first whole cell
+                ld      a,b
+                or      a
+                jr      z,gbf_rw_all
+                ld      e,d                 ; E = x of the first whole cell
+                ld      a,(GFX_Y1)
+                ld      d,a                 ; D = y
+                push    bc
+                call    gfx_calc_addr       ; HL = pattern addr (B clobbered)
+                pop     bc
+                ld      de,8                ; +1 cell column, same pixel row
+gbf_rw_fast:
+                di                          ; the latch-reset race, exactly as
+                                            ; the per-pixel path guards it --
+                                            ; but once per BYTE, not once per bit
+                ld      c,0
+                call    gfx_wr_raw          ; pattern := $00 (blind: no read)
+                ld      a,h
+                add     a,$20               ; pattern high <= $17 -> no carry out
+                ld      h,a
+                ld      a,(GFX_C)
+                ld      c,a
+                call    gfx_wr_raw          ; colour := C (fg nibble 0)
+                ld      a,h
+                sub     $20
+                ld      h,a
+                ei
+                add     hl,de               ; 16-bit: cell 31 at y&7 = 7 sits at
+                                            ; low byte 255, so `inc l` would wrap
+                djnz    gbf_rw_fast
+                ; --- left partial: xl..(xl|7), iff xl is not cell-aligned ---
+                ld      a,(GFX_TX1)
+                and     $07
+                jr      z,gbf_rw_right
+                ld      a,(GFX_TX1)
+                ld      l,a
+                or      $07                 ; ...|7 IS 8*fl-1 whenever xl&7 != 0
+                call    gbf_seg
+gbf_rw_right:
+                ; --- right partial: (xr & $F8)..xr, iff xr is not a cell end ---
+                ld      a,(GFX_TX2)
+                and     $07
+                cp      $07
+                ret     z
+                ld      a,(GFX_TX2)
+                ld      h,a
+                and     $F8                 ; ...&$F8 IS 8*(fr+1) whenever xr&7 != 7
+                ld      l,a
+                ld      a,h
+                jr      gbf_seg
+gbf_rw_all:
+                ; not one whole byte in this run -- the pre-D-BFBYTE behaviour,
+                ; and the two machines already agreed on it
+                ld      a,(GFX_TX1)
+                ld      l,a
+                ld      a,(GFX_TX2)
+                ; fall through
+
+; gbf_seg -- draw the horizontal run L..A on the current row through the landed
+; per-pixel rasteriser. GFX_Y1/GFX_Y2 are already this row's y.
+gbf_seg:
+                ld      h,0
+                ld      (GFX_X1),hl
+                ld      l,a
+                ld      (GFX_X2),hl
+                jp      gfx_draw_seg
+
+; ---------------------------------------------------------------------------
+; gbf_split -- the run split for one scanline. PURE: no VDP, no RAM writes, so
+; tests/test_graphics.py drives it on the host.
+;
+;     fl = (xl + 7) >> 3         the first cell wholly inside
+;     fr = ((xr + 1) >> 3) - 1   the last cell wholly inside
+;
+; out: B = fr-fl+1, the whole-byte count (0 = none, and then D is junk)
+;      D = x of the first whole cell (fl*8)
+;
+; ⚠️ BOTH ARE COMPUTED IN 16 BITS ON PURPOSE. `xl+7` overflows a byte for
+; xl > 248 (255+7 = 262) and `fr` reaches -1 for xr < 7. In 8 bits,
+; `LINE(255,0)-(255,0),,BF` would compute fl=0, fr=31 and blind-fill the entire
+; scanline -- one pixel asked for, 256 destroyed.
+; ---------------------------------------------------------------------------
+gbf_split:
+                ld      hl,(GFX_TX1)
+                ld      de,7
+                add     hl,de
+                call    gbf_shr3
+                ex      de,hl               ; DE = fl
+                ld      hl,(GFX_TX2)
+                inc     hl
+                call    gbf_shr3
+                dec     hl                  ; HL = fr (may be -1)
+                or      a
+                sbc     hl,de               ; fr - fl
+                jp      m,gbf_sp_none
+                ld      a,l
+                inc     a
+                ld      b,a                 ; B = whole-byte count (1..32)
+                ld      a,e
+                add     a,a
+                add     a,a
+                add     a,a                 ; fl*8; fl <= 31 on this branch
+                ld      d,a
+                ret
+gbf_sp_none:
+                ld      b,0
+                ret
+
+; gbf_shr3 -- HL >>= 3, logical.
+gbf_shr3:
+                srl     h
+                rr      l
+                srl     h
+                rr      l
+                srl     h
+                rr      l
+                ret
 
 ; ---------------------------------------------------------------------------
 ; gfx_bf_gxpos -- the GXPOS/GYPOS residue after a box FILL, and it is not p2.

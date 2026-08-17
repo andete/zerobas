@@ -1937,10 +1937,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       an existing bank exits 3 — not by asserting it. ⚠️ The arcmask sweeps
       still write fixed paths and were left alone.
 
-- [ ] 🔴 **A BOX FILL WRITES A FULLY-COVERED BYTE AS *BACKGROUND*, AND WE WRITE
-      IT AS FOREGROUND — A VISIBLE DIVERGENCE, AND THE REASON WE ARE 23×
+- [x] 🔴 **A BOX FILL WRITES A FULLY-COVERED BYTE AS *BACKGROUND*, AND WE WROTE
+      IT AS FOREGROUND — A VISIBLE DIVERGENCE, AND THE REASON WE WERE 23×
       SLOWER.** Filed 2026-08-17 by D-DRAWCLAMP as an unquantified performance
-      note; **MEASURED 2026-08-17 by D-BFPERF and it is a CORRECTNESS defect** —
+      note; measured by D-BFPERF; **CLOSED 2026-08-17 by D-BFBYTE** —
+      `gbf_split` + `gbf_row` + a corner sort, **153 B** (priced 120–180),
+      sub p0 3416→3263, `sub.rom` `aeed6276`, gate **355/0** with 11 new rows
+      (9 discriminating + 2 splitter controls, and every discriminating one has
+      a COLOUR twin because that is where the rule mostly lives). Host tests:
+      19 new cases over `gbf_split`/`gbf_shr3`. Knives **3 predicted, 3 EXACT
+      at the row level**. ⏱️ full screen **20040 → 560 ms**, now **0.65× the
+      reference**; ⚠️ but `bf_1col` (1 px × 192 rows, no whole byte anywhere)
+      went **120 → 145 ms** — a real 21% regression on the narrowest case,
+      accepted against 35.8× on the common one. Simulated against all 11
+      measured readings before any Z80 was written; first build green. The
+      measurement that opened it —
       [`docs/bffill-msx1-characterization.md`](docs/bffill-msx1-characterization.md).
       When a fill covers all 8 pixels of a cell row the VG-8020 writes
       **pattern `$00` and the colour in the BACKGROUND nibble** (`fg` forced
@@ -1956,11 +1967,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 **`box_bf`, the gate's only BF row, CANNOT SEE IT**: `LINE(1,1)-(14,10)`
       spans 7 px in each of two cells, so **not one whole byte is covered**,
       and it is pattern-plane only. Third blind gate row found this week.
-      💰 **PRICED: 120–180 B** in sub p0 (3416 free) — per scanline
+      The shipped shape is per scanline
       `[left partial][whole bytes][right partial]`, ends via `gfx_rmw_at`, the
-      middle two blind writes and no reads. Needs its own slice: COLOUR-plane
-      gate rows, a `span_partial_ends` boundary row, the teeth row, host tests
-      for the run splitting, and knives.
+      middle two blind writes and no reads. ⚠️ **Both halves of the split are
+      16-BIT on purpose**: `xl+7` overflows a byte above 248 and `fr` reaches
+      −1 below `xr=7`, so in 8 bits `LINE(255,0)-(255,0),,BF` would report 32
+      whole bytes and blind-fill the whole scanline — one pixel asked for, 256
+      destroyed. That row is now `bfbyte_x255` in the gate and `(255,255)` in
+      the host tests.
 
 - [x] ⚠️ **ZEROBAS DRAWS ARCS 5–6× SLOWER THAN THE REFERENCE, AND FULL CIRCLES
       1.5× FASTER.** Filed 2026-08-17 by D-ARCMASK (§6), measured in VDP frames

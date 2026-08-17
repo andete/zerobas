@@ -75,6 +75,25 @@ KNIVES = {
 }
 
 
+PAT_ZERO = """                ld      c,0
+                call    gfx_wr_raw          ; pattern := $00 (blind: no read)"""
+PAT_FF = """                ld      c,$FF
+                call    gfx_wr_raw          ; KNIFED: pattern := $FF"""
+COL_SRC = "                ld      a,(GFX_C)\n                ld      c,a"
+COL_BAD = "                ld      a,(GFX_TX1)\n                ld      c,a"
+SORT_C = "                cp      (hl)\n                jr      c,gbf_xsorted"
+SORT_NC = "                cp      (hl)\n                jr      nc,gbf_xsorted"
+
+KNIVES.update({
+    "K-BB1": ("gbf_row fast loop: pattern := $FF instead of $00",
+              lambda s: s.replace(PAT_ZERO, PAT_FF, 1), ["bf"]),
+    "K-BB2": ("gbf_row fast loop: colour from GFX_TX1 instead of GFX_C",
+              lambda s: s.replace(COL_SRC, COL_BAD, 1), ["bf"]),
+    "K-BB3": ("gfx_box_fill: invert the corner sort",
+              lambda s: s.replace(SORT_C, SORT_NC, 1), ["bf"]),
+})
+
+
 def sh(cmd, log):
     with open(log, "w") as f:
         return subprocess.run(cmd, shell=True, cwd=REPO, stdout=f,
@@ -123,7 +142,9 @@ def main() -> int:
             else:
                 print(f"  sub.rom {base} -> {h}  (the cut took)")
             for p in probes:
-                if p == "char":
+                if p == "bf":
+                    cmd = "python3 -u scratchpad/bfperf_gate_rows.py"
+                elif p == "char":
                     cmd = (f"python3 -u scratchpad/drawclamp_char.py "
                            f"--phase {name} --nocalib")
                 else:

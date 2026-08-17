@@ -811,6 +811,43 @@ def run():
                                            "GFX_Y2"))
         check(got == want, f"gfx_clamp_coords {coords} -> {got} (want {want})")
 
+    # --- gbf_split (D-BFBYTE): the per-scanline run split ---------------------
+    # fl = (xl+7)>>3, fr = ((xr+1)>>3)-1; B = fr-fl+1 whole bytes (0 = none),
+    # D = x of the first whole cell. Both halves are computed in 16 bits, and
+    # the last three rows are why: xl+7 overflows a byte above 248 and fr
+    # reaches -1 below xr=7. In 8 bits `LINE(255,0)-(255,0),,BF` would report
+    # 32 whole bytes and blind-fill the whole scanline.
+    SPLIT_CASES = [
+        # (xl, xr) -> (whole-byte count, x of the first whole cell)
+        ((0, 7), (1, 0)),          # exactly one cell
+        ((8, 15), (1, 8)),         # exactly one cell, not the first
+        ((0, 15), (2, 0)),         # two cells
+        ((3, 20), (1, 8)),         # partial | WHOLE | partial
+        ((4, 11), (0, None)),      # 8 px, straddling: NO whole byte
+        ((5, 5), (0, None)),       # one pixel
+        ((0, 6), (0, None)),       # fr = -1
+        ((0, 255), (32, 0)),       # the whole scanline
+        ((1, 254), (30, 8)),       # the whole scanline bar both end pixels
+        ((248, 255), (1, 248)),    # the LAST cell, whole
+        ((249, 255), (0, None)),   # the last cell, partial -> fl = 32 > fr
+        ((255, 255), (0, None)),   # ⚠️ xl+7 = 262: the 8-bit overflow row
+    ]
+    for (xl, xr), (want_n, want_x) in SPLIT_CASES:
+        m.poke_w(m.addr("GFX_TX1"), _w16(xl))
+        m.poke_w(m.addr("GFX_TX2"), _w16(xr))
+        cpu = m.call("gbf_split")
+        ok = cpu.b == want_n and (want_x is None or cpu.d == want_x)
+        check(ok, f"gbf_split x={xl}..{xr} -> {cpu.b} whole byte(s) at x={cpu.d}"
+                  f" (want {want_n}"
+                  f"{'' if want_x is None else ' at x=%d' % want_x})")
+
+    # gbf_shr3 is the 16-bit >>3 both halves lean on -- including the values a
+    # byte cannot hold, which is the whole reason it is 16-bit.
+    for v, want in ((0, 0), (7, 0), (8, 1), (255, 31), (256, 32), (262, 32),
+                    (0xFFFF, 0x1FFF)):
+        cpu = m.call("gbf_shr3", h=(v >> 8) & 0xFF, l=v & 0xFF)
+        check(cpu.hl == want, f"gbf_shr3 {v} -> {cpu.hl} (want {want})")
+
     # --- gbf_max16 / gfx_bf_gxpos (D-DRAWCLAMP): a box FILL leaves the -------
     # CLAMPED BOX'S BOTTOM-RIGHT in GXPOS/GYPOS, while GRPACX/GRPACY keep the
     # raw p2 and the `B` OUTLINE arm leaves GXPOS raw too. Measured on the
