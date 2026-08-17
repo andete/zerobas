@@ -1727,16 +1727,85 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 **THE ROW THAT SETS THE SCOPE IS THE ONE WRITTEN AS A CONTROL.**
       `arcctl_r200` was written to be green — same shape, same off-screen-centre
       geometry, products that fit — and came back red, which is what says the
-      divergence is angular rather than arithmetic. The gate's own arc rows
-      (`arc_0_hpi` and friends, r=15) are green, so the defect needs a radius
-      well past 15 AND non-cardinal angles; `CIRCLE(128,96),120,15,1.1,2.04` is
-      blank on both and settles nothing.
-      💰 Not priced. Candidates, none walked: `gfx_circ_bvec`'s QTAB lookup and
-      the `brad = round(|angle|*128/pi)` rounding (spec §5.2.1 REVISED), and the
-      deferred-spoke line endpoints — the r=400 row is a spoke and differs by
-      one COLUMN over 97 rows, which is an endpoint question, not a mask one.
+      divergence is angular rather than arithmetic.
+
+      🔬 **CHARACTERISED 2026-08-17 by D-ARCMASK**
+      ([`docs/arcmask-msx1-characterization.md`](docs/arcmask-msx1-characterization.md)).
+      **NOT FIXED — and the three unwalked candidates above are all wrong.**
+      53 further rows measured on both machines (whole planes dumped to
+      `scratchpad/arcmask_sweep.json` / `arcmask_fine.json`, so every question
+      below is re-answerable with no emulator). Rig clean both runs: dead
+      subject 1 px, `ctl_full_*` and `ctl_arc_r15` byte-identical, `lad_r200`
+      replicating the §6.1 reading, and an offline zerobas model exact on
+      **56/56 whole 6144-byte planes**.
+      🔴 **THE PREMISE THE BOUNDARY RESTS ON IS MEASURED FALSE.** Spec §5.2.1
+      and `sub/graphics.asm` both assert the reference's boundary vector is the
+      EXACT ray `round(r*|cos|)`/`round(r*|sin|)`, citing "host-fit ALL MATCH".
+      The fit is real; **its corpus is `g4_pointsets.json`, radii 4..20, every
+      ARC row r=15** — and the divergence is 0.032 rad, which at r=15 is 0.5 px.
+      Against 51 whole reference planes at radii to 200 that rule scores **2–4**.
+      🎯 **WHAT THE REFERENCE DOES:** fold the angle to the nearest axis,
+      `f ∈ [0,π/4]`; its boundary is the octant loop's **STEP INDEX distributed
+      LINEARLY over `f`** — measured as a constant +6 steps per 0.035 rad right
+      across the octant, 44 samples at r=190, both sides. Exact at `f=0` and
+      `f=π/4` (where `r·sin(π/4)` is the octant's own step count), up to
+      0.032 rad wrong between. **THE REFERENCE IS THE LESS ACCURATE MACHINE** —
+      zerobas is within one QTAB step (0.012 rad), the reference is out by
+      0.037 — so under the faithful-MSX1 charter our accuracy is the defect.
+      Error in pixels grows with r: 1 step at r=24, 2 at 48, 2–3 at 95, 4–5 at
+      190, 5–6 at 200.
+      💰 **PRICED AS A DECLINE.** A forward model of that rule
+      (`scratchpad/arcmask_refmodel.py`) reaches **22/51** whole planes against
+      2–4 for the rule in the source — right in kind, **not shippable**: it
+      would redden 29 rows that are byte-identical today. The residual misses
+      are ±1 px and do not close under one constant — solving the boundary
+      interval for `c` in `k = c·r·f` conflicts across radii (r=24 needs
+      `c<0.888`, r≥95 needs `c>0.895`), and so does `c·N·f/(π/4)` against the
+      octant step count `N`. **NEXT: find the r-dependent term.** The data to do
+      it with is already banked; no new emulator run is needed to test a
+      candidate.
       ⚠️ `graphics-acceptance` owns it; the three rows above are NOT in the gate
       because they are red.
+
+- [ ] 🔴 **THE ±1 NEAR-CARDINAL NUDGE REJECTS THE AXIS POINT THE REFERENCE
+      KEEPS.** Filed 2026-08-17 by D-ARCMASK (§4.3). A SECOND defect, separate
+      from the one above and not explained by it — found by a row written as a
+      GREEN CONTROL and scoped by it:
+
+          CIRCLE(128,96),95,15,0,1.5707963   ref 135 px 7babb12d / zb 134 px e3e10d24
+
+      `ctl_card_r95` was written to be green: at a CARDINAL boundary QTAB is
+      exact and any shrink about π/2 is zero by construction. It came back RED.
+      At θ=1.5707963 the cosine magnitude rounds to 0, and because θ ≠ HALF_PI
+      to 14 digits the quadrant sign is +1, so `gfx_circ_bvec_nudge` forces
+      Ex=+1 and `gfx_circ_keep` rejects the top point (0,−95); the reference
+      keeps it. **1 px, r-INDEPENDENT** (unlike the arc-mask defect), so it is
+      reachable at any radius. ⚠️ The nudge is pinned by G4-arcbnd at r=15,
+      where it is CORRECT (it is what distinguishes 1.57 from 1.58) — so this
+      is not "delete the nudge", it is "the nudge has a domain and nobody
+      measured its edge". 💰 Not priced.
+
+- [ ] ⚠️ **ZEROBAS DRAWS ARCS 5–6× SLOWER THAN THE REFERENCE, AND FULL CIRCLES
+      1.5× FASTER.** Filed 2026-08-17 by D-ARCMASK (§6), measured in VDP frames
+      via `TIME` with the empty `FOR` loop measured per machine and subtracted
+      (`scratchpad/arcmask_time.py`, `arcmask_time2.py`):
+
+          r=95  full  ref 445/448 ms  zb 289/292 ms   0.65x
+          r=95  ARC   ref     224 ms  zb    1272 ms   5.68x
+          r=200 ARC   ref     436 ms  zb    2600 ms   5.96x
+
+      An arc is CHEAPER than its full circle on the reference (224 vs 448 ms)
+      and **4.4× DEARER** on zerobas (1272 vs 292). `gfx_circ_keep` runs two
+      `gfx_cross_ge0` per emitted point and D-CIRCOVF widened each to two
+      16×16→32 multiplies + a 32-bit compare — eight times per octant step,
+      plotted or not. ⚠️ The widening is FORCED (without it the products wrap,
+      `docs/circovf-msx1-oracle.md` §5.2); the question is whether the 32-bit
+      path can be gated on a cheap 16-bit precondition rather than always taken.
+      💰 Not priced. ⚠️ **NO GATE MEASURES TIME AT ALL** — this is invisible to
+      `graphics-acceptance`, which only compares planes.
+      🔴 Round 1 of this measurement reported three `None`s at N=20; they were
+      the CAPTURE WINDOW, not the machine. Re-run at N=5/step 45 s, with the
+      `r95` row reproducing round 1 to within one frame as the cross-check.
 
 - [ ] ⚠️ **THE 32-BIT CROSS PRODUCT HAS NO GREEN ROW THAT CAN SEE IT.** Filed
       2026-08-16 by D-CIRCOVF (§5.2, and K-CO3 in

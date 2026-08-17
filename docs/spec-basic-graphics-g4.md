@@ -201,7 +201,26 @@ angle→table-index is one bounded integer-range op (`brad = flt_to_int16(θ·25
 single clean `fp_mul` from post-eval state — *not* the sincos series). **Host-fit
 reproduces every captured arc + boundary re-capture EXACTLY**
 ([scratchpad/g4_trigfree_fit.py](../scratchpad/g4_trigfree_fit.py): all 4 arcs + both
-boundary re-captures MATCH). **Placement:** the sine table + boundary math live in the
+boundary re-captures MATCH).
+
+> 🔴 **RETRACTED IN PART — D-ARCMASK, 2026-08-17**
+> ([docs/arcmask-msx1-characterization.md](arcmask-msx1-characterization.md)).
+> The host fit is real; **its corpus cannot see the question it is cited for.**
+> [g4_pointsets.json](../scratchpad/g4_pointsets.json) holds radii **4, 7, 8, 12,
+> 15, 20**, and every **arc** row in it is **r=15**.
+> The premise above — *the reference's boundary vector is the exact ray
+> `round(r·|cos|)` / `round(r·|sin|)`* — is **measured false**: against 51 whole
+> reference pattern planes at radii up to 200 it reproduces **2–4**. Measured
+> instead: fold the angle to the nearest axis (`f ∈ [0, π/4]`); the reference's
+> boundary is the octant loop's **step index distributed linearly over `f`** —
+> exact at `f=0` and `f=π/4`, up to **0.032 rad** wrong in between, which at
+> r=15 is **0.5 px**. So **the reference is the less accurate machine**:
+> zerobas's rays land within one QTAB step (0.012 rad), the reference's are out
+> by 0.037. A step-index-linear model reaches **22/51** — right in kind, not
+> shippable (it would redden 29 currently byte-identical rows).
+> A **second**, separate 1-px defect is filed with it: at a *near-cardinal*
+> boundary the `±1` nudge below rejects the axis point the reference keeps
+> (`CIRCLE(128,96),95,15,0,1.5707963` — ref 135 px, zerobas 134). **Placement:** the sine table + boundary math live in the
 **sub-ROM tenant** (room for the table; also shrinks the tight resident); the resident
 only evaluates each angle → `brad` + sign and marshals it. This drops the
 `SUBROM_IDX_SIN`/`COS` dependency from the arc path entirely.

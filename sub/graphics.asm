@@ -1042,7 +1042,24 @@ gco_spoke:
 ; ===========================================================================
 ; G4 arc boundary -- TRIG-FREE (spec §5.2.1 REVISED 2026-07-21). Own-design,
 ; host-fit against every captured VG-8020 arc + boundary re-capture BEFORE
-; coding (scratchpad/g4_trigfree_final_model.py: ALL MATCH). Replaces the
+; coding (scratchpad/g4_trigfree_final_model.py: ALL MATCH).
+;
+; 🔴 D-ARCMASK (2026-08-17, docs/arcmask-msx1-characterization.md): THAT
+; "ALL MATCH" IS A STATEMENT ABOUT A CORPUS, NOT ABOUT A RULE, AND THE RULE IT
+; WAS READ AS CONFIRMING IS MEASURED FALSE. The corpus is scratchpad/
+; g4_pointsets.json -- radii 4,7,8,12,15,20, and every ARC row in it is r=15.
+; The design it confirmed is "the reference's boundary vector is the EXACT ray,
+; round(r*|cos|) / round(r*|sin|)". Measured on 51 whole reference planes at
+; radii up to 200, that rule reproduces 2-4 of them. What the reference does
+; instead: fold the angle to the nearest axis, f in [0,pi/4], and its boundary
+; is the octant loop's STEP INDEX distributed LINEARLY over f -- exact at f=0
+; and f=pi/4, and up to 0.032 rad wrong in between. A step-index-linear model
+; reproduces 22/51. THE REFERENCE IS THE LESS ACCURATE MACHINE: zerobas's rays
+; land within one QTAB step (0.012 rad); the reference's are out by 0.037.
+; At r=15 that whole divergence is 0.5 px, which is why no row here could see
+; it. NOT FIXED -- 22/51 would redden 29 rows that are byte-identical today.
+;
+; Replaces the
 ; original float SIN/COS pipeline, whose series fp_mul infinite-looped in the
 ; CIRCLE call context (scratchpad/g4_hang_probe.py). The resident half
 ; (basic/graphics.asm gfx_circ_boundary_prep) marshals, per boundary (start
