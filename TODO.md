@@ -1937,28 +1937,77 @@ list. **When a slice lands, grep this list for what it just shipped.**
       an existing bank exits 3 — not by asserting it. ⚠️ The arcmask sweeps
       still write fixed paths and were left alone.
 
-- [ ] ⚠️ **`PSET(0,192)` HAS NO INSTRUMENT: A FAILED y-CLIP WRITES THE NAME
-      TABLE, OUTSIDE THE PATTERN PLANE.** Filed 2026-08-17 by D-GATEBLIND (§4.1)
-      — [`docs/gate-blindness-sweep.md`](docs/gate-blindness-sweep.md). With the
-      clip removed, `PSET(0,192)` writes **`$1800`**, the SCREEN 2 name table;
-      `band_segs()` clamps to 24 cell rows and the 6144-byte pattern plane, so
-      **no band this phase can express reaches it**. The other two thirds of the
-      old `clip_noop` row are now `clip_noop_x300` / `clip_noop_xneg`, reading
-      the cells their own failures would write; this one is left UNROWED rather
-      than left looking like coverage. 💰 Needs a raw-VRAM-segment capture at
-      `$1800` (and `$3800` for the colour half), a mechanism phase A does not
-      have today — a few lines, but a new row shape.
+- [x] ⚠️ **`PSET(0,192)` HAS NO INSTRUMENT: A FAILED y-CLIP WRITES THE NAME
+      TABLE, OUTSIDE THE PATTERN PLANE.** Filed 2026-08-17 by D-GATEBLIND (§4.1);
+      **CLOSED 2026-08-17 by D-GATEBLIND round 2** (§11) — row `clip_noop_y192`,
+      `SPRITE$(0)=STRING$(8,0):PSET(0,192)`, reading `$1800`/`$3800`. 🔴 **THE
+      BLOCKER AS FILED NAMED THE WRONG OBSTACLE**: `band_segs()` is clamped, but
+      it is phases C/D/E's instrument and **phase A never calls it** — phase A
+      captures `paddr(x,y)` and `paddr(x,y)+$2000` as explicit one-byte segments,
+      and `paddr(0,192)` is 6144 = `$1800` exactly. No new row shape was needed
+      at all ([[a-filed-blocker-can-name-the-wrong-obstacle]]). What WAS missing
+      is the pre-state: `$3800` is the sprite pattern generator, and
+      `gfx_color_rmw` writes NOTHING when the plot colour equals the colour
+      byte's low nibble, so a `$3800` whose low nibble was 15 would have left
+      both captured cells unchanged and the new row as blind as the old one. The
+      `SPRITE$` write pins it. Knife **K-Y192** (`gfx_in_range` `cp 192` →
+      `cp 193`) exact: `80`/`f0` predicted and measured, the other 10 phase-A
+      rows unmoved.
 
-- [ ] ⚠️ **232 OF 355 GATE ROWS WERE NOT REDDENED BY THE FIRST MUTATION
+- [x] ⚠️ **232 OF 355 GATE ROWS WERE NOT REDDENED BY THE FIRST MUTATION
       BATTERY, AND THE BATTERY IS THE DENOMINATOR.** Filed 2026-08-17 by
-      D-GATEBLIND (§2). Five mutations of the pixel / clamp / line / colour
-      paths reddened **123**. The remaining 232 are dominated by subsystems the
-      battery never touches — 35 `PUT SPRITE` rows, 29 sprite-pattern rows, 57
-      `VDP()`/`BASE()` rows, 20 VDP-register rows, 25 `DRAW` error rows, 10
-      work-area rows — so **this is a candidate roster, not a verdict**
-      ([[a-hand-listed-denominator-is-a-scope-claim]]). 💰 Extending the battery
-      into the sprite and VDP paths would turn most of those 232 into a real
-      answer; roster and per-row detail in `scratchpad/gate_blindness.json`.
+      D-GATEBLIND (§2); **CLOSED 2026-08-17 by D-GATEBLIND round 2** (§7–§13):
+      sixteen more mutations aimed at exactly the four named subsystems — sprite
+      attribute/pattern addressing, the sprite size state, the VDP register write
+      path, `VDP()`/`BASE()` argument handling. Battery of 21: **263 of 356 rows
+      reddened, 93 never**; the sprite/VDP phases went **155 → 15**, with N and
+      Q1 fully covered. Predictions **10 exact of 16**; 🔴 `M-VDPMIRR` predicted
+      ~24 and measured **68** because `RG0SAV+1` for register 0 *is* `RG1SAV` and
+      phase Q2 is **batched**, so one poisoned mirror desynchronised 44 later
+      cases. Apparatus fixes: per-mutation file AND ROM (a `basic/` cut does not
+      move `sub.rom`), and never-reddened rows now carry how many battery members
+      actually contained them.
+
+- [ ] ⚠️ **78 GATE ROWS OUTSIDE THE SPRITE/VDP PHASES ARE STILL UNMEASURED BY
+      ANY BATTERY.** Filed 2026-08-17 by D-GATEBLIND round 2 (§8/§13) —
+      [`docs/gate-blindness-sweep.md`](docs/gate-blindness-sweep.md). Neither
+      round mutates the `DRAW` error surface (phase L, **25** rows), the work
+      area (phase R, **10**), or the PAINT / CIRCLE / LINE error tails (J 9, D 9,
+      F 9, B 3, C 5, E 2, G 1, H 1, M 2). 💰 A third battery aimed there —
+      `gdo_c`/`gdo_s`/`gdo_a` domain bounds, `gdrw_arg_req`, `gdrw_gxpos` and
+      `gfx_bf_gxpos` — would finish the sweep. Roster in
+      `scratchpad/gate_blindness.json`, keyed `(phase, label, nth)`.
+
+- [ ] 🔴 **THE 11 SURVIVING PHASE-O ROWS NEED A MUTATION THAT *ACCEPTS* A
+      MALFORMED FORM, NOT ONE THAT REFUSES A GOOD ONE.** Filed 2026-08-17 by
+      D-GATEBLIND round 2 (§13). `put_5args` / `put_bare` / `put_comma` /
+      `put_halfxy` / `put_trailing` all assert **ERR 2**, and every cut in the
+      battery pushed *toward* ERR 2, so none of them can ever move it; the same
+      shape as a control that is green under defect and fix alike
+      ([[girdom-slice]]). Two more (`put_scr0`, `spr_on_s0`) are waiting on cuts
+      to `ex_put_sprite`'s and `ex_sprite`'s own SCREEN-0 gates — `M-SPRSCR0` cut
+      `spr_assign`'s — and four (`spr_bare`, `spr_on`, `spr_off`, `spr_stop`) on
+      a cut to the ON/OFF/STOP decode. 💰 Six one-instruction cuts.
+
+- [ ] 🔴 **PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT, SO THE PAIR CANNOT
+      TELL THE TWO FAILURES APART.** Filed 2026-08-17 by D-GATEBLIND round 2
+      (§9). Q3 freezes TIME with `VDP(1)=VDP(1)AND223` and proves the emulator is
+      alive with a control case — but the control's restore line is
+      `VDP(1)=VDP(1)OR32`, **the very statement under test**. `M-G8PAREN`
+      reddened `C-BIOS/control` along with `C-BIOS/ie_off`, which I had predicted
+      would hold. A control is only honest about the cell it reads
+      ([[girdom-slice]]) — and this one reads the subject. 💰 Give the control a
+      restore that does not go through `VDP(n)=` (a `POKE` of the mirror plus a
+      mode set), or state in the probe that Q3 is a pair, not a control.
+
+- [ ] ⚠️ **`M-SPRPBASE` AND `M-SPRSZAPL` EACH HAVE ONE ROW THAT *SHOULD* SEE THEM
+      AND DOES NOT.** Filed 2026-08-17 by D-GATEBLIND round 2 (§9). `pat_8_empty`
+      (`SPRITE$(0)=""`) writes eight zeros, so an 8-byte base shift leaves the
+      read cell at 0 — the row cannot distinguish the right entry from the wrong
+      one **for the empty string only**; and `put_pat63_16` compares the error
+      outcome, which is "accepted" under both the 8×8 and 16×16 pattern rules.
+      Neither is wrong as written, but neither is coverage of what its name
+      suggests. 💰 Give `pat_8_empty` a non-zero neighbouring entry first.
 
 - [x] 🔴 **A BOX FILL WRITES A FULLY-COVERED BYTE AS *BACKGROUND*, AND WE WROTE
       IT AS FOREGROUND — A VISIBLE DIVERGENCE, AND THE REASON WE WERE 23×

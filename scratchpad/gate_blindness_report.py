@@ -14,6 +14,15 @@ have made the gate look BETTER than it is, which is the direction that matters.
 This re-derives everything from the RAW gate logs the sweep saved, keying each
 row by (phase, label, occurrence-within-phase). No emulator time is re-spent.
 
+🔴 A ROW CAN ALSO BE MISSING FROM A MUTANT'S LOG, WHICH IS NOT THE SAME AS GREEN
+UNDER IT. Round 1 ran against a 355-row gate; D-GATEBLIND then split `clip_noop`
+into two rows, so the 356-row baseline carries two rows the round-1 logs never
+contained. Counting those as "no mutation could redden it" would be the same
+lossy direction the parser bug had -- it makes the gate look better than it is.
+Every never-reddened row is therefore printed with the number of battery members
+that ACTUALLY MEASURED it, and any row measured by fewer than all of them is
+called out.
+
     python3 -u scratchpad/gate_blindness_report.py <baseline.log> [muts...]
 """
 from __future__ import annotations
@@ -68,24 +77,49 @@ def main() -> int:
         print(f"  🔴 baseline is NOT clean: {len(green0)} already failing")
 
     reddened = collections.defaultdict(list)
-    battery = []
+    measured = collections.Counter()        # how many mutants CONTAINED the row
+    per_mut, battery = {}, []
     for lg in logs:
         name = re.sub(r".*/mut_(.*)_gate\.log", r"\1", lg)
         rows = parse(lg)
         red = [k for k, ok in rows.items() if not ok]
         battery.append(name)
+        per_mut[name] = red
+        for k in rows:
+            measured[k] += 1
         for k in red:
             reddened[k].append(name)
-        print(f"  {name:11} rows {len(rows):4d}  RED {len(red):4d}")
+        print(f"  {name:12} rows {len(rows):4d}  RED {len(red):4d}"
+              f"{'' if len(rows) == len(baseline) else '   ⚠️ row set differs'}")
+
+    def fmt(k):
+        ph, lb, n = k
+        return f"{ph}/{lb}" + ("" if n == 1 else f"#{n}")
+
+    if "--per-mut" in sys.argv:
+        print("\n=== what each mutation reddened (score the predictions here) ===")
+        for name in battery:
+            byph = collections.defaultdict(list)
+            for k in per_mut[name]:
+                byph[k[0]].append(k[1] if k[2] == 1 else f"{k[1]}#{k[2]}")
+            print(f"\n  {name} ({len(per_mut[name])} rows)")
+            for ph in sorted(byph):
+                print(f"    {ph:3} {', '.join(sorted(byph[ph]))}")
 
     never = [k for k in baseline if k not in reddened]
     print(f"\n=== battery {len(battery)}: "
           f"{len(baseline) - len(never)} of {len(baseline)} rows reddened, "
           f"{len(never)} NEVER ===")
-    print("\n⚠️ 'NEVER' means blind TO THIS BATTERY, which mutates the pixel,")
-    print("   clamp, line and colour paths only. A sprite, PAINT, cassette or")
-    print("   error-surface row is EXPECTED here. This is a candidate roster to")
-    print("   re-derive by hand, not a verdict.\n")
+    print("\n⚠️ 'NEVER' means blind TO THIS BATTERY AND NOTHING MORE. The output")
+    print("   is a candidate roster to re-derive by hand, not a verdict.")
+    partial = sorted((k for k in never if measured[k] < len(battery)), key=fmt)
+    if partial:
+        print(f"\n🔴 {len(partial)} never-reddened row(s) were NOT PRESENT in every")
+        print("   mutant's log -- they were not measured by the whole battery, which")
+        print("   is a weaker claim than the rest of the roster:")
+        for k in partial:
+            print(f"      {fmt(k)}  measured by {measured[k]}/{len(battery)}")
+    print()
     byphase = collections.defaultdict(list)
     for ph, lb, n in never:
         byphase[ph].append(lb if n == 1 else f"{lb}#{n}")
@@ -96,6 +130,8 @@ def main() -> int:
     with open(OUT, "w") as f:
         json.dump({"battery": battery,
                    "never": [list(k) for k in never],
+                   "measured": {"|".join(map(str, k)): measured[k]
+                                for k in baseline},
                    "reddened": {"|".join(map(str, k)): v
                                 for k, v in reddened.items()}}, f, indent=1)
     print(f"\n-> {OUT}")

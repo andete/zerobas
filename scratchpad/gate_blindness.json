@@ -1,15 +1,36 @@
 {
  "battery": [
+  "M-BASEGMAP",
+  "M-BASEGRAIN",
+  "M-BASESHIFT",
   "M-BRESERR",
   "M-CLAMPX",
   "M-CLAMPY",
   "M-COLOUR",
+  "M-G8PAREN",
+  "M-G8RDLIM",
+  "M-PUTCOMMA",
+  "M-SPRECLK",
+  "M-SPRENTSZ",
+  "M-SPRPATSC",
+  "M-SPRPBASE",
+  "M-SPRPLANE",
+  "M-SPRSCR0",
+  "M-SPRSZAPL",
+  "M-SPRXREST",
+  "M-VDPBOUND",
+  "M-VDPMIRR",
   "M-YBOUND"
  ],
  "never": [
   [
    "A",
-   "clip_noop",
+   "clip_noop_x300",
+   1
+  ],
+  [
+   "A",
+   "clip_noop_xneg",
    1
   ],
   [
@@ -343,201 +364,6 @@
    2
   ],
   [
-   "N",
-   "pat_8_full",
-   1
-  ],
-  [
-   "N",
-   "pat_8_short",
-   1
-  ],
-  [
-   "N",
-   "pat_8_long",
-   1
-  ],
-  [
-   "N",
-   "pat_8_empty",
-   1
-  ],
-  [
-   "N",
-   "pat_8_n255",
-   1
-  ],
-  [
-   "N",
-   "pat_16_full",
-   1
-  ],
-  [
-   "N",
-   "pat_16_short",
-   1
-  ],
-  [
-   "N",
-   "pat_16_wrap",
-   1
-  ],
-  [
-   "N",
-   "read_8",
-   1
-  ],
-  [
-   "N",
-   "read_16",
-   1
-  ],
-  [
-   "N",
-   "read_scr0",
-   1
-  ],
-  [
-   "N",
-   "attr_full",
-   1
-  ],
-  [
-   "N",
-   "attr_plane5",
-   1
-  ],
-  [
-   "N",
-   "attr_neg_x",
-   1
-  ],
-  [
-   "N",
-   "attr_neg_x32",
-   1
-  ],
-  [
-   "N",
-   "attr_ec_clear",
-   1
-  ],
-  [
-   "N",
-   "attr_wrap_x",
-   1
-  ],
-  [
-   "N",
-   "attr_wrap_y",
-   1
-  ],
-  [
-   "N",
-   "attr_y209",
-   1
-  ],
-  [
-   "N",
-   "attr_omit_c",
-   1
-  ],
-  [
-   "N",
-   "attr_omit_p",
-   1
-  ],
-  [
-   "N",
-   "attr_omit_xy",
-   1
-  ],
-  [
-   "N",
-   "attr_omit_all",
-   1
-  ],
-  [
-   "N",
-   "attr_step",
-   1
-  ],
-  [
-   "N",
-   "attr_float",
-   1
-  ],
-  [
-   "N",
-   "attr_work",
-   1
-  ],
-  [
-   "N",
-   "attr_16_pat1",
-   1
-  ],
-  [
-   "N",
-   "attr_16_pat63",
-   1
-  ],
-  [
-   "N",
-   "attr_scr1",
-   1
-  ],
-  [
-   "O",
-   "spr_n256",
-   1
-  ],
-  [
-   "O",
-   "spr_n_neg",
-   1
-  ],
-  [
-   "O",
-   "spr_n255",
-   1
-  ],
-  [
-   "O",
-   "spr_numeric",
-   1
-  ],
-  [
-   "O",
-   "spr_scr0_wr",
-   1
-  ],
-  [
-   "O",
-   "spr_scr1_wr",
-   1
-  ],
-  [
-   "O",
-   "spr_read_s0",
-   1
-  ],
-  [
-   "O",
-   "spr_read256",
-   1
-  ],
-  [
-   "O",
-   "spr_noparen",
-   1
-  ],
-  [
-   "O",
-   "spr_noeq",
-   1
-  ],
-  [
    "O",
    "spr_bare",
    1
@@ -564,72 +390,7 @@
   ],
   [
    "O",
-   "put_plane32",
-   1
-  ],
-  [
-   "O",
-   "put_plane31",
-   1
-  ],
-  [
-   "O",
-   "put_planeneg",
-   1
-  ],
-  [
-   "O",
-   "put_col16",
-   1
-  ],
-  [
-   "O",
-   "put_colneg",
-   1
-  ],
-  [
-   "O",
-   "put_pat255",
-   1
-  ],
-  [
-   "O",
-   "put_pat256",
-   1
-  ],
-  [
-   "O",
-   "put_pat64_16",
-   1
-  ],
-  [
-   "O",
-   "put_pat63_16",
-   1
-  ],
-  [
-   "O",
-   "put_patneg",
-   1
-  ],
-  [
-   "O",
-   "put_x40000",
-   1
-  ],
-  [
-   "O",
-   "put_x300",
-   1
-  ],
-  [
-   "O",
    "put_scr0",
-   1
-  ],
-  [
-   "O",
-   "put_scr1",
    1
   ],
   [
@@ -654,22 +415,7 @@
   ],
   [
    "O",
-   "put_steponly",
-   1
-  ],
-  [
-   "O",
    "put_halfxy",
-   1
-  ],
-  [
-   "P",
-   "init_planes",
-   1
-  ],
-  [
-   "P",
-   "init_forclr",
    1
   ],
   [
@@ -678,423 +424,8 @@
    1
   ],
   [
-   "P",
-   "cls_keeps",
-   1
-  ],
-  [
-   "P",
-   "pat_survives",
-   1
-  ],
-  [
-   "P",
-   "size_persist",
-   1
-  ],
-  [
-   "P",
-   "size_persist0",
-   1
-  ],
-  [
-   "P",
-   "size_back",
-   1
-  ],
-  [
-   "P",
-   "size_mag",
-   1
-  ],
-  [
-   "P",
-   "size_mag3",
-   1
-  ],
-  [
-   "Q1",
-   "s0_name",
-   1
-  ],
-  [
-   "Q1",
-   "s0_satr",
-   1
-  ],
-  [
-   "Q1",
-   "s0_spat",
-   1
-  ],
-  [
-   "Q1",
-   "s1_name",
-   1
-  ],
-  [
-   "Q1",
-   "s1_satr",
-   1
-  ],
-  [
-   "Q1",
-   "s2_name",
-   1
-  ],
-  [
-   "Q1",
-   "s2_satr",
-   1
-  ],
-  [
-   "Q1",
-   "s2_spat",
-   1
-  ],
-  [
-   "Q1",
-   "s1_poison",
-   1
-  ],
-  [
-   "Q1",
-   "s2_poison",
-   1
-  ],
-  [
-   "Q1",
-   "s2_poison2",
-   1
-  ],
-  [
-   "Q1",
-   "s0_desync",
-   1
-  ],
-  [
-   "Q1",
-   "s2_desync",
-   1
-  ],
-  [
-   "Q1",
-   "s2_size",
-   1
-  ],
-  [
-   "Q1",
-   "s2_r1poke",
-   1
-  ],
-  [
-   "Q1",
-   "x_s0_g2",
-   1
-  ],
-  [
-   "Q1",
-   "x_s2_g1",
-   1
-  ],
-  [
-   "Q1",
-   "x_s2_g3",
-   1
-  ],
-  [
-   "Q1",
-   "vdp_r7",
-   1
-  ],
-  [
-   "Q1",
-   "vdp_r2",
-   1
-  ],
-  [
-   "Q2",
-   "rd_vdp1",
-   1
-  ],
-  [
-   "Q2",
-   "rd_vdp8",
-   1
-  ],
-  [
-   "Q2",
-   "rd_vdp9",
-   1
-  ],
-  [
-   "Q2",
-   "rd_vdpneg",
-   1
-  ],
-  [
-   "Q2",
-   "rd_vdp256",
-   1
-  ],
-  [
-   "Q2",
-   "rd_vdpfrac",
-   1
-  ],
-  [
-   "Q2",
-   "rd_vdpnegfr",
-   1
-  ],
-  [
-   "Q2",
-   "rd_base0",
-   1
-  ],
-  [
-   "Q2",
-   "rd_base10",
-   1
-  ],
-  [
-   "Q2",
-   "rd_base19",
-   1
-  ],
-  [
-   "Q2",
-   "rd_base20",
-   1
-  ],
-  [
-   "Q2",
-   "rd_baseneg",
-   1
-  ],
-  [
-   "Q2",
-   "rd_base_s0",
-   1
-  ],
-  [
-   "Q2",
-   "rd_bare",
-   1
-  ],
-  [
    "Q2",
    "rd_nopar",
-   1
-  ],
-  [
-   "Q2",
-   "wr_vdp8",
-   1
-  ],
-  [
-   "Q2",
-   "wr_vdpneg",
-   1
-  ],
-  [
-   "Q2",
-   "wr_vdp9",
-   1
-  ],
-  [
-   "Q2",
-   "wr_v256",
-   1
-  ],
-  [
-   "Q2",
-   "wr_vneg",
-   1
-  ],
-  [
-   "Q2",
-   "wr_vfrac",
-   1
-  ],
-  [
-   "Q2",
-   "wr_vnegfrac",
-   1
-  ],
-  [
-   "Q2",
-   "wr_v255fr",
-   1
-  ],
-  [
-   "Q2",
-   "b_name_ok",
-   1
-  ],
-  [
-   "Q2",
-   "b_name_odd",
-   1
-  ],
-  [
-   "Q2",
-   "b_name_80",
-   1
-  ],
-  [
-   "Q2",
-   "b_colr_80",
-   1
-  ],
-  [
-   "Q2",
-   "b_colr_g2",
-   1
-  ],
-  [
-   "Q2",
-   "b_colr_g2ok",
-   1
-  ],
-  [
-   "Q2",
-   "b_patt_g2",
-   1
-  ],
-  [
-   "Q2",
-   "b_patt_g1",
-   1
-  ],
-  [
-   "Q2",
-   "b_satr_80",
-   1
-  ],
-  [
-   "Q2",
-   "b_spat_400",
-   1
-  ],
-  [
-   "Q2",
-   "b_spat_800",
-   1
-  ],
-  [
-   "Q2",
-   "b_big",
-   1
-  ],
-  [
-   "Q2",
-   "b_top",
-   1
-  ],
-  [
-   "Q2",
-   "b_neg",
-   1
-  ],
-  [
-   "Q2",
-   "b_n20",
-   1
-  ],
-  [
-   "Q2",
-   "b_nneg",
-   1
-  ],
-  [
-   "Q2",
-   "g_let_vdp",
-   1
-  ],
-  [
-   "Q2",
-   "g_let_base",
-   1
-  ],
-  [
-   "Q2",
-   "g_bare_stmt",
-   1
-  ],
-  [
-   "Q2",
-   "g_name_eq",
-   1
-  ],
-  [
-   "Q2",
-   "g_base_eq",
-   1
-  ],
-  [
-   "Q2",
-   "g_no_rhs",
-   1
-  ],
-  [
-   "Q2",
-   "g_no_paren",
-   1
-  ],
-  [
-   "Q2",
-   "g_two_args",
-   1
-  ],
-  [
-   "Q2",
-   "g_list_rhs",
-   1
-  ],
-  [
-   "Q2",
-   "g_self",
-   1
-  ],
-  [
-   "Q2",
-   "g_base_self",
-   1
-  ],
-  [
-   "Q2",
-   "g_str_val",
-   1
-  ],
-  [
-   "Q2",
-   "g_str_idx",
-   1
-  ],
-  [
-   "Q2",
-   "g_str_base",
-   1
-  ],
-  [
-   "Q2",
-   "g_for_lhs",
-   1
-  ],
-  [
-   "Q2",
-   "g_swap_lhs",
-   1
-  ],
-  [
-   "Q2",
-   "g_mid_stmt",
-   1
-  ],
-  [
-   "Q2",
-   "g_if_stmt",
    1
   ],
   [
@@ -1105,16 +436,6 @@
   [
    "Q3",
    "Philips/control",
-   1
-  ],
-  [
-   "Q3",
-   "C-BIOS/ie_off",
-   1
-  ],
-  [
-   "Q3",
-   "C-BIOS/control",
    1
   ],
   [
@@ -1168,7 +489,405 @@
    1
   ]
  ],
+ "measured": {
+  "A|pset_single|1": 21,
+  "A|pset_clash|1": 21,
+  "A|pset_clear_bg|1": 21,
+  "A|preset_erase|1": 21,
+  "A|preset_color|1": 21,
+  "A|pset_step|1": 21,
+  "A|pset_mid|1": 21,
+  "A|pset_default|1": 21,
+  "A|clip_noop_x300|1": 16,
+  "A|clip_noop_xneg|1": 16,
+  "B|pset_scr0_err|1": 21,
+  "B|pset_ovf_err|1": 21,
+  "B|pset_offscr_ok|1": 21,
+  "B|point_vals|1": 21,
+  "B|point_step|1": 21,
+  "C|shallow|1": 21,
+  "C|steep|1": 21,
+  "C|diag45|1": 21,
+  "C|negslope|1": 21,
+  "C|rev_shallow|1": 21,
+  "C|horiz|1": 21,
+  "C|vert|1": 21,
+  "C|degenerate|1": 21,
+  "C|continuation|1": 21,
+  "C|step_chain|1": 21,
+  "C|box_b|1": 21,
+  "C|box_bf|1": 21,
+  "C|box_rev|1": 21,
+  "C|clash_line|1": 21,
+  "C|clip_negTL|1": 21,
+  "C|clip_frac|1": 21,
+  "C|clip_alloff|1": 21,
+  "C|clampL_diag|1": 21,
+  "C|clampL_corner|1": 21,
+  "C|clampL_start|1": 21,
+  "C|clampL_box|1": 21,
+  "C|bfbyte_cell|1": 21,
+  "C|bfbyte_cell_c|1": 21,
+  "C|bfbyte_span|1": 21,
+  "C|bfbyte_span_c|1": 21,
+  "C|bfbyte_rev|1": 21,
+  "C|bfbyte_tall|1": 21,
+  "C|bfbyte_c0|1": 21,
+  "C|bfbyte_teeth|1": 21,
+  "C|bfbyte_teeth_c|1": 21,
+  "C|bfbyte_unalign|1": 21,
+  "C|bfbyte_x255|1": 21,
+  "C|clampD_diag|1": 21,
+  "C|clampD_corner|1": 21,
+  "C|clampD_start|1": 21,
+  "C|clampD_dir|1": 21,
+  "C|clampD_scaled|1": 21,
+  "C|clampD_rot|1": 21,
+  "C|clampD_two|1": 21,
+  "C|ctlD_clipleft|1": 21,
+  "D|ovf_end|1": 21,
+  "D|ovf_ok_min|1": 21,
+  "D|scr0_err|1": 21,
+  "D|bf_scr0|1": 21,
+  "D|nodash|1": 21,
+  "D|badsuffix|1": 21,
+  "D|grpac_line|1": 21,
+  "D|grpac_box|1": 21,
+  "D|off_ok|1": 21,
+  "E|circ_r4|1": 21,
+  "E|circ_r7|1": 21,
+  "E|circ_r8|1": 21,
+  "E|circ_r12|1": 21,
+  "E|circ_r15|1": 21,
+  "E|circ_r20|1": 21,
+  "E|ell_a025|1": 21,
+  "E|ell_a05|1": 21,
+  "E|ell_a2|1": 21,
+  "E|ell_a3|1": 21,
+  "E|ell_a05r15|1": 21,
+  "E|arc_0_hpi|1": 21,
+  "E|arc_hpi_pi|1": 21,
+  "E|arc_wrap|1": 21,
+  "E|arc_full628|1": 21,
+  "E|spoke_270|1": 21,
+  "E|spoke_wedge2|1": 21,
+  "E|clash_circle|1": 21,
+  "E|r_zero|1": 21,
+  "E|ell_a03r128|1": 21,
+  "E|ell_a055r128|1": 21,
+  "E|ell_a01r255|1": 21,
+  "E|ell_a07r128|1": 21,
+  "E|ell_a025r128|1": 21,
+  "E|ell_r700a0137|1": 21,
+  "E|ell_a17r128|1": 21,
+  "E|ell_a13r128|1": 21,
+  "E|ell_a11r128|1": 21,
+  "E|ell_a2r128|1": 21,
+  "E|ell_a4r128|1": 21,
+  "E|circ_ovf_r284|1": 21,
+  "E|circ_ovf_r300|1": 21,
+  "E|ell_ovf_a05r528|1": 21,
+  "E|ell_ovf_a2r528|1": 21,
+  "E|circ_ovfc_r255|1": 21,
+  "E|circ_ovfc_r200|1": 21,
+  "E|ell_ovfc_a05r500|1": 21,
+  "E|ell_ovfc_a2r500|1": 21,
+  "E|arc_ovf_r260|1": 21,
+  "E|arc_ovf_wrap300|1": 21,
+  "E|arcmask_r200|1": 21,
+  "E|arcmask_sw1|1": 21,
+  "E|arcmask_sw2|1": 21,
+  "E|arcmask_lad190|1": 21,
+  "E|arcmask_card95|1": 21,
+  "E|arcmask_a137|1": 21,
+  "E|arcmask_spoke|1": 21,
+  "E|clampS_wide|1": 21,
+  "E|clampS_start|1": 21,
+  "F|ovf_centre|1": 21,
+  "F|ovf_radius|1": 21,
+  "F|scr0_err|1": 21,
+  "F|colour16_err|1": 21,
+  "F|aspect_neg_err|1": 21,
+  "F|clip_offscr_ok|1": 21,
+  "F|clip_neg_ok|1": 21,
+  "F|grpac_step|1": 21,
+  "F|work_quirk|1": 21,
+  "G|rneg_err|1": 21,
+  "H|box_bounded_c15b15|1": 21,
+  "H|box_flood_c4b15|1": 21,
+  "H|box_bounded_c9b9|1": 21,
+  "H|step_form|1": 21,
+  "H|defaults_c_and_b|1": 21,
+  "H|comma_empty_c|1": 21,
+  "H|border16_flood_ok|1": 21,
+  "H|seed_on_border_still_floods|1": 21,
+  "H|seed_on_wall_pixel|1": 21,
+  "I|paint_after_string_heavy|1": 21,
+  "J|scr0_err|1": 21,
+  "J|scr1_err|1": 21,
+  "J|colour16_err|1": 21,
+  "J|colour_neg_err|1": 21,
+  "J|offscreen_pos_err|1": 21,
+  "J|offscreen_neg_err|1": 21,
+  "J|ovf_err|1": 21,
+  "J|tile_str_err|1": 21,
+  "J|fourth_arg_err|1": 21,
+  "K|box_udlr|1": 21,
+  "K|diag_e|1": 21,
+  "K|m_line_identity|1": 21,
+  "K|line_for_compare|1": 21,
+  "K|blank_move|1": 21,
+  "K|no_update|1": 21,
+  "K|scale_s8|1": 21,
+  "K|scale_s2|1": 21,
+  "K|angle_a1|1": 21,
+  "K|angle_abs_m_unrotated|1": 21,
+  "K|eqvar|1": 21,
+  "K|xsub|1": 21,
+  "K|xnest|1": 21,
+  "K|clip_left|1": 21,
+  "K|neg_and_chain|1": 21,
+  "K|c_sets|1": 21,
+  "K|c_persists_next_draw|1": 21,
+  "K|inherits_from_line|1": 21,
+  "K|colourless_line_restamps|1": 21,
+  "L|badletter|1": 21,
+  "L|bare_s|1": 21,
+  "L|bare_a|1": 21,
+  "L|bare_c|1": 21,
+  "L|bare_m|1": 21,
+  "L|angle4|1": 21,
+  "L|colour16|1": 21,
+  "L|colour_neg|1": 21,
+  "L|scale256|1": 21,
+  "L|scale255ok|1": 21,
+  "L|count_big|1": 21,
+  "L|m_missing|1": 21,
+  "L|eq_nosemi|1": 21,
+  "L|x_nosemi|1": 21,
+  "L|lead_semi|1": 21,
+  "L|dbl_semi|1": 21,
+  "L|comma_sep|1": 21,
+  "L|junk|1": 21,
+  "L|screen0|1": 21,
+  "L|screen1|1": 21,
+  "L|numeric|1": 21,
+  "L|empty|1": 21,
+  "L|bare_b|1": 21,
+  "L|offscreen|1": 21,
+  "L|scale0|1": 21,
+  "M|after|1": 21,
+  "M|after|2": 21,
+  "N|pat_8_full|1": 21,
+  "N|pat_8_short|1": 21,
+  "N|pat_8_long|1": 21,
+  "N|pat_8_empty|1": 21,
+  "N|pat_8_n255|1": 21,
+  "N|pat_16_full|1": 21,
+  "N|pat_16_short|1": 21,
+  "N|pat_16_wrap|1": 21,
+  "N|read_8|1": 21,
+  "N|read_16|1": 21,
+  "N|read_scr0|1": 21,
+  "N|attr_full|1": 21,
+  "N|attr_plane5|1": 21,
+  "N|attr_neg_x|1": 21,
+  "N|attr_neg_x32|1": 21,
+  "N|attr_ec_clear|1": 21,
+  "N|attr_wrap_x|1": 21,
+  "N|attr_wrap_y|1": 21,
+  "N|attr_y209|1": 21,
+  "N|attr_omit_c|1": 21,
+  "N|attr_omit_p|1": 21,
+  "N|attr_omit_xy|1": 21,
+  "N|attr_omit_all|1": 21,
+  "N|attr_step|1": 21,
+  "N|attr_float|1": 21,
+  "N|attr_work|1": 21,
+  "N|attr_16_pat1|1": 21,
+  "N|attr_16_pat63|1": 21,
+  "N|attr_scr1|1": 21,
+  "O|spr_n256|1": 21,
+  "O|spr_n_neg|1": 21,
+  "O|spr_n255|1": 21,
+  "O|spr_numeric|1": 21,
+  "O|spr_scr0_wr|1": 21,
+  "O|spr_scr1_wr|1": 21,
+  "O|spr_read_s0|1": 21,
+  "O|spr_read256|1": 21,
+  "O|spr_noparen|1": 21,
+  "O|spr_noeq|1": 21,
+  "O|spr_bare|1": 21,
+  "O|spr_on|1": 21,
+  "O|spr_off|1": 21,
+  "O|spr_stop|1": 21,
+  "O|spr_on_s0|1": 21,
+  "O|put_plane32|1": 21,
+  "O|put_plane31|1": 21,
+  "O|put_planeneg|1": 21,
+  "O|put_col16|1": 21,
+  "O|put_colneg|1": 21,
+  "O|put_pat255|1": 21,
+  "O|put_pat256|1": 21,
+  "O|put_pat64_16|1": 21,
+  "O|put_pat63_16|1": 21,
+  "O|put_patneg|1": 21,
+  "O|put_x40000|1": 21,
+  "O|put_x300|1": 21,
+  "O|put_scr0|1": 21,
+  "O|put_scr1|1": 21,
+  "O|put_bare|1": 21,
+  "O|put_comma|1": 21,
+  "O|put_5args|1": 21,
+  "O|put_trailing|1": 21,
+  "O|put_steponly|1": 21,
+  "O|put_halfxy|1": 21,
+  "P|init_planes|1": 21,
+  "P|init_forclr|1": 21,
+  "P|init_p31|1": 21,
+  "P|cls_keeps|1": 21,
+  "P|pat_survives|1": 21,
+  "P|size_persist|1": 21,
+  "P|size_persist0|1": 21,
+  "P|size_back|1": 21,
+  "P|size_mag|1": 21,
+  "P|size_mag3|1": 21,
+  "Q1|s0_name|1": 21,
+  "Q1|s0_satr|1": 21,
+  "Q1|s0_spat|1": 21,
+  "Q1|s1_name|1": 21,
+  "Q1|s1_satr|1": 21,
+  "Q1|s2_name|1": 21,
+  "Q1|s2_satr|1": 21,
+  "Q1|s2_spat|1": 21,
+  "Q1|s1_poison|1": 21,
+  "Q1|s2_poison|1": 21,
+  "Q1|s2_poison2|1": 21,
+  "Q1|s0_desync|1": 21,
+  "Q1|s2_desync|1": 21,
+  "Q1|s2_size|1": 21,
+  "Q1|s2_r1poke|1": 21,
+  "Q1|x_s0_g2|1": 21,
+  "Q1|x_s2_g1|1": 21,
+  "Q1|x_s2_g3|1": 21,
+  "Q1|vdp_r7|1": 21,
+  "Q1|vdp_r2|1": 21,
+  "Q2|rd_vdp1|1": 21,
+  "Q2|rd_vdp8|1": 21,
+  "Q2|rd_vdp9|1": 21,
+  "Q2|rd_vdpneg|1": 21,
+  "Q2|rd_vdp256|1": 21,
+  "Q2|rd_vdpfrac|1": 21,
+  "Q2|rd_vdpnegfr|1": 21,
+  "Q2|rd_base0|1": 21,
+  "Q2|rd_base10|1": 21,
+  "Q2|rd_base19|1": 21,
+  "Q2|rd_base20|1": 21,
+  "Q2|rd_baseneg|1": 21,
+  "Q2|rd_base_s0|1": 21,
+  "Q2|rd_bare|1": 21,
+  "Q2|rd_nopar|1": 21,
+  "Q2|wr_vdp8|1": 21,
+  "Q2|wr_vdpneg|1": 21,
+  "Q2|wr_vdp9|1": 21,
+  "Q2|wr_v256|1": 21,
+  "Q2|wr_vneg|1": 21,
+  "Q2|wr_vfrac|1": 21,
+  "Q2|wr_vnegfrac|1": 21,
+  "Q2|wr_v255fr|1": 21,
+  "Q2|b_name_ok|1": 21,
+  "Q2|b_name_odd|1": 21,
+  "Q2|b_name_80|1": 21,
+  "Q2|b_colr_80|1": 21,
+  "Q2|b_colr_g2|1": 21,
+  "Q2|b_colr_g2ok|1": 21,
+  "Q2|b_patt_g2|1": 21,
+  "Q2|b_patt_g1|1": 21,
+  "Q2|b_satr_80|1": 21,
+  "Q2|b_spat_400|1": 21,
+  "Q2|b_spat_800|1": 21,
+  "Q2|b_big|1": 21,
+  "Q2|b_top|1": 21,
+  "Q2|b_neg|1": 21,
+  "Q2|b_n20|1": 21,
+  "Q2|b_nneg|1": 21,
+  "Q2|g_let_vdp|1": 21,
+  "Q2|g_let_base|1": 21,
+  "Q2|g_bare_stmt|1": 21,
+  "Q2|g_name_eq|1": 21,
+  "Q2|g_base_eq|1": 21,
+  "Q2|g_no_rhs|1": 21,
+  "Q2|g_no_paren|1": 21,
+  "Q2|g_two_args|1": 21,
+  "Q2|g_list_rhs|1": 21,
+  "Q2|g_self|1": 21,
+  "Q2|g_base_self|1": 21,
+  "Q2|g_str_val|1": 21,
+  "Q2|g_str_idx|1": 21,
+  "Q2|g_str_base|1": 21,
+  "Q2|g_for_lhs|1": 21,
+  "Q2|g_swap_lhs|1": 21,
+  "Q2|g_mid_stmt|1": 21,
+  "Q2|g_if_stmt|1": 21,
+  "Q3|Philips/ie_off|1": 21,
+  "Q3|Philips/control|1": 21,
+  "Q3|C-BIOS/ie_off|1": 21,
+  "Q3|C-BIOS/control|1": 21,
+  "R|w_line_off|1": 21,
+  "R|w_line_neg|1": 21,
+  "R|w_line_on|1": 21,
+  "R|w_box_off|1": 21,
+  "R|w_bf_off|1": 21,
+  "R|w_bf_topleft|1": 21,
+  "R|w_bf_on|1": 21,
+  "R|w_draw_m_off|1": 21,
+  "R|w_draw_up_off|1": 21,
+  "R|w_draw_left_down|1": 21,
+  "R|w_draw_blank_off|1": 21,
+  "R|w_draw_on|1": 21,
+  "R|w_step_after|1": 21
+ },
  "reddened": {
+  "Q1|s1_name|1": [
+   "M-BASEGMAP",
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s1_satr|1": [
+   "M-BASEGMAP",
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s1_poison|1": [
+   "M-BASEGMAP",
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_name_80|1": [
+   "M-BASEGRAIN",
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s0_name|1": [
+   "M-BASESHIFT",
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s0_satr|1": [
+   "M-BASESHIFT",
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s0_spat|1": [
+   "M-BASESHIFT",
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s0_desync|1": [
+   "M-BASESHIFT",
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
   "C|shallow|1": [
    "M-BRESERR",
    "M-COLOUR"
@@ -1600,6 +1319,507 @@
   ],
   "K|colourless_line_restamps|1": [
    "M-COLOUR"
+  ],
+  "N|pat_8_full|1": [
+   "M-G8PAREN",
+   "M-SPRPBASE",
+   "M-SPRSCR0"
+  ],
+  "N|pat_8_short|1": [
+   "M-G8PAREN",
+   "M-SPRPBASE",
+   "M-SPRSCR0"
+  ],
+  "N|pat_8_long|1": [
+   "M-G8PAREN",
+   "M-SPRPBASE",
+   "M-SPRSCR0"
+  ],
+  "N|pat_8_empty|1": [
+   "M-G8PAREN",
+   "M-SPRSCR0"
+  ],
+  "N|pat_8_n255|1": [
+   "M-G8PAREN",
+   "M-SPRPBASE",
+   "M-SPRSCR0"
+  ],
+  "N|pat_16_full|1": [
+   "M-G8PAREN",
+   "M-SPRENTSZ",
+   "M-SPRPBASE",
+   "M-SPRSCR0",
+   "M-SPRSZAPL"
+  ],
+  "N|pat_16_short|1": [
+   "M-G8PAREN",
+   "M-SPRENTSZ",
+   "M-SPRPBASE",
+   "M-SPRSCR0",
+   "M-SPRSZAPL"
+  ],
+  "N|pat_16_wrap|1": [
+   "M-G8PAREN",
+   "M-SPRENTSZ",
+   "M-SPRPBASE",
+   "M-SPRSCR0",
+   "M-SPRSZAPL"
+  ],
+  "N|read_8|1": [
+   "M-G8PAREN",
+   "M-SPRPBASE",
+   "M-SPRSCR0"
+  ],
+  "N|read_16|1": [
+   "M-G8PAREN",
+   "M-SPRENTSZ",
+   "M-SPRPBASE",
+   "M-SPRSCR0",
+   "M-SPRSZAPL"
+  ],
+  "N|read_scr0|1": [
+   "M-G8PAREN",
+   "M-SPRPBASE",
+   "M-SPRSCR0"
+  ],
+  "O|spr_n256|1": [
+   "M-G8PAREN"
+  ],
+  "O|spr_n_neg|1": [
+   "M-G8PAREN"
+  ],
+  "O|spr_n255|1": [
+   "M-G8PAREN",
+   "M-SPRSCR0"
+  ],
+  "O|spr_numeric|1": [
+   "M-G8PAREN",
+   "M-SPRSCR0"
+  ],
+  "O|spr_scr1_wr|1": [
+   "M-G8PAREN",
+   "M-SPRSCR0"
+  ],
+  "O|spr_read_s0|1": [
+   "M-G8PAREN"
+  ],
+  "O|spr_read256|1": [
+   "M-G8PAREN"
+  ],
+  "P|cls_keeps|1": [
+   "M-G8PAREN",
+   "M-PUTCOMMA",
+   "M-SPRPBASE",
+   "M-SPRSCR0"
+  ],
+  "P|pat_survives|1": [
+   "M-G8PAREN",
+   "M-SPRPBASE",
+   "M-SPRSCR0"
+  ],
+  "P|size_persist|1": [
+   "M-G8PAREN",
+   "M-SPRENTSZ",
+   "M-SPRPBASE",
+   "M-SPRSCR0",
+   "M-SPRSZAPL"
+  ],
+  "P|size_persist0|1": [
+   "M-G8PAREN",
+   "M-SPRENTSZ",
+   "M-SPRSZAPL"
+  ],
+  "P|size_back|1": [
+   "M-G8PAREN"
+  ],
+  "P|size_mag|1": [
+   "M-G8PAREN"
+  ],
+  "P|size_mag3|1": [
+   "M-G8PAREN",
+   "M-SPRENTSZ",
+   "M-SPRSZAPL"
+  ],
+  "Q1|s2_name|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s2_satr|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s2_spat|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s2_poison|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s2_poison2|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s2_desync|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s2_size|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|s2_r1poke|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q1|x_s0_g2|1": [
+   "M-G8PAREN"
+  ],
+  "Q1|x_s2_g1|1": [
+   "M-G8PAREN"
+  ],
+  "Q1|x_s2_g3|1": [
+   "M-G8PAREN"
+  ],
+  "Q1|vdp_r7|1": [
+   "M-G8PAREN",
+   "M-VDPBOUND"
+  ],
+  "Q1|vdp_r2|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_vdp1|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_vdp8|1": [
+   "M-G8PAREN",
+   "M-G8RDLIM"
+  ],
+  "Q2|rd_vdp9|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_vdpneg|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_vdp256|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_vdpfrac|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_vdpnegfr|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_base0|1": [
+   "M-G8PAREN"
+  ],
+  "Q2|rd_base10|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_base19|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_base20|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_baseneg|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|rd_base_s0|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|wr_vdp8|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|wr_vdpneg|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|wr_vdp9|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|wr_v256|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|wr_vneg|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|wr_vfrac|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|wr_vnegfrac|1": [
+   "M-G8PAREN"
+  ],
+  "Q2|wr_v255fr|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_name_ok|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_name_odd|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_colr_80|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_colr_g2|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_colr_g2ok|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_patt_g2|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_patt_g1|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_satr_80|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_spat_400|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_spat_800|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_big|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_top|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_neg|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_n20|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|b_nneg|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|g_no_rhs|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|g_self|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|g_base_self|1": [
+   "M-G8PAREN"
+  ],
+  "Q2|g_str_val|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|g_str_base|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|g_mid_stmt|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q2|g_if_stmt|1": [
+   "M-G8PAREN",
+   "M-VDPMIRR"
+  ],
+  "Q3|C-BIOS/ie_off|1": [
+   "M-G8PAREN"
+  ],
+  "Q3|C-BIOS/control|1": [
+   "M-G8PAREN"
+  ],
+  "N|attr_full|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_plane5|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_neg_x|1": [
+   "M-PUTCOMMA",
+   "M-SPRECLK"
+  ],
+  "N|attr_neg_x32|1": [
+   "M-PUTCOMMA",
+   "M-SPRECLK"
+  ],
+  "N|attr_ec_clear|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_wrap_x|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_wrap_y|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_y209|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_omit_c|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_omit_p|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_omit_xy|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_omit_all|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_step|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_float|1": [
+   "M-PUTCOMMA"
+  ],
+  "N|attr_work|1": [
+   "M-PUTCOMMA",
+   "M-SPRECLK"
+  ],
+  "N|attr_16_pat1|1": [
+   "M-PUTCOMMA",
+   "M-SPRPATSC",
+   "M-SPRSZAPL"
+  ],
+  "N|attr_16_pat63|1": [
+   "M-PUTCOMMA",
+   "M-SPRPATSC",
+   "M-SPRSZAPL"
+  ],
+  "N|attr_scr1|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_plane32|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_plane31|1": [
+   "M-PUTCOMMA",
+   "M-SPRPLANE"
+  ],
+  "O|put_planeneg|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_col16|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_colneg|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_pat255|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_pat256|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_pat64_16|1": [
+   "M-PUTCOMMA",
+   "M-SPRSZAPL"
+  ],
+  "O|put_pat63_16|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_patneg|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_x40000|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_x300|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_scr1|1": [
+   "M-PUTCOMMA"
+  ],
+  "O|put_steponly|1": [
+   "M-PUTCOMMA"
+  ],
+  "P|init_planes|1": [
+   "M-PUTCOMMA",
+   "M-SPRXREST"
+  ],
+  "O|spr_scr0_wr|1": [
+   "M-SPRSCR0"
+  ],
+  "O|spr_noparen|1": [
+   "M-SPRSCR0"
+  ],
+  "O|spr_noeq|1": [
+   "M-SPRSCR0"
+  ],
+  "P|init_forclr|1": [
+   "M-SPRXREST"
+  ],
+  "Q2|rd_bare|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_let_vdp|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_let_base|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_bare_stmt|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_name_eq|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_base_eq|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_no_paren|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_two_args|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_list_rhs|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_str_idx|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_for_lhs|1": [
+   "M-VDPMIRR"
+  ],
+  "Q2|g_swap_lhs|1": [
+   "M-VDPMIRR"
   ]
  }
 }

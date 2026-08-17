@@ -74,11 +74,27 @@ DRAW_CASES = [
     # own row, reading the cell its OWN failure would write.
     ("clip_noop_x300", "PSET(300,100)", (44, 100), "00", "04"),   # -> $0C2C
     ("clip_noop_xneg", "PSET(-1,0)",    (248, 0),  "00", "04"),   # -> $00F8
-    # ⚠️ `PSET(0,192)` is NOT rowed here: with the clip removed it writes
-    # $1800, which is outside the 6144-byte pattern plane (it is the NAME
-    # TABLE), and no band this phase can express reaches it. It needs a
-    # different instrument, not a wider band -- filed in TODO.md rather than
-    # left as a row that looks like coverage.
+    # The third statement of the old `clip_noop`, rowed at last (D-GATEBLIND
+    # round 2, scratchpad/y192_proof.py).
+    #
+    # 🔴 THE FILED BLOCKER NAMED THE WRONG OBSTACLE. It said `band_segs()`
+    # clamps to the 6144-byte pattern plane so "no band this phase can express"
+    # reaches $1800 -- but band_segs() is phases C/D/E's instrument. PHASE A
+    # DOES NOT USE IT: it captures two explicit one-byte segments at paddr(x,y)
+    # and paddr(x,y)+$2000, and paddr(0,192) is 6144 = $1800 EXACTLY. The
+    # capture shape could always reach the cell.
+    #
+    # What was really missing is the PRE-STATE. $1800 is the name table and its
+    # colour-half cell $3800 is the SPRITE PATTERN GENERATOR, whose byte 0 is
+    # whatever the BIOS left -- and gfx_color_rmw CLEARS the pixel, writing no
+    # colour byte at all, when the plot colour equals the colour byte's low
+    # nibble. With FORCLR 15, a $3800 whose low nibble is 15 would make an
+    # unclipped PSET(0,192) clear an already-0 pattern bit and touch nothing:
+    # BOTH captured cells unchanged, the new row as blind as the old one. The
+    # SPRITE$ write pins $3800..$3807 to 0 on both machines (a BASIC statement,
+    # not a VPOKE -- see this module's docstring), so the clash rule must SET.
+    ("clip_noop_y192", "SPRITE$(0)=STRING$(8,0):PSET(0,192)",
+     (0, 192), "00", "00"),                                       # -> $1800/$3800
 ]
 
 
@@ -1185,6 +1201,18 @@ SPRITE_STATE = [
      f"&H{SPR_ATTR:04X}", 12, "PEEK(&HF3E0)"),
     ("init_forclr",  "COLOR4,1,1:SCREEN2", f"&H{SPR_ATTR:04X}", 8, "PEEK(&HF3E0)"),
     ("init_p31",     "COLOR15,1,1:SCREEN2", f"&H{SPR_ATTR+124:04X}", 4, "0"),
+    # 🔴 D-GATEBLIND round 2: `init_p31` above CANNOT SEE THE X SNAPSHOT, and
+    # nothing else could either. gfx_spr_xsave/xrest bracket CHGMOD to put 32
+    # attribute x bytes back (C-BIOS zeroes them, the reference leaves them
+    # alone) -- but a restore is only observable where x was NON-ZERO before the
+    # mode set, and the ONLY row that set one was init_planes, on PLANE 0. So
+    # the loop's 32-entry COUNT was pinned by no row in the gate. Same shape as
+    # clip_noop: the cell the row reads holds 0 whether the code works or not.
+    # MEASURED, knife K-XR1 (`ld b,32` -> `ld b,1`, scratchpad/xrest_knife.py):
+    # 358 rows, exactly ONE red -- this one. init_p31 and init_planes both stayed
+    # green under a cut that removed 31 of the 32 restores.
+    ("init_p31_x",   "COLOR15,1,1:SCREEN2:PUT SPRITE 31,(77,20),4,1:SCREEN2",
+     f"&H{SPR_ATTR+124:04X}", 4, "0"),
     ("cls_keeps",    "SCREEN2:PUT SPRITE 0,(60,20),4,1:SPRITE$(0)=CHR$(170):CLS",
      f"&H{SPR_ATTR:04X}", 4, "VPEEK(&H3800)"),
     ("pat_survives", "SCREEN2:SPRITE$(0)=CHR$(170):SCREEN2", f"&H{SPR_PAT:04X}", 4, "0"),
