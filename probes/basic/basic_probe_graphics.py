@@ -64,7 +64,21 @@ DRAW_CASES = [
     ("pset_step",     "PSET(0,0),15:PSET STEP(1,0),9",       (0, 0), "c0", "94"),
     ("pset_mid",      "PSET(100,50),9",                      (100, 50), "08", "94"),
     ("pset_default",  "PSET(0,0)",                           (0, 0), "80", "f4"),  # c=FORCLR=15
-    ("clip_noop",     "PSET(300,100):PSET(0,192):PSET(-1,0)",(0, 0), "00", "04"),
+    # 🔴 D-GATEBLIND: `clip_noop` used to be ONE row running all three
+    # off-screen PSETs and reading the cell at (0,0) -- a cell NONE of them
+    # would write even with every clip in gfx_plot_cur deleted. It was green
+    # whether or not the clip worked. Proved by arithmetic in
+    # scratchpad/clipnoop_proof.py: strip the clip, push each coordinate
+    # through gfx_calc_addr, and the three land at $0C2C, $1800 and $00F8,
+    # none of them in the 8 bytes the row read. Each statement now gets its
+    # own row, reading the cell its OWN failure would write.
+    ("clip_noop_x300", "PSET(300,100)", (44, 100), "00", "04"),   # -> $0C2C
+    ("clip_noop_xneg", "PSET(-1,0)",    (248, 0),  "00", "04"),   # -> $00F8
+    # ⚠️ `PSET(0,192)` is NOT rowed here: with the clip removed it writes
+    # $1800, which is outside the 6144-byte pattern plane (it is the NAME
+    # TABLE), and no band this phase can express reaches it. It needs a
+    # different instrument, not a wider band -- filed in TODO.md rather than
+    # left as a row that looks like coverage.
 ]
 
 

@@ -94,6 +94,15 @@ KNIVES.update({
 })
 
 
+XCLIP = ("                ret     nz                  "
+         "; x high byte != 0 -> x<0 or x>255 -> clip (skip)\n")
+XCLIP_OFF = ("                nop                     "
+             "; KNIFED: the x clip removed\n")
+KNIVES["K-CN1"] = (
+    "gfx_plot_cur: remove the X clip (the failure clip_noop could not see)",
+    lambda s: s.replace(XCLIP, XCLIP_OFF, 1), ["phasea"])
+
+
 def sh(cmd, log):
     with open(log, "w") as f:
         return subprocess.run(cmd, shell=True, cwd=REPO, stdout=f,
@@ -142,7 +151,9 @@ def main() -> int:
             else:
                 print(f"  sub.rom {base} -> {h}  (the cut took)")
             for p in probes:
-                if p == "bf":
+                if p == "phasea":
+                    cmd = "python3 -u scratchpad/clipnoop_phasea.py"
+                elif p == "bf":
                     cmd = "python3 -u scratchpad/bfperf_gate_rows.py"
                 elif p == "char":
                     cmd = (f"python3 -u scratchpad/drawclamp_char.py "
@@ -155,7 +166,7 @@ def main() -> int:
                 out = open(log).read()
                 keep = [l for l in out.splitlines()
                         if l.startswith(("  agree", "  DIFF ", "        zb",
-                                         "=== "))]
+                                         "  PASS", "  FAIL", "=== "))]
                 print("\n".join("  " + l for l in keep))
             print()
     finally:

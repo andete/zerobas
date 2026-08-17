@@ -1937,6 +1937,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       an existing bank exits 3 — not by asserting it. ⚠️ The arcmask sweeps
       still write fixed paths and were left alone.
 
+- [ ] ⚠️ **`PSET(0,192)` HAS NO INSTRUMENT: A FAILED y-CLIP WRITES THE NAME
+      TABLE, OUTSIDE THE PATTERN PLANE.** Filed 2026-08-17 by D-GATEBLIND (§4.1)
+      — [`docs/gate-blindness-sweep.md`](docs/gate-blindness-sweep.md). With the
+      clip removed, `PSET(0,192)` writes **`$1800`**, the SCREEN 2 name table;
+      `band_segs()` clamps to 24 cell rows and the 6144-byte pattern plane, so
+      **no band this phase can express reaches it**. The other two thirds of the
+      old `clip_noop` row are now `clip_noop_x300` / `clip_noop_xneg`, reading
+      the cells their own failures would write; this one is left UNROWED rather
+      than left looking like coverage. 💰 Needs a raw-VRAM-segment capture at
+      `$1800` (and `$3800` for the colour half), a mechanism phase A does not
+      have today — a few lines, but a new row shape.
+
+- [ ] ⚠️ **232 OF 355 GATE ROWS WERE NOT REDDENED BY THE FIRST MUTATION
+      BATTERY, AND THE BATTERY IS THE DENOMINATOR.** Filed 2026-08-17 by
+      D-GATEBLIND (§2). Five mutations of the pixel / clamp / line / colour
+      paths reddened **123**. The remaining 232 are dominated by subsystems the
+      battery never touches — 35 `PUT SPRITE` rows, 29 sprite-pattern rows, 57
+      `VDP()`/`BASE()` rows, 20 VDP-register rows, 25 `DRAW` error rows, 10
+      work-area rows — so **this is a candidate roster, not a verdict**
+      ([[a-hand-listed-denominator-is-a-scope-claim]]). 💰 Extending the battery
+      into the sprite and VDP paths would turn most of those 232 into a real
+      answer; roster and per-row detail in `scratchpad/gate_blindness.json`.
+
 - [x] 🔴 **A BOX FILL WRITES A FULLY-COVERED BYTE AS *BACKGROUND*, AND WE WROTE
       IT AS FOREGROUND — A VISIBLE DIVERGENCE, AND THE REASON WE WERE 23×
       SLOWER.** Filed 2026-08-17 by D-DRAWCLAMP as an unquantified performance
