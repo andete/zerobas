@@ -24,7 +24,15 @@ and reddened 123 of 355 rows. Its 232-row roster was dominated by subsystems it
 never touches, so ROUND 2 extends the battery into exactly those: the sprite
 attribute and pattern tables, the sprite size/magnification state, the VDP
 register write path and the VDP()/BASE() argument handling -- the four paths the
-round-1 report named as its own blind spots.
+round-1 report named as its own blind spots. 263 of 356 reddened, 93 never.
+
+ROUND 3 adds the dimension neither of the first two had: **THE ERROR CODE
+ITSELF**. Four of round 2's fifteen surviving sprite/VDP reasons were the same
+sentence -- the row asserts an error code, and every cut in the battery produced
+that same code, so no cut could ever move it. A row asserting "ERR 2 on this
+malformed form" is pinned only by a cut that changes the CODE. Four one-byte code
+cuts cover the whole graphics error surface, resident and tenant; DRAW's entire
+§5 table is one `ld a,5`, which is why phase L's 25 rows had never moved.
 
 Two rules this apparatus learned the hard way:
 
@@ -36,7 +44,10 @@ Two rules this apparatus learned the hard way:
   pointed at the wrong one reports a perfect cut as "the mutation did not take".
   Every entry therefore names its own file AND its own ROM.
 
-    python3 -u scratchpad/gate_blindness_sweep.py [--dry] [--round1] [M-... ...]
+    python3 -u scratchpad/gate_blindness_sweep.py [--dry] [--round1|--round2|--all]
+                                                 [M-... ...]
+The default battery is the LATEST round; the earlier rounds' saved gate logs
+are carried forward by gate_blindness_report.py instead of re-run.
 """
 from __future__ import annotations
 
@@ -210,6 +221,61 @@ MUTS = {
         "                ld      a,8                 ; MUTANT\n"),
 }
 
+# ROUND 3 -- THE DIMENSION ROUNDS 1 AND 2 NEVER TOUCHED: THE ERROR CODE ITSELF.
+# Round 2 left 15 sprite/VDP rows unreddened and four of the reasons were the same
+# sentence -- the row asserts an error code, and every cut in the battery produced
+# that same code. A row that asserts "ERR 2 on this malformed form" cannot be moved
+# by any cut that also raises ERR 2; it moves when the CODE moves. Four one-byte
+# code cuts cover the whole graphics error surface, resident and tenant, and reach
+# straight into phase L (25 rows), whose entire §5 table is one `ld a,5`.
+MUTS3 = {
+    "M-ERR5": (
+        "gfx_err5: the resident graphics Illegal function call raised as ERR 6",
+        MAIN, "main",
+        "gfx_err5:\n                ld      a,5                 "
+        "; Illegal function call (PSET/PRESET in SCREEN 0/1)\n",
+        "gfx_err5:\n                ld      a,6                 ; MUTANT\n"),
+    "M-DRWERR5": (
+        "gdrw_err5: the WHOLE DRAW error table raised as ERR 6 instead of ERR 5",
+        SUB, "sub",
+        "                ld      a,5                 ; Illegal function call (the whole §5 table\n",
+        "                ld      a,6                 ; MUTANT (the whole §5 table\n"),
+    "M-SYNERR": (
+        "gfx_syntax: the trappable graphics Syntax error raised as ERR 3",
+        MAIN, "main",
+        "gfx_syntax:\n                ld      a,2\n",
+        "gfx_syntax:\n                ld      a,3                 ; MUTANT\n"),
+    "M-TYPERR": (
+        "gfx_typeerr: Type mismatch raised as ERR 14",
+        MAIN, "main",
+        "                ld      a,13                ; Type mismatch",
+        "                ld      a,14                ; MUTANT"),
+    "M-SPRONOFF": (
+        "ex_sprite: the ON/OFF/STOP decode INVERTED -- the three arming forms "
+        "are Syntax errors and a bare SPRITE is accepted",
+        MAIN, "main",
+        "                call    onoff_decode        ; A = ZTS_OFF / ZTS_ON / ZTS_STOP\n"
+        "                jp      nc,gfx_syntax       ; bare SPRITE -> ERR 2 (measured)\n",
+        "                call    onoff_decode        ; A = ZTS_OFF / ZTS_ON / ZTS_STOP\n"
+        "                jp      c,gfx_syntax        ; MUTANT\n"),
+    "M-PUTSCR0": (
+        "ex_put_sprite: its OWN SCREEN 0 gate inverted (M-SPRSCR0 cut "
+        "spr_assign's, which is a different routine)",
+        MAIN, "main",
+        "ex_put_sprite:\n                inc     hl                  ; past the SPRITE token\n"
+        "                ld      a,(SCRMOD)\n                or      a\n"
+        "                jp      z,gfx_err5          ; PUT SPRITE in SCREEN 0 -> ERR 5\n",
+        "ex_put_sprite:\n                inc     hl                  ; past the SPRITE token\n"
+        "                ld      a,(SCRMOD)\n                or      a\n"
+        "                jp      nz,gfx_err5         ; MUTANT\n"),
+    "M-XRCOUNT": (
+        "gfx_spr_xrest: only plane 0's attribute x restored, not 32 -- the cut "
+        "K-XR1 proved nothing in the old gate could see (now init_p31_x's)",
+        SUB, "sub",
+        "                ld      b,32\ngsxr_lp:\n",
+        "                ld      b,1                 ; MUTANT\ngsxr_lp:\n"),
+}
+
 # Predictions written BEFORE the run (scored in docs/gate-blindness-sweep.md).
 # A row NOT listed here that reddens is as interesting as one listed that does
 # not: the whole point of the exercise is which rows can move at all.
@@ -252,6 +318,30 @@ PREDICT = {
     "M-BASEGRAIN": "Q2 b_name_80 only (b_name_ok / b_name_odd are the controls "
                    "and should NOT move).",
     "M-G8RDLIM":   "Q2 rd_vdp8 only.",
+    # --- round 3: the error code itself -----------------------------------
+    "M-ERR5":      "every row asserting an ERR 5 raised by the RESIDENT graphics "
+                   "surface: B pset_scr0_err, D bf_scr0/scr0_err, F scr0_err and "
+                   "the aspect/colour domain rows, G rneg_err, J's scr0/scr1 and "
+                   "colour rows, L screen0/screen1, O put_scr0. NOT the tenant's "
+                   "own ERR 5s (spr_tenant re-raises GFX_RES, a different byte).",
+    "M-DRWERR5":   "most of phase L: badletter, bare_s/a/c/m, angle4, colour16, "
+                   "colour_neg, scale256, count_big, m_missing, eq_nosemi, "
+                   "x_nosemi, lead_semi, dbl_semi, comma_sep, junk, empty, "
+                   "bare_b. The ACCEPTED edges (scale255ok, scale0, offscreen) "
+                   "must NOT move, and screen0/screen1/numeric belong to the "
+                   "resident tails, not this one.",
+    "M-SYNERR":    "the ERR 2 assertions from gfx_syntax: O put_bare, put_comma, "
+                   "put_5args, put_trailing, put_halfxy, spr_bare; Q2 rd_nopar; "
+                   "D badsuffix, nodash.",
+    "M-TYPERR":    "J tile_str_err and L numeric (the others -- O spr_numeric, "
+                   "Q2 g_str_* -- are already reddened by round 2).",
+    "M-SPRONOFF":  "O spr_on, spr_off, spr_stop, spr_on_s0 (all four are "
+                   "accepted no-ops on the reference) and spr_bare.",
+    "M-PUTSCR0":   "O put_scr0. put_scr1 and the attr_* rows move too but round "
+                   "2 already reddened them.",
+    "M-XRCOUNT":   "P init_p31_x only -- K-XR1 measured exactly this, and the "
+                   "cut is now a permanent battery member so the row cannot go "
+                   "quietly blind again.",
 }
 
 
@@ -273,9 +363,13 @@ def build():
 
 
 def main() -> int:
-    table = dict(ROUND1) if "--round1" in sys.argv else dict(MUTS)
-    if "--all" in sys.argv:
-        table = {**ROUND1, **MUTS}
+    table = dict(MUTS3)
+    if "--round1" in sys.argv:
+        table = dict(ROUND1)
+    elif "--round2" in sys.argv:
+        table = dict(MUTS)
+    elif "--all" in sys.argv:
+        table = {**ROUND1, **MUTS, **MUTS3}
     want = [k for k in sys.argv[1:] if k in table] or list(table)
 
     print("=== D-GATEBLIND: which gate rows can a mutation redden? ===\n")

@@ -1,38 +1,20 @@
 {
  "battery": [
-  "M-G8PAREN",
-  "M-PUTCOMMA",
-  "M-SPRSCR0",
-  "M-VDPMIRR",
-  "M-SPRSZAPL",
-  "M-SPRPBASE",
-  "M-SPRXREST",
-  "M-SPRENTSZ",
-  "M-BASESHIFT",
-  "M-BASEGMAP",
-  "M-SPRECLK",
-  "M-SPRPATSC",
-  "M-SPRPLANE",
-  "M-VDPBOUND",
-  "M-BASEGRAIN",
-  "M-G8RDLIM"
+  "M-ERR5",
+  "M-DRWERR5",
+  "M-SYNERR",
+  "M-TYPERR",
+  "M-SPRONOFF",
+  "M-PUTSCR0",
+  "M-XRCOUNT"
  ],
  "predict": {
-  "M-G8PAREN": "every VDP()/BASE()/SPRITE$() index -> ERR 2: most of Q1, Q2 and the SPRITE$ half of N/P; Q3 ie_off too (VDP(1) never clears the IE bit). PUT SPRITE's own (x,y) is parse_coord, NOT this routine, so the attr_* rows should NOT move.",
-  "M-PUTCOMMA": "every PUT SPRITE that carries arguments -> ERR 2: all of N's attr_* rows and O's put_* rows except put_bare/put_comma, which are ERR 2 on both sides already.",
-  "M-SPRSCR0": "N's pattern rows and P's SPRITE$ rows; O spr_scr0_wr, spr_scr1_wr, spr_n255, spr_numeric, spr_noparen, spr_noeq. spr_n256/spr_n_neg should NOT move -- ERR 5 either way.",
-  "M-VDPMIRR": "every Q1 row that compares registers (17), plus Q2's read-back rows rd_vdp1 / wr_vfrac / wr_vnegfrac / wr_v255fr / g_self / g_mid_stmt / g_if_stmt.",
-  "M-SPRSZAPL": "the 16x16 rows N pat_16_*/read_16/attr_16_*, O put_pat64_16/put_pat63_16, P size_persist/size_persist0/size_mag3. size_mag and size_back should NOT move.",
-  "M-SPRPBASE": "every N pattern row (pat_8_*, pat_16_*, read_*), P pat_survives, cls_keeps, size_persist. The attr_* rows read the ATTRIBUTE table and should NOT move.",
-  "M-SPRXREST": "P init_planes, init_forclr, cls_keeps (the table is read after a mode set). N's attr_* rows overwrite all four bytes of plane 0 and should mostly survive.",
-  "M-SPRENTSZ": "N pat_16_full/pat_16_short/pat_16_wrap/read_16, P size_persist/size_persist0/size_mag3. size_back and size_mag should NOT move (entry is 8 either way).",
-  "M-BASESHIFT": "ONLY the SCREEN 0 reprograms -- s0_name, s0_satr, s0_spat, s0_desync. Groups 2 and 3 hold pattern base $0000, and 0>>11 == 0>>12, so their R4 is unchanged.",
-  "M-BASEGMAP": "Q1 s1_name, s1_satr, s1_poison.",
-  "M-SPRECLK": "N attr_neg_x, attr_neg_x32, attr_work. attr_ec_clear should NOT move -- its second statement re-writes a positive x.",
-  "M-SPRPATSC": "N attr_16_pat1, attr_16_pat63. O put_pat63_16 should NOT move: accepted either way.",
-  "M-SPRPLANE": "O put_plane31 only.",
-  "M-VDPBOUND": "Q1 vdp_r7 only.",
-  "M-BASEGRAIN": "Q2 b_name_80 only (b_name_ok / b_name_odd are the controls and should NOT move).",
-  "M-G8RDLIM": "Q2 rd_vdp8 only."
+  "M-ERR5": "every row asserting an ERR 5 raised by the RESIDENT graphics surface: B pset_scr0_err, D bf_scr0/scr0_err, F scr0_err and the aspect/colour domain rows, G rneg_err, J's scr0/scr1 and colour rows, L screen0/screen1, O put_scr0. NOT the tenant's own ERR 5s (spr_tenant re-raises GFX_RES, a different byte).",
+  "M-DRWERR5": "most of phase L: badletter, bare_s/a/c/m, angle4, colour16, colour_neg, scale256, count_big, m_missing, eq_nosemi, x_nosemi, lead_semi, dbl_semi, comma_sep, junk, empty, bare_b. The ACCEPTED edges (scale255ok, scale0, offscreen) must NOT move, and screen0/screen1/numeric belong to the resident tails, not this one.",
+  "M-SYNERR": "the ERR 2 assertions from gfx_syntax: O put_bare, put_comma, put_5args, put_trailing, put_halfxy, spr_bare; Q2 rd_nopar; D badsuffix, nodash.",
+  "M-TYPERR": "J tile_str_err and L numeric (the others -- O spr_numeric, Q2 g_str_* -- are already reddened by round 2).",
+  "M-SPRONOFF": "O spr_on, spr_off, spr_stop, spr_on_s0 (all four are accepted no-ops on the reference) and spr_bare.",
+  "M-PUTSCR0": "O put_scr0. put_scr1 and the attr_* rows move too but round 2 already reddened them.",
+  "M-XRCOUNT": "P init_p31_x only -- K-XR1 measured exactly this, and the cut is now a permanent battery member so the row cannot go quietly blind again."
  }
 }

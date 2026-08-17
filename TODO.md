@@ -1968,26 +1968,52 @@ list. **When a slice lands, grep this list for what it just shipped.**
       move `sub.rom`), and never-reddened rows now carry how many battery members
       actually contained them.
 
-- [ ] ⚠️ **78 GATE ROWS OUTSIDE THE SPRITE/VDP PHASES ARE STILL UNMEASURED BY
-      ANY BATTERY.** Filed 2026-08-17 by D-GATEBLIND round 2 (§8/§13) —
-      [`docs/gate-blindness-sweep.md`](docs/gate-blindness-sweep.md). Neither
-      round mutates the `DRAW` error surface (phase L, **25** rows), the work
-      area (phase R, **10**), or the PAINT / CIRCLE / LINE error tails (J 9, D 9,
-      F 9, B 3, C 5, E 2, G 1, H 1, M 2). 💰 A third battery aimed there —
-      `gdo_c`/`gdo_s`/`gdo_a` domain bounds, `gdrw_arg_req`, `gdrw_gxpos` and
-      `gfx_bf_gxpos` — would finish the sweep. Roster in
-      `scratchpad/gate_blindness.json`, keyed `(phase, label, nth)`.
+- [x] ⚠️ **78 GATE ROWS OUTSIDE THE SPRITE/VDP PHASES ARE STILL UNMEASURED BY
+      ANY BATTERY.** Filed 2026-08-17 by D-GATEBLIND round 2; **SUPERSEDED
+      2026-08-17 by round 3** (§14–§16), which added the missing dimension — **the
+      error CODE itself**, never mutated by rounds 1–2 — and took the roster to
+      **51 of 358**. Phase L went **25 → 5** on one cut (`gdrw_err5`'s `ld a,5`:
+      the whole DRAW §5 table is one byte), J **9 → 2**, D **9 → 7**, B **3 → 2**.
+      What remains is three NAMED classes, refiled below, not "the rest".
 
-- [ ] 🔴 **THE 11 SURVIVING PHASE-O ROWS NEED A MUTATION THAT *ACCEPTS* A
+- [ ] ⚠️ **THE 51-ROW RESIDUE IS ACCEPTANCE, THE WORK AREA, AND THE ERR 6 TAIL —
+      AND NOTHING ELSE.** Filed 2026-08-17 by D-GATEBLIND round 3 (§16) —
+      [`docs/gate-blindness-sweep.md`](docs/gate-blindness-sweep.md). 28 cuts now
+      pin every **refusal** in the graphics surface; the residue is (a) ~13 rows
+      asserting **ACCEPTANCE** (`pset_offscr_ok`, `clip_neg_ok`, `clip_offscr_ok`,
+      `off_ok`, `ovf_ok_min`, `border16_flood_ok`, and phase L's `scale255ok` /
+      `scale0` / `offscreen` / `empty` / `bare_b`) — every cut so far made the
+      machine refuse MORE, so these need a cut that **narrows a domain the
+      reference allows**, the one shape this battery has never used; (b) ~14
+      **WORK-AREA** rows (all ten of phase R plus `grpac_box`, `grpac_line`,
+      `grpac_step`, `work_quirk`) which read `GRPACX`/`GXPOS` as a NUMBER —
+      `gdrw_gxpos`, `gfx_bf_gxpos` and the `GRPAC` stores are the sites; (c) ~7
+      **ERR 6 / overflow** rows (`pset_ovf_err`, `ovf_end`, `ovf_centre`,
+      `ovf_radius`, `ovf_err`, `arc_ovf_r260`, `arc_ovf_wrap300`) whose site is
+      `gfx_eval_int16`'s bound. 💰 Three cuts, one per class, would probably close
+      most of it. Roster in `scratchpad/gate_blindness.json`.
+
+- [ ] 🔴 **THREE ROWS' ERROR SITE HAS PROVABLY NOT BEEN FOUND.** Filed 2026-08-17
+      by D-GATEBLIND round 3 (§15). `M-ERR5` moved `gfx_err5`'s code and
+      `G/rneg_err`, `F/aspect_neg_err` and `F/colour16_err` **did not move**,
+      against prediction — their ERR 5 is raised somewhere else entirely; the same
+      for `D/badsuffix` and `D/nodash` under `M-SYNERR`'s ERR 2. **A code cut is a
+      probe for where the code LIVES**, and five rows have just said "not here",
+      which is sharper than a red row. 💰 Grep the CIRCLE/LINE tails for their
+      raisers (`gb_illegal`? a tenant `GFX_RES`?) and cut those instead.
+
+- [x] 🔴 **THE 11 SURVIVING PHASE-O ROWS NEED A MUTATION THAT *ACCEPTS* A
       MALFORMED FORM, NOT ONE THAT REFUSES A GOOD ONE.** Filed 2026-08-17 by
-      D-GATEBLIND round 2 (§13). `put_5args` / `put_bare` / `put_comma` /
-      `put_halfxy` / `put_trailing` all assert **ERR 2**, and every cut in the
-      battery pushed *toward* ERR 2, so none of them can ever move it; the same
-      shape as a control that is green under defect and fix alike
-      ([[girdom-slice]]). Two more (`put_scr0`, `spr_on_s0`) are waiting on cuts
-      to `ex_put_sprite`'s and `ex_sprite`'s own SCREEN-0 gates — `M-SPRSCR0` cut
-      `spr_assign`'s — and four (`spr_bare`, `spr_on`, `spr_off`, `spr_stop`) on
-      a cut to the ON/OFF/STOP decode. 💰 Six one-instruction cuts.
+      D-GATEBLIND round 2; **CLOSED 2026-08-17 by round 3** (§14/§15) — **phase O
+      is now 0**. `M-SYNERR` (`gfx_syntax` `ld a,2` → `ld a,3`) took the ERR-2
+      assertions, `M-SPRONOFF` the four ON/OFF/STOP no-ops, `M-PUTSCR0`
+      `put_scr0`. 🔴 **AND THE FRAMING AS FILED WAS TOO NARROW**: `put_halfxy`
+      moved under `M-PUTSCR0`, because inverting the SCREEN-0 gate raises ERR 5
+      **before** the grammar check — a malformed-form row also moves when an
+      EARLIER stage starts refusing it, not only when a later one starts accepting.
+      Two more owned misses: `spr_bare` moved under `M-SYNERR`, not the decode cut
+      I predicted, and `L/empty` + `L/bare_b` never moved because they are
+      ACCEPTED forms I had filed as errors.
 
 - [ ] 🔴 **PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT, SO THE PAIR CANNOT
       TELL THE TWO FAILURES APART.** Filed 2026-08-17 by D-GATEBLIND round 2

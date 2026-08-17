@@ -376,3 +376,107 @@ none of them is "nobody looked":
 The 78 rows outside the sprite/VDP phases are round 1's roster unchanged, and
 the next battery has an obvious shape: the `DRAW` error surface (phase L, 25
 rows), the work area (phase R, 10), and the PAINT/CIRCLE/LINE error tails.
+
+---
+
+# Round 3 — the dimension neither earlier round had: the error *code*
+
+§13 left fifteen sprite/VDP rows, and **four of the reasons were the same
+sentence**: the row asserts an error code, and every cut in the battery produced
+that same code. A row asserting "ERR 2 on this malformed form" cannot be moved by
+any mutation that also raises ERR 2 — it is pinned only by a cut that moves the
+**code**. Rounds 1 and 2 mutated *decisions*; nothing had ever mutated what the
+graphics surface *raises*.
+
+Four one-byte code cuts cover that whole surface, resident and tenant — and
+`gdrw_err5`'s comment says why phase L's 25 rows had never moved: *"the whole §5
+table is ERR 5 bar the resident's Type mismatch"*. **One `ld a,5` is 17 gate
+rows.** Three targeted cuts came with them: the two gates §13 named as unmeasured,
+and `ld b,32` → `ld b,1` promoted from knife to permanent battery member so §12's
+row cannot go quietly blind again.
+
+| mutation | what it breaks | rows |
+|---|---|---|
+| `M-PUTSCR0` | `ex_put_sprite`'s **own** SCREEN 0 gate inverted | 34 |
+| `M-ERR5` | `gfx_err5`: the resident Illegal function call raised as ERR 6 | 19 |
+| `M-DRWERR5` | `gdrw_err5`: the whole DRAW error table raised as ERR 6 | 17 |
+| `M-SYNERR` | `gfx_syntax`: the trappable graphics Syntax error raised as ERR 3 | 17 |
+| `M-TYPERR` | `gfx_typeerr`: Type mismatch raised as ERR 14 | 6 |
+| `M-SPRONOFF` | `ex_sprite`: the ON/OFF/STOP decode inverted | 4 |
+| `M-XRCOUNT` | `gfx_spr_xrest`: plane 0's x restored, not 32 | 1 |
+
+**Battery of 28: 307 of 358 rows reddened, 51 never** (round 1: 232 never; round
+2: 93). `M-XRCOUNT` rebuilt `sub.rom` to `10342311`, byte-identical to K-XR1 —
+the knife and the battery member are the same cut, and it still reddens exactly
+`init_p31_x`.
+
+## §14 The sprite and VDP phases are finished
+
+| phase | round 1 | round 2 | round 3 |
+|---|---|---|---|
+| N — sprite tables | 29 | 0 | **0** |
+| O — sprite errors + accepted edges | 35 | 11 | **0** |
+| P — table init, CLS, persistent size | 10 | 1 | **1** |
+| Q1 — VDP/BASE state + R0..R6 | 20 | 0 | **0** |
+| Q2 — VDP/BASE reads, domains, grammar | 57 | 1 | **0** |
+| Q3 — does `VDP(n)=` reach the chip | 4 | 2 | **2** |
+
+**155 → 3**, and the three are accounted for, not outstanding: two are §10's
+reference-side floor, which no mutation of our ROM can ever move, and the third is
+§12's `init_p31`, blind to the x half by construction and carrying a live twin.
+That is the same resolution D-SPOKELINE gave `clip_alloff` — which is also still
+in this roster, correctly, because `clampL_corner` carries its coverage and *does*
+redden. **Keep the row, add the twin, and say which one is load-bearing.**
+
+## §15 Round 3's predictions — two exact, and four rows that told me where the code is *not*
+
+* **`M-TYPERR` exact** (6 rows; the two new ones are `J/tile_str_err` and
+  `L/numeric`). **`M-XRCOUNT` exact** (1).
+* **`M-DRWERR5`: 17 of a predicted 19.** The three accepted edges predicted to
+  hold (`scale255ok`, `scale0`, `offscreen`) held — but `empty` (`DRAW""`) and
+  `bare_b` (`DRAW"B"`) held too, because they are **accepted forms as well** and I
+  had filed them as errors. I mis-classified two rows of a phase I was predicting
+  wholesale.
+* **`M-SYNERR` reddened `rd_nopar`**, the round-2 residue row it was written for.
+  But `D/badsuffix` and `D/nodash` did **not** move: their ERR 2 does not come
+  from `gfx_syntax`.
+* 🔴 **`M-ERR5` did not move `G/rneg_err`, `F/aspect_neg_err` or
+  `F/colour16_err`, all three of which I predicted.** Those ERR 5s are raised
+  somewhere else entirely. A code cut is a *probe for where the code lives*, and
+  three rows just said "not here" — which is a sharper result than a red row: the
+  roster now contains rows whose error site I have provably not found yet.
+* **`M-SPRONOFF`: the four ON/OFF/STOP rows exactly**, but `spr_bare` moved under
+  `M-SYNERR` instead — I had it in the wrong cut's prediction. Right row, wrong
+  mechanism.
+* **`M-PUTSCR0` is what finally moved `put_halfxy`**, and §13 had called that row
+  unmovable-in-principle. Inverting the SCREEN-0 gate raises ERR 5 **before** the
+  grammar check, so a row asserting ERR 2 sees ERR 5 — the "accepted instead of
+  refused" framing was too narrow. A malformed-form row also moves when an
+  **earlier** stage starts refusing it.
+
+## §16 What the remaining 51 are, and what the next battery is
+
+The residue is no longer "the rest of the gate". Twenty-eight cuts cover every
+**refusal** in the graphics surface; what they never touch is three specific
+things:
+
+* **Rows asserting ACCEPTANCE** (~13): `pset_offscr_ok`, `clip_neg_ok`,
+  `clip_offscr_ok`, `off_ok`, `ovf_ok_min`, `border16_flood_ok`, and phase L's
+  five survivors (`scale255ok`, `scale0`, `offscreen`, `empty`, `bare_b`). Every
+  cut so far made the machine refuse *more*; an acceptance row moves when it
+  refuses something it should allow.
+* **The WORK AREA** (~14): all ten of phase R, plus `grpac_box`, `grpac_line`,
+  `grpac_step`, `work_quirk`. No cut in 28 moves a `GRPACX`/`GXPOS` cell — these
+  read the work area as a **number**, and the battery has only ever mutated
+  pixels, tables, registers and error codes.
+* **The ERR 6 / overflow tail** (~7): `pset_ovf_err`, `ovf_end`, `ovf_centre`,
+  `ovf_radius`, `ovf_err`, `arc_ovf_r260`, `arc_ovf_wrap300`. `gfx_eval_int16`'s
+  domain check is the site, and no mutation has been written for it.
+
+Plus `C`'s four `bfbyte_*` rows, `M`'s two `after` rows, and the accounted-for
+three from §14.
+
+**The next battery therefore has a list, not a direction**: `gdrw_gxpos` /
+`gfx_bf_gxpos` / the `GRPAC` stores for the work area, `gfx_eval_int16`'s bound
+for the overflow tail, and — for the acceptance rows — a cut that *narrows* a
+domain the reference allows, which is the one shape this battery has never used.
