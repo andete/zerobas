@@ -1895,30 +1895,59 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and was refuted 8/16 by banked planes before being corrected to
       gfx_bres_next's actual accumulator form (then 16/16).
 
-- [ ] ⚠️ **`DRAW` WITH OFF-SCREEN COORDINATES IS UNMEASURED, AND THE CLAMP
-      DOES NOT COVER IT.** Filed 2026-08-17 by D-SPOKELINE (§3.2). `gdrw`
-      calls `gfx_draw_seg` directly, bypassing `gfx_line_op` and therefore
-      `gfx_clamp_coords`. Whether the reference clamps DRAW's `M` targets the
-      same way is unknown; zerobas still per-pixel clips there. The
-      apparatus to answer it is `scratchpad/spokeline_char2.py`'s pattern
-      with `DRAW "BM-40,20;M100,80"`-style rows. 💰 Not priced.
+- [x] ⚠️ **`DRAW` WITH OFF-SCREEN COORDINATES IS UNMEASURED, AND THE CLAMP
+      DOES NOT COVER IT.** Filed 2026-08-17 by D-SPOKELINE (§3.2).
+      **CLOSED 2026-08-17 by D-DRAWCLAMP** —
+      [`docs/drawclamp-msx1-characterization.md`](docs/drawclamp-msx1-characterization.md).
+      **DRAW obeys LINE's rule exactly**: both endpoints clamp to the screen
+      before rasterising, the ideal line is never clipped. 12 discriminating
+      whole-plane rows, the reference matching `clamp_both` on every one and
+      UNIQUELY on `dm_both_off` (the four-way row) and `dm_two_seg`; the
+      absolute, relative, SCALED and ROTATED routes and the direction letters
+      all clamp, and the clamp applies to the TRANSFORMED target, not the
+      typed operand. Fix: one `call gfx_clamp_coords` in `gdrw_move_abs`
+      (**3 B**). 🔴 **G6's "off-screen motion clips by masking" was never
+      measured** — its only off-screen row, `clip_left`, is HORIZONTAL and
+      therefore scores DISCRIMINATING POWER 1: clamp and clip give the same
+      pixels for an axis-aligned segment. It is kept as `ctlD_clipleft`, the
+      three-way control it always was.
 
-- [ ] ⚠️ **THE WORK AREA AFTER AN OFF-SCREEN LINE IS UNMEASURED.** Filed
-      2026-08-17 by D-SPOKELINE (§4). `gfx_line_op` writes `GXPOS/GRPACX` =
-      the RAW p2 before the clamp, so a following `LINE STEP` continues from
-      the unclamped point. Whether the reference stores raw or clamped there
-      is unknown — a `LINE(0,0)-(300,250):LINE STEP(10,0)-STEP(0,10)` pair
-      row would say. 💰 Zero bytes either way (move the clamp call above or
-      below the work-area writes).
+- [x] ⚠️ **THE WORK AREA AFTER AN OFF-SCREEN LINE IS UNMEASURED.** Filed
+      2026-08-17 by D-SPOKELINE (§4). **CLOSED 2026-08-17 by D-DRAWCLAMP** —
+      answered by a direct PEEK of `GRPACX/GXPOS`, not inferred from a second
+      segment. **The reference stores the RAW p2 and zerobas was already
+      right**: nine rows agreeing on both machines, negatives reading back as
+      65486/65506 and a fully off-screen LINE reading 400/400. **Zero bytes.**
+      🔴 But the rows found an UNPREDICTED divergence in the *other* cell
+      pair: `GXPOS/GYPOS` takes the **clamped** coordinate after a `DRAW` move
+      (the greater-y endpoint rule SURVIVED, its coordinate did not) and the
+      **clamped box's bottom-right** after a `BF` fill — while plain LINE and
+      the `B` outline leave it raw. `gdrw_gxpos` retargeted (0 B) +
+      `gfx_bf_gxpos` (35 B). I had predicted raw/raw for `draw_m_off`: a
+      value-level miss inside a correctly-shaped row set.
 
-- [ ] 🔴 **A RE-RUN PROBE THAT BANKS TO A FIXED JSON PATH OVERWRITES ITS OWN
-      PRE-FIX MEASUREMENT.** Filed 2026-08-17 by D-SPOKELINE (§6). The
-      post-fix verification re-run of `spokeline_char.py` clobbered
-      `spokeline_char.json`'s pre-fix planes (recoverable from the parent
-      commit; the reduced readings survive in the doc). The arcmask sweeps
-      have the same hazard. Version the bank path (`*.pre.json` /
-      `*.post.json`) or refuse to overwrite an existing bank. 💰 A few lines
-      per probe.
+- [x] 🔴 **A RE-RUN PROBE THAT BANKS TO A FIXED JSON PATH OVERWRITES ITS OWN
+      PRE-FIX MEASUREMENT.** Filed 2026-08-17 by D-SPOKELINE (§6).
+      **CLOSED 2026-08-17 by D-DRAWCLAMP**, in the pattern rather than in a
+      note: `drawclamp_char.py` banks to a VERSIONED path
+      (`.pre.json`/`.post.json`) and refuses to overwrite without `--force`,
+      and all three `spokeline_char*.py` probes gained a `bank_guard(OUT)`
+      before their write (`--force` to overwrite, `--out NAME.json` to
+      version). The guard was falsified by EXERCISING it — re-running against
+      an existing bank exits 3 — not by asserting it. ⚠️ The arcmask sweeps
+      still write fixed paths and were left alone.
+
+- [ ] ⚠️ **ZEROBAS'S FULL-SCREEN `BF` FILL OUTRUNS A 20 s EMULATED STEP WHERE
+      THE REFERENCE COMPLETES.** Filed 2026-08-17 by D-DRAWCLAMP (§7).
+      `LINE(0,0)-(300,250),,BF` — whose clamped box is the WHOLE screen,
+      49152 pixels — returned NO reading at all on zerobas boot-per-case at
+      step 20, while the VG-8020 answered; batched at step 2.5 it also
+      desynchronised every case after it. A 56×42 fill is fine, so this is
+      slowness, not a hang, but the factor is **unquantified**: no gate
+      measures time, same blind spot D-ARCMASK's arc-performance row names.
+      `gfx_box_fill` runs one `gfx_draw_seg` per row and every pixel pays a
+      di-guarded VDP read-modify-write. 💰 Not priced — measure it first, with
+      `scratchpad/arcmask_time.py`'s `TIME`-difference method.
 
 - [x] ⚠️ **ZEROBAS DRAWS ARCS 5–6× SLOWER THAN THE REFERENCE, AND FULL CIRCLES
       1.5× FASTER.** Filed 2026-08-17 by D-ARCMASK (§6), measured in VDP frames

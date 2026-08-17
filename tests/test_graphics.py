@@ -811,6 +811,39 @@ def run():
                                            "GFX_Y2"))
         check(got == want, f"gfx_clamp_coords {coords} -> {got} (want {want})")
 
+    # --- gbf_max16 / gfx_bf_gxpos (D-DRAWCLAMP): a box FILL leaves the -------
+    # CLAMPED BOX'S BOTTOM-RIGHT in GXPOS/GYPOS, while GRPACX/GRPACY keep the
+    # raw p2 and the `B` OUTLINE arm leaves GXPOS raw too. Measured on the
+    # VG-8020: `LINE(200,150)-(-30,-20),,BF` reports 200/150 -- which is what
+    # separates max-on-each-axis from "the last pixel the fill painted" (the
+    # fill runs bottom-to-top there, ending at y=0).
+    MAX16_CASES = [
+        ((0, 0), 0), ((5, 9), 9), ((9, 5), 9), ((7, 7), 7),
+        ((0, 255), 255), ((255, 0), 255), ((191, 0), 191),
+    ]
+    for (a, b), want in MAX16_CASES:
+        cpu = m.call("gbf_max16", h=(a >> 8) & 0xFF, l=a & 0xFF,
+                     d=(b >> 8) & 0xFF, e=b & 0xFF)
+        check(cpu.hl == want, f"gbf_max16 max({a},{b}) -> {cpu.hl} (want {want})")
+
+    # The stash holds the CLAMPED corners in either order; the residue is the
+    # per-axis max of the two, never p2 and never the last row painted.
+    BF_GXPOS_CASES = [
+        # (TX1, TY1, TX2, TY2) -> (GXPOS, GYPOS)
+        ((20, 20, 60, 60), (60, 60)),        # on screen, p2 IS the bottom-right
+        ((200, 150, 255, 191), (255, 191)),  # p2 off both edges, post-clamp
+        ((200, 150, 0, 0), (200, 150)),      # p2 is the TOP-LEFT: p1 wins
+        ((0, 191, 255, 0), (255, 191)),      # mixed: each axis decides alone
+        ((255, 191, 255, 191), (255, 191)),  # degenerate
+    ]
+    for coords, want in BF_GXPOS_CASES:
+        for name, v in zip(("GFX_TX1", "GFX_TY1", "GFX_TX2", "GFX_TY2"),
+                           coords):
+            m.poke_w(m.addr(name), _w16(v))
+        m.call("gfx_bf_gxpos")
+        got = (_rd16s(m, "GXPOS"), _rd16s(m, "GYPOS"))
+        check(got == want, f"gfx_bf_gxpos {coords} -> {got} (want {want})")
+
     # --- gfx_circ_keep: the D-ARCMASK step-index wedge, driven point by ------
     # point against the Python oracle (py_keep, the pre-asm simulation).
     # Battery covers: both parities, both wrap states, FULLW, ARCF=0, the two

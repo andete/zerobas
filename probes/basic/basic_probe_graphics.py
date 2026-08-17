@@ -172,7 +172,7 @@ def _assert_band_clamp_is_noop() -> None:
     def new_addrs(xr, yr, color=False):
         return [a + i for a, n in band_segs(xr, yr, color) for i in range(n)]
 
-    for label, _, xr, yr, col in LINE_CASES:
+    for label, _, xr, yr, col in LINE_CASES + DRAW_CLAMP_CASES:
         assert new_addrs(xr, yr, col) == old_addrs(xr, yr, col), f"band moved {label}"
     for label, _, (cx, cy), h, col in CIRCLE_CASES:
         if label in _WIDE_ROWS:             # these rows are deliberately wider
@@ -219,11 +219,44 @@ LINE_CASES = [
     ("clampL_box",    "LINE(-40,20)-(100,80),15,B",   (0, 104), (16, 88), False),
 ]
 
+# --- D-DRAWCLAMP (docs/drawclamp-msx1-characterization.md): DRAW OBEYS THE
+# SAME RULE. `gdrw` reaches the rasteriser by its own path, so the D-SPOKELINE
+# clamp did not cover it and none of the rows above can see it. Same tuple
+# shape and same phase as LINE_CASES -- the mechanism is identical, only the
+# verb differs.
+#
+# ⚠️ THE ROW THAT WAS ALREADY HERE COULD NOT SEE THIS. G6's `clip_left`
+# (phase K, `DRAW"A0S4L100"` off the left edge) is HORIZONTAL, and for an
+# axis-aligned segment clamping the endpoint and clipping the ideal line
+# produce THE SAME PIXELS -- it scored DISCRIMINATING POWER 1 when re-run.
+# `ctlD_clipleft` keeps that geometry as an explicit three-way control instead
+# of a row that merely looks like coverage; every band below was scored against
+# the banked pre/post planes by scratchpad/drawclamp_bands.py before landing.
+DRAW_CLAMP_CASES = [
+    ("clampD_diag",   'PSET(0,0),15:DRAW"A0S4BM-50,-50;M305,241"',
+     (0, 255), (0, 191), False),
+    ("clampD_corner", 'PSET(10,10),15:DRAW"A0S4BM300,300;M400,400"',
+     (232, 255), (168, 191), False),
+    ("clampD_start",  'PSET(10,10),15:DRAW"A0S4BM300,20;M100,80"',
+     (0, 255), (0, 88), False),
+    ("clampD_dir",    'PSET(200,100),15:DRAW"A0S4E100"',
+     (200, 255), (0, 104), False),
+    ("clampD_scaled", 'PSET(100,100),15:DRAW"A0S16M+40,-20"',
+     (96, 255), (16, 104), False),
+    ("clampD_rot",    'PSET(100,100),15:DRAW"A1S4M+250,+40"',
+     (96, 144), (0, 104), False),
+    ("clampD_two",    'PSET(30,30),15:DRAW"A0S4M300,60;M60,150"',
+     (24, 255), (24, 152), False),
+    ("ctlD_clipleft", 'PSET(5,5),15:DRAW"A0S4L100"',
+     (0, 24), (0, 12), False),
+]
+
 
 def phase_c() -> int:
     fails = 0
-    print("=== PHASE C: LINE pixel/colour plane differential (VG-8020 vs zerobas) ===")
-    for label, ops, xr, yr, col in LINE_CASES:
+    print("=== PHASE C: LINE + DRAW pixel/colour plane differential "
+          "(VG-8020 vs zerobas) ===")
+    for label, ops, xr, yr, col in LINE_CASES + DRAW_CLAMP_CASES:
         segs = band_segs(xr, yr, color=col)
         specs = [("stored", prog([LINIT, ops]))]
         ref = omsx_repl.run_cases(REF, specs, batch=False, capture=("vram_segs", segs))[0]
@@ -1349,6 +1382,65 @@ def phase_q_teeth() -> int:
     return fails
 
 
+# =====================================================================
+# D-DRAWCLAMP -- THE WORK-AREA RESIDUE AFTER OFF-SCREEN COORDINATES.
+# docs/drawclamp-msx1-characterization.md.
+#
+# GRPACX/GRPACY ($FCB7/$FCB9, the last-referenced point that STEP resolves
+# against) and GXPOS/GYPOS ($FCB3/$FCB5, the pending-target cells) are PEEKable,
+# so the answer is read as a NUMBER rather than inferred from a rasterised
+# second segment. Every row below is a measured VG-8020 reading.
+#
+# The rule is NOT uniform, which is exactly why the rows are enumerated:
+#   * GRPAC keeps the RAW coordinate everywhere -- LINE, box, BF, DRAW.
+#   * GXPOS keeps the raw p2 after a LINE and after a `B` outline...
+#   * ...but takes the CLAMPED endpoint after a DRAW move, and the clamped
+#     box's BOTTOM-RIGHT after a `BF` fill.
+# Each of the three GXPOS behaviours carries its own on-screen control, where
+# raw and clamped coincide, so a row going red names which rule broke.
+WORKAREA_CASES = [
+    ("w_line_off",   "LINE(0,0)-(300,250),15"),
+    ("w_line_neg",   "LINE(100,100)-(-50,-30),15"),
+    ("w_line_on",    "LINE(10,20)-(100,80),15"),            # control
+    ("w_box_off",    "LINE(0,0)-(300,250),15,B"),
+    ("w_bf_off",     "LINE(200,150)-(300,250),15,BF"),
+    ("w_bf_topleft", "LINE(200,150)-(-30,-20),15,BF"),      # p2 = the TOP-left
+    ("w_bf_on",      "LINE(20,20)-(60,60),15,BF"),          # control
+    ("w_draw_m_off",     'PSET(10,10):DRAW"A0S4M300,250"'),
+    ("w_draw_up_off",    'PSET(100,150):DRAW"A0S4M300,-50"'),
+    ("w_draw_left_down", 'PSET(200,100):DRAW"A0S4M-300,+150"'),
+    ("w_draw_blank_off", 'PSET(10,10):DRAW"A0S4BM300,250"'),
+    ("w_draw_on",        'PSET(10,10):DRAW"A0S4M100,80"'),  # control
+    # the SECOND INSTRUMENT: STEP resolves against GRPAC and PSET stores the
+    # resolved point, so this reads the same cell by a different route.
+    ("w_step_after", "LINE(0,0)-(300,250),15:PSET STEP(-100,-100)"),
+]
+
+WORKAREA_RD = ('SCREEN0:PRINT"W";PEEK(&HFCB7)+256*PEEK(&HFCB8);'
+               'PEEK(&HFCB9)+256*PEEK(&HFCBA);'
+               'PEEK(&HFCB3)+256*PEEK(&HFCB4);'
+               'PEEK(&HFCB5)+256*PEEK(&HFCB6)')
+
+
+def phase_r_workarea() -> int:
+    fails = 0
+    print("=== PHASE R: work-area residue after off-screen coordinates ===")
+    # Boot-per-case at a long step: `w_bf_topleft`'s clamped box is 201x151 and
+    # a full-screen BF outran even a 20 s step on zerobas when this was first
+    # batched -- which returned None for that case AND desynchronised every
+    # case after it. A one-sided rig failure wearing a finding's clothes.
+    specs = [("stored", ["SCREEN2:" + ops, WORKAREA_RD])
+             for _, ops in WORKAREA_CASES]
+    ref = omsx_repl.run_cases(REF, specs, batch=False, step=30.0)
+    zb = omsx_repl.run_cases(ZB, specs, batch=False, step=30.0)
+    for (label, _), r, z in zip(WORKAREA_CASES, ref, zb):
+        ra, za = _answer(r, "W"), _answer(z, "W")
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:18} ref={ra!r} zb={za!r}")
+    return fails
+
+
 def main() -> int:
     _assert_band_clamp_is_noop()      # D-CIRCDOM: the clamp must not move old rows
     fails = (phase_a() + phase_b() + phase_c() + phase_d()
@@ -1356,7 +1448,8 @@ def main() -> int:
               + phase_h() + phase_i_aliasing() + phase_j()
               + phase_k() + phase_l() + phase_m()
               + phase_n() + phase_o() + phase_p()
-              + phase_q_state() + phase_q_behav() + phase_q_teeth())
+              + phase_q_state() + phase_q_behav() + phase_q_teeth()
+              + phase_r_workarea())
     print("-------------------")
     print("graphics-acceptance:", "PASS" if fails == 0 else f"FAIL ({fails})")
     return 1 if fails else 0

@@ -485,6 +485,7 @@ gfx_line_op:
                 dec     a
                 jr      z,glo_box           ; mode 1 -> box outline
                 call    gfx_box_fill        ; mode 2 -> box fill
+                call    gfx_bf_gxpos        ; D-DRAWCLAMP: BF's own work-area residue
                 jr      glo_done
 glo_seg:
                 call    gfx_draw_seg
@@ -845,6 +846,44 @@ gbf_loop:
                 add     hl,de
                 ld      (GFX_Y1),hl
                 jr      gbf_loop
+
+; ---------------------------------------------------------------------------
+; gfx_bf_gxpos -- the GXPOS/GYPOS residue after a box FILL, and it is not p2.
+;
+; 🔴 D-DRAWCLAMP, unpredicted: `LINE(0,0)-(300,250),,BF` leaves GRPACX/GRPACY on
+; the raw 300/250 (like every other LINE) but GXPOS/GYPOS on 255/191. The FILL
+; arm alone does this -- the `B` OUTLINE arm leaves the raw p2 there, measured on
+; the same row set, and both machines already agreed on that, so the outline path
+; is deliberately untouched.
+;
+; The rule is the CLAMPED BOX'S BOTTOM-RIGHT, max on each axis -- NOT "the last
+; pixel the fill painted". `bf_p2_topleft` (`LINE(200,150)-(-30,-20),,BF`)
+; separates them and matches it uniquely: the fill runs bottom-to-top there, so
+; the last row painted is y=0, while the reference reports 200/150.
+;
+; The corners are read from the STASH, which gfx_box_fill leaves untouched --
+; GFX_X1/Y1/X2/Y2 have been overwritten by the row loop by now (Y1 = the last
+; row drawn, which is exactly the value this rule is NOT).
+; ---------------------------------------------------------------------------
+gfx_bf_gxpos:
+                ld      hl,(GFX_TX1)
+                ld      de,(GFX_TX2)
+                call    gbf_max16
+                ld      (GXPOS),hl
+                ld      hl,(GFX_TY1)
+                ld      de,(GFX_TY2)
+                call    gbf_max16
+                ld      (GYPOS),hl
+                ret
+
+; gbf_max16 -- HL = max(HL,DE). Both are post-clamp, so 0..255 with a zero high
+; byte: a single low-byte compare decides it.
+gbf_max16:
+                ld      a,e
+                cp      l
+                ret     c                   ; e < l -> HL is already the max
+                ex      de,hl
+                ret
 
 ; gfx_box_stash -- copy the two corners GFX_X1/Y1/X2/Y2 into GFX_TX1/TY1/TX2/TY2.
 gfx_box_stash:
@@ -2798,8 +2837,23 @@ gdrw_move_rel:
 
 ; ---------------------------------------------------------------------------
 ; gdrw_move_abs -- draw (unless B) from the cursor to (GFX_DTX,GFX_DTY), then
-; advance the cursor (unless N). Off-screen parts clip by masking, inherited
-; from the G3 primitive; GRPAC follows the UNCLIPPED coordinate (measured).
+; advance the cursor (unless N).
+;
+; D-DRAWCLAMP: DRAW OBEYS LINE'S RULE. Both endpoints are CLAMPED to the screen
+; before rasterising -- the ideal line is never clipped. Measured on 12
+; discriminating whole-plane rows (scratchpad/drawclamp_char.py) covering the
+; absolute, relative, scaled, rotated and direction-letter routes to an
+; off-screen target, plus both off-screen starts: the reference matched
+; `clamp_both` on every one and UNIQUELY on `dm_both_off` and `dm_two_seg`.
+; ⚠️ G6's "off-screen motion clips by masking" was never measured against a
+; SLOPED segment -- the gate's only off-screen DRAW row, `clip_left`, is
+; HORIZONTAL, and for an axis-aligned segment clamping and clipping produce the
+; same pixels. It scored DISCRIMINATING POWER 1 when re-run under this probe.
+;
+; GRPAC still follows the UNCLIPPED coordinate (measured, both machines agree:
+; `DRAW"BM300,250"` leaves GRPACX/GRPACY on 300/250) -- so the clamp goes here,
+; below gdrw_move_rel's target arithmetic and above the rasteriser, and the
+; cursor write in gdrw_mv_cursor keeps reading the raw GFX_DTX/GFX_DTY.
 ; ---------------------------------------------------------------------------
 gdrw_move_abs:
                 ld      a,(GFX_DFB)
@@ -2814,6 +2868,7 @@ gdrw_move_abs:
                 ld      (GFX_X2),hl
                 ld      hl,(GFX_DTY)
                 ld      (GFX_Y2),hl
+                call    gfx_clamp_coords    ; D-DRAWCLAMP: both endpoints, as LINE
                 call    gfx_draw_seg        ; the landed G3 rasteriser (EI already on)
                 call    gdrw_gxpos
 gdrw_mv_cursor:
@@ -2833,17 +2888,29 @@ gdrw_mv_cursor:
 ; target there, while an upward move leaves the START there. Same class of
 ; observable-but-odd residue as G4's `GXPOS=r` quirk; matched because GXPOS is
 ; PEEKable and it costs a comparison.
+;
+; 🔴 D-DRAWCLAMP: THE ENDPOINT RULE SURVIVED, THE COORDINATE DID NOT. The cells
+; take the CLAMPED endpoint, not the raw one -- `DRAW"A0S4M300,250"` from (10,10)
+; leaves GXPOS/GYPOS on 255/191 while GRPACX/GRPACY keep 300/250. Three rows pin
+; it uniquely (scratchpad/drawclamp_wa2.py): `draw_up_off` kills "always the
+; target" (an upward move leaves the START there, as this rule already said) and
+; `draw_left_down` kills "the last pixel plotted" (x-major leftward: the last
+; pixel is the greater-X end, the reference reports the greater-Y one).
+; So this reads GFX_X2/GFX_Y2 -- the endpoint cells AFTER gfx_clamp_coords --
+; instead of the raw GFX_DTX/GFX_DTY. Clamping is monotonic, so "clamp then pick
+; the greater y" and "pick the greater y then clamp" agree, ties included.
+; gfx_bres_init only READS these four cells, so the segment's own rasterisation
+; leaves them intact for us here.
 ; ---------------------------------------------------------------------------
 gdrw_gxpos:
-                ld      hl,(GFX_DTY)
-                ld      de,(GFX_Y1)         ; Y1 = the start y (gfx_draw_seg preserves
-                                            ; the marshalled endpoint cells)
+                ld      hl,(GFX_Y2)         ; the CLAMPED target y
+                ld      de,(GFX_Y1)         ; the CLAMPED start y
                 or      a
                 sbc     hl,de               ; target.y - start.y
                 jp      m,gdrw_gx_start     ; target is HIGHER up -> the start wins
-                ld      hl,(GFX_DTX)
+                ld      hl,(GFX_X2)
                 ld      (GXPOS),hl
-                ld      hl,(GFX_DTY)
+                ld      hl,(GFX_Y2)
                 ld      (GYPOS),hl
                 ret
 gdrw_gx_start:

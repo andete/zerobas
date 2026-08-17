@@ -55,6 +55,18 @@ LINIT = "COLOR15,4,7:SCREEN2"
 PLANE = [(0, 6144)]
 OUT = os.path.join(HERE, "spokeline_char.json")
 
+# D-DRAWCLAMP: REFUSE TO CLOBBER A BANK. This probe's own pre-fix planes were
+# overwritten by its post-fix verification re-run (D-SPOKELINE §6) -- the
+# measurement a whole slice rested on, gone to a second `python3 ...` with no
+# argument. Pass --force to overwrite deliberately, or --out NAME to version it.
+
+def bank_guard(path):
+    import sys as _s
+    if os.path.exists(path) and "--force" not in _s.argv:
+        print(f"REFUSING to overwrite an existing bank: {path}\n"
+              "  pass --force to overwrite, or --out NAME.json to version it")
+        raise SystemExit(3)
+
 
 def clamp_pt(x, y):
     return max(0, min(W - 1, x)), max(0, min(H - 1, y))
@@ -204,6 +216,7 @@ def main():
         v = "agree" if rr == zz else "DIFF "
         print(f"  {v} {lbl:13} ref={rr}  matches: {names_r or 'NONE'}{flag}")
         print(f"        zb ={zz}")
+    bank_guard(OUT)
     with open(OUT, "w") as f:
         json.dump(out, f)
     print(f"\n=== zerobas misses: {zmiss};  planes -> {OUT} ===")
