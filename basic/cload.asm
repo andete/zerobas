@@ -603,10 +603,35 @@ err_verify:     db      "Verify",MSGESC_ERROR,0         ; 15 B -> 8 B
 ; BETWEEN two TAPINs desyncs the next byte. ascii_read_lines does a full
 ; dispatch_line/tokenise/store_line per line, far more than enough to desync (a
 ; 34-byte file corrupted after line 1 in an unbuffered first cut). So cal_getbyte
-; serves bytes instantly from the 256-byte CAL_BUF, refilled (cal_refill) by a
-; tight TAPIN*256 loop only at a block boundary — exactly how real MSX slurps a
-; block then tokenises during the inter-block leader gap. Symmetric with
+; serves bytes instantly from a 256-byte buffer, refilled (cal_refill) by a tight
+; TAPIN*256 loop only at a block boundary — exactly how real MSX slurps a block
+; then tokenises during the inter-block leader gap. Symmetric with
 ; fat_io_getbyte serving from the 512-byte FSECTOR_BUF on disk.
+;
+; DOUBLE-BUFFERED (CAL_BUF / CAL_BUF2, sysvars.inc CAL_CURHI), not single: a
+; single buffer's refill-on-drain still calls TAPION for block N+1 only once
+; block N is fully drained, i.e. after ascii_read_lines has tokenised every line
+; block N held. The tape keeps playing throughout that tokenise work (requirement
+; 2 below), so a block with unusually slow-to-tokenise lines (long ones: nested
+; parens, several keywords) lets the tape run past block N+1's leader before
+; TAPION is even called — TAPION then locks onto whatever cycles happen to be at
+; the CURRENT, too-late position, which on a well-formed tape is misaligned data
+; rather than a leader, and the very first TAPIN of that "block" fails.
+; (Measured: a single buffer here fixed the ORIGINAL bug — a 21-line, 4-block
+; real program truncating after line 50 — but only moved the failure to one
+; block later, truncating after line 110 instead of surviving to the end.)
+;
+; So every block is read ONE BLOCK AHEAD of when ascii_read_lines actually needs
+; it: cas_ascii_setup primes block 1 into one buffer, then IMMEDIATELY (before
+; any tokenising) primes block 2 into the other. Thereafter, cal_getbyte drains
+; whichever buffer CAL_CURHI names, and on the byte that drains it, SWAPS to the
+; other one (already pre-fetched — an instant swap, no TAPION on the byte-serve
+; path) and kicks off refilling the just-freed buffer with the block after next.
+; A block's own TAPION therefore always fires when the block BEFORE its
+; predecessor drains — one whole block's tokenise time earlier than a single
+; buffer gives it, which is what let the same 21-line program's block 4 succeed
+; (block 3's slow lines no longer delay block 4's own TAPION — see
+; sysvars.inc's CAL_CURHI comment and docs/spec-cas-ascii-saveload.md).
 ;
 ; TWO HARD REQUIREMENTS ON cal_refill, both learned the hard way:
 ;  (1) STATE LIVES IN RAM, NOT ON THE STACK, ACROSS TAPIN. TAPIN clobbers every
@@ -616,19 +641,20 @@ err_verify:     db      "Verify",MSGESC_ERROR,0         ; 15 B -> 8 B
 ;      reads byte-perfect came back all-zero through a stack-guarded loop). So the
 ;      fill keeps its position in CAL_CNT (RAM) and recomputes the address each
 ;      byte — the same "state in RAM across a BIOS tape call" discipline
-;      do_tape_prog's ctp_body uses (it guards CLPTR in RAM, not the stack).
-;  (2) THE DATA-BLOCK TAPION MUST BE PROMPT. Deferring it past new_prog + the
-;      ascii-reader entry makes it miss the block leader and fail to relock. So
-;      block 1 is primed HERE, right after the header skip, in the same
-;      back-to-back regime as do_tape_prog. cal_getbyte then TAPIONs only blocks
-;      2+, the safe mid-tape re-lock the 256-byte format is built around.
+;      do_tape_prog's ctp_body uses (it guards CLPTR in RAM, not the stack). The
+;      fill TARGET (which buffer) lives in RAM too (CAL_CURHI), for the same reason.
+;  (2) THE DATA-BLOCK TAPION MUST BE PROMPT — for EVERY block, not just block 1.
+;      Deferring it past new_prog + the ascii-reader entry makes it miss the block
+;      leader and fail to relock. Block 1 is primed HERE, right after the header
+;      skip, back-to-back like do_tape_prog; block 2 is primed immediately after
+;      block 1, just as promptly. cal_getbyte's steady-state read-ahead (below)
+;      keeps every later block just as prompt, one block early.
 ;
-; CAL_NEEDFILL=0 means "CAL_BUF holds a live block"; cal_getbyte sets it on each
-; 256-byte wrap so the NEXT call refills. ascii_read_lines stops at the first
-; Ctrl-Z ($1A) — which every producer puts in the LAST real block (§0.1) — so we
-; never refill past the program (a TAPIN fail on a non-existent block is never
-; reached on a well-formed tape). `,R`/RUN is unchanged — the caller (do_load's
-; LOAD"CAS:",R / do_cload) applies RUNFLAG exactly as the tokenised path's `ret`.
+; ascii_read_lines stops at the first Ctrl-Z ($1A) — which every producer puts in
+; the LAST real block (§0.1) — so the reader stops before ever draining the final
+; block, and the read-ahead is never asked for a non-existent block on a
+; well-formed tape. `,R`/RUN is unchanged — the caller (do_load's LOAD"CAS:",R /
+; do_cload) applies RUNFLAG exactly as the tokenised path's `ret`.
 cas_ascii_load:
                 call    cas_ascii_setup     ; skip the rest of the header + prime block 1
                 jp      c,dpl_err           ; header / block-1 unreadable -> load error
@@ -640,20 +666,42 @@ cas_ascii_load:
                                             ; `jp c` above did not take), so the ASCII
                                             ; success path needs no `or a` -- 0 bytes
 
-; --- cas_ascii_setup: prime data block 1 of an $EA cassette file --------------
+; --- cas_ascii_setup: prime data blocks 1 AND 2 of an $EA cassette file -------
 ; The whole 16-byte header (id + name) is now consumed upstream by cas_open_match
-; (Tier-3 name-matching), so this only PRIMES the first data block. Shared by
-; cas_ascii_load (LOAD), merge_cas and oo_dev_cas (all of which reach it via
-; cas_open_match). Leaves CAL_BUF holding a live block, CAL_NEEDFILL=0, CAL_CNT=0.
+; (Tier-3 name-matching), so this PRIMES the first data block -- then, for the
+; double buffer (cload.asm header comment), the SECOND, just as promptly, before
+; any caller processing. Shared by cas_ascii_load (LOAD), merge_cas and
+; oo_dev_cas (all of which reach it via cas_open_match).
+; Leaves CAL_CURHI = CAL_BUF (block 1 is what gets served first), CAL_CNT = 0,
+; and CAL_NEEDFILL reporting whether CAL_BUF2 holds a genuine block 2 (0) or the
+; file was only ever one block long (1 -- fine, ascii_read_lines's Ctrl-Z stops
+; it inside block 1 well before a block 2 would ever be asked for).
 ;   out: CF set = data block 1 read failed.
 cas_ascii_setup:
-                ; prime block 1 PROMPTLY (TAPION + fill, back-to-back) so the
-                ; data-block TAPION stays in the same regime as do_tape_prog's.
+                ; cal_refill fills "whichever buffer CAL_CURHI is NOT pointing
+                ; at" (cal-refill-body.inc), so set CAL_CURHI to CAL_BUF2's high
+                ; byte FIRST -- that makes this call fill CAL_BUF (block 1),
+                ; TAPION + fill back-to-back so it stays in do_tape_prog's regime.
+                ld      a,CAL_BUF2 >> 8
+                ld      (CAL_CURHI),a
                 call    cal_refill          ; data block 1 leader + slurp 256 bytes
                 ret     c                   ; block 1 unreadable -> CF
+                ; Block 1 is ready. NOW point CAL_CURHI at CAL_BUF (it IS what
+                ; gets served first) and refill AGAIN -- cal_refill will target
+                ; the buffer CAL_CURHI is NOT pointing at, i.e. CAL_BUF2, priming
+                ; block 2 immediately, before ascii_read_lines has tokenised a
+                ; single byte of block 1.
+                ld      a,CAL_BUF >> 8
+                ld      (CAL_CURHI),a
+                call    cal_refill          ; data block 2 leader + slurp 256 bytes
+                ld      a,0
+                jr      nc,cas_1blk
+                ld      a,1                 ; no block 2 -> a genuine 1-block file
+cas_1blk:
+                ld      (CAL_NEEDFILL),a
                 xor     a
-                ld      (CAL_NEEDFILL),a    ; CAL_BUF now holds a live block (CAL_CNT=0)
-                ret
+                ld      (CAL_CNT),a         ; serve CAL_BUF (block 1) from position 0
+                ret                         ; CF clear: block 1 primed OK (own contract)
 
 ; --- cas_ascii_drive: run ascii_read_lines off the tape byte source, then restore
 ; the default (disk) source and stop the motor. Shared by cas_ascii_load (LOAD) and
@@ -673,36 +721,65 @@ cas_ascii_drive:
                 ret
 
 ; --- cal_getbyte: cassette ASCII-load byte source (D2 indirection target) ----
-; Serves the next byte from CAL_BUF at position CAL_CNT (0..255) instantly — NO
-; tape I/O — so the tokenise/store work ascii_read_lines does between calls is
-; harmless. When the previous call drained the block (position wrapped 255->0),
-; CAL_NEEDFILL is set and this call first TAPION-relocks + slurps the next block
-; (cal_refill) before serving. CAL_BUF is page-aligned ($E600), so the byte
-; address is high=$E6 / low=CAL_CNT.
-;   out: A = byte, CF clear; or CF set = no more data (refill failed).
+; Serves the next byte from whichever buffer CAL_CURHI names, at position
+; CAL_CNT (0..255), instantly — NO tape I/O — so the tokenise/store work
+; ascii_read_lines does between calls is harmless. The byte that DRAINS a buffer
+; (position wraps 255->0) SWAPS CAL_CURHI to the other one, which the double
+; buffer guarantees is ALREADY pre-fetched (an instant swap, no TAPION on this
+; path) — then kicks off refilling the just-freed buffer with the block after
+; next, so a fresh block is always one full block ahead of when it's needed
+; (requirement 2; see the header comment above and sysvars.inc's CAL_CURHI).
+; The drained byte is parked in CAL_SAVE across that refill (requirement 1).
+;   out: A = byte, CF clear; or CF set = no more data at all.
 cal_getbyte:
                 ld      a,(CAL_NEEDFILL)
-                or      a
-                jr      z,cal_serve         ; buffer still has bytes -> serve
-                call    cal_refill          ; drained -> slurp the next block
-                ret     c                   ; block missing / read fail -> EOF
-                xor     a
-                ld      (CAL_NEEDFILL),a    ; fresh block loaded (CAL_CNT = 0)
-cal_serve:
+                cp      2
+                jr      z,cal_geof          ; a prior drain hit true EOF -> report it now
+                ld      a,(CAL_CURHI)
+                ld      h,a
                 ld      a,(CAL_CNT)
-                ld      l,a
-                ld      h,CAL_BUF >> 8      ; HL = CAL_BUF + CAL_CNT (page-aligned)
+                ld      l,a                 ; HL = CAL_CURHI's buffer + CAL_CNT
                 ld      a,(hl)              ; A = the byte to return
-                ld      b,a                 ; save it across the counter bump
+                ld      b,a                 ; hold it across the bump (and any swap/refill)
                 ld      a,l
                 inc     a                   ; advance position; 255 -> 0 wraps (8-bit)
                 ld      (CAL_CNT),a
-                jr      nz,cal_srv_ret      ; still within the block -> done
-                ld      a,1
-                ld      (CAL_NEEDFILL),a    ; block exhausted -> next call refills
+                jr      nz,cal_srv_ret      ; still within the buffer -> done
+                ; This buffer just drained on the byte in B. Is the OTHER one
+                ; (the read-ahead target) actually holding a block?
+                ld      a,(CAL_NEEDFILL)
+                or      a
+                jr      z,cal_gb_swap
+                ; No -- this was genuinely the last byte on the tape. Return it
+                ; (already read fine) but latch a TERMINAL eof so the very next
+                ; call reports CF without touching either buffer again.
+                ld      a,2
+                ld      (CAL_NEEDFILL),a
+                jr      cal_srv_ret
+cal_gb_swap:
+                ld      a,(CAL_CURHI)
+                xor     CAL_XORHI           ; A = the OTHER (pre-fetched) buffer's high byte
+                ld      (CAL_CURHI),a       ; swap -- CAL_CNT is already 0, correct for it
+                ; Now read AHEAD again: refill the buffer we just swapped OUT of
+                ; (now free) with the block after next. cal_refill targets
+                ; "whichever buffer CAL_CURHI is NOT pointing at", which after the
+                ; swap above is exactly the just-freed one.
+                ld      a,b
+                ld      (CAL_SAVE),a        ; the drained byte must survive TAPIN
+                call    cal_refill
+                ld      a,0
+                jr      nc,cal_gb_flag
+                ld      a,1                 ; no block after next -> fine, EOF stops first
+cal_gb_flag:
+                ld      (CAL_NEEDFILL),a
+                ld      a,(CAL_SAVE)
+                ld      b,a                 ; restore the byte to return
 cal_srv_ret:
                 ld      a,b
                 or      a                   ; CF clear = byte valid
+                ret
+cal_geof:
+                scf                         ; terminal EOF, latched by a prior drain
                 ret
 
 ; --- cas_in_getbyte: OPEN"CAS:" FOR INPUT byte source (ARL_GETBYTE target) ----

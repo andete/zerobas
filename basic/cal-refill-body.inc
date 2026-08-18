@@ -18,13 +18,23 @@
 ; Clean-room: our own code, extracted verbatim from basic/cload.asm (see
 ; that file's header for the cassette file-format provenance).
 
-; --- cal_refill: TAPION-relock + slurp one 256-byte tape block into CAL_BUF --
+; --- cal_refill: TAPION-relock + slurp one 256-byte tape block into WHICHEVER
+; buffer CAL_CURHI is NOT currently pointing at ---------------------------------
 ; TAPION then a tight TAPIN*256 loop that keeps its position in CAL_CNT (RAM) —
 ; NOTHING on the stack across TAPIN (requirement 1 in the cas_ascii_load header),
-; and no gap between the lock and the first read (requirement 2). Leaves CAL_CNT
-; = 0 (wrapped after 256) so the caller/cal_getbyte serves from position 0.
-; TAPION failure (no such block) or a TAPIN short-read (corrupt/truncated tape)
-; -> CF set = EOF.
+; and no gap between the lock and the first read (requirement 2). The fill
+; TARGET is derived fresh each byte as CAL_CURHI XOR CAL_XORHI (RAM + a constant,
+; not a register — TAPIN clobbers everything, same reason CAL_CNT lives in RAM).
+; Every caller of cal_refill wants "the buffer I am not currently serving/using"
+; filled: cal_getbyte's double-buffer read-ahead (basic/cload.asm) wants the
+; JUST-DRAINED buffer refilled with the block after next, and cas_ascii_setup
+; primes block 1 then block 2 by toggling CAL_CURHI between calls (see cload.asm).
+; cas_skip_data's csd_ascii arm (sub/casmatch.asm) wants a SINGLE fixed buffer
+; (CAL_BUF) every call, which it gets for free by setting CAL_CURHI to CAL_BUF2's
+; high byte ONCE before its loop and never touching it again.
+; Leaves CAL_CNT = 0 (wrapped after 256) so a caller that then swaps CAL_CURHI to
+; this buffer serves from position 0. TAPION failure (no such block) or a TAPIN
+; short-read (corrupt/truncated tape) -> CF set = EOF.
 cal_refill:
                 call    TAPION              ; (re-)lock onto the block's leader
                 ret     c                   ; no block -> EOF
@@ -34,9 +44,11 @@ cal_fill_lp:
                 call    TAPIN               ; clobbers all; position is in CAL_CNT (RAM)
                 jr      c,cal_fill_fail     ; short block / read fail -> EOF
                 ld      c,a                 ; C = the byte
+                ld      a,(CAL_CURHI)
+                xor     CAL_XORHI           ; A = the OTHER buffer's high byte
+                ld      h,a
                 ld      a,(CAL_CNT)
-                ld      l,a
-                ld      h,CAL_BUF >> 8      ; HL = CAL_BUF + pos (page-aligned)
+                ld      l,a                 ; HL = (not-CAL_CURHI) + pos
                 ld      (hl),c
                 inc     a
                 ld      (CAL_CNT),a         ; pos++ (255 -> 0 ends the 256-byte block)

@@ -220,6 +220,75 @@ def main() -> int:
         print(f"        expect: {prog.hex()}")
         print(f"        got:    {got}")
 
+    # --- Assertion 4: 4-block ASCII load (>768 bytes -> 4 tape blocks), with -----
+    # lines dense enough to genuinely exercise the read-ahead margin -------------
+    # A minimal-baud-agnostic "PRINTn"-style synthetic (assertion 2's shape) does
+    # NOT reproduce the bug this guards: uniform short lines tokenise fast enough
+    # that even a single-buffer refill-on-drain keeps up. The regression this
+    # caught (docs/spec-cas-ascii-saveload.md) needed REAL program-shaped lines --
+    # nested parens, IF/AND/OR, multi-statement colons -- whose tokenise cost is
+    # high enough that a block boundary landing mid-line (or mid-CRLF) lets the
+    # tape's own real-time playback outrun a too-shallow read-ahead.
+    #
+    # This is not an invented worst case: it is modelled directly on the ACTUAL
+    # 21-line, 867-byte, 4-block program that surfaced the bug (a small MSX1
+    # Snake game -- the parens/AND/colon-dense IF lines below are its own,
+    # verbatim), which genuinely truncated after line 50 with no read-ahead at
+    # all and after line 110 under a single-buffer refill-on-drain (one block's
+    # tokenise cost late). (One line of the original, `DEFINT A-Z`, is left out
+    # here: it hits an unrelated, pre-existing tokeniser discrepancy between the
+    # bas_tokenise oracle and the runtime -- a separate bug, not this one -- so
+    # keeping it out of this assertion's content keeps a FAIL here unambiguous.)
+    # Deliberately denser synthetics (packing maximal complexity into every one
+    # of 20 lines, ~1300 bytes / 6 blocks) can still outrun even this double
+    # buffer -- that is a real, separate robustness ceiling (arbitrarily heavy
+    # tokenise work will always eventually outrun a FIXED read-ahead depth), not
+    # a regression of the bug this test guards. Keeping this assertion at the
+    # bug's own reported density, rather than an open-ended harder one, is what
+    # makes it a faithful regression guard instead of a moving target.
+    print("Assertion 4 — 4-block ASCII load (>768 bytes, real-program density):")
+    complex_lines = [
+        (10, 'SCREEN0:WIDTH40:KEYOFF:DIMBX(255),BY(255)'),
+        (20, 'FORI=0TO39:VPOKEI,35:VPOKE920+I,35:NEXT'),
+        (30, 'FORI=1TO22:VPOKEI*40,35:VPOKEI*40+39,35:NEXT'),
+        (40, 'X=20:Y=12:DX=1:DY=0:H=0:T=0:VPOKEY*40+X,79:BX(0)=X:BY(0)=Y'),
+        (50, 'GOSUB200'),
+        (60, 'S=STICK(0):IFSTHENGOSUB300'),
+        (70, 'NX=X+DX:NY=Y+DY:C=VPEEK(NY*40+NX)'),
+        (80, 'IFC=42THENG=1ELSEIFC=32THENG=0ELSE500'),
+        (90, 'X=NX:Y=NY:VPOKEY*40+X,79:H=(H+1)AND255:BX(H)=X:BY(H)=Y'),
+        (100, 'IFGTHENGOSUB200:GOTO60'),
+        (110, 'VPOKEBY(T)*40+BX(T),32:T=(T+1)AND255:GOTO60'),
+        (200, 'FX=INT(RND(1)*38)+1:FY=INT(RND(1)*22)+1:IFVPEEK(FY*40+FX)<>32THEN200'),
+        (210, 'VPOKEFY*40+FX,42:RETURN'),
+        (300, 'ONSGOTO310,320,320,320,330,340,340,340'),
+        (310, 'QX=0:QY=-1:GOTO350'),
+        (320, 'QX=1:QY=0:GOTO350'),
+        (330, 'QX=0:QY=1:GOTO350'),
+        (340, 'QX=-1:QY=0'),
+        (350, 'IF(H<>T)AND(QX=-DX)AND(QY=-DY)THENRETURN'),
+        (360, 'DX=QX:DY=QY:RETURN'),
+        (500, 'LOCATE15,11:PRINT"GAME OVER":END'),
+    ]
+    complex_src = [f"{n} {s}" for n, s in complex_lines]
+    ctext_len = sum(len(s) + 2 for s in complex_src) + 1           # +CRLF each +Ctrl-Z
+    cblocks = (ctext_len + 255) // 256
+    cas = os.path.join(tmp, "complex4.cas")
+    open(cas, "wb").write(build_ascii_cas("CPLX4", complex_src))
+    expect = make_multiline_program(complex_lines, TXTBASE)
+    got = load_capture_txt(args.cart, cas, len(expect) + 8, 'LOAD"CAS:"',
+                           cap_time=60.0)
+    c4 = got is not None and got.startswith(expect.hex())
+    ok &= c4
+    print(f"  [{'PASS' if c4 else 'FAIL'}] {len(complex_lines)}-line ({ctext_len}-byte, "
+          f"{cblocks} blocks) ASCII program loads byte-identical")
+    if cblocks < 4:
+        print(f"        WARNING: only {cblocks} blocks -- widen complex_lines so this "
+              f"stays a >=4-block (>768 byte) case")
+    if not c4:
+        print(f"        expect: {expect.hex()}")
+        print(f"        got:    {got}")
+
     shutil.rmtree(tmp, ignore_errors=True)
     print("CAS-ASCII:", "PASS" if ok else "FAIL")
     return 0 if ok else 1

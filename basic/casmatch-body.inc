@@ -94,7 +94,10 @@ com_miss:
 ;        re-inits it).
 ;   $EA ASCII    -> N 256-byte blocks: cal_refill each, scan CAL_BUF for Ctrl-Z
 ;        ($1A); stop after the block that contains it (the ASCII soft-EOF every
-;        producer puts in the last block, spec-cas-ascii-saveload §0.1).
+;        producer puts in the last block, spec-cas-ascii-saveload §0.1). Skipping
+;        has no tokenise work between blocks (it only scans for Ctrl-Z), so it
+;        wants the single fixed buffer cal_refill originally gave every caller,
+;        not cload.asm's double-buffered read-ahead — see csd_ascii below.
 ;   else -> CF (an unknown file mid-tape is corruption; do not spin).
 ;   out: CF clear = data consumed; CF set = tape read error.
 cas_skip_data:
@@ -105,7 +108,15 @@ cas_skip_data:
                 jr      z,csd_ascii
                 scf                         ; unknown id -> error
                 ret
+; cal_refill (cal-refill-body.inc) fills "whichever buffer CAL_CURHI is NOT
+; pointing at" for cload.asm's double-buffered read-ahead. This loop wants a
+; SINGLE fixed target (CAL_BUF, scanned directly below) every call, which it
+; gets for free by pointing CAL_CURHI at CAL_BUF2 ONCE, here, before the loop —
+; csd_ascii never touches CAL_CURHI again, so every cal_refill call keeps
+; targeting CAL_BUF, unchanged from before cload.asm grew a second buffer.
 csd_ascii:
+                ld      a,CAL_BUF2 >> 8
+                ld      (CAL_CURHI),a
                 call    cal_refill          ; TAPION + slurp 256 into CAL_BUF; CF = EOF/err
                 ret     c
                 ld      hl,CAL_BUF

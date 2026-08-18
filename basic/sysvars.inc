@@ -2244,22 +2244,80 @@ DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
 DISKSLOT        equ     $E0E7   ; disk ROM slot id for CALSLT (1)
 DISKSLOT_OK     equ     $E0E8   ; 1 = DISKSLOT holds a valid disk-ROM slot id
 ; BSAVE/BLOAD ",S" VRAM select (page $E0 free gap $E0E9..$E0EC; dead outside a
-; BSAVE/BLOAD). 1 = the ",S" flag was given -> the data bytes stream to/from VRAM
+; BSAVE/BLOAD) -- also cassette ASCII load's CAL_CURHI (below): a BSAVE/BLOAD
+; ",S" and a cassette ASCII LOAD/CLOAD never run at the same time, so the two
+; overlay (same discipline as CAL_CNT/CAL_NEEDFILL/CAL_SAVE further down).
+; VRAM_FLAG: 1 = the ",S" flag was given -> the data bytes stream to/from VRAM
 ; (RDVRM/WRTVRM) instead of RAM; the $FE header start/end/exec are stored/read
 ; verbatim as VRAM addresses. Cleared at the top of every BSAVE/BLOAD parse.
 VRAM_FLAG       equ     $E0E9   ; 1 = ",S" VRAM save/load (1)
+; CAL_CURHI: cassette ASCII load's DOUBLE-BUFFER "which buffer is being served"
+; pointer -- the high byte of CAL_BUF ($E6) or CAL_BUF2 ($E8), CAL_CNT (below)
+; being the low byte. TWO 256-byte buffers, not one, because a SINGLE buffer's
+; refill-on-drain (the earlier fix here) still calls TAPION for block N+1 only
+; once block N is fully DRAINED -- i.e. after ascii_read_lines has tokenised
+; every line block N held. On a real cassette the tape keeps moving the whole
+; time (cload.asm requirement 2), so a block whose lines are unusually slow to
+; tokenise (long/complex ones: nested parens, several keywords) lets the tape
+; play past block N+1's leader before TAPION is even called -- TAPION then
+; locks onto whatever short/long cycles happen to be at the CURRENT (too-late)
+; position, which on a well-formed tape is misaligned data, not a leader, and
+; the very first TAPIN of that "block" fails (measured: a real 21-line, 4-block
+; program truncated after line 110, one text block earlier than the reported
+; bug, once the single-buffer fix moved the failure from block 2 to block 4 --
+; docs/spec-cas-ascii-saveload.md).
+;
+; The double buffer gives every block's TAPION a full extra block's worth of
+; head start: cas_ascii_setup primes block 1 into one buffer, then IMMEDIATELY
+; (before any tokenising) primes block 2 into the other -- back-to-back, same
+; regime as block 1 alone always used. Thereafter, draining the buffer CAL_CURHI
+; points at swaps to the other (already pre-fetched -- an instant swap, no
+; TAPION on the critical path) and kicks off refilling the JUST-FREED buffer
+; with the block after next. So a block's own TAPION always fires when the
+; block BEFORE its predecessor drains -- one whole block's tokenise time
+; earlier than a single-buffer scheme -- covering realistic per-line tokenise
+; cost (confirmed: this is what let a 4-block real program's block 4 succeed
+; where it failed under the single-buffer fix, block 3's slow lines no longer
+; delaying block 4's own TAPION).
+;
+; cal_refill (cal-refill-body.inc) always fills "whichever buffer CAL_CURHI is
+; NOT pointing at", derived per TAPIN'd byte (CAL_CURHI can't ride a register
+; across TAPIN, which clobbers everything) as CAL_CURHI XOR CAL_XORHI (an
+; assembly-time constant, CAL_BUF>>8 XOR CAL_BUF2>>8 -- no extra RAM needed
+; since XORing either buffer's own high byte into that constant yields the
+; other). cas_skip_data's csd_ascii arm (sub/casmatch.asm, the OTHER cal_refill
+; caller sharing this .inc) wants a single fixed buffer, not double-buffering --
+; it gets that by setting CAL_CURHI to CAL_BUF2's high byte ONCE before its
+; loop and never touching it again, so every cal_refill call in that loop keeps
+; targeting CAL_BUF, unchanged from before this fix.
+CAL_CURHI       equ     $E0E9   ; cassette ASCII load: high byte of the CURRENTLY
+                                ; SERVED buffer, CAL_BUF ($E6) or CAL_BUF2 ($E8) (1)
 ; Cassette ASCII load (cload.asm cal_getbyte) read position within the current
 ; 256-byte tape block, 0..255 (§0.1: fixed 256-byte tape data blocks). Also the
-; refill trigger: == 0 at getbyte entry means "buffer drained -> slurp the next
-; block". Dead outside a cassette ASCII LOAD/CLOAD — never live at the same time
-; as a BSAVE/BLOAD ",S" — so it reuses the same free gap (like IN_RDLEN and
-; FILES_ENTIDX below overlay each other).
+; drain trigger: wrapping 255->0 means "this buffer is now empty -> swap to the
+; pre-fetched other one". Dead outside a cassette ASCII LOAD/CLOAD — never live
+; at the same time as a BSAVE/BLOAD ",S" — so it reuses the same free gap (like
+; IN_RDLEN and FILES_ENTIDX below overlay each other).
 CAL_CNT         equ     $E0EA   ; cassette ASCII load: read position in the
                                 ; current 256-byte tape block, 0..255 (1)
-CAL_NEEDFILL    equ     $E0EB   ; cassette ASCII load: 1 = CAL_BUF drained, the
-                                ; next cal_getbyte must TAPION+refill (blocks 2+);
-                                ; block 1 is primed promptly by cas_ascii_load so
-                                ; its TAPION stays in TAPION's di regime (1)
+CAL_NEEDFILL    equ     $E0EB   ; cassette ASCII load: whether the buffer CAL_CURHI
+                                ; does NOT point at holds a live pre-fetched block.
+                                ; 0 = it does (the normal, steady-state case: swap
+                                ; to it freely on drain). 1 = a read-ahead attempt
+                                ; found no further block (checked only at a drain,
+                                ; before swapping -- fine on a well-formed tape,
+                                ; where ascii_read_lines stops at Ctrl-Z first).
+                                ; 2 = TERMINAL: the drain that just happened was
+                                ; genuinely the last byte on the tape (no buffer
+                                ; left to swap to) -- the byte itself is still
+                                ; returned, but the NEXT cal_getbyte call reports
+                                ; CF with no further buffer access (1)
+; cal_getbyte parks the block's last byte here while cal_refill's 256-TAPIN slurp of
+; the read-ahead buffer overwrites the OTHER buffer -- the held byte cannot ride
+; the stack across TAPIN (requirement 1 in cload.asm). Overlays CAS_WCNT ($E0EC):
+; that is the cassette SAVE block counter, dead during a LOAD, so the two never
+; collide.
+CAL_SAVE        equ     $E0EC   ; cassette ASCII load: parked byte across a prefetch (1)
 ; Cassette ASCII SAVE (save.asm cas_wbyte) block-fill counter: bytes buffered into
 ; CAS_WBUF for the current 256-byte tape data block, 0..255 (§0.1). cas_wbyte does
 ; NOT TAPOUT per byte — like the READ side's block buffer, tape signalling is
@@ -2952,6 +3010,17 @@ CAS_VMIS        equ     $F019   ; sticky: 1 = a verify mismatch was seen (1)
 ; of the tokenise/dispatch path (page $E0..$E3), LINEBUF ($E100), and program
 ; text ($8001+).
 CAL_BUF         equ     $E600   ; cassette ASCII load: 256-byte tape block buffer (in idle FSECTOR_BUF)
+; CAL_BUF2: the double buffer's SECOND 256-byte block buffer (see CAL_CURHI above).
+; Page-aligned at $E800, entirely inside the idle FWBUF ($E7C0..$E9BF, FAT/dir
+; metadata scratch) -- a cassette ASCII load does no disk I/O, so FWBUF is as dead
+; for it as FSECTOR_BUF (CAL_BUF's home) is. CAL_XORHI is the constant that recovers
+; "the other buffer" from CAL_CURHI without extra RAM: CAL_BUF>>8 XOR CAL_BUF2>>8 --
+; XORing either buffer's own high byte into it yields the other one.
+CAL_BUF2        equ     $E800   ; cassette ASCII load: 256-byte read-ahead buffer (in idle FWBUF)
+; pasmo has no XOR operator in EQU expressions, so this is the literal result of
+; ($E6 XOR $E8): CAL_BUF>>8 is $E6 (1110_0110), CAL_BUF2>>8 is $E8 (1110_1000);
+; XORed, the shared high bits cancel and $0E (0000_1110) is what's left.
+CAL_XORHI       equ     $0E     ; = (CAL_BUF>>8) XOR (CAL_BUF2>>8)
 ; Cassette ASCII SAVE (save.asm cas_wbyte / cas_flush_block) uses the SAME 256-byte
 ; buffer for the WRITE mirror: list_walk fills it a byte at a time (no tape I/O), and
 ; a full block is flushed in one tight TAPOUT*256 loop so the inter-byte gaps stay
