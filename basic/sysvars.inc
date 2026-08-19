@@ -3101,8 +3101,16 @@ FOR_CUR         equ     $E045   ; scratch: a working copy of one FOR frame (11),
 ; store and two loads on mutually exclusive branches), and FOR_CUR grew over it.
 GOSUB_STK       equ     $E050   ; GOSUB return-stack base
 GOSUB_DEPTH     equ     8
-GOSUB_STK_END   equ     GOSUB_STK + GOSUB_DEPTH*4   ; $E070
-; $E070..$E0B8 was FOR_STK — 72 B, FREE since D-FORVAR relocated the stack (above).
+GOSUB_FRAME     equ     6       ; D-FORRET: [CURLINE:2][resume:2][FSP-at-push:2].
+                                ; The third field is what lets RETURN discard the
+                                ; FOR frames opened since its GOSUB — MS-BASIC gets
+                                ; that for free by keeping both on the Z80 stack and
+                                ; walking past them; zerobas keeps two separate RAM
+                                ; stacks, so the depth has to be RECORDED to be
+                                ; restored (docs/spec-basic-forret.md §4).
+GOSUB_STK_END   equ     GOSUB_STK + GOSUB_DEPTH*GOSUB_FRAME   ; $E080
+; $E080..$E0B8 was FOR_STK — 56 B still FREE since D-FORVAR relocated the stack
+; (above); D-FORRET spent 16 of that 72 widening the GOSUB frame 4 -> 6.
 FOR_STK         equ     $EA3A   ; FOR-stack base, in the page-3 window S-FCH-1 freed
 FOR_DEPTH       equ     8       ; (see FCH_RECLENS below). 8 x 11 = 88 B.
 FOR_STK_END     equ     FOR_STK + FOR_DEPTH*FOR_FRAME   ; $EA92

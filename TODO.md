@@ -8209,8 +8209,43 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and the clobber cannot fire. Fixed by moving the `push hl` above the trap
       check, at **zero byte cost**.
 
-- [ ] **`RETURN` DOES NOT DISCARD AN OPEN `FOR`, AND ON THE REFERENCE IT DOES.**
-      Filed 2026-08-02 by D-RETLN, found by the apparatus while it was testing
+- [x] ✅ **~~`RETURN` DOES NOT DISCARD AN OPEN `FOR`~~ — SHIPPED 2026-08-19
+      (D-FORRET), AND THE ROW THAT FILED IT COULD NOT HAVE SPECIFIED THE FIX.**
+      [`docs/spec-basic-forret.md`](docs/spec-basic-forret.md). The GOSUB frame
+      grew 4 → **6 B** to record `(FSP)` at push time; `ret_frame` truncates the
+      FOR stack back to it, and the no-frame arm clears the stack outright.
+      **+23 B main page 1 (64 → 41 free), +16 B RAM, 0 B low, 0 B sub** — the RAM
+      from the 72 B window D-FORVAR freed when it relocated the FOR stack, which
+      now leaves 56 B. `lnrt-forret`'s `KNOWN_DIVERGE` pin is **DELETED**, not
+      updated, so the row is back under ordinary cross-side scoring.
+      🎯 **`lnrt-forret` IS THE CORNER WITH NO GOSUB FRAME AT ALL, and it is
+      consistent with two different rules that need different code** — "a RETURN
+      that finds no frame clears the FOR stack" (3 B in `ex_ret_under`) versus
+      the real one, "a RETURN truncates the FOR stack back to its depth at GOSUB
+      time" (a field in every frame). Four new rows with a real GOSUB frame
+      underneath settled it BEFORE a byte was designed: `lnrt-forgsb`,
+      `lnrt-forgdeep` (two frames — "entries" is plural and one frame cannot test
+      it), `lnrt-forgline` (`RETURN <line>`, the second route through the same
+      pop), and `lnrt-forgctl` (🟢 the FOR opened BEFORE the GOSUB, which must
+      SURVIVE). **All four predictions written into the probe first, all four
+      EXACT**, both references agreeing on every row.
+      🔴 **THE DISCRIMINATOR IS `I`, NOT THE ERROR COUNT.** Both sides trap
+      exactly once and so both read `A=1`; only the loop variable separates
+      "found a live frame" from "found none". A row scored on *did it error*
+      would have agreed on both sides and read GREEN.
+      🔴 **AND THIS ITEM'S OWN PRESCRIPTION WAS HALF WRONG, refuted by the
+      control it already carried.** It says closing this means teaching `RETURN`
+      *"(and the error unwind)"* about the FOR stack — but `lnrt-forerr` reads
+      ` 103  0  4 ` on all three sides, so an ordinary trap does not unwind the
+      FOR stack on the reference either. **No error path was changed.**
+      🔴 **`make unit-test` WENT RED AND WAS RIGHT TO**: `test_traps.py` asserted
+      *"GSP advanced by 4"* as a literal. The dispatcher shares `gosub_push`, so
+      a trap handler's RETURN now truncates the FOR stack too. The assertion now
+      reads `GOSUB_FRAME` from the symbol table and gained a tooth that the
+      frame's new field is actually recorded — a test that restates a constant
+      can only rot into agreement with whatever it was last edited to match.
+
+      **Filed 2026-08-02** by D-RETLN, found by the apparatus while it was testing
       something else. MS-BASIC keeps FOR and GOSUB frames on the **same** (Z80)
       stack, so `RETURN` discards the FOR entries it walks past looking for a
       GOSUB frame — with no GOSUB frame at all, that means the open `FOR`.
@@ -8228,6 +8263,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       not have separated those two rules ([[one-row-cannot-separate-two-rules]]).
       `lnrt-forret` is **pinned as `KNOWN_DIVERGE`** to zerobas' exact
       ` 103  0  4 `, with `lnrt-forerr` alongside it as the green control.
+      ⚠️ **THAT PIN IS GONE** — deleted by D-FORRET above; everything in this
+      body stands as filed and as measured, only its status changed.
       This is architectural, not a parse bug: closing it means making `RETURN`
       (and the error unwind) aware of the FOR stack, which is its own slice.
       ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, both rows exactly as filed**

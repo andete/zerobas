@@ -1295,12 +1295,13 @@ exa_stop:
                 ret
 
 ; --- gosub_push: push a bounds-checked GOSUB return frame (repack golf) -------
-; The 4-byte frame is [CURLINE:2][resume-ptr:2]; resume = the token position to
-; run when RETURN pops it. Factored out of ex_gosub / eon_gosub (which each used
+; The 6-byte frame is [CURLINE:2][resume-ptr:2][FSP-at-push:2]; resume = the token
+; position to run when RETURN pops it. Factored out of ex_gosub / eon_gosub (which each used
 ; to inline this) so the interrupt-trap dispatcher can reuse it as its GOSUB-into-
 ; handler branch (docs/spec-basic-interrupt-traps.md §2.1/§10.1).
 ;   IN:  HL = resume token pointer; CURLINE = the line to resume in.
-;   OUT: CF clear = pushed, GSP advanced by 4.  CF set = stack full (nothing pushed).
+;   OUT: CF clear = pushed, GSP advanced by GOSUB_FRAME.  CF set = stack full (nothing
+;        pushed).
 ;        Preserves BC (the target line number). Clobbers A, DE, HL.
 gosub_push:
                 push    bc                  ; guard the caller's target line number
@@ -1319,6 +1320,18 @@ gosub_push:
                 ld      (de),a
                 inc     de
                 pop     hl                  ; HL = resume ptr
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                inc     de
+                ; D-FORRET: frame[4..5] = FSP AS IT IS NOW. RETURN truncates the FOR
+                ; stack back to this, which is what "discards the FOR entries it walks
+                ; past" means when the two stacks are not the same stack. Recorded on
+                ; EVERY push, so the interrupt-trap dispatcher's GOSUB-into-handler
+                ; branch gets it too (traps.asm reuses this routine).
+                ld      hl,(FSP)
                 ld      a,l
                 ld      (de),a
                 inc     de
@@ -1432,7 +1445,7 @@ ex_return:
                 ; That is what rules out the obvious shape -- reusing the bare tail
                 ; below, whose `ld (CURLINE),de` would file it against the caller.
                 push    hl
-                call    ret_frame           ; GSP -= 4; the frame's contents are dead
+                call    ret_frame           ; GSP -= 6; the frame's contents are dead
                 pop     hl                  ; on this path (BC is the branch target)
                 jp      ex_goto_at          ; its own skip_spaces is a no-op here --
                                             ; HL is already past the blanks
@@ -1450,19 +1463,38 @@ set_resumeflag_ret:
                 ld      (RESUMEFLAG),a
                 ret
 ex_ret_under:
+                ; D-FORRET: there is no GOSUB frame, so the reference's walk runs the
+                ; whole stack and discards EVERY open FOR before it gives up and
+                ; raises. Row lnrt-forret is this arm and nothing else: ` 102  0  1 `
+                ; on both references against ` 103  0  4 ` here, and the loop that
+                ; kept running IS the frame this clears.
+                ld      hl,FOR_STK
+                ld      (FSP),hl
                 ld      a,$CD               ; "return without gosub" landmark
                 ld      (ERRMARK),a
                 ld      a,3                 ; ERR 3: return without gosub (error-handling S2a)
                 jp      raise_error
 ; ret_frame: pop the top GOSUB frame. out: DE = its saved CURLINE, BC = its resume
-; pointer, GSP -= 4, HL = the new GSP. The caller has ALREADY established that the
+; pointer, GSP -= GOSUB_FRAME, HL = the new GSP, and FSP is truncated back to the
+; frame's recorded depth. The caller has ALREADY established that the
 ; stack is non-empty (R-T1). Was inline in ex_return until D-RETLN; it is a
 ; subroutine now because the two arms want different halves of it -- the bare arm
 ; needs the contents, the `RETURN <line>` arm needs only the GSP decrement and
 ; must NOT let the contents reach CURLINE.
 ret_frame:
                 ld      hl,(GSP)
-                dec     hl                  ; pop 4 bytes, reading high-to-low
+                ; D-FORRET: frame[4..5] first — the FOR-stack depth at GOSUB time.
+                ; Restoring it here rather than in either arm is deliberate: BOTH
+                ; arms pop through this routine, and `RETURN <line>` discards the
+                ; same entries as a bare RETURN (row lnrt-forgline, measured on both
+                ; references BEFORE this shipped). DE is scratch until the CURLINE
+                ; load below overwrites it, so this costs no register.
+                dec     hl
+                ld      d,(hl)              ; FSP-at-push high
+                dec     hl
+                ld      e,(hl)              ; FSP-at-push low
+                ld      (FSP),de            ; every FOR opened since the GOSUB is gone
+                dec     hl                  ; pop the remaining 4, reading high-to-low
                 ld      b,(hl)              ; resume ptr high
                 dec     hl
                 ld      c,(hl)              ; resume ptr low   -> BC = resume ptr
@@ -1470,7 +1502,7 @@ ret_frame:
                 ld      d,(hl)              ; curline high
                 dec     hl
                 ld      e,(hl)              ; curline low      -> DE = saved CURLINE
-                ld      (GSP),hl            ; GSP -= 4 (popped)
+                ld      (GSP),hl            ; GSP -= GOSUB_FRAME (popped)
                 ret
 
 ; --- for_name: parse a FOR/NEXT loop variable into the frame key -------------

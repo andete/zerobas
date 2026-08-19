@@ -127,6 +127,11 @@ def t_check_traps_fire(fails):
     m.poke(m.addr("TRAPSVC"), b"\x00")
     m.poke_w(m.addr("GSP"), m.addr("GOSUB_STK"))   # empty control stack
     m.poke_w(m.addr("CURLINE"), 0x8000)            # the "current line" saved into the frame
+    # D-FORRET: the dispatcher reaches gosub_push, which now records (FSP) as the
+    # frame's third field. Seed it one FOR frame deep so the recorded value is a
+    # number this test could not get by accident from a zeroed cell.
+    seeded_fsp = m.addr("FOR_STK") + m.addr("FOR_FRAME")
+    m.poke_w(m.addr("FSP"), seeded_fsp)
 
     r = m.call("check_traps", hl=STMT)
     fails = check(fails, "check_traps fired (CF=1)", carry(r), True)
@@ -135,16 +140,24 @@ def t_check_traps_fire(fails):
     fails = check(fails, "TRAPENA dropped to 0", m.peek(m.addr("TRAPENA"))[0], 0)
     fails = check(fails, "TRAPSVC bumped to 1", m.peek(m.addr("TRAPSVC"))[0], 1)
     fails = check(fails, "CURLINE = handler", m.peek(m.addr("CURLINE"), 2), bytes([HANDLER & 0xFF, HANDLER >> 8]))
-    # GSP advanced by 4 (one frame pushed); the record's gsp == that new GSP
+    # GSP advanced by one frame; the record's gsp == that new GSP.
+    # 🔴 THE WIDTH IS READ FROM THE SYMBOL, NOT SPELT AGAIN HERE. It was written
+    # as a literal 4 and D-FORRET widened the frame to 6 -- this assertion went
+    # red and was RIGHT to, but a test that restates a constant can only ever
+    # rot into agreement with whatever it was last edited to match.
+    gframe = m.addr("GOSUB_FRAME")
     new_gsp = m.peek(m.addr("GSP"), 2)
     new_gsp = new_gsp[0] | (new_gsp[1] << 8)
-    fails = check(fails, "GSP advanced by 4", new_gsp - m.addr("GOSUB_STK"), 4)
+    fails = check(fails, "GSP advanced by one GOSUB_FRAME", new_gsp - m.addr("GOSUB_STK"), gframe)
     rec = m.peek(m.addr("TRAPSTK"), 3)
     fails = check(fails, "service record gsp", rec[0] | (rec[1] << 8), new_gsp)
     fails = check(fails, "service record idx", rec[2], ZTI_STOP)
     # the pushed GOSUB frame carries resume == STMT (bytes 2-3 of the frame)
-    frame = m.peek(m.addr("GOSUB_STK"), 4)
+    frame = m.peek(m.addr("GOSUB_STK"), gframe)
     fails = check(fails, "frame resume ptr = STMT", frame[2] | (frame[3] << 8), STMT)
+    # D-FORRET: and bytes 4-5 carry the FOR-stack depth, so the handler's RETURN
+    # can discard whatever FOR frames the handler itself opened.
+    fails = check(fails, "frame records FSP-at-push", frame[4] | (frame[5] << 8), seeded_fsp)
     return fails
 
 
@@ -196,7 +209,11 @@ def t_trap_return_check(fails):
     m.poke(m.addr("TRAPSVC"), b"\x01")
     m.poke_w(rec, GSPV)
     m.poke(rec + 2, bytes([ZTI_STOP]))
-    m.poke_w(m.addr("GSP"), GSPV + 4)         # nested GOSUB pushed higher -> no match
+    # one whole frame higher -> no match. Read from the symbol rather than spelt
+    # as a literal 4: D-FORRET widened GOSUB_FRAME to 6 and this line kept
+    # passing, because ANY non-equal value satisfies it -- so the number here was
+    # never load-bearing, but the comment claiming "a nested GOSUB" was.
+    m.poke_w(m.addr("GSP"), GSPV + m.addr("GOSUB_FRAME"))
     m.call("trap_return_check")
     fails = check(fails, "return mismatch: state untouched", m.peek(e)[0] & 3, ZTS_SERVICING)
     fails = check(fails, "return mismatch: TRAPSVC untouched", m.peek(m.addr("TRAPSVC"))[0], 1)

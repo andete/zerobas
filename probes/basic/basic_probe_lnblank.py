@@ -2738,6 +2738,51 @@ LNRT = [
     ("lnrt-forerr",   ["10 ON ERROR GOTO 50", "20 FOR I=1 TO 3:ERROR 7:NEXT",
                        "30 A=A+100:END", "50 A=A+1:RESUME NEXT", "RUN",
                        'PRINT"[";A;ERR;I;"]"']),
+    # --- D-REPRICE 2026-08-19: the DENOMINATOR `lnrt-forret` never had ---------
+    # `lnrt-forret` measures ONE CORNER of the stated rule -- "RETURN discards
+    # the FOR entries it walks past looking for a GOSUB frame" -- the corner
+    # where there is NO GOSUB FRAME AT ALL. That single row cannot distinguish
+    # the stated rule from a much narrower one ("a RETURN that finds no frame
+    # clears the FOR stack"), and the two prescribe DIFFERENT code
+    # ([[one-row-cannot-separate-two-rules]], which is the lesson `lnrt-forret`
+    # itself was filed under). These three put a real GOSUB frame underneath.
+    #
+    # PREDICTIONS, WRITTEN BEFORE THE RUN (D-REPRICE §6):
+    #   lnrt-forgsb   refs ` 1  0  7 `  zb ` 1  0  8 `
+    #   lnrt-forgctl  ALL THREE ` 0  0  3 `   <- GREEN CONTROL
+    #   lnrt-forgdeep refs ` 1  0  7  4 `  zb ` 1  0  8  4 `
+    #
+    # 🔴 THE DISCRIMINATOR IS `I`, NOT `A`. Both sides trap exactly once and so
+    # both read A=1; what separates them is whether the NEXT on line 30 found a
+    # live frame (I steps to 8) or none (I stays at the FOR's initial 7). A row
+    # scored on the error COUNT would agree on both sides and read as green.
+    ("lnrt-forgsb",   ["10 ON ERROR GOTO 90", "20 GOSUB 200", "30 NEXT I",
+                       "40 END", "90 A=A+1:RESUME NEXT", "200 FOR I=7 TO 9",
+                       "210 RETURN", "220 GOTO 40", "RUN",
+                       'PRINT"[";A;ERR;I;"]"']),
+    # THE GREEN CONTROL: the FOR is opened BEFORE the GOSUB, so the RETURN finds
+    # its frame with nothing above it and has nothing to walk past. If this row
+    # ever diverges, the rule under test is not "discards what it walks past" but
+    # something that damages an unrelated FOR, and the fix would be wrong.
+    ("lnrt-forgctl",  ["10 ON ERROR GOTO 90", "20 FOR I=1 TO 2", "30 GOSUB 200",
+                       "40 NEXT I", "50 END", "90 A=A+1:RESUME NEXT",
+                       "200 RETURN", "RUN",
+                       'PRINT"[";A;ERR;I;"]"']),
+    # TWO frames above the GOSUB frame -- "entries", plural, is part of the rule
+    # and one frame cannot test it.
+    ("lnrt-forgdeep", ["10 ON ERROR GOTO 90", "20 GOSUB 200", "30 NEXT I",
+                       "40 END", "90 A=A+1:RESUME NEXT", "200 FOR I=7 TO 9",
+                       "205 FOR J=4 TO 6", "210 RETURN", "220 GOTO 40", "RUN",
+                       'PRINT"[";A;ERR;I;J;"]"']),
+    # `RETURN <line>` IS A SECOND ROUTE THROUGH THE SAME POP, and a fix sited in
+    # `ret_frame` changes it whether or not anyone measured it. D-RETLN's own
+    # §2 established that this arm pops the frame BEFORE it parses -- so it walks
+    # the same entries -- but nothing here had ever put a FOR above that frame.
+    # PREDICTION: refs ` 1  0  7 `, zb ` 1  0  8 ` (the `lnrt-forgsb` shape).
+    ("lnrt-forgline", ["10 ON ERROR GOTO 90", "20 GOSUB 200", "30 NEXT I",
+                       "40 END", "90 A=A+1:RESUME NEXT", "200 FOR I=7 TO 9",
+                       "210 RETURN 30", "220 GOTO 40", "RUN",
+                       'PRINT"[";A;ERR;I;"]"']),
 ]
 
 # Rows whose reading is `screen_tail` -- the rows the machine PRINTED between the
@@ -3048,15 +3093,19 @@ CONTROLS = {"num-plain", "num-nospace", "num-stop", "num-lead", "num-zero",
 # than updated. Nine cohorts, none rotted. Its successor is a whole GATE
 # (`make editverb-acceptance`, 61 rows, three sides) rather than more pins.
 KNOWN_DIVERGE = {
-    # D-RETLN say mode, and NOT about `RETURN <line>` at all -- found by this
-    # slice's apparatus while it was testing something else. MS-BASIC's `RETURN`
-    # discards the FOR entries it walks past looking for a GOSUB frame (both
-    # stacks are the Z80 stack); zerobas keeps FOR and GOSUB on separate RAM
-    # stacks, so an open FOR survives a `RETURN` that finds no frame. Its control
-    # `lnrt-forerr` -- the identical program with `ERROR 7` for `RETURN` -- agrees
-    # ` 103  0  4 ` on all three sides, so this is `RETURN`'s own doing and not
-    # the error trap's. Architectural; retirement path is the TODO.md item.
-    "lnrt-forret":  " 103  0  4 ",
+    # ✅ `lnrt-forret` IS CLOSED (D-FORRET, 2026-08-19) AND ITS ENTRY IS DELETED
+    # ON PURPOSE -- the same move D-CASSAVE made for `csv-tok`, and for the same
+    # reason: an entry here SUPPRESSES its row from the agreement verdict, so
+    # removing it puts the row back under ordinary cross-side scoring. It was
+    # pinned to zerobas' ` 103  0  4 ` against both references' ` 102  0  1 `.
+    # The GOSUB frame now records FSP and RETURN truncates the FOR stack back to
+    # it (basic/program.asm gosub_push / ret_frame), and the no-frame arm clears
+    # the stack outright -- so the row reads ` 102  0  1 ` on all three sides.
+    # 🎯 THE ROW THAT PINNED IT COULD NOT HAVE SPECIFIED THE FIX: it is the corner
+    # with NO GOSUB FRAME, and four rows with a real frame underneath had to be
+    # measured first (lnrt-forgsb/-forgctl/-forgdeep/-forgline, all four predicted
+    # exactly). Its control `lnrt-forerr` stays, and stays green on all sides:
+    # an ordinary error trap is NOT what discards the frame, `RETURN` is.
     # --- D-DOTGAPS: three rows that diverge for reasons this slice does NOT own,
     # each found by measuring `.` and each pinned to zerobas' exact value so the
     # entry rots loudly the day its owner lands
