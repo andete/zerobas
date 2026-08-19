@@ -497,6 +497,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       are now UNPRICED, not automatically live**: each was a claim about a design
       as well as a wall, and re-opening one means re-reading its own reasoning,
       not just the free-byte count.
+      ✅ **THE WALK THIS ASKS FOR WAS DONE THE SAME DAY — D-REPRICE,
+      [`docs/repricing-page1-2026-08-19.md`](docs/repricing-page1-2026-08-19.md)
+      — AND IT UNBLOCKED NOTHING.** Two sweeps over all 63 open items (one keyed
+      on decline vocabulary, one keyed on price+region so the roster is not a
+      keyword artefact) found **exactly one** item whose page-1 price the wall now
+      covers — `FIELD overflow` at ≈27 B — and it stays declined on two non-byte
+      blockers its own document names. Everything else is a stale WALL reading, a
+      CARVE that frees bytes, or still far over 64 B.
+      🔴 **AND BOTH DECLINES NAMED IN THE PARAGRAPH ABOVE WERE ALREADY CLOSED
+      WHEN IT WAS WRITTEN.** `spec-basic-fldary.md` SHIPPED 2026-08-08 (13/13,
+      funded by a 57 B carve) and D-LVFIX's FIELD/LSET half is the same slice,
+      marked SUPERSEDED in this very file — eleven days earlier, and closed by a
+      CARVE, the same instrument. The paragraph stands as the correct *warning*;
+      its two examples were stale on the day. ⚠️ **This is the wall figure too:
+      69 B was the reading at `33720ae`; D-VPTRDOM spent 5 the same day and the
+      wall is 64 B at `b51bbbb`.**
       ⚠️ **THE CONTRACT IS A REGISTER CONVENTION AND NO GATE READS ONE**, so it is
       written down at `ev_sp` itself: anything added there that can return by
       another route, or with A holding something else, breaks 24 sites silently.
@@ -514,6 +530,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       a typo become a hard stop instead of a silent pass — the exact failure
       `> file 2>&1` and a `set -e` driver exist to prevent.
 
+- [ ] 🔴 **AN ITEM THAT STATES THE WALL INLINE GOES STALE SILENTLY, AND NO GATE
+      READS ONE — FOUR FOUND IN ONE PASS.** Filed 2026-08-19 by D-REPRICE
+      ([`docs/repricing-page1-2026-08-19.md`](docs/repricing-page1-2026-08-19.md)
+      §4), which went looking for declines the new 64 B wall might fund and found
+      this class instead. Four OPEN items assert a *current* free-space figure in
+      prose, as fact, and every one is wrong:
+      *"THE PAGE-1 WALL IS NOW **14 B**"* (editor/program management),
+      *"main page 1 is now **16 B**"* (`FIELD overflow`),
+      *"Main page 1 is down to **49 B**"* (`ex_let_arr_str`),
+      *"**9 B** free low / **6 B** free page 1"* (slim the file-channel context)
+      — against **5 B low / 64 B page 1** measured at `b51bbbb`.
+      🎯 **THIS IS THE 160-DEAD-BYTES SHAPE, IN PROSE**: a figure that was a
+      reading when written, copied nowhere, checked by nothing, and false from
+      the next slice onward. `make basic-reloc` prints all four walls on every
+      run; nothing compares them to a sentence in `TODO.md`.
+      ⚠️ **AND THE ERROR LEANS THE DANGEROUS WAY.** Three of the four UNDERSTATE
+      the wall, so each reads as *less* affordable than it is — a slice opening
+      one and trusting the inline figure would decline work it can already fund.
+      That is the D-EVSPDUP warning one level further down than it looked.
+      💰 Worth a lint, and it is cheap and ROM-free: `make basic-reloc` already
+      emits the four numbers, so a checker that greps `TODO.md`/`docs/` for a
+      free-space assertion and diffs it against the live measurement is a
+      report-parser plus a regex. ⚠️ The hard half is the GRAMMAR, not the
+      compare — the four above are phrased four different ways, and a matcher
+      that catches only the phrasings listed here has a hand-listed denominator
+      ([[a-hand-listed-denominator-is-a-scope-claim]]). All four are addendum-ed
+      in place rather than rewritten; the readings stand as taken.
 - [ ] 📌 **`file:LINE` CITATIONS ARE UNMAINTAINED AND BROADLY ROTTED — ONLY
       31% OF THEM WERE STILL CORRECT, AND NO GATE READS ONE.** Filed 2026-08-19
       by D-DEFTYPEDOC's follow-up sweep, which found a drifted anchor by READING
@@ -1336,6 +1379,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       decline is **narrower but still short by 11 B**, and neither of the other
       two blockers moved. **Bytes alone were never the whole blocker and are
       still not.**
+      💰 **RE-PRICED AGAIN 2026-08-19 (D-REPRICE): THE BYTE HALF IS NOW CLEAR AND
+      THIS IS THE ONLY OPEN ITEM IN THE FILE OF WHICH THAT IS TRUE.** The wall is
+      **64 B** at `b51bbbb` against the ≈27 B priced here (the 6 B and 16 B above
+      stand as taken for their dates). 🔴 **AND IT IS STILL DECLINED**, on the two
+      blockers below that never moved: there is no main-side record-length
+      accessor to borrow, and **the denominator is not built** — every row above
+      uses the DEFAULT 256-byte record, so nothing measured separates "checked
+      against the record length" from "checked against a constant 256". The
+      `OPEN … LEN=r` rows come before the 27 bytes.
+      [`docs/repricing-page1-2026-08-19.md`](docs/repricing-page1-2026-08-19.md)
+      §3.2.
       There is no accessor to borrow — `load_reclen`
       ([`basic/randio-body.inc:270`](basic/randio-body.inc:270)) is **sub-ROM**
       (`sub/randio.asm:47`) and not callable from `ex_field`, and `GP_RECLEN` is
@@ -2727,6 +2781,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       — assumed ERR 7 from the language reference, not from a reading.
       💰 Not carve-scouted. ⚠️ **Main page 1 is down to 49 B** after D-ARYLV, so
       this one needs `tools/carve_scout.py` before a byte moves, unlike the last.
+      ⚠️ **THAT 49 B IS THE WALL, NOT A PRICE, AND IT IS STALE — 64 B at
+      `b51bbbb` (2026-08-19).** Stands as taken for its date. 🎯 **The re-pricing
+      changes nothing here, because this item was never byte-blocked:** the fix
+      is still unpriced and un-scouted, and its real blocker is the `ARY_ERR=4`
+      conflation above — the cheap check raises ERR 7 where both references say
+      ERR 14, so more free page 1 buys exactly none of it.
+      [`docs/repricing-page1-2026-08-19.md`](docs/repricing-page1-2026-08-19.md)
+      §3.7.
       Spike script was scratchpad-only; the three programs above ARE the
       reproduction. Found by the D-ARYLV scout while reading the tail it copies.
 
@@ -4397,6 +4459,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ **THE PAGE-1 WALL IS NOW 14 B**, not the 82 B D-LSTRNG started from, and
       82 B was itself the post-carve figure. Any remaining item here needs a carve
       or an eviction before it needs a design.
+      ⚠️ **THAT 14 B IS STALE — THE WALL IS 64 B AT `b51bbbb` (2026-08-19).**
+      Stands as written for the date it carried; only the figure has moved
+      (D-EVSPDUP's 24-site carve, then D-VPTRDOM's 5 B). The *conclusion* is
+      unchanged and the reason is not bytes: this is a BUCKET
+      (`TRON`/`TROFF`, `WAIT`, `FRE`, full `CLEAR`), not one slice, and the
+      keyword sweep below prices its remainder at **183–268 B** — still well over
+      64 B. Re-priced in
+      [`docs/repricing-page1-2026-08-19.md`](docs/repricing-page1-2026-08-19.md)
+      §3.4/§4.
       ~~(`SWAP` itself is still unimplemented — `SWAP A,B` is a syntax error here,
       where the reference swaps. Its MALFORMED forms already match, via the
       trap-class fix below.)~~
@@ -5597,6 +5668,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       is an unknown-size change to `files.asm` against **9 B** free low / **6 B**
       free page 1. Estimating it from reading code would be a hypothesis, not a
       measurement (D-ARR-C §7a).
+      ⚠️ **THOSE TWO FIGURES ARE STALE — 5 B low / 64 B page 1 at `b51bbbb`
+      (2026-08-19)**; they stand as taken for their date. 🎯 **The caveat itself
+      is UNCHANGED and is the live blocker:** the ROM cost is still not measured,
+      so this is not a decline the wall can lift in either direction — and note
+      the LOW region went the other way (9 B → **5 B**), which is where a
+      `files.asm` change is most likely to land.
+      [`docs/repricing-page1-2026-08-19.md`](docs/repricing-page1-2026-08-19.md)
+      §4.
       ⚠️ **FREEING PAGE 3 DOES NOT BY ITSELF RETURN PROGRAM SPACE.** `TXTMAX`
       rises only if a page-2 buffer MOVES into the freed window: `TOKBUF`
       (576 B @ `$B700`) and the input line buffer are movable; `DETOKBUF`
