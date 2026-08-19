@@ -541,6 +541,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       guard rejected 17 legitimate ones sitting in docstrings, so it was replaced
       with the exact one rather than left to reject good repairs. **Zero live-code
       edits**, and the ROMs stayed byte-identical through both passes.
+      🔴 **AND A DOC-ONLY SWEEP CAN EDIT A GATE INPUT.** The 594 included one
+      anchor inside `tools/injector-record-allow.txt` — a prose description field
+      in a file `make injector-check` PARSES. Byte-identical ROMs say nothing
+      about that, so the gates that READ the touched files were run afterwards and
+      are green: `injector-check` (one live injector across 407 files),
+      `audit-citations` (CLEAN, 798 files swept), `latch-check` **16/16**,
+      `basic-reloc`, `preflight-check`, `rowshape-check`, `deadcode`, `unit-test`
+      **59/59**. ⚠️ `latch-check` first returned rc=2 — an APPARATUS refusal, not a
+      regression: `rm -rf build` had removed `build/zerobas-main-eu.rom` and the
+      preflight refused to measure rather than report a missing ROM as a missing
+      FEATURE. `make repack-machine`, and it passes. **Byte-identity is the wrong
+      instrument for a sweep that touches `tools/`, and the gates were run after
+      the commit rather than before it — the wrong order.**
       ⚠️ **THE 18 AND THE 8 ARE DELIBERATELY NOT TOUCHED.** The 18 point at code
       that no longer exists (`err_overflow` msgtab rows, `TMISMATCH` reads,
       `fre_illegalfn_lc`), so moving a number cannot fix them — the prose around
