@@ -3905,6 +3905,31 @@ code we wrote.
 > ([docs/lnref-msx1-characterization.md](../docs/lnref-msx1-characterization.md)
 > §4). The tenant ABI above (`DEFT_PTR`, `DEFT_STATUS`) is unchanged.
 
+## 2026-08-19 — `INPUT #n` takes a LIST of targets (D-INPLIST) (basic/files.asm)
+
+`inp_readvar` parsed exactly ONE target and fell into `jp exec_stmt`, so the
+leftover `,` of `INPUT#1,A$,B$` raised `Syntax error`. Oracle: the CF-3300 reads
+`HILO` over a `HI,LO` file (row `f.mixctl`, carried DEFERRED in
+`lvfix-acceptance` since D-LVFIX measured it 2026-08-08 and re-confirmed
+2026-08-09). ONE reference only — `INPUT #n` is Disk BASIC and a diskless
+VG-8020 cannot express it.
+
+The loop is the routine itself: `inp_readvar` already required the separator on
+entry (for the comma after the channel number), and the comma between two
+targets is the same byte in the same place, so the tail tests for one and
+re-enters at the top. 7 B, no second parser.
+
+Funded in `do_open`, +8 B: the "APPEND" match was four unrolled
+`cp`/`jp nz`/`inc hl`/`ld a,(hl)` groups for a sequence that is plainly DATA, and
+is a 13 B loop over a 5-byte `oo_app_seq` now; six `jp cc,stmt_error` sites in
+that parse share one local `oo_synerr` trampoline. Page-1 free 2 → 10 → 3 B; the
+carve was built and gated ALONE first (`diskbasic-acceptance` 34/34) so that
+"behaviour unchanged" is a reading rather than an argument.
+
+Clean-room: our own code. The one oracle fact the APPEND sequence encodes — that
+the main-ROM tokeniser crunches "APPEND" to `$41 $50 $50 $81` — was already
+measured and is unchanged by moving it from instructions into a `db`.
+
 ## Phase 3: input devices, I1 — `STICK(n)` / `STRIG(n)` (basic/expr.asm, basic/kwtable.inc, basic/sysvars.inc)
 
 The joystick/cursor direction reader and the trigger reader, as the first slice

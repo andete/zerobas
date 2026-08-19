@@ -184,7 +184,7 @@ ex_open:
 do_open:
                 call    skip_spaces
                 cp      '"'
-                jp      nz,stmt_error       ; filename string required
+                jr      nz,oo_synerr        ; filename string required
                 inc     hl                  ; HL -> first filename char
                 ; --- device-name dispatch: "LPT:"/"CRT:" -> character-device
                 ; channel (no disk file); anything else -> disk filename. Peeked
@@ -217,28 +217,40 @@ do_open:
                 cp      OUT_TOKEN
                 jr      z,oo_output
                 ; APPEND? match the literal "APP" + END-token sequence.
-                cp      'A'
-                jp      nz,stmt_error
+                ; D-INPLIST carve: this was four unrolled `cp`/`jp nz`/`inc hl`/
+                ; `ld a,(hl)` groups, 27 B. The sequence is DATA, so it is data
+                ; now -- 13 B of loop plus the 5-byte oo_app_seq below. The
+                ; oracle fact it encodes is unchanged and still written down at
+                ; the block above: the main-ROM tokeniser crunches "APPEND" to
+                ; $41 $50 $50 $81, so this matches bytes and not a keyword.
+                ld      de,oo_app_seq
+oo_app_lp:
+                ld      a,(de)              ; expected byte
+                cp      (hl)                ; against the line
+                jr      nz,oo_synerr
                 inc     hl
-                ld      a,(hl)
-                cp      'P'
-                jp      nz,stmt_error
-                inc     hl
-                ld      a,(hl)
-                cp      'P'
-                jp      nz,stmt_error
-                inc     hl
-                ld      a,(hl)
-                cp      END_TOKEN           ; the "END" half of app-END
-                jp      nz,stmt_error
-                inc     hl
+                inc     de
+                ld      a,(de)
+                or      a                   ; 0 terminates the sequence
+                jr      nz,oo_app_lp
                 ld      a,3                 ; mode = APPEND (provisional open action)
                 jr      oo_setmode
+; ⚠️ ONE LOCAL `stmt_error` TRAMPOLINE FOR THE WHOLE OPEN PARSE (D-INPLIST
+; carve). Six sites reached it with `jp cc,stmt_error` (3 B each); they reach it
+; with `jr cc,oo_synerr` (2 B) now, which pays for itself from the third site on.
+; ⚠️ EVERY ONE OF THE SIX MUST STAY WITHIN `jr` RANGE OF THIS LABEL -- the
+; assembler is the guard: move a caller out of range and the BUILD fails rather
+; than the branch going wrong. Placed here because nothing falls into it (the
+; APPEND arm above ends in `jr oo_setmode`).
+oo_synerr:
+                jp      stmt_error
+oo_app_seq:
+                db      'A','P','P',END_TOKEN,0
 oo_output:
                 inc     hl
                 ld      a,(hl)
                 cp      PUT_TOKEN
-                jp      nz,stmt_error
+                jr      nz,oo_synerr
                 inc     hl
                 ld      a,2                 ; mode = OUTPUT
                 jr      oo_setmode
@@ -729,6 +741,35 @@ inp_readvar:
                 ; practice: str_set_key's own D-2 path handles a bad source
                 ; descriptor before it would reach here).
                 call    check_expr_errors
+                ; --- D-INPLIST: `INPUT #n` TAKES A LIST OF TARGETS ------------
+                ; `INPUT#1,A$,B$` over a `HI,LO` file reads `HILO` on the
+                ; CF-3300 and was `Syntax error` here, because this site parsed
+                ; exactly ONE target and fell into `jp exec_stmt` -- the leftover
+                ; `,` was what errored (docs/spec-basic-lvsites.md, row f.mixctl,
+                ; carried DEFERRED in lvfix-acceptance until now).
+                ;
+                ; 🎯 THE LOOP IS THE ROUTINE ITSELF. inp_readvar already opens by
+                ; requiring the separator -- it was written for the comma between
+                ; the CHANNEL NUMBER and the first target -- and a comma between
+                ; two targets is the same byte in the same place. So the tail
+                ; tests for one and re-enters at the top, which consumes it and
+                ; parses the next reference with the identical tgt_parse /
+                ; read_into_strscr / tgt_store_str path. No second parser, and no
+                ; state to carry: the channel was selected before this routine was
+                ; entered and each pass simply reads the next field.
+                ;
+                ; SP is at statement level here (both guard words are popped
+                ; above), which is the same depth inp_readvar was first entered
+                ; at, so the abort contracts of every callee still hold on the
+                ; second and later passes. check_expr_errors returns with HL
+                ; untouched on the OK path (interp.asm: `ld a,(FPERR)`/`or a`/
+                ; `ret`), so the cursor this test reads is the one tgt_store_str
+                ; left. ⚠️ Numeric `INPUT #n` is still rejected at the top of the
+                ; loop, exactly as it was for a single target -- this widens the
+                ; COUNT of targets, not their type.
+                call    skip_spaces
+                cp      ','
+                jr      z,inp_readvar       ; another target -> round again
                 jp      exec_stmt
 
 ; read_into_strscr — read bytes from the open channel into the STRSCR descriptor

@@ -219,17 +219,22 @@ SITE_CONTROL = {
 # available (lrset_store -> a page-0 tenant, +57 B). What survived is that 38
 # does not fit 18, which is why that slice is funded rather than free.
 #
-# 🔴 f.mixctl / f.arymix ARE DEFERRED FOR A DIFFERENT REASON, AND ONLY A CONTROL
-# COULD HAVE TOLD THE TWO APART. The spec predicted `f.arymix` GREEN (HILO) on
-# the POSITION axis. It measured `Syntax error` -- and so does its SCALAR twin
-# `f.mixctl` (`INPUT#1,A$,B$`, no subscript anywhere). `inp_readvar` has no
-# variable-LIST loop at all: it parses ONE target and falls into `jp exec_stmt`,
-# so the leftover `,` is what errors. That is a defect about the LIST, not about
-# the SUBSCRIPT, and it is filed as its own residual. Without `f.mixctl` this
-# probe would have scored `f.arymix` as an array failure and this slice would
-# have been blamed for a gap it does not own ([[row-with-two-candidate-causes]],
-# [[one-row-cannot-separate-two-rules]]). ⚠️ POSITION is therefore NOT covered
-# for `INPUT #n` by this gate -- named in the denominator rather than implied.
+# ✅ f.mixctl / f.arymix WERE DEFERRED, AND D-INPLIST (2026-08-19) CLOSED WHAT
+# BLOCKED THEM. Both are SCORED now and both read `HILO`, the CF-3300's own
+# answer. The history is kept because it is the reason this probe has a scalar
+# control at all: the spec predicted `f.arymix` GREEN (HILO) on the POSITION
+# axis, it measured `Syntax error`, and so did its SCALAR twin `f.mixctl`
+# (`INPUT#1,A$,B$`, no subscript anywhere). `inp_readvar` had no variable-LIST
+# loop -- it parsed ONE target and fell into `jp exec_stmt`, so the leftover `,`
+# was what errored. That was a defect about the LIST, not about the SUBSCRIPT.
+# Without `f.mixctl` this probe would have scored `f.arymix` as an array failure
+# and D-LVFIX would have been blamed for a gap it did not own
+# ([[row-with-two-candidate-causes]], [[one-row-cannot-separate-two-rules]]).
+# 🎯 AND THE CONTROL IS WHAT MAKES THE FIX READABLE TOO: `f.arymix` going green
+# says the ARRAY-element target works in a continuation position, which is the
+# POSITION axis D-LVFIX shipped and could not demonstrate here until now. The
+# gate covers POSITION for `INPUT #n` from this slice on -- it is no longer an
+# exclusion in the denominator below.
 #
 # 🔴 AND m.ctldrift / m.arydrift ARE DEFERRED FOR A THIRD REASON, WHICH THE
 # MEASUREMENT FOUND AND THE SPEC HAD PREDICTED GREEN. Both references answer
@@ -249,10 +254,8 @@ SITE_CONTROL = {
 # and nothing else in the zb column. A deferral has to carry its evidence
 # ([[a-pinned-divergence-is-a-live-detector]]).
 DEFERRED = {
-    "f.mixctl": "DEFERRED — `INPUT #n` parses only ONE target; a LIST defect, "
-                "not an array one",
-    "f.arymix": "DEFERRED — blocked by f.mixctl: the same LIST defect, so this "
-                "row cannot speak about the SUBSCRIPT",
+    # f.mixctl / f.arymix graduated 2026-08-19 (D-INPLIST) -- a graduation is a
+    # DELETION FROM THIS LITERAL, never prose about one.
     "m.ctldrift": "DEFERRED — blocked by VARPTR(<unset>): IFC on BOTH "
                   "references, accepted here. A VARPTR DOMAIN defect",
     "m.arydrift": "DEFERRED — same block; kept as the LIVE DETECTOR for K-LV5, "
@@ -432,10 +435,13 @@ def main() -> int:
           "site (whose oracle is an ERROR, not a value), plus the "
           "mid-statement-allocation PAIR that arrays §13a forces on ex_mid_stmt "
           "— and the FIELD/LSET pair this probe carried DEFERRED while that half "
-          "was declined, now SCORED with a control per arm (D-FLDARY).")
-    print("NOT COVERED, named rather than implied: POSITION for `INPUT #n` "
-          "(f.mixctl shows the site parses only ONE target — a LIST defect, "
-          "filed separately); the arrays-§13a mid-statement ARYTAB shift "
+          "was declined, now SCORED with a control per arm (D-FLDARY). "
+          "POSITION for `INPUT #n` is covered from D-INPLIST (2026-08-19): "
+          "f.mixctl/f.arymix were DEFERRED behind a LIST defect at inp_readvar "
+          "and are scored now, so the continuation position is measured for "
+          "that verb and not only for MID$=.")
+    print("NOT COVERED, named rather than implied: the arrays-§13a "
+          "mid-statement ARYTAB shift "
           "(m.ctldrift/m.arydrift — NOT oracle-able: the only eval-time scalar "
           "allocator is VARPTR, which both references REFUSE on an unset "
           "variable, so no program they accept can shift ARYTAB mid-statement); "

@@ -825,8 +825,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 **ONE REFERENCE ONLY** — Disk BASIC; a diskless VG-8020 cannot express
       the question. Weaker than anything D-ARYLV rested on. ⚠️ `RSET` shares
       `lrset_common` and is not separately measurable even after the fix.
-- [ ] 🔴 **`INPUT #n` PARSES ONLY ONE TARGET — a LIST defect, MEASURED
-      2026-08-08 (D-LVFIX).** `INPUT#1,A$,B$` reads `HILO` on the CF-3300 and is
+- [x] ✅ **~~`INPUT #n` PARSES ONLY ONE TARGET~~ — FIXED 2026-08-19,
+      D-INPLIST.** `inp_readvar` (basic/files.asm) takes a comma-separated LIST
+      now: `INPUT#1,A$,B$` over a `HI,LO` file reads **`HILO`** here, the
+      CF-3300's own answer, and so does the array form `INPUT#1,A$,B$(1)`.
+      🎯 **THE LOOP IS THE ROUTINE ITSELF, so the fix is 7 B and no second
+      parser.** `inp_readvar` already opened by requiring the separator — it was
+      written for the comma between the CHANNEL NUMBER and the first target — and
+      the comma between two targets is the same byte in the same place. The tail
+      tests for one and re-enters at the top. Same `tgt_parse` /
+      `read_into_strscr` / `tgt_store_str` path, no state to carry (the channel
+      is selected before the routine is entered), same SP (both guard words are
+      popped), and numeric `INPUT #n` is still rejected — this widens the COUNT
+      of targets, not their type. The existing split was cheaper than a new
+      guard, exactly as at `NEXT` ([[the-existing-split-is-cheaper-than-a-new-guard]]).
+      💰 **FUNDED, and the slice is −1 B NET.** Main page 1 had **2 B**. The
+      carve is in `do_open`: the "APPEND" match was four unrolled
+      `cp`/`jp nz`/`inc hl`/`ld a,(hl)` groups (27 B) for what is plainly DATA,
+      so it became a 13 B loop over a 5-byte `oo_app_seq`; and six
+      `jp cc,stmt_error` sites in that parse now `jr cc,oo_synerr` to one local
+      trampoline. **+8 B returned, 7 B spent: page-1 free 2 → 10 → 3 B.**
+      ✅ **THE CARVE WAS MEASURED ALONE BEFORE ANYTHING SPENT IT** — built,
+      `page-1 free = 10 B`, and `diskbasic-acceptance` **34/34** — so "behaviour
+      unchanged" is an oracle reading and not an argument.
+      ✅ **GATE: `lvfix-acceptance` 18/18 → 20/20**, deferrals 4 → 2. `f.mixctl`
+      and `f.arymix` GRADUATED out of that probe's `DEFERRED` literal (a
+      graduation is a DELETION FROM THE LITERAL, never prose about one), and
+      **POSITION for `INPUT #n` left the NOT-COVERED list**: `f.arymix` going
+      green is the array-element target in a CONTINUATION position, which is the
+      axis D-LVFIX shipped and could not demonstrate until this unblocked it.
+      🔴 **MY FIRST KNIFE OVER-REDDENED AND THE KNIFE WAS WRONG, NOT THE FIX.**
+      K-IL1 cut `cp ','` to `cp 0` — same length — predicting the 2 rows. It
+      reddened **8**: `0` is the end-of-statement terminator, so the loop fired at
+      the END of every `INPUT #n` and re-entered demanding a comma, breaking the
+      SINGLE-target base case too. **A knife byte must be one the site can never
+      see.** Re-cut as K-IL1b (`cp '.'`, which cannot stand after a target):
+      **exactly 2 diverge, 18 green — prediction EXACT.** K-IL2 corrupted
+      `oo_app_seq`'s second byte and reddened **exactly** `PRINT#-append` with
+      33/34 verbs still converging, so the carve is under test too.
+      ⚠️ **ONE REFERENCE ONLY (CF-3300).** `INPUT #n` is Disk BASIC and a diskless
+      VG-8020 cannot express it. Carried forward, not upgraded.
+
+      **Originally filed** — MEASURED 2026-08-08 (D-LVFIX). `INPUT#1,A$,B$` reads `HILO` on the CF-3300 and is
       `Syntax error` here (`f.mixctl`), and so is the array form `INPUT#1,A$,B$(1)`
       (`f.arymix`). `inp_readvar` (`basic/files.asm`) has **no variable-list loop
       at all**: it parses ONE target and falls into `jp exec_stmt`, so the
