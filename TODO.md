@@ -485,6 +485,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       be 25 bespoke edits across ~19,000 lines (only 6 of 30 share a data model)
       plus a re-run of each one's emulator gate — see spec §10, and re-open it
       with evidence if a runner is ever actually caught by one.
+- [x] ✅ **~~MAIN PAGE 1 HAS 2 B~~ — 69 B FREE SINCE 2026-08-19 (D-EVSPDUP).**
+      `ev_sp` (basic/expr.asm) skips spaces and its ONLY exit is `ret nz`, taken
+      with **A already holding the first non-space byte**. Every one of its **24**
+      call sites in that file followed it with a redundant `ld a,(ix+0)` — 3 B
+      each, **72 B**. Removed; page-1 free **3 B → 69 B**.
+      🎯 **THIS WAS FOUND WHILE SCOUTING 5 B, AND IT CHANGES WHICH FILED SLICES
+      ARE AFFORDABLE.** Several are DECLINED WITH NUMBERS against a wall that had
+      2–5 B on it — `spec-basic-fldary.md` at 38 B, D-LVFIX's FIELD/LSET half at
+      ~80 B, and others priced when the answer was "no room". ⚠️ **Those declines
+      are now UNPRICED, not automatically live**: each was a claim about a design
+      as well as a wall, and re-opening one means re-reading its own reasoning,
+      not just the free-byte count.
+      ⚠️ **THE CONTRACT IS A REGISTER CONVENTION AND NO GATE READS ONE**, so it is
+      written down at `ev_sp` itself: anything added there that can return by
+      another route, or with A holding something else, breaks 24 sites silently.
+      ✅ **AND THE 26 GREEN GATES WERE FALSIFIED BEFORE BEING BELIEVED.** K-VS1
+      changed `ld a,(ix+0)` to `ld a,(ix+1)` — same length, wrong character in A —
+      and **`unit-test` and `float-acceptance` both went RED**, so the gates do
+      see this contract and the greens are evidence rather than silence. Green
+      set: unit-test 59/59, basic-reloc, deadcode, float, string, logicops,
+      error, missing, binfre, **graphics** (the 360-row one), array, arrdim,
+      arylv, input, inputary, diskbasic 34/34, lvfix 20/20, cursor, error-trap,
+      math, str-domain, forvar, nxlist, readvar, intarg, abort.
+      🔴 **MY FIRST DRIVER DIED ON A TARGET THAT DOES NOT EXIST** (`arrays-`
+      vs `array-acceptance`) and that is the good outcome: `make` exits 2 on an
+      unknown target, and only because the driver checked the status directly did
+      a typo become a hard stop instead of a silent pass — the exact failure
+      `> file 2>&1` and a `set -e` driver exist to prevent.
+
 - [ ] 📌 **`file:LINE` CITATIONS ARE UNMAINTAINED AND BROADLY ROTTED — ONLY
       31% OF THEM WERE STILL CORRECT, AND NO GATE READS ONE.** Filed 2026-08-19
       by D-DEFTYPEDOC's follow-up sweep, which found a drifted anchor by READING

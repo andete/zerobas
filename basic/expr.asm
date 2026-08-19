@@ -81,7 +81,6 @@ ev_lg:
                 pop     hl
 ev_lg_lp:
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      (hl)                ; this level's operator token?
                 ret     nz
                 ; The level pointer must be SAVED BEFORE the conversion call:
@@ -169,7 +168,6 @@ logtab:
                 db      0                   ; terminator -> drop to ev_not
 ev_not:
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      NOT_TOKEN
                 jr      z,ev_not_do
                 jp      ev_rel              ; no NOT -> drop to the relational layer
@@ -220,13 +218,11 @@ evr_scan:
                 ; correctly outside the loop while the RHS probe at evr_rhs is
                 ; inside it (`1 = 1 = "A"` -> Type mismatch, as the reference does).
                 call    ev_sp
-                ld      a,(ix+0)
                 call    relop_bit
                 ret     nc                  ; no relational operator -> plain value
                 ld      c,b                 ; C = requested relation bits
                 inc     ix
                 call    ev_sp
-                ld      a,(ix+0)
                 call    relop_bit           ; a second relop? (<=, >=, <>)
                 jr      nc,evr_rhs
                 ld      a,c
@@ -314,6 +310,14 @@ rb_gt:
 ;     (ev_rel etc.) resolve to that page-0 copy by label, unchanged.
 
 ; --- ev_sp: skip spaces in the IX stream -----------------------------------
+; ⚠️ ev_sp RETURNS THE CHARACTER IN A, AND 24 CALL SITES DEPEND ON IT.
+; Its only exit is the `ret nz` below, which is reached with A = (ix+0) -- the
+; first non-space byte -- and with the flags of `cp ' '` (always NZ). So a
+; `call ev_sp` needs NO `ld a,(ix+0)` after it; every site used to carry one
+; anyway, 3 B each and 72 B in this file alone, which is what funded D-VPTRDOM.
+; Anything added here that can return by another route, or with A holding
+; something else, breaks all 24 silently -- there is no gate on a register
+; contract, so keep the single exit.
 ev_sp:
                 ld      a,(ix+0)
                 cp      ' '
@@ -328,7 +332,6 @@ ev_e:
                 call    ev_mod              ; DE = first term
 ev_e_lp:
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      PLUS_TOKEN
                 jr      z,ev_e_add
                 cp      MINUS_TOKEN
@@ -360,7 +363,6 @@ ev_mod:
                 call    ev_idiv             ; DE = lhs
 ev_mod_lp:
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      MOD_TOKEN
                 ret     nz
                 ; spec §10.3: \ / MOD operands convert via the STRICT int16
@@ -383,7 +385,6 @@ ev_idiv:
                 call    ev_t                ; DE = lhs
 ev_idiv_lp:
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      IDIV_TOKEN          ; '\'
                 ret     nz
                 call    fac_to_int_strict_reset
@@ -403,7 +404,6 @@ ev_t:
                 call    ev_pw               ; `^` binds above * / (§13.3)
 ev_t_lp:
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      STAR_TOKEN          ; '*'
                 jr      z,ev_t_mul
                 cp      DIV_TOKEN           ; '/'
@@ -440,7 +440,6 @@ ev_pw:
                 call    ev_f
 ev_pw_lp:
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      POW_TOKEN
                 ret     nz
                 inc     ix
@@ -459,7 +458,6 @@ ev_pw_lp:
 ; variable; unary minus is MINUS_TOKEN.
 ev_f:
                 call    ev_sp
-                ld      a,(ix+0)
                 ; empty parenthesised/argument expression: a factor can never
                 ; begin with a closing ')' or a ',' (ev_f is reached only where a
                 ; factor is REQUIRED -- expression start, or right after '(' /
@@ -774,7 +772,6 @@ ev_f_paren:
                 inc     ix                  ; '('
                 call    ev_logic            ; DE = inner value (full expression)
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      ')'
                 jp      nz,ev_f_err
                 inc     ix
@@ -828,7 +825,6 @@ ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
                 inc     ix                  ; skip the selector byte
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      '('
                 ; Residual found by the I1 differential (spec §3): a MISSING
                 ; argument list -- `PRINT PEEK`, `PRINT STICK`, `PEEK 100` --
@@ -843,7 +839,6 @@ ev_ff_arg:
                 call    ev_logic            ; DE = argument (full expression)
                 pop     bc
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      ')'
                 jp      nz,ev_f_empty       ; unclosed / extra arg -> ERR 2 (as above)
                 inc     ix
@@ -1154,7 +1149,6 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 ; CVI selector byte.
                 inc     ix                  ; skip the CVI selector
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      '('
                 jp      nz,ev_f_empty       ; BUG C class (Fable 2026-07-17): CVI missing
                                             ; '(' -> deferred syntax error (was silent
@@ -1172,7 +1166,6 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      ')'
                 jp      nz,ev_f_empty       ; BUG C class: missing ')' -> deferred syntax err
                 inc     ix
@@ -1206,7 +1199,6 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
 ev_ff_fre:
                 inc     ix                  ; skip the FRE selector
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      '('
                 jp      nz,ev_f_empty       ; bare FRE -> deferred syntax error
                 inc     ix
@@ -1244,7 +1236,6 @@ ev_fre_num:
     ENDIF
 ev_fre_close:
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      ')'
                 jp      nz,ev_f_empty       ; unclosed / second arg -> Syntax error
                 inc     ix
@@ -1421,7 +1412,6 @@ evmc_total_tab:
 ev_mc_arg:
                 inc     ix                  ; skip the selector byte
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      '('
                 jp      nz,ev_f_empty       ; D-F2-4: missing '(' (bare fn / operator- or
                                             ; space-separated) -> deferred FPERR=4 "syntax
@@ -1430,7 +1420,6 @@ ev_mc_arg:
                 inc     ix
                 call    ev_logic            ; DE = argument; FAC/FACTYP = its type
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      ')'
                 jp      nz,ev_f_empty       ; D-F2-4: missing ')' (extra arg `f(x,y)` /
                                             ; unclosed `f(x`) -> deferred "syntax error"
@@ -1834,12 +1823,10 @@ evmc_exp_overflow:
 ev_f_varptr:
                 inc     ix                  ; skip the VARPTR token
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      '('
                 jp      nz,ev_f_err
                 inc     ix
                 call    ev_sp
-                ld      a,(ix+0)
                 call    is_letter           ; the argument must be a variable name
                 jp      nc,ev_f_err
                 push    ix
@@ -1895,7 +1882,6 @@ vptr_gottype:
                 ex      de,hl               ; DE = the value-field address
 vptr_close:
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      ')'
                 jp      nz,ev_f_empty       ; malformed close (incl. a consumed
                                             ; array subscript with no outer ')') ->
@@ -1960,13 +1946,11 @@ vptr_none:
 ev_f_base:
                 inc     ix                  ; skip the BASE token
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      '('
                 jp      nz,ev_f_err
                 inc     ix
                 call    ev_logic            ; evaluate + discard the index argument
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      ')'
                 jp      nz,ev_f_err
                 inc     ix
