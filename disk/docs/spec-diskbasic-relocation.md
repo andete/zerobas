@@ -72,7 +72,7 @@ byte relief for each):
 - **Dispatch — `STATEMENT` expansion (`$4004`).** `disk/init.asm` already lays an `"AB"`
   header with a **zeroed** `STATEMENT` vector — implement the provider side there, and the
   consumer slot-walk in `basic/interp.asm` (today an unknown statement falls to
-  `stmt_error`, `basic/interp.asm:921`; there is **no** slot-walk dispatcher — the "one
+  `stmt_error`, `basic/interp.asm:688`; there is **no** slot-walk dispatcher — the "one
   gap" flagged in `basic/docs/msx1-basic-bios-coupling.md`). Protocol is pinned in
   `disk/docs/expansion-protocol.md` (headline: the drive-letter *loader* path does NOT use
   DEVICE expansion — it's `DSKIO`+FAT-in-caller; `STATEMENT` expansion is for the

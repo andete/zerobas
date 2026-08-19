@@ -301,7 +301,7 @@ the honest choices were "relocate" or "6 nested loops instead of 8". `f.dep8` is
 the row that makes that a measurement rather than a preference.
 
 ⚠️ **AND THE FREE-RAM WINDOW IS ONE BYTE SMALLER THAN THE TREE SAYS.**
-`basic/sysvars.inc:2843` reads *"`$EA39..$EAFF` free"*; D-LPTVERB took `$EA39`
+`basic/sysvars.inc:3003` reads *"`$EA39..$EAFF` free"*; D-LPTVERB took `$EA39`
 for `LPTPOS` and the comment was never updated. The real window is
 **`$EA3A..$EAFF`** (198 B) and this slice corrects the comment as well as using
 it. 110 B remain after the FOR stack.

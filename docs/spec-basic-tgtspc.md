@@ -141,7 +141,7 @@ becomes
                 jr      z,tp_ary
 ```
 
-`skip_spaces` (`basic/interp.asm:620`) is `ld a,(hl)` / `cp ' '` / `ret nz` /
+`skip_spaces` (`basic/interp.asm:674`) is `ld a,(hl)` / `cp ' '` / `ret nz` /
 `inc hl` / `jr skip_spaces` — it returns **exactly what `ld a,(hl)` returned**
 when there is no space, with `HL` on the byte in `A`. It is a drop-in.
 

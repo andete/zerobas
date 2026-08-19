@@ -13,7 +13,7 @@ cases / **0** filed. F1–F3 all falsified with the knives verified to have cut.
 ## 1. The defect
 
 `FAT_FILESIZE` ($E9CE, 4-byte LE) is the per-channel size field
-[`basic/sysvars.inc:2039`](../basic/sysvars.inc:2039), inside the 50-byte
+[`basic/sysvars.inc:2513`](../basic/sysvars.inc:2513), inside the 50-byte
 `FCH_STATE0` span that `fch_save_active`/`fch_load_ctx` swap per channel. It is
 the *only* thing `ev_ff_lof` reads
 ([`basic/expr.asm:1002`](../basic/expr.asm:1002)):

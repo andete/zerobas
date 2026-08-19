@@ -132,7 +132,7 @@ stays ERR 7 — an array that will not fit ran out of VARIABLE space.
   what bounds the region. Restoring `ld hl,(FRETOP)` turns both red.
 
 **`basic/interp.asm`** — `err_msgtab` entry 14 currently points at
-`err_unprintable` ([`basic/interp.asm:939`](../basic/interp.asm:939)). Point it
+`err_unprintable` ([`basic/interp.asm:1125`](../basic/interp.asm:1125)). Point it
 at a new `out of string space` string. ⚠️ **Put the string where `LOCATE` put
 ERR 24's, not next to the table**: [`basic/missing.asm:70`](../basic/missing.asm:70)
 records that inserting bytes beside `err_msgtab` pushes page 1's dense forward

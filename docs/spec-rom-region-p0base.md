@@ -202,7 +202,7 @@ three `equ`/assert edits and three probe constants. 44 B to restore access to
 Four source sites:
 
 1. `sub/equates.inc:14` — the definition.
-2. `basic/sysvars.inc:3244` — the `IFNDEF` mirror. ⚠️ `sub.asm` includes
+2. `basic/sysvars.inc:3622` — the `IFNDEF` mirror. ⚠️ `sub.asm` includes
    `equates.inc` first, so the sub build takes that one and the main build takes
    this one. **Nothing cross-checks them** — see K1.
 3. `sub/sub.asm` — the table moves below the `$0038` vector; the existing

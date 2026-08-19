@@ -163,7 +163,7 @@ is this project's standing trap.
 
 `fld_lookup` was taken over `tok_skip`, and the reason is one §4a's table does
 not show: **`tok_skip`'s two callers are per-token LOOPS** (`if_skip_to_else`
-and `skip_to_eol`, [`basic/interp.asm:1335`](../basic/interp.asm:1335)), so a
+and `skip_to_eol`, [`basic/interp.asm:1577`](../basic/interp.asm:1577)), so a
 CALSLT at either site is paid once per token of every line walked — the whole
 program-relink path. "2 callers" reads cheap in a caller count and is not.
 `fld_lookup`'s single caller runs once per read of a FIELDed variable, already

@@ -129,7 +129,7 @@ main reads back is `subrom_call`'s absent-CF.
 | site | change | B |
 |---|---|---:|
 | `err_msgtab` 12 / 15 / 18 / 19 | `dw err_unprintable` → `dw err_subhosted` | 0 |
-| `rerr_unprintable` ([`interp.asm:870`](../basic/interp.asm:870)) | `ld hl,err_unprintable` → `ld hl,err_subhosted` | 0 |
+| `rerr_unprintable` ([`interp.asm:992`](../basic/interp.asm:992)) | `ld hl,err_unprintable` → `ld hl,err_subhosted` | 0 |
 
 `rerr_unprintable` is the fall-through of `rerr_sparse` → `rerr_sparse2`
 (52/59, then 55/58/61), i.e. **every out-of-dense-table code**. Repointing it

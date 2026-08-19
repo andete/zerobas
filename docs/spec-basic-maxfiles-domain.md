@@ -83,7 +83,7 @@ than all 7* ([[gpfi-wrongmode-grid-slice]]) and *measure the DENOMINATOR*.
 `get_byte_arg`. That matters and is the reason to expect an answer rather than a
 formality:
 
-* `get_byte_arg` ([`basic/interp.asm:1457`](../basic/interp.asm:1457)) is the
+* `get_byte_arg` ([`basic/interp.asm:1730`](../basic/interp.asm:1730)) is the
   reference-faithful byte-argument path — `get_int16_checked` first (**ERR 6
   `Overflow`** outside int16), *then* the 0..255 test (ERR 5). `WIDTH`, `ON n`,
   `STRING$`, `SPACE$` and `CHR$` all go through it.

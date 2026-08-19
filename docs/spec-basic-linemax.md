@@ -61,7 +61,7 @@ raising the reference's `Line buffer overflow` — **ERR 25**, measured — and
 storing/executing nothing. `TOKBUF` is sized **315** bytes (314 + terminator).
 
 * Message wording: `Line buffer overflow` (measured verbatim from the screen).
-* `err_msgtab` ([`interp.asm:940`](../basic/interp.asm:940)) currently ends at 24;
+* `err_msgtab` ([`interp.asm:1093`](../basic/interp.asm:1093)) currently ends at 24;
   it gains entry 25, and `raise_error`'s range test moves `cp 24` → `cp 25` —
   the same two-places-one-fact pair the ERR-24 entry already noted.
 * The refusal happens at line **entry**, like the existing `TKOVF` float-overflow

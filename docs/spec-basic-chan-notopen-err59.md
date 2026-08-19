@@ -131,7 +131,7 @@ Plus the rename and comment update on the routine itself (§7.3): its note said
   add + `adc` into H. Neither site reads `D` afterwards (`PRINT#` does
   `ld a,e / call fch_select`; `INPUT#` overwrites with `ld de,fat_io_getbyte`). ✅
 * **Raising with `HL` still pushed is safe.** `raise_error` resets `SP` on BOTH
-  arms — `ld sp,(SAVSTK)` on the trap arm ([`interp.asm:829`](../basic/interp.asm:829)),
+  arms — `ld sp,(SAVSTK)` on the trap arm ([`interp.asm:952`](../basic/interp.asm:952)),
   and `fre_abort_low` resets from `SAVSTK` as its own first act on the abort arm.
   This is the same depth-independence `LOF`'s existing use relies on (it raises
   from deep inside the evaluator). ✅

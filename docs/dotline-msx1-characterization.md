@@ -304,7 +304,7 @@ the natural assumption and it is wrong.
 CONVENTION, IT IS NO WRITE AT ALL.** `clp-direrr` types `ERROR 7` at the prompt
 with `.` = 20 and reads **20**, unchanged. This matters because the obvious
 implementation is to hang the write on `record_errline`
-([`basic/interp.asm:925`](../basic/interp.asm:925)), which already computes
+([`basic/interp.asm:1039`](../basic/interp.asm:1039)), which already computes
 "the erroring line, or 65535 in direct mode" — and its direct arm would file
 65535 where the reference files nothing. Two cells, two conventions, one
 routine: `ERRLIN` and `DOT` part company exactly here.

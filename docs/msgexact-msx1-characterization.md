@@ -163,7 +163,7 @@ time it was written; the R1 rebalance moved them. Not corrected here (that is a
 
 ## 5. What the phrase encoder does and does not constrain
 
-The escapes ([`basic/sysvars.inc:3435`](../basic/sysvars.inc:3435)) deliberately
+The escapes ([`basic/sysvars.inc:3916`](../basic/sysvars.inc:3916)) deliberately
 **exclude the leading letter**, precisely so `"Illegal"`/`"illegal"` and
 `"Out of"`/`"out of"` could share a phrase while each message kept its own case:
 

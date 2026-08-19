@@ -194,7 +194,7 @@ Measured, and it is not the divergence anyone had listed:
 
 `lrset_common`'s `call var_str_type` / `or a` / `jp z,stmt_error` rejects a
 numeric target as a *syntax* error. `type_mismatch_error`
-([`basic/interp.asm:668`](../basic/interp.asm), `$426A`, page 1) is a `jp` target
+([`basic/interp.asm:734`](../basic/interp.asm), `$426A`, page 1) is a `jp` target
 of exactly the same width, so the fix is **`jp z,stmt_error` →
 `jp z,type_mismatch_error`: byte-neutral**.
 

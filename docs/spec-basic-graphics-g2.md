@@ -98,7 +98,7 @@ primitive) needs exactly this home.
 
 **What stays resident** (like `ex_sound`/`ex_play`): the token dispatch, the
 coordinate/color **expression evaluation** (`eval`/`get_int16_checked` are resident,
-[basic/interp.asm:1254](basic/interp.asm)), the `STEP`/`(`/`,`/`)` syntax walk, the
+[basic/interp.asm:1619](basic/interp.asm)), the `STEP`/`(`/`,`/`)` syntax walk, the
 `SCREEN 2`-mode precheck, and the error raises (`raise_error` is resident). The
 resident stub marshals a small param block and issues one `subrom_call`.
 
@@ -194,7 +194,7 @@ parse_coord:            ; HL = cursor after the verb token; on return DE=x, ...=
   and its kwtable entry already exist ([basic/kwtable.inc:97](basic/kwtable.inc)) —
   G2 only adds *handling* in the coordinate walk, no new token.
 - **`>int16 → ERR 6 (Overflow)`** is raised **inside** `get_int16_checked`
-  ([basic/interp.asm:1256](basic/interp.asm), `fac_to_int_strict` → `check_fperr_
+  ([basic/interp.asm:1621](basic/interp.asm), `fac_to_int_strict` → `check_fperr_
   only`), *before* any clip decision — matching §11.4 (`(32768,0)`/`(−32769,0)` →
   ERR 6). `get_byte_arg` is **not** usable here (it raises ERR 5 on negatives/>255,
   but a coordinate of −1 or 300 is a *legal, silently-ignored* value — §11.4).

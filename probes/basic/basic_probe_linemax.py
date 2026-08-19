@@ -229,7 +229,7 @@ CASES += [_lnum_case(k) for k in (5, 20, 22, 23, 30, 42)]
 
 # --- the `code` battery: WHICH ERR CODE `Line buffer overflow` IS -------------
 # The message is measured (§2); the CODE is what an implementation actually
-# raises, and zerobas's err_msgtab (basic/interp.asm:940) stops at 24, so
+# raises, and zerobas's err_msgtab (basic/interp.asm:1093) stops at 24, so
 # whatever this reads may need a new entry. Asked by measuring rather than
 # recalled from an error-code list: the refusal happens at line ENTRY, not during
 # RUN, so the only way to see the code is to ask afterwards.

@@ -128,7 +128,7 @@ convenience, not the authority — the authority is byte-identity (§5) plus a r
 | [`basic/print.asm:403`](basic/print.asm:403) | 14 | no ELSE |
 | [`basic/fat.asm:328`](basic/fat.asm:328), [`:360`](basic/fat.asm:360) | 14, 11 | ELSE |
 | [`basic/program.asm:318`](basic/program.asm:318) | 5 | no ELSE |
-| [`basic/interp.asm:108`](basic/interp.asm:108), [`:601`](basic/interp.asm:601), [`:622`](basic/interp.asm:622), [`:649`](basic/interp.asm:649) | 2–4 | no ELSE |
+| [`basic/interp.asm:108`](basic/interp.asm:108), [`:601`](basic/interp.asm:727), [`:622`](basic/interp.asm:750), [`:649`](basic/interp.asm:649) | 2–4 | no ELSE |
 | [`basic/files.asm:450`](basic/files.asm:450), [`:1069`](basic/files.asm:1069), [`:1086`](basic/files.asm:1086) | 2–4 | no ELSE |
 | [`basic/save.asm:554`](basic/save.asm:554) | 2 | no ELSE |
 

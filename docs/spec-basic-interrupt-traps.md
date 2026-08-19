@@ -115,7 +115,7 @@ This arc is mostly **wiring**, not new mechanism. Three landed subsystems supply
 parts (map anchors from the infra survey):
 
 ### 2.1 The `ON ERROR` trap-branch = the GOSUB-into-handler model
-[`basic/interp.asm:752-767`](../basic/interp.asm) is the exact branch to copy for
+[`basic/interp.asm:952-767`](../basic/interp.asm) is the exact branch to copy for
 dispatch: `ld sp,(SAVSTK)` (unwind to run-loop-clean depth) → save resume context →
 `ld (CURLINE),de` (setting `CURLINE` **is** the branch, reusing `rp_lp`) → set the
 in-handler flag → `jp rp_lp`. The error trap does a **GOTO**-flavoured branch (no

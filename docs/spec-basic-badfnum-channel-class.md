@@ -286,7 +286,7 @@ the first run and paid for the whole apparatus.
   [`files.asm:1135`](../basic/files.asm:1135)) is immediately preceded by a
   `call fch_select`. Verified by reading all three, not by inference from the name. ✅
 * **ERR 5 prints the right text.** `err_msgtab[5]` → `err_illegal_fn_arr`
-  ([`interp.asm:933`](../basic/interp.asm:933)); `field.asm`'s `exf_dev` already
+  ([`interp.asm:1098`](../basic/interp.asm:1098)); `field.asm`'s `exf_dev` already
   raises 5 exactly this way and `wm_lpt_fld` pins it green. ✅
 * **`INPUT$`'s reject stops being a parse fallback.** `str_eval_no` means "not a
   string operand" (CF clear); after this it raises. That is the reference's

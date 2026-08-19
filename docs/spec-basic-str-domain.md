@@ -46,7 +46,7 @@ them were never measured before this probe existed.
 stage 1 accepts the whole int16 range **−32768..32767** and rejects only what
 falls outside it. It is *not* `|x| ≤ 32767`.
 
-This mattered because `get_byte_arg`'s own header (`basic/interp.asm:1378`) is
+This mattered because `get_byte_arg`'s own header (`basic/interp.asm:1718`) is
 written in terms of `fac_to_int_strict`, documented as "FPERR set if
 |x| > 32767" — which would have made `−32768` an `Overflow` and put every
 existing caller off by one at that single value. **It does not.** The `bnd`
@@ -149,7 +149,7 @@ agreeing today. `STRING$`'s char code and `SPACE$(256)` also agree.
 ## 4. The design
 
 Two shared helpers in **page 1**, beside `get_byte_arg`
-([`basic/interp.asm:1382`](../basic/interp.asm:1382)):
+([`basic/interp.asm:1730`](../basic/interp.asm:1730)):
 
 ```
 eval_pos_arg:                       ; MID$'s position: 1..255
@@ -197,7 +197,7 @@ calls it, so the direction is proven, not new.
 ### 4.2 Registers — why no guard bytes are needed
 
 `get_int16_checked` **guards HL** across the conversion (its own header says so,
-`basic/interp.asm:1360`) and `get_byte_arg` returns `D=0, E=byte` with only `A`
+`basic/interp.asm:1615`) and `get_byte_arg` returns `D=0, E=byte` with only `A`
 clobbered. Every site keeps its token cursor in `HL` and either has `BC` on the
 stack or dead. `IX` is not an issue: `str_fn_space` already does exactly
 `eval` + `get_byte_arg` inside the same `$FF` dispatch context, and `SPACE$`

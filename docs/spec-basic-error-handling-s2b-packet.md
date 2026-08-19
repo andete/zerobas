@@ -85,14 +85,14 @@ error handling).
 
 Verified in-tree this session:
 
-* **`raise_error`** (basic/interp.asm:618) — the dispatcher. `in: A = MSX ERR code`.
+* **`raise_error`** (basic/interp.asm:892) — the dispatcher. `in: A = MSX ERR code`.
   Records `ERRCODE`, calls `record_errline`, looks the code up in `err_msgtab`, and
   falls into `fre_abort_low` (the S1 abort body). Its header comment already marks the
   **exact seam** for S2b's trap branch: *"between the `call record_errline` below and
   the message lookup."* (interp.asm:614-616.)
-* **`record_errline`** (interp.asm:648) — `ERRLINE := run? (CURLINE+2) : 65535`.
+* **`record_errline`** (interp.asm:1039) — `ERRLINE := run? (CURLINE+2) : 65535`.
   Reused unchanged; the direct-mode 65535 sentinel is already the pinned convention.
-* **`err_msgtab`** (interp.asm:676) — ERR-code-indexed (1..23) message pointer table.
+* **`err_msgtab`** (interp.asm:1093) — ERR-code-indexed (1..23) message pointer table.
   Codes **21 (No RESUME)** and **22 (RESUME without error)** are currently holes
   pointing at `err_unprintable`; S2b fills them (§8). **(AS-LANDED: 22 filled by
   S2b; 21 stayed a hole until D-ERR21, 2026-07-31 —
@@ -104,7 +104,7 @@ Verified in-tree this session:
   `init`. See §7 — the analogous question for `ONELIN` is **open and must be pinned**.
 * **`DIRECTF`** ($E1C2) — 1 direct / 0 run, set before any statement runs.
 * Tokens `ERROR`=$A6 (interp statement switch already dispatches it, interp.asm:242→
-  `ex_error`), `ERR`=$E2, `ERL`=$E1 (basic/kwtable.inc:296-298; equs
+  `ex_error`), `ERR`=$E2, `ERL`=$E1 (basic/kwtable.inc:496-298; equs
   sysvars.inc:835-837). The kwtable is **resident in main** (basic/kwtable.inc), NOT
   sub-side — the S2 spec §5.1's "kwtable is sub-side" note is **stale** (it moved back);
   so adding `RESUME` needs **no sub.rom rebuild**, no `SUB_PARTS` concern.

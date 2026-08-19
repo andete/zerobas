@@ -498,9 +498,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       BOUND ON ROT** — it says the anchors moved, NOT that they were right
       beforehand; several were already stale from earlier commits (the sweep's
       own control: `basic/vars.asm:174` was 4 lines off with `vars.asm` untouched
-      by any of the three commits in this window). Sorting "these commits broke
-      it" from "it was already broken" needs a semantic notion of correct that
-      this measurement does not have.
+      by any of the three commits in this window).
+      🔴 **AND THE SENTENCE THAT STOOD HERE WAS WRONG.** It said sorting "these
+      commits broke it" from "it was already broken" *"needs a semantic notion of
+      correct that this measurement does not have"*. It does not: **`git blame`
+      supplies it exactly.** Blame the CITING line for the commit that wrote the
+      citation, read the target file AT that commit to learn what the author
+      actually pointed at, then find where that content lives today. Decidable,
+      cheap, and it splits the 87 three ways: **61 correct-when-written and
+      mechanically repairable · 18 citing content DELETED since · 8 undecidable**
+      (7 citing a line too generic to locate uniquely — `ret`, `ENDIF`, `ret nz`
+      — plus 1 already correct, which is `0936943`'s own repaired anchor and so
+      doubles as the audit's control).
+      ✅ **THE 61 ARE FIXED 2026-08-19** — 89 textual occurrences across 41 files,
+      since a markdown link cites the same anchor twice. Verified **61/61**: every
+      repaired anchor now lands on exactly the content its citing commit pointed
+      at. That is a repair WITHIN the convention, not a change to it; option (b)
+      below is still open and still the human's call.
+      ⚠️ **THE 18 AND THE 8 ARE DELIBERATELY NOT TOUCHED.** The 18 point at code
+      that no longer exists (`err_overflow` msgtab rows, `TMISMATCH` reads,
+      `fre_illegalfn_lc`), so moving a number cannot fix them — the prose around
+      them has to be re-read by whoever knows what replaced that code. The 7
+      generic ones have no unique target, and a guess is worse than a stale
+      number. Both lists reproduce from
+      [`scratchpad/anchor_audit.py`](scratchpad/anchor_audit.py).
       🔴 **A SYMBOL GREP CANNOT FIND ONE.** D-DEFTYPEDOC's `ex_def_type`/
       `ex_defint` grep was exhaustive and still missed
       `docs/spec-basic-deftbl-strcode.md`'s anchor, because a drifted line number

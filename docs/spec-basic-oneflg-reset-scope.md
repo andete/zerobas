@@ -19,8 +19,8 @@ exactly four places today: `run_prog` (RUN,
 [`basic/program.asm:302`](../basic/program.asm:302)), cold `init`
 ([`basic/interp.asm:44`](../basic/interp.asm:44)), `ON ERROR GOTO 0`
 ([`basic/program.asm:1590`](../basic/program.asm:1590)) and the `RESUME` family
-([`basic/interp.asm:1126`](../basic/interp.asm:1126),
-[`:1166`](../basic/interp.asm:1166)).
+([`basic/interp.asm:1299`](../basic/interp.asm:1299),
+[`:1166`](../basic/interp.asm:1339)).
 
 **Nothing on the abort path clears it, and nothing on any run-termination path
 clears it.** So every re-entry that is not a fresh `RUN` — `GOTO <line>`,
@@ -113,7 +113,7 @@ wholesale). It already does `xor a` / `ld (PRDEST),a`; add one store:
 what c10 measures. Covers all ten `jp fre_abort_low` sites; the raisers that
 never set the flag store an already-0 value, which is a no-op.
 
-**Site B — `ex_end`** ([`basic/interp.asm:420`](../basic/interp.asm:420), page 1):
+**Site B — `ex_end`** ([`basic/interp.asm:505`](../basic/interp.asm:505), page 1):
 
 ```
 ex_end:

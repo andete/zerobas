@@ -69,7 +69,7 @@ differential is load-bearing here ([memory: error-handling-arc]).
     (relevant only to §4's reentrancy discussion; the audio tenants are page-1).
   - The append-only sub-ROM tenant ABI — dispatcher [`subrom_call`](../basic/subromcall.asm),
     index tables [`sub/equates.inc:14`](../sub/equates.inc) + main mirror
-    [`basic/sysvars.inc:1808`](../basic/sysvars.inc). Highest index today = **13**
+    [`basic/sysvars.inc:3616`](../basic/sysvars.inc). Highest index today = **13**
     (`IDX_DIRVERB`). Audio takes **14+**.
   - Page-1 entry base `SUBROM_ENTRY_BASE_P1 = $4010`; page-1 tenants keep page 0
     (BIOS + real `$0038` ISR) resident — the property that makes an ISR-time

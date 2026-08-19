@@ -36,7 +36,7 @@ policy (not fixing a bug) is the right frame.
 suspected a message-CASE defect. **It is a stale probe expectation.**
 
 `INSTR(0,…)` no longer reaches `ev_f_ifc`. D-MISS-2 folded INSTR's position check
-into `eval_pos_arg` ([`basic/interp.asm:1449`](../basic/interp.asm:1449)), whose
+into `eval_pos_arg` ([`basic/interp.asm:1708`](../basic/interp.asm:1708)), whose
 reject path is `gb_illegal` → `ld a,5 : jp raise_error` → `err_msgtab[5]` →
 `err_illegal_fn_arr` → **capitalised**. The deletion is documented at
 [`basic/str-engine.asm:1340`](../basic/str-engine.asm:1340). The probe at
@@ -65,14 +65,14 @@ duplicated. Make the wording exact and the duplicates become byte-identical:
 
 Keep the **low-region** copy of each and delete the page-1 one; every reader is
 an absolute address, so placement is free
-([`basic/interp.asm:779`](../basic/interp.asm:779)).
+([`basic/interp.asm:873`](../basic/interp.asm:873)).
 
 Once merged, `fp_runtime_error`'s whole one-code-two-dispositions apparatus is
 dead — the `cp 6`/`cp 3` interceptions and the three routines they feed
-([`basic/interp.asm:662`](../basic/interp.asm:662)–709). Verified: `fre_arymem_oom`
+([`basic/interp.asm:782`](../basic/interp.asm:782)–709). Verified: `fre_arymem_oom`
 and `fre_illegalfn_lc` have **no other callers**; `fre_store_raise` is reached
 only from those two. `raise_error_hl` survives — `main.asm:365`, `missing.asm:612`
-and `interp.asm:882` still use it.
+and `interp.asm:1004` still use it.
 
 `fperr_to_err`'s slots 3 and 6 stop being `db 0` placeholders and become real
 entries (3→5, 6→7). Table size unchanged.

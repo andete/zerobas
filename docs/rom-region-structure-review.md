@@ -197,8 +197,8 @@ against their resident stubs:
 | `dirverb_tenant` | 77 B | **~42 B across TWO call sites** | +35 | [`files.asm:1215`](../basic/files.asm:1215), [`:1283`](../basic/files.asm:1283) |
 | `title_tenant` | 78 B | **7 B** (`ld ix` + `jp`) | +71 | [`basic/title.asm:30`](../basic/title.asm:30) |
 | `fld_lookup_tenant` | 81 B | 22 B (body was 60 B → returns 38 B) | +38 | [`basic/field.asm:412`](../basic/field.asm:412) |
-| `scan_stmt_end` | 93 B | ~18 B | +75 | [`basic/interp.asm:1084`](../basic/interp.asm:1084) |
-| `deftype_tenant` | 181 B | ~26 B | +155 | [`basic/usr.asm:205`](../basic/usr.asm:205) |
+| `scan_stmt_end` | 93 B | ~18 B | +75 | [`basic/interp.asm:1342`](../basic/interp.asm:1342) |
+| `deftype_tenant` | 181 B | ~26 B | +155 | [`basic/usr.asm:240`](../basic/usr.asm:240) |
 
 The largest stub cost observed is **~42 B** (`dirverb`, the one tenant with two
 resident call sites — the case most likely to cross) against the **smallest body in

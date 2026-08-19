@@ -104,7 +104,7 @@ Six clauses are readings no earlier row asked, and each one decides bytes:
   THE RULE.** 70000 is `Overflow` (ERR 6) and −1/256/257 are `Illegal function
   call` (ERR 5). That is not "a domain check"; it is exactly
   `get_byte_arg`'s **two stages** — `get_int16_checked` first, the 0..255 test
-  second (`basic/interp.asm:1567`) — the routine `CHR$`, `STRING$`, `SPACE$`,
+  second (`basic/interp.asm:1715`) — the routine `CHR$`, `STRING$`, `SPACE$`,
   `ON n` and `WIDTH n` already share. Had both come back as one error the fix
   would have been a hand-rolled bound; they did not, so the fix is a **call to
   code that already ships and is already the reference's rule**.
@@ -147,7 +147,7 @@ pinned to the byte, and the divergence is real — but it is a **different rule*
 from the one this slice implements:
 
 * it needs the channel's **record length**, which lives in `FCH_RECLENS[ch]`
-  (`basic/sysvars.inc:2843`) and whose only accessor, `load_reclen`
+  (`basic/sysvars.inc:3003`) and whose only accessor, `load_reclen`
   (`basic/randio-body.inc:270`), is **sub-ROM** (`sub/randio.asm:47`) and not
   callable from `ex_field` in main page 1;
 * fetching it main-side is ~14 B of index arithmetic before any compare, and the

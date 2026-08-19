@@ -57,7 +57,7 @@ minor scale, and the arc angle mask.
 is **not yet** in [basic/kwtable.inc](basic/kwtable.inc); G4 adds one row
 (`db 6,"CIRCLE",1,CIRCLE_TOKEN`) and one interp dispatch arm (`cp CIRCLE_TOKEN /
 jp z,ex_circle`), the exact G2 `PSET` pattern
-([basic/kwtable.inc:333](basic/kwtable.inc), [basic/interp.asm:274](basic/interp.asm)).
+([basic/kwtable.inc:543](basic/kwtable.inc), [basic/interp.asm:274](basic/interp.asm)).
 `$BC` collides with nothing (arc §7). The kwtable row + dispatch are **repack-only**
 (guarded like PSET) so the lean cart stays byte-identical — the tenant op is
 unreachable on lean, and `ex_circle` compiles only under the repack guard.

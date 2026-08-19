@@ -42,7 +42,7 @@ fault classes (`1/0` → ERR 11, `SQR(-1)` → ERR 5), three verbs, two referenc
 
 🔴 **THE BLOCKER ROW WAS ALREADY GREEN, AND THE SOURCE SAYS WHY.**
 `get_byte_arg` → `get_int16_checked` ends `jp check_fperr_only`
-([`basic/interp.asm:1520`](../basic/interp.asm:1520)), and `fac_to_int_strict`
+([`basic/interp.asm:1623`](../basic/interp.asm:1623)), and `fac_to_int_strict`
 does **not** clear `FPERR` on its way through. So a deferred FPERR left by
 `eval` is *already* surfaced by the coercion, one step later than
 `check_expr_errors` would surface it — with the **same** code, for every value
@@ -100,7 +100,7 @@ exactly the hazard `basic/missing.asm`'s header describes as a live bug.
 **It is closed, and the closure is in the tree, not in this argument.** Both
 abort arms reset SP from `SAVSTK` before they print:
 
-* trap armed → [`raise_error_hl`](../basic/interp.asm:873) `ld sp,(SAVSTK)`;
+* trap armed → [`raise_error_hl`](../basic/interp.asm:952) `ld sp,(SAVSTK)`;
 * no trap → [`fre_abort_low`](../basic/arrays.asm:118) `ld sp,(SAVSTK)`, added
   by `4d35b6d` (D-CUR-D, [`spec-basic-abort-depth.md`](spec-basic-abort-depth.md)
   §4) **precisely because** `get_byte_arg`'s reject used to return into

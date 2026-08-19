@@ -46,7 +46,7 @@ direct site too:
   All five of the strings §8 called *"a different key"* are reached under an
   `ERRFLG` the code has just re-read. **Same key.**
 * `raise_error_forced` writes `ld (ERRFLG),a` (A=22) before loading
-  `err_resume_noerr` ([`basic/interp.asm:897`](../basic/interp.asm:897)).
+  `err_resume_noerr` ([`basic/interp.asm:1011`](../basic/interp.asm:1011)).
 * `ex_cont_no` writes `ld a,17 / ld (ERRFLG),a` before loading `err_cont`
   ([`basic/program.asm:998`](../basic/program.asm:998)) — D-DELETE's `dlt-cont`
   put that store there.
@@ -168,7 +168,7 @@ strings sub-side, so this is what `sub/errmsg.asm` must spell:
 | site | change | B |
 |---|---|---:|
 | `err_msgtab` 1, 3, 4, 8, 11, 13, 17, 22, 24, 25 | `dw <string>` → `dw err_subhosted` | 0 |
-| `raise_error_forced` ([interp.asm:900](../basic/interp.asm:900)) | `ld hl,err_resume_noerr` → `ld hl,err_subhosted` | 0 |
+| `raise_error_forced` ([interp.asm:1014](../basic/interp.asm:1014)) | `ld hl,err_resume_noerr` → `ld hl,err_subhosted` | 0 |
 | `ex_cont_no` ([program.asm:1000](../basic/program.asm:1000)) | `ld hl,err_cont` → `ld hl,err_subhosted` | 0 |
 | `dl_overflow` 25-arm ([program.asm:150](../basic/program.asm:150)) | `ld hl,err_linebuf_overflow` → `ld hl,err_subhosted` | 0 |
 | the 15 string bodies | **deleted** | **−216** |
@@ -190,7 +190,7 @@ identical to the fall-through, which is `rerr_unprintable`.
 |---|---|---:|
 | `rerr_sparse` + `rsp_go` ([main.asm:348..366](../basic/main.asm:348)) | **deleted** | −23 |
 | `rerr_sparse2` + `rsp2_go` ([missing.asm:600..612](../basic/missing.asm:600)) | **deleted** | −27 |
-| `jp nc,rerr_sparse` ([interp.asm:803](../basic/interp.asm:803)) | → `jp nc,rerr_unprintable` | 0 |
+| `jp nc,rerr_sparse` ([interp.asm:917](../basic/interp.asm:917)) | → `jp nc,rerr_unprintable` | 0 |
 
 ⚠️ **THE TRAP DECISION IS WHAT MUST BE SHOWN UNCHANGED, NOT THE MESSAGE.** Both
 selector arms end at `jp raise_error_hl`; so does `rerr_unprintable`. 52/59/55/58/61

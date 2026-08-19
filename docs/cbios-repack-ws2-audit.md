@@ -26,7 +26,7 @@ Swept `basic/*.asm` + `basic/sysvars.inc` for every numeric literal in the
 | `$8000` | 2 | Only the `ds $8000 - $` page pad + a comment. |
 
 **Control-flow dispatch is 100 % label-based.** The statement executor
-(`interp.asm:694+`) is a linear `cp TOKEN / jp z,<label>` chain — no `dw`-label
+(`interp.asm:156+`) is a linear `cp TOKEN / jp z,<label>` chain — no `dw`-label
 jump tables. The single `dw <label>` in the whole source is `dw init` (the
 cartridge header's INIT pointer), which relocates automatically. Every internal
 CALL/JP targets a label, so pasmo re-fixes all of them for free when `org` moves.

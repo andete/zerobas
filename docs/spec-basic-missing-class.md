@@ -358,7 +358,7 @@ stored line", the condition a line-number decoration needs anyway.
 ### 6.5 D-MISS-1
 
 Add the RHS type check to the **string-lvalue** assignment path
-(`ex_let_str`, [`interp.asm:485`](../basic/interp.asm:485), and the array-element
+(`ex_let_str`, [`interp.asm:624`](../basic/interp.asm:624), and the array-element
 form `ex_let_arr_str`, [`arrays.asm:828`](../basic/arrays.asm:828)) so a numeric
 RHS raises `Type mismatch` instead of falling through to the parser. The
 numeric-lvalue mirror already does this correctly and is the model.

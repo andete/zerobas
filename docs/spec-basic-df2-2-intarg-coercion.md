@@ -176,7 +176,7 @@ through the landed S1/S2a/S2b funnel.
   **Q1 RESOLVED 2026-07-19 (`scratchpad/char_a2_vpeek.py`) — inline, NOT the boundary path.**
   Two empirical facts settle it: (a) the FPERR model is sound for propagation — `exec_stmt`
   (interp.asm:130) clears FPERR once per statement, float ops only ever *set* it (sticky, no
-  mid-expression unwind, interp.asm:508), so `A=PEEK(99999)+1` carries the flag to a boundary.
+  mid-expression unwind, interp.asm:747), so `A=PEEK(99999)+1` carries the flag to a boundary.
   BUT (b) the reference aborts at the function in **every** consuming context, including ones
   that run **no** `check_expr_errors`: `FOR I=PEEK(99999) TO 1` and `FOR I=1 TO PEEK(99999)`
   both → **ERR 6** on VG-8020 (FOR bounds skip the check per [[empty-expr-syntax-error]]'s

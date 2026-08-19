@@ -121,7 +121,7 @@ partially but never run concurrently ([sysvars.inc:610](../../basic/sysvars.inc:
 
 - `basic/interp.asm` dispatches statements from a **linear `cp TOKEN / jp z,handler` chain**
   ([interp.asm:719](../../basic/interp.asm:719)); an unknown statement falls to `stmt_error`
-  ([interp.asm:921](../../basic/interp.asm:921)). There is **no** slot-walk / STATEMENT
+  ([interp.asm:688](../../basic/interp.asm:688)). There is **no** slot-walk / STATEMENT
   dispatcher (the "one gap", [msx1-basic-bios-coupling.md](../../basic/docs/msx1-basic-bios-coupling.md)).
 - `disk/init.asm` lays `"AB"` + **STATEMENT vector = 0** at `$4004`
   ([init.asm:18](../init.asm:18)); the provider side is unimplemented.

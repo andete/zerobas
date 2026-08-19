@@ -35,7 +35,7 @@ Four readings decide bytes, and no earlier row asked any of them:
 * 🎯 **`d.big` vs `d.neg`/`d.256`/`d.257` — TWO DIFFERENT ERRORS, AND THAT IS
   WHAT MAKES THE FIX A CALL RATHER THAN A BOUND.** 70000 → `Overflow` (ERR 6),
   −1/256/257 → `Illegal function call` (ERR 5), 0 → accepted. That is
-  **exactly** `get_byte_arg`'s two stages (`basic/interp.asm:1567` —
+  **exactly** `get_byte_arg`'s two stages (`basic/interp.asm:1715` —
   `get_int16_checked`, then `ld a,d / or a / jr nz,gb_illegal`), the routine
   `CHR$`, `STRING$`, `SPACE$`, `ON n` and `WIDTH n` already share. Had the
   reference answered one error for all four, the fix would have been a
@@ -169,7 +169,7 @@ exf_item:
   `ex_if`, `exp_num` and `eval_chan` already use: `TMISMATCH` → ERR 13,
   `FPERR` → `fp_runtime_error` (which maps FPERR 2 → **ERR 11, Division by
   zero** via `fperr_to_err`). One 3-byte call answers `s.*` **and** `d.div`.
-* `get_byte_arg` (`basic/interp.asm:1577`) is the two-stage rule §1 measured:
+* `get_byte_arg` (`basic/interp.asm:1725`) is the two-stage rule §1 measured:
   `get_int16_checked` (ERR 6 past int16) then `ld a,d / or a / jr nz,gb_illegal`
   (ERR 5 outside 0..255, 0 accepted). It returns `D=0, E=byte` — which is
   precisely what the existing `pop de` / `fld_add` pair wants, and what the

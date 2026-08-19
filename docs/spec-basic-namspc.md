@@ -197,7 +197,7 @@ immediately before the call becomes dead and is deleted:
                 call    is_ident_cont
 ```
 
-`skip_spaces` (`basic/interp.asm:620`) is `ld a,(hl)` / `cp ' '` / `ret nz` /
+`skip_spaces` (`basic/interp.asm:674`) is `ld a,(hl)` / `cp ' '` / `ret nz` /
 `inc hl` / `jr skip_spaces` — with no space it returns **exactly what
 `ld a,(hl)` returned**, with `HL` on the byte in `A`. So the substitution is
 value-for-value at all three sites.

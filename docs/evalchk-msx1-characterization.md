@@ -75,7 +75,7 @@ control for the *expression shape itself* is `WIDTH 30+0*1` → accepted at 30.
 
 ## 3. Where zerobas differs, and why
 
-[`get_int16_checked`](../basic/interp.asm:1516) is `push hl` /
+[`get_int16_checked`](../basic/interp.asm:1619) is `push hl` /
 `call fac_to_int_strict` / `pop hl` / `jp check_fperr_only`.
 
 * `fac_to_int_strict` **does not clear `FPERR`** on entry, so a deferred fault
@@ -89,7 +89,7 @@ control for the *expression shape itself* is `WIDTH 30+0*1` → accepted at 30.
 
 The three handlers that carry the divergence each test `TMISMATCH` inline and
 then coerce; the fix is to run the shared
-[`check_expr_errors`](../basic/interp.asm:1297) — which tests **both** flags —
+[`check_expr_errors`](../basic/interp.asm:1415) — which tests **both** flags —
 **before** the coercion. `basic/field.asm`'s `exf_item` already does exactly
 that (D-FLDWIDTH), which is why `FIELD` is the one site with no divergence here
 and is this rule's positive control in the source.

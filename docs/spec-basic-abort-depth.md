@@ -41,7 +41,7 @@ basic-reloc`: page-1 44 B free, low region 11 B), none assumed:
 ## 1. The defect in one sentence
 
 `raise_error`'s **trap** path resets the stack
-([`basic/interp.asm:841`](../basic/interp.asm:841), `ld sp,(SAVSTK)` then
+([`basic/interp.asm:952`](../basic/interp.asm:952), `ld sp,(SAVSTK)` then
 `jp rp_lp`); its **abort** path does not — `fre_abort_low`
 ([`basic/arrays.asm:90`](../basic/arrays.asm:90)) prints the message and
 **returns**. So an error raised from a statement handler's own depth unwinds

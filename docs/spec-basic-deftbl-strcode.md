@@ -174,7 +174,7 @@ into it. A different corruption, no better.
 
 ### F1 — the filed item (namespace P)
 
-[`basic/sysvars.inc:2858`](../basic/sysvars.inc:2858): `DEFTBL_STR equ 1` → `3`,
+[`basic/sysvars.inc:3375`](../basic/sysvars.inc:3375): `DEFTBL_STR equ 1` → `3`,
 and rewrite the note beside it (and D-REHOME's block above it) to state the
 two-namespace split rather than the "0/1 sentinel" reading the measurement
 refuted. All 26 published bytes then match both references in every state.
@@ -189,7 +189,7 @@ disposition `ex_for` already applies to `FOR A$=`, and exactly what both
 references do for `l2.str.for`.
 
 `raise_error` is depth-independent (`fre_abort_low` resets `SP` from `SAVSTK` as
-its first act, [`basic/interp.asm:851`](../basic/interp.asm:851)), so raising
+its first act, [`basic/interp.asm:974`](../basic/interp.asm:974)), so raising
 from inside `var_set` with the caller's cursor still pushed is safe — the same
 contract `ex_for`'s own `jp z,type_mismatch_error` relies on.
 

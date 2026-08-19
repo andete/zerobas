@@ -172,7 +172,7 @@ pool is accepted and leaves `FRE("")` at 0.
 aborts, `FRE("")` still reads **100**. Nothing is partially charged.
 
 This is ERR 14, which
-[`basic/interp.asm:939`](../basic/interp.asm:939) currently lists as a **hole**
+[`basic/interp.asm:1125`](../basic/interp.asm:1125) currently lists as a **hole**
 pointing at `err_unprintable` — so the slice must add the message, exactly as
 `LOCATE` had to add ERR 24's.
 

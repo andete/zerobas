@@ -545,7 +545,7 @@ CASES = [
     # LITERAL path (`sub/graphics.asm gdrw_arg_try`) accumulates UNSIGNED and
     # refuses only past 65535; the SUBSTITUTION path leaves the tenant for the
     # resident `gdw_want_int` -> `gfx_eval_int16` -> `get_int16_checked`, whose
-    # domain is -32768..32767 (basic/interp.asm:1596). So `DRAW"BU40000"` and
+    # domain is -32768..32767 (basic/interp.asm:1619). So `DRAW"BU40000"` and
     # `V=40000:DRAW"BU=V;"` should be the same statement and are not.
     # ⚠️ THIS IS A SIBLING QUESTION, NOT THIS SLICE'S RULE: if it diverges it is
     # FILED with the row behind it, not folded in. `d.lit2` is what makes

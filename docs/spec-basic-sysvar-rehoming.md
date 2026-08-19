@@ -30,7 +30,7 @@ choice — just-freed RAM"*.
 | `ONELIN` | [`$E1C8`](../basic/sysvars.inc:852) | `$F6B9` | 2 |
 | `ONEFLG` | [`$E1CA`](../basic/sysvars.inc:876) | `$F6BB` | 1 |
 | `ARYTAB` | [`$E1C0`](../basic/sysvars.inc:827) | `$F6C4` | 2 |
-| `DEFTBL` | [`$F153`](../basic/sysvars.inc:2706) | `$F6CA` | 26 |
+| `DEFTBL` | [`$F153`](../basic/sysvars.inc:3223) | `$F6CA` | 26 |
 
 Plus the pair the name-match structurally **cannot** see, because it is spelled
 differently: `ERRCODE` [`$E1C5`](../basic/sysvars.inc:847) / `ERRLINE`
