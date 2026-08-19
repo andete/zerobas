@@ -297,10 +297,20 @@ changed, and it is the same instrument that produced the original reading.
   [`basic/usr.asm`](../basic/usr.asm) `ex_defint`; `20 DEFINT 10` reads
   `<AC> <0F><0A>` on zerobas too now, matching this section's own pinned
   reference bytes exactly. The measurement above stands as taken; only its
-  status changed. `DEFSNG`/`DEFDBL`/`DEFSTR` are unchanged and still filed —
-  `DEFSTR` additionally has its own, separate numeric-argument corruption
-  ([`docs/todo-staleness-sweep-2026-08.md`](todo-staleness-sweep-2026-08.md) §4.11),
-  out of this fix's scope.
+  status changed.
+  ✅ **AND THE OTHER THREE, 2026-08-19 — D-DEFTYPETOK.** `DEFSTR $AB`,
+  `DEFSNG $AD` and `DEFDBL $AE` have whole-word rows of their own now too, so
+  **all four** of the reference bytes this bullet pins are matched by zerobas,
+  and "which have no entry at all" above is history rather than current fact.
+  That fix also closed `DEFSTR`'s *second*, wider divergence
+  ([`docs/todo-staleness-sweep-2026-08.md`](todo-staleness-sweep-2026-08.md)
+  §4.11) — and the two turned out to be **one** defect, not two. With no row of
+  its own, `DEF` matched and `S`,`T`,`R` were copied as NAME letters, which left
+  the tokeniser's in-a-name state SET, so the digits behind the keyword
+  CONTINUED the identifier instead of beginning a constant. That is why
+  `20 DEFSTR 10` kept its argument as ASCII `31 30` where `DEFINT` — which had a
+  whole-word row — crunched it to `0f 0a`. A whole-word match leaves no name
+  open, so one row per verb fixes the token byte and the argument together.
 * **Twenty-five reference token bytes are now oracle-locked** for the words
   zerobas has no entry for — `RENUM $AA`, `DELETE $A8`, `AUTO $A9`, `LLIST $9E`,
   `LPRINT $9D`, `WAIT $96`, `FN $DE`, `COPY $D6`, `SET $D2`, `IPL $D5`,

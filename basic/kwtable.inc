@@ -201,6 +201,30 @@ kwtable:
                 ; fall through to the plain "DEF" row + ex_def_type's ASCII
                 ; mnemonic parse, unchanged.
                 db      6,"DEFINT",1,DEFINT_TOKEN
+                ; D-DEFTYPETOK (2026-08-19): DEFINT's three siblings, for the
+                ; same reason and with the same oracle behind them ($AB/$AD/$AE,
+                ; docs/lnref-msx1-characterization.md §4). Until now these had
+                ; NO entry and fell to the plain "DEF" row + three copied ASCII
+                ; letters -- which cost more than a wrong token byte: "STR" does
+                ; not match STR$ (that needs a trailing '$'), so S,T,R were
+                ; copied as NAME letters, TKNAME stayed SET, and the digits
+                ; behind the keyword CONTINUED the name instead of starting a
+                ; constant. That is why `20 DEFSTR 10` stored its argument as
+                ; ASCII "10" (31 30) where the reference -- and DEFINT, which
+                ; had a whole-word row -- store the int literal `0f 0a`
+                ; (todo-staleness-sweep-2026-08.md §4.11). One row each fixes
+                ; BOTH halves at once: the token byte, and the argument behind
+                ; it, because a whole-word match leaves no name open.
+                ;
+                ; ⚠️ ALL THREE MUST PRECEDE THE PLAIN "DEF" ROW, exactly as
+                ; DEFINT does -- match_kw takes the FIRST match with no
+                ; longest-match and no word boundary, so a "DEF" row tried first
+                ; would eat three of their six characters and hand the suffix
+                ; back to the ordinary scan. (The old no-entry behaviour WAS
+                ; that path; it is what this fixes.)
+                db      6,"DEFSTR",1,DEFSTR_TOKEN
+                db      6,"DEFSNG",1,DEFSNG_TOKEN
+                db      6,"DEFDBL",1,DEFDBL_TOKEN
                 db      3,"DEF",1,DEF_TOKEN
                 db      3,"USR",1,USR_TOKEN
                 db      4,"LIST",1,LIST_TOKEN

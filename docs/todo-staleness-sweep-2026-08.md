@@ -404,8 +404,8 @@ header:
 [`docs/lnref-msx1-characterization.md`](lnref-msx1-characterization.md) §4.
 `20 DEFINT 10` now stores `ac 20 0f 0a 00` on zerobas too, matching `c.print`'s
 own row shape above (real token, no literal ASCII tail). The `c.defint` row
-above stands as taken; only its status changed. `DEFSTR` (below) is a
-SEPARATE, still-open defect and was explicitly out of this fix's scope.
+above stands as taken; only its status changed. `DEFSTR` (below) was a
+SEPARATE, still-open defect then, and explicitly out of that fix's scope.
 
 🔴 **And `DEFSTR` is worse than the entry says.** The item's own claim is only that
 `DEFSNG`/`DEFDBL`/`DEFSTR` *"have no entry at all"* and work via `DEF_TOKEN` +
@@ -414,6 +414,31 @@ ASCII. But zerobas stores `97 "STR" 20 31 30 00` — the argument `10` survives 
 integer literal `0f 0a`. So the divergence is two bytes wide and not one, and a
 `LIST` round-trip is not the only thing that can see it. Recorded here; the
 closing slice owns it.
+
+✅ **`DEFSTR` half FIXED 2026-08-19 — D-DEFTYPETOK**, and **the two halves were
+ONE defect.** `DEFSTR`/`DEFSNG`/`DEFDBL` got whole-word rows of their own
+(`$AB`/`$AD`/`$AE`), so `20 DEFSTR 10` now stores `ab 20 0f 0a 00` — `c.defstr`'s
+reference column exactly, argument included. The wider divergence the paragraph
+above files was never a second bug: with no row of its own, `DEF` matched and
+`S`,`T`,`R` were copied as NAME letters, so the tokeniser's in-a-name state
+stayed SET and the digits behind the keyword CONTINUED the identifier instead of
+beginning a constant. A whole-word match leaves no name open, so one row per verb
+fixed the token byte and the argument TOGETHER — which is why that paragraph
+reads correctly as a measurement ("two bytes wide") and misleadingly as a
+diagnosis (two defects). Both rows above stand as taken; only their status
+changed.
+
+⚠️ **The three rows cost 9 B of main page 1, which had 4.** Funded inside
+[`basic/usr.asm`](../basic/usr.asm) rather than by an eviction — the obvious
+candidate, evicting `clear_usrtab`, is BLOCKED: it runs at
+[`basic/interp.asm`](../basic/interp.asm) `init` *before* `init_ext_roms` does
+sub-ROM discovery, so a tenant call would silently no-op and leave USRTAB
+un-zeroed. Instead: the USRTAB slot index is provably carry-free
+(`low USRTAB = $9A`, max offset 18, `$9A+18 = $AC`), so its 16-bit add collapsed
+to an 8-bit one at both slot sites (−4 B, now assert-guarded so moving USRTAB
+fails the BUILD rather than indexing into the wrong sysvar), and
+`ev_usr_index`'s default arm was a byte-identical `xor a`/`ret` copy of
+`usr_index`'s sitting 83 B away, inside `jr` range (−2 B). Page-1 free: 4 B → 2 B.
 
 ---
 

@@ -116,7 +116,15 @@ EXPECTED = [
     ('OUT_TOKEN', 'ex_out'),
     ('CLEAR_TOKEN', 'ex_clear'),
     ('DEF_TOKEN', 'ex_def'),
-    ('DEFINT_TOKEN', 'ex_defint'),  # D-DEFINTTOK: DEFINT's own token ($AC)
+    # D-DEFINTTOK / D-DEFTYPETOK: the four DEF<type> verbs each crunch to their
+    # OWN single byte ($AB..$AE, matching the reference) and SHARE one handler --
+    # ex_deftype steps over the token and the sub-ROM tenant reads it back to
+    # pick the DEFTBL type code. DEF_TOKEN ($97) above is DEF USR and nothing
+    # else now; no DEF<type> verb reaches it as ASCII text any more.
+    ('DEFSTR_TOKEN', 'ex_deftype'),
+    ('DEFINT_TOKEN', 'ex_deftype'),
+    ('DEFSNG_TOKEN', 'ex_deftype'),
+    ('DEFDBL_TOKEN', 'ex_deftype'),
     ('PRINT_TOKEN', 'ex_print'),
     ('CLS_TOKEN', 'ex_cls'),
     ('SCREEN_TOKEN', 'ex_screen'),

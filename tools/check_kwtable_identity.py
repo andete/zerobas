@@ -66,6 +66,12 @@ SUB_BASE = 0x0000
 # Measured from `rm -rf build && make basic-reloc`. Bump BOTH when
 # basic/kwtable.inc changes; the FAIL text below prints the replacements.
 #
+# D-DEFTYPETOK (2026-08-19): 1064 -> 1091 B, and the DELTA IS THE REVIEW. +27 is
+# exactly the THREE rows added -- DEFSTR/DEFSNG/DEFDBL are 1(klen)+6(chars)+
+# 1(tlen)+1(tok) = 9 B each -- against an otherwise-unchanged table, so the
+# arithmetic itself says the table gained nothing else. These three had NO row
+# at all before: they fell through to the plain "DEF" row and had their mnemonic
+# copied as ASCII, which is the defect D-DEFTYPETOK closes.
 # D-DEFINTTOK (2026-08-18): 1067 -> 1064 B, and the DELTA IS THE REVIEW. -3 is
 # exactly the "DEFINT" row shrinking from the old 4-token-byte shape
 # (`4,DEF_TOKEN,"INT"` = 1+3 = 4 token bytes) to a real single-byte token
@@ -78,8 +84,8 @@ SUB_BASE = 0x0000
 # that matched no expected delta would be the finding.
 # Previous pins: 1058 B / 334b29c4… at b5f4135 (D-LPTVERB, +17 = LPRINT 9 + LPOS
 # 8); 1041 B / 8f120510… at 9bfcfb9 (2026-08-05), kwtable @ $2CD2.
-KWTABLE_SIZE = 1064
-KWTABLE_SHA = "5bfab4e02934d9b44f9a27cf362a2d986aaacb6639c6eeb85e5c92660df53187"
+KWTABLE_SIZE = 1091
+KWTABLE_SHA = "ee1a142c2350b38112603318d20251d544552adca02723e5d2159e0670846c5d"
 
 
 def load_syms(path):

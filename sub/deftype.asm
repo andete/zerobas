@@ -25,14 +25,17 @@
 ; skip_spaces is duplicated sub-locally (5 instructions); `upcase` and
 ; `is_letter` already exist in this page of the sub-ROM and are reused.
 ;
-; D-DEFINTTOK (2026-08-18) added a FOURTH edit, entirely at the top: a peek at
-; the byte below the handed-back cursor that lets `ex_defint` (basic/usr.asm)
-; reach this same tenant for DEFINT's own single-byte token ($AC) without a
-; mnemonic to parse, skipping straight to the range-list parser below.
-; DEFSNG/DEFDBL/DEFSTR still go through the original mnemonic dispatch
-; unchanged. No new memory-ABI cell was added for this -- main page 1 had no
-; spare bytes for the store+cold-boot-reset a flag byte would have cost -- see
-; ex_defint's own comment in basic/usr.asm for the full story and the
+; D-DEFINTTOK (2026-08-18) and D-DEFTYPETOK (2026-08-19) between them replaced
+; the FIRST of those three edits entirely. All four DEF<type> verbs now crunch
+; to their own single-byte tokens ($AB..$AE, matching the reference), so this
+; tenant no longer parses a mnemonic out of the line at all: it reads the token
+; back from below the handed-over cursor and indexes a 4-byte type-code table.
+; The mnemonic dispatch that used to stand at the top is DELETED, not bypassed
+; -- with DEFSNG/DEFDBL/DEFSTR carrying their own kwtable rows there is no
+; caller left that could reach it, and `make deadcode` fails a build that keeps
+; unreachable code. No memory-ABI cell was added for any of this: main page 1
+; had no spare bytes for the store + cold-boot reset a flag byte would cost --
+; see ex_deftype's own comment in basic/usr.asm for the full story and the
 ; measurement.
 ;
 ; Clean-room: this is our own code, relocated. No disassembly.
@@ -41,79 +44,54 @@ deftype_tenant:
                 ld      hl,(DEFT_PTR)       ; the resident's token cursor
                 xor     a
                 ld      (DEFT_STATUS),a     ; 0 = ok until something rejects
-                ; D-DEFINTTOK: tell ex_defint's call from ex_def_type's WITHOUT
-                ; a memory-ABI flag byte (main page 1 had no room to spend
-                ; setting one -- basic/usr.asm's ex_defint comment has the
-                ; measurement) -- peek at the byte just below the handed-back
-                ; cursor. ex_defint only ever does `inc hl` past DEFINT_TOKEN
-                ; ($AC) before handing HL over, so that byte IS the token down
-                ; that path; ex_def_type's other caller (ex_def) only ever
-                ; leaves DEF_TOKEN ($97) or an ASCII space ($20) there, both
-                ; disjoint from $AC and from every mnemonic letter this
-                ; dispatch tests below -- no false positive is reachable.
-                ; Match -> load the int type code straight into C and skip to
-                ; the range-list parser; no match -> HL is restored and the
-                ; ordinary mnemonic dispatch runs unchanged.
-                dec     hl
-                ld      a,(hl)
-                inc     hl
-                cp      DEFINT_TOKEN
-                jr      nz,deftype_mnemonic
-                ld      c,2                 ; int (same literal edt_i loads below)
-                jp      edt_list
-deftype_mnemonic:
-                ld      a,(hl)
-                inc     hl
-                cp      'I'
-                jr      z,edt_i             ; INT
-                cp      'S'
-                jr      z,edt_s             ; SNG or STR
-                cp      'D'
-                jr      z,edt_d             ; DBL
+                ; D-DEFINTTOK / D-DEFTYPETOK: recover WHICH of the four verbs
+                ; this was, without a memory-ABI flag byte (main page 1 had no
+                ; room to spend setting one -- basic/usr.asm's ex_deftype
+                ; comment carries the measurement). ex_deftype does nothing but
+                ; `inc hl` past the statement token before handing the cursor
+                ; over, so the byte just BELOW it IS that token: $AB DEFSTR,
+                ; $AC DEFINT, $AD DEFSNG, $AE DEFDBL. They are contiguous by
+                ; construction (basic/sysvars.inc says so and says not to
+                ; reorder them), so `sub DEFSTR_TOKEN` turns the token into a
+                ; 0..3 index straight into edt_codes below -- no compare chain,
+                ; and the whole thing is sub-ROM, where there is room.
+                ;
+                ; ⚠️ NO RANGE CHECK, AND NONE IS REACHABLE. This tenant has
+                ; exactly ONE caller now (ex_deftype), and interp.asm's dispatch
+                ; table reaches that from exactly four token rows -- so the byte
+                ; below the cursor cannot be anything but those four. The
+                ; mnemonic-TEXT dispatch that used to stand here (and the
+                ; ex_def path that fed it) is gone with D-DEFTYPETOK: DEFSNG/
+                ; DEFDBL/DEFSTR have their own kwtable rows now, so no DEF<type>
+                ; verb arrives as ASCII any more and DEF_TOKEN means DEF USR
+                ; alone. Deleted rather than left unreachable -- the dead-code
+                ; gate (`make deadcode`) would have failed the build otherwise.
+                ld      a,(hl)              ; the statement token itself
+                inc     hl                  ; step over it -> range-list text
+                sub     DEFSTR_TOKEN        ; $AB..$AE -> 0..3
+                push    hl
+                ld      hl,edt_codes
+                add     a,l                 ; index (the table cannot straddle a
+                ld      l,a                 ;  page: 4 bytes, see the align note)
+                ld      c,(hl)              ; C = DEFTBL type code for this verb
+                pop     hl
+                jr      edt_list
+; Type codes in TOKEN ORDER ($AB DEFSTR, $AC DEFINT, $AD DEFSNG, $AE DEFDBL) --
+; the same values the deleted mnemonic parser loaded (2 int / 4 single / 8
+; double / DEFTBL_STR string, basic/sysvars.inc). ⚠️ The index add above is
+; 8-bit (`add a,l`), so these four bytes must not cross a 256-byte boundary;
+; the build-time assert below is what makes a future edit that moves them say
+; so instead of reading garbage.
+edt_codes:
+                db      DEFTBL_STR          ; $AB DEFSTR
+                db      2                   ; $AC DEFINT
+                db      4                   ; $AD DEFSNG
+                db      8                   ; $AE DEFDBL
+    IF (high edt_codes) != (high (edt_codes+3))
+                db      EDT_CODES_STRADDLES_A_PAGE__ADD_A_L_INDEX_IS_8_BIT
+    ENDIF
 edt_bad:
                 jp      edt_fail
-edt_i:                                      ; "I" -> expect "NT"
-                ld      a,(hl)
-                cp      'N'
-                jr      nz,edt_bad
-                inc     hl
-                ld      a,(hl)
-                cp      'T'
-                jr      nz,edt_bad
-                inc     hl
-                ld      c,2                 ; int
-                jr      edt_list
-edt_s:                                      ; "S" -> "NG" (single) or "TR" (string)
-                ld      a,(hl)
-                inc     hl
-                cp      'N'
-                jr      z,edt_sn
-                cp      'T'
-                jr      nz,edt_bad
-                ld      a,(hl)              ; "ST" -> expect 'R'
-                cp      'R'
-                jr      nz,edt_bad
-                inc     hl
-                ld      c,DEFTBL_STR        ; string
-                jr      edt_list
-edt_sn:                                     ; "SN" -> expect 'G'
-                ld      a,(hl)
-                cp      'G'
-                jr      nz,edt_bad
-                inc     hl
-                ld      c,4                 ; single
-                jr      edt_list
-edt_d:                                      ; "D" -> expect "BL"
-                ld      a,(hl)
-                cp      'B'
-                jr      nz,edt_bad
-                inc     hl
-                ld      a,(hl)
-                cp      'L'
-                jr      nz,edt_bad
-                inc     hl
-                ld      c,8                 ; double
-                ; fall through to edt_list
 ; --- range-list parser: C = type code (preserved by skip_spaces/is_letter/upcase)
 edt_list:
 edt_item:

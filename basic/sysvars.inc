@@ -2109,6 +2109,14 @@ USR_TOKEN       equ     $DD     ; USR (function token, single byte; DEF USR targ
 ; storing DEF_TOKEN + literal ASCII "INT" -- see the kwtable.inc row this
 ; token now feeds (basic/kwtable.inc, the "DEFINT" entry) for the full history.
 DEFINT_TOKEN    equ     $AC     ; DEFINT (statement, single byte -- NOT DEF_TOKEN+"INT")
+; D-DEFTYPETOK (2026-08-19): DEFINT's three siblings, same shape and the same
+; oracle row (docs/todo-staleness-sweep-2026-08.md §4.11's `c.defstr`, plus the
+; $AB/$AD/$AE pins in docs/lnref-msx1-characterization.md §4). These are
+; CONTIGUOUS with DEFINT_TOKEN and sub/deftype.asm's type-code lookup indexes
+; off that fact ($AB..$AE -> 0..3), so they may not be reordered or spaced.
+DEFSTR_TOKEN    equ     $AB     ; DEFSTR  (= DEFINT_TOKEN-1; keep adjacent)
+DEFSNG_TOKEN    equ     $AD     ; DEFSNG  (= DEFINT_TOKEN+1; keep adjacent)
+DEFDBL_TOKEN    equ     $AE     ; DEFDBL  (= DEFINT_TOKEN+2; keep adjacent)
 LIST_TOKEN      equ     $93     ; LIST
 ; D-KWGAP4 (docs/spec-basic-kwgap4.md §2 R-K1): the four EDITOR verbs, measured
 ; from the reference's own crunch emission over the whole 162-word denominator

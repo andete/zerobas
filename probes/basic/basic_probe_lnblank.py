@@ -2849,9 +2849,20 @@ CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + L
 # `-lpos`/`-lfiles` made above, for the same reason: an agreeing row does not
 # belong in a set whose members are listed because they cannot agree. It is
 # an ordinary gating row now.
+#
+# ✅ AND `lnrx-defsng` / `-defdbl` / `-defstr` LEFT WITH D-DEFTYPETOK
+# (2026-08-19), which finished what D-DEFINTTOK started: all four DEF<type>
+# verbs now crunch to their own single-byte tokens ($AB/$AD/$AE beside DEFINT's
+# $AC, oracle-pinned). These three were the LAST of this set that were listed as
+# "tokenless" and are not -- and their divergence was two bytes wide, not one:
+# with no kwtable row, "DEF" matched and S,T,R were copied as NAME letters, so
+# TKNAME stayed set and `20 DEFSTR 10` kept its argument as ASCII "10" (31 30)
+# where the reference stores the int literal `0f 0a`. One whole-word row each
+# fixed BOTH halves, because a whole-word match leaves no name open. Ordinary
+# gating rows now. `lnrx-fn` stays: DEF FN still has no token here.
 INFORMATIONAL = {"num-tab", "dec-eol", "dec-eolctl",
                  # the tokenless words that do NOT arm on the reference either
-                 "lnrx-defsng", "lnrx-defdbl", "lnrx-defstr", "lnrx-fn",
+                 "lnrx-fn",
                  "lnrx-mks", "lnrx-mkd",
                  "lnrx-cvs", "lnrx-cvd", "lnrx-dski", "lnrx-dsko",
                  "lnrx-copy", "lnrx-set", "lnrx-attr", "lnrx-ipl",

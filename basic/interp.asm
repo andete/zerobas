@@ -328,8 +328,20 @@ stmt_table:
                 dw      ex_clear
                 db      DEF_TOKEN
                 dw      ex_def
-                db      DEFINT_TOKEN    ; D-DEFINTTOK: DEFINT's own token ($AC) --
-                dw      ex_defint       ; ex_def only sees DEF_TOKEN ($97), never this
+                ; D-DEFINTTOK / D-DEFTYPETOK: the four DEF<type> verbs each have
+                ; their OWN token ($AB..$AE) and share ONE handler -- ex_deftype
+                ; steps over the token and the sub-ROM tenant reads it back to
+                ; pick the type code, so three of these four rows are the entire
+                ; main-ROM cost of the other three verbs. ex_def ($97) is now
+                ; DEF USR and nothing else.
+                db      DEFSTR_TOKEN
+                dw      ex_deftype
+                db      DEFINT_TOKEN
+                dw      ex_deftype
+                db      DEFSNG_TOKEN
+                dw      ex_deftype
+                db      DEFDBL_TOKEN
+                dw      ex_deftype
                 db      PRINT_TOKEN
                 dw      ex_print
                 db      CLS_TOKEN
