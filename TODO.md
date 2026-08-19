@@ -7973,7 +7973,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       redundant-load sweep is a two-line matcher, and there are certainly other
       idioms like it. That is the item.
 
-- [ ] **`DEFINT` STORES DIFFERENT BYTES FROM THE REFERENCE.** Filed 2026-08-01
+- [x] ✅ **~~`DEFINT` STORES DIFFERENT BYTES FROM THE REFERENCE~~ — BOTH HALVES
+      FIXED**, `DEFINT` 2026-08-18 (D-DEFINTTOK, `7aadd36`) and the other three
+      2026-08-19 (D-DEFTYPETOK, `840ed59`). All four DEF<type> verbs have
+      whole-word [`basic/kwtable.inc`](basic/kwtable.inc) rows and the
+      reference's own single-byte tokens now — `DEFSTR $AB`, `DEFINT $AC`,
+      `DEFSNG $AD`, `DEFDBL $AE` — so `20 DEFINT 10` stores `AC 20 0F 0A 00` and
+      `20 DEFSTR 10` stores `AB 20 0F 0A 00`: **both reference columns below,
+      argument included.** 🎯 **THE TWO HALVES WERE ONE DEFECT.** The wider
+      `DEFSTR` divergence this entry files as a second problem was never one:
+      with no row of its own, `DEF` matched and `S`,`T`,`R` were copied as NAME
+      letters, so the tokeniser's in-a-name state stayed SET and the digits
+      behind the keyword CONTINUED the identifier instead of beginning a
+      constant. A whole-word match leaves no name open, so one row per verb
+      fixed the token byte and the argument TOGETHER
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.11, [`docs/lnref-msx1-characterization.md`](docs/lnref-msx1-characterization.md)
+      §4). ⚠️ **THE PRESCRIPTION BELOW IS ALSO SUPERSEDED**: `ex_def_type` did
+      not move off the ASCII mnemonic, it was MERGED with `ex_defint` into
+      `ex_deftype` and the mnemonic parser DELETED — the tenant reads the token
+      back from below the cursor instead (`0936943` corrected the comments and
+      docs that still described the old mechanism). Everything below stands as
+      filed and as measured; only its status changed.
+
+      **Filed 2026-08-01**
       by D-LNREF's walk. `20 DEFINT 10` reads `<AC> <0F><0A>` on both references
       and `<97>INT <0F><0A>` on zerobas — [`basic/kwtable.inc:140`](basic/kwtable.inc:140)
       emits `DEF_TOKEN` + literal `"INT"` **on purpose** so `ex_def_type` sees
