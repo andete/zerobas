@@ -220,11 +220,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      None,                                           "direct",
      "INTERACTIVE: enters auto-line-number mode and swallows all following input"),
 
-    # DEFSNG/DEFDBL/DEFSTR have NO kwtable.inc entry of their own by design (only
-    # DEFINT does — see the collision note there); they reach ex_def_type as
-    # DEF_TOKEN + literal ASCII. So they are the one family where "absent from the
-    # keyword table" is expected AND support is expected — the INTERVAL shape,
-    # in-tree. Flagged by this probe's own coverage audit as a blind spot.
+    # D-DEFTYPETOK (2026-08-19): DEFSNG/DEFDBL/DEFSTR now have whole-word
+    # kwtable.inc rows and single-byte tokens of their own ($AD/$AE/$AB, beside
+    # DEFINT's $AC from D-DEFINTTOK), so they TOKENISE and reach ex_deftype
+    # (basic/usr.asm) as one byte each. The DEF_TOKEN + literal ASCII mechanism
+    # they used to arrive by is gone, and so is ex_def_type (merged into
+    # ex_deftype). Until then they were the one family where "absent from the
+    # keyword table" was expected AND support was expected — the INTERVAL
+    # shape, in-tree, flagged by this probe's own coverage audit as a blind spot.
+    # They are ordinary tokenising rows now; the three cases below are kept
+    # because they gate the BEHAVIOUR, which is what they always gated.
     ("defsng",  "defsng a",
      'DEFSNG A:A=1.5:PRINT"[";A;"]"',                "direct", "control"),
     ("defdbl",  "defdbl a",
@@ -403,11 +408,15 @@ def verdict(ref_cls: str, ref_txt: str, zb_cls: str, zb_txt: str,
     # provably lacks.
     # AGREEMENT WINS FIRST. An earlier revision tested the DIFF-crunch rule before
     # comparing the outputs, and promptly called DEFSNG/DEFDBL/DEFSTR "SILENT-GAP"
-    # while printing two IDENTICAL answers — those three have no kwtable entry by
-    # design (they reach ex_def_type as DEF_TOKEN + literal ASCII) and work fine.
-    # A no-entry word that produces the right answer is the INTERVAL shape, not a
-    # gap, so identical observable behaviour must be decided before tokenisation
-    # is allowed to weigh in at all.
+    # while printing two IDENTICAL answers — at the time those three had no
+    # kwtable entry by design (they reached the then-ex_def_type as DEF_TOKEN +
+    # literal ASCII) and worked fine. A no-entry word that produces the right
+    # answer is the INTERVAL shape, not a gap, so identical observable behaviour
+    # must be decided before tokenisation is allowed to weigh in at all.
+    # ⚠️ THE ORDERING RULE OUTLIVED ITS EXAMPLE: those three got rows and
+    # tokens of their own in D-DEFTYPETOK (2026-08-19) and no longer exercise this
+    # path. INTERVAL still does, and the rule is kept for the CLASS, not the
+    # instance — any word supported without a kwtable entry lands here.
     if not ref_err and not zb_err and ref_txt.strip() == zb_txt.strip():
         return "SUPPORTED"
     if crunch_state == "DIFF" and not zb_err:

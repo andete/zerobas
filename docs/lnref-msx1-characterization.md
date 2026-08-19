@@ -294,12 +294,16 @@ changed, and it is the same instrument that produced the original reading.
   ✅ **FIXED 2026-08-18 — D-DEFINTTOK.** `DEFINT` now emits the reference's own
   single-byte token, `$AC`, via a dedicated
   [`basic/kwtable.inc`](../basic/kwtable.inc) row and
-  [`basic/usr.asm`](../basic/usr.asm) `ex_defint`; `20 DEFINT 10` reads
+  [`basic/usr.asm`](../basic/usr.asm) `ex_defint` (renamed `ex_deftype` the
+  next day, see below); `20 DEFINT 10` reads
   `<AC> <0F><0A>` on zerobas too now, matching this section's own pinned
   reference bytes exactly. The measurement above stands as taken; only its
   status changed.
   ✅ **AND THE OTHER THREE, 2026-08-19 — D-DEFTYPETOK.** `DEFSTR $AB`,
-  `DEFSNG $AD` and `DEFDBL $AE` have whole-word rows of their own now too, so
+  `DEFSNG $AD` and `DEFDBL $AE` have whole-word rows of their own now too, and
+  the two handlers (`ex_defint` and the ASCII-mnemonic `ex_def_type`) merged
+  into a single `ex_deftype` — the only one of the three names that still
+  exists. So
   **all four** of the reference bytes this bullet pins are matched by zerobas,
   and "which have no entry at all" above is history rather than current fact.
   That fix also closed `DEFSTR`'s *second*, wider divergence

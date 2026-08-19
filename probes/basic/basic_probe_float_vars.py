@@ -189,11 +189,20 @@ CASES = [
 
     # === F3 S3b: DEFINT / DEFSNG / DEFDBL / DEFSTR (§11.1) ===================
     # DEF<type> sets the DEFAULT resolved type for an UNSUFFIXED name whose
-    # first letter falls in the given range(s). The mnemonics are NOT keyword
-    # tokens (only "DEF" is), so after the DEF token they arrive as plain
-    # upcased ASCII ("INT"/"SNG"/"DBL"/"STR"), parsed by ex_def_type
-    # (basic/usr.asm) into a 26-byte per-letter DEFTBL (sysvars.inc) that
-    # var_name_key / var_str_type consult at every reference.
+    # first letter falls in the given range(s). Each of the four IS its own
+    # single-byte statement token ($AB DEFSTR / $AC DEFINT / $AD DEFSNG /
+    # $AE DEFDBL, whole-word kwtable.inc rows), so no mnemonic text reaches the
+    # handler: ex_deftype (basic/usr.asm) serves all four dispatch rows and
+    # fills a 26-byte per-letter DEFTBL (sysvars.inc) that var_name_key /
+    # var_str_type consult at every reference.
+    # ⚠️ NOT THE MECHANISM THESE CASES WERE WRITTEN AGAINST. When F3 S3b
+    # shipped (2026-07-12) the mnemonics were NOT keyword tokens — only "DEF"
+    # was — so all four arrived as DEF_TOKEN + plain upcased ASCII
+    # ("INT"/"SNG"/"DBL"/"STR") and a mnemonic parser in the then-ex_def_type
+    # read them back. D-DEFINTTOK (2026-08-18) and D-DEFTYPETOK (2026-08-19)
+    # replaced that with the tokens above and DELETED the parser. The cases
+    # below are unchanged and still pass: they gate the DEFTBL semantics, which
+    # neither fix touched.
     # --- single-letter default override, one per type -----------------------
     ("def.int.basic",  'DEFINT A:A=1.9:PRINT"[";A;"]"',            "value", " 1 "),
     ("def.sng.basic",  'DEFSNG A:A=1/3:PRINT"[";A;"]"',            "value", " .333333 "),

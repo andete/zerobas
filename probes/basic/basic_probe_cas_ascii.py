@@ -242,8 +242,9 @@ def main() -> int:
     # its own single-byte token, $AC (docs/lnref-msx1-characterization.md §4)
     # -- unrelated to the read-ahead bug this assertion guards, so keeping it
     # out kept a FAIL here unambiguous while that discrepancy was still open.
-    # D-DEFINTTOK closed it (basic/kwtable.inc's "DEFINT" row, basic/usr.asm
-    # `ex_defint`), so the line is back to matching the real Snake game's own
+    # D-DEFINTTOK closed it (basic/kwtable.inc's "DEFINT" row, plus the handler
+    # then called `ex_defint` and merged into `ex_deftype` by D-DEFTYPETOK the
+    # next day), so the line is back to matching the real Snake game's own
     # source verbatim.
     # Deliberately denser synthetics (packing maximal complexity into every one
     # of 20 lines, ~1300 bytes / 6 blocks) can still outrun even this double

@@ -156,23 +156,30 @@ kwtable:
                 ; the reference byte-for-byte: `20 DEFINT 10` crunches to
                 ; `<AC> <0F><0A>` on the Philips VG-8020 (oracle-pinned,
                 ; docs/lnref-msx1-characterization.md §4) and zerobas now
-                ; agrees. `ex_defint` (basic/usr.asm) dispatches on the token
-                ; and reaches the SAME range-list parser DEFSNG/DEFDBL/DEFSTR
-                ; use (sub/deftype.asm deftype_tenant), which skips straight
-                ; past the mnemonic-text dispatch those three still need --
-                ; there is no "INT" text in the buffer to parse for this
-                ; entry's call path, the dispatch token already said so. The
-                ; tenant tells the two callers apart by PEEKING at the byte one
-                ; below the cursor it is handed (no flag byte, no new ABI cell:
-                ; main page 1 had no room for one) -- see ex_defint's comment in
-                ; basic/usr.asm for why no false positive is reachable.
+                ; agrees. `ex_deftype` (basic/usr.asm) is reached from this
+                ; row's token and, since D-DEFTYPETOK, from the three rows below
+                ; it as well -- ONE handler for all four verbs -- and hands the
+                ; cursor to the SAME range-list parser (sub/deftype.asm
+                ; deftype_tenant). There is no mnemonic-TEXT dispatch left
+                ; anywhere on that path: with every DEF<type> carrying its own
+                ; token, no caller could reach it, so it was DELETED rather than
+                ; left unreachable (`make deadcode` fails a build that keeps
+                ; unreachable code). The tenant recovers WHICH of the four this
+                ; was by PEEKING at the byte one below the cursor it is handed --
+                ; that byte IS the statement token, and $AB..$AE are contiguous
+                ; by construction, so it indexes a 4-byte type-code table
+                ; directly (no flag byte, no new ABI cell: main page 1 had no
+                ; room for one) -- see ex_deftype's comment in basic/usr.asm for
+                ; the measurement that ruled the ABI cell out.
                 ;
                 ; History, for anyone diffing against an old build: this row
                 ; USED TO emit DEF_TOKEN + literal ASCII "INT" (four bytes, the
                 ; same shape a plain "DEF" match followed by copying the next
-                ; three letters would have produced) so ex_def_type's mnemonic
-                ; parser could read it -- a deliberate regression-preserving
-                ; workaround, not the reference's own byte shape. That was
+                ; three letters would have produced) so the mnemonic parser in
+                ; the then-`ex_def_type` (the routine D-DEFTYPETOK merged away
+                ; into today's `ex_deftype`) could read it -- a deliberate
+                ; regression-preserving workaround, not the reference's own byte
+                ; shape. That was
                 ; itself standing in for an even older bug: before this row
                 ; existed at all, adding "INT" as a real keyword (math pack
                 ; slice 1a) broke DEFINT, because match_kw's linear,
@@ -193,13 +200,32 @@ kwtable:
                 ; "DEFINT A-Z", tokenise to plain DEF_TOKEN, and leave "INT A-Z"
                 ; for the next match_kw call to mis-tokenise via the real "INT"
                 ; function keyword (exactly the math-pack-1a bug above, back
-                ; from the dead). DEFSNG/DEFDBL/DEFSTR still do NOT collide (no
-                ; "SNG"/"DBL"/"STR"-alone keyword exists -- only "CSNG"/"CDBL"
-                ; do, both requiring a leading 'C' that DEF's suffix never has,
-                ; and "STR$" needs a trailing '$' DEFSTR's suffix never has),
-                ; so they still need no matching entry of their own and still
-                ; fall through to the plain "DEF" row + ex_def_type's ASCII
-                ; mnemonic parse, unchanged.
+                ; from the dead).
+                ;
+                ; ⚠️ DEFSNG/DEFDBL/DEFSTR HAVE ROWS OF THEIR OWN NOW TOO (below),
+                ; AND THE ORDERING RULE BINDS THEM EQUALLY -- BUT NOT FOR THIS
+                ; REASON, AND THE DIFFERENCE IS WORTH KEEPING STRAIGHT. Those
+                ; three genuinely do NOT collide: no "SNG"/"DBL"/"STR"-alone
+                ; keyword exists -- only "CSNG"/"CDBL" do, both requiring a
+                ; leading 'C' that DEF's suffix never has, and "STR$" needs a
+                ; trailing '$' DEFSTR's suffix never has. So a plain "DEF" match
+                ; followed by three copied letters could never MIS-CRUNCH those
+                ; three the way it mis-crunches "INT" into $FF $85. DEFINT's row
+                ; is therefore load-bearing against a WRONG TOKEN; theirs is not,
+                ; and all three could have gone on working with no row at all.
+                ;
+                ; They were given rows anyway, because not colliding is not
+                ; the same as being harmless -- and what the collision analysis
+                ; does NOT cover is the state the copied letters leave BEHIND.
+                ; S,T,R are copied as NAME letters, so TKNAME stays SET and the
+                ; tokeniser is still inside an identifier when it reaches what
+                ; follows the keyword. A row is what CLOSES that name. So the
+                ; analysis above stands unchanged and still true; only the
+                ; conclusion it used to carry -- "so they need no entry of their
+                ; own" -- was wrong: right about collisions, silent about the
+                ; argument bytes. The D-DEFTYPETOK block below, and
+                ; todo-staleness-sweep-2026-08.md §4.11, carry the measured
+                ; shapes.
                 db      6,"DEFINT",1,DEFINT_TOKEN
                 ; D-DEFTYPETOK (2026-08-19): DEFINT's three siblings, for the
                 ; same reason and with the same oracle behind them ($AB/$AD/$AE,

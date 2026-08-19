@@ -136,11 +136,14 @@ main page 1 **6 B** are **untouched** — asserted by hashing
 * **`LIST <range>` is not touched.** `lnrd-list` is the must-not-move cell.
 * **`RETURN <line>` and the other 20 tokenless words stay filed.** (`DEFINT`'s
   bytes, named here alongside them at the time this spec was written, are FIXED
-  separately — D-DEFINTTOK, 2026-08-18, `lnref-msx1-characterization.md` §4;
+  separately — D-DEFINTTOK, 2026-08-18, and the other three verbs the next day,
+  D-DEFTYPETOK; `lnref-msx1-characterization.md` §4;
   its `lnr-defint` probe row graduated out of `basic_probe_lnblank.py`'s
   `INFORMATIONAL` set the same way `lnrx-lprint`/`-lpos`/`-lfiles` did below.
   The K3/K4 knife log further down this file is a historical measurement and is
-  left as recorded.) `lnrx-lprint` and `lnrx-wait` are named in §4 as the controls that say
+  left as recorded — but note before re-running K4 that `$AB` is no longer a
+  spare byte: D-DEFTYPETOK made it `DEFSTR_TOKEN`, so that cut now collides with
+  a live token rather than an unused one.) `lnrx-lprint` and `lnrx-wait` are named in §4 as the controls that say
   four entries were added and not five.
 
 ## 4. Rows

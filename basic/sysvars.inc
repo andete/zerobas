@@ -1789,20 +1789,31 @@ RDV_MODE        equ     RDV_ST + 1      ; $E554: main -> tenant MODE (1), D-READ
 ; address -- silent memory corruption, not an error -- guarded only by a property
 ; nothing enforces. 2 B buys that away.
 TGT_ADDR        equ     RDV_MODE + 1    ; $E555: element address, or 0 = scalar (2)
-; D-DEFINTTOK (2026-08-18): DEFINT reaches the SAME DEFtype tenant DEFSNG/
-; DEFDBL/DEFSTR use (basic/usr.asm `ex_defint`, sub/deftype.asm
-; `deftype_tenant`) but needs NO extra memory-ABI cell here -- no new byte
-; was spent in this window (a real constraint: main page 1 sits within a
-; handful of bytes of the $8000 ceiling, docs/rom-region-structure-review.md).
-; The tenant tells the two callers apart for free, by reading the byte
-; already sitting one below the handed-back DEFT_PTR cursor: ex_defint leaves
-; DEFINT_TOKEN there (it only ever did `inc hl` past its own token), and
-; ex_def_type never can (its callers only ever leave DEF_TOKEN or a space
-; there) -- see ex_defint's own comment in basic/usr.asm for the full case
-; that no false positive exists. A DEFT_PRESET-style preset flag byte was
-; drafted and measured too expensive (it cost a `ld a,n`/`ld (nn),a` pair in
-; MAIN-ROM ex_defint plus a cold-boot reset in `init`, ~9 B this window could
-; not afford); the token-peek needs none of that, so it is what shipped.
+; D-DEFINTTOK (2026-08-18) / D-DEFTYPETOK (2026-08-19): all four DEFtype verbs
+; reach ONE handler (basic/usr.asm `ex_deftype`) and ONE tenant (sub/deftype.asm
+; `deftype_tenant`), and needing to know WHICH of the four cost NO extra
+; memory-ABI cell here -- no new byte was spent in this window (a real
+; constraint: main page 1 sits within a handful of bytes of the $8000 ceiling,
+; docs/rom-region-structure-review.md). The tenant recovers the verb for free,
+; by reading the byte already sitting one below the handed-over DEFT_PTR cursor:
+; that byte IS the statement token, because `ex_deftype` does nothing but
+; `inc hl` past it before handing the cursor over. DEFSTR/DEFINT/DEFSNG/DEFDBL
+; are $AB..$AE and CONTIGUOUS BY CONSTRUCTION (see the token equates and the
+; do-not-reorder note that goes with them), so `sub DEFSTR_TOKEN` turns the
+; peeked byte into a 0..3 index straight into the tenant's 4-byte type-code
+; table -- no compare chain, and no range check either, because none is
+; reachable: `deftype_tenant` has exactly ONE caller and interp.asm's dispatch
+; table reaches it from exactly those four token rows, so the byte below the
+; cursor cannot be anything else. (Before D-DEFTYPETOK this same peek served a
+; narrower job -- telling TWO callers apart, `ex_defint` from the ASCII-mnemonic
+; `ex_def_type` -- and rested on the argument that the latter's callers could
+; only ever leave DEF_TOKEN or a space there. That routine and that path no
+; longer exist; the peek now discriminates four tokens rather than two, and
+; contiguity has replaced the false-positive argument.) A DEFT_PRESET-style
+; preset flag byte was drafted and measured too expensive (it cost a `ld a,n`/
+; `ld (nn),a` pair in the MAIN-ROM handler plus a cold-boot reset in `init`,
+; ~9 B this window could not afford); the token-peek needs none of that, so it
+; is what shipped.
 ;
 GFX_DSCALE      equ     GFX_PSTK_END    ; $E55A: persistent scale, quarter units,
                                         ; 0 = NEVER SET (D-DSCALE): a distinct
@@ -3336,7 +3347,7 @@ LHS_VARTYPE     equ     $F152   ; ex_let (interp.asm): the LHS variable's resolv
 ; docs/spec-basic-float-core.md §11.1. The per-letter DEFtbl: a 26-byte map
 ; (index name0-'A', A..Z) holding the resolved default type of an UNSUFFIXED
 ; name of that first letter -- 2 int / 4 single / 8 double / 1 string
-; (DEFTBL_STR). Written by DEFINT/DEFSNG/DEFDBL/DEFSTR ranges (ex_def_type,
+; (DEFTBL_STR). Written by DEFINT/DEFSNG/DEFDBL/DEFSTR ranges (ex_deftype,
 ; usr.asm); consulted at every reference by var_name_key (numeric default type)
 ; and var_str_type (string vs numeric). Reset to all-8 (double) by clear_vars
 ; at INIT/RUN.

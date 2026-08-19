@@ -38,7 +38,7 @@ been carried across two slices without being checked.
 
 ## 3. Target (verified)
 
-**`ex_def_type`** — `DEFINT` / `DEFSNG` / `DEFDBL` / `DEFSTR`
+**`ex_deftype`** — `DEFINT` / `DEFSNG` / `DEFDBL` / `DEFSTR`
 ([basic/usr.asm](../basic/usr.asm) → [sub/deftype.asm](../sub/deftype.asm)),
 tenant index `SUBROM_IDX_DEFTYPE = 9` in the **page-0** table.
 
@@ -55,6 +55,21 @@ Why it is clean:
 - **Repack-only already** (`IF ROM_BASE < $4000`), so the lean 16 KB cart never
   had this code and stays byte-identical **by construction** — no `-body.inc`
   dance, unlike the cassette carve.
+
+> ✅ **THE VERDICT HOLDS, THE BODY CHANGED — D-DEFINTTOK (2026-08-18) and
+> D-DEFTYPETOK (2026-08-19).** The four bullets above were verified against a
+> body that began with a **mnemonic-TEXT parse**, because `DEFINT`/`DEFSNG`/
+> `DEFDBL`/`DEFSTR` then arrived as `DEF_TOKEN` + upcased ASCII. All four now
+> crunch to their own single-byte tokens (`$AB`..`$AE`), the two resident
+> handlers merged into one (`ex_deftype`, [basic/usr.asm](../basic/usr.asm)),
+> and the mnemonic parser was **deleted** — the tenant reads the token back from
+> below the handed-over cursor and indexes a 4-byte type-code table instead. Two
+> bullets read differently today and neither verdict moves: the body is a
+> **token peek** plus a `DEFTBL` fill (still no `eval`, no float work, no BIOS,
+> same three helpers), and "single entry" is now **four dispatch rows sharing
+> one handler** rather than the `DEF` dispatch — still exactly one caller of the
+> tenant. The tenancy analysis above stands as taken; only the body it describes
+> changed.
 
 ## 4. ABI
 

@@ -36,7 +36,7 @@ with a *string* code:
   identity `elsize == type` holds and no map is needed.)
 
 **The two namespaces are distinct, and they happen to agree on the value `1`.**
-`DEFTBL_STR` is used symmetrically for the write ([`sub/deftype.asm:66`](../sub/deftype.asm:66))
+`DEFTBL_STR` is used symmetrically for the write ([`sub/deftype.asm:86`](../sub/deftype.asm:86))
 and the test ([`basic/vars.asm:174`](../basic/vars.asm:174)), so namespace P is
 internally consistent whatever its value. But **three sites feed a namespace-P
 code straight into namespace C**, and today that is invisible because `1 == 1`:

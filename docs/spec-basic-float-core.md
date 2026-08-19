@@ -506,11 +506,25 @@ cells `VARTYPE`/`VS_TARGET_TYPE`/`VS_INT_VAL`/`LHS_VARTYPE` at $F14E–$F152 (fr
 window below DRVA_DPB $F195). Lean `basic.rom` byte-identical.
 
 **S3b SHIPPED 2026-07-12** (`DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR` — the last F3
-half). The mnemonics are NOT keyword tokens (only `DEF` is), so after the `DEF`
-token they arrive as plain upcased ASCII; `ex_def_type` (basic/usr.asm) parses
-`INT`/`SNG`/`DBL`/`STR` + a comma-list of `letter`/`letter-letter` range items
-into a 26-byte `DEFTBL` ($F153, sysvars.inc), reset to all-double by
-`clear_vars` at INIT/RUN. `var_name_key` (numeric default) and `var_str_type`
+half). **Each of the four is its own single-byte statement token** — `DEFSTR`
+`$AB`, `DEFINT` `$AC`, `DEFSNG` `$AD`, `DEFDBL` `$AE`, oracle-pinned against the
+Philips VG-8020 ([`lnref-msx1-characterization.md`](lnref-msx1-characterization.md)
+§4) — with a whole-word `kwtable.inc` row each, so no mnemonic TEXT reaches the
+handler. `ex_deftype` (basic/usr.asm) serves all four dispatch rows and steps
+over the token onto a comma-list of `letter`/`letter-letter` range items, which
+it writes into a 26-byte `DEFTBL` ($F153, sysvars.inc), reset to all-double by
+`clear_vars` at INIT/RUN. *Which* of the four it was is recovered by the
+`sub/deftype.asm` tenant peeking at the token one below the cursor it is handed
+and indexing a 4-byte type-code table (`$AB`..`$AE` are contiguous by
+construction). ⚠️ **THAT IS NOT WHAT S3b ITSELF SHIPPED, AND THE DIFFERENCE IS
+BYTES ON THE WIRE.** As shipped 2026-07-12 the mnemonics were *not* keyword
+tokens (only `DEF` was), so all four arrived as `DEF_TOKEN` + plain upcased
+ASCII `INT`/`SNG`/`DBL`/`STR` and a mnemonic parser in the then-`ex_def_type`
+read them back. `DEFINT` was given its own token and row by **D-DEFINTTOK
+(2026-08-18)** and the other three by **D-DEFTYPETOK (2026-08-19)**, which also
+merged the two handlers into today's `ex_deftype` and deleted the mnemonic
+parser. The `DEFTBL` semantics below are unchanged by either; only the crunched
+byte shape and the dispatch are. `var_name_key` (numeric default) and `var_str_type`
 (DEFSTR → the unsuffixed name selects STRTAB) consult it at every reference; an
 explicit `%`/`!`/`#`/`$` suffix always wins. All 14 spec §11.1 cases pinned in
 the vars probe (now 58 cases), incl. the orphan-on-redeclare and DEFSTR-numeric

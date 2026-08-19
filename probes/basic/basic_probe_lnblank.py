@@ -2831,7 +2831,8 @@ CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + L
 #
 # `lnr-defint` WAS the same shape with a DELIBERATE cause: kwtable.inc used to
 # emit DEF_TOKEN + literal "INT" on purpose so ex_def_type could see an ASCII
-# mnemonic. ⚠️ `lna-renum3`, `lna-auto2` AND `lna-delrng` LEFT THIS SET IN
+# mnemonic. (That routine is gone — D-DEFTYPETOK merged it into `ex_deftype`
+# and deleted the mnemonic parser; see the ✅ notes below.) ⚠️ `lna-renum3`, `lna-auto2` AND `lna-delrng` LEFT THIS SET IN
 # D-KWGAP4, and so did the four `lnrx` + three `ref` rows for the same three
 # words (they left via KNOWN_DIVERGE, below). Their attribution argument was
 # "the WORD is absent from kwtable.inc, and they would still diverge with the
@@ -2843,7 +2844,8 @@ CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + L
 #
 # ✅ `lnr-defint` LEFT TOO, IN D-DEFINTTOK (2026-08-18, DEFINT now crunches to
 # its own single-byte token, $AC, oracle-pinned against the Philips VG-8020 --
-# basic/kwtable.inc's "DEFINT" row, basic/usr.asm `ex_defint`). `20 DEFINT 10`
+# basic/kwtable.inc's "DEFINT" row, basic/usr.asm `ex_defint`, since renamed
+# `ex_deftype`). `20 DEFINT 10`
 # went from the deliberate `<97>INT <0F><0A>` workaround shape to the
 # reference's own `<AC> <0F><0A>` -- the SAME graduation `lnrx-lprint`/
 # `-lpos`/`-lfiles` made above, for the same reason: an agreeing row does not

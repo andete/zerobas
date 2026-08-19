@@ -256,7 +256,7 @@ block and no new `SUBROM_IDX` are needed.
 | Piece | Home | Notes |
 |---|---|---|
 | Scalar walk (find by key,type), insert-and-shift, `FRETOP` collision + GC-once-retry, `vars_reset` | **ARY tenant, new `ARY_OP` ops** ([`sub/arrays.asm`](../sub/arrays.asm)) | pure-RAM pointer work; calls in-page sibling `strheap_gc` (like `ary_alloc`) |
-| `var_name_key`, `deftbl_lookup`, `var_str_type`, `ex_def_type` | **main** (unchanged) | pure key/type resolution, no pool address |
+| `var_name_key`, `deftbl_lookup`, `var_str_type`, `ex_deftype` | **main** (unchanged) | pure key/type resolution, no pool address |
 | `var_load_fac` / `var_store_fac` value codec + coercion | **main** (unchanged bodies) | needs `FAC` + float routines (`fac_to_int_strict`, `round_single_and_pack`) — must stay main-side |
 | `var_alloc_or_find` / `var_find_typed` | **become thin main glue** → set `ARY_OP` = scalar-find/alloc, `ary_engine_call`, read `ARY_ADDR` | reuses `ary_engine_call` + `ary_errmap` ([`basic/arrays.asm:265-301`](../basic/arrays.asm)) verbatim |
 | `ARYTAB` derivation at the 4 array-anchor sites | **in place** (`(PRGEND)+2` → `(ARYTAB)`) | 2 tenant sites + `strheap_aryend` + `ary_reset` |

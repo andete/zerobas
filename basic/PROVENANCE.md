@@ -3894,6 +3894,17 @@ unchanged, and the routine was already repack-only, so the lean cart is
 byte-identical by construction. Clean-room: no disassembly — this is a move of
 code we wrote.
 
+> ⚠️ **"Relocated verbatim" describes THIS carve, not the file today.**
+> D-DEFINTTOK (2026-08-18) and D-DEFTYPETOK (2026-08-19) gave all four verbs
+> their own oracle-pinned single-byte tokens (`$AB`..`$AE`) and **deleted** the
+> mnemonic-text parser this carve had moved, replacing it with a token peek and
+> a 4-byte type-code table; the two resident handlers merged into one
+> (`ex_deftype`). The language DID change there — the crunched byte shape did —
+> and it changed toward the reference. Clean-room basis is unaffected: those
+> tokens were read off a live VG-8020, not lifted
+> ([docs/lnref-msx1-characterization.md](../docs/lnref-msx1-characterization.md)
+> §4). The tenant ABI above (`DEFT_PTR`, `DEFT_STATUS`) is unchanged.
+
 ## Phase 3: input devices, I1 — `STICK(n)` / `STRIG(n)` (basic/expr.asm, basic/kwtable.inc, basic/sysvars.inc)
 
 The joystick/cursor direction reader and the trigger reader, as the first slice

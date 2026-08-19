@@ -11,8 +11,9 @@
 ; call page-1 residents but NOT the BIOS or the page-0 low region (the float
 ; pack), so a candidate is clean only if its TRANSITIVE closure stays off page 0.
 ; Almost nothing qualifies -- most statements reach `eval`, and eval bottoms out
-; in the float pack -- but DEFtype does: it is a pure mnemonic parse plus a
-; DEFTBL fill, with no eval, no BIOS, and no float work. It is also cold (a
+; in the float pack -- but DEFtype does: it was a pure mnemonic parse plus a
+; DEFTBL fill (a token peek plus that fill today, see the D-DEFINTTOK note
+; below), with no eval, no BIOS, and no float work either way. It is also cold (a
 ; declaration, run once), so a CALSLT round trip per execution costs nothing.
 ;
 ; The body below is the resident routine MOVED VERBATIM, with three edits: the

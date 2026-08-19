@@ -83,6 +83,18 @@ Of **162** MSX1 reserved words swept: **124 tokenise**, **38 do not**. Of those 
 they reach `ex_def_type` as `DEF_TOKEN` + literal ASCII) and **1 is `INTERVAL`**
 (needs no token). **34 words are genuinely absent.**
 
+> ✅ **THE `DEFSNG`/`DEFDBL`/`DEFSTR` CLAUSE IS HISTORY — D-DEFTYPETOK
+> (2026-08-19).** All three have whole-word `kwtable.inc` rows and single-byte
+> tokens of their own now (`$AB`/`$AD`/`$AE`, beside `DEFINT`'s `$AC` from
+> D-DEFINTTOK the day before), so they **tokenise**, the `DEF_TOKEN` + literal
+> ASCII mechanism is gone, and `ex_def_type` is gone with it (merged into
+> `ex_deftype`, basic/usr.asm). D-DEFTYPETOK's own gate run already reports all
+> three as **SAME** (crunch) and **SUPPORTED** (execution), so the "3 work
+> anyway" bucket is empty and at least three words have moved from the 38 into
+> the 124. **Re-run `make kwsweep` before quoting the tally above** rather than
+> doing that arithmetic here — the counts stand as taken; only their status
+> changed.
+
 > 🏁 **THE SILENT-GAP CLASS IS EMPTY (2026-07-27).** All eight below have
 > landed and are gated: `EQV`/`IMP` (`ef098e9`), `TAB(`/`SPC(`/`CSRLIN`/`POS`
 > (`99c0f6d`), `FRE`/`BIN$` (`2facfc0`). A re-run of `make kwsweep` confirms it
