@@ -313,6 +313,34 @@ CASES = [
     # regression in the differential coverage, a genuinely zb-only mechanism
     # (same class as the GC-collision/churn cases just above).
     #
+    # 🏁 RETIRED 2026-08-19 (D-VPTRDOM) — FIVE ROWS, AND THE CLASS THEY GUARD
+    # IS NOW UNREACHABLE RATHER THAN UNTESTED. `scalar.varptr.elem`,
+    # `scalar.varptr.neighbor`, `strarr.varptr.neighbor`,
+    # `h2.varptr.strarg.elem` and `h2.varptr.defstr.elem` all forced the §13a
+    # mid-eval ARYTAB shift the ONLY way it could be forced: zerobas's
+    # auto-allocating VARPTR. That was a signed-off slice-4b design choice
+    # (§3a) and it is gone — `VARPTR(<unset>)` is `Illegal function call` here
+    # now, matching BOTH references, which this very comment block had already
+    # recorded as their behaviour since 2026-07-17.
+    #
+    # 🎯 SO THERE IS NO LONGER ANY EVAL-TIME SCALAR ALLOCATOR ON ANY OF THE
+    # THREE SIDES, and §13a's corruption REQUIRED one. The class is not merely
+    # untestable, it is unreachable by construction: no program any side accepts
+    # can shift ARYTAB mid-statement.
+    # ⚠️ THE GUARDS STAY IN THE TREE — ex_let_arr's ary_snapshot_offset /
+    # ary_apply_offset and D-LVFIX's tgt_desc correction are cheap, their
+    # argument is static, and a future eval-time allocator needs them back. What
+    # is gone is the ability to TEST them from BASIC.
+    # 🔴 AND THAT COSTS K-LV5 ITS LIVE DETECTOR (m.arydrift in
+    # basic_probe_lvfix.py). Recorded, not absorbed.
+    # ⚠️ REWRITING THEM TO PASS WAS CONSIDERED AND REFUSED: with no mid-eval
+    # allocator, any rewrite (pre-setting the variable, say) stops reaching the
+    # correction at all — the rows would go green while gating nothing, and a
+    # vacuous row is worse than an honestly retired one.
+    #
+    # The original reasoning is kept below verbatim, because it is the record of
+    # WHY the correction exists and it is still the argument for keeping it.
+    #
     # scalar.varptr.elem: the exact repro (§13a "Repro"). A(0)=VARPTR(B)
     # allocates B mid-eval, shifting A's own element out from under the
     # already-resolved store address -- pre-fix this corrupted memory and
@@ -322,16 +350,10 @@ CASES = [
     # re-read VARPTR(B) (now a plain find, B already exists) and compare
     # against what A(0) actually stored -- must be the SAME value, i.e. the
     # store landed at the address VARPTR(B) really is, not a stale one.
-    ("scalar.varptr.elem",      "stored",
-        ['DIM A(1):A(0)=VARPTR(B):C=VARPTR(B)',
-         'PRINT"[";A(0)=C;"]"'], "zbval"),
     # scalar.varptr.neighbor: the OTHER repro (§13a "Repro" 2nd form) -- a
     # NEIGHBOUR element (not the one being stored) must survive the shift.
     # Pre-fix this also corrupted memory/hung (the stale address could land
     # anywhere in the shifted region, including atop A(3)'s own slot).
-    ("scalar.varptr.neighbor",  "stored",
-        ['DIM A(3):A(0)=11:A(3)=22:A(0)=VARPTR(C)',
-         'PRINT"[";A(3);"]"'], "zbval"),
     # strarr.varptr.neighbor: the STRING sibling (ex_let_arr_str) -- a
     # numeric VARPTR sub-argument INSIDE the string RHS (STRING$'s charcode
     # argument) allocates mid-str_eval, exercising ary_apply_offset_hl_sub
@@ -348,10 +370,6 @@ CASES = [
     # Asserted on the NEIGHBOUR S$(3) (not S$(0), whose own STRING$-built
     # content depends on the unpredictable VARPTR byte) -- "world" must
     # survive untouched.
-    ("strarr.varptr.neighbor",  "stored",
-        ['DIM S$(3):S$(0)="hello":S$(3)="world":'
-         'S$(0)=STRING$(3,VARPTR(D) AND 255)',
-         'PRINT"[";S$(3);"]"'], "zbval"),
 
     # === arrays slice-4c: string-scalar unification (docs/spec-basic- =======
     # arrays-slice4c-string-scalar-unification.md §9). String scalars are
@@ -412,18 +430,12 @@ CASES = [
     # zb-only for the same reason as every other auto-allocating-VARPTR case
     # (scalar.varptr.elem/neighbor, strarr.varptr.neighbor above): the
     # reference's VARPTR requires its argument to already exist.
-    ("h2.varptr.strarg.elem",  "stored",
-        ['DIM A(1):A(0)=VARPTR(B$):C=VARPTR(B$)',
-         'PRINT"[";A(0)=C;"]"'], "zbval"),
     # h2.varptr.defstr.elem: the SAME string-triggered shift as strarg.elem
     # above, but reaching type 1 via a DEFSTR-typed BARE name (var_name_key ->
     # deftbl_lookup -> type 1) rather than the `$` suffix (var_str_type). Both
     # now allocate a stride-6 string entry post-d92c3da; this case is retained
     # to cover the DEFTBL type-resolution path specifically (the two routes to
     # a string scalar exercise different key/type code in var_name_key).
-    ("h2.varptr.defstr.elem",  "stored",
-        ['DEFSTR B:DIM A(1):A(0)=VARPTR(B):C=VARPTR(B)',
-         'PRINT"[";A(0)=C;"]"'], "zbval"),
 
     # GC-root correctness (§9): several string SCALARS + a string ARRAY
     # element, then a real compacting GC (70x STRING$(250) churn), then

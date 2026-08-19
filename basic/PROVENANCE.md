@@ -3905,6 +3905,40 @@ code we wrote.
 > ([docs/lnref-msx1-characterization.md](../docs/lnref-msx1-characterization.md)
 > §4). The tenant ABI above (`DEFT_PTR`, `DEFT_STATUS`) is unchanged.
 
+## 2026-08-19 — `VARPTR(<unset scalar>)` is `Illegal function call` (D-VPTRDOM) (basic/expr.asm)
+
+`ev_f_varptr` created the variable when it did not exist — a signed-off arrays
+slice-4b design choice (§3a), and measured wrong: `X=VARPTR(Q)` with `Q` unset is
+`Illegal function call` on the VG-8020 **and** the CF-3300, against a `Q=1`
+control silent on all three. **Two references.** The scalar path now calls
+`var_find_typed` (find, never allocate) and defers FPERR=3 → ERR 5 through the
+shared `ev_f_defer` tail. The ARRAY-element form is untouched: `VARPTR(A(1))`
+still auto-dims on read, as the references do.
+
+Consequence, recorded because it is a loss of coverage: `VARPTR` was the only
+eval-time scalar allocator, so the arrays-§13a mid-statement `ARYTAB` shift is
+now unreachable from BASIC on every side. The §13a guards stay (cheap, static
+argument, needed again if an allocator returns); five `array-acceptance` rows
+that forced the class through the old `VARPTR` are retired, 151 → 146.
+
+Clean-room: our own code. The reference behaviour was established by black-box
+probing (`PRINT VARPTR(ZZ)` on a never-referenced name), recorded in
+`probes/basic/basic_probe_arrays.py` since 2026-07-17 and re-measured 2026-08-08
+and 2026-08-19. No disassembly.
+
+## 2026-08-19 — the `ev_sp` duplicate-load carve (D-EVSPDUP) (basic/expr.asm)
+
+`ev_sp` skips spaces and returns with `A` holding the first non-space byte — its
+only exit is `ret nz`, taken straight after `ld a,(ix+0)`. All 24 of its call
+sites in `expr.asm` followed it with a second `ld a,(ix+0)`, reloading what it
+had just returned: 3 B each, 72 B. Removed; main page-1 free 3 B → 69 B. No
+behaviour change intended or measured, and the register contract is now written
+down at `ev_sp` itself because no gate can check one. Knife K-VS1 (`ld a,(ix+1)`,
+same length) turns `unit-test` and `float-acceptance` red, so the contract is
+under test.
+
+Clean-room: our own code, a redundancy removal. No disassembly.
+
 ## 2026-08-19 — `INPUT #n` takes a LIST of targets (D-INPLIST) (basic/files.asm)
 
 `inp_readvar` parsed exactly ONE target and fell into `jp exec_stmt`, so the

@@ -236,31 +236,33 @@ SITE_CONTROL = {
 # gate covers POSITION for `INPUT #n` from this slice on -- it is no longer an
 # exclusion in the denominator below.
 #
-# 🔴 AND m.ctldrift / m.arydrift ARE DEFERRED FOR A THIRD REASON, WHICH THE
-# MEASUREMENT FOUND AND THE SPEC HAD PREDICTED GREEN. Both references answer
-# `Illegal function call` to `VARPTR(<unset var>)` -- isolated on its own, away
-# from MID$ entirely: `X=VARPTR(Q)` with Q unset is IFC on the VG-8020 and `OK`
-# here. So the statement these two rows run is REFUSED by the oracle, and their
-# zerobas reading cannot be scored against it.
-# 🎯 THE CONSEQUENCE IS BIGGER THAN THESE TWO ROWS. arrays slice-4b §13a names
-# VARPTR as THE ONLY eval-time scalar allocator -- so on the REFERENCE the whole
-# §13a corruption class is not expressible at all, and it exists here only
-# because zerobas's VARPTR accepts a domain the reference rejects. The
-# correction this slice carries is therefore RIGHT and REACHABLE (a zerobas
-# program reaches it today) but NOT ORACLE-ABLE: no program both references
-# accept can shift ARYTAB mid-statement. Filed as its own residual.
-# ⚠️ The rows STAY, printed with their readings, because they are still the live
-# detector for K-LV5 -- the knife that deletes the correction moves `m.arydrift`
-# and nothing else in the zb column. A deferral has to carry its evidence
-# ([[a-pinned-divergence-is-a-live-detector]]).
-DEFERRED = {
-    # f.mixctl / f.arymix graduated 2026-08-19 (D-INPLIST) -- a graduation is a
-    # DELETION FROM THIS LITERAL, never prose about one.
-    "m.ctldrift": "DEFERRED — blocked by VARPTR(<unset>): IFC on BOTH "
-                  "references, accepted here. A VARPTR DOMAIN defect",
-    "m.arydrift": "DEFERRED — same block; kept as the LIVE DETECTOR for K-LV5, "
-                  "the arrays-§13a correction knife",
-}
+# ✅ m.ctldrift / m.arydrift WERE DEFERRED TOO, AND D-VPTRDOM (2026-08-19)
+# CLOSED THAT BLOCK AS WELL. Both references answer `Illegal function call` to
+# `VARPTR(<unset var>)` -- isolated away from MID$ entirely: `X=VARPTR(Q)` with
+# Q unset is IFC on the VG-8020 AND the CF-3300, and USED TO BE `OK` here,
+# because ev_f_varptr allocated the variable. It FINDS now (var_find_typed) and
+# defers FPERR=3, so all three sides answer IFC and both rows are SCORED.
+# 🔴 AND THAT COST THIS PROBE A DETECTOR -- SAID PLAINLY, NOT ABSORBED. arrays
+# slice-4b §13a names VARPTR as THE ONLY eval-time scalar allocator. While
+# zerobas accepted the wider domain, `m.arydrift` was the LIVE detector for
+# K-LV5 (the knife that deletes the §13a correction moved that row and nothing
+# else). Now that zerobas agrees with the references, no program ANY of the
+# three sides accepts can shift ARYTAB mid-statement -- so the §13a guards
+# (ex_let_arr's ary_snapshot_offset/ary_apply_offset and D-LVFIX's tgt_desc
+# correction) are UNREACHABLE FROM BASIC rather than wrong. They still run; they
+# can simply never see a nonzero offset.
+# ⚠️ THE GUARDS ARE DELIBERATELY NOT DELETED. The argument for them is static and
+# they are cheap, and a future eval-time allocator needs them back. What is gone
+# is the ABILITY TO TEST THEM from a program, which is a loss of COVERAGE and not
+# of correctness -- exactly the trade the residual warned about before the fix
+# was priced ("anyone narrowing VARPTR's domain should price what that makes
+# dead"). K-LV5 has no live detector from this slice on, and that is recorded
+# here rather than discovered later ([[a-pinned-divergence-is-a-live-detector]]).
+# f.mixctl / f.arymix graduated 2026-08-19 (D-INPLIST); m.ctldrift / m.arydrift
+# the same day (D-VPTRDOM). A graduation is a DELETION FROM THIS LITERAL, never
+# prose about one -- so the literal is empty, and this gate now scores every row
+# it prints.
+DEFERRED = {}
 
 LABEL_W = 10
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>", "<NO DISK ON THIS SIDE>")
@@ -441,10 +443,11 @@ def main() -> int:
           "and are scored now, so the continuation position is measured for "
           "that verb and not only for MID$=.")
     print("NOT COVERED, named rather than implied: the arrays-§13a "
-          "mid-statement ARYTAB shift "
-          "(m.ctldrift/m.arydrift — NOT oracle-able: the only eval-time scalar "
-          "allocator is VARPTR, which both references REFUSE on an unset "
-          "variable, so no program they accept can shift ARYTAB mid-statement); "
+          "mid-statement ARYTAB shift — and it is now unreachable on ALL THREE "
+          "sides, not just the two references (D-VPTRDOM made zerobas refuse "
+          "VARPTR(<unset>) too, and VARPTR was the only eval-time scalar "
+          "allocator), so the §13a guards are untestable from BASIC and K-LV5 "
+          "has no live detector; "
           "the FIELD/LSET half's own DENOMINATOR — element identity, RANK, the "
           "error faces, RSET — which is basic_probe_fldary.py, not this probe; "
           "numeric `INPUT #n` (rejected before any target parse); and a "

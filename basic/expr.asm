@@ -1818,8 +1818,30 @@ evmc_exp_overflow:
 ; (VARTAB), NOT the reference ROM's variable-area address — zerobas's table is
 ; its own layout, so VARPTR yields OUR address. This is a documented divergence
 ; (PROVENANCE.md): a loader stub that pokes through VARPTR sees a valid, writable
-; 16-bit cell, which is all the loader use needs. If the variable does not yet
-; exist it is created (value 0) so the returned address is always valid.
+; 16-bit cell, which is all the loader use needs.
+;
+; ⚠️ D-VPTRDOM (2026-08-19): AN UNSET SCALAR IS `Illegal function call`, AND IT
+; USED TO BE CREATED HERE. The old header said "if the variable does not yet
+; exist it is created (value 0) so the returned address is always valid" -- a
+; deliberate design choice, and MEASURED WRONG on BOTH references: `X=VARPTR(Q)`
+; with Q unset is IFC on the VG-8020 AND the CF-3300, against a `Q=1` control
+; silent on all three (docs/todo-staleness-sweep-2026-08.md §4.2, and rows
+; m.ctldrift/m.arydrift in lvfix-acceptance). Under the charter the reference
+; wins, so the scalar path FINDS and no longer allocates.
+; 🎯 THE CONSEQUENCE IS BIGGER THAN THE ROW, AND IT IS A LOSS OF COVERAGE, NOT
+; OF CORRECTNESS. Arrays slice-4b §13a names VARPTR as THE ONLY eval-time scalar
+; allocator, so this was also the only way a zerobas program could shift ARYTAB
+; mid-statement. Closing it makes the §13a guards (`ex_let_arr`'s
+; ary_snapshot_offset/ary_apply_offset and D-LVFIX's tgt_desc correction)
+; UNREACHABLE FROM BASIC rather than wrong -- they still execute, they just can
+; never see a nonzero offset now. They are NOT deleted: the argument for them is
+; static, they are cheap, and a future eval-time allocator would need them back.
+; ⚠️ What IS lost is K-LV5's live detector -- m.arydrift moved under that knife
+; and nothing else did. That is recorded rather than worked around; see the
+; residual, which this slice rewrites rather than closes.
+; ⚠️ SCOPE: the ARRAY-element form is untouched. `VARPTR(A(1))` still auto-dims
+; on read, which is what ev_f_arr does and what the references do; the oracle
+; here covers the unset SCALAR only, and the fix is scoped to it.
 ev_f_varptr:
                 inc     ix                  ; skip the VARPTR token
                 call    ev_sp
@@ -1874,8 +1896,14 @@ vptr_gottype:
                 cp      '('
                 jr      z,vptr_arr          ; subscript -> array element
                 ld      a,e                 ; scalar: A = type
-                call    var_alloc_or_find   ; BC,A -> CF/HL = entry base
-                jr      nc,vptr_none        ; OOM (FPERR set) -> deferred, DE=0
+                call    var_find_typed      ; D-VPTRDOM: FIND, never allocate.
+                                            ; Same BC,A -> CF/HL contract as
+                                            ; var_alloc_or_find and it guards IX
+                                            ; (the text cursor) too, so this is a
+                                            ; like-for-like swap; NC now means
+                                            ; NOT SET rather than OOM, and op=4
+                                            ; SCALAR_FIND cannot raise at all.
+                jr      nc,vptr_unset       ; unset -> Illegal function call
                 inc     hl
                 inc     hl
                 inc     hl                  ; HL = value field (entry+3)
@@ -1927,12 +1955,29 @@ vptr_arr:
                                             ; error (eva_deferred convention; the
                                             ; statement aborts at check_expr_errors)
 vptr_none:
-                ld      de,0                ; no address (OOM / deferred error -> 0)
+                ld      de,0                ; no address (deferred error -> 0)
                 ret                         ; repack: FPERR already set on every path
-                                            ; that reaches here (var_alloc_or_find OOM
-                                            ; or an ary_op0_resolve error), so return
-                                            ; the deferred 0 -- no ')' check (it could
-                                            ; only raise a masking second error)
+                                            ; that reaches here (an ary_op0_resolve
+                                            ; error), so return the deferred 0 -- no
+                                            ; ')' check (it could only raise a masking
+                                            ; second error)
+; ⚠️ vptr_unset SITS BELOW vptr_none's `ret` ON PURPOSE, AND THE DEAD-CODE GATE
+; IS WHY. Drafted ABOVE it, this block silently stole vptr_arr's NZ
+; FALL-THROUGH -- the array-element error path stopped reaching vptr_none and
+; started raising through here instead, which also orphaned vptr_none. `make
+; deadcode` failed the build naming it, which is the only reason the reroute was
+; noticed at all: it would not have shown as a wrong ANSWER, because ev_f_defer's
+; penderr_set is first-error-wins and ary_op0_resolve had already set FPERR.
+; ⇒ inserting a label before an existing one is an edit to whatever FELL INTO it.
+vptr_unset:
+                ; D-VPTRDOM: the reference's own answer for an unset scalar.
+                ; FPERR=3 maps to ERR 5 `Illegal function call` (fperr_to_err,
+                ; interp.asm), deferred through the shared ev_f_defer tail so
+                ; first-error-wins still holds -- `VARPTR(Q)` inside an argument
+                ; list that already faulted must keep the FIRST error, exactly as
+                ; every other deferring factor does.
+                ld      e,3
+                jp      ev_f_defer
 
 ; --- ev_f_base ------------------------------------------------------------
 ; BASE(n) was descoped here for most of the project's life -- it parsed its

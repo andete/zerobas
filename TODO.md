@@ -918,8 +918,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
       see it and zerobas read `[HI]` — a value consistent with the wrong
       hypothesis [[readout-blind-to-its-own-subject]]. Re-drive as a stored
       program with `RUN`, where the abort IS the tail.
-- [ ] 🔴 **`VARPTR(<unset variable>)` IS `Illegal function call` ON BOTH
-      REFERENCES AND SUCCEEDS HERE — MEASURED 2026-08-08 (D-LVFIX).** Isolated
+- [x] ✅ **~~`VARPTR(<unset variable>)` IS `Illegal function call` ON BOTH
+      REFERENCES AND SUCCEEDS HERE~~ — FIXED 2026-08-19, D-VPTRDOM.**
+      `ev_f_varptr`'s scalar path calls `var_find_typed` (find, never allocate)
+      and defers **FPERR=3 → ERR 5** through the shared `ev_f_defer` tail, so
+      `X=VARPTR(Q)` with `Q` unset is `Illegal function call` on **all three
+      sides**. `lvfix-acceptance` **20/20 → 22/22, and its DEFERRED literal is
+      now EMPTY** — every row it prints is scored. Knife K-VP1 put
+      `var_alloc_or_find` back (same length): **exactly 2 diverge, 20 green.**
+      ⚠️ **SCOPE:** the ARRAY-element form is untouched — `VARPTR(A(1))` still
+      auto-dims on read, as `ev_f_arr` and the references do. The oracle covers
+      the unset SCALAR only and the fix is scoped to it.
+      💰 **5 B, from the 66 B `ev_sp` carve** (D-EVSPDUP, same day); page-1 free
+      69 → 64 B.
+      🔴 **THE PRICE THIS ENTRY ASKED FOR, PAID AND LARGER THAN FILED.** The note
+      said "anyone narrowing `VARPTR`'s domain should price what that makes
+      dead". It is **five `array-acceptance` rows**, not just K-LV5's detector:
+      `scalar.varptr.elem`, `scalar.varptr.neighbor`, `strarr.varptr.neighbor`,
+      `h2.varptr.strarg.elem`, `h2.varptr.defstr.elem` — every one of them forced
+      the §13a mid-eval `ARYTAB` shift through the auto-allocating `VARPTR`,
+      because that was the only way to force it. **RETIRED, 151 → 146 rows, all
+      passing**, with the reasoning kept verbatim in the probe.
+      🎯 **AND THE CLASS IS UNREACHABLE NOW, NOT MERELY UNTESTED.** §13a's
+      corruption REQUIRED an eval-time scalar allocator; there is no longer one
+      on ANY of the three sides, so no program any side accepts can shift
+      `ARYTAB` mid-statement. ⚠️ **THE GUARDS STAY** (`ex_let_arr`'s
+      `ary_snapshot_offset`/`ary_apply_offset`, D-LVFIX's `tgt_desc`) — cheap,
+      static argument, and needed again if an allocator ever returns; this entry
+      said not to delete them on the note alone and they are not deleted.
+      ⚠️ **K-LV5 HAS NO LIVE DETECTOR FROM HERE ON**, and rewriting the five rows
+      to pass was REFUSED: with no allocator they would stop reaching the
+      correction and go green while gating nothing.
+      🔴 **THE DEAD-CODE GATE CAUGHT A REROUTE NO ACCEPTANCE GATE COULD HAVE.**
+      The first draft put `vptr_unset:` immediately ABOVE `vptr_none:`, stealing
+      `vptr_arr`'s NZ **fall-through**: the array-element error path started
+      raising through the new block and `vptr_none` was orphaned. It would NOT
+      have shown as a wrong answer — `ev_f_defer`'s `penderr_set` is
+      first-error-wins and `ary_op0_resolve` had already set FPERR — so every
+      differential would have stayed green. Only `make deadcode` failed the
+      build, naming `vptr_none`. ⇒ **inserting a label before an existing one is
+      an edit to whatever FELL INTO it.**
+
+      **Originally filed** — MEASURED 2026-08-08 (D-LVFIX). Isolated
       away from any other verb: `X=VARPTR(Q)` with `Q` unset is IFC on the
       VG-8020 and `OK` on zerobas, which allocates `Q`. **TWO references.**
       🎯 **The consequence is bigger than the row.** Arrays slice-4b §13a names
