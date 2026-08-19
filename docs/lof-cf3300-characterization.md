@@ -180,7 +180,7 @@ so it rewrites the entry on *every* `PUT`; the reference defers it to `CLOSE`.
 
 **And §3's formula needed separating, not just stating.** The rule was written up
 as `recno × reclen` on the strength of the single **256** — but `OPEN … AS #1`
-with no `LEN=` defaults reclen to 256 ([`basic/files.asm:618`](../basic/files.asm:618)),
+with no `LEN=` defaults reclen to 256 ([`basic/files.asm:583`](../basic/files.asm:583)),
 so `1 × 256 = 256` *and* a 256-byte sector is 256. 🔴 **One cell, two rules, no
 way to tell them apart.** `rnd_put_len` (`LEN=16`) reads **16** on both machines:
 `recno × reclen` holds, sector-granularity is refuted. Its `dir` column reads

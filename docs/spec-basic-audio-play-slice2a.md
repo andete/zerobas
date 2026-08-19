@@ -44,7 +44,7 @@ from stock ROM ([memory: no-reference-rom-disasm]).
 
 | Piece | Slice | Notes |
 |---|---|---|
-| `PLAY_TOKEN` ($C1) statement dispatch | 2a | already captured, [`sysvars.inc:311`](../basic/sysvars.inc) |
+| `PLAY_TOKEN` ($C1) statement dispatch | 2a | already captured, [`sysvars.inc:365`](../basic/sysvars.inc) |
 | Resident `ex_play` stub: parse `PLAY <str>[,<str>[,<str>]]`, eval each string arg, marshal (body-ptr, len)×3 to RAM | 2a | uses `str_eval` (§4) |
 | `IDX_PLAY_PARSE` tenant: MML → per-voice packet queue; set `MUSICF` last | 2a | the big code chunk; page-1 leaf |
 | GICINI-equiv init (zero queues, clear `MUSICF`, silence 3 tone channels) | 2a | first `PLAY` needs it (arc spec §3.E) |
@@ -174,16 +174,16 @@ Key ABI facts (from the tenant survey):
 - **Marshal everything through page-3 RAM** — CALSLT clobbers all registers. The
   stub derefs each string's **body pointer** (not the descriptor) + length and
   writes them to a fresh `AUDIO_*` block in the `$E9xx` scratch region (the
-  `DISKOP_*` idiom, [`sysvars.inc:1183`](../basic/sysvars.inc)). String bodies live
+  `DISKOP_*` idiom, [`sysvars.inc:2549`](../basic/sysvars.inc)). String bodies live
   in RAM (program text ≥ `TXTTAB`, or the string heap) — always visible to a page-1
   tenant, which keeps RAM pages 2–3 mapped.
 - **`subrom_call` ABI:** `IX = $4010 + 3*14`; CF=1 means *sub-ROM absent, no call
   made*; the tenant's real success/error rides back in `AUDIO_STATUS`
-  ([`subromcall.asm:55`](../basic/subromcall.asm), [`format.asm:131`](../basic/format.asm)).
+  ([`subromcall.asm:39`](../basic/subromcall.asm), [`format.asm:131`](../basic/format.asm)).
 - **`str_eval`** ([`strvar.asm:22`](../basic/strvar.asm)): `HL` at operand → sets
   `STRPTR`→`[len][ptr]` descriptor (repack build), `VALTYP=1`, `CF=1` on success,
   advances `HL`; deref the body with `pu_deref_body`
-  ([`str-engine.asm:124`](../basic/str-engine.asm)). Errors are deferred → check
+  ([`str-engine.asm:180`](../basic/str-engine.asm)). Errors are deferred → check
   `FPERR`/`check_expr_errors` at the statement boundary.
 
 ---

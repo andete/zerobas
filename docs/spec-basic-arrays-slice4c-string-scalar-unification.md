@@ -88,7 +88,7 @@ Two facts define the starting line:
 | **Numeric + string arrays, numeric scalars** | chain `[PRGEND+2 → ARYTAB → ARYEND)` | scalar `[name0][name1][type][value:2/4/8]` stride `type+3`; array descriptors above `ARYTAB` | `sub/arrays.asm` tenant (`scv_find`/`scv_alloc`, `ary_*`) + `basic/vars.asm` glue |
 | **String scalars** `STRTAB` (4c relocates) | fixed `$E240..$E268` (40 B), stride `STRENTSZ=5` | `[name0][name1][len:1][ptr:2]` × 8, descriptor at slot+2 | `basic/vars.asm` (`str_find`/`str_get_key`/`str_set_key`) + `sub/strheap.asm` GC |
 
-- `ARYTAB` ([`sysvars.inc:434-435`](../basic/sysvars.inc)) is the live cell = scalar-region
+- `ARYTAB` ([`sysvars.inc:904-435`](../basic/sysvars.inc)) is the live cell = scalar-region
   end = array base. Scalar base is derived `(PRGEND)+2`.
 - `STRTAB` ([`sysvars.inc:448`](../basic/sysvars.inc)), `STRENTSZ`/`STREND`
   ([`sysvars.inc:458-466`](../basic/sysvars.inc)), `FRETOP equ STREND == $E268`
@@ -102,16 +102,16 @@ Two facts define the starting line:
 - **Uniform 3-byte descriptor** `[len:1][ptr:2]` everywhere
   ([`sub/strheap.asm:13,19`](../sub/strheap.asm)); `len==0` ⇒ never a root
   ([`sub/strheap.asm:25`](../sub/strheap.asm), `sg_inrange`).
-- **`elsize_from_type`** ([`sub/arrays.asm:761`](../sub/arrays.asm)) already maps
+- **`elsize_from_type`** ([`sub/arrays.asm:943`](../sub/arrays.asm)) already maps
   **type 1 → 3** (the heap descriptor size), identity for numeric 2/4/8, and
   **preserves BC,D,E,H,L, clobbers A only** — the exact primitive 4c needs for a
   variable-stride scalar walk.
-- **GC root set today** ([`sub/strheap.asm:584-591`](../sub/strheap.asm), `sg_walk`):
+- **GC root set today** ([`sub/strheap.asm:744-591`](../sub/strheap.asm), `sg_walk`):
   `sg_walk_strtab` (STRTAB slots) → `sg_walk_arrays` (type==1 array elements, already
   `(ARYTAB)`-anchored) → `sg_walk_temps` (temp-descriptor stack `[TEMPTOP,TEMPBASE)`).
-- **Temp-descriptor stack** ([`sysvars.inc:612-623`](../basic/sysvars.inc)): downward
+- **Temp-descriptor stack** ([`sysvars.inc:1529-623`](../basic/sysvars.inc)): downward
   `[len][ptr]` entries, **enumerated as roots** (so GC updates their ptrs), reset each
-  statement. `RVDESC` ([`sysvars.inc:554-568`](../basic/sysvars.inc)) is a fixed scratch
+  statement. `RVDESC` ([`sysvars.inc:1471-568`](../basic/sysvars.inc)) is a fixed scratch
   descriptor that is **NOT** a root.
 
 ### 1c. Space (measured this session, `build/basic-reloc.sym`)
@@ -149,8 +149,8 @@ marks scalar-end/array-base; string scalars simply join the region below it.
 
 ### 3a. Unify the entry stride (the `elsize_from_type` substitution)
 
-The 4b tenant's `scv_find` ([`sub/arrays.asm:376-432`](../sub/arrays.asm)) and
-`scv_alloc` ([`sub/arrays.asm:451-605`](../sub/arrays.asm)) compute stride as raw
+The 4b tenant's `scv_find` ([`sub/arrays.asm:504-432`](../sub/arrays.asm)) and
+`scv_alloc` ([`sub/arrays.asm:584-605`](../sub/arrays.asm)) compute stride as raw
 `type+3` ([`sub/arrays.asm:487`](../sub/arrays.asm) and the `scvf_lp` advance
 `:414-429`). 4c routes both through **`elsize_from_type`** so a type-1 entry strides by
 6 not 4. Because `elsize_from_type` is identity for numerics, **numeric behaviour is
@@ -163,9 +163,9 @@ now called with type=1).
 
 ### 3b. Replace `sg_walk_strtab` with a scalar-chain string walk (the GC crux)
 
-`sg_walk` ([`sub/strheap.asm:588-591`](../sub/strheap.asm)) changes its first pass from
+`sg_walk` ([`sub/strheap.asm:750-591`](../sub/strheap.asm)) changes its first pass from
 `sg_walk_strtab` (fixed `STRTAB`) to **`sg_walk_scalars`**, modelled directly on the
-sibling `sg_walk_arrays` ([`sub/strheap.asm:633-684`](../sub/strheap.asm)) which already
+sibling `sg_walk_arrays` ([`sub/strheap.asm:824-684`](../sub/strheap.asm)) which already
 walks a `(ARYTAB)`-anchored, type-filtered, `elsize_from_type`-strided region:
 
 ```
@@ -182,7 +182,7 @@ loop:
 
 - End-test is **byte-wise against `(ARYTAB)`**, mirroring `scv_find`'s deliberate
   no-`ld de,(ARYTAB)` to avoid clobbering the walk registers
-  ([`sub/arrays.asm:382-396`](../sub/arrays.asm)).
+  ([`sub/arrays.asm:510-396`](../sub/arrays.asm)).
 - Descriptor offset is **entry+3** (past `[name0][name1][type]`), vs `sg_walk_strtab`'s
   slot+2 — the single most bug-prone byte in the slice (a stale +2 would visit the
   `type` byte as a `len`, corrupting compaction). Gate it directly (§9).
@@ -198,24 +198,24 @@ loop:
 ### 3c. Retarget find/store from `STRTAB` to the chain (main-ROM glue shrinks)
 
 The three `basic/vars.asm` string routines become thin glue over the existing
-`ary_engine_call` + `ary_errmap` ([`basic/arrays.asm:285,311-321`](../basic/arrays.asm)),
+`ary_engine_call` + `ary_errmap` ([`basic/arrays.asm:487,311-321`](../basic/arrays.asm)),
 exactly as 4b did for the numeric `var_find_typed`/`var_alloc_or_find`:
 
 - **`str_find`** ([`vars.asm:707-739`](../basic/vars.asm)) — **deleted**; its callers use
   the tenant scalar-find. (~30 B main reclaim.)
-- **`str_get_key`** ([`vars.asm:745-754`](../basic/vars.asm)) — set `ARY_KEY`=BC,
+- **`str_get_key`** ([`vars.asm:888-754`](../basic/vars.asm)) — set `ARY_KEY`=BC,
   `ARY_TYPE`=1, `ARY_OP`=4 (find), `ary_engine_call`; `ARY_ADDR`==0 (miss) → `HL=STR_EMPTY`;
   else `HL = ARY_ADDR + 3` (descriptor). Stays **find-only** (read never allocates).
-- **`str_set_key`** ([`vars.asm:770-847`](../basic/vars.asm)) — `ARY_OP`=5 (alloc),
+- **`str_set_key`** ([`vars.asm:944-847`](../basic/vars.asm)) — `ARY_OP`=5 (alloc),
   type=1 → `ARY_ADDR` (new-or-existing entry); dest descriptor = `ARY_ADDR+3`; then the
-  **unchanged** sub-side `sh_var_store` (op=12, [`sub/strheap.asm:1627-1653`](../sub/strheap.asm))
+  **unchanged** sub-side `sh_var_store` (op=12, [`sub/strheap.asm:2000-1653`](../sub/strheap.asm))
   heap-allocs the body copy and writes `[len][ptr]`. `ssk_new`'s manual name-write +
   the BUG-B len-zeroing ([`vars.asm:781-800`](../basic/vars.asm)) are **subsumed** by
   `scv_alloc` (it writes the name and zero-fills the value → `[len=0][ptr=0]`, an inert
   empty-string descriptor — BUG-B protection is now structural). **But** the source
   descriptor must be protected across `scv_alloc` — see §6 H1 (the one place this is not
   a mechanical port).
-- `STR_EMPTY` ([`vars.asm:754`](../basic/vars.asm)) is retained (miss sentinel).
+- `STR_EMPTY` ([`vars.asm:914`](../basic/vars.asm)) is retained (miss sentinel).
 
 The lean build keeps its inline-slot `str_find`/`ssk_store` bodies unchanged (all 4c
 edits are `IF ROM_BASE < $4000`).
@@ -223,7 +223,7 @@ edits are `IF ROM_BASE < $4000`).
 ### 3d. Reset — string scalars clear for free (resolves the 4b caveat)
 
 String scalars now live in `[PRGEND+2, ARYTAB)`, so `vars_reset` (`ARYTAB=PRGEND+2`,
-[`basic/arrays.asm:120-125`](../basic/arrays.asm)) — already chained from
+[`basic/arrays.asm:285-125`](../basic/arrays.asm)) — already chained from
 `new_prog`/`run_prog`/`ex_clear`/`relink` — clears them with the numeric scalars and
 arrays. The dedicated `cv_str` `STRTAB` wipe ([`vars.asm:903-910`](../basic/vars.asm))
 is **deleted**. This is the change that reaches full faithfulness (edit clears **all**
@@ -272,7 +272,7 @@ sysvars (`PRGEND`, `ARYTAB`), the scalar RAM region, and the in-page `elsize_fro
 - [`basic/arrays.asm`](../basic/arrays.asm) — no change expected (`vars_reset` already
   clears the whole scalar region); confirm only.
 - [`basic/strvar.asm`](../basic/strvar.asm) / [`basic/str-engine.asm`](../basic/str-engine.asm)
-  — callers of `str_get_key` (`str_eval_one` strvar.asm:89-91; MID$-stmt str-engine.asm:866-867)
+  — callers of `str_get_key` (`str_eval_one` strvar.asm:79-91; MID$-stmt str-engine.asm:866-867)
   are **format-agnostic** (they consume the returned descriptor address) → unchanged, but
   re-audit the MID$-stmt dest-held-across-`str_eval` window under H1.
 
@@ -307,7 +307,7 @@ collision GC), not cleared by static reasoning — the standing arc rule.
 
 **H2 — array-element LHS stale across a mid-eval STRING-scalar alloc (the §13a class, generalised).**
 4b's §13a fix (snapshot `ARYTAB` pre-eval, correct the element addr by the `ARYTAB` delta
-post-eval; [`vars.asm:552-593`](../basic/vars.asm), sites [`arrays.asm:608,629,795,817`](../basic/arrays.asm))
+post-eval; [`vars.asm:736-593`](../basic/vars.asm), sites [`arrays.asm:608,629,795,817`](../basic/arrays.asm))
 fires for `A(0)=…` / `S$(0)=…` when the RHS eval allocates a scalar. The only mid-eval
 scalar allocator is `VARPTR`. **Audit + verify:** (a) does `VARPTR(A$)` on an unset string
 var force-allocate a string scalar (⇒ a shift)? (b) if so, does the existing delta-correction

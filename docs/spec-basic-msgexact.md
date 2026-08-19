@@ -39,7 +39,7 @@ suspected a message-CASE defect. **It is a stale probe expectation.**
 into `eval_pos_arg` ([`basic/interp.asm:1708`](../basic/interp.asm:1708)), whose
 reject path is `gb_illegal` → `ld a,5 : jp raise_error` → `err_msgtab[5]` →
 `err_illegal_fn_arr` → **capitalised**. The deletion is documented at
-[`basic/str-engine.asm:1340`](../basic/str-engine.asm:1340). The probe at
+[`basic/str-engine.asm:1427`](../basic/str-engine.asm:1427). The probe at
 [`basic_probe_arrays.py:748`](../probes/basic/basic_probe_arrays.py:748) still
 asserts the pre-D-MISS-2 lowercase route.
 
@@ -78,7 +78,7 @@ and `interp.asm:1004` still use it.
 entries (3→5, 6→7). Table size unchanged.
 
 Repoint two aliases: `err_subrom_absent` ([`basic/subromcall.asm:67`](../basic/subromcall.asm:67))
-and `err_stack` ([`basic/program.asm:1432`](../basic/program.asm:1432)).
+and `err_stack` ([`basic/program.asm:1805`](../basic/program.asm:1805)).
 
 ### 3.2 Byte accounting — page 1 (sizes from `build/basic-reloc.sym`, not estimated)
 
@@ -115,7 +115,7 @@ from `rm -rf build && make basic-reloc` and nothing else
 ### 3.3 One free fix
 
 `err_msgtab[20]` is `dw err_unprintable`, but `err_verify`
-([`basic/cload.asm:494`](../basic/cload.asm:494)) already reads `Verify error`.
+([`basic/cload.asm:584`](../basic/cload.asm:584)) already reads `Verify error`.
 Repointing the entry costs **0 B** and makes `ERROR 20` exact.
 
 ### 3.4 The full edit list
@@ -278,7 +278,7 @@ taking `lnblank-say-acceptance` to 108/108 with **6** pins.
 
 Two docs need correcting with the fix (both currently state the withdrawn policy
 as fact): [`error_acceptance.py:24`](../probes/basic/error_acceptance.py:24) and
-the ERR table at [`spec-basic-error-handling.md:181`](spec-basic-error-handling.md:181)
+the ERR table at [`spec-basic-error-handling.md:199`](spec-basic-error-handling.md:199)
 — whose row 17 (`Can't continue`) is **measurably wrong** about the case.
 
 ## 6b. THE APPARATUS FINDING — a case-insensitive CLASSIFIER is not an assertion

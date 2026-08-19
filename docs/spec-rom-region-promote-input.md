@@ -356,10 +356,10 @@ The K1/K1e **pair** then localises the reader, which neither does alone:
   sees main page 1 ⇒ **the reader is main-side, not a tenant.**
 
 And the last link, read out of the source once the measurement pointed at it:
-`cpt_asp_scale256` ([`sub/circleparse.asm:309`](../sub/circleparse.asm:309)) is
+`cpt_asp_scale256` ([`sub/circleparse.asm:345`](../sub/circleparse.asm:345)) is
 the tenant's only `cpt_round` caller, and it converts `minor_ratio*256` where the
 ratio is whichever of `aspect` / `1/aspect` is ≤ 1
-([`:186-215`](../sub/circleparse.asm:186)). So the tenant's argument is ≤ 256.5,
+([`:186-215`](../sub/circleparse.asm:197)). So the tenant's argument is ≤ 256.5,
 **dexp ≤ 3, and the dexp==5 arm is unreachable from the only tenant caller.**
 
 ⇒ **The blind spot is real and demonstrated; the runtime consequence for THIS

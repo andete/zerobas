@@ -27,7 +27,7 @@ interrupt-live while paged in.
 ## 0. Why this exists (the problem, verified)
 
 A page-0 sub-ROM tenant is entered under `DI`, and today `subrom_call`
-([basic/subromcall.asm:54](../basic/subromcall.asm)) holds `DI` for the tenant's
+([basic/subromcall.asm:43](../basic/subromcall.asm)) holds `DI` for the tenant's
 **whole duration**. It must: while a page-0 tenant runs, `CALSLT` has switched
 slot-0 page 0 **out** and mapped the sub-ROM in, so the CPU's `$0038` maskable-
 interrupt vector now reads **sub-ROM bytes, not the BIOS ISR**. An interrupt

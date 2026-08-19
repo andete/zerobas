@@ -86,7 +86,7 @@ untouched** (the 003ff70 format-copy fix and its PRDEST routing stay main-side v
   loop (`skip_spaces` / separators / `exec_stmt` / `stmt_error`), and the `eval`/`str_eval`
   call heads of `pu_do_number`/`pu_do_string`. These touch page-1/low services (eval, the
   format copy) and MUST stay resident.
-- **`pu_fmt_int` stays resident** (~58 B). STR$ ([str-engine.asm:629](../basic/str-engine.asm))
+- **`pu_fmt_int` stays resident** (~58 B). STR$ ([str-engine.asm:735](../basic/str-engine.asm))
   keeps calling it directly — the string path is entirely unchanged (zero risk to
   string-acceptance). The tenant does NOT call this resident copy (it would drag in the
   resident `div10`@LOW, invisible to page-0); the tenant renders integers with its own

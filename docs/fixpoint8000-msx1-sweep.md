@@ -118,8 +118,8 @@ quantity and none of them is preceded by a negate.** That is the answer to
 
 | site | routine | fed by | verdict |
 |---|---|---|---|
-| `sub/graphics.asm:2582/2584` | `gdrw_sc_pos` | `gdrw_negate_hl` (the `$8000` arm added by D-DSCALE) | **fixed, 2026-08-11** |
-| `sub/graphics.asm:2593/2595` | `gdrw_sc_neg` | `gdrw_negate_hl` | **fixed, 2026-08-11** |
+| `sub/graphics.asm:2970/2584` | `gdrw_sc_pos` | `gdrw_negate_hl` (the `$8000` arm added by D-DSCALE) | **fixed, 2026-08-11** |
+| `sub/graphics.asm:2981/2595` | `gdrw_sc_neg` | `gdrw_negate_hl` | **fixed, 2026-08-11** |
 | `sub/graphics.asm:649` | `gfx_bres_init` | `gfx_abs16` | §4.1 — reachable, **correct** (unsigned consumer) |
 | `sub/fp_pow.asm:159` | `fpw_lp` | *nothing* — `MATH_N` is built from decimal digits | §4.4 — reachable, **correct by construction** |
 
@@ -135,7 +135,7 @@ the signed shift was written as a signed shift.
 
 ## §4 The negate half: 15 sites
 
-### 4.1 `gfx_abs16` (`sub/graphics.asm:736`) — 6 consumers, all unsigned
+### 4.1 `gfx_abs16` (`sub/graphics.asm:742`) — 6 consumers, all unsigned
 
 `gfx_abs16($8000)` returns `HL=$8000, A=$FF`. This is **already asserted** as
 the expected answer by an existing host unit-test row
@@ -150,7 +150,7 @@ contract is deliberate, not accidental.
 | `gfx_cross_ge0:1463/1467/1475/1479` | `gfx_mul16u`, magnitudes compared with `sbc`+CF (unsigned) | **no** — same bounded domain | out of domain |
 
 The `LINE` route is reachable **and slow**: 32768 masked plot steps.
-`probes/basic/basic_probe_graphics.py:188-191` says so in as many words and
+`probes/basic/basic_probe_graphics.py:338-191` says so in as many words and
 deliberately chose a one-pixel span (`LINE(-32768,0)-(-32767,0)`) to stay off
 that edge — so the `dmaj = $8000` case is *knowingly* untested at the probe
 layer. It is cheap at the **host unit-test layer**, which calls
@@ -171,7 +171,7 @@ bound — `r <= 255`, written in the `gfx_circ_scale` header as
 "Bounded-domain: `|v|*ASPS` assumed `<=65535` (true for `|v|<=255`…)". That is
 one assumption doing four rows' work, and it is an *overflow* bound, not a
 `$8000` bound. `CIRCLE(0,0),32768` is already a probe row
-(`basic_probe_graphics.py:278`, `ovf_radius`) so the domain is enforced
+(`basic_probe_graphics.py:562`, `ovf_radius`) so the domain is enforced
 somewhere; this sweep did not re-derive where. **Filed as a residual, not
 closed.**
 

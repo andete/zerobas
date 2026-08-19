@@ -18,9 +18,9 @@ Swept `basic/*.asm` + `basic/sysvars.inc` for every numeric literal in the
 | Category | Sites | Verdict |
 |---|---|---|
 | **`org $4000`** (`main.asm:23`) | 1 | **The only self-referential absolute address.** This is what changes. |
-| External-cartridge `"AB"` header scan `$4000–$4003` (`initext.asm:91–102`) | 4 | **Stays `$4000`.** Scans *other* slots (e.g. zerobas-disk) whose headers are in their own page 1. Not a self-reference. |
-| Cross-slot DSKIO ABI offset `DSKIO_ENTRY = $4010` (`sysvars.inc:591`, used `fat.asm:66`) | 1 | **Stays `$4010`.** Fixed disk-cartridge interface offset (ROM base + `$10`), not zerobas's own address. |
-| Cassette timing constants `CAS_LOW_1200 = $5C53`, `CAS_LOW_2400 = $2D25` (`sysvars.inc:89–90`, `save.asm:491`) | 3 | **Not addresses** — FSK low-signal-length words. |
+| External-cartridge `"AB"` header scan `$4000–$4003` (`initext.asm:106–102`) | 4 | **Stays `$4000`.** Scans *other* slots (e.g. zerobas-disk) whose headers are in their own page 1. Not a self-reference. |
+| Cross-slot DSKIO ABI offset `DSKIO_ENTRY = $4010` (`sysvars.inc:2461`, used `fat.asm:66`) | 1 | **Stays `$4010`.** Fixed disk-cartridge interface offset (ROM base + `$10`), not zerobas's own address. |
+| Cassette timing constants `CAS_LOW_1200 = $5C53`, `CAS_LOW_2400 = $2D25` (`sysvars.inc:143–90`, `save.asm:491`) | 3 | **Not addresses** — FSK low-signal-length words. |
 | Comments citing `$4010`/`$4000`/`$8000` | ~18 | Prose, no code effect. |
 | Char/ASCII arithmetic (`sub $20`, `cp $7F`, `or $80`) | 4 | **Not address math** — uppercasing, DEL key, expanded-slot flag. |
 | `$8000` | 2 | Only the `ds $8000 - $` page pad + a comment. |

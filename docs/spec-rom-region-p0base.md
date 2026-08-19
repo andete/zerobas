@@ -64,7 +64,7 @@ believing a trend built on it. Two independent checks, both **exact**:
 | filed claim | where | measured |
 |---|---|---|
 | *"Free space starts at `$003B`"* | the item as handed to this slice | 🔴 **FALSE.** `$003B..$0040` is `sub_p0_ping` (6 B: `3E C0 32 05 F1 C9`), `$0041` is `sub_int_selftest`. There is **no** free space below the page-0 body region; free space is the trailing run at the far end of the page. Picking a new base "in the gap after the vector" would have overwritten the PING — the one tenant every boot gate calls. |
-| *"Every call site computes `IX = BASE + 3*index` **symbolically**, so the change is mechanical"* | `TODO.md:2147`, [[capacity-wall-is-not-the-free-byte-count]], review §6 | 🟠 **TRUE of `basic/*.asm` (18 sites, all symbolic) and FALSE of the harness.** Three probes carry the entry address as a **hardcoded byte** inside an injected machine-code array — §3.2. The claim was made about the ROM and repeated as if it were about the change. |
+| *"Every call site computes `IX = BASE + 3*index` **symbolically**, so the change is mechanical"* | `TODO.md:4981`, [[capacity-wall-is-not-the-free-byte-count]], review §6 | 🟠 **TRUE of `basic/*.asm` (18 sites, all symbolic) and FALSE of the harness.** Three probes carry the entry address as a **hardcoded byte** inside an injected machine-code array — §3.2. The claim was made about the ROM and repeated as if it were about the change. |
 
 The second one is the shape the task itself predicted ("a hardcoded address in a
 probe is exactly the shape that would ship green and break later") — and it is
@@ -159,7 +159,7 @@ Read it:
   tenant.**
 
 One displacement is already documented in the tree rather than inferred:
-`sub/equates.inc:159-162` records that `parseln_tenant` (D-EVLNO, 87 B) is on page
+`sub/equates.inc:164-162` records that `parseln_tenant` (D-EVLNO, 87 B) is on page
 1 *"for a reason unlike every tenant above it: the body calls NOTHING AT ALL … the
 tie is broken by capacity, the page-0 table being full"*. That is the customer,
 observed once and about to recur.
@@ -201,7 +201,7 @@ three `equ`/assert edits and three probe constants. 44 B to restore access to
 
 Four source sites:
 
-1. `sub/equates.inc:14` — the definition.
+1. `sub/equates.inc:19` — the definition.
 2. `basic/sysvars.inc:3622` — the `IFNDEF` mirror. ⚠️ `sub.asm` includes
    `equates.inc` first, so the sub build takes that one and the main build takes
    this one. **Nothing cross-checks them** — see K1.
@@ -222,11 +222,11 @@ machine code as a Python byte list:
 | probe | gate | line | today | after |
 |---|---|---|---|---|
 | `probes/basic/basic_probe_subrom_boot.py:73` | `subrom-acceptance` | `0xDD,0x21,0x10,0x00` | `ld ix,$0010` (index 0, PING) | `0x40` |
-| `probes/basic/basic_probe_subrom_inttest.py:71` | `subrom-inttest` | `0xDD,0x21,0x19,0x00` | `ld ix,$0019` (index 3) | `0x49` |
+| `probes/basic/basic_probe_subrom_inttest.py:91` | `subrom-inttest` | `0xDD,0x21,0x19,0x00` | `ld ix,$0019` (index 3) | `0x49` |
 | `probes/basic/basic_probe_graphics_floor.py:76` | `graphics-acceptance` | `0xDD,0x21,0x28,0x00` | `ld ix,$0028` (index 8) | `0x58` |
 
 Their surrounding comments and docstrings carry the arithmetic too, and
-`basic/graphics.asm:73` and `sub/equates.inc:184` both spell "= `$0028`".
+`basic/graphics.asm:86` and `sub/equates.inc:189` both spell "= `$0028`".
 
 ⚠️ **Not fixed here, filed:** the constants stay hardcoded. Deriving them from
 `sub/equates.inc` is a real improvement and a different change — these probes

@@ -1596,7 +1596,7 @@ artifact and validate empirically after.
 **[M12 / CONIN — UNIFY: the M11 "two-bug" model collapses into ONE missing veneer. ROOT CAUSE PINNED;
 spec drafted; NO asm yet.]** · **what I decided:** ran a falsify-first differential span and concluded
 the sole DOS-boot blocker is that the relocated kernel's **`$544E` CONIN entry has no veneer** — it is
-`$00` padding (`kernel.asm:50 ds $5454-$,$00`) that falls through into `$5454` (`jp conout_body`,
+`$00` padding (`kernel.asm:244 ds $5454-$,$00`) that falls through into `$5454` (`jp conout_body`,
 CONOUT). So COMMAND.COM's BUFIN→`CALL $544E` emits one garbage char and returns without CHGET/blocking →
 the infinite prompt spin + `D8 3E 40` garbage. · **decisive evidence:** CHGET (`$009F`) called **1× on
 stock, 0× on ours** (`callseq --log 0x009F`). · **what this OVERTURNS (logged so the next sync re-levels
@@ -1710,7 +1710,7 @@ its own comment says *"Our first cut CONSUMES the string … it does not yet emi
 §7.2's "caller is NOT RES_PRINT" was wrong (reasoned from return addr $D88E; the actual consumer is
 $F1C9). · **Fix (approach A, spec §9.2):** add `push de / ld e,a / call conout_body / pop de` before
 the `jr` — emit each char via our proven CONOUT ($5454→CHPUT, char-in-E per M10), exactly as
-`conin_line_body` echoes (runtime.asm:165). Preserves the DE-past-$/A=$24 return contract. Clean-room
+`conin_line_body` echoes (runtime.asm:401). Preserves the DE-past-$/A=$24 return contract. Clean-room
 (published func-9 + our own CONOUT). · **judgment call:** hard-stopped at the asm boundary
 ([[spec-before-implementation]]) — wrote spec §9 + updated STATE + committed the `callwatch` mode, did
 NOT write the fix asm. · **the one build risk:** the pre-$41FD template budget (§7.3 silent-overflow

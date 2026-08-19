@@ -16,9 +16,9 @@ no intervening `RESUME`"*. `raise_error_hl` sets it to 1 when it takes the trap,
 and reads it to decide **trap vs forced abort**
 ([`basic/interp.asm:872`](../basic/interp.asm:872)). It is written back to 0 at
 exactly four places today: `run_prog` (RUN,
-[`basic/program.asm:302`](../basic/program.asm:302)), cold `init`
-([`basic/interp.asm:44`](../basic/interp.asm:44)), `ON ERROR GOTO 0`
-([`basic/program.asm:1590`](../basic/program.asm:1590)) and the `RESUME` family
+[`basic/program.asm:332`](../basic/program.asm:332)), cold `init`
+([`basic/interp.asm:65`](../basic/interp.asm:65)), `ON ERROR GOTO 0`
+([`basic/program.asm:2131`](../basic/program.asm:2131)) and the `RESUME` family
 ([`basic/interp.asm:1299`](../basic/interp.asm:1299),
 [`:1166`](../basic/interp.asm:1339)).
 
@@ -83,7 +83,7 @@ which zerobas does not raise at all (§7, newly filed).
 
 * **"Clear at the prompt / at every direct line"** — falsified by c6 and c4b.
 * **"Clear at the run-loop exit"** — the `ENDFLAG` exit
-  ([`basic/program.asm:442`](../basic/program.asm:442)) is shared by `END` and
+  ([`basic/program.asm:467`](../basic/program.asm:467)) is shared by `END` and
   the `STOP` statement, and c6 says those two must differ.
 * **"Clear at the run-loop exit gated on `CONTVALID`"** — this *does* reproduce
   every measured row, in 8 B at a single site, and it was the leading candidate.
@@ -100,7 +100,7 @@ lean 16 KB `basic.rom` stays byte-identical and **no label aliasing or call-site
 gating is needed** (contrast the S-FCH-2 trick).
 
 **Site A — the abort funnel**, `fre_abort_low`
-([`basic/arrays.asm:97`](../basic/arrays.asm:97), low region, repack-only
+([`basic/arrays.asm:94`](../basic/arrays.asm:94), low region, repack-only
 wholesale). It already does `xor a` / `ld (PRDEST),a`; add one store:
 
 ```
@@ -129,7 +129,7 @@ ex_end:
 ```
 
 **+3 B, page 1.** `ex_stop` does not come through here
-([`basic/interp.asm:327`](../basic/interp.asm:327) dispatches it separately), so
+([`basic/interp.asm:384`](../basic/interp.asm:384) dispatches it separately), so
 the c6/c4b asymmetry is structural rather than a test.
 
 **Site C — falling off the end of the program** — 🔴 **DELETED 2026-07-31 by
@@ -166,7 +166,7 @@ rp_notend:
 **+5 B, page 1** (specced 6 with a `jr z,rp_endprog` + out-of-line tail — which
 would additionally have been a long-jump risk: a throwaway variant of this site
 that grew the run loop by 5 B in a different spot pushed an *unrelated* `jr` at
-[`basic/program.asm:482`](../basic/program.asm:482) out of range).
+[`basic/program.asm:550`](../basic/program.asm:550) out of range).
 
 ### 4.1 Wall accounting — AS-BUILT
 

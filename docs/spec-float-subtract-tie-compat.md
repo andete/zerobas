@@ -41,11 +41,11 @@ guard 6–9 still round up, guard 0–4 still down. Multiply is half-up on both 
 
 ## 2. Why our build diverges
 
-`fp_sub` = flip ARGB sign then `jp fp_add` ([float-arith.asm:616](../basic/float-arith.asm:616)),
+`fp_sub` = flip ARGB sign then `jp fp_add` ([float-arith.asm:700](../basic/float-arith.asm:700)),
 so effective subtraction is the **opposite-sign** branch `fpa_diffsign`
-([float-arith.asm:561](../basic/float-arith.asm:561)). All its exits merge into
+([float-arith.asm:645](../basic/float-arith.asm:645)). All its exits merge into
 `fpa_done` → `round_and_finalize`, whose guard round is a blanket half-up
-(`ld a,(ARGA_DIG+14); cp 5; jr c,noround; …inc` — [float-arith.asm:362](../basic/float-arith.asm:362)).
+(`ld a,(ARGA_DIG+14); cp 5; jr c,noround; …inc` — [float-arith.asm:446](../basic/float-arith.asm:446)).
 So effective-subtract ties wrongly round away from zero, identical to add.
 
 ## 3. Proposed change (minimal; shared tail stays byte-identical)
@@ -68,7 +68,7 @@ fpa_sub_finalize:
 
 Re-target the **three diffsign exits** (`fpa_zero_result`-via-`jr c`,
 the `k=0` `jr z,fpa_done`, and the post-shift `jr fpa_done` at
-[float-arith.asm:588](../basic/float-arith.asm:588)/[:595](../basic/float-arith.asm:595)/[:606](../basic/float-arith.asm:606))
+[float-arith.asm:672](../basic/float-arith.asm:672)/[:595](../basic/float-arith.asm:679)/[:606](../basic/float-arith.asm:690))
 from `fpa_done` to `fpa_sub_finalize`. The **same-sign** add exits (line 558/560)
 keep going to `fpa_done` (= `round_and_finalize`) untouched → add ties stay half-up.
 `fpa_zero_result` routing through the new tail is harmless (all-zero, guard 0, no tie).

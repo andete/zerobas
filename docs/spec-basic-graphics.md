@@ -30,7 +30,7 @@ to straddle.
 Graphics is the largest remaining Phase-3 charter item ([TODO.md:1058](TODO.md))
 and the first arc whose runtime is **compute-heavy and long-running** (a full-screen
 `PAINT` is milliseconds-to-seconds of work), which collides directly with the live
-`PLAY` servicer we just landed ([basic/playsvc.asm:56](basic/playsvc.asm)). The
+`PLAY` servicer we just landed ([basic/playsvc.asm:67](basic/playsvc.asm)). The
 interrupt-discipline decision (§2) is unlike any prior tenant and must be pinned
 before code.
 
@@ -44,12 +44,12 @@ before code.
 - Graphics work-area addresses (last-referenced point, `ATRBAS`/`PATBAS`, `CLOC`/
   `CMASK`, …) — MSX2 TH work-area appendix / MSX Assembly Page, **cross-checked
   black-box** against VG-8020 work-area RAM (same discipline as `FORCLR` et al.,
-  [basic/sysvars.inc:46](basic/sysvars.inc:46)).
+  [basic/sysvars.inc:99](basic/sysvars.inc:99)).
 - Bresenham, the circle midpoint rasteriser, the flood-fill, and the `DRAW` packet
   encoding — **own-design, host-validated**; never lifted from a stock ROM.
 - Every token value — black-box VG-8020 crunch capture (§8), never asserted from
   memory (the `SOUND`-token `$C2`-guess-was-wrong lesson,
-  [basic/sysvars.inc:308](basic/sysvars.inc)).
+  [basic/sysvars.inc:362](basic/sysvars.inc)).
 
 ---
 
@@ -86,7 +86,7 @@ Two hard constraints collide:
 1. **New code must live in the sub-ROM.** Resident page 1 has 0–3 B free; the
    geometry engine (est. 1.5–3 KB) has nowhere else to go. Sub-ROM has the room.
 2. **A long op must NOT hold DI.** `subrom_call` wraps the whole tenant in
-   `di … call CALSLT … ei` ([basic/subromcall.asm:67](basic/subromcall.asm)). A
+   `di … call CALSLT … ei` ([basic/subromcall.asm:51](basic/subromcall.asm)). A
    full-screen `PAINT` run that way starves H.TIMI (the `PLAY` servicer) and JIFFY
    for its entire duration. And faithfulness demands it: **on a real MSX, music
    keeps playing while graphics draw**, precisely because graphics run interrupts-on.
@@ -99,7 +99,7 @@ proven (the interrupt self-test tenant `SUBROM_IDX_INTTEST`, and the math pack's
 before `ret`.
 
 But page-0 residence has a consequence the recon surfaced
-([sub/equates.inc:12](sub/equates.inc)): **a page-0 tenant has the BIOS switched
+([sub/equates.inc:17](sub/equates.inc)): **a page-0 tenant has the BIOS switched
 out** — it *cannot* `CALSLT WRTVRM`. That is not a problem; it is the forcing
 function toward the correct design (§3): a pixel engine must not pay CALSLT-per-byte
 anyway.
@@ -139,7 +139,7 @@ The tenant talks to the TMS9918 directly, not through the BIOS:
   and that the brief-DI window matches reference behaviour (no visible glitch).
 
 This mirrors the resident code's existing willingness to do raw port I/O
-([basic/vdpio.asm:91](basic/vdpio.asm) `out (c),a` for `OUT`) and needs no BIOS,
+([basic/vdpio.asm:68](basic/vdpio.asm) `out (c),a` for `OUT`) and needs no BIOS,
 which is exactly what page-0 residence (§2) requires.
 
 G1 adds the port equates (VDP_DATA=$98, VDP_ADDR=$99) and the `SCREEN 2` base-table
@@ -200,11 +200,11 @@ always mapped from both the tenant and main BASIC — the same visibility the
 
 New page-0 index appended (never renumber): `SUBROM_IDX_GRAPHICS` (next free after
 7; page-0 indices currently top out at PU_TAIL=7). A **selector-dispatched** single
-entry (the `fatprim`/`dirverb` pattern — [sub/equates.inc:87](sub/equates.inc)):
+entry (the `fatprim`/`dirverb` pattern — [sub/equates.inc:98](sub/equates.inc)):
 resident stubs set a `GFX_OP` selector + args in a RAM param block, then
 `subrom_call IX = SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS`. Args/results
 marshalled in RAM (coords are >8-bit; CALSLT clobbers all registers and CF cannot
-ride back — [basic/subromcall.asm:70](basic/subromcall.asm)). Resident stubs
+ride back — [basic/subromcall.asm:54](basic/subromcall.asm)). Resident stubs
 (repack-only, one per verb in a new `basic/graphics.asm`) do the eval of the
 coordinate/color expressions (eval stays resident) and the token-cursor guard
 (`push`/`pop hl` around the CALSLT — the exact bug that bit `ex_play`).
@@ -220,7 +220,7 @@ today). The `-` between coordinate pairs is the ordinary minus token `$F2`; `,B`
 
 | Keyword | Token | Kind |
 |---|---|---|
-| `PSET` | `$C2` | statement (this is the value the wrong `SOUND` guess used — [basic/sysvars.inc:308](basic/sysvars.inc)) |
+| `PSET` | `$C2` | statement (this is the value the wrong `SOUND` guess used — [basic/sysvars.inc:362](basic/sysvars.inc)) |
 | `PRESET` | `$C3` | statement |
 | `CIRCLE` | `$BC` | statement |
 | `PAINT` | `$BF` | statement |

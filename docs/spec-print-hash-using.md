@@ -14,7 +14,7 @@ count)**, clobbered by `pu_deref_body`, not the descriptor length read.
 ## Problem
 
 `PRINT# n, USING "fmt"; values…` — the file form of `PRINT USING` — is dispatched
-by [basic/print.asm:92](../basic/print.asm) (the file-form item loop routes a
+by [basic/print.asm:143](../basic/print.asm) (the file-form item loop routes a
 following `USING` token into `ex_print_using` with `PRDEST=1`), but the formatter's
 format-string **copy step was never made file-form-safe**. The module header itself
 records the file form as deferred ([basic/printusing.asm:25](../basic/printusing.asm)),
@@ -55,7 +55,7 @@ buffer** (`";` … ` AS #1` is literally from the preceding `open"u.dat" ... as 
 line). i.e. the format-string copy in `ex_print_using`
 ([basic/printusing.asm:50–67](../basic/printusing.asm)) reads a **wrong/oversized
 length** and overruns `"###"` into adjacent buffer bytes.
-`pu_emit_tail` ([basic/printusing.asm:319](../basic/printusing.asm)) then walks
+`pu_emit_tail` ([basic/printusing.asm:207](../basic/printusing.asm)) then walks
 `PU_FMT[PU_POS..PU_FMTLEN)` and streams that residue into the file — exactly the
 `";\x16\x00 AS ` seen on disk.
 

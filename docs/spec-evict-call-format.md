@@ -82,7 +82,7 @@ The S2b implementation agent proposed evicting `CALL FORMAT` as a *"clean page-0
 Shape-B tenant, all callees main-page-1-only."* **That classification is WRONG**, traced
 this session:
 
-* `do_format` (basic/format.asm) calls `write_sector` (basic/fat.asm:87), which tail-
+* `do_format` (basic/format.asm) calls `write_sector` (basic/fat.asm:106), which tail-
   calls `dskio_calslt` (fat.asm:61) → **`call CALSLT` ($001C)** — a **page-0 BIOS** entry.
 * Per the tenant playbook §2, a **page-0 tenant runs with slot-0 page-0 (BIOS + low
   region) switched OUT** — so `CALSLT` is invisible. `write_sector` **cannot run from a
@@ -99,7 +99,7 @@ So `do_format` straddles both pages: **neither pure tenant shape works.** The de
 
 ## 1. What `CALL FORMAT` is (in-tree survey)
 
-* `basic/format.asm` (254 lines), included **unconditionally** by `basic/main.asm:187`
+* `basic/format.asm` (254 lines), included **unconditionally** by `basic/main.asm:265`
   → present in **both** lean and repack. Statement dispatch: interp.asm:173-176
   (`CALL_TOKEN` / `_` → `ex_call` / `ex_call_us`), **not** behind `IF ROM_BASE<$4000`.
 * Structure:

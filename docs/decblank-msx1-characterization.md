@@ -139,7 +139,7 @@ is blank-transparent, not just the mantissa's.
 malformed-exponent divergence is a **separate live defect** that has nothing to
 do with this item — zerobas' `tkf_try_exponent` rolls the marker back and leaves
 it for the ordinary tokeniser, which its own header
-([`sub/tkfloat.asm:216`](../sub/tkfloat.asm:216)) records as own-design rather
+([`sub/tkfloat.asm:230`](../sub/tkfloat.asm:230)) records as own-design rather
 than oracle-pinned. Filed as **D-EXPBAD**
 ([`spec-basic-decblank.md`](spec-basic-decblank.md) §5.1).
 

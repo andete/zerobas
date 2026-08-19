@@ -16,7 +16,7 @@ spec first" (2026-07-04).
 - **V1 — Vacuous gate.** The committed BDOSX3 capture (`--at 0x0333`, un-armed) fires occurrence
   #1 of `$0333` during BOOT at **t=0.31 s**, ~20 s before the `\rBDOSX3\r` keys (t=20) load the
   program. Result: "0/293 bytes differ" — a hollow PASS comparing COMMAND.COM idle state. The
-  arm-gate that prevents this (`_capture_arm`, [disk_probe_diff.py:227](../../probes/disk/disk_probe_diff.py:227))
+  arm-gate that prevents this (`_capture_arm`, [disk_probe_diff.py:247](../../probes/disk/disk_probe_diff.py:247))
   is opt-in and NO `build_bdosx*_disk.py` emits it. The Tier-B "6/6 converged" baseline's
   capture rows are therefore not testing the exercised surface.
 - **V2 — Live create-file regression in `main`.** The SAME BDOSX3 capture, honestly armed

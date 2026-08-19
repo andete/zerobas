@@ -351,8 +351,8 @@ green (the `cmp16_bits`/`div10` escape class is already fenced).
 
 ### 11.5 `evmc_atn` (main-ROM stub) — mirror `evmc_sqr` minus the domain check
 
-Add the `ATN_TOKEN` selector to `ev_ff_mathconv` ([basic/expr.asm:817](../basic/expr.asm:817)).
-`evmc_atn` = `evmc_sqr` ([expr.asm:1059](../basic/expr.asm:1059)) **without** the
+Add the `ATN_TOKEN` selector to `ev_ff_mathconv` ([basic/expr.asm:1323](../basic/expr.asm:1323)).
+`evmc_atn` = `evmc_sqr` ([expr.asm:1678](../basic/expr.asm:1678)) **without** the
 `ARGA+FPNUM_SIGN` domain branch (atan is total): `ev_mc_arg` → `widen_rhs_operand` (ARGA) →
 `push ix` → `ld ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ATN` → `call subrom_call` → `pop ix`
 → `jp c,subrom_absent_error` → `ld a,8 / ld (FACTYP),a` → `jp flt_to_int16` (DE := int16,

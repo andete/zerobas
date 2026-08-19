@@ -63,7 +63,7 @@ Two further facts fell out of the same sweep:
   **only from the symbol table**.
 * `make unit-test` is structurally blind to `build/sub.rom` by design: every
   `tests/test_*.py` that needs a sub-ROM **re-assembles its own** into `/tmp`
-  (`tests/msxtest.py:74`, `test_float.py:61`, `test_graphics.py:631`, …). It is a
+  (`tests/msxtest.py:74`, `test_float.py:61`, `test_graphics.py:591`, …). It is a
   SOURCE reader, correctly classified, and cannot score a build artifact.
 
 Outside `basic-reloc`, `build/sub.rom` reaches the emulator corpus verbatim:

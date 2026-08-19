@@ -80,7 +80,7 @@ whether to do it.
    bounded only by `HIMEM`/the shared free region) and **reclaims the 128-byte
    `$E1C0` RAM pool**.
 3. **`HIMEM` becomes a live scalar ceiling** — currently record-only
-   ([`clear.asm:29-30`](../basic/clear.asm) "No allocator consults HIMEM yet").
+   ([`clear.asm:26-30`](../basic/clear.asm) "No allocator consults HIMEM yet").
 
 **What it costs / risks:**
 - The core mechanism is an **insert-and-shift** (creating a scalar moves the entire
@@ -137,12 +137,12 @@ $8001            PRGEND+2         (ARYEND=$0000)   FRETOP            C = min(HIM
 | `TXTMAX` | `$BE00` (repack) | constant | ceiling input |
 
 - Array base is computed **four times** as `(PRGEND)+2`:
-  [`sub/arrays.asm:524-526`](../sub/arrays.asm) (`ary_alloc`), `:455-457` (`ary_find`),
-  [`sub/strheap.asm:331-341`](../sub/strheap.asm) (`strheap_aryend`), and
-  [`basic/arrays.asm:111-119`](../basic/arrays.asm) (`ary_reset`).
+  [`sub/arrays.asm:506-526`](../sub/arrays.asm) (`ary_alloc`), `:455-457` (`ary_find`),
+  [`sub/strheap.asm:495-341`](../sub/strheap.asm) (`strheap_aryend`), and
+  [`basic/arrays.asm:315-119`](../basic/arrays.asm) (`ary_reset`).
 - Collision invariant `ARYEND ≤ FRETOP`; on a bump collision the allocator GCs the
   heap **once** and retries before OOM
-  ([`sub/arrays.asm:582-610`](../sub/arrays.asm), [`sub/strheap.asm:284-311`](../sub/strheap.asm)).
+  ([`sub/arrays.asm:1102-610`](../sub/arrays.asm), [`sub/strheap.asm:437-311`](../sub/strheap.asm)).
 - The heap treats everything below `FRETOP` as opaque array region; **GC never
   touches array data** — it only needs a correct "top of the region below me"
   (`ARYEND`), re-derived each alloc.
@@ -184,7 +184,7 @@ $8001          PRGEND+2      (ARYTAB)         (ARYEND=$0000)  FRETOP        C
 ### 3a. Create a scalar (the insert-and-shift)
 
 `var_alloc_or_find` today: walk the fixed pool; if absent, bump-write into free
-space with a `VAREND` room check ([`vars.asm:359-411`](../basic/vars.asm)). New:
+space with a `VAREND` room check ([`vars.asm:544-411`](../basic/vars.asm)). New:
 
 1. Walk `[PRGEND+2, ARYTAB)` for `(key,type)`. Found → return entry addr (§3c: done).
 2. Absent → need a new `stride = type+3` byte entry at the top of the scalar region
@@ -210,7 +210,7 @@ write. This is smaller than the 128-byte wipe.
 
 **Correctness constraint (not optional):** the scalar region is anchored at
 `PRGEND`, which the editor moves on **every** program edit
-([`program.asm:169,513,549`](../basic/program.asm), `relink` tail-calls `ary_reset`
+([`program.asm:282,513,549`](../basic/program.asm), `relink` tail-calls `ary_reset`
 [`program.asm:552-565`](../basic/program.asm)). When `PRGEND` moves, the scalar
 region's base moves under it — so **`relink` must reset the scalar region too**
 (not just arrays). Today `relink` calls `ary_reset` but *not* `clear_vars`, so
@@ -229,11 +229,11 @@ that `ary_reset` chains into, so the four call sites stay single-call.
 
 ### 3c. Read / store a scalar (unchanged codec)
 
-`var_load_fac` / `var_store_fac` ([`vars.asm:417-530`](../basic/vars.asm)) take an
+`var_load_fac` / `var_store_fac` ([`vars.asm:566-530`](../basic/vars.asm)) take an
 entry base address and copy/coerce value bytes to/from `FAC`. They are
 **location-independent** and carry over unchanged; only the *find/alloc* that hands
-them the address changes. `ev_f_var` (read, [`expr.asm:569-594`](../basic/expr.asm))
-and `ex_let` (write, [`interp.asm:290-334`](../basic/interp.asm)) are unchanged above
+them the address changes. `ev_f_var` (read, [`expr.asm:543-594`](../basic/expr.asm))
+and `ex_let` (write, [`interp.asm:582-334`](../basic/interp.asm)) are unchanged above
 the find/alloc call.
 
 ---
@@ -258,12 +258,12 @@ block and no new `SUBROM_IDX` are needed.
 | Scalar walk (find by key,type), insert-and-shift, `FRETOP` collision + GC-once-retry, `vars_reset` | **ARY tenant, new `ARY_OP` ops** ([`sub/arrays.asm`](../sub/arrays.asm)) | pure-RAM pointer work; calls in-page sibling `strheap_gc` (like `ary_alloc`) |
 | `var_name_key`, `deftbl_lookup`, `var_str_type`, `ex_deftype` | **main** (unchanged) | pure key/type resolution, no pool address |
 | `var_load_fac` / `var_store_fac` value codec + coercion | **main** (unchanged bodies) | needs `FAC` + float routines (`fac_to_int_strict`, `round_single_and_pack`) — must stay main-side |
-| `var_alloc_or_find` / `var_find_typed` | **become thin main glue** → set `ARY_OP` = scalar-find/alloc, `ary_engine_call`, read `ARY_ADDR` | reuses `ary_engine_call` + `ary_errmap` ([`basic/arrays.asm:265-301`](../basic/arrays.asm)) verbatim |
+| `var_alloc_or_find` / `var_find_typed` | **become thin main glue** → set `ARY_OP` = scalar-find/alloc, `ary_engine_call`, read `ARY_ADDR` | reuses `ary_engine_call` + `ary_errmap` ([`basic/arrays.asm:487-301`](../basic/arrays.asm)) verbatim |
 | `ARYTAB` derivation at the 4 array-anchor sites | **in place** (`(PRGEND)+2` → `(ARYTAB)`) | 2 tenant sites + `strheap_aryend` + `ary_reset` |
 
-**ABI** (reuse wholesale, [`basic/subromcall.asm:50-66`](../basic/subromcall.asm),
-[`basic/arrays.asm:265-301`](../basic/arrays.asm)): `IX = SUBROM_ENTRY_BASE_P0 +
-3*SUBROM_IDX_ARY`; the **existing `ARY_*` param block** ([`sysvars.inc:694-709`](../basic/sysvars.inc))
+**ABI** (reuse wholesale, [`basic/subromcall.asm:39-66`](../basic/subromcall.asm),
+[`basic/arrays.asm:487-301`](../basic/arrays.asm)): `IX = SUBROM_ENTRY_BASE_P0 +
+3*SUBROM_IDX_ARY`; the **existing `ARY_*` param block** ([`sysvars.inc:1953-709`](../basic/sysvars.inc))
 carries op / `ARY_KEY` / `ARY_TYPE` in and `ARY_ADDR` / `ARY_ERR` out; new op-codes
 appended to the `ARY_OP` dispatch (append-only, after the current resolve/alloc/erase/
 copy-str set). `A`=result, `CF`=absent, DI. New tenant-err codes extend `ary_errmap`

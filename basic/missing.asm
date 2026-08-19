@@ -522,7 +522,7 @@ sw_illegal:
 ; TWO ENTRIES, because the two string-lvalue forms carry DIFFERENT stack frames:
 ; the scalar path holds its saved dest key, the array-element path holds
 ; ary_snapshot_offset's [OFFSET] (which is why it uses its own elas_err /
-; elas_abort_fp rather than the shared cepb_* routines -- vars.asm:647). Each
+; elas_abort_fp rather than the shared cepb_* routines -- vars.asm:830). Each
 ; entry discards its own one word and falls into the common tail.
 elas_typecheck:                             ; Q$(0) = <non-string>
                 pop     de                  ; discard [OFFSET], exactly as elas_err does

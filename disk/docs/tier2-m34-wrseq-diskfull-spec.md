@@ -41,7 +41,7 @@ This corrects the old `tier2-tierC-spec.md` §2 numbers (which said stock onset 
 
 ## 2. Mechanism (pinned in OUR source — clean-room)
 
-**D1 root cause.** `bdos_seqwrite_body` ([kernel.asm:2596](../kernel.asm)) copies
+**D1 root cause.** `bdos_seqwrite_body` ([kernel.asm:2883](../kernel.asm)) copies
 each 128-B record into `SECTOR_BUF` and only calls `fat_flush_data_sector` when
 `BDOS_WRBUFLEN` reaches 512 (line 2620). Cluster allocation happens *inside* the
 flush (`ffds_nopad_body` → `ffds_alloc` → `fat_alloc_cluster`). So records #1–3
@@ -50,7 +50,7 @@ flush (`ffds_nopad_body` → `ffds_alloc` → `fat_alloc_cluster`). So records #
 allocates the fresh file's first cluster **eagerly on record #1**, so it fails
 immediately.
 
-`ffds_nopad_body`'s allocation decision (kernel.asm:514) is exactly:
+`ffds_nopad_body`'s allocation decision (kernel.asm:523) is exactly:
 
 ```
 needs-a-new-cluster  ==  (BDOS_WRCLUS == 0)            ; no cluster yet (fresh file)

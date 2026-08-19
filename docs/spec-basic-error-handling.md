@@ -87,9 +87,9 @@ Two divergences:
   message and `ret`. In *direct* mode that `ret` unwinds through `dispatch_line`
   back to the REPL — correct. In *run* mode the erroring statement handler was
   reached by a tail `jp` from `exec_stmt`, and `exec` itself was entered by
-  `call exec` at `rp_exec` (`program.asm:246`); the deferred-error discipline
+  `call exec` at `rp_exec` (`program.asm:480`); the deferred-error discipline
   (§5.3) means the `jp <error>` fires at the statement boundary with a shallow
-  stack, so the handler's `ret` lands back at `program.asm:247`. The run loop then
+  stack, so the handler's `ret` lands back at `program.asm:481`. The run loop then
   finds `ENDFLAG` clear and **advances to the next line**. Nothing sets `ENDFLAG`
   on error. So the program runs on.
 
@@ -266,7 +266,7 @@ real-MSX fix is a saved stack pointer: capture SP at the two flow anchors, and h
 `raise_error` restore it so control returns to a **known** point regardless of call
 depth.
 
-* **Run anchor.** `run_prog` (`program.asm:189`) saves `ld (SAVSTK),sp` at entry
+* **Run anchor.** `run_prog` (`program.asm:298`) saves `ld (SAVSTK),sp` at entry
   (before the run loop). On abort, `raise_error` does `ld sp,(SAVSTK)` then jumps to
   a small tail that prints the message and returns to the REPL (equivalently: sets
   `ENDFLAG` and returns into the run loop's `ret nz`, which unwinds to `dispatch_line`

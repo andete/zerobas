@@ -85,7 +85,7 @@ time in this tool** ([[carve-scout-before-proposing]] point 5).
 
 ### 2.2 🔴 The page-0 entry table has ONE SPARE BYTE
 
-[`sub/sub.asm:75`](../sub/sub.asm:75)'s own comment says so; **filed claims are
+[`sub/sub.asm:124`](../sub/sub.asm:124)'s own comment says so; **filed claims are
 claims** ([[filed-justification-is-a-claim]] — five slices, five wrong), so it was
 re-measured from `build/sub.rom` and `build/sub.sym`:
 
@@ -165,7 +165,7 @@ Why it is a good candidate on the axes that are not size:
   documented-clobbered, no `IX`/`IY`, no cursor.
 * **Same cold path as an existing tenant.** `dl_store` calls `tokenise` — itself a
   page-0 tenant — five instructions later, and
-  [`basic/interp.asm:91`](../basic/interp.asm:91) already argues the coldness:
+  [`basic/interp.asm:110`](../basic/interp.asm:110) already argues the coldness:
   "line-entry / program-LOAD only, so a whole-line DI span is cosmetic".
 * **The best-gated behaviour surface in the tree.** This routine *is* D-LNBLANK:
   `lnblank-acceptance` is **536 rows**, `lnblank-say-acceptance` another 204, and

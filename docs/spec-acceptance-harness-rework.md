@@ -93,7 +93,7 @@ no mid-type Enter. Published contract, no disasm:
 - `GETPNT $F3FA` / `PUTPNT $F3F8` — read/write cursors (empty when equal)
 
 Reference implementation to lift: the `__inj` Tcl proc in
-`probes/disk/disk_probe_getput.py:95` (proven on C-BIOS **and** CF-3300, both
+`probes/disk/disk_probe_getput.py:114` (proven on C-BIOS **and** CF-3300, both
 zerobas and reference machines). Constraint: **line + CR ≤ 40 bytes**.
 
 **Long lines (>40 bytes) split into a stored program.** Every over-cap line in

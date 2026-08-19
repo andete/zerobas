@@ -4,7 +4,7 @@ SPDX-License-Identifier: 0BSD
 -->
 # S3 — RETIRE LEAN: delete the `ROM_BASE` gates, the machinery, and the cart corpus
 
-Step 3 (final) of **RETIRE THE LEAN 16 KB CART** ([`TODO.md:1881`](TODO.md:1881)).
+Step 3 (final) of **RETIRE THE LEAN 16 KB CART** ([`TODO.md:5262`](TODO.md:5262)).
 Follows [`docs/spec-lean-retire-s2-switch.md`](docs/spec-lean-retire-s2-switch.md) (S2,
 `4cdb69b`) and [`docs/spec-lean-retire-s1-explicit-machine.md`](docs/spec-lean-retire-s1-explicit-machine.md).
 
@@ -122,15 +122,15 @@ convenience, not the authority — the authority is byte-identity (§5) plus a r
 | site | span | shape |
 |---|---|---|
 | [`basic/fat.asm:63`](basic/fat.asm:63) | 63–265 | ELSE @72 — the big one: 9 lines of lean FAT primitives deleted, 193 kept |
-| [`basic/tokenise.inc:294`](basic/tokenise.inc:294) | 294–366 | no ELSE — **72 lines deleted outright** (the lean inline tokeniser) |
-| [`basic/files.asm:1268`](basic/files.asm:1268), [`:1353`](basic/files.asm:1353) | 30 each | ELSE — lean file-verb bodies deleted |
+| [`basic/tokenise.inc:456`](basic/tokenise.inc:456) | 294–366 | no ELSE — **72 lines deleted outright** (the lean inline tokeniser) |
+| [`basic/files.asm:1330`](basic/files.asm:1330), [`:1353`](basic/files.asm:1452) | 30 each | ELSE — lean file-verb bodies deleted |
 | [`basic/expr.asm:434`](basic/expr.asm:434) | 25 | no ELSE — lean `cmp16_bits` (repack has it in `float-arith.asm`) |
 | [`basic/print.asm:403`](basic/print.asm:403) | 14 | no ELSE |
-| [`basic/fat.asm:328`](basic/fat.asm:328), [`:360`](basic/fat.asm:360) | 14, 11 | ELSE |
+| [`basic/fat.asm:333`](basic/fat.asm:333), [`:360`](basic/fat.asm:360) | 14, 11 | ELSE |
 | [`basic/program.asm:318`](basic/program.asm:318) | 5 | no ELSE |
 | [`basic/interp.asm:108`](basic/interp.asm:108), [`:601`](basic/interp.asm:727), [`:622`](basic/interp.asm:750), [`:649`](basic/interp.asm:649) | 2–4 | no ELSE |
-| [`basic/files.asm:450`](basic/files.asm:450), [`:1069`](basic/files.asm:1069), [`:1086`](basic/files.asm:1086) | 2–4 | no ELSE |
-| [`basic/save.asm:554`](basic/save.asm:554) | 2 | no ELSE |
+| [`basic/files.asm:364`](basic/files.asm:364), [`:1069`](basic/files.asm:973), [`:1086`](basic/files.asm:990) | 2–4 | no ELSE |
+| [`basic/save.asm:575`](basic/save.asm:575) | 2 | no ELSE |
 
 ### 3.2 The machinery, and the surviving entry point
 
@@ -181,7 +181,7 @@ a generic "insert a cartridge" option, not a lean reference.
 
 **(c) 9 cassette probes + 11 older cart probes.** 🔴 **The shared harness is ALREADY
 machine-aware, which the brief did not know and which shrinks this item a lot:**
-[`run_typed`](probes/basic/basic_probe_cas_verbs.py:66) and
+[`run_typed`](probes/basic/basic_probe_cas_verbs.py:71) and
 [`run_save`](probes/basic/basic_probe_tape_save.py) both do
 `if zb_machine == MACHINE_TAPE: cmd += ["-cart", cart]`, and
 `_tape_save` / `_cas_leader_budget` / `_cas_match` already read
@@ -333,7 +333,7 @@ ROM REGION STRUCTURE REVIEW, with the sysvars/vars comments updated to say so.
 
 🔴 **And `test_expr` showed why a pending error is not inert.** `5/0` leaves `FPERR=2`;
 the real interpreter zeroes it at every statement start
-([`interp.asm:144`](basic/interp.asm:144)). Leaving it set made the NEXT group's `VPEEK`
+([`interp.asm:196`](basic/interp.asm:196)). Leaving it set made the NEXT group's `VPEEK`
 run off into FAT code and die on an invalid opcode at `$63CD`. The crash was three groups
 downstream of its cause — **a stale flag, not a broken routine.**
 

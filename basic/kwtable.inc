@@ -20,7 +20,7 @@
 ; main ROM's reclaimed low region and then out of the main ROM entirely.
 ;
 ; ⚠️ HOME, AND THE OLD HEADER HERE NAMED THE WRONG ONE UNTIL D-KWGAP4. The
-; resident copy was DROPPED in the sub-ROM arc's wave 3; `sub/sub.asm:299` is now
+; resident copy was DROPPED in the sub-ROM arc's wave 3; `sub/sub.asm:355` is now
 ; the SOLE include site and the table is a sub-ROM PAGE-0 tenant. That is what
 ; makes an entry added here a sub-ROM change costing nothing on the main ROM's
 ; 9 B / 6 B walls — a fact worth having right, since it decides whether a new

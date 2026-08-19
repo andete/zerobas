@@ -18,8 +18,8 @@ Two independent parts, deliberately coupled so the second is paid for by the fir
 
 | # | delete | file | region | bytes |
 |---|---|---|---|---|
-| A1 | `var_find`, `vf_lp`, `vf_test`, `vf_next`, `vf_hit`, `vf_free`, `vf_full`, `var_get_key`, `vgk_zero`, `var_set_key`, `vsk_new`, `vsk_store` | [`basic/vars.asm:190-265`](../basic/vars.asm:190) | page 1 `$4760-$47B0` | **80** |
-| A2 | `div_de_bc`, `mod_de_bc`, `div_zero` | [`basic/expr.asm:1900-1918`](../basic/expr.asm:1900) | page 1 `$523C-$5256` | **26** |
+| A1 | `var_find`, `vf_lp`, `vf_test`, `vf_next`, `vf_hit`, `vf_free`, `vf_full`, `var_get_key`, `vgk_zero`, `var_set_key`, `vsk_new`, `vsk_store` | [`basic/vars.asm:464-265`](../basic/vars.asm:464) | page 1 `$4760-$47B0` | **80** |
+| A2 | `div_de_bc`, `mod_de_bc`, `div_zero` | [`basic/expr.asm:2003-1918`](../basic/expr.asm:2003) | page 1 `$523C-$5256` | **26** |
 | A3 | `disk_putword` | [`basic/sv-diskwr.inc:41`](../basic/sv-diskwr.inc:41) | page 1 `$6B63-$6B73` | **16** |
 | A4 | `VARTAB`, `VARENTSZ`, `VARSLOTS` equates | [`basic/sysvars.inc`](../basic/sysvars.inc) | RAM `$E1C0-$E240` | 0 ROM, **128 B RAM** |
 
@@ -38,7 +38,7 @@ A2 ends at `udiv16`, exclusive.
 
 ⚠️ **`var_find_typed` STAYS** — the live F3 typed store, immediately below A1. A1
 ends at `var_find_typed`, exclusive. The two are easy to confuse:
-[`vars.asm:265`](../basic/vars.asm:265)'s own comment distinguishes them.
+[`vars.asm:539`](../basic/vars.asm:539)'s own comment distinguishes them.
 
 ### §1.2 Part B — promote the 80 B message pool from low to page 1
 

@@ -51,7 +51,7 @@ value.
 
 ## 2. What is wrong, in one sentence
 
-* **`nx_end`** ([`basic/program.asm:1671`](../basic/program.asm)) — `pop hl` /
+* **`nx_end`** ([`basic/program.asm:1750`](../basic/program.asm)) — `pop hl` /
   `ld (FSP),hl` / `pop hl` / `jp exec_stmt`: the frame is closed and the cursor
   restored, and the statement dispatcher is handed a `,` it has no rule for.
 

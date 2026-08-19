@@ -19,7 +19,7 @@ this arc the estimates have been wrong in both directions, by as much as 100%.
 
 ## 1. The defect
 
-`ex_width` ([`basic/screen.asm:169`](../basic/screen.asm:169)) evaluates its
+`ex_width` ([`basic/screen.asm:223`](../basic/screen.asm:223)) evaluates its
 argument, runs it through `get_byte_arg` — whose whole domain is 0..255 — and
 then writes `LINLEN`, a per-mode default and calls `CHGMOD` **unconditionally**.
 No bound, and the wrong mode split. Five divergences, measured

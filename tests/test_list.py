@@ -4,7 +4,7 @@
 
 Tier-2 (BIOS-stub) tests: CHPUT is trapped and every emitted byte accumulated.
 
-Entry convention (derived from list.asm:65):
+Entry convention (derived from list.asm:225):
   detok is called with HL pointing to the token *body* — the bytes after the
   line-link word and line-number word in the stored-line format. list.asm
   advances HL past link(2) + lineno(2) before calling detok, so detok itself

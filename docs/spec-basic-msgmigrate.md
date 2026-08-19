@@ -169,7 +169,7 @@ strings sub-side, so this is what `sub/errmsg.asm` must spell:
 |---|---|---:|
 | `err_msgtab` 1, 3, 4, 8, 11, 13, 17, 22, 24, 25 | `dw <string>` → `dw err_subhosted` | 0 |
 | `raise_error_forced` ([interp.asm:1014](../basic/interp.asm:1014)) | `ld hl,err_resume_noerr` → `ld hl,err_subhosted` | 0 |
-| `ex_cont_no` ([program.asm:1000](../basic/program.asm:1000)) | `ld hl,err_cont` → `ld hl,err_subhosted` | 0 |
+| `ex_cont_no` ([program.asm:946](../basic/program.asm:946)) | `ld hl,err_cont` → `ld hl,err_subhosted` | 0 |
 | `dl_overflow` 25-arm ([program.asm:150](../basic/program.asm:150)) | `ld hl,err_linebuf_overflow` → `ld hl,err_subhosted` | 0 |
 | the 15 string bodies | **deleted** | **−216** |
 
@@ -223,7 +223,7 @@ the equate for free.
 
 ### 4.5 `pm_sub` becomes register-transparent — +8 B *(sign-off Q2)*
 
-[`basic/program.asm:832`](../basic/program.asm:832)'s own header states the
+[`basic/program.asm:778`](../basic/program.asm:778)'s own header states the
 precondition this slice retires:
 
 > *"Safe at the one site that can reach it: only the ABORT path resolves a message
@@ -344,7 +344,7 @@ gated by `mid-ifc`.
 The two new direct reachers do **not** pass through `fre_abort_low`:
 
 * `ex_cont_no` runs as a statement under `repl`, which zeroes `PRDEST` at the top
-  of every prompt iteration ([`basic/repl.asm:32`](../basic/repl.asm:32)).
+  of every prompt iteration ([`basic/repl.asm:50`](../basic/repl.asm:50)).
 * `dl_overflow` runs at line-**entry** time, before any statement executes.
 
 🔴 **AND THAT IS WHERE THE HAZARD LIVES, SO SAY IT PROPERLY.** D-MSGSUB wrote two
@@ -380,7 +380,7 @@ phrases. A `MSGESC_SUB` byte there would be `pchar`'d as a literal $06. And
 Two independent blockers; migrating it needs a printer change, not a selector.
 
 ### 6.3 `err_verify` (8 B) — `verify_error` sets no `ERRFLG`
-[`basic/cload.asm:492`](../basic/cload.asm:492) is `ld hl,err_verify / jp
+[`basic/cload.asm:580`](../basic/cload.asm:580) is `ld hl,err_verify / jp
 print_msg` with no `ld (ERRFLG),a`. Adding one costs 5 B to save 8 — a net 3 B
 that is not worth taking blind, because it also makes `PRINT ERR` read 20 after a
 `CLOAD?` mismatch, which is **an observable change with no oracle reading behind

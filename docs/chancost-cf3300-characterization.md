@@ -27,7 +27,7 @@ cause**, not a property of the machine:
 | name table | **`$1800`, 32 columns** |
 
 `omsx_repl` scrapes `SCR_ADDR = $0000` at `COLS = 40` — the SCREEN 0 name table
-([`probes/lib/omsx_repl.py:91`](../probes/lib/omsx_repl.py:91), whose own comment
+([`probes/lib/omsx_repl.py:203`](../probes/lib/omsx_repl.py:203), whose own comment
 already flags that "a stock SCREEN-1 machine would need `0x1800`/768/32
 instead"). Reading a SCREEN 1 machine through a SCREEN 0 scrape yields the
 pattern-table bytes, which decode to noise. Dumping `$0000` on this machine is
@@ -254,7 +254,7 @@ would reserve 217 B per channel that nothing reads; see
 
 Note zerobas's private 512 B per channel is **purely a save area**: a single
 global `FSECTOR_BUF` (`$E5C0..$E7BF`) is the working buffer, and the context
-switch `memcpy`s it in and out ([`basic/files.asm:994`](../basic/files.asm:994)
+switch `memcpy`s it in and out ([`basic/files.asm:914`](../basic/files.asm:914)
 `fch_save_active` / `fch_load_ctx`). The reference gets the same effect by
 treating the shared buffer as a **cache** — flush on switch away, re-read on
 switch back — which is why its per-channel block is small.

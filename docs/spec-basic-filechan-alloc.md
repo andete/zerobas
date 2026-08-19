@@ -23,7 +23,7 @@ zerobas reserved its channel contexts **statically and permanently**:
 whether or not a channel is ever opened. Of each 562 B, **512 B is nothing but a
 save copy** of the single global `FSECTOR_BUF` — `fch_save_active` /
 `fch_load_ctx` `memcpy` it in and out
-([`basic/files.asm:994`](../basic/files.asm:994)).
+([`basic/files.asm:914`](../basic/files.asm:914)).
 
 Measured consequences:
 

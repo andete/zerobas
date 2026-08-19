@@ -51,7 +51,7 @@ all.
 
 ## 2. What is wrong, in one sentence
 
-* **`ex_for`** ([`basic/program.asm:1464`](../basic/program.asm)) — `call
+* **`ex_for`** ([`basic/program.asm:1488`](../basic/program.asm)) — `call
   is_letter` / `call upcase` / `ld (FOR_CUR),a` / `inc hl`: **one** byte of name,
   no suffix, no DEFtbl, and the frame it pushes has a **1-byte** variable field
   that `ex_next` compares with a single `cp c`.
@@ -128,8 +128,8 @@ field serves the match and the store.
 
 `var_name_key`'s `vnk_dollar` writes **`(VARTYPE)=8`** for a `$` suffix — byte
 for byte a default-double `A`. Five comments in this tree exist to warn readers
-about that lie (`basic/arrays.asm:535`, `:604`, `:654`, `basic/missing.asm:424`,
-`basic/expr.asm:1819`). **This slice changes it to `DEFTBL_STR`**, the code the
+about that lie (`basic/arrays.asm:535`, `:604`, `:654`, `basic/missing.asm:429`,
+`basic/expr.asm:1851`). **This slice changes it to `DEFTBL_STR`**, the code the
 *same cell* already carries for a DEFSTR'd unsuffixed name:
 
 ```
@@ -344,7 +344,7 @@ side effect is a scored row rather than a silent behaviour change
 
 ### 5.5 The `FOR` stack is emptied through its SYMBOL, so the move is free
 
-`clear_vars` ([`basic/vars.asm:947`](../basic/vars.asm)) resets `FSP` with `ld
+`clear_vars` ([`basic/vars.asm:1018`](../basic/vars.asm)) resets `FSP` with `ld
 hl,FOR_STK` — cold boot, `RUN`, `NEW` and `CLEAR`, the four sites D-DIR-2
 established. Nothing anywhere hardcodes `$E070`. The one place the old address is
 written down is a **docstring** in

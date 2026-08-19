@@ -62,7 +62,7 @@ And one row set is the **CONSTRAINT** rather than the rule — see §3.2.
 
 ## 2. What is wrong, in one sentence
 
-`ex_field`'s width `call eval` (`basic/field.asm:270`) is followed by nothing at
+`ex_field`'s width `call eval` (`basic/field.asm:282`) is followed by nothing at
 all — no type check, no coercion, no domain test — so its `pop de` takes
 whatever `eval` left in `E`, which is `type_mismatch_set`'s hard **0** for a
 string and the **low byte** of anything out of range; and its target

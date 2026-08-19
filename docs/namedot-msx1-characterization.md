@@ -49,7 +49,7 @@ does not change, and it is the reason this slice never touches the main ROM.
 
 zerobas today is **rule F**: `tk_loop` looks exactly one character past a `.`,
 at every position, and hands it to `tk_float` on a digit
-([`basic/tokenise.inc:81`](../basic/tokenise.inc:81)) — a decision taken without
+([`basic/tokenise.inc:94`](../basic/tokenise.inc:94)) — a decision taken without
 consulting the name state, and one that also *requires* the digit.
 
 ---
@@ -195,7 +195,7 @@ this rule wants the must-not-move cells for free.
 
 The reference emits `$0E,0001`, copies the `.` **verbatim**, and then crunches
 the `5` as a **second** `$0E` line-number reference. That is
-[`branch_lineno`](../basic/tokenise.inc:473)'s list-continuation loop treating a
+[`branch_lineno`](../basic/tokenise.inc:587)'s list-continuation loop treating a
 `.` as a separator that does not end the list — the same family as the empty-slot
 and blank-before-comma bugs already recorded in `bl_num`'s own comment, and
 **different code from the `tk_loop` dispatch this slice changes**.

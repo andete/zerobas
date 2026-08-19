@@ -76,7 +76,7 @@ chosen — **8 nested loops**.
 
 ### 4.1 🎯 THE PARSE BECOMES `tgt_parse`, WHICH IS THE LVALUE FAMILY'S OWN
 
-`tgt_parse` ([`basic/vars.asm:242`](../basic/vars.asm)) already is the whole
+`tgt_parse` ([`basic/vars.asm:291`](../basic/vars.asm)) already is the whole
 rule: name + suffix + optional subscripts, `ary_op0_resolve` op=0 (**which
 auto-dims on first reference — `a.autodim`**), `Z` = ok / `NZ` = resolve failed
 with `FPERR` mapped, `BC` = the key, `(TGT_ADDR)` = the element address **or 0

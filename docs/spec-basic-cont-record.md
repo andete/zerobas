@@ -28,7 +28,7 @@ reachable by `CONT` in new ways.
 zerobas today records at exactly one stop — `do_break` (`STOP` / Ctrl-STOP) —
 and *consumes* the point on use. Everything else answers `can't continue`.
 
-The header comment on `ex_stop` (`basic/program.asm:641-644`) asserts the
+The header comment on `ex_stop` (`basic/program.asm:721-644`) asserts the
 opposite **as fact**:
 
 > *"(END does not: it ends the run with no resume point, so CONT after END is
@@ -173,7 +173,7 @@ ex_end:
 ```
 
 `ex_end` is entered with `HL` on the `END` token (the dispatcher's contract,
-`basic/interp.asm:191`), so `inc hl` is the measured resume position. `HL` is
+`basic/interp.asm:242`), so `inc hl` is the measured resume position. `HL` is
 dead afterwards and `A` is reloaded, so `cont_record`'s clobbers are free.
 
 ### 3.3 The `$0000`-link exit (`basic/program.asm` `rp_lp`) — +5 B
@@ -204,7 +204,7 @@ ra_abort:                                    ; the S1/S2a abort body (HL = messa
 ```
 
 `SAVTXT` is written by `exec_stmt` at **every** statement entry
-(`basic/interp.asm:132`) and is already documented as *"the ONLY clean source
+(`basic/interp.asm:163`) and is already documented as *"the ONLY clean source
 since raise_error fires from arbitrary call depth"*. It is exactly the pointer
 `k_err_mid` measured. No new sysvar, no new invariant.
 
@@ -489,13 +489,13 @@ green row that had agreed for the wrong reason for its whole life, and it took a
 
 ## 6. Doc debt this slice pays
 
-1. **`ex_stop`'s header** (`basic/program.asm:641-644`) — delete the false
+1. **`ex_stop`'s header** (`basic/program.asm:721-644`) — delete the false
    parenthetical about `END`; state the §1 rule and name this spec.
-2. **`ex_cont`'s header** (`basic/program.asm:680-685`) — *"CONT consumes the
+2. **`ex_cont`'s header** (`basic/program.asm:828-685`) — *"CONT consumes the
    resume point (CONTVALID -> 0) so a second bare CONT does not re-resume a run
    that has since finished"* is now wrong in both halves: it is not consumed,
    and a second bare `CONT` **does** re-resume — silently, past the end.
-3. **`do_break`'s direct-mode comment** (`basic/program.asm:527-532`) — the
+3. **`do_break`'s direct-mode comment** (`basic/program.asm:607-532`) — the
    measurement it cites is real but does not support "invalidate"; §2.2.
 4. **`docs/spec-basic-direct-ctrl.md` §5** — add a pointer: the typed-break rule
    is *"records nothing"*, not *"invalidates"*.

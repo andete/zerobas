@@ -34,14 +34,14 @@ are the subset that must not rot).
 
 | # | typed | reference | zerobas | site | this slice |
 |---|-------|-----------|---------|------|------------|
-| 1 | `PRINT #1,"X"` | **ERR 59** | `load error` | [`print.asm:66`](../basic/print.asm:66) `cp 2 / jp nz,load_error` | ✅ **FIX** |
+| 1 | `PRINT #1,"X"` | **ERR 59** | `load error` | [`print.asm:107`](../basic/print.asm:107) `cp 2 / jp nz,load_error` | ✅ **FIX** |
 | 2 | `INPUT #1,A$` | **ERR 59** | `load error` | [`files.asm:791`](../basic/files.asm:791) `cp 1 / jp nz,load_error` | ✅ **FIX** |
 | 3 | `LINE INPUT #1,A$` | **ERR 59** | `load error` | same site (shares `input_common`) | ✅ **FIX (free)** |
 | 4 | `A$=INPUT$(3,#1)` | **ERR 59** | `Syntax error` | [`strvar.asm:182`](../basic/strvar.asm:182) `str_inputd_err` → `str_eval_no` | ❌ leave — §7 |
-| 5 | `GET #1,1` | **ERR 59** | `Syntax error` | [`field.asm:527`](../basic/field.asm:527) `cp 4 / jr nz,gp_err` → `stmt_error` | ❌ leave — §7 |
+| 5 | `GET #1,1` | **ERR 59** | `Syntax error` | [`field.asm:759`](../basic/field.asm:759) `cp 4 / jr nz,gp_err` → `stmt_error` | ❌ leave — §7 |
 | 6 | `PUT #1,1` | **ERR 59** | `Syntax error` | same site | ❌ leave — §7 |
 | 7 | `FIELD #1,10 AS A$` | **ERR 59** | `Syntax error` | [`field.asm:165`](../basic/field.asm:165) `or a / jp z,stmt_error` | ❌ leave — §7 |
-| 8 | `CLOSE #1` | *(no error)* | *(no error)* | [`files.asm:906`](../basic/files.asm:906) `dc_done` | ✅ already agrees |
+| 8 | `CLOSE #1` | *(no error)* | *(no error)* | [`files.asm:796`](../basic/files.asm:796) `dc_done` | ✅ already agrees |
 | 9 | `PRINT EOF(1)` | **ERR 59** | **ERR 59** | `fch_mode_class` | ✅ already agrees |
 | 10 | `PRINT LOF(1)` | **ERR 59** | **ERR 59** | `fch_mode_class` | ✅ already agrees |
 
@@ -75,7 +75,7 @@ code; **`0` means no error was raised at all**, so "trapped", "not trapped" and
 | `INPUT #1,A$` | **59** (handler ran) | `load error` (handler did NOT run) |
 | `A=LOF(1)` — **GREEN CONTROL** | **59** | **59** ✅ |
 
-`load_error` ([`bload.asm:162`](../basic/bload.asm:162)) is a `ret`-based print
+`load_error` ([`bload.asm:160`](../basic/bload.asm:160)) is a `ret`-based print
 path: it prints and the program CONTINUES. `err_notopen_raise` → `raise_error`
 takes the shared trap decision. **So trappability is IN SCOPE** — it is what makes
 this a semantics fix rather than a wording fix — and it comes for free with the
@@ -84,7 +84,7 @@ row is the control that proves the harness can read trappability at all.
 
 ## 3. The change — REUSE the raiser `LOF` already reaches
 
-`fch_mode_class` ([`expr.asm:1036`](../basic/expr.asm:1036) — named
+`fch_mode_class` ([`expr.asm:1118`](../basic/expr.asm:1118) — named
 `ev_chan_hasfile` before this slice, see §7.3) already is exactly
 "read `FCH_MODES[E]` into A, raise ERR 59 if it is 0, and report disk-vs-device in
 CF". `EOF`/`LOF` are its only callers today. **`PRINT#` and `INPUT#` hand-inline
@@ -142,7 +142,7 @@ Plus the rename and comment update on the routine itself (§7.3): its note said
   file. Not worth 2 B.
 * **Mode 0 is unambiguously "not open"**: `FCH_MODES` values are 1 INPUT, 2 OUTPUT,
   3 APPEND, 4 RANDOM, 5 LPT, 6 CRT, 7 CAS-out, 8 CAS-in
-  ([`sysvars.inc:1147`](../basic/sysvars.inc:1147)). ✅
+  ([`sysvars.inc:1383`](../basic/sysvars.inc:1383)). ✅
 * **Order is unchanged**: `fch_valid` still rejects 0 / >MAXF to `load_error`
   first, so §2b does not move.
 

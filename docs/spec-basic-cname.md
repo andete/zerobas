@@ -92,7 +92,7 @@ tcn_skip:
 **31 bytes, replacing 25.** Four properties that have to hold:
 
 1. **`upcase` is safe on every stored character.** It touches `$61`..`$7A` only
-   (`sub/tkfloat.asm:756`), so `` ` `` (`$60`) and `~` (`$7E`) pass through
+   (`sub/tkfloat.asm:812`), so `` ` `` (`$60`) and `~` (`$7E`) pass through
    unchanged — which is what `cnm-bq` and `cnm-tilde` measured.
 2. **EOL must be tested first.** `$00` is below `'0'`, so without the `or a` it
    would take the R-C2 skip path and `inc hl` would run **past the terminator**.
@@ -108,23 +108,23 @@ tcn_skip:
 ### 3.1 🔴 The change DELETES a sub-ROM routine, and the dead-code gate forces it
 
 The new loop no longer calls `is_ident_cont`. **`basic/vars.asm` is not included
-by `sub/sub.asm`**, so [`basic/tokenise.inc:312`](../basic/tokenise.inc:312) is
+by `sub/sub.asm`**, so [`basic/tokenise.inc:314`](../basic/tokenise.inc:314) is
 the *only* caller of the sub-local clone at
-[`sub/sub.asm:278`](../sub/sub.asm:278) — removing the call orphans it, and
+[`sub/sub.asm:334`](../sub/sub.asm:334) — removing the call orphans it, and
 `make basic-reloc`'s hard dead-code gate (0 dead, **both** builds) fails the
 build rather than shipping it. The clone and its `siic_no` tail are **deleted**:
 16 bytes.
 
-`is_letter` **stays**: [`tokenise.inc:195`](../basic/tokenise.inc:195) (`tk_notkw`)
+`is_letter` **stays**: [`tokenise.inc:197`](../basic/tokenise.inc:197) (`tk_notkw`)
 still calls it, so deleting its only *other* caller does not orphan it. The main
-ROM's `is_ident_cont` in [`basic/vars.asm:48`](../basic/vars.asm:48) keeps all
+ROM's `is_ident_cont` in [`basic/vars.asm:74`](../basic/vars.asm:74) keeps all
 three of its callers and is **not touched**.
 
 **NET −10 bytes** (+6 for the loop, −16 for the clone), **all sub-ROM page 0**.
 
 ### 3.2 Scope — sub-ROM only, asserted by hash
 
-`basic/tokenise.inc` is included by [`sub/sub.asm:209`](../sub/sub.asm:209) and
+`basic/tokenise.inc` is included by [`sub/sub.asm:258`](../sub/sub.asm:258) and
 nothing else, and the second edit is inside `sub/sub.asm` itself. So both main
 ROMs must come out **byte-identical** to HEAD:
 

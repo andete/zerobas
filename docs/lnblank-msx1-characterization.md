@@ -158,7 +158,7 @@ not fixed here** (spec §7 — it is a missing feature, not this defect).
 | `ref-renum` | `20 RENUM 1 0` | `line 20 \| <AA> <0E><0A><00>` | `RENUM` = `$AA` |
 | `ref-else` | `20 IF A THEN 1 0 ELSE 2 0` | `line 20 \| <8B> A <DA> <0E><0A><00> :<A1> <0E><14><00>` | `ELSE` = `:`+`$A1` |
 
-zerobas's `bl_yes` ([`basic/tokenise.inc:445`](../basic/tokenise.inc:445)) tests
+zerobas's `bl_yes` ([`basic/tokenise.inc:631`](../basic/tokenise.inc:631)) tests
 only `GOTO`/`GOSUB`/`THEN`/`RESTORE`/`RUN`/`RESUME`, so all five crunch as
 ordinary numeric literals today.
 
@@ -316,7 +316,7 @@ that merely *trails* a number is **kept** (`20 A=1 +2`), so this is not the line
 number's rule; and the `'.'`-led entry `20 A=. 5` is a **fifth site, in the other
 file**, which no change to `tk_float` could reach. The five rows below are a
 sample, not a surface. The site is `tk_float`
-([`basic/tokenise.inc:57`](../basic/tokenise.inc:57) → the sub-ROM float pack),
+([`basic/tokenise.inc:71`](../basic/tokenise.inc:71) → the sub-ROM float pack),
 a different ROM from the two scanners the TODO names, and the change would
 affect every numeric literal in every program — it deserves its own
 falsification. The controls that bound it (`lit-str`, `lit-rem`, `lit-hex`) are

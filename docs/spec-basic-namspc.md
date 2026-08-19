@@ -225,7 +225,7 @@ vnk_dig2:       ld      a,(hl)              ; ← re-reads what A already holds
                 jr      vnk_set2
 ```
 
-`is_letter` (`basic/interp.asm:122`) is `push af` … `pop af` on **both** exits,
+`is_letter` (`basic/interp.asm:141`) is `push af` … `pop af` on **both** exits,
 and `is_ident_cont` only `cp`s — so at `vnk_dig2` **`A` already holds the
 digit**. The reload is dead, and `jr nc,vnk_dig2` can point straight at
 `vnk_set2`.

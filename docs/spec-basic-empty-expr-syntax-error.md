@@ -146,7 +146,7 @@ confirms **every** `FPERR` write in the float ops is a SET on that op's *own*
 error condition (overflow/divzero/illegal/domain); **none clears FPERR to 0 on
 success**. `sqrt(0)`, `abs(0)`, `0+0`, `cint(0)` are all in-domain, so `FPERR=4`
 is untouched until the next `exec_stmt` clears it. Confirmed by source audit of
-float-arith.asm:{785,960,1261,1783} and expr.asm:1072.
+float-arith.asm:{785,960,1261,1783} and expr.asm:1690.
 
 ## 4. Scope (SIGNED OFF: gate `)` AND `,`)
 
@@ -159,7 +159,7 @@ that permits an omitted comma-argument or a comma separator checks the
 delimiter (`cp ','` / `cp ':'` / `or a`) and consumes/short-circuits it
 **before** calling `eval`:
 - `SCREEN` / `COLOR`: explicit `cp ','` skip of omitted args before each
-  `eval` (screen.asm:48,63,72,87,100).
+  `eval` (screen.asm:57,63,72,87,100).
 - `PRINT`: item loop dispatches `,`→tab, `;`, `:`, EOL before `exp_num`/`eval`
   (print.asm:124).
 - `POKE addr,val`: `eval`; require `,`; `inc hl` past it; `eval` — the cursor

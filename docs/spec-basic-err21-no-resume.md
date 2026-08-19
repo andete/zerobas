@@ -72,7 +72,7 @@ Both were carried forward as settled, and both are refuted by measurement.
 `ONEFLG` must **survive an ordinary typed line** while a run is suspended inside
 a handler. D-ONEFLG's site C clears it there: a typed line ends by falling
 through `dir_line`'s own `$0000` link into the very exit site C sits on
-([`basic/program.asm:369`](../basic/program.asm:369) documents that path). So
+([`basic/program.asm:414`](../basic/program.asm:414) documents that path). So
 today, `PRINT 1` at a `Break in 100` prompt silently kills the handler context
 and the following `CONT` reports `resume without error in 110` instead of
 resuming. **No existing row covers it** — `oneflg_keep` re-enters with a typed
@@ -388,7 +388,7 @@ See §5.1 on why `build/sub.rom` legitimately changes despite no `sub/` edit.
 
 1. **`probes/lib/omsx_repl.py` streams audio on every boot.** The
    `sound_driver null` fix from [[probe-audio-churn-sound-driver-null]] landed in
-   [`probes/disk/omsx_session.py:127`](../probes/disk/omsx_session.py:127) only;
+   [`probes/disk/omsx_session.py:133`](../probes/disk/omsx_session.py:133) only;
    the REPL driver — which every BASIC acceptance gate uses — still passes only
    `set renderer none`. Same defect, different layer. *(Ask at WHICH LAYER a
    lesson already applies — [[rdblk-anchor-flake-host-clock]].)*

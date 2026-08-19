@@ -66,7 +66,7 @@ loudly, not silently shrink the seed set.
 
 | span | file | bytes | verdict |
 |---|---|---|---|
-| `gfx_border_read` | [`sub/graphics.asm:1690`](../sub/graphics.asm:1690) | 24 | **orphaned by a bug fix** — superseded by `gfx_paint_read` (the VG-8020 fix; `tests/test_graphics.py:565` names the swap). **DELETE.** |
+| `gfx_border_read` | [`sub/graphics.asm:2084`](../sub/graphics.asm:2084) | 24 | **orphaned by a bug fix** — superseded by `gfx_paint_read` (the VG-8020 fix; `tests/test_graphics.py:525` names the swap). **DELETE.** |
 | `fmt_menu_text` | [`basic/format-body.inc:118`](../basic/format-body.inc:118) | 16 | **DELIBERATE KEEP** — its own comment: "at its ORIGINAL position (do_format's era) … preserving the pre-eviction byte layout. Unused sub-side … but harmless — sub-ROM space is not tight". **ALLOWLIST.** |
 
 ⚠️ `gfx_border_read`'s removal has **doc debt attached**: three comments in

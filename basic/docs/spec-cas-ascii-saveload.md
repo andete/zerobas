@@ -93,7 +93,7 @@ The cassette side handles the **tokenised** program format only:
 - `CLOAD` / `LOAD"CAS:"` read only the tokenised format: `do_tape_prog`
   ([`../cload.asm:193`](../cload.asm)) requires header byte 0 == `BASIC_ID` (`$D3`) and
   `load_error`s anything else — an `$EA` ASCII file cannot be loaded from tape at all.
-- There is **no** `MERGE"CAS:"` (MERGE is disk-only, [`../files.asm:1116`](../files.asm)).
+- There is **no** `MERGE"CAS:"` (MERGE is disk-only, [`../files.asm:1482`](../files.asm)).
 
 The disk side already does all of this; only the cassette byte layer is missing.
 
@@ -126,8 +126,8 @@ read ([[no-reference-rom-disasm]]).
 
 | Need | Already exists | Reuse |
 |---|---|---|
-| detokenise program → ASCII text | `list_walk` + the `pchar`/`PRDEST`/`PRDEV` sink ([`../list.asm`](../list.asm), [`../print.asm:249`](../print.asm)) | SAVE adds a **new `PRDEV` = tape sink** — the LPT/CRT Tier-1 work already made `pchar` a device multiplexer |
-| read ASCII text → tokenise + store | `ascii_read_lines` ([`../files.asm:1150`](../files.asm)) | LOAD reuses it — **but its byte source is hardcoded `fat_io_getbyte`** ([`../files.asm:1155`](../files.asm)); see D2 |
+| detokenise program → ASCII text | `list_walk` + the `pchar`/`PRDEST`/`PRDEV` sink ([`../list.asm`](../list.asm), [`../print.asm:434`](../print.asm)) | SAVE adds a **new `PRDEV` = tape sink** — the LPT/CRT Tier-1 work already made `pchar` a device multiplexer |
+| read ASCII text → tokenise + store | `ascii_read_lines` ([`../files.asm:1564`](../files.asm)) | LOAD reuses it — **but its byte source is hardcoded `fat_io_getbyte`** ([`../files.asm:1155`](../files.asm)); see D2 |
 | clear current program on LOAD | `new_prog` | ASCII CLOAD/LOAD calls it (disk ASCII load already does) |
 | cassette byte layer | `TAPOON`/`TAPOUT`/`TAPOOF`, `TAPION`/`TAPIN` (tape IPS) | the sink writes via `TAPOUT`; the source reads via `TAPIN` |
 | header-block framing | `tape_save_basic` ($D3 header + data block), `do_tape_prog` (read + `$D3` gate) | SAVE mirrors it with `$EA`; LOAD adds an `$EA` branch at the byte-0 gate |

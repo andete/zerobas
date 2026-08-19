@@ -153,6 +153,6 @@ one.
 
 | filed as | measured |
 |---|---|
-| `float-acceptance` → `reg.C.if_skip_over_float`, *"a `tok_skip` float-literal stride bug"* | not `tok_skip` (which strides `$1D` correctly, [`basic/tokskip-body.inc:31`](../basic/tokskip-body.inc:31)), not `if_skip_to_else`, and **not about floats** (§1.2). The `ELSE` never reaches the stored line at all. |
+| `float-acceptance` → `reg.C.if_skip_over_float`, *"a `tok_skip` float-literal stride bug"* | not `tok_skip` (which strides `$1D` correctly, [`basic/tokskip-body.inc:36`](../basic/tokskip-body.inc:36)), not `if_skip_to_else`, and **not about floats** (§1.2). The `ELSE` never reaches the stored line at all. |
 | `logicops-acceptance` → *"50 rows, all `EQV`/`IMP`, both unimplemented"* | `EQV`/`IMP` **are** implemented ([`basic/expr.asm:148`](../basic/expr.asm:148), landed `ef098e9` at 156/156). All 49 failing rows contain **`EQV`**; not one fails on `IMP` alone. `PRINT 0 EQV 0` prints three items — `0`, the variable `QV`, `0`. |
 | *"two unrelated standing failures"* | **one defect**, in `tkf_try_exponent`, regressed by `4b2202e` (D-EXPBAD). |

@@ -35,7 +35,7 @@ the best target — VERIFIED, correcting the survey:**
   to the fatprim **body labels that already exist sub-locally** (the shared
   `fat-prim-body.inc`, included in the sub-ROM), so co-located after fatprim they become
   **sub-local calls with no rewiring** — the exact mechanism the landed **`dirverb`**
-  eviction already uses ([sub/sub.asm:482](sub/sub.asm): "a RAM+BIOS leaf whose bodies
+  eviction already uses ([sub/sub.asm:713](sub/sub.asm): "a RAM+BIOS leaf whose bodies
   call the Phase-1 fatprim primitives sub-locally, placed AFTER fatprim").
 - `fch_select` (the one true straddle the survey flagged) is called by the **resident
   driver** (`gp_common`/`ex_field`), which **stays resident** — it is on the resident side

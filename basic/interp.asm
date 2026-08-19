@@ -493,7 +493,7 @@ stmt_table:
                 ; `syntax error` -- indistinguishable from SWAP still being absent.
                 ; SWAP_TOKEN is $A4, the same byte as PDL_TOKEN in the $FF-prefixed
                 ; FUNCTION namespace; statement tokens are unprefixed, so they do not
-                ; collide (basic/sysvars.inc:1606 records the shared byte).
+                ; collide (basic/sysvars.inc:2093 records the shared byte).
                 db      SWAP_TOKEN
                 dw      ex_swap    ; SWAP a,b
     ENDIF

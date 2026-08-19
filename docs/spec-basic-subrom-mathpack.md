@@ -29,7 +29,7 @@ stays main-ROM. No behaviour change — `SQR`'s outputs must stay byte-identical
 
 ## 2. Dispatch — reuse `subrom_call` unchanged (page-agnostic)
 
-`subrom_call` ([basic/subromcall.asm:50](../basic/subromcall.asm:50)) already works for a
+`subrom_call` ([basic/subromcall.asm:39](../basic/subromcall.asm:39)) already works for a
 page-1 target with **no change**: it sets `IY`h=`SUBSLOT`, `DI`, `call CALSLT`, `EI`,
 `or a`(preserves A) `ret`. CALSLT switches the page that the caller's `IX` addresses — so a
 page-1 `IX` switches **page 1**, leaving **page 0 = slot-0 (C-BIOS + main-ROM low region +
@@ -39,7 +39,7 @@ describes the page-0 case, needs generalizing.)
 
 - Add to [basic/sysvars.inc](../basic/sysvars.inc): `SUBROM_ENTRY_BASE_P1 equ $4010` and
   `SUBROM_IDX_SQR equ 1` (append after the page-1 ping = index 0; never renumber).
-- Append `jp fp_sqrt` at index 1 of `sub_p1_table` ([sub/sub.asm:218](../sub/sub.asm:218)).
+- Append `jp fp_sqrt` at index 1 of `sub_p1_table` ([sub/sub.asm:392](../sub/sub.asm:392)).
 - `evmc_sqr` (main-ROM): `ld ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SQR` / `call subrom_call`.
 
 ## 3. Marshalling — FAC + A, no register args

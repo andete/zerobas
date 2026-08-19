@@ -50,7 +50,7 @@ Consequences, and they are the whole shape of the slice:
 * **`basic/vars.asm` is not touched.** Neither is any of the six surfaces the
   brief listed — they all reach that one unchanged scanner.
 * **The fix is confined to [`basic/tokenise.inc`](../basic/tokenise.inc)**, which
-  [`sub/sub.asm:209`](../sub/sub.asm:209) includes and nothing else — so it is
+  [`sub/sub.asm:262`](../sub/sub.asm:262) includes and nothing else — so it is
   **sub-ROM only**, and the main ROM's 23 B low / 8 B page-1 walls are not in
   play at all. No carve is needed. §6 asserts the split by hash.
 
@@ -81,12 +81,12 @@ Three properties that have to hold, and each is a place this project has been
 bitten before:
 
 1. **`B` is live here.** The `.` test sits **before** `match_kw`
-   ([`tokenise.inc:103`](../basic/tokenise.inc:103)), which clobbers `B`. This is
+   ([`tokenise.inc:116`](../basic/tokenise.inc:116)), which clobbers `B`. This is
    the identical liveness argument D-NAMBLANK's K4 established for `tk_blank`,
    and it is why the fix can read the state at all.
 2. **No new label is inserted before an existing one.** The edit rewrites the
    interior of `tk_nondigit` and jumps **backwards** to `tk_namedig`. Nothing
-   falls through into either (`tokenise.inc:70` and `:79` are unconditional
+   falls through into either (`tokenise.inc:83` and `:79` are unconditional
    `jp`s). 🔴 This is the check D-NAMBLANK's K2 had to find the hard way, on a
    build that read 29/31 green *by luck* ([[knife-found-defect-in-own-fix]]).
 3. **`tkf_fetch` keeps four callers** inside [`sub/tkfloat.asm`](../sub/tkfloat.asm),

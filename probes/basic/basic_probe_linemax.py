@@ -34,7 +34,7 @@ rejected on entry. So "dropped the tail" and "refused the line" are different
 readings, not the same 0, and a truncation point is COUNTED rather than inferred.
 
 `REM` is what makes it 1:1. REM keeps the rest of its line VERBATIM on both
-machines (basic/tokenise.inc:99/181; standard MS-BASIC), so `20 REM` + N-6 filler
+machines (basic/tokenise.inc:164/181; standard MS-BASIC), so `20 REM` + N-6 filler
 characters stores exactly one token plus the surviving filler: count the filler
 bytes and you have the machine's input-line ceiling as a NUMBER, with no proxy
 variable and no error-message wording in the way.
@@ -59,7 +59,7 @@ machine, and no other row in it may be read as a finding.
 
 THE THIRD CONSUMER
 ==================
-`ascii_read_lines` (basic/files.asm:1461) bounds an ASCII-LOADed line with the
+`ascii_read_lines` (basic/files.asm:1580) bounds an ASCII-LOADed line with the
 IDENTICAL idiom and the same constant, and neither battery above touches it: both
 type at the prompt. The `cas` battery carries a long line in on a cassette ASCII
 tape instead, which is the only ASCII-program path the VG-8020 can be given
@@ -120,7 +120,7 @@ CASES = [_rem_case(n) for n in
 
 # --- the `tok` battery: DOES THE *CRUNCHED* LINE HAVE A LIMIT OF ITS OWN? -----
 # ⚠️ THE CRUNCH EXPANDS. A double literal is DBL_TOKEN + 8 value bytes
-# (basic/sysvars.inc:288, sub/tkfloat.asm tkf_double), so the two characters `0#`
+# (basic/sysvars.inc:287, sub/tkfloat.asm tkf_double), so the two characters `0#`
 # become NINE bytes -- 4.5x. zerobas's TOKBUF is 96 bytes ($E160..$E1BF, with
 # ARYTAB/the error-trap block/ZTRAP/POOLSIZE/STRTAB directly above it) and the
 # crunch writes there with NO bound anywhere in tokenise.inc, so eleven `0#`
@@ -394,7 +394,7 @@ def say(raw, lines):
 
 
 # --- the `cas` battery: THE THIRD CONSUMER, the one nobody types into ---------
-# `ascii_read_lines` (basic/files.asm:1461) bounds an ASCII-LOADed line with the
+# `ascii_read_lines` (basic/files.asm:1580) bounds an ASCII-LOADed line with the
 # SAME `(LINEBUF+LINEMAX-1) & $FF` idiom and the SAME constant as the keyboard
 # reader, and neither battery above can reach it: both type at the prompt. That
 # the two share an idiom is a reason to EXPECT them to agree, not a measurement

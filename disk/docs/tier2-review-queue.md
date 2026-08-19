@@ -552,7 +552,7 @@ chose "characterize it next"). Stock steps the user FCB every read (`+32` CR = K
 K div 128, `+28/30` internal FAT current-cluster/index once clusters cross); **ours never advances
 any** — at K=0 ours==stock bar dirloc, so FOPEN is faithful and the ONLY growing divergence is the
 missing write-back. Root cause (our source): the shared `$477D` worker's read side
-`bdos_seqread_body` (kernel.asm:346) tracks position in GLOBAL cells and never writes the FCB copy at
+`bdos_seqread_body` (kernel.asm:367) tracks position in GLOBAL cells and never writes the FCB copy at
 `DE=$DA40` (pointer already live at entry); it also lacks an absolute record counter. **Coupling:**
 the M32 "correct `$24`" reads EX/CR *from the FCB*, which stay 0 without this fix → a correct `$24`
 is useless unless CR-bookkeeping is fixed OR `$24` reads our internal state instead. **⇒ decide this
@@ -613,7 +613,7 @@ not the agent's word):
   occurrence #1 during BOOT at **t=0.31 s** — ~20 s before the `\rBDOSX3\r` keys (t=20) load the
   program. "0/293 bytes differ" is a hollow PASS comparing COMMAND.COM idle state, not the
   exercised BDOS surface. The Tier-B "6/6 converged" baseline included these. The arm-gate that
-  fixes it (`_capture_arm`, disk_probe_diff.py:227-235) is opt-in and NO builder emits it.
+  fixes it (`_capture_arm`, disk_probe_diff.py:247-235) is opt-in and NO builder emits it.
 - **LIVE create-file DIVERGENCE (verified):** same BDOSX3 capture, HONESTLY armed
   (`--arm-check-val 0x03`, anchor now at t≈31–38 s AFTER the program runs) → **17/293 bytes
   differ, `ours=FF` where `stock=00`** at the FOPEN/RDSEQ results: ours fails to REOPEN a file it

@@ -64,11 +64,11 @@ compares the 6-byte field). If the named file is never found before the tape run
 is a load failure (the tape stalls on silence → our existing `load_error`, see §A.4).
 
 ### Current behaviour (the gap)
-`do_tape_prog` ([cload.asm:207](../../basic/cload.asm)) reads header byte 0, then **skips
+`do_tape_prog` ([cload.asm:284](../../basic/cload.asm)) reads header byte 0, then **skips
 the remaining 15 header bytes** (`ctp_skip_hdr`) — the 6-char name (header bytes 10–15) is
 discarded. The callers likewise discard the name: `do_cload`'s `skip_quoted`
-([cload.asm:191](../../basic/cload.asm)) and `do_load`'s `do_load_fn`
-([cload.asm:97](../../basic/cload.asm)) both advance HL past the quoted string without
+([cload.asm:268](../../basic/cload.asm)) and `do_load`'s `do_load_fn`
+([cload.asm:112](../../basic/cload.asm)) both advance HL past the quoted string without
 capturing it. So every caller loads whatever file comes next.
 
 ### Contract to implement
@@ -179,7 +179,7 @@ program currently in memory, **without altering memory**. Identical → `Ok`; an
 Not implemented. `CLOAD?` tokenises to `CLOAD_TOKEN` + `PRINT_TOKEN` (`?` abbreviates PRINT,
 [interp.asm:107](../../basic/interp.asm)). `do_cload` today only handles bare / quoted-name
 forms; a leading `PRINT_TOKEN` falls into `load_error` (`jp nz,load_error`,
-[cload.asm:52](../../basic/cload.asm)).
+[cload.asm:66](../../basic/cload.asm)).
 
 ### Contract to implement
 1. **Recognise the verify form in `do_cload`.** After `skip_spaces`, if `(HL) ==

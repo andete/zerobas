@@ -161,12 +161,12 @@ what was tried and ruled out, for whoever picks this up next.
   distinct new PCs entered), but it immediately returns **EOF (`A=$01`)**
   instead of delivering data — `BDOS_BYTESLEFT` reads `0` at this point.
   Root cause: `BDOS_BYTESLEFT`/`BDOS_RECIDX` (the state `bdos_seqread`
-  depends on) are seeded ONLY by `bdos_open` (`disk/driver.asm:458-483`,
+  depends on) are seeded ONLY by `bdos_open` (`disk/driver.asm:433-483`,
   our OWN internal FOPEN, used when there is no real DOS kernel) and by
-  `bdos_rdblk` (`disk/driver.asm:618-646`, the boot-loader's own local
+  `bdos_rdblk` (`disk/driver.asm:593-646`, the boot-loader's own local
   reseed for `$27` RDBLK). **Neither ever runs for a real kernel-driven
   `$0F` FOPEN in the DOS-boot scenario** — that path goes through
-  `fopen_fill_body` (`disk/fat.asm:1166+`, wired to veneer `$4462`, M21a),
+  `fopen_fill_body` (`disk/fat.asm:1114+`, wired to veneer `$4462`, M21a),
   which by its own documented scope ("owns ONLY +14(high)..+31" of the FCB)
   deliberately does NOT touch `BDOS_BYTESLEFT`/`BDOS_RECIDX` or call
   `fat_open` to re-prime the iterator. So `bdos_seqread` has no valid state

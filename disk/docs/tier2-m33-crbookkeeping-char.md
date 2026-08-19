@@ -47,16 +47,16 @@ cross a cluster boundary.
 
 ## 2. Root cause (our own source — allowed)
 
-The RAM kernel CALLs the ONE page-1 disk-ROM worker `$477D` (`wrseq_body`, kernel.asm:2322) for
+The RAM kernel CALLs the ONE page-1 disk-ROM worker `$477D` (`wrseq_body`, kernel.asm:2782) for
 every sequential record — RDSEQ and WRSEQ share it; direction is our `BDOS_WRMODE` cell; the read
-side falls into `bdos_seqread_body` ([kernel.asm:346](disk/kernel.asm:346)). That body delivers a
+side falls into `bdos_seqread_body` ([kernel.asm:367](disk/kernel.asm:367)). That body delivers a
 128-byte record purely from our **global** iterator state — `BDOS_BYTESLEFT`, `BDOS_RECIDX`,
 `FAT_CURCLUS`/`FAT_CLUSSEC` — and **never writes the FCB copy** at `DE = IY = $DA40`. The kernel
 then copies that (unadvanced) FCB copy back to the user FCB → the user sees post-open values
 forever. Stock's worker advances the copy's position fields, so the kernel copies back the stepped
 values.
 
-The FCB-copy pointer `DE=$DA40` **is already live at the worker entry** (kernel.asm:2316), so the
+The FCB-copy pointer `DE=$DA40` **is already live at the worker entry** (kernel.asm:2762), so the
 fix has the pointer in hand. What ours lacks is an absolute record counter: it tracks
 record-in-sector (`BDOS_RECIDX` 0..3) and bytes-left, not the absolute record number (CR) / extent
 (EX). A small per-open counter (or a byte-consumed → record derivation) supplies CR = n mod 128,

@@ -217,7 +217,7 @@ Sites: 3 × −3 B, 2 × −2 B, 3 × −4 B, 1 × −3 B, `fch_mode_class` −5
 = **−23 B**.
 
 **(b) `oo_parse_as_chan` — the `AS #n` clause, duplicated VERBATIM.**
-`oo_setmode` (files.asm:308, the disk `OPEN`) and `oocas_setmode` (files.asm:573,
+`oo_setmode` (files.asm:251, the disk `OPEN`) and `oocas_setmode` (files.asm:539,
 the cassette `OPEN`) contain a byte-identical 47-byte run: `skip_spaces`, match
 `A`, match `S`, optional `#`, `eval`, `ld a,d / or a / jp nz,oo_fail_bfn`,
 `ld a,e / call fch_valid / jp nc,oo_fail_bfn`. Same raisers, same registers, same
@@ -245,13 +245,13 @@ it.
 ## 3. The change — the SAME reuse D-NOTOPEN made, at the three remaining sites
 
 🔴 **All three sites are further hand-inlined copies of `fch_mode_class`**
-([`basic/expr.asm:1036`](../basic/expr.asm:1036)). D-NOTOPEN found two copies that
+([`basic/expr.asm:1118`](../basic/expr.asm:1118)). D-NOTOPEN found two copies that
 had dropped the `or a`; these three kept the test but raise the wrong code (or, in
 `FIELD`'s case, index the array by hand and then raise ERR 2). The fix is again
 **delete the copy, call the original** — no new routine, no new code path, no new
 message, and the raiser (`err_notopen_raise`) is the one `LOF` already reaches.
 
-### 3.1 `FIELD` — [`basic/field.asm:156`](../basic/field.asm:156) (`ex_field`)
+### 3.1 `FIELD` — [`basic/field.asm:270`](../basic/field.asm:270) (`ex_field`)
 
 ```
                 ld      (FLD_CHAN),a
@@ -322,7 +322,7 @@ is exactly the 61-vs-5 split, so no new classifier is needed:
 `gp_err` disappears; the disk-error `jp c,load_error` at `gp_fin` keeps its own
 `pop hl` and is untouched.
 
-### 3.3 `INPUT$` — [`basic/strvar.asm:179`](../basic/strvar.asm:179) (`str_inputd`)
+### 3.3 `INPUT$` — [`basic/strvar.asm:220`](../basic/strvar.asm:220) (`str_inputd`)
 
 ⚠️ The filed item warned that `INPUT$` "fails via `str_eval_no`, i.e. the error is
 raised by the CALLER". Measured: that caller's answer is ERR **2**, and the fix
@@ -376,10 +376,10 @@ back to.
   arm). Same depth-independence `LOF` and D-NOTOPEN already rely on. ✅
 * **Dropping `stmt_error`'s two side effects is safe.** `stmt_error` does
   `xor a / ld (PRDEST),a` and `ld a,$DD / ld (ERRMARK),a`; `err_notopen_raise`
-  does neither. `exec_stmt` ([`interp.asm:129`](../basic/interp.asm:129)) zeroes
+  does neither. `exec_stmt` ([`interp.asm:160`](../basic/interp.asm:160)) zeroes
   `PRDEST` at the head of **every** statement, so it is already 0 on these paths —
   the clear is redundant here (it exists for errors raised *inside* `PRINT#`'s item
-  loop). `ERRMARK`'s only reader is [`missing.asm:520`](../basic/missing.asm:520),
+  loop). `ERRMARK`'s only reader is [`missing.asm:537`](../basic/missing.asm:537),
   which **clears it itself** at line 517 before the call it inspects, so an unset
   landmark from these paths is inert. ✅
 * **Order is unchanged**: `fch_valid` still rejects 0 / >MAXF *before* the mode

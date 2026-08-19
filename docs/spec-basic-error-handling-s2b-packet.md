@@ -113,7 +113,7 @@ Verified in-tree this session:
   (239) clears it and jumps to `(RESUMEPTR)` = an exact mid-line statement pointer,
   `CURLINE` already pointing at its line. Today set by `RETURN` and a continuing `NEXT`.
   **This is the reuse vehicle for `RESUME`.**
-* **`ex_on`** (program.asm:1215) — `ON <expr> GOTO/GOSUB`. `ON ERROR` extends it (§5).
+* **`ex_on`** (program.asm:1965) — `ON <expr> GOTO/GOSUB`. `ON ERROR` extends it (§5).
 * **`err_msgtab` string reuse** and the `DIRECTF`/`CURLINE+2` conventions are all in
   place; S2b adds no new reporting code.
 
@@ -155,7 +155,7 @@ detected inside `ex_on` (§5).
 
 ## 3. RAM state (new cells)
 
-Freed VARTAB window, below the live cells. Current occupancy (sysvars.inc:434-450):
+Freed VARTAB window, below the live cells. Current occupancy (sysvars.inc:904-450):
 `ARYTAB` $E1C0 (live), `DIRECTF` $E1C2, **$E1C3/C4 reserved for `SAVSTK`**, `ERRCODE`
 $E1C5, `ERRLINE` $E1C6/C7. Next free = **$E1C8**; window is clear up to `$E240`.
 
@@ -181,7 +181,7 @@ Total new RAM: 11 B, all in the free window — **zero ROM-image cost for RAM**.
 the erroring statement's **start** pointer is not in any register at that moment. So we
 capture it continuously and read it at trap time:
 
-* **`SAVTXT` capture.** At `exec_stmt` entry (interp.asm:109 — the per-statement
+* **`SAVTXT` capture.** At `exec_stmt` entry (interp.asm:160 — the per-statement
   dispatch head, reached at line start AND after every `:` via `ex_sep`), save
   `ld (SAVTXT),hl` before dispatching. This mirrors MSX's `SAVTXT`/NEWSTT. Cost: 3 B on
   the statement hot path (page-1). **This is the ONE hot-path edit** — measure it stays
@@ -251,7 +251,7 @@ Design notes:
 ### 5.2 `SAVSTK` anchors (§6)
 
 `ld (SAVSTK),sp` at:
-* **`run_prog`** (program.asm:192, at RUN entry before the run loop) — the run anchor.
+* **`run_prog`** (program.asm:298, at RUN entry before the run loop) — the run anchor.
 * **`dispatch_line`** direct entry (program.asm:30) — so a direct-mode `ERROR n`/error
   with a handler resets cleanly. (Direct error *without* handler stays S1-correct.)
 
@@ -260,7 +260,7 @@ Both are 4 B (`ld (SAVSTK),sp` = ED 73 nn nn). 8 B total, page-1 (run_prog) + pa
 
 ### 5.3 `ON ERROR GOTO <line>` / `GOTO 0`  (extend `ex_on`)
 
-`ex_on` (program.asm:1215) currently does `inc hl` (past ON) then `call eval`. Insert a
+`ex_on` (program.asm:1965) currently does `inc hl` (past ON) then `call eval`. Insert a
 peek: after `inc hl`, `call skip_spaces`; if `(hl)==ERROR_TOKEN`, branch to `ex_on_error`:
 
 ```
@@ -288,7 +288,7 @@ oe_disable:
 ```
 
 The single-`$0E`-line read (`eon_seek_line`) is a trivial subset of `eon_seek_nth`
-(program.asm:1291) — read `$0E lo hi` → BC. May be able to reuse a shared line-number
+(program.asm:2038) — read `$0E lo hi` → BC. May be able to reuse a shared line-number
 reader (the GOTO path has one: `ex_goto` reads a `$0E` operand — reuse it).
 
 ### 5.4 `RESUME` family  (`ex_resume`, interp.asm)

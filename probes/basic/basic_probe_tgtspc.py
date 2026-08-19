@@ -22,14 +22,14 @@ THING THIS PROBE'S DENOMINATOR OWES. `TODO.md` and
 `grep -n "call\\s*tgt_parse\\b" basic/` says **EIGHT** `call tgt_parse`
 instructions, from **NINE** statement surfaces:
 
-  ex_next       basic/program.asm:1641   `NEXT`
-  ex_read       basic/program.asm:1821   `READ`
+  ex_next       basic/program.asm:1665   `NEXT`
+  ex_read       basic/program.asm:1845   `READ`
   inpc_vloop    basic/input.asm:102      console `INPUT`, NUMERIC arm
   inpc_vstr     basic/input.asm:127      console `INPUT`, STRING arm
   inpc_line     basic/input.asm:200      `LINE INPUT`
-  ex_mid_stmt   basic/str-engine.asm:968 `MID$(<var>,n,m) = <expr>`
+  ex_mid_stmt   basic/str-engine.asm:1014 `MID$(<var>,n,m) = <expr>`
   inp_readvar   basic/files.asm:708      `INPUT #n` / `LINE INPUT #n`
-  tgt_parse_fld basic/field.asm:189      -> `FIELD ... AS` (field.asm:288)
+  tgt_parse_fld basic/field.asm:201      -> `FIELD ... AS` (field.asm:288)
                                          -> `LSET`/`RSET`  (field.asm:384)
 
 The filed list ("READ, console INPUT, LINE INPUT, MID$(...)=, FIELD, LSET/RSET
@@ -124,7 +124,7 @@ CASES = [
     ("t.ctl",     "tok", False, ['1 NEXT A(1)'], []),
     ("t.spc",     "tok", False, ['1 NEXT A (1)'], []),
 
-    # === 1. NEXT — ex_next (basic/program.asm:1641) =========================
+    # === 1. NEXT — ex_next (basic/program.asm:1665) =========================
     ("n.ctl",     "run", False, ['FOR A=1 TO 2', 'NEXT A(1)',
                                  'PRINT"[OK]"'], []),
     ("n.spc",     "run", False, ['FOR A=1 TO 2', 'NEXT A (1)',
@@ -135,7 +135,7 @@ CASES = [
     ("n.spcoob",  "run", False, ['FOR A=1 TO 2', 'NEXT A (99)',
                                  'PRINT"[OK]"'], []),
 
-    # === 2. READ — ex_read (basic/program.asm:1821) =========================
+    # === 2. READ — ex_read (basic/program.asm:1845) =========================
     # `PRINT A;A(1)` names WHICH cell took the value: the scalar or the element.
     # A site that read the space as "scalar A, then junk" cannot print ` 0  7 `.
     ("r.ctl",     "run", False, ['DATA 7', 'DIM A(3)', 'READ A(1)',
@@ -166,7 +166,7 @@ CASES = [
     ("l.spc",     "run", False, ['DIM A$(3)', 'LINE INPUT A$ (1)',
                                  'PRINT"[";A$(1);"]"'], ["HI"]),
 
-    # === 5. MID$(...)= — ex_mid_stmt (basic/str-engine.asm:968) ==============
+    # === 5. MID$(...)= — ex_mid_stmt (basic/str-engine.asm:1014) ==============
     ("m.ctl",     "run", False, ['DIM A$(3)', 'A$(1)="HELLO"',
                                  'MID$(A$(1),1,2)="XY"',
                                  'PRINT"[";A$(1);"]"'], []),

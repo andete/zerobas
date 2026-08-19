@@ -75,7 +75,7 @@ records it as a known-unobservable case, not a pass/fail assertion.
 
 **The pixel RMW lives in the page-0 tenant** ([sub/graphics.asm](sub/graphics.asm)),
 extended from G1's single self-test into a **selector-dispatched** entry (arc D5, the
-`fatprim`/`dirverb` pattern — [sub/equates.inc:87](sub/equates.inc)). `SUBROM_IDX_
+`fatprim`/`dirverb` pattern — [sub/equates.inc:98](sub/equates.inc)). `SUBROM_IDX_
 GRAPHICS = 8` is unchanged; `graphics_selftest` becomes `graphics_tenant`, which
 reads `GFX_OP` and dispatches:
 
@@ -137,11 +137,11 @@ correctness because no ISR writes this color byte — only the display reads it.
 a later measurement shows otherwise we widen the guard; flagged, not assumed.)
 
 **3.4 Default color / `PRESET`:**
-- `PSET (x,y)` with `c` omitted → `c = FORCLR` ([basic/sysvars.inc:86](basic/sysvars.inc),
+- `PSET (x,y)` with `c` omitted → `c = FORCLR` ([basic/sysvars.inc:107](basic/sysvars.inc),
   `$F3E9`); §11.3 pinned (omitted → `$D4`, i.e. fg = 13 = FORCLR after `COLOR 13`).
 - `PRESET (x,y),c` behaves **exactly** like `PSET (x,y),c` (§11.3: `PRESET(0,0),6`
   → `$80`/`$64` = `PSET,c`).
-- `PRESET (x,y)` with `c` omitted → `c = BAKCLR` ([basic/sysvars.inc:87](basic/sysvars.inc),
+- `PRESET (x,y)` with `c` omitted → `c = BAKCLR` ([basic/sysvars.inc:108](basic/sysvars.inc),
   `$F3EA`). Since bg is usually the group's low nibble, the omitted-`c` `PRESET`
   normally hits branch 3 (clear the bit) — which is the "erase the pixel" intent.
 
@@ -191,7 +191,7 @@ parse_coord:            ; HL = cursor after the verb token; on return DE=x, ...=
 
 - **`STEP` is relative to the last-referenced point** `GRPACX/GRPACY` (§11.5:
   `PSET(10,20):PSET STEP(5,5)` → (15,25); negative STEP verified). `STEP_TOKEN=$DC`
-  and its kwtable entry already exist ([basic/kwtable.inc:97](basic/kwtable.inc)) —
+  and its kwtable entry already exist ([basic/kwtable.inc:131](basic/kwtable.inc)) —
   G2 only adds *handling* in the coordinate walk, no new token.
 - **`>int16 → ERR 6 (Overflow)`** is raised **inside** `get_int16_checked`
   ([basic/interp.asm:1621](basic/interp.asm), `fac_to_int_strict` → `check_fperr_
@@ -302,7 +302,7 @@ reusing it for `GFX_OP=2` made the marshalling *observable*. `POINT` therefore
 has its own pair, `GFX_PTX/GFX_PTY` — the one op in the block whose parameters
 must not be a work-area cell.
 
-These are the standard MSX work-area addresses ([basic/sysvars.inc:54](basic/sysvars.inc)),
+These are the standard MSX work-area addresses ([basic/sysvars.inc:68](basic/sysvars.inc)),
 the same faithfulness choice as the audio arc's VCB cells. Whether they are written
 resident (the stub already has x/y in registers) or by the tenant (which computes
 `P`/`M`) is an implementation detail; recommend **resident writes GXPOS/GYPOS/GRPAC**
@@ -311,7 +311,7 @@ computes them) — but the tenant is page-0 and these are page-2/3 RAM, always m
 so either works. Pin at implementation.
 
 **Own-design scratch — the G2 param block** (marshalling): appended to the
-`GFX_*` block ([basic/sysvars.inc:65](basic/sysvars.inc), the probe-only high-scratch
+`GFX_*` block ([basic/sysvars.inc:86](basic/sysvars.inc), the probe-only high-scratch
 region `$C1xx`, or a dedicated repack-free cell — decide at implementation from the
 live free-RAM map, the G1 discipline). Fields: `GFX_OP` (1, already exists),
 `GFX_X` (2, target x), `GFX_Y` (2, target y), `GFX_C` (1, resolved color 0..15),
@@ -337,7 +337,7 @@ Collision check (done): no existing equate uses `$C2`/`$C3`/`$ED`; neighbors are
 and `STEP=$DC`/`VARPTR=$E7` on the function side. Capture the three tokens black-box
 (stored-line crunch, the `scratchpad/spike_sound_token.py` shape) as the §8 build
 step before asserting them — the `SOUND`-token-`$C2`-guess-was-wrong discipline
-([basic/sysvars.inc:308](basic/sysvars.inc)); note `$C2` is precisely the value that
+([basic/sysvars.inc:330](basic/sysvars.inc)); note `$C2` is precisely the value that
 wrong guess used, so **re-verify** rather than trust the arc-spec table.
 
 ---

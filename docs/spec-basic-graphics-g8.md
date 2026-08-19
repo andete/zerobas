@@ -23,7 +23,7 @@ the raw record and the probe scripts in
 |---|---|
 | `A=VDP(n)` | did not exist (`VDP` was not a keyword) |
 | `VDP(n)=v` | did not exist |
-| `A=BASE(n)` | **descoped stub** — [`basic/expr.asm:1721`](../basic/expr.asm:1721) parses the argument, returns 0 and sets ERRMARK |
+| `A=BASE(n)` | **descoped stub** — [`basic/expr.asm:1960`](../basic/expr.asm:1960) parses the argument, returns 0 and sets ERRMARK |
 | `BASE(n)=v` | did not exist |
 
 So G8 both adds three surfaces and **retires a documented divergence**: the

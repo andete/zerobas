@@ -150,9 +150,9 @@ out-of-int16 → **DE = 0, no FPERR**. So any `call eval` + use-`DE`/`E` site si
 accepts a wrong value. The checked alternatives already exist and are used by the wired
 sites:
 
-* **`fac_to_int_addr`** (`float-arith.asm:1268` / helper `eval_addr`) — address domain
+* **`fac_to_int_addr`** (`float-arith.asm:1265` / helper `eval_addr`) — address domain
   −32768..65535, wrap-then-truncate, **FPERR=1 (Overflow) outside**. Group A wants this.
-* **`fac_to_int_strict`** (`float-arith.asm:1251`) — strict int16 −32768..32767, **FPERR=1
+* **`fac_to_int_strict`** (`float-arith.asm:1248`) — strict int16 −32768..32767, **FPERR=1
   outside**. The int16 layer of Group B.
 
 The wired template (POKE, `basic/poke.asm:18`): `call eval_addr` (replaces `call eval`,

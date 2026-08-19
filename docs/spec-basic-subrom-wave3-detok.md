@@ -28,12 +28,12 @@ Both are now settled from the actual source; only Q3 (buffer home) remains.
 
 ### 0.1 Q2 — the leaf-audit: the core is a CLEAN LIFT (no BIOS in any `dt_*`)
 
-The full call-graph of the detok region ([`list.asm:91-611`](../basic/list.asm:91))
+The full call-graph of the detok region ([`list.asm:245-611`](../basic/list.asm:245))
 resolves to exactly **three** symbols defined *outside* `list.asm`:
 
 | symbol | defined in | role | disposition |
 |---|---|---|---|
-| `pchar` | [`print.asm:358`](../basic/print.asm:358) | the I/O sink (CHPUT / fat_io_putbyte / LPTOUT / cas_wbyte) | **STAYS RESIDENT** — this is the drain |
+| `pchar` | [`print.asm:421`](../basic/print.asm:421) | the I/O sink (CHPUT / fat_io_putbyte / LPTOUT / cas_wbyte) | **STAYS RESIDENT** — this is the drain |
 | `print_string` | [`repl.asm`](../basic/repl.asm) | a 0-terminated-buffer→`pchar` loop | resident; the number renderers stop calling it (see §0.3) |
 | `div10` | [`print.asm:332`](../basic/print.asm:332) | HL/=10, shift-and-subtract — **pure compute, no BIOS** | **clone sub-side** (the `neg_de`/`upcase` pattern) |
 
@@ -49,12 +49,12 @@ The sketch (§5) feared a 255-char source line → ~767 B output. **The source l
 capped at 96 bytes, not 255**: `LINEMAX equ 96`, `LINEBUF` is one page `$E100..$E15F`
 ([`sysvars.inc:317`](../basic/sysvars.inc:317)), and **both** program-line entry
 paths bound to it — `read_line` ([`repl.asm`](../basic/repl.asm), Enter guard at
-`LINEBUF+LINEMAX-1`) and `ascii_read_lines` ([`files.asm:1382`](../basic/files.asm:1382),
+`LINEBUF+LINEMAX-1`) and `ascii_read_lines` ([`files.asm:1579`](../basic/files.asm:1579),
 same guard, covering MERGE / ASCII-LOAD / CLOAD). So every stored line LIST can
 encounter came from **≤95 source chars**.
 
 The **only** source-expanding token is `?`→`PRINT` (1 char → 5;
-[`tokenise.inc:242`](../basic/tokenise.inc:242)) — all keywords are typed in full,
+[`tokenise.inc:416`](../basic/tokenise.inc:416)) — all keywords are typed in full,
 so they render at their typed length; numbers render at their typed length. Bounds:
 
 - **Realistic worst case** — densest valid `?:?:…?` in 95 chars = 48 `?` + 47 `:` →
@@ -93,7 +93,7 @@ the tokeniser was pure by nature (its output is already a RAM buffer), detok is 
 - **Both readers are sub-side → drop the resident `kwtable`** — recovers wave-2's
   duplication *and* frees its page-0 low-region bytes.
 - **Frees the detok-core code from page 1** (the byte-full wall — `list.asm` is a
-  page-1 include, [`main.asm:133`](../basic/main.asm:133)).
+  page-1 include, [`main.asm:188`](../basic/main.asm:188)).
 - One shared table, one source of truth (the drift risk R-W2-3 disappears).
 
 The core is also cold (LIST/SAVE are peripheral verbs), so the DI span is cosmetic,

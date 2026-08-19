@@ -16,7 +16,7 @@ cases / **0** filed. F1–F3 all falsified with the knives verified to have cut.
 [`basic/sysvars.inc:2513`](../basic/sysvars.inc:2513), inside the 50-byte
 `FCH_STATE0` span that `fch_save_active`/`fch_load_ctx` swap per channel. It is
 the *only* thing `ev_ff_lof` reads
-([`basic/expr.asm:1002`](../basic/expr.asm:1002)):
+([`basic/expr.asm:1084`](../basic/expr.asm:1084)):
 
 ```
 ev_ff_lof:      …  call fch_select
@@ -60,7 +60,7 @@ Enumerated from the source, not from the probe's path:
 | 9 | `fch_save_active`/`fch_load_ctx` | carry it per channel | ✅ none |
 
 ⚠️ **Both bodies with two homes are covered by editing the body once.**
-`fatiocreate-body.inc` is included by [`basic/fat.asm:266`](../basic/fat.asm:266)
+`fatiocreate-body.inc` is included by [`basic/fat.asm:262`](../basic/fat.asm:262)
 (resident) and [`sub/save.asm:119`](../sub/save.asm:119) (sub tenant);
 `randio-body.inc` is **sub-only** ([`sub/randio.asm:47`](../sub/randio.asm:47)),
 so sites 5 and 6 cost **no main ROM at all**. The disk ROM (`disk/fat.asm`) has

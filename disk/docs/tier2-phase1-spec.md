@@ -33,8 +33,8 @@ which then overwrite the cleared baseline. Cells ours writes inside the range:
 | cells | ours' writer | must end up |
 |-------|--------------|-------------|
 | `$F37D-$F37F` SYSTEM = `C3 <bdos_entry>` | `init` (init.asm:126-128) | ours' value (intentional divergence) |
-| `$F341-$F344` RAMAD | `init` → `set_ramad` (init.asm:140) | ours' value |
-| `$F368-$F37C` segment-switch hook table | `build_wa_table` (init.asm:408) | ours' value (A-3/A-5 wa_seg; intentional divergence) |
+| `$F341-$F344` RAMAD | `init` → `set_ramad` (init.asm:142) | ours' value |
+| `$F368-$F37C` segment-switch hook table | `build_wa_table` (init.asm:454) | ours' value (A-3/A-5 wa_seg; intentional divergence) |
 | `$F34D-$F352` drive-DPB pointers | ours (→ DRV_TRAMP `$E8xx`) | ours' value (intentional divergence) |
 
 If the clear runs AFTER any of these, it wipes them (e.g. wiping `$F37D` breaks the boot-sector's

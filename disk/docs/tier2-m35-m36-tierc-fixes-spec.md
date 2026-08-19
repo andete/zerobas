@@ -160,7 +160,7 @@ dropped 8→3 bytes, all allowlisted classes (FCB+25 dirloc + FREN H/L undefined
 contract pins A, same class as BDOSX3 rec14).
 
 **M36 (WRRND past-EOF):** new `wrrnd_extend` in the free corridor
-([kernel.asm:1882](../kernel.asm)), called after the record `write_sector`
+([kernel.asm:1891](../kernel.asm)), called after the record `write_sector`
 ([kernel.asm:3128](../kernel.asm)). Grows `ix+16..19` = max(oldsize,(r0+1)*128) AND
 patches the on-disk dirent+28..31 (the `fren_body` `fat_find`-in-place idiom; NOT
 `fat_dir_update`, to leave first-cluster untouched). Sonnet caught + fixed a real bug

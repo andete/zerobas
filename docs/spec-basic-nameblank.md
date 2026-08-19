@@ -142,11 +142,11 @@ that is a prediction, and the allowlist is what tests it.
 
 ### 4.1 The site — sub-ROM only
 
-`tk_loop` in [`basic/tokenise.inc:38`](../basic/tokenise.inc:38). That file is
-`include`d by [`sub/sub.asm:209`](../sub/sub.asm:209) **and nothing else**, so
+`tk_loop` in [`basic/tokenise.inc:42`](../basic/tokenise.inc:42). That file is
+`include`d by [`sub/sub.asm:262`](../sub/sub.asm:262) **and nothing else**, so
 this slice cannot touch the main ROM. Sub page 0 has ~4026 B free.
 
-`TKNAME` ([`basic/sysvars.inc:700`](../basic/sysvars.inc:700)) has no reader
+`TKNAME` ([`basic/sysvars.inc:749`](../basic/sysvars.inc:749)) has no reader
 outside `tokenise.inc` — verified by grep — so the blast radius is this one file.
 
 ### 4.2 The change — as LANDED
@@ -184,7 +184,7 @@ of relative range). Asserted: `build/basic-reloc.rom` and
 ### 4.3 Why the test goes THERE and not in `tk_copy`
 
 ⚠️ **`B` is only known-live before `match_kw`.** The existing code reads `B` at
-[`tokenise.inc:57`](../basic/tokenise.inc:57), *before* the `match_kw` call at
+[`tokenise.inc:61`](../basic/tokenise.inc:61), *before* the `match_kw` call at
 line 93; a blank test inside `tk_copy` would read a `B` that `match_kw` has had
 every opportunity to clobber. The early position is the correct one for a reason
 that is not stylistic, and K4 (§5) is aimed at exactly this justification.
@@ -225,7 +225,7 @@ disjoint witnesses.
 The first cut placed `tk_blank` immediately **before** `tk_copy`. But `tk_copy`
 is entered by **fallthrough** from `call is_letter / jr c,tk_copy_up` — so every
 punctuation character fell *into* `tk_blank` and stored `B`, a register
-[`match_kw`](../basic/tokenise.inc:103) uses as its own compare counter and has
+[`match_kw`](../basic/tokenise.inc:143) uses as its own compare counter and has
 long since clobbered by that point.
 
 **That is exactly the liveness claim §4.3 makes, violated by the code §4.3

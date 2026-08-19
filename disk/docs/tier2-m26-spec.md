@@ -264,7 +264,7 @@ tail, false success status (MEDIUM risk — needs a FREN-class relocation,
 not a pad-wire like RDABS)
 `callwatch --in-func 0x30` → three hits, `$4720,$4724,$4727`, landing inside
 `bdos_seqwrite`'s body (`$46EE`) and running straight into `bsw_ok`
-(`$4727`, disk/kernel.asm:1218 area) — `bdos_seqwrite`'s own SUCCESS exit
+(`$4727`, disk/kernel.asm:2745 area) — `bdos_seqwrite`'s own SUCCESS exit
 path. **Re-derived FREN/RDABS-style** (third M26 function in a row where the
 callwatch-only read needed correction): `trace --resync` (anchored at
 BDOSX3's `n=30` WRABS call) confirms `$4720` is the kernel's own real, fixed

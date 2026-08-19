@@ -9,7 +9,7 @@ SPDX-License-Identifier: 0BSD
 slice.**
 
 Filed 2026-08-01 by D-CNAME as *"DOES ZEROBAS HONOUR THE OFFICIAL MSX RAM
-VARIABLES? THERE IS NO DENOMINATOR"* ([`../TODO.md:3336`](../TODO.md:3336)).
+VARIABLES? THERE IS NO DENOMINATOR"* ([`../TODO.md:6546`](../TODO.md:6546)).
 
 ---
 
@@ -108,7 +108,7 @@ and checkably**, not by judgement:
   Divergence here is a C-BIOS-vs-reference-BIOS difference *below* the BASIC
   layer. The graphics arc already owns a worked instance: VDP R7 is excluded from
   every G8 assertion because C-BIOS programs it differently from the reference
-  BIOS ([`../probes/basic/basic_probe_graphics.py:959`](../probes/basic/basic_probe_graphics.py:959)).
+  BIOS ([`../probes/basic/basic_probe_graphics.py:1255`](../probes/basic/basic_probe_graphics.py:1255)).
 * **BASIC-owned** — C-BIOS never touches it. On a real MSX the *BASIC ROM* writes
   it, so on zerobas **zerobas** must, or nobody does. This is the bucket `ERRFLG`
   is in, and it is the bucket this slice is about.
@@ -127,7 +127,7 @@ generates candidates; layer 2 decides.
 ## 5. Instrument — a whole-span memory dump, not 3199 `PEEK`s
 
 `omsx_repl`'s `("mem_abs", [(addr, len)])` capture already exists and is in
-service ([`../probes/lib/omsx_repl.py:163`](../probes/lib/omsx_repl.py:163)); it
+service ([`../probes/lib/omsx_repl.py:296`](../probes/lib/omsx_repl.py:296)); it
 lowers to one openMSX `debug read_block memory`. So the entire work area comes
 back in **one capture per case**, with **no BASIC payload delivered for the read
 at all**.

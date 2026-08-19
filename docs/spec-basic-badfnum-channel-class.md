@@ -31,15 +31,15 @@ dispositions:
 
 | site | verb | today's disposition | class printed |
 |---|---|---|---|
-| [`print.asm:42`](../basic/print.asm:42) | `PRINT#`, `PRINT# USING` | `load_error` | `load error` |
-| [`files.asm:695`](../basic/files.asm:695) | `INPUT#`, `LINE INPUT#` | `load_error` | `load error` |
-| [`files.asm:832`](../basic/files.asm:832) | `CLOSE#` | `dc_done` | **nothing at all** |
-| [`files.asm:1054`](../basic/files.asm:1054) | `OPEN … AS #n` | `oo_fail_bfn` | ERR 52 |
-| [`field.asm:153`](../basic/field.asm:153) | `FIELD` | `stmt_error` | ERR 2 |
-| [`field.asm:513`](../basic/field.asm:513) | `GET`, `PUT` | `stmt_error` | ERR 2 |
-| [`strvar.asm:178`](../basic/strvar.asm:178) | `INPUT$(n,#f)` | `str_eval_no` | ERR 2 |
-| [`expr.asm:985`](../basic/expr.asm:985) | `EOF()` | `ev_f_err` | **nothing at all** |
-| [`expr.asm:1007`](../basic/expr.asm:1007) | `LOF()` | `ev_f_err` | **nothing at all** |
+| [`print.asm:82`](../basic/print.asm:82) | `PRINT#`, `PRINT# USING` | `load_error` | `load error` |
+| [`files.asm:657`](../basic/files.asm:657) | `INPUT#`, `LINE INPUT#` | `load_error` | `load error` |
+| [`files.asm:799`](../basic/files.asm:799) | `CLOSE#` | `dc_done` | **nothing at all** |
+| [`files.asm:1028`](../basic/files.asm:1028) | `OPEN … AS #n` | `oo_fail_bfn` | ERR 52 |
+| [`field.asm:270`](../basic/field.asm:270) | `FIELD` | `stmt_error` | ERR 2 |
+| [`field.asm:740`](../basic/field.asm:740) | `GET`, `PUT` | `stmt_error` | ERR 2 |
+| [`strvar.asm:217`](../basic/strvar.asm:217) | `INPUT$(n,#f)` | `str_eval_no` | ERR 2 |
+| [`expr.asm:1065`](../basic/expr.asm:1065) | `EOF()` | `ev_f_err` | **nothing at all** |
+| [`expr.asm:1087`](../basic/expr.asm:1087) | `LOF()` | `ev_f_err` | **nothing at all** |
 
 ## 2. The DENOMINATOR — MEASURED, swept, not sampled
 
@@ -280,7 +280,7 @@ the first run and paid for the whole apparatus.
   `FIELD`'s guarded cursor need no `pop`. ✅
 * **`oo_fail_bfn` clears `FCH_MODE`, and that is harmless for the eight new
   callers.** `FCH_MODE` is a *mirror* re-stamped by `fch_select`
-  ([`files.asm:1148`](../basic/files.asm:1148)), and **every one of its three
+  ([`files.asm:1130`](../basic/files.asm:1130)), and **every one of its three
   readers** ([`print.asm:75`](../basic/print.asm:75),
   [`files.asm:720`](../basic/files.asm:720),
   [`files.asm:1135`](../basic/files.asm:1135)) is immediately preceded by a
@@ -368,7 +368,7 @@ where one exists. **RUN BEFORE THE FIRST EDIT. Two hits, both benign:**
 
 * [`disk_probe_maxfiles.py:13`](../probes/disk/disk_probe_maxfiles.py:13) — types
   `MAXFILES=2` before touching `#2`, so the channel is in range.
-* [`disk_probe_open_device.py:69`](../probes/disk/disk_probe_open_device.py:69) —
+* [`disk_probe_open_device.py:75`](../probes/disk/disk_probe_open_device.py:75) —
   the same, with the comment already saying so ("`#2` needs the ceiling raised
   from the default 1").
 

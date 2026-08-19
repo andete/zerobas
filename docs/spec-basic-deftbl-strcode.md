@@ -30,7 +30,7 @@ with a *string* code:
   `2` / **`1`** / `4` / `8`.
 * **Namespace C (chain).** The variable-chain entry's `type` byte, alias
   `ARY_TYPE` — zerobas' own design, `2/4/8` numeric and **`1` string**, with
-  [`elsize_from_type`](../sub/arrays.asm:845) mapping `1 → 3` because a string
+  [`elsize_from_type`](../sub/arrays.asm:943) mapping `1 → 3` because a string
   element is a 3-byte `[len][ptr]` descriptor. (On the references the two
   namespaces are ONE: `3` is both the code and the descriptor width, so the
   identity `elsize == type` holds and no map is needed.)
@@ -43,16 +43,16 @@ code straight into namespace C**, and today that is invisible because `1 == 1`:
 
 | | site | what it does with the value |
 |---|---|---|
-| **B1** | [`basic/vars.asm:110`](../basic/vars.asm:110) `vnk_suffix` | writes it into `(VARTYPE)`, read by `ev_f_var` / `ev_f_arr` |
+| **B1** | [`basic/vars.asm:147`](../basic/vars.asm:147) `vnk_suffix` | writes it into `(VARTYPE)`, read by `ev_f_var` / `ev_f_arr` |
 | **B2** | [`basic/vars.asm:583`](../basic/vars.asm:583) `var_get` | passes it to `var_load_fac` as the chain type **and byte count** |
 | **B3** | [`basic/vars.asm:595`](../basic/vars.asm:595) `var_set` | passes it to `var_store_fac` as the chain type **and byte count** |
 
-"Byte count" is literal: [`var_load_fac`](../basic/vars.asm:311) and
+"Byte count" is literal: [`var_load_fac`](../basic/vars.asm:585) and
 [`var_store_fac`](../basic/vars.asm:392) both reach `ld c,a` / `ld b,0` / `ldir`
 for any type that is not `2`. **A is the width.** So B2/B3 do not merely mislabel
 a variable — they `ldir` `A` bytes.
 
-The source comment at [`basic/vars.asm:110`](../basic/vars.asm:110) calls the B1
+The source comment at [`basic/vars.asm:147`](../basic/vars.asm:147) calls the B1
 leak *"harmless: the numeric path is never entered for a name `var_str_type`
 routed to STRTAB"*. §3 shows that claim is **false**, and that the rows which
 appear to confirm it confirm it for a different reason.
@@ -165,7 +165,7 @@ into it. A different corruption, no better.
 * **`READ` — a genuine STRING read.** `DATA 42` gives `[42]`, not `[ 42 ]`: no
   leading/trailing space, so it is the *string* `"42"`, not the number. `DATA AB`
   gives `[AB]`. zerobas has no string `READ` at all —
-  [`ex_read`](../basic/program.asm:1310) consumes one letter and calls
+  [`ex_read`](../basic/program.asm:1815) consumes one letter and calls
   `read_one_value` for an int16, with no `$` handling anywhere.
 
 ---
@@ -200,7 +200,7 @@ They stay divergent from the references' string read — that is a missing featu
 
 ### F3 — close B1 (proposed; behaviour parity, 3 red rows)
 
-One guard in [`ev_f_var`](../basic/expr.asm:522), placed after `var_name_key`
+One guard in [`ev_f_var`](../basic/expr.asm:543), placed after `var_name_key`
 and **before** the `cp '('` dispatch to `ev_f_arr`, so it covers the scalar and
 the array-element road with one check. Makes `l1c.str.nested`, `.set` and `.arr`
 match both references.

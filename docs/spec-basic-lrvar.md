@@ -66,7 +66,7 @@ agreement is a result of the measurement, not an assumption behind it.
 
 ## 2. What is wrong, in one sentence
 
-* **`lrset_notfld`** ([`basic/field.asm:404`](../basic/field.asm)) — reached when
+* **`lrset_notfld`** ([`basic/field.asm:479`](../basic/field.asm)) — reached when
   `fld_find` misses, it is `pop hl` / `jp stmt_error`. The **parse** half of this
   site is already complete: D-FLDARY's `tgt_parse_fld` hands `lrset_common` either
   a name key or an ARYTAB-relative element key and leaves the element address in
@@ -239,7 +239,7 @@ This is the same shape `ex_mid_stmt` uses one file away, and for the same reason
 
 ### 5.3 The `ARYTAB` snapshot is D-LVFIX's, reused rather than re-invented
 
-`tgt_desc` / `tgt_desc_fix` ([`basic/vars.asm:348`](../basic/vars.asm)) already
+`tgt_desc` / `tgt_desc_fix` ([`basic/vars.asm:433`](../basic/vars.asm)) already
 solve "a target held across an evaluation": a scalar's descriptor address is
 stashed verbatim, an element's is stashed as its **ARYTAB-relative offset** and
 re-added afterwards, so an `ARYTAB` move between the parse and the store cannot

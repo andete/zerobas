@@ -47,7 +47,7 @@ pixel's VDP access. G3 is where §2 of the arc spec is validated under load.
 | Fast-forwarding the Bresenham error across a huge off-screen span | ❌ | correctness first; masking iterates every step (§4.4 perf note) |
 
 **No new token, no new kwtable row.** `LINE=$AF` already tokenizes on both builds
-(it exists for `LINE INPUT`, [basic/kwtable.inc:43](basic/kwtable.inc)); graphics
+(it exists for `LINE INPUT`, [basic/kwtable.inc:77](basic/kwtable.inc)); graphics
 `LINE` is disambiguated **purely at runtime** in `ex_line` (§6/§7). G3 is otherwise
 repack-only (the page-0 tenant op), so the lean cart is byte-identical.
 
@@ -65,7 +65,7 @@ mid-`CIRCLE`); **music must keep playing while a line draws.**
 **The loop discipline (own-design, mirrors `graphics_selftest`):**
 - The tenant is entered under DI by `CALSLT`. The `LINE` op does **`ei`** at the top,
   runs the Bresenham/box loop with interrupts live, and **`di`** before `ret` — the
-  exact bracket G1's self-test already proved ([sub/graphics.asm:78](sub/graphics.asm)).
+  exact bracket G1's self-test already proved ([sub/graphics.asm:120](sub/graphics.asm)).
 - **Each pixel's read-modify-write is one brief DI unit.** Between pixels the loop is
   interruptible; around a pixel we `di`, do calc-addr → read pattern → read color →
   clash → write pattern → write color, then `ei`. This is arc §2/§3 to the letter:
@@ -149,7 +149,7 @@ sets become the host-unit-test oracle (§8).
 rasteriser runs over the **true int16 endpoints** and range-tests each pixel; deltas
 are up to 16-bit. The per-pixel in-range gate (`0≤x≤255 ∧ 0≤y≤191`) is what implements
 the clip and also guarantees `gfx_calc_addr`'s `x≤255,y≤191` preconditions
-([sub/graphics.asm:177](sub/graphics.asm)) for every pixel actually plotted.
+([sub/graphics.asm:234](sub/graphics.asm)) for every pixel actually plotted.
 
 **4.3 Per-pixel color.** Each plotted pixel takes the **same clash RMW as `PSET`**
 (§11.3: `LINE(0,0)-(15,0),6` → color bytes `$61` = fg 6 | bg 1). The tenant reuses
@@ -192,7 +192,7 @@ verbatim), resolves `p2` (STEP rel `p1`), then draws and sets `GRPAC=p2`.
 
 **Tenant ABI (append-only param cells).** New op `GFX_OP=3` (line/box). Marshal the
 **two int16 endpoints + color + mode** in own-design cells appended after `GFX_REL`
-([basic/sysvars.inc:392](basic/sysvars.inc), `$E033`; allocate `$E034+` after a
+([basic/sysvars.inc:548](basic/sysvars.inc), `$E033`; allocate `$E034+` after a
 live-map check, the G2 discipline): `GFX_X1/GFX_Y1/GFX_X2/GFX_Y2` (2 B each, int16 LE),
 `GFX_C` (reuse, resolved color 0..15), `GFX_MODE` (0=line, 1=box outline, 2=box fill).
 The resident stub sets these, `push hl` (guard the token cursor — the `ex_play`
@@ -205,7 +205,7 @@ tenant reads its own `GFX_*` block for the geometry.
 ## 7. Token dispatch + the `LINE INPUT` disambiguation (measured, §11.1)
 
 `LINE=$AF` reaches `ex_line` already ([basic/interp.asm:170](basic/interp.asm),
-[basic/files.asm:722](basic/files.asm)). Today `ex_line` requires `INPUT` next, else
+[basic/files.asm:620](basic/files.asm)). Today `ex_line` requires `INPUT` next, else
 `stmt_error` ("graphics LINE = Phase 3"). G3 flips that fall-through:
 
 ```

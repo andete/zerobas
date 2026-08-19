@@ -197,7 +197,7 @@ Two further notes, both recorded at the equates:
 
 **`ARYTAB $F6C4`** — `SAME-VAR`, byte-identical, and *still rejected*. zerobas
 has no stored `VARTAB` (derived as `(PRGEND)+2`,
-[`../basic/sysvars.inc:1577`](../basic/sysvars.inc:1577)) and **no `STREND` at
+[`../basic/sysvars.inc:1703`](../basic/sysvars.inc:1703)) and **no `STREND` at
 all**. A consumer computes array space as `STREND − ARYTAB`; publishing a
 plausible `ARYTAB` beside two power-on zeros yields a **large negative length —
 a confident wrong answer** — where today it gets `0 − 0` and an obviously dead

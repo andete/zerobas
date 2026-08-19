@@ -80,7 +80,7 @@ ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK
 # bare CR, which accepts the default date; at the BASIC prompt every later one is
 # a no-op. Emitting it per case rather than once costs a step and needs no
 # library change. Its 4.5 s cadence is not a guess -- D-LOF measured the CF-3300
-# EATING keystrokes at shorter ones (diskbasic_probe_chancost.py:479).
+# EATING keystrokes at shorter ones (diskbasic_probe_chancost.py:484).
 #
 # ⚠️ `diska` is a /tmp COPY, never the committed image: nothing here writes to a
 # disk, but a probe that hands openMSX the repo's own .dsk is one bug away from
@@ -99,7 +99,7 @@ TAB = "\t"
 
 # --- the `num` battery: the LEADING line number (program.asm parse_lineno) ----
 # Payloads end in `REMX` because REM keeps the rest of its line VERBATIM on every
-# MSX (basic/tokenise.inc:99/181), so the body reads back as $8F + 'X' with no
+# MSX (basic/tokenise.inc:174/181), so the body reads back as $8F + 'X' with no
 # token decoding needed and no second variable in the way.
 NUM = [
     # label          typed lines                       role
@@ -236,7 +236,7 @@ DEC = [
                                            # i.e. before the scanner is entered
     # The other radices.  `lit-hex` says &H does not skip; a rule stated from one
     # radix is a sample of three.
-    ("dec-oct",      ["20 A=&O1 7"]),      # octal (zerobas has &O: tokenise.inc:302)
+    ("dec-oct",      ["20 A=&O1 7"]),      # octal (zerobas has &O: tokenise.inc:456)
     # ⚠️ INFORMATIONAL: zerobas' tk_hex knows &H and &O only.  If the references
     # accept &B this row measures a MISSING RADIX and not this defect -- a
     # neighbouring gap that earns its own item with these bytes attached.
@@ -297,7 +297,7 @@ DEC = [
     # --- round 4: the ENTRY to the literal scan, which is in the OTHER ROM ----
     # ⚠️ EVERY ROW ABOVE ENTERS `tk_float` ON A DIGIT.  A literal may also begin
     # with the DOT (`.5`), and that decision is taken in tk_loop's dispatch
-    # (basic/tokenise.inc:70), which looks exactly ONE character past the '.' and
+    # (basic/tokenise.inc:94), which looks exactly ONE character past the '.' and
     # demands a digit.  A blank there is a cell no `tk_float` fix can reach, so a
     # slice that measured only the scanner would ship a hole its own rule
     # predicts -- the D-NOTOPEN2 trap, where 3 of 7 rows gave a different answer
@@ -566,7 +566,7 @@ NAM = [
     ("nam-sfx",      ["20 A=B$ 1"]),
     ("nam-lval",     ["20 B1 1=5"]),       # the same shape in an LVALUE position
     ("nam-print",    ["20 PRINT B1 1"]),   # after a KEYWORD token, not after '='
-    ("nam-dot",      ["20 A=B .5"]),       # the '.'-led literal (tokenise.inc:70,
+    ("nam-dot",      ["20 A=B .5"]),       # the '.'-led literal (tokenise.inc:83,
                                            # a one-char lookahead in the OTHER
                                            # file) reached across a name's blank
     # --- the `&` axis: the denominator of the filed row ----------------------
@@ -637,7 +637,7 @@ NAM = [
 #
 #   rule F (float lead) -- a '.' is examined for a following digit at EVERY
 #                          position, and a digit makes it lead a numeric
-#                          constant. zerobas today (basic/tokenise.inc:81).
+#                          constant. zerobas today (basic/tokenise.inc:94).
 #   rule N (name char)  -- a '.' behind a LIVE name state CONTINUES the
 #                          identifier; with no live name state it leads a
 #                          literal exactly as today (`MY.VAR` is one name, and
@@ -713,7 +713,7 @@ DOT = [
 DIRB = [
     # ⚠️ THE BRACKETS ARE LOAD-BEARING AND THIS ROW HAD BEEN MISSING THEM. Every
     # SAY_ONLY row is read by `result_span_after_echo`, which returns the text
-    # between the LAST '[' and its ']' (omsx_repl.py:518) -- so a payload that
+    # between the LAST '[' and its ']' (omsx_repl.py:1212) -- so a payload that
     # prints no brackets can only ever read `<none>`, on EVERY side, which then
     # compares EQUAL and reports `agrees`. That is the same shape as the
     # chancost NOREAD guard: a sentinel that also means "no reading" is not a
@@ -812,7 +812,7 @@ BODY = [
 ]
 
 # --- the `ref` battery: a line-number REFERENCE inside a statement ------------
-# tokenise.inc:444 branch_lineno -- DIFFERENT CODE from parse_lineno, and the
+# tokenise.inc:630 branch_lineno -- DIFFERENT CODE from parse_lineno, and the
 # TODO says in as many words to measure rather than assume it follows.
 #
 # The readout makes both halves visible at once: the crunched value appears as
@@ -1812,7 +1812,7 @@ DLT = [
 # measurement). The bracket span cannot see one either -- it returns ONE value,
 # and "which lines" is a SET.
 #
-# `screen_tail` (probes/lib/omsx_repl.py:539) returns the rows between the echoed
+# `screen_tail` (probes/lib/omsx_repl.py:1233) returns the rows between the echoed
 # command and the closing prompt, '|'-joined. That is precisely and only what
 # LIST printed, it carries BOTH ends of the range in one reading, and on a row
 # that ERRORS it carries the error TEXT instead -- so one row per range answers
@@ -2041,7 +2041,7 @@ CLN = [
     ("cln-cont",     _CLNS + _CLNRE + ["RUN", "CONT", "LIST ."]),
     # 🔴 AN ERROR WRITES `.` (cln-err) -- AND EVERY ERROR ROW SO FAR HAPPENED IN A
     # STORED LINE. ERRLIN's own measured convention is that a DIRECT-mode error
-    # files 65535, not a line number (sysvars.inc:920), so "the erroring line" is
+    # files 65535, not a line number (sysvars.inc:960), so "the erroring line" is
     # not yet a rule an implementation can write: it does not say what happens
     # when there is no line. If `.` takes 65535 too, `LIST .` lists nothing.
     ("cln-direrr",   _CLNP + _CLNE + ["ERROR 7", "LIST ."]),
@@ -3208,7 +3208,7 @@ def say(raw, lines, margin_lines):
     row built only from characters the CASE ITSELF typed is echo, not output.
 
     ⚠️ THE ECHO ALPHABET IS DERIVED FROM THE CASE, never hard-coded -- the same
-    discipline basic_probe_linemax.py:364 arrived at after a hard-coded alphabet
+    discipline basic_probe_linemax.py:371 arrived at after a hard-coded alphabet
     reported a battery's own echo as machine output on every row.
 
     This exists for ONE question the stored-line readout cannot answer: a row
@@ -3229,7 +3229,7 @@ def say(raw, lines, margin_lines):
     # ⚠️ THE LAST ROW IS NOT OUTPUT -- the references draw the FUNCTION-KEY line
     # there (`color auto goto list run`) and zerobas draws nothing, so leaving it
     # in makes every row differ on furniture. Machine-agnostic and changes no
-    # machine state, unlike `KEY OFF` (basic_probe_linemax.py:372).
+    # machine state, unlike `KEY OFF` (basic_probe_linemax.py:379).
     for r in range(omsx_repl.ROWS - 1):
         row = raw[r * omsx_repl.COLS:(r + 1) * omsx_repl.COLS].strip()
         for p in omsx_repl.PROMPTS:

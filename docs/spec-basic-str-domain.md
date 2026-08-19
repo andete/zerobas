@@ -87,7 +87,7 @@ it must add.
 ## 3. The `MID$` STATEMENT is a second broken surface — newly found
 
 `MID$(a$,p[,m])=b$` is a different code path
-([`basic/str-engine.asm:862`](../basic/str-engine.asm:862)) from the `MID$`
+([`basic/str-engine.asm:995`](../basic/str-engine.asm:995)) from the `MID$`
 function, with the same two numeric arguments and the same domain. **It was not
 in the roadmap item and it is broken in both possible ways:**
 
@@ -130,7 +130,7 @@ tested instead of trusted, and it was **wrong**:
 | `INSTR(99999,A$,"b")` | **`Overflow`** | `illegal function call` |
 
 `INSTR` has **half** the rule: it hand-rolls a `p < 1` test
-([`basic/str-engine.asm:1277`](../basic/str-engine.asm:1277)) and has neither an
+([`basic/str-engine.asm:1423`](../basic/str-engine.asm:1423)) and has neither an
 upper bound nor a stage-1 int16 gate. So `INSTR(256,…)` is a silent wrong
 answer of exactly the D-MISS-2 kind, and it survived the SILENT-GAP sweep for
 exactly the reason D-MISS-2 did.
@@ -212,7 +212,7 @@ push/pop guards around each call.
 numeric argument, so a raise now unwinds out of a half-built expression. That is
 safe: `raise_error` resets `SP` from `SAVSTK` (`4d35b6d`), and `exec_stmt`
 empties the temp-descriptor stack at **every** statement boundary
-([`basic/interp.asm:147`](../basic/interp.asm:147)), so the orphaned temp's slot
+([`basic/interp.asm:194`](../basic/interp.asm:194)), so the orphaned temp's slot
 and heap body are both reclaimed at the next statement.
 
 ### 4.4 Why this had to wait for `4d35b6d`
@@ -378,7 +378,7 @@ record**, and each needs an edit as part of the slice — none is a regression:
    this harness structurally cannot model. **There is direct precedent**: when
    D-F2-2 moved `SPACE$`/`STRING$` onto `get_byte_arg`, those out-of-domain rows
    were removed from this same file with a comment pointing at the openMSX gate
-   ([`tests/test_str_fn.py:198`](../tests/test_str_fn.py:198)). *Edit: same
+   ([`tests/test_str_fn.py:209`](../tests/test_str_fn.py:209)). *Edit: same
    treatment, pointing at `make str-domain-acceptance`.*
 
 ⚠️ Note what #3 means for coverage: **no host unit test can cover any row in this

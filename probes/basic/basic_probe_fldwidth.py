@@ -5,7 +5,7 @@
 """D-FLDWIDTH — what a `FIELD` width may BE, and what `FIELD` does when it isn't.
 
 The residual D-NAMSPC filed and DEFERRED in `TODO.md`: `ex_field`
-(basic/field.asm:270) `eval`s its field width and NEVER CHECKS WHAT THE RESULT
+(basic/field.asm:282) `eval`s its field width and NEVER CHECKS WHAT THE RESULT
 IS, so a STRING is accepted as a field width. The row that says so has no space
 in it at all:
 

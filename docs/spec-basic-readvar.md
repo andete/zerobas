@@ -140,7 +140,7 @@ call    str_set_key         ; var$[key] = the bytes
 of `read_one_value`** that captures the DATA item's raw ASCII span into `STRSCR`
 instead of parsing it as an int — and `read_one_value` **already positions HL at
 the item start** and already owns the comma / `data_seek` walk
-(`basic/readdata-body.inc:38-51`).
+(`basic/readdata-body.inc:49-51`).
 
 ### 4.1 🔴 The sub/main split is FORCED, not chosen
 

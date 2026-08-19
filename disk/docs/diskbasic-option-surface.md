@@ -145,10 +145,10 @@ error). "Ref" = the documented option. Evidence is `file:line` in `basic/`.
 
 | Verb | Documented option surface | Status | Evidence / note |
 |---|---|:--:|---|
-| `OPEN` | `"dev:name" [FOR INPUT\|OUTPUT\|APPEND] AS [#]n [LEN=r]` | ◐ | modes ✅ ([files.asm:225](../../basic/files.asm:225)); **`LEN=r` ✅** (2026-07-08, Item 3) — sector-tiling sizes (power of two 1..256; `oo_parse_reclen`, per-channel `FCH_RECLENS`; non-tiling → `Syntax error`); byte-identical to CF-3300 ([disk_probe_openlen.py](../../probes/disk/disk_probe_openlen.py)); **device channels `CAS:`/`CRT:`/`LPT:`/`GRP:`/`COM:` still ABSENT** (routed to the plain-BASIC axis, Q3.0) |
+| `OPEN` | `"dev:name" [FOR INPUT\|OUTPUT\|APPEND] AS [#]n [LEN=r]` | ◐ | modes ✅ ([files.asm:206](../../basic/files.asm:206)); **`LEN=r` ✅** (2026-07-08, Item 3) — sector-tiling sizes (power of two 1..256; `oo_parse_reclen`, per-channel `FCH_RECLENS`; non-tiling → `Syntax error`); byte-identical to CF-3300 ([disk_probe_openlen.py](../../probes/disk/disk_probe_openlen.py)); **device channels `CAS:`/`CRT:`/`LPT:`/`GRP:`/`COM:` still ABSENT** (routed to the plain-BASIC axis, Q3.0) |
 | `CLOSE` | `[[#]n[,[#]m]…]` | ✅ | bare (all) ✅, single ✅, **comma list ✅** (2026-07-08, Item 4; `dc_listloop`, [files.asm](../../basic/files.asm)); [disk_probe_closelist.py](../../probes/disk/disk_probe_closelist.py) |
-| `PRINT#` | `#n[,\|;][USING …;]items` | ✅ | incl. `PRINT#n,USING` ([print.asm:59](../../basic/print.asm:59)); `TAB()`/`SPC()` not in item loop |
-| `INPUT#` | `#n, var[,var…]` | ◐ | one **string** var only; **numeric ✗ (Phase-3)** ([files.asm:418](../../basic/files.asm:418)); no var list |
+| `PRINT#` | `#n[,\|;][USING …;]items` | ✅ | incl. `PRINT#n,USING` ([print.asm:143](../../basic/print.asm:143)); `TAB()`/`SPC()` not in item loop |
+| `INPUT#` | `#n, var[,var…]` | ◐ | one **string** var only; **numeric ✗ (Phase-3)** ([files.asm:699](../../basic/files.asm:699)); no var list |
 | `LINE INPUT#` | `#n, strvar$` | ✅ | single string var (matches doc); shares `input_common` |
 | `INPUT$` | `(n[,[#]f])` | ◐ | file form ✅; **keyboard `INPUT$(n)` ✗** ([strvar.asm:159](../../basic/strvar.asm:159)) |
 
@@ -156,7 +156,7 @@ error). "Ref" = the documented option. Evidence is `file:line` in `basic/`.
 
 | Verb | Documented option surface | Status | Evidence / note |
 |---|---|:--:|---|
-| `FIELD` | `[#]n, w AS v$[,w AS v$…]` | ✅ | multi-field list ✅ ([field.asm:182](../../basic/field.asm:182)) |
+| `FIELD` | `[#]n, w AS v$[,w AS v$…]` | ✅ | multi-field list ✅ ([field.asm:292](../../basic/field.asm:292)) |
 | `GET#`/`PUT#` | `[#]n[,recno]` | ◐ | optional record-number ✅; **recno capped at 255** (high byte forced 0, [field.asm:642](../../basic/field.asm:642)) |
 | `LSET`/`RSET`, `MK*$`/`CV*` | (no options) | ✅ | — |
 

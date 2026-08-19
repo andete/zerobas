@@ -28,8 +28,8 @@ fields become a maintained mirror. Update that comment.
 
 ## 1. Pinned facts (investigation, clean-room)
 
-- **Shared worker `$477D`** (`wrseq_body`, kernel.asm:2322): the RAM kernel CALLs it for every
-  sequential record; read side falls into `bdos_seqread_body` (kernel.asm:346). Entry gives
+- **Shared worker `$477D`** (`wrseq_body`, kernel.asm:2782): the RAM kernel CALLs it for every
+  sequential record; read side falls into `bdos_seqread_body` (kernel.asm:367). Entry gives
   `DE = IY = $DA40` = the 37-byte kernel FCB copy (already live; not currently consumed).
 - **`$24` SETRND hook = `$50C8`** (captured, both machines reach it during a `$24` call). Entry
   convention: `A=$25`, `DE=IY=$DA40` (FCB copy), `BC=HL=$0000`, `SP=$DBFE`. Same FCB-copy
@@ -57,11 +57,11 @@ Seed `BDOS_SEQREC := 0` in `fopen_fill_body` (disk/fat.asm), alongside the exist
 `$E54x`/`$E55x` BDOS scratch band or the `$E7xx` tail); confirm no alias.
 
 ### 2.2 Write-back — PLACEMENT: in `wrseq_body`'s read branch, NOT in `bdos_seqread_body`
-**Hazard (critical):** `bdos_seqread_body` (kernel.asm:346) is a SHARED routine — it is also reached
-by RRND `$21` (`call bdos_seqread`, kernel.asm:2697, which does its OWN M26 `copy+32:=copy+33`
+**Hazard (critical):** `bdos_seqread_body` (kernel.asm:367) is a SHARED routine — it is also reached
+by RRND `$21` (`call bdos_seqread`, kernel.asm:3201, which does its OWN M26 `copy+32:=copy+33`
 bookkeeping) and by the boot mini-BDOS (driver.asm:405, must stay byte-identical). Putting the FCB
 write-back inside it would corrupt those callers' FCBs / the boot path. So the write-back goes in
-the **`$477D` sequential worker** only — `wrseq_body`'s read branch (kernel.asm:2322), which is the
+the **`$477D` sequential worker** only — `wrseq_body`'s read branch (kernel.asm:2782), which is the
 sole path a real `$14` RDSEQ takes.
 
 Change `wrseq_body`'s read tail-call `jp bdos_seqread` into `call bdos_seqread` → write-back → `ret`.

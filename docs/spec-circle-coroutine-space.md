@@ -71,7 +71,7 @@ grammar walk **and** the float math off page-1 → the ~150 B reclaim.
 
 ## 3. The co-routine protocol (reuse the GFX_D* cells)
 
-Model on `ex_draw`/`gdw_call` (`basic/graphics.asm:939`), reusing `GFX_DREQ`/`GFX_DVAL`/
+Model on `ex_draw`/`gdw_call` (`basic/graphics.asm:1124`), reusing `GFX_DREQ`/`GFX_DVAL`/
 `GFX_DRESUME` and a shared cursor cell (`GFX_DPTR`-style). New `GFX_OP` value (15) → tenant
 `gfx_circle_parse`.
 

@@ -545,7 +545,7 @@ worth keeping: a page-1 tenant does *not* need a page-0 stub. `CALSLT`'s glue is
 page-0 BIOS, which stays mapped, and the shipped `cas_open_match` stub already
 calls a page-1 tenant from page-1 resident code. The page-0-closure rule applies
 to page-**0** tenants. The other precondition held: `init_ext_roms`, which sets
-`SUBSLOT_OK`, runs at `interp.asm:60` — the line immediately before `show_title`.
+`SUBSLOT_OK`, runs at `interp.asm:98` — the line immediately before `show_title`.
 
 ### 9.6 Implementation order (signed off 2026-07-23)
 

@@ -9,7 +9,7 @@ SPDX-License-Identifier: 0BSD
 slice until §9's questions are answered.**
 
 Filed 2026-08-01 by D-SYSVAR as *"THE RE-HOMING CLASS: 8 PUBLISHED NAMES AT
-PRIVATE ADDRESSES, AND NOBODY DECIDED THAT"* ([`../TODO.md:3384`](../TODO.md:3384)),
+PRIVATE ADDRESSES, AND NOBODY DECIDED THAT"* ([`../TODO.md:6594`](../TODO.md:6594)),
 out of [`sysvar-msx1-coverage.md`](sysvar-msx1-coverage.md) §3.
 
 ---
@@ -23,18 +23,18 @@ choice — just-freed RAM"*.
 
 | Symbol | zerobas | published | size |
 |---|---|---|---:|
-| `VALTYP` | [`$E0C8`](../basic/sysvars.inc:1139) | `$F663` | 1 |
-| `FRETOP` | [`$E268`](../basic/sysvars.inc:1216) | `$F69B` | 2 |
-| `SAVTXT` | [`$E1CF`](../basic/sysvars.inc:908) | `$F6AF` | 2 |
-| `SAVSTK` | [`$E1C3`](../basic/sysvars.inc:839) | `$F6B1` | 2 |
-| `ONELIN` | [`$E1C8`](../basic/sysvars.inc:852) | `$F6B9` | 2 |
-| `ONEFLG` | [`$E1CA`](../basic/sysvars.inc:876) | `$F6BB` | 1 |
-| `ARYTAB` | [`$E1C0`](../basic/sysvars.inc:827) | `$F6C4` | 2 |
+| `VALTYP` | [`$E0C8`](../basic/sysvars.inc:1232) | `$F663` | 1 |
+| `FRETOP` | [`$E268`](../basic/sysvars.inc:1320) | `$F69B` | 2 |
+| `SAVTXT` | [`$E1CF`](../basic/sysvars.inc:957) | `$F6AF` | 2 |
+| `SAVSTK` | [`$E1C3`](../basic/sysvars.inc:888) | `$F6B1` | 2 |
+| `ONELIN` | [`$E1C8`](../basic/sysvars.inc:901) | `$F6B9` | 2 |
+| `ONEFLG` | [`$E1CA`](../basic/sysvars.inc:925) | `$F6BB` | 1 |
+| `ARYTAB` | [`$E1C0`](../basic/sysvars.inc:876) | `$F6C4` | 2 |
 | `DEFTBL` | [`$F153`](../basic/sysvars.inc:3223) | `$F6CA` | 26 |
 
 Plus the pair the name-match structurally **cannot** see, because it is spelled
-differently: `ERRCODE` [`$E1C5`](../basic/sysvars.inc:847) / `ERRLINE`
-[`$E1C6`](../basic/sysvars.inc:849) against the published `ERRFLG $F414` /
+differently: `ERRCODE` [`$E1C5`](../basic/sysvars.inc:896) / `ERRLINE`
+[`$E1C6`](../basic/sysvars.inc:898) against the published `ERRFLG $F414` /
 `ERRLIN $F6B3`. **Ten variables, and the list is a lower bound.**
 
 Every published extent matches zerobas' size exactly (1/2/2/2/2/1/2/26 B), so
@@ -84,7 +84,7 @@ together ([`../basic/docs/spec-bload-r.md:68`](../basic/docs/spec-bload-r.md:68)
 
 zerobas defines `TXTTAB` at its published address, `ARYTAB` re-homed, and
 **`VARTAB` and `STREND` not at all** (the scalar base is *derived* as
-`(PRGEND)+2`, [`../basic/sysvars.inc:1577`](../basic/sysvars.inc:1577)). So:
+`(PRGEND)+2`, [`../basic/sysvars.inc:1703`](../basic/sysvars.inc:1703)). So:
 
 > 🔴 **Honouring `ARYTAB $F6C4` alone would be WORSE than leaving it at zero.**
 > A consumer subtracting a power-on `STREND` of `$0000` from a now-plausible

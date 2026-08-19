@@ -69,7 +69,7 @@ Published contract source for every function below: MSX-DOS 1 BDOS call table
 
 **Architecture reminder (the load-bearing distinction, re-confirmed this span):** there
 are TWO separate BDOS surfaces in our tree and they must not be conflated —
-- **`bdos_entry` (SYSTEM `$F37D` vector, `disk/driver.asm:626`)** is our OWN private
+- **`bdos_entry` (SYSTEM `$F37D` vector, `disk/driver.asm:400`)** is our OWN private
   mini-BDOS. It is called ONLY by our COMMAND.COM loader `k_47B2` (`disk/kernel.asm:379`)
   via CALSLT, to load COMMAND.COM off disk during boot. It implements a read subset
   (`$0F/$14/$10/$1A/$27` + write path) purely for that loader. **User-program / COMMAND.COM

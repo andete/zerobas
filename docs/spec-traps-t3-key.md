@@ -21,7 +21,7 @@ the RAM layout, the detection mechanism and the divert mechanism are own-design.
 reference ROM bytes were read or decoded. The keyboard matrix rows, `NEWKEY`, and
 `KEYBUF`/`GETPNT`/`PUTPNT` are **published contracts** (MSX Technical Handbook; the
 buffer trio is already relied on and black-box-verified against C-BIOS — see
-[`basic/PROVENANCE.md:2815`](../basic/PROVENANCE.md)).
+[`basic/PROVENANCE.md:3325`](../basic/PROVENANCE.md)).
 
 > **T3 is NOT "T2 with ten entries."** T2's STRIG source samples a *level* and
 > edge-detects it. The oracle says the KEY trap is a **delivery** trap: it fires on the
@@ -155,8 +155,8 @@ produces its next repeat delivery — there is no spurious edge to suppress.
 ## 3. RAM
 
 No new allocation: `ZTRAP` entries 8..17 (`ZTI_KEY1` = 8, `KEY n` → `7+n`) are already
-reserved and already zeroed by `trap_init` ([`basic/sysvars.inc:791`](../basic/sysvars.inc),
-[`basic/traps.asm:147`](../basic/traps.asm)). T3 adds only the detector's own scratch:
+reserved and already zeroed by `trap_init` ([`basic/sysvars.inc:1127`](../basic/sysvars.inc),
+[`basic/traps.asm:210`](../basic/traps.asm)). T3 adds only the detector's own scratch:
 a 2-byte previous-matrix snapshot (rows 6 and 7), a 1-byte "which key is repeating"
 and a 1-byte repeat countdown — 4 B, inside the ~53 B of headroom the arc spec §3 left
 in the VARTAB window.
@@ -165,7 +165,7 @@ in the VARTAB window.
 
 ## 4. The event source — and the one real design fork
 
-`event_poll` ([`basic/traps.asm:53`](../basic/traps.asm)) runs from `H.TIMI`, DI,
+`event_poll` ([`basic/traps.asm:55`](../basic/traps.asm)) runs from `H.TIMI`, DI,
 register-transparent, and is **pinned to resident page-1 code** (the VBLANK `CALSLT`
 ban). The KEY source must live there too.
 
@@ -320,23 +320,23 @@ false positive and a seam that evaporates the moment a trap could actually fire.
 ## 5. Parsing — T3 is mostly a generalisation of T2, not new code
 
 T2 deliberately pre-paid for this: `trap_line_link`
-([`basic/program.asm:1331`](../basic/program.asm)) already factors the optional
+([`basic/program.asm:2323`](../basic/program.asm)) already factors the optional
 `$0E,lo,hi` handler-line resolver "for T3's `ON KEY` list."
 
 - **`ON KEY GOSUB <l1>,…,<l10>`** — `ex_on_strig`
-  ([`program.asm:1379`](../basic/program.asm)) is already exactly this loop with a base
+  ([`program.asm:2503`](../basic/program.asm)) is already exactly this loop with a base
   index and a slot limit hard-coded (`ZTI_STRIG0`, 5). Generalise those two into
   registers and `ON KEY` is a handful of bytes plus a `cp KEY_TOKEN` peek in `ex_on`
-  ([`program.asm:1063`](../basic/program.asm)). `KEY` is the single-byte token `$CC`
-  ([`sysvars.inc:1453`](../basic/sysvars.inc)), so the peek is cheaper than T2's
+  ([`program.asm:1968`](../basic/program.asm)). `KEY` is the single-byte token `$CC`
+  ([`sysvars.inc:2195`](../basic/sysvars.inc)), so the peek is cheaper than T2's
   two-byte `$FF $A3`.
 - **`KEY(n) ON|OFF|STOP`** — `ex_strig_stmt`
-  ([`program.asm:1423`](../basic/program.asm)) is likewise the same parser with
+  ([`program.asm:2547`](../basic/program.asm)) is likewise the same parser with
   `ZTI_STRIG0`/limit 5/`ERR 5` baked in. Generalise to (base, lo, hi) and the KEY form
   is the `(`-peek in `ex_key` plus a parameter load. The T2 shadow-seeding tail (§2:
   not needed for KEY) is skipped via the same parameter.
 - **`KEY ON` / `KEY OFF` disambiguation** — `ex_key`
-  ([`basic/screen.asm:196`](../basic/screen.asm)) currently accepts only `ON`/`OFF` and
+  ([`basic/screen.asm:283`](../basic/screen.asm)) currently accepts only `ON`/`OFF` and
   falls through to `stmt_error`. Add a `(` test ahead of them (K10 confirms the display
   form must keep working unchanged).
 
@@ -346,7 +346,7 @@ Sharing rather than duplicating is what makes T3 affordable; see §7.
 
 ## 6. Dispatch and priority
 
-`check_traps`/`ct_find` ([`basic/traps.asm:229`](../basic/traps.asm)) need no structural
+`check_traps`/`ct_find` ([`basic/traps.asm:292`](../basic/traps.asm)) need no structural
 change — the KEY entries are already in the table and already scanned.
 
 **D-T3-4 — intra-family order.** `ct_find` scans **ascending**, so with F1+F2+F3 pending
@@ -999,7 +999,7 @@ for the matrix→key-number fold and the repeat counter.
 - **D-T3-4** — ✅ **DECIDED 2026-07-25: match the reference's high-to-low order,
   unconditionally.** The ≤10 B condition in the recommendation was struck; ascending is
   not an acceptable fallback. Implement by scanning the KEY band descending in `ct_find`
-  ([`basic/traps.asm:229`](../basic/traps.asm)) or by laying the band out reversed —
+  ([`basic/traps.asm:292`](../basic/traps.asm)) or by laying the band out reversed —
   whichever measures smaller. Gate-enforced (§8, case V2).
 - **D-T3-5** — ⛔ **REOPENED 2026-07-25, same day** — the decision below was taken on a
   classification that the first measure-and-classify pass **falsified**. `cload.asm` is

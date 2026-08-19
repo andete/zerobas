@@ -106,7 +106,7 @@ whose greenness is not produced by this slice's own edit
 
 ### 2.4 `kwsweep` — an out-of-contract case, recorded, not silently dropped
 
-`basic_probe_kwsweep.py:476` prints `    {k:9} {n} chars` inside a block that
+`basic_probe_kwsweep.py:485` prints `    {k:9} {n} chars` inside a block that
 returns 2. It reaches the contract under a *loose* row definition and drops out
 under §3's: neither that line nor `kwsweep`'s own scored rows
 (`{state:5}  {key:9} {body}`) render their value with `repr()`, so **no line

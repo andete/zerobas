@@ -43,7 +43,7 @@ basic-reloc`: page-1 44 B free, low region 11 B), none assumed:
 `raise_error`'s **trap** path resets the stack
 ([`basic/interp.asm:952`](../basic/interp.asm:952), `ld sp,(SAVSTK)` then
 `jp rp_lp`); its **abort** path does not — `fre_abort_low`
-([`basic/arrays.asm:90`](../basic/arrays.asm:90)) prints the message and
+([`basic/arrays.asm:94`](../basic/arrays.asm:94)) prints the message and
 **returns**. So an error raised from a statement handler's own depth unwinds
 correctly, and an error raised from anything the handler *called* consumes that
 `call`'s frame and lands back **inside the handler**, one instruction past the
@@ -81,7 +81,7 @@ Three things this table settles that the roadmap had wrong:
 
 1. **The scope is not four statements.** [`TODO.md`](../TODO.md) scoped it to
    `WIDTH`, `STRING$`, `SPACE$` and `ON n` — the `call get_byte_arg` sites. But
-   `ev_ff_arg` ([`basic/expr.asm:1094`](../basic/expr.asm:1094) ff.) calls the
+   `ev_ff_arg` ([`basic/expr.asm:886`](../basic/expr.asm:886) ff.) calls the
    same leaf for `STICK`/`STRIG`/`PDL`/`PAD`, and `get_vram_arg` /
    `fac_to_int_addr` reach the same abort for `VPEEK`/`PEEK`/`INP`. Nine sites
    measured, all below handler depth, all wrong.
@@ -141,11 +141,11 @@ branch four instructions away. Two properties make the `ret` exactly right
 rather than merely safe:
 
 - **Run mode.** `run_prog` does `ld (SAVSTK),sp`
-  ([`basic/program.asm:265`](../basic/program.asm:265)) and then falls into
+  ([`basic/program.asm:315`](../basic/program.asm:315)) and then falls into
   `rp_lp`, whose normal end-of-program exit is `ret z` at that same depth. So
   `ld sp,(SAVSTK)` + `ret` **is** the normal end-of-RUN exit, reached early.
 - **Direct mode.** `dl_cmd` does `ld (SAVSTK),sp`
-  ([`basic/program.asm:60`](../basic/program.asm:60)) and then `jp`s (not
+  ([`basic/program.asm:58`](../basic/program.asm:58)) and then `jp`s (not
   `call`s) into the loop, so the same identity holds for a typed line: the
   reset-and-return is the normal end-of-line exit.
 
@@ -163,7 +163,7 @@ makes abort match trap; it cannot create a hazard class that a single
 `ON ERROR GOTO` does not already create. Two further facts bound it:
 
 - `raise_error` is **page-1** code (`interp.asm` is included after
-  `__MEAS_LOW_END`, [`basic/main.asm:119`](../basic/main.asm:119)), so a
+  `__MEAS_LOW_END`, [`basic/main.asm:135`](../basic/main.asm:135)), so a
   **page-1** sub-ROM tenant cannot reach it at all — `check_tenant_closure
   --page1` is the standing proof.
 - **Page-0** tenants can reach it, and are the residual case. S-AD-3 (§8).

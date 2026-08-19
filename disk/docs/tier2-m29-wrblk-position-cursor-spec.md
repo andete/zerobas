@@ -66,13 +66,13 @@ are exact). This matches the M28 review-queue note that a large extend "needed
 
 ## 2. Current behaviour (the defect)
 
-`wrblk_position_ext` (kernel.asm:987) on **every** call:
+`wrblk_position_ext` (kernel.asm:1016) on **every** call:
 1. `fat_open` — resets the iterator to `FAT_FIRSTCLUS`, `FAT_CLUSSEC=0`.
 2. Walks `target_sector_in_file + 1` steps via `wrblk_read_or_extend_sector`,
    each step following one FAT link **and reading that cluster's data sector into
    `SECTOR_BUF`**.
 
-Because `WRBLK_REC` increments by 1 per loop iteration (kernel.asm:884), the caller
+Because `WRBLK_REC` increments by 1 per loop iteration (kernel.asm:913), the caller
 asks for a strictly non-decreasing sequence of records. Re-walking from the head each
 time is therefore pure waste: 3 of every 4 records land in the **same** 512-byte
 sector already positioned, and the 4th is exactly **one** step further on.
@@ -82,7 +82,7 @@ sector already positioned, and the 4th is exactly **one** step further on.
 ## 3. Design — incremental position cursor
 
 Keep the iterator between calls instead of resetting it. WRBLK's record order is
-strictly non-decreasing (invariant, kernel.asm:884), so the next target is always
+strictly non-decreasing (invariant, kernel.asm:913), so the next target is always
 `≥` the current one, and in practice a delta of **0** (same sector, ¾ of records)
 or **1** (next sector).
 
@@ -120,7 +120,7 @@ wpe_fresh:
 
 ### 3.4 Why `wpe_same` (delta==0, no read) is correct
 Between finishing record R and positioning record R+1 in the SAME sector, the code
-path (kernel.asm:870–897: `ldir` overlay → `write_sector` → DTA+=RS → REC+=1 →
+path (kernel.asm:899–897: `ldir` overlay → `write_sector` → DTA+=RS → REC+=1 →
 CNT-=1 → `jp wrblk_loop`) never touches `SECTOR_BUF` except the overlay+write, which
 leave the sector's current (and now persisted) bytes in the buffer. Overlaying the
 next record's 128-byte slot and re-writing is exactly what the current code does after

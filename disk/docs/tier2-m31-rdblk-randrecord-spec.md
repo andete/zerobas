@@ -92,7 +92,7 @@ untouched.
 
 ### 3.1 New/used state
 - Reuse `RDBLK_REQ`/`RDBLK_RECSIZE`/`RDBLK_DONE`/`RDBLK_CNT`/`RDBLK_BUFPOS`/`RDBLK_DST`
-  (`$E76C-$E777`, [init.asm:172](../init.asm)) + `BDOS_BYTESLEFT` (`$E542`) +
+  (`$E76C-$E777`, [init.asm:174](../init.asm)) + `BDOS_BYTESLEFT` (`$E542`) +
   `BDOS_DTA` (`$E4C0`).
 - One new cell for the entry RR (needed for the `RR := RR + HL` write-back). A word
   suffices for realistic RR, but `FCB+33..35` is a 24-bit field: park **`RDBLK_RRSTART`

@@ -507,7 +507,7 @@ def build_owner(table, cbios_src):
 
       BIOS   C-BIOS supplies it. zerobas does not, and must not -- a divergence
              here is a C-BIOS-vs-reference-BIOS difference BELOW the BASIC layer,
-             the same class as the VDP R7 exclusion basic_probe_graphics.py:959
+             the same class as the VDP R7 exclusion basic_probe_graphics.py:1255
              already carries.
       BASIC  C-BIOS never touches it, so on a real MSX the BASIC ROM writes it
              and on zerobas ZEROBAS must, or nobody does. ERRFLG is here.
@@ -569,7 +569,7 @@ def run_side(side, keys, repeat, mode):
 
     ⚠️ BOOT-PER-CASE IS MANDATORY AND IS THE WHOLE POINT. This sweep measures
     what LEAKS BETWEEN cases: `reset` clears the program, it does NOT clear the
-    error state, and basic_probe_lnblank.py:1404 records a control that AGREED
+    error state, and basic_probe_lnblank.py:3356 records a control that AGREED
     FOR THE WRONG REASON when an err row shared a boot with the row before it.
     Here every case is an error-state case.
     ⚠️ batch=False makes run_cases IGNORE `reset` entirely, which is where the

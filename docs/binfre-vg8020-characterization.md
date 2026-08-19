@@ -88,7 +88,7 @@ Identical in shape to `HEX$`/`OCT$`, measured on the same run:
 ### 2.1 The buffer is a measured constraint, not an assumption
 
 `LEN(BIN$(65535))` = **16**. `HEX$`/`OCT$` build their digits in `NUMBUF`, which
-is **8 bytes** ([`basic/sysvars.inc:691`](../basic/sysvars.inc:691)) and holds
+is **8 bytes** ([`basic/sysvars.inc:753`](../basic/sysvars.inc:753)) and holds
 their worst cases (4 and 6) comfortably. **`BIN$` does not fit it.** This is the
 one place `BIN$` cannot simply clone its siblings, and it was worth measuring
 rather than reasoning about — a 16-digit answer is a fact, a 16-byte buffer
@@ -233,7 +233,7 @@ a meaningless `DE` that gets formatted as a number.
 truncated to 16 bits is 0, so it prints `OCT$(0)`). `HEX$` *does* check —
 [`basic/str-engine.asm:969`](../basic/str-engine.asm:969) runs the argument
 through `fac_to_int_addr` under a repack gate — and
-[`str_fn_oct`](../basic/str-engine.asm:990) simply does not have that block.
+[`str_fn_oct`](../basic/str-engine.asm:1132) simply does not have that block.
 Source and measurement agree exactly.
 
 Both matter to this slice beyond being free finds: `BIN$` is the third member of

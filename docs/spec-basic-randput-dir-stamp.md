@@ -45,7 +45,7 @@ the missing rows.
 The characterization states the rule as *"a RANDOM `PUT` grows it to
 `recno × reclen`"*. The only evidence for that formula is the **256** above —
 and `OPEN … AS #1` with no `LEN=` clause defaults to reclen **256**
-([`basic/files.asm:618`](../basic/files.asm:618)), so `1 × 256 = 256`. But a
+([`basic/files.asm:583`](../basic/files.asm:583)), so `1 × 256 = 256`. But a
 256-byte sector is also **256**. 🔴 **The single measured cell agrees with two
 different rules and cannot separate them** — the recurring failure this project
 has now hit ~21× (memory: `apparatus-is-part-of-the-measurement`; "a case that
@@ -94,7 +94,7 @@ Notes on the design, each load-bearing:
   `rnd_put_rt` is attributable to the **RANDOM** path and not to `CLOSE` in
   general. Named here so it is a control rather than a coincidence.
 * **`LEN=16`, not `LEN=10`.** zerobas requires a power-of-two reclen
-  ([`basic/files.asm:313`](../basic/files.asm:313)); `LEN=10` would be refused
+  ([`basic/files.asm:256`](../basic/files.asm:256)); `LEN=10` would be refused
   on the zb side and the row would measure the `LEN=` parser instead of the
   size rule. (Whether the reference accepts a non-power-of-two `LEN=` is a
   *different* question and is NOT opened here.)

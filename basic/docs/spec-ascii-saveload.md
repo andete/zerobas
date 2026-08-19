@@ -36,7 +36,7 @@ zerobas handles the **tokenised** program format only:
 - `SAVE"A:F"` writes `$FF` (`BASIC_DISK_ID`) + the line-link image; `SAVE"A:F",A`
   (ASCII listing) is a documented `load_error` ([`../save.asm`](../save.asm) §34/§242).
 - `LOAD"A:F"` / `RUN"A:F"` require the first byte to be `$FF`; `disk_prog_load`
-  ([`../cload.asm:384`](../cload.asm)) rejects any non-`$FF` file (ASCII **or** BSAVE)
+  ([`../cload.asm:859`](../cload.asm)) rejects any non-`$FF` file (ASCII **or** BSAVE)
   with an error.
 - The **only** ASCII-program path that works is `MERGE`, which reads a `SAVE",A"`-style
   line-numbered text file into the *current* program.
@@ -44,7 +44,7 @@ zerobas handles the **tokenised** program format only:
 ## 2. The ASCII program format (clean-room basis)
 
 Public MSX-BASIC language reference (already cited by `MERGE`,
-[`../files.asm:848`](../files.asm)): an ASCII-saved program is plain text —
+[`../files.asm:1480`](../files.asm)): an ASCII-saved program is plain text —
 
 ```
 <line-number decimal ASCII> <space> <detokenised statement text> CR LF
@@ -70,8 +70,8 @@ it: the machinery already exists and is reused wholesale.
 |---|---|---|
 | detokenise program → ASCII text | `detok` + the `ex_list` line walk ([`../list.asm`](../list.asm)) | ASCII SAVE redirects its output sink |
 | read ASCII text → tokenise + store | the `MERGE` reader loop `mrg_newline…mrg_storeline` ([`../files.asm:865`](../files.asm)) | ASCII LOAD reuses it after a program clear |
-| clear the current program | `new_prog` ([`../program.asm:138`](../program.asm)) | ASCII LOAD calls it (LOAD replaces; MERGE keeps) |
-| detect ASCII vs tokenised on load | the first-byte `$FF` gate in `disk_prog_load` ([`../cload.asm:384`](../cload.asm)) | becomes a branch, not an error |
+| clear the current program | `new_prog` ([`../program.asm:272`](../program.asm)) | ASCII LOAD calls it (LOAD replaces; MERGE keeps) |
+| detect ASCII vs tokenised on load | the first-byte `$FF` gate in `disk_prog_load` ([`../cload.asm:859`](../cload.asm)) | becomes a branch, not an error |
 
 ## 4. Design — ASCII LOAD
 

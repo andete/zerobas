@@ -57,7 +57,7 @@ This is BIOS-agnostic: it saves whatever the host had and writes a fixed `00`, o
 
 ## 3. Change (init.asm, `boot_sig_ok`, around the step-7 handoff at lines 293-303)
 
-New scratch byte (mirrors `BOOT_SV_A8`/`BOOT_SV_SEC` at init.asm:156-157):
+New scratch byte (mirrors `BOOT_SV_A8`/`BOOT_SV_SEC` at init.asm:158-157):
 
 ```
 BOOT_SV_F338    equ     $E762   ; saved host $F338 (restored if a data disk returns)

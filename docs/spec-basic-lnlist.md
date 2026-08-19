@@ -53,7 +53,7 @@ symbol*.
 
 ## 3. The change — `basic/tokenise.inc` only, sub-ROM only
 
-`basic/tokenise.inc` is `include`d by [`sub/sub.asm:209`](../sub/sub.asm:209) and
+`basic/tokenise.inc` is `include`d by [`sub/sub.asm:262`](../sub/sub.asm:262) and
 nothing else, so this is a **sub-ROM-only** change: sub page 0 has 4024 B free.
 Main-ROM walls (low 23 B, page 1 8 B) are not touched, and §6 asserts that by
 hash.

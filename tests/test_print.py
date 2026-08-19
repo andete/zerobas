@@ -5,8 +5,8 @@
 Tier-2 (BIOS-stub) tests: CHPUT is trapped and every emitted byte accumulated.
 
 Entry conventions (derived from print.asm and its call sites):
-  - print_number: DE = signed-16 value (see print.asm:48-49 — `call eval` puts
-    the result in DE, then `call print_number`; also list.asm:60 loads DE from
+  - print_number: DE = signed-16 value (see print.asm:187-49 — `call eval` puts
+    the result in DE, then `call print_number`; also list.asm:198 loads DE from
     the line-number BC pair before calling list_num which mirrors the same path).
   - print_crlf:   no argument; emits CR ($0D) then LF ($0A) via CHPUT.
 
@@ -27,7 +27,7 @@ Oracle basis:
     comment + code (pn_neg stores '-', non-negative stores ' '; pn_tail appends
     ' ' before the 0-terminator).
   - CR/LF values: control-character definitions (CR = 13 = 0x0D, LF = 10 = 0x0A;
-    standard ASCII; also asserted from print.asm:162-165 which loads literal 13
+    standard ASCII; also asserted from print.asm:411-165 which loads literal 13
     and 10).
 """
 
@@ -84,7 +84,7 @@ def run():
 
     # -----------------------------------------------------------------------
     # print_crlf: must emit exactly CR ($0D) then LF ($0A).
-    # Oracle: ASCII control codes CR=13/LF=10; confirmed by print.asm:162-165
+    # Oracle: ASCII control codes CR=13/LF=10; confirmed by print.asm:411-165
     # which loads literal 13 then 10.
     # -----------------------------------------------------------------------
     out = m.capture_chput()

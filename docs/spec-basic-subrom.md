@@ -193,7 +193,7 @@ fill it.
   pre-empts. For every primary slot *after* ours, and every expanded subslot,
   it RDSLT-checks the `AB` header at `$4000` and CALSLTs the INIT word at
   `$4002`; it records the disk-ROM slot in `DISKSLOT`/`DISKSLOT_OK`
-  (`sysvars.inc:589`). **It already visits expanded slot 3's subslots** (the
+  (`sysvars.inc:2285`). **It already visits expanded slot 3's subslots** (the
   `ier_sloop` secondaries 0..3 loop), so 3-0 is on its path today — the arc adds
   a page-0 `CD` check alongside the page-1 `AB` check and a second slot record.
 - **CALSLT precedent** ([files.asm](../basic/files.asm), [field.asm](../basic/field.asm)):

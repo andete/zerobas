@@ -87,13 +87,13 @@ validated primitive already used for CONOUT/CONIN/KEYINT — no new inter-slot m
 $01, but we set both for robustness/clarity. These are plain work-area byte-writes.
 
 ## 4. Insertion point — `dos_handoff` (runtime.asm), DOS-only path, before `BOOT_ENTRY`
-The clear belongs in **`dos_handoff`** (runtime.asm:320), the existing DOS-only handoff
+The clear belongs in **`dos_handoff`** (runtime.asm:568), the existing DOS-only handoff
 subroutine, inserted **before** the `scf; call BOOT_ENTRY` step-7 "load the system" call (i.e.
 alongside the existing `$F338`/`$F30D` DOS-default writes). Reasons this is the right point:
 
-- **DOS-only.** `dos_handoff` is reached ONLY from `boot_sig_ok` (init.asm:311) on a real boot
+- **DOS-only.** `dos_handoff` is reached ONLY from `boot_sig_ok` (init.asm:319) on a real boot
   disk (sig `$EB`/`$E9`). A non-system / data disk returns from `BOOT_ENTRY` and the caller
-  tears the env down back to BASIC (init.asm:312–314). So clearing here NEVER touches a
+  tears the env down back to BASIC (init.asm:320–314). So clearing here NEVER touches a
   BASIC-only or data-disk boot — it is on the DOS path exactly like the `$F338`/`$F30D`
   defaults already there. BIOS-agnostic: runs on any host that boots a DOS disk.
 - **Page-0 state is correct for `pg0_mainrom_in`.** By the time `dos_handoff` runs, init.asm
@@ -154,13 +154,13 @@ equates for style parity with the rest of the tree.)
    subsequent `ld a,($F338)` etc. re-establish them. Only IX (§5.1) is live across it.
 3. **DI/EI window.** Interrupts must be OFF while the main ROM is half-mapped into page 0 (as
    in `conout_body`). The `di`/`ei` wrap the `pg0_mainrom_in … pg0_mainrom_out` span only; the
-   surrounding init path is already DI at this point (init.asm:286 `di`), so confirm we don't
+   surrounding init path is already DI at this point (init.asm:294 `di`), so confirm we don't
    prematurely EI before `BOOT_ENTRY` — SAFER to NOT `ei` here and let the existing path own
    interrupt state. **Open item:** decide at implementation whether the clear should `ei` at
    all, or stay DI (init.asm holds DI across the whole handoff until after MSXDOS.SYS). Leaning:
    do NOT `ei` inside dos_clear_screen — restore page 0 and leave IFF as the caller had it
    (DI), to avoid an interrupt firing mid-handoff with page 0 RAM and $0038 not yet the BIOS
-   handler (the same hazard init.asm:284–285 guards). This differs from `conout_body` (which
+   handler (the same hazard init.asm:292–285 guards). This differs from `conout_body` (which
    runs later, when EI is normal). **Falsify:** confirm no int-storm / derail after the fix via
    the `screen` arbiter + a `callseq` re-run (must stay 27/27).
 4. **FILVRM VRAM-address width.** SCREEN 1 name table is at $1800 (14-bit VRAM, well within

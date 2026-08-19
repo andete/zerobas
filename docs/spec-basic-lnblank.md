@@ -50,7 +50,7 @@ and that zerobas stopped at the blank. It establishes **nothing** about:
 * whether the accumulator can be walked **past 65529** through blanks;
 * whether a line-number **reference inside a statement** (`GOTO 1 0`) obeys the
   same rule — that is a *different code path*
-  ([`basic/tokenise.inc:444`](../basic/tokenise.inc:444) `branch_lineno`), and
+  ([`basic/tokenise.inc:630`](../basic/tokenise.inc:630) `branch_lineno`), and
   the TODO says in as many words to check rather than assume;
 * whether the rule is a property of the **line-number scan** at all, or of the
   machine's **number scanner in general** (`A=1 0`) — which changes the size of
@@ -66,9 +66,9 @@ The line numbers in the filed TODO text have drifted; these are current.
 | # | site | role |
 |---|---|---|
 | P1 | [`basic/program.asm:30`](../basic/program.asm:30) `dispatch_line` | decides "leading digit → numbered line" (after `skip_spaces`) |
-| P2 | [`basic/program.asm:200`](../basic/program.asm:200) `parse_lineno` | **the accumulator**. `pl_lp` does `cp '0' / ret c / cp '9'+1 / ret nc` — it RETURNS on the first non-digit, so a blank terminates it. This is the defect site. |
-| P3 | [`basic/files.asm:1593`](../basic/files.asm:1593) `mrg_storeline` | ASCII `LOAD`/`MERGE`. **Calls `dispatch_line`**, so it inherits P1+P2 by construction — but "by construction" is a claim, and §3.4 pins it with a row. |
-| P4 | [`basic/tokenise.inc:444`](../basic/tokenise.inc:444) `branch_lineno` / `bl_acc` | **different code, different question**: the crunch-time line-number REFERENCE after `GOTO`/`GOSUB`/`THEN`/`RESTORE`/`RUN`/`RESUME`. `bl_acc` has its own copy of the same `cp '0' / jr c,bl_done` idiom. |
+| P2 | [`basic/program.asm:261`](../basic/program.asm:261) `parse_lineno` | **the accumulator**. `pl_lp` does `cp '0' / ret c / cp '9'+1 / ret nc` — it RETURNS on the first non-digit, so a blank terminates it. This is the defect site. |
+| P3 | [`basic/files.asm:1620`](../basic/files.asm:1620) `mrg_storeline` | ASCII `LOAD`/`MERGE`. **Calls `dispatch_line`**, so it inherits P1+P2 by construction — but "by construction" is a claim, and §3.4 pins it with a row. |
+| P4 | [`basic/tokenise.inc:630`](../basic/tokenise.inc:630) `branch_lineno` / `bl_acc` | **different code, different question**: the crunch-time line-number REFERENCE after `GOTO`/`GOSUB`/`THEN`/`RESTORE`/`RUN`/`RESUME`. `bl_acc` has its own copy of the same `cp '0' / jr c,bl_done` idiom. |
 
 Two facts about P4 that matter for the row design:
 
@@ -98,7 +98,7 @@ this project has no way to detect from a single oracle. The whole slice rests
 on a single filed row from a single machine, and the cheapest way to find out
 whether that row generalises is to ask a second machine before writing any code.
 
-CF-3300 apparatus notes (from [`diskbasic_probe_chancost.py:96`](../probes/disk/diskbasic_probe_chancost.py:96)):
+CF-3300 apparatus notes (from [`diskbasic_probe_chancost.py:101`](../probes/disk/diskbasic_probe_chancost.py:101)):
 it has a **boot date prompt** (answered with a bare CR emitted as part of
 `reset`), boots slower (12 s), and boots to **SCREEN 1**. The last one costs us
 nothing here — this probe's readout is **memory, not screen** — which is
@@ -106,7 +106,7 @@ precisely why a second oracle is affordable at all.
 
 ### 2.2 The instrument
 
-`("stored_line", TXTTAB)` — [`omsx_repl.py:277`](../probes/lib/omsx_repl.py:277)
+`("stored_line", TXTTAB)` — [`omsx_repl.py:616`](../probes/lib/omsx_repl.py:616)
 `__hex_line` dereferences `TXTTAB` ($F676) and returns the **exact bytes of the
 first stored line** (link, line number, crunched body, terminator), using the
 link word for the extent so an embedded `$00` never truncates it. This is the
@@ -243,7 +243,7 @@ a `$20` byte in the body.
 construction*. That is exactly the kind of claim D-LOF found to be false three
 sites out of three, so it gets rows rather than an argument. The VG-8020 has no
 disk, so the only ASCII-program path both references accept is a cassette —
-the same `build_ascii_cas` tape [`basic_probe_linemax.py:404`](../probes/basic/basic_probe_linemax.py:404)
+the same `build_ascii_cas` tape [`basic_probe_linemax.py:411`](../probes/basic/basic_probe_linemax.py:411)
 already uses. **Two rows only** (one control, one blank case): these cost a tape
 and a boot each, and their job is fix-coverage, not rule discovery.
 
@@ -333,9 +333,9 @@ Low region untouched at 23 B. The crunch half rides the sub-ROM.
 |---|---|
 | [`basic/program.asm:200`](../basic/program.asm:200) `parse_lineno` | blank-transparency **with a lookahead** (L1/L2), and L3's separator folded in — the run that did *not* end in a digit is exactly where the body begins, so it is one decision, not two. Folding it paid for itself: `dl_store`'s `call skip_spaces` is gone. |
 | same, `pl_sat` | overflow caught **where it happens**: any carry out of the `*10+digit` chain saturates to `$FFFF`. |
-| [`basic/program.asm:82`](../basic/program.asm:82) `dl_store` | the `LINENO_CEIL` bound (L4) → `Syntax error` + `ERRCODE = 2`, reported like the overflow arm rather than through `raise_error` (line *entry*, so a trap arm would jump into a finished program). |
-| [`basic/sysvars.inc:747`](../basic/sysvars.inc:747) | `LINENO_CEIL equ 65529`. |
-| [`basic/tokenise.inc:444`](../basic/tokenise.inc:444) `bl_acc` | the same lookahead (L1/L2) for a line-number reference. |
+| [`basic/program.asm:81`](../basic/program.asm:81) `dl_store` | the `LINENO_CEIL` bound (L4) → `Syntax error` + `ERRCODE = 2`, reported like the overflow arm rather than through `raise_error` (line *entry*, so a trap arm would jump into a finished program). |
+| [`basic/sysvars.inc:798`](../basic/sysvars.inc:798) | `LINENO_CEIL equ 65529`. |
+| [`basic/tokenise.inc:630`](../basic/tokenise.inc:630) `bl_acc` | the same lookahead (L1/L2) for a line-number reference. |
 | same, `bl_done` | L5 — `jr bl_yes` in place of the inline comma test: bl_yes already copies a blank run and falls into bl_num's comma test, so this is **2 bytes cheaper** than what it replaces. |
 
 **Two copies of the lookahead, deliberately.** The two scanners live in different

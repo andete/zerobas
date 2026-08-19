@@ -78,7 +78,7 @@ so the frozen lean `basic.rom` is untouched and needs no gating gymnastics.
 ### 3.1 The digit builder needs no scratch buffer
 
 `HEX$`/`OCT$` build into `NUMBUF`, which is **8 bytes**
-([`basic/sysvars.inc:691`](../basic/sysvars.inc:691)) — ample for their 4- and
+([`basic/sysvars.inc:753`](../basic/sysvars.inc:753)) — ample for their 4- and
 6-digit worst cases. **`BIN$`'s 16 digits do not fit**, and this is the one
 place `BIN$` cannot clone its siblings.
 
@@ -93,7 +93,7 @@ free on page 1 and ~4.5 KB on page 0, so the leaf compute is free.
 `kwtable.inc` gains one entry (`db 4,"BIN$",2,PEEK_PREFIX,BIND_TOKEN`) — also
 free, since the wave-3 eviction made the sub-ROM copy the sole source. One
 `cp BIND_TOKEN / jp z,str_fn_bin` arm joins `str_func_ff`
-([`basic/str-engine.asm:562`](../basic/str-engine.asm:562)): 5 B.
+([`basic/str-engine.asm:661`](../basic/str-engine.asm:661)): 5 B.
 
 ## 4. Contract — `FRE`, and the architectures genuinely differ
 
@@ -123,7 +123,7 @@ zerobas          TXTTAB ..program.. PRGEND
                  [FRETOP, C)          string heap, grows DOWN, C = min(HIMEM,TXTMAX)
 ```
 
-`heap_alloc` ([`sub/strheap.asm:262`](../sub/strheap.asm:262)) is a bump
+`heap_alloc` ([`sub/strheap.asm:392`](../sub/strheap.asm:392)) is a bump
 allocator on the downward frontier `FRETOP` whose only floor is `ARYEND+2`.
 There is **no string pool**: variables and strings compete for one gap. And
 `CLEAR <string-space>` **evaluates its argument and discards it**
@@ -224,7 +224,7 @@ answers in the very class this slice exists to empty.
 
 > ✅ **ANSWERED: yes** — it avoids the `NUMBUF` problem outright rather than
 enlarging a shared scratch buffer that `MID$`-statement aliasing already
-constrains ([`basic/sysvars.inc:697`](../basic/sysvars.inc:697)).
+constrains ([`basic/sysvars.inc:758`](../basic/sysvars.inc:758)).
 
 ## 6. The gate
 

@@ -76,8 +76,8 @@ suite executes runs inside `Machine.call`, so wrapping `call()` sees everything.
 | distinct `exit_sp` values | **`$F380`, and only that** |
 
 The `except` first pass, for the record: **3** textual `except` in 54 files, of
-which **0 swallow a call** — `test_msgenc.py:101` is `except ValueError` around
-a symbol-file parse; `test_stmt_dispatch.py:294` catches `RuntimeError` and
+which **0 swallow a call** — `test_msgenc.py:98` is `except ValueError` around
+a symbol-file parse; `test_stmt_dispatch.py:342` catches `RuntimeError` and
 **reports it as a failure** (the correct pattern); `test_poke.py:118` is a
 comment. Exactly **one** test traps an abort funnel: the repaired poke row.
 
@@ -134,7 +134,7 @@ $8000  ≤  SP  ≤  sp0          sp0 = the SP call() itself established
 Measured headroom (§2.3): the whole suite lives in `$F326…$F380`, so the floor
 is 29 KB clear of the deepest real use — it cannot fire on legitimate nesting.
 Violation raises `StackLost`, a **subclass of `RuntimeError`** so that
-`test_stmt_dispatch.py:294`'s existing handler keeps turning it into a reported
+`test_stmt_dispatch.py:342`'s existing handler keeps turning it into a reported
 failure rather than an unhandled traceback. The message names the cause, the
 call, the PC, and the fix:
 
@@ -229,7 +229,7 @@ layer: **the oracle-lock is what made the knife visible.**
 
 ### 4.2 F4: the `RuntimeError` base is not what makes it LOUD
 
-Measured on a reproduction of `test_stmt_dispatch.py:294`'s handler shape
+Measured on a reproduction of `test_stmt_dispatch.py:342`'s handler shape
 (`except RuntimeError as e: fails.append(…); continue`) over three cases:
 
 * `StackLost(RuntimeError)` → `reported=['case 0: StackLost', 'case 1: …', 'case 2: …'] cases_reached=3/3`
@@ -300,5 +300,5 @@ years. The second one is not swallowable with a straight face.
 
 Two things this slice did **not** change and deliberately leaves standing: the
 2,000,000-step guard (still the backstop for honest infinite loops that keep SP
-sane), and `test_stmt_dispatch.py:294`'s `except RuntimeError` — which is the
+sane), and `test_stmt_dispatch.py:342`'s `except RuntimeError` — which is the
 *correct* pattern, because it reports rather than swallows.

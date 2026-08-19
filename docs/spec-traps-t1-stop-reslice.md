@@ -38,7 +38,7 @@ OFF=$EB, GOSUB=$8D, the LINENO token $0E all already exist).
 `event_poll` stanza) → T3 = KEY (10 entries, matrix) → T4 = SPRITE (VDP collision,
 D-T-4). (Was INTERVAL → STOP+STRIG → KEY → SPRITE.)
 
-**Already-landed skeleton is reused as-is:** the `ZTRAP` sysvars (`sysvars.inc:773…`),
+**Already-landed skeleton is reused as-is:** the `ZTRAP` sysvars (`sysvars.inc:1109…`),
 `trap_init`, and the `htimi_service`/`event_poll` scaffold (commits c355c1d, 83422df) all
 stand. Only INTERVAL-specific parts become MSX2-dead: `event_poll`'s INTERVAL tick and
 `ZINTVAL`/`ZINTCNT`. **This slice leaves `event_poll` untouched** (it is verified live at
@@ -122,7 +122,7 @@ after a valid `STOP ON` fall to the next statement / `:` like every other statem
 `IF ROM_BASE < $4000`); the whole trap surface is repack-only.
 
 *(No dispatch-table / kwtable / token changes at all — STOP already dispatches to
-`ex_stop` in `exec`, `program.asm:264`.)*
+`ex_stop` in `exec`, `program.asm:435`.)*
 
 ---
 

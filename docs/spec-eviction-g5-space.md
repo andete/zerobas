@@ -11,7 +11,7 @@ line-editor). Scout report + verification: this session's transcript;
 
 ## Target (verified)
 Move the **Tier-3 cassette name-match / data-skip engine** — the contiguous block
-`cas_open_match` … `cas_skip_data` in [basic/cload.asm:264](../basic/cload.asm),
+`cas_open_match` … `cas_skip_data` in [basic/cload.asm:320](../basic/cload.asm),
 **161 B measured** (`$67E8–$6889`, i.e. up to `do_tape_prog`) — into a **new sub
 page-1 DI tenant, `SUBROM_IDX 16`** (15/LINEEDIT is last taken; watch the
 spec-vs-impl index-drift lesson, commit 136aee8). Body shared via a new
@@ -20,10 +20,10 @@ the hard gate).
 
 ## Why it's clean (non-straddle) — VERIFIED
 - **Single entry** `cas_open_match`. `cas_skip_data` (the block's other label) is
-  called only from *inside* the block (`com_miss` skip branch, cload.asm:309). No
+  called only from *inside* the block (`com_miss` skip branch, cload.asm:381). No
   external ref into any `com_*`/`csd_*` internal label (grep-confirmed).
-- **3 call sites, all resident & unchanged:** `do_tape_prog` (cload.asm:403),
-  `merge_cas` (files.asm:608), `oo_dev_cas` (files.asm:1411). They call a **resident
+- **3 call sites, all resident & unchanged:** `do_tape_prog` (cload.asm:475),
+  `merge_cas` (files.asm:496), `oo_dev_cas` (files.asm:1530). They call a **resident
   stub** at the same `cas_open_match` label (~17–20 B, modeled on the landed
   `relink` shim): `ld ix,ENTRY / call subrom_call / jp c,<absent> / ld a,(STATUS) /
   or a / ret z / scf / ret`.
@@ -50,7 +50,7 @@ deficit → fits with margin. **No DRY retrofit** (G2–G4 code untouched).
   bare-CLOAD regression, not-found, case-sensitivity). It hardcodes the lean cart —
   **add the `$ZEROBAS_BASIC_MACHINE` override** (the `diskbasic-acceptance-repack`
   mechanism) pointing at `C-BIOS_MSX1_EU_REPACK_DISK` so it hits the tenant (the
-  constant is shared in `basic_probe_cas_verbs.py:59`).
+  constant is shared in `basic_probe_cas_verbs.py:67`).
 - Lean-cart **sha byte-identity** + `check_reloc.py`; `check_tenant_closure.py
   --page1`; `make unit-test`; Makefile **`SUB_PARTS`+`DEPS`** wiring (the
   stale-tenant trap, [[makefile-subparts-stale-tenant]]).

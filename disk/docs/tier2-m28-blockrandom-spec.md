@@ -55,10 +55,10 @@ random block write. See [tier2-bdos-coverage.md](tier2-bdos-coverage.md:56).
   `trace --resync`. Entry contract (M26 §): kernel passes a 37-byte FCB **copy** at `$DA40`
   (copy+33..35 = r0/r1/r2, copy+32 = CR); the USER FCB is a separate address; exit `A=H=L=0`; CR
   (user fcb+32) := r0 as the one random-op side effect.
-- **Random positioning helper** — `rrnd_position` ([kernel.asm:1644](../kernel.asm:1644)) seeds the
+- **Random positioning helper** — `rrnd_position` ([kernel.asm:3107](../kernel.asm:3107)) seeds the
   file iterator to record r0 (target sector r0>>2, record-in-sector r0&3 → `RRND_RECSEC $E760`),
-  `rrnd_sector` ([kernel.asm:1707](../kernel.asm:1707)) recovers the absolute sector. `wrrnd_body`
-  ([kernel.asm:1751](../kernel.asm:1751)) already does the read-modify-write overlay + `write_sector`
+  `rrnd_sector` ([kernel.asm:3170](../kernel.asm:3170)) recovers the absolute sector. `wrrnd_body`
+  ([kernel.asm:3214](../kernel.asm:3214)) already does the read-modify-write overlay + `write_sector`
   that WRBLK needs per-record. **$26 WRBLK ≈ loop `wrrnd_body`'s core HL times, advancing r0.**
 - **Dir search** — `fat_mount` + `fat_find`/`dsm_found` ([fat.asm](../fat.asm)) locate an entry by
   exact 8.3 name and expose size via `FAT_FILESIZE` (entry+28..31). **$23 FSIZE ≈ fat_mount +
@@ -120,12 +120,12 @@ the fix stays page-1-wired. Live table dump (self-checks against M26's `$21`/`$2
   returns **harmless-by-luck** — a latent accidental target, never exercised because COMMAND.COM
   does not call WRBLK during boot. **ARCHITECTURE CORRECTION (Opus verification pass, folded in):**
   the source agent's "repoint the `$D930` table entry" is WRONG for our design. **The `$D8BE` table
-  is the relocated MSX-DOS-1 kernel's — the FIXED shared-kernel ABI ([kernel.asm:521-532](../kernel.asm:521)),
+  is the relocated MSX-DOS-1 kernel's — the FIXED shared-kernel ABI ([kernel.asm:561-532](../kernel.asm:561)),
   not ours to edit.** We do not own the dispatch table; we expose `jp k_XXXX` **veneers at the
   kernel's fixed canonical addresses**, and when a canonical address **collides with our active
   code** the established fix is the **3b relocation pass** — relocate OUR colliding code out to the
   free tail (same technique as the FDC-window fix and M26's collision entries,
-  [kernel.asm:528-529](../kernel.asm:528)), freeing the canonical address for a `jp wrblk_body`
+  [kernel.asm:568-529](../kernel.asm:568)), freeing the canonical address for a `jp wrblk_body`
   veneer. `$26`→`$47BE` is exactly such a collision. So: **relocate `ff_secloop` (position-free —
   reached only by label; internal `jr`s are all local) to the `$60EC` corridor, then pad `$47B9-$47BD`
   and place `jp wrblk_body` at `$47BE`** (see §3.1). Entry regs: `A=$26, B=$00, C=$00, DE=$DA40`
@@ -152,7 +152,7 @@ canonical WRBLK entry ([LANDED-B]); it collides with live `ff_secloop` code, so 
 way M26 and the FDC-window fix free colliding canonical addresses — relocate OUR code, NOT the
 kernel's table (which we do not own). Steps ([fat.asm:141-199](../fat.asm:141) is the block):
 1. **Relocate the `ff_secloop`…(end of the fat_find scan block) body** out of the `$47xx` corridor
-   into the `$60EC-$75A4` free tail, exactly like `fdc_entloop_body` ([kernel.asm:554](../kernel.asm:554)):
+   into the `$60EC-$75A4` free tail, exactly like `fdc_entloop_body` ([kernel.asm:594](../kernel.asm:594)):
    move the label + body verbatim; it is position-free (entered only via the `ff_secloop` label from
    `fat_find_body` and the `jr ff_secloop` back-edge, and every internal target — `ff_entloop`,
    `ff_skip`, `ff_endmark`, `ff_notfound`, `ff_found` — is a local label the assembler recomputes).
@@ -183,7 +183,7 @@ Reuses the dir-search wholesale; the only new code is the ceil-divide + field st
 ### 3.3 $26 WRBLK body  (`wrblk_body`)  — contract per [LANDED-A]
 Inputs: RS = fcb+14..15 (0→128); count = HL; start = 24-bit RR = fcb+33..35. Byte budget =
 (HL × RS) & 0xFFFF (mod-64K). **New shared helper needed: 24-bit positioning** — `rrnd_position`
-today reads ONLY r0 ([kernel.asm:1649](../kernel.asm:1649)); WRBLK/RDBLK need the full RR. Extend it
+today reads ONLY r0 ([kernel.asm:3112](../kernel.asm:3112)); WRBLK/RDBLK need the full RR. Extend it
 (or add `rrnd_position24`) to take a 24-bit record number: target sector = RR>>2, record-in-sector
 = RR&3, walk the FAT chain to that sector — same shape, wider arithmetic (~+20-30 B). Loop over the
 byte budget, RS bytes per record, rec = RR, RR+1, …:

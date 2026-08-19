@@ -28,7 +28,7 @@ capability.
 
 ## 2. What is wrong, in one sentence per site
 
-`var_name_key` ([`basic/vars.asm:67`](../basic/vars.asm)) walks a name and a type
+`var_name_key` ([`basic/vars.asm:102`](../basic/vars.asm)) walks a name and a type
 suffix and **never a subscript**, and all four target-parse sites call it and then
 store through a **key**:
 

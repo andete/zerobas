@@ -87,7 +87,7 @@ pm_lp:          ld      a,(hl)
 
 ⚠️ It **must** precede the bound test: `MSGESC_SUB` > `MSGESC_HI`, so the
 existing `jr nc,pm_lit` would otherwise `pchar` a raw `$06`. And it must **not**
-be folded into the phrase range: `tests/test_msgenc.py:118` reads exactly
+be folded into the phrase range: `tests/test_msgenc.py:115` reads exactly
 `MSGESC_HI - MSGESC_LO + 1` phrases out of `msg_phrase_tab`, so bumping
 `MSGESC_HI` would make that test read one entry PAST the table and compare
 against whatever follows — a readout that fails by producing plausible garbage.
@@ -117,9 +117,9 @@ pm_sub:         push    hl                  ; +1  CALSLT clobbers everything
 ```
 
 ⚠️ **`A` cannot carry a status and neither can `CF` from the tenant.** A is not
-preserved across CALSLT ([`basic/float-arith.asm:1772`](../basic/float-arith.asm:1772),
+preserved across CALSLT ([`basic/float-arith.asm:1799`](../basic/float-arith.asm:1799),
 the SQR/ATN/EXP/LOG lesson) and `subrom_call`'s own `CF` means "absent", never
-"found" ([`basic/field.asm:403`](../basic/field.asm:403)). So the tenant cannot
+"found" ([`basic/field.asm:638`](../basic/field.asm:638)). So the tenant cannot
 say *"not my code"* — it must print **something** for every input, and it
 carries its own `Unprintable error` for codes outside its table. The only signal
 main reads back is `subrom_call`'s absent-CF.

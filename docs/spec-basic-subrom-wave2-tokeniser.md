@@ -24,7 +24,7 @@ Slice spec for the sub-ROM arc
 successor to §5's "S3 — eviction wave 1" (which shipped as the `tk_float` crunch,
 not `float.asm` — see the arc memory). Cross-refs: wave-1 tenant
 [`sub/tkfloat.asm`](../sub/tkfloat.asm), dispatch [`basic/subromcall.asm`](../basic/subromcall.asm),
-the tokeniser [`basic/interp.asm:39`](../basic/interp.asm:39).
+the tokeniser [`basic/interp.asm:109`](../basic/interp.asm:109).
 
 ---
 
@@ -68,7 +68,7 @@ keyword table), leaving only the two-site line-entry stub resident.
 
 ## 3. The eviction surface (leaf-audit — DONE, verify at build)
 
-The whole `tokenise` body was audited ([`interp.asm:39–593`](../basic/interp.asm:39)).
+The whole `tokenise` body was audited ([`interp.asm:109–593`](../basic/interp.asm:109)).
 **No `RST`, `CALSLT`, `CHPUT`, `ISCNTC`, error-jump, `IN`/`OUT`, or any BIOS/
 low-region touch anywhere in the path** — it is pure buffer computation over RAM.
 That is the page-0-tenant purity precondition, and it holds.
@@ -86,7 +86,7 @@ becomes an in-slot callee of the co-located loop.
 stay for the rest of the interpreter):
 - `upcase` — **already cloned** in `tkfloat.asm`.
 - `is_letter` → calls `upcase`. Clone.
-- `is_ident_cont` ([`vars.asm:25`](../basic/vars.asm:25)) → calls `is_letter` →
+- `is_ident_cont` ([`vars.asm:74`](../basic/vars.asm:74)) → calls `is_letter` →
   `upcase`. **Clone the whole chain.**
 - `cmp16_bits`, `neg_de` — **already cloned** in `tkfloat.asm`.
 
@@ -94,8 +94,8 @@ stay for the rest of the interpreter):
 all in `sysvars.inc`, so **byte-address-identical** sub-side (sub.asm includes it).
 No marshalling.
 
-**Caller / stub sites — exactly two**, both in [`program.asm:50`](../basic/program.asm:50)
-and [`program.asm:63`](../basic/program.asm:63) (direct-line + program-line entry;
+**Caller / stub sites — exactly two**, both in [`program.asm:49`](../basic/program.asm:49)
+and [`program.asm:118`](../basic/program.asm:118) (direct-line + program-line entry;
 ASCII LOAD/MERGE/CLOAD funnel through the same insert path). Each becomes:
 `DI → set HL/DE → CALSLT sub tokenise entry → EI`, then act on the returned
 cursors. Marshalling is nil — HL (source), DE (dest) pass through `CALSLT`

@@ -70,7 +70,7 @@ runs). So `$F340` being non-zero is the whole cause.
 | disk-ROM init | **`$40D5` (our `set_ramad`) → `00`** | *(no write — gate skipped)* |
 | result at DOS read | `00` → cold | `C9` → warm |
 
-Our disk ROM already clears `$F340` — in [`set_ramad`](../init.asm) ([init.asm:383](../init.asm#L383)),
+Our disk ROM already clears `$F340` — in [`set_ramad`](../init.asm) ([init.asm:389](../init.asm#L383)),
 added for the CF-3300 DOS boot (§8.33). But the clear sits **after a gate**:
 
 ```asm

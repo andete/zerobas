@@ -390,7 +390,7 @@ def listing_selftest_failures():
 #     read and KEPT by the 2026-07-07 sweep; 2 of them are in this tool's own
 #     governance documents (§2.3);
 #   * allowed-sources.md forbids proprietary bytes "read as anything other than an
-#     oracle" -- provenance, not text. clean-room-audit.md:495 adjudicates a
+#     oracle" -- provenance, not text. clean-room-audit.md:508 adjudicates a
 #     5-byte hex run as legal because it was OBSERVED output (§2.4);
 #   * and the lexical class cannot even tell hex from decimal: "10, 20, 30, 40"
 #     is a run of hex byte pairs (§2.5).

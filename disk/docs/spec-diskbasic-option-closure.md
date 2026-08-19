@@ -55,10 +55,10 @@ to/from VRAM instead of RAM. `exec` is meaningless for a VRAM save (no run targe
 **Approach — minimal swap of the byte source/sink.** The existing data loops already
 move `RAM[start..end]` one byte at a time:
 - `BSAVE` RAM path: [save.asm:107](../../basic/save.asm:107) (`bsv_data`) reads
-  `RAM[cur]` → file. VRAM variant: read `RDVRM(cur)` ([sysvars.inc:31](../../basic/sysvars.inc:31),
+  `RAM[cur]` → file. VRAM variant: read `RDVRM(cur)` ([sysvars.inc:48](../../basic/sysvars.inc:48),
   `$004A`) instead.
 - `BLOAD` RAM path: the header-directed store loop. VRAM variant: `WRTVRM(addr)`
-  ([sysvars.inc:30](../../basic/sysvars.inc:30), `$004D`) instead of a RAM store.
+  ([sysvars.inc:47](../../basic/sysvars.inc:47), `$004D`) instead of a RAM store.
 
 A single `VRAM_FLAG` scratch byte selects the source/sink. Byte-by-byte `RDVRM`/`WRTVRM`
 is the low-risk fit (mirrors the existing loop shape); a `LDIRMV`/`LDIRVM` block move is a
@@ -69,7 +69,7 @@ later perf option, not needed for correctness.
   peek the token *before* `eval`. If it is the literal `S` (not part of an expression),
   set `VRAM_FLAG`, leave `exec = start`, and do **not** feed `S` to `eval`. **This is the
   fix for the current silent trap** where `S` is mis-evaluated as an exec expression.
-- `BLOAD` ([bload.asm:359-378](../../basic/bload.asm:359), `parse_close_run`): add an `S`
+- `BLOAD` ([bload.asm:104-378](../../basic/bload.asm:104), `parse_close_run`): add an `S`
   branch alongside the existing `R` test; `S` sets `VRAM_FLAG`.
 
 **Verification.** New gate cells `BSAVE(VRAM)` / `BLOAD(VRAM)`: BSAVE a known VRAM region
@@ -199,7 +199,7 @@ CLOSE [[#]n [,[#]m]…]   ; channel list
 
 **The gap.** M33 added `wrseq_writeback` (advance FCB `+32` CR / `+12` EX / cluster ptr per
 sequential record) but wired it to the **read** branch only
-([kernel.asm:2694](../kernel.asm)); `wrseq_body_write` is a bare `jp bdos_seqwrite`
+([kernel.asm:2788](../kernel.asm)); `wrseq_body_write` is a bare `jp bdos_seqwrite`
 ([kernel.asm:2699](../kernel.asm)) with no advance. Stock MSX-DOS-1 advances the FCB on
 sequential *writes* too. Our written file is byte-correct (the internal write-iterator
 tracks position); only the **caller-visible FCB position** goes stale. Observable via a

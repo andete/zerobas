@@ -6,13 +6,13 @@ both references agree on all of them, oracle-locked before zerobas ran).
 
 ## 1. What was filed, and why it was the wrong subject
 
-`TODO.md:3475` filed **two standing-red acceptance suites with no expectation
+`TODO.md:6685` filed **two standing-red acceptance suites with no expectation
 written down** and asked for each to be fixed or pinned by name. The brief
 carried three claims, and the measurement refutes all three:
 
 1. *"`float-acceptance` → `reg.C.if_skip_over_float`, likely the `$0E`/`ELSE`
    class"* — it is neither the `$0E` class nor `tok_skip`'s float stride
-   (`tokskip-body.inc:31` strides `$1D` correctly) nor `if_skip_to_else`. And it
+   (`tokskip-body.inc:36` strides `$1D` correctly) nor `if_skip_to_else`. And it
    is **not about floats**: the same line with an integer literal breaks
    identically ([characterization §1.2](expkw-msx1-characterization.md)).
 2. *"`logicops-acceptance` → 50 rows, all `EQV`/`IMP`, which are genuinely

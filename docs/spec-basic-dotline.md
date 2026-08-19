@@ -272,7 +272,7 @@ the pre-cut baseline before concluding anything** — "the cut did nothing" and
   finding** ([[knife-that-reddens-nothing-is-the-finding]]): if it holds, the
   cold init is gated by **nothing** in this tree and is carried on the same
   power-on-RAM-is-garbage argument `init`'s own ERR/ERL reset already carries
-  (`basic/interp.asm:41`). Say that plainly rather than let a green run read as
+  (`basic/interp.asm:51`). Say that plainly rather than let a green run read as
   coverage. ⚠️ Score it by hashing the ROM first — a 3-byte cut that changes no
   row is indistinguishable from a cut that never built.
 * **K7 — aimed at the JUSTIFICATION, not the code.** §3.1 claims writer (b)

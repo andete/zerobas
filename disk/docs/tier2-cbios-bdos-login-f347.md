@@ -54,7 +54,7 @@ fix) and then gates on RAMAD:
 
 Everything after the `ret nz` — the RAMAD fill, `build_wa_table`, `build_drvtbl`,
 `build_resident`, AND the `ld (DRVCNT),$02` / `ld (CURDRV_CELL),$00` seeds (was
-[init.asm:537](../init.asm#L537)) — is **skipped on C-BIOS**, whose page-3 RAM is
+[init.asm:538](../init.asm#L537)) — is **skipped on C-BIOS**, whose page-3 RAM is
 pre-filled with `$C9`. The whole table above confirms it (RAMAD/DRVTBL/CURDRV/DRVCNT all
 left at the C-BIOS fill). This is the SAME bug class as `$F340`
 ([tier2-cbios-dosboot-autoexec-f340.md](tier2-cbios-dosboot-autoexec-f340.md)): the `$FF`
@@ -64,7 +64,7 @@ seed.
 Why DOS still boots on C-BIOS despite the skipped plumbing: MSX-DOS on C-BIOS provisions
 its own RAM paging and does not depend on our CF-3300 `$F348` DRVTBL / resident-routine
 build (all `C9` and it boots fine). But **DRVCNT (`$F347`) is a DATA cell the kernel reads
-directly** — via `login_body` and the `$50D5` SELDSK entry ([kernel.asm:2168](../kernel.asm#L2168))
+directly** — via `login_body` and the `$50D5` SELDSK entry ([kernel.asm:2263](../kernel.asm#L2168))
 — so the garbage leaks straight into LOGIN. `CURDRV` (`$F247`, read by `$50C4`) is the same
 class and was likewise left `FF` on C-BIOS (latent).
 

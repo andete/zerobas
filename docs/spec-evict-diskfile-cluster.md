@@ -331,7 +331,7 @@ sub-local again). This phase leaves the entire per-byte/vector surface resident 
 burn ~13 P1 indices, use a **single** new `SUBROM_IDX_FATPRIM` (next free P1 index = **12**;
 `SUBROM_ENTRY_BASE_P1=$4010`, indices 1–11 taken through `SCANSTMT`) whose tenant entry reads a
 `DISKOP_OP` selector byte and internally `jp`s to the requested primitive with **HL/DE intact**
-(`subrom_call` passes HL/DE through CALSLT, `basic/subromcall.asm:60-68`). Selector table uses
+(`subrom_call` passes HL/DE through CALSLT, `basic/subromcall.asm:44-68`). Selector table uses
 BC for indexing so HL/DE survive to the primitive.
 
 **Uniform shim convention (robust against the register-bug trap — the load-bearing lesson).**

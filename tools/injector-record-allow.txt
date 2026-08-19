@@ -41,6 +41,6 @@
 
 scratchpad/g4_hang_probe.py 0963dd708ff9 G4 hang characterization (907d5b6, 2026-07-22, untouched since). Composes the pre-D-LATCH __key/__inj pair from R.KEYBUF/R.GETPNT/R.PUTPNT. Cited by docs/spec-basic-graphics-g4.md:191 and tests/test_graphics.py:879 as the apparatus that located the CIRCLE/DRAW hang dynamically.
 
-scratchpad/i1_input_char2.py 508918c38319 I1 live key-matrix characterization (8409408, 2026-07-23, untouched since). Composes the same body; its own docstring explains why it had to bypass the shared driver (a matrix read cannot be exercised through the keyboard buffer at all). Cited by basic/PROVENANCE.md:3569 and docs/spec-basic-input-devices.md:18.
+scratchpad/i1_input_char2.py 508918c38319 I1 live key-matrix characterization (8409408, 2026-07-23, untouched since). Composes the same body; its own docstring explains why it had to bypass the shared driver (a matrix read cannot be exercised through the keyboard buffer at all). Cited by basic/PROVENANCE.md:3923 and docs/spec-basic-input-devices.md:18.
 
 scratchpad/i2_frame.py b73bec183fb8 I2 Z80-speed bit-bang harness (559e15d, 2026-07-23, untouched since). Its __key is the pre-D-LATCH body character-for-character modulo whitespace and decimal-vs-symbolic addresses — the same body probes/lib/latch_check.py freezes as OLD_KEY and `make latch-check` row A requires to MANGLE. Cited by docs/spec-basic-input-devices.md:351 and tape/PROVENANCE.md:88.

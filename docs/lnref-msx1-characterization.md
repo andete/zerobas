@@ -247,7 +247,7 @@ one placement that reproduces every row in §2 and this one.
   puts a `$0E` where `ev_f` has no arm; if the evaluator is not taught, this row
   is what goes red.
 * `lnrd-return` is a **different, separate gap**: `ex_return`
-  ([`basic/program.asm:1089`](../basic/program.asm:1089)) pops the frame and
+  ([`basic/program.asm:1366`](../basic/program.asm:1366)) pops the frame and
   never looks at its argument, so `RETURN <line>` returns to the caller. The
   crunch fix does not close it and **this row is expected to stay divergent** —
   measured so the claim is a measurement rather than a guess.

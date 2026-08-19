@@ -163,7 +163,7 @@ lvalue-shaped ones:
 | `FIELD` target | [`basic/field.asm:194`](../basic/field.asm) | ⚠️ **UNMEASURED** |
 | `LSET` / `RSET` target | [`basic/field.asm:283`](../basic/field.asm) | ⚠️ **UNMEASURED** |
 | `MID$(…)=` lvalue | [`basic/str-engine.asm:957`](../basic/str-engine.asm) | ⚠️ **UNMEASURED** — its own header already says *"array lvalues deferred"* |
-| `sw_operand` (`SWAP`) | [`basic/missing.asm:420`](../basic/missing.asm) | ✅ **ALREADY HANDLES ARRAYS** — §4 |
+| `sw_operand` (`SWAP`) | [`basic/missing.asm:425`](../basic/missing.asm) | ✅ **ALREADY HANDLES ARRAYS** — §4 |
 
 The four unmeasured rows need a file/`FIELD` fixture rather than a bare boot, so
 they are not free the way this battery's rows were. They are **named, not

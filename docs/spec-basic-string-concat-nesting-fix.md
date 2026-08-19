@@ -36,7 +36,7 @@ some operand *after the first* is a string function whose own argument contains 
 
 ## 2. Root cause (confirmed by reading the code)
 
-`str_concat_tail` ([str-engine.asm:132](../basic/str-engine.asm:132)) keeps the outer
+`str_concat_tail` ([str-engine.asm:414](../basic/str-engine.asm:414)) keeps the outer
 accumulator's address in the **single global** `STRCAT_R` (`$E55D`, one word,
 [sysvars.inc:497](../basic/sysvars.inc:497)) and **re-reads it from that global on
 every loop iteration**:
@@ -123,7 +123,7 @@ load, which is precisely why the routine uses the `STRCAT_R` global).
 (`$2812–$3FFF`) is **0 bytes free** — `__MEAS_LOW_END == $4000`. Slice 3 consumed
 the last of it (65-B string elements + the D1 `is_letter` guard + the
 `ary_op0_resolve` dedup). So the +6 fix **overflows the hard `$4000` guard**
-([main.asm:86](../basic/main.asm:86), the
+([main.asm:114](../basic/main.asm:114), the
 `STRING_ENGINE_OVERRAN_4000...LOW_REGION_FULL` tripwire — confirmed 2026-07-16 by
 applying the fix and building). The old "77 bytes free at HEAD" note above was the
 PRE-slice-3 baseline and no longer holds.

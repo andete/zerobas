@@ -43,8 +43,8 @@ one of those rows would have steered a crashing change.
 1. **A conditional branch read as a terminator.** My first dead-code triage used
    `^\s*(ret|reti|retn|jp|jr)\b` as the "nothing falls through here" test, which
    matches `jp nc,gfx_syntax` and `ret nz`. It reported `ei_set`
-   ([`basic/program.asm:1619`](../basic/program.asm:1619)) and `spr_set`
-   ([`basic/graphics.asm:690`](../basic/graphics.asm:690)) as **dead**. Both are
+   ([`basic/program.asm:2405`](../basic/program.asm:2405)) and `spr_set`
+   ([`basic/graphics.asm:844`](../basic/graphics.asm:844)) as **dead**. Both are
    fallthrough-entered and live. Fixed by reusing
    [`tools/check_tenant_closure.py`](../tools/check_tenant_closure.py)'s own
    `_is_terminator`, which handles the condition field.
@@ -193,10 +193,10 @@ against their resident stubs:
 
 | tenant | body (sub) | resident stub | margin | site |
 |---|---|---|---|---|
-| `beep_tenant` | 74 B | ~12 B marginal (16 B total) | +62 | [`basic/sound.asm:130`](../basic/sound.asm:130) |
+| `beep_tenant` | 74 B | ~12 B marginal (16 B total) | +62 | [`basic/sound.asm:129`](../basic/sound.asm:129) |
 | `dirverb_tenant` | 77 B | **~42 B across TWO call sites** | +35 | [`files.asm:1215`](../basic/files.asm:1215), [`:1283`](../basic/files.asm:1283) |
 | `title_tenant` | 78 B | **7 B** (`ld ix` + `jp`) | +71 | [`basic/title.asm:30`](../basic/title.asm:30) |
-| `fld_lookup_tenant` | 81 B | 22 B (body was 60 B → returns 38 B) | +38 | [`basic/field.asm:412`](../basic/field.asm:412) |
+| `fld_lookup_tenant` | 81 B | 22 B (body was 60 B → returns 38 B) | +38 | [`basic/field.asm:651`](../basic/field.asm:651) |
 | `scan_stmt_end` | 93 B | ~18 B | +75 | [`basic/interp.asm:1342`](../basic/interp.asm:1342) |
 | `deftype_tenant` | 181 B | ~26 B | +155 | [`basic/usr.asm:240`](../basic/usr.asm:240) |
 
@@ -263,7 +263,7 @@ one live caller is not reported):
 
 | # | block | region | bytes | evidence |
 |---|---|---|---|---|
-| C1 | `var_find` + `var_get_key` + `var_set_key` (12 labels) | PAGE 1 `$4760-$47B0` | **80** | the retired lean build's int-only fixed-pool store. [`basic/vars.asm:265`](../basic/vars.asm:265) **already calls it "the dead int-only `var_find` walk above"** |
+| C1 | `var_find` + `var_get_key` + `var_set_key` (12 labels) | PAGE 1 `$4760-$47B0` | **80** | the retired lean build's int-only fixed-pool store. [`basic/vars.asm:539`](../basic/vars.asm:539) **already calls it "the dead int-only `var_find` walk above"** |
 | C2 | `div_de_bc` + `mod_de_bc` + `div_zero` | PAGE 1 `$523C-$5256` | **26** | the integer `/`/MOD helpers, superseded by the float pack. `udiv16` below them stays (live). **Not visible to pasmo for `div_zero`** — it is referenced, only from C2 |
 | C3 | `disk_putword` | PAGE 1 `$6B63-$6B73` | **16** | [`basic/sv-diskwr.inc`](../basic/sv-diskwr.inc); **NOT dead code — see §4.1.** Dead in the MAIN build, live in the SUB build. Gated `IF SUB_BUILD`, not deleted. The one reclaimable byte of §3.1's 473 |
 | | **total** | **all PAGE 1** | **122** | **0 B of it in the low region** |

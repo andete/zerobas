@@ -125,7 +125,7 @@ frame shape from [`ex_gosub`](../basic/program.asm) `504-561` / `eon_gosub` `939
 (`[CURLINE:2][resume-ptr:2]` at `(GSP)`, bounds-checked vs `GOSUB_STK_END`).
 
 ### 2.2 The H.TIMI PLAY servicer = the per-frame poll seam
-[`basic/playsvc.asm:48-93`](../basic/playsvc.asm). `play_install` writes a bare `JP
+[`basic/playsvc.asm:56-93`](../basic/playsvc.asm). `play_install` writes a bare `JP
 play_service` into `H_TIMI` ($FD9F). `play_service` is **main page-1 resident, reached
 by a near JP** (never a sub-ROM tenant: every page-1 tenant runs under DI so a VBLANK
 never fires mid-tenant), entered DI, register-transparent, touches only PSG + its
@@ -135,7 +135,7 @@ existing `MUSICF` check. **A `CALSLT` in the VBLANK path is ruled out** (input-d
 §, D-I-2 precedent): the poll must be resident code doing direct port / RAM work.
 
 ### 2.3 The matrix-hold acceptance harness = the gate mechanism
-[`probes/lib/omsx_repl.py:232-244`](../probes/lib/omsx_repl.py) (`holds` →
+[`probes/lib/omsx_repl.py:572-244`](../probes/lib/omsx_repl.py) (`holds` →
 `keymatrixdown/up` scheduling) and the `prologue` seam (`191-198`) were built by the
 input-devices arc **explicitly for this arc** ("the interrupt-trap arc needs the same
 capability for `ON KEY`", D-I-3). `basic_probe_input_devices.py`'s `MATRIX` table
@@ -143,15 +143,15 @@ capability for `ON KEY`", D-I-3). `basic_probe_input_devices.py`'s `MATRIX` tabl
 trap-armed program runs* and count the fires.
 
 ### 2.4 The run-loop dispatch point
-[`basic/program.asm:262-269`](../basic/program.asm) — the `BREAKX` poll between
+[`basic/program.asm:437-269`](../basic/program.asm) — the `BREAKX` poll between
 statements. The event-trap dispatch check lives **right here**: after `BREAKX`, before
 `call exec`, test "any trap enabled AND pending?" and if so branch into its handler.
 
 ### 2.5 The input readers
-`ev_ff_strig` ([`basic/expr.asm:1022`](../basic/expr.asm)) / `GTTRIG $00D8`,
+`ev_ff_strig` ([`basic/expr.asm:1039`](../basic/expr.asm)) / `GTTRIG $00D8`,
 `GTSTCK $00D5`, function-key matrix rows — the STRIG/KEY event sources. `ex_sprite` /
-`spr_noop` ([`basic/graphics.asm:1023-1038`](../basic/graphics.asm)) — the no-ops to
-promote. `ex_key` ([`basic/screen.asm:196-217`](../basic/screen.asm)) — the `KEY
+`spr_noop` ([`basic/graphics.asm:830-1038`](../basic/graphics.asm)) — the no-ops to
+promote. `ex_key` ([`basic/screen.asm:283-217`](../basic/screen.asm)) — the `KEY
 ON/OFF` display statement to disambiguate from the new `KEY(n)` trap form.
 
 ---
@@ -243,7 +243,7 @@ verbatim from `play_service`.
 
 ## 5. The dispatcher (run-loop)
 
-At [`program.asm:262-269`](../basic/program.asm), after `BREAKX`, add a
+At [`program.asm:437-269`](../basic/program.asm), after `BREAKX`, add a
 **`check_traps`** step (only when at least one trap is armed — a single "any trap live"
 byte gates the whole cost, so the common no-trap program pays ~one load+or). It scans
 `ZTRAP` in priority order and, for the first entry with state==ON && PENDING &&
@@ -261,7 +261,7 @@ boundary (a second pending trap fires at the next boundary) — matches the refe
 ## 6. STOP trap — intercepting the break path
 
 Ctrl-STOP has an existing owner: the `BREAKX`→`do_break` path
-([`program.asm:262-269, 307-336`](../basic/program.asm)) prints `break in <line>` and
+([`program.asm:437-269, 307-336`](../basic/program.asm)) prints `break in <line>` and
 ends the RUN. When the STOP trap is **ON**, a Ctrl-STOP must instead **fire the trap**
 (GOSUB the handler) and *not* break. When OFF/STOP, the normal break happens. So
 `do_break`'s entry gets a guard: if STOP-trap state==ON, set its PENDING and let
@@ -273,7 +273,7 @@ covered because the trap auto-STOPs itself on dispatch.
 
 ## 7. Parsing — statements + `ON X GOSUB`
 
-**`ON X GOSUB` family** — `ex_on` ([`program.asm:907-913`](../basic/program.asm))
+**`ON X GOSUB` family** — `ex_on` ([`program.asm:1965-913`](../basic/program.asm))
 already peeks the token after `ON` (`jp z,ex_on_error` for `ERROR`). Add sibling peeks:
 `INTERVAL`/`KEY`/`SPRITE`/`STOP`/`STRIG` → a shared `ex_on_trap` that (a) for
 `INTERVAL`, consumes `=n` and stores `ZINTVAL`; (b) reads the handler line(s) —
@@ -283,13 +283,13 @@ entries; leaves state OFF (arm ≠ enable).
 
 **Arming statements** — five `<kw> ON|OFF|STOP` forms:
 - `INTERVAL ON/OFF/STOP` — new keyword+token (§8), new `ex_interval`.
-- `STOP ON/OFF/STOP` — `ex_stop` ([`program.asm:383`](../basic/program.asm)) currently
+- `STOP ON/OFF/STOP` — `ex_stop` ([`program.asm:859`](../basic/program.asm)) currently
   takes no argument; add the `ON/OFF/STOP` sub-parse (bare `STOP` stays the break).
 - `SPRITE ON/OFF/STOP` — promote `spr_noop` ([`graphics.asm:1023-1038`](../basic/graphics.asm))
   to set the SPRITE entry's state (from D-G7-4 no-op → real).
 - `STRIG(n) ON/OFF/STOP` — new `ex_strig_stmt`, replaces the D-I-5 `ERR 2`; parse
   `(n)` (0..4), set entry n's state.
-- `KEY(n) ON/OFF/STOP` — extend `ex_key` ([`screen.asm:196`](../basic/screen.asm)) to
+- `KEY(n) ON/OFF/STOP` — extend `ex_key` ([`screen.asm:283`](../basic/screen.asm)) to
   branch on `(` (trap form, n=1..10) vs `ON/OFF` (the existing display form). Replaces
   the D-I-5 `ERR 2` for `KEY(n)`.
 
@@ -444,13 +444,13 @@ moderate, not negligible.
 `ex_paint` (171 B private) and `ex_circle`/`circ_aspect` (661 B private) are **~90–100 %
 `eval`/float-pack-bound**, and the float pack (`fp_*`, and `eval` itself bottoms out in
 it) lives in the **page-0 low region `$2812–$3FFF` that the sub-ROM overlays** — a page-0
-tenant *cannot* call it (confirmed: `basic/graphics.asm:928-930` says so verbatim for
+tenant *cannot* call it (confirmed: `basic/graphics.asm:707-930` says so verbatim for
 DRAW; `tools/check_tenant_closure.py --page0` fails the build on exactly this escape).
 This is precisely why the current split exists (resident stub does all eval/float **while
 page 0 is mapped**, then marshals an *integer* param block to the tenant). So neither can
 move wholesale; the `--page0` gate would reject the cut. The **only** mechanism that
 reclaims eval-heavy parse bytes is the **DRAW-style co-routine** (`gfx_draw_op`,
-`basic/graphics.asm:916-1001`): the tenant walks tokens and bounces each sub-expression
+`basic/graphics.asm:695-1001`): the tenant walks tokens and bounces each sub-expression
 back to the resident via `GFX_DEXP`/`GFX_DREQ`/`GFX_DVAL`/`GFX_DRESUME`. Re-authoring
 CIRCLE's ~218 B grammar walk as such a co-routine is a substantial, risky sub-arc — out
 of proportion to T1.
@@ -519,10 +519,10 @@ the sub image already owns the name `upcase` in its (unmapped-here) page-0 islan
 **Next span: wire `basic/traps.asm` in + `check_traps`/`ex_return` dispatch + parsers.**
 
 The option-1 scout found the cheap path exists. **Chosen: evict `build_83_name`** (the
-disk 8.3-FCB-name builder, `basic/bload.asm:301-411`, ~139 B) to a new **page-0 sub-ROM
+disk 8.3-FCB-name builder, `basic/bload.asm:83-411`, ~139 B) to a new **page-0 sub-ROM
 tenant** — substituted for the non-viable PAINT+CIRCLE. Why it's the pick:
 - **Closure is clean:** its only external callee is `upcase`, **already sub-resident**
-  (`sub/tkfloat.asm:648`); everything else (`bn_*`) is private. No `eval`/`fp_*`, no
+  (`sub/tkfloat.asm:812`); everything else (`bn_*`) is private. No `eval`/`fp_*`, no
   page-0-low escape, no BIOS — passes `--page0`.
 - **Cold:** one caller (`parse_disk_fcb:200`), on the disk LOAD/SAVE/FILES/NAME path;
   never per-statement/per-loop.

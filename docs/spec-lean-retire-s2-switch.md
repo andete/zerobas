@@ -4,7 +4,7 @@ SPDX-License-Identifier: 0BSD
 -->
 # S2 — RETIRE LEAN: stop building it, stop shipping it, stop measuring it
 
-Step 2 of **RETIRE THE LEAN 16 KB CART** ([`TODO.md:1813`](TODO.md:1813)).
+Step 2 of **RETIRE THE LEAN 16 KB CART** ([`TODO.md:5277`](TODO.md:5277)).
 Follows [`docs/spec-lean-retire-s1-explicit-machine.md`](docs/spec-lean-retire-s1-explicit-machine.md).
 
 Status: ✅ **LANDED 2026-07-29.** §8 answered by the user:
@@ -24,10 +24,10 @@ Not "what the brief listed" — the tree, swept.
 |---|---|---|---|
 | 1 | `$(ROM)` = `build/basic.rom` is in the default goal `all` | [`Makefile:180`](Makefile:180) | build |
 | 2 | `zerobas-msx1.ips` / `.bps` built from `$(ROM)`, tracked at root, in `all` | [`Makefile:176`](Makefile:176), [`:314`](Makefile:314) | **ship** |
-| 3 | `machines` → 12 release machines carrying the lean IPS | [`Makefile:335`](Makefile:335), [`tools/install-openmsx-machine.py:67`](tools/install-openmsx-machine.py:67) | **ship** |
+| 3 | `machines` → 12 release machines carrying the lean IPS | [`Makefile:335`](Makefile:335), [`tools/install-openmsx-machine.py:72`](tools/install-openmsx-machine.py:72) | **ship** |
 | 4 | `install` = `all` + `machines` — the user-facing install path is lean | [`Makefile:345`](Makefile:345) | **ship** |
 | 5 | `diskbasic-acceptance` — the 34/34 lean acceptance column | [`Makefile:411`](Makefile:411) | gate |
-| 6 | `check_reloc.py` check #4 (frozen `LEAN_SHA256`); `basic-reloc` takes `$(ROM)` | [`tools/check_reloc.py:76`](tools/check_reloc.py:76), [`Makefile:281`](Makefile:281) | gate |
+| 6 | `check_reloc.py` check #4 (frozen `LEAN_SHA256`); `basic-reloc` takes `$(ROM)` | [`tools/check_reloc.py:84`](tools/check_reloc.py:84), [`Makefile:281`](Makefile:281) | gate |
 | 7 | `make probe` → `basic_probe_print.py --cart $(ROM)` | [`Makefile:379`](Makefile:379) | gate |
 | 8 | ~20 non-gate probes booting the lean cart (`--cart build/basic.rom`) | `probes/basic/`, `probes/tape/` | corpus |
 | 9 | 311 `IF ROM_BASE` gates + the `ROM_BASE` equ/org/ceiling machinery | `basic/` | source |
@@ -49,7 +49,7 @@ literals against **1** `C-BIOS_MSX1_EU_BASIC`.
 ⚠️ The lean cart is a **cartridge**; the repack build is a **slot-0 32 KB main ROM**.
 There is no "swap the cart" port. But the repack machine already declares
 `<CassettePort/>` and the merged ROM already bakes in `tape/tape.asm`
-([`Makefile:303`](Makefile:303), [`tools/install-repack-machine.py:104`](tools/install-repack-machine.py:104)),
+([`Makefile:303`](Makefile:303), [`tools/install-repack-machine.py:112`](tools/install-repack-machine.py:112)),
 so the cassette corpus *can* move to the repack machine — it just is not a one-line move.
 
 ### 1.2 Two consumers that must be retired TOGETHER
@@ -71,7 +71,7 @@ This is the fact the shipped-artifact decision turns on, and it was not on recor
 
 The lean pair patches **openMSX's own bundled C-BIOS ROM**. The repack pair is built by
 diffing the merged ROM against a `pristine` C-BIOS built from a pinned tag in the user's
-own checkout ([`tools/build_patches.py:192`](tools/build_patches.py:192)) — which reads
+own checkout ([`tools/build_patches.py:182`](tools/build_patches.py:182)) — which reads
 as "end users need a C-BIOS checkout too." **They do not.** Measured directly:
 
 ```
@@ -97,7 +97,7 @@ Measured, and this is the real price:
 * **Region coverage 4 → 1.** The lean IPS is a page-1 splice and is region-universal:
   `make machines` writes 12 machines across `cbios_main_msx1{,_br,_eu,_jp}.rom`. The
   repack rewrites the C-BIOS page-0 layout and is **EU-only by construction** —
-  [`tools/build_repacked_cbios.py:31`](tools/build_repacked_cbios.py:31) applies
+  [`tools/build_repacked_cbios.py:37`](tools/build_repacked_cbios.py:37) applies
   `cbios-repack/eu-drop-statements.patch` and reads `derived/bin/cbios_main_msx1_eu.rom`.
   Regionalising it is separate work, not part of this slice.
 * **The machine needs a second artifact.** The repack build calls page-0 and page-1
@@ -236,7 +236,7 @@ gate path. Regenerating the committed pair is `make release`, the maintainer's j
   (one patch, not two — tape is baked into the merged ROM) with `sub.rom` in slot 3-2.
   **`_TAPE` machines survive unchanged**: they carry only the tape patch, never lean, and
   the cassette corpus and `bios_probe_realtape.py` depend on them.
-* README §385 / §180, [`docs/dev-workflow.md:97`](docs/dev-workflow.md:97),
+* README §385 / §180, [`docs/dev-workflow.md:116`](docs/dev-workflow.md:116),
   [`probes/README.md:34`](probes/README.md:34) updated.
 
 ### 4.5 The `--cart` corpus (row 8) — **kept working, honestly labelled**

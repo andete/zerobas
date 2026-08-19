@@ -40,7 +40,7 @@ past blanks and keeps them unless it actually consumes what it finds.
 ## 1. The sites
 
 All four are in the **sub-ROM**, page 0. `basic/tokenise.inc` is `include`d by
-[`sub/sub.asm:209`](../sub/sub.asm:209) **and by nothing else** — the whole
+[`sub/sub.asm:262`](../sub/sub.asm:262) **and by nothing else** — the whole
 tokeniser body was evicted there in subrom wave 2 — so this slice does not touch
 the main ROM at all. See §6.1 for the assertion that makes that checkable rather
 than asserted.
@@ -48,10 +48,10 @@ than asserted.
 | # | site | file |
 |---|---|---|
 | S1 | the `'.'`-led entry (`.5`), which looks exactly one char past the dot | [`basic/tokenise.inc:68`](../basic/tokenise.inc:68) |
-| S2 | `tkf_scan_digits` — the mantissa digit runs, integer and fractional | [`sub/tkfloat.asm:161`](../sub/tkfloat.asm:161) |
+| S2 | `tkf_scan_digits` — the mantissa digit runs, integer and fractional | [`sub/tkfloat.asm:175`](../sub/tkfloat.asm:175) |
 | S3 | the `'.'` test between the two digit runs | [`sub/tkfloat.asm:61`](../sub/tkfloat.asm:61) |
-| S4 | `tkf_try_exponent` — the marker, the sign, and the exponent's own digits | [`sub/tkfloat.asm:229`](../sub/tkfloat.asm:229) |
-| S5 | `tkf_try_suffix` — `!` / `#` / `%` | [`sub/tkfloat.asm:327`](../sub/tkfloat.asm:327) |
+| S4 | `tkf_try_exponent` — the marker, the sign, and the exponent's own digits | [`sub/tkfloat.asm:243`](../sub/tkfloat.asm:243) |
+| S5 | `tkf_try_suffix` — `!` / `#` / `%` | [`sub/tkfloat.asm:397`](../sub/tkfloat.asm:397) |
 
 ⚠️ **S1 is in the other file and a fix aimed at `tk_float` cannot reach it.**
 `20 A=. 5` is 0.5 on both references; zerobas stores `.` verbatim, then a blank,
@@ -61,7 +61,7 @@ taken before `tk_float` is entered. This cell exists only because the battery
 asked about the entry as well as the scanner — the D-NOTOPEN2 lesson, where 3 of
 7 rows gave a different answer than all 7.
 
-`tk_hex` ([`basic/tokenise.inc:286`](../basic/tokenise.inc:286)) is **not** a
+`tk_hex` ([`basic/tokenise.inc:440`](../basic/tokenise.inc:440)) is **not** a
 site: measured, it does not skip, for `&H` *and* for `&O` (§2, R-D5).
 
 ---
@@ -229,7 +229,7 @@ The reference **consumes** a marker and sign that turn out not to introduce an
 exponent, and the mere presence of the marker forces the literal to single
 precision. zerobas rolls back and leaves the `E` for the ordinary tokeniser —
 own-design, and its header
-([`sub/tkfloat.asm:216`](../sub/tkfloat.asm:216)) says in as many words that it is
+([`sub/tkfloat.asm:230`](../sub/tkfloat.asm:230)) says in as many words that it is
 own-design rather than oracle-pinned. **Both rows carry no blank at all**, which
 is what makes this a separate defect and not this one; attributing it here would
 be the D-MFDOM trap of closing an item on a measurement belonging to another.

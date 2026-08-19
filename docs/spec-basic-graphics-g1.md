@@ -48,7 +48,7 @@ extended to also drive VRAM under interrupts and verify the writes survived.
 `sub/graphics.asm` is a **page-0** tenant (EI-capable via the existing RAM interrupt
 trampoline — [basic/subromcall.asm:89](basic/subromcall.asm)). Index: page-0 indices
 currently top out at `PU_TAIL=7`, so **`SUBROM_IDX_GRAPHICS = 8`** (append-only;
-never renumber — [sub/equates.inc:17](sub/equates.inc)). Add one `jp graphics_tenant`
+never renumber — [sub/equates.inc:28](sub/equates.inc)). Add one `jp graphics_tenant`
 at index 8 of the page-0 dispatch table in [sub/sub.asm](sub/sub.asm). Invocation is
 the standard `subrom_call` (`IX = SUBROM_ENTRY_BASE_P0 + 3*8 = $0028`), which runs it
 under the trampoline so the tenant may `EI`.

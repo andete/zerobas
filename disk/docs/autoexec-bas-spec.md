@@ -44,7 +44,7 @@ inputs→outputs, no ROM decode). Repro: `scratchpad/autoexec_char.py`.
 
 ## 3. Design (all reused routines verified)
 
-**Hook:** [basic/interp.asm:26](../../basic/interp.asm#L26), a single `call autoexec_run`
+**Hook:** [basic/interp.asm:99](../../basic/interp.asm#L26), a single `call autoexec_run`
 inserted between `call show_title` and `jp repl`. By then `clear_vars`/`new_prog`/
 `init_filechan` have run and `init_ext_roms` has recorded `DISKSLOT_OK` — banner→run→`Ok`
 ordering matches the oracle, and PRINT/file-channel state is initialized.
@@ -52,17 +52,17 @@ ordering matches the oracle, and PRINT/file-channel state is initialized.
 **`autoexec_run` (new, in the disk-BASIC layer — reuses everything):**
 1. `ld a,(DISKSLOT_OK) / or a / ret z` — no disk ROM ⇒ silent skip (same gate
    `disk_prog_load` uses, [cload.asm:375](../../basic/cload.asm#L375)).
-2. Fill the scratch FCB name ([sysvars.inc:428](../../basic/sysvars.inc#L428),
+2. Fill the scratch FCB name ([sysvars.inc:2276](../../basic/sysvars.inc#L428),
    `DISK_FCB_NAME`, 11-byte upcased): `LDIR` a ROM constant `db "AUTOEXECBAS"`.
 3. **Silent presence probe:** `call fat_mount` (`ret c` on no/bad disk) then
    `ld hl,DISK_FCB_NAME / call fat_find` ([fat.asm:159](../../basic/fat.asm#L159));
    `ret c` if not found. This is why we don't just call `disk_prog_load` — its absent
    path is `load_error` (noisy), but the oracle is silent on absent.
-4. Found ⇒ `call disk_prog_load` ([cload.asm:373](../../basic/cload.asm#L373); it
+4. Found ⇒ `call disk_prog_load` ([cload.asm:847](../../basic/cload.asm#L373); it
    re-`fat_io_open`s — cheap, reuses the whole loader) then `call run_prog`
-   ([program.asm:155](../../basic/program.asm#L155) = `clear_vars` + RUN). Fall through /
+   ([program.asm:298](../../basic/program.asm#L155) = `clear_vars` + RUN). Fall through /
    `ret` to `jp repl`. This is the `do_run` disk pattern
-   ([cload.asm:139](../../basic/cload.asm#L139)) minus the command parser.
+   ([cload.asm:181](../../basic/cload.asm#L139)) minus the command parser.
 5. Load-failure safety: `disk_prog_load`'s `load_error` prints + `ret`s; the store is still
    `new_prog`-empty so the trailing `run_prog` is a no-op → we land at `Ok`.
 
@@ -79,7 +79,7 @@ BIOS hosts. Nothing in [disk/init.asm](../init.asm) changes.
 - **IN (cheap, recommended):** **silent empty-file** — a 0-byte `AUTOEXEC.BAS` should skip
   silently (one extra check: EOF-as-first-byte ⇒ empty program, no error), matching stock.
 - **FOLLOW-ON (separate milestone):** **ASCII-saved `.bas` support.** Stock runs ASCII
-  `AUTOEXEC.BAS`; ours rejects non-`$FF` first bytes ([cload.asm:384](../../basic/cload.asm#L384)).
+  `AUTOEXEC.BAS`; ours rejects non-`$FF` first bytes ([cload.asm:859](../../basic/cload.asm#L384)).
   This is a *general* `LOAD` gap (tokenise-on-load) affecting `LOAD"x"`, `RUN"x"` AND autorun —
   bigger than this feature and best fixed once for all three. Track separately; not in this cut.
 

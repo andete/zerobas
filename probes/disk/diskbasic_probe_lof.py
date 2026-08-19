@@ -213,12 +213,12 @@ CASES = [
                        'OPEN "ZQ.DAT" AS #1',
                        "PRINT LOF(1)"], "ZQ      DAT")),
     # 🔴 THE ONE MEASURED CELL AGREES WITH TWO DIFFERENT RULES. `rand_put` reads
-    # 256, and `OPEN … AS #1` with no LEN= defaults reclen to 256 (files.asm:618),
+    # 256, and `OPEN … AS #1` with no LEN= defaults reclen to 256 (files.asm:583),
     # so 256 is BOTH `recno * reclen` (1 x 256) AND "one 256-byte sector". A fix
     # aimed with the wrong one would reproduce that cell perfectly and be wrong
     # everywhere else. LEN=16 predicts 16 under the first rule, 256 under the
     # second. (LEN=16, not LEN=10: zerobas requires a power-of-two reclen
-    # (files.asm:313), so LEN=10 would measure the LEN= parser instead.)
+    # (files.asm:256), so LEN=10 would measure the LEN= parser instead.)
     ("rnd_put_len",  (['OPEN "ZQ.DAT" AS #1 LEN=16',
                        "FIELD #1,16 AS A$",
                        'LSET A$="X":PUT #1,1',

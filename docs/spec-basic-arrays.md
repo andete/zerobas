@@ -496,7 +496,7 @@ in RAM, `A`=result, `CF`=absent, under DI) exactly as the math tenants do.
   the type coercion (reusing the `var_store_fac`/`var_load_fac` value-field codec —
   int16 for type 2, `LDIR` of `elsize` for 4/8), and raises on the result code
   (`Subscript out of range` / `Illegal function call`).
-- The array-vs-function `(`-peek after `var_name_key` (interp.asm:279 / expr.asm:551)
+- The array-vs-function `(`-peek after `var_name_key` (interp.asm:586 / expr.asm:543)
   stays in main — it is 2–3 instructions per site.
 
 **Sub-ROM page-0 tenant `ary_engine`** (the bulk, ~400–600 B, pure-RAM leaf):

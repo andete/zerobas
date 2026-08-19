@@ -79,8 +79,8 @@ listed here so the walk is auditable rather than asserted.
 
 | site | shape | in this slice? |
 |---|---|---|
-| [`basic/field.asm:298`](../basic/field.asm:298) `exf_item` | `call eval` / `call check_expr_errors` / `call get_byte_arg` | ✅ **folded** — 9 B → 3 B, **behaviour-identical** (it already had the right order; D-FLDWIDTH put it there) |
-| [`basic/screen.asm:161`](../basic/screen.asm:161) `ex_width` | `call eval` / inline `TMISMATCH` / `call get_byte_arg` | ✅ **folded** — 13 B → 3 B, and `dfe-ovfdiv`/`dfe-ovfsqr` change |
+| [`basic/field.asm:310`](../basic/field.asm:310) `exf_item` | `call eval` / `call check_expr_errors` / `call get_byte_arg` | ✅ **folded** — 9 B → 3 B, **behaviour-identical** (it already had the right order; D-FLDWIDTH put it there) |
+| [`basic/screen.asm:231`](../basic/screen.asm:231) `ex_width` | `call eval` / inline `TMISMATCH` / `call get_byte_arg` | ✅ **folded** — 13 B → 3 B, and `dfe-ovfdiv`/`dfe-ovfsqr` change |
 | [`basic/clear.asm:64`](../basic/clear.asm:64) `ex_clear` | `call eval` / inline `TMISMATCH` / `call get_int16_checked` | ✅ **folded** — 13 B → 3 B, and `cl-ovfdiv` changes. **A DIFFERENT COERCION**, which is why the helper has two entry points |
 | [`basic/missing.asm:237`](../basic/missing.asm:237) `loc_next` | `call eval` / inline `TMISMATCH` / the whole two-stage check **written out** | ❌ **DECLINED, WITH ITS READING TAKEN** — §6.6 |
 | [`basic/float-arith.asm:1289`](../basic/float-arith.asm:1289) `eval_chan` | `call eval` / `TMISMATCH` / **conditional** coercion / `jp check_expr_errors` | ❌ different shape: the coercion is SKIPPED on a mismatch by design (D-BADFNUM §6) |

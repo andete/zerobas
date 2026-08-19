@@ -49,7 +49,7 @@ Three consequences shape this packet:
    `INTERVAL ON` and `ON INTERVAL=10 GOSUB 100` byte-identically to the
    reference, because it already has `INT` and `VAL`. Re-verified 2026-07-26.
 2. **No RAM work.** `ZTI_INTERVAL = 0`, `ZINTVAL` and `ZINTCNT` are already
-   equated in [`basic/sysvars.inc:817,844,845`](../basic/sysvars.inc) and already
+   equated in [`basic/sysvars.inc:1123,844,845`](../basic/sysvars.inc) and already
    cleared by `trap_init`. They were allocated for INTERVAL as the original T1
    and never re-used.
 3. **A poll stanza already existed and was deleted.** `7a91fd1` wrote it;
@@ -243,7 +243,7 @@ the same shape, one comparison cheaper, and it is *why* `S_starves_main` starves
 
 **Correction 2 — the `event_poll` fast-out must know about INTERVAL.** The
 current fast-out returns when `TRAPENA == 0 && TRAPSVC == 0`
-([`basic/traps.asm:62-73`](../basic/traps.asm)). `TRAPENA` counts only **ON**
+([`basic/traps.asm:64-73`](../basic/traps.asm)). `TRAPENA` counts only **ON**
 traps, so with INTERVAL the sole trap and it **STOPped**, both are zero, the poll
 never runs and the counter freezes — which `P_on_reloads` falsifies. The gate
 grows a third term: `ld hl,(ZINTVAL) / ld a,h / or l / jr nz,ep_live` (~7 B, one

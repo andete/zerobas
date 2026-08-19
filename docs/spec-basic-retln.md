@@ -19,12 +19,12 @@ page 0 **3910 B** free.
 
 D-LNREF already made the **crunch** correct: `40 RETURN 30` stores
 `<8E> <0E><1E><00>` byte-identically on all three sides. `ex_return`
-([`basic/program.asm:1089`](../basic/program.asm:1089)) never advances `HL` past
+([`basic/program.asm:1369`](../basic/program.asm:1369)) never advances `HL` past
 the `RETURN` token, so the `$0E` sits in the token stream unread.
 
 Unlike the four editor verbs D-KWGAP4 re-filed as blocked, `RETURN` **already has
 a `stmt_table` row and a handler**. Verified at `6efafed`: `ex_return` is
-dispatched from `stmt_table` ([`basic/interp.asm:214`](../basic/interp.asm:214))
+dispatched from `stmt_table` ([`basic/interp.asm:266`](../basic/interp.asm:266))
 and lives at `$7897`, main-ROM page 1. So this is an edit to an existing handler
 — no new dispatch row, and none of the 3 B/row page-1 cost D-KWGAP4's knife K5
 measured.

@@ -22,7 +22,7 @@ here.
 Every length battery reads `("stored_line", TXTTAB)` — omsx_repl dereferences the
 BASIC text base and returns the first stored line's **exact bytes**. `REM` keeps
 the rest of its line verbatim on both machines
-([`basic/tokenise.inc:99`](../basic/tokenise.inc:99)/[`:181`](../basic/tokenise.inc:181)),
+([`basic/tokenise.inc:164`](../basic/tokenise.inc:164)/[`:181`](../basic/tokenise.inc:276)),
 so `20 REM` + filler stores one token plus the surviving filler and the
 truncation point is **counted**, not inferred from a proxy variable.
 
@@ -68,7 +68,7 @@ plateau above it as its own evidence.
 ## 2. 🔴 The crunched line is the real defect, and it is live TODAY
 
 The tokeniser **expands**. A double literal is `DBL_TOKEN` + 8 value bytes
-([`basic/sysvars.inc:288`](../basic/sysvars.inc:288),
+([`basic/sysvars.inc:287`](../basic/sysvars.inc:287),
 [`sub/tkfloat.asm`](../sub/tkfloat.asm) `tkf_double`), so the two characters `0#`
 become **nine bytes** — 4.5×. zerobas's `TOKBUF` is **96 bytes** (`$E160..$E1BF`)
 and [`basic/tokenise.inc`](../basic/tokenise.inc) bounds its writes **nowhere**.
@@ -161,7 +161,7 @@ Only the `corrupt`-shaped rows, which read the damage, separate them.
 
 ## 3. The third consumer agrees — measured, not assumed
 
-`ascii_read_lines` ([`basic/files.asm:1461`](../basic/files.asm:1461)) bounds an
+`ascii_read_lines` ([`basic/files.asm:1580`](../basic/files.asm:1580)) bounds an
 ASCII-LOADed line with the same idiom and the same constant as the keyboard
 reader. That is a reason to *expect* agreement, not a measurement of it, and the
 reference's ASCII loader is not obliged to share its editor's ceiling. The

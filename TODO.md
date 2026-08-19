@@ -485,11 +485,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       be 25 bespoke edits across ~19,000 lines (only 6 of 30 share a data model)
       plus a re-run of each one's emulator gate — see spec §10, and re-open it
       with evidence if a runner is ever actually caught by one.
-- [ ] 📌 **`file:LINE` CITATIONS ARE UNMAINTAINED AND BROADLY ROTTED — 1994 OF
-      THEM, AND NO GATE READS ONE.** Filed 2026-08-19 by D-DEFTYPEDOC's follow-up
-      sweep, which found a drifted anchor by READING and then found the class by
-      MACHINE. **Denominator machine-produced, not hand-listed**: 1994 `file:LINE`
-      citations across 924 tracked text files, into 318 distinct targets.
+- [ ] 📌 **`file:LINE` CITATIONS ARE UNMAINTAINED AND BROADLY ROTTED — ONLY
+      31% OF THEM WERE STILL CORRECT, AND NO GATE READS ONE.** Filed 2026-08-19
+      by D-DEFTYPEDOC's follow-up sweep, which found a drifted anchor by READING
+      and then found the class by MACHINE.
+      ✅ **MEASURED REPO-WIDE 2026-08-19, and 594 REPAIRED** — see the audit
+      block below. **Denominator machine-produced, not hand-listed**: 1994
+      `file:LINE` citations across 924 tracked text files, into 318 distinct
+      targets; **1392 resolve to a tracked file** and are decidable (the rest are
+      prose-relative or name no tracked path).
+
+      | verdict, whole tree | n |
+      |---|---|
+      | STILL CORRECT | **426** |
+      | REPAIRABLE (unique content match) — **all 594 fixed** | **594** |
+      | CONTENT GONE (cited code deleted since) | **258** |
+      | AMBIGUOUS (cited line too generic to locate) | **93** |
+      | out of range even when written | **10** |
+      | cited a blank line / target absent at birth | **11** |
+
+      🔴 **426 of 1392 is 31%.** The original filing said "broadly rotted" on the
+      evidence of a 212-anchor window; that was a rule claiming more than its
+      evidence, so the whole tree was measured rather than the phrase softened.
+      It turned out to UNDERSTATE the problem.
       Restricted to the five source files `7aadd36`..`840ed59` rewrote
       (`basic/interp.asm`, `basic/kwtable.inc`, `basic/sysvars.inc`,
       `basic/usr.asm`, `sub/deftype.asm`): **212 unique citations, of which 87
@@ -515,6 +533,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       repaired anchor now lands on exactly the content its citing commit pointed
       at. That is a repair WITHIN the convention, not a change to it; option (b)
       below is still open and still the human's call.
+      ✅ **THEN ALL 594 REPO-WIDE** (`scratchpad/anchor_audit_all.py`): 832 textual
+      occurrences across 176 files, verified **594/594** by the same invariant.
+      ⚠️ **A REPAIR MAY ONLY TOUCH PROSE, AND THAT IS ENFORCED, NOT HOPED.** The
+      applier locates each citation inside a COMMENT or STRING span (`tokenize`
+      for Python, first `;` for asm) and refuses anywhere else — a first, blunter
+      guard rejected 17 legitimate ones sitting in docstrings, so it was replaced
+      with the exact one rather than left to reject good repairs. **Zero live-code
+      edits**, and the ROMs stayed byte-identical through both passes.
       ⚠️ **THE 18 AND THE 8 ARE DELIBERATELY NOT TOUCHED.** The 18 point at code
       that no longer exists (`err_overflow` msgtab rows, `TMISMATCH` reads,
       `fre_illegalfn_lc`), so moving a number cannot fix them — the prose around
@@ -4529,7 +4555,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `CLEAR 300,TXTTAB+1000` both references have **148** free bytes and refuse
       a 32-byte line with `Out of memory`; zerobas has **646**, stores it, and
       prints nothing — `CLEAR`'s HIMEM argument does not reach the store check
-      at [`sub/lineedit.asm:115`](sub/lineedit.asm:115), which compares
+      at [`sub/lineedit.asm:139`](sub/lineedit.asm:139), which compares
       `PRGEND + size` against a fixed `$BB00`. **Pinned** as `crf-oomsay` /
       `crf-oomlst`.
       🔴 **AND IT IS WHY D-DOTGAPS' OWN RULE HAS NO EMULATOR GATE.** No typed row
@@ -4951,7 +4977,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       NOT propagate control flow (dropping that = **482 B / 35 labels** over-pinned).
       🔴 **K1d PREDICTED RED AND MEASURED GREEN, and the green was the finding.** The
       tenant does NOT read those bytes at runtime: `cpt_round`
-      ([`sub/circleparse.asm:309`](sub/circleparse.asm:309)) only ever converts
+      ([`sub/circleparse.asm:345`](sub/circleparse.asm:345)) only ever converts
       `ratio*256` with `ratio <= 1`, so dexp <= 3 and the dexp==5 arm is **unreachable
       from the only tenant caller**. The pin is a CLOSURE-CONTRACT pin, not a live
       fault, and the spec says so. Separated by the K1/K1e knife PAIR, which also
@@ -5063,7 +5089,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔴 **THE GATE IS DECLINED, MEASURED — and the filed claims were RIGHT but
       pointed at the wrong risk.** "No content-reading gate at all" is true of the
       HOST side (zero tools read `build/disk.rom`'s bytes and judge them; one reads
-      all 16384 and only fingerprints them, `basic_probe_kwsweep.py:433`) and
+      all 16384 and only fingerprints them, `basic_probe_kwsweep.py:442`) and
       **irrelevant**, because `install-repack-machine.py` writes its absolute path
       into slot 3-1 and **four gate families execute every byte**. Corruption ×
       gate, six images: **6 of 6 caught**, every one by at least two gates — the
@@ -5439,7 +5465,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       AND 2 — **it does not move at all**, because `FCH_CTX $EA00..$EE63` is
       reserved statically whether or not a channel is open. Its 512 B per
       channel is **purely a save copy** of the single global `FSECTOR_BUF`
-      (`fch_save_active`/`fch_load_ctx`, [`basic/files.asm:994`](basic/files.asm:994));
+      (`fch_save_active`/`fch_load_ctx`, [`basic/files.asm:914`](basic/files.asm:914));
       the reference gets the same effect by treating the shared buffer as a
       **cache** — flush on switch away, re-read on switch back.
       **Sizing:** drop the save copy → at `FCH_CEIL=2` the table falls 1124 B →
@@ -6691,7 +6717,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔴 **ALL THREE FILED CLAIMS WERE THE WRONG SUBJECT.**
       * *"`float-acceptance` → `reg.C.if_skip_over_float`, likely the `$0E`/`ELSE`
         class"* — not the `$0E` class, not `tok_skip`'s float stride (which
-        strides `$1D` correctly, `basic/tokskip-body.inc:31`), not
+        strides `$1D` correctly, `basic/tokskip-body.inc:36`), not
         `if_skip_to_else`, **and not about floats**: the same line with an
         INTEGER literal breaks identically (`expk-ifelsei`, pinned as that
         battery's control and measured RED).
@@ -6795,7 +6821,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **THE TWO TYPE-CODE NAMESPACES SHOULD PROBABLY BECOME ONE.** Filed
       2026-08-01 by D-DEFSTR. The references use `3` for **both** the DEFtbl code
       and the variable-chain type byte, which makes `elsize == type` an identity
-      and [`elsize_from_type`](sub/arrays.asm:845) — plus ~7 call sites —
+      and [`elsize_from_type`](sub/arrays.asm:943) — plus ~7 call sites —
       deletable. zerobas uses `1` in the chain with a `1 → 3` map.
       ⚠️ The chain's stored type byte is **RAM-observable**, so this needs its own
       oracle-lock on that byte before anything moves; D-REHOME measured only that
@@ -7027,7 +7053,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **A `--say` row with no brackets cannot have a reading.**
       Found 2026-08-01 in D-NAMBLANK. `result_span_after_echo`
-      ([`probes/lib/omsx_repl.py:518`](probes/lib/omsx_repl.py:518)) returns the
+      ([`probes/lib/omsx_repl.py:1212`](probes/lib/omsx_repl.py:1212)) returns the
       text between the last `[` and its `]`, so a `SAY_ONLY` payload that prints
       no brackets reads `<none>` on **every** side — and sides that all failed
       compare EQUAL and report *agrees*. `basic_probe_lnblank.py`'s `dir-print`
@@ -7819,7 +7845,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] 🔴 **`err_verify` AND `brk_msg` ARE THE LAST TWO MAIN-RESIDENT MESSAGES,
       AND THEY ARE BLOCKED FOR TWO DIFFERENT REASONS.** Filed 2026-08-02 by
       D-MSGMIGRATE §6.2/§6.3, which measured both and declined both.
-      * `err_verify` (8 B): `verify_error` ([`basic/cload.asm:492`](basic/cload.asm:492))
+      * `err_verify` (8 B): `verify_error` ([`basic/cload.asm:580`](basic/cload.asm:580))
         is `ld hl,err_verify / jp print_msg` with **no `ld (ERRFLG),a`**. Adding
         one costs 5 B to save 8 -- a net 3 B not worth taking blind, because it
         also makes `PRINT ERR` read 20 after a `CLOAD?` mismatch, which is an
@@ -8151,10 +8177,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         controls (hex / string / REM / variable name) already measured.
       Sites fixed: `parse_lineno` + `dl_store`
       ([`basic/program.asm:200`](basic/program.asm:200)) and `bl_acc` + `bl_done`
-      ([`basic/tokenise.inc:444`](basic/tokenise.inc:444)) — two copies of the
+      ([`basic/tokenise.inc:630`](basic/tokenise.inc:630)) — two copies of the
       same lookahead **on purpose**: they live in different ROMs (the crunch body
       is evicted to the sub-ROM), so no call could be shared. `mrg_storeline`
-      ([`basic/files.asm:1593`](basic/files.asm:1593)) reaches the storage path
+      ([`basic/files.asm:1620`](basic/files.asm:1620)) reaches the storage path
       through `dispatch_line` and is covered by construction.
       ⚠️ **A blank is only transparent when the run ENDS IN A DIGIT.** A greedy
       skip gives the right line number and the wrong body, which is why the scan

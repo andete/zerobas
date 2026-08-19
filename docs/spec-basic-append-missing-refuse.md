@@ -22,11 +22,11 @@ exist:
   `/tmp` disk image after it exits and the `dir` column reads **`absent`**.
 
 zerobas creates the file and opens the channel, because
-[`basic/fat.asm:286`](../basic/fat.asm:286) does `jp c,fat_io_create` on a
+[`basic/fat.asm:282`](../basic/fat.asm:282) does `jp c,fat_io_create` on a
 `fat_find` miss.
 
 ⚠️ **A COMMENT STATES THE DEFECT AS SETTLED PARITY, AND ITS CITATION CANNOT
-REACH THE CASE.** [`basic/fat.asm:270`](../basic/fat.asm:270) says *"A missing
+REACH THE CASE.** [`basic/fat.asm:266`](../basic/fat.asm:266) says *"A missing
 file is created (append == create)"* and the paragraph cites
 `disk_probe_append.py` for CF-3300 parity. **Verified myself before writing this
 spec:** that probe's sequence is
@@ -34,7 +34,7 @@ spec:** that probe's sequence is
 ([`probes/disk/disk_probe_append.py:9`](../probes/disk/disk_probe_append.py:9)) —
 it creates the file with OUTPUT first and only ever appends to an **existing**
 one. The parity claim is TRUE for the Ctrl-Z resume rule it measured and simply
-does not reach the missing-file case. [`basic/PROVENANCE.md:2182`](../basic/PROVENANCE.md:2182)
+does not reach the missing-file case. [`basic/PROVENANCE.md:2588`](../basic/PROVENANCE.md:2588)
 repeats it (*"a missing file tail-calls `fat_io_create`"*); both must be fixed.
 
 ## 2. The error CLASS — TRACED, because that is the load-bearing question
@@ -43,10 +43,10 @@ The TODO asks the fix to confirm the class rather than assume it. The trace:
 
 ```
 fat_io_append   fat_find miss -> Cy=1 -> (this slice) ret c
-  files.asm:386   call fat_io_append
-  files.asm:393   oo_done: pop de / pop hl   (neither touches flags)
-  files.asm:396   jr c,oo_fail
-  files.asm:419   oo_fail: FCH_MODES[ch]=0, FCH_MODE=0, FCH_ACTIVE=0
+  files.asm:304   call fat_io_append
+  files.asm:311   oo_done: pop de / pop hl   (neither touches flags)
+  files.asm:314   jr c,oo_fail
+  files.asm:335   oo_fail: FCH_MODES[ch]=0, FCH_MODE=0, FCH_ACTIVE=0
   files.asm:430   jp load_error
   bload.asm:162   load_error: TAPIOF, ERRMARK=$EE, print err_io = "load error"
 ```
@@ -82,16 +82,16 @@ one of those two is wrong.
 |---|---|---|---|---|
 | 1 | [`fatio-body.inc:30`](../basic/fatio-body.inc:30) `fat_io_open` (OPEN FOR INPUT, LOAD, RUN, MERGE, BLOAD) | Cy=1 → error | refuses | ✅ correct |
 | 2 | [`fat-delete-body.inc:33`](../basic/fat-delete-body.inc:33) `KILL` | Cy=1 → error | refuses | ✅ correct |
-| 3 | [`files.asm:1269`](../basic/files.asm:1269) `NAME`'s old file | Cy=1 → error | refuses | ✅ correct |
-| 4 | [`cload.asm:871`](../basic/cload.asm:871) cassette-side find | Cy=1 → error | — | ✅ correct |
+| 3 | [`files.asm:1331`](../basic/files.asm:1331) `NAME`'s old file | Cy=1 → error | refuses | ✅ correct |
+| 4 | [`cload.asm:1068`](../basic/cload.asm:1068) cassette-side find | Cy=1 → error | — | ✅ correct |
 | 5 | [`sub/fatprim.asm:148`](../sub/fatprim.asm:148) tenant dispatch | marshals Cy back | — | ✅ transport, not policy |
 | 6 | [`randio-body.inc:72`](../basic/randio-body.inc:72) `fat_rand_open` → `fro_create` | **creates** | `rand_new`: ref `dir` = **0**, i.e. the reference CREATES | ✅ **intentional** |
-| 7 | [`fat.asm:286`](../basic/fat.asm:286) `fat_io_append` | **creates** | `append_new`: ref `dir` = **absent** | 🔴 **the defect** |
+| 7 | [`fat.asm:282`](../basic/fat.asm:282) `fat_io_append` | **creates** | `append_new`: ref `dir` = **absent** | 🔴 **the defect** |
 
 The other `fat_io_create` callers do not consult a miss at all and are creates by
-definition: `oo_create` (OPEN FOR OUTPUT, [`files.asm:383`](../basic/files.asm:383))
-and `disk_write_begin` (SAVE / BSAVE, [`sv-diskwr.inc:30`](../basic/sv-diskwr.inc:30)).
-`pch_disk` ([`print.asm:412`](../basic/print.asm:412)) calls `fat_io_putbyte`, not
+definition: `oo_create` (OPEN FOR OUTPUT, [`files.asm:301`](../basic/files.asm:301))
+and `disk_write_begin` (SAVE / BSAVE, [`sv-diskwr.inc:35`](../basic/sv-diskwr.inc:35)).
+`pch_disk` ([`print.asm:480`](../basic/print.asm:480)) calls `fat_io_putbyte`, not
 create — it is not a create site despite the comment in
 [`fatiocreate-body.inc:11`](../basic/fatiocreate-body.inc:11) listing it as a
 resident consumer.
@@ -101,14 +101,14 @@ is not collateral: the reference genuinely creates on a RANDOM open of a missing
 file, so the two sites must stay DIFFERENT and a "make miss = error everywhere"
 sweep would be a regression.
 
-`fat_io_append` itself has ONE caller, `oo_append` ([`files.asm:386`](../basic/files.asm:386)).
+`fat_io_append` itself has ONE caller, `oo_append` ([`files.asm:304`](../basic/files.asm:304)).
 The body edit is in `fat.asm`'s own text, not in `fatiocreate-body.inc` (which has
 two homes, `basic/fat.asm` + `sub/save.asm`), so this lands in the resident main
 ROM only.
 
 ## 4. The change
 
-**[`basic/fat.asm:286`](../basic/fat.asm:286)** — one instruction:
+**[`basic/fat.asm:282`](../basic/fat.asm:282)** — one instruction:
 
 ```asm
                 call    fat_find
@@ -120,9 +120,9 @@ Cy=1 propagates unchanged through `oo_done`'s two `pop`s (neither affects flags)
 to `jr c,oo_fail`, which releases the claimed channel slot and clears
 `FCH_MODES[ch]` / `FCH_MODE` / `FCH_ACTIVE` before `jp load_error`. That is the
 same disposition `fat_mount` failure already takes two lines above
-([`fat.asm:283`](../basic/fat.asm:283) `ret c`), so no new state is left dirty.
+([`fat.asm:279`](../basic/fat.asm:279) `ret c`), so no new state is left dirty.
 
-**[`basic/fat.asm:270`](../basic/fat.asm:270)** — the comment, rewritten to state
+**[`basic/fat.asm:266`](../basic/fat.asm:266)** — the comment, rewritten to state
 the measured rule and to say what the cited probe actually covers:
 
 > A MISSING file is REFUSED (Cy=1 → `oo_fail` → `load error`), matching the
@@ -131,7 +131,7 @@ the measured rule and to say what the cited probe actually covers:
 > parity claim below covers the Ctrl-Z resume rule on an EXISTING file only — it
 > creates its file with OUTPUT first and never appends to a missing one.
 
-**[`basic/PROVENANCE.md:2182`](../basic/PROVENANCE.md:2182)** — *"a missing file
+**[`basic/PROVENANCE.md:2588`](../basic/PROVENANCE.md:2588)** — *"a missing file
 tail-calls `fat_io_create`"* corrected to the refusal, with the same
 scope-of-citation note, plus a line in the section's Divergences paragraph.
 

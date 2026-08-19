@@ -132,14 +132,14 @@ for n = 0..4:
 
 **D-T2-1 — read the trigger via the published BIOS `GTTRIG` ($00D8), not inlined port
 I/O.** Rationale: it is the same published contract our `STRIG(n)` *function* already
-uses ([`basic/expr.asm:1022`](../basic/expr.asm)), it keeps the code BIOS-agnostic (the
+uses ([`basic/expr.asm:1039`](../basic/expr.asm)), it keeps the code BIOS-agnostic (the
 standing rule — [[cbios-target-cf3300-oracle]]), and it is a page-0 BIOS entry, so it is
 a plain `call`, **not** a `CALSLT` (the VBLANK ban stands). Cost: register-transparency
 now needs `IX`/`IY` pushed as well (`GTTRIG` is documented "Registers: All"), on the
 armed path only.
 
 **The PSG-latch race, and its fix.** `GTTRIG(1..4)` selects PSG register 15 and reads 14.
-Our own PSG writes are already `DI`-guarded ([`basic/sound.asm:73`](../basic/sound.asm),
+Our own PSG writes are already `DI`-guarded ([`basic/sound.asm:71`](../basic/sound.asm),
 the audio-slice-3 fix), and `play_service` runs later in the *same* ISR, so neither can
 interleave. The one remaining hole is the **mainline `STRIG(n)`/`STICK(n)` function
 reader**, which calls `GTTRIG`/`GTSTCK` un-guarded: a VBLANK landing between its latch

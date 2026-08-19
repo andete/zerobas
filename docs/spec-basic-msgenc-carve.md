@@ -242,7 +242,7 @@ the error print path — but none of them is a *decoder* test.
 * **Assert the clobber contract**, don't claim it: `print_msg` must preserve
   exactly what `print_string` preserved. A refactor inherits clobber contracts
   [[refactor-inherits-clobber-contracts]], and the abort path is depth-sensitive
-  (D-CUR-D, [`basic/arrays.asm:92`](../basic/arrays.asm:92)).
+  (D-CUR-D, [`basic/arrays.asm:95`](../basic/arrays.asm:95)).
 * **The lean cart must stay byte-identical** — `tools/check_reloc.py` gates it.
   Everything here is gated `IF ROM_BASE < $4000`; the lean build keeps plain
   strings and `print_string`. This is the established pattern already used by

@@ -151,7 +151,7 @@ mode re-applies that mode's recorded default. Both already agree.
 
 ## 3. What zerobas does today — five divergences, every one SILENT
 
-[`basic/screen.asm:169`](../basic/screen.asm:169) evaluates the argument, runs it
+[`basic/screen.asm:223`](../basic/screen.asm:223) evaluates the argument, runs it
 through `get_byte_arg` (whose whole domain is 0..255), then writes `LINLEN`, a
 per-mode default and calls `CHGMOD` **unconditionally**. There is no bound
 anywhere and no correct mode-dependence.

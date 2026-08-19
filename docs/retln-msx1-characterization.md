@@ -261,7 +261,7 @@ plausible one that happens to be 5 bytes more expensive.
 
 ## 4. What zerobas does today
 
-`ex_return` ([`basic/program.asm:1089`](../basic/program.asm:1089)) pops the
+`ex_return` ([`basic/program.asm:1369`](../basic/program.asm:1369)) pops the
 frame and never advances `HL` past the `RETURN` token at all, so **every**
 argument is invisible to it. That single fact explains all twelve divergent rows:
 the branch never happens (` 20  0 ` where the reference branches), no error is

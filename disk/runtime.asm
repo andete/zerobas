@@ -608,7 +608,7 @@ dos_handoff:
 ;       (init.asm did page0_ram_in), so we page the main BIOS ROM back in from EXPTBL[0].
 ;   (ii) cursor-home: CSRY ($F3DC) := 1, CSRX ($F3DD) := 1 (documented work-area sysvars).
 ; STAY-DI (OI-3 §5.3): the caller (init.asm) holds DI across the whole page-0-RAM handoff
-; until MSXDOS.SYS is entered (init.asm:286); we restore page 0 but do NOT `ei` here, to
+; until MSXDOS.SYS is entered (init.asm:294); we restore page 0 but do NOT `ei` here, to
 ; avoid an interrupt firing mid-handoff while $0038 is not yet the BIOS handler.
 ; MUST preserve IX = $F195 (DRVA_DPB, required into MSXDOS.SYS, §8.31/M18) -- FILVRM does
 ; not contractually preserve IX -> push/pop guards it.

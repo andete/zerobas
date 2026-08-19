@@ -24,7 +24,7 @@ measurement table, a falsification log and a wall accounting that would swamp it
 `10 ON ERROR GOTO 100 : 20 CLEAR : 30 B=SQR(-1)` — the CF-3300/VG-8020 prints
 `Illegal function call in 30` (the handler never runs); zerobas traps and runs
 the handler. `MAXFILES=1` behaves identically (it ends in `jp clr_done`, i.e. a
-verbatim `CLEAR` tail — [`basic/files.asm:1471`](../basic/files.asm:1471)).
+verbatim `CLEAR` tail — [`basic/files.asm:1467`](../basic/files.asm:1467)).
 
 It owns three of `chancost-characterize`'s four filed divergences:
 `clr_disarm`, `mf_disarm`, and — since S-FCH-2 — `err_badchan`, whose line 20
@@ -134,16 +134,16 @@ runs *before* the arm cannot suppress anything.
 
 ## 4. The fix — ONE site, net **0 bytes**
 
-`vars_reset` ([`basic/arrays.asm:207`](../basic/arrays.asm:207), low region
+`vars_reset` ([`basic/arrays.asm:285`](../basic/arrays.asm:285), low region
 `$3D6B`) is exactly the routine the reference's rule names: "the variable world
 was reset". Its call sites are, in full:
 
 | caller | reached by |
 |---|---|
-| `new_prog` ([`basic/program.asm:256`](../basic/program.asm:256)) | `NEW`, cold `init`, `LOAD` |
-| `run_prog` ([`basic/program.asm:275`](../basic/program.asm:275)) | `RUN` |
+| `new_prog` ([`basic/program.asm:285`](../basic/program.asm:285)) | `NEW`, cold `init`, `LOAD` |
+| `run_prog` ([`basic/program.asm:300`](../basic/program.asm:300)) | `RUN` |
 | `clr_done` ([`basic/clear.asm:93`](../basic/clear.asm:93)) | `CLEAR` — and `MAXFILES`, via `jp clr_done` |
-| `relink` ([`basic/lineedit-body.inc:224`](../basic/lineedit-body.inc:224), and the sub-ROM tenant [`sub/lineedit.asm:271`](../sub/lineedit.asm:271)) | every program EDIT, `MERGE`, `CLOAD`/`LOAD` |
+| `relink` ([`basic/lineedit-body.inc:217`](../basic/lineedit-body.inc:217), and the sub-ROM tenant [`sub/lineedit.asm:642`](../sub/lineedit.asm:642)) | every program EDIT, `MERGE`, `CLOAD`/`LOAD` |
 
 That set is the measured set, 1:1. So the fix is not an addition — it is a
 **MOVE**: `run_prog`'s existing `ONELIN:=0` goes down into `vars_reset`, where
@@ -157,7 +157,7 @@ vars_reset:
                 ...                         ; MAXFILES/EDIT all funnel through here
 ```
 
-and `run_prog` ([`basic/program.asm:296`](../basic/program.asm:296)) loses its
+and `run_prog` ([`basic/program.asm:319`](../basic/program.asm:319)) loses its
 now-redundant `ld hl,0 / ld (ONELIN),hl` (6 B), since it calls `vars_reset` a few
 instructions earlier.
 
@@ -169,7 +169,7 @@ instructions earlier.
   in-slot (it is low-region resident, page 0 is always mapped), so a repack-build
   program edit — which runs the *tenant's* relink — disarms without a marshalling
   change. No sub-ROM byte moves.
-* **`init` keeps its explicit `ONELIN:=0`** ([`basic/interp.asm:43`](../basic/interp.asm:43)).
+* **`init` keeps its explicit `ONELIN:=0`** ([`basic/interp.asm:52`](../basic/interp.asm:52)).
   It is reachable-redundant (init → `new_prog` → `jp vars_reset`), but that
   redundancy rests on an ordering invariant documented three routines away, and 3
   bytes of page 1 is not worth resting a power-on-RAM-garbage guarantee on.

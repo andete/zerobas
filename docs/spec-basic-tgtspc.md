@@ -56,7 +56,7 @@ And two rows are the BOUNDARY, measured rather than assumed — see §3.2.
 
 ## 2. What is wrong, in one sentence
 
-`tgt_parse` (`basic/vars.asm:242`) tests for the subscript with a bare
+`tgt_parse` (`basic/vars.asm:279`) tests for the subscript with a bare
 `ld a,(hl)` immediately after `var_name_key`, so its `(` must be **lexically
 contiguous**: `A (1)` resolves as the scalar `A`, and the ` (1)` then reaches
 statement position as **Syntax error** — at all nine surfaces at once.
@@ -73,14 +73,14 @@ all say `tgt_parse` has **seven** call sites. Walked
 
 | # | site | file:line | statement |
 |---|---|---|---|
-| 1 | `ex_next` | `basic/program.asm:1641` | `NEXT` |
-| 2 | `ex_read` | `basic/program.asm:1821` | `READ` |
+| 1 | `ex_next` | `basic/program.asm:1665` | `NEXT` |
+| 2 | `ex_read` | `basic/program.asm:1845` | `READ` |
 | 3 | `inpc_vloop` | `basic/input.asm:102` | console `INPUT`, **numeric** arm |
 | 4 | `inpc_vstr` | `basic/input.asm:127` | console `INPUT`, **string** arm |
 | 5 | `inpc_line` | `basic/input.asm:200` | `LINE INPUT` |
-| 6 | `ex_mid_stmt` | `basic/str-engine.asm:968` | `MID$(<var>,n,m) =` |
+| 6 | `ex_mid_stmt` | `basic/str-engine.asm:1014` | `MID$(<var>,n,m) =` |
 | 7 | `inp_readvar` | `basic/files.asm:708` | `INPUT #n` / `LINE INPUT #n` |
-| 8 | `tgt_parse_fld` | `basic/field.asm:189` | → `FIELD … AS` (`field.asm:288`) |
+| 8 | `tgt_parse_fld` | `basic/field.asm:201` | → `FIELD … AS` (`field.asm:288`) |
 | | | | → `LSET` / `RSET` (`field.asm:384`) |
 
 **EIGHT `call tgt_parse` instructions, NINE statement surfaces.** The filed list

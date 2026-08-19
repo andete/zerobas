@@ -69,7 +69,7 @@ Two facts fall out, and they redirect the fix:
   is a breakpoint on `done` that snapshots and exits. Fix direction #1 in the TODO is,
   on inspection, already satisfied inside the emulator.
 * **F-2 — the only non-deterministic element in the whole path is the HOST.**
-  [`omsx_session.py:202`](../probes/disk/omsx_session.py:202) bounds each boot with
+  [`omsx_session.py:208`](../probes/disk/omsx_session.py:208) bounds each boot with
   `deadline = time.time() + timeout` and **SIGKILLs the process group** on expiry.
   That kill is **silent**: `run_job_raw` returns whatever lines exist, and a
   host-killed run is byte-for-byte indistinguishable, to every caller, from
@@ -88,7 +88,7 @@ Probed on openMSX 21.0 (2026-07-30, this session):
   emulation: a 0.25 s realtime heartbeat fired at host `t=0.251 s` with the machine
   already at emulated `t=33.669 s` (≈134× realtime on this host).
 * **`reverse start` is already active in every probe run**
-  ([`omsx_session.py:97`](../probes/disk/omsx_session.py:97)) and is recording ≈1
+  ([`omsx_session.py:103`](../probes/disk/omsx_session.py:103)) and is recording ≈1
   snapshot per emulated second (`reverse status` at t=8 listed 8 snapshots).
 * **`reverse savereplay <path>` works**, producing a replayable `.omr` (7.9 KB at t=8).
 * `auto_save_replay` did **not** write a file at `interval 2.0` over 12 host seconds.
@@ -133,7 +133,7 @@ on which boot wedged. Nothing is nested; the innermost cap is nearly the outermo
 Prompted by the user asking whether the wedge is really pty exhaustion (§2.4), I
 measured the audio path instead of arguing from the note. openMSX exposes
 `sound_driver`, an **enumeration `{null sdl}`**, defaulting to `sdl`. The preamble
-([`omsx_session.py:92`](../probes/disk/omsx_session.py:92)) sets `renderer none` but
+([`omsx_session.py:98`](../probes/disk/omsx_session.py:98)) sets `renderer none` but
 leaves the sound driver at `sdl`, so **every headless probe boot opens a real
 CoreAudio device it has no use for** — ≈6 boots per probe × 34 probes ≈ **200
 CoreAudio start/stop cycles per `make diskbasic-acceptance` run**.
@@ -194,7 +194,7 @@ it is **ours**, not the harness's.
 🔴 **The `MISALIGNED` refusal in
 [`disk_probe_diff.py:339-347`](../probes/disk/disk_probe_diff.py:339) and the
 `"MISALIGNED" in txt` test in
-[`disk_probe_rdblk_roundtrip.py:113`](../probes/disk/disk_probe_rdblk_roundtrip.py:113)
+[`disk_probe_rdblk_roundtrip.py:119`](../probes/disk/disk_probe_rdblk_roundtrip.py:119)
 stay exactly as strict as they are.** No change may let a misaligned capture reach a
 numeric memory-diff result. §6 falsifies this explicitly (F3).
 
@@ -231,7 +231,7 @@ existing consumers is nil. (The file is rewritten, not appended — the host onl
 needs the latest beat.)
 
 **(b) Wait on PROGRESS, not on elapsed seconds.** The host loop
-([`omsx_session.py:202`](../probes/disk/omsx_session.py:202)) currently kills at
+([`omsx_session.py:208`](../probes/disk/omsx_session.py:208)) currently kills at
 `time.time() + timeout`. It becomes: kill when the **emulated clock has not advanced**
 for `stall_timeout` host seconds (default 20 s — ≈2700× the measured 7 ms of host time
 per emulated second on this host), with the existing `timeout` retained **unchanged as
@@ -294,8 +294,8 @@ the refusal to print any diff are **unchanged in both classes**. The one-sided
 keeping its existing `"never reached occurrence"` wording (two consumers match on it).
 
 Consumers that key on `rc == 2`
-([`disk_bdos_acceptance.py:193`](../probes/disk/disk_bdos_acceptance.py:193),
-[`disk_bdos_cbios_selfcheck.py:136`](../probes/disk/disk_bdos_cbios_selfcheck.py:136))
+([`disk_bdos_acceptance.py:199`](../probes/disk/disk_bdos_acceptance.py:199),
+[`disk_bdos_cbios_selfcheck.py:142`](../probes/disk/disk_bdos_cbios_selfcheck.py:142))
 are widened to `rc in (2, 3)` so they do not rest on text matching alone.
 
 ### 4.3 `disk_probe_rdblk_roundtrip.py` — bounded, LOUD retry on the apparatus class only

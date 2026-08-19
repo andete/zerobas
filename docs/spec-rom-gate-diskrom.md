@@ -55,7 +55,7 @@ and `tests/`, classified by what it actually opens.
 | `tools/pad_rom.py` (Makefile:232) | **length only** | **YES** — exact 16384, refuses SHORT and EMPTY |
 | `tools/install-repack-machine.py` | no — `os.path.abspath` into the machine XML | — |
 | `tools/install-openmsx-machine.py` | no — path + `os.path.isfile` | — |
-| `probes/basic/basic_probe_kwsweep.py:433` | **all 16384**, `sha256[:12]` | **NO** — a report fingerprint, printed so a concurrent `make` cannot silently re-target a measurement |
+| `probes/basic/basic_probe_kwsweep.py:442` | **all 16384**, `sha256[:12]` | **NO** — a report fingerprint, printed so a concurrent `make` cannot silently re-target a measurement |
 | `tests/test_getdpb.py` and every other `tests/test_*.py` | no — **re-assembles `disk/disk.asm` into `/tmp`** | (SOURCE reader) |
 | `probes/disk/wrblk_perf.py` | no — re-assembles, optionally at a git ref | (SOURCE reader) |
 | `probes/disk/disk_probe_diskrom_crossvendor.py` | other vendors' ROMs, not ours | — |
@@ -171,7 +171,7 @@ pass — and the directory check passes too, because a machine that cannot write
 also cannot create `NOSUCH.DAT`.
 
 ⚠️ **The probe's own comment already names this class and closed only one instance
-of it.** `disk_probe_fat_error_disposition.py:108`:
+of it.** `disk_probe_fat_error_disposition.py:221`:
 
 > *"With an empty drive every case fails in `fat_mount` and never reaches
 > `fat_find` at all — so the whole battery measured the MOUNT miss while the

@@ -177,7 +177,7 @@ rulebook** — because a rulebook must name what it forbids.
 The forbidden thing is not *bytes in a document*. It is **how the bytes were
 obtained**. The identical byte string is forbidden when lifted from a ROM code
 region and legal when observed through a documented interface — and
-`docs/clean-room-audit.md:495` adjudicates exactly that, in the project's own
+`docs/clean-room-audit.md:508` adjudicates exactly that, in the project's own
 voice, for a 5-byte hex run:
 
 > *"The `D8 19 3E 40 0A` cycle is observed CONOUT-call/VRAM output, not stock
@@ -259,7 +259,7 @@ by hand against the 2026-07-07 rubric, all 24 are legal: ours
 data layout (DRVTBL, DPB, an FCB filename), a jump **vector** (call-target class),
 or an observed value (`D8 3E 40` screen output).
 
-**One is a review candidate, not a finding:** `provider-oracle-scope.md:685`
+**One is a review candidate, not a finding:** `provider-oracle-scope.md:686`
 renders 16 bytes of MSXDOS.SYS's entry-vector header inside a *byte-identical*
 oracle claim (our BDOS `$27` load equals the on-disk file). That is the legal
 "read as an oracle" form on its face, and the judgement
@@ -505,7 +505,7 @@ five right** ([[filed-justification-is-a-claim]]).
 
 * **Did not build a general raw-byte rule** — declined on §2.2's proof, with the
   three-corpus re-open bar in §3.1. The backstop is the human full-verify trail.
-* **Did not turn `provider-oracle-scope.md:685` into a finding** (§2.8). It is a
+* **Did not turn `provider-oracle-scope.md:686` into a finding** (§2.8). It is a
   review candidate for the next human paper trail; §2.2–§2.4 are the argument
   that a tool must not make that call.
 * **Did not change the K3b disposition** — see §6.2.

@@ -269,7 +269,7 @@ already editing.**
 
 ### 2.6 The second hit adjudicated, and why it is an allowlist entry
 
-`probes/lib/omsx_repl.py:315` renders 3 instructions of **C-BIOS**'s keyboard-buffer
+`probes/lib/omsx_repl.py:366` renders 3 instructions of **C-BIOS**'s keyboard-buffer
 path in a docstring explaining the D-LATCH2 injection window.
 
 C-BIOS is **not** a forbidden source: `allowed-sources.md` grades it **B /
@@ -484,7 +484,7 @@ d061cd58ad4cede795221fef1c0b0c9ae2c0d0c7a090f6a2b8fcef1154d9e28e  build/zerobas-
 | G6 | **690** files swept | 🔴 **692** — see below |
 | G7 | check 5 self-test 10/10 | **11/11** — a vector was added, see below |
 | G8 | 0 unallowlisted, **1** allowlisted | 🔴 **0 unallowlisted, 2 allowlisted** — see below |
-| G9 | 2 runs over the pre-remediation tree | **2** (`tier2-f338-default-spec.md:22` digest `1f6d05d3a66f`, `omsx_repl.py:315`), measured live at rc 1 before §3.5 |
+| G9 | 2 runs over the pre-remediation tree | **2** (`tier2-f338-default-spec.md:22` digest `1f6d05d3a66f`, `omsx_repl.py:366`), measured live at rc 1 before §3.5 |
 | G10–G13 | four hashes | **all four identical** |
 | G14 | 23 / 356 / 3869 / 2324 | **23 / 356 / 3869 / 2324** (sub walls read off the byte-identical image) |
 | G15 | abi 122+4, p0 718+15, p1 522+41 | **122+4, 718+15, 522+41** |

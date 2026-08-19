@@ -221,7 +221,7 @@ operand goes through `fac_to_int_addr` (checked — ERR 6 outside), then
 `ld hl,(JIFFY)` is two byte reads; the timer ISR can tick between them and hand
 back a torn value (`$00FF` → `$01FF`). The same applies to the store. Two bytes
 each, and the codebase already uses this idiom for exactly this reason
-(`sound.asm:88` — "single write, likewise atomic vs play_service"). BASIC always
+(`sound.asm:86` — "single write, likewise atomic vs play_service"). BASIC always
 runs with interrupts enabled, so an unconditional `ei` is safe here.
 
 *This is a correctness fix, not a fidelity claim:* a torn read is unobservable in

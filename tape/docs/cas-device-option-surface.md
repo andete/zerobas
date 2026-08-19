@@ -66,10 +66,10 @@ Evidence is `file:line` in `basic/`.
 | Verb (CAS: form) | Documented option surface | Status | Evidence / note |
 |---|---|:--:|---|
 | `BLOAD"CAS:name"` | `[,R]` | ✅ | `,R` load-and-run parsed via `parse_close_run` ([bload.asm](../../basic/bload.asm) `is_tape`); `,S` VRAM-from-tape cleanly rejected |
-| `BSAVE"CAS:name"` | `,start,end[,exec]` | ✅ | full binary header+data block ([save.asm:147](../../basic/save.asm:147) `bsv_is_cas`); `,S` VRAM-to-tape rejected (disk-only) |
+| `BSAVE"CAS:name"` | `,start,end[,exec]` | ✅ | full binary header+data block ([save.asm:144](../../basic/save.asm:144) `bsv_is_cas`); `,S` VRAM-to-tape rejected (disk-only) |
 | `CLOAD` | `["name"]` / `CLOAD?["name"]` | ✅ | bare + quoted-name load ✅; **name HONOURED** — `cas_open_match` finds the named file (case-sensitive, CF-3300-confirmed), skipping earlier files (Item A); **`CLOAD?` verify ✅** — compare-mode reader (`cas_put`) reports `Verify error`, non-destructively (Item B, 2026-07-09; [cload.asm](../../basic/cload.asm)) |
 | `CSAVE` | `["name"][,speed]` | ◐ | name ✅ (6-char, space-pad); **`,speed` (1=1200 / 2=2400) not parsed** — jumps straight to `tape_save_basic` ([save.asm](../../basic/save.asm) `do_csave`); baud instead comes from `SCREEN,,,baud` |
-| `LOAD"CAS:name"` | `[,R]` | ◐ | loads a tokenised program ✅; **`,R` parsed-past and ignored** — `dl_is_cas` skips to the closing quote and jumps to `do_tape_prog`, never checks `,R` ([cload.asm:87](../../basic/cload.asm:87)). Asymmetric with `BLOAD"CAS:",R` which *does* honour it |
+| `LOAD"CAS:name"` | `[,R]` | ◐ | loads a tokenised program ✅; **`,R` parsed-past and ignored** — `dl_is_cas` skips to the closing quote and jumps to `do_tape_prog`, never checks `,R` ([cload.asm:110](../../basic/cload.asm:110)). Asymmetric with `BLOAD"CAS:",R` which *does* honour it |
 | `SAVE"CAS:name"` | `[,A]` | ✅ | tokenised save ✅; **`,A` ASCII save ✅** (`cas_ascii_save`, [save.asm](../../basic/save.asm)) — `$EA` header + 256-byte blocks, buffer-then-flush tape sink (M2, 2026-07-08) |
 | `RUN"CAS:name"` | `[,R]` | ✅ | `do_run` now has a `CAS:` branch (dev_cmp, [cload.asm](../../basic/cload.asm) `do_run`) → `do_tape_prog` (tokenised OR $EA ASCII) → `run_prog` (2026-07-08) |
 | `MERGE"CAS:name"` | (ASCII) | ✅ | `ex_merge` `CAS:` branch → `merge_cas` ([files.asm](../../basic/files.asm)): $EA reader (cas_ascii_setup/drive) into the current program, NO new_prog (2026-07-08) |

@@ -214,7 +214,7 @@ never moved.
 
 A is 1 before the DELETE and 0 after it, and `CONT` raises ERR 17
 (*can't continue*). This is the `vars_reset` rule zerobas already implements for
-every other edit ([`basic/program.asm:388`](../basic/program.asm:388) — RUN,
+every other edit ([`basic/program.asm:328`](../basic/program.asm:328) — RUN,
 NEW, CLEAR/MAXFILES *and every program edit*), so `DELETE` joins the same tail
 rather than getting a rule of its own.
 

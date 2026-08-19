@@ -213,7 +213,7 @@ And the handlers are not small:
 * **`DELETE`** must unlink a range and rebuild the link fields — the smallest,
   and still not a handful of bytes.
 * **`LLIST`** is the cheapest: a printer sink already exists
-  ([`basic/print.asm:401`](../basic/print.asm:401), `PRDEST=1` → `LPTOUT`) and
+  ([`basic/print.asm:434`](../basic/print.asm:434), `PRDEST=1` → `LPTOUT`) and
   `ex_list` already exists, so the handler is "set the sink, jump to `ex_list`".
   ⚠️ **But it would inherit a filed defect:** `ex_list` ignores its argument
   (`LIST <range>` is a standing item), so `LLIST 10-20` would print the whole

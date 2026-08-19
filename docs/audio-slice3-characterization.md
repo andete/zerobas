@@ -155,7 +155,7 @@ The spec (§3.B) required page-0 residence to avoid the §4.3 hazard: "a VBLANK 
 while the CPU is inside a page-1 tenant CALSLT (e.g. `SIN(x)`) — main page 1 is
 switched out, so a page-1-resident servicer would be unmapped when the ISR reaches
 it." **That scenario is impossible here:** `subrom_call` wraps every page-1 tenant
-CALSLT in `di … call CALSLT … ei` ([subromcall.asm:67-69](../basic/subromcall.asm)) —
+CALSLT in `di … call CALSLT … ei` ([subromcall.asm:51-69](../basic/subromcall.asm)) —
 tenants run **fully under DI**, and a grep confirms **no page-1 tenant opts into EI**.
 So a VBLANK never fires while main page 1 is switched out. In every case where the
 ISR's `H.TIMI` actually runs:

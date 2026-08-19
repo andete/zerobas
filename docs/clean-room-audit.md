@@ -549,7 +549,7 @@ apply; the audit targets the span's **4 docs + the one probe** instead.
   Option A.** Two non-blocking notes: (1) the decoded material persists in git **history**
   (`971fc78`'s message + its committed-then-reverted state) — already flagged for the
   public-release history squash; (2) one out-of-scope, pre-existing item surfaced by the
-  tree-wide grep — [`provider-oracle-scope.md:1781`](../disk/docs/provider-oracle-scope.md)
+  tree-wide grep — [`provider-oracle-scope.md:1789`](../disk/docs/provider-oracle-scope.md)
   names individual *real*-ROM byte values (`$47B2` real `$AF`, …) in an ours-vs-real
   comparison; not part of the M12 span, but worth a separate provenance look before public
   release. When CONIN Option A is built it must cite ONLY the clean sources above and pin the

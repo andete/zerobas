@@ -218,14 +218,14 @@ def run():
     # ⚠️ AND A PENDING FPERR POISONS THE NEXT eval. Leaving it set made Group 7's
     # VPEEK run off into FAT code and die on an invalid opcode -- which is how this
     # port was found. The real interpreter zeroes FPERR at every statement start
-    # (basic/interp.asm:144), so the test does the same before continuing.
+    # (basic/interp.asm:196), so the test does the same before continuing.
     # -------------------------------------------------------------------------
     FPERR_DIVZERO = 2
     got, em = eval_expr(m, "5/0")
     fperr = m.mem[s["FPERR"]]
     cases.append(("5/0 result=0",   got,   0,             em, 0))
     cases.append(("5/0 FPERR=2",    fperr, FPERR_DIVZERO, 0,  0))
-    m.poke(s["FPERR"], 0)           # statement boundary, as interp.asm:144 does
+    m.poke(s["FPERR"], 0)           # statement boundary, as interp.asm:196 does
 
     # -------------------------------------------------------------------------
     # Group 7: VPEEK (Tier-2) — stub RDVRM

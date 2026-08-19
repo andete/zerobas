@@ -301,7 +301,7 @@ records a line that no longer exists): **the number typed, not the line stored.*
 
 ⚠️ **THE `zb` COLUMN OF `crf-oom` IS NOT A READING OF THE SAME EVENT** (§1.5).
 zerobas bounds a line store against **`TXTMAX`, an assembly-time constant**
-([`sub/lineedit.asm:115`](../sub/lineedit.asm:115)) rather than against HIMEM,
+([`sub/lineedit.asm:139`](../sub/lineedit.asm:139)) rather than against HIMEM,
 so no `CLEAR` and no typed row can reach its OOM path at all: `crf-oomlst` shows
 the line stored. The refusal is **bounded away, not measured**
 ([[gate-row-setup-can-expire]]), and gap 3's fix therefore cannot be gated by
@@ -342,7 +342,7 @@ Amending [`dotline-msx1-characterization.md`](dotline-msx1-characterization.md)
 | **D1** | a **refused (OOM) store does not write `.`** on zerobas; both references write the typed number | [`sub/lineedit.asm:143`](../sub/lineedit.asm:143) (`le_ok`, the success path) | `crf-oom` + `crf-oomctl` + `crf-oomlst` on both references |
 | **D2** | **`SAVE"CAS:name"` writes a TOKENISED tape**; both references write ASCII | [`basic/save.asm`](../basic/save.asm) `sav_is_cas` | the decoded tapes, §3.2 |
 | **D3** | **`LOAD"CAS:"` accepts a tokenised tape** on zerobas; the reference searches past it and never returns | [`basic/cload.asm`](../basic/cload.asm) header dispatch | §1.2 |
-| **D4** | a line store is bounded by the **constant `TXTMAX`**, not by HIMEM/`CLEAR`, so zerobas accepts lines both references refuse | [`sub/lineedit.asm:115`](../sub/lineedit.asm:115) | §4.2, `crf-oomlst` |
+| **D4** | a line store is bounded by the **constant `TXTMAX`**, not by HIMEM/`CLEAR`, so zerobas accepts lines both references refuse | [`sub/lineedit.asm:139`](../sub/lineedit.asm:139) | §4.2, `crf-oomlst` |
 
 D1 is this slice's subject. D2 explains one row of it and is a **save-format**
 question with its own probe consequences

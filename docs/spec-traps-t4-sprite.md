@@ -269,7 +269,7 @@ The miss row is the control: hit and miss disagreeing is what makes the reading
 worth anything.
 
 **Provenance:** `STATFL` `$F3E7` is a **published MSX work-area address** (already
-declared at [`sysvars.inc:620`](../basic/sysvars.inc) and already what zerobas's
+declared at [`sysvars.inc:685`](../basic/sysvars.inc) and already what zerobas's
 `VDP(8)` returns), *not* a C-BIOS internal. The arc spec's worry that option (a)
 "depends on a BIOS internal — weak provenance" does not survive contact: reading a
 documented system variable that the interrupt handler is *specified* to maintain is
@@ -284,7 +284,7 @@ reference ROM ([[no-reference-rom-disasm]] is untouched).
 ## 3. Where the poll lives — page 1, and why the T3 argument does NOT carry over
 
 `event_poll` is main **page-1** resident (`$5ADA`), reached through `htimi_guard`
-([`subromcall.asm:96`](../basic/subromcall.asm)), which **skips the frame entirely**
+([`subromcall.asm:97`](../basic/subromcall.asm)), which **skips the frame entirely**
 when a sub-ROM page-1 tenant owns page 1. T3 could not accept that and put
 `keytrap.asm` in the low region, because a skipped frame **leaks an undiverted
 keystroke into `KEYBUF`** — a correctness divergence, not a deferral.
@@ -337,7 +337,7 @@ documented deviation rather than pretended away.
 
 Nothing new. T4 uses the arc's existing `ZTRAP` machinery unchanged:
 
-- **entry `ZTI_SPRITE` = 2**, already allocated in [`sysvars.inc:806`](../basic/sysvars.inc);
+- **entry `ZTI_SPRITE` = 2**, already allocated in [`sysvars.inc:1125`](../basic/sysvars.inc);
 - **priority falls out for free.** `check_traps` scans ascending and `ZTI_SPRITE`
   (2) sits between STOP (1) and STRIG 0 (3) — exactly the arc spec's §5 enum order.
   No priority work, no scan-direction change (contrast T3's reversed KEY band);

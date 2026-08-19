@@ -232,7 +232,7 @@ The obvious close — rewrite the three to call `key_proc()` — is refused, on 
 same grounds as D-BYTEJUDGE's decline [[a-policy-that-forbids-by-provenance]].
 All three are cited as the apparatus behind landed specs:
 
-* `basic/PROVENANCE.md:3569` and `docs/spec-basic-input-devices.md:18` cite
+* `basic/PROVENANCE.md:3923` and `docs/spec-basic-input-devices.md:18` cite
   `i1_input_char2.py`;
 * `docs/spec-basic-input-devices.md:351` and `tape/PROVENANCE.md:88` cite
   `i2_frame.py`;

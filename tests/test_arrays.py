@@ -996,7 +996,7 @@ def run():
     m = make_machine()
     FRAME = 0x9500                      # scratch IX frame (mirrors strheap_gc's
                                         # own 22-byte layout, §"Own scratch
-                                        # frame" strheap.asm:393-396); only the
+                                        # frame" strheap.asm:553-396); only the
                                         # fields sg_walk_scalars/sg_visit's
                                         # MODE=0 path touch are seeded
     OLD_FRETOP = 0xE000

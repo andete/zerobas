@@ -63,7 +63,7 @@ written, reachable, and has never fired because the crunch never produced its
 
 * **R-R2 (`ELSE` is reached by its FIRST token byte)** — `ELSE` crunches to
   `COLON,$A1`, and `branch_lineno` is handed the **first** byte emitted
-  (`match_kw`, [`basic/tokenise.inc:571`](../basic/tokenise.inc:571)). So the
+  (`match_kw`, [`basic/tokenise.inc:576`](../basic/tokenise.inc:576)). So the
   test is `cp COLON`. This is safe because `branch_lineno` is reached **only**
   from the `match_kw` success path and `"ELSE"` is the **only** `kwtable.inc`
   entry whose first token byte is `COLON` (`tk_apos` writes its own `COLON`
@@ -109,7 +109,7 @@ written, reachable, and has never fired because the crunch never produced its
 ### 3.1 `basic/tokenise.inc` — sub-ROM only
 
 `basic/tokenise.inc` is `include`d by
-[`sub/sub.asm:213`](../sub/sub.asm:213) and nothing else, so both tokeniser
+[`sub/sub.asm:262`](../sub/sub.asm:262) and nothing else, so both tokeniser
 changes are **sub-ROM page-0** changes. Measured on a clean build of HEAD that
 region had **3986 B** free (⚠️ *not* the ~4008 B the project notes carry — that
 figure predates a later slice, and it was re-measured here rather than quoted);
@@ -170,7 +170,7 @@ observe.
 ### 3.3 What this change does NOT do
 
 * **`RETURN <line>` stays unimplemented.** `ex_return`
-  ([`basic/program.asm:1089`](../basic/program.asm:1089)) pops the frame and
+  ([`basic/program.asm:1366`](../basic/program.asm:1366)) pops the frame and
   never reads its argument. After this change the argument is stored as `$0E`
   and still ignored, so `lnrd-return` **stays divergent** and is pinned (§5).
   Filed, not fixed — it is a statement feature, not a crunch rule.

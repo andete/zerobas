@@ -276,7 +276,7 @@ layer. Audit each for hidden page-1 reverse-deps before finalizing.
   (repack block), crunch entries to [basic/kwtable.inc](../basic/kwtable.inc) (repack-only,
   like the string-engine tokens). Values **captured** by a new crunch probe (targets above),
   cross-checked vs MSX2 TH Table 2.20 — no disasm.
-- **Evaluator:** extend `ev_f_ff` ([basic/expr.asm:601](../basic/expr.asm:601)) with a new
+- **Evaluator:** extend `ev_f_ff` ([basic/expr.asm:787](../basic/expr.asm:787)) with a new
   **numeric-math group**: recognize the seven selectors, parse `( <numeric expr> )`
   leaving the arg in FAC/FACTYP (as a float factor is evaluated in the repack build), apply
   the function, set the result FACTYP + DE. This is a new arg path distinct from `ev_ff_arg`

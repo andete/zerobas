@@ -210,7 +210,7 @@ document whose whole claim was that it inferred nothing.
 
 ## 4. Design — `LOCATE`
 
-Model it on `ex_color` ([`screen.asm:104`](../basic/screen.asm:104)), which is
+Model it on `ex_color` ([`screen.asm:163`](../basic/screen.asm:163)), which is
 the same three-optional-comma-separated-argument parse and measures 100 B with
 *no* domain check and *no* clamp. Differences:
 
@@ -245,9 +245,9 @@ silently invalidating it.
 The one statement in the language that writes two lvalues, and the tree already
 has the pieces:
 
-- **`var_find_typed`** ([`vars.asm:320`](../basic/vars.asm:320)) returns
+- **`var_find_typed`** ([`vars.asm:504`](../basic/vars.asm:504)) returns
   `CF set, HL = entry address` and **does not allocate**.
-- **`var_alloc_or_find`** ([`vars.asm:360`](../basic/vars.asm:360)) allocates.
+- **`var_alloc_or_find`** ([`vars.asm:544`](../basic/vars.asm:544)) allocates.
 
 So the measured asymmetry (§3.3) is reproduced *directly by choosing the right
 routine per side*: **first operand → `var_alloc_or_find`, second operand →
@@ -267,7 +267,7 @@ matching the measured `SWAP A,Q(0)` acceptance.
 
 **S-MC-3 — DECIDED: reuse `ary_op0_resolve`.** It is already the shared
 address-returning entry into the array engine — `ev_f_varptr` calls it at
-[`expr.asm:2098`](../basic/expr.asm:2098) with `A` = type, `BC` = name key, `HL`
+[`expr.asm:1916`](../basic/expr.asm:1916) with `A` = type, `BC` = name key, `HL`
 = cursor at `'('`, and gets back `Z` with `DE` = the element address and `HL`
 past the `')'`; on `NZ` it has already mapped subscript-out-of-range /
 illegal-function-call / syntax onto `FPERR`, which is exactly the error surface
@@ -337,7 +337,7 @@ not a variant of the share.
 The flag is a byte, cleared by `NEW`, untouched by `RUN`, `END` and `TROFF`-less
 program end.
 
-The hook goes in `run_program`'s loop ([`program.asm:293`](../basic/program.asm:293)),
+The hook goes in `run_program`'s loop ([`program.asm:349`](../basic/program.asm:349)),
 on the **non-resume path only** — `rp_lp` reaches `rp_exec` two ways, and the
 measured behaviour distinguishes them exactly:
 
@@ -359,7 +359,7 @@ stored line", the condition a line-number decoration needs anyway.
 
 Add the RHS type check to the **string-lvalue** assignment path
 (`ex_let_str`, [`interp.asm:624`](../basic/interp.asm:624), and the array-element
-form `ex_let_arr_str`, [`arrays.asm:828`](../basic/arrays.asm:828)) so a numeric
+form `ex_let_arr_str`, [`arrays.asm:958`](../basic/arrays.asm:958)) so a numeric
 RHS raises `Type mismatch` instead of falling through to the parser. The
 numeric-lvalue mirror already does this correctly and is the model.
 
@@ -599,7 +599,7 @@ would have falsified it.* It was caught only because the gate was run.
   the §3.5 measurement cited at its definition. Zero bytes, and it is the one
   artefact that would flag the clamp if a function-key row is ever added.
 - **S-MC-3** ✅ **Reuse `ary_op0_resolve`** — the shared op=0 RESOLVE entry
-  `ev_f_varptr` itself calls ([`expr.asm:2098`](../basic/expr.asm:2098)): `Z`,
+  `ev_f_varptr` itself calls ([`expr.asm:1916`](../basic/expr.asm:1916)): `Z`,
   `DE` = element address, `HL` = cursor past `')'`, with subscript-out-of-range /
   illegal-function-call / syntax already mapped onto `FPERR`. It auto-dims,
   which is exactly the measured `SWAP A,Q(0)` acceptance. The 90–130 B estimate

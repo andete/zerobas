@@ -305,10 +305,10 @@ artifact) plus a full-ROM zero-run scan (own bytes, `disk.rom`):
 2. `$4488-$44C8` = the tail of `div9` (`fdc_div_nob`/`fdc_div_done`) + **all of `dskchg`
    ($448C) and `getdpb` ($448E-$44F3, 102 bytes, ending at `gdpb_popdone`+3)** — `getdpb` is
    itself a **canonical, load-bearing disk-ROM entry** (`$4016`, disk/init.asm:31, and also
-   called directly at disk/init.asm:579), so it is NOT a free-standing internal helper —
+   called directly at disk/init.asm:604), so it is NOT a free-standing internal helper —
    relocating it must repoint `$4016`'s `jp` target, which pasmo does automatically from the
    symbol (no hardcoded address anywhere in our source references `getdpb`/`dskchg` except the
-   two `jp`s in init.asm and the one `call` in init.asm:579 — confirmed by grep, all
+   two `jp`s in init.asm and the one `call` in init.asm:604 — confirmed by grep, all
    symbol-based).
    `$4462`/`$4465` themselves (RC-1's exact collision point) fall inside `fdc_di_save`
    (`$445B-$4465`) / `fdc_di_on` (`$4466-$446B`) — called from `dskio`'s three transfer sites

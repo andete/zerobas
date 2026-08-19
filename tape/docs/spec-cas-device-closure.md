@@ -40,7 +40,7 @@ after Tier 1 lands and we reassess.
 Technical Handbook; MSX-BASIC reference) plus this project's own code. No reference ROM
 read ([no-reference-rom-disasm](../../README.md)). BIOS entry-point contracts (`LPTOUT`
 `$00A5`, `CHPUT` `$00A2`) are from map.grauw.nl / the TH, already cited where implemented
-([tape.asm:574](../tape.asm:574)).
+([tape.asm:632](../tape.asm:632)).
 
 ---
 
@@ -50,7 +50,7 @@ read ([no-reference-rom-disasm](../../README.md)). BIOS entry-point contracts (`
 with `,R`, run it after loading (standard MSX; identical to the disk and to
 `BLOAD"CAS:",R`, which already honours `,R`).
 
-**Current behaviour (the gap).** `dl_is_cas` ([cload.asm:87](../../basic/cload.asm:87))
+**Current behaviour (the gap).** `dl_is_cas` ([cload.asm:110](../../basic/cload.asm:110))
 skips past the filename to the closing quote and jumps to `do_tape_prog`, **never parsing
 `,R`** — so `LOAD"CAS:x",R` loads but does not run. Asymmetric with `BLOAD"CAS:",R`
 ([bload.asm](../../basic/bload.asm) `is_tape` → `parse_close_run`).
@@ -115,12 +115,12 @@ error`. Gate cell reuses the tape round-trip probe with a speed assertion.
 `PRINT#n,…` / `PRINT#n,USING` then stream to the device. `LPT:` = printer, `CRT:` = screen
 (MSX-BASIC reference device-name table). Both are output-only (INPUT from `LPT:`/`CRT:` is
 an error). Their sinks already exist: `LPTOUT` `$00A5` (A = char, preserves A,
-[tape.asm:574](../tape.asm:574)) and `CHPUT` `$00A2` (A = char).
+[tape.asm:632](../tape.asm:632)) and `CHPUT` `$00A2` (A = char).
 
-**Current behaviour (the gap).** `do_open` ([files.asm:231](../../basic/files.asm:231))
+**Current behaviour (the gap).** `do_open` ([files.asm:180](../../basic/files.asm:180))
 calls `parse_disk_fcb` **unconditionally** — no device-prefix dispatch — so `OPEN"LPT:"`
 tries to open a colon-bearing disk file and fails. There is no per-channel notion of a
-device (non-disk) channel; `pchar` ([print.asm:206](../../basic/print.asm:206)) routes only
+device (non-disk) channel; `pchar` ([print.asm:396](../../basic/print.asm:396)) routes only
 screen (`PRDEST=0` → `CHPUT`) vs disk file (`PRDEST=1` → `fat_io_putbyte`).
 
 **Contract to implement.**
@@ -137,7 +137,7 @@ screen (`PRDEST=0` → `CHPUT`) vs disk file (`PRDEST=1` → `fat_io_putbyte`).
    (`FCH_MODES[ch]=2`, `FCH_DEVS[ch]=type`); **skip all fat.asm I/O** (no `fch_claim`, no
    `fat_io_open`, no context block — device channels own no 512-byte buffer). `LEN=` is
    rejected on a device channel.
-4. **PRINT# routing.** In the `PRINT#` selection ([print.asm:29](../../basic/print.asm:29)),
+4. **PRINT# routing.** In the `PRINT#` selection ([print.asm:70](../../basic/print.asm:70)),
    before `fch_select`, test `FCH_DEVS[ch]`: if nonzero it is a device channel — set
    `PRDEST=1` and a new mirror `PRDEV` = the device type, and **do not** call `fch_select`
    (no context load — there is none); just set the `FCH_MODE` mirror to 2. If zero, the

@@ -135,7 +135,7 @@ defect as *"one byte becomes a token"* and been wrong about its own size.
 🔴 **`nam-dot0` carries no blank at all and diverges anyway.** MS-BASIC allows a
 period *inside* an identifier (`MY.VAR`), so `B.5` is the variable `B.5` and
 `B .5` is the same variable reached across a blank. zerobas' `tk_loop` dispatch
-([`basic/tokenise.inc:70`](../basic/tokenise.inc:70)) looks exactly one character
+([`basic/tokenise.inc:83`](../basic/tokenise.inc:83)) looks exactly one character
 past a `.` and hands it to `tk_float` on a digit — for a reason that has nothing
 to do with the name state, and that no `TKNAME` change can reach.
 
@@ -186,7 +186,7 @@ own. zerobas reads `0`: its assignment went somewhere else entirely.
 🔴 **`dir-print` had been unable to produce a reading since the day it was
 written, and it would have reported `agrees`.** Every `SAY_ONLY` row is read by
 `result_span_after_echo`, which returns the text between the last `[` and its `]`
-([`probes/lib/omsx_repl.py:518`](../probes/lib/omsx_repl.py:518)). Its payload was
+([`probes/lib/omsx_repl.py:1212`](../probes/lib/omsx_repl.py:1212)). Its payload was
 a bare `PRINT 1 0`, which prints no brackets — so the reading is `<none>` on
 *every* side, and three sides that all failed compare EQUAL.
 

@@ -74,7 +74,7 @@ gdate_handler:          ; MUST assemble at $553C
 ```
 ### 5b. The collision and net-zero relocation
 `$553C` currently sits **inside `bdos_create_body`** (`$54B5`–`~$5585`), a Tier-1 BDOS
-file-create body that ours parked in the "`$5456-$5FE4` relocated-bodies gap" (`kernel.asm:54`).
+file-create body that ours parked in the "`$5456-$5FE4` relocated-bodies gap" (`kernel.asm:319`).
 That gap is free in *ours'* layout but the DOS kernel calls into it (`$553C`), so it was never
 truly free for DOS boot. The implementation must **vacate `$553C`** for `gdate_handler` and
 **re-place the displaced `bdos_create_body`** elsewhere using the project's established net-zero

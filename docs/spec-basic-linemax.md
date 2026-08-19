@@ -40,13 +40,13 @@ So this spec has two deliverables, and the second is the load-bearing one.
 
 `LINEMAX` becomes **255** (254 characters + the 0 terminator), matching the
 measured reference ceiling. Both readers are unchanged in *shape*:
-[`repl.asm:75`](../basic/repl.asm:75) and
-[`files.asm:1461`](../basic/files.asm:1461) keep
+[`repl.asm:125`](../basic/repl.asm:125) and
+[`files.asm:1580`](../basic/files.asm:1580) keep
 `cp (LINEBUF+LINEMAX-1) & $FF`.
 
 **The one-page trick survives and is not the obstacle the item assumed.** That
 compare, and `read_line`'s backspace `cp LINEBUF & $FF`, and console INPUT's
-`ld h,high LINEBUF` ([`input.asm:239`](../basic/input.asm:239)/[`:258`](../basic/input.asm:258)),
+`ld h,high LINEBUF` ([`input.asm:258`](../basic/input.asm:258)/[`:258`](../basic/input.asm:277)),
 are all correct for **any** `LINEBUF` at a page base with `LINEMAX ≤ 256`.
 `$BB00 + 254 = $BBFE` is one page. The constraint is *page-aligned base, ≤ 256
 bytes* — not ≤ 96. No reader logic changes.
@@ -72,7 +72,7 @@ storing/executing nothing. `TOKBUF` is sized **315** bytes (314 + terminator).
 [`tokenise.inc`](../basic/tokenise.inc) is expensive and easy to miss one. A
 single test at the top of `tk_loop` is enough if the buffer carries slack for the
 largest single emission — a double literal is 9 bytes
-([`sysvars.inc:288`](../basic/sysvars.inc:288)), the largest of any one step — so
+([`sysvars.inc:287`](../basic/sysvars.inc:287)), the largest of any one step — so
 one compare per source character, with 9 bytes of headroom, covers every path.
 The tokeniser body is a sub-ROM tenant in the repack build, which is *not* the
 tight wall.

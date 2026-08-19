@@ -102,7 +102,7 @@ exactly — more failure surface than (B).
   `dw $0038, int_h` → `dw $0038, INT_H_HIRAM`.
 - **`disk/init.asm`** — add the `LDIR` install of the template to `INT_H_HIRAM`, wired
   into the existing init sequence (near `build_wa_table`); add the `INT_H_HIRAM` equate
-  and `INT_H_LEN`. Update the stale comment at `init.asm:409` ("page 1 stays mapped").
+  and `INT_H_LEN`. Update the stale comment at `init.asm:463` ("page 1 stays mapped").
 - **`disk/equates.inc`/`init.asm`** — `INT_H_HIRAM equ $DDAE` (proposed; see below).
 
 ## High-RAM address choice

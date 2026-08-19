@@ -67,9 +67,9 @@ components already live where the space is:
 > [`decision-missing-class-slicing.md`](decision-missing-class-slicing.md) §4 for
 > the as-built, including the two near-misses in its gate.
 
-`exec_stmt` ([`basic/interp.asm:133`](../basic/interp.asm:133)) **was** a linear
+`exec_stmt` ([`basic/interp.asm:160`](../basic/interp.asm:160)) **was** a linear
 `cp TOKEN` / `jp z,handler` chain of 67 entries — 5 B per statement token, 335 B
-total. `exp_loop` ([`basic/print.asm:107`](../basic/print.asm:107)) and the `$FF`
+total. `exp_loop` ([`basic/print.asm:151`](../basic/print.asm:151)) and the `$FF`
 function dispatch have the same shape. So the marginal main-ROM price of a new
 statement keyword is **5 B before it does anything**, against a 13 B budget.
 

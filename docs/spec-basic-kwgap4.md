@@ -99,7 +99,7 @@ db      5,"LLIST",1,LLIST_TOKEN       ; 8 B
 ```
 
 ⚠️ **This is a SUB-ROM change and the main ROM must not move a byte.**
-`kwtable.inc` is `include`d by [`sub/sub.asm:299`](../sub/sub.asm:299) **and
+`kwtable.inc` is `include`d by [`sub/sub.asm:355`](../sub/sub.asm:355) **and
 nothing else** — the resident copy was dropped in the sub-ROM arc's wave 3, and
 `tools/check_kwtable_identity.py` asserts single-copy on every build. Both
 directions are data-driven off that one table (`match_kw` crunches, `detok_kw`
@@ -129,7 +129,7 @@ main page 1 **6 B** are **untouched** — asserted by hashing
   line number *and* every `$0E` reference including `ON..GOTO` lists; `AUTO` must
   drive the line editor, a sub-ROM page-1 tenant, from a main-ROM statement;
   `LLIST` is the cheapest (a printer sink exists at
-  [`basic/print.asm:401`](../basic/print.asm:401)) and would still inherit the
+  [`basic/print.asm:434`](../basic/print.asm:434)) and would still inherit the
   filed `ex_list`-ignores-its-argument defect. **Each is a slice, none is a table
   edit.** `kwgd-delete` and `kwgd-renum` are pinned so the day one lands, the
   gate says so.

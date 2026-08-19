@@ -39,7 +39,7 @@ that reason recorded anywhere?**
 
 ### 1.1 What check 1 and check 2 actually scan
 
-`TARGETS` at `tools/audit_citations.py:56` is three globs. Counted at `0a9bd89`:
+`TARGETS` at `tools/audit_citations.py:86` is three globs. Counted at `0a9bd89`:
 
 | target | glob | files |
 |---|---|---|
@@ -233,7 +233,7 @@ defect would have been paid for in prose — the §2.3 mistake, repeated.
 
 7 `[REVIEW]` headers today. Ran the tool at `4c14006` in the walk worktree:
 **the same 7 headers, same files, same names**, only the line numbers moved. And
-they were triaged — `docs/clean-room-audit.md:381` records
+they were triaged — `docs/clean-room-audit.md:480` records
 *"7 genuine advisory headers remain (structural headers whose bodies carry full
 citations — judged individually, all acceptable)"*, dated 2026-07-04.
 

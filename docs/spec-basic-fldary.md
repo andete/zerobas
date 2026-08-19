@@ -41,11 +41,11 @@ Measured, CF-3300:
 
 ## 2. What is wrong, in one sentence per site
 
-* **`ex_field`** ([`basic/field.asm:194`](../basic/field.asm)) — `call var_name_key`
+* **`ex_field`** ([`basic/field.asm:225`](../basic/field.asm)) — `call var_name_key`
   and then straight to `fld_add`. A `(` after the name is never peeked at, so the
   cursor stops on it, the following `cp ','` fails and the statement is
   `Syntax error`.
-* **`lrset_common`** ([`basic/field.asm:283`](../basic/field.asm)) — the identical
+* **`lrset_common`** ([`basic/field.asm:365`](../basic/field.asm)) — the identical
   shape, one `fld_find` later. ⚠️ **`RSET` shares this body with `LSET`**, so it is
   ONE parse site and is **not separately measurable even after the fix** (§10).
 * **`str_eval_arr`** ([`basic/arrays.asm:1028`](../basic/arrays.asm), **LOW region**)

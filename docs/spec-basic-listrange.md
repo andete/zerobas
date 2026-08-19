@@ -191,7 +191,7 @@ skip to the next line. Both exits reuse the link the loop has already pushed.
 ### 3.3 🔴 `list_walk` HAS THREE CALLERS AND A RANGE MUST NOT LEAK INTO TWO OF THEM
 
 `ex_list` is not the only caller: `ascii_save`
-([`basic/save.asm:227`](../basic/save.asm:227)) and `cas_ascii_save`
+([`basic/save.asm:239`](../basic/save.asm:239)) and `cas_ascii_save`
 ([`basic/save.asm:280`](../basic/save.asm:280)) drive the same walk to disk and
 to tape. Left unhandled, `LIST 20-30` followed by `SAVE"F",A` would silently
 write **two lines** — a data-loss bug in a verb this slice never mentions.
@@ -241,8 +241,8 @@ listrange are never in flight together.
    arm in `lineedit_tenant`'s selector.
 
 ⚠️ No `stmt_table` change: `LIST` already has its row
-([`basic/interp.asm:284`](../basic/interp.asm:284)) and is already declared in
-[`tests/test_stmt_dispatch.py:125`](../tests/test_stmt_dispatch.py:125), so that
+([`basic/interp.asm:357`](../basic/interp.asm:357)) and is already declared in
+[`tests/test_stmt_dispatch.py:134`](../tests/test_stmt_dispatch.py:134), so that
 gate will not fire for this slice.
 
 ## 5. Rows and pins

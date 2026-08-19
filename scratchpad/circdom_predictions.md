@@ -12,7 +12,7 @@ with r > 20. Max aspect literal = 100 (→ ASPS 3); max ASPS in the corpus = 256
 
 `sub/graphics.asm:1362` (`gfx_circ_scale` header): *"Bounded-domain: `|v|*ASPS`
 assumed `<=65535` (true for `|v|<=255`, ASPS<=256 — the blessed r<=255 domain)"*.
-`sub/graphics.asm:908` repeats it and adds *"A radius far outside that domain may
+`sub/graphics.asm:1105` repeats it and adds *"A radius far outside that domain may
 mis-rasterise the arc mask (never crash)"*.
 
 Traced through the source, the enforcement is at **`sub/circleparse.asm:76-82`**

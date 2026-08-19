@@ -252,7 +252,7 @@ list from 30, or from whatever the previous listing left.
 
 ⚠️ **This is the one rule in the slice that is not free**, and §3 of the spec is
 where that is costed: "the last line printed" is known only inside the walk, and
-zerobas's walk (`list_walk`, [`basic/list.asm:122`](../basic/list.asm:122)) has
+zerobas's walk (`list_walk`, [`basic/list.asm:163`](../basic/list.asm:163)) has
 **three callers** — `ex_list` and the two ASCII-SAVE paths through `list_all`.
 D-LSTRNG's §3.3 found the mirror-image hazard in the same routine (a `LIST`
 range leaking into `SAVE",A"`); a `DOT` write placed in the walk would leak the
@@ -297,7 +297,7 @@ value the machine holds rather than one nothing has written yet.
 structurally blind here — after a `NEW` there is nothing to list either way —
 so this is a rule an implementation would have had to guess. It is also the
 opposite of `TRACEFLAG`, whose *only* writer besides its own statements is
-`new_prog` (sysvars.inc:1131); "NEW clears the editor's state" would have been
+`new_prog` (sysvars.inc:1215); "NEW clears the editor's state" would have been
 the natural assumption and it is wrong.
 
 🔴 **A DIRECT-MODE ERROR DOES NOT WRITE `.` — IT IS NOT `ERRLIN`'S 65535
@@ -482,4 +482,4 @@ The **cold** value is the one item still not measured, for the reason given here
   cassette support this probe does not have.
 * whether the cold **0** is a written value or power-on RAM. openMSX zero-fills
   RAM, so no emulator reading can tell; the same argument `init`'s ERR/ERL reset
-  already carries (`basic/interp.asm:41`).
+  already carries (`basic/interp.asm:51`).

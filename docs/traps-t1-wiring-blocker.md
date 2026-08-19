@@ -39,7 +39,7 @@ a byte-alignment-sensitive construct. Chain:
    on *survivable* sub-ROM bytes (boot is green); a carve/insert that shifts it onto *fatal*
    bytes trips the crash. Hence the **bounded** failure band — see the sweep below.
 
-The design comment at `main.asm:171` ("page-1 tenants run DI so the ISR never fires with
+The design comment at `main.asm:206` ("page-1 tenants run DI so the ISR never fires with
 page 1 switched out") states the intended invariant. **FATPRIM violates it** by CALSLTing an
 interrupt-enabling DSKIO.
 
@@ -228,7 +228,7 @@ byte-identity gate (both pass); only the live merged-machine acceptance catches 
    4 crossing addresses (and their preceding tables), looking for a table read/dispatch that
    computes an address by `ld l,idx` / `add a,l` / `jp (hl)` with a **fixed high byte** (no
    `adc h,0`), or a self-modifying `ld (nn),a` whose `nn` low byte is computed. Two known
-   `jp (hl)` sites: `bload.asm:130`, `files.asm:1494` (disk-path — likely NOT it since the
+   `jp (hl)` sites: `bload.asm:130`, `files.asm:1613` (disk-path — likely NOT it since the
    crash is broad; check the console/print and statement-walk paths first).
 2. Harden it (carry into the high byte, or `align` the table so it never crosses a page).
 3. THEN wire in traps.asm normally (seam + trap_init at ier_done/run_prog). The ZTRAP RAM
@@ -242,7 +242,7 @@ fails; remove the `nop` — it passes.
 
 Traced the actual boot crash of the failing merged machine:
 - Boot **reaches `show_title` ($4653) but never `repl` ($465A)** — it dies in `autoexec_run`
-  (interp.asm:62, between them), i.e. **while loading/running a program at boot** (AUTOEXEC).
+  (interp.asm:100, between them), i.e. **while loading/running a program at boot** (AUTOEXEC).
 - Machine ends **stuck looping at PC `$4C9D`, inside `ev_f`** (the expression factor
   evaluator, `ev_f`=$4C63). Deterministic (same PC at 11 s and as a breakpoint).
 - At the crash: **`IX = $4010`** — the eval token pointer is corrupted to a ROM address

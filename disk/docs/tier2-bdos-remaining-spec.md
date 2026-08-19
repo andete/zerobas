@@ -163,7 +163,7 @@ and the 2026-07-01 sweep pinned that no page-1 disk-ROM code is involved (`$0C` 
 kernel-internal, constant); (b) BUT "architecturally expected to ride proven
 primitives" has been wrong before — and the clock group is the cautionary tale: GDATE
 `$2A` needed a real page-1 handler at canonical `$553C` in OUR rom
-(`disk/kernel.asm:287`) while SDATE `$2B` needed nothing — so within one "group",
+(`disk/kernel.asm:454`) while SDATE `$2B` needed nothing — so within one "group",
 per-function page-1 entries can go either way; (c) Phase 1's WRBLK "write" extended
 BDOSX.BIN from 384 to 512 bytes — **inside its already-allocated 1024-B cluster**, so
 FAT allocation, dir-entry creation, and dir-entry rewrite have NEVER run through the

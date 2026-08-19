@@ -51,7 +51,7 @@ filed row green. See §4.1.
 
 `tkf_try_exponent` in [`sub/tkfloat.asm`](../sub/tkfloat.asm) — sub-ROM page 0,
 and the **only** copy: `basic/tokenise.inc` is `include`d by
-[`sub/sub.asm:209`](../sub/sub.asm:209) and nothing else, and `basic/float.asm`
+[`sub/sub.asm:262`](../sub/sub.asm:262) and nothing else, and `basic/float.asm`
 keeps no crunch. So this slice does not touch the main ROM at all (§4.2).
 
 `tke_fail` is today's rollback; its header says in as many words that the
@@ -234,7 +234,7 @@ calling a red row a regression) · `unit-test` 55/55 · `badfnum` 93 · `lof` 45
 missing `$0E` verbs, `CAS:` 7/8, the README, the `PROVENANCE.md` policy.
 
 One stale pointer found in passing and worth correcting with this slice, since it
-names this very routine: `basic/PROVENANCE.md:3134` cites the suffix-after-exponent
+names this very routine: `basic/PROVENANCE.md:3514` cites the suffix-after-exponent
 quirk as living in `basic/float.asm`'s `tkf_try_exponent` header — it moved to
 `sub/tkfloat.asm` in the sub-ROM wave-1 eviction.
 

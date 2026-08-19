@@ -105,7 +105,7 @@ Three descriptor **homes** (the GC root set, §5.2):
 - **`$`-var slot** — `STRTAB` slot becomes `[name0][name1][len:1][ptr:2]` = 5 B.
   `STRENTSZ = 5`, `STRSLOTS` unchanged (8), so `STRTAB` store = 40 B (was 536 B).
 - **String array element** — `[len:1][ptr:2]` = 3 B (was `1+STRMAX` = 65 B inline).
-  `elsize_from_type(1)` becomes **3**, not `1+STRMAX` (`sub/arrays.asm:407`). This
+  `elsize_from_type(1)` becomes **3**, not `1+STRMAX` (`sub/arrays.asm:943`). This
   shrinks string arrays dramatically and decouples them from STRMAX (§8, §15).
 - **Temp-descriptor stack entry** — `[len:1][ptr:2]` = 3 B (§6).
 

@@ -40,7 +40,7 @@ cannot read one either, for a different reason: it returns **one value**, and
 "which lines were listed" is a **set**.
 
 The readout used instead is **`screen_tail`**
-([`probes/lib/omsx_repl.py:539`](../probes/lib/omsx_repl.py:539)) — the rows
+([`probes/lib/omsx_repl.py:1233`](../probes/lib/omsx_repl.py:1233)) — the rows
 between the echoed command and the closing prompt, `|`-joined. It is not new
 (three probes already use it); what is new here is a third decode arm in
 `run_side`, `TAIL_ONLY`, a subset of `SAY_ONLY` that keeps all of that set's

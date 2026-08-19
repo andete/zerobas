@@ -198,7 +198,7 @@ WRBLK_NEXTCLUS  equ     $E7F6   ; shrink path: next cluster to free, saved acros
                                 ; fat_write_fat_entry call that frees the CURRENT one (word)
 ; M29 (tier2-m29-wrblk-position-cursor-spec.md) incremental position cursor --
 ; persists wrblk_position_ext's iterator ACROSS calls within one wrblk_body loop
-; (WRBLK_REC is strictly non-decreasing, kernel.asm:884) so a same-sector or
+; (WRBLK_REC is strictly non-decreasing, kernel.asm:913) so a same-sector or
 ; next-sector call can skip the from-head fat_open+re-walk. Cross-call lifetime
 ; WITHIN a single wrblk_body invocation only -- wrblk_body clears CURVALID once
 ; before wrblk_loop.
