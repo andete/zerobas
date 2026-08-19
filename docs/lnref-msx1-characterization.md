@@ -285,13 +285,22 @@ changed, and it is the same instrument that produced the original reading.
 ## 4. Byproducts of the walk — measured, filed, NOT fixed here
 
 * **`DEFINT` stores different bytes from the reference.** `20 DEFINT 10` reads
-  `<AC> <0F><0A>` on both references and `<97>INT <0F><0A>` on zerobas. This is
-  a *deliberate* zerobas design — [`basic/kwtable.inc:140`](../basic/kwtable.inc:140)
-  emits `DEF_TOKEN` + literal `"INT"` so `ex_def_type` sees the ASCII mnemonic —
-  and the same shape as `DEFSNG`/`DEFDBL`/`DEFSTR`, which have no entry at all.
-  Neither side arms line-number mode, so it is not this defect. The walk newly
-  pins the reference's own bytes: `DEFSTR $AB`, `DEFINT $AC`, `DEFSNG $AD`,
-  `DEFDBL $AE`.
+  `<AC> <0F><0A>` on both references and `<97>INT <0F><0A>` on zerobas. This was
+  a *deliberate* zerobas design — `basic/kwtable.inc` emitted `DEF_TOKEN` +
+  literal `"INT"` so `ex_def_type` could see an ASCII mnemonic — and the same
+  shape as `DEFSNG`/`DEFDBL`/`DEFSTR`, which have no entry at all. Neither side
+  arms line-number mode, so it is not this defect. The walk newly pins the
+  reference's own bytes: `DEFSTR $AB`, `DEFINT $AC`, `DEFSNG $AD`, `DEFDBL $AE`.
+  ✅ **FIXED 2026-08-18 — D-DEFINTTOK.** `DEFINT` now emits the reference's own
+  single-byte token, `$AC`, via a dedicated
+  [`basic/kwtable.inc`](../basic/kwtable.inc) row and
+  [`basic/usr.asm`](../basic/usr.asm) `ex_defint`; `20 DEFINT 10` reads
+  `<AC> <0F><0A>` on zerobas too now, matching this section's own pinned
+  reference bytes exactly. The measurement above stands as taken; only its
+  status changed. `DEFSNG`/`DEFDBL`/`DEFSTR` are unchanged and still filed —
+  `DEFSTR` additionally has its own, separate numeric-argument corruption
+  ([`docs/todo-staleness-sweep-2026-08.md`](todo-staleness-sweep-2026-08.md) §4.11),
+  out of this fix's scope.
 * **Twenty-five reference token bytes are now oracle-locked** for the words
   zerobas has no entry for — `RENUM $AA`, `DELETE $A8`, `AUTO $A9`, `LLIST $9E`,
   `LPRINT $9D`, `WAIT $96`, `FN $DE`, `COPY $D6`, `SET $D2`, `IPL $D5`,

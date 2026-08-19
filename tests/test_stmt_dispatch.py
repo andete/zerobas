@@ -116,6 +116,7 @@ EXPECTED = [
     ('OUT_TOKEN', 'ex_out'),
     ('CLEAR_TOKEN', 'ex_clear'),
     ('DEF_TOKEN', 'ex_def'),
+    ('DEFINT_TOKEN', 'ex_defint'),  # D-DEFINTTOK: DEFINT's own token ($AC)
     ('PRINT_TOKEN', 'ex_print'),
     ('CLS_TOKEN', 'ex_cls'),
     ('SCREEN_TOKEN', 'ex_screen'),

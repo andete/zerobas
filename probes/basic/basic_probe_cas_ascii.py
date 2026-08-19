@@ -235,10 +235,16 @@ def main() -> int:
     # Snake game -- the parens/AND/colon-dense IF lines below are its own,
     # verbatim), which genuinely truncated after line 50 with no read-ahead at
     # all and after line 110 under a single-buffer refill-on-drain (one block's
-    # tokenise cost late). (One line of the original, `DEFINT A-Z`, is left out
-    # here: it hits an unrelated, pre-existing tokeniser discrepancy between the
-    # bas_tokenise oracle and the runtime -- a separate bug, not this one -- so
-    # keeping it out of this assertion's content keeps a FAIL here unambiguous.)
+    # tokenise cost late). Line 10 now carries the original's own `DEFINT A-Z`
+    # again (restored 2026-08-18, D-DEFINTTOK): until then it was left out
+    # because it hit a genuine tokeniser discrepancy from the reference --
+    # zerobas emitted DEF_TOKEN + literal ASCII "INT" where the VG-8020 emits
+    # its own single-byte token, $AC (docs/lnref-msx1-characterization.md §4)
+    # -- unrelated to the read-ahead bug this assertion guards, so keeping it
+    # out kept a FAIL here unambiguous while that discrepancy was still open.
+    # D-DEFINTTOK closed it (basic/kwtable.inc's "DEFINT" row, basic/usr.asm
+    # `ex_defint`), so the line is back to matching the real Snake game's own
+    # source verbatim.
     # Deliberately denser synthetics (packing maximal complexity into every one
     # of 20 lines, ~1300 bytes / 6 blocks) can still outrun even this double
     # buffer -- that is a real, separate robustness ceiling (arbitrarily heavy
@@ -248,7 +254,7 @@ def main() -> int:
     # makes it a faithful regression guard instead of a moving target.
     print("Assertion 4 — 4-block ASCII load (>768 bytes, real-program density):")
     complex_lines = [
-        (10, 'SCREEN0:WIDTH40:KEYOFF:DIMBX(255),BY(255)'),
+        (10, 'SCREEN0:WIDTH40:KEYOFF:DEFINTA-Z:DIMBX(255),BY(255)'),
         (20, 'FORI=0TO39:VPOKEI,35:VPOKE920+I,35:NEXT'),
         (30, 'FORI=1TO22:VPOKEI*40,35:VPOKEI*40+39,35:NEXT'),
         (40, 'X=20:Y=12:DX=1:DY=0:H=0:T=0:VPOKEY*40+X,79:BX(0)=X:BY(0)=Y'),

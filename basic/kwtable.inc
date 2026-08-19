@@ -150,29 +150,57 @@ kwtable:
                 ; Phase 1: CLEAR [<strings>][,<himem>] (MSX2 TH Table 2.20).
                 db      5,"CLEAR",1,CLEAR_TOKEN
                 ; Phase 1: DEF USR / USR + screen verbs (MSX2 TH Table 2.20).
-                ; math pack slice 1a fallout: adding "INT" as a real keyword
-                ; (below) broke DEFINT specifically -- match_kw's linear,
+                ;
+                ; D-DEFINTTOK (2026-08-18): DEFINT gets its OWN single-byte
+                ; token now, $AC (DEFINT_TOKEN, basic/sysvars.inc), matching
+                ; the reference byte-for-byte: `20 DEFINT 10` crunches to
+                ; `<AC> <0F><0A>` on the Philips VG-8020 (oracle-pinned,
+                ; docs/lnref-msx1-characterization.md §4) and zerobas now
+                ; agrees. `ex_defint` (basic/usr.asm) dispatches on the token
+                ; and reaches the SAME range-list parser DEFSNG/DEFDBL/DEFSTR
+                ; use (sub/deftype.asm deftype_tenant), which skips straight
+                ; past the mnemonic-text dispatch those three still need --
+                ; there is no "INT" text in the buffer to parse for this
+                ; entry's call path, the dispatch token already said so. The
+                ; tenant tells the two callers apart by PEEKING at the byte one
+                ; below the cursor it is handed (no flag byte, no new ABI cell:
+                ; main page 1 had no room for one) -- see ex_defint's comment in
+                ; basic/usr.asm for why no false positive is reachable.
+                ;
+                ; History, for anyone diffing against an old build: this row
+                ; USED TO emit DEF_TOKEN + literal ASCII "INT" (four bytes, the
+                ; same shape a plain "DEF" match followed by copying the next
+                ; three letters would have produced) so ex_def_type's mnemonic
+                ; parser could read it -- a deliberate regression-preserving
+                ; workaround, not the reference's own byte shape. That was
+                ; itself standing in for an even older bug: before this row
+                ; existed at all, adding "INT" as a real keyword (math pack
+                ; slice 1a) broke DEFINT, because match_kw's linear,
                 ; boundary-free scan matched plain "DEF" (3 chars) first,
-                ; leaving "INT A-C" for the NEXT match_kw call to find, which
-                ; (now that INT is a keyword) tokenised it to $FF $85 instead
-                ; of leaving it as the literal ASCII "INT" ex_def_type expects
-                ; (usr.asm: "the mnemonics are NOT keyword tokens ... they
-                ; arrive as plain upcased ASCII"). Caught live by
-                ; float-acceptance's def.* cases regressing. Fix: match the
-                ; WHOLE "DEFINT" word as its own entry, EMITTING THE SAME
-                ; BYTES the old DEF+copied-name path produced (DEF_TOKEN then
-                ; literal 'I','N','T') -- so ex_def_type is untouched and the
-                ; crunched byte stream is identical to before this slice.
-                ; Placed BEFORE the plain "DEF" entry: match_kw stops at the
-                ; FIRST table entry that matches (no longest-match, no word-
-                ; boundary check), so DEFINT must be tried first or "DEF"
-                ; wins the first 3 chars and the collision reproduces. DEFSNG/
-                ; DEFDBL/DEFSTR do NOT collide (no "SNG"/"DBL"/"STR"-alone
-                ; keyword exists -- only "CSNG"/"CDBL" do, both requiring a
-                ; leading 'C' that DEF's suffix never has, and "STR$" needs a
-                ; trailing '$' DEFSTR's suffix never has), so no matching
-                ; entry is needed for them.
-                db      6,"DEFINT",4,DEF_TOKEN,"INT"
+                ; leaving "INT A-Z" for the NEXT match_kw call to find, which
+                ; (now that INT was a keyword) tokenised it to $FF $85 instead
+                ; of leaving it as literal ASCII. Both of those are gone now:
+                ; this row matches the WHOLE word and emits the real token
+                ; directly, so there is no "DEF" + copied-suffix path left to
+                ; collide with anything.
+                ;
+                ; ⚠️ STILL PLACED BEFORE THE PLAIN "DEF" ENTRY, AND STILL FOR
+                ; THE SAME REASON. match_kw stops at the FIRST table entry
+                ; that matches -- no longest-match, no word-boundary check --
+                ; so with DEFINT's entry emitting its own token now, table
+                ; order is MORE load-bearing than before, not less: if "DEF"
+                ; were tried first it would match the first 3 characters of
+                ; "DEFINT A-Z", tokenise to plain DEF_TOKEN, and leave "INT A-Z"
+                ; for the next match_kw call to mis-tokenise via the real "INT"
+                ; function keyword (exactly the math-pack-1a bug above, back
+                ; from the dead). DEFSNG/DEFDBL/DEFSTR still do NOT collide (no
+                ; "SNG"/"DBL"/"STR"-alone keyword exists -- only "CSNG"/"CDBL"
+                ; do, both requiring a leading 'C' that DEF's suffix never has,
+                ; and "STR$" needs a trailing '$' DEFSTR's suffix never has),
+                ; so they still need no matching entry of their own and still
+                ; fall through to the plain "DEF" row + ex_def_type's ASCII
+                ; mnemonic parse, unchanged.
+                db      6,"DEFINT",1,DEFINT_TOKEN
                 db      3,"DEF",1,DEF_TOKEN
                 db      3,"USR",1,USR_TOKEN
                 db      4,"LIST",1,LIST_TOKEN

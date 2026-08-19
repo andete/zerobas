@@ -328,6 +328,8 @@ stmt_table:
                 dw      ex_clear
                 db      DEF_TOKEN
                 dw      ex_def
+                db      DEFINT_TOKEN    ; D-DEFINTTOK: DEFINT's own token ($AC) --
+                dw      ex_defint       ; ex_def only sees DEF_TOKEN ($97), never this
                 db      PRINT_TOKEN
                 dw      ex_print
                 db      CLS_TOKEN

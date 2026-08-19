@@ -134,8 +134,13 @@ main page 1 **6 B** are **untouched** — asserted by hashing
   edit.** `kwgd-delete` and `kwgd-renum` are pinned so the day one lands, the
   gate says so.
 * **`LIST <range>` is not touched.** `lnrd-list` is the must-not-move cell.
-* **`RETURN <line>`, `DEFINT`'s bytes, and the other 20 tokenless words stay
-  filed.** `lnrx-lprint` and `lnrx-wait` are named in §4 as the controls that say
+* **`RETURN <line>` and the other 20 tokenless words stay filed.** (`DEFINT`'s
+  bytes, named here alongside them at the time this spec was written, are FIXED
+  separately — D-DEFINTTOK, 2026-08-18, `lnref-msx1-characterization.md` §4;
+  its `lnr-defint` probe row graduated out of `basic_probe_lnblank.py`'s
+  `INFORMATIONAL` set the same way `lnrx-lprint`/`-lpos`/`-lfiles` did below.
+  The K3/K4 knife log further down this file is a historical measurement and is
+  left as recorded.) `lnrx-lprint` and `lnrx-wait` are named in §4 as the controls that say
   four entries were added and not five.
 
 ## 4. Rows

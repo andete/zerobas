@@ -25,12 +25,43 @@
 ; skip_spaces is duplicated sub-locally (5 instructions); `upcase` and
 ; `is_letter` already exist in this page of the sub-ROM and are reused.
 ;
+; D-DEFINTTOK (2026-08-18) added a FOURTH edit, entirely at the top: a peek at
+; the byte below the handed-back cursor that lets `ex_defint` (basic/usr.asm)
+; reach this same tenant for DEFINT's own single-byte token ($AC) without a
+; mnemonic to parse, skipping straight to the range-list parser below.
+; DEFSNG/DEFDBL/DEFSTR still go through the original mnemonic dispatch
+; unchanged. No new memory-ABI cell was added for this -- main page 1 had no
+; spare bytes for the store+cold-boot-reset a flag byte would have cost -- see
+; ex_defint's own comment in basic/usr.asm for the full story and the
+; measurement.
+;
 ; Clean-room: this is our own code, relocated. No disassembly.
 
 deftype_tenant:
                 ld      hl,(DEFT_PTR)       ; the resident's token cursor
                 xor     a
                 ld      (DEFT_STATUS),a     ; 0 = ok until something rejects
+                ; D-DEFINTTOK: tell ex_defint's call from ex_def_type's WITHOUT
+                ; a memory-ABI flag byte (main page 1 had no room to spend
+                ; setting one -- basic/usr.asm's ex_defint comment has the
+                ; measurement) -- peek at the byte just below the handed-back
+                ; cursor. ex_defint only ever does `inc hl` past DEFINT_TOKEN
+                ; ($AC) before handing HL over, so that byte IS the token down
+                ; that path; ex_def_type's other caller (ex_def) only ever
+                ; leaves DEF_TOKEN ($97) or an ASCII space ($20) there, both
+                ; disjoint from $AC and from every mnemonic letter this
+                ; dispatch tests below -- no false positive is reachable.
+                ; Match -> load the int type code straight into C and skip to
+                ; the range-list parser; no match -> HL is restored and the
+                ; ordinary mnemonic dispatch runs unchanged.
+                dec     hl
+                ld      a,(hl)
+                inc     hl
+                cp      DEFINT_TOKEN
+                jr      nz,deftype_mnemonic
+                ld      c,2                 ; int (same literal edt_i loads below)
+                jp      edt_list
+deftype_mnemonic:
                 ld      a,(hl)
                 inc     hl
                 cp      'I'

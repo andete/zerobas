@@ -2829,18 +2829,27 @@ CASES = (NUM + BODY + LIT + DEC + EXP + EXPK + EXPW + EXPB + NAM + DOT + REF + L
 # Corrected in the slice that found it, and the lesson is that a graduation is a
 # DELETION FROM THIS LITERAL, never prose about one.
 #
-# `lnr-defint` is the same shape with a DELIBERATE cause: kwtable.inc:140 emits
-# DEF_TOKEN + literal "INT" on purpose so ex_def_type sees the ASCII mnemonic.
-# ⚠️ `lna-renum3`, `lna-auto2` AND `lna-delrng` LEFT THIS SET IN D-KWGAP4, and so
-# did the four `lnrx` + three `ref` rows for the same three words (they left via
-# KNOWN_DIVERGE, below). Their attribution argument was "the WORD is absent from
-# kwtable.inc, and they would still diverge with the $0E arm perfect" -- which is
-# precisely the thing D-KWGAP4 removed. They are ordinary gating rows now, and
-# `lna-auto2` is the one worth keeping an eye on: `AUTO 10,5`'s second argument
-# is an INCREMENT and is stored as $0E,5 anyway, so it is the row that says the
-# mechanism is a MODE over digit runs and not a typed line-number argument.
+# `lnr-defint` WAS the same shape with a DELIBERATE cause: kwtable.inc used to
+# emit DEF_TOKEN + literal "INT" on purpose so ex_def_type could see an ASCII
+# mnemonic. ⚠️ `lna-renum3`, `lna-auto2` AND `lna-delrng` LEFT THIS SET IN
+# D-KWGAP4, and so did the four `lnrx` + three `ref` rows for the same three
+# words (they left via KNOWN_DIVERGE, below). Their attribution argument was
+# "the WORD is absent from kwtable.inc, and they would still diverge with the
+# $0E arm perfect" -- which is precisely the thing D-KWGAP4 removed. They are
+# ordinary gating rows now, and `lna-auto2` is the one worth keeping an eye
+# on: `AUTO 10,5`'s second argument is an INCREMENT and is stored as $0E,5
+# anyway, so it is the row that says the mechanism is a MODE over digit runs
+# and not a typed line-number argument.
+#
+# ✅ `lnr-defint` LEFT TOO, IN D-DEFINTTOK (2026-08-18, DEFINT now crunches to
+# its own single-byte token, $AC, oracle-pinned against the Philips VG-8020 --
+# basic/kwtable.inc's "DEFINT" row, basic/usr.asm `ex_defint`). `20 DEFINT 10`
+# went from the deliberate `<97>INT <0F><0A>` workaround shape to the
+# reference's own `<AC> <0F><0A>` -- the SAME graduation `lnrx-lprint`/
+# `-lpos`/`-lfiles` made above, for the same reason: an agreeing row does not
+# belong in a set whose members are listed because they cannot agree. It is
+# an ordinary gating row now.
 INFORMATIONAL = {"num-tab", "dec-eol", "dec-eolctl",
-                 "lnr-defint",
                  # the tokenless words that do NOT arm on the reference either
                  "lnrx-defsng", "lnrx-defdbl", "lnrx-defstr", "lnrx-fn",
                  "lnrx-mks", "lnrx-mkd",
@@ -3584,9 +3593,9 @@ def main():
     # only guard for it -- this changes nothing about that requirement.
     #
     # 🔴 INFORMATIONAL ROWS ARE HEALED TOO, AND THAT IS THE CONTROL. `lnrx-wait`,
-    # `lnr-defint`, `dec-eol` and `dec-eolctl` (and, until D-KWGAP4 retired them,
-    # `ref-delete`/`-auto`/`-renum`; and until D-LFILES, `lnrx-lprint`/`lnrx-lpos`/
-    # `lnrx-lfiles`, all three of which now AGREE and gate)
+    # `dec-eol` and `dec-eolctl` (and, until D-KWGAP4 retired them,
+    # `ref-delete`/`-auto`/`-renum`; until D-LFILES, `lnrx-lprint`/`lnrx-lpos`/
+    # `lnrx-lfiles`; and until D-DEFINTTOK, `lnr-defint` -- all now AGREE and gate)
     # diverge for real, measured reasons. They are re-run boot-per-case on every
     # gate and they MUST STILL DIVERGE -- which is what says the heal re-measures
     # a row rather than manufacturing agreement. A run in which they came back

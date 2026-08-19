@@ -1789,6 +1789,20 @@ RDV_MODE        equ     RDV_ST + 1      ; $E554: main -> tenant MODE (1), D-READ
 ; address -- silent memory corruption, not an error -- guarded only by a property
 ; nothing enforces. 2 B buys that away.
 TGT_ADDR        equ     RDV_MODE + 1    ; $E555: element address, or 0 = scalar (2)
+; D-DEFINTTOK (2026-08-18): DEFINT reaches the SAME DEFtype tenant DEFSNG/
+; DEFDBL/DEFSTR use (basic/usr.asm `ex_defint`, sub/deftype.asm
+; `deftype_tenant`) but needs NO extra memory-ABI cell here -- no new byte
+; was spent in this window (a real constraint: main page 1 sits within a
+; handful of bytes of the $8000 ceiling, docs/rom-region-structure-review.md).
+; The tenant tells the two callers apart for free, by reading the byte
+; already sitting one below the handed-back DEFT_PTR cursor: ex_defint leaves
+; DEFINT_TOKEN there (it only ever did `inc hl` past its own token), and
+; ex_def_type never can (its callers only ever leave DEF_TOKEN or a space
+; there) -- see ex_defint's own comment in basic/usr.asm for the full case
+; that no false positive exists. A DEFT_PRESET-style preset flag byte was
+; drafted and measured too expensive (it cost a `ld a,n`/`ld (nn),a` pair in
+; MAIN-ROM ex_defint plus a cold-boot reset in `init`, ~9 B this window could
+; not afford); the token-peek needs none of that, so it is what shipped.
 ;
 GFX_DSCALE      equ     GFX_PSTK_END    ; $E55A: persistent scale, quarter units,
                                         ; 0 = NEVER SET (D-DSCALE): a distinct
@@ -2087,6 +2101,14 @@ CLEAR_TOKEN     equ     $92     ; Table 2.20 (cross-checks MSX Assembly Page tok
 ; the values already oracle-confirmed elsewhere here — strong corroboration).
 DEF_TOKEN       equ     $97     ; DEF (statement; PEEK's $97 is the 2nd byte after $FF)
 USR_TOKEN       equ     $DD     ; USR (function token, single byte; DEF USR target)
+; D-DEFINTTOK (2026-08-18): DEFINT's OWN single-byte statement token, oracle-
+; pinned against the Philips VG-8020 (`20 DEFINT 10` -> `<AC> <0F><0A>`,
+; docs/lnref-msx1-characterization.md §4, and re-confirmed against the
+; reference by docs/todo-staleness-sweep-2026-08.md §4.11's `c.defint` row).
+; Previously zerobas had no entry for this and matched plain "DEF" instead,
+; storing DEF_TOKEN + literal ASCII "INT" -- see the kwtable.inc row this
+; token now feeds (basic/kwtable.inc, the "DEFINT" entry) for the full history.
+DEFINT_TOKEN    equ     $AC     ; DEFINT (statement, single byte -- NOT DEF_TOKEN+"INT")
 LIST_TOKEN      equ     $93     ; LIST
 ; D-KWGAP4 (docs/spec-basic-kwgap4.md §2 R-K1): the four EDITOR verbs, measured
 ; from the reference's own crunch emission over the whole 162-word denominator

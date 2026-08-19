@@ -400,6 +400,13 @@ header:
 
 **LIVE**, exactly as filed for `DEFINT`: `$AC` vs `$97` + `"INT"`.
 
+✅ **`DEFINT` half FIXED 2026-08-18 — D-DEFINTTOK**, pointer:
+[`docs/lnref-msx1-characterization.md`](lnref-msx1-characterization.md) §4.
+`20 DEFINT 10` now stores `ac 20 0f 0a 00` on zerobas too, matching `c.print`'s
+own row shape above (real token, no literal ASCII tail). The `c.defint` row
+above stands as taken; only its status changed. `DEFSTR` (below) is a
+SEPARATE, still-open defect and was explicitly out of this fix's scope.
+
 🔴 **And `DEFSTR` is worse than the entry says.** The item's own claim is only that
 `DEFSNG`/`DEFDBL`/`DEFSTR` *"have no entry at all"* and work via `DEF_TOKEN` +
 ASCII. But zerobas stores `97 "STR" 20 31 30 00` — the argument `10` survives as
