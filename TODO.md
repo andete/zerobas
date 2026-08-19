@@ -485,6 +485,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       be 25 bespoke edits across ~19,000 lines (only 6 of 30 share a data model)
       plus a re-run of each one's emulator gate — see spec §10, and re-open it
       with evidence if a runner is ever actually caught by one.
+- [ ] 📌 **`file:LINE` CITATIONS ARE UNMAINTAINED AND BROADLY ROTTED — 1994 OF
+      THEM, AND NO GATE READS ONE.** Filed 2026-08-19 by D-DEFTYPEDOC's follow-up
+      sweep, which found a drifted anchor by READING and then found the class by
+      MACHINE. **Denominator machine-produced, not hand-listed**: 1994 `file:LINE`
+      citations across 924 tracked text files, into 318 distinct targets.
+      Restricted to the five source files `7aadd36`..`840ed59` rewrote
+      (`basic/interp.asm`, `basic/kwtable.inc`, `basic/sysvars.inc`,
+      `basic/usr.asm`, `sub/deftype.asm`): **212 unique citations, of which 87
+      now point at a line whose CONTENT differs from what stood there before
+      those two commits.** ⚠️ **THAT 87 IS AN UPPER BOUND ON DAMAGE AND A LOWER
+      BOUND ON ROT** — it says the anchors moved, NOT that they were right
+      beforehand; several were already stale from earlier commits (the sweep's
+      own control: `basic/vars.asm:174` was 4 lines off with `vars.asm` untouched
+      by any of the three commits in this window). Sorting "these commits broke
+      it" from "it was already broken" needs a semantic notion of correct that
+      this measurement does not have.
+      🔴 **A SYMBOL GREP CANNOT FIND ONE.** D-DEFTYPEDOC's `ex_def_type`/
+      `ex_defint` grep was exhaustive and still missed
+      `docs/spec-basic-deftbl-strcode.md`'s anchor, because a drifted line number
+      contains no symbol. Found only by reading the cited line.
+      🔴 **AND THE RE-ANCHORING ITSELF DRIFTED, INSIDE ONE COMMIT.** `0936943`
+      corrected that anchor `:66` -> `:86` from a grep taken BEFORE its own
+      `sub/deftype.asm` header edit, which shifted the target by one; the write is
+      at `:87`. **Re-read an anchor AFTER the last edit to the file it points
+      into, not before.** Both anchors in that sentence are corrected now.
+      **Options, priced, none taken**: (a) do nothing, accept prose-only anchors
+      as approximate — free, and honest only if the docs say so; (b) drop line
+      numbers from citations that already name the symbol — a large mechanical
+      edit, no gate needed afterwards; (c) a gate that verifies an anchor lands
+      near a symbol named in the citing text — fuzzy, and the false-positive rate
+      is the whole question. ⚠️ Cheapest EXACT sub-gate available today: flag
+      anchors that are out of range or land on a blank line (zero false
+      positives, low yield — the 87 above are none of those). This is a
+      convention decision, not a defect fix, so it is filed rather than taken.
+
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
       EXIT-2 PATH PRINTS A DIFFERENT TABLE ENTIRELY.** Found 2026-08-07 by
       D-ROWSHAPE's walk ([`docs/spec-probe-rowshape.md`](docs/spec-probe-rowshape.md)
