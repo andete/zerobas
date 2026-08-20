@@ -319,6 +319,59 @@ CASES = [
                           'NAME"FAB.DAT"AS"FAC.DAT"', 'PRINT"[OK]"']),
     ("f.namevar", "dsk", ['OPEN"FAD.DAT"AS #1', 'CLOSE#1', 'A$="FAD.DAT"',
                           'B$="FAE.DAT"', 'NAME A$ AS B$', 'PRINT"[OK]"']),
+    # === D-FNARG2: the FOUR VERBS THE RULE CLAIMED AND NEVER MEASURED ==========
+    # D-FNARG's §4 says the divergence is "one mechanism reached from 11 call
+    # sites" and names five files -- but its rows only ever drove `OPEN`, `KILL`
+    # and `NAME`. `SAVE` (x2), `LOAD`/`CLOAD` (x2), `BLOAD` (x1) and `FILES`
+    # were PREDICTED BY MECHANISM AND NOT MEASURED, which is a rule claiming
+    # more than its evidence [[a-rule-can-claim-more-than-its-evidence]].
+    #
+    # 🎯 LOAD AND BLOAD NEED NO FIXTURE, AND THAT IS THE DESIGN. Point them at a
+    # file that does not exist: the reference reaches the OPEN and answers
+    # `File not found`, zerobas refuses at the PARSE with `Syntax error`. The
+    # literal control proves the parse is reached and the file really is absent,
+    # so the two sentinels cannot be confused with each other -- and neither row
+    # writes to the disk image, so neither can perturb the other.
+    # ⚠️ `File not found` had to be ADDED to ERRORS for this; before that it fell
+    # through to `<NO OUTPUT>`, which is the agreeing-on-nothing shape this file
+    # exists to avoid. Adding a name to a classifier can change a SHIPPED row's
+    # reading, so the full gate is re-run, not just these rows.
+    #
+    # ROUND 1 PREDICTIONS (2026-08-20) AND WHAT THEY COST, cf3300 / zb:
+    #   f.savelit   OK / OK               -> OK / OK                ✅ exact
+    #   f.savevar   OK / <Syntax error>   -> OK / OK                🔴
+    #   f.loadlit   FNF / FNF             -> FNF / OK               🔴
+    #   f.loadvar   FNF / <Syntax error>  -> FNF / OK               🔴
+    #   f.bloadlit  FNF / FNF             -> FNF / OK               🔴
+    #   f.bloadvar  FNF / <Syntax error>  -> FNF / OK               🔴
+    #   f.fileslit  OK / OK               -> FNF / FNF              🔴 (agree)
+    #   f.filesvar  OK / <Syntax error>   -> FNF / <Syntax error>   🔴 half
+    # 🔴 SIX OF THE EIGHT ZEROBAS READINGS WERE `OK` AND EVERY ONE OF THEM WAS
+    # THE READOUT LYING. The screen said `load error` and then `[OK]`, and
+    # `bracket()` looks for `[` before it looks for an error. See `errface()`.
+    # 🎯 ROUND 2 PREDICTIONS, with the error-first readout:
+    #   f.savelit   OK  / OK                 <- 🟢 control (a real save)
+    #   f.savevar   OK  / <load error>
+    #   f.loadlit   FNF / <load error>       <- the literal control DIVERGES
+    #   f.loadvar   FNF / <load error>
+    #   f.bloadlit  FNF / <load error>       <- ditto
+    #   f.bloadvar  FNF / <load error>
+    #   f.fileslit  FNF / FNF                <- 🟢 control, both refuse
+    #   f.filesvar  FNF / <Syntax error>
+    # 🎯 THE CONTRAST IS THE POINT: FILES goes through `files.asm` and RAISES a
+    # real `Syntax error`; SAVE/LOAD/BLOAD go through `load_error`
+    # (basic/bload.asm), which PRINTS a lowercase string and RETURNS -- no ERR
+    # code, no line number, no ON ERROR trap, and the program runs on.
+    # ⚠️ LFILES IS NOT MEASURED AND IS NOT AN OMISSION: it writes to the PRINTER,
+    # so no screen readout can see it. It is the 11th site and stays predicted.
+    ("f.savelit",  "dskerr", ['SAVE"FC1.DAT"', 'PRINT"[OK]"']),
+    ("f.savevar",  "dskerr", ['A$="FC2.DAT"', 'SAVE A$', 'PRINT"[OK]"']),
+    ("f.loadlit",  "dskerr", ['LOAD"FCZ.DAT"', 'PRINT"[OK]"']),
+    ("f.loadvar",  "dskerr", ['A$="FCZ.DAT"', 'LOAD A$', 'PRINT"[OK]"']),
+    ("f.bloadlit", "dskerr", ['BLOAD"FCY.BIN"', 'PRINT"[OK]"']),
+    ("f.bloadvar", "dskerr", ['A$="FCY.BIN"', 'BLOAD A$', 'PRINT"[OK]"']),
+    ("f.fileslit", "dskerr", ['FILES"FC*.*"', 'PRINT"[OK]"']),
+    ("f.filesvar", "dskerr", ['A$="FC*.*"', 'FILES A$', 'PRINT"[OK]"']),
 ]
 
 # 🔴 ORACLE STRENGTH IS NOT UNIFORM. The `z.fld*` rows are Disk BASIC; a diskless
@@ -392,7 +445,11 @@ DEFERRED: dict[str, str] = {
     lab: "DEFERRED — D-FNARG filename-argument denominator (TODO: `OPEN A$ AS #1`)"
     for lab in ("f.lit", "f.var", "f.expr", "f.paren", "f.inlit", "f.invar",
                 "f.outvar", "f.appvar", "f.applit", "f.appvarx", "f.killlit",
-                "f.killvar", "f.namelit", "f.namevar")
+                "f.killvar", "f.namelit", "f.namevar",
+                # D-FNARG2, 2026-08-20: the four verbs the rule claimed and had
+                # never driven.
+                "f.savelit", "f.savevar", "f.loadlit", "f.loadvar",
+                "f.bloadlit", "f.bloadvar", "f.fileslit", "f.filesvar")
 }
 
 
@@ -402,7 +459,15 @@ SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>", "<NOT STORED>",
 ERRORS = ("Syntax error", "Type mismatch", "Subscript out of range",
           "Redimensioned array", "Illegal function call", "Out of memory",
           "Out of string space", "Overflow", "Out of DATA",
-          "NEXT without FOR", "Undefined line number")
+          "NEXT without FOR", "Undefined line number",
+          # D-FNARG2: the disk-side faces the SAVE/LOAD/BLOAD rows turn on. Until
+          # 2026-08-20 these fell through to `<NO OUTPUT>` -- a real error read as
+          # a silence, and a silence is what a diverging pair agrees on.
+          "File not found", "Device I/O error", "Disk offline", "Bad file name",
+          # 🔴 NOT AN MSX ERROR NAME. `load error` is zerobas's OWN lowercase
+          # string (basic/bload.asm `err_io`), printed by a routine that RETURNS
+          # instead of raising. It has to be nameable or it reads as a silence.
+          "load error")
 
 
 def bracket(raw: str | None) -> str:
@@ -431,6 +496,34 @@ def bracket(raw: str | None) -> str:
     return "<NO OUTPUT>"
 
 
+# 🔴 ERROR-FIRST, AND THE FIRST DRAFT OF THE D-FNARG2 ROWS WAS BLIND WITHOUT IT.
+# `bracket()` above looks for `[` BEFORE it looks for an error, which is right
+# for a row whose subject is a VALUE. It is wrong for a row whose subject is a
+# FAILURE, because zerobas's SAVE/LOAD/BLOAD failure path PRINTS and RETURNS
+# (`load_error`, basic/bload.asm: print_msg + ret, no raise) -- so the program
+# runs on and prints its `[OK]` UNDERNEATH the message. All four zerobas rows
+# read `OK` while the screen said `load error`, which is exactly the readout
+# blind to its own subject the module docstring warns about
+# [[readout-blind-to-its-own-subject]]. A separate function rather than a
+# reordering: 58 scored rows depend on `bracket()`'s order and none of them is
+# under test here.
+def errface(raw: str | None) -> str:
+    """The ERROR the RUN produced, or the `[...]` span if there was none."""
+    if raw is None:
+        return "<NO CAPTURE>"
+    tail = omsx_repl.screen_tail(raw, "RUN")
+    if tail is None:
+        return ("<RUN SCROLLED OFF>" if str(raw).strip() else "<NO CAPTURE>")
+    txt = " ".join(str(tail).split("\n"))
+    for e in ERRORS:
+        if e in txt:
+            return f"<{e}>"
+    i, j = txt.find("["), txt.find("]", txt.find("[") + 1)
+    if i >= 0 and j > i:
+        return txt[i + 1:j]
+    return "<NO OUTPUT>"
+
+
 def tokens(raw: str | None) -> str:
     """The stored line's BODY bytes: everything after link(2) + lineno(2), up to
     and including the 0x00 terminator. `<NOT STORED>` when the line never made
@@ -449,7 +542,7 @@ def run_side(side: str, only: list[str]) -> dict:
     for label, kind, lines in CASES:
         if only and label not in only:
             continue
-        if kind == "dsk" and side in NO_DISK_SIDES:
+        if kind in ("dsk", "dskerr") and side in NO_DISK_SIDES:
             # NOT a reading. A diskless machine cannot express the question, and
             # recording its `Syntax error` as an answer would manufacture an
             # agreement with zerobas out of an absent disk controller.
@@ -473,7 +566,7 @@ def run_side(side: str, only: list[str]) -> dict:
             cfg["machine"],
             [("direct", list(cfg["reset"]) + body + ["RUN"])],
             batch=False, boot=cfg["boot"], step=cfg["step"], **kw)
-        out[label] = bracket(caps[0])
+        out[label] = (errface if kind == "dskerr" else bracket)(caps[0])
     return out
 
 

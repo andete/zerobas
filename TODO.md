@@ -2727,6 +2727,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 **`f.expr` (`A$+".DAT"`) AND `f.paren` (`(A$)`) RULE OUT THE CHEAP
       FIX** — the reference EVALUATES an expression; "also accept a bare string
       variable" would close one row and leave the rule unmet.
+      ✅ **THE OTHER FOUR VERBS ARE MEASURED — 2026-08-20 (D-FNARG2)**,
+      [`docs/fnarg2-msx1-characterization.md`](docs/fnarg2-msx1-characterization.md).
+      `SAVE`/`LOAD`/`BLOAD`/`FILES` were PREDICTED here and never driven; they
+      are now 8 more deferred rows (`namspc-acceptance` 58/58, deferred 14 → 22).
+      🎯 **THE RULE HOLDS AT ALL SEVEN VERBS AND THE FACE DOES NOT** — only
+      `OPEN`/`KILL`/`NAME` RAISE. `SAVE`/`LOAD`/`BLOAD` print a non-raising
+      `load error` and run on (filed separately); `FILES` reads a non-quote as
+      *no filespec*, lists the whole directory, and derails later. One rule,
+      three mechanisms — so *"all seven verbs diverge identically"* was the
+      source reading, not the measurement.
       💰 **SCOUTED, NOT PRICED: ONE MECHANISM AT 11 SITES.** `do_open`
       ([`basic/files.asm:184`](basic/files.asm:184)) is `cp '"'` / `jr nz,oo_synerr`
       and then reads the name **straight out of the program text** via
@@ -3035,6 +3045,61 @@ list. **When a slice lands, grep this list for what it just shipped.**
       references and stored here; `VALTYP $E0C8` = `ff`). So the sweep's LIVE
       column now reads **8 closed / 3 live**, and every one of the three carries
       a 2026-08-19-or-later reading.
+
+- [ ] 🔴 **`load error` IS PRINTED, NOT RAISED — THE PROGRAM RUNS ON. MEASURED
+      2026-08-20 (D-FNARG2), and it is the reading two earlier slices said the
+      class was blocked on.**
+      [`docs/fnarg2-msx1-characterization.md`](docs/fnarg2-msx1-characterization.md)
+      §4.2/§4.3.
+
+      | row | program | cf3300 | zb |
+      |---|---|---|---|
+      | `f.loadlit` | `10 LOAD"FCZ.DAT"` (missing) / `20 PRINT"[OK]"` | **`File not found in 20`** | **`load error`** then **`[OK]`** |
+      | `f.bloadlit` | `10 BLOAD"FCY.BIN"` (missing) / `20 PRINT"[OK]"` | **`File not found in 20`** | idem |
+      | `f.savevar` | `10 A$="FC2.DAT"` / `20 SAVE A$` / `30 PRINT"[OK]"` | `OK` | `load error` then `[OK]` |
+
+      🔴 **NOT A WORDING DIVERGENCE — A CONTROL-FLOW ONE.**
+      [`basic/bload.asm:160`](basic/bload.asm) `load_error` is `TAPIOF`, an
+      `ERRMARK` byte, `print_msg`, **`ret`**. No ERR code, no line number, no
+      `ON ERROR` trap, and execution continues into the next line — `[OK]` is
+      printed *underneath* the message. **Same class as the `ex_let_arr_str`
+      swallow D-ARYOOS closed the same day**, in a different verb family.
+      ⚠️ **THIS CLASS HAD NO OPEN PICKUP ENTRY.** D-DSKMSG §4.2 and D-DKNAME
+      §3.4/§6.5 both name it — *"that reading opens the whole `load error`
+      wording divergence for `LOAD`/`RUN`/`BLOAD`/`OPEN`/`APPEND`/`MERGE` — six
+      verbs nothing has measured"* — but only inside a **`- [x]`** item, which
+      is exactly how §4.7 rotted for eleven days. It is open now.
+      ✅ **TWO OF THE SIX NOW HAVE A REFERENCE READING** (`LOAD`, `BLOAD`).
+      **STILL UNMEASURED: `RUN"file"`, `OPEN`, `APPEND`, `MERGE`** — plus every
+      non-missing-file failure (an unreadable volume, a non-binary `BLOAD`
+      target, a cassette failure), which may not share one face.
+      💰 **NOT PRICED, AND DELIBERATELY NOT FOLDED INTO D-FNARG.** That slice is
+      about PARSING (a second source for `parse_disk_fcb`); this one is about
+      RAISING. ERR 53's machinery already exists and ships —
+      [`basic/files.asm:144`](basic/files.asm) `ld a,53`, message sub-hosted by
+      D-MSGSUB — so the shape is "route the disk arms at a raise", but
+      `load_error` is shared with the CASSETTE paths, where a bare C-BIOS
+      TAPION always fails and the right face is unmeasured. **Separating those
+      two callers is the design question**, and it must not be assumed to be a
+      rename [[a-filed-blocker-can-name-the-wrong-obstacle]].
+- [ ] ⚠️ **`FILES A$` LISTS THE WHOLE DIRECTORY BEFORE IT ERRORS.** Measured
+      2026-08-20 (D-FNARG2 §4.2), read off the screen:
+      ```
+      ZB20 FILES A$                          cf3300, same program:
+      TEST    .BIN HI      .TXT PROG    .BIN
+      PROG    .BAS PROG2   .BAS
+      Syntax error in 20                     File not found in 20
+      ```
+      🎯 **THE ERROR AGREES WITH D-FNARG'S RULE BY COINCIDENCE OF FACE, NOT OF
+      MECHANISM.** `FILES` does not refuse a non-quote:
+      [`basic/files.asm:100`](basic/files.asm) reads it as *no filespec*
+      (`jr nz,df_nofilespec`), lists everything, and only then derails on the
+      unconsumed `A$`. So `f.filesvar` scores as a match for the argument rule
+      while the machine has already done something the reference never does.
+      ⚠️ **NO ROW SCORES THE SIDE EFFECT** — the readout takes the error and the
+      listing above it is invisible to it. A row that pinned the printed lines
+      would; that is the fix to the APPARATUS, and it comes before the fix to
+      the ROM. 💰 Not priced.
 
 **Own-design hazards carried out of closed slices**
 
@@ -4996,6 +5061,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       prints nothing — `CLEAR`'s HIMEM argument does not reach the store check
       at [`sub/lineedit.asm:139`](sub/lineedit.asm:139), which compares
       `PRGEND + size` against a fixed `$BB00`.
+      💰 **SCOUTED 2026-08-20 (not priced, not opened).** The right ceiling
+      already exists and is already reachable — the obstacle is neither the
+      arithmetic nor the bytes, it is that the two ends are in different
+      tenants.
+      * The bound wanted is the VARIABLE-region ceiling, `min(HIMEM,TXTMAX) −
+        POOLSIZE − MAXF×FCH_CTXSZ`, which is exactly
+        [`strheap_varceil`](sub/strheap.asm) — derived, never stored, so it is
+        current by construction and `CLEAR ,himem` falls out for free.
+      * 🎯 **NO NEW SUB-ROM OP IS NEEDED.** `sh_chan_addr` (op 18) answers
+        `strheap_varceil() + (ch−1)×FCH_CTXSZ`, so **channel 1 IS the varceil**;
+        `basic/files.asm`'s `fch_ctx_addr` is the existing main-ROM wrapper and
+        returns it in HL.
+      * 🔴 **THE OBSTACLE IS THE TENANT SPLIT, AND IT IS THE WHOLE COST.**
+        `le_store` is in `lineedit_tenant` (sub **page 1**); `strheap_engine` is
+        sub **page 0**. A tenant cannot call across, so the ceiling has to be
+        fetched by the MAIN-ROM store head (`dl_store`, `basic/program.asm`)
+        before it marshals, and published in a RAM cell beside `SL_NUM`/
+        `SL_TOK`. Shape: main ROM ≈ a `ld a,1` + `call fch_ctx_addr` + a store;
+        sub page 1 **+1 B** (`ld de,TXTMAX` → `ld de,(cell)`).
+      * ⚠️ **UNVERIFIED, AND IT IS THE FIRST THING TO CHECK**: `sh_chan_addr` sits
+        behind an assembly-time `IF` in `sub/strheap.asm`, so a build without
+        D-FCH may not have it. Read the guard before believing the 7-byte shape
+        [[a-filed-blocker-can-name-the-wrong-obstacle]].
+      * ⚠️ And the rule itself is UNMEASURED beyond the three rows below: what
+        the references do when the program grows into the variables *while
+        variables exist* is a different question from the empty-program case
+        these rows drive.
       ✅ **RE-MEASURED 2026-08-20 AT `ef50f4c` — STILL LIVE, BYTE FOR BYTE**, all
       three rows and all three sides unchanged from the 2026-08-09 reading
       ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)

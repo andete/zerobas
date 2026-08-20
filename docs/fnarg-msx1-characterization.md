@@ -113,6 +113,19 @@ behind its own `cp '"'` gate, across five files —
 `files.asm` (×6: `FILES`, `OPEN`, `KILL`, `NAME` old + new, `LFILES`),
 `save.asm` (×2), `cload.asm` (×2), `bload-body.inc` (×1).
 
+🔴 **"IDENTICALLY" WAS REFINED BY MEASUREMENT ON 2026-08-20 — SEE
+[`fnarg2-msx1-characterization.md`](fnarg2-msx1-characterization.md).** The
+sentence above was written from the source with rows for **three** verbs
+(`OPEN`, `KILL`, `NAME`); the other four were predicted. They were then driven,
+and the *rule* holds at all seven while the *face* does not: only OPEN/KILL/NAME
+RAISE `Syntax error`. `SAVE`/`LOAD`/`BLOAD` reach `load_error`
+([`basic/bload.asm:160`](../basic/bload.asm)), which PRINTS a lowercase
+`load error` and **returns** — no ERR code, no line number, no trap, and the
+program runs on. `FILES` does not refuse a non-quote at all: it reads it as *no
+filespec*, lists the whole directory, and derails later on the unconsumed
+argument. One rule, three mechanisms
+[[a-rule-can-claim-more-than-its-evidence]].
+
 💰 **AND THAT SIZES THE SLICE WITHOUT PRICING IT.** The fix is not "also accept a
 variable": it is to evaluate a string expression and hand `parse_disk_fcb` a
 *string body* instead of a *text cursor*. That is a second source for a shared
