@@ -2645,6 +2645,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       currently over-claims, and because the same shape will recur in any probe
       that seeds a cell it also tests.
 
+- [ ] 🔴 **`OPEN "X" FOR APPEND AS #1` ON A NON-EXISTENT FILE: zerobas SAYS
+      `OK`, THE CF-3300 PRINTS NOTHING AT ALL.** Filed 2026-08-19 by D-FNARG
+      ([`docs/fnarg-msx1-characterization.md`](docs/fnarg-msx1-characterization.md)
+      §3), found by a CONTROL written to explain a different row's `<NO OUTPUT>`.
+      ```
+      OPEN"FB1.DAT"FOR APPEND AS #1 : CLOSE#1 : PRINT"[OK]"     (FB1.DAT absent)
+          cf3300 -> <NO OUTPUT>        zb -> [OK]
+      ```
+      (row `f.applit`, `make namspc-acceptance`; DEFERRED, measured, printed.)
+      🎯 **A LITERAL FILENAME — NOTHING TO DO WITH D-FNARG's SUBJECT.** Its twin
+      `f.appvarx` (APPEND + variable + a file that EXISTS) reads `OK` on the
+      CF-3300, which is what proves the mode-plus-missing-file pair is the
+      variable here and not the argument form.
+      🔴 **WHAT THE REFERENCE DOES IS UNMEASURED AND MUST NOT BE GUESSED.**
+      `<NO OUTPUT>` means this row's readout could not capture it — an error
+      that did not print, a hang, a prompt that never came back. It is **not**
+      evidence that the reference errors. Characterising it needs a SCREEN-TAIL
+      readout, not a bracket span
+      ([[read-the-artifact-when-the-screen-cannot-witness]]), and that comes
+      before any byte. 💰 Not scouted, not priced.
+      ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
 - [ ] 🔴 **A NON-TILING `LEN=r` IS `Syntax error` HERE AND `OK` ON THE CF-3300 —
       AND THE DOC CLAIMED BYTE-IDENTITY ON A CORPUS THAT NEVER CONTAINED THE
       CASE.** Filed 2026-08-19 by D-RECLEN, found by a row that MISSED its
@@ -2690,6 +2711,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
       §4.5): CF-3300 `[OK]`, zerobas `Syntax error in 20`, against an
       `OPEN"TS.DAT"AS #1` literal control reading `[OK]` on both.
+      ✅ **THE DENOMINATOR IS BUILT AND THE RULE IS WIDER THAN `OPEN` —
+      2026-08-19 (D-FNARG)**,
+      [`docs/fnarg-msx1-characterization.md`](docs/fnarg-msx1-characterization.md),
+      14 `f.*` rows in `basic_probe_namspc.py`, all DEFERRED.
+      🎯 **WHEREVER THE REFERENCE ACCEPTS A FILENAME IT ACCEPTS A STRING
+      EXPRESSION; zerobas accepts a LITERAL and nothing else.** Eight divergent
+      rows, four green controls: `OPEN` bare / `FOR INPUT` / `FOR OUTPUT` /
+      `FOR APPEND`, `KILL`, and `NAME` (both operands) all read `OK` on the
+      CF-3300 with a variable and `Syntax error` here.
+      🎯 **`f.expr` (`A$+".DAT"`) AND `f.paren` (`(A$)`) RULE OUT THE CHEAP
+      FIX** — the reference EVALUATES an expression; "also accept a bare string
+      variable" would close one row and leave the rule unmet.
+      💰 **SCOUTED, NOT PRICED: ONE MECHANISM AT 11 SITES.** `do_open`
+      ([`basic/files.asm:184`](basic/files.asm:184)) is `cp '"'` / `jr nz,oo_synerr`
+      and then reads the name **straight out of the program text** via
+      `parse_disk_fcb`, whose cursor IS the interpreter's. So these are not
+      seven bugs but one parser reached from **11 `parse_disk_fcb` call sites**
+      across five files (`files.asm` ×6, `save.asm` ×2, `cload.asm` ×2,
+      `bload-body.inc` ×1), each behind its own literal-quote gate. The fix is a
+      SECOND SOURCE for a shared parser plus a staging buffer — a design
+      question, not an edit — and with main page 1 at 22 B on 2026-08-19 it is
+      not opened here.
+      🔴 **`SAVE`/`LOAD`/`BLOAD` ARE NOT MEASURED** and are carried: the residual
+      named them, and they run through `save.asm`/`cload.asm`/`bload-body.inc`,
+      three of the same 11 sites — so they are PREDICTED to behave like the
+      other eight and that prediction is untested.
 
 - [x] ✅ **THE RE-RAISE NAMED THE WRONG LINE WHEN THE TWO CONTEXTS DISAGREED ON
       *MODE* — CLOSED 2026-08-09 by D-LOCARG**

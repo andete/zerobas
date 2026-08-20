@@ -258,6 +258,67 @@ CASES = [
     # spec predicts and the proof that `z.fldvar` fails downstream of it.
     ("z.join",    "run", ['DIM A$(3)', 'N=10', 'X=N AS A$(1)', 'PRINT"[OK]"']),
     ("z.joinnum", "run", ['NAS=4', 'N=10', 'X=N AS A', 'PRINT"[";X;"]"']),
+    # --- D-FNARG: the FILENAME-ARGUMENT denominator ---------------------------
+    # D-NAMSPC filed ONE row as a residual -- `OPEN A$ AS #1` is `Syntax error`
+    # here and `OK` on the CF-3300 -- and said in the same breath what it needed:
+    # "OPEN / KILL / NAME / SAVE / LOAD / BLOAD x (literal / variable /
+    # expression), plus whether the same holds for FOR INPUT/OUTPUT/APPEND".
+    # ⚠️ NOTHING TO DO WITH SPACES: the `$` suffix terminates the name scan
+    # before the ` AS`, so these read the same before and after D-NAMSPC. They
+    # are here because this is the probe with the fixtures, not because the rule
+    # is this slice's.
+    #
+    # PREDICTIONS, WRITTEN BEFORE THE RUN:
+    #   every `*lit` control  ` OK ` on the CF-3300 (they are the working form)
+    #   every variable / expression form  cf3300 ` OK `, zerobas `Syntax error`
+    # i.e. the reference takes a string EXPRESSION wherever it takes a filename,
+    # and zerobas takes a LITERAL only. If any `*lit` row diverges the fixture is
+    # broken and no other row here means anything.
+    #
+    # 🔴 THE THREE `FOR` FORMS ARE NOT DECORATION. `OPEN A$ AS #1` and
+    # `OPEN A$ FOR INPUT AS #1` reach the name through DIFFERENT parse paths in
+    # do_open (the mode clause sits between them), so a fix sited at one is not
+    # automatically a fix at the other -- and one row cannot say which
+    # ([[one-row-cannot-separate-two-rules]]).
+    ("f.lit",     "dsk", ['OPEN"FA1.DAT"AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
+    ("f.var",     "dsk", ['A$="FA2.DAT"', 'OPEN A$ AS #1', 'CLOSE#1',
+                          'PRINT"[OK]"']),
+    ("f.expr",    "dsk", ['A$="FA3"', 'OPEN A$+".DAT" AS #1', 'CLOSE#1',
+                          'PRINT"[OK]"']),
+    ("f.paren",   "dsk", ['A$="FA4.DAT"', 'OPEN(A$)AS #1', 'CLOSE#1',
+                          'PRINT"[OK]"']),
+    ("f.inlit",   "dsk", ['OPEN"FA5.DAT"AS #1', 'CLOSE#1',
+                          'OPEN"FA5.DAT"FOR INPUT AS #1', 'CLOSE#1',
+                          'PRINT"[OK]"']),
+    ("f.invar",   "dsk", ['OPEN"FA6.DAT"AS #1', 'CLOSE#1', 'A$="FA6.DAT"',
+                          'OPEN A$ FOR INPUT AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
+    ("f.outvar",  "dsk", ['A$="FA7.DAT"', 'OPEN A$ FOR OUTPUT AS #1', 'CLOSE#1',
+                          'PRINT"[OK]"']),
+    ("f.appvar",  "dsk", ['A$="FA8.DAT"', 'OPEN A$ FOR APPEND AS #1', 'CLOSE#1',
+                          'PRINT"[OK]"']),
+    # 🔴 `f.appvar` READ `<NO OUTPUT>` ON THE CF-3300 -- NOT A VALUE, A READOUT
+    # ANOMALY, and it has TWO candidate causes: the VARIABLE filename (this
+    # battery's subject) or `FOR APPEND` on a file that does not exist (FA8.DAT
+    # was never created, unlike f.invar's fixture). One row cannot separate them,
+    # so these two change ONE variable each
+    # ([[row-with-two-candidate-causes]]).
+    #   f.applit    APPEND + LITERAL  + missing file  -> isolates the MODE
+    #   f.appvarx   APPEND + VARIABLE + existing file -> isolates the ARGUMENT
+    # PREDICT: if the mode is the cause, f.applit also reads `<NO OUTPUT>` and
+    # f.appvarx reads cf3300 ` OK ` / zb `Syntax error` like every other variable
+    # row. If the ARGUMENT is the cause, the opposite.
+    ("f.applit",  "dsk", ['OPEN"FB1.DAT"FOR APPEND AS #1', 'CLOSE#1',
+                          'PRINT"[OK]"']),
+    ("f.appvarx", "dsk", ['OPEN"FB2.DAT"AS #1', 'CLOSE#1', 'A$="FB2.DAT"',
+                          'OPEN A$ FOR APPEND AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
+    ("f.killlit", "dsk", ['OPEN"FA9.DAT"AS #1', 'CLOSE#1', 'KILL"FA9.DAT"',
+                          'PRINT"[OK]"']),
+    ("f.killvar", "dsk", ['OPEN"FAA.DAT"AS #1', 'CLOSE#1', 'A$="FAA.DAT"',
+                          'KILL A$', 'PRINT"[OK]"']),
+    ("f.namelit", "dsk", ['OPEN"FAB.DAT"AS #1', 'CLOSE#1',
+                          'NAME"FAB.DAT"AS"FAC.DAT"', 'PRINT"[OK]"']),
+    ("f.namevar", "dsk", ['OPEN"FAD.DAT"AS #1', 'CLOSE#1', 'A$="FAD.DAT"',
+                          'B$="FAE.DAT"', 'NAME A$ AS B$', 'PRINT"[OK]"']),
 ]
 
 # 🔴 ORACLE STRENGTH IS NOT UNIFORM. The `z.fld*` rows are Disk BASIC; a diskless
@@ -324,7 +385,15 @@ SITE_CONTROL = {
 # `Type mismatch`, which is what the CF-3300 has answered all along. The
 # deferral was honoured rather than merely filed
 # ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
-DEFERRED: dict[str, str] = {}
+DEFERRED: dict[str, str] = {
+    # D-FNARG denominator rows: measured, printed, NEVER scored until the rule is
+    # settled and a fix is priced. A deferred row that started AGREEING would
+    # itself be a finding.
+    lab: "DEFERRED — D-FNARG filename-argument denominator (TODO: `OPEN A$ AS #1`)"
+    for lab in ("f.lit", "f.var", "f.expr", "f.paren", "f.inlit", "f.invar",
+                "f.outvar", "f.appvar", "f.applit", "f.appvarx", "f.killlit",
+                "f.killvar", "f.namelit", "f.namevar")
+}
 
 
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>", "<NOT STORED>",
