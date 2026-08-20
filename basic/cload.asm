@@ -848,10 +848,15 @@ disk_prog_load:
                 ; (1) disk ROM slot must have been recorded by the INIT scan.
                 ld      a,(DISKSLOT_OK)
                 or      a
-                jp      z,dpl_err
+                jp      z,dpl_err           ; no disk ROM at all: NO primitive has
+                                            ; run, so DISKOP_OP would be stale --
+                                            ; and dpl_err is the SAFE tail now
                 ; (2) open the file via the FAT12 engine (mount + find + prime).
                 call    fat_io_open
-                jp      c,dpl_err          ; not found / mount / I-O error
+                jp      c,dpl_nf           ; D-LOADERR: not found -> ERR 53 (raised);
+                                           ; mount / I-O -> the unchanged `load error`.
+                                           ; DISKOP_OP is FRESH here and nowhere else
+                                           ; in this routine.
                 ; (3) first byte selects the format: $FF = tokenised BASIC; anything
                 ; else = an ASCII (SAVE",A") program (ASCII text never starts $FF).
                 call    fat_io_getbyte
@@ -999,8 +1004,30 @@ dpl_done:
 ; tape path -- these five bytes already say exactly 'reported, and failed'. The
 ; `dpl_` prefix is therefore no longer disk-only; renaming it would churn eight
 ; disk call sites and make spec-basic-runtail.md §3.2's table stale for nothing.
+; 🔴 dpl_err IS SHARED WITH THE WHOLE CASSETTE PATH (do_tape_prog above, nine
+; `jp c,dpl_err` sites) AND THAT IS WHY THE NOT-FOUND TEST IS NOT HERE.
+; D-LOADERR's first draft put `call df_or_loaderr` in this tail. It reads
+; DISKOP_OP, which only `fatprim_bounce` writes — so on a CASSETTE failure the
+; cell is STALE from whatever disk statement ran last, and when that happened to
+; be a `fat_find` the machine answered `File not found` to a broken TAPE.
+; `castail-acceptance`'s `cas-run-brk` caught it: vg8020/cf3300 `Device I/O
+; error`, zerobas `File not found`. An existing gate ran a knife nobody wrote.
+; 🎯 SO THE DEFAULT IS INVERTED: this tail is the SAFE one and reading the stale
+; cell is OPT-IN, at `dpl_nf` below, reached only from an arm whose CF came
+; DIRECTLY from a main-side `fat_io_open`. A new caller that lands here gets the
+; unchanged behaviour instead of a wrong message.
 dpl_err:
                 call    load_error
+                scf
+                ret
+; dpl_nf — the same tail plus the not-found test. ONLY for an arm where DISKOP_OP
+; is provably FRESH: the CF has just come out of a main-side `fat_io_open`, whose
+; last act was `call fat_find` through fatprim_bounce. df_or_loaderr's non-found
+; arm is `jp load_error`, so a CALL of it returns here exactly as `call
+; load_error` does; only the found-nothing case diverts, to a raise that never
+; comes back.
+dpl_nf:
+                call    df_or_loaderr
                 scf
                 ret
 

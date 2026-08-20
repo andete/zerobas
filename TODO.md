@@ -3067,9 +3067,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       column now reads **8 closed / 3 live**, and every one of the three carries
       a 2026-08-19-or-later reading.
 
-- [ ] 🔴 **`load error` IS PRINTED, NOT RAISED — THE PROGRAM RUNS ON. MEASURED
-      2026-08-20 (D-FNARG2), and it is the reading two earlier slices said the
-      class was blocked on.**
+- [ ] 🟡 **`load error` IS PRINTED, NOT RAISED — ✅ FIXED AT FIVE VERBS 2026-08-20
+      (D-LOADERR-FIX, 16 B), `BLOAD` REMAINS.**
+      [`docs/loaderr-fix-notes.md`](docs/loaderr-fix-notes.md).
+      `LOAD`, `RUN"f"`, `MERGE`, `OPEN…FOR INPUT` and `OPEN…FOR APPEND` now raise
+      **ERR 53 `File not found`** and stop, matching both references;
+      `dskmsg-acceptance` went **5/5 + 7 reported → 10/10 + 2 reported**, the
+      five rows graduating the day they were filed.
+      🎯 **THE SPLIT NEEDED NO NEW STATUS.** `fatprim_bounce` already writes
+      `DISKOP_OP` with the selector it is about to run, so `DISKOP_OP ==
+      FAT_FIND` on a failure means exactly *mounted fine, name not there*. One
+      11-byte helper (`df_or_loaderr`) plus a 5-byte tail; every consumer is a
+      **0-byte retarget**.
+      🔴 **THE FIRST DRAFT BROKE THE CASSETTE AND AN EXISTING GATE RAN THE KNIFE.**
+      `dpl_err` is shared with `do_tape_prog` (nine sites) and no cassette op
+      writes `DISKOP_OP`, so a broken TAPE read a stale cell and answered
+      `File not found`. `castail-acceptance`'s `cas-run-brk` caught it on the
+      first run. I had identified that exact hazard for the `DISKSLOT_OK == 0`
+      arm and guarded **that one instance** — 🎯 **guarding an instance of a
+      class is not guarding the class.** The default is now inverted: `dpl_err`
+      is safe and the stale read is **opt-in** at `dpl_nf`. Byte-neutral.
+      🔴 **FIVE PINNED ROWS WERE A GREEN ORACLE FOR THE DEFECT** —
+      `disk_probe_fat_error_disposition.py` pinned zerobas's own `load error` for
+      exactly these verbs and passed for as long as the defect lived; the FIX is
+      what turned them red [[a-green-oracle-can-assert-the-defect]]. The pins
+      were honest (marked *not measured on the reference*) and moved in the same
+      commit as the code, as `kill-missing`'s did. `runtail`'s per-side
+      normalisation collapsed to one string too.
+      ➡️ **WHAT REMAINS IS `BLOAD`, AND ITS TWO ROWS STAY UN-GRADUATED.** Its
+      loader is the sub-ROM page-1 tenant, where the shared `fatio-body.inc`
+      binds to the REAL sub-side primitives and `DISKOP_OP` is never written; it
+      reports through `BL_STAT` and needs a value of its own. `dsk-bloadmode`
+      additionally needs a SECOND face (`Bad file mode`) that no arm produces.
+      `bload-missing` deliberately KEEPS its `load error` pin — a pin that
+      drifts on a neighbour's evidence stops being a pin.
+      💰 **Main page 1 was 22 B before this and is 6 B after (2026-08-20,
+      `make basic-reloc`)** — the next page-1 slice needs a carve.
+      *Original filing:* — 🔴 **`load error` IS PRINTED, NOT RAISED — THE PROGRAM
+      RUNS ON. MEASURED 2026-08-20 (D-FNARG2), and it is the reading two earlier
+      slices said the class was blocked on.**
       [`docs/fnarg2-msx1-characterization.md`](docs/fnarg2-msx1-characterization.md)
       §4.2/§4.3.
 

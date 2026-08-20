@@ -144,6 +144,47 @@ df_notfound:
                 ld      a,53
                 jp      raise_error
 
+; --- df_or_loaderr: ERR 53 if the file was simply NOT THERE, else `load error`
+; D-LOADERR (docs/loaderr-msx1-characterization.md). Both references RAISE
+; `File not found` and STOP for a missing file at LOAD / RUN"f" / MERGE /
+; OPEN..FOR INPUT / OPEN..FOR APPEND; zerobas printed `load error` and RAN ON,
+; because every one of those failures funnelled into one non-raising tail.
+;
+; 🎯 THE SPLIT NEEDED NO NEW STATUS, BECAUSE ONE ALREADY EXISTS. `fatprim_bounce`
+; (basic/fat.asm) writes DISKOP_OP with the selector of the primitive it is about
+; to run, so after a failure the cell names WHICH primitive failed. `fat_io_open`
+; and `fat_io_append` reach the disk through exactly two of them -- fat_mount then
+; fat_find -- so `DISKOP_OP == FAT_FIND` on a failure means, precisely, "mounted
+; fine, the name is not there". That is the measured class and nothing else.
+;
+; ⚠️ WHY THE OTHER OPEN MODES CANNOT FALSE-POSITIVE, checked per path, not assumed:
+;   * FOR OUTPUT -> fat_io_create, which calls fat_dir_create, NOT fat_find.
+;   * RANDOM     -> fat_rand_open is ITSELF a tenant selector (DISKOP_SEL_RAND_
+;     OPEN); its internal fat_find runs SUB-SIDE as a plain in-page call and never
+;     touches DISKOP_OP. Same for every other tenant-hosted verb.
+;   * EOF inside fat_io_getbyte -> a successful open ended at `call fat_open`, so
+;     DISKOP_OP is FAT_OPEN by then, never FAT_FIND.
+;   * A path where NO primitive ran at all (DISKSLOT_OK == 0) would read a STALE
+;     cell, so those arms deliberately do NOT come here -- see cload.asm's
+;     `dpl_hard` and do_merge's own DISKSLOT check, both still `load_error`.
+;
+; ⚠️ `jp load_error` here, not `jr`: load_error RETURNS (basic/bload.asm), and ~73
+; call sites depend on that -- several resume into their caller on purpose. So a
+; caller that `call`s THIS routine still gets load_error's return, unchanged; only
+; the not-found arm diverts, and it diverts to a raise that never comes back.
+; raise_error fires from arbitrary call depth by design (fre_abort_low resets SP
+; from SAVSTK as its own first act), so raising from inside disk_prog_load is safe.
+;
+; ⚠️ BLOAD IS NOT COVERED AND THAT IS STATED, NOT OVERLOOKED. Its loader is the
+; sub-ROM page-1 tenant (sub/bload.asm), where the shared fatio-body.inc binds to
+; the REAL sub-side primitives and DISKOP_OP is never written. It reports through
+; BL_STAT and needs a value of its own; its row stays un-graduated.
+df_or_loaderr:
+                ld      a,(DISKOP_OP)
+                cp      DISKOP_SEL_FAT_FIND
+                jp      z,df_notfound
+                jp      load_error
+
 ; ===========================================================================
 ; Sequential file channel (Phase 2). A SINGLE open channel, layered on the
 ; existing fat.asm sequential engine (fat_io_open/getbyte + fat_io_create/putbyte/
@@ -353,7 +394,11 @@ oo_fail:
                 ld      (hl),a              ; FCH_MODES[ch] = 0
                 ld      (FCH_MODE),a
                 ld      (FCH_ACTIVE),a      ; no channel live (don't save the garbage)
-                jp      load_error
+                ; D-LOADERR: AFTER the channel cleanup, never before -- a raise
+                ; here would leave the slot claimed. The cleanup is address
+                ; arithmetic and touches no disk primitive, so DISKOP_OP still
+                ; names the one that failed.
+                jp      df_or_loaderr
 oo_nodisk:
                 xor     a
                 ld      (FCH_MODE),a        ; no slot was claimed; leave FCH_ACTIVE alone
@@ -1546,7 +1591,8 @@ ex_merge:
                 jp      exec_stmt
 mrg_ioerr:
                 pop     hl
-                jp      load_error
+                jp      df_or_loaderr       ; D-LOADERR: `File not found` when the
+                                            ; name simply is not there
 
 ; --- MERGE "CAS:name" — merge an ASCII program from cassette ------------------
 ; The tape counterpart of the disk MERGE above: read an $EA ASCII cassette file and

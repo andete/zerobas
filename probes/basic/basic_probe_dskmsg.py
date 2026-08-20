@@ -180,8 +180,21 @@ CASES = [
 
 # Rows PRINTED but NOT SCORED: a measured, filed divergence. Keeping them out of
 # the tally is what stops a known-red row from masking a NEW red one.
-NOT_GATED = {"dsk-loadnone", "dsk-bloadnone", "dsk-runnone", "dsk-mergenone",
-             "dsk-opennone", "dsk-appnone", "dsk-bloadmode"}
+#
+# ✅ FIVE OF THE ORIGINAL SEVEN GRADUATED THE SAME DAY THEY WERE FILED (D-LOADERR,
+# 2026-08-20): `dsk-loadnone`, `dsk-runnone`, `dsk-mergenone`, `dsk-opennone` and
+# `dsk-appnone` are now GATED, exactly the way `dsk-namenone` graduated when its
+# own arm split landed. That is what this set is for -- a holding pen with an
+# exit, not a place rows go to be forgotten.
+#
+# 🔴 THE TWO THAT REMAIN ARE BOTH `BLOAD`, AND THEY REMAIN FOR ONE STATED REASON:
+# BLOAD's loader is the sub-ROM PAGE-1 tenant (sub/bload.asm), where the shared
+# fatio-body.inc binds to the REAL sub-side primitives and `DISKOP_OP` is never
+# written -- so the DISKOP_OP test df_or_loaderr (basic/files.asm) uses cannot
+# see it. BLOAD reports through BL_STAT and needs a value of its own.
+# `dsk-bloadmode` additionally needs a SECOND face (`Bad file mode`), which no
+# arm in the tree produces yet.
+NOT_GATED = {"dsk-bloadnone", "dsk-bloadmode"}
 
 # Rows that WRITE to the image they mount, and therefore get a private copy.
 # Boot-per-case reboots the machine but keeps handing openMSX the SAME file.

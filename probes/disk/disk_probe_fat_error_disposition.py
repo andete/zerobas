@@ -43,7 +43,9 @@ neighbours' evidence stops being a pin -- so each one waited for its own code.
 FALSIFICATION RECORD (this is the evidence the gate measures its subject).  With
 the error tail neutered, four of the cases below SILENTLY REPORT NOTHING --
 load-missing, run-missing, open-missing, merge-missing.  Restoring the tail
-restores `load error` on all of them.  (`append-missing` was added 2026-07-31 by
+restores the message on all of them.  (✅ Since D-LOADERR, 2026-08-20, that
+message is `File not found`, raised, not `load error`, printed -- for every one
+of those four.  `bload-missing` is the one that still prints.)  (`append-missing` was added 2026-07-31 by
 D-APPMISS and postdates that experiment; it shares open-missing's disposition.)
 If you change fatprim_bounce, re-run that experiment rather than trusting a green
 here.
@@ -94,12 +96,33 @@ import probe_report  # noqa: E402
 # measured on the reference.  Defined BEFORE the table that cites it.
 WANT = "load error"
 
+# ✅ D-LOADERR, 2026-08-20 (docs/loaderr-msx1-characterization.md). The
+# MISSING-FILE half of that class is no longer unmeasured: `File not found` is
+# what BOTH references answer for LOAD / RUN"f" / MERGE / OPEN..FOR INPUT /
+# OPEN..FOR APPEND, and zerobas now raises it too.  So those five pins move --
+# in the same commit as the code, exactly as `kill-missing`'s did.
+#
+# 🔴 AND THEY WERE A GREEN ORACLE FOR THE DEFECT UNTIL TODAY. Five rows in this
+# file asserted `load error` and PASSED for as long as the defect lived; the fix
+# is what turned them red. That is the shape this project keeps finding
+# [[a-green-oracle-can-assert-the-defect]] -- and it is not a criticism of the
+# pin, which was honest: it said "not measured on the reference", and the
+# remedy was to measure, which is what happened.
+#
+# ⚠️ `bload-missing` KEEPS `load error` AND THAT IS NOT AN OVERSIGHT. BLOAD's
+# loader is the sub-ROM page-1 tenant, where DISKOP_OP is never written, so
+# df_or_loaderr cannot see it; its reference reading exists (`File not found`)
+# and its FIX does not. A pin that drifts on a NEIGHBOUR's evidence stops being
+# a pin -- the same rule that kept these five at `load error` until they were
+# measured keeps this one there now.
+NOTFOUND = "File not found"
+
 # Each verb must route a "not found" through the FAT primitive shim layer and
 # surface zerobas's load_error.  Kept to DIRECT-mode one-liners so the failure
 # lands on the line right below the echoed command.
 CASES = [
-    ("load-missing",  'LOAD"A:NOSUCH.BAS"', WANT, "load-alive"),
-    ("run-missing",   'RUN"A:NOSUCH.BAS"', WANT, "run-alive"),
+    ("load-missing",  'LOAD"A:NOSUCH.BAS"', NOTFOUND, "load-alive"),
+    ("run-missing",   'RUN"A:NOSUCH.BAS"', NOTFOUND, "run-alive"),
     # 🔴 THE ONE ROW THAT IS NOT PINNED TO `load error`, SINCE 2026-08-07
     # (D-DSKMSG, docs/spec-basic-dskmsg.md §4.3). This row pinned KILL's no-match
     # to zerobas's own `load error` ON PURPOSE while the message was UNMEASURED
@@ -116,7 +139,7 @@ CASES = [
     # that drifts verb by verb on its neighbours' evidence stops being a pin.
     ("kill-missing",  'KILL"A:NOSUCH.BAS"', "File not found", "kill-alive"),
     ("bload-missing", 'BLOAD"A:NOSUCH.BIN"', WANT, "bload-alive"),
-    ("open-missing",  'OPEN"A:NOSUCH.DAT" FOR INPUT AS #1', WANT,
+    ("open-missing",  'OPEN"A:NOSUCH.DAT" FOR INPUT AS #1', NOTFOUND,
      "open-alive"),
     # D-APPMISS (docs/spec-basic-append-missing-refuse.md §5c). APPEND used to
     # CREATE the missing file -- `fat_io_append` jumped into `fat_io_create` on a
@@ -127,7 +150,7 @@ CASES = [
     # statement whatever OPEN raised, and `err_class` there deliberately does not
     # know zerobas's `load error` wording. `append-missing` red with `open-missing`
     # green means the APPEND path reached a different class.
-    ("append-missing", 'OPEN"A:NOSUCH.DAT" FOR APPEND AS #1', WANT,
+    ("append-missing", 'OPEN"A:NOSUCH.DAT" FOR APPEND AS #1', NOTFOUND,
      "append-alive"),
     # 🔴 THE SECOND ROW OFF `load error`, SINCE 2026-08-07 (D-DKNAME,
     # docs/spec-basic-dkname.md). Same reading as `kill-missing` and taken in the
@@ -141,7 +164,7 @@ CASES = [
     # answers `load error`, and no row here or anywhere drives it.
     ("name-missing",  'NAME"A:NOSUCH.BAS" AS "B.BAS"', "File not found",
      "name-alive"),
-    ("merge-missing", 'MERGE"A:NOSUCH.BAS"', WANT, "merge-alive"),
+    ("merge-missing", 'MERGE"A:NOSUCH.BAS"', NOTFOUND, "merge-alive"),
 ]
 
 # A row is `(key, line)` -- pinned to WANT, no verb control -- or

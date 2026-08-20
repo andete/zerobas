@@ -101,6 +101,22 @@ exists and ERR 53's message is sub-hosted, so the *raise* end is free; the
 
 ---
 
+## 4a. ✅ FIXED THE SAME DAY — see [`loaderr-fix-notes.md`](loaderr-fix-notes.md)
+
+§4 called this a design question. It was, and the design turned out to be
+sixteen bytes: `fatprim_bounce` already records **which** primitive it is about
+to run in `DISKOP_OP`, so `DISKOP_OP == FAT_FIND` on a failure means *mounted
+fine, name not there* — no new status, no change to `fat_io_open`. Five of the
+six verbs now raise ERR 53; `BLOAD` cannot use the test (sub-ROM tenant, never
+writes the cell) and its two rows stay reported.
+
+🔴 **And the first draft broke the cassette**, because `dpl_err` is shared with
+`do_tape_prog` and no tape op writes that cell — caught by
+`castail-acceptance`, a battery this slice does not own. §4's own warning
+("routing `oo_fail` wholesale would report `File not found` for an unreadable
+disk") was right about the class and I then missed nine instances of it one file
+away. **Guarding an instance of a class is not guarding the class.**
+
 ## 5. Status
 
 Seven rows added to

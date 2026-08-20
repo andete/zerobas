@@ -43,10 +43,14 @@ agreed reading -- because two DEAD machines agree perfectly, and `<nothing>` is
 the expected answer of three rows here ([[gate-whose-answer-is-an-error-passes-a-
 dead-subject]]).
 
-⚠️ ONE STRING IS NORMALISED PER SIDE, AND ONLY ONE. zerobas answers a missing
-file with its own lowercase `load error` where the CF-3300 says `File not
-found` -- the wording divergence `basic/PROVENANCE.md` quarantines for the whole
-no-disk / mount / I-O class, deliberately NOT in scope here. A row whose whole
+⚠️ ONE STRING IS NORMALISED PER SIDE, AND ONLY ONE. It USED to differ per side:
+zerobas answered a missing file with its own lowercase `load error` where the
+CF-3300 says `File not found`. ✅ D-LOADERR (2026-08-20) closed that on THIS
+path -- `RUN"A:missing"` now raises `File not found` here too -- so both sides
+normalise the same string and the per-side split is vestigial for these rows.
+It is kept, not deleted, because the quarantined class is not empty: BLOAD (a
+sub-ROM tenant, which reports through BL_STAT and never writes DISKOP_OP) and
+the whole cassette / mount / I-O class still answer `load error`. A row whose whole
 tail is exactly that one message reads `<file-missing>` on both sides, so the
 rows can be scored on SHAPE (how many messages, and did the resident program
 run) without either re-opening the wording or silently blessing it. A tail that
@@ -93,7 +97,11 @@ SIDES = {
     "cf3300": dict(machine="National_CF-3300", boot=14.0, step=4.5,
                    reset=("", "SCREEN 0", "NEW"), missmsg="File not found"),
     "zb":     dict(machine=ZB_MACHINE, boot=8.0, step=2.5,
-                   reset=("NEW",), missmsg="load error"),
+                   # D-LOADERR 2026-08-20: was `load error`. zerobas now RAISES
+                   # `File not found` on this path, so both sides normalise the
+                   # SAME string and the per-side split is vestigial here --
+                   # kept because BLOAD and the cassette class still diverge.
+                   reset=("NEW",), missmsg="File not found"),
 }
 NO_DISK_SIDES = ("vg8020",)
 
