@@ -374,6 +374,18 @@ deadcode: $(RELOC_SYM) $(SUB_ROM)
 redundant-load-check: $(RELOC_SYM)
 	python3 tools/redundant_load_sweep.py
 
+# --- Wall-assertion check (D-WALLDATE) ----------------------------------------
+# D-REPRICE found FOUR open TODO items asserting a CURRENT free-space figure in
+# prose, all four wrong, three of them UNDERSTATING the wall -- so each read as
+# LESS affordable than it was. Deciding "is this sentence stale?" needs English
+# tense; this asks the mechanical question instead: a free-space figure must
+# carry a DATE or a COMMIT, and must not be phrased in the present tense. A
+# dated reading then STANDS AS TAKEN and is never second-guessed.
+# Calibrated against the pre-D-REPRICE TODO.md, where all four were live: it
+# catches 4/4. Its first two drafts caught 0/4 and 3/4 -- see the header.
+wall-assertion-check:
+	python3 tools/wall_assertion_check.py
+
 # --- Merged repack main ROM (WS-3 / D4) ---------------------------------------
 # The 32 KB slot-0 "main ROM": repacked C-BIOS + relocated BASIC ($2812-$7FFF) +
 # tape, built reproducibly from the user's C-BIOS checkout (CBIOS=<path>; no

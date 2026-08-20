@@ -530,8 +530,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       a typo become a hard stop instead of a silent pass — the exact failure
       `> file 2>&1` and a `set -e` driver exist to prevent.
 
-- [ ] 🔴 **AN ITEM THAT STATES THE WALL INLINE GOES STALE SILENTLY, AND NO GATE
-      READS ONE — FOUR FOUND IN ONE PASS.** Filed 2026-08-19 by D-REPRICE
+- [x] ✅ **~~AN ITEM THAT STATES THE WALL INLINE GOES STALE SILENTLY~~ — GATED
+      2026-08-19 (D-WALLDATE), `make wall-assertion-check`, 0 ROM bytes.**
+      [`docs/spec-basic-walldate.md`](docs/spec-basic-walldate.md),
+      [`tools/wall_assertion_check.py`](tools/wall_assertion_check.py). The rule
+      is mechanical because the stale/not-stale question is not: **a free-space
+      figure must carry a DATE or a COMMIT, and must not be in the present
+      tense.** A dated reading then STANDS AS TAKEN and is never second-guessed.
+      🔴 **DRAFT 1 CAUGHT 0 OF THE 4 DEFECTS IT WAS BUILT FOR, AND REPORTED
+      CLEAN.** It looked for a date ANYWHERE in the item; every item names a
+      slice or carries a date somewhere, so it exempted everything. **Calibrated
+      against the pre-D-REPRICE `TODO.md` where all four were live** — draft 2
+      (line-local, past tense allowed) caught 3/4, failing on the word `was`
+      one line below the 14 B claim; draft 3 (date-or-commit only, present tense
+      a separate finding) catches **4/4**.
+      🎯 **A DATE ALONE IS NOT ENOUGH** — *"RE-PRICED 2026-08-09 … main page 1
+      **is now 16 B**"* is dated and still read as current. PRESENT-TENSE is its
+      own finding with its own remedy: **say WAS, not IS NOW**.
+      🔴 **K-WA3 MISSED AND IS RECORDED, NOT TUNED AWAY.** The UNDATED half is
+      weak: any date within one line exempts a figure, related or not. Radius
+      chosen by measurement — 0 gives 4/4 but **6 false positives** on the clean
+      tree, 1 gives 4/4 and **0**. PRESENT-TENSE is the strong half (K-WA2:
+      flagged **despite** its date). ⚠️ **Read a clean run as evidence about
+      present-tense claims and only weak evidence about undated ones.**
+      📊 Fixed **10 figures across 5 open items** — including the surviving
+      present-tense opening lines of three of the founding four, which had dated
+      addenda but still greeted a skimming reader with *"IS NOW 14 B"*. Readings
+      unchanged; only tense and dates.
+      ⚠️ SCOPE, stated: open `- [ ]` items in `TODO.md` only. Dated slice docs
+      under `docs/` are the house style and out of scope.
+
+      **Filed 2026-08-19** by D-REPRICE Filed 2026-08-19 by D-REPRICE
       ([`docs/repricing-page1-2026-08-19.md`](docs/repricing-page1-2026-08-19.md)
       §4), which went looking for declines the new 64 B wall might fund and found
       this class instead. Four OPEN items assert a *current* free-space figure in
@@ -1032,7 +1061,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       observable (`f.aryoortrap`) missed too — `ary_op0_resolve` clobbers `BC`,
       so the store lands where no row looks. Kept for uniformity with the five
       other `tgt_parse` callers (at `exr_lp` the equivalent abort **is**
-      one-row-knifeable, D-ARYLV K-AL3). 3 B of the low region, which has 7.
+      one-row-knifeable, D-ARYLV K-AL3). 3 B of the low region, which had 7 on
+      2026-08-08.
       ⚠️ Removing it makes `ex_mid_stmt` the one caller that trusts a *callee's*
       error check — weigh that against the bytes
       ([[rule-gated-structurally-has-no-knife]]).
@@ -2850,7 +2880,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ALLOCATION OOM (`DIM` — genuinely ERR 7) and `aeng_copy_str`'s string-heap
       OOM (ERR 14). They need different codes. ⚠️ The `DIM` half is **UNMEASURED**
       — assumed ERR 7 from the language reference, not from a reading.
-      💰 Not carve-scouted. ⚠️ **Main page 1 is down to 49 B** after D-ARYLV, so
+      💰 Not carve-scouted. ⚠️ **Main page 1 was down to 49 B** after D-ARYLV
+      (2026-08-08), so
       this one needs `tools/carve_scout.py` before a byte moves, unlike the last.
       ⚠️ **THAT 49 B IS THE WALL, NOT A PRICE, AND IT IS STALE — 64 B at
       `b51bbbb` (2026-08-19).** Stands as taken for its date. 🎯 **The re-pricing
@@ -4527,7 +4558,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       shipped 2026-07-15 with the arrays arc, slice 2; `DELETE <range>` shipped
       2026-08-02 with D-DELETE and **`LIST <range>` the same day with D-LSTRNG**,
       `.` excepted in both — its own item below).
-      ⚠️ **THE PAGE-1 WALL IS NOW 14 B**, not the 82 B D-LSTRNG started from, and
+      ⚠️ **THE PAGE-1 WALL WAS 14 B ON 2026-08-06**, not the 82 B D-LSTRNG
+      started from, and
       82 B was itself the post-carve figure. Any remaining item here needs a carve
       or an eviction before it needs a design.
       ⚠️ **THAT 14 B IS STALE — THE WALL IS 64 B AT `b51bbbb` (2026-08-19).**
@@ -4621,7 +4653,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Page 1 is no longer 14 B over — it is **375 B free** (low region 5 B) after
       the FAT tenant-shim collapse (`6f8ac0f`, +367 B: thirteen byte-identical
       34 B shims onto one shared body), which answered D-KW-1 "carve first". More importantly the item is not blocked on *funding* but on
-      **placement**: `sub.rom` has **≈8 KB free** (4509 B page-0 + 3497 B page-1)
+      **placement**: `sub.rom` had **≈8 KB free** on 2026-07-26
+      (4509 B page-0 + 3497 B page-1)
       and `kwtable.inc` entries + leaf compute already live there, so the only
       number that matters per keyword is its **main-ROM dispatch glue** —
       and `exec_stmt` is a 67-entry linear `cp`/`jp z` chain charging **5 B per
@@ -5736,8 +5769,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       100 B (**frees 1024 B**); at `FCH_CEIL=15` (full reference parity) it is
       750 B, still **374 B less than today**.
       ⚠️ **THE ROM COST IS NOT MEASURED** — flush-and-re-read instead of memcpy
-      is an unknown-size change to `files.asm` against **9 B** free low / **6 B**
-      free page 1. Estimating it from reading code would be a hypothesis, not a
+      is an unknown-size change to `files.asm` against the **9 B** free low /
+      **6 B** free page 1 of 2026-07-29. Estimating it from reading code would be a hypothesis, not a
       measurement (D-ARR-C §7a).
       ⚠️ **THOSE TWO FIGURES ARE STALE — 5 B low / 64 B page 1 at `b51bbbb`
       (2026-08-19)**; they stand as taken for their date. 🎯 **The caveat itself
@@ -5801,7 +5834,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       SPACE: `FRE(0)` 13875 → 14899** (measured). `LINEBUF` `$BA00`→`$EB00`
       (page-aligned, cursor idiom untouched), `TOKBUF` `$B700`→`$EC00`,
       `TXTMAX` `$B700`→`$BB00`. **Zero ROM cost** — address constants only, so
-      page 1 stayed at 1 B free and the lean cart stayed byte-identical.
+      page 1 stayed at the 1 B free it had on 2026-07-29 and the lean cart
+      stayed byte-identical.
       Usability CHECKED, not assumed: `CLEAR 200 : DIM A%(7000)` (14002 B, over
       the old 13875) now succeeds with **both ends written and read back**
       (11/22), 889 B still free. A `DIM` that merely succeeds witnesses nothing.
@@ -5821,7 +5855,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       unconditionally**, the `sem_same` behaviour.
       **Cost: 1 B of main page 1, 0 B of low region, NO CARVE** (measured by
       relaxing the `$8000` guard and reading `__MEAS_PAGE1_END`, then
-      restoring). ⚠️ **Page 1 is now at 0 B free** (`$8000` exactly).
+      restoring). ⚠️ **Page 1 was at 0 B free on 2026-07-29** (`$8000` exactly).
       🔴 **THE COST WAS SITING, A THIRD TIME.** The first build overran by 8 B
       and all 8 were `MAXFILES`' `CLEAR` — which is verbatim `ex_clear`'s own
       tail. `jp clr_done` costs the 3 bytes the `jp exec_stmt` it replaced
