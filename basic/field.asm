@@ -366,6 +366,40 @@ exf_item:
                 pop     de                  ; DE = width (E = width, D = 0 for w<=255)
                 push    hl                  ; guard cursor across the table write
                 call    fld_add             ; add [FLD_CHAN, BC, FLD_CUROFF, E]; bump offset
+                ; --- D-RECLEN: the running total may not exceed the RECORD LENGTH -
+                ; `FIELD overflow` (ERR 50). Sited HERE, after fld_add has bumped
+                ; FLD_CUROFF, so the test reads the total INCLUDING this item and
+                ; needs no second add; the cursor is on the stack, so HL/DE/A are
+                ; free. The raise leaves that pushed HL there ON PURPOSE -- the
+                ; same argument exf_raise already documents below: raise_error
+                ; resets SP from SAVSTK on BOTH its arms.
+                ; 🔴 THE BOUND IS FCH_RECLENS[ch], NOT A CONSTANT 256, and one row
+                ; is why: r.mid FIELDs a width of 200 into a LEN=64 record and the
+                ; CF-3300 refuses it -- 200 is UNDER 256, so a constant-256 test
+                ; passes it. Every row that existed before D-RECLEN used the
+                ; DEFAULT 256-byte record and could not tell the two apart
+                ; (docs/spec-basic-fldwidth.md §6.5 addendum).
+                ; There is no accessor to borrow -- load_reclen is sub-ROM -- so
+                ; the table is read inline, exactly as oo_parse_reclen WRITES it
+                ; inline at basic/files.asm:283.
+                ld      a,(FLD_CHAN)
+                add     a,a                 ; channel * 2 (word index)
+                ld      e,a
+                ld      d,0
+                ld      hl,FCH_RECLENS
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = FCH_RECLENS[ch], 1..256
+                ld      hl,(FLD_CUROFF)     ; HL = the total INCLUDING this item
+                or      a
+                sbc     hl,de
+                jr      c,exf_fits          ; total < record
+                jr      z,exf_fits          ; total == record -> exactly fills it
+                                            ; (row r.ok: LEN=64, width 64 -> ` 64 `)
+                ld      a,50                ; ERR 50: FIELD overflow
+                jr      exf_raise
+exf_fits:
                 pop     hl
                 call    skip_spaces
                 cp      ','

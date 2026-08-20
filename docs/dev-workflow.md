@@ -158,6 +158,18 @@ landed defect, not advice.
 * **Restore from a scratchpad SNAPSHOT, never `git checkout --`** — a knife run
   in a dirty tree otherwise reverts the slice instead of the cut
   (`spec-basic-lnref.md` §7.0).
+* 🔴 **AND RESTORE BY WRITING THE BYTES, NEVER WITH `shutil.copy2` — IT PRESERVES
+  MTIME AND LEAVES A STALE ROM.** Measured 2026-08-19 (D-RECLEN,
+  `spec-basic-fldwidth.md` §6.5.1): the runner's `finally` used `copy2`, which
+  restored the correct SOURCE but stamped it with the snapshot's *older* mtime.
+  `make` then saw the ROM as newer than its input, rebuilt nothing, and the NEXT
+  gate ran against the ROM built from the last knife — reading 45/47 with exactly
+  that knife's two rows red. **A false regression is indistinguishable from a
+  real one**, and it survives the run that produced it, so it lands on whatever
+  is measured next. Use `SRC.write_text(SNAP.read_text())` (or `cp`, or `touch`
+  after), and prefer `rm -rf build` before the gate that has to be believed.
+  ⚠️ The hash guard does NOT catch this: it compares the ROM before and after a
+  CUT, and by the time the stale ROM matters the runner has already exited.
 * **Build BEFORE taking the baseline.** Restoring a snapshot touches mtimes, and
   `omsx_preflight` then (correctly) refuses the run as stale.
 * **Capture the baseline through the probe's own parse path, and refuse a SHORT

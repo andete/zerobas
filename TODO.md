@@ -1357,8 +1357,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and the ERR 5 come from different stages.
       ⚠️ Carried out of it: the `- [ ]` item directly below.
 
-- [ ] 🔴 **`FIELD overflow` (ERR 50) AGAINST THE RECORD LENGTH IS NOT CHECKED.
-      Filed 2026-08-08 by D-FLDWIDTH, MEASURED and DECLINED WITH NUMBERS.**
+- [x] ✅ **~~`FIELD overflow` (ERR 50) AGAINST THE RECORD LENGTH IS NOT
+      CHECKED~~ — SHIPPED 2026-08-19 (D-RECLEN), DENOMINATOR AND ALL.**
+      [`docs/spec-basic-fldwidth.md`](docs/spec-basic-fldwidth.md) §6.5 addendum.
+      `ex_field` reads `FCH_RECLENS[ch]` **inline** and raises ERR 50 when the
+      running total passes it — **+28 B main page 1 (50 → 22 free)**, 0 low,
+      0 sub, 0 RAM. Sited AFTER `fld_add` bumps `FLD_CUROFF` so the test reads the
+      total *including* this item and needs no second add.
+      📊 **`make fldwidth-acceptance` 40/40 → 47/47, deferrals 9 → 2** — the two
+      original ERR-50 rows (`d.sum`, `d.sum1`, red since D-FLDWIDTH) and all five
+      `r.*` rows promoted out of DEFERRED and green. **Promoting is the stricter
+      move**: a deferred row cannot fail; these now can.
+      🎯 **K-RC1 IS THE WHOLE ARGUMENT IN ONE CUT.** It makes the bound a
+      **constant 256** — precisely the wrong rule the old battery could not
+      exclude — and reddens **only** `r.over`/`r.mid`/`r.sum128`, leaving
+      `d.sum`/`d.sum1` GREEN because their totals (300, 257) exceed 256 either
+      way. **That is a measurement of the claim the slice rests on: the rows that
+      existed before D-RECLEN were structurally incapable of separating the two
+      rules.** Knives 3/3 EXACT, three distinct ROM hashes.
+      🔴 **THE DECLINE'S SECOND BLOCKER WAS NEVER ONE.** "No main-side accessor to
+      borrow" — but its own ≈27 B hand-count already priced an INLINE
+      `FCH_RECLENS` read at 14 B, and `oo_parse_reclen` writes that same table
+      inline main-side at [`basic/files.asm:283`](basic/files.asm:283). It only
+      ever meant the fix could not be 3 B. **Re-read a decline's arithmetic
+      before believing its prose.**
+      ⚠️ ONE REFERENCE for every row (Disk BASIC; a diskless VG-8020 cannot
+      express the question). Carried forward, not upgraded.
+
+      **Filed 2026-08-08** by D-FLDWIDTH, MEASURED and DECLINED WITH NUMBERS.
       CF-3300 vs zerobas, over the default 256-byte RANDOM record:
 
       | row | program | CF-3300 | zerobas |

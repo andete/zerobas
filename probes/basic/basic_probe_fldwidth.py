@@ -364,20 +364,23 @@ SITE_CONTROL = {
 # Filed in TODO.md as its own residual; a deferred row that started AGREEING
 # would itself be a finding.
 DEFERRED: dict[str, str] = {
-    "r.openctl": "DEFERRED — D-RECLEN denominator: does `LEN=` parse at all?",
-    "r.ok":      "DEFERRED — D-RECLEN denominator: total == a NON-default record",
-    "r.over":    "DEFERRED — D-RECLEN discriminator: record length vs constant 256",
-    "r.mid":     "DEFERRED — D-RECLEN discriminator, wide margin, still under 256",
-    "r.sum":     "DEFERRED — D-RECLEN: ran two questions together, see r.len100/r.sum128",
-    "r.len100":  "DEFERRED — D-RECLEN: a NON-TILING LEN=, first reading vs the reference",
-    "r.sum128":  "DEFERRED — D-RECLEN discriminator on the RUNNING total, tiling record",
-    "d.sum": "DEFERRED — the RECORD-LENGTH running total (ERR 50), a separate "
-             "rule priced at ~27 B against a 6 B wall; see d.sumok for the "
-             "boundary and spec-basic-fldwidth §6.5 for the numbers",
-    "d.sum1": "DEFERRED — same rule, one byte past the record (257): d.sumok "
-              "(256) is accepted on both sides, so the boundary is pinned to "
-              "the byte and BOTH per-item widths are inside 0..255",
+    # ✅ D-RECLEN SHIPPED (2026-08-19): `r.openctl`, `r.ok`, `r.over`, `r.mid`,
+    # `r.sum128`, `d.sum` and `d.sum1` were ALL deferred here and are now SCORED.
+    # The rule they were waiting on -- is the bound the RECORD LENGTH or a
+    # constant 256? -- was settled by `r.mid` (a width of 200 into a LEN=64
+    # record: 200 is UNDER 256, so a constant-256 test passes it and the CF-3300
+    # does not), and ex_field now reads FCH_RECLENS[ch] inline.
+    # 🔴 PROMOTING THEM IS THE STRICTER MOVE: a DEFERRED row is measured and
+    # printed but never scored, so it cannot fail. These now can.
+    "r.sum":    "DEFERRED — ran TWO questions together (a non-tiling LEN=100 AND "
+                "the running total); split into r.len100 + r.sum128, which are "
+                "scored. Kept as the record of a row whose MISS was the finding",
+    "r.len100": "DEFERRED — a NON-TILING `LEN=` is `OK` on the CF-3300 and "
+                "`Syntax error` here (oo_parse_reclen demands a power of two so "
+                "records tile the 512-byte sector). A SEPARATE defect, filed in "
+                "TODO.md; NOT part of the ERR-50 rule and not fixed by it",
 }
+
 
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>", "<RUN SCROLLED OFF>",
              "<NO DISK ON THIS SIDE>")

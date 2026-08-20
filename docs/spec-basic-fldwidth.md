@@ -398,6 +398,51 @@ same ≈27 B, so **the byte half and the measurement half are both now clear.**
 See [`repricing-page1-2026-08-19.md`](repricing-page1-2026-08-19.md) §3.2, which
 identified this as the only open item whose byte blocker the carve had lifted.
 
+✅ **AND IT SHIPPED THE SAME DAY.** `ex_field` now reads `FCH_RECLENS[ch]`
+inline and raises ERR 50 when the running total passes it — **+28 B main page 1
+(50 → 22 free)**, 0 B low, 0 B sub, 0 RAM. The test is sited **after** `fld_add`
+has bumped `FLD_CUROFF`, so it reads the total *including* the current item and
+needs no second add; the text cursor is on the stack there, leaving `HL`/`DE`/`A`
+free, and the raise leaves that pushed `HL` behind on purpose — the same argument
+`exf_raise` already documents, that `raise_error` resets `SP` from `SAVSTK` on
+both its arms.
+
+**Seven rows left DEFERRED for this**: `d.sum`, `d.sum1` (the original ERR-50
+pair, red since D-FLDWIDTH) and the five `r.*` rows. All seven are now **SCORED
+and green** — the battery went **40/40 → 47/47** and its deferral count **9 → 2**.
+Promoting them is the stricter move: a DEFERRED row is measured and printed but
+never scored, so it cannot fail; these now can.
+
+### 6.5.1 Knives — 3 cuts, 3 EXACT
+
+| knife | cut | predicted red | verdict |
+|---|---|---|---|
+| **K-RC1** | the bound becomes a **constant 256** (`ld e,(hl)/inc hl/ld d,(hl)` → `ld de,256`, both 3 B) | `r.over`, `r.mid`, `r.sum128` | ✅ EXACT |
+| **K-RC2** | `ld a,50` → `ld a,51` | `d.sum`, `d.sum1`, `r.over`, `r.mid`, `r.sum128` | ✅ EXACT |
+| **K-RC3** | `jr z,exf_fits` → `jr c,exf_fits`, so an exactly-full record stops fitting | `r.ok`, `d.sumok` | ✅ EXACT |
+
+Baseline `4352de53`; the cuts produced `00c96de0`, `d0bb94d9`, `3846cd70` —
+three distinct ROMs, so each was genuinely applied.
+
+🔴 **THE RUNNER'S RESTORE LEFT A STALE ROM, AND THE NEXT BATTERY READ IT AS A
+REGRESSION.** The `finally` used `shutil.copy2`, which **preserves mtime**: the
+correct source came back stamped older than the ROM built from K-RC3, so `make`
+rebuilt nothing and the following `fldwidth-acceptance` read **45/47 with exactly
+K-RC3's two rows red** (`r.ok`, `d.sumok`). It looks precisely like a real
+regression, and it outlives the run that caused it. Fixed to write the bytes
+(`SRC.write_text(SNAP.read_text())`), rebuilt from `rm -rf build`, and re-run:
+**47/47**. ⚠️ **The ROM-hash guard cannot catch this** — it compares before and
+after a *cut*, and the stale ROM only matters after the runner has exited. The
+rule is now in [`dev-workflow.md`](dev-workflow.md) §Knives.
+
+🎯 **K-RC1 IS THE WHOLE ARGUMENT FOR THIS SLICE, IN ONE CUT.** It implements
+*exactly* the wrong rule the old battery could not exclude — a constant 256 — and
+reddens **only** `r.over`, `r.mid` and `r.sum128`, leaving `d.sum` and `d.sum1`
+green because their totals (300 and 257) exceed 256 either way. That is a direct
+measurement of the claim this slice was built on: **the rows that existed before
+D-RECLEN were structurally incapable of telling the two rules apart**, and the
+three new ones are exactly the ones that can.
+
 🔴 **AND THE ROW THAT MISSED FOUND A SECOND DIVERGENCE.** `r.sum` was drafted
 with `LEN=100` and predicted ` 60  50 ` here; it read **`Syntax error`**, because
 `oo_parse_reclen` restricts the record length to a **power of two** in 1..256.
