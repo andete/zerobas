@@ -433,6 +433,16 @@ CLEARPOOL       equ     1
 ; (basic/interp.asm). ⚠️ ARRAY allocation failures keep FPERR=6 / ERR 7 on
 ; purpose -- an array that will not fit ran out of VARIABLE space, and the
 ; oos-vs-oom row exists to pin exactly that distinction.
+; 🎯 THE LINE ABOVE IS ABOUT THE ALLOCATION, AND THE STRING ARRAY *STORE* WAS
+; ON THE WRONG SIDE OF IT UNTIL 2026-08-20 (D-ARYOOS). `A$(2)=B$` on a full
+; pool is a BODY that will not fit, not an array that will not fit, and both
+; references say `Out of string space`; it reached ERR 7 because
+; aeng_copy_str's OOM reused ary_alloc's ARY_ERR=4. It now raises ARY_ERR=5,
+; which ary_errmap maps to THIS symbol. The denominator that keeps the two
+; apart is row s.strdim: `CLEAR 100:DIM A$(20000)` is a STRING array and is
+; `Out of memory` on vg8020, cf3300 and here -- so the split is by the SITE
+; that failed, never by the array's type
+; (docs/aryoos-msx1-characterization.md).
     IF CLEARPOOL
 FPERR_STROOM    equ     11      ; -> ERR 14 "out of string space"
     ELSE
@@ -2004,10 +2014,16 @@ ARY_ADDR        equ     $E035   ; [tenant return, RESOLVE] element address (2)
                                 ; starts at $8001)
 ARY_ERR         equ     $E037   ; [tenant return] 0 ok; 1 Subscript-oor;
                                 ; 2 Illegal-fn (negative); 3 Redimensioned;
-                                ; 4 Out of memory (1) -- SCALAR_FIND always 0
-                                ; (a miss is not an error); SCALAR_ALLOC 0 ok
-                                ; / 4 Out of memory (the SAME code + mapping
-                                ; arrays' own OOM uses, §4b §7.3)
+                                ; 4 Out of memory -- an ALLOCATION that will
+                                ; not fit VARIABLE space (DIM, auto-dim, and
+                                ; SCALAR_ALLOC's insert; SCALAR_FIND is always
+                                ; 0, a miss is not an error); 5 Out of string
+                                ; space -- COPY_STR's heap_alloc could not get
+                                ; a BODY out of the `CLEAR n` pool (D-ARYOOS,
+                                ; 2026-08-20). 4 and 5 were ONE code until
+                                ; then, and the conflation cost the message:
+                                ; ary_errmap maps 4 -> FPERR=6 -> ERR 7, where
+                                ; both references answer ERR 14 for a store.
 
 ; --- Phase 1: CLEAR memory-top sysvar --------------------------------------
 ; HIMEM is the documented home of CLEAR's "highest address BASIC may use"

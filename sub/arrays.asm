@@ -95,8 +95,13 @@
 ; basic/arrays.asm's ex_let_arr_str, for why the resolve and the copy are two
 ; separate tenant calls rather than one fused op). Writes ARY_ADDR (RESOLVE
 ; only, harmless on DIM/ERASE/COPY_STR) and ARY_ERR (0 ok; 1 Subscript-oor;
-; 2 Illegal-fn/negative/not-found; 3 Redimensioned; 4 OOM; COPY_STR always
-; writes 0 -- it cannot fail) either way. Clobbers everything (tenant
+; 2 Illegal-fn/negative/not-found; 3 Redimensioned; 4 OOM -- an ALLOCATION that
+; will not fit variable space; 5 Out of string space -- a string BODY that will
+; not fit the `CLEAR n` pool, D-ARYOOS) either way.
+; ⚠️ THIS HEADER SAID "COPY_STR always writes 0 -- it cannot fail" UNTIL
+; 2026-08-20, and it had been false since slice 4a made the copy heap-allocate
+; (aeng_copy_str's own header says so, 280 lines below). No gate reads prose;
+; the code it described is `acs_oom`. Clobbers everything (tenant
 ; convention; the caller is under subrom_call/CALSLT, which already clobbers
 ; all registers).
 ary_engine:
@@ -368,10 +373,13 @@ afx_next:
 ; page-0 image, an in-page `call`, no subrom_call round trip).
 ;
 ; UNLIKE slice-3 (a fixed-size inline copy that could never fail), this now
-; CAN fail: heap_alloc may return OOM. ARY_ERR=4 on that path (the SAME code
-; ary_alloc's own OOM already uses) -- the main-ROM glue's existing
-; ary_errmap (basic/arrays.asm) already maps ARY_ERR=4 -> FPERR=6 "Out of
-; memory", so NO main-ROM change was needed to surface this new failure mode.
+; CAN fail: heap_alloc may return OOM. ARY_ERR=5 on that path (D-ARYOOS -- its
+; OWN code; ary_errmap maps 5 -> FPERR_STROOM -> ERR 14 "Out of string space",
+; which is what both references answer). ⚠️ It was ARY_ERR=4 from slice 4a to
+; 2026-08-20, sharing ary_alloc's code, and this comment used to end "so NO
+; main-ROM change was needed to surface this new failure mode" -- true about
+; SURFACING and false about the message: 4 maps to ERR 7 "Out of memory". The
+; one-byte main-ROM change is ary_errmap's 5th entry.
 ; §5.2(4) GC-safety: heap_alloc(len) may itself trigger a GC; the source
 ; descriptor is re-read FRESH via STRPTR (a stable sysvar address, never a
 ; bare body pointer) only AFTER heap_alloc returns, so a mid-alloc relocation
@@ -435,10 +443,30 @@ acs_copy:
                 ld      (ARY_ERR),a         ; 0 ok
                 ret
 acs_oom:
-                ld      a,4                 ; ARY_ERR: Out of memory (the SAME code
-                                            ; ary_alloc's own OOM uses; the main-ROM
-                                            ; glue's existing ary_errmap already maps
-                                            ; it -> FPERR=6, no main-ROM change needed)
+                ld      a,5                 ; D-ARYOOS: ARY_ERR 5 = OUT OF STRING
+                                            ; SPACE, a code of its OWN. This was 4 --
+                                            ; "the SAME code ary_alloc's own OOM
+                                            ; uses" -- and that reuse WAS the defect,
+                                            ; not a saving: ary_errmap maps 4 ->
+                                            ; FPERR=6 -> ERR 7 `Out of memory`, and
+                                            ; both references answer `Out of string
+                                            ; space` (ERR 14) for a store that could
+                                            ; not get a BODY. Measured 2026-08-20,
+                                            ; docs/aryoos-msx1-characterization.md:
+                                            ; `CLEAR 60:DIM A$(5):B$=STRING$(25,"A")
+                                            ; :A$(1)=B$:A$(2)=B$` -> `Out of string
+                                            ; space in 50` on vg8020 AND cf3300.
+                                            ; 🎯 4 vs 5 IS ALLOCATION vs BODY, NOT
+                                            ; NUMERIC vs STRING. `DIM A$(20000)` is a
+                                            ; STRING array whose 3-byte slots will
+                                            ; not fit VARIABLE space, and all three
+                                            ; machines call that `Out of memory` --
+                                            ; row s.strdim, the denominator row. So
+                                            ; ary_alloc's OOM (aal_oom, scv_oom)
+                                            ; stays 4 and only THIS site moves.
+                                            ; Same instruction, same byte count: the
+                                            ; whole price is ary_errmap's 5th entry,
+                                            ; one byte of the main ROM's low region.
                 ld      (ARY_ERR),a
                 ret
 

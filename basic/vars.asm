@@ -393,7 +393,30 @@ tss_ary:
                 ld      a,3
                 ld      (ARY_OP),a          ; op = 3 (COPY_STR)
                 jp      ary_engine_call     ; NZ + FPERR on OOM; every caller runs a
-                                            ; check_expr_errors* right after
+                                            ; check_expr_errors* right after.
+                                            ; D-ARYOOS: the OOM here is aeng_copy_str's
+                                            ; heap_alloc, so it now arrives as ARY_ERR=5
+                                            ; -> ERR 14 `Out of string space` instead of
+                                            ; ERR 7. MEASURED at THIS site, not inferred
+                                            ; from ex_let_arr_str's: row s.inpary,
+                                            ; `INPUT A$(2)` on a full pool, is
+                                            ; `Out of string space in 50` on vg8020,
+                                            ; cf3300 and here, with s.inpscal (`INPUT
+                                            ; D$`) as the scalar control.
+                                            ; 🔴 READ IS NOT A TEST OF THIS SITE, and
+                                            ; the row written to be one refuted itself:
+                                            ; `READ A$(2)` answers `[OK]` on BOTH
+                                            ; references, because a stored DATA
+                                            ; literal's descriptor points AT THE PROGRAM
+                                            ; TEXT and charges the pool nothing. The
+                                            ; scalar twin `READ D$` diverges the same
+                                            ; way, which is what proves it is the
+                                            ; S-CLP-5 body-ownership question (signed
+                                            ; off out of scope) and not this rule.
+                                            ; INPUT's bytes come from a TRANSIENT line
+                                            ; buffer, so the reference must copy, and
+                                            ; there the two sides agree. TODO.md
+                                            ; carries the READ residual.
 
 ; --- tgt_desc / tgt_desc_fix: a target HELD ACROSS AN EVALUATION -------------
 ; D-LVFIX (docs/spec-basic-lvsites.md §4.1/§5.1). ex_mid_stmt does not STORE

@@ -114,6 +114,12 @@ UNGATED = ("rep", "share")
 #            how big the pool is, so no pool arithmetic can make them agree.
 #   rep   -- REPORTED, NEVER GATED: rows whose answer is a property of each
 #            machine's memory map, so they can never be made to agree.
+#   arychg-- the pool arithmetic of a string ARRAY-ELEMENT store. GATED, and
+#            that was a MEASUREMENT, not a plan: these were written as
+#            reported-only on the assumption that they ride on S-CLP-5 body
+#            ownership like the `share` rows do, and all four agree to the
+#            byte. They SIZE the `oos` D-ARYOOS error rows -- they are the
+#            denominator, and gating them keeps the sizing honest.
 CASES = [
     # --- controls: TWO-SIDED apparatus rows -----------------------------------
     # A control must be a row BOTH machines are expected to pass TODAY. The
@@ -212,6 +218,65 @@ CASES = [
     ("oos-noread",   "oos", ['CLEAR 100', 'A$=STRING$(200,"A")',
                              'PRINT "[";FRE("");"]"']),
 
+    # --- D-ARYOOS: the STRING ARRAY-ELEMENT store's own pool exhaustion -------
+    # TODO.md "`ex_let_arr_str` SWALLOWS AN OUT-OF-STRING-SPACE AND THE PROGRAM
+    # RUNS ON" (measured 2026-08-08, re-measured 2026-08-09). The claim under
+    # measurement is NOT "zerobas has no string-space error" -- the SCALAR store
+    # gets it right, which is what makes this a finding about ONE store rather
+    # than about the engine. So the scalar row sits right beside the array one
+    # and both are gated: a fix that broke the scalar path would show HERE.
+    #
+    # 🎯 THE DISCRIMINATOR IS THE MESSAGE, NEVER "did it error". Adding the
+    # missing check to `ex_let_arr_str` without splitting `ARY_ERR=4` raises
+    # FPERR=6 -> ERR 7 `Out of memory`, where the reference says `Out of string
+    # space` (ERR 14). Every row below is read as TEXT through the echo-anchored
+    # tail (or the bracket span), so the two are told apart; a row scored
+    # error-vs-no-error would go green on that wrong fix.
+    #
+    # PREDICTIONS, WRITTEN BEFORE THE FIRST RUN (2026-08-20):
+    #   oos-arystore-ctl  ref " 25 "                zb " 25 "               PASS
+    #   oos-arystore      ref "Out of string space" zb ""      (swallowed)  FAIL
+    #   oos-autostore     ref "Out of string space" zb ""      (swallowed)  FAIL
+    #   oos-arycont       ref "<none>" (aborted)    zb "OK"                 FAIL
+    #   oos-scalarstore   ref "Out of string space" zb "Out of string space" PASS
+    #   oos-strdim-oom    ref "Out of memory"       zb "Out of memory"      PASS
+    #
+    # POOL ARITHMETIC THESE ROWS ARE SIZED AGAINST (the `arychg` battery below
+    # measures it; the sizes here are chosen so the LAST line is a store that
+    # cannot fit on EITHER machine, which is the only thing an echo-anchored
+    # tail can read in direct mode -- an earlier line's abort is invisible to
+    # the tail of a later one).
+    ("oos-arystore-ctl", "oos", ['CLEAR 200', 'DIM A$(5)',
+                                 'B$=STRING$(25,"A")', 'A$(1)=B$',
+                                 'PRINT "[";LEN(A$(1));"]"']),
+    ("oos-arystore",  "oos", ['CLEAR 60', 'DIM A$(5)', 'B$=STRING$(25,"A")',
+                              'A$(1)=B$', 'A$(2)=B$']),
+    # the same store reached through AUTO-DIM rather than an explicit DIM: the
+    # element is created by the resolve, and the copy is the same op=3.
+    ("oos-autostore", "oos", ['CLEAR 60', 'B$=STRING$(25,"A")',
+                              'A$(1)=B$', 'A$(2)=B$']),
+    # 🔴 THE PROGRAM RUNS ON. Direct mode cannot see an earlier LINE's abort, so
+    # the continuation claim is expressed WITHIN ONE LINE: the failing store and
+    # the PRINT are `:`-joined, and a machine that aborts never reaches the
+    # bracket. ref <none> / zb "OK" is the whole finding in one row.
+    ("oos-arycont",   "oos", ['CLEAR 60:DIM A$(5)', 'B$=STRING$(25,"A")',
+                              'A$(1)=B$:A$(2)=B$:PRINT"[OK]"']),
+    # 🎯 THE ROW THAT MAKES IT SPECIFIC TO THE ARRAY-ELEMENT STORE. Same pool,
+    # same sizes, same source variable -- only the DESTINATION differs.
+    ("oos-scalarstore","oos", ['CLEAR 60', 'B$=STRING$(25,"A")', 'C$=B$',
+                               'D$=B$']),
+    # 🎯 THE DENOMINATOR ROW FOR THE SPLIT, and it is the one that rules out the
+    # cheap reading of it. `ARY_ERR=4` serves TWO failures: the array's own
+    # ALLOCATION (variable space) and `aeng_copy_str`'s heap_alloc (the string
+    # pool). A split keyed on the array's TYPE would send this row -- a STRING
+    # array whose SLOTS will not fit -- to `Out of string space`, and it is
+    # `Out of memory` on both machines. So the split must be by SITE.
+    # 3 * 20001 = 60003 bytes: under $FFFF, so D-ARR-B's size rule does NOT
+    # fire (that would be `Subscript out of range`), and over the free variable
+    # space of BOTH machines (28815 ref / 15667 zb), so both must allocate-and-
+    # fail. The numeric twin is `oos-vs-oom` above.
+    ("oos-strdim-oom","oos", ['CLEAR 100', 'DIM A$(20000)']),
+
     # --- the boot default, and what a BARE `CLEAR` does -----------------------
     ("dflt-boot",    "dflt", ['PRINT "[";FRE("");"]"']),
     # A bare CLEAR: does it RESET the size to the default, or KEEP the current
@@ -295,6 +360,38 @@ CASES = [
     # and their DIFFERENCE is the finding. (The tempting one-line form
     # `CLEAR 200:X=FRE(0):CLEAR 1000:PRINT X>FRE(0)` measures nothing: the
     # second CLEAR wipes X.)
+    # --- D-ARYOOS pool arithmetic --------------------------------------------
+    # What a string ARRAY-ELEMENT store charges the pool, step by step. These
+    # rows exist to SIZE the `oos` error rows above -- an error row is only
+    # readable if the LAST line is the one that cannot fit -- and to pin
+    # `arychg-dimonly`: a `DIM A$(n)` charges the pool NOTHING, because the
+    # 3-byte [len][ptr] slots come out of VARIABLE space. That is the
+    # arithmetic behind `oos-strdim-oom` and the whole reason the ARY_ERR
+    # split is by SITE.
+    # 🔴 THREE OF THE FOUR PREDICTIONS WERE WRONG, AND IN THE SAME DIRECTION.
+    # Written before the first run (2026-08-20), ref / zb:
+    #   arychg-dimonly  200 / 200   -> 200 / 200   ✅ exact
+    #   arychg-scalar   150 / 175   -> 175 / 175   🔴 ref charges 25, not 50
+    #   arychg-store1   125 / 150   -> 150 / 150   🔴
+    #   arychg-store2   100 / 125   -> 125 / 125   🔴
+    # The prediction came from the `share` battery's "an alias charges twice
+    # there", which is a statement about `B$=A$` and does NOT generalise to a
+    # store out of a temp: the reference ADOPTS a temp's body exactly as
+    # zerobas does. All four agree to the byte, so all four are gated. The
+    # sizing survived the miss only by luck of direction -- an over-estimate of
+    # the reference's charge, which moves the failure EARLIER, and both
+    # machines happen to fail on the same line anyway.
+    ("arychg-dimonly","arychg", ['CLEAR 200', 'DIM A$(5)',
+                                 'PRINT "[";FRE("");"]"']),
+    ("arychg-scalar", "arychg", ['CLEAR 200', 'B$=STRING$(25,"A")',
+                                 'PRINT "[";FRE("");"]"']),
+    ("arychg-store1", "arychg", ['CLEAR 200', 'DIM A$(5)',
+                                 'B$=STRING$(25,"A")', 'A$(1)=B$',
+                                 'PRINT "[";FRE("");"]"']),
+    ("arychg-store2", "arychg", ['CLEAR 200', 'DIM A$(5)',
+                                 'B$=STRING$(25,"A")', 'A$(1)=B$', 'A$(2)=B$',
+                                 'PRINT "[";FRE("");"]"']),
+
     ("rep-fre0-200", "rep", ['CLEAR 200', 'PRINT "[";FRE(0);"]"']),
     ("rep-fre0-4000","rep", ['CLEAR 4000', 'PRINT "[";FRE(0);"]"']),
 ]

@@ -62,7 +62,13 @@ err_illegal_fn_arr:
                 db      "I",MSGESC_ILLFN,0                      ; 24 B -> 3 B
 err_mem_arr:                                ; FPERR=6 (fre_msgtab entry 6) is set ONLY
                 db      "O",MSGESC_UTOF,"memory",0              ; 16 B -> 9 B
-                                            ; by ary_errmap (DIM/auto-dim OOM), so the
+                                            ; by ary_errmap entry 4 -- the ALLOCATION
+                                            ; OOMs: DIM, auto-dim, and the scalar
+                                            ; insert (scv_oom). D-ARYOOS moved the
+                                            ; string-BODY OOM off this entry onto its
+                                            ; own code 5 -> ERR 14, so this string is
+                                            ; now reached only when VARIABLE space ran
+                                            ; out, which is what it says. So the
                                             ; whole FPERR=6 surface takes the reference-
                                             ; verbatim capitalised text (§9.5, same rule
                                             ; as err_subscript above; verified: VG-8020
@@ -510,7 +516,7 @@ ary_engine_call:
                 ld      a,(hl)
                 call    penderr_set
                 ret
-ary_errmap:                                 ; ARY_ERR 1..4 -> FPERR (§4.1 dispositions)
+ary_errmap:                                 ; ARY_ERR 1..5 -> FPERR (§4.1 dispositions)
                 db      5                   ; 1 Subscript-oor  -> 5 Subscript out of range
                 db      8                   ; 2 Illegal-fn/neg -> 8 Illegal function call
                                             ;   (arrays' OWN capitalised message, NOT the
@@ -520,7 +526,30 @@ ary_errmap:                                 ; ARY_ERR 1..4 -> FPERR (§4.1 dispo
                 db      6                   ; 4 OOM             -> 6 Out of memory
                                             ;   (arrays' OWN capitalised string too --
                                             ;   err_mem_arr above; FPERR=6 has no other
-                                            ;   setter)
+                                            ;   setter). ⚠️ THIS ENTRY IS THE
+                                            ;   ALLOCATION one: an ARRAY (ary_alloc's
+                                            ;   aal_oom) or a SCALAR (scv_oom) whose
+                                            ;   bytes will not fit VARIABLE space.
+                db      FPERR_STROOM        ; 5 String-heap OOM -> 14 Out of string
+                                            ;   space (D-ARYOOS, docs/aryoos-msx1-
+                                            ;   characterization.md). aeng_copy_str's
+                                            ;   heap_alloc failed: a string BODY that
+                                            ;   will not fit the `CLEAR n` pool, which
+                                            ;   is a DIFFERENT exhaustion from entry 4
+                                            ;   and a different message on both
+                                            ;   references. Until 2026-08-20 the copy
+                                            ;   raised 4 and landed on `Out of memory`.
+                                            ;   🎯 THE SPLIT IS BY SITE, NOT BY TYPE:
+                                            ;   `CLEAR 100:DIM A$(20000)` is a STRING
+                                            ;   array and answers `Out of memory` on
+                                            ;   vg8020, cf3300 and here (row s.strdim)
+                                            ;   -- its SLOTS are variable space, so it
+                                            ;   fails at aal_oom and keeps entry 4.
+                                            ;   The symbol, not a literal 11: with
+                                            ;   CLEARPOOL off FPERR_STROOM is 6 and
+                                            ;   this entry collapses back onto the
+                                            ;   pre-partition `Out of memory`, exactly
+                                            ;   as the five str-engine.asm sites do.
 
 ; --- ex_dim: DIM statement. HL enters on the DIM token. ---------------------
 ; For each comma-separated NAME(b0[,b1...]): parse the name (a `$` string
@@ -995,8 +1024,33 @@ ex_let_arr_str:
                 ld      (ARY_OP),a          ; op = 3 (COPY_STR, pure-RAM leaf)
                 push    hl                  ; [CURSOR] -- ary_engine_call/CALSLT
                                             ; clobbers everything, incl. HL
-                call    ary_engine_call     ; -> always Z (op=3 cannot fail)
-                pop     hl                  ; [CURSOR] restored
+                call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped
+                                            ; and armed via penderr_set.
+                                            ; ⚠️ THIS COMMENT READ "-> always Z (op=3
+                                            ; cannot fail)" UNTIL 2026-08-20 AND WAS
+                                            ; FALSE FROM SLICE 4a ONWARD: the copy
+                                            ; heap-allocates a body, so it can fail
+                                            ; (aeng_copy_str's acs_oom). No check is
+                                            ; added here and none is needed -- exec_stmt
+                                            ; READS the pending cell at the statement
+                                            ; boundary (D-STMTPEND, interp.asm) and
+                                            ; raises there, which is why the store
+                                            ; reports on its OWN line: `Out of string
+                                            ; space in 50` for a failure in line 50,
+                                            ; measured on vg8020, cf3300 and here.
+                                            ; 🔴 D-STMTPEND CLOSED HALF OF A FILED
+                                            ; DEFECT WITHOUT ANYONE NOTICING. TODO.md
+                                            ; carried "ex_let_arr_str SWALLOWS an
+                                            ; out-of-string-space and the program runs
+                                            ; on" from 2026-08-08 to 2026-08-20; the
+                                            ; sweep that re-read it LIVE (14dc44d) is
+                                            ; the commit BEFORE 3dc1e7b, which fixed
+                                            ; it. What was left by then was only the
+                                            ; MESSAGE -- the trap that same item
+                                            ; predicted -- and that is D-ARYOOS.
+                pop     hl                  ; [CURSOR] restored -- POP touches no flag,
+                                            ; so a caller wanting the Z above could
+                                            ; still read it here
                 jp      exec_stmt
 ; elas_err/elas_abort_fp RELOCATED to basic/vars.asm (page-1, §13a space
 ; fix) — reached via `jp` (was `jr`, now out of branch range) above; each

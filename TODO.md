@@ -567,7 +567,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       prose, as fact, and every one is wrong:
       *"THE PAGE-1 WALL IS NOW **14 B**"* (editor/program management),
       *"main page 1 is now **16 B**"* (`FIELD overflow`),
-      *"Main page 1 is down to **49 B**"* (`ex_let_arr_str`),
+      *"Main page 1 is down to **49 B**"* (`ex_let_arr_str`; ✅ that item is
+      CLOSED 2026-08-20 by D-ARYOOS, whose fix cost 1 B of the LOW region and
+      needed no page 1 at all — the wall it quoted was never its blocker, as the
+      re-pricing itself concluded),
       *"**9 B** free low / **6 B** free page 1"* (slim the file-channel context)
       — against **5 B low / 64 B page 1** measured at `b51bbbb`.
       🎯 **THIS IS THE 160-DEAD-BYTES SHAPE, IN PROSE**: a figure that was a
@@ -795,8 +798,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       on the row set that existed before the knives were written it would have
       reddened **none** — the gate would have shipped unable to tell `ARY_TYPE`
       from `VARTYPE`.
-      ➡️ **Still open below:** the `ex_let_arr_str` string-space finding, and the
-      four further lvalue parse sites — which are **no longer unmeasured**: all
+      ➡️ **Still open below:** the four further lvalue parse sites
+      (✅ the `ex_let_arr_str` string-space finding it also pointed at is CLOSED
+      2026-08-20 by D-ARYOOS) — which are **no longer unmeasured**: all
       four diverge, measured 2026-08-08,
       [`docs/lvsites-msx1-characterization.md`](docs/lvsites-msx1-characterization.md).
       ✅ **`ex_for`'s single-letter name shim CLOSED 2026-08-08 by D-FORVAR**
@@ -2894,52 +2898,107 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `nxlist-acceptance`; a deferred row that started agreeing would itself be a
       finding. 💰 Page 1 is at **15 B** after D-NXLIST, so this one is not blocked
       on bytes — it is blocked on being a different rule.
-- [ ] 🔴 **`ex_let_arr_str` SWALLOWS AN OUT-OF-STRING-SPACE AND THE PROGRAM RUNS
-      ON — MEASURED 2026-08-08, the claim is now a FINDING, and it is WORSE than
-      filed.** Three rows × 3 sides, both references agreeing on all three:
+- [x] ✅ **`ex_let_arr_str`'s out-of-string-space — CLOSED 2026-08-20 by
+      D-ARYOOS**, [`docs/aryoos-msx1-characterization.md`](docs/aryoos-msx1-characterization.md).
+      Filed 2026-08-08 as *"SWALLOWS AN OUT-OF-STRING-SPACE AND THE PROGRAM RUNS
+      ON"*. Shipped fix: **1 byte** (low region 23 → 22 B), `make
+      clearpool-acceptance` **56/58 → 62/62**.
 
-      | row | program | both references | zerobas |
-      |---|---|---|---|
-      | `s.ctl` | `CLEAR 200` / `DIM A$(5)` / `B$=STRING$(25,"A")` / `A$(1)=B$` / `PRINT LEN(A$(1))` | ` 25 ` | ` 25 ` 🟢 **control** |
-      | `s.aryoom` | `CLEAR 60` / `DIM A$(5)` / `B$=STRING$(25,"A")` / `A$(1)=B$` / `A$(2)=B$` / `PRINT"[OK]"` | **Out of string space** | **`OK`** 🔴 |
-      | `s.scalar` | `CLEAR 60` / `B$=STRING$(25,"A")` / `C$=B$` / `D$=B$` / `PRINT"[OK]"` | **Out of string space** | **Out of string space** ✅ |
+      🔴 **HALF THE FILED DEFECT HAD ALREADY BEEN CLOSED, BY A SLICE THAT NEVER
+      CLAIMED IT, AND THE ITEM CARRIED A FALSE HEADLINE FOR ELEVEN DAYS.**
+      zerobas does not swallow the error and the program does not run on: it
+      answers `Out of memory in 50` — the right LINE, the wrong MESSAGE. The
+      staleness sweep that re-read this row LIVE (`14dc44d`,
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.7) is the commit IMMEDIATELY BEFORE `3dc1e7b`, D-STMTPEND, which fixed
+      it the same day. D-STMTPEND's own header names this class — *"a fault
+      raised by a driver that never calls `check_expr_errors` got silently
+      discarded"* — and `ex_let_arr_str` ends `jp exec_stmt`, which is exactly
+      that driver. Nobody re-ran §4.7.
 
-      ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, all three rows exactly as filed**
-      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
-      §4.7), including the `s.scalar` half that makes it a finding rather than
-      "zerobas has no string-space error".
+      🎯 **WHAT SURVIVED WAS THE ITEM'S OWN TRAP PARAGRAPH, AND IT WAS RIGHT.**
+      It predicted that the cheap check would land on `ARY_ERR=4` → `FPERR=6` →
+      **ERR 7 `Out of memory`** where both references say **`Out of string
+      space`** (ERR 14), *"green on any gate that only asks did-it-error"* —
+      which is precisely the state D-STMTPEND left behind without adding a
+      check. Every D-ARYOOS row is therefore scored on the MESSAGE.
 
-      🔴 **NOT "prints nothing and stores nothing" — the program CONTINUES.**
-      `[OK]` is printed by the line AFTER the failed store, so the error is not
-      merely unreported: execution carries on with the array element unwritten.
-      🎯 **`s.scalar` IS WHAT MAKES IT A FINDING.** zerobas gets the SCALAR store's
-      pool exhaustion exactly right, so this is specific to the ARRAY-ELEMENT
-      store — not "zerobas has no string-space error", which one row could not
-      have separated [[one-row-cannot-separate-two-rules]].
-      🔴 **AND THE OBVIOUS FIX IS WRONG, WHICH THE SOURCE READING DID NOT
-      PREDICT.** Adding the missing `FPERR` check raises `ARY_ERR=4` → (`ary_errmap`)
-      → `FPERR=6` → (`fperr_to_err`) → **ERR 7 "Out of memory"**, where both
-      references say **"Out of string space"** (ERR 14) — the wording the scalar
-      path already produces. So the 4-byte check would trade a swallowed error
-      for a WRONG MESSAGE, and score green on any gate that only asks "did it
-      error".
-      🔴 **The root is a CONFLATION in `ARY_ERR=4`**: it serves both the array
-      ALLOCATION OOM (`DIM` — genuinely ERR 7) and `aeng_copy_str`'s string-heap
-      OOM (ERR 14). They need different codes. ⚠️ The `DIM` half is **UNMEASURED**
-      — assumed ERR 7 from the language reference, not from a reading.
-      💰 Not carve-scouted. ⚠️ **Main page 1 was down to 49 B** after D-ARYLV
-      (2026-08-08), so
-      this one needs `tools/carve_scout.py` before a byte moves, unlike the last.
-      ⚠️ **THAT 49 B IS THE WALL, NOT A PRICE, AND IT IS STALE — 64 B at
-      `b51bbbb` (2026-08-19).** Stands as taken for its date. 🎯 **The re-pricing
-      changes nothing here, because this item was never byte-blocked:** the fix
-      is still unpriced and un-scouted, and its real blocker is the `ARY_ERR=4`
-      conflation above — the cheap check raises ERR 7 where both references say
-      ERR 14, so more free page 1 buys exactly none of it.
-      [`docs/repricing-page1-2026-08-19.md`](docs/repricing-page1-2026-08-19.md)
-      §3.7.
-      Spike script was scratchpad-only; the three programs above ARE the
-      reproduction. Found by the D-ARYLV scout while reading the tail it copies.
+      🎯 **THE SPLIT IS BY SITE, NOT BY TYPE — and the denominator row is what
+      ruled out the cheap reading.** The item said the `DIM` half was
+      UNMEASURED. Measured now, three-sided: `CLEAR 100:DIM A$(20000)` is a
+      **string** array whose 3-byte slots will not fit VARIABLE space, and all
+      three machines answer `Out of memory in 20`. So `aeng_copy_str`'s
+      heap_alloc OOM gets its own `ARY_ERR=5` → `FPERR_STROOM` → ERR 14, while
+      `ary_alloc`/`scv_alloc` keep 4 → ERR 7. `ld a,4`→`ld a,5` is free; the
+      whole price is `ary_errmap`'s 5th entry.
+
+      🔴 **THE ROW WRITTEN TO MEASURE THE SECOND SITE REFUTED ITSELF.**
+      `basic/vars.asm`'s `tss_ary` (READ / INPUT / LINE INPUT / INPUT# / FIELD
+      read) already checked the NZ, so only its message was wrong, and the same
+      split fixes it. `READ A$(2)` was chosen to prove it and answered **`[OK]`
+      on both references** — a stored `DATA` literal's descriptor points at the
+      PROGRAM TEXT there and charges the pool nothing. The scalar twin
+      `READ D$` diverges the same way, which is what proves it is S-CLP-5 body
+      ownership and not this rule. `INPUT A$(2)` is the valid row (transient
+      buffer, so the reference must copy) and agrees on all three sides after
+      the fix. Residual filed below.
+
+      🔴 **THREE DOC SITES ASSERTED "COPY_STR CANNOT FAIL"** and had been false
+      since slice 4a made the copy heap-allocate: `ex_let_arr_str`'s
+      `-> always Z (op=3 cannot fail)`, `sub/arrays.asm`'s tenant header, and
+      `aeng_copy_str`'s own *"no main-ROM change was needed"* (true about
+      SURFACING, false about the MESSAGE). All three corrected.
+
+      🔴 **A BATTERY DECLARED UNMEASURABLE WAS THE CLEANEST AGREEMENT IN THE
+      SLICE.** The four `arychg` pool-arithmetic rows were written
+      reported-never-gated on the strength of the `share` battery's *"an alias
+      charges twice there"* — a sentence about `B$=A$` that does not generalise
+      to a store out of a temp. Three of the four predictions were wrong in the
+      same direction; all four agree to the byte and are now GATED.
+
+- [ ] ⚠️ **A STORED `DATA` LITERAL CHARGES THE STRING POOL NOTHING ON BOTH
+      REFERENCES AND 25 BYTES HERE — measured 2026-08-20 (D-ARYOOS §2.3), and
+      it is the S-CLP-5 body-ownership class with a new, sharper pair of rows.**
+
+      | row | program | vg8020 | cf3300 | zb |
+      |---|---|---|---|---|
+      | `s.readary` | `CLEAR 60` / `DIM A$(5)` / `B$=STRING$(25,"A")` / `A$(1)=B$` / `DATA <25 chars>` / `READ A$(2)` / `PRINT"[OK]"` | **`[OK]`** | **`[OK]`** | `Out of string space in 60` |
+      | `s.readscal` | same, `READ D$` into a **scalar** | **`[OK]`** | **`[OK]`** | `Out of string space in 50` |
+
+      🎯 **THE SCALAR TWIN IS WHAT MAKES IT THE OWNERSHIP QUESTION AND NOT AN
+      ARRAY ONE** — both destinations diverge identically, so no array rule can
+      be at fault. The reference points a stored literal's descriptor straight
+      AT THE PROGRAM TEXT (already recorded by `hold-lit-prog` in the
+      `clearpool` `share` battery, 2026-07-29, as a FRE reading); these two rows
+      are the first time it shows up as a **divergent ERROR** rather than a
+      divergent number, which is a much harder thing to be relaxed about.
+      ⚠️ Carries the hazard S-CLP-4 already wrote down: a variable pointing into
+      program text means `MID$(A$,1,1)="X"` writes into the PROGRAM. Unpriced,
+      and it is a design question (store-by-reference), not a byte question.
+- [ ] ⚠️ **THREE OF `tss_ary`'s FIVE CALLERS ARE UNMEASURED FOR THE ERR-14
+      MESSAGE** — `LINE INPUT`, `INPUT #n` and the FIELD read. D-ARYOOS measured
+      `INPUT` (row `s.inpary`, agrees three-sided after the fix) and found `READ`
+      to be no test at all (above). All five share one tail
+      ([`basic/vars.asm`](basic/vars.asm) `tss_ary`) and one `ary_engine_call`,
+      so the fix reaches them by construction — but "by construction" is the
+      claim, not the reading, and D-CIRCOVF is the standing reminder that a
+      bound stated by construction is owned by whoever deletes the construction.
+      `INPUT #n` needs a disk fixture; the FIELD read needs a `FIELD`+`GET`.
+      Cheap, and they belong with the `fldary`/`inputary` probes rather than
+      with `clearpool`.
+- [ ] 🔴 **RE-RUN THE STALENESS SWEEP'S "LIVE" ROWS — ONE OF THEM WAS FIXED BY
+      THE NEXT COMMIT AND STAYED FILED FOR ELEVEN DAYS.**
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      re-measured 17 items on 2026-08-09 at `14dc44d` and marked 11 LIVE. The
+      VERY NEXT COMMIT, `3dc1e7b` (D-STMTPEND), closed half of §4.7 — the
+      swallow half of the `ex_let_arr_str` finding — and D-PENDERR (`34a6efe`)
+      and D-TMFP (`38becce`) landed in the same run of error-plumbing work.
+      🎯 **A SWEEP READING IS STAMPED WITH A COMMIT, AND THE COMMIT AFTER IT CAN
+      FALSIFY IT** — nothing in the apparatus notices, because a sweep writes
+      prose and no gate reads prose. The other ten LIVE rows have never been
+      re-read against a tree that has the statement-boundary reader in it, and
+      any of them that turned on "the error is not reported" is now suspect.
+      Cheap: the sweep's own programs are all recorded, three sides each.
 
 **Own-design hazards carried out of closed slices**
 
