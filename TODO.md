@@ -2649,8 +2649,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       currently over-claims, and because the same shape will recur in any probe
       that seeds a cell it also tests.
 
-- [ ] 🔴 **`OPEN "X" FOR APPEND AS #1` ON A NON-EXISTENT FILE: zerobas SAYS
-      `OK`, THE CF-3300 PRINTS NOTHING AT ALL.** Filed 2026-08-19 by D-FNARG
+- [x] ✅ **`OPEN "X" FOR APPEND AS #1` ON A NON-EXISTENT FILE — MEASURED AND
+      CLOSED 2026-08-20 (D-LOADERR), and BOTH filed columns were the readout
+      lying.**
+      [`docs/loaderr-msx1-characterization.md`](docs/loaderr-msx1-characterization.md).
+      The reference does **not** print nothing: it raises **`File not found in
+      10`** and stops. zerobas does **not** say `OK`: it prints **`load error`**
+      and then runs on into the `[OK]`.
+      🎯 **`<NO OUTPUT>` WAS `File not found` ALL ALONG** — the classifier simply
+      did not know the name, so a real error fell through to the sentinel. The
+      item said characterising it *"needs a SCREEN-TAIL readout, not a bracket
+      span"*, and that was exactly right: the readout was the whole obstacle,
+      and D-FNARG2's error-first `errface()` plus five error names in `ERRORS`
+      is the entire fix to it. 🔴 **AND THE SAME BLINDNESS CORRUPTED THE OTHER
+      COLUMN**: zerobas's `OK` was `bracket()` finding the `[` above the message.
+      **One blind readout wrote both halves of a filed row, and neither was a
+      reading** [[readout-blind-to-its-own-subject]].
+      ⚠️ It is not an APPEND question at all. `FOR INPUT` on a missing file does
+      exactly the same thing on both machines, and so do `LOAD`, `BLOAD`,
+      `RUN"f"` and `MERGE` — it is the `load error` class, filed below with all
+      six verbs measured.
+      *Original filing:* — 🔴 **`OPEN "X" FOR APPEND AS #1` ON A NON-EXISTENT
+      FILE: zerobas SAYS `OK`, THE CF-3300 PRINTS NOTHING AT ALL.** Filed
+      2026-08-19 by D-FNARG
       ([`docs/fnarg-msx1-characterization.md`](docs/fnarg-msx1-characterization.md)
       §3), found by a CONTROL written to explain a different row's `<NO OUTPUT>`.
       ```
@@ -3069,10 +3090,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       wording divergence for `LOAD`/`RUN`/`BLOAD`/`OPEN`/`APPEND`/`MERGE` — six
       verbs nothing has measured"* — but only inside a **`- [x]`** item, which
       is exactly how §4.7 rotted for eleven days. It is open now.
-      ✅ **TWO OF THE SIX NOW HAVE A REFERENCE READING** (`LOAD`, `BLOAD`).
-      **STILL UNMEASURED: `RUN"file"`, `OPEN`, `APPEND`, `MERGE`** — plus every
-      non-missing-file failure (an unreadable volume, a non-binary `BLOAD`
-      target, a cassette failure), which may not share one face.
+      ✅ **ALL SIX VERBS MEASURED 2026-08-20 (D-LOADERR)**,
+      [`docs/loaderr-msx1-characterization.md`](docs/loaderr-msx1-characterization.md).
+      `LOAD`, `BLOAD`, `RUN"f"`, `MERGE`, `OPEN…FOR INPUT`, `OPEN…FOR APPEND`:
+      every one is `File not found in <line>` — **raised, and it stops** — on the
+      CF-3300, and `load error` + carry on here. Two green controls (the same
+      two OPEN forms against a file that EXISTS) read `[OK]` on both sides, so
+      it is the failure path and not the verb.
+      🎯 **AND A SEVENTH FACE THE CLASS DID NOT KNOW ABOUT:** `BLOAD"PROG.BAS"`
+      — a real file that is not binary — is **`Bad file mode in 10`** there and
+      `load error` here. The reference tells NOT FOUND apart from WRONG KIND and
+      zerobas collapses both.
+      🎯 **`KILL` AND `NAME` ARE THE PRECEDENT AND ARE ALREADY RIGHT** —
+      `dsk-killnone`/`dsk-namenone` are GATED and agree, their arms routing at
+      `df_notfound`. Eight verbs in one class: two fixed, six not.
+      ✅ **SEVEN ROWS NOW LIVE IN `make dskmsg-acceptance`, PRINTED AND NOT
+      GATED** (5/5 gated rows unchanged), with the reason printed in the run's
+      own tail. They graduate into the tally the day the split lands, exactly as
+      `dsk-namenone` did — so this item cannot rot the way §4.7 did.
+      🔴 **AND THE REAL BLOCKER IS NOW EXACT, NOT A GUESS.** It is **not** that
+      `load_error` is shared with cassette: it is that `load_error` **RETURNS**,
+      and [`basic/cload.asm:840`](basic/cload.asm) says in as many words that
+      several of its **73** call sites *"RESUME into their caller on purpose"*.
+      So the fix is per-arm — and the arms are themselves conflated: `oo_fail`
+      covers *not found / dir-full / mount / I-O*, `dpl_err` covers *not found /
+      mount / I-O / EOF-before-data*, and both get their CF from `fat_io_open`,
+      **which returns carry and nothing else**. 🎯 **THE PRIMITIVE MUST RETURN A
+      STATUS BEFORE EITHER ARM CAN SPLIT — the `ARY_ERR=4` shape exactly**
+      ([[aryoos-slice]]). Routing `oo_fail` wholesale at `df_notfound` reports
+      `File not found` for an unreadable disk: a new defect for an old one.
       💰 **NOT PRICED, AND DELIBERATELY NOT FOLDED INTO D-FNARG.** That slice is
       about PARSING (a second source for `parse_disk_fcb`); this one is about
       RAISING. ERR 53's machinery already exists and ships —

@@ -145,7 +145,43 @@ CASES = [
     # `NOT GATED:` line deleted -- a list of exclusions that contains a
     # non-exclusion stops being read as a list of holes.
     ("dsk-namenone", ['NAME"NOSUCH.BAS" AS "ZZ.BAS"']),
+
+    # === D-LOADERR: the SIX verbs the `load error` class still had no reading
+    # === for. PRINTED, NOT GATED -- they DIVERGE today, and gating a known
+    # === divergence turns a battery red forever instead of measuring anything.
+    # This is exactly the state `dsk-namenone` was in until 2026-08-07: a
+    # printed characterization row whose reading existed but whose fix was an
+    # ARM SPLIT rather than a jump-target swap. It graduated the day the split
+    # landed. These will graduate the same way, and until then a row that
+    # started AGREEING is itself a finding.
+    #
+    # 🎯 KILL AND NAME ARE THE PRECEDENT AND THE CONTROL. `dsk-killnone` and
+    # `dsk-namenone` are GATED and agree -- their missing-file arms already
+    # route at `df_notfound` (ERR 53, raised). So the target face is not a
+    # guess: it is what two verbs in this same battery already produce.
+    #
+    # MEASURED 2026-08-20, both sides, stored programs (docs/loaderr-msx1-
+    # characterization.md). Every one of the six: CF-3300 raises
+    # `File not found in <line>` and STOPS; zerobas prints `load error` and
+    # the program RUNS ON.
+    ("dsk-loadnone",  ['LOAD"NOSUCH.BAS"']),
+    ("dsk-bloadnone", ['BLOAD"NOSUCH.BIN"']),
+    ("dsk-runnone",   ['RUN"NOSUCH.BAS"']),
+    ("dsk-mergenone", ['MERGE"NOSUCH.BAS"']),
+    ("dsk-opennone",  ['OPEN"NOSUCH.DAT"FOR INPUT AS #1']),
+    ("dsk-appnone",   ['OPEN"NOSUCH.DAT"FOR APPEND AS #1']),
+    # 🎯 AND A SEVENTH FACE THE CLASS DID NOT KNOW ABOUT: the reference tells
+    # NOT FOUND apart from WRONG KIND. `BLOAD` of a BASIC file is `Bad file
+    # mode` there and `load error` here, so zerobas collapses two distinct
+    # errors into one string -- the same conflation shape D-ARYOOS found in
+    # `ARY_ERR=4`, and the reason the fix is an ARM SPLIT and not a rename.
+    ("dsk-bloadmode", ['BLOAD"PROG.BAS"']),
 ]
+
+# Rows PRINTED but NOT SCORED: a measured, filed divergence. Keeping them out of
+# the tally is what stops a known-red row from masking a NEW red one.
+NOT_GATED = {"dsk-loadnone", "dsk-bloadnone", "dsk-runnone", "dsk-mergenone",
+             "dsk-opennone", "dsk-appnone", "dsk-bloadmode"}
 
 # Rows that WRITE to the image they mount, and therefore get a private copy.
 # Boot-per-case reboots the machine but keeps handing openMSX the SAME file.
@@ -164,7 +200,11 @@ CONTROLS = {
     "dsk-namehit": (("BYE", "TXT", "TEST"), ("HI      .TXT",)),
 }
 
-VERBS = ("KILL", "NAME", "FILES", "PRINT")
+# D-LOADERR: the anchor is derived from THIS list, so a new verb that is not in
+# it anchors on `lines[-1]` by luck rather than by rule. LOAD/BLOAD/RUN/MERGE/
+# OPEN added with their rows.
+VERBS = ("KILL", "NAME", "FILES", "PRINT",
+         "BLOAD", "LOAD", "MERGE", "OPEN", "RUN")
 
 
 def anchor_for(lines):
@@ -268,7 +308,9 @@ def main() -> int:
                 return 2
             results[s] = got
 
-    gated = [r[0] for r in CASES if any(r[0] in results[s] for s in sides)]
+    measured = [r[0] for r in CASES if any(r[0] in results[s] for s in sides)]
+    gated = [r for r in measured if r not in NOT_GATED]
+    reported = [r for r in measured if r in NOT_GATED]
 
     print(f"D-DSKMSG/D-DKNAME — KILL's and NAME's no-match message   "
           f"sides: {', '.join(sides)}")
@@ -319,6 +361,11 @@ def main() -> int:
             return 2
         return 0
 
+    for label in reported:
+        vals = {s: results[s][label] for s in sides if label in results[s]}
+        print(probe_report.row("....", label, LABEL_W, vals,
+                               "   [D-LOADERR: measured, filed, NOT gated]"))
+
     agree = dis = 0
     for label in gated:
         vals = {s: results[s][label] for s in sides if label in results[s]}
@@ -337,6 +384,11 @@ def main() -> int:
     print(f"{agree}/{agree + dis} gated rows agree")
     print(f"SIDES: {','.join(SIDES)} — the VG-8020 has no disk ROM and CANNOT "
           "measure any row here (stated, not silently dropped)")
+    if reported:
+        print(f"{len(reported)} row(s) PRINTED, NOT GATED (D-LOADERR): "
+              "a measured, filed divergence — `load error` is printed and not "
+              "raised, so the program runs on. They graduate into the tally the "
+              "day the arm split lands, exactly as dsk-namenone did.")
     if a.gate and dis:
         sys.stderr.write(f"dskmsg: {dis} row(s) diverge\n")
         return 1
