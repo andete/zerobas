@@ -208,6 +208,64 @@ CASES = [
     # 🟢 the control for d.sum/d.sum1: the SAME two-item shape, total exactly 256.
     ("d.sumok",   "dsk", [OPEN, 'FIELD#1,200 AS A$,56 AS B$',
                           'PRINT"[";LEN(A$);LEN(B$);"]"']),
+    # --- D-RECLEN: THE DENOMINATOR THE ERR-50 DECLINE SAID WAS NOT BUILT -------
+    # Every `d.sum*` row above uses the DEFAULT 256-byte record, so not one of
+    # them can separate "checked against the RECORD LENGTH" from "checked against
+    # a CONSTANT 256". Both rules predict every reading in this file identically.
+    # These rows open a NON-default record and put the boundary somewhere the two
+    # rules disagree about (docs/spec-basic-fldwidth.md §6.5, TODO ERR-50 item).
+    #
+    # PREDICTIONS, WRITTEN BEFORE THE RUN:
+    #   r.openctl  ` OK `  on both        -- LEN= parses at all (see 🔴 below)
+    #   r.ok       ` 64 `  on both        -- total == record, legal either way
+    #   r.over     CF-3300 FIELD overflow / zerobas ` 65 `
+    #   r.mid      CF-3300 FIELD overflow / zerobas ` 200 `
+    #   r.sum      CF-3300 FIELD overflow / zerobas ` 60  50 `
+    # i.e. the RECORD-LENGTH rule. Under the CONSTANT-256 rule r.over/r.mid/r.sum
+    # would read ` 65 ` / ` 200 ` / ` 60  50 ` on the CF-3300 TOO, and the whole
+    # ERR-50 fix would be a 2-byte compare against an immediate instead of a
+    # fetch of FCH_RECLENS[ch].
+    #
+    # 🔴 r.openctl IS LOAD-BEARING AND IS NOT A FORMALITY. If `LEN=` is a syntax
+    # error on zerobas, every row below reads "error" on this side for a reason
+    # that has NOTHING to do with ERR 50, and the battery would look like a
+    # record-length finding while measuring an OPEN parse gap.
+    ("r.openctl", "dsk", ['OPEN"TS.DAT"AS #1 LEN=64', 'PRINT"[";"OK";"]"']),
+    ("r.ok",      "dsk", ['OPEN"TS.DAT"AS #1 LEN=64', 'FIELD#1,64 AS A$',
+                          'PRINT"[";LEN(A$);"]"']),
+    ("r.over",    "dsk", ['OPEN"TS.DAT"AS #1 LEN=64', 'FIELD#1,65 AS A$',
+                          'PRINT"[";LEN(A$);"]"']),
+    # the same question with a wide margin, still under the default 256 -- so a
+    # constant-256 implementation cannot accidentally agree by rounding.
+    ("r.mid",     "dsk", ['OPEN"TS.DAT"AS #1 LEN=64', 'FIELD#1,200 AS A$',
+                          'PRINT"[";LEN(A$);"]"']),
+    # and on the RUNNING TOTAL rather than one item, which is the shape d.sum
+    # tests against the default record.
+    ("r.sum",     "dsk", ['OPEN"TS.DAT"AS #1 LEN=100',
+                          'FIELD#1,60 AS A$,50 AS B$',
+                          'PRINT"[";LEN(A$);LEN(B$);"]"']),
+    # 🔴 r.sum MISSED, AND THE MISS IS A SECOND DIVERGENCE, NOT A BAD ROW.
+    # Predicted zb ` 60  50 `; measured `<Syntax error>`. `oo_parse_reclen`
+    # (basic/files.asm:578) validates the record length to a POWER OF TWO in
+    # 1..256 "so records tile the 512-byte sector with no straddle", and 100 is
+    # not one. The CF-3300 got as far as raising FIELD overflow, so it ACCEPTED
+    # LEN=100. These two rows separate the two questions r.sum ran together:
+    #
+    #   r.len100  the LEN= parse ALONE, no FIELD at all
+    #             PREDICT: cf3300 ` OK `, zb `<Syntax error>`
+    #   r.sum128  the running total against a record zerobas DOES accept
+    #             PREDICT: cf3300 FIELD overflow, zb ` 100  50 `
+    #
+    # ⚠️ r.len100 IS THE FIRST READING OF A NON-TILING `LEN=` AGAINST THE
+    # REFERENCE. disk/docs/diskbasic-option-surface.md says "non-tiling ->
+    # Syntax error ... byte-identical to CF-3300", but the probe cited for it
+    # (probes/disk/disk_probe_openlen.py) drives LEN=128 and nothing else -- a
+    # power of two. The byte-identity claim covers a corpus that never contained
+    # the case it is being read to cover.
+    ("r.len100",  "dsk", ['OPEN"TS.DAT"AS #1 LEN=100', 'PRINT"[";"OK";"]"']),
+    ("r.sum128",  "dsk", ['OPEN"TS.DAT"AS #1 LEN=128',
+                          'FIELD#1,100 AS A$,50 AS B$',
+                          'PRINT"[";LEN(A$);LEN(B$);"]"']),
     # 🎯 THE ROW THAT DECIDES WHICH POST-EVAL CHECK. A deferred FPERR (division
     # by zero) rides the same statement-boundary mechanism as TMISMATCH, and
     # `check_expr_errors` tests BOTH in one 3-byte call while an inline
@@ -306,6 +364,13 @@ SITE_CONTROL = {
 # Filed in TODO.md as its own residual; a deferred row that started AGREEING
 # would itself be a finding.
 DEFERRED: dict[str, str] = {
+    "r.openctl": "DEFERRED — D-RECLEN denominator: does `LEN=` parse at all?",
+    "r.ok":      "DEFERRED — D-RECLEN denominator: total == a NON-default record",
+    "r.over":    "DEFERRED — D-RECLEN discriminator: record length vs constant 256",
+    "r.mid":     "DEFERRED — D-RECLEN discriminator, wide margin, still under 256",
+    "r.sum":     "DEFERRED — D-RECLEN: ran two questions together, see r.len100/r.sum128",
+    "r.len100":  "DEFERRED — D-RECLEN: a NON-TILING LEN=, first reading vs the reference",
+    "r.sum128":  "DEFERRED — D-RECLEN discriminator on the RUNNING total, tiling record",
     "d.sum": "DEFERRED — the RECORD-LENGTH running total (ERR 50), a separate "
              "rule priced at ~27 B against a 6 B wall; see d.sumok for the "
              "boundary and spec-basic-fldwidth §6.5 for the numbers",

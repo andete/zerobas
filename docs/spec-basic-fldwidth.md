@@ -371,6 +371,41 @@ record length"* from *"checked against a constant 256"*. That needs
 `OPEN … LEN=r` rows — the disk-BASIC option surface, not this one. Deferred in
 the probe, filed in `TODO.md` with these three readings as its starting point.
 
+---
+
+✅ **ADDENDUM 2026-08-19 (D-RECLEN) — THE DENOMINATOR IS NOW BUILT, AND THE RULE
+IS THE RECORD LENGTH.** Everything above stands as written for its date; only its
+status changes. Five `r.*` rows were added to this battery, opening a
+**non-default** record so that the two candidate rules disagree:
+
+| row | record | field(s) | CF-3300 | zerobas |
+|---|---|---|---|---|
+| `r.ok` 🟢 | 64 | 64 | ` 64 ` | ` 64 ` |
+| `r.over` | 64 | 65 | **FIELD overflow** | ` 65 ` |
+| `r.mid` | 64 | 200 | **FIELD overflow** | ` 200 ` |
+| `r.sum128` | 128 | 100 + 50 | **FIELD overflow** | ` 100  50 ` |
+
+🎯 **`r.mid` IS THE DECISIVE ONE: 200 IS UNDER 256.** A constant-256
+implementation accepts it; the CF-3300 refuses it. The check is against
+`FCH_RECLENS[ch]`, and the ≈27 B hand-count above — which already prices the
+inline `FCH_RECLENS` read at 14 B — is a count of the *right* code. **The "no
+main-side accessor" note was never a blocker in its own right**: the price
+assumes no accessor and reads the table inline, exactly as
+`oo_parse_reclen` writes it inline at [`basic/files.asm:283`](../basic/files.asm).
+
+💰 **RE-PRICED: the wall is 50 B page 1** (D-LOADSWEEP, 2026-08-19) against the
+same ≈27 B, so **the byte half and the measurement half are both now clear.**
+See [`repricing-page1-2026-08-19.md`](repricing-page1-2026-08-19.md) §3.2, which
+identified this as the only open item whose byte blocker the carve had lifted.
+
+🔴 **AND THE ROW THAT MISSED FOUND A SECOND DIVERGENCE.** `r.sum` was drafted
+with `LEN=100` and predicted ` 60  50 ` here; it read **`Syntax error`**, because
+`oo_parse_reclen` restricts the record length to a **power of two** in 1..256.
+Split into `r.len100` (the `LEN=` parse alone: CF-3300 `OK`, zerobas **`Syntax
+error`**) and `r.sum128` (the running total on a record zerobas accepts). The
+first is a separate defect and is filed; it is **not** part of the ERR-50 rule
+and must not be folded into it.
+
 ### 6.6 ✅ VERDICT: **GO, +3 into 6.** No eviction, no RAM, no sub-ROM byte, no new label.
 
 ---

@@ -1399,6 +1399,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       against the record length"* from *"checked against a constant 256"*. It
       needs `OPEN … LEN=r` rows — the disk-BASIC option surface — before any
       byte is spent.
+      ✅ **THE DENOMINATOR IS BUILT AND THE RULE IS THE RECORD LENGTH —
+      MEASURED 2026-08-19 (D-RECLEN)**, five `r.*` rows in
+      `basic_probe_fldwidth.py` opening a NON-default record:
+      `r.ok` (LEN=64, width 64) ` 64 ` on both 🟢 · `r.over` (LEN=64, width 65)
+      **FIELD overflow** vs ` 65 ` · `r.mid` (LEN=64, width **200**)
+      **FIELD overflow** vs ` 200 ` · `r.sum128` (LEN=128, 100+50)
+      **FIELD overflow** vs ` 100  50 `.
+      🎯 **`r.mid` IS DECISIVE BECAUSE 200 IS UNDER 256** — a constant-256
+      implementation accepts it and the CF-3300 refuses it. The check is against
+      `FCH_RECLENS[ch]`.
+      💰 **AND BOTH HALVES ARE NOW CLEAR**: the wall is **50 B** page 1
+      (D-LOADSWEEP) against the same ≈27 B, whose hand-count ALREADY prices the
+      inline `FCH_RECLENS` read at 14 B — so **"no main-side accessor" was never
+      a blocker in its own right**, only a reason the fix cannot be 3 bytes.
+      `oo_parse_reclen` writes that table inline main-side at
+      [`basic/files.asm:283`](basic/files.asm:283); reading it is the same shape.
+      **This item is now UNBLOCKED and priced.** Rows stay DEFERRED until it
+      ships. [`docs/spec-basic-fldwidth.md`](docs/spec-basic-fldwidth.md) §6.5
+      addendum.
       Both rows are DEFERRED in `probes/basic/basic_probe_fldwidth.py` —
       measured, printed, never scored; a deferred row that started AGREEING
       would itself be a finding.
@@ -2570,6 +2589,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       currently over-claims, and because the same shape will recur in any probe
       that seeds a cell it also tests.
 
+- [ ] 🔴 **A NON-TILING `LEN=r` IS `Syntax error` HERE AND `OK` ON THE CF-3300 —
+      AND THE DOC CLAIMED BYTE-IDENTITY ON A CORPUS THAT NEVER CONTAINED THE
+      CASE.** Filed 2026-08-19 by D-RECLEN, found by a row that MISSED its
+      prediction while measuring something else.
+      ```
+      OPEN"TS.DAT"AS #1 LEN=100 : PRINT"[";"OK";"]"
+          cf3300 -> [OK]        zb -> Syntax error
+      ```
+      (row `r.len100`, `make fldwidth-acceptance`; DEFERRED, measured, printed.)
+      `oo_parse_reclen` ([`basic/files.asm:578`](basic/files.asm:578)) validates
+      the record length to a **power of two in 1..256** *"so records tile the
+      512-byte sector with no straddle"* and raises `Syntax error` otherwise.
+      The CF-3300 accepts 100 — `r.sum` reached a `FIELD overflow` behind it.
+      🔴 **`disk/docs/diskbasic-option-surface.md` SAID `non-tiling → Syntax
+      error … byte-identical to CF-3300`, AND THE PROBE IT CITES DRIVES `LEN=128`
+      AND NOTHING ELSE** — a power of two. An "all match" is a statement about a
+      corpus, not about a rule ([[arcmask-slice]]); the row that would have
+      falsified it was never in the corpus. Doc corrected to `◐` with the
+      divergence named.
+      ⚠️ **NOT PART OF THE ERR-50 RULE and must not be folded into it** — it is
+      an `OPEN` parse question, not a `FIELD` one. 💰 Not scouted, not priced:
+      the straddle argument is a REAL design constraint (a 100-byte record does
+      not tile a 512-byte sector), so "just widen the validator" is exactly the
+      cheap wrong answer — what the reference DOES with a straddling record is
+      unmeasured, and `GET`/`PUT` round-trip rows come before any byte.
+      ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
 - [ ] 🔴 **`OPEN A$ AS #1` IS `Syntax error` HERE AND `OK` ON THE CF-3300.**
       Filed 2026-08-08 by D-NAMSPC, found while measuring something else
       ([[readout-blind-to-its-own-subject]]). A **variable** filename in `OPEN`:
