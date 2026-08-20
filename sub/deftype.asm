@@ -97,7 +97,6 @@ edt_bad:
 edt_list:
 edt_item:
                 call    edt_skip_spaces
-                ld      a,(hl)
                 call    is_letter           ; each item must start with a letter
                 jr      nc,edt_bad
                 call    upcase
@@ -105,12 +104,10 @@ edt_item:
                 inc     hl
                 ld      d,b                 ; D = range-end (default = start, single letter)
                 call    edt_skip_spaces
-                ld      a,(hl)
                 cp      MINUS_TOKEN         ; "X-Y" range? ('-' crunched to $F2)
                 jr      nz,edt_fill
                 inc     hl                  ; past '-'
                 call    edt_skip_spaces
-                ld      a,(hl)
                 call    is_letter
                 jr      nc,edt_bad
                 call    upcase
@@ -141,7 +138,6 @@ edt_fill_lp:
                 djnz    edt_fill_lp
                 pop     hl                  ; restore the token cursor
                 call    edt_skip_spaces
-                ld      a,(hl)
                 cp      ','                 ; more items?
                 jr      z,edt_comma
                 jp      edt_ok              ; end of the list -> hand the cursor back

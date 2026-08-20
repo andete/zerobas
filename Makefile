@@ -356,6 +356,24 @@ basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
 deadcode: $(RELOC_SYM) $(SUB_ROM)
 	python3 tools/check_dead_code.py --report $(RELOC_SYM) $(SUB_SYM)
 
+# --- Redundant-load sweep (D-LOADSWEEP) ---------------------------------------
+# The gate D-RETLN asked for on 2026-08-02 and did not get: it carved 160 dead
+# bytes of one shape (`call skip_spaces` / `ld a,(hl)`, where the callee already
+# returns with A = (hl)) and filed the SHAPE, noting "a redundant-load sweep is a
+# two-line matcher". Seventeen days later D-EVSPDUP found the identical idiom at
+# `ev_sp` BY HAND while scouting 5 B for something else, carved 72 B from
+# expr.asm, and left NINE MORE SITES in two other files -- which this sweep found
+# on its first run, for a further 27 B. That is why it FAILS rather than reports.
+#
+# It PROVES only the tight-skip-loop shape (`ld a,(PTR) / cp / ret cc / inc PTR /
+# jr back`) and flags everything else as a CANDIDATE for a human to read; it
+# resolves each site to its ENCLOSING LABEL's region rather than to its file,
+# because str-engine.asm spans both and pricing it by file got 18 B of low region
+# wrong. Needs $(RELOC_SYM) for that resolution -- it degrades to "region
+# UNRESOLVED" without one rather than guessing.
+redundant-load-check: $(RELOC_SYM)
+	python3 tools/redundant_load_sweep.py
+
 # --- Merged repack main ROM (WS-3 / D4) ---------------------------------------
 # The 32 KB slot-0 "main ROM": repacked C-BIOS + relocated BASIC ($2812-$7FFF) +
 # tape, built reproducibly from the user's C-BIOS checkout (CBIOS=<path>; no

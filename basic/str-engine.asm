@@ -574,12 +574,10 @@ ev_ff_strnum:
 ev_str_arg:
                 inc     ix                  ; skip the selector
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      '('
                 jp      nz,ev_f_empty
                 inc     ix
                 call    ev_sp
-                ld      a,(ix+0)
                 ; empty string-argument (LEN()/ASC()/VAL(), or a trailing ','):
                 ; the same missing-operand syntax error as ev_f's ')'/',' gate
                 ; (D-F2-3). Route to ev_f_empty so FPERR=4 is set on THIS eval --
@@ -606,7 +604,6 @@ ev_str_arg:
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      ')'
                 jp      nz,ev_f_empty
                 inc     ix
@@ -1373,7 +1370,6 @@ sfg_reject2:
 ev_f_instr:
                 inc     ix                  ; skip the INSTR selector
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      '('
                 jp      nz,ev_f_empty       ; BUG C class: INSTR without '(' -> deferred
                                             ; syntax error (was silent ev_f_err)
@@ -1700,13 +1696,11 @@ ev_rel_str:
                 push    hl
                 pop     ix                  ; IX = cursor (for the relop reads)
                 call    ev_sp
-                ld      a,(ix+0)
                 call    relop_bit
                 jp      nc,ers_mismatch     ; bare string LHS, no relop -> D-2 ([LHStemp])
                 ld      c,b                 ; C = requested relation bits
                 inc     ix
                 call    ev_sp
-                ld      a,(ix+0)
                 call    relop_bit           ; a second relop? (<=, >=, <>)
                 jr      nc,ers_rhs
                 ld      a,c

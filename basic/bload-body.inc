@@ -35,7 +35,6 @@
 do_bload:
                 ; --- parse: "<device>" [ ,R ] ------------------------------
                 call    bl_skip_spaces
-                ld      a,(hl)
                 cp      '"'                 ; opening quote required
                 jp      nz,bl_load_error
                 inc     hl

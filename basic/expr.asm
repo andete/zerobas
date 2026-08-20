@@ -310,14 +310,24 @@ rb_gt:
 ;     (ev_rel etc.) resolve to that page-0 copy by label, unchanged.
 
 ; --- ev_sp: skip spaces in the IX stream -----------------------------------
-; ⚠️ ev_sp RETURNS THE CHARACTER IN A, AND 24 CALL SITES DEPEND ON IT.
+; ⚠️ ev_sp RETURNS THE CHARACTER IN A, AND ALL 36 CALL SITES DEPEND ON IT.
 ; Its only exit is the `ret nz` below, which is reached with A = (ix+0) -- the
 ; first non-space byte -- and with the flags of `cp ' '` (always NZ). So a
 ; `call ev_sp` needs NO `ld a,(ix+0)` after it; every site used to carry one
-; anyway, 3 B each and 72 B in this file alone, which is what funded D-VPTRDOM.
-; Anything added here that can return by another route, or with A holding
-; something else, breaks all 24 silently -- there is no gate on a register
-; contract, so keep the single exit.
+; anyway, 3 B each.
+; ⚠️ THE COUNT HERE SAID **24** FOR A DAY, AND THAT WAS THE WHOLE DEFECT.
+; D-EVSPDUP measured "72 B in this file alone" and carved expr.asm's 24 sites --
+; correctly, and the wording was honest about its scope -- but NINE MORE SITES
+; sat in basic/str-engine.asm and basic/usr.asm, and a header that counts one
+; file reads like a count of the tree. D-LOADSWEEP carved those nine for a
+; further 27 B (18 LOW + 9 page 1) and the number above is now the whole tree.
+; ✅ AND THE CONTRACT IS GATED NOW, which it was not when this comment claimed
+; "there is no gate on a register contract": `make redundant-load-check`
+; (tools/redundant_load_sweep.py) proves this routine's shape mechanically and
+; FAILS on any `call ev_sp` that still reloads (ix+0). Anything added here that
+; can return by another route, or with A holding something else, still breaks
+; all 36 silently -- the sweep proves the SHAPE, not the intent -- so keep the
+; single exit.
 ev_sp:
                 ld      a,(ix+0)
                 cp      ' '

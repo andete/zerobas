@@ -125,7 +125,6 @@ parse_close_run:
                 ld      (RUNFLAG),a         ; default: no ,R handoff
                 ld      (VRAM_FLAG),a       ; default: RAM load
                 call    bl_skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,pcr_ok
                 cp      COLON
@@ -134,7 +133,6 @@ parse_close_run:
                 jr      nz,pcr_err
                 inc     hl                  ; past the comma
                 call    bl_skip_spaces
-                ld      a,(hl)
                 call    bl_upcase              ; accept ,r / ,s as well
                 cp      'R'
                 jr      z,pcr_run
@@ -151,7 +149,6 @@ pcr_vram:
 pcr_flag_end:
                 inc     hl                  ; past the flag letter
                 call    bl_skip_spaces
-                ld      a,(hl)
                 or      a
                 jr      z,pcr_ok
                 cp      COLON

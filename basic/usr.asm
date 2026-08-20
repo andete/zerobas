@@ -128,13 +128,11 @@ ev_usr:
                 call    ev_usr_index        ; A = index 0..9 (IX advanced)
                 push    af                  ; save index
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      '('
                 jr      nz,ev_usr_err
                 inc     ix
                 call    ev_logic            ; DE = argument (full expression)
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      ')'
                 jr      nz,ev_usr_err
                 inc     ix
@@ -159,7 +157,6 @@ ev_usr_err:
 ; index-register-free or these two must split again.
 ev_usr_index:
                 call    ev_sp
-                ld      a,(ix+0)
                 cp      INT_DIGIT_BASE      ; $11
                 jr      c,usi_dflt
                 cp      $1A+1

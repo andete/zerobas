@@ -8272,7 +8272,42 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       §4.10): ` 102  0  1 ` on both references and ` 103  0  4 ` here, with the
       `ERROR 7` control reading ` 103  0  4 ` on all three sides.
 
-- [ ] **135 MORE DEAD BYTES OF THE SAME SHAPE, IN 20 FILES.** Filed 2026-08-02
+- [x] ✅ **~~135 MORE DEAD BYTES OF THE SAME SHAPE~~ — THE GATE THIS ITEM ASKED
+      FOR EXISTS (D-LOADSWEEP, 2026-08-19), AND IT FOUND 35 B ON ITS FIRST RUN.**
+      [`docs/spec-basic-loadsweep.md`](docs/spec-basic-loadsweep.md),
+      `make redundant-load-check` ([`tools/redundant_load_sweep.py`](tools/redundant_load_sweep.py)).
+      🎯 **THIS ITEM PREDICTED THE FIND THAT MADE IT URGENT.** It said "a
+      redundant-load sweep is a two-line matcher, and there are certainly other
+      idioms like it" on 2026-08-02 and was not taken. **Seventeen days later
+      D-EVSPDUP found the identical idiom at `ev_sp` BY HAND** while scouting 5 B
+      for something else — and carved only `basic/expr.asm`, leaving **NINE MORE
+      SITES**: six in `basic/str-engine.asm`, three in `basic/usr.asm`. The sweep
+      found them on its first run, with `bl_skip_spaces` (4) and
+      `edt_skip_spaces` (4): **17 dead loads, 35 B**.
+      💰 **Measured, clean: LOW 5 B → 23 B, page 1 41 B → 50 B**, sub p0
+      3295 → 3299, sub p1 1627 → 1631.
+      🔴 **THE PRICE WAS RIGHT ABOUT THE TOTAL AND WRONG ABOUT EVERY BYTE'S
+      HOME.** Predicted "+27 B of main page 1" by resolving ONE symbol per file
+      (`str_eval_one` `$498F`); `str-engine.asm` **spans both regions** and those
+      six sites are in `ev_str_arg`/`ev_f_instr`/`ev_rel_str` at `$29F3`–`$2E8F`,
+      the LOW region. 🎯 **And the miss landed in the scarcest currency** — the
+      low region was the binding wall at 5 B ("5 B will not fund the next
+      low-region slice") and is now **23 B**. The tool now resolves every site
+      through its enclosing label and groups by REGION, not by path.
+      🔴 **D-EVSPDUP's contract header said "24 CALL SITES DEPEND ON IT" and the
+      tree has 36.** Its "72 B in this file alone" was honest about its scope —
+      which is exactly why it read as complete. **A count true of one file reads
+      like a count of the tree**, and the header is where anyone looks first.
+      Corrected, and it no longer claims "there is no gate on a register
+      contract", because there is one now.
+      ✅ Two proven routines came back at **zero** dead loads — `skip_spaces`
+      and `ldr_skipsp` — D-RETLN's 160 B carve still holding, MEASURED not
+      assumed. 28 CANDIDATE sites are printed and **not gating**: the sweep
+      proves only the tight-skip shape and refuses to guess at a routine's exits.
+      📊 K-LS1 re-planted one dead load per region: exit 1, **EXACT**, including
+      the `LOW $29F3` / `page1 $5347` split the author got wrong by hand.
+
+      **Filed 2026-08-02**
       by D-RETLN, which carved all 160 as its funding — this entry records the
       *shape*, because the gate that should have found it cannot.
       `skip_spaces` ([`basic/interp.asm:574`](basic/interp.asm:574)) is
