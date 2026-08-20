@@ -8302,8 +8302,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       contract", because there is one now.
       ✅ Two proven routines came back at **zero** dead loads — `skip_spaces`
       and `ldr_skipsp` — D-RETLN's 160 B carve still holding, MEASURED not
-      assumed. 28 CANDIDATE sites are printed and **not gating**: the sweep
-      proves only the tight-skip shape and refuses to guess at a routine's exits.
+      assumed.
+      ✅ **AND THE 28 CANDIDATES WERE READ THE SAME DAY — ALL 28 ARE LIVE, a
+      MEASURED ZERO.** 🎯 **11 of them are the EXACT INVERSE of the carve class
+      and look identical to it**: `fch_modes_ptr`, `pu_deref_body`,
+      `ztrap_entry`, `tgt_desc_fix`, `gfx_pstk_addr`, `df_entptr` all **RETURN a
+      computed pointer in HL**, so the following `ld a,(hl)` is not a reload —
+      it is the dereference the call exists to enable, and deleting it would
+      delete the point of the call. The other 17 clobber A with a value, a type
+      or a flag. **That is why the sweep proves a SHAPE rather than
+      pattern-matching one.** Verdicts recorded per callee in
+      [`tools/redundant-load-reviewed.txt`](tools/redundant-load-reviewed.txt)
+      as a **CONTROL, not a suppression list** — every candidate is still
+      printed; an UNREVIEWED callee or a STALE entry FAILS the gate (K-LS2/K-LS3,
+      both EXACT). ⚠️ **A verdict is one human's reading on one day and nothing
+      re-checks the REASONING**, only that the callee still has sites — the
+      tight-skip prover has no such hole, which is why it is the half that gates
+      on bytes.
       📊 K-LS1 re-planted one dead load per region: exit 1, **EXACT**, including
       the `LOW $29F3` / `page1 $5347` split the author got wrong by hand.
 

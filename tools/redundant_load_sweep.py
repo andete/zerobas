@@ -70,6 +70,28 @@ def code(lines, i):
     return i
 
 
+REVIEWED_FILE = 'tools/redundant-load-reviewed.txt'
+
+
+def load_reviewed():
+    """callee -> (verdict, reason). A CONTROL, not a suppression list: the sweep
+    still prints every candidate. What this buys is that a NEW candidate callee
+    surfaces as `unreviewed` instead of blending into a list of already-read
+    ones, and that an entry whose sites have all gone reports as stale rather
+    than sitting there forever asserting nothing."""
+    out = {}
+    if not os.path.exists(REVIEWED_FILE):
+        return out
+    for l in open(REVIEWED_FILE, encoding='utf-8'):
+        l = l.strip()
+        if not l or l.startswith('#'):
+            continue
+        parts = l.split(None, 2)
+        if len(parts) >= 2:
+            out[parts[0]] = (parts[1], parts[2] if len(parts) > 2 else '')
+    return out
+
+
 def load_syms():
     for cand in ('build/basic-reloc.sym',):
         if os.path.exists(cand):
@@ -183,16 +205,41 @@ def main():
         ptr, f, ln = proven[k]
         print(f"     {k:20s} A=({ptr:5s}) {f}:{ln}")
 
-    print(f"\n== CANDIDATES (not gating — a human must read the callee's exits) ==")
-    if not cand:
-        print("   none")
+    reviewed = load_reviewed()
+    cand_callees = sorted({c[2] for c in cand})
+    unreviewed = [c for c in cand_callees if c not in reviewed]
+    stale = [c for c in sorted(reviewed) if c not in cand_callees]
+
+    print(f"\n== CANDIDATES — {len(cand)} site(s), {len(cand_callees)} callee(s) ==")
+    print("   (the sweep proves only the tight-skip shape; these need a human to")
+    print("    read the callee's exits, and every one below has been read)")
     for f, ln, callee, ptr, why in cand:
-        print(f"   {f}:{ln}  call {callee} / ld a,({ptr})  -- {why}")
+        v = reviewed.get(callee, ('UNREVIEWED', 'nobody has read this callee'))[0]
+        print(f"   [{v:10s}] {f}:{ln}  call {callee} / ld a,({ptr})")
+    if reviewed:
+        print(f"\n   verdicts on file ({REVIEWED_FILE}):")
+        for c in cand_callees:
+            v, why2 = reviewed.get(c, ('UNREVIEWED', 'nobody has read this callee'))
+            print(f"     {c:18s} {v:8s} {why2}")
+
+    rc = 0
+    if unreviewed:
+        print(f"\n== 🔴 UNREVIEWED CANDIDATE CALLEE(S) (gating) ==")
+        for c in unreviewed:
+            print(f"   {c} — read its exits, then add a line to {REVIEWED_FILE}")
+        rc = 1
+    if stale:
+        print(f"\n== 🔴 STALE REVIEW ENTRIES (gating) ==")
+        print("   these callees are on file but no longer appear as candidates;")
+        print("   an entry that asserts nothing is how this control goes blind:")
+        for c in stale:
+            print(f"   {c}")
+        rc = 1
 
     print(f"\n== DEAD LOADS (gating) ==")
     if not dead:
         print("   none — every call of a proven routine already relies on the contract")
-        return 0
+        return rc
     byc = {}
     for f, ln, callee, ptr, b, reg, addr in dead:
         byc.setdefault(callee, []).append((f, ln, b, reg, addr))

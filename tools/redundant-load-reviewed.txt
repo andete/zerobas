@@ -1,0 +1,38 @@
+# Reviewed CANDIDATE callees — a CONTROL, not a suppression list.
+#
+# tools/redundant_load_sweep.py proves only the tight-skip shape. Everything else
+# that matches `call X` / `ld a,(ptr)` is a CANDIDATE, and a candidate is a
+# question for a human: does X return with A already holding (ptr)?
+#
+# All 28 candidate sites were read on 2026-08-19 (D-LOADSWEEP §7) and EVERY ONE
+# IS LIVE — a measured zero, not an absence of looking. This file records that
+# verdict per callee so the zero is re-checkable instead of re-derived, and so a
+# NEW candidate callee shows up as `unreviewed` rather than blending into a list
+# of 28 already-dispositioned ones.
+#
+# The gate does NOT skip these sites. It still prints them; it only asserts that
+# the reviewed set still matches, which is the warning available for this file
+# going stale.
+#
+# format:  <callee>  <verdict>  <reason>
+# verdicts: POINTER  the callee RETURNS a computed pointer in HL, so the load is
+#                    the dereference the call exists to enable -- the OPPOSITE of
+#                    the carve class, and dead by construction it can never be.
+#           CLOBBER  the callee leaves something else in A (a value, a type, a
+#                    flag), so the load is the caller's first sight of (ptr).
+
+fch_modes_ptr    POINTER  returns HL = FCH_MODES + A; the load reads the mode byte
+pu_deref_body    POINTER  returns HL = RVDESC / the body pointer it just built
+ztrap_entry      POINTER  returns HL = ZTRAP + 3A; the load reads the trap state
+tgt_desc_fix     POINTER  returns HL = offset + ARYTAB (the D-ARYLV §13a fixup)
+gfx_pstk_addr    POINTER  returns HL = GFX_PSTK + slot
+df_entptr        POINTER  returns HL = FSECTOR_BUF + entry offset
+
+eval             CLOBBER  returns the value in DE; A is scratch, HL the advanced cursor
+var_name_key     CLOBBER  returns A = the RESOLVED TYPE (VARTYPE), HL past the name
+tape_parse_name  CLOBBER  exits through a djnz fill loop; A is loop residue
+parse_disk_fcb   CLOBBER  exits through build_83_name; A is not the cursor byte
+cas_capture_name CLOBBER  exits having written CAS_WANT_ON / a CF verdict
+print_crlf       CLOBBER  tail-jumps into pchar with A = 10
+check_vartype_num CLOBBER returns A = (VARTYPE)
+eval_byte_arg    CLOBBER  returns A = E, the evaluated byte

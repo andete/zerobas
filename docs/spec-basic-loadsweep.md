@@ -179,8 +179,63 @@ that ran all seventeen.
 * No BASIC-visible behaviour changes and **no reference row moves** — every one
   of the 17 deletions removes an instruction that recomputes a value the
   register already holds. The emulator gates above are regression, not oracle.
-* The 28 CANDIDATE sites are **not** asserted to be dead or alive. They are
-  printed so a human can read each callee's exits once, and they do not gate.
+* The sweep still asserts nothing about a candidate's liveness on its own — see
+  §8, where all 28 were read by hand and the verdicts written down.
 * The sweep proves a SHAPE, not an intent. A future edit that gives `ev_sp` a
   second exit would keep the shape green while breaking all 36 call sites — the
   header at `ev_sp` says so, and that remains a comment, not a gate.
+
+
+---
+
+## 8. The 28 candidates, read — a MEASURED ZERO
+
+The sweep defers candidates to a human. That deferral was taken the same day:
+**all 28 sites across 14 callees were read, and every one is LIVE.** No further
+carve exists in this class — a measured zero, not an absence of looking.
+
+Two reasons account for all 28, and the split is the interesting part:
+
+| verdict | callees | sites |
+|---|---|---|
+| **POINTER** — the callee RETURNS a computed pointer in HL | `fch_modes_ptr`, `pu_deref_body`, `ztrap_entry`, `tgt_desc_fix`, `gfx_pstk_addr`, `df_entptr` | **11** |
+| **CLOBBER** — the callee leaves something else in A | `eval`, `var_name_key`, `tape_parse_name`, `parse_disk_fcb`, `cas_capture_name`, `print_crlf`, `check_vartype_num`, `eval_byte_arg` | **17** |
+
+🎯 **THE `POINTER` CLASS IS THE EXACT INVERSE OF THE CARVE CLASS, AND IT LOOKS
+IDENTICAL TO IT.** `call fch_modes_ptr` / `ld a,(hl)` matches the same two-line
+pattern as `call ev_sp` / `ld a,(ix+0)` — but `fch_modes_ptr` *returns* `HL =
+FCH_MODES + A`, so the load is not a reload of anything: it is **the dereference
+the call exists to enable**. Deleting it would not save a byte, it would delete
+the point of the call. Eleven of the 28 are this shape, and they can never be
+dead *by construction*.
+
+That is why the sweep proves a shape instead of pattern-matching one, and why
+the candidate list is printed rather than acted on.
+
+### 8.1 The verdicts are a CONTROL, not a suppression list
+
+They live in [`tools/redundant-load-reviewed.txt`](../tools/redundant-load-reviewed.txt),
+and the sweep **still prints every candidate site** — the file changes nothing
+about what is reported. What it buys is that the zero stops being re-derived:
+
+* a candidate callee **not** on file is reported `UNREVIEWED` and **fails** the
+  gate — so a newly-introduced call site surfaces as a question instead of
+  blending into a list of 28 already-dispositioned ones;
+* an entry **on** file whose sites have all gone is reported `STALE` and **fails**
+  — an entry that asserts nothing is how a control goes blind, which is the same
+  argument `tools/deadcode-allow.txt` carries.
+
+**Falsified both ways:**
+
+| knife | cut | predicted | measured |
+|---|---|---|---|
+| **K-LS2** | drop `eval` from the file | `UNREVIEWED eval`, rc 1 | exactly that | ✅ EXACT |
+| **K-LS3** | add an entry with no sites | `STALE bogus_routine`, rc 1 | exactly that | ✅ EXACT |
+
+⚠️ **WHAT IT STILL DOES NOT PROVE.** A verdict on file is one human's reading of
+a callee on one day, and nothing re-checks the *reasoning* — only that the callee
+still has candidate sites. If `var_name_key` were someday changed to return
+`A = (hl)`, the entry would keep asserting `CLOBBER` and the gate would stay
+green over a real dead load. The tight-skip prover has no such hole, which is
+the difference between the two halves of this tool and the reason the proven
+class is the one that gates on bytes.
