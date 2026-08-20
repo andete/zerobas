@@ -2986,8 +2986,12 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `INPUT #n` needs a disk fixture; the FIELD read needs a `FIELD`+`GET`.
       Cheap, and they belong with the `fldary`/`inputary` probes rather than
       with `clearpool`.
-- [ ] 🔴 **RE-RUN THE STALENESS SWEEP'S "LIVE" ROWS — ONE OF THEM WAS FIXED BY
-      THE NEXT COMMIT AND STAYED FILED FOR ELEVEN DAYS.**
+- [x] ✅ **RE-RAN THE STALENESS SWEEP'S "LIVE" ROWS — DONE 2026-08-20, same
+      day it was filed. 8 of 11 already closed by named slices, the other 3
+      confirmed still live.** Detail below; the addendum is
+      [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §7. Filed as *"one of them was fixed by the next commit and stayed filed
+      for eleven days"*, which is true of §4.7 and of nothing else.
       [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
       re-measured 17 items on 2026-08-09 at `14dc44d` and marked 11 LIVE. The
       VERY NEXT COMMIT, `3dc1e7b` (D-STMTPEND), closed half of §4.7 — the
@@ -2995,10 +2999,42 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and D-TMFP (`38becce`) landed in the same run of error-plumbing work.
       🎯 **A SWEEP READING IS STAMPED WITH A COMMIT, AND THE COMMIT AFTER IT CAN
       FALSIFY IT** — nothing in the apparatus notices, because a sweep writes
-      prose and no gate reads prose. The other ten LIVE rows have never been
-      re-read against a tree that has the statement-boundary reader in it, and
-      any of them that turned on "the error is not reported" is now suspect.
-      Cheap: the sweep's own programs are all recorded, three sides each.
+      prose and no gate reads prose.
+
+      🔴 **THIS ITEM'S OWN FIRST DRAFT OVERSTATED ITS DENOMINATOR, AND ONE GREP
+      REFUTED IT.** It said *"the other ten LIVE rows have never been re-read"*.
+      Machine-checked against `TODO.md` at `ef50f4c` — resolve each §4.x claim to
+      its ENCLOSING `- [ ]`/`- [x]` — the eleven LIVE rows are:
+
+      | § | claim | today |
+      |---|---|---|
+      | 4.1 | `INPUT #n` parses one target | ✅ closed D-INPLIST |
+      | 4.2 | `VARPTR(<unset>)` | ✅ closed D-VPTRDOM |
+      | 4.3 | `FIELD overflow` vs record length | ✅ closed D-RECLEN |
+      | 4.4 | `LOCATE` defer vs coercion | ✅ closed D-LOCARG |
+      | 4.5 | `OPEN A$ AS #1` | 🔵 OPEN — **re-measured 2026-08-19 (D-FNARG)** |
+      | 4.6 | `ON ERROR GOTO 0` re-raise | ✅ closed D-ONERR0 |
+      | 4.7 | `ex_let_arr_str` | ✅ closed D-ARYOOS |
+      | 4.8 | line store bounded by `TXTMAX` | 🔵 OPEN — last read 2026-08-09 |
+      | 4.9 | `VALTYP $E0C8` = `$FF` cold | 🔵 OPEN — last read 2026-08-09 |
+      | 4.10 | `RETURN` vs an open `FOR` | ✅ closed D-FORRET |
+      | 4.11 | `DEFINT` stores other bytes | ✅ closed D-DEFINTTOK |
+
+      🎯 **EIGHT OF ELEVEN WERE CLOSED BY NAMED SLICES WITH THEIR OWN GATES, so
+      the pickup list was being worked, not rotting** — and §4.5 is not stale
+      either: D-FNARG re-read it as 14 `f.*` rows, DEFERRED **inside a committed
+      gate**, which is a live detector rather than prose and cannot go stale
+      silently [[a-pinned-divergence-is-a-live-detector]]. 🔴 **Only §4.7 rotted,
+      and it rotted for exactly one reason: its fix was a SIDE EFFECT of another
+      slice, so no slice ever grepped the list for it.** That is the shape to
+      guard — *"when a slice lands, grep the list for what it just shipped"*
+      catches a slice's OWN subject and misses what it closed by accident.
+      ➡️ **§4.8 and §4.9 were the two left to re-read, and both were re-read the
+      same day: STILL LIVE, BYTE FOR BYTE**, four predictions written first and
+      all four EXACT (` 148 `/` 148 `/` 646 `; the 32-byte line refused by both
+      references and stored here; `VALTYP $E0C8` = `ff`). So the sweep's LIVE
+      column now reads **8 closed / 3 live**, and every one of the three carries
+      a 2026-08-19-or-later reading.
 
 **Own-design hazards carried out of closed slices**
 
@@ -4959,7 +4995,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       a 32-byte line with `Out of memory`; zerobas has **646**, stores it, and
       prints nothing — `CLEAR`'s HIMEM argument does not reach the store check
       at [`sub/lineedit.asm:139`](sub/lineedit.asm:139), which compares
-      `PRGEND + size` against a fixed `$BB00`. **Pinned** as `crf-oomsay` /
+      `PRGEND + size` against a fixed `$BB00`.
+      ✅ **RE-MEASURED 2026-08-20 AT `ef50f4c` — STILL LIVE, BYTE FOR BYTE**, all
+      three rows and all three sides unchanged from the 2026-08-09 reading
+      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      §4.8 and its §7 addendum): ` 148 ` / ` 148 ` / ` 646 ` free, the 32-byte
+      line refused by both references and stored here, `99 REM Z` green on all
+      three as the control. **Pinned** as `crf-oomsay` /
       `crf-oomlst`.
       🔴 **AND IT IS WHY D-DOTGAPS' OWN RULE HAS NO EMULATOR GATE.** No typed row
       can reach the OOM path on this side, so `crf-oom` agrees at ` 20  0 ` for
@@ -7270,6 +7312,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       from the new private-cell capture. Benign today (written before read at
       every eval), so this is a *hygiene* item, not a defect — but it is exactly
       the shape that becomes one when a new caller reads before writing.
+      ✅ **RE-MEASURED 2026-08-09 AND AGAIN 2026-08-20 AT `ef50f4c` — STILL
+      `ff`**, read as MEMORY (`capture=("mem_abs",[(0xE0C8,1)])`) on a case whose
+      only line is `REM`, so no expression of ours evaluates first and writes the
+      cell. Zerobas-only by construction: it is our own private cell, so there is
+      no reference column and no gate can ever be two-sided about it.
       ✅ **RE-MEASURED 2026-08-09 — STILL LIVE: `E0C8 = $ff`**
       ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
       §4.9). ⚠️ Read as MEMORY (`capture=("mem_abs",[(0xE0C8,1)])`) on a case

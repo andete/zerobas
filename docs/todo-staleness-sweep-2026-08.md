@@ -555,3 +555,82 @@ early:** *"A never-gated bucket that outlives its reason is a gate that has
 quietly stopped measuring what it claims to."* Swap "never-gated bucket" for
 "open residual" and it is §8's thesis. The lesson was already written down by a
 slice aiming at something else — which is, exactly, the failure mode.
+
+---
+
+## 7. Addendum — the LIVE column re-run, 2026-08-20 at `ef50f4c`
+
+This sweep was taken at `e2810c6` and published at `14dc44d`. **The commit
+immediately after `14dc44d` falsified one of its readings.** `3dc1e7b`
+(D-STMTPEND) closed the swallow half of §4.7 the same day; D-ARYOOS found it
+eleven days later while pricing the fix, and only because it re-measured before
+touching code. So the LIVE column was re-run.
+
+### 7.1 First the cheap half — one grep, no emulator
+
+Each §4.x claim resolved to its **enclosing `- [ ]` / `- [x]`** in `TODO.md` at
+`ef50f4c`:
+
+| § | claim | today | closed by |
+|---|---|---|---|
+| 4.1 | `INPUT #n` parses one target | ✅ | D-INPLIST `78dae04` |
+| 4.2 | `VARPTR(<unset>)` is IFC | ✅ | D-VPTRDOM `b51bbbb` |
+| 4.3 | `FIELD overflow` vs record length | ✅ | D-RECLEN `8dce108` |
+| 4.4 | `LOCATE` defer vs coercion | ✅ | D-LOCARG `887e78a` |
+| 4.5 | `OPEN A$ AS #1` | 🔵 **OPEN** | re-measured 2026-08-19, D-FNARG |
+| 4.6 | `ON ERROR GOTO 0` re-raise | ✅ | D-ONERR0 `6819a23` |
+| 4.7 | `ex_let_arr_str` swallow | ✅ | D-ARYOOS `ef50f4c` |
+| 4.8 | line store bounded by `TXTMAX` | 🔵 **OPEN** | — |
+| 4.9 | `VALTYP $E0C8` = `$FF` cold | 🔵 **OPEN** | — |
+| 4.10 | `RETURN` vs an open `FOR` | ✅ | D-FORRET `3db99ae` |
+| 4.11 | `DEFINT` stores other bytes | ✅ | D-DEFINTTOK `7aadd36` |
+
+🎯 **EIGHT OF ELEVEN WERE CLOSED BY NAMED SLICES WITH THEIR OWN GATES.** The
+pickup list was being worked, not rotting, and the alarm this addendum was
+written under — *"any LIVE row that turned on the error is not reported is now
+suspect"* — was **too broad by seven**. It was written from one instance.
+
+🔴 **ONLY §4.7 ROTTED, AND THE REASON IS SPECIFIC AND WORTH KEEPING: ITS FIX WAS
+A SIDE EFFECT OF ANOTHER SLICE.** Every other closure was a slice closing *its
+own subject* and updating the item as it went. §6's own prescription — *"when a
+slice lands, grep the list for what it just shipped"* — catches exactly those
+and misses exactly this one, because D-STMTPEND did not ship `ex_let_arr_str`;
+it shipped a statement boundary that happened to raise `ex_let_arr_str`'s
+already-set code. **The cross-check has to be over the MECHANISM, not the
+subject** [[a-fix-falsifies-the-justification-beside-it]].
+
+🎯 **§4.5 IS NOT STALE EITHER, AND FOR A STRUCTURAL REASON.** D-FNARG re-read it
+on 2026-08-19 as 14 `f.*` rows, **DEFERRED inside a committed gate**. A deferred
+row is a live detector, not prose: it is re-run on every gate invocation and the
+day the divergence closes, the row starts disagreeing with its own filing and
+says so. That is the only one of the eleven that cannot go stale silently, and
+it is the shape the rest should be moved toward.
+
+### 7.2 Then the expensive half — the two genuinely unread rows
+
+Predictions written before the run; **all four EXACT.**
+
+**§4.8** — `A=PEEK(&HF676)+256*PEEK(&HF677)` then `CLEAR 300,A+1000`:
+
+| row | vg8020 | cf3300 | zb |
+|---|---|---|---|
+| `t.free` `PRINT FRE(0)` | ` 148 ` | ` 148 ` | **` 646 `** |
+| `t.ctl` 🟢 store `99 REM Z`, `LIST` | `99 REM Z` | `99 REM Z` | `99 REM Z` |
+| `t.oomlst` also store a 32-byte line, `LIST` | `99 REM Z` | `99 REM Z` | **`20 REM BBBB…` \| `99 REM Z`** |
+
+**LIVE, byte for byte**, unchanged from 2026-08-09.
+
+**§4.9** — `VALTYP $E0C8` read as MEMORY on a `REM`-only case
+(`capture=("mem_abs",[(0xE0C8,1)])`, so no expression of ours evaluates first
+and writes the cell): **`ff`**. **LIVE.** Zerobas-only by construction — it is
+our own private cell, so no reference column exists and no gate can ever be
+two-sided about it.
+
+### 7.3 What this changes about §8's thesis
+
+§8 concluded that a pickup list which cannot be trusted makes every ranking
+decision unsound. That stands. What the re-run adds is a **rate**: over eleven
+days, one row of eleven went stale without anyone noticing, and it was the one
+whose fix nobody could have grepped for. A sweep is worth re-running, and the
+honest headline is not *"the list rots"* — it is **"the list is maintained by
+subject, so what escapes is what was closed by mechanism."**
