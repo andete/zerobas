@@ -9155,6 +9155,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       string-function tokens and on a letter, and simply has no `(` arm. It is a
       STRING-EVALUATOR hole, not a filename one, and charging it to the filename
       gate would price it against the wrong verb.
+      ✅ **DENOMINATOR BUILT AND THE RULE HOLDS — 2026-08-21 (D-STRPAREN)**,
+      [`docs/strparen-msx1-characterization.md`](docs/strparen-msx1-characterization.md),
+      `make strparen-acceptance` (**3/3 scored, 11 DEFERRED**), 0 ROM bytes.
+      The filing above rested on **two** ad-hoc readings never committed as rows;
+      it now rests on **eleven contexts** — LET, `+` on either side, nested,
+      a parenthesised EXPRESSION, a parenthesised LITERAL, PRINT, IF, and the
+      arguments of `LEN` / `MID$` / `LEFT$` — with three 🟢 controls, **and no
+      disk anywhere, so every row has TWO references** where `f.paren` has one.
+      All eleven diverge; all three controls are green on all three sides.
+      🔴 **AND THE ROWS CORRECT THE SHAPE OF THE FIX IN TWO WAYS.**
+      (a) `p.lit` — `B$=("Z")`, a parenthesised LITERAL with no variable in it —
+      is refused too, so the subject is the `(` and not string VARIABLES; a fix
+      framed around variables closes ten rows and leaves that one.
+      (b) `p.left` (`LEFT$((A$),1)`) answers **`Syntax error`** where the other
+      ten answer `Type mismatch` — a DIFFERENT refusal site, so this is one rule
+      at **at least two mechanisms**, the shape D-FNARG2 found for filenames.
+      🎯 **IT IS A SPLIT-EVALUATOR QUESTION, NOT A MISSING `case` LABEL.** A `(`
+      arm in `str_eval_one` closes `p.let`/`p.cat1`/`p.nest`/`p.inner`/`p.lit`;
+      `p.print` never reaches `str_eval` at all (`basic/print.asm`'s `exp_loop`
+      peeks for `"`, a string-function token or a `$`-suffixed letter, and a
+      leading `(` falls through to `exp_num`, the NUMERIC evaluator), and `p.if`
+      is the same story through `ev_rel`. zerobas picks its evaluator by PEEKING
+      at the first byte; the reference has one type-polymorphic evaluator. **A
+      leading `(` is the one operand shape a peek cannot classify** — so the fix
+      is "try the string path, fall back to numeric" at each dispatcher, plus
+      `LEFT$`'s own argument parse as its own site.
       ✅ **ITS FACE IS NO LONGER CONTEXT-DEPENDENT — UPDATED 2026-08-21
       (D-FNEXPR2).** This read: *"`Type mismatch` through LET/PRINT ... and
       `Syntax error` through `fname_expr`'s `jp nc,stmt_error`, so the row
@@ -9167,9 +9193,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       divergence to fix instead of two faces to reconcile.
       ⚠️ Row `f.paren` in [`basic_probe_namspc.py`](probes/basic/basic_probe_namspc.py)
       is DEFERRED with exactly this reason; it is the denominator, already built.
-      💰 Not priced. ✅ Main page 1 read **50 B** on 2026-08-21 after D-FNEXPR2
-      (`make basic-reloc`) — the wall this item was filed against (14 B) has
-      moved, and this no longer obviously needs a carve of its own.
+      💰 **SCOUTED, NOT YET PRICED WHOLE.** The `str_eval_one` arm hand-counts at
+      ~25 B (a 5 B dispatch + a ~20 B routine that saves HL, recurses through
+      `str_eval` so the `+` tail comes for free, requires `)`, and **restores HL
+      and returns CF clear when the inside is not a string** — that last part is
+      what lets a peeking dispatcher fall back to numeric). `p.print` adds a
+      `(`-peek in `basic/print.asm`; `p.if` and `p.left` are unscouted.
+      ⚠️ Main page 1 read **39 B** and page-0 LOW **22 B** on 2026-08-21 after
+      D-FNRUN (`make basic-reloc`), so the first arm fits and the rest needs a
+      carve. `tools/clone_scout.py --min 6 --members 2` offers 12 B
+      (`sav_ascii_flag`/`sav_cas_flag`, page 1), 9 B (`ev_t_div`/`ev_t_mul`,
+      page 1) and 12 B in `basic/str-engine.asm` (LOW), read 2026-08-21.
 
 - [x] ✅ **CLOSED 2026-08-21 (D-FNEXPR2), 0 ROM BYTES — THE FACE FOR A
       NON-STRING FILENAME (`OPEN 5 AS #1`) WAS UNMEASURED.**

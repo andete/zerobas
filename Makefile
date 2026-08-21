@@ -2130,6 +2130,19 @@ namspc-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_namspc.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-STRPAREN: `(A$)` in every string context (docs/spec-basic-strparen.md) --
+# 🔴 THE RESIDUAL CAME WITH TWO DATA POINTS AND THIS IS THE DENOMINATOR.
+# D-FNEXPR filed "`(A$)` is refused in EVERY string context" off `B$=(A$)` and
+# `PRINT (A$)`, measured ad hoc and never committed. Eleven contexts + three
+# controls, and NO DISK ANYWHERE -- so unlike the filename battery it grew out
+# of, every row here has TWO references.
+# ⚠️ The eleven divergent rows are DEFERRED (printed, never scored): a known
+# divergence that gates turns the battery red forever instead of measuring. The
+# three CONTROLS are gated, which is what makes the eleven a reading.
+strparen-acceptance: repack-machine
+	python3 probes/basic/basic_probe_strparen.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- D-FLDWIDTH: a FIELD width is a BYTE ARGUMENT (docs/spec-basic-fldwidth.md)
 # D-NAMSPC deferred two rows and filed them as a residual: `ex_field` never
 # type-checked its width, so `FIELD#1,B$ AS A$` -- NO SPACE IN IT -- was `OK`
