@@ -20,11 +20,13 @@
 ;   bl_load_error — sub-local in the tenant, where it does TAPIOF + ERRMARK + sets BL_STAT
 ;     and rets, with the SAME stack behaviour, so control flow is unchanged and
 ;     the resident stub does the reporting once on the way out.
-;   bl_notfound — its sibling for the ONE failure that is not a `load error`:
-;     the volume mounted and the 8.3 name is not in the directory. Files BL_STAT
-;     = 2 and rets the same way; the resident stub raises ERR 53 (D-BLNF). It
-;     deliberately does NOT drop bl_load_error's ERRMARK landmark — this is a
-;     raised error, not a printed one, and the landmark names the printed one.
+;   bl_notfound / bl_badmode — its two siblings, for the failures that are not a
+;     `load error`. bl_notfound: the volume mounted and the 8.3 name is not in
+;     the directory (D-BLNF). bl_badmode: the name WAS found and header byte 0 is
+;     not the $FE BSAVE marker (D-BLMODE). Each files its own MSX ERR code in
+;     BL_STAT — 53 and 61 — and rets the same way; the resident stub RAISES it.
+;     Neither drops bl_load_error's ERRMARK landmark — these are raised errors,
+;     not printed ones, and the landmark names the printed one.
 ;   load_handoff — the ,R exec jump. RESIDENT ON BOTH SIDES: it ends in `jp (hl)`
 ;     into the loaded program and never returns, so it must NOT run inside the
 ;     tenant's CALSLT — that would leave main page 1 switched out forever. The
@@ -218,7 +220,15 @@ do_disk_bload:
                 call    fat_io_getbyte
                 jp      c,bl_load_error
                 cp      BSAVE_DISK_ID
-                jp      nz,bl_load_error
+                jp      nz,bl_badmode          ; D-BLMODE: the file EXISTS and is
+                                               ; not a BSAVE binary -- a DIFFERENT
+                                               ; error from both `load error` and
+                                               ; `File not found`, and the ONLY arm
+                                               ; retargeted here. The `jp c` above
+                                               ; is an I/O failure on the very
+                                               ; first byte, whose reference face
+                                               ; is unmeasured, so it keeps the
+                                               ; shared tail's safe default.
                 ; header bytes 1..6: start(LE), end(LE), exec(LE) into the same
                 ; CURPTR/ENDPTR/EXECPTR vars the tape path uses.
                 call    fat_io_getbyte

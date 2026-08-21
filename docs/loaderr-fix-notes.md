@@ -259,3 +259,129 @@ is `Bad file mode` on the CF-3300 and `load error` here. It is untouched by this
 slice and asserted so on every run: `fat_find` **succeeds**, the `$FE` marker
 check rejects, and the arm is `bl_load_error`. It needs a **face the tree does
 not have**, not a re-route of one it does, and it stays printed-not-gated.
+
+> ✅ **CLOSED THE NEXT DAY — see §7.** The last clause is the one that was
+> wrong: the face **did** exist. `Bad file mode` is ERR 61, its text has shipped
+> sub-hosted since D-MSGMIGRATE, and three `FIELD`/`GET` sites already raise it.
+
+---
+
+## 7. D-BLMODE — the seventh face, 2026-08-21, **+1 B main page 1**
+
+`dskmsg-acceptance` **11 gated + 1 printed → 15 gated + 0 printed**. The holding
+pen is EMPTY, and it was emptied by fixing all seven, not by deleting them.
+Walls: main page 1 **13 B → 12 B**, sub page 1 **1619 B → 1615 B**; low region
+22 B and sub page 0 3299 B unmoved.
+
+### 7.1 🔴 The disposition was measured FIRST, and it is half the divergence
+
+The filed item warned that whether the reference **raises** `Bad file mode` or
+**prints** it was unmeasured, and that "it raises" was a
+plausible-and-therefore-dangerous assumption. Every row in `dskmsg` is a typed
+DIRECT-MODE line, and a direct-mode line stops either way — which is exactly how
+`load error` ran on into the next line at six verbs for a year without a row
+noticing (§1). So the reading was taken before anything was designed, as a stored
+program with a marker on the next line, **calibrated in both senses by two rows
+whose answer was already known**:
+
+| program | cf3300 | zb (before) |
+|---|---|---|
+| 🟢 `10 BLOAD"PROG.BIN"` | **RAN ON**, `[RANON]` | **RAN ON**, `[RANON]` |
+| 🟢 `10 BLOAD"NOSUCH.BIN"` | **STOPPED**, `File not found in 10` | **STOPPED**, idem |
+| 🔴 `10 BLOAD"PROG.BAS"` | **STOPPED**, `Bad file mode in 10` | **RAN ON**, `load error\|[RANON]` |
+| 🔴 `10 BLOAD"TEST.BIN"` | **STOPPED**, `Bad file mode in 10` | **RAN ON**, `load error\|[RANON]` |
+
+It raises. The assumption was right and is now a reading — and the divergence is
+**two things**, a message AND a disposition, of which the shipped battery could
+see only the first.
+
+🎯 **AND THE FOURTH ROW IS THE ONE THAT MAKES IT A RULE.** `TEST.BIN` is data
+with a `.BIN` name, and it is rejected identically. So the reference is checking
+the **`$FE` header marker**, not the extension — which `BLOAD"PROG.BAS"` alone
+could never say, because a machine that simply refused `.BAS` would match it.
+Both rows ship (`dsk-bloadmode`, `dsk-bloadmodbin`).
+
+### 7.2 🔴 The filed price was wrong in both halves, and one grep said so
+
+The item said the shape is *"a fourth `BL_STAT` value plus a new error face,
+i.e. a message-table entry"*, that **"zerobas has neither the message nor an ERR
+code for it"**, and that the code is **54**.
+
+* The **message ships**: [`sub/errmsg.asm`](../sub/errmsg.asm) `em_bad_filemode`,
+  `db "Bad file mode",0`, migrated by D-MSGMIGRATE.
+* The **ERR code ships and is already raised** — `ld a,61` at
+  `basic/strvar.asm` and twice in `basic/field.asm`, and `raise_error`'s sparse
+  fall-through routes 61 to the sub-hosted text with no main-side membership
+  test at all.
+* **It is 61, not 54.** In this tree 54 is `File already open`.
+
+So the entire "new error face" half of the price was **already paid**, and what
+remained was a jump target and a status value.
+
+### 7.3 🎯 The fourth value is a CODE, not an index — which is why it costs one byte
+
+`BL_STAT` was `0 = loaded, 1 = load_error, 2 = not found`. Adding `3 = bad mode`
+would have needed, in the resident stub, `dec a` + `jp z,df_notfound` +
+`ld a,61` + `jp raise_error` — **+6 B of main page 1**. Instead the cell now
+carries **the MSX ERR code itself**: 0 = loaded, 1 = `load error` printed,
+**anything else = raise ERR n**. The stub becomes
+
+```
+                cp      1                   ; was `dec a`          +1 B
+                jp      z,load_error
+                jp      raise_error         ; was `jp df_notfound`  +0 B
+```
+
+because `A` is already the code. **+1 B**, hand-counted before the build and
+confirmed by it. Sub-side, `bl_notfound` files 53 instead of 2 and a new
+`bl_badmode` files 61 through a shared store: **+4 B of sub page 1**, where 1619
+were free.
+
+⚠️ **THE HAZARD IS NAMED, NOT DISCOVERED LATER: BLOAD CAN NEVER RAISE ERR 1**
+through this cell, because 1 means "printed". Written down at the cell
+(`basic/sysvars.inc`), at both arms (`sub/bload.asm`) and at the stub.
+
+⚠️ **AND ONLY ONE ARM MOVED.** `bload-body.inc`'s `jp nz,bl_badmode` is the `$FE`
+mismatch alone; the `jp c,bl_load_error` two lines above is an I/O failure on the
+very first byte, whose reference face is **unmeasured**, so it keeps the shared
+tail's safe default — the same discipline `bl_notfound` was built with, and the
+lesson D-LOADERR-FIX paid for with the cassette.
+
+### 7.4 🔴 The control could have been spoofed by its own echo
+
+`dsk-bloadbinrun` asserts the literal `[RANON]`, because "the marker is absent"
+is satisfied by a machine that cannot print, by a lost anchor, and by a program
+that never ran. But the marker is TYPED as well as printed, so an echo inside the
+window would spell it. Two guards, and **K-BM3 shows they catch different
+failures**:
+
+* the marker is printed as `PRINT"[RAN";"ON]"`, so **the echo cannot spell it**;
+* the control's must-NOT-contain list carries `PRINT`, which appears **only** in
+  an echo — that is what pins the `ANCHOR` override itself.
+
+### 7.5 Knives — 3 of 3 EXACT, two rounds each, byte-identical red sets
+
+| knife | cut | predicted | measured |
+|---|---|---|---|
+| **K-BM1** | `bl_badmode`'s `ld a,61` → `ld a,53` (a VALUE; the discriminator is the MESSAGE) | the three wrong-kind rows read `File not found`; `dsk-bloadnone` GREEN | ✅ **EXACT**, rc 1, 12/15 — and **`sub.rom` only** moved |
+| **K-BM2** | the stub's `jp raise_error` → `jp load_error` | **four** rows: the three plus `dsk-bloadnone`, and `dsk-bloadmoderun` reads `load error / [RANON]` | ✅ **EXACT**, rc 1, 11/15 — **the pre-fix reading reproduced verbatim**; main ROM only |
+| **K-BM3** | probe-side: `ANCHOR = {}` | rc **2** on the must-NOT-contain `PRINT` | ✅ **EXACT**, rc 2, and the reading is `20 PRINT"[RAN";"ON]" / RUN / [RANON]` |
+
+🎯 **K-BM1 IS WHAT SAYS THE NEW ARM IS REACHED RATHER THAN THE OLD ONE
+RE-LABELLED**: `dsk-bloadnone` stays green under it, because that row files its
+own 53 at a different arm. 🎯 **K-BM2 is the stronger of the two** — it reproduces
+the exact string this slice was filed against, on the exact row that could not
+see it before.
+
+⚠️ **AND K-BM3's READING CONTAINS `[RANON]`.** The split marker alone would not
+have caught it; the `PRINT` assertion did. Two guards, two failure modes, and the
+knife is what separated them rather than an argument.
+
+### 7.6 Gates
+
+`dskmsg-acceptance` **15/15**, 0 printed-not-gated · `fat-error-acceptance` ·
+`diskbasic-acceptance` · `runtail-acceptance` · `castail-acceptance` ·
+`cassave-acceptance` · `namspc-acceptance` · `unit-test` 59/59 · `deadcode`
+(`df_notfound` keeps four callers) · `audit-citations` · `wall-assertion-check` ·
+`redundant-load-check` · `rowshape-check` · `injector-check` ·
+`preflight-check` · `latch-check`.

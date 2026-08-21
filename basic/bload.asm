@@ -51,16 +51,25 @@ do_bload:
                 ; so nothing writes DISKOP_OP and df_or_loaderr (basic/files.asm)
                 ; is blind to this verb. The tenant tells the two apart at its own
                 ; mount/find boundary instead and files WHICH it was.
-                ;   0 -> loaded          1 -> `load error`, PRINTED, program runs on
-                ;   2 -> ERR 53 `File not found`, RAISED, program stops
+                ;   0 -> loaded
+                ;   1 -> `load error`, PRINTED, program runs on
+                ;   n -> RAISE MSX ERR n, program stops
+                ; 🎯 D-BLMODE MADE THE THIRD VALUE A **CODE** RATHER THAN ADDING A
+                ; FOURTH INDEX, and that is the whole main-side cost of the new face:
+                ; `cp 1` for `dec a` is one byte, and `jp raise_error` costs the same
+                ; three `jp df_notfound` did, because A is already the code the
+                ; tenant filed. A fourth enumerated value would have been six.
+                ; 53 = `File not found` (D-BLNF), 61 = `Bad file mode` (D-BLMODE).
                 ; ⚠️ 1 STILL COVERS THE CASSETTE, the parse rejects and a failed
-                ; mount. Only an arm that PROVED the volume mounted files a 2.
+                ; mount. Only an arm that PROVED the volume mounted files a code.
+                ; ⚠️ AND SO BLOAD CANNOT RAISE ERR 1 THROUGH THIS CELL -- see
+                ; sub/bload.asm, where the hazard is written down beside the arms.
                 ld      a,(BL_STAT)
                 or      a
                 jp      z,load_handoff      ; plain BLOAD returns; ,R jumps to EXECPTR
-                dec     a
+                cp      1
                 jp      z,load_error        ; the tenant hit load_error; report once here
-                jp      df_notfound         ; ERR 53, raised — never returns
+                jp      raise_error         ; A = the tenant's ERR code — never returns
 
 ; parse_disk_fcb stays RESIDENT even though the verb around it left: nine callers
 ; outside bload.asm use it (do_files, do_kill, do_name, do_open, do_run, ex_merge,

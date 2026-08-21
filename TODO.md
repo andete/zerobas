@@ -3229,8 +3229,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       TAPION always fails and the right face is unmeasured. **Separating those
       two callers is the design question**, and it must not be assumed to be a
       rename [[a-filed-blocker-can-name-the-wrong-obstacle]].
-- [ ] 🔴 **`BLOAD` OF A FILE THAT EXISTS AND IS NOT BINARY IS `Bad file mode`
-      THERE AND `load error` HERE — A FACE NO ARM IN THE TREE PRODUCES.**
+- [x] ✅ **~~`BLOAD` OF A FILE THAT EXISTS AND IS NOT BINARY IS `Bad file mode`
+      THERE AND `load error` HERE — A FACE NO ARM IN THE TREE PRODUCES~~ —
+      CLOSED 2026-08-21 as D-BLMODE, +1 B main page 1 (13 → 12 B) and +4 B sub
+      page 1 (1619 → 1615 B).**
+      [`docs/loaderr-fix-notes.md`](docs/loaderr-fix-notes.md) §7.
+      `dskmsg-acceptance` **11 gated + 1 printed → 15 gated + 0 printed**; the
+      holding pen is EMPTY and was emptied by fixing all seven.
+      🔴 **THE FILED PRICE WAS WRONG IN BOTH HALVES, AND ONE GREP SAID SO.** This
+      entry said zerobas "has neither the message nor an ERR code for it" and
+      called the code **54**. `Bad file mode` is **ERR 61**; its text has shipped
+      sub-hosted since D-MSGMIGRATE (`sub/errmsg.asm em_bad_filemode`) and three
+      `FIELD`/`GET` sites already raise it. 54 in this tree is `File already
+      open`. So the whole "new error face / message-table entry" half of the
+      price was ALREADY PAID, and what was left was a jump target and a value.
+      🎯 **AND THE FOURTH `BL_STAT` VALUE IS A *CODE*, NOT AN INDEX** — the cell
+      is now 0 = loaded, 1 = printed `load error`, n = RAISE ERR n. The stub is
+      `cp 1` for `dec a` and `jp raise_error` for `jp df_notfound`: **one byte**,
+      where a fourth enumerated value would have been six.
+      ✅ **THE DISPOSITION IS MEASURED, NOT ASSUMED** — the reference RAISES and
+      STOPS, read as a stored program with a marker on the next line and
+      calibrated in BOTH senses by `BLOAD"PROG.BIN"` (runs on) and
+      `BLOAD"NOSUCH.BIN"` (stops). The divergence was TWO things, a message and a
+      disposition, and every shipped row was blind to the second.
+      🎯 A fourth row, `BLOAD"TEST.BIN"` (data with a `.BIN` name), is what makes
+      it a rule about the **`$FE` marker** rather than the extension.
+      Knives **3/3 EXACT** (K-BM1 the code, K-BM2 the stub's raise → print, which
+      reproduces the filed pre-fix reading verbatim, K-BM3 probe-side → rc 2).
+      ⚠️ NEW HAZARD, NAMED IN THREE PLACES: BLOAD can never raise ERR 1 through
+      `BL_STAT`, because 1 means "printed". The original entry follows.
+      ~~🔴 A FACE NO ARM IN THE TREE PRODUCES.~~
       Measured 2026-08-20 (D-LOADERR), still divergent at D-BLNF (2026-08-21):
       row `dsk-bloadmode` in `make dskmsg-acceptance`, PRINTED and not gated,
       `BLOAD"PROG.BAS"` → cf3300 `Bad file mode`, zb `load error`.

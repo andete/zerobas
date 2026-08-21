@@ -1212,9 +1212,16 @@ TRAPSTK_END     equ     TRAPSTK + TRAPSTK_MAX*3   ; $E21F — still < $E240, cle
 ; holds its status ACROSS the whole load, during which the fatprim cells are live
 ; on every getbyte.
 BL_PTR          equ     $E221   ; 2 B: main -> tenant, the token cursor after BLOAD
-BL_STAT         equ     $E223   ; 1 B: tenant -> main, 0 = loaded, 1 = load_error,
-                                ; 2 = file not found (D-BLNF: RAISED as ERR 53 by
-                                ; the resident stub, not printed like 1)
+BL_STAT         equ     $E223   ; 1 B: tenant -> main. 0 = loaded, 1 = `load
+                                ; error` PRINTED, and ANY OTHER VALUE IS THE MSX
+                                ; ERR CODE THE RESIDENT STUB RAISES (D-BLMODE,
+                                ; 2026-08-21): 53 `File not found` (D-BLNF),
+                                ; 61 `Bad file mode`. Carrying the CODE rather
+                                ; than a fourth index is what makes a new BLOAD
+                                ; error face cost ONE byte of main page 1.
+                                ; ⚠️ 1 is taken, so BLOAD can never raise ERR 1
+                                ; through this cell. Named here and beside both
+                                ; arms in sub/bload.asm.
 ; --- SAVE-family tenant marshalling (docs/decision-fund-time-and-t5.md) ------
 ; BLOAD's mirror: the SAVE / BSAVE / CSAVE WRITE ENGINES live in a sub-ROM PAGE-1
 ; tenant (sub/save.asm) beside fatprim, so the fat_io_* write cursor they drive

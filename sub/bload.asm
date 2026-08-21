@@ -131,8 +131,31 @@ bl_load_error:
 ; opt-in. Same discipline here: bl_load_error still serves every cassette
 ; failure, every parse failure and every mount failure, and only a call site
 ; that has PROVED the volume mounted may come here.
+;
+; 🔴 D-BLMODE (2026-08-21): THE CELL NOW CARRIES AN **ERR CODE**, NOT AN INDEX.
+; BL_STAT is 0 = loaded, 1 = `load error` PRINTED, and **anything else is the MSX
+; ERR code the resident stub must RAISE**. That is one byte of main page 1 for
+; the whole family (`cp 1` instead of `dec a`, then `jp raise_error` with A
+; already right) where a fourth enumerated value would have cost six.
+; ⚠️ THE HAZARD, NAMED RATHER THAN DISCOVERED: **BLOAD can never raise ERR 1**
+; (`NEXT without FOR`) through this cell, because 1 is taken. That is not a
+; restriction anything could want, but it is a real one and it is written down
+; here so the next arm does not find it by measuring.
+bl_badmode:
+                ld      a,61                ; ERR 61 `Bad file mode` -- the file
+                                            ; EXISTS and is not a BSAVE binary.
+                                            ; MEASURED 2026-08-21: the CF-3300
+                                            ; RAISES this and STOPS the program,
+                                            ; for `PROG.BAS` (tokenised BASIC)
+                                            ; AND for `TEST.BIN` (data with a
+                                            ; .BIN name) alike -- so the rule is
+                                            ; about the $FE MARKER, not the
+                                            ; extension.
+                jr      bl_stat_raise
 bl_notfound:
-                ld      a,2                 ; BL_STAT: 2 = name not in directory
+                ld      a,53                ; ERR 53 `File not found` -- mounted,
+                                            ; name not in the directory (D-BLNF)
+bl_stat_raise:
                 ld      (BL_STAT),a
                 ret
 

@@ -176,7 +176,47 @@ CASES = [
     # errors into one string -- the same conflation shape D-ARYOOS found in
     # `ARY_ERR=4`, and the reason the fix is an ARM SPLIT and not a rename.
     ("dsk-bloadmode", ['BLOAD"PROG.BAS"']),
+    # 🎯 AND THE SAME REJECT FOR A FILE WHOSE NAME SAYS `.BIN`. TEST.BIN is 16
+    # records of data, not a BSAVE image, so header byte 0 is not $FE. This row
+    # is what makes the rule the $FE MARKER rather than the EXTENSION -- without
+    # it, `dsk-bloadmode` alone is satisfied by a machine that refuses `.BAS`.
+    ("dsk-bloadmodbin", ['BLOAD"TEST.BIN"']),
+
+    # === D-BLMODE: THE DISPOSITION, WHICH NO ROW ABOVE CAN SEE =============
+    # 🔴 EVERY ROW IN THIS FILE IS A TYPED DIRECT-MODE LINE, AND A DIRECT-MODE
+    # LINE STOPS EITHER WAY. So the MESSAGE was measured for a year and whether
+    # the machine RAISES it (stops the program) or PRINTS it (runs on) was not --
+    # which is how `load error` ran on into the next line at six verbs without a
+    # single row noticing (D-LOADERR). These two rows are stored programs with a
+    # marker on the NEXT line, and they read the tail of `RUN`.
+    #   MEASURED 2026-08-21, both sides, before anything was designed:
+    #     BLOAD"PROG.BIN"   both RAN ON       '[RANON]'
+    #     BLOAD"NOSUCH.BIN" both STOPPED      'File not found in 10'
+    #     BLOAD"PROG.BAS"   cf3300 STOPPED    'Bad file mode in 10'
+    #                       zb     RAN ON     'load error|[RANON]'
+    # So the reference RAISES. That was the "plausible and therefore dangerous"
+    # assumption the item was filed with, and it is now a reading.
+    # ⚠️ THE MARKER IS SPLIT ACROSS A `;` ON PURPOSE. Typed whole, the ECHO of
+    # line 20 contains the literal `[RANON]`, so a reading whose window had
+    # slipped up past the `RUN` echo would satisfy the control's must-contain
+    # WITHOUT the program ever having run. Printed as `"[RAN";"ON]"` the echo
+    # cannot spell it and only the OUTPUT can.
+    ("dsk-bloadmoderun", ['10 BLOAD"PROG.BAS"', '20 PRINT"[RAN";"ON]"', "RUN"]),
+    # 🟢 ITS POSITIVE CONTROL, and it is not optional: "the marker is absent" is
+    # satisfied by a machine that cannot print, by a lost anchor, and by a row
+    # whose program never ran. This one loads a REAL BSAVE binary through the
+    # identical template and the marker MUST appear.
+    ("dsk-bloadbinrun", ['10 BLOAD"PROG.BIN"', '20 PRINT"[RAN";"ON]"', "RUN"]),
 ]
+
+# 🔴 ROWS WHOSE READING STARTS AFTER A LINE `anchor_for` WOULD NOT PICK. The
+# stored-program rows type `10 BLOAD...` FIRST, and BLOAD is in VERBS, so the
+# derived anchor would be the ENTRY line and the window would swallow the echoes
+# of line 20 and of `RUN`. Named explicitly rather than reordered.
+ANCHOR = {
+    "dsk-bloadmoderun": "RUN",
+    "dsk-bloadbinrun":  "RUN",
+}
 
 # Rows PRINTED but NOT SCORED: a measured, filed divergence. Keeping them out of
 # the tally is what stops a known-red row from masking a NEW red one.
@@ -202,7 +242,14 @@ CASES = [
 # `Bad file mode` -- a SECOND face that no arm in this tree produces. Nothing
 # about the not-found fix moves it, and that is asserted, not assumed: it is
 # still printed here with its own reading on every run.
-NOT_GATED = {"dsk-bloadmode"}
+# ✅ AND `dsk-bloadmode` GRADUATED THE DAY AFTER THAT (D-BLMODE, 2026-08-21),
+# emptying the set. The tenant files an ERR CODE in BL_STAT instead of an index,
+# so `bl_badmode` costs ONE byte of main page 1 -- and the message and the ERR
+# code it needed both already shipped (sub/errmsg.asm `em_bad_filemode`, ERR 61,
+# already raised at three FIELD/GET sites). 🔴 THE FILED ITEM SAID ZEROBAS HAD
+# "NEITHER THE MESSAGE NOR AN ERR CODE FOR IT", AND THAT WAS FALSE IN BOTH
+# HALVES; it also called the code 54, which in this tree is `File already open`.
+NOT_GATED: set[str] = set()
 
 # Rows that WRITE to the image they mount, and therefore get a private copy.
 # Boot-per-case reboots the machine but keeps handing openMSX the SAME file.
@@ -219,6 +266,18 @@ CONTROLS = {
     "dsk-ctl":     (("HI", "TXT"), ()),
     "dsk-killhit": (("TEST", "BIN"), ("HI      .TXT",)),
     "dsk-namehit": (("BYE", "TXT", "TEST"), ("HI      .TXT",)),
+    # 🔴 A LITERAL PIN ON THE DISPOSITION READOUT, WHICH BOTH COLUMNS SHARE.
+    # `dsk-bloadmoderun` scores by cross-side agreement, and if the marker could
+    # never be seen -- a lost anchor, a clipped window, a template that does not
+    # run -- BOTH sides would read "no [RANON]" and the row would AGREE while
+    # measuring nothing. No differential can catch that (D-FILESIDE). This row
+    # runs the SAME template on a file that loads, and asserts the marker as a
+    # literal; a blind readout fails it on a REFERENCE and the probe reports an
+    # INSTRUMENT FAULT rather than an agreement.
+    # `PRINT` is a must-NOT-contain because it appears ONLY in the echo of line
+    # 20: it is what pins the ANCHOR override itself. Drop the override and this
+    # control fails on a REFERENCE, which this probe reports as rc 2.
+    "dsk-bloadbinrun": (("[RANON]",), ("error", "Bad file", "PRINT")),
 }
 
 # D-LOADERR: the anchor is derived from THIS list, so a new verb that is not in
@@ -256,7 +315,7 @@ def run_side(side, only):
         caps = omsx_repl.run_cases(cfg["machine"], cases, batch=False,
                                    boot=cfg["boot"], step=cfg["step"], diska=dsk)
         for (label, lines), raw in zip(sel, caps):
-            out[label] = reading(raw, anchor_for(lines))
+            out[label] = reading(raw, ANCHOR.get(label) or anchor_for(lines))
 
     ro = [r for r in rows if r[0] not in WRITES]
     if ro:
@@ -289,7 +348,7 @@ def check_controls(results, sides):
 # The label pad for every report row this probe prints, on every exit path.
 # docs/spec-probe-rowshape.md: ONE grammar, so a knife runner's baseline taken
 # on one path can be read against another.
-LABEL_W = 14
+LABEL_W = 16          # the widest label is `dsk-bloadmoderun`
 
 
 def main() -> int:
@@ -385,7 +444,7 @@ def main() -> int:
     for label in reported:
         vals = {s: results[s][label] for s in sides if label in results[s]}
         print(probe_report.row("....", label, LABEL_W, vals,
-                               "   [D-BLNF: measured, filed, NOT gated]"))
+                               "   [measured, filed, NOT gated]"))
 
     agree = dis = 0
     for label in gated:
@@ -407,13 +466,16 @@ def main() -> int:
           "measure any row here (stated, not silently dropped)")
     if reported:
         print(f"{len(reported)} row(s) PRINTED, NOT GATED: a measured, filed "
-              "divergence — zerobas prints `load error` where the reference "
-              "raises a DIFFERENT face for a file that EXISTS but is the wrong "
-              "kind (`Bad file mode`). Six of the original seven have already "
-              "graduated this way (D-LOADERR 2026-08-20, D-BLNF 2026-08-21), "
-              "which is what this holding pen is for: an exit, not a place rows "
-              "go to be forgotten. This one needs a face the tree does not "
-              "have, not a re-route of one it does.")
+              "divergence. A row here is a HOLDING PEN WITH AN EXIT, not a "
+              "place rows go to be forgotten — say WHICH divergence and what "
+              "would graduate it, every run.")
+    else:
+        print("0 row(s) PRINTED-NOT-GATED — the holding pen is EMPTY, and it "
+              "was emptied by FIXING all seven, not by deleting them: "
+              "dsk-namenone (D-DKNAME 2026-08-07), the five load/run/merge/"
+              "open/append faces (D-LOADERR-FIX 2026-08-20), dsk-bloadnone "
+              "(D-BLNF 2026-08-21) and dsk-bloadmode (D-BLMODE 2026-08-21). "
+              "Each graduated the day its ARM SPLIT landed.")
     if a.gate and dis:
         sys.stderr.write(f"dskmsg: {dis} row(s) diverge\n")
         return 1
