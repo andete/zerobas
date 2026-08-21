@@ -46,6 +46,14 @@ THE TWO MECHANISMS, WHICH THIS PROBE KEEPS APART BY NAME:
        statement (must stay silent), a single fault at a reader that checks.
   u.*  THE UNTRAPPED FACE: message TEXT, its line, printed ONCE, and whether the
        following line ran.
+  b.*  THE COLD-BOOT FACE. 🔴 ADDED 2026-08-21 (D-COLDROW) TO CLOSE A HOLE THIS
+       PROBE HAD SINCE IT SHIPPED: every other row above resets through `CLS`,
+       and `CLS` is a statement, so it runs `exec_stmt` -- which READS the
+       pending-error cell. If the cold-boot `ld (FPERR),a` in basic/interp.asm
+       were missing, power-on RAM ($FF on this machine, D-VALTYP) would raise
+       ONE bogus `Unprintable error` out of the first statement executed, and
+       the reset's own `CLS` would spend it before any scored row ran. These two
+       rows run the SAME program off two resets that differ only in that `CLS`.
 
 TWO READINGS, ONE GRAMMAR (D-ROWSHAPE): `s.*`/`e.*`/`c.*`/`g.*`/`n.*` are
 TRAPPED and read `[ ERR ]` from inside the handler; `u.*` rows are UNTRAPPED and
@@ -101,6 +109,15 @@ UNTRAP_PROG = [
     "20 {stmt}",
     '30 PRINT"[RANON]"',
 ]
+# 🔴 THE COLD-BOOT TEMPLATE TAKES NO STATEMENT AT ALL. Its subject is not what a
+# statement does; it is whether a machine that has executed NOTHING since power-on
+# can run an ordinary program. Two PRINTs rather than one, so a machine that dies
+# on the first statement and a machine that dies on the second read differently.
+COLD_PROG = [
+    '10 PRINT"[OK]"',
+    '20 PRINT"[TWO]"',
+]
+TEMPLATES = {"t": TRAP_PROG, "u": UNTRAP_PROG, "b": COLD_PROG}
 
 # THE FAULT SEEDS. Each contributes 0 to the expression it sits in and leaves a
 # DISTINCT pending code, so the row says WHICH fault survived, not merely that
@@ -206,19 +223,38 @@ CASES = [
     ("u.syn.for",  "u", "FOR I=1 STEP 2:NEXT"),
     ("u.dz.w",     "u", f"WIDTH {DZ}+1"),
     ("u.tm.loc",   "u", 'LOCATE "5",3'),
+
+    # === b.* THE COLD-BOOT FACE ============================================
+    # Same program, same readout, two resets that differ ONLY in `CLS`.
+    # `b.cold` is the subject: `NEW` alone, so nothing has run `exec_stmt`
+    # before `RUN` does. `b.warm` is its GREEN CONTROL on the same apparatus --
+    # it cannot fail because this row's claim is wrong, only because the
+    # program, the template or the readout is broken.
+    ("b.cold",     "b", ""),
+    ("b.warm",     "b", ""),
 ]
+
+# 🔴 THE ROW WHOSE SUBJECT IS THE ABSENCE OF A RESET LINE. `run_side` drops
+# `CLS` from this side's reset for these labels and nothing else changes.
+NO_CLS_RESET = {"b.cold"}
 
 # 🟢 POSITIVE CONTROLS, two per reading. 🔴 EVERY ONE IS A ROW WHOSE ANSWER IS
 # FIXED BY SOMETHING OTHER THAN THIS SLICE'S CLAIM: a genuine syntax error with
 # no pending code, an ordinary single fault at a reader that already checked
 # before this slice existed, and the same pair on the untrapped reading.
-CONTROLS = ("n.syn.zork", "n.dz.w", "u.syn.for", "u.dz.w")
+CONTROLS = ("n.syn.zork", "n.dz.w", "u.syn.for", "u.dz.w", "b.warm")
 
 CONTROL_WANT = {
     "n.syn.zork": " 2 ",
     "n.dz.w":     " 11 ",
     "u.syn.for":  "Syntax error in 20",
     "u.dz.w":     "Division by zero in 20",
+    # 🔴 A LITERAL, NOT A CROSS-SIDE AGREEMENT. `b.cold` and `b.warm` share a
+    # template, a readout AND a reset builder, so a blindness in any of the three
+    # would make the pair agree while measuring nothing -- and no differential can
+    # see that, because there is no column in which those three differ
+    # (D-FILESIDE). Measured on all three sides 2026-08-21 before it was pinned.
+    "b.warm":     "[OK]|[TWO]",
 }
 
 NEGATIVE = {
@@ -281,7 +317,7 @@ def clip_at_prompt(tail: str) -> str:
 
 
 def program(kind: str, stmt: str) -> list[str]:
-    tpl = TRAP_PROG if kind == "t" else UNTRAP_PROG
+    tpl = TEMPLATES[kind]
     return [ln.format(stmt=stmt) for ln in tpl]
 
 
@@ -307,7 +343,9 @@ def run_side(side: str, only: list[str]) -> dict:
                                f"zb_stpd_{side}_{label}.dsk")
             shutil.copy(TEST_DSK, dsk)
             kw["diska"] = dsk
-        lines = list(cfg["reset"]) + program(kind, stmt) + ["RUN"]
+        reset = (tuple(r for r in cfg["reset"] if r != "CLS")
+                 if label in NO_CLS_RESET else cfg["reset"])
+        lines = list(reset) + program(kind, stmt) + ["RUN"]
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", lines)],
             batch=False, boot=cfg["boot"], step=cfg["step"], **kw)
@@ -341,6 +379,49 @@ DENOMINATOR = (
 )
 
 
+def reset_selftest() -> list[str]:
+    """🔴 A ROW WHOSE SUBJECT IS A MISSING RESET LINE GOES BLIND BY AGREEING.
+
+    `NO_CLS_RESET` is consulted inside `run_side`, which BOTH columns run --
+    so if the override ever stops firing (a renamed label, a side whose reset
+    no longer says `CLS`, a `CLS` that creeps into the template) `b.cold`
+    quietly becomes a second copy of `b.warm`, agrees on three sides, and
+    measures nothing. A differential cannot catch that, because there is no
+    column in which the override is different. So it is pinned STATICALLY,
+    against LITERALS, in both senses -- the override must REMOVE a `CLS` from
+    every side, and the un-overridden twin must still HAVE one
+    (fileside-slice; negjudge's "a vector of each sense").
+
+    Returns a list of complaints; empty means the instrument is sound."""
+    bad: list[str] = []
+    labels = {lab: kind for lab, kind, _ in CASES}
+    for lab in sorted(NO_CLS_RESET):
+        if lab not in labels:
+            bad.append(f"NO_CLS_RESET names {lab!r}, which is not a case")
+    twins = sorted(lab for lab, kind, _ in CASES
+                   if kind == "b" and lab not in NO_CLS_RESET)
+    if not twins:
+        bad.append("no un-overridden b.* row is left to serve as the control")
+    for side, cfg in SIDES.items():
+        if "CLS" not in cfg["reset"]:
+            bad.append(f"{side}: reset {cfg['reset']!r} has no 'CLS' for the "
+                       f"override to remove -- b.cold no longer differs")
+        for lab in sorted(NO_CLS_RESET):
+            if lab not in labels:
+                continue
+            reset = tuple(r for r in cfg["reset"] if r != "CLS")
+            lines = list(reset) + program(labels[lab], "") + ["RUN"]
+            hit = [ln for ln in lines if "CLS" in ln]
+            if hit:
+                bad.append(f"{side}/{lab}: 'CLS' survives in {hit!r}")
+        for lab in twins:
+            lines = list(cfg["reset"]) + program(labels[lab], "") + ["RUN"]
+            if not any("CLS" in ln for ln in lines):
+                bad.append(f"{side}/{lab}: the CONTROL twin has no 'CLS' "
+                           f"either -- the pair no longer differs")
+    return bad
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="D-STMTPEND: a fault that already happened outranks the "
@@ -350,6 +431,14 @@ def main() -> int:
     ap.add_argument("--gate", action="store_true",
                     help="exit 1 unless every row agrees across sides")
     a = ap.parse_args()
+
+    complaints = reset_selftest()
+    if complaints:
+        sys.stderr.write("stmtpend: the reset override is broken, so the "
+                         "b.* rows would agree while measuring nothing:\n")
+        for c in complaints:
+            sys.stderr.write(f"  {c}\n")
+        return 2
 
     sides = [s for s in a.sides.split(",") if s]
     only = [o for o in a.only.split(",") if o]
@@ -389,6 +478,10 @@ def main() -> int:
               "its line.\n"
               "    u.dz.w     = an untrapped numeric fault, the OTHER "
               "message.\n"
+              "    b.warm     = the cold-boot template off the NORMAL reset, a "
+              "LITERAL want\n"
+              "                 (b.cold shares its template, readout and "
+              "reset builder).\n"
               "    🔴 Neither pair can fail because this slice's claim is "
               "wrong: one has\n"
               "    nothing pending to outrank, the other has nothing to be "

@@ -156,3 +156,139 @@ page 1**. Main page 1 measured **2 B free** on 2026-08-21 (`make basic-reloc`).
 the tree reads it — so nothing observable changes today. The residual stays open
 with the price attached, and the reason to reopen it is a **new caller that reads
 before writing**, not a spare byte.
+
+---
+
+## 6. ✅ THE APPARATUS HALF — CLOSED 2026-08-21 as D-COLDROW, **0 ROM bytes**
+
+§4 ends by filing the hole rather than closing it: *"no battery boots and runs a
+program without a `CLS`-bearing reset, so the cold stores for FPERR/ERRFLG/DOT
+are gated by nothing."* This is that row, and it is two rows.
+
+### 6.1 The shape — one variable, and it is the reset
+
+`probes/basic/basic_probe_stmtpend.py` gains a fourth family, `b.*`, and a third
+template that takes **no statement at all**:
+
+```
+COLD_PROG = ['10 PRINT"[OK]"', '20 PRINT"[TWO]"']
+```
+
+Two `PRINT`s, not one, so a machine that dies on the first statement and one that
+dies on the second read differently.
+
+| row | reset typed before the program | reading, all three sides |
+|---|---|---|
+| `b.cold` | `NEW` (vg8020/zb) · `""`,`SCREEN 0`,`NEW` (cf3300) | `[OK]\|[TWO]` |
+| `b.warm` 🟢 | the side's normal reset, i.e. **with `CLS`** | `[OK]\|[TWO]` |
+
+`b.warm` is a **positive control** and is pinned to that **LITERAL**, not to
+cross-side agreement — see §6.3.
+
+### 6.2 The machinery question, and the cheaper answer
+
+The reset is per-SIDE (`SIDES[...]["reset"]`), not per-row. Widening the case
+tuple to carry a reset would touch three unpack sites and all 58 shipped rows.
+What landed instead is a label set consulted inside `run_side`:
+
+```python
+NO_CLS_RESET = {"b.cold"}
+...
+reset = (tuple(r for r in cfg["reset"] if r != "CLS")
+         if label in NO_CLS_RESET else cfg["reset"])
+```
+
+Four lines, and **the 58 shipped rows build exactly the line list they built
+before** — measured, not argued: `stmtpend-acceptance` reads **60/60** where it
+read 58/58, with every pre-existing row's value unchanged.
+
+Deriving the cold reset by REMOVING `CLS` from the side's own reset rather than
+writing a literal one is what keeps the cf3300 arm honest: that side needs its
+leading blank line and its `SCREEN 0`, and a hand-written override would have
+had to know that.
+
+### 6.3 🔴 The blindness this row would have had, and the pin against it
+
+`b.cold` and `b.warm` share a template, a readout **and a reset builder**. If the
+override ever stops firing — a renamed label, a side whose reset no longer says
+`CLS`, a `CLS` that creeps into the template — `b.cold` silently becomes a second
+copy of `b.warm`, **agrees on three sides, and measures nothing**. No differential
+can catch that: there is no column in which the override differs
+([[fileside-slice]]).
+
+So it is pinned **statically**, by `reset_selftest()`, in **both senses** — the
+override must REMOVE a `CLS` from every side, and the un-overridden twin must
+still HAVE one. Calibrated against four known positives **before** the green run
+was believed:
+
+| mutation | complaints |
+|---|---|
+| baseline (shipped tree) | **0** |
+| the label renamed (`b.colld`) | 1 — *"names 'b.colld', which is not a case"* |
+| a side's reset loses its `CLS` | 2 — the side, **and** its control twin |
+| `CLS` creeps into the template | 3 — one per side |
+| the control twin deleted | 1 — *"no un-overridden b.\* row is left"* |
+
+And `b.warm` carries a LITERAL want for the same reason `f.filesbare` does.
+
+### 6.4 Knives — 2/2 EXACT, and the exit codes are again the point
+
+| knife | cut | predicted | measured |
+|---|---|---|---|
+| **K-CR1** | the cold `ld (FPERR),a` (K-VT1's cut, anchored on the comment above it — it matches **twice** in the file) | `b.cold` reddens **alone**, at `Unprintable error in 10`; `b.warm` and all 58 shipped rows stay green | ✅ **EXACT**, rc **1** |
+| **K-CR2** | probe-side: `NO_CLS_RESET = {"b.colld"}` | `reset_selftest` refuses; **rc 2**, nothing scored | ✅ **EXACT**, rc **2** |
+
+`b.cold` under K-CR1: `vg8020='[OK]|[TWO]' cf3300='[OK]|[TWO]'
+zb='Unprintable error in 10'`. That is the store made observable by a row, which
+is the whole of the filed item.
+
+⚠️ **K-CR2 is rc 2 and K-CR1 is rc 1, and a runner shelling out to `make
+<gate>` could not tell them apart** — `make` exits 2 for any failed recipe
+([[injjudge-slice]]). The runner invokes the probe.
+
+⚠️ **A LOG THAT IS OVERWRITTEN IS A LOG THAT WAS NEVER READ.** The first knife
+driver ran both rounds with the same `{knife}.r{n}` tag, so the narrow round
+clobbered the full battery's report and left a `rc=1` with no red set behind it.
+The return code was true and the evidence was gone. Re-run with a distinct tag —
+[[zerobas-gate-operating-rules]]'s *"`ls` the log before believing a return
+code"*, one layer up.
+
+### 6.5 What this row does NOT cover
+
+`ERRFLG $F414` and `DOT $F6B5` sit **inside** the C-BIOS-cleared system-variable
+area (§2), so cutting *their* cold stores is genuinely invisible on this
+emulator. Only `FPERR $F069` is below it. **A row claiming to cover all three
+would be over-claiming**; `b.cold` covers one cell, and that is what it says.
+
+### 6.6 ⚠️ A fixture dependency, and a justification from the day before that was wrong
+
+`stmtpend-characterize`/`-acceptance` had **no `$(DISK_TEST_DSK)` dependency** —
+the third instance in three slices, after `inputary` ([[arysite-slice]]) and
+`namspc` ([[fileside-slice]]). Added.
+
+🔴 **AND THE REASON D-FILESIDE GAVE FOR `namspc`'s IS FALSE.** It says the rows
+*"would read `<NO OUTPUT>` on both disk sides and AGREE"*. They would not: that
+probe **copies** the image per case, so a missing image raises `FileNotFoundError`
+before openMSX is launched. Measured, not reasoned — the file was moved aside and
+one row run on each probe: **rc 1, a traceback, no boot**. The dependency is right;
+only the consequence claimed for its absence was wrong.
+
+The silent-agreement failure is real, but it belongs to the **other** kind of
+probe — the kind that hands the path straight to openMSX, which then boots with
+no disk in the drive and says nothing. `inputary`'s note is accurate for exactly
+that reason.
+
+⚠️ **THE SPLIT BELOW IS A STATIC CLASSIFICATION, NOT 35 MEASUREMENTS.** Two of
+the rows were measured (`namspc` and `stmtpend`, by moving the image aside); the
+rest are `grep`, and the enumerator is in `TODO.md` so the next reader can re-run
+it rather than trust it. **35** probes name `disk/test720.dsk`:
+
+| kind, by `shutil.copy*(TEST_DSK` | probes | targets whose make rule lacks the dep |
+|---|---|---|
+| **copies** it per case → `FileNotFoundError`, **LOUD** | 19 | 24 |
+| hands the path over → **SILENT** no-disk boot | 16 | 24 |
+
+Five of the sixteen do not set `diska` at all and reach the drive some other way,
+so the silent half is an **upper bound** on the dangerous class, not a roster.
+Filed in `TODO.md` as a residual: it is a 48-target sweep with a per-probe
+question in it, which is a slice, not a line in this one.

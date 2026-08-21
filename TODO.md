@@ -7574,8 +7574,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it. One-sided by construction — the cell is zerobas's own private one and
       has no reference column.
 
-- [ ] 🔴 **THE COLD-BOOT `FPERR` ZERO IS LOUDLY OBSERVABLE AND EVERY BATTERY IS
-      BLIND TO IT — MEASURED 2026-08-21 (D-VALTYP, knife K-VT1).**
+- [x] ✅ **~~THE COLD-BOOT `FPERR` ZERO IS LOUDLY OBSERVABLE AND EVERY BATTERY
+      IS BLIND TO IT~~ — CLOSED 2026-08-21 as D-COLDROW, 0 ROM bytes.**
+      [`docs/valtyp-coldram-notes.md`](docs/valtyp-coldram-notes.md) §6.
+      `probes/basic/basic_probe_stmtpend.py` gains a `b.*` family: `b.cold`
+      boots, types `NEW` **without** `CLS`, enters `10 PRINT"[OK]" / 20
+      PRINT"[TWO]"` and runs it; `b.warm` is the same program off the normal
+      reset and is a POSITIVE CONTROL pinned to the LITERAL `[OK]|[TWO]`.
+      `stmtpend-acceptance` **58/58 → 60/60**, every shipped row's value
+      unchanged. Knife **K-CR1** (the K-VT1 cut) reddens **`b.cold` ALONE** at
+      `Unprintable error in 10` — 59/60, two rounds, identical red sets;
+      **K-CR2** (probe-side, the override label renamed) exits **2**, an
+      INSTRUMENT FAULT, because `reset_selftest()` refuses to run a pair that no
+      longer differs. That self-check was calibrated against four known
+      positives before any green run was believed.
+      ⚠️ `ERRFLG`/`DOT` are **still** uncovered and deliberately so: `$F414` and
+      `$F6B5` sit inside the C-BIOS-cleared sysvar area, so cutting their stores
+      is genuinely invisible on this emulator. A row claiming all three would be
+      over-claiming; `b.cold` covers `FPERR $F069`.
+      ⚠️ Also added: the missing `$(DISK_TEST_DSK)` dependency on both stmtpend
+      targets — the THIRD such gap in three slices — and a correction to the
+      REASON D-FILESIDE gave for `namspc`'s, which was wrong (see the new
+      residual below). The original entry follows.
+      ~~🔴 **MEASURED 2026-08-21 (D-VALTYP, knife K-VT1).**~~
       [`docs/valtyp-coldram-notes.md`](docs/valtyp-coldram-notes.md) §3/§4.
       Cut `ld (FPERR),a` from [`basic/interp.asm`](basic/interp.asm)'s cold hook
       and `$F069` stays at its power-on `$FF`, so `10 PRINT"[OK]"` answers
@@ -7591,6 +7612,55 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ The same hole covers `ERRFLG` and `DOT`, whose cold stores are genuinely
       invisible here because `$F414`/`$F6B5` sit inside the C-BIOS-cleared sysvar
       area — a real-hardware-only argument that nothing in the tree can test.
+
+- [ ] ⚠️ **FORTY-EIGHT MAKE TARGETS BUILD THEIR DISK FIXTURE ONLY BY LUCK, AND
+      HALF OF THEM FAIL SILENTLY IF IT IS ABSENT.** Filed 2026-08-21 by
+      D-COLDROW ([`docs/valtyp-coldram-notes.md`](docs/valtyp-coldram-notes.md)
+      §6.6) after `stmtpend` became the THIRD target in three slices found
+      without a `$(DISK_TEST_DSK)` dependency (`inputary` D-ARYSITE, `namspc`
+      D-FILESIDE). `disk/test720.dsk` is **generated, not tracked** — it is not
+      in `git ls-files` — so on a fresh clone every one of these targets depends
+      on some earlier target having happened to build it.
+      📏 **THE DENOMINATOR IS MACHINE-PRODUCED AND THE ENUMERATOR IS THE
+      DELIVERABLE**, because the interesting split is not *which targets lack the
+      dep* but *what absence LOOKS like*:
+
+      ```
+      python3 - <<'PY'
+      import re, os
+      mk = open("Makefile").read()
+      for tgt, deps, recipe in re.findall(
+              r'(?m)^([A-Za-z0-9_.-]+):([^\n]*)\n((?:\t[^\n]*\n)*)', mk):
+          for p in set(re.findall(r'probes/\S+\.py', recipe)):
+              if os.path.exists(p) and 'test720.dsk' in open(p).read():
+                  src = open(p).read()
+                  loud = bool(re.search(r'shutil\.copy2?\(\s*[A-Z_]*TEST_DSK', src))
+                  print(('LOUD  ' if loud else 'SILENT'),
+                        'DEP-OK' if 'DISK_TEST_DSK' in deps else 'NO-DEP',
+                        tgt, p)
+      PY
+      ```
+
+      **35** probes name the image. **19** copy it per case, so a missing image
+      raises `FileNotFoundError` before openMSX launches — **measured**, by moving
+      the file aside and running one row of `namspc` and one of `stmtpend`: rc 1,
+      a traceback, no boot. **16** hand the path to openMSX, which boots with an
+      empty drive and says nothing — that is the class that can AGREE while
+      measuring nothing. **24 targets in each half lack the dependency.**
+      ⚠️ **THE SILENT COUNT IS AN UPPER BOUND, NOT A ROSTER.** Five of the sixteen
+      do not set `diska` at all (`disk_probe_dskio`, `diskbasic_acceptance`,
+      `badfnum`, `chancost`, `lof`) and reach the drive some other way; each needs
+      reading before it is called blind. That per-probe question is why this is a
+      slice and not a line.
+      🔴 **AND ONE JUSTIFICATION IN THE TREE WAS ALREADY WRONG ABOUT THIS** — the
+      `namspc-acceptance` comment D-FILESIDE wrote on 2026-08-20 claimed the rows
+      "would read `<NO OUTPUT>` on both disk sides and AGREE". They would not;
+      `namspc` is in the LOUD half. Corrected in place by D-COLDROW. The
+      dependency was right, only the reason for it was wrong —
+      [[a-fix-falsifies-the-justification-beside-it]] with the fix and the false
+      sentence one day apart.
+      💰 0 ROM bytes, apparatus only. Cheapest honest shape: add the dependency to
+      all 48, then delete the five unknowns from the silent roster by reading them.
 
 - [x] ✅ **~~`dir-name` — A BLANK INSIDE A NAME IS NOT READ BACK IN DIRECT
       MODE~~ — MEASURED FALSE 2026-08-09** by the TODO staleness sweep,

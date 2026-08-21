@@ -64,6 +64,17 @@ init:
                 ; measures is what the batteries type before their first scored
                 ; row, NOT whether the store matters. A prediction and its reason
                 ; are two claims and a green run confirms at most one.
+                ;
+                ; ✅ AND THERE IS NOW A ROW (D-COLDROW, 2026-08-21,
+                ; docs/valtyp-coldram-notes.md §6). `b.cold` in
+                ; probes/basic/basic_probe_stmtpend.py boots, types `NEW` WITHOUT
+                ; `CLS`, and runs a two-line program; K-CR1 reddens it ALONE, at
+                ; `Unprintable error in 10`, out of 60. Its twin `b.warm` is the
+                ; same program off the normal `CLS`-bearing reset and stays green,
+                ; which is what pins the reset as the variable.
+                ; ⚠️ ERRFLG and DOT above are STILL uncovered, and for the reason
+                ; in their own comment -- $F414/$F6B5 are inside the area C-BIOS
+                ; clears, so no emulator row can see those two stores at all.
                 ld      (FPERR),a
                 ld      hl,0
                 ld      (ERRLIN),hl

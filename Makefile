@@ -2090,9 +2090,18 @@ namspc-characterize: repack-machine $(DISK_TEST_DSK)
 
 # ⚠️ $(DISK_TEST_DSK) IS A REAL DEPENDENCY AND WAS MISSING UNTIL D-FILESIDE
 # (2026-08-21). Every `f.*` row of kind `dsk`/`dskerr`/`dsklist` copies that image
-# per case; without it they would read `<NO OUTPUT>` on both disk sides and AGREE.
-# The gap predates the listing rows -- it is the fourteen D-FNARG rows' dependency
-# too -- and is fixed here because this slice is the one that noticed.
+# per case. The gap predates the listing rows -- it is the fourteen D-FNARG rows'
+# dependency too -- and was fixed here because that slice is the one that noticed.
+# 🔴 THE REASON D-FILESIDE GAVE FOR IT WAS WRONG AND IS CORRECTED HERE
+# (D-COLDROW, 2026-08-21). It said the rows "would read `<NO OUTPUT>` on both
+# disk sides and AGREE". They would not: this probe COPIES the image per case,
+# so a missing image raises FileNotFoundError before openMSX is launched --
+# measured by moving the file aside and running one row (rc 1, a traceback).
+# The dependency is still right and still real; what is wrong is only the
+# consequence claimed for its absence. The SILENT-agreement failure is real but
+# belongs to the OTHER kind of probe, the kind that hands the path straight to
+# openMSX (`inputary` is one, and its note is accurate). See TODO.md for the
+# machine-produced split of all 35 probes that name that image.
 namspc-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_namspc.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
@@ -2254,12 +2263,25 @@ penderr-acceptance: repack-machine
 # stranded on the RHS operand after a string compare -- which is one ROUTE into
 # both holes and not the rule. The cursor is measured (by freezing the machine
 # and reading IX, docs/stmtpend-msx1-characterization.md §3) and left alone.
-# 50 rows x 3 sides, ~14 min.
-stmtpend-characterize: repack-machine
+# 🔴 THE b.* PAIR (D-COLDROW, 2026-08-21) IS THE ONLY THING IN THE TREE THAT
+# BOOTS AND RUNS A PROGRAM WITHOUT TYPING `CLS` FIRST. Every other row in every
+# battery resets through `CLS`, `CLS` is a statement, and a statement runs
+# exec_stmt -- which READS the pending-error cell. So the cold-boot
+# `ld (FPERR),a` in basic/interp.asm was covered by nothing at all, despite
+# being loudly observable (knife K-VT1: `Unprintable error in 10`).
+# `b.cold` resets with `NEW` only; `b.warm` is the same program off the normal
+# reset and is a POSITIVE CONTROL.
+# ⚠️ $(DISK_TEST_DSK) IS A REAL DEPENDENCY AND WAS MISSING UNTIL D-COLDROW: the
+# cf3300 and zb sides both run `diska=True`, so EVERY row here copies that image
+# per case. Absence is LOUD in this probe (`shutil.copy` raises) -- measured, not
+# assumed, 2026-08-21 -- but a target that only builds its fixture by luck is a
+# fixture that is not built.
+# 60 rows x 3 sides (58 before D-COLDROW), ~15 min.
+stmtpend-characterize: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_stmtpend.py \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
-stmtpend-acceptance: repack-machine
+stmtpend-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_stmtpend.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
