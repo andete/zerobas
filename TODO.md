@@ -1685,6 +1685,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       to be too late for; a future driver that does will need the same
       per-driver treatment.
 
+- [ ] 📋 **THE PICKUP LIST IS 38/62 APPARATUS, AND THE REAL BASIC SURFACE IS 15
+      ITEMS — SWEPT AND RANKED 2026-08-21.**
+      [`docs/gapsweep-2026-08-21.md`](docs/gapsweep-2026-08-21.md). Commissioned
+      after four consecutive 0-byte apparatus slices, against the charter
+      (faithful full MSX1 BASIC). Denominators RE-RUN at `cf0c4b6`, not quoted:
+      `kwsweep` **MISSING 1 · DIVERGENT 1 · NO-ORACLE 5 · SUPPORTED 29**
+      (37 of 55 executed, 18 crunch-only); `sysvarsweep` apparatus OK.
+      🎯 **EXACTLY ONE MSX1 RESERVED WORD IS GENUINELY MISSING: `DEF FN`/`FN`.**
+      The lone `DIVERGENT` (`csrlin`) is a documented PROBE ARTIFACT — its row has
+      no `CLS`, so it reads ambient scroll, and the REFERENCE disagrees with
+      itself (4 vs 9) across differently-scrolled batches.
+      ➡️ **RANKED, each re-verified against the tree rather than taken from its
+      filing:** (1) filename arguments accept a LITERAL only where the reference
+      takes any string EXPRESSION — 8 rows, 7 verbs, ONE mechanism at **11
+      `parse_disk_fcb` sites, re-walked and exact**; (2) `DEF FN`/`FN`, 200–400 B,
+      an arc; (3) SCREEN 3, a whole-feature gap, unpriced and never scouted;
+      (4) a line store bounded by `TXTMAX` not HIMEM (silent wrong answer);
+      (5) a stored `DATA` literal charging the pool 25 B against 0.
+      ⚠️ **ITEMS 1–3 ALL NEED A CARVE FIRST — main page 1 read 12 B on
+      2026-08-21** (`make basic-reloc`).
+      💰 0 ROM bytes; this is a reading. What it changes is which item is picked
+      up next, and it already retired one (D-LINEMAX, above).
+
 - [ ] ⚠️ **THE THIRD TRAILING `SCREEN` ARGUMENT'S DOMAIN IS UNMEASURED.**
       Filed 2026-08-10 by D-SCRERR. Slot 1 (sprite size) is pinned to 0..3 and
       slot 2 (key click) to 0..255; `scr_extra` treats slots 3+ identically to
@@ -5444,8 +5467,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       despite the previous commit citing them.
       Superseded detail below (kept for the route it records).
 
-- [ ] 🔴 **D-LINEMAX — the input line AND the crunched line. SPEC WRITTEN,
-      MEASURED, AWAITING SIGN-OFF.** Spec
+- [x] ✅ **~~D-LINEMAX — the input line AND the crunched line. SPEC WRITTEN,
+      MEASURED, AWAITING SIGN-OFF~~ — SHIPPED; THE ENTRY WAS STALE, FOUND
+      2026-08-21 by the gap sweep**
+      ([`docs/gapsweep-2026-08-21.md`](docs/gapsweep-2026-08-21.md) §4).
+      Measured at `cf0c4b6`, not inferred: `LINEMAX equ 255`
+      ([`basic/sysvars.inc:807`](basic/sysvars.inc:807)), `TOKBUF equ $EC00` /
+      `TOKBUFSZ 576` / `TOKMAX_BODY 314`
+      ([`basic/sysvars.inc:847`](basic/sysvars.inc:847)), ERR 25 `Line buffer
+      overflow` present in `err_msgtab`
+      ([`basic/interp.asm:1209`](basic/interp.asm:1209), sub-hosted), and
+      **`make linemax-acceptance` 60/60** — the `corrupt` rows, the ones with
+      teeth, included. The 96-byte unbounded crunch survived only in the retired
+      lean cart, which is gone.
+      🔴 **THIS ENTRY WOULD HAVE BEEN RANKED FIRST ON ITS OWN TEXT** — 22/53 was
+      the biggest red set in the file and the defect it names (a 27-character
+      line writing 407 bytes into 96, over `ARYTAB`/`ZTRAP`/`POOLSIZE` into
+      `STRTAB`, silently) is the worst class there is. Ranking on FILED TEXT
+      rather than on a re-reading would have spent a slice re-implementing
+      shipped code [[todo-staleness-sweep]].
+      The original entry follows.
+      ~~🔴 **D-LINEMAX — the input line AND the crunched line.**~~ Spec
       [`docs/spec-basic-linemax.md`](docs/spec-basic-linemax.md), measurement
       [`docs/linemax-vg8020-characterization.md`](docs/linemax-vg8020-characterization.md),
       probe [`probes/basic/basic_probe_linemax.py`](probes/basic/basic_probe_linemax.py)
