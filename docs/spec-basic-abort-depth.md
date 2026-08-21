@@ -142,8 +142,13 @@ rather than merely safe:
 
 - **Run mode.** `run_prog` does `ld (SAVSTK),sp`
   ([`basic/program.asm:315`](../basic/program.asm:315)) and then falls into
-  `rp_lp`, whose normal end-of-program exit is `ret z` at that same depth. So
+  `rp_lp`, whose normal end-of-program exit is a `ret` at that same depth. So
   `ld sp,(SAVSTK)` + `ret` **is** the normal end-of-RUN exit, reached early.
+  > ⚠️ **RE-ANCHORED 2026-08-21 (D-RETZ). This bullet said `ret z`, and the
+  > `ret z` is gone** — D-CONTR replaced it with `jp cont_record` and D-ERR21
+  > put a test above that. The exit is a **tail call**, so `cont_record`'s own
+  > `ret` is the loop's exit `ret`, at the identical depth. **The reading and
+  > the conclusion stand as taken; only the instruction named has changed.**
 - **Direct mode.** `dl_cmd` does `ld (SAVSTK),sp`
   ([`basic/program.asm:58`](../basic/program.asm:58)) and then `jp`s (not
   `call`s) into the loop, so the same identity holds for a typed line: the

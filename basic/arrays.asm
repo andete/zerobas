@@ -114,9 +114,21 @@ fre_abort_low:
                 ; rather than merely safe, in BOTH modes: run_prog and dl_cmd
                 ; each do `ld (SAVSTK),sp` immediately before entering the run
                 ; loop, and the loop's own normal exit is a `ret` at that same
-                ; depth (rp_lp's `ret z` on the $0000 link). So this reset plus
-                ; the tail's `ret` IS the ordinary end-of-RUN / end-of-line
-                ; exit, reached early.
+                ; depth. So this reset plus the tail's `ret` IS the ordinary
+                ; end-of-RUN / end-of-line exit, reached early.
+                ;
+                ; ⚠️ THE CITATION MOVED, THE DEPTH ARGUMENT DID NOT (D-RETZ,
+                ; 2026-08-21). This used to name the instruction: "(rp_lp's
+                ; `ret z` on the $0000 link)". There is no `ret z` there any
+                ; more -- D-CONTR replaced it with `jp cont_record` and D-ERR21
+                ; put the ONEFLG test above that. The exit is now
+                ; `jp cont_record`, a TAIL CALL, so cont_record's own `ret` IS
+                ; the loop's exit `ret` and it is at the same depth the `ret z`
+                ; was (basic/program.asm's own note at that site says so).
+                ; The argument above is unchanged and still load-bearing; only
+                ; the instruction it pointed at is gone. A comment that names a
+                ; specific instruction is a CLAIM, and this one went stale
+                ; without a single gate noticing -- no gate reads prose.
                 ;
                 ; Reset FIRST, before the message is printed: the printing
                 ; routines push and pop BELOW the new SP, and never touch the

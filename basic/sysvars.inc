@@ -1078,8 +1078,25 @@ ONEFLG          equ     $F6BB   ; 1 B: $FF = currently inside a handler (no RESU
                                 ;     while a run is only SUSPENDED (site A,
                                 ;     fre_abort_low, basic/arrays.asm);
                                 ;   * ANY run TERMINATION — END (site B, ex_end)
-                                ;     and running off the end of the program
-                                ;     (site C, rp_lp's $0000-link exit).
+                                ;     and running off the end of the program.
+                                ; ⚠️ SITE C IS DELETED (D-ERR21, 2026-08-21
+                                ;   re-read as D-RETZ). This list used to name
+                                ;   "site C, rp_lp's $0000-link exit" as the
+                                ;   third clearing site. There is no store
+                                ;   there any more: on the arm that survives
+                                ;   that exit, ONEFLG is already 0 by the test
+                                ;   just above it, and on the arm that does not,
+                                ;   the ERR 21 abort funnels through site A,
+                                ;   which clears unconditionally. THE RULE IS
+                                ;   UNCHANGED -- the flag still has to be clear
+                                ;   after running off the end -- and deleting
+                                ;   site C also FIXED a defect it was causing
+                                ;   (a typed line falls through dir_line's own
+                                ;   $0000 link into that exit, so site C killed
+                                ;   the handler context on every benign direct
+                                ;   line typed at a `Break in <handler>`
+                                ;   prompt). basic/program.asm carries the whole
+                                ;   argument at the site itself.
                                 ; It is DELIBERATELY kept across a STOP/Ctrl-STOP
                                 ; SUSPENSION: CONT has to be able to resume
                                 ; INSIDE the handler, and its RESUME must still

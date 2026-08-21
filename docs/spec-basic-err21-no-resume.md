@@ -393,10 +393,25 @@ See §5.1 on why `build/sub.rom` legitimately changes despite no `sub/` edit.
    `set renderer none`. Same defect, different layer. *(Ask at WHICH LAYER a
    lesson already applies — [[rdblk-anchor-flake-host-clock]].)*
 2. **`fre_abort_low`'s header comment is stale**
-   ([`basic/arrays.asm:111`](../basic/arrays.asm:111)): "the loop's own normal
+   ([`basic/arrays.asm:116`](../basic/arrays.asm:116)): "the loop's own normal
    exit is a `ret` at that same depth (rp_lp's `ret z` on the `$0000` link)" —
    D-CONTR replaced that `ret z` with `jp cont_record`. Depth-identical, so the
    argument still holds; the citation does not.
+   > ✅ **FIXED 2026-08-21 as D-RETZ, 0 ROM bytes.** The conclusion was inverted
+   > rather than the paragraph deleted: the depth argument is still true and
+   > still load-bearing, so what changed is the instruction it points at.
+   > ⚠️ **This finding's own line anchor had drifted from `:111` to `:116`** with
+   > the file untouched by the fix — corrected above, and re-derived *after* the
+   > last edit to that file rather than before it
+   > ([[a-fix-falsifies-the-justification-beside-it]]).
+   > 🔴 **AND THE SYMBOL SWEEP WAS NOT ENOUGH.** Grepping `ret z` finds four
+   > sites and two stale ones (this, and `spec-basic-abort-depth.md` §—'s
+   > run-mode bullet, which carries the identical sentence). Grepping the
+   > **mechanism** — `rp_lp`'s `$0000`-link exit, however spelled — finds 27
+   > hits across ten files and **one more stale claim that the symbol sweep
+   > could never see**: `basic/sysvars.inc` still listed *"site C, rp_lp's
+   > `$0000`-link exit"* as a live `ONEFLG` clearing site, and §4 of this very
+   > document deleted site C. Different instruction, same class.
 
 ---
 

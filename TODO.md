@@ -6546,13 +6546,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       driver churning. Convention now written down in
       [`probes/README.md`](probes/README.md) "Headless conventions".
 
-- [ ] **`fre_abort_low`'s header cites a `ret z` that no longer exists.**
-      [`basic/arrays.asm`](basic/arrays.asm) — "the loop's own normal exit is a
+- [x] ✅ **~~`fre_abort_low`'s header cites a `ret z` that no longer exists~~ —
+      FIXED 2026-08-21 as D-RETZ, 0 ROM bytes, and the deliverable is the
+      DENOMINATOR.** The conclusion was inverted, not the paragraph deleted: the
+      depth argument is still true and still load-bearing, so only the
+      instruction it names changed. `basic/arrays.asm` now says the exit is
+      `jp cont_record`, a TAIL CALL whose own `ret` is the loop's exit `ret` at
+      the identical depth.
+      📏 **TWO SWEEPS KEYED ON OPPOSITE THINGS, AND THE SECOND FOUND WHAT THE
+      FIRST COULD NOT.** Sweep A on the SYMBOL (`ret z` in a loop-exit context):
+      **4 sites**, of which **2 stale** — this one and the identical sentence in
+      [`docs/spec-basic-abort-depth.md`](docs/spec-basic-abort-depth.md)'s
+      run-mode bullet; the third
+      ([`docs/spec-basic-err21-no-resume.md`](docs/spec-basic-err21-no-resume.md)
+      §8) was already correct, being the record that first noticed, and the
+      fourth was this entry. Sweep B on the MECHANISM (`rp_lp`'s `$0000`-link
+      exit, however spelled): **27 hits across ten files**, and it found a
+      **THIRD** stale claim naming a different instruction —
+      [`basic/sysvars.inc`](basic/sysvars.inc) still listed *"site C, rp_lp's
+      `$0000`-link exit"* as a live `ONEFLG` clearing site, and D-ERR21 **deleted
+      site C**. So: **3 stale of 27 mechanism hits; 2 of 4 symbol hits; sweep B
+      found one sweep A structurally could not.**
+      ⚠️ **NO EMULATOR ROW CAN SEE ANY OF THIS**, and saying so is part of the
+      result rather than letting a green battery read as coverage. The gates that
+      DO read these files are `make audit-citations` and `make deadcode`, both
+      CLEAN, plus `unit-test` 59/59 and byte-identical ROMs.
+      🔴 **AND THIS FINDING'S OWN LINE ANCHOR HAD DRIFTED** (`arrays.asm:111` →
+      `:116`) with the file untouched — re-derived AFTER the last edit to that
+      file, not before it. The original entry follows.
+      ~~[`basic/arrays.asm`](basic/arrays.asm) — "the loop's own normal exit is a
       `ret` at that same depth (rp_lp's `ret z` on the `$0000` link)". D-CONTR
       replaced that `ret z` with `jp cont_record`, and D-ERR21 put a test above
       it. The DEPTH argument still holds (`cont_record`'s `ret` is the loop's
       exit `ret`); only the citation is stale. A comment that names a specific
-      instruction is a CLAIM — cf. [[msgtab-bound-drift]].
+      instruction is a CLAIM — cf. [[msgtab-bound-drift]].~~
 
 - [x] **`CONT` after a plain `END` must continue.** Found 2026-07-29 by the
       D-ONEFLG battery's c7 row, not aimed at; characterized 2026-07-29;
