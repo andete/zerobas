@@ -482,10 +482,19 @@ through as `20 REM B`. Neither writer is doing the other's work.
 ([[rule-gated-structurally-has-no-knife]]). Said out loud rather than counted as
 coverage.
 
-🎯 **K6 WAS PREDICTED TO REDDEN NOTHING AND DID.** openMSX zero-fills RAM, so the
-cold init is gated by **nothing** in this tree and rests on the same
-power-on-RAM-is-garbage argument `init`'s ERR/ERL reset already carries. Written
-down before the build so a green run could not read as coverage.
+🎯 **K6 WAS PREDICTED TO REDDEN NOTHING AND DID.** The cold init is gated by
+**nothing** in this tree and rests on the same power-on-RAM-is-garbage argument
+`init`'s ERR/ERL reset already carries. Written down before the build so a green
+run could not read as coverage.
+
+⚠️ **THE REASON WRITTEN HERE WAS "openMSX zero-fills RAM", AND THAT IS FALSE**
+(D-VALTYP, 2026-08-21, [`valtyp-coldram-notes.md`](valtyp-coldram-notes.md) §2).
+Power-on RAM on this machine reads `$FF` from `$D000` through `$F1xx`; what is
+cleared is the **standard MSX system-variable area**, by C-BIOS. The verdict
+survives because of a fact about the ADDRESS, not about the emulator: `DOT` is
+`$F6B5`, inside that area, whose whole 32-byte window reads `00`. The same
+sentence was applied to `FPERR` at `$F069`, which is *below* the cleared area —
+and there it was wrong about the outcome too, measurably so.
 
 ### 10.4 ⚠️ Two knives in §7 were NOT run, and that is said rather than implied
 

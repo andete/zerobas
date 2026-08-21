@@ -7526,11 +7526,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ A byte-wise delta pass needs a rule for what counts as a pointer PAIR;
       naive per-byte deltas on a 16-bit cell will agree by luck on the high byte.
 
-- [ ] **zerobas' `VALTYP $E0C8` READS `$FF` AT COLD BOOT** — neither of its two
-      documented values (`0` numeric / `1` string). Filed 2026-08-01 by D-REHOME
-      from the new private-cell capture. Benign today (written before read at
-      every eval), so this is a *hygiene* item, not a defect — but it is exactly
-      the shape that becomes one when a new caller reads before writing.
+- [ ] **zerobas' `VALTYP $E0C8` READS `$FF` AT COLD BOOT — ✅ CAUSE MEASURED
+      2026-08-21 (D-VALTYP), FIX PRICED AT 3 B AND DECLINED.**
+      [`docs/valtyp-coldram-notes.md`](docs/valtyp-coldram-notes.md).
+      🎯 **IT IS POWER-ON RAM, NOT A WRITE.** Read as a WINDOW instead of one
+      byte: every never-written cell in this private `$E0xx` block is `$FF`, and
+      every cell an init writes (`PRDEST`, `PRDEV`, `CONTVALID`) is `00`.
+      Nothing writes a third value; the item's implicit hypothesis is refuted.
+      💰 **THE FIX IS `ld (VALTYP),a` IN THE COLD HOOK = 3 B OF MAIN PAGE 1,
+      WHICH MEASURED 2 B FREE ON 2026-08-21.** It does not fit, no cheaper
+      encoding exists (`ld (nn),a` and `ld (nn),hl` are both 3 B and no adjacent
+      pair is already zeroed), and every cold-init routine in the tree
+      (`interp.asm`, `clear_vars`, `init_filechan`) is in page 1. The low region
+      had 22 B and the two walls are COUPLED, so a promotion could fund it — but
+      that is its own slice with its own closure check, and this is hygiene.
+      **Reopen for a new caller that READS BEFORE WRITING, not for a spare
+      byte.**
+      🔴 **AND THE MEASUREMENT FOUND A DEFECT NEXT DOOR** — see the item below.
+      Filed 2026-08-01 by D-REHOME from the new private-cell capture. Benign
+      today (written before read at every eval), so this is a *hygiene* item,
+      not a defect — but it is exactly the shape that becomes one when a new
+      caller reads before writing.
       ✅ **RE-MEASURED 2026-08-09 AND AGAIN 2026-08-20 AT `ef50f4c` — STILL
       `ff`**, read as MEMORY (`capture=("mem_abs",[(0xE0C8,1)])`) on a case whose
       only line is `REM`, so no expression of ours evaluates first and writes the
@@ -7543,6 +7559,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       question: evaluating PEEK's own argument writes `VALTYP` before PEEK reads
       it. One-sided by construction — the cell is zerobas's own private one and
       has no reference column.
+
+- [ ] 🔴 **THE COLD-BOOT `FPERR` ZERO IS LOUDLY OBSERVABLE AND EVERY BATTERY IS
+      BLIND TO IT — MEASURED 2026-08-21 (D-VALTYP, knife K-VT1).**
+      [`docs/valtyp-coldram-notes.md`](docs/valtyp-coldram-notes.md) §3/§4.
+      Cut `ld (FPERR),a` from [`basic/interp.asm`](basic/interp.asm)'s cold hook
+      and `$F069` stays at its power-on `$FF`, so `10 PRINT"[OK]"` answers
+      **`Unprintable error in 10`**. On the same build `clearpool-acceptance` is
+      **62/62** and `stmtpend-acceptance` — K-SP4's OWN battery — is **58/58**.
+      🎯 **WHY, MEASURED NOT INFERRED:** the bogus error fires EXACTLY ONCE, and
+      `CLS` is the statement that spends it (`NEW` alone does not). Every battery
+      resets through `CLS`, so no scored row can ever see it.
+      ➡️ **WHAT IS OPEN IS THE APPARATUS, NOT THE ROM** — the store is present
+      and correct; what is missing is any row that boots and runs a program
+      WITHOUT a `CLS`-bearing reset. Shape: one case in a battery that already
+      boots per case, resetting with `NEW` only. 💰 Not priced.
+      ⚠️ The same hole covers `ERRFLG` and `DOT`, whose cold stores are genuinely
+      invisible here because `$F414`/`$F6B5` sit inside the C-BIOS-cleared sysvar
+      area — a real-hardware-only argument that nothing in the tree can test.
 
 - [x] ✅ **~~`dir-name` — A BLANK INSIDE A NAME IS NOT READ BACK IN DIRECT
       MODE~~ — MEASURED FALSE 2026-08-09** by the TODO staleness sweep,

@@ -168,6 +168,9 @@ ROM hashes asserted moved after every cut build.
 | K-SP2 | `stmt_error`'s check | 6 | **EXACT** both rounds; `e.*` and the three `c.*` rows that reach `stmt_error` live fall to ` 2 ` |
 | K-SP3 | `record_errline`'s CONSUME | 24 | **EXACT** both rounds |
 | K-SP4 | the cold-boot zero | **0 — a PREDICTED MISS** | 0 moved, hashes confirmed changed |
+> 🔴 **K-SP4's NUMBER STANDS AND ITS REASON DOES NOT** — re-run 2026-08-21
+> (D-VALTYP, [`valtyp-coldram-notes.md`](valtyp-coldram-notes.md) §4). See the
+> ⚠️ under this table.
 
 🎯 **K-SP3 IS THE ONE WORTH READING.** It reddens twenty-four rows, and
 **`g.hex`, `g.hex.tm`, `g.wid`, `g.loc`, `n.dz.w`, `n.tm.loc` and `n.trap.res`
@@ -179,10 +182,26 @@ That is the sharpest evidence that making the statement boundary a reader is not
 a local change, and it is why the consume is part of the design rather than a
 follow-up.
 
-⚠️ **K-SP4's miss is stated in advance, not discovered.** openMSX zero-fills RAM,
-so no emulator row can see the cold-boot store; the runner's four-ROM hash check
-is what separates *"the cut reached the artifact and reddened nothing"* from
-*"the cut never reached the artifact"*, and it reported the former.
+⚠️ **K-SP4's miss is stated in advance, not discovered.** The runner's four-ROM
+hash check is what separates *"the cut reached the artifact and reddened
+nothing"* from *"the cut never reached the artifact"*, and it reported the
+former.
+
+🔴 **BUT THE REASON GIVEN FOR THE MISS WAS WRONG, AND IT WAS RE-MEASURED ON
+2026-08-21** (D-VALTYP, [`valtyp-coldram-notes.md`](valtyp-coldram-notes.md)).
+It said *"openMSX zero-fills RAM, so no emulator row can see the cold-boot
+store"*. Power-on RAM on this machine reads **`$FF`** from `$D000` up through
+`$F1xx`; what is cleared is the standard MSX system-variable area, by C-BIOS,
+and **`FPERR` is `$F069` — below it**, the lone zero in a 32-byte window of
+`$FF`. Cutting the store leaves `$F069 = $FF` and the machine answers
+`Unprintable error in 10` to `10 PRINT"[OK]"`. It is loudly observable.
+
+The **zero still reproduces**: this battery re-runs **58/58** on that same build.
+The reason, measured rather than assumed, is that the bogus error fires
+**exactly once** and every side here resets through **`CLS`**, which spends it
+before the first scored row (`NEW` alone does not — a program typed after a bare
+`NEW` still dies). 🎯 **A PREDICTION AND ITS REASON ARE TWO CLAIMS, AND A GREEN
+RUN CONFIRMS AT MOST ONE.** The number was read as confirming both.
 
 ## 6. Deferred, and filed
 

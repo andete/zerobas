@@ -30,18 +30,40 @@ init:
                 ; the sole cold-only hook; clear_vars also runs on NEW/CLEAR/RUN, which
                 ; the reference does NOT clear -- verified empirically 2026-07-18).
                 ; On real hardware power-on RAM is garbage, so this explicit zero is
-                ; load-bearing (openMSX zero-fills RAM, hiding the omission).
+                ; load-bearing.
+                ; 🔴 IT USED TO SAY "openMSX zero-fills RAM, hiding the omission",
+                ; AND THAT IS FALSE -- MEASURED 2026-08-21, D-VALTYP
+                ; (docs/valtyp-coldram-notes.md §1). Power-on RAM on this machine
+                ; reads $FF from $D000 up through $F1xx; what is cleared is the
+                ; STANDARD MSX system-variable area, by C-BIOS's own workspace
+                ; init, not by the emulator. ERRFLG at $F414 happens to sit INSIDE
+                ; that area (its whole 32-byte window reads 00), so the conclusion
+                ; holds for THIS cell -- but only for this cell, and for a reason
+                ; that has nothing to do with openMSX. See the FPERR store below,
+                ; where the same sentence was wrong about the outcome too.
                 xor     a
                 ld      (ERRFLG),a
                 ; D-STMTPEND: the pending-error cell needs the same cold-only
                 ; zero, and for the same reason. exec_stmt used to clear it
                 ; before anything could read it; now exec_stmt READS it first,
                 ; so power-on RAM garbage would raise a bogus error out of the
-                ; very first statement. openMSX zero-fills RAM, so -- exactly
-                ; like `ld (DOT),hl` below -- NO emulator row can see this
-                ; store: knife K-SP4 predicts ZERO red rows for cutting it and
-                ; says so out loud rather than letting a green run read as
-                ; coverage.
+                ; very first statement.
+                ;
+                ; 🔴 THIS IS THE ONE THE OLD SENTENCE WAS WRONG ABOUT, AND IT WAS
+                ; WRONG IN BOTH HALVES (D-VALTYP, 2026-08-21,
+                ; docs/valtyp-coldram-notes.md §2/§3). It said "openMSX zero-fills
+                ; RAM, so NO emulator row can see this store". FPERR is $F069 --
+                ; BELOW the standard system-variable area C-BIOS clears, in a
+                ; 32-byte window that reads $FF except for this very byte. Knife
+                ; K-VT1 cuts this store and the machine answers `Unprintable error
+                ; in 10` to `10 PRINT"[OK]"`: it is the ONLY reason $F069 is zero,
+                ; and it is loudly observable.
+                ;
+                ; ⚠️ K-SP4's recorded ZERO red rows still stands as a NUMBER, and
+                ; `clearpool-acceptance` is 62/62 under K-VT1 as well -- what that
+                ; measures is what the batteries type before their first scored
+                ; row, NOT whether the store matters. A prediction and its reason
+                ; are two claims and a green run confirms at most one.
                 ld      (FPERR),a
                 ld      hl,0
                 ld      (ERRLIN),hl
@@ -52,10 +74,15 @@ init:
                 ld      (ONELIN),hl         ; hl still 0 from just above
                 ; D-DOTLINE R-DOT2: `.` reads 0 on a cold machine (clp-cold, both
                 ; references). Same cold-only hook and the SAME power-on-RAM-is-
-                ; garbage argument as ERR/ERL above -- openMSX zero-fills RAM, so
-                ; no emulator row can see this store; spec §7 K6 predicts ZERO
-                ; red rows for cutting it and says so out loud rather than letting
-                ; a green run read as coverage.
+                ; garbage argument as ERR/ERL above. K6 predicted ZERO red rows
+                ; for cutting it and measured zero.
+                ; ⚠️ ITS STATED REASON WAS "openMSX zero-fills RAM" AND THAT IS
+                ; FALSE (D-VALTYP 2026-08-21, docs/valtyp-coldram-notes.md §2).
+                ; The right reason is narrower and is a fact about the ADDRESS:
+                ; DOT is $F6B5, inside the standard system-variable area C-BIOS
+                ; clears before BASIC runs, whose whole 32-byte window reads 00.
+                ; Move this cell below $F400 and the argument evaporates -- as it
+                ; already has for FPERR at $F069, four lines above.
                 ; ⚠️ COLD-BOOT ONLY. NEW does NOT reset `.` (clp-new reads 20
                 ; after a NEW that emptied the program), so this must not move
                 ; into new_prog -- which is exactly where TRACEFLAG's reset lives,

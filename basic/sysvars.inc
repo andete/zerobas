@@ -1365,7 +1365,13 @@ STRMAX          equ     255     ; repack build: string heap (slice-4a §8)
 ;   ⚠️ Honouring the ADDRESS without the 2/3/4/8 float type ENCODING would
 ;      publish a value no reference holds — worse than the dead byte today.
 ;   ⚠️ Its cold-boot value here is $FF, which is NEITHER of the two documented
-;      values below. Benign (written before read), filed in TODO.md.
+;      values below. MEASURED 2026-08-21 (D-VALTYP, docs/valtyp-coldram-notes.md):
+;      that $FF is POWER-ON RAM, not a write -- nothing in the tree writes a third
+;      value, and every never-written cell in this private $E0xx block reads $FF
+;      on a cold machine. Benign (written before read at every eval), and the
+;      3-byte cold-boot init is PRICED AND DECLINED against a 2 B page-1 wall
+;      (2026-08-21). Filed in TODO.md; reopen it for a new caller that READS
+;      BEFORE WRITING, not for a spare byte.
 VALTYP          equ     $E0C8   ; 0 = numeric result, 1 = string result (1 byte)
 STRPTR          equ     $E0C9   ; pointer to the [len][bytes] descriptor (2 bytes)
 ; PRINT output destination (Phase 2 PRINT#). 0 = screen (CHPUT), 1 = the open
