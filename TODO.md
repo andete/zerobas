@@ -3067,8 +3067,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       column now reads **8 closed / 3 live**, and every one of the three carries
       a 2026-08-19-or-later reading.
 
-- [ ] 🟡 **`load error` IS PRINTED, NOT RAISED — ✅ FIXED AT FIVE VERBS 2026-08-20
-      (D-LOADERR-FIX, 16 B), `BLOAD` REMAINS.**
+- [ ] 🟡 **`load error` IS PRINTED, NOT RAISED — ✅ FIXED AT ALL SIX MISSING-FILE
+      VERBS (D-LOADERR-FIX 2026-08-20, 16 B; D-BLNF 2026-08-21, `BLOAD`, 4 B main
+      + 12 B sub). WHAT REMAINS IS ONE ROW AND IT IS A DIFFERENT FACE.**
       [`docs/loaderr-fix-notes.md`](docs/loaderr-fix-notes.md).
       `LOAD`, `RUN"f"`, `MERGE`, `OPEN…FOR INPUT` and `OPEN…FOR APPEND` now raise
       **ERR 53 `File not found`** and stop, matching both references;
@@ -3094,15 +3095,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       were honest (marked *not measured on the reference*) and moved in the same
       commit as the code, as `kill-missing`'s did. `runtail`'s per-side
       normalisation collapsed to one string too.
-      ➡️ **WHAT REMAINS IS `BLOAD`, AND ITS TWO ROWS STAY UN-GRADUATED.** Its
-      loader is the sub-ROM page-1 tenant, where the shared `fatio-body.inc`
-      binds to the REAL sub-side primitives and `DISKOP_OP` is never written; it
-      reports through `BL_STAT` and needs a value of its own. `dsk-bloadmode`
-      additionally needs a SECOND face (`Bad file mode`) that no arm produces.
-      `bload-missing` deliberately KEEPS its `load error` pin — a pin that
-      drifts on a neighbour's evidence stops being a pin.
-      💰 **Main page 1 was 22 B before this and is 6 B after (2026-08-20,
-      `make basic-reloc`)** — the next page-1 slice needs a carve.
+      ✅ **`BLOAD` CLOSED 2026-08-21 (D-BLNF)** — `docs/loaderr-fix-notes.md` §6.
+      Everything the 08-20 entry said about *why it cannot use the `DISKOP_OP`
+      test* was true and still is; the wrong half was reading that as *cannot
+      make the distinction*. `fat_io_open` IS mount-then-find, so a zero-byte
+      label (`fat_io_find`) between them gives the tenant a carry that means
+      exactly "mounted, name not there". `BL_STAT` gained a third value and the
+      resident stub raises ERR 53 at the same `df_notfound`.
+      🎯 **AND THE FIX OPENED A HOLE ITS OWN COMMIT CLOSES:** BLOAD's MOUNT arm
+      had no row anywhere, so re-pointing it at the new raise left
+      `dskmsg-acceptance` 11/11 and `bload-missing` PASSING. `bload-nodisk` now
+      sits with `kill-nodisk`/`name-nodisk`, and knife K-BN3 is the measurement
+      that it cuts. `bload-missing`'s pin moved with its own code, as the rule
+      required. `dskmsg-acceptance` **10/10 + 2 → 11/11 + 1 reported**, knives
+      4/4 EXACT.
+      ➡️ **WHAT REMAINS IS ONE ROW, `dsk-bloadmode`, AND IT IS NOT A SMALLER
+      VERSION OF THIS ONE** — see the standing residual below.
+      💰 **Main page 1 measured 22 B before D-LOADERR-FIX, 6 B after it and 2 B
+      after D-BLNF (2026-08-21, `make basic-reloc`)** — the next page-1 slice
+      needs a carve scouted before a byte moves.
       *Original filing:* — 🔴 **`load error` IS PRINTED, NOT RAISED — THE PROGRAM
       RUNS ON. MEASURED 2026-08-20 (D-FNARG2), and it is the reading two earlier
       slices said the class was blocked on.**
@@ -3164,6 +3175,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       TAPION always fails and the right face is unmeasured. **Separating those
       two callers is the design question**, and it must not be assumed to be a
       rename [[a-filed-blocker-can-name-the-wrong-obstacle]].
+- [ ] 🔴 **`BLOAD` OF A FILE THAT EXISTS AND IS NOT BINARY IS `Bad file mode`
+      THERE AND `load error` HERE — A FACE NO ARM IN THE TREE PRODUCES.**
+      Measured 2026-08-20 (D-LOADERR), still divergent at D-BLNF (2026-08-21):
+      row `dsk-bloadmode` in `make dskmsg-acceptance`, PRINTED and not gated,
+      `BLOAD"PROG.BAS"` → cf3300 `Bad file mode`, zb `load error`.
+      🎯 **NOT A SMALLER VERSION OF THE NOT-FOUND ITEM ABOVE, AND D-BLNF DOES
+      NOTHING FOR IT.** `fat_find` SUCCEEDS on this path; the reject is the `$FE`
+      BSAVE-marker check in [`basic/bload-body.inc`](basic/bload-body.inc), so
+      there is no mount/find boundary to read it off. The reference tells NOT
+      FOUND apart from WRONG KIND with a THIRD message; zerobas has neither the
+      message nor an ERR code for it. Shape: a fourth `BL_STAT` value plus a new
+      error face, i.e. a message-table entry — the D-MSGSUB machinery exists.
+      💰 **NOT PRICED, and the main-side half lands on a wall measured at 2 B on
+      2026-08-21** — carve-scout before writing anything
+      ([`tools/carve_scout.py`](tools/carve_scout.py)).
+      ⚠️ Whether the reference raises it (stops) or prints it is NOT measured
+      either; the D-LOADERR reading captured the message, not the disposition,
+      and `Bad file mode` is a documented MSX ERR code (54), which makes "it
+      raises" a plausible-and-therefore-dangerous assumption.
 - [ ] ⚠️ **`FILES A$` LISTS THE WHOLE DIRECTORY BEFORE IT ERRORS.** Measured
       2026-08-20 (D-FNARG2 §4.2), read off the screen:
       ```

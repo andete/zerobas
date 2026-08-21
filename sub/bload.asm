@@ -42,7 +42,7 @@
 ; docs/spec-traps-t1-htimi-page1-safety.md was written for.
 ;
 ; MARSHALLING: BL_PTR in (the token cursor after the BLOAD token), BL_STAT out
-; (0 = loaded, 1 = load_error). subrom_call clobbers every register and forces
+; (0 = loaded, 1 = load_error, 2 = file not found — D-BLNF). subrom_call clobbers every register and forces
 ; CF=0 on return, so neither the cursor nor a carry can ride in registers — the
 ; fatprim/fcbname pattern. Unlike fcbname these need cells of their OWN rather
 ; than aliasing DISKOP_HL/DISKOP_STATUS: the status is held ACROSS the whole
@@ -109,6 +109,30 @@ bl_load_error:
                 ld      a,$EE
                 ld      (ERRMARK),a
                 ld      a,1
+                ld      (BL_STAT),a
+                ret
+
+; bl_notfound — the DISK not-found arm (D-BLNF). Same shape and same stack
+; behaviour as bl_load_error above (reached by `jp`, returns into whoever called
+; the tenant body), but it files BL_STAT = 2 instead of 1 and the resident stub
+; turns that into a RAISED ERR 53 `File not found` — which is what both
+; references answer (docs/loaderr-msx1-characterization.md §4).
+;
+; ⚠️ NO TAPIOF AND NO ERRMARK, ON PURPOSE, AND NEITHER IS AN OVERSIGHT. This arm
+; is reachable ONLY from do_disk_bload after a SUCCESSFUL fat_mount, so no tape
+; is running to stop; and `$EE` at ERRMARK is the landmark for the PRINTED `load
+; error` (basic/bload.asm), which this is not. Dropping it here would make a
+; raised error indistinguishable from a printed one to every probe that reads
+; that cell.
+;
+; 🔴 AND THIS IS WHY THE TAPE ARM IS UNTOUCHED. D-LOADERR-FIX broke the cassette
+; by guarding one instance of a shared tail instead of the class; the answer was
+; to keep the SHARED tail's default the safe one and make the not-found reading
+; opt-in. Same discipline here: bl_load_error still serves every cassette
+; failure, every parse failure and every mount failure, and only a call site
+; that has PROVED the volume mounted may come here.
+bl_notfound:
+                ld      a,2                 ; BL_STAT: 2 = name not in directory
                 ld      (BL_STAT),a
                 ret
 

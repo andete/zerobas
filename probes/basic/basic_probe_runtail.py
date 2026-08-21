@@ -48,9 +48,12 @@ zerobas answered a missing file with its own lowercase `load error` where the
 CF-3300 says `File not found`. ✅ D-LOADERR (2026-08-20) closed that on THIS
 path -- `RUN"A:missing"` now raises `File not found` here too -- so both sides
 normalise the same string and the per-side split is vestigial for these rows.
-It is kept, not deleted, because the quarantined class is not empty: BLOAD (a
-sub-ROM tenant, which reports through BL_STAT and never writes DISKOP_OP) and
-the whole cassette / mount / I-O class still answer `load error`. A row whose whole
+It is kept, not deleted, because the quarantined class is not empty: the whole
+cassette / mount / I-O class still answers `load error`. (BLOAD used to be named
+here too. ✅ D-BLNF, 2026-08-21: its tenant reads the not-found case off
+fat_io_open's own mount/find boundary instead of the DISKOP_OP it never writes,
+so `BLOAD"missing"` raises `File not found` as well. Its MOUNT arm is still in
+the quarantined class, which is where the class's remaining members are.) A row whose whole
 tail is exactly that one message reads `<file-missing>` on both sides, so the
 rows can be scored on SHAPE (how many messages, and did the resident program
 run) without either re-opening the wording or silently blessing it. A tail that

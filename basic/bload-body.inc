@@ -20,6 +20,11 @@
 ;   bl_load_error — sub-local in the tenant, where it does TAPIOF + ERRMARK + sets BL_STAT
 ;     and rets, with the SAME stack behaviour, so control flow is unchanged and
 ;     the resident stub does the reporting once on the way out.
+;   bl_notfound — its sibling for the ONE failure that is not a `load error`:
+;     the volume mounted and the 8.3 name is not in the directory. Files BL_STAT
+;     = 2 and rets the same way; the resident stub raises ERR 53 (D-BLNF). It
+;     deliberately does NOT drop bl_load_error's ERRMARK landmark — this is a
+;     raised error, not a printed one, and the landmark names the printed one.
 ;   load_handoff — the ,R exec jump. RESIDENT ON BOTH SIDES: it ends in `jp (hl)`
 ;     into the loaded program and never returns, so it must NOT run inside the
 ;     tenant's CALSLT — that would leave main page 1 switched out forever. The
@@ -196,8 +201,19 @@ do_disk_bload:
                 or      a
                 jp      z,bl_load_error
                 ; (2) open the file via the FAT12 engine (mount + find + prime).
-                call    fat_io_open
-                jp      c,bl_load_error        ; not found / mount / I-O error
+                ; D-BLNF: unrolled across fat_io_open's OWN mount/find boundary so
+                ; the two failures can be told apart. A carry out of fat_mount is a
+                ; missing/unreadable volume -> the unchanged `load error`; a carry
+                ; out of fat_io_find is "mounted fine, the name is not there" ->
+                ; ERR 53 `File not found`, which is what both references raise
+                ; (docs/loaderr-msx1-characterization.md). This is the SAME
+                ; distinction df_or_loaderr makes on the resident side; it cannot
+                ; use that test because here fat_find is the REAL sub-side
+                ; primitive and nothing writes DISKOP_OP (see this file's header).
+                call    fat_mount
+                jp      c,bl_load_error        ; no volume / I-O error
+                call    fat_io_find            ; find + prime the sequential reader
+                jp      c,bl_notfound          ; the 8.3 name is not in the directory
                 ; (3a) header byte 0 must be the BSAVE disk marker $FE.
                 call    fat_io_getbyte
                 jp      c,bl_load_error

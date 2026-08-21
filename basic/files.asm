@@ -175,10 +175,17 @@ df_notfound:
 ; raise_error fires from arbitrary call depth by design (fre_abort_low resets SP
 ; from SAVSTK as its own first act), so raising from inside disk_prog_load is safe.
 ;
-; ⚠️ BLOAD IS NOT COVERED AND THAT IS STATED, NOT OVERLOOKED. Its loader is the
-; sub-ROM page-1 tenant (sub/bload.asm), where the shared fatio-body.inc binds to
-; the REAL sub-side primitives and DISKOP_OP is never written. It reports through
-; BL_STAT and needs a value of its own; its row stays un-graduated.
+; ⚠️ BLOAD DOES NOT COME HERE, AND IT IS NOT UNCOVERED EITHER (D-BLNF,
+; 2026-08-21). Its loader is the sub-ROM page-1 tenant (sub/bload.asm), where the
+; shared fatio-body.inc binds to the REAL sub-side primitives and DISKOP_OP is
+; never written, so this test is blind to it and always will be. It reaches the
+; SAME verdict by a different road: the tenant splits fat_io_open at its own
+; mount/find boundary (the zero-byte `fat_io_find` label, basic/fatio-body.inc),
+; files BL_STAT = 2 for "the name is not there", and the resident stub
+; (basic/bload.asm) jumps HERE, at df_notfound, with the same ERR 53.
+; 🎯 So df_notfound has TWO callers with two different ways of knowing, and only
+; one of them is this cell — which is the point: a routine's correctness must not
+; depend on how its callers found out.
 df_or_loaderr:
                 ld      a,(DISKOP_OP)
                 cp      DISKOP_SEL_FAT_FIND

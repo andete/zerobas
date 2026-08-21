@@ -107,8 +107,16 @@ exists and ERR 53's message is sub-hosted, so the *raise* end is free; the
 sixteen bytes: `fatprim_bounce` already records **which** primitive it is about
 to run in `DISKOP_OP`, so `DISKOP_OP == FAT_FIND` on a failure means *mounted
 fine, name not there* — no new status, no change to `fat_io_open`. Five of the
-six verbs now raise ERR 53; `BLOAD` cannot use the test (sub-ROM tenant, never
-writes the cell) and its two rows stay reported.
+six verbs raised ERR 53 that day; `BLOAD` cannot use the test (sub-ROM tenant,
+never writes the cell) and its two rows stayed reported.
+
+✅ **AND THE SIXTH FOLLOWED ON 2026-08-21 (D-BLNF, `loaderr-fix-notes.md` §6),
+for 4 more main page-1 bytes.** *"Cannot use the test"* held; *"cannot make the
+distinction"* did not. `fat_io_open` **is** `fat_mount` then `fat_find`, so a
+zero-byte label between them hands the tenant a carry meaning exactly what the
+cell means, and `BL_STAT` carries it back as a third value. All six verbs now
+raise. What is still divergent is the SEVENTH FACE below — `Bad file mode` — and
+nothing in either fix touches it.
 
 🔴 **And the first draft broke the cassette**, because `dpl_err` is shared with
 `do_tape_prog` and no tape op writes that cell — caught by
@@ -121,8 +129,10 @@ away. **Guarding an instance of a class is not guarding the class.**
 
 Seven rows added to
 [`probes/basic/basic_probe_dskmsg.py`](../probes/basic/basic_probe_dskmsg.py),
-**printed and NOT gated** — they diverge today, and gating a known divergence
-turns a battery red forever instead of measuring anything. That is precisely the
+**printed and NOT gated** — they diverged when this was written, and gating a
+known divergence turns a battery red forever instead of measuring anything. ✅ Six
+have since graduated into the tally (five on 2026-08-20, `dsk-bloadnone` on
+2026-08-21); `dsk-bloadmode` is the one left. That is precisely the
 state `dsk-namenone` was in until its arm split landed, and these graduate the
 same way. A row here that started AGREEING would itself be a finding.
 

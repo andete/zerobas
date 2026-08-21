@@ -26,13 +26,21 @@ is deliberately a SELF-CHECK against zerobas's pinned wording, not an oracle
 differential: an oracle comparison here would fail on the divergence, not on the
 disposition.
 
-⚠️ SIX OF THE EIGHT.  `kill-missing` (D-DSKMSG, docs/spec-basic-dskmsg.md §4.3)
-and `name-missing` (D-DKNAME, docs/spec-basic-dkname.md §3.3) are pinned to
-`File not found` since 2026-08-07, because those two verbs' no-match disposition
-was MEASURED on the CF-3300 (R-DK1/R-DK2) and made reference-exact; the other six
-remain the quarantined divergence.  The want is therefore PER CASE, and a row
-that carries its own is printed with `[reference-exact: ...]` so the report never
-reads as if the whole battery had been re-pinned.
+⚠️ THE WANT IS PER CASE, AND AS OF 2026-08-21 EVERY ONE OF THE EIGHT CARRIES
+`File not found`.  It got there in three steps, each waiting for its own code:
+`kill-missing` (D-DSKMSG, docs/spec-basic-dskmsg.md §4.3) and `name-missing`
+(D-DKNAME, docs/spec-basic-dkname.md §3.3) on 2026-08-07 (R-DK1/R-DK2), five
+more on 2026-08-20 (D-LOADERR, docs/loaderr-fix-notes.md), and `bload-missing`
+on 2026-08-21 (D-BLNF).  A row that carries its own want is printed with
+`[reference-exact: ...]` so the report never reads as if the whole battery had
+been re-pinned at once -- which is now what the SET says, but never what any one
+slice's evidence said.
+
+⚠️ `WANT` (zerobas's own `load error`) IS THEREFORE NO LONGER THE DEFAULT OF ANY
+SCORED VERB ROW, and it is deliberately still here: the MOUNT-arm row below is
+pinned to it, the whole no-disk / mount / I-O class still answers it, and the
+report prints it as the thing a row is NOT pinned to.  An empty CASES-side use
+is not a dead constant -- deleting it would delete the contrast.
 
 ⚠️ AND THE TWO STILL DID NOT MOVE TOGETHER.  Both readings were taken in one
 session; `kill-missing` moved a slice earlier because `do_kill`'s no-match arm
@@ -45,7 +53,7 @@ the error tail neutered, four of the cases below SILENTLY REPORT NOTHING --
 load-missing, run-missing, open-missing, merge-missing.  Restoring the tail
 restores the message on all of them.  (✅ Since D-LOADERR, 2026-08-20, that
 message is `File not found`, raised, not `load error`, printed -- for every one
-of those four.  `bload-missing` is the one that still prints.)  (`append-missing` was added 2026-07-31 by
+of those four; `bload-missing` joined them on 2026-08-21, D-BLNF.)  (`append-missing` was added 2026-07-31 by
 D-APPMISS and postdates that experiment; it shares open-missing's disposition.)
 If you change fatprim_bounce, re-run that experiment rather than trusting a green
 here.
@@ -109,12 +117,19 @@ WANT = "load error"
 # pin, which was honest: it said "not measured on the reference", and the
 # remedy was to measure, which is what happened.
 #
-# ⚠️ `bload-missing` KEEPS `load error` AND THAT IS NOT AN OVERSIGHT. BLOAD's
-# loader is the sub-ROM page-1 tenant, where DISKOP_OP is never written, so
-# df_or_loaderr cannot see it; its reference reading exists (`File not found`)
-# and its FIX does not. A pin that drifts on a NEIGHBOUR's evidence stops being
-# a pin -- the same rule that kept these five at `load error` until they were
-# measured keeps this one there now.
+# ✅ AND `bload-missing` MOVED THE DAY ITS OWN CODE DID (D-BLNF, 2026-08-21).
+# It was held at `load error` on the previous line's rule -- its reference
+# reading existed and its FIX did not, and a pin that drifts on a NEIGHBOUR's
+# evidence stops being a pin. It did not drift: BLOAD's tenant now tells a
+# missing NAME from a missing VOLUME at fat_io_open's own mount/find boundary
+# and files BL_STAT = 2, which the resident stub raises as ERR 53. So this pin
+# moves in the same commit as that code, exactly as `kill-missing`'s and the
+# five above did.
+#
+# ⚠️ THE OTHER SEVEN ARE STILL UNTOUCHED AND STILL `load error` -- the
+# quarantined wording divergence for the no-disk / mount / I-O class, which
+# nothing has measured. BLOAD's own mount failure is in THAT class and stays
+# there; only the not-found arm moved.
 NOTFOUND = "File not found"
 
 # Each verb must route a "not found" through the FAT primitive shim layer and
@@ -133,12 +148,16 @@ CASES = [
     # docs/dskmsg-msx1-characterization.md): the CF-3300 answers `File not
     # found`, so the pin moved in the same commit as the code.
     #
-    # ⚠️ THE OTHER SEVEN ARE UNTOUCHED AND STAY `load error`. They are the
-    # quarantined wording divergence basic/PROVENANCE.md records for the whole
-    # no-disk / mount / I-O class, and NOTHING in D-DSKMSG measured them. A pin
-    # that drifts verb by verb on its neighbours' evidence stops being a pin.
+    # ⚠️ WHEN THIS WAS WRITTEN THE OTHER SEVEN WERE UNTOUCHED AND STAYED
+    # `load error` -- the quarantined wording divergence basic/PROVENANCE.md
+    # records for the whole no-disk / mount / I-O class, which NOTHING in
+    # D-DSKMSG measured. A pin that drifts verb by verb on its neighbours'
+    # evidence stops being a pin, so they waited. ✅ All seven have since been
+    # measured for THEMSELVES and moved with their own code: five on 2026-08-20
+    # (D-LOADERR), `name-missing` on 2026-08-07 (D-DKNAME), `bload-missing` on
+    # 2026-08-21 (D-BLNF). The rule is what made that take three slices.
     ("kill-missing",  'KILL"A:NOSUCH.BAS"', "File not found", "kill-alive"),
-    ("bload-missing", 'BLOAD"A:NOSUCH.BIN"', WANT, "bload-alive"),
+    ("bload-missing", 'BLOAD"A:NOSUCH.BIN"', NOTFOUND, "bload-alive"),
     ("open-missing",  'OPEN"A:NOSUCH.DAT" FOR INPUT AS #1', NOTFOUND,
      "open-alive"),
     # D-APPMISS (docs/spec-basic-append-missing-refuse.md §5c). APPEND used to
@@ -199,9 +218,19 @@ CASES = [(c[0], c[1],
 # errors -- and a dead disk ROM -- produce ONE answer, so two different answers
 # from one verb is evidence no dead subject can fake
 # ([[gate-whose-answer-is-an-error-passes-a-dead-subject]]).
+#
+# 🎯 AND THE THIRD ROW IS THE ONE ITS OWN FIX CREATED (D-BLNF, 2026-08-21).
+# BLOAD's tenant now splits fat_io_open at the mount/find boundary and routes
+# ONE side at ERR 53. Nothing in this tree drove BLOAD's MOUNT arm, so moving
+# that `jp c,bl_load_error` to `bl_notfound` -- making a machine with no disk in
+# it answer `File not found` -- reddened NOTHING. That is the same hole
+# `kill-nodisk` and `name-nodisk` were added to close, in the same verb family,
+# opened again by the same shape of fix. A new arm needs its own mount row the
+# day the arm lands, not the day someone breaks it.
 MOUNT_CASES = [
     ("kill-nodisk", 'KILL"A:NOSUCH.BAS"', "kill-missing"),
     ("name-nodisk", 'NAME"A:NOSUCH.BAS" AS "B.BAS"', "name-missing"),
+    ("bload-nodisk", 'BLOAD"A:NOSUCH.BIN"', "bload-missing"),
 ]
 
 # ⚠️ THE BATTERY'S OWN PRECONDITION CANNOT RUN IN THAT BOOT -- `FILES"A:HI.TXT"`

@@ -26,6 +26,16 @@
 fat_io_open:
                 call    fat_mount
                 ret     c
+; fat_io_find — the same open MINUS the mount, for a caller that has already
+; mounted and wants the find's carry BY ITSELF. A ZERO-BYTE label: it splits no
+; code, it only names the boundary `fat_io_open` already had. Cy out of here
+; means precisely "the volume mounted and the 8.3 name is NOT in the directory"
+; — the tail below cannot set it (it ends `or a`). D-BLNF: that is how the BLOAD
+; tenant tells NOT FOUND from a mount/I-O fault without a DISKOP_OP it never
+; writes (sub/bload.asm, basic/bload-body.inc); df_or_loaderr reads the same
+; distinction off DISKOP_OP on the resident side, where fat_find is a
+; marshalling stub (basic/files.asm).
+fat_io_find:
                 ld      hl, DISK_FCB_NAME
                 call    fat_find
                 ret     c

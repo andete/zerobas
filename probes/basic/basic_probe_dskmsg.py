@@ -187,14 +187,22 @@ CASES = [
 # own arm split landed. That is what this set is for -- a holding pen with an
 # exit, not a place rows go to be forgotten.
 #
-# 🔴 THE TWO THAT REMAIN ARE BOTH `BLOAD`, AND THEY REMAIN FOR ONE STATED REASON:
-# BLOAD's loader is the sub-ROM PAGE-1 tenant (sub/bload.asm), where the shared
-# fatio-body.inc binds to the REAL sub-side primitives and `DISKOP_OP` is never
-# written -- so the DISKOP_OP test df_or_loaderr (basic/files.asm) uses cannot
-# see it. BLOAD reports through BL_STAT and needs a value of its own.
-# `dsk-bloadmode` additionally needs a SECOND face (`Bad file mode`), which no
-# arm in the tree produces yet.
-NOT_GATED = {"dsk-bloadnone", "dsk-bloadmode"}
+# ✅ AND `dsk-bloadnone` GRADUATED THE NEXT DAY (D-BLNF, 2026-08-21), leaving
+# ONE. The stated reason it could not use df_or_loaderr's DISKOP_OP test still
+# holds and always will: BLOAD's loader is the sub-ROM PAGE-1 tenant
+# (sub/bload.asm), where the shared fatio-body.inc binds to the REAL sub-side
+# primitives and `DISKOP_OP` is never written. What changed is that the tenant
+# does not need that cell -- it can read the SAME distinction off fat_io_open's
+# own mount/find boundary (the new zero-byte `fat_io_find` label) and file it in
+# BL_STAT as a third value, which the resident stub raises as ERR 53.
+#
+# 🔴 THE ONE THAT REMAINS IS A DIFFERENT QUESTION, NOT A SMALLER ONE.
+# `dsk-bloadmode` is `BLOAD` of a file that EXISTS and is not a BSAVE binary:
+# fat_find SUCCEEDS, the $FE marker check rejects, and the reference answers
+# `Bad file mode` -- a SECOND face that no arm in this tree produces. Nothing
+# about the not-found fix moves it, and that is asserted, not assumed: it is
+# still printed here with its own reading on every run.
+NOT_GATED = {"dsk-bloadmode"}
 
 # Rows that WRITE to the image they mount, and therefore get a private copy.
 # Boot-per-case reboots the machine but keeps handing openMSX the SAME file.
@@ -377,7 +385,7 @@ def main() -> int:
     for label in reported:
         vals = {s: results[s][label] for s in sides if label in results[s]}
         print(probe_report.row("....", label, LABEL_W, vals,
-                               "   [D-LOADERR: measured, filed, NOT gated]"))
+                               "   [D-BLNF: measured, filed, NOT gated]"))
 
     agree = dis = 0
     for label in gated:
@@ -398,10 +406,14 @@ def main() -> int:
     print(f"SIDES: {','.join(SIDES)} — the VG-8020 has no disk ROM and CANNOT "
           "measure any row here (stated, not silently dropped)")
     if reported:
-        print(f"{len(reported)} row(s) PRINTED, NOT GATED (D-LOADERR): "
-              "a measured, filed divergence — `load error` is printed and not "
-              "raised, so the program runs on. They graduate into the tally the "
-              "day the arm split lands, exactly as dsk-namenone did.")
+        print(f"{len(reported)} row(s) PRINTED, NOT GATED: a measured, filed "
+              "divergence — zerobas prints `load error` where the reference "
+              "raises a DIFFERENT face for a file that EXISTS but is the wrong "
+              "kind (`Bad file mode`). Six of the original seven have already "
+              "graduated this way (D-LOADERR 2026-08-20, D-BLNF 2026-08-21), "
+              "which is what this holding pen is for: an exit, not a place rows "
+              "go to be forgotten. This one needs a face the tree does not "
+              "have, not a re-route of one it does.")
     if a.gate and dis:
         sys.stderr.write(f"dskmsg: {dis} row(s) diverge\n")
         return 1

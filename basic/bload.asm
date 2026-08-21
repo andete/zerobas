@@ -45,10 +45,22 @@ do_bload:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD
                 call    subrom_call
                 jp      c,subrom_absent_error
+                ; D-BLNF: BL_STAT is now THREE-VALUED, and the third value is why
+                ; BLOAD could not be fixed by D-LOADERR-FIX's DISKOP_OP test. The
+                ; tenant calls the REAL sub-side fat_find as a plain in-page call,
+                ; so nothing writes DISKOP_OP and df_or_loaderr (basic/files.asm)
+                ; is blind to this verb. The tenant tells the two apart at its own
+                ; mount/find boundary instead and files WHICH it was.
+                ;   0 -> loaded          1 -> `load error`, PRINTED, program runs on
+                ;   2 -> ERR 53 `File not found`, RAISED, program stops
+                ; ⚠️ 1 STILL COVERS THE CASSETTE, the parse rejects and a failed
+                ; mount. Only an arm that PROVED the volume mounted files a 2.
                 ld      a,(BL_STAT)
                 or      a
-                jp      nz,load_error       ; the tenant hit load_error; report once here
-                jp      load_handoff        ; plain BLOAD returns; ,R jumps to EXECPTR
+                jp      z,load_handoff      ; plain BLOAD returns; ,R jumps to EXECPTR
+                dec     a
+                jp      z,load_error        ; the tenant hit load_error; report once here
+                jp      df_notfound         ; ERR 53, raised — never returns
 
 ; parse_disk_fcb stays RESIDENT even though the verb around it left: nine callers
 ; outside bload.asm use it (do_files, do_kill, do_name, do_open, do_run, ex_merge,

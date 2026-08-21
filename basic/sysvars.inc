@@ -1195,7 +1195,9 @@ TRAPSTK_END     equ     TRAPSTK + TRAPSTK_MAX*3   ; $E21F — still < $E240, cle
 ; holds its status ACROSS the whole load, during which the fatprim cells are live
 ; on every getbyte.
 BL_PTR          equ     $E221   ; 2 B: main -> tenant, the token cursor after BLOAD
-BL_STAT         equ     $E223   ; 1 B: tenant -> main, 0 = loaded, 1 = load_error
+BL_STAT         equ     $E223   ; 1 B: tenant -> main, 0 = loaded, 1 = load_error,
+                                ; 2 = file not found (D-BLNF: RAISED as ERR 53 by
+                                ; the resident stub, not printed like 1)
 ; --- SAVE-family tenant marshalling (docs/decision-fund-time-and-t5.md) ------
 ; BLOAD's mirror: the SAVE / BSAVE / CSAVE WRITE ENGINES live in a sub-ROM PAGE-1
 ; tenant (sub/save.asm) beside fatprim, so the fat_io_* write cursor they drive
