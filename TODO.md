@@ -56,7 +56,126 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Language / verb surface**
 
-- [ ] 🔴 **`RUN A$` RESTARTS THE PROGRAM FOREVER, AND THE FILED REASON NOT TO
+- [ ] 🔴 **`castail-acceptance` VOIDS THE WHOLE BATTERY WHEN A CONTROL FAILS ON
+      THE **ZEROBAS** SIDE, SO IT CANNOT SCORE ITS OWN KNIVES.** Filed
+      2026-08-21 by D-FNRUN, found by running K-FR3 against it.
+      K-FR3 (`dr_cas_close`'s `ld hl,(FN_RESUME)` → `ld hl,(STRPTR)`) cut exactly
+      what it aimed at — `cas-run-hit` went `ZQ9` → `<load-failed>` and
+      `cas-run-hit-res` with it. But `cas-run-hit` is a POSITIVE CONTROL, so the
+      probe printed **`33 printed, 0 scored — NOT MEASURED (a positive control
+      failed)`** and exited 2. A knife is *supposed* to break things; a battery
+      that treats any control failure as a broken instrument cannot measure one.
+      🎯 **`basic_probe_namspc.py` ALREADY HAS THE RIGHT RULE AND IS THE
+      PRECEDENT**: *"ONLY A REFERENCE CAN SAY THE APPARATUS IS BROKEN. A control
+      that fails on `zb` is a finding and is scored below like any other row."*
+      That is [[classify-a-control-failure-by-which-side-failed-it]], applied in
+      one probe and not the other.
+      ⚠️ **THE READING SURVIVED ONLY BECAUSE THE RUNNER READS ROWS, NOT `rc`.**
+      Scoring on the exit code would have recorded rc 2 (instrument fault) as
+      "the knife did nothing" — 8 of 11 knives were mis-scored exactly that way
+      once already [[injjudge-slice]].
+      💰 0 ROM bytes; a probe change. Shape: split the control check by side, as
+      namspc does — a reference miss is exit 2, a zerobas miss is an ordinary
+      scored divergence. ⚠️ Re-run the battery after: some rows may then SCORE
+      that were previously only printed, and a row that starts being scored is a
+      claim about it.
+
+- [ ] ⚠️ **`RUN <lineno>` IGNORES THE LINE NUMBER AND RESTARTS FROM THE TOP.**
+      Filed 2026-08-21 by D-FNRUN §2.1, measured while converting the verb next
+      to it — and filed precisely so that slice cannot be read as having fixed a
+      form it merely learned to RECOGNISE.
+      ```
+      10 GOTO 40 : 20 PRINT"[B]" : 30 END : 40 RUN 20
+      vg8020 -> B      cf3300 -> B      zb -> Syntax error
+      10 PRINT"[B]" : 20 END           🟢 all three -> B   (n.runlinectl)
+      ```
+      Both references RESTART AT LINE 20 and print `[B]`. zerobas routes
+      `LINENO_TOKEN` to `run_prog`, which starts from the top — so line 10's
+      `GOTO 40` runs again and the statement re-enters itself.
+      🔴 **AND THE FACE IS `Syntax error`, NOT THE SILENT LOOP THAT SHAPE WOULD
+      PRODUCE**, which says the arm does something beyond ignoring the operand.
+      ✅ **CONFIRMED BY EXPERIMENT, not left as a hunch (E-FR1, D-FNRUN §5).**
+      `do_run`'s stored-program exit is a plain `jp run_prog` where every file
+      arm beside it is `jp run_prog_top` (`ld sp,(SAVSTK)` first). Swapping it —
+      a **0-BYTE** target change — moves the reading from `<Syntax error>` to
+      **`<NO OUTPUT>`**, an honest silent restart loop. So the `Syntax error`
+      IS D-RUNTAIL's nested-run corruption, at the ONE arm that slice did not
+      convert: guarding one instance of a class again.
+      ⚠️ **MEASURED AND NOT SHIPPED, deliberately.** Neither state matches the
+      reference (`B`), so there is no measured reason to prefer a hang over a
+      bogus error, and the same swap moves bare `RUN` INSIDE a program — a form
+      no row drives. It belongs with the real fix (start execution AT the line),
+      where a `10 PRINT"[R]" : 20 RUN` row can be built alongside it.
+      ⚠️ **DIRECT MODE IS A SECOND SITE and is NOT this row**: typed at the
+      prompt, `RUN 20` never reaches `do_run` at all (`dispatch_line`'s `is_cmd`
+      takes it to `dl_run`, which ignores the number for its own reasons). Two
+      sites, one rule, and only one of them has a row.
+      💰 Not priced. Starting execution at an arbitrary line is a `run_prog`
+      entry-point question (find the line, set CURLINE, enter the loop there),
+      not a parser one — so the +17 B filename shape says nothing about it.
+      Rows `n.runline` + `n.runlinectl` 🟢 are built and DEFERRED.
+
+- [ ] 🔴 **A COMMENT IN `sub/` OR `tools/` MAKES A MAIN-BUILD SPAN INVISIBLE TO
+      `make deadcode` — 24 B OF CONFIRMED DEAD CODE IS HIDDEN THAT WAY TODAY.**
+      Filed 2026-08-21 by D-FNRUN §4, found because the gate declined to ask for
+      6 B the slice had just killed.
+      [`tools/check_dead_code.py`](tools/check_dead_code.py) seeds the MAIN build
+      as `{init} | (labels named anywhere under sub/ or tools/)`, and
+      `external_names()` scrapes every IDENTIFIER in those trees **including the
+      ones inside comments**. Its docstring calls this *"deliberately coarse:
+      over-seeding keeps a live routine alive, which is the safe direction"* —
+      which is true about false negatives on LIVE code and says nothing about
+      this:
+      > **a main-build span is invisible to the gate for as long as its label's
+      > name appears in PROSE anywhere under `sub/` or `tools/`.**
+      🎯 **AND THE PROSE THAT HID THE FIRST ONE WAS THE COMMENT EXPLAINING ITS
+      OWN REMOVAL FROM THE OTHER BUILD** (D-FNEXPR2's note in `sub/bload.asm`
+      saying the `parse_close_run` head was dead there). Documenting a removal is
+      what stopped the gate asking for the same removal in the main build.
+      **FALSIFIED, NOT REASONED ABOUT:** mangling those three mentions drops the
+      main seed count 304 → 303 and the span is reported at once.
+      📏 **THE CLASS IS MEASURED, not estimated.** Over the whole main build:
+      **254** labels seeded via `sub/`+`tools/`; **6** of those unreachable from
+      `init`'s own closure; **2** named ONLY in comments. Mangling those two
+      mentions reports **three dead spans, 24 B measured 2026-08-21**, all
+      page-0 LOW:
+      ```
+      [main] str_heap_alloc  basic/str-engine.asm  0x281d  ~21 B
+      [main] sha_oom         basic/str-engine.asm  0x2832   ~2 B
+      [main] ex_mid_stmt     basic/str-engine.asm  0x2c09   ~1 B
+      ```
+      ⚠️ **MEASURED AND RESTORED, NOT DELETED.** The page-0 LOW wall read 22 B on
+      2026-08-21, so 24 B is a real carve — and `str_heap_alloc` is not a name to
+      delete on the strength of a hole found sideways during another slice. The
+      string heap moved to a sub tenant, so a leftover main copy is PLAUSIBLE,
+      which is not the same as proven; the deletion needs its own reading.
+      💰 Two separable pieces: (a) the 24 B carve, needing a per-span check that
+      each really has no main caller; (b) the GATE, where the honest fix is to
+      scrape identifiers from the CODE COLUMN only (strip `;` comments in
+      `.asm`/`.inc`) and let the resulting findings be worked rather than
+      pre-suppressed. ⚠️ (b) will report more than these three — it must be run
+      before it is trusted, and each new finding triaged, exactly as the
+      allowlist's own rule demands.
+
+- [x] ✅ **CLOSED 2026-08-21 (D-FNRUN), −11 B main page 1 (50 → 39) —
+      `RUN A$` RESTARTED THE PROGRAM FOREVER.**
+      [`docs/spec-basic-fnrun.md`](docs/spec-basic-fnrun.md). `do_run` dispatches
+      on end / `:` / `LINENO_TOKEN` and hands anything else to `fname_expr`, so
+      `RUN A$` and `RUN A$+".DAT"` are `File not found` on both sides. Rows
+      `n.runvar` and `n.runexpr` graduated and `n.runlinectl` 🟢 was added as a
+      GATED control; `namspc-acceptance` 95/95 → **98/98**, deferred 5.
+      💰 **THE FILED PRICE WAS EXACT: +17 B**, hand-counted against the
+      D-FNEXPR2 shape before the build. The net is −11 because the fix killed
+      `parse_close_run`'s 6 B head — `do_run` was its last caller.
+      🔴 **AND THE DEAD-CODE GATE COULD NOT SEE THOSE 6 B, BECAUSE A COMMENT WAS
+      SEEDING THEM** — see the new gate residual below; that is the more
+      valuable half of this item and it is filed separately rather than buried
+      here.
+      ⚠️ **`RUN <lineno>` IS RECOGNISED, NOT IMPLEMENTED**, and rows
+      `n.runline` / `n.runlinectl` 🟢 exist so this cannot be read otherwise —
+      see its own open item below.
+      *The original filing:*
+      🔴 **`RUN A$` RESTARTS THE PROGRAM FOREVER, AND THE FILED REASON NOT TO
       FIX IT IS MEASURED FALSE.** Filed 2026-08-21 by D-FNEXPR2,
       [`docs/spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md) §1.2.
       ```

@@ -165,35 +165,62 @@ dl_is_disk:
                 jp      run_prog_top        ; RUN the loaded program (program.asm) --
                                             ; at TOP LEVEL, never nested (§3.1)
 
-; --- do_run: RUN | RUN <lineno> | RUN "A:name" ------------------------------
-; Entry: HL -> the bytes after the RUN token (verbatim ASCII args).
+; --- do_run: RUN | RUN <lineno> | RUN <name expression> ---------------------
+; Entry: HL -> the bytes after the RUN token.
 ;
-; RUN"filename" is a thin wrapper: load a tokenised BASIC program from disk
-; (exactly as LOAD"name" does — same parse_disk_fcb + disk_prog_load path) and
-; then RUN it. The implicit run is the only difference from LOAD"name": there is
+; RUN <name> is a thin wrapper: load a tokenised BASIC program from disk
+; (exactly as LOAD <name> does — same parse_disk_fcb + disk_prog_load path) and
+; then RUN it. The implicit run is the only difference from LOAD: there is
 ; no ,R option, running is the whole point.
 ;
-; Two cases, dispatched on the first non-space char after RUN:
-;   '"'  -> RUN"A:name": a disk program load-then-run. inc past the quote, build
-;           the FCB (parse_disk_fcb), consume the closing quote (parse_close_run,
-;           which also tolerates a trailing ,R harmlessly — running is implicit
-;           either way), load the tokenised program, then jp run_prog.
-;   else -> a bare tokenised RUN, or RUN<lineno> (the tokeniser stored the line
-;           number as a line-ref token after RUN_TOKEN). Both run the stored
-;           program from the start; we ignore any line number, matching the
-;           direct-mode bare-RUN semantics in program.asm's dl_cmd path. Just
-;           jp run_prog.
+; ✅ D-FNRUN (docs/spec-basic-fnrun.md): THE NAME IS A STRING EXPRESSION, and
+; the reason this verb was left out of D-FNEXPR2 was MEASURED FALSE rather than
+; argued away. Both that slice and D-FNEXPR §2 called this dispatch "genuinely
+; ambiguous with RUN <lineno>" and priced the fix as a probable DECLINE. It is
+; not ambiguous, and the rows that say so read the STORED LINE BYTES rather than
+; the screen (t.runnum / t.runvar, byte-identical on vg8020, cf3300 AND zb):
 ;
-; Mirrors do_load's disk path exactly (parse_disk_fcb + disk_prog_load), so
-; RUN"file" parses identically to LOAD"file" minus the implicit run. The load
-; logic is NOT duplicated.
+;       1 RUN 30   ->  8a 20 0e 1e 00 00      RUN_TOKEN ' ' $0E + word 30
+;       1 RUN A$   ->  8a 20 41 24 00         RUN_TOKEN ' ' "A$"
+;
+; basic/tokenise.inc arms line-number mode on RUN_TOKEN and emits LINENO_TOKEN
+; ($0E) for that form and NOTHING ELSE, so the two forms differ in their first
+; byte and a test for $0E separates them exactly. The tokeniser had already done
+; the work the decline was priced against
+; [[a-filed-blocker-can-name-the-wrong-obstacle]].
+;
+; 🔴 AND WHAT THE OLD DISPATCH DID WITH `RUN A$` WAS NOT A REFUSAL. A non-quote
+; fell to `jp run_prog`, so the argument was not rejected, it was EATEN and the
+; statement RESTARTED THE PROGRAM -- forever, for a stored `RUN A$`. The
+; CF-3300 answers `File not found in 30` (row n.runvar).
+;
+; Four cases, dispatched on the first non-space byte after RUN:
+;   end / ':'      -> a bare tokenised RUN
+;   LINENO_TOKEN   -> RUN <lineno> (the tokeniser stored the number as $0E + a
+;                     16-bit value). ⚠️ THIS ARM IS UNCHANGED AND STILL WRONG:
+;                     both references RESTART AT THAT LINE and we still ignore
+;                     the number and restart from the top. Row `n.runline`
+;                     holds that divergence open, with `n.runlinectl` as its
+;                     green control, so this slice cannot be read as having
+;                     fixed a form it merely learned to RECOGNISE.
+;   anything else  -> a string EXPRESSION naming a program: evaluate it
+;                     (fname_expr), dispatch "CAS:" vs disk, load, and run.
+;
+; Mirrors do_load's disk path exactly (fname_expr + parse_disk_fcb +
+; disk_prog_load), so RUN <name> parses identically to LOAD <name> minus the
+; RUNFLAG test. The load logic is NOT duplicated.
 do_run:
                 xor     a
                 ld      (CAS_VERIFY),a      ; RUN"CAS:" is a real load, never verify
-                call    skip_spaces
-                cp      '"'                 ; a quoted filename -> device load+run
-                jp      nz,run_prog         ; bare RUN / RUN<lineno> -> run stored
-                inc     hl                  ; past the opening quote
+                call    skip_spaces         ; A = the first non-space byte
+                or      a
+                jr      z,dr_stored         ; end of statement -> bare RUN
+                cp      COLON
+                jr      z,dr_stored         ; `RUN : ...`      -> bare RUN
+                cp      LINENO_TOKEN        ; $0E -> RUN <lineno> -> stored program
+                jr      z,dr_stored         ; (the number is ignored -- see above)
+                call    fname_expr          ; a string EXPRESSION; HL -> the staged
+                                            ; '"'-terminated copy in STRSCR
                 ; device dispatch: "CAS:" -> tape, else -> disk (mirrors do_load).
                 ; dev_cmp advances HL past a matched prefix and restores it on a miss,
                 ; so the disk path below still sees HL at the filename start.
@@ -201,7 +228,8 @@ do_run:
                 call    dev_cmp
                 jr      z,dr_is_cas         ; matched "CAS:" -> tape program run
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                call    parse_close_run     ; consume closing quote (and any ,R)
+                ld      hl,(FN_RESUME)      ; D-FNRUN: resume past the EXPRESSION --
+                call    pcr_noquote         ; the only '"' is fname_expr's own
                 jp      c,load_error
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
                 ret     c                   ; D-RUNTAIL defect B: the load FAILED and has
@@ -209,14 +237,19 @@ do_run:
                                             ; NOTHING, not the resident program
                 jp      run_prog_top        ; ...and run it (running is implicit), at
                                             ; TOP LEVEL -- see run_prog_top below
+dr_stored:
+                jp      run_prog            ; bare RUN / RUN <lineno>: run the stored
+                                            ; program from the top, exactly as before
 dr_is_cas:
-                ; HL is inside the quotes, past "CAS:". Tier-3: CAPTURE the quoted
+                ; HL is inside the STAGED copy, past "CAS:". Tier-3: CAPTURE the
                 ; filename into CAS_WANT (cas_open_match finds the named tape file,
-                ; case-sensitive) and leave HL ON the closing quote for
-                ; parse_close_run, exactly like do_load's dl_is_cas.
+                ; case-sensitive). It stops on fname_expr's appended '"'; the
+                ; statement tail is taken from FN_RESUME, exactly like do_load's
+                ; dl_is_cas.
                 call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
 dr_cas_close:
-                call    parse_close_run     ; closing quote (+ harmless ,R: run is implicit)
+                ld      hl,(FN_RESUME)      ; D-FNRUN: resume past the EXPRESSION
+                call    pcr_noquote         ; (+ a harmless ,R: run is implicit)
                 jp      c,load_error
                 call    do_tape_prog        ; load the program off tape (tokenised OR
                                             ; $EA ASCII — do_tape_prog's 3-way dispatch)

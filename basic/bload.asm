@@ -124,35 +124,38 @@ build_83_name:
                 rra                         ; BN_STAT bit0 -> CF (1 = reject)
                 ret
 
-; parse_close_run — shared tail parse used by BOTH the tape and disk paths.
-; Consumes the closing '"' and an optional single option flag (,R run or ,S
-; VRAM); sets RUNFLAG / VRAM_FLAG accordingly.
-;   in:  HL -> the closing '"' of the device string
-;   out: CF set on ANY syntax error (missing quote, unrecognized flag, or junk
+; pcr_noquote — shared option-flag tail used by BOTH the tape and disk paths.
+; Parses an optional single option flag (,R run or ,S VRAM); sets RUNFLAG /
+; VRAM_FLAG accordingly.
+;   in:  HL -> the statement tail, past the filename (FN_RESUME)
+;   out: CF set on ANY syntax error (unrecognized flag, or junk
 ;        after the flag — caller -> load_error); CF clear on success, with
 ;        RUNFLAG = 1 iff ,R and VRAM_FLAG = 1 iff ,S.
+;
+; 🔴 THE `parse_close_run` HEAD IS GONE FROM THIS COPY TOO (D-FNRUN), AND THE
+; DEAD-CODE GATE DID NOT ASK FOR IT. Four instructions consumed a closing '"'
+; out of program text; D-FNEXPR2 retired three of their four callers and
+; `do_run` was the fourth, so once RUN took a string EXPRESSION the head had no
+; caller in EITHER build. The sub-ROM copy was reported as a 6 B unreachable
+; span the moment it went dead. This one was not — and the reason is worth more
+; than the six bytes:
+;
+;   `check_dead_code.py` seeds the MAIN build with `{init} | (labels named
+;   anywhere under sub/ or tools/)`, and `external_names()` scrapes every
+;   IDENTIFIER in those trees including the ones inside COMMENTS.
+;
+; So the three mentions of `parse_close_run` in sub/bload.asm's own comment --
+; the comment D-FNEXPR2 wrote to explain why the head was removed THERE -- were
+; seeding the label here. **Documenting a removal is what stopped the gate
+; asking for the same removal in the other build.** Falsified rather than
+; reasoned about: mangling those three mentions drops the seed count 304 -> 303
+; and the span is reported immediately. Filed in TODO.md as a gate residual,
+; because the mechanism is general and this is one instance of it.
 ; "Honest at the walls" (closure-spec item 2): an unrecognized flag or a trailing
 ; token (a second flag, or the deferred ,offset — Q1.2/Q1.4) is a clean error,
 ; never a silent no-op. Only ONE option flag is allowed, so ,R and ,S cannot
 ; combine.
-parse_close_run:
-                ld      a,(hl)
-                cp      '"'                 ; closing quote required
-                jr      nz,pcr_err
-                inc     hl
-pcr_noquote:                                ; ✅ D-FNEXPR2: A LABEL, ZERO BYTES.
-                                            ; Once the filename is a string
-                                            ; EXPRESSION there is no closing quote
-                                            ; in the PROGRAM TEXT to consume -- the
-                                            ; only '"' is the one fname_expr
-                                            ; appended to its staged copy, and the
-                                            ; cursor resumes from FN_RESUME, which
-                                            ; already points PAST the whole
-                                            ; expression. So the `,R` / `,S` tail
-                                            ; is entered here instead. Everything
-                                            ; below is shared byte-for-byte; only
-                                            ; the four-instruction quote check
-                                            ; above is skipped.
+pcr_noquote:
                 xor     a
                 ld      (RUNFLAG),a         ; default: no ,R handoff
                 ld      (VRAM_FLAG),a       ; default: RAM load

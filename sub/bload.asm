@@ -170,11 +170,18 @@ bl_stat_raise:
 ; the program text to consume, only the one `fname_expr` appended to its staged
 ; copy in STRSCR — so the four-instruction quote check had no caller left in
 ; THIS build and `check_dead_code.py` reported it as an unreachable 6 B span.
-; ⚠️ THE RESIDENT COPY KEEPS ITS HEAD, and that asymmetry is the point rather
-; than an oversight: `do_run` still parses a literal quote out of program text
-; and still calls the full `parse_close_run` there. "Dead" is per-build, exactly
-; as this project's dead-code gate documents — the same body can be live on one
-; side and unreachable on the other.
+; 🔴 AND THE RESIDENT COPY LOST ITS HEAD ONE COMMIT LATER (D-FNRUN), WHICH IS
+; NOT THE ASYMMETRY THIS NOTE ORIGINALLY CLAIMED. It read: *"the resident copy
+; KEEPS its head, and that asymmetry is the point rather than an oversight:
+; `do_run` still parses a literal quote out of program text."* True for exactly
+; one commit. `do_run` was the head's last caller anywhere, and once RUN took a
+; string EXPRESSION the resident four instructions were dead too.
+; ⚠️ **The gate did not say so, and the reason is in basic/bload.asm beside the
+; surviving routine**: the three mentions of the old name in THIS comment seeded
+; the main-build label, because `check_dead_code.py` scrapes identifiers out of
+; `sub/` and `tools/` including from comments. "Dead" is still per-build — that
+; part stands — but a per-build reading can be masked by prose in the other
+; build's tree.
 pcr_noquote:
                 xor     a
                 ld      (RUNFLAG),a         ; default: no ,R handoff

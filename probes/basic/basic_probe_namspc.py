@@ -549,6 +549,27 @@ CASES = [
     # not there. Without it a red `n.runvar` has two candidate causes -- "RUN
     # refuses expressions" and "RUN cannot load a disk program at all".
     ("n.runlit",   "dskerr", ['RUN"FCZ.DAT"', 'PRINT"[OK]"']),
+
+    # === D-FNRUN: the second data point, and the control the fix must not break
+    # 🔴 ONE DATA POINT IS NOT A RULE. `n.runvar` alone would be satisfied by
+    # "also accept a bare string variable", which is the cheap wrong fix
+    # D-FNEXPR's `f.expr` was built to rule out at OPEN. Same row, one verb over.
+    ("n.runexpr",  "dskerr", ['PRINT"[R]"', 'A$="FCZ"', 'RUN A$+".DAT"',
+                              'PRINT"[OK]"']),
+    # 🔴 AND THE ROW THAT SAYS THE FIX DOES NOT CLAIM MORE THAN IT DOES.
+    # `RUN <lineno>` is the form the filed decline said could not be told apart
+    # from `RUN <expression>`. The token rows say it CAN be (t.runnum/t.runvar),
+    # and the fix dispatches on LINENO_TOKEN ($0E) -- but dispatching on it only
+    # routes that form to `run_prog` exactly as before, and `run_prog` IGNORES
+    # the line number and restarts from the top. So this row is expected to stay
+    # RED, and it is here precisely so the slice cannot be read as having fixed
+    # it. ⚠️ NOT `dskerr`: no disk is involved, so the VG-8020 is a legitimate
+    # SECOND reference here and the row is stronger for it.
+    ("n.runline",    "run", ['GOTO 40', 'PRINT"[B]"', 'END', 'RUN 20']),
+    # 🟢 ...and the control that stops `<NO OUTPUT>` above from meaning "the
+    # machine cannot print". A silent infinite loop and a program that printed
+    # nothing read IDENTICALLY; only this row separates them.
+    ("n.runlinectl", "run", ['PRINT"[B]"', 'END']),
 ]
 
 # 🔴 ORACLE STRENGTH IS NOT UNIFORM. The `z.fld*` rows are Disk BASIC; a diskless
@@ -568,7 +589,14 @@ CONTROLS = TOK_CONTROLS + (
     "s.ifctl", "s.forctl", "s.dimctl", "s.readctl", "s.swapctl", "z.fldctl",
     # D-FILESIDE: LITERAL wants, and the literal is the whole point -- see the
     # note above CONTROL_WANT.
-    "f.filesbare", "f.fileslitl")
+    "f.filesbare", "f.fileslitl",
+    # D-FNRUN: `n.runline`'s control, and it is GATED rather than merely printed
+    # for the reason D-FILESIDE gated its two: an ungated control can go quiet
+    # and take its row's meaning with it. `n.runline` reads a zerobas RESTART
+    # LOOP, which prints nothing; without a row proving this fixture prints at
+    # all, "the machine printed nothing" and "the machine hung" are the same
+    # reading.
+    "n.runlinectl")
 CONTROL_WANT = {"c.let": " 7 ", "r.digctl": " 7 ", "r.strctl": "HI",
                 "r.pctctl": " 7 ", "r.bangctl": " 7 ", "r.hashctl": " 7 ",
                 "s.ifctl": "OK", "s.forctl": "OK", "s.dimctl": " 7 ",
@@ -589,7 +617,12 @@ CONTROL_WANT = {"c.let": " 7 ", "r.digctl": " 7 ", "r.strctl": "HI",
                 # below it are measuring a directory listing and there is no
                 # honest way to read one without knowing what is in it.
                 "f.filesbare": "5 entries + OK",
-                "f.fileslitl": "0 entries + <File not found>"}
+                "f.fileslitl": "0 entries + <File not found>",
+                # 🟢 `10 PRINT"[B]" / 20 END` -- the same fixture as n.runline
+                # with the GOTO/RUN pair taken out. A literal want, so a
+                # REFERENCE failing it is an instrument fault (exit 2) and not a
+                # regression.
+                "n.runlinectl": "B"}
 NEGATIVE = ("z.kw", "z.miss")
 LABEL_W = 10
 
@@ -722,11 +755,29 @@ for _lab in ("n.savebare", "n.loadbare", "n.bloadbare"):
 # verbs the `load error` residual named, RUN's conversion is a separate edit
 # with its own knife, and a decline that has been REFUTED is worth more filed
 # accurately than folded in quietly.
-DEFERRED["n.runvar"] = ("DEFERRED — `RUN A$` RESTARTS THE PROGRAM (bare-RUN "
-                        "fallthrough) where the CF-3300 loads the named file; "
-                        "the filed `RUN <lineno>` ambiguity is REFUTED by "
-                        "t.runnum/t.runvar (the tokeniser emits $0E for the "
-                        "line-number form and nothing else)")
+# ✅ `n.runvar` AND `n.runexpr` GRADUATED 2026-08-21 (D-FNRUN) and are ordinary
+# scored rows above. `RUN A$` and `RUN A$+".DAT"` load and run the named program;
+# they were a bare-RUN fallthrough that RESTARTED THE PROGRAM FOREVER.
+#
+# 🔴 WHAT STAYS DEFERRED IS `RUN <lineno>`, AND IT IS HERE SO THE SLICE CANNOT
+# BE READ AS HAVING FIXED A FORM IT MERELY LEARNED TO RECOGNISE. Dispatching on
+# LINENO_TOKEN routes that form to `run_prog`, which ignores the number and
+# restarts from the TOP; both references restart AT the line and print `[B]`.
+# 🎯 AND THE FACE IS NOT WHAT "IGNORE THE OPERAND" WOULD PRODUCE -- it is
+# `Syntax error`, not the silent restart loop -- which says the arm does
+# something beyond ignoring it. Experiment E-FR1 settled that rather than
+# leaving it a hunch: swapping this arm's `jp run_prog` for `jp run_prog_top`
+# (D-RUNTAIL's own top-level entry, a 0-BYTE target change) moves the reading
+# to `<NO OUTPUT>` -- an honest silent restart. So the `Syntax error` IS
+# D-RUNTAIL's nested-run corruption, at the one arm that slice did not convert.
+# ⚠️ NOT SHIPPED, deliberately: neither state matches the reference, so there is
+# no measured reason to prefer the hang, and the swap also moves bare `RUN`
+# inside a program, which no row drives. Filed with the reading.
+DEFERRED["n.runline"] = ("DEFERRED — `RUN <lineno>` restarts from the TOP where "
+                         "both references restart AT the line; the `Syntax "
+                         "error` face is D-RUNTAIL's nested-run corruption "
+                         "(E-FR1: `jp run_prog_top` moves it to a silent "
+                         "restart), filed, not folded in")
 
 # 🔴 `f.paren` IS NOT A FILENAME ROW AND NEVER WAS -- MEASURED 2026-08-21, after
 # `fname_expr` closed the other thirteen and left this one red. `(A$)` is
