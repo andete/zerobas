@@ -2507,8 +2507,10 @@ eoi_err5:
 ; A statement that starts with a two-byte function token. MID$ ($FF $83) is the
 ; string-assignment form; STRIG ($FF $A3) is the T2 arming statement (this is the
 ; site that used to be the blanket ERR 2 of the input-devices D-I-5 handoff).
-; Anything else falls into ex_mid_stmt's Syntax error, entered at ex_mid_sel --
-; its post-`inc hl` label, so the selector byte is not re-fetched.
+; Anything else falls into ex_mid_stmt's Syntax error. ⚠️ ex_mid_stmt is entered
+; ON the selector byte: this fork has already done the `inc hl` and fetched it,
+; so the byte is not re-fetched. It used to have a `ex_mid_sel` post-`inc hl`
+; label for that; D-SEEDPROSE deleted the head instead (1 B, page-0 LOW).
 ex_ff_stmt:
                 inc     hl                  ; -> the selector byte
                 ld      a,(hl)
@@ -2517,8 +2519,8 @@ ex_ff_stmt:
     IF TRAPS_T5
                 call    iv_match            ; INTERVAL ON|OFF|STOP  (traps T5)
                 jp      c,ex_interval       ; CF=0 leaves HL on the selector, so
-    ENDIF                                   ; ex_mid_sel's Syntax error is unchanged
-                jp      ex_mid_sel
+    ENDIF                                   ; ex_mid_stmt's Syntax error is unchanged
+                jp      ex_mid_stmt
 
 ; --- ex_on_strig: ON STRIG GOSUB [<l0>][,<l1>[,<l2>[,<l3>[,<l4>]]]] ----------
 ; Arm up to five trigger handlers. Reached from ex_on's sibling peek with HL on

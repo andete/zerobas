@@ -121,8 +121,13 @@ def run():
         m.poke(SRC, stmt.encode("ascii") + b"\x00")
         m.mem[TOKBUF:TOKBUF + 192] = b"\x00" * 192
         m.call("tokenise", hl=SRC, de=TOKBUF)
-        # ex_mid_stmt expects HL on the leading $FF (PEEK_PREFIX) token.
-        m.call("ex_mid_stmt", hl=TOKBUF)
+        # ex_mid_stmt is entered ON THE SELECTOR byte -- program.asm's ex_ff_stmt
+        # consumes the leading $FF (PEEK_PREFIX) itself and fetches the selector
+        # to dispatch STRIG/INTERVAL, so the handler never re-reads the prefix.
+        # (It used to own a `inc hl` head for a $FF-relative entry; D-SEEDPROSE
+        # deleted it once the dead-code gate stopped being seeded by prose --
+        # this test was its only caller, and tests/ is not a seed.)
+        m.call("ex_mid_stmt", hl=TOKBUF + 1)
         return get_var(avar)
 
     def ck(label, got, want):

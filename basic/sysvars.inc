@@ -3714,8 +3714,12 @@ SUBROM_IDX_ARY       equ 4      ; the numeric-array engine (arrays slice-1 SPLIT
 SUBROM_IDX_STRHEAP   equ 5      ; the string-heap engine (arrays slice-4a, docs/
                                 ; spec-basic-arrays-slice4a-string-heap.md §9;
                                 ; sub/strheap.asm strheap_engine) — a pure-RAM
-                                ; leaf. Main-ROM stub is basic/str-engine.asm
-                                ; `str_heap_alloc`.
+                                ; leaf. Main-ROM stubs are basic/str-engine.asm
+                                ; `call_strheap` + one SH_* wrapper per op.
+                                ; ⚠️ NOT op 0 (ALLOC): its wrapper
+                                ; `str_heap_alloc` had lost its last main
+                                ; caller and D-SEEDPROSE deleted it, so no
+                                ; main-side code issues op 0 today.
 SUBROM_IDX_PU_TOFIELD equ 6     ; PRINT USING format scanner: emit leading literals +
                                 ; identify the next field (docs/spec-evict-printusing.md;
                                 ; sub/printusing.asm pu_tofield_tenant) — a pure PU_*-RAM

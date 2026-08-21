@@ -143,8 +143,10 @@ sub_p0_table:
                                                 ;   heap engine (arrays slice-4a, docs/spec-
                                                 ;   basic-arrays-slice4a-string-heap.md §9) —
                                                 ;   heap_alloc + GC compaction, a pure-RAM
-                                                ;   leaf. Main-ROM stub is basic/str-
-                                                ;   engine.asm `str_heap_alloc`.
+                                                ;   leaf. Main-ROM stubs are basic/str-
+                                                ;   engine.asm `call_strheap` + one SH_*
+                                                ;   wrapper per op (op 0 ALLOC has none
+                                                ;   any more -- D-SEEDPROSE).
                 jp      pu_tofield_tenant       ; index 6 (SUBROM_IDX_PU_TOFIELD): PRINT USING
                                                 ;   format scanner — emit leading literals +
                                                 ;   identify the next field (docs/spec-evict-

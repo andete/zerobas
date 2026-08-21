@@ -64,8 +64,9 @@ SUBROM_IDX_ARY          equ     4
 ; pure-RAM leaf -- heap_alloc (bump allocator on the downward frontier
 ; FRETOP) + GC (root enumeration over STRTAB/array elements/the temp-
 ; descriptor stack, then compaction) -- reading the SH_OP..SH_ERR param
-; block (basic/sysvars.inc). Its main-ROM stub is basic/str-engine.asm
-; `str_heap_alloc`. Also called IN-PAGE (no CALSLT) by sub/arrays.asm's
+; block (basic/sysvars.inc). Its main-ROM stubs are basic/str-engine.asm
+; `call_strheap` plus one SH_* wrapper per op -- op 0 (ALLOC) has had none
+; since D-SEEDPROSE. Also called IN-PAGE (no CALSLT) by sub/arrays.asm's
 ; aeng_copy_str (string array element store) and ary_alloc's own GC-before-
 ; OOM retry (§5.4), since both are co-resident in the same sub-ROM page-0
 ; image.

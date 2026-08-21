@@ -44,24 +44,6 @@ call_strheap:
                 ret     nc
                 jp      subrom_absent_error
 
-; --- str_heap_alloc: A=len(0..255) -> CF set+HL=body ptr / CF clear=OOM ----
-; Main-ROM glue for the string-heap tenant's ALLOC op (mirrors
-; basic/arrays.asm's ary_engine_call). Clobbers A, DE, IX.
-str_heap_alloc:
-                ld      (SH_LEN),a
-                xor     a
-                ld      (SH_OP),a           ; op = 0 (ALLOC)
-                call    call_strheap
-                ld      a,(SH_ERR)
-                or      a
-                jr      nz,sha_oom
-                ld      hl,(SH_PTR)
-                scf
-                ret
-sha_oom:
-                or      a                   ; CF clear
-                ret
-
 ; --- penderr_set: FIRST-ERROR-WINS, AS A PROPERTY OF THE WRITE --------------
 ; (D-PENDERR, docs/spec-basic-penderr.md §4.) FPERR is the interpreter's single
 ; PENDING-ERROR CODE cell: a deferred fault records its code here and the
@@ -295,7 +277,8 @@ lpt_flush:
 
 ; --- str_temp_alloc: A=length(0..255) -> push a temp-descriptor-stack ------
 ; entry owning a FRESH heap body of that length (§6/§7). Thin main-ROM glue
-; for the string-heap tenant's TEMP_ALLOC op (mirrors str_heap_alloc) — the
+; for the string-heap tenant's TEMP_ALLOC op (the canonical shape: stage the
+; SH_* param block, `call call_strheap`, read SH_ERR) — the
 ; actual push+alloc mechanics moved to the sub-ROM (sub/strheap.asm
 ; she_temp_alloc/sh_temp_push_alloc) once this low region ran out of room
 ; for them; see the tenant's own header for the shape-C rationale (§9). out:
@@ -529,7 +512,7 @@ str_min_bc:
 ; Pre-validated so that start+count <= length and count <= STRMAX. in:
 ; BC = temp descriptor address, D = start, E = count. Clobbers A, BC, DE, HL.
 ; Thin main-ROM glue for the string-heap tenant's SLICE op (mirrors
-; str_heap_alloc) — the byte-move mechanics moved to the sub-ROM
+; str_temp_alloc) — the byte-move mechanics moved to the sub-ROM
 ; (sub/strheap.asm she_slice) once this low region ran out of room for
 ; them; SAME calling convention (BC=temp descriptor, D=start, E=count), so
 ; every caller (str_fn_left/right/mid) is unchanged. Clobbers A, BC, DE, IX.
@@ -637,7 +620,7 @@ ev_ff_val:
                 ; VAL's leading-signed-decimal parse (integer-only, spec D-E)
                 ; moved to the sub-ROM tenant (sub/strheap.asm sh_val_parse,
                 ; op=13) — pure-RAM parse of (STRPTR)'s body, page-1/low both
-                ; byte-full. Thin glue mirrors str_heap_alloc.
+                ; byte-full. Thin glue mirrors str_temp_alloc.
                 ld      a,13
                 ld      (SH_OP),a           ; op = 13 (VAL_PARSE)
                 push    ix                  ; the CALSLT in call_strheap clobbers IX
@@ -983,16 +966,20 @@ sfm_reject2:
 ; HL through the whole arg parse. ⚠️ MIDS_DEST does NOT alias NUMBUF -- this header
 ; said it did until D-LVFIX; arrays slice-4a rehomed it to TMISMATCH+1 precisely
 ; because HEX$/OCT$ moved their digit build INTO NUMBUF (basic/sysvars.inc).
-; Entered with HL ON the $FF (PEEK_PREFIX). Clobbers A, BC, DE, HL.
+; Entered with HL ON THE SELECTOR BYTE, i.e. past the $FF (PEEK_PREFIX) prefix
+; -- program.asm's ex_ff_stmt has already consumed it and fetched the selector
+; to dispatch STRIG/INTERVAL, so re-consuming it here would be a second `inc hl`
+; nothing reaches. D-SEEDPROSE removed that head (1 B) after the dead-code gate
+; learned to read the code column: its only remaining caller was a unit test,
+; and tests/ is deliberately not a seed for this gate. Clobbers A, BC, DE, HL.
 ;
 ; Arrays slice-4a REVISION: A$/B$ are now [len:1][ptr:2] descriptors, not inline
 ; [len][bytes]. The write target is A$'s CURRENT body (dereferenced from MIDS_DEST,
 ; +n-1 for the 1-based position) — MID$ overwrites bytes IN PLACE inside A$'s own
 ; already-owned heap body (its length never changes, so no realloc is ever needed).
-ex_mid_stmt:
-                inc     hl                  ; -> the function selector
-ex_mid_sel:                                 ; (traps T2) entry with HL already on the
-                                            ; selector byte, from program.asm's ex_ff_stmt
+ex_mid_stmt:                                ; (traps T2) entered with HL already on
+                                            ; the selector byte, from program.asm's
+                                            ; ex_ff_stmt
                 ld      a,(hl)
                 cp      MIDD_TOKEN          ; must be MID$ ($83); any other $FF here is
                 jp      nz,stmt_error       ; not a statement
@@ -1110,7 +1097,7 @@ ems_err_pop1:
 ; HEX$(-1)="FFFF"). The digit builds live in the sub-ROM tenant
 ; (sub/strheap.asm sh_hex_build/sh_oct_build/sh_bin_build, ops 6/7/14) —
 ; shape-C move, this low region ran out of room for them; only the argument
-; PARSE (which needs `eval`) stays main-side. Thin glue mirrors str_heap_alloc.
+; PARSE (which needs `eval`) stays main-side. Thin glue mirrors str_temp_alloc.
 ;
 ; ONE BODY, THREE ENTRY STUBS (docs/spec-basic-binfre.md §3). These were two
 ; near-identical 43 B / 38 B copies, and the 5-byte difference between them WAS
@@ -1431,7 +1418,7 @@ efi_dup_a:
                 ; CHEAPER rather than more expensive.
 efi_p_ok:
                 ; Thin main-ROM glue for the string-heap tenant's
-                ; INSTR_SEARCH op (mirrors str_heap_alloc) — the search body
+                ; INSTR_SEARCH op (mirrors str_temp_alloc) — the search body
                 ; (now dereferencing aT/bT's [len:1][ptr:2] to find their
                 ; CURRENT bodies, was inline-bodied) moved to the sub-ROM
                 ; (sub/strheap.asm sh_instr_search) once this low region ran
@@ -1547,7 +1534,7 @@ rp_yes:
 ; Clobbers DE, HL, IX, flags.
 ;
 ; Thin main-ROM glue for the string-heap tenant's CMP op (mirrors
-; str_heap_alloc) — the byte-compare mechanics (now dereferencing each
+; str_temp_alloc) — the byte-compare mechanics (now dereferencing each
 ; descriptor's [len:1][ptr:2] to find the CURRENT body, was inline
 ; [len][bytes]) moved to the sub-ROM (sub/strheap.asm sh_cmp_bits) once this
 ; low region ran out of room for it.
