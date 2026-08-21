@@ -9137,7 +9137,37 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py) has the
       worked one).
 
-- [ ] 🔴 **`(A$)` IS REFUSED IN EVERY STRING CONTEXT — `str_eval_one` HAS NO
+- [x] ✅ **CLOSED 2026-08-21 (D-STRPAREN), −28 B main page 1 (39 → 11) —
+      `(A$)` WAS REFUSED IN EVERY STRING CONTEXT.**
+      [`docs/spec-basic-strparen.md`](docs/spec-basic-strparen.md).
+      `str_eval_paren` (23 B) + a 5 B `(` peek in `basic/print.asm`.
+      `strparen-acceptance` **16/16, DEFERRED EMPTY**; `namspc-acceptance`
+      98/98 → **99/99** as `f.paren` — the one row D-FNEXPR's filename fix left
+      red — graduates with them, through the string EVALUATOR exactly as that
+      slice predicted.
+      🎯 **THE `ret nc` IS THE DESIGN, NOT AN ERROR PATH.** The routine is
+      written to be TRIED: on a non-string inside it RESTORES HL and returns CF
+      clear, so a dispatcher that guessed wrong falls through to the numeric
+      path with the cursor it would have had. That is what let PRINT offer the
+      string path for 5 B without committing to it.
+      🔴 **TEN ROWS CLOSED ON THE FIRST ARM — TWO MORE THAN PREDICTED — AND
+      `p.left` CLOSING REFUTED THIS ITEM'S OWN ANALYSIS.** The characterization
+      had read `LEFT$`'s `Syntax error` as *"a different refusal site, one rule
+      at at least TWO mechanisms"*; one `(` arm closed it with the other nine.
+      **A face is a claim about the LAST routine to run, not the first one to
+      refuse** — D-FNARG2 established its three mechanisms by tracing paths, and
+      that section read faces. Inverted in place, not deleted.
+      🔴 **AND A PATCH THAT NEVER LANDED WAS CAUGHT BY THE ROM HASH, NOT BY THE
+      PROBE.** The PRINT peek's `assert` failed (wrong anchor), the whole command
+      was backgrounded so the traceback went unread, and the probe log looked
+      like an honest measurement of an unfixed machine. **The wall was 16 B
+      before and after: a 5 B edit that costs 0 B has not happened.** The rebuild
+      script asserts the ROM MOVED now — the same guard D-FNEXPR2 put on its
+      knife runner, which belongs on any edit that claims a byte cost.
+      ⚠️ **MAIN PAGE 1 IS AT 11 B** (2026-08-21) — the next slice needs a carve;
+      `clone_scout` offers 12 B / 10 B / 9 B on page 1, listed below.
+      *The original filing:*
+      🔴 **`(A$)` IS REFUSED IN EVERY STRING CONTEXT — `str_eval_one` HAS NO
       PARENTHESISED-SUBEXPRESSION CASE.** Filed 2026-08-21 by D-FNEXPR
       ([`docs/spec-basic-fnexpr.md`](docs/spec-basic-fnexpr.md) §4), found
       because it is the ONE row of fourteen that the filename fix did **not**

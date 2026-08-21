@@ -779,30 +779,20 @@ DEFERRED["n.runline"] = ("DEFERRED — `RUN <lineno>` restarts from the TOP wher
                          "(E-FR1: `jp run_prog_top` moves it to a silent "
                          "restart), filed, not folded in")
 
-# 🔴 `f.paren` IS NOT A FILENAME ROW AND NEVER WAS -- MEASURED 2026-08-21, after
-# `fname_expr` closed the other thirteen and left this one red. `(A$)` is
-# refused in EVERY string context, not just a filename one, and two controls
-# say so on the same apparatus:
-#     B$=(A$)      cf3300 `Q`     zb `Type mismatch`
-#     PRINT (A$)   cf3300 `Q`     zb `Type mismatch`
-#     B$=A$    🟢  cf3300 `Q`     zb `Q`          <- the unparenthesised twin
-#     B=(A)    🟢  cf3300 ` 5 `   zb ` 5 `        <- NUMERIC parens WORK
-# 🎯 So the gap is `str_eval_one` (basic/strvar.asm), which dispatches on `"`,
-# on the string-function tokens and on a letter, and has no parenthesised-
-# subexpression case at all. Charging it to the filename gate would price a
-# string-evaluator hole against the wrong verb. Filed as its own residual.
-# ⚠️ ITS FACE MOVED WITH D-FNEXPR2 AND THE NOTE IS CORRECTED RATHER THAN LEFT
-# TO ROT. This used to read "its FACE differs by context -- `Type mismatch` in
-# LET/PRINT, `Syntax error` through `fname_expr`'s `jp nc,stmt_error`". That
-# exit is `els_tc_common` now, which is the very routine the LET mirror uses, so
-# `OPEN(A$)AS #1` answers `Type mismatch` here too: the three contexts AGREE on
-# the face and disagree with the reference in one direction only. The row still
-# cannot CLOSE on the face -- the reference answers `OK`, because it accepts the
-# parenthesised subexpression -- but it is now one divergence instead of two.
-DEFERRED["f.paren"] = ("DEFERRED — NOT the filename rule: `(A$)` is refused in "
-                       "every string context (str_eval_one has no paren case); "
-                       "numeric `(A)` works. Filed separately.")
-
+# ✅ `f.paren` GRADUATED 2026-08-21 (D-STRPAREN) and is an ordinary scored row.
+# It was the ONE row of fourteen D-FNEXPR's filename fix did not close, and
+# D-FNEXPR was right to refuse to charge it to the filename gate: `(A$)` was
+# refused in EVERY string context, not just a filename one, so the fix belonged
+# to the string EVALUATOR. `str_eval_paren` (basic/strvar.asm) closed it along
+# with ten sibling contexts measured in basic_probe_strparen.py.
+# 🎯 THE DEFERRAL IS WHAT MADE THAT POSSIBLE. Charging the row to the filename
+# gate would have priced a string-evaluator hole against the wrong verb and
+# probably bought a `(` case that only `fname_expr` could reach
+# [[a-deferral-honoured-is-worth-more-than-one-filed]].
+# ⚠️ Its own denominator lives in `basic_probe_strparen.py` (eleven contexts,
+# three controls, TWO references -- this row has one, being Disk BASIC). This
+# row is the FILENAME instance of that rule and stays here, where its siblings
+# are.
 # ✅ D-FILESIDE'S ROW GRADUATED 2026-08-21 (D-FNEXPR2). `f.filesvarl` was a
 # MEASURED, FILED divergence -- the machine listed a whole directory the
 # reference never lists, then derailed on the unconsumed argument -- and it is

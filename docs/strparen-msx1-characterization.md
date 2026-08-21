@@ -76,15 +76,33 @@ else [[controls-for-the-verb-not-the-cell]].
 So the subject is the `(`, and any fix framed around string *variables* would
 close ten rows and leave this one.
 
-### 3.4 🔴 One rule, at least TWO mechanisms — `p.left` has a different face
+### 3.4 🔴 `p.left` has a different FACE — and I read that as a different SITE, wrongly
 
-Ten rows answer `Type mismatch`; `LEFT$((A$),1)` answers **`Syntax error`**. That
-is not a wording detail, it is a different refusal site: `LEFT$`'s own argument
-parse rejects the `(` before anything type-checks, where the others reach a
-type comparison and fail it. 🎯 **The same shape D-FNARG2 found** when one
-filename rule turned out to be three mechanisms — and the reason this battery
-keeps `p.mid` beside `p.left`: same kind of function, same shape of call, and
-they do **not** answer the same thing here.
+Ten rows answer `Type mismatch`; `LEFT$((A$),1)` answers **`Syntax error`**.
+
+**What this section said when it was written, and it was wrong:** *"That is not a
+wording detail, it is a different refusal site: `LEFT$`'s own argument parse
+rejects the `(` before anything type-checks… one rule at at least TWO
+mechanisms, the same shape D-FNARG2 found."*
+
+🔴 **REFUTED BY THE FIX, ONE COMMIT LATER.** A single `(` arm in `str_eval_one`
+closed `p.left` in the same run as the other nine. `LEFT$`'s parse consumes its
+own `(`, checks for an empty argument, and then calls **`str_eval`** like
+everyone else ([`basic/str-engine.asm`](../basic/str-engine.asm)); the different
+face comes from what its caller does with a `CF clear` return, not from where
+the refusal happens. **One site, two faces** — the opposite of the reading.
+
+🎯 **The inference that produced the error is worth more than the error.** A
+different face was taken as evidence of a different mechanism, and it is not
+evidence of that at all: the same refusal reached through two different callers
+prints two different things. D-FNARG2's *"one rule, THREE mechanisms"* was
+established by tracing each path, not by reading the faces — and this section
+read the faces. **A face is a claim about the LAST routine to run, not about the
+first one to refuse.**
+
+⚠️ Keeping `p.mid` beside `p.left` was still right, for a reason the wrong
+analysis got backwards: they are the same kind of call, and the rows now confirm
+they behave the same way. That is what made the refutation visible in one run.
 
 ### 3.5 🎯 It is a SPLIT-EVALUATOR question, not a missing `case` label
 

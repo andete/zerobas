@@ -11,7 +11,10 @@ fix did not close, correctly refused to charge it to the filename gate, and file
 it as *"`(A$)` is refused in EVERY string context"* on the strength of `B$=(A$)`
 and `PRINT (A$)`, measured ad hoc and never committed as rows. That is a rule
 claiming more than its evidence [[a-rule-can-claim-more-than-its-evidence]].
-This file is the evidence: **eleven contexts, three controls, TWO references.**
+This file is the evidence: **eleven contexts, three controls, TWO references** --
+and since 2026-08-21 it is also the gate that holds the fix, **14/14 scored, the
+DEFERRED dict EMPTY**. What follows described the state it measured; the ✅ notes
+say what closed it.
 
 🎯 AND THE ROWS SAY IT IS NOT WHAT THE RESIDUAL NAMED IT. The filing says
 "`str_eval_one` has no parenthesised-subexpression case", which is TRUE and is
@@ -32,6 +35,16 @@ So this is a SPLIT-EVALUATOR question, not a missing `case` label: zerobas has a
 numeric `eval` and a string `str_eval` and decides between them by PEEKING, while
 the reference has one type-polymorphic evaluator that returns whatever it found.
 A leading `(` is the one operand shape a peek cannot classify.
+
+✅ **FIXED 2026-08-21 in that shape**: `str_eval_paren` (basic/strvar.asm, 23 B)
+is written to be TRIED and to leave no trace when it declines -- it restores HL
+and returns CF clear on a non-string inside -- and `basic/print.asm`'s item loop
+offers it a `(` for 5 B, falling back through the `exps_fallback` it already had.
+🔴 **AND §3.4's "one rule, at least TWO mechanisms" WAS REFUTED BY THAT FIX**:
+`p.left` closed in the same run as the other nine. Its different FACE came from
+what its caller does with a `CF clear` return, not from where the refusal
+happens. A face is a claim about the LAST routine to run, not the first to
+refuse.
 
 🟢 THREE CONTROLS, AND THEY ARE WHAT MAKE THE ELEVEN A READING. `p.ctl` is the
 unparenthesised twin (`B$=A$`), `p.numctl` and `p.numprint` are the NUMERIC
@@ -93,6 +106,26 @@ CASES = [
     # 🔴 THE ONE WITH A DIFFERENT FACE. Keep it next to p.mid: same shape, same
     # kind of function, and they do NOT answer the same thing here.
     ("p.left",     ['PRINT"[";LEFT$((A$),1);"]"']),
+    # 🔴 THE ROW THAT PINS THE DECLINE PATH. `str_eval_paren` must RESTORE HL and
+    # return CF clear when the inside is not a string, so the caller's numeric
+    # fallback sees the cursor it would have had. `p.numprint` exercises that
+    # through basic/print.asm, which guards its own cursor and would survive a
+    # broken restore; this one goes through `ex_let_str` -> `els_tc_common`,
+    # which RE-EVALUATES FROM HL and therefore cannot. Without it the `pop hl`
+    # in `sep_decline` is a guard no row can see
+    # [[a-shadowed-guard-has-no-knife]].
+    ("p.numlet",   ['B$=(A+1)', 'PRINT"[";B$;"]"']),
+    # 🔴 ...AND `p.numlet` TURNED OUT NOT TO PIN IT EITHER -- K-SP2 (`pop hl` ->
+    # `pop de`) reddened NOTHING with it in the set. It agrees for the WRONG
+    # REASON: `els_tc_common` raises `type_mismatch_error` unconditionally once
+    # `eval` returns, so a wrong cursor produces the SAME FACE. A row that scores
+    # only the face cannot see a cursor.
+    # 🎯 THIS ONE SCORES A VALUE INSTEAD. `IF (A+1)=6` must evaluate to TRUE, so
+    # the numeric fallback has to re-read the operand from the `(` -- get the
+    # cursor wrong and the comparison changes, which the `[Y]`/`[N]` arms show
+    # directly rather than through an error.
+    ("p.numif",    ['IF (A+1)=6 THEN PRINT"[Y]" ELSE PRINT"[N]"']),
+
     # --- 🟢 controls
     ("p.ctl",      ['B$=A$', 'PRINT"[";B$;"]"']),
     ("p.numctl",   ['B=(A)', 'PRINT"[";B;"]"']),
@@ -112,14 +145,14 @@ ERRORS = ("Syntax error", "Type mismatch", "Illegal function call",
           "NEXT without FOR", "Undefined line number")
 
 # --- DEFERRED: measured, printed, NEVER scored ------------------------------
-# 🔴 A KNOWN DIVERGENCE MAY NOT GATE: it would turn this battery red forever
-# instead of measuring anything. The three CONTROLS are gated, which is what
-# makes the eleven a reading rather than an anecdote -- exactly D-FILESIDE's
-# argument for its own row. A deferred row that started AGREEING would itself be
-# a finding, so they are printed on every run.
-DEFERRED = {lab: ("DEFERRED — `(A$)` refused: the split evaluator has no "
-                  "parenthesised STRING operand (docs/spec-basic-fnexpr.md §4)")
-            for lab, _ in CASES if lab not in CONTROLS}
+# ✅ EMPTY, AND EMPTIED BY FIXING THE ROWS RATHER THAN BY RESCORING THEM
+# (D-STRPAREN's fix commit, 2026-08-21 -- docs/spec-basic-strparen.md).
+# All eleven divergent rows here were DEFERRED for exactly one gate run: a known
+# divergence that gates turns a battery red forever instead of measuring
+# anything, and the three CONTROLS were gated throughout, which is what made the
+# eleven a reading rather than an anecdote. They are ordinary scored rows now
+# [[a-deferral-honoured-is-worth-more-than-one-filed]].
+DEFERRED: dict[str, str] = {}
 
 
 def face(raw: str | None) -> str:

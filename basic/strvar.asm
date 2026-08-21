@@ -41,6 +41,9 @@ str_eval_one:
                 jp      z,str_eval_lit      ; repack: str_eval_lit is in the low
                                             ; region (str-engine.asm) — out of jr
                                             ; range from here (page 1)
+                cp      '('                 ; ✅ D-STRPAREN: a parenthesised STRING
+                jr      z,str_eval_paren    ; subexpression -- `(A$)`, `("Z")`,
+                                            ; `(A$+"Z")`, `((A$))`
                 cp      INPUT_TOKEN         ; INPUT$(...) ? -> $85 ('INPUT') then '$'
                 jp      z,str_eval_maybe_inputd
                 cp      PEEK_PREFIX         ; $FF + selector -> a function token; MKI$ ?
@@ -86,6 +89,75 @@ sev_have:
 ; Arrays slice-4a: the repack str_eval_lit (zero-copy literal-lift into
 ; RVDESC) lives in the low region (basic/str-engine.asm) — page 1 is byte-
 ; full; str_eval_one reaches it by the jp above.
+; --- str_eval_paren: `( <string expression> )` -------------------------------
+; D-STRPAREN (docs/spec-basic-strparen.md, measured in
+; docs/strparen-msx1-characterization.md). `(A$)` was refused in every string
+; context here and is ordinary on BOTH references -- eleven contexts, three
+; controls, two references, all eleven divergent.
+;
+; 🎯 THE `ret nc` IS THE WHOLE DESIGN, not an error path. zerobas has a NUMERIC
+; `eval` and a STRING `str_eval` and picks between them by PEEKING at the first
+; byte; the reference has one type-polymorphic evaluator. A leading `(` is the
+; one operand shape a peek cannot classify -- `(A$)` is a string and `(A+1)` is
+; not, and nothing short of evaluating the inside can say which. So this routine
+; is written to be TRIED and to leave no trace when it declines: on anything that
+; is not a string it RESTORES HL and returns CF clear, exactly as `str_eval_no`
+; does, and the caller falls through to the numeric path it would have taken
+; anyway. That is what lets `basic/print.asm`'s item loop and `ev_rel` offer the
+; string path first without committing to it.
+;
+; ⚠️ THE RECURSION IS `str_eval`, NOT `str_eval_one`, and that is what makes
+; `(A$+"Z")` work: the `+` tail is `str_concat_tail`'s and it belongs INSIDE the
+; parentheses. `((A$))` then falls out for free -- the inner call re-enters here.
+; The Z80 stack cost is 2 bytes of return address per nesting level; BASIC's own
+; line length bounds the depth long before that matters.
+;
+; ⚠️ A `(` HERE IS UNAMBIGUOUSLY A SUBEXPRESSION, never a subscript. `A$(1)`
+; reaches the variable arm below via `is_letter`, which consumes the name first
+; and only then looks for `(` -- the same disambiguation `ev_f_var`'s numeric
+; array check already relies on. str_eval_one is entered at an OPERAND boundary.
+;
+;   in:  HL -> the '('
+;   out: CF set  -> STRPTR = the value, HL past the ')'
+;        CF clear-> HL RESTORED to the '(', nothing else touched
+str_eval_paren:
+                push    hl                  ; the '(' -- restored if we decline
+                inc     hl
+                call    str_eval            ; full string expression, `+` tail and all
+                jr      nc,sep_decline      ; not a string inside -> hand it back
+                call    skip_spaces
+                cp      ')'
+                jr      nz,sep_decline      ; `(A$` unterminated -> decline, and the
+                                            ; caller's numeric path raises its own
+                                            ; Syntax error at the same cursor
+                inc     hl                  ; past the ')'
+                pop     af                  ; discard the saved cursor (keep HL)
+                scf
+                ret
+sep_decline:
+                ; ⚠️ THIS RESTORE IS UNPINNED BY ANY ROW, AND THAT IS SAID OUT
+                ; LOUD RATHER THAN LEFT TO BE FOUND. K-SP2 (`pop hl` -> `pop de`)
+                ; REDDENS NOTHING, across two deliberate attempts to make it
+                ; live:
+                ;   * `p.numlet` (`B$=(A+1)`) agrees for the WRONG REASON --
+                ;     `els_tc_common` raises `type_mismatch_error` once `eval`
+                ;     returns, from ANY cursor, so a row scoring the FACE cannot
+                ;     see a cursor at all;
+                ;   * `p.numif` (`IF (A+1)=6`) scores a VALUE instead, and still
+                ;     does not move: that caller guards its own cursor too.
+                ; Every caller of `str_eval` that falls back turns out to save
+                ; and restore its own operand start (`exp_strvar` explicitly, and
+                ; `exps_fallback`'s comment says so), or to raise regardless.
+                ; 🎯 KEPT ANYWAY, and not out of superstition: it costs ZERO
+                ; bytes (`pop hl` and `pop af` are both one), and it is what
+                ; makes the CONTRACT stated above ("HL RESTORED to the '('")
+                ; TRUE. A future caller that re-parses from HL will depend on it
+                ; and will have no way to discover it is missing.
+                ; ⚠️ A guard with no row is exactly what D-FNEXPR2 shipped at
+                ; `do_files` and filed against itself. This one is filed too
+                ; [[a-shadowed-guard-has-no-knife]].
+                pop     hl                  ; put the cursor back on the '('
+                ; fall through into str_eval_no
 str_eval_no:
                 or      a                   ; CF clear -> not a string operand
                 ret

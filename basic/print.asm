@@ -178,6 +178,22 @@ exp_loop:
                 jp      z,exp_maybe_strfn   ;  not $FF-prefixed; str_eval handles it, prints)
                 cp      INKEY_TOKEN         ; $EC INKEY$ -> string (single-byte token; str_eval
                 jp      z,exp_maybe_strfn   ;  reads the key, prints it — else PRINT INKEY$ mismatches)
+                ; ✅ D-STRPAREN: `PRINT (A$)`. This is the ONE item shape a peek
+                ; cannot classify -- `(A$)` is a string and `(A+1)` is not, and
+                ; nothing short of evaluating the inside can say which. So it is
+                ; not classified: the STRING path is TRIED and allowed to
+                ; decline. `str_eval_paren` (basic/strvar.asm) restores HL and
+                ; returns CF clear on a non-string inside, and `exp_strvar`
+                ; already has `jr nc,exps_fallback` -- whose own comment states
+                ; the contract this relies on: "str_eval left HL unmoved on
+                ; failure, so this restores the same cursor exp_num would see
+                ; un-gated". So the numeric path is reached with exactly the
+                ; cursor it would have had, and `PRINT (A+1)` is untouched --
+                ; which is the GATED control `p.numprint`, not an assumption.
+                ; ⚠️ `(` is $28 and collides with no token, so its position in
+                ; this chain is free; it sits with the other string operands.
+                cp      '('
+                jp      z,exp_strvar
                 call    is_letter           ; a `$`-suffixed string variable?
                 jr      nc,exp_num
                 call    var_str_type        ; A=1 if `$` suffix
