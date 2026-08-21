@@ -92,22 +92,15 @@ do_bsave:
                 jp      nz,load_error
                 inc     hl
                 ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
-                push    hl                  ; remember filename start
+                ; D-FNFUND: this was a hand-rolled copy of files.asm's dev_cmp --
+                ; same upcase, same 0-terminated prefix, same "advance on a hit,
+                ; restore HL on a miss" contract, 22 B against 9. The push/pop
+                ; pair moved INSIDE dev_cmp, which is why bsv_is_cas below no
+                ; longer discards a saved start.
                 ld      de,dev_cas
-bsv_dev:
-                ld      a,(de)
-                or      a
-                jp      z,bsv_is_cas        ; matched all of "CAS:" -> tape (out of jr range)
-                ld      c,a
-                ld      a,(hl)
-                call    upcase
-                cp      c
-                jr      nz,bsv_is_disk      ; prefix mismatch -> disk
-                inc     hl
-                inc     de
-                jr      bsv_dev
+                call    dev_cmp
+                jp      z,bsv_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
 bsv_is_disk:
-                pop     hl                  ; restore filename start
                 ; HL = filename start (after the quote); build the FCB.
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
                 ld      a,(hl)
@@ -142,7 +135,6 @@ bsv_open:
 
 ; --- tape BSAVE path ---
 bsv_is_cas:
-                pop     af                  ; discard saved filename start (HL past "CAS:")
                 ; HL now points just past "CAS:" inside the quotes.
                 ; Parse filename: up to 6 chars until '"', space-pad to 6.
                 call    tape_parse_name     ; fills TSV_NAME[0..5]; HL -> closing '"'
@@ -180,22 +172,12 @@ do_save:
                 jp      nz,load_error
                 inc     hl
                 ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
-                push    hl                  ; remember filename start
+                ; D-FNFUND: the second hand-rolled copy of dev_cmp (see do_bsave
+                ; above). Identical contract; the push/pop pair is dev_cmp's now.
                 ld      de,dev_cas
-sav_dev:
-                ld      a,(de)
-                or      a
-                jp      z,sav_is_cas        ; matched all of "CAS:" -> tape (jp: ascii_save split the range)
-                ld      c,a
-                ld      a,(hl)
-                call    upcase
-                cp      c
-                jr      nz,sav_is_disk      ; prefix mismatch -> disk
-                inc     hl
-                inc     de
-                jr      sav_dev
+                call    dev_cmp
+                jp      z,sav_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
 sav_is_disk:
-                pop     hl                  ; restore filename start
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
                 ld      a,(hl)
                 cp      '"'                 ; consume the closing quote
@@ -250,7 +232,6 @@ ascii_save:
 
 ; --- tape SAVE path ---
 sav_is_cas:
-                pop     af                  ; discard saved filename start (HL past "CAS:")
                 ; HL now points just past "CAS:" inside the quotes.
                 ; Parse filename: up to 6 chars until '"', space-pad to 6.
                 call    tape_parse_name     ; fills TSV_NAME; HL -> closing '"'

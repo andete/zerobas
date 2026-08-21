@@ -394,6 +394,63 @@ CASES = [
     ("f.filesbare", "dsklist", ['FILES', 'PRINT"[OK]"']),
     ("f.fileslitl", "dsklist", ['FILES"FC*.*"', 'PRINT"[OK]"']),
     ("f.filesvarl", "dsklist", ['A$="FC*.*"', 'FILES A$', 'PRINT"[OK]"']),
+
+    # === D-FNFUND: THE ROWS THAT MAKE `dev_cmp`'s MISS ARM LIVE ===============
+    # 🔴 K-FF1 (`dcmp_miss:` `pop hl` -> `pop bc`, i.e. the miss arm stops
+    # restoring HL) REDDENED NOTHING ON THE ROW SET AS IT STOOD, AND THAT WAS A
+    # CLAIM ABOUT THE ROWS, NOT ABOUT THE CODE. `dev_cmp` (basic/files.asm) tests
+    # `jr nz,dcmp_miss` BEFORE the `inc hl`, so a mismatch at character 0 never
+    # advanced HL and "not restoring it" is a no-op. Every filename in both
+    # batteries -- FA1.DAT, FB2.DAT, FC*.* , and cassave's CAS:PA -- mismatches
+    # `LPT:` / `CRT:` / `CAS:` at character 0. A green knife on that set is a
+    # SHADOWED guard, not coverage ([[a-shadowed-guard-has-no-knife]]).
+    #
+    # 🎯 A FILENAME THAT SHARES ITS LEADING CHARACTERS WITH A DEVICE NAME IS
+    # WHAT MAKES THE ARM REACHABLE, and it is a real BASIC claim in its own
+    # right: `CRT.DAT` and `CAS.DAT` are FILENAMES -- a device name needs the
+    # colon -- so both must survive the dispatch untouched.
+    #   d.opendev  `CRT.DAT` mismatches `CRT:` at char 3 (HL advanced 3)
+    #   d.savedev  `CAS.DAT` mismatches `CAS:` at char 3, AT THE CARVE SITE
+    #              (basic/save.asm `do_save`, one of the two hand-rolled copies
+    #              this slice collapsed onto `dev_cmp`)
+    #
+    # 🎯 AND THE SECOND VERB IS WHAT MAKES THE ROW A READING RATHER THAN A
+    # ROUND TRIP. `do_kill` (basic/files.asm:1327) goes STRAIGHT to
+    # `parse_disk_fcb` -- no device dispatch at all -- so it sees the true
+    # filename whatever the dispatch did to the first verb's copy of it. A row
+    # that both WROTE and READ through the dispatch would corrupt the name
+    # identically on both sides and agree with itself; that is the shape
+    # [[fileside-slice]] was filed for. Written through the dispatch, read
+    # around it.
+    # ⚠️ `dskerr`/`errface` DELIBERATELY, NOT `dsk`/`bracket`: this row's
+    # subject is a FAILURE, and `load_error`'s printed faces would sit
+    # UNDERNEATH a `[OK]` that `bracket()` finds first
+    # ([[readout-blind-to-its-own-subject]]).
+    # 🔴 AND THE FIRST DRAFT OF THESE TWO ROWS READ `<NO OUTPUT>` ON *BOTH*
+    # SIDES -- THE CAPTURE WINDOW, NOT THE MACHINE. `OPEN..FOR OUTPUT` +
+    # `CLOSE` + `KILL` (and `SAVE` + `KILL`) do more disk work than any row
+    # here, and at the default `step` the screen was still blank when it was
+    # scraped; at `step=12.0` both read `OK` on both sides. Two 🟢 SHAPE
+    # CONTROLS said which variable it was: `XRT.DAT` / `XAS.DAT` -- the same
+    # shape with a name sharing NOTHING with a device -- read `<NO OUTPUT>`
+    # too, so it was the SHAPE and never the name. The pair was rebuilt on
+    # shapes MEASURED to fit the default window (`f.killlit`'s proven
+    # `OPEN..AS #1`, and `SAVE` alone as in `f.savelit`).
+    # 🎯 The scorer is what stopped this becoming a reading: both sides
+    # AGREEING on a sentinel is excluded from agreement by construction, so the
+    # rows reported "without a reference" instead of green
+    # ([[apparatus-is-part-of-the-measurement]], the too-short-window entry).
+    #
+    # ⚠️ `d.savedev` HAS NO SECOND VERB, and that is a measured trade, not an
+    # oversight: `SAVE` + `KILL` overruns the window. It discriminates because
+    # what the knife leaves `do_save` looking at was MEASURED, not assumed --
+    # `SAVE".DAT"` prints `load error` (an empty 8.3 base is refused by
+    # `build_83_name`). So a green `d.savedev` says the dispatch left the name
+    # alone; it could not catch a hypothetical corruption that landed on some
+    # OTHER valid name. `d.opendev` keeps its second verb and has no such gap.
+    ("d.opendev",  "dskerr", ['OPEN"CRT.DAT"AS #1', 'CLOSE#1',
+                              'KILL"CRT.DAT"', 'PRINT"[OK]"']),
+    ("d.savedev",  "dskerr", ['SAVE"CAS.DAT"', 'PRINT"[OK]"']),
 ]
 
 # 🔴 ORACLE STRENGTH IS NOT UNIFORM. The `z.fld*` rows are Disk BASIC; a diskless
