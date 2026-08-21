@@ -1266,7 +1266,18 @@ TRACEFLAG       equ     $E226   ; 1 B: TRON state (0 = TROFF)
 ; So if a function-key row is ever added to this console, THIS is the definition
 ; that has to move with it -- which is the entire reason it has a name.
 CON_LASTROW     equ     23      ; 0-based; CSRY is 1-based, so CSRY max = 24
-; --- $E227..$E228 (2 B): FREE. `LOC_RET` lived here and is DELETED ----------
+; --- $E227..$E228 (2 B): FN_RESUME. The cell `LOC_RET` freed -----------------
+; D-FNEXPR, 2026-08-21: a filename argument is a string EXPRESSION, so the
+; statement cursor no longer sits inside the name -- `fname_expr`
+; (basic/files.asm) stages the evaluated name in STRSCR and parks the cursor
+; that follows the expression HERE, for OPEN / KILL / NAME to resume from. Two
+; bytes, one writer, read once per filename operand. That is the whole tenancy.
+; ⚠️ IT IS NOT A SAVED RETURN ADDRESS and must not be treated as one -- unlike
+; the LOC_RET below, nothing `ret`s through it and no stack depth depends on it.
+; The history of the cell is kept because the reason it was FREED is the reason
+; it is SAFE to re-let: nothing parks a frame here any more.
+;
+; `LOC_RET` lived here and is DELETED
 ; (D-LOCPARK, 2026-08-21, docs/spec-basic-locarg.md §3.1.) It held LOCATE's
 ; parked return address so that `loc_next` could run `eval` / `raise_error` at
 ; the STATEMENT HANDLER's own stack depth. The reason it existed was true when it
@@ -1277,8 +1288,12 @@ CON_LASTROW     equ     23      ; 0-based; CSRY is 1-based, so CSRY max = 24
 ; `4d35b6d` (D-CUR-D) made the abort DEPTH-INDEPENDENT -- both arms of
 ; raise_error_hl reset SP from SAVSTK -- so the park was buying a property that
 ; is now free, at 11 bytes of page 1. Deleted; loc_next is an ordinary
-; `call`/`ret`. The two bytes are left named here rather than silently reused,
-; because the next cell that wants them should know what was here.
+; `call`/`ret`. The two bytes were left NAMED rather than silently reused, so
+; that the next cell wanting them would know what had been here -- and that is
+; exactly how they were re-let above, one day later.
+FN_RESUME       equ     $E227   ; D-FNEXPR: text cursor just past a filename
+                                ; EXPRESSION, parked by fname_expr while the
+                                ; staged name is parsed out of STRSCR (2 B)
 ; LOCATE parses all three arguments and applies them only when all three are
 ; valid -- measured (basic/missing.asm ex_locate). Both cells are SEEDED from the
 ; live cursor, so an omitted axis is re-applied unchanged and needs no

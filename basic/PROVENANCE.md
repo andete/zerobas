@@ -2058,7 +2058,7 @@ sequential reader (`fat_io_open` / `fat_io_getbyte`) per the Step-0 verdict
 substrate, so they layer on the loader's engine).
 
 **Statements (basic/files.asm).**
-- `OPEN "name" FOR INPUT AS #n` — `do_open` parses the quoted filename with the
+- `OPEN "name" FOR INPUT AS #n` — `do_open` parses the filename with the
   shared `parse_disk_fcb` (drive prefix + 8.3 into `DISK_FCB_NAME`), the `FOR`
   ($82) + `INPUT` ($85) tokens, the verbatim-ASCII `AS`, an optional `#`, and the
   channel number via `eval`; then `fat_io_open` mounts + finds the file + primes
@@ -2195,7 +2195,7 @@ write-side scratch the read path ignores). It then walks the cluster chain from
 writes `$E5` over the entry's first byte (the Microsoft FAT deleted-entry marker),
 and writes the sector back.
 
-**Statement (`do_kill`, basic/files.asm).** Parses the quoted filename with the
+**Statement (`do_kill`, basic/files.asm).** Parses the filename with the
 shared `parse_disk_fcb` (same `A:`/`B:` prefix + 8.3 handling as the loader verbs),
 guards HL across the CALSLT-heavy `fat_delete`, and continues. Token `KILL = $D4`
 oracle-LOCKED byte-identical to the Philips VG-8020 crunch (`basic_probe_crunch.py`;
@@ -2254,12 +2254,27 @@ field — no FAT change (the clusters and size are untouched). EXTEND over fat.a
 reusing `fat_find`'s recorded entry location (`FWR_DIRSEC`/`FWR_DIROFF`).
 
 **Statement (`do_name`).** Parses the OLD name (`parse_disk_fcb` → `DISK_FCB_NAME`),
-the verbatim-ASCII `AS`, and checks the NEW name's opening quote. It finds the OLD
+the verbatim-ASCII `AS`, then EVALUATES the NEW name. It finds the OLD
 file FIRST (recording the entry location) because building the NEW name reuses
 `DISK_FCB_NAME`; then parses the NEW name, re-reads the directory sector, `LDIR`s
-the new 11-byte 8.3 field over the entry, and writes the sector back. HL (the text
-cursor) is guarded on the stack across every CALSLT (`fat_mount`/`fat_find`/
-`read_sector`/`write_sector`). Token `NAME = $D3` oracle-LOCKED byte-identical to
+the new 11-byte 8.3 field over the entry, and writes the sector back.
+
+⚠️ **TWO CLAIMS THAT STOOD HERE UNTIL 2026-08-21 ARE NOW INVERTED, AND THE
+ANALYSIS IS KEPT BECAUSE IT IS WHY THE NEW SHAPE IS SAFE.** This paragraph used
+to read *"checks the NEW name's opening quote"* and *"HL (the text cursor) is
+guarded on the stack across every CALSLT (`fat_mount`/`fat_find`/`read_sector`/
+`write_sector`)"*. Both were true and both were falsified by D-FNEXPR
+([`../docs/spec-basic-fnexpr.md`](../docs/spec-basic-fnexpr.md)):
+* there is **no opening-quote check** any more — a filename argument is a string
+  EXPRESSION, evaluated by `fname_expr`, of which a literal is one case;
+* HL is **no longer guarded on the stack** across those CALSLTs, because the text
+  cursor lives in `FN_RESUME` ($E227) instead. The guard's whole job was to carry
+  a cursor across a call that clobbers the register file, and a RAM cell does that
+  without a stack discipline three exits had to balance — `nm_fail`, `nm_fail2`
+  and `nm_notfound` each shed the `pop hl` that existed only for it.
+The HL-clobber rule the guard came from is UNCHANGED and still governs everything
+else in this file; what changed is where `do_name` keeps the cursor, not whether
+CALSLT clobbers it. Token `NAME = $D3` oracle-LOCKED byte-identical to
 the Philips VG-8020 crunch (`basic_probe_crunch.py`; MSX2 TH Table 2.20). Note the
 token VALUE ($D3) equals `BASIC_ID` (the cassette tokenised-BASIC marker) but lives
 in a different namespace — separately-named constants, like SAVE/BSAVE.

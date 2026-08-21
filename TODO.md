@@ -2821,19 +2821,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       three mechanisms — so *"all seven verbs diverge identically"* was the
       source reading, not the measurement.
       💰 **SCOUTED, NOT PRICED: ONE MECHANISM AT 11 SITES.** `do_open`
-      ([`basic/files.asm:184`](basic/files.asm:184)) is `cp '"'` / `jr nz,oo_synerr`
-      and then reads the name **straight out of the program text** via
-      `parse_disk_fcb`, whose cursor IS the interpreter's. So these are not
-      seven bugs but one parser reached from **11 `parse_disk_fcb` call sites**
-      across five files (`files.asm` ×6, `save.asm` ×2, `cload.asm` ×2,
-      `bload-body.inc` ×1), each behind its own literal-quote gate. The fix is a
-      SECOND SOURCE for a shared parser plus a staging buffer — a design
-      question, not an edit — and with main page 1 at 22 B on 2026-08-19 it is
-      not opened here.
-      🔴 **`SAVE`/`LOAD`/`BLOAD` ARE NOT MEASURED** and are carried: the residual
-      named them, and they run through `save.asm`/`cload.asm`/`bload-body.inc`,
-      three of the same 11 sites — so they are PREDICTED to behave like the
-      other eight and that prediction is untested.
+      is `cp '"'` / `jr nz,oo_synerr` and then reads the name **straight out of
+      the program text** via `parse_disk_fcb`, whose cursor IS the interpreter's.
+      So these are not seven bugs but one parser reached from **11
+      `parse_disk_fcb` call sites** across five files (`files.asm` ×6,
+      `save.asm` ×2, `cload.asm` ×2, `bload-body.inc` ×1), each behind its own
+      literal-quote gate. The fix is a SECOND SOURCE for a shared parser plus a
+      staging buffer — a design question, not an edit — and with main page 1 at
+      22 B on 2026-08-19 it is not opened here.
+      🔴 **THAT PRICE NAMES THE WRONG UNIT — CORRECTED 2026-08-21 (D-FNEXPR),
+      AND IT WAS WALKED, NOT RE-READ.** The 11 `parse_disk_fcb` sites are real
+      and are **not the change surface.** The sites that refuse an expression
+      are the **QUOTE GATES** — ~13 opening and ~5 closing across five files,
+      with **six** different error faces (`stmt_error`, `load_error`,
+      `oo_synerr`, `bl_load_error`, `df_nofilespec`, and `RUN`'s bare-`RUN`
+      fallthrough at [`basic/cload.asm:185`](basic/cload.asm:185), genuinely
+      ambiguous with `RUN <lineno>`).
+      🎯 **AND `parse_disk_fcb` NEEDS NO SECOND SOURCE.** It walks `(HL)` to a
+      `"` and is already source-agnostic, so pointing it at a staged buffer cost
+      **zero bytes and zero edits** — which is the expensive half of the filed
+      design, and it was never needed.
+      ✅ **THE RAISING HALF IS CLOSED — 2026-08-21 (D-FNEXPR)**,
+      [`docs/spec-basic-fnexpr.md`](docs/spec-basic-fnexpr.md), **+26 B main
+      page 1**. `fname_expr` ([`basic/files.asm`](basic/files.asm)) evaluates the
+      filename with `str_eval` and stages it in `STRSCR`, parking the resume
+      cursor in `FN_RESUME` ($E227 — the cell D-LOCPARK freed one day earlier
+      and deliberately left NAMED). `OPEN` / `KILL` / `NAME` take a string
+      EXPRESSION; **13 deferred rows graduated**, `namspc-acceptance` 62/62 →
+      **75/75**, deferred 23 → 10.
+      🔴 **WHAT IS STILL OPEN IS THE `load error` FAMILY, and it is a DIFFERENT
+      MECHANISM rather than leftover scope:** `SAVE`/`LOAD`/`BLOAD` reach
+      `load_error`, which PRINTS and RETURNS (no ERR code, no line number, no
+      `ON ERROR`, the program runs on), and `FILES` reads a non-quote as *no
+      filespec* and lists the whole directory first. Eight rows stay deferred.
+      💰 Priced by analogy only: the gates are the same shape, but each of the
+      three faces needs its own decision about whether a non-string RAISES.
 
 - [x] ✅ **THE RE-RAISE NAMED THE WRONG LINE WHEN THE TWO CONTEXTS DISAGREED ON
       *MODE* — CLOSED 2026-08-09 by D-LOCARG**
@@ -8843,6 +8865,47 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       explicit "MUST STAY LOWERCASE" comments
       ([`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py) has the
       worked one).
+
+- [ ] 🔴 **`(A$)` IS REFUSED IN EVERY STRING CONTEXT — `str_eval_one` HAS NO
+      PARENTHESISED-SUBEXPRESSION CASE.** Filed 2026-08-21 by D-FNEXPR
+      ([`docs/spec-basic-fnexpr.md`](docs/spec-basic-fnexpr.md) §4), found
+      because it is the ONE row of fourteen that the filename fix did **not**
+      close — and predicted to stay red BEFORE the run, by reading
+      [`basic/strvar.asm`](basic/strvar.asm) rather than by watching it fail.
+      ```
+      B$=(A$)      cf3300 `Q`     zb `Type mismatch`
+      PRINT (A$)   cf3300 `Q`     zb `Type mismatch`
+      B$=A$    🟢  cf3300 `Q`     zb `Q`        <- the unparenthesised twin
+      B=(A)    🟢  cf3300 ` 5 `   zb ` 5 `      <- NUMERIC parens WORK
+      ```
+      🎯 **THE TWO CONTROLS ARE THE FINDING.** Parentheses work for numbers, and
+      the unparenthesised string works, so this is not "parens are unsupported"
+      and not "strings are broken": `str_eval_one` dispatches on `"`, on the
+      string-function tokens and on a letter, and simply has no `(` arm. It is a
+      STRING-EVALUATOR hole, not a filename one, and charging it to the filename
+      gate would price it against the wrong verb.
+      ⚠️ **ITS FACE IS CONTEXT-DEPENDENT** — `Type mismatch` through LET/PRINT
+      (the `(` is taken as a numeric subexpression, which then type-clashes) and
+      `Syntax error` through `fname_expr`'s `jp nc,stmt_error`. So the row cannot
+      be scored on the face either until the evaluator is the subject.
+      ⚠️ Row `f.paren` in [`basic_probe_namspc.py`](probes/basic/basic_probe_namspc.py)
+      is DEFERRED with exactly this reason; it is the denominator, already built.
+      💰 Not priced. ⚠️ Main page 1 read **14 B** on 2026-08-21 after D-FNEXPR
+      (`make basic-reloc`), so this needs a carve like everything else.
+
+- [ ] ⚠️ **THE FACE FOR A NON-STRING FILENAME (`OPEN 5 AS #1`) IS UNMEASURED.**
+      Filed 2026-08-21 by D-FNEXPR §3.3, which deliberately PRESERVED today's
+      answer rather than guess at a better one. zerobas says `Syntax error`,
+      before the change (a non-quote failed `cp '"'`) and after it (`str_eval`
+      returns CF clear on a numeric operand and `fname_expr` jumps to the same
+      `stmt_error`). **No row drives it on either reference.**
+      🎯 The reason to doubt it is inside this tree: `ex_play`
+      ([`basic/play.asm`](basic/play.asm)) answers `Type mismatch` for exactly
+      this shape — a numeric expression where a string operand is required — and
+      that face was measured against the reference. If `OPEN` agrees with `PLAY`
+      on the reference, the fix is one instruction at one site.
+      💰 A row on each of `OPEN`/`KILL`/`NAME`, then 0–3 B. Cheap, and it is a
+      MEASUREMENT before it is a change.
 
 - [x] ✅ **`.` — THE CURRENT-LINE PSEUDO-LINE-NUMBER — LANDED 2026-08-02
       (D-DOTLINE). Four pins RETIRED, none added; `lnblank-say-acceptance`

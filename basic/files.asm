@@ -231,13 +231,18 @@ ex_open:
                 jp      do_open
 do_open:
                 call    skip_spaces
-                cp      '"'
-                jr      nz,oo_synerr        ; filename string required
-                inc     hl                  ; HL -> first filename char
+                call    fname_expr          ; D-FNEXPR: the filename is a string
+                                            ; EXPRESSION; HL -> the staged,
+                                            ; '"'-terminated copy in STRSCR
                 ; --- device-name dispatch: "LPT:"/"CRT:" -> character-device
                 ; channel (no disk file); anything else -> disk filename. Peeked
                 ; case-insensitively; HL is restored on a miss (dev_cmp). CAS:/GRP:/
                 ; COM: OPEN are not in this tier (an unknown xxx: stays a disk name).
+                ; ⚠️ D-FNEXPR: THE DISPATCH NOW RUNS ON THE STAGED COPY, NOT ON
+                ; PROGRAM TEXT, so `OPEN A$ AS #1` with A$="CAS:X" reaches the
+                ; tape arm exactly as the literal does. That is a behaviour
+                ; claim and it is MEASURED (rows d.opendev/f.var, and the
+                ; cassette batteries), not assumed.
                 ld      de,dev_lpt
                 call    dev_cmp
                 jp      z,oo_dev_lpt
@@ -248,7 +253,8 @@ do_open:
                 call    dev_cmp
                 jp      z,oo_dev_cas
                 call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
-                inc     hl                  ; past the closing '"'
+                ld      hl,(FN_RESUME)      ; resume past the EXPRESSION, not past
+                                            ; a quote in the staging buffer
                 call    skip_spaces
                 cp      FOR_TOKEN           ; FOR
                 jp      nz,oo_random        ; no FOR clause -> RANDOM mode (OPEN..AS #n)
@@ -447,6 +453,9 @@ oodv_fn:
                 inc     hl
                 cp      '"'
                 jr      nz,oodv_fn          ; consume through the closing quote
+                ld      hl,(FN_RESUME)      ; D-FNEXPR: that quote was the one
+                                            ; fname_expr appended to the staged
+                                            ; copy -- resume in the program text
                 ; require: FOR OUTPUT AS [#]n , then end-of-statement
                 call    skip_spaces
                 cp      FOR_TOKEN
@@ -503,10 +512,11 @@ oodv_ok:
 ; precedent for a files.asm caller.
 oo_dev_cas:
                 call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
-                ld      a,(hl)
-                cp      '"'
-                jp      nz,oo_fail_syn
-                inc     hl                  ; past the closing '"'
+                ; D-FNEXPR: cas_capture_name scanned the STAGED copy, whose
+                ; closing '"' fname_expr wrote itself -- so the quote can no
+                ; longer be missing and the check that used to guard it is gone
+                ; with the 4 bytes it cost. Resume in the program text.
+                ld      hl,(FN_RESUME)
                 ; require FOR INPUT | FOR OUTPUT
                 call    skip_spaces
                 cp      FOR_TOKEN
@@ -626,6 +636,65 @@ dcmp_miss:
 
 dev_lpt:        db      "LPT:",0
 dev_crt:        db      "CRT:",0
+
+; --- fname_expr: a filename ARGUMENT is a string EXPRESSION ------------------
+; D-FNEXPR (docs/spec-basic-fnexpr.md). Wherever the reference accepts a
+; filename it accepts any string expression -- `OPEN A$ AS #1`,
+; `OPEN A$+".DAT"`, `OPEN(A$)` -- and this tree accepted a LITERAL and nothing
+; else, at every quote gate. Measured across seven verbs by D-FNARG/D-FNARG2:
+; eight divergent rows against four green controls.
+;
+; 🎯 THE CHANGE SURFACE IS THE QUOTE GATES, NOT THE ELEVEN `parse_disk_fcb`
+; CALL SITES THE RESIDUAL NAMED. `parse_disk_fcb` walks (HL) to a '"' and is
+; already source-agnostic, so it needs NO second source and does not change --
+; which matters, because basic/pdfcb-body.inc is included in three places
+; byte-identically, one of them the sub-ROM tenant.
+; 🎯 AND A STRING LITERAL IS ITSELF A STRING EXPRESSION, so `str_eval` serves
+; both and there is no dual path: `OPEN"X.DAT"` and `OPEN A$` take one route.
+;
+;   in:  HL -> the filename argument (cursor as skip_spaces left it)
+;   out: HL -> a staged, '"'-terminated copy of the name at STRSCR+1;
+;        (FN_RESUME) = the text cursor just past the expression.
+;        Does NOT return if the operand is not a string -> stmt_error.
+;   Clobbers A, BC, DE.
+;
+; ⚠️ THE NON-STRING FACE IS DELIBERATELY UNCHANGED AND IS A FILED QUESTION.
+; `OPEN 5 AS #1` was `Syntax error` because a non-quote failed `cp '"'`; it is
+; `Syntax error` still, because `str_eval` returns CF clear on a numeric operand
+; and this jumps to the same `stmt_error` that `oo_synerr` trampolines to. The
+; reference may well answer `Type mismatch` (PLAY's own string operand does),
+; but that is UNMEASURED -- so today's face is preserved rather than guessed at.
+;
+; ⚠️ STRSCR SECOND-TENANT ARGUMENT, stated because STRSCR is a single shared
+; scratch (the MIDS_DEST-style claim). Its other tenant is `read_into_strscr`
+; (INPUT# / LINE INPUT#, below in this file): a filename parse happens at a
+; STATEMENT HEAD, `read_into_strscr` runs INSIDE an already-open INPUT#, so the
+; two can never nest. Every caller here consumes the staged copy with
+; `parse_disk_fcb` -- a pure walk into DISK_FCB_NAME -- before it touches the
+; drive; `do_name`'s second operand is the one exception and carries its own
+; argument at the site.
+; ⚠️ AND THE SELF-OVERLAP IS BENIGN, not unconsidered: `OPEN INPUT$(2,#1) AS #1`
+; has str_eval fill STRSCR itself, so RVDESC.ptr IS STRSCR+1 and the `ldir`
+; below runs with HL == DE, copying each byte onto itself. A no-op, then the
+; terminator is appended past the end as usual.
+fname_expr:
+                call    str_eval            ; STRPTR -> [len][ptr]; HL past the expr
+                jp      nc,stmt_error       ; not a string operand -> Syntax error
+                ld      (FN_RESUME),hl      ; where the statement resumes
+                ld      hl,(STRPTR)
+                ld      a,(hl)              ; A = length
+                call    pu_deref_body       ; HL = body address (A preserved)
+                ld      de,STRSCR+1
+                ld      c,a
+                ld      b,0
+                or      a
+                jr      z,fnx_term          ; empty name: BC=0 would ldir 65536
+                ldir
+fnx_term:
+                ld      a,'"'
+                ld      (de),a              ; parse_disk_fcb terminates on '"'
+                ld      hl,STRSCR+1
+                ret
 
 ; oo_parse_reclen — parse an optional "LEN = expr" record-size clause at (HL).
 ; LEN is the $FF $92 function token; '=' is EQ_TOKEN. Absent -> DE = 256 (the
@@ -1326,11 +1395,9 @@ ex_kill:
                 jp      do_kill
 do_kill:
                 call    skip_spaces
-                cp      '"'
-                jp      nz,stmt_error       ; filename string required
-                inc     hl                  ; HL -> first filename char
+                call    fname_expr          ; D-FNEXPR: a string EXPRESSION
                 call    parse_disk_fcb      ; build DISK_FCB_NAME (8.3 wildcard pattern)
-                inc     hl                  ; past the closing '"'
+                ld      hl,(FN_RESUME)      ; resume past the expression
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error
@@ -1393,11 +1460,9 @@ ex_name:
                 jp      do_name
 do_name:
                 call    skip_spaces
-                cp      '"'
-                jp      nz,stmt_error       ; old filename string required
-                inc     hl                  ; HL -> first char of the old name
-                call    parse_disk_fcb      ; old -> DISK_FCB_NAME; HL -> closing '"'
-                inc     hl                  ; past the closing '"'
+                call    fname_expr          ; D-FNEXPR: OLD name, a string EXPRESSION
+                call    parse_disk_fcb      ; old -> DISK_FCB_NAME
+                ld      hl,(FN_RESUME)      ; resume past the expression
                 ; "AS" (verbatim ASCII)
                 call    skip_spaces
                 call    upcase
@@ -1410,25 +1475,36 @@ do_name:
                 jp      nz,stmt_error
                 inc     hl
                 call    skip_spaces
-                cp      '"'
-                jp      nz,stmt_error       ; new filename string required
+                ; D-FNEXPR: the NEW name is EVALUATED here -- before any disk
+                ; primitive runs -- and only PARSED after the old file is found.
+                ; Evaluating early is what preserves the error ORDER the literal
+                ; gate had: `NAME"x.dat"AS 5` is still `Syntax error`, not
+                ; `File not found`. DISK_FCB_NAME still holds the OLD name; only
+                ; STRSCR is written here.
+                call    fname_expr          ; new -> STRSCR, FN_RESUME = cursor
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error
-                ; find the OLD file first (records FWR_DIRSEC/FWR_DIROFF); HL still
-                ; points at the new name's opening '"', so guard it across CALSLT.
-                push    hl
+                ; find the OLD file first (records FWR_DIRSEC/FWR_DIROFF). The
+                ; text cursor no longer needs guarding across CALSLT -- it lives
+                ; in FN_RESUME, which is why the three exits below lost a `pop`.
+                ; ⚠️ THE STAGED NEW NAME MUST SURVIVE fat_mount + fat_find, and
+                ; that is the one claim here that is NOT "consumed immediately".
+                ; It holds by ADDRESS, not by luck: the only writer into STRSCR's
+                ; span during a disk primitive is DSKIO's FDC work area
+                ; $E29A..$E29F (sysvars.inc's cross-component overlap invariant),
+                ; which is STRSCR+45..+50 -- and a name long enough to reach it
+                ; is 45+ characters, refused by build_83_name's 8.3 rule. The
+                ; bytes that can ever be read back are the first 14 at most, so
+                ; there are 30 bytes of margin.
                 call    fat_mount
                 jr      c,nm_fail
                 ld      hl,DISK_FCB_NAME
                 call    fat_find            ; old located; sets the entry location
                 jr      c,nm_notfound       ; old not found -> ERR 53 (R-DK2)
-                pop     hl                  ; HL -> new name's '"'
-                inc     hl                  ; -> first char of the new name
-                call    parse_disk_fcb      ; new -> DISK_FCB_NAME; HL -> closing '"'
-                inc     hl
+                ld      hl,STRSCR+1         ; the staged NEW name
+                call    parse_disk_fcb      ; new -> DISK_FCB_NAME
                 ; read the dir sector, overwrite the 11-byte name, write it back.
-                push    hl                  ; guard text cursor across CALSLT
                 ; repack: the read+overwrite+write runs in the dirverb_tenant
                 ; (sub page 1). FWR_DIRSEC/FWR_DIROFF (the located OLD entry, set
                 ; by the resident fat_mount+fat_find above) and DISK_FCB_NAME (the
@@ -1441,7 +1517,7 @@ do_name:
                 ld      a,(DISKOP_STATUS)
                 or      a
                 jr      nz,nm_fail2         ; tenant I/O error
-                pop     hl                  ; restore text cursor
+                ld      hl,(FN_RESUME)      ; resume past the NEW name expression
                 jp      exec_stmt
 ; D-DKNAME (docs/spec-basic-dkname.md), R-DK2: the CF-3300 answers `File not
 ; found` to a NAME whose OLD file is missing, exactly as it does to a KILL that
@@ -1464,16 +1540,13 @@ do_name:
 ; primitive-layer change touching every caller in the tree. tnt_files is the
 ; sibling that HAS separated all three, and NAME is not it. Spec §2.2.
 nm_notfound:
-                pop     hl                  ; balance the guarded cursor
                 jp      df_notfound         ; ERR 53 `File not found`
 ; The two remaining exits keep load_error, and stay two labels because they name
 ; two different dispositions: nm_fail is the mount/no-disk failure above, nm_fail2
 ; the stamp tenant's I-O error (or an absent sub-ROM) below.
 nm_fail:
-                pop     hl                  ; balance the guarded cursor
                 jp      load_error
 nm_fail2:
-                pop     hl                  ; balance the second guarded cursor
                 jp      load_error
 
 ; --- MAXFILES = n — size the multi-channel table ---------------------------

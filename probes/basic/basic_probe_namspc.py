@@ -276,26 +276,46 @@ CASES = [
     # and zerobas takes a LITERAL only. If any `*lit` row diverges the fixture is
     # broken and no other row here means anything.
     #
+    # 🔴 THESE ROWS ARE `dskerr`/`errface`, NOT `dsk`/`bracket`, AND A KNIFE IS
+    # WHAT SAID SO. They were `bracket` rows until 2026-08-21; knife K-FE1
+    # (D-FNEXPR -- destroy the terminator fname_expr appends to the staged name)
+    # reddened ONE row of fifteen, and the screen showed why:
+    #     ZBRUN
+    #     load error
+    #     [OK]
+    # `parse_disk_fcb`'s reject reaches `bl_load_error`, which PRINTS and
+    # RETURNS -- so the program runs on and prints its `[OK]` UNDERNEATH the
+    # message, and `bracket()` looks for `[` BEFORE it looks for an error. All
+    # thirteen scored GREEN while the machine was refusing every filename
+    # ([[readout-blind-to-its-own-subject]]).
+    # 🎯 D-FNARG2 ALREADY FOUND THIS CLASS AND FIXED IT FOR THE OTHER FOUR
+    # VERBS -- `errface()` exists because of it. Fixing SAVE/LOAD/BLOAD/FILES
+    # and leaving OPEN/KILL/NAME on `bracket` is guarding one instance of a
+    # class and calling the class guarded
+    # ([[a-fix-falsifies-the-justification-beside-it]]). The healthy readings are
+    # UNCHANGED by the switch -- `errface` returns the `[...]` span when there is
+    # no error -- which is what makes this a coverage fix and not a rescoring.
+    #
     # 🔴 THE THREE `FOR` FORMS ARE NOT DECORATION. `OPEN A$ AS #1` and
     # `OPEN A$ FOR INPUT AS #1` reach the name through DIFFERENT parse paths in
     # do_open (the mode clause sits between them), so a fix sited at one is not
     # automatically a fix at the other -- and one row cannot say which
     # ([[one-row-cannot-separate-two-rules]]).
-    ("f.lit",     "dsk", ['OPEN"FA1.DAT"AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
-    ("f.var",     "dsk", ['A$="FA2.DAT"', 'OPEN A$ AS #1', 'CLOSE#1',
+    ("f.lit",     "dskerr", ['OPEN"FA1.DAT"AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
+    ("f.var",     "dskerr", ['A$="FA2.DAT"', 'OPEN A$ AS #1', 'CLOSE#1',
                           'PRINT"[OK]"']),
-    ("f.expr",    "dsk", ['A$="FA3"', 'OPEN A$+".DAT" AS #1', 'CLOSE#1',
+    ("f.expr",    "dskerr", ['A$="FA3"', 'OPEN A$+".DAT" AS #1', 'CLOSE#1',
                           'PRINT"[OK]"']),
-    ("f.paren",   "dsk", ['A$="FA4.DAT"', 'OPEN(A$)AS #1', 'CLOSE#1',
+    ("f.paren",   "dskerr", ['A$="FA4.DAT"', 'OPEN(A$)AS #1', 'CLOSE#1',
                           'PRINT"[OK]"']),
-    ("f.inlit",   "dsk", ['OPEN"FA5.DAT"AS #1', 'CLOSE#1',
+    ("f.inlit",   "dskerr", ['OPEN"FA5.DAT"AS #1', 'CLOSE#1',
                           'OPEN"FA5.DAT"FOR INPUT AS #1', 'CLOSE#1',
                           'PRINT"[OK]"']),
-    ("f.invar",   "dsk", ['OPEN"FA6.DAT"AS #1', 'CLOSE#1', 'A$="FA6.DAT"',
+    ("f.invar",   "dskerr", ['OPEN"FA6.DAT"AS #1', 'CLOSE#1', 'A$="FA6.DAT"',
                           'OPEN A$ FOR INPUT AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
-    ("f.outvar",  "dsk", ['A$="FA7.DAT"', 'OPEN A$ FOR OUTPUT AS #1', 'CLOSE#1',
+    ("f.outvar",  "dskerr", ['A$="FA7.DAT"', 'OPEN A$ FOR OUTPUT AS #1', 'CLOSE#1',
                           'PRINT"[OK]"']),
-    ("f.appvar",  "dsk", ['A$="FA8.DAT"', 'OPEN A$ FOR APPEND AS #1', 'CLOSE#1',
+    ("f.appvar",  "dskerr", ['A$="FA8.DAT"', 'OPEN A$ FOR APPEND AS #1', 'CLOSE#1',
                           'PRINT"[OK]"']),
     # 🔴 `f.appvar` READ `<NO OUTPUT>` ON THE CF-3300 -- NOT A VALUE, A READOUT
     # ANOMALY, and it has TWO candidate causes: the VARIABLE filename (this
@@ -308,17 +328,17 @@ CASES = [
     # PREDICT: if the mode is the cause, f.applit also reads `<NO OUTPUT>` and
     # f.appvarx reads cf3300 ` OK ` / zb `Syntax error` like every other variable
     # row. If the ARGUMENT is the cause, the opposite.
-    ("f.applit",  "dsk", ['OPEN"FB1.DAT"FOR APPEND AS #1', 'CLOSE#1',
+    ("f.applit",  "dskerr", ['OPEN"FB1.DAT"FOR APPEND AS #1', 'CLOSE#1',
                           'PRINT"[OK]"']),
-    ("f.appvarx", "dsk", ['OPEN"FB2.DAT"AS #1', 'CLOSE#1', 'A$="FB2.DAT"',
+    ("f.appvarx", "dskerr", ['OPEN"FB2.DAT"AS #1', 'CLOSE#1', 'A$="FB2.DAT"',
                           'OPEN A$ FOR APPEND AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
-    ("f.killlit", "dsk", ['OPEN"FA9.DAT"AS #1', 'CLOSE#1', 'KILL"FA9.DAT"',
+    ("f.killlit", "dskerr", ['OPEN"FA9.DAT"AS #1', 'CLOSE#1', 'KILL"FA9.DAT"',
                           'PRINT"[OK]"']),
-    ("f.killvar", "dsk", ['OPEN"FAA.DAT"AS #1', 'CLOSE#1', 'A$="FAA.DAT"',
+    ("f.killvar", "dskerr", ['OPEN"FAA.DAT"AS #1', 'CLOSE#1', 'A$="FAA.DAT"',
                           'KILL A$', 'PRINT"[OK]"']),
-    ("f.namelit", "dsk", ['OPEN"FAB.DAT"AS #1', 'CLOSE#1',
+    ("f.namelit", "dskerr", ['OPEN"FAB.DAT"AS #1', 'CLOSE#1',
                           'NAME"FAB.DAT"AS"FAC.DAT"', 'PRINT"[OK]"']),
-    ("f.namevar", "dsk", ['OPEN"FAD.DAT"AS #1', 'CLOSE#1', 'A$="FAD.DAT"',
+    ("f.namevar", "dskerr", ['OPEN"FAD.DAT"AS #1', 'CLOSE#1', 'A$="FAD.DAT"',
                           'B$="FAE.DAT"', 'NAME A$ AS B$', 'PRINT"[OK]"']),
     # === D-FNARG2: the FOUR VERBS THE RULE CLAIMED AND NEVER MEASURED ==========
     # D-FNARG's §4 says the divergence is "one mechanism reached from 11 call
@@ -541,15 +561,44 @@ DEFERRED: dict[str, str] = {
     # D-FNARG denominator rows: measured, printed, NEVER scored until the rule is
     # settled and a fix is priced. A deferred row that started AGREEING would
     # itself be a finding.
-    lab: "DEFERRED — D-FNARG filename-argument denominator (TODO: `OPEN A$ AS #1`)"
-    for lab in ("f.lit", "f.var", "f.expr", "f.paren", "f.inlit", "f.invar",
-                "f.outvar", "f.appvar", "f.applit", "f.appvarx", "f.killlit",
-                "f.killvar", "f.namelit", "f.namevar",
-                # D-FNARG2, 2026-08-20: the four verbs the rule claimed and had
-                # never driven.
-                "f.savelit", "f.savevar", "f.loadlit", "f.loadvar",
+    lab: "DEFERRED — D-FNARG filename-argument denominator, `load error` half "
+         "(SAVE/LOAD/BLOAD/FILES: a PRINTED non-raising face, a different "
+         "mechanism — D-FNEXPR closed the RAISING half only)"
+    # ✅ THIRTEEN ROWS GRADUATED 2026-08-21 (D-FNEXPR) and are ORDINARY SCORED
+    # ROWS above: `f.lit`, `f.var`, `f.expr`, `f.inlit`, `f.invar`, `f.outvar`,
+    # `f.appvar`, `f.applit`, `f.appvarx`, `f.killlit`, `f.killvar`,
+    # `f.namelit`, `f.namevar`. `fname_expr` (basic/files.asm) evaluates the
+    # filename with `str_eval`, so OPEN / KILL / NAME take a string EXPRESSION
+    # exactly as the reference does. The deferral was honoured by fixing the
+    # rows, not by rescoring them
+    # ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
+    # ⚠️ WHAT STAYS HERE IS THE `load error` FAMILY, AND IT IS A DIFFERENT
+    # MECHANISM, not leftover scope: SAVE/LOAD/BLOAD reach `load_error`, which
+    # PRINTS and RETURNS (no ERR code, no line, no ON ERROR, program runs on),
+    # and FILES reads a non-quote as *no filespec* and lists the directory
+    # first. One rule, three mechanisms -- §4.2 of the D-FNARG2 doc.
+    for lab in ("f.savelit", "f.savevar", "f.loadlit", "f.loadvar",
                 "f.bloadlit", "f.bloadvar", "f.fileslit", "f.filesvar")
 }
+
+# 🔴 `f.paren` IS NOT A FILENAME ROW AND NEVER WAS -- MEASURED 2026-08-21, after
+# `fname_expr` closed the other thirteen and left this one red. `(A$)` is
+# refused in EVERY string context, not just a filename one, and two controls
+# say so on the same apparatus:
+#     B$=(A$)      cf3300 `Q`     zb `Type mismatch`
+#     PRINT (A$)   cf3300 `Q`     zb `Type mismatch`
+#     B$=A$    🟢  cf3300 `Q`     zb `Q`          <- the unparenthesised twin
+#     B=(A)    🟢  cf3300 ` 5 `   zb ` 5 `        <- NUMERIC parens WORK
+# 🎯 So the gap is `str_eval_one` (basic/strvar.asm), which dispatches on `"`,
+# on the string-function tokens and on a letter, and has no parenthesised-
+# subexpression case at all. Charging it to the filename gate would price a
+# string-evaluator hole against the wrong verb. Filed as its own residual.
+# ⚠️ Its FACE differs by context -- `Type mismatch` in LET/PRINT, `Syntax error`
+# through `fname_expr`'s `jp nc,stmt_error` -- so the row cannot be scored on
+# the face either until the evaluator is the one under test.
+DEFERRED["f.paren"] = ("DEFERRED — NOT the filename rule: `(A$)` is refused in "
+                       "every string context (str_eval_one has no paren case); "
+                       "numeric `(A)` works. Filed separately.")
 
 # D-FILESIDE, 2026-08-21. `f.filesvarl` is a MEASURED, FILED divergence -- the
 # machine lists a directory the reference never lists -- so it is PRINTED and
