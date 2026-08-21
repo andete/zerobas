@@ -2084,11 +2084,16 @@ tgtspc-acceptance: repack-machine
 # many. ⚠️ z.fldvar / z.fldstr are DEFERRED -- `ex_field` never type-checks its
 # width, which z.fldstr measures with NO SPACE IN IT AT ALL.
 #   make namspc-characterize ONLY=r.name SIDES=zb      # scope rows / sides
-namspc-characterize: repack-machine
+namspc-characterize: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_namspc.py \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
-namspc-acceptance: repack-machine
+# ⚠️ $(DISK_TEST_DSK) IS A REAL DEPENDENCY AND WAS MISSING UNTIL D-FILESIDE
+# (2026-08-21). Every `f.*` row of kind `dsk`/`dskerr`/`dsklist` copies that image
+# per case; without it they would read `<NO OUTPUT>` on both disk sides and AGREE.
+# The gap predates the listing rows -- it is the fourteen D-FNARG rows' dependency
+# too -- and is fixed here because this slice is the one that noticed.
+namspc-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_namspc.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 

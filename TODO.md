@@ -3223,10 +3223,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (`jr nz,df_nofilespec`), lists everything, and only then derails on the
       unconsumed `A$`. So `f.filesvar` scores as a match for the argument rule
       while the machine has already done something the reference never does.
-      ⚠️ **NO ROW SCORES THE SIDE EFFECT** — the readout takes the error and the
-      listing above it is invisible to it. A row that pinned the printed lines
-      would; that is the fix to the APPARATUS, and it comes before the fix to
-      the ROM. 💰 Not priced.
+      ✅ **THE APPARATUS HALF IS DONE — 2026-08-21 (D-FILESIDE), 0 ROM BYTES.**
+      Three rows and a third readout (`listface`) in
+      [`probes/basic/basic_probe_namspc.py`](probes/basic/basic_probe_namspc.py):
+      `f.filesbare` 🟢 (bare `FILES`) and `f.fileslitl` 🟢 (`FILES"FC*.*"`) are
+      GATED with LITERAL wants, and `f.filesvarl` is PRINTED and never gated —
+      cf3300 `0 entries + <File not found>`, zerobas **`5 entries +
+      <Syntax error>`**. `namspc-acceptance` **58/58 → 60/60**, deferred 22 → 23.
+      🔴 **A PROBE-SIDE BLINDNESS CANNOT BE CAUGHT BY A DIFFERENTIAL** — both
+      columns run the same counter, so a counter that matches nothing reads
+      `0 entries` on both sides and the row AGREES. That is why the two controls
+      are pinned to literals rather than to cross-side agreement: a blind counter
+      fails a positive control on a REFERENCE, which this probe reports as an
+      instrument fault (exit 2), not as a regression.
+      ➡️ **WHAT IS STILL OPEN IS THE ROM QUESTION, AND IT IS D-FNARG'S.** Whether
+      `FILES A$` should refuse the non-quote is the argument-shape design
+      question — unpriced, eleven `parse_disk_fcb` sites — and the main-side wall
+      measured 2 B on 2026-08-21. 💰 Not priced. What changed is that a row can
+      now tell a fix from a no-op.
 
 **Own-design hazards carried out of closed slices**
 

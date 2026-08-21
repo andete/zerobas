@@ -81,6 +81,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -372,6 +373,27 @@ CASES = [
     ("f.bloadvar", "dskerr", ['A$="FCY.BIN"', 'BLOAD A$', 'PRINT"[OK]"']),
     ("f.fileslit", "dskerr", ['FILES"FC*.*"', 'PRINT"[OK]"']),
     ("f.filesvar", "dskerr", ['A$="FC*.*"', 'FILES A$', 'PRINT"[OK]"']),
+
+    # === D-FILESIDE: the row that scores WHAT WAS PRINTED BEFORE THE ERROR ===
+    # 🔴 `f.filesvar` AGREES WITH D-FNARG'S RULE BY COINCIDENCE OF FACE.
+    # Measured 2026-08-20 (§4.2 above): `FILES A$` does not refuse the non-quote
+    # here at all -- basic/files.asm reads it as NO FILESPEC (`jr nz,
+    # df_nofilespec`), LISTS THE WHOLE DIRECTORY, and only then derails on the
+    # unconsumed `A$`. The CF-3300 lists nothing and raises `File not found`.
+    #
+    # 🎯 AND NO ROW SCORED THAT. `errface()` takes the last message; the five
+    # directory lines above it are structurally invisible to it, so a machine
+    # that refused `FILES A$` cleanly at the PARSE would read exactly the same
+    # `<Syntax error>`. The apparatus could not tell a fix from a no-op, which
+    # is why this row lands BEFORE any decision about the ROM.
+    #
+    # The two 🟢 controls are what make the third row evidence: without
+    # `f.filesbare` a count of 0 could mean "the machine printed nothing" or "the
+    # counter is blind", and those are the two readings this project keeps
+    # confusing ([[spokeline-slice]], [[gateblind-slice]]).
+    ("f.filesbare", "dsklist", ['FILES', 'PRINT"[OK]"']),
+    ("f.fileslitl", "dsklist", ['FILES"FC*.*"', 'PRINT"[OK]"']),
+    ("f.filesvarl", "dsklist", ['A$="FC*.*"', 'FILES A$', 'PRINT"[OK]"']),
 ]
 
 # 🔴 ORACLE STRENGTH IS NOT UNIFORM. The `z.fld*` rows are Disk BASIC; a diskless
@@ -388,11 +410,31 @@ TOK_CONTROLS = ("t.ctl", "t.dctl", "t.digctl", "t.kwctl", "t.andctl",
                 "t.absctl")
 CONTROLS = TOK_CONTROLS + (
     "c.let", "r.digctl", "r.strctl", "r.pctctl", "r.bangctl", "r.hashctl",
-    "s.ifctl", "s.forctl", "s.dimctl", "s.readctl", "s.swapctl", "z.fldctl")
+    "s.ifctl", "s.forctl", "s.dimctl", "s.readctl", "s.swapctl", "z.fldctl",
+    # D-FILESIDE: LITERAL wants, and the literal is the whole point -- see the
+    # note above CONTROL_WANT.
+    "f.filesbare", "f.fileslitl")
 CONTROL_WANT = {"c.let": " 7 ", "r.digctl": " 7 ", "r.strctl": "HI",
                 "r.pctctl": " 7 ", "r.bangctl": " 7 ", "r.hashctl": " 7 ",
                 "s.ifctl": "OK", "s.forctl": "OK", "s.dimctl": " 7 ",
-                "s.readctl": " 7 ", "s.swapctl": " 9  7 ", "z.fldctl": "OK"}
+                "s.readctl": " 7 ", "s.swapctl": " 9  7 ", "z.fldctl": "OK",
+                # 🔴 THESE TWO ARE NOT PINNED FOR TIDINESS. `listface` runs on
+                # BOTH sides, so a counter that matches nothing reads
+                # `0 entries` in both columns and the row AGREES -- green while
+                # measuring nothing. Cross-side agreement is the wrong
+                # instrument for a readout both sides share. A literal want
+                # turns that into a POSITIVE CONTROL FAILING ON A REFERENCE,
+                # which this probe already reports as an instrument fault
+                # (exit 2, nothing scored) rather than as a regression. Knife
+                # K-FS1 is the cut that proves it.
+                # ⚠️ FIXTURE-COUPLED ON PURPOSE: `5 entries` is the file count
+                # of disk/test720.dsk (TEST.BIN, HI.TXT, PROG.BIN, PROG.BAS,
+                # PROG2.BAS). Change that image and this goes red on a
+                # REFERENCE, which is the correct loud failure -- the rows
+                # below it are measuring a directory listing and there is no
+                # honest way to read one without knowing what is in it.
+                "f.filesbare": "5 entries + OK",
+                "f.fileslitl": "0 entries + <File not found>"}
 NEGATIVE = ("z.kw", "z.miss")
 LABEL_W = 10
 
@@ -451,6 +493,15 @@ DEFERRED: dict[str, str] = {
                 "f.savelit", "f.savevar", "f.loadlit", "f.loadvar",
                 "f.bloadlit", "f.bloadvar", "f.fileslit", "f.filesvar")
 }
+
+# D-FILESIDE, 2026-08-21. `f.filesvarl` is a MEASURED, FILED divergence -- the
+# machine lists a directory the reference never lists -- so it is PRINTED and
+# NEVER GATED: gating a known divergence turns a battery red forever instead of
+# measuring anything. Its two controls ARE gated, which is what makes it a
+# reading rather than an anecdote.
+DEFERRED["f.filesvarl"] = ("DEFERRED — D-FILESIDE: `FILES A$` lists the whole "
+                           "directory BEFORE it errors (the ROM question is "
+                           "D-FNARG's, unpriced)")
 
 
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>", "<NOT STORED>",
@@ -524,6 +575,45 @@ def errface(raw: str | None) -> str:
     return "<NO OUTPUT>"
 
 
+# --- listface: the DIRECTORY LINES, then the error (D-FILESIDE) -------------
+# A THIRD readout rather than a change to either of the two above, for the same
+# reason `errface()` was a third rather than a reordering of `bracket()`: 58
+# scored rows depend on `bracket()`'s "value first" order and 8 more on
+# `errface()`'s "error first", and none of them is under test here.
+#
+# ⚠️ AN 8.3 ENTRY, NOT A WORD. MSX `FILES` prints `NAME    .EXT` -- the name
+# space-padded to 8, then `.`, then the extension padded to 3 -- so the pattern
+# below matches a DIRECTORY ENTRY and not, say, the `A$="FC*.*"` in the program
+# text (which is above the `RUN` anchor and never in this window anyway).
+DIRENT = re.compile(r"[A-Z0-9$_@!&#%~(){}\-][A-Z0-9$_@!&#%~(){}\- ]{7}"
+                    r"\.[A-Z0-9$_@!&#%~(){}\- ]{3}")
+
+
+def listface(raw: str | None) -> str:
+    """How many directory entries the RUN printed, AND what ended it.
+
+    Both halves in one string on purpose: `0 entries` alone is satisfied by a
+    machine that cannot list a directory at all, and `<Syntax error>` alone is
+    exactly the reading that hid this divergence."""
+    if raw is None:
+        return "<NO CAPTURE>"
+    tail = omsx_repl.screen_tail(raw, "RUN")
+    if tail is None:
+        return ("<RUN SCROLLED OFF>" if str(raw).strip() else "<NO CAPTURE>")
+    txt = " ".join(str(tail).split("\n"))
+    n = len(DIRENT.findall(txt))
+    face = "<none>"
+    for e in ERRORS:
+        if e in txt:
+            face = f"<{e}>"
+            break
+    else:
+        i, j = txt.find("["), txt.find("]", txt.find("[") + 1)
+        if i >= 0 and j > i:
+            face = txt[i + 1:j]
+    return f"{n} entries + {face}"
+
+
 def tokens(raw: str | None) -> str:
     """The stored line's BODY bytes: everything after link(2) + lineno(2), up to
     and including the 0x00 terminator. `<NOT STORED>` when the line never made
@@ -542,7 +632,7 @@ def run_side(side: str, only: list[str]) -> dict:
     for label, kind, lines in CASES:
         if only and label not in only:
             continue
-        if kind in ("dsk", "dskerr") and side in NO_DISK_SIDES:
+        if kind in ("dsk", "dskerr", "dsklist") and side in NO_DISK_SIDES:
             # NOT a reading. A diskless machine cannot express the question, and
             # recording its `Syntax error` as an answer would manufacture an
             # agreement with zerobas out of an absent disk controller.
@@ -566,7 +656,8 @@ def run_side(side: str, only: list[str]) -> dict:
             cfg["machine"],
             [("direct", list(cfg["reset"]) + body + ["RUN"])],
             batch=False, boot=cfg["boot"], step=cfg["step"], **kw)
-        out[label] = (errface if kind == "dskerr" else bracket)(caps[0])
+        out[label] = {"dskerr": errface,
+                      "dsklist": listface}.get(kind, bracket)(caps[0])
     return out
 
 
