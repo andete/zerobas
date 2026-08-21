@@ -92,18 +92,106 @@ CASES = [
      ["HI"]),
     # --- ...and NOT DIMmed: separates a PARSE refusal from a missing array ---
     ("i.arynodim", ['INPUT A(1)', 'PRINT"[";A(1);"]"'], ["7"]),
+
+    # === D-ARYSITE: the ERR-14 message at tss_ary's UNMEASURED call sites ====
+    # D-ARYOOS (docs/aryoos-msx1-characterization.md) split `ARY_ERR` so that
+    # aeng_copy_str's pool OOM reports `Out of string space` (ERR 14) instead of
+    # `Out of memory` (ERR 7), and MEASURED that at ONE of tss_ary's call sites
+    # -- console `INPUT` (row s.inpary). It reached the others "by construction",
+    # which is a claim, not a reading, and D-CIRCOVF is the standing reminder
+    # that a bound stated by construction is owned by whoever deletes the
+    # construction.
+    #
+    # 🔴 AND THE DENOMINATOR IN THE FILED ITEM NAMED A CALLER THAT IS NOT ONE.
+    # `tgt_store_str` has FOUR call sites, by grep over basic/ and sub/:
+    #   basic/program.asm:1908  READ           -- measured, and NO TEST: a stored
+    #                                             DATA literal's descriptor points
+    #                                             AT THE PROGRAM TEXT, so the store
+    #                                             charges the pool nothing and both
+    #                                             references answer `[OK]`
+    #   basic/input.asm:138     console INPUT  -- measured (s.inpary)
+    #   basic/input.asm:224     console LINE INPUT        <- i.oosline below
+    #   basic/files.asm:781     INPUT #n AND LINE INPUT #n, disk AND `CAS:`
+    #                                                     <- i.oosfile / i.oosfline
+    # docs/aryoos-msx1-characterization.md §2.3 calls the fifth one "the FIELD
+    # read". THERE IS NO FIELD CALLER: basic/field.asm reaches `tgt_parse_fld` ->
+    # `tgt_parse` and never `tgt_store_str`, because FIELD BINDS a descriptor
+    # into the record buffer -- it runs no heap_alloc, so the OOM this class is
+    # about cannot happen there at all. basic/vars.asm's own "these FIVE store
+    # paths" is right when it counts VERBS (READ / INPUT / LINE INPUT / INPUT#n /
+    # LINE INPUT#n); the doc turned the fifth VERB into a fifth SITE.
+    #
+    # THE FIXTURE, from D-ARYOOS §2.4's measured pool arithmetic: `CLEAR 60`,
+    # then a 25-char `B$` and a 25-char `A$(1)` leave TEN bytes of pool. Any
+    # store of more than ten characters into `A$(2)` must fail, and the
+    # discriminator is WHICH MESSAGE -- both errors abort the RUN, so a row
+    # scored error-vs-no-error is green under the defect this measures.
+    #
+    # 🎯 THE FILE ROWS WRITE NOTHING. `HI.TXT` on disk/test720.dsk is
+    # `Hello from zerobas-disk!` + CRLF -- a 24-character line, which is over the
+    # ten-byte headroom and under the 25 the console rows type. So no row here
+    # needs a private disk copy, and none can perturb another on `--repeat 2`.
+    ("i.oosline",     ['CLEAR 60', 'DIM A$(5)', 'B$=STRING$(25,"A")',
+                       'A$(1)=B$', 'LINE INPUT A$(2)', 'PRINT"[OK]"'],
+     ["AAAAAAAAAAAAAAAAAAAAAAAAA"]),
+    # the SCALAR twin: the already-correct path (str_set_key, not the array
+    # engine). If this one does NOT report, the FIXTURE is wrong and the array
+    # row above is evidence about nothing.
+    ("i.ooslinescal", ['CLEAR 60', 'B$=STRING$(25,"A")', 'C$=B$',
+                       'LINE INPUT D$', 'PRINT"[OK]"'],
+     ["AAAAAAAAAAAAAAAAAAAAAAAAA"]),
+    ("i.oosfile",     ['CLEAR 60', 'DIM A$(5)', 'B$=STRING$(25,"A")',
+                       'A$(1)=B$', 'OPEN"HI.TXT"FOR INPUT AS #1',
+                       'INPUT#1,A$(2)', 'PRINT"[OK]"'], []),
+    ("i.oosfilescal", ['CLEAR 60', 'B$=STRING$(25,"A")', 'C$=B$',
+                       'OPEN"HI.TXT"FOR INPUT AS #1', 'INPUT#1,D$',
+                       'PRINT"[OK]"'], []),
+    ("i.oosfline",    ['CLEAR 60', 'DIM A$(5)', 'B$=STRING$(25,"A")',
+                       'A$(1)=B$', 'OPEN"HI.TXT"FOR INPUT AS #1',
+                       'LINE INPUT#1,A$(2)', 'PRINT"[OK]"'], []),
+    # 🟢 THE TWO FIT CONTROLS. Every row above expects an ERROR, and a machine
+    # that cannot read a line at all produces one for free
+    # ([[gate-whose-answer-is-an-error-passes-a-dead-subject]]). These are the
+    # same programs with a pool that FITS: they must come back with the stored
+    # LENGTH, which is positive evidence that the verb reached the store.
+    ("i.ooslinefit",  ['CLEAR 200', 'DIM A$(5)', 'LINE INPUT A$(2)',
+                       'PRINT"[";LEN(A$(2));"]"'],
+     ["AAAAAAAAAAAAAAAAAAAAAAAAA"]),
+    ("i.oosfilefit",  ['CLEAR 200', 'DIM A$(5)', 'OPEN"HI.TXT"FOR INPUT AS #1',
+                       'LINE INPUT#1,A$(2)', 'PRINT"[";LEN(A$(2));"]"'], []),
 ]
+
+# The `i.oos*file*` rows need a disk interface. A diskless VG-8020 answers
+# `Syntax error` to `OPEN`, which would measure the absence of hardware rather
+# than a language rule, so it records `<NO DISK ON THIS SIDE>` -- never a
+# reading, never an agreement. Same disposition as basic_probe_namspc.py.
+NEEDS_DISK = ("i.oosfile", "i.oosfilescal", "i.oosfline", "i.oosfilefit")
+NO_DISK_SIDES = ("vg8020",)
+
 CONTROLS = ("i.ctl", "i.strctl", "i.linectl")
 CONTROL_WANT = {"i.ctl": " 7 ", "i.strctl": "HI", "i.linectl": "HI"}
-LABEL_W = 11
+LABEL_W = 14
 
 # A row that answers one of these is NEVER agreement, however many sides answer
 # it -- two machines that both failed to print agree perfectly about nothing.
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>")
 
+# 🔴 NOT A SENTINEL AND NOT A READING. A sentinel means the apparatus failed and
+# poisons the row; this means the QUESTION cannot be put to that machine. It is
+# PRINTED (so the run states what it did not measure) and dropped from the
+# agreement, and a row left with fewer than two answering sides scores as a
+# divergence rather than as agreement-with-itself.
+NO_DISK = "<NO DISK ON THIS SIDE>"
+
+# ⚠️ ADDING A NAME HERE CAN CHANGE A SHIPPED ROW'S READING, so the full gate is
+# re-run whenever this tuple grows -- never `ONLY=` the new rows (the D-FNARG2
+# trap, basic_probe_namspc.py). `Out of string space` and `Out of memory` are the
+# D-ARYSITE discriminator and both must be nameable: whichever one is missing
+# reads as `<NO OUTPUT>`, and a silence is what a diverging pair agrees on.
 ERRORS = ("Syntax error", "Type mismatch", "Subscript out of range",
-          "Redimensioned array", "Illegal function call", "Out of memory",
-          "Overflow", "Bad file number")
+          "Redimensioned array", "Illegal function call",
+          "Out of string space", "Out of memory",
+          "Overflow", "Bad file number", "File not found")
 
 
 def bracket(raw: str | None) -> str:
@@ -131,6 +219,9 @@ def run_side(side: str, only: list[str]) -> dict:
     out = {}
     for label, lines, responses in CASES:
         if only and label not in only:
+            continue
+        if label in NEEDS_DISK and side in NO_DISK_SIDES:
+            out[label] = NO_DISK
             continue
         body = [f"{10 * (k + 1)} {ln}" for k, ln in enumerate(lines)]
         caps = omsx_repl.run_cases(
@@ -215,13 +306,16 @@ def main() -> int:
     refsplit = 0
     for lab in present:
         vals = {s: results[s][lab] for s in sides if lab in results[s]}
-        ok = len(set(vals.values())) == 1 and len(vals) > 1
-        if any(v in SENTINELS for v in vals.values()):
+        scored = {s: v for s, v in vals.items() if v != NO_DISK}
+        ok = len(set(scored.values())) == 1 and len(scored) > 1
+        if any(v in SENTINELS for v in scored.values()):
             ok = False              # an apparatus sentinel is NEVER agreement
         agree += ok
         dis += not ok
         note = "   [POSITIVE CONTROL]" if lab in CONTROLS else ""
-        refs = {vals[s] for s in ("vg8020", "cf3300") if s in vals}
+        if lab in NEEDS_DISK:
+            note += "   [DISK ROW — two-sided by construction]"
+        refs = {scored[s] for s in ("vg8020", "cf3300") if s in scored}
         if len(refs) > 1:
             refsplit += 1
             note += "   [REFERENCES DISAGREE — no oracle for this row]"
@@ -234,11 +328,21 @@ def main() -> int:
           f"({len(CASES)} cases, {len(CONTROLS)} positive controls, "
           f"{refsplit} row(s) with no oracle)")
     print("SIDES: vg8020,cf3300,zb — console INPUT is core BASIC, present on "
-          "every MSX1, so both references are legitimate oracles here")
+          "every MSX1, so both references are legitimate oracles here. The four "
+          f"{NO_DISK} rows ({', '.join(NEEDS_DISK)}) are TWO-sided by "
+          "construction: a diskless VG-8020 answers `Syntax error` to OPEN, "
+          "which measures the absence of hardware, not a language rule")
     print("DENOMINATOR: (INPUT arm: numeric / string / LINE INPUT) x (the array "
           "DIMmed or auto-dimensioned) — the three arms are separate code in "
           "basic/input.asm, and the unDIMmed row separates a PARSE refusal from "
           "a complaint about a missing array")
+    print("DENOMINATOR, D-ARYSITE half: tgt_store_str's FOUR call sites, by "
+          "grep — READ (basic/program.asm, measured NO TEST), console INPUT "
+          "(basic/input.asm:138, measured by D-ARYOOS), console LINE INPUT "
+          "(basic/input.asm:224), and INPUT#n + LINE INPUT#n sharing "
+          "basic/files.asm:781. FIELD is NOT one: it binds a descriptor into "
+          "the record buffer and never calls tgt_store_str, so the pool OOM "
+          "this measures cannot happen there")
     if a.gate and dis:
         sys.stderr.write(f"inputary: {dis} reading(s) diverge\n")
         return 1

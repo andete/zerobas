@@ -3006,17 +3006,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ Carries the hazard S-CLP-4 already wrote down: a variable pointing into
       program text means `MID$(A$,1,1)="X"` writes into the PROGRAM. Unpriced,
       and it is a design question (store-by-reference), not a byte question.
-- [ ] ⚠️ **THREE OF `tss_ary`'s FIVE CALLERS ARE UNMEASURED FOR THE ERR-14
-      MESSAGE** — `LINE INPUT`, `INPUT #n` and the FIELD read. D-ARYOOS measured
-      `INPUT` (row `s.inpary`, agrees three-sided after the fix) and found `READ`
-      to be no test at all (above). All five share one tail
-      ([`basic/vars.asm`](basic/vars.asm) `tss_ary`) and one `ary_engine_call`,
-      so the fix reaches them by construction — but "by construction" is the
-      claim, not the reading, and D-CIRCOVF is the standing reminder that a
-      bound stated by construction is owned by whoever deletes the construction.
-      `INPUT #n` needs a disk fixture; the FIELD read needs a `FIELD`+`GET`.
-      Cheap, and they belong with the `fldary`/`inputary` probes rather than
-      with `clearpool`.
+- [x] ✅ **~~THREE OF `tss_ary`'s FIVE CALLERS ARE UNMEASURED FOR THE ERR-14
+      MESSAGE~~ — MEASURED 2026-08-21 (D-ARYSITE), ALL THREE AGREE, 0 ROM
+      BYTES.** Five rows in `make inputary-acceptance` (**7/7 → 14/14**),
+      [`docs/aryoos-msx1-characterization.md`](docs/aryoos-msx1-characterization.md)
+      §6. `LINE INPUT A$(2)`, `INPUT#1,A$(2)` and `LINE INPUT#1,A$(2)` on a
+      pool with ten bytes left all answer `Out of string space` on vg8020 /
+      cf3300 / zerobas, with the scalar twins as controls and two `CLEAR 200`
+      fit controls so the battery is not satisfied by a machine that errors at
+      everything.
+      🔴 **AND THE DENOMINATOR IN THIS ITEM WAS WRONG: THERE IS NO FIELD
+      CALLER.** `tgt_store_str` has FOUR call sites by grep — READ, console
+      INPUT, console LINE INPUT, and `INPUT#n`+`LINE INPUT#n` sharing
+      [`basic/files.asm:781`](basic/files.asm). `basic/field.asm` reaches
+      `tgt_parse_fld` → `tgt_parse` and never `tgt_store_str`: FIELD BINDS a
+      descriptor into the record buffer and runs no `heap_alloc`, so this OOM
+      cannot happen there. 🎯 **Half this item's filed cost was a `FIELD`+`GET`
+      fixture for a caller that does not exist**, and one grep retired it. The
+      source's own *"these FIVE store paths"* is right about VERBS; the
+      characterization turned the fifth verb into a fifth SITE.
+      🎯 **AND THE FILE ROWS WRITE NOTHING** — `HI.TXT` on `disk/test720.dsk` is
+      a 24-character line, over the ten-byte headroom and under the 25 the
+      console rows type, so no row needs a private disk copy.
+      Knives 3/3 EXACT; K-AS3 (`tss_ary`'s `ld a,3` → `ld a,0`) reddens exactly
+      the seven rows that go through the shared tail and leaves the numeric and
+      scalar rows green, which is the measurement that "by construction" was
+      standing in for.
 - [x] ✅ **RE-RAN THE STALENESS SWEEP'S "LIVE" ROWS — DONE 2026-08-20, same
       day it was filed. 8 of 11 already closed by named slices, the other 3
       confirmed still live.** Detail below; the addendum is

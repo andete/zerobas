@@ -1812,11 +1812,14 @@ readvar-acceptance: repack-machine
 # because every row here needs a typed response to reach a blocked INPUT, and a
 # response that never arrives makes all three sides agree about nothing.
 #   make inputary-characterize ONLY=i.lineary   # scope to rows
-inputary-characterize: repack-machine
+# ⚠️ $(DISK_TEST_DSK) IS A REAL DEPENDENCY SINCE D-ARYSITE, not decoration: the
+# four `i.oos*file*` rows read HI.TXT off it, and without the image they would
+# read `<NO OUTPUT>` on every side and AGREE.
+inputary-characterize: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_inputary.py \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
-inputary-acceptance: repack-machine
+inputary-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_inputary.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 

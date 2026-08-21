@@ -96,9 +96,19 @@ The numeric twins already stood in the gate and still pass: `oos-vs-oom`
 ### 2.3 🔴 THE ROW WRITTEN TO TEST THE SECOND SITE REFUTED ITSELF
 
 `basic/vars.asm`'s `tss_ary` is the *other* array-element string store — the
-tail shared by **READ / INPUT / LINE INPUT / INPUT# / the FIELD read**. Unlike
+tail shared by **READ / INPUT / LINE INPUT / INPUT#n / LINE INPUT#n**. Unlike
 `ex_let_arr_str` it already tested `ary_engine_call`'s NZ, so it always
 reported; only its message was wrong, and the same one-code split fixes it.
+
+> 🔴 **THIS SENTENCE SAID "the FIELD read" UNTIL 2026-08-21, AND THERE IS NO
+> FIELD CALLER** (D-BLNF's sibling slice D-ARYSITE, §6). `basic/field.asm`
+> reaches `tgt_parse_fld` → `tgt_parse` and **never** `tgt_store_str`: FIELD
+> *binds* a descriptor into the record buffer, runs no `heap_alloc`, and so
+> cannot reach the OOM this rule is about. `basic/vars.asm`'s own *"these FIVE
+> store paths"* is right when it counts **verbs** — READ, INPUT, LINE INPUT,
+> `INPUT#n`, `LINE INPUT#n`, the last two sharing one site — and this line
+> turned the fifth verb into a fifth site and named the wrong one. The
+> denominator is **four call sites**, by grep over `basic/` and `sub/`.
 
 `READ` was chosen to measure it, being the only one of the five a stored
 program reaches unattended. **Both references answered `[OK]`** — no error at
@@ -203,3 +213,76 @@ directions. K-AO5 proves the green control can go red.
 
 Every cut is a **value**, never a call: deleting the only call to a routine
 fails `make deadcode` and builds no ROM.
+
+---
+
+## 6. D-ARYSITE — the three callers "by construction" was standing in for, 2026-08-21
+
+§2.3 measured **one** of `tss_ary`'s call sites (console `INPUT`) and found
+`READ` to be no test at all. The rest were said to be reached *by construction*.
+That is a claim, not a reading, and D-CIRCOVF is the standing reminder that a
+bound stated by construction is owned by whoever deletes the construction. Five
+rows now measure it. **Zero ROM bytes** — this slice is measurement and a
+denominator correction.
+
+### 6.1 🔴 The denominator was wrong, and the grep was the whole finding
+
+`tgt_store_str` has **four** call sites, by grep over `basic/` and `sub/`:
+
+| site | verb(s) | status |
+|---|---|---|
+| `basic/program.asm:1908` | `READ` | measured §2.3 — **no test** (both refs `[OK]`) |
+| `basic/input.asm:138` | console `INPUT` | measured §2.1 (`s.inpary`) |
+| `basic/input.asm:224` | console `LINE INPUT` | **new**: `i.oosline` |
+| `basic/files.asm:781` | `INPUT#n` **and** `LINE INPUT#n`, disk **and** `CAS:` | **new**: `i.oosfile`, `i.oosfline` |
+
+**There is no FIELD caller.** `basic/field.asm` reaches `tgt_parse_fld` →
+`tgt_parse` and never `tgt_store_str`; FIELD *binds* a descriptor into the record
+buffer and runs no `heap_alloc`, so the pool OOM this rule is about cannot happen
+there. §2.3's *"the FIELD read"* turned the fifth **verb** into a fifth **site**
+and named the wrong one; `basic/vars.asm`'s own *"these FIVE store paths"* is
+right about verbs. 🎯 **Half the filed cost of this item was a fixture — `FIELD` +
+`GET` — for a caller that does not exist.**
+
+### 6.2 The rows, and why they need no disk write
+
+`CLEAR 60` + a 25-char `B$` + a 25-char `A$(1)` leaves **ten** bytes of pool
+(§2.4's measured arithmetic). `HI.TXT` on `disk/test720.dsk` is
+`Hello from zerobas-disk!` + CRLF — a **24-character** line, over that headroom
+and under the 25 the console rows type. So every file row reads an existing file
+and **no row writes to the image**: no private copy, and nothing to perturb a
+neighbour on `--repeat 2`.
+
+| row | vg8020 | cf3300 | zb |
+|---|---|---|---|
+| `i.oosline` — `LINE INPUT A$(2)` | `Out of string space` | idem | idem |
+| `i.ooslinescal` — the SCALAR twin | `Out of string space` | idem | idem |
+| `i.oosfile` — `INPUT#1,A$(2)` | *(no disk)* | `Out of string space` | idem |
+| `i.oosfilescal` — the SCALAR twin | *(no disk)* | `Out of string space` | idem |
+| `i.oosfline` — `LINE INPUT#1,A$(2)` | *(no disk)* | `Out of string space` | idem |
+| `i.ooslinefit` 🟢 — `CLEAR 200` | ` 25 ` | ` 25 ` | ` 25 ` |
+| `i.oosfilefit` 🟢 — `CLEAR 200` | *(no disk)* | ` 24 ` | ` 24 ` |
+
+`make inputary-acceptance` **7/7 → 14/14**, the seven shipped rows unchanged —
+which is the check growing this probe's `ERRORS` tuple demands, because adding a
+name to a classifier can change a shipped row's reading (the D-FNARG2 trap). The
+two 🟢 fit controls exist because every other new row expects an **error**, and a
+machine that cannot read a line at all produces one for free.
+
+### 6.3 Knives — 3 of 3 EXACT
+
+Baseline 14/14. Every discriminator is the **message**; every cut is a VALUE.
+
+| knife | cut | predicted red | measured |
+|---|---|---|---|
+| K-AS1 | `acs_oom`'s `ld a,5` → `ld a,4` (un-split the code) | the **3 array rows** → `Out of memory`, **both scalar twins green** | **EXACT**, 11/14 |
+| K-AS2 | `ary_errmap` entry 5 `FPERR_STROOM` → `6` | the same 3, a different site | **EXACT**, 11/14 |
+| K-AS3 | `tss_ary`'s `ld a,3` → `ld a,0` (the shared tail's op) | **7**: `i.arystr`, `i.lineary`, the 3 array rows, both fit controls; `i.ary`/`i.arynodim` (numeric) and both scalar twins **green** | **EXACT**, 7/14 |
+
+🎯 **K-AS3 IS THE ONE THAT ANSWERS THE ITEM.** K-AS1/K-AS2 prove the rows read
+the *message* rather than merely "did it error". K-AS3 breaks the shared tail
+itself and reddens exactly the rows that go through it — so the three new rows
+provably reach `tss_ary`, rather than arriving at the same message some other
+way. The two scalar twins staying green under all three cuts is the same
+argument from the other side: they go through `str_set_key` and are not evidence
+about this tail at all, which is what makes them controls.
