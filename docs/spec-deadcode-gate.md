@@ -28,7 +28,7 @@ A span is LIVE if it is a seed, is mentioned by a live span, or is fallthrough-e
 from a live span whose last code line is not an unconditional terminator. Iterate to a
 fixed point; anything still dead is unreachable ROM.
 
-### 2.1 The four apparatus fixes it MUST keep
+### 2.1 The five apparatus fixes it MUST keep
 
 Each of these produced a confident wrong row during the review while missing a real
 one. They are the tool's actual content — the fixed-point loop is the easy part.
@@ -39,11 +39,13 @@ one. They are the tool's actual content — the fixed-point loop is the easy par
 | 2 | lines before a file's first label → an always-live **prologue** span | references made there are invisible (falsely killed `sp_done`) |
 | 3 | closure follows **every identifier a span mentions**, not just `call`/`jp`/`jr`/`djnz` | misses DATA references — `ld hl,zkey_hook` is how `keytrap.asm`'s `$0038` hook read as promotable |
 | 4 | **each build walked separately, with its own include closure and seeds** | "dead" is per-build: `disk_putword` is dead in main, live in sub, and its caller sits outside `main.asm`'s closure entirely |
+| 5 🔴 | the main seed scrape reads the **CODE COLUMN** of `sub/`+`tools/`, not whole files | a comment is not a reference: prose kept **24 B** of dead main code invisible to this gate, and the prose that hid it was the note explaining that span's removal from the other build — §10 |
 
 ### 2.2 Seeds — and why the choice matters more than the algorithm
 
-* **main build**: `init` (the cartridge header's entry) + every label named anywhere in
-  `sub/` or `tools/`. ⚠️ **NOT `tests/` or `probes/`.** A test naming a routine is not
+* **main build**: `init` (the cartridge header's entry) + every label named in the
+  **code column** of `sub/` or `tools/` — prose does not seed, see fix 5 and §10.
+  ⚠️ **NOT `tests/` or `probes/`.** A test naming a routine is not
   a reason to keep ROM bytes — seeding on those hides the whole `vars.asm` block,
   because S3's ported tests still name it. **That one choice is the difference between
   16 dead spans and 4.**
@@ -295,3 +297,118 @@ Seed-vacuity guards in the tool: `init` must resolve to a label in the main buil
 every sub entry-table seed must resolve, and fewer than 20 parsed tenants is a hard
 error — so a rename or a broken table scrape fails loudly instead of silently
 shrinking the seed set to nothing.
+
+---
+
+## 10. D-SEEDPROSE — ✅ a COMMENT was a seed (2026-08-21)
+
+**A fifth apparatus fix, and the one that had been silently wrong the longest.**
+`external_names()` scraped every identifier out of whole FILES under `sub/` and
+`tools/` — comments included — and every main label whose name it found became a
+seed. So:
+
+> **A main-build span was invisible to this gate for as long as its label's name
+> appeared in PROSE anywhere under `sub/` or `tools/`.**
+
+🎯 **The prose that hid the first one was the comment explaining that span's
+removal from the OTHER build.** D-FNRUN killed `parse_close_run`'s 6 B head and
+noticed the gate had never asked for it; D-FNEXPR2's note in `sub/bload.asm`,
+written one commit earlier to record that the head was dead on the sub side, was
+what kept the main label alive. **Documenting a removal is what stopped the gate
+asking for the same removal in the other build** — see
+[`spec-basic-fnrun.md`](spec-basic-fnrun.md) §4.
+
+### 10.1 The class, measured — 254 → 6 → 2 → 24 B
+
+Re-verified on `261049d` before it was fixed, not carried forward from the filing:
+
+| | |
+|---|---|
+| main labels | 1602 |
+| seeded via `sub/` + `tools/` | **254** |
+| of those, NOT reachable from `init`'s own closure | **6** |
+| of those, named **only** in comments | **2** |
+| reported when those two mentions are mangled | **3 spans, 24 B**, all page-0 LOW |
+
+The third span (`sha_oom`) is reached only from the second (`str_heap_alloc`), so
+two comment mentions were holding three spans. The remaining 4 of the 6 are
+`write_sector` / `fat_read_fat_sector` / `fat_alloc_cluster` / `fat_write_fat_entry`
+— seeded from real CODE under `sub/`, and therefore **still** seeded after this
+fix. That is a *different* hole and it is filed as one; see §10.4.
+
+### 10.2 The fix — the code column, and string literals stay
+
+`_code_column()`:
+
+* `.asm` / `.inc` — the `;` tail goes. The same split the span model itself already
+  uses, so the scrape and the walk now read the same thing. (Five lines in the tree
+  put a `;` inside a quote — `cp ';'`, `db "Can't CONTINUE"` — and none of them
+  carries an identifier past it, checked.)
+* `.py` — `#` comments **and docstrings** go, via `tokenize` + `ast` rather than a
+  regex, because a `#` inside a string is not a comment. Docstrings go because a
+  triple-quoted module header is prose by any other name: this tool's own docstring
+  names a dozen labels in both builds. Worth **19 further seeds**, and **0 B** of
+  findings today — measured, and recorded here so the next reader knows the
+  docstring arm was not shipped on a hunch.
+* **String literals STAY.** A tool naming a symbol it looks up in the `.sym` file
+  does so in a string, and that IS a reference.
+* A `.py` under `tools/` that does not parse is a **loud** failure. Falling back to
+  the raw text would silently restore the blindness this section exists to remove.
+
+Seeds: **303 → 123**. Findings after the D-SEEDPROSE carve: **0** in both builds.
+
+⚠️ **The old justification is inverted, not deleted.** *"Deliberately coarse:
+over-seeding keeps a live routine alive, which is the safe direction"* is sound for
+a genuine reference made somewhere odd, and false for prose — a comment cannot
+execute, so over-seeding on prose is not the safe direction, it is the **silent**
+one.
+
+### 10.3 Falsification — 6 rows, all EXACT, predictions written before the run
+
+`_selftest_code_column()` runs on **every** invocation, against a floored table of
+seven vectors carrying **both senses** (something the stripper must keep, something
+it must remove). K1–K3 knife the stripper; K4–K6 knife the sweep with a planted dead
+span in `basic/poke.asm`. **K5 and K6 are the same plant and the same mention text
+under `sub/`, differing by two characters: `; `.**
+
+| row | knife | want | got |
+|---|---|---|---|
+| K1 | `_CC_VECTORS = []` | rc 1, floor fires | ✅ EXACT |
+| K2 | `_code_column` returns `txt` (the pre-slice behaviour) | rc 1, "which is PROSE" | ✅ EXACT |
+| K3 | `_code_column` returns `""` | rc 1, "which is a REFERENCE" | ✅ EXACT |
+| K4 | plant, no mention anywhere | reported by **both** scrapers | ✅ EXACT |
+| K5 🔴 | plant + the mention as a **comment** under `sub/` | **new reports, old blind** | ✅ EXACT |
+| K6 🟢 | plant + the same text as **code** under `sub/` | **neither reports** | ✅ EXACT |
+
+K4 is what makes K5 readable: without it, "the new gate reports the plant" could be
+the plant being dead for some other reason. K6 is what makes it honest: a real
+reference still seeds, so the fix removed prose and nothing else.
+
+⚠️ **These knives build no ROM.** The sweep decides from SOURCES; the `.sym` files
+only decorate a finding with an address and a size. That is why a planted span with
+no symbol still reports (`~? B`) and why the runner does not need `rm -rf build`
+between rows — but it still restores by **writing the bytes**, and asserts all three
+files byte-identical afterwards.
+
+The three §6.1 rows are unchanged and re-verified: gate/clean **rc 0**, gate/blind
+**rc 1 with the allowlist canary firing**, report/clean rc 0, report/blind rc 0.
+
+### 10.4 What this does NOT close — the second seeding hole, 16 B on PAGE 1
+
+The scrape is a **proxy** for the real question, "what can reach main code from
+outside main?", and the proxy is coarse in a second way this fix does not touch: a
+name referenced in `sub/` code seeds the main label of the same name **even when the
+sub reference resolves sub-locally**. Four labels are in exactly that position —
+`sub/fatprim.asm` calls `fat_read_fat_sector` / `fat_alloc_cluster` /
+`fat_write_fat_entry` and `sub/format.asm` defines its own `write_sector` — and each
+main label of that name is a 4 B `DISKOP_SEL_*` bounce in
+[`basic/fat.asm`](../basic/fat.asm) that the sweep cannot reach from `init`.
+
+**Measured 2026-08-21: dropping those four names from the seed set reports 4 spans,
+16 B, all PAGE 1** — where the wall reads 11 B. Not shipped: the true main-external
+surface is the generated [`sub/basic-resident-abi.inc`](../sub/basic-resident-abi.inc)
+(**12** symbols, none of them these four) plus whatever `tools/` looks up by name, and
+re-seeding from that is a redesign, not a strip. Each of the four also needs the same
+per-span triage the 24 B got — they are 4 of ~15 sibling bounces, and deleting part of
+a bounce table is a different kind of claim from deleting an orphan. Filed in
+`TODO.md`.

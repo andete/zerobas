@@ -115,8 +115,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       not a parser one — so the +17 B filename shape says nothing about it.
       Rows `n.runline` + `n.runlinectl` 🟢 are built and DEFERRED.
 
-- [ ] 🔴 **A COMMENT IN `sub/` OR `tools/` MAKES A MAIN-BUILD SPAN INVISIBLE TO
-      `make deadcode` — 24 B OF CONFIRMED DEAD CODE IS HIDDEN THAT WAY TODAY.**
+- [x] ✅ **CLOSED 2026-08-21 (D-SEEDPROSE) — A COMMENT IN `sub/` OR `tools/`
+      MADE A MAIN-BUILD SPAN INVISIBLE TO `make deadcode`; BOTH HALVES SHIPPED,
+      +24 B PAGE-0 LOW (22 → 46 B).**
+      [`docs/spec-deadcode-gate.md`](docs/spec-deadcode-gate.md) §10.
+      **(a) the gate**: `external_names()` now reads the CODE COLUMN — `;` tails
+      go for `.asm`/`.inc`, `#` comments AND docstrings go for `.py` (tokenised,
+      not regexed, so a `#` inside a string is not a comment), string literals
+      STAY because a tool naming a symbol it looks up does so in one. Seeds
+      **303 → 123**, findings **0** in both builds. A floored 7-vector
+      `_selftest_code_column()` of BOTH senses runs on every invocation.
+      Knives **6/6 EXACT**, and the pair that matters is K5/K6: the same planted
+      dead span and the same mention text under `sub/`, differing by `; ` — the
+      old scrape is blind to the comment form, the new one reports it, and both
+      still honour the code form. `--blind` + the allowlist canary re-verified.
+      **(b) the carve**, per-span and not on the strength of the hole that found
+      it: `str_heap_alloc`+`sha_oom` (23 B) are glue for the string-heap tenant's
+      op 0 (ALLOC) with no caller in either build's code column and no other
+      issuer of op 0; `ex_mid_stmt`'s 1 B head is an `inc hl` past a `$FF` prefix
+      that `ex_ff_stmt` already consumes, whose only caller was a unit test — and
+      `tests/` is deliberately not a seed, so allowlisting it would have
+      re-created by hand the seeding this gate refuses. The two labels are
+      collapsed onto the surviving entry, keeping the widely-cited name.
+      🔴 **THE CLASS HAD BEEN FILED TWICE, 15 DAYS APART** — see the
+      2026-08-06 D-EDITVERB entry, also closed, which had already watched it fire
+      with a number (`list_num`, seeds 285 → 286) and filed the drift rather than
+      the blindness.
+      ⚠️ **THE PREDICTION THAT (b) WOULD REPORT MORE THAN THREE SPANS WAS WRONG**:
+      the code-column scrape drops **161** seeds and reports **exactly** those
+      three. What it does NOT close is a SECOND, different seeding hole — see the
+      new item below. Original filing:
       Filed 2026-08-21 by D-FNRUN §4, found because the gate declined to ask for
       6 B the slice had just killed.
       [`tools/check_dead_code.py`](tools/check_dead_code.py) seeds the MAIN build
@@ -155,7 +183,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `.asm`/`.inc`) and let the resulting findings be worked rather than
       pre-suppressed. ⚠️ (b) will report more than these three — it must be run
       before it is trusted, and each new finding triaged, exactly as the
-      allowlist's own rule demands.
+      allowlist's own rule demands. **[Both shipped 2026-08-21; the ⚠️ was wrong,
+      (b) reports exactly these three.]**
+
+- [ ] 💰 **A SECOND SEEDING HOLE, AND IT IS WORTH 16 B ON MAIN PAGE 1 (wall 11 B,
+      2026-08-21).** Filed by D-SEEDPROSE §10.4, measured not estimated. The main
+      seed scrape is a PROXY for *"what can reach main code from outside main?"*,
+      and it is coarse in a way the code-column fix does not touch: a name
+      referenced in `sub/` **code** seeds the main label of the same name **even
+      when the sub reference resolves sub-locally**. Four labels sit there —
+      `sub/fatprim.asm` calls `fat_read_fat_sector` / `fat_alloc_cluster` /
+      `fat_write_fat_entry`, `sub/format.asm` defines its own `write_sector` —
+      and each main label of that name is a 4 B `DISKOP_SEL_*` bounce in
+      `basic/fat.asm` the sweep cannot reach from `init`. **Dropping those four
+      names from the seed set reports 4 spans, 16 B, all PAGE 1** (measured
+      2026-08-21 on `0598831`).
+      💰 Not shipped, and the two halves are separable exactly as the comment
+      hole's were. The GATE half is a redesign, not a strip: the true main-external
+      surface is the generated `sub/basic-resident-abi.inc` (**12** symbols, none
+      of them these four) plus whatever `tools/` looks up by name, and re-seeding
+      from that has to answer what a tool's string-literal lookup means. The CARVE
+      half needs the same per-span triage the 24 B got, and it is a harder claim:
+      these are 4 of ~15 sibling bounces, so deleting part of a bounce table is
+      not deleting an orphan. ⚠️ **`basic/format-body.inc` and
+      `basic/randio-body.inc` both `call write_sector` — they are sub tenants, so
+      the sweep is right that main's copy has no main caller, but check that
+      before quoting the 16 B as recovered.**
 
 - [x] ✅ **CLOSED 2026-08-21 (D-FNRUN), −11 B main page 1 (50 → 39) —
       `RUN A$` RESTARTED THE PROGRAM FOREVER.**
@@ -3677,7 +3730,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the sibling's measurement is exactly [[a-borrowed-window-inherits-its-corpus]].
       Re-open by walking preflight's own rule over its subject's life first.
       Detail: `docs/spec-probe-injjudge.md` §3.6.
-- [ ] ⚠️ **An asm label named in a `tools/*.py` or `sub/` comment is immune to the
+- [x] ✅ **CLOSED 2026-08-21 (D-SEEDPROSE), 15 days after it was filed and after
+      it had already fired with a number — an asm label named in a `tools/*.py` or
+      `sub/` comment is immune to the dead-code sweep.**
+      [`docs/spec-deadcode-gate.md`](docs/spec-deadcode-gate.md) §10. The scrape
+      now reads the CODE COLUMN, so prose does not seed and a seed count cannot
+      drift on a sentence; the method this item asked for (re-run the closure
+      without the seed and diff the live set) is what measured the class at
+      **24 B** before the fix. 🔴 **This entry watched the mechanism fire in
+      D-EDITVERB and filed the DRIFT rather than the BLINDNESS** — "the next slice
+      to see 287 has no way to tell a real seed from a sentence" is the same fact
+      as "a span is invisible while a sentence names it", and it took a second
+      filing 15 days later, from a slice that lost 6 B to it, to be read that way.
+      Original wording:
+      ⚠️ **An asm label named in a `tools/*.py` or `sub/` comment is immune to the
       dead-code sweep** — `check_dead_code.py`'s `external_names` scans those
       directories *including comments*, so writing a label's name in prose seeds it
       as reachable. Every slice that edits `tools/` prose must predict the seed

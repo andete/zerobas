@@ -54,10 +54,27 @@ only by the assembler:
       in main and live in sub; deleting it broke the build. The fix for that shape is
       `IF SUB_BUILD`, not deletion.
 
+  (5) A COMMENT IS NOT A REFERENCE, SO IT MAY NOT BE A SEED. The main seed set is
+      scraped out of sub/ and tools/, and until D-SEEDPROSE (2026-08-21) that scrape
+      read whole FILES -- prose included. A main-build span was therefore invisible
+      to this gate for as long as its label's name appeared in a comment over there,
+      and the sweep reported a clean tree while structurally unable to see it.
+      🔴 The prose that hid the first one was the comment D-FNEXPR2 wrote to explain
+      that `parse_close_run`'s head had been removed from the SUB copy: documenting a
+      removal is what stopped this gate asking for the same removal in the main build.
+      The class measured 24 B the day it was found (`str_heap_alloc` 21 B + `sha_oom`
+      2 B + `ex_mid_stmt` 1 B, all page-0 LOW, carved by that slice).
+      `_code_column()` below is the fix: `;` tails go for .asm/.inc, `#` comments AND
+      docstrings go for .py, and STRING LITERALS STAY -- a tool naming a symbol it
+      looks up in the .sym file does so in a string, and that IS a reference.
+      _selftest_code_column() runs on every invocation because a stripper that
+      silently stops stripping restores the old blindness exactly.
+
 SEEDS -- the choice matters more than the algorithm.
 
-  main: `init` (the cartridge header's entry point) plus every label named anywhere
-  in sub/ or tools/. ⚠️ NOT tests/ or probes/: a test naming a routine is not a
+  main: `init` (the cartridge header's entry point) plus every label named in the
+  CODE COLUMN of sub/ or tools/ -- see fix (5); prose does not seed. ⚠️ NOT tests/
+  or probes/: a test naming a routine is not a
   reason to keep ROM bytes, and seeding on them hides the whole vars.asm block
   because the ported tests still name it. That one choice is the difference between
   16 dead spans and 4.
@@ -71,10 +88,13 @@ Every seed is asserted to resolve to a real label, so a rename fails loudly inst
 of silently shrinking the seed set.
 """
 from __future__ import annotations
+import ast
 import collections
+import io
 import os
 import re
 import sys
+import tokenize
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import importlib.util
@@ -189,20 +209,123 @@ class Spans:
         return nxt - a if (nxt is not None and nxt > a) else None
 
 
+def _py_code_column(txt, path):
+    """A .py file with `#` comments and DOCSTRINGS removed, everything else kept.
+
+    Tokenised rather than regexed, because a `#` inside a string literal is not a
+    comment and a `'label'` argument to a symbol lookup IS a reference. Docstrings
+    go too: a triple-quoted module header is prose by any other name, and this
+    tool's own docstring names a dozen labels in both builds.
+
+    A .py under tools/ that does not parse fails LOUDLY. Falling back to the raw
+    text would restore fix (5)'s blindness for that file and say nothing.
+    """
+    try:
+        tree = ast.parse(txt)
+    except SyntaxError as e:
+        sys.exit(f"FAIL: {path} does not parse ({e}) -- the seed scrape cannot "
+                 f"read its code column, and falling back to the raw text would "
+                 f"silently restore the comment-seeding blindness of fix (5)")
+    docs = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef,
+                             ast.ClassDef)):
+            body = getattr(node, 'body', None)
+            if (body and isinstance(body[0], ast.Expr)
+                    and isinstance(body[0].value, ast.Constant)
+                    and isinstance(body[0].value.value, str)):
+                docs.add((body[0].lineno, body[0].col_offset))
+    out = []
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(txt).readline):
+            if tok.type == tokenize.COMMENT:
+                continue
+            if tok.type == tokenize.STRING and tok.start in docs:
+                continue
+            out.append(tok.string)
+    except tokenize.TokenError as e:
+        sys.exit(f"FAIL: {path} does not tokenise ({e}) -- see above")
+    return "\n".join(out)
+
+
+def _code_column(path, txt):
+    """The CODE COLUMN of one source file -- prose out, string literals in.
+    Fix (5). .asm/.inc use the same `;` split the span model itself uses."""
+    if path.endswith('.py'):
+        return _py_code_column(txt, path)
+    return "\n".join(ln.split(';', 1)[0] for ln in txt.splitlines())
+
+
+# Vectors for _selftest_code_column(). Each is (path, source, must_contain,
+# must_not_contain). ⚠️ BOTH SENSES ARE MANDATORY and the table is FLOORED: a
+# self-test table emptied to [] prints 0/0 and exits 0, which is how four tables
+# in audit_citations.py were vacuous for the tool's whole life.
+_CC_VECTORS = [
+    ("x.asm", "                call    live_one    ; dead_one is gone\n",
+     ["live_one"], ["dead_one"]),
+    ("x.inc", "; dead_one: the head this slice removed\nlive_one:  ld a,1\n",
+     ["live_one"], ["dead_one"]),
+    ("x.asm", "                cp      ';'         ; dead_one\n",
+     ["cp"], ["dead_one"]),
+    ("x.py", "# dead_one is dead\nx = sym['live_one']\n",
+     ["live_one"], ["dead_one"]),
+    ("x.py", '"""Module prose naming dead_one."""\ny = "live_one"\n',
+     ["live_one"], ["dead_one"]),
+    ("x.py", 'def f():\n    """Doc naming dead_one."""\n    return "live_one"\n',
+     ["live_one"], ["dead_one"]),
+    ("x.py", 'z = "a # dead_one is not a comment here"\n',
+     ["dead_one"], []),          # a `#` INSIDE a string is not a comment
+]
+
+
+def _selftest_code_column():
+    """Calibrate the stripper against known positives AND known negatives before
+    trusting a clean sweep. A stripper that stops stripping reads as `0 dead`."""
+    if len(_CC_VECTORS) < 6:
+        sys.exit(f"FAIL: _CC_VECTORS has {len(_CC_VECTORS)} rows -- the code-column "
+                 f"self-test has been gutted; an empty table proves nothing")
+    if not any(v[2] for v in _CC_VECTORS) or not any(v[3] for v in _CC_VECTORS):
+        sys.exit("FAIL: _CC_VECTORS needs vectors of BOTH senses -- something the "
+                 "stripper must KEEP and something it must REMOVE. A table of one "
+                 "sense passes a stripper that strips everything, or nothing.")
+    for path, src, keep, drop in _CC_VECTORS:
+        names = {m.group(0) for m in IDENT.finditer(_code_column(path, src))}
+        for k in keep:
+            if k not in names:
+                sys.exit(f"FAIL: code-column self-test: {path} {src!r} dropped "
+                         f"{k!r}, which is a REFERENCE -- the seed set would shrink "
+                         f"and live code would be reported dead")
+        for d in drop:
+            if d in names:
+                sys.exit(f"FAIL: code-column self-test: {path} {src!r} kept {d!r}, "
+                         f"which is PROSE -- fix (5) has regressed and this sweep "
+                         f"is blind to every span a comment names")
+
+
 def external_names(roots):
-    """Every identifier appearing anywhere under `roots`. Deliberately coarse:
-    over-seeding keeps a live routine alive, which is the safe direction."""
+    """Every identifier appearing in the CODE COLUMN of the files under `roots`.
+
+    ⚠️ THIS USED TO READ WHOLE FILES, and its own justification was "deliberately
+    coarse: over-seeding keeps a live routine alive, which is the safe direction."
+    That reasoning is sound for a genuine reference made in an odd place; it is
+    FALSE for prose, because a comment cannot execute. Over-seeding on prose is not
+    the safe direction, it is the SILENT one -- the gate reports a clean tree and
+    cannot see the span at all. See fix (5) in this file's header.
+    """
+    _selftest_code_column()
     out = set()
     for root in roots:
         for dirpath, _, filenames in os.walk(root):
             for fn in filenames:
                 if not fn.endswith(('.asm', '.inc', '.py')):
                     continue
+                path = os.path.join(dirpath, fn)
                 try:
-                    txt = open(os.path.join(dirpath, fn), errors='ignore').read()
+                    txt = open(path, errors='ignore').read()
                 except OSError:
                     continue
-                out.update(m.group(0) for m in IDENT.finditer(txt))
+                out.update(m.group(0)
+                           for m in IDENT.finditer(_code_column(path, txt)))
     return out
 
 
