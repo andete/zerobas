@@ -10,7 +10,10 @@
 ;
 ; WHY THE BODY PORTS UNCHANGED. Every name it calls resolves correctly on BOTH
 ; sides without editing a single line:
-;   parse_disk_fcb / parse_close_run / bl_skip_spaces / bl_upcase — sub-local
+;   parse_disk_fcb / parse_close_run / bl_upcase — sub-local
+;     (D-FNEXPR2 retired this body's only `bl_skip_spaces` call with the opening
+;     quote gate; the tenant's own parse_close_run still uses it, so the clone
+;     stays for that caller and not for this one)
 ;     clones co-located in sub/bload.asm for the
 ;     tenant (the resident originals must STAY resident regardless: they have
 ;     61/9/6 external callers between them, so they are not evicted, only copied).
@@ -40,11 +43,15 @@
 ; ===========================================================================
 
 do_bload:
-                ; --- parse: "<device>" [ ,R ] ------------------------------
-                call    bl_skip_spaces
-                cp      '"'                 ; opening quote required
-                jp      nz,bl_load_error
-                inc     hl
+                ; --- parse: <name expression> [ ,R ] -----------------------
+                ; ✅ D-FNEXPR2: the opening `call bl_skip_spaces` / `cp '"'` /
+                ; `jp nz,bl_load_error` / `inc hl` gate is GONE. HL arrives (via
+                ; BL_PTR) already pointing at a staged, '"'-terminated copy of
+                ; the evaluated filename, because `str_eval` lives in main page 1
+                ; and cannot be called from inside a page-1 tenant -- see the
+                ; resident stub in basic/bload.asm. Everything below is unchanged:
+                ; the dispatch and parse_disk_fcb walk (HL) exactly as before and
+                ; neither cares where the bytes came from.
                 ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
                 ; Peek for the literal "CAS:" prefix. Match it verbatim and
                 ; non-destructively decide; only commit to the tape path once
@@ -66,8 +73,11 @@ parse_dev:
                 jr      parse_dev
 is_tape:
                 pop     af                  ; discard saved filename start
-                ; HL now points just past "CAS:"; tape path continues verbatim.
-                call    parse_close_run     ; closing quote + optional ,R / ,S
+                ; HL points just past "CAS:" IN THE STAGED COPY, so the closing
+                ; '"' there is fname_expr's terminator and not program text; the
+                ; `,R` / `,S` tail is parsed from the real cursor (D-FNEXPR2).
+                ld      hl,(FN_RESUME)
+                call    pcr_noquote         ; optional ,R / ,S only
                 jp      c,bl_load_error
                 ld      a,(VRAM_FLAG)
                 or      a
@@ -167,10 +177,11 @@ load_handoff:
 ; The 11-byte 8.3 name field is space-padded ($20), upper-cased. See
 ; basic/sysvars.inc DISK_FCB and PROVENANCE.md §disk-BLOAD scratch FCB.
 is_disk:
-                pop     hl                  ; HL = filename start (after quote)
+                pop     hl                  ; HL = filename start (staged copy)
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                ; --- shared closing-quote + ,R parse -----------------------
-                call    parse_close_run
+                ; --- shared ,R parse, from the PROGRAM cursor (D-FNEXPR2) ---
+                ld      hl,(FN_RESUME)
+                call    pcr_noquote
                 jp      c,bl_load_error
                 ; FCB is fully built (DISK_FCB_DRV + DISK_FCB_NAME) and RUNFLAG
                 ; is set. Hand off to the disk loader.

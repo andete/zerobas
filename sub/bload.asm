@@ -159,15 +159,23 @@ bl_stat_raise:
                 ld      (BL_STAT),a
                 ret
 
-; parse_close_run — verbatim copy of the resident routine (basic/bload.asm),
-; which stays resident for its six external callers. parse_disk_fcb needs no copy
-; here: it arrives with the body via basic/pdfcb-body.inc, and binds to the
-; sub-local build_83_name rather than the resident marshalling shim.
-parse_close_run:
-                ld      a,(hl)
-                cp      '"'                 ; closing quote required
-                jr      nz,pcr_err
-                inc     hl
+; pcr_noquote — the `,R` / `,S` option tail. Near-verbatim copy of the resident
+; routine (basic/bload.asm); parse_disk_fcb needs no copy here, it arrives with
+; the body via basic/pdfcb-body.inc and binds to the sub-local build_83_name
+; rather than the resident marshalling shim.
+;
+; 🔴 D-FNEXPR2: THE `parse_close_run` HEAD IS **GONE FROM THIS COPY**, AND THE
+; DEADCODE GATE IS WHAT SAID SO. Once the filename is a string EXPRESSION the
+; tenant's two arms both enter at `pcr_noquote` — there is no closing quote in
+; the program text to consume, only the one `fname_expr` appended to its staged
+; copy in STRSCR — so the four-instruction quote check had no caller left in
+; THIS build and `check_dead_code.py` reported it as an unreachable 6 B span.
+; ⚠️ THE RESIDENT COPY KEEPS ITS HEAD, and that asymmetry is the point rather
+; than an oversight: `do_run` still parses a literal quote out of program text
+; and still calls the full `parse_close_run` there. "Dead" is per-build, exactly
+; as this project's dead-code gate documents — the same body can be live on one
+; side and unreachable on the other.
+pcr_noquote:
                 xor     a
                 ld      (RUNFLAG),a         ; default: no ,R handoff
                 ld      (VRAM_FLAG),a       ; default: RAM load

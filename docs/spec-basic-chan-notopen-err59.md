@@ -75,7 +75,7 @@ code; **`0` means no error was raised at all**, so "trapped", "not trapped" and
 | `INPUT #1,A$` | **59** (handler ran) | `load error` (handler did NOT run) |
 | `A=LOF(1)` — **GREEN CONTROL** | **59** | **59** ✅ |
 
-`load_error` ([`bload.asm:160`](../basic/bload.asm:160)) is a `ret`-based print
+`load_error` ([`bload.asm:207`](../basic/bload.asm:207)) is a `ret`-based print
 path: it prints and the program CONTINUES. `err_notopen_raise` → `raise_error`
 takes the shared trap decision. **So trappability is IN SCOPE** — it is what makes
 this a semantics fix rather than a wording fix — and it comes for free with the

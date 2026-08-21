@@ -29,6 +29,14 @@ Seven verbs diverged. This slice closes the three that **RAISE** — `OPEN`,
 mechanism**, not leftover scope: `load_error` prints and *returns*, so there is
 no error to raise and the program runs on (D-FNARG2 §4.2).
 
+> ✅ **CLOSED THE SAME DAY BY D-FNEXPR2**,
+> [`spec-basic-fnexpr2.md`](spec-basic-fnexpr2.md) — and 🔴 **the "different
+> mechanism" reason above was already out of date when it was written.**
+> D-LOADERR-FIX and D-BLNF had retired the printed `load error` at `LOAD` and
+> `BLOAD` on 08-20/08-21; re-read from clean, `f.loadlit` and `f.bloadlit`
+> already agreed. What remained at all four verbs was the ARGUMENT SHAPE — this
+> slice's own rule — and the fix RECOVERED 36 B rather than spending any.
+
 **Thirteen deferred rows graduated to ordinary scored rows.** `namspc-acceptance`
 deferred count 23 → 10.
 
@@ -64,6 +72,15 @@ an expression are the **quote gates**, and walking them found ~13 opening and
 ~5 closing gates across five files with **six different error faces**
 (`stmt_error`, `load_error`, `oo_synerr`, `bl_load_error`, `df_nofilespec`, and
 `RUN`'s bare-`RUN` fallthrough, which is genuinely ambiguous with `RUN <lineno>`).
+
+> 🔴 **"GENUINELY AMBIGUOUS" IS REFUTED — D-FNEXPR2 §1.2.** That is a claim about
+> the token stream, and the `t.*` instrument reads the stored line bytes:
+> `1 RUN 30` stores `8a 20 0e 1e 00 00` and `1 RUN A$` stores `8a 20 41 24 00`,
+> byte-identical on vg8020, cf3300 and zb. `$0E` is `LINENO_TOKEN` and the
+> tokeniser emits it for the line-number form and nothing else, so a parser that
+> tests for `$0E` first is not guessing. The decline stands for now — RUN is a
+> separate edit with its own knife — but it is **priced at ~+17 B against a
+> 50 B wall**, not blocked.
 
 🎯 **AND `parse_disk_fcb` NEEDS NO SECOND SOURCE.** It walks `(HL)` until a `"`
 and is already source-agnostic, so pointing it at a staged buffer instead of the
@@ -127,6 +144,16 @@ not asserted.
 `fname_expr` jumps to the same `stmt_error` that `oo_synerr` trampolines to. The
 reference may answer `Type mismatch` — `PLAY`'s own string operand does — but
 **that is unmeasured**, so today's face is preserved rather than guessed at.
+
+> ✅ **MEASURED 2026-08-21 (D-FNEXPR2 §2), AND THE GUESS THIS DECLINED TO MAKE
+> WAS THE RIGHT ONE.** `OPEN 5 AS #1` / `KILL 5` / `SAVE 5` / `LOAD 5` /
+> `BLOAD 5` / `FILES 5` are **`Type mismatch`** on the CF-3300 — one face at all
+> six verbs. 🔴 **But it is not the whole rule, which is why declining to guess
+> was still correct:** `SAVE 1/0` and `OPEN 1/0 AS #1` are **`Division by
+> zero`** — the reference EVALUATES the operand and the operand's own fault
+> wins. A blanket "non-string → ERR 13" would have matched the six rows this
+> paragraph anticipated and been wrong on the two it did not. The exit is
+> `els_tc_common` now (D-MISS-1's tail), at **zero bytes**.
 
 ### 3.4 ⚠️ STRSCR is a shared scratch, and the second-tenant argument is stated
 

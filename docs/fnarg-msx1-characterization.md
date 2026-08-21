@@ -119,7 +119,7 @@ sentence above was written from the source with rows for **three** verbs
 (`OPEN`, `KILL`, `NAME`); the other four were predicted. They were then driven,
 and the *rule* holds at all seven while the *face* does not: only OPEN/KILL/NAME
 RAISE `Syntax error`. `SAVE`/`LOAD`/`BLOAD` reach `load_error`
-([`basic/bload.asm:160`](../basic/bload.asm)), which PRINTS a lowercase
+([`basic/bload.asm:207`](../basic/bload.asm:207)), which PRINTS a lowercase
 `load error` and **returns** — no ERR code, no line number, no trap, and the
 program runs on. `FILES` does not refuse a non-quote at all: it reads it as *no
 filespec*, lists the whole directory, and derails later on the unconsumed

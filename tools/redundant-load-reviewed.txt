@@ -31,7 +31,17 @@ df_entptr        POINTER  returns HL = FSECTOR_BUF + entry offset
 eval             CLOBBER  returns the value in DE; A is scratch, HL the advanced cursor
 var_name_key     CLOBBER  returns A = the RESOLVED TYPE (VARTYPE), HL past the name
 tape_parse_name  CLOBBER  exits through a djnz fill loop; A is loop residue
-parse_disk_fcb   CLOBBER  exits through build_83_name; A is not the cursor byte
+# parse_disk_fcb -- RETIRED 2026-08-21 (D-FNEXPR2). It read:
+#   parse_disk_fcb   CLOBBER  exits through build_83_name; A is not the
+#                             cursor byte
+# and it is gone because its candidates are gone, not because the verdict
+# changed. Every `call parse_disk_fcb / ld a,(hl)` in the tree was a
+# CLOSING-QUOTE CHECK on a literal filename; once the filename became a
+# string EXPRESSION each of those sites reloads the cursor from FN_RESUME
+# instead, so there is no load left to be redundant. The gate caught the
+# entry as STALE in the same run -- which is the whole point of a review
+# file that must KEEP MATCHING: an entry that asserts nothing is how this
+# control goes blind.
 cas_capture_name CLOBBER  exits having written CAS_WANT_ON / a CF verdict
 print_crlf       CLOBBER  tail-jumps into pchar with A = 10
 check_vartype_num CLOBBER returns A = (VARTYPE)

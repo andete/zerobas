@@ -471,6 +471,84 @@ CASES = [
     ("d.opendev",  "dskerr", ['OPEN"CRT.DAT"AS #1', 'CLOSE#1',
                               'KILL"CRT.DAT"', 'PRINT"[OK]"']),
     ("d.savedev",  "dskerr", ['SAVE"CAS.DAT"', 'PRINT"[OK]"']),
+
+    # === D-FNEXPR2: WHAT DOES A **NON-STRING** ARGUMENT DO? ==================
+    # D-FNEXPR shipped `fname_expr` with its non-string face DELIBERATELY
+    # PRESERVED and the question FILED (docs/spec-basic-fnexpr.md §3.3): "the
+    # reference may well answer `Type mismatch` -- PLAY's own string operand
+    # does -- but that is UNMEASURED, so today's face is preserved rather than
+    # guessed at." These eight rows are that measurement, and they are what
+    # decides whether the `load error` family should RAISE.
+    #
+    # 🎯 THE DECISION IS PER VERB AND THE THREE FACES MUST NOT BE ASSUMED TO
+    # CONVERGE. zerobas answers a non-quote with THREE different things today:
+    # `Syntax error` RAISED (OPEN/KILL/NAME, via stmt_error), `load error`
+    # PRINTED-AND-RETURNED (SAVE/LOAD/BLOAD, via load_error), and a WHOLE
+    # DIRECTORY LISTING followed by a late `Syntax error` (FILES, via
+    # df_nofilespec). Each row below asks its own verb.
+    # ⚠️ `dskerr` NOT `dsk`: every subject here is a FAILURE, and `load error`
+    # prints and returns, so a `[OK]` lands UNDERNEATH it and `bracket()` would
+    # find the `[` first ([[readout-blind-to-its-own-subject]]).
+    # ⚠️ n.filesnum is `dsklist` as well as `dskerr`-shaped for exactly
+    # D-FILESIDE's reason: the face alone cannot tell "refused at the parse"
+    # from "listed the disk, THEN refused".
+    ("n.opennum",  "dskerr", ['OPEN 5 AS #1', 'PRINT"[OK]"']),
+    ("n.killnum",  "dskerr", ['KILL 5', 'PRINT"[OK]"']),
+    ("n.savenum",  "dskerr", ['SAVE 5', 'PRINT"[OK]"']),
+    ("n.loadnum",  "dskerr", ['LOAD 5', 'PRINT"[OK]"']),
+    ("n.bloadnum", "dskerr", ['BLOAD 5', 'PRINT"[OK]"']),
+    ("n.filesnum", "dsklist", ['FILES 5', 'PRINT"[OK]"']),
+    # 🔴 AND THE ROW THAT SAYS WHETHER "NON-STRING -> Type mismatch" IS THE
+    # WHOLE RULE. D-MISS-1 measured the LET mirror and found it is NOT:
+    # `A$=1/0` answers **Division by zero**, not Type mismatch, because the
+    # reference EVALUATES first and the RHS's own fault wins
+    # (basic/missing.asm els_typecheck, and it is why that routine calls
+    # check_expr_errors before type_mismatch_error). `stmt_error` carries the
+    # same rule for D-STMTPEND. Whether a FILENAME operand obeys it too is a
+    # second claim and gets its own row rather than an analogy
+    # [[a-rule-can-claim-more-than-its-evidence]].
+    ("n.savediv",  "dskerr", ['SAVE 1/0', 'PRINT"[OK]"']),
+    ("n.opendiv",  "dskerr", ['OPEN 1/0 AS #1', 'PRINT"[OK]"']),
+    # ⚠️ AND THE BARE FORMS, BECAUSE THE FIX MOVES THEIR FACE TOO. `SAVE` with
+    # no argument at all reaches the same gate a non-string does, so converting
+    # that gate changes what a bare verb answers whether or not anybody meant
+    # it to. An unmeasured face change is exactly the thing D-FNEXPR §3.3
+    # refused to make; these rows are what stops this one being that.
+    ("n.savebare", "dskerr", ['SAVE', 'PRINT"[OK]"']),
+    ("n.loadbare", "dskerr", ['LOAD', 'PRINT"[OK]"']),
+    ("n.bloadbare", "dskerr", ['BLOAD', 'PRINT"[OK]"']),
+
+    # === D-FNEXPR2: IS `RUN` REALLY AMBIGUOUS? ===============================
+    # TODO.md and docs/spec-basic-fnexpr.md §2 both name `RUN`'s bare-RUN
+    # fallthrough (basic/cload.asm:185) as "genuinely ambiguous with
+    # RUN <lineno>" and price it as a probable DECLINE. That is a claim about
+    # the TOKEN STREAM, and this project has an instrument for claims about the
+    # token stream -- the `t.*` rows, which read the STORED LINE BYTES rather
+    # than the screen ([[read-the-artifact-when-the-screen-cannot-witness]]).
+    #
+    # 🎯 IF `RUN 30` STORES A LINE-NUMBER TOKEN AND `RUN A$` STORES NAME BYTES,
+    # THE TWO ARE NOT AMBIGUOUS AT ALL and the filed decline is priced against
+    # an obstacle that is not there ([[a-filed-blocker-can-name-the-wrong-obstacle]]).
+    # basic/tokenise.inc arms line-number mode on RUN_TOKEN and emits
+    # LINENO_TOKEN ($0E) + a 16-bit value; whether the REFERENCES do the same is
+    # what these two rows ask.
+    ("t.runnum",  "tok", ['1 RUN 30']),
+    ("t.runvar",  "tok", ['1 RUN A$']),
+    # ...and the runtime half. 🔴 THE `[R]` MARKER IS NOT DECORATION: if `RUN A$`
+    # falls through to a BARE RUN the program restarts forever, and a silent
+    # infinite loop would read `<NO OUTPUT>` -- indistinguishable from a machine
+    # that printed nothing. Printing a marker every iteration fills the screen
+    # instead, so the loop reads `<RUN SCROLLED OFF>`, which this probe already
+    # treats as a reading and not a silence. Three outcomes, three distinct
+    # readings: `<File not found>` = RUN takes the expression, `<Syntax error>`
+    # / `<Type mismatch>` = it refuses it, `<RUN SCROLLED OFF>` = it ate it as a
+    # bare RUN.
+    ("n.runvar",   "dskerr", ['PRINT"[R]"', 'A$="FCZ.DAT"', 'RUN A$',
+                              'PRINT"[OK]"']),
+    # 🟢 The literal control for the row above: `RUN"FCZ.DAT"` on a file that is
+    # not there. Without it a red `n.runvar` has two candidate causes -- "RUN
+    # refuses expressions" and "RUN cannot load a disk program at all".
+    ("n.runlit",   "dskerr", ['RUN"FCZ.DAT"', 'PRINT"[OK]"']),
 ]
 
 # 🔴 ORACLE STRENGTH IS NOT UNIFORM. The `z.fld*` rows are Disk BASIC; a diskless
@@ -557,29 +635,98 @@ SITE_CONTROL = {
 # `Type mismatch`, which is what the CF-3300 has answered all along. The
 # deferral was honoured rather than merely filed
 # ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
-DEFERRED: dict[str, str] = {
-    # D-FNARG denominator rows: measured, printed, NEVER scored until the rule is
-    # settled and a fix is priced. A deferred row that started AGREEING would
-    # itself be a finding.
-    lab: "DEFERRED — D-FNARG filename-argument denominator, `load error` half "
-         "(SAVE/LOAD/BLOAD/FILES: a PRINTED non-raising face, a different "
-         "mechanism — D-FNEXPR closed the RAISING half only)"
-    # ✅ THIRTEEN ROWS GRADUATED 2026-08-21 (D-FNEXPR) and are ORDINARY SCORED
-    # ROWS above: `f.lit`, `f.var`, `f.expr`, `f.inlit`, `f.invar`, `f.outvar`,
-    # `f.appvar`, `f.applit`, `f.appvarx`, `f.killlit`, `f.killvar`,
-    # `f.namelit`, `f.namevar`. `fname_expr` (basic/files.asm) evaluates the
-    # filename with `str_eval`, so OPEN / KILL / NAME take a string EXPRESSION
-    # exactly as the reference does. The deferral was honoured by fixing the
-    # rows, not by rescoring them
-    # ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
-    # ⚠️ WHAT STAYS HERE IS THE `load error` FAMILY, AND IT IS A DIFFERENT
-    # MECHANISM, not leftover scope: SAVE/LOAD/BLOAD reach `load_error`, which
-    # PRINTS and RETURNS (no ERR code, no line, no ON ERROR, program runs on),
-    # and FILES reads a non-quote as *no filespec* and lists the directory
-    # first. One rule, three mechanisms -- §4.2 of the D-FNARG2 doc.
-    for lab in ("f.savelit", "f.savevar", "f.loadlit", "f.loadvar",
-                "f.bloadlit", "f.bloadvar", "f.fileslit", "f.filesvar")
-}
+DEFERRED: dict[str, str] = {}
+
+# ✅ ALL EIGHT D-FNARG2 ROWS GRADUATED 2026-08-21 (D-FNEXPR2) and are ORDINARY
+# SCORED ROWS above: f.savelit, f.savevar, f.loadlit, f.loadvar, f.bloadlit,
+# f.bloadvar, f.fileslit, f.filesvar -- and `f.filesvarl` with them. Thirteen
+# more graduated one commit earlier under D-FNEXPR. The deferral was honoured by
+# FIXING the rows [[a-deferral-honoured-is-worth-more-than-one-filed]].
+#
+# 🔴 AND TWO OF THE EIGHT HAD ALREADY BEEN GREEN FOR A DAY WHEN THIS SLICE
+# STARTED. Re-read at `cffb34d` before a line of ROM changed, `f.loadlit` and
+# `f.bloadlit` BOTH answered `<File not found>` on BOTH sides -- closed by
+# D-LOADERR-FIX (2026-08-20) and D-BLNF (2026-08-21) as a SIDE EFFECT, while
+# this dict still described them as the `load error` half and TODO.md still
+# ranked the whole family as open. A deferred row is only a denominator while
+# somebody re-reads it; nobody had. Same shape as the gap sweep's D-LINEMAX
+# ("22/53, awaiting sign-off" over an item that had shipped 60/60).
+# 🎯 So the residual's own name was wrong: what remained of the "`load error`
+# family" was not a FACE question at all. `load_error`'s printed non-raising
+# face had already been retired at LOAD and BLOAD; the four rows that still
+# diverged -- f.savevar, f.loadvar, f.bloadvar, f.filesvar -- were every one of
+# them the ARGUMENT SHAPE, i.e. D-FNEXPR's rule at four more verbs.
+#
+# PREDICTIONS FOR THE FIX, written here BEFORE the run (cf3300 / zb-after):
+#   f.savevar    OK                          / OK
+#   f.loadvar    <File not found>            / <File not found>
+#   f.bloadvar   <File not found>            / <File not found>
+#   f.filesvar   <File not found>            / <File not found>
+#   f.filesvarl  0 entries + <File not found>/ 0 entries + <File not found>
+#   n.opennum    <Type mismatch>             / <Type mismatch>
+#   n.killnum    <Type mismatch>             / <Type mismatch>
+#   n.savenum    <Type mismatch>             / <Type mismatch>
+#   n.loadnum    <Type mismatch>             / <Type mismatch>
+#   n.bloadnum   <Type mismatch>             / <Type mismatch>
+#   n.filesnum   0 entries + <Type mismatch> / 0 entries + <Type mismatch>
+#   n.savediv    <Division by zero>          / <Division by zero>
+#   n.opendiv    <Division by zero>          / <Division by zero>
+#   f.paren      OK                          / <Type mismatch>   (still DEFERRED,
+#                and it MOVES: `Syntax error` -> `Type mismatch`, see below)
+#   n.savebare   <Missing operand>           / <Syntax error>    (still DEFERRED)
+#   n.loadbare   <Missing operand>           / <Syntax error>    (still DEFERRED)
+#   n.bloadbare  <Missing operand>           / <Syntax error>    (still DEFERRED)
+#   n.runvar     <File not found>            / <RUN SCROLLED OFF> (DEFERRED: RUN
+#                is not converted by this slice -- see its own note)
+
+# --- STILL DEFERRED (1): the BARE forms ------------------------------------
+# 🔴 `SAVE` / `LOAD` / `BLOAD` WITH NO ARGUMENT ANSWER `Missing operand in 10`
+# ON THE CF-3300 -- raised, with a line number. They answered a PRINTED
+# `load error` here and they answer a RAISED `Syntax error` now: the DISPOSITION
+# is fixed (it stops, ERR is set, ON ERROR traps it) and the WORDING is not,
+# because `Missing operand` is a message zerobas does not have. That is exactly
+# the disposition basic/missing.asm's els_typecheck already records for the LET
+# mirror `A$=` -- "a THIRD wording zerobas does not produce here" -- so these
+# three rows are that same open item, at three more verbs.
+# ⚠️ THEY MOVED, SO THEY MAY NOT SILENTLY STAY DEFERRED WITH A STALE REASON:
+# the reason below names the face they have NOW.
+for _lab in ("n.savebare", "n.loadbare", "n.bloadbare"):
+    DEFERRED[_lab] = ("DEFERRED — the bare form: `Missing operand` on the "
+                      "CF-3300, `Syntax error` here. RAISED on both sides since "
+                      "D-FNEXPR2 (it was a PRINTED `load error`); the wording is "
+                      "D-MISS-1's open `Missing operand` residual, one verb "
+                      "family over")
+
+# --- STILL DEFERRED (2): RUN, and its filed blocker is REFUTED --------------
+# `RUN A$` is `File not found` on the CF-3300 (row n.runvar) against the 🟢
+# literal control `RUN"FCZ.DAT"` (n.runlit), which agrees on both sides -- so
+# RUN reaches the file system with a LITERAL here and refuses an EXPRESSION.
+# 🔴 AND WHAT IT DOES INSTEAD IS WORSE THAN A REFUSAL: `do_run` reads any
+# non-quote as a BARE RUN, so `RUN A$` RESTARTS THE PROGRAM, forever. The `[R]`
+# marker in the fixture is what makes that visible -- a silent infinite loop
+# would have read `<NO OUTPUT>`, i.e. as a machine that printed nothing.
+#
+# 🎯 AND THE REASON THE FIX WAS FILED AS A PROBABLE DECLINE IS MEASURED FALSE.
+# TODO.md and docs/spec-basic-fnexpr.md §2 both call `RUN`'s fallthrough
+# "genuinely ambiguous with RUN <lineno>". That is a claim about the TOKEN
+# STREAM, and `t.runnum` / `t.runvar` read the STORED LINE BYTES on all three
+# machines:
+#     1 RUN 30   ->  8a 20 0e 1e 00 00     RUN_TOKEN, ' ', $0E + word 30
+#     1 RUN A$   ->  8a 20 41 24 00        RUN_TOKEN, ' ', "A$"
+# byte-identical on vg8020, cf3300 and zb. The tokeniser has ALREADY separated
+# them -- LINENO_TOKEN ($0E) is emitted for the line-number form and nothing
+# else -- so a parser that tests for $0E first is not guessing at anything.
+# The blocker named an obstacle that is not there
+# [[a-filed-blocker-can-name-the-wrong-obstacle]].
+# ⚠️ NOT FIXED HERE ANYWAY, and deliberately: this slice's subject is the four
+# verbs the `load error` residual named, RUN's conversion is a separate edit
+# with its own knife, and a decline that has been REFUTED is worth more filed
+# accurately than folded in quietly.
+DEFERRED["n.runvar"] = ("DEFERRED — `RUN A$` RESTARTS THE PROGRAM (bare-RUN "
+                        "fallthrough) where the CF-3300 loads the named file; "
+                        "the filed `RUN <lineno>` ambiguity is REFUTED by "
+                        "t.runnum/t.runvar (the tokeniser emits $0E for the "
+                        "line-number form and nothing else)")
 
 # 🔴 `f.paren` IS NOT A FILENAME ROW AND NEVER WAS -- MEASURED 2026-08-21, after
 # `fname_expr` closed the other thirteen and left this one red. `(A$)` is
@@ -593,21 +740,26 @@ DEFERRED: dict[str, str] = {
 # on the string-function tokens and on a letter, and has no parenthesised-
 # subexpression case at all. Charging it to the filename gate would price a
 # string-evaluator hole against the wrong verb. Filed as its own residual.
-# ⚠️ Its FACE differs by context -- `Type mismatch` in LET/PRINT, `Syntax error`
-# through `fname_expr`'s `jp nc,stmt_error` -- so the row cannot be scored on
-# the face either until the evaluator is the one under test.
+# ⚠️ ITS FACE MOVED WITH D-FNEXPR2 AND THE NOTE IS CORRECTED RATHER THAN LEFT
+# TO ROT. This used to read "its FACE differs by context -- `Type mismatch` in
+# LET/PRINT, `Syntax error` through `fname_expr`'s `jp nc,stmt_error`". That
+# exit is `els_tc_common` now, which is the very routine the LET mirror uses, so
+# `OPEN(A$)AS #1` answers `Type mismatch` here too: the three contexts AGREE on
+# the face and disagree with the reference in one direction only. The row still
+# cannot CLOSE on the face -- the reference answers `OK`, because it accepts the
+# parenthesised subexpression -- but it is now one divergence instead of two.
 DEFERRED["f.paren"] = ("DEFERRED — NOT the filename rule: `(A$)` is refused in "
                        "every string context (str_eval_one has no paren case); "
                        "numeric `(A)` works. Filed separately.")
 
-# D-FILESIDE, 2026-08-21. `f.filesvarl` is a MEASURED, FILED divergence -- the
-# machine lists a directory the reference never lists -- so it is PRINTED and
-# NEVER GATED: gating a known divergence turns a battery red forever instead of
-# measuring anything. Its two controls ARE gated, which is what makes it a
-# reading rather than an anecdote.
-DEFERRED["f.filesvarl"] = ("DEFERRED — D-FILESIDE: `FILES A$` lists the whole "
-                           "directory BEFORE it errors (the ROM question is "
-                           "D-FNARG's, unpriced)")
+# ✅ D-FILESIDE'S ROW GRADUATED 2026-08-21 (D-FNEXPR2). `f.filesvarl` was a
+# MEASURED, FILED divergence -- the machine listed a whole directory the
+# reference never lists, then derailed on the unconsumed argument -- and it is
+# an ordinary scored row now, because `do_files` tests for an ARGUMENT instead
+# of for a QUOTE and hands it to `fname_expr`. 🎯 IT IS THE ROW THAT PROVES THE
+# FIX IS A FIX: the FACE alone reads the same whether the machine refuses at the
+# parse or lists five files first, which is why D-FILESIDE built `listface` in
+# the first place, and it is the entry COUNT that separates them (5 -> 0).
 
 
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>", "<NOT STORED>",
@@ -621,6 +773,23 @@ ERRORS = ("Syntax error", "Type mismatch", "Subscript out of range",
           # 2026-08-20 these fell through to `<NO OUTPUT>` -- a real error read as
           # a silence, and a silence is what a diverging pair agrees on.
           "File not found", "Device I/O error", "Disk offline", "Bad file name",
+          # 🔴 D-FNEXPR2: ADDED BECAUSE ITS ABSENCE READ AS A SILENCE, AGAIN.
+          # `SAVE 1/0` and `OPEN 1/0 AS #1` both scored `<NO OUTPUT>` on the
+          # CF-3300 in the first characterization round -- the machine printed
+          # `Division by zero` and the classifier could not name it, which is
+          # bit-for-bit the shape that made D-FNARG2 add `File not found` here.
+          # A classifier that cannot name an error reports it as a SILENCE, and
+          # a silence is what a diverging pair agrees on.
+          "Division by zero",
+          # 🔴 AND THE SAME AGAIN, ONE ROUND LATER. `SAVE` / `LOAD` / `BLOAD`
+          # with NO argument answer `Missing operand in 10` on the CF-3300 --
+          # raised, with a line number -- and that read as `<NO OUTPUT>` too
+          # until the name was here. It is the THIRD wording basic/missing.asm
+          # els_typecheck already records zerobas as not producing (D-MISS-1
+          # kept `Syntax error` for the LET mirror `A$=`), so naming it is what
+          # lets these rows stay an honest DEFERRED divergence instead of a
+          # silence that looks like agreement.
+          "Missing operand",
           # 🔴 NOT AN MSX ERROR NAME. `load error` is zerobas's OWN lowercase
           # string (basic/bload.asm `err_io`), printed by a routine that RETURNS
           # instead of raising. It has to be nameable or it reads as a silence.

@@ -673,7 +673,12 @@ end-of-data), so no byte past the program is read.
 dispatch (`ex_cload`/`ex_load` → `do_cload`/`do_load`). `do_cload` accepts an
 optional quoted filename (parsed-past, ignored); `do_load` requires a `"CAS:…"`
 device string (reusing bload.asm's `dev_cas` / `load_error`) and ignores any
-trailing filename. Both fall into `do_tape_prog`, which mirrors bload.asm's tape
+trailing filename. **⚠️ "quoted" is stale for `do_load` since D-FNEXPR2
+(2026-08-21):** its argument is any string EXPRESSION (`LOAD A$`,
+`LOAD A$+".BAS"`), evaluated by `fname_expr` and staged in `STRSCR` before the
+`"CAS:"` dispatch runs — measured on the CF-3300, row `f.loadvar`. `do_cload`
+is genuinely untouched and its argument really is quoted-literal-only; that is
+now a divergence of its own and not a shared description. Both fall into `do_tape_prog`, which mirrors bload.asm's tape
 contract (TAPION per block; TAPIN trashes all registers so state lives in RAM):
 verify the `$D3` id, skip the 16-byte header, re-TAPION the data block, then read
 the line-link image into TXTBASE — `$0000` link ⇒ stop, otherwise store link +
@@ -1416,12 +1421,26 @@ raw RAM); the two on-disk formats — and their marker bytes — are distinct.
 NON-DESTRUCTIVELY, exactly like `do_bload`: a full `"CAS:"` prefix selects the
 unchanged cassette path (`do_load_fn`/`do_tape_prog`), anything else falls
 through to the disk path (a name like `"CASETTE"` is a disk name, not tape). The
-cassette-only `do_cload` (`CLOAD`) is untouched. The disk path restores the
-filename start from the stack (HL is mid-`"CAS:"` compare and not trustworthy),
-parses the FCB via the shared `parse_disk_fcb`, then `parse_close_run` (so
-`LOAD"A:PROG.BAS",R` sets `RUNFLAG`), calls `disk_prog_load`, and — iff `RUNFLAG`
-— `jp run_prog` to RUN the freshly loaded program (LOAD",R" = load and run,
-standard MSX behaviour). No new token: `LOAD` already exists as `LOAD_TOKEN`
+cassette-only `do_cload` (`CLOAD`) is untouched. The disk path parses the FCB
+via the shared `parse_disk_fcb`, then the `,R` tail (so `LOAD"A:PROG.BAS",R`
+sets `RUNFLAG`), calls `disk_prog_load`, and — iff `RUNFLAG` — `jp run_prog` to
+RUN the freshly loaded program (LOAD",R" = load and run, standard MSX
+behaviour).
+
+**⚠️ D-FNEXPR2 (2026-08-21) falsified two sentences that stood here, and they
+are inverted rather than deleted.** They read: *"The disk path restores the
+filename start from the stack (HL is mid-`"CAS:"` compare and not
+trustworthy)"*, and *"then `parse_close_run`"*. Both were true of the
+hand-rolled `"CAS:"` compare loop and the literal-quote gate this verb used to
+carry. Neither is now: the compare is `dev_cmp`, which restores HL itself on a
+miss (so the `push`/`pop` pair the first sentence described no longer exists —
+it was the THIRD hand-rolled copy of `dev_cmp` in the tree and D-FNFUND had
+collapsed only the two in `save.asm`); and the argument is a string EXPRESSION
+staged in `STRSCR`, so there is no closing quote in the program text to consume
+and the tail is entered at `pcr_noquote` with the cursor reloaded from
+`FN_RESUME`. The analysis is kept because the reason it was written down — HL
+is not trustworthy across a device-prefix compare — is exactly why `dev_cmp`
+has the contract it has. No new token: `LOAD` already exists as `LOAD_TOKEN`
 ($B5), and the disk filename is verbatim ASCII in the crunch stream — the
 tokeniser is untouched and crunch stays byte-identical (Philips VG-8020).
 

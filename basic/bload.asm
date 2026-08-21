@@ -41,7 +41,20 @@ bl_load_error   equ     load_error
 ; never returns, so running it inside the tenant's CALSLT would leave main page 1
 ; switched out forever. The tenant returns normally and we do the handoff here.
 do_bload:
-                ld      (BL_PTR),hl         ; token cursor -> tenant
+                ; ✅ D-FNEXPR2: THE FILENAME IS EVALUATED **HERE**, NOT IN THE
+                ; TENANT, AND THAT IS FORCED RATHER THAN CHOSEN. `str_eval` is
+                ; main PAGE 1, which is switched OUT while a page-1 sub-ROM
+                ; tenant runs -- the same constraint this file's header already
+                ; states for the rest of the parse ("every one of these verbs
+                ; PARSES with eval, which is main page 1 and therefore switched
+                ; out"). So the one thing BLOAD's parse still did sub-side, the
+                ; opening quote gate, comes back to the resident half; what
+                ; crosses is the STAGED name in STRSCR (RAM, mapped on both
+                ; sides) plus FN_RESUME for the `,R` tail.
+                ; 🎯 AND IT COSTS THE TENANT NOTHING TO GIVE UP: the 9 B gate it
+                ; drops pays for the two `ld hl,(FN_RESUME)` its arms gain.
+                call    fname_expr          ; HL -> the staged '"'-terminated copy
+                ld      (BL_PTR),hl         ; staged name ptr -> tenant
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD
                 call    subrom_call
                 jp      c,subrom_absent_error
@@ -127,6 +140,19 @@ parse_close_run:
                 cp      '"'                 ; closing quote required
                 jr      nz,pcr_err
                 inc     hl
+pcr_noquote:                                ; ✅ D-FNEXPR2: A LABEL, ZERO BYTES.
+                                            ; Once the filename is a string
+                                            ; EXPRESSION there is no closing quote
+                                            ; in the PROGRAM TEXT to consume -- the
+                                            ; only '"' is the one fname_expr
+                                            ; appended to its staged copy, and the
+                                            ; cursor resumes from FN_RESUME, which
+                                            ; already points PAST the whole
+                                            ; expression. So the `,R` / `,S` tail
+                                            ; is entered here instead. Everything
+                                            ; below is shared byte-for-byte; only
+                                            ; the four-instruction quote check
+                                            ; above is skipped.
                 xor     a
                 ld      (RUNFLAG),a         ; default: no ,R handoff
                 ld      (VRAM_FLAG),a       ; default: RAM load

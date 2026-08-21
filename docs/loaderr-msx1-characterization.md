@@ -32,7 +32,7 @@ Stored programs, `RUN`, read off the screen.
 
 Uniform, on both axes: the reference **raises** an ERR with a line number and
 **stops**; zerobas **prints** a lowercase string and **carries on**.
-[`basic/bload.asm:160`](../basic/bload.asm) `load_error` is `TAPIOF`, an
+[`basic/bload.asm:207`](../basic/bload.asm:207) `load_error` is `TAPIOF`, an
 `ERRMARK` byte, `print_msg`, **`ret`** — no ERR code, no line number, no
 `ON ERROR` trap.
 

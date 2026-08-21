@@ -75,49 +75,54 @@ dcl_noname:
                 ld      (CAS_WANT_ON),a     ; no name -> load the next tape file
                 jp      do_tape_prog
 
-; --- do_load: LOAD "CAS:filename" | LOAD "A:filename"[,R] --------------------
-; Entry: HL -> the bytes after the LOAD token. The argument is a quoted device
-; string: a "CAS:" prefix selects the (unchanged) cassette path; anything else is
+; --- do_load: LOAD <name> | LOAD "CAS:filename" | LOAD "A:filename"[,R] ------
+; Entry: HL -> the bytes after the LOAD token. ⚠️ D-FNEXPR2: the argument is a
+; string EXPRESSION, not "a quoted device string" as this line read until
+; 2026-08-21 -- `LOAD A$` and `LOAD A$+".BAS"` are `File not found` on the
+; CF-3300 and were a PRINTED `load error` here (row f.loadvar). It is evaluated
+; by `fname_expr` and staged in STRSCR, so everything below reads a staged copy:
+; a "CAS:" prefix selects the (unchanged) cassette path; anything else is
 ; a disk filename (optional "A:"/"B:" drive prefix) read from the disk BDOS layer.
 ; A "CAS:" filename is parsed-past and ignored (TAPION opens the next tape file);
 ; a disk LOAD "name",R loads the tokenised BASIC program and runs it.
 ;
 ; The "CAS:" prefix is peeked NON-DESTRUCTIVELY (exactly like do_bload): only once
 ; the full prefix matches do we commit to the tape path, so a name like "CASETTE"
-; falls through cleanly to the disk path.
+; falls through cleanly to the disk path. That peek is `dev_cmp` now, not the
+; hand-rolled loop this file carried -- the THIRD copy of it in the tree, and
+; D-FNFUND had collapsed only the two in save.asm because its sweep was on a
+; FILE and not on the MECHANISM.
 do_load:
                 xor     a
                 ld      (CAS_VERIFY),a      ; LOAD is a real load, never CLOAD? verify
-                call    skip_spaces
-                cp      '"'                 ; opening quote required
-                jp      nz,load_error
-                inc     hl
+                ; ✅ D-FNEXPR2: the filename is a string EXPRESSION (row f.loadvar:
+                ; `LOAD A$` on a missing file is `File not found` on the CF-3300
+                ; and was `load error` here -- PRINTED, so the program ran on).
+                call    fname_expr          ; HL -> the staged '"'-terminated copy
                 ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
-                push    hl                  ; remember the filename start
+                ; 🎯 D-FNEXPR2 CARVE: THIS WAS A **THIRD** HAND-ROLLED COPY OF
+                ; `dev_cmp`, and D-FNFUND collapsed only the two in save.asm --
+                ; its sweep was on `basic/save.asm`, not on the mechanism, which
+                ; is the class this project keeps re-learning (grep the SYMBOL,
+                ; then grep the MECHANISM). Same upcase, same 0-terminated
+                ; prefix, same advance-on-hit / restore-HL-on-miss contract, and
+                ; the `push`/`pop` pair goes with it because dev_cmp owns one.
                 ld      de,dev_cas          ; compare device name to "CAS:"
-dl_dev:
-                ld      a,(de)
-                or      a
-                jr      z,dl_is_cas         ; matched all of "CAS:" -> tape
-                ld      c,a                 ; expected (uppercase) char
-                ld      a,(hl)              ; typed char
-                call    upcase              ; case-insensitive (typed may be lower)
-                cp      c
-                jr      nz,dl_is_disk       ; prefix mismatch -> disk path
-                inc     hl
-                inc     de
-                jr      dl_dev
+                call    dev_cmp
+                jr      nz,dl_is_disk       ; no "CAS:" prefix -> disk (HL restored)
 dl_is_cas:
-                pop     af                  ; discard saved filename start
-                ; HL is now inside the quotes, past "CAS:". Tier-3: CAPTURE the
-                ; quoted filename into CAS_WANT (cas_open_match then finds the named
-                ; tape file, case-sensitive per spec §A.5) and leave HL ON the
-                ; closing quote so parse_close_run can consume it + an optional ,R
-                ; (LOAD"CAS:x",R loads *and runs*; a junk flag is a clean Syntax
-                ; error). Empty name (LOAD"CAS:") -> CAS_WANT_ON=0 = load next.
+                ; HL is now inside the STAGED copy, past "CAS:". Tier-3: CAPTURE
+                ; the filename into CAS_WANT (cas_open_match then finds the named
+                ; tape file, case-sensitive per spec §A.5). It stops ON the '"'
+                ; fname_expr appended to the staging buffer; the `,R` tail is
+                ; parsed from FN_RESUME instead, in the PROGRAM TEXT where it
+                ; actually lives (D-FNEXPR2). Empty name (LOAD"CAS:") ->
+                ; CAS_WANT_ON=0 = load next.
                 call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
 dl_cas_close:
-                call    parse_close_run     ; closing quote + optional ,R -> RUNFLAG
+                ld      hl,(FN_RESUME)      ; D-FNEXPR2: the closing '"' lives in
+                call    pcr_noquote         ; the STAGED copy, so resume past the
+                                            ; expression and take only the ,R tail
                 jp      c,load_error
                 call    do_tape_prog        ; load the tokenised program off tape
                 ret     c                   ; D-CASTAIL defect B (docs/spec-basic-
@@ -133,14 +138,18 @@ dl_cas_close:
                                             ; never nested (§3.1, and see run_prog_top)
 
 ; --- do_load disk path: LOAD "A:name"[,R] -----------------------------------
-; HL was advanced partway through the "CAS:" compare and must NOT be trusted —
-; restore the filename start from the stack. Parse the FCB (shared with do_bload)
-; and the closing-quote + ,R, load the tokenised program from disk, then run it
-; iff ,R was given (LOAD"name",R = load and run; standard MSX behaviour).
+; D-FNEXPR2: this paragraph used to read "HL was advanced partway through the
+; 'CAS:' compare and must NOT be trusted — restore the filename start from the
+; stack." That was true of the hand-rolled compare loop this file carried; it is
+; not true of `dev_cmp`, which restores HL itself on a miss, and the `push`/`pop`
+; pair the sentence described no longer exists. Parse the FCB (shared with
+; do_bload) out of the staged copy, take the `,R` tail from FN_RESUME, load the
+; tokenised program from disk, then run it iff ,R was given (LOAD"name",R = load
+; and run; standard MSX behaviour).
 dl_is_disk:
-                pop     hl                  ; HL = filename start (after the quote)
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                call    parse_close_run     ; closing quote + optional ,R -> RUNFLAG
+                ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
+                call    pcr_noquote         ; ,R tail only -- no quote in the text
                 jp      c,load_error
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
                 ret     c                   ; D-RUNTAIL defect B (docs/spec-basic-

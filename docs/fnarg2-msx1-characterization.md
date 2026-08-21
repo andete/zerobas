@@ -96,7 +96,7 @@ verbs to seven.
 | `SAVE` `LOAD` `BLOAD` | `cp '"'` → `load_error` | **`load error`** | **no** |
 | `FILES` | `cp '"'` → `df_nofilespec` | `Syntax error` | yes, but *later* |
 
-`load_error` ([`basic/bload.asm:160`](../basic/bload.asm)) is `TAPIOF`, an
+`load_error` ([`basic/bload.asm:207`](../basic/bload.asm:207)) is `TAPIOF`, an
 `ERRMARK` byte, `print_msg`, **`ret`**. It is not an error: no ERR code, no line
 number, no `ON ERROR` trap, and **the program runs on** — `[OK]` prints
 underneath it. That is the same class as the `ex_let_arr_str` swallow D-ARYOOS
@@ -138,14 +138,37 @@ does.
 
 ---
 
-## 5. Status
+## 5. Status — ✅ ALL EIGHT ROWS CLOSED, 2026-08-21 (D-FNEXPR2)
 
-All eight rows are **DEFERRED** — measured, printed, never scored — like
-D-FNARG's fourteen. A deferred row that started AGREEING would itself be a
-finding. Two residuals filed in `TODO.md`: the `load error` non-raise (with the
-four remaining verbs named), and the `FILES` full-listing side effect.
+[`spec-basic-fnexpr2.md`](spec-basic-fnexpr2.md). All eight are ordinary scored
+rows now, and `f.filesvarl` (§4.2's side effect) with them:
+`namspc-acceptance` **95/95**, deferred 5.
 
-Not priced. The argument-shape fix is still D-FNARG's design question (a second
-source for `parse_disk_fcb` plus a staging buffer, at 11 sites); the
-`load error` fix is a different question — it is about *raising* rather than
-about *parsing* — and the two should not be assumed to share a slice.
+🔴 **AND §4.2's TITLE — "one rule, THREE mechanisms" — WAS TRUE WHEN WRITTEN AND
+HAD STOPPED BEING TRUE BY THE TIME IT WAS PICKED UP.** Re-read at `cffb34d`
+before any edit, `f.loadlit` and `f.bloadlit` BOTH answered `File not found` on
+both sides: D-LOADERR-FIX (2026-08-20) and D-BLNF (2026-08-21) had retired the
+PRINTED `load error` at `LOAD` and `BLOAD` as a side effect of other slices. So
+the "different mechanism" half of the residual had already closed itself, and
+what remained at all four verbs was the ARGUMENT SHAPE — D-FNARG's own rule.
+**A deferred row is a denominator only while somebody re-reads it.**
+
+🎯 **§4.2's OTHER CLAIM SURVIVED AND GOT SHARPER.** The three faces really were
+three, and the reference has ONE: `OPEN 5` / `KILL 5` / `SAVE 5` / `LOAD 5` /
+`BLOAD 5` / `FILES 5` are all `Type mismatch` on the CF-3300 (D-FNEXPR2 §2). The
+convergence is a READING now, not the assumption it would have been had the fix
+simply pointed all three gates at one label.
+
+🔴 **AND §4.3's "the literal controls found a second defect — again" IS WHY THE
+FIRST HALF CLOSED WITHOUT THIS DOC NOTICING.** `f.loadlit`/`f.bloadlit` were
+that second defect; they were fixed elsewhere and nothing came back to score
+them. *A control is not overhead* — and a control that has gone green is a
+finding too.
+
+**The original status, for the record:** all eight rows DEFERRED; two residuals
+filed in `TODO.md` (the `load error` non-raise with the four remaining verbs
+named, and the `FILES` full-listing side effect); not priced, with the note that
+the argument-shape fix and the `load error` fix *"should not be assumed to share
+a slice."* They did not: D-FNEXPR took the raising three, D-FNEXPR2 the rest —
+and the second half turned out to be the same question as the first, plus a face
+that had to be measured before it could be chosen.

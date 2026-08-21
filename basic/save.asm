@@ -64,7 +64,11 @@
 ;
 ; WHAT DOES **NOT** MOVE, and why the split is where it is: every one of these
 ; verbs PARSES with `eval`, which is main page 1 and therefore switched OUT
-; while a page-1 tenant runs. So the parse stays resident — and because it does,
+; while a page-1 tenant runs. 🎯 D-FNEXPR2 CASHED THAT RULE IN AT BLOAD: once a
+; FILENAME is a string expression it needs `str_eval`, which is page 1 too, so
+; the one piece of parse still living sub-side -- BLOAD's opening quote gate --
+; came back to the resident stub (basic/bload.asm). The staged name crosses in
+; STRSCR, which is RAM and mapped from both sides. So the parse stays resident — and because it does,
 ; the tenant needs no cursor and no argument marshalling at all: by the time it
 ; is called every value already sits in its RAM home (DISK_FCB_NAME, TSV_NAME,
 ; CURPTR, DSV_END, TSV_END, EXECPTR, VRAM_FLAG). Only SV_OP and SV_STAT ride.
@@ -81,16 +85,19 @@ sv_load_error   equ     load_error          ; resident: a zero-byte EQU, so ever
                                             ; reporter that sets SV_STAT.
 
 ; ===========================================================================
-; do_bsave — BSAVE "device:name",start,end[,exec]
-; Entry: HL -> the bytes after the BSAVE token (verbatim ASCII filename, then the
-; crunched address args: comma + &H/decimal expression each).
+; do_bsave — BSAVE <name>,start,end[,exec]     ("device:name" or any string expr)
+; Entry: HL -> the bytes after the BSAVE token. ⚠️ D-FNEXPR2: the name is a
+; string EXPRESSION (it was "verbatim ASCII filename" here, and that described a
+; literal-only gate); the address args are unchanged crunched expressions,
+; comma + &H/decimal each, and are parsed from FN_RESUME.
 do_bsave:
                 xor     a
                 ld      (VRAM_FLAG),a       ; default RAM source; ",S" sets it below
-                call    skip_spaces
-                cp      '"'                 ; opening quote required
-                jp      nz,load_error
-                inc     hl
+                ; ✅ D-FNEXPR2: the filename is a string EXPRESSION. This was
+                ; `call skip_spaces` / `cp '"'` / `jp nz,load_error` / `inc hl`:
+                ; a LITERAL gate whose refusal PRINTED `load error` and RETURNED,
+                ; so `BSAVE A$,&H8000,&H9000` ran on as if nothing had happened.
+                call    fname_expr          ; HL -> the staged '"'-terminated copy
                 ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
                 ; D-FNFUND: this was a hand-rolled copy of files.asm's dev_cmp --
                 ; same upcase, same 0-terminated prefix, same "advance on a hit,
@@ -103,10 +110,10 @@ do_bsave:
 bsv_is_disk:
                 ; HL = filename start (after the quote); build the FCB.
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                ld      a,(hl)
-                cp      '"'                 ; consume the closing quote
-                jp      nz,load_error
-                inc     hl
+                ld      hl,(FN_RESUME)      ; ✅ D-FNEXPR2: resume past the whole
+                                            ; EXPRESSION. The '"' parse_disk_fcb
+                                            ; stopped on is the one fname_expr
+                                            ; appended to STRSCR, not program text.
                 ; --- ,start ------------------------------------------------
                 call    expect_comma_eval   ; DE = start, HL advanced
                 ld      (CURPTR),de         ; CURPTR = start (the source walk cursor)
@@ -138,10 +145,7 @@ bsv_is_cas:
                 ; HL now points just past "CAS:" inside the quotes.
                 ; Parse filename: up to 6 chars until '"', space-pad to 6.
                 call    tape_parse_name     ; fills TSV_NAME[0..5]; HL -> closing '"'
-                ld      a,(hl)
-                cp      '"'
-                jp      nz,load_error
-                inc     hl                  ; past closing '"'
+                ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
                 ; --- ,start ------------------------------------------------
                 call    expect_comma_eval   ; DE = start
                 ld      (CURPTR),de
@@ -164,13 +168,16 @@ bsv_cas_open:
                 jp      sv_tenant           ; BSAVE -> tape
 
 ; ===========================================================================
-; do_save — SAVE "device:name"   (tokenised-BASIC save; ,A out of scope)
-; Entry: HL -> the bytes after the SAVE token.
+; do_save — SAVE <name>[,A]   ("device:name" or any string expr; tokenised-BASIC)
+; Entry: HL -> the bytes after the SAVE token. ⚠️ D-FNEXPR2: the name is a string
+; EXPRESSION -- `SAVE A$` is `OK` on the CF-3300 (row f.savevar) and was a
+; PRINTED `load error` here, so the program carried on having saved nothing.
 do_save:
-                call    skip_spaces
-                cp      '"'                 ; opening quote required
-                jp      nz,load_error
-                inc     hl
+                ; ✅ D-FNEXPR2: the filename is a string EXPRESSION (row f.savevar:
+                ; `SAVE A$` is `OK` on the CF-3300 and was `load error` here --
+                ; PRINTED, not raised, so the program carried on having saved
+                ; nothing at all).
+                call    fname_expr          ; HL -> the staged '"'-terminated copy
                 ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
                 ; D-FNFUND: the second hand-rolled copy of dev_cmp (see do_bsave
                 ; above). Identical contract; the push/pop pair is dev_cmp's now.
@@ -179,10 +186,7 @@ do_save:
                 jp      z,sav_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
 sav_is_disk:
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                ld      a,(hl)
-                cp      '"'                 ; consume the closing quote
-                jp      nz,load_error
-                inc     hl
+                ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
                 ; --- optional ,A -> ASCII listing save; else tokenised ------
                 call    skip_spaces
                 cp      ','
@@ -235,10 +239,7 @@ sav_is_cas:
                 ; HL now points just past "CAS:" inside the quotes.
                 ; Parse filename: up to 6 chars until '"', space-pad to 6.
                 call    tape_parse_name     ; fills TSV_NAME; HL -> closing '"'
-                ld      a,(hl)
-                cp      '"'
-                jp      nz,load_error
-                inc     hl                  ; past closing '"'
+                ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
                 ; --- optional ,A -> ASCII listing save to tape; else tokenised ---
                 call    skip_spaces
                 cp      ','

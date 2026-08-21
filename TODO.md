@@ -56,6 +56,118 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Language / verb surface**
 
+- [ ] 🔴 **`RUN A$` RESTARTS THE PROGRAM FOREVER, AND THE FILED REASON NOT TO
+      FIX IT IS MEASURED FALSE.** Filed 2026-08-21 by D-FNEXPR2,
+      [`docs/spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md) §1.2.
+      ```
+      10 PRINT"[R]" : 20 A$="FCZ.DAT" : 30 RUN A$ : 40 PRINT"[OK]"
+      cf3300 -> File not found in 30      zb -> the program restarts, forever
+      RUN"FCZ.DAT"  🟢 both sides -> File not found     (the literal control)
+      ```
+      `do_run` ([`basic/cload.asm:185`](basic/cload.asm:185)) reads any non-quote
+      as a BARE RUN, so the argument is not refused — it is EATEN, and the
+      statement re-enters the program from the top. That is a HANG, which is a
+      stronger divergence than the "does not accept an expression" the residual
+      it came from described.
+      🎯 **AND THE BLOCKER NAMES AN OBSTACLE THAT IS NOT THERE.** `TODO.md` and
+      [`docs/spec-basic-fnexpr.md`](docs/spec-basic-fnexpr.md) §2 both call this
+      *"genuinely ambiguous with `RUN <lineno>`"* and priced it as a probable
+      DECLINE. Rows `t.runnum` / `t.runvar` read the STORED LINE BYTES on all
+      three machines and they are byte-identical on all three:
+      ```
+      1 RUN 30  ->  8a 20 0e 1e 00 00     RUN_TOKEN, ' ', $0E (LINENO_TOKEN) + 30
+      1 RUN A$  ->  8a 20 41 24 00        RUN_TOKEN, ' ', "A$"
+      ```
+      The tokeniser ALREADY separates the two forms — `basic/tokenise.inc` arms
+      line-number mode on `RUN_TOKEN` and emits `$0E` for that form and nothing
+      else — so a parser that tests for `$0E` first is not guessing
+      [[a-filed-blocker-can-name-the-wrong-obstacle]].
+      💰 **PRICED, hand-counted against the D-FNEXPR2 shape: ~+17 B main page 1**
+      — a three-way head (`or a` / `cp COLON` / `cp LINENO_TOKEN`, each `jr z` to
+      one `jp run_prog`) at ~+11 B, plus `ld hl,(FN_RESUME)` at the disk and
+      `CAS:` resumes at +3 each. **Main page 1 read 50 B on 2026-08-21**
+      (`make basic-reloc`), so it is affordable and needs no carve. Row
+      `n.runvar` is built, DEFERRED and waiting; its 🟢 literal control
+      `n.runlit` is green on both sides today.
+      ⚠️ Converting `do_run` also retires the resident `parse_close_run` HEAD:
+      `do_run` is its last caller that still consumes a literal quote out of
+      program text, so `check_dead_code.py` will ask for those 4 instructions
+      back — the same finding it already made on the sub-ROM copy.
+
+- [ ] ⚠️ **`SAVE` / `LOAD` / `BLOAD` WITH NO ARGUMENT SAY `Syntax error` WHERE
+      BOTH THE REFERENCE AND D-MISS-1 SAY `Missing operand`.** Filed 2026-08-21
+      by D-FNEXPR2 (rows `n.savebare`, `n.loadbare`, `n.bloadbare`, DEFERRED).
+      Measured on the CF-3300 by reading the screen directly, because the
+      probe's classifier could not name it and reported `<NO OUTPUT>` for all
+      three: **`Missing operand in 10`** — raised, with a line number.
+      ✅ **THE DISPOSITION IS ALREADY FIXED and only the WORDING is left**: these
+      three printed a non-raising `load error` before D-FNEXPR2 and now RAISE,
+      so `ERR` is set and `ON ERROR` traps them. What remains is that zerobas
+      has no `Missing operand` message at all.
+      🎯 **SO THIS IS NOT A DISK ITEM — IT IS D-MISS-1's OWN OPEN RESIDUAL AT
+      THREE MORE VERBS.** [`basic/missing.asm`](basic/missing.asm)
+      `els_typecheck` already records it for the LET mirror: *"The reference's
+      `Missing operand` for those is a THIRD wording zerobas does not produce
+      here"* (`A$=` and `A$=+`). One message, one ERR code, five known sites —
+      price it once, at the message, not once per verb.
+      💰 Not priced. Shape: a message-table entry (the D-MSGSUB sub-ROM host
+      machinery exists) plus whatever `els_tc_common`'s `jp nz,stmt_error` arm
+      becomes. ⚠️ The MSX ERR code for it is **not measured**, only the wording.
+
+- [ ] ⚠️ **`CSAVE` AND `CLOAD` STILL TAKE A LITERAL FILENAME ONLY, AND THAT IS
+      NOW A DIVERGENCE OF ITS OWN RATHER THAN PART OF A FAMILY.** Filed
+      2026-08-21 by D-FNEXPR2. Every OTHER filename verb — `OPEN`, `KILL`,
+      `NAME`, `SAVE`, `BSAVE`, `LOAD`, `BLOAD`, `FILES` — takes a string
+      EXPRESSION as of `cffb34d` + this slice; `do_cload`
+      ([`basic/cload.asm`](basic/cload.asm)) and `do_csave`
+      ([`basic/save.asm`](basic/save.asm)) keep their `cp '"'` gates, and
+      `basic/PROVENANCE.md` now says so explicitly instead of describing both
+      halves with one sentence.
+      🔴 **UNMEASURED, AND THE APPARATUS IS THE PROBLEM, NOT THE PRICE.** These
+      are CASSETTE verbs: `CSAVE A$` on the CF-3300 needs a tape, and the
+      `namspc` battery has none. `cassave-acceptance` / `castail-acceptance` are
+      the batteries that CAN drive tape — the reading belongs there, and it
+      should come before any byte. 💰 The edit itself is the same shape as the
+      five this slice did and would likely RECOVER bytes (each gate is longer
+      than the `call fname_expr` that replaces it); what is not free is knowing
+      what the reference does with `CSAVE`'s OPTIONAL argument, which has the
+      `FILES`-style "is there an argument at all" question in it.
+
+- [ ] 🔴 **THE `do_files` OP-SELECTOR GUARD IS PINNED BY NOTHING.** Filed
+      2026-08-21 by D-FNEXPR2 §3.5, against its own fix.
+      `do_files` parks its dirverb op selector on the stack across the filespec
+      parse (+5 B) because `str_eval` can now run `INPUT$(n,#ch)`, which reaches
+      the drive through `fatprim_bounce` and overwrites `DISKOP_OP`. **No row in
+      any battery executes `FILES INPUT$(n,#ch)`**, so a knife that unparked the
+      selector would redden nothing — and that would be a claim about the ROW
+      SET, not about the code [[a-shadowed-guard-has-no-knife]] [[fnfund-slice]].
+      The BALANCE of the push/pop is pinned (every FILES row would derail), the
+      CLOBBER protection is not.
+      💰 0 B of ROM; this is a row. Shape: `10 OPEN"HI.TXT"FOR INPUT AS #1` /
+      `20 FILES INPUT$(3,#1)` / `30 PRINT"[OK]"`, against the CF-3300.
+      ⚠️ **THE CAPTURE WINDOW IS THE RISK** and it is a measured one in this
+      battery: `OPEN`+`CLOSE`+`KILL` did not fit the default `step` (D-FNFUND),
+      and this row does an OPEN, a channel read and a directory walk. Build it
+      with a shape control, or give it a per-row `step` override rather than
+      raising the battery's.
+
+- [ ] ⚠️ **A MALFORMED FILESPEC PRINTS `load error` AND `FILES` LISTS ANYWAY.**
+      Noticed 2026-08-21 while walking D-FNEXPR2's sites; not measured on the
+      reference, so it is filed rather than fixed.
+      `parse_disk_fcb` rejects a name that does not fit 8.3 with
+      `jp bl_load_error` ([`basic/pdfcb-body.inc`](basic/pdfcb-body.inc)), and
+      `load_error` **prints and RETURNS** — from inside `parse_disk_fcb`, so the
+      `ret` lands back in the CALLER, one level up, and `do_files` carries on to
+      the directory walk with a half-built pattern. This is the nested-reject
+      hazard [`sub/bload.asm`](sub/bload.asm) already names in prose
+      ([[load-error-is-not-abort]]); what is new is that it has a VISIBLE
+      symptom at `FILES`, which D-FILESIDE's `listface` readout can now see.
+      ⚠️ **PRE-EXISTING AND NOT WIDENED BY D-FNEXPR2** — the same `jp` served the
+      literal gate. 💰 Not priced; the reference's answer to
+      `FILES"TOOLONGNAME.EXTRA"` is unmeasured, and D-LOADERR-FIX's lesson
+      applies directly: `load_error` has ~73 resume-through callers, so guarding
+      one instance is not guarding the class.
+
 - [x] ✅ **`AUTO` / `RENUM` / `LLIST` — the STATEMENT half, CLOSED 2026-08-06 by
       D-EDITVERB**, [`docs/spec-basic-editverb.md`](docs/spec-basic-editverb.md),
       measured in
@@ -2779,7 +2891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       cheap wrong answer — what the reference DOES with a straddling record is
       unmeasured, and `GET`/`PUT` round-trip rows come before any byte.
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
-- [ ] 🔴 **`OPEN A$ AS #1` IS `Syntax error` HERE AND `OK` ON THE CF-3300.**
+- [x] ✅ **CLOSED 2026-08-21 (D-FNEXPR + D-FNEXPR2) — `OPEN A$ AS #1` IS `Syntax error` HERE AND `OK` ON THE CF-3300.**
       Filed 2026-08-08 by D-NAMSPC, found while measuring something else
       ([[readout-blind-to-its-own-subject]]). A **variable** filename in `OPEN`:
       ```
@@ -2849,13 +2961,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and deliberately left NAMED). `OPEN` / `KILL` / `NAME` take a string
       EXPRESSION; **13 deferred rows graduated**, `namspc-acceptance` 62/62 →
       **75/75**, deferred 23 → 10.
-      🔴 **WHAT IS STILL OPEN IS THE `load error` FAMILY, and it is a DIFFERENT
-      MECHANISM rather than leftover scope:** `SAVE`/`LOAD`/`BLOAD` reach
-      `load_error`, which PRINTS and RETURNS (no ERR code, no line number, no
-      `ON ERROR`, the program runs on), and `FILES` reads a non-quote as *no
-      filespec* and lists the whole directory first. Eight rows stay deferred.
-      💰 Priced by analogy only: the gates are the same shape, but each of the
-      three faces needs its own decision about whether a non-string RAISES.
+      ✅ **AND THE `load error` FAMILY IS CLOSED TOO — 2026-08-21 (D-FNEXPR2)**,
+      [`docs/spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md), **+36 B main
+      page 1 RECOVERED** (14 B → 50 B; the fix is a CARVE, not a spend).
+      `SAVE`/`BSAVE`/`LOAD`/`BLOAD`/`FILES` take a string EXPRESSION;
+      `namspc-acceptance` 75/75 → **95/95**, deferred 10 → 5, and D-FILESIDE's
+      `f.filesvarl` graduated with them (5 listed entries → 0).
+      🔴 **AND THE PARAGRAPH ABOVE — the one this replaces — DESCRIBED A TREE
+      THAT HAD ALREADY CHANGED.** It said the remainder was "a DIFFERENT
+      MECHANISM": a PRINTED, non-raising `load error`. Re-read at `cffb34d`
+      *before any edit*, `f.loadlit` and `f.bloadlit` BOTH already answered
+      `File not found` on both sides — D-LOADERR-FIX (08-20) and D-BLNF (08-21)
+      had retired the printed face at LOAD and BLOAD as a SIDE EFFECT. What
+      actually remained was four rows and every one was the ARGUMENT SHAPE, i.e.
+      D-FNEXPR's own rule at four more verbs. **A deferred row is a denominator
+      only while somebody re-reads it** — the gap sweep's D-LINEMAX lesson, one
+      week later, in the item the same sweep ranked FIRST.
+      🎯 **AND THE NON-STRING FACE WAS MEASURED RATHER THAN CONVERGED BY
+      ASSUMPTION.** `OPEN 5` / `KILL 5` / `SAVE 5` / `LOAD 5` / `BLOAD 5` /
+      `FILES 5` are **`Type mismatch`** on the CF-3300 — one face at all six,
+      where zerobas had three. That closes D-FNEXPR §3.3's filed question and
+      shows its preserved `Syntax error` was wrong. 🔴 But `Type mismatch` is
+      not the whole rule: `SAVE 1/0` is **`Division by zero`**, because the
+      reference EVALUATES and the operand's own fault wins — D-MISS-1's `A$=1/0`
+      rule at the filename position. 💰 **Cost of the correct face: ZERO
+      BYTES**; `els_tc_common` (`basic/missing.asm`) already IS that tail and
+      already had two entry points, so it took one changed jump target.
 
 - [x] ✅ **THE RE-RAISE NAMED THE WRONG LINE WHEN THE TWO CONTEXTS DISAGREED ON
       *MODE* — CLOSED 2026-08-09 by D-LOCARG**
@@ -3321,7 +3452,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       either; the D-LOADERR reading captured the message, not the disposition,
       and `Bad file mode` is a documented MSX ERR code (54), which makes "it
       raises" a plausible-and-therefore-dangerous assumption.
-- [ ] ⚠️ **`FILES A$` LISTS THE WHOLE DIRECTORY BEFORE IT ERRORS.** Measured
+- [x] ✅ **CLOSED 2026-08-21 (D-FNEXPR2), 0 EXTRA BYTES — `FILES A$` LISTS THE
+      WHOLE DIRECTORY BEFORE IT ERRORS.**
+      [`docs/spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md) §3.2/§5.
+      `do_files` tests for an ARGUMENT (end-of-statement or `:` = no filespec)
+      instead of for a QUOTE, and hands anything else to `fname_expr`. `FILES A$`
+      lists **0 entries** and raises `File not found`, exactly as the CF-3300
+      does; `FILES 5` lists 0 and raises `Type mismatch`.
+      🎯 **`f.filesvarl` IS THE ROW THAT PROVED THE FIX IS A FIX**, and it is
+      D-FILESIDE's whole point cashed in: the FACE alone reads the same whether
+      the machine refuses at the parse or lists five files first, so only the
+      ENTRY COUNT (5 → 0) separates a fix from a no-op. It graduated from
+      DEFERRED to a scored row in the same commit.
+      🔴 **AND THE FIX OPENED A HAZARD ITS OWN COMMIT CLOSES**, filed here
+      because the reasoning is worth keeping: `do_files` parked its dirverb op
+      selector in `DISKOP_OP` at the STATEMENT HEAD — the only verb in the family
+      that did — justified by a checked claim that `parse_disk_fcb`'s tenant
+      "touches DISKOP_OP nowhere". Still true, and no longer sufficient once the
+      filespec is an EXPRESSION: `str_eval` can run `INPUT$(n,#ch)`, which
+      reaches the drive through `fatprim_bounce`, whose first instruction is
+      `ld (DISKOP_OP),a`. The selector now rides the stack across the parse
+      (+5 B) and is written where `do_kill` and `do_name` write theirs.
+      *The original filing:* Measured
       2026-08-20 (D-FNARG2 §4.2), read off the screen:
       ```
       ZB20 FILES A$                          cf3300, same program:
@@ -8884,16 +9036,46 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       string-function tokens and on a letter, and simply has no `(` arm. It is a
       STRING-EVALUATOR hole, not a filename one, and charging it to the filename
       gate would price it against the wrong verb.
-      ⚠️ **ITS FACE IS CONTEXT-DEPENDENT** — `Type mismatch` through LET/PRINT
-      (the `(` is taken as a numeric subexpression, which then type-clashes) and
-      `Syntax error` through `fname_expr`'s `jp nc,stmt_error`. So the row cannot
-      be scored on the face either until the evaluator is the subject.
+      ✅ **ITS FACE IS NO LONGER CONTEXT-DEPENDENT — UPDATED 2026-08-21
+      (D-FNEXPR2).** This read: *"`Type mismatch` through LET/PRINT ... and
+      `Syntax error` through `fname_expr`'s `jp nc,stmt_error`, so the row
+      cannot be scored on the face either."* That exit is `els_tc_common` now —
+      the very routine the LET mirror uses — so `OPEN(A$)AS #1` answers
+      **`Type mismatch`** as well, and the three contexts agree with each other
+      while disagreeing with the reference in ONE direction. The row is still
+      DEFERRED, because the CF-3300 answers `OK` (it accepts the parenthesised
+      subexpression) and only the evaluator can close that; but it is now one
+      divergence to fix instead of two faces to reconcile.
       ⚠️ Row `f.paren` in [`basic_probe_namspc.py`](probes/basic/basic_probe_namspc.py)
       is DEFERRED with exactly this reason; it is the denominator, already built.
-      💰 Not priced. ⚠️ Main page 1 read **14 B** on 2026-08-21 after D-FNEXPR
-      (`make basic-reloc`), so this needs a carve like everything else.
+      💰 Not priced. ✅ Main page 1 read **50 B** on 2026-08-21 after D-FNEXPR2
+      (`make basic-reloc`) — the wall this item was filed against (14 B) has
+      moved, and this no longer obviously needs a carve of its own.
 
-- [ ] ⚠️ **THE FACE FOR A NON-STRING FILENAME (`OPEN 5 AS #1`) IS UNMEASURED.**
+- [x] ✅ **CLOSED 2026-08-21 (D-FNEXPR2), 0 ROM BYTES — THE FACE FOR A
+      NON-STRING FILENAME (`OPEN 5 AS #1`) WAS UNMEASURED.**
+      [`docs/spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md) §2. Measured at
+      SIX verbs, not the three this item named: `OPEN 5 AS #1` / `KILL 5` /
+      `SAVE 5` / `LOAD 5` / `BLOAD 5` / `FILES 5` are **`Type mismatch`** on the
+      CF-3300. 🎯 So the hunch recorded below — *"if `OPEN` agrees with `PLAY`
+      on the reference, the fix is one instruction at one site"* — was right in
+      both halves, and it was right about MORE verbs than it claimed: zerobas
+      answered a non-quote with THREE different things and the reference answers
+      one thing at all six.
+      🔴 **BUT "NON-STRING → Type mismatch" IS NOT THE WHOLE RULE, AND THE ROW
+      THAT SAYS SO WAS NOT IN THIS ITEM'S PLAN.** `SAVE 1/0` and
+      `OPEN 1/0 AS #1` are **`Division by zero`** — the reference EVALUATES the
+      operand and the operand's own fault wins. That is D-MISS-1's `A$=1/0`
+      rule at the filename position, and a blanket ERR 13 would have matched six
+      rows and been wrong on two.
+      💰 **The item priced 0–3 B and it cost ZERO**: `els_tc_common`
+      ([`basic/missing.asm`](basic/missing.asm)) already IS that whole tail
+      (clear ERRMARK → `eval` → `check_expr_errors` → `Syntax error` if nothing
+      parsed, else `type_mismatch_error`) and already had two entry points that
+      each pop their own saved word before falling in. `fname_expr` has none to
+      pop, so it enters at the common label and one jump target changed.
+      *The original filing:*
+      ⚠️ **THE FACE FOR A NON-STRING FILENAME (`OPEN 5 AS #1`) IS UNMEASURED.**
       Filed 2026-08-21 by D-FNEXPR §3.3, which deliberately PRESERVED today's
       answer rather than guess at a better one. zerobas says `Syntax error`,
       before the change (a non-quote failed `cp '"'`) and after it (`str_eval`

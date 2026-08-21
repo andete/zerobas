@@ -74,37 +74,81 @@ ex_files:
 ex_lfiles:
                 ld      a,DISKOP_SEL_LFILES ; printer: LPTOUT, one entry per line
 
-; do_files — parse the optional filespec, run the listing in the tenant, then
-; dispatch on how it went.
+; do_files — evaluate the optional filespec, run the listing in the tenant, then
+; dispatch on how it went. ⚠️ D-FNEXPR2: "evaluate", not "parse" -- the filespec
+; is a string EXPRESSION (`FILES A$`, `FILES A$+".BAS"`), which is why the op
+; selector below can no longer be parked in DISKOP_OP across it.
 ; Entry: A = the DISKOP_SEL_* op, HL -> the statement token.
 do_files:
                 inc     hl                  ; HL -> bytes after the token
-                ld      (DISKOP_OP),a
+                ; 🔴 D-FNEXPR2: THE OP SELECTOR CAN NO LONGER BE PARKED IN
+                ; `DISKOP_OP` ACROSS THE PARSE, AND THAT IS A CONSEQUENCE OF
+                ; MAKING THE FILESPEC AN EXPRESSION. It used to be safe, and the
+                ; note here said why: parse_disk_fcb's fcbname tenant aliases
+                ; DISKOP_HL/DISKOP_STATUS as BN_PTR/BN_STAT and "touches
+                ; DISKOP_OP nowhere". That claim is still true and is no longer
+                ; sufficient -- the parse now begins with `str_eval`, which can
+                ; run an arbitrary string expression, and `INPUT$(n,#ch)` reaches
+                ; the drive through `fatprim_bounce`, whose FIRST INSTRUCTION is
+                ; `ld (DISKOP_OP),a` (basic/fat.asm). `FILES INPUT$(5,#1)` would
+                ; hand the dirverb tenant a FAT-primitive selector.
+                ; 🎯 SO THE SELECTOR RIDES THE STACK AND IS WRITTEN WHERE
+                ; do_kill AND do_name ALREADY WRITE THEIRS -- immediately before
+                ; the `subrom_call`, which is the house shape; do_files was the
+                ; one verb that wrote it at the head, which is exactly why it was
+                ; the one verb this could bite.
+                ; ⚠️ Every abort between the push and the pop is a `raise_error`,
+                ; which resets SP from SAVSTK, so none of them can leak the
+                ; pushed word. The one abort that RETURNS -- the DISKSLOT check
+                ; below -- is balanced by hand for that reason, and the check
+                ; still stands ahead of the `push hl` further down.
+                push    af                  ; the DISKOP_SEL_* op, across the parse
                 ; (1) a disk-ROM slot must have been recorded by the INIT scan.
-                ; ⚠️ BEFORE the `push hl` below, so this abort cannot leak a stack
-                ; slot. And DISKOP_OP is written BEFORE parse_disk_fcb, which is
-                ; checked rather than assumed: its fcbname tenant aliases
-                ; DISKOP_HL/DISKOP_STATUS as BN_PTR/BN_STAT and touches DISKOP_OP
-                ; nowhere (basic/sysvars.inc, the BN_* block).
                 ld      a,(DISKSLOT_OK)
                 or      a
-                jp      z,load_error
+                jr      nz,df_slotok
+                pop     af                  ; balance before the returning abort
+                jp      load_error
+df_slotok:
                 ; (1b) parse the optional "filespec" into a match pattern (with
                 ; '*'->'?' expansion via build_83_name); FILES_HASPAT flags its
                 ; presence. The text cursor is advanced PAST the filespec here, so
                 ; the saved cursor below already points at the statement's tail.
+                ; ✅ D-FNEXPR2: THE FILESPEC IS A STRING EXPRESSION, and the
+                ; test is "is there an ARGUMENT at all", not "is there a QUOTE".
+                ; 🔴 THE QUOTE TEST WAS NOT MERELY REFUSING `FILES A$` -- IT WAS
+                ; ANSWERING THE WRONG QUESTION, and that is D-FILESIDE's whole
+                ; finding. A non-quote fell to df_nofilespec, so zerobas LISTED
+                ; THE ENTIRE DIRECTORY and only then derailed on the unconsumed
+                ; argument; the CF-3300 lists nothing (`f.filesvarl`: 0 entries
+                ; + `File not found`, against 5 entries + `Syntax error` here).
+                ; No row could see that until D-FILESIDE built `listface`,
+                ; because the FACE alone reads the same either way.
+                ; ⚠️ End-of-statement and ':' are the only two "no filespec"
+                ; forms -- bare `FILES` and `FILES:PRINT` -- and both must keep
+                ; listing (row f.filesbare is the positive control for exactly
+                ; that, 5 entries + OK). Anything else is an operand and goes to
+                ; fname_expr, whose non-string face is measured: `FILES 5` is
+                ; `Type mismatch` with ZERO entries listed (row n.filesnum).
                 call    skip_spaces
                 xor     a
                 ld      (FILES_HASPAT),a
                 ld      a,(hl)
-                cp      '"'
-                jr      nz,df_nofilespec
-                inc     hl                  ; past the opening quote
+                or      a
+                jr      z,df_nofilespec     ; end of statement -> whole directory
+                cp      COLON
+                jr      z,df_nofilespec     ; `FILES:...` -> ditto
+                call    fname_expr          ; the filespec is an EXPRESSION; HL ->
+                                            ; the staged '"'-terminated copy
                 call    parse_disk_fcb      ; DISK_FCB_NAME = 8.3 wildcard pattern
-                inc     hl                  ; past the closing quote
+                ld      hl,(FN_RESUME)      ; resume past the EXPRESSION, not past
+                                            ; a quote in the staging buffer
                 ld      a,1
                 ld      (FILES_HASPAT),a
 df_nofilespec:
+                pop     af                  ; the op selector, parked at the head
+                ld      (DISKOP_OP),a       ; asserted AFTER the evaluator, not
+                                            ; before it -- see the block at do_files
                 push    hl                  ; guard the text cursor across CALSLT
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB
                 call    subrom_call
@@ -230,7 +274,6 @@ ex_open:
                 inc     hl                  ; HL -> bytes after the OPEN token
                 jp      do_open
 do_open:
-                call    skip_spaces
                 call    fname_expr          ; D-FNEXPR: the filename is a string
                                             ; EXPRESSION; HL -> the staged,
                                             ; '"'-terminated copy in STRSCR
@@ -655,15 +698,46 @@ dev_crt:        db      "CRT:",0
 ;   in:  HL -> the filename argument (cursor as skip_spaces left it)
 ;   out: HL -> a staged, '"'-terminated copy of the name at STRSCR+1;
 ;        (FN_RESUME) = the text cursor just past the expression.
-;        Does NOT return if the operand is not a string -> stmt_error.
+;        Does NOT return if the operand is not a string -> els_tc_common.
 ;   Clobbers A, BC, DE.
 ;
-; ⚠️ THE NON-STRING FACE IS DELIBERATELY UNCHANGED AND IS A FILED QUESTION.
-; `OPEN 5 AS #1` was `Syntax error` because a non-quote failed `cp '"'`; it is
-; `Syntax error` still, because `str_eval` returns CF clear on a numeric operand
-; and this jumps to the same `stmt_error` that `oo_synerr` trampolines to. The
-; reference may well answer `Type mismatch` (PLAY's own string operand does),
-; but that is UNMEASURED -- so today's face is preserved rather than guessed at.
+; ✅ THE NON-STRING FACE IS MEASURED NOW, AND D-FNEXPR'S PRESERVED ONE WAS
+; WRONG (D-FNEXPR2, docs/spec-basic-fnexpr2.md §3). This header used to read
+; "the reference may well answer `Type mismatch` ... but that is UNMEASURED, so
+; today's face is preserved rather than guessed at." It was measured, and the
+; guess it declined to make was the right one -- at SIX verbs at once, on the
+; CF-3300, rows n.opennum/n.killnum/n.savenum/n.loadnum/n.bloadnum/n.filesnum:
+;
+;   OPEN 5 AS #1 / KILL 5 / SAVE 5 / LOAD 5 / BLOAD 5 / FILES 5  ->  Type mismatch
+;
+; 🎯 SO THE THREE FACES DO CONVERGE -- AND THAT IS A READING, NOT THE
+; ASSUMPTION IT WOULD HAVE BEEN. zerobas answered a non-quote with three
+; different things (`Syntax error` raised, `load error` printed-and-returned,
+; and a whole DIRECTORY LISTING then a late `Syntax error`); the reference
+; answers ONE thing at all six.
+;
+; 🔴 BUT "NON-STRING -> Type mismatch" IS NOT THE WHOLE RULE, AND THE ROW THAT
+; SAYS SO IS `n.savediv` / `n.opendiv`: `SAVE 1/0` and `OPEN 1/0 AS #1` answer
+; **Division by zero**, not Type mismatch. The reference EVALUATES the operand
+; and the operand's OWN fault wins -- bit for bit the rule D-MISS-1 measured at
+; the LET mirror (`A$=1/0` -> Division by zero, basic/missing.asm).
+; 🎯 WHICH IS WHY THE EXIT BELOW IS `els_tc_common` AND NOT A NEW ROUTINE: that
+; IS D-MISS-1's tail (eval the operand as numeric -> check_expr_errors, so its
+; own fault aborts -> ERRMARK $DD means nothing parsed -> stmt_error -> else
+; type_mismatch_error). A third entry point costs ZERO BYTES -- `els_typecheck`
+; and `elas_typecheck` each pop their own saved word and fall into it, and this
+; caller has none to pop, so it enters at the common label directly. The dead
+; return address left on the stack is discarded by raise_error's own
+; `ld sp,(SAVSTK)` unwind, which every exit from there takes.
+;
+; ⚠️ THE BARE FORM MOVES TOO, AND IS A DIVERGENCE THIS DOES NOT CLOSE. `SAVE` /
+; `LOAD` / `BLOAD` with NO argument answer `Missing operand in 10` on the
+; CF-3300 -- raised, with a line number. They answered a PRINTED `load error`
+; here and they answer a RAISED `Syntax error` now: closer (it stops, it
+; traps), still the wrong wording, because `Missing operand` is a message
+; zerobas does not have. That is the SAME disposition D-MISS-1 recorded for the
+; LET mirror `A$=`, and rows n.savebare/n.loadbare/n.bloadbare hold it DEFERRED
+; rather than letting it read as agreement.
 ;
 ; ⚠️ STRSCR SECOND-TENANT ARGUMENT, stated because STRSCR is a single shared
 ; scratch (the MIDS_DEST-style claim). Its other tenant is `read_into_strscr`
@@ -677,9 +751,32 @@ dev_crt:        db      "CRT:",0
 ; has str_eval fill STRSCR itself, so RVDESC.ptr IS STRSCR+1 and the `ldir`
 ; below runs with HL == DE, copying each byte onto itself. A no-op, then the
 ; terminator is appended past the end as usual.
+; 🔴 LEADING SPACES ARE THIS ROUTINE'S JOB, AND FOUR CALLERS FOUND THAT OUT THE
+; HARD WAY. D-FNEXPR's five call sites each did `call skip_spaces` immediately
+; before `call fname_expr`, so the contract "HL -> the filename argument" was
+; satisfied by every caller and never stated. D-FNEXPR2's four new sites
+; replaced gates that had BEEN that `skip_spaces` (`call skip_spaces` / `cp '"'`
+; / `jp nz,load_error` / `inc hl`), and dropping the gate dropped the skip with
+; it: `SAVE A$` handed `str_eval` a SPACE, which is not a string operand, and
+; three rows read `<Type mismatch>` where the CF-3300 says `OK`.
+; 🎯 AND THE 🟢 LITERAL CONTROLS WERE STRUCTURALLY BLIND TO IT. `SAVE"FC1.DAT"`
+; has no space between the verb and the argument and a variable form cannot not
+; have one -- so `f.savelit` was green in the same run that `f.savevar` was red,
+; and the pair separated the two only by an accident of how each is spelled.
+; Absorbing the skip HERE is both the fix and cheaper than four `call`s: the
+; four sites that already did it (do_open, do_kill, do_name x2) drop theirs, so
+; the contract is stated once, enforced once, and costs -9 B rather than +12.
+; ⚠️ do_files keeps its own, and not out of caution: it READS the skipped byte
+; to decide whether there is an argument at all.
 fname_expr:
+                call    skip_spaces         ; 🔴 D-FNEXPR2: **INSIDE**, and it was a
+                                            ; defect that it was not. See the
+                                            ; block above the label.
                 call    str_eval            ; STRPTR -> [len][ptr]; HL past the expr
-                jp      nc,stmt_error       ; not a string operand -> Syntax error
+                jp      nc,els_tc_common    ; not a string -> D-MISS-1's measured
+                                            ; tail: the operand's OWN fault wins,
+                                            ; else ERR 13 `Type mismatch` (see the
+                                            ; block above -- 0 B, it already ships)
                 ld      (FN_RESUME),hl      ; where the statement resumes
                 ld      hl,(STRPTR)
                 ld      a,(hl)              ; A = length
@@ -1394,7 +1491,6 @@ ex_kill:
                 inc     hl                  ; HL -> bytes after the KILL token
                 jp      do_kill
 do_kill:
-                call    skip_spaces
                 call    fname_expr          ; D-FNEXPR: a string EXPRESSION
                 call    parse_disk_fcb      ; build DISK_FCB_NAME (8.3 wildcard pattern)
                 ld      hl,(FN_RESUME)      ; resume past the expression
@@ -1459,7 +1555,6 @@ ex_name:
                 inc     hl                  ; HL -> bytes after the NAME token
                 jp      do_name
 do_name:
-                call    skip_spaces
                 call    fname_expr          ; D-FNEXPR: OLD name, a string EXPRESSION
                 call    parse_disk_fcb      ; old -> DISK_FCB_NAME
                 ld      hl,(FN_RESUME)      ; resume past the expression
@@ -1474,7 +1569,6 @@ do_name:
                 cp      'S'
                 jp      nz,stmt_error
                 inc     hl
-                call    skip_spaces
                 ; D-FNEXPR: the NEW name is EVALUATED here -- before any disk
                 ; primitive runs -- and only PARSED after the old file is found.
                 ; Evaluating early is what preserves the error ORDER the literal
