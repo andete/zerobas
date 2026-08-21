@@ -7707,8 +7707,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       invisible here because `$F414`/`$F6B5` sit inside the C-BIOS-cleared sysvar
       area — a real-hardware-only argument that nothing in the tree can test.
 
-- [ ] ⚠️ **FORTY-EIGHT MAKE TARGETS BUILD THEIR DISK FIXTURE ONLY BY LUCK, AND
-      HALF OF THEM FAIL SILENTLY IF IT IS ABSENT.** Filed 2026-08-21 by
+- [x] ✅ **~~FORTY-EIGHT MAKE TARGETS BUILD THEIR DISK FIXTURE ONLY BY LUCK, AND
+      HALF OF THEM FAIL SILENTLY IF IT IS ABSENT~~ — CLOSED 2026-08-21 as
+      D-DISKDEP, AND THE SECOND HALF OF THE TITLE IS FALSE.**
+      [`docs/spec-probe-diskdep.md`](docs/spec-probe-diskdep.md). **0 ROM bytes.**
+      `$(DISK_TEST_DSK)` added to all **48** targets (0 remain), new gate
+      `make diskdep-check` with `make diskdep-selftest` **4/4**, baseline 0.
+      🔴 **THE FILED 19-LOUD / 16-SILENT SPLIT IS REFUTED BY MEASUREMENT: THERE IS
+      NO SILENT HALF.** All seventeen candidates were run with the image moved
+      aside on a fully built machine and **every one refused** — `omsx_preflight`
+      rc 2 (6), an own guard rc 2 (3), a `shutil.copy` traceback rc 1 (5), the
+      `<NO DISK FIXTURE>` sentinel rc 1 (1), a child probe's guard rc 1 (1).
+      🎯 **THE REGEX BEHIND THE SPLIT KEYED ON A VARIABLE NAME** (`TEST_DSK`), so
+      ten probes that copy through a local or spell it `SRC_DSK` read as silent.
+      🎯 **AND THE SIX IT CLASSIFIED CORRECTLY ARE STILL NOT SILENT** — they hand
+      `diska` straight to openMSX, and `omsx_preflight` (which `make
+      preflight-check` proves covers EVERY launch in the tree) refuses first. The
+      property that closes the class was already enforced by a gate nobody thought
+      to cite here.
+      🔴 **TWO READINGS WERE THROWN AWAY FOR MEASURING THE WRONG ABSENCE:** round 1
+      ran on a `basic-reloc`-only tree, so `lptverb` and `msgexact` refused over
+      **missing ROMs** — the preflight named them, the return code did not — and
+      `diskbasic_acceptance` refused three times over `--machine`,
+      `--expect-build` and an empty `--only` before it ever reached the disk.
+      💰 The `<NO DISK FIXTURE>` sentinel is FILED as the shape to converge on, not
+      taken: with the dependency in place the absence never occurs under `make`.
+      The original entry follows.
+      ~~⚠️ **FORTY-EIGHT MAKE TARGETS BUILD THEIR DISK FIXTURE ONLY BY LUCK.**~~
+      Filed 2026-08-21 by
       D-COLDROW ([`docs/valtyp-coldram-notes.md`](docs/valtyp-coldram-notes.md)
       §6.6) after `stmtpend` became the THIRD target in three slices found
       without a `$(DISK_TEST_DSK)` dependency (`inputary` D-ARYSITE, `namspc`
