@@ -1981,14 +1981,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       no `CLS`, so it reads ambient scroll, and the REFERENCE disagrees with
       itself (4 vs 9) across differently-scrolled batches.
       ➡️ **RANKED, each re-verified against the tree rather than taken from its
-      filing:** (1) filename arguments accept a LITERAL only where the reference
+      filing:** ~~(1) filename arguments accept a LITERAL only where the reference
       takes any string EXPRESSION — 8 rows, 7 verbs, ONE mechanism at **11
-      `parse_disk_fcb` sites, re-walked and exact**; (2) `DEF FN`/`FN`, 200–400 B,
-      an arc; (3) SCREEN 3, a whole-feature gap, unpriced and never scouted;
-      (4) a line store bounded by `TXTMAX` not HIMEM (silent wrong answer);
-      (5) a stored `DATA` literal charging the pool 25 B against 0.
-      ⚠️ **ITEMS 1–3 ALL NEED A CARVE FIRST — main page 1 read 12 B on
-      2026-08-21** (`make basic-reloc`).
+      `parse_disk_fcb` sites, re-walked and exact**~~; (2) `DEF FN`/`FN`,
+      200–400 B, an arc; (3) SCREEN 3, a whole-feature gap, unpriced and never
+      scouted; (4) a line store bounded by `TXTMAX` not HIMEM (silent wrong
+      answer); (5) a stored `DATA` literal charging the pool 25 B against 0.
+      🔴 **RANK 1 SHIPPED THE SAME DAY THIS RANKING WAS WRITTEN, AND THE RANKING
+      STOOD FOR A DAY AFTER IT** — corrected 2026-08-21 by D-SEEDPROSE's memory
+      pass. All eight verbs (`OPEN`/`KILL`/`NAME`/`SAVE`/`BSAVE`/`LOAD`/`BLOAD`/
+      `FILES`/`RUN`) take a string EXPRESSION and a non-string is `Type mismatch`;
+      `namspc-acceptance` 62/62 → **99/99**
+      ([`docs/spec-basic-fnexpr.md`](docs/spec-basic-fnexpr.md),
+      [`spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md),
+      [`spec-basic-fnrun.md`](docs/spec-basic-fnrun.md)).
+      🎯 **AND THE PRICE FILED WITH IT WAS WRONG IN BOTH HALVES**: the parser
+      needed **no second source and no staging buffer** (0 B), and the cost was in
+      the quote GATES, not the 11 `parse_disk_fcb` sites. **The mechanism count
+      was right and the unit was not** — which is the reason a filed price is
+      re-derived, not spent.
+      🔴 **THIS ENTRY FELL TO ITS OWN LESSON.** It exists because ranking on filed
+      text nearly re-implemented shipped code (D-LINEMAX), and it then carried a
+      shipped item at rank 1. **Dating a ranking is not enough: re-verify at
+      PICKUP, by whoever picks it up.**
+      ⚠️ **THE SURVIVING ITEMS ALL STILL NEED A CARVE FIRST — main page 1 read
+      11 B on 2026-08-21** after D-STRPAREN (`make basic-reloc`; the 12 B in the
+      original ranking was read earlier the same day). The measured page-1
+      candidate is now the 16 B second seeding hole filed by D-SEEDPROSE, above.
       💰 0 ROM bytes; this is a reading. What it changes is which item is picked
       up next, and it already retired one (D-LINEMAX, above).
 
