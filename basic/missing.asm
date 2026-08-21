@@ -208,24 +208,42 @@ loc_row_set:
 ;        CF=0 -> the argument was OMITTED and its comma has been consumed
 ;   Aborts directly on `Missing operand`, `Type mismatch` and either domain
 ;   error. HL advances.
-; ⚠️ IT PARKS ITS OWN RETURN ADDRESS, and that is not a trick -- it is what makes
-; the error paths correct. The abort chain (raise_error -> fre_abort_low, and
-; type_mismatch_error) PRINTS AND THEN RETURNS, and it is built to return into
-; the run loop: the stack has to look exactly as it did when exec_stmt jumped to
-; this handler. A helper `call`ed from the handler is one frame deeper, so every
-; abort inside it landed back INSIDE LOCATE, which carried on parsing and errored
-; a second time. That is not a theory -- it is what the gate printed:
+;
+; 🔴 IT USED TO PARK ITS OWN RETURN ADDRESS IN `LOC_RET`, AND THE ANALYSIS
+; THAT PUT IT THERE IS STILL TRUE -- ONLY ITS CONCLUSION HAS FLIPPED (D-LOCPARK,
+; 2026-08-21, docs/spec-basic-locarg.md §3.1). What the gate printed before the
+; park existed was real:
 ;
 ;   LOCATE          zb: missing operand / missing operand
 ;   LOCATE "5",3    zb: type mismatch / missing operand
 ;   LOCATE 0,-1     zb: Illegal function call, then overwritten by the prompt
 ;
-; So the return address goes to LOC_RET for the duration and eval /
-; get_byte_arg / raise_error all run at the handler's own depth, which is
-; exactly how ex_width calls the same get_byte_arg.
+; ...and the diagnosis was right too: the abort chain PRINTED AND RETURNED, so an
+; abort one frame deeper consumed the helper's frame and landed back INSIDE
+; LOCATE, which carried on parsing and errored a second time. The park bought
+; handler depth and the symptom went away.
+;
+; 🎯 WHAT CHANGED IS THE PREMISE, NOT THE ARGUMENT. `4d35b6d` (D-CUR-D,
+; docs/spec-basic-abort-depth.md §4) made the abort DEPTH-INDEPENDENT: both arms
+; of raise_error_hl reset SP -- the trap arm does `ld sp,(SAVSTK)` before
+; `jp rp_lp`, and ra_abort's `jp fre_abort_low` lands on a routine whose own
+; first act is `ld sp,(SAVSTK)`. type_mismatch_error is `jp raise_error` and so
+; inherits both. So the park is buying a property that is now free, and it costs
+; 11 bytes of page 1 to buy it. It is deleted; `loc_next` is an ordinary
+; `call`/`ret`.
+;
+; ⚠️ ONLY TWO THINGS MOVE, AND NEITHER IS `loc_more`. The park never governed
+; `loc_more`, the apply-then-reject ordering or `loc_apply_pos`: all three run in
+; ex_locate AFTER loc_next has returned, at the handler's own depth either way --
+; the old header over-claimed there, and reading the call sites is what says so.
+; What moves is `loc_missing` and `eval_byte_checked`, each now two bytes deeper,
+; and depth-independence is exactly what that costs nothing.
+;
+; ⚠️ THE APPARATUS STAYS MEASURED, because a refuted claim is not an unmeasured
+; one: `make locarg-acceptance`'s eleven `u.*` rows run every abort class
+; UNTRAPPED and read the whole screen tail, so the two-messages-for-one-statement
+; failure above is a RED row and not a silent one.
 loc_next:
-                pop     de
-                ld      (LOC_RET),de        ; park it: run at the HANDLER's stack depth
                 call    skip_spaces         ; returns A = (HL)
                 or      a
                 jr      z,loc_missing       ; end of line at an argument position
@@ -260,27 +278,19 @@ loc_next:
                 ; `Missing operand`, the handler carrying on parsing after the abort
                 ; -- is a red row and not a silent one. It is green on all three
                 ; sides through this call.
-                ; ⚠️ LOC_RET STAYS. The parked frame is what makes loc_more, the
-                ; apply-then-reject ordering and `loc_missing` run at the handler's
-                ; own depth; only the DOMAIN CHECK moved. Deleting the park too is a
-                ; separate ~9 B carve with a separate claim (TODO.md).
+                ; ✅ LOC_RET IS GONE (D-LOCPARK). This call now runs two bytes
+                ; deeper than it used to, and the abort it may raise resets SP
+                ; from SAVSTK either way -- see the header.
                 call    eval_byte_checked   ; A = E = 0..255, or aborts:
                                             ;   ERR 13 string, ERR 6 past int16,
                                             ;   ERR 5 outside 0..255, and a DEFERRED
                                             ;   expression error IN PREFERENCE to the
                                             ;   coercion's own overflow (the rule)
                 scf
-                jr      loc_ret
+                ret                         ; CF=1, A = the accepted byte, HL advanced
 loc_omit:
                 inc     hl                  ; consume the comma
                 or      a                   ; A is ',' -> CF = 0
-loc_ret:
-                ; Return to the parked address, preserving BOTH the cursor in HL
-                ; and the CF/A the caller reads. push/ld/ex (sp),hl touch no
-                ; flags, so the `scf` above survives to the caller.
-                push    hl                  ; [cursor]
-                ld      hl,(LOC_RET)
-                ex      (sp),hl             ; stack = the parked address, HL = cursor
                 ret
 loc_missing:
                 ld      a,24
@@ -338,14 +348,17 @@ loc_more_yes:
 ;     which happily manufactured a key from it -- so the operand "existed" or did
 ;     not by accident, and the error came out of whichever later test tripped
 ;     first instead of out of "that is not a variable".
-; (2) THE DEPTH IS THE OTHER HALF. sw_operand is `call`ed, and the abort chain
-;     PRINTS AND RETURNS without resetting SP (docs/spec-basic-cursor-cluster.md
-;     §4.1, D-CUR-D) -- so an abort raised inside it consumes sw_operand's own
-;     frame and lands back HERE, in ex_swap, which swaps on and prints more. That
-;     is the trailing output in rows 1 and 3, and it is exactly why loc_next parks
-;     its return address in LOC_RET. Testing at the handler's own depth costs 6 B
-;     per operand and needs no parking at all: `jp stmt_error` unwinds correctly
-;     from here, the same way this routine's existing missing-comma reject does.
+; (2) THE DEPTH WAS THE OTHER HALF, AND IT NO LONGER IS -- THE ROWS STAND, THE
+;     MECHANISM BEHIND THEM DOES NOT (re-read 2026-08-21, D-LOCPARK). When these
+;     three rows were taken, sw_operand was `call`ed and the abort chain printed
+;     and RETURNED without resetting SP, so an abort raised inside it consumed
+;     sw_operand's own frame and landed back HERE, in ex_swap, which swapped on
+;     and printed more -- the trailing output in rows 1 and 3. `4d35b6d` (D-CUR-D,
+;     docs/spec-basic-abort-depth.md §4) made the abort depth-independent, which
+;     is what let D-LOCPARK delete loc_next's LOC_RET park entirely. The guard
+;     below is still right, and now for the FIRST reason only: `SWAP A,1` must be
+;     `Syntax error` because 1 is not a variable, not because of where the stack
+;     was. `jp stmt_error` unwinds correctly from here in either world.
 ; skip_spaces leaves A = the current character, so the guard is two instructions.
 ex_swap:
                 inc     hl                  ; past the SWAP token

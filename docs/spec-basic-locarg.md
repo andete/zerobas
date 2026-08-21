@@ -63,6 +63,20 @@ is what keeps `loc_more`, the apply-then-reject ordering and `loc_missing` at
 handler depth; deleting it too is a separate ~9 B carve with a separate claim,
 filed rather than ridden along.
 
+> ✅ **THE PARK IS GONE — D-LOCPARK, 2026-08-21. See §11.** The decision to move
+> one thing at a time stands as taken and was right. Two things in the paragraph
+> above did not survive the follow-up, and both are worth naming rather than
+> quietly editing away:
+>
+> * **`~9 B` was low. The carve measures `−11 B`**, hand-counted before the build
+>   and confirmed by it: main page 1 **2 B → 13 B**.
+> * **The park never kept `loc_more` or the apply-then-reject ordering at handler
+>   depth**, because neither is reached from inside `loc_next` — both run in
+>   `ex_locate` after it has returned. The sentence above over-claimed, and one
+>   read of the three call sites is what says so. What the park actually governed
+>   was `loc_missing` and the coercion, and `4d35b6d` had already made the depth
+>   of both irrelevant.
+
 ### 3.2 🔴 The claim the carve rests on was already refuted, and the apparatus is still MEASURED
 
 The block's header said `get_byte_arg` *"CANNOT BE CALLED here"* because the
@@ -485,3 +499,126 @@ ERROR 7
 Against its discriminator `LOCATE "5",3`, which is ` 13 ` on all three sides —
 so the claim is exactly "a pending numeric fault outranks the type test too",
 and it belongs to `check_expr_errors` and its four other callers, not here (§7).
+
+---
+
+## 11. D-LOCPARK — the park is deleted, **−11 B of main page 1** (2026-08-21)
+
+§3.1 filed the park's removal as *"a separate ~9 B carve with a separate claim"*
+and declined to ride it along. This is that carve. **Main page 1: 2 B → 13 B.**
+Low region 22 B, sub page 0 3299 B, sub page 1 1619 B — all four read from
+`make basic-reloc` on a clean build, before and after.
+
+### 11.1 What licensed it, and what it costs to state that
+
+`loc_next` used to `pop de` / `ld (LOC_RET),de` on entry and return through a
+`push hl` / `ld hl,(LOC_RET)` / `ex (sp),hl` / `ret` tail, so that everything it
+called ran at the **statement handler's own** stack depth. The reason was true
+when it was written: the abort chain printed and then `ret`ed, and it was built
+to return into the run loop, so an abort raised one frame deeper consumed the
+helper's frame and landed back inside LOCATE, which carried on parsing and
+errored a **second** time.
+
+`4d35b6d` (D-CUR-D, [`spec-basic-abort-depth.md`](spec-basic-abort-depth.md) §4)
+made the abort **depth-independent**, and that was verified by reading **both**
+arms rather than one:
+
+| arm of `raise_error_hl` | what it does before it leaves |
+|---|---|
+| trap (`ONELIN`≠0, `ONEFLG`=0) | `ld sp,(SAVSTK)` then `jp rp_lp` |
+| `ra_abort` | `push hl` / `call cont_record` / `pop hl` — **balanced** — then `jp fre_abort_low`, whose own first act is `ld sp,(SAVSTK)` |
+
+`type_mismatch_error` is `jp raise_error` and inherits both. So the park buys a
+property that is now free.
+
+### 11.2 🔴 The old header over-claimed, and one read of three call sites says so
+
+The comment said the park *"is what makes `loc_more`, the apply-then-reject
+ordering and `loc_missing` run at the handler's own depth"*. **Two of those three
+were never governed by it.** `loc_more`, `loc_apply_pos` and the `jp stmt_error`
+that rejects a fourth argument are all reached from `ex_locate` **after**
+`loc_next` has returned and the parked frame has already been restored — their
+depth is `ex_locate`'s in both worlds and cannot move. What the park actually
+governed is exactly two things: `loc_missing`, and the `call
+eval_byte_checked`. Each is now **two bytes deeper**, and that is the whole
+behavioural delta.
+
+Predicted separately, before the build, and each held:
+
+| claim | predicted | measured |
+|---|---|---|
+| price | **−11 B** (13 B removed, 2 `ret`s added) | **−11 B**, page 1 2 → 13 ✅ EXACT |
+| `loc_more` depth | unchanged; no row can move | `locarg` 45/45 ✅ |
+| apply-then-reject (`t.four`) | unchanged | green ✅ |
+| `loc_missing` depth | +2, invisible | `u.bare`/`t.bare` green ✅ |
+| domain check depth | +2, invisible | `t.c.*`/`u.*` green ✅ |
+
+### 11.3 Gates
+
+`locarg-acceptance` **45/45** · `missing-acceptance` **OK** (the carve's green
+control set) · `abort-acceptance` **49/49** · `stmtpend-acceptance` **60/60** ·
+`onerr0-acceptance` **24/24** · `screenerr-acceptance` **61/61** ·
+`width-acceptance` **94/94** · `penderr-acceptance` **61/61** ·
+`tmfp-acceptance` **50/50** · `unit-test` 59/59 · `deadcode` · `audit-citations`
+· `wall-assertion-check` · `redundant-load-check` · `rowshape-check`.
+
+ROMs: `basic-reloc` `becf1e98` → **`d66b47be`**, main-eu `670b8d4a` →
+**`9c726e88`**, `sub.rom` **`6a493e36` unchanged** — `missing.asm` is page 1, and
+§11.5 is why that last word is not decoration.
+
+### 11.4 🔴 Knives — 3 cuts × 2 rounds, byte-identical both rounds, and **all three misses are the interesting part**
+
+| knife | cut | predicted | measured |
+|---|---|---|---|
+| **K-LP1** | `fre_abort_low`'s `ld sp,(SAVSTK)` — i.e. put the depth-dependence BACK | rc 2; the doubled message returns, at `u.str` (`LOCATE "5",3`) | rc **2** ✅, but the red set is **`u.bare` ALONE**, reading `''` — and `u.str` is **GREEN** ❌ |
+| **K-LP2** | `loc_next`'s accepted arm: `scf` → `or a` | rc 2; `t.ok` reads ` 0  0  0 ` | rc **2** ✅, `t.ok` ` 0  0  0 ` ✅ **EXACT** — plus `t.c.256` ` 5  0  0 `, not predicted ❌ |
+| **K-LP3** | `loc_omit`'s `or a` → `scf` | rc **1**, five red rows | rc **2** ❌ — `u.ok` fails as a control at `<NO ECHO>` |
+
+**K-LP1 is the one that matters, and it refutes §3.2's confidence.** §3.2 says the
+eleven `u.*` rows keep the refuted apparatus claim MEASURED, and names the
+symptom: *"`LOCATE \"5\",3` printing `Type mismatch` and then `Missing
+operand`"*. Restore the depth-dependence and that row is **green**. Exactly one
+row of forty-five sees the cut at all, `u.bare`, and what it reads is not a
+doubled message but an empty tail. So the sentence is **true and much weaker than
+it sounds**: the battery detects the property, at one row, by a different symptom
+than the one it advertises. 🎯 **An apparatus that "still measures" a refuted
+claim is a claim about a ROW SET, and it has to be knifed like any other.**
+Filed in `TODO.md`.
+
+**K-LP3's miss is the echo lesson again.** With the omit arm returning CF=1,
+`LOCATE ,,1` becomes `LOCATE 44,1` — no error, the program runs on, and the
+cursor lands on the row the readout ANCHORS on, so the `RUN` echo is overwritten
+and `u.ok` reads `<NO ECHO>` rather than `[RANON]`. **A knife that moves the
+cursor destroys the instrument that reads the screen** ([[missing-class-slice]],
+[[width-domain-slice]]). The five rows it was aimed at can still be scored off
+the unscored dump, and there **4 of 5** landed:
+
+| row | predicted | measured (zb vs refs) |
+|---|---|---|
+| `t.omitc` | red | ✅ `  2  4  38 ` vs ` 0  2  7 ` |
+| `t.omitr2` | red | ✅ ` 2  23  3 ` vs ` 0  4  3 ` |
+| `t.omitb` | red | ✅ `  0  1  38 ` vs ` 0  4  7 ` |
+| `t.om.r256` | red | ✅ `  2  4  38 ` vs ` 5  4  7 ` |
+| `t.om.u256` | red | ❌ **GREEN at ` 5  4  7 `** |
+| `t.om.ovdiv` | not predicted | ❌ red, `  2  4  38 ` |
+
+🔴 **`t.om.u256` IS A ROW THAT AGREES FOR THE WRONG REASON.** `LOCATE ,,256`
+still reports ERR 5 with the cursor unmoved under the knife — but from a
+different argument position, because the mangled omit swallowed the first comma
+and the `256` was parsed at the SECOND site instead of the third. Same face,
+different mechanism. Two rows apart from a row (`t.om.r256`) that does move.
+
+### 11.5 🎯 A LOW-REGION MAIN EDIT MOVES `sub.rom`, AND K-LP1/K-LP2 ARE THE PAIR THAT SHOWS IT
+
+K-LP1 cuts three bytes out of `basic/arrays.asm` — main, **page-0 low** — and
+`sub.rom` moved, `6a493e36` → `16f7eae7`. K-LP2 and K-LP3 cut `basic/missing.asm`
+— main, **page 1** — and `sub.rom` did **not** move. The mechanism is
+[`sub/basic-resident-abi.inc`](../sub/basic-resident-abi.inc), a GENERATED file:
+`tools/gen_resident_abi.py` rebuilds it from `build/basic-reloc.sym` on every
+build, and its twelve `equ`s are low-region main addresses. Shift the low region
+and the sub-ROM's imports shift with it.
+
+⚠️ So *"only `sub.rom` moves on a sub-tenant edit"* is right, and its converse is
+**not**: a main-side LOW edit moves `sub.rom` too, by design. A slice that reads
+an unexpected sub-ROM id as a build fault would be wrong; a slice that reads an
+unchanged one as proof it touched nothing sub-side is only right for page 1.

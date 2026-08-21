@@ -2620,8 +2620,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       it does not bear on shipped correctness; it is filed because an unexplained
       knife result is a gap in the model of the error surface, not a curiosity.
 
-- [ ] 💰 **`loc_next`'S PARKED FRAME (`LOC_RET`) IS NOW UNNECESSARY, ~9 B, AND
-      DELIBERATELY NOT TAKEN.** Filed 2026-08-09 by D-LOCARG
+- [x] ✅ **~~`loc_next`'S PARKED FRAME (`LOC_RET`) IS NOW UNNECESSARY, ~9 B, AND
+      DELIBERATELY NOT TAKEN~~ — TAKEN 2026-08-21 as D-LOCPARK, and it is
+      **−11 B**, not ~9.**
+      [`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §11.
+      **Main page 1: 2 B → 13 B**; low 22 B, sub p0 3299 B, sub p1 1619 B all
+      unmoved. `locarg-acceptance` 45/45, `missing-acceptance` OK,
+      `abort-acceptance` 49/49, `stmtpend-acceptance` 60/60, `onerr0` 24/24,
+      `screenerr` 61/61, `width` 94/94, `penderr` 61/61, `tmfp` 50/50.
+      🔴 **THE FILED ENTRY OVER-CLAIMED WHAT THE PARK DID.** It said the change
+      moves the depth of `loc_more` and the apply-then-reject ordering as well as
+      the domain check. It does not: both run in `ex_locate` AFTER `loc_next` has
+      returned, so their depth is `ex_locate`'s in either world. Only
+      `loc_missing` and `call eval_byte_checked` move, and both were already
+      depth-independent — verified by reading BOTH arms of `raise_error_hl`, not
+      one. Enumerating the three separately is what caught it.
+      💰 **THE 11 BYTES ARE NOW THE PAGE-1 BUDGET** two other filed items were
+      declined against: `VALTYP`'s 3 B cold init (D-VALTYP) and the
+      `dsk-bloadmode` face (D-BLNF). Re-read the wall before quoting this.
+      The original entry follows.
+      ~~💰 Filed 2026-08-09 by D-LOCARG~~
       ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §3.1). The park
       exists because the abort chain used to PRINT AND RETURN; `4d35b6d` made
       aborts depth-independent (`fre_abort_low` resets `SP` from `SAVSTK`), which
@@ -2634,6 +2652,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       run every abort class untrapped and read the whole screen tail, which is
       exactly the "two messages for one statement" failure the park prevents.
       💰 ~9 B, denominator already built, not scouted.
+
+- [ ] 🔴 **"THE APPARATUS IS STILL MEASURED" IS A CLAIM ABOUT A ROW SET, AND
+      `locarg`'s IS MUCH WEAKER THAN ITS OWN SENTENCE SAYS.** Filed 2026-08-21 by
+      D-LOCPARK, knife K-LP1
+      ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §11.4).
+      D-LOCARG §3.2 defends deleting a refuted justification by saying the eleven
+      `u.*` rows still run every abort class untrapped, and it names the symptom:
+      *"`LOCATE "5",3` printing `Type mismatch` and then `Missing operand`"*.
+      **Put the depth-dependence back** — cut `fre_abort_low`'s `ld sp,(SAVSTK)`
+      — **and `u.str` is GREEN.** Exactly ONE row of forty-five moves, `u.bare`,
+      and it reads `''`, not a doubled message. So the battery does detect the
+      property, at one row, by a symptom other than the advertised one, and the
+      row the sentence names cannot see it at all.
+      ➡️ **WHAT IS OPEN:** why `u.str` survives. `ENDFLAG` is set by
+      `fre_abort_low` before its `ret`, so the run may simply stop at the next
+      `rp_run` check before a second message can print — that is a hypothesis,
+      not a reading. Either the mechanism is established and §3.2 is narrowed to
+      what it can support, or a row is added that DOES see it.
+      💰 0 ROM bytes; apparatus. ⚠️ This does NOT bear on the carve: D-LOCPARK's
+      licence comes from reading both arms of `raise_error_hl`, not from this
+      knife.
 
 - [ ] 🔴 **`t.zero` IS BLIND TO A CUT THAT ALSO DISABLES ITS SEED, AND THE PROBE
       CLAIMS OTHERWISE.** Filed 2026-08-09 by D-LOCARG

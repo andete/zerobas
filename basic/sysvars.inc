@@ -1242,18 +1242,19 @@ TRACEFLAG       equ     $E226   ; 1 B: TRON state (0 = TROFF)
 ; So if a function-key row is ever added to this console, THIS is the definition
 ; that has to move with it -- which is the entire reason it has a name.
 CON_LASTROW     equ     23      ; 0-based; CSRY is 1-based, so CSRY max = 24
-; --- LOC_RET: LOCATE's parked return address (basic/missing.asm loc_next) ----
-; Not scratch for convenience -- it is what keeps loc_next's error paths CORRECT.
-; The error-abort chain (raise_error -> fre_abort_low, and type_mismatch_error)
-; prints and then RETURNS, and it is built to return into the RUN LOOP, i.e. the
-; stack must look exactly as it did when exec_stmt jumped to the handler. A
-; helper that is `call`ed from the handler is one frame deeper, so every abort
-; inside it landed back in the middle of LOCATE, which then carried on parsing
-; and errored a SECOND time -- measured as `missing operand/missing operand` and
-; `type mismatch/missing operand` on the gate before this cell existed.
-; loc_next therefore parks its own return address here for the duration, so eval
-; / get_byte_arg / raise_error all run at the handler's own stack depth.
-LOC_RET         equ     $E227   ; 2 B: loc_next's parked return address
+; --- $E227..$E228 (2 B): FREE. `LOC_RET` lived here and is DELETED ----------
+; (D-LOCPARK, 2026-08-21, docs/spec-basic-locarg.md §3.1.) It held LOCATE's
+; parked return address so that `loc_next` could run `eval` / `raise_error` at
+; the STATEMENT HANDLER's own stack depth. The reason it existed was true when it
+; was written: the abort chain printed and then RETURNED, and it was built to
+; return into the run loop, so an abort one frame deeper landed back in the
+; middle of LOCATE and errored a SECOND time -- measured as
+; `missing operand/missing operand` and `type mismatch/missing operand`.
+; `4d35b6d` (D-CUR-D) made the abort DEPTH-INDEPENDENT -- both arms of
+; raise_error_hl reset SP from SAVSTK -- so the park was buying a property that
+; is now free, at 11 bytes of page 1. Deleted; loc_next is an ordinary
+; `call`/`ret`. The two bytes are left named here rather than silently reused,
+; because the next cell that wants them should know what was here.
 ; LOCATE parses all three arguments and applies them only when all three are
 ; valid -- measured (basic/missing.asm ex_locate). Both cells are SEEDED from the
 ; live cursor, so an omitted axis is re-applied unchanged and needs no
