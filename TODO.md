@@ -56,6 +56,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Language / verb surface**
 
+- [ ] 🔴 **`POKE <addr>,` WITH NO VALUE WRITES ZERO INSTEAD OF RAISING — a
+      SILENT MEMORY WRITE, and it is not a carve artifact.** Found 2026-08-22 by
+      D-DUPSPAN2's closing demo (`scratchpad/dupspan2_demo.py`,
+      `poke.tail`/`poke.head`/`poke.ok`), measured with a marker on each side of
+      the statement so "did it abort?" needs no trappable error:
+
+          20 POKE &HE000,99 : 30 PRINT"<A>"; : 40 POKE &HE000, : 50 PRINT"<B>";PEEK(&HE000);
+
+      VG-8020 and CF-3300 both print `<A>` and abort with **`Missing operand in
+      40`**; zerobas prints `<A><B> 0` — it COMPLETES and has overwritten the
+      byte with **0**. ✅ **PRE-EXISTING, MEASURED NOT ARGUED**: the identical
+      program on the pre-carve ROM `834c45b5` reads the same `<A><B> 0`.
+      🎯 The aliased label is NOT implicated and there is a green row that says
+      so: `POKE ,1` (the missing ADDRESS) reaches `poke_err` and reads ERR 2 on
+      all three, and `POKE &HE000,65` works. The missing-VALUE path never reaches
+      `poke_err` at all — the empty operand evaluates to 0 and the store
+      proceeds. **Likely one rule at several verbs** (`LOCATE ,` correctly gives
+      ERR 24, so the mechanism exists); sweep the verbs that take a trailing
+      value before pricing.
+
 - [ ] 💰 **`DEF FN` IS WRITTEN, MEASURED GREEN, AND 350 B TOO BIG — the FUNDING
       is the whole remaining job.** Filed 2026-08-22 by D-DEFFN,
       [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md); the code
