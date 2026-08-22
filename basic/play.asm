@@ -82,7 +82,7 @@ pl_dispatch:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE
                 call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
                 pop     hl                  ; restore cursor so exec_stmt chains the next stmt
-                jr      c,pl_absent
+                jp      c,pl_absent
                 ld      a,(AUDIO_STATUS)    ; tenant result (RAM; subrom_call's CF is absence)
                 or      a
                 jr      nz,pl_parse_err     ; nonzero = the ERR code the tenant chose
@@ -92,6 +92,8 @@ pl_parse_err:
 pl_typeerr:
                 ld      a,13                ; Type mismatch (a PLAY argument was not a string)
                 jp      raise_error
-pl_absent:
-                ld      a,5                 ; defensive: merged ROM always ships the tenant
-                jp      raise_error
+; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
+; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
+; The NAME and every call site survive; un-alias here to give this site a
+; distinct face and nothing else moves.
+pl_absent       equ     gb_illegal  ; defensive: merged ROM always ships the tenant

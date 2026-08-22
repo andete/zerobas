@@ -1378,13 +1378,15 @@ fch_check_d:
                 jp      nz,fp_runtime_error
                 ld      a,d
                 or      a
-                jr      nz,fchk_ifc
+                jp      nz,fchk_ifc
                 ld      a,e
                 or      a                   ; Z <=> channel 0
                 ret
-fchk_ifc:
-                ld      a,5                 ; illegal function call (err_msgtab[5])
-                jp      raise_error
+; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
+; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
+; The NAME and every call site survive; un-alias here to give this site a
+; distinct face and nothing else moves.
+fchk_ifc        equ     gb_illegal  ; ERR 5 (err_msgtab[5])
 ; fch_check — the whole rule, for the seven verbs with no channel-0 exception.
 fch_check:
                 call    fch_check_d

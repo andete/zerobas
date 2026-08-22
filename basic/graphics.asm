@@ -257,9 +257,11 @@ elg_draw:
                 pop     hl
                 jp      c,gfx_absent        ; defensive: merged ROM always ships the tenant
                 jp      exec_stmt           ; chain the next ':'-separated statement
-elg_syntax:
-                ld      a,2                 ; Syntax error (bad LINE form)
-                jp      raise_error
+; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
+; pl_syntax, which is the family's canonical tail because its four callers
+; are the only ones close enough to reach it with `jr`. The NAME and every
+; call site survive; un-alias here for a distinct face and nothing moves.
+elg_syntax      equ     pl_syntax   ; ERR 2 (bad LINE form)
 
 ; --- is_box_kw: is HL at a "B"/"BF" box suffix? (does NOT advance HL) ----------
 ; ZF=1 iff HL points at 'B' or 'BF' terminating the statement (next char after it is
@@ -302,18 +304,18 @@ pc_flag:
                 ld      (GFX_REL),a
                 call    skip_spaces
                 cp      '('
-                jr      nz,pc_syntax
+                jp      nz,pc_syntax
                 inc     hl
                 call    gfx_eval_int16   ; DE = x, ERR 6 if > int16 (HL guarded)
                 push    de                  ; save x across the y eval
                 call    skip_spaces
                 cp      ','
-                jr      nz,pc_syntax
+                jp      nz,pc_syntax
                 inc     hl
                 call    gfx_eval_int16   ; DE = value; ERR 6 if > int16
                 call    skip_spaces
                 cp      ')'
-                jr      nz,pc_syntax
+                jp      nz,pc_syntax
                 inc     hl
                 pop     bc                  ; BC = x ; DE = y
                 ld      a,(GFX_REL)
@@ -333,9 +335,12 @@ pc_flag:
                 adc     a,d
                 ld      d,a                 ; DE = y + GRPACY
                 ret
-pc_syntax:
-                ld      a,2                 ; Syntax error (bad coordinate form)
-                jp      raise_error         ; aborts (SP reset) -> the pushed x is discarded
+; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
+; pl_syntax, which is the family's canonical tail because its four callers
+; are the only ones close enough to reach it with `jr`. The NAME and every
+; call site survive; un-alias here for a distinct face and nothing moves.
+; (the raise aborts with SP reset, so the pushed x is still discarded.)
+pc_syntax       equ     pl_syntax   ; ERR 2 (bad coordinate form)
 
 ; --- gfx_in_range: is (x,y) on the SCREEN-2 surface? -----------------------
 ; in: BC = x (int16), DE = y (int16). out: CF = 1 iff 0<=x<=255 and 0<=y<=191,
@@ -359,9 +364,11 @@ gir_off:
                 ret
 
 ; --- shared error tails -----------------------------------------------------
-gfx_err5:
-                ld      a,5                 ; Illegal function call (PSET/PRESET in SCREEN 0/1)
-                jp      raise_error
+; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
+; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
+; The NAME and every call site survive; un-alias here to give this site a
+; distinct face and nothing else moves.
+gfx_err5        equ     gb_illegal  ; ERR 5 (PSET/PRESET in SCREEN 0/1)
 ; 🎯 gfx_absent IS NOW AN ALIAS, NOT A SECOND COPY (D-PAINTBORD carve, 5 B of
 ; main page 1 -- the bytes that fund the border-domain check below). The
 ; defensive "subrom_call reported the tenant missing" tail, which cannot fire on
@@ -792,9 +799,11 @@ ep_draw:
 ep_overflow:
                 ld      a,7                 ; Out of memory (measured, spec §4 D3)
                 jp      raise_error
-ep_syntax:
-                ld      a,2                 ; Syntax error (a 4th PAINT argument)
-                jp      raise_error
+; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
+; pl_syntax, which is the family's canonical tail because its four callers
+; are the only ones close enough to reach it with `jr`. The NAME and every
+; call site survive; un-alias here for a distinct face and nothing moves.
+ep_syntax       equ     pl_syntax   ; ERR 2 (a 4th PAINT argument)
 
     IF G6_RESIDENT
 ; ===========================================================================
@@ -982,9 +991,11 @@ spr_off:
 ; NOT `jp stmt_error`: that prints and aborts the RUN, so an `ON ERROR GOTO`
 ; program never sees it -- the reference raises a trappable ERR 2 for every
 ; malformed sprite statement (Phase O caught exactly this on the first run).
-gfx_syntax:
-                ld      a,2
-                jp      raise_error
+; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
+; pl_syntax, which is the family's canonical tail because its four callers
+; are the only ones close enough to reach it with `jr`. The NAME and every
+; call site survive; un-alias here for a distinct face and nothing moves.
+gfx_syntax      equ     pl_syntax   ; ERR 2 (malformed SPRITE statement)
 
 ; --- SPRITE$(n) = <string$> ------------------------------------------------
 ; WRITING needs a graphics mode (SCREEN 0 -> ERR 5) even though READING does not

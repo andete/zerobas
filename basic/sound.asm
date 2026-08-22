@@ -53,7 +53,7 @@ ex_sound:
                 call    eval                ; DE = register (silent flt_to_int16)
                 call    get_byte_arg        ; A = register 0..255 (ERR6 >int16, ERR5 >255/neg)
                 cp      14                  ; registers 0..13 are the writable PSG set;
-                jr      nc,snd_illegal      ; 14..255 -> Illegal function call (ERR5)
+                jp      nc,snd_illegal      ; 14..255 -> Illegal function call (ERR5)
                 ld      c,a                 ; C = register number (kept across the value eval)
                 call    skip_spaces
                 cp      ','                 ; comma required between register and value
@@ -91,9 +91,11 @@ snd_write:
                 out     (PSG_DATW),a        ; write the data byte
                 ei
                 jp      exec_stmt           ; out preserves HL (still the cursor); next stmt
-snd_illegal:
-                ld      a,5
-                jp      raise_error         ; ERR 5 Illegal function call (register out of 0..13)
+; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
+; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
+; The NAME and every call site survive; un-alias here to give this site a
+; distinct face and nothing else moves.
+snd_illegal     equ     gb_illegal  ; ERR 5 (register out of 0..13)
 
 ; --- BEEP -------------------------------------------------------------------
 ; BEEP  (no arguments) -- one short fixed tone on PSG channel A, synchronous.

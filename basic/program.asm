@@ -2300,9 +2300,11 @@ eos_store:
 ; malformed trap statement -- VG-8020-measured for `ON STRIG` and `ON STRIG GOTO`
 ; (spec-traps-t2-strig.md §1.3, cases S6/S7), which is also what arc spec §7
 ; specified. Same convention as graphics' gfx_syntax.
-trap_syntax:
-                ld      a,2
-                jp      raise_error
+; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
+; pl_syntax, which is the family's canonical tail because its four callers
+; are the only ones close enough to reach it with `jr`. The NAME and every
+; call site survive; un-alias here for a distinct face and nothing moves.
+trap_syntax     equ     pl_syntax   ; ERR 2 (malformed trap statement)
 
 ; --- onoff_decode: the shared ON | OFF | STOP sub-keyword decode -------------
 ; Six statements in this tree decode the same three sub-keywords into the same
@@ -2496,7 +2498,7 @@ ex_on_interval:
                 jp      nz,fp_runtime_error ; outside -32768..65535 -> Overflow (ERR 6)
                 ld      a,d
                 or      e
-                jr      z,eoi_err5          ; ON INTERVAL=0 -> Illegal function call
+                jp      z,eoi_err5          ; ON INTERVAL=0 -> Illegal function call
                 ld      (ZINTVAL),de        ; the period...
                 ld      (ZINTCNT),de        ; ...and RELOAD the live counter: arming
                                             ; restarts the period (§1.4 P2, measured --
@@ -2511,9 +2513,11 @@ ex_on_interval:
                 jp      eos_line            ; shared tail: optional line ref, else CLEAR
                                             ; the slot (§1.6 -- the reference accepts a
                                             ; bare `ON INTERVAL=n GOSUB` and disarms)
-eoi_err5:
-                ld      a,5
-                jp      raise_error
+; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
+; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
+; The NAME and every call site survive; un-alias here to give this site a
+; distinct face and nothing else moves.
+eoi_err5        equ     gb_illegal  ; ERR 5 (ON INTERVAL=0)
     ENDIF
 
 ; --- ex_ff_stmt: the `$FF <selector>` STATEMENT fork -------------------------
@@ -2644,9 +2648,11 @@ strig_done:
                 pop     hl                  ; HL = cursor past the sub-keyword
                 jp      exec_stmt           ; continue the line -- a bare `ret` here would
                                             ; SWALLOW the rest of it (the T1 es_set lesson)
-strig_illegal:
-                ld      a,5
-                jp      raise_error         ; ERR 5 Illegal function call (n out of 0..4)
+; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
+; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
+; The NAME and every call site survive; un-alias here to give this site a
+; distinct face and nothing else moves.
+strig_illegal   equ     gb_illegal  ; ERR 5 (STRIG n out of 0..4, KEY n out of 1..10)
 
     IF TRAPS_T3
 ; ===========================================================================

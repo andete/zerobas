@@ -480,9 +480,15 @@ sw_absent:
                 ; `A=1:SWAP A,B` is Illegal function call, NOT an auto-created B.
                 push    ix
                 pop     hl                  ; restore the cursor for the abort
-sw_illegal:
-                ld      a,5
-                jp      raise_error         ; Illegal function call
+                jp      gb_illegal          ; 🔴 sw_illegal is a FALLTHROUGH target, so the
+                                            ; alias below cannot stand alone: this `jp` is
+                                            ; what sw_absent used to reach by falling in.
+                                            ; The collapse is worth 2 B here, not 5.
+; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
+; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
+; The NAME and every call site survive; un-alias here to give this site a
+; distinct face and nothing else moves.
+sw_illegal      equ     gb_illegal  ; ERR 5 (`SWAP A,B,C` -- a third operand)
     ENDIF
 
 ; --- els_typecheck: D-MISS-1, the string-lvalue RHS type check --------------
