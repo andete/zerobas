@@ -1003,18 +1003,18 @@ ris_lp:
                 call    arl_getbyte         ; byte source vector: fat_io_getbyte (disk)
                                             ; or cas_in_getbyte (CAS: input), set by
                                             ; ex_input per channel type
-                jr      c,ris_done          ; EOF -> stop
+                jp     c,ris_done          ; EOF -> stop
                 cp      $0A                 ; ignore LF entirely
                 jr      z,ris_lp
                 cp      $0D                 ; CR ends the line / field
-                jr      z,ris_done
+                jp     z,ris_done
                 ld      c,a                 ; C = candidate data byte
                 ld      a,(FCH_RDMODE)
                 or      a
                 jr      nz,ris_keep         ; line mode keeps everything (but CR/LF)
                 ld      a,c
                 cp      ','                 ; field mode stops at a comma
-                jr      z,ris_done
+                jp     z,ris_done
 ris_keep:
                 ld      a,(IN_RDLEN)
                 cp      STRMAX
@@ -1028,10 +1028,11 @@ ris_keep:
                 inc     a
                 ld      (IN_RDLEN),a
                 jr      ris_lp
-ris_done:
-                ld      a,(IN_RDLEN)
-                ld      (STRSCR),a          ; descriptor length
-                ret
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to sidr_done,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+ris_done        equ     sidr_done
 
 ; --- CLOSE [#n] -------------------------------------------------------------
 ; CLOSE [#n] — close one channel, or (bare CLOSE) every open channel. An OUTPUT
@@ -1643,8 +1644,11 @@ nm_notfound:
 ; the stamp tenant's I-O error (or an absent sub-ROM) below.
 nm_fail:
                 jp      load_error
-nm_fail2:
-                jp      load_error
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to nm_fail,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+nm_fail2        equ     nm_fail
 
 ; --- MAXFILES = n — size the multi-channel table ---------------------------
 ; MAXFILES sets how many file channels may be open simultaneously (the value also

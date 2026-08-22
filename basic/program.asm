@@ -1636,18 +1636,18 @@ ef_havestep:
                 ld      de,(FSP)            ; the ldir destination, loaded ONCE
                 ld      hl,-FOR_STK_END
                 add     hl,de
-                jr      c,ef_over           ; too many nested FORs
+                jp     c,ef_over           ; too many nested FORs
                 ld      hl,FOR_CUR          ; push the FOR_FRAME-byte frame
                 ld      bc,FOR_FRAME
                 ldir
                 ld      (FSP),de            ; advance FSP by FOR_FRAME
                 pop     hl                  ; HL = loop body -> run it
                 jp      exec_stmt
-ef_over:
-                ld      a,$CE
-                ld      (ERRMARK),a
-                ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
-                jp      raise_error
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to gosub_stk_over,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+ef_over         equ     gosub_stk_over
 
 ; --- ex_next: NEXT [<var>] ---------------------------------------------------
 ; Step the loop variable of the matching FOR frame, test against the limit, and
@@ -2177,16 +2177,18 @@ ex_on_error:
                 push    hl                  ; [cursor] guard across find_line_bc (which
                                             ; clobbers HL, returning the match in it)
                 call    find_line_bc        ; CF set + HL = link addr if found
-                jr      nc,oe_undef
+                jp     nc,oe_undef
                 ld      (ONELIN),hl         ; ONELIN := the handler line's LINK address
                                             ; (find_line_bc's return convention -- exactly
                                             ; what raise_error's trap / rp_goto expect)
                 pop     hl                  ; HL = cursor again (ON ERROR GOTO does not
                                             ; redirect flow -- continue the same line)
                 jp      exec_stmt
-oe_undef:
-                pop     hl                  ; balance the stack (cursor unused, aborting)
-                jp      ex_goto_undef       ; undefined line -> Undefined line number
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ers_undef,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+oe_undef        equ     ers_undef
 oe_disable:
                 ld      de,0                ; (DE, not HL -- HL still holds the cursor
                 ld      (ONELIN),de         ; to continue the line with)
@@ -2381,14 +2383,16 @@ tll_have:
                 inc     hl                  ; HL -> cursor past the $0E operand
                 push    hl                  ; guard cursor across find_line_bc
                 call    find_line_bc        ; CF set + HL = link addr if found
-                jr      nc,tll_undef
+                jp     nc,tll_undef
                 ex      de,hl               ; DE = handler LINK
                 pop     hl                  ; HL = cursor
                 scf
                 ret
-tll_undef:
-                pop     hl                  ; balance the stack (aborting)
-                jp      ex_goto_undef       ; undefined line -> ERR 8
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ers_undef,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+tll_undef       equ     ers_undef
 
     IF TRAPS_T5
 ; ===========================================================================

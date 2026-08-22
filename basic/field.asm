@@ -408,9 +408,11 @@ exf_fits:
 exf_comma:
                 inc     hl                  ; past ',' -> next field item
                 jr      exf_item
-exf_syn:
-                pop     de                  ; discard the saved width
-                jp      stmt_error
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to elas_err,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+exf_syn         equ     elas_err
 ; D-NOTOPEN2 §3.1: FIELD on an open channel that is not RANDOM. Until this slice
 ; ex_field tested only "open at all", so `OPEN "X" FOR INPUT AS #1 : FIELD #1,…`
 ; was accepted SILENTLY -- measured `0` (nothing raised) against the CF-3300's

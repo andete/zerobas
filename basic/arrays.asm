@@ -740,8 +740,11 @@ ee_settype:
                 jr      nz,ee_done
                 inc     hl
                 jr      ee_lp               ; next name
-ee_done:
-                jp      exec_stmt
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ed_done,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+ee_done         equ     ed_done
 ee_synerr_pop:
                 pop     af                  ; discard [STRFLAG] (balance the stack) before
                                             ; the Tier-A abort -- the '(' check is the one

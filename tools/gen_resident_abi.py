@@ -19,8 +19,8 @@ $(MAIN_ROM) Makefile bug, see [[ips-rebuild-after-basic-change]]).
 
 Fails loudly (nonzero exit) if:
   * any of the required symbols is missing from the reloc sym file, or
-  * any of them resolves to $3FE5 (__MEAS_LOW_END) or above — i.e. it is
-    NOT page-0-resident (< $4000), so a page-1 CALSLT could never reach it
+  * any of them resolves to __MEAS_LOW_END or above — i.e. it is NOT
+    page-0-resident (< $4000), so a page-1 CALSLT could never reach it
     by absolute address (page 0 is switched OUT while the page-1 tenant
     runs — spec §2).
 
@@ -48,7 +48,7 @@ import sys
 # tenant code, so they must go through the same writer as the twenty main-ROM
 # ones or first-error-wins would hold everywhere EXCEPT `x^y` and `EXP(x)`.
 # It is page-0-resident by construction (basic/str-engine.asm, low region),
-# which is exactly the property this file's LOW_CEILING check enforces.
+# which is exactly the property this file's low_ceiling() check enforces.
 REQUIRED = [
     "fp_add",
     "fp_sub",
@@ -64,11 +64,26 @@ REQUIRED = [
     "penderr_set",
 ]
 
-# Page-0-resident ceiling (basic/main.asm __MEAS_LOW_END — the reclaimed low
-# region ends here; $4000 is the cartridge header). Any resident-ABI address
-# must be strictly below this, or a page-1 CALSLT (which switches page 0 OUT
-# to the sub-ROM) could never call it by absolute address.
-LOW_CEILING = 0x3FE5
+# Page-0-resident ceiling. Any resident-ABI address must be strictly below the
+# END OF THE LOW REGION, or a page-1 CALSLT (which switches page 0 OUT to the
+# sub-ROM) could never call it by absolute address.
+#
+# 🔴 THIS WAS A HARDCODED `0x3FE5` WHOSE OWN COMMENT CALLED IT `__MEAS_LOW_END`,
+# AND IT HAS NEVER TRACKED IT (D-DUPSPAN2, 2026-08-22). The build MEASURES that
+# label on every run and prints it -- it read `$3FD2` before this session's
+# carve and `$3FA4` after -- so the constant was 19 B, then 65 B, too high, and
+# the guard was that much weaker than its own docstring claimed. Nothing caught
+# it: `make wall-assertion-check` scopes itself to TODO.md's `- [ ]` items by
+# design (its §SCOPE), which is where a stale figure misleads the next SLICE --
+# a stale figure inside a GATE misleads the gate instead, and no one reads it.
+# 🎯 The fix is that there was never anything to hardcode: this tool already
+# loads the sym file the label lives in.
+LOW_CEILING_FALLBACK = 0x4000       # a symbol at/above $4000 is page 1, always fatal
+
+
+def low_ceiling(syms: dict[str, int]) -> int:
+    """The measured end of the low region, from the same sym file."""
+    return syms.get("__MEAS_LOW_END", LOW_CEILING_FALLBACK)
 
 
 def load_syms(path: str) -> dict[str, int]:
@@ -93,13 +108,14 @@ def generate(sym_path: str, out_path: str) -> str:
             "(docs/spec-basic-subrom-mathpack.md §4) could not be resolved"
         )
 
+    ceiling = low_ceiling(syms)
     not_resident = [
-        f"{name}=${syms[name]:04X}" for name in REQUIRED if syms[name] >= LOW_CEILING
+        f"{name}=${syms[name]:04X}" for name in REQUIRED if syms[name] >= ceiling
     ]
     if not_resident:
         raise SystemExit(
             "FAIL: gen_resident_abi.py: resident-ABI symbol(s) resolve at or "
-            f"above __MEAS_LOW_END (${LOW_CEILING:04X}), so they are NOT "
+            f"above __MEAS_LOW_END (${ceiling:04X}), so they are NOT "
             f"page-0-resident: {', '.join(not_resident)} — a page-1 tenant "
             "cannot reach them by absolute address (page 0 is switched out "
             "under a page-1 CALSLT)"

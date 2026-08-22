@@ -1042,15 +1042,19 @@ dpl_body:
 ; dpl_link_err — the second fat_io_getbyte (link high) returned EOF; AF (link-low)
 ; is on the stack from the push before that call.  Pop it to restore balance, then
 ; fall through to dpl_err (close file + error path).
-dpl_link_err:
-                pop     af
-                jp      dpl_err
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ctp_link_err,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+dpl_link_err    equ     ctp_link_err
 
 ; dpl_err_pop / dpl_oom_pop — drop the stacked body length / remaining count, then
 ; take the file-closing error / out-of-memory path (stack stays balanced).
-dpl_err_pop:
-                pop     de
-                jp      dpl_err
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ctp_err_pop,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+dpl_err_pop     equ     ctp_err_pop
 dpl_oom_pop:
                 pop     de
                 jp      dpl_oom

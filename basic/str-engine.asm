@@ -1164,24 +1164,24 @@ str_fn_radix:
 shx_finish:
                 ld      a,(SH_ERR)
                 or      a
-                jr      z,shxf_ok
-                cp      2
-                jr      z,shxf_overflow
+                jp      z,shxf_ok           ; D-DUPSPAN2: widened from `jr` --
+                cp      2                   ; the alias targets are in sst_*'s
+                jp      z,shxf_overflow     ; span, out of `jr` reach from here
                 ld      a,FPERR_STROOM
                 call    penderr_set         ; heap OOM (sysvars.inc)
                 ld      hl,(SH_PTR)
                 ld      (STRPTR),hl
                 ret
-shxf_ok:
-                ld      hl,(SH_PTR)
-                ld      (STRPTR),hl
-                ret
-shxf_overflow:
-                ld      a,9
-                call    penderr_set         ; "String formula too complex"
-                ld      hl,STR_EMPTY
-                ld      (STRPTR),hl
-                ret
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to sst_ok,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+shxf_ok         equ     sst_ok
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to sst_overflow,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+shxf_overflow   equ     sst_overflow
 
 ; str_fn_space: SPACE$(n) -> n space ($20) bytes, clamped to STRMAX (D-3); a
 ; negative n is a function error (own-design, mirrors ASC ""). The clamp reuses

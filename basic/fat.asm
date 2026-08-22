@@ -235,12 +235,14 @@ fat_count_free:
                 ld      (DISKOP_OP),a
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
                 call    subrom_call
-                jr      c,fcfs_absent
+                jp     c,fcfs_absent
                 ld      de,(FAT_WRTMP2)
                 ret
-fcfs_absent:
-                ld      de,0
-                ret
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to vptr_none,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+fcfs_absent     equ     vptr_none
 
 
 

@@ -1769,11 +1769,11 @@ evmc_log:
                 jr      z,evmc_log_err
                 ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LOG
                 jp      evmc_dispatch
-evmc_log_err:
-                ld      a,3
-                call    penderr_set
-                ld      de,0
-                ret
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to evmc_sqr_err,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+evmc_log_err    equ     evmc_sqr_err
 
 ; --- evmc_exp: EXP(x) -> e^x, DOUBLE (math pack slice 2b, docs/spec-basic- --
 ; mathpack-slice2.md §12.6). Same arg-parse + widen shape as evmc_sqr/

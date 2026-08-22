@@ -378,9 +378,11 @@ gfx_err5        equ     gb_illegal  ; ERR 5 (PSET/PRESET in SCREEN 0/1)
 ; different CLAIMS: if a later slice wants a distinct face for an absent tenant,
 ; un-alias it here and no call site moves.
 gfx_absent      equ     gfx_err5
-gfx_typeerr:
-                ld      a,13                ; Type mismatch (G5 PAINT's MSX2 tile$ form, §5)
-                jp      raise_error
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to pl_typeerr,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+gfx_typeerr     equ     pl_typeerr
 
 ; --- gfx_point_gate / gfx_mode_gate / gfx_work_area -------------------------
 ; D-LINERR (docs/spec-basic-lineerr.md). THE ORDERING RULE, in one place:
@@ -1261,10 +1263,11 @@ g8_fn_byte:
                 add     hl,de
                 ld      e,(hl)
                 ld      d,0
+; D-DUPSPAN2: entered by FALLTHROUGH from the span above, so this cannot
+; become an `equ` -- a `jp` has to stay in its place.  Byte-identical to
+; evsgn_settype; 6 B -> 3 B.  tools/dupspan_indep.py calls this SAFE-JP.
 g8_int_result:
-                ld      a,2
-                ld      (FACTYP),a          ; the result is an int16
-                ret
+                jp      evsgn_settype
 
 ; --- g8_open_paren: HL at "(<expr>)" -> DE = value, HL past the ')' --------
 ; Shared by the function forms above and the assignment forms below.

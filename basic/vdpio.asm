@@ -29,7 +29,7 @@ do_vpoke:
                 push    de                  ; save address
                 call    skip_spaces
                 cp      ','                 ; comma required
-                jr      nz,vdp_err
+                jp     nz,vdp_err
                 inc     hl
                 call    eval_addr           ; DE = value, HL = cursor
                 pop     bc                  ; BC = VRAM address (popped BEFORE the check so
@@ -52,7 +52,7 @@ do_out:
                 push    de                  ; save port
                 call    skip_spaces
                 cp      ','                 ; comma required
-                jr      nz,vdp_err
+                jp     nz,vdp_err
                 inc     hl
                 call    eval_addr           ; DE = value, HL = cursor
                 pop     bc                  ; BC = port (C = port number)
@@ -67,6 +67,8 @@ do_out:
                 ld      a,e                 ; A = low byte of value
                 out     (c),a               ; raw Z80 port write
                 jp      exec_stmt           ; HL still the cursor (out preserves it)
-vdp_err:
-                pop     bc                  ; discard the saved address / port
-                jp      stmt_error
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ex_let_err,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+vdp_err         equ     ex_let_err

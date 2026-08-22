@@ -75,6 +75,52 @@ list. **When a slice lands, grep this list for what it just shipped.**
       estimates and both must be BUILT to be believed**, which is the whole
       lesson of this slice: 100 + 200 + 110 = 410 against 450, so a third source
       or a shave is needed and saying so now is cheaper than finding out later.
+      📏 **RE-PRICED 2026-08-22 BY D-DUPSPAN2** (`b61d350` → this commit),
+      [`docs/spec-basic-dupspan2.md`](docs/spec-basic-dupspan2.md): the carve
+      was MEASURED with `tools/dupspan_indep.py` instead of read by eye, and
+      **the ~200 B does not exist** — 403 B nominal → **162 B**
+      position-independent → **119 B** that also stays inside its own ROM
+      region → **+122 B shipped**. Two groups the hand reading called
+      "safe-looking" (`sav_ascii_flag` 20 B, `eostr_lp` 13 B) run off their own
+      end. 🔴 **AND THE SECOND SOURCE IS BIGGER WORK THAN FILED**: measured this
+      session, NO page-0 tenant in this tree calls main page 1 by absolute
+      address and there is no import mechanism for it (`sub/basic-resident-abi.inc`
+      is generated for PAGE-1 tenants calling main's LOW region), so every main
+      helper the parse uses — `var_name_key`, `deftbl_lookup`, `skip_spaces` —
+      needs a sub-side clone. Free in bytes (sub page 0 has 3 KB) but it is work
+      the "~46 B of tenant glue" estimate did not carry. **Run `make basic-reloc`
+      for the walls; never quote a figure from this line.**
+
+- [ ] 💰 **43 B of cross-region dup-span carve, and the gate that would clear it
+      may be blind to the question.** Filed 2026-08-22 by D-DUPSPAN2,
+      [`docs/spec-basic-dupspan2.md`](docs/spec-basic-dupspan2.md) §6. Eleven
+      aliases are position-independent but cross the low ↔ page-1 boundary
+      (`exps_print` 12 B, `vsf_wb_int` 7, `elas_err`/`exf_syn` 8, and seven
+      smaller). Each needs a reachability proof — is the label reached from a
+      tenant of the OPPOSITE kind, for which the target page is switched out? —
+      and `check_tenant_closure.py` filters `equ` names as VALUES rather than
+      LOCATIONS (D-PINDATA's own rule), so it may not follow an alias across the
+      boundary at all. 🎯 **Test the gate on a deliberately-bad cross-region
+      alias FIRST: that answer is worth more than the 43 B.**
+
+- [ ] ⚠️ **D-DUPSPAN2 shipped 28 aliases with NO per-site row set.** Filed
+      2026-08-22, [`docs/spec-basic-dupspan2.md`](docs/spec-basic-dupspan2.md)
+      §5.1. Eleven emulator batteries say the collapse broke nothing; none of
+      them can say it was OBSERVABLE — a site nothing exercises stays green
+      through any mistake made to it, which is why D-DUPSPAN built
+      `scratchpad/dupspan_probe.py` and cut its canonical VALUES. The substitute
+      here is `tools/dupspan_indep.py`'s machine-checked per-alias verdict, an
+      argument about the MECHANISM rather than the observable. Owed: one row per
+      aliased site, and a knife per canonical whose predicted set is that
+      canonical's aliases and nothing else.
+
+- [ ] ⚠️ **A wall figure hardcoded inside a GATE is unpoliced by design.** Filed
+      2026-08-22 by D-DUPSPAN2, §5.2 — `tools/gen_resident_abi.py`'s
+      `LOW_CEILING = 0x3FE5` under a comment naming `__MEAS_LOW_END`, stale by
+      65 B; fixed in that commit by reading the label. The CLASS is open:
+      `make wall-assertion-check` scopes itself to TODO.md's `- [ ]` items, so
+      no gate reads a free-space or region-boundary figure baked into
+      `tools/`, `probes/` or a source `equ`. A sweep for the class is owed.
 
 - [ ] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
       it.** Filed 2026-08-22 by D-DEFFN,
