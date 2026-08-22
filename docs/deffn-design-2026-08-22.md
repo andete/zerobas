@@ -363,7 +363,19 @@ So the classifiers are mutation-tested against **planted face tables** instead:
 | a broken positive control | caught as a control failure |
 | the address claims, three ways | PASS / FAIL / NOT MEASURED |
 
-**16 of 16 hold.**
+**17 of 17 hold**, the seventeenth being an integrity check on the `WANT` table
+itself — and it exists because the generator nearly banked garbage.
+
+🔴 **"BOTH REFERENCES AGREE" DOES NOT MEAN "THE READING IS RIGHT".** The rule
+that built `WANT` was *"take the last round in which both references agreed"*,
+and **the scout's round 2 agreed on eleven rows while reading the program's own
+source text** — the fixture's echo carried the `[...]` fence, so `b.param`
+returned `'";Y;X;"'` on all three sides and scored `refs-agree`. Both readings
+are indistinguishable in the log. The banked table is clean (checked, not
+assumed: the last occurrence of each row happened to be the corrected one), and
+what now keeps it clean is that a captured source fragment carries the fixture's
+own quotes and semicolons, which no value in this row set does. Calibrated both
+ways — silent on the real table, firing on the planted round-2 face.
 
 🔴 **AND THE BATTERY FOUND A DEFECT IN THE CLASSIFIER IT WAS BUILT TO CONFIRM.**
 The blanket rule was *"≥5 rows share this `zb` face and at least one of them

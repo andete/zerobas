@@ -444,8 +444,28 @@ def selftest() -> int:
     ctlf = dict(perfect); ctlf["o.ctl"] = "99"
     cases.append(("a broken positive control", ctlf, lambda r: r["ctl"] == ["o.ctl"]))
 
+    # 🔴 THE WANT TABLE'S OWN INTEGRITY CHECK, AND IT EXISTS BECAUSE THE
+    # GENERATOR NEARLY BANKED GARBAGE. The rule that built `WANT` was "take the
+    # last round in which both references agreed" -- and the scout's round 2
+    # AGREED ON ELEVEN ROWS WHILE READING THE PROGRAM'S OWN SOURCE TEXT (the
+    # fixture's echo carried the `[...]` fence, so `b.param` returned
+    # `'";Y;X;"'` on all three sides). "Both references agree" cannot tell a
+    # correct answer from a readout that was blind to its subject
+    # [[readout-blind-to-its-own-subject]]; the two are indistinguishable in the
+    # log. What separates them is that a captured SOURCE fragment carries the
+    # fixture's own punctuation, which no MSX BASIC *value* here does. The
+    # banked table happens to be clean -- checked, not assumed -- and this keeps
+    # it that way.
+    src_like = sorted(l for l, v in WANT.items() if '"' in v or ';' in v)
+
     W = max(len(n) for n, _, _ in cases)
     bad = 0
+    print(probe_report.row("PASS" if not src_like else "FAIL",
+                           "WANT holds no source text", 34,
+                           {"suspect": src_like},
+                           "  a face carrying the fixture's own quotes/semicolons "
+                           "is the round-2 echo bug, not a value"))
+    bad += 0 if not src_like else 1
     for name, faces_zb, ok in cases:
         r = _score(faces_zb)
         held = ok(r)
@@ -474,7 +494,7 @@ def selftest() -> int:
         bad += 0 if held else 1
         print(probe_report.row("PASS" if held else "FAIL", nm, W,
                                {"verdicts": sorted(got), "want": want}))
-    n = len(cases) + 3
+    n = len(cases) + 4
     print(probe_report.footer(n, n,
                               f"{n - bad} of {n} instrument cases held"))
     return 0 if not bad else 1
