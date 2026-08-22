@@ -228,8 +228,9 @@ exactly as written. 🎯 **What the guard could not do was say what to do about
 it**, and *"never let an unrelated sub-ROM edit relocate this table"* is not a
 rule anyone can keep. So the alignment is now ENFORCED rather than asserted: at
 most 3 bytes of page-0 pad (which has 3 KB), and the assert stays below it as a
-proof that can no longer fire. **That fix is on `main`**, not on the draft
-branch — it is correct on its own and costs the main ROM nothing.
+proof that can no longer fire. **That fix is on `main` as well as on the
+branch** — it is correct on its own, costs the main ROM nothing, and on today's
+tree the pad emits no bytes at all, so `sub.rom` is byte-identical across it.
 
 ---
 

@@ -20,7 +20,7 @@ do_poke:
                 push    de                  ; save address
                 call    skip_spaces
                 cp      ','                 ; comma required
-                jr      nz,poke_err
+                jp     nz,poke_err
                 inc     hl
                 call    eval_addr           ; DE = value, HL = cursor
                 pop     bc                  ; BC = address
@@ -30,6 +30,8 @@ do_poke:
                 ld      a,e                 ; low byte of value
                 ld      (bc),a              ; the POKE
                 jp      exec_stmt           ; HL = cursor; run the next statement
-poke_err:
-                pop     bc                  ; discard saved address
-                jp      stmt_error
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ex_let_err,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+poke_err        equ     ex_let_err

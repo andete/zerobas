@@ -283,13 +283,11 @@ pfi_done:
                 ret
 
 ; pu_emit_str0 — emit the 0-terminated string at HL via pchar. Clobbers A, HL.
-pu_emit_str0:
-                ld      a,(hl)
-                or      a
-                ret     z
-                call    pchar
-                inc     hl
-                jr      pu_emit_str0
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to print_string,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+pu_emit_str0    equ     print_string
 
 ; pu_do_string — eval the next value as a string and emit it per PU_TYPE:
 ;   1 '&' whole, 2 '!' first char, 3 '\..\' fixed PU_W (left-justified, space-pad).

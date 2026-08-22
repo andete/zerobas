@@ -598,14 +598,16 @@ var_load_fac:
                 pop     af                  ; A = target type (unset -> zero value)
                 ld      (FACTYP),a
                 cp      2
-                jr      z,vlf_unset_int
+                jp     z,vlf_unset_int
                 xor     a
                 ld      (FAC),a             ; lead byte 0 -> float zero
                 ld      de,0
                 ret
-vlf_unset_int:
-                ld      de,0
-                ret
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to vptr_none,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+vlf_unset_int   equ     vptr_none
 vlf_found:
                 pop     af                  ; A = type (== the entry's own stored type)
                 ld      (FACTYP),a

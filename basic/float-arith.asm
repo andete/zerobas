@@ -178,9 +178,11 @@ dcm_lp:
                 djnz    dcm_lp
                 ld      a,2
                 ret
-dcm_lt:
-                ld      a,1
-                ret
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to c16_lt,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+dcm_lt          equ     c16_lt
 dcm_gt:
                 ld      a,4
                 ret
@@ -305,8 +307,11 @@ dshl_zlp:
                 inc     de
                 djnz    dshl_zlp
                 ret
-dshl_allzero:
-                jp      dig15_zero15
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to dshr_allzero,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+dshl_allzero    equ     dshr_allzero
 
 ; --- dig_to_word: HL -> digit array (idx0, MSD first), B = digit count -----
 ; (1..5) -> DE = the represented value. Same *10+digit accumulation idiom as
@@ -442,7 +447,7 @@ apf_lp:
 round_and_finalize:
                 ld      hl,ARGA+FPNUM_DIG
                 call    dig15_iszero
-                jr      z,raf_zero_ok
+                jp     z,raf_zero_ok
                 ld      a,(ARGA+FPNUM_DIG+14)
                 cp      5
                 jr      c,raf_noround
@@ -463,13 +468,11 @@ raf_noround:
                 ld      a,8
                 ld      (FACTYP),a
                 jp      flt_to_int16        ; tail call: sets DE, returns to our caller
-raf_zero_ok:
-                xor     a
-                ld      (FAC),a
-                ld      a,8
-                ld      (FACTYP),a
-                ld      de,0
-                ret
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to cpow_x0_pos,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+raf_zero_ok     equ     cpow_x0_pos
 
 ; =============================================================================
 ; F3 S3a store coercion — single-precision (6 sig digit) round + pack
@@ -1066,17 +1069,21 @@ fcmp_have_mag:
                 jr      z,fcmp_ret_c        ; positive: relation bit as computed
                 ld      a,c
                 cp      1
-                jr      z,fcmp_neg_swap4
+                jp     z,fcmp_neg_swap4
                 cp      4
-                jr      z,fcmp_neg_swap1
+                jp     z,fcmp_neg_swap1
                 ld      a,2
                 ret
-fcmp_neg_swap4:
-                ld      a,4
-                ret
-fcmp_neg_swap1:
-                ld      a,1
-                ret
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to c16_gt,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+fcmp_neg_swap4  equ     c16_gt
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to c16_lt,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+fcmp_neg_swap1  equ     c16_lt
 fcmp_ret_c:
                 ld      a,c
                 ret
@@ -1092,21 +1099,25 @@ fcmp_a_zero:
                 jr      z,fcmp_both_zero
                 ld      a,(ARGB+FPNUM_SIGN)
                 or      a
-                jr      z,fcmp_a_lt         ; B positive -> A(0)<B
+                jp     z,fcmp_a_lt         ; B positive -> A(0)<B
                 ld      a,4                 ; B negative -> A(0)>B
                 ret
-fcmp_a_lt:
-                ld      a,1
-                ret
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to c16_lt,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+fcmp_a_lt       equ     c16_lt
 fcmp_b_zero:
                 ld      a,(ARGA+FPNUM_SIGN)
                 or      a
-                jr      z,fcmp_a_gt2        ; A positive -> A>B(0)
+                jp     z,fcmp_a_gt2        ; A positive -> A>B(0)
                 ld      a,1                 ; A negative -> A<B(0)
                 ret
-fcmp_a_gt2:
-                ld      a,4
-                ret
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to c16_gt,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+fcmp_a_gt2      equ     c16_gt
 fcmp_both_zero:
                 ld      a,2
                 ret

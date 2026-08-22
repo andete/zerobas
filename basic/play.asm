@@ -85,10 +85,13 @@ pl_dispatch:
                 jp      c,pl_absent
                 ld      a,(AUDIO_STATUS)    ; tenant result (RAM; subrom_call's CF is absence)
                 or      a
-                jr      nz,pl_parse_err     ; nonzero = the ERR code the tenant chose
+                jp     nz,pl_parse_err     ; nonzero = the ERR code the tenant chose
                 jp      exec_stmt           ; PLAY returns immediately; chain the next stmt
-pl_parse_err:
-                jp      raise_error         ; A = tenant's ERR code (Illegal fn / String too long)
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to tm_raise,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+pl_parse_err    equ     tm_raise
 pl_typeerr:
                 ld      a,13                ; Type mismatch (a PLAY argument was not a string)
                 jp      raise_error

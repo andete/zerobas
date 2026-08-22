@@ -246,9 +246,9 @@ loc_row_set:
 loc_next:
                 call    skip_spaces         ; returns A = (HL)
                 or      a
-                jr      z,loc_missing       ; end of line at an argument position
+                jp     z,loc_missing       ; end of line at an argument position
                 cp      COLON
-                jr      z,loc_missing       ; `LOCATE :` / `LOCATE 5,3,:`
+                jp     z,loc_missing       ; `LOCATE :` / `LOCATE 5,3,:`
                 cp      ','
                 jr      z,loc_omit
                 ; --- ONE CHECKED COERCION, and it used to be 29 bytes of inline --
@@ -292,10 +292,11 @@ loc_omit:
                 inc     hl                  ; consume the comma
                 or      a                   ; A is ',' -> CF = 0
                 ret
-loc_missing:
-                ld      a,24
-                jp      raise_error         ; Missing operand -- a DISTINCT error from
-                                            ; Syntax error, and measured as such
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to g8_missing,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+loc_missing     equ     g8_missing
 
 ; loc_more: is another argument coming? CF=1 -> yes (its comma is consumed).
 loc_more:
