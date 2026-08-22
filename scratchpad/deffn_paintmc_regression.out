@@ -1,0 +1,16 @@
+        APPARATUS: probe printed 16 of 17 rows; missing ['tm3.far']
+parser calibrated: clean / planted / deleted all read correctly
+== build BEFORE the baseline ==
+baseline roms=('815bb553', 'b91622a9') divergent=[]
+EXACT  K-PM1  MULTICOLOUR pitch 4 -> 1
+        roms=('815bb553', 'ef386d67') want=['ac3.spread', 'box3.in', 'mb.b7.up', 'mb.dflt.far', 'nt3.thru', 'sc3.up', 'tm3.far'] got=['ac3.spread', 'box3.in', 'mb.b7.up', 'mb.dflt.far', 'nt3.thru', 'sc3.up', 'tm3.far']
+EXACT  K-PM3  MC read: cp $FF -> cp $04 (colour 4 reads as background)
+        roms=('815bb553', 'ec91a472') want=['b4x.far'] got=['b4x.far']
+EXACT  K-PM4  neighbour row y-pitch -> y-1
+        roms=('815bb553', '32d1de59') want=['ac3.spread', 'mb.b7.up', 'nt3.above', 'sc3.up'] got=['ac3.spread', 'mb.b7.up', 'nt3.above', 'sc3.up']
+EXACT  K-PM5  SCREEN-2 pitch 1 -> 4
+        roms=('815bb553', '8bf0c048') want=['ac2.spread', 'box2.in'] got=['ac2.spread', 'box2.in']
+
+restored: roms=('815bb553', 'b91622a9')  source byte-identical
+
+4/4 knife rows EXACT

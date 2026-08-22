@@ -1,0 +1,12 @@
+        APPARATUS: probe printed 13 of 14 rows; missing ['box3.in']
+parser calibrated: clean / planted / deleted all read correctly
+== build BEFORE the baseline ==
+baseline roms=('815bb553', 'b91622a9') divergent=[]
+EXACT  K-S2S1  SCREEN 2 comparand: GFX_C -> GFX_B
+        roms=('815bb553', 'f9f8f4c6') want=['sc2.up', 'sd2.wall.in', 'sd2.wall.seed', 'su2.drawn', 'su2.row.cbg'] got=['sc2.up', 'sd2.wall.in', 'sd2.wall.seed', 'su2.drawn', 'su2.row.cbg']
+EXACT  K-S2S2  MULTICOLOUR comparand: GFX_B -> GFX_C
+        roms=('815bb553', '5811d479') want=['mb.b4.seed', 'sc3.up', 'sd3.wall.seed'] got=['mb.b4.seed', 'sc3.up', 'sd3.wall.seed']
+
+restored: roms=('815bb553', 'b91622a9')  source byte-identical
+
+2/2 knife rows EXACT

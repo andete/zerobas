@@ -3,7 +3,13 @@
 Status: **MEASUREMENT ONLY. No ROM byte changed.** 2026-08-22, from `84e080c`.
 Probe: [`scratchpad/deffn_scout.py`](../scratchpad/deffn_scout.py), rounds 5–10,
 logs `scratchpad/deffn_round5.out` … `deffn_round10.out`. Boot-per-case, Philips
-VG-8020 + National CF-3300. **Both references agree on every scored row (82).**
+VG-8020 + National CF-3300. **Both references agree on every scored row.**
+
+The gated row set is **82**: 71 measured here, plus the scout's own 11 round-3
+behaviour rows (`scratchpad/deffn_scout.out`), which this round re-uses
+unchanged. 🔴 **The `WANT` column was GENERATED from those logs, not
+transcribed** — and the generator refused any row the two references did not
+agree on, so nothing unscored reached the table.
 
 Companion: [`deffn-scout-2026-08-22.md`](deffn-scout-2026-08-22.md) measured what
 the reference **stores**. This one measures what it **does**, and its §6 list of
@@ -367,6 +373,37 @@ branded the other four **vacuous**. Every mutant reported 4–11 bogus vacuous r
 — visible only because each case states what it must produce. The rule now counts
 the **diverging** rows (`≥5`), and `one wrong row, nothing vacuous` is the case
 that pins it. That case did not exist until the defect did.
+
+---
+
+## 8c. The predecessor knives, re-run as a regression on this work
+
+The only source this round changed outside `docs/`, `probes/` and `scratchpad/`
+is **two comments** (`basic/sysvars.inc`, `basic/vars.asm`). Both ROM images are
+`sha256[:8]` **`815bb553`** / **`b91622a9`** before and after, i.e. byte-identical
+to `84e080c` — so nothing that reads ROM behaviour can have moved.
+
+That is an argument, and the knives are the measurement. All three predecessor
+suites were re-run on this tree. Each calibrated its parser on a clean, a planted
+and a row-deleted log first; each read a baseline of
+`roms=('815bb553','b91622a9') divergent=[]` — **the same two hashes** — and each
+restored to a byte-identical source and those same hashes afterwards.
+
+| suite | patches | knives |
+|---|---|---|
+| `paintbord_knives.py` | `basic/graphics.asm` | **4/4 EXACT** |
+| `paintmc_knives.py` | `sub/graphics.asm` | **4/4 EXACT** |
+| `paints2seed_knives.py` | `sub/graphics.asm` | **2/2 EXACT** |
+
+**10 of 10, no knife going blind, no predicted set moving.** 🎯 And the two-ROM
+guard earned its place in passing: `paintmc`'s K-PM1 reports
+`roms=('815bb553','ef386d67')`, i.e. **only `sub.rom` moved** — a runner watching
+the main image alone would have aborted with *"make skipped the build"* when make
+had done nothing wrong.
+
+⚠️ **The disjointness is worth stating because it is checkable, not assumed**:
+`paintbord` patches `basic/graphics.asm`, the other two patch `sub/graphics.asm`,
+and this round touched neither.
 
 ---
 
