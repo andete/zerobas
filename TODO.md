@@ -2143,7 +2143,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       filing:** ~~(1) filename arguments accept a LITERAL only where the reference
       takes any string EXPRESSION — 8 rows, 7 verbs, ONE mechanism at **11
       `parse_disk_fcb` sites, re-walked and exact**~~; (2) `DEF FN`/`FN`,
-      200–400 B, an arc; (3) SCREEN 3, a whole-feature gap, unpriced and never
+      200–400 B, an arc; (3) SCREEN 3, ✅ **SCOUTED AND PRICED 2026-08-22** — it
+      needs ~6 B of page 1 and ~170–280 B of sub page 0, so it does NOT need the
+      carve this list assumed; was filed as a whole-feature gap, unpriced and never
       scouted; (4) a line store bounded by `TXTMAX` not HIMEM (silent wrong
       answer); (5) a stored `DATA` literal charging the pool 25 B against 0.
       🔴 **RANK 1 SHIPPED THE SAME DAY THIS RANKING WAS WRITTEN, AND THE RANKING
@@ -2244,6 +2246,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       multicolour, not a bitmap), i.e. a graphics slice of its own. Priced at
       nothing; not scouted. Both rows stay printed and marked `....`, excluded
       from the tally in **both** directions.
+      ✅ **SCOUTED 2026-08-22 —
+      [`docs/screen3-scout-2026-08-22.md`](docs/screen3-scout-2026-08-22.md).**
+      💰 **~6 B main page 1 + ~170–280 B sub page 0 — IT FITS IN BOTH WALLS AS
+      THEY STAND** (8 B / 3299 B, 2026-08-22). This item was blocked on a page-1
+      carve it does not need.
+      🔴 **THREE OF THE CLAIMS ABOVE ARE WRONG, ALL IN THE CHEAP DIRECTION**, and
+      the discriminating measurement is in §2 of the scout:
+      (1) **The BASIC coordinate space is 0..255 × 0..191, IDENTICAL to
+      SCREEN 2** — 64×48 is the HARDWARE cell size, and logical `(x,y)` addresses
+      cell `(x>>2, y>>2)`. `PSET(0,0),7` then `POINT(3,3)` reads **7** and
+      `POINT(4,4)` reads **4** on both references; `PSET(256,192)` is the same
+      silent no-op SCREEN 2 has. So `gfx_in_range` needs NO change — that was the
+      only part of the cost sitting on the binding wall.
+      (2) **There is no second CLASH model** — multicolour has no colour table,
+      so `gfx_color_rmw` has no counterpart. The twin is CHEAPER than the
+      original, not dearer.
+      (3) **It is not a whole-feature gap**: the mode switch already works
+      (`ex_screen` accepts 0..3 and calls CHGMOD), **sprites already work in
+      SCREEN 3** (they gate on `or a`, not `cp 2`), the VDP register layer already
+      encodes multicolour, and the 464 B of Bresenham/line/box are mode-free. The
+      gap is the address model and the pixel primitives — 280 B of measured
+      SCREEN-2-specific code to twin.
+      ⚠️ **Still unmeasured and named in §6**: the MC VRAM layout itself (a VPEEK
+      sweep, black-box — never a disassembly), PAINT's run scan, DRAW, CIRCLE
+      aspect, and `LINE ,B/BF`'s fast path.
+
+- [ ] 🔴 **`POINT` IN SCREEN 3 IS A SILENT WRONG ANSWER, AND IT IS INDEPENDENT OF
+      IMPLEMENTING SCREEN 3** (found 2026-08-22 by the SCREEN 3 scout, §5).
+      `SCREEN 3` then `POINT(30,30)` with nothing plotted reads **4** on the
+      VG-8020 and the CF-3300 and **1** here, with **no error on any side**.
+      🎯 **`POINT` does not gate the mode** — `gfx_point_gate` is called by
+      PSET/LINE/CIRCLE/PAINT, but `gfx_point` is reached without it. So in
+      SCREEN 3 zerobas reads the SCREEN-2 address model against multicolour VRAM
+      and returns a wrong colour silently. Every PLOTTING op honestly raises
+      ERR 5; POINT alone answers, and answers wrongly.
+      💰 The silent-wrong-answer class — worse than the refusal beside it. Two
+      remedies with different prices: **gate it** (a few bytes, makes it ERR 5
+      today, matching its siblings but NOT the references) or **implement the MC
+      read path** (part of the SCREEN 3 item above, and the only one that matches
+      the reference reading of 4). ⚠️ The two are not the same claim: no row yet
+      says what `POINT` in SCREEN 3 *should* do in zerobas before SCREEN 3 exists.
 
 - [x] ✅ **PAINT'S OFF-SCREEN-SEED ERR 5 versus ITS WRONG-MODE ERR 5.** Filed
       2026-08-11 by D-LINERR, CLOSED the same day by **D-PAINTSEED**
