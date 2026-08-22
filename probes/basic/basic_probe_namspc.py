@@ -559,13 +559,29 @@ CASES = [
     # 🔴 AND THE ROW THAT SAYS THE FIX DOES NOT CLAIM MORE THAN IT DOES.
     # `RUN <lineno>` is the form the filed decline said could not be told apart
     # from `RUN <expression>`. The token rows say it CAN be (t.runnum/t.runvar),
-    # and the fix dispatches on LINENO_TOKEN ($0E) -- but dispatching on it only
-    # routes that form to `run_prog` exactly as before, and `run_prog` IGNORES
-    # the line number and restarts from the top. So this row is expected to stay
-    # RED, and it is here precisely so the slice cannot be read as having fixed
-    # it. ⚠️ NOT `dskerr`: no disk is involved, so the VG-8020 is a legitimate
+    # and D-FNRUN's fix dispatched on LINENO_TOKEN ($0E) -- but dispatching on it
+    # only routed that form to `run_prog`, which IGNORED the line number and
+    # restarted from the top. ✅ GRADUATED 2026-08-22 (D-RUNLINE): `dr_lineno`
+    # resolves the operand through GOTO's own `goto_resolve` and enters
+    # `run_prog_at`, so execution begins AT the line. It was RED here for one day
+    # by design -- the row existed so D-FNRUN could not be read as having fixed a
+    # form it merely learned to RECOGNISE.
+    # ⚠️ NOT `dskerr`: no disk is involved, so the VG-8020 is a legitimate
     # SECOND reference here and the row is stronger for it.
     ("n.runline",    "run", ['GOTO 40', 'PRINT"[B]"', 'END', 'RUN 20']),
+    # ⚠️ THE DESIGN ASSERTS ERR 8 AND NOTHING MEASURED IT. `goto_resolve` carries
+    # GOTO's undefined-line check, so `RUN 99` inherits `Undefined line number`
+    # "for free" -- which is exactly the kind of claim that turns out to be wrong.
+    # ONE line, so the error is the whole reading: a fixture that printed first
+    # would mix a value and a face into one span.
+    ("n.runundef",   "run", ['RUN 99']),
+    # ⚠️ AND THE `RESTORE_LINE` CLAIM. RUN resets the DATA cursor to the PROGRAM
+    # TOP, so starting at line 30 must still READ the DATA in line 10. run_prog's
+    # two stores were ONE before this slice (`ld hl,TXTBASE` fed both CURLINE and
+    # RESTORE_LINE); splitting them is what this row is for. If RESTORE_LINE had
+    # followed the start line, this reads `Out of DATA` instead of 7.
+    ("n.rundata",    "run", ['DATA 7', 'GOTO 40',
+                             'READ A : PRINT"[";A;"]" : END', 'RUN 30']),
     # 🟢 ...and the control that stops `<NO OUTPUT>` above from meaning "the
     # machine cannot print". A silent infinite loop and a program that printed
     # nothing read IDENTICALLY; only this row separates them.
@@ -773,11 +789,17 @@ for _lab in ("n.savebare", "n.loadbare", "n.bloadbare"):
 # ⚠️ NOT SHIPPED, deliberately: neither state matches the reference, so there is
 # no measured reason to prefer the hang, and the swap also moves bare `RUN`
 # inside a program, which no row drives. Filed with the reading.
-DEFERRED["n.runline"] = ("DEFERRED — `RUN <lineno>` restarts from the TOP where "
-                         "both references restart AT the line; the `Syntax "
-                         "error` face is D-RUNTAIL's nested-run corruption "
-                         "(E-FR1: `jp run_prog_top` moves it to a silent "
-                         "restart), filed, not folded in")
+# ✅ GRADUATED 2026-08-22 (D-RUNLINE, docs/spec-basic-runline.md): `dr_lineno`
+# resolves the operand through GOTO's own `goto_resolve` and enters `run_prog_at`,
+# so execution begins AT the line and all three sides read `B`. 23 B, funded by
+# D-SEEDHOLE2's carve -- page 1 was 11 B before it and 31 B after.
+# 🔴 THE E-FR1 HALF ABOVE IS *STILL* NOT SHIPPED, and this slice honoured that
+# deferral rather than overriding it. `dr_stored` keeps `jp run_prog`. The reason
+# has sharpened: a bare RUN inside a running program CLEARS VARIABLES, so it
+# restarts FOREVER on the references too -- the row cannot read a value, it has to
+# separate "hangs silently" (correct) from "prints a bogus error then stops" (the
+# defect) on a TIMEOUT, with a control saying the fixture would have printed. That
+# is what "a form no row drives" actually costs to fix. Spec §4.
 
 # ✅ `f.paren` GRADUATED 2026-08-21 (D-STRPAREN) and is an ordinary scored row.
 # It was the ONE row of fourteen D-FNEXPR's filename fix did not close, and

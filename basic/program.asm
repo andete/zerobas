@@ -295,7 +295,17 @@ new_prog:
 ; an exact token position, CURLINE already pointing at its line); END/STOP set
 ; ENDFLAG (stop). Otherwise execution falls through to the next line. BLOAD,R
 ; hands off.
+; D-RUNLINE (docs/spec-basic-runline.md): `RUN <lineno>` starts execution AT
+; that line, and the ONE thing that differs from a bare RUN is which line
+; CURLINE names. GOTOTGT carries it -- its SECOND tenant, and safe because
+; run_prog clears GOTOFLAG, so the only reader (rp_goto) cannot fire on a stale
+; value: every path that reads GOTOTGT sets it first. Bare RUN seeds it with
+; TXTBASE here, so run_prog_at below is entered with the invariant already true
+; and there is no flag and no second code path.
 run_prog:
+                ld      hl,TXTBASE
+                ld      (GOTOTGT),hl        ; bare RUN: start at the top
+run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
                 call    clear_vars
                 call    vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b): a
                                             ; fresh RUN has no live scalars/arrays
@@ -344,8 +354,11 @@ run_prog:
                 xor     a                   ; DATA pointer unpositioned (read seeks
                 ld      (DATASTATE),a       ;  from the program start on first READ)
                 ld      hl,TXTBASE
-                ld      (RESTORE_LINE),hl
-                ld      (CURLINE),hl
+                ld      (RESTORE_LINE),hl   ; ⚠️ DATA restores from the PROGRAM TOP even
+                                            ; for RUN <lineno> -- RUN resets the DATA
+                                            ; cursor, and the start line does not move it
+                ld      hl,(GOTOTGT)        ; D-RUNLINE: the line to begin at (TXTBASE
+                ld      (CURLINE),hl        ; for a bare RUN, set at run_prog above)
 rp_lp:
                 ld      a,(RESUMEFLAG)      ; resume mid-line (RETURN / NEXT)?
                 or      a

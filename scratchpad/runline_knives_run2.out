@@ -1,0 +1,15 @@
+== build BEFORE the baseline ==
+baseline rc=0 roms=('02b7b92e', 'c486e7ff') divergent=[]
+EXACT  K-RL1  the lineno operand -> a constant EXISTING line (30 = END)
+        roms=('0c300ccb', 'c486e7ff')  want=['n.runline']  got=['n.runline']
+EXACT  K-RL2  run_prog_at reads TXTBASE again (the pre-slice behaviour)
+        roms=('5e4f25df', 'c486e7ff')  want=['n.rundata', 'n.runline']  got=['n.rundata', 'n.runline']
+EXACT  K-RL3  RESTORE_LINE FOLLOWS the start line (undoes the §2 split)
+        roms=('c53cacad', 'c486e7ff')  want=['n.rundata']  got=['n.rundata']
+EXACT  K-RL4  the operand -> a constant line that EXISTS in every fixture (10)
+        roms=('eddf0282', 'c486e7ff')  want=['n.rundata', 'n.runline', 'n.runundef']  got=['n.rundata', 'n.runline', 'n.runundef']
+
+restored: roms=('02b7b92e', 'c486e7ff')
+both sources byte-identical to their originals
+
+4/4 knife rows EXACT

@@ -217,8 +217,8 @@ do_run:
                 jr      z,dr_stored         ; end of statement -> bare RUN
                 cp      COLON
                 jr      z,dr_stored         ; `RUN : ...`      -> bare RUN
-                cp      LINENO_TOKEN        ; $0E -> RUN <lineno> -> stored program
-                jr      z,dr_stored         ; (the number is ignored -- see above)
+                cp      LINENO_TOKEN        ; $0E -> RUN <lineno>
+                jr      z,dr_lineno         ; D-RUNLINE: start AT that line
                 call    fname_expr          ; a string EXPRESSION; HL -> the staged
                                             ; '"'-terminated copy in STRSCR
                 ; device dispatch: "CAS:" -> tape, else -> disk (mirrors do_load).
@@ -238,8 +238,46 @@ do_run:
                 jp      run_prog_top        ; ...and run it (running is implicit), at
                                             ; TOP LEVEL -- see run_prog_top below
 dr_stored:
-                jp      run_prog            ; bare RUN / RUN <lineno>: run the stored
-                                            ; program from the top, exactly as before
+                jp      run_prog            ; bare RUN: the stored program from the top.
+                                            ; ⚠️ STILL THE ONE ARM D-RUNTAIL DID NOT
+                                            ; CONVERT, and D-RUNLINE deliberately left
+                                            ; it that way. `jp run_prog_top` is the
+                                            ; 0-byte fix and it is NOT shipped, because
+                                            ; the form it changes -- a bare RUN inside a
+                                            ; RUNNING program -- cannot be rowed the
+                                            ; obvious way: RUN clears variables, so a
+                                            ; program that reaches a bare RUN restarts
+                                            ; FOREVER on the references too. The row has
+                                            ; to separate "hangs silently" (correct) from
+                                            ; "prints a bogus error then stops" (the
+                                            ; defect) on a TIMEOUT, which needs a control
+                                            ; of its own. That is the real reason D-FNRUN
+                                            ; said "a form no row drives" -- see
+                                            ; docs/spec-basic-runline.md §4.
+
+; --- dr_lineno: RUN <lineno> -- restart, then begin AT the named line --------
+; D-RUNLINE (docs/spec-basic-runline.md). HL -> the $0E LINENO_TOKEN.
+;
+; 🎯 NO LINE-FINDER AND NO RUN LOOP IS WRITTEN. `RUN <lineno>` is a bare RUN
+; whose CURLINE starts somewhere else, and both halves already exist:
+; goto_resolve (interp.asm) is GOTO's own tail -- find_line_bc + the undefined-
+; line check (ERR 8) + the GOTOTGT store -- and run_prog_at (program.asm) is
+; run_prog entered with GOTOTGT already naming the start line. The operand
+; grammar is GOTO's too: $0E + the line number LE.
+;
+; ⚠️ `ld sp,(SAVSTK)` is run_prog_top's half, inlined rather than jumped to
+; because the variant needed is run_prog_AT: RUN discards any GOSUB/FOR context
+; between here and the prompt, which is what RUN means (see run_prog_top).
+; It sits AFTER goto_resolve deliberately -- an undefined line must raise ERR 8
+; from the ORIGINAL depth, so the trap sees the real stack.
+dr_lineno:
+                inc     hl                  ; past $0E
+                ld      c,(hl)              ; target line number, LE (GOTO's grammar)
+                inc     hl
+                ld      b,(hl)
+                call    goto_resolve        ; find_line_bc + ERR 8 + GOTOTGT := the line
+                ld      sp,(SAVSTK)         ; ...then top level, as bare RUN does
+                jp      run_prog_at
 dr_is_cas:
                 ; HL is inside the STAGED copy, past "CAS:". Tier-3: CAPTURE the
                 ; filename into CAS_WANT (cas_open_match finds the named tape file,

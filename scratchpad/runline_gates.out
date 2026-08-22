@@ -1,0 +1,58 @@
+02b7b92e  build/basic-reloc.rom
+c486e7ff  build/sub.rom
+    measure: page-0 low region free = 46 B ($2812-$3FFF, __MEAS_LOW_END @ 0x3fd2)
+    measure: page-1 free            = 8 B ($4000-$7FFF, __MEAS_PAGE1_END @ 0x7ff8) <- subrom wave-2 tokeniser-eviction relief
+    measure: sub page 0 free       = 3299 B ($0000-$3FFF, the callable-from-main island, __MEAS_SUB_P0_END @ 0x331d)
+    measure: sub page 1 free       = 1624 B ($4000-$7FFF, the BIOS-visible island, __MEAS_SUB_P1_END @ 0x79a8)
+  main: 1596 spans, 73 seeds -> 0 dead (+0 allowlisted)
+  sub : 1557 spans, 104 seeds -> 0 dead (+1 allowlisted)
+OK: no unreachable spans in either build; every allowlist entry still verified dead (the sweep is not blind).
+### unit-test
+
+ALL 59 TEST FILE(S) PASSED
+### deadcode
+  sub : 1557 spans, 104 seeds -> 0 dead (+1 allowlisted)
+OK: no unreachable spans in either build; every allowlist entry still verified dead (the sweep is not blind).
+### wall-assertion-check
+== UNDATED FREE-SPACE ASSERTIONS (gating) ==
+   none — every open item that quotes a wall says WHEN it was read
+### redundant-load-check
+== DEAD LOADS (gating) ==
+   none — every call of a proven routine already relies on the contract
+### rowshape-check
+ALL PASS -- 27 probe(s) print two exit paths' worth of report rows,
+and every one of them prints ONE grammar on both.
+### injector-check
+
+ALL PASS -- one LIVE injector across 419 files, and it is the one `make latch-check` scores; 3 frozen characterization record(s) acknowledged and unreachable.
+### preflight-check
+
+ALL PASS -- every launch site this checker cannot prove harmless is guarded.
+### latch-check
+  PASS  F  D-LATCH injector, forced at $11B0 (pop af) -> DELIVERED (swallow 0, chain '54321', frozen body, no drain guard)
+latch-check: 16/16 rows
+### diskdep-check
+python3 tools/check_disk_deps.py 
+65 make target(s) run a probe needing test720.dsk; 65 declare $(DISK_TEST_DSK), 0 do not
+### diskdep-selftest
+
+self-test 6/6 (4/4 findings, 1/1 blindness, 1/1 latent-route control)
+=== emulator batteries (the ROM moved) ===
+### namspc-acceptance
+102/102 readings match their reference (105 cases, 21 positive controls, 2 negative controls, 41 row(s) with ONE reference only, 0 row(s) without a reference, 0 row(s) where the references disagree, 3 DEFERRED row(s) measured but not scored)
+### strparen-acceptance
+16/16 readings match their reference (16 cases, 3 positive controls, 0 DEFERRED row(s) measured but not scored)
+### cassave-acceptance
+20/20 readings agree (4 cases, 8 positive controls)
+### castail-acceptance
+31/31 scored readings agree (17 cases, 15 positive controls, 1 pinned divergence row(s))
+### dskmsg-acceptance
+15/15 gated rows agree
+### fldwidth-acceptance
+47/47 readings match their reference (49 cases, 7 positive controls, 2 negative controls, 47 row(s) with ONE reference only, 0 row(s) without a reference, 0 row(s) where the references disagree, 2 DEFERRED row(s) measured but not scored)
+### diskbasic-acceptance
+  PASS  [artifact] OPEN(LPT/CRT)    converged
+===== Disk-BASIC acceptance: 34/34 verbs converged =====
+### fat-error-acceptance
+===== FAT error disposition: 8/8 FIND scored (8 rows, 0 NOT MEASURED) + 3/3 MOUNT scored (3 rows) + 5 directory checks, over a LIVE FAT layer =====
+ALL RUNLINE GATES OK
