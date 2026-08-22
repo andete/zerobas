@@ -1,0 +1,82 @@
+The import list is not a proxy for the surface, it IS the surface
+
+D-SEEDHOLE2, the gate half, on top of 206101a's carve. A SIXTH apparatus fix in
+a tool whose whole content is its apparatus fixes. docs/spec-deadcode-gate.md
+Sec 11. Main seeds 118 -> 73, findings 0 in both builds. Both ROMs
+BYTE-IDENTICAL across this commit (tools/ + docs/ only), which is what says the
+carve commit's emulator batteries still stand and are not being re-quoted as if
+re-run.
+
+FIX (5) MADE THE SCRAPE READ THE CODE COLUMN. IT DID NOT MAKE THE SCRAPE
+CORRECT. It was still a PROXY for "what can reach main code from outside main?",
+and a proxy is coarse in more directions than the one you just closed: a name
+referenced in sub/ CODE seeded the MAIN label of that name even when the sub
+reference resolved SUB-LOCALLY. That is the normal case, not an odd one.
+sub/fatprim.asm's `call fat_read_fat_sector` reaches basic/fat-prim-body.inc's
+own copy; sub/format.asm DEFINES its own write_sector.
+
+THE FIX IS NOT A NARROWER PROXY. sub/basic-resident-abi.inc is GENERATED from
+build/basic-reloc.sym and is the ONLY file in the tree that imports a main
+address. Everything else a sub file names resolves sub-locally or the sub build
+does not assemble. So that import list IS the sub->main surface rather than a
+proxy for it -- a strictly stronger claim than "the scrape is coarse", and the
+reason this is a redesign and not a strip.
+
+MEASURED ON THE WHOLE SET, NOT ON THE FOUR THAT PROMPTED IT: 65 main labels are
+named in sub/ code; 65 of 65 resolve inside the sub build (12 via the ABI, 53
+sub-local); 0 escapes. That measurement ships as
+_assert_sub_resolves_locally() -- a STANDING CONTROL on the one assumption that
+lets sub/ stop seeding main. The invariant is enforced by the assembler, but
+"the assembler owns it" is the kind of reasoning that rots when nothing re-runs
+it, and this sweep would go QUIET rather than loud if it stopped holding.
+
+FALSIFIED THE WAY THE CARVE'S JUSTIFICATION WAS, 7 rows, every `want` written
+before the run, run twice, all EXACT (scratchpad/seedhole2_knives.py):
+  K1 ABI import emptied              -> rc 1, floor fires
+  K2 ABI names a non-label           -> rc 1, "do not resolve"
+  K3 plant, no mention               -> reported by BOTH scrapers
+  K4 plant + sub CODE call + a SUB-LOCAL definition -> new reports, OLD BLIND
+  K5 plant + sub CODE call, NOT sub-resolvable      -> rc 1, escape control fires
+  K6 plant + a tools/ STRING lookup  -> neither reports
+  K7 plant + its name in the ABI import -> neither reports
+K3 is what makes K4 readable. K4 IS THE SLICE and is deliberately the
+real-world shape -- the same name, called from sub code, WITH the sub-local
+definition that makes the call resolve there. K6 and K7 are what make it
+honest: without K6, "we dropped sub/" could be "we broke the code column too";
+without K7 it could be "we seed nothing but init". Sec 6.1's four modes
+re-verified: gate/clean rc 0, gate/blind rc 1 WITH THE ALLOWLIST CANARY FIRING,
+report/clean rc 0, report/blind rc 0.
+
+Fix (5) is NOT undone: tools/ still seeds, a `#` comment there still must not,
+and _selftest_code_column() still runs on every invocation.
+
+TWO RESIDUALS FILED RATHER THAN FOLDED IN, both measured:
+
+  * A THIRD HOLE. EVERY FILE'S FIRST LABEL IS UNCONDITIONALLY LIVE. Fix (2)
+    gives each file an always-live prologue span AND a fallthrough edge into
+    its first label -- but 42 of 49 main files (53 of 66 sub) have a prologue
+    that is COMMENTS ONLY, emitting no bytes, and a comment block cannot fall
+    through into anything. That is how read_sector hid through this very seed
+    rebuild. Dropping the edge for emitting-nothing prologues reports, on the
+    sub side, fat_io_open (4 B) and fmt_menu_text (16 B, already the
+    allowlist's vacuity canary -- so 4 B is new). NOT shipped: this is a change
+    to the SPAN MODEL whose failure direction is UNDER-seeding, i.e. reporting
+    LIVE code as dead, so it needs its own knives. Sec 10 shipped carve-first
+    and filed this one for the same reason.
+
+  * Sec 2.2 CLAIMED MORE THAN THE CODE DOES. "Every seed name is asserted to
+    resolve to a real label" is true of `init`, the sub entry-table tenants and
+    the new ABI import -- and was NEVER true of the tools/ arm, which is an
+    INTERSECTION with the label set, so a routine renamed out from under a
+    tools/ lookup drops out of the seeds silently. It over-seeds by
+    construction, so the failure is a missed finding rather than a false one.
+    Corrected in place, not deleted.
+
+GATES: basic-reloc (walls unmoved: low 46 B, page 1 31 B) - unit-test 59/59 -
+deadcode 0 dead both builds (+1 allowlisted, canary still firing) -
+audit-citations - wall-assertion-check - redundant-load-check - rowshape-check -
+injector-check - preflight-check - latch-check 16/16 - diskdep-check -
+diskdep-selftest 6/6. Emulator batteries NOT re-run and NOT re-quoted: both ROM
+images are byte-identical to 206101a, where they were measured.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

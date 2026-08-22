@@ -28,7 +28,7 @@ A span is LIVE if it is a seed, is mentioned by a live span, or is fallthrough-e
 from a live span whose last code line is not an unconditional terminator. Iterate to a
 fixed point; anything still dead is unreachable ROM.
 
-### 2.1 The five apparatus fixes it MUST keep
+### 2.1 The six apparatus fixes it MUST keep
 
 Each of these produced a confident wrong row during the review while missing a real
 one. They are the tool's actual content — the fixed-point loop is the easy part.
@@ -39,12 +39,16 @@ one. They are the tool's actual content — the fixed-point loop is the easy par
 | 2 | lines before a file's first label → an always-live **prologue** span | references made there are invisible (falsely killed `sp_done`) |
 | 3 | closure follows **every identifier a span mentions**, not just `call`/`jp`/`jr`/`djnz` | misses DATA references — `ld hl,zkey_hook` is how `keytrap.asm`'s `$0038` hook read as promotable |
 | 4 | **each build walked separately, with its own include closure and seeds** | "dead" is per-build: `disk_putword` is dead in main, live in sub, and its caller sits outside `main.asm`'s closure entirely |
-| 5 🔴 | the main seed scrape reads the **CODE COLUMN** of `sub/`+`tools/`, not whole files | a comment is not a reference: prose kept **24 B** of dead main code invisible to this gate, and the prose that hid it was the note explaining that span's removal from the other build — §10 |
+| 5 🔴 | the main seed scrape reads the **CODE COLUMN** of `tools/`, not whole files | a comment is not a reference: prose kept **24 B** of dead main code invisible to this gate, and the prose that hid it was the note explaining that span's removal from the other build — §10 |
+| 6 🔴 | the main build is seeded from the **generated `sub/basic-resident-abi.inc`**, never from a scrape of `sub/` | a name is not a route: a `call` in `sub/` code seeded the MAIN label of that name even when it resolved sub-locally, which is the normal case. **20 B on main page 1**, orphaned and hidden by the same eviction commits — §11 |
 
 ### 2.2 Seeds — and why the choice matters more than the algorithm
 
-* **main build**: `init` (the cartridge header's entry) + every label named in the
-  **code column** of `sub/` or `tools/` — prose does not seed, see fix 5 and §10.
+* **main build**: `init` (the cartridge header's entry) + the **generated
+  resident-ABI import** `sub/basic-resident-abi.inc` (fix 6, §11) + every label named
+  in the **code column** of `tools/` — prose does not seed, see fix 5 and §10.
+  ⚠️ **NOT `sub/`** — fix 6: the sub build reaches main only through that import, so
+  scraping `sub/` seeded 53 names that resolve sub-locally.
   ⚠️ **NOT `tests/` or `probes/`.** A test naming a routine is not
   a reason to keep ROM bytes — seeding on those hides the whole `vars.asm` block,
   because S3's ported tests still name it. **That one choice is the difference between
@@ -54,8 +58,13 @@ one. They are the tool's actual content — the fixed-point loop is the easy par
   main ROM can only reach sub code through `SUBROM_ENTRY_BASE_P0/_P1 + 3*index`, so
   the two tables are the entire external surface.
 
-Every seed name is **asserted to resolve to a real label**. A renamed seed must fail
-loudly, not silently shrink the seed set.
+`init`, the sub entry-table tenants and the resident-ABI import are each **asserted
+to resolve to a real label**. A renamed seed must fail loudly, not silently shrink the
+seed set. ⚠️ **The `tools/` arm is not asserted** — it is an *intersection* with the
+label set, so a routine renamed out from under a `tools/` lookup drops out of the
+seeds quietly. That arm over-seeds by construction, so its failure direction is a
+missed finding rather than a false one; §11.4 files it rather than pretending §2.2's
+old sentence was true of it.
 
 ---
 
@@ -393,7 +402,7 @@ files byte-identical afterwards.
 The three §6.1 rows are unchanged and re-verified: gate/clean **rc 0**, gate/blind
 **rc 1 with the allowlist canary firing**, report/clean rc 0, report/blind rc 0.
 
-### 10.4 What this does NOT close — the second seeding hole, 16 B on PAGE 1
+### 10.4 What this does NOT close — the second seeding hole, 16 B on PAGE 1 ✅ CLOSED §11
 
 The scrape is a **proxy** for the real question, "what can reach main code from
 outside main?", and the proxy is coarse in a second way this fix does not touch: a
@@ -412,3 +421,155 @@ re-seeding from that is a redesign, not a strip. Each of the four also needs the
 per-span triage the 24 B got — they are 4 of ~15 sibling bounces, and deleting part of
 a bounce table is a different kind of claim from deleting an orphan. Filed in
 `TODO.md`.
+
+✅ **CLOSED 2026-08-22 by D-SEEDHOLE2 — §11.** The measurement above re-verified
+exactly (4 spans, 16 B, all page 1). Two things it got wrong, both in the direction
+of *under*-counting: there are **17** sibling bounces, not ~15, and the carve is
+**five** spans / **20 B**, not four / 16 — `read_sector` is dead too and was hidden by
+a *different* apparatus hole (§11.4). And the "~15 sibling bounces" worry turned out
+not to be the hard part: they are not a table at all.
+
+---
+
+## 11. D-SEEDHOLE2 — ✅ a NAME is not a ROUTE (2026-08-22)
+
+**A sixth apparatus fix, and the one §10 filed against itself.** Fix (5) made the
+seed scrape read the code column. It did not make the scrape *correct*: the scrape
+was still a **proxy** for "what can reach main code from outside main?", and
+
+> **a name referenced in `sub/` CODE seeded the MAIN label of that name even when
+> the sub reference resolved SUB-LOCALLY** — which is the normal case, not an odd
+> one.
+
+`sub/fatprim.asm`'s `call fat_read_fat_sector` reaches `basic/fat-prim-body.inc`'s
+own copy. `sub/format.asm` **defines** its own `write_sector`. Neither has anything
+to do with the 4 B `DISKOP_SEL_*` bounce of that name in `basic/fat.asm` — and each
+of those bounces was kept alive by it.
+
+### 11.1 The mechanism is an EVICTION, and it will recur
+
+🔴 **The commit that orphans the span is the commit that hides it.** An eviction
+moves a *caller* into the sub-ROM and leaves its main-side shim standing; the moved
+body's own `call <name>` then reads, to a seed scrape keyed on names, as a live
+external reference to the main label. `git log -S` names them:
+
+| commit | what it evicted | shims orphaned |
+|---|---|---|
+| `d3885b3` | `fat_rand_*` random-access engine → sub-ROM | `write_sector`, `fat_read_fat_sector`, `fat_alloc_cluster`, `fat_write_fat_entry` |
+| `0cbf495` | the FILES walk → sub-ROM tenant | `read_sector` |
+
+This is §10's lesson one turn further out. There a **comment** was a seed; here a
+**real `call`** is a seed — for the wrong build.
+
+### 11.2 The carve — 5 spans, 20 B, main page 1 free 11 → 31 B
+
+Triaged per span, not on the strength of the hole. Of the **17** sibling bounces
+(§10.4 said "~15"), **seven** have no main-closure caller; three of those seven are
+live and read otherwise only because the first grep excluded `basic/fat.asm` itself,
+where `fia_walk` / `fia_empty` really do call `fia_walked` / `fat_delete`.
+
+**The symmetry question, answered rather than omitted.** §10.4 worried that "deleting
+part of a bounce table is not deleting an orphan". They are **not a table**: no
+dispatch array, no index — 17 independent 4 B entry points, one per primitive. The
+header's only ordering claim is *reach* ("the stubs are contiguous so every `jr`
+lands within range"), and deleting stubs only **shortens** that distance, so reach
+survives a fortiori. The assembler is the backstop: a shim with a caller fails the
+build loudly on an undefined symbol.
+
+⚠️ **The counter-example §10.4 flagged, settled per body.** `basic/format-body.inc`
+and `basic/randio-body.inc` both `call write_sector`, and `basic/fat-prim-body.inc`
+calls the other three *and defines three of the names*. All three bodies are in
+`sub/sub.asm`'s include closure and **none** is in `basic/main.asm`'s — checked per
+file, not inferred from the sweep's own answer. `disk/` is a third build entirely,
+with its own `disk/fat.asm` defining its own `read_sector`; it includes nothing from
+`basic/`.
+
+A stale citation found on the way: the `fat_alloc_cluster` comment cited
+`field.asm:576/599` as its "HL is a real caller-read output" evidence. Those lines
+are now D-LRVAR's `lrset_notfld`; the HL-reading callers live in
+`basic/randio-body.inc`, **on the sub side** — which is precisely why the main shim
+went callerless.
+
+### 11.3 The fix — the real surface, not a narrower proxy
+
+`sub/basic-resident-abi.inc` is **GENERATED** (`tools/gen_resident_abi.py`) and is
+the **only file in the tree that imports a main address**. Anything else a sub file
+names resolves sub-locally, or the sub build does not assemble. So that import list
+**is** the sub→main surface rather than a proxy for it — a strictly stronger claim
+than "the scrape is coarse", and the reason this is a redesign and not a strip.
+
+Measured before shipping, on the whole set rather than the four:
+
+| | |
+|---|---|
+| main labels named in `sub/` code | **65** (60 after the carve) |
+| of those, resolvable **inside** the sub build | **65** — 12 via the ABI, 53 sub-local |
+| **escapes** (neither ABI nor sub-local) | **0** |
+| main seeds | **118 → 73** |
+| findings after the §11.2 carve | **0**, both builds |
+
+`_assert_sub_resolves_locally()` ships as the **standing control on exactly that
+claim**. The invariant is enforced by the assembler — but *"the assembler owns it"*
+is the kind of reasoning that rots when nothing re-runs it, and this sweep would go
+**quiet** rather than loud if it stopped holding.
+
+⚠️ **Fix (5) is not undone** — `tools/` still seeds, and a `#` comment there must
+still not. `_selftest_code_column()` still runs on every invocation.
+
+### 11.4 Falsification — 7 rows, all EXACT, run twice
+
+`scratchpad/seedhole2_knives.py`, every `want` written before the run. No ROM is
+built (the sweep decides from sources).
+
+| row | knife | want | got |
+|---|---|---|---|
+| K1 | the ABI import emptied of equates | rc 1, floor fires | ✅ EXACT |
+| K2 | an ABI name that is not a main label | rc 1, "do not resolve" | ✅ EXACT |
+| K3 | plant, no mention anywhere | reported by **both** scrapers | ✅ EXACT |
+| K4 🔴 | plant + `call` in `sub/` code **+ a sub-local definition** | **new reports, old blind** | ✅ EXACT |
+| K5 | plant + `call` in `sub/` code, **not** sub-resolvable | rc 1, the escape control fires | ✅ EXACT |
+| K6 🟢 | plant + a `tools/` **string** lookup | **neither reports** | ✅ EXACT |
+| K7 🟢 | plant + its name **in the ABI import** | **neither reports** | ✅ EXACT |
+
+K3 is what makes K4 readable. **K4 is the slice**, and it is deliberately the
+real-world shape — the same name, called from sub code, *with* the sub-local
+definition that makes the call resolve there. K6 and K7 are what make it honest:
+without K6, "we dropped `sub/`" could be "we broke the code column too"; without K7,
+it could be "we seed nothing but `init`". §6.1's four modes re-verified: gate/clean
+rc 0, gate/blind **rc 1 with the allowlist canary firing**, report/clean rc 0,
+report/blind rc 0.
+
+### 11.5 What this does NOT close — and one of them is a THIRD hole
+
+🔴 **THE PROLOGUE FALLTHROUGH: EVERY FILE'S FIRST LABEL IS UNCONDITIONALLY LIVE.**
+Fix (2) gives each file an always-live **prologue** span (lines before its first
+label) so references made there stay visible. But the prologue also gets a
+**fallthrough edge into the first label** — and **42 of 49** main files (and 53 of
+66 sub) have a prologue that is *comments only*, emitting no bytes at all. A
+comment block cannot fall through into anything, so those 42 first labels can never
+be reported dead, whatever the seed set says.
+
+This is how `read_sector` hid. It is the first label in `basic/fat.asm`, and it
+survived the §11.3 seed rebuild for that reason alone. It was carved anyway, on an
+argument that does **not** depend on this hole: no code-column reference exists
+anywhere in main's include closure, and its physical predecessor `basic/list.asm`
+ends `jp print_string`, an unconditional terminator — so nothing falls into it in
+the ROM either.
+
+**Measured 2026-08-22, dropping the fallthrough edge for emitting-nothing prologues:**
+main **+1 span** (`read_sector`, now carved), sub **2 spans / 20 B** —
+`fat_io_open` (`basic/fatio-body.inc`, 4 B) and `fmt_menu_text` (16 B, *already* the
+allowlist's vacuity canary, so only 4 B is new). Not shipped here: this is a change
+to the **span model**, whose failure direction is *under*-seeding — reporting live
+code as dead — so it needs its own knives and its own per-span triage, exactly as
+§10 shipped carve-first and filed this one. Filed in `TODO.md`.
+
+⚠️ **The `tools/` seed arm is an intersection, not an assertion** — see §2.2. A main
+routine renamed out from under a `tools/` by-name lookup drops out of the seed set
+silently. It over-seeds by construction, so the failure is a missed finding rather
+than a false one, but §2.2's blanket *"every seed name is asserted to resolve"* was
+**never true of that arm** and now says so.
+
+⚠️ **`disk/` is a third build this gate does not walk at all.** Out of scope since
+§7, restated here because the denominator moved: `disk/disk.asm` includes nothing
+from `basic/`, so it cannot make a main span live — but nothing checks that.

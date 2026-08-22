@@ -1,0 +1,12 @@
+EXACT  K1 ABI import emptied                  want=rc=1 floored           got=rc=1 floored           an ABI arm gutted to nothing must not read as `no seeds needed`
+EXACT  K2 ABI names a non-label               want=rc=1 unresolved        got=rc=1 unresolved        a renamed resident routine must fail loudly, not shrink the seed set
+EXACT  K3 plant, no mention                   want=new=YES old=YES        got=new=YES old=YES        the plant is genuinely dead under BOTH -- this is what makes K4 readable
+EXACT  K4 sub CODE + sub-local def            want=new=YES old=NO         got=new=YES old=NO         <- the whole slice: the sub call resolves SUB-LOCALLY and no longer seeds main
+EXACT  K5 sub CODE, NOT sub-resolvable        want=rc=1 escape            got=rc=1 escape            the standing control: dropping the sub/ scrape is only safe while this holds
+EXACT  K6 tools/ string lookup (control)      want=new=NO  old=NO         got=new=NO  old=NO         tools/ still seeds -- the fix removed sub/ and nothing else
+EXACT  K7 named in the ABI import (control)   want=new=NO  old=NO         got=new=NO  old=NO         without this, `we dropped sub/` is indistinguishable from `we seed nothing`
+
+restored: gate rc=0, clean
+all 5 files byte-identical to their originals
+
+7/7 knife rows EXACT

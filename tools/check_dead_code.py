@@ -24,7 +24,7 @@ unreachable ROM.
     python3 tools/check_dead_code.py build/basic-reloc.sym build/sub.sym
     python3 tools/check_dead_code.py --report build/basic-reloc.sym build/sub.sym
 
-⚠️ THE FOUR APPARATUS FIXES BELOW ARE THE TOOL'S ACTUAL CONTENT. The fixed-point
+⚠️ THE SIX APPARATUS FIXES BELOW ARE THE TOOL'S ACTUAL CONTENT. The fixed-point
 loop is the easy part. Each fix corresponds to a confident WRONG row this sweep
 produced during the review, three of which were caught only by a control and one
 only by the assembler:
@@ -70,10 +70,36 @@ only by the assembler:
       _selftest_code_column() runs on every invocation because a stripper that
       silently stops stripping restores the old blindness exactly.
 
+  (6) A NAME IS NOT A ROUTE: sub/ CODE MAY NOT SEED THE MAIN BUILD. Fix (5) made
+      the scrape read the code column; it did not make the scrape correct. Until
+      D-SEEDHOLE2 (2026-08-22) a name referenced in sub/ CODE seeded the MAIN
+      label of that name EVEN WHEN THE SUB REFERENCE RESOLVED SUB-LOCALLY -- and
+      that is the normal case, not an odd one: sub/fatprim.asm's
+      `call fat_read_fat_sector` reaches basic/fat-prim-body.inc's own copy, and
+      sub/format.asm DEFINES its own write_sector.
+      🔴 The shape that creates these is an EVICTION. Moving a caller into the
+      sub-ROM leaves its main-side shim standing, and the moved body's own `call`
+      is then read as the reason to keep it -- so the commit that orphans the
+      span is the commit that hides it. d3885b3 and 0cbf495 did exactly that to
+      five 4 B DISKOP_SEL_* bounces in basic/fat.asm, 20 B of main PAGE 1 (where
+      the wall read 11 B), invisible to this gate for weeks.
+      THE FIX IS NOT A NARROWER SCRAPE, IT IS THE REAL SURFACE:
+      sub/basic-resident-abi.inc, GENERATED from build/basic-reloc.sym, is the
+      ONLY file in the tree that imports a main address. Anything else a sub file
+      names resolves sub-locally or the sub build does not assemble -- so that
+      import list IS the sub->main surface, not a proxy for it.
+      _assert_sub_resolves_locally() is the standing control on precisely that
+      claim, because "the assembler enforces it" is the kind of reasoning that
+      rots when nothing re-runs it. Measured the day it shipped: 60 main labels
+      named in sub/ code, 60 resolvable, 0 escapes.
+      ⚠️ Fix (5) still matters -- for tools/, which still seeds.
+
 SEEDS -- the choice matters more than the algorithm.
 
-  main: `init` (the cartridge header's entry point) plus every label named in the
-  CODE COLUMN of sub/ or tools/ -- see fix (5); prose does not seed. ⚠️ NOT tests/
+  main: `init` (the cartridge header's entry point), the resident-ABI import
+  (fix 6), and every label named in the CODE COLUMN of tools/ -- a tool naming a
+  symbol it looks up in the .sym file IS an external reference to it, and prose
+  does not seed (fix 5). ⚠️ NOT sub/ (fix 6), and NOT tests/
   or probes/: a test naming a routine is not a
   reason to keep ROM bytes, and seeding on them hides the whole vars.asm block
   because the ported tests still name it. That one choice is the difference between
@@ -84,8 +110,13 @@ SEEDS -- the choice matters more than the algorithm.
   SUBROM_ENTRY_BASE_P0/_P1 + 3*index, so the two tables ARE the whole external
   surface.
 
-Every seed is asserted to resolve to a real label, so a rename fails loudly instead
-of silently shrinking the seed set.
+`init`, the sub entry-table tenants and the resident-ABI import are each asserted
+to resolve to a real label, so a rename fails loudly instead of silently shrinking
+the seed set. ⚠️ The tools/ arm is NOT -- it is an INTERSECTION with the label set,
+so a main routine renamed out from under a tools/ lookup drops out of the seeds
+quietly. That arm is over-seeding by construction, so the failure direction is a
+missed finding rather than a false one; it is written down here rather than fixed
+because the fix is a per-tool lookup model, not a stricter regex.
 """
 from __future__ import annotations
 import ast
@@ -106,6 +137,10 @@ ctc = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ctc)
 
 ALLOWFILE = os.path.join("tools", "deadcode-allow.txt")
+# fix (6): the GENERATED resident-ABI import is the main build's external surface.
+RESIDENT_ABI = os.path.join("sub", "basic-resident-abi.inc")
+ABI_EQU = re.compile(r'^\s*([A-Za-z_]\w*)\s+equ\b', re.IGNORECASE)
+ABI_FLOOR = 8            # REQUIRED is 12; a floor an edit cannot quietly cross
 IDENT = re.compile(r'[A-Za-z_]\w*')
 INCLUDE = re.compile(r'^\s*include\s+"([^"]+)"', re.IGNORECASE)
 PROLOGUE = "@prologue:"
@@ -302,6 +337,74 @@ def _selftest_code_column():
                          f"is blind to every span a comment names")
 
 
+def resident_abi_seeds(spans):
+    """The main labels the SUB build may legitimately reach -- fix (6).
+
+    sub/basic-resident-abi.inc is GENERATED (tools/gen_resident_abi.py) from
+    build/basic-reloc.sym and is the ONLY file in the tree that imports a main
+    address. Everything else a sub file names resolves SUB-LOCALLY or the sub
+    build does not assemble, which is what makes this list the whole surface
+    rather than a proxy for it -- see _assert_sub_resolves_locally() below, the
+    standing control on exactly that claim.
+
+    FLOORED, because an import list silently emptied would shrink the seed set
+    to `init` and report live code as dead -- loud, but for the wrong reason --
+    and an import list silently IGNORED would restore the over-seeding this fix
+    removes. Every name is asserted to be a real main label: a renamed resident
+    routine fails here rather than quietly dropping out of the seed set.
+    """
+    if not os.path.exists(RESIDENT_ABI):
+        sys.exit(f"FAIL: {RESIDENT_ABI} is missing -- it is GENERATED into the "
+                 f"build (tools/gen_resident_abi.py) and is the main build's "
+                 f"external seed surface; without it this sweep cannot say what "
+                 f"the sub-ROM may reach")
+    names = []
+    for ln in open(RESIDENT_ABI):
+        m = ABI_EQU.match(ln.split(';', 1)[0])
+        if m:
+            names.append(m.group(1))
+    if len(names) < ABI_FLOOR:
+        sys.exit(f"FAIL: {RESIDENT_ABI} yielded {len(names)} import(s), floor is "
+                 f"{ABI_FLOOR} -- the resident-ABI surface is the main build's "
+                 f"whole external seed set and it cannot be this small. An empty "
+                 f"one would seed only `init` and report live code as dead")
+    missing = [n for n in names if n not in spans.nodes]
+    if missing:
+        sys.exit(f"FAIL: resident-ABI import(s) {missing} do not resolve to a "
+                 f"main label -- renamed? A seed that silently stops matching "
+                 f"shrinks this sweep's seed set instead of failing")
+    return set(names)
+
+
+def _assert_sub_resolves_locally(m, s, abi):
+    """THE STANDING CONTROL on fix (6), and the reason dropping sub/ is safe.
+
+    Fix (6) rests on one claim: a main label named in sub/ CODE that is not in
+    the resident ABI resolves to something SUB-LOCAL, so it is not a reason to
+    keep main bytes. The claim is enforced by the assembler (an unresolved
+    symbol does not build) -- but "the assembler owns it" is exactly the kind of
+    reasoning that rots when nobody re-runs it, and this sweep would go quiet
+    rather than loud if it stopped holding. Measured 2026-08-22: 60 main labels
+    named in sub/ code, 60 resolvable, 0 escapes.
+    """
+    named = set(m.nodes) & external_names(['sub'])
+    local = set(s.nodes)
+    for f in s.files:
+        for ln in open(f, errors='ignore'):
+            e = ABI_EQU.match(ln.split(';', 1)[0])
+            if e:
+                local.add(e.group(1))
+    escapes = sorted(n for n in named if n not in abi and n not in local)
+    if escapes:
+        sys.exit(f"FAIL: {escapes} name main label(s) in sub/ CODE and resolve "
+                 f"to neither the resident ABI ({RESIDENT_ABI}) nor a sub-local "
+                 f"definition. Either the sub build reaches main by a route this "
+                 f"sweep does not model -- add it to the ABI import and to "
+                 f"tools/gen_resident_abi.py's REQUIRED -- or the name is a "
+                 f"leftover. Fix (6) assumes this list is EMPTY; it is the one "
+                 f"assumption that lets sub/ stop seeding the main build")
+
+
 def external_names(roots):
     """Every identifier appearing in the CODE COLUMN of the files under `roots`.
 
@@ -367,13 +470,19 @@ def main(argv):
 
     builds = {}
     m = Spans('basic/main.asm', 'main')
-    m_seeds = {'init'} | (set(m.nodes) & external_names(['sub', 'tools']))
-    m_seeds |= {n for n in m.nodes if n.startswith(PROLOGUE)}
+    s = Spans('sub/sub.asm', 'sub')
     if 'init' not in m.nodes:
         sys.exit("FAIL: seed `init` is not a label in the main build -- renamed?")
+    # fix (6): the main build's external surface is the GENERATED resident-ABI
+    # import plus whatever tools/ looks up BY NAME -- not every identifier that
+    # happens to appear under sub/. The sub build is walked first because the
+    # standing control below needs it.
+    abi = resident_abi_seeds(m)
+    _assert_sub_resolves_locally(m, s, abi)
+    m_seeds = {'init'} | abi | (set(m.nodes) & external_names(['tools']))
+    m_seeds |= {n for n in m.nodes if n.startswith(PROLOGUE)}
     builds['main'] = (m, m_seeds, main_sym)
 
-    s = Spans('sub/sub.asm', 'sub')
     tenants = ctc.page0_seeds('sub/sub.asm') + ctc.page1_seeds('sub/sub.asm')
     missing = [t for t in tenants if t not in s.nodes]
     if missing:

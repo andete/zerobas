@@ -75,7 +75,7 @@ def both_scrapers(setup, label, want, note):
     restore(); setup()
     _, out_new = run()
     new = plant_seen(out_new)
-    old_scrape(); setup_again = setup
+    old_scrape()
     _, out_old = run()
     old = plant_seen(out_old)
     row(label, want, f"new={'YES' if new else 'NO '} old={'YES' if old else 'NO '}", note)
@@ -94,7 +94,7 @@ restore()
 open(ABI, 'w').write(originals[ABI].replace('fp_add equ', 'zz_not_a_label equ'))
 rc, out = run()
 row("K2 ABI names a non-label", "rc=1 unresolved",
-    f"rc={rc} {'unresolved' if 'does not resolve' in out else 'NOT CAUGHT'}",
+    f"rc={rc} {'unresolved' if 'do not resolve to a main label' in out else 'NOT CAUGHT'}",
     "a renamed resident routine must fail loudly, not shrink the seed set")
 
 # ---- K3: a planted dead span, no mention anywhere -------------------------
@@ -117,7 +117,7 @@ open(POKE, 'w').write(originals[POKE] + PLANT)
 open(BEEP, 'w').write(originals[BEEP] + "\n                call    zz_seedhole_plant\n")
 rc, out = run()
 row("K5 sub CODE, NOT sub-resolvable", "rc=1 escape",
-    f"rc={rc} {'escape' if 'resolves to neither' in out else 'NOT CAUGHT'}",
+    f"rc={rc} {'escape' if 'to neither the resident ABI' in out else 'NOT CAUGHT'}",
     "the standing control: dropping the sub/ scrape is only safe while this holds")
 
 # ---- K6: green control -- a tools/ STRING lookup still seeds ---------------

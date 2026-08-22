@@ -186,7 +186,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       allowlist's own rule demands. **[Both shipped 2026-08-21; the ⚠️ was wrong,
       (b) reports exactly these three.]**
 
-- [ ] 💰 **A SECOND SEEDING HOLE, AND IT IS WORTH 16 B ON MAIN PAGE 1 (wall 11 B,
+- [x] ✅ **CLOSED 2026-08-22 (D-SEEDHOLE2), −20 B main page 1 (11 → 31 B free) —
+      A NAME IS NOT A ROUTE.** [`docs/spec-deadcode-gate.md`](docs/spec-deadcode-gate.md)
+      §11. The filed measurement below re-verified EXACTLY (4 spans, 16 B, all
+      page 1) and was wrong in one direction only: **under**-counted. There are
+      **17** sibling bounces, not ~15, and the carve is **five** spans / **20 B**
+      — `read_sector` is dead too, hidden by a THIRD, different apparatus hole
+      (now filed, §11.5). The gate half re-seeds main from the GENERATED
+      `sub/basic-resident-abi.inc`: measured 65 main labels named in `sub/` code,
+      **65 resolvable inside the sub build** (12 via the ABI, 53 sub-local),
+      **0 escapes** — so the import list IS the surface, not a proxy for it, and
+      that invariant ships as a standing control. Seeds 118 → 73, 0 findings.
+      🎯 **THE MECHANISM IS AN EVICTION AND IT WILL RECUR**: moving a caller into
+      the sub-ROM leaves its main-side shim standing, and the moved body's own
+      `call` is then read as the reason to keep it — **the commit that orphans
+      the span is the commit that hides it** (`d3885b3`, `0cbf495`). §10's lesson
+      one turn out: there a COMMENT was a seed, here a real CALL is a seed for
+      the WRONG BUILD.
+      ⚠️ The "4 of ~15 sibling bounces" worry was not the hard part — they are
+      **not a table**: no dispatch array, no index, and the header's only order
+      claim is `jr` reach, which a carve only shortens.
+      7/7 knives EXACT, run twice.
+
+  <details><summary>the original filing, kept for the record</summary>
+
+- [x] 💰 **A SECOND SEEDING HOLE, AND IT IS WORTH 16 B ON MAIN PAGE 1 (wall 11 B,
       2026-08-21).** Filed by D-SEEDPROSE §10.4, measured not estimated. The main
       seed scrape is a PROXY for *"what can reach main code from outside main?"*,
       and it is coarse in a way the code-column fix does not touch: a name
@@ -208,7 +232,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       not deleting an orphan. ⚠️ **`basic/format-body.inc` and
       `basic/randio-body.inc` both `call write_sector` — they are sub tenants, so
       the sweep is right that main's copy has no main caller, but check that
-      before quoting the 16 B as recovered.**
+      before quoting the 16 B as recovered.** [Checked per body, and per BUILD:
+      all three are in `sub/sub.asm`'s include closure and none in
+      `basic/main.asm`'s.]
+
+  </details>
+
+- [ ] 🔴 **EVERY FILE'S FIRST LABEL IS UNCONDITIONALLY LIVE — THE PROLOGUE
+      FALLTHROUGH (filed 2026-08-22 by D-SEEDHOLE2, §11.5).** Apparatus fix (2)
+      gives each file an always-live PROLOGUE span so references made above its
+      first label stay visible — and also a FALLTHROUGH edge from that prologue
+      into the first label. **42 of 49 main files (53 of 66 sub) have a prologue
+      that is comments only**, emitting no bytes, and a comment block cannot fall
+      through into anything. So 42 main first labels can never be reported dead,
+      whatever the seed set says. This is how `read_sector` hid through the
+      §11.3 seed rebuild; it was carved anyway on an argument that does not
+      depend on the hole (no code-column reference in main's closure, and
+      `basic/list.asm` ends `jp print_string`).
+      💰 **Measured 2026-08-22, dropping the edge for emitting-nothing
+      prologues**: main +1 span (`read_sector`, since carved); **sub 2 spans /
+      20 B** — `fat_io_open` (`basic/fatio-body.inc`, 4 B) and `fmt_menu_text`
+      (16 B, ALREADY the allowlist's vacuity canary, so only **4 B is new**).
+      ⚠️ **This is a change to the SPAN MODEL, and its failure direction is
+      UNDER-seeding — reporting LIVE code as dead.** It needs its own knives and
+      its own per-span triage; a wrong redesign here is how the gate stops being
+      believed. Sub page 1 free was 1624 B on 2026-08-22, so this is apparatus
+      value, not wall relief.
+
+- [ ] ⚠️ **THE `tools/` SEED ARM IS AN INTERSECTION, NOT AN ASSERTION** (filed
+      2026-08-22 by D-SEEDHOLE2, §11.5). `init`, the sub entry-table tenants and
+      the resident-ABI import each fail loudly if they stop resolving; the
+      `tools/` arm is `set(m.nodes) & external_names(['tools'])`, so a main
+      routine renamed out from under a `tools/` by-name `.sym` lookup drops out
+      of the seed set **silently**. It over-seeds by construction, so the failure
+      direction is a MISSED finding rather than a false one — which is why it is
+      filed rather than fixed. 🔴 **`docs/spec-deadcode-gate.md` §2.2 claimed
+      *"every seed name is asserted to resolve to a real label"* for the whole
+      set; that sentence was never true of this arm.** Corrected in place, not
+      deleted. The real fix is a per-tool lookup model, not a stricter regex.
 
 - [x] ✅ **CLOSED 2026-08-21 (D-FNRUN), −11 B main page 1 (50 → 39) —
       `RUN A$` RESTARTED THE PROGRAM FOREVER.**
@@ -2005,9 +2066,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       shipped item at rank 1. **Dating a ranking is not enough: re-verify at
       PICKUP, by whoever picks it up.**
       ⚠️ **THE SURVIVING ITEMS ALL STILL NEED A CARVE FIRST — main page 1 read
-      11 B on 2026-08-21** after D-STRPAREN (`make basic-reloc`; the 12 B in the
-      original ranking was read earlier the same day). The measured page-1
-      candidate is now the 16 B second seeding hole filed by D-SEEDPROSE, above.
+      31 B on 2026-08-22** after D-SEEDHOLE2 (`make basic-reloc`; it read 11 B on
+      2026-08-21 after D-STRPAREN, and the 12 B in the original ranking was read
+      earlier that day). 🔴 **AND THIS PARAGRAPH FELL TO ITS OWN LESSON A SECOND
+      TIME**: it pointed at "the 16 B second seeding hole filed by D-SEEDPROSE"
+      as the measured page-1 candidate, and that item SHIPPED on 2026-08-22 (20 B,
+      not 16). A pointer to a candidate rots the same way a wall does — **it is a
+      dated reading, and it must be re-verified at pickup, not quoted.** No
+      page-1 carve candidate is currently priced: `DEF FN` / SCREEN 3 / TXTMAX
+      still need one, and the two residuals D-SEEDHOLE2 filed are apparatus
+      (sub-side and gate-honesty), not main page-1 relief.
       💰 0 ROM bytes; this is a reading. What it changes is which item is picked
       up next, and it already retired one (D-LINEMAX, above).
 
