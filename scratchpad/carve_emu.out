@@ -1,0 +1,41 @@
+### strparen-acceptance
+ROWS: 16 printed, 16 scored — 16 agree, 0 diverge, 0 without a reference, 0 deferred (not scored)
+==============================================================================
+16/16 readings match their reference (16 cases, 3 positive controls, 0 DEFERRED row(s) measured but not scored)
+DENOMINATOR: (the CONTEXT the parenthesised string operand stands in: a LET to a `$` target, a `+` concat on either side, NESTED parens, a parenthesised EXPRESSION, a parenthesised LITERAL, a PRINT item, an IF comparison, and the argument of LEN / MID$ / LEFT$) x (what the context DISPATCHES on: str_eval directly, a peek that never reaches it, or a function's own argument parse). Every row carries the unparenthesised or NUMERIC form of its own dispatcher as a control. NOT COVERED: parenthesised strings in RSET/LSET/FIELD, in a DATA body, as a filename (that is `f.paren` in basic_probe_namspc.py, the row this battery grew out of), or nested more than two deep.
+### namspc-acceptance
+==============================================================================
+99/99 readings match their reference (103 cases, 21 positive controls, 2 negative controls, 41 row(s) with ONE reference only, 0 row(s) without a reference, 0 row(s) where the references disagree, 4 DEFERRED row(s) measured but not scored)
+🔴 ORACLE STRENGTH IS NOT UNIFORM: the `z.fld*` rows are Disk BASIC, which a diskless VG-8020 cannot express — they rest on the CF-3300 ALONE. Every other row here has two references.
+DENOMINATOR: (WHERE the space falls inside a reference: before the 2nd LETTER, before a DIGIT, before each of the four type suffixes `% ! # $`, MORE THAN ONCE, and between two names run together) x (the POSITION the reference stands in: r-value expression, LET target, IF condition, FOR, NEXT, DIM, an array element lvalue, READ, SWAP -- none of which except NEXT/READ reaches tgt_parse), plus whether the space SURVIVES THE CRUNCH at all (t.*, read from the stored line bytes, which is what says whether the fix belongs in the tokeniser or the parser), plus what the TWO-CHARACTER KEY does with a space in the middle (r.three / r.run / a.sig), plus the KEYWORD constraint (t.kw / t.and / t.abs / k.and / k.abs: this tokeniser matches keywords at every position mid-identifier, so a spaced name can be crunched into a TOKEN before any parser sees it, and z.kw is the RUNTIME negative control that says a name so tokenised must STAY refused), plus the converse row that says the joined name is a DIFFERENT variable and not tolerated junk (z.miss), plus the TRAILING-space set (w.*) that is green BEFORE and must stay green AFTER. Every spaced row carries the CONTIGUOUS form of its own fixture as its positive control. NOT COVERED: a TAB or other whitespace byte; DIRECT mode (TODO.md's `dir-name` residual); a space inside a DEF FN name or a line-number list; `RSET` and the FIELD family (D-TGTSPC's nine lvalue surfaces already carry the `(` position and share one parse site).
+### cassave-acceptance
+==============================================================================
+20/20 readings agree (4 cases, 8 positive controls)
+SIDES: vg8020,cf3300,zb — every MSX1 has a CASSETTE PORT, so the VG-8020 is a full reference here
+READ OFF THE TAPE, not off the screen: every verb here prints nothing whatever it writes, so each row records to a fresh `cassetteplayer new` WAV and probes/lib/cas_decode.py decodes it
+### castail-acceptance
+31/31 scored readings agree (17 cases, 15 positive controls, 1 pinned divergence row(s))
+SIDES: vg8020,cf3300,zb — every MSX1 has a CASSETTE PORT, so unlike the disk battery the VG-8020 is a legitimate reference here
+NORMALISED: a tail that is EXACTLY the side's own aborted-load message reads '<load-failed>' (vg8020='Device I/O error', cf3300='Device I/O error', zb='load error') — the quarantined wording divergence, not re-opened here
+PINNED: the tape-search progress rows ('Found:RT', 'Skip :RT', and the same pair for 'SK') are dropped from the D-CASTAIL tails, where they are not the subject, and read UNFILTERED by every cas2-* row, where they are. All three sides print them since D-CASSEARCH, so the filter now normalises an AGREEMENT rather than blessing one machine's silence
+### dskmsg-acceptance
+==============================================================================
+15/15 gated rows agree
+SIDES: cf3300,zb — the VG-8020 has no disk ROM and CANNOT measure any row here (stated, not silently dropped)
+0 row(s) PRINTED-NOT-GATED — the holding pen is EMPTY, and it was emptied by FIXING all seven, not by deleting them: dsk-namenone (D-DKNAME 2026-08-07), the five load/run/merge/open/append faces (D-LOADERR-FIX 2026-08-20), dsk-bloadnone (D-BLNF 2026-08-21) and dsk-bloadmode (D-BLMODE 2026-08-21). Each graduated the day its ARM SPLIT landed.
+### fldwidth-acceptance
+==============================================================================
+47/47 readings match their reference (49 cases, 7 positive controls, 2 negative controls, 47 row(s) with ONE reference only, 0 row(s) without a reference, 0 row(s) where the references disagree, 2 DEFERRED row(s) measured but not scored)
+🔴 ORACLE STRENGTH IS NOT UNIFORM: every `FIELD`/`LSET` row is Disk BASIC, which a diskless VG-8020 cannot express — they rest on the CF-3300 ALONE. Only `s.joinctl` can have two references.
+DENOMINATOR: (WHAT TYPE the width expression has: an integer literal, a `%`/`!`/`#` scalar, a parenthesised unsuffixed name, a numeric array element, a `+`/`*` expression, a numeric FUNCTION of a string (LEN) and of a literal (VAL) -- against a string VARIABLE, a string LITERAL, a string ARRAY ELEMENT, a string FUNCTION, and the unsuffixed name that D-NAMSPC's name scan JOINS with the following `AS` into a string reference) x (WHAT DOMAIN: 0, negative, past the BYTE ex_field keeps (256/257), past int16 (70000), a non-integer (10.7 -- truncate or round), and a RUNNING TOTAL past the 256-byte record) x (WHICH SURFACE: the width, the CHANNEL's own unchecked eval, the TARGET's type test, and the SECOND item of a multi-item list, which is where a per-item check and a once-at-entry one differ) x (WHICH ERROR and IN WHAT ORDER: two competing faults in one statement, width-vs-target and channel-vs-width). Every group carries the WORKING form of its own fixture as its positive control, and every accepting row reads the WIDTH BACK rather than printing OK. NOT COVERED: `GET`/`PUT` record I-O through a bad field; a `LEN=` record length other than the 256-byte default; `FIELD` on a CAS: channel; and message WORDING (D-MSGEXACT's surface -- the error-name match here is case-insensitive).
+### diskbasic-acceptance
+  PASS  [artifact] OPEN(LPT/CRT)    converged
+
+===== Disk-BASIC acceptance: 34/34 verbs converged =====
+ALL CONVERGED — the Disk-BASIC verb surface still matches the oracle.
+### fat-error-acceptance
+   must answer DIFFERENTLY from its mounted twin kill-nodisk<>kill-missing, name-nodisk<>name-missing, bload-nodisk<>bload-missing. These rows are what make D-DSKMSG's K-KILL2 and
+   D-DKNAME's K-NAME2 real cuts instead of predicted misses -- docs/spec-fat-error-mount-row.md)
+ROWS: 20 printed, 11 scored — ALL PASS
+ALL PASS
+ALL EMULATOR BATTERIES OK

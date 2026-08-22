@@ -1,0 +1,40 @@
+### unit-test
+PASS  test_wrseq_position.py
+
+ALL 59 TEST FILE(S) PASSED
+### deadcode
+  allowed  [sub] fmt_menu_text            basic/format-body.inc      0x573f 16 B  -- Deliberately kept at its ORIGINAL pre-eviction position between fmt_boot and fmt_geom_byte to preserve the byte layout of basic/format-body.inc (its own comment says so). The menu itself stays main-resident (docs/spec-evict-call-format.md §2), so the sub-side copy is unreachable by design. 16 B of a ROM with 7411 B free — worth more as this gate's vacuity canary than as recovered bytes.
+  sub : 1557 spans, 104 seeds -> 0 dead (+1 allowlisted)
+OK: no unreachable spans in either build; every allowlist entry still verified dead (the sweep is not blind).
+### wall-assertion-check
+
+== UNDATED FREE-SPACE ASSERTIONS (gating) ==
+   none — every open item that quotes a wall says WHEN it was read
+### redundant-load-check
+
+== DEAD LOADS (gating) ==
+   none — every call of a proven routine already relies on the contract
+### rowshape-check
+
+ALL PASS -- 27 probe(s) print two exit paths' worth of report rows,
+and every one of them prints ONE grammar on both.
+### injector-check
+  exemption claimed too wide       : 0
+
+ALL PASS -- one LIVE injector across 416 files, and it is the one `make latch-check` scores; 3 frozen characterization record(s) acknowledged and unreachable.
+### preflight-check
+    UNGUARDED                                        : 0
+
+ALL PASS -- every launch site this checker cannot prove harmless is guarded.
+### latch-check
+  PASS  E  key_proc,          forced at $11AA (ld hl,KEYBUF (wrap)) -> DELIVERED (swallow 0, chain '54321', 2 deferrals)
+  PASS  F  D-LATCH injector, forced at $11B0 (pop af) -> DELIVERED (swallow 0, chain '54321', frozen body, no drain guard)
+latch-check: 16/16 rows
+### diskdep-check
+python3 tools/check_disk_deps.py 
+65 make target(s) run a probe needing test720.dsk; 65 declare $(DISK_TEST_DSK), 0 do not
+### diskdep-selftest
+  ok      B2  import-route positive control
+
+self-test 6/6 (4/4 findings, 1/1 blindness, 1/1 latent-route control)
+ALL FAST GATES OK

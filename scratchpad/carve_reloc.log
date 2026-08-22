@@ -1,0 +1,52 @@
+python3 tools/check_reloc.py build/basic-reloc.rom build/basic-reloc.sym
+OK: relocated image 22510 B, header @ $4000, low region $2812-$3FFF holds 6080 B of string engine
+    measure: page-0 low region free = 46 B ($2812-$3FFF, __MEAS_LOW_END @ 0x3fd2)
+    measure: page-1 free            = 31 B ($4000-$7FFF, __MEAS_PAGE1_END @ 0x7fe1) <- subrom wave-2 tokeniser-eviction relief
+python3 tools/check_sub_walls.py build/sub.rom build/sub.sym
+OK: sub ROM 32768 B, 'CD' @ $0000, 'S1' @ $4000, both wall labels inside their page and both pads verified
+    measure: sub page 0 free       = 3299 B ($0000-$3FFF, the callable-from-main island, __MEAS_SUB_P0_END @ 0x331d)
+    measure: sub page 1 free       = 1624 B ($4000-$7FFF, the BIOS-visible island, __MEAS_SUB_P1_END @ 0x79a8)
+python3 tools/check_kwtable_identity.py build/basic-reloc.rom build/basic-reloc.sym build/sub.rom build/sub.sym
+OK: kwtable single-copy — resident dropped (wave 3) in symbols AND in bytes (0 occurrences in the 22510 B main image), sub-ROM copy is the sole source, 1 occurrence, 1091 B matching the pinned sha256
+python3 tools/check_resident_abi.py build/basic-reloc.sym sub/basic-resident-abi.inc
+OK: sub/basic-resident-abi.inc matches a fresh regen from build/basic-reloc.sym (12 resident-ABI addresses, sub.rom is not stale)
+python3 tools/check_tenant_closure.py build/basic-reloc.sym sub/basic-resident-abi.inc
+OK: 124 routines in the resident closure of 12 ABI seeds, + 4 data-referenced label(s), all page-0 (< $4000). No page-1 escapes.
+python3 tools/check_tenant_closure.py --page0 build/sub.sym sub/sub.asm
+OK: 760 routines in the closure of 14 page-0 tenants (sub_p0_ping, tokenise, dtk_tenant, sub_int_selftest, ary_engine, strheap_engine, pu_tofield_tenant, pu_tail_tenant, graphics_tenant, deftype_tenant, readdata_tenant, beep_tenant, fld_lookup_tenant, lrset_store_tenant), + 15 data-referenced label(s); every callee and data target is sub-local page-0, main page-1, or RAM. No low-region/BIOS escape.
+python3 tools/check_tenant_closure.py --page1 build/sub.sym sub/sub.asm
+OK: 585 routines in the closure of 24 page-1 tenants (sub_p1_ping, fp_sqrt, fp_atan, fp_exp, fp_log, fp_pow, fp_sin, fp_cos, fp_tan, fp_rnd, format_tenant, scan_stmt_end, fatprim_tenant, dirverb_tenant, play_parse_tenant, lineedit_tenant, casmatch_tenant, title_tenant, fcbname_tenant, circleparse_tenant, bload_tenant, save_tenant, errmsg_tenant, parseln_tenant), + 40 data-referenced label(s); every callee and data target is sub-local page-1, main low-region/BIOS (< $4000), or RAM. No main-page-1 escape.
+python3 tools/check_dead_code.py build/basic-reloc.sym build/sub.sym
+  main: 1594 spans, 118 seeds -> 0 dead (+0 allowlisted)
+  sub : 1557 spans, 104 seeds -> 0 dead (+1 allowlisted)
+OK: no unreachable spans in either build; every allowlist entry still verified dead (the sweep is not blind).
+python3 tools/audit_citations.py
+clean-room citation audit (mechanical half — not a full paper trail)
+rule self-test 10/10, listing self-test 11/11, dump self-test 12/12, section self-test 14/14
+
+== disk == (8 files scanned, 97 provenance-bearing)
+  [acknowledged] disk/driver.asm:87: section header without inline citation: 'write path' (aa89e15851ff) — 'write path' — the write twin of the read path in the same file. Its body cites nothing itself because it mirrors dskio's read loop instruction for instruction ("Mirrors the read loop's structure exactly"), and the read path's own header block carries the PROVENANCE.md §FDC / §DSKIO interface citation that both rest on. A single shared citation for a mirrored pair is the honest shape; duplicating it would be prose written to satisfy a scanner. Human judgement, 2026-07-04, re-confirmed 2026-08-06.
+  [acknowledged] disk/kernel.asm:65: section header without inline citation: 'MSX-DOS-1 kernel SETDTA-time entry: $5058 (M19)' (77d4c39b0be0) — 'MSX-DOS-1 kernel SETDTA-time entry: $5058 (M19)' — attested in full, in vocabulary CITATION does not carry: 12 comment lines naming the finding (M19), the probes (callseq / capture / callwatch causal pin), the black-box contract (entry register, write target, the register-identical 51-call comparison) and the clean-room line ("no stock routine internals decoded"). Widening CITATION with black-box was measured and DECLINED — docs/spec-audit-citations-review.md §2.5 records the numbers and the bar to re-open it. Kept as a review candidate deliberately: what counts as a citation is a judgement this tool declines to make.
+  [acknowledged] disk/kernel.asm:2052: section header without inline citation: 'contract bodies (stubs; filled in milestone 4; added as each veneer lands)' (b7535589959f) — 'contract bodies (stubs; filled in milestone 4; added as each veneer lands)' — a table of bare `ret` stubs at pinned kernel addresses. It names no derived behaviour, so there is nothing to cite; each stub acquires its own citation in the comment block above it as the milestone that fills it lands (see the k_47B2 block immediately below, which cites tier2-m31-rdblk-randrecord-spec.md). Structural in substance but not in STRUCTURAL_HDR's vocabulary, and widening that regex to catch it would exempt far more than this one header.
+  [acknowledged] disk/runtime.asm:423: section header without inline citation: 'int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) — SUPERSEDED by A-3' (d8340dfd8ba4) — 'int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) — SUPERSEDED by A-3' — a genuinely uncited header, and the only one this project has ever had that was hidden by the vocabulary rather than by the distance rule. Its block attests in prose — "the MSX1 standard, BIOS-agnostic" — which names a standard but no document: no §, no spec filename, no URL, no datasheet. It was exempt only because the sentence "A bare VDP ack is not enough" contains the word VDP, which was a CITATION token until 2026-08-06. The finding it restates DOES exist: provider-oracle-scope.md §8.70 (O-2, the KEYINT chaining contract — the stock $0038 handler, the main-ROM KEYINT body, the H.KEYI/H.TIMI hooks, all from black-box probe runs). The header's own name once carried the reference, "(A-2/8.70)", a bare number the rule cannot match either, and lost it in the A-3 rename (71b1096). The human's remedy is to name §8.70 in the block, or to delete the dead body this header describes (it says DEAD/SUPERSEDED itself, kept net-zero pending removal). Which of those is right is a judgement this tool declines to make.
+  clean — attestations present, no unattested forbidden source  (4 advisory review candidate(s))
+
+== basic == (108 files scanned, 209 provenance-bearing)
+  clean — attestations present, no unattested forbidden source
+
+== tape == (1 files scanned, 15 provenance-bearing)
+  clean — attestations present, no unattested forbidden source
+
+== listing shape == (820 files swept, 2 allowlisted)
+  [allowed] probes/lib/latch_check.py:82: 2-line listing (5565467e6422) — C-BIOS, same window and same adjudication as the omsx_repl.py entry below: the two comment lines restate the chget_char boundaries this checker scores (D-LATCH2, docs/spec-probe-latch2.md). Surfaced only after knife K1b forced the comment leaders `; # //` into the prefix class — under the first cut this file was invisible, which is the whole reason that fix landed.
+  [allowed] probes/lib/omsx_repl.py:366: 3-line listing (edb676f694b2) — C-BIOS, not a proprietary reference ROM: allowed-sources.md grades C-BIOS source B/Conditional — a peer clean-room reimplementation under BSD-2 whose source this project already patches (cbios-repack/), and NOT the reference implementation zerobas reimplements. The run is 3 instructions of the keyboard-buffer path, in a docstring explaining the D-LATCH2 injection window (docs/spec-probe-latch2.md §5.5); the same docstring is explicit about the line it stays on ("locating chget in the reference needs a disassembly this project does not do"). Probe source, not shipped ROM source. Flagged for the human paper trail 2026-08-06 (D-DOCJUDGE §2.6) — a judgement docs/clean-room-audit.md reserves for a human, which is why it is written down here rather than decided by the tool.
+  clean — no unallowlisted decoded-instruction listings
+
+== hex-dump rows == (820 files swept, 1 allowlisted)
+  [allowed] tools/audit_citations.py:428: hex-dump row (0c30593198a1) — The check's own synthetic self-test vector (_DUMP_VEC). INVENTED bytes — no provenance, no derivation, not decoded from anything — so recording it forbids nothing; a REAL positive vector would be the artifact this check refuses and would make the tool its own first finding. Unlike check 5's LISTING_LINE this rule is not anchored at line start (a dump lives inside a markdown table cell), so the vector is necessarily a hit on this file. That is turned into the canary rather than worked around: if this line stops matching, check 6 has gone blind and exits 2 rather than printing "clean".
+  clean — no unallowlisted hex-dump rows  (narrow by design: this is the dump ROW only, not the raw-byte class — docs/spec-audit-citations-bytes.md §3.1)
+
+ADVISORY: 4 section header(s) without an inline citation, all acknowledged — review candidates for the human paper trail, not gate failures. The SET is pinned (citations-advisory-allow.txt); the judgement is not.
+
+CLEAN (gating checks). The non-mechanical hop — 'is each cited probe genuinely black-box?' — still requires a human paper-trail pass.
+reloc rc=0

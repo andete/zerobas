@@ -251,8 +251,10 @@ __MEAS_LOW_END:
                 include "basic/save.asm"
 
 ; Disk BASIC file-channel verbs (Phase 2): FILES (defines `do_files`). Reuses the
-; fat.asm engine (`fat_mount` / `read_sector`) + bload.asm's `load_error`, so it
-; follows them in the include order.
+; fat.asm engine (`fat_mount` / `fat_find`) + bload.asm's `load_error`, so it
+; follows them in the include order. (It named `read_sector` until D-SEEDHOLE2:
+; the FILES walk itself was evicted to a sub-ROM tenant by 0cbf495, and the
+; callerless main-side read_sector shim went with the last of the carve.)
                 include "basic/files.asm"
 
 ; Random-access record verbs (Phase 2c): FIELD / LSET / RSET. Builds on the
@@ -260,8 +262,10 @@ __MEAS_LOW_END:
 ; so it follows files.asm + strvar.asm in the include order.
                 include "basic/field.asm"
 
-; CALL FORMAT (defines `ex_call`/`ex_call_us`; writes a fresh FAT12 via fat.asm's
-; write_sector), so it follows fat.asm + files.asm in the include order.
+; CALL FORMAT (defines `ex_call`/`ex_call_us`; the menu is resident, the sector
+; build/write bulk is a sub-ROM tenant with its own write path -- see
+; basic/format.asm's REPACK EVICTION note). It still reuses fat.asm's resident
+; layer, so it follows fat.asm + files.asm in the include order.
                 include "basic/format.asm"
 
 ; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).

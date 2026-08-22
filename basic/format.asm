@@ -14,7 +14,9 @@
 ; parsed-past and ignored.
 ;
 ; zerobas-BASIC owns the FAT12 logic and drives the standard $4010 DSKIO read+write
-; (basic/fat.asm), so it lays the filesystem down ITSELF — a fresh boot sector (BPB)
+; (basic/fat.asm's resident layer; since the eviction below, the write primitive
+; itself is sub/format.asm's sub-local copy), so it lays the filesystem down
+; ITSELF — a fresh boot sector (BPB)
 ; + two FAT copies + an empty root directory via write_sector — without needing
 ; zerobas-disk's DSKFMT (a stub). This is the Phase-1.5 "BASIC owns the filesystem"
 ; model applied to formatting.

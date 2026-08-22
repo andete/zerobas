@@ -1,0 +1,5 @@
+python3 tools/check_dead_code.py --report build/basic-reloc.sym build/sub.sym
+  main: 1594 spans, 118 seeds -> 0 dead (+0 allowlisted)
+  allowed  [sub] fmt_menu_text            basic/format-body.inc      0x573f 16 B  -- Deliberately kept at its ORIGINAL pre-eviction position between fmt_boot and fmt_geom_byte to preserve the byte layout of basic/format-body.inc (its own comment says so). The menu itself stays main-resident (docs/spec-evict-call-format.md §2), so the sub-side copy is unreachable by design. 16 B of a ROM with 7411 B free — worth more as this gate's vacuity canary than as recovered bytes.
+  sub : 1557 spans, 104 seeds -> 0 dead (+1 allowlisted)
+OK: no unreachable spans in either build; every allowlist entry still verified dead (the sweep is not blind).

@@ -15,8 +15,14 @@
 ; own code carries its provenance forward, not a forbidden disassembly). The only
 ; substantive change vs. the disk-ROM-side original is the physical-sector
 ; primitive: there `read_sector`/`write_sector` tail-called the LOCAL `dskio`
-; (ROM offset +$10); here they CALSLT the in-slot disk ROM's DSKIO at $4010 across
-; slots (the slot id is the INIT-scan's DISKSLOT capture). Everything above the
+; (ROM offset +$10); in the port they CALSLT the in-slot disk ROM's DSKIO at
+; $4010 across slots (the slot id is the INIT-scan's DISKSLOT capture).
+; ⚠️ NEITHER PRIMITIVE IS IN THIS FILE ANY MORE — the eviction moved the whole
+; primitive/sector layer to the page-1 tenant, so the CALSLT bodies now live in
+; basic/fat-prim-body.inc (read_sector/write_sector) and sub/format.asm (its own
+; private write path); D-SEEDHOLE2 removed the last two callerless shims that
+; still carried those names here. The port's provenance below is unchanged --
+; only the address of the code it describes is. Everything above the
 ; sector primitive — BPB parse, cluster-chain walk, 8.3 directory search, FAT12
 ; nibble pack/unpack, free-cluster allocation, multi-FAT sync, directory
 ; create/update — is byte-for-byte the same algorithm as disk.asm.
@@ -55,8 +61,11 @@
 ; AFTER the resident cursor in this file — see that file's header).
 ; (BYTE-IDENTICAL to the pre-eviction build), the repack build emits resident
 ; SHIMS under the SAME names instead (this file's `IF the repack build`
-; branches below), keeping every existing call site (`call read_sector`,
-; `call fat_find`, ...) unchanged. See basic/PROVENANCE.md §FAT12 primitive
+; branches below), keeping every existing call site (`call fat_mount`,
+; `call fat_find`, ...) unchanged. ⚠️ "Every existing call site" was the design
+; intent and is NOT what the tree grew into: later evictions moved whole CALLERS
+; across too, and five shims outlived their last main call site -- see the carve
+; note above the shims. See basic/PROVENANCE.md §FAT12 primitive
 ; eviction.
 
 ; --- repack: resident shims replacing the FAT12 primitive/sector layer -----
@@ -77,12 +86,12 @@
 ; fat_count_free (DE, not Cy -- rides back over FAT_WRTMP2 instead of a new
 ; RAM cell, see that cell's sysvars.inc comment).
 
-; --- the twelve UNIFORM shims -------------------------------------------
+; --- the UNIFORM shims (nine contiguous + fat_delete) --------------------
 ; Every one of these was, until 2026-07-27, an independent 34-byte copy of the
 ; SAME body: load a selector, bounce to the tenant, marshal Cy+HL+A back. Only
-; the DISKOP_SEL_* immediate differed. Thirteen copies (these twelve plus
-; fat_delete further down) cost 442 B of main page 1 to say one thing thirteen
-; times, on a build with 8 B free.
+; the DISKOP_SEL_* immediate differed. Thirteen copies (the twelve there were
+; then, plus fat_delete further down) cost 442 B of main page 1 to say one
+; thing thirteen times, on a build with 8 B free.
 ;
 ; Collapsed to `ld a,<selector>` + a jump into ONE shared body (fatprim_bounce),
 ; which is what a shim layer should have looked like from the start. The
@@ -90,22 +99,28 @@
 ; fatprim_bounce for the one substantive difference (a branchless tail that is
 ; flag-equivalent, not merely similar). Cost per shim: 4 B, was 34 B.
 ;
-; ORDER MATTERS ONLY FOR REACH: the twelve stubs are contiguous so every `jr`
-; lands within range of fatprim_bounce directly below them. fat_delete sits
-; after the resident fat_io_* cursor (~324 B away) and therefore uses `jp`.
+; ORDER MATTERS ONLY FOR REACH: the contiguous stubs sit directly above
+; fatprim_bounce so every `jr` lands within range. fat_delete sits after the
+; resident fat_io_* cursor (~324 B away) and therefore uses `jp`. Deleting a
+; stub only SHORTENS that distance, so reach survives a carve a fortiori.
+;
+; ⚠️ THE COUNT IS NOT STABLE, AND EVERY MOVE HAS BEEN IN BOTH DIRECTIONS: D-FCH
+; added fch_restage/fch_flush_active (14 contiguous), and D-SEEDHOLE2
+; (2026-08-22) removed five that no main caller had reached for weeks —
+; read_sector, write_sector, fat_read_fat_sector, fat_alloc_cluster,
+; fat_write_fat_entry, 20 B of page 1. A shim here is worth its 4 B only while
+; a MAIN caller exists; the sub-ROM tenant reaches the primitive directly, not
+; through this layer.
+;
+; 🔴 HOW THEY BECAME ORPHANS, because the shape will recur on the next eviction:
+; an eviction moves a CALLER into the sub-ROM but leaves its main-side shim
+; standing, and the evicted body's own `call <name>` then reads — to a seed
+; scrape keyed on NAMES — as a live external reference to the main label of that
+; name, when it in fact resolves sub-locally. `d3885b3` (fat_rand_* -> sub-ROM)
+; orphaned four of the five and `0cbf495` (the FILES walk -> sub-ROM) the fifth;
+; both were invisible to `make deadcode` until the seed set was rebuilt on
+; sub/basic-resident-abi.inc. docs/spec-deadcode-gate.md §11.
 
-
-; read_sector — see basic/fat-prim-body.inc for the full contract. (Cy=1 on a
-; missing sub-ROM is the same disposition class as a real I/O error — the
-; do_format-style contract; fatprim_bounce's `ret c` preserves that.)
-read_sector:
-                ld      a,DISKOP_SEL_READ_SECTOR
-                jr      fatprim_bounce
-
-; write_sector — see basic/fat-prim-body.inc for the full contract.
-write_sector:
-                ld      a,DISKOP_SEL_WRITE_SECTOR
-                jr      fatprim_bounce
 
 ; fat_mount — see basic/fat-prim-body.inc for the full contract.
 fat_mount:
@@ -122,26 +137,9 @@ fat_open:
                 ld      a,DISKOP_SEL_FAT_OPEN
                 jr      fatprim_bounce
 
-; fat_read_fat_sector — see basic/fat-prim-body.inc for the full contract.
-fat_read_fat_sector:
-                ld      a,DISKOP_SEL_FAT_READ_FAT_SECTOR
-                jr      fatprim_bounce
-
 ; fat_read_file_sector — see basic/fat-prim-body.inc for the full contract.
 fat_read_file_sector:
                 ld      a,DISKOP_SEL_FAT_READ_FILE_SECTOR
-                jr      fatprim_bounce
-
-; fat_alloc_cluster — see basic/fat-prim-body.inc for the full contract. HL is
-; a REAL caller-read output (field.asm:576/599) -- covered by the uniform
-; DISKOP_HL reload in fatprim_bounce, no bespoke handling needed.
-fat_alloc_cluster:
-                ld      a,DISKOP_SEL_FAT_ALLOC_CLUSTER
-                jr      fatprim_bounce
-
-; fat_write_fat_entry — see basic/fat-prim-body.inc for the full contract.
-fat_write_fat_entry:
-                ld      a,DISKOP_SEL_FAT_WRITE_FAT_ENTRY
                 jr      fatprim_bounce
 
 ; fat_flush_data_sector — see basic/fat-prim-body.inc for the full contract.

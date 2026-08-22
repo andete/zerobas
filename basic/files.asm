@@ -58,8 +58,9 @@
 ;
 ; Clean-room: original code. FILES/LFILES *semantics* + the 8.3 field layout and
 ; the one-entry-per-line printer form from the MSX-BASIC language reference and
-; black-box CF-3300 observation; the FAT12 directory walk reuses fat.asm
-; primitives (read_sector + the on-disk directory-entry layout, Microsoft FAT
+; black-box CF-3300 observation; the FAT12 directory walk reuses the engine's
+; primitives (read_sector, now in basic/fat-prim-body.inc on the tenant side,
+; + the on-disk directory-entry layout, Microsoft FAT
 ; spec). No disassembly. See file-channel-protocol.md and basic/PROVENANCE.md
 ; §FILES.
 
