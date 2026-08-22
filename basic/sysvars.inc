@@ -3255,14 +3255,35 @@ FOR_STK_END     equ     FOR_STK + FOR_DEPTH*FOR_FRAME   ; $EA92
 ; `used + 3` bytes and takes the first three bytes of SLOT 0 instead of the
 ; cells, so FN_FEND/FN_SLOTP/FN_RTYPE are never restored at all. Cells first,
 ; area second, and one base address covers both.
+; 🔴 D-DEFFNEV: THE TENANT ABI CELLS ARE PART OF THE FRAME, AND A NESTED CALL IS
+; WHAT SAYS SO. The draft kept the parse state in registers and on the Z80 stack,
+; where nesting takes care of itself. A tenant cannot: a CALSLT is not resumable,
+; so the phase, both cursors and the pending formal all have to live in RAM --
+; and `DEF FNB(X)=FNA(X+1)+X` evaluates FNA's actual IN THE MIDDLE of FNB's own
+; parse, through eval, through a second fn_call. Left above the area these five
+; cells would be outside the saved prefix and the inner call would eat them.
+; They go at the BOTTOM, inside FN_CELLS, so ONE `ldir` from FN_BASE carries
+; them exactly as it carries FN_FEND/FN_SLOTP/FN_RTYPE. o.nestsame is the row.
+; ⚠️ The price is 8 more bytes of Z80 stack per NESTED call (11 saved, not 3);
+; a top-level FNA(2) still saves 11 rather than the 110 a fixed block would.
 FN_BASE         equ     FOR_STK_END     ; $EA92: base of the whole DEF FN frame
-FN_FEND         equ     FN_BASE         ; 1 B: low byte of one-past the live frame.
+FN_PTR          equ     FN_BASE         ; 2 B: the call cursor, main <-> tenant
+FN_DPTR         equ     FN_BASE + 2     ; 2 B: the definition cursor, tenant-only
+FN_REQ          equ     FN_BASE + 4     ; 1 B: the request BOTH ways -- 1..5 out of
+                                        ; the tenant, $81..$84 back from the
+                                        ; servicer. Two disjoint alphabets in one
+                                        ; byte is what lets the tenant recover its
+                                        ; phase without a sixth cell there is no
+                                        ; room for.
+FN_KEY          equ     FN_BASE + 5     ; 2 B: the formal (or the $FFFF result slot)
+FN_TYP          equ     FN_BASE + 7     ; 1 B: its type -- and the ERR code on req 0
+FN_FEND         equ     FN_BASE + 8     ; 1 B: low byte of one-past the live frame.
                                         ; == low FN_PAREA means "no FN call in
                                         ; progress" -- the fast miss every ordinary
                                         ; variable reference takes.
-FN_SLOTP        equ     FN_BASE + 1     ; 1 B: low byte of the slot the NEXT formal takes
-FN_RTYPE        equ     FN_BASE + 2     ; 1 B: the FN's own resolved type (its result type)
-FN_CELLS        equ     3               ; ...the three above, saved WITH the live prefix
+FN_SLOTP        equ     FN_BASE + 9     ; 1 B: low byte of the slot the NEXT formal takes
+FN_RTYPE        equ     FN_BASE + 10    ; 1 B: the FN's own resolved type (its result type)
+FN_CELLS        equ     11              ; ...the eleven above, saved WITH the live prefix
 FN_PAREA        equ     FN_BASE + FN_CELLS  ; the shadow-parameter slots themselves
 FN_SLOTSZ       equ     11              ; [name0][name1][type][value:8] -- a scalar entry
 FN_AREA         equ     ((LINEBUF - FN_PAREA)/FN_SLOTSZ)*FN_SLOTSZ
@@ -3989,6 +4010,12 @@ SUBROM_IDX_FLDLOOK   equ 12     ; fld_lookup_tenant (sub/fldlook.asm): the FIELD
                                 ; $0040, above it, and index 13 below is that note
                                 ; being cashed.
 SUBROM_IDX_LRSETST   equ 13     ; lrset_store_tenant (sub/lrsetst.asm): the LSET/RSET
+SUBROM_IDX_DEFFN     equ 14     ; deffn_tenant (sub/deffn.asm): DEF FN's
+                                ; parse -- name resolve, the two lists
+                                ; walked together, the shadow slots and
+                                ; their ceiling. Page 0 because it calls
+                                ; NO eval: every one of those is a token
+                                ; walk over page-3 RAM (D-DEFFNEV).
                                 ; record-field STORE (space-fill the field, then copy
                                 ; min(srclen,width) bytes in left- or right-aligned),
                                 ; carved out of basic/field.asm to fund D-FLDARY's

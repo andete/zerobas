@@ -202,129 +202,127 @@ fn_call:
                 push    bc                  ; [size] -- pushed BELOW the block so
                                             ; fn_leave meets it first
                 ldir
-                ; --- resolve the name --------------------------------------
+
+; ===========================================================================
+; D-DEFFNEV: THE PARSE IS A SUB PAGE-0 TENANT, AND WHAT IS LEFT HERE IS A
+; FOUR-REQUEST SERVICER.
+;
+; The measurement that forced it: the verb costs 450 B of a main ROM with 222
+; free (docs/deffn-impl-2026-08-22.md §1, docs/spec-basic-dupspan2.md §3), and
+; everything between the frame save and the frame restore is TOKEN WALKING over
+; page-3 RAM -- name resolve, the two lists walked together, the delimiter
+; agreement, the shadow-slot open and its ceiling. None of it touches `eval`,
+; so all of it is page-0-tenant legal (tools/carve_scout.py --entries
+; skip_spaces,is_letter,var_name_key,var_str_type,if_skip_to_else: CLEAN), and
+; sub page 0 has 3 KB.
+;
+; ⚠️ A CALSLT IS NOT RESUMABLE, so this is not a co-routine in the CIRCLE sense
+; (docs/spec-circle-coroutine-space.md): the tenant re-enters at its top every
+; bounce and recovers its phase from FN_REQ, which carries BOTH directions --
+; the tenant's request on the way out, and the servicer's answer on the way
+; back. One byte, because the two alphabets are disjoint.
+;
+;   tenant -> main   1  evaluate the expression at FN_PTR; say what you got
+;                    2  store the value into (FN_KEY, FN_TYP)
+;                    3  snapshot the string result off the frame, then LEAVE
+;                    4  load (FN_KEY, FN_TYP) back into FAC, then LEAVE
+;                    0  raise FN_TYP
+;   main -> tenant  $81 a NUMERIC value (FAC/FACTYP/DE)
+;                   $82 a STRING value (STRPTR)
+;                   $83 stored
+;
+; 🎯 THERE IS NO BARE "LEAVE" REQUEST, AND THAT IS THE SAME RULE AS THE
+; INT-RESULT ONE BELOW READ FROM THE OTHER END. Both terminal requests do their
+; own work AND leave, because a bounce after either would be a bounce that
+; carries nothing: the string case has already been snapshotted and the numeric
+; case is sitting in DE. Two arms of the dispatch and eight bytes of tail, for a
+; round trip whose only content was "yes, now".
+;
+; 🎯 ONE EVALUATE REQUEST SERVES BOTH THE ACTUALS AND THE BODY, and that is
+; what makes the servicer small: main never decides WHICH expression it is
+; looking at, only what came back. `str_eval` is offered first and allowed to
+; DECLINE (D-STRPAREN's contract), so the answer is `$82` or `$81` and every
+; type rule -- a string actual in a numeric formal, a numeric body in a `$`
+; function, both directions of ERR 13 -- is the tenant's, where it is free.
+;
+; 🔴 THE LAST BOUNCE MAY NOT BE FOLLOWED BY ANOTHER. An INT-typed factor returns
+; its value in DE (FACTYP=2; FAC is not written), and a CALSLT clobbers DE --
+; so "load the result" and "leave" MUST be the same request. Splitting them
+; would hand every `DEFINT` function a leftover register, which is the exact
+; shape of the defect the 69-row battery found in the draft's own fn_leave
+; (docs/deffn-impl-2026-08-22.md §4.2, six rows, one identical -3392).
+; ===========================================================================
                 push    ix
                 pop     hl
                 inc     hl                  ; past the FN token
-                call    skip_spaces
-                call    var_name_key        ; BC = key, HL past the name + suffix
-                ld      a,(VARTYPE)
-                ld      (FN_RTYPE),a        ; the FN's own type IS its result
-                                            ; type (o.fnpct 2 vs o.fnbang 2.5,
-                                            ; o.defint 2 vs its control 2.5)
-                set     7,b
-                push    hl                  ; [ccur]
-                call    var_find_typed
-                jp      nc,fn_undef         ; ERR 18, and it outranks everything
-                inc     hl
-                inc     hl
-                inc     hl                  ; HL -> the recorded text pointer
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = the definition cursor
-                pop     hl                  ; HL = the call cursor
-                ld      a,low FN_PAREA
-                ld      (FN_SLOTP),a        ; the first formal takes slot 0
-                ; ⚠️ FN_FEND IS **NOT** RESET HERE, AND THAT IS o.nestsame's
-                ; WHOLE POINT. The actuals are evaluated in the CALLER's scope
-                ; (o.actualfirst: `X=5 : DEF FNA(X)=X*10` called as `FNA(X+1)`
-                ; is 60), so the outer frame has to stay visible until the last
-                ; one has been evaluated. fn_slot grows FN_FEND to cover the new
-                ; slots without ever shrinking it, and the exact frame is set
-                ; once the list closes.
-                ld      a,(de)
-                cp      '('
-                jr      nz,fn_body          ; `DEF FNA=7` consumes NO parentheses
-                                            ; at the call either -- `FNA(1)` is
-                                            ; `7 1`, two PRINT items (o.argnoarg)
-                call    skip_spaces
-                cp      '('
-                jp      nz,stmt_error       ; a list in the DEF and none at the
-                                            ; call is ERR 2 (o.barecall)
-                inc     hl
-                inc     de
-fn_bindlp:
-                ex      de,hl               ; HL = the definition cursor
-                call    skip_spaces
-                call    is_letter
-                jp      nc,stmt_error
-                call    var_name_key        ; BC = the formal's key
-                ld      a,(VARTYPE)
-                ex      de,hl               ; HL = call cursor, DE = def cursor
-                call    fn_bind_one
-                ; --- the two delimiters must AGREE -------------------------
-                ; This is the whole of the arity rule, and it is why ERR 2 comes
-                ; out of `FNA(1,2)` on a one-formal FN (o.toomany), `FNA(1)` on a
-                ; two-formal one (o.toofew), AND `DEF FNA(B(1))=...` (o.aryformal
-                ; -- the definition's next character is `(`, the call's is `)`).
-                ex      de,hl
-                call    skip_spaces
-                ex      de,hl
-                ld      c,a                 ; C = the definition's delimiter
-                call    skip_spaces
-                cp      c
-                jp      nz,stmt_error
-                inc     hl
-                inc     de
-                cp      ','
-                jp      z,fn_bindlp
-                cp      ')'
-                jp      nz,stmt_error
-fn_body:
-                ld      a,(FN_SLOTP)
-                ld      (FN_FEND),a         ; the live frame is EXACTLY this
-                                            ; call's own formals -- which is why
-                                            ; `DEF FNB(Y)=X` called from inside
-                                            ; FNA(X) reads the GLOBAL X
-                                            ; (o.dynscope -> 5, not 2)
-                ex      de,hl               ; HL = def cursor, DE = call cursor
-                push    de                  ; [ccur]
-                call    skip_spaces
-                cp      EQ_TOKEN            ; `=` crunches to $EF; a definition
-                jr      nz,fnb_noeq         ; without one is legal (o.noeq) and
-                inc     hl                  ; simply evaluates from here
-fnb_noeq:
-                ld      a,(FN_RTYPE)
+                ld      (FN_PTR),hl
+                xor     a
+                ld      (FN_REQ),a          ; phase 0: nothing has been asked yet
+fn_lp:
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
+                call    subrom_call         ; A = the tenant's request
+                jp      c,subrom_absent_error
+                dec     a
+                jr      z,fn_ev             ; 1 evaluate
+                dec     a
+                jr      z,fn_st             ; 2 store
+                dec     a
+                jr      z,fn_sn             ; 3 snapshot, then leave
+                dec     a
+                jr      z,fn_ld             ; 4 load, then leave
+                ld      a,(FN_TYP)          ; 0 raise -- ERR 18 / 13 / 5, all of
+                jp      raise_error         ; them the tenant's own disposition
+; --- request 1: evaluate the expression at FN_PTR --------------------------
+fn_ev:
+                ld      hl,(FN_PTR)
+                call    str_eval            ; offered first, allowed to decline
+                ld      a,$82
+                jr      c,fn_ev_x
+                call    eval
+                ld      a,$81
+fn_ev_x:
+                ld      (FN_PTR),hl
+                ld      (FN_REQ),a
+                jr      fn_lp
+; --- request 2: bind the value into the shadow slot the tenant just opened -
+fn_st:
+                ld      bc,(FN_KEY)
+                ld      a,(FN_TYP)
                 cp      DEFTBL_STR
-                jr      z,fnb_str
-                call    eval                ; the body, in the callee's own scope
-                ; 🎯 THE RESULT COERCION RIDES THE VARIABLE STORE RATHER THAN
-                ; DUPLICATING THE CODEC. By now the formals have been read and
-                ; slot 0 is dead, so the value goes through var_store_fac /
-                ; var_load_fac on a scratch slot keyed $FFFF -- a key no formal
-                ; can carry, since a formal's name0 is always a letter. That is
-                ; the int-truncate / single-round / double-widen ladder spec
-                ; §11.2 already owns, and it is what makes `DEF FNA%(X)=X/2`
-                ; answer 2 where its `!` twin answers 2.5.
-                ld      hl,FN_PAREA
-                ld      (hl),$FF
-                inc     hl
-                ld      (hl),$FF
-                inc     hl
-                ld      a,(FN_RTYPE)
-                ld      (hl),a
-                ld      hl,FN_FEND
-                ld      (hl),low FN_PAREA + FN_SLOTSZ
-                ld      bc,$FFFF
-                call    var_store_fac       ; A = FN_RTYPE still
-                ld      bc,$FFFF
-                ld      a,(FN_RTYPE)
-                call    var_load_fac        ; FAC/FACTYP/DE = the coerced result
-                pop     hl                  ; [ccur]
-                jr      fn_leave
-fnb_str:
-                call    str_eval
-                jp      nc,fn_typemm        ; a `$` function whose body is not a
-                                            ; string is ERR 13
-                ; ⚠️ SNAPSHOT BEFORE THE FRAME GOES BACK. `DEF FNA$(X$)=X$` would
-                ; otherwise return STRPTR pointing INTO the shadow slot, which
-                ; fn_leave is about to overwrite with the outer frame. The
-                ; measured rows all concatenate (b.str, o.quotedcolon, o.defstr)
-                ; and so all happen to land in a temp already -- which is exactly
-                ; the kind of accident this project does not leave standing.
+                jr      z,fn_st_s
+                call    var_store_fac       ; coerces INTO the slot -- the shadow
+                jr      fn_st_x             ; lookup in sub/arrays.asm routes it
+fn_st_s:
+                ld      de,(STRPTR)
+                ld      a,1                 ; the `$` unifier type (slice-4c)
+                call    str_set_key
+fn_st_x:
+                ld      a,$83
+                ld      (FN_REQ),a
+                jr      fn_lp
+; --- request 3: a string result must leave the frame before the frame does -
+; ⚠️ `DEF FNA$(X$)=X$` would otherwise return STRPTR pointing INTO the shadow
+; slot that fn_leave is about to overwrite with the outer frame. Every measured
+; row happens to concatenate and so lands in a temp anyway -- which is exactly
+; the kind of accident this project does not leave standing.
+fn_sn:
                 call    str_snapshot_to_temp    ; reads STRPTR itself
                 ld      (STRPTR),hl
-                pop     hl                  ; [ccur]
+                jr      fn_fin
+; --- request 4: coerce the result to the FN's own type, THEN leave ---------
+; The coercion rides the variable store rather than duplicating the codec: by
+; now the formals have been read and slot 0 is dead, so the tenant re-keys it
+; $FFFF -- a key no formal can carry, since a formal's name0 is always a letter
+; -- and this is the int-truncate / single-round / double-widen ladder spec
+; §11.2 already owns. It is what makes `DEF FNA%(X)=X/2` answer 2 where its `!`
+; twin answers 2.5.
+fn_ld:
+                ld      bc,(FN_KEY)
+                ld      a,(FN_TYP)
+                call    var_load_fac        ; FAC/FACTYP/DE = the coerced result
+fn_fin:
+                ld      hl,(FN_PTR)         ; the cursor past the whole call
+
 ; 🔴 DE IS THE RESULT AND THE RESTORE IS AN `ldir`, WHICH IS THE WHOLE REASON
 ; THIS IS FOUR INSTRUCTIONS LONGER THAN IT LOOKS. An int-typed factor returns
 ; its value in DE (FACTYP=2; FAC is not written), so the draft's `ldir` +
@@ -349,112 +347,19 @@ fn_leave:
                 ld      e,c                 ; DE = the result, intact
                 ret
 
-; --- fn_bind_one: evaluate ONE actual and bind it to ONE formal -------------
-; in:  A = the formal's resolved type, BC = its key, HL = the call cursor,
-;      DE = the definition cursor.
-; out: HL past the actual, DE unchanged. Clobbers A, BC.
-;
-; 🎯 str_eval IS TRIED FIRST FOR BOTH KINDS OF FORMAL, AND THAT ONE PROBE GIVES
-; BOTH DIRECTIONS OF ERR 13 FOR FREE: a string actual handed to a numeric formal
-; (`FNA("hi")` -> o.strnum) and a numeric actual handed to a string one
-; (`FNA$(1)` -> o.numstr). It is the same offer-then-decline str_eval_paren was
-; built for, so a numeric actual costs one refused call and nothing else.
-fn_bind_one:
-                push    de                  ; [dcur]
-                push    bc                  ; [fkey]
-                push    af                  ; [ftype]
-                call    str_eval            ; CF set -> the actual IS a string
-                jr      c,fnb1_str
-                pop     af
-                cp      DEFTBL_STR
-                jp      z,fn_typemm         ; string formal, numeric actual
-                push    af
-                call    eval                ; HL advanced; FAC/FACTYP = the value
-                pop     af
-                pop     bc
-                push    hl                  ; [ccur]
-                call    fn_slot             ; write the slot header; A survives
-                call    var_store_fac       ; coerce the live value INTO the slot
-                                            ; -- the shadow lookup in sub/
-                                            ; arrays.asm is what routes it there
-                jr      fnb1_done
-fnb1_str:
-                pop     af
-                cp      DEFTBL_STR
-                jp      nz,fn_typemm        ; numeric formal, string actual
-                pop     bc
-                push    hl                  ; [ccur]
-                ld      a,1                 ; the `$` unifier type (slice-4c):
-                                            ; string scalars key at type 1
-                call    fn_slot
-                ld      de,(STRPTR)
-                call    str_set_key
-fnb1_done:
-                pop     hl                  ; [ccur]
-                pop     de                  ; [dcur]
-                ret
-
-; --- fn_slot: open the next shadow slot for (BC = key, A = type) ------------
-; out: A = type (unchanged), BC unchanged, HL clobbered. Raises ERR 5 past the
-; ceiling.
-;
-; 🎯 THE CEILING IS A DIVISION, NOT A RULE. FN_PAREA_END is FN_PAREA + 9*11
-; because 11 is a scalar entry and the window holds nine of them -- the same
-; 100/11 that predicts the reference's own measured nine (o.p9 -> 1, o.p10/p11/
-; p12/p16 -> ERR 5, all AT THE CALL, while `DEF` with ten formals is OK).
-; Nothing here spells 9.
-;
-; ⚠️ FN_FEND GROWS, IT NEVER SHRINKS, and that is what keeps the OUTER frame
-; visible to the actuals still to be evaluated (o.nestsame). The exact frame is
-; set from FN_SLOTP once the list closes.
-; 🔴 DE IS THE VALUE AND THIS ROUTINE MAY NOT TOUCH IT. The type is stashed on
-; the STACK rather than in E, and that is a measured fix, not caution: the draft
-; used `ld e,a` and every numeric formal bound to its own TYPE BYTE instead of
-; its actual. `var_store_fac` takes the live RHS in DE whenever FACTYP is 2
-; (fac_to_int_strict is `cp 2 / ret z` -- DE already holds it), so E carrying 8
-; made `DEF FNA(X)=X+1 : FNA(2)` answer 9, `o.p3` answer 8 and `o.global`
-; answer 11 -- 26 rows, every one of them a plausible-looking number.
-fn_slot:
-                push    af                  ; [type] -- NOT in E: see above
-                ld      a,(FN_SLOTP)
-                cp      low FN_PAREA_END
-                jp      nc,fn_toomany       ; ERR 5 -- past the ninth formal
-                ld      l,a
-                ld      h,high FN_PAREA
-                ld      (hl),b
-                inc     hl
-                ld      (hl),c
-                inc     hl
-                pop     af
-                ld      (hl),a              ; the slot is a scalar entry, verbatim
-                push    af
-                ld      a,l
-                add     a,FN_SLOTSZ-2       ; HL is at slot+2
-                ld      (FN_SLOTP),a
-                ld      hl,FN_FEND
-                cp      (hl)
-                jr      c,fnsl_x
-                ld      (hl),a
-fnsl_x:
-                pop     af
-                ret
-
-; --- the error tails -------------------------------------------------------
-; ⚠️ THREE OF THE FIVE ARE `jp`s TO SOMEBODY ELSE'S TAIL, WHICH IS D-DUPSPAN'S
-; DOING: it collapsed thirteen byte-identical `ld a,N / jp raise_error` spans
-; into `gb_illegal` (ERR 5) and `pl_syntax` (ERR 2) and left them as the tree's
-; canonical ones. ERR 2 goes through stmt_error rather than pl_syntax because it
-; must also clear PRDEST and honour a pending fault (D-STMTPEND).
-fn_undef:                                   ; ERR 18 Undefined user function --
-                                            ; the message already ships (errmsg
-                                            ; tenant, em_undef_fn); before this
-                                            ; verb NOTHING could reach it
-                ld      a,18
-                jp      raise_error
-fn_typemm:                                  ; ERR 13 Type mismatch
-                ld      a,13
-                jp      raise_error
-fn_toomany:
-                jp      gb_illegal          ; ERR 5 Illegal function call
+; --- the one error tail left --------------------------------------------
+; 🎯 ERR 18, ERR 13 AND ERR 5 ARE GONE FROM THIS FILE, AND NOT BECAUSE THEY
+; STOPPED BEING RAISED. Every one of them is a disposition the TENANT decides --
+; the name was not found, the actual's type did not match the formal's, the
+; tenth formal was reached -- so each is now a code in FN_TYP that the servicer's
+; own `ld a,(FN_TYP) / jp raise_error` raises. Three tails, thirteen bytes, and
+; `make deadcode` is what would have caught them had they been left behind.
+; ⚠️ ERR 7 STAYS, because it is the ONE disposition the tenant cannot reach: the
+; Z80-stack floor is tested in fn_enter above, before any tenant call, and SP is
+; not something a routine under CALSLT may move.
 fn_deep:
-                jp      gosub_stk_over      ; ERR 7 Out of memory
+                jp      gosub_stk_over      ; ERR 7 -- `DEF FNA(X)=FNA(X)` is Out
+                                            ; of memory on both references
+                                            ; (b.recurse), and a floor is the only
+                                            ; thing between that answer and a
+                                            ; wrecked stack

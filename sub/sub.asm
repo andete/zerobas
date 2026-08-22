@@ -197,6 +197,12 @@ sub_p0_table:
                                                 ;   note ("INDEX 13 IS FREE and the
                                                 ;   table has no cap") is now cashed.
 
+                jp      deffn_tenant            ; index 14 (SUBROM_IDX_DEFFN): DEF FN's
+                                                ;   PARSE (sub/deffn.asm) -- D-DEFFNEV.
+                                                ;   A CALSLT is not resumable, so this is
+                                                ;   re-entered once per bounce and recovers
+                                                ;   its phase from FN_REQ.
+
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to SUBROM_ENTRY_BASE_P0 mapped slot 3-2 into PAGE 0 and that
 ; page-3 RAM is reachable from there: stamp SUB_PING with the page-0 tag and
@@ -317,6 +323,7 @@ sis_spin:
 ; resident twin of this shape any more; pu_deref_body, its one low-region
 ; callee, is inlined here in 5 B.
                 include "lrsetst.asm"
+                include "deffn.asm"
 
 ; --- sub-local is_letter (byte-identical own-design clone) ------------------
 ; The resident copy stays in the main ROM (basic/interp.asm) for the rest of the
