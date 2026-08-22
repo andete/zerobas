@@ -56,6 +56,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Language / verb surface**
 
+- [ ] 💰 **`DEF FN` IS WRITTEN, MEASURED GREEN, AND 350 B TOO BIG — the FUNDING
+      is the whole remaining job.** Filed 2026-08-22 by D-DEFFN,
+      [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md); the code
+      is the branch **`deffn-draft`** (`git diff main..deffn-draft`), which does
+      NOT build — it stops at the `$8000` ceiling assert, which is the reading.
+      **450 B of main ROM** (`__MEAS_PAGE1_END` = `$818C`, page-0 low unmoved)
+      against **100 B free (2026-08-22, at `b1a01be`)**. `make basic-reloc`
+      prints all four walls — read them, never quote this line.
+      `make deffn-acceptance` on a G6/G7/G8-off scaffold:
+      **0 of 69 subject rows divergent, 0 of 8 controls failed, 3 of 3 claims
+      PASS**. 🔴 **The 403 B in `scratchpad/dupspan_sweep.py` is NOT 403 B of
+      supply** — the tool says out loud it cannot decide position-independence,
+      and reading the groups by hand puts the safe subset near 200. The second
+      source is evicting the PARSING (name resolve, list open, bind loop,
+      `fn_slot`, all of `ex_deffn` — ~180 B, all page-0-tenant legal, no `eval`
+      in any of it) into the sub page 0 that has 3 KB. ⚠️ **Both figures are
+      estimates and both must be BUILT to be believed**, which is the whole
+      lesson of this slice: 100 + 200 + 110 = 410 against 450, so a third source
+      or a shave is needed and saying so now is cheaper than finding out later.
+
+- [ ] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
+      it.** Filed 2026-08-22 by D-DEFFN,
+      [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md) §8. The
+      draft binds in place: `FNA(P,Q)` called as `FNA(X, X*2)` from inside an FN
+      whose own formal is `X` writes slot 0 before the second actual reads it.
+      The reference's behaviour is UNMEASURED — the 82-row design set has no
+      case where a caller's formal is read by a LATER actual of a callee that
+      overwrites it. Needs a reference reading before the fix is priced; the
+      alternative (evaluate every actual into a stack temp first) is ~30 B in a
+      region that has none.
+
+- [ ] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
+      2026-08-22 by D-DEFFN,
+      [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md) §8. The
+      slot holds a `[len][ptr]` descriptor and `strheap_gc`'s walk enumerates
+      the variable chain and the temp-descriptor stack, not this area. No
+      measured row provokes a collection inside an FN call (all three string
+      rows concatenate into a temp), so this is a hole in the ROW SET as much as
+      in the code — the fix is either a `sg_walk_fnframe` or a snapshot at bind
+      time, and the ROW that would catch it does not exist yet.
+
 - [ ] 🔴 **`PAINT`'s 4th-argument `Syntax error` is raised AFTER the fill on both
       references and BEFORE it here.** Filed 2026-08-22 by D-DUPSPAN,
       [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §6.1.
@@ -4176,6 +4217,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       *“`DEFTBL_STR` SHOULD BE `3`, NOT `1`”*, line 4072.
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
+
+- [ ] 🔴 **A PAGE-ALIGNMENT ASSERT WITH NO ENFORCEMENT IS A LANDMINE FOR THE
+      NEXT UNRELATED EDIT — one fired, and the class is not swept.** Filed
+      2026-08-22 by D-DEFFN,
+      [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md) §4.5.
+      `sub/deftype.asm`'s `edt_codes` guard (`IF (high edt_codes) != (high
+      (edt_codes+3))`) fired because a 40-byte routine was added to a file
+      INCLUDED AHEAD OF IT. The guard was right and useless: *"never let an
+      unrelated sub-ROM edit relocate this table"* is not a rule anyone can
+      keep, and every future page-0 tenant re-rolls the dice. ✅ That one is
+      now ENFORCED (≤3 B of pad, assert kept as a proof). ⚠️ **The SWEEP is
+      what is open**: `basic/usr.asm`'s `IF (low USRTAB) + 18 > 255` is the same
+      shape over a sysvar rather than a ROM label, and nothing has walked the
+      tree for the rest. A `db UNDEFINED_SYMBOL` assert that a stranger's edit
+      can trip is a build break with a diagnostic and no remedy.
 
 - [ ] 🔴 **NOTHING POLICES A RAM FREE-SPACE CLAIM, AND THE ONE IN THE MAP WAS
       36x WRONG.** Filed 2026-08-22 by the D-DEFFN RAM hunt,

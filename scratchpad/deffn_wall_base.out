@@ -1,0 +1,555 @@
+mkdir -p build
+pasmo --bin basic/main.asm build/basic-reloc.rom build/basic-reloc.sym
+WARNING: Switching to 3 pass mode on line 786 of file basic/sysvars.inc
+WARNING: Var APOS_MARK is never used on line 521 of file basic/sysvars.inc
+WARNING: Var BINARY_ID is never used on line 153 of file basic/sysvars.inc
+WARNING: Var BPB_BYTSPERSEC is never used on line 2564 of file basic/sysvars.inc
+WARNING: Var BPB_FATSZ16 is never used on line 2569 of file basic/sysvars.inc
+WARNING: Var BPB_NUMFATS is never used on line 2567 of file basic/sysvars.inc
+WARNING: Var BPB_ROOTENTCNT is never used on line 2568 of file basic/sysvars.inc
+WARNING: Var BPB_RSVDSECCNT is never used on line 2566 of file basic/sysvars.inc
+WARNING: Var BPB_SECPERCLUS is never used on line 2565 of file basic/sysvars.inc
+WARNING: Var BSAVE_DISK_ID is never used on line 2536 of file basic/sysvars.inc
+WARNING: Var CAS_HDRNAME is never used on line 3127 of file basic/sysvars.inc
+WARNING: Var CLOC is never used on line 72 of file basic/sysvars.inc
+WARNING: Var CMASK is never used on line 73 of file basic/sysvars.inc
+WARNING: Var CS120_LOW is never used on line 130 of file basic/sysvars.inc
+WARNING: Var CS240_LOW is never used on line 131 of file basic/sysvars.inc
+WARNING: Var DATALINE is never used on line 3223 of file basic/sysvars.inc
+WARNING: Var DATAPTR is never used on line 3222 of file basic/sysvars.inc
+WARNING: Var DB_CUR is never used on line 3389 of file basic/sysvars.inc
+WARNING: Var DIRENT_FILESIZE is never used on line 2573 of file basic/sysvars.inc
+WARNING: Var DIRENT_FIRSTCLUS is never used on line 2572 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_ALLOC_CLUSTER is never used on line 2682 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_READ_FAT_SECTOR is never used on line 2680 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_WRITE_FAT_ENTRY is never used on line 2683 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_NAME_CMP is never used on line 2678 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_READ_SECTOR is never used on line 2674 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_WRITE_SECTOR is never used on line 2675 of file basic/sysvars.inc
+WARNING: Var DSKIO_ENTRY is never used on line 2562 of file basic/sysvars.inc
+WARNING: Var DSV_PTR is never used on line 2481 of file basic/sysvars.inc
+WARNING: Var ENDPTR is never used on line 706 of file basic/sysvars.inc
+WARNING: Var EOC is never used on line 2574 of file basic/sysvars.inc
+WARNING: Var FAT_B0 is never used on line 2621 of file basic/sysvars.inc
+WARNING: Var FAT_B1 is never used on line 2622 of file basic/sysvars.inc
+WARNING: Var FAT_BYTEIDX is never used on line 2619 of file basic/sysvars.inc
+WARNING: Var FAT_CLUSSEC is never used on line 2612 of file basic/sysvars.inc
+WARNING: Var FAT_DIRREM is never used on line 2625 of file basic/sysvars.inc
+WARNING: Var FAT_DIRSEC is never used on line 2624 of file basic/sysvars.inc
+WARNING: Var FAT_FATSEC is never used on line 2620 of file basic/sysvars.inc
+WARNING: Var FAT_FATSTART is never used on line 2607 of file basic/sysvars.inc
+WARNING: Var FAT_FIRSTDATA is never used on line 2610 of file basic/sysvars.inc
+WARNING: Var FAT_FIRSTROOT is never used on line 2608 of file basic/sysvars.inc
+WARNING: Var FAT_NAMEPTR is never used on line 2623 of file basic/sysvars.inc
+WARNING: Var FAT_NUMFATS is never used on line 2615 of file basic/sysvars.inc
+WARNING: Var FAT_PARITY is never used on line 2618 of file basic/sysvars.inc
+WARNING: Var FAT_ROOTSECS is never used on line 2609 of file basic/sysvars.inc
+WARNING: Var FAT_SECPERCLUS is never used on line 2606 of file basic/sysvars.inc
+WARNING: Var FAT_SECPERFAT is never used on line 2616 of file basic/sysvars.inc
+WARNING: Var FCH_CTXSZ is never used on line 3040 of file basic/sysvars.inc
+WARNING: Var FILES_ENTIDX is never used on line 2518 of file basic/sysvars.inc
+WARNING: Var FLD_DESC is never used on line 3091 of file basic/sysvars.inc
+WARNING: Var FMT_DESC is never used on line 3090 of file basic/sysvars.inc
+WARNING: Var FMT_SEC is never used on line 3089 of file basic/sysvars.inc
+WARNING: Var FPNUM_SIZE is never used on line 3309 of file basic/sysvars.inc
+WARNING: Var FWBUF is never used on line 2603 of file basic/sysvars.inc
+WARNING: Var FWR_DIRSEC is never used on line 2637 of file basic/sysvars.inc
+WARNING: Var GFX_ARCF is never used on line 607 of file basic/sysvars.inc
+WARNING: Var GFX_ASPMAJ is never used on line 605 of file basic/sysvars.inc
+WARNING: Var GFX_ASPS is never used on line 606 of file basic/sysvars.inc
+WARNING: Var GFX_BAD is never used on line 87 of file basic/sysvars.inc
+WARNING: Var GFX_CNT is never used on line 584 of file basic/sysvars.inc
+WARNING: Var GFX_COLOR_OFST is never used on line 63 of file basic/sysvars.inc
+WARNING: Var GFX_CPHASE is never used on line 680 of file basic/sysvars.inc
+WARNING: Var GFX_CS_AX is never used on line 623 of file basic/sysvars.inc
+WARNING: Var GFX_CS_AY is never used on line 626 of file basic/sysvars.inc
+WARNING: Var GFX_CS_M2 is never used on line 1748 of file basic/sysvars.inc
+WARNING: Var GFX_CX is never used on line 579 of file basic/sysvars.inc
+WARNING: Var GFX_CY is never used on line 580 of file basic/sysvars.inc
+WARNING: Var GFX_DESC is never used on line 1786 of file basic/sysvars.inc
+WARNING: Var GFX_DJ is never used on line 86 of file basic/sysvars.inc
+WARNING: Var GFX_DMAJ is never used on line 582 of file basic/sysvars.inc
+WARNING: Var GFX_DMIN is never used on line 583 of file basic/sysvars.inc
+WARNING: Var GFX_ENEG is never used on line 646 of file basic/sysvars.inc
+WARNING: Var GFX_EOCT is never used on line 643 of file basic/sysvars.inc
+WARNING: Var GFX_ERR is never used on line 581 of file basic/sysvars.inc
+WARNING: Var GFX_EU14 is never used on line 644 of file basic/sysvars.inc
+WARNING: Var GFX_EVX is never used on line 610 of file basic/sysvars.inc
+WARNING: Var GFX_EVY is never used on line 611 of file basic/sysvars.inc
+WARNING: Var GFX_FILLCNT is never used on line 593 of file basic/sysvars.inc
+WARNING: Var GFX_FULLW is never used on line 612 of file basic/sysvars.inc
+WARNING: Var GFX_M is never used on line 628 of file basic/sysvars.inc
+WARNING: Var GFX_PFY is never used on line 1693 of file basic/sysvars.inc
+WARNING: Var GFX_PGEN_BASE is never used on line 62 of file basic/sysvars.inc
+WARNING: Var GFX_PPITCH is never used on line 1926 of file basic/sysvars.inc
+WARNING: Var GFX_PSCX is never used on line 1696 of file basic/sysvars.inc
+WARNING: Var GFX_PSCY is never used on line 1697 of file basic/sysvars.inc
+WARNING: Var GFX_PSPA is never used on line 1698 of file basic/sysvars.inc
+WARNING: Var GFX_PTESTX is never used on line 1691 of file basic/sysvars.inc
+WARNING: Var GFX_PTESTY is never used on line 1692 of file basic/sysvars.inc
+WARNING: Var GFX_PTOP is never used on line 1689 of file basic/sysvars.inc
+WARNING: Var GFX_PX is never used on line 620 of file basic/sysvars.inc
+WARNING: Var GFX_PXL is never used on line 1694 of file basic/sysvars.inc
+WARNING: Var GFX_PXR is never used on line 1695 of file basic/sysvars.inc
+WARNING: Var GFX_PY is never used on line 622 of file basic/sysvars.inc
+WARNING: Var GFX_QD is never used on line 619 of file basic/sysvars.inc
+WARNING: Var GFX_QX is never used on line 617 of file basic/sysvars.inc
+WARNING: Var GFX_QY is never used on line 618 of file basic/sysvars.inc
+WARNING: Var GFX_R is never used on line 604 of file basic/sysvars.inc
+WARNING: Var GFX_SATR_BASE is never used on line 688 of file basic/sysvars.inc
+WARNING: Var GFX_SDX is never used on line 587 of file basic/sysvars.inc
+WARNING: Var GFX_SDY is never used on line 588 of file basic/sysvars.inc
+WARNING: Var GFX_SMIN is never used on line 586 of file basic/sysvars.inc
+WARNING: Var GFX_SNEG is never used on line 645 of file basic/sysvars.inc
+WARNING: Var GFX_SOCT is never used on line 639 of file basic/sysvars.inc
+WARNING: Var GFX_SPAT_BASE is never used on line 687 of file basic/sysvars.inc
+WARNING: Var GFX_STEEP is never used on line 585 of file basic/sysvars.inc
+WARNING: Var GFX_SU14 is never used on line 642 of file basic/sysvars.inc
+WARNING: Var GFX_SVX is never used on line 608 of file basic/sysvars.inc
+WARNING: Var GFX_SVY is never used on line 609 of file basic/sysvars.inc
+WARNING: Var GFX_TX1 is never used on line 589 of file basic/sysvars.inc
+WARNING: Var GFX_TX2 is never used on line 591 of file basic/sysvars.inc
+WARNING: Var GFX_TY1 is never used on line 590 of file basic/sysvars.inc
+WARNING: Var GFX_TY2 is never used on line 592 of file basic/sysvars.inc
+WARNING: Var GFX_WE_O is never used on line 648 of file basic/sysvars.inc
+WARNING: Var GFX_WE_P is never used on line 647 of file basic/sysvars.inc
+WARNING: Var GFX_WRAPF is never used on line 649 of file basic/sysvars.inc
+WARNING: Var GFX_WS_O is never used on line 631 of file basic/sysvars.inc
+WARNING: Var GFX_WS_P is never used on line 630 of file basic/sysvars.inc
+WARNING: Var GFX_YSTEP is never used on line 594 of file basic/sysvars.inc
+WARNING: Var GP_CLIDX is never used on line 3064 of file basic/sysvars.inc
+WARNING: Var GP_CLUS is never used on line 3063 of file basic/sysvars.inc
+WARNING: Var GP_FLAGS is never used on line 3068 of file basic/sysvars.inc
+WARNING: Var GP_OLDNSEC is never used on line 3067 of file basic/sysvars.inc
+WARNING: Var GP_PHYS is never used on line 3066 of file basic/sysvars.inc
+WARNING: Var GP_RECLEN is never used on line 3115 of file basic/sysvars.inc
+WARNING: Var GP_SEC is never used on line 3061 of file basic/sysvars.inc
+WARNING: Var GP_SECINCL is never used on line 3065 of file basic/sysvars.inc
+WARNING: Var GP_WITHIN is never used on line 3062 of file basic/sysvars.inc
+WARNING: Var HORNER_ACC is never used on line 3637 of file basic/sysvars.inc
+WARNING: Var HORNER_CNT is never used on line 3639 of file basic/sysvars.inc
+WARNING: Var HORNER_G is never used on line 3620 of file basic/sysvars.inc
+WARNING: Var HORNER_PTR is never used on line 3652 of file basic/sysvars.inc
+WARNING: Var INITXT is never used on line 15 of file basic/sysvars.inc
+WARNING: Var LE_OP_RELINK is never used on line 2752 of file basic/sysvars.inc
+WARNING: Var LE_OP_STORE is never used on line 2751 of file basic/sysvars.inc
+WARNING: Var LINENO_ACC_STOP is never used on line 828 of file basic/sysvars.inc
+WARNING: Var LINL32 is never used on line 105 of file basic/sysvars.inc
+WARNING: Var MATH_BREAK is never used on line 3605 of file basic/sysvars.inc
+WARNING: Var MATH_R is never used on line 3625 of file basic/sysvars.inc
+WARNING: Var MATH_RECIP is never used on line 3601 of file basic/sysvars.inc
+WARNING: Var MATH_SIGN is never used on line 3597 of file basic/sysvars.inc
+WARNING: Var MCLPTR is never used on line 2915 of file basic/sysvars.inc
+WARNING: Var MSGESC_LO is never used on line 4050 of file basic/sysvars.inc
+WARNING: Var NEW_TOKEN is never used on line 2159 of file basic/sysvars.inc
+WARNING: Var PLAY_DEF_NOTEL is never used on line 2971 of file basic/sysvars.inc
+WARNING: Var PLAY_DEF_OCTAVE is never used on line 2970 of file basic/sysvars.inc
+WARNING: Var PLAY_DEF_TEMPO is never used on line 2972 of file basic/sysvars.inc
+WARNING: Var PLAY_DEF_VOLUME is never used on line 2973 of file basic/sysvars.inc
+WARNING: Var PLAY_OP_NOTE is never used on line 2988 of file basic/sysvars.inc
+WARNING: Var PLYCNT is never used on line 2918 of file basic/sysvars.inc
+WARNING: Var PLY_BUFEND is never used on line 2986 of file basic/sysvars.inc
+WARNING: Var PLY_LASTDUR is never used on line 2985 of file basic/sysvars.inc
+WARNING: Var PLY_NUM is never used on line 2984 of file basic/sysvars.inc
+WARNING: Var QD_PUT is never used on line 2924 of file basic/sysvars.inc
+WARNING: Var QD_PUTBAK is never used on line 2926 of file basic/sysvars.inc
+WARNING: Var QD_SIZE is never used on line 2927 of file basic/sysvars.inc
+WARNING: Var QUEUEN is never used on line 2916 of file basic/sysvars.inc
+WARNING: Var QUOTE_REM is never used on line 520 of file basic/sysvars.inc
+WARNING: Var RND_ACCLE is never used on line 3699 of file basic/sysvars.inc
+WARNING: Var RND_AJ is never used on line 3714 of file basic/sysvars.inc
+WARNING: Var RND_CARRY is never used on line 3716 of file basic/sysvars.inc
+WARNING: Var RND_I is never used on line 3706 of file basic/sysvars.inc
+WARNING: Var RND_IJ is never used on line 3711 of file basic/sysvars.inc
+WARNING: Var RND_J is never used on line 3709 of file basic/sysvars.inc
+WARNING: Var RND_K is never used on line 3720 of file basic/sysvars.inc
+WARNING: Var RND_LE is never used on line 3693 of file basic/sysvars.inc
+WARNING: Var RND_STATE is never used on line 3684 of file basic/sysvars.inc
+WARNING: Var RN_OLD is never used on line 2841 of file basic/sysvars.inc
+WARNING: Var SL_DELHI is never used on line 2795 of file basic/sysvars.inc
+WARNING: Var SL_DELLO is never used on line 2794 of file basic/sysvars.inc
+WARNING: Var SL_SLOT is never used on line 2126 of file basic/sysvars.inc
+WARNING: Var SUBROM_IDX_INTTEST is never used on line 3742 of file basic/sysvars.inc
+WARNING: Var SUB_INT_DELTA is never used on line 3410 of file basic/sysvars.inc
+WARNING: Var TKDCOUNT is never used on line 3263 of file basic/sysvars.inc
+WARNING: Var TKEXP is never used on line 3266 of file basic/sysvars.inc
+WARNING: Var TKEXPD is never used on line 3267 of file basic/sysvars.inc
+WARNING: Var TKEXPSIGN is never used on line 3268 of file basic/sysvars.inc
+WARNING: Var TKFLAGS is never used on line 3265 of file basic/sysvars.inc
+WARNING: Var TKHAVESIG is never used on line 3261 of file basic/sysvars.inc
+WARNING: Var TKINTLEN is never used on line 3260 of file basic/sysvars.inc
+WARNING: Var TKLEAD is never used on line 3271 of file basic/sysvars.inc
+WARNING: Var TKLNUM is never used on line 740 of file basic/sysvars.inc
+WARNING: Var TKNAME is never used on line 764 of file basic/sysvars.inc
+WARNING: Var TKNZPOS is never used on line 3262 of file basic/sysvars.inc
+WARNING: Var TKPOS is never used on line 3259 of file basic/sysvars.inc
+WARNING: Var TKRADIX is never used on line 766 of file basic/sysvars.inc
+WARNING: Var TKRTOK is never used on line 767 of file basic/sysvars.inc
+WARNING: Var TKSRCSAVE is never used on line 3287 of file basic/sysvars.inc
+WARNING: Var TKSTORED is never used on line 3264 of file basic/sysvars.inc
+WARNING: Var TOKBUFSZ is never used on line 853 of file basic/sysvars.inc
+WARNING: Var TOKMAX_BODY is never used on line 854 of file basic/sysvars.inc
+WARNING: Var TRAPSTK_END is never used on line 1203 of file basic/sysvars.inc
+WARNING: Var VCBC is never used on line 2921 of file basic/sysvars.inc
+WARNING: Var VCX_ENVPER is never used on line 2934 of file basic/sysvars.inc
+WARNING: Var VCX_ENVSH is never used on line 2939 of file basic/sysvars.inc
+WARNING: Var VCX_NOTEL is never used on line 2936 of file basic/sysvars.inc
+WARNING: Var VCX_OCTAVE is never used on line 2935 of file basic/sysvars.inc
+WARNING: Var VCX_TEMPO is never used on line 2937 of file basic/sysvars.inc
+WARNING: Var VCX_VOLUME is never used on line 2938 of file basic/sysvars.inc
+WARNING: Var VDP_ADDR is never used on line 56 of file basic/sysvars.inc
+WARNING: Var VDP_DATA is never used on line 55 of file basic/sysvars.inc
+WARNING: Var VOICAQ is never used on line 2911 of file basic/sysvars.inc
+WARNING: Var VOICBQ is never used on line 2912 of file basic/sysvars.inc
+WARNING: Var VOICCQ is never used on line 2913 of file basic/sysvars.inc
+WARNING: Var VOICEN is never used on line 2914 of file basic/sysvars.inc
+WARNING: Var WRTVDP is never used on line 13 of file basic/sysvars.inc
+WARNING: Var __MEAS_LOW_END is never used on line 118 of file basic/main.asm
+WARNING: Var __MEAS_PAGE1_END is never used on line 397 of file basic/main.asm
+WARNING: Var ary_reset is never used on line 333 of file basic/arrays.asm
+WARNING: Var ascii_save is never used on line 221 of file basic/save.asm
+WARNING: Var bl_skip_spaces is never used on line 30 of file basic/bload.asm
+WARNING: Var bsv_is_disk is never used on line 110 of file basic/save.asm
+WARNING: Var cas_flush_block is never used on line 373 of file basic/save.asm
+WARNING: Var disk_putbyte is never used on line 82 of file basic/sv-diskwr.inc
+WARNING: Var dl_cas_close is never used on line 122 of file basic/cload.asm
+WARNING: Var dl_is_cas is never used on line 113 of file basic/cload.asm
+WARNING: Var dr_cas_close is never used on line 288 of file basic/cload.asm
+WARNING: Var efi_p_ok is never used on line 1419 of file basic/str-engine.asm
+WARNING: Var ei_set is never used on line 2452 of file basic/program.asm
+WARNING: Var ems_err_pop1 is never used on line 1076 of file basic/str-engine.asm
+WARNING: Var err_stack is never used on line 1850 of file basic/program.asm
+WARNING: Var evmc_total_scan is never used on line 1366 of file basic/expr.asm
+WARNING: Var fat_delete is never used on line 351 of file basic/fat.asm
+WARNING: Var fat_io_find is never used on line 38 of file basic/fatio-body.inc
+WARNING: Var key_set is never used on line 2750 of file basic/program.asm
+WARNING: Var mul16 is never used on line 2020 of file basic/expr.asm
+WARNING: Var nx_again is never used on line 1818 of file basic/program.asm
+WARNING: Var nx_scan is never used on line 1774 of file basic/program.asm
+WARNING: Var raise_error_forced is never used on line 1057 of file basic/interp.asm
+WARNING: Var sav_is_disk is never used on line 187 of file basic/save.asm
+WARNING: Var spr_set is never used on line 961 of file basic/graphics.asm
+WARNING: Var strig_set is never used on line 2622 of file basic/program.asm
+WARNING: Var vptr_none is never used on line 1967 of file basic/expr.asm
+WARNING: Var wid_apply is never used on line 268 of file basic/screen.asm
+python3 tools/gen_resident_abi.py build/basic-reloc.sym sub/basic-resident-abi.inc
+wrote sub/basic-resident-abi.inc: 12 resident-ABI symbols (from build/basic-reloc.sym)
+pasmo -I sub --bin sub/sub.asm build/sub.rom build/sub.sym
+WARNING: Switching to 3 pass mode on line 786 of file basic/sysvars.inc
+WARNING: Var ACT_LOW is never used on line 132 of file basic/sysvars.inc
+WARNING: Var ARL_GETBYTE is never used on line 1445 of file basic/sysvars.inc
+WARNING: Var ARY_CUR is never used on line 2082 of file basic/sysvars.inc
+WARNING: Var ATAN_DEG is never used on line 14 of file math-coeffs.inc
+WARNING: Var BAKCLR is never used on line 108 of file basic/sysvars.inc
+WARNING: Var BDRCLR is never used on line 109 of file basic/sysvars.inc
+WARNING: Var BREAKX is never used on line 31 of file basic/sysvars.inc
+WARNING: Var CAL_NEEDFILL is never used on line 2445 of file basic/sysvars.inc
+WARNING: Var CAL_SAVE is never used on line 2462 of file basic/sysvars.inc
+WARNING: Var CAS_IN_MODE is never used on line 1456 of file basic/sysvars.inc
+WARNING: Var CAS_LOW_1200 is never used on line 143 of file basic/sysvars.inc
+WARNING: Var CAS_LOW_2400 is never used on line 144 of file basic/sysvars.inc
+WARNING: Var CAS_OUT_MODE is never used on line 1455 of file basic/sysvars.inc
+WARNING: Var CAS_VERIFY is never used on line 3136 of file basic/sysvars.inc
+WARNING: Var CAS_VMIS is never used on line 3137 of file basic/sysvars.inc
+WARNING: Var CAS_WBUF is never used on line 3172 of file basic/sysvars.inc
+WARNING: Var CAS_WCNT is never used on line 2475 of file basic/sysvars.inc
+WARNING: Var CHGCLR is never used on line 14 of file basic/sysvars.inc
+WARNING: Var CHGET is never used on line 17 of file basic/sysvars.inc
+WARNING: Var CHGMOD is never used on line 12 of file basic/sysvars.inc
+WARNING: Var CHSNS is never used on line 16 of file basic/sysvars.inc
+WARNING: Var CLPTR is never used on line 759 of file basic/sysvars.inc
+WARNING: Var CLS is never used on line 21 of file basic/sysvars.inc
+WARNING: Var CONTLINE is never used on line 2355 of file basic/sysvars.inc
+WARNING: Var CONTPTR is never used on line 2356 of file basic/sysvars.inc
+WARNING: Var CONTVALID is never used on line 2357 of file basic/sysvars.inc
+WARNING: Var CON_LASTROW is never used on line 1273 of file basic/sysvars.inc
+WARNING: Var COS_COEF_DEG is never used on line 347 of file math-coeffs.inc
+WARNING: Var CRT_MODE is never used on line 1447 of file basic/sysvars.inc
+WARNING: Var CS120_LOW is never used on line 130 of file basic/sysvars.inc
+WARNING: Var CS240_LOW is never used on line 131 of file basic/sysvars.inc
+WARNING: Var CSRY is never used on line 25 of file basic/sysvars.inc
+WARNING: Var CVT is never used on line 3329 of file basic/sysvars.inc
+WARNING: Var CVT_MODE is never used on line 3366 of file basic/sysvars.inc
+WARNING: Var DIRECTF is never used on line 923 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_ALLOC_CLUSTER is never used on line 2682 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_COUNT_FREE is never used on line 2684 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_DELETE is never used on line 2688 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_DIR_CREATE is never used on line 2686 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_DIR_UPDATE is never used on line 2687 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_FIND is never used on line 2677 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_FLUSH_DATA_SECTOR is never used on line 2685 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_MOUNT is never used on line 2676 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_OPEN is never used on line 2679 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_READ_FAT_SECTOR is never used on line 2680 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_READ_FILE_SECTOR is never used on line 2681 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FAT_WRITE_FAT_ENTRY is never used on line 2683 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FCH_DETACH is never used on line 2711 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FCH_RESTAGE is never used on line 2710 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_FIA_WALKED is never used on line 2703 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_KILL is never used on line 2719 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_NAME_CMP is never used on line 2678 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_NAME_STAMP is never used on line 2720 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_RAND_GET is never used on line 2698 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_RAND_OPEN is never used on line 2697 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_RAND_PUT is never used on line 2699 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_READ_SECTOR is never used on line 2674 of file basic/sysvars.inc
+WARNING: Var DISKOP_SEL_WRITE_SECTOR is never used on line 2675 of file basic/sysvars.inc
+WARNING: Var DIVPAD is never used on line 3327 of file basic/sysvars.inc
+WARNING: Var DIVREM is never used on line 3328 of file basic/sysvars.inc
+WARNING: Var DSPFNK is never used on line 23 of file basic/sysvars.inc
+WARNING: Var ENDFLAG is never used on line 2339 of file basic/sysvars.inc
+WARNING: Var ERAFNK is never used on line 22 of file basic/sysvars.inc
+WARNING: Var ERRLIN is never used on line 975 of file basic/sysvars.inc
+WARNING: Var EXBRSA is never used on line 4020 of file basic/sysvars.inc
+WARNING: Var EXPTBL is never used on line 96 of file basic/sysvars.inc
+WARNING: Var EXP_COEF_DEG is never used on line 70 of file math-coeffs.inc
+WARNING: Var FACTYP is never used on line 3248 of file basic/sysvars.inc
+WARNING: Var FCH_CEIL is never used on line 3038 of file basic/sysvars.inc
+WARNING: Var FCH_MODE is never used on line 2524 of file basic/sysvars.inc
+WARNING: Var FCH_NUM is never used on line 2523 of file basic/sysvars.inc
+WARNING: Var FCH_RDMODE is never used on line 2525 of file basic/sysvars.inc
+WARNING: Var FLD_CHAN is never used on line 747 of file basic/sysvars.inc
+WARNING: Var FLD_CUROFF is never used on line 746 of file basic/sysvars.inc
+WARNING: Var FLD_TABEND is never used on line 3054 of file basic/sysvars.inc
+WARNING: Var FOMBYTES is never used on line 3279 of file basic/sysvars.inc
+WARNING: Var FOR_CUR is never used on line 3194 of file basic/sysvars.inc
+WARNING: Var FOR_STK_END is never used on line 3217 of file basic/sysvars.inc
+WARNING: Var FOSIGCOUNT is never used on line 3277 of file basic/sysvars.inc
+WARNING: Var FOSIGN is never used on line 3276 of file basic/sysvars.inc
+WARNING: Var FPERR_STROOM is never used on line 447 of file basic/sysvars.inc
+WARNING: Var FPERR_TYPEMM is never used on line 458 of file basic/sysvars.inc
+WARNING: Var FPNUM_SIZE is never used on line 3309 of file basic/sysvars.inc
+WARNING: Var FP_LHSVAL is never used on line 3340 of file basic/sysvars.inc
+WARNING: Var FP_OPMODE is never used on line 3364 of file basic/sysvars.inc
+WARNING: Var FP_RSIGN is never used on line 3344 of file basic/sysvars.inc
+WARNING: Var FP_SHIFTAMT is never used on line 3339 of file basic/sysvars.inc
+WARNING: Var FP_TMP_B is never used on line 3342 of file basic/sysvars.inc
+WARNING: Var FSP is never used on line 3192 of file basic/sysvars.inc
+WARNING: Var GFX_COLOR_OFST is never used on line 63 of file basic/sysvars.inc
+WARNING: Var GFX_DESC is never used on line 1786 of file basic/sysvars.inc
+WARNING: Var GFX_EVY is never used on line 611 of file basic/sysvars.inc
+WARNING: Var GFX_PGEN_BASE is never used on line 62 of file basic/sysvars.inc
+WARNING: Var GFX_REL is never used on line 558 of file basic/sysvars.inc
+WARNING: Var GFX_SVY is never used on line 609 of file basic/sysvars.inc
+WARNING: Var GOSUB_STK_END is never used on line 3212 of file basic/sysvars.inc
+WARNING: Var GOTOFLAG is never used on line 2338 of file basic/sysvars.inc
+WARNING: Var GOTOTGT is never used on line 2337 of file basic/sysvars.inc
+WARNING: Var GP_CHAN is never used on line 3070 of file basic/sysvars.inc
+WARNING: Var GP_MODE is never used on line 3069 of file basic/sysvars.inc
+WARNING: Var GSP is never used on line 3191 of file basic/sysvars.inc
+WARNING: Var GTPAD is never used on line 42 of file basic/sysvars.inc
+WARNING: Var GTPDL is never used on line 43 of file basic/sysvars.inc
+WARNING: Var GTSTCK is never used on line 40 of file basic/sysvars.inc
+WARNING: Var GTTRIG is never used on line 41 of file basic/sysvars.inc
+WARNING: Var H_TIMI is never used on line 2950 of file basic/sysvars.inc
+WARNING: Var H_ZKEY is never used on line 2963 of file basic/sysvars.inc
+WARNING: Var INDLR_N is never used on line 741 of file basic/sysvars.inc
+WARNING: Var INP_CURSOR is never used on line 791 of file basic/sysvars.inc
+WARNING: Var INT_MAIN_PRIM is never used on line 3407 of file basic/sysvars.inc
+WARNING: Var INT_SUB_PRIM is never used on line 3408 of file basic/sysvars.inc
+WARNING: Var INT_SUB_SUBSL is never used on line 3409 of file basic/sysvars.inc
+WARNING: Var IN_RDLEN is never used on line 2529 of file basic/sysvars.inc
+WARNING: Var LE_OP_AUTO is never used on line 2783 of file basic/sysvars.inc
+WARNING: Var LE_OP_DELRANGE is never used on line 2753 of file basic/sysvars.inc
+WARNING: Var LE_OP_LLSTRANGE is never used on line 2770 of file basic/sysvars.inc
+WARNING: Var LE_OP_LSTRANGE is never used on line 2755 of file basic/sysvars.inc
+WARNING: Var LE_OP_RELINK is never used on line 2752 of file basic/sysvars.inc
+WARNING: Var LE_OP_RENUM is never used on line 2778 of file basic/sysvars.inc
+WARNING: Var LE_OP_RENUM_NEXT is never used on line 2779 of file basic/sysvars.inc
+WARNING: Var LE_OP_STORE is never used on line 2751 of file basic/sysvars.inc
+WARNING: Var LHS_FAC is never used on line 3335 of file basic/sysvars.inc
+WARNING: Var LHS_FACTYP is never used on line 3331 of file basic/sysvars.inc
+WARNING: Var LHS_VARTYPE is never used on line 3449 of file basic/sysvars.inc
+WARNING: Var LINEBUF is never used on line 811 of file basic/sysvars.inc
+WARNING: Var LINEMAX is never used on line 812 of file basic/sysvars.inc
+WARNING: Var LINL32 is never used on line 105 of file basic/sysvars.inc
+WARNING: Var LINL40 is never used on line 104 of file basic/sysvars.inc
+WARNING: Var LOC_COL is never used on line 1306 of file basic/sysvars.inc
+WARNING: Var LOC_ROW is never used on line 1307 of file basic/sysvars.inc
+WARNING: Var LOG_COEF_DEG is never used on line 112 of file math-coeffs.inc
+WARNING: Var LPTPOS is never used on line 2872 of file basic/sysvars.inc
+WARNING: Var LPT_MODE is never used on line 1446 of file basic/sysvars.inc
+WARNING: Var MC_TYPE is never used on line 3526 of file basic/sysvars.inc
+WARNING: Var MRG_PTR is never used on line 742 of file basic/sysvars.inc
+WARNING: Var MSGESC_HI is never used on line 4051 of file basic/sysvars.inc
+WARNING: Var MSGESC_LO is never used on line 4050 of file basic/sysvars.inc
+WARNING: Var MSGESC_SUB is never used on line 4070 of file basic/sysvars.inc
+WARNING: Var MSGESC_UTOF is never used on line 4029 of file basic/sysvars.inc
+WARNING: Var MUL32 is never used on line 3357 of file basic/sysvars.inc
+WARNING: Var MULCAND is never used on line 3355 of file basic/sysvars.inc
+WARNING: Var MULTPLR is never used on line 3356 of file basic/sysvars.inc
+WARNING: Var MUL_ADIG is never used on line 3350 of file basic/sysvars.inc
+WARNING: Var MUL_CARRY is never used on line 3351 of file basic/sysvars.inc
+WARNING: Var MUL_I is never used on line 3347 of file basic/sysvars.inc
+WARNING: Var MUL_PP is never used on line 3354 of file basic/sysvars.inc
+WARNING: Var NEWKEY is never used on line 2967 of file basic/sysvars.inc
+WARNING: Var ONELIN is never used on line 1034 of file basic/sysvars.inc
+WARNING: Var OO_DEVTYPE is never used on line 1435 of file basic/sysvars.inc
+WARNING: Var OO_RECLEN_CHAN is never used on line 3116 of file basic/sysvars.inc
+WARNING: Var PLF_RA is never used on line 3368 of file basic/sysvars.inc
+WARNING: Var PLF_RA2 is never used on line 3370 of file basic/sysvars.inc
+WARNING: Var PLY_NUM is never used on line 2984 of file basic/sysvars.inc
+WARNING: Var PRDEST is never used on line 1427 of file basic/sysvars.inc
+WARNING: Var PRDEV is never used on line 1434 of file basic/sysvars.inc
+WARNING: Var PSLTREG is never used on line 97 of file basic/sysvars.inc
+WARNING: Var PU_FMTMAX is never used on line 3077 of file basic/sysvars.inc
+WARNING: Var PU_WP is never used on line 3083 of file basic/sysvars.inc
+WARNING: Var RDSLT is never used on line 94 of file basic/sysvars.inc
+WARNING: Var RESUMEFLAG is never used on line 2346 of file basic/sysvars.inc
+WARNING: Var RESUMEPTR is never used on line 2345 of file basic/sysvars.inc
+WARNING: Var RL_AUTO is never used on line 2852 of file basic/sysvars.inc
+WARNING: Var SAVSTK is never used on line 944 of file basic/sysvars.inc
+WARNING: Var SAVTXT is never used on line 1129 of file basic/sysvars.inc
+WARNING: Var SCAN_INIT is never used on line 2364 of file basic/sysvars.inc
+WARNING: Var SCAN_PRIM is never used on line 2362 of file basic/sysvars.inc
+WARNING: Var SCAN_SLOT is never used on line 2363 of file basic/sysvars.inc
+WARNING: Var SIN_COEF_DEG is never used on line 317 of file math-coeffs.inc
+WARNING: Var STATFL is never used on line 700 of file basic/sysvars.inc
+WARNING: Var STMOTR is never used on line 2198 of file basic/sysvars.inc
+WARNING: Var SUBROM_IDX_ARY is never used on line 61 of file equates.inc
+WARNING: Var SUBROM_IDX_BEEP is never used on line 221 of file equates.inc
+WARNING: Var SUBROM_IDX_CASMATCH is never used on line 134 of file equates.inc
+WARNING: Var SUBROM_IDX_DETOK is never used on line 46 of file equates.inc
+WARNING: Var SUBROM_IDX_DIRVERB is never used on line 113 of file equates.inc
+WARNING: Var SUBROM_IDX_ERRMSG is never used on line 165 of file equates.inc
+WARNING: Var SUBROM_IDX_FATPRIM is never used on line 105 of file equates.inc
+WARNING: Var SUBROM_IDX_FCBNAME is never used on line 151 of file equates.inc
+WARNING: Var SUBROM_IDX_FLDLOOK is never used on line 237 of file equates.inc
+WARNING: Var SUBROM_IDX_FORMAT is never used on line 93 of file equates.inc
+WARNING: Var SUBROM_IDX_GRAPHICS is never used on line 203 of file equates.inc
+WARNING: Var SUBROM_IDX_INTTEST is never used on line 54 of file equates.inc
+WARNING: Var SUBROM_IDX_LINEEDIT is never used on line 123 of file equates.inc
+WARNING: Var SUBROM_IDX_LRSETST is never used on line 251 of file equates.inc
+WARNING: Var SUBROM_IDX_PARSELN is never used on line 183 of file equates.inc
+WARNING: Var SUBROM_IDX_PING is never used on line 44 of file equates.inc
+WARNING: Var SUBROM_IDX_PLAY_PARSE is never used on line 120 of file equates.inc
+WARNING: Var SUBROM_IDX_PU_TAIL is never used on line 83 of file equates.inc
+WARNING: Var SUBROM_IDX_PU_TOFIELD is never used on line 82 of file equates.inc
+WARNING: Var SUBROM_IDX_READVAL is never used on line 214 of file equates.inc
+WARNING: Var SUBROM_IDX_SCANSTMT is never used on line 98 of file equates.inc
+WARNING: Var SUBROM_IDX_STRHEAP is never used on line 73 of file equates.inc
+WARNING: Var SUBROM_IDX_TITLE is never used on line 141 of file equates.inc
+WARNING: Var SUBROM_IDX_TOKENISE is never used on line 45 of file equates.inc
+WARNING: Var SUBSLOT is never used on line 3387 of file basic/sysvars.inc
+WARNING: Var SUBSLOT_OK is never used on line 3388 of file basic/sysvars.inc
+WARNING: Var SV_OP_BSV_CAS is never used on line 1244 of file basic/sysvars.inc
+WARNING: Var SV_OP_BSV_DISK is never used on line 1243 of file basic/sysvars.inc
+WARNING: Var SV_OP_SAV_CAS is never used on line 1246 of file basic/sysvars.inc
+WARNING: Var SV_OP_SAV_DISK is never used on line 1245 of file basic/sysvars.inc
+WARNING: Var SW_ADDR is never used on line 1333 of file basic/sysvars.inc
+WARNING: Var SW_ADDR1 is never used on line 1335 of file basic/sysvars.inc
+WARNING: Var SW_MODE is never used on line 1337 of file basic/sysvars.inc
+WARNING: Var SW_TYPE is never used on line 1334 of file basic/sysvars.inc
+WARNING: Var SW_TYPE1 is never used on line 1336 of file basic/sysvars.inc
+WARNING: Var TOKBUFSZ is never used on line 853 of file basic/sysvars.inc
+WARNING: Var TRACEFLAG is never used on line 1256 of file basic/sysvars.inc
+WARNING: Var TRAPENA is never used on line 1184 of file basic/sysvars.inc
+WARNING: Var TRAPPEND is never used on line 1188 of file basic/sysvars.inc
+WARNING: Var TRAPSTK_END is never used on line 1203 of file basic/sysvars.inc
+WARNING: Var TRAPSVC is never used on line 1194 of file basic/sysvars.inc
+WARNING: Var TRAPS_T3 is never used on line 486 of file basic/sysvars.inc
+WARNING: Var TRAPS_T4 is never used on line 494 of file basic/sysvars.inc
+WARNING: Var TRAPS_T5 is never used on line 502 of file basic/sysvars.inc
+WARNING: Var TXTTAB is never used on line 1947 of file basic/sysvars.inc
+WARNING: Var USRTAB is never used on line 2123 of file basic/sysvars.inc
+WARNING: Var VALTYP is never used on line 1420 of file basic/sysvars.inc
+WARNING: Var VARTYPE is never used on line 3436 of file basic/sysvars.inc
+WARNING: Var VCBC is never used on line 2921 of file basic/sysvars.inc
+WARNING: Var VOICBQ is never used on line 2912 of file basic/sysvars.inc
+WARNING: Var VOICCQ is never used on line 2913 of file basic/sysvars.inc
+WARNING: Var VS_INT_VAL is never used on line 3444 of file basic/sysvars.inc
+WARNING: Var VS_TARGET_TYPE is never used on line 3441 of file basic/sysvars.inc
+WARNING: Var WIDIG is never used on line 3345 of file basic/sysvars.inc
+WARNING: Var WRTVDP is never used on line 13 of file basic/sysvars.inc
+WARNING: Var WSRC is never used on line 3359 of file basic/sysvars.inc
+WARNING: Var WSRC_TYP is never used on line 3362 of file basic/sysvars.inc
+WARNING: Var ZINTCNT is never used on line 1183 of file basic/sysvars.inc
+WARNING: Var ZINTVAL is never used on line 1182 of file basic/sysvars.inc
+WARNING: Var ZTI_INTERVAL is never used on line 1155 of file basic/sysvars.inc
+WARNING: Var ZTI_KEY1 is never used on line 1159 of file basic/sysvars.inc
+WARNING: Var ZTI_SPRITE is never used on line 1157 of file basic/sysvars.inc
+WARNING: Var ZTI_STOP is never used on line 1156 of file basic/sysvars.inc
+WARNING: Var ZTI_STRIG0 is never used on line 1158 of file basic/sysvars.inc
+WARNING: Var ZTRAP is never used on line 1145 of file basic/sysvars.inc
+WARNING: Var ZTRAP_ENTSZ is never used on line 1154 of file basic/sysvars.inc
+WARNING: Var ZTRAP_NENT is never used on line 1160 of file basic/sysvars.inc
+WARNING: Var ZTS_OFF is never used on line 1162 of file basic/sysvars.inc
+WARNING: Var ZTS_ON is never used on line 1163 of file basic/sysvars.inc
+WARNING: Var ZTS_PENDING is never used on line 1167 of file basic/sysvars.inc
+WARNING: Var ZTS_SERVICING is never used on line 1165 of file basic/sysvars.inc
+WARNING: Var ZTS_SHADOW is never used on line 1168 of file basic/sysvars.inc
+WARNING: Var ZTS_STATE_MASK is never used on line 1166 of file basic/sysvars.inc
+WARNING: Var ZTS_STOP is never used on line 1164 of file basic/sysvars.inc
+WARNING: Var __MEAS_SUB_P0_END is never used on line 373 of file sub/sub.asm
+WARNING: Var __MEAS_SUB_P1_END is never used on line 805 of file sub/sub.asm
+WARNING: Var aal_ceil_try is never used on line 1141 of file arrays.asm
+WARNING: Var cpt_at_c is never used on line 99 of file circleparse.asm
+WARNING: Var cpt_at_start is never used on line 130 of file circleparse.asm
+WARNING: Var fat_io_open is never used on line 26 of file basic/fatio-body.inc
+WARNING: Var fmt_menu_text is never used on line 118 of file basic/format-body.inc
+WARNING: Var fsqn_up_check is never used on line 573 of file fp_sqrt.asm
+WARNING: Var g8_reprogram is never used on line 3966 of file graphics.asm
+WARNING: Var graphics_selftest is never used on line 119 of file graphics.asm
+WARNING: Var scv_ceil_try is never used on line 677 of file arrays.asm
+WARNING: Var sg_walk_temps is never used on line 755 of file strheap.asm
+WARNING: Var shf_fill is never used on line 1711 of file strheap.asm
+WARNING: Var show_title is never used on line 23 of file ../basic/title-body.inc
+WARNING: Var sub_p0_table is never used on line 124 of file sub/sub.asm
+WARNING: Var sub_p1_table is never used on line 394 of file sub/sub.asm
+WARNING: Var tkf_cmp5 is never used on line 527 of file tkfloat.asm
+WARNING: Var tkf_ref32768 is never used on line 553 of file tkfloat.asm
+WARNING: Var tkf_ref65535 is never used on line 551 of file tkfloat.asm
+WARNING: Var tnt_name_stamp is never used on line 76 of file dirverb.asm
+python3 tools/pad_rom.py build/sub.rom 32768
+build/sub.rom: 32768 bytes (exact -- the assembler wrote the whole image)
+python3 tools/check_reloc.py build/basic-reloc.rom build/basic-reloc.sym
+OK: relocated image 22510 B, header @ $4000, low region $2812-$3FFF holds 6080 B of string engine
+    measure: page-0 low region free = 46 B ($2812-$3FFF, __MEAS_LOW_END @ 0x3fd2)
+    measure: page-1 free            = 54 B ($4000-$7FFF, __MEAS_PAGE1_END @ 0x7fca) <- subrom wave-2 tokeniser-eviction relief
+python3 tools/check_sub_walls.py build/sub.rom build/sub.sym
+OK: sub ROM 32768 B, 'CD' @ $0000, 'S1' @ $4000, both wall labels inside their page and both pads verified
+    measure: sub page 0 free       = 3075 B ($0000-$3FFF, the callable-from-main island, __MEAS_SUB_P0_END @ 0x33fd)
+    measure: sub page 1 free       = 1624 B ($4000-$7FFF, the BIOS-visible island, __MEAS_SUB_P1_END @ 0x79a8)
+python3 tools/check_kwtable_identity.py build/basic-reloc.rom build/basic-reloc.sym build/sub.rom build/sub.sym
+OK: kwtable single-copy — resident dropped (wave 3) in symbols AND in bytes (0 occurrences in the 22510 B main image), sub-ROM copy is the sole source, 1 occurrence, 1091 B matching the pinned sha256
+python3 tools/check_resident_abi.py build/basic-reloc.sym sub/basic-resident-abi.inc
+OK: sub/basic-resident-abi.inc matches a fresh regen from build/basic-reloc.sym (12 resident-ABI addresses, sub.rom is not stale)
+python3 tools/check_tenant_closure.py build/basic-reloc.sym sub/basic-resident-abi.inc
+OK: 124 routines in the resident closure of 12 ABI seeds, + 4 data-referenced label(s), all page-0 (< $4000). No page-1 escapes.
+python3 tools/check_tenant_closure.py --page0 build/sub.sym sub/sub.asm
+OK: 771 routines in the closure of 14 page-0 tenants (sub_p0_ping, tokenise, dtk_tenant, sub_int_selftest, ary_engine, strheap_engine, pu_tofield_tenant, pu_tail_tenant, graphics_tenant, deftype_tenant, readdata_tenant, beep_tenant, fld_lookup_tenant, lrset_store_tenant), + 15 data-referenced label(s); every callee and data target is sub-local page-0, main page-1, or RAM. No low-region/BIOS escape.
+python3 tools/check_tenant_closure.py --page1 build/sub.sym sub/sub.asm
+OK: 585 routines in the closure of 24 page-1 tenants (sub_p1_ping, fp_sqrt, fp_atan, fp_exp, fp_log, fp_pow, fp_sin, fp_cos, fp_tan, fp_rnd, format_tenant, scan_stmt_end, fatprim_tenant, dirverb_tenant, play_parse_tenant, lineedit_tenant, casmatch_tenant, title_tenant, fcbname_tenant, circleparse_tenant, bload_tenant, save_tenant, errmsg_tenant, parseln_tenant), + 40 data-referenced label(s); every callee and data target is sub-local page-1, main low-region/BIOS (< $4000), or RAM. No main-page-1 escape.
+python3 tools/check_dead_code.py build/basic-reloc.sym build/sub.sym
+  main: 1585 spans, 73 seeds -> 0 dead (+0 allowlisted)
+  sub : 1568 spans, 104 seeds -> 0 dead (+2 allowlisted)
+OK: no unreachable spans in either build; every allowlist entry still verified dead (the sweep is not blind).
+python3 tools/audit_citations.py
+clean-room citation audit (mechanical half — not a full paper trail)
+rule self-test 10/10, listing self-test 11/11, dump self-test 12/12, section self-test 14/14
+
+== disk == (8 files scanned, 97 provenance-bearing)
+  [acknowledged] disk/driver.asm:87: section header without inline citation: 'write path' (aa89e15851ff) — 'write path' — the write twin of the read path in the same file. Its body cites nothing itself because it mirrors dskio's read loop instruction for instruction ("Mirrors the read loop's structure exactly"), and the read path's own header block carries the PROVENANCE.md §FDC / §DSKIO interface citation that both rest on. A single shared citation for a mirrored pair is the honest shape; duplicating it would be prose written to satisfy a scanner. Human judgement, 2026-07-04, re-confirmed 2026-08-06.
+  [acknowledged] disk/kernel.asm:65: section header without inline citation: 'MSX-DOS-1 kernel SETDTA-time entry: $5058 (M19)' (77d4c39b0be0) — 'MSX-DOS-1 kernel SETDTA-time entry: $5058 (M19)' — attested in full, in vocabulary CITATION does not carry: 12 comment lines naming the finding (M19), the probes (callseq / capture / callwatch causal pin), the black-box contract (entry register, write target, the register-identical 51-call comparison) and the clean-room line ("no stock routine internals decoded"). Widening CITATION with black-box was measured and DECLINED — docs/spec-audit-citations-review.md §2.5 records the numbers and the bar to re-open it. Kept as a review candidate deliberately: what counts as a citation is a judgement this tool declines to make.
+  [acknowledged] disk/kernel.asm:2052: section header without inline citation: 'contract bodies (stubs; filled in milestone 4; added as each veneer lands)' (b7535589959f) — 'contract bodies (stubs; filled in milestone 4; added as each veneer lands)' — a table of bare `ret` stubs at pinned kernel addresses. It names no derived behaviour, so there is nothing to cite; each stub acquires its own citation in the comment block above it as the milestone that fills it lands (see the k_47B2 block immediately below, which cites tier2-m31-rdblk-randrecord-spec.md). Structural in substance but not in STRUCTURAL_HDR's vocabulary, and widening that regex to catch it would exempt far more than this one header.
+  [acknowledged] disk/runtime.asm:423: section header without inline citation: 'int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) — SUPERSEDED by A-3' (d8340dfd8ba4) — 'int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) — SUPERSEDED by A-3' — a genuinely uncited header, and the only one this project has ever had that was hidden by the vocabulary rather than by the distance rule. Its block attests in prose — "the MSX1 standard, BIOS-agnostic" — which names a standard but no document: no §, no spec filename, no URL, no datasheet. It was exempt only because the sentence "A bare VDP ack is not enough" contains the word VDP, which was a CITATION token until 2026-08-06. The finding it restates DOES exist: provider-oracle-scope.md §8.70 (O-2, the KEYINT chaining contract — the stock $0038 handler, the main-ROM KEYINT body, the H.KEYI/H.TIMI hooks, all from black-box probe runs). The header's own name once carried the reference, "(A-2/8.70)", a bare number the rule cannot match either, and lost it in the A-3 rename (71b1096). The human's remedy is to name §8.70 in the block, or to delete the dead body this header describes (it says DEAD/SUPERSEDED itself, kept net-zero pending removal). Which of those is right is a judgement this tool declines to make.
+  clean — attestations present, no unattested forbidden source  (4 advisory review candidate(s))
+
+== basic == (108 files scanned, 210 provenance-bearing)
+  clean — attestations present, no unattested forbidden source
+
+== tape == (1 files scanned, 15 provenance-bearing)
+  clean — attestations present, no unattested forbidden source
+
+== listing shape == (832 files swept, 2 allowlisted)
+  [allowed] probes/lib/latch_check.py:82: 2-line listing (5565467e6422) — C-BIOS, same window and same adjudication as the omsx_repl.py entry below: the two comment lines restate the chget_char boundaries this checker scores (D-LATCH2, docs/spec-probe-latch2.md). Surfaced only after knife K1b forced the comment leaders `; # //` into the prefix class — under the first cut this file was invisible, which is the whole reason that fix landed.
+  [allowed] probes/lib/omsx_repl.py:366: 3-line listing (edb676f694b2) — C-BIOS, not a proprietary reference ROM: allowed-sources.md grades C-BIOS source B/Conditional — a peer clean-room reimplementation under BSD-2 whose source this project already patches (cbios-repack/), and NOT the reference implementation zerobas reimplements. The run is 3 instructions of the keyboard-buffer path, in a docstring explaining the D-LATCH2 injection window (docs/spec-probe-latch2.md §5.5); the same docstring is explicit about the line it stays on ("locating chget in the reference needs a disassembly this project does not do"). Probe source, not shipped ROM source. Flagged for the human paper trail 2026-08-06 (D-DOCJUDGE §2.6) — a judgement docs/clean-room-audit.md reserves for a human, which is why it is written down here rather than decided by the tool.
+  clean — no unallowlisted decoded-instruction listings
+
+== hex-dump rows == (832 files swept, 1 allowlisted)
+  [allowed] tools/audit_citations.py:428: hex-dump row (0c30593198a1) — The check's own synthetic self-test vector (_DUMP_VEC). INVENTED bytes — no provenance, no derivation, not decoded from anything — so recording it forbids nothing; a REAL positive vector would be the artifact this check refuses and would make the tool its own first finding. Unlike check 5's LISTING_LINE this rule is not anchored at line start (a dump lives inside a markdown table cell), so the vector is necessarily a hit on this file. That is turned into the canary rather than worked around: if this line stops matching, check 6 has gone blind and exits 2 rather than printing "clean".
+  clean — no unallowlisted hex-dump rows  (narrow by design: this is the dump ROW only, not the raw-byte class — docs/spec-audit-citations-bytes.md §3.1)
+
+ADVISORY: 4 section header(s) without an inline citation, all acknowledged — review candidates for the human paper trail, not gate failures. The SET is pinned (citations-advisory-allow.txt); the judgement is not.
+
+CLEAN (gating checks). The non-mechanical hop — 'is each cited probe genuinely black-box?' — still requires a human paper-trail pass.

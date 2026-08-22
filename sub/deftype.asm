@@ -83,6 +83,21 @@ deftype_tenant:
 ; 8-bit (`add a,l`), so these four bytes must not cross a 256-byte boundary;
 ; the build-time assert below is what makes a future edit that moves them say
 ; so instead of reading garbage.
+; ⚠️ AND THE ASSERT FIRED, ON AN EDIT IN A DIFFERENT FILE (D-DEFFN, 2026-08-22 --
+; docs/deffn-impl-2026-08-22.md §4.5, branch `deffn-draft`). Adding a 40-byte
+; routine to sub/arrays.asm -- included AHEAD of this file -- shifted these four
+; bytes onto a page boundary and the BUILD said so, which is exactly what the
+; guard was for. 🎯 What the guard could NOT do was say what to do about it, and
+; "never let an unrelated sub-ROM edit relocate this table" is not a rule anyone
+; can keep: every future sub page-0 tenant re-rolls the dice. So the alignment is
+; now ENFORCED rather than asserted -- at most 3 bytes of page-0 padding, against
+; 3 KB free, buy the 8-bit `add a,l` index unconditionally. The assert stays
+; below as a PROOF that can no longer fire; if it ever does, this pad is what
+; broke. On today's tree the pad emits NOTHING, which is why sub.rom is
+; byte-identical across this change.
+    IF (low $) > 252
+                ds      256 - (low $), $00
+    ENDIF
 edt_codes:
                 db      DEFTBL_STR          ; $AB DEFSTR
                 db      2                   ; $AC DEFINT
