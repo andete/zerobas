@@ -30,3 +30,10 @@ __pycache__/
 # the scratchpad itself is tracked (knives, drivers, characterisations) but its
 # logs are not — one repack log is 1600 lines of build noise.
 scratchpad/*.log
+# Same rule, same reason, for the other ephemeral classes. The tracked scratchpad
+# is .py / .json / .md / .out / .asm -- knives, characterisations, run summaries
+# that docs cite by name. Ad-hoc gate drivers and commit-message scaffolding are
+# neither: the drivers are per-session by design (there is deliberately no
+# standing corpus driver) and a commit message already lives in git history.
+scratchpad/*.sh
+scratchpad/*.txt
