@@ -1,0 +1,70 @@
+# D-PAINTBORD ordering measurement -- both references, 2026-08-22
+# refs: PAINTMC_SIDES unset (vg8020, cf3300, zb); zb is the PRE-FIX build 926749ee
+  vg8020  od3.b16     -> 'ERR 5'
+  cf3300  od3.b16     -> 'ERR 5'
+  zb      od3.b16     -> '9'
+  ROW od3.b16     refs-agree   zb=DIFF
+  vg8020  od3.b16c    -> 'ERR 5'
+  cf3300  od3.b16c    -> 'ERR 5'
+  zb      od3.b16c    -> 'ERR 2'
+  ROW od3.b16c    refs-agree   zb=DIFF
+  vg8020  od3.b15c    -> 'ERR 2'
+  cf3300  od3.b15c    -> 'ERR 2'
+  zb      od3.b15c    -> 'ERR 2'
+  ROW od3.b15c    refs-agree   zb=same
+  vg8020  od2.b256    -> 'ERR 5'
+  cf3300  od2.b256    -> 'ERR 5'
+  zb      od2.b256    -> '9'
+  ROW od2.b256    refs-agree   zb=DIFF
+  vg8020  od2.b256c   -> 'ERR 5'
+  cf3300  od2.b256c   -> 'ERR 5'
+  zb      od2.b256c   -> 'ERR 2'
+  ROW od2.b256c   refs-agree   zb=DIFF
+  vg8020  od2.b16c    -> 'ERR 2'
+  cf3300  od2.b16c    -> 'ERR 2'
+  zb      od2.b16c    -> 'ERR 2'
+  ROW od2.b16c    refs-agree   zb=same
+done
+DRIVER-EXIT 0
+
+# --- the same rows on the FIXED build 815bb553 (zb only) ---
+  zb      bd2.15      -> '9'
+  ROW bd2.15      one-ref-only zb=<no ref this round>
+  zb      bd2.16      -> '9'
+  ROW bd2.16      one-ref-only zb=<no ref this round>
+  zb      bd2.255     -> '9'
+  ROW bd2.255     one-ref-only zb=<no ref this round>
+  zb      bd2.neg     -> 'ERR 5'
+  ROW bd2.neg     one-ref-only zb=<no ref this round>
+  zb      bd2.256     -> 'ERR 5'
+  ROW bd2.256     one-ref-only zb=<no ref this round>
+  zb      bd3.15      -> '9'
+  ROW bd3.15      one-ref-only zb=<no ref this round>
+  zb      bd3.16      -> 'ERR 5'
+  ROW bd3.16      one-ref-only zb=<no ref this round>
+  zb      bd3.17      -> 'ERR 5'
+  ROW bd3.17      one-ref-only zb=<no ref this round>
+  zb      bd3.255     -> 'ERR 5'
+  ROW bd3.255     one-ref-only zb=<no ref this round>
+  zb      bd3.neg     -> 'ERR 5'
+  ROW bd3.neg     one-ref-only zb=<no ref this round>
+  zb      bd3.256     -> 'ERR 5'
+  ROW bd3.256     one-ref-only zb=<no ref this round>
+  zb      od3.b16     -> 'ERR 5'
+  ROW od3.b16     one-ref-only zb=<no ref this round>
+  zb      od3.b16c    -> 'ERR 5'
+  ROW od3.b16c    one-ref-only zb=<no ref this round>
+  zb      od3.b15c    -> 'ERR 2'
+  ROW od3.b15c    one-ref-only zb=<no ref this round>
+  zb      od2.b256    -> 'ERR 5'
+  ROW od2.b256    one-ref-only zb=<no ref this round>
+  zb      od2.b256c   -> 'ERR 5'
+  ROW od2.b256c   one-ref-only zb=<no ref this round>
+  zb      od2.b16c    -> 'ERR 2'
+  ROW od2.b16c    one-ref-only zb=<no ref this round>
+  zb      b16.3.far   -> 'ERR 5'
+  ROW b16.3.far   one-ref-only zb=<no ref this round>
+  zb      b16.3.up    -> 'ERR 5'
+  ROW b16.3.up    one-ref-only zb=<no ref this round>
+done
+DRIVER-EXIT 0

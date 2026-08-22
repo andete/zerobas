@@ -362,9 +362,15 @@ gir_off:
 gfx_err5:
                 ld      a,5                 ; Illegal function call (PSET/PRESET in SCREEN 0/1)
                 jp      raise_error
-gfx_absent:
-                ld      a,5                 ; defensive: sub-ROM missing (never on merged build)
-                jp      raise_error
+; 🎯 gfx_absent IS NOW AN ALIAS, NOT A SECOND COPY (D-PAINTBORD carve, 5 B of
+; main page 1 -- the bytes that fund the border-domain check below). The
+; defensive "subrom_call reported the tenant missing" tail, which cannot fire on
+; the merged build, raised ERR 5 from the SAME two instructions as gfx_err5, so
+; the two were byte-identical and one had to go -- exactly the argument
+; interp.asm makes for err_illegal_fn. The NAME survives because the two are
+; different CLAIMS: if a later slice wants a distinct face for an absent tenant,
+; un-alias it here and no call site moves.
+gfx_absent      equ     gfx_err5
 gfx_typeerr:
                 ld      a,13                ; Type mismatch (G5 PAINT's MSX2 tile$ form, §5)
                 jp      raise_error
@@ -440,27 +446,61 @@ gfx_work_area:
 ; the resident build is currently blocked (see basic/main.asm's own $8000
 ; gate), so those already-landed, differentially-tested sites could not be
 ; re-verified before landing; reapplying that broader DRY is safe to retry
-; once the space question is resolved. Clobbers A (+ whatever eval/
-; get_int16_checked already clobber).
+; once the space question is resolved.
+; ⚠️ THAT NOTE IS STALE AND IS INVERTED, NOT DELETED (D-PAINTBORD, 2026-08-22).
+; The broader fold is NOT reverted -- PSET, LINE, CIRCLE and parse_coord all call
+; gfx_eval_int16 today, at twelve sites in this file. The "resident build is
+; currently blocked" it describes was the OLD two-build tree's $8000 hard-stop;
+; the merged repack IS the build now. The same staleness sat on
+; gfx_store_colour_checked below, which named a `circ_c` this tree does not
+; contain -- both notes outlived the tree they describe, and a reader who
+; believed either would go looking for a saving that has already been taken.
+; Clobbers A (+ whatever eval/get_int16_checked already clobber).
 gfx_eval_int16:
                 call    eval
                 jp      get_int16_checked   ; tail call: ret serves both
+
+; --- gfx_chk_dom: the shared "is this int16 inside its domain?" leaf ---------
+; D-PAINTBORD (docs/spec-basic-paintbord.md). IN: DE = an already-eval'd +
+; get_int16_checked'd value; A = the HIGH-NIBBLE MASK that names the domain --
+;
+;     A = $F0  ->  0..15    (a colour nibble)
+;     A = $00  ->  0..255   (a byte)
+;
+; OUT: A = E, the checked value. ERR 5 (Illegal function call) if outside.
+;
+; 🎯 THE MASK IS WHY THIS IS ONE LEAF AND NOT TWO. Every domain in this file is
+; "the value fits in k low bits", so `mask AND e OR d` is zero exactly when it
+; does -- `or d` folds the >255/negative half in for free, because a negative or
+; >255 int16 is precisely one with a non-zero high byte. One routine therefore
+; serves the colour rule (0..15, always) and PAINT's border rule (0..15 in
+; MULTICOLOUR, 0..255 in SCREEN 2), which differ ONLY in the mask.
+; ⚠️ It does NOT set flags for the caller: A is the value on return, so a caller
+; that wants to compare it must do so itself (g8_fn below does).
+gfx_chk_dom:
+                and     e
+                or      d                   ; non-zero -> outside the domain
+                jp      nz,gfx_err5
+                ld      a,e
+                ret
 
 ; --- gfx_store_colour_checked: "C" RANGE-CHECK+STORE tail -------------------
 ; (spec-basic-graphics-g5.md §8 D4 DRY lever). IN: DE = an already-eval'd +
 ; get_int16_checked'd colour value. Range-checks 0..15 (ERR 5 if outside --
 ; the stricter CIRCLE/PAINT rule, unlike PSET's silent `and $0F` mask) and
-; stores to GFX_C. Used by ex_paint's colour parse below. (Was ALSO factored
-; into ex_circle/circ_c during the DRY pass, ~10 B saved -- reverted for the
-; same reason as gfx_eval_int16 above: unverifiable while the resident build
-; is blocked.) Clobbers A.
+; stores to GFX_C. Used by ex_pset / ex_line / ex_paint's colour parses.
+; ⚠️ THE PARAGRAPH THAT USED TO STAND HERE WAS FALSE AND IS INVERTED, NOT
+; DELETED. It said the same DRY had been "ALSO factored into ex_circle/circ_c
+; ... reverted ... unverifiable while the resident build is blocked". There is
+; no `circ_c` in this tree and CIRCLE does not range-check its colour in the
+; resident at all -- the tenant does, and reports through GFX_RES. The same
+; staleness sits on gfx_eval_int16 above: that comment says the broader fold was
+; REVERTED at PSET/LINE/CIRCLE/parse_coord, and all of those sites call
+; gfx_eval_int16 today. Both notes outlived the two-build tree whose $8000
+; hard-stop they describe. Clobbers A.
 gfx_store_colour_checked:
-                ld      a,d
-                or      a
-                jr      nz,gfx_err5         ; negative -> ERR 5
-                ld      a,e
-                cp      16
-                jp      nc,gfx_err5         ; > 15 -> ERR 5
+                ld      a,$F0               ; the 0..15 domain
+                call    gfx_chk_dom         ; A = E; ERR 5 if outside
                 ld      (GFX_C),a
                 ret
 
@@ -679,10 +719,52 @@ ep_parse_b:
                 jr      z,ep_default_b
                 cp      ','
                 jp      z,ep_syntax         ; a 3rd comma here => a 4th argument -> ERR 2
-                ; --- given B: eval only, NOT range-checked (spec §3/§5 -- a
-                ; border of 16+ is legal, just a comparison value no pixel hits) ---
+                ; --- given B: eval, then RANGE-CHECK against the MODE'S domain ---
+                ; 🔴 D-PAINTBORD (docs/spec-basic-paintbord.md). ⚠️ THE TWO LINES
+                ; THAT USED TO STAND HERE ARE FALSE AND ARE INVERTED, NOT DELETED:
+                ; they said the border is "eval only, NOT range-checked (spec
+                ; §3/§5 -- a border of 16+ is legal, just a comparison value no
+                ; pixel hits)". That is right about what a border of 16 DOES in
+                ; SCREEN 2 and wrong about the DOMAIN, and it was never right in
+                ; MULTICOLOUR at all:
+                ;
+                ;     B is 0..255 in SCREEN 2 and 0..15 in MULTICOLOUR;
+                ;     outside that, ERR 5 (Illegal function call).
+                ;
+                ; Measured on the VG-8020 AND the CF-3300, which agree on every
+                ; row (bd2.* / bd3.*, scratchpad/paintmc_probe.py). ⚠️ Before
+                ; D-PAINTMC the SCREEN-3 half AGREED BY ACCIDENT -- every
+                ; multicolour PAINT was ERR 5, so `PAINT(10,10),9,16` was right
+                ; for the wrong reason -- and the SCREEN-2 half has been wrong
+                ; since G5, invisibly, because the one shipped row on this
+                ; argument uses B=16, which is INSIDE the SCREEN-2 domain.
+                ; ⚠️ THE CHECK READS THE FULL int16, NOT THE STORED BYTE. 256 is
+                ; $0100, whose low byte is $00 and would sail through a byte-only
+                ; test; `PAINT(10,10),9,256` is ERR 5 on both references in both
+                ; modes. That half is what gfx_chk_dom's `or d` costs nothing to
+                ; get right.
+                ; 🎯 AND THE PLACEMENT IS ITSELF A MEASUREMENT. D-LINERR's finding
+                ; is that WHERE a check sits is a claim, so the domain was raced
+                ; against the grammar with a 4th argument behind it:
+                ;
+                ;   PAINT(10,10),9,16,   SCREEN 3  -> ERR 5 both refs  (od3.b16c)
+                ;   PAINT(10,10),9,15,   SCREEN 3  -> ERR 2 both refs  (od3.b15c)
+                ;   PAINT(10,10),9,256,  SCREEN 2  -> ERR 5 both refs  (od2.b256c)
+                ;   PAINT(10,10),9,16,   SCREEN 2  -> ERR 2 both refs  (od2.b16c)
+                ;
+                ; The in-domain twins are what make the out-of-domain ones mean
+                ; anything: they read ERR 2 on the SAME programs, so the trailing
+                ; comma really is a 4th argument and the parse really does reach
+                ; the grammar. The domain beats it -- which is why this sits ABOVE
+                ; the ep_syntax test below, and not under it.
                 call    gfx_eval_int16      ; DE = value (silent int16); ERR 6 if > int16
-                ld      a,e
+                ld      a,(SCRMOD)
+                cp      3                   ; MULTICOLOUR?
+                ld      a,$F0               ; ...then B is a nibble, 0..15
+                jr      z,ep_b_dom          ; (`ld a,n` does not touch the flags)
+                xor     a                   ; SCREEN 2: B is a whole byte, 0..255
+ep_b_dom:
+                call    gfx_chk_dom         ; A = E; ERR 5 outside the mode's domain
                 ld      (GFX_B),a           ; low byte only (spec §6: GFX_B is 1 B)
                 call    skip_spaces
                 cp      ','
@@ -1140,15 +1222,19 @@ g8_fn:
                 call    g8_open_paren       ; DE = n, HL past ')'
                 push    hl
                 pop     ix
-                ld      a,d
-                or      a
-                jp      nz,gfx_err5
-                ld      a,(GFX_G8V)
-                ld      c,a
-                ld      a,e
-                cp      c
+                ; D-PAINTBORD: the "the index must be a byte" half is
+                ; gfx_chk_dom with an EMPTY mask -- `and 0 / or d` is exactly the
+                ; `ld a,d / or a` this replaces, and the value comes back in A, so
+                ; the C stash goes with it. The LIMIT then stays addressed rather
+                ; than copied (GFX_G8V is read twice: once as the ceiling, once to
+                ; tell BASE from VDP). 3 B of main page 1, part of what funds the
+                ; border domain above.
+                xor     a                   ; the 0..255 domain: only D must be 0
+                call    gfx_chk_dom         ; A = E; ERR 5 if the index is not a byte
+                ld      hl,GFX_G8V
+                cp      (hl)
                 jp      nc,gfx_err5         ; index outside its domain -> ERR 5
-                ld      a,c
+                ld      a,(hl)
                 cp      20
                 ld      hl,RG0SAV           ; ..+7 = the register mirrors, +8 = STATFL,
                 jr      nz,g8_fn_byte       ; which is exactly what VDP(8) returns

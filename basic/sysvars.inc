@@ -657,8 +657,13 @@ GFX_WRAPF       equ     $E159   ; wedge wraps 0: pair S > pair E lexicographical
 ; The much bigger span-stack + its own working scratch do NOT fit here (only 9 B
 ; remain, $E157-$E15F) -- they live in a separate repack-only RAM window below
 ; (GFX_PSTK).
-GFX_B           equ     $E156   ; border colour B (raw comparison value 0..255,
-                                ; NOT range-checked -- spec §3) (1) -> ends $E157
+GFX_B           equ     $E156   ; border colour B, RANGE-CHECKED against the mode's
+                                ; domain before it is stored: 0..255 in SCREEN 2,
+                                ; 0..15 in MULTICOLOUR, else ERR 5 (D-PAINTBORD --
+                                ; ⚠️ this comment used to read "NOT range-checked").
+                                ; Still 1 B, and still the LOW byte -- what changed
+                                ; is that a value whose HIGH byte is non-zero can no
+                                ; longer reach the store. (1) -> ends $E157
 ; D-GIRDOM: POINT's OWN marshal cells. POINT used to hand the tenant its target
 ; through GXPOS/GYPOS, which is a BASIC-VISIBLE work-area cell -- and MEASURED
 ; (rows w.pt.on / w.pt.step) both references leave GXPOS/GYPOS untouched by a

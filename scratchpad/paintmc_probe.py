@@ -254,6 +254,41 @@ _B4X = ['SCREEN 3:PSET(10,10),9', 'PAINT(10,10),1,4',
 case("b4x.seed", [ln.format(read="POINT(10,10)") for ln in _B4X])
 case("b4x.far",  [ln.format(read="POINT(10,60)") for ln in _B4X])
 
+# ===========================================================================
+# 🔴 10. D-PAINTBORD -- WHERE IN THE PARSE DOES THE BORDER DOMAIN SIT?
+#    §7 measured the DOMAIN (0..255 in SCREEN 2, 0..15 in MULTICOLOUR) and filed
+#    the ORDERING as unmeasured. D-LINERR's whole finding is that WHERE a check
+#    sits is itself a claim, and a 4th argument is the only thing that separates
+#    the hypotheses, because everything else that could race the B domain
+#    (off-screen seed, wrong mode, out-of-range C) also raises ERR 5:
+#
+#      `PAINT(10,10),9,16,`  in SCREEN 3  -> ERR 5  the domain is checked as B is
+#                                                   parsed, ABOVE the grammar
+#                                        -> ERR 2  the grammar wins
+#
+#    ⚠️ EVERY ROW HERE IS PAIRED WITH ITS IN-DOMAIN TWIN ON THE SAME PROGRAM.
+#    `od3.b15c` / `od2.b16c` use a border that is LEGAL in that mode, so they
+#    must read ERR 2 -- that is what proves the trailing comma is a 4th argument
+#    at all and that this fixture reaches the grammar. Without them an ERR 2 on
+#    the out-of-domain row would agree with "the check is missing" and with "the
+#    fixture never got that far" alike.
+#    ⚠️ And `od3.b16` / `od2.b256` are the SAME programs WITHOUT the trailing
+#    comma: known ERR 5 from §7, re-run here as this round's own calibration on a
+#    known positive at THIS step.
+_OD = ['SCREEN {m}:LINE(0,40)-(255,40),7', 'PAINT(10,10),9,{b}{tail}',
+       'V=POINT(10,0):SCREEN 0:PRINT"[";V;"]":END']
+for _l, _m, _b, _t in [
+        # --- MULTICOLOUR: 16 is OUTSIDE the domain, 15 inside ---
+        ("od3.b16c",  3, "16",  ","),   # out-of-domain B + 4th arg -> ERR 5 or 2?
+        ("od3.b15c",  3, "15",  ","),   # in-domain B + 4th arg -> must be ERR 2
+        ("od3.b16",   3, "16",  ""),    # calibration: known ERR 5 (bd3.16)
+        # --- SCREEN 2: 256 is OUTSIDE the domain, 16 inside ---
+        ("od2.b256c", 2, "256", ","),   # out-of-domain B + 4th arg -> ERR 5 or 2?
+        ("od2.b16c",  2, "16",  ","),   # in-domain B + 4th arg -> must be ERR 2
+        ("od2.b256",  2, "256", ""),    # calibration: known ERR 5 (bd2.256)
+]:
+    case(_l, [ln.format(m=_m, b=_b, tail=_t) for ln in _OD], mc=(_m == 3))
+
 BR = re.compile(r"\[([^\]]*)\]")
 ERR = re.compile(r"^\s*([A-Z][A-Za-z' ]+ error|Illegal function call|Overflow|"
                  r"Out of memory|Type mismatch|Subscript out of range)", re.M)

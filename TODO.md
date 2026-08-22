@@ -2361,35 +2361,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       edit, which is what made the cause unambiguous. The correct version is also
       **4 B smaller** than the draft.
 
-- [ ] 🔴 **`PAINT`'s BORDER ARGUMENT IS RANGE-CHECKED ON THE REFERENCES AND NOT
-      HERE, AND THE BOUND DEPENDS ON THE MODE** (measured 2026-08-22 by
-      D-PAINTMC §7, rows `bd2.*` / `bd3.*` in `scratchpad/paintmc_probe.py`).
-
-      | `B`      | SCREEN 2 refs | SCREEN 3 refs | zerobas |
-      |----------|---------------|---------------|---------|
-      | 15       | floods        | floods        | floods ✅ |
-      | 16 / 255 | floods        | **ERR 5**     | floods  |
-      | 256 / -1 | **ERR 5**     | **ERR 5**     | floods  |
+- [x] ✅ **`PAINT`'s BORDER ARGUMENT IS RANGE-CHECKED ON THE REFERENCES AND NOT
+      HERE, AND THE BOUND DEPENDS ON THE MODE** — **CLOSED 2026-08-22 by
+      D-PAINTBORD**, `docs/spec-basic-paintbord.md`. Filed by D-PAINTMC §7.
 
       🎯 **`B` is 0..255 in SCREEN 2 and 0..15 in MULTICOLOUR; outside that,
-      ERR 5.** `ep_parse_b` (basic/graphics.asm) does `ld a,e / ld (GFX_B),a`
-      with NO check — the spec's "a border of 16+ is legal, just a comparison
-      value no pixel hits" is right for SCREEN 2 and wrong for the DOMAIN.
-      ⚠️ **THE SCREEN-2 HALF IS PRE-EXISTING** and independent of D-PAINTMC;
-      the shipped row that covers this argument (`border16_flood_ok`, B=16)
-      could never see it, because 16 is INSIDE the SCREEN-2 domain. What
-      D-PAINTMC changed is that the SCREEN-3 half stopped agreeing BY ACCIDENT:
-      before it, every SCREEN-3 PAINT was ERR 5, so `PAINT(10,10),9,16` was
-      right for the wrong reason.
-      💰 **PRICED AND DECLINED: ~21 B of MAIN PAGE 1** (`ld a,d/or a/jp nz` for
-      the byte domain, then `ld a,(SCRMOD)/cp 3` and `cp 16/jp nc` for the MC
-      one, replacing a 4 B inline store), against **10 B free (2026-08-22)**.
-      It needs a carve.
-      ⚠️ **AND ONE MORE MEASUREMENT BEFORE IT IS WRITTEN**: D-LINERR's whole
-      finding is that WHERE in the parse a check sits is itself a claim.
-      `PAINT(10,10),9,16,` — a 4th argument after an out-of-domain border —
-      separates ERR 5 (the domain is checked as B is parsed) from ERR 2 (the
-      grammar wins). Not measured; do not guess it from this table.
+      ERR 5** — and the check is on the FULL int16, not the stored byte (256 is
+      `$0100`, low byte `$00`).
+      ⚠️ **THE ORDERING WAS THE MISSING MEASUREMENT AND IT WENT THE OTHER WAY
+      FROM THE CODE.** `PAINT(10,10),9,16,` in SCREEN 3 is **ERR 5** on both
+      references, not ERR 2 — the domain BEATS the 4th-argument grammar — while
+      the in-domain twin `,9,15,` on the same program is ERR 2 and is what makes
+      that reading mean anything (rows `od3.b16c` / `od3.b15c` / `od2.b256c` /
+      `od2.b16c`, `scratchpad/paintmc_probe.py` §10). So the check replaces the
+      inline store, ABOVE the grammar test.
+      💰 **PRICED AT ~21 B AND DECLINED; MEASURED AT 6 B** of main page 1
+      (10 → 4 B, 2026-08-22). The filed shape was a standalone helper beside
+      `gfx_store_colour_checked`; the two checks are in fact ONE leaf with a
+      different constant (`gfx_chk_dom`, a high-nibble mask — `$F0` = 0..15,
+      `$00` = 0..255, with `or d` folding the negative/>255 half in free), which
+      also rewrote `gfx_store_colour_checked` (−5 B) and `g8_fn`'s VDP/BASE index
+      check (−3 B). The carve that funds the rest: `gfx_absent` was
+      byte-identical to `gfx_err5` and is now `equ` it (−5 B), on the
+      `err_illegal_fn` precedent in `basic/interp.asm`.
+      ✅ Ten rows ship in `basic_probe_graphics.py` PHASE J, both modes.
+      ⚠️ And `border16_flood_ok` is STRENGTHENED: its `C = 1` was the background
+      under `LINIT`, so the reference refused the seed and all four sample points
+      read 1 either way — a coverage row whose geometry could not reach its case.
+      `C = 9` makes the flood real.
+      🔴 Four doc-debt sites INVERTED, not deleted: `ep_parse_b`'s own comment,
+      `spec-basic-graphics-g5.md` §3/§5/§11, and `GFX_B`'s sysvar comment.
 
 - [ ] 🔴 **A `,B` WALL SHARING A COLOUR GROUP WITH THE FILL IS "EATEN" ON THE
       REFERENCES AND NOT HERE** (found 2026-08-22 by D-PAINTMC §7).

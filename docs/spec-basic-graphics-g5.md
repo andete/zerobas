@@ -49,9 +49,20 @@ PAINT [STEP] (x,y) [, [C] [, B]]
   `parse_coord` (STEP vs GRPAC, `>int16 → ERR 6`). Same as PSET.
 - **`C` (paint colour):** omitted → `FORCLR`. Evaluated int16; **`C<0` or `C>15`
   → ERR 5** (Illegal function call). Used as a 0..15 nibble.
-- **`B` (border colour):** omitted → **`= C`**. Evaluated int16; **NOT
-  range-checked** (`B=16` raises no error — it is only a comparison value that no
-  0..15 pixel matches). The `,,B` form (colour omitted, border given) is legal.
+- **`B` (border colour):** omitted → **`= C`**. Evaluated int16, then
+  **RANGE-CHECKED AGAINST THE MODE'S DOMAIN** — `0..255` in SCREEN 2 and
+  `0..15` in MULTICOLOUR; outside → **ERR 5**
+  ([`spec-basic-paintbord.md`](spec-basic-paintbord.md)). The `,,B` form
+  (colour omitted, border given) is legal.
+  ⚠️ **THE SENTENCE THAT USED TO STAND HERE IS INVERTED, NOT DELETED.** It read
+  *"NOT range-checked (`B=16` raises no error — it is only a comparison value
+  that no 0..15 pixel matches)"*. The parenthesis is **true** — 16 raises no
+  error in SCREEN 2 and is a comparison value nothing matches — and the
+  conclusion drawn from it is **false**: 16 is merely INSIDE the SCREEN-2 domain,
+  and the argument that a border no pixel can equal must therefore be legal fails
+  at 256 (ERR 5 in SCREEN 2) and at 16 itself (ERR 5 in MULTICOLOUR). One
+  measured case was generalised into a domain. The check is on the full int16,
+  not the stored byte: 256 is `$0100` and its low byte is `$00`.
 
 **The fill (measured, POINT-verified — the crux):** flood the 4-connected region
 of the seed, painting each pixel with the colour-clash RMW (`gfx_plot_cur`), and
@@ -141,7 +152,8 @@ dead-during-graphics window and measure).
 | any coordinate `> int16` | ERR 6 (Overflow) |
 | `PAINT(x,y),tile$,B` (string paint colour) | ERR 13 (Type mismatch) |
 | `PAINT(x,y),C,B,n` (4th arg) | ERR 2 (Syntax error) |
-| border `B` out of 0..15 | **no error** (comparison value only) |
+| border `B` outside `0..255` (SCREEN 2) / `0..15` (MULTICOLOUR) | **ERR 5**, raised as `B` is parsed — ABOVE the 4th-arg grammar test (D-PAINTBORD; `PAINT(10,10),9,16,` in SCREEN 3 is ERR 5, not ERR 2). ⚠️ This row used to read *"no error (comparison value only)"* |
+| border `B` = 16..255 in SCREEN 2 | no error — a comparison value no 0..15 pixel matches (unchanged; this is the case the retracted row was generalised from) |
 
 ---
 
@@ -263,7 +275,10 @@ declaring an eviction need (recurring lesson).
 
 See `scratchpad/g5_paint_notes.md` for the full log. Summary: grammar/tokens
 (C1), work-area = seed (C5), errors (C6: off-screen seed → ERR5, C-range → ERR5,
-coord ovf → ERR6, tile$ → ERR13, 4th-arg → ERR2, border unchecked), the
+coord ovf → ERR6, tile$ → ERR13, 4th-arg → ERR2, *"border unchecked"* —
+⚠️ **that last one is RETRACTED**, see §3/§5 and
+[`spec-basic-paintbord.md`](spec-basic-paintbord.md): the characterization only
+ever exercised `B=16`, which is inside the SCREEN-2 domain), the
 harness-budget trap (PAINT slow in emulated time — not a hang), and the
 `C==B`-bounded / `C!=B`-flood dichotomy (POINT-verified across thin box + thick
 arena, with a fill=15 control proving the arena encloses).

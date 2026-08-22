@@ -726,9 +726,19 @@ PAINT_FILL_CASES = [
     # the empty-first-field comma path through the same bounded profile.
     ("comma_empty_c", [BOX, "PAINT(40,40),,15"],
      [(40, 40), (21, 21), (59, 59), (100, 100)]),
-    # Border NOT range-checked (spec §3/§5): B=16 can never match a real 0..15
-    # pixel, so this is really a C!=B flood (no error, whole screen -> C=1).
-    ("border16_flood_ok", ["PAINT(5,5),1,16"],
+    # B=16 is INSIDE the SCREEN-2 domain (0..255 -- D-PAINTBORD; it is
+    # multicolour where 16 raises), and it can never match a real 0..15 pixel,
+    # so this is a C!=B flood: no error, whole screen -> C.
+    # 🔴 THIS ROW WAS WEAK AND D-PAINTBORD STRENGTHENED IT, because the same
+    # slice made it load-bearing. It used to paint with C=1, which under LINIT's
+    # COLOR15,1,1 IS the background -- so by D-PAINTS2SEED's rule the reference
+    # REFUSES the seed outright, and all four sample points read 1 whether
+    # anything was painted or not. It gated "a border of 16 does not raise" (via
+    # the program aborting before the PRINT) and nothing else -- a coverage row
+    # whose geometry could not reach its own case. C=9 makes the flood real: the
+    # seed is undrawn, so its effective colour is the background 1, which is
+    # neither C nor B, and the whole screen goes to 9.
+    ("border16_flood_ok", ["PAINT(5,5),9,16"],
      [(5, 5), (200, 150), (0, 0), (255, 191)]),
     # Seed on an OPEN background pixel whose colour happens to equal the
     # given border -- measured to still flood (bug #1 above: an undrawn
@@ -937,6 +947,52 @@ PAINT_BEHAV = [
     # so only THIS pinned combo is a safe, fast differential case.
     ("fourth_arg_err", ["ON ERROR GOTO 40", "SCREEN2:PAINT(28,28),4,15,7",
                         'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    # --- D-PAINTBORD: THE BORDER ARGUMENT HAS A DOMAIN, AND IT DEPENDS ON THE
+    # MODE (docs/spec-basic-paintbord.md). Both references agree on every row:
+    #
+    #     B is 0..255 in SCREEN 2 and 0..15 in MULTICOLOUR; outside -> ERR 5.
+    #
+    # ⚠️ THE PAIRS ARE THE POINT. `b_s2_16_comma` and `b_mc_16_comma` are the
+    # SAME argument in the two modes and the answers DIFFER (ERR 2 vs ERR 5);
+    # that difference is the whole rule, and a single-mode row cannot carry it.
+    # ⚠️ The SCREEN-2 half is not new behaviour of D-PAINTMC's making -- it has
+    # been wrong since G5 and was invisible because the one shipped row on this
+    # argument (border16_flood_ok above) uses B=16, which is INSIDE the SCREEN-2
+    # domain. The SCREEN-3 half used to agree BY ACCIDENT: before D-PAINTMC every
+    # multicolour PAINT was ERR 5.
+    # 🔴 A SECOND CAUSE OF "ERR 5" EXISTS AND IS EXCLUDED BY CONSTRUCTION: a
+    # SCREEN-3 PAINT that was refused outright would give ERR 5 on every row
+    # here. `b_mc_15_comma` reads ERR **2**, which is only reachable by a parse
+    # that got past the mode gate -- so the ERR 5s below are the domain, not the
+    # mode.
+    # 🔴 AND THE CHECK IS ON THE FULL int16, NOT THE STORED BYTE: 256 is $0100,
+    # low byte $00, which a byte-only test would wave through.
+    ("b_s2_256_err",   ["ON ERROR GOTO 40", "SCREEN2:PAINT(5,5),4,256",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("b_s2_neg_err",   ["ON ERROR GOTO 40", "SCREEN2:PAINT(5,5),4,-1",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("b_mc_16_err",    ["ON ERROR GOTO 40", "SCREEN3:PAINT(5,5),4,16",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("b_mc_255_err",   ["ON ERROR GOTO 40", "SCREEN3:PAINT(5,5),4,255",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("b_mc_256_err",   ["ON ERROR GOTO 40", "SCREEN3:PAINT(5,5),4,256",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("b_mc_neg_err",   ["ON ERROR GOTO 40", "SCREEN3:PAINT(5,5),4,-1",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    # ...and WHERE the check sits, raced against the grammar. A 4th argument
+    # behind an out-of-domain border is ERR 5, not ERR 2 -- the domain is decided
+    # as B is parsed, ABOVE the trailing-comma test. The in-domain twins on the
+    # same programs read ERR 2, which is what makes that mean anything: without
+    # them an ERR 2 would agree with "the check is missing" and with "the parse
+    # never reached the grammar" alike (D-LINERR's ordering rule).
+    ("b_s2_256_comma",  ["ON ERROR GOTO 40", "SCREEN2:PAINT(5,5),4,256,",
+                         'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("b_s2_16_comma",   ["ON ERROR GOTO 40", "SCREEN2:PAINT(5,5),4,16,",
+                         'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("b_mc_16_comma",   ["ON ERROR GOTO 40", "SCREEN3:PAINT(5,5),4,16,",
+                         'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("b_mc_15_comma",   ["ON ERROR GOTO 40", "SCREEN3:PAINT(5,5),4,15,",
+                         'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
 ]
 
 
