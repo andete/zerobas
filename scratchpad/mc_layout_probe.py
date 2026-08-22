@@ -18,10 +18,12 @@ sys.path.insert(0, os.path.join(
 import omsx_repl                                                  # noqa: E402
 
 ZB = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
+ZB_M = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 SIDES = {
     "vg8020": dict(machine="Philips_VG_8020", boot=8.0, step=2.5, reset=("NEW",)),
     "cf3300": dict(machine="National_CF-3300", boot=14.0, step=4.5,
                    reset=("", "SCREEN 0", "NEW")),
+    "zb":     dict(machine=ZB_M, boot=8.0, step=2.5, reset=("NEW",)),
 }
 
 # (label, [program lines without numbers]) -- line 10 is always ON ERROR
@@ -77,6 +79,56 @@ for _lab, _x, _y, _a in [("v.252.188", 252, 188, 1535),   # want 71  ($47, low)
                          ("v.128.64",  128,  64,  640),   # want 116 ($74, high)
                          ("v.5.5",       5,   5,    1)]:  # want 71  ($47, low)
     CASES[_lab] = [ln.format(x=_x, y=_y, a=_a) for ln in VERIFY]
+
+# 🔴 zerobas runs on C-BIOS, NOT the reference BIOS. CHGMOD is what lays down the
+# SCREEN-3 NAME TABLE at $0800, so if C-BIOS's mode-3 setup differs, an
+# implementation that writes only the pattern generator inherits a wrong table.
+# This is the row that decides whether the generator is enough. zb is a SIDE here.
+CASES["nt.s3"] = ['SCREEN 3',
+                  'A=VPEEK(&H800):B=VPEEK(&H801):C=VPEEK(&H81F)',
+                  'D=VPEEK(&H820):E1=VPEEK(&H900):F=VPEEK(&HA00)',
+                  'SCREEN 0:PRINT"[";A;B;C;D;E1;F;"]":END']
+CASES["nt.s2"] = ['SCREEN 2',
+                  'A=VPEEK(&H1800):B=VPEEK(&H1801):C=VPEEK(&H181F)',
+                  'D=VPEEK(&H1820):E1=VPEEK(&H1900):F=VPEEK(&H1A00)',
+                  'SCREEN 0:PRINT"[";A;B;C;D;E1;F;"]":END']
+
+# --- PAINT semantics in MC: there is NO pattern bit, so "drawn vs never-drawn"
+# (the distinction gfx_paint_read's border test is built on, and the one the
+# VG-8020 differential forced in SCREEN 2) has no counterpart. Measure what the
+# references actually do before implementing anything.
+_PT = ['SCREEN 3', 'LINE(0,40)-(255,40),7', '{paint}', 'V={read}',
+       'SCREEN 0:PRINT"[";V;"]":END']
+for _lab, _p, _r in [
+        # flood from above the line: does it spread, and where does it stop?
+        ("pt.flood",  "PAINT(10,10),9",   "POINT(10,0)"),
+        ("pt.stop",   "PAINT(10,10),9",   "POINT(10,60)"),
+        ("pt.online", "PAINT(10,10),9",   "POINT(10,40)"),
+        # explicit border argument
+        ("pt.bord7",  "PAINT(10,10),9,7", "POINT(10,0)"),
+        # border == the BACKGROUND colour (4): the SCREEN-2 bug case
+        ("pt.bord4",  "PAINT(10,10),9,4", "POINT(10,0)"),
+]:
+    CASES[_lab] = [ln.format(paint=_p, read=_r) for ln in _PT]
+
+# round 2: pt.stop showed the DEFAULT border does not stop at colour 7. These two
+# discriminate whether an EXPLICIT border does, and whether the default floods the
+# whole surface -- pt.bord7 could not tell, because its read point was on the
+# SEED's own side of the line.
+for _lab, _p, _r in [
+        ("pt.b7stop", "PAINT(10,10),9,7", "POINT(10,60)"),   # border 7: crossed?
+        ("pt.far",    "PAINT(10,10),9",   "POINT(200,150)"), # default: whole screen?
+]:
+    CASES[_lab] = [ln.format(paint=_p, read=_r) for ln in _PT]
+
+CASES["d.seed"]  = ['SCREEN 3', 'PAINT(10,10),9', 'V=POINT(10,10)',
+                    'SCREEN 0:PRINT"[";V;"]":END']
+CASES["d.line"]  = ['SCREEN 3', 'LINE(0,40)-(255,40),7', 'V=POINT(100,40)',
+                    'SCREEN 0:PRINT"[";V;"]":END']
+CASES["d.circ"]  = ['SCREEN 3', 'CIRCLE(100,100),20,7', 'V=POINT(120,100)',
+                    'SCREEN 0:PRINT"[";V;"]":END']
+CASES["d.box"]   = ['SCREEN 3', 'LINE(10,10)-(50,50),7,BF', 'V=POINT(30,30)',
+                    'SCREEN 0:PRINT"[";V;"]":END']
 
 BR = re.compile(r"\[([^\]]*)\]")
 ERR = re.compile(r"^\s*([A-Z][A-Za-z' ]+ error|Illegal function call|Overflow|"

@@ -67,6 +67,17 @@ CASES = [
     ("s3.aliashi", "SCREEN 3", "PSET(255,191),7",    "POINT(252,188)"),
     # and the domain edge: is 256/192 refused as it is in SCREEN 2?
     ("s3.256",     "SCREEN 3", "PSET(256,192),7",    "POINT(255,191)"),
+
+    # 🔴 SEPARATION ROWS -- added 2026-08-22 because the rows above CANNOT see a
+    # broken address model. PSET and POINT both go through gfx_calc_addr_mc, so a
+    # write/read ROUND TRIP through one address function is invariant under ANY
+    # consistent bijection: knife the formula and the read follows the write.
+    # K-S1 proved it, reddening nothing with the row term cut to zero. Each row
+    # below writes at ONE coordinate and reads at ANOTHER that is a DIFFERENT cell
+    # by exactly ONE term of the formula, so each term becomes falsifiable.
+    ("s3.rowsep",  "SCREEN 3", "PSET(0,0),7",        "POINT(0,4)"),   # (cy&7)
+    ("s3.blksep",  "SCREEN 3", "PSET(0,0),7",        "POINT(0,32)"),  # (cy>>3)*256
+    ("s3.colsep",  "SCREEN 3", "PSET(0,0),7",        "POINT(8,0)"),   # x & $F8
 ]
 
 BR = re.compile(r"\[([^\]]*)\]")

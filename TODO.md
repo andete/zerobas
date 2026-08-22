@@ -2233,7 +2233,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       **Missing operand (ERR 24)** — but one field along, at the box slot, the
       same two shapes are ERR 2.
 
-- [ ] 🔴 **SCREEN 3 DRAWS ON BOTH REFERENCES; zerobas raises ERR 5.**
+- [x] ✅ **CLOSED 2026-08-22 (D-SCREEN3) — MULTICOLOUR LANDS, MINUS PAINT.**
+      [`docs/spec-basic-screen3.md`](docs/spec-basic-screen3.md). PSET, PRESET,
+      POINT, LINE, LINE,B/BF, CIRCLE and DRAW all agree with **both** references
+      in SCREEN 3. 💰 **main page 1 8 → 4 B (4 B), sub page 0 3299 → 3156 B
+      (143 B)** — both UNDER the scout's ~6 B / ~170–280 B estimate, because MC
+      has no colour table so the arm replaces the clash RMW as well.
+      🎯 **DRAW'S GATE PAID FOR PAINT'S**: DRAW carried 6 B of inline
+      `ld a,(SCRMOD)/cp 2/jp nz,gfx_err5` — the shared gate's own test spelled out
+      again. A 3 B `call gfx_mode_gate` keeps D-DRAWERR's measured ordering and
+      freed the bytes; main cost fell 7 B → 4 B.
+      ✅ **AND IT CLOSED THE SILENT WRONG ANSWER**: `POINT` had no mode gate, so
+      SCREEN-3 `POINT` read the G2 address model against MC VRAM and returned a
+      plausible wrong colour with no error (`1` vs the references' `4`). The same
+      branch that implements the feature fixes it.
+      🔴 **PAINT IS EXCLUDED ON PURPOSE — see its own item below.**
+
+  <details><summary>the original filing, kept for the record</summary>
+
+- [x] 🔴 **SCREEN 3 DRAWS ON BOTH REFERENCES; zerobas raises ERR 5.**
       Filed 2026-08-11 by D-LINERR
       ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md) §6.4), rows
       `m.s3` and `v.pset3` of `make lineerr-acceptance`, both **measured and
@@ -2289,6 +2307,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **Still unmeasured (§7)**: PAINT's run scan, DRAW, CIRCLE aspect,
       `LINE ,B/BF`'s fast path, and **what the $0800 name table must contain**
       (its address is measured, its contents are not).
+
+  </details>
+
+- [ ] 🔴 **`PAINT` STILL REFUSES SCREEN 3, AND THE REASON IS ALGORITHMIC, NOT
+      ADDRESSING** (filed 2026-08-22 by D-SCREEN3 §5). `gfx_rmw_at_mc` writes
+      PAINT's cells perfectly well — its WRITE side already routes through it. The
+      FILL is what breaks: **adjacent LOGICAL pixels share one 4×4 cell**, so with
+      the default border `B = C` the first cell painted to `C` instantly reads as
+      a BORDER to its own neighbours and the span walk stops dead.
+      🎯 This engine escapes that in SCREEN 2 via the **DRAWN/UNDRAWN**
+      distinction (`gfx_paint_read` reports "the pattern bit is clear", and an
+      undrawn pixel can never be a border). **Multicolour has no pattern bit**, so
+      the escape does not exist.
+      💰 **MEASURED both ways**: an MC arm was written, built and run — it paints
+      the SEED and stops (`POINT(10,0)` = 4 where both references read 9). ⚠️ Two
+      of the six PAINT rows AGREED FOR THE WRONG REASON (both sides did nothing);
+      only the flood rows discriminate. **A loud ERR 5 beats a silent one-cell
+      paint**, so the narrow gate stays and the MC arm was REMOVED rather than
+      left unreachable — `make deadcode` would have flagged it, which is what
+      keeps the decision honest instead of a stub someone mistakes for support.
+      ⚠️ The fix is a flood engine that does not re-test painted cells (or that
+      steps by CELL in MC), plus a measurement of what the reference's span walk
+      actually does. Its own slice.
 
 - [ ] 🔴 **`POINT` IN SCREEN 3 IS A SILENT WRONG ANSWER, AND IT IS INDEPENDENT OF
       IMPLEMENTING SCREEN 3** (found 2026-08-22 by the SCREEN 3 scout, §5).

@@ -1,0 +1,16 @@
+== build BEFORE the baseline ==
+baseline roms=('0ba6d413', '73b78093') divergent=[]
+EXACT  K-S1  row term (cy&7) -> 0
+        roms=('0ba6d413', 'e05a59e3') want=['s3.rowsep'] got=['s3.rowsep']
+EXACT  K-S2  block term (cy>>3) -> 0
+        roms=('0ba6d413', '4f642445') want=['s3.blksep'] got=['s3.blksep']
+EXACT  K-S3  column term (x & $F8) -> 0
+        roms=('0ba6d413', 'fa03ac04') want=['s3.colsep'] got=['s3.colsep']
+MISS   K-S4  nibble select: bit 2 of x -> bit 1
+        roms=('0ba6d413', '4eb87f1a') want=['s3.next', 's3.same'] got=['s3.aliashi', 's3.same']
+MISS   K-S5  gfx_point's MC dispatch removed
+        roms=('0ba6d413', '39f90191') want=['ctl.s3rd', 'pset3', 's3.aliashi', 's3.blksep', 's3.colsep', 's3.next', 's3.rowsep', 's3.same'] got=['ctl.s3rd', 'pset3', 's3.aliashi', 's3.blksep', 's3.same']
+
+restored: roms=('0ba6d413', '73b78093')  source byte-identical
+
+3/5 knife rows EXACT

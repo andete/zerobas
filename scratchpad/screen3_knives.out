@@ -1,0 +1,7 @@
+== build BEFORE the baseline ==
+baseline roms=('0ba6d413', '73b78093') divergent=[]
+MISS   K-S1  row term (cy&7) -> 0
+        roms=('0ba6d413', 'e05a59e3') want=['pset3', 's3.aliashi', 's3.same'] got=[]
+APPARATUS: K-S2  block term (cy>>3) -> 0: anchor matched 0x
+
+restored: roms=('0ba6d413', '73b78093')  source byte-identical

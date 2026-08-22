@@ -411,9 +411,15 @@ gfx_point_gate:
                 ; fall through into the gate
 gfx_mode_gate:
                 ld      a,(SCRMOD)
-                cp      2                   ; SCREEN 2 only (arc D4)
+                cp      3                   ; D-SCREEN3: MULTICOLOUR, whose pixel ops
+                ret     z                   ; the tenant now implements
+gfx_mode_gate_s2:
+                ; ⚠️ PAINT ENTERS HERE, with A ALREADY = (SCRMOD), so that mode 3 is
+                ; excluded for it alone -- see ex_paint. Every OTHER pixel op falls in
+                ; from above with mode 3 already accepted. Two gates, 3 bytes apart.
+                cp      2                   ; SCREEN 2 (arc D4)
                 ret     z
-                jp      gfx_err5            ; SCREEN 0/1/3 -> Illegal function call
+                jp      gfx_err5            ; SCREEN 0/1 -> Illegal function call
 gfx_work_area:
                 ld      (GXPOS),bc          ; pending pixel target X
                 ld      (GRPACX),bc         ; last-referenced point X
@@ -599,7 +605,19 @@ ex_paint:
                 ; spec-basic-graphics-g5.md §6's "deferred to AFTER every field
                 ; is parsed", which was a design choice never measured against
                 ; the reference.
-                call    gfx_point_gate      ; BC/DE/HL preserved
+                ; D-SCREEN3: PAINT is the ONE pixel op that still refuses
+                ; MULTICOLOUR, so it takes gfx_point_gate apart and uses the NARROW
+                ; arm. Not an address-model gap -- gfx_rmw_at_mc would write the cells
+                ; correctly -- but an ALGORITHMIC one: adjacent LOGICAL pixels share
+                ; one 4x4 cell, so with the default border B=C the first painted cell
+                ; instantly reads as a border to its own neighbours and the fill stops
+                ; dead. This flood engine avoids that in SCREEN 2 via the DRAWN/UNDRAWN
+                ; distinction, which multicolour does not have (there is no pattern
+                ; bit). Measured: seed-only, where both references flood the surface.
+                ; A loud ERR 5 beats a silent one-cell paint. Filed in TODO.md.
+                call    gfx_work_area       ; BC/DE/HL preserved (gfx_point_gate's half)
+                ld      a,(SCRMOD)
+                call    gfx_mode_gate_s2    ; SCREEN 2 only -- mode 3 -> ERR 5
                 ; --- D-PAINTSEED: the OFF-SCREEN-SEED test is BELOW the work
                 ; area, not above it. D-LINERR left this ordering where G5 had
                 ; put it and filed it unmeasured, because BOTH conditions raise
@@ -745,9 +763,13 @@ ex_draw:
                                             ; and it is what made d.dz2/d.ov2
                                             ; answer 13 where the references
                                             ; answer the pending fault (11 / 6).
-                ld      a,(SCRMOD)
-                cp      2                   ; SCREEN 2 only (arc D4)
-                jp      nz,gfx_err5         ; SCREEN 0/1 -> ERR 5 (measured)
+                call    gfx_mode_gate       ; D-SCREEN3: was 6 B of inline
+                                            ; `ld a,(SCRMOD) / cp 2 / jp nz,gfx_err5`.
+                                            ; The shared gate is the SAME test and 3 B
+                                            ; smaller, and it still runs BEFORE the
+                                            ; argument, which is D-DRAWERR's measured
+                                            ; ordering. The 3 B saved is what pays for
+                                            ; PAINT's narrow gate below.
                 call    str_eval            ; STRPTR -> [len][ptr]; CF=1 iff a string
                 jp      nc,gfx_typeerr      ; DRAW 5 -> Type mismatch (measured)
                 call    check_expr_errors   ; surface a deferred string error

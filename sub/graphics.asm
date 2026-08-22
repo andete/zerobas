@@ -266,6 +266,113 @@ gca_mask_set:
                 ret
 
 ; ===========================================================================
+; gfx_calc_addr_mc -- the SCREEN 3 (MULTICOLOUR) address model. D-SCREEN3.
+;   in:  D = y (0..191), E = x (0..255)   -- the SAME logical surface as SCREEN 2
+;   out: HL = pattern-generator address, C = NIBBLE mask ($F0 high / $0F low)
+;   Clobbers A. B is NOT clobbered (unlike gfx_calc_addr's mask loop).
+;
+; MEASURED, not derived from any reference ROM: docs/screen3-scout-2026-08-22.md
+; §6. `BASE()` says the SCREEN-3 tables are name $0800, generator $0000, colour
+; UNUSED; the generator fills with $44 (both nibbles = the background colour).
+; Plotting one cell in colour 7 and finding the byte that stopped being $44, at
+; nine points including both corners, gives
+;
+;     cx = x>>2   cy = y>>2                (the 4x4 HARDWARE cell)
+;     addr = (cy>>3)*256 + (cx>>1)*8 + (cy&7)
+;     high nibble when cx is EVEN, low nibble when cx is ODD
+;
+; and (cx>>1)*8 is just (x & $F8), the SAME expression gfx_calc_addr already uses
+; -- a SCREEN-2 byte spans 8 pixels across, an MC byte spans 8 pixels across as
+; two 4-wide cells. Only the row term and the mask differ.
+;
+; 🎯 THERE IS NO COLOUR TABLE AND THEREFORE NO CLASH. Each cell carries its own
+; colour in its nibble, so every caller's second VRAM access (the +$2000 colour
+; byte) and gfx_color_rmw have NO counterpart here. That is why the MC twin is
+; SMALLER than the SCREEN-2 original rather than larger.
+; ===========================================================================
+gfx_calc_addr_mc:
+                ld      a,e
+                and     $F8                 ; (cx>>1)*8 == x & $F8, as in G2
+                ld      l,a
+                ld      a,d
+                and     $1F
+                rrca
+                rrca
+                and     $07                 ; (y>>2) & 7  == cy & 7
+                add     a,l                 ; <=248 + <=7 = 255, no carry into H
+                ld      l,a
+                ld      a,d
+                and     $E0
+                rlca
+                rlca
+                rlca                        ; y>>5 == cy>>3, 0..5
+                ld      h,a
+                ld      c,$F0               ; cx even -> the HIGH nibble
+                ld      a,e
+                and     $04                 ; bit 2 of x IS bit 0 of cx
+                ret     z
+                ld      c,$0F               ; cx odd -> the LOW nibble
+                ret
+
+; ===========================================================================
+; gfx_rmw_at_mc -- plot one MC cell. in: D=y, E=x (caller-checked in range),
+; GFX_C = colour 0..15. Caller HOLDS DI. Updates CLOC/CMASK exactly as the G2
+; path does (the work area is faithful in both modes). Clobbers A/BC/DE/HL.
+; ===========================================================================
+gfx_rmw_at_mc:
+                call    gfx_calc_addr_mc    ; HL = addr, C = nibble mask
+                ld      (CLOC),hl
+                ld      a,c
+                ld      (CMASK),a
+                call    gfx_rd_raw          ; A = the current byte (HL preserved)
+                ld      b,a
+                ld      a,c
+                cpl
+                and     b                   ; keep the OTHER cell's nibble
+                ld      b,a
+                ld      a,(GFX_C)
+                ld      d,a
+                rlca
+                rlca
+                rlca
+                rlca
+                or      d                   ; the colour in BOTH nibbles
+                and     c                   ; ...keep only ours
+                or      b                   ; ...merge with the preserved half
+                ld      c,a
+                jp      gfx_wr_raw          ; tail: HL = addr, C = the new byte
+
+; ===========================================================================
+; gfx_point_mc -- read one MC cell's colour. in: D=y, E=x. out: A = 0..15.
+; Caller holds DI. Clobbers A/BC/HL.
+; ===========================================================================
+gfx_point_mc:
+                call    gfx_calc_addr_mc
+                call    gfx_rd_raw          ; A = the byte (C = mask preserved)
+                ld      b,a
+                ld      a,c
+                cp      $0F
+                ld      a,b
+                jr      z,gpm_low
+                rrca
+                rrca
+                rrca
+                rrca                        ; high nibble -> down
+gpm_low:
+                and     $0F
+                ret
+
+; ===========================================================================
+; gfx_is_mc -- Zf=1 iff the current screen mode is 3 (MULTICOLOUR). One place,
+; because D-SCREEN3 dispatches at four sites and a mode test spelled out four
+; times is four chances to spell it differently. Clobbers A.
+; ===========================================================================
+gfx_is_mc:
+                ld      a,(SCRMOD)
+                cp      3
+                ret
+
+; ===========================================================================
 ; gfx_wr_raw / gfx_rd_raw — one VRAM byte via direct ports for the SHORT G2 pixel
 ; ops. in gfx_wr_raw: HL=addr, C=data. gfx_rd_raw: HL=addr -> A=data. Clobbers A.
 ;
@@ -321,6 +428,17 @@ gfx_rd_raw:
 ; fully DI (gfx_rd_raw/gfx_wr_raw); returns nothing.
 ; ===========================================================================
 gfx_plot:
+                ; D-SCREEN3: in MULTICOLOUR the whole clash dance below has no
+                ; counterpart -- one nibble IS the pixel and its colour. The tenant
+                ; is entered under DI by CALSLT, which is gfx_rmw_at_mc's contract.
+                call    gfx_is_mc
+                jr      nz,gp_g2
+                ld      a,(GXPOS)
+                ld      e,a
+                ld      a,(GYPOS)
+                ld      d,a
+                jp      gfx_rmw_at_mc       ; tail: publishes CLOC/CMASK itself
+gp_g2:
                 ld      a,(GXPOS)           ; x (low byte; 0..255 guaranteed in-range)
                 ld      e,a
                 ld      a,(GYPOS)           ; y (low byte; 0..191)
@@ -374,6 +492,26 @@ gp_clear:
 ; anyway -- the cells are the marshalling AND the contract there.
 ; ===========================================================================
 gfx_point:
+                ld      a,(GFX_PTX)
+                ld      e,a
+                ld      a,(GFX_PTY)
+                ld      d,a
+                ; D-SCREEN3. ⚠️ POINT HAS NO MODE GATE -- the plotting ops are gated
+                ; by gfx_point_gate, POINT is not -- so before this branch existed a
+                ; SCREEN-3 POINT read the G2 address model against MC VRAM and
+                ; returned a WRONG COLOUR WITH NO ERROR (measured: 1 here, 4 on both
+                ; references; docs/screen3-scout-2026-08-22.md §5). That silent wrong
+                ; answer is fixed by the same branch that implements the feature.
+                call    gfx_is_mc
+                jr      nz,gpt_g2
+                ld      a,(GFX_PTX)
+                ld      e,a
+                ld      a,(GFX_PTY)
+                ld      d,a
+                call    gfx_point_mc
+                ld      (GFX_RES),a
+                ret
+gpt_g2:
                 ld      a,(GFX_PTX)
                 ld      e,a
                 ld      a,(GFX_PTY)
@@ -550,6 +688,10 @@ gfx_plot_cur:
 ; This is G2 gfx_plot's body with raw writes; G2's gfx_plot is left untouched.
 ; ---------------------------------------------------------------------------
 gfx_rmw_at:
+                ; D-SCREEN3: one branch here covers LINE, CIRCLE, DRAW and PAINT's
+                ; write side -- every one of them reaches VRAM through this routine.
+                call    gfx_is_mc
+                jp      z,gfx_rmw_at_mc
                 call    gfx_calc_addr       ; HL = pattern addr, C = mask (B clobbered)
                 ld      (CLOC),hl
                 ld      a,c
@@ -894,6 +1036,14 @@ gbf_loop:
 ; it twice.
 ; ---------------------------------------------------------------------------
 gbf_row:
+                ; D-SCREEN3: the whole-byte fast path below writes a pattern byte
+                ; AND a colour byte at +$2000 -- an MC byte is two CELLS and there is
+                ; no colour table, so neither store means anything here. Fall back to
+                ; the per-pixel rasteriser, which gbf_rw_all already is (it is the
+                ; pre-D-BFBYTE behaviour, kept for runs with no whole byte in them).
+                ; Slower in SCREEN 3, correct in both.
+                call    gfx_is_mc
+                jr      z,gbf_rw_all
                 call    gbf_split           ; B = whole-byte count (0 = none)
                                             ; D = x of the first whole cell
                 ld      a,b
@@ -2124,6 +2274,11 @@ gfx_paint_plot:
 ; border, independent of colour.
 ; ---------------------------------------------------------------------------
 gfx_paint_read:
+                ; ⚠️ NO MC ARM HERE ON PURPOSE. PAINT refuses SCREEN 3 in the
+                ; resident gate (basic/graphics.asm ex_paint) because the flood is
+                ; algorithmically wrong in MC, not because this read is -- so an MC
+                ; arm would be code no caller can reach, and `make deadcode` would say
+                ; so. See TODO.md and docs/spec-basic-screen3.md.
                 di
                 call    gfx_calc_addr       ; HL = pattern addr, C = mask
                 call    gfx_rd_raw          ; A = pattern byte

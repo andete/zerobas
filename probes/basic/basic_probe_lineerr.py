@@ -822,17 +822,21 @@ NEGATIVE = {
 }
 LABEL_W = 12
 
-_S3 = ("DEFERRED — SCREEN 3 (multicolour) DRAWS on both references; zerobas "
-       "has no SCREEN-3 pixel op at all, so its `cp 2` refuses the mode. A "
-       "WHOLE-FEATURE gap (a second rasteriser, a second address/clash model), "
-       "not an error-surface defect: this slice moved WHERE the refusal "
-       "happens, and the refusal itself is correct for every mode zerobas "
-       "implements. Measured, priced at nothing, filed in TODO.md")
+# ✅ `m.s3` / `v.pset3` GRADUATED 2026-08-22 (D-SCREEN3,
+# docs/spec-basic-screen3.md). They were DEFERRED from 2026-08-11: SCREEN 3 drew
+# on both references and zerobas raised ERR 5, and the filing called it a
+# whole-feature gap needing "a second rasteriser and a second address/clash
+# model". The scout measured that description wrong in the cheap direction --
+# the BASIC coordinate space is 0..255 x 0..191 exactly as SCREEN 2 (64x48 is
+# the HARDWARE cell), and multicolour has NO colour table, so there is no second
+# CLASH model at all. Both rows now read ` 0 , 20 , 21 ` on all three sides.
+# 🔴 PAINT is the one SCREEN-3 op still refusing, and its reason is ALGORITHMIC,
+# not addressing -- adjacent LOGICAL pixels share one 4x4 cell, so with the
+# default border B=C the first painted cell reads as a border to its own
+# neighbours and the fill stops. Spec §5; no row here drives PAINT in SCREEN 3.
 
 DEFERRED: dict[str, str] = {
     # Measured, not scored, each with the reason it is out of this slice's reach.
-    "m.s3": _S3,
-    "v.pset3": _S3,
     # 🎯 `d.lit2` and `d.def32k` were deferred here by D-DRAWERR and are
     # UNDEFERRED by D-DSCALE (docs/spec-basic-lineerr.md §12) — they are the
     # rows the fix was written against, so leaving them deferred would mean the
