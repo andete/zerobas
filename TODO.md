@@ -5978,6 +5978,69 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `FN` evaluation must call `eval`, which is main page 1, and no sub-ROM
         tenant can reach main page 1. **Read both walls from `make basic-reloc`
         at the time.**
+        ⚠️ **AND THE SCOUT'S OWN HEADLINE IS NOW REFUTED, 2026-08-22**, by
+        [`docs/deffn-design-2026-08-22.md`](docs/deffn-design-2026-08-22.md)
+        (rounds 5–10, `scratchpad/deffn_round5.out` … `deffn_round10.out`,
+        **82 rows, both references agreeing on every scored one**).
+        ❌ **THERE IS NO SAVE AND NO RESTORE.** The scout read *"the formal is
+        SAVED AND RESTORED … that is the fact the design turns on"*; the
+        variable is **never written**. `X=5:P=VARPTR(X):DEF FNA(X)=PEEK(P)` →
+        **5**, and `DEF FNA(X)=VARPTR(X)-P` → **30327, not 0**: the formal is a
+        **SHADOW CELL that only the defining function's own body sees**
+        (`DEF FNB(Y)=X` called from inside `FNA(X)`'s body reads the GLOBAL).
+        Nothing has to be unwound, which is also why `X` survives a body that
+        RAISES. 🔴 The round-8 row built to prove the opposite (`PEEK(VARPTR(X))`
+        → 2) **agreed for the wrong reason** — `VARPTR` inside the body resolves
+        the name the same way the body does.
+        🎯 **THE CEILING IS A DIVISION, NOT A RULE**: 9 formals legal / 10 →
+        **ERR 5 at the call**, and the reference's shadow reads `$F6EB`, i.e.
+        3 B into a 100-byte block; a slot shaped like a variable entry is 11 B;
+        100/11 = 9.
+        🎯 **`DEF FN` DOES NOT PARSE ITS BODY** — `DEF FNA(X)=X+*2` and even
+        `DEF FNA(X) X+1` (no `=`) are accepted; the ONLY DEF-time check is that
+        a letter follows `FN`. The skip to end-of-statement is token-aware
+        (`DEF FNA$(X$)=X$+":Q"` → `a:Q`), i.e. `if_skip_to_else`'s shape with
+        `COLON`.
+        🎯 **`DEF FN` IN DIRECT MODE IS `Illegal direct` (ERR 12)**, pinned by
+        two controls (`DEF USR` and a direct `LET` in the same position are
+        both fine). ✅ ERR 12's message already ships.
+        🎯 **`CLEAR` ERASES A DEFINITION** and `A`/`FNA` coexist — so the
+        definition lives in the VARIABLE TABLE under a key no variable can
+        make (bit 7 of `name0`), needing **no new table**:
+        `var_alloc_or_find(BC,2)` already allocates a typed 2-byte entry and
+        2 B is exactly a text pointer.
+        📏 **GATED**: `make deffn-acceptance` (`probes/basic/basic_probe_deffn.py`,
+        82 rows + 3 claim rows). At `84e080c`: **8 of 8 positive controls PASS,
+        67 of 69 subject rows divergent** — red by design until the verb ships;
+        `make deffn-strict` is the target that flips.
+        🔴 **SIX ROWS ARE A SILENT WRONG ANSWER, NOT TWO** (`b.undef`,
+        `b.forward`, `o.undefarg`, `o.ifnot`, `d.def`, `d.defrun`): an undefined
+        `FN<name>(…)` parses as a subscripted array reference and reads **`0`**.
+        🔴 **AND THE TWO GREEN SUBJECT ROWS ARE VACUOUS** — `o.twofault` /
+        `o.badname` want `ERR 2 AT 20` and so do 44 of the 69, because this tree
+        answers `Syntax error` to EVERY `DEF FN` line. The probe detects the
+        blanket and prints `GREEN BUT VACUOUS` beside them.
+        💰 **STILL NOT LANDED, AND NOW FOR A MEASURED REASON.** Walls at
+        `84e080c`, clean, 2026-08-22: **main page 1 = 4 B, main page-0 low =
+        46 B** (sub p0 3075 B, sub p1 1624 B). The draft was assembled far
+        enough to hit a second obstacle and then REVERTED (the tree is
+        byte-identical): 🔴 **the RAM window the 100-byte parameter area needed
+        IS NOT FREE, AND `basic/sysvars.inc` SAID IT WAS** — *"376 B spare"*
+        below `$E560`, while `GFX_PSTK`/`GFX_DBUF` have sat at `$E3F2` (256 B)
+        since G5. **10 bytes are actually free there.** That comment is FIXED
+        (conclusion inverted, 0 ROM bytes), as is `basic/vars.asm`'s header
+        filing `var_find`/`var_get_key`/`var_set_key` as an available carve —
+        R1 took them three weeks ago.
+        💰 **THE FUNDING SURVEY IS MEASURED**:
+        `scratchpad/dupspan_sweep.py` (calibrated with a planted pair, prints
+        its 1467-span denominator) finds ~150–190 B of byte-identical spans on
+        the D-PAINTBORD `gfx_absent equ gfx_err5` precedent — the biggest being
+        **8 copies of `ld a,5 / jp raise_error` (35 B)** and **6 of `ld a,2 /
+        jp raise_error` (25 B)**. 🔴 Every row is a CANDIDATE, not a verdict:
+        some sites are FALLTHROUGH targets (`sw_illegal` recovers 2 B, not 5)
+        and seven are reached by `jr` (1 B each to widen). **DEF FN is an arc
+        with a funding slice in front of it — but for a different and now
+        measured reason than the filed one.**
       - **The `CLEAR` string-pool partition** — ✅ **LANDED 2026-07-29, 51/51
         gated, falsified.** Opened by the `BIN$`/`FRE` slice (D-BF-A(c)):
         zerobas had ONE free gap where the reference has TWO pools, and

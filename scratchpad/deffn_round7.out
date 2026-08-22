@@ -1,0 +1,45 @@
+  vg8020  o.outerafter -> '2'
+  cf3300  o.outerafter -> '2'
+  ROW o.outerafter  refs-agree   zb=<not run>
+
+  vg8020  o.outerbefore -> '2'
+  cf3300  o.outerbefore -> '2'
+  ROW o.outerbefore refs-agree   zb=<not run>
+
+  vg8020  o.outer.ctl -> '2'
+  cf3300  o.outer.ctl -> '2'
+  ROW o.outer.ctl   refs-agree   zb=<not run>
+
+  vg8020  o.outernoarg -> '3'
+  cf3300  o.outernoarg -> '3'
+  ROW o.outernoarg  refs-agree   zb=<not run>
+
+  vg8020  o.outerabs  -> '2'
+  cf3300  o.outerabs  -> '2'
+  ROW o.outerabs    refs-agree   zb=<not run>
+
+  vg8020  o.quotedcolon -> 'a:Q'
+  cf3300  o.quotedcolon -> 'a:Q'
+  ROW o.quotedcolon refs-agree   zb=<not run>
+
+  vg8020  o.stmtcolon -> '3 9'
+  cf3300  o.stmtcolon -> '3 9'
+  ROW o.stmtcolon   refs-agree   zb=<not run>
+
+  vg8020  o.clearwipe2 -> '<NO OUTPUT>'
+  cf3300  o.clearwipe2 -> '<NO OUTPUT>'
+  ROW o.clearwipe2  NOT MEASURED  (blank on: vg8020,cf3300)
+
+  vg8020  o.runtwice  -> '3'
+  cf3300  o.runtwice  -> '3'
+  ROW o.runtwice    refs-agree   zb=<not run>
+
+  vg8020  o.ctl       -> '6'
+  cf3300  o.ctl       -> '6'
+  ROW o.ctl         refs-agree   zb=<not run>
+
+  vg8020  d.deferr      -> '<NO OUTPUT>'
+  cf3300  d.deferr      -> '<NO OUTPUT>'
+  ROW d.deferr      NOT MEASURED  (blank on: vg8020,cf3300)
+
+done

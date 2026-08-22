@@ -2442,6 +2442,22 @@ lineerr-characterize: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_lineerr.py \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-DEFFN: the last missing MSX1 reserved word ---------------------------
+# 🔴 RED BY DESIGN UNTIL THE VERB SHIPS. `deffn-acceptance` gates the EIGHT
+# POSITIVE CONTROLS (rows with no DEF FN in them) and the address CLAIMS, and
+# reports the 69 subject rows as a recorded baseline -- so it is runnable in CI
+# today and says something true. `deffn-strict` is the same run with the subject
+# rows required to match: that is the target that flips when DEF FN lands.
+# `SIDES=vg8020,cf3300` re-measures the reference column instead of trusting the
+# banked one (docs/deffn-design-2026-08-22.md).
+deffn-acceptance: repack-machine
+	python3 probes/basic/basic_probe_deffn.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+deffn-strict: repack-machine
+	python3 probes/basic/basic_probe_deffn.py --gate --strict \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 lineerr-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_lineerr.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)

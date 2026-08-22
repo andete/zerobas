@@ -1,0 +1,95 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_deffn.py --gate \
+	         
+PASS b.ctl            ref='6'  zb='6'
+DIFF b.forward        ref='ERR 18 AT 60'  zb='0'  🔴 SILENT WRONG ANSWER (a value where the reference refuses)
+DIFF b.nested         ref='8'  zb='ERR 2 AT 20'
+DIFF b.noarg          ref='7'  zb='ERR 2 AT 20'
+DIFF b.param          ref='3 5'  zb='ERR 2 AT 20'
+DIFF b.paramnew       ref='8 0'  zb='ERR 2 AT 20'
+DIFF b.recurse        ref='ERR 7 AT 60'  zb='ERR 2 AT 20'
+DIFF b.redef          ref='3'  zb='ERR 2 AT 20'
+DIFF b.str            ref='hi!'  zb='ERR 2 AT 20'
+DIFF b.two            ref='5'  zb='ERR 2 AT 20'
+DIFF b.undef          ref='ERR 18 AT 60'  zb='0'  🔴 SILENT WRONG ANSWER (a value where the reference refuses)
+PASS d.ctl            ref='6'  zb='6'
+DIFF d.def            ref='<Undefined user function>'  zb='0'  🔴 SILENT WRONG ANSWER (a value where the reference refuses)
+DIFF d.defonly        ref='<Illegal direct>'  zb='<Syntax error>'
+DIFF d.defrun         ref='<Undefined user function>'  zb='0'  🔴 SILENT WRONG ANSWER (a value where the reference refuses)
+PASS d.defusr         ref='OK'  zb='OK'
+PASS d.let            ref='OK'  zb='OK'
+DIFF d.sameline       ref='<Illegal direct>'  zb='<Syntax error>'
+DIFF o.actualfirst    ref='60'  zb='ERR 2 AT 20'
+DIFF o.argnoarg       ref='7 1'  zb='ERR 2 AT 20'
+DIFF o.aryformal      ref='ERR 2 AT 60'  zb='ERR 2 AT 30'
+ok   o.badname        ref='ERR 2 AT 20'  zb='ERR 2 AT 20'  🔴 AGREES WITH THE BLANKET 'ERR 2 AT 20' this tree gives every DEF FN line -- NOT EVIDENCE
+DIFF o.barecall       ref='ERR 2 AT 60'  zb='ERR 2 AT 20'
+DIFF o.clearwipe.ctl  ref='3'  zb='ERR 2 AT 20'
+DIFF o.clearwipe3     ref='<Undefined user function>'  zb='ERR 2 AT 20'
+PASS o.ctl            ref='6'  zb='6'
+PASS o.ctl2           ref='6'  zb='6'
+DIFF o.defint         ref='2'  zb='ERR 2 AT 30'
+DIFF o.defint.ctl     ref='2.5'  zb='ERR 2 AT 20'
+DIFF o.defintbang     ref='2.5'  zb='ERR 2 AT 30'
+DIFF o.defstr         ref='hi!'  zb='ERR 2 AT 30'
+DIFF o.dynaddr        ref='5'  zb='ERR 2 AT 40'
+DIFF o.dynorder       ref='5'  zb='ERR 2 AT 30'
+DIFF o.dynscope       ref='5'  zb='ERR 2 AT 30'
+DIFF o.dynself        ref='205'  zb='ERR 2 AT 30'
+DIFF o.errrestore     ref='5 11'  zb='ERR 2 AT 20'
+DIFF o.fnbang         ref='2.5'  zb='ERR 2 AT 20'
+DIFF o.fnpct          ref='2'  zb='ERR 2 AT 20'
+DIFF o.global         ref='5'  zb='ERR 2 AT 20'
+DIFF o.ifnot          ref='ERR 18 AT 60'  zb='0'  🔴 SILENT WRONG ANSWER (a value where the reference refuses)
+DIFF o.ifthen         ref='3'  zb='ERR 2 AT 20'
+DIFF o.lazybody       ref='OK'  zb='ERR 2 AT 20'
+DIFF o.lazydiv        ref='OK'  zb='ERR 2 AT 20'
+DIFF o.namespace      ref='9 3'  zb='ERR 2 AT 20'
+DIFF o.nestsame       ref='7'  zb='ERR 2 AT 20'
+DIFF o.noeq           ref='OK'  zb='ERR 2 AT 20'
+DIFF o.numstr         ref='ERR 13 AT 60'  zb='ERR 2 AT 20'
+DIFF o.outer.ctl      ref='2'  zb='ERR 2 AT 30'
+DIFF o.outerabs       ref='2'  zb='ERR 2 AT 30'
+DIFF o.outerafter     ref='2'  zb='ERR 2 AT 30'
+DIFF o.outerbefore    ref='2'  zb='ERR 2 AT 30'
+DIFF o.outernoarg     ref='3'  zb='ERR 2 AT 30'
+DIFF o.p10            ref='ERR 5 AT 60'  zb='ERR 2 AT 20'
+DIFF o.p11            ref='ERR 5 AT 60'  zb='ERR 2 AT 20'
+DIFF o.p12            ref='ERR 5 AT 60'  zb='ERR 2 AT 20'
+DIFF o.p16            ref='ERR 5 AT 60'  zb='ERR 2 AT 20'
+DIFF o.p3             ref='1'  zb='ERR 2 AT 20'
+DIFF o.p5             ref='1'  zb='ERR 2 AT 20'
+DIFF o.p8             ref='1'  zb='ERR 2 AT 20'
+DIFF o.p9             ref='1'  zb='ERR 2 AT 20'
+DIFF o.quotedcolon    ref='a:Q'  zb='ERR 2 AT 20'
+DIFF o.realcell       ref='5'  zb='ERR 2 AT 40'
+PASS o.realcell.ctl   ref='5'  zb='5'
+DIFF o.runtwice       ref='3'  zb='ERR 2 AT 20'
+--   o.sameaddr       ref='30327'  zb='ERR 2 AT 40'  (own-design RAM layout; see PREDICATE)
+DIFF o.stmtcolon      ref='3 9'  zb='ERR 2 AT 20'
+DIFF o.strnum         ref='ERR 13 AT 60'  zb='ERR 2 AT 20'
+DIFF o.strnumx        ref='5 13'  zb='ERR 2 AT 20'
+DIFF o.suffn          ref='3'  zb='ERR 2 AT 20'
+DIFF o.sufformal      ref='3'  zb='ERR 2 AT 20'
+DIFF o.toofew         ref='ERR 2 AT 60'  zb='ERR 2 AT 20'
+DIFF o.toomany        ref='ERR 2 AT 60'  zb='ERR 2 AT 20'
+DIFF o.twocalls       ref='7'  zb='ERR 2 AT 20'
+ok   o.twofault       ref='ERR 2 AT 20'  zb='ERR 2 AT 20'  🔴 AGREES WITH THE BLANKET 'ERR 2 AT 20' this tree gives every DEF FN line -- NOT EVIDENCE
+DIFF o.undefarg       ref='ERR 18 AT 60'  zb='0'  🔴 SILENT WRONG ANSWER (a value where the reference refuses)
+DIFF o.varptr         ref='2'  zb='ERR 2 AT 30'
+PASS o.varptr.ctl     ref='5'  zb='5'
+--   z.addr           ref='-2325'  zb='ERR 2 AT 30'  (own-design RAM layout; see PREDICATE)
+--   z.addr.ctl       ref='-32679'  zb='-32679'  (own-design RAM layout; see PREDICATE)
+--   z.addr2          ref='-2325'  zb='ERR 2 AT 30'  (own-design RAM layout; see PREDICATE)
+--   z.addr2i         ref='-2325'  zb='ERR 2 AT 30'  (own-design RAM layout; see PREDICATE)
+DIFF z.p10def         ref='OK'  zb='ERR 2 AT 20'
+.... claim:o.sameaddr  zb:o.sameaddr='ERR 2 AT 40'  NOT MEASURED -- o.sameaddr is not a number here (VARPTR(formal) differs from VARPTR(variable))
+.... claim:z.addr2    zb:z.addr2='ERR 2 AT 30'  zb:z.addr2i='ERR 2 AT 30'  NOT MEASURED -- z.addr2,z.addr2i is not a number here (the shadow cell does not move with nesting)
+.... claim:z.addr     zb:z.addr='ERR 2 AT 30'  zb:z.addr.ctl='-32679'  NOT MEASURED -- z.addr is not a number here (the shadow is not the variable's own cell)
+ROWS: 85 printed, 77 scored — 67 of 69 DEF FN rows still divergent; 0 of 8 controls failed
+SILENT WRONG ANSWERS (6): b.forward, b.undef, d.def, d.defrun, o.ifnot, o.undefarg
+GREEN BUT VACUOUS (2): o.badname, o.twofault -- these agree with the blanket syntax error, not with a rule
+DEF FN not implemented (expected until the verb ships): b.forward, b.nested, b.noarg, b.param, b.paramnew, b.recurse, b.redef, b.str, b.two, b.undef, d.def, d.defonly, d.defrun, d.sameline, o.actualfirst, o.argnoarg, o.aryformal, o.barecall, o.clearwipe.ctl, o.clearwipe3, o.defint, o.defint.ctl, o.defintbang, o.defstr, o.dynaddr, o.dynorder, o.dynscope, o.dynself, o.errrestore, o.fnbang, o.fnpct, o.global, o.ifnot, o.ifthen, o.lazybody, o.lazydiv, o.namespace, o.nestsame, o.noeq, o.numstr, o.outer.ctl, o.outerabs, o.outerafter, o.outerbefore, o.outernoarg, o.p10, o.p11, o.p12, o.p16, o.p3, o.p5, o.p8, o.p9, o.quotedcolon, o.realcell, o.runtwice, o.stmtcolon, o.strnum, o.strnumx, o.suffn, o.sufformal, o.toofew, o.toomany, o.twocalls, o.undefarg, o.varptr, z.p10def

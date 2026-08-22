@@ -1,0 +1,133 @@
+  vg8020  o.lazybody  -> 'OK'
+  cf3300  o.lazybody  -> 'OK'
+  ROW o.lazybody    refs-agree   zb=<not run>
+
+  vg8020  o.lazydiv   -> 'OK'
+  cf3300  o.lazydiv   -> 'OK'
+  ROW o.lazydiv     refs-agree   zb=<not run>
+
+  vg8020  o.twofault  -> 'ERR 2 AT 20'
+  cf3300  o.twofault  -> 'ERR 2 AT 20'
+  ROW o.twofault    refs-agree   zb=<not run>
+
+  vg8020  o.badname   -> 'ERR 2 AT 20'
+  cf3300  o.badname   -> 'ERR 2 AT 20'
+  ROW o.badname     refs-agree   zb=<not run>
+
+  vg8020  o.noeq      -> 'OK'
+  cf3300  o.noeq      -> 'OK'
+  ROW o.noeq        refs-agree   zb=<not run>
+
+  vg8020  o.undefarg  -> 'ERR 18 AT 60'
+  cf3300  o.undefarg  -> 'ERR 18 AT 60'
+  ROW o.undefarg    refs-agree   zb=<not run>
+
+  vg8020  o.toomany   -> 'ERR 2 AT 60'
+  cf3300  o.toomany   -> 'ERR 2 AT 60'
+  ROW o.toomany     refs-agree   zb=<not run>
+
+  vg8020  o.toofew    -> 'ERR 2 AT 60'
+  cf3300  o.toofew    -> 'ERR 2 AT 60'
+  ROW o.toofew      refs-agree   zb=<not run>
+
+  vg8020  o.argnoarg  -> '7 1'
+  cf3300  o.argnoarg  -> '7 1'
+  ROW o.argnoarg    refs-agree   zb=<not run>
+
+  vg8020  o.barecall  -> 'ERR 2 AT 60'
+  cf3300  o.barecall  -> 'ERR 2 AT 60'
+  ROW o.barecall    refs-agree   zb=<not run>
+
+  vg8020  o.strnum    -> 'ERR 13 AT 60'
+  cf3300  o.strnum    -> 'ERR 13 AT 60'
+  ROW o.strnum      refs-agree   zb=<not run>
+
+  vg8020  o.strnumx   -> '5 13'
+  cf3300  o.strnumx   -> '5 13'
+  ROW o.strnumx     refs-agree   zb=<not run>
+
+  vg8020  o.numstr    -> 'ERR 13 AT 60'
+  cf3300  o.numstr    -> 'ERR 13 AT 60'
+  ROW o.numstr      refs-agree   zb=<not run>
+
+  vg8020  o.errrestore -> '5 11'
+  cf3300  o.errrestore -> '5 11'
+  ROW o.errrestore  refs-agree   zb=<not run>
+
+  vg8020  o.p3        -> '1'
+  cf3300  o.p3        -> '1'
+  ROW o.p3          refs-agree   zb=<not run>
+
+  vg8020  o.p5        -> '1'
+  cf3300  o.p5        -> '1'
+  ROW o.p5          refs-agree   zb=<not run>
+
+  vg8020  o.p8        -> '1'
+  cf3300  o.p8        -> '1'
+  ROW o.p8          refs-agree   zb=<not run>
+
+  vg8020  o.p12       -> 'ERR 5 AT 60'
+  cf3300  o.p12       -> 'ERR 5 AT 60'
+  ROW o.p12         refs-agree   zb=<not run>
+
+  vg8020  o.p16       -> 'ERR 5 AT 60'
+  cf3300  o.p16       -> 'ERR 5 AT 60'
+  ROW o.p16         refs-agree   zb=<not run>
+
+  vg8020  o.ifthen    -> '3'
+  cf3300  o.ifthen    -> '3'
+  ROW o.ifthen      refs-agree   zb=<not run>
+
+  vg8020  o.ifnot     -> 'ERR 18 AT 60'
+  cf3300  o.ifnot     -> 'ERR 18 AT 60'
+  ROW o.ifnot       refs-agree   zb=<not run>
+
+  vg8020  o.defint    -> '2'
+  cf3300  o.defint    -> '2'
+  ROW o.defint      refs-agree   zb=<not run>
+
+  vg8020  o.defint.ctl -> '2.5'
+  cf3300  o.defint.ctl -> '2.5'
+  ROW o.defint.ctl  refs-agree   zb=<not run>
+
+  vg8020  o.defstr    -> 'hi!'
+  cf3300  o.defstr    -> 'hi!'
+  ROW o.defstr      refs-agree   zb=<not run>
+
+  vg8020  o.aryformal -> 'ERR 2 AT 60'
+  cf3300  o.aryformal -> 'ERR 2 AT 60'
+  ROW o.aryformal   refs-agree   zb=<not run>
+
+  vg8020  o.sufformal -> '3'
+  cf3300  o.sufformal -> '3'
+  ROW o.sufformal   refs-agree   zb=<not run>
+
+  vg8020  o.suffn     -> '3'
+  cf3300  o.suffn     -> '3'
+  ROW o.suffn       refs-agree   zb=<not run>
+
+  vg8020  o.actualfirst -> '60'
+  cf3300  o.actualfirst -> '60'
+  ROW o.actualfirst refs-agree   zb=<not run>
+
+  vg8020  o.nestsame  -> '7'
+  cf3300  o.nestsame  -> '7'
+  ROW o.nestsame    refs-agree   zb=<not run>
+
+  vg8020  o.ctl       -> '6'
+  cf3300  o.ctl       -> '6'
+  ROW o.ctl         refs-agree   zb=<not run>
+
+  vg8020  d.def         -> '<NO OUTPUT>'
+  cf3300  d.def         -> '<NO OUTPUT>'
+  ROW d.def         NOT MEASURED  (blank on: vg8020,cf3300)
+
+  vg8020  d.defrun      -> '<NO OUTPUT>'
+  cf3300  d.defrun      -> '<NO OUTPUT>'
+  ROW d.defrun      NOT MEASURED  (blank on: vg8020,cf3300)
+
+  vg8020  d.ctl         -> '6'
+  cf3300  d.ctl         -> '6'
+  ROW d.ctl         refs-agree   zb=<not run>
+
+done

@@ -1,0 +1,49 @@
+  vg8020  o.varptr    -> '2'
+  cf3300  o.varptr    -> '2'
+  ROW o.varptr      refs-agree   zb=<not run>
+
+  vg8020  o.varptr.ctl -> '5'
+  cf3300  o.varptr.ctl -> '5'
+  ROW o.varptr.ctl  refs-agree   zb=<not run>
+
+  vg8020  o.dynself   -> '205'
+  cf3300  o.dynself   -> '205'
+  ROW o.dynself     refs-agree   zb=<not run>
+
+  vg8020  o.dynorder  -> '5'
+  cf3300  o.dynorder  -> '5'
+  ROW o.dynorder    refs-agree   zb=<not run>
+
+  vg8020  o.clearwipe3 -> '<Undefined user function>'
+  cf3300  o.clearwipe3 -> '<Undefined user function>'
+  ROW o.clearwipe3  refs-agree   zb=<not run>
+
+  vg8020  o.twocalls  -> '7'
+  cf3300  o.twocalls  -> '7'
+  ROW o.twocalls    refs-agree   zb=<not run>
+
+  vg8020  o.ctl       -> '6'
+  cf3300  o.ctl       -> '6'
+  ROW o.ctl         refs-agree   zb=<not run>
+
+  vg8020  d.sameline    -> '<Illegal direct>'
+  cf3300  d.sameline    -> '<Illegal direct>'
+  ROW d.sameline    refs-agree   zb=<not run>
+
+  vg8020  d.defonly     -> '<Illegal direct>'
+  cf3300  d.defonly     -> '<Illegal direct>'
+  ROW d.defonly     refs-agree   zb=<not run>
+
+  vg8020  d.def         -> '<Undefined user function>'
+  cf3300  d.def         -> '<Undefined user function>'
+  ROW d.def         refs-agree   zb=<not run>
+
+  vg8020  d.defrun      -> '<Undefined user function>'
+  cf3300  d.defrun      -> '<Undefined user function>'
+  ROW d.defrun      refs-agree   zb=<not run>
+
+  vg8020  d.ctl         -> '6'
+  cf3300  d.ctl         -> '6'
+  ROW d.ctl         refs-agree   zb=<not run>
+
+done

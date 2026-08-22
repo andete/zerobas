@@ -1483,7 +1483,20 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ;   ISRCH_*   $E3E1 .. $E3E5      4 B            INSTR resolved-body-base scratch
 ;   STRENG_SPARE $E3E5 .. $E3E6   1 B            FREE (was the D-2 flag, D-PENDERR)
 ;   MIDS_DEST $E3E6 .. $E3E8      2 B            MID$-statement stashed dest desc
-;   -> top $E3E8, well below the disk WBUF wall at $E560 (376 B spare).
+; ⚠️ 🔴 THIS BLOCK TOPS OUT AT $E3E8, AND THE "376 B SPARE" THAT USED TO BE
+;   WRITTEN HERE IS FALSE. The line read *"-> top $E3E8, well below the disk
+;   WBUF wall at $E560 (376 B spare)"* and it has been false since G5 homed
+;   GFX_PSTK/GFX_DBUF at **$E3F2** (256 B) with the rest of the GFX_D* and
+;   GFX_S* cells running up past $E4F9 -- see the G5 PAINT and DRAW blocks
+;   below, which are the current tenants of that window. What is actually free
+;   between this block and the next one is **$E3E8..$E3F2, i.e. 10 bytes**.
+;   Found 2026-08-22 by D-DEFFN, which sized a 100-byte FN parameter area
+;   against the old figure; the assembler caught the page crossing and the
+;   window then turned out to be occupied as well
+;   (docs/deffn-design-2026-08-22.md §7). The conclusion is INVERTED rather
+;   than the note deleted, because the next slice to want a RAM block will
+;   arrive here with the same question: **do not size anything from this
+;   comment -- read the EQU chain, and check the G5 blocks below.**
 ; NOTE: these addresses are the ACTUAL assembled values (verify in build/
 ; basic-reloc.sym). An earlier copy of this table still said SH_*=5 B /
 ; TEMPTOP=$E372 and caused BUG A (MIDS_DEST hardcoded at $E3D9, inside the

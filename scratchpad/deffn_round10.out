@@ -1,0 +1,25 @@
+  vg8020  z.addr      -> '-2325'
+  cf3300  z.addr      -> '-2325'
+  ROW z.addr        refs-agree   zb=<not run>
+
+  vg8020  z.addr2     -> '-2325'
+  cf3300  z.addr2     -> '-2325'
+  ROW z.addr2       refs-agree   zb=<not run>
+
+  vg8020  z.addr2i    -> '-2325'
+  cf3300  z.addr2i    -> '-2325'
+  ROW z.addr2i      refs-agree   zb=<not run>
+
+  vg8020  z.addr.ctl  -> '-32679'
+  cf3300  z.addr.ctl  -> '-32679'
+  ROW z.addr.ctl    refs-agree   zb=<not run>
+
+  vg8020  z.p10def    -> 'OK'
+  cf3300  z.p10def    -> 'OK'
+  ROW z.p10def      refs-agree   zb=<not run>
+
+  vg8020  o.ctl       -> '6'
+  cf3300  o.ctl       -> '6'
+  ROW o.ctl         refs-agree   zb=<not run>
+
+done

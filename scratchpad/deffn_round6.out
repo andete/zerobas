@@ -1,0 +1,61 @@
+  vg8020  o.p9        -> '1'
+  cf3300  o.p9        -> '1'
+  ROW o.p9          refs-agree   zb=<not run>
+
+  vg8020  o.p10       -> 'ERR 5 AT 60'
+  cf3300  o.p10       -> 'ERR 5 AT 60'
+  ROW o.p10         refs-agree   zb=<not run>
+
+  vg8020  o.p11       -> 'ERR 5 AT 60'
+  cf3300  o.p11       -> 'ERR 5 AT 60'
+  ROW o.p11         refs-agree   zb=<not run>
+
+  vg8020  o.global    -> '5'
+  cf3300  o.global    -> '5'
+  ROW o.global      refs-agree   zb=<not run>
+
+  vg8020  o.dynscope  -> '5'
+  cf3300  o.dynscope  -> '5'
+  ROW o.dynscope    refs-agree   zb=<not run>
+
+  vg8020  o.clearwipe -> '<NO OUTPUT>'
+  cf3300  o.clearwipe -> '<NO OUTPUT>'
+  ROW o.clearwipe   NOT MEASURED  (blank on: vg8020,cf3300)
+
+  vg8020  o.clearwipe.ctl -> '3'
+  cf3300  o.clearwipe.ctl -> '3'
+  ROW o.clearwipe.ctl refs-agree   zb=<not run>
+
+  vg8020  o.namespace -> '9 3'
+  cf3300  o.namespace -> '9 3'
+  ROW o.namespace   refs-agree   zb=<not run>
+
+  vg8020  o.fnpct     -> '2'
+  cf3300  o.fnpct     -> '2'
+  ROW o.fnpct       refs-agree   zb=<not run>
+
+  vg8020  o.fnbang    -> '2.5'
+  cf3300  o.fnbang    -> '2.5'
+  ROW o.fnbang      refs-agree   zb=<not run>
+
+  vg8020  o.defintbang -> '2.5'
+  cf3300  o.defintbang -> '2.5'
+  ROW o.defintbang  refs-agree   zb=<not run>
+
+  vg8020  o.ctl       -> '6'
+  cf3300  o.ctl       -> '6'
+  ROW o.ctl         refs-agree   zb=<not run>
+
+  vg8020  d.deferr      -> '<NO OUTPUT>'
+  cf3300  d.deferr      -> '<NO OUTPUT>'
+  ROW d.deferr      NOT MEASURED  (blank on: vg8020,cf3300)
+
+  vg8020  d.defrun      -> '<NO OUTPUT>'
+  cf3300  d.defrun      -> '<NO OUTPUT>'
+  ROW d.defrun      NOT MEASURED  (blank on: vg8020,cf3300)
+
+  vg8020  d.ctl         -> '6'
+  cf3300  d.ctl         -> '6'
+  ROW d.ctl         refs-agree   zb=<not run>
+
+done

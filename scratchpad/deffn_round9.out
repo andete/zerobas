@@ -1,0 +1,33 @@
+  vg8020  o.realcell  -> '5'
+  cf3300  o.realcell  -> '5'
+  ROW o.realcell    refs-agree   zb=<not run>
+
+  vg8020  o.realcell.ctl -> '5'
+  cf3300  o.realcell.ctl -> '5'
+  ROW o.realcell.ctl refs-agree   zb=<not run>
+
+  vg8020  o.sameaddr  -> '30327'
+  cf3300  o.sameaddr  -> '30327'
+  ROW o.sameaddr    refs-agree   zb=<not run>
+
+  vg8020  o.dynaddr   -> '5'
+  cf3300  o.dynaddr   -> '5'
+  ROW o.dynaddr     refs-agree   zb=<not run>
+
+  vg8020  o.ctl2      -> '6'
+  cf3300  o.ctl2      -> '6'
+  ROW o.ctl2        refs-agree   zb=<not run>
+
+  vg8020  d.defusr      -> 'OK'
+  cf3300  d.defusr      -> 'OK'
+  ROW d.defusr      refs-agree   zb=<not run>
+
+  vg8020  d.let         -> 'OK'
+  cf3300  d.let         -> 'OK'
+  ROW d.let         refs-agree   zb=<not run>
+
+  vg8020  d.ctl         -> '6'
+  cf3300  d.ctl         -> '6'
+  ROW d.ctl         refs-agree   zb=<not run>
+
+done

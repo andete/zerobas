@@ -37,11 +37,16 @@
 ; (sub/arrays.asm) — VARTAB/VAREND are DEAD (the 128 B they described is freed
 ; RAM).
 ;
-; ⚠️ `var_find` / `var_get_key` / `var_set_key` (this section) are the old int-only
-; fixed-pool implementation and have NO CALLERS LEFT. They belonged to the retired
-; lean 16 KB cart. Removing them is a carve, filed under the ROM REGION STRUCTURE
-; REVIEW (TODO.md) rather than taken with the gate deletion, which had to stay
-; byte-identical.
+; ✅ `var_find` / `var_get_key` / `var_set_key` WERE the old int-only fixed-pool
+; implementation with no callers left, and this header used to say so in the
+; present tense and file their removal as a future carve. **They are gone** --
+; the ROM REGION STRUCTURE REVIEW's R1 carve took them (and VARTAB / VARENTSZ /
+; VARSLOTS / VAREND with them, see basic/sysvars.inc's own note); the paragraph
+; describing them as still here outlived the code by three weeks and was found
+; on 2026-08-22 by D-DEFFN looking for exactly the carve it advertises. The
+; conclusion is inverted rather than deleted because the CLASS is worth keeping
+; visible: a retired build's leftovers are a real carve source, and this one
+; was already spent.
 
 ; --- is_ident_cont: skip spaces at (HL), then CF set iff an ident-cont char --
 ; 🔴 THIS IS A CURSOR SCAN, NOT A PREDICATE ON A. It used to be "CF set if A is
