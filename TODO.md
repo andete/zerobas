@@ -80,7 +80,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that were previously only printed, and a row that starts being scored is a
       claim about it.
 
-- [ ] ⚠️ **`RUN <lineno>` IGNORES THE LINE NUMBER AND RESTARTS FROM THE TOP.**
+- [x] ✅ **CLOSED 2026-08-22 (D-RUNLINE R1), 23 B — `RUN <lineno>` STARTS AT THE
+      LINE.** [`docs/spec-basic-runline.md`](docs/spec-basic-runline.md). Page 1
+      **31 → 8 B**; 💰 **the D-SEEDHOLE2 carve is what paid for it** — page 1
+      read 11 B before that slice and this fix needs 23.
+      🎯 **NO LINE-FINDER AND NO RUN LOOP WAS WRITTEN.** `RUN <lineno>` IS a bare
+      RUN whose `CURLINE` starts elsewhere: `goto_resolve` is GOTO's own tail
+      (find + ERR 8 + the `GOTOTGT` store) and `run_prog` sets `CURLINE` from ONE
+      store. `GOTOTGT` is the carrier — its SECOND TENANT, safe because
+      `run_prog` clears `GOTOFLAG` and `rp_goto` is its only reader.
+      ⚠️ `RESTORE_LINE` deliberately does NOT move (RUN resets DATA to the
+      program top); splitting the two stores is +3 B of the 23, and `n.rundata`
+      is the only thing that says the split was right.
+      Rows: `n.runline` GRADUATED, `n.runundef` + `n.rundata` NEW, all three
+      agreeing on both references; namspc **99/99 → 102/102**, deferred 4 → 3.
+      4/4 knives EXACT, twice. 🔴 **The knives caught a defect in the KNIFE
+      RUNNER first** — draft 1 read `0/4` with all four ROMs provably moved,
+      because it grepped for `MISS` and the probe prints `DIFF`. A parser that
+      cannot see a divergence reports a broken tree as CLEAN (D-WALLDATE's
+      draft-1 failure). **Calibrate on known positives** — spec §6.
+      ⚠️ **R2 (direct mode) and R3 (the 0-byte swap) are NOT shipped** and have
+      their own items below.
+
+  <details><summary>the original filing, kept for the record</summary>
+
+- [x] ⚠️ **`RUN <lineno>` IGNORES THE LINE NUMBER AND RESTARTS FROM THE TOP.**
       Filed 2026-08-21 by D-FNRUN §2.1, measured while converting the verb next
       to it — and filed precisely so that slice cannot be read as having fixed a
       form it merely learned to RECOGNISE.
@@ -114,6 +138,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       entry-point question (find the line, set CURLINE, enter the loop there),
       not a parser one — so the +17 B filename shape says nothing about it.
       Rows `n.runline` + `n.runlinectl` 🟢 are built and DEFERRED.
+
+  </details>
+
+- [ ] 💰 **`RUN <lineno>` IN DIRECT MODE IS STILL THE OLD BEHAVIOUR — R2, ONE
+      RULE AT A SECOND SITE (filed 2026-08-22 by D-RUNLINE §4).** `RUN 20` typed
+      at the PROMPT never reaches `do_run`: `dispatch_line` runs `is_cmd` against
+      the **raw `LINEBUF`, before `tokenise`**, so direct mode never sees `$0E`
+      and `dl_run` still ignores the number. 🔴 **GUARDING ONE INSTANCE OF A
+      CLASS IS NOT GUARDING THE CLASS** — D-LOADERR-FIX's lesson, and it broke
+      the cassette last time; this is filed rather than skipped for that reason.
+      🎯 **ONE RULE, TWO MECHANISMS** (the D-FNARG2 shape): the direct-mode parse
+      is `parse_lineno`, itself a **sub-ROM tenant** (`SUBROM_IDX_PARSELN`), not
+      GOTO's token grammar.
+      💰 **~15–17 B against 8 B free (2026-08-22) — needs a carve.** ⚠️ The
+      instrument is NOT the obstacle: `basic_probe_lnblank.py` already has a
+      `dir-*` battery that types lines straight at the REPL, so the row is a port
+      of an existing fixture kind. `namspc`'s own DENOMINATOR already names
+      direct mode as NOT COVERED.
+
+- [ ] ⚠️ **BARE `RUN` INSIDE A RUNNING PROGRAM STILL RE-ENTERS THE LOOP NESTED —
+      R3, 0 B, AND THE ROW IS THE HARD PART (filed 2026-08-22 by D-RUNLINE §4).**
+      `dr_stored`'s `jp run_prog` is the ONE arm D-RUNTAIL did not convert;
+      `jp run_prog_top` is the whole fix and costs nothing.
+      🔴 **IT WAS SHIPPED AND THEN BACKED OUT.** Writing its row is what showed
+      why D-FNRUN said *"a form no row drives"*: **a bare RUN CLEARS VARIABLES,
+      so a program that reaches one restarts FOREVER — on the references too.**
+      There is no value to read. The row has to separate *"hangs silently"*
+      (correct) from *"prints a bogus error then stops"* (the defect) on a
+      **TIMEOUT**, plus a control proving the fixture would have printed at all —
+      otherwise it is the `<NO OUTPUT>`-means-two-things trap `n.runlinectl`
+      exists to prevent.
+      🎯 **A deferral honoured is worth more than one filed**: shipping a 0-byte
+      behaviour change beside a measured one puts an unrowed claim inside a rowed
+      slice. Backing it out cost 0 B, confirmed by rebuild.
 
 - [x] ✅ **CLOSED 2026-08-21 (D-SEEDPROSE) — A COMMENT IN `sub/` OR `tools/`
       MADE A MAIN-BUILD SPAN INVISIBLE TO `make deadcode`; BOTH HALVES SHIPPED,
@@ -2076,6 +2134,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       page-1 carve candidate is currently priced: `DEF FN` / SCREEN 3 / TXTMAX
       still need one, and the two residuals D-SEEDHOLE2 filed are apparatus
       (sub-side and gate-honesty), not main page-1 relief.
+      ⚠️ **UPDATE 2026-08-22, SAME DAY: page 1 is back to 8 B.** D-SEEDHOLE2's
+      20 B went straight into D-RUNLINE (23 B), which is what a carve is FOR —
+      but it means every item above still needs one, and D-RUNLINE's own R2
+      (~15–17 B) has joined the queue.
       💰 0 ROM bytes; this is a reading. What it changes is which item is picked
       up next, and it already retired one (D-LINEMAX, above).
 
