@@ -114,11 +114,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `deffn-draft` (`3e3cb67`): `__MEAS_PAGE1_END` **`$8140` → `$80A4`**, i.e.
       **+148 B**, better than the filed ~110. `basic/deffn.asm` 419 → 263 B; the
       verb 450 → **294 B**.
-      > 💰 **THE GAP IS 72 B (2026-08-22, at `7e9030c`): 294 B of verb against
-      > 222 B free.** Both filed figures were wrong and they MISSED IN OPPOSITE
-      > DIRECTIONS WITHOUT CANCELLING — 410-against-450 read as 40 B short; it is
-      > 72. **Run `make basic-reloc` and
+      > 💰 **THE GAP IS 26 B (2026-08-22, after D-XREG): 294 B of verb against
+      > 268 B free.** It was 350 B when the verb was written, 72 B after the
+      > eviction was built, and 26 B once the cross-region aliases landed. Both
+      > originally filed figures were wrong and they MISSED IN OPPOSITE
+      > DIRECTIONS WITHOUT CANCELLING. **Run `make basic-reloc` and
       > `python3 scratchpad/deffn_measure_over.py`; never quote these numbers.**
+      🔴 **AND THE DUP-SPAN FAMILY IS SPENT**, measured with a denominator:
+      `scratchpad/nearspan_sweep.py` finds 148 pairs of spans differing in
+      exactly ONE byte and **0 B usable** at the cheap end (not one has its
+      difference as the FIRST instruction's immediate with both spans
+      position-independent), ~6 B under a register-parameterised collapse. The
+      remaining sources are `ex_deffn`'s own eviction (~10–17 B),
+      `tools/clone_scout.py`'s ~96 B of genuine near-clone refactors, and ~5 B
+      from passing the servicer's answer in `E`.
       🔴 **THE TENANT IS A SIZING STUB — the verb does NOT work on that branch**
       and `deffn-acceptance` was not run. The parse itself (name resolve, the two
       lists, `fn_slot`, both directions of ERR 13, the `$FFFF` result slot) plus
@@ -134,7 +143,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       refactors, which are a DIFFERENT class from dup-span (shared helpers, not
       `equ` aliases) and entirely unspent.
 
-- [ ] 💰 **43 B of cross-region dup-span carve, and the gate that would clear it
+- [x] ✅ **CLOSED 2026-08-22 by D-XREG** ([`docs/spec-basic-xreg.md`](docs/spec-basic-xreg.md)):
+      **+46 B**, 10 aliases, and 🎯 **THE GATE IS NOT BLIND** — K-XR1 aliases the
+      one label the pre-flight calls FATAL (`affn_found`) and
+      `check_tenant_closure.py` reddens naming it, because it resolves every
+      callee's ADDRESS out of the sym file, where an `equ` and a `label:` are
+      indistinguishable by construction. D-PINDATA's rule is about which
+      references count as EDGES on the way IN, not about how a target is
+      resolved once it is one. 🔴 **And draft 1 of that knife went red for the
+      WRONG REASON and taught nothing**: pasmo refused the `jr` range before the
+      gate ever ran. ~~Original entry:~~
+      💰 **43 B of cross-region dup-span carve, and the gate that would clear it
       may be blind to the question.** Filed 2026-08-22 by D-DUPSPAN2,
       [`docs/spec-basic-dupspan2.md`](docs/spec-basic-dupspan2.md) §6. Eleven
       aliases are position-independent but cross the low ↔ page-1 boundary

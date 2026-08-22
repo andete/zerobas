@@ -1072,11 +1072,16 @@ dc_done:
                 pop     hl                  ; restore the text cursor
                 call    skip_spaces
                 cp      ','
-                jr      nz,dc_finish        ; no more channels in the list
+                jp     nz,dc_finish        ; no more channels in the list
                 inc     hl                  ; consume ',' and parse the next channel
                 jr      dc_listloop
-dc_finish:
-                jp      exec_stmt
+; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
+; ed_done and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
+; REGION question -- is this label reached from a tenant whose mapping
+; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
+; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
+; `equ` (it resolves addresses from the sym, not from the source form).
+dc_finish       equ     ed_done
 dc_all:
                 push    hl                  ; guard text cursor across CALSLT
                 call    fch_close_all

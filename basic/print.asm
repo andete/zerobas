@@ -223,7 +223,7 @@ exp_strvar:
                 ; must be re-parsed from here via eval/ev_rel instead of printed.
                 push    hl                  ; operand START (peek may reparse via eval)
                 call    str_eval            ; STRPTR -> the var's value, HL advanced
-                jr      nc,exps_fallback    ; defensive: not a string after all
+                jp     nc,exps_fallback    ; defensive: not a string after all
                 call    skip_spaces
                 call    relop_peek          ; ZF=1 iff (HL) is a relop token
                 jr      nz,exps_notrel      ; no relop -> maybe an operator (below)
@@ -257,22 +257,23 @@ exps_notrel:
                                             ; garbage VRAM on others (`PRINT "A" IMP 1`).
                 call    type_mismatch_set   ; deferred mark (ERRMARK + TMISMATCH)
                 call    check_expr_errors   ; ... surfaced HERE; never returns
+; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
+; ems_print and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
+; REGION question -- is this label reached from a tenant whose mapping
+; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
+; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
+; `equ` (it resolves addresses from the sym, not from the source form).
+; ⚠️ ENTERED BY FALLTHROUGH, so this cannot become an `equ` -- a `jp`
+; has to stay in its place. tools/dupspan_indep.py calls it SAFE-JP.
 exps_print:
-                pop     de                  ; drop the saved operand-start (balances the
-                                             ;  push above; str_eval already clobbers DE,
-                                             ;  so there is nothing in DE worth preserving)
-                ld      a,(FPERR)           ; D-F2-1: the string-item path too (e.g.
-                or      a                   ; print hex$(65536.) — the overflow happens
-                jp      nz,fp_runtime_error ; inside str_eval's HEX$ argument conversion)
-                push    hl                  ; print_strval clobbers HL (token cursor)
-                call    print_strval        ; emit the descriptor's bytes
-                pop     hl
-                jp      exp_loop
-exps_fallback:
-                pop     hl                  ; balance the operand-start push (str_eval left
-                                             ;  HL unmoved on failure, so this restores the
-                                             ;  same cursor exp_num would see un-gated)
-                jp      exp_num
+                jp      ems_print
+; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
+; ems_fallback and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
+; REGION question -- is this label reached from a tenant whose mapping
+; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
+; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
+; `equ` (it resolves addresses from the sym, not from the source form).
+exps_fallback   equ     ems_fallback
 exp_semi:
                 inc     hl                  ; ';' = no spacing
                 call    skip_spaces
