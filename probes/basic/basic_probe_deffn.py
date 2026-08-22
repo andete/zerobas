@@ -425,6 +425,21 @@ def selftest() -> int:
         "undefined name reads 0":           {"b.undef": "0"},
         "result not coerced to FN type":    {"o.fnpct": "2.5"},
         "shadow moves with nesting":        {"z.addr2": "-99"},
+        # 🔴 THE MUTANT THIS TABLE WAS MISSING, AND IT IS THE ONE AN IMPLEMENTER
+        # IS MOST LIKELY TO BE. z.addr2/z.addr2i say FNA's and FNB's shadows are
+        # BOTH at $F6EB -- one block, reused -- so a nested call MUST save the
+        # outer frame and restore it. Build the obvious single fixed block with
+        # no save/restore and the addresses still agree, the binding rows still
+        # agree, the ceiling still agrees; only these two rows move.
+        #   o.nestsame  DEF FNA(X)=X : DEF FNB(X)=FNA(X+1)+X  -> FNB(3)
+        #     restored 4+3 = 7 (both refs) / not restored 4+4 = 8
+        #   o.outerafter X=5 : DEF FNB(Y)=Y : DEF FNA(X)=FNB(0)+X -> FNA(2)
+        #     restored 0+2 = 2 (both refs) / not restored 0+0 = 0
+        # ⚠️ Until this entry existed the battery could not say it would CATCH
+        # that implementation -- the gate's own denominator, not the tree's.
+        "shadow not restored after a nested call":
+                                            {"o.nestsame": "8",
+                                             "o.outerafter": "0"},
     }
     for name, delta in muts.items():
         f = dict(perfect); f.update(delta)

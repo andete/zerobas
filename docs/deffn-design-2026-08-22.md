@@ -46,8 +46,36 @@ which FNB's body reads `X` as 5 — which one shared cell cannot do.
 > 🎯 **THE FORMAL IS A SHADOW CELL THAT ONLY THE DEFINING FUNCTION'S OWN BODY
 > SEES.** Nothing is saved, nothing is restored, and nothing has to be unwound.
 
-That is *cheaper* than the filed design in code and in risk: the error path needs
-no work at all, which is exactly why `X` is still 5 after a body that raised.
+> 🔴 **CORRECTION, 2026-08-22 (the RAM-hunt round): THAT LAST SENTENCE IS TRUE OF
+> THE VARIABLE TABLE AND FALSE OF THE SHADOW BLOCK, AND IT IS WRITTEN AS IF IT
+> WERE UNQUALIFIED.** It is also the form that reached the memory index. §2 states
+> the opposite mechanism eight lines further down — *"the reference copies the
+> outer frame away and reuses one block"* — and §2 is right.
+>
+> The rows decide it. `z.addr2` (`DEF FNB(X)=FNA(0)*0+VARPTR(X)`) and `z.addr2i`
+> (`DEF FNB(X)=FNA(0)`) both read **`$F6EB`**, so FNA's shadow and FNB's shadow
+> are **the same cell**. Then `o.nestsame` — `DEF FNA(X)=X : DEF FNB(X)=FNA(X+1)+X`
+> → `FNB(3)` — requires FNB's `X` to still be **3** after FNA's call wrote **4**
+> to that same cell: 4+3 = **7**, which is what both references answer. With no
+> restore it is 4+4 = 8. `o.outerafter` is the second witness: 0+2 = **2**
+> restored, 0+0 = 0 not.
+>
+> **So a nested call MUST save the outer frame and restore it on return.** What
+> §1 establishes is narrower and still valuable: the *variable table* is never
+> written, so no user-visible cell needs unwinding and the ERROR path needs no
+> work — `raise_error` resets SP and the abandoned saved copy is nobody's
+> business. **The claim survives; its scope does not.**
+>
+> ⚠️ **And the gate could not have caught the mistake.** The mutation battery in
+> §8b had eight mutants and none of them was *"the shadow is not restored"* —
+> the implementation an unqualified §1 invites. Build the obvious single fixed
+> block with no save/restore and the address rows still agree, the binding rows
+> still agree, and the ceiling still agrees; only `o.nestsame` and `o.outerafter`
+> move. That mutant now ships (`make deffn-selftest`, **18/18**, was 17).
+
+That is *cheaper* than the filed design in code and in risk **on the variable-table
+axis only**: the error path needs no work at all, which is exactly why `X` is
+still 5 after a body that raised.
 
 ### 1.1 🔴 And the row that was going to prove the opposite agreed for the wrong reason
 
