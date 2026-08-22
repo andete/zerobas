@@ -1,0 +1,216 @@
+# DEF FN scout, 2026-08-22, from 4b2c5a5 -- four rounds
+# VG-8020 + CF-3300 + zerobas, boot-per-case; the references agree on every row
+
+########## round 1: the crunch (dumper as a stored program -- FAULTY, see the doc) ##########
+  vg8020  deffn.basic  ['11800A009720DE41285829EF58F11200', '1D8014009120DE412813290037806400', '54EFFF97280C76F629F11C0001F3FF97', '280C77F6290045806E0082204AEF1120']
+  cf3300  deffn.basic  ['11800A009720DE41285829EF58F11200', '1D8014009120DE412813290037806400', '54EFFF97280C76F629F11C0001F3FF97', '280C77F6290045806E0082204AEF1120']
+  zb      deffn.basic  None
+  ROW deffn.basic  refs-agree   zb=DIFF
+
+  vg8020  deffn.name2  ['12800A009720DE515A285929EF59F313', '001F8014009120DE515A281429003980', '640054EFFF97280C76F629F11C0001F3', 'FF97280C77F6290047806E0082204AEF']
+  cf3300  deffn.name2  ['12800A009720DE515A285929EF59F313', '001F8014009120DE515A281429003980', '640054EFFF97280C76F629F11C0001F3', 'FF97280C77F6290047806E0082204AEF']
+  zb      deffn.name2  None
+  ROW deffn.name2  refs-agree   zb=DIFF
+
+  vg8020  defusr.ctl   ['0D800A009720DDEF0C00C00018801400', '9120DD281129003280640054EFFF9728', '0C76F629F11C0001F3FF97280C77F629', '0040806E0082204AEF1120D920140078']
+  cf3300  defusr.ctl   ['0D800A009720DDEF0C00C00018801400', '9120DD281129003280640054EFFF9728', '0C76F629F11C0001F3FF97280C77F629', '0040806E0082204AEF1120D920140078']
+  zb      defusr.ctl   ['0D800A009720DDEF0C00C00018801400', '9120DD281129003280640054EFFF9728', '0C76F629F11C0001F3FF97280C77F629', '0040806E0082204AEF1120D920140078']
+  ROW defusr.ctl   refs-agree   zb=same
+
+  vg8020  array.ctl    ['0C800A00862041281629001780140091', '2041281329003180640054EFFF97280C', '76F629F11C0001F3FF97280C77F62900', '3F806E0082204AEF1120D92014007780']
+  cf3300  array.ctl    ['0C800A00862041281629001780140091', '2041281329003180640054EFFF97280C', '76F629F11C0001F3FF97280C77F62900', '3F806E0082204AEF1120D92014007780']
+  zb      array.ctl    ['0C800A00862041281629001780140091', '2041281329003180640054EFFF97280C', '76F629F11C0001F3FF97280C77F62900', '3F806E0082204AEF1120D92014007780']
+  ROW array.ctl    refs-agree   zb=same
+
+done
+DRIVER-EXIT 0
+
+########## round 2: semantics -- READOUT READ THE ECHO, 11 rows, none a measurement ##########
+  vg8020  b.ctl       -> '";X+1;"'
+  cf3300  b.ctl       -> '";X+1;"'
+  zb      b.ctl       -> '";X+1;"'
+  ROW b.ctl       refs-agree   zb=same
+
+  vg8020  b.param     -> '";Y;X;"'
+  cf3300  b.param     -> '";Y;X;"'
+  zb      b.param     -> '";Y;X;"'
+  ROW b.param     refs-agree   zb=same
+
+  vg8020  b.paramnew  -> '";Y;Q;"'
+  cf3300  b.paramnew  -> '";Y;Q;"'
+  zb      b.paramnew  -> '";Y;Q;"'
+  ROW b.paramnew  refs-agree   zb=same
+
+  vg8020  b.undef     -> '";FNZ(1);"'
+  cf3300  b.undef     -> '";FNZ(1);"'
+  zb      b.undef     -> '";FNZ(1);"'
+  ROW b.undef     refs-agree   zb=same
+
+  vg8020  b.forward   -> '";FNA(2);"'
+  cf3300  b.forward   -> '";FNA(2);"'
+  zb      b.forward   -> '";FNA(2);"'
+  ROW b.forward   refs-agree   zb=same
+
+  vg8020  b.str       -> '";FNA$("hi");"'
+  cf3300  b.str       -> '";FNA$("hi");"'
+  zb      b.str       -> '";FNA$("hi");"'
+  ROW b.str       refs-agree   zb=same
+
+  vg8020  b.two       -> '";FNA(2,3);"'
+  cf3300  b.two       -> '";FNA(2,3);"'
+  zb      b.two       -> '";FNA(2,3);"'
+  ROW b.two       refs-agree   zb=same
+
+  vg8020  b.noarg     -> '";FNA;"'
+  cf3300  b.noarg     -> '";FNA;"'
+  zb      b.noarg     -> '";FNA;"'
+  ROW b.noarg     refs-agree   zb=same
+
+  vg8020  b.redef     -> '";FNA(1);"'
+  cf3300  b.redef     -> '";FNA(1);"'
+  zb      b.redef     -> '";FNA(1);"'
+  ROW b.redef     refs-agree   zb=same
+
+  vg8020  b.nested    -> '";FNB(3);"'
+  cf3300  b.nested    -> '";FNB(3);"'
+  zb      b.nested    -> '";FNB(3);"'
+  ROW b.nested    refs-agree   zb=same
+
+  vg8020  b.recurse   -> '";FNA(1);"'
+  cf3300  b.recurse   -> '";FNA(1);"'
+  zb      b.recurse   -> '";FNA(1);"'
+  ROW b.recurse   refs-agree   zb=same
+
+done
+  zb      deffn.basic  None
+      RAW '                     ZBRUN 100                               Syntax error in 10                      ZB                                                                                                                                                                                                                                                                                                                                                                                                             '
+  ROW deffn.basic  one-ref-only no ref this round
+
+done
+DRIVER-EXIT 0
+
+########## round 3: readout fixed (CLS); capture line still a syntax error on 2 rows;
+########## and the untruncated dump scored RAM garbage -- defusr.ctl flipped to REFS DIFFER ##########
+  vg8020  b.ctl       -> '6'
+  cf3300  b.ctl       -> '6'
+  zb      b.ctl       -> '6'
+  ROW b.ctl       refs-agree   zb=same
+
+  vg8020  b.param     -> 'ERR 2 AT 60'
+  cf3300  b.param     -> 'ERR 2 AT 60'
+  zb      b.param     -> 'ERR 2 AT 20'
+  ROW b.param     refs-agree   zb=DIFF
+
+  vg8020  b.paramnew  -> 'ERR 2 AT 60'
+  cf3300  b.paramnew  -> 'ERR 2 AT 60'
+  zb      b.paramnew  -> 'ERR 2 AT 20'
+  ROW b.paramnew  refs-agree   zb=DIFF
+
+  vg8020  b.undef     -> 'ERR 18 AT 60'
+  cf3300  b.undef     -> 'ERR 18 AT 60'
+  zb      b.undef     -> '0'
+  ROW b.undef     refs-agree   zb=DIFF
+
+  vg8020  b.forward   -> 'ERR 18 AT 60'
+  cf3300  b.forward   -> 'ERR 18 AT 60'
+  zb      b.forward   -> '0'
+  ROW b.forward   refs-agree   zb=DIFF
+
+  vg8020  b.str       -> 'hi!'
+  cf3300  b.str       -> 'hi!'
+  zb      b.str       -> 'ERR 2 AT 20'
+  ROW b.str       refs-agree   zb=DIFF
+
+  vg8020  b.two       -> '5'
+  cf3300  b.two       -> '5'
+  zb      b.two       -> 'ERR 2 AT 20'
+  ROW b.two       refs-agree   zb=DIFF
+
+  vg8020  b.noarg     -> '7'
+  cf3300  b.noarg     -> '7'
+  zb      b.noarg     -> 'ERR 2 AT 20'
+  ROW b.noarg     refs-agree   zb=DIFF
+
+  vg8020  b.redef     -> '3'
+  cf3300  b.redef     -> '3'
+  zb      b.redef     -> 'ERR 2 AT 20'
+  ROW b.redef     refs-agree   zb=DIFF
+
+  vg8020  b.nested    -> '8'
+  cf3300  b.nested    -> '8'
+  zb      b.nested    -> 'ERR 2 AT 20'
+  ROW b.nested    refs-agree   zb=DIFF
+
+  vg8020  b.recurse   -> 'ERR 7 AT 60'
+  cf3300  b.recurse   -> 'ERR 7 AT 60'
+  zb      b.recurse   -> 'ERR 2 AT 20'
+  ROW b.recurse   refs-agree   zb=DIFF
+
+done
+  vg8020  deffn.basic  ['11800A009720DE41285829EF58F11200', '1D8014009120DE412813290000000854', '004532769000000000084A0041200000', '000000000353000E29F1084900421400']
+  cf3300  deffn.basic  ['11800A009720DE41285829EF58F11200', '1D8014009120DE412813290000000854', '004532769000000000084A0041200000', '000000000353000E20DC084900421400']
+  zb      deffn.basic  ['12800A009720464E41285829EF58F112', '001F8014009120464E41281329000000', '54000845327690000000004A00084120', '00000000000053000112BFBA49000842']
+  ROW deffn.basic  REFS DIFFER  zb=DIFF
+
+  vg8020  defusr.ctl   ['0D800A009720DDEF0C00C00018801400', '9120DD28112900000008540045327690', '00000000084A00412000000000000003', '53000456F10849004190000000000000']
+  cf3300  defusr.ctl   ['0D800A009720DDEF0C00C00018801400', '9120DD28112900000008540045327690', '00000000084A00412000000000000003', '5300044DDC0849004190000000000000']
+  zb      defusr.ctl   ['0D800A009720DDEF0C00C00018801400', '9120DD28112900000054000845327690', '000000004A0008412000000000000053', '000104FABA4900084190000000000000']
+  ROW defusr.ctl   REFS DIFFER  zb=DIFF
+
+done
+DRIVER-EXIT 0
+
+########## round 4: capture line + dump truncation fixed. Both controls byte-identical again ##########
+  vg8020  b.ctl       -> '6'
+  cf3300  b.ctl       -> '6'
+  zb      b.ctl       -> '6'
+  ROW b.ctl       refs-agree   zb=same
+
+  vg8020  b.param     -> '3 5'
+  cf3300  b.param     -> '3 5'
+  zb      b.param     -> 'ERR 2 AT 20'
+  ROW b.param     refs-agree   zb=DIFF
+
+  vg8020  b.paramnew  -> '8 0'
+  cf3300  b.paramnew  -> '8 0'
+  zb      b.paramnew  -> 'ERR 2 AT 20'
+  ROW b.paramnew  refs-agree   zb=DIFF
+
+  vg8020  b.forward   -> 'ERR 18 AT 60'
+  cf3300  b.forward   -> 'ERR 18 AT 60'
+  zb      b.forward   -> '0'
+  ROW b.forward   refs-agree   zb=DIFF
+
+  vg8020  b.str       -> 'hi!'
+  cf3300  b.str       -> 'hi!'
+  zb      b.str       -> 'ERR 2 AT 20'
+  ROW b.str       refs-agree   zb=DIFF
+
+  vg8020  b.undef     -> 'ERR 18 AT 60'
+  cf3300  b.undef     -> 'ERR 18 AT 60'
+  zb      b.undef     -> '0'
+  ROW b.undef     refs-agree   zb=DIFF
+
+done
+  vg8020  deffn.basic  ['11800A009720DE41285829EF58F112001D8014009120DE41281329000000']
+  cf3300  deffn.basic  ['11800A009720DE41285829EF58F112001D8014009120DE41281329000000']
+  zb      deffn.basic  ['12800A009720464E41285829EF58F112001F8014009120464E41281329000000']
+  ROW deffn.basic  refs-agree   zb=DIFF
+
+  vg8020  deffn.name2  ['12800A009720DE515A285929EF59F313001F8014009120DE515A281429000000']
+  cf3300  deffn.name2  ['12800A009720DE515A285929EF59F313001F8014009120DE515A281429000000']
+  zb      deffn.name2  ['13800A009720464E515A285929EF59F31300218014009120464E515A281429000000']
+  ROW deffn.name2  refs-agree   zb=DIFF
+
+  vg8020  defusr.ctl   ['0D800A009720DDEF0C00C000188014009120DD281129000000']
+  cf3300  defusr.ctl   ['0D800A009720DDEF0C00C000188014009120DD281129000000']
+  zb      defusr.ctl   ['0D800A009720DDEF0C00C000188014009120DD281129000000']
+  ROW defusr.ctl   refs-agree   zb=same
+
+  vg8020  array.ctl    ['0C800A008620412816290017801400912041281329000000']
+  cf3300  array.ctl    ['0C800A008620412816290017801400912041281329000000']
+  zb      array.ctl    ['0C800A008620412816290017801400912041281329000000']
+  ROW array.ctl    refs-agree   zb=same
+
+done
+DRIVER-EXIT 0

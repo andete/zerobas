@@ -5946,8 +5946,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         [`tape/tape.asm:175`](tape/tape.asm:175) **already implements `STMOTR`
         (`$00F3`)** with the matching convention, so its body is a parse and a
         `call`.
-      - **`DEF FN`/`FN`** — an arc, not a slice (200–400 B): a definition table,
-        argument binding, re-entrant evaluation.
+      - **`DEF FN`/`FN`** — ⚠️ **THE FILED PRICE IS PART MEASURED AND PART
+        REFUTED, 2026-08-22**, by
+        [`docs/deffn-scout-2026-08-22.md`](docs/deffn-scout-2026-08-22.md)
+        (`scratchpad/deffn_scout.py` + `.out`, four rounds, both references
+        agreeing on every row). It read *"an arc, not a slice (200–400 B): a
+        definition table, argument binding, re-entrant evaluation"*.
+        ❌ **NO DEFINITION TABLE EXISTS IN THE CRUNCH.** `FN` is ONE token,
+        **`$DE`** — the byte immediately after `USR`'s `$DD`, whose statement
+        (`ex_def`) and function (`ev_f_usr`) paths both already ship — and the
+        NAME is stored as plain ASCII after it, arbitrary length, read at run
+        time like any identifier. Here the same line crunches `46 4E` ("FN" as
+        text), one byte longer per occurrence, which is why `DEF` reaches
+        `stmt_error`; `basic/usr.asm`'s own comment already names the hook.
+        ✅ **`ERR 18` AND ITS MESSAGE ALREADY SHIP** (`err_msgtab` entry 18,
+        `sub/errmsg.asm` `em_undef_fn`).
+        ✅ **RE-ENTRANT EVALUATION IS CONFIRMED**: direct recursion is **ERR 7**
+        on both references, i.e. it runs the stack out rather than refusing.
+        🔴 **AND THE BINDING IS DEARER THAN FILED.** `X=5:DEF FNA(X)=X+1:
+        Y=FNA(2)` leaves **X = 5** on both references — the formal is SAVED AND
+        RESTORED, not bound through the variable table the way classic MS BASIC
+        does. The surface is also wider: **0, 1 and 2 parameters all legal**
+        (`DEF FNA=7` → 7; `DEF FNA(X,Y)=X+Y` → 5), string-typed forms work
+        (`DEF FNA$(X$)=X$+"!"` → `hi!`), redefinition takes the last, and FN
+        calling FN works.
+        🔴 **TWO ROWS ARE A SILENT WRONG ANSWER HERE**: `FNZ(1)` undefined, and a
+        `DEF` on a later unexecuted line, are **ERR 18** on both references and
+        read **`0`** here.
+        💰 **NO TOTAL IS CLAIMED** — nothing has been assembled, and a size from
+        arithmetic is not a measurement. ⚠️ It is RESIDENT wherever it lands:
+        `FN` evaluation must call `eval`, which is main page 1, and no sub-ROM
+        tenant can reach main page 1. **Read both walls from `make basic-reloc`
+        at the time.**
       - **The `CLEAR` string-pool partition** — ✅ **LANDED 2026-07-29, 51/51
         gated, falsified.** Opened by the `BIN$`/`FRE` slice (D-BF-A(c)):
         zerobas had ONE free gap where the reference has TWO pools, and
