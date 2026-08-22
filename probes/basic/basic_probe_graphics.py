@@ -740,6 +740,26 @@ PAINT_FILL_CASES = [
     # (bug #2 above: the seed is unconditionally the flood origin).
     ("seed_on_wall_pixel", ["LINE(17,17)-(41,41),15,B", "PAINT(17,17),7,15"],
      [(17, 17), (29, 29), (6, 6)]),
+    # --- D-PAINTS2SEED: the OTHER half of the seed rule, and the two rows above
+    # are exactly why it was missed for a year. Both of them put the seed on B,
+    # so "the seed is unconditional" was stated far more broadly than its
+    # evidence. Put the seed on **C** and the reference paints NOTHING AT ALL.
+    # docs/spec-basic-paints2seed.md.
+    ("seed_already_c_noop", ["LINE(20,20)-(60,60),15,B", "PSET(30,30),9",
+                             "PAINT(30,30),9,15"],
+     [(50, 50), (30, 30), (6, 6)]),
+    # ...and it covers an UNDRAWN seed too, which can only arise when C == the
+    # background (an undrawn pixel's effective colour IS the background, by
+    # construction -- gfx_paint_read's own header). 🔴 THE DRAWN PIXEL MUST SIT
+    # ON THE SEED'S ROW: reaching another row needs a PUSH, and a push goes
+    # through the `== C` stop, which with C == bg blocks every undrawn pixel, so
+    # an off-row witness survives whether the seed was refused or not and the
+    # case separates nothing. On the seed's row it is gfx_paint_extend_lr's
+    # looser `passable` walk that reaches it, no push involved -- and a flood
+    # repaints it with C == bg, which the clash rule turns into "clear the bit".
+    ("seed_already_c_bg_noop", ["LINE(20,20)-(60,60),15,B", "PSET(35,30),9",
+                                "PAINT(30,30),1,15"],
+     [(35, 30), (33, 30)]),
 ]
 
 
@@ -809,6 +829,15 @@ PAINT_MC_CASES = [
      [(10, 100), (128, 60), (50, 20), (10, 4)]),
     ("mc_box_bounded", ["LINE(4,4)-(40,40),15,B", "PAINT(20,20),9,15"],
      [(20, 30), (60, 20)]),
+    # 🔴 THE ROW THAT SURVIVES A CHANGE TO THE SEED GATE. `mc_border_is_bg` above
+    # decides "is a background cell a border?" only as long as the seed itself is
+    # the background -- and D-PAINTS2SEED made the gate refuse such a seed by
+    # COLOUR, so that row stopped exercising the walk at all (it caught a knife
+    # aimed at exactly this and then stopped catching it). Drawing the seed first
+    # ADMITS it, so the question is decided where it belongs: in the walk.
+    # First point = the seed was painted; second = the fill did NOT escape.
+    ("mc_bg_border_walk", ["PSET(10,10),9", "PAINT(10,10),1,4"],
+     [(10, 10), (10, 60)]),
 ]
 
 

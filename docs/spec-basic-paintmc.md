@@ -201,12 +201,21 @@ because their regex matched nothing.
 | knife | claim | predicted to redden |
 |---|---|---|
 | K-PM1 | the MC pitch is 4 | `box3.in ac3.spread mb.dflt.far mb.b7.up sc3.up nt3.thru tm3.far` |
-| K-PM2 | the seed gate is `!= B` **only** | `sc3.up` |
+| ~~K-PM2~~ | ~~the seed gate is `!= B` **only**~~ | 🗑️ **retired** — see below |
 | K-PM3 | MC never reports "background" | `mb.b4.up mb.b4.seed` |
 | K-PM4 | the pitch applies UPWARD too | `ac3.spread mb.b7.up nt3.above sc3.up` |
 | K-PM5 | SCREEN 2's pitch is 1 | `box2.in ac2.spread` |
 
-**Result: 5/5 EXACT**, five distinct knife ROM hashes, source restored
+🗑️ **K-PM2 WAS RETIRED THE SAME DAY, AND THE RUNNER IS WHAT NOTICED.** It cut
+`call gfx_paint_passable` → `call gfx_paint_inside` in the seed gate.
+[D-PAINTS2SEED](spec-basic-paints2seed.md) replaced that gate with one comparison
+whose comparand is chosen by mode, the anchor stopped existing, and the runner
+**aborted with `anchor matched 0x`** rather than scoring the other four and
+printing a tally. The claim is not lost: `paints2seed_knives.py`'s K-S2S2 swaps
+that comparand and predicts a **superset** of K-PM2's single row. The four
+survivors re-ran EXACT against the new build.
+
+**Result (at `8e75629`): 5/5 EXACT**, five distinct knife ROM hashes, source restored
 byte-identical and both ROMs back to the baseline pair. ⚠️ **Five first-time
 exacts is the shape this project distrusts** — so what carries it is not the
 tally: the parser was calibrated on a planted log before the baseline ran, the

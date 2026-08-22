@@ -2533,9 +2533,11 @@ gpel_right_done:
 ; gfx_paint_process until empty or GFX_POVF fires. Clobbers everything.
 ;
 ; BUG FIX (empirically found via the VG-8020 differential, docs/spec-basic-
-; graphics-g5.md): the seed pixel is ALWAYS painted and used as the flood
-; origin, UNCONDITIONALLY -- it is NOT skipped just because its own effective
-; colour already happens to equal GFX_B (or GFX_C). Measured on the
+; graphics-g5.md): the seed pixel is painted and used as the flood origin even
+; when its own effective colour equals GFX_B. ⚠️ THIS PARAGRAPH USED TO SAY
+; "UNCONDITIONALLY ... (or GFX_C)" AND THE `or GFX_C` HALF WAS NEVER MEASURED:
+; both cases it cites put the seed on B, not on C. It is false -- see the seed
+; admission test in the body below, and docs/spec-basic-paints2seed.md. Measured on the
 ; reference: `PAINT(100,100),7,1` on a plain background already == the
 ; given border (1) still floods (does NOT no-op); `PAINT(16,16),7,15` with
 ; the seed placed EXACTLY on a drawn border pixel (colour 15 == the given
@@ -2560,33 +2562,65 @@ gfx_paint_flood:
                 or      c
                 ld      (GFX_PXL),a
                 ld      (GFX_PXR),a
-                ; 🔴 AND MULTICOLOUR'S SEED IS *NOT* UNCONDITIONAL. The paragraph
-                ; above is a SCREEN-2 rule and stays one: there, a seed placed
-                ; exactly on a drawn border pixel floods (measured). In MC the
-                ; references do the OPPOSITE -- a seed whose cell already reads B
-                ; paints NOTHING AT ALL, not even itself. Two independent geometries
-                ; say so, on both references (scratchpad/paintmc_probe.py):
-                ;   `LINE(20,20)-(60,60),15,B : PAINT(20,20),9,15`
-                ;      -> POINT(20,20)=15 (the seed cell is still the WALL) and
-                ;         POINT(40,40)=4  (the interior was never entered)
-                ;      ...where the SCREEN-2 twin reads 9 and 9.       [sd3/sd2]
-                ;   `PAINT(10,10),9,4` with the background at 4
-                ;      -> POINT(10,10)=4 -- the seed itself unpainted.  [mb.b4]
-                ; ⚠️ IT IS THE `== B` HALF ONLY, NOT "not inside": a seed already
-                ; coloured C floods normally here (`PSET(10,10),9 : PAINT(10,10),9,7`
-                ; -> POINT(10,0)=9, row sc3.up), which is again the opposite of what
-                ; the same program does in SCREEN 2 (sc2.up=4 -- see TODO.md, that
-                ; one is a SHIPPED SCREEN-2 divergence this slice did not close).
-                ; gfx_paint_passable IS the "!= B" test, so the gate is a reuse.
-                call    gfx_is_mc
-                jr      nz,gpf_seed_ok
+                ; 🔴 THE SEED IS NOT UNCONDITIONAL IN EITHER MODE, AND THE TEST IS
+                ; A DIFFERENT ONE IN EACH. The paragraph above is what the G5
+                ; differential measured -- a seed placed exactly on a drawn BORDER
+                ; pixel floods -- and it stays true; what it does NOT cover is a seed
+                ; that already reads the PAINT colour, because neither of the two
+                ; cases it cites has one (both put the seed on B). D-PAINTMC and
+                ; D-PAINTS2SEED measured the rest, on both references
+                ; (scratchpad/paintmc_probe.py):
+                ;
+                ;   MULTICOLOUR -- refuse iff the cell already reads B:
+                ;     `LINE(20,20)-(60,60),15,B : PAINT(20,20),9,15`
+                ;        -> POINT(20,20)=15 (the seed cell is STILL THE WALL),
+                ;           POINT(40,40)=4  (the interior was never entered)  [sd3]
+                ;     `PAINT(10,10),9,4` with the background at 4
+                ;        -> POINT(10,10)=4 -- the seed itself unpainted        [mb.b4]
+                ;     ...and a seed already coloured C floods normally           [sc3]
+                ;
+                ;   SCREEN 2 -- the MIRROR: refuse iff it already reads C:
+                ;     `PSET(10,10),9 : PAINT(10,10),9,7` -> POINT(10,0)=4        [sc2]
+                ;     `LINE(20,20)-(60,60),15,B : PSET(30,30),9 : PAINT(30,30),9,15`
+                ;        -> POINT(50,50)=4, the interior never entered        [su2.drawn]
+                ;     ...and it covers an UNDRAWN seed too, which only arises when
+                ;     C == the background:
+                ;     `LINE(20,20)-(60,60),15,B : PSET(35,30),9 : PAINT(30,30),4,15`
+                ;        -> POINT(35,30)=9, that drawn pixel SURVIVED           [su2.row]
+                ;
+                ; ⚠️ THE LAST ONE TOOK TWO FIXTURES. Draft 1 put the drawn pixel at
+                ; (40,40), a DIFFERENT row from the seed -- reaching it needs a PUSH,
+                ; and a push goes through gfx_paint_inside, which stops at `== C` on
+                ; both sides. With C == the background EVERY undrawn pixel reads
+                ; `== C`, so no span is ever pushed and (40,40) survives either way:
+                ; all three sides read 9 and the row separated nothing. Moving the
+                ; pixel onto the SEED'S OWN ROW puts it inside gfx_paint_extend_lr's
+                ; looser `passable` walk, where no push is involved -- and then a
+                ; flood repaints it with C == bg, the clash rule clears its bit, and
+                ; the two answers are 9 and 4.
+                ; 🔴 D=y, E=x IN REGISTERS -- gfx_paint_read does NOT read
+                ; GFX_PTESTX/Y. Draft 1 of this test stored the seed into those two
+                ; cells (copying the shape of gfx_paint_inside/_passable, which are
+                ; the routines that LOAD D/E from them) and then called
+                ; gfx_paint_read directly, so the comparison ran against a colour
+                ; read from whatever D/E the tenant dispatcher happened to leave.
+                ; ⚠️ IT WAS DETERMINISTIC, SO MOST ROWS STILL AGREED: two of the ten
+                ; PAINT rows failed and the other eight passed on leftovers,
+                ; including `mc_border_is_bg`, whose whole job is this very gate.
+                ; The gate caught it the first time it ran.
                 ld      a,(GFX_PFY)
-                ld      (GFX_PTESTY),a
+                ld      d,a
                 ld      a,(GFX_PXL)
-                ld      (GFX_PTESTX),a
-                call    gfx_paint_passable
-                ret     nc                  ; the seed cell reads B -> paint nothing
-gpf_seed_ok:
+                ld      e,a
+                call    gfx_paint_read      ; A = the seed's EFFECTIVE colour
+                ld      b,a
+                call    gfx_is_mc           ; Zf=1 iff MULTICOLOUR (clobbers A only)
+                ld      a,(GFX_B)           ; MC: the border colour
+                jr      z,gpf_seed_cmp
+                ld      a,(GFX_C)           ; SCREEN 2: the paint colour
+gpf_seed_cmp:
+                cp      b
+                ret     z                   ; not admissible -> paint NOTHING at all
                 call    gfx_paint_extend_lr
                 ; --- push the discovered seed span, then drain the stack ---
                 ld      a,(GFX_PXL)

@@ -2339,23 +2339,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       cached). 🔬 5 knives, 5 distinct predicted row sets, parser calibrated on
       clean / planted / deleted logs first.
 
-- [ ] 🔴 **A SCREEN-2 `PAINT` WHOSE SEED IS ALREADY THE PAINT COLOUR SHOULD DO
-      NOTHING, AND HERE IT FLOODS** (found 2026-08-22 by D-PAINTMC §7, measuring
-      something else). `SCREEN 2 : PSET(10,10),9 : PAINT(10,10),9,7` then
-      `POINT(10,0)` reads **4** on the VG-8020 and the CF-3300 and **9** here
-      (row `sc2.up`, `scratchpad/paintmc_probe.py`). The references refuse a seed
-      whose effective colour already equals C; `gfx_paint_flood`'s header says
-      the seed is used "UNCONDITIONALLY" and cites two measured cases — but
-      NEITHER of them has a seed equal to **C**: `seed_on_border_still_floods`
-      and `seed_on_wall_pixel` both place it on **B**. So the shipped rule is
-      broader than its evidence.
-      ⚠️ **IT IS THE MIRROR OF WHAT MULTICOLOUR DOES** (`sc3.up` = 9 on both
-      references, i.e. MC floods that same program), so "make both modes agree"
-      is NOT the fix and a single shared rule would break one of them. Deliberately
-      NOT folded into D-PAINTMC: a SCREEN-3 measurement and a SCREEN-2 behaviour
-      change do not belong in one differential. Cheap to fix (a mode-gated seed
-      test beside the one D-PAINTMC added), but it needs its own knife and its own
-      look at `basic_probe_graphics.py`'s PAINT phase, whose rows would move.
+- [x] ✅ **A SCREEN-2 `PAINT` WHOSE SEED IS ALREADY THE PAINT COLOUR NOW DOES
+      NOTHING** (D-PAINTS2SEED, 2026-08-22, `docs/spec-basic-paints2seed.md`).
+      💰 **4 B of sub page 0**; `basic-reloc.rom` byte-identical (tenant-only).
+      🎯 **The rule is BROADER than the case that found it, and measured that
+      way**: the references refuse a seed whose EFFECTIVE colour equals C,
+      **drawn or not**. Three geometries on both machines — an open screen
+      (`sc2.up`=4), a bounded box read at its interior (`su2.drawn`=4), and an
+      UNDRAWN seed with C == the background (`su2.row.cbg`=9, where a flood would
+      have ERASED the witness pixel via the `c==bg -> clear the bit` clash).
+      🎯 **AND IT IS THE MIRROR OF MULTICOLOUR'S**, which refuses `== B` and
+      floods on `== C`. Every cell of that 2x2 is measured; no single predicate
+      produces it, so the implementation is one comparison whose COMPARAND is
+      picked by mode.
+      🔴 **THE FIRST DRAFT READ THE SEED'S COLOUR OUT OF REGISTER GARBAGE** —
+      `gfx_paint_read` takes D=y/E=x in REGISTERS and does not read
+      `GFX_PTESTX/Y`; the MC gate had been getting that loading for free from
+      `gfx_paint_passable`. It was deterministic, so **8 of the 10 shipped PAINT
+      rows still passed**, including `mc_border_is_bg`, whose whole job is that
+      gate. The two that failed included one that had been PASSING before the
+      edit, which is what made the cause unambiguous. The correct version is also
+      **4 B smaller** than the draft.
 
 - [ ] 🔴 **`PAINT`'s BORDER ARGUMENT IS RANGE-CHECKED ON THE REFERENCES AND NOT
       HERE, AND THE BOUND DEPENDS ON THE MODE** (measured 2026-08-22 by

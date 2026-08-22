@@ -14,7 +14,7 @@ prediction.
 
 THE CLAIMS UNDER TEST:
   K-PM1  the MULTICOLOUR pitch (4)      -> the pre-slice symptom comes back
-  K-PM2  the seed gate is `!= B` ONLY   -> a seed already C stops the fill
+  K-PM2  RETIRED by D-PAINTS2SEED -> see paints2seed_knives.py K-S2S2
   K-PM3  MC never reports "background"  -> a background cell stops being a border
   K-PM4  the pitch in the UP direction  -> MC floods down but never up
   K-PM5  the SCREEN-2 pitch (1)         -> SCREEN 2 paints a sparse lattice
@@ -35,6 +35,11 @@ WANT = {
     "mb.dflt.far": "9",   "mb.b7.up":    "9",
     "mb.b4.up":    "4",   "mb.b4.seed":  "4",
     "sc3.up":      "9",
+    # 🔴 ADDED 2026-08-22 AFTER K-PM3 WENT BLIND (see its note below). The seed is
+    # DRAWN to colour 9 so it is admitted, and B is the background, so the WALK is
+    # where "is a background cell a border?" gets decided.
+    "b4x.seed":    "1",   # ...the seed itself IS painted
+    "b4x.far":     "4",   # ...and the fill does not spread: bg IS a border in MC
     "nt3.thru":    "9",   "nt3.above":   "9",   "tm3.far":     "9",
 }
 ROWS = tuple(WANT)
@@ -58,23 +63,38 @@ KNIVES = [
      "                jr      z,gpp_pitch_set",
      {"box3.in", "ac3.spread", "mb.dflt.far", "mb.b7.up", "sc3.up",
       "nt3.thru", "tm3.far"}),
-    # The seed gate is the `!= B` half ONLY -- gfx_paint_passable, not
-    # gfx_paint_inside. Swapping in the stricter test also refuses a seed that is
-    # already C, which the references do NOT do in multicolour (sc3.up = 9).
-    ("K-PM2  seed gate: passable -> inside",
-     "                call    gfx_paint_passable\n"
-     "                ret     nc                  ; the seed cell reads B",
-     "                call    gfx_paint_inside    ; K-PM2\n"
-     "                ret     nc                  ; the seed cell reads B",
-     {"sc3.up"}),
+    # 🗑️ K-PM2 IS RETIRED, AND THE RUNNER IS WHAT NOTICED. It cut
+    # `call gfx_paint_passable` -> `call gfx_paint_inside` in the seed gate, to
+    # show the gate is the `!= B` half ONLY. D-PAINTS2SEED replaced that gate
+    # with one comparison whose COMPARAND is chosen by mode, so the anchor
+    # stopped existing and this runner ABORTED with "anchor matched 0x" rather
+    # than scoring four knives and printing a tally -- which is the behaviour
+    # worth keeping.
+    # ✅ The claim is not lost: paints2seed_knives.py's K-S2S2 swaps that
+    # comparand from GFX_B to GFX_C and predicts {sd3.wall.seed, mb.b4.seed,
+    # sc3.up}. That is a SUPERSET of this knife's {sc3.up} and a strictly
+    # stronger claim -- it pins the `== B` half as load-bearing too. Deleted here
+    # rather than re-pointed, because a knife's value is in cutting the code that
+    # actually ships.
     # gfx_paint_read's MC arm returns Zf=0 unconditionally: no MC cell is ever
     # "never-drawn background". Making colour 4 report background restores the
     # SCREEN-2 escape, and a background-coloured cell stops being a border --
     # which only shows where B IS the background.
+    # 🔴 THIS KNIFE WENT BLIND AND THE RE-RUN IS WHAT CAUGHT IT. Its first set was
+    # {mb.b4.up, mb.b4.seed}, and after D-PAINTS2SEED it reddened NOTHING with the
+    # ROM provably moved. The cause is a real coupling, not a fixture accident:
+    # that slice's seed gate reads the seed's COLOUR and ignores Zf, where the
+    # gate it replaced went through gfx_paint_passable, which consulted it. In
+    # mb.b4.* the seed IS the background, so it is now refused by colour alone and
+    # the walk -- the only place Zf still matters -- never runs.
+    # 🎯 b4x.* restores the teeth by DRAWING the seed first, so it is admitted and
+    # the walk then meets background-coloured cells as borders. Under the knife
+    # they stop being borders and the fill escapes: b4x.far goes 4 -> 1. b4x.seed
+    # stays 1 either way and is the green anchor that says the seed ran at all.
     ("K-PM3  MC read: cp $FF -> cp $04 (colour 4 reads as background)",
      "                cp      $FF                 ; A preserved, Zf=0 -> \"drawn\", always",
      "                cp      $04                 ; K-PM3",
-     {"mb.b4.up", "mb.b4.seed"}),
+     {"b4x.far"}),
     # The pitch in ONE direction. `sub 1` is what the SCREEN-2 code already does
     # (pitch 1), so this knife CANNOT redden a SCREEN-2 row -- it is MC-only by
     # construction, and the downward rows must stay green.

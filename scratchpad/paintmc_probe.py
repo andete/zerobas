@@ -195,6 +195,65 @@ for _l, _m, _b in [("bd3.15", 3, "15"), ("bd3.16", 3, "16"), ("bd3.17", 3, "17")
                    ("bd2.256", 2, "256")]:
     case(_l, [ln.format(m=_m, b=_b) for ln in _BD], mc=(_m == 3))
 
+# ===========================================================================
+# 8. D-PAINTS2SEED: HOW BROAD IS THE SCREEN-2 SEED RULE?
+#    `sc2.up` measured ONE case -- a seed PSET to 9 with C=9 -- and it refuses.
+#    The rule "refuse a seed whose effective colour == C" is broader than that
+#    case: it also covers an UNDRAWN seed, whose effective colour IS the
+#    background by construction (gfx_paint_read's header), so that half only
+#    arises when C == the background.
+#
+#    ⚠️ THAT HALF LOOKS UNOBSERVABLE AND IS NOT. Painting C == bg clashes to
+#    "clear the bit" (the PSET rule), so a flood with C == bg ERASES every drawn
+#    pixel it covers, while a refusal leaves them alone. Put a drawn pixel inside
+#    the region and the two answers are 9 and 4:
+#
+#      LINE(20,20)-(60,60),15,B : PSET(40,40),9 : PAINT(30,30),4,15
+#        refuse -> POINT(40,40) = 9      flood -> POINT(40,40) = 4
+#
+#    The .ctl row is the same geometry with a C that is NOT the background, and
+#    exists so that "it refused" cannot be confused with "the fill never ran".
+_SU = ['SCREEN 2:LINE(20,20)-(60,60),15,B', 'PSET(40,40),9', 'PAINT(30,30),{c},15',
+       'V={read}:SCREEN 0:PRINT"[";V;"]":END']
+case("su2.cbg", [ln.format(c=4, read="POINT(40,40)") for ln in _SU], mc=False)
+case("su2.ctl", [ln.format(c=9, read="POINT(30,30)") for ln in _SU], mc=False)
+# 🔴 su2.cbg AGREED ON ALL THREE SIDES AND IT WAS BUILT WRONG. Its drawn pixel is
+# at (40,40), a DIFFERENT row from the seed, so reaching it needs a PUSH -- and a
+# push goes through the `inside` test, which stops at `== C` on BOTH sides. With
+# C == the background every undrawn pixel reads `== C`, so no span is ever pushed
+# and (40,40) survives whether the seed was refused or not. The row cannot
+# separate the two hypotheses it was built for.
+# 🎯 THE FIX IS GEOMETRIC: put the drawn pixel on the SEED'S OWN ROW, which
+# gfx_paint_extend_lr reaches with the looser `passable` walk, no push involved.
+# Then a flood repaints it with C == bg, the PSET clash rule clears its bit, and
+# it reads 4; a refusal leaves it 9.
+_SUR = ['SCREEN 2:LINE(20,20)-(60,60),15,B', 'PSET(35,30),9',
+        'PAINT(30,30),{c},15', 'V={read}:SCREEN 0:PRINT"[";V;"]":END']
+case("su2.row.cbg", [ln.format(c=4, read="POINT(35,30)") for ln in _SUR], mc=False)
+# ...and the control that the row walk really does run and really does reach x=33
+# (with a C that is NOT the background, so the paint is visible).
+case("su2.row.ctl", [ln.format(c=9, read="POINT(33,30)") for ln in _SUR], mc=False)
+
+# ...and the drawn-seed case again, in THIS geometry rather than sc2's, so the
+# rule is not resting on a single fixture shape either.
+_SU2 = ['SCREEN 2:LINE(20,20)-(60,60),15,B', 'PSET(30,30),9',
+        'PAINT(30,30),9,15', 'V={read}:SCREEN 0:PRINT"[";V;"]":END']
+case("su2.drawn", [ln.format(read="POINT(50,50)") for ln in _SU2], mc=False)
+
+# 🔴 9. THE ROW THAT GIVES K-PM3 ITS TEETH BACK. D-PAINTS2SEED's seed gate reads
+#    the seed's COLOUR and ignores gfx_paint_read's Zf, where the gate it replaced
+#    went through gfx_paint_passable, which consulted it. `cp $FF` (the MC arm's
+#    "no cell is ever background") therefore only matters when B == the background
+#    AND the seed is admitted -- and in mb.b4.* the seed IS the background, so it
+#    is refused by colour alone and the walk never runs. K-PM3 went from two
+#    reddened rows to ZERO with the ROM provably moved.
+#    🎯 Admit the seed by DRAWING it first, and the walk then meets
+#    background-coloured cells as borders, which is the thing `cp $FF` decides.
+_B4X = ['SCREEN 3:PSET(10,10),9', 'PAINT(10,10),1,4',
+        'V={read}:SCREEN 0:PRINT"[";V;"]":END']
+case("b4x.seed", [ln.format(read="POINT(10,10)") for ln in _B4X])
+case("b4x.far",  [ln.format(read="POINT(10,60)") for ln in _B4X])
+
 BR = re.compile(r"\[([^\]]*)\]")
 ERR = re.compile(r"^\s*([A-Z][A-Za-z' ]+ error|Illegal function call|Overflow|"
                  r"Out of memory|Type mismatch|Subscript out of range)", re.M)
