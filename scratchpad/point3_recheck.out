@@ -1,0 +1,22 @@
+  vg8020  p3.undrawn  -> '4'
+  cf3300  p3.undrawn  -> '4'
+  zb      p3.undrawn  -> '4'
+  ROW p3.undrawn  refs-agree   zb=same
+  vg8020  p3.set      -> '9'
+  cf3300  p3.set      -> '9'
+  zb      p3.set      -> '9'
+  ROW p3.set      refs-agree   zb=same
+  vg8020  p3.set2     -> '12'
+  cf3300  p3.set2     -> '12'
+  zb      p3.set2     -> '12'
+  ROW p3.set2     refs-agree   zb=same
+  vg8020  p2.s2ctl    -> '9'
+  cf3300  p2.s2ctl    -> '9'
+  zb      p2.s2ctl    -> '9'
+  ROW p2.s2ctl    refs-agree   zb=same
+  vg8020  p2.undrawn  -> '4'
+  cf3300  p2.undrawn  -> '4'
+  zb      p2.undrawn  -> '4'
+  ROW p2.undrawn  refs-agree   zb=same
+done
+DRIVER-EXIT 0

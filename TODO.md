@@ -2408,21 +2408,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `gfx_color_rmw`: a fill that never entered the group is a different defect
       from a clash resolved differently.
 
-- [ ] 🔴 **`POINT` IN SCREEN 3 IS A SILENT WRONG ANSWER, AND IT IS INDEPENDENT OF
-      IMPLEMENTING SCREEN 3** (found 2026-08-22 by the SCREEN 3 scout, §5).
-      `SCREEN 3` then `POINT(30,30)` with nothing plotted reads **4** on the
-      VG-8020 and the CF-3300 and **1** here, with **no error on any side**.
-      🎯 **`POINT` does not gate the mode** — `gfx_point_gate` is called by
-      PSET/LINE/CIRCLE/PAINT, but `gfx_point` is reached without it. So in
-      SCREEN 3 zerobas reads the SCREEN-2 address model against multicolour VRAM
-      and returns a wrong colour silently. Every PLOTTING op honestly raises
-      ERR 5; POINT alone answers, and answers wrongly.
-      💰 The silent-wrong-answer class — worse than the refusal beside it. Two
-      remedies with different prices: **gate it** (a few bytes, makes it ERR 5
-      today, matching its siblings but NOT the references) or **implement the MC
-      read path** (part of the SCREEN 3 item above, and the only one that matches
-      the reference reading of 4). ⚠️ The two are not the same claim: no row yet
-      says what `POINT` in SCREEN 3 *should* do in zerobas before SCREEN 3 exists.
+- [x] ✅ **`POINT` IN SCREEN 3 IS A SILENT WRONG ANSWER** — **STALE. CLOSED
+      2026-08-22 BY RE-MEASUREMENT**, `scratchpad/point3_recheck.py`. Filed the
+      same day by the SCREEN 3 scout §5, and shipped hours later by **D-SCREEN3**,
+      which gave `gfx_point` its `gfx_is_mc` branch to `gfx_point_mc`. Nobody
+      re-read the list.
+
+      The filed row, verbatim, re-run on both references and on zerobas from a
+      clean build: `SCREEN 3` then `POINT(30,30)` with nothing plotted reads
+      **4 / 4 / 4**. It was filed as *"4 on the VG-8020 and the CF-3300 and 1
+      here"*. Two more rows (`PSET(30,30),9` and `PSET(33,37),12`, the second off
+      the 4x4 lattice corner where the two address models disagree about which
+      byte holds the pixel) also agree on all three sides, and SCREEN-2 twins of
+      both shapes agree as controls.
+      ⚠️ **THE TWO `PSET`-THEN-`POINT` ROWS ARE NOT INDEPENDENT EVIDENCE** and
+      are not what closes this: a write/read round trip through ONE address
+      function cannot falsify that function — `docs/spec-basic-screen3.md`'s own
+      recorded lesson. What closes it is the UNDRAWN row, which is the filed
+      claim itself, plus PHASE H-MC's nine POINT-sampled multicolour fill rows,
+      whose fills come from the tenant's own walk.
+      📏 **THE FIFTH TIME A LOUD OPEN ITEM HAD ALREADY SHIPPED.** The pattern is
+      not that the item was wrong when written — it was right — but that a slice
+      aiming at something else closed it and nothing re-read this file.
+      **When a slice lands, grep this list for what it just shipped.**
 
 - [x] ✅ **PAINT'S OFF-SCREEN-SEED ERR 5 versus ITS WRONG-MODE ERR 5.** Filed
       2026-08-11 by D-LINERR, CLOSED the same day by **D-PAINTSEED**
