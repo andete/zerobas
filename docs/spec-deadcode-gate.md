@@ -28,7 +28,7 @@ A span is LIVE if it is a seed, is mentioned by a live span, or is fallthrough-e
 from a live span whose last code line is not an unconditional terminator. Iterate to a
 fixed point; anything still dead is unreachable ROM.
 
-### 2.1 The six apparatus fixes it MUST keep
+### 2.1 The seven apparatus fixes it MUST keep
 
 Each of these produced a confident wrong row during the review while missing a real
 one. They are the tool's actual content — the fixed-point loop is the easy part.
@@ -41,6 +41,7 @@ one. They are the tool's actual content — the fixed-point loop is the easy par
 | 4 | **each build walked separately, with its own include closure and seeds** | "dead" is per-build: `disk_putword` is dead in main, live in sub, and its caller sits outside `main.asm`'s closure entirely |
 | 5 🔴 | the main seed scrape reads the **CODE COLUMN** of `tools/`, not whole files | a comment is not a reference: prose kept **24 B** of dead main code invisible to this gate, and the prose that hid it was the note explaining that span's removal from the other build — §10 |
 | 6 🔴 | the main build is seeded from the **generated `sub/basic-resident-abi.inc`**, never from a scrape of `sub/` | a name is not a route: a `call` in `sub/` code seeded the MAIN label of that name even when it resolved sub-locally, which is the normal case. **20 B on main page 1**, orphaned and hidden by the same eviction commits — §11 |
+| 7 🔴 | a **prologue that emits nothing** confers no fallthrough on its file's first label | fix (2)'s always-live prologue also carried a fallthrough edge, and 42 of 49 main prologues are comments only — so 42 first labels were live **by construction**, unreportable by any seed set. §12 |
 
 ### 2.2 Seeds — and why the choice matters more than the algorithm
 
@@ -573,3 +574,120 @@ than a false one, but §2.2's blanket *"every seed name is asserted to resolve"*
 ⚠️ **`disk/` is a third build this gate does not walk at all.** Out of scope since
 §7, restated here because the denominator moved: `disk/disk.asm` includes nothing
 from `basic/`, so it cannot make a main span live — but nothing checks that.
+
+---
+
+## 12. D-PROLOGUE — ✅ every file's first label was unconditionally live (2026-08-22)
+
+**A seventh apparatus fix, and §11.5 filed it against itself.** Fix (2) gives each
+file an always-live **prologue** span — the lines before its first label — so
+references made up there stay visible (`basic/sprtrap-body.inc` opens with a
+`jr z,sp_done` and that is exactly why the fix exists). But the same span also
+carried a **fallthrough edge into the first label**, and:
+
+> **42 of 49 main prologues (53 of 66 sub) are comments only.** A comment block
+> emits no bytes and cannot fall into anything — so 42 main first labels were
+> live **by construction**, and no seed set could ever report them.
+
+D-SEEDHOLE2's `read_sector` hid in exactly that position, through that slice's own
+seed rebuild.
+
+### 12.1 The obvious generalisation is catastrophic — measured, not argued
+
+The tempting rule is *"an empty span cannot fall through"*. It is **false**, and
+the measurement says so loudly:
+
+| rule | reported dead, main |
+|---|---|
+| *any* empty span confers no fallthrough | **1227 spans, 27727 B** |
+| main ROM total size | **22510 B** |
+
+🔴 **27 KB of dead code in a 22 KB ROM is the tell.** A **bare label directly above
+another label is an ALTERNATE ENTRY POINT** — its "fallthrough" *is* the routine,
+and cutting it disconnects the graph wholesale. Only `@prologue:` spans are
+skipped. K-P5 is the standing row for that distinction.
+
+⚠️ **A prologue that genuinely emits is untouched** — `_last_code` non-empty means
+the edge stays, so `sprtrap-body.inc` keeps working. K-P4 pins it.
+
+### 12.2 What it reports — and why the flat model was checked first
+
+Before changing anything, the include tree was **flattened** the way the assembler
+sees it (`scratchpad/prologue_flatten.py`) to ask whether any of those first
+labels is *genuinely* entered by fallthrough from the code physically before its
+`include`:
+
+| | main | sub |
+|---|---|---|
+| first labels with an empty prologue, reached in flat order | 41 | 53 |
+| predecessor ends in a **terminator** (no real fallthrough) | 30 | 44 |
+| predecessor "falls through" | 11 | 9 |
+
+…and **all 20 of those predecessors are data or directives** — `org`, `db "CAS:",0`,
+`dw …`, `ENDIF`, empty. Nothing runs off the end of a string table into the next
+routine. So the edge being removed is not a control path on either model.
+
+Findings after the fix: **main 0** (its one candidate, `read_sector`, was carved by
+§11), **sub 1** — `fat_io_open`, 4 B, allowlisted (§12.3).
+
+### 12.3 `fat_io_open` — allowlisted, and fix (4)'s remedy DECLINED with a reason
+
+`basic/fatio-body.inc` is shared **byte-identically** between the resident main ROM
+and the sub-ROM BLOAD tenant. On the sub side the tenant enters at `fat_io_find`,
+never at `fat_io_open` — D-BLNF's whole point is telling NOT FOUND from a mount/IO
+fault *without* the mount. So `fat_io_open`'s 4 B (`call fat_mount` + `ret c`) are
+dead in sub and load-bearing in main: fix (4)'s shape exactly.
+
+Fix (4)'s remedy is `IF SUB_BUILD`, and it is **declined here, with a reason**:
+byte-identical sharing is this file's *stated design property* — "the identical
+source text becomes a cross-slot round trip on one side and four plain in-page
+calls on the other" — and **4 B of a page with 1624 B free (2026-08-22) does not
+buy breaking it.** Allowlisted on the `fmt_menu_text` precedent, and it becomes the
+gate's **second vacuity canary**.
+
+### 12.4 Falsification — 5 rows, all EXACT, run twice
+
+`scratchpad/prologue_knives.py`. ⚠️ **The failure direction here is UNDER-seeding —
+reporting LIVE code as dead — so three of the five rows are safety rows, not
+discriminators.**
+
+| row | knife | want | got |
+|---|---|---|---|
+| K-P1 | the fix reverted | rc 1, the **allowlist canary** fires on `fat_io_open` | ✅ EXACT |
+| K-P2 🔴 | a dead span planted as a file's **first label** | **new reports, old blind** | ✅ EXACT |
+| K-P3 🟢 | the same plant **not** first | reported by **both** | ✅ EXACT |
+| K-P4 🟢 | a prologue that **emits** | **neither** reports — fallthrough intact | ✅ EXACT |
+| K-P5 🟢 | an **alternate entry point** (bare label, routine live only by falling out of it) | stays **LIVE** on both | ✅ EXACT |
+
+K-P1 is the strongest shape available here: **the allowlist is the detector.** Revert
+the fix and `fat_io_open` stops being detected as dead, which is precisely the
+"an allowlist that stops matching is the only warning you get" alarm from §4.
+
+🔴 **K-P5's first draft was wrong and the fix was right.** It put the bare label
+where the file's *first* label goes — which is just K-P2 again, and an alias nothing
+references genuinely *is* dead there. The property that matters is a bare label
+reached from outside with a real routine below it that is live **only** by falling
+out of it. Getting a safety row wrong in the permissive direction is how an
+under-seeding fix ships unnoticed.
+
+### 12.5 Still open — the DATA-TABLE fallthrough, measured and filed
+
+The same question one step out: **a data-only span still confers fallthrough on
+whatever follows it.** `err_io: db "load",…` falls into `do_cload` in this model,
+and nothing ever runs off the end of a string.
+
+**Measured 2026-08-22**, cutting fallthrough only out of spans that *emit data*
+(never out of empty ones — that is §12.1's error):
+
+| build | edges cut | new findings | bytes |
+|---|---|---|---|
+| main | 43 | 1 — `ex_sep` | 4 B |
+| sub | 77 | 4 — `tkf_ref65535`, `tkf_ref32768`, `sub_p1_table`, `em_ill_direct` | 97 B |
+
+⚠️ **NOT shipped, and the sub column says why: `sub_p1_table` (72 B) is the page-1
+ENTRY TABLE.** It is unmistakably live — the main ROM reaches it by *address
+arithmetic* (`SUBROM_ENTRY_BASE_P1 + 3*index`), which no name-following model can
+see. So this change does not just find dead code, it surfaces a whole class of
+**labels reached by arithmetic rather than by name**, and each needs a seed or an
+allowlist entry with a reason before the gate could be believed. That is its own
+slice. Filed in `TODO.md`.

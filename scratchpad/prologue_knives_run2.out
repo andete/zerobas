@@ -1,0 +1,10 @@
+EXACT  K-P1 fix reverted, allowlist canary          want=rc=1 canary                got=rc=1 canary                the allowlist IS the detector: an entry that stops matching means the sweep went blind
+EXACT  K-P2 plant as the FIRST label                want=new=YES old=NO             got=new=YES old=NO             <- the whole slice: an empty prologue no longer keeps a first label alive
+EXACT  K-P3 plant NOT first (control)               want=new=YES old=YES            got=new=YES old=YES            a plain dead span is reported by BOTH -- this is what makes K-P2 readable
+EXACT  K-P4 EMITTING prologue (safety)              want=new=NO  old=NO             got=new=NO  old=NO             over-cutting would report LIVE code dead -- the fix must not touch this
+EXACT  K-P5 alternate ENTRY POINT (safety)          want=new=LIVE old=LIVE          got=new=LIVE old=LIVE          zz_target is live ONLY by fallthrough out of a bare label -- the 1227-span error
+
+restored: gate rc=0, clean
+all 3 files byte-identical to their originals
+
+5/5 knife rows EXACT

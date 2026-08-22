@@ -296,7 +296,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
   </details>
 
-- [ ] 🔴 **EVERY FILE'S FIRST LABEL IS UNCONDITIONALLY LIVE — THE PROLOGUE
+- [x] ✅ **CLOSED 2026-08-22 (D-PROLOGUE), apparatus fix (7) —
+      [`docs/spec-deadcode-gate.md`](docs/spec-deadcode-gate.md) §12.** A prologue
+      that emits nothing confers no fallthrough, so a file's first label is no
+      longer live by construction. Findings: **main 0** (its one candidate,
+      `read_sector`, was carved by §11), **sub 1** — `fat_io_open` 4 B,
+      ALLOWLISTED and now the gate's SECOND vacuity canary.
+      🔴 **THE OBVIOUS GENERALISATION IS CATASTROPHIC AND THE ARITHMETIC SAID SO**:
+      *"any empty span cannot fall through"* reports **1227 spans / 27727 B dead
+      in a 22510 B ROM**. A bare label above another label is an ALTERNATE ENTRY
+      POINT and its fallthrough IS the routine. Only `@prologue:` spans skip.
+      ✅ Checked against a FLATTENED include tree first: of the 20 first labels
+      whose flat predecessor "falls through", **all 20 predecessors are data or
+      directives** (`org`, `db`, `dw`, `ENDIF`), so the removed edge is not a
+      control path on either model.
+      ⚠️ Fix (4)'s `IF SUB_BUILD` remedy DECLINED with a reason: byte-identical
+      sharing is `basic/fatio-body.inc`'s stated design property, and 4 B of a
+      page with **1624 B free (2026-08-22)** does not buy breaking it.
+      5/5 knives EXACT, twice — **three of them SAFETY rows**, because the failure
+      direction is under-seeding. 🔴 K-P5's first draft was wrong in the permissive
+      direction, which is how an under-seeding fix ships unnoticed.
+
+  <details><summary>the original filing, kept for the record</summary>
+
+- [x] 🔴 **EVERY FILE'S FIRST LABEL IS UNCONDITIONALLY LIVE — THE PROLOGUE
       FALLTHROUGH (filed 2026-08-22 by D-SEEDHOLE2, §11.5).** Apparatus fix (2)
       gives each file an always-live PROLOGUE span so references made above its
       first label stay visible — and also a FALLTHROUGH edge from that prologue
@@ -316,6 +339,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       its own per-span triage; a wrong redesign here is how the gate stops being
       believed. Sub page 1 free was 1624 B on 2026-08-22, so this is apparatus
       value, not wall relief.
+
+  </details>
+
+- [ ] 💰 **A DATA-ONLY SPAN STILL CONFERS FALLTHROUGH ON WHATEVER FOLLOWS IT**
+      (filed 2026-08-22 by D-PROLOGUE, §12.5). `err_io: db "load",…` falls into
+      `do_cload` in this model, and nothing ever runs off the end of a string
+      table. **Measured**, cutting fallthrough only out of spans that EMIT DATA
+      (never out of empty ones — that is §12.1's 1227-span error): main 43 edges
+      → **1 finding, `ex_sep`, 4 B**; sub 77 edges → **4 findings, 97 B**.
+      🔴 **NOT SHIPPED, AND THE SUB COLUMN IS WHY: `sub_p1_table` (72 B) IS THE
+      PAGE-1 ENTRY TABLE** — unmistakably live, reached by the main ROM through
+      **address arithmetic** (`SUBROM_ENTRY_BASE_P1 + 3*index`), which no
+      name-following model can see. So this change does not merely find dead
+      code, it surfaces a whole CLASS of labels reached by arithmetic rather than
+      by name (`em_ill_direct` looks like the same shape, indexed off a message
+      table). Each needs a seed or an allowlist entry with a reason before the
+      gate could be believed. That triage is the slice, not the edge rule.
 
 - [ ] ⚠️ **THE `tools/` SEED ARM IS AN INTERSECTION, NOT AN ASSERTION** (filed
       2026-08-22 by D-SEEDHOLE2, §11.5). `init`, the sub entry-table tenants and

@@ -24,7 +24,7 @@ unreachable ROM.
     python3 tools/check_dead_code.py build/basic-reloc.sym build/sub.sym
     python3 tools/check_dead_code.py --report build/basic-reloc.sym build/sub.sym
 
-⚠️ THE SIX APPARATUS FIXES BELOW ARE THE TOOL'S ACTUAL CONTENT. The fixed-point
+⚠️ THE SEVEN APPARATUS FIXES BELOW ARE THE TOOL'S ACTUAL CONTENT. The fixed-point
 loop is the easy part. Each fix corresponds to a confident WRONG row this sweep
 produced during the review, three of which were caught only by a control and one
 only by the assembler:
@@ -93,6 +93,23 @@ only by the assembler:
       rots when nothing re-runs it. Measured the day it shipped: 60 main labels
       named in sub/ code, 60 resolvable, 0 escapes.
       ⚠️ Fix (5) still matters -- for tools/, which still seeds.
+
+  (7) AN EMPTY PROLOGUE CANNOT FALL THROUGH, SO EVERY FILE'S FIRST LABEL WAS
+      UNCONDITIONALLY LIVE. Fix (2) gives each file an always-live prologue span
+      so references made above its first label stay visible. That span also
+      carried a FALLTHROUGH edge into the first label -- and 42 of 49 main
+      prologues (53 of 66 sub) are comments only, emitting no bytes. A comment
+      block cannot fall into anything, so 42 main first labels were live by
+      CONSTRUCTION: no seed set could ever report them. D-SEEDHOLE2's read_sector
+      hid there, through that very slice's seed rebuild.
+      🔴 THE OBVIOUS GENERALISATION IS CATASTROPHIC AND WAS MEASURED, NOT
+      ARGUED. "Empty span cannot fall through" is FALSE: a bare label directly
+      above another label is an ALTERNATE ENTRY POINT and its fallthrough IS the
+      routine. Cutting those too reports 1227 spans / 27727 B dead -- in a
+      22510 B ROM, which is what says the measurement is wrong rather than the
+      tree. Only PROLOGUE spans are skipped.
+      ⚠️ A prologue that genuinely emits still falls through, untouched:
+      basic/sprtrap-body.inc opens with `jr z,sp_done` above its first label.
 
 SEEDS -- the choice matters more than the algorithm.
 
@@ -201,7 +218,22 @@ class Spans:
         # fallthrough, within a file, gated on (1) the condition-aware terminator
         for order in self.seq.values():
             for a, b in zip(order, order[1:]):
-                if not ctc._is_terminator(self._last_code(self.nodes.get(a, []))):
+                last = self._last_code(self.nodes.get(a, []))
+                # (7) A PROLOGUE THAT EMITS NOTHING CANNOT FALL THROUGH. Fix (2)
+                # makes every prologue span always-live so references made above
+                # a file's first label stay visible -- but the SAME span also
+                # carried a fallthrough edge into that first label, and 42 of 49
+                # main prologues (53 of 66 sub) are comments only. A comment
+                # block emits no bytes and cannot fall into anything, so those
+                # first labels were live NO MATTER WHAT, unreportable by
+                # construction. ⚠️ Only a PROLOGUE is skipped, never any other
+                # empty span: a bare label with no body directly above another
+                # label is an ALTERNATE ENTRY POINT, and its "fallthrough" IS the
+                # routine -- cutting those too reported 1227 spans / 27727 B dead
+                # in a 22510 B ROM while measuring this.
+                if a.startswith(PROLOGUE) and not last:
+                    continue
+                if not ctc._is_terminator(last):
                     edges[a].add(b)
         for name, lines in self.nodes.items():
             for line in lines:
