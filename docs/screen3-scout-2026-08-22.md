@@ -113,21 +113,86 @@ it needs its own reference measurement of what `POINT` should do in SCREEN 3 (bo
 references answer `4`, i.e. they read the real cell — so the *fix* is the MC read
 path, but the *stop-the-bleeding* option is the gate).
 
-## 6. What is still unmeasured — the named next experiments
+## 6. ✅ The MC VRAM layout — DERIVED 2026-08-22, both references
 
-1. **The MC VRAM layout itself.** Not derived, and it must come from our own
-   black-box measurement or an allowed source — never a disassembly. The clean way
-   is a `VPEEK` sweep: plot one cell in a known colour, find which VRAM byte and
-   nibble changed. That is a probe, not a reading of a reference ROM, and it is how
-   the rest of this project's VDP knowledge was obtained.
-2. **`PAINT` in SCREEN 3** — the flood fill's run scan is byte-oriented (8 px/byte
+`scratchpad/mc_layout_probe.py`. Black-box throughout: the machine is asked with
+`BASE()` and `VPEEK`, and no reference ROM is decoded.
+
+### 6.1 The tables, from `BASE()` — asked, not guessed
+
+| table | SCREEN 3 | SCREEN 2 (control) | SCREEN 0 (control) |
+|---|---|---|---|
+| name | **$0800** (2048) | $1800 | $0000 |
+| colour | unused (0) | $2000 | — |
+| pattern generator | **$0000** | $0000 | $0800 |
+| sprite attr / pattern | $1B00 / $3800 | same | — |
+
+🔴 **The first attempt read the wrong group and its CONTROL AGREED WITH IT.**
+`BASE()`'s groups are 0–4 SCREEN 0, 5–9 SCREEN 1, 10–14 SCREEN 2, 15–19 SCREEN 3
+— so `BASE(10..12)` read SCREEN 2 while the "control" `BASE(5..7)` read SCREEN 1,
+**whose nominal bases are identical** ($1800/$2000/$0000). Two readings agreeing
+said the *indices* were wrong, not that the answer was right. The control is now
+the SCREEN-0 group, whose layout genuinely differs. And the `$1800` this replaced
+was a **guess** that read a meaningless 32.
+
+### 6.2 The fill byte, and the address model
+
+After `SCREEN 3` the generator is filled with **$44** — both nibbles = colour 4,
+the default background (measured, both references).
+
+Plot one cell in colour 7, find the byte that stopped being $44:
+
+| logical (x,y) | cell (x»2, y»2) | address | value | nibble |
+|---|---|---|---|---|
+| (0,0) | (0,0) | 0 | $74 | high |
+| (4,0) | (1,0) | 0 | $47 | **low — shares the byte** |
+| (8,0) | (2,0) | 8 | $74 | high |
+| (0,4) | (0,1) | 1 | $74 | high |
+| (0,8) | (0,2) | 2 | $74 | high |
+| (0,32) | (0,8) | 256 | $74 | high |
+
+> 🎯 **`addr = (cy>>3)*256 + (cx>>1)*8 + (cy&7)`, where `cx = x>>2`, `cy = y>>2`;
+> the high nibble is the pixel with `cx` EVEN, the low nibble `cx` ODD.**
+
+### 6.3 Verified against predictions written before the run
+
+| case | predicted | vg8020 | cf3300 |
+|---|---|---|---|
+| `PSET(252,188)` → `VPEEK(1535)` | 71 (`$47`, low) | **71** | **71** |
+| `PSET(128,64)` → `VPEEK(640)` | 116 (`$74`, high) | **116** | **116** |
+| `PSET(5,5)` → `VPEEK(1)` | 71 (`$47`, low) | **71** | **71** |
+
+⚠️ **One row of the sweep is NOT a reading:** `p.252.188`'s *scan* returned
+`<NO OUTPUT>` on both references. Cell (63,47) lands at 1535 — the **last** byte —
+so that scan ran all 1536 iterations where every other case exited within a few.
+An **apparatus timeout**, and it is recorded as one rather than as a machine fact;
+§6.3's direct `VPEEK` at the predicted address is what replaced it, and it is a
+stronger row than the scan would have been.
+
+### 6.4 What this does to the price
+
+The address model is now **arithmetic on `x` and `y` with shifts only** — no
+table, no multiply. Compare `gfx_calc_addr`'s SCREEN-2 body (33 B: a mask loop
+plus three masks and a shift): the MC twin needs `(cy>>3)*256` (a high-byte
+store), `(cx>>1)*8`, `(cy&7)`, and a nibble select. **It is the same shape and
+about the same size**, and it replaces *both* `gfx_calc_addr` and the clash RMW,
+since a nibble write needs no colour byte. §4's ~170–280 B stands, and its
+largest single unknown is now closed.
+
+## 7. What is still unmeasured — the named next experiments
+
+1. **`PAINT` in SCREEN 3** — the flood fill's run scan is byte-oriented (8 px/byte
    in SCREEN 2, 2 cells/byte in MC).
-3. **`DRAW` in SCREEN 3** — has its own `cp 2` gate; its scale/step rules are
+2. **`DRAW` in SCREEN 3** — has its own `cp 2` gate; its scale/step rules are
    measured only for SCREEN 2.
-4. **`CIRCLE` aspect** in a 4×4-cell surface.
-5. **Whether `LINE ... ,B/BF` uses the same fast path** once a byte is 2 cells.
+3. **`CIRCLE` aspect** in a 4×4-cell surface.
+4. **Whether `LINE ... ,B/BF` uses the same fast path** once a byte is 2 cells.
+5. **What the NAME TABLE at $0800 must contain.** `BASE()` gives its address;
+   nothing here measured its *contents*, and `CHGMOD` writes them — so an
+   implementation that only touches the generator inherits whatever the BIOS
+   laid down. Worth one `VPEEK` row before relying on it.
 
-## 7. Provenance
+## 8. Provenance
 
 Clean-room: every reading above is **black-box observation of screen output**
 through this project's own probe harness. No reference ROM was disassembled. The
@@ -135,7 +200,7 @@ MSX-BASIC *language* (that SCREEN 3 exists and takes the same graphics statement
 is the public language reference; every behavioural rule here is our own
 measurement. Same standing as `basic/PROVENANCE.md` §graphics.
 
-## 8. ⚠️ The instrument, because it failed first
+## 9. ⚠️ The instrument, because it failed first
 
 Draft 1 of the probe read **`<NO OUTPUT>` on all 21 rows, including the SCREEN-2
 control**, and printed *"refs agree"* on every one. **A screen scrape cannot read

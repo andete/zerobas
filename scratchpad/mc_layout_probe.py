@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""SCREEN 3 MULTICOLOUR VRAM LAYOUT — black-box derivation (scout §6, item 1).
+
+Plot ONE cell in a distinctive colour, then find which VRAM byte and which NIBBLE
+changed. That is a measurement of OUR OWN observable machine state through VPEEK;
+no reference ROM is decoded. It is how the rest of this project's VDP knowledge
+was obtained.
+
+⚠️ Same fixture rule as the scout: capture into variables, force SCREEN 0, THEN
+print -- a screen scrape cannot read PRINT while the VDP is in a graphics mode.
+ON ERROR so a refusal is a readable value, never silence.
+"""
+from __future__ import annotations
+import os, re, sys
+
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "lib"))
+import omsx_repl                                                  # noqa: E402
+
+ZB = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
+SIDES = {
+    "vg8020": dict(machine="Philips_VG_8020", boot=8.0, step=2.5, reset=("NEW",)),
+    "cf3300": dict(machine="National_CF-3300", boot=14.0, step=4.5,
+                   reset=("", "SCREEN 0", "NEW")),
+}
+
+# (label, [program lines without numbers]) -- line 10 is always ON ERROR
+CASES = {
+ # --- RECON: what is the fill byte, and does a 6144-VPEEK loop finish here? ---
+ "mc.fill":  ['SCREEN 3', 'V=VPEEK(0):W=VPEEK(&H1800):U=VPEEK(&H1801)',
+              'SCREEN 0:PRINT"[";V;",";W;",";U;"]":END'],
+ "mc.speed": ['SCREEN 3', 'T=0:FOR I=0 TO 6143:T=T+VPEEK(I):NEXT',
+              'SCREEN 0:PRINT"[";T;"]":END'],
+ # ⚠️ ASK THE MACHINE FOR THE TABLE ADDRESSES rather than guessing them. BASE(n)
+ # is the published MSX-BASIC function for exactly this.
+ # 🔴 DRAFT 1 USED THE WRONG GROUP AND ITS CONTROL AGREED WITH IT. The groups are
+ # 0-4 SCREEN 0, 5-9 SCREEN 1, 10-14 SCREEN 2, 15-19 SCREEN 3 -- so BASE(10..12)
+ # read SCREEN 2, and the "control" BASE(5..7) read SCREEN 1, whose nominal bases
+ # are the SAME ($1800/$2000/$0000). Two readings agreeing said the indices were
+ # wrong, not that the answer was right. The SCREEN-0 group is the control now,
+ # because its layout DIFFERS ($0000 name, $0800 pattern) and so can discriminate.
+ "mc.base":  ['SCREEN 3', 'A=BASE(15):B=BASE(16):C=BASE(17)',
+              'SCREEN 0:PRINT"[";A;",";B;",";C;"]":END'],
+ "mc.base2": ['SCREEN 3', 'A=BASE(18):B=BASE(19)',
+              'SCREEN 0:PRINT"[";A;",";B;"]":END'],
+ "ctl.s2base":['SCREEN 2', 'A=BASE(10):B=BASE(11):C=BASE(12)',
+              'SCREEN 0:PRINT"[";A;",";B;",";C;"]":END'],
+ "ctl.s0base":['SCREEN 0', 'A=BASE(0):B=BASE(2)',
+              'SCREEN 0:PRINT"[";A;",";B;"]":END'],
+}
+
+# --- the address sweep -------------------------------------------------------
+# Plot ONE cell in colour 7 and find the byte in the pattern generator ($0000,
+# measured above) that stopped being the $44 background fill. The MC generator is
+# 1536 B (6 blocks of 256), so the scan is short enough to run in BASIC.
+# Prints [addr, value]: the value's NIBBLE says which half of the byte the cell is.
+PLOT = ['SCREEN 3', 'PSET({x},{y}),7', 'A=-1:B=0',
+        'FOR I=0 TO 1535:IF VPEEK(I)<>68 THEN A=I:B=VPEEK(I):I=1535',
+        'NEXT',
+        'SCREEN 0:PRINT"[";A;",";B;"]":END']
+
+# logical (x,y) -> hardware cell (x>>2, y>>2), established by the scout's §2
+SWEEP = [("p.0.0",   0,   0), ("p.4.0",   4,   0), ("p.8.0",   8,   0),
+         ("p.0.4",   0,   4), ("p.0.8",   0,   8), ("p.0.32",  0,  32),
+         ("p.252.188", 252, 188)]
+for _lab, _x, _y in SWEEP:
+    CASES[_lab] = [ln.format(x=_x, y=_y) for ln in PLOT]
+
+# --- VERIFY: predictions written BEFORE the run (see the derivation) ---------
+# ⚠️ p.252.188's SCAN returned <NO OUTPUT> on BOTH references -- an APPARATUS
+# TIMEOUT, not a reading: cell (63,47) lands at 1535, the LAST byte, so that scan
+# ran all 1536 iterations where every other case exited within a few. A direct
+# VPEEK at the PREDICTED address costs nothing and is a stronger row anyway.
+VERIFY = ['SCREEN 3', 'PSET({x},{y}),7', 'V=VPEEK({a})',
+          'SCREEN 0:PRINT"[";V;"]":END']
+for _lab, _x, _y, _a in [("v.252.188", 252, 188, 1535),   # want 71  ($47, low)
+                         ("v.128.64",  128,  64,  640),   # want 116 ($74, high)
+                         ("v.5.5",       5,   5,    1)]:  # want 71  ($47, low)
+    CASES[_lab] = [ln.format(x=_x, y=_y, a=_a) for ln in VERIFY]
+
+BR = re.compile(r"\[([^\]]*)\]")
+ERR = re.compile(r"^\s*([A-Z][A-Za-z' ]+ error|Illegal function call|Overflow|"
+                 r"Out of memory|Type mismatch|Subscript out of range)", re.M)
+
+
+def face(cap):
+    if cap is None:
+        return "<NO CAPTURE>"
+    m = BR.search(cap)
+    if m:
+        return " ".join(m.group(1).split()) or "<empty>"
+    e = ERR.search(cap)
+    return f"<{e.group(1).strip()}>" if e else "<NO OUTPUT>"
+
+
+def main() -> int:
+    want = sys.argv[1:] or list(CASES)
+    for label in want:
+        lines = CASES[label]
+        body = ["10 ON ERROR GOTO 900"]
+        body += [f"{20+10*k} {ln}" for k, ln in enumerate(lines)]
+        body += ['900 SCREEN 0:PRINT"[ERR";ERR;"]":END']
+        for side, cfg in SIDES.items():
+            caps = omsx_repl.run_cases(
+                cfg["machine"], [("direct", list(cfg["reset"]) + body + ["RUN"])],
+                batch=False, boot=cfg["boot"], step=cfg["step"])
+            print(f"  {side:7s} {label:10s} -> {face(caps[0])!r}", flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

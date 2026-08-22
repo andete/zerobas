@@ -2268,9 +2268,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       encodes multicolour, and the 464 B of Bresenham/line/box are mode-free. The
       gap is the address model and the pixel primitives — 280 B of measured
       SCREEN-2-specific code to twin.
-      ⚠️ **Still unmeasured and named in §6**: the MC VRAM layout itself (a VPEEK
-      sweep, black-box — never a disassembly), PAINT's run scan, DRAW, CIRCLE
-      aspect, and `LINE ,B/BF`'s fast path.
+      ✅ **THE MC VRAM LAYOUT IS NOW DERIVED (§6, same day, both references)** —
+      the largest single unknown in the price is closed. `BASE()` says the tables
+      are name **$0800**, generator **$0000**, colour unused; the generator fills
+      with **$44** (both nibbles = background 4); and the address model is
+      **`addr = (cy>>3)*256 + (cx>>1)*8 + (cy&7)`** with `cx=x>>2, cy=y>>2`, high
+      nibble for even `cx` and low for odd. **Shifts only — no table, no
+      multiply**, the same shape and roughly the same size as `gfx_calc_addr`'s
+      33 B, and it replaces the clash RMW as well since a nibble write needs no
+      colour byte. Verified against **three predictions written before the run**
+      (71 / 116 / 71, both references, including the far corner at 1535).
+      🔴 One sweep row was an **APPARATUS TIMEOUT recorded as one**: cell (63,47)
+      is the LAST byte, so its scan ran all 1536 iterations and returned
+      `<NO OUTPUT>` on both sides. A direct VPEEK at the predicted address
+      replaced it — and is the stronger row.
+      🔴 **The BASE() indices were wrong first, and the CONTROL AGREED WITH THE
+      SUBJECT**: groups are 0-4/5-9/10-14/15-19, so SCREEN 1 and SCREEN 2 (whose
+      nominal bases are identical) were being compared. The control is now the
+      SCREEN-0 group, whose layout differs.
+      ⚠️ **Still unmeasured (§7)**: PAINT's run scan, DRAW, CIRCLE aspect,
+      `LINE ,B/BF`'s fast path, and **what the $0800 name table must contain**
+      (its address is measured, its contents are not).
 
 - [ ] 🔴 **`POINT` IN SCREEN 3 IS A SILENT WRONG ANSWER, AND IT IS INDEPENDENT OF
       IMPLEMENTING SCREEN 3** (found 2026-08-22 by the SCREEN 3 scout, §5).
