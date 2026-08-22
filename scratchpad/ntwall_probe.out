@@ -1,0 +1,149 @@
+# ntwall scout, 2026-08-22, from f80cc69 -- five rounds
+# VG-8020 + CF-3300 + zerobas, boot-per-case; the references agree on every row
+
+########## round 1: the wall profile + solid/b15 controls ##########
+  vg8020  wall.row   [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]
+  cf3300  wall.row   [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]
+  zb      wall.row   [7, 7, 7, 7, 9, 9, 9, 9, 7, 7, 7]
+  PTS wall.row   (0,20) (50,20) (100,20) (103,20) (104,20) (106,20) (108,20) (111,20) (112,20) (150,20) (255,20)
+  ROW wall.row   refs-agree   zb=DIFF
+
+  vg8020  wall.near  [9, 9, 9, 9, 9, 9]
+  cf3300  wall.near  [9, 9, 9, 9, 9, 9]
+  zb      wall.near  [9, 9, 9, 9, 9, 9]
+  PTS wall.near  (50,19) (50,21) (200,19) (200,21) (128,8) (10,100)
+  ROW wall.near  refs-agree   zb=same
+
+  vg8020  solid.row  [9, 9, 9, 9]
+  cf3300  solid.row  [9, 9, 9, 9]
+  zb      solid.row  [7, 9, 4, 9]
+  PTS solid.row  (50,20) (50,19) (50,21) (128,8)
+  ROW solid.row  refs-agree   zb=DIFF
+
+  vg8020  b15.row    [9, 9, 9, 9]
+  cf3300  b15.row    [9, 9, 9, 9]
+  zb      b15.row    [9, 9, 9, 9]
+  PTS b15.row    (50,20) (50,19) (50,21) (10,100)
+  ROW b15.row    refs-agree   zb=same
+
+done
+DRIVER-EXIT 0
+
+########## round 2: thickness (FIXTURE FAULT: h2/h4 are diagonals) + vertical ##########
+  vg8020  h2         [9, 9, 9, 9, 9]
+  cf3300  h2         [9, 9, 9, 9, 9]
+  zb      h2         [9, 7, 4, 4, 4]
+  PTS h2         (50,19) (50,20) (50,21) (50,22) (10,100)
+  ROW h2         refs-agree   zb=DIFF
+
+  vg8020  h4         [9, 9, 9, 9, 9, 9, 9]
+  cf3300  h4         [9, 9, 9, 9, 9, 9, 9]
+  zb      h4         [9, 9, 7, 4, 4, 4, 4]
+  PTS h4         (50,19) (50,20) (50,21) (50,22) (50,23) (50,24) (10,100)
+  ROW h4         refs-agree   zb=DIFF
+
+  vg8020  v.thin     [9, 9, 9, 9, 9]
+  cf3300  v.thin     [9, 9, 9, 9, 9]
+  zb      v.thin     <NO OUTPUT>
+  PTS v.thin     (20,100) (19,100) (10,100) (0,100) (128,100)
+  ROW v.thin     refs-agree   zb=DIFF
+
+  vg8020  v.group8   [9, 9, 9, 9, 9]
+  cf3300  v.group8   [9, 9, 9, 9, 9]
+  zb      v.group8   [9, 9, 9, 9, 9]
+  PTS v.group8   (20,100) (15,100) (10,100) (0,100) (128,100)
+  ROW v.group8   refs-agree   zb=same
+
+done
+DRIVER-EXIT 0
+
+########## round 3: the VPEEK instrument + ,BF fixtures ##########
+  vg8020  vp.blank     0   4(fg0,bg4)   0   4(fg0,bg4)   0   4(fg0,bg4)
+  cf3300  vp.blank     0   4(fg0,bg4)   0   4(fg0,bg4)   0   4(fg0,bg4)
+  zb      vp.blank     0   4(fg0,bg4)   0   4(fg0,bg4)   0   4(fg0,bg4)
+  EXP vp.blank   VPEEK(3084) VPEEK(11276) VPEEK(3092) VPEEK(11284) VPEEK(3100) VPEEK(11292)
+  ROW vp.blank   refs-agree   zb=same
+
+  vg8020  vp.g8.pre    0   4(fg0,bg4)   0   7(fg0,bg7)   0   4(fg0,bg4)
+  cf3300  vp.g8.pre    0   4(fg0,bg4)   0   7(fg0,bg7)   0   4(fg0,bg4)
+  zb      vp.g8.pre    0   4(fg0,bg4)   0   7(fg0,bg7)   0   4(fg0,bg4)
+  EXP vp.g8.pre  VPEEK(3084) VPEEK(11276) VPEEK(3092) VPEEK(11284) VPEEK(3100) VPEEK(11292)
+  ROW vp.g8.pre  refs-agree   zb=same
+
+  vg8020  vp.g8        0   9(fg0,bg9)   0   9(fg0,bg9)   0   9(fg0,bg9)
+  cf3300  vp.g8        0   9(fg0,bg9)   0   9(fg0,bg9)   0   9(fg0,bg9)
+  zb      vp.g8      255 148(fg9,bg4) 255 151(fg9,bg7) 255 148(fg9,bg4)
+  EXP vp.g8      VPEEK(3084) VPEEK(11276) VPEEK(3092) VPEEK(11284) VPEEK(3100) VPEEK(11292)
+  ROW vp.g8      refs-agree   zb=DIFF
+
+  vg8020  vp.solid     0   9(fg0,bg9)   0   9(fg0,bg9)   0   9(fg0,bg9)
+  cf3300  vp.solid     0   9(fg0,bg9)   0   9(fg0,bg9)   0   9(fg0,bg9)
+  zb      vp.solid   255 148(fg9,bg4) 255 116(fg7,bg4)   0   4(fg0,bg4)
+  EXP vp.solid   VPEEK(563) VPEEK(8755) VPEEK(564) VPEEK(8756) VPEEK(565) VPEEK(8757)
+  ROW vp.solid   refs-agree   zb=DIFF
+
+  vg8020  h2b        [9, 9, 9, 9, 9]
+  cf3300  h2b        [9, 9, 9, 9, 9]
+  zb      h2b        [9, 9, 9, 9, 9]
+  PTS h2b        (50,19) (50,20) (50,21) (50,22) (10,100)
+  ROW h2b        refs-agree   zb=same
+
+  vg8020  h4b        [9, 9, 9, 9, 9, 9, 9]
+  cf3300  h4b        [9, 9, 9, 9, 9, 9, 9]
+  zb      h4b        [9, 9, 9, 9, 9, 9, 9]
+  PTS h4b        (50,19) (50,20) (50,21) (50,22) (50,23) (50,24) (10,100)
+  ROW h4b        refs-agree   zb=same
+
+done
+DRIVER-EXIT 0
+
+########## round 4: the decisive .pre control -- what does a plain LINE write? ##########
+  vg8020  vp.solid.pre   0   4(fg0,bg4) 255 116(fg7,bg4)   0   4(fg0,bg4)
+  cf3300  vp.solid.pre   0   4(fg0,bg4) 255 116(fg7,bg4)   0   4(fg0,bg4)
+  zb      vp.solid.pre   0   4(fg0,bg4) 255 116(fg7,bg4)   0   4(fg0,bg4)
+  EXP vp.solid.pre VPEEK(563) VPEEK(8755) VPEEK(564) VPEEK(8756) VPEEK(565) VPEEK(8757)
+  ROW vp.solid.pre refs-agree   zb=same
+
+  vg8020  vp.pset.pre   0   4(fg0,bg4)  32 116(fg7,bg4)   0   4(fg0,bg4)
+  cf3300  vp.pset.pre   0   4(fg0,bg4)  32 116(fg7,bg4)   0   4(fg0,bg4)
+  zb      vp.pset.pre   0   4(fg0,bg4)  32 116(fg7,bg4)   0   4(fg0,bg4)
+  EXP vp.pset.pre VPEEK(563) VPEEK(8755) VPEEK(564) VPEEK(8756) VPEEK(565) VPEEK(8757)
+  ROW vp.pset.pre refs-agree   zb=same
+
+  vg8020  vp.bfrow.pre   0   4(fg0,bg4)   0   7(fg0,bg7)   0   4(fg0,bg4)
+  cf3300  vp.bfrow.pre   0   4(fg0,bg4)   0   7(fg0,bg7)   0   4(fg0,bg4)
+  zb      vp.bfrow.pre   0   4(fg0,bg4)   0   7(fg0,bg7)   0   4(fg0,bg4)
+  EXP vp.bfrow.pre VPEEK(563) VPEEK(8755) VPEEK(564) VPEEK(8756) VPEEK(565) VPEEK(8757)
+  ROW vp.bfrow.pre refs-agree   zb=same
+
+  vg8020  v.thin     [9, 9, 9, 9, 9]
+  cf3300  v.thin     [9, 9, 9, 9, 9]
+  zb      v.thin     <NO OUTPUT>
+  PTS v.thin     (20,100) (19,100) (10,100) (0,100) (128,100)
+  ROW v.thin     refs-agree   zb=DIFF
+
+done
+DRIVER-EXIT 0
+
+########## round 5: mechanism (3-row wall, C==B) + v.thin at NTW_STEP=240 ##########
+  vg8020  hp3        [9, 9, 9, 9, 9, 9]
+  cf3300  hp3        [9, 9, 9, 9, 9, 9]
+  zb      hp3        [9, 7, 7, 7, 4, 4]
+  PTS hp3        (50,19) (50,20) (50,21) (50,22) (50,23) (10,100)
+  ROW hp3        refs-agree   zb=DIFF
+
+  vg8020  cb         [7, 7, 4, 4]
+  cf3300  cb         [7, 7, 4, 4]
+  zb      cb         [7, 7, 4, 4]
+  PTS cb         (50,19) (50,20) (50,21) (10,100)
+  ROW cb         refs-agree   zb=same
+
+done
+  vg8020  v.thin     [9, 9, 9, 9, 9]
+  cf3300  v.thin     [9, 9, 9, 9, 9]
+  zb      v.thin     [9, 9, 9, 9, 9]
+  PTS v.thin     (20,100) (19,100) (10,100) (0,100) (128,100)
+  ROW v.thin     refs-agree   zb=same
+
+done
+DRIVER-EXIT 0

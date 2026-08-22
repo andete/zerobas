@@ -770,6 +770,33 @@ PAINT_FILL_CASES = [
     ("seed_already_c_bg_noop", ["LINE(20,20)-(60,60),15,B", "PSET(35,30),9",
                                 "PAINT(30,30),1,15"],
      [(35, 30), (33, 30)]),
+    # --- 🟢 TWO PINS FROM THE ntwall SCOUT (docs/ntwall-scout-2026-08-22.md).
+    # Neither is the divergence that scout measured -- `C != B` floods the whole
+    # screen on the references whatever is drawn, and here only when a border
+    # pixel shares a colour group with a reachable pixel, which is FILED, not
+    # fixed. These are the two facts on the same fixtures that ALREADY agree, and
+    # they are here because a fix for that item could plausibly break either.
+    #
+    # `C == B` is what bounds the reference at all -- without this row "the
+    # references flood everything" is not a falsifiable claim. Same wall, same
+    # seed, C=7=B: the fill stops dead at the wall on all three sides, and (50,21)
+    # BELOW it stays background. A fix that made C != B cross would be wrong if it
+    # made this cross too.
+    ("plain_wall_cb_bounded", ["LINE(0,20)-(255,20),7", "PAINT(128,8),7,7"],
+     [(50, 19), (50, 20), (50, 21), (10, 100)]),
+    # 🔴 A `,BF` BAR IS NOT A BORDER, ON ANY OF THE THREE. Measured with VPEEK:
+    # `,BF` writes a fully covered group as pattern $00 with the colour in the
+    # BACKGROUND nibble, where a plain LINE writes pattern $FF with it in the
+    # FOREGROUND -- identical on both references and here. An undrawn pixel is
+    # never a border, so this bar does not stop anything and the fill crosses all
+    # four of its rows. ⚠️ `POINT` cannot see the difference (it reports the bg
+    # nibble for a clear bit), which is exactly why three rows of that scout
+    # agreed for a reason unrelated to their subject. This row pins the BEHAVIOUR
+    # that follows from the encoding, on the geometry where a plain-LINE wall
+    # diverges -- so the pair says the divergence is about the wall's ENCODING and
+    # not about its shape.
+    ("bf_wall_not_a_border", ["LINE(0,20)-(255,23),7,BF", "PAINT(128,8),9,7"],
+     [(50, 19), (50, 22), (50, 24), (10, 100)]),
 ]
 
 

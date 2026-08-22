@@ -2392,21 +2392,50 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 Four doc-debt sites INVERTED, not deleted: `ep_parse_b`'s own comment,
       `spec-basic-graphics-g5.md` §3/§5/§11, and `GFX_B`'s sysvar comment.
 
-- [ ] 🔴 **A `,B` WALL SHARING A COLOUR GROUP WITH THE FILL IS "EATEN" ON THE
-      REFERENCES AND NOT HERE** (found 2026-08-22 by D-PAINTMC §7).
-      `SCREEN 2 : LINE(0,20)-(103,20),7 : LINE(108,20)-(255,20),7 :
-      PAINT(128,8),9,7` then `POINT(50,20)` reads **9** on both references and
-      **7** here (row `nt2.wall`), while `POINT(10,100)` — the fill's actual
-      extent, through the one-cell gap — agrees at 9 on all three. So the
-      TOPOLOGY is right and the CLASH POLICY is not: rows 16..19 of that char
-      row and the wall pixel at y=20 share one colour byte, the references end up
-      with its foreground at 9, and this engine leaves it at 7.
-      ⚠️ `gfx_paint_extend_lr`'s header already documents the "border eaten"
-      mechanism as an empirically-found FIX — this is a case where it does not
-      fire. Ask FIRST whether the fill even paints the pixels in that group here
-      (a `,B` wall at y=20 with the fill stopping at y=19) before touching
-      `gfx_color_rmw`: a fill that never entered the group is a different defect
-      from a clash resolved differently.
+- [ ] 🔴 **A SCREEN-2 `PAINT` WITH `C != B` FLOODS THE ENTIRE SCREEN ON THE
+      REFERENCES WHATEVER IS DRAWN, AND HERE ONLY WHEN A BORDER PIXEL SHARES A
+      COLOUR GROUP WITH A REACHABLE PIXEL.** ⚠️ **RETRACTS AND REPLACES** the
+      item filed 2026-08-22 by D-PAINTMC §7 as *"a `,B` wall sharing a colour
+      group with the fill is eaten"*. Measured 2026-08-22 by the scout,
+      [`docs/ntwall-scout-2026-08-22.md`](docs/ntwall-scout-2026-08-22.md),
+      `scratchpad/ntwall_probe.py`, five rounds, both references agreeing on
+      every row. **The row was right and the mechanism was wrong**, and it
+      pointed the next reader at `gfx_color_rmw`, which is not where this lives.
+
+      🎯 **THE WALL'S GEOMETRY DECIDES NOTHING.** `LINE(0,20)-(255,20),7` with
+      NO gap: `PAINT(128,8),9,7` then `POINT(50,21)` — BELOW the wall — reads
+      **9** on both references and **4** here. Three stacked plain LINEs: the
+      references cross **all three rows**. A VERTICAL 1-px wall: **all three
+      cross**, because there the 8-pixel group straddles it and this engine's
+      eating does reach. It is `spec-basic-graphics-g5.md` §5's own dichotomy,
+      measured on a box and holding here for walls: **`C == B` bounded,
+      `C != B` floods everything.** `C == B` on the same wall agrees on all
+      three sides, which is what stops the claim being unfalsifiable.
+
+      🔴 **AND THE INSTRUMENT IS PART OF THE FINDING.** `POINT` collapses the
+      pattern bit and both colour nibbles into one number. `VPEEK` says the two
+      engines write DIFFERENT BYTES for the same filled group: the references
+      write `pattern := 0, bg := C`, this engine writes `pattern := $FF,
+      fg := C`. **Both `POINT`-read as C.** One scout row reads 9 on all three
+      sides with `0`/`$09` behind it on the references and `$FF`/`$94` here — a
+      row that AGREES through the instrument it was written for and DIVERGES
+      underneath it. Every PAINT row in `basic_probe_graphics.py` PHASE H is
+      `POINT`-sampled and structurally blind to this.
+      🔴 **`,BF` DOES NOT SET THE PATTERN BITS AT ALL** — a fully covered group
+      is written as *"background = c"*, bits clear, on all three machines — so a
+      `,BF` wall is not a border anywhere and three of this scout's own rows
+      agreed for a reason unrelated to the subject.
+
+      💰 **NO PRICE AND NO DESIGN YET, deliberately.** Matching the reference
+      means changing what a filled span WRITES, which is `gfx_plot_cur`'s
+      contract, shared with PSET/LINE/CIRCLE/DRAW — all of which measurably
+      agree today and must keep agreeing (`vp.pset.pre` / `vp.solid.pre` are
+      identical on all three sides). Its own slice, with its own knives.
+      ⚠️ **AND THE FIRST THING THAT SLICE MUST MEASURE IS NOT IN HAND**: §4 says
+      what the reference WRITES, not how its walk reaches a border row it can
+      still see. No row yet separates the candidate rules.
+      🟢 Two rows SHIP GREEN as pins against a fix that overshoots
+      (`plain_wall_cb_bounded`, `bf_wall_not_a_border`, PHASE H).
 
 - [x] ✅ **`POINT` IN SCREEN 3 IS A SILENT WRONG ANSWER** — **STALE. CLOSED
       2026-08-22 BY RE-MEASUREMENT**, `scratchpad/point3_recheck.py`. Filed the
