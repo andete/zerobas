@@ -325,6 +325,29 @@ assert doing its job. It is a measurement, not a candidate to merge.
 ~40 B has to come from a third source or from shaving the draft, and pretending
 otherwise is how a slice starts and does not finish.
 
+### 7.1 📏 BOTH FIGURES ABOVE WERE BUILT ON 2026-08-22, AND BOTH WERE WRONG
+
+The paragraph above is left standing because its ARGUMENT was right — *both
+figures are estimates and both must be BUILT to be believed*. Only its
+ARITHMETIC is superseded. The two slices that built them:
+
+| source | filed | measured | where |
+|---|---|---|---|
+| the dup-span carve | ~200 B | **+122 B** | [`spec-basic-dupspan2.md`](spec-basic-dupspan2.md) — 403 nominal → 162 position-independent → 119 same-region |
+| the parse eviction | ~110 B | **+148 B** | [`spec-basic-deffnev.md`](spec-basic-deffnev.md) — `__MEAS_PAGE1_END` `$8140` → `$80A4` |
+
+🎯 **THEY MISSED IN OPPOSITE DIRECTIONS AND DID NOT CANCEL.** 100 + 200 + 110 =
+410 against 450 reads as *40 B short*. Measured: **222 B free against a 294 B
+verb — 72 B short**, nearly twice the filed shortfall, because the carve lost
+more than the eviction gained. An estimate that is optimistic on one term and
+pessimistic on another is not thereby safe.
+
+⚠️ And §7(2)'s *"~46 B of new tenant glue"* carried neither of the two
+constraints that building it produced: a nested call makes the tenant's ABI
+cells part of the SAVED FRAME, and no page-0 tenant in this tree can call main
+page 1 by absolute address at all.
+See [`spec-basic-deffnev.md`](spec-basic-deffnev.md) §3 and §3.1.
+
 ---
 
 ## 8. What is NOT claimed

@@ -88,8 +88,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       is generated for PAGE-1 tenants calling main's LOW region), so every main
       helper the parse uses — `var_name_key`, `deftbl_lookup`, `skip_spaces` —
       needs a sub-side clone. Free in bytes (sub page 0 has 3 KB) but it is work
-      the "~46 B of tenant glue" estimate did not carry. **Run `make basic-reloc`
-      for the walls; never quote a figure from this line.**
+      the "~46 B of tenant glue" estimate did not carry.
+      📏 **AND THE EVICTION IS BUILT AND MEASURED, 2026-08-22 BY D-DEFFNEV**,
+      [`docs/spec-basic-deffnev.md`](docs/spec-basic-deffnev.md), on branch
+      `deffn-draft` (`3e3cb67`): `__MEAS_PAGE1_END` **`$8140` → `$80A4`**, i.e.
+      **+148 B**, better than the filed ~110. `basic/deffn.asm` 419 → 263 B; the
+      verb 450 → **294 B**.
+      > 💰 **THE GAP IS 72 B (2026-08-22, at `7e9030c`): 294 B of verb against
+      > 222 B free.** Both filed figures were wrong and they MISSED IN OPPOSITE
+      > DIRECTIONS WITHOUT CANCELLING — 410-against-450 read as 40 B short; it is
+      > 72. **Run `make basic-reloc` and
+      > `python3 scratchpad/deffn_measure_over.py`; never quote these numbers.**
+      🔴 **THE TENANT IS A SIZING STUB — the verb does NOT work on that branch**
+      and `deffn-acceptance` was not run. The parse itself (name resolve, the two
+      lists, `fn_slot`, both directions of ERR 13, the `$FFFF` result slot) plus
+      sub-side `var_name_key` / `deftbl_lookup` clones is the next slice's job,
+      and it is FREE in main-ROM bytes.
+      🔴 **REFUTED, not deferred: the filed ~21 B `FN_WANT0` shave** of
+      `ev_fn`/`str_ev_fn` is worth **1 B** — the two entries differ in their EXIT
+      and that is not shareable. **And per-file eviction is refuted as a third
+      source**: six candidate files, 417–606 B each, all NOT page-0-evictable
+      (most statements reach `eval`, and `eval` bottoms out in the float pack).
+      The remaining named sources are the 43 B cross-region carve, `ex_deffn`'s
+      own eviction (~10–17 B) and `tools/clone_scout.py`'s ~96 B of near-clone
+      refactors, which are a DIFFERENT class from dup-span (shared helpers, not
+      `equ` aliases) and entirely unspent.
 
 - [ ] 💰 **43 B of cross-region dup-span carve, and the gate that would clear it
       may be blind to the question.** Filed 2026-08-22 by D-DUPSPAN2,
