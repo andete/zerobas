@@ -56,6 +56,89 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Language / verb surface**
 
+- [ ] 🔴 **`PAINT`'s 4th-argument `Syntax error` is raised AFTER the fill on both
+      references and BEFORE it here.** Filed 2026-08-22 by D-DUPSPAN,
+      [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §6.1.
+      `SCREEN 2:PAINT(10,10),9,15,` then `POINT(10,0)` **read in the handler**:
+      both references `2 9` (painted), zerobas `2 4` (not painted); the control
+      `PUT SPRITE 0` reads `2 4` everywhere, so the `9` is the fill.
+      🎯 **D-PAINTBORD's `od2.b16c` owns this exact statement shape and cannot
+      see it** — it scores the ERROR FACE and both orderings give ERR 2. No row
+      scored the SIDE EFFECT, so a fix and a no-op read the same (D-FILESIDE's
+      finding, different verb). ⚠️ Found only because the row read `<NO OUTPUT>`
+      at `step=4` on the references and `ERR 2` here: the ASYMMETRY was the
+      measurement, not the blank. Unpriced — `ep_parse_b`'s grammar test would
+      have to move below the tenant call, which is not obviously cheap.
+
+- [ ] 🔴 **`SWAP A,B,C` is `Syntax error` (ERR 2) on both references whenever
+      the SECOND operand exists — and a characterization row says otherwise.**
+      Filed 2026-08-22 by D-DUPSPAN,
+      [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §6.2.
+      `docs/missing-vg8020-characterization.md` §4.5 records `Illegal function
+      call` and calls it *the kind of detail that only a measurement produces*;
+      its fixture left `B` undefined, so what it measured is the **`sw_absent`
+      second-operand rule** (`A=1:SWAP A,B` → ERR 5) firing before the parse
+      reaches `,C`. Four fixtures separate it: all-undefined ERR 5 ✅,
+      B-undefined ERR 5 ✅, **C-undefined ERR 2 🔴, all-defined ERR 2 🔴**.
+      💰 **0 B**: `basic/missing.asm`'s `jp sw_illegal` → `jp pl_syntax`, three
+      bytes for three, into the ERR-2 canonical D-DUPSPAN created.
+      ⚠️ Needs its own rows first: `SWAP A,B,` and the trappability of each
+      shape are unmeasured, and §4.5's row must be NARROWED, not deleted.
+
+- [ ] 🔴 **`PLAY` with no operand is `Missing operand` (ERR 24) on both
+      references, not `Syntax error`.** Filed 2026-08-22 by D-DUPSPAN,
+      [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §6.3.
+      `PLAY` and `PLAY:PRINT 1` → **ERR 24** on both; `PLAY ,"E"` → ERR 2 on
+      both and here. **ERR 24 is a class this tree already implements three
+      times** — `LINE` (graphics.asm:215), `SCREEN` (PROVENANCE.md: *an argument
+      list that ends where a value was required is Missing operand at all four
+      such slots*) and `TIME=` (time.asm:62). 🎯 **TWO of `pl_syntax`'s four
+      call sites move, not four**: the `or a` and `COLON` tests, not the `','`
+      one. The fourth (a 4th voice string) is UNMEASURED — do not assume it into
+      either half. ⚠️ `pl_syntax`'s header cites the VG-8020 for the ERR-2
+      claim; that citation is right for one site and wrong for two.
+
+- [ ] ⚠️ **The bare-`jp raise_error` carve family is worth ~2 B, and the reason
+      is worth more than the bytes.** Filed 2026-08-22 by D-DUPSPAN,
+      [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §2.1.
+      `scratchpad/dupspan_sweep.py` ranks it fourth (six copies, 15 B nominal),
+      but **five of the six are entered by FALLTHROUGH from a different
+      `ld a,N`** — `ee_raise` (A=5), `sid_raise`/`exf_raise`/`gp_raise` (61),
+      `tm_raise` (24) — so each needs a 3 B `jp` to replace 3 B removed. Only
+      `pl_parse_err` is free and its one caller is a `jr` that must widen.
+      **DECLINED at 2 B.** 🔴 **A span is byte-identical without being ENTERED
+      the same way**; the sweep cannot see this and says so.
+
+- [ ] ⚠️ **The rest of the byte-identical-span supply: 53 groups, 403 B
+      NOMINAL, and nominal is not a price.** Filed 2026-08-22 by D-DUPSPAN.
+      Re-run `python3 scratchpad/dupspan_sweep.py` — never quote this figure,
+      it rots exactly like a wall. The two error-tail families are gone; what
+      remains is 11–20 B pairs (`sav_ascii_flag`/`sav_cas_flag`,
+      `esn_p2`/`esn_scan_lp`, `ems_print`/`exps_print`, `ai14_lp`/`ai6_lp`,
+      `raf_zero_ok`/`cpow_x0_pos`, `eostr_lp`/`eokey_lp`,
+      `sst_overflow`/`shxf_overflow`, `ex_on_strig`/`ex_on_key`,
+      `asw_single`/`vsf_single`). 🔴 **Each needs BOTH checks D-DUPSPAN ran**:
+      a fallthrough predecessor (via `check_tenant_closure._is_terminator`, not
+      a regex — `ret nz` and `jp nc,x` are not terminators) and `jr` reach at
+      every caller. **These are LOOP BODIES, not error tails**, so unlike the
+      tails they are not obviously position-independent: a relative jump out of
+      the span makes two identical spans un-collapsible.
+
+- [ ] ⚠️ **A linear predecessor walk stops at `ENDIF` and calls it an
+      instruction.** Filed 2026-08-22 by D-DUPSPAN,
+      [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §2.1.
+      D-DUPSPAN's fallthrough survey reported `gfx_syntax` as a fallthrough
+      target because the line above it is `ENDIF`, which
+      `check_tenant_closure._is_terminator` correctly says is not a terminator —
+      **but a conditional-assembly directive is not an instruction, and a walk
+      that stops at one has stopped in the wrong place.** Both arms of its
+      `IF G6_RESIDENT` end in `jp exec_stmt`, so the real answer is "not a
+      fallthrough target", and the +22 B measurement is what settled it.
+      `_is_terminator` itself is fine; what needs the fix is any CALLER that
+      walks backwards over source lines. 🔴 **This one over-reported and cost
+      nothing. The same walk under-reports whenever the ENDIF's arms do NOT both
+      terminate**, and that direction is silent.
+
 - [ ] 🔴 **`castail-acceptance` VOIDS THE WHOLE BATTERY WHEN A CONTROL FAILS ON
       THE **ZEROBAS** SIDE, SO IT CANNOT SCORE ITS OWN KNIVES.** Filed
       2026-08-21 by D-FNRUN, found by running K-FR3 against it.

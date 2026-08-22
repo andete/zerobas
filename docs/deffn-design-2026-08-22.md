@@ -200,6 +200,16 @@ refuses to make one.
 
 ## 7. What this costs, and why it is not landed today
 
+> ✅ **OBSTACLE (3) IS CLOSED — 2026-08-22, LATER THE SAME DAY.**
+> [D-DUPSPAN](spec-basic-dupspan.md) spent the §8 survey: main page 1 went
+> **4 B → 54 B (+50 B)**, `sub.rom` byte-identical. §8's own estimate for the
+> two error-tail families was *"~45–55 B net"* and the measurement is **50**.
+> **The reading below is left standing as the reading that was true when it was
+> taken** — the conclusion it supports (*"even the statement side alone does not
+> fit"*) is the part that is now false. Obstacle (2), the RAM window, is
+> **still open** and is the live blocker: see
+> [`basic/sysvars.inc`](../basic/sysvars.inc) and §7(2).
+
 **Walls, read from `make basic-reloc` at `84e080c` on a clean tree, 2026-08-22:**
 
 | region | free |
@@ -283,6 +293,14 @@ it cannot decide were checked by hand on the ERR-5 family and both bite:
   `fchk_ifc`, `eoi_err5`, `pl_syntax` and `pc_syntax` are all reached by `jr`
   from nearby, and a collapse moves the target out of range; each such caller
   costs 1 B to widen to `jp`.
+
+✅ **BOTH ERR FAMILIES SPENT 2026-08-22 by [D-DUPSPAN](spec-basic-dupspan.md):
+13 tails collapsed to two `equ` canonicals, `+50 B` — against the estimate below
+of ~45–55 B.** 🔴 **And the estimate for the REST of this table is worse than it
+reads**: the `3 B ×6` bare-`jp raise_error` group is worth **~2 B, not 15**,
+because five of its six members are entered by fallthrough from a *different*
+`ld a,N`. The remainder are loop bodies, not tails, and a loop body containing a
+relative jump out of itself is not position-independent at all. Re-run the tool.
 
 Realistically the ERR-5 and ERR-2 families together are worth ~45–55 B net, and
 the whole list ~150–190 B — enough, but it is **a funding slice of its own**,

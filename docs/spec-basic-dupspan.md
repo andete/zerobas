@@ -198,6 +198,187 @@ static gate green, none of them moved by the carve:
 proves nothing. Every one of the thirteen `rc=` lines was read, and every log
 checked non-empty.
 
-[`scratchpad/dupspan_knives.py`](../scratchpad/dupspan_knives.py) is written and
-**not yet run at this commit** — its results land in §5.
+[`scratchpad/dupspan_knives.py`](../scratchpad/dupspan_knives.py) — §5.
 
+
+---
+
+## 5. The knives — 5/5 EXACT
+
+Baseline `('834c45b5','b91622a9')`. Every knife moved `basic-reloc.rom` and left
+`sub.rom` at `b91622a9`, which is the right answer for a main-only edit; the
+runner prints WHICH image moved, because a guard watching the wrong one halts
+with the right verdict and the wrong reason. Restored to `834c45b5` with all
+five sources byte-identical.
+
+| knife | cut | predicted | got |
+|---|---|---|---|
+| **K-DS1** | `gb_illegal` `ld a,5` → `ld a,9` | **all 11 ERR-5 rows** | ✅ exact |
+| **K-DS2** | `pl_syntax` `ld a,2` → `ld a,9` | **all 7 ERR-2 rows** | ✅ exact |
+| **K-DS3** | `sw_absent`'s new `jp gb_illegal` → `jp gfx_typeerr` | `e5.swapnew` **only** | ✅ exact |
+| **K-DS4** | `gfx_err5 equ gb_illegal` → `equ gfx_typeerr` | `e5.pset0` **only** | ✅ exact |
+| **K-DS5** | `trap_syntax equ pl_syntax` → `equ gfx_typeerr` | `e2.oninterv` **only** | ✅ exact |
+
+**What each one bought:**
+
+🟢 **K-DS1 and K-DS2 have disjoint predicted sets and each is the other's green
+control.** Eleven ERR-5 rows moved to ERR 9 and seven ERR-2 rows did not; then
+the mirror. A knife that reddened both would have been a statement about the
+apparatus — an address shift, a machine rebuilt wrong — and not about the tails.
+**Every one of the thirteen reachable sites is genuinely exercised by a row**:
+none stayed green, so none of these collapses was made blind.
+
+🎯 **K-DS3 is the only knife aimed at code this slice WROTE**, and it separates
+the two SWAP faults that used to be one span. `e5.swapnew` (`A=1:SWAP A,B`,
+reaching the tail by falling off `sw_absent`'s `pop hl` into the new `jp`)
+reddened; `e5.swap3` (`SWAP A,B,C`, reaching it by the surviving
+`jp sw_illegal`) stayed green. The fallthrough repair carries exactly one of
+them, which is what says the repair is load-bearing and correctly scoped.
+
+🎯 **K-DS4 and K-DS5 prove the promise this carve inherits thirteen times over.**
+`gfx_absent`'s comment says *un-alias here and no call site moves*. Retargeting
+one `equ` gave that one name a distinct face (`gfx_err5`'s six call sites,
+`trap_syntax`'s fifteen) and left its whole family untouched. **A collapse whose
+knife reddens the whole family is a collapse that lost the distinction; these
+say the distinction is one line away from coming back.**
+
+⚠️ The parser was calibrated on a clean log, a planted one and a row-deleted one
+**before** the baseline ran — the `APPARATUS: probe printed 17 of 18 rows` line
+at the top of the log is the deleted-row calibration firing as designed, not a
+failure.
+
+### 5.1 The predecessor knives, re-run as a regression
+
+This slice edits `basic/graphics.asm` (`gfx_err5`, `gfx_syntax`, `elg_syntax`,
+`pc_syntax`, `ep_syntax`), which is `paintbord_knives.py`'s own subject — so
+those four are a real regression test here, not a formality.
+
+**All ten re-run, 10/10 EXACT** against the moved baseline
+`('834c45b5','b91622a9')`, every suite restoring both images and its source
+byte-identical:
+
+| suite | cuts | rows |
+|---|---|---|
+| `paintbord_knives.py` | `basic/graphics.asm` — **this slice's own file** | **4/4 EXACT** |
+| `paintmc_knives.py` | `sub/graphics.asm` | **4/4 EXACT** |
+| `paints2seed_knives.py` | `sub/graphics.asm` | **2/2 EXACT** |
+
+⚠️ **And the two-image guard earned its keep in both directions.** `paintbord`'s
+knives move `basic-reloc.rom` and leave `sub.rom` at `b91622a9`; `paintmc`'s and
+`paints2seed`'s move `sub.rom` and leave `basic-reloc.rom` at `834c45b5`. A
+runner watching only one image would halt on half of these with the right
+verdict and the wrong reason.
+
+**15/15 knife rows EXACT across the four suites.**
+
+---
+
+## 6. 🔴 Three divergences the row set turned up — none of them this carve's
+
+A probe built to prove a carve changed nothing found three places where zerobas
+disagrees with **both** references. **All three predate this slice**: every one
+of these dispositions is decided upstream of the tail, in code the collapse did
+not touch, and the `zb` face of all eighteen rows is what it was before. They
+are recorded here and filed in `TODO.md` because a new row set that finds
+something and folds it into the commit that found it is how a finding gets lost.
+
+⚠️ **Two of the three needed a SECOND fixture before they could be believed**,
+and one of those turned out to be my own instrument.
+
+### 6.1 It was the capture window, and then it wasn't
+
+`e2.paint4` — `SCREEN 2 : PAINT(10,10),9,15,` — read `<NO OUTPUT>` on both
+references and `ERR 2` on zerobas at `step=4`. 🔴 **A `<NO OUTPUT>` IS NOT A
+DIVERGENCE, IT IS A MISSING MEASUREMENT.** At `step=90` (paintmc's proven
+SCREEN-2 flood value) all three read `ERR 2` and the row agrees.
+
+🎯 **But the ASYMMETRY is a measurement.** Same fixture, same boot, same step:
+zerobas answered inside four seconds and neither reference did. The only
+plausible consumer of those seconds is the fill — so the reference **paints
+first and raises the 4th-argument Syntax error afterwards**, and zerobas raises
+it before painting.
+
+🔴 **A timing inference is not a measurement either, and the row written to
+settle it could not reach its own case.** `x.paint4pt` put the `POINT` read on a
+line *after* the `PAINT` — but a **trapped** error jumps straight to the
+handler, so that line never runs and all three sides printed the trapped `ERR`.
+The read has to happen **in the handler**, which is exactly how
+`basic_probe_lineerr.py` captures `GRPACX`/`GRPACY`. With the handler moved:
+
+| row | vg8020 | cf3300 | zerobas |
+|---|---|---|---|
+| `x.pt4.ord` — `PAINT(10,10),9,15,` then `POINT(10,0)` in the handler | **`2 9`** | **`2 9`** | **`2 4`** |
+| `x.pt4.ctl` — `PUT SPRITE 0`, an ERR 2 from a statement that paints nothing | `2 4` | `2 4` | `2 4` |
+
+> **Both references PAINT and then raise ERR 2. zerobas raises ERR 2 and paints
+> nothing.** The control says the `9` is the fill and not an artifact of reading
+> `POINT` from a handler: the same handler on a statement that paints nothing
+> reads `4` on every side.
+
+🎯 **D-PAINTBORD's `od2.b16c` row cannot see this**, and it is the row that owns
+this exact statement shape. It scores the ERROR FACE, and both orderings produce
+`ERR 2`. **No row scored the SIDE EFFECT, so a fix and a no-op read the same** —
+D-FILESIDE's finding, in a different verb.
+
+### 6.2 🔴 A characterization row that agreed for the wrong reason
+
+[`docs/missing-vg8020-characterization.md`](missing-vg8020-characterization.md)
+§4.5 records `SWAP A,B,C` → **`Illegal function call`**, and singles it out:
+
+> *`SWAP A,B,C` raising `Illegal function call` where every other malformed
+> shape raises `Syntax error` is the kind of detail that only a measurement
+> produces.*
+
+[`basic/missing.asm`](../basic/missing.asm) implements it as
+`jp sw_illegal ; SWAP A,B,C -> Illegal function call`. **The row is true and its
+generalisation is false**, and one axis the fixture never varied decides it:
+
+| fixture | vg8020 | cf3300 | zerobas | |
+|---|---|---|---|---|
+| `SWAP A,B,C` — all undefined (**the doc's shape**) | ERR 5 | ERR 5 | ERR 5 | ✅ |
+| `A=1:C=3` then `SWAP A,B,C` — **B undefined** | ERR 5 | ERR 5 | ERR 5 | ✅ |
+| `A=1:B=2` then `SWAP A,B,C` — **C undefined** | **ERR 2** | **ERR 2** | ERR 5 | 🔴 |
+| `A=1:B=2:C=3` then `SWAP A,B,C` — all defined | **ERR 2** | **ERR 2** | ERR 5 | 🔴 |
+
+> **The ERR 5 is the SECOND operand's rule, not the third operand's.** It is the
+> already-measured `sw_absent` rule — *`A=1:SWAP A,B` is Illegal function call,
+> NOT an auto-created B* — firing before the parse ever reaches the `,C`. Give
+> `B` a value and a third operand is a plain **trappable Syntax error, ERR 2**.
+
+The doc's fixture had `B` undefined, so it recorded the second-operand rule and
+called it a third-operand rule. **Invert the conclusion, do not delete the
+analysis**: the row stays, its scope narrows.
+
+💰 **The fix this implies is 0 B and this carve is what makes it so**:
+`jp sw_illegal` → `jp pl_syntax`, three bytes for three bytes, into the ERR-2
+canonical tail that did not exist before today. It is **filed, not folded in** —
+a semantic change has no business in a commit whose whole claim is that no
+observable moved, and it needs its own row set (`SWAP A,B,` and the trappability
+of each shape are unmeasured).
+
+### 6.3 `PLAY` is a missed member of an established class
+
+| fixture | vg8020 | cf3300 | zerobas | |
+|---|---|---|---|---|
+| `PLAY` — end of line | **ERR 24** | **ERR 24** | ERR 2 | 🔴 |
+| `PLAY:PRINT 1` — end of statement | **ERR 24** | **ERR 24** | ERR 2 | 🔴 |
+| `PLAY ,"E"` — a bare comma | ERR 2 | ERR 2 | ERR 2 | ✅ |
+| `PLAY "E"` — the control | *(no error)* | *(no error)* | *(no error)* | ✅ |
+
+**ERR 24 is `Missing operand`, and this tree already implements that rule three
+times over** — `LINE` ([`basic/graphics.asm:215`](../basic/graphics.asm:215)),
+`SCREEN` (*"an argument list that ends where a value was required is Missing
+operand at all four such slots"*, `PROVENANCE.md`) and `TIME=`
+([`basic/time.asm:62`](../basic/time.asm:62)). **`PLAY` is the same class and
+does not.**
+
+🎯 **The divergence is TWO of `pl_syntax`'s four call sites, not four.** The
+reference splits *the operand is MISSING* (end of statement → ERR 24) from *the
+operand is MALFORMED* (a bare comma → ERR 2); zerobas answers ERR 2 to all of
+them. `play.asm`'s `jr z,pl_syntax` at the `or a` and `COLON` tests are the two
+that move; the `','` test is already right. The fourth site (a 4th voice string)
+is **unmeasured** and must not be assumed into either half.
+
+⚠️ `pl_syntax`'s own header cites the VG-8020 for the ERR-2 claim. **That
+citation is correct for the comma site and wrong for the two it also covers** —
+the same shape as §6.2, a measurement generalised past its fixture.

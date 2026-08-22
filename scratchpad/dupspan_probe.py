@@ -46,9 +46,14 @@ CASES: dict[str, list[str]] = {}
 SITE: dict[str, str] = {}
 
 
-def case(label, site, *lines):
+HANDLER: dict[str, str] = {}
+
+
+def case(label, site, *lines, handler=None):
     CASES[label] = list(lines)
     SITE[label] = site
+    if handler:
+        HANDLER[label] = handler
 
 
 # ===========================================================================
@@ -121,6 +126,25 @@ case("x.play.colon","pl_syntax/COLON",      "PLAY:PRINT 1")
 case("x.play.comma","pl_syntax/comma",      'PLAY ,"E"')
 case("x.play.ok",   "pl_syntax/ctl",        'PLAY "E"', "PRINT 1")
 
+# 🔴 x.paint4pt AS FIRST WRITTEN COULD NOT REACH ITS OWN CASE. The POINT read sat
+#    on a line AFTER the PAINT, and a TRAPPED error jumps straight to the handler
+#    -- so that line never runs and every side printed the trapped ERR instead of
+#    a pixel. The read has to happen IN THE HANDLER, which is exactly how
+#    basic_probe_lineerr.py captures GRPACX/GRPACY. Same fixture, handler moved.
+case("x.pt4.ord", "ep_syntax/order",
+     "SCREEN 2", "PAINT(10,10),9,15,",
+     handler='900 V=POINT(10,0):SCREEN 0:PRINT"[";ERR;V;"]":END')
+case("x.pt4.ctl", "ep_syntax/order-ctl",   # an ERR 2 from the SAME tail whose
+     "SCREEN 2", "PUT SPRITE 0",           # statement paints nothing: V must be 4
+     handler='900 V=POINT(10,0):SCREEN 0:PRINT"[";ERR;V;"]":END')
+
+# 🎯 THE SWAP SEPARATOR. `SWAP A,B,C` is ERR 5 with all three UNDEFINED and ERR 2
+#    with all three DEFINED, so the doc's row agrees for a reason that is not the
+#    third operand at all. Which name decides it -- the SECOND (whose absence has
+#    its own measured ERR 5, `A=1:SWAP A,B`) or the THIRD?
+case("x.swap.bdef", "sw_illegal/B-defined", "A=1:B=2", "SWAP A,B,C")   # C undefined
+case("x.swap.cdef", "sw_illegal/C-defined", "A=1:C=3", "SWAP A,B,C")   # B undefined
+
 BR = re.compile(r"\[([^\]]*)\]")
 
 
@@ -144,7 +168,7 @@ def main() -> int:
         body = ["10 ON ERROR GOTO 900"]
         body += [f"{20+10*k} {ln}" for k, ln in enumerate(CASES[label])]
         body += ['890 SCREEN 0:PRINT"[NONE]":END',
-                 '900 SCREEN 0:PRINT"[ERR";ERR;"]":END']
+                 HANDLER.get(label, '900 SCREEN 0:PRINT"[ERR";ERR;"]":END')]
         row = {}
         for side, cfg in SIDES.items():
             caps = omsx_repl.run_cases(
