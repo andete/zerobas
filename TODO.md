@@ -4177,6 +4177,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
 
+- [ ] 🔴 **NOTHING POLICES A RAM FREE-SPACE CLAIM, AND THE ONE IN THE MAP WAS
+      36x WRONG.** Filed 2026-08-22 by the D-DEFFN RAM hunt,
+      [`docs/deffn-ramhunt-2026-08-22.md`](docs/deffn-ramhunt-2026-08-22.md) §1.
+      `make wall-assertion-check` gates ROM figures and dates them; RAM figures
+      rot silently (`basic/sysvars.inc` offered *"376 B spare"* where **10**
+      were, for three slices). Two tools now exist and neither is a gate:
+      `scratchpad/rammap_sweep.py` (walks the `equ` chain, calibrated) and
+      `scratchpad/ramfree_probe.py` (fills a window, works the machine, reads
+      it back). ⚠️ **A delta between two names is NOT free space** — `TOKBUF`'s
+      612 B delta is 36 B free and `LINEBUF`'s 256 B delta is 0. Promoting
+      either tool to a gate needs that caveat encoded, not just documented.
+
+- [ ] 🔴 **THE `[...]` READOUT FAMILY IS DEFENDED BY ACCIDENT IN EVERY SCRATCH
+      PROBE.** Filed 2026-08-22 by the D-DEFFN RAM hunt,
+      [`docs/deffn-ramhunt-2026-08-22.md`](docs/deffn-ramhunt-2026-08-22.md)
+      §5.3. `BR.search` returns the FIRST `[...]` on screen, which is the ECHO of
+      the typed `PRINT"[";V;"]"` line — a reading shaped like a result. The
+      SHIPPED gate `probes/basic/basic_probe_deffn.py` knows this and defends
+      with an explicit `CLS`, documented in its own comment (*"eleven rows"*).
+      🔴 **The scratch probes do not**: `paintmc_probe.py`, `dupspan_probe.py`,
+      `s3_scout_probe.py`, `point3_recheck.py`, `mc_layout_probe.py` and
+      `deffn_scout.py` all use `BR.search`, and are protected only because their
+      fixtures enter a graphics mode and the closing `SCREEN 0` clears the
+      screen. **A fixture that never leaves SCREEN 0 has no defence at all** —
+      which is exactly which rows of `ramfree_probe.py` failed. Remedy is
+      `findall()[-1]` (the program's own output is always the last bracket) or
+      the shipped `CLS`; pick one and apply it to the family.
+
+- [ ] ⚠️ **A SCRATCH PROBE THAT NEEDS A DISK MUST MOUNT ONE, AND THE FAILURE
+      READS AS A LANGUAGE RULE.** Filed 2026-08-22,
+      [`docs/deffn-ramhunt-2026-08-22.md`](docs/deffn-ramhunt-2026-08-22.md)
+      §5.6. Booting `C-BIOS_MSX1_EU_REPACK_DISK` without `diska=` made
+      `OPEN"TS.TXT"FOR OUTPUT AS #1` answer **ERR 59**, which is exactly what a
+      channel-ceiling violation looks like. The shipped batteries pass a
+      **writable copy** of `disk/test720.dsk` (mounting the original mutates the
+      fixture — [[test-disk-mutation-gotcha]]). 🔴 And an OPEN can fail *without
+      raising* (it printed `load error` and carried on), so a disk row must
+      READ BACK what it wrote rather than trust that it ran.
+
 - [x] ✅ **`injector-check` is still a TEXT classifier — CLOSED 2026-08-06 by
       D-INJJUDGE as a measured DECLINE + a denominator fix**,
       [`docs/spec-probe-injjudge.md`](docs/spec-probe-injjudge.md).
