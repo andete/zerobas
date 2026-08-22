@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D-DUPSPAN2 — a few lines of real MSX BASIC at sites this carve ALIASED.
+"""D-DUPSPAN2 + D-XREG — real MSX BASIC at sites these carves ALIASED.
 
 Every row below reaches a label that stopped being its own bytes and became an
 `equ` onto another one. The claim of a funding slice is that nothing observable
@@ -52,6 +52,14 @@ CASES = [
     ("poke.head","poke_err equ ex_let_err",       ["POKE ,1"]),
     ("poke.ok",  "poke_err equ ex_let_err (ctl)", ["POKE &HE000,65",
                                                    'PRINT"[";PEEK(&HE000);"]"']),
+    # --- D-XREG: the aliases that CROSS the low <-> page-1 boundary ---------
+    ("x.strprt", "exps_print equ ems_print",       ['PRINT"[";"ab"+"cd";"]"']),
+    ("x.numprt", "exps_fallback equ ems_fallback", ['PRINT"[";1+2;"]"']),
+    ("x.int",    "flt_int_result equ evsgn_settype",['PRINT"[";INT(2.7);"]"']),
+    ("x.intvar", "vsf_wb_int equ asw_wb_int",      ["A%=1234", 'PRINT"[";A%;"]"']),
+    ("x.close",  "dc_finish equ ed_done",          ["CLOSE", 'PRINT"[";9;"]"']),
+    ("x.defusr", "ex_def_err equ ee_synerr_pop",   ["DEF USR=&HC000",
+                                                    'PRINT"[";1;"]"']),
 ]
 BR = re.compile(r"\[([^\]]*)\]")
 
