@@ -692,7 +692,7 @@ vsf_coerced:
                 inc     hl                  ; HL -> value field (entry+3)
                 ld      a,(VS_TARGET_TYPE)
                 cp      2
-                jr      z,vsf_wb_int
+                jp     z,vsf_wb_int
                 ld      c,a                 ; C = byte count (4 single / 8 double)
                 ld      b,0
                 push    hl
@@ -701,12 +701,13 @@ vsf_coerced:
                 ldir                        ; FAC -> value field, verbatim (same [lead+
                                             ; mantissa] bytes flt_out/var_load_fac read)
                 ret
-vsf_wb_int:
-                ld      de,(VS_INT_VAL)     ; the coerced value (DE was clobbered above)
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
-                ret
+; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
+; asw_wb_int and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
+; REGION question -- is this label reached from a tenant whose mapping
+; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
+; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
+; `equ` (it resolves addresses from the sym, not from the source form).
+vsf_wb_int      equ     asw_wb_int
 
 ; --- deftbl_lookup: resolve a name's DEFtbl default type (S3b) ---------------
 ; in:  B = upcased name0 letter ('A'..'Z'). out: A = DEFTBL[B-'A'] (2 int / 4
@@ -857,9 +858,13 @@ ela_abort_fp:
 ; (basic/arrays.asm), RELOCATED here for the identical reason (above). Each
 ; discards exactly ONE word ([OFFSET], same size as the pre-fix [ADDR]) —
 ; byte-identical bodies, only moved + the call sites' `jr`->`jp`.
-elas_err:
-                pop     de                  ; discard [OFFSET]
-                jp      stmt_error
+; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
+; ems_err_pop1 and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
+; REGION question -- is this label reached from a tenant whose mapping
+; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
+; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
+; `equ` (it resolves addresses from the sym, not from the source form).
+elas_err        equ     ems_err_pop1
 elas_abort_fp:
                 pop     de                  ; discard [OFFSET]
                 jp      fp_runtime_error

@@ -398,10 +398,13 @@ flt_neg:
 ; the STICKY FAC (40000) instead of the function's int result (caught live in
 ; F1 review; the fmt matrix had no function-over-float case). Parens and
 ; unary minus deliberately do NOT reset — `PRINT (1.5)` stays a float.
-flt_int_result:
-                ld      a,2
-                ld      (FACTYP),a
-                ret
+; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
+; evsgn_settype and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
+; REGION question -- is this label reached from a tenant whose mapping
+; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
+; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
+; `equ` (it resolves addresses from the sym, not from the source form).
+flt_int_result  equ     evsgn_settype
 
 ; flt_guard (F1's sticky-FACTYP combine guard, interim divergence D-F1-3) is
 ; REMOVED — F2 replaces every one of its 12 call sites in expr.asm with real

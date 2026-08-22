@@ -190,9 +190,13 @@ inpc_redo3:
                 pop     hl                  ; drop textcur
                 pop     bc                  ; drop key
                 jr      inpc_redo0
-inpc_synpop:
-                pop     bc                  ; drop varstart
-                jp      stmt_error
+; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
+; ex_let_err and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
+; REGION question -- is this label reached from a tenant whose mapping
+; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
+; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
+; `equ` (it resolves addresses from the sym, not from the source form).
+inpc_synpop     equ     ex_let_err
 
 ; --- LINE INPUT: the whole typed line into one string variable -------------
 inpc_line:

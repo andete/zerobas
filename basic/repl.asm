@@ -106,7 +106,7 @@ rl_loop:
                 ; the key matrix directly, which is the only thing that can see it.
 rl_poll:
                 call    BREAKX              ; CF set = Ctrl-STOP is down
-                jr      c,rl_break
+                jp     c,rl_break
                 call    CHSNS               ; ZF set = nothing waiting yet
                 jr      z,rl_poll
 rl_get:
@@ -146,10 +146,13 @@ rl_bs:
                 call    CHPUT
                 pop     hl
                 jr      rl_loop
-rl_break:
-                pop     hl                  ; Ctrl-STOP: hand the session back
-                scf                         ; UNTERMINATED -- ex_auto discards it
-                ret
+; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
+; lgb_eof and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
+; REGION question -- is this label reached from a tenant whose mapping
+; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
+; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
+; `equ` (it resolves addresses from the sym, not from the source form).
+rl_break        equ     lgb_eof
 rl_enter:
                 ld      (hl),0              ; terminate the line
                 ld      a,13                ; echo CR/LF

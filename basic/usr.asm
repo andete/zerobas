@@ -48,11 +48,16 @@ clear_usrtab:
                 ld      hl,USRTAB
                 ld      b,20                ; 10 vectors * 2 bytes
                 xor     a
+; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
+; zf_lp and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
+; REGION question -- is this label reached from a tenant whose mapping
+; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
+; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
+; `equ` (it resolves addresses from the sym, not from the source form).
+; ⚠️ ENTERED BY FALLTHROUGH, so this cannot become an `equ` -- a `jp`
+; has to stay in its place. tools/dupspan_indep.py calls it SAFE-JP.
 cut_lp:
-                ld      (hl),a
-                inc     hl
-                djnz    cut_lp
-                ret
+                jp      zf_lp
 
 ; --- ex_def: DEF USR[n] = <addr> -------------------------------------------
 ; HL -> the DEF token. `DEF USR` (USR is its own token, $DD) stores a machine-
@@ -74,7 +79,7 @@ ex_def:
                 push    af                  ; save index across '=' + eval
                 call    skip_spaces
                 cp      EQ_TOKEN            ; '=' crunches to $EF
-                jr      nz,ex_def_err
+                jp     nz,ex_def_err
                 inc     hl
                 call    eval                ; DE = entry address, HL = cursor
                 pop     af                  ; A = index
@@ -82,9 +87,13 @@ ex_def:
                 call    usr_setslot         ; USRTAB[index] = DE
                 pop     hl
                 jp      exec_stmt           ; continue the line
-ex_def_err:
-                pop     af                  ; discard saved index
-                jp      stmt_error
+; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
+; ee_synerr_pop and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
+; REGION question -- is this label reached from a tenant whose mapping
+; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
+; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
+; `equ` (it resolves addresses from the sym, not from the source form).
+ex_def_err      equ     ee_synerr_pop
 
 ; --- usr_index: read an optional USR number 0..9 from (HL) ------------------
 ; out: A = index (0 if none present); HL advanced past a digit token if taken.

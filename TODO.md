@@ -56,6 +56,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Language / verb surface**
 
+- [ ] 🔴 **`POKE <addr>,` WITH NO VALUE WRITES ZERO INSTEAD OF RAISING — a
+      SILENT MEMORY WRITE, and it is not a carve artifact.** Found 2026-08-22 by
+      D-DUPSPAN2's closing demo (`scratchpad/dupspan2_demo.py`,
+      `poke.tail`/`poke.head`/`poke.ok`), measured with a marker on each side of
+      the statement so "did it abort?" needs no trappable error:
+
+          20 POKE &HE000,99 : 30 PRINT"<A>"; : 40 POKE &HE000, : 50 PRINT"<B>";PEEK(&HE000);
+
+      VG-8020 and CF-3300 both print `<A>` and abort with **`Missing operand in
+      40`**; zerobas prints `<A><B> 0` — it COMPLETES and has overwritten the
+      byte with **0**. ✅ **PRE-EXISTING, MEASURED NOT ARGUED**: the identical
+      program on the pre-carve ROM `834c45b5` reads the same `<A><B> 0`.
+      🎯 The aliased label is NOT implicated and there is a green row that says
+      so: `POKE ,1` (the missing ADDRESS) reaches `poke_err` and reads ERR 2 on
+      all three, and `POKE &HE000,65` works. The missing-VALUE path never reaches
+      `poke_err` at all — the empty operand evaluates to 0 and the store
+      proceeds. **Likely one rule at several verbs** (`LOCATE ,` correctly gives
+      ERR 24, so the mechanism exists); sweep the verbs that take a trailing
+      value before pricing.
+
 - [ ] 💰 **`DEF FN` IS WRITTEN, MEASURED GREEN, AND 350 B TOO BIG — the FUNDING
       is the whole remaining job.** Filed 2026-08-22 by D-DEFFN,
       [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md); the code
@@ -88,10 +108,52 @@ list. **When a slice lands, grep this list for what it just shipped.**
       is generated for PAGE-1 tenants calling main's LOW region), so every main
       helper the parse uses — `var_name_key`, `deftbl_lookup`, `skip_spaces` —
       needs a sub-side clone. Free in bytes (sub page 0 has 3 KB) but it is work
-      the "~46 B of tenant glue" estimate did not carry. **Run `make basic-reloc`
-      for the walls; never quote a figure from this line.**
+      the "~46 B of tenant glue" estimate did not carry.
+      📏 **AND THE EVICTION IS BUILT AND MEASURED, 2026-08-22 BY D-DEFFNEV**,
+      [`docs/spec-basic-deffnev.md`](docs/spec-basic-deffnev.md), on branch
+      `deffn-draft` (`3e3cb67`): `__MEAS_PAGE1_END` **`$8140` → `$80A4`**, i.e.
+      **+148 B**, better than the filed ~110. `basic/deffn.asm` 419 → 263 B; the
+      verb 450 → **294 B**.
+      > 💰 **THE GAP IS 26 B (2026-08-22, after D-XREG): 294 B of verb against
+      > 268 B free.** It was 350 B when the verb was written, 72 B after the
+      > eviction was built, and 26 B once the cross-region aliases landed. Both
+      > originally filed figures were wrong and they MISSED IN OPPOSITE
+      > DIRECTIONS WITHOUT CANCELLING. **Run `make basic-reloc` and
+      > `python3 scratchpad/deffn_measure_over.py`; never quote these numbers.**
+      🔴 **AND THE DUP-SPAN FAMILY IS SPENT**, measured with a denominator:
+      `scratchpad/nearspan_sweep.py` finds 148 pairs of spans differing in
+      exactly ONE byte and **0 B usable** at the cheap end (not one has its
+      difference as the FIRST instruction's immediate with both spans
+      position-independent), ~6 B under a register-parameterised collapse. The
+      remaining sources are `ex_deffn`'s own eviction (~10–17 B),
+      `tools/clone_scout.py`'s ~96 B of genuine near-clone refactors, and ~5 B
+      from passing the servicer's answer in `E`.
+      🔴 **THE TENANT IS A SIZING STUB — the verb does NOT work on that branch**
+      and `deffn-acceptance` was not run. The parse itself (name resolve, the two
+      lists, `fn_slot`, both directions of ERR 13, the `$FFFF` result slot) plus
+      sub-side `var_name_key` / `deftbl_lookup` clones is the next slice's job,
+      and it is FREE in main-ROM bytes.
+      🔴 **REFUTED, not deferred: the filed ~21 B `FN_WANT0` shave** of
+      `ev_fn`/`str_ev_fn` is worth **1 B** — the two entries differ in their EXIT
+      and that is not shareable. **And per-file eviction is refuted as a third
+      source**: six candidate files, 417–606 B each, all NOT page-0-evictable
+      (most statements reach `eval`, and `eval` bottoms out in the float pack).
+      The remaining named sources are the 43 B cross-region carve, `ex_deffn`'s
+      own eviction (~10–17 B) and `tools/clone_scout.py`'s ~96 B of near-clone
+      refactors, which are a DIFFERENT class from dup-span (shared helpers, not
+      `equ` aliases) and entirely unspent.
 
-- [ ] 💰 **43 B of cross-region dup-span carve, and the gate that would clear it
+- [x] ✅ **CLOSED 2026-08-22 by D-XREG** ([`docs/spec-basic-xreg.md`](docs/spec-basic-xreg.md)):
+      **+46 B**, 10 aliases, and 🎯 **THE GATE IS NOT BLIND** — K-XR1 aliases the
+      one label the pre-flight calls FATAL (`affn_found`) and
+      `check_tenant_closure.py` reddens naming it, because it resolves every
+      callee's ADDRESS out of the sym file, where an `equ` and a `label:` are
+      indistinguishable by construction. D-PINDATA's rule is about which
+      references count as EDGES on the way IN, not about how a target is
+      resolved once it is one. 🔴 **And draft 1 of that knife went red for the
+      WRONG REASON and taught nothing**: pasmo refused the `jr` range before the
+      gate ever ran. ~~Original entry:~~
+      💰 **43 B of cross-region dup-span carve, and the gate that would clear it
       may be blind to the question.** Filed 2026-08-22 by D-DUPSPAN2,
       [`docs/spec-basic-dupspan2.md`](docs/spec-basic-dupspan2.md) §6. Eleven
       aliases are position-independent but cross the low ↔ page-1 boundary
