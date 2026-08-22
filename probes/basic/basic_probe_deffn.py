@@ -359,6 +359,127 @@ def klass(label):
     return "gate"
 
 
+
+# ===========================================================================
+def _score(faces_zb):
+    """The report's three classifiers, over a PLANTED zb face table.
+
+    Factored out of main() so `--selftest` exercises the SAME code the real run
+    does, rather than a re-implementation that could agree with a broken one.
+    """
+    labels = sorted(WANT)
+    blanket, seen = set(), {}
+    for l in labels:
+        if klass(l) == "gate":
+            seen.setdefault(faces_zb[l], []).append(l)
+    blanket = {f for f, ls in seen.items()
+               if sum(1 for l in ls if faces_zb[l] != WANT[l]) >= 5}
+    out = dict(ctl=[], gate=[], silent=[], vacuous=[], blank=[])
+    for l in labels:
+        k, z, r = klass(l), faces_zb[l], WANT[l]
+        if z in ("<NO OUTPUT>", "<NO CAPTURE>"):
+            out["blank"].append(l)
+        elif z == r:
+            if k == "gate" and z in blanket:
+                out["vacuous"].append(l)
+        else:
+            out[("ctl" if k == "ctl" else "gate")].append(l)
+            if (k == "gate" and _num(z) is not None
+                    and (r.startswith("<") or r.startswith("ERR "))):
+                out["silent"].append(l)
+    return out
+
+
+def selftest() -> int:
+    """🔬 MUTATION-TEST THE GATE ITSELF, because a battery is the DENOMINATOR.
+
+    This probe's whole subject is missing, so 67 of 69 rows are red no matter
+    what the instrument does -- which means a REAL RUN CANNOT DEMONSTRATE THAT
+    IT WOULD DETECT ANYTHING. The classifiers and the address claims are
+    therefore exercised against PLANTED face tables here: an implementation
+    that is right, several that are subtly wrong, and the state the tree is
+    actually in. Every case names what it must produce, so a classifier that
+    stops working fails a case instead of quietly agreeing.
+    """
+    labels = sorted(WANT)
+    perfect = dict(WANT)                                   # the verb, correct
+    today = {l: ("0" if l in ("b.undef", "b.forward", "o.undefarg", "o.ifnot",
+                              "d.def", "d.defrun")
+                 else "ERR 2 AT 20") for l in labels}
+    for l in CONTROLS:                                     # controls pass today
+        today[l] = WANT[l]
+    cases = []
+    cases.append(("a correct implementation", perfect,
+                  lambda r: not r["gate"] and not r["ctl"] and not r["vacuous"]))
+    cases.append(("today's tree", today,
+                  lambda r: (not r["ctl"] and len(r["silent"]) == 6
+                             and set(r["vacuous"]) == {"o.twofault", "o.badname"})))
+    # one wrong rule at a time, each on top of a correct implementation
+    muts = {
+        "binds through the variable table": {"o.realcell": "2", "o.dynself": "202",
+                                             "o.dynscope": "2", "o.dynaddr": "2"},
+        "10 formals accepted":              {"o.p10": "1"},
+        "DEF FN parses its body":           {"o.lazybody": "ERR 2 AT 20"},
+        "direct mode allowed":              {"d.defonly": "OK", "d.sameline": "3"},
+        "CLEAR does not erase":             {"o.clearwipe3": "3"},
+        "undefined name reads 0":           {"b.undef": "0"},
+        "result not coerced to FN type":    {"o.fnpct": "2.5"},
+        "shadow moves with nesting":        {"z.addr2": "-99"},
+    }
+    for name, delta in muts.items():
+        f = dict(perfect); f.update(delta)
+        cases.append((f"MUTANT: {name}", f,
+                      lambda r, d=delta: bool(set(r["gate"]) & set(d))
+                                         or bool(set(r["vacuous"]) & set(d))))
+    # 🎯 THE CASE THAT PINS THE BLANKET RULE. A mostly-correct tree with ONE
+    # wrong row must report NO vacuous rows -- the first rule reported 4 to 11.
+    near = dict(perfect); near["o.toomany"] = "ERR 5 AT 60"
+    cases.append(("one wrong row, nothing vacuous", near,
+                  lambda r: r["gate"] == ["o.toomany"] and not r["vacuous"]))
+    # a blank must never be scored as a divergence
+    blankf = dict(perfect); blankf["o.global"] = "<NO OUTPUT>"
+    cases.append(("a blank reading", blankf,
+                  lambda r: r["blank"] == ["o.global"] and "o.global" not in r["gate"]))
+    # ...and a broken CONTROL must be caught even when every subject row is right
+    ctlf = dict(perfect); ctlf["o.ctl"] = "99"
+    cases.append(("a broken positive control", ctlf, lambda r: r["ctl"] == ["o.ctl"]))
+
+    W = max(len(n) for n, _, _ in cases)
+    bad = 0
+    for name, faces_zb, ok in cases:
+        r = _score(faces_zb)
+        held = ok(r)
+        bad += 0 if held else 1
+        print(probe_report.row("PASS" if held else "FAIL", name, W,
+                               {"gate": len(r["gate"]), "ctl": len(r["ctl"]),
+                                "silent": len(r["silent"]),
+                                "vacuous": len(r["vacuous"]),
+                                "blank": len(r["blank"])}))
+    # the address claims, on the three planted sets the design doc records
+    pf = {"o.sameaddr": "30327", "z.addr2": "-2325", "z.addr2i": "-2325",
+          "z.addr": "-2325", "z.addr.ctl": "-32679"}
+    wf = {"o.sameaddr": "0", "z.addr2": "-2325", "z.addr2i": "-99",
+          "z.addr": "-2325", "z.addr.ctl": "-2325"}
+    ef = {k: "ERR 2 AT 30" for k in pf}
+    for nm, f, want in (("claims: reference-like", pf, "PASS"),
+                        ("claims: planted-wrong", wf, "FAIL"),
+                        ("claims: error faces", ef, "....")):
+        got = set()
+        for lbl, (_claim, reads, fn) in PREDICATE.items():
+            if any(_num(f.get(r)) is None for r in reads):
+                got.add("....")
+            else:
+                got.add("PASS" if fn(f) else "FAIL")
+        held = got == {want}
+        bad += 0 if held else 1
+        print(probe_report.row("PASS" if held else "FAIL", nm, W,
+                               {"verdicts": sorted(got), "want": want}))
+    n = len(cases) + 3
+    print(probe_report.footer(n, n,
+                              f"{n - bad} of {n} instrument cases held"))
+    return 0 if not bad else 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--gate", action="store_true",
@@ -373,7 +494,12 @@ def main() -> int:
                          "column is already measured, re-measure only to "
                          "re-verify it)")
     ap.add_argument("--only", default="")
+    ap.add_argument("--selftest", action="store_true",
+                    help="MUTATION-TEST THE INSTRUMENT on planted face tables "
+                         "instead of booting anything -- see selftest()")
     args = ap.parse_args()
+    if args.selftest:
+        return selftest()
 
     labels = sorted(WANT)
     if args.only:
@@ -428,8 +554,15 @@ def main() -> int:
         for l in labels:
             if klass(l) == "gate":
                 seen.setdefault(faces["zb"][l], []).append(l)
+        # 🔴 IT IS THE DIVERGING ROWS THAT HAVE TO BE ≥5, NOT THE SHARING ONES,
+        # AND THE SELFTEST IS WHAT SAID SO. The first rule was "≥5 rows share
+        # this face AND at least one of them diverges", which is right for
+        # today's tree and WRONG for a mostly-working one: five rows may
+        # legitimately share `ERR 2 AT 60`, and one of them going red then
+        # branded the other four vacuous. Every planted mutant reported 4-11
+        # bogus vacuous rows before this line changed.
         blanket = {f for f, ls in seen.items()
-                   if len(ls) >= 5 and any(faces["zb"][l] != WANT[l] for l in ls)}
+                   if sum(1 for l in ls if faces["zb"][l] != WANT[l]) >= 5}
 
     def _silent(label):
         """zb hands back a VALUE where the reference REFUSES -- the class this

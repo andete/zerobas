@@ -332,6 +332,44 @@ planted-wrong set (FAIL) and today's error faces (NOT MEASURED).
 
 ---
 
+## 8b. 🔬 Falsifying the gate, because the subject is missing
+
+There is no fix to knife. What there IS is an instrument that will be believed
+the day the verb lands — and **a real run of it cannot demonstrate that it would
+detect anything**, because 67 of 69 rows are red whatever the classifiers do.
+So the classifiers are mutation-tested against **planted face tables** instead:
+`make deffn-selftest` (no emulator, `--selftest`).
+
+| planted case | must produce |
+|---|---|
+| a correct implementation (`zb` = `WANT`) | 0 divergent, 0 vacuous, 0 silent |
+| today's tree (the real measured faces) | 6 silent, exactly `o.twofault`+`o.badname` vacuous |
+| MUTANT: binds through the variable table | catches `o.realcell`/`o.dynself`/`o.dynscope`/`o.dynaddr` |
+| MUTANT: 10 formals accepted | catches `o.p10` |
+| MUTANT: `DEF FN` parses its body | catches `o.lazybody` |
+| MUTANT: direct mode allowed | catches `d.defonly`/`d.sameline` |
+| MUTANT: `CLEAR` does not erase | catches `o.clearwipe3` |
+| MUTANT: undefined name reads 0 | catches `b.undef` |
+| MUTANT: result not coerced to the FN's type | catches `o.fnpct` |
+| MUTANT: the shadow moves with nesting | catches `z.addr2` |
+| one wrong row on an otherwise correct tree | exactly 1 divergent, **0 vacuous** |
+| a blank reading | scored `blank`, never `DIFF` |
+| a broken positive control | caught as a control failure |
+| the address claims, three ways | PASS / FAIL / NOT MEASURED |
+
+**16 of 16 hold.**
+
+🔴 **AND THE BATTERY FOUND A DEFECT IN THE CLASSIFIER IT WAS BUILT TO CONFIRM.**
+The blanket rule was *"≥5 rows share this `zb` face and at least one of them
+diverges"*. That is correct for today's tree and wrong for a nearly-working one:
+five rows may legitimately share `ERR 2 AT 60`, and one of them going red then
+branded the other four **vacuous**. Every mutant reported 4–11 bogus vacuous rows
+— visible only because each case states what it must produce. The rule now counts
+the **diverging** rows (`≥5`), and `one wrong row, nothing vacuous` is the case
+that pins it. That case did not exist until the defect did.
+
+---
+
 ## 9. What is NOT claimed
 
 * **No implementation and no total.** §7 says why, with the walls that say it.

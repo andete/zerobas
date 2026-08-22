@@ -2454,6 +2454,13 @@ deffn-acceptance: repack-machine
 	python3 probes/basic/basic_probe_deffn.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# 🔬 MUTATION-TEST THE GATE. DEF FN is missing, so 67 of 69 rows are red no
+# matter what the instrument does and a real run cannot show it would detect
+# anything. This plants face tables instead -- a correct implementation, eight
+# subtly wrong ones, a blank, a broken control -- and needs no emulator.
+deffn-selftest:
+	python3 probes/basic/basic_probe_deffn.py --selftest
+
 deffn-strict: repack-machine
 	python3 probes/basic/basic_probe_deffn.py --gate --strict \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
