@@ -2127,10 +2127,28 @@ gfx_neg16_de:
 ; stops at a point already the same colour as the paint colour) -- so this is
 ; not merely a safe internal shortcut, it is plausibly the MORE faithful
 ; choice. When C==B this collapses to plain "!=B" (spec's own BOUNDED case).
-; NOT measured by the pinned battery either way (no captured case has a
-; coincidental pre-existing-C pixel inside an otherwise-open region); flagged
-; here as the one place this slice's own algorithm choice could in principle
-; diverge from an untested reference edge case.
+;
+; ✅ AND IT IS NO LONGER A GUESS -- D-PAINTMC MEASURED IT, 2026-08-22. The
+; paragraph that stood here said the pinned battery measured this "neither way
+; (no captured case has a coincidental pre-existing-C pixel inside an otherwise-
+; open region)", and flagged it as the one place this slice's own algorithm
+; choice could diverge from the reference. That gap was the whole point of
+; building the fixture: a barrier ALREADY COLOURED C, inside an open area, with
+; a border colour B that appears NOWHERE on the screen, so the ONLY thing that
+; can stop the fill is the "already C" rule.
+;
+;   SCREEN 2  `LINE(0,40)-(255,40),9 : PAINT(10,10),9,15`
+;             -> POINT(10,0)=9  (it spread)   POINT(10,60)=4  (it STOPPED)
+;   SCREEN 3  the same program
+;             -> POINT(10,0)=9                POINT(10,60)=4
+;
+; on BOTH references (rows ac2.* / ac3.*, scratchpad/paintmc_probe.py). The
+; own-design stop is FAITHFUL, in both modes, and the .spread half of each pair
+; is what excludes the second cause of a 4: a fill that never left the seed.
+; 🎯 It also settles the ONLY remaining termination argument for multicolour:
+; with C != B a painted cell is still "!= B", so nothing but the "already C"
+; rule can ever end the walk -- which is why the D-PAINTMC arm below needed a
+; new PITCH and nothing else.
 ;
 ; EI/DI discipline (spec §2/§4): gfx_paint_op EIs once for the whole
 ; (possibly long) fill; gfx_paint_read (the border test) and gfx_paint_plot
@@ -2236,6 +2254,43 @@ gpop_empty:
 ; (tools/check_dead_code.py).
 
 ; ---------------------------------------------------------------------------
+; gfx_paint_pitch -- writes GFX_PPITCH: the flood's COORDINATE PITCH, 1 in
+; SCREEN 2 and 4 in MULTICOLOUR. Called ONCE per statement by gfx_paint_op; the
+; seven step sites below then read the byte with `ld hl,GFX_PPITCH`.
+;
+; 🎯 THIS ONE VALUE IS THE WHOLE SCREEN-3 FIX (D-PAINTMC). In multicolour four
+; adjacent LOGICAL pixels ARE one 4x4 cell, so a walk advancing by 1 immediately
+; re-tests the cell it just painted: with the default border B == C that cell now
+; reads as a BORDER to its own neighbour and the walk stops dead after the seed.
+; That is the measured symptom D-SCREEN3 §5 excluded PAINT for -- `PAINT(10,10),9`
+; then `POINT(10,0)` read 4 here where both references read 9. Advancing by 4
+; always lands on the NEXT cell, so every test is on a cell the fill has not
+; touched, and the whole span engine above is otherwise unchanged.
+;
+; ⚠️ THE PITCH IS NOT THE ONLY HALF: gfx_paint_flood snaps the seed onto the same
+; lattice with `or 3`, so every coordinate the flood ever holds is the
+; BOTTOM-RIGHT pixel of its cell. That choice is deliberate and it is what keeps
+; the two UPPER bounds exactly as they were -- x=255 and y=191 are lattice points
+; in BOTH modes, so `cp 255` and `cp 191` are still the right tests, and only the
+; two LOWER edge tests had to become "< pitch" (which is what `or a` already was,
+; at pitch 1). A `x|0`/`y|0` lattice would have needed 252/188 instead.
+;
+; ⚠️ AND IT IS CACHED, NOT ASKED. The first draft called a helper that read
+; SCRMOD at each of the seven sites; tests/test_graphics.py's full-screen case C
+; went from 3,205,330 Z80 steps to 4,339,041 -- +35% on every SCREEN-2 PAINT, and
+; over that test's 4,000,000-step runaway guard. The byte is 0 B of RAM because
+; it aliases G8's dead index cell; see basic/sysvars.inc GFX_PPITCH.
+; ---------------------------------------------------------------------------
+gfx_paint_pitch:
+                call    gfx_is_mc
+                ld      a,4                 ; MULTICOLOUR: one cell is 4 pixels
+                jr      z,gpp_pitch_set
+                ld      a,1
+gpp_pitch_set:
+                ld      (GFX_PPITCH),a
+                ret
+
+; ---------------------------------------------------------------------------
 ; gfx_paint_plot -- paints the pixel at (GFX_PTESTY,GFX_PTESTX) with GFX_C.
 ; di-guarded RMW (mirrors gfx_plot_cur's discipline; skips its 16-bit clip
 ; test -- unnecessary here, the fill never generates an out-of-range pixel).
@@ -2274,12 +2329,24 @@ gfx_paint_plot:
 ; border, independent of colour.
 ; ---------------------------------------------------------------------------
 gfx_paint_read:
-                ; ⚠️ NO MC ARM HERE ON PURPOSE. PAINT refuses SCREEN 3 in the
-                ; resident gate (basic/graphics.asm ex_paint) because the flood is
-                ; algorithmically wrong in MC, not because this read is -- so an MC
-                ; arm would be code no caller can reach, and `make deadcode` would say
-                ; so. See TODO.md and docs/spec-basic-screen3.md.
+                ; D-PAINTMC: the MULTICOLOUR arm. There is NO pattern bit in MC --
+                ; a cell IS its colour -- so the drawn/undrawn distinction the SCREEN-2
+                ; body below is built on has no counterpart, and this arm returns
+                ; Zf=0 UNCONDITIONALLY: no MC cell is ever "never-drawn background".
+                ; That is not a shortcut, it is the MEASURED rule. `PAINT(10,10),9,4`
+                ; with the background at 4 does NOT spread on either reference (rows
+                ; mb.b4.*) -- a background-coloured cell IS a border here, which is the
+                ; exact OPPOSITE of the SCREEN-2 finding recorded below. `cp $FF` is
+                ; the 2-byte way to force NZ while preserving A (a colour is 0..15, so
+                ; it can never equal $FF); `or a` would report colour 0 as background.
                 di
+                call    gfx_is_mc
+                jr      nz,gprd_g2
+                call    gfx_point_mc        ; A = the cell's colour nibble 0..15
+                ei
+                cp      $FF                 ; A preserved, Zf=0 -> "drawn", always
+                ret
+gprd_g2:
                 call    gfx_calc_addr       ; HL = pattern addr, C = mask
                 call    gfx_rd_raw          ; A = pattern byte
                 ld      d,a                 ; D = pattern byte
@@ -2382,6 +2449,7 @@ gpsb_ok:
 ; ---------------------------------------------------------------------------
 gfx_paint_op:
                 ei
+                call    gfx_paint_pitch     ; D-PAINTMC: GFX_PPITCH := 1 / 4
                 call    gfx_pstk_reset
                 call    gfx_paint_flood
                 di
@@ -2424,10 +2492,11 @@ gfx_paint_op:
 ; ---------------------------------------------------------------------------
 gfx_paint_extend_lr:
 gpel_left:
+                ld      hl,GFX_PPITCH       ; D-PAINTMC: 1 (SCREEN 2) / 4 (MC)
                 ld      a,(GFX_PXL)
-                or      a
-                jr      z,gpel_left_done    ; x=0 -> screen edge, stop
-                dec     a
+                cp      (hl)
+                jr      c,gpel_left_done    ; x < pitch -> screen edge, stop
+                sub     (hl)
                 ld      (GFX_PSCX),a        ; candidate x
                 ld      (GFX_PTESTX),a
                 ld      a,(GFX_PFY)
@@ -2440,10 +2509,11 @@ gpel_left:
                 jr      gpel_left
 gpel_left_done:
 gpel_right:
+                ld      hl,GFX_PPITCH       ; D-PAINTMC
                 ld      a,(GFX_PXR)
-                cp      255
+                cp      255                 ; 255 is a lattice point in BOTH modes
                 jr      z,gpel_right_done   ; x=255 -> screen edge, stop
-                inc     a
+                add     a,(hl)
                 ld      (GFX_PSCX),a
                 ld      (GFX_PTESTX),a
                 ld      a,(GFX_PFY)
@@ -2475,11 +2545,48 @@ gpel_right_done:
 ; safe, idempotent RMW either way.
 ; ---------------------------------------------------------------------------
 gfx_paint_flood:
+                ; D-PAINTMC: snap the seed onto the pitch lattice. C-1 is 0 in
+                ; SCREEN 2 (a no-op `or 0`) and 3 in MULTICOLOUR, which moves the
+                ; seed to the BOTTOM-RIGHT pixel of its own cell -- the same cell
+                ; (cx = x>>2 is unchanged by `or 3`), and the lattice every later
+                ; step keeps it on. See gfx_paint_pitch's header for the corner.
+                ld      a,(GFX_PPITCH)
+                dec     a                   ; C = the lattice mask: 0 / 3
+                ld      c,a
                 ld      a,(GYPOS)
+                or      c
                 ld      (GFX_PFY),a
                 ld      a,(GXPOS)
+                or      c
                 ld      (GFX_PXL),a
                 ld      (GFX_PXR),a
+                ; 🔴 AND MULTICOLOUR'S SEED IS *NOT* UNCONDITIONAL. The paragraph
+                ; above is a SCREEN-2 rule and stays one: there, a seed placed
+                ; exactly on a drawn border pixel floods (measured). In MC the
+                ; references do the OPPOSITE -- a seed whose cell already reads B
+                ; paints NOTHING AT ALL, not even itself. Two independent geometries
+                ; say so, on both references (scratchpad/paintmc_probe.py):
+                ;   `LINE(20,20)-(60,60),15,B : PAINT(20,20),9,15`
+                ;      -> POINT(20,20)=15 (the seed cell is still the WALL) and
+                ;         POINT(40,40)=4  (the interior was never entered)
+                ;      ...where the SCREEN-2 twin reads 9 and 9.       [sd3/sd2]
+                ;   `PAINT(10,10),9,4` with the background at 4
+                ;      -> POINT(10,10)=4 -- the seed itself unpainted.  [mb.b4]
+                ; ⚠️ IT IS THE `== B` HALF ONLY, NOT "not inside": a seed already
+                ; coloured C floods normally here (`PSET(10,10),9 : PAINT(10,10),9,7`
+                ; -> POINT(10,0)=9, row sc3.up), which is again the opposite of what
+                ; the same program does in SCREEN 2 (sc2.up=4 -- see TODO.md, that
+                ; one is a SHIPPED SCREEN-2 divergence this slice did not close).
+                ; gfx_paint_passable IS the "!= B" test, so the gate is a reuse.
+                call    gfx_is_mc
+                jr      nz,gpf_seed_ok
+                ld      a,(GFX_PFY)
+                ld      (GFX_PTESTY),a
+                ld      a,(GFX_PXL)
+                ld      (GFX_PTESTX),a
+                call    gfx_paint_passable
+                ret     nc                  ; the seed cell reads B -> paint nothing
+gpf_seed_ok:
                 call    gfx_paint_extend_lr
                 ; --- push the discovered seed span, then drain the stack ---
                 ld      a,(GFX_PXL)
@@ -2527,22 +2634,25 @@ gpp_paint_lp:
                 ld      a,(GFX_PSCX)
                 cp      (hl)
                 jr      z,gpp_paint_done
-                inc     a
+                ld      hl,GFX_PPITCH       ; D-PAINTMC (A still = GFX_PSCX)
+                add     a,(hl)
                 ld      (GFX_PSCX),a
                 jr      gpp_paint_lp
 gpp_paint_done:
-                ; --- neighbour row y-1 (skip if y==0) ---
+                ; --- neighbour row y-pitch (skip if already at the top) ---
+                ld      hl,GFX_PPITCH       ; D-PAINTMC
                 ld      a,(GFX_PFY)
-                or      a
-                jr      z,gpp_up_done
-                dec     a
+                cp      (hl)
+                jr      c,gpp_up_done
+                sub     (hl)
                 call    gfx_paint_scan_row
 gpp_up_done:
-                ; --- neighbour row y+1 (skip if y==191) ---
+                ; --- neighbour row y+pitch (skip if y==191) ---
+                ld      hl,GFX_PPITCH       ; D-PAINTMC
                 ld      a,(GFX_PFY)
-                cp      191
+                cp      191                 ; 191 is a lattice point in BOTH modes
                 ret     z
-                inc     a
+                add     a,(hl)
                 jp      gfx_paint_scan_row  ; tail call: ret serves both
 
 ; ---------------------------------------------------------------------------
@@ -2579,7 +2689,8 @@ gpsr_extend:
                 ld      a,(GFX_PSCX)
                 cp      (hl)
                 jr      nc,gpsr_span_end    ; PSCX>=PXR -> can't extend further
-                inc     a
+                ld      hl,GFX_PPITCH       ; D-PAINTMC
+                add     a,(hl)
                 ld      (GFX_PTESTX),a
                 ld      a,(GFX_PSCY)
                 ld      (GFX_PTESTY),a
@@ -2603,7 +2714,8 @@ gpsr_advance:
                 ld      a,(GFX_PSCX)
                 cp      (hl)
                 ret     z                   ; was the last column -> row scan done
-                inc     a
+                ld      hl,GFX_PPITCH       ; D-PAINTMC
+                add     a,(hl)
                 ld      (GFX_PSCX),a
                 jr      gpsr_loop
 gpsr_ret:

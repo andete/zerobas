@@ -1,6 +1,7 @@
 # SPEC — D-SCREEN3: MULTICOLOUR lands, minus PAINT
 
-Status: **✅ LANDED 2026-08-22** (PAINT deliberately excluded, §5).
+Status: **✅ LANDED 2026-08-22** (PAINT excluded here; ✅ landed the same
+day by [`spec-basic-paintmc.md`](spec-basic-paintmc.md) — §5 is inverted, not deleted).
 Scout: [`screen3-scout-2026-08-22.md`](screen3-scout-2026-08-22.md) — read it first;
 every measurement this spec builds on is there.
 Baseline `4aaa085`: low **46 B** / main page 1 **8 B** / sub page 0 **3299 B**.
@@ -17,7 +18,7 @@ Baseline `4aaa085`: low **46 B** / main page 1 **8 B** / sub page 0 **3299 B**.
 | `LINE ,B` / `,BF` | ERR 5 | ✅ |
 | `CIRCLE` | ERR 5 | ✅ |
 | `DRAW` | ERR 5 | ✅ |
-| `PAINT` | ERR 5 | **ERR 5 — still, on purpose (§5)** |
+| `PAINT` | ERR 5 | ~~ERR 5 — still, on purpose (§5)~~ ✅ **since D-PAINTMC** |
 | `SPRITE$=` / `PUT SPRITE` | already worked | unchanged |
 
 ## 2. 💰 Price — measured
@@ -71,7 +72,21 @@ and returned a plausible wrong colour with **no error** — `1` where both
 references say `4`. The same branch that implements the feature closes that
 defect; it was found by the scout (§5 there) and is not a separate fix.
 
-## 5. 🔴 PAINT is EXCLUDED, and the reason is ALGORITHMIC, not addressing
+## 5. 🔴 PAINT is EXCLUDED — ✅ **SUPERSEDED 2026-08-22 by D-PAINTMC**
+
+> **THIS SECTION'S CONCLUSION IS FALSE AS OF `spec-basic-paintmc.md`, and it is
+> INVERTED HERE RATHER THAN DELETED.** The diagnosis below is RIGHT — the cell
+> sharing, the `B = C` self-border, the measured seed-only fill. What it got
+> wrong is the remedy in its last paragraph: *"a flood engine that does not
+> re-test painted cells"*. D-PAINTMC built the fixture that would decide it — a
+> barrier ALREADY COLOURED C inside an open area, with a border colour that
+> appears nowhere — and both references **do** stop there, in SCREEN 2 and in
+> multicolour alike. The own-design `== C` stop is faithful. The only thing that
+> had to change was the walk's PITCH: 4 in MC, so a step always lands on a cell
+> the fill has not touched. PAINT now works in SCREEN 3 and the row of the table
+> in §1 that says otherwise is stale too.
+
+### 5.1 The original analysis, as written
 
 `gfx_rmw_at_mc` would write PAINT's cells perfectly well — PAINT's *write* side
 already routes through it. The fill is what breaks:

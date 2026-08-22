@@ -2310,26 +2310,98 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
   </details>
 
-- [ ] 🔴 **`PAINT` STILL REFUSES SCREEN 3, AND THE REASON IS ALGORITHMIC, NOT
-      ADDRESSING** (filed 2026-08-22 by D-SCREEN3 §5). `gfx_rmw_at_mc` writes
-      PAINT's cells perfectly well — its WRITE side already routes through it. The
-      FILL is what breaks: **adjacent LOGICAL pixels share one 4×4 cell**, so with
-      the default border `B = C` the first cell painted to `C` instantly reads as
-      a BORDER to its own neighbours and the span walk stops dead.
-      🎯 This engine escapes that in SCREEN 2 via the **DRAWN/UNDRAWN**
-      distinction (`gfx_paint_read` reports "the pattern bit is clear", and an
-      undrawn pixel can never be a border). **Multicolour has no pattern bit**, so
-      the escape does not exist.
-      💰 **MEASURED both ways**: an MC arm was written, built and run — it paints
-      the SEED and stops (`POINT(10,0)` = 4 where both references read 9). ⚠️ Two
-      of the six PAINT rows AGREED FOR THE WRONG REASON (both sides did nothing);
-      only the flood rows discriminate. **A loud ERR 5 beats a silent one-cell
-      paint**, so the narrow gate stays and the MC arm was REMOVED rather than
-      left unreachable — `make deadcode` would have flagged it, which is what
-      keeps the decision honest instead of a stub someone mistakes for support.
-      ⚠️ The fix is a flood engine that does not re-test painted cells (or that
-      steps by CELL in MC), plus a measurement of what the reference's span walk
-      actually does. Its own slice.
+- [x] ✅ **`PAINT` NOW WORKS IN SCREEN 3** (D-PAINTMC, 2026-08-22,
+      `docs/spec-basic-paintmc.md`). 💰 **77 B of sub page 0, and 6 B of main
+      page 1 RECOVERED** (PAINT rejoins `gfx_point_gate`; the narrow
+      `gfx_mode_gate_s2` entry is retired).
+      🎯 **THE DIAGNOSIS FILED HERE WAS RIGHT AND THE REMEDY WAS WRONG.** This
+      item said the fix was "a flood engine that does not re-test painted
+      cells", and named `gfx_paint_inside`'s own-design `== C` stop as the
+      suspect. The fixture that decides it is a barrier ALREADY COLOURED C
+      inside an open area with a border colour that appears NOWHERE:
+      `LINE(0,40)-(255,40),9 : PAINT(10,10),9,15`. **Both references stop at
+      it** — `POINT(10,0)`=9 (it spread) and `POINT(10,60)`=4 (it stopped) — in
+      SCREEN 2 *and* in multicolour. The own-design stop is FAITHFUL, and it had
+      been carried as "NOT measured by the pinned battery either way" since G5.
+      The only thing that had to change was the walk's **PITCH**: 4 in MC, so a
+      step always lands on a cell the fill has not touched.
+      🔴 **AND ONE PREDICTION WAS WRONG: the SEED rule differs by mode.**
+      `PAINT(20,20),9,15` with the seed exactly on a `,B` box drawn in 15 floods
+      in SCREEN 2 (the shipped `seed_on_wall_pixel` rule) and paints **nothing at
+      all** in multicolour — `POINT(20,20)`=15, `POINT(40,40)`=4 on both
+      references. It is the `== B` half only: a seed already coloured C floods
+      normally in MC (and, mirror-image, does not in SCREEN 2 — see the two new
+      items below).
+      💰 The pitch is CACHED in `GFX_PPITCH` (0 B — it aliases G8's dead
+      `VDP(n)=` index cell) because asking `SCRMOD` at each of the seven step
+      sites cost **+35 %** on every SCREEN-2 PAINT (3,205,330 -> 4,339,041 Z80
+      steps on `tests/test_graphics.py`'s full-screen case; 3,352,745 = +4.6 %
+      cached). 🔬 5 knives, 5 distinct predicted row sets, parser calibrated on
+      clean / planted / deleted logs first.
+
+- [ ] 🔴 **A SCREEN-2 `PAINT` WHOSE SEED IS ALREADY THE PAINT COLOUR SHOULD DO
+      NOTHING, AND HERE IT FLOODS** (found 2026-08-22 by D-PAINTMC §7, measuring
+      something else). `SCREEN 2 : PSET(10,10),9 : PAINT(10,10),9,7` then
+      `POINT(10,0)` reads **4** on the VG-8020 and the CF-3300 and **9** here
+      (row `sc2.up`, `scratchpad/paintmc_probe.py`). The references refuse a seed
+      whose effective colour already equals C; `gfx_paint_flood`'s header says
+      the seed is used "UNCONDITIONALLY" and cites two measured cases — but
+      NEITHER of them has a seed equal to **C**: `seed_on_border_still_floods`
+      and `seed_on_wall_pixel` both place it on **B**. So the shipped rule is
+      broader than its evidence.
+      ⚠️ **IT IS THE MIRROR OF WHAT MULTICOLOUR DOES** (`sc3.up` = 9 on both
+      references, i.e. MC floods that same program), so "make both modes agree"
+      is NOT the fix and a single shared rule would break one of them. Deliberately
+      NOT folded into D-PAINTMC: a SCREEN-3 measurement and a SCREEN-2 behaviour
+      change do not belong in one differential. Cheap to fix (a mode-gated seed
+      test beside the one D-PAINTMC added), but it needs its own knife and its own
+      look at `basic_probe_graphics.py`'s PAINT phase, whose rows would move.
+
+- [ ] 🔴 **`PAINT`'s BORDER ARGUMENT IS RANGE-CHECKED ON THE REFERENCES AND NOT
+      HERE, AND THE BOUND DEPENDS ON THE MODE** (measured 2026-08-22 by
+      D-PAINTMC §7, rows `bd2.*` / `bd3.*` in `scratchpad/paintmc_probe.py`).
+
+      | `B`      | SCREEN 2 refs | SCREEN 3 refs | zerobas |
+      |----------|---------------|---------------|---------|
+      | 15       | floods        | floods        | floods ✅ |
+      | 16 / 255 | floods        | **ERR 5**     | floods  |
+      | 256 / -1 | **ERR 5**     | **ERR 5**     | floods  |
+
+      🎯 **`B` is 0..255 in SCREEN 2 and 0..15 in MULTICOLOUR; outside that,
+      ERR 5.** `ep_parse_b` (basic/graphics.asm) does `ld a,e / ld (GFX_B),a`
+      with NO check — the spec's "a border of 16+ is legal, just a comparison
+      value no pixel hits" is right for SCREEN 2 and wrong for the DOMAIN.
+      ⚠️ **THE SCREEN-2 HALF IS PRE-EXISTING** and independent of D-PAINTMC;
+      the shipped row that covers this argument (`border16_flood_ok`, B=16)
+      could never see it, because 16 is INSIDE the SCREEN-2 domain. What
+      D-PAINTMC changed is that the SCREEN-3 half stopped agreeing BY ACCIDENT:
+      before it, every SCREEN-3 PAINT was ERR 5, so `PAINT(10,10),9,16` was
+      right for the wrong reason.
+      💰 **PRICED AND DECLINED: ~21 B of MAIN PAGE 1** (`ld a,d/or a/jp nz` for
+      the byte domain, then `ld a,(SCRMOD)/cp 3` and `cp 16/jp nc` for the MC
+      one, replacing a 4 B inline store), against **10 B free (2026-08-22)**.
+      It needs a carve.
+      ⚠️ **AND ONE MORE MEASUREMENT BEFORE IT IS WRITTEN**: D-LINERR's whole
+      finding is that WHERE in the parse a check sits is itself a claim.
+      `PAINT(10,10),9,16,` — a 4th argument after an out-of-domain border —
+      separates ERR 5 (the domain is checked as B is parsed) from ERR 2 (the
+      grammar wins). Not measured; do not guess it from this table.
+
+- [ ] 🔴 **A `,B` WALL SHARING A COLOUR GROUP WITH THE FILL IS "EATEN" ON THE
+      REFERENCES AND NOT HERE** (found 2026-08-22 by D-PAINTMC §7).
+      `SCREEN 2 : LINE(0,20)-(103,20),7 : LINE(108,20)-(255,20),7 :
+      PAINT(128,8),9,7` then `POINT(50,20)` reads **9** on both references and
+      **7** here (row `nt2.wall`), while `POINT(10,100)` — the fill's actual
+      extent, through the one-cell gap — agrees at 9 on all three. So the
+      TOPOLOGY is right and the CLASH POLICY is not: rows 16..19 of that char
+      row and the wall pixel at y=20 share one colour byte, the references end up
+      with its foreground at 9, and this engine leaves it at 7.
+      ⚠️ `gfx_paint_extend_lr`'s header already documents the "border eaten"
+      mechanism as an empirically-found FIX — this is a case where it does not
+      fire. Ask FIRST whether the fill even paints the pixels in that group here
+      (a `,B` wall at y=20 with the fill stopping at y=19) before touching
+      `gfx_color_rmw`: a fill that never entered the group is a different defect
+      from a clash resolved differently.
 
 - [ ] 🔴 **`POINT` IN SCREEN 3 IS A SILENT WRONG ANSWER, AND IT IS INDEPENDENT OF
       IMPLEMENTING SCREEN 3** (found 2026-08-22 by the SCREEN 3 scout, §5).

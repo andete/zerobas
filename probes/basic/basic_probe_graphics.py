@@ -761,6 +761,83 @@ def phase_h() -> int:
     return fails
 
 
+# --- D-PAINTMC: the SAME differential in SCREEN 3 --------------------------
+# docs/spec-basic-paintmc.md. PAINT was the last graphics statement that refused
+# multicolour, and the reason was the walk's PITCH: four adjacent LOGICAL pixels
+# are ONE 4x4 cell, so a step of 1 re-tests the cell just painted and (with the
+# default border B == C) reads it as a border to its own neighbour.
+#
+# ⚠️ EVERY "IT STOPPED" ROW CARRIES A "IT SPREAD" ROW ON THE SAME PROGRAM. A read
+# of 4 beyond a barrier agrees for a second reason -- a fill that never left the
+# seed -- and that second reason is exactly what the pre-slice build did. Two of
+# the six rows D-SCREEN3 §5 used to characterise this agreed for precisely that
+# reason, which is why the pairing is structural here rather than a nicety.
+#
+# The two rows that are NOT about the pitch, and are the ones most likely to rot:
+#   mc_seed_on_border  -- a seed whose cell already reads B paints NOTHING in MC,
+#       where the SCREEN-2 twin (seed_on_wall_pixel above) floods.
+#   mc_seed_already_c  -- ...and a seed already coloured C floods in MC, where the
+#       SCREEN-2 twin does NOT (a shipped divergence, TODO.md).
+# Both are pure differentials here: the expectation is the reference's answer, not
+# a constant, so neither can be quietly fitted.
+MC_PAINT_STEP = 45.0   # emulated s RUN..capture; 64x48 cells is 16x fewer writes
+                       # than SCREEN 2's 256x192, so PAINT_STEP's 90 is not needed
+                       # -- but the 2.5 s default fires MID-FILL and reads as a
+                       # blank GRAPHICS screen (see PAINT_STEP's note above).
+MC_BAR = "LINE(0,40)-(255,40),7"     # a colour-7 barrier across the surface
+MC_BAR9 = "LINE(0,40)-(255,40),9"    # ...and one ALREADY the paint colour
+
+PAINT_MC_CASES = [
+    # B defaults to C: the fill crosses a colour that is not C and floods.
+    ("mc_flood_default", [MC_BAR, "PAINT(10,10),9"], [(10, 0), (10, 60), (10, 40)]),
+    # an explicit border DOES stop it -- and the (10,0) row proves it spread.
+    ("mc_border_stops", [MC_BAR, "PAINT(10,10),9,7"], [(10, 0), (10, 60)]),
+    # border == the BACKGROUND: a background cell IS a border in MC (the exact
+    # opposite of the SCREEN-2 finding in gfx_paint_read's header).
+    ("mc_border_is_bg", [MC_BAR, "PAINT(10,10),9,4"], [(10, 10), (10, 0)]),
+    # THE DECISIVE ROW: a barrier already coloured C, border colour nowhere on
+    # screen. Only the own-design "already C" stop can halt this.
+    ("mc_already_c_stops", [MC_BAR9, "PAINT(10,10),9,15"], [(10, 0), (10, 60)]),
+    ("mc_seed_on_border", ["LINE(20,20)-(60,60),15,B", "PAINT(20,20),9,15"],
+     [(20, 20), (40, 40)]),
+    ("mc_seed_already_c", ["PSET(10,10),9", "PAINT(10,10),9,7"],
+     [(10, 0), (10, 10)]),
+    # a concave notch through a gap exactly ONE cell wide (x=104..107): the
+    # region below is reachable only by a walk that re-extends a pushed span.
+    ("mc_notch_one_cell", ["LINE(0,20)-(103,20),7", "LINE(108,20)-(255,20),7",
+                           "PAINT(128,8),9,7"],
+     [(10, 100), (128, 60), (50, 20), (10, 4)]),
+    ("mc_box_bounded", ["LINE(4,4)-(40,40),15,B", "PAINT(20,20),9,15"],
+     [(20, 30), (60, 20)]),
+]
+
+
+def paint_points_prog_mc(setup: list[str], pts: list[tuple[int, int]]) -> list[str]:
+    """paint_points_prog's multicolour twin: SCREEN 3 instead of LINIT. The
+    capture shape is identical -- POINT into vars, SCREEN0, then PRINT -- because
+    a screen scrape cannot read PRINT while the VDP is in a graphics mode."""
+    q = ":".join(f"{chr(65 + i)}=POINT({x},{y})" for i, (x, y) in enumerate(pts))
+    pr = 'SCREEN0:PRINT"R";' + ";".join(chr(65 + i) for i in range(len(pts))) + ":END"
+    return ["SCREEN3"] + setup + [q, pr]
+
+
+def phase_h_mc() -> int:
+    fails = 0
+    print("=== PHASE H-MC: PAINT fill differential in SCREEN 3 (D-PAINTMC, "
+          f"step={MC_PAINT_STEP}s) ===")
+    for label, setup, pts in PAINT_MC_CASES:
+        specs = [("stored", paint_points_prog_mc(setup, pts))]
+        ref = omsx_repl.run_cases(REF, specs, batch=False, step=MC_PAINT_STEP,
+                                  cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, step=MC_PAINT_STEP,
+                                 cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+        rp, zp = _points(ref, len(pts)), _points(zb, len(pts))
+        ok = rp is not None and rp == zp
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:22} ref={rp} zb={zp}")
+    return fails
+
+
 def phase_i_aliasing() -> int:
     """The RECURRING ALIASING BUG CLASS check (do not trust the static
     argument in basic/sysvars.inc's own GFX_PTOP header): run string-heap-
@@ -1563,7 +1640,7 @@ def main() -> int:
     _assert_band_clamp_is_noop()      # D-CIRCDOM: the clamp must not move old rows
     fails = (phase_a() + phase_b() + phase_c() + phase_d()
               + phase_e() + phase_f() + phase_g_rneg()
-              + phase_h() + phase_i_aliasing() + phase_j()
+              + phase_h() + phase_h_mc() + phase_i_aliasing() + phase_j()
               + phase_k() + phase_l() + phase_m()
               + phase_n() + phase_o() + phase_p()
               + phase_q_state() + phase_q_behav() + phase_q_teeth()

@@ -1887,6 +1887,25 @@ GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E55B: persistent angle 0..3 (1). Boot
 ; the $E560 disk-WBUF wall, which the guard below still enforces.
 GFX_G8N         equ     GFX_DANGLE + 1  ; $E55C: written index n (int16 LE) (2)
 GFX_G8V         equ     GFX_G8N + 2     ; $E55E: written value (int16 LE) (2)
+; --- D-PAINTMC: PAINT's COORDINATE PITCH, 1 (SCREEN 2) or 4 (MULTICOLOUR) -----
+; sub/graphics.asm gfx_paint_op writes it once per statement; the flood's seven
+; step sites read it. It ALIASES G8's index cell above, on the same
+; one-statement-at-a-time argument DEFT_PTR / RDV_* / TGT_ADDR / GFX_DBUF /
+; GFX_CS_M1 / GFX_VBUF all rest on in this window: a `VDP(n)=v` (or `BASE(n)=v`)
+; and a PAINT are never in flight together, one statement runs at a time, and
+; neither leaves state behind -- G8's own header above says these 4 B are "dead
+; outside such a statement". Both writer and readers are the graphics tenant, so
+; the lifetime is one CALSLT call, narrower than every other alias here.
+; ⚠️ IT IS A CACHE, NOT A CHOICE OF STYLE, AND THE NUMBER IS WHY. The pitch was
+; first read by CALLING a 4-instruction helper (`gfx_pstep`, which asked SCRMOD)
+; at each of those seven sites. Measured on tests/test_graphics.py's full-screen
+; case C, which is the largest fill this project runs: 3,205,330 Z80 steps before
+; the slice, 4,339,041 with the helper -- +35% on EVERY SCREEN-2 PAINT, paid so
+; that SCREEN 3 works, and enough to blow that test's 4,000,000-step runaway
+; guard. One byte turns those seven calls into seven `ld hl,nn` and gives the
+; cost back. A wall this window could not afford would have been the other
+; answer; it is 0 B here because G8's cells were already dead.
+GFX_PPITCH      equ     GFX_G8N         ; $E55C: 1 or 4, live only inside a PAINT
     IF GFX_DSP + 2 > GFX_PSTK_END
                 db      DRAW_SCRATCH_OVERRAN_THE_PERSISTENT_STATE_CELLS
     ENDIF

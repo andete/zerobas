@@ -830,10 +830,16 @@ LABEL_W = 12
 # the BASIC coordinate space is 0..255 x 0..191 exactly as SCREEN 2 (64x48 is
 # the HARDWARE cell), and multicolour has NO colour table, so there is no second
 # CLASH model at all. Both rows now read ` 0 , 20 , 21 ` on all three sides.
-# 🔴 PAINT is the one SCREEN-3 op still refusing, and its reason is ALGORITHMIC,
-# not addressing -- adjacent LOGICAL pixels share one 4x4 cell, so with the
-# default border B=C the first painted cell reads as a border to its own
-# neighbours and the fill stops. Spec §5; no row here drives PAINT in SCREEN 3.
+# ✅ AND PAINT NO LONGER REFUSES EITHER (D-PAINTMC, docs/spec-basic-paintmc.md).
+# The paragraph that stood here said PAINT was "the one SCREEN-3 op still
+# refusing" for an ALGORITHMIC reason -- adjacent LOGICAL pixels share one 4x4
+# cell, so with the default border B=C the first painted cell reads as a border
+# to its own neighbours. That diagnosis was right; the remedy it implied (a flood
+# that does not re-test painted cells) was wrong. Both references DO stop at an
+# already-C cell, so the engine's own-design stop is faithful and only the walk's
+# PITCH had to change. Still no row HERE drives PAINT in SCREEN 3 -- that belongs
+# to `make graphics-acceptance` PHASE H-MC, which owns what PAINT draws, exactly
+# as PHASE H owns it in SCREEN 2 (see this file's own DENOMINATOR note).
 
 DEFERRED: dict[str, str] = {
     # Measured, not scored, each with the reason it is out of this slice's reach.
