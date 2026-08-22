@@ -1,0 +1,177 @@
+  denominator: 1480 labels in [2812,8000), 1455 non-empty spans
+   20 B x2  23cd6342cd5c40fe41c2ab6423cd6342b7c2ab64
+        $694C  sav_ascii_flag
+        $698B  sav_cas_flag
+   20 B x2  cd6342fe2c200d23cd6342fe0e200523232318ec
+        $7BD1  esn_p2
+        $7BF2  esn_scan_lp
+   16 B x2  d13a69f0b7c28042e5cdb928e1c35654
+        $2E2E  ems_print
+        $54D6  exps_print
+    3 B x6  c39a42
+        $4370  ee_raise
+        $4A77  sid_raise
+        $5299  tm_raise
+        $59FD  pl_parse_err
+        $72BB  exf_raise
+        $7409  gp_raise
+   14 B x2  30117ec601fe0a3805d60a371801
+        $337E  ai14_lp
+        $340B  ai6_lp
+   13 B x2  af321cf03e08321af0110000c9
+        $33F8  raf_zero_ok
+        $3AA2  cpow_x0_pos
+   13 B x2  cd6342c5cd8f7cc13803110000
+        $7D2F  eostr_lp
+        $7DB6  eokey_lp
+   12 B x2  3e09cd1d28210c4922c9e0c9
+        $2943  sst_overflow
+        $2CCF  shxf_overflow
+    4 B x4  c1c36a42
+        $2F91  inpc_synpop
+        $422D  ex_let_err
+        $5260  poke_err
+        $52D6  vdp_err
+    6 B x3  3e02321af0c9
+        $3266  flt_int_result
+        $50BD  evsgn_settype
+        $6134  g8_int_result
+   12 B x2  23cd6342fe8dc2e059230e00
+        $7D23  ex_on_strig
+        $7DAA  ex_on_key
+   11 B x2  216af0cd3139cd59341807
+        $3ED7  asw_single
+        $484F  vsf_single
+   11 B x2  f1feff2806c630121318f5
+        $5579  pn_wr
+        $6247  dde_wr
+   11 B x2  7eb72807fe3a28032318f5
+        $56F9  pu_lo_skip
+        $7419  exc_skip
+   10 B x2  3ece3210e03e07c39a42
+        $78EA  gosub_stk_over
+        $79EF  ef_over
+    3 B x4  3e01c9
+        $3287  c16_lt
+        $32C5  dcm_lt
+        $3757  fcmp_neg_swap1
+        $3770  fcmp_a_lt
+    3 B x4  af1802
+        $39C1  combine_add
+        $72F5  ex_lset
+        $7469  fmt_sel_360
+        $79F9  ex_next
+    9 B x2  7eb7c8cd9a552318f7
+        $4645  print_string
+        $57BB  pu_emit_str0
+    9 B x2  3e03cd1d28110000c9
+        $5147  evmc_sqr_err
+        $5189  evmc_log_err
+    4 B x3  d1c36a42
+        $2C77  ems_err_pop1
+        $48CA  elas_err
+        $72B1  exf_syn
+    8 B x2  ed5b50f1732372c9
+        $3F01  asw_wb_int
+        $4883  vsf_wb_int
+    8 B x2  cdb34630032318f8
+        $46DD  vnk_more
+        $471F  vst_walk
+    4 B x3  110000c9
+        $4814  vlf_unset_int
+        $5211  vptr_none
+        $62A7  fcfs_absent
+    4 B x3  e1c31644
+        $7B2B  ers_undef
+        $7C30  oe_undef
+        $7CA5  tll_undef
+    7 B x2  2a71e322c9e0c9
+        $293C  sst_ok
+        $2CC8  shxf_ok
+    7 B x2  cd1938ed5350f1
+        $3EE2  asw_int
+        $485A  vsf_int
+    7 B x2  3afce0326de2c9
+        $4ABA  sidr_done
+        $6EA7  ris_done
+    3 B x3  3e04c9
+        $328A  c16_gt
+        $3754  fcmp_neg_swap4
+        $377C  fcmp_a_gt2
+    3 B x3  c37740
+        $3E78  ed_done
+        $3EB9  ee_done
+        $6EE4  dc_finish
+    5 B x2  772310fcc9
+        $32A5  zf_lp
+        $5318  cut_lp
+    5 B x2  3e0dc39a42
+        $5A00  pl_typeerr
+        $5E01  gfx_typeerr
+    5 B x2  3e18c39a42
+        $619A  g8_missing
+        $7EAD  loc_missing
+    5 B x2  20696e2000
+        $76AD  in_msg
+        $7834  rn_in
+    4 B x2  23cd0845
+        $2BBA  sfm_haveN
+        $2C2A  ems_have_m
+    4 B x2  e1c39a54
+        $2E3E  ems_fallback
+        $54E6  exps_fallback
+    4 B x2  772b10ed
+        $338D  ai14_st
+        $341A  ai6_st
+    4 B x2  f1c36a42
+        $3EBC  ee_synerr_pop
+        $533F  ex_def_err
+    4 B x2  e1c3f949
+        $49D4  sev_have
+        $602A  spr_rd_done
+    4 B x2  3e0d1802
+        $5293  tm_err13
+        $6159  ex_vdp_assign
+    4 B x2  3e021802
+        $5434  exp_dev_crt
+        $6B52  ex_files
+    4 B x2  f1c35268
+        $6663  ctp_link_err
+        $6830  dpl_link_err
+    4 B x2  d1c35268
+        $6667  ctp_err_pop
+        $6834  dpl_err_pop
+    4 B x2  ed5324e0
+        $68EF  bsv_set_exec
+        $6920  bsv_cas_exec
+    4 B x2  3e051802
+        $6CA8  oo_dev_lpt
+        $72B5  exf_dev
+    4 B x2  e1c37740
+        $7CDC  ei_done
+        $7DA6  strig_done
+    3 B x2  e137c9
+        $2FF9  lgb_eof
+        $469F  rl_break
+    3 B x2  c39c32
+        $3323  dshr_allzero
+        $3347  dshl_allzero
+    3 B x2  78b7c9
+        $3375  affn_found
+        $6760  cal_srv_ret
+    3 B x2  3efff5
+        $556B  pn_conv
+        $6239  ln_div_entry
+    3 B x2  210180
+        $61E2  list_walk
+        $7762  find_line_bc
+    3 B x2  cd8c65
+        $6501  dl_is_cas
+        $6572  dr_is_cas
+    3 B x2  c37875
+        $6561  dr_stored
+        $7516  dl_run
+    3 B x2  c3ab64
+        $70D2  nm_fail
+        $70D5  nm_fail2
+  53 duplicate groups, 403 B recoverable IF every collapse is position-independent (READ EACH ONE)

@@ -37,6 +37,14 @@
 ; Makes an un-DEF'd USR reliably read 0 (so usr_call can refuse to jump to a
 ; stray address — jumping to $0000 would reset the machine). Called from init.
 clear_usrtab:
+                ; D-DEFFN rides the one boot-time zeroer that was already here.
+                ; FN_FEND is the "an FN call is in progress" gate EVERY scalar
+                ; reference consults (sub/arrays.asm scv_find), so power-on RAM
+                ; garbage in it would make ordinary variables resolve against
+                ; nine slots of garbage. raise_error resets it on every fault;
+                ; this is the cold-boot half.
+                ld      a,low FN_PAREA
+                ld      (FN_FEND),a
                 ld      hl,USRTAB
                 ld      b,20                ; 10 vectors * 2 bytes
                 xor     a
@@ -56,9 +64,11 @@ cut_lp:
 ex_def:
                 inc     hl                  ; past the DEF token
                 call    skip_spaces
+                cp      FN_TOKEN            ; D-DEFFN: DEF FN -> basic/deffn.asm
+                jp      z,ex_deffn
                 cp      USR_TOKEN           ; DEF USR -> machine-code vector
-                jp      nz,stmt_error       ; DEF<type> has its own token now; DEF FN
-                                            ; and anything else are syntax errors
+                jp      nz,stmt_error       ; DEF<type> has its own token now;
+                                            ; anything else is a syntax error
                 inc     hl                  ; past USR
                 call    usr_index           ; A = vector index 0..9 (HL advanced)
                 push    af                  ; save index across '=' + eval

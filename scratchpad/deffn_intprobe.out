@@ -1,0 +1,11 @@
+DIFF i.after    want='146'  zb='157'
+DIFF i.const    want='7'  zb='-3392'
+ok   i.ctl      want='9'  zb='9'
+DIFF i.formal   want='9'  zb='-3392'
+ok   i.noco     want='7'  zb='7'
+DIFF i.pctfn    want='7'  zb='-3392'
+ok   i.pctform  want='2'  zb='2'
+DIFF i.peek     want='9'  zb='-3392'
+DIFF i.varptr   want='-5483'  zb='-3392'
+ROWS: 9 printed, 9 scored — 6 divergent
+done

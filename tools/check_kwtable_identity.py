@@ -84,8 +84,8 @@ SUB_BASE = 0x0000
 # that matched no expected delta would be the finding.
 # Previous pins: 1058 B / 334b29c4… at b5f4135 (D-LPTVERB, +17 = LPRINT 9 + LPOS
 # 8); 1041 B / 8f120510… at 9bfcfb9 (2026-08-05), kwtable @ $2CD2.
-KWTABLE_SIZE = 1091
-KWTABLE_SHA = "ee1a142c2350b38112603318d20251d544552adca02723e5d2159e0670846c5d"
+KWTABLE_SIZE = 1096
+KWTABLE_SHA = "05b3810fcff79bf6c918301c7dfe46c89f8de6b405e400619d2770e7300ea131"
 
 
 def load_syms(path):

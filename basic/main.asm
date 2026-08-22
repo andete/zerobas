@@ -176,6 +176,10 @@ __MEAS_LOW_END:
 
 ; DEF USR statement + USR() function (defines `ex_def`, `ev_usr`, `clear_usrtab`).
                 include "basic/usr.asm"
+; DEF FN / FN — the last missing MSX1 reserved word (D-DEFFN). Needs `eval`,
+; `str_eval` and the typed variable store, so it is main-resident and page 1;
+; the shadow LOOKUP is the sub-ROM half (sub/arrays.asm scv_find).
+                include "basic/deffn.asm"
 
 ; The PRINT statement (defines `ex_print`, `print_number`, `print_crlf`).
                 include "basic/print.asm"

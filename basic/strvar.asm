@@ -52,6 +52,9 @@ str_eval_one:
                 jp      z,str_fn_string     ; single-byte reserved word, not $FF-prefixed)
                 cp      INKEY_TOKEN         ; $EC -> INKEY$ (no args; single-byte reserved word)
                 jp      z,str_fn_inkey
+                cp      FN_TOKEN            ; $DE -> FN<name>$[(args)] (D-DEFFN).
+                jp      z,str_ev_fn         ; DECLINES a numeric FN, exactly as
+                                            ; str_eval_paren declines `(A+1)`
     IF G7_RESIDENT
                 cp      SPRITE_TOKEN        ; $C7 -> SPRITE$(n) (graphics G7; the `$` is
                 jp      z,ev_f_sprite       ; separate ASCII after the token)

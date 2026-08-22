@@ -192,6 +192,21 @@ exp_loop:
                 ; which is the GATED control `p.numprint`, not an assumption.
                 ; ⚠️ `(` is $28 and collides with no token, so its position in
                 ; this chain is free; it sits with the other string operands.
+                ; 🎯 D-DEFFN JOINS THE `(` CASE, NOT THE INKEY$ ONE, AND THAT IS
+                ; THE WHOLE REASON IT IS HERE. `FNA$("hi")` and `FNA(2)` share a
+                ; token, so a PEEK cannot classify the item any more than it can
+                ; classify `(A$)` versus `(A+1)` -- only the FN's own NAME can,
+                ; and reading it is str_ev_fn's job. So the string path is TRIED
+                ; and str_ev_fn DECLINES a numeric FN by restoring HL and
+                ; returning CF clear, which is exactly the contract
+                ; `jr nc,exps_fallback` below already relies on.
+                ; 🔴 WITHOUT THIS ARM `PRINT FNA$("hi")` IS ERR 13, and it looks
+                ; like a DEF FN defect rather than a PRINT classification one:
+                ; the item fell through to `is_letter` -> exp_num -> ev_fn, whose
+                ; own guard correctly refuses a `$` function in a numeric factor.
+                ; b.str / o.defstr / o.quotedcolon are the three rows.
+                cp      FN_TOKEN            ; $DE FN<name>[$] -> maybe a string
+                jp      z,exp_strvar
                 cp      '('
                 jp      z,exp_strvar
                 call    is_letter           ; a `$`-suffixed string variable?
