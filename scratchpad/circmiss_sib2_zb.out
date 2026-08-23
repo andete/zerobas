@@ -1,0 +1,33 @@
+  ran zb      p.colour   '0 15'
+  ran zb      p.kcolour  '0 15'
+  ran zb      p.b        '0 15'
+  ran zb      p.kb       '0 15'
+  ran zb      p.cc       '0 15'
+  ran zb      p.kcc      '0 15'
+  ran zb      p.none     '0 15'
+  ran zb      p.omit     '0 15'
+  ran zb      p.plain    '0 15'
+  ran zb      p.ok       '0 15'
+  ran zb      q.trail    '<NO OUTPUT>'
+      RAW: [' zerobas version 0.1                     clean-room MSX-BASIC program loader                                             ZBNEW                                   ZB10 ONERRORGOTO900                     ZB20 PRINT"<A>";                        ZB30 CLEAR 200,                         ZB40 PRINT"[";ERR;0;"]":END             ZB900 PRINT"[";ERR;0;"]":END            ZBRUN                                   <A>                                     Missing operand in 30                   ZB']
+  ran zb      q.kcolon   '<NO OUTPUT>'
+      RAW: [' zerobas version 0.1                     clean-room MSX-BASIC program loader                                             ZBNEW                                   ZB10 ONERRORGOTO900                     ZB20 PRINT"<A>";                        ZB30 CLEAR 200,:A=1                     ZB40 PRINT"[";ERR;0;"]":END             ZB900 PRINT"[";ERR;0;"]":END            ZBRUN                                   <A>                                     Missing operand in 30                   ZB']
+  ran zb      q.comma    '0 0'
+  ran zb      q.ok       '0 0'
+
+  p.colour   zb='0 15'   (zb only)
+  p.kcolour  zb='0 15'   (zb only)
+  p.b        zb='0 15'   (zb only)
+  p.kb       zb='0 15'   (zb only)
+  p.cc       zb='0 15'   (zb only)
+  p.kcc      zb='0 15'   (zb only)
+  p.none     zb='0 15'   (zb only)
+  p.omit     zb='0 15'   (zb only)
+  p.plain    zb='0 15'   (zb only)
+  p.ok       zb='0 15'   (zb only)
+  q.trail    zb='<NO OUTPUT>'   (zb only)
+  q.kcolon   zb='<NO OUTPUT>'   (zb only)
+  q.comma    zb='0 0'   (zb only)
+  q.ok       zb='0 0'   (zb only)
+
+ROWS: 14 printed, 0 scored -- 0 DIFF

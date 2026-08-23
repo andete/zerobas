@@ -183,22 +183,64 @@ list. **When a slice lands, grep this list for what it just shipped.**
       **`0` + a filled region here** — the same mechanism, at
       [`basic/graphics.asm`](basic/graphics.asm)'s `ep_default_b`, reached from
       **two** slots (:708 the colour field, :727 the B field) on two terminators
-      each = **4 jumps**. 2 of the 4 measured divergent; `p.b` / `p.kb` are
-      ⚠️ **NOT MEASURED** (the zerobas run never reached its `PRINT`), which is
-      not green. 💰 **PAINT's grammar is MAIN page 1, 4 B free on 2026-08-23** —
-      a `cp_err24`-shaped raiser needs a carve or a promotion, which CIRCLE's
-      sub page 1 (1617 B free on 2026-08-23) did not. ⚠️ Shape is not a verdict: D-LINERR measured
-      LINE's box slot as ERR **2** one field past a slot that is 24, so the two
-      unmeasured PAINT rows must be RUN, not inherited.
+      each = **4 jumps**. ✅ **ALL SIX ROWS NOW MEASURED (D-CLRTRAP,
+      [`docs/spec-basic-clrtrap.md`](docs/spec-basic-clrtrap.md) §2,
+      `scratchpad/circmiss_sib2.py`): 6 DIFF, and the 4 trap rows are
+      unanimous.** `p.cc` / `p.kcc` (`PAINT(50,50),,`) prove the B slot is
+      reached by BOTH its routes. 💰 **PAINT's grammar is MAIN page 1, 4 B free
+      on 2026-08-23** — a `cpt_err24`-shaped raiser needs a carve or a
+      promotion, which CIRCLE's sub page 1 (1617 B free on 2026-08-23) did not.
+      ⚠️ Shape is not a verdict, which is why all six were RUN: D-LINERR measured
+      LINE's box slot as ERR **2** one field past a slot that is 24, and `p.cc`
+      was predicted LOW CONFIDENCE for exactly that reason before it came back
+      `24`.
 
-- [ ] 🔴 **`CLEAR 200,` IS `Missing operand` ON BOTH REFERENCES AND ZEROBAS IS
-      UNMEASURED.** Filed 2026-08-23, D-CIRCMISS §7. Rows `q.trail` / `q.kcolon`
-      read **`24` on VG-8020 and CF-3300** and `<NO OUTPUT>` here — the probe's
-      zerobas run never reached its `PRINT`, so this is an APPARATUS gap, not a
-      reading. [`basic/clear.asm`](basic/clear.asm):49 has the candidate shape
-      (`or a` / `cp COLON` → `clr_done`). ⚠️ **The control `CLEAR 200` is `0` on
-      all three**, so the machine is not simply dead in that case. Fix the case
-      (CLEAR may be disturbing the `ONERROR` fixture) before pricing anything.
+- [ ] 🔴 **`CLEAR 200,` RAISES THE RIGHT ERROR AND LOSES THE TRAP, *AND* IT
+      WRITES.** 🔴 **THIS ITEM'S FIRST FILING WAS WRONG AND IS INVERTED RATHER
+      THAN DELETED**: on 2026-08-23 D-CIRCMISS §7 filed it as *"zerobas is
+      UNMEASURED… an APPARATUS gap"*. It is not. D-CLRTRAP
+      ([`docs/spec-basic-clrtrap.md`](docs/spec-basic-clrtrap.md) §3) read the
+      raw screen: zerobas prints **`Missing operand in 30`** — the right code at
+      the right line — and **`ON ERROR GOTO` does not catch it**, so no fence
+      printed and the probe scored the reading as nothing.
+      **The divergence is the TRAP, not the error** (both references trap it).
+      🎯 **MECHANISM, source-confirmed:** `clr_himem` is `call eval` /
+      `ld (HIMEM),de` / fall into `clr_done` → `clear_vars`. D-MISSOPFIX made
+      that `eval` **DEFER** ERR 24; `ex_clear` never tests `FPERR`, so it stores
+      and falls through, `clear_vars` wipes the trap, and `exec_stmt` raises into
+      a machine with no handler.
+      ⚠️ **A SUCCESSFUL `CLEAR` KILLS THE TRAP ON ALL THREE MACHINES — that half
+      is FAITHFUL** (row `t.after` unanimous, control `t.notrap` trapped `11 0`
+      on all three). The ORDERING is the defect.
+      🔴 **AND THE SILENT WRITE IS MEASURED, NOT ARGUED**
+      (`scratchpad/clrtrap_himem.py`): `CLEAR 200,` moves HIMEM **`62336 -> 0`**
+      here while both references read `SAME`, with `CLEAR 200,&H9000` → `$9000`
+      on all three as the positive control. **D-MISSOP's silent-memory-write
+      class at a 17th slot**, surviving D-MISSOPFIX because the deferral lands
+      AFTER the store — `do_poke` tests `FPERR` before storing and `ex_clear`
+      does not. Harmless today only because `clear.asm` calls HIMEM
+      *"record-only"*. 💰 Main page 1, 4 B free on 2026-08-23 — unpriced.
+
+- [ ] 🔴 **`CLEAR ,200` IS `Syntax error` ON BOTH REFERENCES AND COMPLETES
+      SILENTLY HERE.** Filed 2026-08-23, D-CLRTRAP §3.3, row `q.comma`: refs
+      **`2`**, zb **`0`**. [`basic/clear.asm`](basic/clear.asm)'s
+      `cp ',' / jr z,clr_himem` accepts a "string space omitted" form that
+      neither reference has — own design, and it was found by a row written as a
+      *control* for a form I had assumed was legal. 🎯 **The prediction miss is
+      the lesson: I read `clr_himem`'s EXISTENCE as evidence about the
+      LANGUAGE.** Unpriced; main page 1.
+
+- [ ] ⚠️ **AN UNNAMED OUTCOME READS AS NO OUTCOME, AND THE FIX MOVES THE HOLE
+      ONE MESSAGE ALONG.** Filed 2026-08-23, D-CLRTRAP §5 — a probe-design
+      residual, not a BASIC one. `face()` knew only about a numeric fence, so an
+      untrapped `Missing operand in 30` scored `<NO OUTPUT>`; naming
+      `UNTRAPPED <msg> in <line>` fixed it, and **within the hour `t.after`
+      scored `<NO OUTPUT>` on ALL THREE machines because "Division by zero" was
+      missing from the new alternation.** 🎯 Every probe in this tree that
+      buckets an unmodelled result as *"nothing"* has this shape. The standing
+      question: **what might the machine legitimately DO that this readout has
+      no name for — and when you add one name, what is the next one?** No gate
+      covers it; `scratchpad/circmiss_sib2.py` carries the widened list.
 
 - [ ] ⚠️ **THE REFERENCES DRAW BEFORE RAISING A TRAILING-COMMA SYNTAX ERROR;
       ZEROBAS RAISES WITHOUT DRAWING.** Filed 2026-08-23, D-CIRCMISS §6, row
