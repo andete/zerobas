@@ -1,0 +1,26 @@
+=== baseline ===
+baseline roms=abfefa7f / 490ffc49 / a8173c25
+baseline 17 rows match scratchpad/circmiss_after.out
+
+K-CM1  roms=abfefa7f / 5ad60bad / a8173c25
+  cut: cpt_err24 `ld a,24` -> `ld a,0` (GFX_RES=0 is 'no error', so the resident draws) -- the bug, re-created
+  moved 8 rows: c.aspect='0 5', c.colour='0 15', c.end='0 5', c.start='0 5', k.aspect='0 5', k.colour='0 15', k.end='0 5', k.start='0 5'
+  ✅ EXACT — 8 predicted, 8 moved
+
+K-CM2  roms=abfefa7f / eac21e13 / a8173c25
+  cut: cpt_err24 `ld a,24` -> `ld a,5` -- WRONG CODE, and the prediction is that the PICTURE is still protected (R stays 4)
+  moved 8 rows: c.aspect='5 4', c.colour='5 4', c.end='5 4', c.start='5 4', k.aspect='5 4', k.colour='5 4', k.end='5 4', k.start='5 4'
+  ✅ EXACT — 8 predicted, 8 moved
+
+K-CM3  roms=abfefa7f / 28da85f1 / a8173c25
+  cut: cpt_at_c's `jp z,cpt_start_intro` -> `jp z,cpt_err24`: the LEGITIMATE omitted colour is sent to the new raiser
+  moved 1 rows: o.colour='24 4'
+  ✅ EXACT — 1 predicted, 1 moved
+
+K-CM4  roms=abfefa7f / 6d858809 / a8173c25
+  cut: cpt_after_r's `jp nz,cpt_finish` -> `jp nz,cpt_err24`: the no-optional-fields exit is sent to the new raiser
+  moved 1 rows: o.none='24 4'
+  ✅ EXACT — 1 predicted, 1 moved
+
+restored roms=abfefa7f / 490ffc49 / a8173c25
+4/4 knife rows EXACT

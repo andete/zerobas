@@ -18,7 +18,7 @@
 ;   GFX_DREQ    tenant->resident: 0 = done; 1 = parse centre; 2 = eval int16;
 ;               3 = eval float -> ARGA canonical.
 ;   GFX_DVAL    resident->tenant: the int16 value (DREQ 2). ARGA holds DREQ 3.
-;   GFX_RES     tenant->resident: 0 = ok, else the ERR code to raise (2 / 5).
+;   GFX_RES     tenant->resident: 0 = ok, else the ERR code to raise (2/5/24).
 ; Round trips: one subrom_call per PRESENT arg. The resident does the GFX_OP=4
 ; geometry draw once GFX_DREQ comes back 0.
 ;
@@ -96,14 +96,28 @@ cpt_after_r:
                 cp      ','
                 jp      nz,cpt_finish       ; no optional fields -> draw
                 call    cpt_advance         ; consume ','
+; 🔴 D-CIRCMISS: THE FOUR `cpt_at_*` LABELS ARE REACHED ONLY AFTER A COMMA
+; HAS BEEN CONSUMED, so a statement that ENDS at one of them is a DANGLING
+; comma, not an omitted argument -- `Missing operand` (ERR 24) on both
+; references, at all four slots and on both the end-of-line and the `:` arm
+; (8 rows, docs/spec-basic-circmiss.md §3). They used to jp cpt_finish, so
+; `CIRCLE(50,50),20,` DREW THE CIRCLE and reported nothing at all.
+; ⚠️ AN OMITTED SLOT BETWEEN COMMAS IS A DIFFERENT THING AND STILL LEGAL:
+; the `cp ','` arm one line below each of these is what carries it, and
+; `CIRCLE(50,50),20,,0.1,6.2` must keep drawing (rows o.colour / o.start /
+; o.end / o.none, unanimous 0 on all three machines before AND after).
+; ⚠️ AND THE RULE STOPS AT THE END OF THE LIST: a comma after a COMPLETE
+; argument list is Syntax error, not 24 (rows x.extra / x.extra2), the same
+; way D-LINERR measured LINE's box slot as ERR 2 one field past a slot that
+; is 24. The two cpt_err2 sites below are that boundary and are UNCHANGED.
 cpt_at_c:
                 call    cpt_skipsp
                 cp      ','
                 jp      z,cpt_start_intro   ; c omitted; this comma also intros start
                 or      a
-                jp      z,cpt_finish
-                cp      COLON
-                jp      z,cpt_finish
+                jp      z,cpt_err24         ; a comma was CONSUMED: end of
+                cp      COLON               ; statement here is a DANGLING
+                jp      z,cpt_err24         ; comma -> Missing operand
                 ld      a,P_C
                 ld      (GFX_CPHASE),a
                 ld      a,2                 ; DREQ 2
@@ -132,9 +146,9 @@ cpt_at_start:
                 cp      ','
                 jp      z,cpt_start_empty   ; start empty; comma intros end
                 or      a
-                jp      z,cpt_finish
-                cp      COLON
-                jp      z,cpt_finish
+                jp      z,cpt_err24         ; a comma was CONSUMED: end of
+                cp      COLON               ; statement here is a DANGLING
+                jp      z,cpt_err24         ; comma -> Missing operand
                 ld      a,P_START
                 ld      (GFX_CPHASE),a
                 ld      a,3                 ; DREQ 3 = eval float -> ARGA
@@ -155,9 +169,9 @@ cpt_at_end:
                 cp      ','
                 jp      z,cpt_end_empty     ; end empty; comma intros aspect
                 or      a
-                jp      z,cpt_finish
-                cp      COLON
-                jp      z,cpt_finish
+                jp      z,cpt_err24         ; a comma was CONSUMED: end of
+                cp      COLON               ; statement here is a DANGLING
+                jp      z,cpt_err24         ; comma -> Missing operand
                 ld      a,P_END
                 ld      (GFX_CPHASE),a
                 ld      a,3
@@ -181,9 +195,9 @@ cpt_at_aspect:
                 cp      ','
                 jp      z,cpt_err2          ; too many args -> Syntax error
                 or      a
-                jp      z,cpt_finish
-                cp      COLON
-                jp      z,cpt_finish
+                jp      z,cpt_err24         ; a comma was CONSUMED: end of
+                cp      COLON               ; statement here is a DANGLING
+                jp      z,cpt_err24         ; comma -> Missing operand
                 ld      a,P_ASPECT
                 ld      (GFX_CPHASE),a
                 ld      a,3
@@ -254,8 +268,15 @@ cpt_advance:
                 ld      (GFX_DPTR),hl
                 ret
 
-; cpt_finish / cpt_err5 / cpt_err2: return control to the resident servicer.
-; DREQ 0 = done; GFX_RES carries the ERR code (0 = ok). Clobbers A.
+; cpt_finish / cpt_err24 / cpt_err5 / cpt_err2: return control to the resident
+; servicer. DREQ 0 = done; GFX_RES carries the ERR code (0 = ok) and the
+; resident's cp_done raises it BEFORE the GFX_OP=4 draw, so a raising exit
+; never draws -- which is what the references do too (D-CIRCMISS: R=4, no
+; pixel, on all eight dangling-comma rows on BOTH machines). Clobbers A.
+cpt_err24:
+                ld      a,24
+                ld      (GFX_RES),a
+                jr      cpt_finish
 cpt_err5:
                 ld      a,5
                 ld      (GFX_RES),a

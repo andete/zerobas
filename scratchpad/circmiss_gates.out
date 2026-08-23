@@ -1,0 +1,41 @@
+rc=0  bytes=   48120  basic-reloc
+rc=0  bytes=    1493  unit-test
+rc=0  bytes=    1712  deadcode
+rc=0  bytes=     361  wall-assertion-check
+rc=0  bytes=    3366  redundant-load-check
+rc=0  bytes=    1775  rowshape-check
+rc=0  bytes=     751  injector-check
+rc=0  bytes=     379  preflight-check
+rc=2  bytes=    1084  latch-check
+rc=0  bytes=     123  diskdep-check
+rc=0  bytes=     261  switch-build-check
+rc=0  bytes=   86174  kwsweep
+rc=0  bytes=    1886  deffn-selftest
+rc=0  bytes=   12123  string-acceptance
+rc=0  bytes=    8673  str-domain-acceptance
+rc=0  bytes=    2436  strparen-acceptance
+rc=0  bytes=    7672  penderr-acceptance
+rc=0  bytes=   43456  missing-acceptance
+rc=0  bytes=    2532  error-acceptance
+rc=0  bytes=   10382  error-trap-acceptance
+rc=0  bytes=    4696  onerr0-acceptance
+rc=0  bytes=   61377  math-acceptance
+rc=0  bytes=   20210  float-acceptance
+rc=0  bytes=    3191  intarg-acceptance
+rc=0  bytes=   26297  logicops-acceptance
+rc=0  bytes=   23704  lineerr-acceptance
+rc=0  bytes=    7692  screenerr-acceptance
+rc=0  bytes=    6537  tmfp-acceptance
+rc=0  bytes=    7349  stmtpend-acceptance
+rc=0  bytes=    5319  array-acceptance
+rc=0  bytes=    4902  deffn-strict
+rc=0  bytes=   21519  graphics-acceptance
+rc=0  bytes=    3648  abort-acceptance
+rc=0  bytes=   14538  interval-trap-acceptance
+
+GATES: 33 green, 1 red -- 34 of 34 run
+RED: latch-check
+=== hashes ===
+build/basic-reloc.rom abfefa7f
+build/sub.rom 490ffc49
+build/zerobas-main-eu.rom a8173c25

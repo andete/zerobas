@@ -1,0 +1,39 @@
+  ran vg8020  p.colour   '24 4'
+  ran vg8020  p.b        '24 4'
+  ran vg8020  p.kcolour  '24 4'
+  ran vg8020  p.kb       '24 4'
+  ran vg8020  p.omit     '0 15'
+  ran vg8020  p.ok       '<NO OUTPUT>'
+  ran vg8020  q.trail    '24 0'
+  ran vg8020  q.kcolon   '24 0'
+  ran vg8020  q.ok       '0 0'
+  ran cf3300  p.colour   '24 4'
+  ran cf3300  p.b        '24 4'
+  ran cf3300  p.kcolour  '24 4'
+  ran cf3300  p.kb       '24 4'
+  ran cf3300  p.omit     '0 15'
+  ran cf3300  p.ok       '<NO OUTPUT>'
+  ran cf3300  q.trail    '24 0'
+  ran cf3300  q.kcolon   '24 0'
+  ran cf3300  q.ok       '0 0'
+  ran zb      p.colour   '0 15'
+  ran zb      p.b        '<NO OUTPUT>'
+  ran zb      p.kcolour  '0 15'
+  ran zb      p.kb       '<NO OUTPUT>'
+  ran zb      p.omit     '0 15'
+  ran zb      p.ok       '<NO OUTPUT>'
+  ran zb      q.trail    '<NO OUTPUT>'
+  ran zb      q.kcolon   '<NO OUTPUT>'
+  ran zb      q.ok       '0 0'
+
+  p.colour   vg8020='24 4'  cf3300='24 4'  zb='0 15'   *** DIFF
+  p.b        vg8020='24 4'  cf3300='24 4'  zb='<NO OUTPUT>'   .... NOT MEASURED
+  p.kcolour  vg8020='24 4'  cf3300='24 4'  zb='0 15'   *** DIFF
+  p.kb       vg8020='24 4'  cf3300='24 4'  zb='<NO OUTPUT>'   .... NOT MEASURED
+  p.omit     vg8020='0 15'  cf3300='0 15'  zb='0 15'
+  p.ok       vg8020='<NO OUTPUT>'  cf3300='<NO OUTPUT>'  zb='<NO OUTPUT>'   .... NOT MEASURED
+  q.trail    vg8020='24 0'  cf3300='24 0'  zb='<NO OUTPUT>'   .... NOT MEASURED
+  q.kcolon   vg8020='24 0'  cf3300='24 0'  zb='<NO OUTPUT>'   .... NOT MEASURED
+  q.ok       vg8020='0 0'  cf3300='0 0'  zb='0 0'
+
+ROWS: 9 printed, 4 scored -- 2 DIFF

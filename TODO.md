@@ -152,17 +152,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       closing **13 of 16** rows including **all four SILENT MEMORY WRITES**
       (`POKE` three ways + `VPOKE`, each turning a byte holding 99 into 0).
       3/3 knives EXACT. What remains:
-      * 🔴 **A VERB'S OWN GRAMMAR SWALLOWS THE DANGLING COMMA BEFORE `eval` IS
-        EVER REACHED.** `CIRCLE(50,50),20,` still COMPLETES silently
-        (`circle.val`: zb `0`, both references `24`), and no evaluator fix can
-        touch it: CIRCLE's grammar walk is a sub-ROM tenant and
-        `sub/circleparse.asm`'s `cpt_at_c` treats end-of-line or `:` after the
-        comma as *"c omitted -> draw"*. `cpt_at_start` / `cpt_after_aspect` have
-        the SAME SHAPE, so there are probably three more slots
-        (`CIRCLE(50,50),20,5,` etc.) — **UNMEASURED**;
-        `scratchpad/missop_circle.py` carries the rows.
-        ⚠️ **NOT byte-blocked** — sub page 1 was 1624 B free on 2026-08-23. It is
-        a scope decision, not a wall.
+      * ✅ **CLOSED FOR CIRCLE 2026-08-23 (D-CIRCMISS, 7 B),**
+        [`docs/spec-basic-circmiss.md`](docs/spec-basic-circmiss.md). A verb's
+        own grammar swallowed the dangling comma before `eval` was ever reached,
+        so `CIRCLE(50,50),20,` **drew the circle and reported nothing**. One
+        `cpt_err24` raiser in [`sub/circleparse.asm`](sub/circleparse.asm) and
+        **eight `jp z,cpt_finish` retargeted to it (0 B, same instruction)**;
+        sub page 1 free **1624 → 1617 B**, the arithmetic estimate EXACT.
+        **17 rows x 3 machines, 9 DIFF → 1; 4/4 knives EXACT; 34/34 gates.**
+        🔴 The filing's label set was wrong and its count was right:
+        `cpt_after_aspect` carries no such pair at all — the four labels are
+        `cpt_at_c` / `cpt_at_start` / `cpt_at_end` / `cpt_at_aspect`.
+        🎯 The slice's real work was the four `o.*` rows proving the LEGITIMATE
+        omitted slot (`CIRCLE(50,50),20,,0.1,6.2`) still draws, and K-CM3/K-CM4
+        proving those rows can go red. **PAINT is the same defect and is OPEN
+        below.**
       * 🔴 **THE STRING PATHS ABORT WITH THE WRONG CODE**: `KEY1,` and
         `MID$(A$,2)=` read **ERR 2** where both references say **24**
         (`key.val`, `midd.val`). Predicted not to move under the evaluator fix,
@@ -171,6 +175,54 @@ list. **When a slice lands, grep this list for what it just shipped.**
         evaluator call sites. `SWAP`, `ON n GOTO`, `FIELD`, `PRINT#`, `INPUT`,
         `PLAY`, `DRAW`, `OPEN`, `WIDTH` and the `PRINT USING` family are
         **unmeasured, not green**.
+
+- [ ] 🔴 **PAINT HAS CIRCLE'S DANGLING-COMMA DEFECT, MEASURED — AND UNLIKE
+      CIRCLE IT IS BYTE-BLOCKED.** Filed 2026-08-23 by D-CIRCMISS §7
+      (`scratchpad/circmiss_siblings.py`, 9 rows x 3 machines). `PAINT(50,50),`
+      and `PAINT(50,50),:A=1` are **`24` and no fill on both references** and
+      **`0` + a filled region here** — the same mechanism, at
+      [`basic/graphics.asm`](basic/graphics.asm)'s `ep_default_b`, reached from
+      **two** slots (:708 the colour field, :727 the B field) on two terminators
+      each = **4 jumps**. 2 of the 4 measured divergent; `p.b` / `p.kb` are
+      ⚠️ **NOT MEASURED** (the zerobas run never reached its `PRINT`), which is
+      not green. 💰 **PAINT's grammar is MAIN page 1, 4 B free on 2026-08-23** —
+      a `cp_err24`-shaped raiser needs a carve or a promotion, which CIRCLE's
+      sub page 1 (1617 B free on 2026-08-23) did not. ⚠️ Shape is not a verdict: D-LINERR measured
+      LINE's box slot as ERR **2** one field past a slot that is 24, so the two
+      unmeasured PAINT rows must be RUN, not inherited.
+
+- [ ] 🔴 **`CLEAR 200,` IS `Missing operand` ON BOTH REFERENCES AND ZEROBAS IS
+      UNMEASURED.** Filed 2026-08-23, D-CIRCMISS §7. Rows `q.trail` / `q.kcolon`
+      read **`24` on VG-8020 and CF-3300** and `<NO OUTPUT>` here — the probe's
+      zerobas run never reached its `PRINT`, so this is an APPARATUS gap, not a
+      reading. [`basic/clear.asm`](basic/clear.asm):49 has the candidate shape
+      (`or a` / `cp COLON` → `clr_done`). ⚠️ **The control `CLEAR 200` is `0` on
+      all three**, so the machine is not simply dead in that case. Fix the case
+      (CLEAR may be disturbing the `ONERROR` fixture) before pricing anything.
+
+- [ ] ⚠️ **THE REFERENCES DRAW BEFORE RAISING A TRAILING-COMMA SYNTAX ERROR;
+      ZEROBAS RAISES WITHOUT DRAWING.** Filed 2026-08-23, D-CIRCMISS §6, row
+      `x.extra2` (`CIRCLE(50,50),20,5,0.1,6.2,1,` — a comma after a COMPLETE
+      argument list). **Both sides answer ERR 2, so an ERR-only probe scores it
+      GREEN**; the drawn-pixel column separates them (`2 5` vs `2 4`).
+      **PRE-EXISTING** — identical before and after D-CIRCMISS and unmoved under
+      knife K-CM1. Structurally awkward: the tenant reports through `GFX_RES`
+      and the resident's `cp_done` tests it BEFORE issuing `GFX_OP=4`, so
+      *"draw, then fail"* needs a second flag. 🎯 The companion row `x.extra`
+      (`...,6.2,,`) is `2 4` on all three, which is what makes the rule
+      readable: the reference draws once its argument list is SATISFIED and
+      checks the terminator afterwards.
+
+- [ ] ⚠️ **`latch-check` IS THE ONE GATE WITH NO PREREQUISITES, AND A HAND-ROLLED
+      BATTERY WILL TRIP IT.** Filed 2026-08-23, D-CIRCMISS §8.
+      [`Makefile`](Makefile):2498 is `latch-check:` with an empty prerequisite
+      list, so running it straight after `rm -rf build` makes it refuse (*"a
+      probe booted against this machine would report the absence of the ROM as
+      the absence of the FEATURE"*) and `make` exits 2. **The gate is right and
+      the driver is wrong** — but every other acceptance target self-heals via
+      its own `repack-machine` prerequisite, so this one is the only way to
+      learn the rule. Either give it the prerequisite or say so where batteries
+      get written; unpriced, and 16/16 once the ROMs exist.
 
 - [ ] 🔴 **`ev_f_err`'s OTHER SEVEN JUMP SITES ARE STILL SILENT, AND TWO ROWS
       MEASURE WRONG.** 2026-08-23, D-MISSOPFIX §13/§14
