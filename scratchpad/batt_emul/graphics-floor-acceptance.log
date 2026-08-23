@@ -1,0 +1,9 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_graphics_floor.py
+page-0 graphics tenant under EI: JIFFY delta = 40 (expect >= 1, interrupts serviced mid-draw): PASS
+di-guarded VDP latch: read-back mismatches = 0 (expect 0, no address-latch corruption): PASS
+-------------------
+graphics floor gate: PASS

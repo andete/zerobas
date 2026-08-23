@@ -1,0 +1,12 @@
+graphics-acceptance rc=0
+graphics-floor-acceptance rc=0
+lineerr-acceptance rc=0
+namspc-acceptance rc=0
+strparen-acceptance rc=0
+fldwidth-acceptance rc=0
+cassave-acceptance rc=0
+castail-acceptance rc=0
+dskmsg-acceptance rc=0
+diskbasic-acceptance rc=0
+fat-error-acceptance rc=0
+DONE 11 targets

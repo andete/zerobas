@@ -1,0 +1,20 @@
+python3 probes/basic/basic_probe_deffn.py --selftest
+PASS WANT holds no source text           suspect=[]  a face carrying the fixture's own quotes/semicolons is the round-2 echo bug, not a value
+PASS a correct implementation                         gate=0  ctl=0  silent=0  vacuous=0  blank=0
+PASS today's tree                                     gate=72  ctl=0  silent=6  vacuous=2  blank=0
+PASS MUTANT: binds through the variable table         gate=4  ctl=0  silent=0  vacuous=0  blank=0
+PASS MUTANT: 10 formals accepted                      gate=1  ctl=0  silent=1  vacuous=0  blank=0
+PASS MUTANT: DEF FN parses its body                   gate=1  ctl=0  silent=0  vacuous=0  blank=0
+PASS MUTANT: direct mode allowed                      gate=2  ctl=0  silent=1  vacuous=0  blank=0
+PASS MUTANT: CLEAR does not erase                     gate=1  ctl=0  silent=1  vacuous=0  blank=0
+PASS MUTANT: undefined name reads 0                   gate=1  ctl=0  silent=1  vacuous=0  blank=0
+PASS MUTANT: result not coerced to FN type            gate=1  ctl=0  silent=0  vacuous=0  blank=0
+PASS MUTANT: shadow moves with nesting                gate=1  ctl=0  silent=0  vacuous=0  blank=0
+PASS MUTANT: shadow not restored after a nested call  gate=2  ctl=0  silent=0  vacuous=0  blank=0
+PASS one wrong row, nothing vacuous                   gate=1  ctl=0  silent=0  vacuous=0  blank=0
+PASS a blank reading                                  gate=0  ctl=0  silent=0  vacuous=0  blank=1
+PASS a broken positive control                        gate=0  ctl=1  silent=0  vacuous=0  blank=0
+PASS claims: reference-like                           verdicts=['PASS']  want='PASS'
+PASS claims: planted-wrong                            verdicts=['FAIL']  want='FAIL'
+PASS claims: error faces                              verdicts=['....']  want='....'
+ROWS: 18 printed, 18 scored — 18 of 18 instrument cases held

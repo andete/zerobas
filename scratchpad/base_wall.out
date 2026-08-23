@@ -1,0 +1,4 @@
+  source restored: CLEAN
+  __MEAS_PAGE1_END = $8080   128 B PAST the $8000 ceiling
+  __MEAS_LOW_END   = $3F9A   102 B free in the low region
+  GAP = 128 - 102 = 26 B (the two regions are co-mapped, so low bytes spend on page-1 pressure)

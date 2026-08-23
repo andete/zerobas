@@ -487,6 +487,8 @@ ev_f:
                 jp      z,ev_f_ff
                 cp      USR_TOKEN           ; $DD -> USR[n](arg) function
                 jp      z,ev_usr
+                cp      FN_TOKEN            ; $DE -> FN<name>[(args)] (D-DEFFN)
+                jp      z,ev_fn
                 cp      VARPTR_TOKEN        ; $E7 -> VARPTR(var) function
                 jp      z,ev_f_varptr
                 cp      BASE_TOKEN          ; $C9 -> BASE(n) function

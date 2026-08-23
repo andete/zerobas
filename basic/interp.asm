@@ -929,6 +929,16 @@ err_illegal_fn  equ     err_illegal_fn_arr
 ; Clobbers A, DE, HL (and SP, on the trap path only).
 raise_error:
                 ld      (ERRFLG),a
+                ; D-DEFFN: A FAULT INSIDE AN FN BODY MUST NOT LEAVE THE SHADOW
+                ; FRAME STANDING. Nothing unwinds fn_leave -- the trap path
+                ; resets SP outright -- so a stale FN_FEND would leave every
+                ; later reference to a formal's NAME reading a dead slot. That is
+                ; a silent wrong answer, and o.errrestore (`X` = 5, ERR = 11
+                ; after a body that divided by zero) is the row that says so.
+                ; 🎯 FREE OF REGISTER COST: record_errline clobbers A anyway and
+                ; rerr_msg below reloads it from (ERRFLG).
+                ld      a,low FN_PAREA
+                ld      (FN_FEND),a
                 call    record_errline
                 ; resolve the abort-fallback message FIRST (into HL), THEN decide
                 ; trap vs abort in the shared raise_error_hl tail. Message-first so
@@ -1612,14 +1622,22 @@ if_false:
 ; out: HL on the $A1 ELSE token (A = $A1) or on the 0 terminator (A = 0).
 ; Steps over operand bytes so a value that happens to equal $A1/$00 is not
 ; mistaken for a delimiter.
+; ⚠️ THE TERMINATOR MOVED INTO C (D-DEFFN). `DEF FN` needs the identical scan
+; with COLON for ELSE_TOKEN -- token-aware, because `DEF FNA$(X$)=X$+":Q"` must
+; NOT end at the ':' inside the literal while `DEF FNA(X)=X+1:B=9` must
+; (o.quotedcolon / o.stmtcolon). Parameterising costs this caller 2 B and the
+; loop gives 1 back; a second 15-byte copy in basic/deffn.asm would have cost 15.
+; C is dead at both call sites and tok_skip preserves it.
 if_skip_to_else:
+                ld      c,ELSE_TOKEN
+tok_skip_to:                                ; C = the terminator token
                 ld      a,(hl)
                 or      a
                 ret     z                   ; end of line
-                cp      ELSE_TOKEN
-                ret     z                   ; ELSE found
+                cp      c
+                ret     z                   ; terminator found
                 call    tok_skip
-                jr      if_skip_to_else
+                jr      tok_skip_to
 
                 include "basic/tokskip-body.inc"
 

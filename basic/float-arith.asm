@@ -411,7 +411,30 @@ arga_carry_renorm:
 ; instead of TKDIG. Caller (round_and_finalize) has already verified
 ; -63<=dexp<=63 and that ARGA_DIG isn't the all-zero case. Clobbers A, B, HL,
 ; DE.
+; 🎯 ONE BODY, TWO ENTRIES, AND THE ONLY DIFFERENCE WAS A LOOP COUNT.
+; arga_pack_single (below, and its callers are unchanged) was a 35-byte copy of
+; this routine with `ld b,3` where this one had `ld b,7` -- 6 digits instead of
+; 14, the same nibble pack over the same ARGA into the same FAC. Two ENTRY
+; POINTS setting the count and falling into one body is 27 B smaller, and it is
+; the shape this file already uses for fac_to_int_addr/fac_to_int_strict and for
+; widen_fac_to/widen_lhsframe_to. tools/clone_scout.py named the pair; it priced
+; only the 22-byte HEADER spans (14 B) because `apf_lp`/`aps_lp` are separate
+; symbols, so the identical 13-byte LOOPS were invisible to it -- the saving is
+; nearly twice the estimate. ⚠️ A ranked estimate is a floor on ITS OWN SHAPE.
+; 🔴 BC IS GUARDED RATHER THAN RE-DOCUMENTED, and that is not caution: this is a
+; RESIDENT-ABI entry (sub/basic-resident-abi.inc, tools/gen_resident_abi.py), so
+; its callers include six sub-ROM math-pack tenants whose own headers quote the
+; "Clobbers A, B, HL, DE" contract. Widening that contract to include C would
+; have to be verified at every one of them; `push bc`/`pop bc` costs 2 B and
+; STRENGTHENS it instead -- B comes back too.
 arga_pack_fac:
+                push    bc                  ; the contract says B is clobbered; this
+                ld      c,7                 ; keeps the promise anyway, and C with it
+                jr      arga_pack_go        ; 14 digits -> 7 mantissa bytes (double)
+arga_pack_single:
+                push    bc
+                ld      c,3                 ; 6 digits -> 3 mantissa bytes (single)
+arga_pack_go:
                 ld      a,(ARGA+FPNUM_SIGN)
                 ld      b,a
                 ld      hl,(ARGA+FPNUM_DEXP)
@@ -421,7 +444,7 @@ arga_pack_fac:
                 ld      (FAC),a
                 ld      hl,ARGA+FPNUM_DIG
                 ld      de,FAC+1
-                ld      b,7
+                ld      b,c
 apf_lp:
                 ld      a,(hl)
                 add     a,a
@@ -434,6 +457,7 @@ apf_lp:
                 ld      (de),a
                 inc     de
                 djnz    apf_lp
+                pop     bc
                 ret
 
 ; --- round_and_finalize: ARGA (unrounded, 15-digit incl. guard) -> FAC -----
@@ -539,30 +563,9 @@ ar6_lp:
 ; mantissa bytes. Caller (round_single_and_pack) has already verified
 ; -63<=dexp<=63 and that ARGA_DIG isn't the all-zero case. Clobbers A, B, HL,
 ; DE.
-arga_pack_single:
-                ld      a,(ARGA+FPNUM_SIGN)
-                ld      b,a
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      a,l
-                add     a,64
-                or      b
-                ld      (FAC),a
-                ld      hl,ARGA+FPNUM_DIG
-                ld      de,FAC+1
-                ld      b,3
-aps_lp:
-                ld      a,(hl)
-                add     a,a
-                add     a,a
-                add     a,a
-                add     a,a
-                inc     hl
-                or      (hl)
-                inc     hl
-                ld      (de),a
-                inc     de
-                djnz    aps_lp
-                ret
+; arga_pack_single is now the SECOND ENTRY POINT of arga_pack_fac above -- same
+; body, `ld c,3` instead of `ld c,7`. Its callers (round_single_and_pack below,
+; basic/expr.asm's CSNG) are unchanged, and so is its register contract.
 
 ; --- round_single_and_pack: ARGA (exact, widen_rhs_operand'd) -> FAC (packed -
 ; single) + FACTYP=4 + DE (silent flt_to_int16). Store-coercion counterpart of

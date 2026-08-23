@@ -253,6 +253,19 @@ kwtable:
                 db      6,"DEFDBL",1,DEFDBL_TOKEN
                 db      3,"DEF",1,DEF_TOKEN
                 db      3,"USR",1,USR_TOKEN
+                ; D-DEFFN: `FN` crunches to ONE token ($DE) with the function
+                ; NAME left as plain ASCII behind it, exactly as USR's row above
+                ; leaves a USR number. TABLE POSITION IS FREE HERE: match_kw
+                ; takes the FIRST entry that is a prefix of the input and does no
+                ; longest-match, so a row only has to precede any keyword it is a
+                ; prefix OF -- and "FN" is a prefix of nothing in this table (the
+                ; F-words are FOR, FIELD, FILES, FIX, FRE, FN$-less), while
+                ; nothing here is a prefix of "FN".
+                ; ⚠️ AND THE MATCH RUNS AT EVERY POSITION, WHICH IS THE POINT: a
+                ; keyword is not gated on a word boundary, so `FNA` crunches
+                ; $DE 'A' and `AFN` crunches 'A' $DE -- the reference's own
+                ; behaviour, and the reason `FN` is a reserved word at all.
+                db      2,"FN",1,FN_TOKEN
                 db      4,"LIST",1,LIST_TOKEN
                 ; D-KWGAP4 (docs/spec-basic-kwgap4.md §2 R-K1): the four editor
                 ; verbs. Tokens oracle-locked from the reference's own crunch

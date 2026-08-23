@@ -2213,6 +2213,15 @@ CLEAR_TOKEN     equ     $92     ; Table 2.20 (cross-checks MSX Assembly Page tok
 ; the values already oracle-confirmed elsewhere here — strong corroboration).
 DEF_TOKEN       equ     $97     ; DEF (statement; PEEK's $97 is the 2nd byte after $FF)
 USR_TOKEN       equ     $DD     ; USR (function token, single byte; DEF USR target)
+; D-DEFFN: FN is ONE token, the byte immediately after USR's, and the NAME is
+; plain ASCII after it (`FNA` -> $DE 'A'), arbitrary length, read at run time
+; like any identifier -- measured off the STORED LINE BYTES on both references
+; before any behaviour row was taken (docs/deffn-scout-2026-08-22.md §2). There
+; is NO definition table in the crunch. Before this row the same line crunched
+; `46 4E` -- "FN" as literal text, one byte longer per occurrence -- which is
+; both why `DEF FN` fell to stmt_error and why an undefined `FNZ(1)` read as an
+; ordinary subscripted array reference and answered a silent 0.
+FN_TOKEN        equ     $DE     ; FN (function token, single byte; DEF FN target)
 ; D-DEFINTTOK (2026-08-18): DEFINT's OWN single-byte statement token, oracle-
 ; pinned against the Philips VG-8020 (`20 DEFINT 10` -> `<AC> <0F><0A>`,
 ; docs/lnref-msx1-characterization.md §4, and re-confirmed against the
@@ -3215,6 +3224,102 @@ GOSUB_STK_END   equ     GOSUB_STK + GOSUB_DEPTH*GOSUB_FRAME   ; $E080
 FOR_STK         equ     $EA3A   ; FOR-stack base, in the page-3 window S-FCH-1 freed
 FOR_DEPTH       equ     8       ; (see FCH_RECLENS below). 8 x 11 = 88 B.
 FOR_STK_END     equ     FOR_STK + FOR_DEPTH*FOR_FRAME   ; $EA92
+; --- DEF FN: the parameter (shadow) area -----------------------------------
+; D-DEFFN (docs/deffn-design-2026-08-22.md §2, docs/deffn-ramhunt-2026-08-22.md).
+; The formal parameters of the FN call in progress live here, NOT in the
+; variable table: `X=5 : P=VARPTR(X) : DEF FNA(X)=PEEK(P)` reads 5 on both
+; references, so the real cell is never written (design §1) -- the formal is a
+; SHADOW CELL only the defining function's own body sees.
+;
+; 🎯 THE CEILING IS A DIVISION, NOT A RULE. The reference's shadow sits 3 bytes
+; into a 100-byte block and 100/11 = 9, which is the measured 9-formal ceiling
+; (o.p9 -> 1, o.p10 -> ERR 5 AT THE CALL). So this sizes the AREA from the window
+; and lets FN_MAXP fall out of the same division; nothing here hardcodes 9. A
+; slot is shaped EXACTLY like a scalar chain entry -- [name0][name1][type]
+; [value:2/4/8] -- which is what lets sub/arrays.asm's scv_find hand one back to
+; var_load_fac / var_store_fac / str_get_key / str_set_key unchanged.
+;
+; ⚠️ THE WINDOW IS $EA92..$EB00, 110 B, MEASURED not read: no name in basic/,
+; sub/ or disk/ claims it (scratchpad/rammap_sweep.py) and 14 of 14 empirical
+; rows -- a FULL FOR stack and a NINTH frame, GOSUB, the crunch, PAINT, DRAW,
+; PLAY's ISR, strings, a disk write round trip, FILES -- changed 0 bytes of it
+; (scratchpad/ramfree_probe.py). Page 3, always mapped, so a sub-ROM CALSLT can
+; read it: that is what lets the shadow lookup live in the ARY tenant and cost
+; the main ROM nothing.
+; 🔴 THE THREE CELLS COME FIRST, AND THAT IS A FIX, NOT A STYLE CHOICE. A
+; nested call saves only the LIVE prefix of the frame -- 3 bytes at top level
+; instead of 102, which is what keeps a plain `FNA(2)` off a Z80 stack this
+; machine has a few hundred bytes of. That save is ONE `ldir`, so the cells and
+; the live prefix have to be CONTIGUOUS from a fixed base. Put the cells above
+; the area and they are not: the copy then runs from FN_PAREA for
+; `used + 3` bytes and takes the first three bytes of SLOT 0 instead of the
+; cells, so FN_FEND/FN_SLOTP/FN_RTYPE are never restored at all. Cells first,
+; area second, and one base address covers both.
+; 🔴 D-DEFFNEV: THE TENANT ABI CELLS ARE PART OF THE FRAME, AND A NESTED CALL IS
+; WHAT SAYS SO. The draft kept the parse state in registers and on the Z80 stack,
+; where nesting takes care of itself. A tenant cannot: a CALSLT is not resumable,
+; so the phase, both cursors and the pending formal all have to live in RAM --
+; and `DEF FNB(X)=FNA(X+1)+X` evaluates FNA's actual IN THE MIDDLE of FNB's own
+; parse, through eval, through a second fn_call. Left above the area these five
+; cells would be outside the saved prefix and the inner call would eat them.
+; They go at the BOTTOM, inside FN_CELLS, so ONE `ldir` from FN_BASE carries
+; them exactly as it carries FN_FEND/FN_SLOTP/FN_RTYPE. o.nestsame is the row.
+; ⚠️ The price is 8 more bytes of Z80 stack per NESTED call (11 saved, not 3);
+; a top-level FNA(2) still saves 11 rather than the 110 a fixed block would.
+FN_BASE         equ     FOR_STK_END     ; $EA92: base of the whole DEF FN frame
+FN_PTR          equ     FN_BASE         ; 2 B: the call cursor, main <-> tenant
+FN_DPTR         equ     FN_BASE + 2     ; 2 B: the definition cursor, tenant-only
+; ⚠️ THERE IS NO `FN_REQ` CELL, AND THERE WAS: the request/answer byte travels
+; in **L** through CALSLT instead (basic/deffn.asm fn_lp). "A CALSLT is not
+; resumable, so the phase lives in RAM" is true of the TENANT's state and false
+; of the SERVICER's -- the servicer is ordinary main-ROM code holding an
+; ordinary register across a `call`, and an inner fn_call runs entirely inside
+; the outer one's `call eval`, which sets L again on the way back. -7 B of main
+; ROM at three sites, and one byte back here.
+FN_KEY          equ     FN_BASE + 4     ; 2 B: the formal (or the $FFFF result slot)
+FN_TYP          equ     FN_BASE + 6     ; 1 B: its type -- and the ERR code on req 0
+FN_FEND         equ     FN_BASE + 7     ; 1 B: low byte of one-past the live frame.
+                                        ; == low FN_PAREA means "no FN call in
+                                        ; progress" -- the fast miss every ordinary
+                                        ; variable reference takes.
+FN_SLOTP        equ     FN_BASE + 8     ; 1 B: low byte of the slot the NEXT formal takes
+FN_RTYPE        equ     FN_BASE + 9     ; 1 B: the FN's own resolved type (its result type)
+FN_CELLS        equ     10              ; ...the ten above, saved WITH the live prefix
+FN_PAREA        equ     FN_BASE + FN_CELLS  ; the shadow-parameter slots themselves
+FN_SLOTSZ       equ     11              ; [name0][name1][type][value:8] -- a scalar entry
+FN_AREA         equ     ((LINEBUF - FN_PAREA)/FN_SLOTSZ)*FN_SLOTSZ
+FN_MAXP         equ     FN_AREA/FN_SLOTSZ   ; the ceiling IS this division (9)
+FN_PAREA_END    equ     FN_PAREA + FN_AREA
+FN_BLK          equ     FN_CELLS + FN_AREA  ; the whole frame, cells first
+; --- FN_STK_FLOOR: the Z80-stack floor a nested FN call refuses to cross -----
+; `DEF FNA(X)=FNA(X)` is ERR 7 Out of memory on both references (b.recurse), and
+; a recursion that saves an outer frame on the Z80 stack has to have SOME floor
+; or the answer is a wrecked machine instead. Compared HIGH BYTE ONLY -- page
+; granularity is all this needs and it costs 6 bytes instead of 12. $F200 is
+; clear of every private sysvar (the highest is the SQRT block around $F194) and
+; leaves ~384 B below the $F380 stack base tests/msxtest.py and the runaway
+; sweep both measure.
+; ⚠️ NOT AN ORACLE FIGURE. The references' own limit is unmeasured -- b.recurse
+; says ERR 7, not at what depth. What IS pinned is that the LEGAL depths in the
+; row set (2, at b.nested / o.nestsame / z.addr2i) work and unbounded recursion
+; does not.
+FN_STK_FLOOR    equ     $F200
+; ⚠️ THE ASSERTS SHIP WITH THE ALLOCATION, NOT AFTER IT. The last RAM obstacle
+; this verb hit was a BUILD ERROR rather than a probe reading garbage out of the
+; PLAY parser's stack only because the draft carried its own page-crossing
+; assert (docs/deffn-design-2026-08-22.md §7(2)). Both survive here.
+    IF FN_BASE + FN_BLK > LINEBUF
+                db      FN_PARAM_AREA_OVERRAN_LINEBUF
+    ENDIF
+    IF (high FN_BASE) != (high (FN_BASE + FN_BLK - 1))
+                db      FN_PAREA_CROSSES_A_PAGE__8BIT_SLOT_WALK_WOULD_CARRY
+    ENDIF
+    IF FN_BASE < FOR_STK_END
+                db      FN_PAREA_OVERLAPS_THE_FOR_STACK
+    ENDIF
+    IF FN_MAXP < 9
+                db      FN_PARAM_CEILING_BELOW_THE_MEASURED_NINE
+    ENDIF
 ; DATA / READ / RESTORE state. The reference stores DATA items as verbatim ASCII
 ; text (oracle: `data 5,6` -> $84 $20 '5' ',' '6'), so READ parses ASCII from the
 ; stored program at run time and a DATA cursor walks the $84-tagged statements.
@@ -3906,6 +4011,12 @@ SUBROM_IDX_FLDLOOK   equ 12     ; fld_lookup_tenant (sub/fldlook.asm): the FIELD
                                 ; $0040, above it, and index 13 below is that note
                                 ; being cashed.
 SUBROM_IDX_LRSETST   equ 13     ; lrset_store_tenant (sub/lrsetst.asm): the LSET/RSET
+SUBROM_IDX_DEFFN     equ 14     ; deffn_tenant (sub/deffn.asm): DEF FN's
+                                ; parse -- name resolve, the two lists
+                                ; walked together, the shadow slots and
+                                ; their ceiling. Page 0 because it calls
+                                ; NO eval: every one of those is a token
+                                ; walk over page-3 RAM (D-DEFFNEV).
                                 ; record-field STORE (space-fill the field, then copy
                                 ; min(srclen,width) bytes in left- or right-aligned),
                                 ; carved out of basic/field.asm to fund D-FLDARY's

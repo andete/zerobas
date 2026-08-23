@@ -518,6 +518,66 @@ asa_err:
                 ld      (ARY_ERR),a         ; A already = 4 (OOM)
                 ret
 
+; --- fn_shadow_find: D-DEFFN's shadow lookup, and it costs the MAIN ROM ZERO -
+; BYTES. in: BC = key (name0,name1), A = type. out: CF set -> HL = the shadow
+; slot, shaped exactly like a scalar entry ([name0][name1][type][value]) so every
+; caller downstream is unchanged; CF clear -> not a formal, walk the real chain.
+; Preserves BC and A; clobbers D, E, H, L -- scv_find's own contract exactly.
+;
+; 🎯 IT LIVES HERE, IN THE TENANT, BECAUSE THAT IS WHERE IT IS FREE. Sitting at
+; the top of scv_find it is reached by ALL FOUR accessors at once --
+; var_find_typed and var_alloc_or_find (ARY_OP 4/5) and, since slice-4c
+; unified string scalars into the same chain at type=1, str_get_key and
+; str_set_key too. The obvious home (a `call fn_shadow` prelude in each of the
+; four, basic/vars.asm) is ~64 B of a main ROM that has 100 free; this is ~40 B
+; of a sub page 0 that has 3 KB, and the CALSLT it rides on is one every scalar
+; reference already pays.
+;
+; ⚠️ THE FAST PATH IS "NO FN CALL IN PROGRESS" AND IT IS THE FIRST TEST. FN_FEND
+; holds the LOW BYTE of one-past the live frame, and equals low FN_PAREA when no
+; call is running -- the area never crosses a page (sysvars.inc asserts it), so
+; one byte is the whole bound and the miss costs a load, a compare and a branch.
+; 🔴 A STALE FRAME WOULD BE A SILENT WRONG ANSWER, not a crash: `X` would keep
+; reading a dead formal after the call. raise_error resets FN_FEND for exactly
+; that reason (basic/interp.asm) -- o.errrestore (`X` = 5 after a body that
+; divided by zero) is the row that says so.
+fn_shadow_find:
+                ld      d,a                 ; D = the type being looked up
+                ld      hl,FN_PAREA
+fsf_lp:
+                ld      a,(FN_FEND)
+                cp      l
+                jr      z,fsf_miss          ; walked the whole live frame
+                ld      a,(hl)              ; name0
+                inc     hl
+                sub     b
+                ld      e,a
+                ld      a,(hl)              ; name1
+                inc     hl
+                sub     c
+                or      e
+                ld      e,a
+                ld      a,(hl)              ; type -- A%/A!/A#/A$/A are five
+                inc     hl                  ; distinct formals, as they are five
+                sub     d                   ; distinct scalars
+                or      e
+                jr      z,fsf_hit
+                ld      a,FN_SLOTSZ-3       ; HL is at slot+3; step to the next slot
+                add     a,l
+                ld      l,a
+                jr      fsf_lp
+fsf_hit:
+                dec     hl
+                dec     hl
+                dec     hl                  ; HL = the slot BASE (an entry address)
+                ld      a,d
+                scf
+                ret
+fsf_miss:
+                ld      a,d
+                or      a                   ; CF clear
+                ret
+
 ; --- scv_find: BC=key(name0,name1), A=type -> CF set+HL=entry base if found;
 ; CF clear+HL=(ARYTAB) if not found (the insertion point -- a not-found
 ; result always lands exactly at the current scalar-region end, since the
@@ -530,6 +590,8 @@ asa_err:
 ; reached ARYTAB yet", not "is name0 0" (a scalar entry's name0 is never 0;
 ; entries are never deleted). Clobbers A,D,E,H,L.
 scv_find:
+                call    fn_shadow_find      ; D-DEFFN: a formal of the FN call in
+                ret     c                   ; progress SHADOWS the variable
                 ld      d,a                 ; D = target type
                 ld      hl,(PRGEND)
                 inc     hl

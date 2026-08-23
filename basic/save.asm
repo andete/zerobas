@@ -200,16 +200,8 @@ sav_is_disk:
 ; sav_ascii_flag: HL is at the ',' after the filename. Accept only ",A" (any
 ; case); anything else -> error.
 sav_ascii_flag:
-                inc     hl                  ; past the ','
-                call    skip_spaces
-                call    upcase
-                cp      'A'
-                jp      nz,load_error       ; only ,A is supported
-                inc     hl                  ; past the 'A'
-                call    skip_spaces
-                or      a
-                jp      nz,load_error       ; trailing junk after ,A
-                ; fall through to ascii_save
+                call    sav_flag_a          ; the shared body, below, beside its
+                                            ; other caller -- then FALL THROUGH
 
 ; ascii_save — write the current program as an ASCII (SAVE",A") listing to disk.
 ; Reuses the LIST detokeniser walk (list_walk, list.asm) with the PRINT#-to-file
@@ -258,7 +250,29 @@ sav_is_cas:
                 ; two paths, unchanged and MEASURED unchanged (`csave:id` = D3 on
                 ; all three sides). Costs 0 B: one absolute jump for another.
                 jp      cas_ascii_save      ; no flag -> ASCII, exactly as ,A does
-sav_cas_flag:
+
+; --- sav_flag_a: accept the `,A` of SAVE"...",A -- ONE body, TWO callers ----
+; in: HL at the ',' . out: HL past the 'A' and end-of-statement checked, or the
+; statement is ABORTED with `load error`.
+; 🎯 THE DISK AND CASSETTE FLAG SCANS WERE TWENTY BYTES OF THE SAME PARSE, TWICE
+; (tools/clone_scout.py: `sav_ascii_flag, sav_cas_flag`, page 1). They are NOT
+; an `equ` alias and D-DUPSPAN2 was right to leave them alone -- they are
+; byte-identical but each FALLS THROUGH to a DIFFERENT next routine
+; (ascii_save / cas_ascii_save), which is precisely the entry-shape a duplicate-
+; span sweep cannot see [[dupspan-slice]]. Collapsing it needs the fallthrough
+; kept and only the BODY shared, which is what a `call` + fallthrough is.
+; 🔴 AND THE FALLTHROUGH IS EXACTLY WHAT THE FIRST DRAFT BROKE: this body was
+; written IN PLACE, between `sav_ascii_flag` and `ascii_save`, so the flag scan
+; ran twice and `ascii_save` became reachable from nothing. `make basic-reloc`'s
+; hard dead-code gate is what said so -- `[main] ascii_save ... ~23 B` -- on a
+; build that had otherwise just succeeded, and it is the same blind spot from
+; the other side: a carve that PRESERVES a fallthrough has to preserve what is
+; NEXT IN THE FILE, not just what the labels say.
+; ⚠️ AND THE `jp nz,load_error` OUT OF A `call`ED BODY IS SAFE FOR A MEASURED
+; REASON, not a hopeful one: the abort resets SP from SAVSTK before it prints,
+; so it is DEPTH-INDEPENDENT -- the same argument D-LOCPARK wrote into
+; basic/missing.asm when it put eval_byte_checked behind a call.
+sav_flag_a:
                 inc     hl                  ; past the ','
                 call    skip_spaces
                 call    upcase
@@ -268,6 +282,10 @@ sav_cas_flag:
                 call    skip_spaces
                 or      a
                 jp      nz,load_error       ; trailing junk after ,A
+                ret
+
+sav_cas_flag:
+                call    sav_flag_a          ; the shared body, just above
                 ; fall into cas_ascii_save
 
 ; cas_ascii_save — write the current program as an ASCII (SAVE"CAS:" / ",A") listing to
