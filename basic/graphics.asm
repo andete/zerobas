@@ -703,10 +703,21 @@ ex_paint:
                 call    skip_spaces
                 cp      ','
                 jr      z,ep_c_empty        ; ",," -> C omitted; this comma intros B
+                ; 🔴 D-PAINTMISS (docs/spec-basic-paintmiss.md). THE COMMA IS
+                ; ALREADY CONSUMED, so end-of-statement HERE is a DANGLING
+                ; comma, not an omitted argument -- `PAINT(50,50),` is ERR 24
+                ; (Missing operand) on the VG-8020 AND the CF-3300, and it does
+                ; NOT paint (rows p.colour / p.kcolour, R=4 on both references).
+                ; It used to fall into ep_default_b, which is the LEGITIMATE
+                ; "no fields at all" tail: the fill ran with C=FORCLR and the
+                ; statement completed silently. Same mechanism as CIRCLE's
+                ; (D-CIRCMISS) -- the verb's own grammar swallows the comma
+                ; before `eval` is ever reached, so D-MISSOPFIX's deferred
+                ; ERR 24 cannot see it.
                 or      a
-                jr      z,ep_default_b      ; terminator -> C=FORCLR, B=C
+                jr      z,ep_missing        ; dangling comma -> ERR 24
                 cp      COLON
-                jr      z,ep_default_b
+                jr      z,ep_missing
                 ; --- given C: the MSX2 tile$ form -> ERR 13 (spec §5); else
                 ; eval + range-check 0..15 -> ERR 5 (the CIRCLE/PAINT rule) ---
                 call    str_eval_one        ; CF=1 iff a string operand (HL past it)
@@ -721,11 +732,18 @@ ex_paint:
 ep_c_empty:
                 inc     hl                  ; consume the shared comma
 ep_parse_b:
+                ; 🔴 D-PAINTMISS: as above, and this slot is reached by BOTH of
+                ; its routes -- the comma that ends a GIVEN C (`PAINT(x,y),15,`)
+                ; and ep_c_empty's shared comma (`PAINT(x,y),,`). Rows p.b /
+                ; p.kb and p.cc / p.kcc are what prove the second route, and
+                ; both are ERR 24 on both references. ⚠️ NOT the `cp ','` arm
+                ; three lines down: a THIRD comma is a fourth argument and is
+                ; ERR 2, measured (od2.b16c / od3.b15c, D-PAINTBORD).
                 call    skip_spaces
                 or      a
-                jr      z,ep_default_b      ; empty B field -> B = C
+                jr      z,ep_missing        ; dangling comma -> ERR 24
                 cp      COLON
-                jr      z,ep_default_b
+                jr      z,ep_missing
                 cp      ','
                 jp      z,ep_syntax         ; a 3rd comma here => a 4th argument -> ERR 2
                 ; --- given B: eval, then RANGE-CHECK against the MODE'S domain ---
@@ -779,6 +797,18 @@ ep_b_dom:
                 cp      ','
                 jp      z,ep_syntax         ; a 4th argument -> ERR 2
                 jr      ep_draw
+                ; 🔴 D-PAINTMISS: the dangling-comma raiser gets its OWN label,
+                ; reached only from the four sites that MEAN it. ep_default_b
+                ; below is a SHARED TAIL and two of its jumps -- `PAINT(x,y)`
+                ; with no comma at all, and `PAINT(x,y),15` with no ",B" -- are
+                ; the LEGITIMATE omissions, which must keep painting (rows
+                ; p.none / p.plain, `0 15` on all three machines, pinned by
+                ; knives K-PM1 / K-PM2). [[a-shared-tail-is-not-a-decision]]
+                ; A trampoline rather than an inline `ld a,24 / jp raise_error`
+                ; because the four sites are `jr`s: 3 B against 5, and main
+                ; page 1 had 4 B free (2026-08-23, e23e350).
+ep_missing:
+                jp      loc_missing         ; ERR 24 (Missing operand)
 ep_default_b:
                 ld      a,(GFX_C)
                 ld      (GFX_B),a

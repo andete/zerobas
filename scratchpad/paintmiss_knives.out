@@ -1,0 +1,36 @@
+=== baseline ===
+baseline roms=59f0a082 / 490ffc49 / 5ea13c71
+baseline 10 rows match scratchpad/paintmiss_after.out
+
+K-PM1  roms=242abbc3 / 490ffc49 / 2845089d
+  cut: the `no fields at all` exit (`PAINT(x,y)`) -> ep_missing: one LEGITIMATE omission pointed at the new raiser
+  moved 1 rows: p.none='24 4'
+  EXACT -- 1 predicted, 1 moved
+
+K-PM2  roms=a563f9e4 / 490ffc49 / 1458d813
+  cut: the `no ,B` exit (`PAINT(x,y),15`) -> ep_missing: the OTHER legitimate omission pointed at the new raiser
+  moved 1 rows: p.plain='24 4'
+  EXACT -- 1 predicted, 1 moved
+
+K-PM3  roms=bd195e9f / 490ffc49 / 516e4542
+  cut: the C slot's end-of-statement arm reverted to ep_default_b -- the defect, re-created at ONE of its four sites
+  moved 1 rows: p.colour='0 15'
+  EXACT -- 1 predicted, 1 moved
+
+K-PM4  roms=b130fce6 / 490ffc49 / e569251f
+  cut: the B slot's end-of-statement arm reverted to ep_default_b -- ONE instruction, and TWO rows must move, by two different routes
+  moved 2 rows: p.b='0 15', p.cc='0 15'
+  EXACT -- 2 predicted, 2 moved
+
+K-PM5  roms=d8145cb3 / 490ffc49 / 59955676
+  cut: ep_c_empty's `inc hl` -> `nop`: the shared comma is no longer consumed, so ep_parse_b sees it as a 4th argument (ERR 2). This is the ONLY knife that reddens p.omit, the legal C-omitted-BETWEEN-commas form that no other row pins
+  moved 3 rows: p.cc='2 4', p.kcc='2 4', p.omit='2 4'
+  EXACT -- 3 predicted, 3 moved
+
+K-PM6  roms=c0b805bb / 490ffc49 / 7edd7ab6
+  cut: ep_missing `jp loc_missing` -> `jp gfx_err5`: WRONG CODE, and the prediction is that the PICTURE is still protected (R stays 4)
+  moved 6 rows: p.b='5 4', p.cc='5 4', p.colour='5 4', p.kb='5 4', p.kcc='5 4', p.kcolour='5 4'
+  EXACT -- 6 predicted, 6 moved
+
+restored roms=59f0a082 / 490ffc49 / 5ea13c71
+6/6 knife rows EXACT
