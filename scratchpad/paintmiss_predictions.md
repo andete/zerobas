@@ -51,3 +51,32 @@ The four `q.*`/`t.*` CLEAR divergences stay open and are NOT this slice.
 * K-PM5: MEDIUM — the amendment above was made while writing this file, which
   is itself the finding that `p.cc`/`p.kcc` cannot detect K-PM5 any more once
   the fix has landed. If a second row moves, the routing model is wrong.
+
+---
+
+## 🔴 CORRECTION, appended 2026-08-23 AFTER the run — K-PM5 above is NOT the knife that ran
+
+**The K-PM5 entry above describes a knife that could not be built, and it was
+left standing rather than edited, because the reason it could not be built is
+the finding.**
+
+* **As predicted above:** point `jr z,ep_c_empty` (`:705`) at `ep_missing`.
+  🔴 **That orphans the `ep_c_empty` label.** `make deadcode` then reports an
+  unreachable span, the build fails, and **no ROM is produced** — a knife that
+  cannot be run at all, which is the same class the tree's own rule names as
+  *"cut a VALUE, not a CALL"*. **A jump is a call for that rule whenever it is
+  the last edge into its target.** Caught while drafting the runner, before the
+  build; the entry above is what I had written down first.
+* **As actually run:** `ep_c_empty`'s `inc hl` → `nop` (both 1 B, size-neutral).
+  The shared comma is no longer consumed, so `ep_parse_b` reads it as a fourth
+  argument and answers **ERR 2**, not 24.
+  **PREDICTED: exactly 3 rows move — `p.cc` / `p.kcc` / `p.omit` → `2 4`.**
+  **MEASURED: exactly those 3.** ✅ EXACT.
+* ⚠️ **The amendment paragraph above is therefore reasoning about the wrong
+  knife**, even though its conclusion — *`p.omit` is the only row the old
+  version could still move, because `p.cc`/`p.kcc` are already 24* — is true and
+  is what sent me looking for a cut that reddens all three.
+* 🎯 **What this costs:** `p.omit` is pinned by ONE knife, through a mechanism
+  (ERR 2) that is not the one it is a detector for (ERR 24). Nothing
+  size-neutral points `ep_c_empty`'s own route at the raiser. Recorded in
+  `docs/spec-basic-paintmiss.md` §6 as a limit, not as coverage.
