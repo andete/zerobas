@@ -1,0 +1,9 @@
+basic-reloc rc=0
+unit-test rc=0
+deadcode rc=0
+kwsweep rc=0
+deffn-strict rc=0
+deffn-selftest rc=0
+wall-assertion-check rc=0
+audit-citations rc=0
+DONE 8 targets

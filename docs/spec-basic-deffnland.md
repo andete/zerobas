@@ -388,8 +388,15 @@ exists to prevent:
 * **Nothing about the aliasing of two formals of one call**, the string formal's
   shadow slot not being a GC root, or `RESUME`/`CONT`/`TRON`/array actuals —
   the impl slice's own filed list, unchanged.
-* **The four predecessor knife suites' pinned baselines are stale** and were
-  deliberately not re-baselined here; see §8.
+* 📏 **"THE FOUR PREDECESSOR KNIFE SUITES' PINNED BASELINES ARE STALE" IS
+  REFUTED** — none of `dupspan_knives.py`, `paintbord_knives.py`,
+  `paintmc_knives.py` or `paints2seed_knives.py` contains a hardcoded ROM hash
+  at all (`grep -E "'[0-9a-f]{8}'"`: zero hits in each). Every one of them
+  computes `base_h = hashes()` from its own clean build BEFORE the baseline
+  runs, and uses it only to assert that each knife MOVED the image. **The
+  `('834c45b5','b91622a9')` pair lives in their prior RUN LOGS, not in their
+  code** — so a ROM move does not stale them, and there was nothing to
+  re-baseline. They are re-run in §9 as ordinary regressions.
 * **2 B of page 1 is not headroom.** The next slice that adds a byte to page 1
   has to carve one first, or promote again — `scratchpad/region_sizes.py` is how
   to pick.
