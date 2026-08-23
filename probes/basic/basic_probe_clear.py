@@ -13,11 +13,20 @@ sourced from an allowed reference listed inline.
 CLEAR syntax under test:
     CLEAR [<string-space>][,<memory-top>]
 
-Bare `CLEAR`, `CLEAR n`, `CLEAR ,himem`, and `CLEAR n,himem` are all legal
-forms (public MSX-BASIC language reference).  zerobas evaluates + ignores
-<string-space>, records <memory-top> in HIMEM ($FC4A — C-BIOS system variables /
-MSX2 Technical Handbook work-area appendix), and then continues the statement
-line via `jp exec_stmt`.
+Bare `CLEAR`, `CLEAR n`, and `CLEAR n,himem` are legal forms (public MSX-BASIC
+language reference).  zerobas evaluates + ignores <string-space>, records
+<memory-top> in HIMEM ($FC4A — C-BIOS system variables / MSX2 Technical Handbook
+work-area appendix), and then continues the statement line via `jp exec_stmt`.
+
+🔴 THE SENTENCE ABOVE USED TO LIST `CLEAR ,himem` AS A FOURTH LEGAL FORM, AND IT
+IS INVERTED RATHER THAN DELETED (D-CLRFIX 2026-08-23,
+docs/spec-basic-clrfix.md).  It is a **Syntax error on the VG-8020 AND the
+CF-3300** — measured on both, in a trapped program (`2 0`) and in direct mode.
+This file is the Phase-1 CLEAR oracle and it is wired to NO make target, so its
+group 2c below asserted the acceptance for the whole life of the tree without a
+gate ever running it.  ⚠️ THAT IS THE POINT WORTH KEEPING: an oracle nothing
+runs is a claim nothing checks, and this one was cited by basic/PROVENANCE.md.
+Group 2c is re-pointed at the refusal below.
 
 Three test groups:
 
@@ -290,19 +299,23 @@ def main() -> int:
           get(v, ERRMARK) == "00",
           f"ERRMARK={get(v, ERRMARK)!r}")
 
-    # 2c: CLEAR ,&HD000 (string-space omitted, himem present)
+    # 2c: CLEAR ,&HD000 -- string-space omitted. 🔴 REVERSED 2026-08-23 BY
+    # D-CLRFIX. This group used to assert that the line CONTINUES, that no error
+    # is raised, and that HIMEM is stored. All three are the OPPOSITE of both
+    # references, which answer Syntax error and store nothing. The statement now
+    # ABORTS, so the trailing POKE must NOT fire and HIMEM must NOT move --
+    # which is exactly what the same three probes read, with the verdicts
+    # inverted. The sentinel is pre-zeroed, so "did not fire" is a reading and
+    # not an absence.
     SENT3 = 0xD002
     v = run(ZB_MACHINE, None,
-            lines_for(f"POKE &H{ERRMARK:04X},0:CLEAR ,&HD000:POKE &H{SENT3:04X},&H3C"),
-            [(SENT3, 1), (HIMEM, 2), (ERRMARK, 1)])
-    check(ok, "CLEAR ,himem: line continues (POKE fires, SENT3=3C)",
-          get(v, SENT3) == "3c",
+            lines_for(f"POKE &H{SENT3:04X},0:CLEAR ,&HD000:POKE &H{SENT3:04X},&H3C"),
+            [(SENT3, 1), (HIMEM, 2)])
+    check(ok, "CLEAR ,himem: the line ABORTS (POKE does NOT fire, SENT3 stays 00)",
+          get(v, SENT3) == "00",
           f"SENT3={get(v, SENT3)!r}")
-    check(ok, "CLEAR ,himem: no error (ERRMARK stays 00 after pre-zero)",
-          get(v, ERRMARK) == "00",
-          f"ERRMARK={get(v, ERRMARK)!r}")
-    check(ok, "CLEAR ,himem: HIMEM stored correctly",
-          le16(get(v, HIMEM)) == HIMEM_TARGET,
+    check(ok, "CLEAR ,himem: HIMEM is NOT stored (the statement never got there)",
+          le16(get(v, HIMEM)) != HIMEM_TARGET,
           f"HIMEM={get(v, HIMEM)!r}")
 
     # 2d: CLEAR 200 (himem omitted, string-space only)

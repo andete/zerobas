@@ -1,0 +1,43 @@
+  ran vg8020  h.none    'SAME'
+  ran vg8020  h.ok      'SAME'
+  ran vg8020  h.set     '->36864'
+  ran vg8020  h.trail   'SAME'
+  ran vg8020  h.comma   'SAME'
+  ran vg8020  h.div     'SAME'
+  ran vg8020  h.str     'SAME'
+  ran vg8020  h.ovf     'SAME'
+  ran vg8020  h.hd000   'SAME'
+  ran vg8020  h.neg     'SAME'
+  ran cf3300  h.none    'SAME'
+  ran cf3300  h.ok      'SAME'
+  ran cf3300  h.set     '->36864'
+  ran cf3300  h.trail   'SAME'
+  ran cf3300  h.comma   'SAME'
+  ran cf3300  h.div     'SAME'
+  ran cf3300  h.str     'SAME'
+  ran cf3300  h.ovf     'SAME'
+  ran cf3300  h.hd000   'SAME'
+  ran cf3300  h.neg     'SAME'
+  ran zb      h.none    'SAME'
+  ran zb      h.ok      'SAME'
+  ran zb      h.set     '->36864'
+  ran zb      h.trail   '->0'
+  ran zb      h.comma   '->200'
+  ran zb      h.div     '->0'
+  ran zb      h.str     '->0'
+  ran zb      h.ovf     '->0'
+  ran zb      h.hd000   '->53248'
+  ran zb      h.neg     '->65535'
+
+  h.none   vg8020='SAME'  cf3300='SAME'  zb='SAME'
+  h.ok     vg8020='SAME'  cf3300='SAME'  zb='SAME'
+  h.set    vg8020='->36864'  cf3300='->36864'  zb='->36864'
+  h.trail  vg8020='SAME'  cf3300='SAME'  zb='->0'   *** DIFF
+  h.comma  vg8020='SAME'  cf3300='SAME'  zb='->200'   *** DIFF
+  h.div    vg8020='SAME'  cf3300='SAME'  zb='->0'   *** DIFF
+  h.str    vg8020='SAME'  cf3300='SAME'  zb='->0'   *** DIFF
+  h.ovf    vg8020='SAME'  cf3300='SAME'  zb='->0'   *** DIFF
+  h.hd000  vg8020='SAME'  cf3300='SAME'  zb='->53248'   *** DIFF
+  h.neg    vg8020='SAME'  cf3300='SAME'  zb='->65535'   *** DIFF
+
+ROWS: 10 printed, 10 scored -- 7 DIFF

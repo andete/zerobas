@@ -115,6 +115,20 @@ designs: a bare `CLEAR` does **not** reset the size to 200 — it keeps whatever
 is set. The 200 in the first two rows is just the untouched boot default.
 Neither `NEW`, `RUN`, nor the `,himem`-only form resizes the pool.
 
+> 🔴 **CORRECTION 2026-08-23 (D-CLRFIX, [`spec-basic-clrfix.md`](spec-basic-clrfix.md)):
+> THE `CLEAR 500 : CLEAR ,&HD000` ROW IS VACUOUS AND IS ANNOTATED RATHER THAN
+> DELETED.** `CLEAR ,&HD000` is **`Syntax error` on the VG-8020 AND the
+> CF-3300** (row `z.hd000`), so the pool reads 500 because **the second
+> statement never ran** — not because the `,himem`-only form leaves the pool
+> alone. Row `z.seq` runs this line verbatim and both references answer
+> `UNTRAPPED Syntax error in 30`; untrapped because the *first* `CLEAR` had
+> already killed the `ON ERROR` handler ([`spec-basic-clrtrap.md`](spec-basic-clrtrap.md)
+> §3.1). **The conclusion about `NEW` and `RUN` is untouched and still measured;
+> only the third clause had no statement behind it.**
+> ⚠️ This is the canonical shape: *a case that AGREES can agree for the wrong
+> reason.* The row was built to ask "does this form resize the pool?" and could
+> not tell that from "does this form exist?".
+
 ### 2.5 What is charged, and what is given back
 
 | row | reference | reading |
@@ -194,6 +208,16 @@ argument and discards it, so a malformed one is silently accepted.
 (unchanged). zerobas's `hmem-tight` answers **4091**, because its single gap is
 bounded by `heap_reset`'s ceiling `C = min(HIMEM,TXTMAX)` and so shrinks when
 HIMEM drops.
+
+> 🔴 **CORRECTION 2026-08-23 (D-CLRFIX): the THIRD reading above measures
+> nothing.** `CLEAR ,&HD000` is a **`Syntax error` on both references**, so
+> "→ 200 (unchanged)" is the boot default surviving a statement that did not
+> execute. **The first two readings are unaffected** — `CLEAR 500,&HD000` and
+> `CLEAR 500,&H9000` are legal on both references and genuinely say the pool
+> keeps its size when only the ceiling moves, which is the section's title.
+> `basic/str-engine.asm` `heap_reset` cited this section for a benefit to a form
+> that does not exist; that comment is inverted in place. zerobas no longer
+> accepts the form either — the special case was deleted, −4 B.
 
 ---
 

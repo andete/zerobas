@@ -124,11 +124,29 @@ def run():
     run_prog_cap(m, [(10, "GOTO 30"), (20, "A=1"), (30, "A=2")])
     check("GOTO skips line 20 (A)", var(m, "A"), 2)
 
-    # --- CLEAR ,<himem> (ex_clear / clr_himem records HIMEM) -----------------
+    # --- CLEAR <n>,<himem> (ex_clear / clr_himem records HIMEM) --------------
+    # 🔴 THIS CHECK USED TO TYPE `CLEAR ,&HABCD` AND IT ASSERTED A FORM THE
+    # LANGUAGE DOES NOT HAVE (D-CLRFIX 2026-08-23,
+    # docs/spec-basic-clrfix.md). `CLEAR ,himem` -- string space omitted -- is a
+    # **Syntax error on the VG-8020 AND the CF-3300**, so the assertion was
+    # pinning own-design behaviour against nothing. zerobas stopped accepting it
+    # when ex_clear's `cp ',' / jr z,clr_himem` was deleted (-4 B) and this test
+    # went red, which is the gate doing its job.
+    # The QUESTION it was written for -- does CLEAR's second argument reach
+    # HIMEM? -- is unchanged and is now asked with the legal two-argument form.
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)
+    run_prog_cap(m, [(10, "CLEAR 200,&HABCD")])
+    himem = m.mem[m.sym["HIMEM"]] | (m.mem[m.sym["HIMEM"] + 1] << 8)
+    check("CLEAR 200,&HABCD sets HIMEM", himem, 0xABCD)
+
+    # ...and the refusal itself is now pinned, so deleting the guard cannot go
+    # unnoticed the way accepting the form did. HIMEM must be UNTOUCHED.
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
+    m.mem[m.sym["HIMEM"]] = 0x34
+    m.mem[m.sym["HIMEM"] + 1] = 0x12
     run_prog_cap(m, [(10, "CLEAR ,&HABCD")])
     himem = m.mem[m.sym["HIMEM"]] | (m.mem[m.sym["HIMEM"] + 1] << 8)
-    check("CLEAR ,&HABCD sets HIMEM", himem, 0xABCD)
+    check("CLEAR ,&HABCD leaves HIMEM alone (Syntax error)", himem, 0x1234)
 
     # --- WIDTH n (ex_width sets LINLEN) --------------------------------------
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)

@@ -1,0 +1,35 @@
+  ran vg8020  h.none    'SAME'
+  ran vg8020  h.ok      'SAME'
+  ran vg8020  h.set     '62336->36864'
+  ran vg8020  h.trail   'SAME'
+  ran vg8020  h.comma   'SAME'
+  ran vg8020  h.div     'SAME'
+  ran vg8020  h.str     'SAME'
+  ran vg8020  h.ovf     'SAME'
+  ran cf3300  h.none    'SAME'
+  ran cf3300  h.ok      'SAME'
+  ran cf3300  h.set     '56951->36864'
+  ran cf3300  h.trail   'SAME'
+  ran cf3300  h.comma   'SAME'
+  ran cf3300  h.div     'SAME'
+  ran cf3300  h.str     'SAME'
+  ran cf3300  h.ovf     'SAME'
+  ran zb      h.none    'SAME'
+  ran zb      h.ok      'SAME'
+  ran zb      h.set     '62336->36864'
+  ran zb      h.trail   '62336->0'
+  ran zb      h.comma   '62336->200'
+  ran zb      h.div     '62336->0'
+  ran zb      h.str     '62336->0'
+  ran zb      h.ovf     '62336->0'
+
+  h.none   vg8020='SAME'  cf3300='SAME'  zb='SAME'
+  h.ok     vg8020='SAME'  cf3300='SAME'  zb='SAME'
+  h.set    vg8020='62336->36864'  cf3300='56951->36864'  zb='62336->36864'   !! THE REFERENCES DISAGREE -- not a want
+  h.trail  vg8020='SAME'  cf3300='SAME'  zb='62336->0'   *** DIFF
+  h.comma  vg8020='SAME'  cf3300='SAME'  zb='62336->200'   *** DIFF
+  h.div    vg8020='SAME'  cf3300='SAME'  zb='62336->0'   *** DIFF
+  h.str    vg8020='SAME'  cf3300='SAME'  zb='62336->0'   *** DIFF
+  h.ovf    vg8020='SAME'  cf3300='SAME'  zb='62336->0'   *** DIFF
+
+ROWS: 8 printed, 7 scored -- 5 DIFF

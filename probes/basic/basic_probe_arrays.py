@@ -479,7 +479,7 @@ CASES = [
     # assignment silently dropped exactly like the pre-4c fixed-pool
     # contract (observed: no "Out of memory" text anywhere in the capture).
     ("scalar.str.chain.oom",   "direct",
-        ['CLEAR,&H8050'] + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
+        ['CLEAR 200,&H8050'] + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
         "zberr"),
 
     # === VARPTR of an ARRAY ELEMENT (post-4c faithfulness follow-up, ==========
@@ -913,6 +913,15 @@ def _line_tokens(raw):
 # function instead (like ABC_REGRESSION/GC_STRESS below), anchoring
 # screen_tail on the LAST LINE INPUT statement's own echo explicitly.
 #
+# 🔴 THE CEILING FIXTURE WAS `CLEAR,&H8050` UNTIL 2026-08-23 (D-CLRFIX,
+# docs/spec-basic-clrfix.md). That form -- string space omitted, leading comma --
+# is a **Syntax error on the VG-8020 AND the CF-3300**, and zerobas stopped
+# accepting it when the special case was deleted (-4 B). Both chain-OOM fixtures
+# then set no ceiling at all and BOTH went red, which is the honest outcome: they
+# had been squeezing memory with a statement the language does not have.
+# `CLEAR 200,&H8050` is the legal two-argument form and 200 is the boot default
+# pool size (clearpool-vg8020-characterization.md §2.4), so the ceiling is the
+# same one these rows were always relying on.
 # NON-VACUOUS (verified by hand 2026-07-17, `git stash` on the input.asm/
 # files.asm fix + rebuild): pre-fix the tail after the LAST 'LINE INPUT Z$'
 # echo was plain '1' (the response, silently accepted, no OOM text -- the
@@ -920,7 +929,7 @@ def _line_tokens(raw):
 # path even after ex_let_str's own fix); post-fix it is '1|Out of memory'.
 INPUT_OOM = [
     ("scalar.input.chain.oom",
-     ['CLEAR,&H8050'] +
+     ['CLEAR 200,&H8050'] +
      [ln for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" for ln in (f'LINE INPUT {c}$', '1')],
      "LINE INPUT Z$", "1|Out of memory"),
 ]

@@ -1,0 +1,26 @@
+=== baseline ===
+baseline roms=f1e743c2 / 490ffc49 / 5293b7c7
+baseline 26 rows match the after-run
+
+K-CF1  roms=2da61a1c / 490ffc49 / 8821afba
+  cut: clr_himem's `call eval_int16_checked` -> `call eval`: half (b) reverted alone, so the HIMEM slot is unguarded again while the carve stays in
+  moved 9 rows: h.div='->0', h.ovf='->0', h.str='->0', h.trail='->0', q.div='UNTRAPPED Division by zero in 30', q.kcolon='UNTRAPPED Missing operand in 30', q.ovf='0 0', q.str='UNTRAPPED Type mismatch in 30', q.trail='UNTRAPPED Missing operand in 30'
+  EXACT -- 9 predicted, 9 moved
+
+K-CF2  roms=ed94ffdd / 490ffc49 / 17bd39f2
+  cut: ex_clear's deleted leading-comma arm RESTORED (+4 B): half (a) undone alone, so `CLEAR ,himem` is accepted again while the HIMEM slot keeps its new guard
+  moved 7 rows: h.comma='->200', h.hd000='->53248', q.comma='0 0', q.commak='UNTRAPPED Out of memory in 30', q.conly='24 0', z.hd000='0 0', z.seq='0 0'
+  EXACT -- 7 predicted, 7 moved
+
+K-CF3  roms=cbc20938 / 490ffc49 / b05a69b5
+  cut: the new coercion narrowed from int16 to a BYTE -- wrong, because `CLEAR 200,&H9000` is accepted on all three machines
+  moved 4 rows: h.neg='SAME', h.set='SAME', q.both='5 0', z.neg='5 0'
+  NOT EXACT: h.neg got 'SAME' want '->65535'
+
+K-CF4  roms=41ed0f95 / 490ffc49 / 9976276a
+  cut: clr_himem's `inc hl` -> `nop`: the comma is no longer consumed, so eval sees it as an empty operand and EVERY row that reaches the slot answers ERR 2
+  moved 9 rows: h.neg='SAME', h.set='SAME', q.both='2 0', q.div='2 0', q.kcolon='2 0', q.ovf='2 0', q.str='2 0', q.trail='2 0', z.neg='2 0'
+  NOT EXACT: h.neg got 'SAME' want '->65535'
+
+restored roms=f1e743c2 / 490ffc49 / 5293b7c7
+2/4 knife rows EXACT

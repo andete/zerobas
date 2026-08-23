@@ -125,10 +125,18 @@ err_out_of_str:
 ; resource, ROM is" -- but the ROM that is scarce is THIS one (the low region,
 ; 30 B free), while the sub-ROM has ~3.4 KB. So the boundary is computed
 ; SUB-SIDE instead, as min(HIMEM,TXTMAX) - POOLSIZE, from two published sysvars
-; plus the size CLEAR recorded. That costs the low region ZERO bytes, and it
-; still makes `CLEAR ,himem` keep its size (characterization §2.8): that form
-; moves the ceiling and never touches POOLSIZE, so re-deriving picks the change
-; up for free. Clobbers A,B,C,H,L (unchanged).
+; plus the size CLEAR recorded. That costs the low region ZERO bytes.
+; 🔴 THE JUSTIFICATION THAT USED TO FOLLOW IS ABOUT A STATEMENT THAT DOES NOT
+; EXIST, AND IS INVERTED RATHER THAN DELETED (D-CLRFIX, 2026-08-23). It said the
+; sub-side derivation "still makes `CLEAR ,himem` keep its size (characterization
+; §2.8): that form moves the ceiling and never touches POOLSIZE, so re-deriving
+; picks the change up for free." **`CLEAR ,himem` is a Syntax error on the
+; VG-8020 AND the CF-3300** (rows q.comma / z.hd000, docs/spec-basic-clrfix.md),
+; and §2.8's reference readings are VACUOUS -- the statement never ran. THE
+; DESIGN IS UNAFFECTED and is still right for its own reason (the low region is
+; the scarce ROM and the sub-ROM is not); what is gone is a benefit it never
+; delivered, to a form the language does not have.
+; Clobbers A,B,C,H,L (unchanged).
 heap_reset:
                 ld      hl,(HIMEM)
                 ld      a,h

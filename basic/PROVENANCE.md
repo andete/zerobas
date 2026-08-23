@@ -167,9 +167,20 @@ HIMEM sysvar are documented-source-first (same provenance model as the Step B
 keyword set). Oracle: `basic_probe_clear.py` differences
 zerobas against the Philips VG-8020 reference and confirms that after
 `CLEAR 200,&HD000` both store `$D000` (LE) in HIMEM (`$FC4A`) — proving `$FC4A`
-is CLEAR's memory-top home on the reference and that zerobas matches it. All
-four syntax forms (`CLEAR`, `CLEAR n`, `CLEAR ,himem`, `CLEAR n,himem`) parse
-without error and the line continues. zerobas does not maintain the
+is CLEAR's memory-top home on the reference and that zerobas matches it.
+
+> 🔴 **CORRECTION 2026-08-23 (D-CLRFIX, [`../docs/spec-basic-clrfix.md`](../docs/spec-basic-clrfix.md)):
+> the sentence that stood here claimed "all **four** syntax forms (`CLEAR`,
+> `CLEAR n`, `CLEAR ,himem`, `CLEAR n,himem`) parse without error and the line
+> continues". There are **three**. `CLEAR ,himem` — string space omitted — is a
+> `Syntax error` on the Philips VG-8020 **and** the National CF-3300, measured
+> both in a trapped program and in direct mode. zerobas accepted it until the
+> special case was deleted (−4 B). The other three forms are unaffected and
+> still measured. ⚠️ `basic_probe_clear.py` is wired to no make target, so its
+> group 2c asserted the acceptance unchecked for the life of the tree; that
+> group is now pointed at the refusal.**
+
+zerobas does not maintain the
 string-heap sysvars (STKTOP/FRETOP/STREND) — it has no heap in Phase 1 — so
 only the HIMEM observable is asserted; nothing here invents expected oracle
 bytes. ALL PASS.
@@ -181,8 +192,21 @@ bytes. ALL PASS.
 | `CLEAR …,&HD000` writes `$D000` (LE) to HIMEM `$FC4A`, byte-identical to the Philips VG-8020 | `00 D0` @ `$FC4A` | `basic_probe_clear.py` differential oracle (Philips VG-8020 vs C-BIOS_MSX1 + cart) | oracle-locked |
 | `CLEAR [<strings>][,<himem>]` syntax — both args optional, comma-separated, bare `CLEAR` valid | — | public MSX-BASIC language reference | sourced |
 | `<string-space>` arg accepted + evaluated, then ignored (zerobas has no string heap to size) | — | own design (minimal memory model); documented in basic/clear.asm | sourced |
-| `<memory-top>` arg stored to HIMEM, record-only (no allocator consults it yet under the fixed RAM layout) | — | own design; HIMEM is the documented home of the value (language reference) | sourced |
+| `<memory-top>` arg stored to HIMEM — **NOT record-only; see the correction below** | — | own design; HIMEM is the documented home of the value (language reference) | sourced |
+| `CLEAR ,himem` (string space omitted) is a **`Syntax error`** on the VG-8020 and the CF-3300 | ERR 2 | `scratchpad/clrfix_probe.py` rows `q.comma` / `z.hd000` (both references, boot-per-case) | oracle-locked |
+| `CLEAR <n>,<himem>` past int16 (`70000`) is **`Overflow`** on both references | ERR 6 | `scratchpad/clrfix_probe.py` row `q.ovf` | oracle-locked |
+| `CLEAR <n>,-1` is **`Illegal function call`** on both references (zerobas diverges — open) | ERR 5 | `scratchpad/clrfix_probe.py` row `z.neg` | oracle-locked |
 | CLEAR parse/dispatch algorithm | — | **own code** (mirrors the do_poke arg-parse pattern); not derived from any disassembly | sourced |
+
+> 🔴 **CORRECTION 2026-08-23 (D-CLRFIX): "record-only" was false.** HIMEM is
+> consulted, and by `CLEAR` itself: [`str-engine.asm`](str-engine.asm)
+> `heap_reset` — called from `clear_vars`, which `CLEAR` calls — computes
+> `FRETOP := min(HIMEM,TXTMAX)`, and the string pool's floor is derived sub-side
+> from the same figure. Measured, not argued: `CLEAR ,200:A=1` answered
+> `Out of memory` (row `q.commak`). The same phrase in
+> [`clear.asm`](clear.asm)'s header is inverted in place. **Nothing about the
+> provenance of the value or its address changes — only the claim that storing
+> it is inert.**
 
 No quarantined items.
 

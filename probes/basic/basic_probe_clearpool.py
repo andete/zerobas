@@ -283,8 +283,17 @@ CASES = [
     # one? Two defensible designs; dflt-keep is the discriminator.
     ("dflt-bare",    "dflt", ['CLEAR', 'PRINT "[";FRE("");"]"']),
     ("dflt-keep",    "dflt", ['CLEAR 500', 'CLEAR', 'PRINT "[";FRE("");"]"']),
-    ("dflt-comma",   "dflt", ['CLEAR 500', 'CLEAR ,&HD000',
-                              'PRINT "[";FRE("");"]"']),
+    # 🔴 D-CLRFIX 2026-08-23: THIS ROW USED TO ASK A QUESTION ITS STATEMENT
+    # COULD NOT REACH. It was `CLEAR 500 : CLEAR ,&HD000: PRINT FRE("")` and it
+    # passed on both machines -- because `CLEAR ,himem` is a **Syntax error on
+    # the reference**, so FRE printed 500 for the trivial reason that the second
+    # statement NEVER RAN. It scored "the ,himem-only form does not resize the
+    # pool" and was measuring "the ,himem-only form does not exist".
+    # docs/clearpool-vg8020-characterization.md §2.4 is annotated with the same
+    # correction. Re-pointed at what is actually there: the CLEAR is now the LAST
+    # line, so read() anchors on its ERROR TAIL and both machines must print the
+    # same refusal. A vacuous agreement becomes a real differential.
+    ("dflt-comma",   "dflt", ['CLEAR 500', 'CLEAR ,&HD000']),
     # RUN and NEW also reset variables -- do they resize the pool?
     ("dflt-new",     "dflt", ['CLEAR 500', 'NEW', 'PRINT "[";FRE("");"]"']),
     ("dflt-run",     "dflt", ['CLEAR 500', 'RUN', 'PRINT "[";FRE("");"]"']),
@@ -299,7 +308,10 @@ CASES = [
     # --- the `,himem` argument's interaction with the pool --------------------
     ("hmem-both",    "hmem", ['CLEAR 500,&HD000', 'PRINT "[";FRE("");"]"']),
     ("hmem-tight",   "hmem", ['CLEAR 500,&H9000', 'PRINT "[";FRE("");"]"']),
-    ("hmem-only",    "hmem", ['CLEAR ,&HD000', 'PRINT "[";FRE("");"]"']),
+    # 🔴 D-CLRFIX 2026-08-23: vacuous for the same reason as dflt-comma above --
+    # §2.8's "`CLEAR ,&HD000` -> 200 (unchanged)" is the BOOT DEFAULT surviving a
+    # statement that did not execute. Now anchored on the refusal itself.
+    ("hmem-only",    "hmem", ['CLEAR ,&HD000']),
 
     # --- ✅ GRADUATED 2026-07-29: the ARRAYS-arc divergence this probe found ---
     # ⚠️ This row USED to be the oos-vs-oom row above, with `DIM Q(20000)`, and

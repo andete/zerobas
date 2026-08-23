@@ -1,0 +1,15 @@
+  ran vg8020  z.hd000   '2 0'
+  ran vg8020  z.seq     'UNTRAPPED Syntax error in 30'
+  ran vg8020  z.neg     '5 0'
+  ran cf3300  z.hd000   '2 0'
+  ran cf3300  z.seq     'UNTRAPPED Syntax error in 30'
+  ran cf3300  z.neg     '5 0'
+  ran zb      z.hd000   '0 0'
+  ran zb      z.seq     '0 0'
+  ran zb      z.neg     '0 0'
+
+  z.hd000  vg8020='2 0'  cf3300='2 0'  zb='0 0'   *** DIFF
+  z.seq    vg8020='UNTRAPPED Syntax error in 30'  cf3300='UNTRAPPED Syntax error in 30'  zb='0 0'   *** DIFF
+  z.neg    vg8020='5 0'  cf3300='5 0'  zb='0 0'   *** DIFF
+
+ROWS: 3 printed, 3 scored -- 3 DIFF
