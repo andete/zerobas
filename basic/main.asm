@@ -92,6 +92,35 @@ SUB_BUILD       equ     0
 ; assembler like pasmo; only ORG-based layout needs include order.
                 include "basic/arrays.asm"
 
+; --- D-DEFFN's PROMOTION: two page-1 leaves brought DOWN into the low region --
+; 💰 THIS IS WHAT ACTUALLY LANDS DEF FN, and it is the move this file's own
+; header block describes from the other direction: R1 promoted the 80 B message
+; pool UP into page 1 when the low region was full, "page 1 and the low region
+; are co-mapped slot-0 pages, so a pressure-placed leaf can be moved between
+; them freely and the walls are COUPLED". DEF FN needed the reverse: after the
+; carves, page 1 was 110 B over its $8000 ceiling with 129 B free below $4000,
+; so the gap arithmetic (`scratchpad/deffn_measure_over.py`) was already
+; negative -- but a NEGATIVE GAP IS NOT A BUILD. Only moving real bytes across
+; the boundary makes the assert stop firing, and 112 B is what these two are.
+;
+; ⚠️ WHY THESE TWO. `basic/sound.asm`'s own header named its placement as
+; pressure and not contract, in its own words -- *"Lands in page 1 (which the
+; disk/file eviction freed to ~1.1 KB) rather than the now-full reclaimed low
+; region"* -- which is the definition of a promotable leaf, written down by the
+; slice that placed it. `basic/poke.asm` is the smallest statement handler in
+; the ROM (29 B) and reaches only `eval_addr` + `eval_byte_checked`, both
+; already low-region. NEITHER is in the resident-ABI closure and neither runs
+; from the $0038 ISR, so neither has a reason to be page-1 resident; the two
+; gates that would object -- check_resident_abi.py and check_tenant_closure.py
+; -- run in `make basic-reloc` either way.
+; 🔴 AND THE DIRECTION MATTERS: promoting DOWN can never break reachability,
+; because low-region code is visible whenever page 0 is mapped, which is always
+; except inside a page-0 CALSLT (where no MAIN code runs at all). It is the
+; other direction -- leaving something in page 1 that the ISR or a page-1 tenant
+; needs -- that this tree has been bitten by (basic/subromcall.asm htimi_guard).
+                include "basic/poke.asm"
+                include "basic/sound.asm"
+
 ; --- (moved out) the low-region message pool -------------------------------
 ; The D-LINEMAX / S-FCH-2 message strings and the ERR 52/59 raisers used to sit
 ; here, at the very top of the low region, and only because page 1 could not
@@ -160,8 +189,6 @@ __MEAS_LOW_END:
 ; 16-bit integer expression evaluator (defines `eval`).
                 include "basic/expr.asm"
 
-; The POKE statement handler (defines `do_poke`).
-                include "basic/poke.asm"
 
 ; The TIME pseudo-variable's WRITE half (defines `ex_time_assign`); the READ
 ; half is a factor and lives in expr.asm beside ERL, whose unsigned-word-to-FAC
@@ -191,11 +218,6 @@ __MEAS_LOW_END:
 ; Screen-setup verbs SCREEN/COLOR/CLS/WIDTH/KEY (defines `ex_screen`, …).
                 include "basic/screen.asm"
 
-; Audio slice 1 (docs/spec-basic-audio-play.md §3.D): the SOUND statement handler
-; (defines `ex_sound`) — a small synchronous resident leaf that coerces/masks the
-; register+value and writes the PSG directly. Lands in page 1 (which the disk/file
-; eviction freed to ~1.1 KB) rather than the now-full reclaimed low region.
-                include "basic/sound.asm"
 
 ; Audio Slice 2a (docs/spec-basic-audio-play-slice2a.md): the PLAY statement's
 ; resident stub (defines `ex_play`) — evaluates up to three MML string arguments

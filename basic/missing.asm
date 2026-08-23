@@ -296,7 +296,25 @@ loc_omit:
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
+; 🔴 AND THE GATE IS NOT DECORATION: `g8_missing` is assembled ONLY under
+; `IF G8_RESIDENT` (basic/graphics.asm), while THIS site is always assembled.
+; A bare `equ` therefore made G8_RESIDENT UNFLIPPABLE -- `G8_RESIDENT equ 0`
+; stopped the build with "Symbol 'g8_missing' is undefined", three files away
+; from the alias that caused it. Nothing catches that: no gate in this tree runs
+; with a switch flipped, tools/dupspan_indep.py decides POSITION-independence
+; and REGION and has no notion of conditional assembly, and the eleven emulator
+; batteries all measure the enabled build. It was found by a scaffold
+; (scratchpad/deffn_scaffold.py) needing the switch it had silently broken, and
+; scratchpad/alias_gate_sweep.py says it is the ONLY one of the 107 label
+; aliases in basic/ that crosses a build gate. The ELSE arm costs the SHIPPING
+; build zero bytes -- it is not assembled there.
+    IF G8_RESIDENT
 loc_missing     equ     g8_missing
+    ELSE
+loc_missing:
+                ld      a,24                ; Missing operand (measured, spec §3)
+                jp      raise_error
+    ENDIF
 
 ; loc_more: is another argument coming? CF=1 -> yes (its comma is consumed).
 loc_more:

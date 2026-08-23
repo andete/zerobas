@@ -76,7 +76,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ERR 24, so the mechanism exists); sweep the verbs that take a trailing
       value before pricing.
 
-- [ ] 💰 **`DEF FN` IS WRITTEN, MEASURED GREEN, AND 350 B TOO BIG — the FUNDING
+- [x] 💰 **`DEF FN` SHIPS (2026-08-23, D-DEFFNLAND,
+      [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md)).** The real
+      tenant is written (428 B of sub page 0, main-ROM cost **zero**), the last
+      28 B were carved, and 112 B were PROMOTED from page 1 into the low region
+      — `make basic-reloc` builds the SHIPPING feature set, `make deffn-strict`
+      is **0 of 69 divergent / 0 of 8 controls failed / 3 of 3 claims PASS**, and
+      `make kwsweep` no longer prints a `MISSING=` line (SUPPORTED 29 → 30).
+      🔴 **THE GAP FIGURE WAS NEVER THE WHOLE PRICE**: `over − lowfree` went
+      NEGATIVE (−19 B) on a tree that still did not assemble, because the two
+      regions are fungible only if you actually MOVE bytes across the boundary.
+      The promotion is the step this residual never carried. Everything below is
+      the history that got here; read the spec, not these numbers.
+      💰 **DEF FN IS WRITTEN, MEASURED GREEN, AND 350 B TOO BIG — the FUNDING
       is the whole remaining job.** Filed 2026-08-22 by D-DEFFN,
       [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md); the code
       is the branch **`deffn-draft`** (`git diff main..deffn-draft`), which does
@@ -165,6 +177,57 @@ list. **When a slice lands, grep this list for what it just shipped.**
       boundary at all. 🎯 **Test the gate on a deliberately-bad cross-region
       alias FIRST: that answer is worth more than the 43 B.**
 
+- [ ] 🔴 **AN `equ` ALIAS TO A CONDITIONALLY-ASSEMBLED SYMBOL SILENTLY BREAKS
+      THE BUILD SWITCH, AND NOTHING IN THIS TREE CAN SEE IT.** Filed 2026-08-23
+      by D-DEFFNLAND,
+      [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md) §3.3.
+      D-DUPSPAN2's `loc_missing equ g8_missing` sat in always-assembled code and
+      pointed at a symbol that exists only under `IF G8_RESIDENT`, so
+      `G8_RESIDENT equ 0` had stopped building — with an undefined-symbol error
+      three files from its cause — for as long as that carve had shipped. **No
+      gate in this tree ever runs with a switch flipped**, `tools/dupspan_indep.py`
+      decides POSITION-independence and REGION and has no notion of conditional
+      assembly, and the eleven emulator batteries all measure the enabled build.
+      ✅ **The instance is FIXED** (an `ELSE` arm, zero shipping bytes) and
+      `scratchpad/alias_gate_sweep.py` says it was the ONLY one of the 107 label
+      aliases in `basic/` that crosses a gate — **but the CLASS is open**: the
+      sweep is a scratch script, not a gate, so the next alias can reintroduce
+      it. ⚠️ And the general form is wider than aliases: **any build switch this
+      tree owns is only as flippable as the last person who tried**. A cheap
+      standing control would be a CI target that assembles with each of
+      `G6/G7/G8_RESIDENT`, `I1_RESIDENT`, `TRAPS_T3`, `TRAPS_T4` turned off in
+      turn and requires only that it BUILDS.
+- [ ] ⚠️ **`clone_scout` prices LABEL-BLOCKS, so a routine split by an interior
+      label is priced at a fraction of its collapse.** Filed 2026-08-23 by
+      D-DEFFNLAND, [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md)
+      §4.3. `arga_pack_fac`/`arga_pack_single` were ranked at **14 B** and
+      measured at **27 B**: the tool compared only their 22-byte header spans,
+      because `apf_lp`/`aps_lp` are separate symbols, so the two identical
+      13-byte LOOPS were invisible to it. The remaining ranked groups are
+      therefore FLOORS, not estimates — and 🔴 **three of them are now known to
+      be worth ZERO** (§4.4: `ev_t_mul`/`ev_t_div`, `ev_e_add`/`ev_e_sub`,
+      `dde_div`/`pn_div`/`pfi_div` all push PERSISTENT frames a helper's own
+      return address cannot sit under). Unspent and unre-ranked:
+      `raf_noround`/`rsp_noround` (12), `ev_usr_index`/`usr_index` (8),
+      `detok`/`pu_emit_tail` (8), the `files.asm` four (8),
+      `ev_ff_stick`/`ev_ff_strig` (6).
+- [ ] ⚠️ **Main page 1 is 2 B free and the low region 17 B, at
+      `031184d9`/`34bb8554` (2026-08-23).** Filed by D-DEFFNLAND. The next slice
+      that adds a byte to page 1 has to carve one first or promote again;
+      `scratchpad/region_sizes.py` prints per-include sizes split by region,
+      which is how `poke.asm`+`sound.asm` were picked. **Run `make basic-reloc`
+      — it prints all four walls; never quote this line.**
+- [ ] ⚠️ **`DEF FN` has NO KNIVES, and now it has a shipping ROM to cut
+      against.** Filed 2026-08-23 by D-DEFFNLAND,
+      [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md) §7. Four
+      obvious sites, three of them defects this arc actually found: `fn_slot`'s
+      `E`, `fn_leave`'s `DE`, PRINT's item classification, and the servicer's
+      `push de`/`pop de` around the tenant bounce (§3.2 — its knife is deleting
+      those two bytes and watching `o.defint` go red). 🔴 **And the ceiling
+      compare of §3.1 needs one too**: a knife that restores `cp low
+      FN_PAREA_END` must redden `o.p3`, and a knife that widens `FN_AREA` by one
+      slot must redden `o.p10` — the second is what would have caught the wrap
+      the first version of that test also got wrong.
 - [ ] ⚠️ **D-DUPSPAN2 shipped 28 aliases with NO per-site row set.** Filed
       2026-08-22, [`docs/spec-basic-dupspan2.md`](docs/spec-basic-dupspan2.md)
       §5.1. Eleven emulator batteries say the collapse broke nothing; none of

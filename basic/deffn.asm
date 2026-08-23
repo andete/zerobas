@@ -218,9 +218,10 @@ fn_call:
 ;
 ; ⚠️ A CALSLT IS NOT RESUMABLE, so this is not a co-routine in the CIRCLE sense
 ; (docs/spec-circle-coroutine-space.md): the tenant re-enters at its top every
-; bounce and recovers its phase from FN_REQ, which carries BOTH directions --
-; the tenant's request on the way out, and the servicer's answer on the way
-; back. One byte, because the two alphabets are disjoint.
+; bounce and recovers its phase from L, which carries BOTH directions -- the
+; tenant's request on the way out (in A, subrom_call's result), and the
+; servicer's answer on the way back (in L, passed through CALSLT). One byte,
+; because the two alphabets are disjoint.
 ;
 ;   tenant -> main   1  evaluate the expression at FN_PTR; say what you got
 ;                    2  store the value into (FN_KEY, FN_TYP)
@@ -256,11 +257,49 @@ fn_call:
                 pop     hl
                 inc     hl                  ; past the FN token
                 ld      (FN_PTR),hl
-                xor     a
-                ld      (FN_REQ),a          ; phase 0: nothing has been asked yet
+                ; 🎯 THE PHASE TRAVELS IN **L**, NOT IN A RAM CELL, AND THAT IS
+                ; WHAT DELETED FN_REQ. CALSLT passes the main register set
+                ; through to the tenant (C-BIOS's own calslt is `ex af,af'/exx`
+                ; at entry and `exx` again just before it jumps to the target),
+                ; and subrom_call touches nothing but A/DE/IY on the way in. The
+                ; cell existed because "a CALSLT is not resumable, so the phase
+                ; lives in RAM" -- true of the tenant's state, false of the
+                ; SERVICER's, which is ordinary main-ROM code holding an
+                ; ordinary register across a `call`. -7 B, at three sites.
+                ; ⚠️ AND NESTING IS WHY THIS IS SAFE RATHER THAN LUCKY: an inner
+                ; fn_call runs entirely inside the outer one's `call eval`, and
+                ; the outer sets L again at fn_ev_x AFTER that call returns. The
+                ; phase never has to survive anything.
+                ld      l,0                 ; phase 0: nothing has been asked yet
 fn_lp:
+                ; 🔴 DE IS THE EVALUATED INT AND A CALSLT CLOBBERS IT. An
+                ; INT-typed value lives in DE with FAC UNWRITTEN (var_store_fac's
+                ; own header: "DE, valid iff the CURRENT (FACTYP)==2"), and
+                ; request 1 -> request 2 puts a whole tenant bounce between the
+                ; `call eval` that produced it and the `call var_store_fac` that
+                ; reads it. That is the SAME defect the 69-row battery found in
+                ; the draft's fn_leave, one bounce further out -- and 2 B here is
+                ; the entire fix, because the resident half's stack is the one
+                ; thing a tenant re-entry cannot disturb.
+                ; ⚠️ AND THE ALTERNATIVE -- THE TENANT DOING push de/pop de
+                ; AROUND ITSELF -- WOULD HAVE MEASURED GREEN HERE AND BEEN A
+                ; CLAIM ABOUT ONE BIOS. C-BIOS's own calslt happens to hand the
+                ; callee's DE back (`ex af,af'/exx` in, the mirrored pair out),
+                ; so the battery could not tell the two fixes apart; but
+                ; subrom_call's header documents the opposite ("CALSLT clobbers
+                ; all registers"), it restores DE only on the way IN, and every
+                ; other tenant in this tree marshals through RAM. 2 B in the
+                ; RESIDENT half is a claim about the protocol.
+                ; 🔬 KNIFE K-DE1 CUTS -- scratchpad/deffn_de_knife.py deletes
+                ; these two bytes and deffn-strict goes 0 -> 31 of 69 rows
+                ; divergent. WIDER than predicted: an integer LITERAL actual is
+                ; FACTYP=2 as much as a DEFINT one is, so `FNA(2)` is in the
+                ; class too. And every wrong answer is a plausible NUMBER --
+                ; 22529, 45058, 11264 -- not damage.
+                push    de
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
                 call    subrom_call         ; A = the tenant's request
+                pop     de                  ; (a `pop` does not touch CF)
                 jp      c,subrom_absent_error
                 dec     a
                 jr      z,fn_ev             ; 1 evaluate
@@ -282,7 +321,7 @@ fn_ev:
                 ld      a,$81
 fn_ev_x:
                 ld      (FN_PTR),hl
-                ld      (FN_REQ),a
+                ld      l,a                 ; the answer, straight into the phase
                 jr      fn_lp
 ; --- request 2: bind the value into the shadow slot the tenant just opened -
 fn_st:
@@ -297,8 +336,7 @@ fn_st_s:
                 ld      a,1                 ; the `$` unifier type (slice-4c)
                 call    str_set_key
 fn_st_x:
-                ld      a,$83
-                ld      (FN_REQ),a
+                ld      l,$83
                 jr      fn_lp
 ; --- request 3: a string result must leave the frame before the frame does -
 ; ⚠️ `DEF FNA$(X$)=X$` would otherwise return STRPTR pointing INTO the shadow

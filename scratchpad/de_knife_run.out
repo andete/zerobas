@@ -1,0 +1,39 @@
+  BASE  main=031184d9 sub=34bb8554  rc=0  ROWS: 85 printed, 80 scored — 0 of 69 DEF FN rows still divergent; 0 of 8 controls failed
+  KNIFE main=0b2a239f sub=34bb8554
+  KNIFE rc=2  ROWS: 85 printed, 80 scored — 31 of 69 DEF FN rows still divergent; 0 of 8 controls failed
+  31 row(s) reddened:
+      DIFF b.nested         ref='8'  zb='45058'
+      DIFF b.param          ref='3 5'  zb='22529 5'
+      DIFF b.paramnew       ref='8 0'  zb='20737 0'
+      DIFF b.redef          ref='3'  zb='22530'
+      DIFF b.two            ref='5'  zb='45312'
+      DIFF o.clearwipe.ctl  ref='3'  zb='22529'
+      DIFF o.defint         ref='2'  zb='11264'
+      DIFF o.defint.ctl     ref='2.5'  zb='11264'
+      DIFF o.defintbang     ref='2.5'  zb='11264'
+      DIFF o.dynself        ref='205'  zb='2252805'
+      DIFF o.fnbang         ref='2.5'  zb='11264'
+      DIFF o.fnpct          ref='2'  zb='11264'
+      DIFF o.global         ref='5'  zb='22531'
+      DIFF o.ifthen         ref='3'  zb='22529'
+      DIFF o.namespace      ref='9 3'  zb='9 22529'
+      DIFF o.nestsame       ref='7'  zb='45057'
+      DIFF o.outer.ctl      ref='2'  zb='22528'
+      DIFF o.outerabs       ref='2'  zb='22528'
+      DIFF o.outerafter     ref='2'  zb='45312'
+      DIFF o.outerbefore    ref='2'  zb='45312'
+      DIFF o.outernoarg     ref='3'  zb='22529'
+      DIFF o.p3             ref='1'  zb='16640'
+      DIFF o.p5             ref='1'  zb='16640'
+      DIFF o.p8             ref='1'  zb='16640'
+      DIFF o.p9             ref='1'  zb='16640'
+      DIFF o.runtwice       ref='3'  zb='22529'
+      DIFF o.stmtcolon      ref='3 9'  zb='22529 9'
+      DIFF o.suffn          ref='3'  zb='22529'
+      DIFF o.sufformal      ref='3'  zb='22529'
+      DIFF o.twocalls       ref='7'  zb='45058'
+      DIFF o.varptr         ref='2'  zb='0'
+  BACK  main=031184d9 sub=34bb8554
+  source restored to the working tree: as before the knife   (git diff vs HEAD: basic/deffn.asm | 51 +++++++++++++++++++++++++++++++++++++++++++--------)
+
+  K-DE1: CUT

@@ -1,0 +1,10 @@
+python3 tools/check_disk_deps.py --selftest
+baseline MISSING-DEP set: 0 target(s)
+  caught  dep stripped from a target (stmtpend-acceptance)
+  caught  dep stripped from the OTHER half of a pair (dskmsg-characterize)
+  caught  dep stripped from a disk-side target (diskbasic-acceptance)
+  caught  dep spelled as a literal path, which `make test-dsk` does not rebuild (namspc-acceptance)
+  caught  B1  the AST literal test goes blind (denominator collapses)
+  ok      B2  import-route positive control
+
+self-test 6/6 (4/4 findings, 1/1 blindness, 1/1 latent-route control)

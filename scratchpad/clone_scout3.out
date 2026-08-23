@@ -1,0 +1,24 @@
+est.save   n  each  region  file / members
+====================================================================================================
+      14   2    22  low     basic/float-arith.asm
+           arga_pack_fac, arga_pack_single
+      12   2    20  page1   basic/save.asm
+           sav_ascii_flag, sav_cas_flag
+      12   2    20  low     basic/float-arith.asm
+           raf_noround, rsp_noround
+      10   3    11  page1   basic/list.asm
+           dde_div, dde_div, pfi_div, pn_div
+       9   2    17  page1   basic/expr.asm
+           ev_t_div, ev_t_mul
+       9   2    17  page1   basic/expr.asm
+           ev_e_add, ev_e_sub
+       8   4     8  page1   basic/files.asm
+           dc_all, exp_num_float, get_int16_checked, mot_go
+       8   2    16  page1   basic/usr.asm
+           ev_usr_index, usr_index
+       8   2    16  page1   basic/list.asm
+           detok, pu_emit_tail
+       6   2    14  page1   basic/expr.asm
+           ev_ff_stick, ev_ff_strig
+
+10 candidate groups; total est. savings 96 B (overlapping groups NOT deduped)

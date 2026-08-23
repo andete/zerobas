@@ -1,0 +1,95 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_deffn.py --gate --strict \
+	         
+PASS b.ctl            ref='6'  zb='6'
+ok   b.forward        ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
+DIFF b.nested         ref='8'  zb='ERR 5 AT 60'
+ok   b.noarg          ref='7'  zb='7'
+DIFF b.param          ref='3 5'  zb='ERR 5 AT 30'
+DIFF b.paramnew       ref='8 0'  zb='ERR 5 AT 30'
+DIFF b.recurse        ref='ERR 7 AT 60'  zb='ERR 5 AT 60'
+DIFF b.redef          ref='3'  zb='ERR 5 AT 60'
+DIFF b.str            ref='hi!'  zb='ERR 5 AT 60'
+DIFF b.two            ref='5'  zb='ERR 5 AT 60'
+ok   b.undef          ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
+PASS d.ctl            ref='6'  zb='6'
+ok   d.def            ref='<Undefined user function>'  zb='<Undefined user function>'
+ok   d.defonly        ref='<Illegal direct>'  zb='<Illegal direct>'
+ok   d.defrun         ref='<Undefined user function>'  zb='<Undefined user function>'
+PASS d.defusr         ref='OK'  zb='OK'
+PASS d.let            ref='OK'  zb='OK'
+ok   d.sameline       ref='<Illegal direct>'  zb='<Illegal direct>'
+DIFF o.actualfirst    ref='60'  zb='ERR 5 AT 60'
+ok   o.argnoarg       ref='7 1'  zb='7 1'
+DIFF o.aryformal      ref='ERR 2 AT 60'  zb='ERR 5 AT 60'
+ok   o.badname        ref='ERR 2 AT 20'  zb='ERR 2 AT 20'
+ok   o.barecall       ref='ERR 2 AT 60'  zb='ERR 2 AT 60'
+DIFF o.clearwipe.ctl  ref='3'  zb='ERR 5 AT 60'
+ok   o.clearwipe3     ref='<Undefined user function>'  zb='<Undefined user function>'
+PASS o.ctl            ref='6'  zb='6'
+PASS o.ctl2           ref='6'  zb='6'
+DIFF o.defint         ref='2'  zb='ERR 5 AT 60'
+DIFF o.defint.ctl     ref='2.5'  zb='ERR 5 AT 60'
+DIFF o.defintbang     ref='2.5'  zb='ERR 5 AT 60'
+DIFF o.defstr         ref='hi!'  zb='ERR 5 AT 60'
+DIFF o.dynaddr        ref='5'  zb='ERR 5 AT 60'
+DIFF o.dynorder       ref='5'  zb='ERR 5 AT 60'
+DIFF o.dynscope       ref='5'  zb='ERR 5 AT 60'
+DIFF o.dynself        ref='205'  zb='ERR 5 AT 60'
+DIFF o.errrestore     ref='5 11'  zb='5 5'
+DIFF o.fnbang         ref='2.5'  zb='ERR 5 AT 60'
+DIFF o.fnpct          ref='2'  zb='ERR 5 AT 60'
+DIFF o.global         ref='5'  zb='ERR 5 AT 60'
+ok   o.ifnot          ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
+DIFF o.ifthen         ref='3'  zb='ERR 5 AT 60'
+ok   o.lazybody       ref='OK'  zb='OK'
+ok   o.lazydiv        ref='OK'  zb='OK'
+DIFF o.namespace      ref='9 3'  zb='ERR 5 AT 30'
+DIFF o.nestsame       ref='7'  zb='ERR 5 AT 60'
+ok   o.noeq           ref='OK'  zb='OK'
+ok   o.numstr         ref='ERR 13 AT 60'  zb='ERR 13 AT 60'
+DIFF o.outer.ctl      ref='2'  zb='ERR 5 AT 60'
+DIFF o.outerabs       ref='2'  zb='ERR 5 AT 60'
+DIFF o.outerafter     ref='2'  zb='ERR 5 AT 60'
+DIFF o.outerbefore    ref='2'  zb='ERR 5 AT 60'
+DIFF o.outernoarg     ref='3'  zb='ERR 5 AT 60'
+ok   o.p10            ref='ERR 5 AT 60'  zb='ERR 5 AT 60'  🔴 AGREES WITH THE BLANKET 'ERR 5 AT 60' this tree gives every DEF FN line -- NOT EVIDENCE
+ok   o.p11            ref='ERR 5 AT 60'  zb='ERR 5 AT 60'  🔴 AGREES WITH THE BLANKET 'ERR 5 AT 60' this tree gives every DEF FN line -- NOT EVIDENCE
+ok   o.p12            ref='ERR 5 AT 60'  zb='ERR 5 AT 60'  🔴 AGREES WITH THE BLANKET 'ERR 5 AT 60' this tree gives every DEF FN line -- NOT EVIDENCE
+ok   o.p16            ref='ERR 5 AT 60'  zb='ERR 5 AT 60'  🔴 AGREES WITH THE BLANKET 'ERR 5 AT 60' this tree gives every DEF FN line -- NOT EVIDENCE
+DIFF o.p3             ref='1'  zb='ERR 5 AT 60'
+DIFF o.p5             ref='1'  zb='ERR 5 AT 60'
+DIFF o.p8             ref='1'  zb='ERR 5 AT 60'
+DIFF o.p9             ref='1'  zb='ERR 5 AT 60'
+DIFF o.quotedcolon    ref='a:Q'  zb='ERR 5 AT 60'
+DIFF o.realcell       ref='5'  zb='ERR 5 AT 60'
+PASS o.realcell.ctl   ref='5'  zb='5'
+DIFF o.runtwice       ref='3'  zb='ERR 5 AT 30'
+--   o.sameaddr       ref='30327'  zb='ERR 5 AT 60'  (own-design RAM layout; see PREDICATE)
+DIFF o.stmtcolon      ref='3 9'  zb='ERR 5 AT 60'
+ok   o.strnum         ref='ERR 13 AT 60'  zb='ERR 13 AT 60'
+ok   o.strnumx        ref='5 13'  zb='5 13'
+DIFF o.suffn          ref='3'  zb='ERR 5 AT 60'
+DIFF o.sufformal      ref='3'  zb='ERR 5 AT 60'
+DIFF o.toofew         ref='ERR 2 AT 60'  zb='ERR 5 AT 60'
+DIFF o.toomany        ref='ERR 2 AT 60'  zb='ERR 5 AT 60'
+DIFF o.twocalls       ref='7'  zb='ERR 5 AT 30'
+ok   o.twofault       ref='ERR 2 AT 20'  zb='ERR 2 AT 20'
+ok   o.undefarg       ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
+DIFF o.varptr         ref='2'  zb='ERR 5 AT 60'
+PASS o.varptr.ctl     ref='5'  zb='5'
+--   z.addr           ref='-2325'  zb='ERR 5 AT 60'  (own-design RAM layout; see PREDICATE)
+--   z.addr.ctl       ref='-32679'  zb='-32679'  (own-design RAM layout; see PREDICATE)
+--   z.addr2          ref='-2325'  zb='ERR 5 AT 60'  (own-design RAM layout; see PREDICATE)
+--   z.addr2i         ref='-2325'  zb='ERR 5 AT 60'  (own-design RAM layout; see PREDICATE)
+ok   z.p10def         ref='OK'  zb='OK'
+.... claim:o.sameaddr  zb:o.sameaddr='ERR 5 AT 60'  NOT MEASURED -- o.sameaddr is not a number here (VARPTR(formal) differs from VARPTR(variable))
+.... claim:z.addr2    zb:z.addr2='ERR 5 AT 60'  zb:z.addr2i='ERR 5 AT 60'  NOT MEASURED -- z.addr2,z.addr2i is not a number here (the shadow cell does not move with nesting)
+.... claim:z.addr     zb:z.addr='ERR 5 AT 60'  zb:z.addr.ctl='-32679'  NOT MEASURED -- z.addr is not a number here (the shadow is not the variable's own cell)
+ROWS: 85 printed, 77 scored — 44 of 69 DEF FN rows still divergent; 0 of 8 controls failed
+GREEN BUT VACUOUS (4): o.p10, o.p11, o.p12, o.p16 -- these agree with the blanket syntax error, not with a rule
+DEF FN not implemented (expected until the verb ships): b.nested, b.param, b.paramnew, b.recurse, b.redef, b.str, b.two, o.actualfirst, o.aryformal, o.clearwipe.ctl, o.defint, o.defint.ctl, o.defintbang, o.defstr, o.dynaddr, o.dynorder, o.dynscope, o.dynself, o.errrestore, o.fnbang, o.fnpct, o.global, o.ifthen, o.namespace, o.nestsame, o.outer.ctl, o.outerabs, o.outerafter, o.outerbefore, o.outernoarg, o.p3, o.p5, o.p8, o.p9, o.quotedcolon, o.realcell, o.runtwice, o.stmtcolon, o.suffn, o.sufformal, o.toofew, o.toomany, o.twocalls, o.varptr
+make: *** [deffn-strict] Error 1

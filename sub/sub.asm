@@ -201,7 +201,7 @@ sub_p0_table:
                                                 ;   PARSE (sub/deffn.asm) -- D-DEFFNEV.
                                                 ;   A CALSLT is not resumable, so this is
                                                 ;   re-entered once per bounce and recovers
-                                                ;   its phase from FN_REQ.
+                                                ;   its phase from L.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to SUBROM_ENTRY_BASE_P0 mapped slot 3-2 into PAGE 0 and that

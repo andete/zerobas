@@ -1,0 +1,3 @@
+deffn-strict rc=2
+deffn-selftest rc=0
+DONE 2 targets

@@ -3269,21 +3269,22 @@ FOR_STK_END     equ     FOR_STK + FOR_DEPTH*FOR_FRAME   ; $EA92
 FN_BASE         equ     FOR_STK_END     ; $EA92: base of the whole DEF FN frame
 FN_PTR          equ     FN_BASE         ; 2 B: the call cursor, main <-> tenant
 FN_DPTR         equ     FN_BASE + 2     ; 2 B: the definition cursor, tenant-only
-FN_REQ          equ     FN_BASE + 4     ; 1 B: the request BOTH ways -- 1..5 out of
-                                        ; the tenant, $81..$84 back from the
-                                        ; servicer. Two disjoint alphabets in one
-                                        ; byte is what lets the tenant recover its
-                                        ; phase without a sixth cell there is no
-                                        ; room for.
-FN_KEY          equ     FN_BASE + 5     ; 2 B: the formal (or the $FFFF result slot)
-FN_TYP          equ     FN_BASE + 7     ; 1 B: its type -- and the ERR code on req 0
-FN_FEND         equ     FN_BASE + 8     ; 1 B: low byte of one-past the live frame.
+; ⚠️ THERE IS NO `FN_REQ` CELL, AND THERE WAS: the request/answer byte travels
+; in **L** through CALSLT instead (basic/deffn.asm fn_lp). "A CALSLT is not
+; resumable, so the phase lives in RAM" is true of the TENANT's state and false
+; of the SERVICER's -- the servicer is ordinary main-ROM code holding an
+; ordinary register across a `call`, and an inner fn_call runs entirely inside
+; the outer one's `call eval`, which sets L again on the way back. -7 B of main
+; ROM at three sites, and one byte back here.
+FN_KEY          equ     FN_BASE + 4     ; 2 B: the formal (or the $FFFF result slot)
+FN_TYP          equ     FN_BASE + 6     ; 1 B: its type -- and the ERR code on req 0
+FN_FEND         equ     FN_BASE + 7     ; 1 B: low byte of one-past the live frame.
                                         ; == low FN_PAREA means "no FN call in
                                         ; progress" -- the fast miss every ordinary
                                         ; variable reference takes.
-FN_SLOTP        equ     FN_BASE + 9     ; 1 B: low byte of the slot the NEXT formal takes
-FN_RTYPE        equ     FN_BASE + 10    ; 1 B: the FN's own resolved type (its result type)
-FN_CELLS        equ     11              ; ...the eleven above, saved WITH the live prefix
+FN_SLOTP        equ     FN_BASE + 8     ; 1 B: low byte of the slot the NEXT formal takes
+FN_RTYPE        equ     FN_BASE + 9     ; 1 B: the FN's own resolved type (its result type)
+FN_CELLS        equ     10              ; ...the ten above, saved WITH the live prefix
 FN_PAREA        equ     FN_BASE + FN_CELLS  ; the shadow-parameter slots themselves
 FN_SLOTSZ       equ     11              ; [name0][name1][type][value:8] -- a scalar entry
 FN_AREA         equ     ((LINEBUF - FN_PAREA)/FN_SLOTSZ)*FN_SLOTSZ

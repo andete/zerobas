@@ -1,0 +1,118 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_namspc.py --gate \
+	         
+D-NAMSPC — a SPACE inside a variable reference's NAME / before its suffix   sides: vg8020, cf3300, zb
+==============================================================================
+ok   t.ctl       vg8020='4142ef1200'  cf3300='4142ef1200'  zb='4142ef1200'   [POSITIVE CONTROL]
+ok   t.name      vg8020='412042ef1200'  cf3300='412042ef1200'  zb='412042ef1200'
+ok   t.dctl      vg8020='414224ef22582200'  cf3300='414224ef22582200'  zb='414224ef22582200'   [POSITIVE CONTROL]
+ok   t.dollar    vg8020='41422024ef22582200'  cf3300='41422024ef22582200'  zb='41422024ef22582200'
+ok   t.digctl    vg8020='4131ef1200'  cf3300='4131ef1200'  zb='4131ef1200'   [POSITIVE CONTROL]
+ok   t.dig       vg8020='412031ef1200'  cf3300='412031ef1200'  zb='412031ef1200'
+ok   t.kwctl     vg8020='5343f745ef1200'  cf3300='5343f745ef1200'  zb='5343f745ef1200'   [POSITIVE CONTROL]
+ok   t.kw        vg8020='534320f745ef1200'  cf3300='534320f745ef1200'  zb='534320f745ef1200'
+ok   t.andctl    vg8020='f6ef1200'  cf3300='f6ef1200'  zb='f6ef1200'   [POSITIVE CONTROL]
+ok   t.and       vg8020='41204e44ef1200'  cf3300='41204e44ef1200'  zb='41204e44ef1200'
+ok   t.absctl    vg8020='ff86ef1200'  cf3300='ff86ef1200'  zb='ff86ef1200'   [POSITIVE CONTROL]
+ok   t.abs       vg8020='41204253ef1200'  cf3300='41204253ef1200'  zb='41204253ef1200'
+ok   c.let       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '   [POSITIVE CONTROL]
+ok   r.name      vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   r.multi     vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   r.three     vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   r.run       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   r.digctl    vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '   [POSITIVE CONTROL]
+ok   r.dig       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   r.strctl    vg8020='HI'  cf3300='HI'  zb='HI'   [POSITIVE CONTROL]
+ok   r.instr     vg8020='HI'  cf3300='HI'  zb='HI'
+ok   r.dollar    vg8020='HI'  cf3300='HI'  zb='HI'
+ok   r.pctctl    vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '   [POSITIVE CONTROL]
+ok   r.pct       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   r.bangctl   vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '   [POSITIVE CONTROL]
+ok   r.bang      vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   r.hashctl   vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '   [POSITIVE CONTROL]
+ok   r.hash      vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   a.name      vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   a.dig       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   a.str       vg8020='HI'  cf3300='HI'  zb='HI'
+ok   a.dollar    vg8020='HI'  cf3300='HI'  zb='HI'
+ok   a.sig       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   s.ifctl     vg8020='OK'  cf3300='OK'  zb='OK'   [POSITIVE CONTROL]
+ok   s.if        vg8020='OK'  cf3300='OK'  zb='OK'
+ok   s.forctl    vg8020='OK'  cf3300='OK'  zb='OK'   [POSITIVE CONTROL]
+ok   s.for       vg8020='OK'  cf3300='OK'  zb='OK'
+ok   s.next      vg8020='OK'  cf3300='OK'  zb='OK'
+ok   s.dimctl    vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '   [POSITIVE CONTROL]
+ok   s.dim       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   s.ary       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   s.readctl   vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '   [POSITIVE CONTROL]
+ok   s.read      vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   s.swapctl   vg8020=' 9  7 '  cf3300=' 9  7 '  zb=' 9  7 '   [POSITIVE CONTROL]
+ok   s.swap      vg8020=' 9  7 '  cf3300=' 9  7 '  zb=' 9  7 '
+ok   k.and       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   k.abs       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   z.kw        vg8020='<Syntax error>'  cf3300='<Syntax error>'  zb='<Syntax error>'   [NEGATIVE CONTROL — both references REFUSE this]
+ok   z.miss      vg8020='<NEXT without FOR>'  cf3300='<NEXT without FOR>'  zb='<NEXT without FOR>'   [NEGATIVE CONTROL — both references REFUSE this]
+ok   w.let       vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   w.print     vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   w.for       vg8020='OK'  cf3300='OK'  zb='OK'
+ok   w.comma     vg8020=' 9  7 '  cf3300=' 9  7 '  zb=' 9  7 '
+ok   z.fldctl    vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   z.fldvar    vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   z.fldstr    vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   z.join      vg8020='<Type mismatch>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'
+ok   z.joinnum   vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   f.lit       vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.var       vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.expr      vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.paren     vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.inlit     vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.invar     vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.outvar    vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.appvar    vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.applit    vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.appvarx   vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.killlit   vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.killvar   vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.namelit   vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.namevar   vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.savelit   vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.savevar   vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.loadlit   vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.loadvar   vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.bloadlit  vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.bloadvar  vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.fileslit  vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.filesvar  vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.filesbare  vg8020='<NO DISK ON THIS SIDE>'  cf3300='5 entries + OK'  zb='5 entries + OK'   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.fileslitl  vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <File not found>'  zb='0 entries + <File not found>'   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   f.filesvarl  vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <File not found>'  zb='0 entries + <File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.opendev   vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.savedev   vg8020='<NO DISK ON THIS SIDE>'  cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.opennum   vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.killnum   vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.savenum   vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.loadnum   vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.bloadnum  vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.filesnum  vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <Type mismatch>'  zb='0 entries + <Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.savediv   vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Division by zero>'  zb='<Division by zero>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.opendiv   vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Division by zero>'  zb='<Division by zero>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+.... n.savebare  vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Missing operand>'  zb='<Syntax error>'   [DEFERRED — the bare form: `Missing operand` on the CF-3300, `Syntax error` here. RAISED on both sides since D-FNEXPR2 (it was a PRINTED `load error`); the wording is D-MISS-1's open `Missing operand` residual, one verb family over]
+.... n.loadbare  vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Missing operand>'  zb='<Syntax error>'   [DEFERRED — the bare form: `Missing operand` on the CF-3300, `Syntax error` here. RAISED on both sides since D-FNEXPR2 (it was a PRINTED `load error`); the wording is D-MISS-1's open `Missing operand` residual, one verb family over]
+.... n.bloadbare  vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Missing operand>'  zb='<Syntax error>'   [DEFERRED — the bare form: `Missing operand` on the CF-3300, `Syntax error` here. RAISED on both sides since D-FNEXPR2 (it was a PRINTED `load error`); the wording is D-MISS-1's open `Missing operand` residual, one verb family over]
+ok   t.runnum    vg8020='8a200e1e0000'  cf3300='8a200e1e0000'  zb='8a200e1e0000'
+ok   t.runvar    vg8020='8a20412400'  cf3300='8a20412400'  zb='8a20412400'
+ok   n.runvar    vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.runlit    vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.runexpr   vg8020='<NO DISK ON THIS SIDE>'  cf3300='<File not found>'  zb='<File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.runline   vg8020='B'  cf3300='B'  zb='B'
+ok   n.runundef  vg8020='<Undefined line number>'  cf3300='<Undefined line number>'  zb='<Undefined line number>'
+ok   n.rundata   vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '
+ok   n.runlinectl  vg8020='B'  cf3300='B'  zb='B'   [POSITIVE CONTROL]
+ROWS: 105 printed, 102 scored — 102 agree, 0 diverge, 0 without a reference, 3 deferred (not scored)
+==============================================================================
+102/102 readings match their reference (105 cases, 21 positive controls, 2 negative controls, 41 row(s) with ONE reference only, 0 row(s) without a reference, 0 row(s) where the references disagree, 3 DEFERRED row(s) measured but not scored)
+🔴 ORACLE STRENGTH IS NOT UNIFORM: the `z.fld*` rows are Disk BASIC, which a diskless VG-8020 cannot express — they rest on the CF-3300 ALONE. Every other row here has two references.
+DENOMINATOR: (WHERE the space falls inside a reference: before the 2nd LETTER, before a DIGIT, before each of the four type suffixes `% ! # $`, MORE THAN ONCE, and between two names run together) x (the POSITION the reference stands in: r-value expression, LET target, IF condition, FOR, NEXT, DIM, an array element lvalue, READ, SWAP -- none of which except NEXT/READ reaches tgt_parse), plus whether the space SURVIVES THE CRUNCH at all (t.*, read from the stored line bytes, which is what says whether the fix belongs in the tokeniser or the parser), plus what the TWO-CHARACTER KEY does with a space in the middle (r.three / r.run / a.sig), plus the KEYWORD constraint (t.kw / t.and / t.abs / k.and / k.abs: this tokeniser matches keywords at every position mid-identifier, so a spaced name can be crunched into a TOKEN before any parser sees it, and z.kw is the RUNTIME negative control that says a name so tokenised must STAY refused), plus the converse row that says the joined name is a DIFFERENT variable and not tolerated junk (z.miss), plus the TRAILING-space set (w.*) that is green BEFORE and must stay green AFTER. Every spaced row carries the CONTIGUOUS form of its own fixture as its positive control. NOT COVERED: a TAB or other whitespace byte; DIRECT mode (TODO.md's `dir-name` residual); a space inside a DEF FN name or a line-number list; `RSET` and the FIELD family (D-TGTSPC's nine lvalue surfaces already carry the `(` position and share one parse site).
