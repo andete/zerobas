@@ -1,0 +1,20 @@
+  ran vg8020  poke.plus
+  ran vg8020  poke.paren
+  ran vg8020  poke.colon
+  ran vg8020  let.plus
+  ran cf3300  poke.plus
+  ran cf3300  poke.paren
+  ran cf3300  poke.colon
+  ran cf3300  let.plus
+  ran zb      poke.plus
+  ran zb      poke.paren
+  ran zb      poke.colon
+  ran zb      let.plus
+
+  poke.plus   vg8020='24 99'  cf3300='24 99'  zb='0 0'   🔴 DIFF
+  poke.paren  vg8020='2 99'  cf3300='2 99'  zb='2 99'
+  poke.colon  vg8020='24 99'  cf3300='24 99'  zb='0 0'   🔴 DIFF
+  let.plus    vg8020='24 0'  cf3300='24 0'  zb='0 0'   🔴 DIFF
+
+ROWS: 4 printed — 3 DIFF, 1 agree, 0 NOT MEASURED
+rc=0

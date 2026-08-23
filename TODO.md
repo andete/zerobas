@@ -113,9 +113,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       so: `POKE ,1` (the missing ADDRESS) reaches `poke_err` and reads ERR 2 on
       all three, and `POKE &HE000,65` works. The missing-VALUE path never reaches
       `poke_err` at all — the empty operand evaluates to 0 and the store
-      proceeds. **Likely one rule at several verbs** (`LOCATE ,` correctly gives
-      ERR 24, so the mechanism exists); sweep the verbs that take a trailing
-      value before pricing.
+      proceeds.
+      ✅ **SWEPT 2026-08-23, D-MISSOP,**
+      [`docs/spec-basic-missop.md`](docs/spec-basic-missop.md)
+      (`scratchpad/missop_probe.py`, 26 rows x 3 machines, 78 runs).
+      **IT IS ONE RULE AT SIXTEEN SLOTS: 16 DIFF, 10 agree, references unanimous
+      on all 26.** 13 rows SILENTLY COMPLETE (four of them WRITE — `POKE` three
+      ways and `VPOKE`, each turning a byte holding 99 into 0) and 3 abort with
+      ERR 2 where the reference says 24. THE RULE: *a required slot that ends
+      where a value was needed is `Missing operand` (ERR 24); an empty operand
+      terminated by `)` or `,` is `Syntax error` (ERR 2); an OPTIONAL slot may be
+      omitted and completes.* 🎯 **That partition is ALREADY `ev_f`'s partition**
+      — `ev_f_empty` (at `)`/`,`) is exact today, and `ev_f_err` (end of
+      statement, `:`, `+`) is the hole: it returns DE=0 with the `ERRMARK`
+      landmark and **no `penderr_set` at all**. 💰 **~6 B — 5 in
+      `basic/expr.asm` + 1 table byte in `basic/interp.asm`, BOTH page 1, which
+      was 2 B free on 2026-08-23.** An ESTIMATE and therefore a lower bound.
+      Funding: a 6 B page-1 carve, or PROMOTE `ev_f_err` into the low region
+      (which was 17 B free on 2026-08-23) —
+      but `ev_f_defer` falls THROUGH into it, so the net gain must be measured.
+      §6.1 names what a knife must attack, headed by `str-engine.asm`'s
+      backtracking `jp ev_f_err` sites.
+      🔴 **AND THE SWEEP REFUTED THIS ITEM'S OWN JUSTIFICATION**: the
+      parenthesis *"`LOCATE ,` correctly gives ERR 24"* is false — `LOCATE,1`
+      reads **0 on all three** (an omitted LOCATE row is an OPTIONAL slot). The
+      conclusion was right and the row named for it measured a different
+      question; `LOCATE1,` is the row that shows the mechanism (§7).
 
 - [x] 💰 **`DEF FN` SHIPS (2026-08-23, D-DEFFNLAND,
       [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md)).** The real
