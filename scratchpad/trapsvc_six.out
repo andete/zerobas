@@ -1,0 +1,8 @@
+  ran vg8020  int.six
+  ran cf3300  int.six
+  ran zb      int.six
+
+  int.six  vg8020='9 18'  cf3300='9 18'  zb='6 18'   🔴 DIFF
+
+ROWS: 1 printed
+rc=0

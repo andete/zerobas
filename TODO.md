@@ -56,6 +56,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Language / verb surface**
 
+- [ ] 🔴 **A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD — AND
+      THAT IS FAITHFUL; WHAT IS NOT IS THE SIX-EVENT CAP.** Measured 2026-08-23,
+      D-TRAPSVC, [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §4/§6
+      (`scratchpad/trapsvc_probe.py`, 7 rows x 3 machines, 2 knives EXACT).
+      `RESUME <line>` **and** a plain `GOTO` out of an `ON INTERVAL` handler kill
+      that trap on the VG-8020, the CF-3300 **and** zerobas alike (`1 0`), while
+      `RESUME NEXT` — one keyword apart — keeps it alive on all three (`1 1`).
+      The residual is `TRAPSVC`: it is decremented ONLY by `ex_return`'s
+      `trap_return_check`, so each abandoned dispatch leaks a `TRAPSTK` record.
+      After **6**, `ct_svc_full` raises ERR 7 with the entry still `ON`+`PENDING`
+      and `TRAPPEND` still set, so it re-raises inside the active `ON ERROR`
+      handler and the program **aborts** (`Out of memory in 800`). Row `int.six`:
+      **`6 18` vs `9 18` on both references**; `gos.leak` (no trap in it) caps at
+      **8**, which is what says the cap is `TRAPSTK_MAX` and not `GOSUB_DEPTH`.
+      💰 **PRICED AND DECLINED**: the only fix that closes the class is popping
+      the stale record when a `SERVICING` entry is explicitly re-armed, **~25–30 B
+      of main page 1** against **2 B free** (measured `b8a8137`), and it still
+      misses a nested leak. The two cheaper designs are rejected on principle in
+      §6 — one of them makes the trap *silently* dead.
+
+- [ ] 🔴 **`CLEAR` BREAKS THE CONSTRUCTION THAT MAKES `TRAPSTK`'s GSP MATCH SOUND
+      — UNMEASURED.** Filed 2026-08-23,
+      [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §7. After a
+      leaked trap dispatch the abandoned GOSUB frame is still on the stack, so
+      the only `RETURN` that can reach `record.gsp` is the one popping the trap's
+      own frame — the match is sound *by construction*. **`clear_vars`
+      (`basic/vars.asm:1061`) resets `GSP` and does NOT call `trap_init`**, so
+      after a `CLEAR` an unrelated later `GOSUB`/`RETURN` pair can land on the
+      stale record's gsp and re-enable a trap the program believes is dead
+      (+`TRAPENA`). The references have no `TRAPSTK` at all. **Needs the T5
+      probe's POKE-based readout, not D-TRAPSVC's** — `CLEAR` wipes the variables
+      a fenced `PRINT` row carries its flags in.
+
+- [ ] ⚠️ **KEY / STRIG / SPRITE / STOP were NOT run against the D-TRAPSVC rows.**
+      2026-08-23, [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §7.
+      `ON INTERVAL` is the only self-firing MSX1 trap, so the other four are
+      covered by a **code** argument (they share `check_traps`, `ct_find`,
+      `set_state` and `trap_return_check` verbatim; the index is a parameter),
+      not by a measurement. The device-driven harnesses exist
+      (`basic_probe_key_trap.py`, T2/T4 probes) if the argument is ever attacked.
+
 - [ ] 🔴 **`POKE <addr>,` WITH NO VALUE WRITES ZERO INSTEAD OF RAISING — a
       SILENT MEMORY WRITE, and it is not a carve artifact.** Found 2026-08-22 by
       D-DUPSPAN2's closing demo (`scratchpad/dupspan2_demo.py`,

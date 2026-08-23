@@ -1,0 +1,32 @@
+== clean build, baseline ==
+baseline roms={'basic-reloc.rom': '7942cc20', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '031184d9'}
+baseline rows={'int.ctl': '1 1', 'int.one': '1 1', 'int.resume': '1 0', 'int.resnext': '1 1', 'int.goto': '1 0', 'int.six': '6 18', 'gos.leak': '8 7'}
+
+== K-TR1  the SERVICING -> ON auto-resume value ==
+  roms={'basic-reloc.rom': '8a92bb32', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': 'a8e8a729'}
+  MOVED  int.ctl    '1 1' -> '1 0'
+  MOVED  int.one    '1 1' -> '1 0'
+  same   int.resume '1 0' -> '1 0'
+  MOVED  int.resnext '1 1' -> '1 0'
+  same   int.goto   '1 0' -> '1 0'
+  same   int.six    '6 18' -> '6 18'
+  same   gos.leak   '8 7' -> '8 7'
+  => EXACT  moved=['int.ctl', 'int.one', 'int.resnext'] want=['int.ctl', 'int.one', 'int.resnext']
+
+== K-TR2  the TRAPSVC decrement (the service record is never popped) ==
+  roms={'basic-reloc.rom': '99e62e71', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '021778c8'}
+  MOVED  int.ctl    '1 1' -> '<NO OUTPUT>'
+  same   int.one    '1 1' -> '1 1'
+  same   int.resume '1 0' -> '1 0'
+  MOVED  int.resnext '1 1' -> '<NO OUTPUT>'
+  same   int.goto   '1 0' -> '1 0'
+  same   int.six    '6 18' -> '6 18'
+  same   gos.leak   '8 7' -> '8 7'
+  => EXACT  moved=['int.ctl', 'int.resnext'] want=['int.ctl', 'int.resnext']
+
+restored roms={'basic-reloc.rom': '7942cc20', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '031184d9'}
+
+2/2 knife rows EXACT
+  EXACT  K-TR1  the SERVICING -> ON auto-resume value   moved=['int.ctl', 'int.one', 'int.resnext'] want=['int.ctl', 'int.one', 'int.resnext']
+  EXACT  K-TR2  the TRAPSVC decrement (the service record is never popped)   moved=['int.ctl', 'int.resnext'] want=['int.ctl', 'int.resnext']
+rc=0

@@ -1,0 +1,32 @@
+  ran vg8020  int.ctl
+  ran vg8020  int.one
+  ran vg8020  int.resume
+  ran vg8020  int.resnext
+  ran vg8020  int.goto
+  ran vg8020  int.six
+  ran vg8020  gos.leak
+  ran cf3300  int.ctl
+  ran cf3300  int.one
+  ran cf3300  int.resume
+  ran cf3300  int.resnext
+  ran cf3300  int.goto
+  ran cf3300  int.six
+  ran cf3300  gos.leak
+  ran zb      int.ctl
+  ran zb      int.one
+  ran zb      int.resume
+  ran zb      int.resnext
+  ran zb      int.goto
+  ran zb      int.six
+  ran zb      gos.leak
+
+  int.ctl      vg8020='1 1'  cf3300='1 1'  zb='1 1'
+  int.one      vg8020='1 1'  cf3300='1 1'  zb='1 1'
+  int.resume   vg8020='1 0'  cf3300='1 0'  zb='1 0'
+  int.resnext  vg8020='1 1'  cf3300='1 1'  zb='1 1'
+  int.goto     vg8020='1 0'  cf3300='1 0'  zb='1 0'
+  int.six      vg8020='9 18'  cf3300='9 18'  zb='6 18'   🔴 DIFF
+  gos.leak     vg8020='12 0'  cf3300='12 0'  zb='8 7'   🔴 DIFF
+
+ROWS: 7 printed
+rc=0

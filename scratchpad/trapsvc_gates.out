@@ -1,0 +1,18 @@
+rc=0 basic-reloc
+rc=0 unit-test
+rc=0 deadcode
+rc=0 wall-assertion-check
+rc=0 redundant-load-check
+rc=0 rowshape-check
+rc=0 injector-check
+rc=0 preflight-check
+rc=0 latch-check
+rc=0 diskdep-check
+rc=0 switch-build-check
+rc=0 kwsweep
+rc=0 deffn-selftest
+rc=0 interval-trap-acceptance
+7942cc20 build/basic-reloc.rom
+34bb8554 build/sub.rom
+031184d9 build/zerobas-main-eu.rom
+DONE

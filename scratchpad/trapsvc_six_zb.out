@@ -1,0 +1,26 @@
+=== zb int.six ===
+ zerobas version 0.1                    
+ clean-room MSX-BASIC program loader    
+                                        
+ ZBNEW                                  
+ ZB10 ONERRORGOTO800                    
+ ZB20 ONINTERVAL=10GOSUB700             
+ ZB30 N=0:E=0                           
+ ZB40 INTERVALON:C=0                    
+ ZB41 H=PEEK(&HFC9F):W=PEEK(&HFC9E)+256*
+ H:IFH<>PEEK(&HFC9F)THEN41              
+ ZB42 H=PEEK(&HFC9F):V=PEEK(&HFC9E)+256*
+ H:IFH<>PEEK(&HFC9F)THEN42              
+ ZB43 IFV-W<45THEN42                    
+ ZB50 IFC=0THEN90                       
+ ZB52 N=N+1:IFN<9THEN40                 
+ ZB90 INTERVALOFF:CLS:PRINT"[";N;E;"]":E
+ ND                                     
+ ZB700 C=1:X=FNZ(0)                     
+ ZB710 RETURN                           
+ ZB800 E=ERR:RESUME50                   
+ ZBRUN                                  
+ Out of memory in 800                   
+ ZB                                     
+                                        
+--- face: '<NO OUTPUT>'
