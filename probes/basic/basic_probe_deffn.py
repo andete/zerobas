@@ -36,7 +36,10 @@ row the two references did not agree on, so `WANT` contains no unscored reading.
            `o.sameaddr` must be NON-ZERO (the formal is not the variable) and
            `z.addr2`/`z.addr2i` must be EQUAL (the shadow does not move with
            nesting). See `PREDICATE` below.
-  * `gate` everything else — the verb's actual surface, 69 rows.
+  * `gate` everything else — the verb's actual surface, **71 rows**
+           (69 until 2026-08-23, when D-DEFFNKNIFE's K-FE1 found that no
+           row scored `raise_error`'s FN_FEND reset and added
+           `o.errfend18`/`o.errfend13`).
 
 🔴 TWO SUBJECT ROWS ARE A SILENT WRONG ANSWER TODAY, WHICH IS WHY THEY ARE HERE.
 `FNZ(1)` on an undefined name, and a `DEF` on a later unexecuted line, are
@@ -104,6 +107,20 @@ CASES = {
     'o.dynorder'        : (['X=5', 'DEF FNA(X)=FNB(0)', 'DEF FNB(Y)=X'], 'FNA(2)'),
     'o.dynscope'        : (['X=5', 'DEF FNB(Y)=X', 'DEF FNA(X)=FNB(0)'], 'FNA(2)'),
     'o.dynself'         : (['X=5', 'DEF FNB(Y)=X', 'DEF FNA(X)=FNB(0)+X*100'], 'FNA(2)'),
+    # 🔴 o.errrestore CANNOT SEE raise_error's FN_FEND RESET, AND A KNIFE IS WHAT
+    # SAID SO (2026-08-23, D-DEFFNKNIFE K-FE1). `X/0` is a DEFERRED error --
+    # fp_runtime_error's own header: the float ops "have no mid-expression
+    # unwind, only SET FPERR and yield a defined value (0)", and the abort is
+    # "realized at the statement boundary". So `Y=FNA(2)` RETURNS NORMALLY,
+    # fn_leave restores the frame in the ordinary way, and raise_error runs with
+    # nothing stale to reset. Disabling the reset left this row green.
+    # The two rows below are the ones that score it: an IMMEDIATE `jp
+    # raise_error` from inside a live frame (the tenant's ERR 18 and its ERR 13),
+    # where the trap path resets SP and fn_leave never runs at all. Both are
+    # MEASURED on both references (scratchpad/deffn_fend_probe.out), and both
+    # redden under K-FE1 while o.errrestore does not.
+    'o.errfend13'       : (['X=5:DEF FNA(X)=A$', 'ON ERROR GOTO 800', 'Y=FNA(2)'], 'X;E', ['800 E=ERR:RESUME 60']),
+    'o.errfend18'       : (['X=5:DEF FNA(X)=FNZ(0)', 'ON ERROR GOTO 800', 'Y=FNA(2)'], 'X;E', ['800 E=ERR:RESUME 60']),
     'o.errrestore'      : (['X=5:DEF FNA(X)=X/0', 'ON ERROR GOTO 800', 'Y=FNA(2)'], 'X;E', ['800 E=ERR:RESUME 60']),
     'o.fnbang'          : (['DEF FNA!(X)=X/2'], 'FNA!(5)'),
     'o.fnpct'           : (['DEF FNA%(X)=X/2'], 'FNA%(5)'),
@@ -199,6 +216,8 @@ WANT = {
     'o.dynorder'        : '5',   # round8
     'o.dynscope'        : '5',   # round6
     'o.dynself'         : '205',   # round8
+    'o.errfend13'       : '5 13',   # deffn_fend_probe, 2026-08-23
+    'o.errfend18'       : '5 18',   # deffn_fend_probe, 2026-08-23
     'o.errrestore'      : '5 11',   # round5
     'o.fnbang'          : '2.5',   # round6
     'o.fnpct'           : '2',   # round6

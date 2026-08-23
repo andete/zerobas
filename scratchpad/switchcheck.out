@@ -1,0 +1,17 @@
+python3 tools/check_switch_builds.py
+baseline (all switches on): assembles
+
+PASS  G6_RESIDENT equ 0
+FAIL  G7_RESIDENT equ 0
+        ERROR: Symbol 'gfx_syntax' is undefined  on line 1522 of file basic/interp.asm
+FAIL  G8_RESIDENT equ 0
+        ERROR: Symbol 'g8_open_paren' is undefined  on line 1063 of file basic/graphics.asm
+PASS  I1_RESIDENT equ 0
+PASS  TRAPS_T3 equ 0
+PASS  TRAPS_T4 equ 0
+
+SWITCHES: 4 of 6 assemble with the switch off
+FAIL: G7_RESIDENT, G8_RESIDENT
+A switch that cannot be flipped is a switch that is not there. The usual cause is an ALWAYS-ASSEMBLED reference to a symbol that only exists under the switch (`X equ y`, a `jp`, a table entry); the fix is an ELSE arm, which costs the shipping build nothing because it is not assembled there.
+make: *** [switch-build-check] Error 1
+rc=2

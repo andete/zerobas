@@ -933,8 +933,20 @@ raise_error:
                 ; FRAME STANDING. Nothing unwinds fn_leave -- the trap path
                 ; resets SP outright -- so a stale FN_FEND would leave every
                 ; later reference to a formal's NAME reading a dead slot. That is
-                ; a silent wrong answer, and o.errrestore (`X` = 5, ERR = 11
-                ; after a body that divided by zero) is the row that says so.
+                ; a silent wrong answer, and o.errfend18 / o.errfend13 (`X` = 5
+                ; after a body whose fault reached THIS routine with the frame
+                ; still live) are the rows that say so.
+                ; 🔴 THEY REPLACE o.errrestore, WHICH THIS COMMENT USED TO NAME
+                ; AND WHICH IS BLIND TO THIS LINE -- a knife found it
+                ; (D-DEFFNKNIFE K-FE1, scratchpad/deffn_knives.py). `X/0` is a
+                ; DEFERRED error: fp_runtime_error's header says the float ops
+                ; "have no mid-expression unwind, only SET FPERR and yield a
+                ; defined value (0)" and the abort is "realized at the statement
+                ; boundary", so the FN call RETURNS NORMALLY, fn_leave restores
+                ; the frame the ordinary way, and by the time we get here there
+                ; is nothing stale to reset. Disabling this store left that row
+                ; green. The rows above raise through `jp raise_error` from
+                ; INSIDE a live frame, which is the only shape this guard sees.
                 ; 🎯 FREE OF REGISTER COST: record_errline clobbers A anyway and
                 ; rerr_msg below reloads it from (ERRFLG).
                 ld      a,low FN_PAREA

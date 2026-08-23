@@ -2465,6 +2465,20 @@ deffn-strict: repack-machine
 	python3 probes/basic/basic_probe_deffn.py --gate --strict \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-DEFFNKNIFE: EVERY BUILD SWITCH, FLIPPED ------------------------------
+# 🔴 NOTHING IN THIS TREE EVER RAN WITH A SWITCH OFF, SO THE SWITCHES DECAYED.
+# D-DUPSPAN2's `loc_missing equ g8_missing` -- an always-assembled alias to a
+# symbol that exists only under `IF G8_RESIDENT` -- had made `G8_RESIDENT equ 0`
+# unbuildable from the day that carve landed, and the only thing that ever
+# noticed was a SCAFFOLD, mid-slice, where a broken switch is indistinguishable
+# from a broken edit (docs/spec-basic-deffnland.md §3.3). This assembles the
+# main image with each switch off in turn and asks ONLY that it BUILDS -- not
+# that it fits, not that it is correct: a disabled feature's stub moves the
+# walls, and gating a wall here would fail for reasons that are not the switch.
+# It writes into build/switchcheck/ and never touches the shipping artefacts.
+switch-build-check:
+	python3 tools/check_switch_builds.py
+
 lineerr-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_lineerr.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
@@ -2717,4 +2731,5 @@ clean:
         lineerr-characterize lineerr-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
+        deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check clean

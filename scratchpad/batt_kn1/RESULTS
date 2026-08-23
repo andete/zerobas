@@ -1,0 +1,15 @@
+basic-reloc rc=0
+unit-test rc=0
+deffn-selftest rc=0
+switch-build-check rc=0
+wall-assertion-check rc=0
+redundant-load-check rc=0
+rowshape-check rc=0
+injector-check rc=0
+preflight-check rc=0
+latch-check rc=2
+diskdep-check rc=0
+diskdep-selftest rc=0
+kwsweep rc=0
+deffn-strict rc=0
+DONE 14 targets

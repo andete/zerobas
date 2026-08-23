@@ -177,8 +177,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       boundary at all. 🎯 **Test the gate on a deliberately-bad cross-region
       alias FIRST: that answer is worth more than the 43 B.**
 
-- [ ] 🔴 **AN `equ` ALIAS TO A CONDITIONALLY-ASSEMBLED SYMBOL SILENTLY BREAKS
-      THE BUILD SWITCH, AND NOTHING IN THIS TREE CAN SEE IT.** Filed 2026-08-23
+- [x] ✅ **CLOSED 2026-08-23 by D-DEFFNKNIFE — `make switch-build-check` SHIPS,
+      and it was RED ON TWO SWITCHES, one of them `G8_RESIDENT` AGAIN.**
+      [`docs/spec-basic-deffnknife.md`](docs/spec-basic-deffnknife.md) §7.
+      `tools/check_switch_builds.py` assembles the main image with each of
+      `G6/G7/G8_RESIDENT`, `I1_RESIDENT`, `TRAPS_T3`, `TRAPS_T4` off in turn and
+      asks ONLY that it BUILDS. First run: `G7_RESIDENT` died on `gfx_syntax`
+      (defined in G7's block, used by G8's `LET VDP(0)=` refusal over in
+      `interp.asm`) and `G8_RESIDENT` on `g8_open_paren` (defined in G8's block,
+      called by G7's `spr_parse_index`). Fixing those revealed a THIRD:
+      `spr_tenant`, defined in G7's block and called by G8's `g8_run`.
+      🔴 **THE CLASS IS WIDER THAN ALIASES** — not one of the three is an `equ`;
+      the real shape is *any* symbol defined inside one feature's `IF` and used
+      from another's, and the sprite/VDP pair is riddled with it because the two
+      share grammar. ⚠️ **AND EVERY DIAGNOSTIC NAMES A DIFFERENT FILE AND A
+      DIFFERENT FEATURE FROM ITS CAUSE**, which is exactly why this had to be a
+      standing gate rather than a thing re-derived mid-slice. 💰 All three fixes
+      cost the shipping build **ZERO**, and the proof is the hash: clean rebuild
+      after them is `7942cc20` / `34bb8554` / `031184d9`, byte-identical.
+      🔴 **AND THE GATE'S FIRST GREEN RUN BROKE THE NEXT GATE**: it rewrites
+      `basic/sysvars.inc` and restores it byte-identical, but the mtime bump made
+      `make -q` call the shipping ROM STALE and `latch-check` refused with
+      *"APPARATUS FAILURE -- NOTHING WAS MEASURED"*. Fixed with `os.utime()`
+      after the byte-identity assert — the deliberate INVERSE of the knife rule,
+      and documented as such at the site. Below is the original filing.
+      ~~AN `equ` ALIAS TO A CONDITIONALLY-ASSEMBLED SYMBOL SILENTLY BREAKS
+      THE BUILD SWITCH, AND NOTHING IN THIS TREE CAN SEE IT.~~ Filed 2026-08-23
       by D-DEFFNLAND,
       [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md) §3.3.
       D-DUPSPAN2's `loc_missing equ g8_missing` sat in always-assembled code and
@@ -196,7 +220,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
       tree owns is only as flippable as the last person who tried**. A cheap
       standing control would be a CI target that assembles with each of
       `G6/G7/G8_RESIDENT`, `I1_RESIDENT`, `TRAPS_T3`, `TRAPS_T4` turned off in
-      turn and requires only that it BUILDS.
+      turn and requires only that it BUILDS. ✅ **THAT TARGET IS
+      `make switch-build-check`, and it found three more instances on its first
+      run — see the header of this item.**
+- [ ] 🔴 **A RULE WITNESSED ONLY BY A *DEFERRED* ERROR IS WITNESSED BY NOTHING —
+      and one shipped guard was in exactly that state.** Filed 2026-08-23 by
+      D-DEFFNKNIFE,
+      [`docs/spec-basic-deffnknife.md`](docs/spec-basic-deffnknife.md) §4.
+      `raise_error`'s `FN_FEND` reset had a comment in TWO files
+      (`basic/interp.asm`, `sub/arrays.asm`) naming `o.errrestore` as *"the row
+      that says so"*. Knife K-FE1 disabled the reset and `deffn-strict` stayed
+      **0 of 69 divergent**: `X/0` is a DEFERRED FPERR *"realized at the
+      statement boundary"* (`fp_runtime_error`'s own header), so the FN call
+      RETURNS NORMALLY, `fn_leave` restores the frame, and `raise_error` runs
+      with nothing stale to reset. ✅ **The instance is CLOSED** — `o.errfend18`
+      / `o.errfend13` were measured on both references (`5 18` / `5 13`, and
+      `2 18` / `2 13` under the knife), added to the row set (`deffn-strict` is
+      now **0 of 71**), and both comments corrected.
+      🔴 **BUT THE CLASS IS OPEN**: this tree defers overflow and division by
+      zero at EVERY float site, so any guard whose only test program faults that
+      way is untested, and nothing distinguishes the two in prose. The sweep is
+      *"for each `ON ERROR`-based acceptance row, is the error it provokes raised
+      IMMEDIATELY or realized at the statement boundary?"* — grep
+      `fperr_to_err`'s ten codes for the deferred set, then read each row that
+      cites one. ⚠️ `o.errrestore` looked like a *stronger* row than the two that
+      replaced it, and nothing but a knife could tell.
+
+- [ ] ⚠️ **DEF FN's knife roster is EIGHT, and eight is a candidate roster, not a
+      verdict.** Filed 2026-08-23 by D-DEFFNKNIFE,
+      [`docs/spec-basic-deffnknife.md`](docs/spec-basic-deffnknife.md) §9.
+      `scratchpad/deffn_knives.py` (+ `scratchpad/deffn_de_knife.py`'s K-DE1)
+      now cut the ceiling in BOTH directions, `fn_leave`'s DE, PRINT's item
+      classification, the result-type coercion, the frame reset and the stack
+      floor. **Unknifed and named**: the phase discriminator (`dfn_is_result`'s
+      `inc a` — what reddens if the body and actual phases are confused?),
+      `fn_enter`'s "only the live part" copy length, the `$FFFF` result-slot
+      **key** (K-RT1 cuts the TYPE it writes, not the key), `dfn_delim`'s
+      two-cursor swap, and `dfn_a_x`'s grow-never-shrink `FN_FEND` rule. Each was
+      skipped because its predicted set is wide (most of the successful-call
+      rows) and a wide prediction scored EXACTLY is worth less than a narrow one
+      — but "wide" is a guess until it is measured
+      [[a-hand-listed-denominator-is-a-scope-claim]].
+
 - [ ] ⚠️ **`clone_scout` prices LABEL-BLOCKS, so a routine split by an interior
       label is priced at a fraction of its collapse.** Filed 2026-08-23 by
       D-DEFFNLAND, [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md)

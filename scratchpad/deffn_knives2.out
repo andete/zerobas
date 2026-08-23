@@ -1,0 +1,29 @@
+        APPARATUS: no `ROWS:` footer in 4 line(s) of output -- the report is a PREFIX, or the probe does not print the terminator. Either way nothing here can be compared to a baseline.
+        APPARATUS: the footer declares 9 row(s), 4 parsed -- the report was cut short (or the parser has gone blind to a shape the probe prints).
+parser calibrated: clean / planted / footerless / short all correct
+== clean build BEFORE the baseline ==
+baseline roms={'basic-reloc.rom': '7942cc20', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '031184d9'}
+baseline: 0 DIFF, 0 control FAIL, 0 blank, 0 claim FAIL
+
+EXACT  K-FE1  raise_error's frame reset: `ld (FN_FEND),a` -> `ld (FN_TYP),a`
+        moved=['basic-reloc.rom', 'zerobas-main-eu.rom']
+        DIFF  want=['o.errfend13', 'o.errfend18']
+              got =['o.errfend13', 'o.errfend18']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+          o.errfend13    ref='5 13'  zb='2 13'
+          o.errfend18    ref='5 18'  zb='2 18'
+EXACT  K-SF1  fn_enter's stack floor: `cp high FN_STK_FLOOR` -> `cp 0`
+        moved=['basic-reloc.rom', 'zerobas-main-eu.rom']
+        DIFF  want=['b.recurse']
+              got =['b.recurse']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+          b.recurse      ref='ERR 7 AT 60'  zb='ERR 8 AT 60'
+
+restored: roms={'basic-reloc.rom': '7942cc20', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '031184d9'}  all four sources byte-identical
+
+2/2 knife rows EXACT
+  EXACT  K-FE1  raise_error's frame reset: `ld (FN_FEND),a` -> `ld (FN_TYP),a`
+  EXACT  K-SF1  fn_enter's stack floor: `cp high FN_STK_FLOOR` -> `cp 0`
+rc=0

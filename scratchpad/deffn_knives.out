@@ -1,0 +1,68 @@
+        APPARATUS: no `ROWS:` footer in 4 line(s) of output -- the report is a PREFIX, or the probe does not print the terminator. Either way nothing here can be compared to a baseline.
+        APPARATUS: the footer declares 9 row(s), 4 parsed -- the report was cut short (or the parser has gone blind to a shape the probe prints).
+parser calibrated: clean / planted / footerless / short all correct
+== clean build BEFORE the baseline ==
+baseline roms={'basic-reloc.rom': '7942cc20', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '031184d9'}
+baseline: 0 DIFF, 0 control FAIL, 0 blank, 0 claim FAIL
+
+EXACT  K-DF1  the falsified compare restored: `cp low FN_PAREA_END`
+        moved=['sub.rom']
+        DIFF  want=[]
+              got =[]
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+EXACT  K-CE1  ceiling one slot too LOW:  cp FN_AREA -> cp FN_AREA-FN_SLOTSZ
+        moved=['sub.rom']
+        DIFF  want=['o.p9']
+              got =['o.p9']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+EXACT  K-CE2  ceiling one slot too HIGH: cp FN_AREA -> cp FN_AREA+FN_SLOTSZ
+        moved=['sub.rom']
+        DIFF  want=['o.p10']
+              got =['o.p10']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+EXACT  K-DE2  fn_leave's DE: `ld d,b / ld e,c` -> `ld d,h / ld e,l`
+        moved=['basic-reloc.rom', 'zerobas-main-eu.rom']
+        DIFF  want=['o.defint', 'o.dynaddr', 'o.fnpct', 'o.realcell', 'o.suffn', 'o.varptr']
+              got =['o.defint', 'o.dynaddr', 'o.fnpct', 'o.realcell', 'o.suffn', 'o.varptr']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=['claim:z.addr2']
+EXACT  K-PR1  PRINT's FN item arm: `jp z,exp_strvar` -> `jp z,exp_num`
+        moved=['basic-reloc.rom', 'zerobas-main-eu.rom']
+        DIFF  want=['b.str', 'o.defstr', 'o.quotedcolon']
+              got =['b.str', 'o.defstr', 'o.quotedcolon']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+EXACT  K-RT1  the result slot's type: `ld a,(FN_RTYPE)` -> `ld a,4`
+        moved=['sub.rom']
+        DIFF  want=['o.defint', 'o.fnpct']
+              got =['o.defint', 'o.fnpct']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+MISS   K-FE1  raise_error's frame reset: `ld (FN_FEND),a` -> `ld (FN_TYP),a`
+        moved=['basic-reloc.rom', 'zerobas-main-eu.rom']
+        DIFF  want=['o.errrestore']
+              got =[]
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+MISS   K-SF1  fn_enter's stack floor: `cp high FN_STK_FLOOR` -> `cp 0`
+        moved=['basic-reloc.rom', 'zerobas-main-eu.rom']
+        DIFF  want=[]
+              got =['b.recurse']
+        BLANK want=['b.recurse']  got=[]
+        control FAIL=[]  claim FAIL=[]
+
+restored: roms={'basic-reloc.rom': '7942cc20', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '031184d9'}  all four sources byte-identical
+
+6/8 knife rows EXACT
+  EXACT  K-DF1  the falsified compare restored: `cp low FN_PAREA_END`
+  EXACT  K-CE1  ceiling one slot too LOW:  cp FN_AREA -> cp FN_AREA-FN_SLOTSZ
+  EXACT  K-CE2  ceiling one slot too HIGH: cp FN_AREA -> cp FN_AREA+FN_SLOTSZ
+  EXACT  K-DE2  fn_leave's DE: `ld d,b / ld e,c` -> `ld d,h / ld e,l`
+  EXACT  K-PR1  PRINT's FN item arm: `jp z,exp_strvar` -> `jp z,exp_num`
+  EXACT  K-RT1  the result slot's type: `ld a,(FN_RTYPE)` -> `ld a,4`
+  MISS   K-FE1  raise_error's frame reset: `ld (FN_FEND),a` -> `ld (FN_TYP),a`
+  MISS   K-SF1  fn_enter's stack floor: `cp high FN_STK_FLOOR` -> `cp 0`
+rc=1

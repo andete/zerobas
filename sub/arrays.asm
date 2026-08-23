@@ -539,8 +539,12 @@ asa_err:
 ; one byte is the whole bound and the miss costs a load, a compare and a branch.
 ; 🔴 A STALE FRAME WOULD BE A SILENT WRONG ANSWER, not a crash: `X` would keep
 ; reading a dead formal after the call. raise_error resets FN_FEND for exactly
-; that reason (basic/interp.asm) -- o.errrestore (`X` = 5 after a body that
-; divided by zero) is the row that says so.
+; that reason (basic/interp.asm) -- o.errfend18 / o.errfend13 (`X` = 5 after a
+; body whose fault reached raise_error with the frame still LIVE) are the rows
+; that say so. 🔴 NOT o.errrestore, which this comment used to name: `X/0` is a
+; DEFERRED error realized at the statement boundary, so its FN call returns
+; normally and fn_leave restores the frame before raise_error ever runs. A knife
+; found that (D-DEFFNKNIFE K-FE1); the row was green with the reset disabled.
 fn_shadow_find:
                 ld      d,a                 ; D = the type being looked up
                 ld      hl,FN_PAREA

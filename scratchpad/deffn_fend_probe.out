@@ -1,0 +1,14 @@
+program shape (err.immediate):
+    10 ON ERROR GOTO 900
+    20 X=5:DEF FNA(X)=FNZ(0)
+    30 ON ERROR GOTO 800
+    40 Y=FNA(2)
+    60 CLS:PRINT"[";X;E;"]":END
+    800 E=ERR:RESUME 60
+    900 CLS:PRINT"[ERR";ERR;"AT";ERL;"]":END
+    RUN
+
+  err.deferred     vg8020='5 11'  cf3300='5 11'  zb='5 11'
+  err.immediate    vg8020='5 18'  cf3300='5 18'  zb='5 18'
+  err.immediate13  vg8020='5 13'  cf3300='5 13'  zb='5 13'
+rc=0

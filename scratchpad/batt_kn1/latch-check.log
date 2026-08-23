@@ -1,0 +1,21 @@
+python3 probes/lib/latch_check.py
+
+==========================================================================
+APPARATUS FAILURE -- openMSX preflight: NOTHING WAS MEASURED
+==========================================================================
+  machine : C-BIOS_MSX1_EU_REPACK_DISK
+  config  : /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+
+  STALE       build/zerobas-main-eu.rom
+              `make -q build/zerobas-main-eu.rom` says it is out of date w.r.t. its sources
+
+  FIX: make repack-machine        (rebuilds the ROMs AND reinstalls the
+                                   machine config that points at them)
+
+  A probe booted against this machine would report the absence of the
+  ROM as the absence of the FEATURE -- a whole class of cases failing
+  identically, which reads exactly like a catastrophic regression.
+  Refused instead of measured.  (docs/spec-probe-preflight.md)
+==========================================================================
+
+make: *** [latch-check] Error 2

@@ -1,0 +1,16 @@
+python3 tools/check_switch_builds.py
+baseline (all switches on): assembles
+
+PASS  G6_RESIDENT equ 0
+FAIL  G7_RESIDENT equ 0
+        ERROR: Symbol 'spr_tenant' is undefined  on line 1350 of file basic/graphics.asm
+PASS  G8_RESIDENT equ 0
+PASS  I1_RESIDENT equ 0
+PASS  TRAPS_T3 equ 0
+PASS  TRAPS_T4 equ 0
+
+SWITCHES: 5 of 6 assemble with the switch off
+FAIL: G7_RESIDENT
+A switch that cannot be flipped is a switch that is not there. The usual cause is an ALWAYS-ASSEMBLED reference to a symbol that only exists under the switch (`X equ y`, a `jp`, a table entry); the fix is an ELSE arm, which costs the shipping build nothing because it is not assembled there.
+make: *** [switch-build-check] Error 1
+rc=2

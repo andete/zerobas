@@ -939,6 +939,23 @@ gdw_hand_string:
 ; Every rule is a black-box measurement (scratchpad/g7_sprite_notes.md), never a
 ; disassembly.
 ; ===========================================================================
+; --- gfx_syntax: a TRAPPABLE Syntax error (ERR 2) --------------------------
+; NOT `jp stmt_error`: that prints and aborts the RUN, so an `ON ERROR GOTO`
+; program never sees it -- the reference raises a trappable ERR 2 for every
+; malformed sprite statement (Phase O caught exactly this on the first run).
+; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
+; pl_syntax, which is the family's canonical tail because its four callers
+; are the only ones close enough to reach it with `jr`. The NAME and every
+; call site survive; un-alias here for a distinct face and nothing moves.
+gfx_syntax      equ     pl_syntax   ; ERR 2 (malformed SPRITE statement)
+; 🔴 AND IT LIVES OUTSIDE `IF G7_RESIDENT`, WHICH IS NOT COSMETIC. It is used
+; from the G8 block too (basic/interp.asm's ex_letkw refuses `LET VDP(0)=` /
+; `LET BASE(0)=` with it), so defining it inside G7's block made `G7_RESIDENT
+; equ 0` fail to assemble with `Symbol 'gfx_syntax' is undefined  on line 1522
+; of file basic/interp.asm` -- a diagnostic naming a different file and a
+; different feature. `make switch-build-check` is what found it; an `equ` emits
+; no bytes, so hoisting it costs the shipping build nothing.
+
     IF G7_RESIDENT
 
 ; --- ex_sprite: the statement forms that START with the SPRITE token --------
@@ -988,16 +1005,6 @@ spr_off:
                 inc     hl                  ; D-G7-4: accepted no-op (trap not built)
                 jp      exec_stmt
     ENDIF
-
-; --- gfx_syntax: a TRAPPABLE Syntax error (ERR 2) --------------------------
-; NOT `jp stmt_error`: that prints and aborts the RUN, so an `ON ERROR GOTO`
-; program never sees it -- the reference raises a trappable ERR 2 for every
-; malformed sprite statement (Phase O caught exactly this on the first run).
-; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
-; pl_syntax, which is the family's canonical tail because its four callers
-; are the only ones close enough to reach it with `jr`. The NAME and every
-; call site survive; un-alias here for a distinct face and nothing moves.
-gfx_syntax      equ     pl_syntax   ; ERR 2 (malformed SPRITE statement)
 
 ; --- SPRITE$(n) = <string$> ------------------------------------------------
 ; WRITING needs a graphics mode (SCREEN 0 -> ERR 5) even though READING does not
@@ -1064,10 +1071,20 @@ spr_parse_index:
                 ld      (GFX_SN),de         ; VDP(n)/BASE(n) -- same grammar, and
                 ret                         ; `SPRITE$0` -> ERR 2 either way)
 
+    ENDIF   ; G7_RESIDENT -- reopened after spr_tenant below
+
 ; --- spr_tenant: run one sprite tenant op (A = GFX_OP) and raise its error --
 ; The sprite ops carry no colour, so unlike the drawing statements this leaves
 ; GFX_C alone (the tenant's ATRBYT stamp deliberately skips ops 7/8/9 -- sprites
 ; measurably do not touch the shared graphics attribute). Clobbers A, IX.
+; 🔴 AND THE G8 BLOCK CALLS IT: `VDP(n)=v` / `BASE(n)=v` run through the SAME
+; page-0 tenant, so g8_run's `call spr_tenant` is a G8 site for a G7-named
+; routine. Gating it under G7 alone made `G7_RESIDENT equ 0` fail with `Symbol
+; 'spr_tenant' is undefined  on line 1350 of file basic/graphics.asm`, which is
+; VDP/BASE code. Found by `make switch-build-check`. Nothing falls THROUGH into
+; this label (spr_parse_index above ends in `ret`) and nothing falls out of it,
+; so bracketing it emits the same instructions in the same order and the
+; shipping ROM does not move a byte.
 spr_tenant:
                 ld      (GFX_OP),a
                 xor     a
@@ -1080,6 +1097,8 @@ spr_tenant:
                 or      a
                 ret     z
                 jp      raise_error         ; the tenant's ERR code (ERR 5, §6)
+
+    IF G7_RESIDENT
 
 ; --- SCREEN's sprite-size argument (D-G7-2) --------------------------------
 ; `SCREEN <mode>,<size>` selects 8x8 vs 16x16 (bit 1) and magnification (bit 0),
@@ -1269,8 +1288,17 @@ g8_fn_byte:
 g8_int_result:
                 jp      evsgn_settype
 
+    ENDIF   ; G8_RESIDENT -- reopened after g8_num_operand below
+
 ; --- g8_open_paren: HL at "(<expr>)" -> DE = value, HL past the ')' --------
 ; Shared by the function forms above and the assignment forms below.
+; 🔴 AND BY THE G7 BLOCK: spr_parse_index calls it, because `SPRITE$(n)` and
+; `VDP(n)` are the same grammar. So these two routines are assembled whenever
+; EITHER feature is built, not only under G8 -- gating them with G8 alone made
+; `G8_RESIDENT equ 0` fail with `Symbol 'g8_open_paren' is undefined  on line
+; 1063 of file basic/graphics.asm`, which is sprite code. Found by
+; `make switch-build-check`; in the SHIPPING build both conditions are true, so
+; the same instructions are emitted in the same order and not one byte moves.
 g8_open_paren:
                 call    skip_spaces
                 cp      '('
@@ -1292,6 +1320,8 @@ g8_num_operand:
                 call    str_eval_one
                 jp      c,gfx_typeerr
                 jp      gfx_eval_int16      ; tail call: its ret serves ours
+
+    IF G8_RESIDENT
 
 ; --- ex_vdp_assign / ex_base_assign: the STATEMENT forms -------------------
 ; There is no statement token: a statement whose first token is VDP/BASE IS the
