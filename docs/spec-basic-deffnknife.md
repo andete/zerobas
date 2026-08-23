@@ -43,7 +43,38 @@ corrected knives: [`scratchpad/deffn_knives2.out`](../scratchpad/deffn_knives2.o
 | **K-SF1** | `fn_enter`: `cp high FN_STK_FLOOR` → `cp 0` | **{}**, `b.recurse` BLANK | `{b.recurse}` | 🔴 MISS |
 
 After the two findings below were acted on, K-FE1 and K-SF1 were re-cut against
-corrected predictions and both are **EXACT**. Every knife's baseline was a clean
+corrected predictions and both are **EXACT**, and the other six were re-cut on
+the enlarged **71-row** set (all still EXACT, predictions unchanged) to capture
+the FACES — because a runner that records only LABELS can say a row moved and
+not what it said:
+[`scratchpad/deffn_knives3.out`](../scratchpad/deffn_knives3.out).
+
+| knife | row | reference | zerobas UNDER THE KNIFE |
+|---|---|---|---|
+| K-CE1 | `o.p9` | `1` | `ERR 5 AT 60` |
+| K-CE2 | `o.p10` | `ERR 5 AT 60` | `1` |
+| K-DE2 | `o.defint` | `2` | `-32711` |
+| K-DE2 | `o.dynaddr` | `5` | `-32676` |
+| K-DE2 | `o.fnpct` | `2` | `-32719` |
+| K-DE2 | `o.realcell` | `5` | `-32694` |
+| K-DE2 | `o.suffn` | `3` | `-32719` |
+| K-DE2 | `o.varptr` | `2` | `-32702` |
+| K-PR1 | `b.str` | `hi!` | `ERR 13 AT 60` |
+| K-PR1 | `o.defstr` | `hi!` | `ERR 13 AT 60` |
+| K-PR1 | `o.quotedcolon` | `a:Q` | `ERR 13 AT 60` |
+| K-RT1 | `o.defint` | `2` | `2.5` |
+| K-RT1 | `o.fnpct` | `2` | `2.5` |
+| K-FE1 | `o.errfend18` | `5 18` | `2 18` |
+| K-FE1 | `o.errfend13` | `5 13` | `2 13` |
+| K-SF1 | `b.recurse` | `ERR 7 AT 60` | `ERR 8 AT 60` |
+
+🎯 **NOT ONE OF THOSE SIXTEEN WRONG ANSWERS LOOKS LIKE DAMAGE.** K-DE2's six are
+all plausible negative addresses in one tight band — the `-3392` shape the draft
+shipped, recovered exactly. K-RT1 turns `2` into `2.5`, which is the *other*
+function's correct answer. K-SF1 turns a stack overflow into *Undefined line
+number*. A tree with green suites and no differential ships every one of them.
+
+Every knife's baseline was a clean
 build scoring 0 DIFF / 0 control FAIL / 0 blank / 0 claim FAIL, every knife
 asserted the RIGHT image moved (a `sub/*.asm` cut moves `sub.rom` only; a
 `basic/*.asm` cut moves `basic-reloc.rom` + the merged image and NOT `sub.rom`),

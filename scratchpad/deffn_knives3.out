@@ -1,0 +1,67 @@
+        APPARATUS: no `ROWS:` footer in 4 line(s) of output -- the report is a PREFIX, or the probe does not print the terminator. Either way nothing here can be compared to a baseline.
+        APPARATUS: the footer declares 9 row(s), 4 parsed -- the report was cut short (or the parser has gone blind to a shape the probe prints).
+parser calibrated: clean / planted / footerless / short all correct
+== clean build BEFORE the baseline ==
+baseline roms={'basic-reloc.rom': '7942cc20', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '031184d9'}
+baseline: 0 DIFF, 0 control FAIL, 0 blank, 0 claim FAIL
+
+EXACT  K-DF1  the falsified compare restored: `cp low FN_PAREA_END`
+        moved=['sub.rom']
+        DIFF  want=[]
+              got =[]
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+EXACT  K-CE1  ceiling one slot too LOW:  cp FN_AREA -> cp FN_AREA-FN_SLOTSZ
+        moved=['sub.rom']
+        DIFF  want=['o.p9']
+              got =['o.p9']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+          o.p9           ref='1'  zb='ERR 5 AT 60'
+EXACT  K-CE2  ceiling one slot too HIGH: cp FN_AREA -> cp FN_AREA+FN_SLOTSZ
+        moved=['sub.rom']
+        DIFF  want=['o.p10']
+              got =['o.p10']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+          o.p10          ref='ERR 5 AT 60'  zb='1'
+EXACT  K-DE2  fn_leave's DE: `ld d,b / ld e,c` -> `ld d,h / ld e,l`
+        moved=['basic-reloc.rom', 'zerobas-main-eu.rom']
+        DIFF  want=['o.defint', 'o.dynaddr', 'o.fnpct', 'o.realcell', 'o.suffn', 'o.varptr']
+              got =['o.defint', 'o.dynaddr', 'o.fnpct', 'o.realcell', 'o.suffn', 'o.varptr']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=['claim:z.addr2']
+          o.defint       ref='2'  zb='-32711'
+          o.dynaddr      ref='5'  zb='-32676'
+          o.fnpct        ref='2'  zb='-32719'
+          o.realcell     ref='5'  zb='-32694'
+          o.suffn        ref='3'  zb='-32719'
+          o.varptr       ref='2'  zb='-32702'
+EXACT  K-PR1  PRINT's FN item arm: `jp z,exp_strvar` -> `jp z,exp_num`
+        moved=['basic-reloc.rom', 'zerobas-main-eu.rom']
+        DIFF  want=['b.str', 'o.defstr', 'o.quotedcolon']
+              got =['b.str', 'o.defstr', 'o.quotedcolon']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+          b.str          ref='hi!'  zb='ERR 13 AT 60'
+          o.defstr       ref='hi!'  zb='ERR 13 AT 60'
+          o.quotedcolon  ref='a:Q'  zb='ERR 13 AT 60'
+EXACT  K-RT1  the result slot's type: `ld a,(FN_RTYPE)` -> `ld a,4`
+        moved=['sub.rom']
+        DIFF  want=['o.defint', 'o.fnpct']
+              got =['o.defint', 'o.fnpct']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+          o.defint       ref='2'  zb='2.5'
+          o.fnpct        ref='2'  zb='2.5'
+
+restored: roms={'basic-reloc.rom': '7942cc20', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '031184d9'}  all four sources byte-identical
+
+6/6 knife rows EXACT
+  EXACT  K-DF1  the falsified compare restored: `cp low FN_PAREA_END`
+  EXACT  K-CE1  ceiling one slot too LOW:  cp FN_AREA -> cp FN_AREA-FN_SLOTSZ
+  EXACT  K-CE2  ceiling one slot too HIGH: cp FN_AREA -> cp FN_AREA+FN_SLOTSZ
+  EXACT  K-DE2  fn_leave's DE: `ld d,b / ld e,c` -> `ld d,h / ld e,l`
+  EXACT  K-PR1  PRINT's FN item arm: `jp z,exp_strvar` -> `jp z,exp_num`
+  EXACT  K-RT1  the result slot's type: `ld a,(FN_RTYPE)` -> `ld a,4`
+rc=0
