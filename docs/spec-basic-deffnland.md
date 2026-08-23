@@ -400,3 +400,30 @@ exists to prevent:
 * **2 B of page 1 is not headroom.** The next slice that adds a byte to page 1
   has to carve one first, or promote again — `scratchpad/region_sizes.py` is how
   to pick.
+
+---
+
+## 9. The four predecessor knife suites, re-run
+
+All four, sequentially (two suites driving `make` at once would each score the
+other's ROM), on the shipping DEF FN image — `scratchpad/knives1/`:
+
+| suite | rows | verdict |
+|---|---|---|
+| `dupspan_knives.py` | 5 | **5/5 EXACT**, all five sources byte-identical after restore |
+| `paintbord_knives.py` | 4 | **4/4 EXACT** |
+| `paintmc_knives.py` | 4 | **4/4 EXACT** |
+| `paints2seed_knives.py` | 2 | **2/2 EXACT** |
+
+📏 **AND THE HANDOFF'S "THEIR PINNED BASELINES ARE STALE" IS REFUTED** (§7):
+they carry no pinned hash. Each builds clean, takes `base_h = hashes()` itself,
+and uses it only to assert that a knife MOVED the image.
+
+⚠️ **TWO ARTEFACTS, TWO HASHES, ONE BUILD — do not read them as a
+contradiction.** These suites hash `build/basic-reloc.rom` (the relocated BASIC,
+22510 B) and `build/sub.rom`; the rest of this document quotes
+`build/zerobas-main-eu.rom` (the merged 32 KB cartridge image). For this build
+they are `7942cc20` / `34bb8554` and `031184d9` / `34bb8554` respectively. It is
+the same trap as §7's pinned-baseline claim in miniature: **a hexadecimal
+identity in a report says nothing about WHICH file it identifies unless the
+report says so.**

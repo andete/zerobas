@@ -1,0 +1,28 @@
+        APPARATUS: probe printed 17 of 18 rows; missing ['e2.play']
+parser calibrated: clean / planted / deleted all read correctly
+== build BEFORE the baseline ==
+baseline roms=('7942cc20', '34bb8554') divergent=[]
+EXACT  K-DS1  ERR-5 canonical value: gb_illegal `ld a,5` -> `ld a,9`
+        roms=('5c259a1f', '34bb8554') moved=['basic-reloc.rom']
+        want=['e5.chr', 'e5.eof300', 'e5.interv', 'e5.key', 'e5.mid0', 'e5.pset0', 'e5.sound', 'e5.strig', 'e5.swap3', 'e5.swapnew', 'e5.vpoke']
+        got =['e5.chr', 'e5.eof300', 'e5.interv', 'e5.key', 'e5.mid0', 'e5.pset0', 'e5.sound', 'e5.strig', 'e5.swap3', 'e5.swapnew', 'e5.vpoke']
+EXACT  K-DS2  ERR-2 canonical value: pl_syntax `ld a,2` -> `ld a,9`
+        roms=('d6f53662', '34bb8554') moved=['basic-reloc.rom']
+        want=['e2.letvdp', 'e2.line', 'e2.oninterv', 'e2.paint4', 'e2.play', 'e2.pset', 'e2.putspr']
+        got =['e2.letvdp', 'e2.line', 'e2.oninterv', 'e2.paint4', 'e2.play', 'e2.pset', 'e2.putspr']
+EXACT  K-DS3  fallthrough repair: sw_absent's `jp gb_illegal` -> `jp gfx_typeerr`
+        roms=('583466fc', '34bb8554') moved=['basic-reloc.rom']
+        want=['e5.swapnew']
+        got =['e5.swapnew']
+EXACT  K-DS4  un-alias: gfx_err5 equ gb_illegal -> equ gfx_typeerr
+        roms=('ad5b98c1', '34bb8554') moved=['basic-reloc.rom']
+        want=['e5.pset0']
+        got =['e5.pset0']
+EXACT  K-DS5  un-alias: trap_syntax equ pl_syntax -> equ gfx_typeerr
+        roms=('a77944b8', '34bb8554') moved=['basic-reloc.rom']
+        want=['e2.oninterv']
+        got =['e2.oninterv']
+
+restored: roms=('7942cc20', '34bb8554')  all five sources byte-identical
+
+5/5 knife rows EXACT

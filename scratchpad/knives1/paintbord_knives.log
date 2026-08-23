@@ -1,0 +1,20 @@
+        APPARATUS: probe printed 12 of 13 rows; missing ['bd2.15']
+parser calibrated: clean / planted / deleted all read correctly
+== build BEFORE the baseline ==
+baseline roms=('7942cc20', '34bb8554') divergent=[]
+EXACT  K-PB1  multicolour bound: mask $F0 -> $00
+        roms=('09c6a063', '34bb8554') moved=['basic-reloc.rom']
+        want=['bd3.16', 'bd3.17', 'bd3.255', 'od3.b16c'] got=['bd3.16', 'bd3.17', 'bd3.255', 'od3.b16c']
+EXACT  K-PB2  byte bound: gfx_chk_dom `or d` -> `or a`
+        roms=('49dbe8de', '34bb8554') moved=['basic-reloc.rom']
+        want=['bd2.256', 'bd2.neg', 'bd3.256', 'od2.b256c'] got=['bd2.256', 'bd2.neg', 'bd3.256', 'od2.b256c']
+EXACT  K-PB3  mode selection: cp 3 -> cp 2
+        roms=('9c3e1d4d', '34bb8554') moved=['basic-reloc.rom']
+        want=['bd3.16', 'bd3.17', 'bd3.255', 'od2.b16c', 'od3.b16c'] got=['bd3.16', 'bd3.17', 'bd3.255', 'od2.b16c', 'od3.b16c']
+EXACT  K-PB4  placement: the grammar test moved ABOVE the domain check
+        roms=('db4e7f28', '34bb8554') moved=['basic-reloc.rom']
+        want=['od2.b256c', 'od3.b16c'] got=['od2.b256c', 'od3.b16c']
+
+restored: roms=('7942cc20', '34bb8554')  source byte-identical
+
+4/4 knife rows EXACT
