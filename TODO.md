@@ -217,6 +217,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       promotion of `basic/title.asm` for the shape. **Read the wall, never this
       line: `make basic-reloc` prints all four.**
 
+- [ ] 💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS
+      THERE WITHOUT FUNDING FIRST.** Filed as its OWN open item because this
+      section's preamble says exactly what happens to a residual written up
+      inside a `- [x]` block: it is accurate, dated and invisible. D-PAINTMISS
+      spent 3 of the 4 B that were free.
+      🔴 **DO NOT QUOTE THE FIGURE ABOVE — `make basic-reloc` prints all four
+      walls on every run** and a wall rots faster than this file does.
+      **Two routes, neither costed here:** (a) a page-1 CARVE — the dup-span
+      survey ([`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md),
+      D-DUPSPAN/D-DUPSPAN2/D-XREG) is the standing method and has produced
+      +50/+122/+46 B; (b) a PROMOTION into the page-0 low region (10 B free,
+      2026-08-23), the shape D-MISSOPFIX used on `basic/title.asm`, which left
+      the wall LOOSER than it found it.
+      ⚠️ **Price a draft with a SCAFFOLDED build** (ceiling temporarily raised,
+      read `__MEAS_PAGE1_END`, restore immediately) — `make basic-reloc` fails
+      hard on overrun, so an unfunded draft cannot be measured any other way,
+      and a scaffolded build **is a different machine**: a SIZE READING ONLY.
+      🎯 And read D-PAINTMISS's own arithmetic before assuming a raiser costs
+      5 B: with `jr` call sites a 3 B trampoline to an EXISTING `*_missing`
+      label beat both the inline raiser (5 B) and widening the jumps (+4 B).
+      Check for an existing label before writing one.
+
 - [ ] 🔴 **`CLEAR 200,` RAISES THE RIGHT ERROR AND LOSES THE TRAP, *AND* IT
       WRITES.** 🔴 **THIS ITEM'S FIRST FILING WAS WRONG AND IS INVERTED RATHER
       THAN DELETED**: on 2026-08-23 D-CIRCMISS §7 filed it as *"zerobas is
