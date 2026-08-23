@@ -1,0 +1,24 @@
+  banner   PRESENT  (marker '7 0')
+  ran vg8020  c.colour
+  ran vg8020  c.start
+  ran vg8020  c.end
+  ran vg8020  c.aspect
+  ran vg8020  c.ok
+  ran cf3300  c.colour
+  ran cf3300  c.start
+  ran cf3300  c.end
+  ran cf3300  c.aspect
+  ran cf3300  c.ok
+  ran zb      c.colour
+  ran zb      c.start
+  ran zb      c.end
+  ran zb      c.aspect
+  ran zb      c.ok
+
+  c.colour  vg8020='24 0'  cf3300='24 0'  zb='0 0'   🔴 DIFF
+  c.start   vg8020='24 0'  cf3300='24 0'  zb='0 0'   🔴 DIFF
+  c.end     vg8020='24 0'  cf3300='24 0'  zb='0 0'   🔴 DIFF
+  c.aspect  vg8020='24 0'  cf3300='24 0'  zb='0 0'   🔴 DIFF
+  c.ok      vg8020='0 0'  cf3300='0 0'  zb='0 0'
+
+ROWS: 5 printed — 4 DIFF

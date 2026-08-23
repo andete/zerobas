@@ -97,7 +97,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       not by a measurement. The device-driven harnesses exist
       (`basic_probe_key_trap.py`, T2/T4 probes) if the argument is ever attacked.
 
-- [ ] 🔴 **`POKE <addr>,` WITH NO VALUE WRITES ZERO INSTEAD OF RAISING — a
+- [x] ✅ **`POKE <addr>,` WITH NO VALUE WROTE ZERO — FIXED 2026-08-23
       SILENT MEMORY WRITE, and it is not a carve artifact.** Found 2026-08-22 by
       D-DUPSPAN2's closing demo (`scratchpad/dupspan2_demo.py`,
       `poke.tail`/`poke.head`/`poke.ok`), measured with a marker on each side of
@@ -139,6 +139,82 @@ list. **When a slice lands, grep this list for what it just shipped.**
       reads **0 on all three** (an omitted LOCATE row is an OPTIONAL slot). The
       conclusion was right and the row named for it measured a different
       question; `LOCATE1,` is the row that shows the mechanism (§7).
+      ✅ **CLOSED BY D-MISSOPFIX, 5 B** (`ev_f_missop`, basic/expr.asm +
+      one `db 24` in `fperr_to_err`), funded by PROMOTING `basic/title.asm`
+      into the low region: **13 of 16 rows closed, all four silent memory
+      writes among them**, 3/3 knives EXACT, 34/34 gates green. The three
+      rows that remain, and everything the fix widened past, are the OPEN
+      items directly below. §10-§16 of the spec.
+
+- [ ] 🔴 **THE `Missing operand` CLASS HAS THREE MECHANISMS; ONE IS CLOSED AND
+      3 ROWS STILL DIVERGE.** D-MISSOPFIX shipped 2026-08-23, 5 B
+      ([`docs/spec-basic-missop.md`](docs/spec-basic-missop.md) §10-§14),
+      closing **13 of 16** rows including **all four SILENT MEMORY WRITES**
+      (`POKE` three ways + `VPOKE`, each turning a byte holding 99 into 0).
+      3/3 knives EXACT. What remains:
+      * 🔴 **A VERB'S OWN GRAMMAR SWALLOWS THE DANGLING COMMA BEFORE `eval` IS
+        EVER REACHED.** `CIRCLE(50,50),20,` still COMPLETES silently
+        (`circle.val`: zb `0`, both references `24`), and no evaluator fix can
+        touch it: CIRCLE's grammar walk is a sub-ROM tenant and
+        `sub/circleparse.asm`'s `cpt_at_c` treats end-of-line or `:` after the
+        comma as *"c omitted -> draw"*. `cpt_at_start` / `cpt_after_aspect` have
+        the SAME SHAPE, so there are probably three more slots
+        (`CIRCLE(50,50),20,5,` etc.) — **UNMEASURED**;
+        `scratchpad/missop_circle.py` carries the rows.
+        ⚠️ **NOT byte-blocked** — sub page 1 was 1624 B free on 2026-08-23. It is
+        a scope decision, not a wall.
+      * 🔴 **THE STRING PATHS ABORT WITH THE WRONG CODE**: `KEY1,` and
+        `MID$(A$,2)=` read **ERR 2** where both references say **24**
+        (`key.val`, `midd.val`). Predicted not to move under the evaluator fix,
+        and they did not — they reach an abort by another route.
+      * ⚠️ **THE DENOMINATOR IS STILL A SAMPLE.** 26 BASIC rows against 66
+        evaluator call sites. `SWAP`, `ON n GOTO`, `FIELD`, `PRINT#`, `INPUT`,
+        `PLAY`, `DRAW`, `OPEN`, `WIDTH` and the `PRINT USING` family are
+        **unmeasured, not green**.
+
+- [ ] 🔴 **`ev_f_err`'s OTHER SEVEN JUMP SITES ARE STILL SILENT, AND TWO ROWS
+      MEASURE WRONG.** 2026-08-23, D-MISSOPFIX §13/§14
+      ([`docs/spec-basic-missop.md`](docs/spec-basic-missop.md),
+      `scratchpad/missop_blast.py`, 11 rows x 3 machines). `basic/expr.asm`'s
+      `ev_f_err` is reached by EIGHT `jp`/`jr` instructions; D-MISSOPFIX serves
+      exactly ONE (`:556`, `ev_f_var`'s `is_letter` failure). Measured on the
+      shipping tree, references unanimous on all 11 rows:
+      * `A=(1+2` (site `:807`, no closing `)`) — zb **completes silently (0)**,
+        both references **ERR 2**. 🔴 LIVE.
+      * `A=VARPTR(B` — zb **ERR 5**, both references **ERR 2**. 🔴 LIVE.
+      * `A=VARPTR 5` / `A=VARPTR(5)` — agree at 2 ✅. `A=BASE 5` / `A=BASE(0` —
+        agree at 2 ✅ (**those two sites are never reached**: BASE is descoped
+        and carries its own inline `ERRMARK` body). `A=EOF(0)` / `A=LOF(0)` —
+        agree at 59 ✅, which makes `expr.asm:1095`'s comment that
+        `PRINT EOF(0)` *"printed a plausible ` 0` with no error at all"* STALE.
+      ✅ **BOTH LIVE ROWS ARE PRE-EXISTING, AND THAT IS A READING NOT AN
+      ARGUMENT**: knife K-MO1 neutralises D-MISSOPFIX's deferred code and
+      neither row moves.
+      🎯 **`ev_f_err` IS NOW A NAME FOR TWO THINGS** — "a factor was required"
+      (one site, deferred ERR 24, at `ev_f_missop`) and "this expression is
+      malformed some other way" (seven sites, silent). **Splitting the label by
+      MEANING is the shape of the next slice**, and each site needs its own
+      reference reading before it is priced.
+
+- [ ] ⚠️ **`CLEARPOOL=0` IS UNTESTED AND CANNOT BE ADDED TO
+      `switch-build-check`.** 2026-08-23, D-MISSOPFIX. `FPERR_MISSOP` is equated
+      inside the `IF CLEARPOOL` in `basic/sysvars.inc` (12 with, 11 without)
+      because `fperr_to_err` is a **dense** table whose next free index moves
+      with the switch — and an off-by-one is SILENT: it reads a neighbouring
+      byte and reports some other error. The `ELSE` arm has never been
+      assembled. `tools/check_switch_builds.py` cannot cover it: its scope claim
+      is *"no switch is read outside `basic/`"* and **CLEARPOOL is read from
+      `sub/arrays.asm` and `sub/strheap.asm`**, so adding it to `SWITCHES` trips
+      the tool's own `scope_holds()` check. Widening the tool to two-ROM builds
+      is the fix; unpriced.
+
+- [ ] ⚠️ **NO GATE READS THE BOOT BANNER, AND D-MISSOPFIX MOVED IT.** 2026-08-23.
+      The 5 B fix was funded by PROMOTING `basic/title.asm` from page 1 into the
+      low region. Every probe program in this tree opens with `CLS`, which wipes
+      the startup header, so **not one of the 34 gates would notice if
+      `show_title` stopped printing.** `scratchpad/missop_circle.py`'s `banner`
+      row is a one-off check (run without `CLS`, assert the header text is on
+      screen); it is NOT a gate. Making it one is cheap and unclaimed.
 
 - [x] 💰 **`DEF FN` SHIPS (2026-08-23, D-DEFFNLAND,
       [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md)).** The real

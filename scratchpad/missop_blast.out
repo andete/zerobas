@@ -1,0 +1,47 @@
+  ran vg8020  b.paren
+  ran vg8020  b.vpnopar
+  ran vg8020  b.vpbadarg
+  ran vg8020  b.vpnoclose
+  ran vg8020  b.basenopar
+  ran vg8020  b.basenoclose
+  ran vg8020  b.eofdev
+  ran vg8020  b.lofdev
+  ran vg8020  b.parenok
+  ran vg8020  b.vpok
+  ran vg8020  b.baseok
+  ran cf3300  b.paren
+  ran cf3300  b.vpnopar
+  ran cf3300  b.vpbadarg
+  ran cf3300  b.vpnoclose
+  ran cf3300  b.basenopar
+  ran cf3300  b.basenoclose
+  ran cf3300  b.eofdev
+  ran cf3300  b.lofdev
+  ran cf3300  b.parenok
+  ran cf3300  b.vpok
+  ran cf3300  b.baseok
+  ran zb      b.paren
+  ran zb      b.vpnopar
+  ran zb      b.vpbadarg
+  ran zb      b.vpnoclose
+  ran zb      b.basenopar
+  ran zb      b.basenoclose
+  ran zb      b.eofdev
+  ran zb      b.lofdev
+  ran zb      b.parenok
+  ran zb      b.vpok
+  ran zb      b.baseok
+
+  b.paren        vg8020='2 0'  cf3300='2 0'  zb='0 0'   🔴 DIFF
+  b.vpnopar      vg8020='2 0'  cf3300='2 0'  zb='2 0'
+  b.vpbadarg     vg8020='2 0'  cf3300='2 0'  zb='2 0'
+  b.vpnoclose    vg8020='2 0'  cf3300='2 0'  zb='5 0'   🔴 DIFF
+  b.basenopar    vg8020='2 0'  cf3300='2 0'  zb='2 0'
+  b.basenoclose  vg8020='2 0'  cf3300='2 0'  zb='2 0'
+  b.eofdev       vg8020='59 0'  cf3300='59 0'  zb='59 0'
+  b.lofdev       vg8020='59 0'  cf3300='59 0'  zb='59 0'
+  b.parenok      vg8020='0 0'  cf3300='0 0'  zb='0 0'
+  b.vpok         vg8020='5 0'  cf3300='5 0'  zb='5 0'
+  b.baseok       vg8020='0 0'  cf3300='0 0'  zb='0 0'
+
+ROWS: 11 printed — 2 DIFF

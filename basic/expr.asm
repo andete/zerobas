@@ -553,7 +553,7 @@ ev_f_notword:
 ev_f_var:
                 ld      a,(ix+0)
                 call    is_letter           ; must start with a letter
-                jr      nc,ev_f_err
+                jr      nc,ev_f_missop      ; D-MISSOP: THE missing-operand site
                 push    ix
                 pop     hl                  ; HL = cursor
                 call    var_name_key        ; BC = key, HL past the (multi-char) name
@@ -597,6 +597,28 @@ ev_f_ifc:                                   ; deferred FPERR=3 "illegal function
                                             ; carrier -- ev_f_err zeroes DE below.
                 ld      e,3
                 jr      ev_f_defer
+ev_f_missop:                                ; D-MISSOP (docs/spec-basic-missop.md §5/§13):
+                                            ; a factor was REQUIRED and what is here cannot
+                                            ; start one -- end of line, ':', or a stray
+                                            ; operator. Both references call that `Missing
+                                            ; operand` (ERR 24) at every such slot, measured
+                                            ; at 16 of them; before this, ev_f_err returned
+                                            ; DE=0 with only the ERRMARK landmark, so
+                                            ; `POKE &HE000,` COMPLETED and WROTE A ZERO.
+                                            ; 🔴 IT IS ITS OWN LABEL, NOT A LINE ADDED TO
+                                            ; ev_f_err, AND A SHIPPED GATE IS WHY. The first
+                                            ; draft sat on that shared tail -- which has
+                                            ; EIGHT jump sites, only ONE of them this one.
+                                            ; `make lineerr-acceptance` went 209/210: row
+                                            ; a.noclose (`LINE (11,12-(20,21)`) reaches
+                                            ; expr.asm's `cp ')' / jp nz,ev_f_err` for a
+                                            ; parenthesised expression closed by ',', and
+                                            ; BOTH references call that Syntax error (2).
+                                            ; Reached only from ev_f_var's `is_letter`
+                                            ; failure. Same `ld e,<code> / jr ev_f_defer`
+                                            ; idiom as ev_f_tmm / ev_f_ifc above.
+                ld      e,FPERR_MISSOP
+                jr      ev_f_defer
 ev_f_empty:                                 ; D-F2-3: the empty parenthesised/argument
                                             ; expression -> deferred FPERR=4 "syntax error",
                                             ; checked at the statement boundary (the D-F2-1
@@ -619,7 +641,10 @@ ev_f_defer:                                 ; shared tail: E = FPERR code to def
                                             ; the remaining two instructions say the same
                                             ; thing (str-engine.asm penderr_set).
                 ; fall into ev_f_err for the $DD landmark.
-ev_f_err:
+ev_f_err:                                   ; the SILENT landmark, and it stays silent:
+                                            ; D-MISSOP's deferred code lives at
+                                            ; ev_f_missop above, reached from ONE of this
+                                            ; tail's eight jump sites. See there.
                 ld      a,$DD               ; expression error marker
                 ld      (ERRMARK),a
                 ld      de,0

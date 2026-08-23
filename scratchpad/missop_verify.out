@@ -1,0 +1,54 @@
+repack rc=0
+abfefa7f build/basic-reloc.rom
+34bb8554 build/sub.rom
+a8173c25 build/zerobas-main-eu.rom
+=== verb matrix (26 rows, zb) ===
+rc=0
+  poke.ok      zb='0 65'   (zb only -- no reference column in this run)
+  poke.addr    zb='2 0'   (zb only -- no reference column in this run)
+  locate.addr  zb='0 0'   (zb only -- no reference column in this run)
+  time.val     zb='24 0'   (zb only -- no reference column in this run)
+  poke.val     zb='24 99'   (zb only -- no reference column in this run)
+  vpoke.val    zb='24 99'   (zb only -- no reference column in this run)
+  out.val      zb='24 0'   (zb only -- no reference column in this run)
+  color.val    zb='0 0'   (zb only -- no reference column in this run)
+  sound.val    zb='24 0'   (zb only -- no reference column in this run)
+  locate.val   zb='24 0'   (zb only -- no reference column in this run)
+  screen.val   zb='24 0'   (zb only -- no reference column in this run)
+  key.val      zb='2 0'   (zb only -- no reference column in this run)
+  let.val      zb='24 0'   (zb only -- no reference column in this run)
+  lets.val     zb='24 0'   (zb only -- no reference column in this run)
+  base.val     zb='24 0'   (zb only -- no reference column in this run)
+  defusr.val   zb='24 0'   (zb only -- no reference column in this run)
+  midd.val     zb='2 0'   (zb only -- no reference column in this run)
+  pset.val     zb='24 0'   (zb only -- no reference column in this run)
+  line.val     zb='24 0'   (zb only -- no reference column in this run)
+  circle.val   zb='0 0'   (zb only -- no reference column in this run)
+  sprite.val   zb='24 0'   (zb only -- no reference column in this run)
+  print.val    zb='24 0'   (zb only -- no reference column in this run)
+  poke.plus    zb='24 99'   (zb only -- no reference column in this run)
+  poke.paren   zb='2 99'   (zb only -- no reference column in this run)
+  poke.colon   zb='24 99'   (zb only -- no reference column in this run)
+  let.plus     zb='24 0'   (zb only -- no reference column in this run)
+
+ROWS: 26 printed — 0 DIFF, 0 agree, 0 NOT MEASURED
+=== blast radius (11 rows x 3) ===
+rc=0
+
+  b.paren        vg8020='2 0'  cf3300='2 0'  zb='0 0'   🔴 DIFF
+  b.vpnopar      vg8020='2 0'  cf3300='2 0'  zb='2 0'
+  b.vpbadarg     vg8020='2 0'  cf3300='2 0'  zb='2 0'
+  b.vpnoclose    vg8020='2 0'  cf3300='2 0'  zb='5 0'   🔴 DIFF
+  b.basenopar    vg8020='2 0'  cf3300='2 0'  zb='2 0'
+  b.basenoclose  vg8020='2 0'  cf3300='2 0'  zb='2 0'
+  b.eofdev       vg8020='59 0'  cf3300='59 0'  zb='59 0'
+  b.lofdev       vg8020='59 0'  cf3300='59 0'  zb='59 0'
+  b.parenok      vg8020='0 0'  cf3300='0 0'  zb='0 0'
+  b.vpok         vg8020='5 0'  cf3300='5 0'  zb='5 0'
+  b.baseok       vg8020='0 0'  cf3300='0 0'  zb='0 0'
+
+ROWS: 11 printed — 2 DIFF
+=== lineerr-acceptance ===
+lineerr rc=0
+210/210 readings agree (210 cases, 4 positive controls, 20 negative controls, 0 row(s) with no oracle, 0 DEFERRED row(s) measured but not scored)
+DONE

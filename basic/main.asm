@@ -120,6 +120,14 @@ SUB_BUILD       equ     0
 ; needs -- that this tree has been bitten by (basic/subromcall.asm htimi_guard).
                 include "basic/poke.asm"
                 include "basic/sound.asm"
+; D-MISSOP: PROMOTED FROM PAGE 1 (7 B). `show_title` is a two-instruction stub
+; -- `ld ix,<tenant slot>` + `jp subrom_call` -- whose only callee, subrom_call,
+; is ALREADY in the low region, and whose only caller is `init`, once, just
+; before the REPL. It is the same argument poke.asm's promotion above makes, and
+; the direction is the safe one: promoting DOWN cannot break reachability.
+; It funds D-MISSOP's 6 B at ev_f_err/fperr_to_err, which page 1 could not hold
+; (measured 4 B over the $8000 ceiling before this move).
+                include "basic/title.asm"
 
 ; --- (moved out) the low-region message pool -------------------------------
 ; The D-LINEMAX / S-FCH-2 message strings and the ERR 52/59 raisers used to sit
@@ -171,9 +179,6 @@ __MEAS_LOW_END:
 ; `sub_int_install`) — PROMOTED here out of the page-0 low region to fund the KEY
 ; trap's $0038-path hook, which cannot leave it.
                 include "basic/subrom-boot.asm"
-
-; Startup header (defines `show_title`).
-                include "basic/title.asm"
 
 ; Keyboard line editor + read/eval loop (defines `repl`, `print_string`).
                 include "basic/repl.asm"

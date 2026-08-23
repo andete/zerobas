@@ -1,0 +1,52 @@
+== clean build, baseline (the SHIPPING tree) ==
+baseline roms={'basic-reloc.rom': 'abfefa7f', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': 'a8173c25'}
+baseline rows={'poke.ok': '0 65', 'poke.addr': '2 0', 'locate.addr': '0 0', 'time.val': '24 0', 'poke.val': '24 99', 'vpoke.val': '24 99', 'out.val': '24 0', 'color.val': '0 0', 'sound.val': '24 0', 'locate.val': '24 0', 'screen.val': '24 0', 'key.val': '2 0', 'let.val': '24 0', 'lets.val': '24 0', 'base.val': '24 0', 'defusr.val': '24 0', 'midd.val': '2 0', 'pset.val': '24 0', 'line.val': '24 0', 'circle.val': '0 0', 'sprite.val': '24 0', 'print.val': '24 0', 'poke.plus': '24 99', 'poke.paren': '2 99', 'poke.colon': '24 99', 'let.plus': '24 0', 'b.paren': '0 0', 'b.vpnopar': '2 0', 'b.vpbadarg': '2 0', 'b.vpnoclose': '5 0', 'b.basenopar': '2 0', 'b.basenoclose': '2 0', 'b.eofdev': '59 0', 'b.lofdev': '59 0', 'b.parenok': '0 0', 'b.vpok': '5 0', 'b.baseok': '0 0'}
+
+== K-MO1  the deferred code (ld e,FPERR_MISSOP -> ld e,0) ==
+  roms={'basic-reloc.rom': 'ca376dd5', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '0c6058af'}
+  MOVED  defusr.val  '24 0' -> '0 0'
+  MOVED  let.plus    '24 0' -> '0 0'
+  MOVED  let.val     '24 0' -> '0 0'
+  MOVED  lets.val    '24 0' -> '2 0'
+  MOVED  out.val     '24 0' -> '0 0'
+  MOVED  poke.colon  '24 99' -> '0 0'
+  MOVED  poke.plus   '24 99' -> '0 0'
+  MOVED  poke.val    '24 99' -> '0 0'
+  MOVED  print.val   '24 0' -> '0 0'
+  MOVED  pset.val    '24 0' -> '0 0'
+  MOVED  sound.val   '24 0' -> '0 0'
+  MOVED  sprite.val  '24 0' -> '0 0'
+  MOVED  vpoke.val   '24 99' -> '0 0'
+  => EXACT  moved=['defusr.val', 'let.plus', 'let.val', 'lets.val', 'out.val', 'poke.colon', 'poke.plus', 'poke.val', 'print.val', 'pset.val', 'sound.val', 'sprite.val', 'vpoke.val']
+     want=['defusr.val', 'let.plus', 'let.val', 'lets.val', 'out.val', 'poke.colon', 'poke.plus', 'poke.val', 'print.val', 'pset.val', 'sound.val', 'sprite.val', 'vpoke.val']
+
+== K-MO2  the fperr_to_err table byte (db 24 -> db 5) ==
+  roms={'basic-reloc.rom': '393afaa6', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': 'ae621e6a'}
+  MOVED  defusr.val  '24 0' -> '5 0'
+  MOVED  let.plus    '24 0' -> '5 0'
+  MOVED  let.val     '24 0' -> '5 0'
+  MOVED  lets.val    '24 0' -> '5 0'
+  MOVED  out.val     '24 0' -> '5 0'
+  MOVED  poke.colon  '24 99' -> '5 99'
+  MOVED  poke.plus   '24 99' -> '5 99'
+  MOVED  poke.val    '24 99' -> '5 99'
+  MOVED  print.val   '24 0' -> '5 0'
+  MOVED  pset.val    '24 0' -> '5 0'
+  MOVED  sound.val   '24 0' -> '5 0'
+  MOVED  sprite.val  '24 0' -> '5 0'
+  MOVED  vpoke.val   '24 99' -> '5 99'
+  => EXACT  moved=['defusr.val', 'let.plus', 'let.val', 'lets.val', 'out.val', 'poke.colon', 'poke.plus', 'poke.val', 'print.val', 'pset.val', 'sound.val', 'sprite.val', 'vpoke.val']
+     want=['defusr.val', 'let.plus', 'let.val', 'lets.val', 'out.val', 'poke.colon', 'poke.plus', 'poke.val', 'print.val', 'pset.val', 'sound.val', 'sprite.val', 'vpoke.val']
+
+== K-MO3  the NARROWNESS: point site :807 at the new label ==
+  roms={'basic-reloc.rom': 'a56f33c6', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '0c75ae80'}
+  MOVED  b.paren     '0 0' -> '24 0'
+  => EXACT  moved=['b.paren']
+     want=['b.paren']
+
+restored roms={'basic-reloc.rom': 'abfefa7f', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': 'a8173c25'}
+
+3/3 knife rows EXACT
+  EXACT  K-MO1  the deferred code (ld e,FPERR_MISSOP -> ld e,0)   moved=['defusr.val', 'let.plus', 'let.val', 'lets.val', 'out.val', 'poke.colon', 'poke.plus', 'poke.val', 'print.val', 'pset.val', 'sound.val', 'sprite.val', 'vpoke.val']
+  EXACT  K-MO2  the fperr_to_err table byte (db 24 -> db 5)   moved=['defusr.val', 'let.plus', 'let.val', 'lets.val', 'out.val', 'poke.colon', 'poke.plus', 'poke.val', 'print.val', 'pset.val', 'sound.val', 'sprite.val', 'vpoke.val']
+  EXACT  K-MO3  the NARROWNESS: point site :807 at the new label   moved=['b.paren']

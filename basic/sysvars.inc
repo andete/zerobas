@@ -445,9 +445,17 @@ CLEARPOOL       equ     1
 ; (docs/aryoos-msx1-characterization.md).
     IF CLEARPOOL
 FPERR_STROOM    equ     11      ; -> ERR 14 "out of string space"
+FPERR_MISSOP    equ     12      ; -> ERR 24 "Missing operand" (D-MISSOP)
     ELSE
 FPERR_STROOM    equ     6       ; -> ERR 7 "Out of memory" (pre-partition)
+FPERR_MISSOP    equ     11      ; -> ERR 24 "Missing operand" (D-MISSOP)
     ENDIF
+; D-MISSOP (docs/spec-basic-missop.md): the code ev_f_err defers when a factor
+; was REQUIRED and the statement ended instead. It is equated HERE, inside the
+; same IF, because fperr_to_err is a DENSE table indexed by the code -- the
+; entry FPERR_STROOM occupies only exists when CLEARPOOL does, so the next free
+; index is not a constant. Getting this wrong is silent: it reads a neighbouring
+; table byte and reports some other error.
 ; D-PENDERR (docs/spec-basic-penderr.md §4): the pending-error code a DEFERRED
 ; TYPE MISMATCH records. Named because it is now written from two places that
 ; used to speak in different currencies -- basic/str-engine.asm's

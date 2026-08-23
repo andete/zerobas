@@ -1,0 +1,55 @@
+  ran zb      poke.ok
+  ran zb      poke.addr
+  ran zb      locate.addr
+  ran zb      time.val
+  ran zb      poke.val
+  ran zb      vpoke.val
+  ran zb      out.val
+  ran zb      color.val
+  ran zb      sound.val
+  ran zb      locate.val
+  ran zb      screen.val
+  ran zb      key.val
+  ran zb      let.val
+  ran zb      lets.val
+  ran zb      base.val
+  ran zb      defusr.val
+  ran zb      midd.val
+  ran zb      pset.val
+  ran zb      line.val
+  ran zb      circle.val
+  ran zb      sprite.val
+  ran zb      print.val
+  ran zb      poke.plus
+  ran zb      poke.paren
+  ran zb      poke.colon
+  ran zb      let.plus
+
+  poke.ok      zb='0 65'   (zb only -- no reference column in this run)
+  poke.addr    zb='2 0'   (zb only -- no reference column in this run)
+  locate.addr  zb='0 0'   (zb only -- no reference column in this run)
+  time.val     zb='24 0'   (zb only -- no reference column in this run)
+  poke.val     zb='24 99'   (zb only -- no reference column in this run)
+  vpoke.val    zb='24 99'   (zb only -- no reference column in this run)
+  out.val      zb='24 0'   (zb only -- no reference column in this run)
+  color.val    zb='0 0'   (zb only -- no reference column in this run)
+  sound.val    zb='24 0'   (zb only -- no reference column in this run)
+  locate.val   zb='24 0'   (zb only -- no reference column in this run)
+  screen.val   zb='24 0'   (zb only -- no reference column in this run)
+  key.val      zb='2 0'   (zb only -- no reference column in this run)
+  let.val      zb='24 0'   (zb only -- no reference column in this run)
+  lets.val     zb='24 0'   (zb only -- no reference column in this run)
+  base.val     zb='24 0'   (zb only -- no reference column in this run)
+  defusr.val   zb='24 0'   (zb only -- no reference column in this run)
+  midd.val     zb='2 0'   (zb only -- no reference column in this run)
+  pset.val     zb='24 0'   (zb only -- no reference column in this run)
+  line.val     zb='24 0'   (zb only -- no reference column in this run)
+  circle.val   zb='0 0'   (zb only -- no reference column in this run)
+  sprite.val   zb='24 0'   (zb only -- no reference column in this run)
+  print.val    zb='24 0'   (zb only -- no reference column in this run)
+  poke.plus    zb='24 99'   (zb only -- no reference column in this run)
+  poke.paren   zb='2 99'   (zb only -- no reference column in this run)
+  poke.colon   zb='24 99'   (zb only -- no reference column in this run)
+  let.plus     zb='24 0'   (zb only -- no reference column in this run)
+
+ROWS: 26 printed — 0 DIFF, 0 agree, 0 NOT MEASURED

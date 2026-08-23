@@ -884,6 +884,16 @@ fperr_to_err:
                                             ; message (err_out_of_str, str-engine.asm) and
                                             ; flows through the generic err_msgtab lookup.
     ENDIF
+                db      24                  ; FPERR_MISSOP (sysvars.inc, D-MISSOP): MISSING
+                                            ; OPERAND -- a factor was REQUIRED and the
+                                            ; statement ended instead (end of line, ':', or
+                                            ; a byte that cannot start one). Deferred by
+                                            ; ev_f_err, expr.asm. ⚠️ THIS `db` MUST FOLLOW
+                                            ; the CLEARPOOL block, not sit inside it: the
+                                            ; table is DENSE and FPERR_MISSOP's value moves
+                                            ; with the switch (12 with CLEARPOOL, 11
+                                            ; without), which is why the equ lives beside
+                                            ; FPERR_STROOM rather than being a literal.
 ; D-MSGMIGRATE: err_fp_divzero's TEXT is sub-ROM-hosted (em_fp_divzero, ERRFLG
 ; = 11). fp_runtime_error reaches it through fperr_to_err -> raise_error ->
 ; err_msgtab entry 11, which is now err_subhosted -- one table operand, 0 B.
