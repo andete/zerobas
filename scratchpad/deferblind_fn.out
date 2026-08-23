@@ -1,0 +1,16 @@
+  ran vg8020  fn.imm
+  ran vg8020  fn.def
+  ran vg8020  fn.ctl
+  ran cf3300  fn.imm
+  ran cf3300  fn.def
+  ran cf3300  fn.ctl
+  ran zb      fn.imm
+  ran zb      fn.def
+  ran zb      fn.ctl
+
+  fn.imm  vg8020='5'  cf3300='5'  zb='5'
+  fn.def  vg8020='5'  cf3300='5'  zb='5'
+  fn.ctl  vg8020='5'  cf3300='5'  zb='5'
+
+ROWS: 3 printed
+rc=0

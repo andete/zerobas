@@ -1,0 +1,23 @@
+== clean build, baseline ==
+baseline roms={'basic-reloc.rom': '7942cc20', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '031184d9'}
+baseline rows={'fn.imm': '5', 'fn.def': '5', 'fn.ctl': '5', 'for.imm': '6', 'for.def': '6', 'for.ctl': '6', 'gos.imm': 'BACK', 'gos.def': 'BACK', 'gos.ctl': 'BACK', 'fre.imm': '4', 'fre.def': '4', 'fre.ctl': '4'}
+knifed  roms={'basic-reloc.rom': 'b7b3cb1e', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': 'b5a0c5e6'}
+knifed  rows={'fn.imm': '2', 'fn.def': '5', 'fn.ctl': '5', 'for.imm': '6', 'for.def': '6', 'for.ctl': '6', 'gos.imm': 'BACK', 'gos.def': 'BACK', 'gos.ctl': 'BACK', 'fre.imm': '4', 'fre.def': '4', 'fre.ctl': '4'}
+restored roms={'basic-reloc.rom': '7942cc20', 'sub.rom': '34bb8554', 'zerobas-main-eu.rom': '031184d9'}
+
+  same   fn.ctl   '5' -> '5'
+  same   fn.def   '5' -> '5'
+  MOVED  fn.imm   '5' -> '2'
+  same   for.ctl  '6' -> '6'
+  same   for.def  '6' -> '6'
+  same   for.imm  '6' -> '6'
+  same   fre.ctl  '4' -> '4'
+  same   fre.def  '4' -> '4'
+  same   fre.imm  '4' -> '4'
+  same   gos.ctl  'BACK' -> 'BACK'
+  same   gos.def  'BACK' -> 'BACK'
+  same   gos.imm  'BACK' -> 'BACK'
+
+CALIBRATION: PASS — moved=['fn.imm'], want=['fn.imm']
+The row shape CAN see a stale liveness cell. The nine zeros are a reading, not a silence.
+rc=0

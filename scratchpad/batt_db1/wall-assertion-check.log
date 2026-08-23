@@ -1,0 +1,12 @@
+python3 tools/wall_assertion_check.py
+== live walls ==
+   page-0 low region free = 17 B
+   page-1 free = 2 B
+   sub page 0 free = 2563 B
+   sub page 1 free = 1624 B
+
+== denominator ==
+   88 open item(s) in TODO.md; 9 mention a free-space figure
+
+== UNDATED FREE-SPACE ASSERTIONS (gating) ==
+   none — every open item that quotes a wall says WHEN it was read

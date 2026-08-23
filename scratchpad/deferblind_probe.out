@@ -1,0 +1,40 @@
+  ran vg8020  for.imm
+  ran vg8020  for.def
+  ran vg8020  for.ctl
+  ran vg8020  gos.imm
+  ran vg8020  gos.def
+  ran vg8020  gos.ctl
+  ran vg8020  fre.imm
+  ran vg8020  fre.def
+  ran vg8020  fre.ctl
+  ran cf3300  for.imm
+  ran cf3300  for.def
+  ran cf3300  for.ctl
+  ran cf3300  gos.imm
+  ran cf3300  gos.def
+  ran cf3300  gos.ctl
+  ran cf3300  fre.imm
+  ran cf3300  fre.def
+  ran cf3300  fre.ctl
+  ran zb      for.imm
+  ran zb      for.def
+  ran zb      for.ctl
+  ran zb      gos.imm
+  ran zb      gos.def
+  ran zb      gos.ctl
+  ran zb      fre.imm
+  ran zb      fre.def
+  ran zb      fre.ctl
+
+  for.imm  vg8020='6'  cf3300='6'  zb='6'
+  for.def  vg8020='6'  cf3300='6'  zb='6'
+  for.ctl  vg8020='6'  cf3300='6'  zb='6'
+  gos.imm  vg8020='BACK'  cf3300='BACK'  zb='BACK'
+  gos.def  vg8020='BACK'  cf3300='BACK'  zb='BACK'
+  gos.ctl  vg8020='BACK'  cf3300='BACK'  zb='BACK'
+  fre.imm  vg8020='4'  cf3300='4'  zb='4'
+  fre.def  vg8020='4'  cf3300='4'  zb='4'
+  fre.ctl  vg8020='4'  cf3300='4'  zb='4'
+
+ROWS: 9 printed
+rc=0

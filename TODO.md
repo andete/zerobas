@@ -237,13 +237,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       / `o.errfend13` were measured on both references (`5 18` / `5 13`, and
       `2 18` / `2 13` under the knife), added to the row set (`deffn-strict` is
       now **0 of 71**), and both comments corrected.
-      🔴 **BUT THE CLASS IS OPEN**: this tree defers overflow and division by
-      zero at EVERY float site, so any guard whose only test program faults that
-      way is untested, and nothing distinguishes the two in prose. The sweep is
-      *"for each `ON ERROR`-based acceptance row, is the error it provokes raised
-      IMMEDIATELY or realized at the statement boundary?"* — grep
-      `fperr_to_err`'s ten codes for the deferred set, then read each row that
-      cites one. ⚠️ `o.errrestore` looked like a *stronger* row than the two that
+      📏 **SCOUTED 2026-08-23**,
+      [`docs/deferblind-scout-2026-08-23.md`](docs/deferblind-scout-2026-08-23.md),
+      no ROM byte moved. **21 `penderr_set` sites; exactly ONE raises on the
+      spot** (`str_heap_oom_error`), the other 20 return — so ERR 6/11/5/2/9/7/
+      10/13 can EACH arrive deferred or immediate depending on the SITE, and
+      🔴 **the ERR code a row expects carries NO information about whether that
+      row can witness an ordering-sensitive guard.** The class was then stated
+      checkably (*a cell meaning "we are inside X", cleared by X's normal exit,
+      NOT cleared at the statement boundary, and READ outside X* — `exec_stmt`'s
+      own `xor a / ld (PRDEST),a` is why PRDEST is safe by construction and
+      FN_FEND was not) and **measured EMPTY for the FOR stack, the GOSUB stack
+      and the string heap**: 27 of 27 readings agree across both references and
+      zerobas. ✅ **And the instrument was CALIBRATED on the known positive** —
+      the same 12 rows re-run under K-FE1 move `fn.imm` (`5`→`2`) and **nothing
+      else**, so the nine zeros are a reading and not a silence.
+      🔴 **STILL OPEN — THE DENOMINATOR IS THREE CONSTRUCTS.** 96 cells in
+      `sysvars.inc` describe themselves as live/in-progress/pending; the
+      "read outside X" filter leaves a short untested list, headed by
+      **`TRAPSVC`** (incremented on trap dispatch, decremented ONLY by
+      `ex_return`'s hook — so a handler left via `RESUME <line>` never
+      re-enables its trap, and `TRAPSTK_MAX` is 6), then `FCH_ACTIVE`/`FCH_NUM`/
+      `FCH_MODE` and `GFX_DFTOP`. ⚠️ **`TRAPSVC`'s trigger is a DIFFERENT one** —
+      *RESUME out of a trap handler*, not deferred-vs-immediate — and both
+      references would be expected to leak too, so it needs its own reference
+      measurement. Use §4's shape: three ways (immediate / deferred / no fault)
+      and prove the row can go red before believing a zero.
+      ⚠️ `o.errrestore` looked like a *stronger* row than the two that
       replaced it, and nothing but a knife could tell.
 
 - [ ] ⚠️ **DEF FN's knife roster is EIGHT, and eight is a candidate roster, not a

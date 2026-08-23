@@ -1,0 +1,6 @@
+basic-reloc rc=0
+audit-citations rc=0
+rowshape-check rc=0
+wall-assertion-check rc=0
+switch-build-check rc=0
+DONE 5 targets
