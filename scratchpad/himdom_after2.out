@@ -1,0 +1,63 @@
+  ran vg8020  d.50000   '0 ->50000'
+  ran vg8020  d.40000   '0 ->40000'
+  ran vg8020  d.32768   '7 SAME'
+  ran vg8020  d.32767   '5 SAME'
+  ran vg8020  d.65535   '5 SAME'
+  ran vg8020  d.65536   '6 SAME'
+  ran vg8020  d.70000   '6 SAME'
+  ran vg8020  d.hffff   '5 SAME'
+  ran vg8020  d.neg1    '5 SAME'
+  ran vg8020  d.h8000   '7 SAME'
+  ran vg8020  d.hd000   '0 ->53248'
+  ran vg8020  d.zero    '5 SAME'
+  ran vg8020  d.one     '5 SAME'
+  ran vg8020  d.h4000   '5 SAME'
+  ran vg8020  d.h8050   '7 SAME'
+  ran cf3300  d.50000   '0 ->50000'
+  ran cf3300  d.40000   '0 ->40000'
+  ran cf3300  d.32768   '7 SAME'
+  ran cf3300  d.32767   '5 SAME'
+  ran cf3300  d.65535   '5 SAME'
+  ran cf3300  d.65536   '6 SAME'
+  ran cf3300  d.70000   '6 SAME'
+  ran cf3300  d.hffff   '5 SAME'
+  ran cf3300  d.neg1    '5 SAME'
+  ran cf3300  d.h8000   '7 SAME'
+  ran cf3300  d.hd000   '0 ->53248'
+  ran cf3300  d.zero    '5 SAME'
+  ran cf3300  d.one     '5 SAME'
+  ran cf3300  d.h4000   '5 SAME'
+  ran cf3300  d.h8050   '7 SAME'
+  ran zb      d.50000   '0 ->50000'
+  ran zb      d.40000   '0 ->40000'
+  ran zb      d.32768   '0 ->32768'
+  ran zb      d.32767   '0 ->32767'
+  ran zb      d.65535   '0 ->65535'
+  ran zb      d.65536   '6 SAME'
+  ran zb      d.70000   '6 SAME'
+  ran zb      d.hffff   '0 ->65535'
+  ran zb      d.neg1    '0 ->65535'
+  ran zb      d.h8000   '0 ->32768'
+  ran zb      d.hd000   '0 ->53248'
+  ran zb      d.zero    '0 ->0'
+  ran zb      d.one     '0 ->1'
+  ran zb      d.h4000   '0 ->16384'
+  ran zb      d.h8050   '0 ->32848'
+
+  d.50000  vg8020='0 ->50000'  cf3300='0 ->50000'  zb='0 ->50000'
+  d.40000  vg8020='0 ->40000'  cf3300='0 ->40000'  zb='0 ->40000'
+  d.32768  vg8020='7 SAME'  cf3300='7 SAME'  zb='0 ->32768'   *** DIFF
+  d.32767  vg8020='5 SAME'  cf3300='5 SAME'  zb='0 ->32767'   *** DIFF
+  d.65535  vg8020='5 SAME'  cf3300='5 SAME'  zb='0 ->65535'   *** DIFF
+  d.65536  vg8020='6 SAME'  cf3300='6 SAME'  zb='6 SAME'
+  d.70000  vg8020='6 SAME'  cf3300='6 SAME'  zb='6 SAME'
+  d.hffff  vg8020='5 SAME'  cf3300='5 SAME'  zb='0 ->65535'   *** DIFF
+  d.neg1   vg8020='5 SAME'  cf3300='5 SAME'  zb='0 ->65535'   *** DIFF
+  d.h8000  vg8020='7 SAME'  cf3300='7 SAME'  zb='0 ->32768'   *** DIFF
+  d.hd000  vg8020='0 ->53248'  cf3300='0 ->53248'  zb='0 ->53248'
+  d.zero   vg8020='5 SAME'  cf3300='5 SAME'  zb='0 ->0'   *** DIFF
+  d.one    vg8020='5 SAME'  cf3300='5 SAME'  zb='0 ->1'   *** DIFF
+  d.h4000  vg8020='5 SAME'  cf3300='5 SAME'  zb='0 ->16384'   *** DIFF
+  d.h8050  vg8020='7 SAME'  cf3300='7 SAME'  zb='0 ->32848'   *** DIFF
+
+ROWS: 15 printed, 15 scored -- 10 DIFF

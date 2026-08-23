@@ -127,19 +127,38 @@ clr_himem:
                 ; h.str, HIMEM `->0`). It also had NO int16 coercion, so
                 ; `CLEAR 200,70000` completed where both references answer
                 ; ERR 6 (q.ovf) after truncating 70000 to 4464.
-                ; 🎯 ONE 3-BYTE CALL FOR THREE FIXES, AT ZERO BYTES:
-                ; eval_int16_checked IS `eval` + `check_expr_errors` +
-                ; `get_int16_checked`. HL (cursor) and DE (value) survive and its
-                ; interposed frame is SP-safe -- see its own header.
-                ; ⚠️ `&H9000` is -28672 as a signed int16, so |x| <= 32767 and the
-                ; ACCEPTED ceiling still passes: row h.set is `->36864` on all
-                ; three machines, and it is the control this change could break.
-                ; 🔴 STILL OPEN, AND NOT A SIGN TEST: `CLEAR 200,-1` is ERR 5 on
-                ; both references and completes here. The pool argument below
-                ; rejects negatives with `bit 7,d`, and that test is WRONG for
-                ; HIMEM -- `&H9000` has bit 15 set too and is accepted. The domain
-                ; is a RANGE with unmeasured edges; filed in TODO.md.
-                call    eval_int16_checked  ; DE = int16, or aborts (ERR 2/6/11/13)
+                ; 🔴 D-HIMDOM (docs/spec-basic-himdom.md): THIS WAS
+                ; `call eval_int16_checked` FOR ONE HOUR AND IT WAS THE WRONG
+                ; LEAF. That routine's `get_int16_checked` stage raises ERR 6 for
+                ; |x| > 32767, and D-CLRFIX justified it with `CLEAR 200,70000`
+                ; -> ERR 6 on both references. **70000 is rejected under BOTH
+                ; candidate rules**, so the row could not separate a SIGNED int16
+                ; from the MSX ADDRESS domain -- and `&HD000` passed only because
+                ; MSX BASIC reads a hex literal >= &H8000 as NEGATIVE (-12288),
+                ; so |x| <= 32767 by accident. A DECIMAL in [32768, 65535] is the
+                ; discriminator and no row had one:
+                ;
+                ;   CLEAR 200,50000   both references: ACCEPTED, HIMEM = 50000
+                ;   CLEAR 200,40000   both references: ACCEPTED, HIMEM = 40000
+                ;
+                ; Rows d.50000 / d.40000. The coercion is the ADDRESS domain,
+                ; -32768..65535, which is exactly what basic/poke.asm's argument
+                ; parse already uses. `&HFFFF` and `-1` answer identically on
+                ; both references, so the rule is the VALUE and not the syntax.
+                ; ⚠️ eval_addr DEFERS (it sets FPERR and returns -- do_poke tests
+                ; it by hand for the same reason), so check_expr_errors is a
+                ; SEPARATE call here. It preserves DE and raises before the store
+                ; and before clr_done falls into clear_vars, which is the whole
+                ; point of D-CLRFIX and is unchanged.
+                ; 🔴 STILL OPEN -- THE *RANGE* CHECK, WHICH IS A DIFFERENT RULE:
+                ; both references answer ERR 5 below RAM (0, 1, &H4000, 32767)
+                ; and above the RAM top (65535, &HFFFF, -1), and ERR 7 (Out of
+                ; memory) for a ceiling inside RAM but below what BASIC is
+                ; already using (32768, &H8050). zerobas accepts all of those.
+                ; Filed in TODO.md; the edges are machine-specific and the two
+                ; references have different RAM tops.
+                call    eval_addr           ; DE = -32768..65535, FPERR=1 past it
+                call    check_expr_errors   ; raise BEFORE the store and the wipe
                 ld      (HIMEM),de          ; record CLEAR's ceiling
 clr_done:
                 push    hl                  ; clear_vars clobbers HL; guard the

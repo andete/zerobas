@@ -298,28 +298,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `basic/str-engine.asm` `heap_reset` cited them for a benefit to a form the
       language does not have.
 
-- [ ] 🔴 **`CLEAR 200,-1` IS `Illegal function call` ON BOTH REFERENCES AND
-      COMPLETES HERE, WRITING `HIMEM = 65535` — AND THE OBVIOUS FIX IS
-      REFUTED.** Filed 2026-08-23 by D-CLRFIX §5, rows `z.neg` (`5 0` vs `0 0`)
-      and `h.neg` (`SAME` vs `->65535`), `scratchpad/clrfix_probe.py` /
-      `scratchpad/clrfix_himem.py`. The last divergent row of that slice's 26,
-      and the only member of D-MISSOP's silent-write class still live at CLEAR.
-      🔴 **DO NOT COPY THE POOL ARGUMENT'S TEST.** Two lines up, CLEAR's
-      *string-space* argument rejects negatives with `bit 7,d / jp nz,gb_illegal`.
-      **That is WRONG for HIMEM**: `&H9000` has bit 15 set exactly as `-1` does,
-      and `CLEAR 200,&H9000` is ACCEPTED on all three machines (row `h.set`,
-      `->36864`). **HIMEM's domain is a RANGE, not a sign**, and its edges are
-      unmeasured — guessing one would repeat D-CIRCDOM's blessed-domain mistake.
-      📏 **What is needed first is a characterization sweep against both
-      references**: where the accept/reject boundary sits between `&H9000` and
-      `-1`, whether it is absolute (a RAM top) or relative (below the current
-      ceiling / above the program), and what a value BELOW the program text does.
-      🎯 **Knife K-CF3 already shows how easy it is to get this wrong**:
-      narrowing the coercion to a byte turns BOTH red rows green — matching the
-      references on the ERR *and* on the write — while breaking `q.both` and
-      `h.set`. A fix for this row that does not keep `h.set` at `->36864` is not
-      a fix. 💰 Unpriced; main page 1, which D-CLRFIX left at 5 B free
-      (2026-08-23).
+- [ ] 🔴 **CLEAR's CEILING HAS A THREE-BAND RANGE CHECK AND zerobas HAS NONE OF
+      IT — 10 ROWS.** Filed 2026-08-23 by D-CLRFIX §5 as a single row
+      (`CLEAR 200,-1`) and **CHARACTERIZED the same day by D-HIMDOM**
+      ([`docs/spec-basic-himdom.md`](docs/spec-basic-himdom.md) §5,
+      `scratchpad/himdom_probe.py`, 15 rows x 3 machines, **both references
+      agree on every row**). The COERCION half is fixed and shipped; this is the
+      range check that sits on top of it:
+      * **ERR 5 below `$8000`** — `0`, `1`, `&H4000`, `32767` all refused. The
+        edge is exactly the bottom of RAM.
+      * **ERR 7 (`Out of memory`) inside RAM but below BASIC's own data** —
+        `32768` and `&H8050` (32848) refused while `40000` is accepted, so the
+        edge lies between 32848 and 40000 and is a property of the CURRENT
+        program and variables, not a constant.
+      * **ERR 5 above the RAM top** — `65535`, `&HFFFF`, `-1`.
+      🔴 **THE FIRST THING TO MEASURE IS THE MACHINE-SPECIFIC EDGE, AND NO ROW
+      COVERS IT YET.** HIMEM boots at **62336** on the VG-8020 and **56951** on
+      the CF-3300, so a value between them should be accepted on one and refused
+      on the other. That single row decides whether the check reads a sysvar or
+      a constant, and D-HIMDOM's set has nothing in that window.
+      🎯 **The old filing's guess is now RETIRED BY MEASUREMENT**: `&HFFFF` and
+      `-1` answer identically (ERR 5), same sixteen bits and different syntax, so
+      the rule is the VALUE — a range, and now with edges. ⚠️ **DO NOT copy the
+      pool argument's `bit 7,d`**: `&H9000` has bit 15 set and is ACCEPTED.
+      ⚠️ **IT WILL BREAK THIS TREE'S OWN FIXTURES.** `probes/basic/basic_probe_arrays.py`
+      squeezes memory with `CLEAR 200,&H8050`, which both references answer
+      **ERR 7**. Those rows are `zb`-only by declaration so they are not wrong
+      today, but the ERR-7 band retires them; they need a ceiling inside the
+      accepted window instead.
+      💰 Unpriced; main page 1, which D-HIMDOM left at **2 B free (2026-08-23)**
+      — this needs FUNDING before it needs a design.
 
 - [ ] ⚠️ **AN UNNAMED OUTCOME READS AS NO OUTCOME, AND THE FIX MOVES THE HOLE
       ONE MESSAGE ALONG.** Filed 2026-08-23, D-CLRTRAP §5 — a probe-design

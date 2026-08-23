@@ -1,0 +1,16 @@
+=== baseline ===
+baseline roms=0d04f8b7 / 490ffc49 / dd90f859
+baseline 15 rows match scratchpad/himdom_after2.out
+
+K-HD1  roms=7294b22a / 490ffc49 / c5cadd1b
+  cut: eval_addr -> eval_int16_checked: THE REGRESSION, re-created. This is the exact build D-CLRFIX shipped, so every predicted face is read off scratchpad/himdom_before.out rather than reasoned
+  moved 4 rows: d.32768='6 SAME', d.40000='6 SAME', d.50000='6 SAME', d.65535='6 SAME'
+  EXACT -- 4 predicted, 4 moved
+
+K-HD2  roms=7b312ea1 / 490ffc49 / d1a8151c
+  cut: eval_addr -> eval_byte_checked: the domain narrowed as far as it goes, so every accepted ceiling must redden -- the control knife
+  moved 11 rows: d.32767='5 SAME', d.32768='6 SAME', d.40000='6 SAME', d.50000='6 SAME', d.65535='6 SAME', d.h4000='5 SAME', d.h8000='5 SAME', d.h8050='5 SAME', d.hd000='5 SAME', d.hffff='5 SAME', d.neg1='5 SAME'
+  EXACT -- 11 predicted, 11 moved
+
+restored roms=0d04f8b7 / 490ffc49 / dd90f859
+2/2 knife rows EXACT

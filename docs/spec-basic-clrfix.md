@@ -74,10 +74,28 @@ another buys three fixes: the deferred-fault guard (which closes the trap loss
 *and* the write, because the raise happens before `ld (HIMEM),de`), the type
 fault, and the `ERR 6` the references give on `70000`.
 
+> 🔴 **CORRECTION, SAME DAY (D-HIMDOM, [`spec-basic-himdom.md`](spec-basic-himdom.md)):
+> `eval_int16_checked` WAS THE WRONG LEAF AND THIS SHIPPED A REGRESSION.** Its
+> `get_int16_checked` stage rejects `|x| > 32767`, and **both references ACCEPT
+> `CLEAR 200,50000`** (HIMEM = 50000). The coercion is the MSX **address**
+> domain, −32768..65535 — `eval_addr`, which `basic/poke.asm` already uses.
+> 🎯 **`q.ovf` could not have caught it:** `70000` is rejected under the signed
+> rule *and* under the address rule, so the row cannot separate them, and
+> `&HD000` passed only because MSX BASIC reads a hex literal ≥ `&H8000` as
+> NEGATIVE (−12288), landing inside `|x| <= 32767` by accident. **No row in the
+> 26 held a decimal in [32768, 65535].** The guard, the type fault and the
+> trap/write half of this slice are unaffected and still measured — only the
+> coercion's WIDTH was wrong. Fixed at +3 B by `eval_addr` + an explicit
+> `check_expr_errors` (that leaf defers, exactly as `do_poke` handles it).
+
 ⚠️ **The control this could have broken is `h.set`.** `&H9000` is **−28672** as
 a signed int16, so `|x| <= 32767` and the accepted ceiling still passes:
 `->36864` on all three machines, before and after. Knife K-CF3 is what proves
 that row is a detector.
+🔴 **And that paragraph is the whole mistake in miniature.** `h.set` passing
+*because* `&H9000` reads as negative is the fact that should have prompted the
+question **"then what does a POSITIVE 50000 do?"** — it is written down here, one
+line above the defect, as reassurance rather than as a lead.
 
 ## 3. The measurement — 26 rows × 3 machines, boot-per-case
 

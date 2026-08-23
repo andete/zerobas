@@ -1,0 +1,63 @@
+  ran vg8020  d.50000   '";ERR;" ->50000'
+  ran vg8020  d.40000   '";ERR;" ->40000'
+  ran vg8020  d.32768   '";ERR;" SAME'
+  ran vg8020  d.32767   '";ERR;" SAME'
+  ran vg8020  d.65535   '";ERR;" SAME'
+  ran vg8020  d.65536   '";ERR;" SAME'
+  ran vg8020  d.70000   '";ERR;" SAME'
+  ran vg8020  d.hffff   '";ERR;" SAME'
+  ran vg8020  d.neg1    '";ERR;" SAME'
+  ran vg8020  d.h8000   '";ERR;" SAME'
+  ran vg8020  d.hd000   '";ERR;" ->53248'
+  ran vg8020  d.zero    '";ERR;" SAME'
+  ran vg8020  d.one     '";ERR;" SAME'
+  ran vg8020  d.h4000   '";ERR;" SAME'
+  ran vg8020  d.h8050   '";ERR;" SAME'
+  ran cf3300  d.50000   '";ERR;" ->50000'
+  ran cf3300  d.40000   '";ERR;" ->40000'
+  ran cf3300  d.32768   '";ERR;" SAME'
+  ran cf3300  d.32767   '";ERR;" SAME'
+  ran cf3300  d.65535   '";ERR;" SAME'
+  ran cf3300  d.65536   '";ERR;" SAME'
+  ran cf3300  d.70000   '";ERR;" SAME'
+  ran cf3300  d.hffff   '";ERR;" SAME'
+  ran cf3300  d.neg1    '";ERR;" SAME'
+  ran cf3300  d.h8000   '";ERR;" SAME'
+  ran cf3300  d.hd000   '";ERR;" ->53248'
+  ran cf3300  d.zero    '";ERR;" SAME'
+  ran cf3300  d.one     '";ERR;" SAME'
+  ran cf3300  d.h4000   '";ERR;" SAME'
+  ran cf3300  d.h8050   '";ERR;" SAME'
+  ran zb      d.50000   '";ERR;" ->50000'
+  ran zb      d.40000   '";ERR;" ->40000'
+  ran zb      d.32768   '";ERR;" ->32768'
+  ran zb      d.32767   '";ERR;" ->32767'
+  ran zb      d.65535   '";ERR;" ->65535'
+  ran zb      d.65536   '";ERR;" SAME'
+  ran zb      d.70000   '";ERR;" SAME'
+  ran zb      d.hffff   '";ERR;" ->65535'
+  ran zb      d.neg1    '";ERR;" ->65535'
+  ran zb      d.h8000   '";ERR;" ->32768'
+  ran zb      d.hd000   '";ERR;" ->53248'
+  ran zb      d.zero    '";ERR;" ->0'
+  ran zb      d.one     '";ERR;" ->1'
+  ran zb      d.h4000   '";ERR;" ->16384'
+  ran zb      d.h8050   '";ERR;" ->32848'
+
+  d.50000  vg8020='";ERR;" ->50000'  cf3300='";ERR;" ->50000'  zb='";ERR;" ->50000'
+  d.40000  vg8020='";ERR;" ->40000'  cf3300='";ERR;" ->40000'  zb='";ERR;" ->40000'
+  d.32768  vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" ->32768'   *** DIFF
+  d.32767  vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" ->32767'   *** DIFF
+  d.65535  vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" ->65535'   *** DIFF
+  d.65536  vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" SAME'
+  d.70000  vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" SAME'
+  d.hffff  vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" ->65535'   *** DIFF
+  d.neg1   vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" ->65535'   *** DIFF
+  d.h8000  vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" ->32768'   *** DIFF
+  d.hd000  vg8020='";ERR;" ->53248'  cf3300='";ERR;" ->53248'  zb='";ERR;" ->53248'
+  d.zero   vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" ->0'   *** DIFF
+  d.one    vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" ->1'   *** DIFF
+  d.h4000  vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" ->16384'   *** DIFF
+  d.h8050  vg8020='";ERR;" SAME'  cf3300='";ERR;" SAME'  zb='";ERR;" ->32848'   *** DIFF
+
+ROWS: 15 printed, 15 scored -- 10 DIFF
