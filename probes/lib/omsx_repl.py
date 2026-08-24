@@ -502,7 +502,8 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          holds: list[tuple[int, int] | None] | None = None,
          hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
          slots_out: list[tuple[int, str]] | None = None,
-         hb_path: str | None = None, state_load: str | None = None) -> str:
+         hb_path: str | None = None, state_load: str | None = None,
+         settle_n: int = 0) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
     (CHGET drains KEYBUF into the line editor) before the next write overwrites
@@ -606,6 +607,22 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         else:
             for ln in lines:
                 t = emit(t, ln)
+        # BUDGET INSTRUMENT (docs/spec-probe-budget.md): sample the capture
+        # region `settle_n` times across the gap between the LAST injected line
+        # (`RUN`, in stored mode) and the capture, so the host can say WHEN the
+        # machine actually stopped changing it -- the ACTUAL -- against the
+        # scheduled capture -- the BUDGET. Emitted only when asked; a `puts`
+        # callback is atomic w.r.t. the emulated CPU and costs ZERO emulated
+        # time, so the sampled timeline is the un-sampled one (asserted, not
+        # assumed: the instrument's own gate compares captures with it on and
+        # off). `run_at`/`cap_at` travel with the samples because a margin is
+        # meaningless without the two ends it is measured between.
+        # The instant the LAST line (`RUN`, in stored mode) was injected: `emit`
+        # has already advanced `t` one `step` past it, and the capture is
+        # scheduled at `t` -- so the window a case's budget actually buys between
+        # RUN and capture is exactly `step`. (`cap_gap` is the gap AFTER the
+        # capture, i.e. inter-case spacing, and buys this case nothing.)
+        t_run = max(boot, t - step)
         hold = holds[idx] if holds else None
         if hold:
             # Press at the RUN slot itself (t - step), not after it: the program
@@ -619,6 +636,27 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
             t += hold_secs
             body.append(f'after time {t:.1f} {{ keymatrixup {row} {mask} }}')
             t += 1.0
+        if settle_n > 0 and t > t_run:
+            # `settle_n` LOG-SPACED samples over (t_run, t]: the window the
+            # budget actually buys. Each records the emulated instant and the
+            # capture region itself, so the host finds the LAST sample at which
+            # the region still changed -- everything after it is pure margin.
+            #
+            # 🔴 LOG-SPACED, NOT EVEN, AND THAT IS THE DIFFERENCE BETWEEN A
+            # MEASUREMENT AND A RESOLUTION ARTEFACT. An even grid over a 90 s
+            # window samples first at 2.25 s -- but the operations these budgets
+            # are sized for finish FAR inside that, so every sample came back
+            # identical and the readout printed "used 2.25 s / 2.5%" for both a
+            # circle draw and a text error: not a reading of the work, a reading
+            # of the grid. Log spacing puts the first sample at window/1000 and
+            # keeps ~3 decades of resolution where fast cases actually settle,
+            # while still reaching the far end for the slow ones.
+            for k in range(1, settle_n + 1):
+                ts = t_run + (t - t_run) * 10.0 ** (-3.0 * (1 - k / settle_n))
+                body.append(f'after time {ts:.3f} {{ puts $__f '
+                            f'"settle.{idx}.{k}={ts:.3f},{cap}"; flush $__f }}')
+            body.append(f'after time {t:.3f} {{ puts $__f '
+                        f'"span.{idx}={t_run:.3f},{t:.3f}"; flush $__f }}')
         body.append(f'after time {t:.1f} {{ puts $__f "case.{idx}='
                     f'{cap}"; flush $__f }}')
         t += cap_gap
@@ -938,7 +976,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                timeout: float = 240.0, omsx: str | None = None,
                cart: str | None = None, diska: str | None = None,
                stall: float | None = None, abscap: float | None = None,
-               state_load: str | None = None
+               state_load: str | None = None, settle_n: int = 0,
+               settle_out: dict | None = None
                ) -> tuple[list[str | None], dict[int, list[int]], list]:
     """One boot, `cases` driven, returning `(captures, delivered, echo)` -- the
     raw engine. `delivered` maps a stored-mode case index to the line-number
@@ -973,7 +1012,7 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     with open(tcl, "w") as f:
         f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
                      holds, hold_secs, prologue, slots, hb_path=hb,
-                     state_load=state_load))
+                     state_load=state_load, settle_n=settle_n))
     for p in (out, hb):
         if os.path.exists(p):
             os.unlink(p)
@@ -1036,6 +1075,19 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                 delivered[int(d.group(1))] = [
                     int(x) for x in d.group(2).split(",") if x]
                 continue
+            if settle_out is not None:
+                s = re.match(r"settle\.(\d+)\.(\d+)=([\d.]+),([0-9a-f]*)$",
+                             ln.strip())
+                if s:                          # BUDGET INSTRUMENT: one sample
+                    settle_out.setdefault("samples", {}).setdefault(
+                        int(s.group(1)), []).append(
+                            (float(s.group(3)), s.group(4)))
+                    continue
+                sp = re.match(r"span\.(\d+)=([\d.]+),([\d.]+)$", ln.strip())
+                if sp:                         # the window the budget bought
+                    settle_out.setdefault("span", {})[int(sp.group(1))] = (
+                        float(sp.group(2)), float(sp.group(3)))
+                    continue
             e = re.match(r"echo\.(\d+)=(\d+),(\d+),([0-9a-f]*)$", ln.strip())
             if e:                              # D-ECHO: what the machine ECHOED
                 # ⚠️ decoded EXACTLY as the `screen` capture is -- non-print ->

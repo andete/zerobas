@@ -1,0 +1,117 @@
+<!--
+Copyright (c) 2026 Joost Yervante Damad
+SPDX-License-Identifier: 0BSD
+-->
+# ACTUAL-vs-BUDGET — instrumenting the probe harness's emulated-time budgets
+
+**Date:** 2026-08-24. **Files:**
+[`probes/lib/omsx_repl.py`](../probes/lib/omsx_repl.py) (`settle_n` / `settle_out`,
+inert when off), [`scratchpad/budget_probe.py`](../scratchpad/budget_probe.py)
+(the driver). **Parent item:** [`TODO.md`](../TODO.md) *"the real gate-suite lever
+is the emulated-time budgets"*, filed out of
+[`spec-probe-savestate.md`](spec-probe-savestate.md) §4b — which found the
+per-case COLD BOOT is **not** the suite's dominant cost, and that `step` /
+`cap_gap` / `PAINT_STEP` are.
+
+The item says to **instrument first, and cut only what the data licenses**. This
+is the instrument and its first readings. **No budget is changed here.**
+
+## 1. What a "budget" is, exactly
+
+`_tcl` schedules each injected line one `step` apart and the capture one `step`
+after the last line, so:
+
+* **the window a case's budget buys between `RUN` and its capture is exactly
+  `step`** — not `step + cap_gap`;
+* **`cap_gap` is the gap AFTER the capture** (inter-case spacing) and buys the
+  case that owns it nothing.
+
+🔴 **`step` therefore does DOUBLE DUTY, and that is the constraint that shapes any
+cut.** It is simultaneously (a) the inter-line injection spacing that guarantees
+the previous chunk has been consumed — *"measured drained before 1794/1794
+injections"*, the property the whole D-LATCH/D-DELIVER delivery-race apparatus
+rests on — and (b) the RUN→capture completion budget. **Lowering `step` to reclaim
+(b) tightens (a)**, i.e. pays for wall time with the one race this harness has
+been bitten by repeatedly. A cut wants a *separate knob*, not a smaller `step`.
+
+## 2. The instrument
+
+`_run_batch(..., settle_n=N, settle_out=d)` schedules `N` **log-spaced** samples
+across `(RUN, capture]`, each emitting the emulated instant and **the capture
+region itself**. The host finds the last sample at which the region still
+changed: everything after it is margin.
+
+🔴 **LOG-SPACED, NOT EVEN — the first cut was a resolution artefact.** An even
+grid over a 90 s window first samples at 2.25 s, but these operations finish far
+inside that, so every sample came back identical and the readout printed *"used
+2.25 s / 2.5 %"* for a circle draw **and** for a text error — the grid's own
+spacing, reported as a measurement. Log spacing puts the first sample at
+`window/1000` and keeps ~3 decades of resolution where fast cases settle.
+
+🔴 **AND NO OBSERVED CHANGE IS A BOUND, NOT A VALUE.** When every sample agrees,
+all that is known is `used < first-sample offset`; the driver prints `<x`, never
+`x`.
+
+### 2.1 Two controls, because an instrument is part of the measurement
+
+* **It must not move what it measures.** openMSX `after time` callbacks are
+  atomic w.r.t. the emulated CPU and cost zero emulated time — *asserted*:
+  `budget_probe.py --inert` compares each case's capture with sampling on and
+  off (**identical**), and the generated Tcl with `settle_n=0` is **byte-identical
+  to the committed pre-instrument version** across every capture shape and hold
+  combination.
+* 🔴 **THE SAMPLED REGION MUST BE THE REGION THE WORK WRITES.** The first sweep
+  watched only the SCREEN-2 **pattern** table and reported the PAINT flood
+  settling in **0.254 s on both references** — because they fill by writing the
+  **colour** table alone. Measured, holding the screen: reference pattern all
+  `0x00` / colour all `0x0F`; zerobas pattern all `0xFF` / colour all `0xF4` —
+  the *same visible screen* (`POINT` reads 15 on all three, `PAINT` completes
+  with `ERR 0` on all three), different bytes. That is the filed *"the two
+  engines write DIFFERENT BYTES"* fact ([[ntwall-scout-slice]]) arriving as an
+  instrument fault: **a sampler pointed at a region a machine never touches
+  reports "settled immediately" for every machine that does the work elsewhere**,
+  and a budget cut made on that reading would be cut on nothing. Sampling both
+  tables moved the references from 0.254 s to **16.0 s**.
+
+## 3. First readings (2026-08-24, ROMs `41b8c4ed`/`1922eaa0`/`7d27b871`)
+
+`used` = to the last change in the capture region; `margin` = the rest;
+resolution `window/40`, log-spaced.
+
+| case | window | vg8020 | cf3300 | zerobas | worst used |
+|---|---|---|---|---|---|
+| `paint.flood` — whole-screen fill | 90.00 | 16.005 | 16.005 | **53.610** | **59.6 %** |
+| `paint.circle` — bounded fill | 90.00 | 4.778 | 4.778 | 11.330 | 12.6 % |
+| `circle` — draw, no fill | 90.00 | 0.715 | 0.715 | 0.426 | 0.8 % |
+| `text.err` — error + PRINT readout | 2.50 | 0.094 | 0.094 | 0.024 | 3.8 % |
+
+## 4. What the data licenses — and what it forbids
+
+🟢 **`PAINT_STEP = 90.0` IS EARNED, NOT PADDING.** Its worst case needs **53.6
+emulated seconds on zerobas** — a margin of only **1.68×**. The comment calling it
+*"generous"* is wrong about the number: it is the tightest budget in the table.
+**Do not cut it.** (A cut to 45 s would fire the capture MID-FILL on the subject —
+which reads as a hang or a wrong partial result, i.e. as semantics.)
+
+🎯 **THE WASTE IS NOT THE BUDGET, IT IS ITS SCOPE.** `PAINT_STEP` is applied to a
+whole phase, while only the flood needs it: `paint.circle` uses 12.6 % of it and a
+plain `circle` **0.8 %**. Per-case budgets — or an adaptive capture that fires
+when the region settles — is where the wall time is, and neither requires making
+any budget tighter than its own measured need.
+
+⚠️ **zerobas is the slowest on every fill row** (53.6 s vs 16.0 s; 11.3 s vs
+4.8 s) because it writes both tables where the references write one. That is a
+performance observation about the implementation, **not** a divergence — the
+visible result and the error code agree on all three. Any budget must be sized on
+the *slowest* machine, so zerobas sets the floor.
+
+🔴 **AND ANY CUT MUST KEEP `step`'S OTHER JOB.** See §1: a separate RUN→capture
+knob, defaulting to `step` (hence inert), is the shape that can be cut safely.
+A gate that would go RED if the margin were too thin is required before any
+budget moves — the obvious subject being the `graphics-acceptance` fill rows,
+whose failure mode under a thin budget is a *partial* result, not an error.
+
+## 5. Status
+
+Instrument LANDED and inert; **no budget changed**. Next: the separate
+RUN→capture knob + per-case budgets, gated as §4 requires.
