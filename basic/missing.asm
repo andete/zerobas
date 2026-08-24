@@ -403,19 +403,22 @@ ex_swap:
                 ld      a,1
                 ld      (SW_MODE),a         ; operand 2: must already EXIST
                 call    sw_operand
-                ; a third operand: `SWAP A,B,C` is Illegal function call, but a bare
-                ; trailing comma `SWAP A,B,` is Syntax error -- both measured, and they
-                ; differ, so the comma alone cannot decide it.
-                call    skip_spaces
-                cp      ','
-                jr      nz,sw_types
-                inc     hl
-                call    skip_spaces
-                or      a
-                jp      z,stmt_error        ; `SWAP A,B,` -> Syntax error
-                cp      COLON
-                jp      z,stmt_error
-                jp      sw_illegal          ; `SWAP A,B,C` -> Illegal function call
+                ; NO third-operand check here, DELIBERATELY -- and deleting it was
+                ; a 23 B MAIN page-1 carve (wall 68 -> 91 B, D-SWAP3). SWAP now
+                ; consumes exactly `A,B`, falls into sw_types,
+                ; EXCHANGES them and `jp exec_stmt`s; any trailing token (`,C`, a
+                ; bare `,`, ...) is then rejected by exec_stmt's own statement-
+                ; boundary guard (interp.asm es_noentry) as Syntax error -- ERR 2,
+                ; trappable, first-error-wins. That is the reference's architecture,
+                ; and it is what makes `SWAP A,B,C` on DEFINED operands EXCHANGE
+                ; A<->B and THEN raise: measured on the VG-8020 AND the CF-3300
+                ; (D-SWAP3, docs/spec-basic-swap3.md -- s.ok3 `2 2` / s.ok3b `2 1`,
+                ; the swap done before the ERR 2). The old bespoke check raised ERR 5
+                ; BEFORE the exchange: wrong code AND wrong side effect.
+                ; sw_absent (below) still owns the SECOND-operand rule -- `SWAP A,B`
+                ; on an undefined B is Illegal function call (ERR 5) -- which is why
+                ; §4.5 recorded ERR 5 for `SWAP A,B,C`: it ran with B undefined and
+                ; sw_absent fired before the parse ever reached the third operand.
 sw_types:
                 ld      a,(SW_TYPE)
                 ld      b,a
@@ -496,18 +499,16 @@ sw_array:
                 ret
 sw_absent:
                 ; the SECOND operand names a scalar that does not exist. Measured:
-                ; `A=1:SWAP A,B` is Illegal function call, NOT an auto-created B.
+                ; `A=1:SWAP A,B` is Illegal function call (ERR 5), NOT an auto-created
+                ; B. It fires while RESOLVING operand 2, before the exchange, so
+                ; `SWAP A,B,C` on an UNDEFINED B reads ERR 5 -- never reaching the
+                ; exec_stmt boundary that gives a DEFINED B's `,C` the ERR 2
+                ; (D-SWAP3, docs/spec-basic-swap3.md). The old `sw_illegal equ
+                ; gb_illegal` alias and this file's bespoke third-operand raiser are
+                ; both gone; gb_illegal is now reached only from here.
                 push    ix
                 pop     hl                  ; restore the cursor for the abort
-                jp      gb_illegal          ; 🔴 sw_illegal is a FALLTHROUGH target, so the
-                                            ; alias below cannot stand alone: this `jp` is
-                                            ; what sw_absent used to reach by falling in.
-                                            ; The collapse is worth 2 B here, not 5.
-; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
-; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
-; The NAME and every call site survive; un-alias here to give this site a
-; distinct face and nothing else moves.
-sw_illegal      equ     gb_illegal  ; ERR 5 (`SWAP A,B,C` -- a third operand)
+                jp      gb_illegal          ; ERR 5 (Illegal function call)
     ENDIF
 
 ; --- els_typecheck: D-MISS-1, the string-lvalue RHS type check --------------

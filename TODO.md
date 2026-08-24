@@ -776,20 +776,80 @@ list. **When a slice lands, grep this list for what it just shipped.**
       measurement, not the blank. Unpriced — `ep_parse_b`'s grammar test would
       have to move below the tenant call, which is not obviously cheap.
 
-- [ ] 🔴 **`SWAP A,B,C` is `Syntax error` (ERR 2) on both references whenever
-      the SECOND operand exists — and a characterization row says otherwise.**
-      Filed 2026-08-22 by D-DUPSPAN,
-      [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §6.2.
-      `docs/missing-vg8020-characterization.md` §4.5 records `Illegal function
-      call` and calls it *the kind of detail that only a measurement produces*;
-      its fixture left `B` undefined, so what it measured is the **`sw_absent`
-      second-operand rule** (`A=1:SWAP A,B` → ERR 5) firing before the parse
-      reaches `,C`. Four fixtures separate it: all-undefined ERR 5 ✅,
-      B-undefined ERR 5 ✅, **C-undefined ERR 2 🔴, all-defined ERR 2 🔴**.
-      💰 **0 B**: `basic/missing.asm`'s `jp sw_illegal` → `jp pl_syntax`, three
-      bytes for three, into the ERR-2 canonical D-DUPSPAN created.
-      ⚠️ Needs its own rows first: `SWAP A,B,` and the trappability of each
-      shape are unmeasured, and §4.5's row must be NARROWED, not deleted.
+- [x] ✅ **CLOSED 2026-08-24 (D-SWAP3) — AND IT WAS A GENERIC MECHANISM, NOT A
+      PER-VERB PATCH: `SWAP`'s BESPOKE THIRD-OPERAND CHECK DELETED, −23 B MAIN
+      PAGE-1 CARVE (68 → 91 B free).**
+      [`docs/spec-basic-swap3.md`](docs/spec-basic-swap3.md). The filed fix
+      (`jp sw_illegal` → `jp pl_syntax`, 0 B) was measured to WORK (per-verb
+      knives 3/3 EXACT) but it was the wrong layer and it missed a second
+      divergence. The user asked whether an extra operand is a generic mechanism;
+      it is. `exec_stmt`'s statement-boundary guard (`basic/interp.asm`
+      `es_noentry`, `jp stmt_error`) already rejects any leftover token after a
+      statement. Deleting SWAP's own trailing-token block lets SWAP consume `A,B`,
+      EXCHANGE them, `jp exec_stmt`, and the generic guard reject `,C`/`,` —
+      ERR 2, trappable, first-error-wins, **after the swap**.
+      🎯 **That closes TWO divergences the 0 B patch left open**: (1) the error
+      code (`SWAP A,B,C` on a defined B: ERR 5 → ERR 2), and (2) the SIDE EFFECT
+      — the references EXCHANGE A↔B and THEN raise (`s.ok3` `2 2` / `s.ok3b`
+      `2 1`; the trailing comma too, `s.tc.va`/`s.tc.vb`). zerobas raised before
+      the exchange and left A,B untouched; now it matches.
+      📏 **21 rows × 3 machines, references unanimous, 4 DIFF → 0**
+      (`scratchpad/swap3_probe.py`, before `swap3_probe.out` / after
+      `swap3_after2.out`). Type mismatch still outranks the boundary (`s.mm3`
+      ERR 13, A% unchanged) — the `sw_types` type check runs before the exchange,
+      unchanged by the carve. **Knives 3/3 EXACT** (`swap3_knives.py`): K-SW1
+      proves the ERR-5 rows are `sw_absent`, K-SW2/K-SW3 that each operand is
+      written by the exchange before the boundary.
+      🔴 **§4.5 WAS A CASE THAT AGREED FOR THE WRONG REASON**, NARROWED not
+      deleted: its `SWAP A,B,C → Illegal function call` fixture left B undefined,
+      so it measured the second-operand rule, and its own `SWAP A,B,` row was
+      ERR 2 because it ran with the variables in scope — the table was
+      inconsistent about state. `docs/missing-vg8020-characterization.md` §4.5
+      now names each reject row's operand-2 state.
+
+- [ ] 💰 **THE GENERIC ERROR-LAYER SEAM: per-verb error checks that duplicate a
+      layer that already exists — a carve AND a correctness seam.** Opened
+      2026-08-24 by D-SWAP3, [`docs/spec-basic-swap3.md`](docs/spec-basic-swap3.md)
+      §6, on the user's observation that SWAP is one instance of a class. **Two
+      generic layers get reimplemented per-verb:**
+      * **Trailing-token → ERR 2**: `exec_stmt`'s `es_noentry`
+        (`basic/interp.asm`) already raises `Syntax error` for any leftover token
+        after a statement returns via `jp exec_stmt`. Bespoke duplicates alias
+        `pl_syntax` and are reached from a `cp ','`/`cp COLON`/`or a` peek PAST
+        the last valid argument: `graphics.asm:748/798` (PAINT 3rd/4th arg),
+        `1203` (`PUT SPRITE 0,`), `1239` (a 5th sprite arg), `play.asm:73` (PLAY
+        4th voice), and SWAP (now deleted).
+      * **Missing/empty operand → ERR 24 / ERR 2**: `ev_f`'s
+        `ev_f_missop`/`ev_f_empty` machinery — the D-MISSOP arc already found
+        this is *"one rule at 16 slots"* (docs/spec-basic-missop.md); several
+        verbs still raise their own (the `PLAY`-no-operand and `ev_f_err`
+        seven-sites items below are the same seam).
+      🎯 **The failure is not just wasted bytes — the bespoke check is usually
+      subtly WRONG**: SWAP had wrong CODE (5 not 2) AND wrong ORDERING (raised
+      before its exchange; the ref swaps then raises). The SAME ordering bug is
+      FILED OPEN for two more verbs — **PAINT's 4th argument** ("raised AFTER the
+      fill on both references and BEFORE here", below) and **CIRCLE's trailing
+      comma** ("draw before raising", below) — so this class already has three
+      known instances, one fixed.
+      ⚠️ **THE CARVE IS REAL BUT NOT UNIFORM, and the split is the whole job.**
+      SWAP was a clean 23 B DELETE because its side effect (the exchange) is
+      INLINE and guards the cursor, so falling to `jp exec_stmt` with the cursor
+      on the leftover token Just Works. PAINT/SPRITE/CIRCLE issue their side
+      effect through a sub-ROM TENANT (`ep_draw`/`GFX_OP`), so whether deleting
+      the check is free (draw, `jp exec_stmt`, boundary rejects — matching the
+      ref's draw-then-fail) or a restructure depends on whether the parse cursor
+      SURVIVES the tenant round-trip. That is a per-verb MEASUREMENT (build +
+      3-machine differential + a value read for the side effect), one verb at a
+      time — never a mechanical sweep. Reuse `scratchpad/swap3_probe.py`'s shape.
+      🎯 **BUT MEASURING PER-VERB DOES NOT MEAN THE VERBS ARE DIFFERENT — HEAVY
+      SHARING IS THE EXPECTED RESULT.** The per-verb differential CONFIRMS a verb
+      belongs to the shared rule; it does not presume uniqueness. Direct
+      precedent: D-MISSOP measured the missing-operand case verb-by-verb and found
+      **one rule at 16 slots** (docs/spec-basic-missop.md). So the likely finding
+      is that most of these bespoke ERR-2 raisers ARE the one `es_noentry` rule
+      wearing per-verb labels — which is why the consolidation is a real carve,
+      not a marginal one. The per-verb measurement is the ADMISSION test; the
+      shared handler is the payoff.
 
 - [ ] 🔴 **`PLAY` with no operand is `Missing operand` (ERR 24) on both
       references, not `Syntax error`.** Filed 2026-08-22 by D-DUPSPAN,

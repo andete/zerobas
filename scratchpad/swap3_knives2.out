@@ -1,0 +1,22 @@
+=== baseline ===
+baseline roms=62d89972 / dd8f417b / 0c5aa556
+baseline 21 rows match scratchpad/swap3_after2.out
+
+K-SW1  roms=0a9005a6 / dd8f417b / fa5d20d7
+  cut: sw_absent (2nd-operand rule) jp gb_illegal -> jp stmt_error (ERR 5->2)
+  moved 8 rows: s.2bund='2 0', s.2none='2 0', s.3bund='2 0', s.3none='2 0', s.tc.bun='2 0', s.tc.non='2 0', z.45.3='2 0', z.45.tc='2 0'
+  ✅ EXACT — 8 predicted, 8 moved
+
+K-SW2  roms=858aeebb / dd8f417b / 1272dc53
+  cut: exchange operand-1 write ld (hl),a -> ld (hl),c (A keeps its byte)
+  moved 3 rows: s.ok='0 1', s.ok3='2 1', s.tc.va='2 1'
+  ✅ EXACT — 3 predicted, 3 moved
+
+K-SW3  roms=d3c00a34 / dd8f417b / 211ca2bb
+  cut: exchange operand-1 read ld c,(hl) -> ld c,a (B keeps its byte)
+  moved 2 rows: s.ok3b='2 2', s.tc.vb='2 2'
+  ✅ EXACT — 2 predicted, 2 moved
+
+restored roms=62d89972 / dd8f417b / 0c5aa556
+3/3 knives EXACT
+EXIT rc=0

@@ -372,15 +372,24 @@ This is a bug-for-bug behaviour to reproduce, not to fix; see
 | case | ROM |
 |---|---|
 | `SWAP` / `A=1:SWAP A` | `Syntax error` |
-| `SWAP A,B,C` | **`Illegal function call`** — not `Syntax error` |
+| `SWAP A,B,C`, `B` **undefined** | `Illegal function call` |
+| `A=1:B=2:SWAP A,B,C` (`B` **defined**) | `Syntax error` — **and A,B are swapped first** |
 | `SWAP A,1` / `SWAP 1,A` | `Syntax error` |
 | `SWAP A,B+0` / `SWAP A,LEN("x")` | `Syntax error` |
 | `SWAP (A),B` | `Syntax error` |
-| `SWAP A,B,` | `Syntax error` |
+| `A=1:B=2:SWAP A,B,` (`B` **defined**) | `Syntax error` — **A,B swapped first** |
 | `DIM Q(2):SWAP A,Q(9)` | `Subscript out of range` |
 
-`SWAP A,B,C` raising `Illegal function call` where every other malformed shape
-raises `Syntax error` is the kind of detail that only a measurement produces.
+🔴 **NARROWED 2026-08-24 (D-SWAP3, [`spec-basic-swap3.md`](spec-basic-swap3.md)).**
+The original table read *"`SWAP A,B,C` → `Illegal function call` — the kind of
+detail that only a measurement produces"* — and that was a case AGREEING FOR THE
+WRONG REASON: the fixture left `B` undefined, so the reading is the SECOND-operand
+rule (operand 2 must exist), not a third-operand rule. With `B` DEFINED both
+references answer `Syntax error` (ERR 2) — the generic statement-boundary error
+for the leftover `,C` — **after exchanging A and B**. The table above was
+internally inconsistent about variable state (the `SWAP A,B,` row was ERR 2
+because it ran with the variables in scope); every SWAP reject row now names its
+operand-2 state. Measured on the VG-8020 and the CF-3300.
 
 ## 5. `TRON` / `TROFF` — per LINE, and never in direct mode
 
