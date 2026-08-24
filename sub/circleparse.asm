@@ -107,9 +107,19 @@ cpt_after_r:
 ; `CIRCLE(50,50),20,,0.1,6.2` must keep drawing (rows o.colour / o.start /
 ; o.end / o.none, unanimous 0 on all three machines before AND after).
 ; ⚠️ AND THE RULE STOPS AT THE END OF THE LIST: a comma after a COMPLETE
-; argument list is Syntax error, not 24 (rows x.extra / x.extra2), the same
-; way D-LINERR measured LINE's box slot as ERR 2 one field past a slot that
-; is 24. The two cpt_err2 sites below are that boundary and are UNCHANGED.
+; argument list is Syntax error (ERR 2), not 24 (rows x.extra / x.extra2), the
+; same way D-LINERR measured LINE's box slot as ERR 2 one field past a slot
+; that is 24. But WHERE the ERR 2 is raised splits the two boundary sites
+; (D-CIRCTC):
+;   cpt_at_aspect (x.extra `...,6.2,,`): the aspect slot is itself EMPTY, so the
+;     reference raises BEFORE drawing (`2 4`). Its cpt_err2 STAYS -- raise-first.
+;   cpt_asp_done  (x.extra2 `...,6.2,1,`): the list is COMPLETE (aspect present),
+;     so the reference DRAWS then raises (`2 5`). Its bespoke cpt_err2 is DELETED
+;     and the leftover comma is delegated to the resident's cp_done boundary --
+;     draw-then-raise, matching SWAP/PAINT/SPRITE (docs/spec-basic-circle-
+;     restructure.md). The empty-slot-vs-complete-list split is the SAME rule
+;     the four cpt_at_* labels carry above (omitted slot draws; dangling comma
+;     is 24) -- extended to the terminator.
 cpt_at_c:
                 call    cpt_skipsp
                 cp      ','
@@ -239,8 +249,20 @@ cpt_asp_le1:
                 call    cpt_asp_scale256    ; ARGA still = aspect
 cpt_asp_done:
                 call    cpt_skipsp
-                cp      ','
-                jp      z,cpt_err2          ; too many args -> Syntax error
+                ; 🔴 D-CIRCTC: a trailing comma after a COMPLETE argument list
+                ; (aspect PRESENT) is NOT a tenant error. The reference DRAWS the
+                ; circle and THEN raises Syntax error (x.extra2 `2 5`); zerobas
+                ; raised ERR 2 here BEFORE the draw (`2 4`). This is the seam the
+                ; three resident-side verbs already delegate (SWAP/PAINT/SPRITE):
+                ; report SUCCESS (GFX_RES stays 0), leave GFX_DPTR ON the leftover
+                ; comma, and let the resident's cp_done do its GFX_OP=4 draw and
+                ; the `jp exec_stmt` it ALREADY ends in -- es_noentry / stmt_error
+                ; raises ERR 2 (trappable, after the draw). The tenant needn't
+                ; signal the leftover: the resident's own statement boundary is
+                ; the second signal, so this is a DELETE, not the "second flag"
+                ; restructure the seam classifier assumed (docs/spec-basic-circle-
+                ; restructure.md). Non-comma trailing junk ALREADY fell to
+                ; cpt_finish here; the comma now joins it.
                 jp      cpt_finish
 
 ; ===========================================================================

@@ -417,18 +417,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       no name for — and when you add one name, what is the next one?** No gate
       covers it; `scratchpad/circmiss_sib2.py` carries the widened list.
 
-- [ ] ⚠️ **THE REFERENCES DRAW BEFORE RAISING A TRAILING-COMMA SYNTAX ERROR;
-      ZEROBAS RAISES WITHOUT DRAWING.** Filed 2026-08-23, D-CIRCMISS §6, row
-      `x.extra2` (`CIRCLE(50,50),20,5,0.1,6.2,1,` — a comma after a COMPLETE
-      argument list). **Both sides answer ERR 2, so an ERR-only probe scores it
-      GREEN**; the drawn-pixel column separates them (`2 5` vs `2 4`).
-      **PRE-EXISTING** — identical before and after D-CIRCMISS and unmoved under
-      knife K-CM1. Structurally awkward: the tenant reports through `GFX_RES`
-      and the resident's `cp_done` tests it BEFORE issuing `GFX_OP=4`, so
-      *"draw, then fail"* needs a second flag. 🎯 The companion row `x.extra`
-      (`...,6.2,,`) is `2 4` on all three, which is what makes the rule
-      readable: the reference draws once its argument list is SATISFIED and
-      checks the terminator afterwards.
+- [x] ✅ **CLOSED 2026-08-24 (D-CIRCTC) — AND IT WAS A CLEAN DELETE, NOT A
+      RESTRUCTURE: −5 B of sub page 1.**
+      [`docs/spec-basic-circle-restructure.md`](docs/spec-basic-circle-restructure.md).
+      Filed 2026-08-23 (D-CIRCMISS §6) as row `x.extra2`
+      (`CIRCLE(50,50),20,5,0.1,6.2,1,` — a comma after a COMPLETE argument list):
+      both references DRAW then raise ERR 2 (`2 5`), zerobas raised without
+      drawing (`2 4`), and every filing (D-CIRCMISS §6, D-DUPSPAN §6.1, the seam
+      classifier) called it a cross-ABI RESTRUCTURE needing a *"second flag"*.
+      🔴 **THAT VERDICT WAS REASONED, NOT MEASURED.** The trailing comma is not a
+      CIRCLE error the tenant must signal — it is a leftover STATEMENT token, and
+      the resident's `cp_done` ALREADY ends in `jp exec_stmt` after the
+      `GFX_OP=4` draw. Deleting `cpt_asp_done`'s bespoke `cp ',' / jp z,cpt_err2`
+      (`sub/circleparse.asm`) makes the tenant report success (`GFX_RES`=0) and
+      leave the cursor on the comma; the draw happens and `exec_stmt`'s
+      `es_noentry` raises ERR 2 AFTER it — draw-then-raise, exactly like
+      SWAP/PAINT/SPRITE. `GFX_DPTR` survives GFX_OP=4 (a RAM sysvar `gfx_circle_op`
+      never touches), which is the fact the "cursor survives the tenant" test got
+      wrong. **17 rows × 3 machines, 1 DIFF → 0** (`circtc_before.out` /
+      `circtc_after.out`); `x.extra` (`...,6.2,,`, empty aspect slot) correctly
+      STAYS `2 4` — `cpt_at_aspect`'s `cpt_err2` is left in place (raise-first).
+      `sub.rom` moves, `basic-reloc.rom` + merged do NOT. Knives 2/2 EXACT
+      (`circtc_knives.py`): K-CT1 moves all THREE aspect-present rows together
+      (the tenant no longer distinguishes the comma — the refutation itself);
+      K-CT2 proves the empty-slot case must raise-before-draw. 38/38 gates green.
 
 - [ ] ⚠️ **`latch-check` IS THE ONE GATE WITH NO PREREQUISITES, AND A HAND-ROLLED
       BATTERY WILL TRIP IT.** Filed 2026-08-23, D-CIRCMISS §8.
@@ -831,12 +843,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
         the last valid argument: `graphics.asm:748/798` (PAINT 3rd/4th arg),
         `1203`/`1210` (`PUT SPRITE 0`/`0,`), `1250` (5th sprite arg),
         `play.asm:73` (PLAY 4th voice). **DELETED so far: SWAP, PAINT `:798`,
-        SPRITE `:1250`** (D-SWAP3/D-PAINT4/D-SPRITE5). ⚠️ The incomplete-arg
-        siblings (PAINT `:748`, SPRITE `:1203`/`:1210`) are NOT deletable — they
-        raise before the effect and agree on both refs — the per-site oracle
-        split, measured. PLAY `:73` is KEEP (raises before playing). CIRCLE is
-        RESTRUCTURE. So of the trailing-token sites, the DELETABLE ones are
-        SHIPPED; what remains in this layer is CIRCLE's cross-ABI restructure.
+        SPRITE `:1250`, CIRCLE `cpt_asp_done`** (D-SWAP3/D-PAINT4/D-SPRITE5/
+        D-CIRCTC). ⚠️ The incomplete-arg siblings (PAINT `:748`, SPRITE
+        `:1203`/`:1210`) are NOT deletable — they raise before the effect and
+        agree on both refs — the per-site oracle split, measured. PLAY `:73` is
+        KEEP (raises before playing). 🟢 **CIRCLE turned out DELETABLE too, not a
+        restructure** (D-CIRCTC — the classifier's one wrong verdict, reasoned not
+        measured): the resident's `cp_done` already `jp exec_stmt`s after the
+        draw, so the trailing comma delegates like the other three. **ALL FOUR
+        trailing-token members are now SHIPPED; this half of the seam is CLOSED.**
       * **Missing/empty operand → ERR 24 / ERR 2**: `ev_f`'s
         `ev_f_missop`/`ev_f_empty` machinery — the D-MISSOP arc already found
         this is *"one rule at 16 slots"* (docs/spec-basic-missop.md); several
@@ -881,10 +896,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
         2/2 EXACT. [`docs/spec-basic-sprite5.md`](docs/spec-basic-sprite5.md).
         The `:1203`/`:1210` incomplete-arg sites KEEP their gfx_syntax (raise
         before place, agree — sp.incomp/sp.barep).
-      * **CIRCLE trailing comma → RESTRUCTURE, confirmed.** Refs DRAW then raise
-        (`2 15`), zb raises before (`2 4`) — the filed `x.extra2`. Parse is in the
-        sub-ROM tenant, result tested before the draw op: a second flag, NOT a
-        delete. Stays the cross-ABI hard case.
+      * **CIRCLE trailing comma → classified RESTRUCTURE, but SHIPPED AS A CLEAN
+        DELETE** (D-CIRCTC, −5 B). Refs DRAW then raise (`2 15`/`2 5`), zb raised
+        before (`2 4`) — the filed `x.extra2`. The classifier's *"second flag, not
+        a delete"* was REASONED, not measured, and wrong: `cp_done` already
+        `jp exec_stmt`s after the draw, so deleting `cpt_asp_done`'s `cp ',' /
+        jp z,cpt_err2` delegates the leftover comma to the statement boundary —
+        draw-then-raise, like the other three. 🎯 The one wrong verdict in the
+        one-pass classification, and it was wrong by reasoning where the others
+        were right by measuring.
       * **PLAY 4th voice (`:73`) → KEEP.** Refs raise BEFORE any voice plays
         (`2 0`, `PLAY(0)`=0-not-playing) — the bespoke check's ordering is CORRECT.
         🎯 This is the concrete verb a blind batch delete would have REGRESSED
