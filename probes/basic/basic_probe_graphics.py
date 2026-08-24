@@ -1514,9 +1514,9 @@ def phase_q_state() -> int:
     for label, lines, with_regs in G8_STATE:
         specs = [_g8_prog(lines)]
         r = _g8_state(omsx_repl.run_cases(REF, specs, batch=False,
-                                          capture=G8_CAP, step=6.0)[0])
+                                          capture=G8_CAP, run_gap=6.0)[0])
         z = _g8_state(omsx_repl.run_cases(ZB, specs, batch=False,
-                                          capture=G8_CAP, step=6.0)[0])
+                                          capture=G8_CAP, run_gap=6.0)[0])
         if r is None or z is None:
             ok, detail = False, f"ref={r is not None} zb={z is not None} (no capture)"
         elif with_regs:
@@ -1644,7 +1644,7 @@ def phase_q_teeth() -> int:
     ]) for _, stmt in cases]
     for mach in (REF, ZB):
         outs = omsx_repl.run_cases(mach, specs, batch=False,
-                                   capture=("mem_abs", [(G8_RES, 3)]), step=25.0)
+                                   capture=("mem_abs", [(G8_RES, 3)]), run_gap=25.0)
         for (label, stmt), o in zip(cases, outs):
             b = bytes.fromhex(o) if o else None
             delta = None if b is None or b[0] != 0 else b[1]
@@ -1735,8 +1735,8 @@ def phase_r_workarea() -> int:
     # case after it. A one-sided rig failure wearing a finding's clothes.
     specs = [("stored", ["SCREEN2:" + ops, WORKAREA_RD])
              for _, ops in WORKAREA_CASES]
-    ref = omsx_repl.run_cases(REF, specs, batch=False, step=30.0)
-    zb = omsx_repl.run_cases(ZB, specs, batch=False, step=30.0)
+    ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=30.0)
+    zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=30.0)
     for (label, _), r, z in zip(WORKAREA_CASES, ref, zb):
         ra, za = _answer(r, "W"), _answer(z, "W")
         ok = ra is not None and ra == za
@@ -1750,8 +1750,8 @@ def phase_r_workarea() -> int:
                           'SCREEN0:PRINT"W";-1:END',   # reached only if NO error
                           WORKAREA_ERR_RD])
               for _, ops in WORKAREA_ERR_CASES]
-    eref = omsx_repl.run_cases(REF, especs, batch=False, step=30.0)
-    ezb = omsx_repl.run_cases(ZB, especs, batch=False, step=30.0)
+    eref = omsx_repl.run_cases(REF, especs, batch=False, run_gap=30.0)
+    ezb = omsx_repl.run_cases(ZB, especs, batch=False, run_gap=30.0)
     for (label, _), r, z in zip(WORKAREA_ERR_CASES, eref, ezb):
         ra, za = _answer(r, "W"), _answer(z, "W")
         ok = ra is not None and ra == za
