@@ -54,6 +54,28 @@ from evidence already in this file or in a gate that runs on every build**: a
 residual gets closed by a slice aiming at something else, and nothing re-reads the
 list. **When a slice lands, grep this list for what it just shipped.**
 
+**Apparatus / tooling**
+
+- [ ] ⚡ **SAVESTATE-RESTORE-PER-CASE — skip the per-case COLD BOOT, the dominant
+      cost of the gate suite.** Filed 2026-08-24 after `make gates` (parallel
+      battery + serial-retry, commits `18e759e`/`a8e9713`,
+      [`docs/spec-probe-emutime-watchdog.md`](docs/spec-probe-emutime-watchdog.md))
+      topped out at ~1.9-2.5x: the boot-per-case openMSX (8 emulated s of C-BIOS)
+      dominates, and `batch=True` (the ~20x-cheaper one-boot-per-matrix default)
+      is unsafe for ~8 gates because of the delivery race that drops a program
+      line. **Savestate-restore-per-case would give boot-per-case's ISOLATION (no
+      delivery race — each case a fresh identical state) at ~batch speed.** It
+      would also cut the stochastic capture-drop flake rate (less boot churn under
+      concurrency — the flakes the retry currently absorbs). Considered + DEFERRED
+      in [`docs/spec-rdblk-anchor-flake.md`](docs/spec-rdblk-anchor-flake.md) §8
+      (*"worth its own item; noted, not smuggled in"*). 🔴 **THE GATE IS A
+      DIFFERENTIAL: a restored snapshot of the cold-boot-`A>` state must be proven
+      BYTE-IDENTICAL to a fresh cold boot on BOTH the subject and the oracle before
+      it can replace boots** — that differential is the first deliverable, not the
+      speedup. In `omsx_repl._run_batch` (boot once → `savestate` at the ready
+      prompt → `loadstate` per case instead of the 8s boot delay). See
+      [[parallel-gate-battery]].
+
 **Language / verb surface**
 
 - [ ] 🔴 **A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD — AND
