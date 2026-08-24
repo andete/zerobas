@@ -491,7 +491,9 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
          slots_out: list[tuple[int, str]] | None = None,
          hb_path: str | None = None, settle_n: int = 0,
-         sentinel: tuple[int, int] | None = None) -> str:
+         sentinel: tuple[int, int] | None = None,
+         run_gap: float | None = None,
+         sentinel_capture: bool = False) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
     (CHGET drains KEYBUF into the line editor) before the next write overwrites
@@ -531,6 +533,12 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
     echo = echo_guard_on() and slots_out is not None
     case_idx = 0
     pre: list[str] = []
+    if sentinel_capture:
+        # one "already captured" flag per case: the sentinel and the scheduled
+        # fallback must not BOTH emit a `case.N=` line -- the host takes the last
+        # match, so a late fallback would silently overwrite the sentinel's and
+        # reinstate exactly the guessed-time reading this replaces.
+        pre += [f"set ::__cap({i}) 0" for i in range(len(cases))]
 
     def emit(t: float, s: str) -> float:
         """Schedule injection of one CR-terminated line `s` at/after time `t`;
@@ -624,6 +632,27 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         # RUN and capture is exactly `step`. (`cap_gap` is the gap AFTER the
         # capture, i.e. inter-case spacing, and buys this case nothing.)
         t_run = last_inj[0]
+        # 🔴 `step` USED TO DO DOUBLE DUTY, AND THAT WAS THE EXPENSIVE MISTAKE.
+        # It is (a) the inter-line injection spacing that guarantees the previous
+        # chunk was consumed -- the drained-buffer property the whole
+        # D-LATCH/D-DELIVER apparatus rests on -- and it WAS also (b) the
+        # RUN->capture completion budget. A phase that needs a long budget for
+        # (b) therefore paid it on EVERY typed line: a graphics PAINT case bought
+        # 6 slots x 90 = 540 emulated seconds to cover one 46-second fill.
+        # `run_gap` separates them. MEASURED on a bounded PAINT case, capture
+        # BYTE-IDENTICAL: 2.9s -> 0.5s on the VG-8020 (5.5x), 1.9s -> 0.5s on
+        # zerobas (3.6x), with NO budget made tighter than its measured need --
+        # only stopping the completion budget from being charged to the typing.
+        #
+        # ⚠️ IT IS A *MINIMUM*, AND NEVER PULLS THE CAPTURE EARLIER. A case may
+        # end in an explicit `@WAIT`, which advances the clock on purpose so the
+        # readout is taken after a long operation (tape rows are built that way).
+        # A first cut assigned `t = t_run + run_gap` outright and moved such a
+        # case's capture from 45.5 back to 15.5 -- discarding the wait the case
+        # asked for. Caught by the byte-identical check against the
+        # pre-instrument version, which is exactly what that check is for.
+        if run_gap is not None:
+            t = max(t, t_run + run_gap)
         hold = holds[idx] if holds else None
         if hold:
             # Press at the RUN slot itself (t - step), not after it: the program
@@ -695,16 +724,46 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
             # Hunting for an address no ROM ever touches is not a contract anyone
             # can keep; arming after the program starts is, and it makes the
             # choice of address nearly free.
-            s_addr, _s_val = sentinel
+            s_addr, s_val = sentinel
+            # `sentinel_capture` additionally CAPTURES when the program signals,
+            # turning the scheduled capture below into the pure FAILURE detector
+            # it should always have been -- so the budget stops being a guess
+            # that fires whether or not the work finished.
+            #
+            # ⚠️ VRAM/MEMORY CAPTURES ONLY, AND THAT IS MEASURED, NOT CAUTION.
+            # Across subject and both oracles it is byte-identical for VRAM
+            # captures (9/9) but text captures differ by exactly 2 characters on
+            # all three machines: the `Ok`/`ZB` PROMPT, which the interpreter has
+            # not printed yet when the program signals. `screen_tail` terminates
+            # AT that prompt, so a screen readout would change meaning. Callers
+            # must not set this for `capture="screen"`; `_run_batch` refuses it.
+            grab = (f'      set ::__cap({idx}) 1\n'
+                    f'      puts $__f "case.{idx}={cap}"\n'
+                    f'      puts $__f "sentinel.{idx}=[machine_info time]"\n'
+                    f'      flush $__f\n'
+                    # Capturing early reclaims nothing unless the run also ENDS --
+                    # the timeline still holds a scheduled exit at the far end.
+                    # Only on the LAST case: in a shared boot the later cases are
+                    # scheduled at fixed times and would be aborted.
+                    + (f'      close $__f\n      exit\n'
+                       if idx == len(cases) - 1 else ''))
             body.append(
                 f'after time {t_run:.3f} {{\n'
                 f'  debug set_watchpoint write_mem {s_addr} {{}} {{\n'
                 f'    puts $__f "mark.{idx}=[machine_info time],$::wp_last_value"\n'
                 f'    flush $__f\n'
-                f'  }}\n'
+                + (f'    if {{$::wp_last_value == {s_val} && !$::__cap({idx})}} {{\n'
+                   + grab + '    }\n' if sentinel_capture else '')
+                + f'  }}\n'
                 f'}}')
-        body.append(f'after time {t:.1f} {{ puts $__f "case.{idx}='
-                    f'{cap}"; flush $__f }}')
+        if sentinel_capture:
+            body.append(f'after time {t:.1f} {{ if {{!$::__cap({idx})}} {{ '
+                        f'set ::__cap({idx}) 1; puts $__f "case.{idx}={cap}"; '
+                        f'puts $__f "fallback.{idx}=[machine_info time]"; '
+                        f'flush $__f }} }}')
+        else:
+            body.append(f'after time {t:.1f} {{ puts $__f "case.{idx}='
+                        f'{cap}"; flush $__f }}')
         t += cap_gap
     # wall-cadence heartbeat (see HB_* above): __hb self-reschedules on the HOST
     # clock, so the watchdog's mtime always updates every HB_WALL s unless openMSX
@@ -823,7 +882,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                cart: str | None = None, diska: str | None = None,
                stall: float | None = None, abscap: float | None = None,
                settle_n: int = 0, settle_out: dict | None = None,
-               sentinel: tuple[int, int] | None = None
+               sentinel: tuple[int, int] | None = None,
+               run_gap: float | None = None, sentinel_capture: bool = False
                ) -> tuple[list[str | None], dict[int, list[int]], list]:
     """One boot, `cases` driven, returning `(captures, delivered, echo)` -- the
     raw engine. `delivered` maps a stored-mode case index to the line-number
@@ -850,6 +910,19 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     entry) -- reads the line's link pointer for its precise extent so an embedded
     0x00 never truncates it (the crunch/tokenise probes). The probe decodes a mem
     capture itself (e.g. floatlit's marker+trim, crunch's header-strip)."""
+    if sentinel_capture:
+        if sentinel is None:
+            raise SystemExit("omsx_repl: sentinel_capture needs a sentinel")
+        if capture == "screen":
+            # MEASURED, not defensive: the sentinel fires before the interpreter
+            # prints its `Ok`/`ZB` prompt, and `screen_tail` terminates AT the
+            # prompt -- text readouts differed by exactly those 2 characters on
+            # all three machines. Refuse rather than let a probe adopt it silently.
+            raise SystemExit(
+                "omsx_repl: sentinel_capture is NOT valid for capture='screen' "
+                "-- the prompt has not been printed when the program signals, "
+                "so the readout changes (docs/spec-probe-mark.md). Use it for "
+                "VRAM/memory captures only.")
     binary = find_omsx(omsx)
     out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="repl_", delete=False).name
     tcl = out + ".tcl"
@@ -858,7 +931,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     with open(tcl, "w") as f:
         f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
                      holds, hold_secs, prologue, slots, hb_path=hb,
-                     settle_n=settle_n, sentinel=sentinel))
+                     settle_n=settle_n, sentinel=sentinel, run_gap=run_gap,
+                     sentinel_capture=sentinel_capture))
     for p in (out, hb):
         if os.path.exists(p):
             os.unlink(p)
@@ -935,6 +1009,12 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                     settle_out.setdefault("marks", {}).setdefault(
                         int(mk.group(1)), []).append(
                             (float(mk.group(2)), int(mk.group(3))))
+                continue
+            fb = re.match(r"fallback\.(\d+)=([\d.]+)$", ln.strip())
+            if fb:      # the sentinel did NOT fire; the budget captured instead
+                if settle_out is not None:
+                    settle_out.setdefault("fallback", {})[int(fb.group(1))] = \
+                        float(fb.group(2))
                 continue
             sn = re.match(r"sentinel\.(\d+)=([\d.]+)$", ln.strip())
             if sn:      # the case ANNOUNCED completion; emulated time it fired
@@ -1256,7 +1336,11 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
               timeout: float | None = None, omsx: str | None = None,
               cart: str | None = None, diska: str | None = None,
-              verify_delivery: bool = True) -> list[str | None]:
+              verify_delivery: bool = True,
+              run_gap: float | None = None,
+              sentinel: tuple[int, int] | None = None,
+              sentinel_capture: bool = False,
+              settle_out: dict | None = None) -> list[str | None]:
     """Deliver `cases` (each `(mode, lines)`) and return one raw SCREEN-0 string
     per case, aligned with `cases`. THE DEFAULT ENTRY POINT for a whole probe
     matrix -- it picks the delivery granularity:
@@ -1291,7 +1375,10 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
     """
     kw = dict(boot=boot, step=step, cap_gap=cap_gap, capture=capture,
               hold_secs=hold_secs, prologue=prologue,
-              omsx=omsx, cart=cart, diska=diska)
+              omsx=omsx, cart=cart, diska=diska, run_gap=run_gap,
+              sentinel=sentinel, sentinel_capture=sentinel_capture)
+    if settle_out is not None:
+        kw["settle_out"] = settle_out
     to_single = timeout if timeout is not None else 240.0
     if not batch:
         return [run_batch(machine, [c], reset=(), timeout=to_single,

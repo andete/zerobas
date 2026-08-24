@@ -670,7 +670,18 @@ def phase_g_rneg() -> int:
 # against; a byte-aligned enclosure is out of scope for this gate.
 BOX = "LINE(20,20)-(60,60),15,B"       # a realistic (non-byte-aligned) 1px box
 
-PAINT_STEP = 90.0     # emulated seconds RUN..capture (generous; see above)
+# 🔴 PASSED AS `run_gap`, NOT `step`, SINCE 2026-08-24 -- and that one word is
+# worth 3.5-5.5x. `step` spaces EVERY injected line, so passing this as `step`
+# charged the 90 s completion budget to each TYPED line as well: a case bought
+# 6 x 90 = 540 emulated seconds to cover one fill. `run_gap` applies it to
+# RUN..capture ONLY, leaving line spacing at the 2.5 s default that the rest of
+# the corpus uses. MEASURED on a bounded PAINT case with the capture
+# BYTE-IDENTICAL: 2.9s -> 0.5s (VG-8020), 1.9s -> 0.5s (zerobas).
+# 🟢 AND THE 90 ITSELF IS EARNED, NOT PADDING: the whole-screen flood needs
+# 46.25 emulated seconds on zerobas (exact, measured with the mark stopwatch --
+# docs/spec-probe-budget.md), i.e. this is only a 1.9x margin over its worst
+# case. Do NOT cut it; it was the SCOPE that was wrong, never the size.
+PAINT_STEP = 90.0     # emulated seconds RUN..capture (see above)
 PAINT_CAP_GAP = 10.0
 PAINT_TIMEOUT = 900.0  # wall-clock kill switch -- generous (see above; the
                        # actual wall time is typically a few seconds under
@@ -807,9 +818,9 @@ def phase_h() -> int:
     for label, setup, pts in PAINT_FILL_CASES:
         prog_lines = paint_points_prog(setup, pts)
         specs = [("stored", prog_lines)]
-        ref = omsx_repl.run_cases(REF, specs, batch=False, step=PAINT_STEP,
+        ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=PAINT_STEP,
                                   cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, step=PAINT_STEP,
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=PAINT_STEP,
                                  cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
         rp, zp = _points(ref, len(pts)), _points(zb, len(pts))
         ok = rp is not None and rp == zp
@@ -837,10 +848,11 @@ def phase_h() -> int:
 #       SCREEN-2 twin does NOT (a shipped divergence, TODO.md).
 # Both are pure differentials here: the expectation is the reference's answer, not
 # a constant, so neither can be quietly fitted.
-MC_PAINT_STEP = 45.0   # emulated s RUN..capture; 64x48 cells is 16x fewer writes
-                       # than SCREEN 2's 256x192, so PAINT_STEP's 90 is not needed
-                       # -- but the 2.5 s default fires MID-FILL and reads as a
-                       # blank GRAPHICS screen (see PAINT_STEP's note above).
+MC_PAINT_STEP = 45.0   # emulated s RUN..capture (passed as `run_gap`); 64x48
+                       # cells is 16x fewer writes than SCREEN 2's 256x192, so
+                       # PAINT_STEP's 90 is not needed -- but the 2.5 s default
+                       # fires MID-FILL and reads as a blank GRAPHICS screen
+                       # (see PAINT_STEP's note above).
 MC_BAR = "LINE(0,40)-(255,40),7"     # a colour-7 barrier across the surface
 MC_BAR9 = "LINE(0,40)-(255,40),9"    # ...and one ALREADY the paint colour
 
@@ -893,9 +905,9 @@ def phase_h_mc() -> int:
           f"step={MC_PAINT_STEP}s) ===")
     for label, setup, pts in PAINT_MC_CASES:
         specs = [("stored", paint_points_prog_mc(setup, pts))]
-        ref = omsx_repl.run_cases(REF, specs, batch=False, step=MC_PAINT_STEP,
+        ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=MC_PAINT_STEP,
                                   cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, step=MC_PAINT_STEP,
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=MC_PAINT_STEP,
                                  cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
         rp, zp = _points(ref, len(pts)), _points(zb, len(pts))
         ok = rp is not None and rp == zp
@@ -924,9 +936,9 @@ def phase_i_aliasing() -> int:
              "P=POINT(40,40):Q=POINT(21,21):W=POINT(100,100)",
              'SCREEN0:PRINT"S";L;M;P;Q;W:END']
     specs = [("stored", lines)]
-    ref = omsx_repl.run_cases(REF, specs, batch=False, step=PAINT_STEP,
+    ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=PAINT_STEP,
                               cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
-    zb = omsx_repl.run_cases(ZB, specs, batch=False, step=PAINT_STEP,
+    zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=PAINT_STEP,
                              cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
 
     def vals(raw):
