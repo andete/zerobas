@@ -96,8 +96,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       partial result, i.e. as SEMANTICS. Any cut needs a per-phase measurement of
       what the operation actually takes plus a margin, and a gate that would go
       RED if the margin were too thin (the `graphics-acceptance` rows are the
-      obvious subject). Start by INSTRUMENTING: emit each case's actual
-      completion time vs its budget, then cut only what the data licenses.
+      obvious subject).
+      ✅ **INSTRUMENTED 2026-08-24 (`44fe13c`),
+      [`docs/spec-probe-budget.md`](docs/spec-probe-budget.md)** —
+      `_run_batch(settle_n=, settle_out=)`, inert when off (generated Tcl
+      byte-identical to before), driver `scratchpad/budget_probe.py`.
+      **MEASURED** (`used` = to the last change in the capture region; the window
+      a budget buys is exactly `step`, since `cap_gap` falls AFTER the capture):
+
+      | case | window | vg8020 | cf3300 | zerobas | worst |
+      |---|---|---|---|---|---|
+      | `paint.flood` | 90.00 | 16.005 | 16.005 | **53.610** | **59.6%** |
+      | `paint.circle` | 90.00 | 4.778 | 4.778 | 11.330 | 12.6% |
+      | `circle` | 90.00 | 0.715 | 0.715 | 0.426 | 0.8% |
+      | `text.err` | 2.50 | 0.094 | 0.094 | 0.024 | 3.8% |
+
+      🟢 **`PAINT_STEP = 90.0` IS EARNED — 1.68× margin, the TIGHTEST budget
+      measured; the "generous" comment is wrong about the number. DO NOT CUT IT.**
+      🎯 **The waste is its SCOPE, not its size**: it is applied to a whole phase
+      while only the flood needs it. **Per-case budgets, or an adaptive capture
+      that fires when the region settles, is where the wall time is** — neither
+      makes any budget tighter than its own measured need.
+      🔴 **`step` DOES DOUBLE DUTY** — inter-line injection spacing (the
+      drained-buffer property the D-LATCH/D-DELIVER apparatus rests on) AND the
+      RUN→capture budget; lowering it to reclaim the second tightens the first.
+      **The cut needs a SEPARATE knob defaulting to `step`** (hence inert), plus
+      the RED-if-thin gate above. ⚠️ zerobas is slowest on every fill row (it
+      writes both VRAM tables where the references write only the colour table —
+      a performance fact, NOT a divergence), so it sets the floor for any budget.
 
 **Language / verb surface**
 
