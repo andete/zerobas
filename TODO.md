@@ -868,6 +868,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       wearing per-verb labels — which is why the consolidation is a real carve,
       not a marginal one. The per-verb measurement is the ADMISSION test; the
       shared handler is the payoff.
+      📏 **ONE-PASS CLASSIFICATION 2026-08-24** (`scratchpad/seam_classify.py`,
+      SPRITE/CIRCLE/PLAY in a single differential, each with an effect column):
+      * **SPRITE `PUT SPRITE …,` (`:1250`, 5th arg) → DELETABLE.** Refs PLACE then
+        raise (`2 30`, sprite-0 Y attr), zb raises before placing (`2 209`);
+        `pspr_go` guards the cursor like `ep_draw`. The next carve of this class.
+      * **CIRCLE trailing comma → RESTRUCTURE, confirmed.** Refs DRAW then raise
+        (`2 15`), zb raises before (`2 4`) — the filed `x.extra2`. Parse is in the
+        sub-ROM tenant, result tested before the draw op: a second flag, NOT a
+        delete. Stays the cross-ABI hard case.
+      * **PLAY 4th voice (`:73`) → KEEP.** Refs raise BEFORE any voice plays
+        (`2 0`, `PLAY(0)`=0-not-playing) — the bespoke check's ordering is CORRECT.
+        🎯 This is the concrete verb a blind batch delete would have REGRESSED
+        (it would have made zb play 3 voices then error, where the reference plays
+        none). The measurement is exactly what caught it.
+
+- [ ] 🔴 **zerobas does NOT implement the `PLAY(n)` FUNCTION (background-queue
+      status).** Found 2026-08-24 by the seam classifier
+      (`scratchpad/seam_classify.py`). `P=PLAY(0)` returns **-1** (voice 0
+      playing) / **0** (idle) on both the VG-8020 and the CF-3300; on zerobas
+      every `PLAY(0)` read raised **`Missing operand`** — the function form is
+      unparsed. Separate from the `PLAY` STATEMENT surface. Unpriced; needs its
+      own probe (is `PLAY(n)` in the kwsweep denominator? it is a one-token
+      function like `USR`). A real MSX1 BASIC function gap, not apparatus.
 
 - [ ] 🔴 **`PLAY` with no operand is `Missing operand` (ERR 24) on both
       references, not `Syntax error`.** Filed 2026-08-22 by D-DUPSPAN,

@@ -1,0 +1,46 @@
+  ran vg8020  sp.ok     '0 30'
+  ran vg8020  sp.none   '0 209'
+  ran vg8020  sp.5comma '2 30'
+  ran vg8020  sp.5arg   '2 30'
+  ran vg8020  sp.incomp '2 209'
+  ran vg8020  ci.ok     '0 15'
+  ran vg8020  ci.none   '0 4'
+  ran vg8020  ci.trail  '2 15'
+  ran vg8020  pl.ok     '0 -1'
+  ran vg8020  pl.none   '0 0'
+  ran vg8020  pl.4voice '2 0'
+  ran cf3300  sp.ok     '0 30'
+  ran cf3300  sp.none   '0 209'
+  ran cf3300  sp.5comma '2 30'
+  ran cf3300  sp.5arg   '2 30'
+  ran cf3300  sp.incomp '2 209'
+  ran cf3300  ci.ok     '0 15'
+  ran cf3300  ci.none   '0 4'
+  ran cf3300  ci.trail  '2 15'
+  ran cf3300  pl.ok     '0 -1'
+  ran cf3300  pl.none   '0 0'
+  ran cf3300  pl.4voice '2 0'
+  ran zb      sp.ok     '0 30'
+  ran zb      sp.none   '0 209'
+  ran zb      sp.5comma '2 209'
+  ran zb      sp.5arg   '2 209'
+  ran zb      sp.incomp '2 209'
+  ran zb      ci.ok     '0 15'
+  ran zb      ci.none   '0 4'
+  ran zb      ci.trail  '2 4'
+  ran zb      pl.ok     'UNTRAPPED Missing operand in 900'
+  ran zb      pl.none   'UNTRAPPED Missing operand in 900'
+  ran zb      pl.4voice 'UNTRAPPED Missing operand in 900'
+
+  sp.ok      vg8020='0 30'  cf3300='0 30'  zb='0 30'
+  sp.none    vg8020='0 209'  cf3300='0 209'  zb='0 209'
+  sp.5comma  vg8020='2 30'  cf3300='2 30'  zb='2 209'   *** DIFF
+  sp.5arg    vg8020='2 30'  cf3300='2 30'  zb='2 209'   *** DIFF
+  sp.incomp  vg8020='2 209'  cf3300='2 209'  zb='2 209'
+  ci.ok      vg8020='0 15'  cf3300='0 15'  zb='0 15'
+  ci.none    vg8020='0 4'  cf3300='0 4'  zb='0 4'
+  ci.trail   vg8020='2 15'  cf3300='2 15'  zb='2 4'   *** DIFF
+  pl.ok      vg8020='0 -1'  cf3300='0 -1'  zb='UNTRAPPED Missing operand in 900'   *** DIFF
+  pl.none    vg8020='0 0'  cf3300='0 0'  zb='UNTRAPPED Missing operand in 900'   *** DIFF
+  pl.4voice  vg8020='2 0'  cf3300='2 0'  zb='UNTRAPPED Missing operand in 900'   *** DIFF
+EXIT rc=0
