@@ -39,21 +39,9 @@ table from VRAM, returning one raw 40x24 screen string per case. Span/tail
 extraction (the `[...]` bracket convention) lives in the reusable helpers below.
 
 GRANULARITY -- three layers, batched by default for a whole matrix:
-  * `run_case(machine, mode, lines)`  -- ONE case, ONE machine state: power-on-
-    clean variables + default DEF table. The single-case primitive (= run_batch
-    of one case, no reset) and the isolation escape hatch.
-
-THE BOOT-PER-CASE PATH NO LONGER BOOTS PER CASE (docs/spec-probe-savestate.md).
-It takes ONE cold boot per machine configuration, snapshots the ready prompt at
-exactly the emulated instant the first line is injected, and `loadstate`s that
-snapshot for every case -- the same fresh identical state, reached without paying
-8 (or 14) emulated seconds of C-BIOS boot each time. Restore is proven
-byte-identical to a cold boot, on the subject AND both oracles, across text,
-POINT and raw-VRAM captures, by `make savestate-check` -- which runs in the
-battery and carries a teeth control, because a 0-DIFF tally that could not see a
-difference would pass whatever savestate did. A `prologue` DECLINES the snapshot
-(a `plug`ged device must be present for the ROM's own boot, and loadstate
-replaces the machine), and `ZEROBAS_SAVESTATE=off` disarms the whole mechanism.
+  * `run_case(machine, mode, lines)`  -- ONE case, ONE boot: power-on-clean
+    variables + default DEF table. The single-case primitive (= run_batch of one
+    case, no reset) and the isolation escape hatch.
   * `run_cases(machine, specs, batch=, reset=)`  -- a whole matrix; batch=True
     (DEFAULT) ships it in one boot with `reset` between cases (~20x faster).
   * `run_differential(ref, zb, specs, compare, isolate=)`  -- the differential
@@ -502,8 +490,7 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          holds: list[tuple[int, int] | None] | None = None,
          hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
          slots_out: list[tuple[int, str]] | None = None,
-         hb_path: str | None = None, state_load: str | None = None,
-         settle_n: int = 0) -> str:
+         hb_path: str | None = None, settle_n: int = 0) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
     (CHGET drains KEYBUF into the line editor) before the next write overwrites
@@ -675,22 +662,6 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
     body.append(f"after time {t + 30.0:.1f} {{ catch {{close $__f}}; exit }}")
     return (
         "set throttle off\n"
-        # SAVESTATE-RESTORE-PER-CASE (docs/spec-probe-savestate.md): when a
-        # ready-prompt snapshot is supplied, loadstate it INSTEAD of waiting the
-        # `boot` emulated seconds for a cold C-BIOS boot. It must precede the
-        # prologue (machine-scoped `plug`s are wiped by the machine switch) and
-        # every `after time` registration (which then registers at the restored
-        # save-time, `after time` being relative to registration -- so the caller
-        # passes a near-zero `boot` and the first injection lands at the SAME
-        # absolute emulated instant, hence the SAME VDP/interrupt phase, that a
-        # cold boot injects at). Proven byte-identical to a cold boot before it
-        # was allowed to replace one (spec-probe-savestate.md gate).
-        + (f"if {{[catch {{loadstate {{{state_load}}}}} __le]}} {{\n"
-           f"  catch {{set __lf [open {{{out_path}}} w];"
-           f" puts $__lf \"loadstate.fail=$__le\"; close $__lf}}\n"
-           "  exit\n"
-           "}\nset throttle off\n"
-           if state_load else "")
         + "".join(f"{p}\n" for p in prologue)
         + f"set __f [open {{{out_path}}} w]\n"
         "proc __hex_v {a l} { binary scan [debug read_block VRAM $a $l] H* h;"
@@ -783,191 +754,6 @@ def run_case(machine: str, mode: str, lines: list[str], **kw) -> str | None:
     return run_batch(machine, [(mode, lines)], reset=(), **kw)[0]
 
 
-def make_savestate(machine: str, path: str, *, boot: float = 8.0,
-                   omsx: str | None = None, cart: str | None = None,
-                   diska: str | None = None, timeout: float = 90.0) -> str:
-    """Boot `machine` cold, run to the ready prompt at emulated t=`boot`, and
-    write an openMSX savestate whose base name is `path` (openMSX appends `.oms`
-    and returns the full path). The snapshot is taken at EXACTLY emulated t=`boot`
-    -- the same instant the cold boot-per-case path first injects at -- so a run
-    that loadstate's it and injects at `after time 0` resumes from the identical
-    VDP/interrupt/CPU phase a cold boot presents to its first line. Returns the
-    `.oms` path openMSX wrote. Raises SystemExit if it never wrote one.
-
-    docs/spec-probe-savestate.md. This is the ONE cold boot the whole matrix then
-    amortises: every subsequent `_run_batch(..., state_load=<path>)` skips it."""
-    binary = find_omsx(omsx)
-    # A NON-ABSOLUTE savestate name is resolved by openMSX against its OWN
-    # savestates dir (~/.openMSX/savestates/), NOT the cwd -- so a relative `path`
-    # writes somewhere surprising and usually fails on a missing subdir. Resolve
-    # to absolute so the name means the file the caller thinks it does, and so the
-    # returned loadstate key is absolute too.
-    path = os.path.abspath(path)
-    # openMSX writes nothing if the target directory is absent; own that here so a
-    # caller never has to pre-create it (and a missing dir can't read as a hang).
-    d = os.path.dirname(path)
-    if d:
-        os.makedirs(d, exist_ok=True)
-    done = tempfile.NamedTemporaryFile(suffix=".done", prefix="ss_",
-                                       delete=False).name
-    tcl = done + ".tcl"
-    os.unlink(done)
-    with open(tcl, "w") as f:
-        f.write(
-            "set throttle off\n"
-            f"after time {boot:.3f} {{\n"
-            # savestate can THROW (e.g. mid-boot disk activity); record the error
-            # into `done` so the host reports the cause instead of a blind 90 s
-            # timeout, and either way exit -- an uncaught throw would drop this
-            # callback and stall until the safety-exit.
-            f"  if {{[catch {{savestate {{{path}}}}} __p]}} {{ set __p \"ERR:$__p\" }}\n"
-            f"  set __d [open {{{done}}} w]; puts $__d $__p; close $__d\n"
-            "  exit\n"
-            "}\n"
-            # emulated-time safety-exit: never let a wedged boot hang the run.
-            f"after time {boot + 60.0:.3f} {{ exit }}\n")
-    cmd = [binary, "-machine", machine]
-    if cart:
-        cmd += ["-cart", cart]
-    if diska:
-        cmd += ["-diska", diska]
-    cmd += ["-command", "set renderer none; set sound_driver null", "-script", tcl]
-    proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL, start_new_session=True)
-    deadline = time.time() + timeout
-    while proc.poll() is None and time.time() < deadline:
-        time.sleep(0.05)
-    if proc.poll() is None:
-        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-    os.unlink(tcl)
-    if not os.path.exists(done):
-        raise SystemExit(f"omsx_repl: make_savestate FAILED on {machine} "
-                         f"(no snapshot written within {timeout}s)")
-    with open(done) as f:
-        oms = f.read().strip()
-    os.unlink(done)
-    if oms.startswith("ERR:"):
-        raise SystemExit(f"omsx_repl: make_savestate on {machine} at t={boot} "
-                         f"threw: {oms[4:]} (try a settled ready-prompt time)")
-    # openMSX's `savestate <name>` APPENDS `.oms` and returns the full path; its
-    # `loadstate <name>` appends `.oms` TOO, so state_load must be the BASE name
-    # (`.oms` stripped) or loadstate looks for `<name>.oms.oms` and FAILS -- and a
-    # failed loadstate aborts the whole Tcl script silently -> a host-clock hang.
-    if not os.path.exists(oms):
-        raise SystemExit(f"omsx_repl: make_savestate wrote no .oms on {machine} "
-                         f"(openMSX returned {oms!r})")
-    return oms[:-4] if oms.endswith(".oms") else oms
-
-
-# --- the per-machine ready-prompt snapshot cache ----------------------------
-# One cold boot per (machine, boot, cart, diska) per PROCESS; every boot-per-case
-# run after it loadstate's that snapshot instead of booting. Proven equivalent by
-# `make savestate-check` (docs/spec-probe-savestate.md §3) before it was allowed
-# to replace a boot.
-_STATE_CACHE: dict[tuple, str | None] = {}
-_STATE_SEEN: set[tuple] = set()
-_STATE_DIR: str | None = None
-
-
-def savestate_on() -> bool:
-    """False when `ZEROBAS_SAVESTATE=off` -- every run boots cold, exactly as it
-    did before this landed. Mirrors `ZEROBAS_ECHOGUARD=off`: an operator escape
-    hatch, the A/B for any suspicion that a restore moved a reading, and the knife
-    for the wiring itself (with it off, savestate-check's subject is unreachable
-    and every gate must still be green)."""
-    return os.environ.get("ZEROBAS_SAVESTATE", "").lower() not in ("off", "0", "no")
-
-
-def _state_for(machine: str, boot: float, cart: str | None, diska: str | None,
-               omsx: str | None) -> str | None:
-    """The cached ready-prompt snapshot key for this machine configuration, or
-    None if snapshots are off or this one could not be taken (in which case the
-    caller boots cold -- a snapshot that cannot be made must never fail a gate).
-
-    ⚠️ `cart`/`diska` ARE PART OF THE IDENTITY. A snapshot carries the media the
-    machine booted with, so restoring one taken without a disk into a run that
-    needs one would silently measure the wrong machine.
-
-    🔴 A SNAPSHOT IS TAKEN ONLY ON THE **SECOND** SIGHTING OF A KEY, and that is
-    not a micro-optimisation -- without it the cache THRASHES INTO A PESSIMISM on
-    a whole class of probe. `basic_probe_lineerr` copies a FRESH DISK IMAGE PER
-    CASE (`zb_line_<side>_<label>.dsk`, deliberately, for write isolation), so
-    every case is a new key: MEASURED 6 snapshots for 6 rows, each paying a
-    snapshot boot AND a restore where a cold boot paid one boot. Keyed on first
-    sighting it would have been strictly slower than booting; the A/B against
-    `ZEROBAS_SAVESTATE=off` read 36 s vs 39 s -- near-neutral, which is how a
-    self-cancelling mechanism reads if you only look at the total.
-
-    Waiting for the second sighting is self-tuning and needs no knowledge of what
-    varies: a key used once is never snapshotted (pure cold, no thrash), a key
-    used many times pays ONE learning boot and restores ever after."""
-    global _STATE_DIR
-    if not savestate_on():
-        return None
-    key = (machine, round(boot, 3), cart, diska, omsx)
-    if key in _STATE_CACHE:
-        return _STATE_CACHE[key]
-    if key not in _STATE_SEEN:      # first sighting: boot cold, remember the key
-        _STATE_SEEN.add(key)
-        return None
-    if _STATE_DIR is None:
-        _STATE_DIR = tempfile.mkdtemp(prefix="zb_state_")
-    path = os.path.join(_STATE_DIR, f"s{len(_STATE_CACHE)}")
-    try:
-        oms = make_savestate(machine, path, boot=boot, omsx=omsx, cart=cart,
-                             diska=diska)
-    except SystemExit as e:
-        sys.stderr.write(f"omsx_repl: no ready-prompt snapshot for {machine} "
-                         f"({e}); booting cold for every case.\n")
-        oms = None
-    _STATE_CACHE[key] = oms
-    return oms
-
-
-def _boot_per_case(machine: str, cases, *, boot: float, prologue, holds,
-                   verify_delivery: bool, timeout: float, kw) -> list[str | None]:
-    """Run `cases` one machine-state per case -- the isolation path -- restoring a
-    ready-prompt snapshot instead of cold-booting where that is equivalent.
-
-    🔴 A PROLOGUE DECLINES THE SNAPSHOT, AND THAT IS NOT AN OPTIMISATION GAP.
-    `prologue` is raw Tcl run before the timeline, and its whole purpose is
-    machine-scoped `plug joyporta <device>` -- a device the COLD path has plugged
-    for the machine's entire boot, so the ROM's own start-up sees it. A snapshot
-    is taken on an UNPLUGGED boot, and `loadstate` replaces the machine (wiping
-    any plug), so restoring one and plugging afterwards is a genuinely different
-    initial condition, not the same one reached faster. Cold-boot those.
-
-    ⚠️ THE ELIGIBILITY RULE LIVES IN `_state_for`, AND BOTH EARLIER VERSIONS OF IT
-    WERE MEASURED WRONG -- in OPPOSITE directions, which is why neither could be
-    reasoned out:
-
-      * *"snapshot only from the SECOND CASE of a call, or when already cached"*
-        left the mechanism INERT for every probe that calls `run_cases` with ONE
-        case at a time (circmiss does, 51 times): no call ever reached a second
-        case, so nothing warmed. 24 s on, 24 s off, byte-identical output --
-        exactly how a wired-but-inert optimisation reads.
-      * *"warm on the first sighting"* fixed that and introduced a PESSIMISM:
-        `lineerr` varies `diska` per case, so every case was a new key and took
-        its own snapshot (6 for 6 rows) -- a snapshot boot plus a restore against
-        cold's single boot.
-
-    The rule that survives both is `_state_for`'s: warm on the SECOND sighting of
-    a key. Neither shape can be seen from the code; both came from timing the
-    thing against its own off-switch."""
-    state = None
-    if not prologue:
-        state = _state_for(machine, boot, kw.get("cart"), kw.get("diska"),
-                           kw.get("omsx"))
-    out: list[str | None] = []
-    for i, c in enumerate(cases):
-        out.append(run_batch(
-            machine, [c], reset=(), timeout=timeout,
-            holds=[holds[i]] if holds else None,
-            verify_delivery=verify_delivery, prologue=prologue,
-            boot=0.0 if state else boot, state_load=state, **kw)[0])
-    return out
-
-
 def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
                reset: tuple[str, ...] = (), capture="screen",
@@ -976,8 +762,7 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                timeout: float = 240.0, omsx: str | None = None,
                cart: str | None = None, diska: str | None = None,
                stall: float | None = None, abscap: float | None = None,
-               state_load: str | None = None, settle_n: int = 0,
-               settle_out: dict | None = None
+               settle_n: int = 0, settle_out: dict | None = None
                ) -> tuple[list[str | None], dict[int, list[int]], list]:
     """One boot, `cases` driven, returning `(captures, delivered, echo)` -- the
     raw engine. `delivered` maps a stored-mode case index to the line-number
@@ -1012,7 +797,7 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     with open(tcl, "w") as f:
         f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
                      holds, hold_secs, prologue, slots, hb_path=hb,
-                     state_load=state_load, settle_n=settle_n))
+                     settle_n=settle_n))
     for p in (out, hb):
         if os.path.exists(p):
             os.unlink(p)
@@ -1063,13 +848,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     caps: dict[int, str] = {}
     delivered: dict[int, list[int]] = {}
     echoes: dict[int, tuple[int, int, str]] = {}
-    load_fail: str | None = None
     if os.path.exists(out):
         for ln in open(out):
-            lf = re.match(r"loadstate\.fail=(.*)$", ln.strip())
-            if lf:                             # a bad/missing savestate -- LOUD
-                load_fail = lf.group(1)
-                continue
             d = re.match(r"prog\.(\d+)=([\d,]*)$", ln.strip())
             if d:                              # D-DELIVER: what the machine STORED
                 delivered[int(d.group(1))] = [
@@ -1116,11 +896,6 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                     caps[int(m.group(1))] = m.group(2)
         os.unlink(out)
     os.unlink(tcl)
-    if load_fail is not None:
-        raise SystemExit(
-            f"omsx_repl: LOADSTATE FAILED on {machine} for {state_load!r}: "
-            f"{load_fail} -- the ready-prompt snapshot is missing or corrupt; "
-            "nothing was measured.")
     if timed_out and not caps:
         raise SystemExit(f"omsx_repl: TIMEOUT running {machine}")
     return ([caps.get(i) for i in range(len(cases))], delivered,
@@ -1443,15 +1218,12 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
     kw = dict(boot=boot, step=step, cap_gap=cap_gap, capture=capture,
               hold_secs=hold_secs, prologue=prologue,
               omsx=omsx, cart=cart, diska=diska)
-    # the boot-per-case path takes its `boot`/`prologue` explicitly (it may
-    # replace the cold boot with a snapshot restore), so keep them out of `kw`.
-    bpc = dict(step=step, cap_gap=cap_gap, capture=capture, hold_secs=hold_secs,
-               omsx=omsx, cart=cart, diska=diska)
     to_single = timeout if timeout is not None else 240.0
     if not batch:
-        return _boot_per_case(machine, cases, boot=boot, prologue=prologue,
-                              holds=holds, verify_delivery=verify_delivery,
-                              timeout=to_single, kw=bpc)
+        return [run_batch(machine, [c], reset=(), timeout=to_single,
+                          holds=[holds[i]] if holds else None,
+                          verify_delivery=verify_delivery, **kw)[0]
+                for i, c in enumerate(cases)]
 
     # scale the safety-net timeout with the emulated timeline length
     to = timeout if timeout is not None else max(240.0, 1.5 * len(cases) + 120.0)
@@ -1480,11 +1252,9 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
         for _, note in [n for n in notes if n[0] == i]:
             sys.stderr.write("omsx_repl: " + note + "\n")
         sys.stderr.write("            -> re-running that case boot-per-case\n")
-        caps[i] = _boot_per_case(machine, [cases[i]], boot=boot,
-                                 prologue=prologue,
-                                 holds=[holds[i]] if holds else None,
-                                 verify_delivery=verify_delivery,
-                                 timeout=to_single, kw=bpc)[0]
+        caps[i] = run_batch(machine, [cases[i]], reset=(), timeout=to_single,
+                            holds=[holds[i]] if holds else None,
+                            verify_delivery=verify_delivery, **kw)[0]
     return caps
 
 

@@ -2,7 +2,40 @@
 Copyright (c) 2026 Joost Yervante Damad
 SPDX-License-Identifier: 0BSD
 -->
-# Savestate-restore-per-case — skip the cold C-BIOS boot, keep boot-per-case isolation
+# Savestate-restore-per-case — WITHDRAWN 2026-08-24, and why
+
+> 🔴 **WITHDRAWN (user decision, 2026-08-24). The code is REVERTED — no
+> `make_savestate`, no `state_load`, no `savestate-check`, no cache. This document
+> is kept as the RECORD, because what it measured outlived what it built.**
+>
+> **The decision, on the measured numbers:** a same-session A/B of the full
+> battery read **555 s with savestate vs 642 s without** — but the OFF run hit a
+> flake whose serial retry alone cost ~124 s, *more than the entire difference*,
+> so a single run per side cannot support that 13.5 %. The least-confounded
+> figure is the same-gate one: `graphics-acceptance` **425 s vs 463 s, ~8 %**.
+>
+> **That is not worth the inherent risk.** The mechanism is a behaviour change to
+> `omsx_repl`, the module every probe in the corpus depends on; it introduced four
+> distinct failure modes, *every one of which presented as a hang* (§1); its
+> eligibility rule was measured wrong twice in opposite directions (§4); and it
+> needed a permanent 17 s gate in the battery to keep proving it safe. **~8 % on
+> one gate does not buy that.**
+>
+> 🟢 **WHAT SURVIVES, and is the real yield of this arc:** §4b — the measurement
+> that **refuted the premise the whole item was filed on** ("the per-case cold
+> boot dominates the gate suite"; it does not). That refutation redirected the
+> work to the emulated-time budgets, and from there to the `done`-sentinel item
+> that supersedes them — see [`spec-probe-budget.md`](spec-probe-budget.md) and
+> `TODO.md`. The openMSX API findings in §1 are kept because they are true of the
+> tool regardless of whether this project uses it.
+>
+> ⚠️ **If anyone revisits this**: the value of skipping the boot RISES as the
+> budget/sentinel work lands (an 8 s boot is ~1 % of a 676 s paint case today, but
+> ~5 % of a 151 s one). Revisit it THEN, on fresh numbers — not on these.
+
+---
+
+## (historical) Savestate-restore-per-case — skip the cold C-BIOS boot, keep boot-per-case isolation
 
 **Date:** 2026-08-24. **Files:** [`probes/lib/omsx_repl.py`](../probes/lib/omsx_repl.py)
 (`make_savestate` + the `state_load` path in `_tcl`/`_run_batch`),

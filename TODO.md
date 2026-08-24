@@ -56,8 +56,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
-- [x] ⚡ **SAVESTATE-RESTORE-PER-CASE — SHIPPED 2026-08-24 (`a73071b` capability +
-      gate, `cf9779a` wiring), AND ITS OWN PREMISE IS REFUTED.**
+- [x] 🔴 **SAVESTATE-RESTORE-PER-CASE — BUILT, MEASURED, AND WITHDRAWN 2026-08-24
+      (user). THE CODE IS REVERTED.** Same-session A/B: **555 s with vs 642 s
+      without** — but the OFF run's single flake cost ~124 s in serial retry,
+      *more than the whole difference*, so that 13.5 % is not claimable. The
+      least-confounded figure is same-gate: `graphics-acceptance` **425 s vs
+      463 s, ~8 %**. **Not worth the inherent risk**: a behaviour change to the
+      module every probe depends on, four failure modes that all presented as
+      HANGS, an eligibility rule measured wrong twice in opposite directions, and
+      a permanent 17 s battery gate to keep proving it safe. Kept as a record in
+      [`docs/spec-probe-savestate.md`](docs/spec-probe-savestate.md) (marked
+      WITHDRAWN) because the measurement outlived the mechanism — see the struck
+      entry below for what it refuted. ⚠️ Revisit only if the budget/sentinel work
+      lands and makes the boot a bigger share of what remains — **on fresh
+      numbers, not these**.
+
+- [x] ~~**SAVESTATE-RESTORE-PER-CASE — the premise, REFUTED**~~ (kept: this is the
+      finding that redirected the arc)
       [`docs/spec-probe-savestate.md`](docs/spec-probe-savestate.md).
       🟢 **What shipped and is durable:** `omsx_repl.make_savestate` + the
       `state_load` path (boot once → `savestate` at the ready prompt → `loadstate`
