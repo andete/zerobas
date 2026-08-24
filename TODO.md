@@ -114,12 +114,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       exactly as `savestate-check` gates restore-vs-cold: sentinel-captured
       results **byte-identical** to fixed-time ones across the corpus, subject AND
       both oracles, with a teeth control, BEFORE it replaces anything.
-      🔬 **FIRST STEP: verify `debug set_watchpoint write_mem` fires reliably
-      under `set throttle off`** on all three machines — the same feasibility
-      check `after realtime` and `savestate`/`loadstate` each got, and for the
-      same reason. ⚠️ Cases that ERROR never reach their `POKE`, so the generous
-      bound remains the backstop for that path — which is exactly "no bound needed
-      unless there is a test or harness failure".
+      🔬 **FIRST STEP IS THE DIFFERENTIAL, NOT A FEASIBILITY RUN.** openMSX is
+      mature and `throttle off` is implemented properly (user, 2026-08-24) —
+      *"does the watchpoint fire?"* is not a real doubt and must not be dressed up
+      as one. The earlier `savestate` feasibility runs earned their keep on **API
+      SHAPE** (`savestate -f` is not the API; `loadstate` re-appends `.oms`; a
+      relative name resolves against `~/.openMSX/savestates/`) — shape is
+      discovered while building, not in its own ceremony. **The risk here is not
+      the emulator, it is the SEMANTICS CHANGE above**, so build the
+      byte-identical differential directly and let it find the API on the way.
+      ⚠️ Cases that ERROR never reach their `POKE`, so the generous bound remains
+      the backstop for that path — which is exactly "no bound needed unless there
+      is a test or harness failure".
 
 - [ ] ⚡ **THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS, NOT THE BOOT.**
       ⚠️ **PARTLY SUPERSEDED by the sentinel item above** — a sentinel capture
