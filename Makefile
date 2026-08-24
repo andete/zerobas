@@ -2498,6 +2498,16 @@ lineerr-acceptance: repack-machine $(DISK_TEST_DSK)
 latch-check:
 	python3 probes/lib/latch_check.py
 
+# --- SAVESTATE-RESTORE equivalence gate (docs/spec-probe-savestate.md) --------
+# The probe harness may loadstate a ready-prompt snapshot INSTEAD of a cold C-BIOS
+# boot only while a restored snapshot is proven byte-identical to that cold boot.
+# This re-proves it every run on the subject (repack disk) and both oracles
+# (Philips_VG_8020, National_CF-3300), across text, POINT and raw-VRAM captures,
+# and carries a within-run TEETH control so a 0-DIFF tally cannot be vacuous.
+# Emulator-heavy (one save + cold/restore boots per machine); not sharded.
+savestate-check:
+	python3 probes/lib/savestate_check.py
+
 # --- ONE type-ahead injector in the tree (docs/spec-probe-lastinj.md §3.4) ----
 # The DENOMINATOR behind latch-check, not a duplicate of it. `latch-check` proves
 # the SHIPPED injector is race-free; this proves nothing else in the tree ships a
@@ -2732,7 +2742,7 @@ clean:
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
-        msgexact-gate msgexact-relock preflight-check latch-check injector-check gates clean
+        msgexact-gate msgexact-relock preflight-check latch-check savestate-check injector-check gates clean
 
 # --- gates: the acceptance-gate battery, run in PARALLEL ----------------------
 # Build the shared artifacts once, then fan the per-gate probes out across worker
