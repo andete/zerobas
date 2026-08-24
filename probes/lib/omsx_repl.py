@@ -464,15 +464,23 @@ def tcl_writes(body: str, addr: int) -> bool:
 # openMSX runs `throttle off`, so the WALL time to reach a scheduled `after time`
 # capture varies with how much host CPU the process gets -- on a slow/contended
 # core a capture that is fine solo can miss a fixed WALL deadline and read as a
-# `None` wedge (docs/spec-probe-emutime-watchdog.md). The kill must therefore be
-# gated on EMULATED-time PROGRESS, not wall time: these callbacks write the
-# emulated clock to a heartbeat file at HB_EMU_STEP emulated-second intervals, and
-# _run_batch kills only when that file stops advancing (a real hang/crash), never
-# for merely running slow. A BASIC infinite loop still advances emulated time, and
-# the capture+exit are scheduled in emulated time regardless of what BASIC does, so
-# every non-frozen run completes.
-HB_EMU_STEP = 2.0        # emulated seconds between heartbeats
-HB_STALL = 90.0          # wall seconds with no emu-time progress -> declare a hang
+# `None` wedge (docs/spec-probe-emutime-watchdog.md). The kill is therefore gated
+# on EMULATED-time PROGRESS, not wall time.
+#
+# 🔴 THE HEARTBEAT BEATS ON A *WALL* CADENCE (`after realtime`), NOT an emulated
+# one. A first cut scheduled beats every N EMULATED seconds -- but under severe
+# contention emulation can run below N/HB_STALL realtime, so the beats themselves
+# arrive >HB_STALL apart in wall time and the watchdog FALSE-FIRES on a
+# slow-but-advancing emulator (it killed graphics-acceptance reference boots).
+# `after realtime` fires on the host clock regardless of emulation speed, so a
+# beat lands every HB_WALL wall-seconds as long as openMSX's event loop is alive;
+# it self-reschedules. A stall (no beat for HB_STALL wall-s) then means the loop
+# is TRULY stuck -- a frozen/crashed emulator, or a guest that escaped the timeline
+# and dropped every pending callback -- never merely slow. The capture+exit are
+# emulated-time `after time` events fired by openMSX independent of guest code, so
+# a guest infinite/reset loop still completes at emulated `t`.
+HB_WALL = 3.0            # WALL seconds between heartbeats (host clock, not emulated)
+HB_STALL = 90.0          # wall seconds with no heartbeat at all -> declare a hang
 HB_ABSCAP = 1800.0       # paranoia backstop (wall s); stall detection is primary
 
 
@@ -602,13 +610,11 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         body.append(f'after time {t:.1f} {{ puts $__f "case.{idx}='
                     f'{cap}"; flush $__f }}')
         t += cap_gap
-    # emulated-time heartbeat across the whole timeline (see HB_* above): the host
-    # watchdog reads hb_path's mtime and kills only when it STOPS advancing.
+    # wall-cadence heartbeat (see HB_* above): __hb self-reschedules on the HOST
+    # clock, so the watchdog's mtime always updates every HB_WALL s unless openMSX
+    # itself is stuck -- immune to how slow emulation runs under contention.
     if hb_path:
-        h = HB_EMU_STEP
-        while h < t:
-            body.append(f'after time {h:.1f} {{ __hb }}')
-            h += HB_EMU_STEP
+        body.append("after realtime 0 __hb")
     body.append(f"after time {t:.1f} {{ close $__f; exit }}")
     # A REDUNDANT emulated-time safety-exit a margin past the real one. The primary
     # exit above is guest-independent (openMSX fires `after time` from its own
@@ -689,14 +695,16 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         # __inj: __key plus the submitting CR (appended here so a literal CR byte
         # never has to survive Tcl brace-quoting).
         + "proc __inj {s} { append s \"\\r\"; __key $s }\n"
-        # __hb: rewrite the heartbeat file with the current emulated clock. The
-        # host watchdog watches this file's MTIME (not its value): a beat that
-        # stops arriving means the SCHEDULED TIMELINE stopped progressing -- a
-        # frozen/crashed emulator OR a guest that escaped it (e.g. a reset loop
-        # that dropped the pending callbacks) -- and both must be killed. `catch`
-        # so a transient write error never derails the run.
+        # __hb: rewrite the heartbeat file, then RE-ARM on the WALL clock. The host
+        # watchdog watches this file's MTIME: a beat that stops arriving means the
+        # emulator's event loop is stuck -- a frozen/crashed emulator OR a guest
+        # that escaped the timeline and dropped its callbacks -- both must be
+        # killed. Beating on `after realtime` (not `after time`) keeps the cadence
+        # on the host clock, so a merely SLOW emulator still beats and is not
+        # killed. `catch` so a transient write error never derails the run.
         + (f"proc __hb {{}} {{ catch {{set __h [open {{{hb_path}}} w];"
-           f" puts $__h [machine_info time]; close $__h}} }}\n" if hb_path else "")
+           f" puts $__h [machine_info time]; close $__h}};"
+           f" after realtime {HB_WALL:g} __hb }}\n" if hb_path else "")
         + "\n".join(body) + "\n")
 
 

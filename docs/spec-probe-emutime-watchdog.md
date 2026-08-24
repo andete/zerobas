@@ -33,13 +33,24 @@ of an unlucky per-boot scheduling race, not smooth contention.
 
 ## 2. The fix — gate the kill on emulated-time PROGRESS, not wall time
 
-The run emits an **emulated-clock heartbeat**: `__hb` rewrites a heartbeat file
-with `machine_info time` at `HB_EMU_STEP` (2.0) emulated-second intervals across
-the whole timeline. The host watchdog watches that file's **mtime** and kills
-only when it **stops advancing** for `HB_STALL` (90) wall-seconds — i.e. when the
-*scheduled timeline itself* stopped progressing — never for merely running slow.
-A generous `HB_ABSCAP` (1800 s, floored by any caller `timeout`) is a final
-paranoia backstop; env `ZEROBAS_OMSX_STALL` / `ZEROBAS_OMSX_ABSCAP` override.
+The run emits a **heartbeat on a WALL cadence**: `__hb` rewrites a heartbeat file
+with `machine_info time` and re-arms itself via `after realtime HB_WALL` (3 s) —
+the **host** clock, not the emulated one. The watchdog watches that file's
+**mtime** and kills only when it **stops advancing** for `HB_STALL` (90) wall-s —
+i.e. when openMSX's event loop is truly stuck — never for merely running slow. A
+generous `HB_ABSCAP` (1800 s, floored by any caller `timeout`) is a final paranoia
+backstop; env `ZEROBAS_OMSX_STALL` / `ZEROBAS_OMSX_ABSCAP` override.
+
+🔴 **THE CADENCE IS WALL-TIME (`after realtime`), NOT EMULATED (`after time`), AND
+THAT IS THE WHOLE POINT.** A first cut beat every N *emulated* seconds — but under
+severe contention emulation can run below `N / HB_STALL` realtime, so the beats
+themselves arrive more than `HB_STALL` apart in wall-time and the watchdog
+FALSE-FIRES on a slow-but-advancing emulator (it killed `graphics-acceptance`
+reference boots, `ref=None`, in the first `make gates` run). `after realtime`
+fires on the host clock regardless of emulation speed, so a beat lands every 3 s
+as long as openMSX's loop is alive; a stall then means the loop is genuinely
+stuck. `after realtime` does fire under `set throttle off` (openMSX services its
+event loop between emulation slices) — verified: captures return normally.
 
 ### Why mtime-of-heartbeat, not the emulated-time value
 

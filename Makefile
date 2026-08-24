@@ -2732,4 +2732,14 @@ clean:
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
-        msgexact-gate msgexact-relock preflight-check latch-check injector-check clean
+        msgexact-gate msgexact-relock preflight-check latch-check injector-check gates clean
+
+# --- gates: the acceptance-gate battery, run in PARALLEL ----------------------
+# Build the shared artifacts once, then fan the per-gate probes out across worker
+# slots (docs/spec-probe-emutime-watchdog.md). ~2.5-2.8x faster than running them
+# serially, and reliable because the harness is parallel-safe (emulated-time
+# watchdog + temp-path isolation). `make gates` picks the worker count from the
+# CPU; tools/run_gates.py --serial falls back to one-at-a-time. NOT a substitute
+# for a targeted `make <gate>` while iterating -- it is the full-suite sweep.
+gates:
+	python3 tools/run_gates.py $(GATE_ARGS)
