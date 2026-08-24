@@ -1,0 +1,27 @@
+=== baseline ===
+baseline roms=8ac7e302 / dd8f417b / 806745c4
+baseline 24 rows match himrange_verify.out
+
+K-HR1  roms=550d6ab1 / dd8f417b / 9a87aa5b
+  cut: range check bypassed (jr nz -> jr): the PRE-FIX build, faces read off scratchpad/himrange_probe.out
+  moved 17 rows: b.7fff='0 ->32767', b.8001='0 ->32769', d.32767='0 ->32767', d.32768='0 ->32768', d.65535='0 ->65535', d.h4000='0 ->16384', d.h8000='0 ->32768', d.h8050='0 ->32848', d.hffff='0 ->65535', d.neg1='0 ->65535', d.one='0 ->1', d.zero='0 ->0', f.33650='0 ->33650', f.33700='0 ->33700', l.33000='0 ->33000', u.62337='0 ->62337', u.63000='0 ->63000'
+  EXACT -- 17 predicted, 17 moved
+
+K-HR2  roms=d2a9cd39 / dd8f417b / f4c27e59
+  cut: upper edge removed (CLR_HIMEM_TOP -> $FFFF): only > $F380 rows move
+  moved 5 rows: d.65535='0 ->65535', d.hffff='0 ->65535', d.neg1='0 ->65535', u.62337='0 ->62337', u.63000='0 ->63000'
+  EXACT -- 5 predicted, 5 moved
+
+K-HR3  roms=e4d40c6b / dd8f417b / 5fd0c324
+  cut: floor dropped (PRGEND -> 0): every in-RAM ERR-7 row is accepted
+  moved 7 rows: b.8001='0 ->32769', d.32768='0 ->32768', d.h8000='0 ->32768', d.h8050='0 ->32848', f.33650='0 ->33650', f.33700='0 ->33700', l.33000='0 ->33000'
+  EXACT -- 7 predicted, 7 moved
+
+K-HR4  roms=63da396c / dd8f417b / d8017a86
+  cut: low ERR-5 edge collapsed ($7FFF -> 0): (0,$8000) becomes ERR 7, d.zero (==0) stays ERR 5 as the control
+  moved 4 rows: b.7fff='7 SAME', d.32767='7 SAME', d.h4000='7 SAME', d.one='7 SAME'
+  EXACT -- 4 predicted, 4 moved
+
+restored roms=8ac7e302 / dd8f417b / 806745c4
+
+4/4 knives EXACT

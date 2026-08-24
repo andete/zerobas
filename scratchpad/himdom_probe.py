@@ -67,6 +67,101 @@ def case(arg):
             H]                              # direct mode, after
 
 
+# 🔴 D-HIMRANGE follow-up rows. THREE questions the shipped 15 rows cannot ask:
+#   (1) THE MACHINE-SPECIFIC UPPER EDGE. HIMEM boots at 62336 (VG-8020) / 56951
+#       (CF-3300), so the ERR-5-above-RAM-top edge should sit at a DIFFERENT
+#       value on each reference, and no row in [56951, 62336] existed to prove
+#       it. The u.* rows below sweep that window: a row where the two references
+#       DISAGREE (one accepts, one refuses) is the finding -- it says the edge is
+#       a property of the machine (its RAM top / boot HIMEM), not a constant.
+#   (2) CURRENT vs BOOT HIMEM. Does the upper edge read the LIVE HIMEM (so you
+#       can only ever LOWER the ceiling) or a fixed boot-time RAM top (so you can
+#       raise it back up)? Two CLEARs in one run separate them: lower then raise.
+#       If the raise is refused, the check reads a live sysvar; if it succeeds,
+#       it reads a fixed top. This decides whether zerobas must boot-init HIMEM.
+#   (3) IS THE ERR-7 LOWER EDGE PROGRAM-DEPENDENT? D-HIMDOM ASSUMED it was "a
+#       property of the current program and variables" but measured only a BARE
+#       program -- which cannot separate "constant floor" from "used-memory +
+#       margin". The p.* rows DIM an array first (wiped by CLEAR, but live at the
+#       check) to move the high-water mark; if a value accepted bare becomes
+#       ERR 7 after the DIM, the edge tracks allocation.
+
+
+def case2(a1, a2):
+    """Two CLEARs: set the ceiling to a1 (a legal value), re-arm the trap, then
+    try a2. Re-arm because CLEAR eats the ON ERROR handler (D-CLRTRAP)."""
+    return [H,
+            "10 ONERRORGOTO900",
+            '20 PRINT"<A>";',
+            f"30 CLEAR 200,{a1}",
+            "32 ONERRORGOTO900",
+            f"35 CLEAR 200,{a2}",
+            '40 PRINT"<E";ERR;">":END',
+            '900 PRINT"<E";ERR;">":END',
+            "RUN",
+            H]
+
+
+def casen(n, arg):
+    """CLEAR n,arg -- a NON-default string space. If the ERR-7 floor tracks the
+    requested string space, a large n raises the floor."""
+    return [H,
+            "10 ONERRORGOTO900",
+            '20 PRINT"<A>";',
+            f"30 CLEAR {n},{arg}",
+            '40 PRINT"<E";ERR;">":END',
+            '900 PRINT"<E";ERR;">":END',
+            "RUN",
+            H]
+
+
+def casepad(nlines, arg, remlen=200):
+    """Pad the program with nlines of long REM lines (each ~remlen B) to push the
+    program high-water up, then CLEAR 200,arg. Few LONG lines rather than many
+    short ones -- the 60-short-line version broke injection. If the floor tracks
+    program TEXT size, a big program raises the floor."""
+    lines = [H, "10 ONERRORGOTO900"]
+    for i in range(nlines):
+        lines.append(f"{100+i} REM {'X'*remlen}")
+    lines += ['20 PRINT"<A>";',
+              f"30 CLEAR 200,{arg}",
+              '40 PRINT"<E";ERR;">":END',
+              '900 PRINT"<E";ERR;">":END',
+              "RUN", H]
+    return lines
+
+
+# zerobas PRGEND ($E026) reader -- ONLY meaningful on zb (the sysvar is zerobas's
+# own; on the references $E026 is unrelated RAM). Used to set the floor MARGIN
+# from a measured PRGEND rather than a guess.
+PG = 'PRINT"[";PEEK(&HE026)+256*PEEK(&HE027);"]"'
+
+
+def caseprgend(nlines):
+    """Enter a program of nlines long REMs, then read PRGEND in direct mode."""
+    lines = ["10 ONERRORGOTO900"]
+    for i in range(nlines):
+        lines.append(f"{100+i} REM {'X'*200}")
+    lines += ['900 PRINT"<E";ERR;">":END', PG]
+    return lines
+
+
+def casedim(dimspec, arg):
+    """DIM an array (raising the used-memory high-water), then CLEAR ,arg. The
+    array is live when clr_himem's range check runs (the check precedes the
+    variable wipe), so a program-dependent lower edge will refuse a value that a
+    bare program accepts."""
+    return [H,
+            "10 ONERRORGOTO900",
+            f"15 DIM {dimspec}",
+            '20 PRINT"<A>";',
+            f"30 CLEAR 200,{arg}",
+            '40 PRINT"<E";ERR;">":END',
+            '900 PRINT"<E";ERR;">":END',
+            "RUN",
+            H]
+
+
 CASES = {
     # --- 🔴 THE REGRESSION DISCRIMINATOR: decimals in [32768, 65535] --------
     'd.50000':  case("50000"),
@@ -86,6 +181,75 @@ CASES = {
     'd.one':    case("1"),
     'd.h4000':  case("&H4000"),     # 16384 -- inside ROM, positive int16
     'd.h8050':  case("&H8050"),     # the ceiling the array OOM fixtures use
+    # --- (1) THE MACHINE-SPECIFIC UPPER EDGE, [56951, 62336] ----------------
+    'u.56000':  case("56000"),      # below BOTH boot HIMEMs -> accept on both
+    'u.56951':  case("56951"),      # == CF-3300 boot HIMEM (edge, CF)
+    'u.57000':  case("57000"),      # just above CF-3300 top; below VG top
+    'u.58000':  case("58000"),      # inside the window: VG accept, CF refuse?
+    'u.60000':  case("60000"),      # inside the window
+    'u.62000':  case("62000"),      # just below VG top
+    'u.62336':  case("62336"),      # == VG-8020 boot HIMEM (edge, VG)
+    'u.62337':  case("62337"),      # one past VG top -> refuse on both?
+    'u.63000':  case("63000"),      # above both tops -> ERR 5 on both
+    # --- (2) CURRENT vs BOOT HIMEM: can you RAISE the ceiling back up? -------
+    't.4to6':   case2("40000", "60000"),   # lower to 40000, then raise to 60000
+    't.4to5':   case2("40000", "50000"),   # lower to 40000, then raise to 50000
+    't.6to4':   case2("60000", "40000"),   # CONTROL: lowering always legal
+    't.4to4':   case2("40000", "40000"),   # CONTROL: same value twice
+    # --- (3) IS THE ERR-7 LOWER EDGE PROGRAM-DEPENDENT? ---------------------
+    # bare-program lower sweep: find where accept begins (D-HIMDOM: >32848, <40000)
+    'l.33000':  case("33000"),
+    'l.34000':  case("34000"),
+    'l.35000':  case("35000"),
+    'l.36000':  case("36000"),
+    'l.38000':  case("38000"),
+    'l.39000':  case("39000"),
+    # a double array A#(1000) = 8008 B from $8001 -> top ~ $9F49 (40777).
+    'p.dim38k': casedim("A#(1000)", "38000"),   # bare 38000 accepted; dep -> ERR 7
+    'p.dim40k': casedim("A#(1000)", "40000"),   # near the array top
+    'p.dim44k': casedim("A#(1000)", "44000"),   # above the array top -> accept
+    # --- the ERR-5 / ERR-7 boundary at the bottom of RAM --------------------
+    'b.7fff':   case("&H7FFF"),     # 32767, ROM side of the $8000 boundary
+    'b.8001':   case("&H8001"),     # TXTTAB base, RAM side
+    # --- RUN 2: does the floor track STRING SPACE (n)? ----------------------
+    # if floor = base + n + margin, then n=10000 raises the floor by ~9800:
+    's.n2_42k': casen("200", "42000"),     # CONTROL: n=200 accepts 42000
+    's.big33k': casen("10000", "33000"),   # ERR7 either way (below any floor)
+    's.big42k': casen("10000", "42000"),   # ERR7 iff floor tracks n (42000<~43k)
+    's.big44k': casen("10000", "44000"),   # accept iff floor ~43k < 44000
+    's.big52k': casen("10000", "52000"),   # accept (well above any floor, < top)
+    # --- RUN 2: does the floor track PROGRAM TEXT size? ---------------------
+    # 60 REM lines ~ 2.4 KB of program text above TXTTAB:
+    'g.pad34k': casepad(60, "34000"),      # bare 34000 accepts; ERR7 iff prog-dep
+    'g.pad38k': casepad(60, "38000"),      # accept iff floor still < 38000
+    'g.pad0_34k': casepad(0, "34000"),     # CONTROL: no pad, accepts (== l.34000)
+    # --- RUN 3: narrow the n=200 floor (D-HIMDOM window was (32848,40000)) ---
+    'f.33200':  case("33200"),
+    'f.33400':  case("33400"),
+    'f.33600':  case("33600"),
+    'f.33800':  case("33800"),
+    'f.33900':  case("33900"),
+    # --- RUN 3: program-TEXT dependence, working readout (few LONG lines) ----
+    # 8 REM lines x ~200 B ~= 1.6 KB of program text above TXTTAB:
+    'g3.p34k':  casepad(8, "34000"),       # ERR7 iff floor rose past 34000
+    'g3.p36k':  casepad(8, "36000"),       # ERR7 iff floor rose past 36000
+    'g3.p38k':  casepad(8, "38000"),       # accept iff floor still < 38000
+    'g3.p0_36k': casepad(0, "36000"),      # CONTROL: no pad -> accept
+    # --- RUN 3: zerobas PRGEND for a small vs padded program (zb only) -------
+    'x.pg0':    caseprgend(0),
+    'x.pg8':    caseprgend(8),
+    # exact PRGEND for the 5-line case() program (lines 10,20,30,40,900), the
+    # one the floor rows f.* / l.* / d.* use -- to set MARGIN precisely.
+    'x.pg5':    ["10 ONERRORGOTO900",
+                 '20 PRINT"<A>";',
+                 "30 CLEAR 200,33700",
+                 '40 PRINT"<E";ERR;">":END',
+                 '900 PRINT"<E";ERR;">":END',
+                 PG],
+    # narrow the reference floor to a tighter center
+    'f.33650':  case("33650"),
+    'f.33700':  case("33700"),
+    'f.33750':  case("33750"),
 }
 
 BR = re.compile(r"\[([^\]]*)\]")

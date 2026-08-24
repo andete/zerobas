@@ -298,36 +298,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `basic/str-engine.asm` `heap_reset` cited them for a benefit to a form the
       language does not have.
 
-- [ ] 🔴 **CLEAR's CEILING HAS A THREE-BAND RANGE CHECK AND zerobas HAS NONE OF
-      IT — 10 ROWS.** Filed 2026-08-23 by D-CLRFIX §5 as a single row
-      (`CLEAR 200,-1`) and **CHARACTERIZED the same day by D-HIMDOM**
-      ([`docs/spec-basic-himdom.md`](docs/spec-basic-himdom.md) §5,
-      `scratchpad/himdom_probe.py`, 15 rows x 3 machines, **both references
-      agree on every row**). The COERCION half is fixed and shipped; this is the
-      range check that sits on top of it:
-      * **ERR 5 below `$8000`** — `0`, `1`, `&H4000`, `32767` all refused. The
-        edge is exactly the bottom of RAM.
-      * **ERR 7 (`Out of memory`) inside RAM but below BASIC's own data** —
-        `32768` and `&H8050` (32848) refused while `40000` is accepted, so the
-        edge lies between 32848 and 40000 and is a property of the CURRENT
-        program and variables, not a constant.
-      * **ERR 5 above the RAM top** — `65535`, `&HFFFF`, `-1`.
-      🔴 **THE FIRST THING TO MEASURE IS THE MACHINE-SPECIFIC EDGE, AND NO ROW
-      COVERS IT YET.** HIMEM boots at **62336** on the VG-8020 and **56951** on
-      the CF-3300, so a value between them should be accepted on one and refused
-      on the other. That single row decides whether the check reads a sysvar or
-      a constant, and D-HIMDOM's set has nothing in that window.
-      🎯 **The old filing's guess is now RETIRED BY MEASUREMENT**: `&HFFFF` and
-      `-1` answer identically (ERR 5), same sixteen bits and different syntax, so
-      the rule is the VALUE — a range, and now with edges. ⚠️ **DO NOT copy the
-      pool argument's `bit 7,d`**: `&H9000` has bit 15 set and is ACCEPTED.
-      ⚠️ **IT WILL BREAK THIS TREE'S OWN FIXTURES.** `probes/basic/basic_probe_arrays.py`
-      squeezes memory with `CLEAR 200,&H8050`, which both references answer
-      **ERR 7**. Those rows are `zb`-only by declaration so they are not wrong
-      today, but the ERR-7 band retires them; they need a ceiling inside the
-      accepted window instead.
-      💰 Unpriced; main page 1, which D-HIMDOM left at **2 B free (2026-08-23)**
-      — this needs FUNDING before it needs a design.
+- [x] ✅ **CLOSED 2026-08-24 (D-HIMRANGE) — CLEAR's THREE-BAND RANGE CHECK
+      SHIPPED, +52 B, 15 DIFF → 0.**
+      ([`docs/spec-basic-himrange.md`](docs/spec-basic-himrange.md), funded by
+      D-JRSLICE/2, main page 1 was 120 B free before this.) Bands, as MEASURED
+      (both references agree on every scored row):
+      * **ERR 5 below `$8000`**; **ERR 5 above `$F380` (62336)**;
+      * **ERR 7 (`Out of memory`) for `$8000` ≤ v < floor**, where
+        `floor = PRGEND + POOLSIZE + 680` (tracks program TEXT + string space);
+      * **accepted** `floor` ≤ v ≤ `$F380`.
+      🔴 **BOTH OF D-HIMDOM §5's OPEN GUESSES WERE REFUTED by the finer rows
+      (the two-rules-coincide trap again):**
+      * The upper edge is a **CONSTANT `$F380`**, NOT machine-specific: both
+        machines accept up to 62336 and refuse 62337 despite boot HIMEMs of
+        62336 (VG) vs 56951 (CF), and raising the ceiling back up works
+        (`t.4to6`). So it reads a fixed top, not live HIMEM — zerobas needs no
+        boot-time HIMEM init.
+      * The floor is **program-text + string-space dependent, NOT variable-
+        dependent** — `DIM A#(1000)` before the CLEAR does not move it (CLEAR
+        wipes it), but a large `CLEAR n,` string space does.
+      ⚠️ Fixtures retired as filed: `probes/basic/basic_probe_arrays.py`'s
+      `scalar.str.chain.oom`, `scalar.input.chain.oom` (were `CLEAR 200,&H8050`)
+      and `gc.bugB.phantom` (was `CLEAR 400,&H82C0`) — all three now use a legal
+      ceiling + a room-filling DIM; the floor GUARANTEES ≥678 B headroom so no
+      legal ceiling can squeeze the chain. Knives 4/4 (`himrange_knives.py`).
 
 - [ ] 📏 **CARVE SCOUT 2026-08-24 — TWO OF THE THREE FUNDING ROUTES FOR MAIN
       PAGE 1 ARE MEASURED SHUT.** Measurement only, no byte moved

@@ -150,14 +150,60 @@ clr_himem:
                 ; SEPARATE call here. It preserves DE and raises before the store
                 ; and before clr_done falls into clear_vars, which is the whole
                 ; point of D-CLRFIX and is unchanged.
-                ; 🔴 STILL OPEN -- THE *RANGE* CHECK, WHICH IS A DIFFERENT RULE:
-                ; both references answer ERR 5 below RAM (0, 1, &H4000, 32767)
-                ; and above the RAM top (65535, &HFFFF, -1), and ERR 7 (Out of
-                ; memory) for a ceiling inside RAM but below what BASIC is
-                ; already using (32768, &H8050). zerobas accepts all of those.
-                ; Filed in TODO.md; the edges are machine-specific and the two
-                ; references have different RAM tops.
+                ; 🔴 D-HIMRANGE (docs/spec-basic-himrange.md): THE *RANGE* CHECK
+                ; D-HIMDOM filed, now implemented. Measured on the VG-8020 AND
+                ; the CF-3300 (both agree on every row, scratchpad/himdom_probe.py):
+                ;   value >= 65536         -> ERR 6 (eval_addr sets FPERR=1 below)
+                ;   value >  $F380 (62336) -> ERR 5 (above the top of RAM)
+                ;   value <  $8000         -> ERR 5 (below RAM, in ROM)
+                ;   $8000 <= value < floor -> ERR 7 (no room for prog + strings)
+                ;   floor <= value <= $F380-> accepted, HIMEM moves
+                ; floor = PRGEND + POOLSIZE + CLR_HIMEM_MARGIN -- it tracks the
+                ; program TEXT (PRGEND) and the requested string space (POOLSIZE,
+                ; stored by the string-space arm above BEFORE we get here), as the
+                ; reference does; variables do NOT count because CLEAR wipes them
+                ; (rows p.dim*).
+                ; ⚠️ THE UPPER EDGE IS A CONSTANT $F380 ON BOTH MACHINES despite
+                ; boot HIMEMs of 62336 (VG) vs 56951 (CF): raising the ceiling
+                ; back up works (row t.4to6), so the check reads a FIXED top, not
+                ; live HIMEM -- which REFUTES D-HIMDOM §5's machine-specific guess
+                ; and is why zerobas needs no boot-time HIMEM init.
+                ; 🔴 NOT the pool arm's `bit 7,d` sign test: &H9000 has bit 15 set
+                ; exactly as -1 does yet is ACCEPTED on all three -- the domain is
+                ; a RANGE, not a sign (docs/spec-basic-clrfix.md STILL OPEN note).
                 call    eval_addr           ; DE = -32768..65535, FPERR=1 past it
+                ld      a,(FPERR)
+                or      a
+                jr      nz,clr_h_store      ; >=65536 overflow already pending -> ERR 6;
+                                            ; skip the range check (DE is 0 here anyway)
+                                            ; and HL is still the statement cursor.
+                push    hl                  ; guard the cursor across the arithmetic
+                ld      hl,CLR_HIMEM_TOP    ; value > $F380 -> ERR 5
+                or      a
+                sbc     hl,de
+                jr      c,clr_h_ill
+                ld      hl,$7FFF            ; value <= $7FFF (< $8000) -> ERR 5
+                or      a
+                sbc     hl,de
+                jr      nc,clr_h_ill
+                ld      hl,(PRGEND)         ; floor = PRGEND + POOLSIZE + margin
+                ld      bc,(POOLSIZE)
+                add     hl,bc
+                ld      bc,CLR_HIMEM_MARGIN
+                add     hl,bc
+                or      a
+                sbc     hl,de               ; floor - value
+                jr      c,clr_h_ok          ; value > floor  -> accepted
+                jr      z,clr_h_ok          ; value == floor -> accepted
+                ld      a,6                 ; value < floor -> ERR 7 Out of memory
+                jr      clr_h_set           ; (fperr_to_err[6] = 7)
+clr_h_ill:
+                ld      a,3                 ; ERR 5 Illegal function call
+clr_h_set:                                  ; (fperr_to_err[3] = 5)
+                call    penderr_set         ; preserves DE and the pushed cursor
+clr_h_ok:
+                pop     hl                  ; restore the statement cursor
+clr_h_store:
                 call    check_expr_errors   ; raise BEFORE the store and the wipe
                 ld      (HIMEM),de          ; record CLEAR's ceiling
 clr_done:

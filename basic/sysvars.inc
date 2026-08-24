@@ -2125,6 +2125,27 @@ ARY_ERR         equ     $E037   ; [tenant return] 0 ok; 1 Subscript-oor;
 ; Source: C-BIOS system variables (BSD 2-clause; address $FC4A), cross-checked
 ; against the MSX2 Technical Handbook work-area appendix / MSX Assembly Page.
 HIMEM           equ     $FC4A   ; highest RAM address BASIC may use (2 bytes)
+; --- D-HIMRANGE: CLEAR memory-ceiling range-check bounds --------------------
+; The <memory-top> argument's accepted band, MEASURED on the VG-8020 AND the
+; CF-3300 (both agree on every row; scratchpad/himdom_probe.py,
+; docs/spec-basic-himdom.md §5/§6). value > CLR_HIMEM_TOP or < $8000 -> ERR 5;
+; $8000 <= value < PRGEND+POOLSIZE+CLR_HIMEM_MARGIN -> ERR 7 (Out of memory);
+; else accepted and HIMEM moves. Used by clr_himem (basic/clear.asm).
+; ⚠️ CLR_HIMEM_TOP is a CONSTANT on BOTH machines despite their boot HIMEMs
+; differing (62336 vs 56951): CLEAR reads a FIXED top, NOT live HIMEM -- you may
+; raise the ceiling back up to $F380 after lowering it (probe row t.4to6). This
+; REFUTES docs/spec-basic-himdom.md §5's guess that the edge was machine-
+; specific, and is why the check needs no boot-time HIMEM init. $F380 is the
+; documented top of BASIC-usable RAM (below the BIOS work area).
+CLR_HIMEM_TOP    equ    $F380   ; 62336: highest address CLEAR accepts
+; The reserve (interpreter stack + overhead) that must remain between the top of
+; the program text and the string space below the new ceiling. DERIVED, not
+; guessed: the measured floor for the 5-line n=200 probe program is in
+; (33700,33750] and that program's PRGEND is 32843, so
+; MARGIN = floor - PRGEND - POOLSIZE is in (657,707]; 680 sits at the centre.
+; The floor tracks program TEXT (PRGEND) and string space (POOLSIZE) exactly as
+; the reference does -- variables do NOT count (CLEAR wipes them; rows p.dim*).
+CLR_HIMEM_MARGIN equ    680
 ; USRTAB: the 10 DEF USR vectors (USR0..USR9), 2 bytes each, $F39A..$F3AD.
 ; Source: C-BIOS system variables (BSD 2-clause). On C-BIOS (no BASIC) this is
 ; unused work-area RAM, so DEF USR writing it is safe and observable.

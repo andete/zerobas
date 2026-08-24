@@ -464,13 +464,26 @@ CASES = [
     # is now bounded only by the shared free chain region, and exhausting
     # it must raise a SURFACED "Out of memory" (matching the array/numeric-
     # scalar OOM disposition), NOT silently drop the assignment (the old
-    # STRTAB-full contract). CLEAR sets a tight ceiling ($8050, ~77 B of
-    # scalar-region room -- ~12 6-byte string-scalar entries) so a run of
-    # distinct one-letter `$` names exhausts it deterministically. zberr
-    # (zb-only: the byte-for-byte ceiling arithmetic is zb's own chain
-    # layout, not a property the reference's differently-shaped variable
-    # table can be an oracle for) -- asserted against the reference-wording
-    # ZB_OOM literal, the SAME string arrays' own OOM already uses.
+    # STRTAB-full contract). A run of distinct one-letter `$` names must
+    # exhaust the shared free chain region deterministically. zberr (zb-only:
+    # the byte-for-byte ceiling arithmetic is zb's own chain layout, not a
+    # property the reference's differently-shaped variable table can be an
+    # oracle for) -- asserted against the reference-wording ZB_OOM literal,
+    # the SAME string arrays' own OOM already uses.
+    #
+    # 🔴 THE SQUEEZE WAS `CLEAR 200,&H8050` UNTIL 2026-08-24 (D-HIMRANGE,
+    # docs/spec-basic-himrange.md). &H8050 (32848) set HIMEM just above the
+    # program so FRETOP=min(HIMEM,TXTMAX) left only ~77 B of chain room and
+    # ~12 names exhausted it. But &H8050 is **ERR 7 (Out of memory) on the
+    # VG-8020 AND the CF-3300** -- a ceiling below what BASIC needs for the
+    # program + string space -- and zerobas now raises that too. The range
+    # check GUARANTEES >=678 B of headroom by design, so no legal ceiling can
+    # squeeze to 77 B. Instead a legal ceiling (50000) is set and a big array
+    # DIM Z(1840) consumes the room the tight ceiling used to deny (MEASURED:
+    # room ~14899 B, DIM fit boundary N~1853; N=1840 fits with ~104 B margin
+    # and leaves an ~18-name gap, so of A$..Z$ the last 8 OOM). SAME code
+    # path: str_set_key's scalar allocation still hits the full-region OOM;
+    # the array just fills the region the ceiling used to.
     #
     # NON-VACUOUS proof (recorded here, verified by hand during
     # implementation): before wiring the FPERR check into ex_let_str
@@ -479,7 +492,8 @@ CASES = [
     # assignment silently dropped exactly like the pre-4c fixed-pool
     # contract (observed: no "Out of memory" text anywhere in the capture).
     ("scalar.str.chain.oom",   "direct",
-        ['CLEAR 200,&H8050'] + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
+        ['CLEAR 200,50000', 'DIM Z(1840)']
+        + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
         "zberr"),
 
     # === VARPTR of an ARRAY ELEMENT (post-4c faithfulness follow-up, ==========
@@ -679,8 +693,10 @@ GC_STRESS = [
     #     OOM now aborts, so the old construction left >250 B free and P$
     #     stored fine. DIRECT mode (4th field) + a CLEAR-shrunk heap replace
     #     it: each direct line survives the previous line's abort, and
-    #     CLEAR,&H82C0 pins the heap ceiling (C=min(HIMEM,TXTMAX), FRETOP
-    #     reset to C) so no fill loop is needed at all.
+    #     a legal CLEAR (>= TXTMAX) pins the heap ceiling (C=min(HIMEM,TXTMAX)=
+    #     TXTMAX, FRETOP reset to C) so no fill loop is needed at all. (Was
+    #     `CLEAR,&H82C0` until D-HIMRANGE made that ceiling ERR 7 -- see the
+    #     Sizing note below.)
     # ⚠️ RE-TARGETED A THIRD TIME (D-CLP, 2026-07-29) -- THE ORIGINAL WINDOW NO
     # LONGER EXISTS, so the old construction was asserting an unreachable state.
     # It required, in order: (a) build a 250-byte temp, (b) SUCCEED at
@@ -710,14 +726,20 @@ GC_STRESS = [
     # the descriptor's own length byte. Genuine path: LEN(P$)=250 and W=250.
     # Seed survived (slot never written): W=200, and LEN would read 200 over a
     # garbage body. Store OOM'd: LEN=0. NON-VACUOUS in every direction.
-    # Sizing: CLEAR 400,&H82C0 -> C=$82C0, pool [$8130,$82C0). A$ costs 60
-    # (FRETOP=$8284), P$'s temp 250 -> 310 of 400, and the seed ptr $82A0 sits
-    # inside [FRETOP,C) as the original's $8200 did at the original ceiling.
+    # Sizing: 🔴 RE-TARGETED A FOURTH TIME (D-HIMRANGE, 2026-08-24). The old
+    # `CLEAR 400,&H82C0` set the ceiling to $82C0 (33472), which is now
+    # **ERR 7 Out of memory on the VG-8020 AND the CF-3300** (below the program +
+    # string space) -- zerobas raises it too. A legal ceiling >= TXTMAX pins the
+    # pool just as deterministically, WITHOUT a magic low address: C =
+    # min(HIMEM,TXTMAX) = TXTMAX = $BB00 for any HIMEM >= TXTMAX, so
+    # `CLEAR 400,50000` -> C=$BB00, pool [$B970,$BB00). A$ costs 60
+    # (FRETOP=$BAC4), P$'s temp 250 -> 310 of 400, and the seed ptr $BAE0 sits
+    # inside [FRETOP,C)=[$BAC4,$BB00) exactly as $82A0 did in the old window.
     ("gc.bugB.phantom",
-     ['CLEAR 400,&H82C0',
+     ['CLEAR 400,50000',
       'V=0:A$=STRING$(60,66)',
       'V=VARPTR(A$):POKEV+6,200',
-      'POKEV+7,&HA0:POKEV+8,&H82',
+      'POKEV+7,&HE0:POKEV+8,&HBA',
       'P$=STRING$(250,67)',
       'W=PEEK(V+6)',
       'PRINT"[";LEN(P$);W;"]"'],
@@ -913,15 +935,15 @@ def _line_tokens(raw):
 # function instead (like ABC_REGRESSION/GC_STRESS below), anchoring
 # screen_tail on the LAST LINE INPUT statement's own echo explicitly.
 #
-# 🔴 THE CEILING FIXTURE WAS `CLEAR,&H8050` UNTIL 2026-08-23 (D-CLRFIX,
-# docs/spec-basic-clrfix.md). That form -- string space omitted, leading comma --
-# is a **Syntax error on the VG-8020 AND the CF-3300**, and zerobas stopped
-# accepting it when the special case was deleted (-4 B). Both chain-OOM fixtures
-# then set no ceiling at all and BOTH went red, which is the honest outcome: they
-# had been squeezing memory with a statement the language does not have.
-# `CLEAR 200,&H8050` is the legal two-argument form and 200 is the boot default
-# pool size (clearpool-vg8020-characterization.md §2.4), so the ceiling is the
-# same one these rows were always relying on.
+# 🔴 THE SQUEEZE WAS `CLEAR,&H8050` THEN `CLEAR 200,&H8050`; IT IS NOW A LEGAL
+# CEILING + A ROOM-FILLING DIM (D-HIMRANGE, 2026-08-24). History: the leading-
+# comma `CLEAR,&H8050` (a Syntax error on both references) was retired by
+# D-CLRFIX (-4 B); `CLEAR 200,&H8050` replaced it -- but &H8050 (32848) is
+# **ERR 7 Out of memory on the VG-8020 AND the CF-3300** (a ceiling below the
+# program + string space), and D-HIMRANGE makes zerobas raise that too. The
+# range check GUARANTEES >=678 B of chain headroom, so no legal ceiling can
+# squeeze the chain; `CLEAR 200,50000 : DIM Z(1840)` consumes the room instead
+# (see scalar.str.chain.oom's own header for the sizing). SAME OOM path.
 # NON-VACUOUS (verified by hand 2026-07-17, `git stash` on the input.asm/
 # files.asm fix + rebuild): pre-fix the tail after the LAST 'LINE INPUT Z$'
 # echo was plain '1' (the response, silently accepted, no OOM text -- the
@@ -929,7 +951,7 @@ def _line_tokens(raw):
 # path even after ex_let_str's own fix); post-fix it is '1|Out of memory'.
 INPUT_OOM = [
     ("scalar.input.chain.oom",
-     ['CLEAR 200,&H8050'] +
+     ['CLEAR 200,50000', 'DIM Z(1840)'] +
      [ln for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" for ln in (f'LINE INPUT {c}$', '1')],
      "LINE INPUT Z$", "1|Out of memory"),
 ]
