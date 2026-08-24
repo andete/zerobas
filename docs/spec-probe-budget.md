@@ -111,7 +111,48 @@ A gate that would go RED if the margin were too thin is required before any
 budget moves — the obvious subject being the `graphics-acceptance` fill rows,
 whose failure mode under a thin budget is a *partial* result, not an error.
 
-## 5. Status
+## 5. Results — the fix was the budgets' SCOPE, and it shipped
 
-Instrument LANDED and inert; **no budget changed**. Next: the separate
-RUN→capture knob + per-case budgets, gated as §4 requires.
+`run_gap` (commits `c04606b`, `f9afec1`) applies a phase's budget to RUN→capture
+**only**; line spacing keeps the 2.5 s default. **No budget is tighter than its
+measured need** — the fix is to stop charging the completion budget to the typing.
+
+| | before | after |
+|---|---|---|
+| one bounded-PAINT case (VG-8020) | 2.9 s | **0.5 s** (5.5×), capture byte-identical |
+| one bounded-PAINT case (zerobas) | 1.9 s | **0.5 s** (3.6×), capture byte-identical |
+| `graphics-acceptance` solo | 269 s | **218 s** |
+| `graphics-acceptance` in the battery | 465 s | **347 s** |
+| **full battery** | **664 s** | **476 s**, 37/37 green, 0 flakes, ROMs unchanged |
+
+⚠️ **CONVERTED ONLY WHERE THE GAPS ARE PURE TYPING** — `("stored", …)` specs, or a
+single line. A DIRECT-mode line executes AS IT IS TYPED, so its gap genuinely is a
+completion budget: `deffn` (8 s), `arrays` (6/150 s) and `namspc` (12 s — whose own
+comment records that the value exists so `OPEN`/`CLOSE`/`KILL` disk work completes
+BETWEEN lines) are deliberately left alone. Cutting those is the mid-fill failure
+in another costume.
+
+📏 **`wall ≈ 0.003 s per emulated second`, UNIFORMLY.** A hypothesis that
+prompt-idle costs more per emulated second than tight-loop-idle was tested and
+**REFUTED** (measured 0.21 s vs 0.36 s per 100 emulated s, inside a ±0.2 s noise
+floor). So emulated seconds convert to wall at a flat rate, and the table above is
+just that arithmetic — which is also why the SENTINEL saves so little (§6).
+
+## 6. What the sentinel turned out to be for
+
+Capturing on a program-written `done` sentinel instead of at a guessed time was
+built and measured (`docs/spec-probe-mark.md`, `TODO.md`). Two independent results
+retired it as a *speedup* and kept it as an *instrument*:
+
+* **It reclaims ~88 emulated seconds per case ≈ 0.3 s wall** — under the noise
+  floor, because the window it removes is idle emulation. The oversized TYPING
+  gaps held ~5× more, and `run_gap` takes those.
+* **It is not safe for screen captures**: byte-identical for VRAM (9/9 across
+  subject and both oracles), but text captures differ by exactly 2 characters on
+  all three machines — the `Ok`/`ZB` PROMPT, unprinted when the program signals,
+  and `screen_tail` terminates AT the prompt.
+
+🟢 **What it IS for: an exact, DETERMINISTIC emulated-time stopwatch.** Marks
+either side of an operation give its precise duration on any machine, repeating
+bit-identically across runs — the only basis on which a performance differential
+can be gated without flaking. That is what produced §4b's exact PAINT figures.

@@ -149,8 +149,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       RED only when an operation is significantly slower than BOTH references,
       never when it is faster.
 
-- [ ] 🔴⚡ **CAPTURE ON A `done` SENTINEL, NOT AT A GUESSED EMULATED TIME — THIS
-      SUPERSEDES THE BUDGET ITEM BELOW.** Filed 2026-08-24 (user), out of the
+- [~] 🕐 **SENTINEL — SHIPPED AS A *STOPWATCH* (`f6bb5a0`); SHIPPED BUT *NOT
+      ADOPTED* AS A CAPTURE TRIGGER (`c04606b`).** Both modes exist and are gated;
+      what changed is which one is justified.
+      🟢 **ADOPTED — the emulated-time stopwatch.** `sentinel=(addr,val)` +
+      `settle_out` logs `(emulated instant, value)` for every write the case's own
+      BASIC makes, so marks either side of an operation give its EXACT duration,
+      on the black-box references too. **Emulated time is DETERMINISTIC** —
+      measured bit-identical across repeats (14.736728 s twice, 46.252527 s twice)
+      — so this is the only basis on which a performance differential can be gated
+      **without flaking**, which wall-clock timing (±0.2 s noise here) can never
+      offer. It produced the exact PAINT figures in the item above.
+      ⏸️ **IMPLEMENTED, GATED, NOT ADOPTED — `sentinel_capture=True`.** It makes
+      the budget a pure failure detector and measures 1.1 s → 0.2 s with the
+      capture byte-identical. **But it is refused for `capture="screen"`, and that
+      refusal is MEASURED, not caution**: the sentinel fires before the
+      interpreter prints its `Ok`/`ZB` prompt, and text captures differed by
+      exactly those 2 characters on all three machines. **Every PAINT-phase case
+      in `graphics-acceptance` is a screen capture whose program `END`s** — i.e.
+      exactly that shape — so adopting it there would mean lifting the refusal,
+      adding a `POKE` to every program in a FIDELITY gate, and proving a fresh
+      differential, for ~10% of one gate. **Left at the boundary deliberately.**
+      To pick up: prove the phase's `_points` readout is prompt-independent, then
+      adopt per-phase behind a byte-identical differential with a teeth control.
+
+- [ ] 🔴⚡ ~~**CAPTURE ON A `done` SENTINEL**~~ — original framing, kept for its
+      reasoning; the speed case it was filed on is DEAD (the window it removes is
+      idle emulation, ~0.3 s/case, under the noise floor) and the win was the
+      budgets' SCOPE instead. Filed 2026-08-24 (user), out of the
       budget instrumentation. **The budgets are not timeouts, they are GUESSES AT
       THE COMPLETION TIME**: `_tcl` schedules the capture at `after time
       RUN+step`, so it fires whether or not the work finished. That is why the
@@ -194,7 +220,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the backstop for that path — which is exactly "no bound needed unless there
       is a test or harness failure".
 
-- [ ] ⚡ **THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS, NOT THE BOOT.**
+- [x] ⚡ **THE REAL GATE-SUITE LEVER WAS THE BUDGETS' *SCOPE* — SHIPPED 2026-08-24
+      (`c04606b`, `f9afec1`), 28% OFF THE BATTERY.** `step` did double duty: it is
+      the inter-line injection spacing AND it was the RUN→capture completion
+      budget, so a phase needing a long budget paid it on EVERY TYPED LINE (a
+      graphics PAINT case bought 6 × 90 = 540 emulated seconds to cover one
+      46-second fill). **`run_gap` separates them**; line spacing keeps the 2.5 s
+      default, and **no budget is made tighter than its measured need**.
+      **MEASURED:** per case 2.9 s → 0.5 s (VG-8020, 5.5×) with the capture
+      BYTE-IDENTICAL; `graphics-acceptance` **269 s → 218 s** solo and
+      **465 s → 347 s** in the battery; **battery 664 s → 476 s, 37/37 green, 0
+      flakes, ROM hashes unchanged**. 13 call sites converted.
+      ⚠️ **ONLY WHERE THE GAPS ARE PURE TYPING** (`("stored", …)`, or a single
+      line): a DIRECT-mode line executes AS IT IS TYPED, so its gap genuinely is a
+      completion budget — `deffn` (8 s), `arrays` (6/150 s) and `namspc` (12 s,
+      whose own comment records the value exists so `OPEN`/`CLOSE`/`KILL` disk
+      work finishes BETWEEN lines) are deliberately LEFT ALONE.
+      🟢 **AND THE BUDGETS THEMSELVES ARE EARNED**: the flood needs **46.252527
+      emulated seconds** on zerobas (exact, mark stopwatch) against `PAINT_STEP`'s
+      90 — a 1.9× margin. It was the SCOPE that was wrong, never the size.
+      📏 **`wall ≈ 0.003 s per emulated second`, UNIFORMLY** — a hypothesis that
+      prompt-idle costs more than tight-loop-idle was tested and REFUTED, so
+      emulated seconds convert to wall at a flat rate and the arithmetic above is
+      the whole story.
+
+- [ ] ⚡ ~~**THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS**~~ (original
+      framing, kept for the reasoning it carries)
       ⚠️ **PARTLY SUPERSEDED by the sentinel item above** — a sentinel capture
       makes per-case budget tuning unnecessary for every case that reaches its
       sentinel. What survives regardless: the **two knobs are conflated** (below),
