@@ -1,0 +1,30 @@
+walked 22510 B from $2812; 892 jp/jp-cc instructions total
+
+convertible to jr (-1 B each):
+     58  jp
+     37  jp nz
+     34  jp z
+     17  jp c
+      9  jp nc
+   ----
+    155  TOTAL convertible  (120 in page 1, 35 in low region)
+     16  jp pe/po/p/m -- NO jr form, cannot convert
+
+examples:
+   $2A43 jp z   -> $2A72 (disp +45) [low]
+   $2A48 jp z   -> $2A9D (disp +83) [low]
+   $2A76 jp nz  -> $2ADF (disp +103) [low]
+   $2A80 jp nz  -> $2ADF (disp +93) [low]
+   $2AA1 jp nz  -> $2ADF (disp +60) [low]
+   $2AAB jp nz  -> $2ADF (disp +50) [low]
+   $2AEB jp nz  -> $2ADF (disp -14) [low]
+   $2AF2 jp z   -> $2ADF (disp -21) [low]
+
+✅ THIS IS A FLOOR, NOT A CEILING. Converting a jp->jr shifts every later byte
+   DOWN by 1, which only TIGHTENS other displacements (forward targets move closer,
+   backward gaps shrink) -- so no conversion knocks another out of range, all 155
+   convert together, and the shrink may pull currently-just-out-of-range jumps IN.
+   Caveats that remain: a jr is slower (12/7 vs 10 cyc), so a HOT loop may keep its
+   jp on purpose; and the assembler is the final authority on range. Safety is NOT
+   a caveat: jr and jp are flag- and control-flow-identical, so 'it assembles' == 'it
+   is correct'. That makes this the safest carve class in the tree.

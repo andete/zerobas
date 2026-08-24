@@ -1,0 +1,38 @@
+
+=== basic/playsvc.asm  (229 B in page 1, 2 external entries, closure 11)
+    (no escapes at all)
+
+=== basic/fat.asm  (180 B in page 1, 7 external entries, closure 15)
+    direct   BIOS      CALSLT @ $001C
+    direct   plumbing  subrom_call @ $3BFF
+
+=== basic/initext.asm  (173 B in page 1, 2 external entries, closure 15)
+    direct   BIOS      CALSLT @ $001C
+    direct   BIOS      RDSLT @ $000C
+
+=== basic/subrom-boot.asm  (86 B in page 1, 3 external entries, closure 5)
+    direct   BIOS      RDSLT @ $000C
+
+=== basic/list.asm  (187 B in page 1, 3 external entries, closure 41)
+    direct   BIOS      CALSLT @ $001C
+    direct   BIOS      CHPUT @ $00A2
+    direct   BLOCKER   d10_lp @ $3275
+    direct   BLOCKER   d10_skip @ $327E
+    direct   BLOCKER   div10 @ $3272
+    direct   plumbing  subrom_absent_error @ $3C17
+    direct   plumbing  subrom_call @ $3BFF
+    THRU-P1  LPTOUT @ $00A5  via list_all -> pchar -> pch_file -> pch_lpt -> LPTOUT
+    THRU-P1  TAPOOF @ $00F0  via list_all -> pchar -> pch_file -> cas_wbyte -> TAPOOF
+    THRU-P1  TAPOON @ $00EA  via list_all -> pchar -> pch_file -> cas_wbyte -> TAPOON
+    THRU-P1  TAPOUT @ $00ED  via list_all -> pchar -> pch_file -> cas_wbyte -> TAPOUT
+
+=== basic/field.asm  (589 B in page 1, 5 external entries, closure 50)
+    direct   BIOS      CALSLT @ $001C
+    direct   plumbing  subrom_absent_error @ $3C17
+    direct   plumbing  subrom_call @ $3BFF
+    THRU-P1  CHPUT @ $00A2  via fld_lookup -> subrom_absent_error -> print_msg -> print_crlf -> pchar -> CHPUT
+    THRU-P1  LPTOUT @ $00A5  via fld_lookup -> subrom_absent_error -> print_msg -> print_crlf -> pchar -> pch_file
+    THRU-P1  TAPOOF @ $00F0  via fld_lookup -> subrom_absent_error -> print_msg -> print_crlf -> pchar -> pch_file
+    THRU-P1  TAPOON @ $00EA  via fld_lookup -> subrom_absent_error -> print_msg -> print_crlf -> pchar -> pch_file
+    THRU-P1  TAPOUT @ $00ED  via fld_lookup -> subrom_absent_error -> print_msg -> print_crlf -> pchar -> pch_file
+    THRU-P1  call_strheap @ $2812  via fld_lookup -> fch_select -> fch_save_active -> fch_ctx_addr -> call_strheap

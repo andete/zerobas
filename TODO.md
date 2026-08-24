@@ -360,6 +360,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ `tools/carve_scout.py --census` prints nothing and exits 0 without
       `--files` (documented, but it is the 0-byte-report-at-rc-0 shape).
 
+- [ ] 💰 **THE `jp`->`jr` PEEPHOLE SEAM: A PAGE-1 RECOVERY MEASURED AT 120
+      SITES ON 2026-08-24, MECHANICALLY SAFE, AND UNWORKED.** Filed 2026-08-24
+      ([`docs/spec-carve-scout-2026-08.md`](docs/spec-carve-scout-2026-08.md)
+      §3b, `scratchpad/peephole_jr.py`). **155 `jp`/`jp cc` sites whose target
+      is already in `jr` range — 120 of those sites in page 1 — recovering one
+      byte apiece.** It is a
+      FLOOR: converting one shifts later bytes down, which only tightens other
+      displacements, so all 155 convert together and more may come into range.
+      🔴 **SAFEST CLASS IN THE TREE: `jp` and `jr` are flag- and control-flow-
+      identical, and pasmo enforces the only constraint (range) — "it assembles"
+      == "it is correct".** No flag-liveness, no position-independence, no
+      differential needed for safety. PROVEN: one page-1 conversion moved the
+      wall 2 B → 3 B (`jp nz,elg_draw`, reverted).
+      ⚠️ The only judgment call is SPEED (`jr` 12/7 vs `jp` 10 cyc), so a HOT
+      loop may keep its `jp` — a per-site call, never a correctness gate.
+      🎯 **This is the funding route the range-check item needs** — the dup-span
+      seam is 4 B, this is ≥120 B. Run it as its own slice with the full
+      battery (cheap insurance) before spending against it.
+      ⚠️ SIBLING FINDINGS, both small: the `SLA A` class the idea came from is
+      ALREADY EXHAUSTED (0 left; 17 `add a,a` / 149 `xor a` / 13 `rlca` already
+      applied), and `ld a,0`->`xor a` is 9 sites but flag-UNSAFE (needs
+      liveness, ≤9 B) — `scratchpad/peephole_scan.py`.
+
 - [ ] ⚠️ **AN UNNAMED OUTCOME READS AS NO OUTCOME, AND THE FIX MOVES THE HOLE
       ONE MESSAGE ALONG.** Filed 2026-08-23, D-CLRTRAP §5 — a probe-design
       residual, not a BASIC one. `face()` knew only about a numeric fence, so an

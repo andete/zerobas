@@ -104,10 +104,68 @@ request/resume protocol per verb, and the resident stub still costs page-1 bytes
 even as it frees more. Unpriced here — pricing it means picking a verb and
 counting its value requests, which is a slice.
 
+## 3b. Route D — the peephole encoding seam (added 2026-08-24)
+
+Prompted by a note that the tree has "plenty of Z80 size tricks like `ADD A,A`
+instead of `SLA A`." That is a whole class the structural routes above miss: no
+routine moves, each hit is a local −1 B, and it works on a 2-B page because the
+wins are independent.
+
+### The `SLA A` class the note named is ALREADY EXHAUSTED
+
+`scratchpad/peephole_scan.py`, main-image source, calibrated (a planted `sla a`
+is matched; the empty classes are empty in code, present only in comments):
+
+    sla a / rlc a / rrc a / rl a / rr a / cp 0   ->   0 candidates
+    ld a,0 -> xor a                              ->   9 candidates (-1 B, but flag-UNSAFE)
+
+The tricks are already applied throughout: **17 `add a,a`, 149 `xor a`, 13
+`rlca`**. So the specific lever named is spent. The 9 `ld a,0` hits are NOT
+mechanical — `xor a` clobbers every flag where `ld a,0` clobbers none, and
+`ld a,0` is often written precisely to preserve flags for a later `jr`. Each
+needs flag-liveness, which is the differential's job, for at most 9 B.
+
+### But the FAMILY has a large, unexploited, and uniquely SAFE member: `jp -> jr`
+
+`scratchpad/peephole_jr.py` walks the assembled image and counts `jp`/`jp cc`
+whose target is already within `jr` range (`jr` has no pe/po/p/m form, so those
+16 are excluded):
+
+    155 convertible sites  (120 in PAGE 1, 35 in the low region)   -1 B each
+
+🎯 **THIS IS A FLOOR, NOT A CEILING.** Converting a `jp`→`jr` shifts every later
+byte DOWN by one, which only *tightens* other displacements — forward targets
+move closer, backward gaps shrink — so no conversion knocks another out of
+range, all 155 convert together, and the shrink may pull currently-just-out-of-
+range jumps IN. The real yield is ≥ 120 B in page 1.
+
+🔴 **AND IT IS THE SAFEST CARVE CLASS IN THE TREE, by construction.** `jp` and
+`jr` are flag-identical and control-flow-identical; the ONLY difference is range,
+and pasmo *enforces* range — a too-far `jr` fails the build. So **"it assembles"
+≡ "it is correct"**: no flag-liveness reasoning (unlike `ld a,0`), no
+position-independence proof (unlike the dup-span collapse), no differential
+needed to establish safety. The differential becomes cheap insurance, not the
+authority.
+
+**PROVEN, not argued:** converting one page-1 site (`jp nz,elg_draw`,
+`basic/graphics.asm`) and rebuilding moved the wall **2 B → 3 B**; reverted.
+
+⚠️ **The one real judgment call is SPEED, not safety.** `jr` is 12/7 cyc vs
+`jp` 10, so a hot loop (the tokeniser, the interpreter dispatch, float inner
+loops) may keep its `jp` deliberately. That is a per-site call on ~120 sites,
+not a correctness gate — a blanket page-1 conversion is correct however many hot
+sites it touches; it would only be slower at those. The high-value, low-argument
+cut is the page-1 sites that are demonstrably not hot.
+
+📏 **Why these exist:** pasmo does not auto-shorten `jp`→`jr`, and a `jp` written
+when its target was once far (or for uniformity) is never revisited when code
+later moves closer. 155 is what has accumulated.
+
 ## 4. What this changes
 
-* **Do not open the range-check slice expecting a dup-span carve to fund it.**
-  4 B is the whole seam.
+* **The range-check slice's funding is Route D, not a dup-span carve.** The
+  dup-span seam is 4 B; the `jp`→`jr` seam is ≥120 B in page 1, mechanically
+  safe, and proven to move the wall.
 * **Do not open an eviction slice for a printing or erroring verb.** The tool
   refuses it in seconds; the design that would satisfy it is Route C.
 * ⚠️ `tools/carve_scout.py --census` **prints nothing and exits 0 without

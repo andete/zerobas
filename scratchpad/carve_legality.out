@@ -1,0 +1,66 @@
+denominator: 2492 symbols, 1143 in main page 1, 40 source files walked
+
+=== FILE granularity: entries = labels called from OUTSIDE the file
+  refused    137 B  basic/bload.asm            through-p1= 311 data= 6 blockers=3
+  refused     55 B  basic/clear.asm            through-p1= 317 data= 6 blockers=1
+  refused    961 B  basic/cload.asm            through-p1= 313 data= 8 blockers=6
+  refused    258 B  basic/deffn.asm            through-p1= 301 data= 6 blockers=12
+  refused   1919 B  basic/expr.asm             through-p1= 209 data= 6 blockers=104
+  refused    180 B  basic/fat.asm              through-p1=   0 data= 0 blockers=1
+  refused    589 B  basic/field.asm            through-p1=   6 data= 0 blockers=1
+  refused   1629 B  basic/files.asm            through-p1= 314 data= 8 blockers=4
+  refused   1313 B  basic/graphics.asm         through-p1= 302 data= 6 blockers=12
+  refused    173 B  basic/initext.asm          through-p1=   0 data= 0 blockers=2
+  refused   1201 B  basic/interp.asm           through-p1= 295 data= 6 blockers=18
+  refused    187 B  basic/list.asm             through-p1=   4 data= 0 blockers=5
+  refused     17 B  basic/main.asm             through-p1= 315 data= 6 blockers=0
+  refused    422 B  basic/missing.asm          through-p1= 313 data= 6 blockers=2
+  CLEAN      229 B  basic/playsvc.asm          through-p1=   0 data= 0 blockers=0
+  refused    628 B  basic/print.asm            through-p1= 333 data= 6 blockers=20
+  refused    446 B  basic/printusing.asm       through-p1= 306 data= 6 blockers=7
+  refused   2421 B  basic/program.asm          through-p1= 308 data= 6 blockers=8
+  refused    130 B  basic/repl.asm             through-p1= 314 data= 8 blockers=7
+  refused    593 B  basic/save.asm             through-p1= 307 data= 6 blockers=7
+  refused    318 B  basic/strvar.asm           through-p1= 279 data= 6 blockers=34
+  refused     86 B  basic/subrom-boot.asm      through-p1=   0 data= 0 blockers=1
+  refused     56 B  basic/time.asm             through-p1= 315 data= 6 blockers=0
+  refused    329 B  basic/traps.asm            through-p1= 314 data= 6 blockers=1
+  refused    204 B  basic/usr.asm              through-p1= 313 data= 6 blockers=2
+  refused    711 B  basic/vars.asm             through-p1= 274 data= 5 blockers=42
+  refused     60 B  basic/vdpio.asm            through-p1= 314 data= 6 blockers=3
+  -> 1 of the files walked are page-0-evictable
+
+=== LABEL granularity: every page-1 label as a lone entry
+  348 of 1143 page-1 labels are page-0-clean on their own  (3328 B, but see the note below)
+         66 B  trap_return_check
+         65 B  CAS_LOW_1200
+         51 B  tok_skip
+         49 B  gosub_push
+         48 B  psv_fetch
+         43 B  sidr_lp
+         41 B  sub_int_install
+         41 B  fig_have
+         41 B  fat_io_create
+         40 B  fat_io_putbyte
+         38 B  pcr_noquote
+         37 B  cal_getbyte
+         35 B  psv_env
+         35 B  fat_io_getbyte
+         31 B  fadd_free
+
+  the escapes that refuse the most labels (the STRUCTURAL blockers):
+        694 labels blocked by  LPTOUT @ $00A5
+        693 labels blocked by  TAPOON @ $00EA
+        693 labels blocked by  TAPOUT @ $00ED
+        693 labels blocked by  TAPOOF @ $00F0
+        659 labels blocked by  CHPUT @ $00A2
+        625 labels blocked by  CALSLT @ $001C
+        594 labels blocked by  d10_lp @ $3275
+        594 labels blocked by  d10_skip @ $327E
+        591 labels blocked by  pes_pending @ $2829
+        589 labels blocked by  div10 @ $3272
+
+  ⚠️ A CLEAN LEAF IS NOT A CARVE. These are single labels; moving one costs a
+     tenant entry + a resident stub, and its callers stay in page 1. The number
+     that matters is a CLUSTER that is clean TOGETHER, which the file view above
+     is the honest proxy for.
