@@ -28,6 +28,7 @@ Oracle basis (sound.asm §BEEP + the VG-8020 captures in spec-basic-audio-beep.m
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -37,8 +38,8 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
-ROM = "/tmp/zb_beep_sub.rom"
-SYM = "/tmp/zb_beep_sub.sym"
+ROM = tp("zb_beep_sub.rom")
+SYM = tp("zb_beep_sub.sym")
 
 
 def build():

@@ -33,6 +33,7 @@ every real caller reaches instead of a marshalling layer that no longer exists.
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -52,10 +53,10 @@ BASIC_BASE = 0x2812
 # note). `name_cmp` is inside the page-1 fatprim tenant, i.e. $4000+.
 SUB_BASE = 0x0000
 
-ROM = "/tmp/zb_wildcard.rom"
-SYM = "/tmp/zb_wildcard.sym"
-SUB_ROM = "/tmp/zb_wildcard_sub.rom"
-SUB_SYM = "/tmp/zb_wildcard_sub.sym"
+ROM = tp("zb_wildcard.rom")
+SYM = tp("zb_wildcard.sym")
+SUB_ROM = tp("zb_wildcard_sub.rom")
+SUB_SYM = tp("zb_wildcard_sub.sym")
 SRC = 0xC400   # scratch source filename buffer
 
 

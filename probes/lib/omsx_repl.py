@@ -460,12 +460,29 @@ def tcl_writes(body: str, addr: int) -> bool:
     return bool(re.search(rf"debug write memory\s+{addr}\b", body))
 
 
+# --- emulated-time heartbeat (parallel-safety) -------------------------------
+# openMSX runs `throttle off`, so the WALL time to reach a scheduled `after time`
+# capture varies with how much host CPU the process gets -- on a slow/contended
+# core a capture that is fine solo can miss a fixed WALL deadline and read as a
+# `None` wedge (docs/spec-probe-emutime-watchdog.md). The kill must therefore be
+# gated on EMULATED-time PROGRESS, not wall time: these callbacks write the
+# emulated clock to a heartbeat file at HB_EMU_STEP emulated-second intervals, and
+# _run_batch kills only when that file stops advancing (a real hang/crash), never
+# for merely running slow. A BASIC infinite loop still advances emulated time, and
+# the capture+exit are scheduled in emulated time regardless of what BASIC does, so
+# every non-frozen run completes.
+HB_EMU_STEP = 2.0        # emulated seconds between heartbeats
+HB_STALL = 90.0          # wall seconds with no emu-time progress -> declare a hang
+HB_ABSCAP = 1800.0       # paranoia backstop (wall s); stall detection is primary
+
+
 def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          boot: float, step: float, cap_gap: float,
          reset: tuple[str, ...], capture="screen",
          holds: list[tuple[int, int] | None] | None = None,
          hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
-         slots_out: list[tuple[int, str]] | None = None) -> str:
+         slots_out: list[tuple[int, str]] | None = None,
+         hb_path: str | None = None) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
     (CHGET drains KEYBUF into the line editor) before the next write overwrites
@@ -585,7 +602,21 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         body.append(f'after time {t:.1f} {{ puts $__f "case.{idx}='
                     f'{cap}"; flush $__f }}')
         t += cap_gap
+    # emulated-time heartbeat across the whole timeline (see HB_* above): the host
+    # watchdog reads hb_path's mtime and kills only when it STOPS advancing.
+    if hb_path:
+        h = HB_EMU_STEP
+        while h < t:
+            body.append(f'after time {h:.1f} {{ __hb }}')
+            h += HB_EMU_STEP
     body.append(f"after time {t:.1f} {{ close $__f; exit }}")
+    # A REDUNDANT emulated-time safety-exit a margin past the real one. The primary
+    # exit above is guest-independent (openMSX fires `after time` from its own
+    # scheduler, so a BASIC/ROM infinite loop cannot suppress it), but if that
+    # callback were ever dropped this bounds the run in EMULATED time regardless of
+    # host speed -- the guest can loop forever and openMSX still self-terminates.
+    # Host FREEZES (emulated clock stops) are caught by the wall-side stall watchdog.
+    body.append(f"after time {t + 30.0:.1f} {{ catch {{close $__f}}; exit }}")
     return (
         "set throttle off\n"
         + "".join(f"{p}\n" for p in prologue)
@@ -658,6 +689,14 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         # __inj: __key plus the submitting CR (appended here so a literal CR byte
         # never has to survive Tcl brace-quoting).
         + "proc __inj {s} { append s \"\\r\"; __key $s }\n"
+        # __hb: rewrite the heartbeat file with the current emulated clock. The
+        # host watchdog watches this file's MTIME (not its value): a beat that
+        # stops arriving means the SCHEDULED TIMELINE stopped progressing -- a
+        # frozen/crashed emulator OR a guest that escaped it (e.g. a reset loop
+        # that dropped the pending callbacks) -- and both must be killed. `catch`
+        # so a transient write error never derails the run.
+        + (f"proc __hb {{}} {{ catch {{set __h [open {{{hb_path}}} w];"
+           f" puts $__h [machine_info time]; close $__h}} }}\n" if hb_path else "")
         + "\n".join(body) + "\n")
 
 
@@ -676,7 +715,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                holds: list[tuple[int, int] | None] | None = None,
                hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
                timeout: float = 240.0, omsx: str | None = None,
-               cart: str | None = None, diska: str | None = None
+               cart: str | None = None, diska: str | None = None,
+               stall: float | None = None, abscap: float | None = None
                ) -> tuple[list[str | None], dict[int, list[int]], list]:
     """One boot, `cases` driven, returning `(captures, delivered, echo)` -- the
     raw engine. `delivered` maps a stored-mode case index to the line-number
@@ -706,12 +746,14 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     binary = find_omsx(omsx)
     out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="repl_", delete=False).name
     tcl = out + ".tcl"
+    hb = out + ".hb"                     # emulated-time heartbeat (parallel-safety)
     slots: list[tuple[int, str]] = []
     with open(tcl, "w") as f:
         f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
-                     holds, hold_secs, prologue, slots))
-    if os.path.exists(out):
-        os.unlink(out)
+                     holds, hold_secs, prologue, slots, hb_path=hb))
+    for p in (out, hb):
+        if os.path.exists(p):
+            os.unlink(p)
 
     cmd = [binary, "-machine", machine]
     if cart:
@@ -722,12 +764,39 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
 
     proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL, start_new_session=True)
-    deadline = time.time() + timeout
-    while proc.poll() is None and time.time() < deadline:
+    # EMULATED-TIME watchdog (docs/spec-probe-emutime-watchdog.md). openMSX runs
+    # `throttle off`, so wall-time to reach a scheduled capture is host-speed-
+    # dependent -- a fixed wall deadline SIGKILLs slow/contended (or E-core) runs
+    # mid-timeline and reads as a `None` wedge, which is what broke the parallel
+    # battery. Instead: kill only when the heartbeat file stops ADVANCING for
+    # `stall` wall-seconds (a frozen/crashed emulator, or a guest that escaped the
+    # scheduled timeline and dropped its callbacks), never for merely running slow.
+    # A guest infinite loop / reset loop can't hang the run: the capture+exit are
+    # openMSX `after time` events fired from its own scheduler, independent of guest
+    # code. `abscap` is a generous final backstop only. Env overrides:
+    # ZEROBAS_OMSX_STALL / ZEROBAS_OMSX_ABSCAP.
+    stall_s = float(os.environ.get("ZEROBAS_OMSX_STALL", stall if stall is not None else HB_STALL))
+    abscap_s = max(timeout, float(os.environ.get("ZEROBAS_OMSX_ABSCAP",
+                                                 abscap if abscap is not None else HB_ABSCAP)))
+    start = time.time()
+    last_beat = start                   # wall time of the most recent heartbeat
+    last_mtime = None
+    while proc.poll() is None:
         time.sleep(0.05)
+        now = time.time()
+        try:
+            m = os.path.getmtime(hb)
+        except OSError:
+            m = None
+        if m is not None and m != last_mtime:
+            last_mtime, last_beat = m, now
+        if now - last_beat > stall_s or now - start > abscap_s:
+            break
     timed_out = proc.poll() is None
     if timed_out:
         os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    if os.path.exists(hb):
+        os.unlink(hb)
 
     caps: dict[int, str] = {}
     delivered: dict[int, list[int]] = {}

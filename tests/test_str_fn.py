@@ -28,6 +28,7 @@ Oracle basis:
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -37,8 +38,8 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine, carry  # noqa: E402
 
-ROM = "/tmp/zb_strfn.rom"
-SYM = "/tmp/zb_strfn.sym"
+ROM = tp("zb_strfn.rom")
+SYM = tp("zb_strfn.sym")
 RELOC_BASE = 0x2812
 
 SRC = 0xC000     # ASCII expression source

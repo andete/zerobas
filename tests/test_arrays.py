@@ -40,6 +40,7 @@ disassembly -- the byte layout is zerobas's own choice, like VARTAB/STRTAB).
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -49,8 +50,8 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine, carry  # noqa: E402
 
-ROM = "/tmp/zb_arrays_sub.rom"
-SYM = "/tmp/zb_arrays_sub.sym"
+ROM = tp("zb_arrays_sub.rom")
+SYM = tp("zb_arrays_sub.sym")
 
 # Scratch program-text area for these tests: PRGEND is pointed at a fixed
 # scratch address (well inside RAM, clear of any other structure) so ARYBASE

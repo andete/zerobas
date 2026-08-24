@@ -21,6 +21,7 @@ FOR/NEXT divergence (program.asm ex_for comment).
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -36,8 +37,8 @@ from msxtest import Machine  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 BASIC_BASE = 0x2812
 
-ROM = "/tmp/zb_cflow.rom"
-SYM = "/tmp/zb_cflow.sym"
+ROM = tp("zb_cflow.rom")
+SYM = tp("zb_cflow.sym")
 SRC = 0xC000          # ASCII line body for tokenise
 TOKB = 0xC100         # tokenised body buffer
 

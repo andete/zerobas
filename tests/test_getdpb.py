@@ -16,6 +16,7 @@ mocking, and an oracle assertion — the whole harness loop end to end.
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -31,8 +32,8 @@ from msxtest import Machine, carry  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 DISK_BASE = 0x4000
 
-ROM = "/tmp/zerobas_disk_ut.rom"
-SYM = "/tmp/zerobas_disk_ut.sym"
+ROM = tp("zerobas_disk_ut.rom")
+SYM = tp("zerobas_disk_ut.sym")
 
 # --- 720 KB volume geometry (standard MSX 9-sector, double-sided) -----------
 # reserved=1, FATs=2, secPerFAT=3, rootEnt=112(->7 root secs), secPerClus=2.

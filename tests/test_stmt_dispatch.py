@@ -59,6 +59,7 @@ Run:  python3 tests/test_stmt_dispatch.py     (or `make unit-test`)
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -268,7 +269,7 @@ def handler_names(m):
 
 
 def check_build(src_name, tag, rom_base):
-    rom, sym = f"/tmp/zb_disp_{tag}.rom", f"/tmp/zb_disp_{tag}.sym"
+    rom, sym = tp(f"zb_disp_{tag}.rom"), tp(f"zb_disp_{tag}.sym")
     build(src_name, rom, sym)
     m = Machine(rom, sym, rom_base=rom_base)
     table = read_table(m)

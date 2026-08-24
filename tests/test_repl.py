@@ -14,6 +14,7 @@ CR,LF.
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -29,8 +30,8 @@ from msxtest import Machine  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 BASIC_BASE = 0x2812
 
-ROM = "/tmp/zb_repl.rom"
-SYM = "/tmp/zb_repl.sym"
+ROM = tp("zb_repl.rom")
+SYM = tp("zb_repl.sym")
 
 
 def build():

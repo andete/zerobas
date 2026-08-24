@@ -32,6 +32,7 @@ Oracle basis:
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -47,8 +48,8 @@ from msxtest import Machine  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 BASIC_BASE = 0x2812
 
-ROM = "/tmp/zb_print.rom"
-SYM = "/tmp/zb_print.sym"
+ROM = tp("zb_print.rom")
+SYM = tp("zb_print.sym")
 
 
 def build():

@@ -17,6 +17,7 @@ hazards, so it is the fast regression layer beneath the differential probes.
 import os
 import re
 import subprocess
+from _tmp import tp
 from z80 import Z80
 
 _SENTINEL = 0xFFFF          # return address that marks "the routine returned"
@@ -71,8 +72,8 @@ def _build_subrom():
     where a real page-0 or page-1 CALSLT would map them into CPU space. Callers
     slice the piece they need (see _install_subrom_bridge)."""
     if "bytes" not in _SUB_CACHE:
-        rom = "/tmp/msxtest_sub.rom"
-        sym = "/tmp/msxtest_sub.sym"
+        rom = tp("msxtest_sub.rom")
+        sym = tp("msxtest_sub.sym")
         subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", rom, sym],
                        check=True, capture_output=True, cwd=_ROOT)
         with open(rom, "rb") as fh:

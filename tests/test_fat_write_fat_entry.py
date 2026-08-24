@@ -39,6 +39,7 @@ lands + is oracle-confirmed, set STRADDLE_FIXED = True to make them strict.
 STRADDLE_FIXED = True        # fix landed 2026-07-04 (oracle-confirmed vs stock)
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -54,8 +55,8 @@ from msxtest import Machine, carry  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 DISK_BASE = 0x4000
 
-ROM = "/tmp/zb_fatwrite_ut.rom"
-SYM = "/tmp/zb_fatwrite_ut.sym"
+ROM = tp("zb_fatwrite_ut.rom")
+SYM = tp("zb_fatwrite_ut.sym")
 
 FATSTART = 1
 SECSIZE = 512

@@ -18,6 +18,7 @@ found and not-found (hit end-marker) outcomes, and case-insensitive matching.
 """
 
 import os
+from _tmp import tp
 import struct
 import subprocess
 import sys
@@ -34,8 +35,8 @@ from msxtest import Machine, carry, zero  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 DISK_BASE = 0x4000
 
-ROM = "/tmp/zb_fatfind_ut.rom"
-SYM = "/tmp/zb_fatfind_ut.sym"
+ROM = tp("zb_fatfind_ut.rom")
+SYM = tp("zb_fatfind_ut.sym")
 
 FIRSTROOT = 7        # first root-dir sector (720 KB BPB)
 ROOTSECS = 1         # one sector = 16 entries, enough for this fixture

@@ -32,6 +32,7 @@ Sysvar addresses (sysvars.inc; used verbatim via m.sym):
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -47,8 +48,8 @@ from msxtest import Machine  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 BASIC_BASE = 0x2812
 
-ROM = "/tmp/zb_io.rom"
-SYM = "/tmp/zb_io.sym"
+ROM = tp("zb_io.rom")
+SYM = tp("zb_io.sym")
 BUF = 0xC000   # scratch token buffer
 
 

@@ -17,6 +17,7 @@ GSP matches the service record re-enables the trap to ON.
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -26,8 +27,8 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine, carry  # noqa: E402
 
-RES_ROM = "/tmp/zb_traps_reloc.rom"
-RES_SYM = "/tmp/zb_traps_reloc.sym"
+RES_ROM = tp("zb_traps_reloc.rom")
+RES_SYM = tp("zb_traps_reloc.sym")
 RELOC_BASE = 0x2812
 
 # trap state-byte encoding (basic/sysvars.inc)

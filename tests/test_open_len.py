@@ -18,6 +18,7 @@ output. r=256 reproduces the historical 2-per-sector behaviour exactly.
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -40,10 +41,10 @@ from msxtest import Machine  # noqa: E402
 SUB_BASE = 0x0000     # sub image: flat $0000-$7FFF, page-0 low / page-1 high
 BASIC_BASE = 0x2812   # the shipped BASIC image's org
 
-SUB_ROM = "/tmp/zb_openlen_sub.rom"
-SUB_SYM = "/tmp/zb_openlen_sub.sym"
-ROM = "/tmp/zb_openlen.rom"
-SYM = "/tmp/zb_openlen.sym"
+SUB_ROM = tp("zb_openlen_sub.rom")
+SUB_SYM = tp("zb_openlen_sub.sym")
+ROM = tp("zb_openlen.rom")
+SYM = tp("zb_openlen.sym")
 
 
 def build():

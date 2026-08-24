@@ -30,6 +30,7 @@ Stubs:
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -45,8 +46,8 @@ from msxtest import Machine  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 BASIC_BASE = 0x2812
 
-ROM  = "/tmp/zb_prog.rom"
-SYM  = "/tmp/zb_prog.sym"
+ROM  = tp("zb_prog.rom")
+SYM  = tp("zb_prog.sym")
 TOKBUF_SCRATCH = 0xE160  # TOKBUF from sysvars.inc (safe scratch area)
 
 

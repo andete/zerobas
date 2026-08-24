@@ -23,6 +23,7 @@ against the real VG-8020 in S2/S3. No disassembly.
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -32,8 +33,8 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
-ROM = "/tmp/zb_midstmt.rom"
-SYM = "/tmp/zb_midstmt.sym"
+ROM = tp("zb_midstmt.rom")
+SYM = tp("zb_midstmt.sym")
 RELOC_BASE = 0x2812
 
 SRC = 0xC000     # ASCII statement source

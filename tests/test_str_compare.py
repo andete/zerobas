@@ -45,6 +45,7 @@ so the full behaviour is exercised here; the openMSX probe
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -54,8 +55,8 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
-ROM = "/tmp/zb_strcmp.rom"
-SYM = "/tmp/zb_strcmp.sym"
+ROM = tp("zb_strcmp.rom")
+SYM = tp("zb_strcmp.sym")
 RELOC_BASE = 0x2812
 
 SRC = 0xC000       # ASCII expression / line-body source

@@ -20,6 +20,7 @@ Oracle basis per case group:
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -35,8 +36,8 @@ from msxtest import Machine, carry  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 BASIC_BASE = 0x2812
 
-ROM = "/tmp/zb_vars.rom"
-SYM = "/tmp/zb_vars.sym"
+ROM = tp("zb_vars.rom")
+SYM = tp("zb_vars.sym")
 
 # Scratch buffers for name strings placed in free RAM clear of the variable tables.
 NAMEBUF = 0xC100   # small scratch for variable-name ASCII strings

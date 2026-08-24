@@ -43,6 +43,7 @@ PROVENANCE.md as black-box-oracle-derived, not copied from any ROM listing.
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -52,8 +53,8 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine, carry, zero  # noqa: E402
 
-ROM = "/tmp/zb_tape.rom"
-SYM = "/tmp/zb_tape.sym"
+ROM = tp("zb_tape.rom")
+SYM = tp("zb_tape.sym")
 ROM_BASE = 0x00A5          # tape.asm's lowest org ($00A5 LPTOUT) -> flat image starts here
 
 

@@ -19,6 +19,7 @@ graphics.py) proves. Never ROM disassembly.
 import decimal
 import json
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -321,10 +322,10 @@ def pymirror(steps):
                 pts.add((sx * y, sy * x))
     return pts
 
-SUB_ROM = "/tmp/zb_graphics_sub.rom"
-SUB_SYM = "/tmp/zb_graphics_sub.sym"
-RES_ROM = "/tmp/zb_graphics_res.rom"
-RES_SYM = "/tmp/zb_graphics_res.sym"
+SUB_ROM = tp("zb_graphics_sub.rom")
+SUB_SYM = tp("zb_graphics_sub.sym")
+RES_ROM = tp("zb_graphics_res.rom")
+RES_SYM = tp("zb_graphics_res.sym")
 RELOC_BASE = 0x2812
 
 # --- gfx_calc_addr (G1): (x,y) -> (pattern byte addr, MSB-first mask) ---------

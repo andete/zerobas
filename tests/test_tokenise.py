@@ -15,6 +15,7 @@ a rich opcode set: match_kw's IX/IY table walk, the *10 digit loop, branch_linen
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -30,8 +31,8 @@ from msxtest import Machine  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 BASIC_BASE = 0x2812
 
-ROM = "/tmp/zerobas_basic_ut.rom"
-SYM = "/tmp/zerobas_basic_ut.sym"
+ROM = tp("zerobas_basic_ut.rom")
+SYM = tp("zerobas_basic_ut.sym")
 SRC = 0xC000          # ASCII source line (free RAM)
 DST = 0xC100          # token output buffer
 

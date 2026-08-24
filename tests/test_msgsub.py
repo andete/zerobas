@@ -29,6 +29,7 @@ them.
 """
 
 import os
+from _tmp import tp
 import re
 import subprocess
 import sys
@@ -36,8 +37,8 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
-ROM = "/tmp/zb_msgsub_sub.rom"
-SYM = "/tmp/zb_msgsub_sub.sym"
+ROM = tp("zb_msgsub_sub.rom")
+SYM = tp("zb_msgsub_sub.sym")
 
 # The sub-ROM is a flat $0000-based 32 KB image spanning BOTH pages, so a symbol
 # address IS its file offset -- no relocation base, unlike test_msgenc's LOW.

@@ -35,6 +35,7 @@ disk/docs/tier2-m31-rdblk-randrecord-spec.md.
 """
 
 import os
+from _tmp import tp
 import struct
 import sys
 
@@ -49,8 +50,8 @@ from msxtest import Machine  # noqa: E402
 # defaulted (docs/spec-lean-retire-s3-gates.md §5, F-U).
 DISK_BASE = 0x4000
 
-ROM = "/tmp/zb_wrblk_e2e_ut.rom"     # same build as test_wrblk_body_e2e.py (shared)
-SYM = "/tmp/zb_wrblk_e2e_ut.sym"
+ROM = tp("zb_wrblk_e2e_ut.rom")     # same build as test_wrblk_body_e2e.py (shared)
+SYM = tp("zb_wrblk_e2e_ut.sym")
 
 FCB = 0xDA40
 DTA = 0xC000

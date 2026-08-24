@@ -23,14 +23,15 @@ every row "agree" on the empty string.
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
-ROM = "/tmp/zb_msgenc_reloc.rom"
-SYM = "/tmp/zb_msgenc_reloc.sym"
+ROM = tp("zb_msgenc_reloc.rom")
+SYM = tp("zb_msgenc_reloc.sym")
 LOW = 0x2812                    # basic/main-reloc.asm ROM_BASE: image offset origin
 
 # The decoded text every message MUST still produce, typed independently of the

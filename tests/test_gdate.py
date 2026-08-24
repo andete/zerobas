@@ -24,6 +24,7 @@ no stock-ROM disassembly. The handler is this project's own code (kernel.asm).
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -39,8 +40,8 @@ from msxtest import Machine  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 DISK_BASE = 0x4000
 
-ROM = "/tmp/zb_gdate_ut.rom"
-SYM = "/tmp/zb_gdate_ut.sym"
+ROM = tp("zb_gdate_ut.rom")
+SYM = tp("zb_gdate_ut.sym")
 
 # Expected _GDATE return image (the $CC04 contract, docs/tier2-gdate-spec.md §4).
 EXPECT = {"hl": 0x07C0, "de": 0x0101, "bc": 0x0000, "a": 0x00, "f": 0x44}

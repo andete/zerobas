@@ -29,6 +29,7 @@ Oracle basis (independently derivable, never the ROM's own output):
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -38,8 +39,8 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine, carry, zero  # noqa: E402
 
-ROM = "/tmp/zb_input.rom"
-SYM = "/tmp/zb_input.sym"
+ROM = tp("zb_input.rom")
+SYM = tp("zb_input.sym")
 RELOC_BASE = 0x2812
 
 

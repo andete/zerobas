@@ -21,6 +21,7 @@ Oracle basis per case group:
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -36,8 +37,8 @@ from msxtest import Machine, carry  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 BASIC_BASE = 0x2812
 
-ROM = "/tmp/zb_vars.rom"
-SYM = "/tmp/zb_vars.sym"
+ROM = tp("zb_vars.rom")
+SYM = tp("zb_vars.sym")
 
 # Free scratch RAM for input tokens / name strings.
 TOKBUF  = 0xC100   # token/ASCII operand buffer (clear of VARTAB/STRTAB)

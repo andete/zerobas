@@ -30,6 +30,7 @@ verified against the encode matrix's own FAC bytes) and `flt_neg`/
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -39,16 +40,16 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
-ROM = "/tmp/zb_float.rom"
-SYM = "/tmp/zb_float.sym"
+ROM = tp("zb_float.rom")
+SYM = tp("zb_float.sym")
 RELOC_BASE = 0x2812
 
 # The float PRINT formatter (flt_out) was evicted to the sub-ROM (subrom S2b):
 # it now lives in build/sub.rom's page 0 and ends in `ret` (writing FOUTBUF in
 # RAM) rather than tail-calling print_string. The format matrix therefore runs
 # against a second Machine loaded from sub.rom and reads FOUTBUF directly.
-SUB_ROM = "/tmp/zb_sub.rom"
-SUB_SYM = "/tmp/zb_sub.sym"
+SUB_ROM = tp("zb_sub.rom")
+SUB_SYM = tp("zb_sub.sym")
 
 SRC = 0xC000       # ASCII literal source
 TOKBUF = 0xC100    # crunch destination

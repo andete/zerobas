@@ -21,6 +21,7 @@ contract -- no stock disassembly. See disk/docs/tier2-m28-blockrandom-spec.md.
 """
 
 import os
+from _tmp import tp
 import struct
 import subprocess
 import sys
@@ -37,8 +38,8 @@ from msxtest import Machine, carry  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 DISK_BASE = 0x4000
 
-ROM = "/tmp/zb_wrblk_e2e_ut.rom"
-SYM = "/tmp/zb_wrblk_e2e_ut.sym"
+ROM = tp("zb_wrblk_e2e_ut.rom")
+SYM = tp("zb_wrblk_e2e_ut.sym")
 
 SECSIZE = 512
 FATSTART = 1

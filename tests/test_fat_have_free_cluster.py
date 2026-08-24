@@ -24,6 +24,7 @@ FAT spec §3.2 ($000 = free, $FF8-$FFF = end-of-chain) -- no stock disassembly.
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -39,8 +40,8 @@ from msxtest import Machine, carry  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 DISK_BASE = 0x4000
 
-ROM = "/tmp/zb_fathavefree_ut.rom"
-SYM = "/tmp/zb_fathavefree_ut.sym"
+ROM = tp("zb_fathavefree_ut.rom")
+SYM = tp("zb_fathavefree_ut.sym")
 
 FATSTART, SECSIZE, FAT_SECTORS = 1, 512, 3
 NUMFATS, SECPERFAT = 2, 3

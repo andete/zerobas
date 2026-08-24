@@ -34,6 +34,7 @@ Three rows, and all three are load-bearing:
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -46,8 +47,8 @@ from msxtest import Machine, StackLost  # noqa: E402
 # The shipped image at its ORG, named here rather than defaulted -- msxtest's old
 # default was $4000, the retired lean cart's org (docs/spec-lean-retire-s3-gates.md §5).
 BASIC_BASE = 0x2812
-ROM = "/tmp/zb_hguard.rom"
-SYM = "/tmp/zb_hguard.sym"
+ROM = tp("zb_hguard.rom")
+SYM = tp("zb_hguard.sym")
 CODE = 0xC000    # scratch: hand-assembled Z80 for the synthetic rows
 SPWORD = 0xF000  # holds the bogus SP the synthetic row loads (left 0 = zeroed RAM)
 BUF = 0xC100     # token buffer for the in-situ row

@@ -26,6 +26,7 @@ Oracle basis (each expected value independently derivable, never from the ROM):
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -41,8 +42,8 @@ from msxtest import Machine  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 BASIC_BASE = 0x2812
 
-ROM = "/tmp/zb_printusing.rom"
-SYM = "/tmp/zb_printusing.sym"
+ROM = tp("zb_printusing.rom")
+SYM = tp("zb_printusing.sym")
 SBUF  = 0xC200           # scratch [len][ptr] descriptor for the string cases
 SBODY = 0xC240           # the body those descriptors point at
 

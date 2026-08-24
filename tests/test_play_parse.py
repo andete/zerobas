@@ -17,6 +17,7 @@ descriptor's byte count / buffer address land at the reference addresses.
 """
 
 import os
+from _tmp import tp
 import subprocess
 import sys
 
@@ -27,8 +28,8 @@ sys.path.insert(0, HERE)
 from msxtest import Machine  # noqa: E402
 import mml_ref  # noqa: E402
 
-SUB_ROM = "/tmp/zb_playparse_sub.rom"
-SUB_SYM = "/tmp/zb_playparse_sub.sym"
+SUB_ROM = tp("zb_playparse_sub.rom")
+SUB_SYM = tp("zb_playparse_sub.sym")
 
 # Work-area addresses (mirror basic/sysvars.inc; the tenant writes these).
 QUETAB = 0xF959

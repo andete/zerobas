@@ -23,6 +23,7 @@ cluster +28/29, rec-in-cluster +30) -- no stock disassembly.
 """
 
 import os
+from _tmp import tp
 import struct
 import subprocess
 import sys
@@ -39,8 +40,8 @@ from msxtest import Machine  # noqa: E402
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 DISK_BASE = 0x4000
 
-ROM = "/tmp/zb_wrseq_position_ut.rom"
-SYM = "/tmp/zb_wrseq_position_ut.sym"
+ROM = tp("zb_wrseq_position_ut.rom")
+SYM = tp("zb_wrseq_position_ut.sym")
 
 FCB = 0xDA40
 RECSIZE = 128
