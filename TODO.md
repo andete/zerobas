@@ -120,12 +120,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       **not** the 3.35× on the flood — so expect a SECOND factor (per-pixel span
       walking vs a row-wise fill). Do not stop at the first explanation that fits
       one row.
-      ⚠️ **AND THERE IS A LATENT CORRECTNESS QUESTION UNDER IT**: the two engines
-      leave *different bytes* for the same visible screen ([[ntwall-scout-slice]];
-      `POINT` reads 15 on all three and is blind to it). A SUBSEQUENT draw over a
-      filled area reads that state — so the divergence may be observable after a
-      second operation even though the fill itself agrees. **That is a gate row
-      nobody has written**, and it is worth more than the speed.
+      🔴 **AND THE CORRECTNESS QUESTION UNDER IT IS NOW MEASURED, AND IT IS A
+      REAL BUG — `PAINT` WRITES THE WRONG VRAM REPRESENTATION.** Not cosmetic:
+      **`VPEEK` is a BASIC statement**, so a program can read these bytes, and
+      SCREEN 2's colour-clash rules make the NEXT write to a cell depend on which
+      nibble currently holds what. Scope measured 2026-08-24
+      (`scratchpad/vram_fidelity.py`, both tables captured live, 8 primitives ×
+      3 machines):
+
+      | primitive | zerobas vs both references |
+      |---|---|
+      | blank SCREEN 2, PSET, PSET colour 1, LINE, LINE BF, CIRCLE | ✅ **byte-identical** |
+      | PAINT bounded / PAINT flood | 🔴 **DIFFERS** (2592 / 12288 bytes) |
+
+      🟢 **THE SHARED PIXEL-WRITE PATH IS FAITHFUL** — byte for byte, colour-clash
+      behaviour included (`linebf` matches across 2882 colour cells). **The defect
+      is PAINT's own fill shortcut**: on a blank screen the references leave
+      pattern `0x00` / colour `0x0F` (fill by rewriting the **background** nibble,
+      pattern untouched) while zerobas leaves pattern `0xFF` / colour `0xF4` (fill
+      via the **foreground** path). Same visible screen, `POINT` 15 and `ERR 0` on
+      all three — **which is why every existing graphics gate is blind to it: they
+      all read through `POINT`.** Likely the same root as the 2.4–3.4× slowness
+      (two tables written per span instead of one), so the fix may close both.
+      ⏸️ **DEFERRED (user, 2026-08-24): the sentinel harness work is more urgent.**
+      Characterised, not fixed — pick it up with the table above and a VPEEK-level
+      gate row, which is the row nobody has written.
       💡 A standing **asymmetric** perf check falls out of the same instrument:
       RED only when an operation is significantly slower than BOTH references,
       never when it is faster.
