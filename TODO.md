@@ -82,7 +82,59 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `ZEROBAS_SAVESTATE=off`. Successor rule: warm on the SECOND sighting of a
       key. See [[parallel-gate-battery]].
 
+- [ ] 🔴⚡ **CAPTURE ON A `done` SENTINEL, NOT AT A GUESSED EMULATED TIME — THIS
+      SUPERSEDES THE BUDGET ITEM BELOW.** Filed 2026-08-24 (user), out of the
+      budget instrumentation. **The budgets are not timeouts, they are GUESSES AT
+      THE COMPLETION TIME**: `_tcl` schedules the capture at `after time
+      RUN+step`, so it fires whether or not the work finished. That is why the
+      budget cannot be cut (fires MID-FILL, and a partial result reads as
+      SEMANTICS) and why leaving it generous is ruinous — **one graphics PAINT
+      case buys 676 emulated seconds** (6 slots × `PAINT_STEP` 90) for work whose
+      worst measured need is 53.6 s.
+      🔴 **THE ROOT CAUSE IS AN OVER-GENERALISED CONSTRAINT.** The clean-room rule
+      forbids disassembling the reference ROMs → no breakpoint on *ROM internals*
+      → which became "completion cannot be detected", hence fixed-time schedules
+      everywhere. **But the PROGRAM can announce its own completion**, which
+      watches emulated *RAM* and needs no ROM knowledge on any machine:
+      `30 POKE &HE000,255` + `debug set_watchpoint write_mem 0xE000 {} {
+      <capture>; exit }`. The repo ALREADY does the sentinel pattern on the disk
+      side (`omsx_run.py --bp`, `spec-rdblk-anchor-flake.md` §2 *"the readout is
+      already sentinel-gated inside the emulator"*) and the standing lesson says
+      *gate every reading on a `done` sentinel* — the BASIC side just never got it.
+      ✅ **WHY THIS BEATS TIGHT BOUNDS**: the capture fires the instant the work
+      ends (no wasted emulated time at ANY generosity), the bound becomes a PURE
+      FAILURE DETECTOR that only fires when the test or harness actually failed,
+      **no per-case measurement is needed at all**, no budget can be cut below its
+      need, and it self-adapts to the slowest machine (zerobas writes both VRAM
+      tables, so it currently sets a floor everyone pays for).
+      ⚠️ **IT CHANGES WHAT IS MEASURED, SO IT NEEDS THE SAVESTATE TREATMENT.**
+      Today both machines are sampled at the SAME emulated instant; with sentinels
+      each is captured at ITS OWN completion. Arguably more correct (final states,
+      not an arbitrary shared moment) — but *arguably* is not a licence. Gate it
+      exactly as `savestate-check` gates restore-vs-cold: sentinel-captured
+      results **byte-identical** to fixed-time ones across the corpus, subject AND
+      both oracles, with a teeth control, BEFORE it replaces anything.
+      🔬 **FIRST STEP: verify `debug set_watchpoint write_mem` fires reliably
+      under `set throttle off`** on all three machines — the same feasibility
+      check `after realtime` and `savestate`/`loadstate` each got, and for the
+      same reason. ⚠️ Cases that ERROR never reach their `POKE`, so the generous
+      bound remains the backstop for that path — which is exactly "no bound needed
+      unless there is a test or harness failure".
+
 - [ ] ⚡ **THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS, NOT THE BOOT.**
+      ⚠️ **PARTLY SUPERSEDED by the sentinel item above** — a sentinel capture
+      makes per-case budget tuning unnecessary for every case that reaches its
+      sentinel. What survives regardless: the **two knobs are conflated** (below),
+      and the error paths still need a bound.
+      💡 **AND THE CHEAPEST WIN NEEDS NEITHER**: `step` spaces EVERY injected line,
+      not just RUN→capture, so a graphics case waits 90 emulated s between each
+      TYPED line (including `NEW`/`CLS`) when line spacing only has to cover
+      KEYBUF drain (measured ~20 ms; the 2.5 s default is already 100×).
+      Separating the two — lines at the default, RUN→capture keeping its measured
+      90 — is **676 s → 151 s, a 4.5× cut, with NO budget made tighter than its
+      measured need**. ⚠️ Safe for STORED cases (only `RUN` executes); a
+      DIRECT-mode line executes as it is typed, so its gap genuinely is a
+      completion budget.
       Filed 2026-08-24 out of the savestate measurement above, which found the
       per-case cost is dominated by `step` / `cap_gap` / `PAINT_STEP` — every one
       a hand-picked margin and several explicitly generous (`PAINT_STEP = 90.0`
