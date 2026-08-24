@@ -1,0 +1,45 @@
+rc=0  bytes=  113686  repack-machine
+rc=0  bytes=    9516  basic-reloc
+rc=0  bytes=     215  subrom-abi-check
+rc=0  bytes=    1285  subrom-closure-check
+rc=0  bytes=    1493  unit-test
+rc=0  bytes=    1712  deadcode
+rc=0  bytes=     363  wall-assertion-check
+rc=0  bytes=    3366  redundant-load-check
+rc=0  bytes=    1775  rowshape-check
+rc=0  bytes=     751  injector-check
+rc=0  bytes=     379  preflight-check
+rc=0  bytes=    1639  latch-check
+rc=0  bytes=     123  diskdep-check
+rc=0  bytes=     261  switch-build-check
+rc=0  bytes=   11880  kwsweep
+rc=0  bytes=    1886  deffn-selftest
+rc=0  bytes=   12123  string-acceptance
+rc=0  bytes=    8673  str-domain-acceptance
+rc=0  bytes=    2436  strparen-acceptance
+rc=0  bytes=    7672  penderr-acceptance
+rc=0  bytes=   43456  missing-acceptance
+rc=0  bytes=    2532  error-acceptance
+rc=0  bytes=   10382  error-trap-acceptance
+rc=0  bytes=    4696  onerr0-acceptance
+rc=0  bytes=   61377  math-acceptance
+rc=0  bytes=   20210  float-acceptance
+rc=0  bytes=    3191  intarg-acceptance
+rc=0  bytes=   26297  logicops-acceptance
+rc=0  bytes=   23704  lineerr-acceptance
+rc=0  bytes=    7692  screenerr-acceptance
+rc=0  bytes=    6537  tmfp-acceptance
+rc=0  bytes=    7349  stmtpend-acceptance
+rc=0  bytes=    5319  array-acceptance
+rc=0  bytes=    4902  deffn-strict
+rc=0  bytes=   21519  graphics-acceptance
+rc=0  bytes=    3648  abort-acceptance
+rc=0  bytes=   14538  interval-trap-acceptance
+rc=0  bytes=    7045  clearpool-acceptance
+
+GATES: 38 green, 0 red -- 38 run
+=== hashes ===
+build/basic-reloc.rom 41b8c4ed
+build/sub.rom dd8f417b
+build/zerobas-main-eu.rom 7d27b871
+BATTERY EXIT rc=0

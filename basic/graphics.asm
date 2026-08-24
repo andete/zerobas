@@ -1245,9 +1245,17 @@ pspr_pattern:
                 ld      a,(GFX_SFLAGS)
                 or      $04                 ; bit 2 = pattern given
                 ld      (GFX_SFLAGS),a
-                call    skip_spaces
-                cp      ','
-                jp      z,gfx_syntax        ; a 5th argument -> ERR 2 (measured)
+                ; NO trailing-token check here, DELIBERATELY (D-SPRITE5, -8 B carve).
+                ; A complete `PUT SPRITE p,(x,y),c,n` PLACES the sprite (pspr_go's
+                ; attribute merge), then any leftover token (`,`, `,X`, `,:`) is
+                ; rejected by exec_stmt's boundary guard as ERR 2 -- AFTER the
+                ; placement, the reference's ordering (place then raise: sp.5comma /
+                ; sp.5arg / sp.5colon `2 30` on the VG-8020 AND the CF-3300,
+                ; docs/spec-basic-sprite5.md). pspr_go guards HL across the tenant
+                ; and `jp exec_stmt`s, so the cursor lands on the leftover token.
+                ; The incomplete-arg sites (:1203/:1210, `PUT SPRITE 0`/`0,`) keep
+                ; their gfx_syntax: they raise before the placement (sp.incomp /
+                ; sp.barep `2 209`, agree on both refs).
 pspr_go:
                 push    hl
                 ld      a,9                 ; GFX_OP = 9 -> tenant attribute merge

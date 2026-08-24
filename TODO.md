@@ -829,10 +829,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
         after a statement returns via `jp exec_stmt`. Bespoke duplicates alias
         `pl_syntax` and are reached from a `cp ','`/`cp COLON`/`or a` peek PAST
         the last valid argument: `graphics.asm:748/798` (PAINT 3rd/4th arg),
-        `1203` (`PUT SPRITE 0,`), `1239` (a 5th sprite arg), `play.asm:73` (PLAY
-        4th voice); SWAP and PAINT's `:798` are now DELETED (D-SWAP3, D-PAINT4).
-        ⚠️ PAINT's `:748` is NOT deletable — it raises before B is complete and
-        agrees on both refs (pa.ccomma) — the per-site oracle split, measured.
+        `1203`/`1210` (`PUT SPRITE 0`/`0,`), `1250` (5th sprite arg),
+        `play.asm:73` (PLAY 4th voice). **DELETED so far: SWAP, PAINT `:798`,
+        SPRITE `:1250`** (D-SWAP3/D-PAINT4/D-SPRITE5). ⚠️ The incomplete-arg
+        siblings (PAINT `:748`, SPRITE `:1203`/`:1210`) are NOT deletable — they
+        raise before the effect and agree on both refs — the per-site oracle
+        split, measured. PLAY `:73` is KEEP (raises before playing). CIRCLE is
+        RESTRUCTURE. So of the trailing-token sites, the DELETABLE ones are
+        SHIPPED; what remains in this layer is CIRCLE's cross-ABI restructure.
       * **Missing/empty operand → ERR 24 / ERR 2**: `ev_f`'s
         `ev_f_missop`/`ev_f_empty` machinery — the D-MISSOP arc already found
         this is *"one rule at 16 slots"* (docs/spec-basic-missop.md); several
@@ -870,9 +874,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       shared handler is the payoff.
       📏 **ONE-PASS CLASSIFICATION 2026-08-24** (`scratchpad/seam_classify.py`,
       SPRITE/CIRCLE/PLAY in a single differential, each with an effect column):
-      * **SPRITE `PUT SPRITE …,` (`:1250`, 5th arg) → DELETABLE.** Refs PLACE then
-        raise (`2 30`, sprite-0 Y attr), zb raises before placing (`2 209`);
-        `pspr_go` guards the cursor like `ep_draw`. The next carve of this class.
+      * **SPRITE `PUT SPRITE …,` (`:1250`, 5th arg) → DELETABLE — ✅ SHIPPED
+        (D-SPRITE5, −8 B).** Refs PLACE then raise (`2 30`, sprite-0 Y attr), zb
+        raised before placing (`2 209`); `pspr_go` guards the cursor like `ep_draw`
+        (and has no overflow check, so even cleaner). 8 rows, 3 DIFF → 0, knives
+        2/2 EXACT. [`docs/spec-basic-sprite5.md`](docs/spec-basic-sprite5.md).
+        The `:1203`/`:1210` incomplete-arg sites KEEP their gfx_syntax (raise
+        before place, agree — sp.incomp/sp.barep).
       * **CIRCLE trailing comma → RESTRUCTURE, confirmed.** Refs DRAW then raise
         (`2 15`), zb raises before (`2 4`) — the filed `x.extra2`. Parse is in the
         sub-ROM tenant, result tested before the draw op: a second flag, NOT a

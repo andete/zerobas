@@ -1,0 +1,17 @@
+=== baseline ===
+baseline roms=41b8c4ed / dd8f417b / 7d27b871
+baseline 8 rows match sprite5_after.out
+
+K-SP1  roms=21de46f2 / dd8f417b / 5998e721
+  cut: RE-ADD the deleted 5th-argument check (revert to raise-before-place)
+  moved 3 rows: sp.5arg='2 209', sp.5colon='2 209', sp.5comma='2 209'
+  ✅ EXACT — 3 predicted, 3 moved
+
+K-SP2  roms=d15a294f / dd8f417b / 678e27e3
+  cut: pspr_go GFX_OP ld a,9 (merge) -> ld a,2 (POINT read, no placement)
+  moved 5 rows: sp.5arg='2 209', sp.5colon='2 209', sp.5comma='2 209', sp.noc='0 209', sp.ok='0 209'
+  ✅ EXACT — 5 predicted, 5 moved
+
+restored roms=41b8c4ed / dd8f417b / 7d27b871
+2/2 knives EXACT
+EXIT rc=0
