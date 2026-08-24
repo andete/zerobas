@@ -108,16 +108,64 @@ never "the comparison is blind" [[apparatus-is-part-of-the-measurement]].
 - Measured speedup on a single case: RESTORE ~0.2 s vs COLD ~0.9 s wall (the
   8-emulated-second boot skipped).
 
-## 4. Status and what is NOT yet done
+## 4. The wiring, and the eligibility rule that was measured wrong TWICE
 
-- **LANDED (inert):** `make_savestate`, the `state_load` path, the defensive
-  loadstate, and the `savestate-check` gate (in the `make gates` battery). No
-  existing probe passes `state_load` yet, so behavior is unchanged; the capability
-  and its correctness control ship first.
-- **NEXT (the speedup):** wire `state_load` into `run_cases`/`run_differential`
-  so the boot-per-case gates take one snapshot per machine and loadstate per run.
-  That is a behavior change to the shared harness and is gated by re-running the
-  whole battery green with ROM images unchanged, on top of `savestate-check`.
+`run_cases(batch=False)` and the self-heal re-run go through `_boot_per_case`,
+which restores a cached snapshot where that is equivalent. `ZEROBAS_SAVESTATE=off`
+disarms the whole mechanism and reproduces the old behaviour exactly (it is both
+the operator escape hatch and the A/B baseline every timing below is against).
+
+🔴 **NEITHER FAILED RULE IS VISIBLE IN THE CODE; BOTH TOOK A STOPWATCH.**
+
+1. *"snapshot from the SECOND case of a call, or when already cached"* — INERT for
+   every probe that calls `run_cases` with ONE case at a time (circmiss does, 51
+   times): no call reaches a second case, so nothing ever warmed. **24 s on, 24 s
+   off, byte-identical output** — which is exactly how a wired-but-inert
+   optimisation reads if you only check that the verdicts still agree.
+2. *"warm on the FIRST sighting"* — fixed that, bought a **pessimism**.
+   `basic_probe_lineerr` copies a fresh disk image PER CASE (deliberately, for
+   write isolation), so every case is a new key: **measured 6 snapshots for 6
+   rows**, each paying a snapshot boot AND a restore where cold paid one boot.
+   The A/B read **36 s vs 39 s** — a self-cancelling mechanism looks near-neutral
+   in the total.
+3. **The rule that survives both: warm on the SECOND SIGHTING of a key.**
+   Self-tuning, needs no knowledge of what varies — a key used once is never
+   snapshotted (pure cold, no thrash), a key used many times pays ONE learning
+   boot and restores ever after. Verified: **lineerr 0 snapshots**, **circmiss
+   24 s → 21 s, byte-identical**.
+
+**A `prologue` DECLINES the snapshot**, and that is correctness, not a coverage
+gap: `prologue` exists for machine-scoped `plug joyporta <device>` — a device the
+cold path has plugged for the ROM's *whole boot* — while a snapshot is taken on an
+unplugged boot and `loadstate` replaces the machine. `cart`/`diska` are part of
+the cache identity for the same reason.
+
+## 4b. 🔴 The item's PREMISE does not survive the measurement
+
+This was filed as *"the per-case boot dominates, savestate gets batch speed with
+boot-per-case isolation"*. **It does not dominate.** The boot is ~0.7 s of wall
+per case; the gates that dominate the suite spend far more inside their own
+EMULATED timelines:
+
+| gate shape | per-case emulated timeline | boot's share |
+|---|---|---|
+| `graphics-acceptance` PAINT phases | `step` 45–90 emulated s | ~10–15% |
+| circmiss-shaped | ~35 emulated s | ~20–25% |
+| `lineerr` rows | `step` 2.5–4.5 emulated s | large — **but excluded**, per-case disk |
+
+And the one gate where boot *should* have dominated — `lineerr`, 210 rows,
+~46% of the serial suite — is excluded by its own per-case disk isolation (§4).
+
+**Battery, measured:** 555 s 38/38 green with 0 flakes (this rule), 680 s 38/38
+with one flake retry (the previous rule), against a **580–750 s baseline** — i.e.
+**within run-to-run noise, not the multiple the item predicted.**
+Single-gate: `graphics-acceptance` 269 s solo vs a ~304 s baseline (~12%).
+
+🟢 **What IS durable is §3**: the capability, and a standing gate that re-proves
+restore ≡ cold boot every run. 🎯 **The real remaining lever is the emulated-time
+budgets** (`step`, `cap_gap`, `PAINT_STEP`) — every one of them a hand-picked
+margin, several explicitly generous — which is a different item with its own
+correctness question, and must not be trimmed by reasoning either.
 
 ## 5. Blast radius
 

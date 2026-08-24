@@ -56,25 +56,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
-- [ ] ⚡ **SAVESTATE-RESTORE-PER-CASE — skip the per-case COLD BOOT, the dominant
-      cost of the gate suite.** Filed 2026-08-24 after `make gates` (parallel
-      battery + serial-retry, commits `18e759e`/`a8e9713`,
-      [`docs/spec-probe-emutime-watchdog.md`](docs/spec-probe-emutime-watchdog.md))
-      topped out at ~1.9-2.5x: the boot-per-case openMSX (8 emulated s of C-BIOS)
-      dominates, and `batch=True` (the ~20x-cheaper one-boot-per-matrix default)
-      is unsafe for ~8 gates because of the delivery race that drops a program
-      line. **Savestate-restore-per-case would give boot-per-case's ISOLATION (no
-      delivery race — each case a fresh identical state) at ~batch speed.** It
-      would also cut the stochastic capture-drop flake rate (less boot churn under
-      concurrency — the flakes the retry currently absorbs). Considered + DEFERRED
-      in [`docs/spec-rdblk-anchor-flake.md`](docs/spec-rdblk-anchor-flake.md) §8
-      (*"worth its own item; noted, not smuggled in"*). 🔴 **THE GATE IS A
-      DIFFERENTIAL: a restored snapshot of the cold-boot-`A>` state must be proven
-      BYTE-IDENTICAL to a fresh cold boot on BOTH the subject and the oracle before
-      it can replace boots** — that differential is the first deliverable, not the
-      speedup. In `omsx_repl._run_batch` (boot once → `savestate` at the ready
-      prompt → `loadstate` per case instead of the 8s boot delay). See
-      [[parallel-gate-battery]].
+- [x] ⚡ **SAVESTATE-RESTORE-PER-CASE — SHIPPED 2026-08-24 (`a73071b` capability +
+      gate, `cf9779a` wiring), AND ITS OWN PREMISE IS REFUTED.**
+      [`docs/spec-probe-savestate.md`](docs/spec-probe-savestate.md).
+      🟢 **What shipped and is durable:** `omsx_repl.make_savestate` + the
+      `state_load` path (boot once → `savestate` at the ready prompt → `loadstate`
+      per case), and **`make savestate-check`** in the battery — the differential
+      this item demanded *first*: **12/12 restore==cold, 0 DIFF** on the subject
+      AND both oracles across text, POINT and raw-VRAM captures, with a within-run
+      TEETH control so a 0-DIFF tally cannot be vacuous. Development differential
+      behind it: circmiss 17 cases × 3 machines **51/51** raw-identical, plus a
+      6144-byte SCREEN-2 pattern-table battery **15/15, 0 differing nibbles**.
+      🔴 **What the measurement KILLED: "the per-case boot dominates".** It is
+      ~0.7 s of wall per case, while the gates that dominate spend far more in
+      their own EMULATED timelines (`graphics-acceptance` PAINT runs `step`
+      45–90 emulated s — boot is ~10–15% there), and `lineerr` (210 rows, ~46% of
+      serial), where boot *should* have dominated, is excluded by its own
+      per-case disk isolation. Battery **555 s 38/38 green 0 flakes** (vs 680 s
+      with the prior rule, against a 580–750 s baseline) = **within run-to-run
+      noise, not the predicted multiple**; `graphics-acceptance` 269 s vs ~304 s
+      (~12%). 🎯 **The eligibility rule was measured wrong TWICE, in opposite
+      directions** (inert for one-case-at-a-time callers; a pessimism that took 6
+      snapshots for 6 rows when a probe varies `diska` per case) — neither shape
+      is visible in the code; both needed a stopwatch against
+      `ZEROBAS_SAVESTATE=off`. Successor rule: warm on the SECOND sighting of a
+      key. See [[parallel-gate-battery]].
+
+- [ ] ⚡ **THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS, NOT THE BOOT.**
+      Filed 2026-08-24 out of the savestate measurement above, which found the
+      per-case cost is dominated by `step` / `cap_gap` / `PAINT_STEP` — every one
+      a hand-picked margin and several explicitly generous (`PAINT_STEP = 90.0`
+      *"generous; see above"*, `MC_PAINT_STEP = 45.0`, the default `step = 2.5`
+      and `cap_gap = 2.5`). A case's wall time is essentially linear in these, so
+      this is where a multiple lives. 🔴 **AND THEY MAY NOT BE TRIMMED BY
+      REASONING**: several are documented as sized against a MEASURED worst case
+      (a whole-screen `C != B` PAINT flood; a cassette LOAD/SAVE running 10–30
+      emulated s while the harness keeps injecting), and a budget cut below its
+      operation fires the capture MID-FILL — which reads as a hang or a wrong
+      partial result, i.e. as SEMANTICS. Any cut needs a per-phase measurement of
+      what the operation actually takes plus a margin, and a gate that would go
+      RED if the margin were too thin (the `graphics-acceptance` rows are the
+      obvious subject). Start by INSTRUMENTING: emit each case's actual
+      completion time vs its budget, then cut only what the data licenses.
 
 **Language / verb surface**
 
