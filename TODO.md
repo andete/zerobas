@@ -82,6 +82,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `ZEROBAS_SAVESTATE=off`. Successor rule: warm on the SECOND sighting of a
       key. See [[parallel-gate-battery]].
 
+- [ ] 🐌 **`PAINT` IS 2.4–3.4× SLOWER THAN BOTH REFERENCES — THE ONLY OPERATION
+      MEASURED SIGNIFICANTLY SLOWER.** Filed 2026-08-24 out of the budget
+      instrument ([`docs/spec-probe-budget.md`](docs/spec-probe-budget.md)), which
+      incidentally produced the project's first **per-operation performance
+      differential** against the two real machines. **Policy (user): faster or
+      comparable is not a worry; significantly SLOWER is.** Measured emulated
+      seconds to completion:
+
+      | operation | vg8020 | cf3300 | zerobas | |
+      |---|---|---|---|---|
+      | PAINT, whole-screen flood | 16.005 | 16.005 | **53.610** | 🔴 3.35× slower |
+      | PAINT, bounded by a circle | 4.778 | 4.778 | **11.330** | 🟠 2.37× slower |
+      | CIRCLE draw, no fill | 0.715 | 0.715 | 0.426 | ✅ 1.7× faster |
+      | error + PRINT readout | 0.094 | 0.094 | 0.024 | ✅ 3.9× faster |
+
+      So the interpreter and the drawing engine are FINE; it is `PAINT`
+      specifically. 🎯 **MECHANISM CANDIDATE, MEASURED**: zerobas writes **both**
+      VRAM tables (pattern all `0xFF` + colour all `0xF4`, 12288 B) where both
+      references write **only the colour table** (pattern stays `0x00`, colour all
+      `0x0F`, 6144 B). 2× the VRAM traffic ≈ the 2.37× on the bounded fill, but
+      **not** the 3.35× on the flood — so expect a SECOND factor (per-pixel span
+      walking vs a row-wise fill). Do not stop at the first explanation that fits
+      one row.
+      ⚠️ **AND THERE IS A LATENT CORRECTNESS QUESTION UNDER IT**: the two engines
+      leave *different bytes* for the same visible screen ([[ntwall-scout-slice]];
+      `POINT` reads 15 on all three and is blind to it). A SUBSEQUENT draw over a
+      filled area reads that state — so the divergence may be observable after a
+      second operation even though the fill itself agrees. **That is a gate row
+      nobody has written**, and it is worth more than the speed.
+      💡 A standing **asymmetric** perf check falls out of the same instrument:
+      RED only when an operation is significantly slower than BOTH references,
+      never when it is faster.
+
 - [ ] 🔴⚡ **CAPTURE ON A `done` SENTINEL, NOT AT A GUESSED EMULATED TIME — THIS
       SUPERSEDES THE BUDGET ITEM BELOW.** Filed 2026-08-24 (user), out of the
       budget instrumentation. **The budgets are not timeouts, they are GUESSES AT
