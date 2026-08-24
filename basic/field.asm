@@ -745,7 +745,7 @@ ex_put:
                 inc     hl
                 call    skip_spaces
                 cp      SPRITE_TOKEN
-                jp      z,pus_is_sprite
+                jr      z,pus_is_sprite
                 pop     hl
     ENDIF
                 ld      a,1                 ; mode = PUT (write)

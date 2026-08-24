@@ -79,7 +79,7 @@ do_bload:
                 ; sub/bload.asm, where the hazard is written down beside the arms.
                 ld      a,(BL_STAT)
                 or      a
-                jp      z,load_handoff      ; plain BLOAD returns; ,R jumps to EXECPTR
+                jr      z,load_handoff      ; plain BLOAD returns; ,R jumps to EXECPTR
                 cp      1
                 jp      z,load_error        ; the tenant hit load_error; report once here
                 jp      raise_error         ; A = the tenant's ERR code — never returns

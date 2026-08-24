@@ -987,7 +987,7 @@ rerr_msg:                                  ; D-ONERR0 (docs/spec-basic-onerr0.md
                                            ; -- ERROR n now validates 1..255 upstream, so
                                            ; 0 no longer reaches here, but keep it safe)
                 cp      25                 ; index >= 25  <=>  code 0 (via $FF) or code >= 26
-                jp      nc,rerr_unprintable ; D-MSGMIGRATE: straight to the marker.
+                jr      nc,rerr_unprintable ; D-MSGMIGRATE: straight to the marker.
                                            ; S-FCH-2's rerr_sparse/rerr_sparse2 used to
                                            ; sit here to pick 52/59/55/58/61's messages;
                                            ; all five migrated to the tenant, at which
@@ -1071,7 +1071,7 @@ rerr_unprintable:
                 ; so their text is unchanged -- which is exactly what makes ERROR 26
                 ; a live GREEN control riding the new mechanism (spec §3.2).
                 ld      hl,err_subhosted
-                jp      raise_error_hl       ; through the trap check (ERROR n with a
+                jr      raise_error_hl       ; through the trap check (ERROR n with a
                                              ; wild code still traps if a handler is armed)
 
 ; --- raise_error_forced: like raise_error but ALWAYS aborts, never traps ---
@@ -1090,7 +1090,7 @@ raise_error_forced:                          ; reached ONLY via ex_resume_noerr,
                 ld      (ERRFLG),a
                 call    record_errline
                 ld      hl,err_subhosted     ; ERR 22's message, sub-hosted (D-MSGMIGRATE:
-                jp      ra_abort             ; ERR-22-only) -> ALWAYS abort, never trap.
+                jr      ra_abort             ; ERR-22-only) -> ALWAYS abort, never trap.
                                              ; D-CONTR: via ra_abort, not straight to
                                              ; fre_abort_low -- same 3 bytes, and the
                                              ; FORCED abort arm records a resume point
@@ -1792,7 +1792,7 @@ eval_pos_arg:
 ; n, MID$'s count (function and statement).
 eval_byte_arg:
                 call    eval
-                jp      get_byte_arg
+                jr      get_byte_arg
 ; get_byte_arg: FAC -> A = E = a byte 0..255, else abort (ERR 6 if >int16, ERR 5
 ; if in-int16 but >255 or negative — high byte non-zero). Serves STRING$ (count
 ; and char code), SPACE$, ON n, WIDTH n, and — via the two leaves above — the

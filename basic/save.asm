@@ -106,7 +106,7 @@ do_bsave:
                 ; longer discards a saved start.
                 ld      de,dev_cas
                 call    dev_cmp
-                jp      z,bsv_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
+                jr      z,bsv_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
 bsv_is_disk:
                 ; HL = filename start (after the quote); build the FCB.
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
@@ -183,14 +183,14 @@ do_save:
                 ; above). Identical contract; the push/pop pair is dev_cmp's now.
                 ld      de,dev_cas
                 call    dev_cmp
-                jp      z,sav_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
+                jr      z,sav_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
 sav_is_disk:
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
                 ; --- optional ,A -> ASCII listing save; else tokenised ------
                 call    skip_spaces
                 cp      ','
-                jp      z,sav_ascii_flag    ; SAVE"name",<flag> -> check for ,A
+                jr      z,sav_ascii_flag    ; SAVE"name",<flag> -> check for ,A
                 or      a
                 jp      nz,load_error       ; trailing junk after the name
                 ld      a,SV_OP_SAV_DISK
@@ -249,7 +249,7 @@ sav_is_cas:
                 ; tokenised cassette write and reaches tape_save_basic by its own
                 ; two paths, unchanged and MEASURED unchanged (`csave:id` = D3 on
                 ; all three sides). Costs 0 B: one absolute jump for another.
-                jp      cas_ascii_save      ; no flag -> ASCII, exactly as ,A does
+                jr      cas_ascii_save      ; no flag -> ASCII, exactly as ,A does
 
 ; --- sav_flag_a: accept the `,A` of SAVE"...",A -- ONE body, TWO callers ----
 ; in: HL at the ',' . out: HL past the 'A' and end-of-statement checked, or the

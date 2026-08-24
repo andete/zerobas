@@ -47,7 +47,7 @@ str_eval_one:
                 cp      INPUT_TOKEN         ; INPUT$(...) ? -> $85 ('INPUT') then '$'
                 jp      z,str_eval_maybe_inputd
                 cp      PEEK_PREFIX         ; $FF + selector -> a function token; MKI$ ?
-                jp      z,str_eval_maybe_mki
+                jr      z,str_eval_maybe_mki
                 cp      STRING_TOKEN        ; $E3 -> STRING$(n,c) (string-functions Group B;
                 jp      z,str_fn_string     ; single-byte reserved word, not $FF-prefixed)
                 cp      INKEY_TOKEN         ; $EC -> INKEY$ (no args; single-byte reserved word)

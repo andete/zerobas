@@ -1,0 +1,73 @@
+trampoline preambles found: 67
+MERGEABLE groups (>=2 sharing target+register): 10
+
+  target fatprim_bounce  via ld a,_  (12 entries, ~11 B):
+      fat_mount                ld a,DISKOP_SEL_FAT_MOUNT  [basic/fat.asm]
+      fat_find                 ld a,DISKOP_SEL_FAT_FIND  [basic/fat.asm]
+      fat_open                 ld a,DISKOP_SEL_FAT_OPEN  [basic/fat.asm]
+      fat_read_file_sector     ld a,DISKOP_SEL_FAT_READ_FILE_SECTOR  [basic/fat.asm]
+      fat_flush_data_sector    ld a,DISKOP_SEL_FAT_FLUSH_DATA_SECTOR  [basic/fat.asm]
+      fch_restage              ld a,DISKOP_SEL_FCH_RESTAGE  [basic/fat.asm]
+      fch_flush_active         ld a,DISKOP_SEL_FCH_DETACH  [basic/fat.asm]
+      fat_dir_create           ld a,DISKOP_SEL_FAT_DIR_CREATE  [basic/fat.asm]
+      fat_delete               ld a,DISKOP_SEL_FAT_DELETE  [basic/fat.asm]
+      fat_rand_open            ld a,DISKOP_SEL_RAND_OPEN  [basic/field.asm]
+      fat_rand_put             ld a,DISKOP_SEL_RAND_PUT  [basic/field.asm]
+      fat_rand_get             ld a,DISKOP_SEL_RAND_GET  [basic/field.asm]
+
+  target dop_emit  via ld a,_  (8 entries, ~7 B):
+      dop_eq                   ld a,'='       [basic/detok.inc]
+      dop_plus                 ld a,'+'       [basic/detok.inc]
+      dop_minus                ld a,'-'       [basic/detok.inc]
+      dop_star                 ld a,'*'       [basic/detok.inc]
+      dop_div                  ld a,'/'       [basic/detok.inc]
+      dop_idiv                 ld a,'\'       [basic/detok.inc]
+      dop_pow                  ld a,'^'       [basic/detok.inc]
+      dop_gt                   ld a,'>'       [basic/detok.inc]
+
+  target tk_op_emit  via ld a,_  (8 entries, ~7 B):
+      tk_op_eq                 ld a,EQ_TOKEN  [basic/tokenise.inc]
+      tk_op_plus               ld a,PLUS_TOKEN  [basic/tokenise.inc]
+      tk_op_minus              ld a,MINUS_TOKEN  [basic/tokenise.inc]
+      tk_op_star               ld a,STAR_TOKEN  [basic/tokenise.inc]
+      tk_op_lt                 ld a,LT_TOKEN  [basic/tokenise.inc]
+      tk_op_div                ld a,DIV_TOKEN  [basic/tokenise.inc]
+      tk_op_idiv               ld a,IDIV_TOKEN  [basic/tokenise.inc]
+      tk_op_pow                ld a,POW_TOKEN  [basic/tokenise.inc]
+
+  target raise_error  via ld a,_  (6 entries, ~5 B):
+      df_notfound              ld a,53        [basic/files.asm]
+      type_mismatch_error      ld a,13        [basic/interp.asm]
+      gb_illegal               ld a,5         [basic/interp.asm]
+      pl_syntax                ld a,2         [basic/play.asm]
+      exp_pos_syn              ld a,2         [basic/print.asm]
+      exr_raise                ld a,(LE_STATUS)  [basic/program.asm]
+
+  target ev_f_defer  via ld e,_  (3 entries, ~2 B):
+      ev_f_tmm                 ld e,10        [basic/expr.asm]
+      ev_f_ifc                 ld e,3         [basic/expr.asm]
+      ev_f_missop              ld e,FPERR_MISSOP  [basic/expr.asm]
+
+  target sv_tenant  via ld a,_  (3 entries, ~2 B):
+      bsv_open                 ld a,SV_OP_BSV_DISK  [basic/save.asm]
+      bsv_cas_open             ld a,SV_OP_BSV_CAS  [basic/save.asm]
+      tape_save_basic          ld a,SV_OP_SAV_CAS  [basic/save.asm]
+
+  target evsgn_settype  via ld de,_  (2 entries, ~1 B):
+      evsgn_neg                ld de,$FFFF     [basic/expr.asm]
+      evsgn_pos                ld de,1         [basic/expr.asm]
+
+  target exp_dev_set  via ld a,_  (2 entries, ~1 B):
+      exp_dev_lpt              ld a,1         [basic/print.asm]
+      exp_dev_crt              ld a,2         [basic/print.asm]
+
+  target str_fn_radix  via ld a,_  (2 entries, ~1 B):
+      str_fn_hex               ld a,6         [basic/str-engine.asm]
+      str_fn_oct               ld a,7         [basic/str-engine.asm]
+
+  target tm_raise  via ld a,_  (2 entries, ~1 B):
+      tm_err2                  ld a,2         [basic/time.asm]
+      tm_err13                 ld a,13        [basic/time.asm]
+
+  ~38 B nominal IF every group merges AND a scratch reg is free AND the
+  clarity cost is accepted. Each is a hand judgement, not a sweep.

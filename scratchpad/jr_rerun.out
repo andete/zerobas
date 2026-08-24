@@ -1,0 +1,8 @@
+rc=0  repack-machine
+rc=0  tmfp-acceptance
+rc=0  array-acceptance
+rc=0  graphics-acceptance
+=== hashes ===
+build/basic-reloc.rom f213a97d
+build/sub.rom 490ffc49
+build/zerobas-main-eu.rom f9eeae8f

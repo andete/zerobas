@@ -49,7 +49,7 @@ dl_cmd:
                 call    tokenise
                 ld      a,(TKOVF)           ; float-literal crunch-time overflow (F1,
                 or      a                   ; basic/float.asm) -> reject the whole line,
-                jp      nz,dl_overflow      ; own wording (D-F1-1); never execute/store
+                jr      nz,dl_overflow      ; own wording (D-F1-1); never execute/store
                                             ; (D-2's explicit `DIRECTF := 1` used to sit
                                             ; here; it is now DERIVED in rp_exec, which
                                             ; this path always reaches before any
@@ -201,7 +201,7 @@ dl_new:
                 ; the stored program — MS-BASIC semantics. LOAD's own new_prog
                 ; calls stay variable-safe.
                 call    clear_vars
-                jp      new_prog
+                jr      new_prog
 
 ; --- is_cmd: does the word at (HL) match the uppercase template at (DE)? ------
 ; CF set iff (HL) case-folds to the 0-terminated template AND the next input
@@ -1299,7 +1299,7 @@ exa_next:
                 jr      nc,exa_stop         ; compare is exact)
 exa_ok:
                 ld      (AU_NUM),hl
-                jp      exa_loop
+                jr      exa_loop
 exa_stop:
                 xor     a
                 ld      (RL_AUTO),a         ; the prompt blocks again
@@ -1432,7 +1432,7 @@ ex_return:
                 ld      de,GOSUB_STK        ; D-RETLN R-T1: THIS CHECK COMES FIRST,
                 or      a                   ; before the argument is parsed OR
                 sbc     hl,de               ; resolved. Measured both references:
-                jp      z,ex_ret_under      ; `RETURN B` with an empty stack is
+                jr      z,ex_ret_under      ; `RETURN B` with an empty stack is
                                             ; ERR 3, not ERR 2 (lnrt-nogosbad), and
                                             ; `RETURN 99` is ERR 3, not ERR 8
                                             ; (lnrt-nogosund). lnrt-nogos alone
@@ -1768,7 +1768,7 @@ nx_bound:
                 add     hl,de               ; HL = FSP - FOR_STK
                 ld      a,h
                 or      l
-                jp      z,nx_nofor          ; ...zero -> no frame left at all
+                jr      z,nx_nofor          ; ...zero -> no frame left at all
                 ld      de,FOR_STK-FOR_FRAME
                 add     hl,de               ; ...else HL = the top frame's base
 nx_scan:
@@ -2536,10 +2536,10 @@ ex_ff_stmt:
                 inc     hl                  ; -> the selector byte
                 ld      a,(hl)
                 cp      STRIG_TOKEN         ; STRIG(n) ON|OFF|STOP  (traps T2)
-                jp      z,ex_strig_stmt     ; (entered with HL on the selector)
+                jr      z,ex_strig_stmt     ; (entered with HL on the selector)
     IF TRAPS_T5
                 call    iv_match            ; INTERVAL ON|OFF|STOP  (traps T5)
-                jp      c,ex_interval       ; CF=0 leaves HL on the selector, so
+                jr      c,ex_interval       ; CF=0 leaves HL on the selector, so
     ENDIF                                   ; ex_mid_stmt's Syntax error is unchanged
                 jp      ex_mid_stmt
 

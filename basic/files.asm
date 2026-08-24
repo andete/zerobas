@@ -273,7 +273,7 @@ df_or_loaderr:
 ; --- OPEN "name" FOR INPUT AS #n -------------------------------------------
 ex_open:
                 inc     hl                  ; HL -> bytes after the OPEN token
-                jp      do_open
+                jr      do_open
 do_open:
                 call    fname_expr          ; D-FNEXPR: the filename is a string
                                             ; EXPRESSION; HL -> the staged,
@@ -301,7 +301,7 @@ do_open:
                                             ; a quote in the staging buffer
                 call    skip_spaces
                 cp      FOR_TOKEN           ; FOR
-                jp      nz,oo_random        ; no FOR clause -> RANDOM mode (OPEN..AS #n)
+                jr      nz,oo_random        ; no FOR clause -> RANDOM mode (OPEN..AS #n)
                 inc     hl
                 ; mode keyword: INPUT ($85); OUTPUT = OUT ($9C) + PUT ($B3); or
                 ; APPEND = "APP" (verbatim ASCII $41 $50 $50) + END ($81) — none of
@@ -370,7 +370,7 @@ oo_setmode:
                 ld      a,e
                 ld      (OO_RECLEN_CHAN),a  ; stash channel across the LEN= eval
                 call    oo_parse_reclen     ; DE = reclen (default 256); HL past; Cy=1 bad
-                jp      c,oo_fail_syn       ; non-tiling / out-of-range record size
+                jr      c,oo_fail_syn       ; non-tiling / out-of-range record size
                 push    hl                  ; GUARD the text cursor -- the store below
                                             ; uses HL as scratch (a bug once: the lost
                                             ; cursor abandoned a same-line ':' tail)
@@ -493,7 +493,7 @@ oo_dev_open:
 oodv_fn:
                 ld      a,(hl)
                 or      a
-                jp      z,oo_fail_syn       ; unterminated string
+                jr      z,oo_fail_syn       ; unterminated string
                 inc     hl
                 cp      '"'
                 jr      nz,oodv_fn          ; consume through the closing quote
@@ -571,7 +571,7 @@ oo_dev_cas:
                 jr      z,oocas_in
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
                 jr      z,oocas_out
-                jp      oo_fail_syn         ; APPEND not supported on cassette
+                jr      oo_fail_syn         ; APPEND not supported on cassette
 oocas_in:
                 inc     hl
                 ld      a,CAS_IN_MODE
@@ -1239,7 +1239,7 @@ fch_select:
                 call    fch_load_ctx        ; cursor IS IX -- enters through HERE.
                 pop     ix                  ; its cursor in HL and already guards
 fsel_sync:
-                jp      fch_sync_mirror
+                jr      fch_sync_mirror
 
 ; fch_claim — make channel A the active slot WITHOUT loading its (about-to-be-
 ; overwritten) context, used by OPEN before fat_io_open/create fills the globals.
@@ -1295,7 +1295,7 @@ oopac_num:
                 ; sample would have shipped wrong (spec §2).
                 call    fch_check_d         ; D != 0 -> ERR 5; else A = E, Z <=> ch 0
                 jp      z,oo_fail_bfn       ; OPEN's channel-0 exception -> ERR 52
-                jp      fch_check_nz        ; > MAXF -> ERR 52; else return A = E
+                jr      fch_check_nz        ; > MAXF -> ERR 52; else return A = E
 
 ; fch_modes_ptr — HL = &FCH_MODES[A]. A = channel. Clobbers A and HL ONLY.
 ;
@@ -1498,7 +1498,7 @@ fcla_next:
 ; I-O) reuse the loader's load_error path. See basic/PROVENANCE.md §KILL.
 ex_kill:
                 inc     hl                  ; HL -> bytes after the KILL token
-                jp      do_kill
+                jr      do_kill
 do_kill:
                 call    fname_expr          ; D-FNEXPR: a string EXPRESSION
                 call    parse_disk_fcb      ; build DISK_FCB_NAME (8.3 wildcard pattern)
@@ -1562,7 +1562,7 @@ do_kill:
 ; mount / I-O wording (quarantined). See basic/PROVENANCE.md §NAME.
 ex_name:
                 inc     hl                  ; HL -> bytes after the NAME token
-                jp      do_name
+                jr      do_name
 do_name:
                 call    fname_expr          ; D-FNEXPR: OLD name, a string EXPRESSION
                 call    parse_disk_fcb      ; old -> DISK_FCB_NAME
@@ -1762,7 +1762,7 @@ ex_merge:
                 ; disk path still sees HL at the filename start).
                 ld      de,dev_cas
                 call    dev_cmp
-                jp      z,merge_cas         ; matched "CAS:" -> tape merge (HL past prefix)
+                jr      z,merge_cas         ; matched "CAS:" -> tape merge (HL past prefix)
                 call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
                 inc     hl                  ; past the closing '"'
                 ld      a,(DISKSLOT_OK)
@@ -1770,7 +1770,7 @@ ex_merge:
                 jp      z,load_error
                 push    hl                  ; guard the text cursor across the merge
                 call    fat_io_open         ; mount + find + prime the sequential read
-                jp      c,mrg_ioerr         ; not found / mount / I-O error
+                jr      c,mrg_ioerr         ; not found / mount / I-O error
                 call    ascii_read_lines    ; tokenise+store each line; CF set = bad line
                 pop     hl                  ; restore the text cursor
                 jp      c,stmt_error        ; non-numbered line -> "Direct statement in file"
@@ -1804,7 +1804,7 @@ merge_cas:
                 jp      c,mc_ioerr
                 ld      a,(CAS_HDRID)
                 cp      ASCII_ID            ; MERGE requires an ASCII ($EA) file
-                jp      nz,mc_ioerr         ; tokenised / other -> cannot merge
+                jr      nz,mc_ioerr         ; tokenised / other -> cannot merge
                 call    cas_ascii_setup     ; prime data block 1
                 jp      c,mc_ioerr
                 ; NB: NO new_prog — MERGE inserts into the current program.

@@ -295,7 +295,7 @@ fat_io_append:
                 ld      hl,(FAT_FILESIZE)   ; size (low 16 bits)
                 ld      a,h
                 or      l
-                jp      z,fia_empty         ; empty file -> write from offset 0
+                jr      z,fia_empty         ; empty file -> write from offset 0
                 ; nsec = ceil(size / 512) = (size + 511) >> 9 (high byte >> 1).
                 ld      de,511
                 add     hl,de

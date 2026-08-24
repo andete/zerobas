@@ -157,7 +157,7 @@ ev_usr:
                 inc     ix
                 call    flt_int_result      ; USR returns an int even if its arg was a
                 pop     af                  ; A = index
-                jp      usr_call            ; perform the call (preserves IX) -> DE
+                jr      usr_call            ; perform the call (preserves IX) -> DE
 ev_usr_err:
                 pop     af                  ; discard saved index
                 ld      a,$DD               ; expression-error marker (cf. ev_f_err)

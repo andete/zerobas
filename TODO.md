@@ -360,8 +360,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ `tools/carve_scout.py --census` prints nothing and exits 0 without
       `--files` (documented, but it is the 0-byte-report-at-rc-0 shape).
 
-- [ ] 💰 **THE `jp`->`jr` PEEPHOLE SEAM: A PAGE-1 RECOVERY MEASURED AT 120
-      SITES ON 2026-08-24, MECHANICALLY SAFE, AND UNWORKED.** Filed 2026-08-24
+- [ ] 💰 **THE `jp`->`jr` PEEPHOLE SEAM — 51 B BANKED 2026-08-24 (D-JRSLICE),
+      ~69 B PAGE-1 REMAINDER + 35 LOW-REGION SITES STILL OPEN.** Filed 2026-08-24
       ([`docs/spec-carve-scout-2026-08.md`](docs/spec-carve-scout-2026-08.md)
       §3b, `scratchpad/peephole_jr.py`). **155 `jp`/`jp cc` sites whose target
       is already in `jr` range — 120 of those sites in page 1 — recovering one
@@ -378,6 +378,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 **This is the funding route the range-check item needs** — the dup-span
       seam is 4 B, this is ≥120 B. Run it as its own slice with the full
       battery (cheap insurance) before spending against it.
+      ✅ **BANKED: 51 of the 120 page-1 sites, page-1 free 2 B -> 53 B**
+      (D-JRSLICE, [`docs/spec-basic-jrslice.md`](docs/spec-basic-jrslice.md)) —
+      the sites whose target label is UNIQUE in source, converted mechanically
+      and certified by the assembler (range) and the ABI gates (the layout
+      shifted under the sub-ROM). 🔴 One of 52 was reverted: `pdfcb-body.inc` is
+      a shared body, in range in main and OUT of range in sub — a shared
+      `*-body.inc` has two answers and only the assembler knows the second.
+      🔴 **REMAINDER, ~69 B measured 2026-08-24, NEEDS ADDRESS-PRECISE MAPPING:**
+      the 68 page-1 sites
+      whose target is a shared tail (`raise_error`, `str_eval_no`, …) are not
+      uniquely locatable by (mnemonic,label) text, and pasmo 0.5.5 emits no
+      listing to map address->source. That mapper is the follow-up. Plus 35
+      low-region sites that fund the LOW wall, not page 1.
+      🔴 **OPCODE-SWALLOW MULTI-ENTRY TRICK: measured 10 groups / ~40 B and
+      DECLINED WITH NUMBERS** (D-JRSLICE §6) — it widens clobber contracts (the
+      12 disk primitives would newly trash BC/HL, a semantic change) and trades
+      the co-equal-docs clarity of the cleanest dispatch tables, for fewer bytes
+      than `jp`->`jr` banks at zero cost. Measured-not-taken, like de-eviction.
       ⚠️ SIBLING FINDINGS, both small: the `SLA A` class the idea came from is
       ALREADY EXHAUSTED (0 left; 17 `add a,a` / 149 `xor a` / 13 `rlca` already
       applied), and `ld a,0`->`xor a` is 9 sites but flag-UNSAFE (needs

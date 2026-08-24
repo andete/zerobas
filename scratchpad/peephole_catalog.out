@@ -1,0 +1,21 @@
+walked 22510 B from $2812, 11412 instructions
+
+  A  jp cc -> jr cc (in range)       155 sites x -1 B =  155 B   [120 in page 1]  SAFE by construction
+  B  jp/jp cc -> ret/ret cc            0 sites x -2 B =    0 B   [0 in page 1]  differential-safe
+  C  jr/jr cc -> ret/ret cc            5 sites x -1 B =    5 B   [0 in page 1]  differential-safe
+  D  call X / ret -> jp X             12 sites x -1 B =   12 B   [6 in page 1]  differential-safe (see caveat)
+
+  TOTAL 172 B nominal across the image; ~126 B of it in PAGE 1.
+  Class A (155 B) is the mechanically-safe floor; B+C+D (17 B) need the differential.
+
+  A examples:
+   $2A43 jp z  -> $2A72 (disp +45) [low]
+   $2A48 jp z  -> $2A9D (disp +83) [low]
+   $2A76 jp nz -> $2ADF (disp +103) [low]
+   $2A80 jp nz -> $2ADF (disp +93) [low]
+
+  D examples:
+   $29C9 call   + ret [low]
+   $2FBB call   + ret [low]
+   $37D9 call   + ret [low]
+   $3B6E call   + ret [low]

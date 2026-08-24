@@ -75,7 +75,7 @@ ev_logic:
 ev_lg:
                 ld      a,(hl)
                 or      a
-                jp      z,ev_not            ; past the tightest layer -> NOT / relational
+                jr      z,ev_not            ; past the tightest layer -> NOT / relational
                 push    hl
                 call    ev_lg_next          ; DE = lhs, from the tighter level
                 pop     hl
@@ -170,7 +170,7 @@ ev_not:
                 call    ev_sp
                 cp      NOT_TOKEN
                 jr      z,ev_not_do
-                jp      ev_rel              ; no NOT -> drop to the relational layer
+                jr      ev_rel              ; no NOT -> drop to the relational layer
 ev_not_do:
                 inc     ix
                 call    ev_not              ; unary, right-assoc (NOT NOT x)
@@ -248,7 +248,7 @@ evr_rhs:
                 pop     ix                  ; restore the cursor str_eval may have trashed
                 pop     de
                 pop     bc
-                jp      c,evr_mismatch      ; RHS is a string, LHS was numeric -> D-2
+                jr      c,evr_mismatch      ; RHS is a string, LHS was numeric -> D-2
                 push    de                  ; lhs
                 ; spec §10.1: relationals over any float operand compare AS
                 ; floats after widening (never int-converted, `40000=40000!`
@@ -499,13 +499,13 @@ ev_f:
                 ; §3/(f)): ERR/ERL, single-byte value tokens, same shape as
                 ; VARPTR/BASE/INSTR above.
                 cp      ERR_TOKEN           ; $E2 -> ERR (last error's MSX ERR code)
-                jp      z,ev_f_errfn
+                jr      z,ev_f_errfn
                 cp      ERL_TOKEN           ; $E1 -> ERL (last error's line, 65535=direct)
-                jp      z,ev_f_erlfn
+                jr      z,ev_f_erlfn
                 cp      TIME_TOKEN          ; $CB -> TIME (JIFFY as an UNSIGNED word)
                 jp      z,ev_f_time
                 cp      CSRLIN_TOKEN        ; $E8 -> CSRLIN (0-based cursor row)
-                jp      z,ev_f_csrlin
+                jr      z,ev_f_csrlin
                 cp      POINT_TOKEN         ; $ED -> POINT(x,y) (graphics G2, graphics.asm)
                 jp      z,ev_f_point
     IF G8_RESIDENT
@@ -548,7 +548,7 @@ ev_f_notword:
                 cp      INT_DIGIT_BASE      ; $11
                 jr      c,ev_f_var
                 cp      $1A+1               ; $11..$1A -> digit token
-                jp      c,ev_f_digit
+                jr      c,ev_f_digit
                 ; fall through: letter -> variable (or error)
 ev_f_var:
                 ld      a,(ix+0)
@@ -1603,7 +1603,7 @@ evmc_int:
                 ld      a,(ARGA+FPNUM_SIGN)
                 or      a
                 jr      z,evmc_int_pack     ; positive: truncate == floor already
-                jp      evmc_sub1           ; negative + fraction dropped: floor = trunc-1
+                jr      evmc_sub1           ; negative + fraction dropped: floor = trunc-1
 evmc_int_pack:
                 jp      evconv_pack_same_type
 

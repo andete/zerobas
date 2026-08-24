@@ -1,0 +1,22 @@
+page-1 class-A sites: 120  (unique labels: 83)
+  cleanly locatable & UNIQUE (will apply): 52
+  ambiguous (mnemonic+label appears >1x)  : 30
+  no source match                         : 1
+  wrote 4 conversions to basic/interp.asm
+  wrote 1 conversions to basic/strvar.asm
+  wrote 8 conversions to basic/expr.asm
+  wrote 1 conversions to basic/usr.asm
+  wrote 2 conversions to basic/print.asm
+  wrote 1 conversions to basic/play.asm
+  wrote 2 conversions to basic/graphics.asm
+  wrote 1 conversions to basic/list.asm
+  wrote 1 conversions to basic/fat.asm
+  wrote 1 conversions to basic/bload.asm
+  wrote 1 conversions to basic/pdfcb-body.inc
+  wrote 5 conversions to basic/cload.asm
+  wrote 4 conversions to basic/save.asm
+  wrote 12 conversions to basic/files.asm
+  wrote 1 conversions to basic/field.asm
+  wrote 7 conversions to basic/program.asm
+
+APPLIED 52 conversions. Build now.

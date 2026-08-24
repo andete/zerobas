@@ -240,7 +240,7 @@ lst_stop:
 ; NUMBUF (reusing div10 from print.asm) with no sign and no trailing space.
 list_num:
                 ex      de,hl               ; HL = value (magnitude; line nos are >=0)
-                jp      ln_div_entry        ; print HL as bare unsigned decimal
+                jr      ln_div_entry        ; print HL as bare unsigned decimal
 
 ; --- detok: render the crunched token body at (HL) -------------------------
 ; The whole detokeniser body (detok/dt_*/detok_op/detok_kw*/the number renderers

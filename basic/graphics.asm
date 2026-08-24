@@ -826,7 +826,7 @@ ep_draw:
                 jp      c,gfx_absent        ; defensive: merged ROM always ships the tenant
                 ld      a,(GFX_POVF)
                 or      a
-                jp      nz,ep_overflow      ; span-stack overflow -> ERR 7 (spec §4 D3)
+                jr      nz,ep_overflow      ; span-stack overflow -> ERR 7 (spec §4 D3)
                 jp      exec_stmt           ; chain the next ':'-separated statement
 ep_overflow:
                 ld      a,7                 ; Out of memory (measured, spec §4 D3)
@@ -913,7 +913,7 @@ ex_draw:
 gdw_call:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
                 call    subrom_call         ; CF=1 iff the sub-ROM is absent
-                jp      c,gdw_absent
+                jr      c,gdw_absent
                 ld      a,(GFX_DREQ)
                 or      a
                 jr      z,gdw_finish        ; the tenant is done

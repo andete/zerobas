@@ -71,7 +71,7 @@ pl_voice:
                 ld      a,b
                 cp      3
                 jr      nc,pl_syntax        ; a 4th voice string -> Syntax error
-                jp      pl_voice
+                jr      pl_voice
 pl_syntax:
                 ld      a,2                 ; Syntax error (missing/bad voice operand),
                 jp      raise_error         ; via raise_error so ON ERROR can trap it (the

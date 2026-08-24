@@ -486,7 +486,7 @@ ctp_line:
                 jp      c,dpl_err           ; D-CASTAIL CF contract
                 push    af                  ; preserve link-low: TAPIN clobbers C
                 call    TAPIN               ; link high
-                jp      c,ctp_link_err      ; must pop before leaving
+                jr      c,ctp_link_err      ; must pop before leaving
                 ld      b,a                 ; B = link high
                 pop     af
                 ld      c,a                 ; C = link low (restored)
@@ -564,7 +564,7 @@ ctp_err_pop:
                 jp      dpl_err             ; D-CASTAIL CF contract
 ctp_oom_pop:
                 pop     de
-                jp      ctp_oom
+                jr      ctp_oom
 
 ctp_done:
                 call    TAPIOF              ; motor off (program fully read)
@@ -603,13 +603,13 @@ ctp_verify_done:
                 ld      a,(CAS_VMIS)
                 or      a
                 ret     z                   ; no difference -> Ok (memory intact)
-                jp      verify_error        ; a byte differed -> "Verify error"
+                jr      verify_error        ; a byte differed -> "Verify error"
 
 ctp_oom:
                 call    TAPIOF              ; stop the motor before reporting
                 ld      a,(CAS_VERIFY)
                 or      a
-                jp      nz,verify_error     ; CLOAD? overrun = mismatch, do NOT wipe
+                jr      nz,verify_error     ; CLOAD? overrun = mismatch, do NOT wipe
                 call    new_prog            ; leave a clean (empty) program
                 ld      a,$CC               ; out-of-memory landmark (as store_line)
                 ld      (ERRMARK),a
@@ -1057,7 +1057,7 @@ dpl_link_err    equ     ctp_link_err
 dpl_err_pop     equ     ctp_err_pop
 dpl_oom_pop:
                 pop     de
-                jp      dpl_oom
+                jr      dpl_oom
 
 dpl_done:
                 ; (program fully read; no Close — the read side has no dirty state.)
