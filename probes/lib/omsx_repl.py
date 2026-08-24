@@ -39,9 +39,21 @@ table from VRAM, returning one raw 40x24 screen string per case. Span/tail
 extraction (the `[...]` bracket convention) lives in the reusable helpers below.
 
 GRANULARITY -- three layers, batched by default for a whole matrix:
-  * `run_case(machine, mode, lines)`  -- ONE case, ONE boot: power-on-clean
-    variables + default DEF table. The single-case primitive (= run_batch of one
-    case, no reset) and the isolation escape hatch.
+  * `run_case(machine, mode, lines)`  -- ONE case, ONE machine state: power-on-
+    clean variables + default DEF table. The single-case primitive (= run_batch
+    of one case, no reset) and the isolation escape hatch.
+
+THE BOOT-PER-CASE PATH NO LONGER BOOTS PER CASE (docs/spec-probe-savestate.md).
+It takes ONE cold boot per machine configuration, snapshots the ready prompt at
+exactly the emulated instant the first line is injected, and `loadstate`s that
+snapshot for every case -- the same fresh identical state, reached without paying
+8 (or 14) emulated seconds of C-BIOS boot each time. Restore is proven
+byte-identical to a cold boot, on the subject AND both oracles, across text,
+POINT and raw-VRAM captures, by `make savestate-check` -- which runs in the
+battery and carries a teeth control, because a 0-DIFF tally that could not see a
+difference would pass whatever savestate did. A `prologue` DECLINES the snapshot
+(a `plug`ged device must be present for the ROM's own boot, and loadstate
+replaces the machine), and `ZEROBAS_SAVESTATE=off` disarms the whole mechanism.
   * `run_cases(machine, specs, batch=, reset=)`  -- a whole matrix; batch=True
     (DEFAULT) ships it in one boot with `reset` between cases (~20x faster).
   * `run_differential(ref, zb, specs, compare, isolate=)`  -- the differential
@@ -809,6 +821,115 @@ def make_savestate(machine: str, path: str, *, boot: float = 8.0,
     return oms[:-4] if oms.endswith(".oms") else oms
 
 
+# --- the per-machine ready-prompt snapshot cache ----------------------------
+# One cold boot per (machine, boot, cart, diska) per PROCESS; every boot-per-case
+# run after it loadstate's that snapshot instead of booting. Proven equivalent by
+# `make savestate-check` (docs/spec-probe-savestate.md §3) before it was allowed
+# to replace a boot.
+_STATE_CACHE: dict[tuple, str | None] = {}
+_STATE_SEEN: set[tuple] = set()
+_STATE_DIR: str | None = None
+
+
+def savestate_on() -> bool:
+    """False when `ZEROBAS_SAVESTATE=off` -- every run boots cold, exactly as it
+    did before this landed. Mirrors `ZEROBAS_ECHOGUARD=off`: an operator escape
+    hatch, the A/B for any suspicion that a restore moved a reading, and the knife
+    for the wiring itself (with it off, savestate-check's subject is unreachable
+    and every gate must still be green)."""
+    return os.environ.get("ZEROBAS_SAVESTATE", "").lower() not in ("off", "0", "no")
+
+
+def _state_for(machine: str, boot: float, cart: str | None, diska: str | None,
+               omsx: str | None) -> str | None:
+    """The cached ready-prompt snapshot key for this machine configuration, or
+    None if snapshots are off or this one could not be taken (in which case the
+    caller boots cold -- a snapshot that cannot be made must never fail a gate).
+
+    ⚠️ `cart`/`diska` ARE PART OF THE IDENTITY. A snapshot carries the media the
+    machine booted with, so restoring one taken without a disk into a run that
+    needs one would silently measure the wrong machine.
+
+    🔴 A SNAPSHOT IS TAKEN ONLY ON THE **SECOND** SIGHTING OF A KEY, and that is
+    not a micro-optimisation -- without it the cache THRASHES INTO A PESSIMISM on
+    a whole class of probe. `basic_probe_lineerr` copies a FRESH DISK IMAGE PER
+    CASE (`zb_line_<side>_<label>.dsk`, deliberately, for write isolation), so
+    every case is a new key: MEASURED 6 snapshots for 6 rows, each paying a
+    snapshot boot AND a restore where a cold boot paid one boot. Keyed on first
+    sighting it would have been strictly slower than booting; the A/B against
+    `ZEROBAS_SAVESTATE=off` read 36 s vs 39 s -- near-neutral, which is how a
+    self-cancelling mechanism reads if you only look at the total.
+
+    Waiting for the second sighting is self-tuning and needs no knowledge of what
+    varies: a key used once is never snapshotted (pure cold, no thrash), a key
+    used many times pays ONE learning boot and restores ever after."""
+    global _STATE_DIR
+    if not savestate_on():
+        return None
+    key = (machine, round(boot, 3), cart, diska, omsx)
+    if key in _STATE_CACHE:
+        return _STATE_CACHE[key]
+    if key not in _STATE_SEEN:      # first sighting: boot cold, remember the key
+        _STATE_SEEN.add(key)
+        return None
+    if _STATE_DIR is None:
+        _STATE_DIR = tempfile.mkdtemp(prefix="zb_state_")
+    path = os.path.join(_STATE_DIR, f"s{len(_STATE_CACHE)}")
+    try:
+        oms = make_savestate(machine, path, boot=boot, omsx=omsx, cart=cart,
+                             diska=diska)
+    except SystemExit as e:
+        sys.stderr.write(f"omsx_repl: no ready-prompt snapshot for {machine} "
+                         f"({e}); booting cold for every case.\n")
+        oms = None
+    _STATE_CACHE[key] = oms
+    return oms
+
+
+def _boot_per_case(machine: str, cases, *, boot: float, prologue, holds,
+                   verify_delivery: bool, timeout: float, kw) -> list[str | None]:
+    """Run `cases` one machine-state per case -- the isolation path -- restoring a
+    ready-prompt snapshot instead of cold-booting where that is equivalent.
+
+    🔴 A PROLOGUE DECLINES THE SNAPSHOT, AND THAT IS NOT AN OPTIMISATION GAP.
+    `prologue` is raw Tcl run before the timeline, and its whole purpose is
+    machine-scoped `plug joyporta <device>` -- a device the COLD path has plugged
+    for the machine's entire boot, so the ROM's own start-up sees it. A snapshot
+    is taken on an UNPLUGGED boot, and `loadstate` replaces the machine (wiping
+    any plug), so restoring one and plugging afterwards is a genuinely different
+    initial condition, not the same one reached faster. Cold-boot those.
+
+    ⚠️ THE ELIGIBILITY RULE LIVES IN `_state_for`, AND BOTH EARLIER VERSIONS OF IT
+    WERE MEASURED WRONG -- in OPPOSITE directions, which is why neither could be
+    reasoned out:
+
+      * *"snapshot only from the SECOND CASE of a call, or when already cached"*
+        left the mechanism INERT for every probe that calls `run_cases` with ONE
+        case at a time (circmiss does, 51 times): no call ever reached a second
+        case, so nothing warmed. 24 s on, 24 s off, byte-identical output --
+        exactly how a wired-but-inert optimisation reads.
+      * *"warm on the first sighting"* fixed that and introduced a PESSIMISM:
+        `lineerr` varies `diska` per case, so every case was a new key and took
+        its own snapshot (6 for 6 rows) -- a snapshot boot plus a restore against
+        cold's single boot.
+
+    The rule that survives both is `_state_for`'s: warm on the SECOND sighting of
+    a key. Neither shape can be seen from the code; both came from timing the
+    thing against its own off-switch."""
+    state = None
+    if not prologue:
+        state = _state_for(machine, boot, kw.get("cart"), kw.get("diska"),
+                           kw.get("omsx"))
+    out: list[str | None] = []
+    for i, c in enumerate(cases):
+        out.append(run_batch(
+            machine, [c], reset=(), timeout=timeout,
+            holds=[holds[i]] if holds else None,
+            verify_delivery=verify_delivery, prologue=prologue,
+            boot=0.0 if state else boot, state_load=state, **kw)[0])
+    return out
+
+
 def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
                reset: tuple[str, ...] = (), capture="screen",
@@ -1270,12 +1391,15 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
     kw = dict(boot=boot, step=step, cap_gap=cap_gap, capture=capture,
               hold_secs=hold_secs, prologue=prologue,
               omsx=omsx, cart=cart, diska=diska)
+    # the boot-per-case path takes its `boot`/`prologue` explicitly (it may
+    # replace the cold boot with a snapshot restore), so keep them out of `kw`.
+    bpc = dict(step=step, cap_gap=cap_gap, capture=capture, hold_secs=hold_secs,
+               omsx=omsx, cart=cart, diska=diska)
     to_single = timeout if timeout is not None else 240.0
     if not batch:
-        return [run_batch(machine, [c], reset=(), timeout=to_single,
-                          holds=[holds[i]] if holds else None,
-                          verify_delivery=verify_delivery, **kw)[0]
-                for i, c in enumerate(cases)]
+        return _boot_per_case(machine, cases, boot=boot, prologue=prologue,
+                              holds=holds, verify_delivery=verify_delivery,
+                              timeout=to_single, kw=bpc)
 
     # scale the safety-net timeout with the emulated timeline length
     to = timeout if timeout is not None else max(240.0, 1.5 * len(cases) + 120.0)
@@ -1304,9 +1428,11 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
         for _, note in [n for n in notes if n[0] == i]:
             sys.stderr.write("omsx_repl: " + note + "\n")
         sys.stderr.write("            -> re-running that case boot-per-case\n")
-        caps[i] = run_batch(machine, [cases[i]], reset=(), timeout=to_single,
-                            holds=[holds[i]] if holds else None,
-                            verify_delivery=verify_delivery, **kw)[0]
+        caps[i] = _boot_per_case(machine, [cases[i]], boot=boot,
+                                 prologue=prologue,
+                                 holds=[holds[i]] if holds else None,
+                                 verify_delivery=verify_delivery,
+                                 timeout=to_single, kw=bpc)[0]
     return caps
 
 
