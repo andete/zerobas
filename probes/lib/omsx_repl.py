@@ -490,7 +490,8 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          holds: list[tuple[int, int] | None] | None = None,
          hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
          slots_out: list[tuple[int, str]] | None = None,
-         hb_path: str | None = None, settle_n: int = 0) -> str:
+         hb_path: str | None = None, settle_n: int = 0,
+         sentinel: tuple[int, int] | None = None) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
     (CHGET drains KEYBUF into the line editor) before the next write overwrites
@@ -529,6 +530,7 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
     cap = _cap_expr(capture)
     echo = echo_guard_on() and slots_out is not None
     case_idx = 0
+    pre: list[str] = []
 
     def emit(t: float, s: str) -> float:
         """Schedule injection of one CR-terminated line `s` at/after time `t`;
@@ -553,6 +555,9 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
                              f"{len(s)} chars {s!r}")
 
         def slot(t: float, proc: str, text: str) -> None:
+            # remember when the last REAL injection was scheduled -- see
+            # `last_inj` below; a trailing `@WAIT` must not move this.
+            last_inj[0] = t
             body.append(f'after time {t:.1f} {{ {proc} {{{text}}} }}')
             if echo:
                 body.append(f'after time {t + ECHO_GAP * step:.2f} '
@@ -571,6 +576,15 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
             t += step
         return t
 
+    # The emulated instant of the LAST REAL INJECTION in the current case.
+    # 🔴 IT CANNOT BE DERIVED AS `t - step`. A case may END IN A `@WAIT` (tape
+    # cases do, and any case that must let an operation finish before its
+    # readout is typed), and a wait advances `t` by its own length -- so
+    # `t - step` lands an arbitrary distance PAST the last thing that was typed.
+    # Measured: with a trailing `@WAIT120` the sentinel watchpoint armed 117.5
+    # emulated seconds late, i.e. after the program had already written its
+    # marks, and every timing came back None.
+    last_inj = [boot]
     t = boot
     for idx, (mode, lines) in enumerate(cases):
         # a reset line belongs to the case it precedes: a swallowed `NEW` leaks
@@ -609,7 +623,7 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         # scheduled at `t` -- so the window a case's budget actually buys between
         # RUN and capture is exactly `step`. (`cap_gap` is the gap AFTER the
         # capture, i.e. inter-case spacing, and buys this case nothing.)
-        t_run = max(boot, t - step)
+        t_run = last_inj[0]
         hold = holds[idx] if holds else None
         if hold:
             # Press at the RUN slot itself (t - step), not after it: the program
@@ -644,6 +658,51 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
                             f'"settle.{idx}.{k}={ts:.3f},{cap}"; flush $__f }}')
             body.append(f'after time {t:.3f} {{ puts $__f '
                         f'"span.{idx}={t_run:.3f},{t:.3f}"; flush $__f }}')
+        if sentinel is not None:
+            # 🕐 A PROGRAM-DRIVEN EMULATED-TIME STOPWATCH (docs/spec-probe-mark.md).
+            # `POKE <addr>,<v>` from the case's own BASIC, watched here, logs the
+            # EXACT emulated instant of each write. Mark before an operation and
+            # after it and the delta is that operation's precise duration -- on
+            # the black-box reference machines too, because this watches emulated
+            # RAM and so needs no ROM knowledge anywhere.
+            #
+            # 🔴 IT ONLY *READS* THE CLOCK -- IT DOES NOT MOVE THE CAPTURE, AND
+            # THAT IS DELIBERATE. An earlier cut also armed the CAPTURE on the
+            # sentinel, to stop the budgets being guesses. It was proven
+            # byte-identical for VRAM captures (9/9) but NOT for screen ones --
+            # the sentinel fires before the interpreter prints its `Ok`/`ZB`
+            # prompt, and `screen_tail` terminates AT that prompt, so text
+            # readouts lost 2 characters. And it bought no measurable time
+            # (~0.3 emulated-second-equivalents per case, under the +-0.2 s wall
+            # noise floor), because the window it removes is idle emulation.
+            # Reading the clock carries none of that risk and is where the value
+            # turned out to be: EMULATED time is DETERMINISTIC -- measured
+            # bit-identical across repeats (14.736728 s twice, 46.252527 s twice)
+            # -- so it is the only basis on which a performance differential can
+            # be gated without flaking, which wall-clock timing can never offer.
+            # 🔴 ARM IT AT THE `RUN` SLOT, NOT AT SCRIPT START. MEASURED: with
+            # the watchpoint created up front it fired at emulated t=0.458 on
+            # BOTH references -- during their BOOT, hundreds of emulated seconds
+            # before `RUN` -- because they write the sentinel address while
+            # sizing/clearing RAM, so the capture read a booting screen. Hunting
+            # for an address no ROM ever touches is not a contract anyone can
+            # keep; arming AFTER the program starts is, and it makes the choice
+            # of address nearly free. (The value test stays as a second filter.)
+            # 🔴 ARM IT AT THE LAST INJECTION, NOT AT SCRIPT START. MEASURED:
+            # created up front it fired at emulated t=0.458 on BOTH references --
+            # during their BOOT -- because they write this address while
+            # sizing/clearing RAM, so it timed the boot instead of the program.
+            # Hunting for an address no ROM ever touches is not a contract anyone
+            # can keep; arming after the program starts is, and it makes the
+            # choice of address nearly free.
+            s_addr, _s_val = sentinel
+            body.append(
+                f'after time {t_run:.3f} {{\n'
+                f'  debug set_watchpoint write_mem {s_addr} {{}} {{\n'
+                f'    puts $__f "mark.{idx}=[machine_info time],$::wp_last_value"\n'
+                f'    flush $__f\n'
+                f'  }}\n'
+                f'}}')
         body.append(f'after time {t:.1f} {{ puts $__f "case.{idx}='
                     f'{cap}"; flush $__f }}')
         t += cap_gap
@@ -742,6 +801,7 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         + (f"proc __hb {{}} {{ catch {{set __h [open {{{hb_path}}} w];"
            f" puts $__h [machine_info time]; close $__h}};"
            f" after realtime {HB_WALL:g} __hb }}\n" if hb_path else "")
+        + "".join(f"{p}\n" for p in pre)
         + "\n".join(body) + "\n")
 
 
@@ -762,7 +822,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                timeout: float = 240.0, omsx: str | None = None,
                cart: str | None = None, diska: str | None = None,
                stall: float | None = None, abscap: float | None = None,
-               settle_n: int = 0, settle_out: dict | None = None
+               settle_n: int = 0, settle_out: dict | None = None,
+               sentinel: tuple[int, int] | None = None
                ) -> tuple[list[str | None], dict[int, list[int]], list]:
     """One boot, `cases` driven, returning `(captures, delivered, echo)` -- the
     raw engine. `delivered` maps a stored-mode case index to the line-number
@@ -797,7 +858,7 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     with open(tcl, "w") as f:
         f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
                      holds, hold_secs, prologue, slots, hb_path=hb,
-                     settle_n=settle_n))
+                     settle_n=settle_n, sentinel=sentinel))
     for p in (out, hb):
         if os.path.exists(p):
             os.unlink(p)
@@ -868,6 +929,19 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                     settle_out.setdefault("span", {})[int(sp.group(1))] = (
                         float(sp.group(2)), float(sp.group(3)))
                     continue
+            mk = re.match(r"mark\.(\d+)=([\d.]+),(\d+)$", ln.strip())
+            if mk:      # (emulated instant, value) for every sentinel write
+                if settle_out is not None:
+                    settle_out.setdefault("marks", {}).setdefault(
+                        int(mk.group(1)), []).append(
+                            (float(mk.group(2)), int(mk.group(3))))
+                continue
+            sn = re.match(r"sentinel\.(\d+)=([\d.]+)$", ln.strip())
+            if sn:      # the case ANNOUNCED completion; emulated time it fired
+                if settle_out is not None:
+                    settle_out.setdefault("sentinel", {})[int(sn.group(1))] = \
+                        float(sn.group(2))
+                continue
             e = re.match(r"echo\.(\d+)=(\d+),(\d+),([0-9a-f]*)$", ln.strip())
             if e:                              # D-ECHO: what the machine ECHOED
                 # ⚠️ decoded EXACTLY as the `screen` capture is -- non-print ->
