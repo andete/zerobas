@@ -782,8 +782,11 @@ ep_parse_b:
                 ; The in-domain twins are what make the out-of-domain ones mean
                 ; anything: they read ERR 2 on the SAME programs, so the trailing
                 ; comma really is a 4th argument and the parse really does reach
-                ; the grammar. The domain beats it -- which is why this sits ABOVE
-                ; the ep_syntax test below, and not under it.
+                ; the grammar. The domain beats it -- which is why gfx_chk_dom
+                ; sits ABOVE the fill: an out-of-domain border (od2.b256c, ERR 5)
+                ; must be rejected before ep_draw, and so before the exec_stmt
+                ; boundary that now owns the trailing-comma ERR 2 (D-PAINT4 deleted
+                ; the ep_syntax test that used to sit here -- see below).
                 call    gfx_eval_int16      ; DE = value (silent int16); ERR 6 if > int16
                 ld      a,(SCRMOD)
                 cp      3                   ; MULTICOLOUR?
@@ -793,9 +796,17 @@ ep_parse_b:
 ep_b_dom:
                 call    gfx_chk_dom         ; A = E; ERR 5 outside the mode's domain
                 ld      (GFX_B),a           ; low byte only (spec §6: GFX_B is 1 B)
-                call    skip_spaces
-                cp      ','
-                jp      z,ep_syntax         ; a 4th argument -> ERR 2
+                ; NO trailing-token check here, DELIBERATELY (D-PAINT4, -8 B carve).
+                ; A complete `PAINT(x,y),C,B` FILLS, then any leftover token (`,`,
+                ; `,X`, `,:`) is rejected by exec_stmt's boundary guard as ERR 2 --
+                ; AFTER the fill, which is the reference's ordering (fill then raise:
+                ; pa.4comma / pa.4arg / pa.4colon `2 9` on the VG-8020 AND the
+                ; CF-3300, docs/spec-basic-paint4.md). The old `cp ',' /
+                ; jp z,ep_syntax` raised ERR 2 BEFORE ep_draw -- right code, wrong
+                ; ordering (no fill). ep_draw guards HL across the tenant and
+                ; `jp exec_stmt`s, so the cursor lands on the leftover token. The
+                ; :748 site KEEPS ep_syntax: a doubled comma raises before B is
+                ; complete (ERR 2, no fill -- agrees on both refs, pa.ccomma).
                 jr      ep_draw
                 ; 🔴 D-PAINTMISS: the dangling-comma raiser gets its OWN label,
                 ; reached only from the four sites that MEAN it. ep_default_b

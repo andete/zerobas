@@ -762,19 +762,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       in the code — the fix is either a `sg_walk_fnframe` or a snapshot at bind
       time, and the ROW that would catch it does not exist yet.
 
-- [ ] 🔴 **`PAINT`'s 4th-argument `Syntax error` is raised AFTER the fill on both
-      references and BEFORE it here.** Filed 2026-08-22 by D-DUPSPAN,
-      [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §6.1.
-      `SCREEN 2:PAINT(10,10),9,15,` then `POINT(10,0)` **read in the handler**:
-      both references `2 9` (painted), zerobas `2 4` (not painted); the control
-      `PUT SPRITE 0` reads `2 4` everywhere, so the `9` is the fill.
-      🎯 **D-PAINTBORD's `od2.b16c` owns this exact statement shape and cannot
-      see it** — it scores the ERROR FACE and both orderings give ERR 2. No row
-      scored the SIDE EFFECT, so a fix and a no-op read the same (D-FILESIDE's
-      finding, different verb). ⚠️ Found only because the row read `<NO OUTPUT>`
-      at `step=4` on the references and `ERR 2` here: the ASYMMETRY was the
-      measurement, not the blank. Unpriced — `ep_parse_b`'s grammar test would
-      have to move below the tenant call, which is not obviously cheap.
+- [x] ✅ **CLOSED 2026-08-24 (D-PAINT4) — SAME DELETE-AND-DELEGATE AS SWAP, −8 B
+      MAIN PAGE-1 CARVE (91 → 99 B free).**
+      [`docs/spec-basic-paint4.md`](docs/spec-basic-paint4.md). The second verb
+      from the generic error-layer seam. `PAINT(x,y),C,B,<trailing>` FILLS then
+      raises ERR 2 on both references; zerobas raised ERR 2 BEFORE the fill via a
+      bespoke `ep_syntax` check above `ep_draw`. Deleting that
+      `call skip_spaces / cp ',' / jp z,ep_syntax` lets a complete arg list fill
+      and `jp exec_stmt`; the boundary guard (`es_noentry`) rejects the leftover
+      after the fill, matching the reference.
+      🔴 **THE FILED "not obviously cheap … move below the tenant call" WAS AN
+      UNRUN ASSUMPTION**: the check already sat above `ep_draw`, which already
+      guards the cursor (`push hl`/tenant/`pop hl`) and ends in `jp exec_stmt`, so
+      it was a DELETE, not a move.
+      📏 8 rows × 3 machines, references unanimous, **3 DIFF → 0** (before
+      `paint4_before3.out`, after `paint4_after.out`): `pa.4comma`/`pa.4arg`/
+      `pa.4colon` `2 4` → `2 9` (now filled before the raise, `POINT`=9). Knives
+      2/2 EXACT (`paint4_knives.py`); K-PA1's revert reproduced the pre-fix ROM
+      hash exactly.
+      🎯 **ONLY THE AFTER-COMPLETE-ARGS SITE MOVED.** PAINT's other two bespoke
+      error sites stay: `:748` (doubled comma `PAINT(x,y),C,,`, `pa.ccomma`) and
+      the dangling-border ERR 24 (`pa.3comma`) both raise BEFORE any fill and
+      AGREE on both references — the per-site oracle check is what separated them.
+      ⚠️ TIMING WAS THE APPARATUS: a PAINT flood is slow in emulated time; a first
+      pass at `step=7` starved the fill (every reference row `<NO OUTPUT>`), and a
+      bounded 10×10 box + the proven `step=90` fixed it.
 
 - [x] ✅ **CLOSED 2026-08-24 (D-SWAP3) — AND IT WAS A GENERIC MECHANISM, NOT A
       PER-VERB PATCH: `SWAP`'s BESPOKE THIRD-OPERAND CHECK DELETED, −23 B MAIN
@@ -818,7 +830,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
         `pl_syntax` and are reached from a `cp ','`/`cp COLON`/`or a` peek PAST
         the last valid argument: `graphics.asm:748/798` (PAINT 3rd/4th arg),
         `1203` (`PUT SPRITE 0,`), `1239` (a 5th sprite arg), `play.asm:73` (PLAY
-        4th voice), and SWAP (now deleted).
+        4th voice); SWAP and PAINT's `:798` are now DELETED (D-SWAP3, D-PAINT4).
+        ⚠️ PAINT's `:748` is NOT deletable — it raises before B is complete and
+        agrees on both refs (pa.ccomma) — the per-site oracle split, measured.
       * **Missing/empty operand → ERR 24 / ERR 2**: `ev_f`'s
         `ev_f_missop`/`ev_f_empty` machinery — the D-MISSOP arc already found
         this is *"one rule at 16 slots"* (docs/spec-basic-missop.md); several
@@ -827,10 +841,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 **The failure is not just wasted bytes — the bespoke check is usually
       subtly WRONG**: SWAP had wrong CODE (5 not 2) AND wrong ORDERING (raised
       before its exchange; the ref swaps then raises). The SAME ordering bug is
-      FILED OPEN for two more verbs — **PAINT's 4th argument** ("raised AFTER the
-      fill on both references and BEFORE here", below) and **CIRCLE's trailing
-      comma** ("draw before raising", below) — so this class already has three
-      known instances, one fixed.
+      FILED for two more verbs — **PAINT's 4th argument** (D-PAINT4, CLOSED
+      2026-08-24, fill-then-raise) and **CIRCLE's trailing comma** ("draw before
+      raising", still open, the cross-ABI tenant case) — so this class has three
+      measured instances, **two fixed (SWAP, PAINT)**.
       ⚠️ **THE CARVE IS REAL BUT NOT UNIFORM, and the split is the whole job.**
       SWAP was a clean 23 B DELETE because its side effect (the exchange) is
       INLINE and guards the cursor, so falling to `jp exec_stmt` with the cursor
@@ -838,7 +852,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       effect through a sub-ROM TENANT (`ep_draw`/`GFX_OP`), so whether deleting
       the check is free (draw, `jp exec_stmt`, boundary rejects — matching the
       ref's draw-then-fail) or a restructure depends on whether the parse cursor
-      SURVIVES the tenant round-trip. That is a per-verb MEASUREMENT (build +
+      SURVIVES the tenant round-trip. PAINT's DID — `ep_draw` already `push hl`s
+      across the tenant and `pop hl`s before `jp exec_stmt`, so it was a clean
+      delete like SWAP; CIRCLE's may not (parse in the tenant, result tested
+      before the draw op — likely a second flag, not a delete). That is a
+      per-verb MEASUREMENT (build +
       3-machine differential + a value read for the side effect), one verb at a
       time — never a mechanical sweep. Reuse `scratchpad/swap3_probe.py`'s shape.
       🎯 **BUT MEASURING PER-VERB DOES NOT MEAN THE VERBS ARE DIFFERENT — HEAVY

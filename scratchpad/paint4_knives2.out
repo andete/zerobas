@@ -1,0 +1,17 @@
+=== baseline ===
+baseline roms=21de46f2 / dd8f417b / 5998e721
+baseline 8 rows match paint4_after.out
+
+K-PA1  roms=62d89972 / dd8f417b / 0c5aa556
+  cut: RE-ADD the deleted trailing-token check (revert to raise-before-fill)
+  moved 3 rows: pa.4arg='2 4', pa.4colon='2 4', pa.4comma='2 4'
+  ✅ EXACT — 3 predicted, 3 moved
+
+K-PA2  roms=39f92c69 / dd8f417b / f5dcda5c
+  cut: ep_draw GFX_OP ld a,5 (PAINT) -> ld a,2 (POINT read, no fill)
+  moved 5 rows: pa.4arg='7 4', pa.4colon='7 4', pa.4comma='7 4', pa.color='7 4', pa.plain='7 4'
+  ✅ EXACT — 5 predicted, 5 moved
+
+restored roms=21de46f2 / dd8f417b / 5998e721
+2/2 knives EXACT
+EXIT rc=0
