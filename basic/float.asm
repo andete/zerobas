@@ -56,7 +56,7 @@ flo_dblsz:
 flo_unpackgo:
                 ld      a,(FAC)
                 or      a
-                jp      z,flo_zero
+                jr      z,flo_zero
                 ld      (FOSIGN),a          ; stash the raw lead byte (sign in bit7)
                 and     $7F
                 sub     64                  ; A = dec_exp (signed, -64..63)
@@ -194,7 +194,7 @@ flo_fx_a_zloop:
                 inc     hl
                 djnz    flo_fx_a_zloop
 flo_fx_a_digits:
-                jp      flo_write_digits
+                jr      flo_write_digits
 flo_fx_bc:
                 ld      a,(FOSIGCOUNT)
                 push    hl
@@ -222,7 +222,7 @@ flo_fx_bc:
                 ld      a,(FOSIGCOUNT)
                 sub     c
                 ld      b,a
-                jp      flo_write_digits_range   ; digits[dec_exp..s)
+                jr      flo_write_digits_range   ; digits[dec_exp..s)
 flo_fx_case_b:
                 ld      a,(FOSIGCOUNT)
                 ld      b,a
@@ -250,7 +250,7 @@ flo_write_digits:
                 ld      a,(FOSIGCOUNT)
                 ld      b,a
                 ld      c,0
-                jp      flo_write_digits_range
+                jr      flo_write_digits_range
 
 ; --- flo_write_digits_range: write B ASCII digits from TKDIG[C..] at (HL) -
 ; out: HL advanced past the written digits. Clobbers A, B, D, E.

@@ -262,7 +262,7 @@ e21_last:
                 call    record_errline      ; ERL := that line (run mode; DIRECTF==0
                                             ; is exactly what the gate above proved)
                 ld      hl,err_no_resume
-                jp      fre_abort_low       ; D-ONEFLG site A clears ONEFLG on the way
+                jr      fre_abort_low       ; D-ONEFLG site A clears ONEFLG on the way
                                             ; through, which is why rp_lp's site C could
                                             ; be deleted (spec §2.2); then the message
                                             ; and " in <line>"

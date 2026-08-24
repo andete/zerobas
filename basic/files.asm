@@ -234,7 +234,7 @@ df_notfound:
 df_or_loaderr:
                 ld      a,(DISKOP_OP)
                 cp      DISKOP_SEL_FAT_FIND
-                jp      z,df_notfound
+                jr      z,df_notfound
                 jp      load_error
 
 ; ===========================================================================
@@ -503,22 +503,22 @@ oodv_fn:
                 ; require: FOR OUTPUT AS [#]n , then end-of-statement
                 call    skip_spaces
                 cp      FOR_TOKEN
-                jp      nz,oo_fail_syn      ; device channels require FOR OUTPUT
+                jr      nz,oo_fail_syn      ; device channels require FOR OUTPUT
                 inc     hl
                 call    skip_spaces
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
-                jp      nz,oo_fail_syn      ; INPUT from LPT:/CRT: is invalid
+                jr      nz,oo_fail_syn      ; INPUT from LPT:/CRT: is invalid
                 inc     hl
                 ld      a,(hl)
                 cp      PUT_TOKEN
-                jp      nz,oo_fail_syn
+                jr      nz,oo_fail_syn
                 inc     hl
                 call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
                 call    skip_spaces         ; only a terminator may follow (no LEN=)
                 or      a
                 jr      z,oodv_ok
                 cp      COLON
-                jp      nz,oo_fail_syn
+                jr      nz,oo_fail_syn
 oodv_ok:
                 ; mark the channel open as a device (FCH_MODES[ch] = LPT/CRT_MODE);
                 ; no fat.asm I/O. Guard the text cursor across the array store.
@@ -564,7 +564,7 @@ oo_dev_cas:
                 ; require FOR INPUT | FOR OUTPUT
                 call    skip_spaces
                 cp      FOR_TOKEN
-                jp      nz,oo_fail_syn      ; CAS: needs FOR (no RANDOM cassette)
+                jr      nz,oo_fail_syn      ; CAS: needs FOR (no RANDOM cassette)
                 inc     hl
                 call    skip_spaces
                 cp      INPUT_TOKEN
@@ -580,7 +580,7 @@ oocas_out:
                 inc     hl
                 ld      a,(hl)
                 cp      PUT_TOKEN
-                jp      nz,oo_fail_syn
+                jr      nz,oo_fail_syn
                 inc     hl
                 ld      a,CAS_OUT_MODE
 oocas_setmode:
@@ -1801,12 +1801,12 @@ merge_cas:
                 inc     hl                  ; past the closing '"'
                 push    hl                  ; guard the text cursor across the merge
                 call    cas_open_match      ; find the (named) $EA file; header consumed
-                jp      c,mc_ioerr
+                jr      c,mc_ioerr
                 ld      a,(CAS_HDRID)
                 cp      ASCII_ID            ; MERGE requires an ASCII ($EA) file
                 jr      nz,mc_ioerr         ; tokenised / other -> cannot merge
                 call    cas_ascii_setup     ; prime data block 1
-                jp      c,mc_ioerr
+                jr      c,mc_ioerr
                 ; NB: NO new_prog — MERGE inserts into the current program.
                 call    cas_ascii_drive     ; read + tokenise + store each line; CF=bad line
                 pop     hl                  ; restore the text cursor

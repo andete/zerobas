@@ -268,7 +268,7 @@ evr_rhs:
                 jr      z,evr_chain
                 dec     de                  ; true = -1 ($FFFF)
 evr_chain:
-                jp      evr_scan            ; and look for the NEXT relop (left-assoc)
+                jr      evr_scan            ; and look for the NEXT relop (left-assoc)
 evr_lhs_str:
                 pop     af                  ; BUG C: drop the LHS-probe IX guard
                                             ; (ev_rel_str re-derives IX from HL)
@@ -1715,7 +1715,7 @@ evmc_sqr:
                 or      a
                 jr      nz,evmc_sqr_err
                 ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SQR
-                jp      evmc_dispatch
+                jr      evmc_dispatch
 evmc_sqr_err:
                 ld      a,3
                 call    penderr_set
@@ -1795,7 +1795,7 @@ evmc_log:
                 call    dig15_iszero
                 jr      z,evmc_log_err
                 ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LOG
-                jp      evmc_dispatch
+                jr      evmc_dispatch
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to evmc_sqr_err,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).
@@ -1825,7 +1825,7 @@ evmc_exp:
                 jp      p,evmc_exp_huge     ; dexp-4 >= 0 (no overflow in
                                             ; this range) <=> dexp>=4
                 ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_EXP
-                jp      evmc_dispatch
+                jr      evmc_dispatch
 evmc_exp_huge:
                 ld      a,(ARGA+FPNUM_SIGN)
                 or      a

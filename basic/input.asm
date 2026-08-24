@@ -185,7 +185,7 @@ inpc_redo0:
                 ld      hl,msg_redo
                 call    print_msg           ; "?redo from start" (D-MSGENC: CRLF emitted)
                 call    inpc_print_q
-                jp      inpc_reread         ; re-read the whole line (stack: varstart)
+                jr      inpc_reread         ; re-read the whole line (stack: varstart)
 inpc_redo3:
                 pop     hl                  ; drop textcur
                 pop     bc                  ; drop key

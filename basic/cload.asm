@@ -66,7 +66,7 @@ dcl_name:
                 cp      COLON               ; CLOAD : ... -> bare form
                 jr      z,dcl_noname
                 cp      '"'                 ; CLOAD "name" -> capture the quoted name
-                jp      nz,load_error
+                jr      nz,load_error
                 inc     hl                  ; past the opening quote
                 call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON=1
                 jp      do_tape_prog        ; (CLOAD has no ,R; trailing chars ignored)
@@ -123,7 +123,7 @@ dl_cas_close:
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: the closing '"' lives in
                 call    pcr_noquote         ; the STAGED copy, so resume past the
                                             ; expression and take only the ,R tail
-                jp      c,load_error
+                jr      c,load_error
                 call    do_tape_prog        ; load the tokenised program off tape
                 ret     c                   ; D-CASTAIL defect B (docs/spec-basic-
                                             ; castail.md §3.2): the tape load FAILED and
@@ -134,7 +134,7 @@ dl_cas_close:
                 ld      a,(RUNFLAG)          ; ,R ? -> run it; else back to the REPL
                 or      a
                 ret     z
-                jp      run_prog_top        ; RUN the loaded program -- at TOP LEVEL,
+                jr      run_prog_top        ; RUN the loaded program -- at TOP LEVEL,
                                             ; never nested (§3.1, and see run_prog_top)
 
 ; --- do_load disk path: LOAD "A:name"[,R] -----------------------------------
@@ -150,7 +150,7 @@ dl_is_disk:
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
                 call    pcr_noquote         ; ,R tail only -- no quote in the text
-                jp      c,load_error
+                jr      c,load_error
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
                 ret     c                   ; D-RUNTAIL defect B (docs/spec-basic-
                                             ; runtail.md §3.2): the load FAILED and has
@@ -162,7 +162,7 @@ dl_is_disk:
                 ld      a,(RUNFLAG)
                 or      a
                 ret     z
-                jp      run_prog_top        ; RUN the loaded program (program.asm) --
+                jr      run_prog_top        ; RUN the loaded program (program.asm) --
                                             ; at TOP LEVEL, never nested (§3.1)
 
 ; --- do_run: RUN | RUN <lineno> | RUN <name expression> ---------------------
@@ -235,7 +235,7 @@ do_run:
                 ret     c                   ; D-RUNTAIL defect B: the load FAILED and has
                                             ; already reported -- RUN"missing" must run
                                             ; NOTHING, not the resident program
-                jp      run_prog_top        ; ...and run it (running is implicit), at
+                jr      run_prog_top        ; ...and run it (running is implicit), at
                                             ; TOP LEVEL -- see run_prog_top below
 dr_stored:
                 jp      run_prog            ; bare RUN: the stored program from the top.
@@ -294,7 +294,7 @@ dr_cas_close:
                 ret     c                   ; D-CASTAIL defect B: the load FAILED and has
                                             ; already reported -- RUN"CAS:x" must run
                                             ; NOTHING, not the resident program
-                jp      run_prog_top        ; ...and run it, at TOP LEVEL -- see
+                jr      run_prog_top        ; ...and run it, at TOP LEVEL -- see
                                             ; run_prog_top below. D-CASTAIL closes the
                                             ; D-RUNTAIL §9 residual: this site had the
                                             ; IDENTICAL defect A and was left alone only
@@ -515,7 +515,7 @@ ctp_line:
                 ld      de,TXTMAX-4
                 or      a
                 sbc     hl,de
-                jp      nc,ctp_oom_pop
+                jr      nc,ctp_oom_pop
 
                 ; store (load) OR compare (CLOAD? verify) the saved link word via
                 ; cas_put — one mode-flagged emit point (relink fixes links later).
@@ -526,10 +526,10 @@ ctp_line:
 
                 ; line number (2 bytes)
                 call    TAPIN
-                jp      c,ctp_err_pop
+                jr      c,ctp_err_pop
                 call    cas_put
                 call    TAPIN
-                jp      c,ctp_err_pop
+                jr      c,ctp_err_pop
                 call    cas_put
                 pop     de                  ; DE = body length
 
@@ -543,9 +543,9 @@ ctp_body:
                 ld      de,TXTMAX
                 or      a
                 sbc     hl,de
-                jp      nc,ctp_oom_pop
+                jr      nc,ctp_oom_pop
                 call    TAPIN
-                jp      c,ctp_err_pop
+                jr      c,ctp_err_pop
                 call    cas_put             ; store or compare the body byte
                 pop     de                  ; DE = remaining count
                 dec     de
@@ -993,7 +993,7 @@ dpl_line:
                 ld      de,TXTMAX-4
                 or      a
                 sbc     hl,de
-                jp      nc,dpl_oom_pop
+                jr      nc,dpl_oom_pop
 
                 ; store the (saved) link word verbatim; relink fixes it later
                 ld      hl,(CLPTR)
@@ -1028,7 +1028,7 @@ dpl_body:
                 ld      de,TXTMAX
                 or      a
                 sbc     hl,de
-                jp      nc,dpl_oom_pop
+                jr      nc,dpl_oom_pop
                 call    fat_io_getbyte
                 jp      c,dpl_err_pop
                 ld      hl,(CLPTR)
@@ -1140,9 +1140,9 @@ dpl_oom:
 ascii_load:
                 call    new_prog            ; LOAD replaces the current program
                 call    fat_io_open         ; re-prime: reset the read to offset 0
-                jp      c,dpl_err           ; file vanished between opens -> error
+                jr      c,dpl_err           ; file vanished between opens -> error
                 call    ascii_read_lines    ; tokenise + store; CF set = bad line
-                jp      c,dpl_err           ; non-numbered line / not an ASCII program
+                jr      c,dpl_err           ; non-numbered line / not an ASCII program
                 ret                         ; caller handles ,R / returns to the REPL
                                             ; (D-RUNTAIL: CF is clear here -- the `jp c`
                                             ; two lines up did not fire)

@@ -360,8 +360,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ `tools/carve_scout.py --census` prints nothing and exits 0 without
       `--files` (documented, but it is the 0-byte-report-at-rc-0 shape).
 
-- [ ] 💰 **THE `jp`->`jr` PEEPHOLE SEAM — 51 B BANKED 2026-08-24 (D-JRSLICE),
-      ~69 B PAGE-1 REMAINDER + 35 LOW-REGION SITES STILL OPEN.** Filed 2026-08-24
+- [x] ✅ **THE `jp`->`jr` PEEPHOLE SEAM — FULLY BANKED 2026-08-24 (D-JRSLICE
+      + D-JRSLICE2): main page 1 2 B -> 120 B, low region 10 B -> 45 B.** Filed 2026-08-24
       ([`docs/spec-carve-scout-2026-08.md`](docs/spec-carve-scout-2026-08.md)
       §3b, `scratchpad/peephole_jr.py`). **155 `jp`/`jp cc` sites whose target
       is already in `jr` range — 120 of those sites in page 1 — recovering one
@@ -391,7 +391,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       uniquely locatable by (mnemonic,label) text, and pasmo 0.5.5 emits no
       listing to map address->source. That mapper is the follow-up. Plus 35
       low-region sites that fund the LOW wall, not page 1.
-      🔴 **OPCODE-SWALLOW MULTI-ENTRY TRICK: measured 10 groups / ~40 B and
+      ✅ **REMAINDER LANDED (D-JRSLICE2,
+      [`docs/spec-basic-jrslice2.md`](docs/spec-basic-jrslice2.md)): 102 more
+      sites via an address->source mapper** (`scratchpad/jr_mapper.py`,
+      region+ordinal join, all 104 resolved uniquely). Page 1 53 B -> 120 B,
+      low region 10 B -> 45 B (measured 2026-08-24). sub.rom moved this pass
+      (shared/both-side files), so the ABI gates were load-bearing -- both green.
+      🔴 **STANDING EXCLUSION: `pdfcb-body.inc` — a shared `*-body.inc` whose
+      `jr` is in range in main and OUT in sub.** It bit BOTH jp->jr passes at the
+      same line 53; the only 2 convertible page-1 bytes left, held off-limits to
+      a main-address-only mapper. A future taker must range-check the sub build.
+            🔴 **OPCODE-SWALLOW MULTI-ENTRY TRICK: measured 10 groups / ~40 B and
       DECLINED WITH NUMBERS** (D-JRSLICE §6) — it widens clobber contracts (the
       12 disk primitives would newly trash BC/HL, a semantic change) and trades
       the co-equal-docs clarity of the cleanest dispatch tables, for fewer bytes

@@ -273,7 +273,7 @@ dig15_shr:
                                             ; so no final restore is needed before ret)
                 ld      a,(FP_SHIFTAMT)
                 ld      b,a
-                jp      zero_fill           ; tail call
+                jr      zero_fill           ; tail call
 dshr_allzero:
                 jp      dig15_zero15
 
@@ -894,7 +894,7 @@ fpm_outer_next:
                 jr      z,fpm_after
                 dec     a
                 ld      (MUL_I),a
-                jp      fpm_outer
+                jr      fpm_outer
 fpm_after:
                 pop     af                  ; result sign, stashed above
                 ld      (ARGA+FPNUM_SIGN),a
@@ -1095,7 +1095,7 @@ fcmp_diffsign:
                 ; sign-to-relation shape as fcmp_b_zero below (ARGA vs an
                 ; implicit 0 on the right) — share its tail rather than
                 ; re-testing the already-loaded B register.
-                jp      fcmp_b_zero
+                jr      fcmp_b_zero
 fcmp_a_zero:
                 ld      hl,ARGB+FPNUM_DIG
                 call    dig15_iszero
@@ -1561,7 +1561,7 @@ widen_lhs_operand:
                 pop     hl
                 jr      nz,wlo_float
                 ld      de,(FP_LHSVAL)
-                jp      widen_int_to
+                jr      widen_int_to
 wlo_float:
                 jp      widen_lhsframe_to
 
@@ -1574,7 +1574,7 @@ widen_rhs_operand:
                 cp      2
                 pop     hl
                 jr      nz,wro_float
-                jp      widen_int_to
+                jr      widen_int_to
 wro_float:
                 jp      widen_fac_to
 
@@ -1589,7 +1589,7 @@ widen_both_operands:
                 call    widen_lhs_operand
                 ld      hl,ARGB
                 ld      de,(FP_TMP_B)
-                jp      widen_rhs_operand   ; tail call
+                jr      widen_rhs_operand   ; tail call
 
 ; --- xor_sign: A = ARGA_SIGN XOR ARGB_SIGN, masked to bit 7 — the standard -
 ; "result sign" for * and / (spec §10.2). Shared by fp_mul and fp_div.

@@ -648,12 +648,12 @@ ex_let:
                 pop     hl
                 ld      a,(FPERR)           ; store-coercion Overflow (§11.2) aborts the
                 or      a                   ; statement exactly like an eval()-time one
-                jp      nz,fp_runtime_error ; (D-F2-1 pattern); no stack cleanup needed --
+                jr      nz,fp_runtime_error ; (D-F2-1 pattern); no stack cleanup needed --
                                             ; checker (unlike check_expr_errors_popbc)
                 jp      exec_stmt           ; continue the line
 ex_let_err:
                 pop     bc
-                jp      stmt_error
+                jr      stmt_error
 
 ; --- ex_let_str: string-variable assignment  A$ = <string operand> -----------
 ; HL is on the name's first letter (var_str_type did not advance it). Parse the
@@ -705,7 +705,7 @@ ex_let_str:
                 ; unconditionally inside str_set_key itself).
                 ld      a,(FPERR)
                 or      a
-                jp      nz,fp_runtime_error
+                jr      nz,fp_runtime_error
                 jp      exec_stmt
 
 ; --- skip_spaces: advance HL past 0x20 bytes -------------------------------
@@ -751,7 +751,7 @@ stmt_error:
                 ; exactly as before -- which is what the n.syn.* rows hold.
                 call    check_expr_errors
                 ld      a,2                 ; -> trap if armed, else the identical
-                jp      raise_error         ; message + abort (fre_abort_low tail)
+                jr      raise_error         ; message + abort (fre_abort_low tail)
     ; repack build: err_syntax now lives in the low region (basic/arrays.asm,
     ; near err_subscript/err_redim/...) instead of here -- page-1 is razor-
     ; thin (arrays slice 3, docs/spec-basic-arrays-slice3-strings.md §5.3
@@ -771,7 +771,7 @@ stmt_error:
 ; wording we don't copy).
 type_mismatch_error:
                 ld      a,13                ; ERR 13: type mismatch (error-handling
-                jp      raise_error         ; S2a §2/(d), below) -- was ld hl,err_
+                jr      raise_error         ; S2a §2/(d), below) -- was ld hl,err_
                                             ; type_mismatch + jr fre_abort (byte-
                                             ; neutral: 2+3 vs 3+2)
 ; D-MSGMIGRATE: err_type_mismatch's TEXT now lives in the sub-ROM tenant
@@ -825,7 +825,7 @@ fp_runtime_error:
                 ld      hl,fperr_to_err
                 add     hl,de
                 ld      a,(hl)              ; A = MSX ERR code
-                jp      raise_error
+                jr      raise_error
 ; (fre_arymem_oom / fre_illegalfn_lc / fre_store_raise were HERE. D-MSGEXACT
 ; deleted all three -- see fp_runtime_error's header above. They existed to give
 ; ONE ERR code a second message that differed only in case; exact wording made
@@ -1629,7 +1629,7 @@ if_then:
                 jr      z,if_branch
                 jp      exec_stmt
 if_branch:
-                jp      ex_goto_at          ; HL on $0E -> conditional GOTO
+                jr      ex_goto_at          ; HL on $0E -> conditional GOTO
 if_false:
                 call    if_skip_to_else     ; scan to ELSE token or end of line
                 or      a
@@ -1787,7 +1787,7 @@ eval_pos_arg:
                 call    eval_byte_arg       ; A = E = 0..255 (or aborts)
                 or      a
                 ret     nz
-                jp      gb_illegal          ; p = 0 -> Illegal function call
+                jr      gb_illegal          ; p = 0 -> Illegal function call
 ; eval_byte_arg: eval + get_byte_arg's plain 0..255. CHR$'s code, LEFT$/RIGHT$'s
 ; n, MID$'s count (function and statement).
 eval_byte_arg:

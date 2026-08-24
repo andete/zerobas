@@ -649,9 +649,9 @@ ev_ff_val:
 str_func_ff:
                 ld      a,(hl)
                 cp      CHRD_TOKEN          ; $96 -> CHR$
-                jp      z,str_fn_chr
+                jr      z,str_fn_chr
                 cp      STRD_TOKEN          ; $93 -> STR$
-                jp      z,str_fn_str
+                jr      z,str_fn_str
                 cp      LEFTD_TOKEN         ; $81 -> LEFT$
                 jp      z,str_fn_left
                 cp      RIGHTD_TOKEN        ; $82 -> RIGHT$
@@ -680,12 +680,12 @@ str_fn_chr:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_arg_empty
+                jr      nz,str_arg_empty
                 inc     hl
                 call    eval_byte_arg       ; DE = n, 0..255 (or aborts); HL advanced
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_arg_empty
+                jr      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor across the temp write
                 ld      a,1
@@ -707,12 +707,12 @@ str_fn_str:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_arg_empty
+                jr      nz,str_arg_empty
                 inc     hl
                 call    eval                ; DE = n
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_arg_empty
+                jr      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor                       [CURSOR]
                 ld      c,0                 ; C = leading-space count
@@ -771,13 +771,13 @@ str_fn_left:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_arg_empty
+                jr      nz,str_arg_empty
                 inc     hl
                 ld      a,(hl)              ; empty first arg -> deferred syntax error
                 cp      ')'
-                jp      z,str_arg_empty
+                jr      z,str_arg_empty
                 cp      ','
-                jp      z,str_arg_empty
+                jr      z,str_arg_empty
                 call    str_eval            ; STRPTR -> source; HL advanced; CF=ok
                 jp      nc,str_eval_no
                 push    hl                  ; save cursor@','
@@ -785,7 +785,7 @@ str_fn_left:
                 pop     hl
                 ld      a,(hl)
                 cp      ','
-                jp      nz,str_arg_empty
+                jr      nz,str_arg_empty
                 inc     hl
                 ld      bc,(STRPTR)         ; BC = temp addr
                 push    bc                  ; save it across the numeric eval
@@ -793,7 +793,7 @@ str_fn_left:
                 pop     bc                  ; BC = temp addr
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_arg_empty
+                jr      nz,str_arg_empty
                 inc     hl                  ; HL = cursor past ')'
                 push    hl                  ; save cursor
                 ld      l,c
@@ -816,13 +816,13 @@ str_fn_right:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_arg_empty
+                jr      nz,str_arg_empty
                 inc     hl
                 ld      a,(hl)              ; empty first arg -> deferred syntax error
                 cp      ')'
-                jp      z,str_arg_empty
+                jr      z,str_arg_empty
                 cp      ','
-                jp      z,str_arg_empty
+                jr      z,str_arg_empty
                 call    str_eval
                 jp      nc,str_eval_no
                 push    hl
@@ -830,7 +830,7 @@ str_fn_right:
                 pop     hl
                 ld      a,(hl)
                 cp      ','
-                jp      nz,str_arg_empty
+                jr      nz,str_arg_empty
                 inc     hl
                 ld      bc,(STRPTR)
                 push    bc
@@ -1035,15 +1035,15 @@ ems_close:
                 push    de                  ; [n][m]
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,ems_err_pop2
+                jr      nz,ems_err_pop2
                 inc     hl
                 ld      a,(hl)
                 cp      EQ_TOKEN            ; '=' crunches to $EF
-                jp      nz,ems_err_pop2
+                jr      nz,ems_err_pop2
                 inc     hl
                 call    skip_spaces
                 call    str_eval            ; STRPTR -> RHS B$; HL = post-B$ cursor
-                jp      nc,ems_err_pop2     ; not a string operand
+                jr      nc,ems_err_pop2     ; not a string operand
                 ; --- compute + copy. HL = the continue cursor (keep it). ---
                 ; n<1/n>255 and the La>=n check, the avail/cap derivation, the
                 ; final k=min(cap,Lb), and the actual byte-overwrite ALL moved
@@ -1398,17 +1398,17 @@ efi_dup_a:
                 ex      (sp),hl             ; HL=cursor(restored); top:=aT        [p][aT]
                 ld      a,(hl)
                 cp      ','
-                jp      nz,efi_reject_pa    ; malformed -> discard [p][aT]
+                jr      nz,efi_reject_pa    ; malformed -> discard [p][aT]
                 inc     hl
                 call    skip_spaces
                 call    str_eval            ; STRPTR -> b$; HL advanced; CF=ok
-                jp      nc,efi_reject_pa
+                jr      nc,efi_reject_pa
                 push    hl                  ; guard cursor (past b$)              [p][aT][cursor]
                 call    str_snapshot_to_temp ; HL = bT (b$ snapshot); STRPTR=bT
                 ex      (sp),hl             ; HL=cursor(restored); top:=bT        [p][aT][bT]
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,efi_reject_pab
+                jr      nz,efi_reject_pab
                 inc     hl                  ; HL = cursor, past ')'
                 ; --- everything parsed: search ---
                 pop     iy                  ; IY = bT                             [p][aT]
@@ -1692,7 +1692,7 @@ ev_rel_str:
                 pop     ix                  ; IX = cursor (for the relop reads)
                 call    ev_sp
                 call    relop_bit
-                jp      nc,ers_mismatch     ; bare string LHS, no relop -> D-2 ([LHStemp])
+                jr      nc,ers_mismatch     ; bare string LHS, no relop -> D-2 ([LHStemp])
                 ld      c,b                 ; C = requested relation bits
                 inc     ix
                 call    ev_sp
@@ -1740,4 +1740,4 @@ ers_rhs_mismatch:
 ers_mismatch:
                 pop     hl                  ; discard [LHStemp] (bare-LHS entry: IX already
                                             ; = cursor from the relop reads above)
-                jp      type_mismatch_set
+                jr      type_mismatch_set

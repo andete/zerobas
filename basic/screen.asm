@@ -164,9 +164,9 @@ ex_color:
                 inc     hl                  ; past the COLOR token
                 call    skip_spaces
                 or      a
-                jp      z,clr_apply         ; bare COLOR -> re-apply current colours
+                jr      z,clr_apply         ; bare COLOR -> re-apply current colours
                 cp      COLON
-                jp      z,clr_apply
+                jr      z,clr_apply
                 cp      ','                 ; "COLOR ,bg" -> fg omitted
                 jr      z,clr_bg
                 call    eval                ; DE = foreground
@@ -174,29 +174,29 @@ ex_color:
                 ld      (FORCLR),a
                 call    skip_spaces
                 cp      ','
-                jp      nz,clr_apply
+                jr      nz,clr_apply
 clr_bg:
                 inc     hl                  ; past the comma
                 call    skip_spaces
                 cp      ','                 ; "COLOR fg,,border" -> bg omitted
                 jr      z,clr_bd
                 or      a
-                jp      z,clr_apply
+                jr      z,clr_apply
                 cp      COLON
-                jp      z,clr_apply
+                jr      z,clr_apply
                 call    eval                ; DE = background
                 ld      a,e
                 ld      (BAKCLR),a
                 call    skip_spaces
                 cp      ','
-                jp      nz,clr_apply
+                jr      nz,clr_apply
 clr_bd:
                 inc     hl                  ; past the comma
                 call    skip_spaces
                 or      a
-                jp      z,clr_apply
+                jr      z,clr_apply
                 cp      COLON
-                jp      z,clr_apply
+                jr      z,clr_apply
                 call    eval                ; DE = border
                 ld      a,e
                 ld      (BDRCLR),a

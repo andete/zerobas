@@ -195,7 +195,7 @@ dl_ovf_report:                              ; 🔴 SHARED TAIL, AND MY ENUMERATI
 dir_line:       dw      dir_line + 2        ; [link] -> the word below
                 dw      0                   ; [lineno] = 0 == the $0000 end marker
 dl_run:
-                jp      run_prog
+                jr      run_prog
 dl_new:
                 ; NEW clears ALL variables (VARTAB / DEFtbl / strings), not just
                 ; the stored program — MS-BASIC semantics. LOAD's own new_prog
@@ -654,7 +654,7 @@ do_break:
                 ; in DIRECT mode print_in_lineno now suppresses the suffix itself
                 ; (the reference prints a bare "Break" for a typed STOP -- measured),
                 ; so this tail stays a single unconditional jump.
-                jp      print_in_lineno
+                jr      print_in_lineno
 brk_msg:        db      "Break",0           ; repack: " in " moved into print_in_lineno
 
 ; --- cont_record: record a CONT resume point (D-CONTR) -----------------------
@@ -1007,7 +1007,7 @@ ex_cont_no:
                                             ; for PRINT ERR -- change the 17 and this
                                             ; prints `Unprintable error`. Gate row
                                             ; `cont-bare`; knife K2 cuts exactly this.
-                jp      print_msg           ; D-MSGENC: encoded body + emitted CRLF
+                jr      print_msg           ; D-MSGENC: encoded body + emitted CRLF
 
 ; --- find_line_bc: locate a stored line by number ----------------------------
 ; in: BC = line number. out: CF set + HL = the line's link-field address if

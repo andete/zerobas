@@ -63,7 +63,7 @@ ex_lprint:
                 ; not even empty. `scr-lprhash` is the row that names the message.
                 cp      '#'
                 jp      z,exp_pos_syn       ; ERR 2, and nothing printed
-                jp      exp_loop
+                jr      exp_loop
 
 ex_print:
                 inc     hl                  ; past the PRINT token
@@ -206,9 +206,9 @@ exp_loop:
                 ; own guard correctly refuses a `$` function in a numeric factor.
                 ; b.str / o.defstr / o.quotedcolon are the three rows.
                 cp      FN_TOKEN            ; $DE FN<name>[$] -> maybe a string
-                jp      z,exp_strvar
+                jr      z,exp_strvar
                 cp      '('
-                jp      z,exp_strvar
+                jr      z,exp_strvar
                 call    is_letter           ; a `$`-suffixed string variable?
                 jr      nc,exp_num
                 call    var_str_type        ; A=1 if `$` suffix
@@ -224,12 +224,12 @@ exp_num:
                 push    hl                  ; print_number divides the value in HL,
                 call    print_number        ;  clobbering the token cursor — guard it
                 pop     hl                  ;  (same as exp_strvar does for print_strval)
-                jp      exp_loop
+                jr      exp_loop
 exp_num_float:
                 push    hl                  ; flt_out ends in print_string, which guards
                 call    flt_out             ;  HL across CHPUT the same way (basic/float.asm)
                 pop     hl
-                jp      exp_loop
+                jr      exp_loop
 exp_strvar:
                 ; S2 (spec-basic-print-unparen-compare.md §3): remember the
                 ; operand START before str_eval consumes it -- if a relational
@@ -243,7 +243,7 @@ exp_strvar:
                 call    relop_peek          ; ZF=1 iff (HL) is a relop token
                 jr      nz,exps_notrel      ; no relop -> maybe an operator (below)
                 pop     hl                  ; relop follows -> restore the operand START
-                jp      exp_num             ; re-drive via eval -> ev_rel (-1/0, or D-2 abort)
+                jr      exp_num             ; re-drive via eval -> ev_rel (-1/0, or D-2 abort)
 ; --- an OPERATOR after a string value is a Type mismatch ---------------------
 ; MEASURED (docs/logicops-vg8020-characterization.md §6): the reference rejects
 ; EVERY operator here -- `"A" AND 1`, and equally `- * / ^ \ MOD` and the rest.

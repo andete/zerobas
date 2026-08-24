@@ -199,7 +199,7 @@ elg_second:
                 ld      (GFX_MODE),a        ; default: segment
                 call    skip_spaces
                 cp      ','
-                jp      nz,elg_draw         ; no options
+                jr      nz,elg_draw         ; no options
                 inc     hl                  ; consume the 1st comma
                 call    skip_spaces
                 cp      ','                 ; ",," -> colour omitted, straight to box field
@@ -226,7 +226,7 @@ elg_second:
                 call    gfx_store_colour_checked
                 call    skip_spaces
                 cp      ','
-                jp      nz,elg_draw         ; ",c" only
+                jr      nz,elg_draw         ; ",c" only
 elg_box_comma:
                 inc     hl                  ; consume the box-introducing comma
                 call    skip_spaces

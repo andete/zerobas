@@ -60,10 +60,10 @@ str_eval_one:
                 jp      z,ev_f_sprite       ; separate ASCII after the token)
     ENDIF
                 call    is_letter           ; a `$`-suffixed variable?
-                jp      nc,str_eval_no
+                jr      nc,str_eval_no
                 call    var_str_type        ; A=1 if `$` suffix
                 or      a
-                jp      z,str_eval_no       ; numeric name -> not a string operand
+                jr      z,str_eval_no       ; numeric name -> not a string operand
                 ; string variable: key it and point STRPTR at its stored value.
                 call    var_name_key        ; BC = key, HL past name + `$`
                 ld      a,(hl)
@@ -88,7 +88,7 @@ str_eval_one:
                 ld      (STRPTR),hl
 sev_have:
                 pop     hl
-                jp      str_eval_ok
+                jr      str_eval_ok
 ; Arrays slice-4a: the repack str_eval_lit (zero-copy literal-lift into
 ; RVDESC) lives in the low region (basic/str-engine.asm) — page 1 is byte-
 ; full; str_eval_one reaches it by the jp above.
@@ -238,12 +238,12 @@ str_mki:
                 inc     hl                  ; past the MKI$ selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jr      nz,str_eval_no
                 inc     hl
                 call    eval                ; DE = n; HL advanced past the argument
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_eval_no
+                jr      nz,str_eval_no
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard the cursor across the STRSCR write
                 ld      a,2
@@ -257,35 +257,35 @@ str_mki:
                                             ; target is a [len:1][ptr:2] descriptor)
                 ld      (STRPTR),hl
                 pop     hl                  ; restore the eval cursor
-                jp      str_eval_ok
+                jr      str_eval_ok
 str_eval_maybe_inputd:
                 inc     hl                  ; tentatively past the INPUT token
                 ld      a,(hl)
                 cp      '$'
                 jr      z,str_inputd
                 dec     hl                  ; not INPUT$ -> restore, not a string operand
-                jp      str_eval_no
+                jr      str_eval_no
 str_inputd:
                 inc     hl                  ; past '$'
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jr      nz,str_eval_no
                 inc     hl
                 call    eval                ; DE = n (byte count); HL advanced past it
                 ld      a,e
                 ld      (INDLR_N),a         ; target count (low byte; n <= 255)
                 ld      a,(hl)
                 cp      ','                 ; INPUT$(n) keyboard form (no ',') = Phase 3
-                jp      nz,str_eval_no
+                jr      nz,str_eval_no
                 inc     hl
                 ld      a,(hl)
                 cp      '#'                 ; file form requires '#f'
-                jp      nz,str_eval_no
+                jr      nz,str_eval_no
                 inc     hl
                 call    eval                ; DE = channel f; HL advanced
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_eval_no
+                jr      nz,str_eval_no
                 inc     hl                  ; HL past ')'
                 call    fch_check           ; D-BADFNUM: 5 / 59 / 52. Was
                                             ; `jp nc,str_eval_no` -- a PARSE-level
