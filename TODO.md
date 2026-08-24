@@ -329,6 +329,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       💰 Unpriced; main page 1, which D-HIMDOM left at **2 B free (2026-08-23)**
       — this needs FUNDING before it needs a design.
 
+- [ ] 📏 **CARVE SCOUT 2026-08-24 — TWO OF THE THREE FUNDING ROUTES FOR MAIN
+      PAGE 1 ARE MEASURED SHUT.** Measurement only, no byte moved
+      ([`docs/spec-carve-scout-2026-08.md`](docs/spec-carve-scout-2026-08.md)).
+      Read this BEFORE opening any slice that needs main page-1 bytes.
+      * **Route A, the dup-span collapse: EXHAUSTED.** 1440 spans walked, 27
+        byte-identical groups, 190 B nominal → **MEASURED SAFE NET 4 B**
+        (`tools/dupspan_indep.py`). Every large group dies on one of the three
+        blind spots — an escaping relative jump, running off its own end, or
+        fallthrough entry. D-DUPSPAN/D-DUPSPAN2/D-XREG worked this seam out.
+        ⚠️ Includes this week's own `ep_missing` ≡ `wid_missing`, priced at
+        **NET +1 B** because four `jr` edges would have to widen.
+      * **Route B, eviction to a page-0 sub-ROM tenant: STRUCTURALLY CLOSED FOR
+        VERBS**, despite 2563 B free over there. 🔴 **A verb that can PRINT or
+        can RAISE AN ERROR reaches the BIOS transitively** (`pchar → CHPUT`,
+        `raise_error → BREAKX`), and a page-0 tenant runs with that region
+        switched out. Five candidates sized at 177–762 B of movable code and
+        **all five refused, all by those same two paths**. 🎯 The shipped
+        tenants (circle generator, flood fill, string heap) are pure computation
+        reporting errors through a SLOT rather than raising — that is the only
+        shape the slot configuration permits, not a style choice.
+        📏 **Denominator: 5 files of 22 tested.** The blocker is generic so it
+        very likely generalises, and the cheap way to settle it is to ask
+        whether ANY page-1 entry point avoids both `pchar` and `raise_error`.
+      * **Route C, the page-1 eval-bounce co-routine: OPEN, UNPRICED.** Sub page
+        1 has 1617 B free and `sub/circleparse.asm` proves a verb's grammar can
+        live there via `GFX_DREQ` request/resume. It is the only route left for
+        a verb and it is not cheap — pricing it means picking a verb and
+        counting its value requests.
+      ⚠️ `tools/carve_scout.py --census` prints nothing and exits 0 without
+      `--files` (documented, but it is the 0-byte-report-at-rc-0 shape).
+
 - [ ] ⚠️ **AN UNNAMED OUTCOME READS AS NO OUTCOME, AND THE FIX MOVES THE HOLE
       ONE MESSAGE ALONG.** Filed 2026-08-23, D-CLRTRAP §5 — a probe-design
       residual, not a BASIC one. `face()` knew only about a numeric fence, so an

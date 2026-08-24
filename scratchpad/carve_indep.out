@@ -1,0 +1,99 @@
+  denominator: 1440 non-empty spans, 10 of them do not decode cleanly
+  27 byte-identical groups
+
+   20 B x2  nominal  20 B -> NET   +0 B   cd6342fe2c200d23cd6342fe0e200523232318ec
+        $7C0E esn_p2                 KEEP       relative jump leaves the span (+20 of 20)
+        $7C2F esn_scan_lp            UNSAFE     relative jump leaves the span (+20 of 20)
+   14 B x2  nominal  14 B -> NET   +0 B   30117ec601fe0a3805d60a371801
+        $335D ai14_lp                KEEP       relative jump leaves the span (+19 of 14)
+        $33E6 ai6_lp                 UNSAFE     relative jump leaves the span (+19 of 14)
+   13 B x2  nominal  13 B -> NET   +0 B   cd6342c5cdc97cc13803110000
+        $7D66 eostr_lp               KEEP       runs off its end — continues into different code
+        $7DED eokey_lp               UNSAFE     runs off its end — continues into different code
+    3 B x5  nominal  12 B -> NET   +0 B   c39b42
+        $4376 ee_raise               WORTHLESS  entered by fallthrough from ee_illegal; a `jp` costs 0 more than the span
+        $4A6C sid_raise              WORTHLESS  entered by fallthrough from str_inputd; a `jp` costs 0 more than the span
+        $526E pl_parse_err/tm_raise  KEEP       entered by fallthrough from tm_err24; a `jp` costs 0 more than the span
+        $7301 exf_raise              WORTHLESS  entered by fallthrough from exf_bfm; a `jp` costs 0 more than the span
+        $744F gp_raise               WORTHLESS  entered by fallthrough from gp_bfm; a `jp` costs 0 more than the span
+   12 B x2  nominal  12 B -> NET   +0 B   23cd6342fe8dc2525a230e00
+        $7D5A ex_on_strig            KEEP       runs off its end — continues into different code
+        $7DE1 ex_on_key              UNSAFE     runs off its end — continues into different code
+   11 B x2  nominal  11 B -> NET   +0 B   216af0cde138cd11341807
+        $3E84 asw_single             KEEP       relative jump leaves the span (+18 of 11)
+        $484A vsf_single             UNSAFE     relative jump leaves the span (+18 of 11)
+   11 B x2  nominal  11 B -> NET   +0 B   f1feff2806c630121318f5
+        $5647 pn_wr                  KEEP       relative jump leaves the span (+11 of 11)
+        $62B2 dde_wr                 UNSAFE     relative jump leaves the span (+11 of 11)
+   11 B x2  nominal  11 B -> NET   +0 B   7eb72807fe3a28032318f5
+        $57C7 pu_lo_skip             KEEP       relative jump leaves the span (+11 of 11)
+        $745F exc_skip               UNSAFE     relative jump leaves the span (+11 of 11)
+    3 B x4  nominal   9 B -> NET   +0 B   af1802
+        $3971 combine_add            UNSAFE     relative jump leaves the span (+5 of 3)
+        $733B ex_lset                UNSAFE     relative jump leaves the span (+5 of 3)
+        $74AF fmt_sel_360            KEEP       relative jump leaves the span (+5 of 3)
+        $7A36 ex_next                UNSAFE     relative jump leaves the span (+5 of 3)
+    4 B x3  nominal   8 B -> NET   +0 B   e1c3ee49
+        $2D13 sfi_done               KEEP       entered by fallthrough from sfi_nowrite: needs `jp`, 4-3
+        $49C9 sev_have               SAFE-JP    entered by fallthrough from str_eval_one: needs `jp`, 4-3
+        $6098 spr_rd_done            SAFE-JP    entered by fallthrough from ev_f_sprite: needs `jp`, 4-3
+        (- 2 B: `jr` callers that must widen to reach $2D13)
+    8 B x2  nominal   8 B -> NET   +0 B   cdb14630032318f8
+        $46DB vnk_more               KEEP       relative jump leaves the span (+8 of 8)
+        $471D vst_walk               UNSAFE     relative jump leaves the span (+8 of 8)
+    7 B x2  nominal   7 B -> NET   +0 B   cdc937ed5350f1
+        $3E8F asw_int                KEEP       runs off its end — continues into different code
+        $4855 vsf_int                UNSAFE     runs off its end — continues into different code
+    5 B x2  nominal   5 B -> NET   +0 B   20696e2000
+        $76F3 in_msg                 UNSAFE     runs off its end — continues into different code
+        $787A rn_in                  KEEP       runs off its end — continues into different code
+    4 B x2  nominal   4 B -> NET   +0 B   23cd0f45
+        $2BBA sfm_haveN              KEEP       runs off its end — continues into different code
+        $2C2A ems_have_m             UNSAFE     runs off its end — continues into different code
+    4 B x2  nominal   4 B -> NET   +0 B   772b10ed
+        $336C ai14_st                KEEP       runs off its end — continues into different code
+        $33F5 ai6_st                 UNSAFE     runs off its end — continues into different code
+    4 B x2  nominal   4 B -> NET   +0 B   3e0d1802
+        $5268 tm_err13               KEEP       relative jump leaves the span (+6 of 4)
+        $61C4 ex_vdp_assign          UNSAFE     relative jump leaves the span (+6 of 4)
+    4 B x2  nominal   4 B -> NET   +0 B   3e021802
+        $550D exp_dev_crt            KEEP       relative jump leaves the span (+6 of 4)
+        $6BA5 ex_files               UNSAFE     relative jump leaves the span (+6 of 4)
+    4 B x2  nominal   4 B -> NET   +0 B   ed5324e0
+        $694F bsv_set_exec           KEEP       runs off its end — continues into different code
+        $6980 bsv_cas_exec           UNSAFE     runs off its end — continues into different code
+    4 B x2  nominal   4 B -> NET   +0 B   3e051802
+        $6CFB oo_dev_lpt             UNSAFE     relative jump leaves the span (+6 of 4)
+        $72FB exf_dev                KEEP       relative jump leaves the span (+6 of 4)
+    4 B x2  nominal   4 B -> NET   +0 B   e1c37740
+        $7D13 ei_done                KEEP       entered by fallthrough from ei_set: needs `jp`, 4-3
+        $7DDD strig_done             SAFE-JP    entered by fallthrough from strig_flag: needs `jp`, 4-3
+        (- 1 B: `jr` callers that must widen to reach $7D13)
+    3 B x2  nominal   3 B -> NET   +2 B   78b7c9
+        $3354 affn_found             SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $67C8 cal_srv_ret            KEEP       entered by fallthrough from cal_gb_flag; a `jp` costs 0 more than the span
+        (- 1 B: `jr` callers that must widen to reach $67C8)
+    3 B x2  nominal   3 B -> NET   +0 B   3efff5
+        $5639 pn_conv                KEEP       runs off its end — continues into different code
+        $62A4 ln_div_entry           UNSAFE     runs off its end — continues into different code
+    3 B x2  nominal   3 B -> NET   +1 B   c30562
+        $59D7 wid_missing            SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $5F8A ep_missing             KEEP       terminates, no escaping relative jump, no fallthrough entry
+        (- 2 B: `jr` callers that must widen to reach $5F8A)
+    3 B x2  nominal   3 B -> NET   +0 B   210180
+        $624D list_walk              KEEP       runs off its end — continues into different code
+        $77A8 find_line_bc           UNSAFE     runs off its end — continues into different code
+    3 B x2  nominal   3 B -> NET   +0 B   cdf465
+        $6569 dl_is_cas              UNSAFE     runs off its end — continues into different code
+        $65DA dr_is_cas              KEEP       runs off its end — continues into different code
+    3 B x2  nominal   3 B -> NET   +1 B   c3be75
+        $65C9 dr_stored              SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $755C dl_run                 KEEP       entered by fallthrough from dir_line; a `jp` costs 0 more than the span
+        (- 2 B: `jr` callers that must widen to reach $755C)
+    3 B x2  nominal   3 B -> NET   +0 B   cdda69
+        $69AC sav_ascii_flag         UNSAFE     runs off its end — continues into different code
+        $69EF sav_cas_flag           KEEP       runs off its end — continues into different code
+
+  nominal 190 B  ->  MEASURED SAFE NET 4 B
+  by REGION, before widening: page-0 low 3 B, page 1 6 B; `jr` widening charged 5 B
+  ⚠️ the widening figure is an ESTIMATE from a byte scan that cannot tell a `jr` opcode from data; the assembler is the authority.

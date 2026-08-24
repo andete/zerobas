@@ -1,0 +1,89 @@
+  denominator: 1500 labels in [2812,8000), 1440 non-empty spans
+   20 B x2  cd6342fe2c200d23cd6342fe0e200523232318ec
+        $7C0E  esn_p2
+        $7C2F  esn_scan_lp
+   14 B x2  30117ec601fe0a3805d60a371801
+        $335D  ai14_lp
+        $33E6  ai6_lp
+   13 B x2  cd6342c5cdc97cc13803110000
+        $7D66  eostr_lp
+        $7DED  eokey_lp
+    3 B x5  c39b42
+        $4376  ee_raise
+        $4A6C  sid_raise
+        $526E  pl_parse_err/tm_raise
+        $7301  exf_raise
+        $744F  gp_raise
+   12 B x2  23cd6342fe8dc2525a230e00
+        $7D5A  ex_on_strig
+        $7DE1  ex_on_key
+   11 B x2  216af0cde138cd11341807
+        $3E84  asw_single
+        $484A  vsf_single
+   11 B x2  f1feff2806c630121318f5
+        $5647  pn_wr
+        $62B2  dde_wr
+   11 B x2  7eb72807fe3a28032318f5
+        $57C7  pu_lo_skip
+        $745F  exc_skip
+    3 B x4  af1802
+        $3971  combine_add
+        $733B  ex_lset
+        $74AF  fmt_sel_360
+        $7A36  ex_next
+    4 B x3  e1c3ee49
+        $2D13  sfi_done
+        $49C9  sev_have
+        $6098  spr_rd_done
+    8 B x2  cdb14630032318f8
+        $46DB  vnk_more
+        $471D  vst_walk
+    7 B x2  cdc937ed5350f1
+        $3E8F  asw_int
+        $4855  vsf_int
+    5 B x2  20696e2000
+        $76F3  in_msg
+        $787A  rn_in
+    4 B x2  23cd0f45
+        $2BBA  sfm_haveN
+        $2C2A  ems_have_m
+    4 B x2  772b10ed
+        $336C  ai14_st
+        $33F5  ai6_st
+    4 B x2  3e0d1802
+        $5268  tm_err13
+        $61C4  ex_vdp_assign
+    4 B x2  3e021802
+        $550D  exp_dev_crt
+        $6BA5  ex_files
+    4 B x2  ed5324e0
+        $694F  bsv_set_exec
+        $6980  bsv_cas_exec
+    4 B x2  3e051802
+        $6CFB  oo_dev_lpt
+        $72FB  exf_dev
+    4 B x2  e1c37740
+        $7D13  ei_done
+        $7DDD  strig_done
+    3 B x2  78b7c9
+        $3354  affn_found
+        $67C8  cal_srv_ret
+    3 B x2  3efff5
+        $5639  pn_conv
+        $62A4  ln_div_entry
+    3 B x2  c30562
+        $59D7  wid_missing
+        $5F8A  ep_missing
+    3 B x2  210180
+        $624D  list_walk
+        $77A8  find_line_bc
+    3 B x2  cdf465
+        $6569  dl_is_cas
+        $65DA  dr_is_cas
+    3 B x2  c3be75
+        $65C9  dr_stored
+        $755C  dl_run
+    3 B x2  cdda69
+        $69AC  sav_ascii_flag
+        $69EF  sav_cas_flag
+  27 duplicate groups, 190 B recoverable IF every collapse is position-independent (READ EACH ONE)
