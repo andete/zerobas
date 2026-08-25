@@ -884,6 +884,23 @@ GXPOS_ROWS = frozenset(("w.s2", "w.s0", "w.s0.tm", "w.s2.col",
 # first and walk ~250. It is a speed difference, and this probe measures error
 # surfaces, so the window is widened for those two rows rather than the finding
 # being mis-filed. Measured: 2.5 s no, 12 s yes, 40 s identical to 12 s.
+#
+# 🔴 AND IT IS A `run_gap`, NOT A `step` -- FIXED 2026-08-25, HAVING BEEN THE
+# LAST SITE IN THE TREE STILL PAYING FOR THE CONFLATION `run_gap` WAS ADDED TO
+# END. `step` is TWO knobs wearing one name: the inter-line KEYBUF spacing that
+# guarantees the previous chunk was consumed (the drained-buffer property the
+# whole D-LATCH/D-DELIVER apparatus rests on), and the RUN..capture completion
+# budget. Raising `step` to 12 s bought the completion window these two rows
+# genuinely need -- and charged it to all TWELVE typing slots as well, so each
+# case scheduled 166.5 emulated seconds where an ordinary row schedules 43.0.
+# Every word of the measurement above is about what happens AFTER `RUN`, which
+# is exactly and only what `run_gap` covers. ⚠️ THE WINDOW IS UNCHANGED: with
+# `step` at the side's default, `t = max(t, t_run + run_gap)` puts the capture
+# at `RUN + 12 s`, the same instant `step = 12` put it. Verified the only way
+# that has teeth -- all 236 report rows byte-identical across the 8 shards.
+# 🟢 AND THE TALLY IS THE STANDING PROOF THE WINDOW IS STILL BIG ENOUGH: these
+# rows capture ON SIGNAL, so a completion that outran 12 s would show up as a
+# FALLBACK. 0 fallbacks, before and after.
 SLOW_ROWS = {"c.32767": 12.0, "c.m32768": 12.0}
 
 
@@ -897,8 +914,7 @@ def program(label: str, kind: str, seed: str, stmt: str) -> list[str]:
 
 # --- D-SNCAP: capture-on-signal (probes/lib/probe_signal.py) -----------------
 # Every case here is its OWN BOOT (`batch=False`), so the scheduled RUN..capture
-# budget is a guess -- and an expensive one on the two `SLOW_ROWS`, whose 12 s
-# `step` is charged to every typed line. The TRAPPED template ends at a single
+# budget is a guess. The TRAPPED template ends at a single
 # `:END` that BOTH paths reach (the handler `RESUME`s onto line 50), so the case
 # announces completion itself and the budget becomes a pure FAILURE detector.
 #
@@ -944,7 +960,9 @@ def run_side(side: str, only: list[str]) -> dict:
             shutil.copy(TEST_DSK, dsk)
             kw["diska"] = dsk
         lines = list(cfg["reset"]) + program(label, kind, seed, stmt) + ["RUN"]
-        step = max(cfg["step"], SLOW_ROWS.get(label, 0.0))
+        # 🔴 `run_gap`, NOT `step` -- see SLOW_ROWS. It is a MINIMUM and never
+        # pulls a capture earlier, so a row without an entry is untouched.
+        gap = SLOW_ROWS.get(label)
         # 🔴 A FRESH `so` PER CALL. Each case is its own boot and every boot
         # indexes from 0, so one dict reused across the loop would hold a single
         # entry and the tally would silently under-count.
@@ -952,7 +970,8 @@ def run_side(side: str, only: list[str]) -> dict:
         sn = probe_signal.kwargs(so) if kind == "t" else {}
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", lines)],
-            batch=False, boot=cfg["boot"], step=step, **kw, **sn)
+            batch=False, boot=cfg["boot"], step=cfg["step"], run_gap=gap,
+            **kw, **sn)
         SIG.add(so, label=f"{side}:{label}")
         out[label] = read_case(kind, caps[0])
     return out

@@ -56,8 +56,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
-- [ ] ⚡ **`lineerr`'s TWO `SLOW_ROWS` PAY THEIR 12 s BUDGET ON EVERY TYPED LINE —
-      the exact mistake `run_gap` was built to fix, still standing in one probe.**
+- [x] ✅ **FIXED 2026-08-25, SAME DAY IT WAS FILED — `lineerr`'s two `SLOW_ROWS`
+      now carry their 12 s on `run_gap`, not on `step`.** `run_gap=` in
+      `run_side`; `step` stays at the side's default. **236 report rows
+      byte-identical** across the 8 shards, **0 fallbacks** before and after,
+      `make gates` **37/37**, ROM hashes unchanged.
+      📏 **The window is UNCHANGED and that was checked before booting anything**
+      (`scratchpad/rungap/check_timeline.py`, off `_tcl`'s generated timeline):
+      RUN..capture is **12.0 s in both configurations**, and the per-case
+      schedule ends at **166.5 → 52.5** emulated s (vg8020/zb) and **196.5 →
+      91.5** (cf3300). Six case-runs, **−666 emulated s ≈ 2 s of wall** — filed
+      as bookkeeping and it stayed bookkeeping.
+      🟢 **AND THE TALLY WITNESSED IT.** The two shards holding these rows had a
+      max signal instant of **182.7 / 182.6 emulated s; now 78.0**, the same as
+      an ordinary row. 🔴 **What that proves is SUFFICIENCY, not need**: 0
+      fallbacks says 12 s is still enough, nothing says it is still required —
+      and with capture-on-signal that no longer matters, because a budget only
+      costs time on a row that FAILS to signal.
+      ⏱️ The battery came in at 540 s against 672 s for the previous full run at
+      the same 14 s warm-up. **That is NOT this change** — 2 s cannot be 132 s;
+      the warm-up is a 14 s serial sample and does not bound contention over a
+      540 s parallel battery. No wall claim.
+
+      ~~⚡ **`lineerr`'s TWO `SLOW_ROWS` PAY THEIR 12 s BUDGET ON EVERY TYPED LINE —
+      the exact mistake `run_gap` was built to fix, still standing in one probe.**~~
       `basic_probe_lineerr.py` `SLOW_ROWS = {"c.32767": 12.0, "c.m32768": 12.0}`
       raises `step`, and `step` is the inter-line KEYBUF spacing as well as the
       RUN..capture budget. MEASURED (deterministically, off `_tcl`'s own timeline,
