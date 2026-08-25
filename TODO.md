@@ -56,6 +56,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [ ] ⚡ **`lineerr`'s TWO `SLOW_ROWS` PAY THEIR 12 s BUDGET ON EVERY TYPED LINE —
+      the exact mistake `run_gap` was built to fix, still standing in one probe.**
+      `basic_probe_lineerr.py` `SLOW_ROWS = {"c.32767": 12.0, "c.m32768": 12.0}`
+      raises `step`, and `step` is the inter-line KEYBUF spacing as well as the
+      RUN..capture budget. MEASURED (deterministically, off `_tcl`'s own timeline,
+      `scratchpad/sncap/emutotal.py`): those rows schedule **166.5 emulated s per
+      case against 43.0** for an ordinary row — 12 slots at 12 s to cover one
+      completion that D-SNCAP2's tally shows signalling **0.2 s after `RUN`**.
+      Six case-runs (2 rows × 3 sides) ≈ **740 emulated s ≈ 2 s of wall**, so this
+      is bookkeeping, not a speedup: fix it by moving the 12 s to `run_gap=` and
+      letting `step` stay at the side's default. ⚠️ **VERIFY THE ROWS STILL READ
+      THE SAME** — the whole point of those rows is that they are slow, and
+      `run_gap` is a MINIMUM that never pulls a capture earlier, so a byte-identical
+      before/after is the check (`scratchpad/sncap/rowdiff.py`). Filed 2026-08-25
+      by D-SNCAP2, which measured it in passing and did not act on it.
+
 - [x] 🔴 **SAVESTATE-RESTORE-PER-CASE — BUILT, MEASURED, AND WITHDRAWN 2026-08-24
       (user). THE CODE IS REVERTED.** Same-session A/B: **555 s with vs 642 s
       without** — but the OFF run's single flake cost ~124 s in serial retry,
