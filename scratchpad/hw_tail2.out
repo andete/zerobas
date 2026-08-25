@@ -1,0 +1,20 @@
+250 identical invocations of a 1-line case on C-BIOS_MSX1_EU_REPACK_DISK
+
+wall: median 0.117s  mean 0.231s  min 0.104s  max 5.798s
+slowest 25 = 55% of total
+
+  SLOWEST 5
+    #179 wall  5.798s = preflight 0.000 + spawn 0.002 + after-spawn 5.796
+    #89  wall  5.762s = preflight 0.000 + spawn 0.001 + after-spawn 5.761
+    #45  wall  5.750s = preflight 0.000 + spawn 0.002 + after-spawn 5.748
+    #134 wall  5.741s = preflight 0.000 + spawn 0.002 + after-spawn 5.739
+    #223 wall  5.733s = preflight 0.000 + spawn 0.001 + after-spawn 5.731
+  FASTEST 5
+    #65  wall  0.104s = preflight 0.000 + spawn 0.001 + after-spawn 0.102
+    #32  wall  0.105s = preflight 0.000 + spawn 0.001 + after-spawn 0.103
+    #211 wall  0.105s = preflight 0.000 + spawn 0.002 + after-spawn 0.103
+    #150 wall  0.106s = preflight 0.000 + spawn 0.001 + after-spawn 0.104
+    #201 wall  0.106s = preflight 0.000 + spawn 0.001 + after-spawn 0.104
+
+  median preflight 0.000s  median spawn 0.001s  median after-spawn 0.114s
+rc=0

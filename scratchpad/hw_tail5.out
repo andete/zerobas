@@ -1,0 +1,23 @@
+200 identical invocations, 1 case(s) each, on C-BIOS_MSX1_EU_REPACK_DISK
+
+wall: median 0.117s  mean 0.233s  min 0.106s  max 5.789s
+slowest 20 = 55% of total
+
+  stalls (>3x median): 5 at [0, 44, 88, 132, 176]
+  deltas in COUNT: [44, 44, 44, 44]  median 44.0
+  => one stall per 5.1s of non-stall wall
+  SLOWEST 5
+    #44  wall  5.789s = preflight 0.000 + spawn 0.001 + after-spawn 5.787
+    #176 wall  5.750s = preflight 0.000 + spawn 0.001 + after-spawn 5.749
+    #88  wall  5.749s = preflight 0.000 + spawn 0.001 + after-spawn 5.747
+    #132 wall  5.710s = preflight 0.000 + spawn 0.001 + after-spawn 5.709
+    #0   wall  0.800s = preflight 0.058 + spawn 0.002 + after-spawn 0.740
+  FASTEST 5
+    #46  wall  0.106s = preflight 0.000 + spawn 0.002 + after-spawn 0.104
+    #112 wall  0.106s = preflight 0.000 + spawn 0.002 + after-spawn 0.104
+    #182 wall  0.107s = preflight 0.000 + spawn 0.002 + after-spawn 0.105
+    #140 wall  0.107s = preflight 0.000 + spawn 0.001 + after-spawn 0.105
+    #24  wall  0.107s = preflight 0.000 + spawn 0.001 + after-spawn 0.105
+
+  median preflight 0.000s  median spawn 0.001s  median after-spawn 0.115s
+rc=0

@@ -1,0 +1,23 @@
+200 identical invocations, 1 case(s) each, on Philips_VG_8020
+
+wall: median 0.168s  mean 0.339s  min 0.115s  max 5.833s
+slowest 20 = 56% of total
+
+  stalls (>3x median): 7 at [0, 31, 63, 94, 126, 157, 188]
+  deltas in COUNT: [31, 32, 31, 32, 31, 31]  median 31.0
+  => one stall per 5.2s of non-stall wall
+  SLOWEST 5
+    #126 wall  5.833s = preflight 0.000 + spawn 0.002 + after-spawn 5.831
+    #63  wall  5.798s = preflight 0.000 + spawn 0.002 + after-spawn 5.796
+    #31  wall  5.792s = preflight 0.000 + spawn 0.002 + after-spawn 5.790
+    #157 wall  5.760s = preflight 0.000 + spawn 0.002 + after-spawn 5.758
+    #94  wall  5.756s = preflight 0.000 + spawn 0.001 + after-spawn 5.754
+  FASTEST 5
+    #1   wall  0.115s = preflight 0.000 + spawn 0.002 + after-spawn 0.113
+    #58  wall  0.120s = preflight 0.000 + spawn 0.002 + after-spawn 0.118
+    #52  wall  0.121s = preflight 0.000 + spawn 0.002 + after-spawn 0.118
+    #195 wall  0.122s = preflight 0.000 + spawn 0.001 + after-spawn 0.120
+    #167 wall  0.157s = preflight 0.000 + spawn 0.002 + after-spawn 0.155
+
+  median preflight 0.000s  median spawn 0.002s  median after-spawn 0.166s
+rc=0
