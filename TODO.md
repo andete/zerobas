@@ -85,14 +85,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       failure-formatting branch, so no healthy run executes it and nothing else
       can notice it rot. ⛔ **NOT in `make gates`**: two cases signal `openmsx` by
       name and would hit a neighbour, so it refuses to start while any is running.
-      🟢 `make gates` **37/37 with ZERO flakes and zero retries**, the first fully
-      clean battery of the day — n=1, and not the evidence.
-      📋 **RESIDUAL, NOT FIXED**: the per-case temp disk path is
-      `zb_{probe}_{side}_{label}.dsk`, keyed by side and label only. The 4
-      `CONTROLS` are replicated into **every** `lineerr` shard, so 8 concurrent
-      processes `shutil.copy` onto the same 12 paths. It did **not** cause any of
-      the four flakes examined (none of them was a control row), but it is the
-      same class and one `os.getpid()` from closed.
+      🔴 **AND THE FIRST CUT MOVED THE RACE INSTEAD OF REMOVING IT — CAUGHT BY
+      THE DIAGNOSIS IT SHIPPED WITH.** `shutil.copyfile` isolated the DESTINATION
+      and still READ the shared source mid-rewrite, so a run got a torn copy of
+      its own and died on that: two flakes in the very next battery, naming the
+      temp path. 🎯 **A COPY IS A READ.** `_settings_read()` now VALIDATES what it
+      got as XML before believing it — a torn read is not a rare event to hope
+      past, it is a return value to check — retries briefly, and omits the flag
+      if it never comes back clean (no worse than before).
+      📏 **THE FLAKE COUNT, BEFORE AND AFTER.** Before: **6 flakes in 7 full
+      batteries**, wall 337–672 s. After: **0 in 3**, wall **427 / 414 / 415 s** —
+      and the stability is itself a consequence, because a flake costs a whole
+      serial re-run. At the old rate three clean in a row is ≈0.3 %, which with
+      the mechanism (24/40 → 0/40) and the captured messages is the case.
+      ⚠️ **NOT "the flake is solved" — "this flake is".** Another cause would now
+      NAME ITSELF instead of printing nothing, which is the durable part.
+      ✅ **AND THE FILED RESIDUAL IS CLOSED TOO** (`probes/lib/probe_tmp.py`):
+      21 sites across 19 probes built `zb_{probe}_{side}_{label}.dsk` from a
+      fixed name with no process identity and no cleanup. 8 shards × 4 replicated
+      `CONTROLS` = 12 paths copied onto concurrently. 🔴 **AND THE LEAK WAS THE
+      BIGGER HALF: 2165 orphaned `zb_*` files, 1.1 GB**, because nothing ever
+      deleted them — adding process identity WITHOUT cleanup would have made that
+      strictly worse. One directory per process, removed at exit, honouring
+      `$ZB_TEST_TMP` exactly as `tests/_tmp.py` does. Verified: 6 concurrent
+      processes asking for one name get 6 distinct paths, all gone at exit.
+      🎯 **`tests/_tmp.py` HAD CARRIED THIS LESSON SINCE THE UNIT TESTS HIT IT**
+      (*"bit the parallel gate battery as a stochastic pasmo failure"*) and it was
+      never carried across to the probes — the half that actually runs eight at a
+      time. **When a fix is filed as a helper, grep for the OTHER callers.**
 
 - [x] ✅ **FIXED 2026-08-25, SAME DAY IT WAS FILED — `lineerr`'s two `SLOW_ROWS`
       now carry their 12 s on `run_gap`, not on `step`.** `run_gap=` in
