@@ -1,0 +1,11 @@
+case          side   fixed wall  sentinel wall  captured at   budget
+flood         ref         1.07s          0.22s       36.05s      90s
+flood         zb          0.47s          0.27s       50.56s      90s
+circle_fill   ref         0.47s          0.17s       23.17s      90s
+circle_fill   zb          0.36s          0.16s       24.27s      90s
+errpath       ref         0.48s          0.48s fallback 113.0s      90s
+errpath       zb          0.38s          0.37s fallback 113.0s      90s
+
+  total: fixed 3.24s -> sentinel 1.68s (+48%)
+  ⚠️ wall here carries the host's periodic stall (TODO.md), so a small difference is NOT resolvable; the 'captured at' column is the deterministic one.
+rc=0

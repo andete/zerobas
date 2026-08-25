@@ -681,6 +681,75 @@ BOX = "LINE(20,20)-(60,60),15,B"       # a realistic (non-byte-aligned) 1px box
 # 46.25 emulated seconds on zerobas (exact, measured with the mark stopwatch --
 # docs/spec-probe-budget.md), i.e. this is only a 1.9x margin over its worst
 # case. Do NOT cut it; it was the SCOPE that was wrong, never the size.
+# 🕐 D-SNCAP: THE PAINT PHASES CAPTURE ON THE PROGRAM'S OWN SIGNAL, NOT ON THE
+# BUDGET. Each case POKEs PAINT_MARK once its readout is final; the harness
+# watches that address and captures THEN, so `PAINT_STEP` below stops being a
+# guess at the completion time and becomes a pure FAILURE detector -- it now
+# fires only if the case never signalled at all.
+#
+# 🟢 WHY THIS IS ALLOWED FOR A *SCREEN* CAPTURE. It was refused until 2026-08-25
+# because a raw screen taken when the program signals is missing the `Ok`/`ZB`
+# prompt -- 2 characters, on all three machines. That measurement stands, and it
+# does not matter: `_answer()` strips exactly that text by construction, and
+# `_points` is built on `_answer`. Proven, not argued, by
+# scratchpad/sentinel_screen_diff.py -- 6 rows x 2 machines, RAW differs on every
+# one (which is also the proof the sentinel FIRED) while the ANSWER is identical
+# on every one, with a teeth control showing the readout can tell the cases apart.
+# ⚠️ A CASE THAT RAISES NEVER REACHES ITS POKE, so the budget stays the backstop
+# for that path -- measured: an `ONERRORGOTO` row falls back and saves nothing,
+# which is the intended behaviour and not a defect. PHASE J (the PAINT ERROR
+# phase) is therefore deliberately NOT converted.
+# 📏 MEASURED reclaim on the rows that do signal: captured at 23.2-50.6 emulated
+# seconds against the 90 s budget.
+PAINT_MARK = 0xE000
+
+
+def paint_mark(lines: list[str]) -> list[str]:
+    """Append the sentinel POKE to a case's program.
+
+    Two shapes exist in this module and they need it in different places: a
+    `_points` case ENDS (poke just before `:END`, once the readout is printed),
+    while a PHASE H-V case holds the screen in a `GOTO`-self loop and never ends
+    (poke on its own line, before the loop)."""
+    out = list(lines)
+    for i, ln in enumerate(out):
+        if ln.endswith(":END"):
+            out[i] = ln[:-4] + f":POKE&H{PAINT_MARK:04X},255:END"
+            return out
+    for i, ln in enumerate(out):
+        if ln.startswith("GOTO"):
+            out.insert(i, f"POKE&H{PAINT_MARK:04X},255")
+            return out
+    raise AssertionError(f"paint_mark: no END and no GOTO-self in {lines!r}")
+
+
+# 🔴 AND THE ADOPTION MUST BE VISIBLE, OR IT IS UNFALSIFIABLE. A case whose
+# sentinel never fires falls back to the budget and passes IDENTICALLY -- so a
+# green phase says nothing about whether capture-on-signal is actually happening
+# ([[savestate-slice]]: "an optimisation that does nothing is indistinguishable
+# from one that works"). Every converted call records which way it captured, and
+# the phase prints the tally; a fallback in a PAINT phase means that case never
+# signalled, which is a finding about the CASE, not a detail of the harness.
+PAINT_SIG = [0, 0]          # [captured on signal, fell back to the budget]
+
+
+def paint_sn(out: dict) -> dict:
+    """The capture-on-signal kwargs, wired to record how the capture happened."""
+    return dict(sentinel=(PAINT_MARK, 255), sentinel_capture=True, settle_out=out)
+
+
+def paint_tally(*outs: dict) -> None:
+    for o in outs:
+        PAINT_SIG[0] += len(o.get("sentinel", {}))
+        PAINT_SIG[1] += len(o.get("fallback", {}))
+
+
+def paint_sig_line() -> str:
+    hit, fb = PAINT_SIG
+    return (f"    capture-on-signal: {hit} on signal, {fb} fell back to the "
+            f"{PAINT_STEP:.0f}s budget"
+            + ("" if not fb else "   ⚠️ a fallback means that case never signalled"))
+
 PAINT_STEP = 90.0     # emulated seconds RUN..capture (see above)
 PAINT_CAP_GAP = 10.0
 PAINT_TIMEOUT = 900.0  # wall-clock kill switch -- generous (see above; the
@@ -834,15 +903,20 @@ def phase_h() -> int:
           f"step={PAINT_STEP}s) ===")
     for label, setup, pts in PAINT_FILL_CASES:
         prog_lines = paint_points_prog(setup, pts)
-        specs = [("stored", prog_lines)]
+        specs = [("stored", paint_mark(prog_lines))]
+        so_r, so_z = {}, {}
         ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=PAINT_STEP,
-                                  cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+                                  cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
+                                  **paint_sn(so_r))[0]
         zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=PAINT_STEP,
-                                 cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+                                 cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
+                                 **paint_sn(so_z))[0]
+        paint_tally(so_r, so_z)
         rp, zp = _points(ref, len(pts)), _points(zb, len(pts))
         ok = rp is not None and rp == zp
         fails += not ok
         print(f"  {'PASS' if ok else 'FAIL'} {label:22} ref={rp} zb={zp}")
+    print(paint_sig_line())
     return fails
 
 
@@ -956,13 +1030,15 @@ def phase_h_vram() -> int:
         for x, y, _, _, _ in cells:
             pa = paddr(x, y)
             segs += [(pa, 1), (pa + 0x2000, 1)]
-        specs = [("stored", prog([INIT] + ops))]
+        specs = [("stored", paint_mark(prog([INIT] + ops)))]
+        so_r, so_z = {}, {}
         ref = omsx_repl.run_cases(REF, specs, batch=False, capture=("vram_segs", segs),
                                   run_gap=PAINT_STEP, cap_gap=PAINT_CAP_GAP,
-                                  timeout=PAINT_TIMEOUT)[0]
+                                  timeout=PAINT_TIMEOUT, **paint_sn(so_r))[0]
         zb = omsx_repl.run_cases(ZB, specs, batch=False, capture=("vram_segs", segs),
                                  run_gap=PAINT_STEP, cap_gap=PAINT_CAP_GAP,
-                                 timeout=PAINT_TIMEOUT)[0]
+                                 timeout=PAINT_TIMEOUT, **paint_sn(so_z))[0]
+        paint_tally(so_r, so_z)
         for i, (x, y, ep, ec, note) in enumerate(cells):
             r = ref[i * 4:i * 4 + 4] if ref else None
             z = zb[i * 4:i * 4 + 4] if zb else None
@@ -977,6 +1053,7 @@ def phase_h_vram() -> int:
             zp = f"{z[:2]}/{z[2:]}" if z else "None"
             print(f"  {'PASS' if ok else 'FAIL'} {label + '.' + str(i):20} "
                   f"({x:3},{y:3}) ref={rp} zb={zp}  {note}{orc}")
+    print(paint_sig_line())
     return fails
 
 
@@ -1055,15 +1132,20 @@ def phase_h_mc() -> int:
     print("=== PHASE H-MC: PAINT fill differential in SCREEN 3 (D-PAINTMC, "
           f"step={MC_PAINT_STEP}s) ===")
     for label, setup, pts in PAINT_MC_CASES:
-        specs = [("stored", paint_points_prog_mc(setup, pts))]
+        specs = [("stored", paint_mark(paint_points_prog_mc(setup, pts)))]
+        so_r, so_z = {}, {}
         ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=MC_PAINT_STEP,
-                                  cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+                                  cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
+                                  **paint_sn(so_r))[0]
         zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=MC_PAINT_STEP,
-                                 cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+                                 cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
+                                 **paint_sn(so_z))[0]
+        paint_tally(so_r, so_z)
         rp, zp = _points(ref, len(pts)), _points(zb, len(pts))
         ok = rp is not None and rp == zp
         fails += not ok
         print(f"  {'PASS' if ok else 'FAIL'} {label:22} ref={rp} zb={zp}")
+    print(paint_sig_line())
     return fails
 
 

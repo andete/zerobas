@@ -913,16 +913,24 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     if sentinel_capture:
         if sentinel is None:
             raise SystemExit("omsx_repl: sentinel_capture needs a sentinel")
-        if capture == "screen":
-            # MEASURED, not defensive: the sentinel fires before the interpreter
-            # prints its `Ok`/`ZB` prompt, and `screen_tail` terminates AT the
-            # prompt -- text readouts differed by exactly those 2 characters on
-            # all three machines. Refuse rather than let a probe adopt it silently.
-            raise SystemExit(
-                "omsx_repl: sentinel_capture is NOT valid for capture='screen' "
-                "-- the prompt has not been printed when the program signals, "
-                "so the readout changes (docs/spec-probe-mark.md). Use it for "
-                "VRAM/memory captures only.")
+        # 🟢 THE `capture="screen"` REFUSAL WAS LIFTED 2026-08-25 (user decision).
+        # It was measured, and it was WEIGHED WRONG. The measurement stands: the
+        # sentinel fires before the interpreter prints its `Ok`/`ZB` prompt and
+        # `screen_tail` terminates AT that prompt, so a RAW text capture differs
+        # by exactly those 2 characters on all three machines.
+        # 🔴 BUT THOSE 2 CHARACTERS ARE THE ONE THING EVERY TEXT READOUT ALREADY
+        # THROWS AWAY. basic_probe_graphics `_answer()` says so in its own
+        # docstring -- "the trailing BASIC prompt / 'Ok' / 'No RESUME' text
+        # (which differs per machine) is ignored" -- and `_points` is built on it.
+        # A capture taken BEFORE the prompt is not a degraded reading of the same
+        # screen; it is the screen WITHOUT the machine-specific noise the
+        # readouts exist to strip. `screen_tail` terminating at the prompt is a
+        # property of the TERMINATOR, not evidence the reading is wrong.
+        # ⚠️ THE BURDEN MOVED, IT DID NOT VANISH: a probe adopting this for a
+        # screen capture must show its OWN readout is prompt-independent, with a
+        # differential taken AFTER normalisation and carrying a teeth control
+        # (scratchpad/sentinel_screen_diff.py). Comparing RAW screens will still
+        # differ by 2 characters, by construction, and that is not a defect.
     binary = find_omsx(omsx)
     out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="repl_", delete=False).name
     tcl = out + ".tcl"

@@ -292,6 +292,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       — so this is the only basis on which a performance differential can be gated
       **without flaking**, which wall-clock timing (±0.2 s noise here) can never
       offer. It produced the exact PAINT figures in the item above.
+      ✅ **SHIPPED 2026-08-25 (D-SNCAP) — THE REFUSAL IS LIFTED AND THE PAINT
+      PHASES CAPTURE ON SIGNAL.** `graphics-acceptance` 216.7 → 186 s solo
+      (−14 %), battery **502 → 445 s**, 37/37 green, ROM hashes unchanged.
+      🟢 **THE DIFFERENTIAL THAT CARRIES IT** (`scratchpad/sentinel_screen_diff.py`,
+      6 rows × 2 machines): **RAW differs on every row** — the `Ok`/`ZB` prompt,
+      exactly as the old measurement said, *and that is also the proof the
+      sentinel FIRED* — while the **ANSWER after `_points` is identical on every
+      row**, with a teeth control (flood `[15,15]` vs box `[7,1]`) so a 0-DIFF
+      tally cannot be vacuous. The 2 characters are precisely what `_answer()`
+      documents itself as stripping.
+      🔬 **AND THE ADOPTION IS FALSIFIABLE, WHICH MATTERS MORE THAN THE 14 %.** A
+      case whose sentinel never fires falls back to the budget and passes
+      IDENTICALLY, so a green phase proves nothing on its own
+      ([[savestate-slice]]). Each converted phase now prints its tally: **28 / 34
+      / 52 captured on signal, 0 fallbacks**, in the battery as well as solo.
+      🎯 **THE BUDGETS ARE NOW FAILURE DETECTORS**: `PAINT_STEP` = 90 s fires only
+      if a case never signals at all. Deterministically the captures land at
+      **23.2–50.6 emulated s** against that 90 s.
+      ⚠️ **PHASE J (PAINT errors) IS DELIBERATELY NOT CONVERTED** — a case that
+      raises never reaches its `POKE`. Measured, not assumed: an `ONERRORGOTO` row
+      falls back (`fallback 113.0 s`) and saves nothing. That is the intended
+      backstop.
+      📋 **NOT YET CONVERTED, and each needs its own differential**: every other
+      phase of this probe and every other emulator gate. The pattern is
+      `paint_mark()` + `paint_sn()` + `paint_tally()` in
+      `basic_probe_graphics.py`.
+
       🟢 **DECIDED 2026-08-25 (user): ADOPT IT FOR SCREEN CAPTURES TOO —
       *"even if we verify via a screenshot, a sentinel still makes sense"*.** The
       refusal below was measured but it was WEIGHED WRONG, and the item may not
