@@ -42,11 +42,11 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-import tempfile
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_repl                                                 # noqa: E402
+import probe_tmp                                                 # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
                             "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -294,7 +294,7 @@ def run_side(side, only, repeat):
         return [r for r in rows if not only or any(r[0].startswith(o)
                                                    for o in only)]
 
-    log = os.path.join(tempfile.gettempdir(), f"zb_editverb_{side}.log")
+    log = probe_tmp.tmp(f"zb_editverb_{side}.log")
     plug = (f"set printerlogfilename {{{log}}}", "plug printerport logger")
 
     rnm = sel(RNM)

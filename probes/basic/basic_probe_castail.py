@@ -154,6 +154,7 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "disk"))
 import omsx_repl                                                 # noqa: E402
 import probe_report                                              # noqa: E402
+import probe_tmp                                                 # noqa: E402
 from basic_probe_cas_ascii import build_ascii_cas                # noqa: E402
 from cas_encode import CAS_SYNC, BASIC_ID, build_cas_basic       # noqa: E402
 from bas_tokenise import make_multiline_program                  # noqa: E402
@@ -631,7 +632,7 @@ def run_rec_group(side, only, row, out):
                     + [f"{label}:{n}" for n in REC_READINGS]:
                 out[name] = "<NO DISK FIXTURE>"
             return out
-        dsk = os.path.join(tempfile.gettempdir(), f"zb_castail_{side}_{label}.dsk")
+        dsk = probe_tmp.tmp(f"zb_castail_{side}_{label}.dsk")
         shutil.copy(TEST_DSK, dsk)
         kw["diska"] = dsk
     wav = os.path.join(tempfile.mkdtemp(prefix=f"zb_castail_rec_{side}_"),
@@ -668,8 +669,7 @@ def run_group(side, only, kind, group, out):
             for label, *_ in rows:
                 out[label] = "<NO DISK FIXTURE>"
             return out
-        dsk = os.path.join(tempfile.gettempdir(),
-                           f"zb_castail_{side}_{kind}.dsk")
+        dsk = probe_tmp.tmp(f"zb_castail_{side}_{kind}.dsk")
         shutil.copy(TEST_DSK, dsk)
         kw["diska"] = dsk
     cases = [("direct", list(cfg["reset"]) + list(lines))

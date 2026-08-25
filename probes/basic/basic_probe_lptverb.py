@@ -71,11 +71,11 @@ import argparse
 import os
 import shutil
 import sys
-import tempfile
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_repl                                                 # noqa: E402
+import probe_tmp                                                 # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
                             "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -403,7 +403,7 @@ def run_side(side, only):
         return [r for r in rows
                 if not only or any(r[0].startswith(o) for o in only)]
 
-    log = os.path.join(tempfile.gettempdir(), f"zb_lptverb_{side}.log")
+    log = probe_tmp.tmp(f"zb_lptverb_{side}.log")
     plug = (f"set printerlogfilename {{{log}}}", "plug printerport logger")
 
     def prn_battery(rows, diska=None):
@@ -484,8 +484,7 @@ def run_side(side, only):
             # Read-only rows share ONE working copy; the committed fixture is
             # never the file openMSX is handed.
             if ro:
-                dsk = os.path.join(tempfile.gettempdir(),
-                                   f"zb_lptverb_{side}_{tag}.dsk")
+                dsk = probe_tmp.tmp(f"zb_lptverb_{side}_{tag}.dsk")
                 shutil.copy(src, dsk)
                 scr = [r for r in ro if r[0] in LFL_SCREEN]
                 prn = [r for r in ro if r[0] not in LFL_SCREEN]
@@ -495,8 +494,7 @@ def run_side(side, only):
                     prn_battery(prn, diska=dsk)
             # Every WRITING row gets a fresh copy of its own.
             for row in [r for r in rows if r[0] in LFL_WRITES]:
-                dsk = os.path.join(tempfile.gettempdir(),
-                                   f"zb_lptverb_{side}_{tag}_{row[0]}.dsk")
+                dsk = probe_tmp.tmp(f"zb_lptverb_{side}_{tag}_{row[0]}.dsk")
                 shutil.copy(src, dsk)
                 if row[0] in LFL_SCREEN:
                     scr_battery([row], diska=dsk)

@@ -97,13 +97,13 @@ import argparse
 import os
 import shutil
 import sys
-import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))    # sibling probes
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_repl                                                 # noqa: E402
 import probe_report                                              # noqa: E402
+import probe_tmp                                                 # noqa: E402
 from basic_probe_lptverb import reading                          # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
@@ -319,11 +319,11 @@ def run_side(side, only):
 
     ro = [r for r in rows if r[0] not in WRITES]
     if ro:
-        dsk = os.path.join(tempfile.gettempdir(), f"zb_dskmsg_{side}.dsk")
+        dsk = probe_tmp.tmp(f"zb_dskmsg_{side}.dsk")
         shutil.copy(TEST_DSK, dsk)
         battery(ro, dsk)
     for row in [r for r in rows if r[0] in WRITES]:
-        dsk = os.path.join(tempfile.gettempdir(), f"zb_dskmsg_{side}_{row[0]}.dsk")
+        dsk = probe_tmp.tmp(f"zb_dskmsg_{side}_{row[0]}.dsk")
         shutil.copy(TEST_DSK, dsk)
         battery([row], dsk)
     return out

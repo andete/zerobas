@@ -67,12 +67,12 @@ import argparse
 import os
 import shutil
 import sys
-import tempfile
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_repl                                                 # noqa: E402
 import probe_report                                              # noqa: E402
+import probe_tmp                                                 # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
                             "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -309,8 +309,7 @@ def run_side(side: str, only: list[str]) -> dict:
             continue
         kw = {}
         if cfg["diska"]:
-            dsk = os.path.join(tempfile.gettempdir(),
-                               f"zb_locarg_{side}_{label}.dsk")
+            dsk = probe_tmp.tmp(f"zb_locarg_{side}_{label}.dsk")
             shutil.copy(TEST_DSK, dsk)
             kw["diska"] = dsk
         lines = list(cfg["reset"]) + program(kind, stmt) + ["RUN"]

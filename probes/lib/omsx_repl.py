@@ -104,6 +104,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from xml.etree import ElementTree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from omsx_run import find_omsx  # reuse headless-binary discovery
@@ -501,7 +502,23 @@ def tcl_writes(body: str, addr: int) -> bool:
 # over a person's config was never intended.
 # ⚠️ If the user has no settings file yet there is nothing to copy and nothing
 # to tear, so the flag is omitted and openMSX uses its own defaults.
+#
+# 🔴 AND THE FIRST CUT OF THIS MOVED THE RACE INSTEAD OF REMOVING IT. A plain
+# `shutil.copyfile` isolates the DESTINATION and still READS the shared source
+# while another openMSX is mid-rewrite of it -- so the run got a torn copy of
+# its own and died on that instead, with the temp path in the message:
+#
+#   Fatal error: Failed to parser settings file '/var/…/repl_XXXX.txt.settings.xml'
+#
+# Two flakes in the very next battery, found by the diagnosis this same commit
+# added. **A copy is a READ.** So the source is read through `_settings_read`,
+# which VALIDATES what it got as XML before believing it -- a torn read is not a
+# rare event to hope past, it is a return value to check -- and retries briefly,
+# because the tear lasts microseconds. If it never validates, the flag is
+# omitted: back to today's behaviour, which is no worse, rather than handing
+# openMSX a file that is certainly broken.
 OMSX_SETTINGS = os.path.expanduser("~/.openMSX/share/settings.xml")
+SETTINGS_TRIES = 8
 
 HB_WALL = 3.0            # WALL seconds between heartbeats (host clock, not emulated)
 HB_STALL = 90.0          # wall seconds with no heartbeat at all -> declare a hang
@@ -895,6 +912,30 @@ def run_case(machine: str, mode: str, lines: list[str], **kw) -> str | None:
     return run_batch(machine, [(mode, lines)], reset=(), **kw)[0]
 
 
+def _settings_read() -> str | None:
+    """The user's openMSX settings, read WHOLE -- or None.
+
+    🔴 A COPY IS A READ, AND THE SOURCE IS THE CONTENDED FILE. Every openMSX
+    rewrites `~/.openMSX/share/settings.xml` on exit, so reading it during a
+    parallel battery can return a torn document; handing that to openMSX as a
+    private `-setting` file just relocates the crash (measured: two flakes,
+    naming the temp path). A torn read is not a rare event to hope past -- it is
+    a return value, and this checks it. `fromstring` is the exact test openMSX
+    itself will apply, not a heuristic about the first and last line."""
+    for _ in range(SETTINGS_TRIES):
+        try:
+            blob = open(OMSX_SETTINGS, encoding="utf-8", errors="strict").read()
+        except OSError:
+            return None                 # no settings file at all: nothing to tear
+        try:
+            if ElementTree.fromstring(blob).tag == "settings":
+                return blob
+        except ElementTree.ParseError:
+            pass
+        time.sleep(0.02)                # the tear lasts microseconds
+    return None                         # never clean: omit the flag, as before
+
+
 def _rm(path: str) -> None:
     try:
         os.unlink(path)
@@ -1019,10 +1060,12 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
             os.unlink(p)
 
     settings = out + ".settings.xml"    # see OMSX_SETTINGS: the parallel flake
-    try:
-        shutil.copyfile(OMSX_SETTINGS, settings)
-    except OSError:
+    blob = _settings_read()
+    if blob is None:
         settings = None
+    else:
+        with open(settings, "w") as sf:
+            sf.write(blob)
 
     cmd = [binary, "-machine", machine]
     if settings:

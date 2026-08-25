@@ -84,12 +84,12 @@ import argparse
 import os
 import shutil
 import sys
-import tempfile
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_repl                                                 # noqa: E402
 import probe_report                                              # noqa: E402
+import probe_tmp                                                 # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
                             "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -205,7 +205,7 @@ def run_side(side, only):
             out[label] = "<NO DISK FIXTURE>"
         return out
     # ⚠️ A /tmp COPY, never the committed image: every hit row WRITES RT.BAS.
-    dsk = os.path.join(tempfile.gettempdir(), f"zb_runtail_{side}.dsk")
+    dsk = probe_tmp.tmp(f"zb_runtail_{side}.dsk")
     shutil.copy(TEST_DSK, dsk)
     cases = [("direct", list(cfg["reset"]) + list(lines))
              for _, lines, _, _ in rows]

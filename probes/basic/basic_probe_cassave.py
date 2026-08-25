@@ -74,6 +74,7 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_repl                                                 # noqa: E402
 import probe_report                                              # noqa: E402
+import probe_tmp                                                 # noqa: E402
 import cas_decode                                                # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
@@ -185,7 +186,7 @@ def run_row(side, label, saveline, out):
             for k in ("", ":alive", ":id", ":name", ":text"):
                 out[f"{label}{k}" if k else label] = "<NO DISK FIXTURE>"
             return out
-        dsk = os.path.join(tempfile.gettempdir(), f"zb_cassave_{side}_{label}.dsk")
+        dsk = probe_tmp.tmp(f"zb_cassave_{side}_{label}.dsk")
         shutil.copy(TEST_DSK, dsk)
         kw["diska"] = dsk
     wav = os.path.join(tempfile.mkdtemp(prefix=f"zb_cassave_{side}_"),
