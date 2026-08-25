@@ -37,6 +37,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl  # noqa: E402
+import probe_signal  # noqa: E402
 
 REF = os.environ.get("ZEROBAS_REF_MACHINE", "Philips_VG_8020")
 ZB = os.environ.get("ZEROBAS_SUBROM_INTTEST_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -716,7 +717,13 @@ BOX = "LINE(20,20)-(60,60),15,B"       # a realistic (non-byte-aligned) 1px box
 # phase) is therefore deliberately NOT converted.
 # 📏 MEASURED reclaim on the rows that do signal: captured at 23.2-50.6 emulated
 # seconds against the 90 s budget.
-PAINT_MARK = 0xE000
+# 🔀 THE PLUMBING NOW LIVES IN `probe_signal` (2026-08-25, D-SNCAP2). The
+# ADDRESS, the kwargs and the tally are shape-free and are shared with every
+# other converted probe -- one address, one value filter, one tally line. What
+# stays HERE is the only part that is not shareable and the only part that can be
+# silently wrong: WHERE THE MARK GOES, which is a property of the programs THIS
+# module builds (four shapes, below).
+PAINT_MARK = probe_signal.MARK_ADDR
 
 
 def paint_mark(lines: list[str]) -> list[str]:
@@ -741,7 +748,7 @@ def paint_mark(lines: list[str]) -> list[str]:
     a FALLBACK, because the poke was never reached -- which is why every
     converted phase prints that tally."""
     out, marked = list(lines), False
-    poke = f"POKE&H{PAINT_MARK:04X},255"
+    poke = probe_signal.POKE
     for i, ln in enumerate(out):
         if ln.endswith(":END") or ln == "END":
             out[i] = (ln[:-3] if ln == "END" else ln[:-4] + ":") + poke + ":END"
@@ -772,25 +779,24 @@ def paint_mark(lines: list[str]) -> list[str]:
 # from one that works"). Every converted call records which way it captured, and
 # the phase prints the tally; a fallback in a PAINT phase means that case never
 # signalled, which is a finding about the CASE, not a detail of the harness.
-PAINT_SIG = [0, 0]          # [captured on signal, fell back to the budget]
+# ⚠️ ONE ACCUMULATOR FOR THE WHOLE MODULE, SO EVERY `paint_sig_line()` PRINTS A
+# RUNNING TOTAL, not that phase's own count. That is what it has always done and
+# what the "321 on signal" figure means; a per-phase count would be a different
+# (and also useful) reading, but it is not this one.
+PAINT_SIG = probe_signal.Tally()
 
 
 def paint_sn(out: dict) -> dict:
     """The capture-on-signal kwargs, wired to record how the capture happened."""
-    return dict(sentinel=(PAINT_MARK, 255), sentinel_capture=True, settle_out=out)
+    return probe_signal.kwargs(out)
 
 
 def paint_tally(*outs: dict) -> None:
-    for o in outs:
-        PAINT_SIG[0] += len(o.get("sentinel", {}))
-        PAINT_SIG[1] += len(o.get("fallback", {}))
+    PAINT_SIG.add(*outs)
 
 
 def paint_sig_line() -> str:
-    hit, fb = PAINT_SIG
-    return (f"    capture-on-signal: {hit} on signal, {fb} fell back to the "
-            f"{PAINT_STEP:.0f}s budget"
-            + ("" if not fb else "   ⚠️ a fallback means that case never signalled"))
+    return PAINT_SIG.line(PAINT_STEP)
 
 PAINT_STEP = 90.0     # emulated seconds RUN..capture (see above)
 PAINT_CAP_GAP = 10.0

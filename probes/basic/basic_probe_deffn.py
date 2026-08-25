@@ -59,6 +59,7 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_repl                                                  # noqa: E402
 import probe_report                                               # noqa: E402
+import probe_signal                                               # noqa: E402
 
 ZB_M = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 SIDES = {
@@ -334,6 +335,27 @@ def face(cap):
     return f"<{e.group(1).strip()}>" if e else "<NO OUTPUT>"
 
 
+# --- D-SNCAP: capture-on-signal (probes/lib/probe_signal.py) -----------------
+# Every row here is its own boot (`batch=False`) with an 8 s step and a 10 s
+# cap_gap, so the scheduled capture is a guess at how long a row takes. A STORED
+# row ends at `:END` on line 60 (the value) or line 900 (the trapped error), so
+# it can announce completion itself and the budget becomes a pure FAILURE
+# detector.
+#
+# 🔴 THE `DIRECT` ROWS ARE OUT OF SCOPE: they are not a program at all, they
+# have no terminal point to mark, and three of the seven are BUILT to end in an
+# untrapped error message (`<Illegal direct>`, `<Undefined user function>`),
+# which never reaches a POKE. The `ADDR` rows are out of scope for a different
+# reason -- see build().
+#
+# 🟢 HOW THE MARKED ROWS DISCHARGE THE PROMPT BURDEN. `face()` reads the FIRST
+# `[`..`]` span, and falls back to ERRRE, a closed set of err_msgtab messages.
+# Neither prompt is a bracket and neither is in ERRRE, so both branches are
+# prompt-independent by construction -- and the marked rows only ever reach the
+# bracket branch, because they all carry `ON ERROR GOTO 900`.
+SIG = probe_signal.Tally()
+
+
 def build(label):
     """The delivered lines for one row: a stored program, or direct commands."""
     if label in DIRECT:
@@ -355,17 +377,42 @@ def build(label):
     body += [f'60 CLS:PRINT"[";{expr};"]":END']
     body += list(extra)
     body += ['900 CLS:PRINT"[ERR";ERR;"AT";ERL;"]":END']
-    return body + ["RUN"], True
+    # D-SNCAP (probes/lib/probe_signal.py): mark BOTH terminal points -- line 60
+    # is the value exit and line 900 the trapped-error one, and unlike the
+    # error-shaped suites they do NOT converge, so marking one would leave the
+    # whole error half of this matrix falling back with nothing to say why.
+    #
+    # 🔴 EXCEPT THE `ADDR` ROWS, AND THIS IS WHERE probe_signal's RULE 3 CAME
+    # FROM. The mark is BASIC TEXT: it makes the tokenised program ~8 bytes
+    # longer per marked line, VARTAB sits directly above the program text, and
+    # these five rows report a `VARPTR` -- an ADDRESS. Marking them shifts
+    # `z.addr.ctl` and `o.sameaddr` by exactly the bytes added. Neither is GATED
+    # (main() prints the class as `--`, and PREDICATE scores the two
+    # layout-INDEPENDENT claims), so this would not have gone red -- it would
+    # have quietly moved a recorded characterization number to accommodate the
+    # instrument, which is worse. They keep the budget; nothing they report
+    # moves.
+    stored = label not in ADDR
+    if stored:
+        body = probe_signal.mark_ends(body)
+    return body + ["RUN"], stored
 
 
 def run_side(side, labels):
     cfg = SIDES[side]
     out = {}
     for label in labels:
-        lines, _stored = build(label)
+        lines, marked = build(label)
+        # 🔴 A FRESH `so` PER CALL: each case is its own boot and every boot
+        # indexes from 0, so one dict reused across the loop would hold a single
+        # entry and the tally would silently under-count.
+        so: dict = {}
+        sn = probe_signal.kwargs(so) if marked else {}
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", list(cfg["reset"]) + lines)],
-            batch=False, boot=cfg["boot"], step=8.0, cap_gap=10.0, timeout=300.0)
+            batch=False, boot=cfg["boot"], step=8.0, cap_gap=10.0, timeout=300.0,
+            **sn)
+        SIG.add(so, label=f"{side}:{label}")
         out[label] = face(caps[0])
     return out
 
@@ -591,6 +638,7 @@ def main() -> int:
         return 2
 
     faces = {s: run_side(s, labels) for s in sides}
+    print(SIG.line())
     W = max(len(l) for l in labels)
 
     # 🔴 THE BLANKET FACE. zerobas answers `Syntax error` to EVERY `DEF FN`

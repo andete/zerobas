@@ -123,6 +123,7 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_repl                                                 # noqa: E402
 import probe_report                                              # noqa: E402
+import probe_signal                                              # noqa: E402
 
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE",
                             "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -889,7 +890,35 @@ SLOW_ROWS = {"c.32767": 12.0, "c.m32768": 12.0}
 def program(label: str, kind: str, seed: str, stmt: str) -> list[str]:
     tpl = TRAP_PROG if kind == "t" else UNTRAP_PROG
     rd = GXPOS_RD if label in GXPOS_ROWS else GRPAC_RD
-    return [ln.format(stmt=stmt, seed=seed, **rd) for ln in tpl]
+    lines = [ln.format(stmt=stmt, seed=seed, **rd) for ln in tpl]
+    # D-SNCAP: only the TRAPPED template has a terminal point every path reaches.
+    return probe_signal.mark_ends(lines) if kind == "t" else lines
+
+
+# --- D-SNCAP: capture-on-signal (probes/lib/probe_signal.py) -----------------
+# Every case here is its OWN BOOT (`batch=False`), so the scheduled RUN..capture
+# budget is a guess -- and an expensive one on the two `SLOW_ROWS`, whose 12 s
+# `step` is charged to every typed line. The TRAPPED template ends at a single
+# `:END` that BOTH paths reach (the handler `RESUME`s onto line 50), so the case
+# announces completion itself and the budget becomes a pure FAILURE detector.
+#
+# 🔴 THE UNTRAPPED ROWS ARE OUT OF SCOPE, TWICE OVER. They are BUILT to abort --
+# the statement raises and line 30 is the run-on detector -- so control never
+# reaches a POKE; and their readout is `screen_tail`, which TERMINATES at the
+# `Ok`/`ZB` prompt, exactly the 2 characters a signal-time capture has not
+# printed yet. They pass no sentinel rather than being counted as fallbacks.
+#
+# 🟢 HOW THE TRAPPED ROWS DISCHARGE THE PROMPT BURDEN. They read through
+# `omsx_repl.result_span` -- the text between the LAST `[` and the following
+# `]` -- and neither prompt is a bracket, so the reading is prompt-independent
+# by construction. That argument is not what this rests on: the whole report was
+# diffed row-by-row against a run taken BEFORE the conversion.
+#
+# ⚠️ AND THE X/Y READINGS ARE NOT A COUNTER-EXAMPLE TO probe_signal's RULE 3
+# (a mark moves VARTAB, so a readout that IS an address moves with it). These
+# rows PEEK fixed system variables -- GRPACX/GRPACY, GXPOS/GYPOS -- and report
+# the graphics COORDINATES stored there, not where anything lives.
+SIG = probe_signal.Tally()
 
 
 def read_case(kind: str, raw: str | None) -> str:
@@ -916,9 +945,15 @@ def run_side(side: str, only: list[str]) -> dict:
             kw["diska"] = dsk
         lines = list(cfg["reset"]) + program(label, kind, seed, stmt) + ["RUN"]
         step = max(cfg["step"], SLOW_ROWS.get(label, 0.0))
+        # 🔴 A FRESH `so` PER CALL. Each case is its own boot and every boot
+        # indexes from 0, so one dict reused across the loop would hold a single
+        # entry and the tally would silently under-count.
+        so: dict = {}
+        sn = probe_signal.kwargs(so) if kind == "t" else {}
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", lines)],
-            batch=False, boot=cfg["boot"], step=step, **kw)
+            batch=False, boot=cfg["boot"], step=step, **kw, **sn)
+        SIG.add(so, label=f"{side}:{label}")
         out[label] = read_case(kind, caps[0])
     return out
 
@@ -977,6 +1012,7 @@ def main() -> int:
             return 2
 
     results = {s: run_side(s, only) for s in sides}
+    print(SIG.line())
     present = [lab for lab, _, _, _ in CASES
                if any(lab in results[s] for s in sides)]
 

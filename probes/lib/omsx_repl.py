@@ -695,20 +695,15 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
             # the black-box reference machines too, because this watches emulated
             # RAM and so needs no ROM knowledge anywhere.
             #
-            # 🔴 IT ONLY *READS* THE CLOCK -- IT DOES NOT MOVE THE CAPTURE, AND
-            # THAT IS DELIBERATE. An earlier cut also armed the CAPTURE on the
-            # sentinel, to stop the budgets being guesses. It was proven
-            # byte-identical for VRAM captures (9/9) but NOT for screen ones --
-            # the sentinel fires before the interpreter prints its `Ok`/`ZB`
-            # prompt, and `screen_tail` terminates AT that prompt, so text
-            # readouts lost 2 characters. And it bought no measurable time
-            # (~0.3 emulated-second-equivalents per case, under the +-0.2 s wall
-            # noise floor), because the window it removes is idle emulation.
-            # Reading the clock carries none of that risk and is where the value
-            # turned out to be: EMULATED time is DETERMINISTIC -- measured
-            # bit-identical across repeats (14.736728 s twice, 46.252527 s twice)
-            # -- so it is the only basis on which a performance differential can
-            # be gated without flaking, which wall-clock timing can never offer.
+            # 🔴 ON ITS OWN IT ONLY *READS* THE CLOCK; `sentinel_capture`
+            # BELOW IS WHAT MOVES THE CAPTURE. Keep the two apart when reading
+            # this: a probe may want the emulated stopwatch and NOT want its
+            # capture rescheduled. Reading the clock is where the first value
+            # turned out to be, and it is risk-free: EMULATED time is
+            # DETERMINISTIC -- measured bit-identical across repeats
+            # (14.736728 s twice, 46.252527 s twice) -- so it is the only basis
+            # on which a performance differential can be gated without flaking,
+            # which wall-clock timing can never offer.
             # 🔴 ARM IT AT THE `RUN` SLOT, NOT AT SCRIPT START. MEASURED: with
             # the watchpoint created up front it fired at emulated t=0.458 on
             # BOTH references -- during their BOOT, hundreds of emulated seconds
@@ -730,13 +725,16 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
             # it should always have been -- so the budget stops being a guess
             # that fires whether or not the work finished.
             #
-            # ⚠️ VRAM/MEMORY CAPTURES ONLY, AND THAT IS MEASURED, NOT CAUTION.
-            # Across subject and both oracles it is byte-identical for VRAM
-            # captures (9/9) but text captures differ by exactly 2 characters on
-            # all three machines: the `Ok`/`ZB` PROMPT, which the interpreter has
-            # not printed yet when the program signals. `screen_tail` terminates
-            # AT that prompt, so a screen readout would change meaning. Callers
-            # must not set this for `capture="screen"`; `_run_batch` refuses it.
+            # ⚠️ THE `capture="screen"` REFUSAL THAT USED TO BE STATED HERE WAS
+            # LIFTED 2026-08-25 -- see `_run_batch`, which carries the whole
+            # note and the burden that replaced it. The MEASUREMENT is unchanged
+            # and still worth knowing at this line: byte-identical for VRAM
+            # captures (9/9), and text captures differ by exactly 2 characters
+            # on all three machines -- the `Ok`/`ZB` PROMPT, which the
+            # interpreter has not printed yet when the program signals. What
+            # changed is the conclusion drawn from it: a readout that already
+            # strips the prompt is unaffected, and one that TERMINATES at the
+            # prompt (`screen_tail`) may not be converted.
             grab = (f'      set ::__cap({idx}) 1\n'
                     f'      puts $__f "case.{idx}={cap}"\n'
                     f'      puts $__f "sentinel.{idx}=[machine_info time]"\n'

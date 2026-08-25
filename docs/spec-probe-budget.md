@@ -141,18 +141,44 @@ just that arithmetic — which is also why the SENTINEL saves so little (§6).
 ## 6. What the sentinel turned out to be for
 
 Capturing on a program-written `done` sentinel instead of at a guessed time was
-built and measured (`docs/spec-probe-mark.md`, `TODO.md`). Two independent results
-retired it as a *speedup* and kept it as an *instrument*:
+built and measured (`docs/spec-probe-mark.md`, `TODO.md`). It has **two** uses,
+and this section used to record only the first because the second had been
+weighed wrong.
 
-* **It reclaims ~88 emulated seconds per case ≈ 0.3 s wall** — under the noise
-  floor, because the window it removes is idle emulation. The oversized TYPING
-  gaps held ~5× more, and `run_gap` takes those.
-* **It is not safe for screen captures**: byte-identical for VRAM (9/9 across
-  subject and both oracles), but text captures differ by exactly 2 characters on
-  all three machines — the `Ok`/`ZB` PROMPT, unprinted when the program signals,
-  and `screen_tail` terminates AT the prompt.
+🟢 **A. An exact, DETERMINISTIC emulated-time stopwatch.** Marks either side of
+an operation give its precise duration on any machine, repeating bit-identically
+across runs — the only basis on which a performance differential can be gated
+without flaking. That is what produced §4b's exact PAINT figures.
 
-🟢 **What it IS for: an exact, DETERMINISTIC emulated-time stopwatch.** Marks
-either side of an operation give its precise duration on any machine, repeating
-bit-identically across runs — the only basis on which a performance differential
-can be gated without flaking. That is what produced §4b's exact PAINT figures.
+🟢 **B. A CAPTURE TRIGGER, which turns every budget on this page into a pure
+FAILURE DETECTOR** (`sentinel_capture=True`; adopted 2026-08-25, D-SNCAP /
+D-SNCAP2, now on `graphics-acceptance` plus six more gates). A budget that fires
+whether or not the work finished is the hazard §1 is about; a budget that fires
+only when the case never signalled is not a guess at all.
+
+⚠️ **THE TWO RESULTS THAT USED TO RETIRE (B) — WHAT SURVIVED AND WHAT DID NOT.**
+
+* *"It reclaims ~0.3 s wall, under the noise floor"* — **STILL TRUE, AND STILL
+  NOT THE POINT.** Recomputed deterministically over the six error-shaped gates
+  (`scratchpad/sncap/emutotal.py`, off `_tcl`'s own generated timeline):
+  **71 104 → 63 927 emulated s, −10.1 %**, ≈ 21 s of wall at §5's flat
+  0.003 s/emulated s. No wall claim is made from it — in the environment that
+  measured it, the emulator-free warm-up control moved 7 s → 14 s between the two
+  batteries and two identical converted runs differed by 59 s. **(B) is adopted
+  for the failure-detector property, not for speed.**
+* *"It is not safe for screen captures"* — **THE MEASUREMENT STANDS, THE
+  CONCLUSION WAS WRONG.** Text captures do differ by exactly 2 characters on all
+  three machines — the `Ok`/`ZB` PROMPT, unprinted when the program signals — and
+  that is *also* the proof the sentinel fired. But those 2 characters are what
+  every text readout already throws away. The blanket refusal is replaced by a
+  **BURDEN**: a probe converting a `capture="screen"` row must show ITS OWN
+  readout is prompt-independent. `result_span` (last `[`..`]`) and `deffn.face`
+  (first such span) are, by construction; **`screen_tail`, which TERMINATES at
+  the prompt, is not, and no row reading through it may be converted.**
+
+📏 **AND A MARK IS NOT FREE, WHICH IS THE PART THE 0.3 s FRAMING HID.** It is
+BASIC text. `screenerr`'s reclaim is only −5.1 % against −11-13 % elsewhere
+because `POKE&HE000,255` pushes its printing line from 36 to 51 characters, past
+the 38-char KEYBUF chunk boundary, buying an extra typing slot that gives half
+the reclaim straight back. And a longer program moves `VARTAB`, so a readout that
+IS a RAM address moves with it — see `docs/spec-probe-mark.md` §3, rule 3.

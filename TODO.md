@@ -336,15 +336,54 @@ list. **When a slice lands, grep this list for what it just shipped.**
       2.5 s default and were converted for the FAILURE-DETECTOR property and
       uniformity, not for speed — stated so nobody reads a performance claim into
       them later.
-      📋 **STILL UNCONVERTED: every other emulator gate.** Each needs its own
-      differential; the pattern is `paint_mark()` + `paint_sn()` +
-      `paint_tally()` in `basic_probe_graphics.py`.
+      ✅ **EXTENDED TO SIX MORE GATES (2026-08-25, D-SNCAP2): 1344 captures on
+      signal, 1 fallback**, `penderr` / `screenerr` / `stmtpend` / `tmfp` /
+      `lineerr` / `deffn-strict`, all 6/6 green, ROM hashes unchanged. The
+      plumbing moved to **`probes/lib/probe_signal.py`** (address, kwargs,
+      tally) so it is no longer copy-pasted; `basic_probe_graphics.py` delegates
+      to it and its `paint_mark()` — the part that is NOT shareable, because
+      where the mark goes is the only part that can be silently wrong — stays
+      local. See `docs/spec-probe-mark.md`.
+      🔬 **VERIFIED THE ONLY WAY THAT HAS TEETH: 557 report rows across 13
+      reports, byte-identical before vs after** (`scratchpad/sncap/rowdiff.py`,
+      itself teeth-checked against a mutated log).
+      🎯 **THE DETECTOR EARNED ITS KEEP ON ITS FIRST RUN.** `deffn`'s
+      `o.clearwipe3` never signalled — its `CLEAR` wipes the `ON ERROR` handler
+      along with the DEF FN table, so the row aborts UNTRAPPED and reaches
+      neither `END`. Its reading is unchanged and correct; the tally is the only
+      thing in the tree that could have said so. 🔴 **AND THE FIRST TALLY COULD
+      NOT NAME IT** — it printed `1 fell back` out of 72 and the gate had to be
+      re-run to find out which row. `Tally.add(label=...)` now names them: an
+      unnamed outcome reads as no outcome.
+      📏 **THE DETERMINISTIC COST/BENEFIT, COMPUTED NOT TIMED**
+      (`scratchpad/sncap/emutotal.py` reads `_tcl`'s own generated timeline, no
+      emulator): **71 104 → 63 927 emulated s, −10.1 %** over the six gates ≈
+      **21 s of wall** at §5's measured 0.003 s/emulated s. 🔴 **NO WALL CLAIM IS
+      MADE AND NONE CAN BE**: the emulator-free warm-up control moved **7 s →
+      14 s** between the before and after batteries, and two converted runs of
+      the same battery differed by **59 s** — both an order of magnitude above
+      the effect. Measured signal instants land within **0.1–0.7 emulated s** of
+      the computed `t_run` floor, so the old budgets were pure idle.
+      ⚠️ **`screenerr` IS THE OUTLIER AT −5.1 %, AND THE REASON IS THE MARK
+      ITSELF.** `POKE&HE000,255` pushes its line 50 from 36 to 51 characters,
+      past the 38-char KEYBUF chunk boundary, buying an extra typing slot that
+      gives back half the reclaim. A mark is BASIC TEXT and text is not free.
+      ⛔ **STILL UNCONVERTED, AND EACH FOR A STATED REASON.** `array`, `math`,
+      `float` and every other `batch=True` matrix (rule 1 — capturing early
+      reclaims nothing in a shared boot). `interval-trap-acceptance` does not go
+      through `run_cases` at all and its subject IS emulated timing. The
+      untrapped/cold rows of the six converted suites (rules 2 and the
+      `screen_tail` prompt burden). `deffn`'s five `ADDR` rows (rule 3).
 
       🟢 **DECIDED 2026-08-25 (user): ADOPT IT FOR SCREEN CAPTURES TOO —
       *"even if we verify via a screenshot, a sentinel still makes sense"*.** The
       refusal below was measured but it was WEIGHED WRONG, and the item may not
       keep quoting the measurement as if it settled the question.
-      ⏸️ **IMPLEMENTED, GATED, NOT YET ADOPTED — `sentinel_capture=True`.** It
+      ✅ **DONE 2026-08-25 — the refusal was lifted, both graphics and six more
+      gates adopted it, and `probes/lib/probe_signal.py` carries the burden that
+      replaced it. The block below is the record of what the refusal SAID; read
+      it as history, not as current behaviour.**
+      ⏸️ **~~IMPLEMENTED, GATED, NOT YET ADOPTED~~ — `sentinel_capture=True`.** It
       makes the budget a pure failure detector and measures 1.1 s → 0.2 s with the
       capture byte-identical. It is currently refused for `capture="screen"`, and
       that refusal is MEASURED, not caution: the sentinel fires before the
@@ -363,10 +402,12 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the sentinel was never the 0.3 s: it is that **a fixed-time budget captures
       a half-finished machine and a partial result reads as SEMANTICS**, and that
       hazard is identical whether the capture is text or VRAM.
-      To pick up: lift the `capture="screen"` refusal in `omsx_repl`, prove each
+      ~~To pick up: lift the `capture="screen"` refusal in `omsx_repl`, prove each
       phase's readout is prompt-independent (assert the sentinel-captured and
       fixed-time answers are equal AFTER `_answer`, not before), then adopt
-      per-phase behind that differential with a teeth control.
+      per-phase behind that differential with a teeth control.~~ ✅ **ALL THREE
+      DONE** — refusal lifted, `sentinel_screen_diff.py` for graphics and
+      `scratchpad/sncap/rowdiff.py` (557 rows) for the six error-shaped gates.
 
 - [ ] 🔴⚡ ~~**CAPTURE ON A `done` SENTINEL**~~ — original framing, kept for its
       reasoning; the speed case it was filed on is DEAD (the window it removes is
