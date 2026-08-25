@@ -352,9 +352,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       drained-buffer property the D-LATCH/D-DELIVER apparatus rests on) AND the
       RUN→capture budget; lowering it to reclaim the second tightens the first.
       **The cut needs a SEPARATE knob defaulting to `step`** (hence inert), plus
-      the RED-if-thin gate above. ⚠️ zerobas is slowest on every fill row (it
-      writes both VRAM tables where the references write only the colour table —
-      a performance fact, NOT a divergence), so it sets the floor for any budget.
+      the RED-if-thin gate above. ⚠️ zerobas is slowest on every fill row, so it
+      sets the floor for any budget. ⚠️ **The parenthesis "*it writes both VRAM
+      tables … a performance fact, NOT a divergence*" was FALSE and was the
+      justification nobody ran** — writing both tables WAS the divergence, closed
+      2026-08-25 by D-PAINTVRAM
+      ([`docs/spec-basic-paintvram.md`](docs/spec-basic-paintvram.md)).
+
+      ✅ **THE CORPUS AUDIT RAN, 2026-08-25, AND IT IS GREEN.**
+      `scratchpad/settle_audit.py` had been built and never pointed at the
+      corpus; the standing worry was that a budget too SHORT does not raise, it
+      captures a half-finished machine and the partial result reads as SEMANTICS.
+      Over the whole of `basic_probe_graphics` — **773 cases sampled, 🔴 still
+      moving at capture: 0, 🟠 settled in the last 10%: 0**; tightest margin seen
+      **56.2 % of its window (1.41 / 2.50 s)**.
+      🎯 **THE DENOMINATOR, STATED**: graphics-acceptance ONLY — but that is the
+      gate where the question has teeth, because it owns the only non-default
+      budgets (`PAINT_STEP` 90 s, `MC_PAINT_STEP` 45 s), and its many 2.5 s cases
+      mean the DEFAULT budget was sampled in the same run (the 56.2 % row is one
+      of them, so the default carries ~1.8× margin). Other probes are unaudited.
+      ⚠️ Run on the POST-D-PAINTVRAM build, where the flood settles in 29.7 s of
+      its 90 s rather than 46.3 s — so the margins are the ones that exist NOW,
+      not the ones the pre-fix corpus had.
 
 **Language / verb surface**
 
