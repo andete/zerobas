@@ -98,6 +98,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -479,6 +480,29 @@ def tcl_writes(body: str, addr: int) -> bool:
 # and dropped every pending callback -- never merely slow. The capture+exit are
 # emulated-time `after time` events fired by openMSX independent of guest code, so
 # a guest infinite/reset loop still completes at emulated `t`.
+# 🔴 EVERY openMSX PROCESS READS AND REWRITES ONE SHARED `settings.xml`, AND
+# THAT IS THE PARALLEL BATTERY'S FLAKE. openMSX saves its settings on exit; a
+# process STARTING while another is mid-rewrite reads a torn file, refuses to
+# boot and exits 1 within 0 s wall:
+#
+#   Uncaught exception: Failed to parser settings file 'settings.xml':
+#   systemID doesn't match (expected 'settings.dtd' got '')
+#
+# MEASURED 2026-08-25: six of seven full batteries that day recovered a "FLAKE
+# (green on retry)", each one a single `<NO CAPTURE>` on a random row and a
+# random side, with NOT ONE diagnostic line anywhere -- because openMSX's own
+# stderr went to `DEVNULL`. `_why_missing` is what finally printed the sentence
+# above, on the very first battery that had it.
+#
+# 🎯 SO GIVE EACH RUN ITS OWN COPY. `-setting <file>` is openMSX's own knob; the
+# user's file is copied in so behaviour is unchanged, and the copy is deleted
+# with the rest of the run's temp files. ⚠️ SIDE EFFECT, AND IT IS A GOOD ONE:
+# probe runs no longer WRITE the user's openMSX settings. Eight probes fighting
+# over a person's config was never intended.
+# ⚠️ If the user has no settings file yet there is nothing to copy and nothing
+# to tear, so the flag is omitted and openMSX uses its own defaults.
+OMSX_SETTINGS = os.path.expanduser("~/.openMSX/share/settings.xml")
+
 HB_WALL = 3.0            # WALL seconds between heartbeats (host clock, not emulated)
 HB_STALL = 90.0          # wall seconds with no heartbeat at all -> declare a hang
 HB_ABSCAP = 1800.0       # paranoia backstop (wall s); stall detection is primary
@@ -871,6 +895,57 @@ def run_case(machine: str, mode: str, lines: list[str], **kw) -> str | None:
     return run_batch(machine, [(mode, lines)], reset=(), **kw)[0]
 
 
+def _rm(path: str) -> None:
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+def _why_missing(machine: str, got: int, want: int, killer: str | None,
+                 rc: int, elapsed: float, out_lines: int, err_path: str) -> str:
+    """ONE line naming WHY a capture is missing -- the evidence the run already
+    held and used to throw away.
+
+    🔴 `<NO CAPTURE>` IS THE SAME STRING FOR AT LEAST FOUR DIFFERENT EVENTS, and
+    which one it was decides what to do next:
+
+      stall     the heartbeat stopped -- a frozen or crashed emulator. REAL.
+      abscap    the paranoia backstop -- the run was merely enormous.
+      exit N    openMSX terminated ON ITS OWN before its scheduled capture:
+                a crash, a bad machine, a busy or missing disk image. Its own
+                message is quoted, because it usually says exactly which.
+      exit 0    openMSX ran to completion and the capture callback never fired
+                -- the guest escaped the timeline, or the schedule is wrong.
+
+    ⚠️ AND THE FOURTH IS THE ONE THAT MATTERS: a case whose MACHINE genuinely
+    wedges looks, to `tools/run_gates.py`, exactly like a contention flake, and
+    its retry turns it green and prints "FLAKE". Nothing else in the tree can
+    tell those apart, so this line is what a red gate is read with."""
+    tail = ""
+    try:
+        txt = open(err_path, errors="replace").read().strip()
+        if txt:
+            last = [l for l in txt.splitlines() if l.strip()][-3:]
+            tail = "  emulator said: " + " | ".join(last)[:300]
+    except OSError:
+        pass
+    if killer:
+        cause = (f"the {killer} watchdog killed it after {elapsed:.0f}s wall"
+                 + ("  (a stall is a FROZEN OR CRASHED emulator, not a slow one"
+                    " -- the heartbeat is on the HOST clock)" if killer == "stall"
+                    else ""))
+    elif rc:
+        sig = f"signal {-rc}" if rc < 0 else f"exit {rc}"
+        cause = (f"openMSX terminated ON ITS OWN ({sig}) after {elapsed:.0f}s "
+                 f"wall, before its scheduled capture")
+    else:
+        cause = (f"openMSX exited CLEANLY (0) after {elapsed:.0f}s wall without "
+                 f"writing the capture -- the callback never fired")
+    return (f"omsx_repl: {want - got} of {want} capture(s) MISSING on {machine} "
+            f"-- {cause}; the run wrote {out_lines} line(s).{tail}")
+
+
 def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
                reset: tuple[str, ...] = (), capture="screen",
@@ -943,15 +1018,36 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
         if os.path.exists(p):
             os.unlink(p)
 
+    settings = out + ".settings.xml"    # see OMSX_SETTINGS: the parallel flake
+    try:
+        shutil.copyfile(OMSX_SETTINGS, settings)
+    except OSError:
+        settings = None
+
     cmd = [binary, "-machine", machine]
+    if settings:
+        cmd += ["-setting", settings]
     if cart:
         cmd += ["-cart", cart]
     if diska:
         cmd += ["-diska", diska]
     cmd += ["-command", "set renderer none; set sound_driver null", "-script", tcl]
 
-    proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL, start_new_session=True)
+    # 🔴 openMSX's OWN OUTPUT USED TO GO TO `DEVNULL`, AND SO DID THE ONE
+    # QUESTION AN OPERATOR ACTUALLY ASKS. A missing capture surfaces as
+    # `<NO CAPTURE>`, which is the same string for at least four different
+    # events: the stall watchdog fired, the abscap backstop fired, openMSX died
+    # on its own, or the guest genuinely wedged. Four flakes measured across six
+    # batteries on 2026-08-25 were each ONE `<NO CAPTURE>`, on a random row and
+    # a random side, with NOT ONE diagnostic line in any log -- and the retry in
+    # `tools/run_gates.py` turned every one of them green and printed "FLAKE".
+    # A row that wedges for a REAL reason is indistinguishable from that.
+    # So: keep the emulator's stderr, keep its exit status, and spend both when
+    # (and only when) a capture goes missing. See `_why_missing` below.
+    err = out + ".err"
+    with open(err, "w") as ef:
+        proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=ef,
+                                stderr=subprocess.STDOUT, start_new_session=True)
     # EMULATED-TIME watchdog (docs/spec-probe-emutime-watchdog.md). openMSX runs
     # `throttle off`, so wall-time to reach a scheduled capture is host-speed-
     # dependent -- a fixed wall deadline SIGKILLs slow/contended (or E-core) runs
@@ -967,8 +1063,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     abscap_s = max(timeout, float(os.environ.get("ZEROBAS_OMSX_ABSCAP",
                                                  abscap if abscap is not None else HB_ABSCAP)))
     start = time.time()
-    last_beat = start                   # wall time of the most recent heartbeat
-    last_mtime = None
+    last_beat = now = start             # wall time of the most recent heartbeat
+    last_mtime = None                   # (`now` pre-bound: the loop may not run)
     while proc.poll() is None:
         time.sleep(0.05)
         now = time.time()
@@ -981,15 +1077,24 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
         if now - last_beat > stall_s or now - start > abscap_s:
             break
     timed_out = proc.poll() is None
+    killer = None
     if timed_out:
+        # WHICH watchdog. They mean different things -- a stall is a frozen or
+        # crashed emulator, an abscap is a run that was merely far too long --
+        # and "killed" alone tells the operator neither.
+        killer = ("stall" if now - last_beat > stall_s else "abscap")
         os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    rc = proc.wait()
+    elapsed = time.time() - start
     if os.path.exists(hb):
         os.unlink(hb)
 
     caps: dict[int, str] = {}
     delivered: dict[int, list[int]] = {}
     echoes: dict[int, tuple[int, int, str]] = {}
+    out_lines = 0                       # what the run DID write, for _why_missing
     if os.path.exists(out):
+        out_lines = sum(1 for _ in open(out))
         for ln in open(out):
             d = re.match(r"prog\.(\d+)=([\d,]*)$", ln.strip())
             if d:                              # D-DELIVER: what the machine STORED
@@ -1056,8 +1161,16 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                     caps[int(m.group(1))] = m.group(2)
         os.unlink(out)
     os.unlink(tcl)
-    if timed_out and not caps:
-        raise SystemExit(f"omsx_repl: TIMEOUT running {machine}")
+    if len(caps) < len(cases):
+        why = _why_missing(machine, len(caps), len(cases), killer, rc, elapsed,
+                           out_lines, err)
+        if timed_out and not caps:
+            _rm(err)
+            _rm(settings or "")
+            raise SystemExit(why)
+        sys.stderr.write(why + "\n")
+    _rm(err)
+    _rm(settings or "")
     return ([caps.get(i) for i in range(len(cases))], delivered,
             echo_verdicts(slots, echoes))
 

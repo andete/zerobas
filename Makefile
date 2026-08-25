@@ -664,6 +664,18 @@ graphics-floor-acceptance: repack-machine
 # sub-ROM and could only ever report FAIL. The teeth check now actually builds an
 # unguarded sub.rom, installs it, runs the probe, and puts the real machine back
 # whatever the outcome.
+# --- The missing-capture diagnosis, falsified (docs/spec-probe-mark.md is not
+# its home -- see probes/lib/omsx_missing_teeth.py). ⛔ DELIBERATELY NOT IN
+# `make gates`: two of its cases SIGKILL/SIGTERM `openmsx` BY NAME, which in a
+# parallel battery would hit a neighbour, so it refuses to start while any
+# openmsx is running. `omsx_repl._why_missing` is a failure-formatting branch --
+# no healthy run ever executes it, so nothing else in the tree can notice it rot.
+# Five cases: a GREEN control that must print NOTHING, and four forced failures
+# (stall watchdog, abscap backstop, a CRASH, a graceful SIGTERM) that must each
+# be named DIFFERENTLY. ~40 s, needs a quiet host.
+omsx-diag-teeth: repack-machine
+	python3 probes/lib/omsx_missing_teeth.py
+
 graphics-floor-teeth: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 	$(PASMO) -I sub --equ GFX_UNGUARDED=1 --bin $(SUB_SRC) $(BUILD)/sub-unguarded.rom
 	python3 tools/pad_rom.py $(BUILD)/sub-unguarded.rom 32768
@@ -2732,7 +2744,8 @@ clean:
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
-        msgexact-gate msgexact-relock preflight-check latch-check injector-check gates clean
+        msgexact-gate msgexact-relock preflight-check latch-check injector-check \
+        omsx-diag-teeth gates clean
 
 # --- gates: the acceptance-gate battery, run in PARALLEL ----------------------
 # Build the shared artifacts once, then fan the per-gate probes out across worker
