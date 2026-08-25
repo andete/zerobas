@@ -184,8 +184,49 @@ list. **When a slice lands, grep this list for what it just shipped.**
       consecutive pixels of a row share ONE pattern byte and ONE colour byte, and
       `gfx_paint_scan_row` only TESTS (it never writes), so the row's VRAM is
       stable across its own pass — read the two bytes once per cell and answer
-      eight columns from the cached pair. Its own slice, its own measurement; the
-      standing asymmetric perf check below is what should gate it.
+      eight columns from the cached pair.
+
+      📏 **SCOUTED AND PRICED 2026-08-25, BEFORE ANY ROM BYTE**
+      (`scratchpad/paintscan_scout.py`). *"Eight columns share a byte"* is the
+      BEST case; it only pays if the tests actually ARRIVE grouped by cell. They
+      do, and — the part that decides the DESIGN — a **ONE-ENTRY** cache gets
+      nearly all of it:
+
+      | box interior | tests | distinct (row,cell) pairs | 1-entry hit rate | unbounded ideal |
+      |---|---|---|---|---|
+      | 4,4-36,28 | 1505 | 125 | **79.5 %** | 91.7 % |
+      | 4,4-68,52 | 6081 | 441 | **83.5 %** | 92.7 % |
+      | 4,4-132,100 | 24449 | 1649 | **85.5 %** | 93.3 % |
+
+      🟢 **SO THE CHEAP DESIGN IS THE RIGHT ONE — a bigger cache buys 7.8 points
+      and cannot be worth its bytes.** Against §7.1's counts (largest box: 50480
+      VDP reads + 4432 writes, of which 48898 reads are the scan), removing 85.5 %
+      of the scan's read pairs takes the total from ~54.9 k to **~13 k accesses,
+      24 % of today** — and also drops one `gfx_calc_addr` per cached test. That
+      projects the flood well under the references' 14.7 s, but **it is a
+      projection from access counts, not a stopwatch reading: it is NOT measured
+      until the stopwatch says so.**
+      ⚠️ The scout MODELS the invalidation it will need (both `gfx_paint_plot`
+      and `gfx_span_bytes` clear the cache), so the rates above are already the
+      post-invalidation ones, not an upper bound that ignores writes.
+
+      🔴 **THE GATING DECISION IS RAM, AND IT IS NOT DECIDED.** The cache needs
+      4 bytes (tag 2 + pattern 1 + colour 1; `tag_hi = $FF` is a free "invalid"
+      marker since a pattern address is `<= $17xx`). The usual regions are
+      EXHAUSTED — `sysvars.inc` says *"SQRT_POW10 took the last free byte"* below
+      `DRVA_DPB`. Two routes, and neither may be assumed:
+        1. a real RAM hunt (`scratchpad/rammap_sweep.py`, then ASK THE MACHINE
+           with `ramfree_probe.py` — **a delta between two names is NOT free
+           space** [[deffn-ramhunt-slice]]);
+        2. ALIAS a cell dead for the duration of a PAINT. `GFX_CX`/`GFX_CY`
+           ($E109, 4 B) look right — they belong to `gfx_plot_cur` and the
+           Bresenham stepper, and PAINT reaches VRAM through `gfx_rmw_at`
+           directly, never through either. **That is an aliasing CLAIM and this
+           project has been bitten by those; it must be verified against the call
+           graph and pinned, not asserted.** PHASE I already exists as PAINT's
+           aliasing stress and is the obvious place to extend.
+      Its own slice; the standing asymmetric perf check below is what should
+      gate it, and the stopwatch is what should score it.
       💡 A standing **asymmetric** perf check falls out of the same instrument:
       RED only when an operation is significantly slower than BOTH references,
       never when it is faster.

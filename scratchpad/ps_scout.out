@@ -1,0 +1,9 @@
+box interior         px   tests  pairs  1-entry hits  hit rate   ideal
+4,4-36,28           713    1505    125          1197    79.5%  91.7%
+4,4-68,52          2961    6081    441          5077    83.5%  92.7%
+4,4-132,100       12065   24449   1649         20901    85.5%  93.3%
+
+hit rate = VDP read pairs a ONE-ENTRY cache removes (the cheap design).
+ideal    = what an unbounded cache could remove. The gap is what a
+           bigger cache would buy, and it must be worth its bytes.
+rc=0
