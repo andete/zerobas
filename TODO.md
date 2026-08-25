@@ -314,10 +314,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       raises never reaches its `POKE`. Measured, not assumed: an `ONERRORGOTO` row
       falls back (`fallback 113.0 s`) and saves nothing. That is the intended
       backstop.
-      📋 **NOT YET CONVERTED, and each needs its own differential**: every other
-      phase of this probe and every other emulator gate. The pattern is
-      `paint_mark()` + `paint_sn()` + `paint_tally()` in
-      `basic_probe_graphics.py`.
+      ✅ **EXTENDED TO EVERY BOOT-PER-CASE PHASE (2026-08-25): 321 captures on
+      signal, 0 fallbacks**, `graphics-acceptance` PASS, battery 37/37 at 452 s,
+      ROM hashes unchanged. Phases A, C, E, G, I, K, N, P, Q1, Q3, R joined
+      H/H-V/H-MC. `paint_mark()` handles all four program shapes this module
+      produces — a `:END` readout, a `GOTO`-self hold (renumbered so the hold
+      stays self-referential and the poke runs ONCE), a program that runs off its
+      end, and a two-exit `ON ERROR` case which is marked on **BOTH** paths.
+      🔬 **THE CHECK THE TALLY CANNOT MAKE**: a fallback proves a mark was never
+      REACHED, but nothing in the tally would catch a mark placed too EARLY —
+      that would capture a half-finished machine on both sides and could agree
+      wrongly. So each conversion round was verified by diffing all **395 row
+      values** against the previous run: byte-identical every time.
+      ⛔ **THE 8 BATCHED PHASES ARE DELIBERATELY NOT CONVERTED** (B, D, F, J, L,
+      M, O, Q2). With one boot per matrix the later cases are scheduled at FIXED
+      emulated instants and the generated Tcl only exits early on the LAST case,
+      so capturing early reclaims nothing there. PHASE J additionally cannot
+      work: its programs raise, so they never reach a `POKE`.
+      📏 **AND CONVERTING THE SMALL BUDGETS BOUGHT NO WALL, MEASURED**: the
+      90 s/30 s/25 s phases went 186 → 184 s. The remaining phases run at the
+      2.5 s default and were converted for the FAILURE-DETECTOR property and
+      uniformity, not for speed — stated so nobody reads a performance claim into
+      them later.
+      📋 **STILL UNCONVERTED: every other emulator gate.** Each needs its own
+      differential; the pattern is `paint_mark()` + `paint_sn()` +
+      `paint_tally()` in `basic_probe_graphics.py`.
 
       🟢 **DECIDED 2026-08-25 (user): ADOPT IT FOR SCREEN CAPTURES TOO —
       *"even if we verify via a screenshot, a sentinel still makes sense"*.** The

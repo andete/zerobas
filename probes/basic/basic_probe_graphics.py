@@ -104,15 +104,20 @@ def phase_a() -> int:
     for label, ops, (x, y), ep, ec in DRAW_CASES:
         pa = paddr(x, y)
         segs = [(pa, 1), (pa + 0x2000, 1)]
-        specs = [("stored", prog([INIT, ops]))]
-        ref = omsx_repl.run_cases(REF, specs, batch=False, capture=("vram_segs", segs))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, capture=("vram_segs", segs))[0]
+        specs = [("stored", paint_mark(prog([INIT, ops])))]
+        so_r, so_z = {}, {}
+        ref = omsx_repl.run_cases(REF, specs, batch=False,
+                                  capture=("vram_segs", segs), **paint_sn(so_r))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False,
+                                 capture=("vram_segs", segs), **paint_sn(so_z))[0]
+        paint_tally(so_r, so_z)
         ok = ref is not None and ref == zb
         note = "" if (zb and zb[:2] == ep and zb[2:4] == ec) else f"  [oracle {ep}{ec}]"
         fails += not ok
         rp = f"{ref[:2]}/{ref[2:4]}" if ref else "None"
         zp = f"{zb[:2]}/{zb[2:4]}" if zb else "None"
         print(f"  {'PASS' if ok else 'FAIL'} {label:14} ref={rp} zb={zp}{note}")
+    print(paint_sig_line())
     return fails
 
 
@@ -319,14 +324,19 @@ def phase_c() -> int:
           "(VG-8020 vs zerobas) ===")
     for label, ops, xr, yr, col in LINE_CASES + DRAW_CLAMP_CASES:
         segs = band_segs(xr, yr, color=col)
-        specs = [("stored", prog([LINIT, ops]))]
-        ref = omsx_repl.run_cases(REF, specs, batch=False, capture=("vram_segs", segs))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, capture=("vram_segs", segs))[0]
+        specs = [("stored", paint_mark(prog([LINIT, ops])))]
+        so_r, so_z = {}, {}
+        ref = omsx_repl.run_cases(REF, specs, batch=False,
+                                  capture=("vram_segs", segs), **paint_sn(so_r))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False,
+                                 capture=("vram_segs", segs), **paint_sn(so_z))[0]
+        paint_tally(so_r, so_z)
         ok = ref is not None and ref == zb
         fails += not ok
         plane = "colour" if col else "pattern"
         note = "" if ok else f"  ref={ref} zb={zb}"
         print(f"  {'PASS' if ok else 'FAIL'} {label:13} {plane} band {len(ref or '')//2}B{note}")
+    print(paint_sig_line())
     return fails
 
 
@@ -550,6 +560,7 @@ def phase_e() -> int:
         plane = "colour" if col else "pattern"
         note = "" if ok else f"  ref={ref} zb={zb}"
         print(f"  {'PASS' if ok else 'FAIL'} {label:14} {plane} band {len(ref or '')//2}B{note}")
+    print(paint_sig_line())
     return fails
 
 
@@ -600,11 +611,15 @@ def phase_g_rneg() -> int:
     print("=== PHASE G: CIRCLE negative radius (zerobas-only; reference hangs) ===")
     body = ["ON ERROR GOTO 40", "SCREEN2:CIRCLE(30,30),-1,15",
             'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END']
-    zb = omsx_repl.run_cases(ZB, [("stored", body)], batch=False, reset=("NEW", "CLS"))[0]
+    so_z = {}
+    zb = omsx_repl.run_cases(ZB, [("stored", paint_mark(body))], batch=False,
+                             reset=("NEW", "CLS"), **paint_sn(so_z))[0]
+    paint_tally(so_z)
     za = _answer(zb, "E")
     ok = za is not None and za.strip() == "E 5"
     fails += not ok
     print(f"  {'PASS' if ok else 'FAIL'} rneg_err zb={za!r} (want 'E 5')")
+    print(paint_sig_line())
     return fails
 
 
@@ -705,22 +720,49 @@ PAINT_MARK = 0xE000
 
 
 def paint_mark(lines: list[str]) -> list[str]:
-    """Append the sentinel POKE to a case's program.
+    """Put the sentinel POKE at every point a case's program can FINISH.
 
-    Two shapes exist in this module and they need it in different places: a
-    `_points` case ENDS (poke just before `:END`, once the readout is printed),
-    while a PHASE H-V case holds the screen in a `GOTO`-self loop and never ends
-    (poke on its own line, before the loop)."""
-    out = list(lines)
+    🔴 THE MARK MUST BE THE LAST THING THAT RUNS. Placed early it signals before
+    the work is done and the capture reads a HALF-FINISHED machine -- which is the
+    exact failure the budget existed to prevent, now firing deterministically
+    instead of occasionally. So the rule is by SHAPE, and this module has four:
+
+      * `...:END`          -- poke just before it, after the readout is printed.
+                              EVERY such line, not the first: an `ON ERROR` case
+                              has a normal exit AND a handler exit, and marking
+                              only one leaves the other path to fall back.
+      * a `GOTO`-self hold -- the program never ends; poke on its own line just
+                              before the loop, i.e. after all drawing.
+      * runs off the end   -- append the poke as a new final line.
+      * already ends in a
+        `GOTO`/`END`       -- nothing to append; the cases above covered it.
+
+    ⚠️ A MISPLACED MARK IS NOT SILENT. Its phase's capture-on-signal tally shows
+    a FALLBACK, because the poke was never reached -- which is why every
+    converted phase prints that tally."""
+    out, marked = list(lines), False
+    poke = f"POKE&H{PAINT_MARK:04X},255"
     for i, ln in enumerate(out):
-        if ln.endswith(":END"):
-            out[i] = ln[:-4] + f":POKE&H{PAINT_MARK:04X},255:END"
-            return out
+        if ln.endswith(":END") or ln == "END":
+            out[i] = (ln[:-3] if ln == "END" else ln[:-4] + ":") + poke + ":END"
+            marked = True
     for i, ln in enumerate(out):
         if ln.startswith("GOTO"):
-            out.insert(i, f"POKE&H{PAINT_MARK:04X},255")
+            # ⚠️ RENUMBER THE HOLD. `prog()` numbers lines 10,20,30..., so a
+            # self-loop reads `GOTO <its own number>`. Inserting the poke pushes
+            # that line down one; left alone the GOTO would then target the POKE
+            # and the hold becomes a TWO-line loop that re-pokes forever. Harmless
+            # for the capture, but it is no longer the program the phase means to
+            # run. Point it back at itself so the poke executes exactly once.
+            out.insert(i, poke)
+            out[i + 1] = f"GOTO {(i + 2) * 10}"
             return out
-    raise AssertionError(f"paint_mark: no END and no GOTO-self in {lines!r}")
+    last = out[-1] if out else ""
+    if not (last.endswith(":END") or last == "END" or last.startswith("GOTO")):
+        out.append(poke)            # the program simply runs off its end
+        marked = True
+    assert marked, f"paint_mark: no terminal point found in {lines!r}"
+    return out
 
 
 # 🔴 AND THE ADOPTION MUST BE VISIBLE, OR IT IS UNFALSIFIABLE. A case whose
@@ -1168,11 +1210,15 @@ def phase_i_aliasing() -> int:
              "L=LEN(A$):M=LEN(B$)",
              "P=POINT(40,40):Q=POINT(21,21):W=POINT(100,100)",
              'SCREEN0:PRINT"S";L;M;P;Q;W:END']
-    specs = [("stored", lines)]
+    specs = [("stored", paint_mark(lines))]
+    so_r, so_z = {}, {}
     ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=PAINT_STEP,
-                              cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+                              cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
+                              **paint_sn(so_r))[0]
     zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=PAINT_STEP,
-                             cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+                             cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
+                             **paint_sn(so_z))[0]
+    paint_tally(so_r, so_z)
 
     def vals(raw):
         if not raw:
@@ -1186,6 +1232,7 @@ def phase_i_aliasing() -> int:
     fails += not ok
     print(f"  {'PASS' if ok else 'FAIL'} paint_after_string_heavy ref={rv} zb={zv} "
           "(L,M,P,Q,W = LEN(A$),LEN(B$),3x POINT)")
+    print(paint_sig_line())
     return fails
 
 
@@ -1410,13 +1457,16 @@ def phase_k() -> int:
     fails = 0
     print("=== PHASE K: DRAW pixel differential (POINT-sampled: pattern AND colour) ===")
     for label, setup, pts in DRAW_FILL_CASES + DRAW_COLOUR_CASES:
-        specs = [("stored", paint_points_prog(setup, pts))]
-        ref = omsx_repl.run_cases(REF, specs, batch=False)[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False)[0]
+        specs = [("stored", paint_mark(paint_points_prog(setup, pts)))]
+        so_r, so_z = {}, {}
+        ref = omsx_repl.run_cases(REF, specs, batch=False, **paint_sn(so_r))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, **paint_sn(so_z))[0]
+        paint_tally(so_r, so_z)
         ra, za = _points(ref, len(pts)), _points(zb, len(pts))
         ok = ra is not None and ra == za
         fails += not ok
         print(f"  {'PASS' if ok else 'FAIL'} {label:26} ref={ra} zb={za}")
+    print(paint_sig_line())
     return fails
 
 
@@ -1559,13 +1609,17 @@ def phase_n() -> int:
     fails = 0
     print("=== PHASE N: sprite tables (attribute + pattern) differential ===")
     for label, head, base, n, extra in SPRITE_CASES:
-        specs = [("stored", [f"CLEAR 2000:COLOR15,4,7:{head}"] + spr_dump(base, n, extra))]
-        ref = omsx_repl.run_cases(REF, specs, batch=False)[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False)[0]
+        specs = [("stored", paint_mark([f"CLEAR 2000:COLOR15,4,7:{head}"]
+                                       + spr_dump(base, n, extra)))]
+        so_r, so_z = {}, {}
+        ref = omsx_repl.run_cases(REF, specs, batch=False, **paint_sn(so_r))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, **paint_sn(so_z))[0]
+        paint_tally(so_r, so_z)
         ra, za = _spr_bytes(ref), _spr_bytes(zb)
         ok = ra is not None and ra == za
         fails += not ok
         print(f"  {'PASS' if ok else 'FAIL'} {label:15} ref={ra!r} zb={za!r}")
+    print(paint_sig_line())
     return fails
 
 
@@ -1670,13 +1724,17 @@ def phase_p() -> int:
     fails = 0
     print("=== PHASE P: sprite table init, CLS, and the persistent size ===")
     for label, head, base, n, extra in SPRITE_STATE:
-        specs = [("stored", [f"CLEAR 2000:{head}"] + spr_dump(base, n, extra))]
-        ref = omsx_repl.run_cases(REF, specs, batch=False)[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False)[0]
+        specs = [("stored", paint_mark([f"CLEAR 2000:{head}"]
+                                       + spr_dump(base, n, extra)))]
+        so_r, so_z = {}, {}
+        ref = omsx_repl.run_cases(REF, specs, batch=False, **paint_sn(so_r))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, **paint_sn(so_z))[0]
+        paint_tally(so_r, so_z)
         ra, za = _spr_bytes(ref), _spr_bytes(zb)
         ok = ra is not None and ra == za
         fails += not ok
         print(f"  {'PASS' if ok else 'FAIL'} {label:14} ref={ra!r} zb={za!r}")
+    print(paint_sig_line())
     return fails
 
 
@@ -1745,11 +1803,14 @@ def phase_q_state() -> int:
     fails = 0
     print("=== PHASE Q1: VDP/BASE state differential (table + R0..R6) ===")
     for label, lines, with_regs in G8_STATE:
-        specs = [_g8_prog(lines)]
-        r = _g8_state(omsx_repl.run_cases(REF, specs, batch=False,
-                                          capture=G8_CAP, run_gap=6.0)[0])
-        z = _g8_state(omsx_repl.run_cases(ZB, specs, batch=False,
-                                          capture=G8_CAP, run_gap=6.0)[0])
+        _m, _l = _g8_prog(lines)
+        specs = [(_m, paint_mark(_l))]
+        so_r, so_z = {}, {}
+        r = _g8_state(omsx_repl.run_cases(REF, specs, batch=False, capture=G8_CAP,
+                                          run_gap=6.0, **paint_sn(so_r))[0])
+        z = _g8_state(omsx_repl.run_cases(ZB, specs, batch=False, capture=G8_CAP,
+                                          run_gap=6.0, **paint_sn(so_z))[0])
+        paint_tally(so_r, so_z)
         if r is None or z is None:
             ok, detail = False, f"ref={r is not None} zb={z is not None} (no capture)"
         elif with_regs:
@@ -1760,6 +1821,7 @@ def phase_q_state() -> int:
             detail = "table-only (cross-group: no reprogram)"
         fails += not ok
         print(f"  {'PASS' if ok else 'FAIL'} {label:11} {detail}")
+    print(paint_sig_line())
     return fails
 
 
@@ -1868,16 +1930,19 @@ def phase_q_teeth() -> int:
     print("=== PHASE Q3: does VDP(n)= reach the CHIP? (TIME freeze) ===")
     cases = [("ie_off", "VDP(1)=VDP(1)AND223"), ("control", "A=0")]
     jiffy = "(PEEK(&HFC9E)+256*PEEK(&HFC9F))"
-    specs = [("stored", [
+    specs = [("stored", paint_mark([
         f"POKE&H{G8_RES:04X},255",
         f"SCREEN0:{stmt}",
         f"T={jiffy}:FORI=1TO800:NEXT:D={jiffy}-T",
         "VDP(1)=VDP(1)OR32",
         f"POKE&H{G8_RES+1:04X},D-INT(D/256)*256:POKE&H{G8_RES:04X},0:END",
-    ]) for _, stmt in cases]
+    ])) for _, stmt in cases]
     for mach in (REF, ZB):
+        so = {}
         outs = omsx_repl.run_cases(mach, specs, batch=False,
-                                   capture=("mem_abs", [(G8_RES, 3)]), run_gap=25.0)
+                                   capture=("mem_abs", [(G8_RES, 3)]),
+                                   run_gap=25.0, **paint_sn(so))
+        paint_tally(so)
         for (label, stmt), o in zip(cases, outs):
             b = bytes.fromhex(o) if o else None
             delta = None if b is None or b[0] != 0 else b[1]
@@ -1886,6 +1951,7 @@ def phase_q_teeth() -> int:
             fails += not ok
             print(f"  {'PASS' if ok else 'FAIL'} {mach.split('_')[0]:8} {label:8} "
                   f"JIFFY delta={delta}")
+    print(paint_sig_line())
     return fails
 
 
@@ -1966,10 +2032,14 @@ def phase_r_workarea() -> int:
     # a full-screen BF outran even a 20 s step on zerobas when this was first
     # batched -- which returned None for that case AND desynchronised every
     # case after it. A one-sided rig failure wearing a finding's clothes.
-    specs = [("stored", ["SCREEN2:" + ops, WORKAREA_RD])
+    specs = [("stored", paint_mark(["SCREEN2:" + ops, WORKAREA_RD]))
              for _, ops in WORKAREA_CASES]
-    ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=30.0)
-    zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=30.0)
+    so_r, so_z = {}, {}
+    ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=30.0,
+                              **paint_sn(so_r))
+    zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=30.0,
+                             **paint_sn(so_z))
+    paint_tally(so_r, so_z)
     for (label, _), r, z in zip(WORKAREA_CASES, ref, zb):
         ra, za = _answer(r, "W"), _answer(z, "W")
         ok = ra is not None and ra == za
@@ -1983,13 +2053,19 @@ def phase_r_workarea() -> int:
                           'SCREEN0:PRINT"W";-1:END',   # reached only if NO error
                           WORKAREA_ERR_RD])
               for _, ops in WORKAREA_ERR_CASES]
-    eref = omsx_repl.run_cases(REF, especs, batch=False, run_gap=30.0)
-    ezb = omsx_repl.run_cases(ZB, especs, batch=False, run_gap=30.0)
+    especs = [(m, paint_mark(l)) for m, l in especs]
+    so_er, so_ez = {}, {}
+    eref = omsx_repl.run_cases(REF, especs, batch=False, run_gap=30.0,
+                               **paint_sn(so_er))
+    ezb = omsx_repl.run_cases(ZB, especs, batch=False, run_gap=30.0,
+                              **paint_sn(so_ez))
+    paint_tally(so_er, so_ez)
     for (label, _), r, z in zip(WORKAREA_ERR_CASES, eref, ezb):
         ra, za = _answer(r, "W"), _answer(z, "W")
         ok = ra is not None and ra == za
         fails += not ok
         print(f"  {'PASS' if ok else 'FAIL'} {label:18} ref={ra!r} zb={za!r}")
+    print(paint_sig_line())
     return fails
 
 
