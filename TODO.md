@@ -56,6 +56,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [x] ✅ **THE PARALLEL BATTERY'S FLAKE HAD A CAUSE, AND THE HARNESS WAS
+      THROWING IT AWAY — FIXED 2026-08-25.** Six of seven full batteries that day
+      recovered a *"FLAKE (green on retry)"*, each a single `<NO CAPTURE>` on a
+      random row and a random side, with **not one diagnostic line anywhere**:
+      openMSX's stdout/stderr went to `DEVNULL` and its exit status was used as a
+      liveness boolean and discarded.
+      🔴 **`<NO CAPTURE>` IS THE SAME STRING FOR FOUR DIFFERENT EVENTS** — stall
+      watchdog, abscap backstop, openMSX dying on its own, or the guest genuinely
+      wedging — and **the fourth is a REAL DEFECT that `run_gates.py` retries into
+      green and labels a flake.** `omsx_repl._why_missing()` now spends the
+      evidence the run already held: which watchdog if either, the exit status or
+      signal, the elapsed wall, the lines written, and openMSX's own last words.
+      🎯 **ON THE FIRST BATTERY THAT HAD IT, IT NAMED THE CAUSE**: *"openMSX
+      terminated ON ITS OWN (exit 1) after 0s wall … emulator said: Failed to
+      parser settings file 'settings.xml'"*. Every openMSX process **reads
+      `~/.openMSX/share/settings.xml` at start and REWRITES it at exit**, so in a
+      parallel battery a starting process reads a torn file and refuses to boot.
+      Each run now gets its own copy via openMSX's own `-setting`. ⚠️ Side effect,
+      and a good one: probe runs no longer write the user's openMSX settings.
+      📏 **MEASURED, because a flake count is not causal evidence**
+      (`scratchpad/flake/repro.py` drives the mechanism instead of waiting for
+      it): **SHARED 35/40 starts failed (87.5 %), ISOLATED 0/40**, both arms
+      against a COPY so the user's file is never touched.
+      🔬 **`make omsx-diag-teeth`** (`probes/lib/omsx_missing_teeth.py`) is the
+      standing falsification — a GREEN control that must print NOTHING plus four
+      forced failures that must each be named DIFFERENTLY. `_why_missing` is a
+      failure-formatting branch, so no healthy run executes it and nothing else
+      can notice it rot. ⛔ **NOT in `make gates`**: two cases signal `openmsx` by
+      name and would hit a neighbour, so it refuses to start while any is running.
+      🟢 `make gates` **37/37 with ZERO flakes and zero retries**, the first fully
+      clean battery of the day — n=1, and not the evidence.
+      📋 **RESIDUAL, NOT FIXED**: the per-case temp disk path is
+      `zb_{probe}_{side}_{label}.dsk`, keyed by side and label only. The 4
+      `CONTROLS` are replicated into **every** `lineerr` shard, so 8 concurrent
+      processes `shutil.copy` onto the same 12 paths. It did **not** cause any of
+      the four flakes examined (none of them was a control row), but it is the
+      same class and one `os.getpid()` from closed.
+
 - [x] ✅ **FIXED 2026-08-25, SAME DAY IT WAS FILED — `lineerr`'s two `SLOW_ROWS`
       now carry their 12 s on `run_gap`, not on `step`.** `run_gap=` in
       `run_side`; `step` stays at the side's default. **236 report rows
