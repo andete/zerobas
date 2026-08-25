@@ -1,0 +1,7 @@
+box interior          px    reads   plots   cells |    VDP rd   VDP wr  scan share
+4,4-36,28            713     1505     191      69 |      3392      520   76.9%
+4,4-68,52           2961     6081     391     329 |     12944     1440   84.6%
+4,4-132,100        12065    24449     791    1425 |     50480     4432   89.0%
+
+scan share = the fraction of ALL VDP accesses that are the neighbour-row/walk pixel TESTS (gfx_paint_read).
+rc=0

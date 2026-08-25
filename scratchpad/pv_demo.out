@@ -1,0 +1,11 @@
+10 SCREEN2                                 ' a blank SCREEN 2
+20 PAINT(128,96),15                        ' flood it white
+30 P=VPEEK(&H0C80):C=VPEEK(&H2C80)         ' the STORED bytes for that cell
+40 PSET(128,96),6                          ' one more pixel, colour 6
+50 A=POINT(128,96):B=POINT(129,96):D=POINT(135,96)
+60/70 PRINT them
+
+  Philips VG-8020   PAT= 0 COL= 15 PSET= 6 NEXT= 15 LAST= 15 Ok color au
+  National CF-3300  PAT= 0 COL= 15 PSET= 6 NEXT= 15 LAST= 15 Ok color au
+  zerobas           PAT= 0 COL= 15 PSET= 6 NEXT= 15 LAST= 15 ZB
+rc=0

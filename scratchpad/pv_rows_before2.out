@@ -1,0 +1,11 @@
+=== PHASE H-V: PAINT VRAM representation, BYTE-level (D-PAINTVRAM, step=90.0s) ===
+  FAIL flood_wholebyte.0    (128, 96) ref=00/0f zb=ff/f4  mid-screen
+  FAIL flood_wholebyte.1    (  8,  8) ref=00/0f zb=ff/f4  far corner
+  FAIL box_span_cells.0     ( 24, 30) ref=00/07 zb=ff/74  WHOLE byte
+  PASS box_span_cells.1     ( 16, 30) ref=0f/74 zb=0f/74  left partial (control)
+  PASS box_span_cells.2     ( 56, 30) ref=f8/74 zb=f8/74  right partial (control)
+  PASS box_span_cells.3     (  8, 30) ref=00/04 zb=00/04  OUTSIDE the box (control)
+PHASE H-V fails: 3
+=== PHASE H row: paint_then_pset ===
+  FAIL paint_then_pset        ref=[6, 15, 15] zb=[6, 6, 6]
+rc=1

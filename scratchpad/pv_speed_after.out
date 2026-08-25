@@ -1,0 +1,6 @@
+operation            vg8020       cf3300           zb   verdict
+paint.flood       14.736728    15.536890    29.742824   🔴 2.02x SLOWER
+paint.circle       3.885463     4.097390     7.403163   🔴 1.91x SLOWER
+circle             0.409343     0.430918     0.253305   ✅ 0.62x (faster)
+line               0.135319     0.142345     0.122553   ✅ 0.91x
+rc=0

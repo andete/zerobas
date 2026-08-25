@@ -1,0 +1,16 @@
+=== PHASE H-V: PAINT VRAM representation, BYTE-level (D-PAINTVRAM, step=90.0s) ===
+  PASS flood_wholebyte.0    (128, 96) ref=00/0f zb=00/0f  mid-screen
+  PASS flood_wholebyte.1    (  8,  8) ref=00/0f zb=00/0f  far corner
+  PASS flood_c_ne_b.0       (128, 96) ref=00/09 zb=00/09  colour is C, not B
+  PASS box_span_cells.0     ( 24, 30) ref=00/07 zb=00/07  WHOLE byte, seed row
+  PASS box_span_cells.1     ( 16, 30) ref=0f/74 zb=0f/74  left partial, seed row (extend_lr paints it)
+  PASS box_span_cells.2     ( 56, 30) ref=f8/74 zb=f8/74  right partial, seed row (extend_lr paints it)
+  PASS box_span_cells.3     (  8, 30) ref=00/04 zb=00/04  OUTSIDE the box (control)
+  PASS box_span_cells.4     ( 24, 40) ref=00/07 zb=00/07  WHOLE byte, PUSHED row
+  PASS box_span_cells.5     ( 16, 40) ref=0f/74 zb=0f/74  left partial, PUSHED row (gpr_part alone)
+  PASS box_span_cells.6     ( 56, 40) ref=f8/74 zb=f8/74  right partial, PUSHED row (gpr_part alone)
+  PASS box_span_cells.7     (  8, 40) ref=00/04 zb=00/04  OUTSIDE the box (control)
+PHASE H-V fails: 0
+=== PHASE H row: paint_then_pset ===
+  PASS paint_then_pset        ref=[6, 15, 15] zb=[6, 15, 15]
+rc=0

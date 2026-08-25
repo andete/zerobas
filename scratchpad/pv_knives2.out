@@ -1,0 +1,46 @@
+unknifed  sub.rom=ae796ccb  main=7d27b871
+
+########## K-PV2 -- gfx_paint_row: left-partial count forced to 0
+  sub.rom ae796ccb -> 172b9c91 (cut took); main 7d27b871 -> 7d27b871 (unmoved, as expected for a sub/ edit)
+  --- rows ---
+    PASS flood_wholebyte.0    (128, 96) ref=00/0f zb=00/0f  mid-screen
+    PASS flood_wholebyte.1    (  8,  8) ref=00/0f zb=00/0f  far corner
+    PASS flood_c_ne_b.0       (128, 96) ref=00/09 zb=00/09  colour is C, not B
+    PASS box_span_cells.0     ( 24, 30) ref=00/07 zb=00/07  WHOLE byte, seed row
+    PASS box_span_cells.1     ( 16, 30) ref=0f/74 zb=0f/74  left partial, seed row (extend_lr paints it)
+    PASS box_span_cells.2     ( 56, 30) ref=f8/74 zb=f8/74  right partial, seed row (extend_lr paints it)
+    PASS box_span_cells.3     (  8, 30) ref=00/04 zb=00/04  OUTSIDE the box (control)
+    PASS box_span_cells.4     ( 24, 40) ref=00/07 zb=00/07  WHOLE byte, PUSHED row
+    FAIL box_span_cells.5     ( 16, 40) ref=0f/74 zb=08/74  left partial, PUSHED row (gpr_part alone)
+    PASS box_span_cells.6     ( 56, 40) ref=f8/74 zb=f8/74  right partial, PUSHED row (gpr_part alone)
+    PASS box_span_cells.7     (  8, 40) ref=00/04 zb=00/04  OUTSIDE the box (control)
+  PHASE H-V fails: 1
+    PASS paint_then_pset        ref=[6, 15, 15] zb=[6, 15, 15]
+  --- fidelity ---
+  linebf    zb       [(0, 5882), (15, 131)]     [(4, 3000), (15, 2882)]      ✅ IDENTICAL
+  paint     zb       [(0, 5890), (8, 30)]       [(4, 5235), (15, 655)]       🔴 DIFFERS (799 of 12288 bytes)
+  flood     zb       [(0, 6144)]                [(15, 6144)]                 ✅ IDENTICAL
+
+########## K-PV3 -- gfx_paint_row: right partial measured from PXL, not PXR
+  sub.rom ae796ccb -> fdad5bec (cut took); main 7d27b871 -> 7d27b871 (unmoved, as expected for a sub/ edit)
+  --- rows ---
+    PASS flood_wholebyte.0    (128, 96) ref=00/0f zb=00/0f  mid-screen
+    PASS flood_wholebyte.1    (  8,  8) ref=00/0f zb=00/0f  far corner
+    PASS flood_c_ne_b.0       (128, 96) ref=00/09 zb=00/09  colour is C, not B
+    PASS box_span_cells.0     ( 24, 30) ref=00/07 zb=00/07  WHOLE byte, seed row
+    PASS box_span_cells.1     ( 16, 30) ref=0f/74 zb=0f/74  left partial, seed row (extend_lr paints it)
+    PASS box_span_cells.2     ( 56, 30) ref=f8/74 zb=f8/74  right partial, seed row (extend_lr paints it)
+    PASS box_span_cells.3     (  8, 30) ref=00/04 zb=00/04  OUTSIDE the box (control)
+    PASS box_span_cells.4     ( 24, 40) ref=00/07 zb=00/07  WHOLE byte, PUSHED row
+    PASS box_span_cells.5     ( 16, 40) ref=0f/74 zb=0f/74  left partial, PUSHED row (gpr_part alone)
+    FAIL box_span_cells.6     ( 56, 40) ref=f8/74 zb=08/74  right partial, PUSHED row (gpr_part alone)
+    PASS box_span_cells.7     (  8, 40) ref=00/04 zb=00/04  OUTSIDE the box (control)
+  PHASE H-V fails: 1
+    PASS paint_then_pset        ref=[6, 15, 15] zb=[6, 15, 15]
+  --- fidelity ---
+  linebf    zb       [(0, 5882), (15, 131)]     [(4, 3000), (15, 2882)]      ✅ IDENTICAL
+  paint     zb       [(0, 5890), (1, 30)]       [(4, 5235), (15, 655)]       🔴 DIFFERS (801 of 12288 bytes)
+  flood     zb       [(0, 6144)]                [(15, 6144)]                 ✅ IDENTICAL
+
+restored sub.rom=ae796ccb main=7d27b871  OK
+knives2 rc=0
