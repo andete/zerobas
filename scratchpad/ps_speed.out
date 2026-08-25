@@ -1,0 +1,5 @@
+operation            vg8020       cf3300           zb   verdict
+paint.flood       14.736728    15.536890    26.193087   🔴 1.78x SLOWER
+paint.circle       3.885463     4.097390     6.622417   🔴 1.70x SLOWER
+omsx_repl: TIMEOUT running Philips_VG_8020
+speed rc=1

@@ -186,47 +186,52 @@ list. **When a slice lands, grep this list for what it just shipped.**
       stable across its own pass — read the two bytes once per cell and answer
       eight columns from the cached pair.
 
-      📏 **SCOUTED AND PRICED 2026-08-25, BEFORE ANY ROM BYTE**
-      (`scratchpad/paintscan_scout.py`). *"Eight columns share a byte"* is the
-      BEST case; it only pays if the tests actually ARRIVE grouped by cell. They
-      do, and — the part that decides the DESIGN — a **ONE-ENTRY** cache gets
-      nearly all of it:
+      🔴 **BUILT, MEASURED AND *DECLINED* 2026-08-25 (D-PAINTSCAN) —
+      [`docs/spec-basic-paintscan.md`](docs/spec-basic-paintscan.md). No ROM
+      change: `sub.rom` `ae796ccb` before and after, 2464 B free both sides.**
+      The cache was implemented in full (42 B, invalidated by every VRAM write in
+      a PAINT) with every correctness gate green — unit-test 59/59, PHASE H-V
+      12/12, `vram_fidelity.py` 0 divergent — and then reverted.
 
-      | box interior | tests | distinct (row,cell) pairs | 1-entry hit rate | unbounded ideal |
-      |---|---|---|---|---|
-      | 4,4-36,28 | 1505 | 125 | **79.5 %** | 91.7 % |
-      | 4,4-68,52 | 6081 | 441 | **83.5 %** | 92.7 % |
-      | 4,4-132,100 | 24449 | 1649 | **85.5 %** | 93.3 % |
+      📏 **THE TWO THINGS MEASURED FIRST WERE BOTH RIGHT.** Hit rate
+      (`scratchpad/paintscan_scout.py`, post-invalidation, three box sizes):
+      **79.5 % → 83.5 % → 85.5 %** for a ONE-ENTRY cache against an unbounded
+      ideal of 93.3 %, so the cheap design was the right one. RAM: the 4 B aliased
+      `GFX_CX`/`GFX_CY`, **verified two independent ways and neither vacuous**
+      (`scratchpad/paintscan_ramclaim.py`) — STATIC, the 62-routine closure of
+      `gfx_paint_op` over 67 sources mentions neither cell while 10 routines
+      elsewhere DO; DYNAMIC, identical 3185-px fill under two poison seeds with
+      both seeds intact afterwards. **That verification stands and is reusable.**
 
-      🟢 **SO THE CHEAP DESIGN IS THE RIGHT ONE — a bigger cache buys 7.8 points
-      and cannot be worth its bytes.** Against §7.1's counts (largest box: 50480
-      VDP reads + 4432 writes, of which 48898 reads are the scan), removing 85.5 %
-      of the scan's read pairs takes the total from ~54.9 k to **~13 k accesses,
-      24 % of today** — and also drops one `gfx_calc_addr` per cached test. That
-      projects the flood well under the references' 14.7 s, but **it is a
-      projection from access counts, not a stopwatch reading: it is NOT measured
-      until the stopwatch says so.**
-      ⚠️ The scout MODELS the invalidation it will need (both `gfx_paint_plot`
-      and `gfx_span_bytes` clear the cache), so the rates above are already the
-      post-invalidation ones, not an upper bound that ignores writes.
+      🔴 **AND THE STOPWATCH FALSIFIED THE PROJECTION.** Predicted from the
+      access counts: ~54.9 k → ~13 k accesses, i.e. the flood far under 14.7 s.
+      Measured: flood **29.742824 → 26.193087** (2.02× → **1.78×**), bounded
+      7.403163 → 6.622417 (1.91× → 1.70×). **1.14×, not 4×.**
+      🎯 **THE MISS IS THE FINDING: TIME IS NOT PROPORTIONAL TO VDP ACCESSES.**
+      Removing ~85 % of what was ~89 % of all accesses bought 12 %; had the reads
+      dominated it would have bought ~76 %. `gfx_rd_raw` is ~85 T-states (two
+      `out`s, a 3-`nop` fetch-window settle, an `in`) while the per-column loop
+      around it — `gpsr_loop`/`gpsr_test` bookkeeping, `gfx_paint_inside`'s four
+      RAM loads and two stores, `gfx_calc_addr`, `gfx_point_extract`, `call`/`ret`
+      — is comparable or larger, and a read cache removes NONE of it (it adds a
+      tag compare to every read). 🟢 **`PAINT` IS Z80-LOOP-BOUND, NOT VDP-BOUND.**
 
-      🔴 **THE GATING DECISION IS RAM, AND IT IS NOT DECIDED.** The cache needs
-      4 bytes (tag 2 + pattern 1 + colour 1; `tag_hi = $FF` is a free "invalid"
-      marker since a pattern address is `<= $17xx`). The usual regions are
-      EXHAUSTED — `sysvars.inc` says *"SQRT_POW10 took the last free byte"* below
-      `DRVA_DPB`. Two routes, and neither may be assumed:
-        1. a real RAM hunt (`scratchpad/rammap_sweep.py`, then ASK THE MACHINE
-           with `ramfree_probe.py` — **a delta between two names is NOT free
-           space** [[deffn-ramhunt-slice]]);
-        2. ALIAS a cell dead for the duration of a PAINT. `GFX_CX`/`GFX_CY`
-           ($E109, 4 B) look right — they belong to `gfx_plot_cur` and the
-           Bresenham stepper, and PAINT reaches VRAM through `gfx_rmw_at`
-           directly, never through either. **That is an aliasing CLAIM and this
-           project has been bitten by those; it must be verified against the call
-           graph and pinned, not asserted.** PHASE I already exists as PAINT's
-           aliasing stress and is the obvious place to extend.
-      Its own slice; the standing asymmetric perf check below is what should
-      gate it, and the stopwatch is what should score it.
+      💰 **DECLINED WITH NUMBERS**: designed for ~4×, delivers 1.14×; does not
+      close the item (1.78× is still "significantly slower"); costs a permanent
+      invariant (*every VRAM write in a PAINT must invalidate*) plus an aliasing
+      coupling to the Bresenham cells; and **the right fix subsumes it**.
+
+      🎯 **WHAT THE SUCCESSOR SHOULD DO — the unit of work must become a CELL,
+      NOT A COLUMN.** Restructure `gfx_paint_scan_row` to fetch the
+      pattern/colour pair once and answer up to eight columns from REGISTERS: no
+      `call gfx_paint_inside` per column, no `GFX_PTESTX`/`GFX_PTESTY` round
+      trip, no `gfx_calc_addr` per column. Span-end partials stay on the existing
+      per-column path, exactly as `gfx_paint_row` already does for the write side.
+      SCREEN 2 only. ⚠️ **The host unit test is structurally blind to it** —
+      `tests/test_graphics.py` traps `gfx_paint_read` wholesale, so anything
+      below that trap is invisible; the emulator differential is the only gate
+      with teeth. The standing asymmetric perf check is what should gate it, and
+      the stopwatch is what should score it.
       💡 A standing **asymmetric** perf check falls out of the same instrument:
       RED only when an operation is significantly slower than BOTH references,
       never when it is faster.

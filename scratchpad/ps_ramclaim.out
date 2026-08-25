@@ -1,0 +1,11 @@
+STATIC: closure of gfx_paint_op = 62 routines over 67 source files
+  ✅ no routine in the closure mentions GFX_CX / GFX_CY
+  control: 10 routine(s) in the whole sub image DO mention them -- ['gbi_start_p1', 'gbi_start_p2', 'gbn_major_y', 'gbn_minor_x', 'gbn_step', 'gbn_step_stored']
+
+DYNAMIC: the same fill run with GFX_CX/CY seeded differently
+  painted set identical            : ✅ (3185 vs 3185 px)
+  seed 0000/FFFF survived the fill : ✅ -> 0000/FFFF
+  seed A55A/5AA5 survived the fill : ✅ -> A55A/5AA5
+
+=== GFX_CX/GFX_CY dead for the duration of a PAINT: ✅ BOTH CHECKS AGREE ===
+rc=0
