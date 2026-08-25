@@ -97,58 +97,98 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `ZEROBAS_SAVESTATE=off`. Successor rule: warm on the SECOND sighting of a
       key. See [[parallel-gate-battery]].
 
-- [ ] 🐌 **`PAINT` IS 2.4–3.4× SLOWER THAN BOTH REFERENCES — THE ONLY OPERATION
-      MEASURED SIGNIFICANTLY SLOWER.** Filed 2026-08-24 out of the budget
-      instrument ([`docs/spec-probe-budget.md`](docs/spec-probe-budget.md)), which
-      incidentally produced the project's first **per-operation performance
-      differential** against the two real machines. **Policy (user): faster or
-      comparable is not a worry; significantly SLOWER is.** Measured emulated
-      seconds to completion:
+- [x] ✅ **CLOSED 2026-08-25 (D-PAINTVRAM) — `PAINT` WROTE THE WRONG VRAM, AND
+      THE FIX WAS A RULE THIS ROM ALREADY HAD.**
+      [`docs/spec-basic-paintvram.md`](docs/spec-basic-paintvram.md).
+      💰 **99 B of sub page 0** (2563 → 2464 free); `basic-reloc.rom`
+      byte-identical — a `sub/` tenant edit, exactly as the two-ROM rule predicts.
+      🟢 **`scratchpad/vram_fidelity.py` NOW READS 0 DIVERGENT CASES**: all eight
+      primitives × three machines, **both** SCREEN-2 tables, 12288 bytes a side,
+      byte-identical — including the circle-bounded fill's mixed partial/whole
+      geometry (the 34 `$FF` pattern bytes the references leave reproduce exactly),
+      not merely the uniform flood.
+      🎯 **THE MECHANISM WAS D-BFBYTE's, ONE SLICE OLDER.** A run covering all
+      eight pixels of a cell row is written blind as `pattern := $00,
+      colour := C` — the colour in the BACKGROUND nibble, foreground forced to 0.
+      `LINE ,BF` had done that since D-BFBYTE; `PAINT` fills by horizontal spans
+      and never got it, so it wrote its spans through the per-pixel colour-clash
+      RMW like eight `PSET`s. `gfx_span_bytes` is that loop, EXTRACTED from
+      `gbf_row` and now shared by both; `gfx_paint_row` splits the span with the
+      existing pure `gbf_split` and keeps the two partials per-pixel.
+      ⚠️ SCREEN 2 only — an MC byte is two CELLS with no colour table, so
+      MULTICOLOUR keeps the old per-pixel loop (also the only one that honours
+      `GFX_PPITCH`'s 4). `gfx_paint_extend_lr` is untouched: it still paints each
+      newly discovered pixel inline as it walks (its own header's bug fix), and
+      the span's byte fill then overwrites those cells — which is the reference's
+      own end state.
+      ✅ **THE GATE ROW NOBODY HAD WRITTEN NOW EXISTS — PHASE H-V**, byte-level,
+      seven cells over three programs, RED on the pre-fix build and GREEN after;
+      plus PHASE H's `paint_then_pset`, which shows the SAME divergence through
+      `POINT` after a second draw (`PAINT(128,96),15 : PSET(128,96),6` →
+      references `6 15 15`, pre-fix zerobas `6 6 6`) and is why this was a bug and
+      not cosmetics. **Every one of the seven reference oracles matched
+      first time.**
+      🔴 **THE FIXTURE, NOT THE DIAGNOSIS, WAS WRONG FIRST.** Draft 1's bounded
+      case used `C != B` and all three of its cells came back identical on BOTH
+      sides — the fill had flooded the screen on all three machines, so its two
+      "partial" controls were reading whole-byte territory. That is the
+      references' own dichotomy (`C == B` bounded, `C != B` floods whatever is
+      drawn, [`ntwall-scout-2026-08-22.md`](docs/ntwall-scout-2026-08-22.md)), and
+      the repair added a FOURTH cell outside the box, without which the case
+      cannot tell a bounded fill from a flood at all.
+      ⚠️ **AND `B == C` IS A REAL COVERAGE HOLE, NOT A CHOICE**: a bounded fill
+      REQUIRES `C == B`, and an unbounded one runs every span the full 0..255 —
+      32 cell-aligned whole cells, no partial at either end. So no fixture on
+      these machines puts a partial cell and `B != C` together. `flood_c_ne_b`
+      carries the *which colour* question alone; without it a fill that wrote the
+      BORDER colour would pass every other row in the phase.
+      🔬 **The host model needed the second write path too** — `tests/test_graphics.py`
+      traps `gfx_paint_plot`, which whole cells no longer go through, so its three
+      whole-algorithm cases failed until `gfx_span_bytes` was trapped as well.
+      It also now pokes `SCRMOD` explicitly: nothing in that file ever set it, so
+      the SCREEN-2 arm of `gfx_is_mc` was being taken by whatever the simulated
+      RAM happened to hold. **An implicit mode is not a mode.**
 
-      | operation | vg8020 | cf3300 | zerobas | |
-      |---|---|---|---|---|
-      | PAINT, whole-screen flood | 16.005 | 16.005 | **53.610** | 🔴 3.35× slower |
-      | PAINT, bounded by a circle | 4.778 | 4.778 | **11.330** | 🟠 2.37× slower |
-      | CIRCLE draw, no fill | 0.715 | 0.715 | 0.426 | ✅ 1.7× faster |
-      | error + PRINT readout | 0.094 | 0.094 | 0.024 | ✅ 3.9× faster |
+- [ ] 🐌 **`PAINT` IS STILL 1.9–2.0× SLOWER THAN BOTH REFERENCES — HALVED BY
+      D-PAINTVRAM, NOT CLOSED.** Was 2.4–3.4× (filed 2026-08-24 out of the budget
+      instrument, [`docs/spec-probe-budget.md`](docs/spec-probe-budget.md), this
+      project's first per-operation performance differential against the two real
+      machines). **Policy (user): faster or comparable is not a worry;
+      significantly SLOWER is.** Exact emulated seconds, mark stopwatch,
+      deterministic (`scratchpad/paint_stopwatch.py`):
 
-      So the interpreter and the drawing engine are FINE; it is `PAINT`
-      specifically. 🎯 **MECHANISM CANDIDATE, MEASURED**: zerobas writes **both**
-      VRAM tables (pattern all `0xFF` + colour all `0xF4`, 12288 B) where both
-      references write **only the colour table** (pattern stays `0x00`, colour all
-      `0x0F`, 6144 B). 2× the VRAM traffic ≈ the 2.37× on the bounded fill, but
-      **not** the 3.35× on the flood — so expect a SECOND factor (per-pixel span
-      walking vs a row-wise fill). Do not stop at the first explanation that fits
-      one row.
-      🔴 **AND THE CORRECTNESS QUESTION UNDER IT IS NOW MEASURED, AND IT IS A
-      REAL BUG — `PAINT` WRITES THE WRONG VRAM REPRESENTATION.** Not cosmetic:
-      **`VPEEK` is a BASIC statement**, so a program can read these bytes, and
-      SCREEN 2's colour-clash rules make the NEXT write to a cell depend on which
-      nibble currently holds what. Scope measured 2026-08-24
-      (`scratchpad/vram_fidelity.py`, both tables captured live, 8 primitives ×
-      3 machines):
+      | operation | vg8020 | cf3300 | zb before | zb after | |
+      |---|---|---|---|---|---|
+      | PAINT, whole-screen flood | 14.736728 | 15.536890 | 46.252527 | **29.742824** | 🔴 2.98× → **2.02×** |
+      | PAINT, bounded by a circle | 3.885463 | 4.097390 | 10.874419 | **7.403163** | 🟠 2.65× → **1.91×** |
+      | CIRCLE draw, no fill | 0.409343 | 0.430918 | 0.253305 | 0.253305 | ✅ 0.62× faster |
+      | LINE, corner to corner | 0.135319 | 0.142345 | 0.122553 | 0.122553 | ✅ 0.91× faster |
 
-      | primitive | zerobas vs both references |
-      |---|---|
-      | blank SCREEN 2, PSET, PSET colour 1, LINE, LINE BF, CIRCLE | ✅ **byte-identical** |
-      | PAINT bounded / PAINT flood | 🔴 **DIFFERS** (2592 / 12288 bytes) |
-
-      🟢 **THE SHARED PIXEL-WRITE PATH IS FAITHFUL** — byte for byte, colour-clash
-      behaviour included (`linebf` matches across 2882 colour cells). **The defect
-      is PAINT's own fill shortcut**: on a blank screen the references leave
-      pattern `0x00` / colour `0x0F` (fill by rewriting the **background** nibble,
-      pattern untouched) while zerobas leaves pattern `0xFF` / colour `0xF4` (fill
-      via the **foreground** path). Same visible screen, `POINT` 15 and `ERR 0` on
-      all three — **which is why every existing graphics gate is blind to it: they
-      all read through `POINT`.** Likely the same root as the 2.4–3.4× slowness
-      (two tables written per span instead of one), so the fix may close both.
-      ⏸️ **DEFERRED (user, 2026-08-24): the sentinel harness work is more urgent.**
-      Characterised, not fixed — pick it up with the table above and a VPEEK-level
-      gate row, which is the row nobody has written.
+      🔴 **A PREDICTION MISSED, AND IT IS THE USEFUL KIND.** I predicted the flood
+      would land UNDER 15 s, reasoning from `gbf_row`'s own *"two blind writes per
+      byte instead of eight read-modify-writes … and it is the whole 23×"*. It did
+      not. **The 23× applies to the WRITE, and the write is no longer where PAINT
+      spends its time.** The filed item's warning — *expect a SECOND factor and do
+      not stop at the first explanation that fits one row* — was right, and the
+      2× VRAM-traffic story that fitted the bounded row was never the whole story.
+      📏 **THE RESIDUE IS THE NEIGHBOUR-ROW SCAN, AND IT WAS COUNTED, NOT
+      ARGUED** (§7.1 of [`spec-basic-paintvram.md`](docs/spec-basic-paintvram.md),
+      `scratchpad/paint_callcount.py` — the real `gfx_paint_op` in the host Z80
+      sim with the three VDP-touching leaves trapped, over three box sizes so the
+      SCALING is measured): `gfx_paint_scan_row` tests EVERY column one pixel at a
+      time on TWO neighbour rows per span, and **the scan's share of all VDP
+      accesses RISES with area — 76.9 % → 84.6 % → 89.0 %**. At the largest box
+      48898 of 54912 accesses are pixel tests and the blind byte fill this slice
+      installed is ~5 % of them.
+      🎯 **THE CANDIDATE FIX IS PURE CACHING, NOT A SEMANTICS CHANGE**: eight
+      consecutive pixels of a row share ONE pattern byte and ONE colour byte, and
+      `gfx_paint_scan_row` only TESTS (it never writes), so the row's VRAM is
+      stable across its own pass — read the two bytes once per cell and answer
+      eight columns from the cached pair. Its own slice, its own measurement; the
+      standing asymmetric perf check below is what should gate it.
       💡 A standing **asymmetric** perf check falls out of the same instrument:
       RED only when an operation is significantly slower than BOTH references,
       never when it is faster.
-
 - [~] 🕐 **SENTINEL — SHIPPED AS A *STOPWATCH* (`f6bb5a0`); SHIPPED BUT *NOT
       ADOPTED* AS A CAPTURE TRIGGER (`c04606b`).** Both modes exist and are gated;
       what changed is which one is justified.
@@ -160,18 +200,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       — so this is the only basis on which a performance differential can be gated
       **without flaking**, which wall-clock timing (±0.2 s noise here) can never
       offer. It produced the exact PAINT figures in the item above.
-      ⏸️ **IMPLEMENTED, GATED, NOT ADOPTED — `sentinel_capture=True`.** It makes
-      the budget a pure failure detector and measures 1.1 s → 0.2 s with the
-      capture byte-identical. **But it is refused for `capture="screen"`, and that
-      refusal is MEASURED, not caution**: the sentinel fires before the
+      🟢 **DECIDED 2026-08-25 (user): ADOPT IT FOR SCREEN CAPTURES TOO —
+      *"even if we verify via a screenshot, a sentinel still makes sense"*.** The
+      refusal below was measured but it was WEIGHED WRONG, and the item may not
+      keep quoting the measurement as if it settled the question.
+      ⏸️ **IMPLEMENTED, GATED, NOT YET ADOPTED — `sentinel_capture=True`.** It
+      makes the budget a pure failure detector and measures 1.1 s → 0.2 s with the
+      capture byte-identical. It is currently refused for `capture="screen"`, and
+      that refusal is MEASURED, not caution: the sentinel fires before the
       interpreter prints its `Ok`/`ZB` prompt, and text captures differed by
       exactly those 2 characters on all three machines. **Every PAINT-phase case
       in `graphics-acceptance` is a screen capture whose program `END`s** — i.e.
-      exactly that shape — so adopting it there would mean lifting the refusal,
-      adding a `POKE` to every program in a FIDELITY gate, and proving a fresh
-      differential, for ~10% of one gate. **Left at the boundary deliberately.**
-      To pick up: prove the phase's `_points` readout is prompt-independent, then
-      adopt per-phase behind a byte-identical differential with a teeth control.
+      exactly that shape.
+      🔴 **AND THOSE 2 CHARACTERS ARE THE ONE THING EVERY TEXT READOUT ALREADY
+      THROWS AWAY.** `basic_probe_graphics.py`'s `_answer()` says so in its own
+      docstring — *"the trailing BASIC prompt / 'Ok' / 'No RESUME' text (which
+      differs per machine) is ignored"* — and `_points` is built on it. A capture
+      taken BEFORE the prompt is not a degraded reading of the same screen, it is
+      the screen WITHOUT the machine-specific noise the readouts exist to strip,
+      and `screen_tail` terminating AT the prompt is a property of the
+      TERMINATOR, not evidence that the reading is wrong. The real argument for
+      the sentinel was never the 0.3 s: it is that **a fixed-time budget captures
+      a half-finished machine and a partial result reads as SEMANTICS**, and that
+      hazard is identical whether the capture is text or VRAM.
+      To pick up: lift the `capture="screen"` refusal in `omsx_repl`, prove each
+      phase's readout is prompt-independent (assert the sentinel-captured and
+      fixed-time answers are equal AFTER `_answer`, not before), then adopt
+      per-phase behind that differential with a teeth control.
 
 - [ ] 🔴⚡ ~~**CAPTURE ON A `done` SENTINEL**~~ — original framing, kept for its
       reasoning; the speed case it was filed on is DEAD (the window it removes is

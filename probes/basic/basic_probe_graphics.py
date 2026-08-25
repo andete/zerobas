@@ -808,6 +808,23 @@ PAINT_FILL_CASES = [
     # not about its shape.
     ("bf_wall_not_a_border", ["LINE(0,20)-(255,23),7,BF", "PAINT(128,8),9,7"],
      [(50, 19), (50, 22), (50, 24), (10, 100)]),
+    # 🔴 D-PAINTVRAM: PAINT'S VRAM REPRESENTATION IS OBSERVABLE THROUGH `POINT`
+    # -- AFTER A SECOND DRAW. This is the row that says the divergence PHASE H-V
+    # measures in bytes is not cosmetic, and it is `POINT`-sampled like every
+    # other row here, so it needs no new instrument.
+    #
+    # Both machines render the flood identically and `POINT` reads 15 everywhere
+    # on all three. But the references leave the cell ALL BACKGROUND (pattern
+    # $00, colour C in the bg nibble), so a later `PSET` into it finds the
+    # FOREGROUND nibble free and claims it for its ONE pixel; here the cell is
+    # ALL FOREGROUND (pattern $FF, colour C in the fg nibble), so the same `PSET`
+    # rewrites the shared fg nibble and recolours ALL EIGHT pixels of the group.
+    # (`gbf_row`'s header states the identical consequence for `,BF`, which is
+    # where this encoding was first measured -- D-BFBYTE.)
+    # First point = the PSET landed (agrees); second and third = its NEIGHBOURS
+    # in the same 8-pixel group, which is where the two encodings separate.
+    ("paint_then_pset", ["PAINT(128,96),15", "PSET(128,96),6"],
+     [(128, 96), (129, 96), (135, 96)]),
 ]
 
 
@@ -826,6 +843,140 @@ def phase_h() -> int:
         ok = rp is not None and rp == zp
         fails += not ok
         print(f"  {'PASS' if ok else 'FAIL'} {label:22} ref={rp} zb={zp}")
+    return fails
+
+
+# =====================================================================
+# PHASE H-V -- D-PAINTVRAM: PAINT's VRAM REPRESENTATION, read as BYTES.
+#
+# 🔴 WHY THIS PHASE HAD TO EXIST. Every other PAINT row in this module reads
+# through `POINT`, and `POINT` collapses the pattern bit and both colour nibbles
+# into one number -- so two engines can agree on every visible pixel while
+# storing the screen completely differently. They do: after `PAINT(128,96),15`
+# on a blank SCREEN 2 both references leave pattern $00 / colour $0F and zerobas
+# leaves pattern $FF / colour $F4, `POINT` reads 15 and `ERR` reads 0 on all
+# three, and 372 green rows saw nothing (scratchpad/vram_fidelity.py, and
+# [[ntwall-scout-slice]] recorded the same blindness a fill differential earlier).
+# Under the faithful-MSX1 charter the bytes ARE the contract: `VPEEK` is a BASIC
+# statement, so a program can read them, and SCREEN 2's colour clash makes the
+# NEXT write to a cell depend on which nibble currently holds what -- see
+# `paint_then_pset` in PHASE H above, which is that consequence in `POINT`.
+#
+# The shape is PHASE A's (explicit one-byte VRAM segments, ref vs zb), not
+# PHASE C/D/E's band_segs -- a fill covers the whole plane, and a whole-plane
+# band would diff as one enormous blob that names nothing.
+#
+# ⚠️ EVERY SUBJECT CELL IS PAIRED WITH A PARTIAL-COVERAGE CONTROL ON THE SAME
+# PROGRAM. The claim is not "PAINT's writes differ" but specifically "PAINT does
+# not do the WHOLE-BYTE fill that `LINE ,BF` already does" (D-BFBYTE,
+# `gbf_row`/`gbf_split`, docs/bffill-msx1-characterization.md: a run covering all
+# eight pixels of a cell row is written BLIND as pattern $00 + colour := C in the
+# BACKGROUND nibble). A cell only PARTLY covered by a span must stay on the
+# per-pixel path and must agree on both machines both before and after any fix --
+# if those controls ever go red, the diagnosis is wrong and the shared pixel path
+# is the subject instead.
+# =====================================================================
+# label, ops (after INIT), [(x, y, expected pattern, expected colour, note)]
+PAINT_VRAM_CASES = [
+    # The whole-screen flood: every cell is wholly covered, so every cell is a
+    # subject and there is no control to pair -- the box case below carries those.
+    ("flood_wholebyte", ["PAINT(128,96),15"],
+     [(128, 96, "00", "0f", "mid-screen"),
+      (8, 8, "00", "0f", "far corner")]),
+    # 🔴 ...AND THE SAME FLOOD WITH B != C, BECAUSE EVERY OTHER ROW IN THIS PHASE
+    # HAS B == C AND THEREFORE CANNOT TELL THE TWO COLOURS APART. `PAINT(x,y),15`
+    # defaults B to C, and the bounded case below needs C == B to be bounded at
+    # all -- so a fill that wrote the BORDER colour into the cell would pass
+    # every one of them. Here B=7 appears nowhere on screen (so this floods, per
+    # the references' own C != B rule) and the cell must read C=9, not B=7.
+    ("flood_c_ne_b", ["PAINT(128,96),9,7"],
+     [(128, 96, "00", "09", "colour is C, not B")]),
+    # A BOUNDED fill, and THE FOUR CELLS OF ONE SPAN.
+    #
+    # 🔴 THE BORDER COLOUR MUST EQUAL THE PAINT COLOUR OR THERE IS NO BOUNDED
+    # FILL TO SPLIT. Draft 1 used `BOX` (drawn in 15) with `PAINT(30,30),9,15`
+    # and all three cells came back byte-identical to each other on BOTH sides --
+    # the fill had escaped and flooded the screen on all three machines, so the
+    # "partial" controls were reading whole-byte territory. That is the
+    # references' own measured dichotomy, not an accident: `C == B` is bounded,
+    # `C != B` floods the entire screen whatever is drawn
+    # (docs/ntwall-scout-2026-08-22.md; `plain_wall_cb_bounded` in PHASE H is the
+    # pin for it). Hence C = B = 7 here.
+    #
+    # At y=30 the span the fill discovers is x=21..59 (the box walls sit at x=20
+    # and x=60), so `gbf_split`'s arithmetic gives whole cells 3..6 (x=24..55), a
+    # left partial x=21..23 and a right partial x=56..59.
+    #   (24,30) whole   -> byte-filled on the references: $00 / $07
+    #   (16,30) partial -> per-pixel on BOTH; bit 4 of it is the box's own left
+    #                      wall at x=20, which must SURVIVE with its bit set
+    #   (56,30) partial -> per-pixel on BOTH; bit 3 is the right wall at x=60
+    #   ( 8,30) OUTSIDE -> untouched $00/$04, and it is not decoration: without it
+    #                      this case cannot tell a bounded fill from a flood, which
+    #                      is exactly how draft 1 fooled itself.
+    #
+    # ⚠️ DENOMINATOR, STATED BECAUSE IT IS A REAL HOLE AND NOT A CHOICE: the
+    # partial-cell controls exist ONLY with C == B. A bounded fill REQUIRES
+    # C == B on the references, and an unbounded one runs every span the full
+    # 0..255 -- which is 32 whole cells with no partial at either end. So no
+    # fixture on these machines puts a partial cell and B != C together, and
+    # `flood_c_ne_b` above carries the "which colour" question on its own.
+    #
+    # 🔴 AND THE PARTIALS ARE READ ON **TWO** ROWS, BECAUSE THE SEED'S OWN ROW HAS
+    # A SECOND PAINTER. Draft 2 read them only at y=30 -- the SEED's row -- and
+    # K-PV2/K-PV3 (which delete gfx_paint_row's left/right partial pass outright)
+    # left both cells GREEN. `gfx_paint_extend_lr` paints each newly discovered
+    # pixel INLINE as it walks (its own header's bug fix), and on the seed row it
+    # is the walk that discovers x=21..29 and 31..59 -- so `gpr_part` is redundant
+    # there and its loss is invisible. On a row reached by a PUSH (y=40), the
+    # popped span is already maximal, extend_lr extends and paints NOTHING, and
+    # `gpr_part` is the only painter the partial cells have. The y=40 trio is
+    # therefore the one that scores the split; the y=30 trio pins extend_lr's
+    # inline painting, which is a different painter and worth its own cell.
+    # 🎯 Ask of a cell not "is the value right" but "which code path WROTE it".
+    ("box_span_cells", ["LINE(20,20)-(60,60),7,B", "PAINT(30,30),7,7"],
+     [(24, 30, "00", "07", "WHOLE byte, seed row"),
+      (16, 30, "0f", "74", "left partial, seed row (extend_lr paints it)"),
+      (56, 30, "f8", "74", "right partial, seed row (extend_lr paints it)"),
+      (8, 30, "00", "04", "OUTSIDE the box (control)"),
+      (24, 40, "00", "07", "WHOLE byte, PUSHED row"),
+      (16, 40, "0f", "74", "left partial, PUSHED row (gpr_part alone)"),
+      (56, 40, "f8", "74", "right partial, PUSHED row (gpr_part alone)"),
+      (8, 40, "00", "04", "OUTSIDE the box (control)")]),
+]
+
+
+def phase_h_vram() -> int:
+    """PHASE H-V. Uses INIT (colour plane $04), not LINIT, so the pre-state is
+    PHASE A's pinned one and the expected bytes below are readable against it."""
+    fails = 0
+    print("=== PHASE H-V: PAINT VRAM representation, BYTE-level (D-PAINTVRAM, "
+          f"step={PAINT_STEP}s) ===")
+    for label, ops, cells in PAINT_VRAM_CASES:
+        segs = []
+        for x, y, _, _, _ in cells:
+            pa = paddr(x, y)
+            segs += [(pa, 1), (pa + 0x2000, 1)]
+        specs = [("stored", prog([INIT] + ops))]
+        ref = omsx_repl.run_cases(REF, specs, batch=False, capture=("vram_segs", segs),
+                                  run_gap=PAINT_STEP, cap_gap=PAINT_CAP_GAP,
+                                  timeout=PAINT_TIMEOUT)[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, capture=("vram_segs", segs),
+                                 run_gap=PAINT_STEP, cap_gap=PAINT_CAP_GAP,
+                                 timeout=PAINT_TIMEOUT)[0]
+        for i, (x, y, ep, ec, note) in enumerate(cells):
+            r = ref[i * 4:i * 4 + 4] if ref else None
+            z = zb[i * 4:i * 4 + 4] if zb else None
+            ok = r is not None and r == z
+            # The ORACLE is on the REFERENCE, not on zerobas: these constants are
+            # a claim about what the real machines store, and a differential that
+            # only compares the two sides cannot tell a shared answer from the
+            # RIGHT one. A red oracle here means the model is wrong, not the ROM.
+            orc = "" if (r and r[:2] == ep and r[2:] == ec) else f"  [ref!=oracle {ep}/{ec}]"
+            fails += not ok
+            rp = f"{r[:2]}/{r[2:]}" if r else "None"
+            zp = f"{z[:2]}/{z[2:]}" if z else "None"
+            print(f"  {'PASS' if ok else 'FAIL'} {label + '.' + str(i):20} "
+                  f"({x:3},{y:3}) ref={rp} zb={zp}  {note}{orc}")
     return fails
 
 
@@ -1764,7 +1915,8 @@ def main() -> int:
     _assert_band_clamp_is_noop()      # D-CIRCDOM: the clamp must not move old rows
     fails = (phase_a() + phase_b() + phase_c() + phase_d()
               + phase_e() + phase_f() + phase_g_rneg()
-              + phase_h() + phase_h_mc() + phase_i_aliasing() + phase_j()
+              + phase_h() + phase_h_vram() + phase_h_mc()
+              + phase_i_aliasing() + phase_j()
               + phase_k() + phase_l() + phase_m()
               + phase_n() + phase_o() + phase_p()
               + phase_q_state() + phase_q_behav() + phase_q_teeth()

@@ -548,6 +548,31 @@ def run_asm_paint(m, screen, seed, C, B):
         c = mm.peek(mm.addr("GFX_C"))[0]
         screen[(x, y)] = c
     m.trap("gfx_paint_plot", do_plot)
+
+    # 🔴 D-PAINTVRAM: THE SECOND WRITE PATH. A span's WHOLE CELLS no longer go
+    # through gfx_paint_plot at all -- gfx_paint_row splits the span the way
+    # gbf_row splits a `,BF` scanline and writes each fully-covered cell BLIND
+    # through gfx_span_bytes (pattern $00 + the colour in the background nibble,
+    # D-BFBYTE's storage rule, which is what both references leave and this ROM
+    # did not: docs/spec-basic-paintvram.md). Without this trap those pixels are
+    # simply absent from the model, gfx_paint_read then reports them UNDRAWN, and
+    # the graph-walk under test is being driven by a screen that never got
+    # painted -- the three whole-algorithm cases below failed exactly that way.
+    # in: B = cell count, D = y, E = x of the first (cell-aligned) whole cell.
+    # This model is still a PIXEL model; the byte ENCODING it stands for is
+    # gated by basic_probe_graphics.py's PHASE H-V, not here.
+    def do_span_bytes(mm):
+        n, y, x0 = mm.cpu.b, mm.cpu.d, mm.cpu.e
+        c = mm.peek(mm.addr("GFX_C"))[0]
+        for k in range(n * 8):
+            screen[(x0 + k, y)] = c
+    m.trap("gfx_span_bytes", do_span_bytes)
+
+    # ...and SCREEN 2 explicitly. gfx_paint_row and gbf_row both branch on
+    # gfx_is_mc (SCRMOD == 3), and until D-PAINTVRAM nothing in this file set
+    # SCRMOD at all -- the SCREEN-2 arm was being taken by whatever the simulated
+    # RAM happened to hold. An implicit mode is not a mode.
+    m.poke(m.addr("SCRMOD"), 2)
     m.poke_w(m.addr("GXPOS"), seed[0])
     m.poke_w(m.addr("GYPOS"), seed[1])
     m.poke(m.addr("GFX_C"), C)

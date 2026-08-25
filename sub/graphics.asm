@@ -1052,29 +1052,7 @@ gbf_row:
                 ld      e,d                 ; E = x of the first whole cell
                 ld      a,(GFX_Y1)
                 ld      d,a                 ; D = y
-                push    bc
-                call    gfx_calc_addr       ; HL = pattern addr (B clobbered)
-                pop     bc
-                ld      de,8                ; +1 cell column, same pixel row
-gbf_rw_fast:
-                di                          ; the latch-reset race, exactly as
-                                            ; the per-pixel path guards it --
-                                            ; but once per BYTE, not once per bit
-                ld      c,0
-                call    gfx_wr_raw          ; pattern := $00 (blind: no read)
-                ld      a,h
-                add     a,$20               ; pattern high <= $17 -> no carry out
-                ld      h,a
-                ld      a,(GFX_C)
-                ld      c,a
-                call    gfx_wr_raw          ; colour := C (fg nibble 0)
-                ld      a,h
-                sub     $20
-                ld      h,a
-                ei
-                add     hl,de               ; 16-bit: cell 31 at y&7 = 7 sits at
-                                            ; low byte 255, so `inc l` would wrap
-                djnz    gbf_rw_fast
+                call    gfx_span_bytes      ; D-PAINTVRAM: shared with PAINT now
                 ; --- left partial: xl..(xl|7), iff xl is not cell-aligned ---
                 ld      a,(GFX_TX1)
                 and     $07
@@ -1111,6 +1089,51 @@ gbf_seg:
                 ld      l,a
                 ld      (GFX_X2),hl
                 jp      gfx_draw_seg
+
+; ---------------------------------------------------------------------------
+; gfx_span_bytes -- THE WHOLE-BYTE BLIND FILL, D-BFBYTE's storage rule as a
+; callable leaf. in: B = cell count (>=1), D = y, E = x of the FIRST whole cell
+; (cell-aligned). Writes each cell row as `pattern := $00, colour := GFX_C` --
+; the colour in the BACKGROUND nibble with the foreground FORCED to 0, which is
+; what a VG-8020 stores for a run covering all eight pixels of a cell
+; (docs/bffill-msx1-characterization.md: measured for two colours and over a
+; pre-stained cell, so the fg really is forced and not inherited).
+;
+; Extracted from gbf_row by D-PAINTVRAM, which found the SECOND caller: PAINT
+; wrote its spans PIXEL BY PIXEL through the colour-clash RMW and left pattern
+; $FF / colour $F4 where both references leave $00 / $0F for the same visible
+; screen. Callers are EI on entry (LINE ,BF and PAINT both draw with interrupts
+; live); the di bracket is per BYTE, not per bit -- the same latch-reset race
+; the per-pixel path guards, guarded eight times less often.
+; SCREEN 2 ONLY: an MC byte is two CELLS and there is no colour table, so
+; neither store would mean anything -- both callers test gfx_is_mc first.
+; Clobbers everything.
+; ---------------------------------------------------------------------------
+gfx_span_bytes:
+                push    bc
+                call    gfx_calc_addr       ; HL = pattern addr (B clobbered)
+                pop     bc
+                ld      de,8                ; +1 cell column, same pixel row
+gsb_lp:
+                di                          ; the latch-reset race, exactly as
+                                            ; the per-pixel path guards it --
+                                            ; but once per BYTE, not once per bit
+                ld      c,0
+                call    gfx_wr_raw          ; pattern := $00 (blind: no read)
+                ld      a,h
+                add     a,$20               ; pattern high <= $17 -> no carry out
+                ld      h,a
+                ld      a,(GFX_C)
+                ld      c,a
+                call    gfx_wr_raw          ; colour := C (fg nibble 0)
+                ld      a,h
+                sub     $20
+                ld      h,a
+                ei
+                add     hl,de               ; 16-bit: cell 31 at y&7 = 7 sits at
+                                            ; low byte 255, so `inc l` would wrap
+                djnz    gsb_lp
+                ret
 
 ; ---------------------------------------------------------------------------
 ; gbf_split -- the run split for one scanline. PURE: no VDP, no RAM writes, so
@@ -2655,24 +2678,7 @@ gpf_drain:
 ; ---------------------------------------------------------------------------
 gfx_paint_process:
                 call    gfx_paint_extend_lr
-                ; --- paint xL..xR at row y ---
-                ld      a,(GFX_PXL)
-                ld      (GFX_PSCX),a
-gpp_paint_lp:
-                ld      a,(GFX_PFY)
-                ld      (GFX_PTESTY),a
-                ld      a,(GFX_PSCX)
-                ld      (GFX_PTESTX),a
-                call    gfx_paint_plot
-                ld      hl,GFX_PXR
-                ld      a,(GFX_PSCX)
-                cp      (hl)
-                jr      z,gpp_paint_done
-                ld      hl,GFX_PPITCH       ; D-PAINTMC (A still = GFX_PSCX)
-                add     a,(hl)
-                ld      (GFX_PSCX),a
-                jr      gpp_paint_lp
-gpp_paint_done:
+                call    gfx_paint_row       ; D-PAINTVRAM: paint xL..xR at row y
                 ; --- neighbour row y-pitch (skip if already at the top) ---
                 ld      hl,GFX_PPITCH       ; D-PAINTMC
                 ld      a,(GFX_PFY)
@@ -2688,6 +2694,150 @@ gpp_up_done:
                 ret     z
                 add     a,(hl)
                 jp      gfx_paint_scan_row  ; tail call: ret serves both
+
+; ---------------------------------------------------------------------------
+; gfx_paint_row -- D-PAINTVRAM: paint row (GFX_PFY), columns (GFX_PXL)..(GFX_PXR).
+;
+; 🔴 A FILL DOES NOT WRITE THE SAME BYTES AS EIGHT PSETs, AND `POINT` CANNOT SEE
+; THE DIFFERENCE. This was a plain per-pixel walk through gfx_paint_plot -> the
+; colour-clash RMW, which on a blank SCREEN 2 leaves pattern $FF / colour $F4
+; where BOTH references leave $00 / $0F for the same visible screen. `POINT`
+; reads 15 and `ERR` reads 0 on all three, so all 372 graphics rows were
+; structurally blind to it -- every one of them samples through `POINT`.
+; Measured 2026-08-24 (scratchpad/vram_fidelity.py, both tables captured live,
+; eight primitives x three machines): blank / PSET / PSET c=1 / LINE / LINE ,BF
+; / CIRCLE are byte-identical and only PAINT diverges, so the shared pixel-write
+; path was never the subject -- PAINT's own span write was.
+;
+; THE RULE IS ONE THIS ROM ALREADY HAD, for `LINE ,BF`. Split the span exactly
+; as gbf_row splits a box scanline --
+;
+;       [ left partial ] [ whole bytes ] [ right partial ]
+;
+; -- run the two partials through the per-pixel clash RMW (what both machines do
+; there, pinned by PHASE H-V's partial-cell controls) and write each WHOLE cell
+; blind as pattern $00 + the colour in the BACKGROUND nibble (gfx_span_bytes,
+; D-BFBYTE). It is NOT an optimisation that happens to be faithful: the two
+; storages RENDER identically and then diverge on the NEXT write into the cell,
+; because the clash rule's decision depends on which nibble holds what.
+; `PAINT(128,96),15 : PSET(128,96),6` leaves ONE pixel in 6 on the references
+; (the cell was all background, so the PSET claims the free foreground nibble)
+; and recoloured ALL EIGHT here -- PHASE H's `paint_then_pset`, which is the
+; whole reason this is filed as a BUG and not as cosmetics.
+;
+; ⚠️ THE PARTIALS MUST STAY PER-PIXEL. A span end that is not cell-aligned
+; shares its cell with pixels OUTSIDE the fill -- on a bounded fill, with the
+; bounding wall itself, whose pattern bit must survive (PHASE H-V's
+; `box_span_cells` reads the wall's own cell at BOTH ends of one span).
+;
+; ⚠️ SCREEN 2 ONLY. In MULTICOLOUR a byte is two CELLS and there is no colour
+; table, so gfx_span_bytes has nothing to store -- fall through to the per-pixel
+; walk, which is also the only one that honours GFX_PPITCH's 4. Same arm, same
+; reason, as gbf_row's own MC test.
+;
+; Uses GFX_TX1/GFX_TX2 as gbf_split's inputs: they are the BOX corner stashes,
+; dead for the whole of a PAINT (a PAINT is marshalled through GXPOS/GYPOS and
+; GFX_C/GFX_B, which gfx_paint_flood reads once, before any of this runs).
+; Clobbers everything + the GFX_PSCX scratch.
+; ---------------------------------------------------------------------------
+gfx_paint_row:
+                call    gfx_is_mc
+                jr      z,gpr_pixels        ; MC: no colour table -> per-pixel
+                ; gbf_split's inputs are 16-bit; GFX_PXL/GFX_PXR are the two
+                ; ADJACENT bytes at $E3ED/$E3EE, so one load gets both.
+                ld      hl,(GFX_PXL)        ; L = PXL, H = PXR
+                ld      a,h
+                ld      h,0
+                ld      (GFX_TX1),hl        ; TX1 = PXL
+                ld      l,a
+                ld      (GFX_TX2),hl        ; TX2 = PXR
+                call    gbf_split           ; B = whole-cell count (0 = none)
+                                            ; D = x of the first whole cell
+                ld      a,b
+                or      a
+                jr      z,gpr_pixels        ; not one whole cell -> all per-pixel
+                ; --- left partial: PXL .. D-1 ---
+                push    bc
+                push    de
+                ld      hl,GFX_PXL
+                ld      a,d
+                sub     (hl)                ; A = D - PXL (D is inside the span)
+                jr      z,gpr_no_left
+                ld      b,a                 ; B = pixel count
+                ld      c,(hl)              ; C = first x
+                call    gpr_part
+gpr_no_left:
+                pop     de
+                pop     bc
+                ; --- right partial: (D + 8*count) .. PXR ---
+                ; 🔴 THE CARRY OUT OF THIS MULTIPLY IS LOAD-BEARING. 32 cells
+                ; starting at x=0 end at 256, which wraps to 0 in 8 bits and
+                ; would "start" a right partial at column 0 -- i.e. repaint the
+                ; entire row pixel by pixel, on every span of every flood. Same
+                ; 8-vs-16-bit trap gbf_split's own header records for
+                ; `LINE(255,0)-(255,0),,BF`.
+                push    bc
+                push    de
+                ld      a,d
+                ld      c,b                 ; C = the cell count to walk off
+gpr_mul:
+                add     a,8
+                jr      c,gpr_no_right      ; reached 256 -> nothing to the right
+                dec     c
+                jr      nz,gpr_mul
+                ld      c,a                 ; C = first x past the whole cells
+                ld      a,(GFX_PXR)
+                sub     c
+                jr      c,gpr_no_right      ; PXR < C -> span ended cell-aligned
+                inc     a
+                ld      b,a                 ; B = PXR - C + 1
+                call    gpr_part
+gpr_no_right:
+                pop     de
+                pop     bc
+                ; --- the whole cells, blind ---
+                ld      e,d                 ; E = x of the first whole cell
+                ld      a,(GFX_PFY)
+                ld      d,a                 ; D = y
+                jp      gfx_span_bytes      ; tail call: ret serves both
+
+; gpr_part -- paint B pixels of row (GFX_PFY) starting at column C, through the
+; per-pixel clash RMW. SCREEN 2 only, so the step is 1 (GFX_PPITCH is 4 only in
+; MULTICOLOUR, which never reaches here). The counters ride the Z80 stack across
+; the call -- gfx_paint_plot clobbers every register, and PAINT's own span stack
+; is a RAM window (GFX_PTOP), not this one.
+gpr_part:
+                push    bc
+                ld      a,(GFX_PFY)
+                ld      (GFX_PTESTY),a
+                ld      a,c
+                ld      (GFX_PTESTX),a
+                call    gfx_paint_plot
+                pop     bc
+                inc     c
+                djnz    gpr_part
+                ret
+
+; gpr_pixels -- the whole span one pixel at a time: MULTICOLOUR (where the blind
+; store means nothing and the pitch is 4), and any SCREEN-2 span too narrow to
+; contain a whole cell. This IS the pre-D-PAINTVRAM loop, moved, not changed.
+gpr_pixels:
+                ld      a,(GFX_PXL)
+                ld      (GFX_PSCX),a
+gpp_paint_lp:
+                ld      a,(GFX_PFY)
+                ld      (GFX_PTESTY),a
+                ld      a,(GFX_PSCX)
+                ld      (GFX_PTESTX),a
+                call    gfx_paint_plot
+                ld      hl,GFX_PXR
+                ld      a,(GFX_PSCX)
+                cp      (hl)
+                ret     z
+                ld      hl,GFX_PPITCH       ; D-PAINTMC (A still = GFX_PSCX)
+                add     a,(hl)
+                ld      (GFX_PSCX),a
+                jr      gpp_paint_lp
 
 ; ---------------------------------------------------------------------------
 ; gfx_paint_scan_row -- IN: A = row ny (0..191, caller-clipped). Scans
