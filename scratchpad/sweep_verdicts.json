@@ -9,8 +9,9 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 7 of N -- the remaining ids are NOT yet verdicted",
-  "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them."
+  "status": "TRANCHE 8 of N -- the remaining ids are NOT yet verdicted",
+  "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
+  "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds."
  },
  "T-B96267": {
   "verdict": "LIVE",
@@ -213,11 +214,11 @@
   "reading": "333 label-to-label `equ` aliases across basic/ and sub/ today -- an order of magnitude more than the 28 that slice shipped -- and NO per-site row set exists anywhere in probes/"
  },
  "T-B34E15": {
-  "verdict": "LIVE (the row-set half)",
+  "verdict": "LIVE -- mechanism now confirmed, not just the row-set half",
   "how": "grep of probes/",
   "headline": "`DEF FN`: a STRING formal's shadow slot is not a GC root",
-  "reading": "no probe row names the class (`fnstr`: 0 files). 16 strheap_gc sites exist.",
-  "caveat": "\u26a0\ufe0f the 'shadow' grep is NOISY -- 63 hits, and the ones I read are sprite shadows and keyword shadowing, not the DEF FN slot. Only the row-set half is scored here; whether the slot IS a GC root was NOT determined and needs a read of the walk, not a grep."
+  "reading": "strheap_gc's walk members in the tree today are sg_walk_arrays, sg_walk_scalars, sg_walk_strtab and sg_walk_temps -- exactly the 'variable chain and temp-descriptor stack' the item names, and there is NO FN-frame walker of any name. The shadow slot is genuinely unwalked. No probe row names the class either (fnstr: 0 files).",
+  "caveat": "\u26a0\ufe0f `sg_walk_fnframe` is absent from the tree because the item PROPOSES it ('the fix is either a sg_walk_fnframe or a snapshot at bind time'). A bulk screen flagged that absence as evidence of staleness; reading the item inverted it into evidence the claim is LIVE."
  },
  "T-FE0E95": {
   "verdict": "CLASS MEASURED EMPTY TODAY",

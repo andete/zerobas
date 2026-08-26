@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-⚠️ **THIS IS TRANCHE 7 OF N. 30 of 146 subject blocks carry a verdict.** The
+⚠️ **THIS IS TRANCHE 8 OF N. 30 of 146 subject blocks carry a verdict** (one upgraded). The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -282,6 +282,44 @@ They should be linked.
 
 Running total across seven tranches: **19 LIVE, 9 stale / partly stale /
 reframed / split, 1 class-empty, 1 unreachable-by-instrument.**
+
+## 2g. Tranche 8 — a bulk screen, and the four ways it lied
+
+At five items a tranche the remaining 116 needed a faster instrument, so
+`tools/todo_subject_check.py` asks a cheaper question of all 146 at once: **does
+the thing this item names still exist?**
+
+🔴 **WHAT IT MAY AND MAY NOT DO.** A named file or symbol that is GONE is
+evidence the item's subject left the tree. A named symbol that is PRESENT proves
+only that the subject exists — nothing about whether the behaviour still holds.
+**The screen is allowed to retire an item and never to confirm one.**
+
+It reported **54 candidates for stale**. The true figure is **9**. All four
+false-positive classes were found by running it:
+
+| # | class | example |
+|---|---|---|
+| 1 | **a bare basename is not a path** | `run_gates.py` declared GONE — it is `tools/run_gates.py` |
+| 2 | a 7-hex token is a git revision | `a897bcd`, `b8a8137` reported as missing symbols |
+| 3 | `.rom`/`.dsk` are gitignored build artifacts | absent from `ls-files`, present in `build/` |
+| 4 | **an item may name a symbol because it is PROPOSING it** | `sg_walk_fnframe` |
+
+🔴 **CLASS 1 IS THE ERROR THE CITATION GATE WRITTEN EARLIER THIS SESSION EXISTS
+TO PREVENT** — *match the path, not the basename* — committed by me in the
+inverse direction, a few hours later, in a different tool. Knowing a rule and
+encoding it in one checker does not carry it to the next one.
+
+🔴 **CLASS 4 CANNOT BE FIXED IN THE SCREEN, AND IT INVERTED A VERDICT.** The
+`DEF FN` GC-root item names `sg_walk_fnframe`, which is absent — the screen
+flagged it as stale. Reading the item shows it *proposes* that symbol: *"the fix
+is either a `sg_walk_fnframe` or a snapshot at bind time"*. **A screen cannot
+tell a named subject from a named remedy.**
+
+And reading it settled the item the other way. The walk's actual members today
+are `sg_walk_arrays`, `sg_walk_scalars`, `sg_walk_strtab`, `sg_walk_temps` —
+exactly the *"variable chain and temp-descriptor stack"* the item names, with **no
+FN-frame walker of any name**. So the shadow slot really is unwalked: tranche 6's
+deliberately half-scored verdict is upgraded to **LIVE, mechanism confirmed**.
 
 ## 3. What the apparatus cost, said out loud
 
