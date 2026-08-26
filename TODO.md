@@ -170,14 +170,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       is a standing drift, not a one-session slip. All 19 are now committed.
       🎯 **THE CHECK IS ONE RULE AND THE DENOMINATOR IS FREE**: for every
       `scratchpad/<name>.py` named in `docs/**` or `TODO.md`, assert
-      `git ls-files --error-unmatch` succeeds. It is the same shape as
-      `audit_citations.py`'s existing sweeps and would have failed on the first
+      `git ls-files --error-unmatch` succeeds. Same shape as
+      `audit_citations.py`'s existing sweeps; it would have failed on the first
       commit of the day.
+      🔴 **AND IT MUST MATCH THE PATH, NOT THE BASENAME — THIS ITEM IS WHY.** A
+      basename detector flagged `fastgates.py` as a dangling citation, and the
+      only "citation" was **this item's own sentence listing it as NOT in the
+      class**. A checker whose corpus contains the note describing its exception
+      will flag the exception (`audit_citations.py` hit the same shape and made
+      its self-test vector the canary). Requiring the `scratchpad/` prefix costs
+      nothing and removes it: prose names a file, a citation names a path.
       ⚠️ **SCOPE, MEASURED**: 11 further untracked scripts are cited by nothing
-      committed (`fastgates.py`, the `himrange_*` family, `ss_*`). Those are NOT
+      committed (the `himrange_*` family, `ss_*`, and one other). Those are NOT
       in this class and are left alone — a script nobody cites is a scratch file,
       which is what the directory is for. The rule is about **citations that
-      dangle**, not about tracking everything. Unpriced.
+      dangle**, not about tracking everything.
+      🔴 **AND THE SAME RULE FINDS A SECOND, OLDER FLAVOUR: 9 CITED PATHS DO NOT
+      EXIST ON DISK AT ALL.** Not untracked — *gone*. 165 `scratchpad/*.py`
+      paths are cited by committed docs and only 156 are present:
+      `char_a2_vpeek.py`, `char_intarg.py`, `char_trans.py`, `char_trig.py`
+      (the characterisation family), `deftbl_leak_scout.py`, `knives.py`,
+      `p1scout.py`, `spike_beep_token.py`, `spike_sound_token.py` — cited from
+      `spec-basic-df2-2-intarg-coercion.md`, `spec-basic-mathpack-slice2.md`,
+      `spec-basic-deftbl-strcode.md`, `fixpoint8000-msx1-sweep.md`,
+      `decision-fund-time-and-t5.md`, `spec-basic-audio-beep.md` and
+      `spec-basic-graphics-g2.md`. **Those specs' evidence cannot be re-run by
+      anyone**, which is a bigger hole than an untracked file: an untracked
+      script still exists for its author, a deleted one exists for no one.
+      ⚠️ **Deleting them may have been deliberate** (a spike is meant to be
+      thrown away) — in which case the DOC should say so instead of naming a
+      path. Either the file comes back or the citation does. Unpriced, and the
+      one check finds both flavours.
 
 - [ ] 🔴 **A `unit-test` FLAKE IS OPEN AND UNCAUSED — the diagnostic that would
       have named it was only installed AFTERWARDS.** Filed 2026-08-26 by
