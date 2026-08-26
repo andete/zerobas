@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 50 of N. Subject 176; 120 verdicted, 56 pending.",
+  "status": "TRANCHE 51 of N. Subject 176; 122 verdicted, 54 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -927,5 +927,20 @@
   "headline": "zerobas' `VALTYP $E0C8` READS `$FF` AT COLD BOOT -- CAUSE MEASURED, FIX PRICED AT 3 B AND DECLINED",
   "reading": "VALTYP is documented at basic/sysvars.inc:1400-1407 as an own-design TRANSIENT whose value at any given moment is not a contract. The item records the cause as measured (D-VALTYP, docs/valtyp-coldram-notes.md) and the 3 B fix as DECLINED.",
   "category": "\ud83c\udfaf the EIGHTH not-a-task item: a decision already taken, sitting on the list in the same shape as unfinished work"
+ },
+ "T-40B7E8": {
+  "verdict": "LIVE -- and it is a priced-and-DECLINED decision",
+  "how": "git grep over basic/ and sub/",
+  "headline": "`err_verify` AND `brk_msg` ARE THE LAST TWO MAIN-RESIDENT MESSAGES",
+  "reading": "both are still in `basic/`: `err_verify` at cload.asm:664 (`db \"Verify\",MSGESC_ERROR,0`) and `brk_msg` at program.asm:658 (`db \"Break\",0`). Neither has migrated to sub/.",
+  "category": "\ud83c\udfaf the NINTH not-a-task item -- D-MSGMIGRATE 'measured both and declined both'. The state is unchanged because a decision was taken, not because work is outstanding.",
+  "citation_note": "\u26a0\ufe0f the item cites basic/cload.asm:580 for err_verify; it is at :664 -- one of the drifts tranche 38 counted"
+ },
+ "T-438D23": {
+  "verdict": "LIVE -- and UNFALSIFIABLE BY THE INSTRUMENT IT CRITICISES",
+  "how": "git grep, which is the point",
+  "headline": "AN INDIRECT REACHER CANNOT BE ENUMERATED BY NAMING THE CALLEE",
+  "reading": "the direct-call denominator today: 15 `(jp|call|jr) ... print_msg` reachers across arrays(2), bload(1), cload(3), input(2), program(7). Neither of the two common INDIRECT shapes -- `ld <reg>,print_msg` or `dw print_msg` -- appears anywhere in basic/ or sub/.",
+  "\ud83c\udfaf_the_reflexive_part": "THE ITEM'S CLAIM IS THAT GREPPING FOR CALL SHAPES MISSES REACHERS. I checked it BY GREPPING FOR CALL SHAPES. Finding no indirect reacher of the two shapes I happened to think of is exactly the evidence the item says is worthless -- a fourth reacher of a FIFTH shape would be invisible to me for the same reason it was invisible to D-MSGMIGRATE. The item can only be closed by an instrument that does not enumerate by name at all (a symbol closure over the built image), which is the cure this project already applied to the seed-set problem in D-SEEDHOLE2."
  }
 }

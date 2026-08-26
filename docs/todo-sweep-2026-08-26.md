@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 50 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 51 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1496,6 +1496,32 @@ priced at 3 B and **declined**; `sysvars.inc`:1400-1407 documents VALTYP as an
 own-design **transient** whose value at any moment is not a contract. 🎯 The
 **eighth** not-a-task item — a decision already taken, sitting on the list in the
 same shape as unfinished work.
+
+## 2aw. Tranche 51 — an item unfalsifiable by the instrument it criticises
+
+**`err_verify` / `brk_msg` — LIVE.** Both still in `basic/`: `cload.asm`:664 and
+`program.asm`:658. 🎯 The **ninth** not-a-task item — D-MSGMIGRATE *"measured both
+and declined both"*, so the state is unchanged because a **decision** was taken,
+not because work is outstanding. (Its citation of `cload.asm:580` for `err_verify`
+is one of the drifts tranche 38 counted; the label is at `:664`.)
+
+**An indirect reacher cannot be enumerated by naming the callee — LIVE.** Today's
+direct-call denominator: **15** `(jp|call|jr) … print_msg` reachers across
+`arrays`(2), `bload`(1), `cload`(3), `input`(2), `program`(7). Neither common
+**indirect** shape — `ld <reg>,print_msg` or `dw print_msg` — appears anywhere.
+
+🎯 **AND THE ITEM IS UNFALSIFIABLE BY THE INSTRUMENT IT CRITICISES.** Its claim is
+that grepping for call shapes misses reachers — and I checked it **by grepping for
+call shapes**. Finding no indirect reacher of the two shapes I happened to think
+of is **exactly the evidence the item says is worthless**: a reacher of a *fifth*
+shape would be invisible to me for precisely the reason it was invisible to
+D-MSGMIGRATE.
+
+**It can only be closed by an instrument that does not enumerate by name at all** —
+a symbol closure over the built image — which is the cure this project already
+applied to the seed-set problem in D-SEEDHOLE2 (*"the cure for a proxy is not a
+narrower proxy — it is the REAL surface"*). The item is a standing instance of a
+lesson the project has already learned elsewhere.
 
 ## 3. What the apparatus cost, said out loud
 
