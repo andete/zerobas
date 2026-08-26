@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 52 of N. Subject 176; 124 verdicted, 52 pending.",
+  "status": "TRANCHE 53 of N. Subject 176; 124 verdicted, 52 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -27,6 +27,21 @@
    "why_it_matters": "\ud83c\udfaf EVERY ITEM THAT REASONS FROM 'THE BATTERY HAS BEEN GREEN/QUIET' ABOUT ONE OF THESE 22 INHERITS THE VOID tranche 46 found in lof-acceptance. `make gates` going 39/39 says nothing whatever about fat-error, input, time, sound, play, beep, the four trap gates, or the disk gates. A green battery is a claim about 39 units, and the project owns at least 57 gate-shaped things that could run.",
    "caveats": "\u26a0\ufe0f 22 IS AN UPPER BOUND ON THE PROBLEM, THREE WAYS: (1) my detector looks 14 lines back for an exclusion phrase, so an exclusion documented in a spec or in run_gates.py's own docstring is missed; (2) some are covered under a DIFFERENT unit name that IS in the battery (deffn-acceptance is absent but deffn-selftest and deffn-strict are present); (3) some may be run by CI rather than by `make gates`. What is certain is the 87/35 split and that 22 carry no nearby note explaining it.",
    "how": "regex over Makefile targets vs run_gates.py's GATES list"
+  },
+  "unrun_gate_exposure": {
+   "headline": "\ud83d\udd34 THIRTEEN SUBJECT ITEMS REFERENCE A GATE THE BATTERY NEVER RUNS",
+   "measured": "cross-checking the 176 subject blocks against the 22 undocumented-exclusion unrun targets from tranche 47: 13 items name at least one.",
+   "the_13": {
+    "T-E56017 / T-CAA3DC / T-2148BA": "lnblank-say-acceptance",
+    "T-5858A6 / T-6A9F9F / T-8A24D5": "namspc-acceptance",
+    "T-4B3ABB / T-CFEA4A": "readvar-acceptance",
+    "T-70A01E / T-8A25E8": "diskbasic-acceptance",
+    "T-FE1732": "fat-error-acceptance",
+    "T-48AC8B": "direct-ctrl-acceptance",
+    "T-632DF5": "bdos-, fat-error-, graphics-floor- and subrom-acceptance (four at once)"
+   },
+   "\u26a0\ufe0f_what_this_does_and_does_not_show": "REFERENCING A GATE IS NOT THE SAME AS DEPENDING ON IT HAVING RUN. Some of the 13 merely name the gate as the place a row lives, which is unaffected. The exposure is specific: any item whose reasoning is 'that gate is green / has been quiet / would have caught it' inherits tranche 46's void. Each of the 13 needs a read to say which kind it is; ONE has already been read (T-E56017, tranche 52) and it was the exposed kind.",
+   "\ud83d\udd34_the_uncomfortable_one": "T-FE1732 was verdicted in this sweep as SELF-DECLARED CLOSED ('fat-error-acceptance's missing NAME control -- CLOSED 2026-08-07'). Its gate is one of the 22. A closure asserted against a gate that has not run since is a claim about the day it was written, not about today -- and my own read-not-run verdict inherited that without noticing until now."
   }
  },
  "T-B96267": {

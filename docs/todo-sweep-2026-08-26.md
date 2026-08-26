@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 52 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 53 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1545,6 +1545,38 @@ Every probe still spells its literals inline, so an assertion and a classifier
 needle remain textually indistinguishable. The item records that this silently
 broke **30 comparisons across 9 files**; nothing in the tree today would prevent a
 repeat.
+
+## 2ay. Tranche 53 — how far the battery gap reaches into the list
+
+Cross-checking all 176 subject blocks against tranche 47's **22
+undocumented-exclusion unrun targets**: **13 items reference at least one.**
+
+| gate that never runs | items referencing it |
+|---|---|
+| `lnblank-say-acceptance` | T-E56017, T-CAA3DC, T-2148BA |
+| `namspc-acceptance` | T-5858A6, T-6A9F9F, T-8A24D5 |
+| `readvar-acceptance` | T-4B3ABB, T-CFEA4A |
+| `diskbasic-acceptance` | T-70A01E, T-8A25E8 |
+| `fat-error-acceptance` | T-FE1732 |
+| `direct-ctrl-acceptance` | T-48AC8B |
+| four at once | T-632DF5 |
+
+⚠️ **WHAT THIS DOES AND DOES NOT SHOW.** *Referencing* a gate is not the same as
+*depending on it having run* — some merely name it as where a row lives, which is
+unaffected. The exposure is specific: **any item reasoning "that gate is green /
+has been quiet / would have caught it" inherits tranche 46's void.** One of the 13
+has already been read (T-E56017, tranche 52) and it **was** the exposed kind.
+
+🔴 **AND ONE OF THEM IS MY OWN VERDICT.** T-FE1732 was scored in this sweep as
+**self-declared closed** — *"`fat-error-acceptance`'s missing `NAME` control —
+CLOSED 2026-08-07"*. Its gate is one of the 22. **A closure asserted against a
+gate that has not run since is a claim about the day it was written, not about
+today** — and my read-not-run verdict inherited that without noticing until this
+cross-check.
+
+That is the value of the `how:` field being recorded on every verdict: the 19
+read-not-run verdicts can now be re-examined as a set, and this is the first
+concrete reason to.
 
 ## 3. What the apparatus cost, said out loud
 
