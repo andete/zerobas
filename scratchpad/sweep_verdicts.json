@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 34 of N. Subject 176; 95 verdicted, 81 pending.",
+  "status": "TRANCHE 35 of N. Subject 176; 96 verdicted, 80 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -721,5 +721,15 @@
   "reading": "\ud83c\udfaf ROUTE A IS TWICE AS OPEN AS FILED -- 8 B safe net, not 4 B -- while its NOMINAL figure fell (190 -> 163 B). The two move in opposite directions because carves since have consumed easy groups while the safe/unsafe classification shifted. Route B's free space fell by 99 B, consistent with D-PAINTVRAM landing there.",
   "what_stands": "the STRUCTURAL conclusions are untouched: a verb that can PRINT or RAISE reaches the BIOS transitively (pchar->CHPUT, raise_error->BREAKX) and a page-0 tenant runs with that region switched out -- five candidates at 177-762 B all refused for those two paths. That is an argument about reachability, not a number, and re-running does not touch it.",
   "why_it_matters_now": "\u26a0\ufe0f THIS ITEM SAYS 'Read this BEFORE opening any slice that needs main page-1 bytes' -- so its numbers are load-bearing for exactly the decision the screen-editor question turns on. Anyone reading '4 B' would price the seam at half what it is."
+ },
+ "T-B10921": {
+  "verdict": "INSTANCE CLOSED (verified); CLASS OPEN AND GROWING",
+  "how": "static read of probes/basic/basic_probe_deffn.py + git grep over basic/ and sub/",
+  "headline": "A RULE WITNESSED ONLY BY A *DEFERRED* ERROR IS WITNESSED BY NOTHING",
+  "instance": "\u2705 VERIFIED CLOSED. The rows the item says were added are present: `o.errfend13` (:123) and `o.errfend18` (:124) in basic_probe_deffn.py, both with an ON ERROR handler and an `X;E` readout, exactly as described.",
+  "class_filed": "21 `penderr_set` sites; exactly ONE raises on the spot (str_heap_oom_error), the other 20 return",
+  "class_today": "22 call sites",
+  "reading": "\ud83d\udd34 THE DENOMINATOR HAS GROWN BY ONE SINCE THE ITEM WAS FILED. A new `penderr_set` call site was added between 2026-08-23 and today, so the class of guards that can be witnessed only by a deferred error is not merely open -- it is EXPANDING while unwatched.",
+  "why_that_is_the_finding": "\ud83c\udfaf The item's own point is that the ERR CODE a row expects carries no information about whether it can witness an ordering-sensitive guard. A growing site count means each new site inherits that blindness silently, and nothing counts them. The re-measurement is the only thing that made the growth visible."
  }
 }

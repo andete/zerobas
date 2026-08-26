@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 34 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 35 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1062,6 +1062,31 @@ reachability, not a number**, and re-running cannot touch it.
 That split is the useful shape: *this item's reasoning survived a month and every
 one of its figures did not*. Both halves sit in the same block, and only one of
 them rots.
+
+## 2ag. Tranche 35 — a residual that is not just open but growing
+
+**Instance: verified closed.** The rows the item says were added are present —
+`o.errfend13` and `o.errfend18` in `basic_probe_deffn.py`, both with an `ON ERROR`
+handler and an `X;E` readout, exactly as described.
+
+**Class: open, and the denominator has moved.**
+
+| | filed 2026-08-23 | **today** |
+|---|---|---|
+| `penderr_set` call sites | **21** | **22** |
+| of which raise on the spot | 1 | 1 |
+
+🔴 **A NEW SITE WAS ADDED SINCE THE ITEM WAS FILED.** The class of guards
+witnessable only by a deferred error is not merely open — it is **expanding while
+unwatched**. The item's own point is that *the ERR code a row expects carries no
+information about whether that row can witness an ordering-sensitive guard*, so
+each new site inherits the blindness silently and **nothing counts them**.
+
+🎯 **EVERY OTHER STALE FIGURE IN THIS SWEEP SHRANK OR HELD** — 403 B of carve
+supply became 8 B safe, 122 `/tmp` literals became 104, three divergences healed.
+**This is the first one that grew.** A list that is only ever re-read cannot tell
+those two directions apart; a list that is re-run can, and the growing one is the
+one that matters.
 
 ## 3. What the apparatus cost, said out loud
 
