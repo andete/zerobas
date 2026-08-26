@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 28 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 29 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -899,6 +899,32 @@ project cites many kinds of thing and gates exactly one:
 
 One rule, three surfaces, one gate. The morning's gate was scoped to the surface
 that had just bitten; the sweep is what shows the surface had siblings.
+
+## 2aa. Tranche 29 — gates that annotate what they cannot judge
+
+| item | verdict |
+|---|---|
+| `kwsweep` prints rows no runner can parse | **LIVE — a declared exception inside the gate** |
+| `s.fldarymix` is a row no knife can redden | **LIVE, exact — the probe records its own provenance** |
+
+`check_report_shape.py` walks every probe and names this one at line 29: the
+kwsweep case is handled *"out loud (`basic_probe_kwsweep.py`, spec §2.4) — never
+silently skipped"*. And `basic_probe_fldary.py`:34 says *"🎯 `s.fldary2` AND
+`s.fldarymix` EXIST BECAUSE A KNIFE WAS DRAFTED FIRST"* — the row was written to
+satisfy a knife that then could not redden it, and the file says so.
+
+🎯 **THIS IS THE FOURTH SIGHTING OF ONE PATTERN, AND IT EXPLAINS THE SWEEP'S OWN
+ECONOMICS.** Four gates annotate the cases they cannot judge:
+
+* `injector-check`'s `EXEMPT` table, each entry stating its class (tranche 14)
+* `check_report_shape`'s named kwsweep exception (here)
+* `check_dead_code`'s *"⚠️ Only a PROLOGUE is skipped, never any other empty span"* (tranche 24)
+* `check_dead_code`'s *"⚠️ Fix (5) still matters — for `tools/`, which still seeds"* (tranche 24)
+
+**The residual and its record live in the same file**, which is why so many items
+here are confirmable by reading the gate rather than running anything — and why
+these particular residuals have **not** rotted, unlike the 30 divergences §1.2
+found buried in `- [x]` blocks, which had no such home.
 
 ## 3. What the apparatus cost, said out loud
 
