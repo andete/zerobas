@@ -73,9 +73,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       worth more than the bytes**: `scratchpad/` has no sweep for "a pop that
       only exists to satisfy a raise that unwinds anyway". Unpriced.
 
-- [ ] 🔴 **THE STALL WATCHDOG'S OWN DIAGNOSTIC ASSERTS THE ONE THING IT CANNOT
-      KNOW: *"a stall is a FROZEN OR CRASHED emulator, NOT A SLOW ONE"*.** Filed
-      2026-08-26 by D-DRAWOP. `probes/lib/omsx_repl.py`:981 appends that clause
+- [ ] ⚠️ **THE STALL WATCHDOG NO LONGER MIS-ASSERTS, BUT `run_gates.py` STILL
+      CALLS A CONTENDED UNIT *REAL*.** Filed 2026-08-26 by D-DRAWOP; the
+      diagnostic half FIXED the same day by D-STALLSLOW (`a897bcd`), the
+      classifier half OPEN. The message used to assert *"a stall is a FROZEN OR
+      CRASHED emulator, NOT A SLOW ONE"*. `probes/lib/omsx_repl.py`:981 appends that clause
       to every stall kill, and justifies it with *"the heartbeat is on the HOST
       clock"* — **which is exactly why the claim fails.** A host-clock deadline
       cannot separate a FROZEN guest from a STARVED one; when the host is
@@ -133,26 +135,49 @@ list. **When a slice lands, grep this list for what it just shipped.**
       at a real kill site — only that the parse and the message are right. **An
       arm that passes because it never fired is not an arm.**
 
-- [ ] 🔴 **EVERY KNIFE RUNNER IN `scratchpad/` CAN EXIT BETWEEN THE WRITE AND
-      THE RESTORE, LEAVING THE TREE CUT.** Filed 2026-08-26 by D-MIDOP
-      ([`docs/spec-basic-midop.md`](docs/spec-basic-midop.md) §5.2), which hit
-      it: an assertion fired after the cut was written, the only restore sat at
-      the END of the loop body, and the run exited with
-      `basic/str-engine.asm` still holding K-MD1. **The next invocation reported
-      *"anchor appears 0 times"*, which reads as a bad anchor and is really a
-      dirty tree** — and a dirty tree silently corrupts whatever is measured
-      next.
-      🟢 `scratchpad/midop_knives.py` now registers an `atexit` restore beside
-      the read, covering the assert, the exception and the clean return alike.
-      🔴 **THE OTHER ~20 RUNNERS DO NOT** (`onlist_knives.py`,
-      `pusing_knives.py`, `playop_knives.py`, `evferr_knives.py`, and every
-      earlier one) — they all share the shape the operating rules describe as
-      *"RESTORE BY WRITING THE BYTES"*, which says nothing about WHEN.
-      ⚠️ **THE DAMAGE IS SILENT AND CROSS-SLICE**: a runner that dies mid-cut
-      leaves a tree whose next `make gates` measures a knifed machine, and the
-      ROM-hash guard cannot see it because the hash legitimately differs from
-      the baseline it was handed. Unpriced; the shape is three lines per runner,
-      or one shared helper.
+- [x] ✅ **CLOSED 2026-08-26, D-KNIFEGUARD — every knife runner now restores on
+      the FAILURE path.** Filed and fixed the same day. The restore sat at the
+      END of the loop body, after the asserts, so an assertion firing mid-run
+      left the SOURCE CUT: `midop_knives.py` exited on a `sub.rom` assertion and
+      the next invocation reported *"anchor appears 0 times"*, which reads as a
+      bad anchor and is really a **dirty tree**. 🔴 **The ROM-hash guard cannot
+      see this** — the hash legitimately differs from the baseline it was handed
+      — so the next thing measured would have been a knifed machine.
+      ✅ `atexit.register` beside the read, covering the assert, the exception
+      and the clean return alike. 📏 **12 of 14 runners were vulnerable**; all
+      patched, all parse, and the registration is after `original` is bound in
+      every one (checked, not assumed). A patched runner re-run live:
+      `drawop_knives.py` 2/2 EXACT, restore byte-exact, tree clean.
+      🔬 **FALSIFIED WITH A CONTROL** (`scratchpad/knifeguard_falsify.py`): a
+      runner WITH the hook that dies mid-cut comes back PRISTINE; the same
+      runner WITHOUT it stays CUT. ⚠️ **The green arm is the load-bearing one** —
+      without it, a red arm that passes proves only that nothing cut the file.
+      🔴 **AND I MEASURED THE DENOMINATOR TWICE AND GOT 12 AND 1.** Two detectors
+      for the same question disagreed by an order of magnitude and only READING
+      one runner settled it; the second detector was broken and its "1
+      vulnerable" was the comfortable answer. **When two counts of your own
+      disagree, read the code — do not pick the one you like.**
+      🟢 **THE DURABLE HALF IS IN THE OPERATING RULES**, which said HOW to
+      restore and nothing about WHEN — which is why every runner had it wrong.
+
+- [ ] 🔴 **A COMMITTED DOC CAN CITE A `scratchpad/` SCRIPT THE REPO DOES NOT
+      HAVE, AND NOTHING CHECKS IT.** Filed 2026-08-26 by D-KNIFEGUARD, which hit
+      it while patching the knife runners and discovering `scratchpad/*.py` is
+      **tracked** (524 files) — so the convention is to commit them, and
+      **19 scripts cited by committed docs or by this file were untracked.**
+      Every spec written on 2026-08-26 cited a probe and a knife runner that a
+      fresh clone would not have; `circtc_knives.py` predates that day, so this
+      is a standing drift, not a one-session slip. All 19 are now committed.
+      🎯 **THE CHECK IS ONE RULE AND THE DENOMINATOR IS FREE**: for every
+      `scratchpad/<name>.py` named in `docs/**` or `TODO.md`, assert
+      `git ls-files --error-unmatch` succeeds. It is the same shape as
+      `audit_citations.py`'s existing sweeps and would have failed on the first
+      commit of the day.
+      ⚠️ **SCOPE, MEASURED**: 11 further untracked scripts are cited by nothing
+      committed (`fastgates.py`, the `himrange_*` family, `ss_*`). Those are NOT
+      in this class and are left alone — a script nobody cites is a scratch file,
+      which is what the directory is for. The rule is about **citations that
+      dangle**, not about tracking everything. Unpriced.
 
 - [ ] 🔴 **A `unit-test` FLAKE IS OPEN AND UNCAUSED — the diagnostic that would
       have named it was only installed AFTERWARDS.** Filed 2026-08-26 by

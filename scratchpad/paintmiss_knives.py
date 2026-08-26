@@ -17,6 +17,7 @@ knife can redden them one at a time. [[a-shared-tail-is-not-a-decision]]
 """
 from __future__ import annotations
 
+import atexit
 import hashlib
 import os
 import subprocess
@@ -129,6 +130,15 @@ def zb_faces(tag):
 
 def main():
     original = open(SRC).read()
+    # 🔴 RESTORE ON EVERY EXIT PATH, NOT JUST THE HAPPY ONE (D-MIDOP §5.2,
+    # 2026-08-26). The restore below sits at the END of the loop body, AFTER the
+    # asserts -- so an assertion that fires mid-run leaves the SOURCE CUT. That
+    # happened: midop_knives.py exited on a sub.rom assertion and the next
+    # invocation reported "anchor appears 0 times", which reads as a bad anchor
+    # and is really a dirty tree. A knife runner that can exit between the write
+    # and the restore can silently corrupt whatever is measured next, and the
+    # ROM-hash guard cannot see it because the hash legitimately differs.
+    atexit.register(lambda: open(SRC, "w").write(original))
     for k in KNIVES:
         assert original.count(k["old"]) == 1, f"{k['name']}: anchor not unique"
 
