@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 24 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 25 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -776,6 +776,33 @@ safe handling the item asks for. But I could only establish that **a safe path
 exists**, not that **this input takes it**. Those are different claims and only
 the second answers the item. Scoring it closed on the strength of the first is
 precisely the move that put the stale entries on this list to begin with.
+
+## 2w. Tranche 25 — absence as a measurement, and a subject I could not identify
+
+| item | verdict |
+|---|---|
+| two `DEF FN` formals of one call can alias, no row separates it | **LIVE — confirmed by absence** |
+| the generic error-layer seam | **LIVE — the source names the kept sites** |
+| an unnamed outcome reads as no outcome | **not scored** |
+
+🎯 **ABSENCE IS THE RIGHT MEASUREMENT FOR THE FIRST ONE.** The item's claim is
+that **no row separates the case** — so finding no such row in
+`basic_probe_deffn.py` is not a weak form of evidence, it *is* the evidence.
+Elsewhere in this sweep absence has been the weakest signal (tranche 8's symbol
+screen); here it is the strongest, and the difference is whether the item's claim
+is about presence or about a gap.
+
+The error-layer seam is confirmed with the sites documenting themselves:
+`graphics.asm:748` still carries `jp z,ep_syntax`, and the comments around it
+record D-PAINT4 removing one such site while **deliberately keeping this one**.
+
+⚠️ **AND ONE ITEM I COULD NOT IDENTIFY THE SUBJECT OF.** `face()` exists in two
+probes and `UNTRAPPED` naming in two others — **four candidates**, and the item
+names none of them (it cites a spec section instead). Picking one and scoring
+against it would be scoring a **different subject**, so it is deferred to a read
+of the spec rather than guessed. 🎯 *Which artefact an item is about* is itself a
+thing that can go unrecorded, and a citation to a spec section is not a citation
+to a file.
 
 ## 3. What the apparatus cost, said out loud
 

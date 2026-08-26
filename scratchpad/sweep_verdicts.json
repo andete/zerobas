@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 24 of N. Subject 176; 76 verdicted, 100 pending.",
+  "status": "TRANCHE 25 of N. Subject 176; 78 verdicted, 98 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -585,5 +585,25 @@
   "headline": "A linear predecessor walk stops at `ENDIF` and calls it an instruction",
   "reading": "tools/dupspan_indep.py DOES decode the predecessor span and has an explicit 'predecessor ... does not decode' -> UNKNOWN path (line 214), which is the safe handling the item asks for. Whether the ENDIF case specifically reaches that path was NOT determined.",
   "why_not_scored": "\u26a0\ufe0f I could establish that a safe path EXISTS, not that THIS input takes it. Those are different claims and only the second answers the item. Recorded partial rather than closed on the strength of the first."
+ },
+ "T-1738AC": {
+  "verdict": "LIVE -- confirmed by absence",
+  "how": "grep of probes/basic/basic_probe_deffn.py",
+  "headline": "`DEF FN`: two formals of ONE call can alias, and no row separates it",
+  "reading": "the DEF FN probe exists (probes/basic/basic_probe_deffn.py) and contains NO row mentioning aliasing, two formals, or a repeated formal. The item's claim is that no row separates the case -- and none does.",
+  "note": "the item is about a MISSING row, so absence IS the measurement here rather than a weaker form of it"
+ },
+ "T-B42728": {
+  "verdict": "LIVE -- and the source narrates which sites were kept",
+  "how": "static read of basic/graphics.asm",
+  "headline": "THE GENERIC ERROR-LAYER SEAM: per-verb error checks that duplicate a layer that already exists",
+  "reading": "basic/graphics.asm:748 still carries `jp z,ep_syntax` for a 3rd comma, and the comments at :789/:805/:808 record D-PAINT4 removing ONE such site while deliberately KEEPING this one ('the :748 site KEEPS ep_syntax: a doubled comma raises before B is...'). The seam is open and its remaining members are documented at the sites."
+ },
+ "T-7F8654": {
+  "verdict": "NOT SCORED -- the subject probe was not identified this pass",
+  "how": "grep, inconclusive",
+  "headline": "AN UNNAMED OUTCOME READS AS NO OUTCOME, AND THE FIX MOVES THE HOLE ONE MESSAGE ALONG",
+  "reading": "`face()` exists in basic_probe_strparen.py and basic_probe_deffn.py, and UNTRAPPED naming appears in basic_probe_penderr.py and basic_probe_clearpool.py -- four probes, and the item names none of them explicitly (it cites D-CLRTRAP \u00a75).",
+  "why_not_scored": "\u26a0\ufe0f Picking one of four probes and scoring against it would be scoring a DIFFERENT subject. The item needs its spec read to say which `face()` it means; that is a read, not a grep, and it is deferred rather than guessed."
  }
 }
