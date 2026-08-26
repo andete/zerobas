@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 31 of N. Subject 176; 89 verdicted, 87 pending.",
+  "status": "TRANCHE 32 of N. Subject 176; 91 verdicted, 85 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -679,17 +679,16 @@
   "unresolved": "\u26a0\ufe0f whether the lineerr readout actually reddens under K-GR4 is NOT tested here -- that needs the knife run, not a grep"
  },
  "T-7F8323": {
-  "verdict": "NOT SCORED -- the phase was not identified",
-  "how": "grep, inconclusive",
+  "verdict": "LIVE, exact -- and last tranche's refusal was RIGHT",
+  "how": "read of docs/gate-blindness-sweep.md:250-256",
   "headline": "PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT",
-  "reading": "the closest pairing found is basic_probe_graphics.py:1937 `cases = [(\"ie_off\", \"VDP(1)=VDP(1)AND223\"), (\"control\", \"A=0\")]` -- where the control does NOT share the subject's statement, which would make the item stale.",
-  "why_not_scored": "\u26a0\ufe0f I could not confirm that pairing IS 'Phase Q3'. Scoring an item stale on a code site I have not established is its subject is the tranche-25 mistake, and it is declined for the same reason. It needs the D-GATEBLIND \u00a79 read."
+  "reading": "the sweep says it outright: 'Q3's control exists to prove the emulator is alive when the subject case freezes TIME -- but its RESTORE LINE is `VDP(1)=VDP(1)OR32`, the very statement the subject uses. A cut to the VDP grammar takes the control down with the subject.' That restore is at basic_probe_graphics.py:1943.",
+  "why_the_deferral_mattered": "\ud83d\udd34 LAST TRANCHE I FOUND `cases = [(\"ie_off\", ...), (\"control\", \"A=0\")]` AND NEARLY SCORED THE ITEM STALE ON IT -- the control's CASE genuinely does not share the subject's statement. The sharing is in the RESTORE LINE, one line further down. Scoring on the first plausible site would have produced a confident WRONG verdict, and the only thing that prevented it was refusing to score a subject I had not established."
  },
  "T-E0B493": {
-  "verdict": "NOT SCORED -- rows located, knife question untouched",
-  "how": "grep",
+  "verdict": "LIVE, confirmed by the knife roster",
+  "how": "read of docs/spec-fat-error-verb-control.md:185-198",
   "headline": "Two `fat-error` gaps left by the 8-of-8 closure",
-  "reading": "`bload-alive`, `open-alive` and `append-alive` all exist as landmarks in probes/disk/disk_probe_fat_error_disposition.py (:160, :162, :173).",
-  "why_not_scored": "\u26a0\ufe0f the item's claim is that NO KNIFE SEPARATES them from the shared fat_io_getbyte layer. Finding the ROWS says nothing about the KNIVES; that needs the knife roster read, which a grep for row names cannot substitute for."
+  "reading": "the probe's knife roster is exactly THREE: K-FE1 cuts `tnt_name_stamp`'s `fatprim_write_sector` (NAME), K-FE2 undoes D-DKNAME's disposition (NAME), K-FE3 zeroes build/disk.rom (dead subject, nothing scored). NONE separates `bload-alive` / `open-alive` / `append-alive` from the shared `fat_io_getbyte` layer -- exactly the gap filed."
  }
 }

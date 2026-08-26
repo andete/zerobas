@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 31 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 32 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -978,6 +978,36 @@ knife run.
 🎯 Both refusals share a shape worth naming: **locating something with the item's
 vocabulary is not the same as locating the item's subject.** Three tranches have
 now turned on that distinction.
+
+## 2ad. Tranche 32 — the deferral paid, and it would have been a wrong verdict
+
+Both of tranche 31's refusals resolved by reading the source the items cite.
+
+**`fat-error` gaps — LIVE.** The probe's knife roster is exactly three: `K-FE1`
+cuts `tnt_name_stamp`'s write-sector (NAME), `K-FE2` undoes D-DKNAME's
+disposition (NAME), `K-FE3` zeroes `build/disk.rom` (dead subject, nothing
+scored). **None** separates `bload-alive`/`open-alive`/`append-alive` from the
+shared `fat_io_getbyte` layer.
+
+**Phase Q3 — LIVE, exact.** `docs/gate-blindness-sweep.md`:250 says it outright:
+
+> Q3's control exists to prove the emulator is alive when the subject case
+> freezes TIME — but its **restore line** is `VDP(1)=VDP(1)OR32`, **the very
+> statement the subject uses**. A cut to the VDP grammar takes the control down
+> with the subject.
+
+🔴 **AND LAST TRANCHE I NEARLY SCORED THIS ITEM STALE.** I had found
+`cases = [("ie_off", …), ("control", "A=0")]` — where the control's **case**
+genuinely does *not* share the subject's statement — and that reads as a fix. The
+sharing is in the **restore line, one line further down**. Scoring on the first
+plausible site would have produced a **confident wrong verdict**, and the only
+thing that prevented it was refusing to score a subject I had not established.
+
+🎯 **THAT IS THE ARGUMENT FOR THE REFUSALS, MADE CONCRETE.** Three tranches have
+now declined to score something on vocabulary alone; this is the first one where
+the answer came back **opposite** to what the plausible site suggested. The
+refusals are not caution for its own sake — one in three of them was about to be
+wrong.
 
 ## 3. What the apparatus cost, said out loud
 
