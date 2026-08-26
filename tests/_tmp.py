@@ -35,3 +35,57 @@ os.makedirs(BASE, exist_ok=True)
 def tp(name: str) -> str:
     """A build-artifact path under the (isolatable) temp base."""
     return os.path.join(BASE, name)
+
+# --- D-PASMOSAY: make a failed shell-out SAY WHY -----------------------------
+# 🔴 A `pasmo` FAILURE REPORTED AN EXIT CODE AND NOTHING ELSE, AND THAT MADE A
+# REAL FLAKE UNDIAGNOSABLE. The 2026-08-26 D-PLAYOP battery went 38/38 with one
+# "recovered flake" on `unit-test`; the log held a full Python traceback ending
+#
+#   subprocess.CalledProcessError: Command '['pasmo', '--bin', ...]'
+#   returned non-zero exit status 1.
+#
+# ...and pasmo's own explanation was in `e.stderr`, which
+# `CalledProcessError.__str__` does not print. So the one thing that could say
+# whether the tree was broken or the harness was could not be looked at, and the
+# runner retried it into green.
+#
+# 🎯 THIS IS THE `omsx_repl._why_missing()` LESSON ON THE HOST SIDE
+# (docs/spec-probe-omsx-settings.md, docs/spec-probe-machxml.md): when PASS is
+# "nothing happened", spend the evidence the run already holds. There it was a
+# `<NO CAPTURE>` that named its cause and immediately found the machine-XML
+# race; here it is an exit status that names nothing.
+#
+# ⚠️ AND IT IS A HOOK, NOT A WRAPPER, BECAUSE 53 CALL SITES WOULD HAVE TO
+# REMEMBER A WRAPPER. `sys.excepthook` fires for the UNCAUGHT exception that
+# kills the test process -- which is exactly the shape every one of these
+# shell-outs has (`subprocess.run(..., check=True)` at module or run() level).
+# 📏 MEASURED: 53 test files shell out to `pasmo`, and **52 of them already
+# import this module**; the 53rd is `tests/coverage.py`, which `tests/run.py`'s
+# `test_*.py` glob does not collect. One file covers the suite. That is the same
+# choice probe_tmp.py made when ONE `tempfile.tempdir` assignment relocated 140
+# call sites: reach for the chokepoint before the wrapper.
+#
+# A test that CATCHES the error is unaffected -- the hook only runs when nothing
+# else handled it.
+import subprocess                                                # noqa: E402
+
+_prev_excepthook = sys.excepthook
+
+
+def _say_why(exc_type, exc, tb):
+    if isinstance(exc, subprocess.CalledProcessError):
+        argv = exc.cmd[0] if isinstance(exc.cmd, (list, tuple)) and exc.cmd else exc.cmd
+        for stream in ("stderr", "stdout"):
+            blob = getattr(exc, stream, None)
+            if not blob:
+                continue
+            if isinstance(blob, (bytes, bytearray)):
+                blob = blob.decode("utf-8", "replace")
+            blob = blob.strip()
+            if blob:
+                sys.stderr.write(
+                    f"\n--- what {argv} actually said ({stream}) ---\n{blob}\n")
+    _prev_excepthook(exc_type, exc, tb)
+
+
+sys.excepthook = _say_why

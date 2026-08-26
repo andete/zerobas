@@ -56,6 +56,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [ ] 🔴 **A `unit-test` FLAKE IS OPEN AND UNCAUSED — the diagnostic that would
+      have named it was only installed AFTERWARDS.** Filed 2026-08-26 by
+      D-PASMOSAY ([`docs/spec-probe-pasmosay.md`](docs/spec-probe-pasmosay.md)).
+      The D-PLAYOP battery went 38/38 with one *"recovered flake (green on
+      serial retry)"* on `unit-test`; the failing file was `test_expr.py` and
+      the cause was `pasmo` exiting 1 while assembling `basic/main.asm`. **Why
+      it exited 1 is unrecoverable** — `capture_output=True` held the message
+      and `CalledProcessError.__str__` does not print it.
+      🟢 **THE NEXT ONE WILL SAY**: `tests/_tmp.py` now installs a
+      `sys.excepthook` that prints the child's stderr, falsified 4 arms of 4.
+      ⚠️ **THAT IS NOT A DIAGNOSIS OF THIS ONE.** Ruled out by measurement, not
+      by argument: the artifact name `zb_eval.rom` is used by **one** test file,
+      `tests/run.py` is **not** parallel, and `ZB_TEST_TMP` was set to a
+      per-invocation directory — so it is not the fixed-name collision class
+      `tests/_tmp.py` was written for. A solo `make unit-test` on the same tree
+      is **59 PASS / 0 FAIL**. What is left is resource pressure under 8-way
+      parallelism, or something not yet named. **Do not close this on the next
+      green battery; close it on a captured message.**
+
 - [ ] ⚠️ **FIVE MORE NON-ATOMIC PUBLISHES INTO THE SHARED openMSX TREE, AND NO
       GATE WOULD SEE A SIXTH.** Filed 2026-08-26 by D-MACHXML
       ([`docs/spec-probe-machxml.md`](docs/spec-probe-machxml.md)), which fixed
