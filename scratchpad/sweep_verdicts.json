@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 15 of N. Subject 176; 59 verdicted, 117 pending.",
+  "status": "TRANCHE 16 of N. Subject 176; 60 verdicted, 116 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -457,5 +457,14 @@
   "marker": "\u2705 **",
   "spot_verified": false,
   "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+ },
+ "T-D550FC": {
+  "verdict": "NOT SEPARATED BY THIS ROW -- the sampled point is painted either way",
+  "how": "REPL x3, the item's own fixture (PSET(75,60),9 : CIRCLE(60,60),15,6,-0.01,1.57)",
+  "headline": "ZEROBAS'S SPOKE ENDPOINT DIVERGES FROM THE REFERENCE AT NEAR-ZERO ANGLES",
+  "reading": "POINT(75,60)/POINT(75,59)/POINT(74,60) read '6 6 6' on vg8020, cf3300 AND zb",
+  "why_not_a_heal": "\ud83d\udd34 (75,60) IS CENTRE + (15,0) -- a point ON THE ARC ITSELF, and the arc spans -0.01..1.57 which includes angle 0. So the CIRCLE paints that pixel whether or not the SPOKE reaches it. The row cannot separate the two writers, so agreement here is not evidence the endpoint agrees. Recorded unresolved rather than healed.",
+  "instrument_note": "\u26a0\ufe0f AND MY FIRST DRAFT WAS NOT THE ITEM'S FIXTURE AT ALL -- it dropped the `PSET(75,60),9` seed, turning 'does colour 6 REACH and overwrite a pixel holding 9' into 'does the spoke paint the pixel'. Same coordinates, different experiment. Re-run verbatim before the confound above was even visible.",
+  "what_would_settle_it": "a point on the SPOKE but OFF the arc -- i.e. strictly inside radius 15 along the near-zero-angle ray -- or the banked full-plane capture the item was originally measured from (scratchpad/g4_arc_boundary_capture.json)"
  }
 }

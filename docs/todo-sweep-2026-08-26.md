@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 15 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **59** carry a verdict; **117** do not. The
+🔴 **THIS IS TRANCHE 16 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -523,6 +523,32 @@ recorded as one.
 ⚠️ All 9 are still labelled **`how: read — NOT re-run`**. Nineteen of the 176
 verdicts now rest on a body claim rather than a machine, and the verdict file
 says so on every one of them, so a later reader can re-run exactly that subset.
+
+## 2n. Tranche 16 — a row that agreed, and could not have disagreed
+
+The spoke-endpoint item was *"measured from BANKED data, no gate row covers it"*,
+so this is the first time it has been put to a live machine. The item's own
+fixture — `PSET(75,60),9 : CIRCLE(60,60),15,6,-0.01,1.57` — reads **`6 6 6` on all
+three machines**.
+
+🔴 **THAT IS NOT A HEAL, AND THE ROW COULD NOT HAVE SHOWN ONE.** `(75,60)` is
+centre + `(15,0)` — a point **on the arc itself**, and the arc spans `-0.01..1.57`,
+which includes angle 0. **The `CIRCLE` paints that pixel whether or not the SPOKE
+reaches it.** The row cannot separate the two writers, so agreement is not
+evidence the endpoints agree. Recorded **unresolved**, not healed.
+
+⚠️ **AND THE FIRST DRAFT WAS NOT THE ITEM'S FIXTURE AT ALL** — it dropped the
+`PSET(75,60),9` seed, which turns *"does colour 6 reach and overwrite a pixel
+holding 9"* into *"does the spoke paint the pixel"*. Same coordinates, a
+different experiment. It had to be re-run verbatim before the confound above was
+even visible.
+
+🎯 **TWO FAULTS, ONE SHAPE**: both were the row failing to ask the item's
+question. This is the sibling of the `PAINT`-flood row in tranche 1, where a
+second control (`POINT` *above* the wall) was what made a negative meaningful —
+here no such control exists yet, so the honest output is a **named gap** and what
+would close it: a point on the spoke but **off** the arc, or the banked
+full-plane capture the item was originally measured from.
 
 ## 3. What the apparatus cost, said out loud
 
