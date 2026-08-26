@@ -56,6 +56,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [ ] 🔴 **A STALE TRACKED PATCH DELIVERABLE IS INVISIBLE TO THE WHOLE
+      BATTERY.** Filed 2026-08-26 by D-EVFERR, which shipped TWO ROM-moving
+      commits without regenerating `zerobas-main-eu.ips` / `.bps` — **and
+      `make gates` went 38/38 green both times.** The pair is the *shipped BASIC
+      deliverable* (Makefile header, and `release:` calls regenerating it *"the
+      maintainer's step before committing a basic/ change"*), so a stale one
+      means the repo's advertised artifact does not match its own source.
+      ⚠️ **THE OMISSION IS NOT WHAT NEEDS FIXING — THE BLINDNESS IS.** Getting it
+      wrong took nothing more exotic than `git add <paths>` instead of
+      `git add -A`, which is the normal way to keep a scratchpad out of a commit.
+      🎯 `patches` is deliberately NOT a prerequisite of `machines` so the build
+      stays usable without a C-BIOS checkout
+      (docs/spec-lean-retire-s2-switch.md §4.4) — that trade is right and this
+      item does not propose reversing it. What is missing is a CHECK: regenerate
+      to a temp path and compare against the tracked bytes, RED on a mismatch,
+      SKIP (not pass) with no C-BIOS. ⚠️ A check that silently passes when it
+      cannot run is the 0/0-ALL-CONVERGED shape and would be worse than nothing.
+      Unpriced; the gate is small, the *skip* semantics are the design.
+
 - [ ] 🧹 **122 HARDCODED `/tmp/...` LITERALS ARE OUTSIDE THE TEMP ROOT** — pinned,
       not fixed. `probes/lib/probe_tmp.py` owns `/tmp/zerobas` and sets
       `tempfile.tempdir`, which relocated **140** bare `tempfile.*` call sites at
