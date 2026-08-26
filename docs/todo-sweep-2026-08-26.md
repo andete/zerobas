@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 49 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 50 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1473,6 +1473,29 @@ green today.
 the only thing separating them is battery membership** — which, per tranche 47, is
 undocumented for 22 targets. A reader has no way to tell which kind of "green
 today" they are looking at without checking the `GATES` list themselves.
+
+## 2av. Tranche 50 — the largest citation drift in the sweep
+
+**A `--say` row with no brackets — LIVE.** `result_span_after_echo`'s own
+docstring confirms it: *"…an aborted case's echoed `[` is not misread as printed
+output. **None** if the [span is absent]"*, with `return None` on both the
+raw-is-None and echo-not-found paths.
+
+🔴 **AND THE ITEM CITES `probes/lib/omsx_repl.py:1212`. THE FUNCTION IS AT
+`:1765` — 553 LINES OF DRIFT**, the largest measured anywhere in this sweep
+(previous worst: 273, `basic/cload.asm`'s `dpl_nf`).
+
+🎯 **AND `:1212` IS NOT EMPTY.** It holds settle-instrument regex parsing —
+unrelated code that a reader following the citation lands in and tries to make
+sense of. **A citation that points at nothing is a dead end; one that points at
+the wrong live code is a trap**, and both count identically under tranche 28's
+structural walk, which only asked whether the line exists.
+
+**`VALTYP` reads `$FF` at cold boot — NOT A TASK.** Cause measured (D-VALTYP), fix
+priced at 3 B and **declined**; `sysvars.inc`:1400-1407 documents VALTYP as an
+own-design **transient** whose value at any moment is not a contract. 🎯 The
+**eighth** not-a-task item — a decision already taken, sitting on the list in the
+same shape as unfinished work.
 
 ## 3. What the apparatus cost, said out loud
 

@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 49 of N. Subject 176; 118 verdicted, 58 pending.",
+  "status": "TRANCHE 50 of N. Subject 176; 120 verdicted, 56 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -913,5 +913,19 @@
   "headline": "`float-acceptance` HAS NO NAMED EXPECTED-FAILURE MECHANISM",
   "reading": "the gate runs four probes. Expected-failure mentions: basic_probe_float_arith.py **0**, basic_probe_float_fmt.py **0**, basic_probe_floatlit.py **0**, basic_probe_float_vars.py **1**. Three of four have no mechanism at all.",
   "note": "\ud83c\udfaf the item says 'the suite is green today, so this is not urgent' -- which is the same reasoning tranche 46 found void for lof-acceptance. Here it holds, because float-acceptance IS in the 39-unit battery and did run green today. Worth stating: the identical sentence is sound for one gate and void for the other, and the only thing that separates them is battery membership."
+ },
+ "T-BBA612": {
+  "verdict": "LIVE -- and its citation carries the LARGEST DRIFT in this sweep",
+  "how": "static read of probes/lib/omsx_repl.py",
+  "headline": "A `--say` row with no brackets cannot have a reading",
+  "reading": "`result_span_after_echo` exists and its own docstring confirms the behaviour: '... an aborted case's echoed `[` is not misread as printed output. None if the [span is absent]', with `return None` on both the raw-is-None and echo-not-found paths. The item's claim holds.",
+  "\ud83d\udd34_citation_drift": "THE ITEM CITES probes/lib/omsx_repl.py:1212. THE FUNCTION IS AT :1765 -- **553 LINES**, the largest drift measured anywhere in this sweep (previous worst: 273, basic/cload.asm's `dpl_nf`). And :1212 is not empty -- it holds settle-instrument regex parsing, unrelated code that a reader following the citation would land in and try to make sense of."
+ },
+ "T-DC3629": {
+  "verdict": "NOT A TASK -- a priced-and-declined decision",
+  "how": "read + static check",
+  "headline": "zerobas' `VALTYP $E0C8` READS `$FF` AT COLD BOOT -- CAUSE MEASURED, FIX PRICED AT 3 B AND DECLINED",
+  "reading": "VALTYP is documented at basic/sysvars.inc:1400-1407 as an own-design TRANSIENT whose value at any given moment is not a contract. The item records the cause as measured (D-VALTYP, docs/valtyp-coldram-notes.md) and the 3 B fix as DECLINED.",
+  "category": "\ud83c\udfaf the EIGHTH not-a-task item: a decision already taken, sitting on the list in the same shape as unfinished work"
  }
 }
