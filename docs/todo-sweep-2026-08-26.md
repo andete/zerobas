@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 36 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 37 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1120,6 +1120,34 @@ was previously zero**.
 
 🎯 *"Not enumerated"* is the most actionable phrase on a list, because enumerating
 is cheap and the number is what decides whether anyone cares.
+
+## 2ai. Tranche 37 — a live item whose own citation has rotted
+
+Applying the heuristic: **7 of the 41 pending open items declare their own scope
+unknown** (*"unmeasured"*, *"unpriced"*, *"not enumerated"*, *"not measured"*).
+Two are countable; both were taken.
+
+**Type-code namespaces — LIVE.** `elsize_from_type` still exists and is still
+deletable in principle. Call sites: **6** today against the item's *"~7"*.
+
+🔴 **AND THE ITEM CITES `sub/arrays.asm:943`. THE ROUTINE IS AT `:1037`** — a
+drift of **94 lines**. That is a live instance of tranche 28's class (90 provably
+broken `file:LINE` anchors, nothing checking them) sitting **inside a pending item
+on the same list**.
+
+🎯 **AND IT IS THE INSTRUCTIVE KIND**: the anchor still points at a line that
+*exists*, so tranche 28's walk counted it under *"line exists — 95%"*. **This is
+what that 95% is hiding.** The upper bound was correctly labelled an upper bound;
+here is one of the cases that separates it from the real rate.
+
+**The `NO-ORACLE` bucket — partly answered.** `SAME-DELTA` **is** implemented
+(`basic_probe_sysvarsweep.py`:802). But the item's claim is narrower — that the
+verdict is applied *only* in the re-homing table while the 3199-byte census still
+classifies absolutely — and establishing that needs a read of which path the
+census takes, not a grep for the string. **The question it asks (how much of the
+311 B is a pointer) remains unanswered**, and its own ⚠️ explains why: a byte-wise
+delta pass needs a rule for what counts as a pointer *pair*, since naive per-byte
+deltas agree by luck on the high byte.
 
 ## 3. What the apparatus cost, said out loud
 

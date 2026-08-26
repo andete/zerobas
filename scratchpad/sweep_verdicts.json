@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 36 of N. Subject 176; 97 verdicted, 79 pending.",
+  "status": "TRANCHE 37 of N. Subject 176; 98 verdicted, 78 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -740,5 +740,20 @@
   "measured_today": "201 probe .py files. **72 import omsx_repl** (and so reach the shared injector, the stored-program oracle and the echo oracle). **59 build their own Tcl and do not** -- 43 of them under probes/disk/, plus basic_probe_printusing.py exactly as the item names, and 15 more under probes/basic/ that the item does NOT name (graphics_floor, subrom_inttest, key_trap, strig_trap, usr, cas_verify, cas_leader_budget, cas_verbs, ...).",
   "why_it_matters": "\ud83d\udd34 THE ITEM UNDERSTATES ITS OWN SCOPE. It names probes/disk/* and one basic probe; the measurement finds FIFTEEN further basic probes in the same position. Nearly half the probe corpus (59 of 131 that do either) bypasses the shared injector -- and D-LATCH already promoted this from a coverage item to a CORRECTNESS one, because a local copy of the pre-D-LATCH `__key` still has the race the shared injector no longer has.",
   "caveat": "\u26a0\ufe0f HEURISTIC COUNT: 'builds its own Tcl' is detected as (mentions build_tcl / debug write / set tcl) AND (does not import omsx_repl). Some of the 59 may not inject keystrokes at all. The figure is an upper bound on the exposed set and a genuine lower bound on the item's scope, which was previously zero."
+ },
+ "T-876600": {
+  "verdict": "LIVE -- and its own citation has rotted",
+  "how": "static read of sub/arrays.asm + call-site count",
+  "headline": "THE TWO TYPE-CODE NAMESPACES SHOULD PROBABLY BECOME ONE",
+  "reading": "`elsize_from_type` still exists and is still deletable-in-principle. Call sites: **6** today; the item says '~7'.",
+  "citation_rot": "\ud83d\udd34 THE ITEM CITES `sub/arrays.asm:943`. THE ROUTINE IS AT **:1037** -- a drift of 94 lines. This is a LIVE INSTANCE of the class measured in tranche 28 (90 provably-broken file:LINE anchors, nothing checking them), sitting inside a pending item on the same list. The anchor still resolves to a line that exists, so my tranche-28 walk would have counted it as 'line exists' -- which is exactly why that 95% is an upper bound and not a correctness rate.",
+  "note": "the item's own \u26a0\ufe0f ('the entry field ORDER may differ -- unmeasured') is untouched by this pass"
+ },
+ "T-7438C3": {
+  "verdict": "PARTLY ANSWERED -- the verdict exists, its reach was not established",
+  "how": "grep of probes/basic/basic_probe_sysvarsweep.py",
+  "headline": "HOW MUCH OF THE 311-BYTE `NO-ORACLE` BUCKET IS A POINTER?",
+  "reading": "`SAME-DELTA` IS implemented -- basic_probe_sysvarsweep.py:802 returns `('SAME-DELTA' if rd == zd else 'DIFF-DELTA')` and :1000 documents it in the legend.",
+  "why_partial": "\u26a0\ufe0f The item's claim is narrower than 'does SAME-DELTA exist': it is that the verdict is applied ONLY in the re-homing table while the 3199-byte census still classifies absolutely. Establishing that needs a read of which code path the census takes, not a grep for the string. The QUESTION the item asks -- how much of the 311 B is a pointer -- remains unanswered, and its own \u26a0\ufe0f says why: a byte-wise delta pass needs a rule for what counts as a pointer PAIR, since naive per-byte deltas agree by luck on the high byte."
  }
 }
