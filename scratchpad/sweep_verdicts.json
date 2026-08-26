@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 44 of N. Subject 176; 110 verdicted, 66 pending.",
+  "status": "TRANCHE 45 of N. Subject 176; 112 verdicted, 64 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -848,5 +848,19 @@
   "headline": "The raw-byte class beyond the dump row has NO mechanical floor, by measurement",
   "reading": "audit_citations.py:58 still carries it: 'Recall against the class is 1 of 20 and the check says so'. The gate documents its own recall against the class it cannot cover, and :263 and :266 record the two variants that were DECLINED (0 recall; 26 affirmative false positives over 278 files).",
   "note": "\ud83c\udfaf fifth gate found stating its own limit in its own source -- the pattern from tranche 29 holds across the whole tools/ directory"
+ },
+ "T-8947C8": {
+  "verdict": "LIVE -- and it is a HUMAN DECISION, not a task",
+  "how": "static read of tools/citations-listing-allow.txt",
+  "headline": "Both check-5 allowlist entries need a HUMAN paper-trail confirm",
+  "reading": "both entries are present -- probes/lib/latch_check.py at :22 and omsx_repl.py at :24 -- each with its full adjudication. The omsx_repl entry says so itself: 'Flagged for the human paper trail 2026-08-06 (D-DOCJUDGE \u00a72.6) -- a judgement docs/clean-room-audit.md RESERVES FOR A HUMAN, which is why it is written down here rather than decided by the tool.'",
+  "category": "\ud83c\udfaf the tool has already done everything a tool may do here and says so. Re-running cannot advance it; only a person can."
+ },
+ "T-99C822": {
+  "verdict": "LIVE -- a human decision, and its citation is EXACT",
+  "how": "static read of disk/runtime.asm:423 + the advisory allowlist",
+  "headline": "`disk/runtime.asm:423` `int_h_body` awaits a HUMAN decision",
+  "reading": "the header is exactly at :423: 'int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) -- SUPERSEDED by A-3 ... DEAD as of A-3 ... Kept in place (net-zero, no address shift) pending removal'. One matching entry in tools/citations-advisory-allow.txt -- acknowledged, not resolved.",
+  "\ud83d\udfe2_a_counter_example": "THIS ITEM'S file:LINE CITATION IS EXACT. Tranche 38 measured a 47% semantic rate and tranche 39 showed that figure is itself an under-estimate; this is a clean counter-example -- :423 lands precisely on the header the item is about. The citation class has both failure and success in it, which is why the honest answer was a BRACKET rather than a rate."
  }
 }

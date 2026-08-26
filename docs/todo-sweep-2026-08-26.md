@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 44 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 45 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1336,6 +1336,33 @@ recording the two variants declined for **0 recall and 26 affirmative false
 positives over 278 files**. 🎯 That is the **fifth** gate found stating its own
 limit in its own source — the tranche-29 pattern holds across the whole `tools/`
 directory.
+
+## 2aq. Tranche 45 — two items that are decisions, not tasks
+
+**Both check-5 allowlist entries — LIVE.** `latch_check.py` (:22) and
+`omsx_repl.py` (:24) are both present with their full adjudication, and the second
+says outright:
+
+> Flagged for the human paper trail … **a judgement `docs/clean-room-audit.md`
+> reserves for a human**, which is why it is written down here rather than decided
+> by the tool.
+
+**`disk/runtime.asm:423` — LIVE.** The `int_h_body` header sits exactly there:
+*"the OLD page-1 `$0038` handler — SUPERSEDED by A-3 … DEAD as of A-3 … kept in
+place (net-zero, no address shift) pending removal"*, with one matching entry in
+the advisory allowlist — acknowledged, not resolved.
+
+🎯 **BOTH ARE DECISIONS RESERVED FOR A PERSON, AND THE TOOLS SAY SO.** That brings
+the *not-a-task* category to six across this sweep: two clean-room judgements, a
+coverage trade, a spec sign-off, a stated instrument limit, and a past event whose
+evidence was discarded. **None can be advanced by re-running anything**, and all
+six read identically to real work on a `- [ ]` list.
+
+🟢 **AND THE SECOND ITEM'S CITATION IS EXACT.** `:423` lands precisely on the
+header it names. Tranche 38 measured a 47 % semantic rate and tranche 39 showed
+that figure is itself an under-estimate; this is a clean counter-example. **The
+citation class contains both failures and successes**, which is exactly why the
+honest output was a bracket rather than a single rate.
 
 ## 3. What the apparatus cost, said out loud
 
