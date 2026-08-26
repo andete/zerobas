@@ -32,18 +32,42 @@ ex_play:
                 ld      iy,VCBA             ; IY = running VCB base (voice 0)
                 ld      bc,$0001            ; B = voice count 0; C = voice-0 mask bit
                 ; Each voice is a REQUIRED string expression (empty "" is allowed),
-                ; commas separate voices. A bare comma / missing operand is a Syntax
-                ; error, and a numeric operand a Type mismatch -- matching the VG-8020
-                ; (PLAY,"E" -> Syntax error; PLAY 5 -> Type mismatch; PLAY"","E" -> ok),
-                ; empirically confirmed (basic_probe_play.py).
+                ; commas separate voices. A numeric operand is a Type mismatch
+                ; (PLAY 5), and PLAY"","E" is fine -- both still as the old header
+                ; said and as basic_probe_play.py confirmed.
+                ; 🔴 BUT ITS OTHER HALF WAS WRONG, AND D-PLAYOP MEASURED IT
+                ; (docs/spec-basic-playop.md, 11 rows x 3 machines). The header
+                ; used to say "a bare comma / MISSING OPERAND is a Syntax error
+                ; -- matching the VG-8020". The bare comma is; the missing
+                ; operand is NOT. `PLAY` and `PLAY:PRINT1` are ERR 24 `Missing
+                ; operand` on BOTH references and were ERR 2 here. One citation
+                ; was carrying two claims and only one of them had been run.
+                ; 🎯 AND THE SPLIT IS THE ORDINARY ONE: a required slot that ENDS
+                ; where a value was needed is 24; an EMPTY operand terminated by
+                ; ',' is 2 (D-MISSOP's rule, docs/spec-basic-missop.md §5).
+                ; ⚠️ pl_voice IS A LOOP -- `jr pl_voice` below re-enters it after
+                ; every comma -- so each test here has TWO entry conditions, the
+                ; first voice and a subsequent one. Both were measured and both
+                ; answer the same way: `PLAY"A",` and `PLAY"A",:PRINT1` are 24,
+                ; `PLAY"A",,"C"` is 2. Reading the sites as four INSTRUCTIONS
+                ; would have missed that they are seven ROWS.
 pl_voice:
                 call    skip_spaces
                 or      a                   ; a separator / EOL where a string is
-                jr      z,pl_syntax         ; required -> missing operand -> Syntax error
+                ; +1 B each, and that is CHEAPER THAN A TRAMPOLINE HERE. D-PAINTMISS
+                ; reasoned the opposite way and was right for its own case: with
+                ; FOUR `jr` sites, four `jp z,loc_missing` costs +4 B against a 3 B
+                ; `ep_missing: jp loc_missing`. With TWO sites it is +2 B against 3,
+                ; so the arithmetic inverts below four. loc_missing is `equ
+                ; g8_missing` in the shipping build and a real body in the
+                ; !G8_RESIDENT arm, so both switch arms still assemble.
+                jp      z,loc_missing       ; required slot ENDS here -> ERR 24
                 cp      COLON
-                jr      z,pl_syntax
+                jp      z,loc_missing       ; `PLAY:` likewise -> ERR 24
                 cp      ','
-                jr      z,pl_syntax         ; bare comma (PLAY ,"E") -> Syntax error
+                jr      z,pl_syntax         ; bare comma (PLAY ,"E") -> Syntax error,
+                                            ; measured 2 on both references at BOTH
+                                            ; entry conditions -- this one does NOT move
                 push    bc                  ; str_eval clobbers BC (voice count + bit)
                 call    str_eval            ; STRPTR -> [len][ptr]; VALTYP=1; CF=1 ok;
                 pop     bc                  ;   HL advanced past the operand
@@ -73,7 +97,15 @@ pl_voice:
                 jr      nc,pl_syntax        ; a 4th voice string -> Syntax error
                 jr      pl_voice
 pl_syntax:
-                ld      a,2                 ; Syntax error (missing/bad voice operand),
+                ld      a,2                 ; Syntax error. D-PLAYOP: NOT "missing/bad
+                                            ; voice operand" any more -- a MISSING one is
+                                            ; ERR 24 at loc_missing above. What is left
+                                            ; here is the EMPTY operand before a ','
+                                            ; (`PLAY,"E"`, `PLAY"A",,"C"`) and the 4th
+                                            ; voice string, both measured 2 on both
+                                            ; references. The 4th-voice site is the one
+                                            ; TODO.md marked UNMEASURED and told nobody
+                                            ; to assume: it is 2, and it stays.
                 jp      raise_error         ; via raise_error so ON ERROR can trap it (the
                                             ; VG-8020 traps this; stmt_error would not)
 pl_dispatch:

@@ -1634,9 +1634,12 @@ list. **When a slice lands, grep this list for what it just shipped.**
         trailing-token members are now SHIPPED; this half of the seam is CLOSED.**
       * **Missing/empty operand → ERR 24 / ERR 2**: `ev_f`'s
         `ev_f_missop`/`ev_f_empty` machinery — the D-MISSOP arc already found
-        this is *"one rule at 16 slots"* (docs/spec-basic-missop.md); several
-        verbs still raise their own (the `PLAY`-no-operand item below is the
-        same seam). 🟢 **THE `ev_f_err` SEVEN-SITES MEMBER IS SHIPPED**
+        this is *"one rule at 16 slots"* (docs/spec-basic-missop.md).
+        🟢 **THE `PLAY`-NO-OPERAND MEMBER SHIPPED 2026-08-26 (D-PLAYOP, +2 B)**
+        and the `ev_f_err` seven-sites member shipped the same day (D-EVFERR,
+        0 B), so what is left of this half is the roots D-MISSOP3 measured:
+        `MID$(A$,2)=`, `PRINT USING` (two ways), `SCREEN2:DRAW`, and KEY's
+        absent form. 🟢 **THE `ev_f_err` SEVEN-SITES MEMBER IS SHIPPED**
         (D-EVFERR 2026-08-26, [`docs/spec-basic-evferr.md`](docs/spec-basic-evferr.md)):
         five live sites split by MEANING onto `ev_f_empty` (2) and `ev_f_ifc`
         (5) at **ZERO bytes**, 11 DIFF → 1, and `ev_f_err` now has **no
@@ -1708,18 +1711,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       own probe (is `PLAY(n)` in the kwsweep denominator? it is a one-token
       function like `USR`). A real MSX1 BASIC function gap, not apparatus.
 
-- [ ] 🔴 **`PLAY` with no operand is `Missing operand` (ERR 24) on both
-      references, not `Syntax error`.** Filed 2026-08-22 by D-DUPSPAN,
-      [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §6.3.
-      `PLAY` and `PLAY:PRINT 1` → **ERR 24** on both; `PLAY ,"E"` → ERR 2 on
-      both and here. **ERR 24 is a class this tree already implements three
-      times** — `LINE` (graphics.asm:215), `SCREEN` (PROVENANCE.md: *an argument
-      list that ends where a value was required is Missing operand at all four
-      such slots*) and `TIME=` (time.asm:62). 🎯 **TWO of `pl_syntax`'s four
-      call sites move, not four**: the `or a` and `COLON` tests, not the `','`
-      one. The fourth (a 4th voice string) is UNMEASURED — do not assume it into
-      either half. ⚠️ `pl_syntax`'s header cites the VG-8020 for the ERR-2
-      claim; that citation is right for one site and wrong for two.
+- [x] ✅ **CLOSED 2026-08-26, D-PLAYOP, +2 B** —
+      [`docs/spec-basic-playop.md`](docs/spec-basic-playop.md),
+      `scratchpad/playop_probe.py`, **11 rows x 3 machines, references unanimous
+      on all 11, 4 DIFF → 0**, 4/4 knives EXACT, main page 1 **85 → 83 B**.
+      Filed 2026-08-22 by D-DUPSPAN §6.3.
+      🎯 **THE FILING WAS RIGHT ON EVERY POINT — THE FIRST ONE IN THIS RUN THAT
+      SURVIVED ITS OWN RE-RUN INTACT**, including the point it explicitly
+      refused to guess: *"the fourth (a 4th voice string) is UNMEASURED — do not
+      assume it into either half"* measured **2 on both references**, already
+      correct. That sentence is why the site was cheap to check and impossible
+      to get wrong by inheritance.
+      🔴 **BUT IT COUNTED INSTRUCTIONS, AND `pl_voice` IS A LOOP.**
+      `basic/play.asm:74` is `jr pl_voice`, so the three entry-side tests are
+      re-entered after EVERY comma and each has TWO entry conditions — four
+      sites are **seven rows**. Both conditions answer the same way at every
+      site, so the conclusion holds; that is a RESULT, not something an
+      instruction count could say. D-ONLIST had the identical shape and came out
+      the OTHER way. **Ask it per site, every time.**
+      💰 **AND THE PRICE INVERTS D-PAINTMISS's REASONING.** That slice recorded
+      *"a trampoline beats both alternatives because the sites are `jr`s: four
+      `jp z,loc_missing` is +4 B against a 3 B `ep_missing`"*. With **two**
+      sites it is +2 B against 3, so the trampoline loses. **The arithmetic
+      inverts below four sites** — a function of the site count, not a rule.
+      ⚠️ **NOT MEASURED: whether PLAY QUEUES BEFORE RAISING.** The seam found
+      wrong ordering at SWAP and PAINT; this probe reads the error code only.
 
 - [ ] ⚠️ **The bare-`jp raise_error` carve family is worth ~2 B, and the reason
       is worth more than the bytes.** Filed 2026-08-22 by D-DUPSPAN,
