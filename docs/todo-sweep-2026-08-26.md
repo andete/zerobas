@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 39 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 40 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1215,6 +1215,29 @@ picking the number that sounds most decisive.
 D-GIRDOM **already moved `POINT` off them** (*"marshal through POINT'S OWN cells,
 NOT GXPOS/GYPOS"*). The decision the item says *"nothing re-examines"* **has** been
 re-examined for one verb and left for the other two.
+
+## 2al. Tranche 40 — a lesson that DID cross the corridor
+
+**`t.zero` — LIVE.** The row is at `basic_probe_locarg.py`:129 and the probe's own
+comment at `:118` documents the blindness: a cut *"breaks the SEED too, and
+`t.zero` — whose target IS home — then reads…"*.
+
+🟢 **AND THE LESSON PROPAGATED.** `basic_probe_screenerr.py`:112 carries it —
+*"[[t.zero is blind to a cut that also disables its seed]], caught before it…"* —
+**a different probe, citing this row's lesson to avoid repeating it.**
+
+🎯 **THAT IS THE EXACT OPPOSITE OF TRANCHE 23**, where the split-by-side control
+rule sat in `namspc` and never reached `castail`. Both patterns are in this tree,
+and the difference looks like **how the lesson was written**: `t.zero`'s was given
+a **name in double brackets** — a citable thing — while the split-by-side rule
+lives as prose inside one file's comment. A named lesson travels; a described one
+stays put.
+
+⚠️ **And one item not scored.** The `load error` block is a long closure narrative
+(five verbs fixed, `BLOAD` closed, a cassette regression caught by `castail`'s own
+control). Its **live** half is *"what remains is ONE ROW and it is a different
+face"*, and I did not locate which row that is. Scoring on the closure narrative
+would be scoring the part that is already ✅ — the tranche-32 near-miss shape.
 
 ## 3. What the apparatus cost, said out loud
 

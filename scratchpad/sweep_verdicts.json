@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 39 of N. Subject 176; 101 verdicted, 75 pending.",
+  "status": "TRANCHE 40 of N. Subject 176; 102 verdicted, 74 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -776,5 +776,19 @@
   "how": "read of docs/spec-basic-stmtpend.md:167",
   "headline": "K-FA5's FALSIFIABILITY PREMISE IS STALE, AND SO ARE FOUR OTHER COMMENTS",
   "reading": "the spec says outright: 'What has NOT been done is re-running K-FA5 to measure what the cut now...' -- open, in the source the item cites."
+ },
+ "T-87A882": {
+  "verdict": "LIVE -- and the lesson DID cross to a sibling probe",
+  "how": "static read of probes/basic/basic_probe_locarg.py and basic_probe_screenerr.py",
+  "headline": "`t.zero` IS BLIND TO A CUT THAT ALSO DISABLES ITS SEED, AND THE PROBE CLAIMS OTHERWISE",
+  "reading": "`t.zero` is at basic_probe_locarg.py:129 (`SEED + \"LOCATE 0,0\"`), and the probe's own comment at :118 documents the blindness: a cut 'breaks the SEED too, and `t.zero` -- whose target IS home -- then reads...'. The row and its blindness are both still there.",
+  "\ud83d\udfe2_the_contrast": "AND THE LESSON PROPAGATED. basic_probe_screenerr.py:112 carries it: '[[t.zero is blind to a cut that also disables its seed]], caught before it...' -- a DIFFERENT probe, citing this row's lesson to avoid repeating it. \ud83c\udfaf That is the exact opposite of tranche 23, where the split-by-side control rule sat in one probe and never reached its sibling. Both patterns exist in this tree; the difference is whether the lesson was written as a NAMED, citable thing or left in a comment about one file."
+ },
+ "T-D5F7A9": {
+  "verdict": "NOT SCORED -- the surviving row was not identified this pass",
+  "how": "partial read",
+  "headline": "`load error` IS PRINTED, NOT RAISED -- FIXED AT ALL SIX MISSING-FILE VERBS ... WHAT REMAINS IS ONE ROW",
+  "reading": "the block is a long closure narrative (D-LOADERR-FIX, D-BLNF, the cassette regression caught by castail's `cas-run-brk`, the five pinned rows that were a green oracle for the defect). The five graduated verbs are recorded as fixed.",
+  "why_not_scored": "\u26a0\ufe0f the item's live half is 'ONE ROW and it is a DIFFERENT FACE', and I did not locate which row that is within this pass. Scoring the item on the closure narrative would be scoring the part that is already \u2705 -- the same shape as the tranche-32 near-miss."
  }
 }
