@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 5 of N -- the remaining ids are NOT yet verdicted",
+  "status": "TRANCHE 6 of N -- the remaining ids are NOT yet verdicted",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them."
  },
  "T-B96267": {
@@ -199,5 +199,38 @@
   "headline": "THE TAPE PATCH PAIR IS UNGUARDED BY THE SAME RULE",
   "reading": "check_patch_freshness.py's PAIR is [zerobas-main-eu.ips, zerobas-main-eu.bps] -- main only. The tape pair is tracked and currently clean.",
   "note": "filed by me earlier today; confirmed against the shipped checker rather than against my memory of writing it"
+ },
+ "T-F184BB": {
+  "verdict": "LIVE, exact",
+  "how": "static read of the gate + basic/sysvars.inc",
+  "headline": "`CLEARPOOL=0` IS UNTESTED AND CANNOT BE ADDED TO `switch-build-check`",
+  "reading": "the gate flips G6_RESIDENT, G7_RESIDENT, G8_RESIDENT, I1_RESIDENT, TRAPS_T3, TRAPS_T4 -- CLEARPOOL is NOT among them. And basic/sysvars.inc carries both `FPERR_MISSOP equ 12` and `equ 11`, the '12 with, 11 without' the item describes"
+ },
+ "T-466ECC": {
+  "verdict": "LIVE",
+  "how": "grep of basic/ + sub/ and probes/",
+  "headline": "D-DUPSPAN2 shipped 28 aliases with NO per-site row set",
+  "reading": "333 label-to-label `equ` aliases across basic/ and sub/ today -- an order of magnitude more than the 28 that slice shipped -- and NO per-site row set exists anywhere in probes/"
+ },
+ "T-B34E15": {
+  "verdict": "LIVE (the row-set half)",
+  "how": "grep of probes/",
+  "headline": "`DEF FN`: a STRING formal's shadow slot is not a GC root",
+  "reading": "no probe row names the class (`fnstr`: 0 files). 16 strheap_gc sites exist.",
+  "caveat": "\u26a0\ufe0f the 'shadow' grep is NOISY -- 63 hits, and the ones I read are sprite shadows and keyword shadowing, not the DEF FN slot. Only the row-set half is scored here; whether the slot IS a GC root was NOT determined and needs a read of the walk, not a grep."
+ },
+ "T-FE0E95": {
+  "verdict": "CLASS MEASURED EMPTY TODAY",
+  "how": "regex walk of tools/*.py",
+  "headline": "A wall figure hardcoded inside a GATE is unpoliced by design",
+  "reading": "0 hardcoded 16-bit CEILING/WALL/_END/LIMIT constants remain in tools/. The named instance (gen_resident_abi.py's LOW_CEILING) was fixed in the filing commit; nothing has re-grown.",
+  "note": "\ud83c\udfaf 'found 0' is a fact about today's tools, not about the apparatus that permits them. The right residual is to make the class UNWRITABLE (a check), not to keep watching for it -- restate the item that way rather than closing it."
+ },
+ "T-027472": {
+  "verdict": "NOT VERIFIED THIS PASS -- wrong instrument",
+  "how": "attempted by grep; grep cannot decide byte-identity of two spans",
+  "headline": "A 4 B DUP-SPAN THE D-ONLIST FIX CREATED",
+  "reading": "esn_notlineno is at basic/program.asm:2190; my grep could not isolate either discriminator cleanly",
+  "note": "\ud83d\udd34 A SPAN IS BYTE-IDENTICAL WITHOUT BEING ENTERED THE SAME WAY, and the project already owns the right tool (tools/dupspan_indep.py). Scoring this with a regex would be the exact mistake the dup-span work has filed twice. Deferred to the proper instrument rather than guessed."
  }
 }

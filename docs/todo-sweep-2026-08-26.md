@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-⚠️ **THIS IS TRANCHE 5 OF N. 24 of 146 subject blocks carry a verdict.** The
+⚠️ **THIS IS TRANCHE 6 OF N. 29 of 146 subject blocks carry a verdict.** The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -25,7 +25,7 @@ instrument had the property it was measuring.** It is a tool now.
 | blocks parsed | 367 (346 top-level, **21 nested** — an indented `- [x]` under an open parent is not an independent item) |
 | open / done (top-level) | **109 / 237** |
 | subject = open + done-carrying-a-residual-marker | **146** |
-| verdicted so far | **24** |
+| verdicted so far | **29** |
 
 ### 1.1 Two counts of my own disagreed, so I read
 
@@ -213,6 +213,40 @@ settled it.
 
 Running total across five tranches: **16 LIVE (3 with a stale figure inside),
 8 stale / partly stale / reframed / split.**
+
+## 2e. Findings — tranche 6
+
+Probe: `scratchpad/sweep_tranche6.py`.
+
+| item | verdict | reading |
+|---|---|---|
+| `CLEARPOOL=0` untested by `switch-build-check` | **LIVE, exact** | the gate flips `G6/G7/G8_RESIDENT`, `I1_RESIDENT`, `TRAPS_T3`, `TRAPS_T4` — **not** `CLEARPOOL`; and `basic/sysvars.inc` carries both `FPERR_MISSOP equ 12` and `equ 11`, the "12 with, 11 without" it describes |
+| 28 aliases with no per-site row set | **LIVE** | **333** label-to-label `equ` aliases across `basic/` + `sub/` today, and **no** per-site row set anywhere in `probes/` |
+| a `DEF FN` string formal's shadow slot | **LIVE (row-set half only)** | no probe row names the class |
+| a wall figure hardcoded inside a gate | **CLASS MEASURED EMPTY TODAY** | **0** hardcoded 16-bit ceiling constants remain in `tools/` |
+| the 4 B dup-span D-ONLIST created | **NOT VERIFIED — wrong instrument** | see below |
+
+🔴 **I DECLINED TO SCORE ONE RATHER THAN SCORE IT BADLY.** The dup-span item
+asserts two spans are **byte-identical**, and a `grep` cannot decide that — *a
+span is byte-identical without being entered the same way* is a lesson this
+project has already filed twice, and `tools/dupspan_indep.py` exists precisely
+for it. Scoring it with a regex would have reproduced the mistake the tool was
+built to prevent, so it is deferred to the proper instrument and says so.
+
+⚠️ **AND ONE VERDICT IS DELIBERATELY HALF A VERDICT.** For the `DEF FN` shadow
+slot, only the *row-set* half is scored (no probe names the class). My `shadow`
+grep returned 63 hits and the ones I read were **sprite** shadows and **keyword**
+shadowing — noise. Whether the slot actually is a GC root was **not determined**
+and needs a read of the walk, not a grep.
+
+🎯 **"CLASS EMPTY" IS NOT "CLOSED".** The hardcoded-wall item's named instance was
+fixed in its own filing commit and nothing has re-grown — but 0 members is a fact
+about today's `tools/`, not about the apparatus that still permits them. The right
+restatement is *make the class unwritable*, not *close it*.
+
+Running total across six tranches: **19 LIVE (3 with a stale figure, 1 scored
+only in half), 8 stale / partly stale / reframed / split, 1 class-empty, 1
+declined for want of the right instrument.**
 
 ## 3. What the apparatus cost, said out loud
 
