@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 20 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 21 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -670,6 +670,33 @@ it; the remaining graphics items need the project's **own** apparatus
 (`probes/basic/basic_probe_graphics.py`, which compares per-cell VRAM *segments*
 rather than whole-plane counts). Discovering why that apparatus is shaped the way
 it is has been worth the three tranches — continuing to rebuild it would not be.
+
+## 2s. Tranche 21 — back to the open items
+
+| item | verdict |
+|---|---|
+| `ems_typecheck`'s two `pop de` (2 B carve) | **LIVE, exact** |
+| `run_gates.py` still calls a contended unit REAL | **LIVE, confirmed** |
+| the `unit-test` flake is open and uncaused | **diagnostic shipped; the flake is unfalsifiable** |
+
+The carve item is exact down to its aside: `ems_typecheck:` is followed by
+exactly two `pop de` and `jp els_tc_common`, **and** its remark that *"the same
+2 B sit in `ems_err_pop2`/`ems_err_pop1` next door"* is true — four `pop de` in
+the region.
+
+The classifier item is confirmed by absence: `run_gates.py` has **no load
+awareness of any kind** — no `getloadavg`, no `uptime`, only a `--nice` flag —
+and the verdict line is unchanged at `'FLAKE (green on retry)' if rc == 0 else
+'REAL (still red)'`. The diagnostic half really did ship; the classifier half is
+untouched, exactly as filed.
+
+🎯 **AND ONE ITEM CANNOT BE MEASURED BY ANYONE, EVER.** The `unit-test` flake's
+subject is a **past event whose evidence was discarded** — `capture_output=True`
+held pasmo's message and `CalledProcessError.__str__` does not print it. The
+diagnostic that would have named it is now installed, so the *next* one will
+name itself, but no re-run recovers this one. **An open item whose subject
+cannot be measured is a WAIT, not a task**, and it should be restated as *"the
+diagnostic is armed; close this when a flake next fires and is named"*.
 
 ## 3. What the apparatus cost, said out loud
 

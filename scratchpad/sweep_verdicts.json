@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 20 of N. Subject 176; 62 verdicted, 114 pending.",
+  "status": "TRANCHE 21 of N. Subject 176; 66 verdicted, 110 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -498,5 +498,26 @@
   "why": "\ud83d\udd34 `SCREEN 2:CLS` LEAVES 4923 SET PIXELS IN THE VG-8020's PATTERN TABLE AND 0 IN ZEROBAS'S. A whole-plane bit count therefore compares a reference baseline of 4923 against a zerobas baseline of 0, and an XOR against the empty plane is no better: where the figure sets a bit the leftover already set, nothing changes, so the count under-reports what was drawn (circle: ref XOR 275 vs zb 536 for the SAME figure).",
   "what_it_needs": "the NAME table as well as the pattern table -- the leftover is probably unreferenced by the name table and therefore invisible, which is why the items' own figures are small (170/127/97/135). Counting the pattern table alone measures bytes the screen may never show.",
   "note": "\ud83d\udfe2 zerobas's counts came out at exactly the filed REFERENCE values on all four rows (170, 127, 97, 135 against filed ref 170, 127, 97, 135) -- suggestive that all four healed, but NOT evidence, because the reference side of the same run is invalid."
+ },
+ "T-4AC4B2": {
+  "verdict": "LIVE, exact",
+  "how": "static read of basic/str-engine.asm:1116",
+  "headline": "A 2 B CARVE WITH ITS EVIDENCE ALREADY ATTACHED: `ems_typecheck`'s two `pop de`",
+  "reading": "ems_typecheck: is followed by exactly two `pop de` (discard m, discard n) then `jp els_tc_common` -- present and unchanged",
+  "and_the_sibling": "\ud83c\udfaf THE ITEM'S OWN 'the same 2 B sit in ems_err_pop2/ems_err_pop1 next door' IS ALSO EXACT: those two labels follow immediately with two more `pop de`, four in the region."
+ },
+ "T-15B362": {
+  "verdict": "LIVE, confirmed",
+  "how": "static read of tools/run_gates.py",
+  "headline": "THE STALL WATCHDOG NO LONGER MIS-ASSERTS, BUT `run_gates.py` STILL CALLS A CONTENDED UNIT *REAL*",
+  "reading": "run_gates.py has NO load awareness of any kind -- no getloadavg, no uptime, only a `--nice` flag for scheduling. The classifier line is unchanged: `verdict = 'FLAKE (green on retry)' if rc == 0 else 'REAL (still red)'` (line 192).",
+  "note": "the diagnostic half really did ship (D-STALLSLOW); the classifier half is untouched, exactly as the item says"
+ },
+ "T-313D01": {
+  "verdict": "DIAGNOSTIC SHIPPED; THE FLAKE ITSELF IS HISTORICALLY UNFALSIFIABLE",
+  "how": "static read of tests/_tmp.py",
+  "headline": "A `unit-test` FLAKE IS OPEN AND UNCAUSED",
+  "reading": "the sys.excepthook that prints the child's stderr IS installed in tests/_tmp.py, so the NEXT such failure will name itself.",
+  "why_unfalsifiable": "\u26a0\ufe0f THE ITEM'S SUBJECT IS A PAST EVENT WHOSE EVIDENCE WAS DISCARDED (capture_output=True held pasmo's message and CalledProcessError.__str__ does not print it). No re-run can recover it. The item should be restated as 'the diagnostic is armed; close this when a flake next fires and is named' -- an open item whose subject cannot be measured is a WAIT, not a task."
  }
 }
