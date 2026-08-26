@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 22 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 23 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -725,6 +725,33 @@ list, one defect underneath.
 The DEF FN pair shows the two ways a filed item goes stale: one claim is now
 **false** (knives exist), the other's **point stands and its number doesn't** — a
 roster is still not a verdict, but it is nine, not eight.
+
+## 2u. Tranche 23 — three live, and one rule that never crossed the corridor
+
+| item | verdict |
+|---|---|
+| bare `RUN` inside a running program re-enters nested | **LIVE, exact** |
+| the bare-`jp raise_error` carve family | **LIVE**, 29 sites measured |
+| `castail-acceptance` voids on a zerobas-side control failure | **LIVE, exact** |
+
+🟢 **ONE OF THESE CANNOT ROT UNNOTICED, AND IT IS THE ONE ANNOTATED AT THE
+SITE.** `dr_stored:` is still `jp run_prog`, and the comment directly beneath it
+says *"⚠️ STILL THE ONE ARM D-RUNTAIL DID NOT CONVERT, and D-RUNLINE deliberately
+left…"*. The next reader of that routine sees the residual whether or not they
+ever open `TODO.md` — which is more than can be said for the 30 divergences §1.2
+found buried in `- [x]` blocks.
+
+🎯 **AND THE CURE FOR THE THIRD IS ALREADY SHIPPED, TWENTY FILES AWAY.**
+`basic_probe_castail.py` gates its controls with `for lab in CONTROLS: for s in
+sides:` — every side, zerobas included — so a control failing on **zb** voids the
+run, exactly as filed. It contains **zero** occurrences of the split-by-side
+rule. `basic_probe_namspc.py:1036` carries that rule verbatim: *"ONLY A REFERENCE
+CAN SAY THE APPARATUS IS BROKEN."*
+
+**One probe has the rule, the other does not, and nothing carries it across** —
+the same shape as tranche 8, where a rule I had encoded in one checker that
+morning did not reach the next one I wrote that afternoon. A rule that lives in a
+comment travels no further than the file it is in.
 
 ## 3. What the apparatus cost, said out loud
 

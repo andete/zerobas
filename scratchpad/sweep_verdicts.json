@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 22 of N. Subject 176; 70 verdicted, 106 pending.",
+  "status": "TRANCHE 23 of N. Subject 176; 73 verdicted, 103 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -545,5 +545,26 @@
   "how": "count of distinct K-* ids in docs/spec-basic-deffnknife.md",
   "headline": "DEF FN's knife roster is EIGHT, and eight is a candidate roster, not a verdict",
   "reading": "9 distinct knives are named. The item's POINT (a roster is not a verdict) stands; its NUMBER does not."
+ },
+ "T-B62D37": {
+  "verdict": "LIVE, exact -- and the SOURCE annotates its own residual",
+  "how": "static read of basic/cload.asm:240",
+  "headline": "BARE `RUN` INSIDE A RUNNING PROGRAM STILL RE-ENTERS THE LOOP NESTED",
+  "reading": "`dr_stored:` is still `jp run_prog`, not `jp run_prog_top`. The comment beneath it says so itself: '\u26a0\ufe0f STILL THE ONE ARM D-RUNTAIL DID NOT CONVERT, and D-RUNLINE deliberately left...'",
+  "note": "\ud83d\udfe2 a residual that is annotated AT THE SITE is the one kind that cannot rot unnoticed -- the next reader of that routine sees it whether or not they read TODO.md"
+ },
+ "T-F7EBCE": {
+  "verdict": "LIVE, with a measured denominator",
+  "how": "git grep over basic/",
+  "headline": "The bare-`jp raise_error` carve family is worth ~2 B",
+  "reading": "29 bare `jp raise_error` sites across basic/ today (bload 1, deffn 2, field 2, files 1, graphics 3, and the rest)",
+  "note": "the item's own point is that the REASON is worth more than the bytes; the denominator is now attached to it"
+ },
+ "T-58C2D1": {
+  "verdict": "LIVE, exact -- and the cure already exists in a sibling probe",
+  "how": "static read of both probes",
+  "headline": "`castail-acceptance` VOIDS THE WHOLE BATTERY WHEN A CONTROL FAILS ON THE ZEROBAS SIDE",
+  "reading": "basic_probe_castail.py gates on `for lab in CONTROLS: for s in sides:` -- every side, zerobas included -- so a control failing on zb voids the run. It contains ZERO occurrences of the split-by-side rule.",
+  "the_cure_is_shipped_next_door": "\ud83c\udfaf basic_probe_namspc.py:1036 carries it verbatim: 'ONLY A REFERENCE CAN SAY THE APPARATUS IS BROKEN. A control that fails...'. One probe has the rule, the other does not, and nothing carries it across -- the same shape as tranche 8, where a rule encoded in one checker did not reach the next one."
  }
 }
