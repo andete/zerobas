@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 29 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 30 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -925,6 +925,30 @@ ECONOMICS.** Four gates annotate the cases they cannot judge:
 here are confirmable by reading the gate rather than running anything — and why
 these particular residuals have **not** rotted, unlike the 30 divergences §1.2
 found buried in `- [x]` blocks, which had no such home.
+
+## 2ab. Tranche 30 — halfway, and a duplication problem gets its denominator
+
+**88 of 176 verdicted — the halfway mark.**
+
+| item | verdict |
+|---|---|
+| `ex_mid_stmt`'s resolve abort is shadowed (3 B) | **LIVE, exact** |
+| no knife runner shares a way to scope a cut | **LIVE — 30 runners, 0 sharing** |
+| `a.spr` is blind to a cut stopping the sprite size | **LIVE, exact** |
+
+`str-engine.asm`:988 still carries `call tgt_parse` / `jp nz,fp_runtime_error` —
+the 3 B unchanged. And `a.spr` is `("a.spr", "t", "SCREEN 1,3")`: it scores the
+`SCREEN` statement's own outcome and reads back **nothing** about the resulting
+sprite size, so a cut that stops the size being applied leaves it green.
+
+🎯 **THE MIDDLE ITEM GAINS THE THING IT WAS FILED WITHOUT: A COUNT.** *"No shared
+way to scope a cut"* is a nicety at two runners and a duplication problem at
+**thirty** — which is what there are, with **zero** sharing such a helper. The
+filed sentence and the measured one say the same thing and mean different things.
+
+That is the third time this sweep has attached a denominator to an item that had
+none (29 bare `jp raise_error` sites, 333 `equ` aliases, 30 knife runners), and
+each time the number is what turns a note into a priority.
 
 ## 3. What the apparatus cost, said out loud
 

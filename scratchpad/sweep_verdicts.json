@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 29 of N. Subject 176; 85 verdicted, 91 pending.",
+  "status": "TRANCHE 30 of N. Subject 176; 88 verdicted, 88 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -650,5 +650,24 @@
   "how": "static read of probes/basic/basic_probe_fldary.py",
   "headline": "`s.fldarymix` IS A GATE ROW NO KNIFE CAN REDDEN, and that is recorded rather than fixed",
   "reading": "the row exists at :145 and the file's own header says at :34 '\ud83c\udfaf `s.fldary2` AND `s.fldarymix` EXIST BECAUSE A KNIFE WAS DRAFTED FIRST' -- the row was written to satisfy a knife that then could not redden it, and the file says so."
+ },
+ "T-A04C9F": {
+  "verdict": "LIVE, exact",
+  "how": "static read of basic/str-engine.asm",
+  "headline": "3 B carve candidate: `ex_mid_stmt`'s resolve abort is SHADOWED",
+  "reading": "`ex_mid_stmt:` at :988 still carries `call tgt_parse` followed by `jp nz,fp_runtime_error ; resolve failed -- FPERR already mapped`. The 3 B the item names are present and unchanged."
+ },
+ "T-D4D426": {
+  "verdict": "LIVE -- with a denominator of THIRTY",
+  "how": "walk of scratchpad/*knives*.py",
+  "headline": "A KNIFE RUNNER STILL HAS NO SHARED WAY TO SCOPE A CUT TO ONE ROUTINE",
+  "reading": "30 knife runners exist in scratchpad/ and NOT ONE has a shared scope-to-one-routine helper. Every one that needs to scope a cut does it ad hoc.",
+  "note": "\ud83c\udfaf the item was filed without a count; 30 runners with 0 sharing is what makes it a duplication problem rather than a nicety"
+ },
+ "T-3AED26": {
+  "verdict": "LIVE, exact",
+  "how": "static read of probes/basic/basic_probe_screenerr.py",
+  "headline": "`a.spr` IS BLIND TO A CUT THAT STOPS THE SPRITE SIZE BEING APPLIED",
+  "reading": "the row is `(\"a.spr\", \"t\", \"SCREEN 1,3\")` at :190 -- it scores the SCREEN statement's own outcome and reads back NOTHING about the resulting sprite size, so a cut that stops the size being applied leaves the row green. Exactly the blindness filed."
  }
 }
