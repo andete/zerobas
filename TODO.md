@@ -56,6 +56,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [ ] 🔴 **`KEY n,"str"` AND `KEY LIST` ARE UNIMPLEMENTED — A WELL-FORMED
+      STATEMENT IS `Syntax error` HERE AND SILENT ON BOTH REFERENCES.** Filed
+      2026-08-26 by D-MISSOP3. `KEY1,"X"` reads **0 / 0 / 2**: both references
+      complete it, zerobas refuses it. [`basic/screen.asm`](basic/screen.asm):294
+      is `jp stmt_error` with the comment *"KEY <n>,\"str\" / KEY LIST
+      unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
+      `KEY(n)` arming form).
+      🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
+      INVISIBLE** — TODO.md:6645, a Phase-1 entry ending *"all Phase-3 scope"*.
+      That is the exact failure this section's own preamble exists to prevent,
+      and it survived the 2026-08-09 staleness sweep because the sweep
+      enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
+      either: its scope claim is **reserved words only**, and it says so —
+      *"a word can be present and still wrong in its third argument"*. So
+      `make kwsweep` printing no `MISSING=` line is not evidence about this.
+      🎯 **FOUND BY A CONTROL, NOT BY THE SUBJECT.** `r.keyok` was a
+      throwaway well-formed row expected to be green on all three; the filed
+      residual it sits next to (`KEY1,` reading ERR 2 where the references say
+      24) is a SYMPTOM of the whole form being absent, and "fix the error code"
+      would have been the wrong repair. Under the charter the reference wins.
+      💰 Unpriced. Needs the FNKSTR function-key string area (16 B x 10) and
+      `KEY LIST`'s display; main page 1 was **99 B** free on 2026-08-26 — read
+      the wall, never this line.
+
 - [ ] 🔴 **A STALE TRACKED PATCH DELIVERABLE IS INVISIBLE TO THE WHOLE
       BATTERY.** Filed 2026-08-26 by D-EVFERR, which shipped TWO ROM-moving
       commits without regenerating `zerobas-main-eu.ips` / `.bps` — **and
@@ -799,14 +823,49 @@ list. **When a slice lands, grep this list for what it just shipped.**
         omitted slot (`CIRCLE(50,50),20,,0.1,6.2`) still draws, and K-CM3/K-CM4
         proving those rows can go red. ✅ **PAINT WAS THE SAME DEFECT AND IS
         CLOSED 2026-08-23 (D-PAINTMISS, 3 B, below).**
-      * 🔴 **THE STRING PATHS ABORT WITH THE WRONG CODE**: `KEY1,` and
-        `MID$(A$,2)=` read **ERR 2** where both references say **24**
-        (`key.val`, `midd.val`). Predicted not to move under the evaluator fix,
-        and they did not — they reach an abort by another route.
-      * ⚠️ **THE DENOMINATOR IS STILL A SAMPLE.** 26 BASIC rows against 66
-        evaluator call sites. `SWAP`, `ON n GOTO`, `FIELD`, `PRINT#`, `INPUT`,
-        `PLAY`, `DRAW`, `OPEN`, `WIDTH` and the `PRINT USING` family are
-        **unmeasured, not green**.
+      * 🔴 **RE-MEASURED 2026-08-26 — D-MISSOP3,
+        [`docs/spec-basic-missop3.md`](docs/spec-basic-missop3.md),
+        `scratchpad/missop3_probe.py`, 29 rows x 3 machines — AND THE FILED
+        SENTENCE IS FALSE.** It read
+        *"predicted not to move under the evaluator fix, and they did not"* —
+        **`A$=` and `A$=+` now read 24 on all three and are GREEN.** Something
+        between 2026-08-23 and today closed them and nothing re-read the item.
+        🔴 **`KEY1,` IS MISDIAGNOSED, NOT UNFIXED**: it is not a wrong error
+        CODE, it is `KEY n,"str"` being UNIMPLEMENTED — see the item below,
+        found by a control that was supposed to be trivially green.
+        **`MID$(A$,2)=` (zb 2, refs 24) is the ONE row of the three that
+        survives as filed.**
+      * 🔴 **AND THE SWEEP FOUND THREE MORE, NONE OF THEM FILED ANYWHERE**:
+        `PLAY` (zb **2**, refs 24 — confirms the separate item below),
+        `PRINT USING` (zb **2**, refs 24), and `ON 1 GOTO` (zb **0**, it
+        SILENTLY COMPLETES, refs **2**).
+      * ✅ **THE DENOMINATOR IS NO LONGER A SAMPLE — the ten verbs this item
+        named as *"unmeasured, not green"* were all run.** Already correct:
+        `WIDTH`, `OPEN`, `INPUT#`, `PRINT#` (24 on all three). `FIELD` is
+        **excluded, not green**: the references DISAGREE (VG-8020 5, CF-3300
+        24) because the VG-8020 has no disk. Bare `INPUT`/`LINE INPUT` are
+        UNMEASURABLE by this instrument — they are valid statements that prompt
+        and WAIT, so the row would hang rather than answer.
+      * 🔴 **THE ONE-RULE PREDICTION WAS REFUTED, THEN HALF-RESTORED BY ITS
+        OWN SEPARATORS.** *"A required slot that ends where a value was needed
+        is 24"* is wrong on both references twice — `SWAP A,` is 2, `DRAW` is 5.
+        `SWAP ,B` is **2 on all three** (its slot is a NAME), so SWAP is a real
+        exception. 🔴 **`DRAW` NEVER WAS ONE: `SCREEN2:DRAW` is 24 on both
+        references and 13 here.** The baseline row agreed at 5 on all three
+        because **SCREEN 0 makes `DRAW` `Illegal function call` before the
+        operand is ever looked at** — a case that agreed for the wrong reason,
+        on every machine, hiding a live divergence.
+        🎯 **THE REFINED RULE:** *a missing **VALUE** is 24; a missing **NAME**
+        is 2; and a missing **SEPARATOR** is 2* — `PRINT USING"##"` is 2 on both
+        references, not 24, because the format is present and the `;` is not.
+        ⚠️ Rests on TWO separating rows; the scope is the verbs measured.
+      * 📏 **FULL LIVE LIST — TEN, where this item knew of two:** `KEY1,"X"` and
+        `KEY LIST` (refs **0**, zb 2 — the item below), `KEY1,` (24 vs 2),
+        `MID$(A$,2)=` (24 vs 2), `PLAY` (24 vs 2), `PRINT USING` (24 vs 2),
+        `PRINT USING"##"` (2 vs **0**), `ON 1 GOTO` and `ON 1 GOSUB` (2 vs
+        **0**, they SILENTLY COMPLETE), `SCREEN2:DRAW` (24 vs 13).
+        **Four roots, so four slices, none of them priced here** — page 1 was
+        99 B free on 2026-08-26; read the wall, never this line.
 
 - [x] ✅ **CLOSED 2026-08-23 — PAINT'S DANGLING COMMA RAISES ERR 24 AND NO
       LONGER FILLS** (D-PAINTMISS,
