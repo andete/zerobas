@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 37 of N. Subject 176; 98 verdicted, 78 pending.",
+  "status": "TRANCHE 38 of N. Subject 176; 98 verdicted, 78 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -636,7 +636,8 @@
   "reading": "1990 file:LINE citations in committed docs. 66 name a file that does not resolve; 24 name a line PAST THE END of the file they cite (e.g. disk/disk.asm:742 where the file has 62 lines, PROVENANCE.md:3591 where it has 29). 1900 -- 95% -- point at a line that EXISTS.",
   "why_this_does_not_contradict_the_filing": "\ud83d\udd34 95% IS AN UPPER BOUND ON CORRECTNESS, NOT A CORRECTNESS RATE. 'The line exists' and 'the line still says what the doc claims' are different properties, and only the second is what the filed 31% measured -- by READING. My walk cannot read; it can only prove a citation WRONG, never right. The two numbers measure different things and neither refutes the other.",
   "the_actionable_part": "\ud83c\udfaf 90 CITATIONS ARE PROVABLY BROKEN (66 unresolvable + 24 past EOF) and nothing checks them. That subset is mechanically decidable, unlike the semantic majority, and it is the part a gate could own tomorrow.",
-  "caveat": "\u26a0\ufe0f some of the 66 may be basename-only forms my resolver failed on rather than genuinely absent files"
+  "caveat": "\u26a0\ufe0f some of the 66 may be basename-only forms my resolver failed on rather than genuinely absent files",
+  "semantic_measurement_t38": "\ud83c\udfaf THE MEASUREMENT TRANCHE 28 COULD NOT MAKE, on a tractable subset. Of the 28 file:LINE citations sitting inside PENDING items, a symbol the item names appears within +-4 lines of the cited line in only 9. TEN have DRIFTED -- the symbol is defined elsewhere in the same file. Decidable rate: 9 of 19 = 47%.\nDrift magnitudes: basic/vars.asm:1061 cited for `clear_vars`, actually :1047 (14 lines); basic/interp.asm:574 for `skip_spaces`, actually :712 (138); basic/cload.asm:580 for `err_verify`, actually :664 (84); basic/cload.asm:840 for `dpl_nf`, actually :1113 (273).\n\ud83d\udd34 SO THE FILED 31% AND THIS 47% ARE THE SAME KIND OF NUMBER, AND MY TRANCHE-28 95% IS NOT. The structural walk ('does the line exist') and the semantic one ('does the line say it') differ by roughly a factor of two, exactly as the upper-bound label warned. The item's spirit is confirmed.\n\u26a0\ufe0f HEURISTIC: a citation may legitimately point at a CALL SITE rather than a definition, so DRIFT here means 'the named symbol is not near the cited line but is defined elsewhere' -- suggestive, not proof, on any individual row."
  },
  "T-F2BCFF": {
   "verdict": "LIVE -- and named as a declared exception inside the gate",

@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 37 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 38 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1148,6 +1148,46 @@ census takes, not a grep for the string. **The question it asks (how much of the
 311 B is a pointer) remains unanswered**, and its own ⚠️ explains why: a byte-wise
 delta pass needs a rule for what counts as a pointer *pair*, since naive per-byte
 deltas agree by luck on the high byte.
+
+## 2aj. Tranche 38 — the semantic measurement, on a subset small enough to make it
+
+Tranche 28 could only ask *"does the cited line exist"* (95%) and said so; the
+filed claim was *"only 31% were still correct"*, a **semantic** rate. Tranche 37
+found a live item citing a 94-line drift that the structural walk had counted as
+fine. So: the semantic check, on the 28 citations inside **pending items** —
+small enough to decide, because each item names the symbols its citation is about.
+
+| | |
+|---|---|
+| citations checked | **28** |
+| a named symbol within ±4 lines of the cited line | **9** |
+| **drifted** — symbol defined elsewhere in the same file | **10** |
+| decidable rate | **9 of 19 = 47%** |
+
+Drift magnitudes:
+
+| cited | for | actually at | drift |
+|---|---|---|---|
+| `basic/vars.asm:1061` | `clear_vars` | `:1047` | 14 |
+| `basic/cload.asm:580` | `err_verify` | `:664` | 84 |
+| `basic/interp.asm:574` | `skip_spaces` | `:712` | 138 |
+| `basic/cload.asm:840` | `dpl_nf` | `:1113` | **273** |
+
+🔴 **THE FILED 31% AND THIS 47% ARE THE SAME KIND OF NUMBER. MY 95% IS NOT.**
+Structural and semantic differ by roughly a factor of two — exactly what the
+upper-bound label was warning about, now with a figure attached instead of a
+caveat. **The item's spirit is confirmed**, and tranche 28's tension resolves in
+the item's favour.
+
+⚠️ **HEURISTIC, and it matters per-row**: a citation may legitimately point at a
+**call site** rather than a definition. *Drift* here means *the named symbol is
+not near the cited line but is defined elsewhere* — suggestive in aggregate, not
+proof on any single row.
+
+🎯 **AND THE SUBSET IS WHY IT WAS DECIDABLE AT ALL.** 1990 citations repo-wide
+cannot be checked semantically without reading; 28 inside items that name their
+own symbols can. **Narrowing the denominator is what turned an unmeasurable claim
+into a measured one** — the opposite move from §1.2, where widening it was.
 
 ## 3. What the apparatus cost, said out loud
 
