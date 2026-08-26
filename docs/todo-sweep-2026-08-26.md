@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 47 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 48 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1425,6 +1425,32 @@ phrase, so one documented in a spec or in `run_gates.py`'s docstring is missed;
 `deffn-acceptance` is absent while `deffn-selftest` and `deffn-strict` are
 present; (3) some may run in CI rather than `make gates`. **What is certain is the
 87/35 split and that 22 carry no nearby note explaining it.**
+
+## 2at. Tranche 48 — the same defect, fenced and unfenced
+
+**README "Limitations (this slice)" — LIVE, and fenced.** The section is still
+stale, and it now opens with:
+
+> ⚠️ **THIS SECTION IS STALE AND IS KNOWN DOC DEBT — do not trust it.** … At least
+> two of its claims are flatly false: `ON … GOTO` is listed as "still out" but is
+> implemented and gated, and "variables are single-letter integers; no strings,
+> arrays, or multi-character names" predates the string engine, the float pack and
+> the array engine.
+
+🟢 **THE DOC DEBT IS FENCED.** A reader hitting the section cannot be misled,
+because it says what it is before it says anything else. 🎯 **Compare the 30
+divergences buried in `- [x]` blocks (§1.2)**: same defect — stale text — opposite
+consequences, and the entire difference is whether the staleness is **declared
+where it is read**.
+
+**Inline decoded form — LIVE, undecidable by proof.** `audit_citations.py`:50
+records that the general raw-byte class is *"UNDECIDABLE from text"*, and :384
+that it is *"still undecidable, **by proof** rather than by threshold"*.
+
+🎯 **A hole proven unclosable by the available instrument is not a task either —
+it is a boundary.** That is the **seventh** not-a-task item this sweep has found,
+alongside two clean-room judgements, a coverage trade, a spec sign-off, a stated
+instrument limit and a past event whose evidence was discarded.
 
 ## 3. What the apparatus cost, said out loud
 

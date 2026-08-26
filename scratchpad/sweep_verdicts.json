@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 47 of N. Subject 176; 114 verdicted, 62 pending.",
+  "status": "TRANCHE 48 of N. Subject 176; 116 verdicted, 60 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -886,5 +886,19 @@
   "how": "make kwsweep (run this session)",
   "headline": "Direct sector access -- INVESTIGATED, DEFERRED to Phase 3 -- `DSKI$` / `DSKO$`",
   "reading": "both words read ABSENT / not-run / crunch-only in today's sweep -- the tokens crunch (so they are recognised) and nothing executes them, exactly the state the item describes."
+ },
+ "T-4857B9": {
+  "verdict": "LIVE -- and FENCED at the point of use",
+  "how": "read of README.md:291-300",
+  "headline": "README \"Limitations (this slice)\" IS STALE",
+  "reading": "the section is still there and still stale -- but it now opens with a banner: '\u26a0\ufe0f THIS SECTION IS STALE AND IS KNOWN DOC DEBT -- do not trust it', naming TWO flatly false claims (`ON..GOTO` listed as 'still out' though implemented and gated; 'variables are single-letter integers; no strings, arrays, or multi-character names', which predates the string engine, float pack and array engine) and citing this TODO entry by name.",
+  "\ud83d\udfe2_why_that_matters": "THE DOC DEBT IS FENCED. A reader hitting the section cannot be misled, because the section says what it is before it says anything else. Compare the 30 divergences buried in `- [x]` blocks (\u00a71.2), which carried no such fence and were invisible to every listing of open work. \ud83c\udfaf Same defect -- stale text -- with opposite consequences, and the difference is entirely whether the staleness is DECLARED WHERE IT IS READ."
+ },
+ "T-EC28F3": {
+  "verdict": "LIVE -- undecidable BY PROOF, and the tool says so",
+  "how": "static read of tools/audit_citations.py + docs/spec-audit-citations-bytes.md",
+  "headline": "The INLINE decoded form is measured UNDECIDABLE, and that is a standing hole, not a closed item",
+  "reading": "audit_citations.py:50 records that 'docs/spec-audit-citations-bytes.md measures that the general raw-byte class is UNDECIDABLE from text', and :384 that it is 'still undecidable, BY PROOF rather than by threshold'. The spec's own \u00a7512 lists the inline decoded form among what it 'did not revisit'.",
+  "category": "\ud83c\udfaf a standing hole that is PROVEN unclosable by the available instrument is not a task either -- it is a boundary. That is the seventh not-a-task item in this sweep."
  }
 }
