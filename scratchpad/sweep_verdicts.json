@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 30 of N. Subject 176; 88 verdicted, 88 pending.",
+  "status": "TRANCHE 31 of N. Subject 176; 89 verdicted, 87 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -669,5 +669,27 @@
   "how": "static read of probes/basic/basic_probe_screenerr.py",
   "headline": "`a.spr` IS BLIND TO A CUT THAT STOPS THE SPRITE SIZE BEING APPLIED",
   "reading": "the row is `(\"a.spr\", \"t\", \"SCREEN 1,3\")` at :190 -- it scores the SCREEN statement's own outcome and reads back NOTHING about the resulting sprite size, so a cut that stops the size being applied leaves the row green. Exactly the blindness filed."
+ },
+ "T-45C1F6": {
+  "verdict": "LIVE FOR THE GATE IT NAMES -- but the store IS pinned, by a DIFFERENT gate",
+  "how": "grep of probes/basic/",
+  "headline": "NOTHING IN 360 ROWS PINS THE TENANT'S `GRPACX` STORE",
+  "reading": "the 360 rows are `graphics-acceptance`, and it only MENTIONS GRPACX in comments (:569, :1968). But `basic_probe_lineerr.py`:42 READS IT BACK: `X = PEEK(&HFCB7)+256*PEEK(&HFCB8)` -- a live readout of the very address K-GR4 diverts.",
+  "why_that_matters": "\ud83c\udfaf THE ITEM IS TRUE AS WRITTEN AND MISLEADING AS READ. 'Nothing pins the store' is what a reader takes away; what was measured is 'nothing in THESE 360 rows'. A knife aimed at the store may well redden a lineerr row instead -- which is a different gate, a different battery unit, and a place nobody scoring K-GR4 would look.",
+  "unresolved": "\u26a0\ufe0f whether the lineerr readout actually reddens under K-GR4 is NOT tested here -- that needs the knife run, not a grep"
+ },
+ "T-7F8323": {
+  "verdict": "NOT SCORED -- the phase was not identified",
+  "how": "grep, inconclusive",
+  "headline": "PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT",
+  "reading": "the closest pairing found is basic_probe_graphics.py:1937 `cases = [(\"ie_off\", \"VDP(1)=VDP(1)AND223\"), (\"control\", \"A=0\")]` -- where the control does NOT share the subject's statement, which would make the item stale.",
+  "why_not_scored": "\u26a0\ufe0f I could not confirm that pairing IS 'Phase Q3'. Scoring an item stale on a code site I have not established is its subject is the tranche-25 mistake, and it is declined for the same reason. It needs the D-GATEBLIND \u00a79 read."
+ },
+ "T-E0B493": {
+  "verdict": "NOT SCORED -- rows located, knife question untouched",
+  "how": "grep",
+  "headline": "Two `fat-error` gaps left by the 8-of-8 closure",
+  "reading": "`bload-alive`, `open-alive` and `append-alive` all exist as landmarks in probes/disk/disk_probe_fat_error_disposition.py (:160, :162, :173).",
+  "why_not_scored": "\u26a0\ufe0f the item's claim is that NO KNIFE SEPARATES them from the shared fat_io_getbyte layer. Finding the ROWS says nothing about the KNIVES; that needs the knife roster read, which a grep for row names cannot substitute for."
  }
 }

@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 30 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 31 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -949,6 +949,35 @@ filed sentence and the measured one say the same thing and mean different things
 That is the third time this sweep has attached a denominator to an item that had
 none (29 bare `jp raise_error` sites, 333 `equ` aliases, 30 knife runners), and
 each time the number is what turns a note into a priority.
+
+## 2ac. Tranche 31 — an item true as written and misleading as read
+
+**`GRPACX`: LIVE for the gate it names — and the store is pinned by a different
+one.** The 360 rows are `graphics-acceptance`, which only *mentions* `GRPACX` in
+comments. But `basic_probe_lineerr.py`:42 **reads it back**:
+`X = PEEK(&HFCB7)+256*PEEK(&HFCB8)` — a live readout of the very address `K-GR4`
+diverts.
+
+🎯 **THE ITEM IS TRUE AS WRITTEN AND MISLEADING AS READ.** *"Nothing pins the
+store"* is what a reader takes away; what was measured is *"nothing in **these**
+360 rows"*. A knife aimed at that store may well redden a **lineerr** row — a
+different gate, a different battery unit, and a place nobody scoring `K-GR4`
+would look. ⚠️ Whether it actually does redden is untested here; that needs the
+knife run.
+
+**And two I declined to score:**
+
+* *Phase Q3's control shares its subject's statement* — the closest pairing found
+  (`("ie_off", "VDP(1)=VDP(1)AND223")` against control `"A=0"`) does **not** share
+  the statement, which would make the item stale. But **I could not confirm that
+  pairing is Phase Q3**, and scoring an item stale against a site I have not
+  established is its subject is precisely the tranche-25 mistake.
+* *Two `fat-error` gaps* — the three `*-alive` landmarks exist. The item's claim
+  is about **knives**, and finding the **rows** says nothing about them.
+
+🎯 Both refusals share a shape worth naming: **locating something with the item's
+vocabulary is not the same as locating the item's subject.** Three tranches have
+now turned on that distinction.
 
 ## 3. What the apparatus cost, said out loud
 
