@@ -9,12 +9,13 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 14 of N. Subject 176; 50 verdicted, 126 pending.",
+  "status": "TRANCHE 15 of N. Subject 176; 59 verdicted, 117 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
   "denominator_correction": "The subject set was scoped as 'open + done-carrying-a-residual-KEYWORD' = 146. But 38 of the 237 done blocks open with a \ud83d\udd34/\u26a0\ufe0f/\ud83d\udcb0 headline that STATES A DIVERGENCE, and only 8 of those 38 also carry a keyword. The keyword screen silently dropped 30 blocks -- and those are precisely the class the pickup list's own header exists to catch. Subject is now open + keyword-marked + open-reading-headline = 176.",
-  "marker_regex_undermatch": "\u26a0\ufe0f tranche 13's self-declaration regex required `\u2705 **CLOSED`; T-3B013F writes `**CLOSED 2026-08-17 by D-DRAWCLAMP**` with no tick and was therefore NOT swept up by it. The 10 self-declaring blocks are a LOWER BOUND on that class, not its size."
+  "marker_regex_undermatch": "\u26a0\ufe0f tranche 13's self-declaration regex required `\u2705 **CLOSED`; T-3B013F writes `**CLOSED 2026-08-17 by D-DRAWCLAMP**` with no tick and was therefore NOT swept up by it. The 10 self-declaring blocks are a LOWER BOUND on that class, not its size.",
+  "self_declaring_total": "19 of the 38 open-reading headlines self-declare closure (10 by the strict marker, 9 more by the broadened one). The strict count was a LOWER BOUND, as tranche 14 predicted."
  },
  "T-B96267": {
   "verdict": "LIVE",
@@ -384,5 +385,77 @@
   "headline": "A KNIFE RUNNER READ A COMPLETE 32-ROW EXIT-2 REPORT AS TRUNCATED",
   "reading": "tools/check_report_shape.py exists and its own docstring names this exact defect ('the exit-2 rows are indented two spaces'). Its target `rowshape-check` is one of the 39 gates that ran green today.",
   "note": "\ud83d\udfe2 STRONGER THAN A BODY CLAIM: the fix is a gate that runs on every battery, so it cannot lapse the way a note can."
+ },
+ "T-978578": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
+  "how": "read -- NOT re-run",
+  "headline": "\u26a0\ufe0f **`DRAW` WITH OFF-SCREEN COORDINATES IS UNMEASURED, AND THE CLAMP",
+  "marker": "**CLOSED",
+  "spot_verified": false,
+  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+ },
+ "T-81A230": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
+  "how": "read -- NOT re-run",
+  "headline": "\u26a0\ufe0f **THE WORK AREA AFTER AN OFF-SCREEN LINE IS UNMEASURED.** Filed",
+  "marker": "**CLOSED",
+  "spot_verified": false,
+  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+ },
+ "T-386A5D": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
+  "how": "read -- NOT re-run",
+  "headline": "\u26a0\ufe0f **`PSET(0,192)` HAS NO INSTRUMENT: A FAILED y-CLIP WRITES THE NAME",
+  "marker": "**CLOSED",
+  "spot_verified": false,
+  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+ },
+ "T-DE9A5C": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
+  "how": "read -- NOT re-run",
+  "headline": "\u26a0\ufe0f **232 OF 355 GATE ROWS WERE NOT REDDENED BY THE FIRST MUTATION",
+  "marker": "**CLOSED",
+  "spot_verified": false,
+  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+ },
+ "T-5F2A8D": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
+  "how": "read -- NOT re-run",
+  "headline": "\u26a0\ufe0f **THE 51-ROW RESIDUE IS ACCEPTANCE, THE WORK AREA, AND THE ERR 6 TAIL.**",
+  "marker": "**CLOSED",
+  "spot_verified": false,
+  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+ },
+ "T-8F7199": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
+  "how": "read -- NOT re-run",
+  "headline": "\ud83d\udd34 **THREE ROWS' ERROR SITE HAS PROVABLY NOT BEEN FOUND.** Filed 2026-08-17",
+  "marker": "**CLOSED",
+  "spot_verified": false,
+  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+ },
+ "T-592DFC": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
+  "how": "read -- NOT re-run",
+  "headline": "\ud83d\udd34 **THE GATE HAS NO ROW THAT SEPARATES LINE'S *TWO* WORK-AREA WRITERS, SO",
+  "marker": "**CLOSED",
+  "spot_verified": true,
+  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+ },
+ "T-2FB5C7": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
+  "how": "read -- NOT re-run",
+  "headline": "\ud83d\udd34 **A BOX FILL WRITES A FULLY-COVERED BYTE AS *BACKGROUND*, AND WE WROTE",
+  "marker": "**CLOSED",
+  "spot_verified": true,
+  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+ },
+ "T-4813D0": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
+  "how": "read -- NOT re-run",
+  "headline": "\u26a0\ufe0f **THE SECOND LATCH WINDOW IS OPEN AND HAS NEVER BEEN OBSERVED.** A CPU",
+  "marker": "\u2705 **",
+  "spot_verified": false,
+  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
  }
 }

@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 14 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **50** carry a verdict; **126** do not. The
+🔴 **THIS IS TRANCHE 15 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **59** carry a verdict; **117** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -493,6 +493,36 @@ never swept into the self-declaring set. **The 10 are a LOWER BOUND on that clas
 not its size** — which is the safe direction (it sends blocks to be read rather
 than retiring them unread), but it means "28 still need reading" is an
 over-estimate of the real work.
+
+## 2m. Tranche 15 — the lower bound was a lower bound
+
+Tranche 14 predicted the strict `✅ **CLOSED` marker under-counted. Broadening it
+(no tick required, twelve lines deep) matches **9 more** of the pending hidden
+blocks. So of the 38:
+
+| | n |
+|---|---|
+| self-declares closure | **19** (10 strict + 9 broadened) |
+| still needs reading or running | **13** |
+
+🟢 **AND THE BROADENED MARKER WAS SPOT-CHECKED BEFORE BEING TRUSTED IN BULK**,
+because a 12-line window can match a sentence about somebody *else's* closure.
+Two were read in full:
+
+* the **box-fill byte rule** — *"CLOSED 2026-08-17 by D-BFBYTE — `gbf_split` +
+  `gbf_row` + a corner sort, 153 B … gate 355/0 with 11 new rows … knives 3
+  predicted, 3 EXACT"*, and a named 21 % regression on the narrowest case,
+  accepted against 35.8× on the common one.
+* **LINE's two work-area writers** — *"CLOSED THE SAME DAY … `w_err_scr0` and
+  `w_err_step` (gate 358 → 360/0) … Knives both EXACT"*.
+
+Both carry byte counts, gate row totals and knife results. **The marker is not
+decorative in this file** — which is a statement about a sample of two, and is
+recorded as one.
+
+⚠️ All 9 are still labelled **`how: read — NOT re-run`**. Nineteen of the 176
+verdicts now rest on a body claim rather than a machine, and the verdict file
+says so on every one of them, so a later reader can re-run exactly that subset.
 
 ## 3. What the apparatus cost, said out loud
 
