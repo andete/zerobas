@@ -2052,7 +2052,7 @@ ex_on_expr:                                 ; ON <expr> GOTO/GOSUB -- the ordina
 eon_goto:
                 inc     hl                  ; past GOTO token
                 call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
-                jp      nc,exec_stmt        ; N=0 or N > count -> fall through
+                jp      nc,eon_notfound     ; D-ONLIST: 0 B, the same instruction
                 call    find_line_bc
                 jp      nc,ex_goto_undef
                 ld      (GOTOTGT),hl
@@ -2061,10 +2061,27 @@ eon_goto:
                 ret
 
 ; eon_gosub (repack: via gosub_push, sharing gosub_stk_over)
+eon_notfound:                               ; D-ONLIST: eon_seek_nth found no Nth
+                                            ; entry. Z = the list legitimately ran
+                                            ; out; NZ = the sought position held
+                                            ; something that is not a lineno.
+                                            ; 🔴 THE RAISE LIVES HERE, NOT INSIDE
+                                            ; eon_seek_nth, AND THAT IS THE POINT:
+                                            ; the abort chain PRINTS AND RETURNS
+                                            ; without resetting SP, so it is only
+                                            ; correct at the statement handler's
+                                            ; own depth. eon_seek_nth is one
+                                            ; `call` deeper, and a `jp
+                                            ; stmt_error` from in there would land
+                                            ; control back inside eon_seek_nth's
+                                            ; caller instead of the run loop --
+                                            ; the LOCATE/WIDTH failure shape.
+                jp      nz,stmt_error       ; malformed -> ERR 2 (trappable)
+                jp      exec_stmt           ; legal -> fall through, as before
 eon_gosub:
                 inc     hl                  ; past GOSUB token
                 call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
-                jp      nc,exec_stmt        ; N=0 or N > count -> fall through
+                jp      nc,eon_notfound     ; D-ONLIST: 0 B, the same instruction
                 call    gosub_push          ; push [CURLINE][resume=HL]; BC kept; CF=full
                 jp      c,gosub_stk_over    ; jp (not jr): gosub_stk_over is far back
                 call    find_line_bc
@@ -2088,7 +2105,10 @@ eon_seek_nth:
 esn_p1:
                 call    skip_spaces
                 cp      LINENO_TOKEN        ; $0E expected
-                jr      nz,esn_nocf         ; list shorter than N -> not found
+                jr      nz,esn_notlineno    ; D-ONLIST: NOT simply "list shorter
+                                            ; than N" -- that comment was true for
+                                            ; one of this jump's two entry
+                                            ; conditions and false for the other
                 inc     hl
                 ld      c,(hl)              ; lineno lo
                 inc     hl
@@ -2143,9 +2163,50 @@ esn_scan_lp:
                 inc     hl
                 inc     hl                  ; skip $0E,lo,hi
                 jr      esn_scan_lp
+; --- D-ONLIST (docs/spec-basic-onlist.md): the Nth position, and ONLY it -----
+; `ON 1 GOTO` is Syntax error on both references and `ON 5 GOTO` is SILENT --
+; and in this routine those are the SAME INSTRUCTION, esn_p1's `cp
+; LINENO_TOKEN` on its first iteration. So the reference is not validating the
+; target list at all:
+;
+;   🎯 IT DEMANDS A LINE NUMBER ONLY AT THE POSITION IT IS ABOUT TO USE.
+;      Syntax error iff the Nth position is REACHED and what is there is not a
+;      lineno. N=0 never looks; a list that ends before position N never looks.
+;
+; Measured over 15 rows x 3 machines, references unanimous. The rows that pin it
+; are `ON 2 GOTO 40,` (ERR 2 -- the consumed comma COMMITS the reference to
+; position 2) against `ON 5 GOTO 40,` (SILENT -- the same comma commits nothing,
+; because position 5 is unreachable).
+;
+; 🔴 AND THE WIDE RULE WOULD HAVE SHIPPED THREE REGRESSIONS. The draft this
+; replaces raised at every malformed-looking site -- esn_scan's `no entries at
+; all`, and esn_ok's two "malformed: stop here" jumps. All three are measured
+; SILENT on both references, and zerobas was ALREADY RIGHT at each: `ON 0 GOTO`,
+; `ON 1 GOTO 40,` and `ON 1 GOTO 40,X` complete on all three machines. Reading
+; the jump sites said four of seven were errors; the machines say ONE.
+;
+; DE has not yet been decremented for the entry esn_p1 was about to read, so
+; DE==1 is exactly "this is the one being sought". DE is dead on both exits.
+esn_notlineno:
+                dec     de
+                ld      a,d
+                or      e
+                jr      nz,esn_nocf         ; still counting -> the list simply
+                                            ; ENDS before position N: LEGAL, and
+                                            ; the caller falls through silently
+; 🔴 esn_bad IS A LABEL, NOT A REUSABLE RAISER, and its own knives are why it
+; says so. K-OL3/K-OL4 pointed two OTHER sites at esn_notlineno above and moved
+; the wrong row / no row at all: that entry runs `dec de` on a DE that is
+; already 0 there, wraps to $FFFF, and lands back on the LEGAL exit. The
+; discriminator is coupled to esn_p1's state and to nothing else. Anything that
+; wants this verdict from another site must jump HERE, past the test.
+esn_bad:
+                or      $FF                 ; sought position, no lineno -> CF
+                ret                         ; clear + NZ = malformed (eon_notfound)
 esn_nocf:
-                or      a                   ; CF clear
-                ret
+                xor     a                   ; CF clear + Z = a legal not-found.
+                ret                         ; (was `or a`; same 1 byte, and now
+                                            ; the Z flag carries the verdict)
 
 ; --- ex_on_error: ON ERROR GOTO <line> / GOTO 0 -----------------------------
 ; (docs/spec-basic-error-handling-s2b-packet.md §5.3). HL enters on the

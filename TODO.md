@@ -56,6 +56,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [ ] 💰 **A 4 B DUP-SPAN THE D-ONLIST FIX CREATED, AND ITS OWN KNIFE FOUND
+      IT.** Filed 2026-08-26. `esn_notlineno`'s discriminator
+      (`dec de / ld a,d / or e / jr …`) is **byte-identical to `esn_p1`'s own
+      countdown test** four instructions above it — the K-OL2 anchor guard
+      reported *"anchor appears 2 times"* and that is what a duplicate span
+      looks like from the outside.
+      🔴 **RUN, NOT ASSUMED: `tools/dupspan_indep.py` DOES NOT SEE IT** —
+      `scratchpad/onlist_dupspan.out`, zero mentions of `esn_p1` or
+      `esn_notlineno` in a report that lists 169 nominal bytes. The reason is
+      structural: the two spans end in DIFFERENT jumps (`jr z,esn_found` vs
+      `jr nz,esn_nocf`), so the identical part is a 4-instruction **PREFIX**,
+      and the tool's model is spans-with-terminators. That is a hole in the
+      model, not a near miss —
+      [[dupspan-slice]] already records that a span can be byte-identical
+      without being ENTERED the same way; this is the mirror, byte-identical
+      without EXITING the same way. **The tooling question is worth more than
+      the 4 bytes.**
+      ⚠️ Unpriced, and probably not worth taking alone: folding it needs a
+      shared entry with the exit selected somehow, which is likely to cost more
+      than it saves. Filed for the SWEEP, not for the carve.
+
 - [ ] 🔴 **`KEY n,"str"` AND `KEY LIST` ARE UNIMPLEMENTED — A WELL-FORMED
       STATEMENT IS `Syntax error` HERE AND SILENT ON BOTH REFERENCES.** Filed
       2026-08-26 by D-MISSOP3. `KEY1,"X"` reads **0 / 0 / 2**: both references
