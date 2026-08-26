@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 40 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 41 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1238,6 +1238,26 @@ stays put.
 control). Its **live** half is *"what remains is ONE ROW and it is a different
 face"*, and I did not locate which row that is. Scoring on the closure narrative
 would be scoring the part that is already ✅ — the tranche-32 near-miss shape.
+
+## 2am. Tranche 41 — absence as the verdict, where the item is about provenance
+
+**`fp_exp`/`fp_log` `$8000` reachability — LIVE.** Only **two** probe files mention
+`EXP(` or `LOG(` at all, and **not one row anywhere** calls either near the 16-bit
+boundary — no `32767`, `32768`, `-32768` or `$8000` argument. The reachability is
+still an argument about the code, exactly as filed.
+
+🎯 **AND HERE ABSENCE IS THE VERDICT, NOT A PROXY FOR IT.** The item's claim is
+about a **provenance**: *reasoned, not measured*. Finding no measuring row settles
+that directly. Compare tranche 8, where absence was the weakest possible signal
+(six false-positive classes) — the difference is again whether the item asserts a
+**presence** or a **gap**. That is now three tranches where the same evidence type
+was decisive or worthless depending only on the shape of the claim.
+
+⚠️ **And one only partly measured.** `locarg`'s probe carries **45 rows** today —
+but the item's claim is **comparative**: the row set is weaker than *the sentence
+asserting it*. I did not locate that sentence. **A row count cannot settle a claim
+about what the rows are said to prove**; that needs the sentence and the row set
+side by side.
 
 ## 3. What the apparatus cost, said out loud
 

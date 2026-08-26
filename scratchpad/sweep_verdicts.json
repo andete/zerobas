@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 40 of N. Subject 176; 102 verdicted, 74 pending.",
+  "status": "TRANCHE 41 of N. Subject 176; 104 verdicted, 72 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -790,5 +790,19 @@
   "headline": "`load error` IS PRINTED, NOT RAISED -- FIXED AT ALL SIX MISSING-FILE VERBS ... WHAT REMAINS IS ONE ROW",
   "reading": "the block is a long closure narrative (D-LOADERR-FIX, D-BLNF, the cassette regression caught by castail's `cas-run-brk`, the five pinned rows that were a green oracle for the defect). The five graduated verbs are recorded as fixed.",
   "why_not_scored": "\u26a0\ufe0f the item's live half is 'ONE ROW and it is a DIFFERENT FACE', and I did not locate which row that is within this pass. Scoring the item on the closure narrative would be scoring the part that is already \u2705 -- the same shape as the tranche-32 near-miss."
+ },
+ "T-DB105B": {
+  "verdict": "LIVE -- confirmed by absence, which is the item's own claim",
+  "how": "grep across probes/basic/",
+  "headline": "`fp_exp`/`fp_log`'s `$8000` REACHABILITY WAS REASONED, NOT MEASURED",
+  "reading": "only 2 probe files mention `EXP(` or `LOG(` at all, and NOT ONE row anywhere calls either near the 16-bit boundary (no 32767 / 32768 / -32768 / $8000 argument). The reachability is still an argument about the code, exactly as filed.",
+  "note": "the item is about a claim's PROVENANCE (reasoned vs measured), so finding no measuring row IS the verdict rather than a proxy for it"
+ },
+ "T-DDBFFA": {
+  "verdict": "PARTLY MEASURED -- row count taken, the claim's wording not located",
+  "how": "count of probes/basic/basic_probe_locarg.py",
+  "headline": "\"THE APPARATUS IS STILL MEASURED\" IS A CLAIM ABOUT A ROW SET, AND `locarg`'s IS MUCH WEAKER THAN ITS OWN SENTENCE SAYS",
+  "reading": "locarg's probe carries 45 rows today.",
+  "why_partial": "\u26a0\ufe0f the item's claim is comparative -- the row set is weaker than the SENTENCE asserting it -- and I did not locate that sentence in the probe or its spec. A row COUNT does not settle a claim about what the rows are said to prove; that needs the sentence and the row set side by side."
  }
 }
