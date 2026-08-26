@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 21 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 22 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -697,6 +697,34 @@ diagnostic that would have named it is now installed, so the *next* one will
 name itself, but no re-run recovers this one. **An open item whose subject
 cannot be measured is a WAIT, not a task**, and it should be restated as *"the
 diagnostic is armed; close this when a flake next fires and is named"*.
+
+## 2t. Tranche 22 — a class that closed itself while nobody re-read it
+
+| item | verdict |
+|---|---|
+| the `Missing operand` class: 3 rows still diverge | **STALE — the last surviving row healed too** |
+| `clone_scout` prices label-blocks | **LIVE, exact** |
+| `DEF FN` has NO knives | **STALE — nine knives exist** |
+| `DEF FN`'s knife roster is EIGHT | **stale figure — it is nine** |
+
+🎯 **THE `Missing operand` ITEM CLOSED ITSELF IN THREE STAGES AND NOBODY NOTICED
+UNTIL THE THIRD.** It already carried an in-place re-measurement (D-MISSOP3)
+retiring two of its three rows and reframing `KEY1,` as *`KEY n,"str"` is
+unimplemented*, leaving `MID$(A$,2)=` as *"the ONE row of the three that survives
+as filed"*. Measured today: **`MID$(A$,2)=` reads ERR 24 on vg8020 and on
+zerobas** — filed as zb 2 / refs 24. Healed, consistent with D-MIDOP's `MID$()=`
+fix. ⚠️ cf3300 produced no reading in that quick fixture, so the final row rests
+on **one reference**.
+
+🎯 **AND TWO ITEMS TURN OUT TO BE ONE CAUSE.** `clone_scout`'s span model is
+exactly as filed — *"groups of label-blocks … only structurally identical
+label-blocks"* — and that is **the same blind spot** that made the 4 B dup-span
+item unreachable in tranche 7. Both dup-span tools share it. Two entries on the
+list, one defect underneath.
+
+The DEF FN pair shows the two ways a filed item goes stale: one claim is now
+**false** (knives exist), the other's **point stands and its number doesn't** — a
+roster is still not a verdict, but it is nine, not eight.
 
 ## 3. What the apparatus cost, said out loud
 

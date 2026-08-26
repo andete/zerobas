@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 21 of N. Subject 176; 66 verdicted, 110 pending.",
+  "status": "TRANCHE 22 of N. Subject 176; 70 verdicted, 106 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -519,5 +519,31 @@
   "headline": "A `unit-test` FLAKE IS OPEN AND UNCAUSED",
   "reading": "the sys.excepthook that prints the child's stderr IS installed in tests/_tmp.py, so the NEXT such failure will name itself.",
   "why_unfalsifiable": "\u26a0\ufe0f THE ITEM'S SUBJECT IS A PAST EVENT WHOSE EVIDENCE WAS DISCARDED (capture_output=True held pasmo's message and CalledProcessError.__str__ does not print it). No re-run can recover it. The item should be restated as 'the diagnostic is armed; close this when a flake next fires and is named' -- an open item whose subject cannot be measured is a WAIT, not a task."
+ },
+ "T-1AF0BC": {
+  "verdict": "STALE -- the last surviving row healed too",
+  "how": "REPL (vg8020 + zb) + the item's own in-place D-MISSOP3 note",
+  "headline": "THE `Missing operand` CLASS HAS THREE MECHANISMS; ONE IS CLOSED AND 3 ROWS STILL DIVERGE",
+  "reading": "the item already carried an in-place re-measurement (D-MISSOP3, 2026-08-26) retiring two of its three rows and reframing `KEY1,` as KEY n,\"str\" being unimplemented, leaving `MID$(A$,2)=` as 'the ONE row of the three that survives as filed'. Measured today: MID$(A$,2)= reads ERR 24 on vg8020 AND zb -- filed as zb 2 / refs 24. HEALED, consistent with D-MIDOP shipping the MID$()= fix.",
+  "gap": "\u26a0\ufe0f cf3300 produced no reading in this quick fixture -- ONE reference only for the final row"
+ },
+ "T-CB89FD": {
+  "verdict": "LIVE, exact",
+  "how": "static read of tools/clone_scout.py",
+  "headline": "`clone_scout` prices LABEL-BLOCKS, so a routine split by an interior label is priced at a fraction",
+  "reading": "the tool's own docstring says 'groups of label-blocks' and 'only structurally identical label-blocks differing in <=2 operands', and its extractor yields '(label, [...]) per label-delimited block'. The span model is exactly what the item describes.",
+  "link": "\ud83c\udfaf this is the SAME blind spot that made the 4 B dup-span item unreachable in tranche 7 -- both dup-span tools share this span model. Two items, one cause."
+ },
+ "T-5F2080": {
+  "verdict": "STALE -- DEF FN has knives now",
+  "how": "ls scratchpad + the deffnknife spec",
+  "headline": "`DEF FN` has NO KNIVES, and now it has a shipping ROM to cut against",
+  "reading": "scratchpad/deffn_de_knife.py exists and docs/spec-basic-deffnknife.md names 9 distinct knives (K-CE1 K-CE2 K-DE1 K-DE2 K-DF1 K-FE1 K-PR1 K-RT1 K-SF1)"
+ },
+ "T-BDB5E2": {
+  "verdict": "STALE FIGURE -- the roster is NINE, not eight",
+  "how": "count of distinct K-* ids in docs/spec-basic-deffnknife.md",
+  "headline": "DEF FN's knife roster is EIGHT, and eight is a candidate roster, not a verdict",
+  "reading": "9 distinct knives are named. The item's POINT (a roster is not a verdict) stands; its NUMBER does not."
  }
 }
