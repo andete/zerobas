@@ -5,10 +5,13 @@
 # question for a human: does X return with A already holding (ptr)?
 #
 # All 28 candidate sites were read on 2026-08-19 (D-LOADSWEEP §7) and EVERY ONE
-# IS LIVE — a measured zero, not an absence of looking. This file records that
+# WAS LIVE — a measured zero, not an absence of looking. This file records that
 # verdict per callee so the zero is re-checkable instead of re-derived, and so a
 # NEW candidate callee shows up as `unreviewed` rather than blending into a list
-# of 28 already-dispositioned ones.
+# of already-dispositioned ones.
+# ⚠️ THE COUNT MOVES AND THIS SENTENCE DOES NOT — 28 is what 2026-08-19 read, and
+# slices since have DELETED candidate sites (see the two RETIRED blocks below).
+# `make redundant-load-check` prints today's figure; do not quote this one.
 #
 # The gate does NOT skip these sites. It still prints them; it only asserts that
 # the reviewed set still matches, which is the warning available for this file
@@ -43,6 +46,18 @@ tape_parse_name  CLOBBER  exits through a djnz fill loop; A is loop residue
 # file that must KEEP MATCHING: an entry that asserts nothing is how this
 # control goes blind.
 cas_capture_name CLOBBER  exits having written CAS_WANT_ON / a CF verdict
-print_crlf       CLOBBER  tail-jumps into pchar with A = 10
+# print_crlf -- RETIRED 2026-08-26 (D-PUSING). It read:
+#   print_crlf       CLOBBER  tail-jumps into pchar with A = 10
+# and it is gone for the same reason parse_disk_fcb above is: its candidate is
+# gone, not its verdict. The tree's only `call print_crlf / ld a,(hl)` pair was
+# in printusing.asm's pu_lo_end, and that whole block (pu_literal_only /
+# pu_lo_skip / pu_lo_end) was DELETED because it implemented behaviour neither
+# reference has -- `PRINT USING"abc"` is ERR 2 and `PRINT USING"abc";5` is ERR 5,
+# measured, where it printed the literal and swallowed the value list
+# (docs/spec-basic-pusing.md). print_crlf itself is untouched and still called
+# from pu_endlist; only the load that followed it is gone.
+# 🎯 THIS GATE CAUGHT IT IN THE SAME BATTERY AS THE FIX, which is the second time
+# that has happened to this file and the whole argument for a review list that
+# must KEEP MATCHING rather than merely suppress.
 check_vartype_num CLOBBER returns A = (VARTYPE)
 eval_byte_arg    CLOBBER  returns A = E, the evaluated byte

@@ -1654,11 +1654,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       * **Missing/empty operand → ERR 24 / ERR 2**: `ev_f`'s
         `ev_f_missop`/`ev_f_empty` machinery — the D-MISSOP arc already found
         this is *"one rule at 16 slots"* (docs/spec-basic-missop.md).
-        🟢 **THE `PLAY`-NO-OPERAND MEMBER SHIPPED 2026-08-26 (D-PLAYOP, +2 B)**
-        and the `ev_f_err` seven-sites member shipped the same day (D-EVFERR,
-        0 B), so what is left of this half is the roots D-MISSOP3 measured:
-        `MID$(A$,2)=`, `PRINT USING` (two ways), `SCREEN2:DRAW`, and KEY's
-        absent form. 🟢 **THE `ev_f_err` SEVEN-SITES MEMBER IS SHIPPED**
+        🟢 **THREE MEMBERS SHIPPED 2026-08-26**: `ev_f_err`'s seven sites
+        (D-EVFERR, 0 B), `PLAY`'s missing operand (D-PLAYOP, +2 B) and
+        **`PRINT USING`, which was a −6 B CARVE and 13 DIFF → 0**
+        ([`docs/spec-basic-pusing.md`](docs/spec-basic-pusing.md)). What is left
+        of this half is `MID$(A$,2)=`, `SCREEN2:DRAW`, and KEY's absent form.
+        🎯 **D-PUSING is the one to read before pricing the rest**: the filed
+        item named TWO rows and the verb had **THIRTEEN**, because the
+        references distinguish FIVE cases where zerobas had two — and the rows
+        that found that were the ones added to keep the fix NARROW. 🟢 **THE `ev_f_err` SEVEN-SITES MEMBER IS SHIPPED**
         (D-EVFERR 2026-08-26, [`docs/spec-basic-evferr.md`](docs/spec-basic-evferr.md)):
         five live sites split by MEANING onto `ev_f_empty` (2) and `ev_f_ifc`
         (5) at **ZERO bytes**, 11 DIFF → 1, and `ev_f_err` now has **no

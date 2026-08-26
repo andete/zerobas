@@ -44,11 +44,38 @@ BACKSLASH       equ     $5C                 ; '\' (avoid the assembler's escape 
 ; engine.asm), shared with print_strval / field.asm / expr.asm's CVI — page 1
 ; is byte-full. PRINT USING's string-field sites below reach it by in-slot call.
 
+; 🔴 D-PUSING (docs/spec-basic-pusing.md): 18 rows x 3 machines, 13 DIFF. This
+; head answered ERR 2 for everything malformed and SILENTLY COMPLETED for two
+; whole shapes. The references distinguish FIVE cases and this routine now does
+; too:
+;
+;   no format at all (EOL or ':')                     -> 24 Missing operand
+;   format present but NOT a string                   -> 13 Type mismatch
+;   format present, separator absent or ','           ->  2 Syntax error
+;   ';' present, no values, format HAS a field        -> 24 Missing operand
+;   ';' present, format has NO field (values or not)  ->  5 Illegal function call
+;
+; ⚠️ AND `,` IS NOT A SEPARATOR HERE, THOUGH IT IS BETWEEN VALUES. `PRINT
+; USING"##",5` is ERR 2 on both references and printed here; `PRINT USING"##";1,2`
+; is fine on all three. Two commas, two grammatical positions, two answers --
+; measured separately, because carrying one row's answer into the other is
+; exactly how the first prediction for this slice went wrong.
 ex_print_using:
                 inc     hl                  ; past the USING token
                 call    skip_spaces
+                ; The EOL/':' test must come FIRST, and that is what SPLITS the
+                ; old shared `jp nc,stmt_error`: str_eval declines both for "there
+                ; is nothing here" and for "there is something and it is not a
+                ; string", and the references answer 24 and 13 respectively. With
+                ; the missing case taken off the front, an NC below can only mean
+                ; the second.
+                or      a
+                jp      z,loc_missing       ; `PRINT USING` -> ERR 24
+                cp      COLON
+                jp      z,loc_missing       ; `PRINT USING:` -> ERR 24
                 call    str_eval            ; STRPTR -> the format [len][bytes]
-                jp      nc,stmt_error       ; the format must be a string
+                jp      nc,type_mismatch_error  ; `PRINT USING 5` -> ERR 13 (0 B:
+                                            ; the same instruction, retargeted)
                 ; copy the format into PU_FMT (it must survive later str_eval calls,
                 ; which reuse STRSCR/RVDESC for literal string VALUES). Clamp to
                 ; PU_FMTMAX.
@@ -69,23 +96,36 @@ puf_lenok:
                 ldir
 puf_copied:
                 pop     hl                  ; HL = cursor past the format operand
-                ; a ';' or ',' separates the format from the value list.
+                ; ONLY ';' separates the format from the value list. A ',' here,
+                ; or nothing at all, is ERR 2 on both references -- and this used
+                ; to accept the comma and fall through on neither. -3 B.
                 call    skip_spaces
                 cp      ';'
-                jr      z,puf_sep
-                cp      ','
-                jr      nz,puf_nosep
-puf_sep:
+                jp      nz,stmt_error       ; ',' / EOL / a bare value -> ERR 2
                 inc     hl
-puf_nosep:
                 xor     a
                 ld      (PU_POS),a
                 ld      (PU_FLAGS),a
-                ; a format with NO field is just literal text -> emit it and finish.
+                ; 🔴 A FIELD-LESS FORMAT IS AN ERROR IN EVERY CASE, NOT "literal
+                ; text, well-defined". `PRINT USING"abc";` and `PRINT USING"abc";5`
+                ; are BOTH ERR 5 on both references, and `PRINT USING"abc"` is
+                ; ERR 2 (caught by the separator test above). The old
+                ; pu_literal_only path emitted the format and swallowed the value
+                ; list -- behaviour NEITHER reference has -- so it is deleted, and
+                ; deleting it is what pays for this slice.
                 push    hl                  ; pu_has_field clobbers HL (the token cursor)
                 call    pu_has_field
                 pop     hl
-                jr      nc,pu_literal_only
+                jp      nc,pu_ifc           ; no field -> ERR 5, values or not
+                ; ';' present and the format has a field: at least one value is
+                ; REQUIRED. pu_main's own end-of-list test cannot serve here --
+                ; it is also reached from pu_msep after a TRAILING separator,
+                ; which is legal and suppresses the newline.
+                call    skip_spaces
+                or      a
+                jp      z,loc_missing       ; `PRINT USING"##";` -> ERR 24
+                cp      COLON
+                jp      z,loc_missing       ; -> ERR 24
 ; --- main loop: one value per field, cycling the format ---------------------
 pu_main:
                 call    skip_spaces
@@ -134,28 +174,17 @@ pu_skipnl:
                 jp      z,exec_stmt         ; HL on ':' -> step into the next statement
                 ret
 
-; literal-only format (no field char): emit the whole format, swallow any value
-; list, newline. Rare/degenerate but kept well-defined.
-pu_literal_only:
-                xor     a
-                ld      (PU_POS),a
-                push    hl                  ; pu_emit_tail clobbers HL (the token cursor)
-                call    pu_emit_tail        ; no field -> emits the whole format
-                pop     hl
-pu_lo_skip:
-                ld      a,(hl)
-                or      a
-                jr      z,pu_lo_end
-                cp      COLON
-                jr      z,pu_lo_end
-                inc     hl
-                jr      pu_lo_skip
-pu_lo_end:
-                call    print_crlf
-                ld      a,(hl)
-                cp      COLON
-                jp      z,exec_stmt
-                ret
+; D-PUSING: pu_literal_only / pu_lo_skip / pu_lo_end DELETED (30 B). They
+; implemented "a format with no field char is literal text: emit it, swallow any
+; value list, newline" -- which is not what either reference does. Measured:
+; `PRINT USING"abc"` is ERR 2, `PRINT USING"abc";` and `PRINT USING"abc";5` are
+; ERR 5, and nothing is printed in any of them (CSRLIN unmoved). The block had
+; exactly ONE incoming jump, so once that jump became `jp nc,pu_ifc` it was
+; unreachable and `make deadcode` would have refused the build -- the gate is
+; what turns "this is now wrong" into "this cannot be left behind".
+pu_ifc:
+                ld      a,5                 ; Illegal function call: a value list
+                jp      raise_error         ; against a format with no field
 
 ; pu_has_field — CF set iff PU_FMT[0..PU_FMTLEN) contains a field char (#/!/&/\).
 ; Clobbers A, B, DE, HL.
