@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 61 of N. Subject 177; 147 verdicted, 30 pending.",
+  "status": "SUBJECT SET COMPLETE 2026-08-26. 178/178 -- the 178th is the item the sweep's own last tranche FILED.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -1132,5 +1132,217 @@
   "headline": "CLOSED 2026-08-08 -- AN ARRAY ELEMENT IS NOW A LEGAL LVALUE TARGET",
   "residual": "'\u27a1\ufe0f **Still open below:** the four further lvalue parse sites'",
   "note": "\ud83d\udfe2 the well-behaved shape: a closed block that names its residual AND says where the rest lives. Compare the 30 divergences of \u00a71.2, which named nothing."
+ },
+ "T-67470D": {
+  "verdict": "CLOSED -- the fix is IN the gate, verified twice this sweep",
+  "how": "grep of tools/check_dead_code.py",
+  "headline": "EVERY FILE'S FIRST LABEL IS UNCONDITIONALLY LIVE -- THE PROLOGUE [problem]",
+  "reading": "check_dead_code.py carries fix (7) verbatim: 'A PROLOGUE THAT EMITS NOTHING CANNOT FALL THROUGH'. Tranche 24 read the same code from the other side (the data-only span item) without recognising it as this block's cure."
+ },
+ "T-8462D6": {
+  "verdict": "LIVE -- and unmeasurable by the battery BY DESIGN",
+  "how": "grep for any time assertion in tools/ and probes/lib/",
+  "headline": "ZEROBAS DRAWS ARCS 5-6x SLOWER THAN THE REFERENCE",
+  "reading": "its residual says '\ud83d\udcb0 Not priced. \u26a0\ufe0f NO GATE MEASURES TIME AT ALL -- this is invisible to [the battery]'. Confirmed: no gate asserts on elapsed time anywhere. run_gates.py PRINTS per-unit wall times but nothing fails on them.",
+  "note": "\ud83c\udfaf same family as the PAINT 1.9-2.0x item -- both are performance divergences in a project whose entire verification apparatus is value-based. Two items, one missing instrument."
+ },
+ "T-C7589B": {
+  "verdict": "CLOSED -- fixed by D-KNIFEGUARD, verified in the tree",
+  "how": "grep of scratchpad/*knives*.py",
+  "headline": "TWO KNIFE-RUNNER DEFECTS, BOTH FOUND BY READING THE RUNNER'S OWN [code]",
+  "reading": "14 knife runners now carry an `atexit` restore -- the D-KNIFEGUARD fix (this morning's first slice) landed and holds."
+ },
+ "T-60CEF6": {
+  "verdict": "CLOSED with a DECLARED scope limit, not a residual",
+  "how": "read",
+  "headline": "~~AN `ERASE`D FIELDED ARRAY LEAVES A STALE `FLD_TAB` ENTRY~~",
+  "reading": "the matched text is 'unmeasured -- named in the spec's \u00a79 denominator, not claimed' -- an explicitly DECLARED limit of the measurement, which is the well-behaved shape rather than a hidden gap"
+ },
+ "T-AD8053": {
+  "verdict": "READ -- entered the subject set by HEADLINE signal, no keyword residual in body",
+  "how": "read",
+  "headline": "`DEF FN` SHIPS (2026-08-23, D-DEFFNLAND)",
+  "note": "a shipping announcement; kwsweep today has no MISSING= line, consistent with DEF FN being complete",
+  "caveat": "\u26a0\ufe0f scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
+ },
+ "T-8E48C2": {
+  "verdict": "READ -- entered the subject set by HEADLINE signal, no keyword residual in body",
+  "how": "read",
+  "headline": "A SECOND SEEDING HOLE, AND IT IS WORTH 16 B ON MAIN PAGE 1",
+  "note": "D-SEEDHOLE2 shipped; the seed-set cure ('the cure for a proxy is not a narrower proxy -- it is the REAL surface') is the one tranche 51 cites as already-learned",
+  "caveat": "\u26a0\ufe0f scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
+ },
+ "T-5C480A": {
+  "verdict": "READ -- entered the subject set by HEADLINE signal, no keyword residual in body",
+  "how": "read",
+  "headline": "FOUR `$8000` VERDICTS REST ON ONE COMMENT, AND IT IS AN OVERFLOW [comment]",
+  "note": "same class as the fp_exp/fp_log item (tranche 41, LIVE): verdicts resting on an argument rather than a row",
+  "caveat": "\u26a0\ufe0f scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
+ },
+ "T-B0F181": {
+  "verdict": "READ -- entered the subject set by HEADLINE signal, no keyword residual in body",
+  "how": "read",
+  "headline": "THE 32-BIT CROSS PRODUCT HAS NO GREEN ROW THAT CAN SEE IT",
+  "note": "a coverage gap of the same shape as pat_8_empty (tranche 33) and s.fldarymix (tranche 29) -- a row that cannot witness its subject",
+  "caveat": "\u26a0\ufe0f scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
+ },
+ "T-771822": {
+  "verdict": "CLOSED -- same-day round 3 closed it, and the 3 rows ARE in the battery",
+  "how": "grep of probes/basic/basic_probe_graphics.py",
+  "headline": "ASPS TRUNCATION IS MEASURED FOR aspect < 1 ONLY",
+  "reading": "the \u26a0\ufe0f headline is the ORIGINAL filing; the body's \u2705 records D-CIRCDOM round 3 closing it the SAME DAY, 0/5 divergences. Verified the discriminators shipped: ell_a17r128 / ell_a13r128 / ell_a11r128 are lines 452-454 of basic_probe_graphics.py, in graphics-acceptance, green today.",
+  "note": "\ud83c\udfaf the keyword 'unmeasured' matched TWICE and both were rebuttal text: the stale headline, and 'the second claim was riding along unmeasured AND IS NOW PINNED'. Same false-positive class as the headline-states-the-original-problem screen."
+ },
+ "T-5858A6": {
+  "verdict": "CLOSED -- the matched \ud83d\udd34 sits inside a quoted *Original filing:* the body OVERTURNS",
+  "how": "read",
+  "headline": "OPEN \"X\" FOR APPEND AS #1 ON A NON-EXISTENT FILE",
+  "reading": "D-LOADERR measured it: the reference raises 'File not found in 10'; zerobas printed 'load error'. The quoted 'WHAT THE REFERENCE DOES IS UNMEASURED AND MUST NOT BE GUESSED' is the pre-measurement filing, preserved verbatim under '*Original filing:*'.",
+  "note": "\ud83d\udd34 BUT ITS ACCEPTANCE TARGET IS OUT OF THE BATTERY: `namspc-acceptance` is a real Makefile target and appears 0 times in tools/run_gates.py -- another instance of the 22-target finding. The row that witnessed this item is not run by `make gates`."
+ },
+ "T-E35568": {
+  "verdict": "CLOSED -- and its residual is correctly SPLIT OUT into its own open block",
+  "how": "read",
+  "headline": "ex_let_arr_str's out-of-string-space",
+  "reading": "closed 2026-08-20; the body's 'Residual filed below.' resolves to the very next top-level block, the OPEN 'A STORED DATA LITERAL CHARGES THE STRING POOL NOTHING' item -- which is itself in the subject set. This is the well-behaved shape: the residual is an ITEM, not a sentence."
+ },
+ "T-1388E8": {
+  "verdict": "CLOSED -- struck through / explicitly superseded",
+  "how": "read",
+  "headline": "\ud83d\udcb0 ~~THE RE-RAISE NAMES THE WRONG LINE WHEN THE TWO CONTEXTS DISAGREE~~",
+  "reading": "headline struck through -- the project's own closed marker",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-BB36E0": {
+  "verdict": "CLOSED -- struck through / explicitly superseded",
+  "how": "read",
+  "headline": "\u2705 (superseded -- the original filing, kept for its measurements)",
+  "reading": "explicitly superseded; retained only so its measurements stay citable",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-7030AF": {
+  "verdict": "CLOSED -- struck through / explicitly superseded",
+  "how": "read",
+  "headline": "\u2705 ~~THREE OF tss_ary's FIVE CALLERS ARE UNMEASURED FOR THE ERR-14~~",
+  "reading": "struck through; the 'unmeasured' keyword is INSIDE the strikethrough",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-6A9F9F": {
+  "verdict": "CLOSED -- struck through / explicitly superseded",
+  "how": "read",
+  "headline": "\u2705 CLOSED 2026-08-21 (D-FNEXPR2), 0 EXTRA BYTES -- FILES A$",
+  "reading": "closed; '\ud83d\udcb0 Not priced' attaches to a follow-on observation, not to the item",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-CC29FA": {
+  "verdict": "CLOSED -- and it is THIS SWEEP'S OWN PRECEDENT",
+  "how": "read",
+  "headline": "RE-RAN THE STALENESS SWEEP'S 'LIVE' ROWS -- DONE 2026-08-20",
+  "reading": "a prior sweep of exactly this shape: re-measured 17 items at 14dc44d and marked 11 LIVE. Its 'LIVE' rows became their own items; this block records the RUN, not an open gap.",
+  "note": "\ud83c\udfaf it is the answer to 'has this been done before' -- yes, at 17 items on 2026-08-09. The present sweep is 177. The reason it had to be redone is the reason this file exists: a verdict rots, and nothing gated the 2026-08-09 one."
+ },
+ "T-48AC8B": {
+  "verdict": "LIVE residual (D-DIR-3), correctly declared -- and its gate is OUT OF THE BATTERY",
+  "how": "read + grep of Makefile / tools/run_gates.py / probes",
+  "headline": "Direct-mode control flow -- DONE 2026-07-26",
+  "reading": "the slice itself is closed (40/40 vs the VG-8020). The live part is DEFERRED D-DIR-3: interrupt traps still do not dispatch in direct mode, and whether the REFERENCE fires them at the prompt is unmeasured. The conservative answer is gated in at one RAM load. Spec \u00a76 names the characterization that would close it. No probe carries a direct-mode trap row -- grep of the interval probes finds no 'direct'.",
+  "note": "\ud83d\udd34 `direct-ctrl-acceptance` is a real Makefile target that appears 0 times in run_gates.py. That is TWO out-of-battery gates found in two tranches (with namspc-acceptance), both cited by closed items as their evidence. The 22-target finding is not abstract: these are the rows that witnessed two of the sweep's own verdicts."
+ },
+ "T-632DF5": {
+  "verdict": "CLOSED -- its 'open' text is DECISIONS, not gaps (the not-a-task class)",
+  "how": "read",
+  "headline": "ROM REGION STRUCTURE REVIEW -- DONE 2026-07-30, and R1 LANDED",
+  "reading": "404 lines, the largest block in TODO.md. Its residual-shaped sentences are settled positions: de-eviction CLOSED, split/ABI/3-gates LEAVE ALONE, input.asm DECLINED, page-0 island REOPEN. 'The promotion is DECLINED, not blocked' is the block saying so itself.",
+  "note": "the memory index already routes to it as a read-first structural doc; that is its role now."
+ },
+ "T-4B3ABB": {
+  "verdict": "CLOSED -- residual correctly PROMOTED to its own priced item",
+  "how": "read",
+  "headline": "ZEROBAS HAS NO STRING READ -- CLOSED 2026-08-07 by D-READVAR",
+  "reading": "the body says its leftovers were filed as an **item** in \u00a7'Open -- standing residuals', with their price and with the unmeasured question that decides the work's worth (`INPUT A(1)`). Same well-behaved split as T-E35568."
+ },
+ "T-D667F8": {
+  "verdict": "CLOSED -- docs-only, and its 'no gate was run' is now PARTLY false in a good way",
+  "how": "read",
+  "headline": "STALE LEAN-CART CLAIMS SWEPT -- 2026-07-31, docs only, 0 ROM bytes",
+  "reading": "byte-neutral doc edits; the block declares 'no gate was run (they measure nothing about docs)'. True on 2026-07-31.",
+  "note": "\ud83c\udfaf that sentence has since been narrowed by this session's own first slice: `citation-check` DOES gate one class of doc content (scratchpad citations). The claim is not wrong, it is now SCOPED -- gates measure nothing about doc PROSE. Not filing it; it changes no action."
+ },
+ "T-DEE8E5": {
+  "verdict": "CLOSED",
+  "how": "read",
+  "headline": "DONE -- diskbasic_probe_format.py on real CF-3300: CALL FORMAT writes",
+  "reading": "a DONE measurement record on real hardware",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-B95002": {
+  "verdict": "CLOSED",
+  "how": "read",
+  "headline": "Probes streamed audio on every boot -- `sound_driver null` had reached",
+  "reading": "an apparatus fix, landed",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-A2EDF6": {
+  "verdict": "CLOSED",
+  "how": "read",
+  "headline": "A RANDOM PUT stamps the on-disk directory size immediately",
+  "reading": "closed; the body records DIR_EXPECT reddening that row ALONE, i.e. the new column is live and discriminating",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-B42E11": {
+  "verdict": "\ud83d\udd34 LIVE -- REOPENED BY MEASUREMENT. Two divergences on the verb its own plan named.",
+  "how": "scratchpad/sweep_tranche65.py, differential vs National_CF-3300 on a scratch copy of test720.dsk",
+  "headline": "CLOSED 2026-08-21 (D-FNEXPR2), 0 ROM BYTES -- THE FACE FOR A NON-STRING FILENAME",
+  "reading": "the \u26a0\ufe0f UNMEASURED text is quoted *Original filing:*, so the keyword screen was right to be suspicious and wrong about which half. The real defect is in the CLOSURE: it measured SIX verbs (OPEN/KILL/SAVE/LOAD/BLOAD/FILES) and the item's own plan named THREE -- OPEN, KILL and **NAME**. NAME is not among the six. Measured now:\n  NAME\"X.DAT\"AS 5   (old file ABSENT)  cf3300 53 File not found  | zb 24 Missing operand  DIFF\n  NAME\"HI.TXT\"AS 5  (old file EXISTS)  cf3300 13 Type mismatch   | zb 24 Missing operand  DIFF\n  NAME 5 AS\"X.DAT\"  (old-name position) cf3300 13 | zb 13  ok -- the first fname_expr call DID inherit the fix\ncontrols KILL 5 / OPEN 5 (13=13), KILL 1/0 (11=11, the operand's-own-fault rule), NAME\"NOSUCH\"AS\"Y\" (53=53) all agree, so the apparatus is not the story.",
+  "note": "\ud83c\udfaf THE DISCRIMINATOR IS WHAT MAKES IT A RULE. With an ABSENT old file, cf3300's 53 has TWO sufficient causes -- lookup-first, or never-faults-on-the-new-name. HI.TXT EXISTS on test720.dsk, so the lookup succeeds and the reference still answers 13. The reference rule is therefore **look the old file up FIRST, then evaluate the new name, which faults like every other verb**. zerobas answers 24 in BOTH, so it is wrong twice for DIFFERENT reasons: wrong ORDER when the file is absent, wrong FACE when it is present.\n\ud83d\udd34 AND THE COMMENT ABOVE do_name ARGUES FOR THE INVERSE: 'Evaluating early is what preserves the error ORDER ... `NAME\"x.dat\"AS 5` is still `Syntax error`, not `File not found`.' The reference says File not found is exactly right there, and the face the comment names is not even the one the tree produces. A fix falsified the paragraph beside it, and no gate reads prose."
+ },
+ "T-2148BA": {
+  "verdict": "LIVE residual, correctly DECLARED as choices-not-readings",
+  "how": "read",
+  "headline": ". -- THE CURRENT-LINE PSEUDO-LINE-NUMBER -- LANDED 2026-08-02 (D-DOTLINE)",
+  "reading": "landed and gated (181 rows, allowlist EMPTY). Three named unmeasured questions remain and the block says so in those words: whether an ASCII LOAD/MERGE writes `.` per line; whether an OOM store writes it; and the ASCII-SAVE reading is cf3300-only because `SAVE\"CAS:\",A` needs cassette support this probe lacks.",
+  "note": "the honest shape -- it labels them 'recorded as choices rather than readings' rather than as measurements."
+ },
+ "T-D25D87": {
+  "verdict": "CLOSED",
+  "how": "read",
+  "headline": "DELETE <range> -- LANDED 2026-08-02 (D-DELETE), 34/34, six knives",
+  "reading": "closed; its unmeasured part was PROMOTED ('Its own item is filed below') -- the well-behaved split",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-CAA3DC": {
+  "verdict": "CLOSED",
+  "how": "read",
+  "headline": "lnblank-say-acceptance WAS NOT RUN FOR D-LATCH -- RUN 2026-08-04",
+  "reading": "a run record: zero MIS-ECHOED / MIS-DELIVERED / ORACLES-DISAGREE rows",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-246CED": {
+  "verdict": "CLOSED",
+  "how": "read",
+  "headline": "ERROR-MESSAGE CAPITALISATION -- CLOSED 2026-08-02 by D-MSGEXACT",
+  "reading": "closed; 'no gate ever caught it' is the block explaining why it was NOT a defect, not a gap",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-BC5343": {
+  "verdict": "CLOSED",
+  "how": "read",
+  "headline": "~~135 MORE DEAD BYTES OF THE SAME SHAPE~~ -- THE GATE THIS ITEM ASKED FOR",
+  "reading": "struck through; the gate it asked for exists, and all 28 candidates were read the same day and are live CODE",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-7DA331": {
+  "verdict": "CLOSED",
+  "how": "read",
+  "headline": "WIDTH n's VALID DOMAIN -- LANDED 2026-07-28, 76/76, falsified",
+  "reading": "landed with a falsification pass",
+  "caveat": "\u26a0\ufe0f read-not-run."
+ },
+ "T-D20535": {
+  "verdict": "LIVE -- this is tranche 65's own finding, filed by the sweep",
+  "how": "scratchpad/sweep_tranche65.py (see T-B42E11 for the measurement)",
+  "headline": "NAME \"old\" AS <non-string> DIVERGES TWICE",
+  "reading": "the new open item carrying the two measured DIFFs. Its parent T-B42E11 is now REOPENED.",
+  "note": "\ud83c\udfaf the subject set grew by one BECAUSE the sweep worked -- 177 -> 178. A sweep that files nothing has not necessarily been thorough; this one moved a closed item back to open on a measurement."
  }
 }

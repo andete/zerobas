@@ -26,23 +26,24 @@ item — do **one item per session** to keep context lean.
 
 ## Open — standing residuals (INDEX; this is the pickup list)
 
-🔬 **RE-SWEEP IN PROGRESS 2026-08-26 (D-TODOSWEEP), TRANCHE 1 OF N** —
+🔬 **RE-SWEEP DONE 2026-08-26 (D-TODOSWEEP), 65 TRANCHES** —
 [`docs/todo-sweep-2026-08-26.md`](docs/todo-sweep-2026-08-26.md), verdicts in
 `scratchpad/sweep_verdicts.json`, denominator `tools/todo_inventory.py`.
-**Rule: re-run everything, inherit no claim.** ⚠️ **11 of 146 subject blocks
-carry a verdict; the other 135 are named by id in the audit** — an unfinished
-sweep must not read as a finished one.
-📏 **OF THE FIRST 11: 5 LIVE, 5 STALE OR PARTLY STALE, 1 LIVE-BUT-REFRAMED.**
-🔴 **AND THE ITEM THAT *IS* THE RANKING IS ONE OF THE STALE ONES** (the
-38/62-apparatus sweep of 2026-08-21). 🎯 **`PLAY(n)` is the sharpest**: a closed
-`D-PLAYOP` block sits directly beneath it, same week, same verb, same words
-*"missing operand"* — reading would have merged them, and RUNNING separated them
-(D-PLAYOP fixed the STATEMENT's operand; the FUNCTION form still raises).
-🔴 **THE APPARATUS COST TWO READINGS BEFORE IT GAVE ANY**: a reset that did not
-`CLS` made every case inherit the previous case's screen (a `9` from `PAINT` was
-read two cases later as another item's answer), and `WAIT 1,0` BLOCKS on a port
-condition, hanging both references and voiding every case after it in the batch.
-⚠️ **A blocking statement may not share a batch**, and `WAIT` is still unmeasured.
+**Rule: re-run everything, inherit no claim.** ✅ **COMPLETE 2026-08-26 —
+178 of 178 subject blocks carry a verdict** (`tools/todo_inventory.py --audit
+scratchpad/sweep_verdicts.json` reports `subject with NO verdict: 0`).
+📏 **HOW THEY WERE SETTLED: 68 RAN** (emulator, probe or gate), **53 INSPECTED**
+(source, tree, git), **57 READ** from the block's own text. **32 carry an
+explicit `read-not-run` caveat** — a read is a verdict about the WRITING, not
+about the machine, and this file says which is which rather than averaging them.
+🔴 **THE SUBJECT SET GREW WHILE BEING SWEPT, 177 → 178**: the last tranche
+measured `NAME "old" AS <non-string>`, found two divergences, and REOPENED the
+item that had closed that question at six verbs. A sweep that files nothing has
+not thereby been thorough.
+⚠️ **THE VERDICTS ROT LIKE ANY OTHER FIGURE.** The 2026-08-09 staleness sweep
+covered 17 items and nothing gated it; this one is 178 and nothing gates it
+either. Re-derive from `scratchpad/sweep_verdicts.json` and the audit, never
+from this paragraph.
 
 ⚠️ **This section exists so a residual cannot be lost by being written up inside a
 `- [x]` block.** Several of the items below were filed that way — accurate, dated,
@@ -1007,6 +1008,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       not the ones the pre-fix corpus had.
 
 **Language / verb surface**
+
+- [ ] 🔴 **`NAME "old" AS <non-string>` DIVERGES TWICE, AND `NAME` IS THE VERB
+      D-FNEXPR2's OWN PLAN NAMED AND ITS MEASUREMENT SKIPPED.** Measured
+      2026-08-26 by D-TODOSWEEP tranche 65
+      ([`scratchpad/sweep_tranche65.py`](scratchpad/sweep_tranche65.py),
+      [`scratchpad/sweep_t65.out`](scratchpad/sweep_t65.out)), differential vs
+      the National_CF-3300 on a scratch copy of `disk/test720.dsk`.
+      ```
+      NAME"X.DAT"AS 5     (old file ABSENT)   cf3300 ERR 53   zb ERR 24   DIFF
+      NAME"HI.TXT"AS 5    (old file EXISTS)   cf3300 ERR 13   zb ERR 24   DIFF
+      NAME 5 AS"X.DAT"    (old-name position) cf3300 ERR 13   zb ERR 13     ok
+      ```
+      Controls on the same run: `KILL 5` 13=13 and `OPEN 5 AS #1` 13=13 (the two
+      D-FNEXPR2 itself measured), `KILL 1/0` 11=11 (D-MISS-1's operand's-own-fault
+      rule), `NAME"NOSUCH.DAT"AS"Y.DAT"` 53=53. The apparatus is not the story.
+      🎯 **THE DISCRIMINATOR IS WHAT MAKES IT A RULE AND NOT A ROW.** With an
+      absent old file the reference's 53 has TWO sufficient causes — *lookup
+      first*, or *never faults on the new-name operand at all*. `HI.TXT`
+      **exists** on the test disk, so the lookup succeeds and the reference
+      still answers 13. The reference rule is **look the old file up FIRST,
+      then evaluate the new name, which then faults like every other verb.**
+      🔴 **ZEROBAS IS WRONG IN BOTH ROWS, FOR DIFFERENT REASONS**: wrong ORDER
+      when the old file is absent (24 where 53 is due), wrong FACE when it
+      exists (24 where 13 is due). The FIRST `fname_expr` call did inherit
+      D-FNEXPR2's fix — `NAME 5 AS"X.DAT"` agrees at 13 — so this is the
+      **second operand position only**.
+      🔴 **AND THE COMMENT ABOVE THE CODE ARGUED FOR THE INVERSE.**
+      [`basic/files.asm`](basic/files.asm) read *"Evaluating early is what
+      preserves the error ORDER … `NAME"x.dat"AS 5` is still `Syntax error`,
+      not `File not found`"* — and `File not found` is precisely what the
+      reference says there. The face it named is not the one this tree produces
+      either. **Corrected in place 2026-08-26**: conclusion inverted, analysis
+      kept [[a-fix-falsifies-the-justification-beside-it]].
+      ⚠️ **OUT OF SCOPE FOR THE FIX WAS NOT OUT OF SCOPE FOR THE DENOMINATOR** —
+      D-FNEXPR2 closed at six verbs while its own plan said *"a row on each of
+      `OPEN`/`KILL`/`NAME`"*, and the verb it dropped is the one that diverges
+      [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
+      💰 Not priced. The two rows above exist and are in **no gate**; the change
+      is a REORDER in `do_name`, not a new tail — `els_tc_common` already ships
+      the face. ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express
+      `NAME`).
 
 - [ ] 🔴 **A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD — AND
       THAT IS FAITHFUL; WHAT IS NOT IS THE SIX-EVENT CAP.** Measured 2026-08-23,

@@ -1580,10 +1580,31 @@ do_name:
                 inc     hl
                 ; D-FNEXPR: the NEW name is EVALUATED here -- before any disk
                 ; primitive runs -- and only PARSED after the old file is found.
-                ; Evaluating early is what preserves the error ORDER the literal
-                ; gate had: `NAME"x.dat"AS 5` is still `Syntax error`, not
-                ; `File not found`. DISK_FCB_NAME still holds the OLD name; only
-                ; STRSCR is written here.
+                ; DISK_FCB_NAME still holds the OLD name; only STRSCR is written
+                ; here.
+                ;
+                ; 🔴 THE JUSTIFICATION THAT USED TO STAND HERE IS FALSIFIED, IN
+                ; BOTH HALVES. It read: "Evaluating early is what preserves the
+                ; error ORDER the literal gate had: `NAME"x.dat"AS 5` is still
+                ; `Syntax error`, not `File not found`."  Measured 2026-08-26
+                ; (D-TODOSWEEP tranche 65, scratchpad/sweep_tranche65.py) against
+                ; the CF-3300:
+                ;
+                ;   NAME"X.DAT"AS 5   old file ABSENT   cf3300 ERR 53  zb ERR 24
+                ;   NAME"HI.TXT"AS 5  old file EXISTS   cf3300 ERR 13  zb ERR 24
+                ;
+                ; So `File not found` is exactly what the reference says when the
+                ; old file is absent -- the outcome the comment claimed to be
+                ; avoiding -- and when the old file EXISTS the reference answers
+                ; `Type mismatch`, the same face KILL/OPEN/SAVE/LOAD/BLOAD/FILES
+                ; give (D-FNEXPR2). The reference rule is LOOK THE OLD FILE UP
+                ; FIRST, THEN EVALUATE THE NEW NAME. The face this comment named
+                ; is not even the one this tree produces: both rows read ERR 24
+                ; `Missing operand`.
+                ;
+                ; ⚠️ NOT FIXED HERE -- reordering is a priced change and no row
+                ; drives it. Filed in TODO.md; the ANALYSIS above (what is
+                ; evaluated vs parsed, and where) is unchanged and still true.
                 call    fname_expr          ; new -> STRSCR, FN_RESUME = cursor
                 ld      a,(DISKSLOT_OK)
                 or      a

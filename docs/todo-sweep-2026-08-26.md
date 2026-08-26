@@ -1798,11 +1798,81 @@ tranche 47's 22), so it is a claim about the day it was written.
 
 ## 4. Audit — the sweep cannot pretend to be finished
 
+At tranche 1 this section read `subject 146 / verdicts 11 / no verdict 135`,
+and it was left in the file on purpose so an unfinished sweep could not read as
+a finished one. **It is finished now.**
+
 ```
-subject ids            : 146
-verdicts supplied      : 11
-subject with NO verdict: 135
-verdicts for NON-subject: 0
+subject ids            : 178
+verdicts supplied      : 178
+subject with NO verdict: 0  []
+verdicts for NON-subject: 0  []
 ```
 
 Re-run with `python3 tools/todo_inventory.py --audit scratchpad/sweep_verdicts.json`.
+
+## 5. What 178 verdicts cost, and what they are worth
+
+| how the verdict was reached | n |
+|---|---|
+| **RAN** — emulator, probe or gate | **68** |
+| **INSPECTED** — source, tree, git | **53** |
+| **READ** — the block's own text | **57** |
+
+**32 verdicts carry an explicit `read-not-run` caveat.** A read settles what the
+BLOCK says; only a run settles what the MACHINE does, and the record says which
+each one is rather than averaging them into a single number.
+
+🔴 **THE DENOMINATOR MOVED WHILE IT WAS BEING COUNTED: 146 → 176 → 177 → 178.**
+146 was the first parse; 176 came from finding 30 divergences written up inside
+`- [x]` blocks; 177 from an id re-key; and **178 from the last tranche, which
+measured a verb and had to file what it found**. A sweep whose subject set never
+grows has probably only re-read its own index.
+
+## 6. The last tranche, in full — `NAME` (tranche 65)
+
+`T-B42E11` closed *"the face for a non-string filename"* on 2026-08-21 with six
+verbs measured. **Its own plan named three — `OPEN`, `KILL` and `NAME` — and
+`NAME` is not among the six.** Measured now
+([`scratchpad/sweep_tranche65.py`](../scratchpad/sweep_tranche65.py)):
+
+| row | cf3300 | zb | |
+|---|---|---|---|
+| `NAME"X.DAT"AS 5` — old file **absent** | **53** File not found | **24** Missing operand | **DIFF** |
+| `NAME"HI.TXT"AS 5` — old file **exists** | **13** Type mismatch | **24** Missing operand | **DIFF** |
+| `NAME 5 AS"X.DAT"` — old-name position | 13 | 13 | ok |
+| `KILL 5` / `OPEN 5 AS #1` (controls) | 13 / 13 | 13 / 13 | ok |
+| `KILL 1/0` (operand's own fault) | 11 | 11 | ok |
+| `NAME"NOSUCH.DAT"AS"Y.DAT"` (well formed) | 53 | 53 | ok |
+
+🎯 **THE `HI.TXT` ROW IS WHAT MAKES IT A RULE.** With an absent old file the
+reference's 53 has two sufficient causes — *lookup first*, or *never faults on
+the new-name operand at all*. `HI.TXT` exists on `test720.dsk`, so the lookup
+succeeds and the reference still answers 13. The rule is **look the old file up
+FIRST, then evaluate the new name, which then faults like every other verb**;
+zerobas is wrong in both rows for two *different* reasons.
+
+🔴 **AND THE COMMENT BESIDE THE CODE ARGUED FOR THE INVERSE.**
+[`basic/files.asm`](../basic/files.asm) justified evaluating the new name early
+as *"what preserves the error ORDER … `NAME"x.dat"AS 5` is still `Syntax
+error`, not `File not found`"*. `File not found` is exactly what the reference
+says there, and the face the comment named is not the one this tree produces.
+Corrected in place — **conclusion inverted, analysis kept** — and the three ROM
+hashes are byte-identical to the battery's (`350db281 33ba143a eced167f`), so
+the correction moved nothing.
+
+### 6.1 🔬 The probe failed twice before it measured anything
+
+* **It read its own echo.** The first cut looked for its `<E…>` marker anywhere
+  on screen and found it in the **echo of line 30**, so all six rows returned
+  the same literal — and the run exited **rc 0**. A fail-by-agreeing instrument
+  that reports success. Fixed by reading the span *after* the `RUN` echo
+  (`result_span_after_echo`), the fence `omsx_repl` already ships.
+* **`diska` is a PATH, not a flag.** Copied from a probe that wraps it,
+  `diska=True` reached preflight as a missing image — which **refused to
+  measure** and said so, which is the preflight gate doing its job.
+* The run now carries **its own red arm**: `KILL 1/0` and `KILL 5` must read
+  *differently* (11 vs 13). If the readout cannot separate two error codes, every
+  agreement above it is worthless, and the probe exits 2 rather than pass.
+* ⚠️ Both sides drive a **copy** of `test720.dsk` under `/tmp/zerobas`:
+  `NAME"HI.TXT"AS 5` asks a real machine to rename a real directory entry.

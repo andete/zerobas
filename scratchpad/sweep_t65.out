@@ -1,0 +1,8 @@
+row          cf3300       zb       statement   -- expectation
+name.as5         53       24  DIFF  NAME"X.DAT"AS 5   -- THE SUBJECT. comment says ERR 2 Syntax; fix implies ERR 13
+name.old5        13       13    ok  NAME 5 AS"X.DAT"   -- the OLD-name position, fname_expr's first call
+ctl.kill5        13       13    ok  KILL 5   -- CONTROL: D-FNEXPR2 measured ERR 13 vs the CF-3300
+ctl.open5        13       13    ok  OPEN 5 AS #1   -- CONTROL: D-FNEXPR2 measured ERR 13 vs the CF-3300
+ctl.div0         11       11    ok  KILL 1/0   -- CONTROL: the operand's own fault wins -> ERR 11, NOT 13
+ctl.wf           53       53    ok  NAME"NOSUCH.DAT"AS"Y.DAT"   -- CONTROL: well formed -> a FILE error (53), not a type one
+name.ex5         13       24  DIFF  NAME"HI.TXT"AS 5   -- DISCRIMINATOR: old file EXISTS -- separates lookup-first from never-faults
