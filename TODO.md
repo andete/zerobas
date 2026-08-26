@@ -108,13 +108,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       calls a unit REAL when it fails twice, and under sustained host load it
       will fail twice for the same non-semantic reason — the opposite of the
       2026-08-25 failure mode, where a real defect was retried into GREEN.
-      🎯 **THE FIX IS NOT A LONGER DEADLINE**, it is a diagnostic that can tell
-      the two apart: the run already knows its own EMULATED time, so a stall
-      where emulated time ADVANCED is a slow host and one where it did not is a
-      frozen guest. Until then the clause should say what it knows and stop
-      there. ⚠️ **A message that names the wrong cause is worse than one that
-      names none** — this one sent me looking at DRAW's semantics.
-      Unpriced; the wording is one line, the emulated-time test is the real fix.
+      🟢 **PARTLY FIXED 2026-08-26 (D-STALLSLOW), and the fix is EVIDENCE, not a
+      better guess.** The heartbeat file's CONTENT is already `[machine_info
+      time]` — the EMULATED instant — and only its MTIME was ever read. It is now
+      read before the unlink and reported, and the *"not a slow one"* clause is
+      replaced by the two fields that bear on it plus an explicit *"a host-clock
+      deadline CANNOT separate a frozen emulator from one starved of CPU"*.
+      🔴 **AND THE FIRST CUT OF THAT FIX WAS THE SAME DEFECT ONE LAYER ALONG.**
+      It classified on a RATE THRESHOLD (*"emulated/wall > 0.02 means starved"*)
+      — and its own falsification vector killed it: **12.4 emulated seconds in
+      947 wall is 0.013x, plainly ADVANCING and plainly below the line.** The
+      LAST beat's value cannot separate *"froze at 12.4s"* from *"starved at
+      12.4s"*; only a DELTA could, and the watchdog keeps no previous value. **A
+      threshold invented to look decisive is the same defect as the sentence it
+      replaced.**
+      ⚠️ **STILL OPEN, AND THIS IS THE PART THAT MATTERS**: `run_gates.py`'s
+      flake-vs-real classifier is unchanged, so a contended battery still
+      produces REAL verdicts for non-semantic reasons. A real discriminator
+      needs the watchdog to keep the PREVIOUS emulated instant and report the
+      DELTA over the stall window — that is the fix, and it is not done.
+      🔴 **AND ONE FALSIFICATION ARM IS RECORDED AS NOT EXERCISED**
+      (`scratchpad/stallslow_falsify.py`): forcing a real kill with
+      `ZEROBAS_OMSX_STALL=2` did **not** kill, so nothing proves the READ happens
+      at a real kill site — only that the parse and the message are right. **An
+      arm that passes because it never fired is not an arm.**
 
 - [ ] 🔴 **EVERY KNIFE RUNNER IN `scratchpad/` CAN EXIT BETWEEN THE WRITE AND
       THE RESTORE, LEAVING THE TREE CUT.** Filed 2026-08-26 by D-MIDOP

@@ -949,14 +949,18 @@ def _rm(path: str) -> None:
 
 
 def _why_missing(machine: str, got: int, want: int, killer: str | None,
-                 rc: int, elapsed: float, out_lines: int, err_path: str) -> str:
+                 rc: int, elapsed: float, out_lines: int, err_path: str,
+                 hb_emu: float | None = None) -> str:
     """ONE line naming WHY a capture is missing -- the evidence the run already
     held and used to throw away.
 
     🔴 `<NO CAPTURE>` IS THE SAME STRING FOR AT LEAST FOUR DIFFERENT EVENTS, and
     which one it was decides what to do next:
 
-      stall     the heartbeat stopped -- a frozen or crashed emulator. REAL.
+      stall     the heartbeat stopped. ⚠️ NOT automatically REAL: a host-clock
+                deadline cannot tell a FROZEN emulator from a STARVED one, so
+                this line now reports the last EMULATED instant and its ratio to
+                wall time. Emulated time advancing means a contended host.
       abscap    the paranoia backstop -- the run was merely enormous.
       exit N    openMSX terminated ON ITS OWN before its scheduled capture:
                 a crash, a bad machine, a busy or missing disk image. Its own
@@ -977,10 +981,45 @@ def _why_missing(machine: str, got: int, want: int, killer: str | None,
     except OSError:
         pass
     if killer:
-        cause = (f"the {killer} watchdog killed it after {elapsed:.0f}s wall"
-                 + ("  (a stall is a FROZEN OR CRASHED emulator, not a slow one"
-                    " -- the heartbeat is on the HOST clock)" if killer == "stall"
-                    else ""))
+        cause = f"the {killer} watchdog killed it after {elapsed:.0f}s wall"
+        if killer == "stall":
+            # 🔴 THIS USED TO ASSERT "a stall is a FROZEN OR CRASHED emulator,
+            # NOT A SLOW ONE -- the heartbeat is on the HOST clock", and that is
+            # the one thing a host-clock deadline cannot know. The reasoning is
+            # recorded at the HB_* block above: a FIRST design beat on EMULATED
+            # time and false-fired on a slow-but-advancing emulator, so it moved
+            # to `after realtime` -- which lands "regardless of emulation speed
+            # ... as long as the event loop is ALIVE". That holds only if the
+            # process is SCHEDULED. The dependency moved from emulation speed to
+            # process scheduling; both fail under host contention.
+            # 🎯 MEASURED 2026-08-26 (D-DRAWOP): two batteries at 3509s and
+            # longer against a normal ~420s, 20 stall kills, two DIFFERENT
+            # machines killed at the same 947s deadline to the second -- and
+            # runs that had written 1886, 90 and 88 LINES before being declared
+            # frozen. A frozen emulator does not write 1886 lines. The refutation
+            # was already printed in the same sentence as the claim.
+            # So: report the emulated instant, which actually separates them,
+            # and let the reader conclude.
+            # 🔴 AND THE REPLACEMENT IS EVIDENCE, NOT A DIFFERENT ASSERTION.
+            # The first cut here classified on a RATE THRESHOLD -- "emulated/wall
+            # > 0.02 means starved" -- and its own falsification vector killed
+            # it: 12.4 emulated seconds in 947 wall is 0.013x, plainly ADVANCING
+            # and plainly below the line. The LAST beat's value cannot separate
+            # "froze at emulated 12.4s" from "starved at emulated 12.4s"; only a
+            # DELTA could, and the watchdog keeps no previous value. A threshold
+            # invented to look decisive is the same defect as the sentence it
+            # replaced, one layer along.
+            # 🎯 So state the two fields that bear on it and stop. `out_lines` is
+            # already in this message and is the strongest liveness signal there
+            # is: the runs that provoked this had written 1886, 90 and 88 lines.
+            emu = (f"last beat at emulated {hb_emu:.1f}s"
+                   f" ({hb_emu / elapsed:.3f}x realtime)"
+                   if hb_emu is not None and hb_emu == hb_emu and elapsed > 0
+                   else "no emulated instant was recorded")
+            cause += (f"  ({emu}; a host-clock deadline CANNOT separate a frozen"
+                      f" emulator from one starved of CPU -- read that figure and"
+                      f" the line count below together, and check host load"
+                      f" before calling this REAL)")
     elif rc:
         sig = f"signal {-rc}" if rc < 0 else f"exit {rc}"
         cause = (f"openMSX terminated ON ITS OWN ({sig}) after {elapsed:.0f}s "
@@ -1142,7 +1181,17 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
         rc = proc.wait()
         elapsed = time.time() - start
+        # D-STALLSLOW: the heartbeat file's CONTENT is `[machine_info time]` --
+        # the EMULATED instant of the last beat -- and until now only its MTIME
+        # was ever read. That threw away the one field that separates a FROZEN
+        # emulator from a STARVED one, which is exactly the distinction the kill
+        # message went on to assert. Read it before unlinking.
+        hb_emu = None
         if os.path.exists(hb):
+            try:
+                hb_emu = float(open(hb).read().strip() or "nan")
+            except (OSError, ValueError):
+                pass
             os.unlink(hb)
 
         caps: dict[int, str] = {}
@@ -1217,7 +1266,7 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                         caps[int(m.group(1))] = m.group(2)
         if len(caps) < len(cases):
             why = _why_missing(machine, len(caps), len(cases), killer, rc, elapsed,
-                               out_lines, err)
+                               out_lines, err, hb_emu)
             if timed_out and not caps:
                 raise SystemExit(why)
             sys.stderr.write(why + "\n")
