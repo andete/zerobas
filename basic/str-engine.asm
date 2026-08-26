@@ -1043,7 +1043,29 @@ ems_close:
                 inc     hl
                 call    skip_spaces
                 call    str_eval            ; STRPTR -> RHS B$; HL = post-B$ cursor
-                jr      nc,ems_err_pop2     ; not a string operand
+                ; D-MIDOP (docs/spec-basic-midop.md): NOT a blanket Syntax error.
+                ; `jr nc,ems_err_pop2` was the same SHARED TAIL D-PUSING split in
+                ; ex_print_using -- str_eval declines both for "there is nothing
+                ; here" and for "there is something and it is not a string" -- and
+                ; the references answer 24 / 13 / 24 across the three shapes:
+                ;   MID$(A$,2)=        -> 24   MID$(A$,2)=:  -> 24
+                ;   MID$(A$,2)=5       -> 13   MID$(A$,2)=+  -> 24
+                ; 🔴 AND THAT LAST ROW IS WHY THIS IS A DELEGATION AND NOT AN
+                ; EOL TEST. D-PUSING's shape (`or a / cp COLON` ahead of str_eval)
+                ; gets `+` WRONG: it is neither end-of-line nor ':', so it would
+                ; fall through to the type-mismatch arm and answer 13 where both
+                ; references say 24. The discriminator is not "is there a byte"
+                ; but "can a FACTOR start here", which is ev_f's question.
+                ; 🎯 SO ASK THE ROUTINE THAT ALREADY ANSWERS IT. els_tc_common
+                ; (basic/missing.asm, D-MISS-1) clears ERRMARK, evaluates the
+                ; operand NUMERICALLY and lets check_expr_errors decide: a
+                ; deferred FPERR aborts with its own code (24 for a missing
+                ; factor, via ev_f_missop), a clean parse means a real numeric
+                ; RHS -> ERR 13, and the $DD landmark means nothing parsed ->
+                ; ERR 2. It is what already makes `A$=` and `A$=+` read 24, and
+                ; files.asm:724 records that a THIRD entry point costs nothing:
+                ; each caller pops its own saved words and enters the tail.
+                jp      nc,ems_typecheck    ; +1 B over the `jr`
                 ; --- compute + copy. HL = the continue cursor (keep it). ---
                 ; n<1/n>255 and the La>=n check, the avail/cap derivation, the
                 ; final k=min(cap,Lb), and the actual byte-overwrite ALL moved
@@ -1079,6 +1101,22 @@ ems_range:
                 pop     hl                  ; discard the guarded cursor -> stack balanced
                 ld      a,5
                 jp      raise_error         ; Illegal function call
+; D-MIDOP: the MID$ entry to D-MISS-1's shared numeric-RHS typecheck. It pops
+; [n][m] and enters els_tc_common at statement-handler depth, exactly as
+; els_typecheck pops its dest key and elas_typecheck pops [OFFSET].
+; ⚠️ THE POPS ARE KEPT DELIBERATELY, AND TWO RECORDS DISAGREE ABOUT WHETHER THEY
+; ARE NEEDED. files.asm:732 says raise_error's own `ld sp,(SAVSTK)` discards
+; whatever is left, and the code agrees -- the trap arm resets SP at
+; interp.asm:1022 and the abort arm through fre_abort_low (interp.asm:1731,
+; citing 4d35b6d / docs/spec-basic-abort-depth.md). The
+; abort-chain-returns-into-caller note says the opposite, and it predates that
+; fix. Popping is correct under BOTH readings and costs 2 B, so this does not
+; bet a stack on which record is current; the discrepancy is FILED rather than
+; resolved here.
+ems_typecheck:
+                pop     de                  ; discard m
+                pop     de                  ; discard n
+                jp      els_tc_common       ; -> 24 / 13 / 2, decided by eval
 ems_err_pop2:
                 pop     de                  ; discard m
 ems_err_pop1:

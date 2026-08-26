@@ -56,6 +56,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [ ] 💰 **A 2 B CARVE WITH ITS EVIDENCE ALREADY ATTACHED: `ems_typecheck`'s
+      two `pop de` ARE PROVABLY UNNECESSARY.** Filed 2026-08-26 by D-MIDOP
+      ([`docs/spec-basic-midop.md`](docs/spec-basic-midop.md) §4). They were
+      written to be correct under a DISAGREEMENT between two records about
+      whether `raise_error` resets SP — and **knife K-MD2 deleted both and moved
+      0 rows of 9**, so it does: the trap arm at `basic/interp.asm`:1022, the
+      abort arm through `fre_abort_low` (`:1731`, citing `4d35b6d`).
+      🎯 **NOT TAKEN AT THE TIME ON PURPOSE**: popping is correct under both
+      readings, and removing it makes the code DEPEND on the SAVSTK behaviour
+      rather than merely survive it. `els_tc_common`'s header says *"every path
+      out of here errors"*, so the dependency is sound — but that is a decision
+      to take deliberately, not at the end of a slice.
+      ⚠️ **AND THE SAME 2 B SIT IN `ems_err_pop2`/`ems_err_pop1` NEXT DOOR**, and
+      in every other hand-rolled pop-then-raise tail in the tree. **The class is
+      worth more than the bytes**: `scratchpad/` has no sweep for "a pop that
+      only exists to satisfy a raise that unwinds anyway". Unpriced.
+
+- [ ] 🔴 **EVERY KNIFE RUNNER IN `scratchpad/` CAN EXIT BETWEEN THE WRITE AND
+      THE RESTORE, LEAVING THE TREE CUT.** Filed 2026-08-26 by D-MIDOP
+      ([`docs/spec-basic-midop.md`](docs/spec-basic-midop.md) §5.2), which hit
+      it: an assertion fired after the cut was written, the only restore sat at
+      the END of the loop body, and the run exited with
+      `basic/str-engine.asm` still holding K-MD1. **The next invocation reported
+      *"anchor appears 0 times"*, which reads as a bad anchor and is really a
+      dirty tree** — and a dirty tree silently corrupts whatever is measured
+      next.
+      🟢 `scratchpad/midop_knives.py` now registers an `atexit` restore beside
+      the read, covering the assert, the exception and the clean return alike.
+      🔴 **THE OTHER ~20 RUNNERS DO NOT** (`onlist_knives.py`,
+      `pusing_knives.py`, `playop_knives.py`, `evferr_knives.py`, and every
+      earlier one) — they all share the shape the operating rules describe as
+      *"RESTORE BY WRITING THE BYTES"*, which says nothing about WHEN.
+      ⚠️ **THE DAMAGE IS SILENT AND CROSS-SLICE**: a runner that dies mid-cut
+      leaves a tree whose next `make gates` measures a knifed machine, and the
+      ROM-hash guard cannot see it because the hash legitimately differs from
+      the baseline it was handed. Unpriced; the shape is three lines per runner,
+      or one shared helper.
+
 - [ ] 🔴 **A `unit-test` FLAKE IS OPEN AND UNCAUSED — the diagnostic that would
       have named it was only installed AFTERWARDS.** Filed 2026-08-26 by
       D-PASMOSAY ([`docs/spec-probe-pasmosay.md`](docs/spec-probe-pasmosay.md)).
