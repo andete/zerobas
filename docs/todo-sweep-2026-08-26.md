@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 58 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 59 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1682,6 +1682,34 @@ It did not rot through drift. **I never counted; I wrote the number from memory 
 what I had just done, two tranches earlier.** That is the same failure this sweep
 has found in a dozen items, committed by the person cataloguing it, at the moment
 of cataloguing it — and it is corrected here rather than quietly.
+
+## 2bd. Tranche 59 — neither id scheme is stable, and the audit is what makes either usable
+
+Correcting *NINE* to *ELEVEN* in that headline last tranche **changed its
+content-derived id** — `T-872E8C` became `T-AC33CE` — and orphaned its verdict.
+The audit reported it on the next run:
+
+```
+subject with NO verdict: 39
+verdicts for NON-subject: 1  ['T-872E8C']
+```
+
+🎯 **BOTH ID SCHEMES THIS SWEEP HAS USED ARE UNSTABLE, IN OPPOSITE DIRECTIONS.**
+
+| scheme | survives | rots on |
+|---|---|---|
+| positional (`T001…`, tranche 1) | edits to the block itself | **any edit above it** — one inserted paragraph renumbered everything |
+| content-derived (tranche 2 on) | line moves, file moves | **any rewording of its own headline** |
+
+Both failures are **silent**. Tranche 2 caught the first only because the file
+was edited immediately afterwards; tranche 59 caught the second because
+`--audit` reconciles the verdict set against the live file every run.
+
+🎯 **THE LESSON IS NOT "PICK BETTER IDS."** It is that a verdict set needs a
+**reconciliation check**, because any keying scheme drifts — and the check has now
+paid for itself twice, once per scheme. This is the same shape as the sweep's
+finding about gates: **the thing that catches the error is not the cleverness of
+the design, it is the standing check that runs afterwards.**
 
 ## 3. What the apparatus cost, said out loud
 

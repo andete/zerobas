@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 58 of N. Subject 176; 137 verdicted, 39 pending -- ALL OPEN ITEMS VERDICTED.",
+  "status": "TRANCHE 59 of N. Subject 177; 139 verdicted, 38 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -49,7 +49,8 @@
     "\ud83d\udd34_the_finding": "SEVEN ITEMS CITE A GATE SCORE AS EVIDENCE, AND NONE OF THOSE GATES RUNS IN THE BATTERY. The scores were real on the day they were taken -- the issue is that nothing re-checks them, so '58/58 -> 60/60' is a claim about a past run with no standing verification. That is weaker than 'the item is wrong' and stronger than 'the item is fine'.",
     "\ud83c\udfaf_the_precedent_inside_the_list": "T-70A01E ALREADY CONTAINS A CORRECTION OF THIS EXACT SHAPE: '\ud83d\udd34 AND \"no Makefile target runs it\" WAS FALSE. `make diskbasic-acceptance` dispatches...'. Someone hit this class before and fixed it in the other direction. \u26a0\ufe0f BUT THAT CORRECTION IS ITSELF INCOMPLETE: a target EXISTING is not the battery RUNNING it, and diskbasic-acceptance is one of the 22. The fix replaced one wrong claim with a narrower one that is still not the question that matters."
    }
-  }
+  },
+  "id_scheme_tradeoff": "\ud83c\udfaf NEITHER ID SCHEME IS STABLE, AND THE AUDIT IS WHAT MAKES EITHER USABLE. Positional ids (tranche 1) rot on any edit ABOVE the block -- one paragraph inserted in the header renumbered everything. Content-derived ids (tranche 2 onward) rot on any edit TO THE BLOCK'S OWN HEADLINE -- correcting NINE to ELEVEN in tranche 58 re-keyed T-872E8C to T-AC33CE and orphaned its verdict. Both failures are silent; what caught the second one instantly was `--audit` reporting 'verdicts for NON-subject: 1'. The lesson is not 'pick better ids' -- it is that a verdict set needs a RECONCILIATION CHECK against the live file, because any keying scheme will drift."
  },
  "T-B96267": {
   "verdict": "LIVE",
@@ -1051,13 +1052,6 @@
   "\ud83c\udfaf_why_that_is_the_right_answer": "THE ITEM STATES ITS OWN PRECONDITION AND THE PRECONDITION IS UNMET. Re-measuring now would produce a number contaminated in exactly the way the item warns about -- and would then sit on the list looking like a measurement. The item is better written than most on this list precisely because it makes its own falsification refusable.",
   "note": "scratchpad/harness_walltime.py is present and ready; it needs a quiet host, not new code"
  },
- "T-872E8C": {
-  "verdict": "LIVE -- and my own filed COUNT was wrong",
-  "how": "grep over this session's probes",
-  "headline": "D-TODOSWEEP'S OWN NINE PROBES RE-IMPLEMENT THE `[...]` READER",
-  "reading": "**11**, not nine: sweep_tranche1 (two readers), 2, 3, 4, 11, 12, 16, 17, plus editscout_layout, editscout_reentry, editscout_reentry2. And **0 of them import the shared reader** -- not `result_span`, not `result_span_after_echo`.",
-  "\ud83d\udd34_the_irony_is_load_bearing": "I FILED THIS ITEM WITH AN UNMEASURED COUNT ('nine') IN A SWEEP WHOSE ENTIRE PREMISE IS THAT FILED COUNTS ROT. It rotted within two tranches -- not through drift, but because I never counted in the first place and wrote the number from memory of what I had done. \ud83c\udfaf That is the same failure the sweep has found in a dozen items, committed by the person cataloguing it, at the moment of cataloguing it. Corrected here rather than quietly."
- },
  "T-C7AC0E": {
   "verdict": "NOT MEASURABLE TONIGHT -- a perf figure needs a quiet host",
   "how": "uptime",
@@ -1071,5 +1065,13 @@
   "headline": "K-PE1's FOUR UNEXPLAINED ROWS: SOMETHING RAISES ERR 5 WITHOUT THE WRITER",
   "reading": "K-PE1 is documented at docs/spec-basic-penderr.md:285 as inverting the guard's polarity ('jr nz,pes_pending -> jr z,pes_pending: nothing is ever recorded'). Its four unexplained rows are a KNIFE RESULT.",
   "why_not": "\u26a0\ufe0f a knife result can only be re-established by running the knife -- cutting the source, rebuilding both ROMs, scoring the rows, and restoring. That is a full slice's apparatus, and per the operating rules it must never run while anything else is building. Named rather than guessed."
+ },
+ "T-AC33CE": {
+  "verdict": "LIVE -- and my own filed COUNT was wrong",
+  "how": "grep over this session's probes",
+  "headline": "D-TODOSWEEP'S OWN NINE PROBES RE-IMPLEMENT THE `[...]` READER",
+  "reading": "**11**, not nine: sweep_tranche1 (two readers), 2, 3, 4, 11, 12, 16, 17, plus editscout_layout, editscout_reentry, editscout_reentry2. And **0 of them import the shared reader** -- not `result_span`, not `result_span_after_echo`.",
+  "\ud83d\udd34_the_irony_is_load_bearing": "I FILED THIS ITEM WITH AN UNMEASURED COUNT ('nine') IN A SWEEP WHOSE ENTIRE PREMISE IS THAT FILED COUNTS ROT. It rotted within two tranches -- not through drift, but because I never counted in the first place and wrote the number from memory of what I had done. \ud83c\udfaf That is the same failure the sweep has found in a dozen items, committed by the person cataloguing it, at the moment of cataloguing it. Corrected here rather than quietly.",
+  "id_history": "was T-872E8C; became T-AC33CE when its headline was corrected from NINE to ELEVEN in tranche 58. Content-derived ids survive line MOVES and FILE moves -- they do not survive REWORDING."
  }
 }
