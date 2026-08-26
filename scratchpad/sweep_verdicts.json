@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 32 of N. Subject 176; 91 verdicted, 85 pending.",
+  "status": "TRANCHE 33 of N. Subject 176; 94 verdicted, 82 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -690,5 +690,24 @@
   "how": "read of docs/spec-fat-error-verb-control.md:185-198",
   "headline": "Two `fat-error` gaps left by the 8-of-8 closure",
   "reading": "the probe's knife roster is exactly THREE: K-FE1 cuts `tnt_name_stamp`'s `fatprim_write_sector` (NAME), K-FE2 undoes D-DKNAME's disposition (NAME), K-FE3 zeroes build/disk.rom (dead subject, nothing scored). NONE separates `bload-alive` / `open-alive` / `append-alive` from the shared `fat_io_getbyte` layer -- exactly the gap filed."
+ },
+ "T-870B77": {
+  "verdict": "LIVE, exact",
+  "how": "static read of probes/basic/basic_probe_graphics.py:1562",
+  "headline": "`M-SPRPBASE` AND `M-SPRSZAPL` EACH HAVE ONE ROW THAT *SHOULD* SEE THEM AND DOES NOT",
+  "reading": "`pat_8_empty` is `SCREEN2:SPRITE$(3)=STRING$(8,170):SPRITE$(3)=\"\"` -- it writes eight bytes and then blanks them, so the row's final state is eight zeros. An 8-byte base shift moves zeros onto zeros and the row cannot see it. Exactly the geometry filed."
+ },
+ "T-5EDF8A": {
+  "verdict": "LIVE -- the rows exist but do not CROSS the dimension",
+  "how": "static read of probes/basic/basic_probe_graphics.py",
+  "headline": "THE THREE SCALE STATES ARE NOT SWEPT THROUGH `X` SUBSTRINGS OR `=var;` SUBSTITUTION",
+  "reading": "X-substring rows DO exist -- `xsub` (`DRAW\"A0S4XA$;D5\"`), `xnest` (`A$=\"XB$;\"`), `x_nosemi`. But every one of them pins the scale at **S4**. The three states are never-set / S4 / Sn, so two of the three are never combined with an X substring.",
+  "why_precise": "\ud83c\udfaf 'not swept' could mean 'no such rows' or 'rows that do not cross the dimension'. It is the second, and the difference matters: the fixture is already there and only the scale axis is missing, which is a much smaller job than the item's wording implies."
+ },
+ "T-F7FF11": {
+  "verdict": "LIVE -- the shape is proven, the nine cuts are not written",
+  "how": "read of docs/gate-blindness-sweep.md:507-517",
+  "headline": "NINE ACCEPTANCE ROWS STILL NEED A REFUSAL CUT, ONE PER PATH",
+  "reading": "`M-DRWSCALE` (34 rows reddened) and `M-PSETOFF` (1 row, 'exact including its NEGATIVE prediction') exist in the blindness sweep and demonstrate the technique. They are MUTATIONS in that sweep, not shipped refusal cuts, and the nine per-path cuts the item asks for do not exist."
  }
 }

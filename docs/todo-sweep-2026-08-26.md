@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 32 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 33 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1008,6 +1008,30 @@ now declined to score something on vocabulary alone; this is the first one where
 the answer came back **opposite** to what the plausible site suggested. The
 refusals are not caution for its own sake — one in three of them was about to be
 wrong.
+
+## 2ae. Tranche 33 — "not swept" turns out to mean two different things
+
+| item | verdict |
+|---|---|
+| `pat_8_empty` cannot see an 8-byte sprite base shift | **LIVE, exact** |
+| the three scale states are not swept through `X` substrings | **LIVE — but narrower than it reads** |
+| nine acceptance rows still need a refusal cut | **LIVE — shape proven, cuts unwritten** |
+
+`pat_8_empty` is `SPRITE$(3)=STRING$(8,170):SPRITE$(3)=""` — it writes eight
+bytes then blanks them, so its final state is eight zeros and an 8-byte base
+shift moves zeros onto zeros. The row is blind by geometry, exactly as filed.
+
+🎯 **AND THE MIDDLE ITEM IS SMALLER THAN ITS WORDING.** *"Not swept through `X`
+substrings"* could mean *no such rows exist* or *rows exist but do not cross the
+dimension*. It is the second: `xsub` (`DRAW"A0S4XA$;D5"`), `xnest` and
+`x_nosemi` are all there — and **every one pins the scale at `S4`**. Two of the
+three scale states are simply never combined with an `X` substring. **The fixture
+is already built and only the scale axis is missing**, which is a far smaller job
+than the item implies.
+
+That distinction has now shown up twice in three tranches (`GRPACX` was *"true as
+written, misleading as read"*), and both times the correction made the work
+**smaller**, not larger. A list re-read without measurement tends to inflate.
 
 ## 3. What the apparatus cost, said out loud
 
