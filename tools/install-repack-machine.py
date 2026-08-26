@@ -206,7 +206,36 @@ def main() -> int:
     mdir = os.path.join(openmsx_paths.find_user(), "share", "machines")
     os.makedirs(mdir, exist_ok=True)
     out = os.path.join(mdir, MACHINE + ".xml")
-    open(out, "w").write(cfg)
+    # 🔴 ATOMIC, AND A MEASURED BATTERY FLAKE IS WHY. `open(out, "w")` TRUNCATES
+    # the moment it is called and only then writes -- so between those two
+    # instants this shared path holds an EMPTY file. Every gate unit's
+    # `repack-machine` prerequisite runs this, `make gates` runs units in
+    # parallel, and openMSX reads the machine config at start: a starting
+    # emulator that lands in the window dies with
+    #
+    #   Loading of hardware configuration failed: <MACHINE>.xml:
+    #   Document doesn't contain mandatory root Element
+    #
+    # ...which is exactly what the 2026-08-26 D-ONLIST battery caught
+    # (scratchpad/gate_logs/error-trap-acceptance.log, row `ERROR 1`, zb ERR
+    # None). 🎯 IT WAS FOUND ONLY BECAUSE `omsx_repl._why_missing()` SPENDS THE
+    # EVIDENCE: before that work the row printed a bare `<NO CAPTURE>`, the
+    # runner retried it into green, and it was labelled a flake forever.
+    # ⚠️ THIS IS THE settings.xml RACE'S SIBLING ON A DIFFERENT FILE
+    # (docs/spec-probe-omsx-settings.md): that one was cured by giving each run
+    # its OWN copy, which cannot be done here -- openMSX resolves a machine by
+    # NAME out of the shared user tree. So the cure is the other one: make the
+    # publish atomic, and the window stops existing.
+    # os.replace is atomic on POSIX within a filesystem, and the temp sits in
+    # the SAME directory so it always is one. The pid keeps two concurrent
+    # installers from sharing a temp -- they may both write, and whichever lands
+    # last wins with a WHOLE file, which is all any reader needs.
+    tmp = f"{out}.{os.getpid()}.tmp"
+    with open(tmp, "w") as f:
+        f.write(cfg)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, out)
     subtail = ", zerobas-sub in slot 3-2" if sub else ""
     print(f"wrote {MACHINE}  (-> machine \"{MACHINE}\": merged repack ROM in slot 0, "
           f"zerobas-disk in slot 3-1{subtail})")

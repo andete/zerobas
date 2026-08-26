@@ -56,6 +56,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [ ] ⚠️ **FIVE MORE NON-ATOMIC PUBLISHES INTO THE SHARED openMSX TREE, AND NO
+      GATE WOULD SEE A SIXTH.** Filed 2026-08-26 by D-MACHXML
+      ([`docs/spec-probe-machxml.md`](docs/spec-probe-machxml.md)), which fixed
+      the one that FIRED. `tools/install-openmsx-machine.py`:379/392/401/440/455
+      all publish with `open(out, "w").write(...)` into
+      `~/.openMSX/share/{machines,extensions}` — the same truncate-then-write
+      window, **measured at 34.3 % of concurrent reads torn**
+      (`scratchpad/machxml_repro.py`).
+      🟢 **THEY ARE OFF THE HOT PATH, AND THAT IS MEASURED NOT ASSUMED**: they
+      are reached only from `machines` / `machines-oracle`, and the Makefile's
+      own comment says *"`machines` is the RELEASE-INSTALL path, not a gate
+      path"*. The one that fired, `install-repack-machine.py`, is a prerequisite
+      of **112 targets** that `make gates` runs in parallel. So this is a real
+      but cold instance of a hot class.
+      🔴 **THE STANDING HOLE IS THAT NOTHING CHECKS IT.** A new
+      `open(path,"w")` into the shared tree reintroduces the window silently,
+      and the only thing that would notice is another named `<NO CAPTURE>` —
+      i.e. a flake, after the fact, in a battery. A one-rule checker
+      (*no `open(...,"w")` whose destination resolves under the openMSX user
+      dir*) is cheap; ⚠️ its DENOMINATOR is the hard part, because the path is
+      built by `openmsx_paths.find_user()` at runtime and a textual sweep cannot
+      resolve it. Unpriced.
+
 - [ ] 💰 **A 4 B DUP-SPAN THE D-ONLIST FIX CREATED, AND ITS OWN KNIFE FOUND
       IT.** Filed 2026-08-26. `esn_notlineno`'s discriminator
       (`dec de / ld a,d / or e / jr …`) is **byte-identical to `esn_p1`'s own
