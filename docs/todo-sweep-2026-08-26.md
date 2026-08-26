@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 18 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 19 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -612,6 +612,35 @@ that matches expectation is not thereby measured. All three items are recorded
 pixels in the VG-8020's pattern generator and **0** in zerobas's. If the name
 table does not reference them it is invisible and harmless; if it does, it is a
 visible divergence. Nothing in the sweep or the battery asks.
+
+## 2q. Tranche 19 — the instrument fixed, and one row that validates it
+
+Tranche 18's plane count was wrong. The fix is one rule: **count a pattern bit
+only where its colour-table row has fg nibble ≠ 0** — fg 0 is *transparent* on
+MSX and shows the backdrop. (Both machines' name tables are identity-mapped
+768/768, so every pattern byte really is referenced; the leftover was invisible
+for the colour reason, not the reference reason.)
+
+🟢 **THE RULE IS VALIDATED, NOT ASSUMED**: with it applied, the reference
+reproduces a **filed figure exactly** — 170 on the r200 row — and every reading
+below is stable across 25 s and 45 s capture windows.
+
+| row | filed | **today** |
+|---|---|---|
+| `CIRCLE(128,352),200,15,1.1,2.04` | ref 170 / zb **181** | ref 170 / zb **170** ✅ healed |
+| `CIRCLE(128,96),700,15,0,1.57,.137` | ref 127 / zb 126 | **ref 18 / zb 127** |
+| `CIRCLE(128,96),400,15,-1.57,0` | ref 97 / zb 97 | **ref 125 / zb 97** |
+| `CIRCLE(128,96),95,15,0,1.5707963` | ref 135 / zb 134 | **ref 103 / zb 135** |
+
+The first row is a clean heal: zerobas moved 181 → 170 and now matches.
+
+🔴 **ON THE OTHER THREE, BOTH SIDES DIFFER FROM THE FILING — AND ZEROBAS READS
+THE VALUE FILED FOR THE *REFERENCE* EVERY TIME** (127, 97, 135 against filed ref
+127, 97, 135). Two readings fit: the rows moved, or the filed figures used a
+different visibility rule than mine. **The r200 row argues for the first**, since
+my reference matched its filed value exactly — but **one validating case is not
+enough to reinterpret three**, and saying so is the verdict. The divergences are
+real and measured today; their relationship to the filing is **not settled**.
 
 ## 3. What the apparatus cost, said out loud
 
