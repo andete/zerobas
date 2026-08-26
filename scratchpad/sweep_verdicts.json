@@ -9,13 +9,14 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 17 of N. Subject 176; 60 verdicted, 116 pending.",
+  "status": "TRANCHE 18 of N. Subject 176; 60 verdicted, 116 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
   "denominator_correction": "The subject set was scoped as 'open + done-carrying-a-residual-KEYWORD' = 146. But 38 of the 237 done blocks open with a \ud83d\udd34/\u26a0\ufe0f/\ud83d\udcb0 headline that STATES A DIVERGENCE, and only 8 of those 38 also carry a keyword. The keyword screen silently dropped 30 blocks -- and those are precisely the class the pickup list's own header exists to catch. Subject is now open + keyword-marked + open-reading-headline = 176.",
   "marker_regex_undermatch": "\u26a0\ufe0f tranche 13's self-declaration regex required `\u2705 **CLOSED`; T-3B013F writes `**CLOSED 2026-08-17 by D-DRAWCLAMP**` with no tick and was therefore NOT swept up by it. The 10 self-declaring blocks are a LOWER BOUND on that class, not its size.",
-  "self_declaring_total": "19 of the 38 open-reading headlines self-declare closure (10 by the strict marker, 9 more by the broadened one). The strict count was a LOWER BOUND, as tranche 14 predicted."
+  "self_declaring_total": "19 of the 38 open-reading headlines self-declare closure (10 by the strict marker, 9 more by the broadened one). The strict count was a LOWER BOUND, as tranche 14 predicted.",
+  "new_question_from_t18": "\u26a0\ufe0f UNFILED AND UNMEASURED: `SCREEN 2:CLS` leaves 4923 set pixels in the VG-8020's pattern generator and 0 in zerobas's. If the name table does not reference them it is invisible and harmless; if it does, it is a visible divergence. No row in the sweep or the battery asks."
  },
  "T-B96267": {
   "verdict": "LIVE",
@@ -469,5 +470,29 @@
   "reading_t17": "y=60 at radii 5/9/13 (strictly inside the arc): '6 6 6' on vg8020, cf3300 AND zb. The SAME radii at y=59, where a (15,-1) ray would have to pass: '4 4 4' on all three. All three machines draw the spoke along y=60 and none rises.",
   "the_control_that_makes_it_mean_something": "\ud83d\udfe2 A POSITIVE start angle (CIRCLE...,0.01,1.57) draws NO SPOKE, and the same y=60 points then read '4 4 4' on all three. THAT is what proves those pixels are the SPOKE's and not the arc's -- exactly the control tranche 16's row lacked, and without it this row would have been the same non-answer.",
   "residue": "\u26a0\ufe0f THE ENDPOINT PIXEL ITSELF REMAINS UNSEPARABLE -- centre+(15,0) lies on the arc, which paints it either way. So the filed claim is refuted for the RAY (13 of 15 pixels measured identical, and the y=59 alternative empty) and untested for the single last pixel. That is a much narrower claim than 'zerobas's spoke endpoint diverges', and the item should be restated to it rather than closed outright."
+ },
+ "T-0DFFD6": {
+  "verdict": "NOT MEASURED -- my plane instrument counts data the screen may not show",
+  "how": "attempted via capture=('vram',0x0000,6144), abandoned",
+  "headline": "THE ARC MASK DIVERGES AT LARGE RADII",
+  "why": "\ud83d\udd34 `SCREEN 2:CLS` LEAVES 4923 SET PIXELS IN THE VG-8020's PATTERN TABLE AND 0 IN ZEROBAS'S. A whole-plane bit count therefore compares a reference baseline of 4923 against a zerobas baseline of 0, and an XOR against the empty plane is no better: where the figure sets a bit the leftover already set, nothing changes, so the count under-reports what was drawn (circle: ref XOR 275 vs zb 536 for the SAME figure).",
+  "what_it_needs": "the NAME table as well as the pattern table -- the leftover is probably unreferenced by the name table and therefore invisible, which is why the items' own figures are small (170/127/97/135). Counting the pattern table alone measures bytes the screen may never show.",
+  "note": "\ud83d\udfe2 zerobas's counts came out at exactly the filed REFERENCE values on all four rows (170, 127, 97, 135 against filed ref 170, 127, 97, 135) -- suggestive that all four healed, but NOT evidence, because the reference side of the same run is invalid."
+ },
+ "T-F78A04": {
+  "verdict": "NOT MEASURED -- my plane instrument counts data the screen may not show",
+  "how": "attempted via capture=('vram',0x0000,6144), abandoned",
+  "headline": "THE REFERENCE EVALUATES THE ARC ANGLE IN SINGLE PRECISION",
+  "why": "\ud83d\udd34 `SCREEN 2:CLS` LEAVES 4923 SET PIXELS IN THE VG-8020's PATTERN TABLE AND 0 IN ZEROBAS'S. A whole-plane bit count therefore compares a reference baseline of 4923 against a zerobas baseline of 0, and an XOR against the empty plane is no better: where the figure sets a bit the leftover already set, nothing changes, so the count under-reports what was drawn (circle: ref XOR 275 vs zb 536 for the SAME figure).",
+  "what_it_needs": "the NAME table as well as the pattern table -- the leftover is probably unreferenced by the name table and therefore invisible, which is why the items' own figures are small (170/127/97/135). Counting the pattern table alone measures bytes the screen may never show.",
+  "note": "\ud83d\udfe2 zerobas's counts came out at exactly the filed REFERENCE values on all four rows (170, 127, 97, 135 against filed ref 170, 127, 97, 135) -- suggestive that all four healed, but NOT evidence, because the reference side of the same run is invalid."
+ },
+ "T-3B7A48": {
+  "verdict": "NOT MEASURED -- my plane instrument counts data the screen may not show",
+  "how": "attempted via capture=('vram',0x0000,6144), abandoned",
+  "headline": "THE REFERENCE'S SPOKE LINE ADVANCES ITS MINOR AXIS BEFORE THE MIDPOINT",
+  "why": "\ud83d\udd34 `SCREEN 2:CLS` LEAVES 4923 SET PIXELS IN THE VG-8020's PATTERN TABLE AND 0 IN ZEROBAS'S. A whole-plane bit count therefore compares a reference baseline of 4923 against a zerobas baseline of 0, and an XOR against the empty plane is no better: where the figure sets a bit the leftover already set, nothing changes, so the count under-reports what was drawn (circle: ref XOR 275 vs zb 536 for the SAME figure).",
+  "what_it_needs": "the NAME table as well as the pattern table -- the leftover is probably unreferenced by the name table and therefore invisible, which is why the items' own figures are small (170/127/97/135). Counting the pattern table alone measures bytes the screen may never show.",
+  "note": "\ud83d\udfe2 zerobas's counts came out at exactly the filed REFERENCE values on all four rows (170, 127, 97, 135 against filed ref 170, 127, 97, 135) -- suggestive that all four healed, but NOT evidence, because the reference side of the same run is invalid."
  }
 }

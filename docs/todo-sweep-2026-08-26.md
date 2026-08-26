@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 17 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 18 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -577,6 +577,41 @@ a far narrower claim than *"zerobas's spoke endpoint diverges"*, and the item
 should be **restated to it**, not closed outright — closing it would discard a
 live, unmeasured one-pixel question, and leaving it as filed would overstate a
 refuted one.
+
+## 2p. Tranche 18 — an instrument that counted bytes the screen may not show
+
+The remaining arc items were filed as `ref N px <hash> / zb M px <hash>` over the
+whole plane, so this tranche captured raw VRAM instead of sampling `POINT`. It
+produced **no verdicts**, and the reason is worth more than one would have been.
+
+| after `SCREEN 2:CLS` | empty plane | with a circle | XOR |
+|---|---|---|---|
+| zerobas | **0 px** | 536 | 536 |
+| VG-8020 | **4923 px** | 5198 | **275** |
+
+🔴 **THE REFERENCE'S PATTERN TABLE IS NOT EMPTY AFTER `CLS`.** So a whole-plane
+bit count compares a 4923-pixel baseline against a 0-pixel one — and the obvious
+repair, XOR against the empty plane, is no better: where the figure sets a bit the
+leftover **already** set, nothing changes, so the count *under-reports* what was
+drawn. The same circle reads **275 on the reference and 536 here**, and neither
+number is the figure.
+
+🎯 **THE INSTRUMENT NEEDS THE NAME TABLE, NOT JUST THE PATTERN TABLE.** The
+leftover is almost certainly unreferenced by the name table — which is why the
+items' own figures are small (170/127/97/135) while mine are ~5000. Counting the
+pattern generator alone measures bytes the screen may never display.
+
+⚠️ **AND THE TEMPTING READING IS THE ONE TO REFUSE.** zerobas's counts came out at
+**exactly the filed REFERENCE values on all four rows** — 170, 127, 97, 135
+against filed ref 170, 127, 97, 135. That looks like four heals. It is **not
+evidence**, because the reference side of the very same run is invalid; a number
+that matches expectation is not thereby measured. All three items are recorded
+**NOT MEASURED**.
+
+🔬 **ONE NEW QUESTION, UNFILED ANYWHERE**: `SCREEN 2:CLS` leaves **4923** set
+pixels in the VG-8020's pattern generator and **0** in zerobas's. If the name
+table does not reference them it is invisible and harmless; if it does, it is a
+visible divergence. Nothing in the sweep or the battery asks.
 
 ## 3. What the apparatus cost, said out loud
 
