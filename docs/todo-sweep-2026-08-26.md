@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 54 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 55 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1602,6 +1602,33 @@ in the other direction.
 battery running it**, and `diskbasic-acceptance` is one of the 22. The fix
 replaced one wrong claim with a narrower one that still is not the question that
 matters. Two readers, two different wrong questions, same gate.
+
+## 2ba. Tranche 55 — an item that caught the person auditing it
+
+**The `[...]` readout family — LIVE.** The **defended** readers exist and are
+shared: `omsx_repl.py`'s `result_span` (:1725) and `result_span_after_echo`
+(:1765), the latter written specifically so *"an aborted case's echoed `[` is not
+misread as printed output"*. Meanwhile **8 scratch probes carry their own bracket
+reader** and inherit none of that defence.
+
+🔴 **AND EVERY SWEEP PROBE I WROTE THIS SESSION HAS ITS OWN `spans()`** —
+`sweep_tranche1/11/12/16/17`, both falsification harnesses, the layout and
+re-entry scouts. Nine probes, each re-implementing the bracket scan, none using
+`result_span_after_echo`, each vulnerable to exactly the echo confusion the shared
+reader was written to prevent.
+
+**I read this item after writing nine probes that instantiate it.**
+
+🎯 That is the strongest evidence the item could have: **it describes a trap that
+catches whoever is not looking, and it caught the person auditing it.** It also
+explains the mechanism — the shared reader is in `probes/lib/`, and a scratch
+probe starts by copying another scratch probe. Nothing pushes the defence outward;
+it has to be reached for.
+
+**Two type-code namespaces — LIVE**, in the source's own words:
+`sysvars.inc`:3601 — *"`DEFTBL_STR equ 1` sentinel below reads like an own-design
+0/1"*. The three crossing sites were fixed by D-DEFSTR; the namespaces are still
+unmerged and still collide on `1`.
 
 ## 3. What the apparatus cost, said out loud
 

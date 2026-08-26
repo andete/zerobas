@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 54 of N. Subject 176; 124 verdicted, 52 pending.",
+  "status": "TRANCHE 55 of N. Subject 176; 126 verdicted, 50 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -979,5 +979,19 @@
   "headline": "A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A CLASSIFIER NEEDLE, AND THEY LOOK IDENTICAL",
   "reading": "probes/lib/ carries NO shared message table -- no `MSG_*` constants, no `MESSAGES = `, no `EXPECT_MSG`. Every probe still spells its message literals inline, so an assertion and a classifier needle remain textually indistinguishable, exactly as filed.",
   "note": "the item records that this silently broke 30 comparisons across 9 files; nothing in the tree today would prevent a repeat"
+ },
+ "T-977D6F": {
+  "verdict": "LIVE -- and this sweep's own probes made it worse",
+  "how": "grep of probes/lib/ and scratchpad/",
+  "headline": "THE `[...]` READOUT FAMILY IS DEFENDED BY ACCIDENT IN EVERY SCRATCH PROBE",
+  "reading": "the DEFENDED readers exist and are shared: probes/lib/omsx_repl.py `result_span` (:1725) and `result_span_after_echo` (:1765), the latter specifically so 'an aborted case's echoed `[` is not misread as printed output'. Meanwhile **8 scratch probes carry their own bracket reader** and inherit none of that defence.",
+  "\ud83d\udd34_and_I_added_to_it": "EVERY SWEEP PROBE I WROTE IN THIS SESSION HAS ITS OWN `spans()` -- sweep_tranche1/11/12/16/17, citepaths/patchfresh falsifiers, the layout and reentry scouts. Each re-implements the bracket scan and none uses result_span_after_echo, so each is vulnerable to exactly the echo confusion the shared reader was written to prevent. I read this item AFTER writing nine probes that instantiate it.",
+  "note": "\ud83c\udfaf that is the strongest possible evidence for the item: it describes a trap that catches whoever is not looking, and it caught the person auditing it"
+ },
+ "T-F09939": {
+  "verdict": "LIVE, confirmed in the source's own words",
+  "how": "static read of basic/sysvars.inc",
+  "headline": "Two type-code namespaces share the value `1`",
+  "reading": "sysvars.inc:3601 says it outright: '`DEFTBL_STR equ 1` sentinel below reads like an own-design 0/1' -- the published DEFTBL string code and zerobas's own chain tag still collide on 1, with the three crossing sites fixed by D-DEFSTR and the namespaces themselves unmerged."
  }
 }
