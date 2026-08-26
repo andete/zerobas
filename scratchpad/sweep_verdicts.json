@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 43 of N. Subject 176; 108 verdicted, 68 pending.",
+  "status": "TRANCHE 44 of N. Subject 176; 110 verdicted, 66 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -832,5 +832,21 @@
   "headline": "`check_probe_preflight.py` carries the IDENTICAL `SCAN_DIRS`",
   "reading": "check_probe_preflight.py:43 still has the HAND-LISTED `SCAN_DIRS = (\"probes\", \"tools\", \"tests\")`. check_probe_injectors.py has NO such constant -- D-INJJUDGE replaced its hand-list with a derived denominator, and only mentions the three directories in prose at :24.",
   "\ud83d\udd34_third_instance": "THIS IS THE THIRD SIGHTING OF ONE PATTERN IN THIS SWEEP: a fix landing in one file and never reaching its sibling. (1) the split-by-side control rule, in namspc not castail (tranche 23). (2) the path-not-basename rule, in check_citation_paths not todo_subject_check -- my own, hours apart (tranche 8). (3) the derived denominator, in injector-check not preflight-check. \ud83c\udfaf And tranche 40 found the counter-example: the ONE lesson that DID travel was written as a NAMED, citable thing rather than as prose in a file."
+ },
+ "T-E93A7E": {
+  "verdict": "LIVE -- and EXACT TO THE BYTE, the only figure in this sweep that has not moved",
+  "how": "byte count of build/disk.rom",
+  "headline": "`build/disk.rom` pad-only damage is invisible ON PURPOSE",
+  "filed": "9543 of 16384 bytes (58.2%) are $00 pad",
+  "measured_today": "16384 bytes, 9543 are $00 = 58.2%",
+  "why_it_did_not_drift": "\ud83c\udfaf EVERY OTHER FIGURE THIS SWEEP RE-MEASURED HAD MOVED -- carve supply, /tmp literals, penderr sites, page-1 walls, dup-span groups. This one is byte-identical because it is a property of a GENERATED artifact with a fixed size and a deterministic pad, not of hand-maintained source. A number is stable exactly when nothing a human edits can reach it.",
+  "note": "the item's own point stands unchanged: closing it needs a whole-image digest, which would pin the ROM against every legitimate disk/*.asm change"
+ },
+ "T-F6B771": {
+  "verdict": "LIVE -- and stated inside the gate, again",
+  "how": "static read of tools/audit_citations.py",
+  "headline": "The raw-byte class beyond the dump row has NO mechanical floor, by measurement",
+  "reading": "audit_citations.py:58 still carries it: 'Recall against the class is 1 of 20 and the check says so'. The gate documents its own recall against the class it cannot cover, and :263 and :266 record the two variants that were DECLINED (0 recall; 26 affirmative false positives over 278 files).",
+  "note": "\ud83c\udfaf fifth gate found stating its own limit in its own source -- the pattern from tranche 29 holds across the whole tools/ directory"
  }
 }

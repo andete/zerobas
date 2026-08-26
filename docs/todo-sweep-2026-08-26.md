@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 43 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 44 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1311,6 +1311,31 @@ SIBLING.**
 **named, citable thing** in double brackets. The three that did not travel are all
 prose inside one file. That is a cheap, testable practice: **name the lesson and
 it propagates; describe it and it stays put.**
+
+## 2ap. Tranche 44 — the one figure that did not move, and why
+
+**`build/disk.rom` pad fraction — LIVE, and exact to the byte.**
+
+| | filed | today |
+|---|---|---|
+| `$00` pad bytes | **9543 of 16384 (58.2 %)** | **9543 of 16384 (58.2 %)** |
+
+🎯 **EVERY OTHER FIGURE THIS SWEEP RE-MEASURED HAD MOVED** — carve supply 403 B →
+8 B safe, `/tmp` literals 122 → 104, `penderr_set` sites 21 → 22, page-1 walls,
+dup-span groups 27 → 26, `elsize_from_type` call sites 7 → 6. **This one is
+byte-identical**, and the reason is structural: it is a property of a **generated
+artifact** with a fixed size and a deterministic pad, not of hand-maintained
+source. **A number is stable exactly when nothing a human edits can reach it.**
+
+That is a usable rule for reading the rest of the list: a figure about generated
+output can be quoted; a figure about source must be re-run.
+
+**Raw-byte class recall — LIVE.** `audit_citations.py`:58 still carries *"Recall
+against the class is 1 of 20 and the check says so"*, with `:263`/`:266`
+recording the two variants declined for **0 recall and 26 affirmative false
+positives over 278 files**. 🎯 That is the **fifth** gate found stating its own
+limit in its own source — the tranche-29 pattern holds across the whole `tools/`
+directory.
 
 ## 3. What the apparatus cost, said out loud
 
