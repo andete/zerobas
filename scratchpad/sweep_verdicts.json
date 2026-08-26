@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 35 of N. Subject 176; 96 verdicted, 80 pending.",
+  "status": "TRANCHE 36 of N. Subject 176; 97 verdicted, 79 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -731,5 +731,14 @@
   "class_today": "22 call sites",
   "reading": "\ud83d\udd34 THE DENOMINATOR HAS GROWN BY ONE SINCE THE ITEM WAS FILED. A new `penderr_set` call site was added between 2026-08-23 and today, so the class of guards that can be witnessed only by a deferred error is not merely open -- it is EXPANDING while unwatched.",
   "why_that_is_the_finding": "\ud83c\udfaf The item's own point is that the ERR CODE a row expects carries no information about whether it can witness an ordering-sensitive guard. A growing site count means each new site inherits that blindness silently, and nothing counts them. The re-measurement is the only thing that made the growth visible."
+ },
+ "T-70A01E": {
+  "verdict": "LIVE -- and ENUMERATED for the first time",
+  "how": "walk of probes/**/*.py",
+  "headline": "THE DELIVERY GUARDS DO NOT COVER PROBES WITH THEIR OWN `build_tcl`",
+  "filed": "'Every probes/disk/* script and basic_probe_printusing.py ... Not enumerated; not known to be affected.'",
+  "measured_today": "201 probe .py files. **72 import omsx_repl** (and so reach the shared injector, the stored-program oracle and the echo oracle). **59 build their own Tcl and do not** -- 43 of them under probes/disk/, plus basic_probe_printusing.py exactly as the item names, and 15 more under probes/basic/ that the item does NOT name (graphics_floor, subrom_inttest, key_trap, strig_trap, usr, cas_verify, cas_leader_budget, cas_verbs, ...).",
+  "why_it_matters": "\ud83d\udd34 THE ITEM UNDERSTATES ITS OWN SCOPE. It names probes/disk/* and one basic probe; the measurement finds FIFTEEN further basic probes in the same position. Nearly half the probe corpus (59 of 131 that do either) bypasses the shared injector -- and D-LATCH already promoted this from a coverage item to a CORRECTNESS one, because a local copy of the pre-D-LATCH `__key` still has the race the shared injector no longer has.",
+  "caveat": "\u26a0\ufe0f HEURISTIC COUNT: 'builds its own Tcl' is detected as (mentions build_tcl / debug write / set tcl) AND (does not import omsx_repl). Some of the 59 may not inject keystrokes at all. The figure is an upper bound on the exposed set and a genuine lower bound on the item's scope, which was previously zero."
  }
 }

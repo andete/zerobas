@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 35 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 36 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1087,6 +1087,39 @@ supply became 8 B safe, 122 `/tmp` literals became 104, three divergences healed
 **This is the first one that grew.** A list that is only ever re-read cannot tell
 those two directions apart; a list that is re-run can, and the growing one is the
 one that matters.
+
+## 2ah. Tranche 36 — an item that said "not enumerated", enumerated
+
+Last tranche found the first residual whose denominator had **grown**, so this
+one went looking for other countable claims. Only three pending items carry one —
+and the most interesting says outright *"Not enumerated; not known to be
+affected."*
+
+| | |
+|---|---|
+| probe `.py` files | **201** |
+| import `omsx_repl` (reach the shared injector + both oracles) | **72** |
+| **build their own Tcl and do not** | **59** |
+
+Of the 59: **43 under `probes/disk/`** and `basic_probe_printusing.py` — exactly
+what the item names — **plus fifteen further `probes/basic/` scripts it does
+not** (`graphics_floor`, `subrom_inttest`, `key_trap`, `strig_trap`, `usr`,
+`cas_verify`, `cas_leader_budget`, `cas_verbs`, …).
+
+🔴 **THE ITEM UNDERSTATES ITS OWN SCOPE.** Nearly half the probes that do either
+thing bypass the shared injector — and D-LATCH already promoted this from a
+coverage item to a **correctness** one, because a local copy of the pre-D-LATCH
+`__key` still carries the race the shared injector no longer has, with no oracle
+that would notice.
+
+⚠️ **HEURISTIC COUNT**, and labelled as one: *builds its own Tcl* is detected as
+(mentions `build_tcl`/`debug write`/`set tcl`) **and** (does not import
+`omsx_repl`). Some of the 59 may not inject keystrokes at all. It is an upper
+bound on the exposed set — and a genuine lower bound on the item's scope, **which
+was previously zero**.
+
+🎯 *"Not enumerated"* is the most actionable phrase on a list, because enumerating
+is cheap and the number is what decides whether anyone cares.
 
 ## 3. What the apparatus cost, said out loud
 
