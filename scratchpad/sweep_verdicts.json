@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 4 of N -- the remaining ids are NOT yet verdicted",
+  "status": "TRANCHE 5 of N -- the remaining ids are NOT yet verdicted",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them."
  },
  "T-B96267": {
@@ -159,5 +159,45 @@
   "headline": "A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD ... the SIX-EVENT CAP",
   "reading": "int.six: vg8020 '9 18', cf3300 '9 18', zb '6 18' -- the filed reading exactly",
   "finding": "\ud83d\udd34 ITS SUPPORTING CONTROL IS AN UNFILED SECOND DIVERGENCE. gos.leak reads '12 0' on BOTH references and '8 7' on zb. The item says only 'gos.leak caps at 8, which is what says the cap is TRAPSTK_MAX and not GOSUB_DEPTH' -- it never states the reference value, so the fact that the references reach 12 with NO error while zb stops at 8 WITH ERR 7 is nowhere in the record."
+ },
+ "T-ABA845": {
+  "verdict": "LIVE, exact",
+  "how": "static read of tools/install-openmsx-machine.py",
+  "headline": "FIVE MORE NON-ATOMIC PUBLISHES INTO THE SHARED openMSX TREE",
+  "reading": "5 non-atomic open(...,'w').write sites at lines 379, 392, 401, 440, 455 -- the filed line numbers, unchanged -- and 0 mentions of an atomic publish anywhere in the file"
+ },
+ "T-035C3D": {
+  "verdict": "LIVE, and now with a denominator",
+  "how": "walk of every tracked .py/.sh",
+  "headline": "A TRACKED `scratchpad/` SCRIPT CAN HARDCODE THE AUTHOR'S ABSOLUTE PATH",
+  "reading": "546 tracked .py/.sh under scratchpad|probes|tools|tests; 26 lines contain /Users/joost, a dozen of them `ROOT = \"/Users/joost/projects/zerobas\"` in tracked scratchpad scripts, which therefore cannot run in a clone. No checker for the class exists.",
+  "note": "filed by me earlier today; the denominator was unmeasured then and is measured now"
+ },
+ "T-64EB78": {
+  "verdict": "STALE FIGURE, class still LIVE",
+  "how": "make temp-root-check + allowlist split",
+  "headline": "122 HARDCODED /tmp/... LITERALS ARE OUTSIDE THE TEMP ROOT",
+  "reading": "the allowlist pins 124 literals, but 20 of those are INSIDE /tmp/zerobas -- outside the root is 104, not 122",
+  "note": "\ud83d\udd34 THE GATE'S NUMBER AND THE ITEM'S NUMBER COUNT DIFFERENT SETS, and taking the gate's 124 as a refutation of the item's 122 would have been wrong in the other direction. Reading check_temp_root.py settled it. The shrink is the shrink-only gate working as designed."
+ },
+ "T-B5DD7F": {
+  "verdict": "STALE AS WORDED",
+  "how": "static read of the Makefile",
+  "headline": "`latch-check` IS THE ONE GATE WITH NO PREREQUISITES",
+  "reading": "TEN *-check targets have an empty prerequisite list today: wall-assertion-check, diskdep-check, patch-freshness-check, temp-root-check, preflight-check, rowshape-check, switch-build-check, latch-check, injector-check, citation-check",
+  "note": "\ud83d\udd34 AND TWO OF THE TEN ARE MINE, ADDED EARLIER TODAY. The uniqueness claim is false; the underlying hazard (latch-check refuses after `rm -rf build`) is untested by this check and stays open"
+ },
+ "T-2E1C86": {
+  "verdict": "LIVE, with a stale count",
+  "how": "grep of probes/tools + run_gates.py",
+  "headline": "NO GATE READS THE BOOT BANNER, AND D-MISSOPFIX MOVED IT",
+  "reading": "no probe reads the banner (the only file mentioning it is probes/disk/disk_probe_autoexec.py, which is not a banner check). The battery is 39 gates today; the item says 34."
+ },
+ "T-E27BD0": {
+  "verdict": "LIVE, confirmed",
+  "how": "static read + git status",
+  "headline": "THE TAPE PATCH PAIR IS UNGUARDED BY THE SAME RULE",
+  "reading": "check_patch_freshness.py's PAIR is [zerobas-main-eu.ips, zerobas-main-eu.bps] -- main only. The tape pair is tracked and currently clean.",
+  "note": "filed by me earlier today; confirmed against the shipped checker rather than against my memory of writing it"
  }
 }

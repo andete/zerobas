@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-⚠️ **THIS IS TRANCHE 4 OF N. 18 of 146 subject blocks carry a verdict.** The
+⚠️ **THIS IS TRANCHE 5 OF N. 24 of 146 subject blocks carry a verdict.** The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -25,7 +25,7 @@ instrument had the property it was measuring.** It is a tool now.
 | blocks parsed | 367 (346 top-level, **21 nested** — an indented `- [x]` under an open parent is not an independent item) |
 | open / done (top-level) | **109 / 237** |
 | subject = open + done-carrying-a-residual-marker | **146** |
-| verdicted so far | **18** |
+| verdicted so far | **24** |
 
 ### 1.1 Two counts of my own disagreed, so I read
 
@@ -180,6 +180,39 @@ reference half of clause 1 rests on tranche 3's batched run, which did reset it.
 
 Running total across four tranches: **12 LIVE, 6 stale or partly stale, 1
 reframed-unresolvable, 1 split (half live, half false).**
+
+## 2d. Findings — tranche 5: the space and gate items
+
+These assert facts about the tree and the battery, so the instrument is a
+targeted static check plus today's walls and the 39/39 battery. Every check
+prints its evidence — *0 hits* and *I looked in the wrong place* read identically
+otherwise. Probe: `scratchpad/sweep_tranche5.py`.
+
+| item | verdict | reading |
+|---|---|---|
+| 5 non-atomic openMSX publishes | **LIVE, exact** | still at lines **379, 392, 401, 440, 455** — the filed line numbers — and **0** mentions of an atomic publish in the file |
+| a tracked script may hardcode `/Users/joost` | **LIVE, now with a denominator** | **546** tracked `.py`/`.sh`; **26** lines contain it, a dozen being `ROOT = "/Users/joost/projects/zerobas"` in tracked scratchpad scripts. No checker exists |
+| the tape patch pair is unguarded | **LIVE, confirmed** | the checker's `PAIR` is main-only; the tape pair is tracked and clean |
+| no gate reads the boot banner | **LIVE, stale count** | no probe reads it; the battery is **39** gates, the item says 34 |
+| "122 `/tmp` literals outside the root" | **STALE FIGURE, class live** | **104**, not 122 |
+| "`latch-check` is THE ONE gate with no prerequisites" | **STALE AS WORDED** | **ten** `*-check` targets have an empty prerequisite list |
+
+🔴 **TWO OF THOSE TEN ARE MINE, ADDED EARLIER TODAY.** `patch-freshness-check`
+and `citation-check` both have empty prerequisite lists, so this session is part
+of why the uniqueness claim is now false. The underlying hazard — `latch-check`
+refuses after `rm -rf build` — is untested by this check and stays open.
+
+🔴 **AND THE `/tmp` FIGURE NEARLY WENT THE WRONG WAY.** `make temp-root-check`
+prints **124 pinned literal(s)**, which reads as a refutation of the item's 122 —
+in the direction of *"it grew"*. It counts a different set: 20 of the 124 are
+**inside** `/tmp/zerobas` and were never in the item's class. Outside the root is
+**104**, so the set has *shrunk* by 18 — the shrink-only gate working as designed.
+🎯 **Two numbers that disagree can both be right about different sets, and the
+gate's number is not automatically the truer one.** Reading `check_temp_root.py`
+settled it.
+
+Running total across five tranches: **16 LIVE (3 with a stale figure inside),
+8 stale / partly stale / reframed / split.**
 
 ## 3. What the apparatus cost, said out loud
 
