@@ -607,7 +607,7 @@ ev_f_missop:                                ; D-MISSOP (docs/spec-basic-missop.m
                                             ; `POKE &HE000,` COMPLETED and WROTE A ZERO.
                                             ; 🔴 IT IS ITS OWN LABEL, NOT A LINE ADDED TO
                                             ; ev_f_err, AND A SHIPPED GATE IS WHY. The first
-                                            ; draft sat on that shared tail -- which has
+                                            ; draft sat on that shared tail -- which had
                                             ; EIGHT jump sites, only ONE of them this one.
                                             ; `make lineerr-acceptance` went 209/210: row
                                             ; a.noclose (`LINE (11,12-(20,21)`) reaches
@@ -641,10 +641,25 @@ ev_f_defer:                                 ; shared tail: E = FPERR code to def
                                             ; the remaining two instructions say the same
                                             ; thing (str-engine.asm penderr_set).
                 ; fall into ev_f_err for the $DD landmark.
-ev_f_err:                                   ; the SILENT landmark, and it stays silent:
-                                            ; D-MISSOP's deferred code lives at
-                                            ; ev_f_missop above, reached from ONE of this
-                                            ; tail's eight jump sites. See there.
+ev_f_err:                                   ; the SILENT landmark -- and as of D-EVFERR
+                                            ; (docs/spec-basic-evferr.md) NOTHING JUMPS
+                                            ; HERE AT ALL: it is reached only by
+                                            ; FALL-THROUGH from ev_f_defer, whose job is
+                                            ; to stamp the $DD landmark after a code has
+                                            ; been deferred. D-MISSOPFIX split ONE of the
+                                            ; eight jumps off to ev_f_missop; D-EVFERR
+                                            ; measured the other seven and split ALL of
+                                            ; them (two were not even assembled), at ZERO
+                                            ; bytes -- every one was a `jp` whose target
+                                            ; changed. 🎯 SO THE LABEL IS NO LONGER A
+                                            ; SHARED TAIL, AND THAT IS THE POINT: while
+                                            ; it was one, "silent" was not a decision any
+                                            ; site had made, it was what a NEUTRAL tail
+                                            ; gives every caller that falls into it.
+                                            ; ⚠️ Keep it that way. A new `jp ev_f_err` is
+                                            ; a factor deciding to fail with NO error
+                                            ; code, which measured wrong at every one of
+                                            ; the seven sites that had made it.
                 ld      a,$DD               ; expression error marker
                 ld      (ERRMARK),a
                 ld      de,0
@@ -810,7 +825,14 @@ ev_f_paren:
                 call    ev_logic            ; DE = inner value (full expression)
                 call    ev_sp
                 cp      ')'
-                jp      nz,ev_f_err
+                ; D-EVFERR (docs/spec-basic-evferr.md): the CHECKED deferred
+                ; FPERR=4 syntax error, not the bare ERRMARK ev_f_err -- which
+                ; nothing on this path reads, so `A=(1+2` COMPLETED SILENTLY
+                ; with A=0 where both references say Syntax error. Byte-neutral
+                ; (the same instruction, retargeted), and the same cure
+                ; vptr_close already carries. 4 rows: `A=(1+2`, `A=(1+2:B=3`,
+                ; `A=((1+2)`, `PRINT(1+2`, plus `IF(1 THEN` and `FOR I=(1 TO`.
+                jp      nz,ev_f_empty
                 inc     ix
                 ret
 
@@ -1096,9 +1118,21 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
                                             ; `jp nc,ev_f_err`, which set ERRMARK and
                                             ; returned DE=0 -- and NOTHING on this path
                                             ; reads ERRMARK, so `PRINT EOF(0)` printed
-                                            ; a plausible ` 0` with no error at all
+                                            ; a plausible ` 0` with no error at all.
+                                            ; ⚠️ THAT LAST SENTENCE WAS STALE FOR THIS
+                                            ; ROW and D-EVFERR measured it: `EOF(0)` is
+                                            ; channel 0, which fch_check sends to
+                                            ; err_notopen_raise (59, all three) BEFORE
+                                            ; the class test below runs -- so the site
+                                            ; underneath was never reached by the row
+                                            ; that was supposed to witness it.
                 call    fch_mode_class      ; device/cassette channels have no length
-                jp      nc,ev_f_err         ; -> function error (never fch_select them)
+                ; D-EVFERR: an OPEN device channel is what reaches this, and it
+                ; is a function-domain VALUE error, not a syntax one:
+                ; `OPEN"CRT:"FOR OUTPUT AS#1:A=EOF(1)` is ERR 5 on BOTH
+                ; references and COMPLETED SILENTLY here. ev_f_ifc is the
+                ; deferred FPERR=3 -> ERR 5 idiom; byte-neutral retarget.
+                jp      nc,ev_f_ifc         ; -> function error (never fch_select them)
                 ld      a,e
                 call    fch_select
                 ld      hl,FREAD_LEFT
@@ -1117,9 +1151,10 @@ ev_ff_lof:                                  ; LOF(n): length of open input file 
                 ; Select channel n so FAT_FILESIZE (set by fat_find at OPEN, part of
                 ; the per-channel state span) belongs to it; return its low 16 bits.
                 call    fch_check           ; D-BADFNUM: 5 / 59 / 52 -- see ev_ff_eof
-                                            ; above. `PRINT LOF(0)` printed ` 0` too
+                                            ; above, including why channel 0 never
+                                            ; reaches the class test
                 call    fch_mode_class      ; device/cassette channels have no length
-                jp      nc,ev_f_err         ; -> function error (never fch_select them)
+                jp      nc,ev_f_ifc         ; D-EVFERR: ERR 5, as ev_ff_eof above
                 ld      a,e
                 call    fch_select
                 ld      de,(FAT_FILESIZE)
@@ -1883,11 +1918,18 @@ ev_f_varptr:
                 inc     ix                  ; skip the VARPTR token
                 call    ev_sp
                 cp      '('
-                jp      nz,ev_f_err
+                ; D-EVFERR: both these sites are Syntax error (2) on both
+                ; references, and BOTH LOOKED GREEN because ev_f_err leaves the
+                ; cursor UNADVANCED -- `A=VARPTR 5` / `A=VARPTR(5)` answered 2
+                ; through exec_stmt's leftover-token layer (es_noentry), with
+                ; the expression layer saying nothing at all. The rows with
+                ; NOTHING left over separate them: `A=VARPTR` and `A=VARPTR(`
+                ; COMPLETED SILENTLY. Byte-neutral retargets.
+                jp      nz,ev_f_empty
                 inc     ix
                 call    ev_sp
                 call    is_letter           ; the argument must be a variable name
-                jp      nc,ev_f_err
+                jp      nc,ev_f_empty
                 push    ix
                 pop     hl                  ; HL = cursor at the name
                 ; Fix (arrays slice-4c follow-up): VARPTR(A$) must hand back
@@ -2029,12 +2071,21 @@ ev_f_base:
                 inc     ix                  ; skip the BASE token
                 call    ev_sp
                 cp      '('
-                jp      nz,ev_f_err
+                ; D-EVFERR: retargeted with the five LIVE sites even though this
+                ; stub is NOT ASSEMBLED (G8_RESIDENT equ 1, sysvars.inc) -- the
+                ; `IF !G8_RESIDENT` arm must stay correct for
+                ; `make switch-build-check` to have anything true to flip to.
+                ; ⚠️ AND THE FILED CLAIM ABOUT THESE TWO SITES WAS STALE: TODO
+                ; and spec-basic-missop §14.1 said "BASE is descoped and carries
+                ; its own inline ERRMARK body", but G8 retired that years of
+                ; slices ago -- the shipping ev_f_base is graphics.asm:1292 and
+                ; raises gfx_syntax. Right conclusion, dead reasoning.
+                jp      nz,ev_f_empty
                 inc     ix
                 call    ev_logic            ; evaluate + discard the index argument
                 call    ev_sp
                 cp      ')'
-                jp      nz,ev_f_err
+                jp      nz,ev_f_empty
                 inc     ix
                 ld      a,$DD               ; BASE is descoped -> expression-error marker
                 ld      (ERRMARK),a

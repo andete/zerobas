@@ -1066,29 +1066,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       learn the rule. Either give it the prerequisite or say so where batteries
       get written; unpriced, and 16/16 once the ROMs exist.
 
-- [ ] 🔴 **`ev_f_err`'s OTHER SEVEN JUMP SITES ARE STILL SILENT, AND TWO ROWS
-      MEASURE WRONG.** 2026-08-23, D-MISSOPFIX §13/§14
-      ([`docs/spec-basic-missop.md`](docs/spec-basic-missop.md),
-      `scratchpad/missop_blast.py`, 11 rows x 3 machines). `basic/expr.asm`'s
-      `ev_f_err` is reached by EIGHT `jp`/`jr` instructions; D-MISSOPFIX serves
-      exactly ONE (`:556`, `ev_f_var`'s `is_letter` failure). Measured on the
-      shipping tree, references unanimous on all 11 rows:
-      * `A=(1+2` (site `:807`, no closing `)`) — zb **completes silently (0)**,
-        both references **ERR 2**. 🔴 LIVE.
-      * `A=VARPTR(B` — zb **ERR 5**, both references **ERR 2**. 🔴 LIVE.
-      * `A=VARPTR 5` / `A=VARPTR(5)` — agree at 2 ✅. `A=BASE 5` / `A=BASE(0` —
-        agree at 2 ✅ (**those two sites are never reached**: BASE is descoped
-        and carries its own inline `ERRMARK` body). `A=EOF(0)` / `A=LOF(0)` —
-        agree at 59 ✅, which makes `expr.asm:1095`'s comment that
-        `PRINT EOF(0)` *"printed a plausible ` 0` with no error at all"* STALE.
-      ✅ **BOTH LIVE ROWS ARE PRE-EXISTING, AND THAT IS A READING NOT AN
-      ARGUMENT**: knife K-MO1 neutralises D-MISSOPFIX's deferred code and
-      neither row moves.
-      🎯 **`ev_f_err` IS NOW A NAME FOR TWO THINGS** — "a factor was required"
-      (one site, deferred ERR 24, at `ev_f_missop`) and "this expression is
-      malformed some other way" (seven sites, silent). **Splitting the label by
-      MEANING is the shape of the next slice**, and each site needs its own
-      reference reading before it is priced.
+- [x] ✅ **`ev_f_err`'s OTHER SEVEN JUMP SITES — CLOSED 2026-08-26, D-EVFERR, at
+      ZERO BYTES.** [`docs/spec-basic-evferr.md`](docs/spec-basic-evferr.md),
+      `scratchpad/evferr_probe.py`, **26 rows x 3 machines, references unanimous
+      on all 26, 11 DIFF -> 1.** The filing said EIGHT jump sites; today's tree
+      has **SEVEN**, and **two of those are not assembled** (`expr.asm:2032/2037`
+      sit inside `IF !G8_RESIDENT` and `sysvars.inc:475` is `G8_RESIDENT equ 1`).
+      🔴 **AND EVERY ONE OF THE FIVE ROWS FILED AS "AGREES" AGREED FOR A REASON
+      OTHER THAN ITS SITE**, which is the whole finding: `A=VARPTR 5` /
+      `A=VARPTR(5)` answer 2 through **`es_noentry`**'s leftover-token layer
+      because `ev_f_err` leaves the cursor UNADVANCED; `A=EOF(0)` / `A=LOF(0)`
+      answer 59 inside **`fch_check`**, one call before the site; `A=BASE 5` /
+      `A=BASE(0)` answer 2 in the RESIDENT `ev_f_base` (`graphics.asm:1292`).
+      The separators are one character away and **four of the five sites were
+      live divergences wearing a green row**: `A=VARPTR` and `A=VARPTR(`
+      COMPLETED SILENTLY (refs 2), and `OPEN"CRT:"FOR OUTPUT AS#1:A=EOF(1)` /
+      `A=LOF(1)` COMPLETED SILENTLY where both references say **ERR 5**.
+      💰 **ZERO BYTES — all four walls identical (45 / 107 / 2464 / 1622) and
+      `basic-reloc.rom` moved `41b8c4ed` -> `6db7c1f0`**: every fix is a `jp`
+      whose TARGET changed, the byte-neutral cure `vptr_close` had carried in
+      its own comment since the arrays slice. The ~6 B price and the page-1
+      carve this item was blocked on were answers to the wrong question.
+      🎯 **`ev_f_err` NOW HAS ZERO INCOMING JUMPS** — it is reached only by
+      fall-through from `ev_f_defer`, and the three labels that replaced it each
+      say ONE thing: `ev_f_missop` (24, a factor was required), `ev_f_empty`
+      (2, malformed expression), `ev_f_ifc` (5, the value is out of domain).
+      🔴 **AND THIS ITEM'S OWN JUSTIFICATION HAD ROTTED TOO**: *"BASE is
+      descoped and carries its own inline `ERRMARK` body"* has been false since
+      graphics slice G8 — right conclusion, dead reasoning.
 
 - [ ] ⚠️ **`CLEARPOOL=0` IS UNTESTED AND CANNOT BE ADDED TO
       `switch-build-check`.** 2026-08-23, D-MISSOPFIX. `FPERR_MISSOP` is equated
@@ -1468,8 +1473,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       * **Missing/empty operand → ERR 24 / ERR 2**: `ev_f`'s
         `ev_f_missop`/`ev_f_empty` machinery — the D-MISSOP arc already found
         this is *"one rule at 16 slots"* (docs/spec-basic-missop.md); several
-        verbs still raise their own (the `PLAY`-no-operand and `ev_f_err`
-        seven-sites items below are the same seam).
+        verbs still raise their own (the `PLAY`-no-operand item below is the
+        same seam). 🟢 **THE `ev_f_err` SEVEN-SITES MEMBER IS SHIPPED**
+        (D-EVFERR 2026-08-26, [`docs/spec-basic-evferr.md`](docs/spec-basic-evferr.md)):
+        five live sites split by MEANING onto `ev_f_empty` (2) and `ev_f_ifc`
+        (5) at **ZERO bytes**, 11 DIFF → 1, and `ev_f_err` now has **no
+        incoming jumps at all**. 🔴 Its lesson is the seam's own: **four of the
+        five rows filed as AGREEING agreed through a DIFFERENT LAYER** —
+        `es_noentry`, `fch_check`, `gfx_syntax` — which is the same shape as
+        this seam's thesis read backwards, and it is why a per-site oracle is
+        not optional here either.
       🎯 **The failure is not just wasted bytes — the bespoke check is usually
       subtly WRONG**: SWAP had wrong CODE (5 not 2) AND wrong ORDERING (raised
       before its exchange; the ref swaps then raises). The SAME ordering bug is
