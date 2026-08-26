@@ -9,10 +9,11 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 9 of N -- the remaining ids are NOT yet verdicted",
+  "status": "TRANCHE 10 of N. \ud83d\udd34 THE SUBJECT SET WAS WRONG: it is 176, not 146. 34 verdicted, 142 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
-  "screen_false_positive_classes": 6
+  "screen_false_positive_classes": 6,
+  "denominator_correction": "The subject set was scoped as 'open + done-carrying-a-residual-KEYWORD' = 146. But 38 of the 237 done blocks open with a \ud83d\udd34/\u26a0\ufe0f/\ud83d\udcb0 headline that STATES A DIVERGENCE, and only 8 of those 38 also carry a keyword. The keyword screen silently dropped 30 blocks -- and those are precisely the class the pickup list's own header exists to catch. Subject is now open + keyword-marked + open-reading-headline = 176."
  },
  "T-B96267": {
   "verdict": "LIVE",

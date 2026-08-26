@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-⚠️ **THIS IS TRANCHE 9 OF N. 34 of 146 subject blocks carry a verdict.** The
+🔴 **THIS IS TRANCHE 10 OF N, AND THE SUBJECT SET WAS WRONG. It is 176, not 146** (§1.2). 34 carry a verdict; **142** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -354,6 +354,38 @@ path is policed by nothing.
 🎯 **TWO OF THE FOUR ARE NOT FALSIFIABLE AT ALL** — a recorded coverage trade and
 a decision awaiting sign-off. *"Re-run everything"* has a floor: an item whose
 content is a judgement cannot be put to a machine, and saying so is the verdict.
+
+## 1.2 🔴 The denominator was too small, and the missing 30 are the important ones
+
+The subject set was scoped as *open + done-carrying-a-residual-**keyword***, and
+that gave **146**. It is wrong.
+
+**38 of the 237 done blocks open with a `🔴`/`⚠️`/`💰` headline that states a
+divergence** — and **only 8 of those 38 also carry a residual keyword.** The
+keyword screen silently dropped **30 blocks**. Subject is now *open +
+keyword-marked + open-reading-headline* = **176**.
+
+🎯 **AND THE 30 ARE EXACTLY THE CLASS THE PICKUP LIST'S OWN HEADER EXISTS TO
+CATCH** — *"a residual cannot be lost by being written up inside a `- [x]`
+block"*. The header warned about this; the sweep scoped itself with an instrument
+that could not see it. A sample of what is sitting inside `- [x]`:
+
+* `SCREEN 3 DRAWS ON BOTH REFERENCES; zerobas raises ERR 5`
+* `LINE (0,0)-((A$<5),1)` is ERR 5 here and **ERR 13 on both references**
+* `SCREEN (1<5)` is `Syntax error` here and **`Illegal function call`** on the reference
+* `A BOX FILL WRITES A FULLY-COVERED BYTE AS BACKGROUND`
+* `THE ARC MASK DIVERGES AT LARGE RADII`
+* `ZEROBAS'S SPOKE ENDPOINT DIVERGES FROM THE REFERENCE AT NEAR-ZERO ANGLES`
+* `DRAW's BOOT-DEFAULT SCALE STATE IS NOT S4`
+
+🔴 **THESE ARE BASIC-SURFACE DIVERGENCES, AND THEY NEVER APPEARED IN ANY LISTING
+OF "OPEN" WORK** — not in the pickup list, not in my earlier answer about what to
+prioritise, because every one of them is marked `- [x]`. A dozen-plus graphics and
+error-classification divergences have been invisible to prioritisation.
+
+⚠️ **THIS IS THE THIRD TIME THIS SWEEP'S DENOMINATOR HAS MOVED** — the filed 165
+cited paths became 238; the done-block screen read 67 then 37; and now 146 becomes
+176. Each time the instrument, not the tree, was what changed.
 
 ## 3. What the apparatus cost, said out loud
 

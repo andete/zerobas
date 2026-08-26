@@ -42,6 +42,14 @@ BOX = re.compile(r"^(\s*)- \[([ x])\] ?(.*)$")
 H2 = re.compile(r"^## (.+)$")
 BOLD = re.compile(r"^\*\*(.+?)\*\*\s*$")
 
+# 🔴 A CLOSED BLOCK WHOSE HEADLINE READS AS A FINDING. This is the signal the
+# keyword screen MISSED: 38 of 237 `- [x]` blocks open with 🔴/⚠️/💰 and state a
+# divergence ("SCREEN 3 DRAWS ON BOTH REFERENCES; zerobas raises ERR 5"), and
+# only 8 of those 38 also carry a residual KEYWORD. Scoping the sweep by keyword
+# alone silently dropped 30 blocks -- and these are the ones the pickup list's own
+# header warns about: a residual lost by being written up inside a `- [x]`.
+OPEN_HEADLINE = re.compile(r"^(🔴|⚠️|💰|🧹|📌|🔬|🐌|🟡)")
+
 # Markers that say a block carries an unresolved claim. Deliberately COARSE:
 # this is used to SCOPE a manual read, so over-inclusion is the safe direction.
 # It is a proxy and is labelled one — the real surface is reading the block.
@@ -105,6 +113,7 @@ def blocks():
         b["id"] = f"T-{h}" + (f".{n}" if n else "")
         b["lines"] = b["end"] - b["start"] + 1
         b["residual_marker"] = bool(RESIDUAL.search(b["text"]))
+        b["open_headline"] = bool(OPEN_HEADLINE.match(b["headline"]))
         b["kind"] = next((k for k, r in KIND if r.search(b["text"])), "unclassified")
         del b["text"]
     return out
@@ -118,14 +127,15 @@ def main():
     bs = blocks()
     top = [b for b in bs if b["depth"] == 0]
     nested = [b for b in bs if b["depth"] > 0]
-    subj = [b for b in top if b["state"] == "open" or b["residual_marker"]]
+    subj = [b for b in top if b["state"] == "open" or b["residual_marker"]
+            or b["open_headline"]]
 
     print(f"TODO.md blocks: {len(bs)}  (top-level {len(top)}, nested {len(nested)})")
     for st in ("open", "done"):
         n = [b for b in top if b["state"] == st]
         print(f"  {st:5s} {len(n):4d}   lines {sum(b['lines'] for b in n):6d}")
     print(f"\nSWEEP SUBJECT = every open block + every done block carrying a "
-          f"residual marker: {len(subj)}")
+          f"residual marker OR an open-reading headline: {len(subj)}")
     for k in sorted({b["kind"] for b in subj}):
         rows = [b for b in subj if b["kind"] == k]
         o = sum(1 for b in rows if b["state"] == "open")
