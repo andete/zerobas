@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 13 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **47** carry a verdict; **129** do not. The
+🔴 **THIS IS TRANCHE 14 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **50** carry a verdict; **126** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -470,6 +470,29 @@ machine agreed with the body **both times, 2 of 2**. That is a reason to believe
 the marker is honest in this file. **It is calibration on a sample of two, not a
 licence**, and the distinction is written into every one of the ten verdicts
 rather than resolved silently in favour of speed.
+
+## 2l. Tranche 14 — closed by MECHANISM, which beats closed by claim
+
+Three of the 25 non-self-declaring hidden blocks, each verified by finding the
+fix **in the tree** rather than by believing the block:
+
+| item | evidence |
+|---|---|
+| a re-run probe overwrites its own pre-fix measurement | `bank_guard` present in all three `spokeline_char*.py`; `drawclamp_bands.py` uses the versioned `.pre.json`/`.post.json` paths |
+| `injector-check` classifies its own detector as an injector | an `EXEMPT` table exists, each entry stating its CLASS, consulted at the walk site |
+| a knife runner read a complete exit-2 report as truncated | `tools/check_report_shape.py` exists and its **own docstring names this defect** — *"the exit-2 rows are indented two spaces"* |
+
+🟢 **THE THIRD IS THE STRONGEST KIND OF CLOSED**: the fix is a **standing gate**
+(`rowshape-check`, one of the 39 green today), so it cannot lapse the way a note
+can. *"Closed by a gate"* and *"closed by a paragraph"* are different claims and
+this sweep records which one it found.
+
+⚠️ **AND TRANCHE 13'S MARKER REGEX UNDER-MATCHED.** It required `✅ **CLOSED`;
+this block writes `**CLOSED 2026-08-17 by D-DRAWCLAMP**` with no tick, so it was
+never swept into the self-declaring set. **The 10 are a LOWER BOUND on that class,
+not its size** — which is the safe direction (it sends blocks to be read rather
+than retiring them unread), but it means "28 still need reading" is an
+over-estimate of the real work.
 
 ## 3. What the apparatus cost, said out loud
 
