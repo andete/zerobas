@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 19 of N. Subject 176; 62 verdicted, 114 pending.",
+  "status": "TRANCHE 20 of N. Subject 176; 62 verdicted, 114 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -17,7 +17,7 @@
   "marker_regex_undermatch": "\u26a0\ufe0f tranche 13's self-declaration regex required `\u2705 **CLOSED`; T-3B013F writes `**CLOSED 2026-08-17 by D-DRAWCLAMP**` with no tick and was therefore NOT swept up by it. The 10 self-declaring blocks are a LOWER BOUND on that class, not its size.",
   "self_declaring_total": "19 of the 38 open-reading headlines self-declare closure (10 by the strict marker, 9 more by the broadened one). The strict count was a LOWER BOUND, as tranche 14 predicted.",
   "new_question_from_t18": "\u26a0\ufe0f UNFILED AND UNMEASURED: `SCREEN 2:CLS` leaves 4923 set pixels in the VG-8020's pattern generator and 0 in zerobas's. If the name table does not reference them it is invisible and harmless; if it does, it is a visible divergence. No row in the sweep or the battery asks.",
-  "plane_instrument": "\ud83d\udfe2 FIXED IN TRANCHE 19. Count a pattern bit ONLY where its colour-table row has fg nibble != 0: fg 0 is TRANSPARENT on MSX and shows the backdrop. Counting transparent bits is what made the reference read ~5000 in tranche 18. VALIDATED: with the rule applied, the reference reproduces a filed figure EXACTLY (170 on the r200 row), and both machines' name tables are identity-mapped 768/768 so every pattern byte is referenced."
+  "plane_instrument": "\ud83d\udd34 THREE RULES, THREE ANSWERS -- AND THAT IS THE FINDING. The VG-8020's SCREEN 2 pattern plane holds 4923 leftover bits that `CLS` does not clear (a colour-0 `LINE ...,BF` fill does not either). Every counting rule is then wrong in a different direction: RAW counts invisible bits (~5000); VISIBLE (fg!=0) over-counts, because drawing recolours a row and makes leftovers in it visible; BASELINE-SUBTRACTED under-counts, because a drawn pixel landing on a leftover bit is subtracted away. Readings for one row under the three rules: ref 4955 / 125 / 32. \ud83c\udfaf AN EXACT WHOLE-PLANE COUNT OF A FIGURE IS NOT AVAILABLE ON THIS MACHINE BY ANY OF THEM."
  },
  "T-B96267": {
   "verdict": "LIVE",
@@ -473,17 +473,19 @@
   "residue": "\u26a0\ufe0f THE ENDPOINT PIXEL ITSELF REMAINS UNSEPARABLE -- centre+(15,0) lies on the arc, which paints it either way. So the filed claim is refuted for the RAY (13 of 15 pixels measured identical, and the y=59 alternative empty) and untested for the single last pixel. That is a much narrower claim than 'zerobas's spoke endpoint diverges', and the item should be restated to it rather than closed outright."
  },
  "T-0DFFD6": {
-  "verdict": "SPLIT: one row HEALED, three rows LIVE with magnitudes unreconciled",
+  "verdict": "SPLIT: the r200 row HEALED (trustworthy); the other three NOT MEASURABLE by this instrument",
   "how": "whole-plane visible-pixel count, stable across 25 s and 45 s capture windows",
   "headline": "THE ARC MASK DIVERGES AT LARGE RADII, AND IT IS NOT THE PRODUCT BOUND",
   "r200": "CIRCLE(128,352),200,15,1.1,2.04 -> ref 170, zb 170. Filed ref 170 / zb 181. \u2705 HEALED, and the reference reproducing its filed 170 EXACTLY is what validates the instrument.",
   "r700": "CIRCLE(128,96),700,15,0,1.57,.137 -> ref 18, zb 127. Filed ref 127 / zb 126. \ud83d\udd34 LIVE and LARGE (7x), and NEITHER side matches the filing.",
   "r400": "CIRCLE(128,96),400,15,-1.57,0 -> ref 125, zb 97. Filed ref 97 / zb 97.",
   "pi2": "CIRCLE(128,96),95,15,0,1.5707963 -> ref 103, zb 135. Filed ref 135 / zb 134.",
-  "caveat": "\u26a0\ufe0f ON THREE OF THE FOUR ROWS BOTH SIDES DIFFER FROM THE FILED NUMBERS, and in each case zerobas today reads the value filed for the REFERENCE. Two readings are possible: the rows moved, or the filed figures were taken with a different visibility rule than mine. The r200 row -- where my reference matches its filed value exactly -- argues for the first, but ONE validating case is not enough to reinterpret three. The divergences are real and measured TODAY; their relationship to the filing is NOT settled."
+  "caveat": "\u26a0\ufe0f ON THREE OF THE FOUR ROWS BOTH SIDES DIFFER FROM THE FILED NUMBERS, and in each case zerobas today reads the value filed for the REFERENCE. Two readings are possible: the rows moved, or the filed figures were taken with a different visibility rule than mine. The r200 row -- where my reference matches its filed value exactly -- argues for the first, but ONE validating case is not enough to reinterpret three. The divergences are real and measured TODAY; their relationship to the filing is NOT settled.",
+  "why_r200_is_trusted": "\ud83d\udfe2 IT IS THE ONE ROW THAT AGREES UNDER TWO INDEPENDENT RULES: visible-only and baseline-subtracted both give ref 170 / zb 170, and 170 is exactly the filed reference value. A reading that survives a change of rule is a reading; the other three move with the rule (r400 ref: 125 visible vs 32 subtracted) and are therefore artefacts of the instrument, not measurements of the machine.",
+  "next_instrument": "the project's OWN graphics apparatus (probes/basic/basic_probe_graphics.py, which compares per-cell VRAM segments rather than whole-plane counts) -- three tranches of building a fresh one is enough, and that is why the existing one is shaped the way it is."
  },
  "T-F78A04": {
-  "verdict": "LIVE -- ref 103, zb 135 (magnitudes unreconciled with the filing)",
+  "verdict": "NOT MEASURABLE by this instrument (see T-0DFFD6's three-rule note)",
   "how": "same instrument, same stability check",
   "headline": "THE REFERENCE EVALUATES THE ARC ANGLE IN SINGLE PRECISION",
   "reading": "CIRCLE(128,96),95,15,0,1.5707963 -> ref 103, zb 135 visible px. Filed: ref 135 / zb 134.",

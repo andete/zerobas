@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 19 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 20 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -641,6 +641,35 @@ different visibility rule than mine. **The r200 row argues for the first**, sinc
 my reference matched its filed value exactly — but **one validating case is not
 enough to reinterpret three**, and saying so is the verdict. The divergences are
 real and measured today; their relationship to the filing is **not settled**.
+
+## 2r. Tranche 20 — three counting rules, three answers, and knowing when to stop
+
+The VG-8020's SCREEN 2 pattern plane holds **4923 leftover bits that `CLS` does
+not clear** — and a colour-0 `LINE …,BF` fill does not clear them either. Every
+counting rule is then wrong in a different direction:
+
+| rule | failure | `r400` reference reads |
+|---|---|---|
+| raw bits | counts invisible bits (fg 0 is transparent) | **4955** |
+| visible (fg ≠ 0) | drawing **recolours** a row, making leftovers in it visible | **125** |
+| baseline-subtracted | a drawn pixel landing **on** a leftover bit is subtracted away | **32** |
+
+🎯 **AN EXACT WHOLE-PLANE COUNT OF A FIGURE IS NOT AVAILABLE ON THIS MACHINE BY
+ANY OF THEM**, and each rule looked correct until the next one contradicted it.
+
+🟢 **WHICH IS EXACTLY WHY THE `r200` ROW IS THE ONE TO TRUST**: it is the only row
+that **agrees under two independent rules** — visible-only and baseline-subtracted
+both give **ref 170 / zb 170** — and 170 is the filed reference value.
+**A reading that survives a change of rule is a reading.** The other three *move
+with the rule* (r400's reference: 125 vs 32), so they are artefacts of the
+instrument rather than measurements of the machine, and are recorded **NOT
+MEASURABLE** rather than reported as divergences.
+
+⚠️ **AND THAT IS THE END OF BUILDING THIS INSTRUMENT.** Three tranches went into
+it; the remaining graphics items need the project's **own** apparatus
+(`probes/basic/basic_probe_graphics.py`, which compares per-cell VRAM *segments*
+rather than whole-plane counts). Discovering why that apparatus is shaped the way
+it is has been worth the three tranches — continuing to rebuild it would not be.
 
 ## 3. What the apparatus cost, said out loud
 
