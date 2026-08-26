@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 53 of N. Subject 176; 124 verdicted, 52 pending.",
+  "status": "TRANCHE 54 of N. Subject 176; 124 verdicted, 52 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -41,7 +41,14 @@
     "T-632DF5": "bdos-, fat-error-, graphics-floor- and subrom-acceptance (four at once)"
    },
    "\u26a0\ufe0f_what_this_does_and_does_not_show": "REFERENCING A GATE IS NOT THE SAME AS DEPENDING ON IT HAVING RUN. Some of the 13 merely name the gate as the place a row lives, which is unaffected. The exposure is specific: any item whose reasoning is 'that gate is green / has been quiet / would have caught it' inherits tranche 46's void. Each of the 13 needs a read to say which kind it is; ONE has already been read (T-E56017, tranche 52) and it was the exposed kind.",
-   "\ud83d\udd34_the_uncomfortable_one": "T-FE1732 was verdicted in this sweep as SELF-DECLARED CLOSED ('fat-error-acceptance's missing NAME control -- CLOSED 2026-08-07'). Its gate is one of the 22. A closure asserted against a gate that has not run since is a claim about the day it was written, not about today -- and my own read-not-run verdict inherited that without noticing until now."
+   "\ud83d\udd34_the_uncomfortable_one": "T-FE1732 was verdicted in this sweep as SELF-DECLARED CLOSED ('fat-error-acceptance's missing NAME control -- CLOSED 2026-08-07'). Its gate is one of the 22. A closure asserted against a gate that has not run since is a claim about the day it was written, not about today -- and my own read-not-run verdict inherited that without noticing until now.",
+   "resolved_t54": {
+    "method": "read the sentence around each gate mention in all 13",
+    "DEPENDS_ON_A_SCORE (7)": "T-6A9F9F ('namspc-acceptance 58/58 -> 60/60'), T-8A24D5 ('namspc-acceptance 62/62 -> 99/99'), T-4B3ABB ('readvar-acceptance 22/22, 1 positive...'), T-CFEA4A ('readvar-acceptance 24/24'), T-8A25E8 ('diskbasic-acceptance 34/34'), T-48AC8B ('direct-ctrl-acceptance 40/...'), T-632DF5 ('fat-error-acceptance reports ALL PASS', 'bdos-acceptance is the deep one').",
+    "NAMES_ONLY (6)": "T-E56017, T-CAA3DC, T-2148BA, T-5858A6, T-70A01E, T-FE1732",
+    "\ud83d\udd34_the_finding": "SEVEN ITEMS CITE A GATE SCORE AS EVIDENCE, AND NONE OF THOSE GATES RUNS IN THE BATTERY. The scores were real on the day they were taken -- the issue is that nothing re-checks them, so '58/58 -> 60/60' is a claim about a past run with no standing verification. That is weaker than 'the item is wrong' and stronger than 'the item is fine'.",
+    "\ud83c\udfaf_the_precedent_inside_the_list": "T-70A01E ALREADY CONTAINS A CORRECTION OF THIS EXACT SHAPE: '\ud83d\udd34 AND \"no Makefile target runs it\" WAS FALSE. `make diskbasic-acceptance` dispatches...'. Someone hit this class before and fixed it in the other direction. \u26a0\ufe0f BUT THAT CORRECTION IS ITSELF INCOMPLETE: a target EXISTING is not the battery RUNNING it, and diskbasic-acceptance is one of the 22. The fix replaced one wrong claim with a narrower one that is still not the question that matters."
+   }
   }
  },
  "T-B96267": {

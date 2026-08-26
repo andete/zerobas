@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 53 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 54 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1577,6 +1577,31 @@ cross-check.
 That is the value of the `how:` field being recorded on every verdict: the 19
 read-not-run verdicts can now be re-examined as a set, and this is the first
 concrete reason to.
+
+## 2az. Tranche 54 — seven items resting on scores nothing re-checks
+
+Reading the sentence around each gate mention splits the 13:
+
+| | n | |
+|---|---|---|
+| **cites a gate SCORE as evidence** | **7** | T-6A9F9F (`namspc 58/58 → 60/60`), T-8A24D5 (`62/62 → 99/99`), T-4B3ABB (`readvar 22/22`), T-CFEA4A (`readvar 24/24`), T-8A25E8 (`diskbasic 34/34`), T-48AC8B (`direct-ctrl 40/…`), T-632DF5 (`fat-error ALL PASS`) |
+| names the gate only | 6 | T-E56017, T-CAA3DC, T-2148BA, T-5858A6, T-70A01E, T-FE1732 |
+
+🔴 **SEVEN ITEMS CITE A GATE SCORE, AND NONE OF THOSE GATES RUNS IN THE BATTERY.**
+The scores were real the day they were taken — the issue is that **nothing
+re-checks them**, so `58/58 → 60/60` is a claim about a past run with no standing
+verification. That is weaker than *"the item is wrong"* and stronger than
+*"the item is fine"*, and the list currently offers no way to tell the difference.
+
+🎯 **AND ONE ITEM ALREADY CONTAINS A CORRECTION OF THIS EXACT SHAPE.** T-70A01E
+carries: *"🔴 AND **"no Makefile target runs it" WAS FALSE**. `make
+diskbasic-acceptance` dispatches…"*. Someone hit this class before and fixed it —
+in the other direction.
+
+⚠️ **But that correction is itself incomplete**: **a target existing is not the
+battery running it**, and `diskbasic-acceptance` is one of the 22. The fix
+replaced one wrong claim with a narrower one that still is not the question that
+matters. Two readers, two different wrong questions, same gate.
 
 ## 3. What the apparatus cost, said out loud
 
