@@ -7749,6 +7749,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       input buffer), so the user can cursor-up to any visible output, edit it
       in place, and re-enter it. Needs cursor-key handling and VDP line-readback.
       Our `repl.asm` is a deliberate simplification; full replacement is Phase 3.
+      📏 **SCOUTED 2026-08-26 (D-EDITSCOUT)**,
+      [`docs/spec-basic-editscout.md`](docs/spec-basic-editscout.md) — placement
+      only, nothing priced. **The feature is measured, not inferred**: the
+      reference's counter payload reads **1 → 2 → 3** as re-entries accumulate,
+      and entering from EITHER row of a wrapped line re-executes the whole
+      LOGICAL LINE, so the reader must walk back to its start and forward through
+      its continuations.
+      🟢 **C-BIOS's `CHPUT` ALREADY HONOURS THE CURSOR-MOTION CODES ON THE
+      ZEROBAS MACHINE** (`PRINT CHR$(31);CHR$(31);"Z"` moves Z +2 rows on BOTH
+      sides), so the OUTPUT half is present and free. What is missing is the
+      INPUT half: `read_line`'s `cp 32 / jr c,rl_loop` throws `$1C`–`$1F` away
+      before `CHPUT` ever sees them.
+      🎯 **THE PER-KEYSTROKE SUB-ROM-CROSSING WORRY IS REFUTED**: the
+      per-keystroke path is `CHPUT`, and the novel work is ONE act per Enter —
+      `lineedit_tenant`'s exact granularity. The "in-window 0.6–0.9 KB"
+      classification in `docs/decision-phase3-space-strategy.md` §3 was signed
+      off **2026-07-11, before the sub-ROM tenant architecture existed**; sub
+      page 1 has 1622 B free and sub page 0 has 2464 B. ⚠️ **The byte cost is
+      still NOT measured**, nor how the reader finds a logical line's START
+      (the reference keeps per-row continuation bookkeeping; zerobas has none),
+      nor `INS`/`HOME`/`CTRL` keys, and **`CF-3300` was not run**.
+      🔴 **THE FIRST RE-ENTRY ROW WAS BLIND BY CONSTRUCTION** — `PRINT"AAA"`
+      re-entered reprints `AAA` over the `AAA` already there, so a WORKING
+      re-entry leaves the screen byte-identical to none. It read as "no feature".
+      The wrong-row control (cursor-up ×1 onto an `Ok` row → `Syntax error`) is
+      the only row that saw anything, and it had been written to rule out a
+      different hypothesis.
 - [ ] **Editor / program management** — `RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`, full `CLEAR` semantics (`ERASE`
       shipped 2026-07-15 with the arrays arc, slice 2; `DELETE <range>` shipped
