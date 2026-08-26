@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 60 of N. Subject 177; 142 verdicted, 35 pending.",
+  "status": "TRANCHE 61 of N. Subject 177; 147 verdicted, 30 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -1096,5 +1096,41 @@
   "headline": "CLOSED 2026-08-24 (D-SWAP3) -- AND IT WAS A GENERIC MECHANISM",
   "reading": "the matched phrase is '\ud83c\udfaf That closes TWO divergences the 0 B patch **left open**' -- a sentence stating that two things are now CLOSED. My keyword screen matched 'left open' and read a closure as a residual.",
   "\ud83c\udfaf_instrument_note": "THE KEYWORD SCREEN HAS A FALSE-POSITIVE DIRECTION I HAD NOT SEEN: it matches residual vocabulary used in the PAST TENSE inside a closure. Tranche 1 measured its over-inclusion at 67-vs-37 on the word OPEN; this is the same failure with a two-word phrase. The screen remains a superset -- which is the safe direction -- but its precision is worse than the 37 suggested."
+ },
+ "T-7A663B": {
+  "verdict": "CLOSED, verified by mechanism -- and a screen false positive",
+  "how": "grep of the Makefile",
+  "headline": "THE SUB-ROM WALLS HAVE NO GATED READOUT -- CLOSED 2026-08-07",
+  "reading": "`tools/check_sub_walls.py` runs at Makefile:328 as a step of `basic-reloc`, which IS in the 39-unit battery and ran green today. The walls ARE gated.",
+  "screen_note": "the keyword hit was the HEADLINE's own description of the original problem ('HAVE NO GATED READOUT'), not a residual"
+ },
+ "T-FE1732": {
+  "verdict": "CLOSED by mechanism, but the mechanism sits in a gate that never runs",
+  "how": "read + tranche 47's battery list",
+  "headline": "`fat-error-acceptance`'s missing `NAME` control -- CLOSED 2026-08-07 by D-FEVERB",
+  "reading": "the fix is real and described in detail (a control that prints `NOT MEASURED` and exits 2 rather than passing).",
+  "\ud83d\udd34_exposure": "its gate, `fat-error-acceptance`, is one of the 22 targets tranche 47 found NOT in the battery with no documented exclusion. A closure verified only by a gate that has not run since is a claim about the day it was written.",
+  "screen_note": "the keyword hit was the FIX's own behaviour ('if it fails, THAT case prints NOT MEASURED'), not a residual"
+ },
+ "T-AEE8D4": {
+  "verdict": "CLOSED -- the keyword hit is inside a REFUTATION",
+  "how": "read",
+  "headline": "CLOSED -- `CLEAR 200,` RAISED THE RIGHT ERROR AND LOST THE TRAP",
+  "reading": "the matched text is 'UNMEASURED... an APPARATUS gap\". It is not. D-CLRTRAP [...]' -- the block quotes an earlier claim in order to refute it.",
+  "screen_note": "third false-positive shape in two tranches: residual vocabulary QUOTED INSIDE A REBUTTAL"
+ },
+ "T-014104": {
+  "verdict": "CLOSED with a GENUINE live residual -- and its own figure is stale",
+  "how": "read + make basic-reloc",
+  "headline": "~~MAIN PAGE 1 HAS 2 B~~ -- 69 B FREE SINCE 2026-08-19",
+  "residual": "'are now UNPRICED, not automatically live: each was a claim about a design' -- the carve candidates the wall change freed are unpriced, deliberately",
+  "note": "\ud83c\udfaf the 69 B in its own corrected headline is ITSELF stale: today's wall is 89 B. A block that corrects a stale number acquires a stale number."
+ },
+ "T-CFEA4A": {
+  "verdict": "CLOSED with a GENUINE live residual, and it points forward",
+  "how": "read",
+  "headline": "CLOSED 2026-08-08 -- AN ARRAY ELEMENT IS NOW A LEGAL LVALUE TARGET",
+  "residual": "'\u27a1\ufe0f **Still open below:** the four further lvalue parse sites'",
+  "note": "\ud83d\udfe2 the well-behaved shape: a closed block that names its residual AND says where the rest lives. Compare the 30 divergences of \u00a71.2, which named nothing."
  }
 }

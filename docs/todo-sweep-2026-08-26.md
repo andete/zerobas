@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 60 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 61 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1742,6 +1742,37 @@ in the **past tense inside a closure**. Tranche 1 measured its over-inclusion at
 67-vs-37 on the word `OPEN`; this is the same failure with a two-word phrase. The
 screen stays a superset — the safe direction — but its precision is worse than the
 37 implied.
+
+## 2bf. Tranche 61 — the screen's precision on closed blocks, measured properly
+
+Five closed blocks read. **Three were screen false positives, two carry genuine
+residuals** — and the three fail in three *different* ways:
+
+| block | what the screen matched | what it actually was |
+|---|---|---|
+| sub-ROM walls | *"HAVE NO GATED READOUT"* | the **headline describing the original problem**, now closed — `check_sub_walls.py` runs at `Makefile`:328 inside `basic-reloc`, which ran green today |
+| `fat-error` NAME control | *"THAT case prints NOT MEASURED"* | the **fix's own behaviour** |
+| `CLEAR 200,` | *"UNMEASURED… an APPARATUS gap"* | a claim **quoted inside a rebuttal** (*"It is not."*) |
+
+🎯 **THREE SHAPES, ONE CAUSE: RESIDUAL VOCABULARY APPEARS IN CLOSURES AS OFTEN AS
+IN RESIDUALS** — in the headline that states the problem, in the description of
+the cure, and in quotations of claims being refuted. The screen was always a
+superset; this measures *how* loose, and it is looser on closed blocks than the
+tranche-1 figure of 37 implied.
+
+**The two genuine residuals:**
+
+* **Main page 1** — *"are now UNPRICED, not automatically live: each was a claim
+  about a design."* 🎯 And its own corrected headline (*"69 B FREE SINCE
+  2026-08-19"*) is **itself stale**: today's wall is **89 B**. **A block that
+  corrects a stale number acquires a stale number.**
+* **Array-element lvalue** — *"➡️ **Still open below:** the four further lvalue
+  parse sites."* 🟢 The well-behaved shape: a closed block that **names its
+  residual and says where the rest lives** — the opposite of the 30 divergences
+  §1.2 found, which named nothing.
+
+⚠️ **And `fat-error`'s closure is verified only by a gate that never runs** (one of
+tranche 47's 22), so it is a claim about the day it was written.
 
 ## 3. What the apparatus cost, said out loud
 
