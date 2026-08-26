@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-⚠️ **THIS IS TRANCHE 2 OF N. 14 of 146 subject blocks carry a verdict.** The
+⚠️ **THIS IS TRANCHE 3 OF N. 17 of 146 subject blocks carry a verdict.** The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -25,7 +25,7 @@ instrument had the property it was measuring.** It is a tool now.
 | blocks parsed | 367 (346 top-level, **21 nested** — an indented `- [x]` under an open parent is not an independent item) |
 | open / done (top-level) | **109 / 237** |
 | subject = open + done-carrying-a-residual-marker | **146** |
-| verdicted so far | **14** |
+| verdicted so far | **17** |
 
 ### 1.1 Two counts of my own disagreed, so I read
 
@@ -93,6 +93,34 @@ removed prints `[OK]` on all three, so `CLEAR 60` + `DIM` + `STRING$(25)` is not
 itself the cost — it is the `READ` of a stored literal.
 
 Running total across both tranches: **8 LIVE, 6 stale or partly stale.**
+
+## 2b. Findings — tranche 3, the disk-channel items
+
+⚠️ **A STOCK VG-8020 HAS NO DRIVE.** It errors on every disk statement — the
+`FIELD` control row raises `Bad file name` *and* `Illegal function call` on it —
+so a disk row scores on the CF-3300 and zerobas only. That is a denominator
+fact, stated rather than averaged away. Probe: `scratchpad/sweep_tranche3.py`.
+
+| item | verdict | reading |
+|---|---|---|
+| non-tiling `LEN=r` | **LIVE** | `OPEN"TS.DAT"AS #1 LEN=100`: cf3300 `[OK]`, zb **`Syntax error`** — the filed row exactly. Control `LEN=128` is accepted on **both**, so zb's `OPEN..LEN` works and it is the non-tiling value it rejects |
+| malformed filespec prints `load error` | **LIVE (first clause)** | `FILES"TOOLONGNAME.EXTRA"`: zb prints **`load error`**, cf3300 prints no error at all |
+| `FIELD #(A$<5)` classification order | **REFRAMED — not resolvable here** | zb `Type mismatch`, cf3300 `Type mismatch`, vg8020 `Illegal function call` |
+
+🔴 **THE `FIELD` ITEM IS FILED AS ZEROBAS-VS-REFERENCE AND THE TWO REFERENCES
+DISAGREE.** zerobas matches the CF-3300 exactly. Worse, **the VG-8020 reading
+that the item rests on may be an apparatus artifact**: that machine has no
+drive and raises `Illegal function call` on every `FIELD`, so its reading cannot
+be separated from "no drive" by this apparatus. Settling it needs a VG-8020 with
+a disk interface. 🎯 **A filed divergence can be a disagreement between the two
+oracles, and the item's own wording hides that by naming only one.**
+
+⚠️ **THE MALFORMED-FILESPEC ITEM IS ONLY HALF SCORED.** Its second clause — *"and
+`FILES` lists anyway"* — needs a screen read; an error scrape cannot see a
+directory listing. Recorded as unverified rather than folded into the verdict.
+
+Running total across three tranches: **10 LIVE, 6 stale or partly stale, 1
+reframed-unresolvable.**
 
 ## 3. What the apparatus cost, said out loud
 

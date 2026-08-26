@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 2 of N -- the remaining ids are NOT yet verdicted",
+  "status": "TRANCHE 3 of N -- the remaining ids are NOT yet verdicted",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them."
  },
  "T-B96267": {
@@ -121,5 +121,28 @@
   "headline": "A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM",
   "reading": "after CLEAR 300,TXTTAB+1000: FRE(0) reads 148 / 148 / 646 -- the filed numbers exactly. Storing a 32-byte line then raises `Out of memory` on BOTH references while zb stores it (FRE 646 -> 615)",
   "caveat": "\u26a0\ufe0f THE CONTROL DOES NOT CONFIRM THE ITEM'S MECHANISM. Plain `CLEAR 300` reads 148/148/646 too, so the HIMEM argument changes FRE(0) on NEITHER side; the symptom is reproduced exactly, the attribution to 'CLEAR's HIMEM argument does not reach the store check' is not tested by these rows"
+ },
+ "T-66E1EE": {
+  "verdict": "LIVE",
+  "how": "REPL, cf3300 + zb with disk (VG-8020 has NO DRIVE)",
+  "headline": "A NON-TILING `LEN=r` IS `Syntax error` HERE AND `OK` ON THE CF-3300",
+  "reading": "OPEN\"TS.DAT\"AS #1 LEN=100: cf3300 [OK], zb `Syntax error` -- the filed row exactly",
+  "control": "LEN=128 (a tiling length) is accepted on BOTH, so zb's OPEN..LEN works and it is the NON-TILING value it rejects"
+ },
+ "T-EC6E68": {
+  "verdict": "REFRAMED -- NOT RESOLVABLE ON THIS APPARATUS",
+  "how": "REPL x3 with disk where available",
+  "headline": "`FIELD #(A$<5),1 AS Z$` IS `Type mismatch` HERE AND `Illegal function call` ON THE VG-8020",
+  "reading": "zb `Type mismatch`, cf3300 `Type mismatch`, vg8020 `Illegal function call`",
+  "reframe": "the item files this as zerobas-vs-reference; the TWO REFERENCES DISAGREE and zerobas matches the CF-3300",
+  "caveat": "\ud83d\udd34 AND THE VG-8020 READING MAY BE AN APPARATUS ARTIFACT. That machine has NO DRIVE: the control row (OPEN + FIELD #1) raises `Bad file name` AND `Illegal function call` on it, i.e. it errors on every disk statement. Its `Illegal function call` cannot be separated from 'no drive' by this apparatus. Settling it needs a VG-8020 WITH a disk interface."
+ },
+ "T-3CC9D3": {
+  "verdict": "LIVE (first clause)",
+  "how": "REPL, cf3300 + zb with disk",
+  "headline": "A MALFORMED FILESPEC PRINTS `load error` AND `FILES` LISTS ANYWAY",
+  "reading": "FILES\"TOOLONGNAME.EXTRA\": zb prints `load error`, cf3300 prints no error at all",
+  "control": "bare FILES is clean on both",
+  "gap": "\u26a0\ufe0f ONLY THE FIRST CLAUSE IS SCORED. Whether the directory is listed ANYWAY needs a screen read, not an error scrape -- the span reader cannot see a listing. The 'lists anyway' half is still unverified."
  }
 }
