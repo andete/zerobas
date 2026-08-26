@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 45 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 46 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1363,6 +1363,33 @@ header it names. Tranche 38 measured a 47 % semantic rate and tranche 39 showed
 that figure is itself an under-estimate; this is a clean counter-example. **The
 citation class contains both failures and successes**, which is exactly why the
 honest output was a bracket rather than a single rate.
+
+## 2ar. Tranche 46 — an item whose evidence of quiescence is void
+
+**`lof-acceptance` intermittent oracle drift.** The item reasons:
+
+> Sighting 3 has not occurred across **EIGHT consecutive slices** (D-PINDATA,
+> D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE, D-DOCJUDGE, …)
+
+🔴 **`lof-acceptance` IS NOT IN THE BATTERY.** It is a real target
+(`Makefile`:1736, `.PHONY` at :2785) but it is **not** in `run_gates.py`'s `GATES`
+list, so `make gates` never runs it. Those eight slices ran the battery; the
+battery does not include this gate.
+
+🎯 **"NOTHING SINCE" IS NOT EVIDENCE OF STABILITY WHEN NOTHING LOOKED.** The
+quiet is explained by the gate's absence, not by the drift stopping. **An
+intermittent fault that stopped being observed is not an intermittent fault that
+stopped.**
+
+That is the same family as *an unnamed outcome reads as no outcome* (tranche 26)
+and the `0/0-ALL-CONVERGED` shape the patch-freshness gate was built this morning
+to avoid: **a gate that does not run reads exactly like a gate that passes.**
+⚠️ A slice could have run it by hand — the item does not say so, and the battery
+certainly did not.
+
+**`DSKI$`/`DSKO$` — LIVE**, confirmed by this session's `kwsweep`: both read
+ABSENT / not-run / crunch-only. The tokens crunch, so they are recognised, and
+nothing executes them — exactly the state the item describes.
 
 ## 3. What the apparatus cost, said out loud
 

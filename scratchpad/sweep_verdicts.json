@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 45 of N. Subject 176; 112 verdicted, 64 pending.",
+  "status": "TRANCHE 46 of N. Subject 176; 114 verdicted, 62 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -862,5 +862,21 @@
   "headline": "`disk/runtime.asm:423` `int_h_body` awaits a HUMAN decision",
   "reading": "the header is exactly at :423: 'int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) -- SUPERSEDED by A-3 ... DEAD as of A-3 ... Kept in place (net-zero, no address shift) pending removal'. One matching entry in tools/citations-advisory-allow.txt -- acknowledged, not resolved.",
   "\ud83d\udfe2_a_counter_example": "THIS ITEM'S file:LINE CITATION IS EXACT. Tranche 38 measured a 47% semantic rate and tranche 39 showed that figure is itself an under-estimate; this is a clean counter-example -- :423 lands precisely on the header the item is about. The citation class has both failure and success in it, which is why the honest answer was a BRACKET rather than a rate."
+ },
+ "T-E19368": {
+  "verdict": "\ud83d\udd34 ITS EVIDENCE OF QUIESCENCE IS VOID -- the gate does not run in the battery",
+  "how": "static read of Makefile + tools/run_gates.py",
+  "headline": "`lof-acceptance` intermittent oracle drift -- two sightings, nothing since",
+  "the_filed_evidence": "'Sighting 3 has not occurred across EIGHT consecutive slices (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE, D-DOCJUDGE, ...)'",
+  "reading": "`lof-acceptance` IS a real target (Makefile:1736, `.PHONY` at :2785) but it is NOT in run_gates.py's GATES list -- `make gates` never runs it. Those eight slices ran the battery; the battery does not include this gate.",
+  "why_that_matters": "\ud83d\udd34 'NOTHING SINCE' IS NOT EVIDENCE OF STABILITY WHEN NOTHING LOOKED. The item reasons from eight quiet slices to a quiescent drift, and the quiet is explained by the gate's absence from the battery rather than by the drift stopping. An intermittent fault that stopped being OBSERVED is not an intermittent fault that stopped.",
+  "class": "\ud83c\udfaf the same family as 'an unnamed outcome reads as no outcome' (tranche 26) and the 0/0-ALL-CONVERGED shape the patch-freshness gate was built to avoid this morning: A GATE THAT DOES NOT RUN READS EXACTLY LIKE A GATE THAT PASSES.",
+  "caveat": "\u26a0\ufe0f a slice could have run `make lof-acceptance` by hand; the item does not say so, and the battery certainly did not"
+ },
+ "T-3628DB": {
+  "verdict": "LIVE, confirmed by today's kwsweep",
+  "how": "make kwsweep (run this session)",
+  "headline": "Direct sector access -- INVESTIGATED, DEFERRED to Phase 3 -- `DSKI$` / `DSKO$`",
+  "reading": "both words read ABSENT / not-run / crunch-only in today's sweep -- the tokens crunch (so they are recognised) and nothing executes them, exactly the state the item describes."
  }
 }
