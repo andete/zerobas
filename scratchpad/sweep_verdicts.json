@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 48 of N. Subject 176; 116 verdicted, 60 pending.",
+  "status": "TRANCHE 49 of N. Subject 176; 118 verdicted, 58 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -900,5 +900,18 @@
   "headline": "The INLINE decoded form is measured UNDECIDABLE, and that is a standing hole, not a closed item",
   "reading": "audit_citations.py:50 records that 'docs/spec-audit-citations-bytes.md measures that the general raw-byte class is UNDECIDABLE from text', and :384 that it is 'still undecidable, BY PROOF rather than by threshold'. The spec's own \u00a7512 lists the inline decoded form among what it 'did not revisit'.",
   "category": "\ud83c\udfaf a standing hole that is PROVEN unclosable by the available instrument is not a task either -- it is a boundary. That is the seventh not-a-task item in this sweep."
+ },
+ "T-23E24B": {
+  "verdict": "LIVE, exact -- the classifier works as the item describes",
+  "how": "static read of basic/expr.asm:1163-1167",
+  "headline": "`GET`/`PUT`/`FIELD`/`INPUT$` on a `CAS:` channel (`FCH_MODES` 7/8) are INFERRED, not measured",
+  "reading": "`fch_mode_class` classifies by `FCH_MODES[E] < LPT_MODE`: CF clear for a length-less DEVICE channel (LPT/CRT/CAS, mode >= LPT_MODE). Modes 7/8 are >= LPT_MODE and so go down the device arm by construction -- exactly the inference the item flags, with no CF-3300 measurement behind it."
+ },
+ "T-F2E36E": {
+  "verdict": "LIVE -- confirmed across the whole float surface",
+  "how": "grep over all four float probes",
+  "headline": "`float-acceptance` HAS NO NAMED EXPECTED-FAILURE MECHANISM",
+  "reading": "the gate runs four probes. Expected-failure mentions: basic_probe_float_arith.py **0**, basic_probe_float_fmt.py **0**, basic_probe_floatlit.py **0**, basic_probe_float_vars.py **1**. Three of four have no mechanism at all.",
+  "note": "\ud83c\udfaf the item says 'the suite is green today, so this is not urgent' -- which is the same reasoning tranche 46 found void for lof-acceptance. Here it holds, because float-acceptance IS in the 39-unit battery and did run green today. Worth stating: the identical sentence is sound for one gate and void for the other, and the only thing that separates them is battery membership."
  }
 }

@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 48 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 49 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1451,6 +1451,28 @@ that it is *"still undecidable, **by proof** rather than by threshold"*.
 it is a boundary.** That is the **seventh** not-a-task item this sweep has found,
 alongside two clean-room judgements, a coverage trade, a spec sign-off, a stated
 instrument limit and a past event whose evidence was discarded.
+
+## 2au. Tranche 49 — the same sentence, sound for one gate and void for another
+
+**`FCH_MODES` 7/8 — LIVE, exact.** `fch_mode_class` (`expr.asm`:1163) classifies
+by `FCH_MODES[E] < LPT_MODE`, so modes 7/8 take the device arm **by
+construction** — exactly the inference the item flags, with no CF-3300
+measurement behind it.
+
+**`float-acceptance` expected-failure mechanism — LIVE**, across the whole
+surface: `float_arith` **0**, `float_fmt` **0**, `floatlit` **0**,
+`float_vars` **1**. Three of four probes have no mechanism at all.
+
+🎯 **AND THE ITEM'S OWN JUSTIFICATION IS WORTH COMPARING TO TRANCHE 46's.** It
+says *"the suite is green today, so this is not urgent."* That is the same
+reasoning that tranche 46 found **void** for `lof-acceptance` — but **here it
+holds**, because `float-acceptance` **is** in the 39-unit battery and did run
+green today.
+
+**The identical sentence is sound for one gate and worthless for the other, and
+the only thing separating them is battery membership** — which, per tranche 47, is
+undocumented for 22 targets. A reader has no way to tell which kind of "green
+today" they are looking at without checking the `GATES` list themselves.
 
 ## 3. What the apparatus cost, said out loud
 
