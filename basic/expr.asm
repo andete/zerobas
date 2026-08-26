@@ -2055,6 +2055,34 @@ vptr_unset:
                 ; first-error-wins still holds -- `VARPTR(Q)` inside an argument
                 ; list that already faulted must keep the FIRST error, exactly as
                 ; every other deferring factor does.
+                ;
+                ; D-EVFERR (docs/spec-basic-evferr.md §7): BUT THE CLOSING ')'
+                ; COMES FIRST. `A=VARPTR(B` with B UNSET was ERR 5 here where
+                ; both references say ERR 2, and `A=VARPTR(B$` with it -- while
+                ; `B=1:A=VARPTR(B`, the SAME missing ')' with the lookup
+                ; satisfied, was already 2 through vptr_close. So it is an
+                ; ORDERING divergence and nothing else: the reference resolves
+                ; the SCALAR only once the form is known to be well formed.
+                ; 🔴 AND THE RULE IS NARROWER THAN "SYNTAX OUTRANKS DOMAIN",
+                ; WHICH IS WHAT I WAS ABOUT TO SHIP. `DIM Z(2):A=VARPTR(Z(9)`
+                ; is ERR 9 on ALL THREE -- the ARRAY arm's out-of-range
+                ; subscript DOES outrank the missing ')', because its subscripts
+                ; are evaluated while the form is being parsed. That is exactly
+                ; what vptr_none's own comment predicted ("no ')' check -- it
+                ; could only raise a masking second error"), untested until now
+                ; and CORRECT: leave that arm alone. The two rules coincide on
+                ; every scalar row and separate only on an array one
+                ; [[two-rules-that-coincide-on-every-row-you-have]].
+                ; ⚠️ WRITTEN OUT, NOT `call vptr_close`, WHICH WOULD BE 5 B
+                ; CHEAPER. Every factor error path ends in `ret` TO THE FACTOR'S
+                ; CALLER, so a `call` here puts one frame between ev_f_err's
+                ; `ret` and the address it means to land on. It does unwind --
+                ; through a second pass over the tail -- and that is precisely
+                ; the accident abort-chain-returns-into-caller records twice as
+                ; a measured failure. 8 B is the price of not repeating it.
+                call    ev_sp
+                cp      ')'
+                jp      nz,ev_f_empty       ; malformed close -> Syntax error (2)
                 ld      e,3
                 jp      ev_f_defer
 

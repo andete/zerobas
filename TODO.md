@@ -1094,6 +1094,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 **AND THIS ITEM'S OWN JUSTIFICATION HAD ROTTED TOO**: *"BASE is
       descoped and carries its own inline `ERRMARK` body"* has been false since
       graphics slice G8 — right conclusion, dead reasoning.
+      ✅ **AND THE LAST DIFF CLOSED TOO, +8 B** (main page 1 **107 → 99**, read
+      from clean): `A=VARPTR(B` with B unset was ERR 5 where both references say
+      2, an ORDERING divergence — `vptr_unset` now runs the closing-`)` check
+      before deferring its domain error. **30 rows × 3 machines, 0 DIFF.**
+      🎯 **THE RULE IS NARROWER THAN "SYNTAX OUTRANKS DOMAIN", AND ONE ROW SAID
+      SO**: `DIM Z(2):A=VARPTR(Z(9)` is ERR **9 on all three** — an array
+      reference's subscripts are evaluated WHILE the form is parsed, a scalar is
+      looked up only AFTER the `)`. That row also VINDICATED `vptr_none`'s
+      untested justification (*"no `')'` check — it could only raise a masking
+      second error"*) rather than falsifying it. A second class member came free:
+      `A=VARPTR(B$`.
+      🔬 **Knives 5 of 6 EXACT** (`scratchpad/evferr_knives.py`). K-EV3/K-EV4
+      move ONE row each and neither touches `v.nopar`/`v.badarg` — the §2 finding
+      measured. K-EV6's ROM is byte-identical to the retarget-only commit.
+      🔴 **K-EV2 found a row the prediction missed**: `A$=(1+2` moves to 24 when
+      `:835` is pointed at `ev_f_missop`, because `missing.asm`'s
+      `els_tc_common` reads the DEFERRED code — so that row is a LIVE DETECTOR
+      for the code chosen there, not a control. §6.1 of
+      [`docs/spec-basic-missop.md`](docs/spec-basic-missop.md) named that path
+      and the knife shows it would have sunk a DIFFERENT choice.
 
 - [ ] ⚠️ **`CLEARPOOL=0` IS UNTESTED AND CANNOT BE ADDED TO
       `switch-build-check`.** 2026-08-23, D-MISSOPFIX. `FPERR_MISSOP` is equated
