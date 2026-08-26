@@ -2,42 +2,124 @@
  "_meta": {
   "sweep": "TODO sweep 2026-08-26 (D-TODOSWEEP)",
   "rule": "re-run, never re-read; no claim inherited from the item's own text",
-  "walls_measured_today": {"main_page1": 89, "page0_low": 39,
-                           "sub_p0": 2464, "sub_p1": 1622},
+  "walls_measured_today": {
+   "main_page1": 89,
+   "page0_low": 39,
+   "sub_p0": 2464,
+   "sub_p1": 1622
+  },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 1 of N -- the remaining ids are NOT yet verdicted"
+  "status": "TRANCHE 2 of N -- the remaining ids are NOT yet verdicted",
+  "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them."
  },
- "T056": {"verdict": "LIVE", "how": "REPL x3",
-   "reading": "PRINT PLAY(0): vg8020 0, cf3300 0, zb `Missing operand`",
-   "control": "PRINT[;1;] prints 1 on all three",
-   "note": "a D-PLAYOP closed block sits directly below it; that fix was the PLAY STATEMENT's operand, NOT the function form. Re-running is what separated them."},
- "T064": {"verdict": "LIVE", "how": "REPL x3",
-   "reading": "RUN 20 with 10/20 stored: refs print [B] only, zb prints [A][B]",
-   "control": "bare RUN prints [A][B] on all three, pinning 'from the top'"},
- "T008": {"verdict": "LIVE", "how": "REPL x3",
-   "reading": "KEY 1,\"X\": both references silent, zb raises Syntax error"},
- "T131": {"verdict": "LIVE", "how": "REPL isolated, 25s step",
-   "reading": "SCREEN2 wall + PAINT, POINT(50,21) BELOW it: vg8020 9, zb 4 -- the filed claim exactly",
-   "control": "no-PAINT reads 4 on both (pins the untouched colour); PAINT + POINT ABOVE the wall reads 9 on BOTH, so zb's PAINT does fill -- it just does not cross",
-   "gap": "cf3300 returned no span on ANY of the three rows, control included -- ONE REFERENCE ONLY this pass, apparatus gap not a finding"},
- "T123": {"verdict": "STALE-AS-FILED", "how": "REPL x3",
-   "reading": "SCREEN 0,0,0 and SCREEN 0,0,99 both accepted silently on vg8020, cf3300 AND zb",
-   "was": "filed as 'the domain is UNMEASURED'; it is measured now and AGREES at both points",
-   "residue": "only two points sampled; the full domain is still unswept"},
- "T278": {"verdict": "PARTLY-STALE", "how": "kwsweep + REPL",
-   "reading": "kwsweep today: TRON/TROFF/FRE/SWAP/ERASE all SUPPORTED; RENUM/AUTO/DELETE shipped (LE_OP_RENUM/_AUTO in sub/lineedit.asm, D-EDITVERB). The bucket is down to WAIT + full CLEAR semantics.",
-   "gap": "WAIT UNMEASURED -- `WAIT 1,0` BLOCKS on a port condition and hung both references, voiding every case after it in the batch. It needs an isolated timeout-bounded row."},
- "T279": {"verdict": "STALE", "how": "make kwsweep today",
-   "reading": "DIVERGENT=1 NO-ORACLE=5 SUPPORTED=30, and NO `MISSING=` line at all",
-   "was": "'of 162 reserved words, 34 are genuinely absent' (2026-07-26)"},
- "T277": {"verdict": "LIVE, REFRAMED", "how": "D-EDITSCOUT, docs/spec-basic-editscout.md",
-   "reading": "reference counter 1->2->3 as re-entries accumulate, zb stays 1; re-read unit is the LOGICAL LINE",
-   "note": "the blocker named the wrong obstacle: C-BIOS CHPUT already honours the cursor codes on the zerobas machine, the per-keystroke path needs no sub-ROM crossing, and the 'in-window 0.6-0.9KB' classification predates the tenant architecture"},
- "T029": {"verdict": "STALE", "how": "make basic-reloc today",
-   "reading": "main page 1 is 89 B free; the item says 1 B at 4db8010"},
- "T047": {"verdict": "STALE", "how": "make basic-reloc today",
-   "reading": "main page 1 89 B, low region 39 B; the item says 2 B and 17 B"},
- "T122": {"verdict": "STALE", "how": "tools/todo_inventory.py today",
-   "reading": "the item ranks the list 38/62 apparatus with 15 BASIC-surface items; the list is now 109 open, split 60 behavioural / 39 gate+space / 3 doc / 7 unclassified",
-   "note": "a ranked candidate rots like a wall -- this one IS the ranking"}
+ "T-B96267": {
+  "verdict": "LIVE",
+  "how": "REPL x3",
+  "reading": "PRINT PLAY(0): vg8020 0, cf3300 0, zb `Missing operand`",
+  "control": "PRINT[;1;] prints 1 on all three",
+  "note": "a D-PLAYOP closed block sits directly below it; that fix was the PLAY STATEMENT's operand, NOT the function form. Re-running is what separated them.",
+  "was_positional_id": "T056",
+  "headline": "\ud83d\udd34 **zerobas does NOT implement the `PLAY(n)` FUNCTION (background-queue"
+ },
+ "T-77303B": {
+  "verdict": "LIVE",
+  "how": "REPL x3",
+  "reading": "RUN 20 with 10/20 stored: refs print [B] only, zb prints [A][B]",
+  "control": "bare RUN prints [A][B] on all three, pinning 'from the top'",
+  "was_positional_id": "T064",
+  "headline": "\ud83d\udcb0 **`RUN <lineno>` IN DIRECT MODE IS STILL THE OLD BEHAVIOUR \u2014 R2, ONE"
+ },
+ "T-EF8C91": {
+  "verdict": "LIVE",
+  "how": "REPL x3",
+  "reading": "KEY 1,\"X\": both references silent, zb raises Syntax error",
+  "was_positional_id": "T008",
+  "headline": "\ud83d\udd34 **`KEY n,\"str\"` AND `KEY LIST` ARE UNIMPLEMENTED \u2014 A WELL-FORMED"
+ },
+ "T-CC4F5F": {
+  "verdict": "LIVE",
+  "how": "REPL isolated, 25s step",
+  "reading": "SCREEN2 wall + PAINT, POINT(50,21) BELOW it: vg8020 9, zb 4 -- the filed claim exactly",
+  "control": "no-PAINT reads 4 on both (pins the untouched colour); PAINT + POINT ABOVE the wall reads 9 on BOTH, so zb's PAINT does fill -- it just does not cross",
+  "gap": "cf3300 returned no span on ANY of the three rows, control included -- ONE REFERENCE ONLY this pass, apparatus gap not a finding",
+  "was_positional_id": "T131",
+  "headline": "\ud83d\udd34 **A SCREEN-2 `PAINT` WITH `C != B` FLOODS THE ENTIRE SCREEN ON THE"
+ },
+ "T-7A608F": {
+  "verdict": "STALE-AS-FILED",
+  "how": "REPL x3",
+  "reading": "SCREEN 0,0,0 and SCREEN 0,0,99 both accepted silently on vg8020, cf3300 AND zb",
+  "was": "filed as 'the domain is UNMEASURED'; it is measured now and AGREES at both points",
+  "residue": "only two points sampled; the full domain is still unswept",
+  "was_positional_id": "T123",
+  "headline": "\u26a0\ufe0f **THE THIRD TRAILING `SCREEN` ARGUMENT'S DOMAIN IS UNMEASURED.**"
+ },
+ "T-63A411": {
+  "verdict": "PARTLY-STALE",
+  "how": "kwsweep + REPL",
+  "reading": "kwsweep today: TRON/TROFF/FRE/SWAP/ERASE all SUPPORTED; RENUM/AUTO/DELETE shipped (LE_OP_RENUM/_AUTO in sub/lineedit.asm, D-EDITVERB). The bucket is down to WAIT + full CLEAR semantics.",
+  "gap": "WAIT UNMEASURED -- `WAIT 1,0` BLOCKS on a port condition and hung both references, voiding every case after it in the batch. It needs an isolated timeout-bounded row.",
+  "was_positional_id": "T278",
+  "headline": "**Editor / program management** \u2014 `RENUM`, `AUTO`,"
+ },
+ "T-D2A359": {
+  "verdict": "STALE",
+  "how": "make kwsweep today",
+  "reading": "DIVERGENT=1 NO-ORACLE=5 SUPPORTED=30, and NO `MISSING=` line at all",
+  "was": "'of 162 reserved words, 34 are genuinely absent' (2026-07-26)",
+  "was_positional_id": "T279",
+  "headline": "**Keyword-completeness gaps \u2014 the measured remainder of MSX1 BASIC.**"
+ },
+ "T-E20888": {
+  "verdict": "LIVE, REFRAMED",
+  "how": "D-EDITSCOUT, docs/spec-basic-editscout.md",
+  "reading": "reference counter 1->2->3 as re-entries accumulate, zb stays 1; re-read unit is the LOGICAL LINE",
+  "note": "the blocker named the wrong obstacle: C-BIOS CHPUT already honours the cursor codes on the zerobas machine, the per-keystroke path needs no sub-ROM crossing, and the 'in-window 0.6-0.9KB' classification predates the tenant architecture",
+  "was_positional_id": "T277",
+  "headline": "**Screen-editor REPL** \u2014 real MSX BASIC does not use a sequential prompt"
+ },
+ "T-FA0579": {
+  "verdict": "STALE",
+  "how": "make basic-reloc today",
+  "reading": "main page 1 is 89 B free; the item says 1 B at 4db8010",
+  "was_positional_id": "T029",
+  "headline": "\ud83d\udcb0 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` \u2014 NOTHING LANDS"
+ },
+ "T-64AD27": {
+  "verdict": "STALE",
+  "how": "make basic-reloc today",
+  "reading": "main page 1 89 B, low region 39 B; the item says 2 B and 17 B",
+  "was_positional_id": "T047",
+  "headline": "\u26a0\ufe0f **Main page 1 is 2 B free and the low region 17 B, at"
+ },
+ "T-8A24D5": {
+  "verdict": "STALE",
+  "how": "tools/todo_inventory.py today",
+  "reading": "the item ranks the list 38/62 apparatus with 15 BASIC-surface items; the list is now 109 open, split 60 behavioural / 39 gate+space / 3 doc / 7 unclassified",
+  "note": "a ranked candidate rots like a wall -- this one IS the ranking",
+  "was_positional_id": "T122",
+  "headline": "\ud83d\udccb **THE PICKUP LIST IS 38/62 APPARATUS, AND THE REAL BASIC SURFACE IS 15"
+ },
+ "T-13B166": {
+  "verdict": "STALE",
+  "how": "REPL x3, stored",
+  "headline": "SAVE / LOAD / BLOAD WITH NO ARGUMENT SAY `Syntax error`",
+  "reading": "10 SAVE / 10 LOAD / 10 BLOAD each raise `Missing operand in 10` on vg8020, cf3300 AND zb -- all three agree",
+  "was": "filed 2026-08-21 as zb saying `Syntax error` where both references say `Missing operand`",
+  "control": "10 PRINT[OK] prints on all three, so the stored fixture runs"
+ },
+ "T-B22650": {
+  "verdict": "LIVE",
+  "how": "REPL x3, stored, the item's own fixture verbatim",
+  "headline": "A STORED `DATA` LITERAL CHARGES THE STRING POOL NOTHING ON BOTH REFERENCES",
+  "reading": "s.readary and s.readscal both: vg8020 [OK], cf3300 [OK], zb `Out of string space in 60`",
+  "control": "the same program with the READ/DATA lines removed prints [OK] on all three, so CLEAR 60 + DIM + STRING$(25) is not itself the cost"
+ },
+ "T-E0B04B": {
+  "verdict": "LIVE",
+  "how": "REPL x3, direct",
+  "headline": "A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM",
+  "reading": "after CLEAR 300,TXTTAB+1000: FRE(0) reads 148 / 148 / 646 -- the filed numbers exactly. Storing a 32-byte line then raises `Out of memory` on BOTH references while zb stores it (FRE 646 -> 615)",
+  "caveat": "\u26a0\ufe0f THE CONTROL DOES NOT CONFIRM THE ITEM'S MECHANISM. Plain `CLEAR 300` reads 148/148/646 too, so the HIMEM argument changes FRE(0) on NEITHER side; the symptom is reproduced exactly, the attribution to 'CLEAR's HIMEM argument does not reach the store check' is not tested by these rows"
+ }
 }

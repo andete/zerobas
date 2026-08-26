@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-⚠️ **THIS IS TRANCHE 1 OF N. 11 of 146 subject blocks carry a verdict.** The
+⚠️ **THIS IS TRANCHE 2 OF N. 14 of 146 subject blocks carry a verdict.** The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -25,7 +25,7 @@ instrument had the property it was measuring.** It is a tool now.
 | blocks parsed | 367 (346 top-level, **21 nested** — an indented `- [x]` under an open parent is not an independent item) |
 | open / done (top-level) | **109 / 237** |
 | subject = open + done-carrying-a-residual-marker | **146** |
-| verdicted in tranche 1 | **11** |
+| verdicted so far | **14** |
 
 ### 1.1 Two counts of my own disagreed, so I read
 
@@ -69,6 +69,30 @@ the stale ones.
 in the file, closed the same week, both about `PLAY` and a missing operand.
 Reading would have merged them. **Running separated them**: D-PLAYOP fixed the
 `PLAY` *statement*'s operand; the *function* form `PLAY(0)` still raises.
+
+## 2a. Findings — tranche 2
+
+Three items that filed an EXACT program. Each was re-run as its own fixture.
+Probe: `scratchpad/sweep_tranche2.py`.
+
+| item | verdict | reading |
+|---|---|---|
+| `SAVE`/`LOAD`/`BLOAD` with no argument | **STALE** | all three now raise **`Missing operand in 10`** — the divergence is gone |
+| stored `DATA` literal charges the string pool | **LIVE** | refs `[OK]` / `[OK]`, zb **`Out of string space in 60`**, both rows |
+| a line store is bounded by `TXTMAX`, not HIMEM | **LIVE** | `FRE(0)` after `CLEAR 300,TXTTAB+1000`: **148 / 148 / 646** — the filed numbers exactly; a 32-byte line then raises `Out of memory` on both references while zb stores it (646 → 615) |
+
+⚠️ **THE `TXTMAX` ROW REPRODUCES THE SYMPTOM AND NOT THE MECHANISM.** The item
+attributes it to *"`CLEAR`'s HIMEM argument does not reach the store check"* —
+but the control shows plain `CLEAR 300` reads **148/148/646** as well, so the
+HIMEM argument moves `FRE(0)` on NEITHER side. The divergence is real and the
+numbers are exact; the stated cause is untested by these rows and is recorded as
+such rather than inherited.
+
+🟢 **THE `DATA` CONTROL IS LOAD-BEARING**: the same program with `READ`/`DATA`
+removed prints `[OK]` on all three, so `CLEAR 60` + `DIM` + `STRING$(25)` is not
+itself the cost — it is the `READ` of a stored literal.
+
+Running total across both tranches: **8 LIVE, 6 stale or partly stale.**
 
 ## 3. What the apparatus cost, said out loud
 

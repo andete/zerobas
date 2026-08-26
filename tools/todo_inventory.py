@@ -29,6 +29,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -89,8 +90,19 @@ def blocks():
                        section=section, group=bold, headline=head.strip()[:160])
             continue
     close(len(lines))
-    for n, b in enumerate(out, 1):
-        b["id"] = f"T{n:03d}"
+    # 🔴 AN ID DERIVED FROM POSITION IS NOT STABLE ACROSS EDITS. The first
+    # version numbered blocks T001.. in file order, and the very next edit to
+    # TODO.md (inserting a paragraph in the pickup-list header) renumbered
+    # everything below it — so a verdict file written against those ids would
+    # silently re-point at different items. The bookkeeping would have rotted in
+    # exactly the way this sweep exists to catch. The id is CONTENT-derived:
+    # a digest of the headline, which survives reflow, renumbering and moving
+    # the block to another file (which the archive split will do).
+    seen = {}
+    for b in out:
+        h = hashlib.sha256(b["headline"].encode()).hexdigest()[:6].upper()
+        n = seen.get(h, 0); seen[h] = n + 1
+        b["id"] = f"T-{h}" + (f".{n}" if n else "")
         b["lines"] = b["end"] - b["start"] + 1
         b["residual_marker"] = bool(RESIDUAL.search(b["text"]))
         b["kind"] = next((k for k, r in KIND if r.search(b["text"])), "unclassified")
