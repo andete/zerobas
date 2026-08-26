@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 23 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 24 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -752,6 +752,30 @@ CAN SAY THE APPARATUS IS BROKEN."*
 the same shape as tranche 8, where a rule I had encoded in one checker that
 morning did not reach the next one I wrote that afternoon. A rule that lives in a
 comment travels no further than the file it is in.
+
+## 2v. Tranche 24 — two items the code concedes, and one I would not score
+
+| item | verdict |
+|---|---|
+| a data-only span still confers fallthrough | **LIVE, exact** |
+| the `tools/` seed arm is an intersection | **LIVE — the gate concedes it** |
+| a predecessor walk stops at `ENDIF` | **partly addressed — not scored** |
+
+🎯 **BOTH LIVE VERDICTS COME FROM THE GATE'S OWN COMMENTS.** `check_dead_code.py`
+gates its fallthrough edge on `_last_code(...)` not being a terminator, and fix (7)
+skips a prologue that emits nothing — with the comment stating the exemption's
+limit outright: *"⚠️ Only a PROLOGUE is skipped, never any other empty span"*. A
+data-only span emits bytes, its last code line is a `db`, and a `db` is not a
+terminator. And the seed arm's header says *"⚠️ Fix (5) still matters — for
+`tools/`, which still seeds."* **Two residuals confirmed by the code admitting
+them**, which is the cheapest evidence available and the most durable.
+
+⚠️ **AND ONE I DECLINED TO SCORE.** `dupspan_indep.py` does decode the predecessor
+span and has an explicit *"predecessor … does not decode → UNKNOWN"* path — the
+safe handling the item asks for. But I could only establish that **a safe path
+exists**, not that **this input takes it**. Those are different claims and only
+the second answers the item. Scoring it closed on the strength of the first is
+precisely the move that put the stale entries on this list to begin with.
 
 ## 3. What the apparatus cost, said out loud
 

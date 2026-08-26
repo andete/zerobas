@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 23 of N. Subject 176; 73 verdicted, 103 pending.",
+  "status": "TRANCHE 24 of N. Subject 176; 76 verdicted, 100 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -566,5 +566,24 @@
   "headline": "`castail-acceptance` VOIDS THE WHOLE BATTERY WHEN A CONTROL FAILS ON THE ZEROBAS SIDE",
   "reading": "basic_probe_castail.py gates on `for lab in CONTROLS: for s in sides:` -- every side, zerobas included -- so a control failing on zb voids the run. It contains ZERO occurrences of the split-by-side rule.",
   "the_cure_is_shipped_next_door": "\ud83c\udfaf basic_probe_namspc.py:1036 carries it verbatim: 'ONLY A REFERENCE CAN SAY THE APPARATUS IS BROKEN. A control that fails...'. One probe has the rule, the other does not, and nothing carries it across -- the same shape as tranche 8, where a rule encoded in one checker did not reach the next one."
+ },
+ "T-F80602": {
+  "verdict": "LIVE, exact -- and the code says so in its own comment",
+  "how": "static read of tools/check_dead_code.py:_edges",
+  "headline": "A DATA-ONLY SPAN STILL CONFERS FALLTHROUGH ON WHATEVER FOLLOWS IT",
+  "reading": "the fallthrough edge is gated on `_last_code(...)` not being a terminator. Fix (7) skips a PROLOGUE that emits nothing -- and its comment is explicit that this is the ONLY exemption: '\u26a0\ufe0f Only a PROLOGUE is skipped, never any other empty span'. A data-only span (`err_io: db \"load\",...`) emits bytes, its last code line is a `db`, and a `db` is not a terminator -- so it still confers fallthrough, exactly as filed."
+ },
+ "T-816985": {
+  "verdict": "LIVE -- the gate's own comment concedes it",
+  "how": "static read of tools/check_dead_code.py",
+  "headline": "THE `tools/` SEED ARM IS AN INTERSECTION, NOT AN ASSERTION",
+  "reading": "the gate still seeds from 'every label named in the CODE COLUMN of tools/', and its own header says '\u26a0\ufe0f Fix (5) still matters -- for tools/, which still seeds.' The arm is unchanged since the item was filed."
+ },
+ "T-6ACF9C": {
+  "verdict": "PARTLY ADDRESSED -- needs a closer read than this pass gave it",
+  "how": "static read, inconclusive",
+  "headline": "A linear predecessor walk stops at `ENDIF` and calls it an instruction",
+  "reading": "tools/dupspan_indep.py DOES decode the predecessor span and has an explicit 'predecessor ... does not decode' -> UNKNOWN path (line 214), which is the safe handling the item asks for. Whether the ENDIF case specifically reaches that path was NOT determined.",
+  "why_not_scored": "\u26a0\ufe0f I could establish that a safe path EXISTS, not that THIS input takes it. Those are different claims and only the second answers the item. Recorded partial rather than closed on the strength of the first."
  }
 }
