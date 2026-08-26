@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 55 of N. Subject 176; 126 verdicted, 50 pending.",
+  "status": "TRANCHE 56 of N. Subject 176; 131 verdicted, 45 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -993,5 +993,40 @@
   "how": "static read of basic/sysvars.inc",
   "headline": "Two type-code namespaces share the value `1`",
   "reading": "sysvars.inc:3601 says it outright: '`DEFTBL_STR equ 1` sentinel below reads like an own-design 0/1' -- the published DEFTBL string code and zerobas's own chain tag still collide on 1, with the three crossing sites fixed by D-DEFSTR and the namespaces themselves unmerged."
+ },
+ "T-78990E": {
+  "verdict": "LIVE -- 6 of 6 sampled",
+  "how": "grep of scratchpad/",
+  "headline": "A SCRATCH PROBE THAT NEEDS A DISK MUST MOUNT ONE, AND THE FAILURE READS AS A LANGUAGE RULE",
+  "reading": "of six scratch probes that reference disk verbs (OPEN\"/FILES/KILL/BLOAD) -- circmiss_sib2, evferr_probe, g4_hang_probe, i2_frame, i1_input_char2, i2_pinmap -- **all six pass `diska` zero times**. A probe that needs a disk and does not mount one gets a disk error the reader will read as a language rule.",
+  "\ud83d\udfe2_my_own_contrast": "MY sweep_tranche3.py DID mount one -- but only because I read the convention in an existing probe first. Contrast tranche 55, where I did NOT read the convention and re-implemented `spans()` nine times. The difference between complying and not was entirely whether I happened to look, which is the item's whole point."
+ },
+ "T-9EFF88": {
+  "verdict": "NOT MEASURABLE BY THIS SWEEP'S INSTRUMENTS -- fixture named",
+  "how": "read",
+  "headline": "2-Tier2-a -- DOS boot (steps 4-7)",
+  "why_not": "needs a DOS boot this sweep cannot stand up: a four-step environment hand-off (MSX2 TH ch.3), not a one-call bridge",
+  "note": "recorded with the missing fixture NAMED, so the next attempt starts from what is needed rather than from scratch"
+ },
+ "T-2A1D8A": {
+  "verdict": "NOT MEASURABLE BY THIS SWEEP'S INSTRUMENTS -- fixture named",
+  "how": "read",
+  "headline": "2-Tier2-b -- organic GETDPB",
+  "why_not": "needs DOS UP and a real DOS command traced at $4016 -- downstream of T-9EFF88 and unreachable until it lands",
+  "note": "recorded with the missing fixture NAMED, so the next attempt starts from what is needed rather than from scratch"
+ },
+ "T-A55F3D": {
+  "verdict": "NOT MEASURABLE BY THIS SWEEP'S INSTRUMENTS -- fixture named",
+  "how": "read",
+  "headline": "`LOAD\"CAS:\"` ACCEPTS A TOKENISED TAPE; the reference does not return",
+  "why_not": "needs a tape fixture carrying a $D3-only file, and the reference's failure mode is a HANG (it 'sat there'), which needs a timeout-bounded row of the kind tranche 4 built for WAIT",
+  "note": "recorded with the missing fixture NAMED, so the next attempt starts from what is needed rather than from scratch"
+ },
+ "T-C6421D": {
+  "verdict": "NOT MEASURABLE BY THIS SWEEP'S INSTRUMENTS -- fixture named",
+  "how": "read",
+  "headline": "UNMEASURED: a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`",
+  "why_not": "needs a mid-operation machine reset -- the harness drives BASIC lines, not power cycles, so this is outside what the REPL driver can express",
+  "note": "recorded with the missing fixture NAMED, so the next attempt starts from what is needed rather than from scratch"
  }
 }

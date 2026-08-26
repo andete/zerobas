@@ -354,6 +354,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       are `sha256[:8]` now. And arm P3b proves the red CLEARS by its documented
       remedy — a red that cannot be cleared is not a gate.
 
+- [ ] 🔴 **D-TODOSWEEP'S OWN NINE PROBES RE-IMPLEMENT THE `[...]` READER, WHICH
+      IS THE TRAP THE ITEM BELOW DESCRIBES.** Filed 2026-08-26 by D-TODOSWEEP
+      tranche 55, against itself. `probes/lib/omsx_repl.py` ships
+      `result_span_after_echo` (:1765) specifically so *"an aborted case's echoed
+      `[` is not misread as printed output"* — and
+      `scratchpad/sweep_tranche{1,11,12,16,17}.py`,
+      `scratchpad/{citepaths,patchfresh}_falsify.py` and
+      `scratchpad/editscout_{layout,reentry,reentry2,wrap}.py` each carry their
+      own `spans()` instead. 🎯 **THE ITEM WAS READ AFTER THE NINE PROBES WERE
+      WRITTEN**, which is the item's own thesis demonstrated. ⚠️ None of the nine
+      is a GATE — they are one-shot sweep instruments — so the exposure is to
+      wrong readings in this sweep's own record, not to a green battery. The
+      cheap fix is to import the shared reader; the durable one is whatever stops
+      the next scratch probe copying the last scratch probe.
+
 - [ ] 🧹 **A TRACKED `scratchpad/` SCRIPT CAN HARDCODE THE AUTHOR'S ABSOLUTE
       PATH, AND NOTHING CHECKS IT.** Filed 2026-08-26 by D-CITEPATH, which found
       `cd /Users/joost/projects/zerobas` inside one of the four `.sh` battery
