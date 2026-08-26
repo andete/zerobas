@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 55 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 57 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1629,6 +1629,31 @@ it has to be reached for.
 `sysvars.inc`:3601 — *"`DEFTBL_STR equ 1` sentinel below reads like an own-design
 0/1"*. The three crossing sites were fixed by D-DEFSTR; the namespaces are still
 unmerged and still collide on `1`.
+
+## 2bb. Tranche 57 — an item that refuses its own falsification, correctly
+
+**Trailing blank — LIVE, by construction.** The readout path compares against
+`rstrip()`, so a trailing blank cannot survive into any reading. The two rows the
+item names are informational **by construction**. 🎯 Not a gap better rows would
+close: **the instrument cannot represent the value**, and naming that is the
+verdict.
+
+**Emulated-time budgets — SUPERSEDED, as it says.** Struck through, and the
+sentinel capture that supersedes it is shipped (30 mentions in `omsx_repl.py`, 1
+in `run_gates.py`). Kept for its reasoning, which is what its header says it is
+for.
+
+**The ~5.7 s harness stall — NOT MEASURABLE TONIGHT.** The item's own headline
+says it *"MUST BE RE-MEASURED ON AN IDLE HOST BEFORE ANYONE ACTS ON IT."* Load
+average right now: **2.50 / 2.54 / 3.56** — not idle, **partly because this sweep
+has been running emulator batteries on this host all evening**.
+
+🎯 **THE ITEM STATES ITS OWN PRECONDITION, AND THE PRECONDITION IS UNMET.**
+Re-measuring now would produce a number contaminated in exactly the way it warns
+about — and that number would then sit on the list *looking like a measurement*.
+**This item is better written than most on this list precisely because it makes
+its own falsification refusable.** `scratchpad/harness_walltime.py` is present and
+ready; it needs a quiet host, not new code.
 
 ## 3. What the apparatus cost, said out loud
 

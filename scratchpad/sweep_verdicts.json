@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 56 of N. Subject 176; 131 verdicted, 45 pending.",
+  "status": "TRANCHE 57 of N. Subject 176; 134 verdicted, 42 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -1028,5 +1028,27 @@
   "headline": "UNMEASURED: a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`",
   "why_not": "needs a mid-operation machine reset -- the harness drives BASIC lines, not power cycles, so this is outside what the REPL driver can express",
   "note": "recorded with the missing fixture NAMED, so the next attempt starts from what is needed rather than from scratch"
+ },
+ "T-F97E35": {
+  "verdict": "LIVE -- and true BY CONSTRUCTION, not by circumstance",
+  "how": "static read of probes/lib/omsx_repl.py",
+  "headline": "A TRAILING BLANK at end of line is not measurable through the keyboard",
+  "reading": "the readout path compares against `rstrip()` (omsx_repl.py:1349 records a variant that 'reported every row mangled' for that reason). A screen row is stripped before comparison, so a trailing blank cannot survive into any reading -- the two rows the item names (`dec-eol` / `dec-eolctl`) are informational BY CONSTRUCTION, exactly as filed.",
+  "note": "\ud83c\udfaf this is not a gap that better rows would close: the instrument cannot represent the value. Naming that is the verdict."
+ },
+ "T-329DD3": {
+  "verdict": "SUPERSEDED, as the item itself says",
+  "how": "grep of the superseding mechanism",
+  "headline": "THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS (struck through)",
+  "reading": "the item is struck through and says '\u26a0\ufe0f PARTLY SUPERSEDED by the sentinel item above'. The sentinel capture IS shipped -- 30 mentions in probes/lib/omsx_repl.py and 1 in tools/run_gates.py -- so the superseding mechanism exists and the supersession is real.",
+  "note": "kept for the reasoning it carries, which is what its own header says it is for"
+ },
+ "T-051734": {
+  "verdict": "NOT MEASURABLE TONIGHT -- the item's OWN precondition is unmet",
+  "how": "uptime",
+  "headline": "THE HARNESS'S WALL TIME HAS A ~5.7 s PERIODIC STALL ... AND IT MUST BE RE-MEASURED ON AN IDLE HOST BEFORE ANYONE ACTS ON IT",
+  "reading": "load average right now is 2.50 / 2.54 / 3.56 -- this host is NOT idle, partly because this sweep has been running emulator batteries on it all evening.",
+  "\ud83c\udfaf_why_that_is_the_right_answer": "THE ITEM STATES ITS OWN PRECONDITION AND THE PRECONDITION IS UNMET. Re-measuring now would produce a number contaminated in exactly the way the item warns about -- and would then sit on the list looking like a measurement. The item is better written than most on this list precisely because it makes its own falsification refusable.",
+  "note": "scratchpad/harness_walltime.py is present and ready; it needs a quiet host, not new code"
  }
 }
