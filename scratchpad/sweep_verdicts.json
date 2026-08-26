@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 6 of N -- the remaining ids are NOT yet verdicted",
+  "status": "TRANCHE 7 of N -- the remaining ids are NOT yet verdicted",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them."
  },
  "T-B96267": {
@@ -227,10 +227,17 @@
   "note": "\ud83c\udfaf 'found 0' is a fact about today's tools, not about the apparatus that permits them. The right residual is to make the class UNWRITABLE (a check), not to keep watching for it -- restate the item that way rather than closing it."
  },
  "T-027472": {
-  "verdict": "NOT VERIFIED THIS PASS -- wrong instrument",
+  "verdict": "NOT SCOREABLE BY EITHER EXISTING TOOL -- by construction",
   "how": "attempted by grep; grep cannot decide byte-identity of two spans",
   "headline": "A 4 B DUP-SPAN THE D-ONLIST FIX CREATED",
-  "reading": "esn_notlineno is at basic/program.asm:2190; my grep could not isolate either discriminator cleanly",
-  "note": "\ud83d\udd34 A SPAN IS BYTE-IDENTICAL WITHOUT BEING ENTERED THE SAME WAY, and the project already owns the right tool (tools/dupspan_indep.py). Scoring this with a regex would be the exact mistake the dup-span work has filed twice. Deferred to the proper instrument rather than guessed."
+  "reading": "tools/dupspan_indep.py re-run today reports 26 groups and NO `esn_` label appears in any of them. The tool works on LABEL-TO-LABEL spans (its own docstring, line 4), and this item's subject is an INTERIOR fragment -- `esn_notlineno`'s discriminator against a test four instructions above it, inside the same label block.",
+  "note": "\ud83c\udfaf THIS IS THE SAME BLIND SPOT A SIBLING ITEM ALREADY FILES. T-CB89FD says `clone_scout` prices LABEL-BLOCKS so a routine split by an interior label is priced at a fraction of its collapse. Both dup-span tools share that span model, so this 4 B item is invisible to the whole toolchain, not merely unmeasured. The two items should be linked: one is an instance of the other."
+ },
+ "T-6E72AD": {
+  "verdict": "STALE FIGURES -- and the supply has HALVED",
+  "how": "python3 tools/dupspan_indep.py, re-run today",
+  "headline": "The rest of the byte-identical-span supply: 53 groups, 403 B",
+  "reading": "26 byte-identical groups today over a denominator of 1445 non-empty spans; nominal 163 B; MEASURED SAFE NET 8 B (page-0 low 3 B, page 1 8 B, jr widening charged 3 B)",
+  "note": "the item's 53 groups / 403 B is roughly double today's supply -- the carve slices since have eaten it. \ud83c\udfaf And the number that matters is not the nominal one: 163 B nominal is 8 B SAFE. An item quoting the nominal figure overstates the fundable amount by 20x."
  }
 }

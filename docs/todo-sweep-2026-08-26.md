@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-⚠️ **THIS IS TRANCHE 6 OF N. 29 of 146 subject blocks carry a verdict.** The
+⚠️ **THIS IS TRANCHE 7 OF N. 30 of 146 subject blocks carry a verdict.** The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -25,7 +25,7 @@ instrument had the property it was measuring.** It is a tool now.
 | blocks parsed | 367 (346 top-level, **21 nested** — an indented `- [x]` under an open parent is not an independent item) |
 | open / done (top-level) | **109 / 237** |
 | subject = open + done-carrying-a-residual-marker | **146** |
-| verdicted so far | **29** |
+| verdicted so far | **30** |
 
 ### 1.1 Two counts of my own disagreed, so I read
 
@@ -247,6 +247,41 @@ restatement is *make the class unwritable*, not *close it*.
 Running total across six tranches: **19 LIVE (3 with a stale figure, 1 scored
 only in half), 8 stale / partly stale / reframed / split, 1 class-empty, 1
 declined for want of the right instrument.**
+
+## 2f. Findings — tranche 7: the deferred dup-span item, through the right tool
+
+Tranche 6 declined to score the dup-span item with a regex. `tools/dupspan_indep.py`
+re-run today settles **two** items at once.
+
+### The byte-identical-span supply has halved, and the fundable figure is 20× smaller
+
+| | filed | **today** |
+|---|---|---|
+| groups | 53 | **26** (over 1445 non-empty spans) |
+| nominal | 403 B | **163 B** |
+| **measured SAFE net** | *not stated* | **8 B** |
+
+🎯 **THE NUMBER THAT MATTERS IS NOT THE NOMINAL ONE.** 163 B nominal is **8 B
+safe** once the tool decides terminators, `jr` reach and fallthrough entry. An
+item quoting only the nominal figure overstates the fundable amount by roughly
+twentyfold — and this item quotes 403 B.
+
+### And the 4 B dup-span is invisible to the whole toolchain, not merely unmeasured
+
+**No `esn_` label appears in any of the 26 groups.** The tool works on
+**label-to-label** spans — its own docstring, line 4 — and this item's subject is
+an **interior fragment**: `esn_notlineno`'s discriminator against a test four
+instructions above it, *inside the same label block*.
+
+🎯 **THAT IS EXACTLY THE BLIND SPOT A SIBLING ITEM ALREADY FILES.** The
+`clone_scout` item says it prices **label-blocks**, so a routine split by an
+interior label is priced at a fraction of its collapse. Both dup-span tools share
+that span model. So the 4 B item is not "unmeasured pending a run" — it is
+**unreachable by the instrument**, and the two items are one finding seen twice.
+They should be linked.
+
+Running total across seven tranches: **19 LIVE, 9 stale / partly stale /
+reframed / split, 1 class-empty, 1 unreachable-by-instrument.**
 
 ## 3. What the apparatus cost, said out loud
 
