@@ -354,15 +354,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       are `sha256[:8]` now. And arm P3b proves the red CLEARS by its documented
       remedy — a red that cannot be cleared is not a gate.
 
-- [ ] 🔴 **D-TODOSWEEP'S OWN NINE PROBES RE-IMPLEMENT THE `[...]` READER, WHICH
+- [ ] 🔴 **D-TODOSWEEP'S OWN ELEVEN PROBES RE-IMPLEMENT THE `[...]` READER, WHICH
       IS THE TRAP THE ITEM BELOW DESCRIBES.** Filed 2026-08-26 by D-TODOSWEEP
       tranche 55, against itself. `probes/lib/omsx_repl.py` ships
       `result_span_after_echo` (:1765) specifically so *"an aborted case's echoed
       `[` is not misread as printed output"* — and
       `scratchpad/sweep_tranche{1,11,12,16,17}.py`,
       `scratchpad/{citepaths,patchfresh}_falsify.py` and
-      `scratchpad/editscout_{layout,reentry,reentry2,wrap}.py` each carry their
-      own `spans()` instead. 🎯 **THE ITEM WAS READ AFTER THE NINE PROBES WERE
+      `scratchpad/editscout_{layout,reentry,reentry2}.py` each carry their own
+      `spans()` instead — **ELEVEN, not nine: the filed count was written from
+      memory and corrected by counting 2026-08-26 (tranche 58)**, and **0 of the
+      eleven import the shared reader**. 🎯 **THE ITEM WAS READ AFTER THE NINE PROBES WERE
       WRITTEN**, which is the item's own thesis demonstrated. ⚠️ None of the nine
       is a GATE — they are one-shot sweep instruments — so the exposure is to
       wrong readings in this sweep's own record, not to a green battery. The

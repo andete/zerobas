@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 57 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 58 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1654,6 +1654,34 @@ about — and that number would then sit on the list *looking like a measurement
 **This item is better written than most on this list precisely because it makes
 its own falsification refusable.** `scratchpad/harness_walltime.py` is present and
 ready; it needs a quiet host, not new code.
+
+## 2bc. Tranche 58 — every OPEN item now carries a verdict
+
+**0 open items remain unverdicted.** 139 of 176; the 38 outstanding are all
+**closed blocks carrying residuals**.
+
+**The last three:**
+
+* **`PAINT` still 1.9–2.0× slower — not measurable tonight.** Load 1.84/2.18/3.21,
+  and this sweep's own batteries are part of why. It is a *ratio* between two
+  machines in one run, so more robust to load than an absolute figure — **but not
+  robust enough to bank two significant figures from**, and banking one is exactly
+  how a contaminated reading becomes a filed fact.
+* **K-PE1's four unexplained rows — needs the knife re-run.** A knife result can
+  only be re-established by cutting, rebuilding both ROMs, scoring and restoring —
+  a full slice's apparatus, which the operating rules forbid running alongside
+  anything else. Named rather than guessed.
+* **My own filed item — LIVE, and my count was wrong.**
+
+🔴 **I FILED "NINE PROBES" IN A SWEEP WHOSE ENTIRE PREMISE IS THAT FILED COUNTS
+ROT.** The real number is **11** — `sweep_tranche1` (two readers), `2`, `3`, `4`,
+`11`, `12`, `16`, `17`, plus `editscout_layout`, `editscout_reentry`,
+`editscout_reentry2` — and **0 of them import the shared reader.**
+
+It did not rot through drift. **I never counted; I wrote the number from memory of
+what I had just done, two tranches earlier.** That is the same failure this sweep
+has found in a dozen items, committed by the person cataloguing it, at the moment
+of cataloguing it — and it is corrected here rather than quietly.
 
 ## 3. What the apparatus cost, said out loud
 

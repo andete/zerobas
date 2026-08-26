@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 57 of N. Subject 176; 134 verdicted, 42 pending.",
+  "status": "TRANCHE 58 of N. Subject 176; 137 verdicted, 39 pending -- ALL OPEN ITEMS VERDICTED.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -1050,5 +1050,26 @@
   "reading": "load average right now is 2.50 / 2.54 / 3.56 -- this host is NOT idle, partly because this sweep has been running emulator batteries on it all evening.",
   "\ud83c\udfaf_why_that_is_the_right_answer": "THE ITEM STATES ITS OWN PRECONDITION AND THE PRECONDITION IS UNMET. Re-measuring now would produce a number contaminated in exactly the way the item warns about -- and would then sit on the list looking like a measurement. The item is better written than most on this list precisely because it makes its own falsification refusable.",
   "note": "scratchpad/harness_walltime.py is present and ready; it needs a quiet host, not new code"
+ },
+ "T-872E8C": {
+  "verdict": "LIVE -- and my own filed COUNT was wrong",
+  "how": "grep over this session's probes",
+  "headline": "D-TODOSWEEP'S OWN NINE PROBES RE-IMPLEMENT THE `[...]` READER",
+  "reading": "**11**, not nine: sweep_tranche1 (two readers), 2, 3, 4, 11, 12, 16, 17, plus editscout_layout, editscout_reentry, editscout_reentry2. And **0 of them import the shared reader** -- not `result_span`, not `result_span_after_echo`.",
+  "\ud83d\udd34_the_irony_is_load_bearing": "I FILED THIS ITEM WITH AN UNMEASURED COUNT ('nine') IN A SWEEP WHOSE ENTIRE PREMISE IS THAT FILED COUNTS ROT. It rotted within two tranches -- not through drift, but because I never counted in the first place and wrote the number from memory of what I had done. \ud83c\udfaf That is the same failure the sweep has found in a dozen items, committed by the person cataloguing it, at the moment of cataloguing it. Corrected here rather than quietly."
+ },
+ "T-C7AC0E": {
+  "verdict": "NOT MEASURABLE TONIGHT -- a perf figure needs a quiet host",
+  "how": "uptime",
+  "headline": "`PAINT` IS STILL 1.9-2.0x SLOWER THAN BOTH REFERENCES -- HALVED BY D-PAINTVRAM, NOT CLOSED",
+  "reading": "load average 1.84 / 2.18 / 3.21 -- not idle, and this sweep's own emulator batteries are part of why. A 1.9-2.0x ratio re-measured under contention would be contaminated in the same way T-051734 warns about for wall time.",
+  "note": "\ud83c\udfaf the item is a RATIO between two machines measured in the same run, so it is more robust to load than an absolute figure -- but not robust enough to bank a two-significant-figure number from, and banking one is exactly how a contaminated reading becomes a filed fact."
+ },
+ "T-356731": {
+  "verdict": "NOT MEASURABLE BY READING -- needs the knife re-run",
+  "how": "read",
+  "headline": "K-PE1's FOUR UNEXPLAINED ROWS: SOMETHING RAISES ERR 5 WITHOUT THE WRITER",
+  "reading": "K-PE1 is documented at docs/spec-basic-penderr.md:285 as inverting the guard's polarity ('jr nz,pes_pending -> jr z,pes_pending: nothing is ever recorded'). Its four unexplained rows are a KNIFE RESULT.",
+  "why_not": "\u26a0\ufe0f a knife result can only be re-established by running the knife -- cutting the source, rebuilding both ROMs, scoring the rows, and restoring. That is a full slice's apparatus, and per the operating rules it must never run while anything else is building. Named rather than guessed."
  }
 }
