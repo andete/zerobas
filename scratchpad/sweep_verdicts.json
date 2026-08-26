@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 51 of N. Subject 176; 122 verdicted, 54 pending.",
+  "status": "TRANCHE 52 of N. Subject 176; 124 verdicted, 52 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -942,5 +942,20 @@
   "headline": "AN INDIRECT REACHER CANNOT BE ENUMERATED BY NAMING THE CALLEE",
   "reading": "the direct-call denominator today: 15 `(jp|call|jr) ... print_msg` reachers across arrays(2), bload(1), cload(3), input(2), program(7). Neither of the two common INDIRECT shapes -- `ld <reg>,print_msg` or `dw print_msg` -- appears anywhere in basic/ or sub/.",
   "\ud83c\udfaf_the_reflexive_part": "THE ITEM'S CLAIM IS THAT GREPPING FOR CALL SHAPES MISSES REACHERS. I checked it BY GREPPING FOR CALL SHAPES. Finding no indirect reacher of the two shapes I happened to think of is exactly the evidence the item says is worthless -- a fourth reacher of a FIFTH shape would be invisible to me for the same reason it was invisible to D-MSGMIGRATE. The item can only be closed by an instrument that does not enumerate by name at all (a symbol closure over the built image), which is the cure this project already applied to the seed-set problem in D-SEEDHOLE2."
+ },
+ "T-E56017": {
+  "verdict": "LIVE -- and WORSE than filed: the covering gate never runs",
+  "how": "static read of Makefile + run_gates.py GATES",
+  "headline": "THE `--say` SURFACE IS STILL UN-GATED OUTSIDE `ONLY=lnrd-`",
+  "reading": "`lnblank-say-acceptance` IS a make target (Makefile:1439) and IS in .PHONY (:2760) -- and it is NOT in run_gates.py's GATES list.",
+  "\ud83d\udd34_the_escalation": "THE ITEM SAYS THE SURFACE IS UN-GATED OUTSIDE ONE FILTER. THE MEASUREMENT SAYS THE GATE THAT WOULD COVER IT NEVER RUNS AT ALL. `lnblank-say-acceptance` is one of the 22 targets tranche 47 found with no documented exclusion. So the item understates itself twice over: not merely a narrow filter, but a unit the battery has never executed.",
+  "note": "\ud83c\udfaf this is the first pending item that tranche 47's structural finding directly reclassifies -- and there are 21 more targets in that set, any of which could be doing the same to another item"
+ },
+ "T-94C4D6": {
+  "verdict": "LIVE -- confirmed by absence of any shared constant",
+  "how": "grep over probes/lib/",
+  "headline": "A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A CLASSIFIER NEEDLE, AND THEY LOOK IDENTICAL",
+  "reading": "probes/lib/ carries NO shared message table -- no `MSG_*` constants, no `MESSAGES = `, no `EXPECT_MSG`. Every probe still spells its message literals inline, so an assertion and a classifier needle remain textually indistinguishable, exactly as filed.",
+  "note": "the item records that this silently broke 30 comparisons across 9 files; nothing in the tree today would prevent a repeat"
  }
 }

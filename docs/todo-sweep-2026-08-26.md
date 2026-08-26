@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 51 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 52 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1522,6 +1522,29 @@ a symbol closure over the built image — which is the cure this project already
 applied to the seed-set problem in D-SEEDHOLE2 (*"the cure for a proxy is not a
 narrower proxy — it is the REAL surface"*). The item is a standing instance of a
 lesson the project has already learned elsewhere.
+
+## 2ax. Tranche 52 — the battery gap starts reclassifying items
+
+**`--say` un-gated — LIVE, and worse than filed.** `lnblank-say-acceptance` **is**
+a make target (`Makefile`:1439), **is** in `.PHONY` (:2760), and is **not** in
+`run_gates.py`'s `GATES` list.
+
+🔴 **THE ITEM SAYS THE SURFACE IS UN-GATED OUTSIDE ONE FILTER. THE MEASUREMENT
+SAYS THE GATE THAT WOULD COVER IT NEVER RUNS AT ALL.** It is one of the 22 targets
+tranche 47 found with no documented exclusion, so the item understates itself
+twice over — not a narrow filter, but a unit the battery has never executed.
+
+🎯 **THIS IS THE FIRST PENDING ITEM THAT TRANCHE 47's STRUCTURAL FINDING DIRECTLY
+RECLASSIFIES**, and there are **21 more targets in that set** — any of which could
+be doing the same to another item. The coverage gap is not only a fact about the
+battery; it is silently changing the meaning of items that reference those gates.
+
+**Message literal as assertion vs needle — LIVE.** `probes/lib/` carries **no**
+shared message table — no `MSG_*` constants, no `MESSAGES =`, no `EXPECT_MSG`.
+Every probe still spells its literals inline, so an assertion and a classifier
+needle remain textually indistinguishable. The item records that this silently
+broke **30 comparisons across 9 files**; nothing in the tree today would prevent a
+repeat.
 
 ## 3. What the apparatus cost, said out loud
 
