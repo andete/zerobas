@@ -73,6 +73,49 @@ list. **When a slice lands, grep this list for what it just shipped.**
       worth more than the bytes**: `scratchpad/` has no sweep for "a pop that
       only exists to satisfy a raise that unwinds anyway". Unpriced.
 
+- [ ] 🔴 **THE STALL WATCHDOG'S OWN DIAGNOSTIC ASSERTS THE ONE THING IT CANNOT
+      KNOW: *"a stall is a FROZEN OR CRASHED emulator, NOT A SLOW ONE"*.** Filed
+      2026-08-26 by D-DRAWOP. `probes/lib/omsx_repl.py`:981 appends that clause
+      to every stall kill, and justifies it with *"the heartbeat is on the HOST
+      clock"* — **which is exactly why the claim fails.** A host-clock deadline
+      cannot separate a FROZEN guest from a STARVED one; when the host is
+      oversubscribed, a perfectly healthy emulator misses it.
+      🎯 **AND THE REFUTATION IS PRINTED IN THE SAME SENTENCE AS THE CLAIM.**
+      The message ends *"the run wrote N line(s)"*, and across the two degraded
+      batteries those N were **1886, 90, 88, 6, 4, 3, 2 and 0**. **A frozen or
+      crashed emulator does not write 1886 lines.** The field that falsifies the
+      clause is adjacent to it.
+      📏 **MEASURED**: wall **3509 s against a normal ~420 s**, lineerr shards at
+      ~1000 s against ~100 s, **20 capture failures and every one a stall kill**,
+      and **two different machines** (`C-BIOS…REPACK_DISK` and
+      `National_CF-3300`) killed at **947 s — the same deadline to the second**.
+      Two independent guest crashes do not share a timestamp; one expiring timer
+      does. A second battery went **17 red**. The serial retry called several
+      REAL, because the retry also ran contended.
+      🟢 **THE HOST IS NOT BROKEN — it is self-contended.** With the battery
+      stopped, a single `make error-acceptance` runs in **7.2 s** (normally 13),
+      so the deadline is not fighting a sick machine, it is fighting `J=8` on
+      10 cores plus whatever else the host is doing.
+      🔴 **AND `omsx_repl.py`:477's REASONING IS WHERE IT WENT IN.** It records
+      that a FIRST design beat on EMULATED time and false-fired on a
+      slow-but-advancing emulator, and moved to `after realtime` so a beat lands
+      *"regardless of emulation speed... as long as openMSX's event loop is
+      alive"*. **That holds only if the process is SCHEDULED.** The fix moved the
+      dependency from emulation speed to process scheduling, and both fail under
+      the same condition. The comment then draws the conclusion the code has
+      been asserting ever since: *"never merely slow"*.
+      🔴 **SO THE FLAKE-vs-REAL CLASSIFIER INHERITS THE FAULT.** `run_gates.py`
+      calls a unit REAL when it fails twice, and under sustained host load it
+      will fail twice for the same non-semantic reason — the opposite of the
+      2026-08-25 failure mode, where a real defect was retried into GREEN.
+      🎯 **THE FIX IS NOT A LONGER DEADLINE**, it is a diagnostic that can tell
+      the two apart: the run already knows its own EMULATED time, so a stall
+      where emulated time ADVANCED is a slow host and one where it did not is a
+      frozen guest. Until then the clause should say what it knows and stop
+      there. ⚠️ **A message that names the wrong cause is worse than one that
+      names none** — this one sent me looking at DRAW's semantics.
+      Unpriced; the wording is one line, the emulated-time test is the real fix.
+
 - [ ] 🔴 **EVERY KNIFE RUNNER IN `scratchpad/` CAN EXIT BETWEEN THE WRITE AND
       THE RESTORE, LEAVING THE TREE CUT.** Filed 2026-08-26 by D-MIDOP
       ([`docs/spec-basic-midop.md`](docs/spec-basic-midop.md) §5.2), which hit
@@ -980,6 +1023,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
         is 2; and a missing **SEPARATOR** is 2* — `PRINT USING"##"` is 2 on both
         references, not 24, because the format is present and the `;` is not.
         ⚠️ Rests on TWO separating rows; the scope is the verbs measured.
+      * 🟢 **NINE OF THE TEN ARE CLOSED (2026-08-26)** — D-EVFERR, D-PLAYOP,
+        D-PUSING (which turned 2 rows into 13), D-MIDOP and D-DRAWOP. The tenth
+        is KEY's absent form, blocked on ~160 B of defaults DATA rather than on
+        knowledge. 🔴 **AND `SCREEN2:DRAW` IS THE ONE TO REMEMBER FROM THIS
+        LIST**: this item's own `DRAW` row agreed at 5 on all three because
+        SCREEN 0 refuses before the operand is read, so the row that was
+        supposed to find the defect was structurally incapable of it.
       * 📏 **FULL LIVE LIST — TEN, where this item knew of two:** `KEY1,"X"` and
         `KEY LIST` (refs **0**, zb 2 — the item below), `KEY1,` (24 vs 2),
         `MID$(A$,2)=` (24 vs 2), `PLAY` (24 vs 2), `PRINT USING` (24 vs 2),
@@ -1692,15 +1742,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       * **Missing/empty operand → ERR 24 / ERR 2**: `ev_f`'s
         `ev_f_missop`/`ev_f_empty` machinery — the D-MISSOP arc already found
         this is *"one rule at 16 slots"* (docs/spec-basic-missop.md).
-        🟢 **THREE MEMBERS SHIPPED 2026-08-26**: `ev_f_err`'s seven sites
-        (D-EVFERR, 0 B), `PLAY`'s missing operand (D-PLAYOP, +2 B) and
-        **`PRINT USING`, which was a −6 B CARVE and 13 DIFF → 0**
-        ([`docs/spec-basic-pusing.md`](docs/spec-basic-pusing.md)). What is left
-        of this half is `MID$(A$,2)=`, `SCREEN2:DRAW`, and KEY's absent form.
-        🎯 **D-PUSING is the one to read before pricing the rest**: the filed
-        item named TWO rows and the verb had **THIRTEEN**, because the
-        references distinguish FIVE cases where zerobas had two — and the rows
-        that found that were the ones added to keep the fix NARROW. 🟢 **THE `ev_f_err` SEVEN-SITES MEMBER IS SHIPPED**
+        🟢 **FIVE MEMBERS SHIPPED 2026-08-26, AND ONLY KEY'S ABSENT FORM IS
+        LEFT** (and that one is BLOCKED on ~160 B of defaults data, not on
+        knowledge). What each one COST: `ev_f_err`'s seven sites (D-EVFERR)
+        spent **0 B**; `PLAY` (D-PLAYOP) spent **+2 B**; `PRINT USING`
+        (D-PUSING) **freed 6 B** and turned 2 filed rows into 13; `MID$()=`
+        (D-MIDOP) spent **+6 B**, and spent it in the low region, not page 1;
+        `DRAW` (D-DRAWOP) spent **0 B**.
+        🎯 **ONE RULE, THREE VERBS, THREE DIFFERENT PRICES.** The last three
+        slices all split the SAME shared tail — `call str_eval / jp nc,<one
+        error>`, where str_eval declines both for *"nothing is here"* and for
+        *"this is not a string"* and the references answer **24** and **13**.
+        The rule is shared; **the price is a property of each site's stack and
+        neighbourhood**, and so is the fix's SHAPE — an EOL/`:` peek works at
+        `PRINT USING` and is WRONG at both `MID$()=` and `DRAW`, where a stray
+        operator must read 24. Ask *"can a FACTOR start here"*, which is `ev_f`'s
+        question, by delegating to `els_tc_common`.
+        📏 **D-PUSING is still the one to read before pricing anything else**:
+        the filed item named TWO rows and the verb had **THIRTEEN**, and the
+        rows that found that were the ones added to keep the fix NARROW. 🟢 **THE `ev_f_err` SEVEN-SITES MEMBER IS SHIPPED**
         (D-EVFERR 2026-08-26, [`docs/spec-basic-evferr.md`](docs/spec-basic-evferr.md)):
         five live sites split by MEANING onto `ev_f_empty` (2) and `ev_f_ifc`
         (5) at **ZERO bytes**, 11 DIFF → 1, and `ev_f_err` now has **no

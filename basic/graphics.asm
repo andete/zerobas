@@ -909,7 +909,32 @@ ex_draw:
                                             ; ordering. The 3 B saved is what pays for
                                             ; PAINT's narrow gate below.
                 call    str_eval            ; STRPTR -> [len][ptr]; CF=1 iff a string
-                jp      nc,gfx_typeerr      ; DRAW 5 -> Type mismatch (measured)
+                ; D-DRAWOP (docs/spec-basic-drawop.md): this was the SAME SHARED
+                ; TAIL D-PUSING and D-MIDOP each split, for the third time.
+                ; str_eval declines both for "there is nothing here" and for
+                ; "there is something and it is not a string", and the
+                ; references answer 24 and 13:
+                ;   SCREEN2:DRAW    -> 24    SCREEN2:DRAW:   -> 24
+                ;   SCREEN2:DRAW+   -> 24    SCREEN2:DRAW 5  -> 13
+                ; The old comment's "(measured)" was true and NARROW -- `DRAW 5`
+                ; really is 13 -- and the label it sat on served three more
+                ; shapes it had never been measured on.
+                ; 🔴 D-MISSOP3's ORIGINAL `DRAW` ROW AGREED AT 5 ON ALL THREE AND
+                ; HID THIS: in SCREEN 0 the mode gate above refuses before the
+                ; operand is looked at, so the row could not reach this tail at
+                ; all. Every row that finds the defect says SCREEN2 first.
+                ; 🎯 DELEGATION, NOT A PEEK -- and `SCREEN2:DRAW+` is why. An
+                ; EOL/':' test ahead of str_eval (D-PUSING's shape) answers 13
+                ; for a stray operator, where both references say 24. The
+                ; question is "can a FACTOR start here", which is ev_f's, so ask
+                ; els_tc_common (basic/missing.asm, D-MISS-1): it evaluates the
+                ; operand NUMERICALLY and lets check_expr_errors decide.
+                ; 0 B -- the same instruction, retargeted. Nothing is pushed
+                ; here, so this is the case files.asm:732 calls "this caller has
+                ; none to pop, so it enters at the common label directly", and
+                ; gfx_typeerr keeps its four other callers (:724, :936, :1065,
+                ; :1370) so nothing is orphaned.
+                jp      nc,els_tc_common    ; 24 / 13, decided by eval
                 call    check_expr_errors   ; surface a deferred string error
                 push    hl                  ; guard the statement cursor
                 call    gdw_hand_string     ; GFX_DVAL/GFX_DVLEN = the body + length
