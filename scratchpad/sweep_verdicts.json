@@ -9,9 +9,10 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 8 of N -- the remaining ids are NOT yet verdicted",
+  "status": "TRANCHE 9 of N -- the remaining ids are NOT yet verdicted",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
-  "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds."
+  "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
+  "screen_false_positive_classes": 6
  },
  "T-B96267": {
   "verdict": "LIVE",
@@ -240,5 +241,33 @@
   "headline": "The rest of the byte-identical-span supply: 53 groups, 403 B",
   "reading": "26 byte-identical groups today over a denominator of 1445 non-empty spans; nominal 163 B; MEASURED SAFE NET 8 B (page-0 low 3 B, page 1 8 B, jr widening charged 3 B)",
   "note": "the item's 53 groups / 403 B is roughly double today's supply -- the carve slices since have eaten it. \ud83c\udfaf And the number that matters is not the nominal one: 163 B nominal is 8 B SAFE. An item quoting the nominal figure overstates the fundable amount by 20x."
+ },
+ "T-D35BCC": {
+  "verdict": "SUPERSEDED BY ITS OWN TEXT -- should not be an open item",
+  "how": "read + tree check",
+  "headline": "CAPTURE ON A `done` SENTINEL (struck through in the file)",
+  "reading": "the headline is already struck through (~~...~~) and the body says 'the speed case it was filed on is DEAD ... the win was the budgets SCOPE instead'. It is kept for its reasoning, not as work.",
+  "note": "the `loadstate` the screen flagged is openMSX COMMAND vocabulary (docs/spec-probe-savestate.md), not a repo symbol -- a FIFTH false-positive class for the screen: an item may name an EXTERNAL tool's command."
+ },
+ "T-E5E8DB": {
+  "verdict": "LIVE, unchanged -- a standing DECISION, not a measurable claim",
+  "how": "tree check",
+  "headline": "REGIONALISE THE REPACK BUILD",
+  "reading": "the shipped pair is EU-only by construction; both files are tracked and present. The item is a recorded coverage trade ('revisit if a BR/JP user turns up'), which no instrument can falsify.",
+  "note": "the screen flagged `zerobas-main-eu.ips/.bps` as a gone path -- that is the compound form `x.ips/.bps`, a SIXTH false-positive class: a path written as a shared-stem pair."
+ },
+ "T-E2C671": {
+  "verdict": "LIVE -- and its named probe does not exist",
+  "how": "git ls-files",
+  "headline": "2-Tier2-c -- regression. Host-unit-test the sector-0 read + handoff setup",
+  "reading": "`disk_probe_provider_dosboot.py` is absent from the tree; only disk/docs/tier2-cbios-dosboot-autoexec-f340.md mentions dosboot at all. The regression task names an instrument that was never committed.",
+  "note": "this is the citation class the morning's gate covers for docs/, in a TODO item -- the gate's corpus is committed .md, and TODO.md IS in it, so a `scratchpad/` path would have been caught; a `probes/` path is NOT policed by anything."
+ },
+ "T-CA0671": {
+  "verdict": "NOT A MEASURABLE CLAIM -- awaiting a human sign-off",
+  "how": "read",
+  "headline": "SLIM THE FILE-CHANNEL CONTEXT toward the reference",
+  "reading": "the item says '\u2705 MEASURED 2026-07-29; awaiting spec sign-off'. The measurement is done and recorded; what is open is a DECISION. Re-running cannot advance it.",
+  "note": "`ERRMSG_BUF` is absent from the tree (only `ERRMSG` exists) -- unresolved, and not load-bearing for the verdict."
  }
 }

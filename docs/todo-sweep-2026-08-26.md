@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-⚠️ **THIS IS TRANCHE 8 OF N. 30 of 146 subject blocks carry a verdict** (one upgraded). The
+⚠️ **THIS IS TRANCHE 9 OF N. 34 of 146 subject blocks carry a verdict.** The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -320,6 +320,40 @@ are `sg_walk_arrays`, `sg_walk_scalars`, `sg_walk_strtab`, `sg_walk_temps` —
 exactly the *"variable chain and temp-descriptor stack"* the item names, with **no
 FN-frame walker of any name**. So the shadow slot really is unwalked: tranche 6's
 deliberately half-scored verdict is upgraded to **LIVE, mechanism confirmed**.
+
+## 2h. Tranche 9 — reading the screen's candidates, and two more ways it lies
+
+Of the 9 the screen flagged, **two more false-positive classes** turned up, so the
+tally is six:
+
+| # | class | example |
+|---|---|---|
+| 5 | **an external tool's command vocabulary** | `loadstate` is an openMSX command, not a repo symbol |
+| 6 | **a shared-stem path pair** | `zerobas-main-eu.ips/.bps` parsed as one path |
+
+🎯 **SIX FALSE-POSITIVE CLASSES, EVERY ONE FOUND BY RUNNING THE SCREEN AND
+READING WHAT IT SAID.** None was predictable from the code. That is the argument
+for the rule this sweep adopted: **a screen may retire an item and may never
+confirm one.**
+
+Four items settled:
+
+| item | verdict |
+|---|---|
+| `CAPTURE ON A done SENTINEL` | **superseded by its own text** — the headline is already struck through and the body says the speed case is dead. It is kept for its reasoning and should not sit in the open list |
+| `2-Tier2-c` regression | **LIVE, and its named probe does not exist** — `disk_probe_provider_dosboot.py` is absent from the tree |
+| REGIONALISE THE REPACK BUILD | **LIVE — a standing decision, not a measurable claim** |
+| SLIM THE FILE-CHANNEL CONTEXT | **not measurable — awaiting a human sign-off**; the measurement is done, the decision is open |
+
+🔴 **AND ONE OF THEM IS THE MORNING'S CITATION CLASS IN A PLACE THE GATE CANNOT
+SEE.** The Tier2 item names a probe that was never committed. `check_citation_paths.py`
+polices `scratchpad/` paths in committed docs — and `TODO.md` *is* in its corpus,
+so a dangling `scratchpad/` path there would be caught. A dangling **`probes/`**
+path is policed by nothing.
+
+🎯 **TWO OF THE FOUR ARE NOT FALSIFIABLE AT ALL** — a recorded coverage trade and
+a decision awaiting sign-off. *"Re-run everything"* has a floor: an item whose
+content is a judgement cannot be put to a machine, and saying so is the verdict.
 
 ## 3. What the apparatus cost, said out loud
 
