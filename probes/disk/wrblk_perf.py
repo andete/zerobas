@@ -23,6 +23,11 @@ import argparse, os, struct, subprocess, sys, tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests"))
 import test_wrblk_body_e2e as E   # Disk, n83, build(); harness geometry globals
+import os as _zbo, sys as _zbs
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(_zbo.path.dirname(
+    _zbo.path.abspath(__file__))), "lib"))
+# 🎯 the project temp root, as a side effect of import (probe_tmp.py).
+import probe_tmp  # noqa: E402,F401
 from msxtest import Machine
 
 SECSIZE = 512; FATSTART = 1; NUMFATS = 1; EOC = 0xFFF

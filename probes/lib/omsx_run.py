@@ -40,6 +40,10 @@ import time
 import os as _zbo, sys as _zbs  # noqa: E402
 _zbs.path.insert(0, _zbo.path.dirname(_zbo.path.abspath(__file__)))
 import omsx_preflight  # noqa: E402
+# 🎯 ESTABLISHES THE PROJECT TEMP ROOT (`/tmp/zerobas`) AS A SIDE EFFECT OF
+# IMPORT -- see probes/lib/probe_tmp.py. Imported here, at a chokepoint every
+# probe reaches, so a bare `tempfile.*` anywhere lands under the one root.
+import probe_tmp  # noqa: E402,F401
 
 # openMSX 21.0 (Homebrew-bin symlink -> /Applications/openMSX.app). Override with
 # $OPENMSX or --omsx; e.g. point at a self-built source clone for C-BIOS work.

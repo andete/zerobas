@@ -32,10 +32,28 @@ it stay exactly as they were, so a probe that reuses one path across cases
 directory rather than N files. The watchdog in `omsx_repl` kills the EMULATOR,
 not the probe, so this is the rare path.
 
-⚠️ The base honours `$ZB_TEST_TMP` exactly as `tests/_tmp.py` does, so a runner
-that isolates an invocation isolates the probes too -- and `run_gates.py`, which
-sets it and then `rm -rf`s that tree on the next battery, sweeps up even the
-SIGKILL leftovers.
+🎯 AND EVERYTHING GOES UNDER **ONE ROOT**, so cleaning up is one command:
+
+    rm -rf /tmp/zerobas
+
+That is the whole point of this module, and it is why importing it has a SIDE
+EFFECT: it sets `tempfile.tempdir`. Python resolves every bare
+`mkstemp`/`mkdtemp`/`NamedTemporaryFile` through that one global, so setting it
+once relocates ~140 call sites across the probe tree without touching any of
+them -- and, more importantly, without a future one being able to escape by
+being written the ordinary way. A per-site helper would have had to be
+remembered 140 times; this has to be right once.
+
+⚠️ WHAT IS *NOT* COVERED, AND IS ENFORCED SEPARATELY: hardcoded `"/tmp/..."`
+string literals. There are 122 of them in 67 files, and they cannot be moved
+blindly -- eleven are `argparse` defaults, i.e. a documented output location a
+person may be relying on. `tools/check_temp_root.py` pins the set so it can
+shrink but never grow.
+
+⚠️ `$ZEROBAS_TMP` overrides the root; `tests/_tmp.py` derives its own base from
+`ROOT` so unit-test artefacts land under it too; and `run_gates.py` still points
+`$ZB_TEST_TMP` at a per-battery tree it wipes, which is where the probe scratch
+directories go during a battery.
 """
 from __future__ import annotations
 
@@ -44,7 +62,19 @@ import os
 import shutil
 import tempfile
 
-BASE = os.environ.get("ZB_TEST_TMP") or tempfile.gettempdir()
+# 🔴 ONE ROOT, AND IT IS A LITERAL PATH ON PURPOSE. `tempfile.gettempdir()` is
+# `$TMPDIR`, which on macOS is a per-user `/var/folders/…` path nobody can type
+# from memory -- and "cleaning up" has to be a command a person will actually
+# run. This is the path the operator asked for.
+ROOT = os.environ.get("ZEROBAS_TMP") or "/tmp/zerobas"
+os.makedirs(ROOT, exist_ok=True)
+
+# 🔴 THE SIDE EFFECT THAT MAKES THIS WORK AT ALL. Every bare `tempfile.*` call
+# in any module imported after this one now lands under ROOT. Importing this
+# module IS the policy; see the docstring.
+tempfile.tempdir = ROOT
+
+BASE = os.environ.get("ZB_TEST_TMP") or ROOT
 
 _dir: str | None = None
 

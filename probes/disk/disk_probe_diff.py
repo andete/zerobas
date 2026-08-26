@@ -52,6 +52,11 @@ import os
 import shutil
 import sys
 import tempfile
+import os as _zbo, sys as _zbs
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(_zbo.path.dirname(
+    _zbo.path.abspath(__file__))), "lib"))
+# 🎯 the project temp root, as a side effect of import (probe_tmp.py).
+import probe_tmp  # noqa: E402,F401
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from omsx_session import (OmsxRun, OURS_MACHINE, STOCK_MACHINE,  # noqa: E402

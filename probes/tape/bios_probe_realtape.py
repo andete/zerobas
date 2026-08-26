@@ -56,6 +56,11 @@ import tempfile
 import zipfile
 
 import z80probe as Z  # noqa: E402
+import os as _zbo, sys as _zbs
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(_zbo.path.dirname(
+    _zbo.path.abspath(__file__))), "lib"))
+# 🎯 the project temp root, as a side effect of import (probe_tmp.py).
+import probe_tmp  # noqa: E402,F401
 
 OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib", "omsx_run.py")
 

@@ -50,6 +50,10 @@ so a future layout change cannot silently turn it into a line differ.
 from __future__ import annotations
 
 import re
+# 🎯 ESTABLISHES THE PROJECT TEMP ROOT (`/tmp/zerobas`) AS A SIDE EFFECT OF
+# IMPORT -- see probes/lib/probe_tmp.py. Imported here, at a chokepoint every
+# probe reaches, so a bare `tempfile.*` anywhere lands under the one root.
+import probe_tmp  # noqa: E402,F401
 from typing import NamedTuple
 
 # The closed tag set. Four characters wide as printed; the spellings here are

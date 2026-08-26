@@ -18,10 +18,18 @@ as a stochastic `pasmo` failure). Route every such path through `tp()`:
 Leading underscore so tests/run.py's `test_*.py` glob never collects this.
 """
 import os
+import sys
 
-BASE = os.environ.get("ZB_TEST_TMP", "/tmp")
-if BASE != "/tmp":
-    os.makedirs(BASE, exist_ok=True)
+# 🎯 ONE SOURCE OF TRUTH FOR THE TEMP ROOT. `probes/lib/probe_tmp.py` owns it
+# (`/tmp/zerobas`, overridable with $ZEROBAS_TMP) so that "clean up everything
+# this project wrote" stays ONE `rm -rf`. Importing it also points `tempfile`
+# at the root, which is what relocates the bare `tempfile.*` calls in tests.
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "lib"))
+import probe_tmp                                                 # noqa: E402
+
+BASE = os.environ.get("ZB_TEST_TMP") or probe_tmp.ROOT
+os.makedirs(BASE, exist_ok=True)
 
 
 def tp(name: str) -> str:

@@ -105,6 +105,10 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(_HERE))          # probes/lib -> probes -> repo
 sys.path.insert(0, os.path.join(REPO, "tools"))
 import openmsx_paths  # noqa: E402
+# 🎯 ESTABLISHES THE PROJECT TEMP ROOT (`/tmp/zerobas`) AS A SIDE EFFECT OF
+# IMPORT -- see probes/lib/probe_tmp.py. Imported here, at a chokepoint every
+# probe reaches, so a bare `tempfile.*` anywhere lands under the one root.
+import probe_tmp  # noqa: E402,F401
 
 BUILD = os.path.join(REPO, "build")
 

@@ -44,6 +44,7 @@ WARM = ["repack-machine", "basic-reloc", "subrom-abi-check", "disk/test720.dsk"]
 
 GATES = """basic-reloc subrom-abi-check subrom-closure-check unit-test deadcode
 wall-assertion-check redundant-load-check rowshape-check injector-check
+temp-root-check
 preflight-check latch-check diskdep-check switch-build-check kwsweep
 deffn-selftest string-acceptance str-domain-acceptance strparen-acceptance
 penderr-acceptance missing-acceptance error-acceptance error-trap-acceptance

@@ -664,6 +664,19 @@ graphics-floor-acceptance: repack-machine
 # sub-ROM and could only ever report FAIL. The teeth check now actually builds an
 # unguarded sub.rom, installs it, runs the probe, and puts the real machine back
 # whatever the outcome.
+# --- One temp root, statically enforced --------------------------------------
+# `probes/lib/probe_tmp.py` owns `/tmp/zerobas` and points `tempfile.tempdir` at
+# it, so every bare `tempfile.*` in the tree lands under ONE directory and
+# "clean up everything this project wrote" is `rm -rf /tmp/zerobas`. This gates
+# the three rules that keep it true: a bare tempfile call must reach the root,
+# only probe_tmp may set it, and the hardcoded `/tmp/...` literals that predate
+# it are PINNED (tools/temp-root-allow.txt) so the set can shrink but not grow.
+# 🔴 The tree already lost this once: `tests/_tmp.py` solved it for the unit
+# tests and nobody carried it to the probes, which cost 1.1 GB of orphans and a
+# stochastic gate flake. Emulator-free, <1 s.
+temp-root-check:
+	python3 tools/check_temp_root.py
+
 # --- The missing-capture diagnosis, falsified (docs/spec-probe-mark.md is not
 # its home -- see probes/lib/omsx_missing_teeth.py). ⛔ DELIBERATELY NOT IN
 # `make gates`: two of its cases SIGKILL/SIGTERM `openmsx` BY NAME, which in a
@@ -2745,7 +2758,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth gates clean
+        omsx-diag-teeth temp-root-check gates clean
 
 # --- gates: the acceptance-gate battery, run in PARALLEL ----------------------
 # Build the shared artifacts once, then fan the per-gate probes out across worker

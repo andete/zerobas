@@ -49,6 +49,11 @@ import argparse
 import os
 import shutil
 import tempfile
+import os as _zbo, sys as _zbs
+_zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(_zbo.path.dirname(
+    _zbo.path.abspath(__file__))), "lib"))
+# 🎯 the project temp root, as a side effect of import (probe_tmp.py).
+import probe_tmp  # noqa: E402,F401
 
 from cas_encode import build_cas_basic, CAS_SYNC, BASIC_ID  # noqa: E402
 from bas_tokenise import make_multiline_program         # noqa: E402
