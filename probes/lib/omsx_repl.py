@@ -96,6 +96,7 @@ cannot share a boot and stays boot-per-case.
 """
 from __future__ import annotations
 
+import glob
 import os
 import re
 import shutil
@@ -1049,173 +1050,180 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="repl_", delete=False).name
     tcl = out + ".tcl"
     hb = out + ".hb"                     # emulated-time heartbeat (parallel-safety)
-    slots: list[tuple[int, str]] = []
-    with open(tcl, "w") as f:
-        f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
-                     holds, hold_secs, prologue, slots, hb_path=hb,
-                     settle_n=settle_n, sentinel=sentinel, run_gap=run_gap,
-                     sentinel_capture=sentinel_capture))
-    for p in (out, hb):
-        if os.path.exists(p):
-            os.unlink(p)
+    # 🔴 EVERY TEMP NAME IN THIS FUNCTION IS `out` OR `out + <suffix>`, AND THEY
+    # USED TO BE UNLINKED ONE BY ONE ON THE SUCCESS PATH ONLY. Anything that
+    # raised in between leaked all five -- and one of them raises by design:
+    # `omsx_preflight.guarded()` refuses a bad machine at the `Popen` call, after
+    # the Tcl has been written. Measured: 44 orphaned `repl_*` files, mostly
+    # `.tcl`. Small, but it is the same class as the 1.1 GB of `zb_*` that
+    # `probe_tmp` was written for, and the same answer -- sweep, do not enumerate.
+    try:
+        slots: list[tuple[int, str]] = []
+        with open(tcl, "w") as f:
+            f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
+                         holds, hold_secs, prologue, slots, hb_path=hb,
+                         settle_n=settle_n, sentinel=sentinel, run_gap=run_gap,
+                         sentinel_capture=sentinel_capture))
+        for p in (out, hb):
+            if os.path.exists(p):
+                os.unlink(p)
 
-    settings = out + ".settings.xml"    # see OMSX_SETTINGS: the parallel flake
-    blob = _settings_read()
-    if blob is None:
-        settings = None
-    else:
-        with open(settings, "w") as sf:
-            sf.write(blob)
+        settings = out + ".settings.xml"    # see OMSX_SETTINGS: the parallel flake
+        blob = _settings_read()
+        if blob is None:
+            settings = None
+        else:
+            with open(settings, "w") as sf:
+                sf.write(blob)
 
-    cmd = [binary, "-machine", machine]
-    if settings:
-        cmd += ["-setting", settings]
-    if cart:
-        cmd += ["-cart", cart]
-    if diska:
-        cmd += ["-diska", diska]
-    cmd += ["-command", "set renderer none; set sound_driver null", "-script", tcl]
+        cmd = [binary, "-machine", machine]
+        if settings:
+            cmd += ["-setting", settings]
+        if cart:
+            cmd += ["-cart", cart]
+        if diska:
+            cmd += ["-diska", diska]
+        cmd += ["-command", "set renderer none; set sound_driver null", "-script", tcl]
 
-    # 🔴 openMSX's OWN OUTPUT USED TO GO TO `DEVNULL`, AND SO DID THE ONE
-    # QUESTION AN OPERATOR ACTUALLY ASKS. A missing capture surfaces as
-    # `<NO CAPTURE>`, which is the same string for at least four different
-    # events: the stall watchdog fired, the abscap backstop fired, openMSX died
-    # on its own, or the guest genuinely wedged. Four flakes measured across six
-    # batteries on 2026-08-25 were each ONE `<NO CAPTURE>`, on a random row and
-    # a random side, with NOT ONE diagnostic line in any log -- and the retry in
-    # `tools/run_gates.py` turned every one of them green and printed "FLAKE".
-    # A row that wedges for a REAL reason is indistinguishable from that.
-    # So: keep the emulator's stderr, keep its exit status, and spend both when
-    # (and only when) a capture goes missing. See `_why_missing` below.
-    err = out + ".err"
-    with open(err, "w") as ef:
-        proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=ef,
-                                stderr=subprocess.STDOUT, start_new_session=True)
-    # EMULATED-TIME watchdog (docs/spec-probe-emutime-watchdog.md). openMSX runs
-    # `throttle off`, so wall-time to reach a scheduled capture is host-speed-
-    # dependent -- a fixed wall deadline SIGKILLs slow/contended (or E-core) runs
-    # mid-timeline and reads as a `None` wedge, which is what broke the parallel
-    # battery. Instead: kill only when the heartbeat file stops ADVANCING for
-    # `stall` wall-seconds (a frozen/crashed emulator, or a guest that escaped the
-    # scheduled timeline and dropped its callbacks), never for merely running slow.
-    # A guest infinite loop / reset loop can't hang the run: the capture+exit are
-    # openMSX `after time` events fired from its own scheduler, independent of guest
-    # code. `abscap` is a generous final backstop only. Env overrides:
-    # ZEROBAS_OMSX_STALL / ZEROBAS_OMSX_ABSCAP.
-    stall_s = float(os.environ.get("ZEROBAS_OMSX_STALL", stall if stall is not None else HB_STALL))
-    abscap_s = max(timeout, float(os.environ.get("ZEROBAS_OMSX_ABSCAP",
-                                                 abscap if abscap is not None else HB_ABSCAP)))
-    start = time.time()
-    last_beat = now = start             # wall time of the most recent heartbeat
-    last_mtime = None                   # (`now` pre-bound: the loop may not run)
-    while proc.poll() is None:
-        time.sleep(0.05)
-        now = time.time()
-        try:
-            m = os.path.getmtime(hb)
-        except OSError:
-            m = None
-        if m is not None and m != last_mtime:
-            last_mtime, last_beat = m, now
-        if now - last_beat > stall_s or now - start > abscap_s:
-            break
-    timed_out = proc.poll() is None
-    killer = None
-    if timed_out:
-        # WHICH watchdog. They mean different things -- a stall is a frozen or
-        # crashed emulator, an abscap is a run that was merely far too long --
-        # and "killed" alone tells the operator neither.
-        killer = ("stall" if now - last_beat > stall_s else "abscap")
-        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-    rc = proc.wait()
-    elapsed = time.time() - start
-    if os.path.exists(hb):
-        os.unlink(hb)
+        # 🔴 openMSX's OWN OUTPUT USED TO GO TO `DEVNULL`, AND SO DID THE ONE
+        # QUESTION AN OPERATOR ACTUALLY ASKS. A missing capture surfaces as
+        # `<NO CAPTURE>`, which is the same string for at least four different
+        # events: the stall watchdog fired, the abscap backstop fired, openMSX died
+        # on its own, or the guest genuinely wedged. Four flakes measured across six
+        # batteries on 2026-08-25 were each ONE `<NO CAPTURE>`, on a random row and
+        # a random side, with NOT ONE diagnostic line in any log -- and the retry in
+        # `tools/run_gates.py` turned every one of them green and printed "FLAKE".
+        # A row that wedges for a REAL reason is indistinguishable from that.
+        # So: keep the emulator's stderr, keep its exit status, and spend both when
+        # (and only when) a capture goes missing. See `_why_missing` below.
+        err = out + ".err"
+        with open(err, "w") as ef:
+            proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=ef,
+                                    stderr=subprocess.STDOUT, start_new_session=True)
+        # EMULATED-TIME watchdog (docs/spec-probe-emutime-watchdog.md). openMSX runs
+        # `throttle off`, so wall-time to reach a scheduled capture is host-speed-
+        # dependent -- a fixed wall deadline SIGKILLs slow/contended (or E-core) runs
+        # mid-timeline and reads as a `None` wedge, which is what broke the parallel
+        # battery. Instead: kill only when the heartbeat file stops ADVANCING for
+        # `stall` wall-seconds (a frozen/crashed emulator, or a guest that escaped the
+        # scheduled timeline and dropped its callbacks), never for merely running slow.
+        # A guest infinite loop / reset loop can't hang the run: the capture+exit are
+        # openMSX `after time` events fired from its own scheduler, independent of guest
+        # code. `abscap` is a generous final backstop only. Env overrides:
+        # ZEROBAS_OMSX_STALL / ZEROBAS_OMSX_ABSCAP.
+        stall_s = float(os.environ.get("ZEROBAS_OMSX_STALL", stall if stall is not None else HB_STALL))
+        abscap_s = max(timeout, float(os.environ.get("ZEROBAS_OMSX_ABSCAP",
+                                                     abscap if abscap is not None else HB_ABSCAP)))
+        start = time.time()
+        last_beat = now = start             # wall time of the most recent heartbeat
+        last_mtime = None                   # (`now` pre-bound: the loop may not run)
+        while proc.poll() is None:
+            time.sleep(0.05)
+            now = time.time()
+            try:
+                m = os.path.getmtime(hb)
+            except OSError:
+                m = None
+            if m is not None and m != last_mtime:
+                last_mtime, last_beat = m, now
+            if now - last_beat > stall_s or now - start > abscap_s:
+                break
+        timed_out = proc.poll() is None
+        killer = None
+        if timed_out:
+            # WHICH watchdog. They mean different things -- a stall is a frozen or
+            # crashed emulator, an abscap is a run that was merely far too long --
+            # and "killed" alone tells the operator neither.
+            killer = ("stall" if now - last_beat > stall_s else "abscap")
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        rc = proc.wait()
+        elapsed = time.time() - start
+        if os.path.exists(hb):
+            os.unlink(hb)
 
-    caps: dict[int, str] = {}
-    delivered: dict[int, list[int]] = {}
-    echoes: dict[int, tuple[int, int, str]] = {}
-    out_lines = 0                       # what the run DID write, for _why_missing
-    if os.path.exists(out):
-        out_lines = sum(1 for _ in open(out))
-        for ln in open(out):
-            d = re.match(r"prog\.(\d+)=([\d,]*)$", ln.strip())
-            if d:                              # D-DELIVER: what the machine STORED
-                delivered[int(d.group(1))] = [
-                    int(x) for x in d.group(2).split(",") if x]
-                continue
-            if settle_out is not None:
-                s = re.match(r"settle\.(\d+)\.(\d+)=([\d.]+),([0-9a-f]*)$",
-                             ln.strip())
-                if s:                          # BUDGET INSTRUMENT: one sample
-                    settle_out.setdefault("samples", {}).setdefault(
-                        int(s.group(1)), []).append(
-                            (float(s.group(3)), s.group(4)))
+        caps: dict[int, str] = {}
+        delivered: dict[int, list[int]] = {}
+        echoes: dict[int, tuple[int, int, str]] = {}
+        out_lines = 0                       # what the run DID write, for _why_missing
+        if os.path.exists(out):
+            out_lines = sum(1 for _ in open(out))
+            for ln in open(out):
+                d = re.match(r"prog\.(\d+)=([\d,]*)$", ln.strip())
+                if d:                              # D-DELIVER: what the machine STORED
+                    delivered[int(d.group(1))] = [
+                        int(x) for x in d.group(2).split(",") if x]
                     continue
-                sp = re.match(r"span\.(\d+)=([\d.]+),([\d.]+)$", ln.strip())
-                if sp:                         # the window the budget bought
-                    settle_out.setdefault("span", {})[int(sp.group(1))] = (
-                        float(sp.group(2)), float(sp.group(3)))
+                if settle_out is not None:
+                    s = re.match(r"settle\.(\d+)\.(\d+)=([\d.]+),([0-9a-f]*)$",
+                                 ln.strip())
+                    if s:                          # BUDGET INSTRUMENT: one sample
+                        settle_out.setdefault("samples", {}).setdefault(
+                            int(s.group(1)), []).append(
+                                (float(s.group(3)), s.group(4)))
+                        continue
+                    sp = re.match(r"span\.(\d+)=([\d.]+),([\d.]+)$", ln.strip())
+                    if sp:                         # the window the budget bought
+                        settle_out.setdefault("span", {})[int(sp.group(1))] = (
+                            float(sp.group(2)), float(sp.group(3)))
+                        continue
+                mk = re.match(r"mark\.(\d+)=([\d.]+),(\d+)$", ln.strip())
+                if mk:      # (emulated instant, value) for every sentinel write
+                    if settle_out is not None:
+                        settle_out.setdefault("marks", {}).setdefault(
+                            int(mk.group(1)), []).append(
+                                (float(mk.group(2)), int(mk.group(3))))
                     continue
-            mk = re.match(r"mark\.(\d+)=([\d.]+),(\d+)$", ln.strip())
-            if mk:      # (emulated instant, value) for every sentinel write
-                if settle_out is not None:
-                    settle_out.setdefault("marks", {}).setdefault(
-                        int(mk.group(1)), []).append(
-                            (float(mk.group(2)), int(mk.group(3))))
-                continue
-            fb = re.match(r"fallback\.(\d+)=([\d.]+)$", ln.strip())
-            if fb:      # the sentinel did NOT fire; the budget captured instead
-                if settle_out is not None:
-                    settle_out.setdefault("fallback", {})[int(fb.group(1))] = \
-                        float(fb.group(2))
-                continue
-            sn = re.match(r"sentinel\.(\d+)=([\d.]+)$", ln.strip())
-            if sn:      # the case ANNOUNCED completion; emulated time it fired
-                if settle_out is not None:
-                    settle_out.setdefault("sentinel", {})[int(sn.group(1))] = \
-                        float(sn.group(2))
-                continue
-            e = re.match(r"echo\.(\d+)=(\d+),(\d+),([0-9a-f]*)$", ln.strip())
-            if e:                              # D-ECHO: what the machine ECHOED
-                # ⚠️ decoded EXACTLY as the `screen` capture is -- non-print ->
-                # blank -- so the comparison sees the same characters a probe's
-                # readout does. The cursor is a live cell in the name table and
-                # decodes to a blank on both machines.
-                raw = bytes.fromhex(e.group(4))
-                echoes[int(e.group(1))] = (
-                    int(e.group(2)), int(e.group(3)),
-                    "".join(chr(b) if 32 <= b < 127 else " " for b in raw))
-                continue
-            m = re.match(r"case\.(\d+)=([0-9a-f]*)", ln.strip())
-            # An EMPTY capture is DATA, not a missing one. `__hex_line` returns ""
-            # for an empty program -- i.e. "the line was REFUSED on entry", which
-            # is a behaviour a probe has to be able to read. Dropping it here
-            # collapsed that into the None a probe also gets when the machine
-            # never reached the capture at all (a wedge), so the two were
-            # indistinguishable; D-LINEMAX needs them apart. Callers that folded
-            # both together (`if not raw`) are unaffected.
-            if m:
-                if capture == "screen":
-                    data = bytes.fromhex(m.group(2))
-                    caps[int(m.group(1))] = "".join(
-                        chr(b) if 32 <= b < 127 else " " for b in data)
-                else:                      # mem capture: hand back the raw hex
-                    caps[int(m.group(1))] = m.group(2)
-        os.unlink(out)
-    os.unlink(tcl)
-    if len(caps) < len(cases):
-        why = _why_missing(machine, len(caps), len(cases), killer, rc, elapsed,
-                           out_lines, err)
-        if timed_out and not caps:
-            _rm(err)
-            _rm(settings or "")
-            raise SystemExit(why)
-        sys.stderr.write(why + "\n")
-    _rm(err)
-    _rm(settings or "")
-    return ([caps.get(i) for i in range(len(cases))], delivered,
-            echo_verdicts(slots, echoes))
+                fb = re.match(r"fallback\.(\d+)=([\d.]+)$", ln.strip())
+                if fb:      # the sentinel did NOT fire; the budget captured instead
+                    if settle_out is not None:
+                        settle_out.setdefault("fallback", {})[int(fb.group(1))] = \
+                            float(fb.group(2))
+                    continue
+                sn = re.match(r"sentinel\.(\d+)=([\d.]+)$", ln.strip())
+                if sn:      # the case ANNOUNCED completion; emulated time it fired
+                    if settle_out is not None:
+                        settle_out.setdefault("sentinel", {})[int(sn.group(1))] = \
+                            float(sn.group(2))
+                    continue
+                e = re.match(r"echo\.(\d+)=(\d+),(\d+),([0-9a-f]*)$", ln.strip())
+                if e:                              # D-ECHO: what the machine ECHOED
+                    # ⚠️ decoded EXACTLY as the `screen` capture is -- non-print ->
+                    # blank -- so the comparison sees the same characters a probe's
+                    # readout does. The cursor is a live cell in the name table and
+                    # decodes to a blank on both machines.
+                    raw = bytes.fromhex(e.group(4))
+                    echoes[int(e.group(1))] = (
+                        int(e.group(2)), int(e.group(3)),
+                        "".join(chr(b) if 32 <= b < 127 else " " for b in raw))
+                    continue
+                m = re.match(r"case\.(\d+)=([0-9a-f]*)", ln.strip())
+                # An EMPTY capture is DATA, not a missing one. `__hex_line` returns ""
+                # for an empty program -- i.e. "the line was REFUSED on entry", which
+                # is a behaviour a probe has to be able to read. Dropping it here
+                # collapsed that into the None a probe also gets when the machine
+                # never reached the capture at all (a wedge), so the two were
+                # indistinguishable; D-LINEMAX needs them apart. Callers that folded
+                # both together (`if not raw`) are unaffected.
+                if m:
+                    if capture == "screen":
+                        data = bytes.fromhex(m.group(2))
+                        caps[int(m.group(1))] = "".join(
+                            chr(b) if 32 <= b < 127 else " " for b in data)
+                    else:                      # mem capture: hand back the raw hex
+                        caps[int(m.group(1))] = m.group(2)
+        if len(caps) < len(cases):
+            why = _why_missing(machine, len(caps), len(cases), killer, rc, elapsed,
+                               out_lines, err)
+            if timed_out and not caps:
+                raise SystemExit(why)
+            sys.stderr.write(why + "\n")
+        return ([caps.get(i) for i in range(len(cases))], delivered,
+                echo_verdicts(slots, echoes))
+    finally:
+        # by GLOB, so a suffix added later is covered without editing this line.
+        for _p in glob.glob(out + "*"):
+            _rm(_p)
+        _rm(out)
 
 
 # --- D-DELIVER: the stored-program delivery oracle --------------------------
