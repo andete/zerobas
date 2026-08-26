@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 16 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 17 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -549,6 +549,34 @@ second control (`POINT` *above* the wall) was what made a negative meaningful �
 here no such control exists yet, so the honest output is a **named gap** and what
 would close it: a point on the spoke but **off** the arc, or the banked
 full-plane capture the item was originally measured from.
+
+## 2o. Tranche 17 — the control that turns a non-answer into a verdict
+
+Tranche 16 could not separate the spoke from the arc. This row samples the spoke
+**strictly inside** the radius, where the arc cannot reach:
+
+| row | vg8020 | cf3300 | zb |
+|---|---|---|---|
+| y=60 at r=5/9/13 (inside the arc) | `6 6 6` | `6 6 6` | **`6 6 6`** |
+| y=59, same radii — where a `(15,−1)` ray must pass | `4 4 4` | `4 4 4` | **`4 4 4`** |
+| **positive** start angle, so **no spoke at all** | `4 4 4` | `4 4 4` | `4 4 4` |
+
+🟢 **THE THIRD ROW IS THE ONE THAT MATTERS.** A positive start angle draws no
+spoke, and the same y=60 pixels go background on all three — **that is what proves
+those pixels belong to the SPOKE and not to the arc.** Without it this would have
+been tranche 16's non-answer again, with better coordinates.
+
+**Verdict: the filed `(15,−1)` ray is refuted** — all three machines draw the
+spoke along y=60 for every sampled radius, and the y=59 alternative is empty
+everywhere.
+
+⚠️ **BUT THE ENDPOINT PIXEL ITSELF IS STILL UNSEPARABLE**: centre+`(15,0)` lies on
+the arc, painted either way. So the claim is refuted **for the ray** (13 of 15
+pixels measured identical) and **untested for the single last pixel**. 🎯 That is
+a far narrower claim than *"zerobas's spoke endpoint diverges"*, and the item
+should be **restated to it**, not closed outright — closing it would discard a
+live, unmeasured one-pixel question, and leaving it as filed would overstate a
+refuted one.
 
 ## 3. What the apparatus cost, said out loud
 
