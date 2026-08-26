@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 27 of N. Subject 176; 82 verdicted, 94 pending.",
+  "status": "TRANCHE 28 of N. Subject 176; 83 verdicted, 93 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -17,7 +17,8 @@
   "marker_regex_undermatch": "\u26a0\ufe0f tranche 13's self-declaration regex required `\u2705 **CLOSED`; T-3B013F writes `**CLOSED 2026-08-17 by D-DRAWCLAMP**` with no tick and was therefore NOT swept up by it. The 10 self-declaring blocks are a LOWER BOUND on that class, not its size.",
   "self_declaring_total": "19 of the 38 open-reading headlines self-declare closure (10 by the strict marker, 9 more by the broadened one). The strict count was a LOWER BOUND, as tranche 14 predicted.",
   "new_question_from_t18": "\u26a0\ufe0f UNFILED AND UNMEASURED: `SCREEN 2:CLS` leaves 4923 set pixels in the VG-8020's pattern generator and 0 in zerobas's. If the name table does not reference them it is invisible and harmless; if it does, it is a visible divergence. No row in the sweep or the battery asks.",
-  "plane_instrument": "\ud83d\udd34 THREE RULES, THREE ANSWERS -- AND THAT IS THE FINDING. The VG-8020's SCREEN 2 pattern plane holds 4923 leftover bits that `CLS` does not clear (a colour-0 `LINE ...,BF` fill does not either). Every counting rule is then wrong in a different direction: RAW counts invisible bits (~5000); VISIBLE (fg!=0) over-counts, because drawing recolours a row and makes leftovers in it visible; BASELINE-SUBTRACTED under-counts, because a drawn pixel landing on a leftover bit is subtracted away. Readings for one row under the three rules: ref 4955 / 125 / 32. \ud83c\udfaf AN EXACT WHOLE-PLANE COUNT OF A FIGURE IS NOT AVAILABLE ON THIS MACHINE BY ANY OF THEM."
+  "plane_instrument": "\ud83d\udd34 THREE RULES, THREE ANSWERS -- AND THAT IS THE FINDING. The VG-8020's SCREEN 2 pattern plane holds 4923 leftover bits that `CLS` does not clear (a colour-0 `LINE ...,BF` fill does not either). Every counting rule is then wrong in a different direction: RAW counts invisible bits (~5000); VISIBLE (fg!=0) over-counts, because drawing recolours a row and makes leftovers in it visible; BASELINE-SUBTRACTED under-counts, because a drawn pixel landing on a leftover bit is subtracted away. Readings for one row under the three rules: ref 4955 / 125 / 32. \ud83c\udfaf AN EXACT WHOLE-PLANE COUNT OF A FIGURE IS NOT AVAILABLE ON THIS MACHINE BY ANY OF THEM.",
+  "citation_family": "\ud83c\udfaf A FAMILY IS EMERGING ACROSS THREE TRANCHES: this project cites many kinds of thing and gates exactly one. `check_citation_paths.py` (shipped this morning) covers scratchpad/ paths in committed docs. Tranche 9 found a dangling probes/ path that nothing polices. This tranche finds 90 provably-broken file:LINE anchors that nothing polices. Same class, three surfaces, one gate."
  },
  "T-B96267": {
   "verdict": "LIVE",
@@ -626,5 +627,14 @@
   "headline": "KEY / STRIG / SPRITE / STOP were NOT run against the D-TRAPSVC rows",
   "reading": "the probe contains ON INTERVAL and NO `ON KEY`, `ON STRIG`, `ON SPRITE` or `ON STOP` row. Its line 26 says why: 'ON INTERVAL is the instrument because it is the ONLY self-firing MSX1 trap'.",
   "note": "\ud83c\udfaf the item already concedes the other four rest on a CODE argument (shared check_traps / ct_find / set_state / trap_return_check, index as a parameter). So this is not a wrong claim to fix -- it is a stated coverage limit, and re-running confirms the limit is still exactly where it was put."
+ },
+ "T-F37B1B": {
+  "verdict": "LIVE -- and now with a measured, actionable subset",
+  "how": "walk of every file:LINE citation in every committed .md",
+  "headline": "`file:LINE` CITATIONS ARE UNMAINTAINED AND BROADLY ROTTED -- ONLY 31% WERE STILL CORRECT, AND NO GATE READS ONE",
+  "reading": "1990 file:LINE citations in committed docs. 66 name a file that does not resolve; 24 name a line PAST THE END of the file they cite (e.g. disk/disk.asm:742 where the file has 62 lines, PROVENANCE.md:3591 where it has 29). 1900 -- 95% -- point at a line that EXISTS.",
+  "why_this_does_not_contradict_the_filing": "\ud83d\udd34 95% IS AN UPPER BOUND ON CORRECTNESS, NOT A CORRECTNESS RATE. 'The line exists' and 'the line still says what the doc claims' are different properties, and only the second is what the filed 31% measured -- by READING. My walk cannot read; it can only prove a citation WRONG, never right. The two numbers measure different things and neither refutes the other.",
+  "the_actionable_part": "\ud83c\udfaf 90 CITATIONS ARE PROVABLY BROKEN (66 unresolvable + 24 past EOF) and nothing checks them. That subset is mechanically decidable, unlike the semantic majority, and it is the part a gate could own tomorrow.",
+  "caveat": "\u26a0\ufe0f some of the 66 may be basename-only forms my resolver failed on rather than genuinely absent files"
  }
 }

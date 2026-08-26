@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 27 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 28 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -859,6 +859,46 @@ not overturn it — it confirms **the limit is still exactly where it was put**.
 That distinction matters for what this sweep hands back: *stated limits* and
 *unfixed defects* both sit as `- [ ]` on the list and read identically, but only
 one of them is work.
+
+## 2z. Tranche 28 — a number that neither confirms nor refutes the filed one
+
+The `file:LINE` citation item was filed as *"only 31% were still correct"*.
+Walking every one of them in every committed doc:
+
+| | |
+|---|---|
+| `file:LINE` citations in committed docs | **1990** |
+| target file does not resolve | 66 |
+| line number **past the end** of the cited file | **24** |
+| line exists | 1900 — **95%** |
+
+🔴 **95% IS AN UPPER BOUND ON CORRECTNESS, NOT A CORRECTNESS RATE.** *"The line
+exists"* and *"the line still says what the doc claims"* are different properties,
+and only the second is what the filed **31%** measured — by reading. **My walk
+cannot read; it can only prove a citation wrong, never right.** The two numbers
+measure different things and neither refutes the other, which is the honest
+result and not a hedge.
+
+🎯 **BUT IT PRODUCES SOMETHING THE FILING DID NOT: A MECHANICALLY DECIDABLE
+SUBSET.** **90 citations are provably broken** — 66 unresolvable, 24 past EOF
+(`disk/disk.asm:742` where the file has **62** lines; `PROVENANCE.md:3591` where
+it has **29**). Nothing checks them. That subset is a gate's worth of work
+tomorrow, where the semantic majority is not.
+
+⚠️ Some of the 66 may be basename-only forms my resolver failed on rather than
+genuinely absent files.
+
+### The family this belongs to
+
+🎯 **THREE TRANCHES HAVE NOW FOUND THE SAME CLASS ON THREE SURFACES.** This
+project cites many kinds of thing and gates exactly one:
+
+* `scratchpad/` paths in committed docs — **gated** (`check_citation_paths.py`, shipped this morning)
+* `probes/` paths — **ungated** (tranche 9 found a dangling one)
+* `file:LINE` anchors — **ungated**, 90 provably broken
+
+One rule, three surfaces, one gate. The morning's gate was scoped to the surface
+that had just bitten; the sweep is what shows the surface had siblings.
 
 ## 3. What the apparatus cost, said out loud
 
