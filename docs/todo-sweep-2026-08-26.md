@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 10 OF N, AND THE SUBJECT SET WAS WRONG. It is 176, not 146** (§1.2). 34 carry a verdict; **142** do not. The
+🔴 **THIS IS TRANCHE 11 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **37** carry a verdict; **139** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -386,6 +386,35 @@ error-classification divergences have been invisible to prioritisation.
 ⚠️ **THIS IS THE THIRD TIME THIS SWEEP'S DENOMINATOR HAS MOVED** — the filed 165
 cited paths became 238; the done-block screen read 67 then 37; and now 146 becomes
 176. Each time the instrument, not the tree, was what changed.
+
+## 2i. Tranche 11 — the hidden divergences, re-run: all three had HEALED
+
+The first three of the 30 blocks §1.2 surfaced, each a BASIC-surface divergence
+filed inside a `- [x]`. Probe: `scratchpad/sweep_tranche11.py`.
+
+| item (as filed) | today, all three machines |
+|---|---|
+| `SCREEN 3` draws on both references; **zerobas raises ERR 5** | **`ok 15`** on all three — zerobas draws |
+| `LINE (0,0)-((A$<5),1)` is **ERR 5 here**, ERR 13 on both references | **ERR 13** on all three |
+| `SCREEN (1<5)` is **`Syntax error` here**, `Illegal function call` on the reference | **ERR 5** on all three |
+
+**Three filed divergences, three healed.** Each carries a control on the same
+apparatus (SCREEN 2, a numeric coordinate, a plain `SCREEN 1`) reading `ok` — so
+the handler fires only on the subject, and the differing codes (13 vs 5) show it
+reports the real one rather than a constant.
+
+🔴 **AND THE FIRST DRAFT OF THIS PROBE WAS BLIND IN A WAY THAT READ AS
+AGREEMENT.** Every row did `SCREEN <n>` … then `SCREEN 0:PRINT`, and **a mode
+change clears the screen** — so an error raised in SCREEN 2/3 was wiped before the
+SCREEN-0 scrape ran. All six rows came back identical with no error anywhere,
+which reads as *"all three agree"* and was really *"the instrument erased the
+answer"*. 🎯 **The right answer and the erased answer look the same**; only the
+absence of *any* error on *any* machine gave it away. Fixed by trapping the error
+and carrying its CODE out as a value, which survives any number of mode changes.
+
+⚠️ A second draft stored the program without running it, and the `[...]` reader
+returned the **echo** of the `PRINT` lines rather than their output — an explicit
+`RUN` fixed it. Two instrument faults before one reading.
 
 ## 3. What the apparatus cost, said out loud
 

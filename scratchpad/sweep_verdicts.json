@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 10 of N. \ud83d\udd34 THE SUBJECT SET WAS WRONG: it is 176, not 146. 34 verdicted, 142 pending.",
+  "status": "TRANCHE 11 of N. Subject 176; 37 verdicted, 139 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -270,5 +270,27 @@
   "headline": "SLIM THE FILE-CHANNEL CONTEXT toward the reference",
   "reading": "the item says '\u2705 MEASURED 2026-07-29; awaiting spec sign-off'. The measurement is done and recorded; what is open is a DECISION. Re-running cannot advance it.",
   "note": "`ERRMSG_BUF` is absent from the tree (only `ERRMSG` exists) -- unresolved, and not load-bearing for the verdict."
+ },
+ "T-6AC87B": {
+  "verdict": "STALE -- HEALED",
+  "how": "REPL x3, error trapped as a VALUE",
+  "headline": "SCREEN 3 DRAWS ON BOTH REFERENCES; zerobas raises ERR 5",
+  "reading": "SCREEN 3 + PSET(10,10),15 + POINT(10,10): vg8020 'ok 15', cf3300 'ok 15', zb 'ok 15'. zerobas draws in SCREEN 3 now.",
+  "control": "the same fixture in SCREEN 2 reads 'ok 15' on all three",
+  "note": "filed inside a `- [x]` block, so it never appeared in any listing of open work"
+ },
+ "T-B5FF6F": {
+  "verdict": "STALE -- HEALED",
+  "how": "REPL x3, error trapped as a VALUE",
+  "headline": "`LINE (0,0)-((A$<5),1)` IS ERR 5 HERE AND ERR 13 ON BOTH REFERENCES",
+  "reading": "all three now read ERR 13. zerobas agrees with both references.",
+  "control": "the same LINE with a numeric coordinate reads 'ok' on all three, so the fixture draws normally and the handler fires only on the subject"
+ },
+ "T-116BD4": {
+  "verdict": "STALE -- HEALED",
+  "how": "REPL x3, error trapped as a VALUE",
+  "headline": "`SCREEN (1<5)` IS `Syntax error` HERE AND `Illegal function call` ON THE REFERENCE",
+  "reading": "all three now read ERR 5 (Illegal function call). zerobas agrees.",
+  "control": "plain SCREEN 1 reads 'ok' on all three"
  }
 }
