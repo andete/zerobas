@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 11 of N. Subject 176; 37 verdicted, 139 pending.",
+  "status": "TRANCHE 12 of N. Subject 176; 40 verdicted, 136 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -292,5 +292,28 @@
   "headline": "`SCREEN (1<5)` IS `Syntax error` HERE AND `Illegal function call` ON THE REFERENCE",
   "reading": "all three now read ERR 5 (Illegal function call). zerobas agrees.",
   "control": "plain SCREEN 1 reads 'ok' on all three"
+ },
+ "T-A75646": {
+  "verdict": "STALE -- HEALED",
+  "how": "REPL x3, the item's own fixture",
+  "headline": "`RUN <lineno>` IGNORES THE LINE NUMBER AND RESTARTS FROM THE TOP",
+  "reading": "10 ON ERROR / 20 GOTO 50 / 30 PRINT[B] / 40 END / 50 RUN 30 -- all three print B and raise nothing. zerobas honours the line number.",
+  "control": "n.runlinectl prints B on all three",
+  "note": "\ud83c\udfaf DISTINCT FROM THE DIRECT-MODE ITEM, which is still LIVE. `RUN 20` typed at the PROMPT still runs from the top here; `RUN 30` inside a PROGRAM now honours the number. One verb, two mechanisms, two different verdicts -- merging them by name would have been wrong in both directions."
+ },
+ "T-D65E52": {
+  "verdict": "AGREES AT THE SAMPLED POINTS -- weaker than the filing",
+  "how": "REPL x3, 3 POINT samples",
+  "headline": "THE PRODUCT BOUND IS REAL AND REACHABLE: `CIRCLE` WITH r >= 256 DRAWS PIXELS THE REFERENCE DOES NOT",
+  "reading": "CIRCLE(128,96),256 then POINT(0,96)/POINT(128,0)/POINT(250,96): '4 4 4' on vg8020, cf3300 AND zb",
+  "control": "the same at r=128 reads '15 4 4' on all three -- different from r=256, so the fixture does discriminate radius",
+  "caveat": "\ud83d\udd34 THREE SAMPLE POINTS ARE NOT THE ITEM'S MEASUREMENT. It was taken 'on the whole pattern plane'; a 3-point signature can agree while the planes differ. This row CANNOT retire the item -- it only says the divergence is not at these three points. The whole-plane instrument is what would settle it."
+ },
+ "T-3B539B": {
+  "verdict": "CLOSED IN ITS OWN BODY -- the headline is the FILING",
+  "how": "read",
+  "headline": "`DRAW`'s BOOT-DEFAULT SCALE STATE IS NOT `S4`, AND ZEROBAS TREATS IT AS IF IT WERE",
+  "reading": "the body says '\u2705 CLOSED 2026-08-11 by D-DSCALE ... Both rows below are undeferred and green'. GFX_DSCALE boots at 0 with a sentinel gdo_s cannot write.",
+  "note": "\u26a0\ufe0f A NEW CLASS IN THE \u00a71.2 SET: an open-reading HEADLINE over a body that records the CLOSURE. The 38 are not all hidden live work -- some are filed-and-closed in one block. The headline signal over-includes, and only reading separates them."
  }
 }

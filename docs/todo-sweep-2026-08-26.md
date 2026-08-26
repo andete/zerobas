@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 11 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **37** carry a verdict; **139** do not. The
+🔴 **THIS IS TRANCHE 12 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **40** carry a verdict; **136** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -415,6 +415,36 @@ and carrying its CODE out as a value, which survives any number of mode changes.
 ⚠️ A second draft stored the program without running it, and the `[...]` reader
 returned the **echo** of the `PRINT` lines rather than their output — an explicit
 `RUN` fixed it. Two instrument faults before one reading.
+
+## 2j. Tranche 12 — and the §1.2 signal over-includes
+
+| item | verdict |
+|---|---|
+| `RUN <lineno>` ignores the line number (in a PROGRAM) | **STALE — healed**; all three print `B` |
+| `CIRCLE` r ≥ 256 product bound | **agrees at the sampled points** — weaker than the filing |
+| `DRAW`'s boot-default scale state | **closed in its own body** |
+
+🎯 **ONE VERB, TWO MECHANISMS, TWO OPPOSITE VERDICTS.** `RUN 30` *inside a
+program* now honours the line number on all three machines — healed. `RUN 20`
+*typed at the prompt* still runs from the top — **LIVE**, verdicted in tranche 1.
+Merging them by name would have been wrong in both directions.
+
+🔴 **AND ONE ROW IS WEAKER THAN THE CLAIM IT TESTS.** The `CIRCLE` item was
+measured *"on the whole pattern plane"*; my row samples **three points** and they
+agree on all three machines. A 3-point signature can agree while the planes
+differ, so **this row cannot retire the item** — it says only that the divergence
+is not at those points. Recorded as such rather than as a heal. The control
+(r=128, reading `15 4 4` against r=256's `4 4 4`) proves the fixture discriminates
+radius, which is what makes the negative meaningful at all.
+
+⚠️ **A NEW CLASS IN THE §1.2 SET: the open-reading headline OVER-INCLUDES.** The
+`DRAW` scale block opens `🔴 …ZEROBAS TREATS IT AS IF IT WERE` and its body says
+*"✅ CLOSED 2026-08-11 by D-DSCALE … Both rows below are undeferred and green"*.
+The headline is the **original filing**; the body records the closure. So the 38
+are not all hidden live work — some are filed-and-closed in one block, and only
+reading separates them. The signal is still right to widen the subject set (three
+of the four read so far were genuinely live-as-filed), but it is a *reason to
+read*, never a verdict — the same rule the symbol screen earned in tranche 8.
 
 ## 3. What the apparatus cost, said out loud
 
