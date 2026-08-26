@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 38 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 39 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1188,6 +1188,33 @@ proof on any single row.
 cannot be checked semantically without reading; 28 inside items that name their
 own symbols can. **Narrowing the denominator is what turned an unmeasurable claim
 into a measured one** — the opposite move from §1.2, where widening it was.
+
+## 2ak. Tranche 39 — my own heuristic, caught false-positiving
+
+| item | verdict |
+|---|---|
+| `CLEAR` breaks `TRAPSTK`'s GSP construction | **LIVE as filed** |
+| `GFX_OP=1` marshalling aliased to the work area | **LIVE for `PSET`/`PRESET`** |
+| K-FA5's falsifiability premise is stale | **LIVE — its own spec says so** |
+
+🔴 **AND THE FIRST ONE FALSIFIES PART OF TRANCHE 38.** That measurement flagged
+this item's citation — `basic/vars.asm:1061` — as **drifted**, because
+`clear_vars` is defined 14 lines earlier at `:1047`. **The citation is exactly
+right**: `:1061` is the `ld (GSP),hl` the item is *about*. This is the
+*call-site-versus-definition* false positive I attached as a caveat to that
+measurement, **caught firing on a real row**.
+
+🎯 So the citation rate is **bracketed, not pinned**: 95% (structural, an
+over-estimate) and 47% (semantic, now demonstrably an **under**-estimate). The
+filed 31% sits below both. Naming the direction of each error is the most that
+can be said without reading all 1990 by hand — and saying that is better than
+picking the number that sounds most decisive.
+
+**And one item is narrower than it reads, again.** `graphics.asm`:22 confirms
+`GXPOS`/`GYPOS` still move on every `PSET`/`PRESET` — but `:106-111` records that
+D-GIRDOM **already moved `POINT` off them** (*"marshal through POINT'S OWN cells,
+NOT GXPOS/GYPOS"*). The decision the item says *"nothing re-examines"* **has** been
+re-examined for one verb and left for the other two.
 
 ## 3. What the apparatus cost, said out loud
 

@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 38 of N. Subject 176; 98 verdicted, 78 pending.",
+  "status": "TRANCHE 39 of N. Subject 176; 101 verdicted, 75 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -756,5 +756,25 @@
   "headline": "HOW MUCH OF THE 311-BYTE `NO-ORACLE` BUCKET IS A POINTER?",
   "reading": "`SAME-DELTA` IS implemented -- basic_probe_sysvarsweep.py:802 returns `('SAME-DELTA' if rd == zd else 'DIFF-DELTA')` and :1000 documents it in the legend.",
   "why_partial": "\u26a0\ufe0f The item's claim is narrower than 'does SAME-DELTA exist': it is that the verdict is applied ONLY in the re-homing table while the 3199-byte census still classifies absolutely. Establishing that needs a read of which code path the census takes, not a grep for the string. The QUESTION the item asks -- how much of the 311 B is a pointer -- remains unanswered, and its own \u26a0\ufe0f says why: a byte-wise delta pass needs a rule for what counts as a pointer PAIR, since naive per-byte deltas agree by luck on the high byte."
+ },
+ "T-7BA8D1": {
+  "verdict": "LIVE as filed",
+  "how": "static read of basic/vars.asm",
+  "headline": "`CLEAR` BREAKS THE CONSTRUCTION THAT MAKES `TRAPSTK`'s GSP MATCH SOUND -- UNMEASURED",
+  "reading": "`clear_vars:` is at :1047 and `ld (GSP),hl` at :1061 -- it resets GSP, with no trap_init call in the routine. Exactly the construction the item says is broken.",
+  "\ud83d\udd34_my_own_heuristic_was_wrong_here": "TRANCHE 38 FLAGGED THIS ITEM'S CITATION (basic/vars.asm:1061) AS DRIFTED because `clear_vars` is defined 14 lines earlier at :1047. THE CITATION IS EXACTLY RIGHT: :1061 is the `ld (GSP),hl` the item is ABOUT. This is the 'call site vs definition' false positive I attached as a caveat to that measurement, caught firing on a real row. The 47% figure is correspondingly an UNDER-estimate of correctness, just as the 95% was an over-estimate -- the true rate is bracketed, not pinned."
+ },
+ "T-783F00": {
+  "verdict": "LIVE for PSET/PRESET -- and POINT was already changed",
+  "how": "static read of basic/graphics.asm",
+  "headline": "`GFX_OP=1`'s MARSHALLING IS STILL ALIASED TO THE WORK AREA",
+  "reading": "graphics.asm:22 says GXPOS/GYPOS 'move to the resolved (unclipped) coordinate on EVERY PSET/PRESET' -- the aliasing stands. But :106-111 records that D-GIRDOM already moved POINT off it: 'marshal through POINT'S OWN cells, NOT GXPOS/GYPOS. This used to be `ld (GXPOS),bc / ld (GYPOS),de`'.",
+  "note": "\ud83c\udfaf the decision the item says 'nothing re-examines' HAS been re-examined for one verb and left for the other two, which is a narrower and more actionable statement than the item makes"
+ },
+ "T-940CF2": {
+  "verdict": "LIVE -- confirmed by the item's own spec",
+  "how": "read of docs/spec-basic-stmtpend.md:167",
+  "headline": "K-FA5's FALSIFIABILITY PREMISE IS STALE, AND SO ARE FOUR OTHER COMMENTS",
+  "reading": "the spec says outright: 'What has NOT been done is re-running K-FA5 to measure what the cut now...' -- open, in the source the item cites."
  }
 }
