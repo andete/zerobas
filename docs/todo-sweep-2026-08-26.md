@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 33 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 34 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1032,6 +1032,36 @@ than the item implies.
 That distinction has now shown up twice in three tranches (`GRPACX` was *"true as
 written, misleading as read"*), and both times the correction made the work
 **smaller**, not larger. A list re-read without measurement tends to inflate.
+
+## 2af. Tranche 34 — the carve scout: conclusions stand, every number moved
+
+The item opens *"Read this BEFORE opening any slice that needs main page-1
+bytes"* — so its figures are load-bearing for exactly the decision the
+screen-editor question turns on.
+
+| | filed 2026-08-24 | **today** |
+|---|---|---|
+| Route A spans walked | 1440 | 1445 |
+| byte-identical groups | 27 | **26** |
+| nominal | 190 B | **163 B** |
+| **measured SAFE NET** | **4 B** | **8 B** |
+| Route B free (sub p0) | 2563 B | **2464 B** |
+
+🎯 **ROUTE A IS TWICE AS OPEN AS FILED** — 8 B safe net, not 4 B — **while its
+nominal figure fell**. The two move in opposite directions: carves since have
+eaten the easy groups, while the safe/unsafe classification shifted in the other
+direction. Route B's free space fell by 99 B, consistent with D-PAINTVRAM landing
+there.
+
+🟢 **AND THE STRUCTURAL CONCLUSIONS ARE UNTOUCHED.** *A verb that can PRINT or
+RAISE reaches the BIOS transitively* (`pchar → CHPUT`, `raise_error → BREAKX`)
+and a page-0 tenant runs with that region switched out — five candidates at
+177–762 B all refused for those two paths. **That is an argument about
+reachability, not a number**, and re-running cannot touch it.
+
+That split is the useful shape: *this item's reasoning survived a month and every
+one of its figures did not*. Both halves sit in the same block, and only one of
+them rots.
 
 ## 3. What the apparatus cost, said out loud
 

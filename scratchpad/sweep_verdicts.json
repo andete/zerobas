@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 33 of N. Subject 176; 94 verdicted, 82 pending.",
+  "status": "TRANCHE 34 of N. Subject 176; 95 verdicted, 81 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -709,5 +709,17 @@
   "how": "read of docs/gate-blindness-sweep.md:507-517",
   "headline": "NINE ACCEPTANCE ROWS STILL NEED A REFUSAL CUT, ONE PER PATH",
   "reading": "`M-DRWSCALE` (34 rows reddened) and `M-PSETOFF` (1 row, 'exact including its NEGATIVE prediction') exist in the blindness sweep and demonstrate the technique. They are MUTATIONS in that sweep, not shipped refusal cuts, and the nine per-path cuts the item asks for do not exist."
+ },
+ "T-8768F7": {
+  "verdict": "CONCLUSIONS STAND, EVERY NUMBER MOVED",
+  "how": "tools/dupspan_indep.py re-run (tranche 7) + make basic-reloc walls (today)",
+  "headline": "CARVE SCOUT 2026-08-24 -- TWO OF THE THREE FUNDING ROUTES FOR MAIN PAGE 1 ARE MEASURED SHUT",
+  "route_A_filed": "1440 spans, 27 byte-identical groups, 190 B nominal -> MEASURED SAFE NET 4 B",
+  "route_A_today": "1445 spans, 26 groups, 163 B nominal -> MEASURED SAFE NET 8 B",
+  "route_B_filed": "2563 B free in the page-0 sub-ROM",
+  "route_B_today": "2464 B free (sub p0), measured by `make basic-reloc`",
+  "reading": "\ud83c\udfaf ROUTE A IS TWICE AS OPEN AS FILED -- 8 B safe net, not 4 B -- while its NOMINAL figure fell (190 -> 163 B). The two move in opposite directions because carves since have consumed easy groups while the safe/unsafe classification shifted. Route B's free space fell by 99 B, consistent with D-PAINTVRAM landing there.",
+  "what_stands": "the STRUCTURAL conclusions are untouched: a verb that can PRINT or RAISE reaches the BIOS transitively (pchar->CHPUT, raise_error->BREAKX) and a page-0 tenant runs with that region switched out -- five candidates at 177-762 B all refused for those two paths. That is an argument about reachability, not a number, and re-running does not touch it.",
+  "why_it_matters_now": "\u26a0\ufe0f THIS ITEM SAYS 'Read this BEFORE opening any slice that needs main page-1 bytes' -- so its numbers are load-bearing for exactly the decision the screen-editor question turns on. Anyone reading '4 B' would price the seam at half what it is."
  }
 }
