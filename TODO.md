@@ -56,6 +56,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [ ] 🧹 **122 HARDCODED `/tmp/...` LITERALS ARE OUTSIDE THE TEMP ROOT** — pinned,
+      not fixed. `probes/lib/probe_tmp.py` owns `/tmp/zerobas` and sets
+      `tempfile.tempdir`, which relocated **140** bare `tempfile.*` call sites at
+      a stroke; string literals cannot be relocated that way. **67 files, 10 of
+      them reached by a gate.** 🔴 **THEY ARE NOT UNIFORMLY WRONG — 11 are
+      `argparse` defaults**, a documented output location someone may rely on,
+      which is exactly why they were not moved in bulk: that would be a silent
+      behaviour change in probes no gate runs. The rest are one-shot capture
+      files; each is a small safe conversion for whoever next touches that probe.
+      🟢 `tools/temp-root-allow.txt` pins the set and `make temp-root-check`
+      makes it **shrink-only** — a new literal is RED, and a pin that stops
+      matching is STALE, so the file cannot drift from what it claims.
+      Filed 2026-08-26 by the temp-root work, which chose containment + a gate
+      over a 122-site edit it could not verify.
+
 - [x] ✅ **THE PARALLEL BATTERY'S FLAKE HAD A CAUSE, AND THE HARNESS WAS
       THROWING IT AWAY — FIXED 2026-08-25.** Six of seven full batteries that day
       recovered a *"FLAKE (green on retry)"*, each a single `<NO CAPTURE>` on a
