@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 3 of N -- the remaining ids are NOT yet verdicted",
+  "status": "TRANCHE 4 of N -- the remaining ids are NOT yet verdicted",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them."
  },
  "T-B96267": {
@@ -55,12 +55,19 @@
   "headline": "\u26a0\ufe0f **THE THIRD TRAILING `SCREEN` ARGUMENT'S DOMAIN IS UNMEASURED.**"
  },
  "T-63A411": {
-  "verdict": "PARTLY-STALE",
+  "verdict": "PARTLY-STALE; the WAIT residue is now MEASURED",
   "how": "kwsweep + REPL",
   "reading": "kwsweep today: TRON/TROFF/FRE/SWAP/ERASE all SUPPORTED; RENUM/AUTO/DELETE shipped (LE_OP_RENUM/_AUTO in sub/lineedit.asm, D-EDITVERB). The bucket is down to WAIT + full CLEAR semantics.",
   "gap": "WAIT UNMEASURED -- `WAIT 1,0` BLOCKS on a port condition and hung both references, voiding every case after it in the batch. It needs an isolated timeout-bounded row.",
   "was_positional_id": "T278",
-  "headline": "**Editor / program management** \u2014 `RENUM`, `AUTO`,"
+  "headline": "**Editor / program management** \u2014 `RENUM`, `AUTO`,",
+  "wait_residue": {
+   "verdict": "MEASURED -- closes the WAIT gap left open in tranche 1",
+   "how": "isolated run_case, WAIT as the LAST line",
+   "belongs_to": "the Editor / program-management bucket item",
+   "reading": "vg8020: `WAIT 1,0` is typed and NO `Ok` prompt ever follows -- the machine is still inside it; the no-WAIT control shows `Ok`. zb: `Syntax error` -- WAIT is unimplemented here.",
+   "note": "\ud83d\udd34 THE FIRST ATTEMPT WAS ABORTED BY THE HARNESS ITSELF, AND THE ABORT WAS THE EVIDENCE. With a PRINT after the WAIT, the echo guard refused to report anything: the reference was still inside WAIT when the next line was injected, so 12 leading characters were swallowed. A guard that declines to produce a reading told me more than the reading would have."
+  }
  },
  "T-D2A359": {
   "verdict": "STALE",
@@ -138,11 +145,19 @@
   "caveat": "\ud83d\udd34 AND THE VG-8020 READING MAY BE AN APPARATUS ARTIFACT. That machine has NO DRIVE: the control row (OPEN + FIELD #1) raises `Bad file name` AND `Illegal function call` on it, i.e. it errors on every disk statement. Its `Illegal function call` cannot be separated from 'no drive' by this apparatus. Settling it needs a VG-8020 WITH a disk interface."
  },
  "T-3CC9D3": {
-  "verdict": "LIVE (first clause)",
+  "verdict": "SPLIT: first clause LIVE, SECOND CLAUSE FALSE",
   "how": "REPL, cf3300 + zb with disk",
   "headline": "A MALFORMED FILESPEC PRINTS `load error` AND `FILES` LISTS ANYWAY",
   "reading": "FILES\"TOOLONGNAME.EXTRA\": zb prints `load error`, cf3300 prints no error at all",
   "control": "bare FILES is clean on both",
-  "gap": "\u26a0\ufe0f ONLY THE FIRST CLAUSE IS SCORED. Whether the directory is listed ANYWAY needs a screen read, not an error scrape -- the span reader cannot see a listing. The 'lists anyway' half is still unverified."
+  "gap": "the cf3300 side of the clause-2 read is UNUSABLE: run_case applies no reset, so that machine stayed in SCREEN 1 and the scrape is VRAM garbage. The reference comparison for clause 1 rests on tranche 3's batched run, which did reset it.",
+  "clause2": "\ud83d\udd34 MEASURED FALSE. The item says `FILES` LISTS ANYWAY. Screen read (scratchpad/sweep_tranche4.py): FILES\"TOOLONGNAME.EXTRA\" on zb prints `load error`, then `File not found`, and NO directory listing. The bare-FILES control on the same disk lists six entries (TEST.BIN HI.TXT PROG.BIN PROG.BAS PROG2.BAS TS.DAT), so a listing WOULD have been visible. The half nobody ran is the half that is wrong."
+ },
+ "T-BDB99C": {
+  "verdict": "LIVE",
+  "how": "the item's OWN probe re-run (scratchpad/trapsvc_probe.py --only int.six,gos.leak)",
+  "headline": "A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD ... the SIX-EVENT CAP",
+  "reading": "int.six: vg8020 '9 18', cf3300 '9 18', zb '6 18' -- the filed reading exactly",
+  "finding": "\ud83d\udd34 ITS SUPPORTING CONTROL IS AN UNFILED SECOND DIVERGENCE. gos.leak reads '12 0' on BOTH references and '8 7' on zb. The item says only 'gos.leak caps at 8, which is what says the cap is TRAPSTK_MAX and not GOSUB_DEPTH' -- it never states the reference value, so the fact that the references reach 12 with NO error while zb stops at 8 WITH ERR 7 is nowhere in the record."
  }
 }

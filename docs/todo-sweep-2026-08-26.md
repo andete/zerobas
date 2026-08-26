@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-⚠️ **THIS IS TRANCHE 3 OF N. 17 of 146 subject blocks carry a verdict.** The
+⚠️ **THIS IS TRANCHE 4 OF N. 18 of 146 subject blocks carry a verdict.** The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -25,7 +25,7 @@ instrument had the property it was measuring.** It is a tool now.
 | blocks parsed | 367 (346 top-level, **21 nested** — an indented `- [x]` under an open parent is not an independent item) |
 | open / done (top-level) | **109 / 237** |
 | subject = open + done-carrying-a-residual-marker | **146** |
-| verdicted so far | **17** |
+| verdicted so far | **18** |
 
 ### 1.1 Two counts of my own disagreed, so I read
 
@@ -121,6 +121,65 @@ directory listing. Recorded as unverified rather than folded into the verdict.
 
 Running total across three tranches: **10 LIVE, 6 stale or partly stale, 1
 reframed-unresolvable.**
+
+## 2c. Findings — tranche 4: the rows that could not share a batch
+
+Probe: `scratchpad/sweep_tranche4.py`, plus the item's **own** probe re-run
+(`scratchpad/trapsvc_probe.py --only int.six,gos.leak`).
+
+### The `TRAPSVC` six-event cap — LIVE, exact
+
+`int.six` reads **`9 18` / `9 18` / `6 18`** — the filed reading, unchanged.
+
+🔴 **BUT ITS SUPPORTING CONTROL IS AN UNFILED SECOND DIVERGENCE.** `gos.leak`
+reads **`12 0` on both references and `8 7` on zerobas**. The item says only
+*"`gos.leak` caps at 8, which is what says the cap is `TRAPSTK_MAX` and not
+`GOSUB_DEPTH`"* — it never records the reference value. So *the references reach
+12 with no error while zerobas stops at 8 with ERR 7* is nowhere in the record.
+🎯 **A row cited as a control can be carrying a divergence of its own, and citing
+it for one property is how the other one goes unwritten.**
+
+### `WAIT` — the gap tranche 1 could not measure
+
+| | reading |
+|---|---|
+| VG-8020 | `WAIT 1,0` is typed and **no `Ok` prompt ever follows** — still inside it. The no-`WAIT` control shows `Ok` |
+| zerobas | **`Syntax error`** — `WAIT` is unimplemented here |
+
+🔴 **THE FIRST ATTEMPT WAS ABORTED BY THE HARNESS, AND THE ABORT WAS THE
+EVIDENCE.** With a `PRINT` after the `WAIT`, the echo guard refused to report
+anything at all: the reference was still inside `WAIT` when the next line was
+injected, so 12 leading characters were swallowed and it declared the delivery
+mangled. **A guard that declines to produce a reading told me more than the
+reading would have.**
+
+### `FILES` with a malformed name — the second clause is FALSE
+
+The item reads *"a malformed filespec prints `load error` **and `FILES` lists
+anyway**"*. An error scrape is structurally blind to the second half, so this row
+draws the screen:
+
+```
+ZBFILES"TOOLONGNAME.EXTRA"        <- zerobas
+load error
+File not found
+[END]                              <- no listing at all
+```
+against the bare-`FILES` control on the same disk, which lists six entries
+(`TEST.BIN HI.TXT PROG.BIN PROG.BAS PROG2.BAS TS.DAT`) — so a listing **would**
+have been visible.
+
+🔴 **CLAUSE 1 IS LIVE AND CLAUSE 2 IS FALSE.** The half nobody ran is the half
+that is wrong — the `a-justification-parenthesis-is-an-unrun-claim` shape, in an
+item that had been carried for five days as a single finding.
+
+⚠️ **The cf3300 side of that read is unusable**: `run_case` applies no reset, so
+that machine stayed in SCREEN 1 and the scrape is VRAM garbage — obviously
+garbage rather than plausibly wrong, which is the good failure mode. The
+reference half of clause 1 rests on tranche 3's batched run, which did reset it.
+
+Running total across four tranches: **12 LIVE, 6 stale or partly stale, 1
+reframed-unresolvable, 1 split (half live, half false).**
 
 ## 3. What the apparatus cost, said out loud
 
