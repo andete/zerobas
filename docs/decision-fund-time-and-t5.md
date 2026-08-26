@@ -259,7 +259,10 @@ for page-0 tenancy**, which is the question that was asked then.
 
 ## 6. Method notes worth keeping
 
-* The frontier scout used here is `scratchpad/p1scout.py`; if D-FUND-1 is
+* The frontier scout used here is `tools/p1scout.py` (written for this decision
+  as a scratchpad p1scout.py, promoted to `tools/` at 6f8ac0f — the old path is
+  deliberately not spelled out: a citation names a path, and that one no longer
+  resolves); if D-FUND-1 is
   adopted it should be promoted to `tools/` beside `carve_scout.py` and
   `promote_scout.py`, because **`carve_scout.py` cannot answer the page-1
   question at all** and every remaining candidate is a page-1 candidate.

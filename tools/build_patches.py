@@ -196,14 +196,22 @@ def build_tape(explicit_stock):
     print("done.")
 
 
-def build_main(cbios_checkout):
+def build_main(cbios_checkout, out_dir=None):
     """Merged main-ROM patch (cbios-repack arc, WS-3 / D4): repacked C-BIOS +
     relocated BASIC ($2812-$7FFF) + tape, diffed vs the PRISTINE stock built from
     the same pinned tag -> one zerobas-main-eu.ips/.bps. The repacked + pristine
     ROMs are built reproducibly from the user's C-BIOS checkout (no C-BIOS bytes
-    in-repo, D1)."""
+    in-repo, D1).
+
+    `out_dir` redirects EVERY output — the intermediate ROMs as well as the patch
+    pair — under one directory, so a freshness check can regenerate the shipped
+    deliverable through this exact code path without touching either the tracked
+    files or `build/`. It must be all-or-nothing: redirecting only the patches
+    would still write `build/`, which races a parallel gate battery
+    (tools/check_patch_freshness.py, docs/spec-patch-freshness-gate.md)."""
     patch = os.path.join(TOOLS, "rom_patch.py")
-    build = os.path.join(REPO, "build")
+    build = out_dir if out_dir else os.path.join(REPO, "build")
+    dest = out_dir if out_dir else REPO
     os.makedirs(build, exist_ok=True)
     repacked = os.path.join(build, "cbios_main_msx1_eu-repacked.rom")
     pristine = os.path.join(build, "cbios_main_msx1_eu-pristine.rom")
@@ -223,8 +231,8 @@ def build_main(cbios_checkout):
         run([PY, os.path.join(TOOLS, "build_mainrom.py"),
              repacked, reloc, tape_bin, tape_sym, merged])
     print("making patches (vs pristine stock)...")
-    run([PY, patch, "make", pristine, merged, os.path.join(REPO, "zerobas-main-eu.ips")])
-    run([PY, patch, "make", pristine, merged, os.path.join(REPO, "zerobas-main-eu.bps")])
+    run([PY, patch, "make", pristine, merged, os.path.join(dest, "zerobas-main-eu.ips")])
+    run([PY, patch, "make", pristine, merged, os.path.join(dest, "zerobas-main-eu.bps")])
     print("done.")
 
 
@@ -238,11 +246,17 @@ def main() -> int:
                       help="build the merged repack main-ROM patch (cbios-repack arc)")
     ap.add_argument("--cbios", default="~/projects/cbios",
                     help="C-BIOS checkout for --main (default ~/projects/cbios)")
+    ap.add_argument("--out-dir",
+                    help="--main only: write the intermediate ROMs AND the patch "
+                         "pair under this directory instead of build/ and the "
+                         "repo root (used by the freshness check)")
     ap.add_argument("stock", nargs="?",
                     help="stock C-BIOS main ROM (auto-detected from openMSX if omitted)")
     args = ap.parse_args()
     if args.main:
-        build_main(args.cbios)
+        build_main(args.cbios, args.out_dir)
+    elif args.out_dir:
+        sys.exit("--out-dir is only meaningful with --main")
     elif args.tape:
         build_tape(args.stock)
     else:

@@ -137,6 +137,7 @@ chain to the ~77 B the old fixtures relied on.** `probes/basic/basic_probe_array
 
 ## 6. Gates
 
-`scratchpad/himrange_gates.sh` (38 gates from clean), incl. `unit-test`,
+a himrange_gates.sh battery wrapper (gitignored, not in the repo) (38 gates from
+clean), incl. `unit-test`,
 `array-acceptance`, `clearpool-acceptance`, `switch-build-check`, `deadcode`,
 `wall-assertion-check`, `subrom-abi-check`.

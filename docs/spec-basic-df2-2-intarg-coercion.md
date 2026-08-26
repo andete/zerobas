@@ -14,7 +14,8 @@ pass (2026-07-19, `char_a2_vpeek.py`) then (i) RESOLVED Q1 → an inline FPERR c
 a SECOND missing site: `VPEEK`, the read-twin of VPOKE with the identical VRAM 0..16383 domain
 (§1.1).** **Stage A2+VPEEK LANDED 2026-07-19** — funded by the disk/file cluster eviction
 Phase 1 (`[[diskfile-cluster-eviction]]`, page-1 6→1146 B; the A2 block cost the measured 39 B),
-repack-only + lean byte-identical. The parked `scratchpad/a2-vpeek-impl.patch` re-applied cleanly;
+repack-only + lean byte-identical. The parked a2-vpeek-impl.patch (never
+committed, not in the repo) re-applied cleanly;
 all 8 differentials (PEEK/INP address-domain → ERR 6, incl. the `FOR I=PEEK(99999)` non-checking
 consumer; VPEEK VRAM 0..16383 → ERR 5 / >32767 → ERR 6) now MATCH the VG-8020 ref and are
 **promoted to the gated `ASSERTED` set** (19/19). No regression at the shared `ev_ff_arg` point
@@ -62,7 +63,8 @@ move at one site; this doc generalises it to the remaining surface.
 
 Every case below: `10 ON ERROR GOTO 100 / 20 <stmt with out-of-domain arg> / 30 …:END /
 100 …ERR…` on VG-8020 (ref) vs the repack (zb). Result = the trapped `ERR`, or `cont`
-(no error, silently continued). Probe: `scratchpad/char_intarg.py` (to be promoted to a
+(no error, silently continued). Probe: a throwaway char_intarg.py (never
+committed, not in the repo) (to be promoted to a
 gated differential, §7).
 
 ### 1.1 Divergent sites (ref raises, zb silently continues)
@@ -90,7 +92,9 @@ per-site upper bound (0..255 for the byte sites, 0..16383 for VPOKE's VRAM addre
 | **`VPOKE addr`** | `basic/vdpio.asm` `do_vpoke` | **16383** | ERR 5 | ERR 6 | ERR 5 | **cont (WRONG)** |
 | **`VPEEK(addr)`** | `basic/expr.asm` `ev_ff_vpeek` | **16383** | ERR 5 | ERR 6 | ERR 5 | **cont (MISSING)** |
 
-**VPEEK correction (found by the A2 empirical pass 2026-07-19, `scratchpad/char_a2_vpeek.py`):**
+**VPEEK correction (found by the A2 empirical pass 2026-07-19, by a throwaway
+char_a2_vpeek.py harness that was never committed — not in the repo, so this
+reading cannot be re-run from it):**
 VPEEK was **absent from the draft surface entirely** — the read-twin of VPOKE, and the second
 VPOKE-class omission the empirical discipline has caught. The VG-8020 domain sweep is byte-for-byte
 identical to VPOKE's: `VPEEK(16383)`=cont, `VPEEK(16384)`=**ERR 5**, `VPEEK(32768)`/`(40000)`/
@@ -173,7 +177,8 @@ through the landed S1/S2a/S2b funnel.
   `fac_to_int_addr`) so an out-of-domain arg sets FPERR **at the function**, then an
   **INLINE FPERR check at `ev_ff_arg`** (`expr.asm`, the shared PEEK/VPEEK/INP parse point)
   aborts immediately via `fp_runtime_error`.
-  **Q1 RESOLVED 2026-07-19 (`scratchpad/char_a2_vpeek.py`) — inline, NOT the boundary path.**
+  **Q1 RESOLVED 2026-07-19 (the same char_a2_vpeek.py harness, not in the repo)
+  — inline, NOT the boundary path.**
   Two empirical facts settle it: (a) the FPERR model is sound for propagation — `exec_stmt`
   (interp.asm:130) clears FPERR once per statement, float ops only ever *set* it (sticky, no
   mid-expression unwind, interp.asm:747), so `A=PEEK(99999)+1` carries the flag to a boundary.
@@ -313,7 +318,7 @@ Lean 16 KB stays byte-identical throughout (every byte repack-gated, like all Ph
 
 ## 7. Acceptance & gates
 
-* Promote `scratchpad/char_intarg.py` → `probes/basic/basic_probe_intarg.py`, a VG-8020
+* Promote the char_intarg.py harness (not in the repo) → `probes/basic/basic_probe_intarg.py`, a VG-8020
   differential over all sites × {in-domain, boundary, over-int16, negative}, gated
   `make intarg-acceptance`. Include the §1.2 already-faithful sites as regression guards.
 * Standing gates that MUST stay green (this touches eval consumers + the shared error

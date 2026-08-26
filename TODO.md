@@ -160,47 +160,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🟢 **THE DURABLE HALF IS IN THE OPERATING RULES**, which said HOW to
       restore and nothing about WHEN — which is why every runner had it wrong.
 
-- [ ] 🔴 **A COMMITTED DOC CAN CITE A `scratchpad/` SCRIPT THE REPO DOES NOT
-      HAVE, AND NOTHING CHECKS IT.** Filed 2026-08-26 by D-KNIFEGUARD, which hit
-      it while patching the knife runners and discovering `scratchpad/*.py` is
-      **tracked** (524 files) — so the convention is to commit them, and
-      **19 scripts cited by committed docs or by this file were untracked.**
-      Every spec written on 2026-08-26 cited a probe and a knife runner that a
-      fresh clone would not have; `circtc_knives.py` predates that day, so this
-      is a standing drift, not a one-session slip. All 19 are now committed.
-      🎯 **THE CHECK IS ONE RULE AND THE DENOMINATOR IS FREE**: for every
-      `scratchpad/<name>.py` named in `docs/**` or `TODO.md`, assert
-      `git ls-files --error-unmatch` succeeds. Same shape as
-      `audit_citations.py`'s existing sweeps; it would have failed on the first
-      commit of the day.
-      🔴 **AND IT MUST MATCH THE PATH, NOT THE BASENAME — THIS ITEM IS WHY.** A
-      basename detector flagged `fastgates.py` as a dangling citation, and the
-      only "citation" was **this item's own sentence listing it as NOT in the
-      class**. A checker whose corpus contains the note describing its exception
-      will flag the exception (`audit_citations.py` hit the same shape and made
-      its self-test vector the canary). Requiring the `scratchpad/` prefix costs
-      nothing and removes it: prose names a file, a citation names a path.
-      ⚠️ **SCOPE, MEASURED**: 11 further untracked scripts are cited by nothing
-      committed (the `himrange_*` family, `ss_*`, and one other). Those are NOT
-      in this class and are left alone — a script nobody cites is a scratch file,
-      which is what the directory is for. The rule is about **citations that
-      dangle**, not about tracking everything.
-      🔴 **AND THE SAME RULE FINDS A SECOND, OLDER FLAVOUR: 9 CITED PATHS DO NOT
-      EXIST ON DISK AT ALL.** Not untracked — *gone*. 165 `scratchpad/*.py`
-      paths are cited by committed docs and only 156 are present:
-      `char_a2_vpeek.py`, `char_intarg.py`, `char_trans.py`, `char_trig.py`
-      (the characterisation family), `deftbl_leak_scout.py`, `knives.py`,
-      `p1scout.py`, `spike_beep_token.py`, `spike_sound_token.py` — cited from
-      `spec-basic-df2-2-intarg-coercion.md`, `spec-basic-mathpack-slice2.md`,
-      `spec-basic-deftbl-strcode.md`, `fixpoint8000-msx1-sweep.md`,
-      `decision-fund-time-and-t5.md`, `spec-basic-audio-beep.md` and
-      `spec-basic-graphics-g2.md`. **Those specs' evidence cannot be re-run by
-      anyone**, which is a bigger hole than an untracked file: an untracked
-      script still exists for its author, a deleted one exists for no one.
-      ⚠️ **Deleting them may have been deliberate** (a spike is meant to be
-      thrown away) — in which case the DOC should say so instead of naming a
-      path. Either the file comes back or the citation does. Unpriced, and the
-      one check finds both flavours.
+- [x] ✅ **A COMMITTED DOC COULD CITE A `scratchpad/` PATH THE REPO DOES NOT
+      CONTAIN — GATED 2026-08-26 (D-CITEPATH).** Filed the same day by
+      D-KNIFEGUARD; `tools/check_citation_paths.py` now runs as a step of
+      `make basic-reloc` (alias `make citation-check`), spec
+      [`docs/spec-citation-paths-gate.md`](docs/spec-citation-paths-gate.md),
+      falsified 12/12 by `scratchpad/citepaths_falsify.py`.
+      🔴 **THE FILED DENOMINATOR WAS A SCOPE CLAIM AND THE REAL ONE IS BIGGER.**
+      It swept `docs/**` + this file and reported 165 cited paths, 9 dangling.
+      The gate's corpus is `git ls-files '*.md'` — **457 docs, 238 cited paths,
+      27 dangling**: `disk/docs/` and `tape/docs/` were never walked, and held
+      6 further gone paths and 4 untracked ones. The RULE was right; the CORPUS
+      was hand-listed.
+      🎯 **THREE REMEDIES, SO THREE CLASSES.** `UNTRACKED` (7, committed);
+      `IGNORED` — on disk but excluded by `.gitignore`, where no `git add` helps
+      (4 per-slice battery wrappers under the `*.sh` rule; the citations gave,
+      the ignore rule stood — two of them cite their `.out` beside the driver
+      and `.out` IS tracked, so the RESULT already shipped, and one hardcodes an
+      absolute `/Users/joost/…` path so it could not run in a clone anyway);
+      and `GONE` (15). **14 of the 15 were NEVER committed** — `git log --all`
+      empty — so nothing could restore them and their docs now name the file in
+      prose and say it is not in the repo; the 15th, `p1scout.py`, WAS committed
+      and had moved to `tools/p1scout.py`, so it was repointed.
+      🔴 **THE SELF-DESCRIBING-EXCEPTION SHAPE FIRED THREE TIMES IN ONE SLICE.**
+      The filed one (a basename detector flagging the file this list was naming
+      as NOT in the class); a spec citing a path while saying *"throwaway, not
+      committed"* in the same sentence; and the first draft of the `p1scout`
+      repoint, which restated the broken path while explaining it. **Prose names
+      a file, a citation names a path** — that one distinction is the whole fix.
+      🟢 **AND A COMMITTABLE-LOOKING FILE THAT MUST NOT BE COMMITTED**: the
+      eighth untracked path was under `scratchpad/gate_logs/`, which
+      `run_gates.py` `rm -rf`s at the start of every battery. `scratchpad/*.log`
+      is a SHALLOW rule that never covered the subdirectory; `.gitignore` now
+      does, and the doc quotes the text instead of pointing at the file.
 
 - [ ] 🔴 **A `unit-test` FLAKE IS OPEN AND UNCAUSED — the diagnostic that would
       have named it was only installed AFTERWARDS.** Filed 2026-08-26 by
@@ -309,24 +301,64 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unmeasured: the `n` domain (`KEY 0,` / `KEY 11,`), the truncation length
       (15 is read off the stride, not off a machine), and `KEY LIST` entirely.
 
-- [ ] 🔴 **A STALE TRACKED PATCH DELIVERABLE IS INVISIBLE TO THE WHOLE
-      BATTERY.** Filed 2026-08-26 by D-EVFERR, which shipped TWO ROM-moving
-      commits without regenerating `zerobas-main-eu.ips` / `.bps` — **and
-      `make gates` went 38/38 green both times.** The pair is the *shipped BASIC
-      deliverable* (Makefile header, and `release:` calls regenerating it *"the
-      maintainer's step before committing a basic/ change"*), so a stale one
-      means the repo's advertised artifact does not match its own source.
-      ⚠️ **THE OMISSION IS NOT WHAT NEEDS FIXING — THE BLINDNESS IS.** Getting it
-      wrong took nothing more exotic than `git add <paths>` instead of
-      `git add -A`, which is the normal way to keep a scratchpad out of a commit.
-      🎯 `patches` is deliberately NOT a prerequisite of `machines` so the build
-      stays usable without a C-BIOS checkout
-      (docs/spec-lean-retire-s2-switch.md §4.4) — that trade is right and this
-      item does not propose reversing it. What is missing is a CHECK: regenerate
-      to a temp path and compare against the tracked bytes, RED on a mismatch,
-      SKIP (not pass) with no C-BIOS. ⚠️ A check that silently passes when it
-      cannot run is the 0/0-ALL-CONVERGED shape and would be worse than nothing.
-      Unpriced; the gate is small, the *skip* semantics are the design.
+- [x] ✅ **A STALE TRACKED PATCH DELIVERABLE WAS INVISIBLE TO THE WHOLE BATTERY
+      — GATED 2026-08-26 (D-PATCHFRESH).** Filed the same day by D-EVFERR, which
+      shipped two ROM-moving commits without regenerating
+      `zerobas-main-eu.ips`/`.bps` and went 38/38 both times. Unit
+      `patch-freshness-check` (`tools/check_patch_freshness.py`) is now in
+      `make gates`; spec
+      [`docs/spec-patch-freshness-gate.md`](docs/spec-patch-freshness-gate.md),
+      falsified 7/7 by `scratchpad/patchfresh_falsify.py`.
+      🔴 **THE OBVIOUS CHECK IS STRUCTURALLY BLIND TO THE FILED DEFECT.**
+      `build_patches.py --main` writes the pair IN PLACE at the repo root and
+      `$(MAIN_ROM)` is a real file rule every gate depends on — so by the time a
+      battery finishes, the WORKING COPY is already fresh and the staleness
+      survives only in what was COMMITTED. Comparing the tree against its
+      sources would have been GREEN on both of D-EVFERR's commits. It therefore
+      REGENERATES (a new `build_patches.py --out-dir`, redirecting the
+      intermediates too, so nothing writes `build/` and the unit is
+      parallel-battery safe) and compares against BOTH the working copy AND
+      `HEAD`.
+      🎯 **FOUR STATES, AND THE DEFERRAL IS WHAT MAKES IT USABLE**: R≠W is red;
+      R=W≠H with sources CLEAN is red (the D-EVFERR shape, reproduced as plant
+      P3); R=W≠H with sources DIRTY is green and says DEFERRED out loud, so a
+      mid-slice battery is not red on an expected state. *Sources clean* is
+      asked of MAKE (`make -pn`'s prerequisite list, 66 files), never a hand
+      list — ⚠️ and is therefore only as complete as that list, **which has been
+      wrong before**; a missing prerequisite surfaces as a RED pointing at the
+      gap, which is the right direction for a blind spot to fail.
+      🟢 **A SKIP CHANNEL, NEW AND GENERAL.** With no C-BIOS checkout the unit
+      prints `GATE-SKIPPED:` and `run_gates.py` counts it SKIPPED, never green,
+      naming the reason in the tally. A check that silently passes when it
+      cannot run is the 0/0-ALL-CONVERGED shape.
+      🔬 **THE FALSIFICATION CORRECTED THE INSTRUMENT**: the first draft reported
+      byte SIZES, and both stale plants printed the same size on each side. Ids
+      are `sha256[:8]` now. And arm P3b proves the red CLEARS by its documented
+      remedy — a red that cannot be cleared is not a gate.
+
+- [ ] 🧹 **A TRACKED `scratchpad/` SCRIPT CAN HARDCODE THE AUTHOR'S ABSOLUTE
+      PATH, AND NOTHING CHECKS IT.** Filed 2026-08-26 by D-CITEPATH, which found
+      `cd /Users/joost/projects/zerobas` inside one of the four `.sh` battery
+      wrappers it was triaging. That one is gitignored, so it does not matter —
+      **but the class is not about `.sh`**: `scratchpad/*.py` IS tracked and
+      shipped, and a tracked script with an absolute home directory in it
+      resolves in a fresh clone and then does the wrong thing, which is worse
+      than dangling. 🎯 The new citation gate proves the PATH exists; nothing
+      asks whether the file it points at can RUN anywhere else. Unmeasured: the
+      denominator over `scratchpad/**` + `probes/**` + `tools/**` has not been
+      taken, and some hits will be legitimate (a C-BIOS checkout default). Cheap
+      to sweep, a judgement to remediate.
+
+- [ ] 🧹 **THE TAPE PATCH PAIR IS UNGUARDED BY THE SAME RULE.** Filed 2026-08-26
+      by D-PATCHFRESH. `tape/zerobas-tape-msx1.ips`/`.bps` are tracked
+      deliverables built from `tape/tape.asm` by the same `build_patches.py`,
+      and `patch-freshness-check` covers only the MAIN pair. 📏 **MEASURED
+      INCIDENTALLY**: regenerating the tape pair is reproducible and it is
+      currently FRESH (it rebuilt byte-identical during this slice), so this is a
+      hole, not a known-stale artifact. The check is the same three-way
+      comparison against a different target and a different prerequisite list;
+      it needs a `--out-dir` on the tape path, which `build_patches.py` does not
+      have yet.
 
 - [ ] 🧹 **122 HARDCODED `/tmp/...` LITERALS ARE OUTSIDE THE TEMP ROOT** — pinned,
       not fixed. `probes/lib/probe_tmp.py` owns `/tmp/zerobas` and sets

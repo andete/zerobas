@@ -142,7 +142,8 @@ window instead.
 
 ## 6. Gates — 36 of 36 green
 
-`scratchpad/himdom_gates.sh`, `scratchpad/himdom_gates.out`, from `rm -rf build`.
+a himdom_gates.sh battery wrapper (gitignored, not in the repo — its RESULT is,
+at `scratchpad/himdom_gates.out`), from `rm -rf build`.
 
     GATES: 36 green, 0 red -- 36 run
     build/basic-reloc.rom 0d04f8b7 / build/sub.rom 490ffc49

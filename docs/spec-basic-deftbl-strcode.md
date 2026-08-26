@@ -61,7 +61,8 @@ appear to confirm it confirm it for a different reason.
 
 ## 2. Apparatus
 
-`scratchpad/deftbl_leak_scout.py` — 18 rows, three sides, batched one boot per
+A throwaway deftbl_leak_scout.py (never committed — not in the repo) — 18 rows,
+three sides, batched one boot per
 side. Every RED candidate is paired with a GREEN control differing **only in the
 `DEF` mnemonic**, so the DEFtbl byte is the sole moving part; that byte is
 already known to move (D-REHOME's `s10`/`s11`, `[ 0 ]` vs `[]`).

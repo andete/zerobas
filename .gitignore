@@ -30,6 +30,12 @@ __pycache__/
 # the scratchpad itself is tracked (knives, drivers, characterisations) but its
 # logs are not — one repack log is 1600 lines of build noise.
 scratchpad/*.log
+# ...and the per-run battery logs, which live one level down. The rule above is
+# SHALLOW and `tools/run_gates.py` `rm -rf`s this directory at the start of every
+# battery, so a file in it exists only until the next `make gates` -- which made
+# `docs/spec-probe-machxml.md` cite a path nobody else could ever open
+# (tools/check_citation_paths.py, 2026-08-26).
+scratchpad/gate_logs/
 # Same rule, same reason, for the other ephemeral classes. The tracked scratchpad
 # is .py / .json / .md / .out / .asm -- knives, characterisations, run summaries
 # that docs cite by name. Ad-hoc gate drivers and commit-message scaffolding are

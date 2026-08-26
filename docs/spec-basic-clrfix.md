@@ -200,7 +200,9 @@ written off stops being carried in the bookkeeping while continuing to move.
 
 ## 7. 🔴 Gates — two RED, and neither was mine
 
-`scratchpad/clrfix_gates.sh`. The 26-row sweep in §3 went green and **two gates
+a per-slice clrfix_gates.sh battery wrapper (`scratchpad/*.sh` is gitignored —
+the drivers are per-session by design, so it is not in the repo). The 26-row
+sweep in §3 went green and **two gates
 written for other slices went red**: `unit-test` and `array-acceptance`. This is
 the D-MISSOPFIX lesson again — a purpose-built probe's denominator is shaped by
 the hypothesis that motivated it, and the blast radius of a deleted grammar arm

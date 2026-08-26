@@ -25,7 +25,8 @@ Corroborated by Wikipedia (MSX-DOS), fms.komkon.org EasyGuide, msxblue.com disk 
 The public text fixes: exact filename, fires at Disk-BASIC startup, DOS-boot precedence
 (`AUTOEXEC.BAT` wins when DOS boots), absence ⇒ normal startup. Everything else below is
 **black-box observed** on `National_CF-3300` (openMSX; the clean-room-legitimate complement —
-inputs→outputs, no ROM decode). Repro: `scratchpad/autoexec_char.py`.
+inputs→outputs, no ROM decode). Repro: a throwaway autoexec_char.py, never
+committed — not in the repo, so this reading cannot be re-run from it.
 
 ## 2. Characterized behavior (the contract to match)
 
@@ -85,7 +86,7 @@ BIOS hosts. Nothing in [disk/init.asm](../init.asm) changes.
 
 ## 5. Test plan (acceptance)
 
-- **Differential:** repurpose `scratchpad/autoexec_char.py` into a committed self-asserting
+- **Differential:** repurpose that autoexec_char.py harness (not in the repo) into a committed self-asserting
   probe: build a 1-file tokenised-`AUTOEXEC.BAS` disk, boot **ours** and **CF-3300**, assert
   both set the marker (ours now matches stock). Add the negative controls (absent ⇒ silent
   `Ok` both; wrong-name ⇒ no run both).

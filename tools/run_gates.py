@@ -46,6 +46,7 @@ GATES = """basic-reloc subrom-abi-check subrom-closure-check unit-test deadcode
 wall-assertion-check redundant-load-check rowshape-check injector-check
 temp-root-check
 preflight-check latch-check diskdep-check switch-build-check kwsweep
+patch-freshness-check
 deffn-selftest string-acceptance str-domain-acceptance strparen-acceptance
 penderr-acceptance missing-acceptance error-acceptance error-trap-acceptance
 onerr0-acceptance math-acceptance float-acceptance intarg-acceptance
@@ -63,6 +64,24 @@ def sh(argv, log, env=None):
     with open(log, "w") as f:
         return subprocess.call(omsx_preflight.guarded(argv),
                                stdout=f, stderr=subprocess.STDOUT, env=env)
+
+
+# A unit may exit 0 while declaring it could not measure anything -- the shipped
+# patch pair cannot be regenerated without a C-BIOS checkout, for instance. It
+# says so with this sentinel and the tally counts it SKIPPED, never green: a
+# check that silently passes when it cannot run is the 0/0-ALL-CONVERGED shape.
+SKIP_SENTINEL = "GATE-SKIPPED:"
+
+
+def skipped_reason(log):
+    try:
+        with open(log) as f:
+            for line in f:
+                if line.startswith(SKIP_SENTINEL):
+                    return line[len(SKIP_SENTINEL):].strip()
+    except OSError:
+        pass
+    return None
 
 
 def hashes():
@@ -144,13 +163,16 @@ def main():
         log = f"{OUT}/{name.replace('/', '_').replace('#', '_')}.log"
         s = time.time()
         rc = sh(argv, log)
-        return name, rc, time.time() - s
+        return name, rc, time.time() - s, (skipped_reason(log) if rc == 0 else None)
 
-    results = {}
+    results, skips = {}, {}
     with cf.ThreadPoolExecutor(max_workers=jobs) as ex:
-        for name, rc, dt in ex.map(run, enumerate(units)):
+        for name, rc, dt, skip in ex.map(run, enumerate(units)):
             results[name] = (rc, dt)
-            print(f"  rc={rc}  {dt:5.0f}s  {name}", flush=True)
+            if skip:
+                skips[name] = skip
+            print(f"  rc={rc}{'  SKIPPED' if skip else '        '}  {dt:5.0f}s  "
+                  f"{name}", flush=True)
 
     # RETRY red units SERIALLY, in isolation (docs-spec-probe-emutime-watchdog):
     # heavy emulator gates can drop a capture under concurrency (a `ref=None` on a
@@ -178,12 +200,16 @@ def main():
     red = [n for n, (rc, _) in results.items()
            if rc != 0 and not n.startswith("lineerr#")]
     green = sum(1 for n, (rc, _) in results.items()
-                if rc == 0 and not n.startswith("lineerr#")) + int(lineerr_ok)
+                if rc == 0 and not n.startswith("lineerr#")
+                and n not in skips) + int(lineerr_ok)
     total_gates = len([g for g in GATES if g not in excl])
     print(f"\n=== wall {ttot:.0f}s ({twarm:.0f}s build + "
           f"{ttot-twarm:.0f}s gates) ===")
     print(f"GATES: {green}/{total_gates} green"
+          + (f", {len(skips)} SKIPPED" if skips else "")
           + ("" if lineerr_ok else "  (lineerr shard FAILED)"))
+    for n, why in sorted(skips.items()):
+        print(f"  SKIPPED {n}: {why}")
     if red:
         print("RED:", " ".join(red))
     if flaky:

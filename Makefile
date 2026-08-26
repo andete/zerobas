@@ -333,6 +333,7 @@ basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
 	python3 tools/check_tenant_closure.py --page1 $(SUB_SYM) sub/sub.asm
 	python3 tools/check_dead_code.py $(RELOC_SYM) $(SUB_SYM)
 	python3 tools/audit_citations.py
+	python3 tools/check_citation_paths.py
 
 # Transitive dead-code sweep, BOTH builds (docs/spec-deadcode-gate.md). A step of
 # `basic-reloc` above, since unreachable code is exactly the finding that goes
@@ -454,6 +455,19 @@ zerobas-main-eu.bps: $(MAIN_ROM)
 release: all $(MAIN_PATCHES)
 
 patches: $(MAIN_PATCHES)
+
+# The shipped pair must match the sources committed beside it. D-EVFERR shipped
+# two ROM-moving commits without regenerating it and `make gates` went 38/38
+# green BOTH times -- `git add <paths>` instead of `git add -A` is all it takes.
+# ⚠️ IT REGENERATES; it does not look at the tree. $(MAIN_ROM)'s file rule
+# rewrites the pair IN PLACE, so by the time any battery finishes the WORKING
+# COPY is already fresh and the defect only survives in what was COMMITTED.
+# Hermetic (its own temp dir -- no build/ writes, so it is parallel-battery safe)
+# and SKIPS, never passes, with no C-BIOS checkout: run_gates.py reads the
+# GATE-SKIPPED sentinel and counts the unit as skipped.
+# ~5 s. Spec: docs/spec-patch-freshness-gate.md.
+patch-freshness-check:
+	python3 tools/check_patch_freshness.py --cbios $(CBIOS)
 
 # --- Page-0 cassette patch (assembled from tape/tape.asm; its own sub-make) ----
 tape/zerobas-tape-msx1.ips: tape/tape.asm tools/build_patches.py tools/openmsx_paths.py \
@@ -2708,6 +2722,20 @@ bdos-cbios-selfcheck: $(DISK_ROM)
 audit-citations:
 	python3 tools/audit_citations.py $(TARGET)
 
+# A committed doc may not cite a `scratchpad/` path the repo does not contain --
+# `scratchpad/` is tracked on purpose (knives, probes, characterisations), so a
+# citation that dead-ends means that spec's evidence cannot be re-run by anybody.
+# Same family as audit_citations.py check 4 (a citation dead-ending in the
+# private workbench); where it dead-ends only changes the remedy, which is why
+# the report splits GONE / IGNORED / UNTRACKED.
+# ⚠️ LIKE audit-citations, IT RUNS AS A STEP OF `basic-reloc`, NOT ON DEMAND: a
+# cadence written in a comment is a habit, and a habit is not a control
+# (D-CITEJUDGE left audit-citations RED for 268 of its first 761 commits that
+# way). This target is the standalone alias. <1 s, read-only, no emulator.
+# Spec: docs/spec-citation-paths-gate.md.
+citation-check:
+	python3 tools/check_citation_paths.py
+
 # clean removes the gitignored build artifacts only. The tracked patch
 # deliverables are left in place (use `make patches` to regenerate them).
 clean:
@@ -2758,7 +2786,8 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check gates clean
+        omsx-diag-teeth temp-root-check citation-check \
+        patch-freshness-check gates clean
 
 # --- gates: the acceptance-gate battery, run in PARALLEL ----------------------
 # Build the shared artifacts once, then fan the per-gate probes out across worker

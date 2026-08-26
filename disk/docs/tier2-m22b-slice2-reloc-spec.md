@@ -8,7 +8,8 @@ SPDX-License-Identifier: 0BSD
 **Status: SPEC / SCOPE ONLY — no asm touched. STOP for sign-off** before building
 ([[spec-before-implementation]]). The slice-2 *logic* is already characterised +
 written (spec [tier2-m22b-conout53a7-spec.md](tier2-m22b-conout53a7-spec.md)
-§5.3–§5.5/§6; saved impl `scratchpad/m22b-slice2-conout.patch`); this spec is ONLY
+§5.3–§5.5/§6; saved impl in an m22b-slice2-conout.patch that was never
+committed — not in the repo); this spec is ONLY
 about *where the bytes go* so it doesn't crash the DOS boot. Blocker background:
 [tier2-lstout-characterisation.md](tier2-lstout-characterisation.md) sibling; FDC
 hole [[disk-hardware-target-variants]].
@@ -118,7 +119,8 @@ jumps over the hole — the hole is never fetched as code). So:
    (keys2 echo now VISIBLE both screens); BDOSX 47/47; `make unit-test` 19/19;
    `make probe`; `disk.rom` == 16384 B; **both FDC/above-hole guards pass**.
 3. **TAB oracle (slice 2):** inject `TABTEST.TXT`/`TABTEST2.TXT`
-   (`scratchpad/make_tabtest_disk.py`), `TYPE` them: CHPUT stream
+   (a throwaway make_tabtest_disk.py, never committed — not in the repo),
+   `TYPE` them: CHPUT stream
    (`callseq --log 0x00A2`) + `screen` byte-identical ours==stock — cols 1/2/8/34
    incl. at-stop and post-wrap cases.
 4. **`$F237` parity:** `capture --mem 0xF237:0x1` at a late anchor, ours==stock.

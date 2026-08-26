@@ -24,7 +24,7 @@ queue, no ISR involvement, no sub-ROM tenant.
 ### 1.1 Token — black-box pinned
 
 `BEEP` crunches to a **single-byte STATEMENT token `$C0`** (VG-8020 crunch capture,
-`scratchpad/spike_beep_token.py`, 2026-07-21):
+a throwaway spike_beep_token.py, never committed — not in the repo, 2026-07-21):
 
 | typed | stored body bytes |
 |---|---|

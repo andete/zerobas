@@ -489,7 +489,8 @@ most important gate. **Improvement (idea from the user):** inject an `AUTOEXEC.B
 disk (identical on ours + CF-3300, disk-resident), unlike `AUTOEXEC.BAS` which we had to implement
 in our Disk-BASIC ROM. Standard MSX-DOS also **skips the date prompt** when `AUTOEXEC.BAT` exists,
 so the leading `\r` goes away too → zero typed input. Bonus: exercises a bit more of the DOS path.
-**Verify-first (black-box, like the AUTOEXEC.BAS experiment `scratchpad/autoexec_probe.py`):**
+**Verify-first (black-box, like the AUTOEXEC.BAS experiment run by a throwaway
+autoexec_probe.py, never committed — not in the repo):**
 confirm MSX-DOS 1 (a) auto-runs `AUTOEXEC.BAT` and (b) skips the date prompt, on the CF-3300 AND
 ours. **Scope:** ~8 `build_bdosx*_disk.py` + re-anchor the `disk_probe_diff` capture timing (the
 COM now runs at boot, not t=20). Spec + sign-off before touching all 8 (primary gate). See

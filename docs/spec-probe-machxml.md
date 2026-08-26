@@ -18,7 +18,9 @@ retry)"* on `error-trap-acceptance`. The row was:
 
 `ERR None` is a **missing capture**, not a wrong answer, and
 `omsx_repl._why_missing()` spent the evidence the run already held
-(`scratchpad/gate_logs/error-trap-acceptance.log`):
+(the battery's own `error-trap-acceptance` log — `scratchpad/gate_logs/` is a
+per-run directory `run_gates.py` deletes at the start of every battery, so the
+quoted text below is the record, not the file):
 
 > *openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled
 > capture; the run wrote 0 line(s). emulator said: Fatal error: …Loading of

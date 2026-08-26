@@ -59,7 +59,8 @@ round-trips) are to be pinned empirically **as each phase is reached**, not re-e
 sign-off. Phases 4–5 (sequential/random I/O — higher risk) get a go/no-go re-confirm with the
 user when reached. Discipline: gate + adversarial VG-8020/CF-3300 pass per phase (§8); the
 green-build-hides-bugs lesson is load-bearing. Funds D-F2-2 A2+VPEEK ([[df2-2-intarg-coercion-arc]],
-impl parked at `scratchpad/a2-vpeek-impl.patch`) once Phase 1 frees page-1.
+impl parked in an a2-vpeek-impl.patch that was never committed — not in the
+  repo) once Phase 1 frees page-1.
 
 Related: [[subrom-tenant-playbook]] (the reusable how-to), [[math-pack-subrom-tenant]] (A-not-
 preserved-across-CALSLT, page-0/1 visibility), [[load-error-is-not-abort]] (the shared error

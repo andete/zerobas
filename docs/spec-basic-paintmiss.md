@@ -168,7 +168,8 @@ size-neutral cuts, each with a row set predicted before the run
 
 ## 7. Gates — 35 of 35 green
 
-`scratchpad/paintmiss_gates.sh`, `scratchpad/paintmiss_gates.out`, from
+a paintmiss_gates.sh battery wrapper (gitignored, not in the repo — its RESULT
+is, at `scratchpad/paintmiss_gates.out`), from
 `rm -rf build`. ⚠️ **`repack-machine` is FIRST on purpose**: `latch-check`
 (Makefile:2498) is the one gate with no prerequisites and refuses on an empty
 `build/`, which makes `make` exit 2.

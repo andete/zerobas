@@ -464,7 +464,8 @@ K-N4 confirms it from the other side: reverting the insertion restores
 
 ## §5B Knives
 
-Runner: `scratchpad/knives.py` (throwaway, not committed). Subject is the probe
+Runner: a throwaway knives.py — never committed, so it is not in the repo and
+this run cannot be reproduced from it. Subject is the probe
 invoked directly, scoped `--only 32768`; every cut asserts its site occurs
 **exactly once**; restore is in a `finally`; a report without its tally line is
 an abort, not "nothing moved".

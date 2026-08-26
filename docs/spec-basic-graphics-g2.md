@@ -335,7 +335,8 @@ these). Add token equates to [basic/sysvars.inc](basic/sysvars.inc) and rows to
 Collision check (done): no existing equate uses `$C2`/`$C3`/`$ED`; neighbors are
 `BEEP=$C0`, `PLAY=$C1`, `SOUND=$C4`, `VPOKE=$C6`, `BASE=$C9` ([basic/sysvars.inc](basic/sysvars.inc)),
 and `STEP=$DC`/`VARPTR=$E7` on the function side. Capture the three tokens black-box
-(stored-line crunch, the `scratchpad/spike_sound_token.py` shape) as the §8 build
+(stored-line crunch, the shape of a throwaway spike_sound_token.py that was
+never committed — not in the repo) as the §8 build
 step before asserting them — the `SOUND`-token-`$C2`-guess-was-wrong discipline
 ([basic/sysvars.inc:330](basic/sysvars.inc)); note `$C2` is precisely the value that
 wrong guess used, so **re-verify** rather than trust the arc-spec table.

@@ -21,7 +21,8 @@ tenant; resident-ABI import + `check_tenant_closure.py` closure gate already exi
 ## 1. Characterization result (black-box VG-8020, 2026-07-13)
 
 Full-precision `PRINT` capture over designed batteries, compared against host `Decimal`
-mathematical truth (14-sig correctly-rounded). Raw harness: `scratchpad/char_trans.py`
+mathematical truth (14-sig correctly-rounded). Raw harness: a throwaway
+char_trans.py, never committed — not in the repo
 (to be promoted into the slice's probe). **Observed outputs only; the ROM is a black box.**
 
 ### 1.1 Accuracy — the reference transcendentals are LOW-accuracy polynomial approximations
@@ -1030,7 +1031,8 @@ review after (§8.5 split).
 
 ### 14.1 Characterization result (pinned 2026-07-14 — do NOT re-run)
 
-Fresh VG-8020 black-box capture ([scratchpad/char_trig.py](../scratchpad/char_trig.py),
+Fresh VG-8020 black-box capture (a throwaway char_trig.py, never committed —
+not in the repo,
 cached char_trig.json), extending §1.1/§1.2 with the quantitative reduction floor:
 
 - **Exact anchors (confirmed):** `SIN(0)`=0, `COS(0)`=1, `TAN(0)`=0.

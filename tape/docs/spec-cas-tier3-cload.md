@@ -146,7 +146,8 @@ Two findings:
 (Aside, also observed: on the MSX1 CF-3300, `LOAD"CAS:name"` itself is a no-op — `CLOAD` is
 the working stock cassette-load verb. Our `LOAD"CAS:"` is therefore wholly our own
 extension; its name-matching should mirror `CLOAD`'s case-sensitive compare for internal
-consistency.) Characterization harness: `scratchpad/cf3300_final.py` (to be promoted into a
+consistency.) Characterization harness: a throwaway cf3300_final.py, never
+committed — not in the repo (to be promoted into a
 committed `probes/basic/` oracle probe when Item A's gate lands). NB fixtures must use
 collision-safe filenames — macOS's case-insensitive FS silently merges `abc`/`ABC` paths
 (cost a false "inconclusive" during characterization).
