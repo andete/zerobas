@@ -120,9 +120,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       residual it sits next to (`KEY1,` reading ERR 2 where the references say
       24) is a SYMPTOM of the whole form being absent, and "fix the error code"
       would have been the wrong repair. Under the charter the reference wins.
-      💰 Unpriced. Needs the FNKSTR function-key string area (16 B x 10) and
-      `KEY LIST`'s display; main page 1 was **99 B** free on 2026-08-26 — read
-      the wall, never this line.
+      📏 **SCOUTED 2026-08-26 — D-KEYSTR,
+      [`docs/spec-basic-keystr-scout.md`](docs/spec-basic-keystr-scout.md)**
+      (`scratchpad/keystr_probe.py`, 6 rows x 3 machines, measurement only).
+      The storage is MEASURED, not assumed: a distinctive plant (`KEY n,"ZQX"`)
+      reads back at **base `$F87F`, stride 16, NUL-terminated**, with two
+      controls making it a reading rather than a coincidence — planting slot 1
+      and reading slot 2 returns `"auto"` (F2's default), and planting nothing
+      returns `"colo"` (the head of F1's `"color "`).
+      🔴 **AND THE GAP IS BIGGER THAN THIS ITEM SAYS: zerobas reads `0 0 0 0` AT
+      EVERY SLOT WITH NOTHING PLANTED.** The references' DEFAULTS are present on
+      a cold boot and zerobas's are not — so the function-key string area is
+      **UNPOPULATED**, not merely unwritable, and `KEY ON` renders it. A fix
+      that added only the parse and the copy would leave nine slots holding
+      zeros where the reference holds `color `/`auto`/`goto`/`list`/…
+      ⚠️ **SECOND REFRAMING OF THIS ITEM BY A CONTROL RATHER THAN ITS SUBJECT** —
+      D-MISSOP3's `r.keyok` turned *"wrong error code"* into *"the form is
+      absent"*; this scout's `k.none` turns that into *"the storage is empty
+      too"*.
+      💰 **STILL UNPRICED, AND THE DEFAULTS ARE THE LARGER HALF**: ~160 B of
+      DATA, which needs a home outside main page 1 (**85 B** free 2026-08-26 —
+      read the wall, never this line) before it needs a design. Also still
+      unmeasured: the `n` domain (`KEY 0,` / `KEY 11,`), the truncation length
+      (15 is read off the stride, not off a machine), and `KEY LIST` entirely.
 
 - [ ] 🔴 **A STALE TRACKED PATCH DELIVERABLE IS INVISIBLE TO THE WHOLE
       BATTERY.** Filed 2026-08-26 by D-EVFERR, which shipped TWO ROM-moving
