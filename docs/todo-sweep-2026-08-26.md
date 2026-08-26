@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 12 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **40** carry a verdict; **136** do not. The
+🔴 **THIS IS TRANCHE 13 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **47** carry a verdict; **129** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -445,6 +445,31 @@ are not all hidden live work — some are filed-and-closed in one block, and onl
 reading separates them. The signal is still right to widen the subject set (three
 of the four read so far were genuinely live-as-filed), but it is a *reason to
 read*, never a verdict — the same rule the symbol screen earned in tranche 8.
+
+## 2k. Tranche 13 — the 38 sort themselves, and a calibration on a sample of two
+
+Of the 38 open-reading headlines §1.2 surfaced, **10 declare their own disposition
+in the body** — `✅ CLOSED`, `DECLINED`, `WITHDRAWN`, `SUPERSEDED` — within the
+first few lines. **3 of the 38 are struck through** (`~~…~~`), the file's
+retraction marker, and all three also say `DECLINED` in the body.
+
+So the 38 sort into:
+
+| | n |
+|---|---|
+| self-declares closed / declined / withdrawn / superseded | **10** |
+| does not — needs reading or running | **28** |
+
+⚠️ **THESE 10 ARE VERDICTED FROM A BODY CLAIM, NOT A MEASUREMENT**, and the
+sweep's whole rule is to inherit nothing. Each is recorded as **`how: read — NOT
+re-run`** so it can never be mistaken for a machine result.
+
+🟢 **THE CALIBRATION, AND ITS SIZE.** Two of these ten were independently re-run
+in tranche 11 — the `LINE` string-relational row and `SCREEN (1<5)` — and the
+machine agreed with the body **both times, 2 of 2**. That is a reason to believe
+the marker is honest in this file. **It is calibration on a sample of two, not a
+licence**, and the distinction is written into every one of the ten verdicts
+rather than resolved silently in favour of speed.
 
 ## 3. What the apparatus cost, said out loud
 

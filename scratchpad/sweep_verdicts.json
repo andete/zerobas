@@ -315,5 +315,54 @@
   "headline": "`DRAW`'s BOOT-DEFAULT SCALE STATE IS NOT `S4`, AND ZEROBAS TREATS IT AS IF IT WERE",
   "reading": "the body says '\u2705 CLOSED 2026-08-11 by D-DSCALE ... Both rows below are undeferred and green'. GFX_DSCALE boots at 0 with a sentinel gdo_s cannot write.",
   "note": "\u26a0\ufe0f A NEW CLASS IN THE \u00a71.2 SET: an open-reading HEADLINE over a body that records the CLOSURE. The 38 are not all hidden live work -- some are filed-and-closed in one block. The headline signal over-includes, and only reading separates them."
+ },
+ "T-229618": {
+  "verdict": "SELF-DECLARED WITHDRAWN IN ITS OWN BODY",
+  "how": "read -- NOT re-run",
+  "headline": "\ud83d\udd34 **SAVESTATE-RESTORE-PER-CASE \u2014 BUILT, MEASURED, AND WITHDRAWN 2026-08-24",
+  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "note": "one of the 38 open-reading headlines surfaced in tranche 10"
+ },
+ "T-A1BDEB": {
+  "verdict": "SELF-DECLARED DECLINED IN ITS OWN BODY",
+  "how": "read -- NOT re-run",
+  "headline": "\ud83d\udd34 **~~`FIELD` AND `LSET`/`RSET` STILL REFUSE AN ARRAY ELEMENT~~ \u2014 DECLINED",
+  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "note": "one of the 38 open-reading headlines surfaced in tranche 10"
+ },
+ "T-791D60": {
+  "verdict": "SELF-DECLARED DECLINED IN ITS OWN BODY",
+  "how": "read -- NOT re-run",
+  "headline": "\ud83d\udcb0 ~~**A \u221229 B CARVE EXISTS IN `loc_next`, IT FIXES A MEASURED DIVERGENCE,",
+  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "note": "one of the 38 open-reading headlines surfaced in tranche 10"
+ },
+ "T-D1F78B": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY",
+  "how": "read -- NOT re-run",
+  "headline": "\ud83d\udd34 **THE STATEMENT BOUNDARY IS TOO LATE FOR A DRIVER WITH A SIDE EFFECT.**",
+  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "note": "one of the 38 open-reading headlines surfaced in tranche 10"
+ },
+ "T-5AA386": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY",
+  "how": "read -- NOT re-run",
+  "headline": "\ud83d\udd34 **NOTHING SWEEPS THE `$8000` FIXED POINT AT THE OTHER SIGNED-16",
+  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "note": "one of the 38 open-reading headlines surfaced in tranche 10"
+ },
+ "T-FA2A33": {
+  "verdict": "SELF-DECLARED SUPERSEDED IN ITS OWN BODY",
+  "how": "read -- NOT re-run",
+  "headline": "\u26a0\ufe0f **78 GATE ROWS OUTSIDE THE SPRITE/VDP PHASES ARE STILL UNMEASURED BY",
+  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "note": "one of the 38 open-reading headlines surfaced in tranche 10"
+ },
+ "T-7A9746": {
+  "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY",
+  "how": "read -- NOT re-run",
+  "headline": "\u26a0\ufe0f **`DRAW`'s mode gate was left alone, with a green row behind it.**",
+  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "note": "one of the 38 open-reading headlines surfaced in tranche 10"
  }
 }
