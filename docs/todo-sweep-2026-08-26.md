@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 42 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 43 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1282,6 +1282,35 @@ unattached to a gate.
 (after the `X`-substring scale axis and the `GXPOS` gate scope). All three shrink
 the same way: **the hard part is already done and the item does not say so**,
 because nothing re-read it after the tool landed.
+
+## 2ao. Tranche 43 — the same pattern, a third time
+
+**Hardcoded page-0 entries — LIVE, exact.** `subrom_inttest.py`:19 `ld ix,$0049`;
+`graphics_floor.py`:16 `ld ix,$0058` **and** `:76` the same address as **raw
+opcode bytes** `0xDD, 0x21, 0x58, 0x00`. 🎯 The raw-byte copy is the worse half:
+a change to `SUBROM_IDX_GRAPHICS` would be caught by nothing and would not even
+**look** like an address to a reader scanning for one.
+
+**Identical `SCAN_DIRS` — LIVE, exact.** `check_probe_preflight.py`:43 still
+carries the **hand-listed** `SCAN_DIRS = ("probes", "tools", "tests")`.
+`check_probe_injectors.py` has **no such constant** — D-INJJUDGE replaced its
+hand-list with a derived denominator and now names the three directories only in
+prose.
+
+🔴 **THIRD SIGHTING OF ONE PATTERN: A FIX LANDS IN ONE FILE AND NEVER REACHES ITS
+SIBLING.**
+
+| # | the rule | has it | lacks it |
+|---|---|---|---|
+| 1 | split-by-side control (tranche 23) | `namspc` | `castail` |
+| 2 | path-not-basename (tranche 8) | `check_citation_paths` | `todo_subject_check` — **mine, hours apart** |
+| 3 | derived denominator (here) | `injector-check` | `preflight-check` |
+
+🎯 **AND TRANCHE 40 HAS THE COUNTER-EXAMPLE.** The one lesson that *did* travel —
+`t.zero`'s blindness, cited from a different probe entirely — was written as a
+**named, citable thing** in double brackets. The three that did not travel are all
+prose inside one file. That is a cheap, testable practice: **name the lesson and
+it propagates; describe it and it stays put.**
 
 ## 3. What the apparatus cost, said out loud
 
