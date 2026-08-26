@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 25 of N. Subject 176; 78 verdicted, 98 pending.",
+  "status": "TRANCHE 26 of N. Subject 176; 79 verdicted, 97 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -600,10 +600,11 @@
   "reading": "basic/graphics.asm:748 still carries `jp z,ep_syntax` for a 3rd comma, and the comments at :789/:805/:808 record D-PAINT4 removing ONE such site while deliberately KEEPING this one ('the :748 site KEEPS ep_syntax: a doubled comma raises before B is...'). The seam is open and its remaining members are documented at the sites."
  },
  "T-7F8654": {
-  "verdict": "NOT SCORED -- the subject probe was not identified this pass",
-  "how": "grep, inconclusive",
+  "verdict": "LIVE STRUCTURALLY -- the fix shipped and the hole it names is still open",
+  "how": "spec read (docs/spec-basic-clrtrap.md:150-156) then the identified probe",
   "headline": "AN UNNAMED OUTCOME READS AS NO OUTCOME, AND THE FIX MOVES THE HOLE ONE MESSAGE ALONG",
-  "reading": "`face()` exists in basic_probe_strparen.py and basic_probe_deffn.py, and UNTRAPPED naming appears in basic_probe_penderr.py and basic_probe_clearpool.py -- four probes, and the item names none of them explicitly (it cites D-CLRTRAP \u00a75).",
-  "why_not_scored": "\u26a0\ufe0f Picking one of four probes and scoring against it would be scoring a DIFFERENT subject. The item needs its spec read to say which `face()` it means; that is a read, not a grep, and it is deferred rather than guessed."
+  "subject_identified": "scratchpad/circmiss_sib2.py -- found by reading the spec, not by guessing among the four probes that have a `face()` or an UNTRAPPED branch",
+  "reading": "the UNTRAPPED branch shipped, and the probe's OWN comment narrates the item verbatim: '<NO OUTPUT> ON ALL THREE MACHINES for one reason only: \"Division by zero\" was [missing] ... That is the SAME failure the UNTRAPPED branch was added to fix, one message along.' The cure is an ALTERNATION of 16 named messages -- a CLOSED LIST -- so message 17 still reads as nothing. The structural residual is exactly as filed.",
+  "denominator_gap": "\u26a0\ufe0f I could not cleanly count MSX1's full error-message set from the tree: the main build yields 14 message strings and the rest live in the sub-ROM's errmsg tenant. So '16 of N' has no N here, and the item's severity is unquantified rather than quantified."
  }
 }

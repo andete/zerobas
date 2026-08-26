@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 25 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 26 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -803,6 +803,34 @@ against it would be scoring a **different subject**, so it is deferred to a read
 of the spec rather than guessed. 🎯 *Which artefact an item is about* is itself a
 thing that can go unrecorded, and a citation to a spec section is not a citation
 to a file.
+
+## 2x. Tranche 26 — the deferred item, read instead of guessed
+
+Tranche 25 refused to score the *"unnamed outcome"* item because `face()` exists
+in two probes and `UNTRAPPED` naming in two others, and the item named none of
+them. Reading `docs/spec-basic-clrtrap.md`:150-156 identifies the subject in one
+line: **`scratchpad/circmiss_sib2.py`**.
+
+**Verdict: LIVE structurally.** The `UNTRAPPED` branch shipped — and the probe's
+own comment narrates the item verbatim:
+
+> `<NO OUTPUT>` ON ALL THREE MACHINES for one reason only: *"Division by zero"*
+> was [missing] … That is the SAME failure the UNTRAPPED branch was added to fix,
+> one message along.
+
+The cure is an **alternation of 16 named messages — a closed list** — so message
+17 still reads as nothing. The residual is exactly as filed, and the fix's own
+shape is what keeps it open.
+
+⚠️ **THE SEVERITY IS UNQUANTIFIED AND I COULD NOT QUANTIFY IT.** *16 of N* has no
+N here: the main build yields 14 message strings and the rest live in the
+sub-ROM's `errmsg` tenant, so a quick count of MSX1's full message set was not
+available. The item is confirmed **live**; how much of the message space it
+leaves blind is **not measured**.
+
+🎯 **AND THE DEFERRAL WAS WORTH ONE TRANCHE.** Guessing among four probes would
+have had a 1-in-4 chance of scoring the right subject, and a wrong guess would
+have produced a confident verdict about a file the item was not about.
 
 ## 3. What the apparatus cost, said out loud
 
