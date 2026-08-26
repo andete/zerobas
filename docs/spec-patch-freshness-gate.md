@@ -2,7 +2,9 @@
 
 **D-PATCHFRESH, 2026-08-26.** Gate: `tools/check_patch_freshness.py`, unit
 `patch-freshness-check` in `make gates`. Falsification:
-`scratchpad/patchfresh_falsify.py`, 7 arms.
+`scratchpad/patchfresh_falsify.py`, 7 arms. Battery **39/39 green, wall 438 s**
+(the new unit costs 6 s, in parallel with the rest):
+`scratchpad/citepath_gates.out`.
 
 `zerobas-main-eu.ips` / `.bps` **are** the shipped BASIC (Makefile header): the
 merged repack main ROM diffed against the pristine stock C-BIOS from the pinned

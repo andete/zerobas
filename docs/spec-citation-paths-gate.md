@@ -2,7 +2,9 @@
 
 **D-CITEPATH, 2026-08-26.** Gate: `tools/check_citation_paths.py`, a step of
 `make basic-reloc` (standalone alias `make citation-check`). Falsification:
-`scratchpad/citepaths_falsify.py`, 12 arms.
+`scratchpad/citepaths_falsify.py`, 12 arms. Battery **39/39 green, wall 438 s**
+against a normal ~420 s (so uncontended — a contended battery calls a unit REAL
+on a non-semantic double failure): `scratchpad/citepath_gates.out`.
 
 Filed by D-KNIFEGUARD ([`TODO.md`](../TODO.md)), which hit the class while
 patching the knife runners and discovered that `scratchpad/` is **tracked on
