@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 26 of N. Subject 176; 79 verdicted, 97 pending.",
+  "status": "TRANCHE 27 of N. Subject 176; 82 verdicted, 94 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -606,5 +606,25 @@
   "subject_identified": "scratchpad/circmiss_sib2.py -- found by reading the spec, not by guessing among the four probes that have a `face()` or an UNTRAPPED branch",
   "reading": "the UNTRAPPED branch shipped, and the probe's OWN comment narrates the item verbatim: '<NO OUTPUT> ON ALL THREE MACHINES for one reason only: \"Division by zero\" was [missing] ... That is the SAME failure the UNTRAPPED branch was added to fix, one message along.' The cure is an ALTERNATION of 16 named messages -- a CLOSED LIST -- so message 17 still reads as nothing. The structural residual is exactly as filed.",
   "denominator_gap": "\u26a0\ufe0f I could not cleanly count MSX1's full error-message set from the tree: the main build yields 14 message strings and the rest live in the sub-ROM's errmsg tenant. So '16 of N' has no N here, and the item's severity is unquantified rather than quantified."
+ },
+ "T-687C2B": {
+  "verdict": "LIVE, exact -- and the source says 'must be a quoted name'",
+  "how": "static read of basic/save.asm:472 (do_csave)",
+  "headline": "`CSAVE` AND `CLOAD` STILL TAKE A LITERAL FILENAME ONLY",
+  "reading": "do_csave does `cp '\"'` / `jp nz,load_error` with the comment 'must be a quoted name', then `tape_parse_name`. It calls `str_eval` ZERO times, so no expression is accepted -- exactly the divergence filed, while every other filename verb went through the expression path."
+ },
+ "T-51C633": {
+  "verdict": "LIVE -- confirmed by absence, which is what the item claims",
+  "how": "grep of probes/ and scratchpad/",
+  "headline": "THE `do_files` OP-SELECTOR GUARD IS PINNED BY NOTHING",
+  "reading": "no row anywhere in probes/ or scratchpad/ executes `FILES INPUT$(n,#ch)`. The item's claim is that no row exercises the clobber path, so a knife unparking the selector would redden nothing -- and none does.",
+  "note": "the BALANCE of the push/pop is still pinned by every FILES row; only the CLOBBER protection is unwitnessed, as filed"
+ },
+ "T-847C24": {
+  "verdict": "LIVE, exact -- and the probe states the reason itself",
+  "how": "static read of scratchpad/trapsvc_probe.py",
+  "headline": "KEY / STRIG / SPRITE / STOP were NOT run against the D-TRAPSVC rows",
+  "reading": "the probe contains ON INTERVAL and NO `ON KEY`, `ON STRIG`, `ON SPRITE` or `ON STOP` row. Its line 26 says why: 'ON INTERVAL is the instrument because it is the ONLY self-firing MSX1 trap'.",
+  "note": "\ud83c\udfaf the item already concedes the other four rest on a CODE argument (shared check_traps / ct_find / set_state / trap_return_check, index as a parameter). So this is not a wrong claim to fix -- it is a stated coverage limit, and re-running confirms the limit is still exactly where it was put."
  }
 }

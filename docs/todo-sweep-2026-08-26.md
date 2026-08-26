@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 26 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 27 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -831,6 +831,34 @@ leaves blind is **not measured**.
 🎯 **AND THE DEFERRAL WAS WORTH ONE TRANCHE.** Guessing among four probes would
 have had a 1-in-4 chance of scoring the right subject, and a wrong guess would
 have produced a confident verdict about a file the item was not about.
+
+## 2y. Tranche 27 — three live, and one of them is a limit rather than a defect
+
+| item | verdict |
+|---|---|
+| `CSAVE`/`CLOAD` take a literal filename only | **LIVE, exact** |
+| the `do_files` op-selector guard is pinned by nothing | **LIVE — by absence** |
+| KEY/STRIG/SPRITE/STOP not run against the D-TRAPSVC rows | **LIVE — a stated limit** |
+
+`do_csave` does `cp '"'` / `jp nz,load_error` under the comment *"must be a
+quoted name"*, then `tape_parse_name`, and calls `str_eval` **zero** times — so no
+expression is accepted, exactly the divergence filed while every other filename
+verb moved to the expression path.
+
+Nothing in `probes/` or `scratchpad/` executes `FILES INPUT$(n,#ch)`, so the
+clobber guard is unwitnessed exactly as filed. (Its push/pop **balance** is still
+pinned by every `FILES` row; only the clobber protection is blind — the item was
+precise about which half.)
+
+🎯 **AND THE THIRD IS NOT A DEFECT TO FIX.** `trapsvc_probe.py` has no `ON KEY`,
+`ON STRIG`, `ON SPRITE` or `ON STOP` row, and says why at line 26: *"ON INTERVAL
+is the instrument because it is the ONLY self-firing MSX1 trap"*. The item
+**already concedes** the other four rest on a code argument. So re-running does
+not overturn it — it confirms **the limit is still exactly where it was put**.
+
+That distinction matters for what this sweep hands back: *stated limits* and
+*unfixed defects* both sit as `- [ ]` on the list and read identically, but only
+one of them is work.
 
 ## 3. What the apparatus cost, said out loud
 
