@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 46 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 47 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1390,6 +1390,41 @@ certainly did not.
 **`DSKI$`/`DSKO$` — LIVE**, confirmed by this session's `kwsweep`: both read
 ABSENT / not-run / crunch-only. The tokens crunch, so they are recognised, and
 nothing executes them — exactly the state the item describes.
+
+## 2as. Tranche 47 — the `lof-acceptance` void is structural
+
+Tranche 46 found one gate whose "eight quiet slices" were quiet because the
+battery never ran it. That generalises.
+
+| | |
+|---|---|
+| gate-shaped make targets (`*-acceptance`/`-check`/`-sweep`/`-selftest`/`-teeth`) | **87** |
+| in `run_gates.py`'s `GATES` list | **35** |
+| **not in the battery** | **52** |
+| …of those, with a documented exclusion nearby | 30 |
+| **…with no documented exclusion at all** | **22** |
+
+The 22: `diskdep-selftest`, `bdos-acceptance`, `diskbasic-acceptance`,
+**`fat-error-acceptance`**, `subrom-acceptance`, `graphics-floor-acceptance`,
+**`input-acceptance`**, `input-devices-acceptance`, **`stop-trap-`/`strig-trap-`/
+`key-trap-acceptance`**, **`time-acceptance`**, `lnblank-say-acceptance`,
+`editverb-acceptance`, `lptverb-acceptance`, `readvar-acceptance`,
+`namspc-acceptance`, `direct-ctrl-acceptance`, **`sound-`/`play-`/
+`beep-acceptance`**, `bdos-cbios-selfcheck`.
+
+🎯 **EVERY ITEM THAT REASONS FROM "THE BATTERY HAS BEEN GREEN" ABOUT ONE OF THESE
+INHERITS TRANCHE 46'S VOID.** `make gates` going **39/39** says nothing whatever
+about `fat-error`, `input`, `time`, `sound`, `play`, `beep`, the four trap gates
+or the disk gates. **A green battery is a claim about 39 units**, and this project
+owns at least 57 gate-shaped things that could run.
+
+⚠️ **22 IS AN UPPER BOUND, THREE WAYS**, and the sweep says so rather than
+banking the largest number: (1) the detector looks 14 lines back for an exclusion
+phrase, so one documented in a spec or in `run_gates.py`'s docstring is missed;
+(2) some are covered under a **different unit name** that *is* in the battery —
+`deffn-acceptance` is absent while `deffn-selftest` and `deffn-strict` are
+present; (3) some may run in CI rather than `make gates`. **What is certain is the
+87/35 split and that 22 carry no nearby note explaining it.**
 
 ## 3. What the apparatus cost, said out loud
 
