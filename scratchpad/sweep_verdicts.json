@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 41 of N. Subject 176; 104 verdicted, 72 pending.",
+  "status": "TRANCHE 42 of N. Subject 176; 106 verdicted, 70 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -804,5 +804,19 @@
   "headline": "\"THE APPARATUS IS STILL MEASURED\" IS A CLAIM ABOUT A ROW SET, AND `locarg`'s IS MUCH WEAKER THAN ITS OWN SENTENCE SAYS",
   "reading": "locarg's probe carries 45 rows today.",
   "why_partial": "\u26a0\ufe0f the item's claim is comparative -- the row set is weaker than the SENTENCE asserting it -- and I did not locate that sentence in the probe or its spec. A row COUNT does not settle a claim about what the rows are said to prove; that needs the sentence and the row set side by side."
+ },
+ "T-927679": {
+  "verdict": "LIVE -- the asserts are PROSE, and nothing enforces them",
+  "how": "grep of basic/ + tools/",
+  "headline": "A PAGE-ALIGNMENT ASSERT WITH NO ENFORCEMENT IS A LANDMINE FOR THE NEXT UNRELATED EDIT",
+  "reading": "page-alignment requirements exist only as COMMENTS: sysvars.inc:796 ('LINEBUF is one PAGE (page-aligned, <= 256 B), so a single low...'), :808 ('PAGE-ALIGNED base and <= 256 bytes -- NOT <= 96'), :1973, :3182 ('PAGE-ALIGNED at $E600 so the read...'), and save.asm:376. No assembler assert enforces any of them, and no tool in tools/ checks alignment.",
+  "note": "\ud83c\udfaf each comment states a CONSTRAINT that the next edit to that address can silently break, and the comment is the only thing standing between the constraint and a landmine -- exactly as filed"
+ },
+ "T-5B155E": {
+  "verdict": "LIVE -- and CHEAPER TO CLOSE than the item implies",
+  "how": "ls of scratchpad/ + the 39-gate battery list",
+  "headline": "NOTHING POLICES A RAM FREE-SPACE CLAIM, AND THE ONE IN THE MAP WAS 36x WRONG",
+  "reading": "no gate polices it -- neither `ramfree_probe.py` nor `rammap_sweep.py` is a make target or a member of the 39-unit battery.",
+  "\ud83d\udfe2_the_nuance": "BUT BOTH INSTRUMENTS ALREADY EXIST in scratchpad/: `rammap_sweep.py` (walk the map) and `ramfree_probe.py` (ask the machine). The item reads as 'this needs building'; what it actually needs is WIRING -- the measuring code is written and merely unattached to any gate. That is a materially smaller job than the wording suggests, and the third time this sweep has found an item larger in prose than in fact."
  }
 }

@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 41 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 42 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1258,6 +1258,30 @@ but the item's claim is **comparative**: the row set is weaker than *the sentenc
 asserting it*. I did not locate that sentence. **A row count cannot settle a claim
 about what the rows are said to prove**; that needs the sentence and the row set
 side by side.
+
+## 2an. Tranche 42 — an unenforced constraint, and an item that needs wiring not building
+
+**Page-alignment asserts — LIVE.** The requirements exist **only as comments**:
+`sysvars.inc`:796 (*"LINEBUF is one PAGE (page-aligned, ≤ 256 B)"*), `:808`
+(*"PAGE-ALIGNED base and ≤ 256 bytes — NOT ≤ 96"*), `:1973`, `:3182`
+(*"PAGE-ALIGNED at `$E600` so the read…"*), and `save.asm`:376. **No assembler
+assert enforces any of them, and no tool checks alignment.** Each comment states a
+constraint the next edit to that address can silently break, and the comment is
+the only thing standing between the constraint and a landmine.
+
+**RAM free-space policing — LIVE, and cheaper than it reads.** No gate polices it:
+neither `ramfree_probe.py` nor `rammap_sweep.py` is a make target or a member of
+the 39-unit battery.
+
+🟢 **BUT BOTH INSTRUMENTS ALREADY EXIST.** `rammap_sweep.py` walks the map;
+`ramfree_probe.py` asks the machine. The item reads as *"this needs building"*;
+what it actually needs is **wiring** — the measuring code is written and merely
+unattached to a gate.
+
+🎯 **THAT IS THE THIRD ITEM THIS SWEEP HAS FOUND LARGER IN PROSE THAN IN FACT**
+(after the `X`-substring scale axis and the `GXPOS` gate scope). All three shrink
+the same way: **the hard part is already done and the item does not say so**,
+because nothing re-read it after the tool landed.
 
 ## 3. What the apparatus cost, said out loud
 
