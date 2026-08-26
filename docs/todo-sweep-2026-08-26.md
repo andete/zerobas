@@ -5,7 +5,7 @@ carrying a residual marker. **Rule, set by the user: re-run everything, inherit
 no claim** — an item is put to a machine even when it is recent and even when a
 past sweep already blessed it.
 
-🔴 **THIS IS TRANCHE 59 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
+🔴 **THIS IS TRANCHE 60 OF N, AND THE SUBJECT SET IS 176, NOT 146** (§1.2). **60** carry a verdict; **116** do not. The
 audit below names the other 135 by id, so an unfinished sweep cannot read as a
 finished one.
 
@@ -1710,6 +1710,38 @@ was edited immediately afterwards; tranche 59 caught the second because
 paid for itself twice, once per scheme. This is the same shape as the sweep's
 finding about gates: **the thing that catches the error is not the cleverness of
 the design, it is the standing check that runs afterwards.**
+
+## 2be. Tranche 60 — one open item blocks the measurement of another
+
+The closed-block residuals begin. Of the first sampled batch: **2 carry genuine
+live residuals, 1 is a marker false positive.**
+
+🔴 **THE `PLAY` BLOCK CARRIES TWO RESIDUALS AND THEY END DIFFERENTLY.** The first
+— *"the fourth (a 4th voice string) is UNMEASURED — do not assume it into either
+half"* — the block itself records as since measured: **2 on both references,
+already correct**. The second is still open:
+
+> ⚠️ **NOT MEASURED: whether `PLAY` QUEUES BEFORE RAISING.** The seam found wrong
+> ordering at SWAP and PAINT; this probe reads the error code only.
+
+**And it cannot be measured while a different filed item is live.** Reading the
+queue needs `PLAY(n)` — and tranche 1 measured that zerobas raises `Missing
+operand` on `PLAY(0)` while both references print `0`. **The instrument for this
+residual is the exact function another open item says is unimplemented.**
+
+🎯 **ONE OPEN ITEM BLOCKS THE MEASUREMENT OF ANOTHER, AND NEITHER MENTIONS THE
+OTHER.** The queue question is not *unmeasured because nobody tried* — it is
+**unmeasurable until `PLAY(n)` ships**. And since the seam ordering was wrong at
+both SWAP and PAINT, the prior is that it is wrong here too, which makes the
+blocked measurement worth more rather than less.
+
+⚠️ **AND MY OWN SCREEN FALSE-POSITIVED AGAIN.** The D-SWAP3 block matched on
+*"That closes TWO divergences the 0 B patch **left open**"* — a sentence saying
+two things are now **closed**. The keyword screen matches residual vocabulary used
+in the **past tense inside a closure**. Tranche 1 measured its over-inclusion at
+67-vs-37 on the word `OPEN`; this is the same failure with a two-word phrase. The
+screen stays a superset — the safe direction — but its precision is worse than the
+37 implied.
 
 ## 3. What the apparatus cost, said out loud
 

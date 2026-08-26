@@ -9,7 +9,7 @@
    "sub_p1": 1622
   },
   "battery": "39/39 green, wall 438s, scratchpad/citepath_gates.out",
-  "status": "TRANCHE 59 of N. Subject 177; 139 verdicted, 38 pending.",
+  "status": "TRANCHE 60 of N. Subject 177; 142 verdicted, 35 pending.",
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
@@ -1073,5 +1073,28 @@
   "reading": "**11**, not nine: sweep_tranche1 (two readers), 2, 3, 4, 11, 12, 16, 17, plus editscout_layout, editscout_reentry, editscout_reentry2. And **0 of them import the shared reader** -- not `result_span`, not `result_span_after_echo`.",
   "\ud83d\udd34_the_irony_is_load_bearing": "I FILED THIS ITEM WITH AN UNMEASURED COUNT ('nine') IN A SWEEP WHOSE ENTIRE PREMISE IS THAT FILED COUNTS ROT. It rotted within two tranches -- not through drift, but because I never counted in the first place and wrote the number from memory of what I had done. \ud83c\udfaf That is the same failure the sweep has found in a dozen items, committed by the person cataloguing it, at the moment of cataloguing it. Corrected here rather than quietly.",
   "id_history": "was T-872E8C; became T-AC33CE when its headline was corrected from NINE to ELEVEN in tranche 58. Content-derived ids survive line MOVES and FILE moves -- they do not survive REWORDING."
+ },
+ "T-B11411": {
+  "verdict": "ONE RESIDUAL ALREADY RESOLVED IN PLACE; THE OTHER IS BLOCKED BY A DIFFERENT LIVE ITEM",
+  "how": "read + the tranche-1 PLAY(n) measurement",
+  "headline": "CLOSED 2026-08-26, D-PLAYOP, +2 B",
+  "residual_1": "'the fourth (a 4th voice string) is UNMEASURED -- do not assume it into either half' -- the block itself records this as since measured: **2 on both references, already correct**. Resolved in place.",
+  "residual_2": "\u26a0\ufe0f 'NOT MEASURED: whether PLAY QUEUES BEFORE RAISING. The seam found wrong ordering at SWAP and PAINT; this probe reads the error code only.' STILL OPEN.",
+  "\ud83d\udd34_and_it_cannot_be_measured_while_another_item_is_live": "READING THE QUEUE NEEDS `PLAY(n)` -- and tranche 1 measured that zerobas raises `Missing operand` on `PLAY(0)` while both references print 0. So the instrument for THIS residual is the exact function a DIFFERENT filed item says is unimplemented. \ud83c\udfaf ONE OPEN ITEM BLOCKS THE MEASUREMENT OF ANOTHER, and neither item mentions the other. The queue question is not 'unmeasured because nobody tried' -- it is unmeasurable until PLAY(n) ships.",
+  "note": "the seam ordering was wrong at SWAP and at PAINT, so the prior is that it is wrong here too -- which makes the blocked measurement worth more, not less"
+ },
+ "T-E98A8C": {
+  "verdict": "CLOSED, with a LIVE residual of the 'reasoned not measured' class",
+  "how": "read",
+  "headline": "CLOSED 2026-08-24 (D-CIRCTC) -- AND IT WAS A CLEAN DELETE",
+  "reading": "the fix is closed; the block carries '\ud83d\udd34 THAT VERDICT WAS REASONED, NOT MEASURED. The trailing comma is not a [...]'",
+  "class": "same family as the fp_exp/fp_log $8000 item (tranche 41) -- a conclusion resting on an argument about the code with no row behind it. Two instances now, in unrelated slices."
+ },
+ "T-EB2497": {
+  "verdict": "CLOSED -- and my residual marker FALSE-POSITIVED on it",
+  "how": "read",
+  "headline": "CLOSED 2026-08-24 (D-SWAP3) -- AND IT WAS A GENERIC MECHANISM",
+  "reading": "the matched phrase is '\ud83c\udfaf That closes TWO divergences the 0 B patch **left open**' -- a sentence stating that two things are now CLOSED. My keyword screen matched 'left open' and read a closure as a residual.",
+  "\ud83c\udfaf_instrument_note": "THE KEYWORD SCREEN HAS A FALSE-POSITIVE DIRECTION I HAD NOT SEEN: it matches residual vocabulary used in the PAST TENSE inside a closure. Tranche 1 measured its over-inclusion at 67-vs-37 on the word OPEN; this is the same failure with a two-word phrase. The screen remains a superset -- which is the safe direction -- but its precision is worse than the 37 suggested."
  }
 }
