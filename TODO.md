@@ -26,6 +26,24 @@ item — do **one item per session** to keep context lean.
 
 ## Open — standing residuals (INDEX; this is the pickup list)
 
+🔬 **RE-SWEEP IN PROGRESS 2026-08-26 (D-TODOSWEEP), TRANCHE 1 OF N** —
+[`docs/todo-sweep-2026-08-26.md`](docs/todo-sweep-2026-08-26.md), verdicts in
+`scratchpad/sweep_verdicts.json`, denominator `tools/todo_inventory.py`.
+**Rule: re-run everything, inherit no claim.** ⚠️ **11 of 146 subject blocks
+carry a verdict; the other 135 are named by id in the audit** — an unfinished
+sweep must not read as a finished one.
+📏 **OF THE FIRST 11: 5 LIVE, 5 STALE OR PARTLY STALE, 1 LIVE-BUT-REFRAMED.**
+🔴 **AND THE ITEM THAT *IS* THE RANKING IS ONE OF THE STALE ONES** (the
+38/62-apparatus sweep of 2026-08-21). 🎯 **`PLAY(n)` is the sharpest**: a closed
+`D-PLAYOP` block sits directly beneath it, same week, same verb, same words
+*"missing operand"* — reading would have merged them, and RUNNING separated them
+(D-PLAYOP fixed the STATEMENT's operand; the FUNCTION form still raises).
+🔴 **THE APPARATUS COST TWO READINGS BEFORE IT GAVE ANY**: a reset that did not
+`CLS` made every case inherit the previous case's screen (a `9` from `PAINT` was
+read two cases later as another item's answer), and `WAIT 1,0` BLOCKS on a port
+condition, hanging both references and voiding every case after it in the batch.
+⚠️ **A blocking statement may not share a batch**, and `WAIT` is still unmeasured.
+
 ⚠️ **This section exists so a residual cannot be lost by being written up inside a
 `- [x]` block.** Several of the items below were filed that way — accurate, dated,
 and invisible to anyone scanning for `- [ ]`. Each line here is a **one-line
