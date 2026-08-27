@@ -1,0 +1,18 @@
+=== vg8020: captured=True
+   |   800 A=PEEK(&HD000):IFA<250THENPOKE&HD
+   |   000,A+1
+   |   801 INTERVALON
+   |   802 GOTO30
+   |   900 PRINT"[ERR";ERR;"AT";PEEK(&HD000)
+   |   ;"]":END
+   |   RUN
+   |   color  auto   goto   list   run
+=== zb: captured=True
+   |  000,A+1
+   |  ZB801 INTERVALON
+   |  ZB802 GOTO30
+   |  ZB900 PRINT"[ERR";ERR;"AT";PEEK(&HD000)
+   |  ;"]":END
+   |  ZBRUN
+   |  Out of memory in 900
+   |  ZB

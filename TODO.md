@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2824 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2859 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1524,7 +1524,42 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and prove the row can go red before believing a zero.
       ⚠️ `o.errrestore` looked like a *stronger* row than the two that
       replaced it, and nothing but a knife could tell.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      🔴 **`TRAPSVC` MEASURED 2026-08-26 — AND IT IS A LIVE DIVERGENCE WITH A
+      CEILING OF SIX.**
+      ([`scratchpad/trapsvc_depth.py`](scratchpad/trapsvc_depth.py),
+      [`scratchpad/trapsvc_depth_screen.py`](scratchpad/trapsvc_depth_screen.py)).
+      Same program on both machines: an `ON INTERVAL` handler that re-arms and
+      leaves by `GOTO` — the leak form, which needs no fault at all.
+      ```
+      zerobas    dies after 6 leaked dispatches:  "Out of memory in 900"
+      VG-8020    no error at all in the same window; still running
+      control (handler RETURNs)   30 fires, err 0, done 1 — IDENTICAL on both
+      ```
+      🎯 **SIX IS `TRAPSTK_MAX`.** `check_traps` guards `cp TRAPSTK_MAX` and
+      jumps to `gosub_stk_over` → ERR 7. The references have no `TRAPSTK`; they
+      leak GOSUB frames, and that stack is far deeper.
+      🔴 **AND THE FAILURE IS UNTRAPPABLE.** The message is *"Out of memory
+      **in 900**"* — line 900 is the `ON ERROR` handler. The raise enters the
+      handler, the handler needs a frame it cannot have, and the program stops
+      dead. So `ON ERROR` does not merely fail to help; it is the line that gets
+      blamed.
+      ⚠️ **THE `141` FROM THE COUNTER RUN IS NOT QUOTED AS A COUNT.** That read
+      came back with `err=115` and `done=76` beside it — neither a valid ERR nor
+      a valid flag — so the whole $D000 window is untrustworthy on a program
+      that never finished. The screen is the reading; "well past 6" is all the
+      counter supports.
+      ⚠️ **ONE REFERENCE.** `basic_probe_interval_trap` has only ever driven the
+      VG-8020; pointing its `run()` at the CF-3300 returned an **all-$FF** window
+      on every row, which the first cut printed as `fires=255 err=255 done=255`
+      — garbage read as data. The probe now calls that an instrument fault.
+      🎯 **SO THE FILED SHAPE HELD BUT THE TRIGGER WAS NARROWER THAN THE CLASS,
+      AGAIN**: the item says *"RESUME out of a trap handler"*; a plain `GOTO`
+      does it, with no error anywhere, and that is the form measured here
+      [[trapsvc-slice]].
+      💰 **NOT PRICED, AND THE FIX IS A SPEND.** Raising `TRAPSTK_MAX` costs
+      3 B per slot of RAM; popping the record when a frame is abandoned costs
+      main page-1 bytes. Both are budget decisions.
+      🔭 SCOUT-THEN-ASK — measured and isolated 2026-08-26; the FIX costs bytes, which is yours to spend.
 
 - [ ] ⚠️ **DEF FN's knife roster is EIGHT, and eight is a candidate roster, not a
       verdict.** Filed 2026-08-23 by D-DEFFNKNIFE,

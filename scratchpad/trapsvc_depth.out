@@ -1,0 +1,10 @@
+case                       side     fires  ERR done
+handler LEAKS (GOTO)       vg8020     141  115   76
+handler LEAKS (GOTO)       zb           6    0    0
+handler RETURNs (control)  vg8020      30    0    1
+handler RETURNs (control)  zb          30    0    1
+
+  vg8020   control fires= 30 err=0   leaking fires=141 err=115
+  zb       control fires= 30 err=0   leaking fires=  6 err=0
+
+=== DIVERGENCE on the leaking case ===
