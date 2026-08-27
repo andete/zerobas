@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2498 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2532 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -460,7 +460,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       comparison against a different target and a different prerequisite list;
       it needs a `--out-dir` on the tape path, which `build_patches.py` does not
       have yet.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **SHIPPED 2026-08-26.** `build_patches.py --tape` takes `--out-dir`
+      (same contract as `--main`; the SOURCE is always the repo's `tape.asm`),
+      and `check_patch_freshness.py` now walks a **`DELIVERABLES` list** rather
+      than one hardcoded pair — `--only main|tape` selects one. Prerequisites
+      come from make's own database per target: **66** for main, **4** for tape.
+      🎯 **AND THE TWO DO NOT SHARE A SKIP CONDITION — WHICH IS THE PART WORTH
+      NOTICING.** The main pair needs a C-BIOS **source checkout** to
+      regenerate; the tape pair only needs a stock ROM, which `resolve_stock()`
+      finds inside openMSX. **Folding them under one skip would have silently
+      left the tape half unmeasured on every machine without a checkout** — the
+      `GATE-SKIPPED` is now per deliverable.
+      🔬 **FALSIFIED BY PLANTING, 4/4**
+      ([`scratchpad/tapefresh_falsify.py`](scratchpad/tapefresh_falsify.py)), in
+      a `git clone --local` so the working tree is never the subject: GREEN
+      untouched · RED `STALE IN YOUR TREE` (source edited, pair not rebuilt) ·
+      RED `STALE IN THE LAST COMMIT` (committed without the pair) · GREEN
+      (pair carried).
+      🔴 **THE HARNESS BROKE ITSELF TWICE, BOTH LOUDLY.** `git clone --local`
+      takes **HEAD, not the working tree**, so the first run falsified the
+      *committed* checker and reported `unrecognized arguments: --only tape`,
+      0/4. Copying the working-tree tools in then made the clone **dirty** — and
+      `tools/build_patches.py` is a PREREQUISITE of the tape pair, so
+      *"sources are clean"* was false and **RED-B correctly DEFERRED instead of
+      firing**: the fix had suppressed the arm it exists to test. Committing the
+      copies inside the clone is what made all four fire.
+      🔴 **AND THE REFACTOR TRIPPED A THIRD GATE.** Turning the one hardcoded
+      pair into a `DELIVERABLES` loop changed the regeneration spawn from a
+      **list literal** into a variable `argv`, and `make preflight-check` went
+      red: it can no longer read the argv and prove the call is not an emulator
+      launch. `omsx_preflight.guarded()` is a passthrough here and is what the
+      rule requires of every spawn site. 🎯 **THAT IS THREE TIMES TODAY A
+      MECHANICAL, LOCALLY-CORRECT EDIT BROKE A DIFFERENT INVARIANT** — the
+      frozen injector RECORD, this, and the harness's own dirty clone. The
+      battery is not a formality after a refactor.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (SHIPPED 2026-08-26, falsified 4/4).
 
 - [ ] 🧹 **122 HARDCODED `/tmp/...` LITERALS ARE OUTSIDE THE TEMP ROOT** — pinned,
       not fixed. `probes/lib/probe_tmp.py` owns `/tmp/zerobas` and sets

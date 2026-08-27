@@ -73,11 +73,26 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "probes" / "lib"))
 import probe_tmp                       # noqa: E402,F401  (sets tempfile.tempdir)
+import omsx_preflight                  # noqa: E402
 
-PAIR = ["zerobas-main-eu.ips", "zerobas-main-eu.bps"]
-# The prerequisite query must come back with at least this many files, or the
-# make database was not read and "sources are clean" would be vacuously true.
-PREREQ_FLOOR = 20
+# TWO shipped patch deliverables, not one. The tape pair was filed as "unguarded
+# by the same rule": same three-way comparison, a different target and a
+# different prerequisite list.
+# 🎯 AND A DIFFERENT SKIP CONDITION, which is the part worth noticing: the MAIN
+# pair needs a C-BIOS SOURCE CHECKOUT to regenerate, the TAPE pair only needs a
+# stock ROM, which `resolve_stock()` finds inside openMSX. So the tape half is
+# measurable on machines where the main half must skip -- folding them under one
+# skip would have silently un-measured it.
+DELIVERABLES = [
+    dict(name="main", needs_cbios=True, floor=20,
+         make_target="build/zerobas-main-eu.rom",
+         pair=["zerobas-main-eu.ips", "zerobas-main-eu.bps"],
+         build=["--main"]),
+    dict(name="tape", needs_cbios=False, floor=2,
+         make_target="tape/zerobas-tape-msx1.ips",
+         pair=["tape/zerobas-tape-msx1.ips", "tape/zerobas-tape-msx1.bps"],
+         build=["--tape"]),
+]
 
 
 def sid(b: bytes) -> str:
@@ -93,12 +108,12 @@ def git(*args, check=True):
     return p
 
 
-def main_rom_prereqs() -> list[str]:
-    """$(MAIN_ROM)'s prerequisites, straight out of make's own database."""
-    p = subprocess.run(["make", "-pn", "build/zerobas-main-eu.rom"],
+def prereqs_of(target: str) -> list[str]:
+    """A target's prerequisites, straight out of make's own database."""
+    p = subprocess.run(["make", "-pn", target],
                        cwd=ROOT, capture_output=True, text=True)
     for line in p.stdout.splitlines():
-        if line.startswith("build/zerobas-main-eu.rom:"):
+        if line.startswith(target + ":"):
             rhs = line.split(":", 1)[1]
             rhs = rhs.split("|", 1)[0]          # drop order-only prerequisites
             return sorted(set(rhs.split()))
@@ -119,50 +134,50 @@ def head_blob(path: str) -> bytes | None:
     return p.stdout if p.returncode == 0 else None
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--cbios", default=os.environ.get("CBIOS", "~/projects/cbios"),
-                    help="C-BIOS checkout (default $CBIOS or ~/projects/cbios)")
-    ap.add_argument("--keep", action="store_true",
-                    help="keep the regenerated pair for inspection")
-    a = ap.parse_args()
-
-    cbios = Path(os.path.expanduser(a.cbios))
-    if not (cbios / ".git").exists() and not (cbios / "src").exists():
-        print(f"GATE-SKIPPED: no C-BIOS checkout at {cbios} — the shipped patch "
-              f"pair cannot be regenerated, so its freshness is UNMEASURED. "
-              f"Point CBIOS=<checkout> at one to measure it.")
+def check(d, cbios, keep) -> int:
+    """One deliverable: regenerate hermetically, compare against tree AND HEAD."""
+    label = d["name"]
+    if d["needs_cbios"] and cbios is None:
+        print(f"GATE-SKIPPED: no C-BIOS checkout — the {label} patch pair cannot "
+              f"be regenerated, so its freshness is UNMEASURED. Point "
+              f"CBIOS=<checkout> at one to measure it.")
         return 0
-
-    for f in PAIR:
+    for f in d["pair"]:
         if not (ROOT / f).exists():
-            print(f"FAIL: {f} is missing from the tree. It is the shipped BASIC "
+            print(f"FAIL: {f} is missing from the tree. It is a shipped "
                   f"deliverable; regenerate it with `make patches`.")
             return 1
-
-    prereqs = main_rom_prereqs()
-    if len(prereqs) < PREREQ_FLOOR:
+    prereqs = prereqs_of(d["make_target"])
+    if len(prereqs) < d["floor"]:
         print(f"INSTRUMENT: make reported {len(prereqs)} prerequisite(s) for "
-              f"build/zerobas-main-eu.rom, floor is {PREREQ_FLOOR}. The "
-              f"sources-clean condition would be vacuously true.")
+              f"{d['make_target']}, floor is {d['floor']}. The sources-clean "
+              f"condition would be vacuously true.")
         return 2
     dirty = dirty_tracked(prereqs)
 
-    work = tempfile.mkdtemp(prefix="patch-freshness-")
+    work = tempfile.mkdtemp(prefix=f"patch-freshness-{label}-")
     try:
-        print(f"regenerating the shipped pair from {len(prereqs)} source(s) into "
-              f"{work} ...")
-        p = subprocess.run([sys.executable, str(ROOT / "tools" / "build_patches.py"),
-                            "--main", "--cbios", str(cbios), "--out-dir", work],
+        print(f"[{label}] regenerating from {len(prereqs)} source(s) into {work} ...")
+        argv = [sys.executable, str(ROOT / "tools" / "build_patches.py"),
+                *d["build"], "--out-dir", work]
+        if d["needs_cbios"]:
+            argv += ["--cbios", str(cbios)]
+        # 🔴 A LIST LITERAL IS EXEMPT BY CONSTRUCTION; A VARIABLE IS NOT.
+        # Generalising the single hardcoded pair into a DELIVERABLES loop turned
+        # this spawn from a literal into `argv`, and `make preflight-check` went
+        # red -- it can no longer read the argv and prove it is not an emulator
+        # launch. guarded() is a passthrough here, and it is what the rule
+        # requires of every spawn site (docs/spec-probe-preflight.md §3.5).
+        p = subprocess.run(omsx_preflight.guarded(argv),
                            capture_output=True, text=True)
         if p.returncode != 0:
-            print("INSTRUMENT: the regeneration itself failed — nothing was "
-                  "measured:\n" + p.stdout[-3000:] + p.stderr[-3000:])
+            print(f"INSTRUMENT: the {label} regeneration itself failed — nothing "
+                  f"was measured:\n" + p.stdout[-3000:] + p.stderr[-3000:])
             return 2
 
         rc, notes = 0, []
-        for f in PAIR:
-            regen = (Path(work) / f).read_bytes()
+        for f in d["pair"]:
+            regen = (Path(work) / Path(f).name).read_bytes()
             wc = (ROOT / f).read_bytes()
             head = head_blob(f)
             if regen != wc:
@@ -183,26 +198,48 @@ def main() -> int:
                                  f"uncommitted ({', '.join(dirty[:4])}"
                                  f"{' …' if len(dirty) > 4 else ''}).")
                 else:
-                    print(f"FAIL {f}: STALE IN THE LAST COMMIT. Every source of "
-                          f"the main ROM is clean, your working copy of the pair "
-                          f"is fresh, and HEAD's copy is NOT — the build "
-                          f"refreshed the file and the commit did not carry it. "
-                          f"Stage the pair and commit (or amend) it.")
+                    print(f"FAIL {f}: STALE IN THE LAST COMMIT. Every source is "
+                          f"clean, your working copy of the pair is fresh, and "
+                          f"HEAD's copy is NOT — the build refreshed the file and "
+                          f"the commit did not carry it. Stage and commit it.")
                     rc = 1
             else:
                 notes.append(f"{f}: fresh in the tree and at HEAD "
                              f"({sid(regen)}, {len(regen)} B).")
         for n in notes:
             print("  " + n)
-        if rc == 0:
-            print("patch-freshness: the shipped BASIC deliverable matches its "
-                  "sources.")
         return rc
     finally:
-        if a.keep:
+        if keep:
             print(f"  (kept: {work})")
         else:
             shutil.rmtree(work, ignore_errors=True)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--cbios", default=os.environ.get("CBIOS", "~/projects/cbios"),
+                    help="C-BIOS checkout (default $CBIOS or ~/projects/cbios)")
+    ap.add_argument("--keep", action="store_true",
+                    help="keep the regenerated pair for inspection")
+    ap.add_argument("--only", help="check just this deliverable (main|tape)")
+    a = ap.parse_args()
+
+    c = Path(os.path.expanduser(a.cbios))
+    cbios = c if ((c / ".git").exists() or (c / "src").exists()) else None
+
+    ds = [d for d in DELIVERABLES if not a.only or d["name"] == a.only]
+    if not ds:
+        sys.exit(f"no such deliverable: {a.only}")
+    worst = 0
+    for d in ds:
+        rc = check(d, cbios, a.keep)
+        worst = 2 if 2 in (worst, rc) else max(worst, rc)
+    if worst == 0:
+        names = "/".join(d["name"] for d in ds)
+        print(f"patch-freshness: the shipped {names} deliverable(s) match their "
+              f"sources.")
+    return worst
 
 
 if __name__ == "__main__":

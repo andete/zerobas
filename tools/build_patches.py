@@ -152,8 +152,12 @@ def build_page1(explicit_stock):
 # The retired mode itself is documented in docs/spec-lean-retire-s2-switch.md.
 
 
-def build_tape(explicit_stock):
-    tape_dir = os.path.join(REPO, "tape")
+def build_tape(explicit_stock, out_dir=None):
+    """`out_dir` redirects the patch pair, so `check_patch_freshness.py` can
+    regenerate it hermetically and diff it against the tracked one without
+    touching the working copy. Same contract as `build_main`."""
+    tape_dir = out_dir if out_dir else os.path.join(REPO, "tape")
+    os.makedirs(tape_dir, exist_ok=True)
     patch = os.path.join(TOOLS, "rom_patch.py")
     stock = resolve_stock(explicit_stock, "cbios_main_msx1_eu.rom")
 
@@ -161,7 +165,8 @@ def build_tape(explicit_stock):
         tape_bin = os.path.join(work, "tape.bin")
         tape_sym = os.path.join(work, "tape.sym")
         print("assembling tape.asm (our code only)...")
-        run([PASMO, "--bin", os.path.join(tape_dir, "tape.asm"), tape_bin, tape_sym])
+        run([PASMO, "--bin", os.path.join(REPO, "tape", "tape.asm"),
+             tape_bin, tape_sym])   # SOURCE is always the repo's
 
         # Verify the patch's page-0 assumptions hold in EVERY C-BIOS main ROM, so
         # the one universal IPS stays byte-safe across all variants (DESIGN.md):
@@ -247,18 +252,19 @@ def main() -> int:
     ap.add_argument("--cbios", default="~/projects/cbios",
                     help="C-BIOS checkout for --main (default ~/projects/cbios)")
     ap.add_argument("--out-dir",
-                    help="--main only: write the intermediate ROMs AND the patch "
-                         "pair under this directory instead of build/ and the "
-                         "repo root (used by the freshness check)")
+                    help="--main / --tape: write the patch pair (and, for "
+                         "--main, the intermediate ROMs) under this directory "
+                         "instead of build/ and the repo root. Used by the "
+                         "freshness check to regenerate hermetically.")
     ap.add_argument("stock", nargs="?",
                     help="stock C-BIOS main ROM (auto-detected from openMSX if omitted)")
     args = ap.parse_args()
     if args.main:
         build_main(args.cbios, args.out_dir)
-    elif args.out_dir:
-        sys.exit("--out-dir is only meaningful with --main")
     elif args.tape:
-        build_tape(args.stock)
+        build_tape(args.stock, args.out_dir)
+    elif args.out_dir:
+        sys.exit("--out-dir is only meaningful with --main or --tape")
     else:
         build_page1(args.stock)
     return 0

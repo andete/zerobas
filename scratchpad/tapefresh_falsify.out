@@ -1,0 +1,6 @@
+  PASS  GREEN  untouched clone: rc=0 (want 0), found 'fresh in the tree and at HEAD'
+  PASS  RED-A  source edited, pair not rebuilt: rc=1 (want 1), found 'STALE IN YOUR TREE'
+  PASS  RED-B  committed without the pair: rc=1 (want 1), found 'STALE IN THE LAST COMMIT'
+  PASS  GREEN  pair carried with the source: rc=0 (want 0), found 'fresh in the tree and at HEAD'
+
+4/4 arms as expected
