@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2859 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2883 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1600,7 +1600,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       which is how `poke.asm`+`sound.asm` were picked. **Run `make basic-reloc`
       — it prints all four walls; never quote this line.**
       🙋 NEEDS-JOOST — a call that is yours to make (page-1 budget).
-- [ ] ⚠️ **`DEF FN` has NO KNIVES, and now it has a shipping ROM to cut
+- [x] ⚠️ **`DEF FN` has NO KNIVES, and now it has a shipping ROM to cut
       against.** Filed 2026-08-23 by D-DEFFNLAND,
       [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md) §7. Four
       obvious sites, three of them defects this arc actually found: `fn_slot`'s
@@ -1611,7 +1611,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       FN_PAREA_END` must redden `o.p3`, and a knife that widens `FN_AREA` by one
       slot must redden `o.p10` — the second is what would have caught the wrap
       the first version of that test also got wrong.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **FULLY SUPERSEDED — VERIFIED 2026-08-26 BY COUNTING THE KNIVES.**
+      The headline is false: `DEF FN` has **NINE**, not none — eight implemented
+      in [`scratchpad/deffn_knives.py`](scratchpad/deffn_knives.py) (K-DF1,
+      K-CE1, K-CE2, K-DE2, K-PR1, K-RT1, K-FE1, K-SF1) plus **K-DE1** in
+      [`scratchpad/deffn_de_knife.py`](scratchpad/deffn_de_knife.py). Every site
+      this item names is accounted for:
+      | this item asked for | covered by |
+      |---|---|
+      | `fn_leave`'s `DE` | **K-DE2** |
+      | PRINT's item classification | **K-PR1** |
+      | the servicer's `push de`/`pop de` | **K-DE1** — that IS its subject |
+      | the ceiling compare, both directions | **K-DF1 / K-CE1 / K-CE2** |
+      | `fn_slot`'s `E` | 🔴 **the label does not exist** |
+      🔴 **`fn_slot:` WAS REMOVED BY THIS ITEM'S OWN SLICE.** `git log -S` puts
+      its last change in `dd0c84d` — *"DEF FN ships"* — which is D-DEFFNLAND,
+      the slice that filed this. The item named a knife target its own commit
+      had just deleted.
+      🎯 **AND I NEARLY REBUILT K-DE1.** The plan here — *"deleting those two
+      bytes and watching `o.defint` go red"* — is word for word what
+      `deffn_de_knife.py` already does; `basic/deffn.asm` even carries the
+      result in a comment (*"these two bytes and `deffn-strict` goes 0 → 31 of
+      69 rows divergent"*). Counting the roster before building is the only
+      reason that duplicate did not ship.
+      ➡️ The live successor is the *unknifed* roster in the D-DEFFNKNIFE item
+      above — five named sites, none of them these.
 - [ ] ⚠️ **D-DUPSPAN2 shipped 28 aliases with NO per-site row set.** Filed
       2026-08-22, [`docs/spec-basic-dupspan2.md`](docs/spec-basic-dupspan2.md)
       §5.1. Eleven emulator batteries say the collapse broke nothing; none of
