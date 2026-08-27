@@ -2736,6 +2736,21 @@ audit-citations:
 citation-check:
 	python3 tools/check_citation_paths.py
 
+# A `TODO.md:NNN` citation rots the moment TODO.md is edited, and the 2026-08-26
+# archive split moved 8829 lines at once. Every citation now carries the block's
+# CONTENT-DERIVED id beside the line, so the line is for a human's click and the
+# id is what this check trusts; `--fix` repairs a drifted line from the id and
+# `--annotate` attaches an id to a citation that lacks one. Also catches a
+# markdown link whose two halves disagree -- the exact defect the split's first
+# repointing pass introduced.
+# ⚠️ DELIBERATELY *NOT* A STEP OF `basic-reloc`, unlike citation-check: that
+# target is a prerequisite of 112 others, and a stale line number in a doc does
+# not gate ROM correctness. One unit of `make gates` is the right weight.
+# <1 s, read-only, no emulator.
+# Spec: docs/spec-todo-archive-split.md.
+todo-citation-check:
+	python3 tools/check_todo_citations.py
+
 # clean removes the gitignored build artifacts only. The tracked patch
 # deliverables are left in place (use `make patches` to regenerate them).
 clean:
@@ -2786,7 +2801,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check citation-check \
+        omsx-diag-teeth temp-root-check citation-check todo-citation-check \
         patch-freshness-check gates clean
 
 # --- gates: the acceptance-gate battery, run in PARALLEL ----------------------

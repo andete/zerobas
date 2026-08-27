@@ -24,7 +24,7 @@
 > Gate `make lnblank-acceptance`; apparatus lessons in
 > [`lnblank-msx1-characterization.md`](lnblank-msx1-characterization.md) §9.
 
-Filed item: [`TODO.md:3251`](../TODO.md:3251) — "Line-number scan does not skip
+Filed item: [`TODO-done.md:1759 (T-CFEA4A)`](TODO-done.md:1759) — "Line-number scan does not skip
 embedded blanks", found 2026-07-29 as a **failing two-sided control** inside
 D-LINEMAX's `tok` battery ([`spec-basic-linemax.md`](spec-basic-linemax.md),
 [`basic_probe_linemax.py:139`](../probes/basic/basic_probe_linemax.py:139)).

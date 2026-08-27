@@ -266,7 +266,7 @@ rows, 3 clean builds). Predictions written before the matrix:
 **ALL PASS**. `7942cc20` / `34bb8554` / `031184d9` before and after.
 
 ⚠️ `kwsweep`'s `DIVERGENT=1` is `csrlin`, the documented probe artifact
-(`TODO.md:2519`) — pre-existing, and it cannot be this slice's: no source file
+(`TODO-done.md:1152 (T-A88F7F)`) — pre-existing, and it cannot be this slice's: no source file
 changed and all three images are byte-identical to `b8a8137`.
 
 **Walls, read from this run's `make basic-reloc` (2026-08-23, `b8a8137`), not

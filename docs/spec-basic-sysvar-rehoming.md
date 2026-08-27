@@ -9,7 +9,7 @@ SPDX-License-Identifier: 0BSD
 slice until §9's questions are answered.**
 
 Filed 2026-08-01 by D-SYSVAR as *"THE RE-HOMING CLASS: 8 PUBLISHED NAMES AT
-PRIVATE ADDRESSES, AND NOBODY DECIDED THAT"* ([`../TODO.md:6594`](../TODO.md:6594)),
+PRIVATE ADDRESSES, AND NOBODY DECIDED THAT"* ([`TODO-done.md:4406 (T-2C1131)`](TODO-done.md:4406)),
 out of [`sysvar-msx1-coverage.md`](sysvar-msx1-coverage.md) §3.
 
 ---

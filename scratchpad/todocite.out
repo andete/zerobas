@@ -1,0 +1,5 @@
+selftest: GREEN control passes and a planted drift goes RED on TODO.md:228 (T-529ABE) ✅
+todo-citations: 42 citation(s) into TODO.md / docs/TODO-done.md across 18 file(s)
+   33 verified against the block id
+    9 link targets agreeing with their label
+    0 id-less (line existence only -- NOT verified):

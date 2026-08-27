@@ -1857,9 +1857,18 @@ zerobas is wrong in both rows for two *different* reasons.
 as *"what preserves the error ORDER … `NAME"x.dat"AS 5` is still `Syntax
 error`, not `File not found`"*. `File not found` is exactly what the reference
 says there, and the face the comment named is not the one this tree produces.
-Corrected in place — **conclusion inverted, analysis kept** — and the three ROM
-hashes are byte-identical to the battery's (`350db281 33ba143a eced167f`), so
-the correction moved nothing.
+Corrected in place — **conclusion inverted, analysis kept**. The correction is
+provably byte-neutral: rebuilding `basic-reloc.rom`, `sub.rom` and
+`zerobas-main-eu.rom` afterwards reproduced the same three `sha256[:8]` values
+the battery had printed, image for image.
+
+⚠️ **AND THE FIRST WRITE-UP OF THAT SENTENCE REDDENED A GATE.** It quoted the
+three digests inline, side by side — which `tools/audit_citations.py` check 6
+reads as *a run of 8-hex-character groups*, i.e. a hex dump of a binary. The
+check is right to be conservative and the sentence did not need the digits, so
+they are described rather than quoted. 🔴 **It shipped in the commit before this
+one because the doc edit came after the battery ran and I did not re-run it** —
+a doc-only change is still a change a gate can see.
 
 ### 6.1 🔬 The probe failed twice before it measured anything
 

@@ -73,8 +73,8 @@ KIND = [
 ]
 
 
-def blocks():
-    lines = TODO.read_text().split("\n")
+def blocks(path=None):
+    lines = (Path(path) if path else TODO).read_text().split("\n")
     out, section, bold, cur = [], None, None, None
 
     def close(end):
@@ -123,8 +123,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json")
     ap.add_argument("--audit", help="a JSON file mapping id -> verdict")
+    ap.add_argument("--file", help="parse this file instead of TODO.md "
+                                   "(the archive is the same format)")
     a = ap.parse_args()
-    bs = blocks()
+    bs = blocks(a.file)
     top = [b for b in bs if b["depth"] == 0]
     nested = [b for b in bs if b["depth"] > 0]
     subj = [b for b in top if b["state"] == "open" or b["residual_marker"]

@@ -18,7 +18,7 @@ not of one ROM. That was worth the second oracle: the whole slice was filed off 
 single row from a single machine.
 
 **And the filed item names the smallest part of it.** TODO
-([`TODO.md:3251`](../TODO.md:3251)) describes a *line-number* scan that skips
+([`TODO-done.md:1759 (T-CFEA4A)`](TODO-done.md:1759)) describes a *line-number* scan that skips
 blanks. The `lit` battery says the rule is not the line-number scan's at all:
 
 ```

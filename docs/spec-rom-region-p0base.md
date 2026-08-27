@@ -64,7 +64,7 @@ believing a trend built on it. Two independent checks, both **exact**:
 | filed claim | where | measured |
 |---|---|---|
 | *"Free space starts at `$003B`"* | the item as handed to this slice | 🔴 **FALSE.** `$003B..$0040` is `sub_p0_ping` (6 B: `3E C0 32 05 F1 C9`), `$0041` is `sub_int_selftest`. There is **no** free space below the page-0 body region; free space is the trailing run at the far end of the page. Picking a new base "in the gap after the vector" would have overwritten the PING — the one tenant every boot gate calls. |
-| *"Every call site computes `IX = BASE + 3*index` **symbolically**, so the change is mechanical"* | `TODO.md:4981`, [[capacity-wall-is-not-the-free-byte-count]], review §6 | 🟠 **TRUE of `basic/*.asm` (18 sites, all symbolic) and FALSE of the harness.** Three probes carry the entry address as a **hardcoded byte** inside an injected machine-code array — §3.2. The claim was made about the ROM and repeated as if it were about the change. |
+| *"Every call site computes `IX = BASE + 3*index` **symbolically**, so the change is mechanical"* | `TODO-done.md:3336 (T-81A230)`, [[capacity-wall-is-not-the-free-byte-count]], review §6 | 🟠 **TRUE of `basic/*.asm` (18 sites, all symbolic) and FALSE of the harness.** Three probes carry the entry address as a **hardcoded byte** inside an injected machine-code array — §3.2. The claim was made about the ROM and repeated as if it were about the change. |
 
 The second one is the shape the task itself predicted ("a hardcoded address in a
 probe is exactly the shape that would ship green and break later") — and it is
