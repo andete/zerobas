@@ -1,0 +1,49 @@
+  ran vg8020  o.nolist      -> '2 0'
+  ran vg8020  o.nolistsub   -> '2 0'
+  ran vg8020  o.zeronolist  -> '0 1'
+  ran vg8020  o.overnolist  -> '0 1'
+  ran vg8020  o.short       -> '0 1'
+  ran vg8020  o.zero        -> '0 1'
+  ran vg8020  o.trail1      -> '0 2'
+  ran vg8020  o.trail0      -> '0 1'
+  ran vg8020  o.badafter    -> '0 2'
+  ran vg8020  o.ok          -> '0 2'
+  ran vg8020  o.gosubok     -> '0 2'
+  ran cf3300  o.nolist      -> '2 0'
+  ran cf3300  o.nolistsub   -> '2 0'
+  ran cf3300  o.zeronolist  -> '0 1'
+  ran cf3300  o.overnolist  -> '0 1'
+  ran cf3300  o.short       -> '0 1'
+  ran cf3300  o.zero        -> '0 1'
+  ran cf3300  o.trail1      -> '0 2'
+  ran cf3300  o.trail0      -> '0 1'
+  ran cf3300  o.badafter    -> '0 2'
+  ran cf3300  o.ok          -> '0 2'
+  ran cf3300  o.gosubok     -> '0 2'
+  ran zb      o.nolist      -> '0 1'
+  ran zb      o.nolistsub   -> '0 1'
+  ran zb      o.zeronolist  -> '0 1'
+  ran zb      o.overnolist  -> '0 1'
+  ran zb      o.short       -> '0 1'
+  ran zb      o.zero        -> '0 1'
+  ran zb      o.trail1      -> '0 2'
+  ran zb      o.trail0      -> '0 1'
+  ran zb      o.badafter    -> '0 2'
+  ran zb      o.ok          -> '0 2'
+  ran zb      o.gosubok     -> '0 2'
+
+  o.nolist      vg8020='2 0'  cf3300='2 0'  zb='0 1'   🔴 DIFF
+  o.nolistsub   vg8020='2 0'  cf3300='2 0'  zb='0 1'   🔴 DIFF
+  o.zeronolist  vg8020='0 1'  cf3300='0 1'  zb='0 1'   ✅
+  o.overnolist  vg8020='0 1'  cf3300='0 1'  zb='0 1'   ✅
+  o.short       vg8020='0 1'  cf3300='0 1'  zb='0 1'   ✅
+  o.zero        vg8020='0 1'  cf3300='0 1'  zb='0 1'   ✅
+  o.trail1      vg8020='0 2'  cf3300='0 2'  zb='0 2'   ✅
+  o.trail0      vg8020='0 1'  cf3300='0 1'  zb='0 1'   ✅
+  o.badafter    vg8020='0 2'  cf3300='0 2'  zb='0 2'   ✅
+  o.ok          vg8020='0 2'  cf3300='0 2'  zb='0 2'   ✅
+  o.gosubok     vg8020='0 2'  cf3300='0 2'  zb='0 2'   ✅
+
+  11 scored, 2 DIFF, 0 not measured
+    capture-on-signal: 33 on signal, 0 fell back to the scheduled budget   [signalled at 38.1-50.4 emulated s]
+rc=0

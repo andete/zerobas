@@ -11,7 +11,7 @@ Reports, per case: wall, and the emulated instant the capture actually happened
 """
 from __future__ import annotations
 import os, sys, time
-ROOT = "/Users/joost/projects/zerobas"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 sys.path.insert(0, os.path.join(ROOT, "probes", "basic"))
 import omsx_repl                                                   # noqa: E402

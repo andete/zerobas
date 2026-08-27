@@ -13,7 +13,7 @@ Conventions from docs/dev-workflow.md 'Knives':
 """
 import hashlib, pathlib, re, shutil, subprocess, sys
 
-ROOT = pathlib.Path("/Users/joost/projects/zerobas")
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC  = ROOT / "basic/program.asm"
 SNAP = ROOT / "scratchpad/forret_program.asm.snapshot"
 ROM  = ROOT / "build/zerobas-main-eu.rom"

@@ -1,0 +1,9 @@
+TODO: file the 122 /tmp literals the temp root could not relocate
+
+`tempfile.tempdir` moved 140 bare call sites at a stroke; string literals cannot
+be moved that way. 67 files, 10 reached by a gate, and 11 of the literals are
+argparse defaults -- a documented output location someone may rely on -- so a
+bulk edit would be a silent behaviour change in probes nothing runs. Contained
+and gated shrink-only instead, and filed with why.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

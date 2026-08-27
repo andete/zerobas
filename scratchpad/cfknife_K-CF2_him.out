@@ -1,0 +1,23 @@
+  ran zb      h.none    'SAME'
+  ran zb      h.ok      'SAME'
+  ran zb      h.set     '->36864'
+  ran zb      h.trail   'SAME'
+  ran zb      h.comma   '->200'
+  ran zb      h.div     'SAME'
+  ran zb      h.str     'SAME'
+  ran zb      h.ovf     'SAME'
+  ran zb      h.hd000   '->53248'
+  ran zb      h.neg     '->65535'
+
+  h.none   zb='SAME'   (zb only)
+  h.ok     zb='SAME'   (zb only)
+  h.set    zb='->36864'   (zb only)
+  h.trail  zb='SAME'   (zb only)
+  h.comma  zb='->200'   (zb only)
+  h.div    zb='SAME'   (zb only)
+  h.str    zb='SAME'   (zb only)
+  h.ovf    zb='SAME'   (zb only)
+  h.hd000  zb='->53248'   (zb only)
+  h.neg    zb='->65535'   (zb only)
+
+ROWS: 10 printed, 0 scored -- 0 DIFF

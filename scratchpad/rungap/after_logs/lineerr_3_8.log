@@ -1,0 +1,39 @@
+    capture-on-signal: 87 on signal, 0 fell back to the scheduled budget   [signalled at 38.2-78.0 emulated s]
+D-LINERR — LINE's SCREEN-mode refusal is the LAST thing it does    sides: vg8020, cf3300, zb
+==============================================================================
+ok   m.s2.ok       vg8020=' 0 , 20 , 21 '  cf3300=' 0 , 20 , 21 '  zb=' 0 , 20 , 21 '   [NEGATIVE CONTROL — the (X,Y) instrument: a clean LINE completes]
+ok   m.s1          vg8020=' 5 , 20 , 21 '  cf3300=' 5 , 20 , 21 '  zb=' 5 , 20 , 21 '
+ok   m.s0.box      vg8020=' 5 , 20 , 21 '  cf3300=' 5 , 20 , 21 '  zb=' 5 , 20 , 21 '
+ok   t.x1          vg8020=' 13 , 7 , 4 '  cf3300=' 13 , 7 , 4 '  zb=' 13 , 7 , 4 '
+ok   t.cont        vg8020=' 13 , 7 , 4 '  cf3300=' 13 , 7 , 4 '  zb=' 13 , 7 , 4 '
+ok   o.ovdz        vg8020=' 11 , 11 , 12 '  cf3300=' 11 , 11 , 12 '  zb=' 11 , 11 , 12 '
+ok   c.m32768      vg8020=' 0 , 32768 , 21 '  cf3300=' 0 , 32768 , 21 '  zb=' 0 , 32768 , 21 '
+ok   k.16          vg8020=' 5 , 20 , 21 '  cf3300=' 5 , 20 , 21 '  zb=' 5 , 20 , 21 '
+ok   a.p1          vg8020=' 2 , 11 , 12 '  cf3300=' 2 , 11 , 12 '  zb=' 2 , 11 , 12 '
+ok   a.trailc      vg8020=' 24 , 20 , 21 '  cf3300=' 24 , 20 , 21 '  zb=' 24 , 20 , 21 '
+ok   a.cont        vg8020=' 0 , 20 , 21 '  cf3300=' 0 , 20 , 21 '  zb=' 0 , 20 , 21 '   [NEGATIVE CONTROL — the '-' continuation form is accepted]
+ok   v.circ0.tm    vg8020=' 13 , 7 , 4 '  cf3300=' 13 , 7 , 4 '  zb=' 13 , 7 , 4 '
+ok   v.circ2.c     vg8020=' 11 , 20 , 21 '  cf3300=' 11 , 20 , 21 '  zb=' 11 , 20 , 21 '
+ok   p.oy0         vg8020=' 5 , 20 , 200 '  cf3300=' 5 , 20 , 200 '  zb=' 5 , 20 , 200 '
+ok   p.step0       vg8020=' 5 , 307 , 104 '  cf3300=' 5 , 307 , 104 '  zb=' 5 , 307 , 104 '
+ok   g.pr.off      vg8020=' 0 , 300 , 100 '  cf3300=' 0 , 300 , 100 '  zb=' 0 , 300 , 100 '
+ok   g.pt.step     vg8020=' 0 , 7 , 4 '  cf3300=' 0 , 7 , 4 '  zb=' 0 , 7 , 4 '
+ok   d.dz2         vg8020=' 11 , 7 , 4 '  cf3300=' 11 , 7 , 4 '  zb=' 11 , 7 , 4 '
+ok   d.marg2       vg8020=' 5 , 7 , 4 '  cf3300=' 5 , 7 , 4 '  zb=' 5 , 7 , 4 '
+ok   d.s4.40k      vg8020=' 0 , 7 , 58308 '  cf3300=' 0 , 7 , 58308 '  zb=' 0 , 7 , 58308 '
+ok   d.c1.32k      vg8020=' 0 , 7 , 32773 '  cf3300=' 0 , 7 , 32773 '  zb=' 0 , 7 , 32773 '
+ok   d.p8.s4b      vg8020=' 0 , 7 , 57348 '  cf3300=' 0 , 7 , 57348 '  zb=' 0 , 7 , 57348 '
+ok   d.cat2        vg8020=' 0 , 17 , 4 '  cf3300=' 0 , 17 , 4 '  zb=' 0 , 17 , 4 '
+ok   w.paint0.off  vg8020=' 5 , 300 , 100 '  cf3300=' 5 , 300 , 100 '  zb=' 5 , 300 , 100 '
+ok   w.d.b2        vg8020=' 0 , 7 , 4 '  cf3300=' 0 , 7 , 4 '  zb=' 0 , 7 , 4 '
+ok   n.zork        vg8020=' 2 , 7 , 4 '  cf3300=' 2 , 7 , 4 '  zb=' 2 , 7 , 4 '   [NEGATIVE CONTROL — a syntax error outside LINE stays ERR 2]
+ok   n.dzw         vg8020=' 11 , 7 , 4 '  cf3300=' 11 , 7 , 4 '  zb=' 11 , 7 , 4 '   [NEGATIVE CONTROL — one numeric fault at a checking reader]
+ok   n.sprdz       vg8020=' 11 , 7 , 4 '  cf3300=' 11 , 7 , 4 '  zb=' 11 , 7 , 4 '
+ok   d.sp.m2       vg8020=' 0 , 53 , 37 '  cf3300=' 0 , 53 , 37 '  zb=' 0 , 53 , 37 '
+ok   u.zork        vg8020='Syntax error in 20'  cf3300='Syntax error in 20'  zb='Syntax error in 20'   [NEGATIVE CONTROL — the untrapped reading itself]
+ROWS: 30 printed, 30 scored — 30 agree, 0 diverge, 0 deferred (not scored)
+==============================================================================
+30/30 readings agree (210 cases, 4 positive controls, 20 negative controls, 0 row(s) with no oracle, 0 DEFERRED row(s) measured but not scored)
+READING: trapped rows are `[ ERR , GRPACX , GRPACY ]` — the error code and the LAST-REFERENCED POINT the statement left behind, captured in the handler over a `PSET(7,4)` seed. (7,4) = LINE moved nothing; (11,12) = the first endpoint was staged and it then died; (20,21) = it ran to completion. The w.* rows read GXPOS/GYPOS instead — the OTHER half of the work area, same statements. Untrapped rows are the clipped screen tail of `RUN`.
+SIDES: vg8020,cf3300,zb — LINE, PSET, SCREEN, ON ERROR, ERR, RESUME and PEEK are core MSX-BASIC, present on every MSX1, so BOTH references are legitimate oracles for every row here
+DENOMINATOR: (WHERE IN `LINE` A FAULT HAPPENS) x (WHAT KIND OF FAULT IT IS), crossed with the SCREEN MODE. The POSITION axis is swept structurally rather than sampled: LINE's grammar is `LINE [[STEP](x1,y1)] - [STEP](x2,y2) [,[c][,B|BF]]`, so every slot that reaches a VALUE is x1, y1, x2, y2 and c -- all five carry a type fault (t.*) and the first four plus c carry a deferred numeric one (o.*) -- and every slot that can END where a value was required is swept by a.* (bare, p1 only, a bare '-', an empty x or y, a trailing comma after the colour, and a box field with no keyword), which is every path through ex_line_gfx and parse_coord. The FAULT axis is the four distinct pending codes 11/6/5/13 (each contributing 0 so the row says WHICH fault survived), plus the coercion's own ERR 6 alone and TOGETHER with a pending code -- the pair that says which of the two is consulted first. The MODE axis is complete for an MSX1: 0, 1, 2, 3. The VALUE domain sweeps the int16 edges (32767/32768, -32768/-32769), past int16 (70000), off-screen-but-legal (300, -1), and the fractional boundary in a slot where truncate-vs-round is visible in GRPAC. NOT swept: what LINE DRAWS once it is accepted (`make graphics-acceptance` owns that, spec-basic-graphics-g3.md), the box tenant's clipping, and PAINT/CIRCLE's own colour domains (spec-basic-graphics-g4/g5). The d.* class extends the POSITION axis to the one verb whose mandatory argument is not a coordinate: DRAW's grammar is `DRAW <string expression>`, so the slots are the EXPRESSION (swept for all three fault kinds it can carry -- 13 from a numeric literal and from both type-mismatch sites, 11 and 6 through STR$) and the STRING's own command language (an unknown letter, a command whose operand is missing, a partial walk that faults after a move has already taken effect, and the empty string), crossed with the modes DRAW is legal and illegal in. Its work area is swept through BOTH halves on the three shapes where they DISAGREE -- the B prefix, the N prefix and an upward segment. NOT swept: what DRAW DRAWS once accepted (spec-basic-graphics-g6.md and its notebook own that), the A/S/C/X commands' own argument domains, and the coroutine's second and later substitution round trips.

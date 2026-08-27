@@ -8,7 +8,7 @@ Reuses omsx_repl's batch driver but prepends `plug` commands to the generated Tc
 from __future__ import annotations
 import os, re, subprocess, sys, tempfile, time
 
-REPO = "/Users/joost/projects/zerobas"
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl as R
 from omsx_run import find_omsx

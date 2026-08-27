@@ -1,0 +1,37 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_onerr0.py --gate \
+	         
+D-ONERR0 — ON ERROR GOTO 0 inside a handler RE-RAISES   sides: vg8020, cf3300, zb
+==============================================================================
+ok   c.untrap     vg8020='Out of memory in 10'  cf3300='Out of memory in 10'  zb='Out of memory in 10'   [POSITIVE CONTROL]
+ok   c.trap       vg8020='[TRAPPED]|No RESUME in 40'  cf3300='[TRAPPED]|No RESUME in 40'  zb='[TRAPPED]|No RESUME in 40'   [POSITIVE CONTROL]
+ok   c.resume     vg8020='[RESUMED]'  cf3300='[RESUMED]'  zb='[RESUMED]'   [POSITIVE CONTROL]
+ok   c.resume0    vg8020='[DONE]'  cf3300='[DONE]'  zb='[DONE]'   [POSITIVE CONTROL]
+ok   c.disarm     vg8020='Out of memory in 30'  cf3300='Out of memory in 30'  zb='Out of memory in 30'   [POSITIVE CONTROL]
+ok   c.never      vg8020='[OK]'  cf3300='[OK]'  zb='[OK]'   [POSITIVE CONTROL]
+ok   r.reraise    vg8020='Out of memory in 20'  cf3300='Out of memory in 20'  zb='Out of memory in 20'
+ok   r.code       vg8020='Subscript out of range in 20'  cf3300='Subscript out of range in 20'  zb='Subscript out of range in 20'
+ok   r.line       vg8020='Out of memory in 50'  cf3300='Out of memory in 50'  zb='Out of memory in 50'
+ok   r.mid        vg8020='Out of memory in 20'  cf3300='Out of memory in 20'  zb='Out of memory in 20'
+ok   r.rearm      vg8020='[REARM]|[DONE]'  cf3300='[REARM]|[DONE]'  zb='[REARM]|[DONE]'   [NEGATIVE CONTROL — re-arming is NOT re-raising]
+ok   r.depth      vg8020='Out of memory in 20'  cf3300='Out of memory in 20'  zb='Out of memory in 20'
+ok   r.afterres   vg8020='[OK]'  cf3300='[OK]'  zb='[OK]'
+ok   r.nested     vg8020='Subscript out of range in 40'  cf3300='Subscript out of range in 40'  zb='Subscript out of range in 40'   [NEGATIVE CONTROL — the INNER message, and it must stay]
+ok   e.untrap     vg8020='Out of memory in 10 >> [ 7 , 10 ]'  cf3300='Out of memory in 10 >> [ 7 , 10 ]'  zb='Out of memory in 10 >> [ 7 , 10 ]'
+ok   e.trap       vg8020='[TRAPPED]|No RESUME in 40 >> [ 21 , 40 ]'  cf3300='[TRAPPED]|No RESUME in 40 >> [ 21 , 40 ]'  zb='[TRAPPED]|No RESUME in 40 >> [ 21 , 40 ]'
+ok   e.reraise    vg8020='Out of memory in 20 >> [ 7 , 20 ]'  cf3300='Out of memory in 20 >> [ 7 , 20 ]'  zb='Out of memory in 20 >> [ 7 , 20 ]'
+ok   e.disarm     vg8020='Out of memory in 30 >> [ 7 , 30 ]'  cf3300='Out of memory in 30 >> [ 7 , 30 ]'  zb='Out of memory in 30 >> [ 7 , 30 ]'
+ok   r.reexec     vg8020='[X]|Illegal function call in 20'  cf3300='[X]|Illegal function call in 20'  zb='[X]|Illegal function call in 20'
+ok   k.cont       vg8020='Out of memory in 20 >> Out of memory in 20'  cf3300='Out of memory in 20 >> Out of memory in 20'  zb='Out of memory in 20 >> Out of memory in 20'
+ok   d.plain      vg8020=' >> [OK]'  cf3300=' >> [OK]'  zb=' >> [OK]'
+ok   d.direrr     vg8020=' >> [TRAPPED]|No RESUME in 30 >> [AFTER]'  cf3300=' >> [TRAPPED]|No RESUME in 30 >> [AFTER]'  zb=' >> [TRAPPED]|No RESUME in 30 >> [AFTER]'
+ok   d.instop     vg8020='Break in 40 >> Out of memory in 20 >> [OK]'  cf3300='Break in 40 >> Out of memory in 20 >> [OK]'  zb='Break in 40 >> Out of memory in 20 >> [OK]'
+ok   d.dirtrap    vg8020=' >> Out of memory >> [AFTER]'  cf3300=' >> Out of memory >> [AFTER]'  zb=' >> Out of memory >> [AFTER]'
+ROWS: 24 printed, 24 scored — 24 agree, 0 diverge, 0 deferred (not scored)
+==============================================================================
+24/24 readings agree (24 cases, 6 positive controls, 2 negative control, 0 row(s) with no oracle, 0 DEFERRED row(s) measured but not scored)
+SIDES: vg8020,cf3300,zb — ON ERROR / RESUME / ERROR n / ERR / ERL are core MSX-BASIC, present on every MSX1, so BOTH references are legitimate oracles for every row here
+DENOMINATOR: (WHICH error is re-raised: code 7 vs code 9) x (WHICH line it reports: handler-before-error vs handler-after-error) x (WHEN: immediately vs end of statement) x (WHICH `ON ERROR`: GOTO 0 vs GOTO n, the disarm-is-special discriminator) x (DEPTH: handler top level vs inside a GOSUB it called) x (HANDLER STATE: entered / left by RESUME / never entered / suspended by STOP) x (MODE: stored vs direct), plus ERR/ERL read at the prompt after four different endings — which is also what says whether `No RESUME` is a REPORT or an ERROR — plus the SECOND-error-inside-a-handler rule that must not move

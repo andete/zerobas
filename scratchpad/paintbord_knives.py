@@ -42,7 +42,7 @@ below the grammar", which is precisely what §4 measured it does not.
 """
 import hashlib, os, pathlib, re, subprocess, sys
 
-ROOT = pathlib.Path("/Users/joost/projects/zerobas")
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC  = ROOT / "basic/graphics.asm"
 ROMS = [ROOT / "build/basic-reloc.rom", ROOT / "build/sub.rom"]
 

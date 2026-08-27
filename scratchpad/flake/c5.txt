@@ -1,0 +1,24 @@
+omsx_repl: sweep a run's temp files in a finally, not one by one on success
+
+Answering "will new runs clean up after themselves?" by counting rather than
+asserting turned up one path that did not. Every temp name in `_run_batch` is
+`out` or `out + <suffix>` -- the capture file, the Tcl, the heartbeat, the
+emulator's stderr, the settings copy -- and they were unlinked individually on
+the SUCCESS path only. Anything that raised in between leaked all five, and one
+of them raises by design: `omsx_preflight.guarded()` refuses a bad machine at
+the `Popen` call, after the Tcl has been written.
+
+Measured: 44 orphaned `repl_*` files, mostly `.tcl`. Small next to the 1.1 GB of
+`zb_*` that probe_tmp was written for, but the same class and the same answer --
+sweep by glob in a `finally`, do not enumerate on one path. A suffix added later
+is covered without editing the cleanup.
+
+VERIFIED BY CENSUS, not by reading the code:
+  * the refusing path alone: repl_* 44 -> 44
+  * `make omsx-diag-teeth`, five cases including a stall kill, a SIGKILL and a
+    SIGTERM: delta 0
+  * a full `make gates`: delta 0, and no leftover scratch under $ZB_TEST_TMP
+
+make gates 37/37 green, no flakes. ROM hashes 41b8c4ed ae796ccb 7d27b871.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

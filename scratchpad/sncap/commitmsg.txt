@@ -1,0 +1,64 @@
+probe harness: six more gates capture on the program's SIGNAL
+
+D-SNCAP2 extends capture-on-signal from basic_probe_graphics.py to every other
+boot-per-case emulator gate that can take it: penderr, screenerr, stmtpend,
+tmfp, lineerr and deffn-strict. 1344 captures on signal, 1 fallback, all six
+green, ROM hashes unchanged.
+
+The plumbing is no longer copy-pasted. probes/lib/probe_signal.py now owns the
+ADDRESS, the kwargs and the tally -- the shape-free parts, where a second copy
+is how two probes end up watching two addresses. basic_probe_graphics.py
+delegates to it and keeps paint_mark(), because WHERE THE MARK GOES is a
+property of the programs a probe builds and is the only part that can be
+silently wrong. Its own reading is unchanged: 321 on signal, 0 fell back.
+
+VERIFIED THE ONLY WAY THAT HAS TEETH. The tally proves a mark was never
+REACHED; nothing in it would catch a mark placed too EARLY, which captures a
+half-finished machine on both sides and can agree wrongly. So all 557 report
+rows across 13 reports were diffed before vs after through probe_report.parse
+(scratchpad/sncap/rowdiff.py, itself teeth-checked against a mutated log):
+byte-identical, every one.
+
+A THIRD CONVERSION RULE, LEARNED ON THE THIRD GATE. A mark is BASIC TEXT: it
+makes the tokenised program ~8 bytes longer per marked line, VARTAB sits
+directly above the program text, so a readout that IS a RAM address moves with
+it. deffn's five ADDR rows report VARPTRs; marking them shifts z.addr.ctl and
+o.sameaddr. Neither is gated, so this would not have gone red -- it would have
+quietly moved a recorded characterization number to accommodate the instrument.
+They keep the budget.
+
+AND THE MARK IS NOT FREE EVEN WHEN THE RULES PASS. screenerr reclaims only
+-5.1% against -11 to -13% elsewhere, because POKE&HE000,255 pushes its printing
+line from 36 to 51 characters, past the 38-char KEYBUF chunk boundary, buying
+an extra typing slot that gives half the reclaim back.
+
+THE DETECTOR EARNED ITS KEEP ON ITS FIRST RUN, and could not say so. deffn's
+o.clearwipe3 never signalled -- its CLEAR wipes the ON ERROR handler along with
+the DEF FN table, so the row aborts UNTRAPPED and reaches neither END. Correct,
+unchanged, and invisible to everything else in the tree. But the tally printed
+"1 fell back" out of 72 and the gate had to be RE-RUN to find out which row: an
+unnamed outcome reads as no outcome. Tally.add(label=...) now names them.
+
+NO WALL CLAIM IS MADE AND NONE CAN BE. The deterministic figure, computed off
+_tcl's own generated timeline with no emulator at all
+(scratchpad/sncap/emutotal.py): 71104 -> 63927 emulated s, -10.1%, about 21 s
+of wall at spec-probe-budget.md's flat 0.003 s/emulated s. Against that, the
+emulator-free warm-up control moved 7 s -> 14 s between the before and after
+batteries and two identical converted runs of the same battery differed by 59 s.
+Measured signal instants land within 0.1-0.7 emulated s of the computed t_run
+floor, so the budgets they replace were pure idle.
+
+Docs: spec-probe-mark.md WRITTEN -- omsx_repl.py and spec-probe-budget.md have
+both cited it since before it existed, and a third adopter made the dangling
+reference load-bearing. It carries the four conversion rules, the prompt burden
+with a per-readout table, the verification protocol and the adoption record.
+spec-probe-budget.md section 6 said the sentinel had been "retired as a speedup"
+and was "not safe for screen captures"; the first is still true and still not
+the point, the second was falsified by the 2026-08-25 decision and by 557 rows.
+Two stale comments in omsx_repl.py said the same and are corrected in place.
+
+make gates: 37/37 green (error-trap-acceptance red once on contention, green on
+the serial retry; not a file this change touches). ROM hashes 41b8c4ed ae796ccb
+7d27b871, unchanged throughout.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

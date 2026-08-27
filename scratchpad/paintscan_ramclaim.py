@@ -25,7 +25,7 @@ independent checks, because either alone can be fooled:
 """
 from __future__ import annotations
 import os, sys
-ROOT = "/Users/joost/projects/zerobas"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.path.insert(0, os.path.join(ROOT, "tests"))

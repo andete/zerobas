@@ -6,7 +6,7 @@ back with VPEEK (a BASIC statement, which is the whole point), then draws ONE
 more pixel into the painted cell and asks POINT what happened to its NEIGHBOURS.
 """
 import os, sys
-ROOT = "/Users/joost/projects/zerobas"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 import omsx_repl                                                   # noqa: E402
 

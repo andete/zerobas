@@ -8,7 +8,7 @@ from __future__ import annotations
 import os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = "/Users/joost/projects/zerobas"
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl  # noqa: E402
 

@@ -1,0 +1,55 @@
+=== warm-up (serial build of shared artifacts) ===
+warm-up 14s
+=== 44 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0      3s  basic-reloc
+  rc=0      0s  subrom-abi-check
+  rc=0      1s  subrom-closure-check
+  rc=0     49s  unit-test
+  rc=0      1s  deadcode
+  rc=0      3s  wall-assertion-check
+  rc=0      0s  redundant-load-check
+  rc=0      2s  rowshape-check
+  rc=0      7s  injector-check
+  rc=0      1s  preflight-check
+  rc=0     14s  latch-check
+  rc=0      6s  diskdep-check
+  rc=0      1s  switch-build-check
+  rc=0     58s  kwsweep
+  rc=0      0s  deffn-selftest
+  rc=0     64s  string-acceptance
+  rc=0     37s  str-domain-acceptance
+  rc=0     73s  strparen-acceptance
+  rc=0    208s  penderr-acceptance
+  rc=0     73s  missing-acceptance
+  rc=0     23s  error-acceptance
+  rc=0     74s  error-trap-acceptance
+  rc=0     91s  onerr0-acceptance
+  rc=0    112s  math-acceptance
+  rc=0     93s  float-acceptance
+  rc=0     43s  intarg-acceptance
+  rc=0     36s  logicops-acceptance
+  rc=0    211s  screenerr-acceptance
+  rc=0    152s  tmfp-acceptance
+  rc=0    200s  stmtpend-acceptance
+  rc=0    116s  array-acceptance
+  rc=0    129s  deffn-strict
+  rc=0    330s  graphics-acceptance
+  rc=0     58s  abort-acceptance
+  rc=0    150s  interval-trap-acceptance
+  rc=0     83s  clearpool-acceptance
+  rc=1    125s  lineerr#1/8
+  rc=0    125s  lineerr#2/8
+  rc=0    125s  lineerr#3/8
+  rc=0    117s  lineerr#4/8
+  rc=0    108s  lineerr#5/8
+  rc=0    106s  lineerr#6/8
+  rc=0     85s  lineerr#7/8
+  rc=0     77s  lineerr#8/8
+
+=== retrying 1 red unit(s) SERIALLY (flake vs real) ===
+  retry lineerr#1/8: rc 1->0  FLAKE (green on retry)
+
+=== wall 540s (14s build + 526s gates) ===
+GATES: 37/37 green
+recovered flakes (green on serial retry): lineerr#1/8
+hashes: 41b8c4ed ae796ccb 7d27b871

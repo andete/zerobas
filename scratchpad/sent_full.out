@@ -1,0 +1,17 @@
+case     side      fixed-time   sentinel    fired@  verdict
+circle   vg8020         24576      24576     0.458  🔴 DIFFERS (6826 chars)
+circle   cf3300         24576      24576     0.458  🔴 DIFFERS (6826 chars)
+circle   zb             24576      24576   548.399  ✅ identical
+paint    vg8020         24576      24576     0.458  🔴 DIFFERS (6769 chars)
+paint    cf3300         24576      24576     0.458  🔴 DIFFERS (6769 chars)
+paint    zb             24576      24576   649.014  ✅ identical
+flood    vg8020         24576      24576     0.458  🔴 DIFFERS (6144 chars)
+flood    cf3300         24576      24576     0.458  🔴 DIFFERS (6144 chars)
+flood    zb             24576      24576   594.398  ✅ identical
+text     vg8020           960        960     0.458  🔴 DIFFERS (143 chars)
+text     cf3300           960        960     0.458  🔴 DIFFERS (143 chars)
+text     zb               960        960         -  🔴 NOT MEASURED — sentinel never fired (callback dropped?)
+
+3 identical, 8 differ, 1 NOT MEASURED
+A row that agrees WITHOUT its sentinel firing proves nothing: both sides
+would be the scheduled fallback, i.e. the old path compared to itself.

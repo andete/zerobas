@@ -1,0 +1,148 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_clearpool.py --gate \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK  \
+	        
+PASS  ctl   ctl-strlen     PRINT "[";LEN(STRING$(100,"A"));"]"         
+        ref: ' 100 '
+PASS  ctl   ctl-strval     A$="ABC":PRINT "[";A$;"]"                   
+        ref: 'ABC'
+PASS  ctl   ctl-fre0       PRINT "[";FRE(0)>1000;"]"                   
+        ref: '-1 '
+PASS  ctl   ctl-frestr     PRINT "[";FRE("")>0;"]"                     
+        ref: '-1 '
+PASS  ctl   ctl-abort      PRINT "[";ASC("");"]"                       
+        ref: '<none>'
+PASS  ctl   ctl-multi      A$=STRING$(100,"A"):PRINT "[";LEN(A$);"]"   
+        ref: ' 100 '
+PASS  repro repro-500      CLEAR 500:PRINT "[";FRE("");"]"             
+        ref: ' 500 '
+PASS  repro repro-200      CLEAR 200:PRINT "[";FRE("");"]"             
+        ref: ' 200 '
+PASS  repro repro-100      CLEAR 100:PRINT "[";FRE("");"]"             
+        ref: ' 100 '
+PASS  repro repro-hold     CLEAR 500:A$=STRING$(100,"A"):PRINT "[";FRE(
+        ref: ' 400 '
+PASS  size  size-0         CLEAR 0:PRINT "[";FRE("");"]"               
+        ref: ' 0 '
+PASS  size  size-1         CLEAR 1:PRINT "[";FRE("");"]"               
+        ref: ' 1 '
+PASS  size  size-2         CLEAR 2:PRINT "[";FRE("");"]"               
+        ref: ' 2 '
+PASS  size  size-50        CLEAR 50:PRINT "[";FRE("");"]"              
+        ref: ' 50 '
+PASS  size  size-255       CLEAR 255:PRINT "[";FRE("");"]"             
+        ref: ' 255 '
+PASS  size  size-256       CLEAR 256:PRINT "[";FRE("");"]"             
+        ref: ' 256 '
+PASS  size  size-1000      CLEAR 1000:PRINT "[";FRE("");"]"            
+        ref: ' 1000 '
+PASS  size  size-4000      CLEAR 4000:PRINT "[";FRE("");"]"            
+        ref: ' 4000 '
+PASS  size  size-frac      CLEAR 100.7:PRINT "[";FRE("");"]"           
+        ref: ' 100 '
+PASS  hold  hold-1         CLEAR 500:A$="A":PRINT "[";FRE("");"]"      
+        ref: ' 499 '
+PASS  hold  hold-100-50    CLEAR 500:A$=STRING$(100,"A"):B$=STRING$(50,
+        ref: ' 350 '
+PASS  hold  hold-reassign  CLEAR 500:A$=STRING$(100,"A"):A$="B":PRINT "
+        ref: ' 499 '
+PASS  hold  hold-literal   CLEAR 500:A$="ABCDE":PRINT "[";FRE("");"]"  
+        ref: ' 495 '
+PASS  hold  hold-array     CLEAR 500:DIM A$(2):A$(1)=STRING$(100,"A"):P
+        ref: ' 400 '
+PASS  hold  hold-arr-fit   CLEAR 100:DIM A$(2):A$(1)=STRING$(100,"A"):P
+        ref: ' 0 '
+PASS  hold  hold-temp      CLEAR 500:X=LEN(STRING$(100,"A")):PRINT "[";
+        ref: ' 500 '
+PASS  indep ind-body       CLEAR 500:X=0:Y=0:X=FRE(0):A$=STRING$(100,"A
+        ref: ' 6 '
+PASS  indep ind-body200    CLEAR 500:X=0:Y=0:X=FRE(0):A$=STRING$(200,"A
+        ref: ' 6 '
+PASS  indep ind-numvar     CLEAR 500:Q=1:PRINT "[";FRE("");"]"         
+        ref: ' 500 '
+PASS  indep ind-numarray   CLEAR 500:DIM Q(50):PRINT "[";FRE("");"]"   
+        ref: ' 500 '
+PASS  oos   oos-over       CLEAR 100:A$=STRING$(200,"A")               
+        ref: 'Out of string space'
+PASS  oos   oos-exact      CLEAR 100:A$=STRING$(100,"A"):PRINT "[";FRE(
+        ref: ' 0 '
+PASS  oos   oos-one-over   CLEAR 100:A$=STRING$(101,"A")               
+        ref: 'Out of string space'
+PASS  oos   oos-zero       CLEAR 0:A$="X"                              
+        ref: 'Out of string space'
+PASS  oos   oos-cumul      CLEAR 100:A$=STRING$(60,"A"):B$=STRING$(60,"
+        ref: 'Out of string space'
+PASS  oos   oos-vs-oom     CLEAR 100:DIM Q(5000)                       
+        ref: 'Out of memory'
+PASS  oos   oos-noread     CLEAR 100:A$=STRING$(200,"A"):PRINT "[";FRE(
+        ref: ' 100 '
+PASS  oos   oos-arystore-ctl CLEAR 200:DIM A$(5):B$=STRING$(25,"A"):A$(1)
+        ref: ' 25 '
+PASS  oos   oos-arystore   CLEAR 60:DIM A$(5):B$=STRING$(25,"A"):A$(1)=
+        ref: 'Out of string space'
+PASS  oos   oos-autostore  CLEAR 60:B$=STRING$(25,"A"):A$(1)=B$:A$(2)=B
+        ref: 'Out of string space'
+PASS  oos   oos-arycont    CLEAR 60:DIM A$(5):B$=STRING$(25,"A"):A$(1)=
+        ref: '<none>'
+PASS  oos   oos-scalarstore CLEAR 60:B$=STRING$(25,"A"):C$=B$:D$=B$     
+        ref: 'Out of string space'
+PASS  oos   oos-strdim-oom CLEAR 100:DIM A$(20000)                     
+        ref: 'Out of memory'
+PASS  dflt  dflt-boot      PRINT "[";FRE("");"]"                       
+        ref: ' 200 '
+PASS  dflt  dflt-bare      CLEAR:PRINT "[";FRE("");"]"                 
+        ref: ' 200 '
+PASS  dflt  dflt-keep      CLEAR 500:CLEAR:PRINT "[";FRE("");"]"       
+        ref: ' 500 '
+PASS  dflt  dflt-comma     CLEAR 500:CLEAR ,&HD000                     
+        ref: 'Syntax error'
+PASS  dflt  dflt-new       CLEAR 500:NEW:PRINT "[";FRE("");"]"         
+        ref: ' 500 '
+PASS  dflt  dflt-run       CLEAR 500:RUN:PRINT "[";FRE("");"]"         
+        ref: ' 500 '
+PASS  dom   dom-neg        CLEAR -1                                    
+        ref: 'Illegal function call'
+PASS  dom   dom-huge       CLEAR 60000                                 
+        ref: 'Overflow'
+PASS  dom   dom-32768      CLEAR 32768                                 
+        ref: 'Overflow'
+PASS  dom   dom-99999      CLEAR 99999                                 
+        ref: 'Overflow'
+PASS  dom   dom-str        CLEAR "200"                                 
+        ref: 'Type mismatch'
+PASS  hmem  hmem-both      CLEAR 500,&HD000:PRINT "[";FRE("");"]"      
+        ref: ' 500 '
+PASS  hmem  hmem-tight     CLEAR 500,&H9000:PRINT "[";FRE("");"]"      
+        ref: ' 500 '
+PASS  hmem  hmem-only      CLEAR ,&HD000                               
+        ref: 'Syntax error'
+PASS  oos   oos-dim-huge   CLEAR 100:DIM Q(20000)                      
+        ref: 'Subscript out of range'
+----  share hold-alias     CLEAR 500:A$=STRING$(100,"A"):B$=A$:PRINT "[
+        ref: ' 300 '
+----  share hold-lit-prog  CLEAR 500:10 A$="ABCDE":RUN:PRINT "[";FRE(""
+        ref: ' 500 '
+        zb : ' 495 '
+----  share hold-lit-p25   CLEAR 500:10 A$="AAAAAAAAAAAAAAAAAAAAAAAAA":
+        ref: ' 500 '
+        zb : ' 475 '
+PASS  arychg arychg-dimonly CLEAR 200:DIM A$(5):PRINT "[";FRE("");"]"   
+        ref: ' 200 '
+PASS  arychg arychg-scalar  CLEAR 200:B$=STRING$(25,"A"):PRINT "[";FRE("
+        ref: ' 175 '
+PASS  arychg arychg-store1  CLEAR 200:DIM A$(5):B$=STRING$(25,"A"):A$(1)
+        ref: ' 150 '
+PASS  arychg arychg-store2  CLEAR 200:DIM A$(5):B$=STRING$(25,"A"):A$(1)
+        ref: ' 125 '
+----  rep   rep-fre0-200   CLEAR 200:PRINT "[";FRE(0);"]"              
+        ref: ' 28815 '
+        zb : ' 14849 '
+----  rep   rep-fre0-4000  CLEAR 4000:PRINT "[";FRE(0);"]"             
+        ref: ' 25015 '
+        zb : ' 11049 '
+
+62/62 gated rows agree with the reference  (5 reported, never gated)
+ALL PASS

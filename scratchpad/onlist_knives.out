@@ -1,0 +1,28 @@
+=== baseline ===
+baseline roms=24d8e393 / ae796ccb / 5bf17dee
+baseline 15 rows match onlist_after.out
+
+K-OL1  roms=025ddba6 / ae796ccb / 78eae2b4
+  cut: esn_p1's jump back to esn_nocf: delete the discriminator, restoring the pre-slice silence
+  moved 3 rows: o.n2trail='0 1', o.nolist='0 1', o.nolistsub='0 1'
+  ✅ EXACT — 3 predicted, 3 moved
+
+K-OL2  roms=0e82ad86 / ae796ccb / f4fedf92
+  cut: make the discriminator UNCONDITIONAL -- 'any missing entry is an error', the rule a reader of the source would write
+  moved 5 rows: o.n2trail='0 1', o.n5trail='2 0', o.nolist='0 1', o.nolistsub='0 1', o.overnolist='2 0'
+  🔴 NOT EXACT: o.n2short got '0 1' want '2 0', o.n2trail got '0 1' want '2 0', o.nolist got '0 1' want '2 0', o.nolistsub got '0 1' want '2 0'
+
+K-OL3  roms=b5648f91 / ae796ccb / 5560d585
+  cut: esn_ok's "malformed: stop here" pointed at the raiser -- the wide rule's second regression
+  moved 2 rows: o.badafter='2 0', o.trail1='0 1'
+  🔴 NOT EXACT: o.trail1 got '0 1' want '2 0'
+
+K-OL4  roms=59e70314 / ae796ccb / c312113d
+  cut: esn_scan's "no entries at all" pointed at the raiser -- the wide rule's third regression (the N=0 path)
+  moved 0 rows: 
+  🔴 NOT EXACT: o.zeronolist got '0 1' want '2 0'
+
+restored, roms=24d8e393 / ae796ccb / 5bf17dee
+
+1 of 4 knives EXACT
+rc=1

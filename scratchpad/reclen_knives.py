@@ -9,7 +9,7 @@ a cut that never reached the ROM is a claim about the runner, not the tree.
 """
 import hashlib, pathlib, re, shutil, subprocess, sys
 
-ROOT = pathlib.Path("/Users/joost/projects/zerobas")
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC  = ROOT / "basic/field.asm"
 SNAP = ROOT / "scratchpad/reclen_field.asm.snapshot"
 ROM  = ROOT / "build/zerobas-main-eu.rom"

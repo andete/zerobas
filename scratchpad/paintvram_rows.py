@@ -2,7 +2,7 @@
 """Run ONLY the new D-PAINTVRAM rows (PHASE H-V + PHASE H's paint_then_pset),
 so they can be scored RED on today's build before anything is fixed."""
 import os, sys
-REPO = "/Users/joost/projects/zerobas"
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "probes", "basic"))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import basic_probe_graphics as g

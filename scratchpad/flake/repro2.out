@@ -1,0 +1,5 @@
+a writer is tearing /var/folders/y1/2bp37r696tqbmrlck7mmx3km0000gn/T/zb_flake_s1p0bfju/settings.xml while 40 starts race it, per arm
+
+SHARED   (today)       32 / 40 starts FAILED ( 80.0%)
+                         32x  Uncaught exception of unexpected type.
+ISOLATED (the fix)      0 / 40 starts FAILED (  0.0%)

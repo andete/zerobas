@@ -22,7 +22,7 @@ the two columns is exactly how much a bigger cache would buy.
 """
 from __future__ import annotations
 import os, sys
-ROOT = "/Users/joost/projects/zerobas"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tests"))
 os.chdir(ROOT)
 from _tmp import tp                                                # noqa: E402

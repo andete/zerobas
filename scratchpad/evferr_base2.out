@@ -1,0 +1,29 @@
+  ran vg8020  s.strparen    -> '2'
+  ran vg8020  s.strvp       -> '2'
+  ran vg8020  s.strok       -> '13'
+  ran vg8020  p.if          -> '2'
+  ran vg8020  p.for         -> '2'
+  ran vg8020  v.aryunset    -> '2'
+  ran cf3300  s.strparen    -> '2'
+  ran cf3300  s.strvp       -> '2'
+  ran cf3300  s.strok       -> '13'
+  ran cf3300  p.if          -> '2'
+  ran cf3300  p.for         -> '2'
+  ran cf3300  v.aryunset    -> '2'
+  ran zb      s.strparen    -> '2'
+  ran zb      s.strvp       -> '2'
+  ran zb      s.strok       -> '13'
+  ran zb      p.if          -> '0'
+  ran zb      p.for         -> '0'
+  ran zb      v.aryunset    -> '2'
+
+  s.strparen  vg8020='2'  cf3300='2'  zb='2'   ✅
+  s.strvp     vg8020='2'  cf3300='2'  zb='2'   ✅
+  s.strok     vg8020='13'  cf3300='13'  zb='13'   ✅
+  p.if        vg8020='2'  cf3300='2'  zb='0'   🔴 DIFF
+  p.for       vg8020='2'  cf3300='2'  zb='0'   🔴 DIFF
+  v.aryunset  vg8020='2'  cf3300='2'  zb='2'   ✅
+
+  6 scored, 2 DIFF, 0 not measured
+    capture-on-signal: 18 on signal, 0 fell back to the scheduled budget   [signalled at 29.1-41.4 emulated s]
+rc=0

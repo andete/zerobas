@@ -53,7 +53,7 @@ a CALL" rule's real content).
 """
 import hashlib, os, pathlib, re, subprocess, sys
 
-ROOT = pathlib.Path("/Users/joost/projects/zerobas")
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRCS = [ROOT / p for p in ("basic/interp.asm", "basic/play.asm",
                            "basic/missing.asm", "basic/graphics.asm",
                            "basic/program.asm")]

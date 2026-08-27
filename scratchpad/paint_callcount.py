@@ -20,7 +20,7 @@ dominates, its share must stay high as the area grows.
 """
 from __future__ import annotations
 import os, sys, collections
-ROOT = "/Users/joost/projects/zerobas"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tests"))
 sys.path.insert(0, ROOT)
 os.chdir(ROOT)

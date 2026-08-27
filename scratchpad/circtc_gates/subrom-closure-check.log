@@ -1,0 +1,6 @@
+python3 tools/check_tenant_closure.py build/basic-reloc.sym sub/basic-resident-abi.inc
+OK: 125 routines in the resident closure of 12 ABI seeds, + 4 data-referenced label(s), all page-0 (< $4000). No page-1 escapes.
+python3 tools/check_tenant_closure.py --page0 build/sub.sym sub/sub.asm
+OK: 808 routines in the closure of 15 page-0 tenants (sub_p0_ping, tokenise, dtk_tenant, sub_int_selftest, ary_engine, strheap_engine, pu_tofield_tenant, pu_tail_tenant, graphics_tenant, deftype_tenant, readdata_tenant, beep_tenant, fld_lookup_tenant, lrset_store_tenant, deffn_tenant), + 15 data-referenced label(s); every callee and data target is sub-local page-0, main page-1, or RAM. No low-region/BIOS escape.
+python3 tools/check_tenant_closure.py --page1 build/sub.sym sub/sub.asm
+OK: 586 routines in the closure of 24 page-1 tenants (sub_p1_ping, fp_sqrt, fp_atan, fp_exp, fp_log, fp_pow, fp_sin, fp_cos, fp_tan, fp_rnd, format_tenant, scan_stmt_end, fatprim_tenant, dirverb_tenant, play_parse_tenant, lineedit_tenant, casmatch_tenant, title_tenant, fcbname_tenant, circleparse_tenant, bload_tenant, save_tenant, errmsg_tenant, parseln_tenant), + 40 data-referenced label(s); every callee and data target is sub-local page-1, main low-region/BIOS (< $4000), or RAM. No main-page-1 escape.

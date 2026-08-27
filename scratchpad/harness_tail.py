@@ -18,7 +18,7 @@ the harness, and nothing about any test's content matters.
 from __future__ import annotations
 import os, statistics, subprocess, sys, time
 
-ROOT = "/Users/joost/projects/zerobas"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 import omsx_repl, omsx_preflight                                   # noqa: E402
 

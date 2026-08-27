@@ -1,0 +1,13 @@
+python3 tools/check_probe_injectors.py 
+injector-check: self-test 4/4  (rows A, B, C, D: the frozen pre-D-LATCH body COMPOSES, the re-pointed body is CLEAN, the imported frozen body HANDLES, an ordinary import is CLEAN)
+injector-check: frozen-body registry: 6 symbols across 3 modules, all 3 pinned symbols present
+
+files scanned                      : 494
+  exempt (named, structural)       : 4
+  acknowledged RECORDs (frozen)    : 3
+  compose their own injector       : 0
+  handle a frozen injector body    : 0
+  UNPARSEABLE (fails closed)       : 0
+  exemption claimed too wide       : 0
+
+ALL PASS -- one LIVE injector across 494 files, and it is the one `make latch-check` scores; 3 frozen characterization record(s) acknowledged and unreachable.

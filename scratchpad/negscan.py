@@ -1,6 +1,6 @@
 import re, pathlib, sys
 
-ROOT = pathlib.Path('/Users/joost/projects/zerobas')
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 files = [p for p in ROOT.rglob('*.asm') if 'build' not in p.parts]
 
 def norm(line):

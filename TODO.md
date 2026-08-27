@@ -302,7 +302,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2451 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2477 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -401,7 +401,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       denominator over `scratchpad/**` + `probes/**` + `tools/**` has not been
       taken, and some hits will be legitimate (a C-BIOS checkout default). Cheap
       to sweep, a judgement to remediate.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      📏 **SWEPT AND FIXED 2026-08-26. THE DENOMINATOR IS 511 EXECUTABLE TRACKED
+      FILES** (`.py`/`.sh`/`.asm`/`.inc`/Makefile under those three trees).
+      ⚠️ **`.log` AND `.out` CAPTURES ARE EXCLUDED ON PURPOSE** — they hold 343
+      of the 372 raw hits, and an absolute path inside a captured log is
+      *evidence of what ran*, not a portability bug. Sweeping them in is how a
+      372-hit number gets quoted for a 25-hit problem.
+      🟢 **`/opt/homebrew/bin/openmsx` (44 files) IS NOT A HIT.** It is the last
+      term of `os.environ.get("OPENMSX") or shutil.which("openmsx") or …`, and
+      guarded after by `if not isfile: OMSX = "openmsx"`. It resolves on any
+      host. Read before counting.
+      🔴 **THE REAL CLASS WAS 25 ASSIGNMENTS IN 24 FILES** — `ROOT`/`REPO` set
+      to the literal `/Users/joost/projects/zerobas`. **11 of the 24 are knife
+      runners**, which CUT SOURCE FILES: in a fresh clone they would compute the
+      wrong root and cut nothing, or the wrong file.
+      ✅ **REMEDIATION WAS NOT A JUDGEMENT AFTER ALL — THE TREE HAD ALREADY
+      VOTED 190 TO 25** for `dirname(dirname(abspath(__file__)))`. All 24
+      conformed, **0 remain**, and each rewrite was PROVEN value-preserving:
+      the new expression is evaluated with that file's `__file__` and must equal
+      the old literal exactly — **24/24 did**, so no instrument changed what it
+      reads. (My first pass skipped 9 of them by testing `^import pathlib$`
+      against files that say `import hashlib, os, pathlib, re, subprocess, sys`.)
+      🔴 **THE "NOTHING CHECKS IT" HALF REMAINS**, and it is now the THIRD
+      deferred checker of one shape — with the openMSX publish rule and the
+      scratch-probe reader rule, all three are *"a tracked file that would do the
+      wrong thing somewhere else"*. 🎯 **THEY WANT TO BE ONE GATE, NOT THREE**;
+      that is the thing to weigh, not three separate cheap tools.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (swept + FIXED 2026-08-26; the checker half folds into the one-gate question).
 
 - [ ] 🧹 **THE TAPE PATCH PAIR IS UNGUARDED BY THE SAME RULE.** Filed 2026-08-26
       by D-PATCHFRESH. `tape/zerobas-tape-msx1.ips`/`.bps` are tracked

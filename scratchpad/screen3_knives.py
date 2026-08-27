@@ -16,7 +16,7 @@ THE CLAIMS UNDER TEST -- the address model is arithmetic, so each term is a knif
 """
 import hashlib, pathlib, re, subprocess, sys
 
-ROOT = pathlib.Path("/Users/joost/projects/zerobas")
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 SUB  = ROOT / "sub/graphics.asm"
 ROMS = [ROOT / "build/basic-reloc.rom", ROOT / "build/sub.rom"]
 ROWS = ("ctl.s2", "pset3", "s3.same", "s3.next", "s3.aliashi", "ctl.s3rd",

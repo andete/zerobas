@@ -1,0 +1,8 @@
+  ran zb      k.none    -> '<NO OUTPUT>'
+  ran zb      k.smoke   -> '0 1234 7'
+
+  k.none   zb='<NO OUTPUT>'   ⚠️ THE REFERENCES DISAGREE — not a want
+  k.smoke  zb='0 1234 7'   ⚠️ THE REFERENCES DISAGREE — not a want
+
+    capture-on-signal: 1 on signal, 1 fell back to the scheduled budget   [signalled at 29.1-29.1 emulated s]
+      ⚠️ NEVER SIGNALLED (captured on the budget, as before this conversion): zb/k.none

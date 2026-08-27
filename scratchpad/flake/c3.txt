@@ -1,0 +1,52 @@
+probes: one scratch dir per process, and a settings copy that is actually whole
+
+Two fixes in the same class -- a path shared by name, with no process identity
+and no cleanup -- and one of them is a correction to yesterday's commit.
+
+1. A COPY IS A READ, AND THE SOURCE WAS THE CONTENDED FILE. f41cae9 gave each
+run its own `-setting` file to stop eight emulators sharing one settings.xml.
+It isolated the DESTINATION and left `shutil.copyfile` READING the shared source
+while another openMSX was mid-rewrite of it -- so a run got a torn copy of its
+own and died on that instead. It moved the race; it did not remove it. Two
+flakes in the very next battery, and the diagnosis f41cae9 added is what found
+them, naming the temp path in the message. `_settings_read()` now VALIDATES what
+it read as XML before believing it -- a torn read is not a rare event to hope
+past, it is a return value to check -- retries briefly, and omits the flag
+entirely if it never comes back clean, which is no worse than before.
+
+2. PER-PROCESS SCRATCH DIRECTORIES (probes/lib/probe_tmp.py). Twenty-one sites
+across nineteen probes built `os.path.join(tempfile.gettempdir(),
+f"zb_line_{side}_{label}.dsk")`: a fixed name derived from the CASE, with no
+process identity and no cleanup.
+
+  COLLISION -- run_gates shards lineerr across eight processes and replicates
+  the four CONTROLS into every shard, so eight processes copy onto the same
+  twelve paths while others have them mounted as -diska. tests/_tmp.py has
+  carried this lesson since the unit tests hit it ("bit the parallel gate
+  battery as a stochastic pasmo failure") but it was never carried across to the
+  probes, which are the half that runs eight at a time.
+
+  LEAK -- nothing ever deleted them. Measured on this machine: 2165 orphaned
+  zb_* files, 1.1 GB, across sessions. Adding process identity WITHOUT cleanup
+  would have made that strictly worse, since today's fixed names are at least
+  reused between batteries. One directory per process, made on first use,
+  removed at exit, honouring $ZB_TEST_TMP exactly as tests/_tmp.py does -- so
+  run_gates isolates the probes too and sweeps up even SIGKILL leftovers.
+
+Verified: six concurrent processes asking for the same name get six distinct
+paths, all present while alive, all gone at exit.
+
+THE REPRODUCER WAS WRONG TWICE, AND THE SECOND TIME IT PASSED. Draft 2's
+ISOLATED arm copied from the PRISTINE source while the writer tore a different
+file, so it exercised a fix that had not been written, reported 0/40, and the
+real code went on to flake twice. A falsification must call the code, not a
+model of it: arm B now goes through omsx_repl._settings_read() itself, pointed
+at the torn file. Draft 3 then had a VACUITY hole -- a read that never validates
+omits the flag and scores as "no failure", so a fix that never ran would report
+a perfect 0/40. The fallback is now counted and printed. Final, non-vacuous:
+SHARED 24/40 starts failed, ISOLATED 0/40 with every read validated.
+
+make gates 37/37 with zero flakes and zero retries; make omsx-diag-teeth 5/5.
+ROM hashes 41b8c4ed ae796ccb 7d27b871, unchanged.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

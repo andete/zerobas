@@ -1,0 +1,85 @@
+  ran vg8020  p.noclose     -> '2'
+  ran vg8020  p.colon       -> '2'
+  ran vg8020  p.nested      -> '2'
+  ran vg8020  p.print       -> '2'
+  ran vg8020  p.ok          -> '0'
+  ran vg8020  v.nopar       -> '2'
+  ran vg8020  v.nopareol    -> '2'
+  ran vg8020  v.badarg      -> '2'
+  ran vg8020  v.badargeol   -> '2'
+  ran vg8020  v.noclose     -> '2'
+  ran vg8020  v.nocloseset  -> '2'
+  ran vg8020  v.ok          -> '0'
+  ran vg8020  e.eofdev      -> '59'
+  ran vg8020  e.eofcrt      -> '5'
+  ran vg8020  e.lofcrt      -> '5'
+  ran vg8020  e.crtok       -> '0'
+  ran vg8020  b.nopar       -> '2'
+  ran vg8020  b.nopareol    -> '2'
+  ran vg8020  b.openeol     -> '24'
+  ran vg8020  b.ok          -> '0'
+  ran cf3300  p.noclose     -> '2'
+  ran cf3300  p.colon       -> '2'
+  ran cf3300  p.nested      -> '2'
+  ran cf3300  p.print       -> '2'
+  ran cf3300  p.ok          -> '0'
+  ran cf3300  v.nopar       -> '2'
+  ran cf3300  v.nopareol    -> '2'
+  ran cf3300  v.badarg      -> '2'
+  ran cf3300  v.badargeol   -> '2'
+  ran cf3300  v.noclose     -> '2'
+  ran cf3300  v.nocloseset  -> '2'
+  ran cf3300  v.ok          -> '0'
+  ran cf3300  e.eofdev      -> '59'
+  ran cf3300  e.eofcrt      -> '5'
+  ran cf3300  e.lofcrt      -> '5'
+  ran cf3300  e.crtok       -> '0'
+  ran cf3300  b.nopar       -> '2'
+  ran cf3300  b.nopareol    -> '2'
+  ran cf3300  b.openeol     -> '24'
+  ran cf3300  b.ok          -> '0'
+  ran zb      p.noclose     -> '0'
+  ran zb      p.colon       -> '0'
+  ran zb      p.nested      -> '0'
+  ran zb      p.print       -> '0'
+  ran zb      p.ok          -> '0'
+  ran zb      v.nopar       -> '2'
+  ran zb      v.nopareol    -> '0'
+  ran zb      v.badarg      -> '2'
+  ran zb      v.badargeol   -> '0'
+  ran zb      v.noclose     -> '5'
+  ran zb      v.nocloseset  -> '2'
+  ran zb      v.ok          -> '0'
+  ran zb      e.eofdev      -> '59'
+  ran zb      e.eofcrt      -> '0'
+  ran zb      e.lofcrt      -> '0'
+  ran zb      e.crtok       -> '0'
+  ran zb      b.nopar       -> '2'
+  ran zb      b.nopareol    -> '2'
+  ran zb      b.openeol     -> '24'
+  ran zb      b.ok          -> '0'
+
+  p.noclose     vg8020='2'  cf3300='2'  zb='0'   🔴 DIFF
+  p.colon       vg8020='2'  cf3300='2'  zb='0'   🔴 DIFF
+  p.nested      vg8020='2'  cf3300='2'  zb='0'   🔴 DIFF
+  p.print       vg8020='2'  cf3300='2'  zb='0'   🔴 DIFF
+  p.ok          vg8020='0'  cf3300='0'  zb='0'   ✅
+  v.nopar       vg8020='2'  cf3300='2'  zb='2'   ✅
+  v.nopareol    vg8020='2'  cf3300='2'  zb='0'   🔴 DIFF
+  v.badarg      vg8020='2'  cf3300='2'  zb='2'   ✅
+  v.badargeol   vg8020='2'  cf3300='2'  zb='0'   🔴 DIFF
+  v.noclose     vg8020='2'  cf3300='2'  zb='5'   🔴 DIFF
+  v.nocloseset  vg8020='2'  cf3300='2'  zb='2'   ✅
+  v.ok          vg8020='0'  cf3300='0'  zb='0'   ✅
+  e.eofdev      vg8020='59'  cf3300='59'  zb='59'   ✅
+  e.eofcrt      vg8020='5'  cf3300='5'  zb='0'   🔴 DIFF
+  e.lofcrt      vg8020='5'  cf3300='5'  zb='0'   🔴 DIFF
+  e.crtok       vg8020='0'  cf3300='0'  zb='0'   ✅
+  b.nopar       vg8020='2'  cf3300='2'  zb='2'   ✅
+  b.nopareol    vg8020='2'  cf3300='2'  zb='2'   ✅
+  b.openeol     vg8020='24'  cf3300='24'  zb='24'   ✅
+  b.ok          vg8020='0'  cf3300='0'  zb='0'   ✅
+
+  20 scored, 9 DIFF, 0 not measured
+    capture-on-signal: 60 on signal, 0 fell back to the scheduled budget   [signalled at 29.1-41.4 emulated s]
+rc=0

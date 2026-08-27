@@ -23,7 +23,7 @@ from __future__ import annotations
 import os
 import sys
 
-ROOT = "/Users/joost/projects/zerobas"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 sys.path.insert(0, os.path.join(ROOT, "scratchpad"))
 import omsx_repl                                                   # noqa: E402
