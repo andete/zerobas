@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2599 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2639 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1071,7 +1071,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (+`TRAPENA`). The references have no `TRAPSTK` at all. **Needs the T5
       probe's POKE-based readout, not D-TRAPSVC's** — `CLEAR` wipes the variables
       a fenced `PRINT` row carries its flags in.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      🔴 **CONFIRMED LIVE 2026-08-26 — `vg8020` 1 FIRE, `zb` 17**
+      ([`scratchpad/clrtrapstk_probe.py`](scratchpad/clrtrapstk_probe.py),
+      [`scratchpad/clrtrapstk.out`](scratchpad/clrtrapstk.out)). A 2×2 over
+      *{CLEAR, no CLEAR} × {trap killed in the escape path, state left
+      SERVICING}*, and **exactly one cell is live**:
+      ```
+      case                        vg8020  zb   TRAPSVC TRAPENA rec.gsp  GSP
+      CLEAR, still SERVICING           1  17         0       1    E056  E050  DIFF
+      CLEAR, trap killed               1   1         0       0    E056  E050
+      no-CLEAR, still SERVICING        1   1         1       0    E056  E056
+      no-CLEAR (control)               1   1         1       0    E056  E056
+      ```
+      🎯 **BOTH CONDITIONS ARE NECESSARY, WHICH IS WHY IT HAD NOT BEEN SEEN.**
+      `CLEAR` resets `GSP` to the base (`E050`), so the *first* unrelated `GOSUB`
+      lands back on the stale record's saved gsp (`E056`) — without it the
+      abandoned frame keeps `GSP` at `E056` and the next `GOSUB` reaches `E05C`,
+      which never matches. And the pop re-enables only **iff** the entry is still
+      SERVICING (`cp ZTS_SERVICING / ret nz`, [`basic/traps.asm`](basic/traps.asm)),
+      so a handler whose escape path does `INTERVAL OFF` **pops the record
+      without re-enabling anything** — the obvious construction hides the defect.
+      🎯 **THE FILED CLAIM IS RIGHT, AND ITS MECHANISM IS ONE GUARD DEEPER.** The
+      collision happens in BOTH `CLEAR` rows — `TRAPSVC` goes 1 → 0, an unrelated
+      `RETURN` popping a record that was never its own. Only the live cell also
+      takes `or ZTS_ON` + `inc TRAPENA` (read out of RAM: `TRAPENA=1`), and the
+      trap resumes firing **17 times** in the second wait, on a program that
+      never re-armed it.
+      ⚠️ **`trap_init` IS REACHED ONLY FROM COLD BOOT AND `RUN`**
+      (`initext.asm`, `basic/program.asm`) — nothing on the `CLEAR` path, which
+      confirms the filed reading of `clear_vars`.
+      🔬 The probe imports `basic_probe_interval_trap` rather than re-rolling its
+      harness, and reads `TRAPSVC` / `TRAPENA` / `rec.gsp` / `GSP` out of
+      emulated RAM so a 1-fire row says WHICH of its several sufficient causes
+      applied [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. Two
+      instrument faults on the way: a subroutine numbered `700` sat before
+      `790 END`, so execution fell into it (ERR 3 — and under `CLEAR`, which also
+      resets `ON ERROR`, that killed the run silently); and the first mechanism
+      readout named its cells in the wrong order.
+      💰 **NOT PRICED, AND THE FIX IS A SPEND.** `clear_vars` calling
+      `trap_init`, or validating the record against the live frame, costs main
+      page-1 bytes — a budget decision, not an edit.
+      🔭 SCOUT-THEN-ASK — measured and isolated 2026-08-26; the FIX costs main page-1 bytes, which is yours to spend.
 
 - [ ] ⚠️ **KEY / STRIG / SPRITE / STOP were NOT run against the D-TRAPSVC rows.**
       2026-08-23, [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §7.
