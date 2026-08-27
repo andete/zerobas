@@ -58,34 +58,97 @@ MAIN_SRC = ROOT / "basic/main.asm"
 OUT = ROOT / "build/switchcheck"
 PASMO = "pasmo"
 
-# Every conditional-compilation switch in the tree. A switch not listed here is
-# a switch nothing flips — add it when you add it.
-SWITCHES = ("G6_RESIDENT", "G7_RESIDENT", "G8_RESIDENT",
-            "I1_RESIDENT", "TRAPS_T3", "TRAPS_T4")
+# Every conditional-compilation switch in the tree, with the trees it is READ
+# from. A switch not listed here is a switch nothing flips — add it when you add
+# it. The value is what gets ASSEMBLED for that switch, so the scope claim is
+# per-switch rather than global.
+#
+# 🔴 IT USED TO BE A GLOBAL CLAIM -- "no switch is read from `sub/`" -- and that
+# kept CLEARPOOL OUT of this gate entirely: it is read from `sub/arrays.asm` and
+# `sub/strheap.asm`, so adding it tripped `scope_holds()` and the ELSE arm went
+# unassembled instead. A scope that excludes the switch that needs covering most
+# is a scope that has chosen its own denominator.
+SWITCHES = {
+    "G6_RESIDENT": ("basic",),
+    "G7_RESIDENT": ("basic",),
+    "G8_RESIDENT": ("basic",),
+    "I1_RESIDENT": ("basic",),
+    "TRAPS_T3": ("basic",),
+    "TRAPS_T4": ("basic",),
+    "CLEARPOOL": ("basic", "sub"),
+}
 
-# The measured claim this tool's scope rests on: no switch is read from `sub/`.
-SWITCH_HOMES = ("basic",)
+SRC = {"basic": (ROOT / "basic/main.asm", []),
+       "sub": (ROOT / "sub/sub.asm", ["-I", "sub"])}
+
+# 🔴 ASSEMBLING IS THE EASY HALF. The failure CLEARPOOL was filed for is an
+# off-by-one that BUILDS: `fperr_to_err` is a DENSE table whose next free index
+# moves with the switch, so a wrong `FPERR_MISSOP` reads a NEIGHBOURING byte and
+# raises some other error, silently. A gate that only asks "does it build" would
+# report PASS on exactly that. So a switch may also declare a POST-CHECK read
+# out of the assembled image.
+POSTCHECK = {
+    # switch -> (symbol naming the index, table symbol, expected byte)
+    "CLEARPOOL": ("FPERR_MISSOP", "fperr_to_err", 24),
+}
 
 
 def scope_holds() -> bool:
-    """Refuse to report a PASS whose scope has silently stopped being true."""
+    """Refuse to report a PASS whose scope has silently stopped being true.
+
+    Per switch now: a switch read from a tree it does not DECLARE is a switch
+    whose flip this tool does not actually cover."""
     bad = []
     for d in ("basic", "sub"):
         for p in sorted((ROOT / d).rglob("*")):
             if p.suffix not in (".asm", ".inc") or not p.is_file():
                 continue
             txt = p.read_text()
-            for name in SWITCHES:
-                if re.search(rf"\b{name}\b", txt) and d not in SWITCH_HOMES:
-                    bad.append(f"{p.relative_to(ROOT)} reads {name}")
+            for name, trees in SWITCHES.items():
+                if re.search(rf"\b{name}\b", txt) and d not in trees:
+                    bad.append(f"{p.relative_to(ROOT)} reads {name}, which "
+                               f"declares only {'/'.join(trees)}")
     if bad:
-        print("SCOPE BROKEN — a switch is read outside "
-              f"{'/'.join(SWITCH_HOMES)}, so a main-only assemble no longer "
-              "covers it:")
+        print("SCOPE BROKEN — a switch is read from a tree it does not declare, "
+              "so flipping it is not actually covered:")
         for b in bad:
             print(f"  {b}")
         return False
     return True
+
+
+def _sym(tag: str, tree: str, name: str):
+    try:
+        txt = (OUT / f"{tag}-{tree}.sym").read_text()
+    except OSError:
+        return None
+    m = re.search(rf"^{re.escape(name)}\s+EQU\s+([0-9A-Fa-f]+)H", txt, re.M)
+    return int(m.group(1), 16) if m else None
+
+
+def postcheck(name: str, tag: str) -> tuple[bool, str]:
+    """Read the switch's declared table byte back out of the assembled ROM."""
+    spec = POSTCHECK.get(name)
+    if not spec:
+        return True, ""
+    idx_sym, tbl_sym, want = spec
+    idx = _sym(tag, "basic", idx_sym)
+    tbl = _sym(tag, "basic", tbl_sym)
+    org = _sym(tag, "basic", "BASIC_ORG")
+    if None in (idx, tbl, org):
+        return False, (f"postcheck could not resolve {idx_sym}/{tbl_sym}/"
+                       f"BASIC_ORG in the sym file -- an offset from a DEFAULT "
+                       f"is not a reading")
+    rom = (OUT / f"{tag}-basic.rom").read_bytes()
+    off = tbl - org + (idx - 1)                 # FPERR codes are 1-based
+    if not (0 <= off < len(rom)):
+        return False, f"{tbl_sym}[{idx_sym}={idx}] is outside the image"
+    got = rom[off]
+    if got != want:
+        return False, (f"{tbl_sym}[{idx_sym}={idx}] is {got}, want {want} -- the "
+                       f"equate and the dense table have DRIFTED APART, and a "
+                       f"raise there would report ERR {got}")
+    return True, f"{tbl_sym}[{idx_sym}={idx}] = {got}"
 
 
 def swap(name: str, frm: str, to: str) -> None:
@@ -100,18 +163,22 @@ def swap(name: str, frm: str, to: str) -> None:
     SYSVARS.write_text(s.replace(old, new, 1))
 
 
-def assemble(tag: str) -> tuple[int, str]:
+def assemble(tag: str, trees=("basic",)) -> tuple[int, str]:
+    """Assemble every tree the switch declares. A `sub/`-read switch that only
+    ever built `basic/` was a PASS about the half that could not break."""
     OUT.mkdir(parents=True, exist_ok=True)
-    r = subprocess.run(
-        [PASMO, "--bin", str(MAIN_SRC), str(OUT / f"{tag}.rom"),
-         str(OUT / f"{tag}.sym")],
-        cwd=ROOT, capture_output=True, text=True)
-    if r.returncode == 0:
-        return 0, ""
-    txt = (r.stdout + r.stderr).strip().splitlines()
-    err = next((l for l in txt if "ERROR" in l.upper()),
-               txt[-1] if txt else "<no diagnostic>")
-    return r.returncode, err.strip()
+    for tree in trees:
+        src, extra = SRC[tree]
+        r = subprocess.run(
+            [PASMO, *extra, "--bin", str(src), str(OUT / f"{tag}-{tree}.rom"),
+             str(OUT / f"{tag}-{tree}.sym")],
+            cwd=ROOT, capture_output=True, text=True)
+        if r.returncode != 0:
+            txt = (r.stdout + r.stderr).strip().splitlines()
+            err = next((l for l in txt if "ERROR" in l.upper()),
+                       txt[-1] if txt else "<no diagnostic>")
+            return r.returncode, f"[{tree}] {err.strip()}"
+    return 0, ""
 
 
 def main() -> int:
@@ -121,18 +188,33 @@ def main() -> int:
     stat = SYSVARS.stat()          # see the mtime note in the `finally` below
     results = []
     try:
-        rc, err = assemble("baseline")
+        rc, err = assemble("baseline", ("basic", "sub"))
         if rc:
             print(f"REFUSING: the UNMODIFIED tree does not assemble — "
                   f"{err}\nNothing below would mean anything.")
             return 2
-        print("baseline (all switches on): assembles\n")
-        for name in SWITCHES:
+        for nm in POSTCHECK:
+            ok, note = postcheck(nm, "baseline")
+            if not ok:
+                print(f"REFUSING: the UNMODIFIED tree fails {nm}'s postcheck — "
+                      f"{note}\nNothing below would mean anything.")
+                return 2
+        print("baseline (all switches on): assembles"
+              + (f", postchecks OK ({len(POSTCHECK)})" if POSTCHECK else "") + "\n")
+        for name, trees in SWITCHES.items():
             SYSVARS.write_text(orig)
             swap(name, "1", "0")
-            rc, err = assemble(name)
+            rc, err = assemble(name, trees)
+            if rc == 0:
+                ok, note = postcheck(name, name)
+                if not ok:
+                    rc, err = 1, note
+                elif note:
+                    err = note          # carried into the PASS line, see below
             results.append((name, rc, err))
-            print(f"{'PASS' if rc == 0 else 'FAIL'}  {name} equ 0"
+            print(f"{'PASS' if rc == 0 else 'FAIL'}  {name} equ 0 "
+                  f"({'+'.join(trees)})"
+                  + (f"  [{err}]" if rc == 0 and err else "")
                   + (f"\n        {err}" if rc else ""), flush=True)
     finally:
         SYSVARS.write_text(orig)

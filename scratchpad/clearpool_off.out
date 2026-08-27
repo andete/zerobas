@@ -1,0 +1,5 @@
+arm                  main                sub  FPERR_MISSOP  table[MISSOP]
+CLEARPOOL=1           assembles          assembles            12             24
+CLEARPOOL=0           assembles          assembles            11             24
+
+✅ both arms assemble (main AND sub), and in each the dense table's FPERR_MISSOP slot holds 24 -- the equate and the table agree on both sides of the switch.
