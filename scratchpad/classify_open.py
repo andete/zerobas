@@ -123,3 +123,43 @@ for k in ("🙋 NEEDS-JOOST", "🔭 SCOUT-THEN-ASK", "⛔ BLOCKED", "🤖 AUTONO
         print(f"  {x['id']}  [{sig}] {h[:74]}")
 json.dump({x["id"]: {"bucket": b, "signal": s, "matched": w}
            for b, s, w, x in rows}, open("scratchpad/open_buckets.json", "w"), indent=1)
+
+
+# --- `--count`: recount the markers actually in TODO.md ---------------------
+# 🔴 THE HEADER TABLE'S `n` COLUMN ROTS, AND ON 2026-08-27 IT WAS WRONG BY 12 IN
+# ONE BUCKET. It is a hand copy of a number the file itself carries -- exactly the
+# class D-WALLIT gated for build symbols, in a place no gate reads. The table now
+# carries a DATE and names this mode; run it rather than quoting it.
+# It also enforces the header's own stated invariant (every open item is marked):
+# three items on 2026-08-27 were `- [ ]` with no marker AND ended "✅ DONE", so the
+# loop would have re-picked finished work.
+def _count(path="TODO.md"):
+    import re as _re
+    s = open(path).read()
+    marks = ("🤖", "🔭", "🙋", "⛔")
+    c = {m: 0 for m in marks}
+    opened, unmarked = 0, []
+    for b in _re.split(r"\n(?=- \[[ x]\] )", s):
+        if not b.startswith("- [ ] "):
+            continue
+        opened += 1
+        hit = False
+        for m in marks:
+            if _re.search(r"^\s*" + m + r" ", b, _re.M):
+                c[m] += 1
+                hit = True
+        if not hit:
+            unmarked.append(b.splitlines()[0][:70])
+    for m in marks:
+        print(f"  {m}  {c[m]}")
+    print(f"  open blocks {opened}, markers {sum(c.values())}")
+    if unmarked:
+        print("🔴 UNMARKED OPEN ITEM(S) -- unclassified, NOT autonomous:")
+        for u in unmarked:
+            print("   ", u)
+        return 1
+    return 0
+
+
+if __name__ == "__main__" and "--count" in sys.argv:
+    raise SystemExit(_count())

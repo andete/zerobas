@@ -63,12 +63,24 @@ BE IN THE ROOM** — not what the item touches. Derived 2026-08-26 by
 [`scratchpad/classify_open.py`](scratchpad/classify_open.py), which prints the
 signal that decided each one so it can be argued with.
 
-| marker | meaning | n |
+⚠️ **THE `n` COLUMN ROTS — RECOUNT IT, DO NOT QUOTE IT:**
+`python3 scratchpad/classify_open.py --count`. It reads the markers actually in
+this file and FAILS if an open item carries none. The figures below are **as
+measured 2026-08-27** and stand as taken; on that day the previous set was wrong
+by **12** in the 🤖 bucket, and three items were `- [ ]`, unmarked, and ended
+"✅ DONE" — so the loop would have re-picked finished work. (`classify_open.py`'s
+own headline re-DERIVES a classification from signals and may differ by an item
+or two; the MARKERS in this file are what the loop reads, and `--count` counts
+those.)
+
+| marker | meaning | n (2026-08-27) |
 |---|---|---|
-| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **77** |
-| 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **4** |
-| 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **21** |
+| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **65** |
+| 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **6** |
+| 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **25** |
 | ⛔ **BLOCKED** | neither can start it now — an idle host, a missing fixture, apparatus that must be built first | **9** |
+
+**105 open items, 105 markers, 0 unmarked** — the invariant above, checked.
 
 🔴 **A MISFILED 🤖 IS NOT A STOP CONDITION — WRAP UP AND REFILE.** If an item
 marked autonomous turns out to need a decision of his: **finish and commit
@@ -234,7 +246,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       stays open and now names a number instead of a suspicion.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (driven 2026-08-26, negative at 384; needs the flake to recur).
 
-- [ ] ⚠️ **FIVE MORE NON-ATOMIC PUBLISHES INTO THE SHARED openMSX TREE, AND NO
+- [x] ⚠️ **FIVE MORE NON-ATOMIC PUBLISHES INTO THE SHARED openMSX TREE, AND NO
       GATE WOULD SEE A SIXTH.** Filed 2026-08-26 by D-MACHXML
       ([`docs/spec-probe-machxml.md`](docs/spec-probe-machxml.md)), which fixed
       the one that FIRED. `tools/install-openmsx-machine.py`:379/392/401/440/455
@@ -304,7 +316,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3016 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3055 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -341,7 +353,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (15 is read off the stride, not off a machine), and `KEY LIST` entirely.
       🔭 SCOUT-THEN-ASK — the decision is yours; the measuring and pricing in front of it are not (charter / scope, but unpriced/unmeasured first).
 
-- [ ] 🔴 **D-TODOSWEEP'S OWN ELEVEN PROBES RE-IMPLEMENT THE `[...]` READER, WHICH
+- [x] 🔴 **D-TODOSWEEP'S OWN ELEVEN PROBES RE-IMPLEMENT THE `[...]` READER, WHICH
       IS THE TRAP THE ITEM BELOW DESCRIBES.** Filed 2026-08-26 by D-TODOSWEEP
       tranche 55, against itself. `probes/lib/omsx_repl.py` ships
       `result_span_after_echo` (:1765) specifically so *"an aborted case's echoed
@@ -407,7 +419,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       bypassing it is the finding.
       ✅ **DONE** — counted, measured, and gated.
 
-- [ ] 🧹 **A TRACKED `scratchpad/` SCRIPT CAN HARDCODE THE AUTHOR'S ABSOLUTE
+- [x] 🧹 **A TRACKED `scratchpad/` SCRIPT CAN HARDCODE THE AUTHOR'S ABSOLUTE
       PATH, AND NOTHING CHECKS IT.** Filed 2026-08-26 by D-CITEPATH, which found
       `cd /Users/joost/projects/zerobas` inside one of the four `.sh` battery
       wrappers it was triaging. That one is gitignored, so it does not matter —
@@ -1800,7 +1812,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       overwrites it. Needs a reference reading before the fix is priced; the
       alternative (evaluate every actual into a stack temp first) is ~30 B in a
       region that has none.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **THE REFERENCE READING IS TAKEN (2026-08-27, D-FNALIAS),**
+      [`docs/spec-deffn-alias.md`](docs/spec-deffn-alias.md). Premise re-run on the
+      SHIPPED code, not the draft it was filed against. **Both references agree, so
+      there is an oracle: every actual is evaluated in the CALLER's scope.**
+      `DEF FNA(P,Q)=P*100+Q : P=3 : FNA(5,P)` → ref **503**, zb **505**;
+      `DEF FNA(X,Q)=X*100+Q : DEF FNB(X)=FNA(9,X) : FNB(3)` → ref **903**, zb **909**;
+      both controls green at 507/907. ⚠️ I predicted zb correctly and guessed the
+      reference WRONG — it does not shadow.
+      🔴 **TWO ROWS, TWO CAUSES, NOT ONE FIX.** Top-level is the *grow, never shrink*
+      in `dfn_a_x` (deleting it fixes that row and FREES 8 B). Nested is `fn_enter`
+      resetting `FN_SLOTP` to slot 0, which **physically overwrites** the caller's
+      slot — the grow is not even involved.
+      🎯 **This is why D-DEFFNKNIFE's K-GS1 reddened ZERO rows**: it cut exactly that
+      block and no row separated the behaviours. `o.alias` is that row.
+      🔴 **THE ITEM'S PRICE WAS WRONG AND ITS CONCLUSION SURVIVES ANYWAY.** The fix
+      lands in `sub/` (**2464 B free on page 0**, measured), not "a region that has
+      none" — but the cheap design (slots above the caller, relocate at `dfn_body`,
+      ~+17 B) is **REFUTED BY A SECOND MEASUREMENT**: `FN_AREA` is exactly nine slots
+      (`((LINEBUF - FN_PAREA)/11)*11`) and the reference gives **nine formals to a
+      NESTED call too** (`o.p9nest` = 9/9/9) — which zerobas matches *precisely
+      because it clobbers*. Two coexisting frames need ~198 B where 99 exist.
+      ⚠️ The four `o.alias*` rows are deliberately NOT in the probe: `deffn-strict`
+      has no XFAIL class and a knowingly-red row would redden a green battery.
+      They reproduce from `scratchpad/deffn_alias_probe.py`; adding them is step 1
+      of whichever fix is chosen.
+      🙋 NEEDS-JOOST — a call that is yours to make (page-3 RAM eviction below
+      LINEBUF, or accept one of two MEASURED divergences: fix top-level only for
+      −8 B and leave the nested row, or grow the shadow area ~+99 B of RAM).
 
 - [ ] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
       2026-08-22 by D-DEFFN,
