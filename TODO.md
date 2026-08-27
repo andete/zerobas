@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2639 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2670 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1120,7 +1120,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `set_state` and `trap_return_check` verbatim; the index is a parameter),
       not by a measurement. The device-driven harnesses exist
       (`basic_probe_key_trap.py`, T2/T4 probes) if the argument is ever attacked.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **THE CODE ARGUMENT IS NOW A MEASUREMENT — ON `SPRITE`, 2026-08-26**
+      ([`scratchpad/clrtrapstk_sprite.py`](scratchpad/clrtrapstk_sprite.py),
+      [`scratchpad/clrtrapstk_sprite.out`](scratchpad/clrtrapstk_sprite.out)).
+      🎯 **THE `CLEAR`/`TRAPSTK` DEFECT MEASURED THE SAME DAY IS A DISCRIMINATOR
+      FOR EXACTLY THIS CLAIM**: it lives in `trap_return_check`, the routine the
+      argument says all five traps share verbatim. Replaying that 2×2 with
+      `SPRITE` instead of `INTERVAL` puts the SAME cell live and leaves the other
+      three agreeing at 1:
+      ```
+      case                        vg8020   zb
+      CLEAR, still SERVICING           1  250 (SATURATED)   DIVERGENCE
+      CLEAR, trap killed               1    1
+      no-CLEAR, still SERVICING        1    1
+      no-CLEAR (control)               1    1
+      ```
+      So the sharing is real where it matters, and the defect is **worse** here:
+      `SPRITE` re-fires once per FRAME, so the re-enabled trap saturated the
+      counter and **starved the program** — it never completed its second wait.
+      ⚠️ **ON THAT ROW THE MECHANISM CELLS ARE UNWRITTEN, NOT ZERO.** `TRAPSVC` /
+      `TRAPENA` print as `0` because the starved program never reached the lines
+      that `POKE` them. The `INTERVAL` run is where those cells were actually
+      read (`TRAPENA=1`); here the evidence is the fire count and the starvation.
+      🔴 **AND `basic_probe_sprite_trap.py`'s HEADER IS STALE.** It says
+      *"`ON SPRITE GOSUB` is unimplemented on the zerobas side (D-G7-4 left
+      `SPRITE ON/OFF/STOP` a no-op)"*. It fires — `basic/sprtrap-body.inc` is
+      included via `subromcall.asm`, `ZTI_SPRITE` is a live index, and the
+      control rows show one fire on both machines. Doc debt, filed not fixed.
+      ➡️ **STILL A CODE ARGUMENT FOR `KEY` / `STRIG` / `STOP`** — those three need
+      device input (key matrix, joystick, the STOP key), and the harnesses exist.
+      `SPRITE` was taken first because a sprite collision is reachable from pure
+      BASIC, so it needed no device at all. **1 of 4 converted.**
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (SPRITE measured 2026-08-26; KEY/STRIG/STOP still argued).
 
 - [ ] 🔴 **THE `Missing operand` CLASS HAS THREE MECHANISMS; ONE IS CLOSED AND
       3 ROWS STILL DIVERGE.** D-MISSOPFIX shipped 2026-08-23, 5 B
