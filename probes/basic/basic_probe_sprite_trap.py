@@ -6,10 +6,17 @@
 docs/spec-traps-t4-sprite.md §1 and §8. This is the probe that produced every
 reading in §1; it runs as a straight REPORTING differential between the reference
 oracle (Philips VG-8020) and the relocated repack build. It is deliberately NOT
-yet wired to a `make` target: `ON SPRITE GOSUB` is unimplemented on the zerobas
-side (D-G7-4 left `SPRITE ON/OFF/STOP` a no-op), so the asserting gate
-`make sprite-trap-acceptance` arrives with the implementation, built from these
-same cases and the reference values recorded in the spec.
+yet wired to a `make` target, so the asserting gate `make sprite-trap-acceptance`
+still has to be built from these cases and the reference values in the spec.
+
+🔴 THE REASON RECORDED HERE FOR THAT IS FALSIFIED (2026-08-26). It read:
+`ON SPRITE GOSUB` is unimplemented on the zerobas side (D-G7-4 left
+`SPRITE ON/OFF/STOP` a no-op)". IT FIRES. `basic/sprtrap-body.inc` is included
+via `basic/subromcall.asm`, `ZTI_SPRITE` is a live ZTRAP index, and
+`scratchpad/clrtrapstk_sprite.py` measured ONE fire on the VG-8020 and one on
+zerobas across three control cases -- plus a divergence in the fourth, which is
+a statement about `trap_return_check` and not about SPRITE being absent.
+The conclusion (not yet gated) still stands; the reason for it does not.
 
 WHAT MAKES T4'S APPARATUS THE SIMPLEST IN THE ARC: the event is produced by the
 BASIC program itself -- two overlapping sprites. There is no keyboard matrix to

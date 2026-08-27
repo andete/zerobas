@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2670 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2692 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1153,7 +1153,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       BASIC, so it needed no device at all. **1 of 4 converted.**
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (SPRITE measured 2026-08-26; KEY/STRIG/STOP still argued).
 
-- [ ] 🔴 **THE `Missing operand` CLASS HAS THREE MECHANISMS; ONE IS CLOSED AND
+- [x] 🔴 **THE `Missing operand` CLASS HAS THREE MECHANISMS; ONE IS CLOSED AND
       3 ROWS STILL DIVERGE.** D-MISSOPFIX shipped 2026-08-23, 5 B
       ([`docs/spec-basic-missop.md`](docs/spec-basic-missop.md) §10-§14),
       closing **13 of 16** rows including **all four SILENT MEMORY WRITES**
@@ -1224,7 +1224,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
         **0**, they SILENTLY COMPLETE), `SCREEN2:DRAW` (24 vs 13).
         **Four roots, so four slices, none of them priced here** — page 1 was
         99 B free on 2026-08-26; read the wall, never this line.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **RE-VERIFIED 2026-08-26 AFTER ALL FIVE SLICES SHIPPED — THE LIVE LIST
+      IS TEN → THREE, AND ALL THREE ARE ONE ROOT.** `scratchpad/missop3_probe.py`
+      re-run whole ([`scratchpad/missop3_reverify.out`](scratchpad/missop3_reverify.out)):
+      **27 scored, 3 DIFF, 1 excluded.**
+      ```
+      r.key      KEY1,        refs 24  zb 2    🔴
+      r.keyok    KEY1,"X"     refs  0  zb 2    🔴
+      r.keylist  KEY LIST     refs  0  zb 2    🔴
+      ```
+      🟢 **THE OTHER SEVEN ARE GREEN BY MEASUREMENT, NOT BY THE SLICES' OWN
+      REPORTS**: `MID$(A$,2)=` → 24 (the row this item called *"the ONE of the
+      three that survives as filed"*), `PLAY` → 24, `PRINT USING` → 24,
+      `PRINT USING"##"` → 2, `ON 1 GOTO` and `ON 1 GOSUB` → 2, `SCREEN2:DRAW`
+      → 24. `d.field` still has the references DISAGREEING (VG-8020 5, CF-3300
+      24) and stays EXCLUDED, not counted green.
+      🎯 **SO THIS TRACKING ITEM IS SPENT.** All three survivors are
+      `KEY n,"str"` / `KEY LIST` being UNIMPLEMENTED — a single filed item,
+      blocked on ~160 B of defaults DATA against a scarce main page 1, not on
+      knowledge. The residual is an ITEM, not a sentence, so this one closes and
+      that one carries it.
+      🔬 The run also exercised the sentinel machinery end to end: **84 captures
+      on signal, 0 fell back to the scheduled budget** (signalled at 29.1–44.4
+      emulated s).
 
 - [ ] 💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS
       THERE WITHOUT FUNDING FIRST.** Filed as its OWN open item because this
