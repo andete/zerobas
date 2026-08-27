@@ -132,3 +132,33 @@ def find_cbios_rom(names, explicit: str | None = None) -> str | None:
             if hits:
                 return hits[0]
     return None
+
+
+# --- publishing into the shared tree ----------------------------------------
+# 🔴 `open(out, "w")` TRUNCATES THE MOMENT IT IS CALLED and only then writes, so
+# for the duration of that gap the shared path holds an EMPTY file. openMSX
+# reads its machine config at start, so an emulator launching inside the window
+# dies before executing one instruction. D-MACHXML measured it at
+# **412 / 1200 (34.3 %) of concurrent reads torn** against 0 / 1200 atomic
+# (`scratchpad/machxml_repro.py`), and `repack-machine` is a prerequisite of 112
+# Makefile targets that `make gates` runs in parallel.
+#
+# The cure lives HERE, beside `find_user()`, because the module that knows where
+# the shared tree is, is the one that should know how to write into it. That is
+# also what gives a checker something to name: writes into the tree go through
+# `publish()`, and a bare `open(..., "w")` on a path derived from `find_user()`
+# is the finding.
+def publish(out: str, text: str) -> None:
+    """Write `text` to `out` so no reader can ever see a partial file.
+
+    `os.replace` is atomic on POSIX within a filesystem, and the temp sits in
+    the SAME directory so it always is one. The pid keeps two concurrent
+    installers from sharing a temp -- they may both write, and whichever lands
+    last wins with a WHOLE file, which is all any reader needs.
+    """
+    tmp = f"{out}.{os.getpid()}.tmp"
+    with open(tmp, "w") as f:
+        f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, out)

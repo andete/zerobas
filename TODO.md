@@ -248,15 +248,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       path"*. The one that fired, `install-repack-machine.py`, is a prerequisite
       of **112 targets** that `make gates` runs in parallel. So this is a real
       but cold instance of a hot class.
-      🔴 **THE STANDING HOLE IS THAT NOTHING CHECKS IT.** A new
-      `open(path,"w")` into the shared tree reintroduces the window silently,
-      and the only thing that would notice is another named `<NO CAPTURE>` —
-      i.e. a flake, after the fact, in a battery. A one-rule checker
-      (*no `open(...,"w")` whose destination resolves under the openMSX user
-      dir*) is cheap; ⚠️ its DENOMINATOR is the hard part, because the path is
-      built by `openmsx_paths.find_user()` at runtime and a textual sweep cannot
-      resolve it. Unpriced.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **FIXED 2026-08-26 — ALL SIX PUBLISH SITES NOW GO THROUGH ONE HELPER,
+      `openmsx_paths.publish()`.** The cure sits beside `find_user()` because
+      the module that knows where the shared tree IS should know how to write
+      into it; `install-repack-machine.py`'s inline copy was folded in too, so
+      the mechanism and its 34.3 %-torn measurement are documented at **one**
+      site rather than six. **Verified, not assumed**: `make repack-machine`
+      publishes an XML that parses and leaves no `.tmp`, and the five rewritten
+      sites were driven with `--user` pointed at a scratch tree —
+      **5 XML files, all parse, no `.tmp`** — so the release-install path was
+      exercised without touching the real `~/.openMSX`.
+      🔴 **THE CHECKER IS STILL OPEN, AND IT IS NOW TRACTABLE.** The filed
+      obstacle was the DENOMINATOR: the destination is built by
+      `openmsx_paths.find_user()` at runtime, so a textual sweep cannot resolve
+      it. `publish()` sidesteps that — the rule no longer needs to resolve a
+      path, it needs a **file set**: within `tools/install-*.py` and
+      `openmsx_paths.py`, any `open(..., "w")` outside `publish()` itself is the
+      finding. That denominator is small, complete and statable.
+      ⚠️ **NOT BUILT HERE, DELIBERATELY.** It does not fit `check_temp_root`
+      (same shape, different subject — and a gate whose name disagrees with its
+      contents is a defect this tree keeps paying for), so it is a new unit and
+      wants to be weighed as one. 💰 ~40 lines, one battery unit, not a
+      `basic-reloc` step.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (fix SHIPPED 2026-08-26; the checker half remains).
 
 - [ ] 💰 **A 4 B DUP-SPAN THE D-ONLIST FIX CREATED, AND ITS OWN KNIFE FOUND
       IT.** Filed 2026-08-26. `esn_notlineno`'s discriminator
@@ -288,7 +302,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2405 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2419 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

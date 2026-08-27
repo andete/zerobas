@@ -376,7 +376,7 @@ def main():
         if args.dry_run:
             print(f"would write {os.path.basename(tout)}")
         else:
-            open(tout, "w").write(ttext)
+            openmsx_paths.publish(tout, ttext)
             print(f"wrote {base}_TAPE   (-> machine \"{base}_TAPE\")")
         # The BASIC machines exist for the ONE region the repack is built for.
         if base != MAIN_REGION:
@@ -389,7 +389,7 @@ def main():
         if args.dry_run:
             print(f"would write {os.path.basename(out)}")
         else:
-            open(out, "w").write(out_text)
+            openmsx_paths.publish(out, out_text)
             print(f"wrote {base}_BASIC   (-> machine \"{base}_BASIC\")")
         if disk_rom:
             dout = os.path.join(user_machines, f"{base}_BASIC_DISK.xml")
@@ -398,7 +398,7 @@ def main():
             if args.dry_run:
                 print(f"would write {os.path.basename(dout)}")
             else:
-                open(dout, "w").write(dtext)
+                openmsx_paths.publish(dout, dtext)
                 print(f"wrote {base}_BASIC_DISK  (-> machine \"{base}_BASIC_DISK\")")
     # A silent zero-BASIC-machine run is the vacuity failure here: openMSX renaming or
     # dropping its EU C-BIOS machine would leave _TAPE machines written and no BASIC at
@@ -437,7 +437,7 @@ def main():
             print("would write extensions/zerobas-disk.xml")
         else:
             os.makedirs(user_ext, exist_ok=True)
-            open(eout, "w").write(zerobas_disk_extension(disk_rom))
+            openmsx_paths.publish(eout, zerobas_disk_extension(disk_rom))
             print("wrote zerobas-disk extension  (-> -ext zerobas-disk)")
     # --- Tier-1 provider-oracle machine: real BIOS + zerobas-disk ------------
     if real_disk_rom:
@@ -452,7 +452,7 @@ def main():
         if args.dry_run:
             print(f"would write {os.path.basename(out)}")
         else:
-            open(out, "w").write(out_text)
+            openmsx_paths.publish(out, out_text)
             print(f"wrote {base}_ZEROBASDISK  (-> machine \"{base}_ZEROBASDISK\", "
                   f"real {base} BIOS + zerobas-disk in slot 3-1)")
 
