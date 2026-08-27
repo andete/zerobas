@@ -90,7 +90,14 @@ tool's disagreements in §1 worth believing.**
 
 ---
 
-## 3. What was carved — 28 aliases in 16 files
+## 3. What was carved — 27 aliases in 16 files
+
+> 🔴 **THIS HEADING SAID 28 UNTIL 2026-08-26, AND §6 BELOW ALREADY DISAGREED
+> WITH IT.** The tree carries **27** `D-DUPSPAN2: an ALIAS` markers in 16 files
+> (`scratchpad/dupspan2_roster.py`, taken from the source, not from here). The
+> 28th is `dr_stored equ dl_run`, which §6 records as **DECLINED** — the heading
+> was written before that decision and never re-counted
+> [[two-sections-of-one-doc-disagreed]]. The FILE count was right all along.
 
 | region | before | after | delta |
 |---|---|---|---|

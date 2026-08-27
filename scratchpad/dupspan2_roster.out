@@ -1,0 +1,33 @@
+D-DUPSPAN2 alias markers in source : 27
+  resolved to an alias name        : 27
+  files                            : 16
+  distinct canonicals              : 21
+    dcm_lt                 -> c16_lt                 basic/float-arith.asm:181
+    dpl_err_pop            -> ctp_err_pop            basic/cload.asm:1053
+    dpl_link_err           -> ctp_link_err           basic/cload.asm:1045
+    dshl_allzero           -> dshr_allzero           basic/float-arith.asm:310
+    ee_done                -> ed_done                basic/arrays.asm:743
+    ef_over                -> gosub_stk_over         basic/program.asm:1646
+    evmc_log_err           -> evmc_sqr_err           basic/expr.asm:1834
+    exf_syn                -> elas_err               basic/field.asm:411
+    fcfs_absent            -> vptr_none              basic/fat.asm:241
+    fcmp_a_gt2             -> c16_gt                 basic/float-arith.asm:1119
+    fcmp_a_lt              -> c16_lt                 basic/float-arith.asm:1108
+    fcmp_neg_swap1         -> c16_lt                 basic/float-arith.asm:1085
+    fcmp_neg_swap4         -> c16_gt                 basic/float-arith.asm:1080
+    gfx_typeerr            -> pl_typeerr             basic/graphics.asm:381
+    loc_omit               -> g8_missing             basic/missing.asm:295
+    nm_fail2               -> nm_fail                basic/files.asm:1673
+    oe_undef               -> ers_undef              basic/program.asm:2248
+    pl_parse_err           -> tm_raise               basic/play.asm:122
+    poke_err               -> ex_let_err             basic/poke.asm:33
+    pu_emit_str0           -> print_string           basic/printusing.asm:315
+    raf_zero_ok            -> cpow_x0_pos            basic/float-arith.asm:495
+    ris_done               -> sidr_done              basic/files.asm:1031
+    shxf_ok                -> sst_ok                 basic/str-engine.asm:1221
+    shxf_overflow          -> sst_overflow           basic/str-engine.asm:1226
+    tll_undef              -> ers_undef              basic/program.asm:2452
+    vdp_err                -> ex_let_err             basic/vdpio.asm:70
+    vlf_unset_int          -> vptr_none              basic/vars.asm:606
+
+⚠️ the spec (docs/spec-basic-dupspan2.md §3) says '28 aliases in 16 files'. Source says 27 in 16.

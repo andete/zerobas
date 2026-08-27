@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2917 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2940 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1680,7 +1680,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       argument about the MECHANISM rather than the observable. Owed: one row per
       aliased site, and a knife per canonical whose predicted set is that
       canonical's aliases and nothing else.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      📏 **THE PER-SITE DENOMINATOR EXISTS NOW, TAKEN FROM THE SOURCE**
+      ([`scratchpad/dupspan2_roster.py`](scratchpad/dupspan2_roster.py)): **27
+      aliases in 16 files, 21 distinct canonicals**, each named with its
+      canonical and its file:line. A per-site row set needs a per-site list, and
+      the list was a sentence in a spec.
+      🔴 **AND IT IS 27, NOT 28 — THE SPEC'S §3 HEADING CONTRADICTED ITS OWN
+      §6.** The 28th is `dr_stored equ dl_run`, which §6 records as **DECLINED**
+      (its comment holds a deliberately unshipped `jp run_prog_top` that an
+      `equ` would erase). The heading was written before that decision and never
+      re-counted; the FILE count, 16, was right all along. **Corrected in
+      place** [[two-sections-of-one-doc-disagreed]].
+      🔴 **AN ALIAS IS SPELLED TWO WAYS AND A SCANNER THAT KNOWS ONE
+      UNDERCOUNTS.** `ee_synerr_pop:` is a LABEL; `poke_err equ ex_let_err` is an
+      EQU. My first cut looked only for `^name:` and resolved **22 of 27** — and
+      the five it could not place were all EQUs, which are the *clearest* aliases
+      in the tree [[a-hand-listed-denominator-is-a-scope-claim]].
+      ➡️ **THE OBSERVABILITY HALF IS STILL OWED, AND NOW IT IS PRICED.** The
+      knives the item asks for are **21** (one per canonical, not 27), each
+      needing its own battery to score — roughly 21 × 7 min. That is the real
+      cost of turning the mechanism argument into an observable, and it is why
+      nobody has done it; a cheaper design (one knife reddening several
+      canonicals at once) cannot say WHICH site was observed, which is the whole
+      question.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (roster + count fixed 2026-08-26; the 21 knives remain, now priced).
 
 - [ ] ⚠️ **A wall figure hardcoded inside a GATE is unpoliced by design.** Filed
       2026-08-22 by D-DUPSPAN2, §5.2 — `tools/gen_resident_abi.py`'s
