@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2532 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2554 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -510,7 +510,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       matching is STALE, so the file cannot drift from what it claims.
       Filed 2026-08-26 by the temp-root work, which chose containment + a gate
       over a 122-site edit it could not verify.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      📏 **RE-MEASURED 2026-08-26. IT IS 124 LITERALS IN 69 FILES**, not 122 in
+      67 — it drifted **+2 within the day**, which is the gate doing its job
+      rather than a problem: a new literal is RED, so the pin file cannot lie.
+      🔴 **AND "10 OF THEM REACHED BY A GATE" DOES NOT REPRODUCE UNDER ANY
+      DEFINITION I CAN CONSTRUCT.** Taking the **real** `GATES` list out of
+      `run_gates.py` (41 targets), resolving each target's recipe to its scripts
+      (48 seeds) and closing over imports (58 files), exactly **2** pinned files
+      are on a battery path — and **both ARE the temp-root machinery itself**:
+      `probes/lib/probe_tmp.py`, whose literals *define* the root, and
+      `tools/check_temp_root.py`, whose two are its own matching regex and its
+      docstring. **Zero of the 124 is a stray write on a battery path.**
+      🔴 **MY OWN FIRST MEASUREMENT WAS WRONG THE SAME WAY THE FILING WAS.** It
+      reported a different pair, including `probes/disk/disk_probe_dskio.py`
+      (which really does write `/tmp/disk_probe_ours.txt`) — because I selected
+      battery targets by *"the target name appears somewhere in `run_gates.py`"*,
+      and **`probe` matched the substring `probes/lib`**. `make probe` is a
+      SMOKE target, explicitly not a gate. A substring is not a membership test.
+      ✅ **SO THE CONTAINMENT DECISION IS VINDICATED AND THIS DE-ESCALATES.** No
+      bulk edit: today's lesson is that a mechanical sweep whose blast radius
+      cannot be verified breaks invariants its own rule cannot see
+      [[a-mechanical-fix-can-break-a-different-invariant]]. Convert
+      opportunistically, when touching a probe for another reason.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (re-measured 2026-08-26: 0 stray writes on a battery path; DE-ESCALATED).
 
 - [ ] 🐌 **`PAINT` IS STILL 1.9–2.0× SLOWER THAN BOTH REFERENCES — HALVED BY
       D-PAINTVRAM, NOT CLOSED.** Was 2.4–3.4× (filed 2026-08-24 out of the budget
