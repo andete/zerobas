@@ -1,0 +1,7 @@
+# Pinned rule-A pairs: a probe literal and a ROM label share a NAME but mean two
+# different namespaces, so the disagreement is correct.  One line per pin,
+# `path:NAME  # why`.  Nothing else belongs here -- a genuinely stale copy must be
+# fixed, not pinned.  Every entry below was MEASURED on a VG-8020 by
+# scratchpad/sysvar_addr_probe.py (D-WALLIT, 2026-08-27), not accepted on its face.
+probes/basic/basic_probe_bload.py:ARYTAB   # published MSX work area $F6C4 (reads $8003 on the reference); zerobas' own ARYTAB is the internal $E1C0 -- REJECT-GROUP, basic/sysvars.inc:910
+probes/basic/basic_probe_clear.py:FRETOP   # published MSX work area $F69B (tracks the CLEAR ceiling on the reference); zerobas' own FRETOP is the internal $E268 -- basic/sysvars.inc:1519

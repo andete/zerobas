@@ -1811,12 +1811,12 @@ GFX_SC          equ     GFX_SDESC + 2   ; $E417: PUT SPRITE colour (2). x/y need
                                         ; they ride the arc's pinned GXPOS/GYPOS pair, which
                                         ; PUT SPRITE writes anyway (the work area keeps the
                                         ; raw, unwrapped coordinate)
-GFX_SPATN       equ     GFX_SC + 2      ; $E41B: ...pattern number (2)
-GFX_SSIZE       equ     GFX_SPATN + 2   ; $E41D: SCREEN's sprite-size argument while a mode
+GFX_SPATN       equ     GFX_SC + 2      ; $E419: ...pattern number (2)
+GFX_SSIZE       equ     GFX_SPATN + 2   ; $E41B: SCREEN's sprite-size argument while a mode
                                         ; set is in flight (RG1SAV bits 1..0 hold it after) (1)
-GFX_SARGN       equ     GFX_SSIZE + 1   ; $E41E: how many extra SCREEN arguments have been
+GFX_SARGN       equ     GFX_SSIZE + 1   ; $E41C: how many extra SCREEN arguments have been
                                         ; seen -- only the FIRST is the sprite size (1)
-GFX_SFLAGS      equ     GFX_SARGN + 1   ; $E41F: which arguments were GIVEN --
+GFX_SFLAGS      equ     GFX_SARGN + 1   ; $E41D: which arguments were GIVEN --
                                         ; bit0 = coordinates, bit1 = colour, bit2 = pattern;
                                         ; an omitted one keeps the entry's own byte (1)
 ;
@@ -2612,7 +2612,13 @@ DIRENT_FILESIZE equ     28      ; file-size dword (LE) within a dir entry
 EOC             equ     $0FFF   ; end-of-chain marker we write (Microsoft FAT §3.2)
 ;
 ; Scratch RAM (page-3 RAM; NOT part of the ROM image). The host buffers below are
-; placed ABOVE all basic-core RAM (which tops out at STRSCR $E360..$E380).
+; placed ABOVE all basic-core RAM (which is capped at $E560 -- the ceiling the
+; assembler asserts at sysvars.inc `IF GFX_G8V + 2 > $E560` / `IF GFX_PSTK_END >
+; $E560`; the topmost cell today is GFX_G8V $E55E..$E55F).
+; 🔴 THIS READ "tops out at STRSCR $E360..$E380" UNTIL 2026-08-27 (D-WALLIT) AND WAS
+; WRONG TWICE: STRSCR is $E26D..$E36D (this same file, :1481), and it is not the top
+; -- the GFX_PSTK/GFX_D* block above it runs to $E55F, 512 B higher. A reader siting
+; a new host buffer off this sentence would have overlapped live graphics scratch.
 ;
 ; CROSS-COMPONENT OVERLAP INVARIANT (the load-bearing one — read before moving any
 ; address here). On the combined machine these host buffers ($E5C0..$E9FB) OVERLAP

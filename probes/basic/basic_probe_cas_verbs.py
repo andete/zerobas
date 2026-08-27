@@ -240,7 +240,12 @@ def _write_cas_data(cart: str, wav: str, name: str, lines: list[str]) -> None:
 # (LEN/ASC etc. don't round-trip a value out — confirmed), whereas STRSCR holds the
 # exact bytes read and is stable in the post-RUN idle REPL. This is the same scratch
 # the shared (disk + CAS) reader fills, so it evidences the read faithfully.
-STRSCR = 0xE360
+# 🔴 THIS READ $E360 UNTIL 2026-08-27 (D-WALLIT) -- 243 B INTO THE BUFFER, NOT ITS
+# HEADER. `STRSCR` is $E26D (basic/sysvars.inc:1570, `RVDESC + 3`); $E360 was its
+# address before the string-engine S3 low-region re-layout (17b9878) and this hand
+# copy never followed. Both STRSCR cases below read all-$FF and had been FAILING
+# unnoticed: this probe is README-listed but in NO battery, so nothing read the rc.
+STRSCR = 0xE26D
 
 
 def test_open_cas_roundtrip(cart: str, tmp: str) -> bool:

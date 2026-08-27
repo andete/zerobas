@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2971 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3016 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1736,14 +1736,59 @@ list. **When a slice lands, grep this list for what it just shipped.**
       question.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (roster + count fixed 2026-08-26; the 21 knives remain, now priced).
 
-- [ ] ⚠️ **A wall figure hardcoded inside a GATE is unpoliced by design.** Filed
+- [x] ⚠️ **A wall figure hardcoded inside a GATE is unpoliced by design.** Filed
       2026-08-22 by D-DUPSPAN2, §5.2 — `tools/gen_resident_abi.py`'s
       `LOW_CEILING = 0x3FE5` under a comment naming `__MEAS_LOW_END`, stale by
       65 B; fixed in that commit by reading the label. The CLASS is open:
       `make wall-assertion-check` scopes itself to TODO.md's `- [ ]` items, so
       no gate reads a free-space or region-boundary figure baked into
       `tools/`, `probes/` or a source `equ`. A sweep for the class is owed.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **SWEPT AND GATED 2026-08-27 (D-WALLIT), and the class was NOT empty —
+      three live defects.** [`docs/spec-wall-literals.md`](docs/spec-wall-literals.md);
+      new `make wall-literal-check`. Both filed claims re-ran true first.
+      **Rule: a HAND COPY of a value the build already resolves.** Two shapes,
+      each with its own denominator — **A** `NAME = <literal>` in `tools/`/`probes/`
+      where NAME is a build symbol (**93 anchored of 626**), **B** `NAME equ <expr>
+      ; $XXXX…` (**64** rows). ⚠️ The scout's wider rule reports `960 of 1464`;
+      that is NOT this gate's denominator and the docstring says so.
+      🔴 **`basic_probe_cas_verbs.py` read `STRSCR = $E360` — 243 B INTO the buffer
+      ($E26D). BOTH STRSCR cases had been FAILING on all-`$FF` and nobody knew:
+      the probe is README-listed but in NO battery, so its honest `rc=1` was never
+      collected.** 4 FAIL/2 PASS → **6/6 PASS**, four untouched controls — and the
+      BASIC was right all along; only the readout was blind.
+      🔴 **`basic_probe_clear.py`: FOUR of six sysvars pointed at the wrong cell**
+      ($F691/$F693/$FC4C read `$0000` on a VG-8020; $FC48 is ceiling-independent).
+      Case 3 printed two DEAD cells as `SAME` — agreement made of two zeroes.
+      🎯 The right addresses were ALREADY in this repo (`sysvars.inc:1528`,
+      `sysvar-rehoming-decisions.md:210`); nothing compared the copies to them.
+      ⚠️ Of my two discriminators only one worked: varying string-space size moved
+      NOTHING, including live cells — the ceiling arm and the live/dead split
+      carried it.
+      🔴 **`sysvars.inc`: the `GFX_SPATN..GFX_SFLAGS` chain annotated addresses 2 B
+      high, and :2615 said basic-core RAM "tops out at STRSCR $E360..$E380" —
+      wrong span AND wrong cell** (:1481 of the same file has it right; the real
+      cap is the build-enforced $E560, 512 B higher). Comment-only: all three ROM
+      images rebuilt byte-identical (md5s in the spec doc §3.3).
+      Exemptions are mechanical (PER-BUILD, CONDITIONAL ×32) except PUBLISHED,
+      which is 2 pinned lines — both MEASURED on the reference, not accepted.
+      ⚠️ Does NOT catch prose, or a literal with no name in a sym file: §3.3 was
+      found by READING, not by either gate.
+
+- [ ] ⚠️ **A probe with an honest `rc` that NO battery collects is not an oracle.**
+      Opened 2026-08-27 by D-WALLIT,
+      [`docs/spec-wall-literals.md`](docs/spec-wall-literals.md) §3.1.
+      `basic_probe_cas_verbs.py` had **two failing cases for an unknown number of
+      months** — it returns a correct `rc=1`, it is listed in `README.md:360`, and
+      nothing ever ran it. The new `wall-literal-check` covers the CAUSE of that
+      particular break (a stale address literal) but not the SHAPE: a probe outside
+      every battery fails silently for any other reason too. **Two things are owed
+      and only the first is autonomous:** (a) COUNT the probes that no `make` target
+      and no battery invokes — the denominator is unmeasured, and `cas_verbs` was
+      found by accident; (b) decide which of them earn a battery slot. (b) is a
+      RUNTIME-BUDGET call: `cas_verbs` alone is a ~4 min tape probe against a 426 s
+      battery, so adding the tape corpus could roughly double it.
+      🙋 NEEDS-JOOST — a call that is yours to make (battery runtime budget). The
+      COUNT in (a) is autonomous and should be measured first; the spending is not.
 
 - [ ] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
       it.** Filed 2026-08-22 by D-DEFFN,

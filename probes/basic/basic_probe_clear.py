@@ -40,7 +40,7 @@ Three test groups:
     error landmark) must stay 0x00 (no error fired).
 
  3. Divergence observation — CLEAR on the reference adjusts heap-related
-    sysvars (MEMSIZ $FC48, STKTOP $FC4C, FRETOP $F691, VARTAB pointer $F676 …)
+    sysvars (MEMSIZ $F672, STKTOP $F674, FRETOP $F69B, TXTTAB pointer $F676 …)
     that zerobas does not touch (no string heap in Phase 1).  This case
     captures a representative set of those sysvars from both sides after a
     `CLEAR 200,&HD000` and prints the observed differences; it does NOT FAIL
@@ -92,15 +92,37 @@ HIMEM        = 0xFC4A
 # The following sysvars are from C-BIOS system variables / MSX2 Technical
 # Handbook work-area appendix (allowed sources), captured here for the
 # divergence observation only — we DO NOT enforce their values.
-# MEMSIZ  $FC48 — highest available RAM address (set by BIOS at boot).
-# STKTOP  $FC4C — initial GOSUB/FOR stack top (CLEAR adjusts it from HIMEM).
-# FRETOP  $F691 — top of the string heap (CLEAR resets to new heap top).
-# STREND  $F692 — end of string space (CLEAR sets from string-space arg).
+#
+# 🔴 FOUR OF THESE SIX POINTED AT THE WRONG CELL UNTIL 2026-08-27 (D-WALLIT), AND
+# CASE 3 REPORTED TWO DEAD CELLS AS `SAME`. Read on a VG-8020 with the ceiling
+# moved (CLEAR 200,&HD000 vs &HC000), scratchpad/sysvar_addr_probe.py:
+#
+#     $F691  $0000 / $0000   DEAD -- was "FRETOP"     ->  FRETOP is $F69B
+#     $F693  $0000 / $0000   DEAD -- was "STREND"     ->  STREND is $F6C6
+#     $FC4C  $0000 / $0000   DEAD -- was "STKTOP"     ->  STKTOP is $F674
+#     $FC48  $8000 / $8000   live but ceiling-INDEPENDENT, so not "highest
+#                            available RAM" -- MEMSIZ is $F672
+#     $F672  $CDE8 / $BDE8   tracks the ceiling exactly (-4096)  = MEMSIZ
+#     $F674  $CD20 / $BD20   tracks the ceiling exactly (-4096)  = STKTOP
+#     $F69B  $CDE9 / $BDE9   tracks the ceiling exactly (-4096)  = FRETOP
+#     $FC4A  $D000 / $C000   tracks the ceiling exactly          = HIMEM  ✅ kept
+#     $F676  $8001 / $8001   BASIC text base                     = TXTTAB ✅ kept
+#
+# 🎯 THE CORRECT ADDRESSES WERE ALREADY WRITTEN DOWN IN THIS REPO: basic/sysvars.inc
+# :1528 and docs/sysvar-rehoming-decisions.md:210 both name `MEMSIZ $F672` /
+# `STKTOP $F674` / `FRETOP $F69B`, and :918 gives the chain STREND $F6C6. This
+# file's hand copies never agreed with them and nothing compares the two -- the
+# founding shape of D-DUPSPAN2 §5.2. The old prose block disagreed even with the
+# code beside it (it said STREND $F692 above `STREND = 0xF693`).
+# MEMSIZ  $F672 — highest available RAM address (set by BIOS at boot).
+# STKTOP  $F674 — initial GOSUB/FOR stack top (CLEAR adjusts it from HIMEM).
+# FRETOP  $F69B — top of the string heap (CLEAR resets to new heap top).
+# STREND  $F6C6 — end of string space (CLEAR sets from string-space arg).
 # TXTTAB  $F676 — pointer to BASIC text base (CLEAR may move it for heap).
-MEMSIZ       = 0xFC48
-STKTOP       = 0xFC4C
-FRETOP       = 0xF691
-STREND       = 0xF693   # 2 bytes: end-of-string-space pointer
+MEMSIZ       = 0xF672
+STKTOP       = 0xF674
+FRETOP       = 0xF69B
+STREND       = 0xF6C6   # 2 bytes: end-of-string-space pointer
 TXTTAB       = 0xF676   # 2 bytes: BASIC text base pointer
 
 # zerobas error landmark (basic/sysvars.inc — own source)
@@ -349,10 +371,10 @@ def main() -> int:
 
     sysvar_names = {
         HIMEM:  "HIMEM  $FC4A (CLEAR ceiling)",
-        MEMSIZ: "MEMSIZ $FC48 (highest avail RAM)",
-        STKTOP: "STKTOP $FC4C (initial GOSUB/FOR stack top)",
-        FRETOP: "FRETOP $F691 (string-heap top)",
-        STREND: "STREND $F693 (end of string space)",
+        MEMSIZ: "MEMSIZ $F672 (highest avail RAM)",
+        STKTOP: "STKTOP $F674 (initial GOSUB/FOR stack top)",
+        FRETOP: "FRETOP $F69B (string-heap top)",
+        STREND: "STREND $F6C6 (end of string space)",
         TXTTAB: "TXTTAB $F676 (BASIC text base pointer)",
     }
     print("  Sysvar comparison (ref vs zerobas) — divergences expected for"
