@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2729 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2752 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1353,7 +1353,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       names that file as the remedy — that exposed it, not the tally.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (measured 2026-08-26; conversion is opportunistic, the sweep is the standing measure).
 
-- [ ] ⚠️ **`latch-check` IS THE ONE GATE WITH NO PREREQUISITES, AND A HAND-ROLLED
+- [x] ⚠️ **`latch-check` IS THE ONE GATE WITH NO PREREQUISITES, AND A HAND-ROLLED
       BATTERY WILL TRIP IT.** Filed 2026-08-23, D-CIRCMISS §8.
       [`Makefile`](Makefile):2498 is `latch-check:` with an empty prerequisite
       list, so running it straight after `rm -rf build` makes it refuse (*"a
@@ -1363,7 +1363,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       its own `repack-machine` prerequisite, so this one is the only way to
       learn the rule. Either give it the prerequisite or say so where batteries
       get written; unpriced, and 16/16 once the ROMs exist.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **FIXED 2026-08-26 — `latch-check: repack-machine`.** The requirement
+      was already written in the comment directly above the target (*"Needs
+      `make repack-machine`"*); it is now a prerequisite, which is the shape the
+      other emulator-driving targets use. **Falsified by planting, both senses,
+      from the same clean tree**: with the prerequisite REMOVED, `rm -rf build`
+      then `make latch-check` exits **2** with the preflight refusal — exactly
+      as filed; with it, the same clean tree gives **16/16 rows, rc 0**.
+      🔴 **AND CHECKING IT WAS SAFE FALSIFIED `run_gates.py`'s OWN JUSTIFICATION.**
+      `repack-machine` is **PHONY**, so it re-runs unconditionally — and
+      **24 of the battery's targets already name it**, so one battery
+      re-publishes `~/.openMSX/share/machines/*.xml` up to 24 times,
+      concurrently, while every other unit reads it. The docstring said *"in the
+      parallel phase … no build/ writes, no races … nothing rebuilds"*, which is
+      the load-bearing excuse for running `make` concurrently with a battery and
+      was **false for the one artifact all 41 units share**.
+      🎯 **THAT ALSO EXPLAINS WHY D-MACHXML'S RACE WAS REPRODUCIBLE AT ALL** — it
+      is not a rare window, it is two dozen publishes per run. It is survivable
+      only because `openmsx_paths.publish()` is atomic (the non-atomic form
+      measured **412/1200 = 34.3 %** of concurrent reads torn). Docstring
+      corrected in place: conclusion narrowed, the exception named
+      [[a-fix-falsifies-the-justification-beside-it]].
+      ⚠️ This change adds a 24th such target, not the first — the cost was
+      already being paid, and it is now written down where the next person will
+      read it.
 
 - [ ] ⚠️ **`CLEARPOOL=0` IS UNTESTED AND CANNOT BE ADDED TO
       `switch-build-check`.** 2026-08-23, D-MISSOPFIX. `FPERR_MISSOP` is equated

@@ -9,9 +9,23 @@ in probes/lib/omsx_repl.py and the temp-path isolation in tests/_tmp.py --
 docs/spec-probe-emutime-watchdog.md); before those, heavy emulator gates flaked
 under load. The warm-up builds every shared artifact (ROMs, reloc sym/rom, the
 resident-ABI include, the test disk) FIRST, so in the parallel phase every gate's
-prerequisites are up to date and `make <gate>` runs only its probe -- no build/
-writes, no races (which is why this does not violate "never run make concurrently
-with a battery": nothing rebuilds).
+FILE prerequisites are up to date and `make <gate>` runs only its probe -- no
+build/ writes and no races over build artifacts, which is why this does not
+violate "never run make concurrently with a battery".
+
+🔴 WITH ONE MEASURED EXCEPTION, AND IT IS THE IMPORTANT ONE. `repack-machine` is
+PHONY, so it re-runs unconditionally -- and **24 of the battery's targets name it
+as a prerequisite**, so a single battery RE-PUBLISHES
+`~/.openMSX/share/machines/*.xml` up to 24 times, concurrently, while every other
+unit is reading it. This paragraph used to end "nothing rebuilds", which was
+false for the one artifact that all 41 units share.
+
+That is survivable for exactly one reason: `openmsx_paths.publish()` writes to a
+sibling temp and `os.replace`s it, so a reader can never see a partial file
+(D-MACHXML measured the non-atomic form at 412/1200 = 34.3 % of concurrent reads
+TORN). It is also why that race was reproducible at all -- it is not a rare
+window, it is two dozen publishes per run. Do not remove the atomicity, and do
+not read "nothing rebuilds" as covering the machine config.
 
 `graphics-acceptance` is the tent-pole -- a ~300s monolithic, un-shardable,
 memory-bandwidth-sensitive render suite -- so by default it runs at NORMAL

@@ -2532,9 +2532,18 @@ lineerr-acceptance: repack-machine $(DISK_TEST_DSK)
 # Row A is why this cannot pass vacuously: once the race is fixed, the two
 # delivery oracles have no live subject left, and cross-oracle disagreement --
 # D-ECHO's only positive control -- goes silent forever. Nine boots, ~40 s.
-# Needs `make repack-machine`; SUBJECT-ONLY (the reference is not driven, see
-# the module docstring). Exits NON-ZERO if it cannot identify the trigger.
-latch-check:
+# SUBJECT-ONLY (the reference is not driven, see the module docstring). Exits
+# NON-ZERO if it cannot identify the trigger.
+# 🔴 `repack-machine` IS A PREREQUISITE, NOT A SENTENCE. This line used to read
+# "Needs `make repack-machine`" in prose with an EMPTY prerequisite list -- so a
+# hand-rolled battery running it straight after `rm -rf build` got the preflight
+# refusal ("a probe booted against this machine would report the absence of the
+# ROM as the absence of the FEATURE") and `make` exited 2. Every other
+# emulator-driving target self-heals through its own prerequisite; this was the
+# only one where the rule lived in a comment. `run_gates.py` builds
+# repack-machine in its WARM set, so this adds no work to the battery and
+# cannot rebuild mid-run.
+latch-check: repack-machine
 	python3 probes/lib/latch_check.py
 
 # --- ONE type-ahead injector in the tree (docs/spec-probe-lastinj.md §3.4) ----
