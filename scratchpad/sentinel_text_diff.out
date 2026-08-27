@@ -1,0 +1,18 @@
+case      side     raw       span   tail    fixed -> sentinel
+value     vg8020   differs   same   DIFF    ' 42 ' -> ' 42 '
+value     cf3300   differs   same   DIFF    ' 42 ' -> ' 42 '
+value     zb       differs   same   same    ' 42 ' -> ' 42 '
+string    vg8020   differs   same   DIFF    'ZB' -> 'ZB'
+string    cf3300   differs   same   DIFF    'ZB' -> 'ZB'
+string    zb       differs   same   same    'ZB' -> 'ZB'
+forloop   vg8020   differs   same   DIFF    ' 55 ' -> ' 55 '
+forloop   cf3300   differs   same   DIFF    ' 55 ' -> ' 55 '
+forloop   zb       differs   same   same    ' 55 ' -> ' 55 '
+error     vg8020   same      same   same    'Division by zero in 10' -> 'Division by zero in 10'
+error     cf3300   same      same   same    'Division by zero in 10' -> 'Division by zero in 10'
+error     zb       same      same   same    'Division by zero in 10' -> 'Division by zero in 10'
+
+  TEETH (value vs string spans must differ): ✅ they do  ' 42 ' vs 'ZB'
+  FALLBACK (the erroring case never pokes, so the sentinel CANNOT fire): 3/3 error messages identical -- the fixed-time schedule still fired and still read the right thing
+
+=== spans differing under sentinel capture: 0 of 12 ===

@@ -1,0 +1,11 @@
+case           side  raw        answer     verdict
+flood          ref   differs    same       ✅  fixed=[15, 15] sentinel=[15, 15]
+flood          zb    differs    same       ✅  fixed=[15, 15] sentinel=[15, 15]
+box_bounded    ref   differs    same       ✅  fixed=[7, 1] sentinel=[7, 1]
+box_bounded    zb    differs    same       ✅  fixed=[7, 1] sentinel=[7, 1]
+circle_fill    ref   differs    same       ✅  fixed=[15, 1] sentinel=[15, 1]
+circle_fill    zb    differs    same       ✅  fixed=[15, 1] sentinel=[15, 1]
+
+  TEETH (flood vs box_bounded must differ): ✅ they do  [15, 15] vs [7, 1]
+
+=== answers differing under sentinel capture: 0 ===

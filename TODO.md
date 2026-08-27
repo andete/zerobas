@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2554 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2599 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -842,7 +842,52 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ Cases that ERROR never reach their `POKE`, so the generous bound remains
       the backstop for that path — which is exactly "no bound needed unless there
       is a test or harness failure".
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      📏 **STATE AS OF 2026-08-26, MEASURED NOT INHERITED.** The mechanism is
+      **BUILT** (`sentinel` + `sentinel_capture` in `omsx_repl._tcl`: the
+      watchpoint captures, and the fixed-time schedule is demoted to the pure
+      failure detector this item asked for). **ADOPTION IS ZERO** — no probe
+      under `probes/basic/` uses it; only `probes/lib/`, `probe_signal.py` and
+      scratchpad experiments — so nothing has been replaced and nothing is at
+      risk today. 🔴 **AND THE MODEL GATE THIS ITEM NAMES DOES NOT EXIST:**
+      `savestate-check` was **WITHDRAWN 2026-08-24** and the code reverted
+      ([`docs/spec-probe-savestate.md`](docs/spec-probe-savestate.md)). The
+      PATTERN it stands for survives; the target to copy does not.
+      ✅ **THE GRAPHICS HALF WAS ALREADY DIFFERENTIALLED** —
+      [`scratchpad/sentinel_screen_diff.py`](scratchpad/sentinel_screen_diff.py),
+      re-run today: 3 cases × 2 sides, raw **differs** (the prompt, so the
+      sentinel demonstrably fired), answers **identical**, teeth fire. But every
+      answer there is a VRAM point sample, and it never drove the second oracle.
+      ✅ **THE TEXT HALF IS NOW MEASURED TOO —
+      [`scratchpad/sentinel_text_diff.py`](scratchpad/sentinel_text_diff.py),
+      12/12 SPANS IDENTICAL ON ALL THREE MACHINES** (value / string / FOR-loop /
+      error × vg8020, cf3300, zb), with `' 42 '` vs `'ZB'` as teeth.
+      🎯 **AND `screen_tail` BREAKS EXACTLY WHERE THE CODE SAID IT WOULD — BUT
+      ASYMMETRICALLY, WHICH THE CODE DID NOT SAY.** `result_span_after_echo`
+      (strips the prompt) is identical on 12/12. `screen_tail` (TERMINATES at the
+      prompt) **DIFFERS on 6 of 12: both references, all three signalling cases,
+      and NOT on zerobas.** So converting a tail-style readout would not merely
+      lose 2 characters — it would manufacture a **machine-asymmetric** reading,
+      i.e. an apparatus-made divergence between subject and oracle
+      [[apparatus-is-part-of-the-measurement]].
+      ✅ **THE FALLBACK PATH IS EVIDENCED, NOT ASSUMED.** The `1/0` case dies
+      before its `POKE`, so the sentinel *cannot* fire — and all three machines
+      still read `Division by zero in 10`, identically, from the fixed-time
+      schedule.
+      🔴 **THE FIRST RUN OF THAT DIFFERENTIAL WAS VACUOUS ON 8 OF 12 ROWS AND
+      EXITED 0.** The CF-3300 got the same `("NEW","CLS")` reset as the others
+      and returned `None` for every span; the error case returned `None` on both
+      sides because a dead program prints no `[...]`. Four "same"s agreeing on
+      nothing, plus a `3/3 FALLBACK` claim resting on `None == None`
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. Fixed: Disk BASIC
+      gets `("", "SCREEN 0", "NEW")` like every other probe that drives it, the
+      aborted case is scored on its MESSAGE, and a row with no reading on the
+      fixed side is now an INSTRUMENT FAULT (rc 2) rather than a pass.
+      ➡️ **WHAT REMAINS IS THE GATE AND THE CORPUS**, not the question: a
+      standing check that sentinel-vs-fixed stays byte-identical, over the real
+      acceptance corpus rather than 7 hand-written cases. **Adoption is licensed
+      for span-style readouts and REFUSED for tail-style ones**, on the rows
+      above.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (both halves differentialled 2026-08-26; the standing gate remains).
 
 - [ ] ⚡ ~~**THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS**~~ (original
       framing, kept for the reasoning it carries)
