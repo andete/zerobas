@@ -1,0 +1,45 @@
+1218 span(s)  [--extend: groups grow across label boundaries]
+est.save   n  each  region  file / members
+====================================================================================================
+      48   3    30  page1   basic/bload.asm
+           ex_clear, ex_close, pcr_flag_end
+      12   2    20  low     basic/float-arith.asm
+           raf_noround, rsp_noround
+      10   3    11  page1   basic/list.asm
+           dde_div, dde_div, pfi_div, pn_div
+       9   2    17  page1   basic/expr.asm
+           ev_t_div, ev_t_mul
+       9   2    17  page1   basic/expr.asm
+           ev_e_add, ev_e_sub
+       8   2    16  page1   basic/usr.asm
+           ev_usr_index, usr_index
+       8   2    16  page1   basic/list.asm
+           detok, pu_emit_tail
+       7   2    15  page1   basic/cload.asm
+           do_bsave, do_load
+       6   2    14  page1   basic/expr.asm
+           ev_ff_stick, ev_ff_strig
+       5   2    13  page1   basic/files.asm
+           oo_storemode, oodv_ok
+       5   2    13  low     basic/input.asm
+           inf_lead, inf_trail
+       5   2    13  page1   basic/expr.asm
+           evmc_cdbl, evmc_csng
+       5   2    13  page1   basic/program.asm
+           eokey_lp, eostr_lp
+       5   2    13  low     basic/float-arith.asm
+           cpow_x0_pos, rsp_zero_ok
+       5   2    13  low     basic/float-arith.asm
+           caddsub_float, caddsub_ovf
+       4   3     8  page1   basic/files.asm
+           dc_all, get_int16_checked, mot_go
+       4   2    12  low     basic/str-engine.asm
+           sst_overflow, sta_overflow
+       4   2    12  page1   basic/program.asm
+           ex_on_key, ex_on_strig
+       4   2    12  page1   basic/graphics.asm
+           es_set, spr_set
+       3   2    11  page1   basic/graphics.asm
+           g8_run, pspr_go
+
+27 candidate groups; total est. savings 180 B (overlapping groups NOT deduped)

@@ -53,13 +53,19 @@ collapsed behind an `IF ROM_BASE < $4000`.  That build and its 284 gates are gon
 free to collapse; the column would report `both` for everything and has been
 dropped.  What still constrains a candidate is its REGION (page 1 vs the low
 region) and whether it is shared with the sub-ROM side."""
+import os
 import sys, glob, re, collections, argparse
 sys.path.insert(0, "tools")
-from check_tenant_closure import load_syms
+from check_tenant_closure import load_syms, _is_terminator
 
 _ap = argparse.ArgumentParser()
 _ap.add_argument("--min", type=int, default=25, help="minimum est. saving (B)")
 _ap.add_argument("--members", type=int, default=3, help="minimum clones per group")
+_ap.add_argument("--extend", action="store_true",
+                 help="after grouping, EXTEND each group across label "
+                      "boundaries while every member's next block still "
+                      "matches. A routine split by an interior loop label is "
+                      "otherwise priced at a FRACTION of its collapse.")
 _args = _ap.parse_args()
 
 syms = load_syms("build/basic-reloc.sym")
@@ -107,12 +113,33 @@ def blocks_of(path):
     return out
 
 
+
+# 🔴 A LABEL-BLOCK IS NOT A ROUTINE, AND PRICING ONE AS THE OTHER UNDERSTATES
+# THE CARVE. `arga_pack_fac`/`arga_pack_single` ranked at 14 B and MEASURED at
+# 27: the two 13-byte loops that follow their 22-byte headers live under their
+# own labels (`apf_lp`/`aps_lp`), so this scanner compared the headers and never
+# saw the loops (D-DEFFNLAND §4.3). `--extend` grows a MATCHED group forward
+# across label boundaries while every member's next block still agrees, which
+# prices the collapse whole.
+#
+# ⚠️ EXTENDING IS NOT MERGING. A first attempt merged blocks into
+# terminator-delimited runs BEFORE matching, and that is the wrong shape: it
+# made spans longer and therefore LESS likely to be identical, so it found
+# FEWER groups (10 vs 27) and LOWER savings (55 B vs 180 B). Two routines that
+# share a prefix and diverge after it are a real clone at block granularity and
+# vanish at run granularity. Grow the match; do not pre-merge the input.
 allblocks = []
+order, pos = {}, {}
 for f in sorted(glob.glob("basic/*.asm") + glob.glob("basic/*.inc")):
-    for lbl, body in blocks_of(f):
+    bs = blocks_of(f)
+    order[f] = [(lbl, tuple(body)) for lbl, body in bs]
+    for i, (lbl, body) in enumerate(bs):
+        pos[(lbl, f)] = i
         if len(body) < 4:                      # too small to be worth collapsing
             continue
         allblocks.append((lbl, tuple(body), f))
+print(f"{len(allblocks)} span(s)"
+      + ("  [--extend: groups grow across label boundaries]" if _args.extend else ""))
 
 # signature = the block with UP TO TWO operands masked.  ONE is not enough and
 # the scanner proved it: at 099c809 (pre-carve) a 1-position mask found NOTHING
@@ -131,6 +158,12 @@ for lbl, body, f in allblocks:
                             for j, (mn, op) in enumerate(body))
             sig[masked2].append((lbl, f))
 
+def _norm(lbl, body):
+    """A block body with its OWN label replaced by <self>, so two copies of the
+    same loop compare equal despite their different self-jump targets."""
+    return tuple((mn, op.replace(lbl, "<self>")) for mn, op in body)
+
+
 seen_group = set()
 rows = []
 for masked, members in sig.items():
@@ -143,8 +176,42 @@ for masked, members in sig.items():
     low = [m for m in members if m[0] in syms and syms[m[0]] < 0x4000]
     if not (p1 or low):
         continue
-    sizes = [span.get(m[0], 0) for m in (p1 or low)]
-    body_b = max(sizes) if sizes else 0
+    chosen = p1 or low
+    grown = 0
+    if _args.extend:
+        # Walk forward one block at a time. Every member must HAVE a next block
+        # and all of them must be byte-for-byte equal to each other -- no extra
+        # operand masking, because the group's mask budget was already spent on
+        # the head. The first disagreement stops the whole group.
+        k = 1
+        while True:
+            nxt = []
+            for lbl, f in chosen:
+                i = pos.get((lbl, f))
+                if i is None or i + k >= len(order[f]):
+                    nxt = None; break
+                nxt.append(order[f][i + k])
+            # 🎯 ALPHA-NORMALISE EACH BLOCK'S OWN LABEL BEFORE COMPARING. Two
+            # copies of one loop end `djnz apf_lp` and `djnz aps_lp` -- the same
+            # instruction targeting the equivalent place, which is a RENAMING
+            # and not a difference. Comparing raw bodies calls them distinct and
+            # refuses to extend, which is exactly what the strict first cut did
+            # to this item's own 27 B example.
+            if not nxt or len({_norm(l, b) for l, b in nxt}) != 1:
+                break
+            grown += max(span.get(l, 0) for l, _ in nxt)
+            k += 1
+            # 🔴 AND STOP AT A REAL TERMINATOR. Unbounded, this walk runs past
+            # every `ret` and keeps matching: `gosub_stk_over` grew +1307 B,
+            # `tokenise` +1107 B -- the rest of the file, not a clone. The item
+            # is about a routine split by an INTERIOR label, so the extension
+            # must end where the routine does. `_is_terminator` is the same test
+            # check_dead_code uses; `ret nz` and `jp nc,X` are NOT terminators.
+            last = " ".join(x for x in nxt[0][1][-1] if x) if nxt[0][1] else ""
+            if _is_terminator(last):
+                break
+    sizes = [span.get(m[0], 0) for m in chosen]
+    body_b = (max(sizes) if sizes else 0) + grown
     n = len(p1 or low)
     save = (n - 1) * body_b - 4 * n          # shared body kept, 4 B stub each
     if save < _args.min:
