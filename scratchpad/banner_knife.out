@@ -1,0 +1,10 @@
+K-BANNER: `call show_title` cut; rebuilding and re-running the gate
+banner gate — 2 header line(s) expected, read from basic/title-body.inc
+  🔴 ABSENT  'zerobas version 0.1'
+  🔴 ABSENT  'clean-room MSX-BASIC program loader'
+  marker ' 7  0 '
+
+🔴 FAIL: the marker printed but 2 header line(s) are GONE: ['zerobas version 0.1', 'clean-room MSX-BASIC program loader']. `show_title` stopped reaching the screen, and no other gate in this tree would have noticed.
+
+✅ K-BANNER: the gate went RED for the right reason (marker printed, header absent).
+  restored basic/title-body.inc byte-identically

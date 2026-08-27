@@ -1,0 +1,6 @@
+banner gate — 2 header line(s) expected, read from basic/title-body.inc
+  PRESENT  'zerobas version 0.1'
+  PRESENT  'clean-room MSX-BASIC program loader'
+  marker ' 7  0 '
+
+banner: PASS — the startup header survives to the prompt.

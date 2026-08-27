@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2781 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2824 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -996,6 +996,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that wants isolation sets `ZB_TEST_TMP`), so it is a decision, not an edit.
       🙋 NEEDS-JOOST — a call that is yours to make (changes the documented test-isolation contract).
 
+- [ ] 🧭 **THE BOOT BANNER STILL CALLS ZEROBAS A "PROGRAM LOADER", AND THE
+      CHARTER STOPPED BEING THAT ON 2026-07-17.** Noticed 2026-08-26 while
+      gating the banner. [`basic/title-body.inc`](basic/title-body.inc) prints:
+      ```
+      zerobas version 0.1
+      clean-room MSX-BASIC program loader
+      ```
+      The second line is the loader-stub-era scope. The charter is **faithful
+      full MSX1 BASIC** [[charter-faithful-full-msx1-basic]], and the memory
+      index's own rule is that top-level text saying otherwise is doc debt.
+      🎯 **BUT THIS IS NOT DOC DEBT LIKE A COMMENT IS** — it is the first thing
+      a user sees on every boot, it is version-stamped, and it is the product's
+      own description of itself. Changing it is a decision about what zerobas
+      says it IS, not a correction.
+      ⚠️ **AND IT IS NOW GATED, WHICH CUTS BOTH WAYS**: `banner-acceptance`
+      reads its expectation out of this same file, so editing the text keeps the
+      gate green by construction. That is deliberate (the gate asserts the
+      header REACHES THE SCREEN, not what it says) — but it does mean nothing
+      will ever flag the wording for you.
+      💰 Zero ROM bytes if the replacement is the same length or shorter; the
+      strings live in the sub-ROM tenant, not main page 1.
+      🙋 NEEDS-JOOST — a call that is yours to make (user-visible product text, and what the project says it is).
+
 - [ ] 🔴 **`NAME "old" AS <non-string>` DIVERGES TWICE, AND `NAME` IS THE VERB
       D-FNEXPR2's OWN PLAN NAMED AND ITS MEASUREMENT SKIPPED.** Measured
       2026-08-26 by D-TODOSWEEP tranche 65
@@ -1430,14 +1453,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `BASIC_ORG`, `$2812`) and reported bytes **32** and **67** on a tree that
       is fine. An offset computed from a default is not a reading.
 
-- [ ] ⚠️ **NO GATE READS THE BOOT BANNER, AND D-MISSOPFIX MOVED IT.** 2026-08-23.
+- [x] ⚠️ **NO GATE READS THE BOOT BANNER, AND D-MISSOPFIX MOVED IT.** 2026-08-23.
       The 5 B fix was funded by PROMOTING `basic/title.asm` from page 1 into the
       low region. Every probe program in this tree opens with `CLS`, which wipes
       the startup header, so **not one of the 34 gates would notice if
       `show_title` stopped printing.** `scratchpad/missop_circle.py`'s `banner`
       row is a one-off check (run without `CLS`, assert the header text is on
       screen); it is NOT a gate. Making it one is cheap and unclaimed.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **GATED 2026-08-26 — `make banner-acceptance`, a unit of `make gates`**
+      ([`probes/basic/basic_probe_banner.py`](probes/basic/basic_probe_banner.py)).
+      No `CLS` anywhere; asserts both header lines are above the prompt.
+      🎯 **THE EXPECTATION IS READ OUT OF THE SOURCE**, not pinned in the probe
+      ([`basic/title-body.inc`](basic/title-body.inc)) — a copy would rot the day
+      the banner changes, and the gate would then be "fixed" by editing the
+      expectation to match whatever it now prints, which asserts nothing.
+      🎯 **AND THE PROGRAM'S OWN MARKER IS THE CONTROL.** Header absent + marker
+      absent is a machine that never booted, not a banner that stopped printing;
+      that case is **rc 2, an instrument fault, never a verdict**
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      🔬 **K-BANNER** ([`scratchpad/banner_knife.py`](scratchpad/banner_knife.py)):
+      marker `' 7  0 '` printed, **both header lines GONE**, gate RED. Restored
+      byte-identically, mtime deliberately NOT preserved (D-KNIFEGUARD).
+      🔴 **THE FIRST KNIFE WAS THE WRONG CUT AND THE GATE'S OWN CONTROL CAUGHT
+      IT.** Cutting `call show_title` in `interp.asm`'s init gave a screen of
+      GARBAGE — banner *and* marker gone — because the body opens with
+      `call INITXT`, which is what puts the VDP in SCREEN 0 text mode. That cut
+      tested *"no text mode"*, not *"no header"*, and the gate refused to score
+      it (rc 2) instead of reporting a false RED. The surgical cut keeps `INITXT`
+      and returns before the print loop.
 
 - [ ] 🔴 **A RULE WITNESSED ONLY BY A *DEFERRED* ERROR IS WITNESSED BY NOTHING —
       and one shipped guard was in exactly that state.** Filed 2026-08-23 by

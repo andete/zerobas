@@ -2775,6 +2775,17 @@ todo-citation-check:
 chokepoint-check:
 	python3 tools/check_chokepoints.py
 
+# The boot banner is the one thing no other gate can see: every probe program in
+# this tree opens with CLS, which wipes the startup header, so `show_title` could
+# stop printing entirely and all 41 gates would stay green. D-MISSOP funded a 5 B
+# fix by PROMOTING basic/title.asm out of page 1 -- the one thing that could
+# plausibly break was the one thing nothing read. Runs no CLS and asserts the
+# header is above the prompt, with the program's own marker as the control that
+# separates "header gone" (RED) from "never booted" (rc 2).
+# Knife: scratchpad/banner_knife.py. One boot, ~15 s.
+banner-acceptance: repack-machine
+	python3 probes/basic/basic_probe_banner.py --gate
+
 # clean removes the gitignored build artifacts only. The tracked patch
 # deliverables are left in place (use `make patches` to regenerate them).
 clean:
@@ -2826,7 +2837,7 @@ clean:
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
         omsx-diag-teeth temp-root-check citation-check todo-citation-check \
-        chokepoint-check \
+        chokepoint-check banner-acceptance \
         patch-freshness-check gates clean
 
 # --- gates: the acceptance-gate battery, run in PARALLEL ----------------------
