@@ -1,0 +1,8 @@
+pasmo flake repro: 24 rounds x 12 workers per arm, assembling basic/main.asm
+  DETECT   rc=1 and it said: "ERROR: Macro name expected but 'is' found  on line 1 of file /tmp/zerobas/zbprobe_57268_jp" ✅
+  SHARED      0 failure(s) in 96 run(s)
+  PRESSURE    0 failure(s) in 288 run(s)
+
+SHARED   0/96 non-zero exits, 12 workers on ONE output pair
+PRESSURE 0/288 non-zero exits, 12 workers on their own pairs
+NOT REPRODUCED at this denominator, and the detection control proves the harness would have seen it. A measured negative, not a diagnosis — the item stays open and now names a number.

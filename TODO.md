@@ -215,7 +215,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       is **59 PASS / 0 FAIL**. What is left is resource pressure under 8-way
       parallelism, or something not yet named. **Do not close this on the next
       green battery; close it on a captured message.**
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      📏 **DRIVEN 2026-08-26, NOT REPRODUCED IN 384 RUNS — AND THE DETECTOR IS
+      PROVEN.** [`scratchpad/pasmoflake_repro.py`](scratchpad/pasmoflake_repro.py)
+      runs `test_expr.build()`'s exact command under concurrency, three arms:
+      ```
+      DETECT    rc=1 "ERROR: Macro name expected …"   the harness CAN see a failure
+      SHARED      0 / 96   12 workers on ONE output pair
+      PRESSURE    0 / 288  12 workers on their own pairs
+      ```
+      🔴 **THE FIRST CUT USED `SHARED` AS ITS POSITIVE CONTROL AND IT CAME BACK
+      0/32** — so the run had no evidence it could detect a `pasmo` failure at
+      all, and a silent subject would have read as ALL-CONVERGED. The detection
+      control is now a source `pasmo` *cannot* assemble, and it is checked first.
+      ⚠️ **BOTH NAMED HYPOTHESES ARE NOW MEASURED NEGATIVE AT 384**: a shared
+      output path does not break `pasmo`, and neither does 12-way CPU pressure.
+      What is NOT modelled is the battery's actual mix — 7 concurrent
+      **emulators**, i.e. memory and I/O pressure, not more assemblers. The item
+      stays open and now names a number instead of a suspicion.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (driven 2026-08-26, negative at 384; needs the flake to recur).
 
 - [ ] ⚠️ **FIVE MORE NON-ATOMIC PUBLISHES INTO THE SHARED openMSX TREE, AND NO
       GATE WOULD SEE A SIXTH.** Filed 2026-08-26 by D-MACHXML
@@ -271,7 +288,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2360 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2405 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -756,6 +773,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Language / verb surface**
       ⛔ BLOCKED — neither of us can start it now (needs an idle host).
+
+- [ ] ⚠️ **TEN `tests/_tmp.py` ARTIFACT NAMES ARE SHARED BY 2–4 FILES, AND
+      `tp()`'s FALLBACK BASE IS THE *SHARED* ROOT.** Found 2026-08-26 while
+      driving the `unit-test` flake (item above), by walking every `tp("…")` in
+      the tracked tree rather than inheriting *"`zb_eval.rom` is used by one
+      test file"* — which is **true**, and true of only 96 of the 106 names.
+      ```
+      zb_graphics_sub.rom/.sym   tests/test_graphics.py + 3 scratchpad/paint*.py
+      zb_io.rom/.sym             test_poke / test_screen / test_usr / test_vdpio
+      zb_print.rom/.sym          test_list / test_print
+      zb_vars.rom/.sym           test_strvar / test_vars
+      zb_wrblk_e2e_ut.rom/.sym   test_rdblk_randrecord / test_wrblk_body_e2e
+      ```
+      🎯 **`tp(name)` IS `BASE/name` WITH NO PROCESS IDENTITY**, and
+      `BASE = $ZB_TEST_TMP or probe_tmp.ROOT` — the **shared** `/tmp/zerobas`,
+      *not* `probe_tmp.tmp()`'s per-process directory, which exists precisely to
+      stop fixed names colliding. It does not fire today only because
+      `tests/run.py` is serial and the four `zb_io` writers are all inside it.
+      ⚠️ **THE `zb_graphics_sub` ROW IS THE ONE THAT CAN BITE**: three
+      `scratchpad/paint*.py` probes share those names with a unit test, and a
+      scratch probe run while a battery is running is a normal thing to do.
+      ⚠️ **NOT REPRODUCED, AND THIS IS NOT THE FLAKE ABOVE** — `zb_eval.rom` has
+      one writer, and the shared-path arm of that repro was **0/96**. Filed as a
+      latent collision, not a diagnosis.
+      💰 0 ROM bytes. But the fix is a change to the test harness's ISOLATION
+      MODEL (the shared fallback is deliberate — the docstring says a runner
+      that wants isolation sets `ZB_TEST_TMP`), so it is a decision, not an edit.
+      🙋 NEEDS-JOOST — a call that is yours to make (changes the documented test-isolation contract).
 
 - [ ] 🔴 **`NAME "old" AS <non-string>` DIVERGES TWICE, AND `NAME` IS THE VERB
       D-FNEXPR2's OWN PLAN NAMED AND ITS MEASUREMENT SKIPPED.** Measured
