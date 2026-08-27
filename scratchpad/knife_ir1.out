@@ -1,0 +1,60 @@
+        APPARATUS: no `ROWS:` footer in 4 line(s) of output -- the report is a PREFIX, or the probe does not print the terminator. Either way nothing here can be compared to a baseline.
+        APPARATUS: the footer declares 9 row(s), 4 parsed -- the report was cut short (or the parser has gone blind to a shape the probe prints).
+parser calibrated: clean / planted / footerless / short all correct
+== clean build BEFORE the baseline ==
+baseline roms={'basic-reloc.rom': '350db281', 'sub.rom': '33ba143a', 'zerobas-main-eu.rom': 'eced167f'}
+baseline: 0 DIFF, 0 control FAIL, 0 blank, 0 claim FAIL
+
+EXACT  K-IR1  dfn_is_result's phase discriminator: `inc a` -> `or a`
+        moved=['sub.rom']
+        DIFF  want=['b.nested', 'b.noarg', 'b.param', 'b.paramnew', 'b.redef', 'b.str', 'b.two', 'o.actualfirst', 'o.argnoarg', 'o.clearwipe.ctl', 'o.defint', 'o.defint.ctl', 'o.defintbang', 'o.defstr', 'o.dynaddr', 'o.dynorder', 'o.dynscope', 'o.dynself', 'o.errrestore', 'o.fnbang', 'o.fnpct', 'o.global', 'o.ifthen', 'o.namespace', 'o.nestsame', 'o.outer.ctl', 'o.outerabs', 'o.outerafter', 'o.outerbefore', 'o.outernoarg', 'o.p3', 'o.p5', 'o.p8', 'o.p9', 'o.quotedcolon', 'o.realcell', 'o.runtwice', 'o.stmtcolon', 'o.suffn', 'o.sufformal', 'o.twocalls', 'o.varptr']
+              got =['b.nested', 'b.noarg', 'b.param', 'b.paramnew', 'b.redef', 'b.str', 'b.two', 'o.actualfirst', 'o.argnoarg', 'o.clearwipe.ctl', 'o.defint', 'o.defint.ctl', 'o.defintbang', 'o.defstr', 'o.dynaddr', 'o.dynorder', 'o.dynscope', 'o.dynself', 'o.errrestore', 'o.fnbang', 'o.fnpct', 'o.global', 'o.ifthen', 'o.namespace', 'o.nestsame', 'o.outer.ctl', 'o.outerabs', 'o.outerafter', 'o.outerbefore', 'o.outernoarg', 'o.p3', 'o.p5', 'o.p8', 'o.p9', 'o.quotedcolon', 'o.realcell', 'o.runtwice', 'o.stmtcolon', 'o.suffn', 'o.sufformal', 'o.twocalls', 'o.varptr']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+          b.nested       ref='8'  zb='ERR 2 AT 60'
+          b.noarg        ref='7'  zb='ERR 2 AT 60'
+          b.param        ref='3 5'  zb='ERR 2 AT 30'
+          b.paramnew     ref='8 0'  zb='ERR 2 AT 30'
+          b.redef        ref='3'  zb='ERR 2 AT 60'
+          b.str          ref='hi!'  zb='ERR 2 AT 60'
+          b.two          ref='5'  zb='ERR 2 AT 60'
+          o.actualfirst  ref='60'  zb='ERR 2 AT 60'
+          o.argnoarg     ref='7 1'  zb='ERR 2 AT 60'
+          o.clearwipe.ctl ref='3'  zb='ERR 2 AT 60'
+          o.defint       ref='2'  zb='ERR 2 AT 60'
+          o.defint.ctl   ref='2.5'  zb='ERR 2 AT 60'
+          o.defintbang   ref='2.5'  zb='ERR 2 AT 60'
+          o.defstr       ref='hi!'  zb='ERR 2 AT 60'
+          o.dynaddr      ref='5'  zb='ERR 2 AT 60'
+          o.dynorder     ref='5'  zb='ERR 2 AT 60'
+          o.dynscope     ref='5'  zb='ERR 2 AT 60'
+          o.dynself      ref='205'  zb='ERR 2 AT 60'
+          o.errrestore   ref='5 11'  zb='5 2'
+          o.fnbang       ref='2.5'  zb='ERR 2 AT 60'
+          o.fnpct        ref='2'  zb='ERR 2 AT 60'
+          o.global       ref='5'  zb='ERR 2 AT 60'
+          o.ifthen       ref='3'  zb='ERR 2 AT 60'
+          o.namespace    ref='9 3'  zb='ERR 2 AT 30'
+          o.nestsame     ref='7'  zb='ERR 2 AT 60'
+          o.outer.ctl    ref='2'  zb='ERR 2 AT 60'
+          o.outerabs     ref='2'  zb='ERR 2 AT 60'
+          o.outerafter   ref='2'  zb='ERR 2 AT 60'
+          o.outerbefore  ref='2'  zb='ERR 2 AT 60'
+          o.outernoarg   ref='3'  zb='ERR 2 AT 60'
+          o.p3           ref='1'  zb='ERR 2 AT 60'
+          o.p5           ref='1'  zb='ERR 2 AT 60'
+          o.p8           ref='1'  zb='ERR 2 AT 60'
+          o.p9           ref='1'  zb='ERR 5 AT 60'
+          o.quotedcolon  ref='a:Q'  zb='ERR 2 AT 60'
+          o.realcell     ref='5'  zb='ERR 2 AT 60'
+          o.runtwice     ref='3'  zb='ERR 2 AT 30'
+          o.stmtcolon    ref='3 9'  zb='ERR 2 AT 60'
+          o.suffn        ref='3'  zb='ERR 2 AT 60'
+          o.sufformal    ref='3'  zb='ERR 2 AT 60'
+          o.twocalls     ref='7'  zb='ERR 2 AT 30'
+          o.varptr       ref='2'  zb='ERR 2 AT 60'
+
+restored: roms={'basic-reloc.rom': '350db281', 'sub.rom': '33ba143a', 'zerobas-main-eu.rom': 'eced167f'}  all four sources byte-identical
+
+1/1 knife rows EXACT
+  EXACT  K-IR1  dfn_is_result's phase discriminator: `inc a` -> `or a`

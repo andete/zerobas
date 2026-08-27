@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2940 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2971 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1576,7 +1576,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rows) and a wide prediction scored EXACTLY is worth less than a narrow one
       — but "wide" is a guess until it is measured
       [[a-hand-listed-denominator-is-a-scope-claim]].
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **THREE OF THE FIVE KNIFED 2026-08-26 — ROSTER 9 → 12, ALL EXACT**
+      ([`scratchpad/deffn_knives.py`](scratchpad/deffn_knives.py)). *"Wide" was
+      a guess until measured; it is now three different numbers.*
+      ```
+      K-IR1  dfn_is_result `inc a` -> `or a`        42 of 71 rows
+      K-DL1  dfn_delim `cp c` -> `cp a`              2 rows
+      K-GS1  dfn_a_x grow-never-shrink guard removed 0 rows
+      ```
+      🔴 **K-DL1 FALSIFIED THE COMMENT ABOVE ITS OWN SITE.** `dfn_delim`'s header
+      claimed the compare *"is the WHOLE of the arity rule, and it is why ERR 2
+      comes out of `FNA(1,2)` on a one-formal FN (o.toomany)"*. With the two
+      delimiters forced to agree, `o.toofew` and `o.aryformal` go red and
+      **`o.toomany` does NOT** — too many actuals is still ERR 2, decided
+      somewhere else. A comment naming three rows owned two. **Corrected in
+      place**, 0 ROM bytes (hashes unchanged)
+      [[a-fix-falsifies-the-justification-beside-it]].
+      🔴 **K-GS1 REDDENED NOTHING — 0 of 71.** `deffn-strict` cannot witness the
+      grow-never-shrink rule at all, so the 2 B `jr c,dfn_a_x` guard is
+      **unobservable by this row set**. Encoded EXACT with an empty prediction,
+      because the emptiness IS the result
+      [[knife-that-reddens-nothing-is-the-finding]]. ⚠️ That is not a licence to
+      delete it — D-RESUME's withdrawal had a row that CONTRADICTED the rule;
+      this has none either way. What it says is that nothing here would notice
+      if the guard were wrong.
+      🟢 **AND K-IR1 VINDICATES THE ITEM'S OWN REASON FOR SKIPPING IT**: 42 of 71
+      rows scored exactly says very little about the one line cut, which is
+      precisely why a wide prediction is worth less than a narrow one.
+      ➡️ **TWO REMAIN**: `fn_enter`'s "only the live part" copy length and the
+      `$FFFF` result-slot **key** (K-RT1 cuts the TYPE it writes, not the key).
+      Neither has a label this sweep could site precisely; they need reading
+      before cutting.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (3 of 5 knifed 2026-08-26; 2 remain, unsited).
 
 - [ ] ⚠️ **`clone_scout` prices LABEL-BLOCKS, so a routine split by an interior
       label is priced at a fraction of its collapse.** Filed 2026-08-23 by

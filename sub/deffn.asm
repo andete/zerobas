@@ -232,10 +232,15 @@ dfn_req:
                                             ; servicer's `ld l,a` next time round
 
 ; --- dfn_delim: the two delimiters must AGREE ------------------------------
-; This is the WHOLE of the arity rule, and it is why ERR 2 comes out of
-; `FNA(1,2)` on a one-formal FN (o.toomany), `FNA(1)` on a two-formal one
-; (o.toofew), AND `DEF FNA(B(1))=...` (o.aryformal -- the definition's next
-; character is `(`, the call's is `)`).
+; It is why ERR 2 comes out of `FNA(1)` on a two-formal FN (o.toofew) and of
+; `DEF FNA(B(1))=...` (o.aryformal -- the definition's next character is `(`,
+; the call's is `)`).
+; 🔴 IT IS NOT "THE WHOLE OF THE ARITY RULE", AND K-DL1 MEASURED THAT. This
+; comment used to claim it was, and to name `FNA(1,2)` on a one-formal FN
+; (o.toomany) as its third row. With the compare disabled (`cp c` -> `cp a`, so
+; the two delimiters always agree) o.toofew and o.aryformal go red and
+; **o.toomany does NOT** -- too many actuals is still ERR 2, decided elsewhere.
+; A comment naming three rows owned two of them (2026-08-26).
 dfn_delim:
                 ld      hl,(FN_DPTR)
                 call    skip_spaces

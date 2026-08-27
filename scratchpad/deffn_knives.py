@@ -130,6 +130,46 @@ SUB_MOVES = {"sub.rom"}
 
 # (name, file, old, new, predicted DIFF labels, predicted BLANK labels, moves)
 KNIVES = [
+    # --- 2026-08-26: three of the five sites the D-DEFFNKNIFE item named as
+    # UNKNIFED. Each was skipped for having a "wide" predicted set, and wide was
+    # a guess until measured. K-DL1 is NOT wide: dfn_delim's own comment names
+    # the three rows it decides, so its prediction comes from the source.
+    ("K-IR1  dfn_is_result's phase discriminator: `inc a` -> `or a`",
+     ROOT / "sub/deffn.asm",
+     "                ld      a,(FN_KEY+1)        ; name0 (ld (FN_KEY),bc puts B high)\n"
+     "                inc     a\n",
+     "                ld      a,(FN_KEY+1)        ; name0 (ld (FN_KEY),bc puts B high)\n"
+     "                or      a                   ; K-IR1\n",
+     # MEASURED 2026-08-26: 42 of 71 rows. The item skipped this one for having
+     # a "wide" predicted set -- wide is now a NUMBER, and the reason to skip it
+     # was sound: a 42-row set scored exactly says little about the one line cut.
+     {"b.nested", "b.noarg", "b.param", "b.paramnew", "b.redef", "b.str", "b.two", "o.actualfirst", "o.argnoarg", "o.clearwipe.ctl", "o.defint", "o.defint.ctl", "o.defintbang", "o.defstr", "o.dynaddr", "o.dynorder", "o.dynscope", "o.dynself", "o.errrestore", "o.fnbang", "o.fnpct", "o.global", "o.ifthen", "o.namespace", "o.nestsame", "o.outer.ctl", "o.outerabs", "o.outerafter", "o.outerbefore", "o.outernoarg", "o.p3", "o.p5", "o.p8", "o.p9", "o.quotedcolon", "o.realcell", "o.runtwice", "o.stmtcolon", "o.suffn", "o.sufformal", "o.twocalls", "o.varptr"}, set(), SUB_MOVES),
+
+    ("K-GS1  dfn_a_x's grow-never-shrink guard removed",
+     ROOT / "sub/deffn.asm",
+     "                jr      c,dfn_a_x\n"
+     "                ld      (hl),a              ; grow, never shrink\n",
+     "                ld      (hl),a              ; K-GS1: guard removed\n",
+     # 🔴 MEASURED 2026-08-26: **ZERO of 71**. `deffn-strict` cannot witness the
+     # grow-never-shrink rule at all, so the 2 B `jr c,dfn_a_x` guard is
+     # unobservable by this row set. EXACT with an empty prediction is the
+     # honest encoding: the emptiness is the finding, not a missing prediction
+     # [[knife-that-reddens-nothing-is-the-finding]].
+     set(), set(), SUB_MOVES),
+
+    ("K-DL1  dfn_delim's two-cursor compare: `cp c` -> `cp a` (always agree)",
+     ROOT / "sub/deffn.asm",
+     "                cp      c\n"
+     "                jp      nz,dfn_err2\n",
+     "                cp      a                   ; K-DL1: always equal\n"
+     "                jp      nz,dfn_err2\n",
+     # 🔴 MEASURED 2026-08-26: `o.toomany` does NOT move. The comment above
+     # dfn_delim says the compare "is the WHOLE of the arity rule, and it is why
+     # ERR 2 comes out of `FNA(1,2)` (o.toomany)" -- with the compare disabled,
+     # `FNA(1,2)` on a one-formal FN is STILL ERR 2, so something else decides
+     # it. Two of the three rows the comment claims are really its.
+     {"o.toofew", "o.aryformal"}, set(), SUB_MOVES),
+
     ("K-DF1  the falsified compare restored: `cp low FN_PAREA_END`",
      ROOT / "sub/deffn.asm",
      "                ld      c,a                 ; C = the header type\n"

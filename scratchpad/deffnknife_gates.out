@@ -1,0 +1,56 @@
+=== warm-up (serial build of shared artifacts) ===
+warm-up 7s
+=== 49 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              2s  basic-reloc
+  rc=0              0s  subrom-abi-check
+  rc=0              1s  subrom-closure-check
+  rc=0             22s  unit-test
+  rc=0              0s  deadcode
+  rc=0              2s  wall-assertion-check
+  rc=0              0s  redundant-load-check
+  rc=0              1s  rowshape-check
+  rc=0              4s  injector-check
+  rc=0              0s  temp-root-check
+  rc=0              1s  todo-citation-check
+  rc=0              1s  chokepoint-check
+  rc=0              1s  banner-acceptance
+  rc=0              1s  preflight-check
+  rc=0              4s  latch-check
+  rc=0              4s  diskdep-check
+  rc=0              1s  switch-build-check
+  rc=0             17s  kwsweep
+  rc=0              6s  patch-freshness-check
+  rc=0              0s  deffn-selftest
+  rc=0             48s  string-acceptance
+  rc=0             17s  str-domain-acceptance
+  rc=0             41s  strparen-acceptance
+  rc=0            172s  penderr-acceptance
+  rc=0             44s  missing-acceptance
+  rc=0             17s  error-acceptance
+  rc=0             71s  error-trap-acceptance
+  rc=0             79s  onerr0-acceptance
+  rc=0             98s  math-acceptance
+  rc=0             88s  float-acceptance
+  rc=0             44s  intarg-acceptance
+  rc=0             33s  logicops-acceptance
+  rc=0            201s  screenerr-acceptance
+  rc=0            140s  tmfp-acceptance
+  rc=0            174s  stmtpend-acceptance
+  rc=0             99s  array-acceptance
+  rc=0            119s  deffn-strict
+  rc=0            303s  graphics-acceptance
+  rc=0             56s  abort-acceptance
+  rc=0            139s  interval-trap-acceptance
+  rc=0             74s  clearpool-acceptance
+  rc=0            114s  lineerr#1/8
+  rc=0            107s  lineerr#2/8
+  rc=0            114s  lineerr#3/8
+  rc=0             97s  lineerr#4/8
+  rc=0            103s  lineerr#5/8
+  rc=0             95s  lineerr#6/8
+  rc=0             77s  lineerr#7/8
+  rc=0             74s  lineerr#8/8
+
+=== wall 424s (7s build + 417s gates) ===
+GATES: 42/42 green
+hashes: 350db281 33ba143a eced167f

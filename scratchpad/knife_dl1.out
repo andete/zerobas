@@ -1,0 +1,20 @@
+        APPARATUS: no `ROWS:` footer in 4 line(s) of output -- the report is a PREFIX, or the probe does not print the terminator. Either way nothing here can be compared to a baseline.
+        APPARATUS: the footer declares 9 row(s), 4 parsed -- the report was cut short (or the parser has gone blind to a shape the probe prints).
+parser calibrated: clean / planted / footerless / short all correct
+== clean build BEFORE the baseline ==
+baseline roms={'basic-reloc.rom': '350db281', 'sub.rom': '33ba143a', 'zerobas-main-eu.rom': 'eced167f'}
+baseline: 0 DIFF, 0 control FAIL, 0 blank, 0 claim FAIL
+
+EXACT  K-DL1  dfn_delim's two-cursor compare: `cp c` -> `cp a` (always agree)
+        moved=['sub.rom']
+        DIFF  want=['o.aryformal', 'o.toofew']
+              got =['o.aryformal', 'o.toofew']
+        BLANK want=[]  got=[]
+        control FAIL=[]  claim FAIL=[]
+          o.aryformal    ref='ERR 2 AT 60'  zb='1'
+          o.toofew       ref='ERR 2 AT 60'  zb='0'
+
+restored: roms={'basic-reloc.rom': '350db281', 'sub.rom': '33ba143a', 'zerobas-main-eu.rom': 'eced167f'}  all four sources byte-identical
+
+1/1 knife rows EXACT
+  EXACT  K-DL1  dfn_delim's two-cursor compare: `cp c` -> `cp a` (always agree)
