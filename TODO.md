@@ -302,7 +302,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2419 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2451 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -355,7 +355,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       wrong readings in this sweep's own record, not to a green battery. The
       cheap fix is to import the shared reader; the durable one is whatever stops
       the next scratch probe copying the last scratch probe.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      🔴 **COUNTED A THIRD TIME 2026-08-26, AND 11 IS WRONG IN BOTH DIRECTIONS.**
+      The real membership is **8**, and the list above names **ten** files for a
+      count of eleven — it does not even agree with itself:
+      * **NOT MEMBERS:** `citepaths_falsify.py` and `patchfresh_falsify.py`
+        **never import `omsx_repl` and never read a screen** — they falsify the
+        two citation gates. They were swept in by name, not by property.
+      * **NOT MEMBERS (weaker sense):** `editscout_{layout,reentry,reentry2}`
+        slice rows, but only to **print the whole screen** for inspection; they
+        extract no `[...]` value, so they cannot misread one.
+      * **MISSED:** `sweep_tranche2`, `sweep_tranche3` and `sweep_paintflood`
+        each carry their own `spans()` and were not listed.
+      🎯 **AND THE EXPOSURE IS VISIBLE, NOT SILENT — MEASURED, NOT ARGUED.**
+      [`scratchpad/spanreader_diff.py`](scratchpad/spanreader_diff.py) separates
+      the two readers on **4 of 4** cases: the hand-rolled one returns a LIST
+      whose **first element is always the echo's bracket fragment**
+      (`'";1+1;"'`), where `result_span_after_echo` returns the value. But
+      **all 8 print the whole list** (`spans={...}`) and none picks an element in
+      code — so the echo fragment was on the page for a human to see, and **no
+      verdict rests on a code-chosen element**. The sweep's record is not
+      corrupted by this.
+      🔴 **ONE REAL HAZARD SURVIVES THAT MEASUREMENT.** On an **aborted** case
+      the hand-rolled reader returns a **non-empty** list — the echo fragment
+      alone — where the shared reader returns `None`. *"No output"* can therefore
+      read as *"a value"*, which is this tree's oldest trap
+      [[an-unnamed-outcome-reads-as-no-outcome]].
+      ⚠️ **THE 8 WERE DELIBERATELY NOT REWRITTEN.** They are one-shot
+      instruments whose printed output IS the sweep's evidence; changing the code
+      changes what that record is reproducible from. The open half is the durable
+      fix — whatever stops the next scratch probe copying the last — and
+      today's `sweep_tranche65.py` is evidence it is still needed: it imports the
+      shared reader now, but **its first cut hand-rolled a finder and read its
+      own echo**, at rc 0.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (denominator + exposure MEASURED 2026-08-26; the durable fix remains).
 
 - [ ] 🧹 **A TRACKED `scratchpad/` SCRIPT CAN HARDCODE THE AUTHOR'S ABSOLUTE
       PATH, AND NOTHING CHECKS IT.** Filed 2026-08-26 by D-CITEPATH, which found

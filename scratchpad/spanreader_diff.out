@@ -1,0 +1,11 @@
+case                   hand-rolled                  result_span_after_echo  
+plain                  ['";1+1;"', '2']              2                       DIFF
+    an ordinary value row -- both readers must agree
+echo-carries-bracket   ['";ERR;"', '13']             13                      DIFF
+    🎯 THE TRAP: the stored line's echo contains the marker literally
+aborted                ['";1;"']                    None                     DIFF
+    🎯 the case the shared reader was written for: NO output, echo only
+two-values             ['1', '2']                    2                       DIFF
+    two real spans after one echo
+
+4 of 4 cases separate the two readers.
