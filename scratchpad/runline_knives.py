@@ -24,7 +24,7 @@ others leave agreeing-for-the-wrong-reason:
 """
 import hashlib, pathlib, re, subprocess, sys
 
-ROOT  = pathlib.Path("/Users/joost/projects/zerobas")
+ROOT  = pathlib.Path(__file__).resolve().parent.parent
 CLOAD = ROOT / "basic/cload.asm"
 PROG  = ROOT / "basic/program.asm"
 ROMS  = [ROOT / "build/basic-reloc.rom", ROOT / "build/sub.rom"]

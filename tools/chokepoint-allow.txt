@@ -1,0 +1,49 @@
+# chokepoint-allow.txt — pinned exceptions for tools/check_chokepoints.py.
+#
+# Format: RULE:path  reason (two spaces between).
+#
+# ⚠️ THESE MAY SHRINK, NEVER GROW. A pin that stops being a finding is itself
+# reported RED as a STALE PIN: an exception nobody can retire is indistinguish-
+# able from a rule nobody enforces.
+#
+# --- READER: a DIFFERENT MARKER CONVENTION, not a copy of the [...] reader ----
+# Both use `#...#`, so `result_span`'s `[` never applies, and both handle the
+# command echo explicitly and say so in their own docstrings -- direct_ctrl with
+# `_strip_prompt()`, time with `_last()` taking the last NON-EMPTY span ("that is
+# how the D-TIME-1 `TIME AND 255` reading nearly got lost"). Read before pinning.
+READER:probes/basic/basic_probe_direct_ctrl.py  # marker, with _strip_prompt() handling the echo
+READER:probes/basic/basic_probe_time.py  # marker, with _last() documented against the echo
+#
+# --- READER: one-shot sweep instruments, DELIBERATELY not rewritten -----------
+# D-TODOSWEEP's probes. Their printed output IS the sweep's evidence, so editing
+# them changes what that record is reproducible from. Measured 2026-08-26
+# (scratchpad/spanreader_diff.py): the copies differ from the fenced reader on
+# 4/4 cases, but ALL of them print the WHOLE span list and none picks an element
+# in code -- so the echo fragment was visible to a human and no verdict rests on
+# it. The residual hazard is real but bounded: on an ABORTED case they return a
+# non-empty list where the fenced reader returns None.
+# ⚠️ RETIRE THESE BY DELETING THE PROBES WHEN THE SWEEP RECORD IS SUPERSEDED,
+# not by rewriting them.
+READER:scratchpad/sweep_paintflood.py  one-shot sweep instrument; output is the record
+READER:scratchpad/sweep_tranche1.py  one-shot sweep instrument; output is the record
+READER:scratchpad/sweep_tranche2.py  one-shot sweep instrument; output is the record
+READER:scratchpad/sweep_tranche3.py  one-shot sweep instrument; output is the record
+READER:scratchpad/sweep_tranche11.py  one-shot sweep instrument; output is the record
+READER:scratchpad/sweep_tranche12.py  one-shot sweep instrument; output is the record
+READER:scratchpad/sweep_tranche16.py  one-shot sweep instrument; output is the record
+READER:scratchpad/sweep_tranche17.py  one-shot sweep instrument; output is the record
+#
+# --- ROOT: a FROZEN characterization RECORD -----------------------------------
+# 🔴 FOUND BY BREAKING IT. The 2026-08-26 portability sweep rewrote this file's
+# hardcoded REPO along with 23 others -- and `make injector-check` went RED,
+# because this file is one of three FROZEN records pinned by digest in
+# tools/injector-record-allow.txt: "a RECORD's whole claim is that it is FROZEN".
+# It composes the pre-D-LATCH injector body that `make latch-check` row A
+# requires to MANGLE, and it is cited by basic/PROVENANCE.md and
+# docs/spec-basic-input-devices.md as evidence of what the apparatus WAS.
+# Restored to its frozen contents; the portability defect is real and is
+# outranked by the freeze. ⚠️ RETIRE THIS PIN ONLY BY RETIRING THE RECORD.
+# 🎯 A MECHANICAL FIX CAN BE CORRECT BY ITS OWN RULE AND STILL BREAK A DIFFERENT
+# INVARIANT -- no sweep of "hardcoded paths" could have known this, and only the
+# OTHER gate caught it.
+ROOT:scratchpad/i1_input_char2.py  frozen injector RECORD; contents are pinned by digest elsewhere

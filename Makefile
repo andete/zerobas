@@ -2751,6 +2751,21 @@ citation-check:
 todo-citation-check:
 	python3 tools/check_todo_citations.py
 
+# Three items filed "and nothing checks it" and each proposed its own cheap
+# checker. They are ONE property, not three subjects: a shared helper exists
+# BECAUSE the obvious hand-written version was measured wrong, so writing the
+# obvious version again re-introduces a defect that has a number attached.
+#   PUBLISH  openmsx_paths.publish()      412/1200 concurrent reads torn
+#   ROOT     dirname(dirname(__file__))   the tree had voted 190 to 25
+#   READER   the echo fence               separated on 4/4 cases
+# Every rule states its own denominator; exceptions are pinned WITH a reason in
+# tools/chokepoint-allow.txt and may shrink, never grow (a stale pin is RED).
+# Like todo-citation-check and unlike citation-check, NOT a `basic-reloc` step:
+# none of this gates ROM correctness, and 112 targets depend on that path.
+# <1 s, read-only, no emulator. Spec: docs/spec-chokepoint-gate.md.
+chokepoint-check:
+	python3 tools/check_chokepoints.py
+
 # clean removes the gitignored build artifacts only. The tracked patch
 # deliverables are left in place (use `make patches` to regenerate them).
 clean:
@@ -2802,6 +2817,7 @@ clean:
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
         omsx-diag-teeth temp-root-check citation-check todo-citation-check \
+        chokepoint-check \
         patch-freshness-check gates clean
 
 # --- gates: the acceptance-gate battery, run in PARALLEL ----------------------

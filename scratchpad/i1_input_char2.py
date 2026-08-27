@@ -9,7 +9,7 @@ the matrix) can only be exercised by holding a matrix bit down during the RUN.
 from __future__ import annotations
 import os, re, subprocess, sys, tempfile, time, signal
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = "/Users/joost/projects/zerobas"
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl as R  # noqa: E402
 

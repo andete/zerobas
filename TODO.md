@@ -265,12 +265,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       path, it needs a **file set**: within `tools/install-*.py` and
       `openmsx_paths.py`, any `open(..., "w")` outside `publish()` itself is the
       finding. That denominator is small, complete and statable.
-      ⚠️ **NOT BUILT HERE, DELIBERATELY.** It does not fit `check_temp_root`
-      (same shape, different subject — and a gate whose name disagrees with its
-      contents is a defect this tree keeps paying for), so it is a new unit and
-      wants to be weighed as one. 💰 ~40 lines, one battery unit, not a
-      `basic-reloc` step.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (fix SHIPPED 2026-08-26; the checker half remains).
+      ✅ **CHECKER SHIPPED 2026-08-26 as rule PUBLISH of `make chokepoint-check`**
+      ([`docs/spec-chokepoint-gate.md`](docs/spec-chokepoint-gate.md)) — one gate
+      for three items, because they were one property. Denominator **3 files**.
+      🔴 Its first cut reddened `openmsx_paths.py` **twice, on the COMMENT that
+      explains why the raw call is forbidden** — a regex cannot tell code from
+      prose ABOUT code, and a file documenting a chokepoint is the likeliest
+      place to contain its own subject. AST now.
+      ✅ **DONE** — both halves.
 
 - [ ] 💰 **A 4 B DUP-SPAN THE D-ONLIST FIX CREATED, AND ITS OWN KNIFE FOUND
       IT.** Filed 2026-08-26. `esn_notlineno`'s discriminator
@@ -302,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2477 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2498 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -387,7 +389,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       today's `sweep_tranche65.py` is evidence it is still needed: it imports the
       shared reader now, but **its first cut hand-rolled a finder and read its
       own echo**, at rc 0.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (denominator + exposure MEASURED 2026-08-26; the durable fix remains).
+      ✅ **THE DURABLE FIX SHIPPED 2026-08-26 as rule READER of
+      `make chokepoint-check`**
+      ([`docs/spec-chokepoint-gate.md`](docs/spec-chokepoint-gate.md)). The 8 are
+      PINNED with that reason in `tools/chokepoint-allow.txt`; a NEW unfenced
+      reader is RED. Pins may shrink, never grow, and a stale pin is itself RED.
+      🔴 **THIS ITEM'S SCOPE CLAIM IS FALSIFIED.** *"None of the nine is a
+      GATE — so the exposure is … not to a green battery"* is wrong: **two gate
+      probes define an unfenced reader**, `basic_probe_direct_ctrl.py` and
+      `basic_probe_time.py`. On reading, both are SAFE — they use `#…#` markers,
+      so `result_span`'s `[` never applies, and both handle the echo explicitly
+      and say so — but the reason for not worrying was wrong even though the
+      conclusion held [[a-justification-parenthesis-is-an-unrun-claim]].
+      🔴 **THE RULE IS "REACHES A FENCE", NOT "DEFINES A `bracket()`"** — the
+      first cut tested the name and reddened **24 correct gate probes** that wrap
+      `screen_tail` and add sentinels. Wrapping a chokepoint is the goal; only
+      bypassing it is the finding.
+      ✅ **DONE** — counted, measured, and gated.
 
 - [ ] 🧹 **A TRACKED `scratchpad/` SCRIPT CAN HARDCODE THE AUTHOR'S ABSOLUTE
       PATH, AND NOTHING CHECKS IT.** Filed 2026-08-26 by D-CITEPATH, which found
@@ -422,12 +440,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the old literal exactly — **24/24 did**, so no instrument changed what it
       reads. (My first pass skipped 9 of them by testing `^import pathlib$`
       against files that say `import hashlib, os, pathlib, re, subprocess, sys`.)
-      🔴 **THE "NOTHING CHECKS IT" HALF REMAINS**, and it is now the THIRD
-      deferred checker of one shape — with the openMSX publish rule and the
-      scratch-probe reader rule, all three are *"a tracked file that would do the
-      wrong thing somewhere else"*. 🎯 **THEY WANT TO BE ONE GATE, NOT THREE**;
-      that is the thing to weigh, not three separate cheap tools.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (swept + FIXED 2026-08-26; the checker half folds into the one-gate question).
+      ✅ **CHECKER SHIPPED 2026-08-26 as rule ROOT of `make chokepoint-check`**
+      ([`docs/spec-chokepoint-gate.md`](docs/spec-chokepoint-gate.md)).
+      Denominator **495 files**.
+      🔴 **AND IT IMMEDIATELY FOUND ONE THE FIX HAD MISSED.** The sweep above
+      reported *zero remaining*; `scratchpad/runline_knives.py` still hardcoded
+      it. The sweep's regex required exactly one space before `=` and the file
+      says `ROOT  = pathlib.Path(...)`. **The AST does not care about
+      whitespace, and that is the whole argument for it.** Now 0, checked.
+      ✅ **DONE** — swept, fixed, and gated.
 
 - [ ] 🧹 **THE TAPE PATCH PAIR IS UNGUARDED BY THE SAME RULE.** Filed 2026-08-26
       by D-PATCHFRESH. `tape/zerobas-tape-msx1.ips`/`.bps` are tracked
