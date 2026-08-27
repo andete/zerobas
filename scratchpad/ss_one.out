@@ -1,5 +1,0 @@
-spec lines: ['NEW', '10 ONERRORGOTO900', '15 SCREEN2', '20 CIRCLE(50,50),', '30 R=POINT(30,50):SCREEN0:CLS:PRINT"[";ERR;R;"]":END', '900 R=POINT(30,50):SCREEN0:CLS:PRINT"[";ERR;R;"]":END', 'RUN']
-COLD wall=0.9s cap_none=False face='24 4'
-state: /Users/joost/projects/zerobas/scratchpad/ss_diff_states/zb
-RESTORE wall=0.2s cap_none=False face='24 4'
-raw_eq: True

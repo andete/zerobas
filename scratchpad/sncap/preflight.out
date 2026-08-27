@@ -1,9 +1,0 @@
-python3 tools/check_probe_preflight.py 
-
-subprocess spawn sites : 184
-  exempt by construction (list literal, no -machine) : 88
-  require a preflight guard                          : 96
-    guarded                                          : 96
-    UNGUARDED                                        : 0
-
-ALL PASS -- every launch site this checker cannot prove harmless is guarded.

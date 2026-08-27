@@ -1,9 +1,0 @@
-[main 61d7727] D-SWAP3: SWAP's 3rd operand is the statement boundary, not a bespoke check -- +23 B carve, 4 DIFF -> 0
- 12 files changed, 763 insertions(+), 41 deletions(-)
- create mode 100644 docs/spec-basic-swap3.md
- create mode 100644 scratchpad/swap3_after2.out
- create mode 100644 scratchpad/swap3_gates_run.out
- create mode 100644 scratchpad/swap3_knives.py
- create mode 100644 scratchpad/swap3_knives2.out
- create mode 100644 scratchpad/swap3_probe.out
- create mode 100644 scratchpad/swap3_probe.py

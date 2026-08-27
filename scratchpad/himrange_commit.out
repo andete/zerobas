@@ -1,9 +1,0 @@
-[main 3bc896b] D-HIMRANGE: CLEAR's memory-ceiling range check -- +52 B, 15 DIFF -> 0
- 14 files changed, 1210 insertions(+), 62 deletions(-)
- create mode 100644 docs/spec-basic-himrange.md
- create mode 100644 scratchpad/himrange_gates_run.out
- create mode 100644 scratchpad/himrange_knives.out
- create mode 100644 scratchpad/himrange_knives.py
- create mode 100644 scratchpad/himrange_predictions.md
- create mode 100644 scratchpad/himrange_probe.out
- create mode 100644 scratchpad/himrange_verify.out

@@ -1,9 +1,0 @@
-=== savestate-check (zb) ===
-  ok  zb      err      cap_none=False raw_eq=True
-  ok  zb      draw     cap_none=False raw_eq=True
-  ok  zb      vcircle  cap_none=False raw_eq=True
-  ok  zb      vpaint   cap_none=False raw_eq=True
-  ok  zb      TEETH err!=draw=True
-
-savestate-check: 4/4 restore==cold, 0 DIFF; teeth OK
-=== PASS ===
