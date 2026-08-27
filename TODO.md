@@ -304,7 +304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:2692 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:2729 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1314,7 +1314,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       question: **what might the machine legitimately DO that this readout has
       no name for — and when you add one name, what is the next one?** No gate
       covers it; `scratchpad/circmiss_sib2.py` carries the widened list.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      📏 **THE STANDING QUESTION NOW HAS A NUMBER — SWEPT 2026-08-26**
+      ([`scratchpad/unnamed_outcome_sweep.py`](scratchpad/unnamed_outcome_sweep.py),
+      [`scratchpad/unnamed_outcome_sweep.out`](scratchpad/unnamed_outcome_sweep.out)).
+      Denominator is the ROM's OWN table — every `db "…",0 ; ERR n` in
+      [`sub/errmsg.asm`](sub/errmsg.asm), **30 messages** — so it cannot drift
+      from what the machine can print.
+      ```
+      probes with a <NO OUTPUT> bucket            53
+        classify by MESSAGE TEXT  (the subject)   31
+        classify by ERR code / span / VRAM        22
+      coverage of the canon      min 1   median 6   max 15
+      COMPLETE readouts                            0 of 31
+      sentinels that do NOT carry the text        52 of 53
+      ```
+      🎯 **SO "ADD THE NEXT NAME" IS PROVABLY UNBOUNDED, WHICH IS THE ITEM'S OWN
+      THESIS MEASURED.** Not one readout in the tree can name even half the
+      canon; the widest — `basic_probe_fldwidth.py`, 15/30 — is still blind to
+      `Bad FAT`, `Bad drive name`, `Bad file name`, `Bad sector number`,
+      `Can't CONTINUE` and ten more. The file this item names as carrying the
+      widened list, `scratchpad/circmiss_sib2.py`, reaches **11/30**: genuinely
+      widened, still less than half.
+      ➡️ **THE DURABLE FIX IS THE SELF-DESCRIBING SENTINEL, NOT A LONGER
+      ALTERNATION** — emit the unrecognised screen text INSIDE the sentinel, so
+      an unmodelled outcome names itself and the hole cannot move one message
+      along. **52 of 53 sentinels are bare literals**; exactly one already does
+      this. It is the same cure as `omsx_repl._why_missing` and D-PASMOSAY, both
+      of which turned a silent `<NO CAPTURE>` into a diagnosis.
+      ⚠️ **NOT MASS-EDITED, DELIBERATELY.** It is ~52 sites whose printed output
+      IS the evidence for shipped slices, and today's lesson is that a mechanical
+      sweep whose blast radius cannot be verified breaks invariants its own rule
+      cannot see [[a-mechanical-fix-can-break-a-different-invariant]]. Convert
+      opportunistically, when touching a probe anyway — and the sweep above is
+      the standing measure of how far that has got.
+      🔴 **MY OWN FIRST DETECTOR MEASURED THE SPELLING, NOT THE LIST**: it looked
+      for quoted literals and scored `circmiss_sib2.py` at **1/30**, because that
+      file spells its list as a regex alternation. It was the anomaly — the item
+      names that file as the remedy — that exposed it, not the tally.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (measured 2026-08-26; conversion is opportunistic, the sweep is the standing measure).
 
 - [ ] ⚠️ **`latch-check` IS THE ONE GATE WITH NO PREREQUISITES, AND A HAND-ROLLED
       BATTERY WILL TRIP IT.** Filed 2026-08-23, D-CIRCMISS §8.
