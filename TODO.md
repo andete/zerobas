@@ -509,7 +509,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3562 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3569 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2156,7 +2156,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       repointed**; the BODY copy buys nothing and is exactly the L bytes that
       make the peak 4L instead of 3L. ➡️ The fix is a single allocation copying
       BOTH sources (peak 3L+4, which would make CLEAR 70 pass at L=20) — a new
-      sub-ROM op, its own slice.
+      sub-ROM op, its own slice, and the ground is surveyed: **ops 0–11 are
+      taken**, the op needs **THREE descriptors (srcA/srcB/dest) where only
+      `SH_SRC` and `SH_DEST` exist**, and 🔴 **the obvious third cell `SH_P` is
+      INSTR's — and concat can appear INSIDE an INSTR argument**
+      (`INSTR(A$+B$,"x")`). Settle that FIRST, or walk the RAM map for a new
+      cell. ⚠️ The cheap shortcut is measured DEAD: starting R empty and
+      appending both operands leaves the peak at 4L+4, because the first append
+      still leaves an L-byte body live while allocating 2L.
       ✅ **THE GATE HOLE IS CLOSED 2026-08-28**: `clearpool-acceptance` now
       carries the recovered ground as GATED rows (`tslice-100`, `tslice-120`,
       and `tslice-var70` — the row that separates slicing a TEMP from slicing a

@@ -98,6 +98,23 @@ appending both operands leaves the peak unchanged at `4L + 4`: the first append
 still leaves an L-byte body live while allocating 2L. Only a single combined
 allocation reaches `3L`.
 
+### What the slice starts from — the cell question, already surveyed
+
+* **Op numbers 0–11 are taken** (`strheap_engine`'s dispatch), so the new op is
+  12 or higher.
+* **It needs THREE descriptors — srcA, srcB, dest — and only two cells exist**
+  for that shape: `SH_SRC` and `SH_DEST`. A third is required.
+* Reusing a cell across mutually-exclusive ops is this engine's established
+  pattern (`SH_NUM` is HEX/OCT's, `SH_FILLBYTE` is FILL's, `SH_START`/`SH_COUNT`
+  are SLICE's). 🔴 **But the obvious candidate, `SH_P`, is INSTR's — and
+  concatenation can appear INSIDE an INSTR argument** (`INSTR(A$+B$,"x")`).
+  `ev_f_instr` guards `p` on the STACK and writes `SH_P` only just before the
+  search, so the orders probably do not collide — **"probably" is not a contract
+  for a shared cell, and that is the first thing the slice must settle**, not the
+  last. The alternative is a new cell, which means walking the RAM map
+  (`scratchpad/rammap_sweep.py`) because [[deffn-ramhunt-slice]] — RAM has no
+  gate, and a delta between two names is not free space.
+
 ## 6. The gate hole, closed
 
 The recovered ground from D-POOLCAP (threshold 120 → 100) was **pinned by
