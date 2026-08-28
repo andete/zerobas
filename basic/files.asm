@@ -1370,9 +1370,7 @@ fch_check_d:
                 ; pending div0/overflow is surfaced here too instead of derailing to
                 ; ERR 59 -- the exact failure mode this site was added to stop, one
                 ; fault class over. Rows p.lof.dz / p.lof.ov (spec §5.3).
-                ld      a,(FPERR)
-                or      a
-                jp      nz,fp_runtime_error
+                call    check_fperr_only
                 ld      a,d
                 or      a
                 jp      nz,fchk_ifc

@@ -65,9 +65,7 @@ ex_time_assign:
                 call    str_eval_one        ; CF=1 -> a STRING operand, HL past it
                 jr      c,tm_err13          ; `TIME="A"` -> Type mismatch
                 call    eval_addr           ; DE = value in the ADDRESS domain
-                ld      a,(FPERR)
-                or      a
-                jp      nz,fp_runtime_error ; outside -32768..65535 -> Overflow (ERR 6)
+                call    check_fperr_only    ; outside -32768..65535 -> Overflow (ERR 6)
                 ; --- the store, guarded --------------------------------------
                 ; `ld (JIFFY),de` is TWO byte writes and the timer ISR ticks
                 ; between them, so an unguarded store can be torn by an interrupt

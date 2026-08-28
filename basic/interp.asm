@@ -273,9 +273,7 @@ exec_stmt:
                 ; re-raise the code that entered it.
                 ; ⚠️ Cold boot must still zero the cell (power-on RAM is
                 ; garbage) -- see the cold-only hook above.
-                ld      a,(FPERR)
-                or      a
-                jp      nz,fp_runtime_error ; the FIRST fault outranks the rest
+                call    check_fperr_only    ; the FIRST fault outranks the rest
                                             ; of the statement, including its end
                 ld      de,TEMPBASE         ; arrays slice-4a §6: the temp-descriptor
                 ld      (TEMPTOP),de        ; stack is emptied at every statement

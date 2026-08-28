@@ -2560,9 +2560,7 @@ ex_on_interval:
                 jp      nz,trap_syntax      ; `ON INTERVAL GOSUB 800` -> ERR 2
                 inc     hl
                 call    eval_addr           ; DE = n (checked address domain)
-                ld      a,(FPERR)
-                or      a
-                jp      nz,fp_runtime_error ; outside -32768..65535 -> Overflow (ERR 6)
+                call    check_fperr_only    ; outside -32768..65535 -> Overflow (ERR 6)
                 ld      a,d
                 or      e
                 jp      z,eoi_err5          ; ON INTERVAL=0 -> Illegal function call

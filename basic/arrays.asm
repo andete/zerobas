@@ -892,9 +892,7 @@ ex_let_arr:
                 call    ary_store_write     ; HL=elem addr,A=type; DE/FAC=RHS -> writes
                 push    ix
                 pop     hl                  ; HL = cursor restored
-                ld      a,(FPERR)
-                or      a
-                jp      nz,fp_runtime_error ; coercion-time overflow (D-F2-1 pattern)
+                call    check_fperr_only    ; coercion-time overflow (D-F2-1 pattern)
                 jp      exec_stmt
 ; (`ela_parse_abort` — `pop [CURSOR]; jp fp_runtime_error` — stood here and is
 ; GONE with D-ARR-C: ary_parse_call owns its whole frame and has already

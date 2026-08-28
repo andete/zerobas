@@ -24,9 +24,7 @@ do_poke:
                 inc     hl
                 call    eval_addr           ; DE = value, HL = cursor
                 pop     bc                  ; BC = address
-                ld      a,(FPERR)
-                or      a
-                jp      nz,fp_runtime_error
+                call    check_fperr_only
                 ld      a,e                 ; low byte of value
                 ld      (bc),a              ; the POKE
                 jp      exec_stmt           ; HL = cursor; run the next statement

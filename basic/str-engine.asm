@@ -1571,9 +1571,9 @@ exp_maybe_strfn:
 ems_print:
                 pop     de                  ; drop the saved operand-start (balances the
                                              ;  push above; str_eval already clobbers DE)
-                ld      a,(FPERR)           ; D-F2-1: e.g. print hex$(65536.) — the
-                or      a                   ; overflow happens inside str_eval's HEX$
-                jp      nz,fp_runtime_error ; argument conversion (fac_to_int_addr)
+                call    check_fperr_only    ; D-F2-1: e.g. print hex$(65536.) -- the
+                                            ; overflow happens inside str_eval's HEX$
+                                            ; argument conversion (fac_to_int_addr)
                 push    hl                  ; print_strval clobbers HL (token cursor)
                 call    print_strval
                 pop     hl

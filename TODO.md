@@ -331,6 +331,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [x] ✅ **D-NGRAM6 (2026-08-28): seven sites open-coded `check_fperr_only`,
+      which ALREADY EXISTED** ([`docs/spec-basic-ngram6.md`](docs/spec-basic-ngram6.md)).
+      **−28 B and no new body** — low 94 -> 106 B free, page 1 299 -> 315 B free
+      (READINGS; run `make basic-reloc`). 13 rows, DIFF 0/13.
+      🎯 **The sweep priced it at 20 B because it assumes a new helper must be
+      written. Look for an existing one first — the cheapest carve adds nothing.**
+      🔴 Three rows were vacuous: `A%=99999` raises the right error through the
+      WRONG LAYER (the LET store's own check, not the boundary), and `A(1)=1E10`
+      / `A=1E10` raise nothing at all. All replaced or dropped.
+
 - [x] ~~💰 **D-NGRAM's remaining main-region exact repeats.**~~ ✅ **BOTH SHIPPED
       2026-08-28**: `shx_tail`/`shx_op_tail` (D-NGRAM4,
       [`docs/spec-basic-ngram4.md`](docs/spec-basic-ngram4.md), **low 70 -> 94 B
@@ -696,7 +706,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3782 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3792 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
