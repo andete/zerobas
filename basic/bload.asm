@@ -185,11 +185,7 @@ pcr_vram:
 pcr_flag_end:
                 ; after the flag ONLY a statement terminator is allowed; a second
                 ; flag or a trailing ,offset is rejected (not silently ignored).
-                inc     hl                  ; past the flag letter
-                call    skip_spaces
-                or      a
-                jr      z,pcr_ok
-                cp      COLON
+                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
                 jr      z,pcr_ok
                 ; fall through to pcr_err
 pcr_err:

@@ -77,10 +77,10 @@ those.)
 |---|---|---|
 | 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **62** |
 | 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **6** |
-| 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **26** |
+| 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **25** |
 | ⛔ **BLOCKED** | neither can start it now — an idle host, a missing fixture, apparatus that must be built first | **9** |
 
-**103 open items, 103 markers, 0 unmarked** — the invariant above, checked.
+**102 open items, 102 markers, 0 unmarked** — the invariant above, checked.
 
 🔴 **A MISFILED 🤖 IS NOT A STOP CONDITION — WRAP UP AND REFILE.** If an item
 marked autonomous turns out to need a decision of his: **finish and commit
@@ -331,7 +331,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3319 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3354 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1636,6 +1636,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       before cutting.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (3 of 5 knifed 2026-08-26; 2 remain, unsited).
 
+- [x] 💰 **NINE STATEMENT ENTRIES SPENT 11 B EACH ON THE SAME SIX INSTRUCTIONS —
+      +45 B.** Done 2026-08-28 (D-BAREEND),
+      [`docs/spec-bareend.md`](docs/spec-bareend.md), on Joost's steer toward work
+      that aggregates common behaviour and reduces size. `pcr_flag_end`,
+      `ex_clear`, `ex_close`, `ex_resume`, `ex_return`, `b4_maybe_s`, `ex_color`,
+      `clr_bd`, `ex_width` all open with *"skip my token; did the statement end
+      here?"*. 🎯 **In every one of the nine BOTH `jr z` go to the SAME label**, so
+      the idiom takes ONE parameter and collapses to a flag: `stmt_bare_end`
+      (9 B, Z iff the statement ends), each site `call` + `jr z` (5 B).
+      99 B → 54 B; **main page 1 was 61 B → 106 B free on 2026-08-28**.
+      🔴 **`clone_scout` FOUND THREE OF THE NINE AND PRICED THEM WRONG, neither a
+      bug.** It groups on a fixed span window with up to two operands masked, so
+      the other six differ beyond that window; and its `(n-1)·each - 4n` prices a
+      plain `call`, while this body ENDS IN A BRANCH and needs a flag-returning
+      helper. The family was found by grepping the IDIOM. A ROM dump shows the
+      three "30 B" bodies share **six bytes** and diverge at the `jr`
+      displacement — source-level identity modulo masked operands is a legitimate
+      question, but it is not a price.
+      🟢 Region checked BEFORE writing code: all nine callers and `skip_spaces`
+      are page 1, so nothing crosses the low/page-1 boundary. Battery 43/43,
+      `deadcode` clean.
+
 - [ ] ⚠️ **`clone_scout` prices LABEL-BLOCKS, so a routine split by an interior
       label is priced at a fraction of its collapse.** Filed 2026-08-23 by
       D-DEFFNLAND, [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md)
@@ -1937,7 +1959,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended
       (oracle intact; the remaining half is str_concat's double snapshot).
 
-- [ ] 💰 **THE GENERIC ERROR-LAYER SEAM: per-verb error checks that duplicate a
+- [x] 💰 **THE GENERIC ERROR-LAYER SEAM: per-verb error checks that duplicate a
       layer that already exists — a carve AND a correctness seam.** Opened
       2026-08-24 by D-SWAP3, [`docs/spec-basic-swap3.md`](docs/spec-basic-swap3.md)
       §6, on the user's observation that SWAP is one instance of a class. **Two
@@ -2041,7 +2063,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
         🎯 This is the concrete verb a blind batch delete would have REGRESSED
         (it would have made zb play 3 voices then error, where the reference plays
         none). The measurement is exactly what caught it.
-      🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).
+      ✅ **RETIRED 2026-08-28 — BOTH HALVES ARE CLOSED.** Trailing-token: all four
+      members shipped (SWAP −23 B, PAINT, SPRITE −8 B, CIRCLE −5 B).
+      Missing-operand: five of six shipped (`ev_f_err` 0 B, PLAY +2 B, PRINT USING
+      −6 B, `MID$()=` +6 B, DRAW 0 B); only `KEY`'s absent form remains, blocked on
+      ~160 B of defaults DATA rather than on knowledge, and it lives on its own
+      🔭 item rather than here.
+      🎯 **WHAT THE SEAM TAUGHT, and why the doc stays: ONE RULE, SIX VERBS, SIX
+      DIFFERENT PRICES.** The rule is shared; the price and the FIX'S SHAPE are
+      properties of each site's stack and neighbourhood. An EOL/`:` peek is right
+      at PRINT USING and WRONG at both `MID$()=` and DRAW. A blind batch delete
+      would have REGRESSED PLAY — the per-verb measurement is exactly what caught
+      it. Retired because nothing is left to DECIDE, not because the class stopped
+      mattering: on Joost's 2026-08-28 steer toward aggregation/size work, the live
+      remainder of this class is the ranked CLONE GROUPS, not this item.
 
 - [x] 🔴 **zerobas does NOT implement the `PLAY(n)` FUNCTION (background-queue
       status).** Found 2026-08-24 by the seam classifier

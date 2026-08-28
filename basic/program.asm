@@ -1438,12 +1438,8 @@ ex_return:
                                             ; (lnrt-nogosund). lnrt-nogos alone
                                             ; cannot tell the two orders apart.
                 pop     hl
-                inc     hl                  ; past the RETURN token
-                call    skip_spaces         ; A = (hl)
-                or      a
-                jr      z,ret_frame_bare    ; <EOL> -> bare RETURN
-                cp      COLON
-                jr      z,ret_frame_bare    ; ':'   -> bare RETURN, and the statement
+                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
+                jr      z,ret_frame_bare
                                             ; after it does NOT run (lnrt-bcolon)
                 ; D-RETLN R-T2/R-T3/R-T4 (docs/spec-basic-retln.md §2): pop the
                 ; frame and hand the cursor to GOTO's own parser -- $0E branches,

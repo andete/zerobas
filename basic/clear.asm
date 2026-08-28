@@ -52,12 +52,8 @@
 ; — MS-BASIC semantics; the argument expressions are evaluated first (they may
 ; still read variables), then everything is wiped.
 ex_clear:
-                inc     hl                  ; past the CLEAR token
-                call    skip_spaces
-                or      a
-                jr      z,clr_done          ; bare CLEAR (end of line)
-                cp      COLON
-                jr      z,clr_done          ; bare CLEAR before ':'
+                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
+                jr      z,clr_done
                 ; 🔴 D-CLRFIX (docs/spec-basic-clrfix.md). THE TWO LINES THAT USED
                 ; TO STAND HERE ARE DELETED, AND THIS IS A CARVE, NOT A COST:
                 ;

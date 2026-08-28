@@ -716,6 +716,32 @@ skip_spaces:
                 inc     hl
                 jr      skip_spaces
 
+; --- stmt_bare_end: "did this statement end right here?" --------------------
+; in:  HL on the statement's own token.  out: Z iff the statement ends (end of
+;      line or ':'), HL past the token and past any spaces, A = the byte there.
+; Exactly the flags and registers the nine inline copies left behind, because it
+; IS those copies -- `ret z` where they wrote `jr z,<own label>`, and the caller
+; keeps its own branch.
+;
+; 🎯 NINE SITES SPENT ELEVEN BYTES EACH ON THE SAME SIX INSTRUCTIONS
+; (D-BAREEND): pcr_flag_end, ex_clear, ex_close, ex_resume, ex_return,
+; b4_maybe_s, ex_color, clr_bd, ex_width -- and in every one of them BOTH `jr z`
+; went to the SAME label, so the idiom has ONE parameter, not two, and collapses
+; to a flag the caller branches on.
+; ⚠️ `clone_scout` ranked only THREE of the nine (est. 48 B) because it groups on
+; a fixed span window with up to two operands masked; the other six differ beyond
+; that window. Its estimate also assumes a plain `call`, which this is not. The
+; family was found by grepping the IDIOM, and the price measured by building it.
+; 🟢 All nine callers and skip_spaces are page 1, so no caller reaches across the
+; low/page-1 boundary to get here.
+stmt_bare_end:
+                inc     hl                  ; past the statement's token
+                call    skip_spaces
+                or      a
+                ret     z                   ; end of line
+                cp      COLON
+                ret                         ; Z iff ':'
+
 ; --- fre_abort_low -------------------------------------------------------------
 ; The abort funnel (basic/arrays.asm) sets ENDFLAG (D-1) + emits the fresh-line and
 ; prints; the shared error sites in interp.asm/program.asm jump to it. (The retired
@@ -1362,11 +1388,7 @@ ex_resume:
                 ; against this build's **50**. An ordinary RESUME leaves `.` on
                 ; the ERRORING line. ~12 B of main page 1 recovered, and the
                 ; rule withdrawn from the spec rather than pinned.
-                inc     hl                  ; past RESUME_TOKEN
-                call    skip_spaces         ; A = (hl)
-                or      a                   ; bare RESUME / RESUME<EOL>?
-                jr      z,res_same
-                cp      COLON               ; bare RESUME before a further ':'-statement?
+                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
                 jr      z,res_same
                 cp      NEXT_TOKEN          ; RESUME NEXT
                 jr      z,res_next

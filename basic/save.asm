@@ -596,12 +596,8 @@ b4_have:
                 ret
 b4_maybe_s:
                 push    hl                  ; remember the S position
-                inc     hl
-                call    skip_spaces
-                or      a
-                jr      z,b4_is_s           ; S then end-of-statement -> the flag
-                cp      COLON
-                jr      z,b4_is_s           ; S then ':' -> the flag
+                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
+                jr      z,b4_is_s
                 pop     hl                  ; S starts a longer identifier/expr
                 scf                         ; (unsupported as an exec) -> reject (CF set)
                 ret

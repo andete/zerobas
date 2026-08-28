@@ -161,11 +161,7 @@ scr_extra:                                  ; the trailing arguments
 ; --- ex_color: COLOR [<fg>][,<bg>][,<border>] ------------------------------
 ; Each colour is optional; an omitted one keeps the current work-area value.
 ex_color:
-                inc     hl                  ; past the COLOR token
-                call    skip_spaces
-                or      a
-                jr      z,clr_apply         ; bare COLOR -> re-apply current colours
-                cp      COLON
+                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
                 jr      z,clr_apply
                 cp      ','                 ; "COLOR ,bg" -> fg omitted
                 jr      z,clr_bg
@@ -191,11 +187,7 @@ clr_bg:
                 cp      ','
                 jr      nz,clr_apply
 clr_bd:
-                inc     hl                  ; past the comma
-                call    skip_spaces
-                or      a
-                jr      z,clr_apply
-                cp      COLON
+                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
                 jr      z,clr_apply
                 call    eval                ; DE = border
                 ld      a,e
@@ -221,12 +213,8 @@ ex_cls:
 ; (LINL40 for text-1, LINL32 for text-2), then re-inits the screen so the new
 ; width is programmed into the VDP.
 ex_width:
-                inc     hl                  ; past the WIDTH token
-                call    skip_spaces         ; returns A = (HL)
-                or      a
-                jr      z,wid_missing       ; bare `WIDTH` -> Missing operand (ERR 24)
-                cp      COLON
-                jr      z,wid_missing       ; `WIDTH :` likewise -- both measured
+                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
+                jr      z,wid_missing
                 ; D-EVALCHK (docs/spec-basic-evalchk.md): eval + the deferred-
                 ; error check + the byte coercion, in ONE call. This was 13 B
                 ; written out inline -- `call eval`, a hand-rolled TMISMATCH

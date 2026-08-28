@@ -1039,12 +1039,8 @@ ris_done        equ     sidr_done
 ; channel is flushed + Ctrl-Z-stamped via fch_do_close_ch (which selects it first,
 ; so the right channel's buffer/dir state is the one flushed).
 ex_close:
-                inc     hl                  ; HL -> bytes after the CLOSE token
-                call    skip_spaces
-                or      a
-                jr      z,dc_all            ; bare CLOSE (end of line) -> close all
-                cp      COLON
-                jr      z,dc_all            ; bare CLOSE before ':' -> close all
+                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
+                jr      z,dc_all
                 ; CLOSE [#]n [, [#]m ...] — a comma-separated channel list. Loop:
                 ; parse one [#]expr, close it, and while the next token is ',' repeat.
 dc_listloop:
