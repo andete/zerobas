@@ -700,6 +700,15 @@ graphics-floor-acceptance: repack-machine
 temp-root-check:
 	python3 tools/check_temp_root.py
 
+# --- D-REFCACHE (docs/spec-refcache.md): the reference-column store ---------
+# 🔴 A CACHE IS ONE SLIP AWAY FROM "A PREDICTION COPIED INTO THE RESULT COLUMN",
+# so its falsification suite is a GATE, not a script somebody remembers to run.
+# 23 arms: every way a wrong hit could happen, planted and shown to miss, plus a
+# green control for each and an end-to-end `verify` arm that tampers with a
+# stored entry and requires the mismatch to be caught against a real machine.
+refcache-check:
+	python3 probes/lib/probe_refcache.py --selftest
+
 # --- The missing-capture diagnosis, falsified (docs/spec-probe-mark.md is not
 # its home -- see probes/lib/omsx_missing_teeth.py). ⛔ DELIBERATELY NOT IN
 # `make gates`: two of its cases SIGKILL/SIGTERM `openmsx` BY NAME, which in a
@@ -2858,3 +2867,23 @@ clean:
 # for a targeted `make <gate>` while iterating -- it is the full-suite sweep.
 gates:
 	python3 tools/run_gates.py $(GATE_ARGS)
+
+# --- D-GATESKIP (docs/spec-gateskip.md): the two tiers ----------------------
+# Measured 2026-08-28 over a full battery: the STATIC tier is 65 serial-seconds
+# and the EMULATOR tier is 2870. Nearly the whole cost of a battery is the
+# emulator half -- and both of that day's real reds came out of the static half.
+#
+# `gates-fast` is the iteration loop: ~20s, run it after every edit instead of
+# guessing. It NEVER records a green baseline, and its report says
+# [STATIC TIER ONLY] so it can never be mistaken for a full battery.
+#
+# `gates` skips the emulator tier only when it can PROVE it cannot move: the four
+# ROM images AND every probe/test/tool source AND the Makefile byte-identical to
+# a full battery that was itself fully green. That is a proof, not a judgement
+# about what a diff can affect -- judgement is what failed 3x on 2026-08-26.
+# `gates-full` forces the emulator tier regardless.
+gates-fast:
+	python3 tools/run_gates.py --static $(GATE_ARGS)
+
+gates-full:
+	python3 tools/run_gates.py --full $(GATE_ARGS)

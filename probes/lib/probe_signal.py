@@ -134,6 +134,8 @@ class Tally:
         self.fell_back = 0
         self.at: list[float] = []      # emulated instant of each signal capture
         self.missed: list[str] = []    # which case never signalled
+        self.replayed = 0              # D-REFCACHE: served from the store, so
+                                       # these instants describe an EARLIER run
 
     def add(self, *outs: dict, label: str | None = None) -> None:
         """Fold one `run_cases` call's `settle_out` in. Pass `label` -- 🔴 AN
@@ -143,6 +145,12 @@ class Tally:
         without re-running the gate. A count says the detector fired; only the
         label says what it caught."""
         for o in outs:
+            # \U0001f534 A REPLAYED PROVENANCE IS NOT A READING OF THIS RUN
+            # (D-REFCACHE). These are emulated-time instants; served from the
+            # store they say how an EARLIER run captured. Counted separately so
+            # `line()` can never report a recording as live apparatus health.
+            if o.get("replayed"):
+                self.replayed += 1
             sig = o.get("sentinel", {})
             self.hit += len(sig)
             self.at += list(sig.values())
@@ -155,6 +163,9 @@ class Tally:
              else f"the {budget:.0f}s budget")
         s = (f"{indent}capture-on-signal: {self.hit} on signal, "
              f"{self.fell_back} fell back to {b}")
+        if self.replayed:
+            s += (f"   \u26a0\ufe0f {self.replayed} REPLAYED from the refcache "
+                  f"-- not measured on this run")
         if self.at:
             s += (f"   [signalled at {min(self.at):.1f}-{max(self.at):.1f} "
                   f"emulated s]")

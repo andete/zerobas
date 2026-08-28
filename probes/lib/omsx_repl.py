@@ -1551,7 +1551,69 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     return caps
 
 
-def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
+def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
+    """D-REFCACHE wrapper around `_run_cases_impl` (the real body, below).
+
+    🎯 ONE CHOKEPOINT, NOT 200 CALL SITES. Every probe in the tree reaches the
+    emulator through this function, so the cache is installed HERE rather than
+    in a helper each caller must remember to use -- the same reasoning that put
+    the temp root in one `tempfile.tempdir` assignment instead of a wrapper 140
+    sites had to call. [[one-temp-root]]
+
+    The parameters are normalised through the impl's own signature with defaults
+    applied, so a caller that OMITS `boot=8.0` keys identically to one that
+    passes it. (Getting that wrong would only ever cause a miss, never a wrong
+    hit -- but a cache that misses on equivalent calls is not worth having.)
+    """
+    import inspect
+    bound = inspect.signature(_run_cases_impl).bind(machine, cases, **kw)
+    bound.apply_defaults()
+    args = dict(bound.arguments)
+    args.pop("machine"); args.pop("cases")
+    settle = args.pop("settle_out", None)
+
+    try:
+        import probe_refcache as rc
+    except Exception:
+        rc = None
+    if rc is None or not rc.ENABLED:
+        return _run_cases_impl(machine, cases, **kw)
+
+    key = rc.key_for(machine, cases, args)
+    cached, settle_cached = rc.load(key)
+    # 🔴 ALL-OR-NOTHING: `cached` covers the WHOLE call or none of it, so a
+    # batched matrix is never re-composed (see the module header).
+    servable = (cached is not None and len(cached) == len(cases)
+                and (settle is None or settle_cached is not None))
+    if servable and not rc.VERIFY:
+        rc.STATS["hit"] += 1
+        if settle is not None:
+            # give the caller EXACTLY the dict it would have got, plus the flag
+            # that says these instants were replayed rather than measured now
+            settle.clear()
+            settle.update(settle_cached)
+            settle["replayed"] = True
+            rc.STATS["replayed"] += 1
+        return cached
+
+    result = _run_cases_impl(machine, cases, **kw)
+    if rc.VERIFY and cached is not None and len(cached) == len(cases):
+        if cached == result:
+            rc.STATS["verify_ok"] += 1
+        else:
+            rc.STATS["verify_bad"] += 1
+            bad = [i for i, (a, b) in enumerate(zip(cached, result)) if a != b]
+            sys.stderr.write(
+                f"🔴 refcache VERIFY MISMATCH on {machine}: case(s) {bad} differ "
+                f"between the stored reading and a fresh one. The store is WRONG "
+                f"or the machine moved; key {key[:12]}\n")
+    else:
+        rc.STATS["miss"] += 1
+    rc.store(key, result, machine, settle=settle)
+    return result
+
+
+def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
               batch: bool = True, reset: tuple[str, ...] = ("CLS",),
               capture="screen",
               holds: list[tuple[int, int] | None] | None = None,

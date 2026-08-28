@@ -297,6 +297,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [x] ~~💰 **THE BATTERY AND THE PROBES RE-MEASURE CONSTANTS.**~~ ✅ **SHIPPED
+      2026-08-28, at Joost's request, as TWO independent mechanisms.**
+
+      **D-REFCACHE** ([`docs/spec-refcache.md`](docs/spec-refcache.md),
+      `probes/lib/probe_refcache.py`, gate `make refcache-check`): the reference
+      sides are FIXED ROMs, so their answers are constants.
+      📏 **MEASURED on a 23-row matrix: vg8020 14.5s + cf3300 19.8s + zb 11.2s =
+      45.6s, of which 75 % is the references.** An in-slice repeat (zb rebuilt,
+      refs cached) is **11.2s — 4.1x**; a repeat with nothing rebuilt is 0.0s.
+      🎯 Keyed on the machine's ACTUAL BYTES, so zerobas needs no special case —
+      its entries expire on every build, and a byte-identical rebuild hits
+      CORRECTLY. 23 falsification arms.
+
+      **D-GATESKIP** ([`docs/spec-gateskip.md`](docs/spec-gateskip.md),
+      `tools/run_gates.py`, arms `scratchpad/gateskip_arms.py`): split the
+      battery by WHAT A UNIT READS. 📏 **21 static units = 65 serial-seconds; 23
+      emulator targets = 2870.** `make gates-fast` is **21s** against a full
+      battery's ~420s. `make gates` skips the emulator tier only when the four
+      ROMs AND every probe/test/tool source AND the Makefile are byte-identical
+      to a baseline written by a fully-green FULL battery — a PROOF, not a
+      judgement about blast radius. 12 arms, all live.
+
+- [ ] 🔬 **THE REFCACHE STORE GROWS AND NOTHING PRUNES IT.** Filed 2026-08-28 by
+      D-REFCACHE ([`docs/spec-refcache.md`](docs/spec-refcache.md) §6). One full
+      battery stored **3132 entries / 17 MB**; `rm -rf ~/.cache/zerobas/refcache`
+      is currently the entire recovery procedure and costs one cold battery.
+      ⚠️ **THE REAL QUESTION IS NOT DISK, IT IS STALENESS.** A well-formed but
+      WRONG reference reading — taken while the reference machine was
+      misbehaving in a way `storable()` does not catch — is frozen until someone
+      runs `ZEROBAS_REFCACHE=verify`. Nothing schedules that. A periodic verify
+      in the battery, or an age cap on entries, would close it; neither is
+      measured. 🤖 AUTONOMOUS — the reference or a gate settles it.
+
 - [ ] 💰 **A 2 B CARVE WITH ITS EVIDENCE ALREADY ATTACHED: `ems_typecheck`'s
       two `pop de` ARE PROVABLY UNNECESSARY.** Filed 2026-08-26 by D-MIDOP
       ([`docs/spec-basic-midop.md`](docs/spec-basic-midop.md) §4). They were
@@ -563,7 +596,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3649 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3682 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
