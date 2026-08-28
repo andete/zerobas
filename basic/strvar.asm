@@ -329,9 +329,8 @@ sidr_lp:
                 call    fat_io_getbyte
                 jr      c,sidr_done         ; EOF before n -> stop (partial)
                 ld      c,a                 ; C = the byte read
-                ld      a,(INDLR_N)
-                dec     a
-                ld      (INDLR_N),a         ; one fewer to read
+                ld      hl,INDLR_N
+                dec     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 ld      a,(IN_RDLEN)
                 cp      STRMAX
                 jr      nc,sidr_lp          ; descriptor full -> consume but don't store
@@ -340,9 +339,8 @@ sidr_lp:
                 ld      hl,STRSCR+1
                 add     hl,de
                 ld      (hl),c              ; store the byte
-                ld      a,(IN_RDLEN)
-                inc     a
-                ld      (IN_RDLEN),a
+                ld      hl,IN_RDLEN
+                inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 jr      sidr_lp
 sidr_done:
                 ld      a,(IN_RDLEN)

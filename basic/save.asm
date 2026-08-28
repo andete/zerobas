@@ -331,9 +331,8 @@ caw_id:
                 ld      a,ASCII_ID          ; $EA
                 call    TAPOUT
                 ret     c
-                ld      a,(TSV_CNT)
-                dec     a
-                ld      (TSV_CNT),a
+                ld      hl,TSV_CNT
+                dec     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 jr      nz,caw_id
                 call    tape_name_emit
                 ret     c
@@ -399,9 +398,8 @@ cas_fb_lp:
                 ld      h,CAS_WBUF >> 8     ; HL = CAS_WBUF + pos
                 ld      a,(hl)
                 call    TAPOUT              ; emit the byte (CF ignored: best-effort)
-                ld      a,(CAS_WCNT)
-                inc     a
-                ld      (CAS_WCNT),a        ; pos++ ; 256 -> wraps to 0
+                ld      hl,CAS_WCNT
+                inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 jr      nz,cas_fb_lp
                 jp      TAPOOF              ; block complete; CAS_WCNT = 0 for next fill
 

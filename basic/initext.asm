@@ -77,9 +77,8 @@ ier_single:
                 ld      a,(SCAN_PRIM)       ; slot id = primary (no expanded flag)
                 call    try_init_slot
 ier_pnext:
-                ld      a,(SCAN_PRIM)
-                inc     a
-                ld      (SCAN_PRIM),a
+                ld      hl,SCAN_PRIM
+                inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 jr      ier_ploop
 ier_done:
                 call    sub_int_install     ; install the page-0 EI trampoline if a

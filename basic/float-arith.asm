@@ -941,9 +941,8 @@ fpdtd_lp:
                 ld      hl,DIVREM+14
                 ld      de,DIVPAD+14
                 call    dig15_sub_inplace
-                ld      a,(MUL_CARRY)
-                inc     a
-                ld      (MUL_CARRY),a
+                ld      hl,MUL_CARRY
+                inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 jr      fpdtd_lp
 fpdtd_done:
                 ld      a,(MUL_CARRY)
@@ -1020,9 +1019,8 @@ fpd_loop:
                 ld      d,0
                 add     hl,de               ; HL = ARGA_DIG + slot
                 ld      (hl),c              ; QDIG[slot] = digit
-                ld      a,(FP_LHSVAL)
-                inc     a
-                ld      (FP_LHSVAL),a
+                ld      hl,FP_LHSVAL
+                inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 jr      fpd_loop
 fpd_loop_done:
                 ld      a,(FP_RSIGN)

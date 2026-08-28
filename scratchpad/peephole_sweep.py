@@ -245,8 +245,13 @@ RULES = [
      "djnz sets NO flags; dec b sets Z/S/N/H"),
     ("sla l / rl h      -> add hl,hl",    2, r_slarl,    3, "FLAGS",
      "add hl,hl leaves Z/S alone"),
-    ("ld a,(v)/inc/ld   -> inc (hl)",     3, r_incvar,   2, "REGS",
-     "needs HL free AND A dead"),
+    # 🔴 THE SOURCE PAGE'S ARITHMETIC IS WRONG HERE, and it was propagated into
+    # this table on the first cut: the page prices the before-form at 6 B and the
+    # saving at 2 B, but `ld a,(nn)` is 3 B and `ld (nn),a` is 3 B, so the
+    # before-form is 7 B and the saving is 3. VERIFIED BY ASSEMBLING BOTH FORMS
+    # with pasmo (7 B -> 4 B), not by reading the page.
+    ("ld a,(v)/inc/ld   -> inc (hl)",     3, r_incvar,   3, "REGS",
+     "7 B -> 4 B pasmo-verified; needs HL free AND A dead AFTER"),
     ("and n / cp n / jr -> and n / jr",   3, r_andcp,    2, "SAFE",
      "only when n is a single bit -- otherwise cp n is a real test"),
     ("pop rr / ld,ld    -> pop rr'",      3, r_popmove,  2, "SAFE",

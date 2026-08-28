@@ -259,18 +259,18 @@ set_state:
                 ld      a,c
                 cp      ZTS_ON
                 jr      nz,ss_write
-                ld      a,(TRAPENA)
-                inc     a
-                ld      (TRAPENA),a
-                jr      ss_write
+                ld      a,(TRAPENA)         ; 🔴 NOT `ld hl,TRAPENA / inc (hl)`
+                inc     a                   ; (D-PEEPHOLE): set_state's header
+                ld      (TRAPENA),a         ; promises it PRESERVES HL, and HL
+                jr      ss_write            ; is the entry byte ss_write stores to.
 ss_wason:
                 ; old == ON: dec TRAPENA unless new is still ON
                 ld      a,c
                 cp      ZTS_ON
                 jr      z,ss_write
-                ld      a,(TRAPENA)
-                dec     a
-                ld      (TRAPENA),a
+                ld      a,(TRAPENA)         ; 🔴 NOT `ld hl,TRAPENA / dec (hl)`
+                dec     a                   ; (D-PEEPHOLE): set_state PRESERVES HL
+                ld      (TRAPENA),a         ; -- see the arm above.
 ss_write:
                 ld      a,c
                 or      a                   ; new == OFF?
@@ -342,9 +342,8 @@ check_traps:
                 or      ZTS_SERVICING       ; dropping it would let a trigger still held
                 ld      (hl),a               ; when the handler RETURNs re-fire (oracle Q2).
                                             ; PENDING (bit 7) is cleared, state = SERVICING.
-                ld      a,(TRAPENA)
-                dec     a
-                ld      (TRAPENA),a          ; one fewer ON trap while servicing
+                ld      hl,TRAPENA
+                dec     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 pop     hl                  ; HL = resume ptr
                 push    de                  ; save handler link across gosub_push
                 call    gosub_push          ; push [CURLINE][resume=HL]; BC(idx) kept; CF=full
@@ -429,9 +428,9 @@ trap_return_check:
                 and     $FC                 ; clear state bits, KEEP PENDING (bit 7)
                 or      ZTS_ON              ; SERVICING -> ON (auto-resume)
                 ld      (hl),a
-                ld      a,(TRAPENA)
-                inc     a
-                ld      (TRAPENA),a
+                ld      a,(TRAPENA)         ; 🔴 NOT `ld hl,TRAPENA / inc (hl)`
+                inc     a                   ; (D-PEEPHOLE): the very next
+                ld      (TRAPENA),a         ; instruction READS (hl).
                 ld      a,(hl)
                 and     ZTS_PENDING         ; re-latched during the handler?
                 ret     z

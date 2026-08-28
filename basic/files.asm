@@ -1024,9 +1024,8 @@ ris_keep:
                 ld      hl,STRSCR+1
                 add     hl,de               ; HL -> STRSCR+1+len
                 ld      (hl),c              ; store the byte
-                ld      a,(IN_RDLEN)
-                inc     a
-                ld      (IN_RDLEN),a
+                ld      hl,IN_RDLEN
+                inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 jr      ris_lp
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to sidr_done,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no

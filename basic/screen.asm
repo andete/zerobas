@@ -133,9 +133,9 @@ scr_extra:                                  ; the trailing arguments
                 ; does not raise (row a.clk). Commas and argument slots are 1:1,
                 ; so counting here is both correct and cheaper than counting at
                 ; the value: spr_extra_arg's own increment goes away (-4 B).
-                ld      a,(GFX_SARGN)
-                inc     a
-                ld      (GFX_SARGN),a
+                ld      a,(GFX_SARGN)       ; 🔴 NOT `ld hl,GFX_SARGN / inc (hl)`
+                inc     a                   ; (D-PEEPHOLE): HL is the PARSE CURSOR
+                ld      (GFX_SARGN),a       ; here -- skip_spaces below advances it.
     ENDIF
                 call    skip_spaces
                 or      a                   ; a comma PROMISED an argument, so a
