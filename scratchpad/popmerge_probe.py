@@ -39,6 +39,42 @@ NEW = {
     'f.ary'     : (['DIM A(3)', 'A(1)=1/0'], '"OK"'),
     # --- candidate for elas_abort_fp (ex_let_arr_str, arrays.asm:1026)
     'f.arystr'  : (['DIM A$(3)', f'A$(1)={OVF}'], '"OK"'),
+    # --- the stmt_error group (D-POPRAISE §7). Each row is a statement whose
+    # lvalue parse reaches a discard-then-`jp stmt_error` tail with NOTHING
+    # pending, so the ERR 2 is that tail's own and a retarget moves it.
+    's.ary'     : (['DIM A(3)', 'A(1)'],     '"OK"'),   # ela_err
+    's.let'     : (['A'],                    '"OK"'),   # ex_let_err (numeric)
+    's.letstr'  : (['A$'],                   '"OK"'),   # ex_let_err (string)
+    's.dim'     : (['DIM A'],                '"OK"'),   # ee_synerr_pop
+    's.erase'   : (['DIM A(3)', 'ERASE A('], '"OK"'),   # ee_synerr_pop tier A
+    's.arystr'  : (['DIM A$(3)', 'A$(1)'],   '"OK"'),   # elas_err (already aliased)
+    # --- D-POPRAISE found this by accident: `s.dim` DIVERGES. Both references
+    # accept `DIM A` (no bound list); zerobas raises ERR 2 at arrays.asm:601,
+    # whose comment asserts "DIM requires a bound list". Characterise WHAT the
+    # references make of it before filing -- a bare "they accept it" is the kind
+    # of justification parenthesis nobody runs.
+    'd.scalar'  : (['DIM A', 'A=5'],         'A'),
+    'd.aselem'  : (['DIM A', 'A(0)=5'],      'A(0)'),
+    'd.twice'   : (['DIM A', 'DIM A'],       '"OK"'),
+    'd.str'     : (['DIM A$'],               '"OK"'),
+    'd.list'    : (['DIM A,B'],              '"OK"'),
+    'd.mixed'   : (['DIM A,B(2)'],           '"OK"'),
+    'd.thenary' : (['DIM A', 'DIM A(2)'],    '"OK"'),
+    # --- THE EDGE ROWS THAT SEPARATE TWO RULES that agree on every row above:
+    #   (a) a DIM item with no bound list is ACCEPTED AND IGNORED, everything
+    #       else parses exactly as before; versus
+    #   (b) DIM is simply lax about anything that is not a `(`.
+    # (b) would also accept a trailing comma, two names with no comma, and a
+    # bare DIM. If the references reject those, (a) is the rule and (b) would
+    # ship three regressions into rows that are green today.
+    'e.digit'   : (['DIM 1'],                '"OK"'),
+    'e.dollar'  : (['DIM $'],                '"OK"'),
+    'e.bare'    : (['DIM'],                  '"OK"'),
+    'e.trail'   : (['DIM A,'],               '"OK"'),
+    'e.twoname' : (['DIM A B'],              '"OK"'),
+    'e.openpar' : (['DIM A('],               '"OK"'),
+    'e.after'   : (['DIM A(2),B'],           '"OK"'),
+    'e.before'  : (['DIM B,A(2)'],           '"OK"'),
     # --- GREEN CONTROLS on the same apparatus: rows that must NOT move under
     # any of the four knives. Without these a knife that breaks the harness
     # reads as "everything reddened", which is the wrong finding.

@@ -564,9 +564,13 @@ ary_errmap:                                 ; ARY_ERR 1..5 -> FPERR (§4.1 dispo
                                             ;   as the five str-engine.asm sites do.
 
 ; --- ex_dim: DIM statement. HL enters on the DIM token. ---------------------
-; For each comma-separated NAME(b0[,b1...]): parse the name (a `$` string
+; For each comma-separated NAME[(b0[,b1...])]: parse the name (a `$` string
 ; name is now LIVE, arrays slice 3, docs/spec-basic-arrays-slice3-strings.md
 ; §5.2 -- the old Q-9a reject is gone), then the bound list via ary_parse_call
+; 🔴 THE BOUND LIST IS OPTIONAL, and this header asserted it was not until
+; D-DIMBARE measured 11 rows saying otherwise (docs/spec-basic-dimbare.md).
+; An item with no `(` is ACCEPTED AND IGNORED -- it creates nothing, which is
+; why `DIM A:DIM A(2)` reports no Redimensioned array on either reference.
 ; (reused — a DIM bound list is the identical "comma-separated int expr list
 ; in parens" shape as a subscript list, §9.4), which also dispatches to the
 ; tenant (op=DIM) for the redim-check + allocation. Loops on ','.
@@ -598,10 +602,30 @@ ed_lp:
                 call    skip_spaces
                 cp      '('
                 jr      z,ed_haveparen
-                jr      ee_synerr_pop       ; DIM requires a bound list -- shares
-                                            ; ex_erase's own identical "pop [STR?];
-                                            ; jp stmt_error" tail (below in this
-                                            ; file), slice-3 space audit
+                ; D-DIMBARE (docs/spec-basic-dimbare.md): A DIM ITEM WITH NO
+                ; BOUND LIST IS ACCEPTED AND IGNORED. This used to be
+                ; `jr ee_synerr_pop`, justified by "DIM requires a bound list" --
+                ; a claim BOTH references refute, on 11 rows: `DIM A`, `DIM A$`,
+                ; `DIM A,B`, `DIM A,B(2)`, `DIM A(2),B`, `DIM B,A(2)` are all
+                ; accepted there, and `DIM A:DIM A(2)` does NOT report
+                ; Redimensioned array -- so the ignored item creates NOTHING,
+                ; which is why falling into the list continuation (rather than
+                ; allocating a default-bound array) is the faithful shape.
+                ; 🎯 THE RULE IS "NO BOUND LIST", NOT "LAX ABOUT ANYTHING THAT
+                ; IS NOT `(`". `DIM A,` (trailing comma), a bare `DIM`, and
+                ; `DIM 1`/`DIM $` all still raise ERR 2, and `DIM A(` keeps its
+                ; ERR 24 -- five rows GREEN BOTH BEFORE AND AFTER, which is why
+                ; this arm re-enters ed_lp through ed_next instead of bypassing
+                ; its is_letter guard.
+                ; ⚠️ BUT ONLY TWO OF THOSE ROWS ARE THIS GUARD'S. K-DB3 cuts
+                ; is_letter's reject to ed_next -- the wider rule made real --
+                ; and only `DIM` and `DIM A,` go green. `DIM 1` and `DIM $`
+                ; STILL error, through a SECOND cause: the offending token is
+                ; left under HL, ed_done reaches exec_stmt, and exec_stmt
+                ; rejects it there. Predicted 4, measured 2; the other two agree
+                ; for a reason that is not this line.
+                pop     af                  ; discard [STR?] -- nothing is created
+                jr      ed_next             ; +1 B of the low region
 ed_haveparen:
                 pop     af                  ; recover string-ness (CF set iff string)
                 ld      a,(VARTYPE)         ; numeric default: type 2/4/8 as parsed
@@ -624,6 +648,9 @@ ed_settype:
                                             ; more -- ary_parse_call owns the whole
                                             ; frame and has already released it, so
                                             ; the old ela_parse_abort stub is gone
+ed_next:                                    ; D-DIMBARE: the list continuation, now
+                                            ; also reached by an item that carried
+                                            ; no bound list at all
                 call    skip_spaces
                 cp      ','
                 jr      nz,ed_done

@@ -126,6 +126,34 @@ from evidence already in this file or in a gate that runs on every build**: a
 residual gets closed by a slice aiming at something else, and nothing re-reads the
 list. **When a slice lands, grep this list for what it just shipped.**
 
+**BASIC surface**
+
+- [x] ✅ **`DIM`'s BOUND LIST IS OPTIONAL, AND THE SOURCE ASSERTED IT WAS NOT.**
+      Found 2026-08-28 by D-POPRAISE while looking for a row that reached
+      `ee_synerr_pop` — the witness row WAS the divergence.
+      [`docs/spec-basic-dimbare.md`](docs/spec-basic-dimbare.md). `arrays.asm`
+      raised ERR 2 for any `DIM` item with no `(`, justified in-line by *"DIM
+      requires a bound list"* — a claim **both references refute on 11 rows**:
+      `DIM A`, `DIM A$`, `DIM A,B`, `DIM A,B(2)`, `DIM A(2),B`, `DIM B,A(2)`,
+      `DIM A B` all accepted, and `DIM A:A=5` / `DIM A:A(0)=5` both answer 5.
+      🎯 **`DIM A:DIM A(2)` reports NO `Redimensioned array`**, so the ignored
+      item creates NOTHING — that is what makes "fall into the list
+      continuation" the faithful shape rather than "allocate a default bound".
+      ✅ **FIXED: 11 DIFF → 0, +1 B of the low region (measured 2026-08-28).**
+      🔴 **TWO RULES FITTED ALL 11 ROWS** and the separating cases were measured
+      BEFORE the fix was written: `DIM A,` / bare `DIM` / `DIM 1` / `DIM $` all
+      still raise ERR 2 and `DIM A(` still raises ERR 24, so the rule is "no
+      bound list", not "lax about anything that is not `(`" — the wider reading
+      would have shipped regressions into green rows.
+      🔴 **PREDICTION MISSED, AND THE MISS IS THE FINDING**: K-DB3 (widen past
+      `is_letter`) was predicted to redden 4 of those green rows and reddened
+      **2**. `DIM 1`/`DIM $` still error through a SECOND cause — the leftover
+      token reaches `exec_stmt`, which rejects it. So the wider rule would have
+      shipped TWO regressions, not four, and those two rows agree under BOTH
+      rules for a reason that is not the guard under test.
+      Knives K-DB1 (11 rows) / K-DB2 (3) / K-DB3 (2), all live:
+      [`scratchpad/dimbare_knives.py`](scratchpad/dimbare_knives.py).
+
 **Apparatus / tooling**
 
 - [ ] 💰 **A 2 B CARVE WITH ITS EVIDENCE ALREADY ATTACHED: `ems_typecheck`'s
@@ -363,7 +391,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3386 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3414 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

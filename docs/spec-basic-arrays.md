@@ -401,7 +401,11 @@ convention should VARPTR arrive later.
   ([interp.asm](../basic/interp.asm):~213, in the `IF ROM_BASE < $4000` block).
   `ERASE`/`$A5` token + handler are **slice 2** — not added now, so `ERASE` stays a
   `Syntax error` in slice 1 (out of scope).
-- **`ex_dim`:** for each comma-separated `NAME(b0[,b1…])`: `var_str_type` (string →
+- **`ex_dim`:** for each comma-separated `NAME[(b0[,b1…])]` — 🔴 **the bound list
+  is OPTIONAL; this line said `NAME(b0[,b1…])` until D-DIMBARE
+  ([spec-basic-dimbare.md](spec-basic-dimbare.md)) measured 11 rows against both
+  references. An item with no `(` is accepted and IGNORED — it creates nothing,
+  so `DIM A:DIM A(2)` raises no `Redimensioned array`** — : `var_str_type` (string →
   slice 3, so a `$` name in slice 1 → `Syntax error` or defer; **decide in review**,
   Q-9a) then `var_name_key` (BC=key, A/`VARTYPE`=type); parse the bound list (each
   bound `eval`'d to int16 ≥ 0); `ary_find` — if already present → **`Redimensioned
