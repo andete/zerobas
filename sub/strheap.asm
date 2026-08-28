@@ -750,6 +750,7 @@ smo_fixup:
 sg_walk:
                 call    sg_walk_scalars
                 call    sg_walk_arrays
+                call    sg_walk_fnframe
                 ; fall through to sg_walk_temps
 ; temp-stack entries [TEMPTOP, TEMPBASE), stride 3.
 sg_walk_temps:
@@ -765,6 +766,56 @@ sgw_tm_lp:
                 ld      de,3
                 add     hl,de
                 jr      sgw_tm_lp
+; --- sg_walk_fnframe: the DEF FN shadow slots [FN_PAREA, FN_FEND) --------
+; 🔴 WITHOUT THIS, A STRING FORMAL'S BODY IS REACHABLE FROM NOTHING THE GC WALKS
+; (D-FNGCROOT, docs/spec-deffn-gcroot.md). `str_set_key` (basic/vars.asm:979)
+; snapshots the actual into a temp, stores THAT COPY's descriptor into the
+; destination, and then restores TEMPTOP -- releasing the temp. While an FN call
+; is live the destination is a shadow slot, because scv_find consults
+; fn_shadow_find first (sub/arrays.asm). So the copy was referenced only by a
+; slot this walk never visited.
+;
+; ⚠️ IT TOOK THREE ROUNDS TO PROVOKE, AND THE FIRST TWO WERE GREEN FOR REASONS
+; THAT HAD NOTHING TO DO WITH THE HAZARD. A collection ALONE cannot catch it:
+; compaction moves live bodies UPWARD (measured, $BAEB -> $BAFC) and the dead
+; copy is the LOWEST allocation, so a GC moves everything AWAY from it and leaves
+; its bytes intact. The frontier has to march back DOWN over the copy, which
+; means ALLOCATING after the collection and before the formal is read. The
+; catching row is g2.sub -- `DEF FNA$(S$)=LEFT$(STR$(FRE(""))+X$+X$,0)+S$` --
+; which returned the literal garbage `376A` where both references say `ABCD`.
+;
+; Same shape as sg_walk_scalars: [name0][name1][type][value:8], a type==1 entry's
+; [len][ptr] descriptor at entry+3. Stride is the fixed FN_SLOTSZ rather than
+; elsize_from_type -- a shadow slot is always a full scalar entry, that being the
+; whole point of the area. The end test is byte-wise against FN_FEND, mirroring
+; fn_shadow_find's own loop: the area never crosses a page (sysvars.inc asserts
+; it), and FN_FEND == low FN_PAREA means "no FN call in progress", so the very
+; first compare returns and a program with no live FN call pays 8 T-states.
+;
+; ⚠️ THIS COVERS THE LIVE FRAME ONLY, AND AN OUTER FRAME IS STILL UNREACHABLE.
+; fn_enter saves the caller's live prefix to the Z80 STACK, which no walk can
+; address, so during a NESTED call an outer string formal's body has the same
+; problem. Measured and recorded rather than implied -- see the spec's §6.
+sg_walk_fnframe:
+                ld      hl,FN_PAREA
+sgw_fn_lp:
+                ld      a,(FN_FEND)
+                cp      l
+                ret     z                   ; walked the whole live frame
+                push    hl                  ; [ENTRY]
+                inc     hl
+                inc     hl                  ; -> type field (entry+2)
+                ld      a,(hl)
+                cp      1
+                jr      nz,sgw_fn_skip
+                inc     hl                  ; -> descriptor (entry+3, NOT +2)
+                call    sg_visit            ; visits [len][ptr]; preserves HL
+sgw_fn_skip:
+                pop     hl                  ; HL = entry base
+                ld      a,FN_SLOTSZ
+                add     a,l
+                ld      l,a
+                jr      sgw_fn_lp
 ; --- sg_walk_scalars: the unified scalar chain [PRGEND+2, ARYTAB) --------
 ; (arrays slice-4c §3b, REPLACES sg_walk_strtab). Every entry is
 ; [name0][name1][type][value...]; a type==1 (string) entry's value is the

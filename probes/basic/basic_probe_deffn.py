@@ -75,7 +75,8 @@ SIDES = {
 # subject. `o.varptr.ctl` / `o.realcell.ctl` in particular exercise the
 # VARPTR+PEEK machinery the two sharpest subject rows depend on.
 CONTROLS = {"b.ctl", "o.ctl", "o.ctl2", "d.ctl", "o.varptr.ctl",
-            "o.realcell.ctl", "d.defusr", "d.let"}
+            "o.realcell.ctl", "d.defusr", "d.let",
+            "o.gcroot.ctlv", "o.gcroot.ctln", "o.gcroot.ctla"}
 
 # --- the five address-valued rows, and the claim each really makes ---------
 ADDR = {"z.addr", "z.addr2", "z.addr2i", "z.addr.ctl", "o.sameaddr"}
@@ -93,6 +94,25 @@ CASES = {
     'b.undef'           : ([], 'FNZ(1)'),
     'o.actualfirst'     : (['X=5:DEF FNA(X)=X*10'], 'FNA(X+1)'),
     'o.argnoarg'        : (['DEF FNA=7'], 'FNA(1)'),
+    # --- D-FNGCROOT (docs/spec-deffn-gcroot.md): a STRING formal's shadow slot
+    # is a GC ROOT, and until 2026-08-27 sg_walk never visited it. The subject
+    # needs THREE things together -- a formal, a collection, and an ALLOCATION
+    # after it -- because compaction moves live bodies UPWARD and the dead copy
+    # is the lowest allocation, so a GC alone moves everything away from it.
+    # The three controls each remove exactly one of those and must stay green.
+    'o.gcroot'          : (['CLEAR 400', 'B$="12345"+"67890":A$="AB"+"CD":B$=""',
+                            'X$="ABCDEFGHIJ"+"KLMNOPQRST"',
+                            'DEF FNA$(S$)=LEFT$(STR$(FRE(""))+X$+X$,0)+S$'],
+                           'FNA$(A$)'),
+    'o.gcroot.ctlv'     : (['CLEAR 400', 'B$="12345"+"67890":A$="AB"+"CD":B$=""',
+                            'X$="ABCDEFGHIJ"+"KLMNOPQRST"'],
+                           'LEFT$(STR$(FRE(""))+X$+X$,0)+A$'),
+    'o.gcroot.ctln'     : (['CLEAR 400', 'B$="12345"+"67890":A$="AB"+"CD":B$=""',
+                            'X$="ABCDEFGHIJ"+"KLMNOPQRST"',
+                            'DEF FNB$(S$)=LEFT$(X$,0)+S$'], 'FNB$(A$)'),
+    'o.gcroot.ctla'     : (['CLEAR 400', 'B$="12345"+"67890":A$="AB"+"CD":B$=""',
+                            'X$="ABCDEFGHIJ"+"KLMNOPQRST"',
+                            'DEF FNC$(S$)=LEFT$(X$+X$,0)+S$'], 'FNC$(A$)'),
     'o.aryformal'       : (['DIM B(5)', 'DEF FNA(B(1))=B(1)+1'], 'FNA(2)'),
     'o.badname'         : (['DEF FN1(X)'], '"OK"'),
     'o.barecall'        : (['DEF FNA(X)=X+1'], 'FNA'),
@@ -202,6 +222,10 @@ WANT = {
     'd.sameline'        : '<Illegal direct>',   # round8
     'o.actualfirst'     : '60',   # round5
     'o.argnoarg'        : '7 1',   # round5
+    'o.gcroot'          : 'ABCD',   # D-FNGCROOT 2026-08-27 (was 376A)
+    'o.gcroot.ctla'     : 'ABCD',   # D-FNGCROOT 2026-08-27
+    'o.gcroot.ctln'     : 'ABCD',   # D-FNGCROOT 2026-08-27
+    'o.gcroot.ctlv'     : 'ABCD',   # D-FNGCROOT 2026-08-27
     'o.aryformal'       : 'ERR 2 AT 60',   # round5
     'o.badname'         : 'ERR 2 AT 20',   # round5
     'o.barecall'        : 'ERR 2 AT 60',   # round5

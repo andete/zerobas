@@ -77,10 +77,10 @@ those.)
 |---|---|---|
 | 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **65** |
 | 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **6** |
-| 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **25** |
+| 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **26** |
 | ⛔ **BLOCKED** | neither can start it now — an idle host, a missing fixture, apparatus that must be built first | **9** |
 
-**105 open items, 105 markers, 0 unmarked** — the invariant above, checked.
+**106 open items, 106 markers, 0 unmarked** — the invariant above, checked.
 
 🔴 **A MISFILED 🤖 IS NOT A STOP CONDITION — WRAP UP AND REFILE.** If an item
 marked autonomous turns out to need a decision of his: **finish and commit
@@ -167,6 +167,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Two independent guest crashes do not share a timestamp; one expiring timer
       does. A second battery went **17 red**. The serial retry called several
       REAL, because the retry also ran contended.
+      📏 **THIRD INSTANCE 2026-08-27/28 (D-FNGCROOT), AND IT YIELDS A FREE
+      DISCRIMINATOR THE CLASSIFIER DOES NOT USE.** Wall **3785 s against ~426 s**;
+      5 recovered flakes; the two units left REAL (`stmtpend-acceptance`,
+      `graphics-acceptance`) were **stall kills at 929–1031 s writing 0 lines, on
+      `Philips_VG_8020`** — a REFERENCE machine. 🎯 **A zerobas ROM change cannot
+      make a reference machine hang**, so any stall kill whose missing capture is
+      on `Philips_VG_8020` or `National_CF-3300` is mechanically NOT caused by the
+      ROM under test. That is a one-line rule and it was decisive here: it took a
+      genuine sub-ROM change from "prime suspect" to exonerated.
+      🔴 **AND THE RETRY IS STILL NOT ENOUGH ON ITS OWN.** A serial re-run of
+      `stmtpend-acceptance` at **load 2.05** failed again at 898 s — so a quiet
+      host is not sufficient either, and only an explicit REVERT differential
+      settled it: with the change backed out, the same unit failed identically at
+      903 s (on `National_CF-3300` that time). Logs:
+      `scratchpad/gate_logs/{stmtpend-acceptance,graphics-acceptance}.retry.log`.
       🟢 **THE HOST IS NOT BROKEN — it is self-contended.** With the battery
       stopped, a single `make error-acceptance` runs in **7.2 s** (normally 13),
       so the deadline is not fighting a sick machine, it is fighting `J=8` on
@@ -316,7 +331,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3055 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3109 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1850,7 +1865,46 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rows concatenate into a temp), so this is a hole in the ROW SET as much as
       in the code — the fix is either a `sg_walk_fnframe` or a snapshot at bind
       time, and the ROW that would catch it does not exist yet.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **THE ROW EXISTS, IT WENT RED, AND THE LIVE FRAME IS FIXED (2026-08-27,
+      D-FNGCROOT),** [`docs/spec-deffn-gcroot.md`](docs/spec-deffn-gcroot.md).
+      Both halves of the premise re-ran true on the SHIPPED code. `sg_walk_fnframe`
+      walks `[FN_PAREA, FN_FEND)` — **30 B of sub page 0** (2464 → 2434); main ROM
+      does not move (low 39 B, page 1 89 B, identical). `o.gcroot` **`376A` →
+      `ABCD`**; four rows now gate under `deffn-strict`.
+      🔴 **TWO ROUNDS OF GREEN PROVED NOTHING FIRST.** Round 1's "does the heap
+      move" arm used `VARPTR`, which is the DESCRIPTOR address and never moves —
+      blind, and kept as a negative control. Reading the descriptor's PTR field
+      instead showed the body moves **UPWARD** (47851 → 47868), and the dead copy
+      is the LOWEST allocation — so a collection alone moves everything AWAY from
+      it. The catching row needs THREE things: a formal, a collection, and an
+      **allocation after it**. Three controls each remove exactly one.
+      🔴 **A CONTROL CAUGHT A CONFOUND BEFORE THE SUBJECT DID** — at `CLEAR 100`
+      the no-FN variable control failed on zerobas with `Out of string space`
+      while both references returned ABCD. Filed separately below.
+      ⚠️ **RESIDUAL, MEASURED NOT IMPLIED:** the walk covers the LIVE frame only;
+      an OUTER frame is parked on the Z80 stack where no walk can reach it.
+      `n.outer` → zb `q75AB` vs ref `qABCD`, control green. **Same root cause as
+      D-FNALIAS** — `fn_enter` resets `FN_SLOTP` and stacks the caller — so both
+      want frames that coexist in the shadow area, which needs page-3 RAM.
+      🙋 NEEDS-JOOST — the RESIDUAL only (page-3 RAM below LINEBUF, shared with
+      D-FNALIAS). The live-frame half is shipped and gated.
+
+- [ ] ⚠️ **zerobas EXHAUSTS A `CLEAR 100` STRING POOL WHERE BOTH REFERENCES COPE.**
+      Filed 2026-08-27 by D-FNGCROOT,
+      [`docs/spec-deffn-gcroot.md`](docs/spec-deffn-gcroot.md) §3 — found as a
+      CONFOUND, by the control rather than the subject. With `CLEAR 100`,
+      `X$="ABCDEFGHIJ"+"KLMNOPQRST"` and
+      `LEFT$(STR$(FRE(""))+X$+X$,0)+A$` (no `DEF FN` anywhere in it), vg8020 and
+      CF-3300 both answer `ABCD` and zerobas raises **Out of string space**.
+      Green from `CLEAR 150` up (150/200/300 all ABCD), so the ladder is measured
+      and the boundary is between 100 and 150 — **not bisected further, and not
+      attributed**: it may be the CLEARPOOL partition charging the same expression
+      more, a temp that is not released, or a genuine per-temp overhead. The
+      reproducer is `g2.cap*` in
+      [`scratchpad/deffn_gcroot2_probe.py`](scratchpad/deffn_gcroot2_probe.py).
+      ⚠️ Nothing here is a DEF FN claim — the failing expression has no FN in it.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended
+      (both references agree, so there is an oracle; bisect the boundary first).
 
 - [ ] 💰 **THE GENERIC ERROR-LAYER SEAM: per-verb error checks that duplicate a
       layer that already exists — a carve AND a correctness seam.** Opened
