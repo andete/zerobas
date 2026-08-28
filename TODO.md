@@ -321,27 +321,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
-- [ ] 🔴 **A KNIFE CAN BE SILENTLY INERT BECAUSE THE BUILD DID NOT HAPPEN — AND
-      NONE OF THE 14 RUNNERS CHECKS.** Filed 2026-08-28 by D-NGRAM2
-      ([`docs/spec-basic-ngram2.md`](docs/spec-basic-ngram2.md) §3).
-      📏 **MEASURED, NOT SUSPECTED:** running `scratchpad/ngram2_knives.py` twice
-      on an unchanged tree gave TWO DIFFERENT ANSWERS — K-NG2 moved 2 rows once
-      and 11 the other time, and the 11-row output was **byte-identical to
-      K-NG1's**: the probe had measured the PREVIOUS knife's ROM. Writing a
-      source file and immediately invoking `make` can leave the old ROM
-      installed.
-      🎯 **THE FAILURE PRESENTS AS "moved 0 row(s)"** — which is exactly what a
-      knife with nothing to say looks like, so an inert knife reads as a
-      falsification arm that legitimately found nothing. Every "UNWITNESSED"
-      verdict in the tree was taken without this check.
-      🔬 Build non-determinism is EXCLUDED: three consecutive builds are
-      byte-identical and converge in one pass.
-      ➡️ **THE FIX IS 6 LINES AND ALREADY EXISTS IN ONE RUNNER:** hash the ROMs
-      before and after planting, refuse to score a cut whose hash did not move,
-      print the transition. `scratchpad/ngram2_knives.py` has it; the other 13 do
-      not. ⚠️ Also force `ZEROBAS_REFCACHE=0` in every runner — a knife measures,
-      it never replays.
-      🤖 AUTONOMOUS — a gate settles it; finishable unattended.
+- [x] ~~🔴 **A KNIFE CAN BE SILENTLY INERT BECAUSE THE BUILD DID NOT HAPPEN — AND
+      NONE OF THE 14 RUNNERS CHECKS.**~~ ✅ **SHIPPED 2026-08-28 (D-KNIFEROM,
+      [`docs/spec-kniferom.md`](docs/spec-kniferom.md))** — **and the filing was
+      WRONG IN BOTH THE COUNT AND THE DIRECTION.**
+      📏 **NOT 13 of 14; it is 5 of 41.** The convention ALREADY EXISTED and 36
+      of 41 runners follow it (`circmiss_knives.py` is the canonical shape:
+      `hashes()` over the built images plus `rm -rf build`), and several specs
+      already separate *"the cut reached the artifact and reddened nothing"* from
+      *"the cut never happened"*.
+      🎯 **FOUR OF THE FIVE GAPS WERE RUNNERS I WROTE IN THE LAST 48 H** — the
+      real defect was that NO GATE existed, so a new runner could omit it
+      unseen. `scratchpad/knife_guard.py` (one implementation, 9 arms), the five
+      wired, my two inline copies folded in, and `make knife-guard-check`
+      (5 arms + a live-tree falsification).
+
+- [ ] 🔬 **DO THE 41 KNIFE RUNNERS *COMPARE* THEIR HASH, OR ONLY PRINT IT?**
+      Filed 2026-08-28 by D-KNIFEROM
+      ([`docs/spec-kniferom.md`](docs/spec-kniferom.md) §2). `make
+      knife-guard-check` polices the PRESENCE of ROM evidence, not its correct
+      USE — a runner can hash the images and never compare the two readings, and
+      **about ten of the 41 look like they print rather than assert**.
+      ⚠️ **THAT COUNT IS ITSELF UNTRUSTWORTHY**: the regex that produced it
+      scored `strlong_knives.py` at 5 assertions when the file had none
+      (spec §5). **Read the code; do not grep for this one.**
+      🎯 The question that matters is narrower than an audit of all 41: which
+      recorded **"reddened nothing" / "UNWITNESSED"** verdicts rest on a runner
+      that could not have detected an inert cut? `grep -rniE "reddened
+      nothing|unwitnessed" docs/*.md` finds **29 mentions across 21 specs**.
+      🤖 AUTONOMOUS — the code settles it; finishable unattended.
 
 - [x] ~~💰 **THE BATTERY AND THE PROBES RE-MEASURE CONSTANTS.**~~ ✅ **SHIPPED
       2026-08-28, at Joost's request, as TWO independent mechanisms.**
@@ -642,7 +650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3728 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3736 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

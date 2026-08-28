@@ -30,6 +30,8 @@ which is the failure a runtime knife cannot see.
 🔴 RESTORE ON EVERY EXIT (D-KNIFEGUARD): try/finally AND atexit.
 """
 import atexit, hashlib, os, re, subprocess, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import knife_guard   # D-KNIFEROM: ONE implementation, not three
 
 TMP, SRC = "/tmp/zerobas", "basic/program.asm"
 
@@ -50,14 +52,6 @@ le_call:""")]),
 ]
 
 ROW = re.compile(r"^[a-z][a-z0-9]*\.[a-z0-9.]+$")
-
-
-ROMS = ("build/zerobas-main-eu.rom", "build/sub.rom", "build/disk.rom")
-
-
-def rom_hash():
-    return " ".join(hashlib.sha256(open(r, "rb").read()).hexdigest()[:8]
-                    for r in ROMS if os.path.exists(r))
 
 
 def sh(cmd, log):
@@ -118,11 +112,11 @@ def main():
             for o, n in cuts:
                 t = t.replace(o, n)
             open(SRC, "w").write(t)
-            before = rom_hash()
+            before = knife_guard.hashes()
             print(f"{name}: planted, rebuilding...")
             if sh("make repack-machine", f"{TMP}/n3k_{tag}_build.out"):
                 print(f"{name}: BUILD FAILED"); fails.append(name); continue
-            after = rom_hash()
+            after = knife_guard.hashes()
             # 🔴 A KNIFE CAN BE SILENTLY INERT BECAUSE THE BUILD DID NOT HAPPEN.
             # Writing the source and immediately running `make` can leave the
             # previous ROM in place, and then the probe measures the UNCUT

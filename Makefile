@@ -709,6 +709,16 @@ temp-root-check:
 refcache-check:
 	python3 probes/lib/probe_refcache.py --selftest
 
+# --- D-KNIFEROM (docs/spec-kniferom.md): a knife must prove its cut landed ----
+# A knife writes a source file and rebuilds. If the rebuild does not happen, the
+# probe measures the PREVIOUS machine and the runner reports "moved 0 row(s)" --
+# indistinguishable from an arm that legitimately found nothing, which is the
+# verdict specs quote as EVIDENCE. 36 of 41 runners already hashed the built
+# images; this gate says so and refuses the next one that omits it.
+knife-guard-check:
+	python3 tools/check_knife_guard.py --selftest
+	python3 tools/check_knife_guard.py
+
 # --- The missing-capture diagnosis, falsified (docs/spec-probe-mark.md is not
 # its home -- see probes/lib/omsx_missing_teeth.py). ⛔ DELIBERATELY NOT IN
 # `make gates`: two of its cases SIGKILL/SIGTERM `openmsx` BY NAME, which in a

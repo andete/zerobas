@@ -28,6 +28,8 @@ separately checkable and NONE of them is allowed to be inert:
 try/finally AND atexit, for EVERY file a knife touched -- not just the last one.
 """
 import atexit, os, re, subprocess, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import knife_guard                  # D-KNIFEROM: prove the cut reached the ROM
 
 TMP = "/tmp/zerobas"
 STRHEAP, STRENG, INTERP = "sub/strheap.asm", "basic/str-engine.asm", "basic/interp.asm"
@@ -128,8 +130,14 @@ def main():
             for f, old, new in cuts:
                 open(f, "w").write(originals[f].replace(old, new))
             print(f"{name}: planted, rebuilding...")
-            if sh("make repack-machine", f"{TMP}/slk_{tag}_build.out"):
+            _before = knife_guard.hashes()
+            _moved, _after, _rc = knife_guard.build(f"{TMP}/slk_{tag}_build.out", _before)
+            print(knife_guard.report(tag, _moved, _before, _after))
+            if _rc:
                 print(f"{name}: BUILD FAILED (see {TMP}/slk_{tag}_build.out)")
+                results[name] = None
+                continue
+            if not _moved:
                 results[name] = None
                 continue
             sh("python3 scratchpad/strlong_probe.py zb", f"{TMP}/slk_{tag}.out")

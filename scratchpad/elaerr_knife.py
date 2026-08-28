@@ -16,6 +16,8 @@ consults nothing, so ERR 2 -> ERR 5 is a clean signal.
 🔴 RESTORE ON EVERY EXIT (D-KNIFEGUARD).
 """
 import atexit, os, subprocess, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import knife_guard                  # D-KNIFEROM: prove the cut reached the ROM
 
 TMP, SRC = "/tmp/zerobas", "basic/vars.asm"
 OLD = ("ela_err:\n"
@@ -56,7 +58,12 @@ def main():
     try:
         open(SRC, "w").write(orig.replace(OLD, NEW))
         print("K-EL1 planted, rebuilding...")
-        if sh("make repack-machine", f"{TMP}/elk_build.out"):
+        _before = knife_guard.hashes()
+        _moved, _after, _rc = knife_guard.build(f"{TMP}/elk_build.out", _before)
+        print(knife_guard.report("K-ELA", _moved, _before, _after))
+        if not _moved and not _rc:
+            print("  -> refusing to score an INERT cut"); return 1
+        if _rc:
             print("BUILD FAILED"); return 2
         sh("python3 scratchpad/popmerge_probe.py zb", f"{TMP}/elk_probe.out")
     finally:

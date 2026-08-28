@@ -25,6 +25,8 @@ A tail whose knife moves no row is UNWITNESSED and is reported as such.
 try/finally AND atexit.
 """
 import atexit, os, subprocess, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import knife_guard                  # D-KNIFEROM: prove the cut reached the ROM
 
 TMP = "/tmp/zerobas"
 
@@ -100,7 +102,12 @@ def main():
         try:
             open(src, "w").write(orig.replace(old, new))
             print(f"{name}: planted, rebuilding...")
-            if sh("make repack-machine", f"{TMP}/pmk_{tag}_build.out"):
+            _before = knife_guard.hashes()
+            _moved, _after, _rc = knife_guard.build(f"{TMP}/pmk_{tag}_build.out", _before)
+            print(knife_guard.report(tag, _moved, _before, _after))
+            if not _moved and not _rc:
+                results[name] = None; continue
+            if _rc:
                 print(f"{name}: BUILD FAILED"); results[name] = None; continue
             sh(f"python3 scratchpad/popmerge_probe.py zb",
                f"{TMP}/pmk_{tag}.out")

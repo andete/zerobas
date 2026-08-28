@@ -15,6 +15,8 @@ back by try/finally AND atexit, so a kill between the write and the restore cann
 leave the tree cut and invisible to the ROM-hash guard.
 """
 import atexit, os, subprocess, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import knife_guard                  # D-KNIFEROM: prove the cut reached the ROM
 
 SRC = "basic/cload.asm"
 # 🔴 THE INSTRUCTION ALONE IS NOT THE SITE. `ld hl,(FN_RESUME) ; D-FNRUN: resume
@@ -48,7 +50,12 @@ def main():
     try:
         open(SRC, "w").write(orig.replace(OLD, NEW))
         print("K-CT-FR3 planted; rebuilding...")
-        if sh("make repack-machine", f"{tmp}/ctknife_build.out"):
+        _before = knife_guard.hashes()
+        _moved, _after, _rc = knife_guard.build(f"{tmp}/ctknife_build.out", _before)
+        print(knife_guard.report("K-CT", _moved, _before, _after))
+        if not _moved and not _rc:
+            print("  -> refusing to score an INERT cut"); return 1
+        if _rc:
             print("BUILD FAILED with the knife in -- see ctknife_build.out")
             return 2
         rc = sh("make castail-acceptance", f"{tmp}/ctknife_probe.out")
