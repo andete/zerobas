@@ -353,6 +353,27 @@ str_snapshot_keep:
                 ld      a,16                ; op = 16 (SNAPSHOT-UNLESS-TEMP)
                 jr      sst_op
     ENDIF
+; --- str_snapshot_arg (D-POOLCAP): what a STRING FUNCTION's first argument ---
+; should use. LEFT$/RIGHT$/MID$ snapshot their source and then TRUNCATE IT IN
+; PLACE, so they need an OWNED body -- but a source that is already an owned temp
+; is one, and copying it is the "second full charge against the user's pool" that
+; str_snapshot_keep's own header describes. D-CLP converted str_set_key and left
+; these three; the cost was measured 2026-08-28:
+;
+;     LEN(LEFT$(X$+X$,0)) with 24 B live    references: works at CLEAR 70
+;                                           zerobas:    needs CLEAR 120
+;
+; -- a 40 B temp charged twice. Slicing a VARIABLE was green on every side at
+; CLEAR 70, which is what says the source's KIND is the variable at issue.
+; An alias rather than an IF at each of the three call sites: the non-CLEARPOOL
+; build has no str_snapshot_keep to call, and `switch-build-check` flips that
+; switch. Zero bytes either way -- it is the same `call`, to a different label.
+    IF CLEARPOOL
+str_snapshot_arg equ str_snapshot_keep
+    ELSE
+str_snapshot_arg equ str_snapshot_to_temp
+    ENDIF
+
 str_snapshot_to_temp:
                 ld      a,4                 ; op = 4 (SNAPSHOT)
 sst_op:
@@ -781,7 +802,7 @@ str_fn_left:
                 call    str_eval            ; STRPTR -> source; HL advanced; CF=ok
                 jp      nc,str_eval_no
                 push    hl                  ; save cursor@','
-                call    str_snapshot_to_temp ; STRPTR -> owned temp copy; HL=temp
+                call    str_snapshot_arg    ; STRPTR -> an OWNED temp; HL=temp
                 pop     hl
                 ld      a,(hl)
                 cp      ','
@@ -826,7 +847,7 @@ str_fn_right:
                 call    str_eval
                 jp      nc,str_eval_no
                 push    hl
-                call    str_snapshot_to_temp
+                call    str_snapshot_arg
                 pop     hl
                 ld      a,(hl)
                 cp      ','
@@ -874,7 +895,7 @@ str_fn_mid:
                 call    str_eval            ; STRPTR -> source
                 jp      nc,str_eval_no
                 push    hl
-                call    str_snapshot_to_temp ; STRPTR -> owned temp copy; HL=temp
+                call    str_snapshot_arg    ; STRPTR -> an OWNED temp; HL=temp
                 pop     hl
                 ld      a,(hl)
                 cp      ','

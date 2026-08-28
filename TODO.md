@@ -331,7 +331,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3109 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3140 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1903,8 +1903,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       reproducer is `g2.cap*` in
       [`scratchpad/deffn_gcroot2_probe.py`](scratchpad/deffn_gcroot2_probe.py).
       ⚠️ Nothing here is a DEF FN claim — the failing expression has no FN in it.
+      ✅ **HALF OF IT IS FIXED, AT ZERO BYTES (2026-08-28, D-POOLCAP),**
+      [`docs/spec-poolcap.md`](docs/spec-poolcap.md). **Threshold CLEAR 120 → 100**;
+      still red at 70/80, where both references work.
+      🔴 **TWO EXPLANATIONS DIED FIRST.** The pool is NOT smaller (grant 100/150,
+      free-after 76/126, concat cost 36 — identical on all three), and the result
+      is NOT over-allocated (`LEFT$(X$,n)` charges exactly n: 0/5/20 everywhere).
+      The cost is a TRANSIENT PEAK, which a before/after `FRE("")` cannot see.
+      🎯 **`FRE("")` IS EXONERATED** — `LEFT$(X$+X$,0)+A$` has none and fails too.
+      The separator is the SOURCE's kind: slicing a VARIABLE is green at CLEAR 70
+      on every side; slicing a TEMP is what diverges.
+      🎯 **CAUSE: A KNOWN CLASS WITH ONE SITE CONVERTED.** `LEFT$`/`RIGHT$`/`MID$`
+      called `str_snapshot_to_temp` when `str_snapshot_keep` sits beside it, whose
+      header already describes this defect — *"with `CLEAR n` it was a second full
+      charge against the user's pool"*. D-CLP converted `str_set_key` and left the
+      three verbs. Fixed via a `str_snapshot_arg` ALIAS (not an `IF` per site: the
+      non-CLEARPOOL build has no `keep` to call) — **0 B, all four walls unchanged**.
+      🔴 **THE HAZARD IS IN LEFT$'s OWN SENTENCE — it truncates the snapshot IN
+      PLACE**, so handing the source back as-is mutates it. Six rows written to
+      break it (nested slices, a temp sliced two ways, a slice beside a rebuilt
+      copy) all agree with both references; string/str-domain/strparen/array/
+      deffn-strict/unit-test green, and **`switch-build-check` builds
+      `CLEARPOOL equ 0`** — the arm the alias exists for.
+      ➡️ **WHAT REMAINS, WITH ITS SITE NAMED:** ~one more temp's worth. `str_concat`
+      snapshots BOTH operands ([`basic/str-engine.asm:1435`](basic/str-engine.asm:1435)),
+      so `X$+X$` is 20+20 transient over the 40 B result. `keep` does NOT help there
+      — both operands are VARIABLES — so closing it means re-reading the descriptor
+      after the allocation instead of copying first: a different, larger change.
+      ⚠️ The `t.*` rows are NOT gated (`t.70`/`t.80` still red, no XFAIL class);
+      reproducer [`scratchpad/leftkeep_probe.py`](scratchpad/leftkeep_probe.py).
+      Pinning the RECOVERED ground (`t.100`, green now, red before) belongs in
+      `clearpool-acceptance`.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended
-      (both references agree, so there is an oracle; bisect the boundary first).
+      (oracle intact; the remaining half is str_concat's double snapshot).
 
 - [ ] 💰 **THE GENERIC ERROR-LAYER SEAM: per-verb error checks that duplicate a
       layer that already exists — a carve AND a correctness seam.** Opened
