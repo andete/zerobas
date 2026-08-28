@@ -83,23 +83,79 @@ is `jr tsk_data` — unconditional. The walk read the *directive* instead and
 invented a fallthrough into `skip_to_eol`, keeping an 11 B dead routine
 "reachable" for as long as it existed.
 
-## 4. What is deliberately NOT landed yet
+## 4. Both remaining spans adjudicated, and the walk fixed
 
-The `_last_code` fix itself. Applying even the `include`-only correction makes the
-hard gate report `fat_delete` and `__MEAS_SUB_P1_END`, and neither is adjudicated:
+### 4.1 `fat_delete` — the same shape again, another 5 B
 
-* `fat_delete` is defined in **both** `basic/fat.asm:353` and
-  `basic/fat-delete-body.inc:29`, and every caller is in `sub/`
-  (`sub/dirverb.asm:128`, `sub/fatprim.asm:205`). That is the *shared body* shape,
-  where the header's own answer is `IF SUB_BUILD` **and where deletion has broken
-  the build before** — so it needs reading, not a guess.
-* `__MEAS_SUB_P1_END` is a measurement label reached by construction rather than
-  control flow; it became reportable only because its incoming phantom edge went.
+`basic/fat.asm` is in the **main** closure only; `basic/fat-delete-body.inc` and
+both callers (`sub/dirverb.asm:128`, `sub/fatprim.asm:205`) are in the **sub**
+closure only. Main's copy is the thirteenth *uniform resident shim*
+(`ld a,DISKOP_SEL_FAT_DELETE / jp fatprim_bounce`) — and it had no caller.
 
-Landing the walk fix without settling both would turn a gate that silently hides
-findings into one that fails the build on two non-findings. The full correction
-(the `IF`/`ELSE`/`ENDIF` arms, and the 20 undecidable cases needing file-level
-rather than per-span context) is a larger change again.
+The twelve shims above it are called by name from `basic/files.asm`
+(`call fat_io_open`, `call fat_rand_open`, …). This one is not, because **main's
+KILL does not use the primitive layer at all**: `files.asm` goes
+`ld a,DISKOP_SEL_KILL / call subrom_call`, and its own comment says the tenant is
+*"calling `fat_delete` sub-locally"*. The shim outlived that eviction.
 
-**The carve does not depend on any of that** — it is verified by grepping the
-build's own closure, and the assembler confirmed it by linking without the label.
+⚠️ **Checked rather than assumed, because a resident shim is exactly the shape
+that can be reached by ADDRESS rather than by name.** It is in no resident-ABI
+list and no dispatch table, and `basic/main.asm`'s whole closure contains **one**
+mention of the name — the definition itself.
+
+**Main page-1 free 105 B → 110 B.**
+
+### 4.2 `__MEAS_SUB_P1_END` — true and useless
+
+`__MEAS_SUB_P1_END:` is followed by `ds $8000 - $, $FF`. It exists to be **read
+from the sym file** by `check_sub_walls.py`; nothing jumps to it, by design. It
+was only ever kept out of the dead set by an incoming fallthrough edge, so
+correcting the walk made it reportable — as a finding that is true and useless.
+
+Fix (9): **a span whose only code line is a `ds` emits no instructions and cannot
+be unreachable code.** Deliberately narrow, and proved narrow rather than
+asserted — a `db` table is data a reference can genuinely go missing from and
+stays reportable:
+
+| span content | skipped? |
+|---|---|
+| `ds $8000 - $, $FF` | **yes** |
+| `db 1,2,3` | no |
+| `ds 4` + `ret` | no |
+| empty | no |
+| `ret` | no |
+
+The skip **prints what it skipped**. A silently dropped finding is the shape this
+gate exists to remove.
+
+### 4.3 The walk fix, scoped
+
+`_last_code` now resolves `include "f"` recursively to the included file's last
+code line; an unresolvable include is left unchanged, keeping its edge.
+
+⚠️ **Only `include` (13 of the 68), and that is a scope decision.** Deciding an
+`IF/ELSE/ENDIF` needs every arm to terminate, and **20 of those conditionals open
+in a PREVIOUS span**, where a per-span walk cannot see the arms at all. That needs
+file-level context and stays open.
+
+**Falsification:** `--blind` still exits non-zero — the allowlist canary fires, so
+the sweep has not gone quiet. Both allowlist entries are still detected as dead.
+`main: 0 dead`, `sub: 0 dead (+2 allowlisted)`.
+
+## 5. Total
+
+**16 B of main page 1** recovered from code no gate could see: 94 B → **110 B**.
+
+## 6. What is still open
+
+**The `IF`/`ELSE`/`ENDIF` half — 55 of the 68 pairs.** Deciding one needs every
+arm to terminate, and the corrected walk marks **20 of them undecidable** because
+the opening `IF` lies in a *previous* span. A per-span walk cannot see those arms;
+resolving them needs file-level structure, which is a different tool than the one
+this file fixed.
+
+That half keeps its edges, and that is the safe direction: a guessed "terminates"
+deletes a real edge and invents a dead-code finding, while a guessed "does not"
+only keeps a phantom one and hides. Whatever it is still hiding is bounded by
+those 20 spans, and they are enumerable — `scratchpad/endif_walk_verdict.py`
+prints them by name.

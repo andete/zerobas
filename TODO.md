@@ -331,7 +331,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3233 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3248 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2176,19 +2176,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 It hid because `tok_skip_to`'s span ends on
       `include "basic/tokskip-body.inc"`, whose real last instruction is the
       unconditional `jr tsk_data`.
-      ➡️ **STILL OPEN: the `_last_code` FIX ITSELF.** Even the `include`-only
-      correction makes the hard gate report two more spans, neither adjudicated:
-      `fat_delete` (defined in BOTH `basic/fat.asm:353` and
-      `basic/fat-delete-body.inc:29`, all callers in `sub/` — the shared-body shape
-      where deletion HAS broken the build) and `__MEAS_SUB_P1_END` (a measurement
-      label reached by construction). Landing the fix without settling both turns a
-      gate that hides findings into one that fails the build on two non-findings.
+      ✅ **BOTH REMAINING SPANS ADJUDICATED AND THE `include` HALF OF THE WALK
+      FIXED (2026-08-28).** `fat_delete` was the SAME SHAPE AGAIN: `basic/fat.asm`
+      is main-only, the body `.inc` and BOTH callers are sub-only, and main's copy
+      was the thirteenth uniform resident shim with **no caller** — the twelve
+      above it are called by name from `files.asm`, but KILL does not use the
+      primitive layer at all (`ld a,DISKOP_SEL_KILL / call subrom_call`, its own
+      comment saying the tenant calls `fat_delete` sub-locally). ⚠️ Checked, not
+      assumed, that no resident-ABI list or dispatch table reaches it by ADDRESS.
+      **+5 B.** `__MEAS_SUB_P1_END` is `ds`-padding read from the SYM file by
+      `check_sub_walls.py` — true and useless as a finding; fix (9) skips a span
+      whose only code line is a `ds`, PROVES it narrow (a `db` table stays
+      reportable), and PRINTS what it skipped.
+      📏 **TOTAL 16 B of main page 1 from code no gate could see: 94 B → 110 B free
+      on 2026-08-28.** `--blind` still exits non-zero (the allowlist canary fires,
+      so the sweep has not gone quiet); battery 43/43, 5 flakes recovered serially
+      on a contended host.
+      ➡️ **STILL OPEN: the `IF`/`ELSE`/`ENDIF` half — 55 of the 68 pairs.** Deciding
+      one needs EVERY ARM to terminate, and **20 conditionals OPEN IN A PREVIOUS
+      SPAN**, where a per-span walk cannot see the arms at all; that needs
+      file-level structure. Those keep their edges, which is the safe direction (a
+      guessed "terminates" invents a finding; a guessed "does not" only hides one),
+      and the 20 are enumerable by name from the verdict scout.
       Scouts: [`scratchpad/endif_walk_sweep.py`](scratchpad/endif_walk_sweep.py),
       [`scratchpad/endif_walk_verdict.py`](scratchpad/endif_walk_verdict.py),
       [`scratchpad/endif_walk_impact.py`](scratchpad/endif_walk_impact.py).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended
-      (measurement banked 2026-08-28; what remains is adjudicating 2 spans, then
-      the walk fix).
+      (include half SHIPPED 2026-08-28 with 16 B recovered; what remains is the
+      IF/ELSE/ENDIF half, which needs a file-level walk, not a per-span one).
 
 - [ ] 🔴 **`castail-acceptance` VOIDS THE WHOLE BATTERY WHEN A CONTROL FAILS ON
       THE **ZEROBAS** SIDE, SO IT CANNOT SCORE ITS OWN KNIVES.** Filed

@@ -345,11 +345,15 @@ fia_empty:
 
                 include "basic/fatiow-body.inc"        ; fat_io_putbyte/fwr_bytes_inc/fat_io_close
 
-; fat_delete — resident shim (docs/spec-evict-diskfile-cluster.md §11). See
-; basic/fat-delete-body.inc for the full contract; same uniform Cy+HL+A
-; marshalling convention as the other primitive shims above.
-; `jp`, not `jr`: this is the thirteenth uniform shim but it sits AFTER the
-; resident fat_io_* cursor, ~324 B below fatprim_bounce — out of `jr` reach.
-fat_delete:
-                ld      a,DISKOP_SEL_FAT_DELETE
-                jp      fatprim_bounce
+; fat_delete — RESIDENT SHIM DELETED FROM THIS BUILD (D-ENDIFWALK, 5 B).
+; It was the thirteenth uniform shim (`ld a,DISKOP_SEL_FAT_DELETE / jp
+; fatprim_bounce`) and it had NO caller in main. The twelve above it are called by
+; name from basic/files.asm (`call fat_io_open`, `call fat_rand_open`, …); this one
+; is not, because main's KILL does not use the primitive layer at all — files.asm
+; goes `ld a,DISKOP_SEL_KILL / call subrom_call`, and its own comment says the
+; tenant is "calling fat_delete sub-locally". The shim outlived that eviction.
+; ⚠️ Checked rather than assumed, because a resident shim is exactly the shape that
+; can be reached by ADDRESS rather than by name: `fat_delete` is in no resident-ABI
+; list and no dispatch table, and basic/main.asm's whole closure contained ONE
+; mention of the name — this definition. The sub build keeps its own body
+; (basic/fat-delete-body.inc, included only by sub/) and both its callers.

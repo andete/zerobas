@@ -205,13 +205,55 @@ class Spans:
             self.seq[f] = order
         self.edges = self._edges()
 
+    # (8) AN `include` IS NOT AN INSTRUCTION, AND NEITHER IS ANY DIRECTIVE.
+    # This walk returned the last SOURCE line, so a span ending on `include "f"`
+    # was handed that directive and asked whether it terminates. `_is_terminator`
+    # correctly says no -- it is not an instruction at all -- and the result was a
+    # FALLTHROUGH EDGE THAT DOES NOT EXIST, which makes the next label reachable
+    # and HIDES dead code. A gate going quiet, not one crying wolf.
+    # 🔴 IT WAS HIDING 16 B (D-ENDIFWALK, docs/spec-endifwalk.md): `skip_to_eol`/
+    # `ste_done` (11 B) behind `include "basic/tokskip-body.inc"`, whose real last
+    # instruction is the unconditional `jr tsk_data`, and `fat_delete` (5 B).
+    # ⚠️ ONLY `include` IS RESOLVED HERE, and that is a scope decision, not an
+    # oversight. Over both builds 68 span pairs end on a directive -- endif 32,
+    # if 22, include 13, else 1 -- but deciding an `IF/ELSE/ENDIF` needs every ARM
+    # to terminate, and 20 of those conditionals OPEN IN A PREVIOUS SPAN where a
+    # per-span walk cannot see them. Resolving includes is unambiguous; the rest
+    # needs file-level context and stays open in TODO.md.
+    _INC = re.compile(r'^include\s+"([^"]+)"', re.I)
+
     @staticmethod
-    def _last_code(lines):
+    def _last_code(lines, _depth=0):
         for c in reversed(lines):
             t = c.strip()
-            if t and not re.match(r'^\w+:$', t):
-                return t
+            if not t or re.match(r'^\w+:$', t):
+                continue
+            m = Spans._INC.match(t)
+            if m and _depth < 6:
+                for cand in (m.group(1), os.path.join('basic', m.group(1)),
+                             os.path.join('sub', m.group(1))):
+                    if os.path.exists(cand):
+                        inner = [ln.split(';', 1)[0] for ln in open(cand)]
+                        got = Spans._last_code(inner, _depth + 1)
+                        if got:
+                            return got
+                return t                  # unresolvable -> unchanged, edge kept
+            return t
         return ""
+
+    # (9) A PADDING SPAN EMITS NO INSTRUCTIONS, SO IT CANNOT BE UNREACHABLE CODE.
+    # The region markers (`__MEAS_SUB_P1_END:` then `ds $8000 - $, $FF`) exist to
+    # be READ FROM THE SYM FILE by check_sub_walls.py; nothing jumps to them, by
+    # design. They were only ever kept out of the dead set by an incoming
+    # fallthrough edge, so fix (8) above made them reportable -- as findings that
+    # are true and useless. Deliberately NARROW: the span's only code line must be
+    # a `ds`. A `db` table is data a reference can genuinely go missing from and
+    # stays reportable.
+    @staticmethod
+    def _padding_only(lines):
+        code = [c.strip() for c in lines
+                if c.strip() and not re.match(r'^\w+:$', c.strip())]
+        return bool(code) and all(re.match(r'^ds\b', c, re.I) for c in code)
 
     def _edges(self):
         edges = collections.defaultdict(set)
@@ -531,6 +573,13 @@ def main(argv):
         if blind:
             seeds = set(spans.nodes)
         dead, live = spans.dead(seeds)
+        pad = [d for d in dead if Spans._padding_only(spans.nodes.get(d, []))]
+        if pad:
+            # never silent: a skipped finding that nobody can see is the shape
+            # this whole gate exists to remove.
+            print(f"  {name:4s}: {len(pad)} padding-only span(s) not reportable "
+                  f"(fix 9): {', '.join(sorted(pad))}")
+            dead = [d for d in dead if d not in set(pad)]
         deadset = set(dead)
         for lbl in dead:
             reason = allow.get((name, lbl))
