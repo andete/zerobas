@@ -154,6 +154,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Knives K-DB1 (11 rows) / K-DB2 (3) / K-DB3 (2), all live:
       [`scratchpad/dimbare_knives.py`](scratchpad/dimbare_knives.py).
 
+- [ ] 💰 **D-NGRAM: EXACT REPEATED INSTRUCTION SEQUENCES — `req_letter` SHIPPED
+      (−50 B), THREE CANDIDATES LEFT.** [`docs/spec-ngram.md`](docs/spec-ngram.md),
+      `scratchpad/ngram_sweep.py --main`. Built because `clone_scout` masks two
+      operands BY DESIGN and so cannot see EXACT repeats collapsible into a
+      shared body — the shape that paid in D-BAREEND (+45 B) and D-POPRAISE.
+      ✅ **SHIPPED: `req_letter`.** `call skip_spaces / call is_letter /
+      jp nc,stmt_error` stood open-coded at **TEN** statement entries (DIM,
+      ERASE, DEF FN, FIELD, the disk string-var parse, INPUT, both SWAP
+      operands, FOR, READ) at 9 B each; one 10 B body + ten 3 B calls replaces
+      90 B. Low region read 50 → 68 B free, page 1 154 → 186 B, 2026-08-28.
+      🔴 **TWO INSTRUMENT FAULTS CAUGHT BEFORE ANY NUMBER WAS QUOTED**: the raw
+      table was ALL `sub/` (mathpack repeats, where thousands of bytes are
+      already free — `--main` rescores on main sites only), and **a CONDITIONAL
+      jump is not a terminator**, so the top candidate was first mispriced as a
+      shared tail it can never be.
+      ➡️ **STILL OPEN, measured 2026-08-28:** `call skip_spaces / or a /
+      jp z,loc_missing / cp COLON / jp z,loc_missing` (**41 B**, 6 sites); the
+      `subrom_call` + LE_STATUS sequence (**40 B**, 5 sites); and an `inc hl` +
+      req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
+      must be RE-RUN, not inherited**.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
+
 - [ ] 💰 **D-PEEPHOLE: THE CLASSIC Z80 SIZE IDIOMS, COUNTED — SAFE CLASS TAKEN,
       FLAG-CHANGING CLASS STILL OPEN (20 B).** Pattern list from the WikiTI
       "Z80 Optimization" page (Joost, 2026-08-28);
@@ -464,7 +486,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3487 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3509 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

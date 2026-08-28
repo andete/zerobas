@@ -200,9 +200,7 @@ inpc_synpop     equ     ex_let_err
 
 ; --- LINE INPUT: the whole typed line into one string variable -------------
 inpc_line:
-                call    skip_spaces
-                call    is_letter
-                jp      nc,stmt_error
+                call    req_letter          ; D-NGRAM: an INPUT target must be a name
                 call    var_str_type
                 or      a
                 jp      z,stmt_error        ; LINE INPUT requires a string variable

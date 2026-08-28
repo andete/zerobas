@@ -381,9 +381,7 @@ loc_more_yes:
 ; skip_spaces leaves A = the current character, so the guard is two instructions.
 ex_swap:
                 inc     hl                  ; past the SWAP token
-                call    skip_spaces
-                call    is_letter
-                jp      nc,stmt_error       ; operand 1 is not a name -> Syntax error
+                call    req_letter          ; D-NGRAM: operand 1 is not a name -> Syntax error
                 xor     a
                 ld      (SW_MODE),a         ; operand 1: MAY be created
                 call    sw_operand
@@ -395,9 +393,7 @@ ex_swap:
                 cp      ','
                 jp      nz,stmt_error       ; `SWAP` / `SWAP A` -> Syntax error
                 inc     hl
-                call    skip_spaces
-                call    is_letter
-                jp      nc,stmt_error       ; operand 2 is not a name -> Syntax error
+                call    req_letter          ; D-NGRAM: operand 2 is not a name -> Syntax error
                                             ; (see the header: this must be tested at
                                             ; THIS depth, not inside sw_operand)
                 ld      a,1

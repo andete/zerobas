@@ -191,6 +191,28 @@ il_no:
                 or      a                   ; CF clear
                 ret
 
+; --- req_letter: skip spaces, then DEMAND an identifier-start letter --------
+; D-NGRAM (docs/spec-ngram.md). `call skip_spaces / call is_letter /
+; jp nc,stmt_error` -- "a name must start here, else Syntax error" -- stood
+; open-coded at TEN statement entries, 9 B each: DIM and ERASE (arrays.asm),
+; DEF FN (deffn.asm), FIELD (field.asm), the disk string-variable parse
+; (files.asm), INPUT (input.asm), SWAP's two operands (missing.asm), FOR and
+; READ (program.asm). One 10 B body plus ten 3 B calls replaces 90 B: -50 B.
+;   in:  HL = cursor.  out: A = the letter, HL on it, CF set. Does NOT return
+;        when the byte is not a letter -- stmt_error owns that exit.
+; 🎯 `ret c / jp stmt_error` is byte-for-byte the same 4 B as the `jp nc,
+; stmt_error / ret` it replaces, and inverting it this way keeps the caller's
+; flags EXACTLY as the open-coded form left them: CF still set on return,
+; A still the letter, HL still the cursor -- `call`/`ret` touch none of them.
+; ⚠️ The extra return address costs nothing on the failing path: stmt_error
+; never returns, and both its arms reset SP (the trap arm at :1022, the abort
+; arm through fre_abort_low) -- the same fact D-POPRAISE's discard-tails rest on.
+req_letter:
+                call    skip_spaces
+                call    is_letter
+                ret     c                   ; a letter: hand it back untouched
+                jp      stmt_error          ; not a letter: the statement aborts
+
 ; --- exec: walk the line, dispatching each statement -----------------------
 ; in: HL = token buffer (0x00-terminated). Statements are separated by ':'.
 ; Returns to the REPL at end of line (or hands off via BLOAD,R, never to return).

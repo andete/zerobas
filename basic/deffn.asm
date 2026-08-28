@@ -77,10 +77,9 @@ ex_deffn:
                 jp      raise_error
 exdf_run:
                 inc     hl                  ; past the FN token
-                call    skip_spaces
-                call    is_letter           ; the ONE thing a DEF validates
-                jp      nc,stmt_error       ; `DEF FN1(X)` / `DEF FN(X` -> ERR 2
-                                            ; at the DEF (o.badname / o.twofault)
+                call    req_letter          ; D-NGRAM: the ONE thing a DEF validates
+                                            ; at the DEF -- `DEF FN1(X)` / `DEF FN(X`
+                                            ; -> ERR 2 (o.badname / o.twofault)
                 call    var_name_key        ; BC = key, HL past the name + suffix
                 ld      a,(VARTYPE)         ; FNA / FNA% / FNA! / FNA$ are four
                                             ; distinct functions, exactly as the

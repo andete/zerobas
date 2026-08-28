@@ -585,10 +585,10 @@ ary_errmap:                                 ; ARY_ERR 1..5 -> FPERR (§4.1 dispo
 ex_dim:
                 inc     hl                  ; past the DIM token
 ed_lp:
-                call    skip_spaces         ; A = (hl), first non-space char
-                call    is_letter           ; a DIM target must START with a letter;
-                jp      nc,stmt_error       ; reject bare `$` / a digit name (D1,
-                                            ; slice-3 adversarial catch: `DIM $(5)`
+                call    req_letter          ; D-NGRAM: a DIM target must START with a
+                                            ; letter -- reject a bare `$` or a digit
+                                            ; name (D1, slice-3 adversarial catch:
+                                            ; `DIM $(5)`
                                             ; and `DIM 1(5)` were silently accepted
                                             ; -- the deleted slice-2 `$`-reject had
                                             ; masked exactly this). Mirrors ex_erase's
@@ -704,14 +704,12 @@ ed_done:
 ex_erase:
                 inc     hl                  ; past the ERASE token
 ee_lp:
-                call    skip_spaces         ; A = (hl), the first non-space char
-                call    is_letter           ; CF set = letter. This ONE peek covers
-                                            ; every Tier-A "no name where a name is
+                call    req_letter          ; D-NGRAM: CF set = letter. This ONE peek
+                                            ; covers every Tier-A "no name where a name is
                                             ; expected" case: bare ERASE (EOL), a
                                             ; leading/trailing/double comma (','),
                                             ; and a numeric argument (digit) --
                                             ; none of those set CF.
-                jp      nc,stmt_error
                 call    var_str_type        ; A=1 / CF set iff this is a STRING name --
                                             ; the unifying detector for BOTH an explicit
                                             ; `$` suffix AND a DEFSTR-defaulted bare name

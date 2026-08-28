@@ -924,9 +924,7 @@ inp_readvar:
                 cp      ','
                 jp      nz,stmt_error
                 inc     hl
-                call    skip_spaces
-                call    is_letter           ; a string variable name must follow
-                jp      nc,stmt_error
+                call    req_letter          ; D-NGRAM: a string variable name must follow
                 call    var_str_type        ; A = 1 if the name has a '$' suffix
                 or      a
                 jp      z,stmt_error        ; numeric INPUT# = Phase 3

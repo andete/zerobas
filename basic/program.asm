@@ -1578,9 +1578,7 @@ for_key:                                    ; (VARTYPE) = the resolved type (F3/
 ; array one, and tgt_parse (which resolves subscripts) is the wrong tool.
 ex_for:
                 inc     hl                  ; past the FOR token
-                call    skip_spaces
-                call    is_letter
-                jp      nc,stmt_error
+                call    req_letter          ; D-NGRAM: FOR needs a loop variable
                 call    for_name            ; FOR_CUR[0..2] = the key; A = the type
                 cp      DEFTBL_STR          ; `FOR A$=` -- and `DEFSTR A` / `FOR AB=` --
                 jp      z,type_mismatch_error ; are ERR 13, not ERR 2 (rows f.str and
@@ -1880,9 +1878,7 @@ err_stack       equ     err_mem             ; share sl_oom's "out of memory" (D-
 ex_read:
                 inc     hl                  ; past the READ token
 exr_lp:
-                call    skip_spaces
-                call    is_letter
-                jp      nc,stmt_error       ; READ needs a variable
+                call    req_letter          ; D-NGRAM: READ needs a variable
                 call    var_str_type        ; A = 1 iff the name carries a '$' (or its
                 ld      (RDV_MODE),a        ; DEFtbl default is a string) -- and that
                                             ; is exactly the DATA-item read mode

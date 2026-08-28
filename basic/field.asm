@@ -481,9 +481,7 @@ ex_rset:
 lrset_common:
                 ld      (LRSET_JUST),a
                 inc     hl                  ; past the LSET/RSET token
-                call    skip_spaces
-                call    is_letter
-                jp      nc,stmt_error
+                call    req_letter          ; D-NGRAM: a FIELD target must be a name
                 call    var_str_type        ; A=1 if `$`
                 or      a
                 jp      z,type_mismatch_error
