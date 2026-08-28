@@ -241,6 +241,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       a differential times it.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
+- [ ] 🔴 **THE STRMAX CLAMP DIVERGES: zerobas SILENTLY CLAMPS TO 255 WHERE BOTH
+      REFERENCES RAISE `String too long`.** Found 2026-08-28 by D-CONCATPEAK
+      while testing a path its own 12 threshold rows never reach
+      ([`docs/spec-concatpeak.md`](docs/spec-concatpeak.md) §8).
+      `sh_append` clamps a combined length over 255, and its header calls that
+      *"reference left-to-right truncation"* — **which is exactly what both
+      references do NOT do.**
+      📏 **4 ROWS, MEASURED:** `CLEAR 900:X$=STRING$(200,"A"):LEN(X$+X$+X$)` →
+      refs `String too long`, zb **255**; the same with `RIGHT$(X$+X$,3)` → refs
+      `String too long`, zb **`AAA`**; and `X$=STRING$(128,"A"):LEN(X$+X$)` and
+      the 200 form → refs **ERR 15**, zb **ERR 14**.
+      🔬 **KNIFE-PROVEN PRE-EXISTING** — with `sap_try_extend` cut out, all four
+      give byte-identical answers, so D-CONCATPEAK neither caused nor worsened
+      it.
+      🎯 **TWO DISTINCT DEFECTS IN ONE FILING, and they need separating before a
+      fix:** a SILENT CLAMP where the reference RAISES, and an ERROR-PRECEDENCE
+      difference (zb reports `Out of string space` where the reference reports
+      `String too long`, because zb exhausts the pool BEFORE it checks the
+      length). Whether the second survives fixing the first is unmeasured.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
+
 **Apparatus / tooling**
 
 - [ ] 💰 **A 2 B CARVE WITH ITS EVIDENCE ALREADY ATTACHED: `ems_typecheck`'s
@@ -509,7 +530,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3569 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3616 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2093,7 +2114,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🙋 NEEDS-JOOST — the RESIDUAL only (page-3 RAM below LINEBUF, shared with
       D-FNALIAS). The live-frame half is shipped and gated.
 
-- [ ] ⚠️ **zerobas EXHAUSTS A `CLEAR 100` STRING POOL WHERE BOTH REFERENCES COPE.**
+- [x] ✅ **CLOSED 2026-08-28 (D-CONCATPEAK): the peak is 3L, and it matches the
+      references TO THE BYTE.** ~~zerobas EXHAUSTS A `CLEAR 100` STRING POOL
+      WHERE BOTH REFERENCES COPE.~~
       Filed 2026-08-27 by D-FNGCROOT,
       [`docs/spec-deffn-gcroot.md`](docs/spec-deffn-gcroot.md) §3 — found as a
       CONFOUND, by the control rather than the subject. With `CLEAR 100`,
@@ -2171,8 +2194,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (`topen-70`/`topen-80`). They lived only in
       [`scratchpad/leftkeep_probe.py`](scratchpad/leftkeep_probe.py); the battery
       now shows the open half every run.
+      ✅ **FIXED 2026-08-28 — `sap_try_extend` in `sub/strheap.asm`, 109 B of sub
+      page 0 and ZERO bytes of main** (main ROM hashes byte-identical; only
+      `build/sub.rom` moved). The heap grows DOWNWARD from `FRETOP`, so the most
+      recent body sits exactly AT `FRETOP` — and in `A$+B$` that body is the
+      operand-1 snapshot made one step earlier. `sh_append` now grows it IN
+      PLACE, costing only `ext` instead of a fresh `lenR+lenTk` body allocated
+      while the old one is still live. It also leaves NO garbage.
+      📏 **BOTH MODELS SCORED, because "stopped failing" is a weaker claim than
+      "behaves as the mechanism requires": 4L+4 now fits 7/12, 3L+4 fits 12/12,
+      DIFF vs references 0/12.** The boundary is pinned TO A BYTE on all three
+      sides: `CLEAR 59` is Out of string space everywhere, `CLEAR 60` answers 0
+      everywhere.
+      🔴 **TWO MISTAKES OF MINE, both recurring classes.** (1) `strheap_floor`'s
+      own header says *"Clobbers A,B,C,D,E,H,L"*; the first cut held `total`/
+      `lenR` in B/C across it and **every concatenation in the language died**.
+      (2) **The probe scored the dead machine as HALF-PASSING** — every row
+      returned the typed line (echo fence), the pass test asked only *"is `Out of
+      string space` in the answer"*, and **6 rows read `ok` on a ROM that could
+      not concatenate**. It had NO CONTROL ROW; it now has three plus an
+      echo-fence detector.
+      ✅ **`topen-70`/`topen-80` PROMOTED to gated**, joined by `tslice-59`/`-60`.
+      🎯 `tslice-59` is the load-bearing one: a passing row says the pool was big
+      enough, a row FAILING one byte lower says the peak is what the mechanism
+      claims. 68/68 gated rows agree.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended
-      (oracle intact; the remaining half is str_concat's double snapshot).
+      (SHIPPED 2026-08-28, 0 DIFF, gated).
 
 - [x] 💰 **THE GENERIC ERROR-LAYER SEAM: per-verb error checks that duplicate a
       layer that already exists — a carve AND a correctness seam.** Opened

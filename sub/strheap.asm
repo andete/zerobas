@@ -1318,6 +1318,8 @@ sh_append:
 sap_ok:
                 or      a
                 jr      z,sap_empty         ; total 0 -> R becomes empty
+                call    sap_try_extend      ; D-CONCATPEAK: grow R in place if it is
+                ret     c                   ; the TOP body -- A/C restored if it is not
                 push    af                  ; [total] guard
                 call    heap_alloc          ; A=total -> CF+HL=newbody / CF clear=OOM.
                                             ; May GC; R and Tk are re-read fresh below
@@ -1358,6 +1360,132 @@ sap_oom:
                 ld      a,1
                 ld      (SH_ERR),a          ; heap OOM -- R left unchanged (valid)
                 ret
+; --- sap_try_extend (D-CONCATPEAK, docs/spec-concatpeak.md): grow R's body ---
+; IN PLACE when R is the TOP heap allocation.
+;
+; The heap grows DOWNWARD from FRETOP (heap_alloc: `candidate = FRETOP - LEN`,
+; then `ld (FRETOP),hl`), so the MOST RECENT body sits exactly AT FRETOP -- and
+; in `A$ + B$` that body is the operand-1 snapshot str_concat_tail made one step
+; earlier. Extending it costs only the `ext` new bytes instead of a fresh
+; lenR+lenTk body allocated WHILE THE OLD ONE IS STILL LIVE, which is what made
+; the transient peak `4L+4` where both references cope at `3L+4`:
+;
+;     old:  held + R(L) + new(2L)  = 4L + held      `CLEAR 70`, L=20 -> OOM
+;     new:  held + R(L) +   ext(L) = 3L + held      -> fits
+;
+; 🎯 IT ALSO LEAVES NO GARBAGE. The realloc path abandons R's old L bytes; here
+; the new body [F-ext, F+lenR) COVERS the old one exactly, so nothing is dropped
+; for the GC to reclaim later.
+;
+; ⚠️ WHY THE DOWNWARD MOVE IS SAFE, AND WHY Tk CANNOT BE CLOBBERED. R's bytes
+; move from [F, F+lenR) to [F-ext, F-ext+lenR) -- dest < src, so a FORWARD `ldir`
+; is correct even though the ranges overlap. Tk is then written to
+; [F-ext+lenR, F+lenR). Every heap body lies at >= FRETOP = F, and Tk cannot lie
+; inside R's own old range, so Tk's body is at >= F+lenR -- at or above the top of
+; the write range, never inside it. A literal or STRSCR source is not in the heap
+; at all and sits below the pool floor.
+;
+;   in:  A = total (already clamped to STRMAX), C = lenR,
+;        SH_DEST = R's descriptor, SH_SRC = Tk's descriptor
+;   out: CF set   = done. R.len/R.ptr updated, FRETOP lowered, SH_ERR = 0.
+;        CF clear = not applicable (R has no body, or is not the top allocation,
+;                   or the extension would cross the pool floor). A AND C ARE
+;                   RESTORED so the caller's realloc path runs unchanged -- an
+;                   early exit that ate `total` would corrupt the fallback.
+; Clobbers B,D,E,H,L (and A/C only on the CF-set path).
+sap_try_extend:
+                ld      b,a                 ; B = total (A restored at every no-exit)
+                ld      a,c
+                or      a
+                jr      z,sate_no           ; R has no body to extend
+                ld      hl,(SH_DEST)
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = R.ptr
+                ld      hl,(FRETOP)
+                or      a
+                sbc     hl,de
+                jr      nz,sate_no          ; R is not the top allocation
+                ld      a,b
+                sub     c                   ; A = ext = total - lenR
+                jr      z,sate_len_only     ; the clamp swallowed all of Tk
+                ld      e,a
+                ld      d,0                 ; DE = ext
+                ld      hl,(FRETOP)
+                or      a
+                sbc     hl,de               ; HL = newstart
+                ; 🔴 strheap_floor's OWN HEADER SAYS "Clobbers A,B,C,D,E,H,L" --
+                ; strheap_ceiling inside it does `ld bc,TXTMAX`. The first cut of
+                ; this routine held `total` in B and `lenR` in C across that call
+                ; and the ldir below then ran with a GARBAGE length: every
+                ; concatenation in the language died. Guard them.
+                ; [[a-scratch-register-that-was-the-callers-value]]
+                push    bc                  ; [total|lenR]
+                push    hl                  ; [total|lenR][newstart]
+    IF CLEARPOOL
+                call    strheap_floor       ; the SAME floor heap_alloc honours
+    ELSE
+                call    strheap_aryend
+                inc     hl
+                inc     hl                  ; body must start ABOVE the sentinel
+    ENDIF
+                ex      de,hl               ; DE = floor
+                pop     hl                  ; HL = newstart          [total|lenR]
+                push    hl
+                or      a
+                sbc     hl,de
+                pop     hl                  ; HL = newstart (flags kept)
+                pop     bc                  ; B = total, C = lenR -- `pop rr` does
+                                            ; NOT touch flags, so CF above survives
+                jr      nc,sate_fits
+sate_no:
+                ld      a,b                 ; restore total for the realloc path
+                or      a                   ; CF clear
+                ret
+sate_fits:
+                ld      (FRETOP),hl         ; the body starts here now
+                ld      d,h
+                ld      e,l                 ; DE = dest cursor
+                push    bc                  ; [total|lenR]
+                ld      hl,(SH_DEST)
+                inc     hl
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL = R's OLD body (the old FRETOP)
+                ld      b,0                 ; BC = lenR
+                ldir                        ; move R down; DE = newstart + lenR
+                pop     bc                  ; B = total, C = lenR
+                push    bc                  ; [total|lenR]
+                ld      a,b
+                sub     c
+                ld      c,a
+                ld      b,0                 ; BC = ext (what is left for Tk)
+                ld      hl,(SH_SRC)
+                inc     hl
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL = Tk's body
+                ldir                        ; append Tk's first `ext` bytes
+                pop     bc                  ; B = total
+sate_write:
+                ld      hl,(SH_DEST)
+                ld      (hl),b              ; R.len = total
+                inc     hl
+                ld      de,(FRETOP)
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d              ; R.ptr = FRETOP
+                xor     a
+                ld      (SH_ERR),a
+                scf                         ; handled
+                ret
+sate_len_only:
+                ; total == lenR: R keeps its body, only the length changes.
+                jr      sate_write
+
 ; sap_copy_clamped: HL=source descriptor, DE=dest body cursor, C=room remaining.
 ; Copies min(source_len, C) bytes of the source's CURRENT body to (DE);
 ; advances DE past them and reduces C by the count. Source len+ptr re-read

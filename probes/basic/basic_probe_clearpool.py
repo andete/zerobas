@@ -94,7 +94,8 @@ ECHO_MAX = 37
 # has quietly stopped measuring what it claims to.
 # `topen` joins these: a KNOWN-divergent half, reported every run so it stays
 # visible, but not gated -- gating it would make the suite permanently red.
-UNGATED = ("rep", "share", "topen")
+# `topen` is GONE: D-CONCATPEAK closed that half and the rows are gated.
+UNGATED = ("rep", "share")
 
 # the D-POOLCAP subject: a 20 B variable whose SELF-CONCATENATION is sliced.
 # 40 B of result over 20+20 of transient, which is the whole finding.
@@ -428,17 +429,33 @@ CASES = [
     ("tslice-var70","tslice", ['CLEAR 70', BIG,
                                'PRINT "[";LEN(LEFT$(X$,0));"]"']),
 
-    # --- topen: the HALF THAT IS STILL DIVERGENT, reported, never gated -------
-    # zerobas raises `Out of string space` at CLEAR 70/80 where both references
-    # answer 0. Cause is named and unfixed: str_concat snapshots BOTH operands
-    # (basic/str-engine.asm:1435), so `X$+X$` is 20+20 transient over a 40 B
-    # result. These lived only in scratchpad/leftkeep_probe.py; carrying them
-    # here means the battery SHOWS the open half every run instead of it being
-    # visible only to whoever remembers the scratchpad file.
-    ("topen-70",    "topen", ['CLEAR 70', BIG,
-                              'PRINT "[";LEN(LEFT$(X$+X$,0));"]"']),
-    ("topen-80",    "topen", ['CLEAR 80', BIG,
-                              'PRINT "[";LEN(LEFT$(X$+X$,0));"]"']),
+    # --- ✅ PROMOTED TO GATED 2026-08-28 (D-CONCATPEAK) -----------------------
+    # These were `topen` -- reported, never gated -- because zerobas raised
+    # `Out of string space` at CLEAR 70/80 where both references answer 0. The
+    # cause is fixed: sh_append now grows the accumulator IN PLACE when it is the
+    # top heap body, so the transient peak is 3L+4 instead of 4L+4. The rows that
+    # DOCUMENTED the open half are now the rows that stop it reopening.
+    ("tslice-70",   "tslice", ['CLEAR 70', BIG,
+                               'PRINT "[";LEN(LEFT$(X$+X$,0));"]"']),
+    ("tslice-80",   "tslice", ['CLEAR 80', BIG,
+                               'PRINT "[";LEN(LEFT$(X$+X$,0));"]"']),
+    # 🎯 AND THE PAIR THAT PINS THE PEAK TO A SINGLE BYTE. These rows hold only
+    # X$ (20 B) -- there is no A$ here -- so the model is peak = 3L = 60, and it
+    # was MEASURED on all three sides, not computed: 59 is `Out of string space`
+    # everywhere, 60 answers 0 everywhere. zerobas's peak now equals the
+    # references' peak EXACTLY, not approximately.
+    # 🔴 tslice-59 IS THE LOAD-BEARING HALF. A row that merely passes says the
+    # pool was big enough; a row that FAILS one byte lower says the peak is what
+    # the mechanism claims. Without it, a change that stopped enforcing the pool
+    # at all would leave every other tslice row green.
+    # ⚠️ An earlier version of this comment asserted 3L+4 = 64 and predicted 60
+    # would FAIL -- carried over from scratchpad/concatpeak_probe.py, whose rows
+    # DO also hold a 4-byte A$. The row was right and the arithmetic beside it
+    # was wrong; the constant did not survive the change of fixture.
+    ("tslice-59",   "tslice", ['CLEAR 59', BIG,
+                               'PRINT "[";LEN(LEFT$(X$+X$,0));"]"']),
+    ("tslice-60",   "tslice", ['CLEAR 60', BIG,
+                               'PRINT "[";LEN(LEFT$(X$+X$,0));"]"']),
 ]
 
 

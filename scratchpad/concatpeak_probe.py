@@ -47,11 +47,38 @@ for L, clears in ((10, (30, 40, 50, 60)), (20, (70, 80, 90, 100)),
     for c in clears:
         lab = f"c{L}.{c}"
         NEW[lab] = ([f'CLEAR {c}', mk(L)], 'LEN(LEFT$(X$+X$,0))')
-        PRED[lab] = (L, c, 4*L + 4)
+        PRED[lab] = (L, c, 4*L + 4)      # pre-fix model; 3L+4 is scored beside it
+# 🔴 THE FIRST CUT OF THIS PROBE HAD NO CONTROL ROW, AND IT COST A WRONG VERDICT.
+# When D-CONCATPEAK's own fix corrupted the heap, every row returned the TYPED
+# LINE (the echo fence) instead of a value -- and because the pass/fail test below
+# asks "is 'Out of string space' in the answer", an echo is not, so SIX ROWS
+# SCORED `ok` ON A DEAD MACHINE. A control that must stay green, plus an explicit
+# echo-fence detector, is what makes a row's `ok` mean anything.
+# [[an-unnamed-outcome-reads-as-no-outcome]] [[trapsvc-echo-fence]]
+CTL = {
+    'ctl.num':  ([], '1+1'),                       # nothing string-related
+    'ctl.str':  (['A$="HI"'], 'A$'),               # strings work at all
+    'ctl.cat':  (['A$="AB":B$="CD"'], 'A$+B$'),    # CONCAT works at all
+}
+CTL_WANT = {'ctl.num': '2', 'ctl.str': 'HI', 'ctl.cat': 'ABCD'}
 D.CASES.update(NEW)
+D.CASES.update(CTL)
 labels = sorted(NEW)
 sides = (sys.argv[1] if len(sys.argv) > 1 else "vg8020,cf3300,zb").split(",")
-res = {s: D.run_side(s, labels) for s in sides}
+res = {s: D.run_side(s, labels + sorted(CTL)) for s in sides}
+
+# --- controls FIRST: nothing below is readable if one of these moved ---------
+dead = []
+for c, want in sorted(CTL_WANT.items()):
+    got = str(res.get("zb", {}).get(c))
+    print(f"{'CTL':<6} {c:<10} want {want!r:<8} got {got!r}")
+    if got != want:
+        dead.append(c)
+if dead:
+    print(f"\n🔴 CONTROL ROW(S) FAILED: {' '.join(dead)} — the machine is broken "
+          f"and NO row below is a reading. (An echo-fence answer is not a pass.)")
+    raise SystemExit(2)
+print()
 w = max(len(l) for l in labels)
 print(f"{'row':<{w}}  {'L':>3s} {'CLEAR':>6s} {'pred':>5s}  "
       + "  ".join(f"{s:>22}" for s in sides) + "   model")
@@ -60,6 +87,10 @@ for l in sorted(labels, key=lambda x: (PRED[x][0], PRED[x][1])):
     L, c, thr = PRED[l]
     zb = str(res["zb"].get(l)) if "zb" in res else "-"
     want_fail = c < thr
+    # an echo-fence answer is neither a pass nor a fail -- it is NO READING
+    if "LEFT$" in zb or "PRINT" in zb:
+        print(f"{l:<{w}}  {L:>3d} {c:>6d} {thr:>5d}  🔴 ECHO FENCE — no reading")
+        bad.append(l); continue
     got_fail = "Out of string space" in zb
     ok = (want_fail == got_fail)
     if not ok: bad.append(l)
@@ -67,5 +98,24 @@ for l in sorted(labels, key=lambda x: (PRED[x][0], PRED[x][1])):
           + "  ".join(f"{str(res[s].get(l)):>22}" for s in sides)
           + f"   {'ok' if ok else 'MISS'} ({'fail' if want_fail else 'pass'} predicted)")
 print()
-print(f"model peak = 4L+4 : {len(labels)-len(bad)}/{len(labels)} rows match"
-      + (f"   MISSES: {' '.join(bad)}" if bad else "  — the threshold MOVES WITH L"))
+# 🎯 SCORE BOTH MODELS. The pre-fix code copied op1 into R and then allocated a
+# fresh lenR+lenTk body while R's was still live -> peak 4L+4. sap_try_extend
+# (D-CONCATPEAK) grows R in place instead, so the extra body is `ext`, not
+# `lenR+ext` -> peak 3L+4. A fix that works must move the tree from one model to
+# the OTHER, not merely stop failing: both are scored so the run says WHICH.
+for name, coeff in (("4L+4 (pre-fix)", 4), ("3L+4 (in-place extend)", 3)):
+    miss = []
+    for l in labels:
+        L, c, _ = PRED[l]
+        thr = coeff * L + 4
+        zb = str(res["zb"].get(l))
+        if "LEFT$" in zb or "PRINT" in zb:
+            miss.append(l); continue
+        if (c < thr) != ("Out of string space" in zb):
+            miss.append(l)
+    print(f"model peak = {name:<24s} {len(labels)-len(miss):>2d}/{len(labels)} rows"
+          + (f"   MISSES: {' '.join(miss)}" if miss else "   ✅ FITS"))
+refs = [x for x in sides if x != "zb"]
+if refs:
+    d = [l for l in labels if any(res["zb"].get(l) != res[r].get(l) for r in refs)]
+    print(f"\nDIFF vs references: {len(d)}/{len(labels)}" + ("  " + " ".join(d) if d else ""))

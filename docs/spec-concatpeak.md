@@ -1,7 +1,9 @@
 # D-CONCATPEAK — the filed cause was wrong in three ways, and the real one predicts the threshold
 
-**Status:** DIAGNOSED 2026-08-28. The gate hole is CLOSED; the fix is named,
-priced in shape, and left as its own slice.
+**Status:** DIAGNOSED **and FIXED** 2026-08-28. The divergence is CLOSED —
+`leftkeep_probe` 0 divergences, `concatpeak_probe` 0/12 DIFF — for **109 B of sub
+page 0 and ZERO bytes of main**. A separate, PRE-EXISTING clamp divergence was
+found on the way and is filed, not fixed (§7).
 
 ## 1. What was filed
 
@@ -85,7 +87,7 @@ This is the inverse of [[a-fix-falsifies-the-justification-beside-it]]: not a
 justification a later fix invalidated, but one that appears never to have
 described `sh_append`'s actual contract.
 
-## 5. The fix, and why it is its own slice
+## 5. The fix that shipped — extend in place, don't reallocate
 
 One allocation that copies **both sources** into a fresh body, instead of
 copy-then-append: peak `3L + 4`, which makes `CLEAR 70` pass at L=20 and closes
@@ -128,3 +130,82 @@ nothing** — the fix could have regressed silently.
 
 They existed only in `scratchpad/leftkeep_probe.py`. The battery now shows the
 open half on every run: **65/65 gated rows agree, 7 reported.**
+
+
+## 7. What shipped, and what it cost
+
+`sap_try_extend` in [sub/strheap.asm](../sub/strheap.asm). The heap grows
+**downward from `FRETOP`** (`heap_alloc`: `candidate = FRETOP - LEN`, then
+`ld (FRETOP),hl`), so the most recent body sits exactly **at** `FRETOP` — and in
+`A$ + B$` that body is the operand-1 snapshot `str_concat_tail` made one step
+earlier. `sh_append` now grows it in place, costing only the `ext` new bytes
+instead of a fresh `lenR+lenTk` body allocated while the old one is still live.
+It also leaves **no garbage**: the new body `[F-ext, F+lenR)` covers the old one
+exactly, where the realloc path abandoned `lenR` bytes.
+
+**109 B of sub page 0 (2444 → 2335), zero bytes of main.** The main ROM hashes
+are byte-identical across the change; only `build/sub.rom` moved.
+
+### The model moved, which is the actual claim
+
+"Stopped failing" is weaker than "behaves as the mechanism requires", so
+`concatpeak_probe` scores **both** models:
+
+```
+model peak = 4L+4 (pre-fix)            7/12 rows   MISSES: c10.40 c20.70 c20.80 c30.110 c30.120
+model peak = 3L+4 (in-place extend)   12/12 rows   ✅ FITS
+DIFF vs references: 0/12
+```
+
+And the boundary is pinned **to a single byte**, measured on all three sides for
+the `clearpool` row shape (held = 20, no `A$`, so peak = 3L = 60):
+`CLEAR 59` is `Out of string space` everywhere, `CLEAR 60` answers `0`
+everywhere. zerobas's peak now equals the references' peak *exactly*.
+
+### 🔴 Two mistakes of mine, recorded because they are the recurring classes
+
+* **A helper ate the caller's values.** `strheap_floor`'s own header says
+  *"Clobbers A,B,C,D,E,H,L"* — `strheap_ceiling` does `ld bc,TXTMAX`. The first
+  cut held `total` in B and `lenR` in C across that call, the `ldir` ran with a
+  garbage length, and **every concatenation in the language died**.
+  [[a-scratch-register-that-was-the-callers-value]], third time in this file.
+* **The probe scored a dead machine as half-passing.** With the heap corrupted,
+  every row returned the TYPED LINE (the echo fence). The pass test asked *"is
+  `Out of string space` in the answer"*, an echo is not, so **six rows scored
+  `ok` on a ROM that could not concatenate at all.** The probe had **no control
+  row**. It now has three that must hold, plus an explicit echo-fence detector
+  that reports NO READING rather than a verdict.
+  [[an-unnamed-outcome-reads-as-no-outcome]]
+
+### The gate rows, promoted
+
+`topen-70` / `topen-80` were added earlier the same day as *reported, never
+gated* — the documented open half. They now **pass and are gated**, joined by
+`tslice-59`/`tslice-60`. 🎯 **`tslice-59` is the load-bearing one**: a row that
+passes says the pool was big enough; a row that FAILS one byte lower says the
+peak is what the mechanism claims. Without it, a change that stopped enforcing
+the pool at all would leave every other row green. **68/68 gated rows agree.**
+
+## 8. FOUND ON THE WAY, PRE-EXISTING, NOT FIXED: the STRMAX clamp diverges
+
+`sh_append` clamps a combined length over 255 to 255. Its header calls that
+*"reference left-to-right truncation"*. **Both references instead raise
+`String too long`:**
+
+| row | references | zerobas |
+|---|---|---|
+| `CLEAR 900 : X$=STRING$(200,"A") : LEN(X$+X$+X$)` | `String too long` | **255** |
+| `CLEAR 900 : X$=STRING$(200,"A") : RIGHT$(X$+X$,3)` | `String too long` | **`AAA`** |
+| `X$=STRING$(128,"A") : LEN(X$+X$)` | `ERR 15` | `ERR 14` |
+| `X$=STRING$(200,"A") : LEN(X$+X$)` | `ERR 15` | `ERR 14` |
+
+**Knife-proven pre-existing**: with `sap_try_extend` cut out, those four rows give
+byte-identical answers. Two distinct defects are in there — a silent clamp where
+the reference raises, and an error-precedence difference (`Out of string space`
+reported where the reference reports `String too long`, because zerobas exhausts
+the pool before it checks the length). Filed for its own slice.
+
+⚠️ And that clamp comment is the **fourth** false in-source justification found
+today, after `str_concat_tail`'s *"modify in place"* (§4),
+`arrays.asm`'s *"DIM requires a bound list"*, and this probe's own boundary
+arithmetic. **No gate reads prose.**

@@ -4,7 +4,7 @@ SPDX-License-Identifier: 0BSD
 -->
 # S3 — RETIRE LEAN: delete the `ROM_BASE` gates, the machinery, and the cart corpus
 
-Step 3 (final) of **RETIRE THE LEAN 16 KB CART** ([`../TODO.md:3066 (T-5EDF8A)`](../TODO.md:3066)).
+Step 3 (final) of **RETIRE THE LEAN 16 KB CART** ([`../TODO.md:3120 (T-5EDF8A)`](../TODO.md:3120)).
 Follows [`docs/spec-lean-retire-s2-switch.md`](docs/spec-lean-retire-s2-switch.md) (S2,
 `4cdb69b`) and [`docs/spec-lean-retire-s1-explicit-machine.md`](docs/spec-lean-retire-s1-explicit-machine.md).
 
