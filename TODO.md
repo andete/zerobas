@@ -167,13 +167,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ✅ **SAFE CLASS SHIPPED 2026-08-28: 14 B** — 12 `call X / ret` → `jp X`
       tail calls (each read individually first) + 2 `ld r,n / ld r',n` →
       `ld rr,nn`. Low region read 38 → 44 B, page 1 124 → 132 B on 2026-08-28.
-      ➡️ **STILL OPEN — the FLAG-CHANGING rules, ~20 B of code, deliberately NOT
-      swept.** `ld a,0` → `xor a` (18 sites) also clears carry; `dec b / jr nz`
-      → `djnz` (2 sites) sets NO flags where `dec b` sets four. This tree reads
-      flags across exactly these boundaries and a mechanical rewrite broke a
-      DIFFERENT invariant three times on 2026-08-26
-      ([[a-mechanical-fix-can-break-a-different-invariant]]), so each site needs
-      its SUCCESSOR read. A slice, not a sweep.
+      ✅ **THE FLAG-CHANGING RULES ARE A MEASURED NEGATIVE, 2026-08-28 — the
+      ~20 B ceiling is really 1 B, and sweeping it would have shipped SIX
+      REGRESSIONS.** Every one of the six main-region `ld a,0` sites is
+      LOAD-BEARING: `cload.asm:777`/`:850` are `call cal_refill / ld a,0 /
+      jr nc` (xor clears the carry the branch tests), `float.asm:308`/`:351` are
+      16-bit NEGATES where the borrow from `sub l`/`sub e` must reach the
+      following `sbc` — and `program.asm:555`/`:1994` already said so in a
+      comment. Only the `djnz` at `cload.asm:376` converts: **1 B, taken**
+      (nothing reads `dec b`'s flags — `ccn_flag` opens `ld a,c / or a`).
+      🔴 **AND THE SWEEP WAS REPORTING A DISHONEST 18.** It counted every
+      `ld a,0` as a candidate. It now walks forward and rejects the site if any
+      instruction CONSUMES a flag before the flags are redefined, treating a
+      label / a call / the end of the window as LIVE. It reports **1** tree-wide
+      and independently rejects exactly the six rejected by hand.
+      🎯 **FOUR OF THE SIX HAD NO COMMENT SAYING WHY** — annotated in place
+      (0 B; comments do not assemble), because that is where the next person
+      running a peephole sweep will land, not in a spec file.
       ➡️ Also open: `ld a,(v)/inc a/ld (v),a` → `ld hl,v / inc (hl)`, 29 sites,
       58 B ceiling — needs HL free AND A dead at each, unmeasured.
       🔴 **THE SWEEP'S FIRST RUN REPORTED 54 HITS FOR THE PAIR-LOAD RULE AND THE
@@ -454,7 +464,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3477 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3487 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

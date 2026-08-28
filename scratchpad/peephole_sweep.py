@@ -118,9 +118,45 @@ def is_imm(s):
 
 
 # --- each rule: (name, window, matcher, bytes_saved, klass, note) -----------
-def r_lda0(w):
+# 🔴 `ld a,0` IS NOT A LAZY `xor a`. `xor a` sets Z/S/P/H/N and CLEARS CARRY;
+# `ld a,0` touches nothing. Every one of this tree's six main-region sites turned
+# out to be PRESERVING a flag -- two 16-bit negations (`sub l` -> `ld a,0` ->
+# `sbc a,h`) and four carry tests -- so a mechanical sweep of this rule would
+# have shipped six regressions. Two sites already said so in a comment; four did
+# not, which is exactly why this rule now decides instead of counting.
+COND = {"z", "nz", "c", "nc", "p", "m", "pe", "po"}
+FLAG_CONSUMERS = {"adc", "sbc", "rla", "rra", "rl", "rr", "daa", "ccf"}
+# an 8-bit ALU/inc/dec op redefines everything `xor a` would have set, so once one
+# is reached the earlier flags are provably dead
+FLAG_DEFINERS = {"add", "sub", "and", "or", "xor", "cp", "inc", "dec", "neg",
+                 "sla", "sra", "srl", "bit", "scf", "cpl"}
+
+
+def _flags_dead_after(seq, i):
+    """Is the flag state live across seq[i]? Conservative: an unreadable shape
+    (a label, a call, running off the end) counts as LIVE, i.e. not convertible."""
+    for j in range(i + 1, min(i + 9, len(seq))):
+        n, mn, ops = seq[j][0], seq[j][1], seq[j][2]
+        if seq[j][3]:                      # a label: other entry paths unknown
+            return False
+        if mn in FLAG_CONSUMERS:
+            return False
+        if mn in ("jr", "jp", "call", "ret") and ops and ops[0] in COND:
+            return False                   # a conditional reads the flags
+        if mn in FLAG_DEFINERS:
+            return True                    # everything earlier is now dead
+        if mn in ("call", "rst", "jp", "jr", "ret", "djnz", "ldir", "lddr",
+                  "ldi", "ldd", "cpir", "cpi", "halt", "ei", "di"):
+            return False                   # opaque or leaves the window
+    return False
+
+
+def r_lda0(w, seq=None, i=None):
     n, mn, ops = w[0][0], w[0][1], w[0][2]
-    return mn == "ld" and ops[:1] == ["a"] and len(ops) == 2 and ops[1] in ("0", "$00", "%00000000")
+    if not (mn == "ld" and ops[:1] == ["a"] and len(ops) == 2
+            and ops[1] in ("0", "$00", "%00000000")):
+        return False
+    return _flags_dead_after(seq, i) if seq is not None else True
 
 def r_cp0(w):
     n, mn, ops = w[0][0], w[0][1], w[0][2]
@@ -237,7 +273,7 @@ def main(argv):
             for i in range(len(seq) - win + 1):
                 w = seq[i:i + win]
                 try:
-                    ok = fn(w)
+                    ok = fn(w, seq, i) if fn is r_lda0 else fn(w)
                 except Exception:
                     ok = False
                 if ok:

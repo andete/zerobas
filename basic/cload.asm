@@ -373,8 +373,12 @@ ccn_pad_lp:
                 ld      a,' '               ; space-pad the remaining slots
                 ld      (de),a
                 inc     de
-                dec     b
-                jr      nz,ccn_pad_lp
+                djnz    ccn_pad_lp          ; D-PEEPHOLE: -1 B. djnz sets NO
+                                            ; flags, and none are read after --
+                                            ; ccn_flag opens `ld a,c / or a`,
+                                            ; which redefines them. The `or a`
+                                            ; guard above keeps B >= 1, so the
+                                            ; B=0 wrap is unreachable either way.
 ccn_flag:
                 ld      a,c                 ; A = name-char count
                 or      a
@@ -774,7 +778,9 @@ cas_ascii_setup:
                 ld      a,CAL_BUF >> 8
                 ld      (CAL_CURHI),a
                 call    cal_refill          ; data block 2 leader + slurp 256 bytes
-                ld      a,0
+                ld      a,0                 ; 🔴 NOT `xor a`: cal_refill's CF is
+                                            ; the test on the very next line and
+                                            ; xor would CLEAR it (D-PEEPHOLE).
                 jr      nc,cas_1blk
                 ld      a,1                 ; no block 2 -> a genuine 1-block file
 cas_1blk:
@@ -847,7 +853,9 @@ cal_gb_swap:
                 ld      a,b
                 ld      (CAL_SAVE),a        ; the drained byte must survive TAPIN
                 call    cal_refill
-                ld      a,0
+                ld      a,0                 ; 🔴 NOT `xor a`: cal_refill's CF is
+                                            ; the test below; xor clears carry
+                                            ; (D-PEEPHOLE).
                 jr      nc,cal_gb_flag
                 ld      a,1                 ; no block after next -> fine, EOF stops first
 cal_gb_flag:

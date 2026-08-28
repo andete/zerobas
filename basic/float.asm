@@ -305,7 +305,10 @@ flo_e_nodp:
                 xor     a
                 sub     l
                 ld      l,a
-                ld      a,0
+                ld      a,0                 ; 🔴 NOT `xor a`: this is a 16-bit
+                                            ; NEGATE and the borrow from `sub l`
+                                            ; must reach the `sbc a,h` below.
+                                            ; xor would clear it (D-PEEPHOLE).
                 sbc     a,h
                 ld      h,a
 flo_e_magpos:
@@ -348,7 +351,9 @@ neg_de:
                 xor     a
                 sub     e
                 ld      e,a
-                ld      a,0
+                ld      a,0                 ; 🔴 NOT `xor a`: 16-bit negate, the
+                                            ; borrow from `sub e` must reach the
+                                            ; `sbc a,d` below (D-PEEPHOLE).
                 sbc     a,d
                 ld      d,a
                 ret
