@@ -336,20 +336,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       wired, my two inline copies folded in, and `make knife-guard-check`
       (5 arms + a live-tree falsification).
 
-- [ ] 🔬 **DO THE 41 KNIFE RUNNERS *COMPARE* THEIR HASH, OR ONLY PRINT IT?**
+- [x] ~~🔬 **DO THE 41 KNIFE RUNNERS *COMPARE* THEIR HASH, OR ONLY PRINT IT?**~~
+      ✅ **MEASURED 2026-08-28 — THE CLASS IS EFFECTIVELY EMPTY** (D-KNIFEROM
+      [`docs/spec-kniferom.md`](docs/spec-kniferom.md) §6,
+      `scratchpad/knife_verdict_audit.py`). Of **22** recorded null verdicts in
+      `docs/`, **ZERO** rest on a knife that exists and has no ROM evidence. Two
+      name a knife not in the tree — and BOTH read *"reddened nothing AND THAT
+      WAS A MISSING ROW"*, so the finding is carried by a committed, gated row
+      rather than by the knife. Three more have their hash transition RECORDED IN
+      THE SPEC, so the evidence outlived the script.
+      🎯 **THE AXIS THAT MATTERS: a null verdict that ADDS A ROW is
+      self-correcting; one that CLOSES something is not.** Ask that of the next
+      one.
+      🔴 The audit was wrong THREE TIMES before it was right, each time
+      OVERSTATING the alarming bucket (spec §7).
+
+- [ ] 🔬 **KNIFE TAGS ARE NOT UNIQUE: `K2`/`K5`/`K6` ARE REUSED ACROSS SLICES.**
       Filed 2026-08-28 by D-KNIFEROM
-      ([`docs/spec-kniferom.md`](docs/spec-kniferom.md) §2). `make
-      knife-guard-check` polices the PRESENCE of ROM evidence, not its correct
-      USE — a runner can hash the images and never compare the two readings, and
-      **about ten of the 41 look like they print rather than assert**.
-      ⚠️ **THAT COUNT IS ITSELF UNTRUSTWORTHY**: the regex that produced it
-      scored `strlong_knives.py` at 5 assertions when the file had none
-      (spec §5). **Read the code; do not grep for this one.**
-      🎯 The question that matters is narrower than an audit of all 41: which
-      recorded **"reddened nothing" / "UNWITNESSED"** verdicts rest on a runner
-      that could not have detected an inert cut? `grep -rniE "reddened
-      nothing|unwitnessed" docs/*.md` finds **29 mentions across 21 specs**.
-      🤖 AUTONOMOUS — the code settles it; finishable unattended.
+      ([`docs/spec-kniferom.md`](docs/spec-kniferom.md) §7).
+      📏 **7 of 22 recorded null verdicts cannot be traced to their knife**
+      because the tag matches several scripts — `K6` matches 3, `K5` matches 3,
+      `K-FE1` matches 2 (`scratchpad/knife_verdict_audit.py`, the AMBIGUOUS
+      bucket). A further 7 carry no tag near the claim at all.
+      🎯 **THIS IS A NAMESPACE PROBLEM, NOT A KNIFE PROBLEM** — every one of
+      those knives may be perfectly sound; the point is that no tool can say so.
+      The slice-prefixed form (`K-NG1`, `K-SL4`) is already the majority
+      convention and is unambiguous; the bare `K<n>` form is the whole gap.
+      ➡️ Cheap fix: rename bare tags in the runners that still use them, and
+      have `knife_verdict_audit.py` refuse a bare `K<n>` in a NEW spec.
+      🤖 AUTONOMOUS — a gate settles it; finishable unattended.
 
 - [x] ~~💰 **THE BATTERY AND THE PROBES RE-MEASURE CONSTANTS.**~~ ✅ **SHIPPED
       2026-08-28, at Joost's request, as TWO independent mechanisms.**
@@ -650,7 +665,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3736 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3751 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
