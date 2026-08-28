@@ -92,7 +92,13 @@ ECHO_MAX = 37
 # implemented the array size rule, which is exactly what its own comment said
 # would happen. A never-gated bucket that outlives its reason is a gate that
 # has quietly stopped measuring what it claims to.
-UNGATED = ("rep", "share")
+# `topen` joins these: a KNOWN-divergent half, reported every run so it stays
+# visible, but not gated -- gating it would make the suite permanently red.
+UNGATED = ("rep", "share", "topen")
+
+# the D-POOLCAP subject: a 20 B variable whose SELF-CONCATENATION is sliced.
+# 40 B of result over 20+20 of transient, which is the whole finding.
+BIG = 'X$="ABCDEFGHIJ"+"KLMNOPQRST"'
 
 # (label, battery, [lines]). The LAST line carries the readout and is always
 # short enough not to wrap (see the docstring). Batteries:
@@ -406,6 +412,33 @@ CASES = [
 
     ("rep-fre0-200", "rep", ['CLEAR 200', 'PRINT "[";FRE(0);"]"']),
     ("rep-fre0-4000","rep", ['CLEAR 4000', 'PRINT "[";FRE(0);"]"']),
+
+    # --- tslice: what does slicing a TEMP charge the pool? (D-POOLCAP) --------
+    # The transient PEAK of `LEFT$(X$+X$,0)`, which a before/after FRE("") cannot
+    # see. D-POOLCAP moved the threshold 120 -> 100 by routing LEFT$/RIGHT$/MID$
+    # through str_snapshot_keep, and NOTHING PINNED THE RECOVERED GROUND -- the
+    # fix could regress silently. 100 and 120 are gated here for exactly that.
+    ("tslice-100",  "tslice", ['CLEAR 100', BIG,
+                               'PRINT "[";LEN(LEFT$(X$+X$,0));"]"']),
+    ("tslice-120",  "tslice", ['CLEAR 120', BIG,
+                               'PRINT "[";LEN(LEFT$(X$+X$,0));"]"']),
+    # 🎯 THE ROW THAT SEPARATES THE MECHANISM: slicing a VARIABLE is green at
+    # CLEAR 70 on every side. Only slicing a TEMP diverges, so a tslice-70
+    # failure that took this row with it would be a different defect.
+    ("tslice-var70","tslice", ['CLEAR 70', BIG,
+                               'PRINT "[";LEN(LEFT$(X$,0));"]"']),
+
+    # --- topen: the HALF THAT IS STILL DIVERGENT, reported, never gated -------
+    # zerobas raises `Out of string space` at CLEAR 70/80 where both references
+    # answer 0. Cause is named and unfixed: str_concat snapshots BOTH operands
+    # (basic/str-engine.asm:1435), so `X$+X$` is 20+20 transient over a 40 B
+    # result. These lived only in scratchpad/leftkeep_probe.py; carrying them
+    # here means the battery SHOWS the open half every run instead of it being
+    # visible only to whoever remembers the scratchpad file.
+    ("topen-70",    "topen", ['CLEAR 70', BIG,
+                              'PRINT "[";LEN(LEFT$(X$+X$,0));"]"']),
+    ("topen-80",    "topen", ['CLEAR 80', BIG,
+                              'PRINT "[";LEN(LEFT$(X$+X$,0));"]"']),
 ]
 
 

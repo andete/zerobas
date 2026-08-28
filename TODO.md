@@ -509,7 +509,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3532 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3562 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -655,7 +655,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       whitespace, and that is the whole argument for it.** Now 0, checked.
       ✅ **DONE** — swept, fixed, and gated.
 
-- [ ] 🧹 **THE TAPE PATCH PAIR IS UNGUARDED BY THE SAME RULE.** Filed 2026-08-26
+- [x] ✅ **THE TAPE PATCH PAIR IS GUARDED — CLOSED 2026-08-28** (the box was
+      still open on work its own marker recorded as SHIPPED; re-verified today,
+      `make patch-freshness-check` walks both deliverables and `--only tape`
+      selects one, each with its own GATE-SKIPPED condition).
+      ~~THE TAPE PATCH PAIR IS UNGUARDED BY THE SAME RULE.~~ Filed 2026-08-26
       by D-PATCHFRESH. `tape/zerobas-tape-msx1.ips`/`.bps` are tracked
       deliverables built from `tape/tape.asm` by the same `build_patches.py`,
       and `patch-freshness-check` covers only the MAIN pair. 📏 **MEASURED
@@ -2125,15 +2129,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       copy) all agree with both references; string/str-domain/strparen/array/
       deffn-strict/unit-test green, and **`switch-build-check` builds
       `CLEARPOOL equ 0`** — the arm the alias exists for.
-      ➡️ **WHAT REMAINS, WITH ITS SITE NAMED:** ~one more temp's worth. `str_concat`
-      snapshots BOTH operands ([`basic/str-engine.asm:1435`](basic/str-engine.asm:1435)),
-      so `X$+X$` is 20+20 transient over the 40 B result. `keep` does NOT help there
-      — both operands are VARIABLES — so closing it means re-reading the descriptor
-      after the allocation instead of copying first: a different, larger change.
-      ⚠️ The `t.*` rows are NOT gated (`t.70`/`t.80` still red, no XFAIL class);
-      reproducer [`scratchpad/leftkeep_probe.py`](scratchpad/leftkeep_probe.py).
-      Pinning the RECOVERED ground (`t.100`, green now, red before) belongs in
-      `clearpool-acceptance`.
+      🔴 **~~WHAT REMAINS, WITH ITS SITE NAMED: `str_concat` snapshots BOTH
+      operands (`basic/str-engine.asm:1435`)~~ — THAT CAUSE IS WRONG IN THREE
+      WAYS, corrected 2026-08-28 (D-CONCATPEAK,
+      [`scratchpad/concatpeak_probe.py`](scratchpad/concatpeak_probe.py)).**
+      There is **no `str_concat` label** in the tree; **line 1435 is
+      `ev_f_instr`** — INSTR, which does snapshot both operands, a DIFFERENT
+      routine; and concatenation is **`str_concat_tail`**
+      ([`basic/str-engine.asm:426`](basic/str-engine.asm:426)), which snapshots
+      **operand 1 ONLY** — operand 2 is passed straight through as `SH_SRC`.
+      Acting on the filed cause would have edited the wrong verb.
+      🎯 **THE REAL MECHANISM IS IN THE SUB-ROM, AND IT PREDICTS THE THRESHOLD.**
+      `sh_append` ([`sub/strheap.asm:1309`](sub/strheap.asm:1309)) never appends
+      in place: it `heap_alloc`s a body of the COMBINED length, copies BOTH
+      operands into it, repoints R and lets R's old body become garbage. So for
+      `LEFT$(X$+X$,0)` with X$ of length L and A$ holding 4 B:
+      **peak = L (X$) + 4 (A$) + L (R's body) + 2L (new body) = 4L + 4.**
+      📏 **12/12 ROWS MATCH, and two of the three L values were never measured
+      before** — L=10 predicts 44 (fails 30/40, passes 50/60), L=20 predicts 84
+      (fails 70/80, passes 90/100), L=30 predicts 124 (fails 110/120, passes
+      130/140). The threshold MOVES WITH L, which a "double snapshot" story
+      cannot explain.
+      ⚠️ **AND THE SNAPSHOT'S OWN JUSTIFICATION IS FALSE.** `str_concat_tail`
+      says *"R must be a fresh temp we can modify in place"* — `sh_append` does
+      NOT modify the body in place. What R must be is a **SLOT that can be
+      repointed**; the BODY copy buys nothing and is exactly the L bytes that
+      make the peak 4L instead of 3L. ➡️ The fix is a single allocation copying
+      BOTH sources (peak 3L+4, which would make CLEAR 70 pass at L=20) — a new
+      sub-ROM op, its own slice.
+      ✅ **THE GATE HOLE IS CLOSED 2026-08-28**: `clearpool-acceptance` now
+      carries the recovered ground as GATED rows (`tslice-100`, `tslice-120`,
+      and `tslice-var70` — the row that separates slicing a TEMP from slicing a
+      VARIABLE), and the still-divergent half as REPORTED-not-gated
+      (`topen-70`/`topen-80`). They lived only in
+      [`scratchpad/leftkeep_probe.py`](scratchpad/leftkeep_probe.py); the battery
+      now shows the open half every run.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended
       (oracle intact; the remaining half is str_concat's double snapshot).
 
