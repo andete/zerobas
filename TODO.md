@@ -331,6 +331,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [x] ✅ **D-NGRAM7 (2026-08-28): one `gfx_call` for PSET/PRESET, LINE and
+      PAINT** ([`docs/spec-basic-ngram7.md`](docs/spec-basic-ngram7.md)).
+      **Page 1 read 315 -> 335 B free** (a READING; run `make basic-reloc`).
+      7 rows, DIFF 0/7.
+      🔴 **AN S1 ARM WHOSE EXPECTED COUNT IS ZERO CANNOT TELL A CLEAN TREE FROM
+      A BROKEN MATCHER.** S1 failed on a pattern whose spacing did not match the
+      sweep's keys — it matched NOTHING and reported "0 open-coded runs left".
+      D-NGRAM6's S1 expects zero and had the same hole; it now carries a POSITIVE
+      CONTROL that the pattern still finds something.
+
 - [x] ✅ **D-SELFTEST (2026-08-28): three of fifteen `--selftest` scripts were
       RED and nothing collected their exit codes**
       ([`docs/spec-selftest.md`](docs/spec-selftest.md), `make selftest-check`,
@@ -720,7 +730,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3806 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3816 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

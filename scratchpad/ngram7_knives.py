@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-r"""D-NGRAM6 K-N6A + S1 — seven sites routed onto a helper that already existed.
+r"""D-NGRAM7 K-N7A + S1 — three graphics-tenant sites onto one `gfx_call`.
 
-  S1     STATIC per-site witness: the open-coded run must occur ZERO times in
-         basic/ and `call check_fperr_only` exactly SEVEN. A site left
-         open-coded behaves identically at runtime, so nothing else sees it.
-  K-N6A  break the helper (`or a` -> `xor a`, so it never reports a fault).
-         EVERY subject row must move -- and a row that does NOT move names a
-         site still carrying its own copy. The clean-path controls must hold,
-         because they never had a fault to report.
+  S1     STATIC per-site witness: 0 open-coded runs left and exactly 3 calls.
+  K-N7A  send the tenant the WRONG op (`ld (GFX_OP),a` -> `ld (GFX_OP),a` with
+         A forced to 0). All five subject rows must move; the two controls,
+         which draw nothing, must hold.
 
 🔴 RESTORE ON EVERY EXIT (D-KNIFEGUARD) and PROVE THE CUT REACHED THE ROM
 (D-KNIFEROM): knife_guard hashes the images around every plant.
@@ -16,19 +13,16 @@ import atexit, os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import knife_guard
 
-TMP, SRC = "/tmp/zerobas", "basic/interp.asm"
+TMP, SRC = "/tmp/zerobas", "basic/graphics.asm"
 ROW = re.compile(r"^[a-z][a-z0-9]*\.[a-z0-9.]+$")
 
 KNIVES = [
-    ("K-N6A neuter the shared helper", [
-        ("""check_expr_errors:
-check_fperr_only:
-                ld      a,(FPERR)
-                or      a""",
-         """check_expr_errors:
-check_fperr_only:
-                ld      a,(FPERR)
-                xor     a                   ; K-N6A CUT (restored on exit)""")]),
+    ("K-N7A force the tenant op to 0", [
+        ("""gfx_call:
+                ld      (GFX_OP),a""",
+         """gfx_call:
+                xor     a                   ; K-N7A CUT (restored on exit)
+                ld      (GFX_OP),a""")]),
 ]
 
 
@@ -49,10 +43,10 @@ def read_rows(path):
 
 
 def main():
-    base = read_rows(f"{TMP}/n6_zb_base.out")
+    base = read_rows(f"{TMP}/n7_zb_base.out")
     if not base:
-        print(f"NO BASELINE: ZEROBAS_REFCACHE=0 python3 scratchpad/ngram6_probe.py zb "
-              f"> {TMP}/n6_zb_base.out")
+        print(f"NO BASELINE: ZEROBAS_REFCACHE=0 python3 scratchpad/ngram7_probe.py zb "
+              f"> {TMP}/n7_zb_base.out")
         return 2
     subj = sorted(r for r in base if r.startswith("s."))
     ctrl = sorted(r for r in base if not r.startswith("s."))
@@ -61,25 +55,24 @@ def main():
     # --- S1: the per-site witness ------------------------------------------
     import ngram_sweep as NS
     st = NS.parse()
-    PAT = ["ld a,(fperr)", "or a", "jp nz,fp_runtime_error"]
+    # 🔴 THE SWEEP'S KEYS KEEP THE SPACING AROUND `+`/`*`. My first pattern
+    # wrote `..._p0+3*subrom_idx_graphics` with none, matched NOTHING, and
+    # reported "0 open-coded runs left" -- which reads exactly like success.
+    # 🎯 AN S1 ARM WHOSE EXPECTED COUNT IS ZERO CANNOT TELL A CLEAN TREE FROM A
+    # TYPO'D PATTERN. That is why `body_seen` below asserts the pattern matches
+    # the body itself: a positive control on the matcher, not just on the tree.
+    PAT = ["ld (gfx_op),a", "push hl",
+           "ld ix,subrom_entry_base_p0 + 3*subrom_idx_graphics", "call subrom_call",
+           "pop hl", "jp c,gfx_absent"]
     ins = [e for e in st if e[0] == "I"]
-    open_coded = sum(1 for k in range(len(ins) - 2)
-                     if [e[3] for e in ins[k:k + 3]] == PAT
+    open_coded = sum(1 for k in range(len(ins) - 5)
+                     if [e[3] for e in ins[k:k + 6]] == PAT
                      and ins[k][1].startswith("basic/"))
-    jumps = sum(1 for e in ins if e[3] == "call check_fperr_only"
-                and e[1].startswith("basic/"))
-    # 🔴 A POSITIVE CONTROL ON THE MATCHER ITSELF. This arm expects ZERO
-    # open-coded runs -- and a pattern with a typo in it ALSO reports zero, so
-    # "clean tree" and "broken matcher" are the same reading without this.
-    # D-NGRAM7 hit exactly that (a missing space around `+` in a key). The
-    # pattern's own first instruction still exists inside check_fperr_only, so
-    # requiring it proves the keys are spelled the way the sweep spells them.
-    matcher_alive = any(e[3] == PAT[0] for e in ins)
-    ok = (open_coded == 0 and jumps == 10 and matcher_alive)
+    jumps = sum(1 for e in ins if e[3] == "call gfx_call")
+    ok = (open_coded == 1 and jumps == 3)      # the ONE copy left IS the body
     print(f"{'PASS' if ok else 'FAIL'}  S1 every site rewired: {open_coded} "
-          f"open-coded run(s) left (want 0 — the helper predates this slice), "
-          f"{jumps} call(s) to it (want 10 = 3 pre-existing + 7 new), "
-          f"matcher{'' if matcher_alive else ' 🔴 NOT'} alive")
+          f"open-coded run(s) left (want 1 — the body itself), "
+          f"{jumps} call(s) to it (want 3)")
     if not ok:
         fails.append("S1")
     print(f"\nbaseline: {len(subj)} subject row(s), {len(ctrl)} control(s)\n")
@@ -98,17 +91,17 @@ def main():
             open(SRC, "w").write(t)
             before = knife_guard.hashes()
             print(f"{name}: planted, rebuilding...")
-            moved, after, rc = knife_guard.build(f"{TMP}/n6k_{tag}_build.out", before)
+            moved, after, rc = knife_guard.build(f"{TMP}/n7k_{tag}_build.out", before)
             print(knife_guard.report(tag, moved, before, after))
             if rc:
                 print(f"{name}: BUILD FAILED"); fails.append(name); continue
             if not moved:
                 fails.append(name); continue
-            sh(f"ZEROBAS_REFCACHE=0 python3 scratchpad/ngram6_probe.py zb",
-               f"{TMP}/n6k_{tag}.out")
+            sh(f"ZEROBAS_REFCACHE=0 python3 scratchpad/ngram7_probe.py zb",
+               f"{TMP}/n7k_{tag}.out")
         finally:
             restore(); atexit.unregister(restore)
-        cut = read_rows(f"{TMP}/n6k_{tag}.out")
+        cut = read_rows(f"{TMP}/n7k_{tag}.out")
         if not cut:
             print(f"  🔴 NO ROWS READ BACK — not 'reddened nothing'")
             fails.append(name); continue
@@ -117,7 +110,7 @@ def main():
         if not moved_rows:
             fails.append(name)
         print()
-    sh("make repack-machine", f"{TMP}/n6k_restore.out")
+    sh("make repack-machine", f"{TMP}/n7k_restore.out")
     print("=" * 68)
     print("VERDICT:", "every arm live" if not fails else f"🔴 {sorted(set(fails))}")
     return 1 if fails else 0

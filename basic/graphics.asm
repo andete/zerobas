@@ -28,6 +28,25 @@
 ; and the tokens are black-box VG-8020 pins (spec §11.3/§11.4/§11.8/§11.9); the
 ; parser + marshalling are zerobas's own. No disassembly. See basic/PROVENANCE.md.
 
+; --- gfx_call: drive the page-0 graphics tenant (D-NGRAM7) ------------------
+; Three verbs opened with the identical 15 B run -- PSET/PRESET (GFX_OP=1),
+; LINE/box (3) and PAINT (5): store the op, guard the token cursor across
+; CALSLT, point IX at the tenant, call, restore HL, and bail if the sub-ROM is
+; absent. 45 B becomes a 16 B body plus three 3 B calls: **-20 B of page 1.**
+;   in:  A = the GFX_OP code, HL = the token cursor.
+;   out: HL restored, CF clear. Does NOT return when the tenant is missing --
+;        gfx_absent owns that exit (defensive: the merged ROM always ships it).
+; ⚠️ A SHARED TAIL IS A LABEL, NOT A DECISION: a change here serves all three
+; verbs. PAINT alone reads GFX_POVF afterwards, and that stays at ITS site.
+gfx_call:
+                ld      (GFX_OP),a
+                push    hl                  ; guard the token cursor -- CALSLT clobbers HL
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
+                call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
+                pop     hl
+                jp      c,gfx_absent        ; defensive: merged ROM always ships the tenant
+                ret
+
 ; --- ex_pset / ex_preset: the pixel-plot statements -------------------------
 ; Entry: HL on the PSET/PRESET token. The two differ ONLY in the default colour
 ; used when `,c` is omitted (FORCLR vs BAKCLR); both marshal GFX_OP=1.
@@ -81,12 +100,7 @@ gfx_plot_go:
                 call    gfx_in_range        ; CF = 1 iff 0<=x<=255 and 0<=y<=191
                 jp      nc,exec_stmt        ; off-screen -> no plot (work area already moved)
                 ld      a,1                 ; GFX_OP = 1 -> tenant plot (PSET/PRESET)
-                ld      (GFX_OP),a
-                push    hl                  ; guard the token cursor -- CALSLT clobbers HL
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS   ; page-0 index 8 = $0058
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
-                pop     hl
-                jp      c,gfx_absent        ; defensive: merged ROM always ships the tenant
+                call    gfx_call            ; op in A; HL restored, gfx_absent owns the bail
                 jp      exec_stmt           ; chain the next ':'-separated statement
 
 ; --- ev_f_point: POINT(x,y) function -> the pixel's colour ------------------
@@ -250,12 +264,7 @@ elg_draw:
                 ; GFX_X2/GFX_Y2 in RAM, so they cost nothing there and freed 24
                 ; resident bytes (docs/spec-basic-graphics-g8.md §6).
                 ld      a,3                 ; GFX_OP = 3 -> tenant LINE/box
-                ld      (GFX_OP),a
-                push    hl                  ; guard the token cursor -- CALSLT clobbers HL
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent
-                pop     hl
-                jp      c,gfx_absent        ; defensive: merged ROM always ships the tenant
+                call    gfx_call            ; op in A; HL restored, gfx_absent owns the bail
                 jp      exec_stmt           ; chain the next ':'-separated statement
 ; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
 ; pl_syntax, which is the family's canonical tail because its four callers
@@ -829,12 +838,7 @@ ep_draw:
                 ; also what retires the push/pop pair that used to guard the
                 ; seed across them: nothing below here needs BC/DE any more.
                 ld      a,5                 ; GFX_OP = 5 -> tenant PAINT
-                ld      (GFX_OP),a
-                push    hl                  ; guard the token cursor -- CALSLT clobbers HL
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent
-                pop     hl
-                jp      c,gfx_absent        ; defensive: merged ROM always ships the tenant
+                call    gfx_call            ; op in A; HL restored, gfx_absent owns the bail
                 ld      a,(GFX_POVF)
                 or      a
                 jr      nz,ep_overflow      ; span-stack overflow -> ERR 7 (spec §4 D3)
