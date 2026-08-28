@@ -71,6 +71,27 @@ abort-acceptance interval-trap-acceptance clearpool-acceptance""".split()
 
 IMAGES = ["build/basic-reloc.rom", "build/sub.rom", "build/zerobas-main-eu.rom"]
 
+# 🔴 GATES THAT MUTATE A SHARED TRACKED FILE TO SELF-TEST, THEN RESTORE IT.
+# Each one is EXIT-safe already (D-KNIFEGUARD: the original is held in memory and
+# put back by try/finally AND atexit), but exit-safety is not the hazard here --
+# a CONCURRENT READER is, and a 43-unit parallel battery is exactly that:
+#
+#   switch-build-check   mutates basic/sysvars.inc  (tools/check_switch_builds.py)
+#   diskdep-check        mutates the MAKEFILE       (tools/check_disk_deps.py)
+#   wall-literal-check   mutates tracked probe/tool sources (check_wall_literals.py)
+#
+# 2026-08-28 this cost a red `unit-test`: pasmo read basic/sysvars.inc mid-write
+# and reported "Unexpected 'EQ' used as instruction on line 4216" -- the LABEL of
+# a valid `equ` line, gone. The serial retry passed, so the battery called it a
+# FLAKE. It was not. `unit-test` is deterministic and takes 22 s; it has no
+# business flaking, and the retry masked a real race.
+#
+# Same class as the machine-XML race and the openMSX settings flake: a shared
+# mutable file read in parallel. The `--solo` flag does NOT fix it -- solo only
+# schedules a unit FIRST, it does not grant exclusivity. These run SERIALLY,
+# before the pool starts. Cost: a few seconds of a ~430 s battery.
+MUTATORS = ["switch-build-check", "diskdep-check", "wall-literal-check"]
+
 
 def sh(argv, log, env=None):
     # guarded() is a no-op passthrough here (argv is make/python3/nice, never a
@@ -155,11 +176,26 @@ def main():
             return ["nice", "-n", str(a.nice), *argv]
         return argv
 
+    # --- the mutators, serially, with the pool not yet running -------------
+    mut_results = []
+    run_mut = [g for g in MUTATORS if g not in excl]
+    if run_mut and not a.serial:
+        print(f"=== {len(run_mut)} tree-mutating unit(s), SERIAL "
+              f"(they rewrite a shared tracked file) ===", flush=True)
+        for g in run_mut:
+            t0 = time.time()
+            rc = sh(["make", g], f"{OUT}/{g}.log")
+            dt = time.time() - t0
+            mut_results.append((g, rc, dt, None))
+            print(f"  rc={rc:<3d} {dt:12.0f}s  {g}", flush=True)
+
     solo_u, rest_u, bare = [], [], {}      # bare = un-niced argv for a serial retry
     for g in GATES:
         if g in excl:
             continue
         bare[g] = ["make", g]
+        if g in run_mut:
+            continue                        # already run, serially, above
         (solo_u if g in solo else rest_u).append((g, wrap(g, bare[g])))
     if "lineerr-acceptance" not in excl and not a.serial:
         rest_u[:] = [u for u in rest_u if u[0] != "lineerr-acceptance"]
@@ -181,6 +217,8 @@ def main():
         return name, rc, time.time() - s, (skipped_reason(log) if rc == 0 else None)
 
     results, skips = {}, {}
+    for g, rc, dt, _ in mut_results:       # the serial phase counts in the tally
+        results[g] = (rc, dt)
     with cf.ThreadPoolExecutor(max_workers=jobs) as ex:
         for name, rc, dt, skip in ex.map(run, enumerate(units)):
             results[name] = (rc, dt)
@@ -196,7 +234,11 @@ def main():
     # so this never masks a bug. Serial, so at most a couple of tent-poles re-run.
     flaky = []
     if not a.no_retry and not a.serial:
-        reds = [n for n, (rc, _) in results.items() if rc != 0]
+        # a MUTATOR that goes red already ran alone, so its red cannot be a
+        # contention flake -- retrying it would only launder a real failure.
+        mut_names = {g for g, *_ in mut_results}
+        reds = [n for n, (rc, _) in results.items()
+                if rc != 0 and n not in mut_names]
         if reds:
             print(f"\n=== retrying {len(reds)} red unit(s) SERIALLY (flake vs "
                   f"real) ===", flush=True)
