@@ -331,6 +331,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [x] ~~💰 **D-NGRAM's remaining main-region exact repeats.**~~ ✅ **BOTH SHIPPED
+      2026-08-28**: `shx_tail`/`shx_op_tail` (D-NGRAM4,
+      [`docs/spec-basic-ngram4.md`](docs/spec-basic-ngram4.md), **low 70 -> 94 B
+      free**) and `goto_take_bc` (D-NGRAM5,
+      [`docs/spec-basic-ngram5.md`](docs/spec-basic-ngram5.md), **page 1 275 ->
+      299 B free**). Both are READINGS — run `make basic-reloc`.
+      🔴 **EACH ONE'S ROW SET WAS WRONG UNTIL A KNIFE SAID SO.** D-NGRAM4: I
+      named the sites from nearby PROSE and `:733` is CHR$, not SPACE$, so CHR$
+      had no row while the set looked complete. D-NGRAM5: the success rows could
+      not tell a taken jump from FALLING THROUGH to the same line, and K-N5A
+      moved 0 rows with the ROM provably changed.
+
 - [x] ~~🔴 **A KNIFE CAN BE SILENTLY INERT BECAUSE THE BUILD DID NOT HAPPEN — AND
       NONE OF THE 14 RUNNERS CHECKS.**~~ ✅ **SHIPPED 2026-08-28 (D-KNIFEROM,
       [`docs/spec-kniferom.md`](docs/spec-kniferom.md))** — **and the filing was
@@ -684,7 +696,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3770 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3782 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

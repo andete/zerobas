@@ -1388,12 +1388,7 @@ ex_gosub:
                 inc     hl                  ; HL = resume point (after the statement)
                 call    gosub_push          ; push frame; BC=target kept; CF set = full
                 jr      c,gosub_stk_over
-                call    find_line_bc        ; CF set + HL = line addr if found
-                jp      nc,ex_goto_undef
-                ld      (GOTOTGT),hl
-                ld      a,1
-                ld      (GOTOFLAG),a
-                ret
+                jp      goto_take_bc        ; BC = target; arm GOTOTGT/GOTOFLAG
 
 ; --- ex_return: RETURN -------------------------------------------------------
 ; Pop the top GOSUB frame and resume at its saved (CURLINE, resume-ptr) via the
@@ -2054,12 +2049,7 @@ eon_goto:
                 inc     hl                  ; past GOTO token
                 call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
                 jp      nc,eon_notfound     ; D-ONLIST: 0 B, the same instruction
-                call    find_line_bc
-                jp      nc,ex_goto_undef
-                ld      (GOTOTGT),hl
-                ld      a,1
-                ld      (GOTOFLAG),a
-                ret
+                jp      goto_take_bc        ; BC = target; arm GOTOTGT/GOTOFLAG
 
 ; eon_gosub (repack: via gosub_push, sharing gosub_stk_over)
 eon_notfound:                               ; D-ONLIST: eon_seek_nth found no Nth
@@ -2085,7 +2075,18 @@ eon_gosub:
                 jp      nc,eon_notfound     ; D-ONLIST: 0 B, the same instruction
                 call    gosub_push          ; push [CURLINE][resume=HL]; BC kept; CF=full
                 jp      c,gosub_stk_over    ; jp (not jr): gosub_stk_over is far back
-                call    find_line_bc
+; --- goto_take_bc: BC names the target line -- find it and ARM the jump ------
+; (D-NGRAM5.) The identical 15 B run stood at THREE sites: `ex_gosub`, `eon_goto`
+; and this one. The other two now `jp` here; this site keeps the code and simply
+; LABELS it, so the third jump costs nothing: -24 B of page 1.
+;   in:  BC = the target line number, any pushed frame already made.
+;   out: GOTOTGT/GOTOFLAG armed, returns to the statement driver. Does NOT return
+;        when the line does not exist -- ex_goto_undef owns that exit.
+; ⚠️ THIS IS NOW A SHARED TAIL, AND A SHARED TAIL IS A LABEL, NOT A DECISION: a
+; change sited here serves ALL THREE verbs (GOSUB, ON..GOTO, ON..GOSUB). Anything
+; that should apply to only one of them belongs at that site, above the jump.
+goto_take_bc:
+                call    find_line_bc        ; CF set + HL = the line's address
                 jp      nc,ex_goto_undef
                 ld      (GOTOTGT),hl
                 ld      a,1
