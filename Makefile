@@ -719,6 +719,16 @@ knife-guard-check:
 	python3 tools/check_knife_guard.py --selftest
 	python3 tools/check_knife_guard.py
 
+# --- D-SELFTEST (docs/spec-selftest.md): collect the exit codes nobody read --
+# A script outside the battery can be RED FOR MONTHS and nobody learns. Measured
+# 2026-08-28: of 15 scripts advertising `--selftest`, THREE were red -- two
+# genuinely (a known-answer set invalidated by the slice's own fix; a frozen
+# `jp $429A` literal that every carve since had moved) and one a false positive
+# of the first sweep. Same shape as D-WALLIT.
+selftest-check:
+	python3 tools/check_selftests.py --selftest
+	python3 tools/check_selftests.py
+
 # --- The missing-capture diagnosis, falsified (docs/spec-probe-mark.md is not
 # its home -- see probes/lib/omsx_missing_teeth.py). ⛔ DELIBERATELY NOT IN
 # `make gates`: two of its cases SIGKILL/SIGTERM `openmsx` BY NAME, which in a

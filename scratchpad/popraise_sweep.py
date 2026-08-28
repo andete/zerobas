@@ -222,8 +222,15 @@ def main(argv):
     tails = find_tails(items, equs, nr)
 
     if "--selftest" in argv:
-        # REAL, KNOWN-ANSWER: the five tails TODO.md and vars.asm name by hand.
-        want = {"ems_typecheck", "ems_err_pop2", "ems_err_pop1", "elas_abort_fp"}
+        # REAL, KNOWN-ANSWER: the tails TODO.md and vars.asm name by hand.
+        # 🔴 `elas_abort_fp` WAS DROPPED FROM THIS SET BECAUSE D-POPRAISE'S OWN
+        # FIX RETIRED IT: the fp group was collapsed and `elas_abort_fp` became
+        # `equ cee_abort_fp` (basic/vars.asm), so it no longer has a body of its
+        # own for this sweep to find. The selftest went RED at the moment the
+        # slice shipped and stayed red, because nothing collects the honest rc=1
+        # of a script outside the battery -- exactly the D-WALLIT shape.
+        # `make selftest-check` now does. [[wallit-slice]]
+        want = {"ems_typecheck", "ems_err_pop2", "ems_err_pop1"}
         got = set()
         for t in tails:
             for _, ns in t["pops"]:

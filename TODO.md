@@ -331,6 +331,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [x] ✅ **D-SELFTEST (2026-08-28): three of fifteen `--selftest` scripts were
+      RED and nothing collected their exit codes**
+      ([`docs/spec-selftest.md`](docs/spec-selftest.md), `make selftest-check`,
+      now in the STATIC tier).
+      🎯 **THE CLASS: a known-answer test keyed to a LIVE artifact rots every
+      time the artifact legitimately improves, and rots SILENTLY when nothing
+      reads its rc.** `popraise_sweep` froze a symbol's MEANING (`elas_abort_fp`,
+      which D-POPRAISE's own fix aliased away); `dupspan_indep` froze a symbol's
+      ADDRESS (`jp $429A`) that every carve since has moved. Both now DERIVE the
+      answer. The third was a false positive of my sweep.
+      🔴 **And my first sweep wrapped each run in `timeout`, which does not exist
+      on macOS — all 15 returned rc=127.** An instrument that fails identically
+      on every input is reporting about itself.
+
 - [x] ✅ **D-NGRAM6 (2026-08-28): seven sites open-coded `check_fperr_only`,
       which ALREADY EXISTED** ([`docs/spec-basic-ngram6.md`](docs/spec-basic-ngram6.md)).
       **−28 B and no new body** — low 94 -> 106 B free, page 1 299 -> 315 B free
@@ -706,7 +720,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3792 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3806 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
