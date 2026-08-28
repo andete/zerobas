@@ -729,12 +729,8 @@ str_fn_chr:
                 ld      (SH_LEN),a          ; length = 1 (FILL op, same as
                 ld      a,e                 ; SPACE$/STRING$ — shape-C follow-up)
                 ld      (SH_FILLBYTE),a     ; fill byte = the char (low byte of n)
-                ld      a,8
-                ld      (SH_OP),a           ; op = 8 (FILL)
-                call    call_strheap
-                call    shx_finish          ; shared SH_ERR/SH_PTR -> STRPTR tail
-                pop     hl                  ; restore cursor
-                jp      str_eval_ok
+                ld      a,8                 ; op = 8 (FILL)
+                jp      shx_op_tail         ; sets SH_OP, drives it, publishes
 
 ; STR$(n): the decimal text of n. Leading blank for non-negative n (MSX format);
 ; the '-' for a negative is emitted by pu_fmt_int. Reuses print.asm's div10 via
@@ -1232,11 +1228,35 @@ str_fn_radix:
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor
                 ld      (SH_NUM),de
-                ld      a,c
-                ld      (SH_OP),a           ; op = 6 HEX / 7 OCT / 14 BIN
+                ld      a,c                 ; op = 6 HEX / 7 OCT / 14 BIN
+                jp      shx_op_tail
+
+; --- shx_op_tail / shx_tail: the sub-ROM string-op RESULT tail (D-NGRAM4) ---
+; Four verbs ended with the identical 10 B run -- CHR$ (str_fn_chr),
+; HEX$/OCT$/BIN$ (str_fn_radix), SPACE$ (str_fn_space) and STRING$ (sfg_close):
+; 🔴 NAMED FROM THE ENCLOSING LABEL, NOT FROM NEARBY COMMENTS. The first version
+; of this list read "SPACE$ (:733)" because the sweep reports LINE NUMBERS and I
+; read the verb off the surrounding prose. :733 is CHR$. The mistake was caught
+; by a knife: K-N4B moved five rows and none of them was the one I thought
+; covered that site -- because CHR$ had NO ROW AT ALL.
+;     call call_strheap / call shx_finish / pop hl / jp str_eval_ok
+; and THREE of them set SH_OP immediately before it, so `shx_op_tail` is a 3 B
+; second ENTRY rather than a second body -- the same shape D-NGRAM3 found at the
+; lineedit sites. 49 B of sites becomes a 13 B body plus four 3 B jumps: -24 B.
+;   in:  shx_op_tail -- A = the op code.  shx_tail -- SH_OP already set.
+;        Each caller has pushed its own cursor guard; the `pop hl` here restores
+;        it, exactly as the open-coded form did (the fourth site guards with
+;        `push ix` and pops it into HL -- byte-identical, and deliberate).
+;   out: never returns -- str_eval_ok owns the exit.
+; 🔬 The four sites were enumerated at INSTRUCTION level and checked for an
+; INTERIOR LABEL (none): one of them carries comment lines inside the run, so a
+; line-adjacent grep sees three.
+shx_op_tail:
+                ld      (SH_OP),a
+shx_tail:
                 call    call_strheap
                 call    shx_finish
-                pop     hl                  ; restore cursor
+                pop     hl                  ; restore the caller's cursor guard
                 jp      str_eval_ok
 
 ; shx_finish: shared HEX_BUILD/OCT_BUILD result tail. Reads SH_ERR/SH_PTR
@@ -1290,15 +1310,11 @@ str_fn_space:
                 ld      (SH_LEN),a
                 ld      a,' '
                 ld      (SH_FILLBYTE),a
-                ld      a,8
-                ld      (SH_OP),a           ; op = 8 (FILL) -- shape-C follow-up:
+                ld      a,8                 ; op = 8 (FILL) -- shape-C follow-up:
                                             ; the fill loop moved to the sub-ROM
                                             ; tenant (sub/strheap.asm sh_fill),
                                             ; this low region ran out of room
-                call    call_strheap
-                call    shx_finish          ; shared SH_ERR/SH_PTR -> STRPTR tail
-                pop     hl                  ; restore cursor
-                jp      str_eval_ok
+                jp      shx_op_tail
 
 ; str_fn_inkey: INKEY$ -> a 0- or 1-character string. Samples the keyboard ONCE,
 ; strictly non-blocking (D-2): CHSNS ($009C) reports Z = buffer empty / NZ = a key
@@ -1403,10 +1419,7 @@ sfg_close:
                 ld      (SH_OP),a           ; op = 8 (FILL) -- shape-C follow-up
                                             ; (same move as SPACE$ above)
                 push    ix                  ; guard the parked cursor across the call
-                call    call_strheap
-                call    shx_finish          ; shared SH_ERR/SH_PTR -> STRPTR tail
-                pop     hl                  ; HL = cursor (restore)
-                jp      str_eval_ok
+                jp      shx_tail            ; SH_OP already set above
 sfg_reject1:
                 pop     af                  ; discard [count]
                 jp      str_arg_empty       ; BUG C class: defer FPERR=4 (missing ',' / empty

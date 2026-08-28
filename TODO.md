@@ -195,6 +195,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       WITHOUT reading `LE_STATUS`, so folding it in changes the A/flags its
       callers see, and `cload.asm` has two plain `call relink` sites whose flag
       dependence is unverified.
+      ✅ **ALSO SHIPPED 2026-08-28: `shx_tail` / `shx_op_tail`** (D-NGRAM4,
+      [`docs/spec-basic-ngram4.md`](docs/spec-basic-ngram4.md)) — the sub-ROM
+      string-op RESULT tail at CHR$ / HEX$-OCT$-BIN$ / SPACE$ / STRING$. **Low
+      region read 70 -> 94 B free on 2026-08-28** (a READING; run
+      `make basic-reloc`). 13 rows, DIFF 0/13.
+      🔴 **I NAMED THE SITES FROM NEARBY PROSE AND ONE WENT UNWITNESSED**: the
+      sweep reports LINE NUMBERS, and `:733` is CHR$, not SPACE$ as I wrote — so
+      CHR$ had no row while the set looked complete. The knife caught it only
+      because its prediction named WHICH rows should move. **Name a site from
+      its ENCLOSING LABEL.**
       ➡️ **STILL OPEN, measured 2026-08-28:** an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
@@ -362,9 +372,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       those knives may be perfectly sound; the point is that no tool can say so.
       The slice-prefixed form (`K-NG1`, `K-SL4`) is already the majority
       convention and is unambiguous; the bare `K<n>` form is the whole gap.
-      ➡️ Cheap fix: rename bare tags in the runners that still use them, and
-      have `knife_verdict_audit.py` refuse a bare `K<n>` in a NEW spec.
-      🤖 AUTONOMOUS — a gate settles it; finishable unattended.
+      ⬇️ **DOWNGRADED 2026-08-28 after costing it.** Three routes measured, all
+      worse than the problem: renaming historical tags edits shipped specs; a
+      `SPEC =` declaration per runner is a 43-file sweep; and mapping by the
+      runner's own docstring fails because **only 6 of 43 cite their spec**. A
+      frozen-baseline gate would need updating on every new knife.
+      🟢 **AND NOTHING IS SUSPECT**: D-KNIFEROM §6 measured 0 of 22 null verdicts
+      resting on an unguarded knife, so this is TRACEABILITY hygiene, not
+      correctness. The cheap half is free and needs no gate: **use the
+      slice-prefixed form (`K-NG1`, `K-SL4`) for new knives**, already the
+      majority convention.
+      🙋 NEEDS-JOOST — worth doing only if the traceability is wanted for its own
+      sake; I do not think it pays for itself.
 
 - [x] ~~💰 **THE BATTERY AND THE PROBES RE-MEASURE CONSTANTS.**~~ ✅ **SHIPPED
       2026-08-28, at Joost's request, as TWO independent mechanisms.**
@@ -665,7 +684,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3751 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3770 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
