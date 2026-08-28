@@ -70,6 +70,30 @@ def digit_tok(n):
     return bytes([0x11 + n])
 
 
+class _Raised(Exception):
+    """raise_error NEVER RETURNS on the machine, and modelling it as if it did
+    is what made these two rows fragile.
+
+    🔴 `Machine.trap` replaces a routine with "run fn, then RET". For a routine
+    that never returns that is only faithful while it is reached by `jp` with NO
+    intervening call frame: the RET then lands on m.call's sentinel and the run
+    ends, which is why `raised == [24]` held. D-NGRAM2 moved the empty-slot test
+    behind `call req_operand`, so the stub returned INTO the helper, `ret`ed back
+    to the site, and execution carried on raising -- [24, 24, 5] for bare SCREEN
+    and [24, 5] for `SCREEN 4`, while the machine itself was unchanged (the
+    differential probe reads ERR 24 and ERR 5, matching both references).
+    🎯 Modelling the non-return directly makes the assertion frame-count
+    independent, so it tests the CLAIM rather than the stack shape underneath it.
+    """
+
+
+def _stop_at(log):
+    def fn(mm):
+        log.append(mm.cpu.a)
+        raise _Raised
+    return fn
+
+
 def run():
     build()
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)
@@ -107,10 +131,13 @@ def run():
     # -- no except-guard, so a genuine runaway stays LOUD.
     log = m.record("CHGMOD", regs=("a",))
     raised = []
-    m.trap("raise_error", lambda mm: raised.append(mm.cpu.a))
+    m.trap("raise_error", _stop_at(raised))
     stream = bytes([s["SCREEN_TOKEN"], 0x00])    # bare SCREEN, no operand
     m.poke(BUF, stream)
-    m.call("ex_screen", hl=BUF)
+    try:
+        m.call("ex_screen", hl=BUF)
+    except _Raised:
+        pass
     ok = raised == [24] and len(log) == 0
     fails += not ok
     print(f"{'PASS' if ok else 'FAIL'}  SCREEN (bare) -> ERR 24 Missing operand,"
@@ -123,10 +150,13 @@ def run():
     # the ERR 2 Syntax error it used to `jp stmt_error` for.
     log = m.record("CHGMOD", regs=("a",))
     raised = []
-    m.trap("raise_error", lambda mm: raised.append(mm.cpu.a))
+    m.trap("raise_error", _stop_at(raised))
     stream = bytes([s["SCREEN_TOKEN"], 0x11 + 4, 0x00])   # SCREEN 4 (MSX2 only)
     m.poke(BUF, stream)
-    m.call("ex_screen", hl=BUF)
+    try:
+        m.call("ex_screen", hl=BUF)
+    except _Raised:
+        pass
     ok = raised == [5] and len(log) == 0
     fails += not ok
     print(f"{'PASS' if ok else 'FAIL'}  SCREEN 4 -> ERR 5 Illegal function call,"

@@ -244,11 +244,9 @@ loc_row_set:
 ; UNTRAPPED and read the whole screen tail, so the two-messages-for-one-statement
 ; failure above is a RED row and not a silent one.
 loc_next:
-                call    skip_spaces         ; returns A = (HL)
-                or      a
-                jp     z,loc_missing       ; end of line at an argument position
-                cp      COLON
-                jp     z,loc_missing       ; `LOCATE :` / `LOCATE 5,3,:`
+                call    req_operand         ; A = (HL); ERR 24 if the argument
+                                            ; position is empty (`LOCATE :`,
+                                            ; `LOCATE 5,3,:`) -- interp.asm
                 cp      ','
                 jr      z,loc_omit
                 ; --- ONE CHECKED COERCION, and it used to be 29 bytes of inline --

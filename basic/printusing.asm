@@ -62,17 +62,14 @@ BACKSLASH       equ     $5C                 ; '\' (avoid the assembler's escape 
 ; exactly how the first prediction for this slice went wrong.
 ex_print_using:
                 inc     hl                  ; past the USING token
-                call    skip_spaces
                 ; The EOL/':' test must come FIRST, and that is what SPLITS the
                 ; old shared `jp nc,stmt_error`: str_eval declines both for "there
                 ; is nothing here" and for "there is something and it is not a
                 ; string", and the references answer 24 and 13 respectively. With
                 ; the missing case taken off the front, an NC below can only mean
-                ; the second.
-                or      a
-                jp      z,loc_missing       ; `PRINT USING` -> ERR 24
-                cp      COLON
-                jp      z,loc_missing       ; `PRINT USING:` -> ERR 24
+                ; the second. (req_operand IS that test -- D-NGRAM2, interp.asm;
+                ; sharing it does not move the split, it only stops open-coding it.)
+                call    req_operand         ; `PRINT USING` / `PRINT USING:` -> ERR 24
                 call    str_eval            ; STRPTR -> the format [len][bytes]
                 jp      nc,type_mismatch_error  ; `PRINT USING 5` -> ERR 13 (0 B:
                                             ; the same instruction, retargeted)
@@ -121,11 +118,7 @@ puf_copied:
                 ; REQUIRED. pu_main's own end-of-list test cannot serve here --
                 ; it is also reached from pu_msep after a TRAILING separator,
                 ; which is legal and suppresses the newline.
-                call    skip_spaces
-                or      a
-                jp      z,loc_missing       ; `PRINT USING"##";` -> ERR 24
-                cp      COLON
-                jp      z,loc_missing       ; -> ERR 24
+                call    req_operand         ; `PRINT USING"##";` -> ERR 24
 ; --- main loop: one value per field, cycling the format ---------------------
 pu_main:
                 call    skip_spaces

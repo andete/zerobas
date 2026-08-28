@@ -52,18 +52,18 @@ ex_play:
                 ; `PLAY"A",,"C"` is 2. Reading the sites as four INSTRUCTIONS
                 ; would have missed that they are seven ROWS.
 pl_voice:
-                call    skip_spaces
-                or      a                   ; a separator / EOL where a string is
-                ; +1 B each, and that is CHEAPER THAN A TRAMPOLINE HERE. D-PAINTMISS
-                ; reasoned the opposite way and was right for its own case: with
-                ; FOUR `jr` sites, four `jp z,loc_missing` costs +4 B against a 3 B
-                ; `ep_missing: jp loc_missing`. With TWO sites it is +2 B against 3,
-                ; so the arithmetic inverts below four. loc_missing is `equ
-                ; g8_missing` in the shipping build and a real body in the
-                ; !G8_RESIDENT arm, so both switch arms still assemble.
-                jp      z,loc_missing       ; required slot ENDS here -> ERR 24
-                cp      COLON
-                jp      z,loc_missing       ; `PLAY:` likewise -> ERR 24
+                ; 🔴 THE TRAMPOLINE ARITHMETIC BELOW IS NOW MOOT AT THIS SITE,
+                ; and it is inverted rather than deleted because its REASONING is
+                ; still right elsewhere. It read: two open-coded `jp z,loc_missing`
+                ; cost +2 B against a 3 B `ep_missing: jp loc_missing` trampoline,
+                ; so inline wins below four sites (D-PAINTMISS reasoned the
+                ; opposite way at FOUR `jr` sites and was right for its case).
+                ; D-NGRAM2 changes the question: the choice is no longer
+                ; inline-vs-trampoline for the JUMP, it is whether the whole
+                ; five-instruction TEST is shared -- and at six sites it is.
+                ; loc_missing is still `equ g8_missing` in the shipping build and a
+                ; real body in the !G8_RESIDENT arm, so both switch arms assemble.
+                call    req_operand         ; A = (HL); `PLAY` / `PLAY:` -> ERR 24
                 cp      ','
                 jr      z,pl_syntax         ; bare comma (PLAY ,"E") -> Syntax error,
                                             ; measured 2 on both references at BOTH

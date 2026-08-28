@@ -213,6 +213,32 @@ req_letter:
                 ret     c                   ; a letter: hand it back untouched
                 jp      stmt_error          ; not a letter: the statement aborts
 
+; --- req_operand: a value is REQUIRED at the cursor (D-NGRAM2) -------------
+; The other half of the same idea as req_letter above, and the top-ranked exact
+; repeat in the MAIN regions: `call skip_spaces / or a / jp z,loc_missing /
+; cp COLON / jp z,loc_missing` stood open-coded at SIX sites -- LOCATE's argument
+; positions (missing.asm), PLAY's voice slot (play.asm), PRINT USING's format and
+; its value list (printusing.asm x2), and SCREEN's mode and trailing arguments
+; (screen.asm x2). 12 B each, 72 B in all; one 13 B body plus six 3 B calls is
+; 31 B: **-41 B of page 1**.
+;   in:  HL = cursor.
+;   out: A = the token, HL on it -- EXACTLY as the open-coded form left them, so
+;        every caller's following `cp ','` reads the same byte and re-sets its own
+;        flags. Does NOT return when the slot is empty: loc_missing owns that exit
+;        (ERR 24, D-MISSOP).
+; 🔬 THE SIX SITES WERE ENUMERATED AT INSTRUCTION LEVEL, NOT BY GREPPING LINES.
+; Four of them have COMMENT LINES INSIDE the sequence, so a line-adjacent regex
+; finds only 4 of 6 -- and the check that actually mattered was for an INTERIOR
+; LABEL at any site, which would make the span byte-identical without being
+; ENTERED the same way. There is none. (scratchpad/ngram_sweep.py --main.)
+req_operand:
+                call    skip_spaces
+                or      a
+                jp      z,loc_missing       ; the slot ENDS here -> ERR 24
+                cp      COLON
+                jp      z,loc_missing       ; `... :` likewise -> ERR 24
+                ret
+
 ; --- exec: walk the line, dispatching each statement -----------------------
 ; in: HL = token buffer (0x00-terminated). Statements are separated by ':'.
 ; Returns to the REPL at end of line (or hands off via BLOAD,R, never to return).

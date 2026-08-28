@@ -169,8 +169,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       already free — `--main` rescores on main sites only), and **a CONDITIONAL
       jump is not a terminator**, so the top candidate was first mispriced as a
       shared tail it can never be.
-      ➡️ **STILL OPEN, measured 2026-08-28:** `call skip_spaces / or a /
-      jp z,loc_missing / cp COLON / jp z,loc_missing` (**41 B**, 6 sites); the
+      ✅ **SHIPPED 2026-08-28: `req_operand`** (D-NGRAM2,
+      [`docs/spec-basic-ngram2.md`](docs/spec-basic-ngram2.md)) — `call
+      skip_spaces / or a / jp z,loc_missing / cp COLON / jp z,loc_missing`, the
+      top-ranked exact repeat in the SCARCE regions. 6 sites x 12 B -> one 13 B
+      body + six 3 B calls. **Page 1 read 185 -> 226 B free on 2026-08-28** (a
+      READING; run `make basic-reloc`). 18 rows, DIFF 0/18; 2 knives.
+      🔬 **A LINE-BASED GREP FINDS ONLY 4 OF THE 6** — four sites carry comment
+      lines INSIDE the sequence. Enumerated at instruction level, and checked for
+      an INTERIOR LABEL (none), which is what would make the span byte-identical
+      without being ENTERED the same way.
+      ➡️ **STILL OPEN, measured 2026-08-28:** the
       `subrom_call` + LE_STATUS sequence (**40 B**, 5 sites); and an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
@@ -296,6 +305,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
 **Apparatus / tooling**
+
+- [ ] 🔴 **A KNIFE CAN BE SILENTLY INERT BECAUSE THE BUILD DID NOT HAPPEN — AND
+      NONE OF THE 14 RUNNERS CHECKS.** Filed 2026-08-28 by D-NGRAM2
+      ([`docs/spec-basic-ngram2.md`](docs/spec-basic-ngram2.md) §3).
+      📏 **MEASURED, NOT SUSPECTED:** running `scratchpad/ngram2_knives.py` twice
+      on an unchanged tree gave TWO DIFFERENT ANSWERS — K-NG2 moved 2 rows once
+      and 11 the other time, and the 11-row output was **byte-identical to
+      K-NG1's**: the probe had measured the PREVIOUS knife's ROM. Writing a
+      source file and immediately invoking `make` can leave the old ROM
+      installed.
+      🎯 **THE FAILURE PRESENTS AS "moved 0 row(s)"** — which is exactly what a
+      knife with nothing to say looks like, so an inert knife reads as a
+      falsification arm that legitimately found nothing. Every "UNWITNESSED"
+      verdict in the tree was taken without this check.
+      🔬 Build non-determinism is EXCLUDED: three consecutive builds are
+      byte-identical and converge in one pass.
+      ➡️ **THE FIX IS 6 LINES AND ALREADY EXISTS IN ONE RUNNER:** hash the ROMs
+      before and after planting, refuse to score a cut whose hash did not move,
+      print the transition. `scratchpad/ngram2_knives.py` has it; the other 13 do
+      not. ⚠️ Also force `ZEROBAS_REFCACHE=0` in every runner — a knife measures,
+      it never replays.
+      🤖 AUTONOMOUS — a gate settles it; finishable unattended.
 
 - [x] ~~💰 **THE BATTERY AND THE PROBES RE-MEASURE CONSTANTS.**~~ ✅ **SHIPPED
       2026-08-28, at Joost's request, as TWO independent mechanisms.**
@@ -596,7 +627,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3682 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3713 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

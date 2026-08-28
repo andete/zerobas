@@ -45,11 +45,9 @@ ex_screen:
                 ld      (GFX_SARGN),a       ; sprite size, and it is no longer discarded
     ENDIF
                 inc     hl                  ; past the SCREEN token
-                call    skip_spaces
-                or      a
-                jp      z,loc_missing       ; bare `SCREEN` -> Missing operand (ERR
-                cp      COLON               ; 24); `SCREEN :` likewise -- both
-                jp      z,loc_missing       ; measured, D-SCRERR spec §2.1. An
+                call    req_operand         ; bare `SCREEN` -> Missing operand (ERR
+                                            ; 24); `SCREEN :` likewise -- both
+                                            ; measured, D-SCRERR spec §2.1. An
                                             ; ARGUMENT LIST THAT ENDS WHERE A VALUE
                                             ; WAS REQUIRED is ERR 24 at every one of
                                             ; this routine's four such slots; the
@@ -137,11 +135,10 @@ scr_extra:                                  ; the trailing arguments
                 inc     a                   ; (D-PEEPHOLE): HL is the PARSE CURSOR
                 ld      (GFX_SARGN),a       ; here -- skip_spaces below advances it.
     ENDIF
-                call    skip_spaces
-                or      a                   ; a comma PROMISED an argument, so a
-                jp      z,loc_missing       ; statement end here is ERR 24 --
-                cp      COLON               ; `SCREEN 2,` and `SCREEN 2,:`, and via
-                jp      z,loc_missing       ; the ",," arm `SCREEN ,` too. Measured
+                call    req_operand         ; a comma PROMISED an argument, so a
+                                            ; statement end here is ERR 24 --
+                                            ; `SCREEN 2,` and `SCREEN 2,:`, and via
+                                            ; the ",," arm `SCREEN ,` too. Measured
                                             ; on both references (spec §2.1).
                 cp      ','                 ; an omitted argument (",,")
                 jr      z,scr_extra
