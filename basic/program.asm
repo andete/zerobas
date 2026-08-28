@@ -626,8 +626,7 @@ rp_do_break:
                 ; that was about to run -> the CONT resume point. do_break records
                 ; it, prints "Break in <line>", and sets ENDFLAG; we then return
                 ; to the REPL (the run is suspended, not torn down).
-                call    do_break
-                ret
+                jp      do_break
 
 ; --- do_break: record a CONT resume point and report "Break in <line>" -------
 ; in: HL = the token position to resume at; CURLINE = the line being interrupted

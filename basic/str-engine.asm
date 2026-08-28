@@ -553,8 +553,7 @@ str_temp_slice:
                 ld      (SH_COUNT),a
                 ld      a,5
                 ld      (SH_OP),a           ; op = 5 (SLICE)
-                call    call_strheap
-                ret
+                jp      call_strheap
 
 ; --- LEN/ASC/VAL: string-argument functions in the NUMERIC evaluator -------
 ; Reached from ev_f_ff (basic/expr.asm) via `jp ev_ff_strnum` on an unrecognised

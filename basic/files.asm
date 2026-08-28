@@ -1116,8 +1116,7 @@ ifc_zero:
                 djnz    ifc_zero
                 ld      a,1
                 ld      (MAXF),a            ; default ceiling = 1 (#1 always usable)
-                call    fld_init            ; empty the random-access field table
-                ret
+                jp      fld_init            ; empty the random-access field table
 
 ; ===========================================================================
 ; Channel manager (Phase 2 MAXFILES) — the multi-channel substrate that retires
@@ -1207,8 +1206,7 @@ fch_load_ctx:
                 ldir                        ; ctx state -> globals
                 pop     af
                 ld      (FCH_ACTIVE),a
-                call    fch_restage         ; re-read this channel's staged sector
-                ret
+                jp      fch_restage         ; re-read this channel's staged sector
 
 ; fch_sync_mirror — FCH_NUM = FCH_ACTIVE, FCH_MODE = FCH_MODES[FCH_ACTIVE].
 fch_sync_mirror:

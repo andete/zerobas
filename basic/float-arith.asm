@@ -1269,8 +1269,7 @@ fac_to_int_go:
                 call    domain_convert_core
                 ret     nc
                 ld      a,1
-                call    penderr_set
-                ret
+                jp      penderr_set
 
 ; --- eval_addr: HL(cursor) -> DE = a checked ADDRESS-domain int value, ----
 ; HL(cursor advanced). Thin wrapper combining eval + fac_to_int_addr — the
@@ -2094,8 +2093,7 @@ signed_mod_de_bc:
                 ld      a,(FP_RSIGN)
                 or      a
                 ret     z
-                call    neg_de              ; DE = -DE (float.asm)
-                ret
+                jp      neg_de              ; DE = -DE (float.asm)
 
 ; --- widen_uint_to: HL = dest FPNUM base, A = sign (0/$80), DE = UNSIGNED --
 ; magnitude (0..65535) -> fills dest. Same digit-collection technique as

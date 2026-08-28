@@ -208,7 +208,6 @@ load_error:
                 ld      a,$EE
                 ld      (ERRMARK),a
                 ld      hl,err_io
-                call    print_msg                   ; D-MSGENC
-                ret
+                jp      print_msg                   ; D-MSGENC
 err_io:
                 db      "load",MSGESC_ERROR,0       ; 13 B -> 6 B

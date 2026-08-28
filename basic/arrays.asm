@@ -526,8 +526,7 @@ ary_engine_call:
                                             ; `or a` this comment replaces was
                                             ; therefore provably redundant
                 ld      a,(hl)
-                call    penderr_set
-                ret
+                jp      penderr_set
 ary_errmap:                                 ; ARY_ERR 1..5 -> FPERR (§4.1 dispositions)
                 db      5                   ; 1 Subscript-oor  -> 5 Subscript out of range
                 db      8                   ; 2 Illegal-fn/neg -> 8 Illegal function call
@@ -941,8 +940,7 @@ ev_f_arr:
                 ld      b,0
                 ld      de,FAC
                 ldir                        ; (HL=elem addr) -> (DE=FAC), elsize bytes
-                call    flt_to_int16        ; DE = int16 fast path (FACTYP untouched)
-                ret
+                jp      flt_to_int16        ; DE = int16 fast path (FACTYP untouched)
 eva_int:
                 ld      (FACTYP),a
                 ld      e,(hl)

@@ -620,8 +620,7 @@ expect_comma_eval:
                 cp      ','
                 jp      nz,load_error
                 inc     hl                  ; past the comma
-                call    eval                ; DE = value, HL advanced (BC clobbered)
-                ret
+                jp      eval                ; DE = value, HL advanced (BC clobbered)
 
 ; ===========================================================================
                 include "basic/sv-diskwr.inc"       ; disk_write_* (copied into the tenant)

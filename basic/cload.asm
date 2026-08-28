@@ -346,8 +346,8 @@ run_prog_top:
 ; stored, so HL still lands on the quote). Clobbers A, BC, DE, HL.
 cas_capture_name:
                 ld      de,CAS_WANT
-                ld      b,6                 ; slots left in CAS_WANT
-                ld      c,0                 ; chars copied so far
+                ld      bc,$0600            ; D-PEEPHOLE: b=6 slots left in
+                                            ; CAS_WANT, c=0 chars copied so far
 ccn_lp:
                 ld      a,(hl)
                 or      a

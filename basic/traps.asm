@@ -295,8 +295,7 @@ ss_off:
 ;   Clobbers A, B, C, DE, HL.
 ct_find:
                 ld      hl,ZTRAP
-                ld      b,ZTRAP_NENT
-                ld      c,0
+                ld      bc,ZTRAP_NENT*256   ; D-PEEPHOLE: b=count, c=0 in one
 ctf_lp:
                 ld      a,(hl)
                 bit     7,a                 ; PENDING?

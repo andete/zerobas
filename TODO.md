@@ -154,6 +154,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Knives K-DB1 (11 rows) / K-DB2 (3) / K-DB3 (2), all live:
       [`scratchpad/dimbare_knives.py`](scratchpad/dimbare_knives.py).
 
+- [ ] 💰 **D-PEEPHOLE: THE CLASSIC Z80 SIZE IDIOMS, COUNTED — SAFE CLASS TAKEN,
+      FLAG-CHANGING CLASS STILL OPEN (20 B).** Pattern list from the WikiTI
+      "Z80 Optimization" page (Joost, 2026-08-28);
+      `scratchpad/peephole_sweep.py --sites` counts each against basic/ + sub/
+      (76 files, 20579 instructions). Two entries were ALREADY CLOSED and are
+      reported rather than re-counted: `jp`→`jr` (D-JRSLICE/2, banked
+      2026-08-24) and `call X`/`ld a,(hl)` (D-RETLN/D-EVSPDUP, gated).
+      🎯 **REGION IS WHAT THE BYTES ARE WORTH**: of a 106 B ceiling only **47 B
+      is in MAIN** (35 page 1, 12 low, measured 2026-08-28) — the rest is sub,
+      which had thousands of bytes free and is not a carve.
+      ✅ **SAFE CLASS SHIPPED 2026-08-28: 14 B** — 12 `call X / ret` → `jp X`
+      tail calls (each read individually first) + 2 `ld r,n / ld r',n` →
+      `ld rr,nn`. Low region read 38 → 44 B, page 1 124 → 132 B on 2026-08-28.
+      ➡️ **STILL OPEN — the FLAG-CHANGING rules, ~20 B of code, deliberately NOT
+      swept.** `ld a,0` → `xor a` (18 sites) also clears carry; `dec b / jr nz`
+      → `djnz` (2 sites) sets NO flags where `dec b` sets four. This tree reads
+      flags across exactly these boundaries and a mechanical rewrite broke a
+      DIFFERENT invariant three times on 2026-08-26
+      ([[a-mechanical-fix-can-break-a-different-invariant]]), so each site needs
+      its SUCCESSOR read. A slice, not a sweep.
+      ➡️ Also open: `ld a,(v)/inc a/ld (v),a` → `ld hl,v / inc (hl)`, 29 sites,
+      58 B ceiling — needs HL free AND A dead at each, unmeasured.
+      🔴 **THE SWEEP'S FIRST RUN REPORTED 54 HITS FOR THE PAIR-LOAD RULE AND THE
+      TRUE COUNT IS 9**: `a b c d e` are all valid HEX DIGITS, so `is_imm()`
+      accepted a bare register name and counted `ld d,a / ld e,b` — a register
+      MOVE — as a constant pair.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
+
 - [ ] 🔬 **IXH/IXL/IYH/IYL: MEASURED **NO** ON SIZE (2 B), UNMEASURED ON SPEED.**
       Asked by Joost 2026-08-28, who confirmed every official MSX machine
       supports them (and `pasmo` encodes them correctly), so availability is
@@ -426,7 +454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3449 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3477 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

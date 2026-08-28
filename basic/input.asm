@@ -243,8 +243,7 @@ inpc_print_q:
                 ld      a,'?'
                 call    CHPUT
                 ld      a,' '
-                call    CHPUT
-                ret
+                jp      CHPUT
 
 ; --- inpc_more_input: is there another field to read from LINEBUF? ----------
 ; The only delimiters in LINEBUF are ',' and the 0 terminator (read_line stores

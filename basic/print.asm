@@ -298,8 +298,7 @@ exp_semi:
                 jp      z,exec_stmt         ; trailing ';' before ':' -> no newline
                 jp      exp_loop
 exp_nl_ret:
-                call    print_crlf
-                ret
+                jp      print_crlf
 exp_nl_stmt:
                 call    print_crlf
                 jp      exec_stmt           ; HL on ':' -> exec_stmt steps over it
