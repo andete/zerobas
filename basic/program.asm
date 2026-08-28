@@ -1059,12 +1059,7 @@ store_line:
                 ld      (SL_NUM),bc
                 ld      (SL_TOK),hl
                 xor     a                   ; LE_OP_STORE = 0
-                ld      (LE_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
-                call    subrom_call
-                jp      c,subrom_absent_error
-                ld      a,(LE_STATUS)
-                or      a
+                call    le_call_op          ; A = LE_STATUS, Z = ok
                 ret     z                   ; ok (tenant already relinked +
                                             ; vars_reset)
                 ld      a,$CC               ; out-of-memory landmark (distinct byte)
@@ -1081,6 +1076,34 @@ store_line:
 ; that must resolve to a main-ROM address, never a sub-ROM one. err_stack (below)
 ; and cload.asm's err_prog_mem both `equ err_mem` and are unaffected.
 err_mem         equ     err_mem_arr
+
+; --- le_call / le_call_op: the lineedit tenant's call sequence (D-NGRAM3) ----
+; Five sites drove SUBROM_IDX_LINEEDIT with the identical 14 B run --
+;     ld ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
+;     call subrom_call / jp c,subrom_absent_error / ld a,(LE_STATUS) / or a
+; -- LIST (list.asm), the line STORE, DELETE, RENUM and AUTO (this file). 70 B in
+; all; one 15 B body plus five 3 B calls is 30 B.
+; 🎯 AND FOUR OF THE FIVE SET LE_OP IMMEDIATELY BEFORE IT, so `le_call_op` is a
+; 3 B second ENTRY rather than a second body: those four drop their own
+; `ld (LE_OP),a` for nothing. Together: **-49 B of page 1.**
+;   in:  le_call_op -- A = the LE_OP code.  le_call -- LE_OP already set.
+;   out: A = LE_STATUS, Z set when it is 0 (ok). Every caller branches on exactly
+;        that, and `ret` preserves both. Does NOT return when the sub-ROM is
+;        absent: subrom_absent_error owns that exit.
+; ⚠️ `relink` below is a SIXTH site with the same prefix and is deliberately NOT
+; folded in: it returns WITHOUT reading LE_STATUS, so routing it through here
+; would change the A and flags its callers see (cload.asm has two plain
+; `call relink` sites). 7 B, declined until that contract is measured rather
+; than assumed. [[a-shared-tail-is-not-a-decision]]
+le_call_op:
+                ld      (LE_OP),a
+le_call:
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      a,(LE_STATUS)
+                or      a
+                ret
 
 relink:
                 ld      a,1                 ; LE_OP_RELINK
@@ -1114,16 +1137,11 @@ relink:
 ex_delete:
                 ld      (SL_DELPTR),hl      ; the statement cursor, on the token
                 ld      a,LE_OP_DELRANGE
-                ld      (LE_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
-                call    subrom_call
-                jp      c,subrom_absent_error
                 ; LE_STATUS carries the ERR CODE ITSELF for this op (basic/
                 ; sysvars.inc): 0 = ok, 2 = R-D6 trailing junk, 5 = R-D2 (the high
                 ; end names no stored line) or R-D4 (lo > hi). One compare, no
                 ; second table.
-                ld      a,(LE_STATUS)
-                or      a
+                call    le_call_op          ; A = LE_STATUS, Z = ok
                 jp      nz,raise_error
                 ; R-D7: a SUCCEEDING delete is a program EDIT. The tenant has
                 ; already run relink + vars_reset (its own tail, exactly as
@@ -1165,12 +1183,7 @@ ex_renum:
                 ld      (RN_PTR),hl         ; the statement cursor, on the token
                 ld      a,LE_OP_RENUM
 exr_call:
-                ld      (LE_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
-                call    subrom_call
-                jp      c,subrom_absent_error
-                ld      a,(LE_STATUS)
-                or      a
+                call    le_call_op          ; A = LE_STATUS, Z = ok
                 jr      z,exr_done          ; 0 = the whole renumbering is done
                 dec     a
                 jr      nz,exr_raise        ; >= 2 is the ERR CODE ITSELF: 2 for
@@ -1231,12 +1244,9 @@ rn_in:          db      " in ",0
 ex_auto:
                 ld      (RN_PTR),hl         ; the statement cursor, on the token
                 ld      a,LE_OP_AUTO
-                ld      (LE_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
-                call    subrom_call
-                jp      c,subrom_absent_error
-                ld      a,(LE_STATUS)       ; 2 = R-AU9 trailing junk, 5 = R-AU5
-                or      a                   ; (increment 0, which is also what bare
+                call    le_call_op          ; A = LE_STATUS, Z = ok.
+                                            ; 2 = R-AU9 trailing junk, 5 = R-AU5
+                                            ; (increment 0, which is also what bare
                 jp      nz,raise_error      ; `AUTO ,` reduces to)
                 inc     a                   ; -> 1: read_line polls from here on
                 ld      (RL_AUTO),a

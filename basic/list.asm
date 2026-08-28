@@ -92,11 +92,9 @@ ex_list:
 exl_entry:
                 ld      (LE_OP),a
                 ld      (LST_PTR),hl        ; the statement cursor, on the token
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
-                call    subrom_call
-                jp      c,subrom_absent_error
-                ld      a,(LE_STATUS)       ; the ERR CODE ITSELF; only ever 2
-                or      a                   ; (R-LS6). LIST has NO range error --
+                call    le_call             ; A = LE_STATUS, Z = ok. The ERR CODE
+                                            ; ITSELF; only ever 2
+                                            ; (R-LS6). LIST has NO range error --
                 jp      nz,raise_error      ; a high end naming no stored line, a
                                             ; reversed range and a range past the
                                             ; program are all ERR 0 and list

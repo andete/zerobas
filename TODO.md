@@ -179,8 +179,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       lines INSIDE the sequence. Enumerated at instruction level, and checked for
       an INTERIOR LABEL (none), which is what would make the span byte-identical
       without being ENTERED the same way.
-      ➡️ **STILL OPEN, measured 2026-08-28:** the
-      `subrom_call` + LE_STATUS sequence (**40 B**, 5 sites); and an `inc hl` +
+      ✅ **ALSO SHIPPED 2026-08-28: `le_call` / `le_call_op`** (D-NGRAM3,
+      [`docs/spec-basic-ngram3.md`](docs/spec-basic-ngram3.md)) — the
+      `subrom_call` + LE_STATUS sequence at LIST / line-STORE / DELETE / RENUM /
+      AUTO. Filed at 40 B; **it is 49 B**, because four of the five set `LE_OP`
+      immediately before, so a 3 B second ENTRY drops four `ld (LE_OP),a`.
+      **Page 1 read 226 -> 275 B free on 2026-08-28** (a READING; run
+      `make basic-reloc`). 9 rows, DIFF 0/9.
+      🔴 **THE PER-SITE WITNESS HAD TO BE STATIC.** The line STORE is one of the
+      five sites and the probe harness TYPES its own program through it, so a
+      knife on the helper takes the fixture down and EVERY row moves, controls
+      included — there is no control on that apparatus that survives it. Arm S1
+      enumerates instead: 0 open-coded copies left, exactly 5 calls.
+      ⚠️ **A SIXTH SITE (`relink`) MEASURED AND DECLINED**, 7 B: it returns
+      WITHOUT reading `LE_STATUS`, so folding it in changes the A/flags its
+      callers see, and `cload.asm` has two plain `call relink` sites whose flag
+      dependence is unverified.
+      ➡️ **STILL OPEN, measured 2026-08-28:** an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
@@ -627,7 +642,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3713 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3728 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
