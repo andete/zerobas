@@ -75,12 +75,12 @@ those.)
 
 | marker | meaning | n (2026-08-27) |
 |---|---|---|
-| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **63** |
+| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **62** |
 | 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **6** |
 | 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **26** |
 | ⛔ **BLOCKED** | neither can start it now — an idle host, a missing fixture, apparatus that must be built first | **9** |
 
-**104 open items, 104 markers, 0 unmarked** — the invariant above, checked.
+**103 open items, 103 markers, 0 unmarked** — the invariant above, checked.
 
 🔴 **A MISFILED 🤖 IS NOT A STOP CONDITION — WRAP UP AND REFILE.** If an item
 marked autonomous turns out to need a decision of his: **finish and commit
@@ -331,7 +331,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3302 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3319 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2231,7 +2231,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (include half SHIPPED 2026-08-28 with 16 B recovered; what remains is the
       IF/ELSE/ENDIF half, which needs a file-level walk, not a per-span one).
 
-- [ ] 🔴 **`castail-acceptance` VOIDS THE WHOLE BATTERY WHEN A CONTROL FAILS ON
+- [x] 🔴 **`castail-acceptance` VOIDS THE WHOLE BATTERY WHEN A CONTROL FAILS ON
       THE **ZEROBAS** SIDE, SO IT CANNOT SCORE ITS OWN KNIVES.** Filed
       2026-08-21 by D-FNRUN, found by running K-FR3 against it.
       K-FR3 (`dr_cas_close`'s `ld hl,(FN_RESUME)` → `ld hl,(STRPTR)`) cut exactly
@@ -2254,7 +2254,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       scored divergence. ⚠️ Re-run the battery after: some rows may then SCORE
       that were previously only printed, and a row that starts being scored is a
       claim about it.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **FIXED AND PROVEN WITH THE FOUNDING KNIFE 2026-08-28 (D-CASTAILCTL),**
+      [`docs/spec-castail-control.md`](docs/spec-castail-control.md). 0 ROM bytes.
+      `control_faults()` skips `zb`, exactly namspc's rule.
+      **Falsified twice.** `--selftest` plants readings and checks WHICH SIDE
+      decides (zb-only miss → 0 faults; reference miss → 1; both → 1, only the
+      reference listed) with no machine booted. Then K-FR3 itself — **not tracked
+      anywhere, so re-created** as
+      [`scratchpad/castail_knife.py`](scratchpad/castail_knife.py) — with the cut
+      in: `32 printed, 31 scored — 29 agree, 2 diverge`, exit **1**, naming
+      `cas-run-hit` and `cas-run-hit-res`. Was `33 printed, 0 scored — NOT
+      MEASURED`. Clean tree 31/31, unchanged, so no row starts being scored today.
+      🔴 **THE KNIFE TAUGHT TWO THINGS.** The instruction alone was NOT the site:
+      `ld hl,(FN_RESUME) ; D-FNRUN: …` occurs TWICE in `basic/cload.asm` (the disk
+      path at :231, whose comment continues `--`), so the bare line matched both as
+      a PREFIX and the uniqueness guard refused to cut — anchored on the LABEL
+      instead. And ⚠️ **`make`'s exit code is not the probe's**: `make` exits 2 on
+      any failed target, and the first reading nearly recorded "still voided" when
+      the probe had in fact exited 1.
 
 - [ ] 💰 **`RUN <lineno>` IN DIRECT MODE IS STILL THE OLD BEHAVIOUR — R2, ONE
       RULE AT A SECOND SITE (filed 2026-08-22 by D-RUNLINE §4).** `RUN 20` typed

@@ -700,14 +700,77 @@ def labels_of(row):
 LABEL_W = 22
 
 
+# --- control_faults: ONLY A REFERENCE CAN SAY THE APPARATUS IS BROKEN --------
+# 🔴 THIS USED TO SCAN EVERY SIDE, AND THAT MADE THE BATTERY UNABLE TO MEASURE ITS
+# OWN KNIVES (D-FNRUN, 2026-08-21). K-FR3 cut exactly what it aimed at --
+# `cas-run-hit` went `ZQ9` -> `<load-failed>` -- and because that row is a POSITIVE
+# CONTROL the probe printed "33 printed, 0 scored -- NOT MEASURED" and exited 2. A
+# knife is SUPPOSED to break things; a battery that reads any control failure as a
+# broken instrument cannot score one.
+#
+# 🎯 `basic_probe_namspc.py`:1036 already had the right rule and is the precedent:
+# a control that fails on `zb` is a FINDING and is scored like any other row, while
+# a control that fails on a REFERENCE means the fixture, the ROMs or the cassette
+# are wrong and nothing below it can be believed. The controls exist because a
+# machine that runs no program at all produces `<nothing>` and an error message for
+# free -- and that argument is about the REFERENCE side, which is what defines the
+# answer here.
+#
+# ⚠️ A zb control failure is now SCORED, so it counts in the agree/diverge tally and
+# the run exits non-zero through the ORDINARY path. Exit 2 keeps its meaning: the
+# instrument was broken, not a regression.
+def control_faults(results, sides, controls):
+    """(lab, side, got, missing) for REFERENCE sides only. `zb` is never a fault."""
+    out = []
+    for lab, want in controls.items():
+        for s in sides:
+            if s == "zb":
+                continue                          # a zerobas miss is a RESULT
+            got = results[s].get(lab)
+            if got is None:
+                continue                          # excluded by --only
+            miss = [w for w in want if w not in got]
+            if miss:
+                out.append((lab, s, got, miss))
+    return out
+
+
+def _selftest() -> int:
+    """Plant control readings and check WHICH SIDE decides. No machine booted."""
+    ctl = {"cas-run-hit": ["ZQ9"]}
+    cases = [
+        ("zb misses, reference fine -> a FINDING, scored below",
+         {"cf3300": {"cas-run-hit": "ZQ9"}, "zb": {"cas-run-hit": "<load-failed>"}}, 0),
+        ("reference misses -> the INSTRUMENT, exit 2",
+         {"cf3300": {"cas-run-hit": "<load-failed>"}, "zb": {"cas-run-hit": "ZQ9"}}, 1),
+        ("both miss -> still the instrument, only the reference listed",
+         {"cf3300": {"cas-run-hit": "<x>"}, "zb": {"cas-run-hit": "<y>"}}, 1),
+        ("both fine -> no fault",
+         {"cf3300": {"cas-run-hit": "ZQ9"}, "zb": {"cas-run-hit": "ZQ9"}}, 0),
+    ]
+    rc = 0
+    for name, results, want in cases:
+        got = len(control_faults(results, ["cf3300", "zb"], ctl))
+        good = got == want
+        rc |= (not good)
+        print(f"  {'ok ' if good else 'RED'} {name:56} faults={got} want={want}")
+    print("castail selftest:", "PASS" if not rc else "FAIL")
+    return rc
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="D-CASTAIL")
+    ap.add_argument("--selftest", action="store_true",
+                    help="check WHICH SIDE decides a control failure, on planted "
+                         "readings -- no machine booted")
     ap.add_argument("--sides", default="cf3300,zb")
     ap.add_argument("--only", default="")
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--gate", action="store_true",
                     help="exit 1 unless every row agrees across sides")
     a = ap.parse_args()
+    if a.selftest:
+        return _selftest()
 
     sides = [s for s in a.sides.split(",") if s]
     only = [o for o in a.only.split(",") if o]
@@ -741,22 +804,14 @@ def main() -> int:
     print("=" * 78)
 
     # --- the POSITIVE controls, first and gating ---------------------------
-    bad = []
-    for lab, want in CONTROLS.items():
-        for s in sides:
-            got = results[s].get(lab)
-            if got is None:
-                continue                          # excluded by --only
-            miss = [w for w in want if w not in got]
-            if miss:
-                bad.append((lab, s, got, miss))
+    bad = control_faults(results, sides, CONTROLS)
     if bad:
         for lab, s, got, miss in bad:
             print(probe_report.row("FAIL", lab, LABEL_W, {s: got},
                                    "   [POSITIVE CONTROL]"))
             print(f"        wanted {miss} in the reading")
-        print("\n*** A POSITIVE CONTROL FAILED, so nothing below it was "
-              "measured.\n"
+        print("\n*** A POSITIVE CONTROL FAILED ON A REFERENCE, so nothing below "
+              "it was measured.\n"
               "    ONE row here expects `<nothing>` and THREE expect an error "
               "message, and a\n"
               "    machine that runs no program at all produces both for free "
