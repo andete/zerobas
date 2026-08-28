@@ -461,6 +461,7 @@ sct_loop:
                 ld      a,(SH_ERR)
                 or      a
                 jr      nz,sct_append_err   ; heap OOM / overflow -> [R][cursor]
+sct_cont:
                 pop     hl                  ; HL = cursor            [R]
                 call    skip_spaces
                 cp      PLUS_TOKEN
@@ -488,22 +489,38 @@ sct_err2:
                 or      a                   ; A=1 -> CF clear (malformed operand)
                 ret
 sct_append_err:
-                ; SH_ERR = 1 (heap OOM) or 2 (temp overflow). Result = R (the
-                ; partial accumulator, still valid); set FPERR so the statement-
+                ; SH_ERR = 1 (heap OOM), 2 (temp overflow) or 3 (D-STRLONG: the
+                ; combined length is over STRMAX). Result = R (the partial
+                ; accumulator, still valid -- sh_append raises the length case
+                ; BEFORE it touches R or the heap); set FPERR so the statement-
                 ; boundary check aborts before the value is consumed.
-                pop     hl                  ; HL = cursor            [R]
-                pop     de                  ; DE = R                 [ ]
-                ld      (STRPTR),de         ; STRPTR = R (partial)
+                ;
+                ; 🔴 THIS TAIL USED TO `ret` HERE, AND THAT LEFT ANY `+ term`
+                ; STILL TO ITS RIGHT UNPARSED (D-STRLONG, spec §6). HL is the
+                ; cursor just past the operand that FAILED, so `LEN(X$+X$+X$)`
+                ; came back to the caller with `+X$` still in the text; the
+                ; caller re-drove it as a NUMERIC continuation and the statement
+                ; reported `Type mismatch` instead of the error that actually
+                ; happened. It was never specific to SH_ERR=3 -- probe row
+                ; `x.oom3` reproduces it through a plain pool OOM (SH_ERR=1), on
+                ; code that predates this slice entirely.
+                ; 🎯 THE FIX IS TO REJOIN THE FOLD, NOT TO LEAVE IT. penderr_set
+                ; is FIRST-ERROR-WINS (above), so the remaining terms may be
+                ; consumed, appended and even fail again without changing what
+                ; is reported -- and the normal exit at sct_cont publishes R and
+                ; the final cursor exactly as it does on the success path. That
+                ; also deletes this tail's own STRPTR store and `scf`/`ret`.
                 ld      a,(SH_ERR)
-                cp      2
+                cp      2                   ; `ld` does not touch flags, so both
+                                            ; branches below read THIS compare
                 ld      a,FPERR_STROOM      ; SH_ERR=1 -> heap OOM (sysvars.inc)
-                jr      nz,sct_ae_set
+                jr      c,sct_ae_set
                 ld      a,9                 ; SH_ERR=2 -> "String formula too complex"
+                jr      z,sct_ae_set
+                ld      a,FPERR_STRLONG     ; SH_ERR=3 -> ERR 15 "String too long"
 sct_ae_set:
                 call    penderr_set
-                scf                         ; CF set (a string operand WAS recognised;
-                                            ; only its VALUE errored, deferred via FPERR)
-                ret
+                jr      sct_cont            ; consume whatever is still pending
 
 ; ===========================================================================
 ; S4 — the core string VERBS (repack build only): LEN/ASC/VAL (string->number)

@@ -942,6 +942,14 @@ fperr_to_err:
                                             ; with the switch (12 with CLEARPOOL, 11
                                             ; without), which is why the equ lives beside
                                             ; FPERR_STROOM rather than being a literal.
+                db      15                  ; FPERR_STRLONG (= FPERR_MISSOP+1, sysvars.inc,
+                                            ; D-STRLONG): STRING TOO LONG -- a `+` fold whose
+                                            ; combined length exceeds STRMAX. sh_append used
+                                            ; to clamp it to 255 and return that; both
+                                            ; references raise here instead. Same DENSE-table
+                                            ; caveat as the entry above: this `db` must stay
+                                            ; LAST, because FPERR_MISSOP moves with CLEARPOOL
+                                            ; and this code is defined relative to it.
 ; D-MSGMIGRATE: err_fp_divzero's TEXT is sub-ROM-hosted (em_fp_divzero, ERRFLG
 ; = 11). fp_runtime_error reaches it through fperr_to_err -> raise_error ->
 ; err_msgtab entry 11, which is now err_subhosted -- one table operand, 0 B.

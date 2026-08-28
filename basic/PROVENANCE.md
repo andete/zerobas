@@ -3136,13 +3136,26 @@ byte-identical to the VG-8020 by `make string-acceptance` (the `basic_probe_crun
 The concat-aware `str_eval` wrapper (strvar.asm) folds a trailing `+ operand` chain
 for every string context at once (LET, PRINT, PRINT#, the file-write path, …) with no
 caller edits; `str_concat_tail` (str-engine.asm) copies operand 1 into a ring temp and
-appends each further operand, clamped to STRMAX.
+appends each further operand. 🔴 **IT USED TO SAY "clamped to STRMAX", AND THAT
+WAS THE DIVERGENCE, NOT THE DESIGN** — corrected 2026-08-28 (D-STRLONG,
+`docs/spec-basic-strlong.md`): a combined length over STRMAX raises
+`String too long` (ERR 15), as both references do.
 
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
 | `+` concatenation semantics: left-to-right, result length = sum of operand lengths | — | public MSX-BASIC language reference | sourced |
 | String-result **temp ring**: 3 slots (`STRNTMP=3`), round-robin `[len][bytes]` descriptors | `STRTMP`/`STRTMP_IDX`/`STRSCR` in free page-3 RAM (`$E240–$E55E`, below the `$E560` file/cassette buffers) | **own design** — the reference heap+GC is not reproduced; N=3 covers a binary op's ≤2 live operands + 1 result, a deeper nest reuses the oldest slot (documented depth-truncation) | quarantined |
-| **STRMAX** length clamp: strings longer than STRMAX are truncated | `64` (repack) / `32` (lean) | **own design** — the 255-faithful clamp overflows page-3 RAM by ~2 KB (spec §5a), so a smaller cap is chosen; extra bytes are dropped, no error | quarantined |
+| ~~**STRMAX** length clamp: strings longer than STRMAX are truncated~~ | ~~`64` (repack) / `32` (lean)~~ | ~~**own design** — the 255-faithful clamp overflows page-3 RAM by ~2 KB (spec §5a), so a smaller cap is chosen; extra bytes are dropped, no error~~ | **RETIRED** |
+| **CONCATENATION over STRMAX raises ERR 15 `String too long`** | `STRMAX = 255` | public MSX-BASIC language reference, oracle-locked against BOTH references (`scratchpad/strlong_probe.py`) | **sourced** |
+
+⚠️ **THE ROW ABOVE IS STRUCK, NOT DELETED, BECAUSE ITS REASONING WAS SOUND AND
+ITS PREMISE EXPIRED.** The clamp was chosen when STRMAX was 64/32 and the
+3-slot ring lived in page-3 RAM, where a 255-faithful cap really did overflow by
+~2 KB. Arrays slice-4a retired that ring for the compacting heap and widened
+STRMAX to 255 — at which point the clamp was no longer a RAM-budget concession
+but a plain divergence, and it survived unexamined until 2026-08-28 because no
+gate reads prose and the ONE unit-test case that touched it
+(`tests/test_str_engine.py`) asserted the clamp. See `docs/spec-basic-strlong.md`.
 | `str_alloc_temp` / `str_copy_desc` / `str_append_desc` / `str_concat_tail` ring allocator + append algorithm | — | **own code**; not derived from any disassembly | sourced |
 
 ### The eight verb handlers (basic/str-engine.asm, reached via gated hooks in basic/expr.asm, basic/strvar.asm, basic/print.asm)
@@ -3353,7 +3366,7 @@ bare-token list).
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
 | `HEX$`/`OCT$` view `n` as **unsigned 16-bit** (integer-only engine; no float rendering) | — | own design (D-2), consistent with the integer-only core; also the reference behaviour for the integer domain | quarantined |
-| `SPACE$`/`STRING$` length clamps to **`STRMAX`=64** (reference ceiling is 255); a **negative** count is a function error | — | own design (D-3), identical to the concat/substring STRMAX-clamp philosophy; 255 awaits the RAM re-architecture | quarantined |
+| `SPACE$`/`STRING$` length clamps to **`STRMAX`=64** (reference ceiling is 255); a **negative** count is a function error | — | own design (D-3) — ⚠️ this cell used to read "identical to the concat/substring STRMAX-clamp philosophy", and the CONCAT half of that comparison no longer exists (D-STRLONG, 2026-08-28: concat RAISES). Whether `SPACE$`/`STRING$` should raise too is UNMEASURED and filed separately | quarantined |
 | `INSTR` uses the **N=3 ring** for its two live snapshots (a deep `INSTR(a$+b$,c$+d$)` reuses the oldest slot) | — | own design (spec §3a ring bound) | quarantined |
 
 ### Two integration bugs the acceptance gate caught (both fixed before ship)

@@ -241,25 +241,58 @@ list. **When a slice lands, grep this list for what it just shipped.**
       a differential times it.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
-- [ ] 🔴 **THE STRMAX CLAMP DIVERGES: zerobas SILENTLY CLAMPS TO 255 WHERE BOTH
-      REFERENCES RAISE `String too long`.** Found 2026-08-28 by D-CONCATPEAK
-      while testing a path its own 12 threshold rows never reach
-      ([`docs/spec-concatpeak.md`](docs/spec-concatpeak.md) §8).
-      `sh_append` clamps a combined length over 255, and its header calls that
-      *"reference left-to-right truncation"* — **which is exactly what both
-      references do NOT do.**
-      📏 **4 ROWS, MEASURED:** `CLEAR 900:X$=STRING$(200,"A"):LEN(X$+X$+X$)` →
-      refs `String too long`, zb **255**; the same with `RIGHT$(X$+X$,3)` → refs
-      `String too long`, zb **`AAA`**; and `X$=STRING$(128,"A"):LEN(X$+X$)` and
-      the 200 form → refs **ERR 15**, zb **ERR 14**.
-      🔬 **KNIFE-PROVEN PRE-EXISTING** — with `sap_try_extend` cut out, all four
-      give byte-identical answers, so D-CONCATPEAK neither caused nor worsened
-      it.
-      🎯 **TWO DISTINCT DEFECTS IN ONE FILING, and they need separating before a
-      fix:** a SILENT CLAMP where the reference RAISES, and an ERROR-PRECEDENCE
-      difference (zb reports `Out of string space` where the reference reports
-      `String too long`, because zb exhausts the pool BEFORE it checks the
-      length). Whether the second survives fixing the first is unmeasured.
+- [x] ~~🔴 **THE STRMAX CLAMP DIVERGES: zerobas SILENTLY CLAMPS TO 255 WHERE
+      BOTH REFERENCES RAISE `String too long`.**~~ ✅ **SHIPPED 2026-08-28
+      (D-STRLONG, [`docs/spec-basic-strlong.md`](docs/spec-basic-strlong.md)),
+      and the filing was RIGHT — all four of its rows reproduced unchanged on
+      the first run.** `sh_append`'s over-STRMAX carry now sets `SH_ERR=3`,
+      mapped to `FPERR_STRLONG` → ERR 15, sited BEFORE every allocation.
+      📏 **20 rows, 16 DIFF → 3** (`scratchpad/strlong_probe.py`; K-SL0 reverts
+      both sites to read the before/after on ONE denominator, because the row
+      set grew mid-slice — the first run's "14 of 17" is a DIFFERENT row set). Cost as measured 2026-08-28: **page-0 low +2 B
+      (68 → 70 free), page 1 −1 B (186 → 185), sub page 0 −6 B (2335 → 2329)**
+      — the slice GIVES BACK low bytes.
+      🎯 **THE TWO DEFECTS WERE SEPARATED BY SWEEPING ONE KNOB.** Fixing the
+      clamp also moved four of the six precedence rows: the test precedes
+      `heap_alloc`, so wherever the operand-1 snapshot still fits, the LENGTH is
+      now reached before the allocation that used to fail first.
+      🔬 5 knives, all live, `scratchpad/strlong_knives.py`.
+
+- [ ] 🔴 **THE `String too long` PRECEDENCE RESIDUAL: 3 ROWS, AND THE DEFAULT
+      POOL IS INSIDE THE WINDOW.** Filed 2026-08-28 by D-STRLONG
+      ([`docs/spec-basic-strlong.md`](docs/spec-basic-strlong.md) §5) — what
+      that slice measured but did NOT fix.
+      📏 `f.128` / `f.200` / `s.200`: when the pool is smaller than **2 × lenR**,
+      `str_concat_tail`'s operand-1 snapshot exhausts it before `sh_append` is
+      entered at all, so zb reports `Out of string space` where both references
+      report `String too long`. ⚠️ **`FRE("")` is 200 on all three sides**, so
+      `X$=STRING$(128,"A"):PRINT LEN(X$+X$)` — no `CLEAR` at all — is in it.
+      🔬 **THE ROUTE IS MEASURED, NOT GUESSED, AND IT IS A RESTRUCTURE.** The
+      snapshot is unconditional because operand 2's evaluation can clobber the
+      shared `RVDESC` — but only the DESCRIPTOR is at risk, never the body: a
+      var slot and a temp slot are both stable, and a literal's `RVDESC.ptr`
+      points into the token stream, which nothing moves. So the length test
+      could be hoisted above the snapshot by saving operand 1's 3-byte
+      descriptor instead of copying its body. **Unpriced, and it moves the
+      concat peak again — re-run `scratchpad/concatpeak_probe.py` with it.**
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
+
+- [ ] 🔬 **DOES `SPACE$`/`STRING$` RAISE OR CLAMP? UNMEASURED, AND ITS
+      JUSTIFICATION JUST LOST THE THING IT POINTED AT.** Filed 2026-08-28 by
+      D-STRLONG ([`docs/spec-basic-strlong.md`](docs/spec-basic-strlong.md)).
+      `basic/PROVENANCE.md`'s entry for these two verbs justified their clamp as
+      *"identical to the concat/substring STRMAX-clamp philosophy"* — **and the
+      concat half of that comparison no longer exists**, so the cell now cites a
+      sibling that went the other way. That is not evidence the verbs are wrong;
+      it is evidence NOBODY HAS ASKED.
+      📏 **THE MEASUREMENT IS THREE ROWS AND HAS NOT BEEN RUN:** `STRING$(300,"A")`,
+      `SPACE$(300)` and the exact-255/256 pair, on both references. `STRMAX` is
+      255 = the byte ceiling, so a count over 255 cannot even be REPRESENTED in
+      the byte the argument is coerced to — which means the failure is likely
+      `Illegal function call` at the coercion, NOT a clamp at all, and the
+      PROVENANCE cell may be describing code that has not existed since
+      slice-4a widened STRMAX. ⚠️ **RUN IT BEFORE BELIEVING EITHER STORY** —
+      the same cell's `STRMAX=64` is already stale by the same widening.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
 **Apparatus / tooling**
@@ -530,7 +563,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3616 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3649 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

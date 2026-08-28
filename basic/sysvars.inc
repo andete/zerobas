@@ -463,6 +463,12 @@ FPERR_MISSOP    equ     11      ; -> ERR 24 "Missing operand" (D-MISSOP)
 ; basic/expr.asm's ev_f_tmm (which always deferred through FPERR). Both mean the
 ; same thing and always did; fperr_to_err entry 10 maps it to ERR 13, the SAME
 ; table entry type_mismatch_error raises directly (basic/interp.asm).
+; D-STRLONG (docs/spec-basic-strlong.md): a concatenation whose combined length
+; exceeds STRMAX. `sh_append` used to CLAMP such a result to 255 and return it,
+; which is a SILENT WRONG ANSWER -- both references raise ERR 15. Defined as
+; FPERR_MISSOP+1 rather than a literal for the reason the block above gives: the
+; table is DENSE and every code above it MOVES with the CLEARPOOL switch.
+FPERR_STRLONG   equ     FPERR_MISSOP + 1    ; -> ERR 15 "String too long"
 FPERR_TYPEMM    equ     10      ; -> ERR 13 "Type mismatch"
 ; Graphics G8 (docs/spec-basic-graphics-g8.md). VDP(n) and BASE(n) are single-byte
 ; FUNCTION tokens, and their assignment form has no statement token of its own: a

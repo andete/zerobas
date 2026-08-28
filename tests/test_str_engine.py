@@ -13,9 +13,11 @@ crunches to PLUS_TOKEN $F1 and literals pass through verbatim), then call the PU
 `str_eval` and follow the [len:1][ptr:2] descriptor STRPTR points at to its heap body.
 
 Oracle basis:
-- Concatenation semantics (left-to-right join, combined length clamped) — public
-  MSX-BASIC language reference; the clamp value STRMAX=255 is zerobas own-design
-  (docs/spec-basic-string-engine.md §3; basic/PROVENANCE.md).
+- Concatenation semantics (left-to-right join) — public MSX-BASIC language
+  reference. 🔴 A COMBINED LENGTH OVER STRMAX=255 RAISES `String too long`
+  (ERR 15), it does not truncate: this file asserted the truncation until
+  2026-08-28 and the assertion was the divergence (D-STRLONG,
+  docs/spec-basic-strlong.md; docs/spec-basic-string-engine.md §3).
 - str_eval contract: STRPTR -> [len][ptr], VALTYP=1, CF=1 on success (strvar.asm).
 - String home (arrays slice-4a, docs/spec-basic-arrays-slice4a-string-heap.md §3/§6/§7):
   the fixed STRTMP N=3 ring is retired. A CONCAT result is a temp-descriptor-stack
@@ -80,6 +82,8 @@ def run():
     m.call("heap_reset")
 
     STRMAX = s["STRMAX"]        # 255 in the repack build (slice-4a widened 64->255)
+    FPERR = s["FPERR"]          # D-STRLONG: the deferred-error cell str_concat_tail
+    FPERR_STRLONG = s["FPERR_STRLONG"]      # arms when a fold exceeds STRMAX
     STRPTR = s["STRPTR"]
     VALTYP = s["VALTYP"]
     RVDESC = s["RVDESC"]        # the single-rvalue descriptor cell (non-concat literals)
@@ -128,6 +132,10 @@ def run():
         m.poke_w(TEMPTOP, TEMPBASE)
         m.poke(VALTYP, 0)
         m.poke_w(STRPTR, 0)
+        m.poke(s["FPERR"], 0)       # D-STRLONG: exec_stmt clears the pending-error
+                                    # cell at every statement boundary and str_eval
+                                    # bypasses it, so a case that ARMS FPERR would
+                                    # otherwise leak into the next case's reading
         cpu = m.call("str_eval", hl=TOKBUF)
         ptr = m.mem[STRPTR] | (m.mem[STRPTR + 1] << 8)
         dlen, dbytes = read_val(ptr)
@@ -171,14 +179,44 @@ def run():
     #    RVDESC rvalue (never allocated a temp), not a temp-stack result.
     check('"XY" (single operand)', *eval_expr('"XY"'), b"XY", want_temp=False)
 
-    # 6) combined length clamps to STRMAX=255 (own-design left-to-right
-    #    truncation). A$=200 chars, A$+A$=400 -> clamped to the first 255.
+    # 6) 🔴 A COMBINED LENGTH OVER STRMAX RAISES; IT DOES NOT CLAMP (D-STRLONG,
+    #    docs/spec-basic-strlong.md). Until 2026-08-28 this case asserted
+    #    `200+200 chars clamps to 255` and PASSED -- the gate encoded the
+    #    divergence. `X$=STRING$(200,"A") : PRINT LEN(X$+X$)` is
+    #    `String too long` on both the VG-8020 and the CF-3300, so sh_append
+    #    now answers the carry out of `add a,c` with SH_ERR=3 and
+    #    str_concat_tail defers it as FPERR_STRLONG.
+    #    What str_eval returns is UNCHANGED in shape: CF=1 (a string operand WAS
+    #    recognised -- only its value errored), VALTYP=1, and STRPTR -> R, the
+    #    partial accumulator, which is still a valid temp because the length is
+    #    tested BEFORE any allocation. R therefore holds operand 1 untouched.
     reset_strtab()
     a200 = b"a" * 200
     set_var("A", a200)
     cpu, ptr, dlen, dbytes = eval_expr("A$+A$")
-    want = (a200 + a200)[:STRMAX]
-    check(f'200+200 chars clamps to {STRMAX}', cpu, ptr, dlen, dbytes, want, want_temp=True)
+    got_fperr = m.mem[FPERR]
+    ok = (carry(cpu) and m.mem[VALTYP] == 1 and in_temp(ptr)
+          and dbytes == a200 and got_fperr == FPERR_STRLONG)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  200+200 raises String too long (no clamp): "
+          f"CF={int(carry(cpu))} VALTYP={m.mem[VALTYP]} len={dlen} "
+          f"FPERR={got_fperr} (want {FPERR_STRLONG}) R-intact={dbytes == a200}")
+
+    # 6b) 🟢 THE GREEN CONTROL ON THE SAME APPARATUS. Exactly STRMAX bytes is
+    #    LEGAL and must stay legal -- without this row, a fix that raised one
+    #    byte early would score perfect on case 6 and every other case here.
+    #    (The emulator-side twin is probe row `e.255`, and knife K-SL4 is what
+    #    proves the pair is load-bearing rather than decorative.)
+    reset_strtab()
+    a200 = b"a" * 200
+    b55 = b"b" * 55
+    set_var("A", a200); set_var("B", b55)
+    cpu, ptr, dlen, dbytes = eval_expr("A$+B$")
+    ok = (carry(cpu) and m.mem[VALTYP] == 1 and in_temp(ptr)
+          and dbytes == a200 + b55 and m.mem[FPERR] == 0)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  exactly {STRMAX} chars is LEGAL: "
+          f"CF={int(carry(cpu))} len={dlen} FPERR={m.mem[FPERR]} (want 0)")
 
     # 7) empty operands
     check('""+"Z"', *eval_expr('""+"Z"'), b"Z", want_temp=True)

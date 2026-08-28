@@ -1296,8 +1296,7 @@ stpa_overflow:
 
 ; --- sh_append: op=2 (APPEND) — the concat accumulator step. Append the ----
 ; string at SH_SRC (any stable descriptor: temp / var slot / RVDESC) onto the
-; accumulator temp at SH_DEST (a temp slot, IN PLACE), clamping the combined
-; length to STRMAX=255 (reference left-to-right truncation). SH_DEST's slot
+; accumulator temp at SH_DEST (a temp slot, IN PLACE). SH_DEST's slot
 ; stays put; only its len/ptr change (its old body becomes GC garbage). This
 ; per-operand binary append (vs the old "build from the last B contiguous
 ; temps") is robust to operands whose OWN evaluation pushes intermediate
@@ -1305,7 +1304,19 @@ stpa_overflow:
 ; operand is fully evaluated and appended before the next, so no contiguity
 ; assumption is needed. SH_ERR: 0 ok / 1 heap OOM (SH_DEST left unchanged,
 ; still valid) / 2 temp-stack overflow (only if a fresh body alloc needs a
-; slot -- it does not here, so 2 never occurs). Clobbers A,B,C,D,E,H,L.
+; slot -- it does not here, so 2 never occurs) / 3 combined length > STRMAX.
+; Clobbers A,B,C,D,E,H,L.
+;
+; 🔴 SH_ERR=3 REPLACES A CLAMP, AND THE CLAMP'S COMMENT WAS FALSE (D-STRLONG,
+; docs/spec-basic-strlong.md). Until 2026-08-28 an over-STRMAX total was set to
+; 255 and RETURNED, and the line above said that was "reference left-to-right
+; truncation". It is not: `X$=STRING$(200,"A") : PRINT LEN(X$+X$+X$)` is
+; `String too long` on BOTH the VG-8020 and the CF-3300, and 255 here -- a
+; SILENT WRONG ANSWER, which this project ranks below the refusal beside it.
+; 🎯 THE TEST IS SITED BEFORE EVERY ALLOCATION on purpose. `add a,c` is the
+; first thing sh_append does, so the raise costs no pool and leaves R valid,
+; which is what lets a small pool report the LENGTH error rather than the
+; out-of-space error it used to reach first (the sweep in the spec, §4).
 sh_append:
                 ld      hl,(SH_DEST)
                 ld      a,(hl)              ; lenR
@@ -1313,8 +1324,9 @@ sh_append:
                 ld      hl,(SH_SRC)
                 ld      a,(hl)              ; lenTk
                 add     a,c                 ; total = lenR + lenTk
-                jr      nc,sap_ok
-                ld      a,255               ; clamp to STRMAX
+                jr      c,sap_toolong       ; D-STRLONG: over STRMAX -> ERR 15, and
+                                            ; NOTHING has been touched yet -- R, the
+                                            ; heap and FRETOP are all still intact
 sap_ok:
                 or      a
                 jr      z,sap_empty         ; total 0 -> R becomes empty
@@ -1359,6 +1371,12 @@ sap_oom:
                 pop     af                  ; discard [total]
                 ld      a,1
                 ld      (SH_ERR),a          ; heap OOM -- R left unchanged (valid)
+                ret
+sap_toolong:
+                ld      a,3
+                ld      (SH_ERR),a          ; D-STRLONG: combined length > STRMAX.
+                                            ; R is unchanged and still valid; main's
+                                            ; sct_append_err maps 3 -> FPERR_STRLONG.
                 ret
 ; --- sap_try_extend (D-CONCATPEAK, docs/spec-concatpeak.md): grow R's body ---
 ; IN PLACE when R is the TOP heap allocation.
