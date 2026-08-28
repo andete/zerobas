@@ -182,9 +182,19 @@ pu_skipnl:
 ; exactly ONE incoming jump, so once that jump became `jp nc,pu_ifc` it was
 ; unreachable and `make deadcode` would have refused the build -- the gate is
 ; what turns "this is now wrong" into "this cannot be left behind".
-pu_ifc:
-                ld      a,5                 ; Illegal function call: a value list
-                jp      raise_error         ; against a format with no field
+; D-DUPSUPPLY: an ALIAS, not a ninth copy. These two instructions were
+; byte-identical to `gb_illegal` (interp.asm) -- which already carries EIGHT
+; names (eoi_err5/fchk_ifc/gfx_absent/gfx_err5/pl_absent/snd_illegal/
+; strig_illegal) -- and `tools/dupspan_indep.py --samereg` decides the collapse
+; from the ROM BYTES: terminates, no escaping relative jump, no fallthrough
+; entry, and the canonical is in the SAME region (both page 1, so no tenant sees
+; an address that is switched out). The one incoming jump was ALREADY a `jp`
+; (`jp nc,pu_ifc` above), so nothing widens and the 5 B is net.
+; 🎯 THIS IS THE WHOLE REMAINING SUPPLY. The sweep's 26 groups are 163 B nominal
+; and price out at 5 B same-region -- every larger pair dies on "a relative jump
+; leaves the span" or "runs off its end", exactly as the item predicted for LOOP
+; BODIES. The NAME and its call site survive; only the second copy goes.
+pu_ifc          equ     gb_illegal
 
 ; pu_has_field — CF set iff PU_FMT[0..PU_FMTLEN) contains a field char (#/!/&/\).
 ; Clobbers A, B, DE, HL.

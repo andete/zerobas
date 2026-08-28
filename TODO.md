@@ -75,12 +75,12 @@ those.)
 
 | marker | meaning | n (2026-08-27) |
 |---|---|---|
-| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **64** |
+| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **63** |
 | 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **7** |
 | 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **26** |
 | ⛔ **BLOCKED** | neither can start it now — an idle host, a missing fixture, apparatus that must be built first | **9** |
 
-**106 open items, 106 markers, 0 unmarked** — the invariant above, checked.
+**105 open items, 105 markers, 0 unmarked** — the invariant above, checked.
 
 🔴 **A MISFILED 🤖 IS NOT A STOP CONDITION — WRAP UP AND REFILE.** If an item
 marked autonomous turns out to need a decision of his: **finish and commit
@@ -331,7 +331,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3169 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3197 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2094,7 +2094,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the same way**; the sweep cannot see this and says so.
       🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).
 
-- [ ] ⚠️ **The rest of the byte-identical-span supply: 53 groups, 403 B
+- [x] ⚠️ **The rest of the byte-identical-span supply: 53 groups, 403 B
       NOMINAL, and nominal is not a price.** Filed 2026-08-22 by D-DUPSPAN.
       Re-run `python3 scratchpad/dupspan_sweep.py` — never quote this figure,
       it rots exactly like a wall. The two error-tail families are gone; what
@@ -2108,7 +2108,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       every caller. **These are LOOP BODIES, not error tails**, so unlike the
       tails they are not obviously position-independent: a relative jump out of
       the span makes two identical spans un-collapsible.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **PRICED AND CLOSED 2026-08-28 (D-DUPSUPPLY),**
+      [`docs/spec-dupsupply.md`](docs/spec-dupsupply.md). **The class is MEASURED
+      EMPTY apart from 5 B, and that 5 B is taken.**
+      📏 The figure had rotted exactly as this item warned: **53 groups / 403 B →
+      26 groups / 163 B nominal**, and pairs it named by size moved
+      (`sav_ascii_flag`/`sav_cas_flag` was in its "11–20 B" list, now a 3 B group)
+      while `pn_wr`/`dde_wr` (11 B) appeared since.
+      🎯 **THIS ITEM'S PREDICTION WAS RIGHT ABOUT THE MECHANISM, NOT JUST THE
+      DIRECTION.** Every large pair dies on "relative jump leaves the span" or
+      "runs off its end" — the literal verdict strings — which is the loop-body
+      hazard it named in advance. 163 B nominal → **5 B same-region net**.
+      🔴 **THE DEFAULT `dupspan_indep.py` RUN OVER-PRICES AT 8 B** because its
+      REGION check is a FLAG, not a default: the extra 3 B is collapsing
+      `affn_found` ($333D, page-0 low) onto `cal_srv_ret` ($67A3, page 1) — across
+      the boundary its OWN comment forbids. `--samereg` is the number to act on.
+      ✅ **TAKEN: `pu_ifc equ gb_illegal`** — a NINTH copy of a body that already
+      carried eight names; terminates, no escaping `jr`, no fallthrough entry, same
+      region, and its one incoming jump was already a `jp` so nothing widened.
+      Main page 1 was **89 B → 94 B free on 2026-08-28**; low and both sub islands
+      unchanged. The tool's price was right to the byte.
+      🔴 **NOTHING IN `make gates` NAMES PRINT USING**, so the collapsed arm got its
+      own reading ([`scratchpad/puifc_probe.py`](scratchpad/puifc_probe.py)):
+      `PRINT USING"abc"`→ERR 2, `"abc";`/`"abc";5`→**ERR 5** (the pu_ifc arm),
+      `"##";5` prints — all three machines agreeing. `deadcode` clean; battery
+      **43/43** with no flakes.
+      ➡️ **The remaining 158 B nominal is refused by the byte decoder, not by
+      judgement**, and structurally: a loop body with a `jr` inside it does not
+      collapse at any price. Reopening means restructuring loops, which an alias
+      carve does not fund.
 
 - [ ] ⚠️ **A linear predecessor walk stops at `ENDIF` and calls it an
       instruction.** Filed 2026-08-22 by D-DUPSPAN,
