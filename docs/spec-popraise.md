@@ -133,11 +133,28 @@ Rejected on the reader, not on a hunch.
 
 * **Q1, the 21 B of pops** — 🙋, unchanged. Deleting them buys bytes with a new
   dependency on SP being reset.
-* **The `stmt_error` chain, 13 B** — spans LOW (`ems_err_pop2` `$2C6A`,
-  `ee_synerr_pop` `$3E4C`) and page 1 (`ela_err` `$48A0`, `ex_let_err` `$422C`).
-  Cross-region aliasing is legal here subject to `check_tenant_closure.py`
-  (precedent: `elas_err equ ems_err_pop1`, D-XREG), but `ex_let_err`'s two call
-  sites use `jr` and would need `jp` (+2 B), netting ~10 B not 13.
+* **The `stmt_error` chain — 🔴 this section said "13 B nominal, ~10 B net" and
+  the measurement refutes it. It is worth 5 B, and only one member is free.**
+  What decides is not the address but the **call site's jump form**:
+
+  | member | region | call sites | verdict |
+  |---|---|---|---|
+  | `ela_err` | page 1 | 1× `jp` (arrays.asm:849) | **free — 5 B, SHIPPED** |
+  | `ee_synerr_pop` | LOW | 2× `jr` (arrays.asm:601, 707) | pinned; 4 B − 2 B = +2 B |
+  | `ex_let_err` | page 1 | 2× `jr` (interp.asm:639, 675) | pinned; 3 B − 2 B = +1 B |
+  | `ems_err_pop2` | LOW | 2× `jr` (str-engine.asm:1059, 1063) | pinned — it is the canonical |
+
+  A `jr` caller **pins** its target next to itself: moving the body costs +1 B at
+  every such site, which eats most of a 3–4 B body. Only `ela_err` is reached
+  solely by `jp`, so only `ela_err` may move at no cost — `ela_err equ
+  ems_err_pop2`, cross-region page 1 → LOW exactly as `elas_err equ
+  ems_err_pop1` already is (D-XREG, gated by `check_tenant_closure.py`).
+  Witnessed alone by **K-EL1** (row `s.ary`, `ERR 2` → `ERR 5` under a
+  `gb_illegal` retarget — `stmt_error`'s own siblings would have been the §5
+  no-op again). **Page 1 119 → 124 B free on 2026-08-28.**
+  🎯 **Read the jump form, not just the address.** Doing so turned a 13 B
+  nominal group into a 5 B real one, and it is the step that separates a nominal
+  price from a net one anywhere in this class.
 * **`gosub_stk_over`, 4 B** — `ct_gsfull`/`ct_svc_full` are adjacent in
   `traps.asm`, both page 1, and `gosub_stk_over` reads no register. Cheap, but
   **unwitnessed**: reaching either needs a full control stack or an over-nested

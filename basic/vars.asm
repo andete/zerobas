@@ -842,10 +842,21 @@ ary_apply_offset_hl_sub:
 ; site changed). stmt_error/type_mismatch_error/fp_runtime_error (interp.asm)
 ; are page-1 resident too, so these are now a same-region tail all the way
 ; through.
-ela_err:
-                pop     af
-                pop     hl                  ; discard [TYPE],[OFFSET]
-                jp      stmt_error
+; D-POPRAISE §7: an ALIAS, 0 B. `pop af / pop hl / jp stmt_error` is
+; byte-for-byte the job ems_err_pop2 (basic/str-engine.asm) does in the low
+; region, in different registers -- free to change, because the words are
+; DISCARDED and stmt_error opens `xor a`, redefining both A and the flags.
+; -5 B of page 1. Witnessed alone by K-EL1 (row `s.ary`, ERR 2 -> ERR 5 under a
+; gb_illegal retarget): scratchpad/elaerr_knife.py.
+; 🎯 THIS IS THE ONLY ZERO-COST MEMBER OF THAT GROUP, and the thing that decides
+; it is not the address but the CALL SITE'S JUMP FORM. arrays.asm:849 reaches
+; ela_err by `jp`, so the body may move anywhere. ee_synerr_pop and ex_let_err
+; are reached by `jr`, which PINS them next to their callers: aliasing either
+; costs +1 B per site and nets +1/+2 B, so the group is worth 5 B, not the 13 B
+; its nominal body total suggests.
+; Cross-region (page 1 -> low) exactly as elas_err below, D-XREG, gated by
+; check_tenant_closure.py.
+ela_err         equ     ems_err_pop2
 ; (`ela_abort_tm` — `pop af; pop hl; jp type_mismatch_error` — stood HERE and is
 ; GONE with D-PENDERR: ex_let_arr's type-fault arm and its numeric arm are the
 ; same arm now, so the two tails collapsed into ela_abort_fp below. -5 B, page 1.)

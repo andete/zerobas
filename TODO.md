@@ -195,9 +195,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       NO-OP**: retargeting to `stmt_error` re-raises the identical code, because
       `stmt_error` opens with `call check_expr_errors` (D-STMTPEND); three tails
       read "UNWITNESSED" for a reason that was not about the tails.
-      ➡️ **STILL OPEN, all measured, none shipped:** the `stmt_error` chain
-      (**13 B of code nominal, ~10 B net, measured 2026-08-28** — it spans
-      LOW/page 1 and `ex_let_err`'s two `jr` call sites would need `jp`);
+      ✅ **AND THE `stmt_error` GROUP'S ONE FREE MEMBER SHIPPED: `ela_err equ
+      ems_err_pop2`, −5 B; page 1 read 119 → 124 B free on 2026-08-28.**
+      🔴 **I FILED THAT GROUP AT "13 B nominal, ~10 B net" AND THE MEASUREMENT
+      REFUTES IT — it is worth 5 B.** What decides is not the ADDRESS but the
+      **CALL SITE'S JUMP FORM**: a `jr` caller PINS its target beside itself, so
+      moving the body costs +1 B per site and eats most of a 3–4 B body.
+      `ee_synerr_pop` (2 `jr`) nets **+2 B**, `ex_let_err` (2 `jr`) nets **+1 B**,
+      `ems_err_pop2` (2 `jr`) is the canonical; only `ela_err` is reached solely
+      by `jp` (arrays.asm:849) and only it could move. Witnessed alone by K-EL1
+      ([`scratchpad/elaerr_knife.py`](scratchpad/elaerr_knife.py), row `s.ary`).
+      ➡️ **STILL OPEN, measured, not shipped:**
       `gosub_stk_over` (**4 B, measured 2026-08-28**, adjacent, page 1, but
       **UNWITNESSED** — no probe row fills a control stack or over-nests a
       trap); `els_tc_common` (**4 B, measured 2026-08-28**, but it is a LOW →
@@ -391,7 +399,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3414 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3422 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
