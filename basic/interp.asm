@@ -1663,19 +1663,22 @@ tok_skip_to:                                ; C = the terminator token
 
                 include "basic/tokskip-body.inc"
 
-; --- skip_to_eol: HL at a token body -> HL just past the line's 00 terminator -
-; Token-aware (steps whole tokens via tok_skip), so an operand byte equal to 00
-; (e.g. the low byte of &HD000 -> $0C $00 $D0) is not mistaken for the
-; terminator. Used to find a stored line's length and its next-line address.
-skip_to_eol:
-                ld      a,(hl)
-                or      a
-                jr      z,ste_done
-                call    tok_skip
-                jr      skip_to_eol
-ste_done:
-                inc     hl                  ; advance past the 00 terminator
-                ret
+; --- skip_to_eol / ste_done: DELETED FROM THIS BUILD (D-ENDIFWALK, 11 B) ------
+; Token-aware "advance past the line's 00 terminator". It survived the G4
+; line-editor eviction as a SECOND COPY: sub/lineedit.asm:738 defines its own
+; `skip_to_eol`/`ste_done` and holds all EIGHT real callers, while `basic/main.asm`'s
+; whole closure contained exactly one mention -- `jr skip_to_eol` at what used to
+; be interp.asm:1675, INSIDE THE ROUTINE'S OWN BODY. A self-loop is not a caller.
+; ⚠️ NOT the `IF SUB_BUILD` shape this file's dead-code header warns about (fix 4,
+; `disk_putword`): that is ONE definition in a SHARED body .inc, live in the other
+; build. This was TWO definitions in two files, and the sub build does not include
+; basic/interp.asm at all -- so deleting main's copy takes nothing from sub.
+; 🔴 IT WAS INVISIBLE TO `make deadcode`, AND FOR A REASON WORTH KEEPING:
+; `tok_skip_to`'s span ends on `include "basic/tokskip-body.inc"`, and
+; `_last_code` returns that DIRECTIVE as if it were an instruction. `endif` is not
+; a terminator and neither is `include`, so the walk invented a fallthrough edge
+; into this label and kept it "reachable" for as long as it existed. The include's
+; real last instruction is `jr tsk_data` -- an unconditional jump.
 
 ; --- D-F2-2 stage B: the shared Group-B checked-coercion leaves -------------
 ; The int-argument statements/functions NOT wired during F2 (STRING$/SPACE$/ON/
