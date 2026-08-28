@@ -54,6 +54,35 @@ The three now run in a **serial phase before the pool starts** — measured cost
 flake-retry: a unit that already ran alone cannot have failed from contention, so
 retrying it could only launder a real failure into a flake.
 
+### Proof, not inference: the mechanism planted and reproduced
+
+The 2026-08-26 item this closes
+(`TODO.md`, filed by D-PASMOSAY) demanded *"do not close this on the next green
+battery; close it on a captured message"*, and had already **driven its own repro
+384 times without reproducing**. Its two arms were the wrong hypotheses. A fourth
+arm was added to [`scratchpad/pasmoflake_repro.py`](../scratchpad/pasmoflake_repro.py)
+that plants exactly the mechanism above — a background thread rewriting
+`basic/sysvars.inc` while workers assemble `basic/main.asm`:
+
+| arm | hypothesis | result |
+|---|---|---|
+| `SHARED` | two writers on one output pair | **0 / 16** |
+| `PRESSURE` | resource exhaustion at 8-way concurrency | **0 / 48** |
+| **`MUTATOR`** | **a GATE rewriting a source file in the same pool** | **13 / 16** |
+
+```
+ERROR: Symbol 'CLEARPOOL' is undefined  on line 107 of file basic/str-engine.asm
+ERROR: Symbol 'RND_SEED' is undefined   on line 201 of file basic/subromcall.asm
+```
+
+Different messages from the battery's `Unexpected 'EQ'` — a torn read loses a
+different amount each time — but the same defect. The arm restores the file by
+`try/finally` **and** `atexit`, and asserts byte-identity afterwards.
+
+🎯 **A repro that fails to reproduce has only excluded the hypotheses it
+ENCODED.** 384 clean runs said nothing at all about the one it did not: the
+writer was never another `pasmo`, it was a **gate**.
+
 ## 2. A gate that was structurally blind in the only workflow anyone uses
 
 Fixing §1 changed the execution order, and `patch-freshness-check` immediately

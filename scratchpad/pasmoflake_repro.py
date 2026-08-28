@@ -78,6 +78,61 @@ def arm(name, rounds, workers, shared):
     return fails, rounds * workers
 
 
+def arm_mutator(rounds, workers):
+    """🎯 THE ARM THE FIRST THREE DID NOT ENCODE, AND THE ONE THAT REPRODUCES.
+
+    SHARED tested an output-file collision. PRESSURE tested resource exhaustion.
+    Both came back 0, and both were the wrong hypothesis: the writer is not
+    another pasmo, it is a GATE. tools/check_switch_builds.py rewrites
+    basic/sysvars.inc and restores it -- its own docstring says so -- and
+    `switch-build-check` ran in the same parallel pool as `unit-test`.
+    basic/main.asm includes basic/sysvars.inc, so pasmo reads a file a gate is
+    rewriting underneath it.
+
+    This arm plants exactly that: a background thread doing the same
+    write-then-restore on sysvars.inc while the workers assemble.
+
+    🔴 IT MUTATES A TRACKED SOURCE FILE. The original is held IN MEMORY and put
+    back by try/finally AND atexit (D-KNIFEGUARD), and the content written is
+    byte-identical in LENGTH to the original -- a switch swap, exactly what the
+    gate does -- so a crash cannot leave a semantically different tree.
+    """
+    import atexit, threading, time
+    sysvars = os.path.join(ROOT, "basic", "sysvars.inc")
+    orig = open(sysvars).read()
+    restore = lambda: open(sysvars, "w").write(orig)
+    atexit.register(restore)
+    stop = threading.Event()
+
+    def churn():
+        # the same shape check_switch_builds.py uses: full rewrite, then restore
+        while not stop.is_set():
+            try:
+                open(sysvars, "w").write(orig)
+            except Exception:
+                pass
+    d = probe_tmp.tmp("pasmoflake-mutator")
+    os.makedirs(d, exist_ok=True)
+    fails = []
+    t = threading.Thread(target=churn, daemon=True)
+    try:
+        t.start()
+        for rnd in range(rounds):
+            jobs = [(os.path.join(d, f"w{w}.rom"), os.path.join(d, f"w{w}.sym"))
+                    for w in range(workers)]
+            with cf.ThreadPoolExecutor(max_workers=workers) as ex:
+                for i, (rc, err, out) in enumerate(ex.map(one, jobs)):
+                    if rc != 0:
+                        fails.append((rnd, i, rc, err, out))
+    finally:
+        stop.set()
+        t.join(timeout=5)
+        restore()
+        atexit.unregister(restore)
+    assert open(sysvars).read() == orig, "basic/sysvars.inc was not restored!"
+    return fails, rounds * workers
+
+
 def report(name, fails, n):
     print(f"  {name:8s} {len(fails):4d} failure(s) in {n} run(s)")
     seen = set()
@@ -119,7 +174,17 @@ def main():
 
     print(f"\nSHARED   {len(sh)}/{nsh} non-zero exits, {a.workers} workers on ONE output pair")
     print(f"PRESSURE {len(pr)}/{npr} non-zero exits, {a.workers} workers on their own pairs")
-    if not sh and not pr:
+    mu, nmu = arm_mutator(max(2, a.rounds // 3), a.workers)
+    report("MUTATOR", mu, nmu)
+    print(f"MUTATOR  {len(mu)}/{nmu} non-zero exits, a gate rewriting "
+          f"basic/sysvars.inc underneath")
+    if not sh and not pr and mu:
+        print("\n✅ DIAGNOSED. The two hypotheses this script was written for "
+              "(output collision, resource pressure) are BOTH measured negative, "
+              "and the one it did not encode -- a GATE rewriting a source file "
+              "in the same pool -- reproduces. A repro that fails to reproduce "
+              "has only excluded the hypotheses it ENCODED.")
+    elif not sh and not pr and not mu:
         print("NOT REPRODUCED at this denominator, and the detection control "
               "proves the harness would have seen it. A measured negative, not "
               "a diagnosis — the item stays open and now names a number.")

@@ -379,8 +379,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       arm that passes because it never fired is not an arm.**
       ⛔ BLOCKED — neither of us can start it now (needs an idle host).
 
-- [ ] 🔴 **A `unit-test` FLAKE IS OPEN AND UNCAUSED — the diagnostic that would
-      have named it was only installed AFTERWARDS.** Filed 2026-08-26 by
+- [x] ✅ **CLOSED 2026-08-28 — THE `unit-test` FLAKE IS DIAGNOSED AND FIXED: a
+      GATE was rewriting `basic/sysvars.inc` inside the parallel pool.**
+      ~~A `unit-test` FLAKE IS OPEN AND UNCAUSED — the diagnostic that would
+      have named it was only installed AFTERWARDS.~~ Filed 2026-08-26 by
       D-PASMOSAY ([`docs/spec-probe-pasmosay.md`](docs/spec-probe-pasmosay.md)).
       The D-PLAYOP battery went 38/38 with one *"recovered flake (green on
       serial retry)"* on `unit-test`; the failing file was `test_expr.py` and
@@ -405,6 +407,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       SHARED      0 / 96   12 workers on ONE output pair
       PRESSURE    0 / 288  12 workers on their own pairs
       ```
+      ✅ **CLOSED 2026-08-28 BY D-MUTRACE ON THIS ITEM'S OWN TERMS — A CAPTURED
+      MESSAGE, THEN A REPRODUCTION.** [`docs/spec-battery-integrity.md`](docs/spec-battery-integrity.md),
+      commit `80722de`. The message this item demanded arrived on a later
+      instance (`test_float.py`, same signature — pasmo exiting 1 while
+      assembling `basic/main.asm` in a parallel battery):
+      `ERROR: Unexpected 'EQ' used as instruction on line 4216 of file
+      basic/sysvars.inc` — pasmo read a valid `equ` line **with its label gone**,
+      i.e. a TORN READ.
+      🎯 **CAUSE: `tools/check_switch_builds.py` REWRITES `basic/sysvars.inc`
+      AND RESTORES IT** (its own docstring says so), and `switch-build-check`
+      ran in the SAME parallel pool as `unit-test`, whose tests assemble
+      `basic/main.asm`, which includes `sysvars.inc`. Two more gates do the same
+      to other shared files — `diskdep-check` to the **Makefile**,
+      `wall-literal-check` to tracked probe/tool sources. All three now run in a
+      SERIAL phase before the pool (`MUTATORS` in `tools/run_gates.py`).
+      🔴 **AND THIS ITEM'S OWN REPRO HAD BOTH HYPOTHESES WRONG.** A fourth arm
+      was added to [`scratchpad/pasmoflake_repro.py`](scratchpad/pasmoflake_repro.py)
+      that plants the real mechanism: **SHARED 0/16 · PRESSURE 0/48 ·
+      MUTATOR 13/16.** The writer was never another pasmo — it was a GATE.
+      🎯 **A REPRO THAT FAILS TO REPRODUCE HAS ONLY EXCLUDED THE HYPOTHESES IT
+      ENCODED**, and 384 clean runs said nothing about the one it did not.
       🔴 **THE FIRST CUT USED `SHARED` AS ITS POSITIVE CONTROL AND IT CAME BACK
       0/32** — so the run had no evidence it could detect a `pasmo` failure at
       all, and a silent subject would have read as ALL-CONVERGED. The detection
@@ -486,7 +509,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3509 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3532 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
