@@ -547,11 +547,15 @@ tkf_cmp_big:
                 ret
 tkf_ref32767:
                 db      3,2,7,6,7
-; flt_to_int16's sign-dependent bounds (D-F1-2 address domain, see its header)
-tkf_ref65535:
-                db      6,5,5,3,5           ; positive ceiling: unsigned 16-bit
-tkf_ref32768:
-                db      3,2,7,6,8           ; negative magnitude ceiling (-32768)
+; 🔴 tkf_ref65535 / tkf_ref32768 DELETED FROM THIS BUILD (D-DATASPAN, 10 B).
+; They are `flt_to_int16`'s sign-dependent bounds, and `flt_to_int16` lives in
+; basic/float-arith.asm -- which is NOT in sub/sub.asm's closure. All three loads
+; (`ld de,tkf_ref32767/32768/65535`, dcc_bound_pick) are main-side and BY NAME,
+; with no address arithmetic over the table, so nothing here could reach them.
+; ⚠️ `tkf_ref32767` above STAYS: sub/tkfloat.asm:522 loads it for tkf_cmp32767.
+; This file's header says "the tkf_ref* bound tables live INSIDE this body (used
+; by tkf_cmp32767)" -- true of ONE of the three, and that plural is how two dead
+; tables kept their place.
 
 ; --- tkf_int_value: TKDIG[0..D-1] (D=TKDCOUNT, <=5 here) -> DE = value -----
 ; Same *10+digit accumulation idiom as tk_number (interp.asm); safe from

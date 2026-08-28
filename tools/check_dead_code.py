@@ -249,6 +249,32 @@ class Spans:
     # are true and useless. Deliberately NARROW: the span's only code line must be
     # a `ds`. A `db` table is data a reference can genuinely go missing from and
     # stays reportable.
+    _DATA = re.compile(r'^(db|dw|ds|defb|defw|defs|equ|org|if|ifdef|ifndef|else|'
+                       r'endif|macro|endm|end)\b', re.I)
+    _LBLEQU = re.compile(r'^[A-Za-z_]\w*\s+equ\b', re.I)
+
+    @staticmethod
+    def _data_only(lines):
+        """Only data/directives, no executable instruction. EMPTY is NOT data-only."""
+        seen = False
+        for c in lines:
+            t = c.strip()
+            if not t or re.match(r'^[A-Za-z_]\w*:$', t):
+                continue
+            t2 = re.sub(r'^[A-Za-z_]\w*:\s*', '', t)
+            if not t2:
+                continue
+            seen = True
+            if not (Spans._DATA.match(t2) or Spans._LBLEQU.match(t2)
+                    or Spans._DATA.match(t)):
+                return False
+        return seen
+
+    @staticmethod
+    def _names(lines, label):
+        pat = re.compile(r'\b%s\b' % re.escape(label))
+        return any(pat.search(l) for l in lines)
+
     @staticmethod
     def _padding_only(lines):
         code = [c.strip() for c in lines
@@ -274,6 +300,25 @@ class Spans:
                 # routine -- cutting those too reported 1227 spans / 27727 B dead
                 # in a 22510 B ROM while measuring this.
                 if a.startswith(PROLOGUE) and not last:
+                    continue
+                # (11) A SPAN THAT EMITS ONLY DATA CANNOT FALL THROUGH. Nothing
+                # runs off the end of a string table; `err_io: db "load",…` was
+                # conferring liveness on `do_cload` purely by source adjacency
+                # (D-PROLOGUE §12.5). Measured: main 26 edges cut -> 0 findings,
+                # sub 37 -> 3, all three of them the address-arithmetic class
+                # (fix 10 seeds two; the third pair was genuinely dead and is gone).
+                # 🔴 AN EMPTY SPAN IS NOT DATA-ONLY, and that distinction is §12.1:
+                # cutting those too reported 1195 spans / 28820 B dead in a 22510 B
+                # ROM. An empty span is an ALTERNATE ENTRY POINT and its
+                # "fallthrough" IS the routine.
+                # 🔴 AND A TARGET THE SPAN NAMES KEEPS ITS EDGE. A fallthrough edge
+                # and a REFERENCE edge to the same label are one entry in this dict,
+                # so discarding one discards both: `stmt_table` holds `dw ex_sep`
+                # AND is followed by `ex_sep`, which is how main's only "finding"
+                # (4 B) was an artifact of the rule rather than dead code.
+                # `em_ill_direct`/`em_table` is the same shape.
+                if (self._data_only(self.nodes.get(a, []))
+                        and not self._names(self.nodes.get(a, []), b)):
                     continue
                 if not ctc._is_terminator(last):
                     edges[a].add(b)
@@ -564,7 +609,15 @@ def main(argv):
     if len(tenants) < 20:
         sys.exit(f"FAIL: only {len(tenants)} sub tenants parsed from the entry "
                  f"tables -- the table scrape broke, seeds would be vacuous")
-    s_seeds = set(tenants) | {n for n in s.nodes if n.startswith(PROLOGUE)}
+    # (10) THE ENTRY TABLES THEMSELVES ARE REACHED BY ADDRESS ARITHMETIC.
+    # `page0_seeds`/`page1_seeds` parse these tables to seed their TENANTS, but the
+    # tables are dispatched into by the main ROM as
+    # `SUBROM_ENTRY_BASE_P1 + 3*index` -- arithmetic no name-following model can
+    # see. Fix (11) below made `sub_p1_table` (72 B) reportable, and it is
+    # unmistakably live. Seeded rather than allowlisted: an allowlist entry claims
+    # "dead and kept on purpose", which would be false.
+    s_seeds = (set(tenants) | {n for n in s.nodes if n.startswith(PROLOGUE)}
+               | {n for n in ('sub_p0_table', 'sub_p1_table') if n in s.nodes})
     builds['sub'] = (s, s_seeds, sub_sym)
 
     allow = load_allow()

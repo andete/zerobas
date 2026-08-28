@@ -75,12 +75,12 @@ those.)
 
 | marker | meaning | n (2026-08-27) |
 |---|---|---|
-| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **63** |
+| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **62** |
 | 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **7** |
 | 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **26** |
 | ⛔ **BLOCKED** | neither can start it now — an idle host, a missing fixture, apparatus that must be built first | **9** |
 
-**105 open items, 105 markers, 0 unmarked** — the invariant above, checked.
+**104 open items, 104 markers, 0 unmarked** — the invariant above, checked.
 
 🔴 **A MISFILED 🤖 IS NOT A STOP CONDITION — WRAP UP AND REFILE.** If an item
 marked autonomous turns out to need a decision of his: **finish and commit
@@ -331,7 +331,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3248 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3276 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2264,7 +2264,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       slice. Backing it out cost 0 B, confirmed by rebuild.
       ⛔ BLOCKED — neither of us can start it now (needs a fixture).
 
-- [ ] 💰 **A DATA-ONLY SPAN STILL CONFERS FALLTHROUGH ON WHATEVER FOLLOWS IT**
+- [x] 💰 **A DATA-ONLY SPAN STILL CONFERS FALLTHROUGH ON WHATEVER FOLLOWS IT**
       (filed 2026-08-22 by D-PROLOGUE, §12.5). `err_io: db "load",…` falls into
       `do_cload` in this model, and nothing ever runs off the end of a string
       table. **Measured**, cutting fallthrough only out of spans that EMIT DATA
@@ -2278,7 +2278,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       by name (`em_ill_direct` looks like the same shape, indexed off a message
       table). Each needs a seed or an allowlist entry with a reason before the
       gate could be believed. That triage is the slice, not the edge rule.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **TRIAGED AND SHIPPED 2026-08-28 (D-DATASPAN),**
+      [`docs/spec-dataspan.md`](docs/spec-dataspan.md) — and the numbers above moved
+      in BOTH directions.
+      🔴 **THE TRACKED SCRIPT REPRODUCED §12.1'S CATASTROPHE, NOT THIS
+      MEASUREMENT** — `main 1195 findings / 28820 B in a 22510 B ROM`. One line:
+      `return seen or True`, which is `True`, so an EMPTY span counts as data-only
+      — the exact thing this item says was excluded. The script implements §12.1's
+      DEMONSTRATION (its own commit is titled *"the obvious fix reports 27 KB in a
+      22 KB ROM"*); `--empty-too` now reproduces that deliberately, and with empty
+      spans excluded the filed numbers come back exactly.
+      🔴 **THEN BOTH `dw`-TABLE FINDINGS TURNED OUT TO BE THE RULE'S OWN ARTIFACT.**
+      A fallthrough edge and a REFERENCE edge to the same label are ONE entry in
+      the edge dict, so discarding one discards both: `stmt_table` contains
+      `dw ex_sep` AND is followed by `ex_sep`. Main's only finding was manufactured
+      by the rule; `em_table`/`em_ill_direct` is identical. **main 1 → 0,
+      sub 4/97 B → 3/82 B.**
+      ✅ **ALL THREE SURVIVORS WERE THE ARITHMETIC CLASS.** `sub_p1_table` (72 B)
+      and `sub_p0_table` are now SEEDED, not allowlisted — an allowlist entry would
+      claim "dead and kept on purpose", which is false. `tkf_ref65535`/`tkf_ref32768`
+      were GENUINELY DEAD and are deleted: `flt_to_int16` lives in
+      `basic/float-arith.asm`, not in sub's closure, and all three loads are BY NAME
+      with no arithmetic over the table. ⚠️ `tkf_ref32767` stays — the file header's
+      plural *"the tkf_ref* bound tables … used by tkf_cmp32767"* is true of ONE of
+      three, and that is how two dead tables kept their place.
+      📏 **Sub page 0 was 2434 B → 2444 B free on 2026-08-28**; main does not move.
+      The bytes are not the point — the gate now cuts 26 main / 37 sub fallthrough
+      edges that never existed. `--blind` still exits non-zero; both new predicates
+      unit-checked (empty is NOT data-only; a named target keeps its edge); battery
+      43/43 with 7 flakes recovered serially.
 
 - [ ] ⚠️ **THE `tools/` SEED ARM IS AN INTERSECTION, NOT AN ASSERTION** (filed
       2026-08-22 by D-SEEDHOLE2, §11.5). `init`, the sub entry-table tenants and
