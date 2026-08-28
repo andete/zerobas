@@ -132,3 +132,51 @@ pl_typeerr:
 ; The NAME and every call site survive; un-alias here to give this site a
 ; distinct face and nothing else moves.
 pl_absent       equ     gb_illegal  ; defensive: merged ROM always ships the tenant
+
+; --- ev_f_play: the PLAY(n) FUNCTION (D-PLAYFN) -----------------------------
+; `PLAY(n)` reports the BACKGROUND-QUEUE state, and is a different surface from
+; the PLAY STATEMENT above -- same token, expression position. Measured on both
+; references (docs/spec-basic-playfn.md), not inherited:
+;
+;   PLAY(0)   -1 iff ANY of the three voices is still sounding, else 0
+;   PLAY(1..3)  -1 iff THAT voice is, else 0
+;   PLAY(4), PLAY(-1)               ERR 5
+;   the argument TRUNCATES toward zero: PLAY(2.7) reads voice 2, PLAY(3.7)
+;   reads voice 3 (rounding would have made the first read voice 3 and the
+;   second ERR 5 -- the two rows that separate the rules)
+;
+; 🎯 THE STATE IS ALREADY MAINTAINED, which is what makes this a function and not
+; a feature: playsvc.asm's H.TIMI servicer clears each voice's MUSICF bit at
+; OP_END, so MUSICF's bits 0/1/2 (voices A/B/C) ARE the answer. ⚠️ play.asm's own
+; header still said "Slice 2a has NO live drain (the interrupt servicer is Slice
+; 3), so PLAY returns immediately after the parse" -- true of the sentence about
+; returning, stale about the drain: basic/playsvc.asm ships.
+;
+; The mask is a TABLE rather than a shift loop because n=0 is not voice 0 -- it is
+; all three -- so the "any" case is a table entry instead of a special case.
+ev_f_play:
+                inc     ix                  ; past the PLAY token
+                push    ix
+                pop     hl
+                call    g8_open_paren       ; DE = n, HL past ')'; ERR 13 on a string
+                push    hl
+                pop     ix
+                ld      a,d
+                or      a
+                jp      nz,gb_illegal       ; ERR 5 -- n is not in 0..3
+                ld      a,e
+                cp      4
+                jp      nc,gb_illegal
+                ld      hl,pl_fn_mask
+                add     hl,de               ; D is 0, checked above
+                ld      a,(hl)
+                ld      hl,MUSICF
+                and     (hl)                ; the voices asked about that are sounding
+                add     a,255               ; CF iff any of them is
+                sbc     a,a                 ; $FF (playing) / $00 (idle)
+                ld      e,a
+                ld      d,a                 ; DE = -1 / 0, evsgn_settype's convention
+                jp      evsgn_settype
+pl_fn_mask:
+                db      7                   ; n=0 -> ANY voice
+                db      1,2,4               ; n=1..3 -> voice A/B/C

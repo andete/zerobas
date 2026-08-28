@@ -501,13 +501,19 @@ ev_f:
                 cp      ERR_TOKEN           ; $E2 -> ERR (last error's MSX ERR code)
                 jr      z,ev_f_errfn
                 cp      ERL_TOKEN           ; $E1 -> ERL (last error's line, 65535=direct)
-                jr      z,ev_f_erlfn
+                ; ⚠️ `jp`, not `jr`: this arm sat ~170 lines from its target and was
+                ; already at the edge of relative range. D-PLAYFN's 5-byte PLAY arm
+                ; below pushed it over ("Relative jump out of range on line 504"),
+                ; so the +1 B is part of PLAY(n)'s price, not a free change.
+                jp      z,ev_f_erlfn
                 cp      TIME_TOKEN          ; $CB -> TIME (JIFFY as an UNSIGNED word)
                 jp      z,ev_f_time
                 cp      CSRLIN_TOKEN        ; $E8 -> CSRLIN (0-based cursor row)
                 jr      z,ev_f_csrlin
                 cp      POINT_TOKEN         ; $ED -> POINT(x,y) (graphics G2, graphics.asm)
                 jp      z,ev_f_point
+                cp      PLAY_TOKEN          ; $C1 -> PLAY(n) background-queue status
+                jp      z,ev_f_play         ; (D-PLAYFN, basic/play.asm)
     IF G8_RESIDENT
                 cp      VDP_TOKEN           ; $C8 -> VDP(n) (graphics G8, graphics.asm)
                 jp      z,ev_f_vdp

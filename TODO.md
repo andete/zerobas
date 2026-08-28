@@ -75,8 +75,8 @@ those.)
 
 | marker | meaning | n (2026-08-27) |
 |---|---|---|
-| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **62** |
-| 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **7** |
+| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **63** |
+| 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **6** |
 | 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **26** |
 | ⛔ **BLOCKED** | neither can start it now — an idle host, a missing fixture, apparatus that must be built first | **9** |
 
@@ -331,7 +331,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3276 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3302 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2043,7 +2043,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
         none). The measurement is exactly what caught it.
       🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).
 
-- [ ] 🔴 **zerobas does NOT implement the `PLAY(n)` FUNCTION (background-queue
+- [x] 🔴 **zerobas does NOT implement the `PLAY(n)` FUNCTION (background-queue
       status).** Found 2026-08-24 by the seam classifier
       (`scratchpad/seam_classify.py`). `P=PLAY(0)` returns **-1** (voice 0
       playing) / **0** (idle) on both the VG-8020 and the CF-3300; on zerobas
@@ -2072,15 +2072,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       dispatch arm pushed `jr z,ev_f_erlfn` out of relative range and it had to
       become a `jp`. Patch banked and VERIFIED: with it applied all **18 rows ×
       3 machines** agree. `git apply scratchpad/playfn_impl.patch`.
-      🔭 SCOUT-THEN-ASK — measured, implemented and priced 2026-08-28; the SPEND is
-      yours. 49 B is **55 % of main page 1's remaining 89 B** for one function.
-      Nothing needs EVICTING, so it is not strictly 🙋 — but ties go to 🙋 and this
-      counts as a tie at minimum. Tree reverted and rebuilt: main page 1 was 89 B on
-      2026-08-28 after the revert, the reading the 49 B above is priced against.
-      ⚠️ That sentence originally read *"is at least a tie"* and `wall-assertion-check`
-      flagged the 89 B beside it as PRESENT-TENSE: its pattern includes `\bis at\b`,
-      which ordinary English hits. A false positive costs one rephrase, which is the
-      trade its own header argues for — recorded, not filed.
+      ✅ **LANDED 2026-08-28 — Joost spent the bytes.** Main page 1 was **110 B →
+      61 B free on 2026-08-28**, the 49 B priced. Now GATED: 7 differential rows in
+      `make play-acceptance` (`fn_dom_hi`/`fn_dom_neg` in `ERR_CASES`, and a new
+      `FN_CASES` value table), all PASS against the VG-8020.
+      🔴 **AND THE GATE FIXTURE CAUGHT SOMETHING THE SCOUT'S HAD HIDDEN.** Read
+      IMMEDIATELY after the PLAY statement, the reference answers `-1 -1 -1 0` for a
+      ONE-voice `PLAY"L1CDEFGAB"` — voice 2 active with no music given to it — and
+      settles to `-1 -1 0 0` after any delay at all (a `CLS` suffices). zerobas
+      answers the settled value straight away. The scout fixture did a `CLS` before
+      printing, so it only ever saw the settled state. Rows now carry an explicit
+      `SETTLE` loop and measure the settled answer, which is the property worth
+      gating; **the transient is a real divergence and is filed separately below**.
+      ⚠️ Earlier this item said *"is at least a tie"* and `wall-assertion-check`
+      flagged the byte figure beside it as PRESENT-TENSE — its pattern includes
+      `\bis at\b`, which ordinary English hits. A false positive costs one
+      rephrase, the trade its own header argues for — recorded, not filed.
+
+- [ ] ⚠️ **`PLAY(n)` READ IMMEDIATELY AFTER `PLAY` SEES A REFERENCE TRANSIENT THAT
+      zerobas DOES NOT REPRODUCE.** Filed 2026-08-28 by D-PLAYFN,
+      [`docs/spec-basic-playfn.md`](docs/spec-basic-playfn.md).
+      `10 PLAY"L1CDEFGAB" : 20 PRINT PLAY(0);PLAY(1);PLAY(2);PLAY(3)` with NO delay
+      between the two lines gives **vg8020 `-1 -1 -1 0`** — voice 2 reading active
+      although only one MML string was supplied — against zerobas's `-1 -1 0 0`.
+      Insert ANY delay (a `CLS`, `FOR I=1 TO 200:NEXT`) and both sides agree
+      exactly, on that row and on the voice-2 and voice-3 rows.
+      🎯 So the reference marks something active during PLAY's own start-up window
+      and zerobas settles instantly. **Unmeasured: what exactly, and for how long.**
+      Reproducer varies ONLY the delay and prints both columns:
+      [`scratchpad/playfn_fixture_probe.py`](scratchpad/playfn_fixture_probe.py).
+      ⚠️ Whether it is worth reproducing is a real question — a BASIC program cannot
+      easily observe a window a `CLS` closes — but it is a measured difference and
+      the gate rows are written AROUND it (`SETTLE`), which is the kind of
+      accommodation that should be visible rather than silent.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended
+      (both machines answer; the open question is the window's mechanism and width).
 
 - [ ] ⚠️ **The bare-`jp raise_error` carve family is worth ~2 B, and the reason
       is worth more than the bytes.** Filed 2026-08-22 by D-DUPSPAN,

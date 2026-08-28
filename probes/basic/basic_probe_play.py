@@ -50,6 +50,41 @@ ERR_CASES = [
     ("vol_hi",     'PLAY"V16"',          "ERR5"),    # volume > 15 -> Illegal fn call
     ("bare_comma", 'PLAY,"E"',           "ERR2"),    # missing operand -> Syntax error
     ("numeric",    'PLAY 5',             "ERR13"),   # numeric arg -> Type mismatch
+    # --- the PLAY(n) FUNCTION's domain (D-PLAYFN) -- a DIFFERENT surface from the
+    # statement above, same token in expression position. 0..3 answer; anything
+    # else is Illegal function call on both references.
+    ("fn_dom_hi",  'X=PLAY(4)',          "ERR5"),
+    ("fn_dom_neg", 'X=PLAY(-1)',         "ERR5"),
+]
+
+# --- THE PLAY(n) FUNCTION's VALUES (differential; ref == zerobas == want) ------
+# D-PLAYFN, docs/spec-basic-playfn.md. `PLAY(0)` is "is ANY voice sounding";
+# `PLAY(1..3)` are the three voices individually.
+# 🔴 fn_v2 AND fn_v3 ARE THE ROWS THAT EARN THEIR PLACE. A single `PLAY"..."`
+# sounds voice 1, so `PLAY(0)` and `PLAY(1)` both read -1 and a 0-BASED numbering
+# (n=0 meaning voice 1) predicts every cell of fn_idle and fn_v1 correctly. Only
+# sounding voice 2 ALONE, then voice 3 ALONE, separates the two rules.
+# 🔴 fn_trunc IS THE COERCION, AND ONE ROW COULD NOT SAY IT EITHER: `PLAY(0.9)`
+# reads -1 under truncation AND under rounding. `PLAY(2.7)` -> 0 (rounding
+# predicts -1) and `PLAY(3.7)` -> -1 (rounding predicts ERR 5 -- an answer versus
+# an error) are what pin it.
+VOICES = "PLAY(0);PLAY(1);PLAY(2);PLAY(3)"
+LONG = 'L1CDEFGAB'
+# 🔴 THE SETTLE LOOP IS LOAD-BEARING AND WAS MEASURED, NOT ADDED FOR LUCK.
+# Read IMMEDIATELY after the PLAY statement, the VG-8020 answers `-1 -1 -1 0` for
+# a ONE-voice `PLAY"L1CDEFGAB"` -- voice 2 reading active with no music given to
+# it -- and settles to `-1 -1 0 0` after any delay at all (a CLS is enough).
+# zerobas answers the settled value straight away. So a no-delay row does not
+# measure "which voices are sounding", it measures a reference STARTUP TRANSIENT
+# that zerobas does not reproduce; that divergence is filed separately in TODO.md.
+# scratchpad/playfn_fixture_probe.py varies ONLY the delay and shows both columns.
+SETTLE = "FOR I=1 TO 200:NEXT"
+FN_CASES = [
+    ("fn_idle",  "",                          VOICES,                "0 0 0 0"),
+    ("fn_v1",    'PLAY"%s"' % LONG,           VOICES,                "-1 -1 0 0"),
+    ("fn_v2",    'PLAY "","%s"' % LONG,       VOICES,                "-1 0 -1 0"),
+    ("fn_v3",    'PLAY "","","%s"' % LONG,    VOICES,                "-1 0 0 -1"),
+    ("fn_trunc", 'PLAY "","","%s"' % LONG,    "PLAY(2.7);PLAY(3.7)", "0 -1"),
 ]
 
 # --- INTEGRATION SELF-CHECK (zerobas only): (label, stmt, expected MUSICF) ------
@@ -69,6 +104,24 @@ def err(machine, stmt):
     if e:
         return f"ERR{e[-1].strip()}"
     return "cont" if "C#" in raw else f"?({re.sub(r'\\s+', ' ', raw).strip()[-30:]!r})"
+
+
+def fnval(machine, setup, expr):
+    """Run `setup` (may be empty), then PRINT `expr`; return the values, or None.
+
+    Whitespace-normalised because MSX `PRINT` pads numerics with a leading sign
+    column and a trailing space, and this row set is about VALUES, not spacing.
+    """
+    prog = ["10 ON ERROR GOTO 100"]
+    if setup:
+        prog.append(f"20 {setup}")
+        prog.append(f"25 {SETTLE}")     # see SETTLE's note: without it these rows
+                                        # read a reference startup transient
+    prog += [f"30 PRINTCHR$(35);{expr};CHR$(35):END",
+             "100 PRINTCHR$(35);CHR$(69);ERR;CHR$(35)", "RUN"]
+    raw = omsx_repl.run_case(machine, "direct", prog) or ""
+    m = re.findall(r"#([^#]*)#", raw)
+    return " ".join(m[-1].split()) if m else None
 
 
 def musicf(machine, stmt):
@@ -102,6 +155,17 @@ def main():
         ok = ok and good
         print(f"{'PASS' if good else 'FAIL':5} {label:9} {stmt:22} "
               f"zb={zb:7} ref={ref if ref else '-':7} want={want}")
+
+    print("\n--- PLAY(n) FUNCTION values (differential vs VG-8020) ---")
+    for label, setup, expr, want in FN_CASES:
+        if args.only and args.only not in label:
+            continue
+        zb = fnval(args.zb_machine, setup, expr)
+        ref = None if args.no_ref else fnval(args.machine, setup, expr)
+        good = (zb == want) and (args.no_ref or ref == want)
+        ok = ok and good
+        print(f"{'PASS' if good else 'FAIL':5} {label:9} {(setup or '(idle)'):26} "
+              f"zb={str(zb):11} ref={str(ref) if ref else '-':11} want={want}")
 
     print("\n--- PLAY -> MUSICF integration (zerobas self-check) ---")
     for label, stmt, want in MUSICF_CASES:
