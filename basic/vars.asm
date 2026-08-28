@@ -849,10 +849,15 @@ ela_err:
 ; (`ela_abort_tm` — `pop af; pop hl; jp type_mismatch_error` — stood HERE and is
 ; GONE with D-PENDERR: ex_let_arr's type-fault arm and its numeric arm are the
 ; same arm now, so the two tails collapsed into ela_abort_fp below. -5 B, page 1.)
-ela_abort_fp:
-                pop     af
-                pop     hl
-                jp      fp_runtime_error
+; D-POPRAISE: an ALIAS, 0 B. This body was `pop af / pop hl / jp
+; fp_runtime_error` -- byte-for-byte the job cepb_abort_fp (basic/interp.asm)
+; does, in different registers, and the register is free because the word is
+; DISCARDED and fp_runtime_error writes A/DE/HL before reading anything. The
+; two-word [TYPE],[OFFSET] frame this discards is a DIFFERENT MEANING from
+; cepb's "our resume address plus the caller's saved key", and that is the
+; point: the meanings differ, the mechanism does not, and only the mechanism is
+; code. -5 B of page 1. Witnessed alone by K-PR3 (f.ary), see interp.asm.
+ela_abort_fp    equ     cepb_abort_fp
 
 ; --- elas_err/elas_abort_fp: ex_let_arr_str's error tails -------------------
 ; (basic/arrays.asm), RELOCATED here for the identical reason (above). Each
@@ -865,9 +870,12 @@ ela_abort_fp:
 ; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
 ; `equ` (it resolves addresses from the sym, not from the source form).
 elas_err        equ     ems_err_pop1
-elas_abort_fp:
-                pop     de                  ; discard [OFFSET]
-                jp      fp_runtime_error
+; D-POPRAISE: likewise, the ONE-word arm -> cee_abort_fp. -4 B of page 1.
+; Witnessed alone by K-PR4 (f.arystr). Note this file now aliases BOTH of its
+; string-lvalue tails away (elas_err above went to ems_err_pop1 under D-XREG);
+; the pair is what made the shape visible -- a second `equ` beside a first one
+; is what a repeated idiom looks like before anyone counts it.
+elas_abort_fp   equ     cee_abort_fp
 
 ; --- for_get / for_set: the FOR frame's loop variable ------------------------
 ; D-FORVAR (docs/spec-basic-forvar.md §4.5). in: FOR_CUR[0..2] = the frame's key

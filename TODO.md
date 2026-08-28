@@ -143,8 +143,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **AND THE SAME 2 B SIT IN `ems_err_pop2`/`ems_err_pop1` NEXT DOOR**, and
       in every other hand-rolled pop-then-raise tail in the tree. **The class is
       worth more than the bytes**: `scratchpad/` has no sweep for "a pop that
-      only exists to satisfy a raise that unwinds anyway". Unpriced.
-      🙋 NEEDS-JOOST — a call that is yours to make (page-1 budget).
+      only exists to satisfy a raise that unwinds anyway". ~~Unpriced.~~
+      ✅ **SWEPT AND PRICED 2026-08-28 (D-POPRAISE,
+      [`docs/spec-popraise.md`](docs/spec-popraise.md),
+      `scratchpad/popraise_sweep.py --selftest`)**, and the class splits into
+      THREE questions the filing above runs together. **16 tails**, never-return
+      set derived as a fixed point from `raise_error` (120 routines), not
+      declared. **Q1 delete the pops: 21 B — still 🙋 and still for the reason
+      given above.** Q2 merge identical bodies: 21 B. 🎯 **Q3, the one neither
+      the filing nor Q2 could see: 34 B.** Tails that share a RAISE TARGET but
+      differ in POP COUNT are not identical bodies, yet **one chain serves them
+      all** — the deeper entry falls through into the shallower one, the shape
+      `ems_err_pop2 -> ems_err_pop1` has had all along.
+      ✅ **THE `fp_runtime_error` GROUP SHIPPED 2026-08-28: −13 B; page 1 read
+      106 → 119 B free on 2026-08-28** (a READING, not a standing figure — run
+      `make basic-reloc`). Four routines (`cee_abort_fp`/`cepb_abort_fp`/
+      `ela_abort_fp`/`elas_abort_fp`), all page 1, **18 B of code measured
+      2026-08-28**, were one sequence in four register names; the register was free because the word is DISCARDED and
+      `fp_runtime_error` writes A/DE/HL before reading anything.
+      🔴 **THE KNIFE ON THE POPS CANNOT FALSIFY THIS** (K-MD2 already moved 0 of
+      9), so the four ENTRIES are witnessed one knife each — 7 rows, DISJOINT,
+      0 controls moved. 🔴 **AND THE FIRST CUT OF THAT KNIFE WAS A DESIGNED
+      NO-OP**: retargeting to `stmt_error` re-raises the identical code, because
+      `stmt_error` opens with `call check_expr_errors` (D-STMTPEND); three tails
+      read "UNWITNESSED" for a reason that was not about the tails.
+      ➡️ **STILL OPEN, all measured, none shipped:** the `stmt_error` chain
+      (**13 B of code nominal, ~10 B net, measured 2026-08-28** — it spans
+      LOW/page 1 and `ex_let_err`'s two `jr` call sites would need `jp`);
+      `gosub_stk_over` (**4 B, measured 2026-08-28**, adjacent, page 1, but
+      **UNWITNESSED** — no probe row fills a control stack or over-nests a
+      trap); `els_tc_common` (**4 B, measured 2026-08-28**, but it is a LOW →
+      page 1 region trade, not a carve).
+      🙋 NEEDS-JOOST — Q1 only (page-1 budget was the WRONG reason on the filing:
+      a carve frees bytes. The real call is whether to depend on `raise_error`
+      resetting SP).
 
 - [ ] ⚠️ **THE STALL WATCHDOG NO LONGER MIS-ASSERTS, BUT `run_gates.py` STILL
       CALLS A CONTENDED UNIT *REAL*.** Filed 2026-08-26 by D-DRAWOP; the
@@ -331,7 +363,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3354 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3386 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

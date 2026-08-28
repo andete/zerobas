@@ -1510,12 +1510,6 @@ check_fperr_only:
                 or      a
                 jr      nz,cee_abort_fp
                 ret
-cee_abort_fp:
-                pop     hl                  ; discard our own dead resume addr
-                jp      fp_runtime_error    ; D-PENDERR: the type fault arrives here too
-                                            ; now, as FPERR_TYPEMM -> fperr_to_err 10 ->
-                                            ; ERR 13, the SAME code and the SAME
-                                            ; err_msgtab entry type_mismatch_error raises
 
 ; --- check_expr_errors_popbc: the same check for drivers that must POP a --
 ; saved key (BC) off the stack before erroring (ex_let; ex_let_
@@ -1535,10 +1529,48 @@ cepb_fp:
                 or      a
                 jr      nz,cepb_abort_fp
                 ret
+; --- cepb_abort_fp / cee_abort_fp: THE discard-then-abort chain -------------
+; D-POPRAISE (docs/spec-popraise.md). Four routines used to stand here and in
+; vars.asm, 18 B between them, and all four were the same instruction sequence
+; wearing four register names: "throw away k words of stack, then
+; jp fp_runtime_error", k in {1,2}. They are now ONE 5 B chain -- the 2-word
+; entry falls through into the 1-word one, exactly the shape ems_err_pop2 ->
+; ems_err_pop1 has carried in str-engine.asm all along -- and vars.asm's
+; ela_abort_fp / elas_abort_fp are `equ`s onto these two labels. -13 B, page 1.
+;
+; 🎯 WHY `pop de` IS THE NORMALISATION, AND WHY THE REGISTER WAS FREE TO CHANGE.
+; The four sites popped into HL, BC, AF and DE, which is what made them look
+; like four routines instead of one. But the popped word is DISCARDED at every
+; one of them, so the destination is observable only if something downstream
+; reads it -- and fp_runtime_error's first three instructions are
+; `ld a,(FPERR) / dec a / ld e,a ... ld d,0 / ld hl,fperr_to_err`, i.e. it
+; WRITES A, DE and HL before it reads any register at all, and raise_error below
+; documents the same clobber set. `pop af` additionally dropped the flags, which
+; `dec a` immediately redefines. So DE is dead on every path out of here and no
+; caller can tell which register absorbed the discard.
+;
+; 🔴 THIS MERGE CANNOT BE FALSIFIED BY A KNIFE ON THE POPS, and a run that tried
+; would be an arm that never fires: D-MIDOP's K-MD2 already deleted BOTH pops at
+; ems_typecheck and moved 0 rows of 9, because raise_error resets SP outright.
+; The four ENTRIES are witnessed instead, one knife each, by retargeting the
+; abort and watching the ERR code move (scratchpad/popmerge_knives.py,
+; scratchpad/popmerge_probe.py): K-PR1 cee 3 rows, K-PR2 cepb 2, K-PR3 ela 1,
+; K-PR4 elas 1 -- SEVEN rows, DISJOINT, no control moved.
+; ⚠️ AND THE FIRST CUT OF THAT KNIFE RETARGETED TO `stmt_error`, WHICH IS A
+; DESIGNED NO-OP: stmt_error opens with `call check_expr_errors` (D-STMTPEND,
+; first-error-wins), so with FPERR set it re-raises the identical code and three
+; of four tails read "unwitnessed" for a reason that was not about the tails.
+; That is also why fp_runtime_error and stmt_error are NOT interchangeable here
+; and the two chains stay separate: stmt_error additionally stores ERRMARK $DD,
+; which basic/missing.asm:576 reads.
 cepb_abort_fp:
-                pop     hl                  ; discard our own dead resume addr
-                pop     bc                  ; discard the caller's saved key
-                jp      fp_runtime_error
+                pop     de                  ; discard the caller's saved key
+cee_abort_fp:
+                pop     de                  ; discard our own dead resume addr
+                jp      fp_runtime_error    ; D-PENDERR: the type fault arrives here too
+                                            ; now, as FPERR_TYPEMM -> fperr_to_err 10 ->
+                                            ; ERR 13, the SAME code and the SAME
+                                            ; err_msgtab entry type_mismatch_error raises
 
 ; --- ex_letkw: optional LET keyword before an assignment -------------------
 ex_letkw:
