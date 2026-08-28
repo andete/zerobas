@@ -75,8 +75,8 @@ those.)
 
 | marker | meaning | n (2026-08-27) |
 |---|---|---|
-| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **65** |
-| 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **6** |
+| 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **64** |
+| 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **7** |
 | 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **26** |
 | ⛔ **BLOCKED** | neither can start it now — an idle host, a missing fixture, apparatus that must be built first | **9** |
 
@@ -331,7 +331,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3140 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3169 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2051,7 +2051,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unparsed. Separate from the `PLAY` STATEMENT surface. Unpriced; needs its
       own probe (is `PLAY(n)` in the kwsweep denominator? it is a one-token
       function like `USR`). A real MSX1 BASIC function gap, not apparatus.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **MEASURED IN FULL, IMPLEMENTED, AND PRICED (2026-08-28, D-PLAYFN),**
+      [`docs/spec-basic-playfn.md`](docs/spec-basic-playfn.md). Claim re-ran true.
+      🎯 **THE ITEM'S OWN DESCRIPTION OF THE SEMANTICS WAS INCOMPLETE**, and TWO
+      RULES fit every row of the first round: `n=0` = "ANY voice" vs a 0-BASED
+      numbering. A single `PLAY"…"` plays voice 1, so both predict
+      `PLAY(0)=PLAY(1)=-1`. Playing ONLY voice 2, then ONLY voice 3, separates
+      them: `-1 0 -1 0` and `-1 0 0 -1`. **Rule A; B refuted.** `PLAY(4)`/
+      `PLAY(-1)` = ERR 5, both refs agreeing throughout.
+      🔴 **THE ARGUMENT TRUNCATES, AND ONE ROW COULD NOT SAY SO** — `PLAY(0.9)`
+      fits truncate AND round. `PLAY(2.7)`→0 and `PLAY(3.7)`→-1 settle it (rounding
+      would make the second **ERR 5** — an answer vs an error).
+      🎯 **IT IS A FUNCTION, NOT A FEATURE: the state already exists.** `playsvc.asm`'s
+      H.TIMI servicer clears each voice's `MUSICF` bit at OP_END, so bits 0/1/2 ARE
+      the answer. ⚠️ `play.asm`'s header still claims *"NO live drain (the
+      interrupt servicer is Slice 3)"* — **stale**, `basic/playsvc.asm` ships; read
+      as current it prices this feature out of existence.
+      📏 **PRICE MEASURED BY BUILDING IT: 49 B of main page 1 (89 → 40 free)**;
+      low/sub walls unchanged. Includes **+1 B nothing predicted** — the 5 B
+      dispatch arm pushed `jr z,ev_f_erlfn` out of relative range and it had to
+      become a `jp`. Patch banked and VERIFIED: with it applied all **18 rows ×
+      3 machines** agree. `git apply scratchpad/playfn_impl.patch`.
+      🔭 SCOUT-THEN-ASK — measured, implemented and priced 2026-08-28; the SPEND is
+      yours. 49 B is **55 % of main page 1's remaining 89 B** for one function.
+      Nothing needs EVICTING, so it is not strictly 🙋 — but ties go to 🙋 and this
+      counts as a tie at minimum. Tree reverted and rebuilt: main page 1 was 89 B on
+      2026-08-28 after the revert, the reading the 49 B above is priced against.
+      ⚠️ That sentence originally read *"is at least a tie"* and `wall-assertion-check`
+      flagged the 89 B beside it as PRESENT-TENSE: its pattern includes `\bis at\b`,
+      which ordinary English hits. A false positive costs one rephrase, which is the
+      trade its own header argues for — recorded, not filed.
 
 - [ ] ⚠️ **The bare-`jp raise_error` carve family is worth ~2 B, and the reason
       is worth more than the bytes.** Filed 2026-08-22 by D-DUPSPAN,
