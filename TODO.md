@@ -375,8 +375,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `tkf_done` is one tail that `ret`s in VAL mode, and the seven exits are
       already `jp tk_loop` so retargeting them is **0 B**; the destination is
       ~9 B (one token byte + at most 8 value bytes); `ev_f_float` already
-      decodes. All in sub page 0, 2203 B free on 2026-08-30.
-      **Space was never the constraint — the terminator was.**
+      decodes. All the CODE fits in sub page 0, 2203 B free on 2026-08-30.
+      🔴 **CORRECTION (2026-08-30): THE BOUND GOES IN ONE PLACE, NOT SEVEN.** An
+      earlier note here said `tk_float` has seven source reads — **five of those
+      read `TKDIG`, the internal digit array.** The only source reads are inside
+      the single helper `tkf_fetch`. 🎯 And it must be a POSITION test, not a
+      counter: `tkf_fetch`'s callers push HL and may `pop hl` to REWIND across a
+      rejected blank run, so a counter would drift out of step with the cursor.
+      ⛔ **REMAINING BLOCKER: TWO BYTES OF VERIFIED-FREE RAM.** The `TK` block is
+      packed solid. ⚠️ A quick `sysvars.inc` scan reported a 23 B gap at
+      `$F03D..$F054` and **that was a tooling artifact** — `TKDIG` is `$F03C`
+      **+24**, exactly up to `$F054`; the scan defaulted its size to 1 because
+      the `(24)` is on a continuation line.
+      ➡️ **RAM HAS NO GATE, so ask the machine** the way
+      [`scratchpad/ramfree_probe.py`](scratchpad/ramfree_probe.py) does: fill a
+      candidate window, run the subsystems hard, read it back. That is the next
+      step. [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
       🟢 **ATTRIBUTED TO THE RIGHT LAYER BY CONTROLS:** `PRINT 1.5`, `PRINT 1E9`,
       `PRINT 3/2` and `PRINT &HFF` are all CORRECT on zerobas. Float literals,
       float arithmetic, hex literals and float printing work — the gap is
@@ -1248,7 +1262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4334 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4348 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -142,10 +142,17 @@ buffers. There is no unowned window.
 🎯 **So bound the SCAN instead of the copy, and the problem goes away.** With a
 length bound there is no terminator to write, so there is no buffer to find:
 
-1. **`tkf_getc`** — a "next source byte, or 0 when the bound is exhausted"
-   helper replacing `tk_float`'s **seven** `ld a,(hl)` source reads (lines 264,
-   269, 533, 574, 704, 749, 788). ~7×2 B + ~10 B. A sentinel bound disables it,
-   so ordinary tokenising is unchanged.
+1. **The bound goes in ONE place, not seven.** ⚠️ An earlier draft of this
+   section said `tk_float` has *"seven source reads (lines 264, 269, 533, 574,
+   704, 749, 788)"*. **Five of those read `TKDIG`, the internal digit array, not
+   the source.** The only source reads are 264 and 269, and both are inside the
+   single helper **`tkf_fetch`** — which is also the one place the blank-lookahead
+   protocol lives, already covered by knives K2/K4. So the bound is a few bytes
+   in one chokepoint.
+   🎯 **And it must be a POSITION test, not a counter.** `tkf_fetch`'s callers
+   push HL and may `pop hl` to *rewind* across a rejected blank run, so a
+   decrementing counter would drift out of step with the cursor. Comparing HL
+   against a stored end address is rewind-safe by construction.
 2. **`tkf_done`** — one tail that `ret`s in VAL mode and otherwise `jp tk_loop`.
    The seven exits are all already `jp tk_loop`, so retargeting them is **0 B**.
 3. **Glue** — VAL sets the bound to the body length, points HL at the body and DE
@@ -153,9 +160,25 @@ length bound there is no terminator to write, so there is no buffer to find:
 4. **Decode** — hand the token bytes back to the main ROM, where `ev_f_float`
    already turns a `SNG_TOKEN`/`DBL_TOKEN` into FAC/FACTYP + DE.
 
-All of it lands in sub page 0, which had **2203 B** free on 2026-08-30
-(`make basic-reloc`; do not quote this). **Space is not the constraint and never
-was — the terminator was.**
+All the *code* lands in sub page 0, which had **2203 B** free on 2026-08-30
+(`make basic-reloc`; do not quote this).
+
+### 5.4 🔴 The remaining blocker is two bytes of RAM, and the map cannot settle it
+
+The end address needs **2 bytes of RAM**, and the `TK` block is packed solid
+(`$F054`–`$F062`).
+
+⚠️ **A quick scan of `sysvars.inc` reported a 23-byte gap at `$F03D..$F054` and
+that was a tooling artifact.** `TKDIG` is `$F03C` **+ 24 bytes** — exactly up to
+`$F054`, with no gap at all. The scan defaulted its size to 1 because the `(24)`
+sits on a continuation line. A confident table from a mis-parse.
+[[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
+
+**RAM has no gate here** — `wall-assertion-check` covers ROM only — so the
+question has to be put to the machine the way `scratchpad/ramfree_probe.py` puts
+it: fill a candidate window with a pattern, run the subsystems hard, read it back,
+and see what moved. That is the next step, and it is a small investigation of its
+own rather than a line of assembly.
 
 ⚠️ Still unmeasured: what the integer tokens (`INT1_TOKEN`, the digit tokens)
 decode through on the VAL path, and whether `tk_float`'s `TKOVF` reject exit
