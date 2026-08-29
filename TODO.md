@@ -373,11 +373,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       LEAD, NOT A PLAN.** `sh_val_parse` lives in `sub/strheap.asm`; the
       tokeniser's full numeric scanner `tk_float` lives in `sub/tkfloat.asm`, the
       SAME sub-ROM, and already handles every shape above (HL = source cursor).
-      ⚠️ **THREE THINGS ARE UNVERIFIED:** can `tk_float` be pointed at a RAM
-      buffer; what does it do with trailing junk (VAL must STOP and return, never
-      error); can the two tenants call each other. Sub page 0 had 2329 B free on
-      2026-08-29 (`make basic-reloc`; do not quote this), so **space is not the
-      constraint — the interface is.** Answer those three before pricing.
+      🟢 **THE THREE QUESTIONS ARE ANSWERED (2026-08-29, §5.1)** — and answering
+      them CHANGED THE DESIGN. **Q1 RAM buffer: YES** (`tokenise` takes
+      HL = 0-terminated ASCII, DE = destination). **Q2 trailing junk: A NON-ISSUE
+      and the question was slightly wrong** — the tokeniser crunches the whole
+      line and VAL reads only the LEADING token, which IS VAL's semantics.
+      **Q3 tenant-to-tenant: THE QUESTION DISSOLVES** — `ev_ff_val` is in the MAIN
+      ROM and already reaches the sub-ROM by `subrom_call`, so nothing needs a
+      tenant-to-tenant call; it decodes locally with `ev_f_float`.
+      🔴 **BUT A FOURTH BLOCKER TURNED UP AND IT IS THE REAL ONE: THE DESTINATION
+      BUFFER.** A whole-line tokenise needs ~256 B of scratch and every candidate
+      is taken — **`TOKBUF` is where DIRECT-MODE LINES EXECUTE FROM**
+      (`ld hl,TOKBUF / jp rp_exec`), so `PRINT VAL("1.5")` at the prompt would
+      have VAL overwrite the statement running it; `DETOKBUF` is drained by
+      `PRINT USING`, and VAL can appear in a PRINT USING value list; `LINEBUF` is
+      the runtime INPUT line.
+      🎯 **SO THE DESIGN FLIPS BACK TO `tk_float`** — it emits only a token byte
+      plus at most 8 value bytes, so ~**9 B of scratch**, not 256. Its own blocker
+      is the EXIT PROTOCOL: it does not `ret`, it ends `jp tk_loop` / `jp tk_end`,
+      so it needs a small variant entry that returns.
+      **A ~6 B variant entry versus ~256 B of new RAM** — a concrete trade now,
+      not an open question.
+      ⚠️ Still unmeasured: whether the tokeniser's `TKOVF` crunch-time reject is
+      what makes `VAL("&")` an ERR 2 on the references.
       🤖 AUTONOMOUS — the references settle the behaviour and the code settles
       the interface.
 
@@ -401,6 +419,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the ERL arm); even sited past the chain, two still had to be widened.
       Assume +1 B per surviving `jr` for anything inserted there.
       [[two-rules-that-coincide-on-every-row-you-have]]
+
+- [ ] 🔬 **MOVE D-CACHEPRE's PREFLIGHT FROM `run_cases` ENTRY TO THE CACHE-HIT
+      PATH — WRITTEN, MEASURED SOUND, AND WITHDRAWN UNSHIPPED FOR WANT OF A GREEN
+      BATTERY.** Filed 2026-08-29
+      ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md) §5.1).
+      ➡️ The miss path is ALREADY guarded at `Popen`, so an entry check costs
+      ~20 s per battery for no extra cover; the hit path is the one that had none.
+      Both falsification directions were re-run after the move (a cached run on a
+      touched source refuses; a fresh one measures).
+      🔴 **THE HYPOTHESIS THAT MOTIVATED IT WAS REFUTED.** I moved it believing
+      the entry placement had broken the battery — but **the emulator tier forces
+      `ZEROBAS_REFCACHE=0` and never takes the cached path at all**, so neither
+      placement can affect it. The move fixed nothing, and the next battery failed
+      identically.
+      🎯 **THE REAL CAUSE WAS HOST CPU STARVATION, AND THE APPARATUS SAID SO** —
+      *"the stall watchdog killed it after 989 s wall … a host-clock deadline
+      CANNOT separate a frozen emulator from one starved of CPU … check host load
+      before calling this REAL"*. Host load ~6 from four other users;
+      `math-acceptance` fails in 4 s under it and **passes solo**.
+      ⚠️ **WITHDRAWN RATHER THAN COMMITTED: an apparatus change without a green
+      battery is not evidence of anything.** Re-apply and validate on a quiet
+      host. [[apparatus-is-part-of-the-measurement]]
+      🤖 AUTONOMOUS — needs only an idle machine.
 
 - [x] ✅ **D-CACHEPRE (2026-08-29): A WARM REFCACHE SILENTLY DISABLED THE STALE-ROM
       PREFLIGHT** ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md) §5).
@@ -1192,7 +1233,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4278 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4319 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

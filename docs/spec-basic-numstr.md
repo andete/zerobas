@@ -130,6 +130,41 @@ ways: with a touched source a **fully-cached** run refuses (`rc=2`, `STALE`), an
 after a rebuild the same run measures normally (the green control — a guard that
 refuses everything is worthless). [[apparatus-is-part-of-the-measurement]]
 
+### 5.1 ⚠️ An attempted follow-up, withdrawn — and the hypothesis behind it was refuted
+
+A follow-up moved the check from `run_cases` **entry** to the cache-**hit** path,
+on the theory that the entry placement had broken the full battery: five emulator
+units came back `rc=2` at 400–1000 s, and `make gates` runs units in parallel
+while several of them mutate tracked sources to self-test, which makes `make -q`
+transiently report the ROM STALE.
+
+🔴 **That hypothesis is refuted, and by something that was already true when I
+formed it.** The emulator tier forces `ZEROBAS_REFCACHE=0`, so it *never takes
+the cached path at all* — neither placement can affect it. Moving the check could
+not have caused those failures and did not fix them: the next battery failed the
+same way.
+
+**The actual cause was host CPU starvation**, and the apparatus says so in its own
+words:
+
+> the stall watchdog killed it after 989 s wall … a host-clock deadline CANNOT
+> separate a frozen emulator from one starved of CPU … check host load before
+> calling this REAL
+
+The host was carrying load ~6 from four other users; `math-acceptance` fails in
+4 s under that contention and **passes solo**. Two batteries I killed while
+diagnosing made it worse.
+
+**So the follow-up is withdrawn, not shipped.** The committed placement — at
+`run_cases` entry — is the one that passed a 47/47 battery, and it stands. Moving
+it to the hit path is still worth doing (the miss path is already guarded at
+`Popen`, so an entry check costs ~20 s per battery for nothing), but that is an
+apparatus change and **an apparatus change without a green battery is not
+evidence of anything**. Filed for a quiet host.
+
+🎯 Twice in one evening a plausible causal story survived until it was checked
+against a fact already in hand. [[a-justification-parenthesis-is-an-unrun-claim]]
+
 ## 6. Falsification
 
 | arm | requires | measured |
