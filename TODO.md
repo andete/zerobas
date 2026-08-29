@@ -311,23 +311,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       concat peak again — re-run `scratchpad/concatpeak_probe.py` with it.**
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
-- [ ] 🔬 **DOES `SPACE$`/`STRING$` RAISE OR CLAMP? UNMEASURED, AND ITS
-      JUSTIFICATION JUST LOST THE THING IT POINTED AT.** Filed 2026-08-28 by
-      D-STRLONG ([`docs/spec-basic-strlong.md`](docs/spec-basic-strlong.md)).
-      `basic/PROVENANCE.md`'s entry for these two verbs justified their clamp as
-      *"identical to the concat/substring STRMAX-clamp philosophy"* — **and the
-      concat half of that comparison no longer exists**, so the cell now cites a
-      sibling that went the other way. That is not evidence the verbs are wrong;
-      it is evidence NOBODY HAS ASKED.
-      📏 **THE MEASUREMENT IS THREE ROWS AND HAS NOT BEEN RUN:** `STRING$(300,"A")`,
-      `SPACE$(300)` and the exact-255/256 pair, on both references. `STRMAX` is
-      255 = the byte ceiling, so a count over 255 cannot even be REPRESENTED in
-      the byte the argument is coerced to — which means the failure is likely
-      `Illegal function call` at the coercion, NOT a clamp at all, and the
-      PROVENANCE cell may be describing code that has not existed since
-      slice-4a widened STRMAX. ⚠️ **RUN IT BEFORE BELIEVING EITHER STORY** —
-      the same cell's `STRMAX=64` is already stale by the same widening.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
+- [x] ✅ **D-SPCLAMP (2026-08-29): THERE IS NO CLAMP — `SPACE$`/`STRING$` RAISE,
+      and zerobas already agreed with both references at every point**
+      ([`docs/spec-basic-spclamp.md`](docs/spec-basic-spclamp.md),
+      [`scratchpad/spclamp_probe.py`](scratchpad/spclamp_probe.py)). **14 rows,
+      0 DIFF. No code change.**
+      📏 Past 255 both verbs answer `Illegal function call` on all three sides —
+      the count coerces to a BYTE and 256 is not representable. Over int16 it is
+      `Overflow`, raised earlier. At `CLEAR 600` both build a **255**-byte string
+      on all three sides. **This is the ALTERNATIVE the item flagged as likelier
+      than the clamp story, and it is the one that is true.**
+      🔴 **THE BOUNDARY ROW AGREED FOR THE WRONG REASON FIRST:** at the default
+      pool `LEN(STRING$(255,"A"))` is `ERR 14` (out of string space) on every
+      side — a POOL answer, not a ceiling one, behind which a wrong ceiling could
+      hide. The `CLEAR 600` rows separate them.
+      🟢 **`basic/PROVENANCE.md`'s cell was wrong TWICE OVER** — no clamp, and
+      `STRMAX` has not been 64 since slice-4a widened it. Corrected, and moved
+      from **quarantined** to **sourced**.
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
 **Apparatus / tooling**
 
@@ -896,7 +897,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3982 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3983 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
