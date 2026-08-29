@@ -38,6 +38,16 @@ add('j.mid',     [], 'VAL("1.2.3")')
 add('j.spacelead', [], 'VAL("  12")')
 add('j.spacemid',  [], 'VAL("1 2")')
 add('j.tabish',  [], 'VAL(" - 12")')
+# --- HOW FAR CAN A NUMBER SPAN? This decides whether VAL can work on a BOUNDED
+# copy of the body, or needs the whole 255 bytes terminated. `VAL("1 2")` = 12
+# says spaces INSIDE a number are skipped, so the source span is not bounded by
+# the digit count. Measure the pathological shapes before designing around them.
+add('w.sp10',    [], 'VAL("1          2")')
+add('w.sp40',    [], 'VAL("1' + ' ' * 40 + '2")')
+add('w.spsign',  [], 'VAL("-          12")')
+add('w.spdot',   [], 'VAL("1 . 5")')
+add('w.spexp',   [], 'VAL("1 E 3")')
+add('w.tail40',  [], 'VAL("12' + 'Z' * 40 + '")')
 
 # --- bases: MSX VAL accepts the &H / &O / &B literal forms ------------------
 add('b.hex',     [], 'VAL("&HFF")')

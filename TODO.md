@@ -362,6 +362,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       📏 **STILL MISSING (14 rows): fractions** (`VAL("1.5")` -> 1),
       **exponents** (`VAL("1E3")` -> 1), **embedded spaces** (`VAL("1 2")` -> 1,
       `VAL(" - 12")` -> 0), and STR$ of any non-integer (`STR$(1.5)` -> `1`).
+      🟢 **THE DESIGN FOR THAT HALF IS COMPLETE (2026-08-30, §5.3) AND THE RAM
+      PROBLEM DISSOLVED.** A bounded COPY was rejected by measurement — spaces
+      are skipped everywhere inside a number (`"1"`+40 spaces+`"2"` = 12,
+      `"1 . 5"` = 1.5, `"1 E 3"` = 1000), so any copy bound is a silent wrong
+      answer past it. And every 256 B buffer belongs to someone (TOKBUF is where
+      DIRECT-MODE LINES EXECUTE FROM; DETOKBUF is PRINT USING's; LINEBUF is the
+      INPUT line).
+      🎯 **SO BOUND THE SCAN, NOT THE COPY** — with a length bound there is no
+      terminator to write and therefore no buffer to find. `tkf_getc` replaces
+      `tk_float`'s SEVEN source reads (lines 264/269/533/574/704/749/788);
+      `tkf_done` is one tail that `ret`s in VAL mode, and the seven exits are
+      already `jp tk_loop` so retargeting them is **0 B**; the destination is
+      ~9 B (one token byte + at most 8 value bytes); `ev_f_float` already
+      decodes. All in sub page 0, 2203 B free on 2026-08-30.
+      **Space was never the constraint — the terminator was.**
       🟢 **ATTRIBUTED TO THE RIGHT LAYER BY CONTROLS:** `PRINT 1.5`, `PRINT 1E9`,
       `PRINT 3/2` and `PRINT &HFF` are all CORRECT on zerobas. Float literals,
       float arithmetic, hex literals and float printing work — the gap is
@@ -1233,7 +1248,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4319 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4334 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

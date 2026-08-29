@@ -119,6 +119,44 @@ a small variant entry that returns instead.
 **A ~6 B variant entry versus ~256 B of new RAM** is the trade, and it is now a
 concrete question rather than an open one.
 
-⚠️ Still unmeasured: whether the tokeniser's `TKOVF` crunch-time reject is what
-makes `VAL("&")` an ERR 2 on the references, and what the integer tokens
-(`INT1_TOKEN`, the digit tokens) decode through on the VAL path.
+### 5.3 The design, completed 2026-08-30 — and the RAM problem dissolves
+
+**First, a measurement that killed the obvious design.** A bounded *copy* of the
+body would be simplest — but how far can a number span?
+
+| row | references |
+|---|---|
+| `VAL("1          2")` · `VAL("1` +40 spaces+ `2")` | **12** |
+| `VAL("-          12")` | **-12** |
+| `VAL("1 . 5")` · `VAL("1 E 3")` | **1.5** · **1000** |
+
+Spaces are skipped **everywhere inside a number**, so the source span is
+unbounded. Any fixed copy bound produces a *silent wrong answer* past it — the
+class this project ranks worst. **Bounded copy: rejected.**
+
+**And every 256-byte buffer belongs to someone.** `TOKBUF` is where direct-mode
+lines execute from, `DETOKBUF` is drained by `PRINT USING`, `LINEBUF` is the
+runtime `INPUT` line; the RAM map's other large regions are cassette and disk
+buffers. There is no unowned window.
+
+🎯 **So bound the SCAN instead of the copy, and the problem goes away.** With a
+length bound there is no terminator to write, so there is no buffer to find:
+
+1. **`tkf_getc`** — a "next source byte, or 0 when the bound is exhausted"
+   helper replacing `tk_float`'s **seven** `ld a,(hl)` source reads (lines 264,
+   269, 533, 574, 704, 749, 788). ~7×2 B + ~10 B. A sentinel bound disables it,
+   so ordinary tokenising is unchanged.
+2. **`tkf_done`** — one tail that `ret`s in VAL mode and otherwise `jp tk_loop`.
+   The seven exits are all already `jp tk_loop`, so retargeting them is **0 B**.
+3. **Glue** — VAL sets the bound to the body length, points HL at the body and DE
+   at a **~9 B** scratch (one token byte + at most 8 value bytes), then decodes.
+4. **Decode** — hand the token bytes back to the main ROM, where `ev_f_float`
+   already turns a `SNG_TOKEN`/`DBL_TOKEN` into FAC/FACTYP + DE.
+
+All of it lands in sub page 0, which had **2203 B** free on 2026-08-30
+(`make basic-reloc`; do not quote this). **Space is not the constraint and never
+was — the terminator was.**
+
+⚠️ Still unmeasured: what the integer tokens (`INT1_TOKEN`, the digit tokens)
+decode through on the VAL path, and whether `tk_float`'s `TKOVF` reject exit
+(`jp tk_end`) needs its own VAL-mode answer.
