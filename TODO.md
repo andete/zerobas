@@ -348,18 +348,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       part of the reading.**
       [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
-- [ ] 🔴 **`INSTR` WITH A NUMERIC ARGUMENT ANSWERS ERR 2 WHERE BOTH REFERENCES
-      ANSWER ERR 13.** Found 2026-08-29 by D-NGRAM11
-      ([`docs/spec-basic-ngram11.md`](docs/spec-basic-ngram11.md) §5). 2 rows:
-      `INSTR("ABCDE",5)` and `INSTR(2,5,"CD")`. **Pre-existing, verified by
-      revert.** Same family as D-LEFTTM: a declined string operand reported as
-      `Syntax error` where the reference says `Type mismatch`.
-      ➡️ **D-LEFTTM's ROUTE SHOULD APPLY**, and its lesson with it: the raise must
-      come AFTER the operand is evaluated, so a fault the expression itself
-      raises wins on first-error-wins. Arming it before the evaluation is the
-      mistake D-NGRAM8 made and D-LEFTTM's K-LT2 now pins. The sites are
-      `efi_reject_p` / `efi_reject_pa` (`basic/str-engine.asm`). Unpriced.
-      🤖 AUTONOMOUS — the references settle it.
+- [x] ✅ **D-INSTRTM (2026-08-29): FIXED — `INSTR` with a non-string operand now
+      answers ERR 13, and a faulting operand answers its OWN error**
+      ([`docs/spec-basic-instrtm.md`](docs/spec-basic-instrtm.md)). **18 rows,
+      DIFF 5 -> 0. +10 B of the low region** (134 -> 124 B free; page 1
+      unchanged). `penderr-acceptance` 61/61, `tmfp-acceptance` 50/50.
+      🔴 **THE TAIL HAD TO BE SPLIT, NOT RETARGETED.** `efi_reject_p` /
+      `efi_reject_pa` were each reached BOTH by a `jr nz` ("the ',' is missing")
+      and a `jr nc` ("there IS an operand and it is not a string"), and both
+      answered Syntax error. Retargeting would have fixed 3 rows and BROKEN 7
+      that are already correct — the shape D-MIDOP measured for MID$ (24/13/24).
+      **The reference surface was measured before anything changed**, and 2 filed
+      rows turned out to be 5. [[a-shared-tail-is-not-a-decision]]
+      🎯 **THE ORDER IS THE FIX, AGAIN** — evaluate the operand, THEN defer
+      TYPEMM, so `ev_f_defer`'s first-error-wins lets the operand's own fault
+      keep the answer.
+      🔴 **AND K-IT2 FOUND A THIRD DISCRIMINATING ROW I HAD NOT PREDICTED:**
+      `INSTR("AB",)` — a MALFORMED shape, not a pending-fault one. It reaches the
+      new tail, and in the shipped order `eval` fails on the `)` and defers a
+      SYNTAX error which wins. **So the ordering is not merely "nicer for pending
+      faults": without it the split would have BROKEN a malformed shape that was
+      already right.** The three clean-expression rows cannot tell the two fixes
+      apart at all.
 
 - [ ] 🔬 **`LSET`/`RSET` ON A NEVER-FIELDED VARIABLE HAS NO ORACLE: THE TWO
       REFERENCES DISAGREE.** Found 2026-08-29 by D-NGRAM11. `A$="12345":LSET
@@ -1018,7 +1028,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4104 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4114 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

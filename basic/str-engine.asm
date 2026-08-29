@@ -1518,12 +1518,35 @@ ev_f_instr:
                 jr      nz,efi_reject_p
                 call    str_eval_next       ; D-NGRAM11: past ',', STRPTR -> a$;
                                             ; HL advanced; CF=ok
-                jr      nc,efi_reject_p
+                jr      nc,efi_tm_p         ; D-INSTRTM: a$ present but NOT a string
                 jr      efi_dup_a
 efi_reject_p:
                 pop     de                  ; discard [p]
-                jp      ev_f_empty          ; BUG C class: 3-arg form missing ',' / a$
-                                            ; not a string -> deferred syntax error
+                jp      ev_f_empty          ; BUG C class: 3-arg form missing ','
+                                            ; -> deferred syntax error
+; --- D-INSTRTM: an operand that is NOT A STRING is a TYPE MISMATCH ----------
+; (docs/spec-basic-instrtm.md.) These two tails used to be reached BOTH by the
+; `jr nz` that means "the ',' is missing" and by the `jr nc` that means "there IS
+; an operand and it is not a string", and both answered `Syntax error`. Both
+; references answer 13 for the second and 2 for the first, so the tail had to be
+; SPLIT -- retargeting it would have broken five malformed shapes that are
+; correct today. [[a-shared-tail-is-not-a-decision]]
+; 🎯 AND THE RAISE COMES AFTER THE OPERAND IS EVALUATED, which is the whole
+; lesson of D-LEFTTM: `ev_f_defer` is first-error-wins, so a fault the operand
+; itself raises keeps the answer and this one is dropped.
+; `INSTR("ABCDE",0*(1/0)+1)` is Division by zero on both references, not 13.
+; Arming it BEFORE the evaluation is the mistake D-NGRAM8 made, and D-LEFTTM's
+; K-LT2 pins it.
+; ⚠️ The discards use DE, not HL: HL is the cursor, still ON the operand, and
+; `eval` needs it.
+efi_tm_pa:
+                pop     de                  ; discard [aT]                        [p]
+efi_tm_p:
+                pop     de                  ; discard [p]                         [ ]
+                call    eval                ; the operand, numerically -- it arms its
+                                            ; OWN fault first if it has one
+                ld      e,FPERR_TYPEMM      ; -> ERR 13, unless the operand beat us
+                jp      ev_f_defer
 efi_have_a:
                 ld      de,1                ; default p = 1 (two-arg form)
                 push    de                  ; guard p                             [p]
@@ -1536,7 +1559,7 @@ efi_dup_a:
                 jr      nz,efi_reject_pa    ; malformed -> discard [p][aT]
                 call    str_eval_next       ; D-NGRAM11: past ',', STRPTR -> b$;
                                             ; HL advanced; CF=ok
-                jr      nc,efi_reject_pa
+                jr      nc,efi_tm_pa        ; D-INSTRTM: b$ present but NOT a string
                 push    hl                  ; guard cursor (past b$)              [p][aT][cursor]
                 call    str_snapshot_to_temp ; HL = bT (b$ snapshot); STRPTR=bT
                 ex      (sp),hl             ; HL=cursor(restored); top:=bT        [p][aT][bT]
