@@ -2282,6 +2282,25 @@ svp_sp:
                 dec     b
                 jr      svp_sp              ; skip leading spaces
 svp_sign:
+                ; --- D-VALBASE: `&H` / `&O` / `&B` base literals -------------
+                ; Measured on both references before a line was written:
+                ;   &HFF &hff &HFFZZ "  &HFF" -> 255   (stop at the first invalid
+                ;                                       digit; case-insensitive)
+                ;   &O17 -> 15    &B101 -> 5
+                ;   &HFFFF -> -1        (the accumulator is SIGNED int16)
+                ;   &H1FFFF -> ERR 6    (overflow past 16 bits)
+                ;   &H &HZZ &O9 &B2 -> 0 (a prefix with no valid digit is NOT an
+                ;                         error, it is zero)
+                ;   & and &17 -> ERR 2  ('&' not followed by H/O/B)
+                ;   -&H10 -> 0          (a sign before a base literal does not
+                ;                        apply -- and that falls out for free,
+                ;                        because the '&' test is BEFORE the sign
+                ;                        one, so a leading '-' consumes itself and
+                ;                        the digit scan then meets '&' and stops)
+                ; 🟢 The scan is LENGTH-BOUNDED by B, like the decimal path, so it
+                ; cannot run off the end of a body that is not 0-terminated.
+                cp      '&'
+                jp      z,svp_base
                 cp      '-'
                 jr      nz,svp_plus
                 ld      c,1                 ; negative
@@ -2330,6 +2349,117 @@ svp_fin:
                 sbc     hl,de               ; HL = -DE
                 ex      de,hl               ; DE = negated value
 svp_done:
+                ld      (SH_PTR),de
+                xor     a
+                ld      (SH_ERR),a
+                ret
+
+; --- D-VALBASE: the base-literal scan ---------------------------------------
+; in:  HL = cursor ON the '&', B = bytes remaining.
+; Registers are reassigned for this path: DE = cursor, HL = accumulator. That is
+; the other way round from the decimal path above, and deliberately so -- the
+; accumulate here is a SHIFT loop, and `add hl,hl` is the only 16-bit shift the
+; Z80 has, so the accumulator has to be HL.
+; C = (shift count << 4) | max digit value: hex $4F, octal $37, binary $11.
+; Multiplying by a power of two means `acc = acc*base + digit` is a shift then an
+; OR, because the digit is always < base.
+svp_base:
+                ex      de,hl               ; DE = cursor, HL = free
+                ld      hl,0                ; HL = accumulator
+                inc     de
+                dec     b
+                jr      z,svp_amperr        ; a bare '&' -> ERR 2
+                ld      a,(de)
+                and     $DF                 ; upcase (h/o/b); a digit becomes junk,
+                                            ; which is what we want -- '&17' is an
+                                            ; error, not octal
+                ld      c,$4F               ; hex:    shift 4, max digit 15
+                cp      'H'
+                jr      z,svp_bpfx
+                ld      c,$37               ; octal:  shift 3, max digit 7
+                cp      'O'
+                jr      z,svp_bpfx
+                ld      c,$11               ; binary: shift 1, max digit 1
+                cp      'B'
+                jr      z,svp_bpfx
+                ; ⚠️ EXPLICIT CODES, NOT AN OFFSET. The first draft wrote the
+                ; MSX error numbers here and added 3 to reach the SH_ERR codes --
+                ; which inverted them, so `VAL("&")` raised Overflow and
+                ; `VAL("&H1FFFF")` raised Syntax error. Both rows were red in the
+                ; obvious way and the cleverness bought nothing.
+svp_amperr:
+                ld      a,4                 ; SH_ERR 4 -> FPERR 4 -> ERR 2 (syntax)
+                jr      svp_berr
+svp_bovf:
+                ld      a,5                 ; SH_ERR 5 -> FPERR 1 -> ERR 6 (overflow)
+svp_berr:
+                ld      (SH_ERR),a
+                ld      de,0
+                ld      (SH_PTR),de
+                ret
+svp_bpfx:
+                inc     de
+                dec     b
+svp_bloop:
+                ld      a,b
+                or      a
+                jr      z,svp_bfin
+                ld      a,(de)
+                cp      '0'
+                jr      c,svp_bfin
+                cp      '9'+1
+                jr      c,svp_bdec
+                and     $DF                 ; upcase a-f
+                cp      'A'
+                jr      c,svp_bfin
+                cp      'F'+1
+                jr      nc,svp_bfin
+                sub     'A'-10              ; A = 10..15
+                jr      svp_bval
+svp_bdec:
+                sub     '0'                 ; A = 0..9
+svp_bval:
+                ; A = digit value; B = bytes remaining, C = packed(shift<<4|max).
+                ; 🔴 C MUST SURVIVE THE WHOLE LOOP -- an earlier draft used it as
+                ; scratch for the max and then for the shift count, so the SECOND
+                ; digit of `&HFF` was validated against the shift count instead of
+                ; the max. Caught by tracing the register flow, not by a row.
+                ; [[a-scratch-register-that-was-the-callers-value]]
+                ; The count goes on the stack instead, which frees B to hold the
+                ; digit across the shifts.
+                push    bc                  ; [count|packed]
+                ld      b,a                 ; B = digit
+                ld      a,c
+                and     $0F                 ; A = max digit for this base
+                cp      b
+                jr      c,svp_bpopfin       ; max < digit -> out of range: STOP, and
+                                            ; that is a value, not an error (&O9 = 0)
+                ld      a,c
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F
+                ld      c,a                 ; C = shift count (packed is safe on the stack)
+svp_bsh:
+                add     hl,hl               ; acc <<= 1, watching for 16-bit overflow
+                jr      c,svp_bovfpop
+                dec     c
+                jr      nz,svp_bsh
+                ld      a,b                 ; A = digit
+                or      l                   ; digit < base, so OR == ADD here
+                ld      l,a
+                pop     bc                  ; count|packed both restored
+                inc     de
+                dec     b
+                jr      svp_bloop
+svp_bovfpop:
+                pop     bc
+                jr      svp_bovf
+svp_bpopfin:
+                pop     bc
+svp_bfin:
+                ex      de,hl               ; DE = accumulator (the value)
                 ld      (SH_PTR),de
                 xor     a
                 ld      (SH_ERR),a

@@ -352,11 +352,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DIVERGE, AND THE SURFACE HAD **ONE** ROW OF COVERAGE**
       ([`docs/spec-basic-val.md`](docs/spec-basic-val.md),
       [`scratchpad/val_probe.py`](scratchpad/val_probe.py)).
-      📏 Missing: **fractions** (`VAL("1.5")` -> 1), **base literals**
-      (`VAL("&HFF")` -> 0), **exponents** (`VAL("1E3")` -> 1), **embedded
-      spaces** (`VAL("1 2")` -> 1, `VAL(" - 12")` -> 0), and STR$ of any
-      non-integer (`STR$(1.5)` -> `1`). `VAL("&")` returns **0 where both
-      references raise ERR 2** — a SILENT wrong answer.
+      🟢 **BASE LITERALS SHIPPED 2026-08-30 (D-VALBASE,
+      [`docs/spec-basic-valbase.md`](docs/spec-basic-valbase.md)) — 16 rows, all
+      green.** `&HFF`/`&hff`/`&HFFZZ`/`  &HFF` = 255, `&O17` = 15, `&B101` = 5,
+      `&HFFFF` = -1 (signed int16), `&H1FFFF` = ERR 6, a prefix with no valid
+      digit = 0, and `&`/`&17` = ERR 2. **Cost measured 2026-08-30: 17 B of the
+      low region + 126 B of sub page 0** (`make basic-reloc` for the standing
+      figures; do not quote these). DIFF 20 -> 14.
+      📏 **STILL MISSING (14 rows): fractions** (`VAL("1.5")` -> 1),
+      **exponents** (`VAL("1E3")` -> 1), **embedded spaces** (`VAL("1 2")` -> 1,
+      `VAL(" - 12")` -> 0), and STR$ of any non-integer (`STR$(1.5)` -> `1`).
       🟢 **ATTRIBUTED TO THE RIGHT LAYER BY CONTROLS:** `PRINT 1.5`, `PRINT 1E9`,
       `PRINT 3/2` and `PRINT &HFF` are all CORRECT on zerobas. Float literals,
       float arithmetic, hex literals and float printing work — the gap is

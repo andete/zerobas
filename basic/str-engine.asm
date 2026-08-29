@@ -713,8 +713,26 @@ ev_ff_val:
                 push    ix                  ; the CALSLT in call_strheap clobbers IX
                 call    call_strheap        ; -- guard the token cursor ev_f needs back
                 pop     ix
+                ; D-VALBASE: the base-literal scan can REFUSE, and VAL's usual
+                ; "never raises, returns 0" does not cover it -- both references
+                ; answer `Syntax error` for `VAL("&")` and `VAL("&17")` ('&' not
+                ; followed by H/O/B) and `Overflow` for `VAL("&H1FFFF")`.
+                ; SH_ERR 4 -> FPERR 4 (syntax), 5 -> FPERR 1 (overflow -> ERR 6).
+                ; 🟢 Deferred through ev_f_defer like every other factor refusal,
+                ; so first-error-wins still lets an operand's own fault outrank
+                ; this one.
+                ld      a,(SH_ERR)
+                or      a
+                jr      nz,evv_refuse
                 ld      de,(SH_PTR)         ; DE = the parsed integer value
                 ret
+evv_refuse:
+                ld      e,4                 ; SH_ERR 4 -> syntax error
+                cp      5
+                jr      nz,evv_defer
+                ld      e,1                 ; SH_ERR 5 -> overflow
+evv_defer:
+                jp      ev_f_defer
 
 ; --- str_arg_snap: evaluate a string argument and OWN it (D-NGRAM8) ---------
 ; LEFT$, RIGHT$ and MID$ all open the same way: evaluate the source expression,

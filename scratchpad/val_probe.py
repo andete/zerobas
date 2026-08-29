@@ -47,6 +47,16 @@ add('b.oct',     [], 'VAL("&O17")')
 add('b.bin',     [], 'VAL("&B101")')
 add('b.hextail', [], 'VAL("&HFFZZ")')
 add('b.amp',     [], 'VAL("&")')
+# --- base edge cases the first pass did not ask, needed BEFORE writing code ---
+add('b.nopfx',   [], 'VAL("&17")')       # '&' + digits, no base letter
+add('b.hsign',   [], 'VAL("-&H10")')     # a sign in front of a base literal
+add('b.hspace',  [], 'VAL("&H 10")')     # a space between prefix and digits
+add('b.hbad',    [], 'VAL("&HZZ")')      # prefix, then nothing valid
+add('b.obad',    [], 'VAL("&O9")')       # 9 is not an octal digit
+add('b.bbad',    [], 'VAL("&B2")')       # 2 is not a binary digit
+add('b.hbig',    [], 'VAL("&HFFFF")')    # the 16-bit ceiling
+add('b.hover',   [], 'VAL("&H1FFFF")')   # past it
+add('b.lead',    [], 'VAL("  &HFF")')    # leading spaces then a base literal
 
 # --- exponents --------------------------------------------------------------
 add('e.e3',      [], 'VAL("1E3")')
