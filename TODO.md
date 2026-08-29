@@ -344,17 +344,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       The gates owning the ERRMARK and pending-error invariants
       (`missing`/`stmtpend`/`penderr`) were run BEFORE the suite, not after.
 
-- [ ] 🔬 **ARE THE THREE `jp nz,fp_runtime_error` IN `str_target_parse`
-      REDUNDANT? 9 B.** Filed 2026-08-28 by D-NGRAM9
-      ([`docs/spec-basic-ngram9.md`](docs/spec-basic-ngram9.md) §4).
-      📏 K-N9B nops the bail and moves **0 rows**, ROM provably changed —
-      **structurally, not for want of a row**: it changes WHEN the fault is
-      raised, not WHETHER, and `exec_stmt`'s boundary check raises the same
-      ERR 11 a few instructions later.
-      ⚠️ **"No row can see it" is a statement about the ROW SET only when the
-      difference is observable at all** — here it may genuinely not be. Read the
-      `exec_stmt` contract rather than building another knife.
-      🤖 AUTONOMOUS — the code settles it.
+- [x] ⛔ **DECLINED 2026-08-29 (D-N9BAIL): the `jp nz,fp_runtime_error` in
+      `str_target_parse` is LOAD-BEARING**
+      ([`docs/spec-basic-ngram9.md`](docs/spec-basic-ngram9.md) §4, rewritten).
+      🔴 **THE FILED CLAIM WAS WRONG IN EVERY CLAUSE, AND ITS PRICE WAS STALE.**
+      Not 9 B: D-NGRAM9 had already collapsed the three sites into one `jp`, so
+      the candidate was **3 B** the moment the slice that filed it shipped.
+      📏 **Don't nop the jump — RETARGET it.** `fp_runtime_error` →
+      `type_mismatch_error` moves `s.mid.sub` **ERR 11 → ERR 13**: the bail is
+      reached and taken.
+      🎯 **THE NOP'S ZERO HAD A SECOND CAUSE OF GREEN, AND NOT THE ONE WRITTEN
+      DOWN.** Not `exec_stmt`'s boundary — `ex_mid_stmt`'s very next act is
+      `eval_pos_arg` → `get_int16_checked`, which ends `jp check_fperr_only` and
+      re-raises the pending FPERR inside the SAME statement. That is why even the
+      line number never moved (`AT 30` both ways, where the boundary story
+      predicts `AT 60`).
+      🔴 **AND THAT COVER IS MID$'s ALONE.** `inpc_line` and `inp_readvar` reach
+      `check_expr_errors` only AFTER `read_line`/`read_into_strscr` and
+      `tgt_store_str`, so without the bail `LINE INPUT A$(0*(1/0))` WAITS ON THE
+      KEYBOARD where both references raise at once, and both store through a
+      `TGT_ADDR` that `tgt_parse`'s `ret nz` never wrote.
+      🟢 **THE ARM IS FIXED, NOT JUST THE VERDICT:** K-N9B is now the retarget
+      (live, 1 row), K-N9C keeps the nop with its zero **asserted and its cause
+      named**, and all three arms score against an EXPECTED ROW SET rather than
+      against "did anything move".
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
 - [x] ✅ **D-NGRAM8 (2026-08-28): `str_arg_snap` for LEFT$/RIGHT$/MID$**
       ([`docs/spec-basic-ngram8.md`](docs/spec-basic-ngram8.md)). **Low read
@@ -369,6 +383,65 @@ list. **When a slice lands, grep this list for what it just shipped.**
       in the report. The probe now carries the ORDERING rows — and only the
       ASSIGNMENT shape separates the trees; `PRINT LEFT$(0*(1/0)+1)` reads the
       same on HEAD, shipped and a deliberately broken tree.
+
+- [x] ⛔ **DECLINED 2026-08-29 (D-N8ARM): `str_arg_snap`'s snapshot is
+      LOAD-BEARING — and BOTH of `ngram8_knives.py`'s arms had stopped testing
+      anything** ([`docs/spec-basic-n8arm.md`](docs/spec-basic-n8arm.md)).
+      🔴 **K-N8B's "expected null" WAS A ROW-GEOMETRY HOLE, not evidence.** All
+      17 rows printed the FUNCTION'S RESULT; nothing read the SOURCE back, so
+      in-place truncation of the source — the exact damage the snapshot prevents
+      — could not appear. `LEFT$(A$,2)` returns `AB` whether or not it wrecked
+      `A$` on the way. Three rows reading `C$+"/"+A$` move it immediately.
+      🔴 **K-N8A HAD BEEN CUTTING A STRING THAT IS NOT IN THE SOURCE** since the
+      slice shipped (`jp nc,type_mismatch_error`; the `pop af` fix made it
+      `jp nc,sas_decline`), printing `KNIFE BROKEN` into a log nobody read — and
+      its stated claim described **D-NGRAM9's** fix in **D-NGRAM8's** file.
+      🔴 **A REPAIR TO THE INSTRUMENT BROKE A GATE THAT READS IT.** 2 of 7 S1
+      patterns carry a form that no longer occurs anywhere; `ngram7`'s was
+      written against `ngram_sweep.py`'s BUGGY whitespace normalisation and went
+      stale when that regex was fixed. Staleness cost depends on which way the
+      count points: `ngram8` (wants 0) went **vacuous**, `ngram7` (wants 1) went
+      **red**. D-NGRAM7's control checked only `PAT[0]`;
+      `knife_guard.pattern_alive()` now checks every element.
+      🟢 **All four ngram knife files now score against an EXPECTED ROW SET.**
+      [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
+
+- [ ] 🔬 **DO ALL 52 KNIFE RUNNERS *ACT* ON THEIR ROM HASH, OR ONLY PRINT IT?
+      MEASURED 2026-08-29 AND THE COUNT IS NOT YET TRUSTWORTHY.** Denominator:
+      **52** runners in `scratchpad/` (not the 41 previously filed).
+      🔴 **I CLASSIFIED THIS THREE TIMES AND WAS WRONG TWICE**, each time
+      OVERSTATING the gap (33 print-only → 10, after two idioms turned up that a
+      regex had missed). That is the second time this exact claim has been filed
+      too pessimistically — the earlier one said "none of 14" where the answer
+      was 5 of 41. **Do not quote a number from this line.**
+      📏 At least FOUR distinct idioms mean "the ROM moved", and a fifth looks
+      like one and is not: `if not moved` (knife_guard.build), `if after ==
+      before`, `assert h[0] != base_h[0]` (paint4/himdom), `knife_guard.moved()`
+      — and `banner_knife.py` hashes the **SOURCE**, to verify its own restore,
+      which a hash-shaped grep reads as a ROM check.
+      ➡️ **NEXT STEP IS AN INSTRUMENT, NOT ANOTHER REGEX.** ~24 files still need
+      reading by hand (10 apparently print-only, 14 with no ROM hash found).
+      Then a gate, so a new runner cannot ship without the check.
+      🤖 AUTONOMOUS — the code settles it.
+      [[a-knife-can-be-inert-because-the-build-did-not-happen]]
+
+- [ ] 🔴 **I PIPED THREE KNIFE RUNNERS TO `head -2` ON 2026-08-29**, which can
+      SIGPIPE a runner mid-plant and leave a CUT source or a CUT ROM behind. The
+      tree was checked clean afterwards and the battery is 46/46, so nothing was
+      lost — but the project's own operating rule says `> file 2>&1`, **never**
+      `| head`/`| tail`, and this is exactly the hazard it names. Worth a
+      cheap guard: knife runners could refuse to run on a closed stdout.
+      🤖 AUTONOMOUS — the code settles it. [[zerobas-gate-operating-rules]]
+
+- [x] 🟢 **THE EMULATOR-TIER SKIP NOW CHECKS ITS OWN PREMISE (2026-08-29,
+      D-N8ARM)** ([`docs/spec-gateskip.md`](docs/spec-gateskip.md) §3.1). The
+      fingerprint covers `probes`/`tests`/`tools` + the Makefile, which makes the
+      skip a proof ONLY while every script an emulator unit runs lives there —
+      and `scratchpad/` is tracked here on purpose. The premise HOLDS (0 of 23
+      recipes reach outside it) but nothing re-derived it;
+      `unfingerprinted_scripts()` now does, at every skip, and an unreadable
+      recipe REFUSES rather than passes. `run_gates.py --selftest`, 6 arms.
+      [[apparatus-is-part-of-the-measurement]]
 
 - [ ] 🔴 **`LEFT$(5,2)` ANSWERS ERR 2 WHERE BOTH REFERENCES ANSWER ERR 13.**
       Filed 2026-08-28 by D-NGRAM8
@@ -813,7 +886,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3899 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3972 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

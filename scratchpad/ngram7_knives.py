@@ -62,14 +62,22 @@ def main():
     # TYPO'D PATTERN. That is why `body_seen` below asserts the pattern matches
     # the body itself: a positive control on the matcher, not just on the tree.
     PAT = ["ld (gfx_op),a", "push hl",
-           "ld ix,subrom_entry_base_p0 + 3*subrom_idx_graphics", "call subrom_call",
+           "ld ix,subrom_entry_base_p0+3*subrom_idx_graphics", "call subrom_call",
            "pop hl", "jp c,gfx_absent"]
     ins = [e for e in st if e[0] == "I"]
     open_coded = sum(1 for k in range(len(ins) - 5)
                      if [e[3] for e in ins[k:k + 6]] == PAT
                      and ins[k][1].startswith("basic/"))
     jumps = sum(1 for e in ins if e[3] == "call gfx_call")
-    ok = (open_coded == 1 and jumps == 3)      # the ONE copy left IS the body
+    # D-N8ARM: name the STALE ELEMENT rather than reporting a bare count. This
+    # arm's `ld ix,...+3*...` had been stale since ngram_sweep.py's whitespace
+    # normalisation was repaired (it was written against the buggy output), and
+    # because this expectation points at 1 the arm went RED rather than vacuous
+    # -- loudly, into a log nobody had re-run.
+    matcher_alive, stale = knife_guard.pattern_alive(PAT, (e[3] for e in ins))
+    ok = (open_coded == 1 and jumps == 3 and matcher_alive)  # the ONE copy left IS the body
+    if not matcher_alive:
+        print(f"  🔴 S1 PATTERN STALE: {stale}")
     print(f"{'PASS' if ok else 'FAIL'}  S1 every site rewired: {open_coded} "
           f"open-coded run(s) left (want 1 — the body itself), "
           f"{jumps} call(s) to it (want 3)")

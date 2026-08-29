@@ -6,18 +6,32 @@ r"""D-NGRAM9 K-N9A/K-N9B + S1 — three string-target sites, and BOTH of its bai
   K-N9A  put the OLD type-check target back (`type_mismatch_error` ->
          `stmt_error`). Exactly the two numeric-target rows must return to
          ERR 2 -- the divergence this slice closed, re-opened on demand.
-  K-N9B  break the DEFERRED-FAULT bail (`jp nz,fp_runtime_error` -> `nop`x3).
-         🔴 DECLARED NULL, AND STRUCTURALLY SO. It moves ZERO rows, with the ROM
-         provably changed. The reason is not a missing row: that bail changes
-         WHEN the fault is raised, not WHETHER. Nop it and the fault stays
-         pending, and exec_stmt's statement-boundary check raises the SAME
-         ERR 11 a few instructions later -- so no differential row can separate
-         them, because the machine's observable behaviour is identical.
-         ⚠️ That makes the three `jp nz,fp_runtime_error` at these sites a 9 B
-         CANDIDATE, filed and not taken: "no row can see it" is a statement
-         about the row set only if the difference is observable at all, and here
-         it may genuinely not be. Reading the exec_stmt contract settles it,
-         not another knife.
+  K-N9B  RETARGET the deferred-fault bail (`fp_runtime_error` ->
+         `type_mismatch_error`). `s.mid.sub` MUST move ERR 11 -> ERR 13: that is
+         what says the bail is REACHED AND TAKEN.
+  K-N9C  NOP the deferred-fault bail. **Asserted to move ZERO** -- and the whole
+         point of the arm is that the zero has a NAMED CAUSE.
+
+🔴 D-N9BAIL (2026-08-29) OVERTURNED THIS FILE'S OWN PRIOR VERDICT.
+K-N9B used to BE the nop, and it was written up as a "declared null, and
+structurally so": the bail supposedly changed WHEN the fault was raised and not
+WHETHER, with exec_stmt's statement-boundary check raising the same ERR 11 a few
+instructions later. That made the bail a 9 B carve candidate. **All of it was
+wrong.** Retarget the jump instead of nopping it and `s.mid.sub` moves ERR 11 ->
+ERR 13 on the spot, so the bail is taken. The zero came from a SECOND CAUSE OF
+GREEN inside the SAME statement, not from the statement boundary at all:
+ex_mid_stmt's next act is `eval_pos_arg` -> `get_int16_checked`, which ends
+`jp check_fperr_only` and re-raises the still-pending FPERR before the boundary
+is ever reached.
+🔴 AND THE COVER IS MID$'s ALONE. `inpc_line` (input.asm) and `inp_readvar`
+(files.asm) reach their `check_expr_errors` only AFTER `read_line` /
+`read_into_strscr` and `tgt_store_str`. Remove the bail and `LINE INPUT
+A$(0*(1/0))` WAITS ON THE KEYBOARD where both references raise at once, and both
+sites then store through a TGT_ADDR that `tgt_parse`'s `ret nz` never wrote.
+🎯 So the carve is DECLINED and the arm is now two: a live one that proves the
+bail is taken, and a masked one that asserts its own zero. A knife that reports
+"moved 0" for a masked cut and for a broken plant is not telling you which.
+[[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
 🔴 RESTORE ON EVERY EXIT (D-KNIFEGUARD) and PROVE THE CUT REACHED THE ROM
 (D-KNIFEROM): knife_guard hashes the images around every plant.
@@ -33,14 +47,26 @@ KNIVES = [
     ("K-N9A restore the old type-check target", [
         ("                jp      z,type_mismatch_error   ; D-NGRAM9: BOTH REFERENCES ANSWER",
          "                jp      z,stmt_error        ; K-N9A CUT (restored on exit)")]),
-    ("K-N9B break the deferred-fault bail", [
+    ("K-N9B retarget the deferred-fault bail", [
+        ("                jp      nz,fp_runtime_error ; a deferred fault from the subscript",
+         "                jp      nz,type_mismatch_error ; K-N9B CUT (restored on exit)")]),
+    ("K-N9C nop the deferred-fault bail", [
         ("""                jp      nz,fp_runtime_error ; a deferred fault from the subscript
                 ret""",
-         """                nop                         ; K-N9B CUT (restored on exit)
+         """                nop                         ; K-N9C CUT (restored on exit)
                 nop
                 nop
                 ret""")]),
 ]
+
+# Rows each arm MUST move. A tag mapped to the empty set is a MASKED arm: its
+# zero is asserted, with the cause named in the module docstring -- so a plant
+# that silently stopped reaching the ROM cannot hide inside it.
+EXPECT = {
+    "K-N9A": {"s.line.num", "s.mid.num"},
+    "K-N9B": {"s.mid.sub"},
+    "K-N9C": set(),
+}
 
 
 def sh(cmd, log):
@@ -87,11 +113,13 @@ def main():
     jumps = sum(1 for e in ins if e[3] == "call str_target_parse")
     # 🔴 EXPECTED ZERO -> NEEDS A POSITIVE CONTROL ON THE MATCHER, or a typo'd
     # pattern reports "0 occurrences" and reads as a clean tree (D-NGRAM7 §3).
-    matcher_alive = any(e[3] == PAT[0] for e in ins)
+    # D-N8ARM: EVERY element, not just PAT[0] -- a stale element in any
+    # later position made 2 of 7 of these arms vacuous.
+    matcher_alive, stale = knife_guard.pattern_alive(PAT, (e[3] for e in ins))
     ok = (open_coded == 0 and jumps == 3 and matcher_alive)
     print(f"{'PASS' if ok else 'FAIL'}  S1 every site rewired: {open_coded} "
           f"open-coded run(s) left (want 0), {jumps} call(s) to it (want 3), "
-          f"matcher{'' if matcher_alive else ' 🔴 NOT'} alive")
+          f"matcher{'' if matcher_alive else ' 🔴 STALE: ' + str(stale)} alive")
     if not ok:
         fails.append("S1")
     print(f"\nbaseline: {len(subj)} subject row(s), {len(ctrl)} control(s)\n")
@@ -125,11 +153,12 @@ def main():
             print(f"  🔴 NO ROWS READ BACK — not 'reddened nothing'")
             fails.append(name); continue
         moved_rows = sorted(r for r in base if base[r] != cut.get(r))
-        print(f"  moved {len(moved_rows)}: {' '.join(moved_rows) or '(none)'}")
-        # K-N8B is a DECLARED null: the ROM moved (checked above), so zero rows
-        # is a finding about the snapshot, not a dead arm. Every other knife
-        # must move something.
-        if not moved_rows and tag != "K-N9B":
+        want = EXPECT[tag]
+        ok = set(moved_rows) == want
+        print(f"  moved {len(moved_rows)}: {' '.join(moved_rows) or '(none)'}"
+              f"   want {' '.join(sorted(want)) or '(none -- MASKED, cause named in the docstring)'}"
+              f"   {'OK' if ok else '🔴 MISMATCH'}")
+        if not ok:
             fails.append(name)
         print()
     sh("make repack-machine", f"{TMP}/n9k_restore.out")

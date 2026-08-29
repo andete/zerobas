@@ -242,6 +242,24 @@ str_target_parse:
                                             ; to override.
                 call    tgt_parse           ; D-ARYLV: BC = key, HL past the
                                             ; reference, (TGT_ADDR) = element addr
+                ; 🔴 D-N9BAIL (docs/spec-basic-ngram9.md §4, settled 2026-08-29):
+                ; THIS BAIL IS LOAD-BEARING AND THE 9 B CARVE IS DECLINED. It was
+                ; filed as redundant on the strength of a knife that NOPPED it and
+                ; moved zero rows -- but retarget the jump instead of nopping it and
+                ; `s.mid.sub` moves ERR 11 -> ERR 13, so it is reached and taken.
+                ; The zero had a SECOND CAUSE, and not the one written down: not
+                ; exec_stmt's boundary, but ex_mid_stmt's very next act --
+                ; eval_pos_arg -> get_int16_checked, which ends `jp check_fperr_only`
+                ; and re-raises the pending FPERR inside the SAME statement.
+                ; ⚠️ AND THAT COVER IS MID$'s ALONE. inpc_line (input.asm) and
+                ; inp_readvar (files.asm) reach check_expr_errors only AFTER
+                ; read_line / read_into_strscr and tgt_store_str. Without this bail
+                ; `LINE INPUT A$(0*(1/0))` WAITS ON THE KEYBOARD where both
+                ; references raise at once, and both sites then store through a
+                ; TGT_ADDR that tgt_parse's own `ret nz` never wrote (it returns from
+                ; tp_ary, ahead of tp_set's `ld (TGT_ADDR),de`) -- a stale address
+                ; from whichever target was resolved last.
+                ; [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
                 jp      nz,fp_runtime_error ; a deferred fault from the subscript
                 ret
 

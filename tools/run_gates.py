@@ -45,6 +45,7 @@ import concurrent.futures as cf
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -133,8 +134,92 @@ def inert_against_last_green():
         return False, "ROM images differ from the last green battery"
     if rec.get("sources") != source_fingerprint():
         return False, "probes/tests/tools or the Makefile changed"
+    stray = unfingerprinted_scripts()
+    if stray:
+        return False, ("an emulator recipe runs a script OUTSIDE the fingerprint: "
+                       + " ".join(sorted(stray)[:4]))
     return True, (f"ROMs and probe/test/tool sources byte-identical to the green "
                   f"full battery of {rec.get('when', '?')}")
+
+
+# 🔴 THE PROOF HAS A PREMISE, AND UNTIL 2026-08-29 NOTHING CHECKED IT.
+# source_fingerprint() covers probes/tests/tools + the Makefile. That makes the
+# skip a proof only while every script an EMULATOR unit actually RUNS lives in
+# one of those trees -- wire a `scratchpad/` probe into an acceptance recipe and
+# the tier can move with the fingerprint unchanged, which is a silent false
+# green. `scratchpad/` is tracked here on purpose (knives, probes,
+# characterisations), so this is a live hazard, not a hypothetical one.
+# 🟢 As measured 2026-08-29 the premise HOLDS -- 0 of the 23 emulator recipes
+# reference a script outside the fingerprint -- and it is now RE-DERIVED at every
+# skip instead of being true on the day someone looked. ~0.03 s per target.
+# [[apparatus-is-part-of-the-measurement]]
+SCRIPT_REF = re.compile(r"([\w./-]+\.(?:py|tcl|sh))")
+
+
+def _make_n(target):
+    try:
+        return subprocess.run(["make", "-n", target], cwd=ROOT,
+                              capture_output=True, text=True, timeout=60).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def unfingerprinted_scripts(read_recipe=_make_n, exists=None):
+    """-> the set of scripts an EMULATOR recipe runs from outside the fingerprint.
+
+    `read_recipe`/`exists` are injected by the selftest so the arm can drive a
+    SYNTHETIC recipe. 🔴 The alternative -- planting a stray reference in the real
+    Makefile -- would make this the FOURTH gate that mutates a shared tracked file
+    mid-battery, and that class already produces false 'real' verdicts under a
+    parallel battery [[exit-safe-is-not-concurrency-safe]]."""
+    if exists is None:
+        exists = lambda ref: os.path.exists(os.path.join(ROOT, ref))
+    stray = set()
+    for target in EMULATOR:
+        out = read_recipe(target)
+        if out is None:
+            # Cannot read the recipe -> cannot prove the premise -> do not skip.
+            return {f"<make -n {target} failed>"}
+        for ref in SCRIPT_REF.findall(out):
+            ref = ref.lstrip("./")
+            if not ref.startswith(FINGERPRINT_TREES) and exists(ref):
+                stray.add(ref)
+    return stray
+
+
+def selftest():
+    """🔴 The premise check must REFUSE a skip when an emulator recipe reaches
+    outside the fingerprint -- and must not refuse when it does not."""
+    ok = True
+
+    def arm(name, cond):
+        nonlocal ok
+        print(f"{'PASS' if cond else 'FAIL'}  {name}")
+        ok = ok and bool(cond)
+
+    inside = "python3 probes/basic/foo_probe.py --gate\n"
+    outside = "python3 scratchpad/foo_probe.py --gate\n"
+    seen = lambda _ref: True
+
+    arm("S1 a recipe wholly inside the fingerprint is clean",
+        unfingerprinted_scripts(lambda t: inside, seen) == set())
+    arm("S2 a scratchpad script in ONE recipe is caught",
+        unfingerprinted_scripts(
+            lambda t, f=EMULATOR[0]: outside if t == f else inside, seen)
+        == {"scratchpad/foo_probe.py"})
+    arm("S3 an unreadable recipe REFUSES the skip rather than passing it",
+        unfingerprinted_scripts(lambda t: None, seen) != set())
+    # 🔴 A matcher that finds nothing would make S1 pass for the wrong reason.
+    arm("S4 positive control: the matcher does find the path it is given",
+        SCRIPT_REF.findall(outside) == ["scratchpad/foo_probe.py"])
+    # An untracked path is not a hazard -- it is not what the recipe runs.
+    arm("S5 a reference to a NON-EXISTENT path is not reported",
+        unfingerprinted_scripts(lambda t: outside, lambda _r: False) == set())
+
+    arm("S6 the LIVE premise holds: no emulator recipe leaves the fingerprint",
+        unfingerprinted_scripts() == set())
+    print("selftest:", "GREEN" if ok else "🔴 RED")
+    return 0 if ok else 1
 
 # 🔴 GATES THAT MUTATE A SHARED TRACKED FILE TO SELF-TEST, THEN RESTORE IT.
 # Each one is EXIT-safe already (D-KNIFEGUARD: the original is held in memory and
@@ -204,6 +289,8 @@ def lineerr_shards(k):
 
 
 def main():
+    if "--selftest" in sys.argv:
+        return selftest()
     ap = argparse.ArgumentParser()
     cpu = os.cpu_count() or 8
     ap.add_argument("--jobs", type=int, default=min(8, max(2, cpu)))

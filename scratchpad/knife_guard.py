@@ -86,6 +86,37 @@ def report(tag: str, moved: bool, before: str, after: str) -> str:
 
 
 # --------------------------------------------------------------------------
+# --- pattern_alive: the control an "expect 0" S1 arm cannot do without ------
+# 🔴 FOUND 2026-08-29 (D-N8ARM): 2 of 7 ngram S1 arms carried a STALE pattern
+# element -- a form that no longer occurs anywhere in the tree. What that costs
+# depends entirely on which way the arm's expected count points, and the two
+# cases here landed on opposite sides:
+#   ngram8  expects **0** open-coded runs -> VACUOUS. `jp nc,str_eval_no` was
+#           replaced by `jp nc,sas_decline` when the `pop af` fix landed after
+#           the arm was written; the pattern then matched nothing, reported 0,
+#           and read exactly like a clean tree.
+#   ngram7  expects **1** (the body itself is the surviving copy) -> RED, and
+#           loudly so -- but nobody had run the file since. Its element
+#           `ld ix,... + 3*...` was written to match the OUTPUT OF A BUGGY
+#           NORMALISER: `ngram_sweep.py`'s key normalisation had a doubled
+#           backslash (`r'\\s+'`) and never stripped whitespace, so fixing that
+#           regex on 2026-08-28 invalidated the pattern. A REPAIR TO THE
+#           INSTRUMENT BROKE A GATE THAT READ IT.
+# 🎯 So the hazard is not "stale patterns pass" -- it is that a stale pattern's
+# verdict is decided by an unrelated design choice (which way the count points)
+# instead of by the tree. This control removes that coupling.
+# ⚠️ D-NGRAM7 already added a control for this class -- but it checked only
+# PAT[0], so a stale element ANYWHERE ELSE still passed. Check every element.
+# 🟢 Element-presence is NECESSARY, not sufficient: the elements can each exist
+# while the SEQUENCE does not. It is the cheap half, and it is the half that was
+# missing. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+def pattern_alive(pat, forms):
+    """-> (ok, missing) — every element of `pat` occurs in the tree's `forms`."""
+    forms = set(forms)
+    missing = [e for e in pat if e not in forms]
+    return (not missing), missing
+
+
 def _selftest() -> int:
     r"""The arms that matter: a real change must read as MOVED, and everything
     else -- no change, a missing baseline, an absent image -- must NOT."""
@@ -121,6 +152,13 @@ def _selftest() -> int:
         and "UNCUT" in report("t", False, "aa", "aa"))
     arm("K6 moved -> the transition is PRINTED, not just asserted",
         "->" in report("t", True, "aa", "bb"))
+    forms = {"call foo", "jp nz,bar"}
+    arm("K7 a pattern whose elements all exist is alive",
+        pattern_alive(["call foo", "jp nz,bar"], forms) == (True, []))
+    arm("K8 a STALE element is named, not silently tolerated",
+        pattern_alive(["call foo", "jp nc,gone"], forms) == (False, ["jp nc,gone"]))
+    arm("K9 a stale element in a LATER position is caught too (the D-NGRAM7 hole)",
+        pattern_alive(["call foo", "jp nz,bar", "ld a,gone"], forms)[0] is False)
     import shutil
     shutil.rmtree(d, ignore_errors=True)
     print()

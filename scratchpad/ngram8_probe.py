@@ -34,6 +34,17 @@ add('s.mid.nest',  ['A$="ABCDE"', 'B$="XY"'], 'MID$(A$,LEN(B$),LEN(B$+B$))')
 add('s.left.deep', ['A$="ABCDE"', 'B$="XY"'], 'LEFT$(A$+B$,LEN(B$+B$))')
 add('s.right.nest',['A$="ABCDE"', 'B$="XY"'], 'RIGHT$(A$,LEN(B$+B$))')
 
+# 🔴 AND EVERY ROW ABOVE PRINTS THE FUNCTION'S *RESULT*. Nothing read the SOURCE
+# back, so IN-PLACE TRUNCATION OF THE SOURCE -- the exact damage the snapshot
+# exists to prevent -- was invisible to the whole set: `LEFT$(A$,2)` returns "AB"
+# whether or not it wrecked A$ on the way. That is a row-geometry hole, not a
+# thin row set [[a-coverage-row-whose-geometry-cannot-reach-the-case]], and it is
+# why K-N8B's zero was recorded as "expected null" instead of "unwitnessed".
+# 🎯 These three read BOTH: the result AND the source afterwards, in one value.
+add('s.left.src',  ['A$="ABCDE"', 'C$=LEFT$(A$,2)'],   'C$+"/"+A$')
+add('s.right.src', ['A$="ABCDE"', 'C$=RIGHT$(A$,2)'],  'C$+"/"+A$')
+add('s.mid.src',   ['A$="ABCDE"', 'C$=MID$(A$,2,2)'],  'C$+"/"+A$')
+
 # --- the BAIL half: a non-string argument -----------------------------------
 add('s.left.bad',  [], 'LEFT$(5,2)')
 add('s.right.bad', [], 'RIGHT$(5,2)')

@@ -74,12 +74,14 @@ def main():
     # D-NGRAM7 hit exactly that (a missing space around `+` in a key). The
     # pattern's own first instruction still exists inside check_fperr_only, so
     # requiring it proves the keys are spelled the way the sweep spells them.
-    matcher_alive = any(e[3] == PAT[0] for e in ins)
+    # D-N8ARM: EVERY element, not just PAT[0] -- a stale element in any
+    # later position made 2 of 7 of these arms vacuous.
+    matcher_alive, stale = knife_guard.pattern_alive(PAT, (e[3] for e in ins))
     ok = (open_coded == 0 and jumps == 10 and matcher_alive)
     print(f"{'PASS' if ok else 'FAIL'}  S1 every site rewired: {open_coded} "
           f"open-coded run(s) left (want 0 — the helper predates this slice), "
           f"{jumps} call(s) to it (want 10 = 3 pre-existing + 7 new), "
-          f"matcher{'' if matcher_alive else ' 🔴 NOT'} alive")
+          f"matcher{'' if matcher_alive else ' 🔴 STALE: ' + str(stale)} alive")
     if not ok:
         fails.append("S1")
     print(f"\nbaseline: {len(subj)} subject row(s), {len(ctrl)} control(s)\n")

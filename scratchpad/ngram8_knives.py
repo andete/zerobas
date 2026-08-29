@@ -2,21 +2,35 @@
 r"""D-NGRAM8 K-N8A/K-N8B + S1 — three string-arg sites, and the bail that was wrong.
 
   S1     STATIC per-site witness: 0 open-coded runs left and exactly 3 calls.
-  K-N8A  put the OLD bail back (`jp nc,type_mismatch_error` -> `jp nc,
-         str_eval_no`). Exactly the three `.bad` rows must return to ERR 2 --
-         that is the divergence this slice closed, re-opened on demand.
-  K-N8B  neuter the SNAPSHOT (`call str_snapshot_arg` -> `nop`x3).
-         🔴 EXPECTED NULL, AND RECORDED AS ONE. It moves ZERO rows -- with the
-         ROM provably changed (D-KNIFEROM), so this is a genuine "the cut
-         reached the artifact and reddened nothing", not an inert cut. Rows
-         were built specifically to break it: a COMPUTED source (`A$+B$`) and
-         count expressions that really allocate (`LEN(B$+B$)`); the first
-         attempt used `LEN("XY")`, which allocates nothing and proved less
-         than it looked.
-         ⚠️ THAT IS NOT EVIDENCE THE SNAPSHOT IS REMOVABLE. Absence of a
-         witnessing row is absence of evidence; the temp-stack entry a computed
-         source lands in happens to survive the count evaluation today. Filed
-         as a candidate, not taken.
+  K-N8A  re-open the FRAME-DEPTH bug: drop `sas_decline`'s `pop af`, so
+         str_eval_no's `ret` lands back inside the verb instead of declining out
+         of it. The `.pend` rows must move -- that is the breakage this slice
+         actually hit and fixed.
+  K-N8B  neuter the SNAPSHOT (`call str_snapshot_arg` -> `nop`x3). The three
+         `.src` rows must move: the source string is truncated IN PLACE.
+
+🔴 BOTH ARMS WERE WRONG WHEN THIS FILE SHIPPED, AND IN OPPOSITE DIRECTIONS
+(found 2026-08-29, D-N8ARM).
+
+K-N8A CUT A STRING THAT WAS NOT IN THE SOURCE. It looked for
+`jp nc,type_mismatch_error`; the shipped shape is `jp nc,sas_decline`, because
+the `pop af` fix landed AFTER this arm was written and nobody re-ran the file
+against the final source. It has reported `KNIFE BROKEN` ever since -- loudly,
+into a log nobody read. 🔴 And its stated claim was false as well: *"exactly the
+three `.bad` rows must return to ERR 2 -- the divergence this slice closed"*.
+D-NGRAM8 closed no such thing; `.bad` reads ERR 2 on this tree TODAY and the
+divergence is filed open in TODO.md. The arm was describing D-NGRAM9's fix.
+[[a-justification-parenthesis-is-an-unrun-claim]]
+
+K-N8B WAS RECORDED AS AN "EXPECTED NULL" -- moving zero rows with the ROM
+provably changed, which was read as *the cut reached the artifact and reddened
+nothing*. It was a ROW-GEOMETRY HOLE. Every row in the probe printed the
+FUNCTION'S RESULT and nothing read the SOURCE back afterwards, so in-place
+truncation of the source -- the exact damage the snapshot prevents -- could not
+appear: `LEFT$(A$,2)` returns `AB` whether or not it wrecked `A$` on the way.
+Three rows that read `C$+"/"+A$` make it move immediately. The snapshot is
+LOAD-BEARING; the filed carve candidate is DECLINED.
+[[a-coverage-row-whose-geometry-cannot-reach-the-case]]
 
 🔴 RESTORE ON EVERY EXIT (D-KNIFEGUARD) and PROVE THE CUT REACHED THE ROM
 (D-KNIFEROM): knife_guard hashes the images around every plant.
@@ -29,9 +43,9 @@ TMP, SRC = "/tmp/zerobas", "basic/str-engine.asm"
 ROW = re.compile(r"^[a-z][a-z0-9]*\.[a-z0-9.]+$")
 
 KNIVES = [
-    ("K-N8A restore the old bail", [
-        ("                jp      nc,type_mismatch_error",
-         "                jp      nc,str_eval_no      ; K-N8A CUT (restored on exit)")]),
+    ("K-N8A re-open the frame-depth bug", [
+        ("                pop     af                  ; discard str_arg_snap's return address",
+         "                nop                         ; K-N8A CUT (restored on exit)")]),
     ("K-N8B neuter the snapshot", [
         ("""                call    str_snapshot_arg    ; STRPTR -> an OWNED temp; HL=temp
                 pop     hl
@@ -42,6 +56,14 @@ KNIVES = [
                 pop     hl
                 ret""")]),
 ]
+
+# Rows each arm MUST move -- an EXPECTED SET, not "did anything move". Both of
+# this file's arms were wrong for a year of nobody re-reading them; a count is
+# what let that happen.
+EXPECT = {
+    "K-N8A": {"s.left.pend", "s.right.pend", "s.mid.pend"},
+    "K-N8B": {"s.left.src", "s.right.src", "s.mid.src"},
+}
 
 
 def sh(cmd, log):
@@ -79,20 +101,30 @@ def main():
     # 🎯 AN S1 ARM WHOSE EXPECTED COUNT IS ZERO CANNOT TELL A CLEAN TREE FROM A
     # TYPO'D PATTERN. That is why `body_seen` below asserts the pattern matches
     # the body itself: a positive control on the matcher, not just on the tree.
-    PAT = ["call str_eval", "jp nc,str_eval_no", "push hl",
+    PAT = ["call str_eval", "jp nc,sas_decline", "push hl",
            "call str_snapshot_arg", "pop hl"]
     ins = [e for e in st if e[0] == "I"]
     open_coded = sum(1 for k in range(len(ins) - 4)
                      if [e[3] for e in ins[k:k + 5]] == PAT
                      and ins[k][1].startswith("basic/"))
     jumps = sum(1 for e in ins if e[3] == "call str_arg_snap")
-    # 🔴 EXPECTED ZERO -> NEEDS A POSITIVE CONTROL ON THE MATCHER, or a typo'd
-    # pattern reports "0 occurrences" and reads as a clean tree (D-NGRAM7 §3).
-    matcher_alive = any(e[3] == PAT[0] for e in ins)
-    ok = (open_coded == 0 and jumps == 3 and matcher_alive)
+    # 🔴 D-N8ARM (2026-08-29): THIS ARM WANTED **0**, AND THAT WAS THE BUG.
+    # PAT's second element was `jp nc,str_eval_no` -- a form the `pop af` fix had
+    # already replaced with `jp nc,sas_decline`. It matched nothing, reported 0,
+    # and passed: a vacuous arm that read exactly like a clean tree. With the
+    # element repaired the pattern matches ONE run -- `str_arg_snap`'s OWN BODY,
+    # which is the surviving copy, the same shape ngram7's arm already had. So
+    # the honest expectation is 1, and a SECOND match is a site that got
+    # re-open-coded.
+    # 🟢 And the control now checks EVERY element, not just PAT[0]: the D-NGRAM7
+    # control only validated the first, so a stale element anywhere after it
+    # still passed.
+    matcher_alive, stale = knife_guard.pattern_alive(PAT, (e[3] for e in ins))
+    ok = (open_coded == 1 and jumps == 3 and matcher_alive)
     print(f"{'PASS' if ok else 'FAIL'}  S1 every site rewired: {open_coded} "
-          f"open-coded run(s) left (want 0), {jumps} call(s) to it (want 3), "
-          f"matcher{'' if matcher_alive else ' 🔴 NOT'} alive")
+          f"open-coded run(s) left (want 1 = the helper body itself), {jumps} "
+          f"call(s) to it (want 3), "
+          f"matcher{'' if matcher_alive else ' 🔴 STALE: ' + str(stale)} alive")
     if not ok:
         fails.append("S1")
     print(f"\nbaseline: {len(subj)} subject row(s), {len(ctrl)} control(s)\n")
@@ -126,11 +158,11 @@ def main():
             print(f"  🔴 NO ROWS READ BACK — not 'reddened nothing'")
             fails.append(name); continue
         moved_rows = sorted(r for r in base if base[r] != cut.get(r))
-        print(f"  moved {len(moved_rows)}: {' '.join(moved_rows) or '(none)'}")
-        # K-N8B is a DECLARED null: the ROM moved (checked above), so zero rows
-        # is a finding about the snapshot, not a dead arm. Every other knife
-        # must move something.
-        if not moved_rows and tag != "K-N8B":
+        want = EXPECT[tag]
+        ok = set(moved_rows) == want
+        print(f"  moved {len(moved_rows)}: {' '.join(moved_rows) or '(none)'}"
+              f"   want {' '.join(sorted(want))}   {'OK' if ok else '🔴 MISMATCH'}")
+        if not ok:
             fails.append(name)
         print()
     sh("make repack-machine", f"{TMP}/n8k_restore.out")

@@ -41,6 +41,35 @@ It **never records a green baseline**, and its report is stamped
 An emulator unit's only inputs are the ROM it boots and the code that drives it.
 If neither moved, the unit *cannot* return a different verdict.
 
+### 3.1 🔴 The proof has a premise, and nothing checked it until 2026-08-29
+
+Condition 2 covers `probes/`, `tests/`, `tools/`. That makes the skip a proof
+**only while every script an emulator unit actually runs lives in one of those
+trees** — and `scratchpad/` is tracked in this repo on purpose (knives, probes,
+characterisations). Wire a `scratchpad/` probe into one acceptance recipe and the
+tier can move with the fingerprint unchanged: a **silent false green**, produced
+by the machinery built to prevent exactly that.
+
+The premise turns out to **hold** — 0 of the 23 emulator recipes reference a
+script outside the fingerprint — but it was true on the day someone looked, which
+is not the same as checked. `unfingerprinted_scripts()` now **re-derives it at
+every skip**, reading each recipe with `make -n` (~0.03 s per target) and
+refusing the skip if any referenced `.py`/`.tcl`/`.sh` that exists on disk lies
+outside the fingerprinted trees. An unreadable recipe also refuses: *cannot prove
+the premise* is not *the premise holds*.
+
+`python3 tools/run_gates.py --selftest` is the arm, collected automatically by
+`selftest-check`. Six checks: a clean recipe passes, **a stray `scratchpad/`
+reference in one recipe is caught**, an unreadable recipe refuses, a
+non-existent path is not reported, the live premise holds — and a **positive
+control that the path matcher matches at all**, because an arm whose expected
+answer is "nothing found" cannot otherwise tell a clean tree from a typo'd
+pattern (D-NGRAM7). The arm injects a synthetic recipe reader rather than
+planting a stray reference in the real `Makefile`: three gates already mutate
+shared tracked files mid-battery and that class produces false verdicts under a
+parallel run. [[exit-safe-is-not-concurrency-safe]]
+[[apparatus-is-part-of-the-measurement]]
+
 🔴 **THE REJECTED ALTERNATIVE IS THE INTERESTING PART.** The tempting version of
 this is to skip by judgement — *"this change is in the string engine, it cannot
 affect graphics"*. That is precisely the reasoning that failed three times in a
