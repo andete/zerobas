@@ -331,6 +331,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [x] ⛔ **DECLINED 2026-08-28: the 18 B `ld a,$DD / ld (ERRMARK),a / ld de,0 /
+      ret` tail at four sites** (`ev_f_err`, `ev_f_base`, `ev_usr_err`,
+      `usr_undef`). Byte-identical, no interior labels, and it would save 18 B.
+      🔴 **THE SOURCE FORBIDS IT IN SO MANY WORDS.** `basic/expr.asm` beside
+      `ev_f_err`: *"⚠️ Keep it that way. A new `jp ev_f_err` is a factor deciding
+      to fail with NO error code, which measured wrong at every one of the seven
+      sites that had made it."* D-EVFERR SPLIT this family by MEANING (0 B,
+      11 DIFF → 1); merging the bytes back re-couples the decisions it
+      separated. `ev_f_base` is a factor, so routing it there is exactly the
+      forbidden move.
+      🎯 **The sweep ranks BYTES; the source carries the DECISION.** An
+      identical-run ranking cannot see a deliberate split, so a high-ranked
+      candidate is not automatically a candidate.
+
+- [x] ✅ **`ngram_sweep.py`'s whitespace normalisation had NEVER RUN** (fixed
+      2026-08-28): the regex was `r'\\s+'` — a DOUBLE backslash — so it matched a
+      literal `\s`, never whitespace. Keys therefore kept their interior spacing
+      AND a trailing space on no-operand instructions (`'ret '`).
+      🔴 **THAT BIT A KNIFE'S S1 ARM IN TWO CONSECUTIVE SLICES**, each time by
+      matching NOTHING and reporting "0 occurrences" — which reads exactly like
+      a clean tree (D-NGRAM7 §3).
+      📏 **MEASURED, NOT ASSUMED: the ranking is IDENTICAL after the fix** (bar
+      the display's trailing space). The assembly is consistently formatted, so
+      no grouping was actually lost. A real bug with no effect today; fixed
+      because it is a trap for the next pattern, not because it revealed
+      candidates.
+
 - [x] ✅ **D-NGRAM7 (2026-08-28): one `gfx_call` for PSET/PRESET, LINE and
       PAINT** ([`docs/spec-basic-ngram7.md`](docs/spec-basic-ngram7.md)).
       **Page 1 read 315 -> 335 B free** (a READING; run `make basic-reloc`).
@@ -730,7 +757,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3816 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3843 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

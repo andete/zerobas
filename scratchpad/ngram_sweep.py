@@ -98,7 +98,17 @@ def parse():
             mi = INSN.match(line)
             if mi:
                 mn = mi.group(1).lower(); ops = mi.group(2).strip()
-                key = f"{mn} {re.sub(r'\\s+', '', ops.lower())}"
+                # 🔴 THIS WAS `r'\\s+'` -- A DOUBLE BACKSLASH -- SO IT MATCHED A
+                # LITERAL `\s`, NEVER WHITESPACE. The intended normalisation has
+                # therefore never run: `ld ix,X + 3*Y` and `ld ix,X+3*Y` keyed
+                # DIFFERENTLY, so byte-identical instructions written with
+                # different spacing did not group, and the ranking could
+                # UNDERCOUNT a repeat. `.strip()` additionally kills the trailing
+                # space a no-operand instruction used to carry (`'ret '`), which
+                # made every hand-written S1 pattern a trap -- it bit two knives
+                # in two slices, each time by matching NOTHING and reporting
+                # "0 occurrences", which reads exactly like a clean tree.
+                key = f"{mn} {re.sub(r'\s+', '', ops.lower())}".strip()
                 out.append(("I", rel, n, key, size_of(mn, ops), mn))
     return out
 
