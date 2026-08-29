@@ -1379,13 +1379,9 @@ gosub_stk_over:
 ex_gosub:
                 inc     hl                  ; past the GOSUB token
                 call    skip_spaces
-                cp      LINENO_TOKEN        ; $0E,<lineno LE> expected
-                jp      nz,stmt_error
-                inc     hl
-                ld      c,(hl)              ; target line number, LE
-                inc     hl
-                ld      b,(hl)
-                inc     hl                  ; HL = resume point (after the statement)
+                call    req_lineno          ; D-NGRAM10: $0E,<lineno LE> expected --
+                                            ; BC = target, HL = resume point (after
+                                            ; the statement)
                 call    gosub_push          ; push frame; BC=target kept; CF set = full
                 jr      c,gosub_stk_over
                 jp      goto_take_bc        ; BC = target; arm GOTOTGT/GOTOFLAG
@@ -2227,13 +2223,9 @@ ex_on_error:
                 jp      nz,stmt_error
                 inc     hl                  ; past GOTO_TOKEN
                 call    skip_spaces
-                cp      LINENO_TOKEN        ; $0E,lo,hi expected (GOTO's own operand shape)
-                jp      nz,stmt_error
-                inc     hl
-                ld      c,(hl)              ; target line number, LE
-                inc     hl
-                ld      b,(hl)
-                inc     hl                  ; HL -> cursor past the $0E operand
+                call    req_lineno          ; D-NGRAM10: $0E,lo,hi expected (GOTO's
+                                            ; own operand shape) -- BC = the line,
+                                            ; HL past the $0E operand
                 ld      a,b
                 or      c
                 jr      z,oe_disable        ; GOTO 0 -> disable

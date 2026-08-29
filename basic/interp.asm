@@ -213,6 +213,32 @@ req_letter:
                 ret     c                   ; a letter: hand it back untouched
                 jp      stmt_error          ; not a letter: the statement aborts
 
+; --- req_lineno: a LINE NUMBER is REQUIRED at the cursor (D-NGRAM10) --------
+; The fourth-ranked exact repeat in the MAIN regions, and the same idea as
+; req_letter and req_operand above: `cp LINENO_TOKEN / jp nz,stmt_error /
+; inc hl / ld c,(hl) / inc hl / ld b,(hl) / inc hl` stood open-coded at FOUR
+; sites -- RESUME <line> (ex_resume, below), GOTO (ex_goto_at), GOSUB
+; (ex_gosub, program.asm) and ON ERROR GOTO (ex_on_error, program.asm).
+; 10 B each, 40 B in all; an 11 B body plus four 3 B calls is 23: **-17 B**.
+;   in:  A = the token at HL. Every caller already has it -- three from their own
+;        `call skip_spaces`, and RESUME from the `cp NEXT_TOKEN` above its site.
+;   out: BC = the line number (LE), HL past the whole $0E operand -- EXACTLY as
+;        the open-coded form left them, so each caller's next instruction reads
+;        the same state.
+; 🟢 THE BAIL NEVER RETURNS, so unlike D-NGRAM8's decline this is safe behind a
+; `call`: stmt_error falls into raise_error, which resets SP from SAVSTK. There
+; is no `ret` whose depth could change. Checked at the source, not assumed.
+; [[a-shared-tail-is-not-a-decision]]
+req_lineno:
+                cp      LINENO_TOKEN
+                jp      nz,stmt_error
+                inc     hl
+                ld      c,(hl)              ; target line number, LE
+                inc     hl
+                ld      b,(hl)
+                inc     hl
+                ret
+
 ; --- str_target_parse: a STRING VARIABLE TARGET, type-checked and parsed -----
 ; (D-NGRAM9.) Three statements take one: INPUT#'s variable list (files.asm),
 ; LINE INPUT (input.asm) and the MID$ statement (str-engine.asm). All three ran
@@ -1496,13 +1522,8 @@ ex_resume:
                 jr      z,res_same
                 cp      NEXT_TOKEN          ; RESUME NEXT
                 jr      z,res_next
-                cp      LINENO_TOKEN        ; RESUME <line> / RESUME 0
-                jp      nz,stmt_error
-                inc     hl
-                ld      c,(hl)              ; target line number, LE
-                inc     hl
-                ld      b,(hl)
-                inc     hl
+                call    req_lineno          ; D-NGRAM10: RESUME <line> / RESUME 0 --
+                                            ; BC = the line, HL past the operand
                 ld      a,b
                 or      c
                 jr      z,res_same          ; RESUME 0 == RESUME
@@ -1712,13 +1733,8 @@ ex_goto:
                 inc     hl                  ; past the GOTO token
 ex_goto_at:
                 call    skip_spaces
-                cp      LINENO_TOKEN        ; $0E expected
-                jp      nz,stmt_error
-                inc     hl
-                ld      c,(hl)              ; target line number, LE
-                inc     hl
-                ld      b,(hl)
-                inc     hl
+                call    req_lineno          ; D-NGRAM10: $0E expected -- BC = the
+                                            ; line, HL past the operand
 ; goto_resolve: shared tail (error-handling S2b space fix) -- RESUME <line>
 ; (ex_resume, above) jumps in here with BC already holding its target line
 ; number (after its own RESUME-0 special-case check, which GOTO itself does

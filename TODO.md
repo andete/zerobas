@@ -325,6 +325,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       external oracle — which is why this is now 🙋 and not 🤖.
       🙋 **NEEDS-JOOST** — a refactor of the string heap's ownership rules.
 
+- [x] ✅ **D-NGRAM10 (2026-08-29): one `req_lineno` for RESUME / GOTO / GOSUB /
+      ON ERROR GOTO — main page 1 331 -> 348 B free**
+      ([`docs/spec-basic-ngram10.md`](docs/spec-basic-ngram10.md)). The 4th-ranked
+      exact repeat in the main regions: 7 instructions x 4 sites = 40 B, replaced
+      by an 11 B body plus four calls. **-17 B.** 13 rows.
+      🟢 The bail never returns (`stmt_error` -> `raise_error` resets SP), so the
+      `call` is safe — checked at the source, and no interior label sits inside
+      any of the four runs.
+      🔴 **I PREDICTED BOTH KNIVES WRONG AND THE ARMS CAUGHT IT.** K-N10A: I said
+      `b.resume` would not move because its message is untrapped — but an
+      untrapped message IS the error's text and the text follows the code
+      (`<Syntax error>` -> `<Type mismatch>`). K-N10B: I predicted 6 rows and
+      **all 13** moved, controls included — because LINE 10 OF EVERY FIXTURE IS
+      `ON ERROR GOTO 900`, which goes through this very helper.
+      🔴 **AND THE PROBE FOUND TWO FAULTS IN ITSELF:** its blindness check read
+      only the zb column, so a row where BOTH REFERENCES echoed their own source
+      text was scored a DIFF; and the first repair blinded on a word the row also
+      PRINTS when the bail fails, which would have filed a real failure as
+      blindness. It now detects the ECHO signature, on every side.
+      [[readout-blind-to-its-own-subject]]
+
+- [ ] 🔬 **`ON ERROR GOTO <non-line>` IS TRAPPED HERE AND UNTRAPPED ON BOTH
+      REFERENCES.** Found 2026-08-29 by D-NGRAM10's new bail rows
+      ([`docs/spec-basic-ngram10.md`](docs/spec-basic-ngram10.md) §4).
+      `CLS : ON ERROR GOTO A` reads `<Syntax error>` UNTRAPPED on the VG-8020 and
+      the CF-3300, and `ERR 2 AT 30` — trapped by the handler the previous
+      statement armed — on zerobas.
+      🟢 **PRE-EXISTING, VERIFIED BY REVERT:** HEAD gives the identical
+      `ERR 2 AT 30`, so D-NGRAM10 exposed it rather than causing it. ⚠️ That
+      revert check ran **zb only**, which makes its verdict column vacuously
+      SAME — the evidence is the identical READING, not the verdict.
+      ➡️ The question is `ON ERROR`'s DISARM ORDERING: the references appear to
+      drop the current handler before parsing the new target, so the statement's
+      own syntax error cannot be trapped by the handler it is replacing.
+      **Unpriced; 1 row measured, the surrounding shapes unmeasured.**
+      🤖 AUTONOMOUS — the references settle it.
+
 - [x] ✅ **D-SPCLAMP (2026-08-29): THERE IS NO CLAMP — `SPACE$`/`STRING$` RAISE,
       and zerobas already agreed with both references at every point**
       ([`docs/spec-basic-spclamp.md`](docs/spec-basic-spclamp.md),
@@ -921,7 +958,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4007 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4044 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
