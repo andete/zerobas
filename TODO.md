@@ -346,21 +346,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       blindness. It now detects the ECHO signature, on every side.
       [[readout-blind-to-its-own-subject]]
 
-- [ ] 🔬 **`ON ERROR GOTO <non-line>` IS TRAPPED HERE AND UNTRAPPED ON BOTH
-      REFERENCES.** Found 2026-08-29 by D-NGRAM10's new bail rows
-      ([`docs/spec-basic-ngram10.md`](docs/spec-basic-ngram10.md) §4).
-      `CLS : ON ERROR GOTO A` reads `<Syntax error>` UNTRAPPED on the VG-8020 and
-      the CF-3300, and `ERR 2 AT 30` — trapped by the handler the previous
-      statement armed — on zerobas.
-      🟢 **PRE-EXISTING, VERIFIED BY REVERT:** HEAD gives the identical
-      `ERR 2 AT 30`, so D-NGRAM10 exposed it rather than causing it. ⚠️ That
-      revert check ran **zb only**, which makes its verdict column vacuously
-      SAME — the evidence is the identical READING, not the verdict.
-      ➡️ The question is `ON ERROR`'s DISARM ORDERING: the references appear to
-      drop the current handler before parsing the new target, so the statement's
-      own syntax error cannot be trapped by the handler it is replacing.
-      **Unpriced; 1 row measured, the surrounding shapes unmeasured.**
-      🤖 AUTONOMOUS — the references settle it.
+- [ ] 🔬 **`ON ERROR GOTO <non-line>` IS UNTRAPPABLE ON BOTH REFERENCES —
+      MEASURED 2026-08-29 (D-ONERRARM), AND BOTH OF MY HYPOTHESES WERE REFUTED**
+      ([`docs/spec-basic-onerrarm.md`](docs/spec-basic-onerrarm.md),
+      [`scratchpad/onerrarm_probe.py`](scratchpad/onerrarm_probe.py)). 12 rows,
+      4 DIFF. Pre-existing (HEAD gives the same reading).
+      🔴 **NOT "disarm before parsing"** — the guess this item was filed with.
+      `ON ERROR PRINT` fails EARLIER in the same statement and TRAPS on all three
+      sides; `ON ERROR GOTO 12345` fails LATER and traps too. Only the `$0E`
+      operand stage differs. [[a-justification-parenthesis-is-an-unrun-claim]]
+      🔴 **NOT a tokenise-time rejection either.** `CLS:ON ERROR GOTO A:B=9`
+      printing `B` reads the MESSAGE on both references, not `9` — a line
+      rejected at entry would leave `B=9` to run, which the 🟢 control
+      (`ON ERROR GOTO 900:B=9`) shows this shape does report as `9`. The line was
+      stored, executed, and raised UNTRAPPED.
+      ➡️ **SO IT IS A ONE-STAGE ASYMMETRY**, and any fix must reproduce exactly
+      that: trap the wrong-token stage, trap the undefined-line stage, and NOT
+      trap the operand stage in between.
+      ⚠️ **UNPRICED AND NOT CHEAP:** `req_lineno` (D-NGRAM10) is now shared by
+      four verbs and only ON ERROR wants this exit, so it needs a second entry
+      point or a flag — against a page 1 that was 348 B free on 2026-08-29
+      (`make basic-reloc`; do not quote this). And "untrapped" must be
+      EXPRESSIBLE: it needs a raise that skips the trap check, which is not what
+      `stmt_error` does.
+      🤖 AUTONOMOUS — the references settle the behaviour; the cost is the open
+      part.
 
 - [x] ✅ **D-SPCLAMP (2026-08-29): THERE IS NO CLAMP — `SPACE$`/`STRING$` RAISE,
       and zerobas already agreed with both references at every point**
@@ -958,7 +968,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4044 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4054 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
