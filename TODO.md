@@ -635,16 +635,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       to a baseline written by a fully-green FULL battery — a PROOF, not a
       judgement about blast radius. 12 arms, all live.
 
-- [ ] 🔬 **THE REFCACHE STORE GROWS AND NOTHING PRUNES IT.** Filed 2026-08-28 by
-      D-REFCACHE ([`docs/spec-refcache.md`](docs/spec-refcache.md) §6). One full
-      battery stored **3132 entries / 17 MB**; `rm -rf ~/.cache/zerobas/refcache`
-      is currently the entire recovery procedure and costs one cold battery.
-      ⚠️ **THE REAL QUESTION IS NOT DISK, IT IS STALENESS.** A well-formed but
-      WRONG reference reading — taken while the reference machine was
-      misbehaving in a way `storable()` does not catch — is frozen until someone
-      runs `ZEROBAS_REFCACHE=verify`. Nothing schedules that. A periodic verify
-      in the battery, or an age cap on entries, would close it; neither is
-      measured. 🤖 AUTONOMOUS — the reference or a gate settles it.
+- [x] ✅ **D-REFAGE (2026-08-29): REFCACHE ENTRIES NOW EXPIRE, AND THE STORE HAS
+      A READOUT THAT CAN GO RED** ([`docs/spec-refcache.md`](docs/spec-refcache.md)
+      §8). `make refcache-check` also runs `--maintain`.
+      🎯 **THE ITEM NAMED ITS OWN REAL COMPLAINT: the hazard was never disk, it
+      was STALENESS.** A well-formed but WRONG reference reading was frozen
+      FOREVER because nothing re-measured it and nothing scheduled
+      `ZEROBAS_REFCACHE=verify`. Past `MAX_AGE_DAYS` (14) an entry now reads as a
+      MISS and is re-measured against the live machine — self-healing, no
+      operator step. **An age cap does not DETECT a bad reading; it BOUNDS how
+      long one survives, and that is all that is claimed for it.**
+      ⚠️ Deliberately NOT a random re-verify sample: re-measuring a different
+      subset every run makes the probe's own wall-clock unpredictable, and this
+      cache exists to make repeats cheap.
+      📏 **MEASURED: 5386 entries, 11.2 MB, oldest 0.7 d.** The filed figure
+      (3132 / 17 MB) had rotted in BOTH directions. Re-run `--maintain`.
+      🟢 **10 new arms**, two of them the controls that matter: a FRESH entry must
+      NOT be expired (else every other arm passes on a store that never wrote),
+      and prune must KEEP a fresh entry (else a prune that deletes everything
+      passes). [[an-unnamed-outcome-reads-as-no-outcome]]
 
 - [ ] 💰 **A 2 B CARVE WITH ITS EVIDENCE ALREADY ATTACHED: `ems_typecheck`'s
       two `pop de` ARE PROVABLY UNNECESSARY.** Filed 2026-08-26 by D-MIDOP
@@ -912,7 +921,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3998 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4007 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

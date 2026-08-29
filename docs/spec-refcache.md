@@ -172,3 +172,41 @@ procedure and costs one cold battery.
 taken while the reference machine was misbehaving for some reason `storable()`
 does not catch — would otherwise be frozen forever. The store's whole value is
 that it is long-lived, which is also the only thing that makes it dangerous.
+
+## 8. D-REFAGE (2026-08-29) — entries expire, and the store has a readout
+
+The filed residual was *"the store grows and nothing prunes it"*, and it named
+its own real complaint: **the hazard was never disk, it was staleness.** A
+well-formed but **wrong** reference reading — taken while the reference machine
+misbehaved in a way `storable()` does not catch — was frozen **forever**, because
+nothing ever re-measured it and nothing scheduled `ZEROBAS_REFCACHE=verify`.
+`rm -rf ~/.cache/zerobas/refcache` was the entire recovery procedure.
+
+**An age cap does not detect a bad reading. It bounds how long one can survive**
+— and that is what is claimed for it, no more. Past `MAX_AGE_DAYS` (14, override
+with `ZEROBAS_REFCACHE_MAX_AGE_DAYS`; 0 disables) an entry reads as a **miss** and
+is re-measured against the live machine. Self-healing, no scheduling, no operator
+step.
+
+⚠️ **Deliberately not a random re-verify sample.** A probe that re-measures a
+different subset on every run makes its own wall-clock unpredictable, and this
+cache exists to make repeats cheap.
+
+🟢 **The expiry is NAMED in the tally, not folded into `miss`** — an expired entry
+is a reading this run *deliberately refused to reuse*, which is a different fact
+from never having had one. [[an-unnamed-outcome-reads-as-no-outcome]]
+
+`make refcache-check` now also runs `--maintain`: it prunes past-cap entries and
+prints the store. 🔴 **And that readout can go RED** — after a prune, no entry may
+be past the cap; if one is, expiry is not doing what this section claims. A
+readout that cannot fail is a print statement.
+
+**Measured 2026-08-29: 5386 entries, 11.2 MB, oldest 0.7 d.** The filed figure
+(*3132 entries / 17 MB*) had rotted in **both** directions — more entries, less
+disk. Re-run `--maintain`; do not quote this line.
+
+**Ten new arms (KA1–KA10)**, and two of them are the controls that matter: KA1
+asserts a **fresh** entry is *not* expired (without it, every arm below would pass
+on a store that simply never wrote), and KA9 asserts prune **keeps** a fresh entry
+(a prune that deleted everything would pass KA8). KA10 checks the cap-0 escape
+hatch actually disables expiry.

@@ -708,6 +708,7 @@ temp-root-check:
 # stored entry and requires the mismatch to be caught against a real machine.
 refcache-check:
 	python3 probes/lib/probe_refcache.py --selftest
+	python3 probes/lib/probe_refcache.py --maintain
 
 # --- D-KNIFEROM (docs/spec-kniferom.md): a knife must prove its cut landed ----
 # A knife writes a source file and rebuilds. If the rebuild does not happen, the

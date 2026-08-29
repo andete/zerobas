@@ -99,6 +99,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 
 import probe_tmp                        # noqa: F401 -- sets tempfile.tempdir
 # 🎯 NOT DECORATION. `store()` writes its temp file with an explicit `dir=` (it
@@ -117,7 +118,7 @@ ROOT = (os.environ.get("ZEROBAS_REFCACHE_DIR")
 NON_READINGS = ("<NO OUTPUT>", "<NO CAPTURE>")
 
 STATS = {"hit": 0, "miss": 0, "store": 0, "bypass": 0, "verify_ok": 0,
-         "verify_bad": 0, "refused": 0, "replayed": 0}
+         "verify_bad": 0, "refused": 0, "replayed": 0, "expired": 0}
 
 
 def _sha(b: bytes) -> str:
@@ -273,14 +274,91 @@ def _path(key: str) -> str:
     return os.path.join(ROOT, key[:2], key + ".json")
 
 
+# --- D-REFAGE (2026-08-29): entries EXPIRE ----------------------------------
+# 🔴 THE HAZARD WAS NEVER DISK, IT WAS STALENESS. A well-formed but WRONG
+# reference reading -- taken while the reference machine misbehaved in a way
+# `storable()` does not catch -- was frozen FOREVER, because nothing ever
+# re-measured it and nothing scheduled `ZEROBAS_REFCACHE=verify`.
+# 🎯 AN AGE CAP DOES NOT DETECT A BAD READING; it BOUNDS HOW LONG ONE CAN SURVIVE,
+# which is the honest thing to claim for it. After MAX_AGE_DAYS an entry reads as
+# a MISS and is re-measured against the live machine -- self-healing, needing no
+# scheduling and no operator step. `rm -rf` stops being the recovery procedure.
+# ⚠️ Deliberately NOT a random re-verify sample: a probe that re-measures a
+# different subset on every run makes its own wall-clock unpredictable, and this
+# cache exists to make repeats cheap.
+MAX_AGE_DAYS = float(os.environ.get("ZEROBAS_REFCACHE_MAX_AGE_DAYS", "14"))
+_MAX_AGE = MAX_AGE_DAYS * 86400.0
+
+
+def _age(path: str) -> float:
+    """Seconds since the entry was written. -1 when it cannot be told."""
+    try:
+        return max(0.0, time.time() - os.path.getmtime(path))
+    except OSError:
+        return -1.0
+
+
+def expired(path: str) -> bool:
+    """An entry older than the cap. A cap of 0 or less disables expiry."""
+    if _MAX_AGE <= 0:
+        return False
+    a = _age(path)
+    return a >= 0 and a > _MAX_AGE
+
+
 def load(key: str):
     """-> (result, settle) or (None, None)."""
+    path = _path(key)
+    if expired(path):
+        # Read as a MISS, so the caller re-measures against the live machine.
+        STATS["expired"] += 1
+        return None, None
     try:
-        with open(_path(key), "r") as fh:
+        with open(path, "r") as fh:
             d = json.load(fh)
         return d["result"], _dec(d.get("settle")) if d.get("settle") else None
     except (OSError, ValueError, KeyError):
         return None, None
+
+
+def prune(max_age_days: float | None = None) -> tuple[int, int]:
+    """Delete every entry past the cap. -> (removed, kept). Disk is the SECOND
+    reason this exists; the first is that an expired entry left on disk is a
+    stale reading waiting for the cap to be raised."""
+    limit = _MAX_AGE if max_age_days is None else max_age_days * 86400.0
+    removed = kept = 0
+    for dirpath, _dirs, files in os.walk(ROOT):
+        for fn in files:
+            if not fn.endswith(".json"):
+                continue
+            fp = os.path.join(dirpath, fn)
+            a = _age(fp)
+            if limit > 0 and a > limit:
+                try:
+                    os.unlink(fp); removed += 1
+                except OSError:
+                    kept += 1
+            else:
+                kept += 1
+    return removed, kept
+
+
+def store_stats() -> tuple[int, int, float]:
+    """-> (entries, bytes, oldest_age_seconds) over the whole store."""
+    n = size = 0
+    oldest = 0.0
+    for dirpath, _dirs, files in os.walk(ROOT):
+        for fn in files:
+            if not fn.endswith(".json"):
+                continue
+            fp = os.path.join(dirpath, fn)
+            n += 1
+            try:
+                size += os.path.getsize(fp)
+            except OSError:
+                pass
+            oldest = max(oldest, _age(fp))
+    return n, size, oldest
 
 
 def storable(result) -> bool:
@@ -328,7 +406,7 @@ def summary() -> str:
     # was read as evidence on that silence; it was not evidence of anything until
     # this line listed every counter.
     if not any(s[k] for k in ("hit", "miss", "bypass", "verify_ok",
-                              "verify_bad", "store", "refused")):
+                              "verify_bad", "store", "refused", "expired")):
         return ""
     bits = [f"{s['hit']} hit", f"{s['miss']} miss"]
     if VERIFY:
@@ -341,6 +419,12 @@ def summary() -> str:
         bits.append(f"{s['replayed']} replayed provenance")
     if s["bypass"]:
         bits.append(f"{s['bypass']} bypassed")
+    if s["expired"]:
+        # Named, not folded into `miss`: an expired entry is a reading this run
+        # DELIBERATELY refused to reuse, and that is a different fact from never
+        # having had one. [[an-unnamed-outcome-reads-as-no-outcome]]
+        bits.append(f"{s['expired']} EXPIRED past {MAX_AGE_DAYS:g}d "
+                    f"(re-measured)")
     if VERIFY:
         bits.append(f"{s['verify_ok']} entries CONFIRMED against a fresh reading"
                     f", {s['verify_bad']} MISMATCH")
@@ -548,12 +632,81 @@ def _selftest() -> int:
         shutil.rmtree(RC.ROOT, ignore_errors=True)
         RC.ROOT = saved_root
 
+    # --- D-REFAGE: expiry, prune, and the store readout --------------------
+    saved_root = RC.ROOT
+    RC.ROOT = tempfile.mkdtemp(prefix="refage-")
+    try:
+        RC.store("a" * 40, ["r1"], "M")
+        p_fresh = RC._path("a" * 40)
+        arm("KA1 a FRESH entry is not expired (the green control -- without it "
+            "every arm below passes on a store that simply never wrote)",
+            os.path.exists(p_fresh) and not RC.expired(p_fresh))
+        arm("KA2 a fresh entry LOADS", RC.load("a" * 40)[0] == ["r1"])
+
+        old_t = time.time() - (RC.MAX_AGE_DAYS + 1) * 86400
+        os.utime(p_fresh, (old_t, old_t))
+        arm("KA3 an entry past the cap reads as EXPIRED", RC.expired(p_fresh))
+        before = RC.STATS["expired"]
+        arm("KA4 🔴 THE ARM THAT MATTERS: an expired entry LOADS AS A MISS, so "
+            "the caller re-measures against the live machine",
+            RC.load("a" * 40)[0] is None)
+        arm("KA5 and the refusal is COUNTED, not silent",
+            RC.STATS["expired"] == before + 1)
+        arm("KA6 the summary NAMES the expiry rather than folding it into miss",
+            "EXPIRED" in RC.summary())
+
+        n, _sz, oldest = RC.store_stats()
+        arm("KA7 store_stats sees the entry and its age", n == 1 and oldest > 0)
+        removed, kept = RC.prune()
+        arm("KA8 prune deletes the expired entry", (removed, kept) == (1, 0))
+
+        RC.store("b" * 40, ["r2"], "M")
+        removed, kept = RC.prune()
+        arm("KA9 prune KEEPS a fresh entry (negative control -- a prune that "
+            "deletes everything would pass KA8)", (removed, kept) == (0, 1))
+
+        saved_max = RC._MAX_AGE
+        RC._MAX_AGE = 0
+        os.utime(RC._path("b" * 40), (old_t, old_t))
+        arm("KA10 a cap of 0 DISABLES expiry (the escape hatch works)",
+            not RC.expired(RC._path("b" * 40)))
+        RC._MAX_AGE = saved_max
+    finally:
+        shutil.rmtree(RC.ROOT, ignore_errors=True)
+        RC.ROOT = saved_root
+
     print()
     print("ALL PASS — refcache falsification suite" if not fails
           else f"🔴 {len(fails)} ARM(S) FAILED: {fails}")
     return 1 if fails else 0
 
 
+def maintain() -> int:
+    """Prune expired entries and print what the store looks like.
+
+    🟢 THE PRUNE HAS TO BE SOMEWHERE THAT ACTUALLY RUNS. An age cap that only
+    takes effect on `load` bounds STALENESS but never reclaims disk, and the
+    filed item's whole complaint was that `rm -rf` was the entire recovery
+    procedure. `make refcache-check` runs every battery, costs nothing, and is
+    already the file's gate."""
+    removed, kept = prune()
+    n, size, oldest = store_stats()
+    print(f"refcache store: {n} entr(ies), {size / 1e6:.1f} MB, "
+          f"oldest {oldest / 86400:.1f}d, cap {MAX_AGE_DAYS:g}d; "
+          f"pruned {removed}, kept {kept}")
+    # 🔴 A READOUT THAT CANNOT GO RED IS A PRINT STATEMENT. After a prune no
+    # entry may be past the cap -- if one is, expiry is not doing what the two
+    # sentences above claim.
+    if MAX_AGE_DAYS > 0 and oldest > _MAX_AGE:
+        print(f"🔴 an entry survived the prune at {oldest / 86400:.1f}d "
+              f"> {MAX_AGE_DAYS:g}d cap")
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
-    raise SystemExit(_selftest() if "--selftest" in sys.argv else
-                     (print(summary() or "refcache: idle"), 0)[1])
+    if "--selftest" in sys.argv:
+        raise SystemExit(_selftest())
+    if "--maintain" in sys.argv:
+        raise SystemExit(maintain())
+    raise SystemExit((print(summary() or "refcache: idle"), 0)[1])
