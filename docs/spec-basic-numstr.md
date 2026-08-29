@@ -155,12 +155,17 @@ The host was carrying load ~6 from four other users; `math-acceptance` fails in
 4 s under that contention and **passes solo**. Two batteries I killed while
 diagnosing made it worse.
 
-**So the follow-up is withdrawn, not shipped.** The committed placement — at
-`run_cases` entry — is the one that passed a 47/47 battery, and it stands. Moving
-it to the hit path is still worth doing (the miss path is already guarded at
-`Popen`, so an entry check costs ~20 s per battery for nothing), but that is an
-apparatus change and **an apparatus change without a green battery is not
-evidence of anything**. Filed for a quiet host.
+**The follow-up was withdrawn unshipped that night** — an apparatus change
+without a green battery is not evidence of anything — and **re-applied and
+validated on 2026-08-30 once the host went quiet: 47/47 green**, three units
+flaking and all three adjudicated green on serial retry.
+
+🟢 **That result also confirms the starvation diagnosis rather than assuming it:**
+the same change on the same tree went red under load ~6 and green under load
+~2.5. The move itself is justified by **cost, not safety** — a miss goes on to
+`Popen`, which is already guarded, so an entry check buys no extra cover and adds
+a `make -q` to every one of the thousands of `run_cases` calls a batched probe
+makes.
 
 🎯 Twice in one evening a plausible causal story survived until it was checked
 against a fact already in hand. [[a-justification-parenthesis-is-an-unrun-claim]]

@@ -420,28 +420,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Assume +1 B per surviving `jr` for anything inserted there.
       [[two-rules-that-coincide-on-every-row-you-have]]
 
-- [ ] 🔬 **MOVE D-CACHEPRE's PREFLIGHT FROM `run_cases` ENTRY TO THE CACHE-HIT
-      PATH — WRITTEN, MEASURED SOUND, AND WITHDRAWN UNSHIPPED FOR WANT OF A GREEN
-      BATTERY.** Filed 2026-08-29
-      ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md) §5.1).
-      ➡️ The miss path is ALREADY guarded at `Popen`, so an entry check costs
-      ~20 s per battery for no extra cover; the hit path is the one that had none.
-      Both falsification directions were re-run after the move (a cached run on a
-      touched source refuses; a fresh one measures).
-      🔴 **THE HYPOTHESIS THAT MOTIVATED IT WAS REFUTED.** I moved it believing
-      the entry placement had broken the battery — but **the emulator tier forces
-      `ZEROBAS_REFCACHE=0` and never takes the cached path at all**, so neither
-      placement can affect it. The move fixed nothing, and the next battery failed
-      identically.
-      🎯 **THE REAL CAUSE WAS HOST CPU STARVATION, AND THE APPARATUS SAID SO** —
-      *"the stall watchdog killed it after 989 s wall … a host-clock deadline
-      CANNOT separate a frozen emulator from one starved of CPU … check host load
-      before calling this REAL"*. Host load ~6 from four other users;
-      `math-acceptance` fails in 4 s under it and **passes solo**.
-      ⚠️ **WITHDRAWN RATHER THAN COMMITTED: an apparatus change without a green
-      battery is not evidence of anything.** Re-apply and validate on a quiet
-      host. [[apparatus-is-part-of-the-measurement]]
-      🤖 AUTONOMOUS — needs only an idle machine.
+- [x] ✅ **D-CACHEPRE's PREFLIGHT MOVED TO THE CACHE-HIT PATH — withdrawn
+      2026-08-29 for want of a green battery, re-applied and VALIDATED
+      2026-08-30: 47/47 green** ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md)
+      §5.1).
+      ➡️ Justified by **cost, not safety**: a miss goes on to `Popen`, which is
+      already guarded, so an entry check buys no extra cover and adds a `make -q`
+      to every one of the thousands of `run_cases` calls a batched probe makes.
+      The hit path is the one that had no guard at all.
+      🔴 **THE HYPOTHESIS THAT FIRST MOTIVATED THE MOVE WAS REFUTED** — I believed
+      the entry placement had reddened a battery, but the emulator tier forces
+      `ZEROBAS_REFCACHE=0` and never takes the cached path, so neither placement
+      can affect it. **The real cause was HOST CPU STARVATION, which the stall
+      watchdog names in its own message** ("a host-clock deadline CANNOT separate
+      a frozen emulator from one starved of CPU").
+      🟢 **AND THE RE-RUN CONFIRMS THAT RATHER THAN ASSUMING IT:** the same change
+      on the same tree went RED under load ~6 and GREEN under load ~2.5.
+      [[apparatus-is-part-of-the-measurement]]
 
 - [x] ✅ **D-CACHEPRE (2026-08-29): A WARM REFCACHE SILENTLY DISABLED THE STALE-ROM
       PREFLIGHT** ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md) §5).

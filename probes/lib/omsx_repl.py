@@ -1551,6 +1551,10 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     return caps
 
 
+# Machines whose preflight has already passed in THIS process (see run_cases).
+_PREFLIGHTED: set = set()
+
+
 def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
     """D-REFCACHE wrapper around `_run_cases_impl` (the real body, below).
 
@@ -1565,24 +1569,6 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
     passes it. (Getting that wrong would only ever cause a miss, never a wrong
     hit -- but a cache that misses on equivalent calls is not worth having.)
     """
-    # 🔴 D-CACHEPRE (2026-08-29): THE PREFLIGHT RUNS HERE, BEFORE THE CACHE.
-    # `omsx_preflight.guarded()` is applied at the `Popen` call inside
-    # `_run_cases_impl` -- so it only ever ran when the emulator actually
-    # LAUNCHED. A fully-cached call returns above that, which meant THE REFCACHE
-    # SILENTLY DISABLED THE STALENESS GUARD: with a warm store and a ROM that no
-    # longer matches its sources, a probe printed a complete, self-consistent,
-    # entirely plausible table and said nothing.
-    # 🎯 IT BIT TWICE IN TEN MINUTES. A `make repack-machine` failed on an
-    # assembler error (pasmo fails cleanly, leaving the PREVIOUS ROM in place),
-    # the cache hit every row because it keys on the ROM's identity -- which had
-    # not changed -- and the report looked exactly like a measurement of the edit
-    # that had just failed to build. It was caught only by happening to read the
-    # build's exit code. [[apparatus-is-part-of-the-measurement]]
-    # The check is a few `make -q` calls; it costs nothing next to a boot, and on
-    # the cached path it is the ONLY thing standing between a stale ROM and a
-    # confident answer.
-    omsx_preflight.preflight(machine)
-
     import inspect
     bound = inspect.signature(_run_cases_impl).bind(machine, cases, **kw)
     bound.apply_defaults()
@@ -1604,6 +1590,34 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
     servable = (cached is not None and len(cached) == len(cases)
                 and (settle is None or settle_cached is not None))
     if servable and not rc.VERIFY:
+        # 🔴 D-CACHEPRE (2026-08-29): THE STALENESS GUARD LIVES ON THE HIT PATH.
+        # `omsx_preflight.guarded()` is applied at the `Popen` call inside
+        # `_run_cases_impl`, so it only ever ran when the emulator actually
+        # LAUNCHED -- and a served hit returns before that. THE REFCACHE SILENTLY
+        # DISABLED THE GUARD: with a warm store and a ROM that no longer matches
+        # its sources, a probe printed a complete, self-consistent, entirely
+        # plausible table and said nothing. It bit twice in ten minutes, after a
+        # `make repack-machine` failed on an assembler error (pasmo fails
+        # cleanly, leaving the PREVIOUS ROM in place, so the cache's ROM-identity
+        # key was unchanged and every row hit). Caught only by reading the
+        # build's exit code. [[apparatus-is-part-of-the-measurement]]
+        #
+        # ⚠️ THE HIT PATH, NOT run_cases ENTRY -- and the reason is cost, not
+        # safety. A MISS goes on to Popen, which is already guarded, so an entry
+        # check buys no extra cover and adds a `make -q` to every one of the
+        # thousands of run_cases calls a batched probe makes: ~20 s per battery
+        # for an answer that cannot change. The hit path is the one that had no
+        # guard at all.
+        # 🔴 AN EARLIER NOTE HERE BLAMED THE ENTRY PLACEMENT FOR A RED BATTERY.
+        # That was wrong and is recorded in docs/spec-basic-numstr.md §5.1: the
+        # emulator tier forces ZEROBAS_REFCACHE=0 and never takes this branch, so
+        # neither placement can affect it. Those failures were host CPU
+        # starvation, which the stall watchdog names in its own message.
+        # Memoised per process: within one process the ROM is fixed, and a knife
+        # runner rebuilds BETWEEN probe invocations, each a fresh process.
+        if machine not in _PREFLIGHTED:
+            omsx_preflight.preflight(machine)
+            _PREFLIGHTED.add(machine)
         rc.STATS["hit"] += 1
         if settle is not None:
             # give the caller EXACTLY the dict it would have got, plus the flag
