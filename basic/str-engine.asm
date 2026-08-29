@@ -1059,15 +1059,12 @@ ex_mid_stmt:                                ; (traps T2) entered with HL already
                 cp      '('
                 jp      nz,stmt_error
                 inc     hl                  ; HL -> target var name
-                call    var_str_type        ; A=1 iff `$`-suffixed (HL unmoved)
-                or      a
-                jp      z,stmt_error         ; not a string var -> error
+                call    str_target_parse    ; string-var target: type-check, parse,
+                                            ; raise -- D-NGRAM9
                 ; D-LVFIX (docs/spec-basic-lvsites.md §4.2): the target is any
                 ; string variable REFERENCE, array element included -- measured
                 ; on BOTH references (docs/lvsites-msx1-characterization.md,
                 ; m.ary), which is the one row of that document with two.
-                call    tgt_parse           ; BC = key, (TGT_ADDR) = elem addr or 0
-                jp      nz,fp_runtime_error ; resolve failed -- FPERR already mapped
                 push    hl                  ; [cursor] guard across the lookup
                 call    tgt_desc            ; HL -> dest descriptor (STRTAB / STR_EMPTY),
                                             ; or the ARYTAB-RELATIVE OFFSET of the

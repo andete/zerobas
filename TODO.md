@@ -331,6 +331,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [x] ✅ **D-NGRAM9 (2026-08-28): `str_target_parse` for INPUT# / LINE INPUT /
+      MID$-statement, AND a live divergence closed for 0 B**
+      ([`docs/spec-basic-ngram9.md`](docs/spec-basic-ngram9.md)). **Low read
+      114 -> 134 B free, page 1 335 -> 331** (READINGS; run `make basic-reloc`).
+      8 rows, DIFF 2 -> 0.
+      🎯 **`MID$(A,1,1)="X"` and `LINE INPUT A` answered ERR 2 where both
+      references answer ERR 13.** Pre-existing. One retargeted `jp z`, three
+      sites at once, 0 B.
+      🟢 **A DIRECT RAISE IS SAFE HERE AND WAS NOT IN D-NGRAM8** — this test is
+      the FIRST thing the statement does, so nothing can be pending to override.
+      The gates owning the ERRMARK and pending-error invariants
+      (`missing`/`stmtpend`/`penderr`) were run BEFORE the suite, not after.
+
+- [ ] 🔬 **ARE THE THREE `jp nz,fp_runtime_error` IN `str_target_parse`
+      REDUNDANT? 9 B.** Filed 2026-08-28 by D-NGRAM9
+      ([`docs/spec-basic-ngram9.md`](docs/spec-basic-ngram9.md) §4).
+      📏 K-N9B nops the bail and moves **0 rows**, ROM provably changed —
+      **structurally, not for want of a row**: it changes WHEN the fault is
+      raised, not WHETHER, and `exec_stmt`'s boundary check raises the same
+      ERR 11 a few instructions later.
+      ⚠️ **"No row can see it" is a statement about the ROW SET only when the
+      difference is observable at all** — here it may genuinely not be. Read the
+      `exec_stmt` contract rather than building another knife.
+      🤖 AUTONOMOUS — the code settles it.
+
 - [x] ✅ **D-NGRAM8 (2026-08-28): `str_arg_snap` for LEFT$/RIGHT$/MID$**
       ([`docs/spec-basic-ngram8.md`](docs/spec-basic-ngram8.md)). **Low read
       106 -> 114 B free** — 12 B of carve minus 4 B the decline needs back.
@@ -788,7 +813,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3874 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3899 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

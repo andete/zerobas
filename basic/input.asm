@@ -201,17 +201,14 @@ inpc_synpop     equ     ex_let_err
 ; --- LINE INPUT: the whole typed line into one string variable -------------
 inpc_line:
                 call    req_letter          ; D-NGRAM: an INPUT target must be a name
-                call    var_str_type
-                or      a
-                jp      z,stmt_error        ; LINE INPUT requires a string variable
-                call    tgt_parse           ; D-ARYLV: BC = key, HL past the whole
+                call    str_target_parse    ; string-var target: type-check, parse,
+                                            ; raise -- D-NGRAM9
                                             ; reference, (TGT_ADDR) = element address or
                                             ; 0; A already holds the mode (1) it wants.
                                             ; ⚠️ LINE INPUT re-parses its own target
                                             ; rather than sharing the list driver above,
                                             ; which is why it was a THIRD divergent
                                             ; INPUT arm and needs its own call here.
-                jp      nz,fp_runtime_error ; the stack is clean at this point --
                                             ; inpc_dispatch pushes [varstart] only on the
                                             ; INPUT path, AFTER the branch to here
                 push    hl                  ; guard the text cursor across the read

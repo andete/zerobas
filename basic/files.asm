@@ -925,17 +925,14 @@ inp_readvar:
                 jp      nz,stmt_error
                 inc     hl
                 call    req_letter          ; D-NGRAM: a string variable name must follow
-                call    var_str_type        ; A = 1 if the name has a '$' suffix
-                or      a
-                jp      z,stmt_error        ; numeric INPUT# = Phase 3
+                call    str_target_parse    ; string-var target: type-check, parse,
+                                            ; raise -- D-NGRAM9
                 ; D-LVFIX (docs/spec-basic-lvsites.md §4.2): the target is any
                 ; string variable REFERENCE, array element included -- measured
                 ; on the CF-3300 (docs/lvsites-msx1-characterization.md, f.ary).
                 ; This is byte for byte the edit D-ARYLV made at inpc_vstr, and
                 ; needs no ARYTAB-delta correction (§5.5): read_into_strscr calls
                 ; only arl_getbyte, which allocates no variable.
-                call    tgt_parse           ; BC = key, (TGT_ADDR) = elem addr or 0
-                jp      nz,fp_runtime_error ; the resolve failed -- FPERR already
                                             ; mapped, so this yields the
                                             ; reference's own `Subscript out of
                                             ; range`, not `Syntax error`

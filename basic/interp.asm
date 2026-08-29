@@ -213,6 +213,38 @@ req_letter:
                 ret     c                   ; a letter: hand it back untouched
                 jp      stmt_error          ; not a letter: the statement aborts
 
+; --- str_target_parse: a STRING VARIABLE TARGET, type-checked and parsed -----
+; (D-NGRAM9.) Three statements take one: INPUT#'s variable list (files.asm),
+; LINE INPUT (input.asm) and the MID$ statement (str-engine.asm). All three ran
+; the identical 13 B sequence -- require the `$` suffix, raise ERR 2 without it,
+; parse the reference (array element included, D-ARYLV), and raise a deferred
+; numeric fault if the subscript evaluation left one.
+;   in:  HL = cursor on the variable name.
+;   out: BC = key, HL past the whole reference, (TGT_ADDR) = element address or
+;        0 -- exactly as the open-coded form left them, so each caller's
+;        following `push hl` pushes the same value.
+; 🟢 BOTH BAILS NEVER RETURN (stmt_error and fp_runtime_error each reset SP from
+; SAVSTK), so unlike D-NGRAM8's decline this sequence is safe behind a `call`:
+; there is no `ret` whose depth could change. Checked, not assumed.
+; [[a-shared-tail-is-not-a-decision]]
+str_target_parse:
+                call    var_str_type        ; A = 1 iff the name has a `$` suffix
+                or      a
+                jp      z,type_mismatch_error   ; D-NGRAM9: BOTH REFERENCES ANSWER
+                                            ; ERR 13 here, not the ERR 2 this
+                                            ; answered -- `MID$(A,1,1)="X"` and
+                                            ; `LINE INPUT A` with a numeric A.
+                                            ; Pre-existing (verified against HEAD).
+                                            ; ⚠️ A DIRECT raise is safe HERE and was
+                                            ; not in D-NGRAM8: this test is the
+                                            ; FIRST thing the statement does, so no
+                                            ; fault can already be pending for it
+                                            ; to override.
+                call    tgt_parse           ; D-ARYLV: BC = key, HL past the
+                                            ; reference, (TGT_ADDR) = element addr
+                jp      nz,fp_runtime_error ; a deferred fault from the subscript
+                ret
+
 ; --- req_operand: a value is REQUIRED at the cursor (D-NGRAM2) -------------
 ; The other half of the same idea as req_letter above, and the top-ranked exact
 ; repeat in the MAIN regions: `call skip_spaces / or a / jp z,loc_missing /
