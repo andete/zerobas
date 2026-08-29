@@ -719,6 +719,15 @@ knife-guard-check:
 	python3 tools/check_knife_guard.py --selftest
 	python3 tools/check_knife_guard.py
 
+# --- D-KNIFEROM2 (docs/spec-basic-kniferom2.md): every knife runner must ACT on
+# its ROM hash, or say why it has none. A knife can be silently inert because the
+# build did not happen, and it reports as "moved 0 rows" -- indistinguishable
+# from an arm that legitimately found nothing.
+.PHONY: knife-rom-guard-check
+knife-rom-guard-check:
+	python3 tools/check_knife_rom_guard.py --selftest
+	python3 tools/check_knife_rom_guard.py
+
 # --- D-SELFTEST (docs/spec-selftest.md): collect the exit codes nobody read --
 # A script outside the battery can be RED FOR MONTHS and nobody learns. Measured
 # 2026-08-28: of 15 scripts advertising `--selftest`, THREE were red -- two

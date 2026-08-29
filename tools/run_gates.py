@@ -68,7 +68,8 @@ STATIC = """basic-reloc subrom-abi-check subrom-closure-check unit-test deadcode
 wall-assertion-check redundant-load-check rowshape-check injector-check
 temp-root-check todo-citation-check chokepoint-check wall-literal-check
 preflight-check latch-check diskdep-check switch-build-check kwsweep
-patch-freshness-check refcache-check knife-guard-check selftest-check
+patch-freshness-check refcache-check knife-guard-check knife-rom-guard-check
+selftest-check
 deffn-selftest""".split()
 
 EMULATOR = """banner-acceptance string-acceptance str-domain-acceptance strparen-acceptance

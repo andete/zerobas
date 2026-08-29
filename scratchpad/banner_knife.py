@@ -53,6 +53,23 @@ def main() -> int:
         print(f"  restored {SRC.relative_to(ROOT)} byte-identically")
     atexit.register(restore)
 
+    # 🔴 THE ROM HASH ROUND THE PLANT (added 2026-08-29, D-KNIFEROM2). This
+    # runner checked its ANCHOR and its RESTORE -- both over the SOURCE -- and
+    # never once asked whether the cut reached the ROM. Writing the source and
+    # running make can leave the previous image in place, and the probe then
+    # measures the UNCUT machine: the gate stays GREEN and the arm reports
+    # "the knife did not redden anything", which is exactly what a knife with
+    # nothing to say looks like. It was the last of 52 runners without this.
+    # [[a-knife-can-be-inert-because-the-build-did-not-happen]]
+    def rom_hashes():
+        out = []
+        for name in ("basic-reloc.rom", "sub.rom", "zerobas-main-eu.rom"):
+            p = ROOT / "build" / name
+            out.append(hashlib.sha256(p.read_bytes()).hexdigest()[:8]
+                       if p.exists() else "<absent>")
+        return tuple(out)
+
+    before_rom = rom_hashes()
     SRC.write_text(orig.replace(CUT, WITH, 1))
     print("K-BANNER: the title body returns before its print loop "
           "(INITXT kept); rebuilding and re-running the gate")
@@ -61,6 +78,13 @@ def main() -> int:
     if r.returncode != 0:
         print(f"INSTRUMENT FAULT: the KNIFED tree does not build:\n"
               f"{(r.stdout + r.stderr)[-1200:]}")
+        return 2
+    after_rom = rom_hashes()
+    print(f"  ROM {' '.join(before_rom)}  ->  {' '.join(after_rom)}")
+    if after_rom == before_rom:
+        print("INSTRUMENT FAULT: the ROM did NOT change under the cut -- the "
+              "gate below would measure the UNCUT machine, and a green result "
+              "would mean nothing.")
         return 2
     g = subprocess.run([sys.executable,
                         str(ROOT / "probes/basic/basic_probe_banner.py"), "--gate"],

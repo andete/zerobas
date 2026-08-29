@@ -406,32 +406,42 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🟢 **All four ngram knife files now score against an EXPECTED ROW SET.**
       [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
 
-- [ ] 🔬 **DO ALL 52 KNIFE RUNNERS *ACT* ON THEIR ROM HASH, OR ONLY PRINT IT?
-      MEASURED 2026-08-29 AND THE COUNT IS NOT YET TRUSTWORTHY.** Denominator:
-      **52** runners in `scratchpad/` (not the 41 previously filed).
-      🔴 **I CLASSIFIED THIS THREE TIMES AND WAS WRONG TWICE**, each time
-      OVERSTATING the gap (33 print-only → 10, after two idioms turned up that a
-      regex had missed). That is the second time this exact claim has been filed
-      too pessimistically — the earlier one said "none of 14" where the answer
-      was 5 of 41. **Do not quote a number from this line.**
-      📏 At least FOUR distinct idioms mean "the ROM moved", and a fifth looks
-      like one and is not: `if not moved` (knife_guard.build), `if after ==
-      before`, `assert h[0] != base_h[0]` (paint4/himdom), `knife_guard.moved()`
-      — and `banner_knife.py` hashes the **SOURCE**, to verify its own restore,
-      which a hash-shaped grep reads as a ROM check.
-      ➡️ **NEXT STEP IS AN INSTRUMENT, NOT ANOTHER REGEX.** ~24 files still need
-      reading by hand (10 apparently print-only, 14 with no ROM hash found).
-      Then a gate, so a new runner cannot ship without the check.
-      🤖 AUTONOMOUS — the code settles it.
+- [x] ✅ **D-KNIFEROM2 (2026-08-29): 48 of 52 knife runners ACT on their ROM
+      hash, 4 have none to hash, 0 are unguarded**
+      ([`docs/spec-basic-kniferom2.md`](docs/spec-basic-kniferom2.md)). Gate:
+      `make knife-rom-guard-check`, static tier, **ratchet at 0**.
+      🔴 **I ANSWERED THIS WITH A REGEX FOUR TIMES AND WAS WRONG FOUR TIMES**
+      (33 → 10 → 24 → 6 print-only), always OVERSTATING the gap — the second
+      time this same claim has been filed too pessimistically.
+      🔴 **AND THE FIRST AST VERSION FAILED FIVE MORE TIMES, THE SAME WAY: IT
+      ENCODED A SPELLING INSTEAD OF FOLLOWING THE DATA** — a path inside the
+      function body, one level of taint, the name `hashes`, a direct call, a
+      literal image filename. Each was caught by PINNING THE REAL FILE THAT
+      BROKE THE PREVIOUS VERSION as an arm (S8 is five real files by name).
+      🎯 **THE RULE THAT HOLDS IS ABOUT DATA FLOW:** a function is a ROM-hash
+      source when its body calls `hashlib` in a ROM-aware module; taint crosses
+      assignments AND function returns, to a fixpoint; a runner acts when an
+      `if`/`assert` reads a tainted name.
+      🟢 **ONE REAL FIX: `banner_knife.py`** verified its anchor and its restore
+      — both over the SOURCE — and never asked whether the cut reached the ROM.
+      ⚠️ **AND "MENTIONS A BUILD PATH" IS NOT "BUILDS":** the three source-sweep
+      knives read `build/*.sym` and never invoke make.
       [[a-knife-can-be-inert-because-the-build-did-not-happen]]
 
-- [ ] 🔴 **I PIPED THREE KNIFE RUNNERS TO `head -2` ON 2026-08-29**, which can
-      SIGPIPE a runner mid-plant and leave a CUT source or a CUT ROM behind. The
-      tree was checked clean afterwards and the battery is 46/46, so nothing was
-      lost — but the project's own operating rule says `> file 2>&1`, **never**
-      `| head`/`| tail`, and this is exactly the hazard it names. Worth a
-      cheap guard: knife runners could refuse to run on a closed stdout.
-      🤖 AUTONOMOUS — the code settles it. [[zerobas-gate-operating-rules]]
+- [x] ✅ **REFUTED 2026-08-29, THE SAME DAY IT WAS FILED: piping a knife runner
+      to `head` does NOT risk leaving a cut source.** Filed after I piped three
+      runners to `head -2`, reasoning that SIGPIPE could kill one mid-plant.
+      📏 **MEASURED, not reasoned:** a script that plants a marker, registers an
+      `atexit` restore and prints 100 000 lines into `| head -2` leaves the
+      marker reading **RESTORED**. Python ignores SIGPIPE and raises
+      `BrokenPipeError`, so `atexit` and `finally` both still run.
+      🟢 **AND THE RESIDUAL HAZARD IS ALREADY COVERED.** Dying mid-run restores
+      the SOURCE but leaves the ROM CUT — and the probe preflight refuses on
+      exactly that (`make -q` reports the image stale w.r.t. its sources).
+      Observed firing today during the D-N8ARM run, not assumed.
+      ⚠️ The operating rule (`> file 2>&1`, never `| head`) still stands, for its
+      REAL reason: a truncated log loses the evidence.
+      [[a-justification-parenthesis-is-an-unrun-claim]]
 
 - [x] 🟢 **THE EMULATOR-TIER SKIP NOW CHECKS ITS OWN PREMISE (2026-08-29,
       D-N8ARM)** ([`docs/spec-gateskip.md`](docs/spec-gateskip.md) §3.1). The
@@ -886,7 +896,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3972 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3982 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
