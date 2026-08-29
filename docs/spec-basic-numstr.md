@@ -84,8 +84,33 @@ experiment, not shipped:
 | `POKE &HE000,` | **2** ✗ broken — POKE *depends* on `ev_f_missop` for its 24 |
 
 So the fix is real but not local: every statement slot that still leans on
-`ev_f_missop` needs its own `req_operand` guard first (3 B each, the helper
-already exists). Filed with that enumeration as the next step.
+`ev_f_missop` needs its own `req_operand` guard first.
+
+### 4.1 The enumeration, run 2026-08-29 — and it prices the item out
+
+Planting `ld e,4` and re-running the full D-MISSOP row set on zerobas gives the
+list directly, rather than by reading call sites:
+
+| | slots |
+|---|---|
+| **Independent** — keep their 24 through the cut | `PLAY`, `PRINT USING`, `WIDTH`, `LOCATE` |
+| **Depend** — lose their 24 | `POKE`, `DRAW` (SCREEN 2), `FIELD`, `INPUT#`, `OPEN`, `PRINT#`, and three string-assignment shapes: `A$=`, `A$=+`, `MID$(A$,2)=` |
+
+🎯 **The independent four are exactly D-NGRAM2's own sites.** `req_operand`
+already guards LOCATE, PLAY, PRINT USING and SCREEN, and those are precisely the
+slots the cut cannot touch — which is a pleasing confirmation that the helper is
+the right shape, and the reason the remaining work is *more of it* rather than
+something new.
+
+**Price: 6 statement slots × 3 B ≈ 18 B, plus an unpriced route for the three
+string-assignment shapes, to correct 2 rows** (`5+`, `5*` — a trailing binary
+operator with nothing after it). Against a page 1 that was 343 B free on
+2026-08-29 (`make basic-reloc`; do not quote this), that is affordable but a poor
+trade, and it puts a rule that took a whole slice to establish back in motion.
+
+⚠️ **That is a judgement about what a scarce page is for, not a measurement** —
+so the item is re-marked 🙋 with the price attached rather than taken. The
+measuring in front of the decision is done.
 
 ## 5. 🔴 The apparatus finding: a warm cache switched the preflight off
 

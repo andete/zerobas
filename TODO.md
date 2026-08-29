@@ -386,19 +386,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that refuses everything is worthless.
       [[apparatus-is-part-of-the-measurement]]
 
-- [ ] 🔬 **THE MISSING-OPERAND HALF: `5+` READS ERR 24 WHERE BOTH REFERENCES SAY
-      ERR 2.** Found 2026-08-29 by D-NUMSTR
-      ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md) §4).
-      📏 **THE FIX AND ITS BLOCKER ARE BOTH MEASURED, NOT GUESSED.** Changing
-      `ev_f_missop`'s code to 4 was tried as an experiment: `5+`/`5*` become 2 ✓,
-      `LOCATE ,` HOLDS at 24 ✓ (it has its own `req_operand` guard from
-      D-NGRAM2), and **`POKE &HE000,` BREAKS to 2** ✗ — POKE depends on
-      `ev_f_missop` for its 24.
-      ➡️ **SO THE NEXT STEP IS AN ENUMERATION, NOT A CUT:** every statement slot
-      still leaning on `ev_f_missop` needs its own `req_operand` guard first
-      (3 B each; the helper already exists, D-NGRAM2). Then the label is free to
-      answer Syntax error. Unpriced until that set is counted.
-      🤖 AUTONOMOUS — the references settle it.
+- [ ] 🙋 **THE MISSING-OPERAND HALF: `5+` READS ERR 24 WHERE BOTH REFERENCES SAY
+      ERR 2 — ENUMERATED 2026-08-29, AND THE PRICE IS THE REASON IT IS NOW 🙋**
+      ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md) §4.1).
+      📏 **THE ENUMERATION IS RUN, NOT READ.** Planting `ld e,4` at
+      `ev_f_missop` and re-running the whole D-MISSOP row set gives the list
+      directly: **independent** (keep their 24) are `PLAY`, `PRINT USING`,
+      `WIDTH`, `LOCATE`; **dependent** (lose it) are `POKE`, `DRAW`, `FIELD`,
+      `INPUT#`, `OPEN`, `PRINT#`, plus three string-assignment shapes (`A$=`,
+      `A$=+`, `MID$(A$,2)=`).
+      🎯 **THE INDEPENDENT FOUR ARE EXACTLY D-NGRAM2's OWN SITES** — `req_operand`
+      already guards them, which says the helper is the right shape and the
+      remaining work is MORE OF IT rather than something new.
+      💰 **PRICE: ~18 B for six statement slots, plus an UNPRICED route for the
+      three string-assignment shapes, to correct TWO rows** (`5+`, `5*` — a
+      trailing binary operator with nothing after it).
+      ⚠️ Affordable against a page 1 that was 343 B free on 2026-08-29
+      (`make basic-reloc`; do not quote this) — but a poor trade, and it puts a
+      rule that took a whole slice to establish back in motion. **That is a
+      judgement about what a scarce page is for, not a measurement**, so it is
+      🙋 rather than 🤖. The measuring in front of the decision is DONE.
+      🙋 **NEEDS-JOOST** — spend ~18 B and reopen D-MISSOP's rule, or leave it.
 
 - [x] ✅ **D-STRTM (2026-08-29): SWEPT THE STRING-ARGUMENT TYPE-MISMATCH SURFACE
       ON PURPOSE, AND IT FOUND THREE MORE**
@@ -1151,7 +1159,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4237 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4245 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
