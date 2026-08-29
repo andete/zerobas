@@ -292,24 +292,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       now reached before the allocation that used to fail first.
       🔬 5 knives, all live, `scratchpad/strlong_knives.py`.
 
-- [ ] 🔴 **THE `String too long` PRECEDENCE RESIDUAL: 3 ROWS, AND THE DEFAULT
-      POOL IS INSIDE THE WINDOW.** Filed 2026-08-28 by D-STRLONG
-      ([`docs/spec-basic-strlong.md`](docs/spec-basic-strlong.md) §5) — what
-      that slice measured but did NOT fix.
-      📏 `f.128` / `f.200` / `s.200`: when the pool is smaller than **2 × lenR**,
-      `str_concat_tail`'s operand-1 snapshot exhausts it before `sh_append` is
-      entered at all, so zb reports `Out of string space` where both references
-      report `String too long`. ⚠️ **`FRE("")` is 200 on all three sides**, so
-      `X$=STRING$(128,"A"):PRINT LEN(X$+X$)` — no `CLEAR` at all — is in it.
-      🔬 **THE ROUTE IS MEASURED, NOT GUESSED, AND IT IS A RESTRUCTURE.** The
-      snapshot is unconditional because operand 2's evaluation can clobber the
-      shared `RVDESC` — but only the DESCRIPTOR is at risk, never the body: a
-      var slot and a temp slot are both stable, and a literal's `RVDESC.ptr`
-      points into the token stream, which nothing moves. So the length test
-      could be hoisted above the snapshot by saving operand 1's 3-byte
-      descriptor instead of copying its body. **Unpriced, and it moves the
-      concat peak again — re-run `scratchpad/concatpeak_probe.py` with it.**
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
+- [ ] 🙋 **THE `String too long` PRECEDENCE RESIDUAL — RE-MARKED 🙋 ON
+      2026-08-29: THE FILED ROUTE HAS A GC HAZARD, AND ITS OBVIOUS REPAIR IS
+      CLOSED BY A STATED INVARIANT.** Filed 2026-08-28 by D-STRLONG
+      ([`docs/spec-basic-strlong.md`](docs/spec-basic-strlong.md) §5).
+      📏 **RE-MEASURED 2026-08-29, still 3 DIFF of 20** (`f.128` `f.200`
+      `s.200`): zb reports `Out of string space` (ERR 14) where both references
+      report `String too long` (ERR 15). ⚠️ **`FRE("")` is 200 on all three
+      sides**, so `X$=STRING$(128,"A"):PRINT LEN(X$+X$)` — no `CLEAR` at all —
+      is a real user-visible case, not a corner.
+      🎯 **THE CAUSE IS EXACT AND WAS CONFIRMED IN THE CODE:** `sh_append`
+      already tests the length FIRST and raises correctly (D-STRLONG). The
+      failure is EARLIER — `str_concat_tail`'s unconditional
+      `call str_snapshot_to_temp` copies operand 1's BODY, which exhausts a
+      200 B pool holding a 128 B operand before `sh_append` is ever entered.
+      🔴 **THE FILED ROUTE IS UNSAFE AS WRITTEN.** It says to save operand 1's
+      3-byte descriptor instead of copying its body, on the grounds that *"only
+      the DESCRIPTOR is at risk, never the body"*. **That is false for a heap
+      body.** GC compacts and MOVES heap bodies, fixing up only the descriptors
+      it can ENUMERATE — `sg_walk_temps` / `_fnframe` / `_scalars` / `_arrays`.
+      A private scratch copy is none of those, so operand 2's evaluation can GC
+      and leave the saved `ptr` dangling: **silent corruption, not an error.**
+      🔴 **AND THE OBVIOUS REPAIR IS CLOSED.** Making the copy an enumerated root
+      means pushing it on the temp-descriptor stack — but `sh_src_is_temp`'s
+      header states the invariant a temp entry is **"UNIQUELY OWNED (nothing
+      else holds its body)"**, and D-CLP rests on it twice. Aliasing a variable's
+      body from a temp entry breaks it.
+      ➡️ **SO THE REMAINING ROUTES ARE ALL DECISIONS, NOT MEASUREMENTS:** (a) a
+      new GC root kind, (b) relax unique-ownership and re-verify D-CLP's two
+      uses, or (c) accept the body copy and fix the PRECEDENCE some other way.
+      Each touches a load-bearing subsystem whose internal invariant has no
+      external oracle — which is why this is now 🙋 and not 🤖.
+      🙋 **NEEDS-JOOST** — a refactor of the string heap's ownership rules.
 
 - [x] ✅ **D-SPCLAMP (2026-08-29): THERE IS NO CLAMP — `SPACE$`/`STRING$` RAISE,
       and zerobas already agreed with both references at every point**
@@ -898,7 +912,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3984 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3998 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
