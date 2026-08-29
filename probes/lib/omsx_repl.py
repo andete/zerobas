@@ -1565,6 +1565,24 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
     passes it. (Getting that wrong would only ever cause a miss, never a wrong
     hit -- but a cache that misses on equivalent calls is not worth having.)
     """
+    # 🔴 D-CACHEPRE (2026-08-29): THE PREFLIGHT RUNS HERE, BEFORE THE CACHE.
+    # `omsx_preflight.guarded()` is applied at the `Popen` call inside
+    # `_run_cases_impl` -- so it only ever ran when the emulator actually
+    # LAUNCHED. A fully-cached call returns above that, which meant THE REFCACHE
+    # SILENTLY DISABLED THE STALENESS GUARD: with a warm store and a ROM that no
+    # longer matches its sources, a probe printed a complete, self-consistent,
+    # entirely plausible table and said nothing.
+    # 🎯 IT BIT TWICE IN TEN MINUTES. A `make repack-machine` failed on an
+    # assembler error (pasmo fails cleanly, leaving the PREVIOUS ROM in place),
+    # the cache hit every row because it keys on the ROM's identity -- which had
+    # not changed -- and the report looked exactly like a measurement of the edit
+    # that had just failed to build. It was caught only by happening to read the
+    # build's exit code. [[apparatus-is-part-of-the-measurement]]
+    # The check is a few `make -q` calls; it costs nothing next to a boot, and on
+    # the cached path it is the ONLY thing standing between a stale ROM and a
+    # confident answer.
+    omsx_preflight.preflight(machine)
+
     import inspect
     bound = inspect.signature(_run_cases_impl).bind(machine, cases, **kw)
     bound.apply_defaults()

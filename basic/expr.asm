@@ -499,7 +499,12 @@ ev_f:
                 ; §3/(f)): ERR/ERL, single-byte value tokens, same shape as
                 ; VARPTR/BASE/INSTR above.
                 cp      ERR_TOKEN           ; $E2 -> ERR (last error's MSX ERR code)
-                jr      z,ev_f_errfn
+                jp      z,ev_f_errfn        ; ⚠️ `jp`, not `jr`, for the SAME reason as the
+                                            ; ERL arm below -- and it went over on the same
+                                            ; KIND of edit: D-NUMSTR's 4 bytes at
+                                            ; ev_f_missop, which sits between this arm and
+                                            ; its target, exactly as D-PLAYFN's PLAY arm did
+                                            ; to ERL. +1 B.
                 cp      ERL_TOKEN           ; $E1 -> ERL (last error's line, 65535=direct)
                 ; ⚠️ `jp`, not `jr`: this arm sat ~170 lines from its target and was
                 ; already at the edge of relative range. D-PLAYFN's 5-byte PLAY arm
@@ -509,7 +514,13 @@ ev_f:
                 cp      TIME_TOKEN          ; $CB -> TIME (JIFFY as an UNSIGNED word)
                 jp      z,ev_f_time
                 cp      CSRLIN_TOKEN        ; $E8 -> CSRLIN (0-based cursor row)
-                jr      z,ev_f_csrlin
+                jp      z,ev_f_csrlin       ; ⚠️ `jp`, not `jr`: the THIRD arm in this chain
+                                            ; to need it, and D-NUMSTR pushed two of them
+                                            ; over at once. 🎯 THIS DISPATCH CHAIN IS AT ITS
+                                            ; RELATIVE-RANGE LIMIT -- assume ANY insertion
+                                            ; between it and ev_f's tail costs +1 B per
+                                            ; surviving `jr`, and check before pricing a
+                                            ; slice that lands here. +1 B.
                 cp      POINT_TOKEN         ; $ED -> POINT(x,y) (graphics G2, graphics.asm)
                 jp      z,ev_f_point
                 cp      PLAY_TOKEN          ; $C1 -> PLAY(n) background-queue status
@@ -623,6 +634,31 @@ ev_f_missop:                                ; D-MISSOP (docs/spec-basic-missop.m
                                             ; Reached only from ev_f_var's `is_letter`
                                             ; failure. Same `ld e,<code> / jr ev_f_defer`
                                             ; idiom as ev_f_tmm / ev_f_ifc above.
+                ; D-NUMSTR (docs/spec-basic-numstr.md): a STRING LITERAL where a
+                ; numeric factor is required is a TYPE MISMATCH, not a missing
+                ; operand. `5+"AB"` read ERR 24 and both references answer 13 --
+                ; so do `-"AB"`, `5-"AB"`, `5*"AB"` and `5/"AB"`.
+                ; 🎯 IT ALSO FIXES `5+LEFT$("AB",1)` WITHOUT TOUCHING IT: that
+                ; reaches ev_ff_strnum, whose D-LEFTTM arm evaluates the argument
+                ; numerically, and THAT inner eval landed here on the `"` and
+                ; deferred 24 -- which first-error-wins then kept over the type
+                ; mismatch. Measured: the row was ERR 2 before D-LEFTTM and ERR 24
+                ; after, one wrong code for another, and no row saw it because the
+                ; probe had no string function inside a numeric expression.
+                ; 🟢 A is still the offending byte here -- is_letter restores it on
+                ; both paths -- and this site is reached ONLY from ev_f_var's
+                ; is_letter failure (see the note above).
+                ; ⚠️ SITED HERE, NOT IN THE DISPATCH CHAIN, AND THAT IS NOT STYLE.
+                ; Five bytes added up there pushed TWO neighbouring `jr` arms out
+                ; of relative range -- the same thing D-PLAYFN's 5-byte PLAY arm
+                ; did to the ERL arm, which is written up two screens above. This
+                ; site is past every one of them.
+                ; ⚠️ A LITERAL CANNOT CARRY A PENDING FAULT, so unlike D-LEFTTM /
+                ; D-INSTRTM / D-STRTM there is nothing to evaluate first; and
+                ; ev_f_defer is still first-error-wins, so `(0*(1/0)+1)+"AB"` keeps
+                ; its Division by zero.
+                cp      '"'
+                jr      z,ev_f_tmm          ; -> ERR 13
                 ld      e,FPERR_MISSOP
                 jr      ev_f_defer
 ev_f_empty:                                 ; D-F2-3: the empty parenthesised/argument

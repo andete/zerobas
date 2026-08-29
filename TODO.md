@@ -348,6 +348,58 @@ list. **When a slice lands, grep this list for what it just shipped.**
       part of the reading.**
       [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
+- [x] ✅ **D-NUMSTR (2026-08-29): a STRING where a numeric factor is required is
+      now ERR 13, not ERR 24 — and the refcache had switched the preflight off**
+      ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md)). 26 rows,
+      DIFF 8 -> 2. **+6 B of main page 1.**
+      🔴 **D-MISSOP's RULE WAS MEASURED AT SLOTS IT DOES NOT ONLY SERVE.** Its
+      header says both references answer 24 "at every such slot, measured at 16
+      of them" — all sixteen were STATEMENT-ARGUMENT slots, and the label serves
+      EVERY factor position. `POKE &HE000,` and `LOCATE ,` are 24 on all three
+      sides ✓; `5+` inside an expression is **2** on both references and 24 here.
+      🎯 **THE STRING HALF IS FIXED, AND IT FIXED `5+LEFT$("AB",1)` WITHOUT
+      TOUCHING IT** — that row reaches `ev_ff_strnum`, whose D-LEFTTM arm
+      evaluates the argument numerically, and THAT inner eval is what landed on
+      the `"`. **Measured: it was ERR 2 before D-LEFTTM and ERR 24 after** — one
+      wrong code for another, and no row saw it because that slice's probe had no
+      string function nested in a numeric expression.
+      ⚠️ **THE `ev_f` DISPATCH CHAIN IS AT ITS RELATIVE-RANGE LIMIT.** Five bytes
+      in it pushed TWO `jr` arms out of range (as D-PLAYFN's 5-byte arm did to
+      the ERL arm); even sited past the chain, two still had to be widened.
+      Assume +1 B per surviving `jr` for anything inserted there.
+      [[two-rules-that-coincide-on-every-row-you-have]]
+
+- [x] ✅ **D-CACHEPRE (2026-08-29): A WARM REFCACHE SILENTLY DISABLED THE STALE-ROM
+      PREFLIGHT** ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md) §5).
+      `omsx_preflight.guarded()` is applied at the `Popen` call INSIDE
+      `_run_cases_impl`, so it only ever ran when the emulator actually LAUNCHED
+      — and a fully-cached `run_cases` returns before that.
+      🔴 **IT BIT TWICE IN TEN MINUTES.** A `make repack-machine` failed on an
+      assembler error; pasmo fails cleanly, leaving the PREVIOUS ROM in place;
+      the cache hit every row because it keys on the ROM's identity, which had
+      not changed; and the probe printed a complete, self-consistent, entirely
+      plausible table **of the edit that had just failed to build**. Caught only
+      by happening to read the build's exit code.
+      🟢 The preflight now runs at `run_cases` entry, ahead of the cache.
+      Falsified BOTH ways: a fully-cached run on a touched source refuses
+      (rc=2, STALE), and after a rebuild the same run measures normally — a guard
+      that refuses everything is worthless.
+      [[apparatus-is-part-of-the-measurement]]
+
+- [ ] 🔬 **THE MISSING-OPERAND HALF: `5+` READS ERR 24 WHERE BOTH REFERENCES SAY
+      ERR 2.** Found 2026-08-29 by D-NUMSTR
+      ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md) §4).
+      📏 **THE FIX AND ITS BLOCKER ARE BOTH MEASURED, NOT GUESSED.** Changing
+      `ev_f_missop`'s code to 4 was tried as an experiment: `5+`/`5*` become 2 ✓,
+      `LOCATE ,` HOLDS at 24 ✓ (it has its own `req_operand` guard from
+      D-NGRAM2), and **`POKE &HE000,` BREAKS to 2** ✗ — POKE depends on
+      `ev_f_missop` for its 24.
+      ➡️ **SO THE NEXT STEP IS AN ENUMERATION, NOT A CUT:** every statement slot
+      still leaning on `ev_f_missop` needs its own `req_operand` guard first
+      (3 B each; the helper already exists, D-NGRAM2). Then the label is free to
+      answer Syntax error. Unpriced until that set is counted.
+      🤖 AUTONOMOUS — the references settle it.
+
 - [x] ✅ **D-STRTM (2026-08-29): SWEPT THE STRING-ARGUMENT TYPE-MISMATCH SURFACE
       ON PURPOSE, AND IT FOUND THREE MORE**
       ([`docs/spec-basic-strtm.md`](docs/spec-basic-strtm.md),
@@ -1099,7 +1151,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4185 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4237 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
