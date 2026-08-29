@@ -325,6 +325,56 @@ list. **When a slice lands, grep this list for what it just shipped.**
       external oracle — which is why this is now 🙋 and not 🤖.
       🙋 **NEEDS-JOOST** — a refactor of the string heap's ownership rules.
 
+- [x] ✅ **D-NGRAM11 (2026-08-29): one `str_eval_next` for the six "past the
+      delimiter, evaluate a string" sites — page-0 low 118 -> 134 B free**
+      ([`docs/spec-basic-ngram11.md`](docs/spec-basic-ngram11.md)). LET A$(i)= /
+      LSET / RSET / LET A$= / MID$-statement / INSTR's two arguments. **-17 B**,
+      four of the six sites in the LOW region — which is where D-LEFTTM had just
+      spent 16 B. 16 rows.
+      🟢 **THE TAIL IS A `jp`, AND THE ARM SAYS WHAT THAT IS WORTH.** It makes the
+      depth at `str_eval` identical to the open-coded form — the property
+      D-NGRAM8 lost. But K-N11B turns it into `call`+`ret` and moves **ZERO**
+      rows, so the value here is STRUCTURAL (it cannot go wrong for the next
+      caller added) plus one byte, **not a measured hazard**. An arm asserting
+      its own zero beats a comment asserting a danger never demonstrated.
+      🔴 **ONE OF THE TWO "CONTROLS" WAS A SUBJECT ROW.** `ctl.cat`'s SETUP was
+      two `LET A$=` statements — one of the six sites — so it ran the subject's
+      own machinery and read as reassurance. K-N11A moved it, which is how it was
+      caught. Renamed `g.letcat`; a literals-only control replaces it.
+      🔴 **I PREDICTED 7 ROWS FOR K-N11A AND 12 MOVED.** The already-declining
+      `b.*` rows move too, 13 -> **24**: handed the `=` itself, the decline
+      reason changes from "a non-string is here" to "NOTHING is here".
+      **I had assumed a declining row cannot move; the code it declines WITH is
+      part of the reading.**
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+
+- [ ] 🔴 **`INSTR` WITH A NUMERIC ARGUMENT ANSWERS ERR 2 WHERE BOTH REFERENCES
+      ANSWER ERR 13.** Found 2026-08-29 by D-NGRAM11
+      ([`docs/spec-basic-ngram11.md`](docs/spec-basic-ngram11.md) §5). 2 rows:
+      `INSTR("ABCDE",5)` and `INSTR(2,5,"CD")`. **Pre-existing, verified by
+      revert.** Same family as D-LEFTTM: a declined string operand reported as
+      `Syntax error` where the reference says `Type mismatch`.
+      ➡️ **D-LEFTTM's ROUTE SHOULD APPLY**, and its lesson with it: the raise must
+      come AFTER the operand is evaluated, so a fault the expression itself
+      raises wins on first-error-wins. Arming it before the evaluation is the
+      mistake D-NGRAM8 made and D-LEFTTM's K-LT2 now pins. The sites are
+      `efi_reject_p` / `efi_reject_pa` (`basic/str-engine.asm`). Unpriced.
+      🤖 AUTONOMOUS — the references settle it.
+
+- [ ] 🔬 **`LSET`/`RSET` ON A NEVER-FIELDED VARIABLE HAS NO ORACLE: THE TWO
+      REFERENCES DISAGREE.** Found 2026-08-29 by D-NGRAM11. `A$="12345":LSET
+      A$="AB"` reads `Illegal function call` on the cassette-only VG-8020 and
+      pads in place (`AB   `) on the disk-equipped CF-3300. zerobas targets the
+      disk machine and agrees with it, so **nothing is known to be wrong** — but
+      the row cannot score either way and is marked NO-ORACLE in the probe rather
+      than dropped from it.
+      ➡️ The open question is whether the split is DISK vs CASSETTE (a machine
+      capability) or a firmware revision, which decides whether the CF-3300 is
+      the right oracle for this row at all. `b.lset` (`LSET A$=5`) is in the same
+      bucket: ERR 5 / ERR 13 / ERR 2 across the three sides.
+      🤖 AUTONOMOUS — a third reference or the disk-ROM source settles it.
+      [[an-unnamed-outcome-reads-as-no-outcome]]
+
 - [x] ✅ **D-NGRAM10 (2026-08-29): one `req_lineno` for RESUME / GOTO / GOSUB /
       ON ERROR GOTO — main page 1 331 -> 348 B free**
       ([`docs/spec-basic-ngram10.md`](docs/spec-basic-ngram10.md)). The 4th-ranked
@@ -968,7 +1018,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4054 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4104 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

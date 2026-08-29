@@ -1122,9 +1122,8 @@ ems_close:
                 ld      a,(hl)
                 cp      EQ_TOKEN            ; '=' crunches to $EF
                 jr      nz,ems_err_pop2
-                inc     hl
-                call    skip_spaces
-                call    str_eval            ; STRPTR -> RHS B$; HL = post-B$ cursor
+                call    str_eval_next       ; D-NGRAM11: past '=', STRPTR -> RHS
+                                            ; B$; HL = post-B$ cursor, CF=ok
                 ; D-MIDOP (docs/spec-basic-midop.md): NOT a blanket Syntax error.
                 ; `jr nc,ems_err_pop2` was the same SHARED TAIL D-PUSING split in
                 ; ex_print_using -- str_eval declines both for "there is nothing
@@ -1517,9 +1516,8 @@ ev_f_instr:
                 call    skip_spaces
                 cp      ','
                 jr      nz,efi_reject_p
-                inc     hl
-                call    skip_spaces
-                call    str_eval            ; STRPTR -> a$; HL advanced; CF=ok
+                call    str_eval_next       ; D-NGRAM11: past ',', STRPTR -> a$;
+                                            ; HL advanced; CF=ok
                 jr      nc,efi_reject_p
                 jr      efi_dup_a
 efi_reject_p:
@@ -1536,9 +1534,8 @@ efi_dup_a:
                 ld      a,(hl)
                 cp      ','
                 jr      nz,efi_reject_pa    ; malformed -> discard [p][aT]
-                inc     hl
-                call    skip_spaces
-                call    str_eval            ; STRPTR -> b$; HL advanced; CF=ok
+                call    str_eval_next       ; D-NGRAM11: past ',', STRPTR -> b$;
+                                            ; HL advanced; CF=ok
                 jr      nc,efi_reject_pa
                 push    hl                  ; guard cursor (past b$)              [p][aT][cursor]
                 call    str_snapshot_to_temp ; HL = bT (b$ snapshot); STRPTR=bT

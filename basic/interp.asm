@@ -213,6 +213,35 @@ req_letter:
                 ret     c                   ; a letter: hand it back untouched
                 jp      stmt_error          ; not a letter: the statement aborts
 
+; --- str_eval_next: step past the delimiter and evaluate the string ---------
+; (D-NGRAM11.) `inc hl / call skip_spaces / call str_eval` stood open-coded at
+; SIX sites -- the RHS of LET A$(i)= (arrays.asm), LSET/RSET (field.asm), LET A$=
+; (interp.asm), the MID$ statement (str-engine.asm) and INSTR's two string
+; arguments (str-engine.asm x2). Each is the same sentence: the byte at HL is a
+; delimiter we have just recognised, so step over it, skip spaces, and evaluate
+; the string expression that follows. 7 B each, 42 B in all; a 7 B body plus six
+; 3 B calls is 25 B: **-17 B**.
+;   in:  HL = ON the delimiter ('=' or ',') the caller has just matched.
+;   out: exactly str_eval's own contract -- STRPTR -> the descriptor, HL past the
+;        expression, CF set on success and CLEAR on a decline. Every caller keeps
+;        its OWN `jp/jr nc,<target>`, which is why this is a call and not a
+;        shared tail. [[a-shared-tail-is-not-a-decision]]
+; 🟢 THE TAIL IS A `jp`, NOT A `call` + `ret`. That makes the stack depth at
+; str_eval IDENTICAL to the open-coded form -- the caller's return address on top
+; in both -- which is the property D-NGRAM8 lost when it put str_eval behind a
+; `call` whose `ret` then landed one frame too shallow and the decline stopped
+; declining. Two of these sites carry guard words ([p] and [p][aT] for INSTR).
+; ⚠️ AND THE ARM SAYS THAT IS A GUARANTEE, NOT A MEASURED HAZARD. K-N11B turns
+; this `jp` into `call` + `ret` and moves ZERO rows: str_eval returns normally,
+; so at these six sites the extra frame is popped before any caller sees it. The
+; tail jump's value here is structural (it cannot go wrong for the next caller
+; anyone adds) plus one saved byte -- and saying so with an arm beats asserting
+; it in a comment. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+str_eval_next:
+                inc     hl                  ; past the delimiter
+                call    skip_spaces
+                jp      str_eval            ; TAIL jump -- see the note above
+
 ; --- req_lineno: a LINE NUMBER is REQUIRED at the cursor (D-NGRAM10) --------
 ; The fourth-ranked exact repeat in the MAIN regions, and the same idea as
 ; req_letter and req_operand above: `cp LINENO_TOKEN / jp nz,stmt_error /
@@ -795,9 +824,8 @@ ex_let_str:
                 call    skip_spaces
                 cp      EQ_TOKEN            ; '=' -> $EF
                 jr      nz,ex_let_err
-                inc     hl
-                call    skip_spaces
-                call    str_eval            ; STRPTR -> RHS descriptor, HL advanced
+                call    str_eval_next       ; D-NGRAM11: past '=', STRPTR -> RHS
+                                            ; descriptor, HL advanced, CF=ok
                 jp      nc,els_typecheck    ; not a string operand -> D-MISS-1: is it a
                                             ; valid NUMERIC one (Type mismatch) or junk
                                             ; (syntax error)? basic/missing.asm.

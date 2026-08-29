@@ -533,9 +533,8 @@ lrs_haveeq:
                 call    skip_spaces
                 cp      EQ_TOKEN            ; '='
                 jp      nz,stmt_error
-                inc     hl
-                call    skip_spaces
-                call    str_eval            ; STRPTR -> [len][ptr]; HL advanced
+                call    str_eval_next       ; D-NGRAM11: past '=', STRPTR ->
+                                            ; [len][ptr]; HL advanced, CF=ok
                 jp      nc,stmt_error       ; RHS not a string operand
                 push    hl                  ; guard cursor across select + store
                 ld      a,(FLD_CHAN)

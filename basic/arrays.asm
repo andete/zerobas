@@ -1034,9 +1034,8 @@ ex_let_arr_str:
                 call    skip_spaces
                 cp      EQ_TOKEN
                 jp      nz,elas_err
-                inc     hl
-                call    skip_spaces
-                call    str_eval            ; STRPTR -> RHS descriptor, HL advanced
+                call    str_eval_next       ; D-NGRAM11: past '=', STRPTR -> RHS
+                                            ; descriptor, HL advanced, CF=ok
                 jp      nc,elas_typecheck   ; not a string operand -> D-MISS-1: a valid
                                             ; NUMERIC RHS is Type mismatch, junk stays
                                             ; syntax error (basic/missing.asm)
