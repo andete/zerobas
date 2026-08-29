@@ -348,6 +348,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       part of the reading.**
       [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
+- [ ] 🔴 **D-VAL (2026-08-29): `VAL` AND `STR$` ARE INTEGER-ONLY — 20 OF 40 ROWS
+      DIVERGE, AND THE SURFACE HAD **ONE** ROW OF COVERAGE**
+      ([`docs/spec-basic-val.md`](docs/spec-basic-val.md),
+      [`scratchpad/val_probe.py`](scratchpad/val_probe.py)).
+      📏 Missing: **fractions** (`VAL("1.5")` -> 1), **base literals**
+      (`VAL("&HFF")` -> 0), **exponents** (`VAL("1E3")` -> 1), **embedded
+      spaces** (`VAL("1 2")` -> 1, `VAL(" - 12")` -> 0), and STR$ of any
+      non-integer (`STR$(1.5)` -> `1`). `VAL("&")` returns **0 where both
+      references raise ERR 2** — a SILENT wrong answer.
+      🟢 **ATTRIBUTED TO THE RIGHT LAYER BY CONTROLS:** `PRINT 1.5`, `PRINT 1E9`,
+      `PRINT 3/2` and `PRINT &HFF` are all CORRECT on zerobas. Float literals,
+      float arithmetic, hex literals and float printing work — the gap is
+      precisely the two functions that convert between numbers and strings at
+      RUNTIME. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+      🔴 **THE DEFERRAL NOTE IS STALE AND UNDERSTATES THE GAP.**
+      `basic/PROVENANCE.md`'s Phase-3 entry defers *"string comparison,
+      INSTR/HEX$/OCT$/STRING$/SPACE$/INKEY$, the MID$ statement, and floats in
+      VAL/STR$"* — and **every other item on that list has since shipped**. And
+      "floats" omits the base literals, the exponents and the `&` silent zero. A
+      deferral note describes what was skipped THEN; it is not a specification of
+      what is missing NOW.
+      ➡️ **THE ROUTE IS DELEGATION, NOT A SECOND IMPLEMENTATION — BUT IT IS A
+      LEAD, NOT A PLAN.** `sh_val_parse` lives in `sub/strheap.asm`; the
+      tokeniser's full numeric scanner `tk_float` lives in `sub/tkfloat.asm`, the
+      SAME sub-ROM, and already handles every shape above (HL = source cursor).
+      ⚠️ **THREE THINGS ARE UNVERIFIED:** can `tk_float` be pointed at a RAM
+      buffer; what does it do with trailing junk (VAL must STOP and return, never
+      error); can the two tenants call each other. Sub page 0 had 2329 B free on
+      2026-08-29 (`make basic-reloc`; do not quote this), so **space is not the
+      constraint — the interface is.** Answer those three before pricing.
+      🤖 AUTONOMOUS — the references settle the behaviour and the code settles
+      the interface.
+
 - [x] ✅ **D-NUMSTR (2026-08-29): a STRING where a numeric factor is required is
       now ERR 13, not ERR 24 — and the refcache had switched the preflight off**
       ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md)). 26 rows,
@@ -1159,7 +1192,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4245 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4278 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
