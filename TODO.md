@@ -348,6 +348,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       part of the reading.**
       [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
+- [x] ✅ **D-STRTM (2026-08-29): SWEPT THE STRING-ARGUMENT TYPE-MISMATCH SURFACE
+      ON PURPOSE, AND IT FOUND THREE MORE**
+      ([`docs/spec-basic-strtm.md`](docs/spec-basic-strtm.md),
+      [`scratchpad/strtm_probe.py`](scratchpad/strtm_probe.py)). 22 rows,
+      DIFF 3 -> 1. **+5 B of the low region** (124 -> 119 B free).
+      🎯 **THREE SLICES FOUND THE SAME DEFECT IN THREE PLACES IN ONE DAY**
+      (D-NGRAM9, D-LEFTTM, D-INSTRTM), every one INCIDENTALLY, by a carve that
+      happened to touch the site. Three instances is a class, so this walked the
+      whole surface deliberately — every verb taking a string, handed a number,
+      **each with an ORDERING twin**.
+      🟢 **FIXED: `LEN`/`ASC`/`VAL`.** `ev_str_arg` ended its decline with a bare
+      `jp nc,ev_f_tmm` — a type mismatch armed WITHOUT LOOKING AT THE OPERAND.
+      The comment beside it reasoned first-error-wins would separate `LEN(5)`
+      from `LEN(LEFT$("AB"))`, and it does — **but only when the inner thing
+      already set FPERR.** `LEN(0*(1/0)+1)` sets nothing. For the third time the
+      fix is the ORDER, and here it is safe because `ev_str_arg` is already ON
+      the numeric evaluator's path, so nothing re-drives the operand.
+      🔴 **AND THE SWEEP'S SHARPEST ROW: `"AB"+5` IS CORRECT AT 13 WHILE
+      `"AB"+(0*(1/0)+1)` IS WRONG — THE SAME OPERATOR, OPPOSITE HALVES.** A row
+      set of clean expressions only would have declared concat fine.
+      [[two-rules-that-coincide-on-every-row-you-have]]
+
+- [ ] 🔴 **THE CONCATENATION PAIR: `5+"AB"` READS ERR 24 AND
+      `"AB"+(0*(1/0)+1)` READS ERR 13, WHERE BOTH REFERENCES SAY 13 AND 11.**
+      Found 2026-08-29 by D-STRTM
+      ([`docs/spec-basic-strtm.md`](docs/spec-basic-strtm.md) §4).
+      ⚠️ **NOT FIXED WITH D-STRTM's ROUTE, AND THE REASON IS A HAZARD.** Both live
+      at `sct_err2`, which calls `type_mismatch_set` and then RETURNS NC so the
+      caller re-drives the whole expression numerically. Evaluating the operand
+      inside `sct_err2` would evaluate it **TWICE** — once there and once on the
+      re-drive — and a string operand can contain a `USR` call or a `DEF FN`
+      invocation with side effects.
+      ⚠️ **AND REMOVING THE ARM IS CLOSED BY BUG C:** without it `PRINT A$+5`
+      printed `" 0"`, a silent wrong answer, which this project ranks worse than
+      the refusal beside it.
+      ➡️ So the fix probably belongs in whatever the NUMERIC RE-DRIVE meets, not
+      in `sct_err2`. Unpriced.
+      🤖 AUTONOMOUS — the references settle the behaviour.
+
 - [x] ⛔ **DECLINED 2026-08-29: `push de / call push_lhs_frame / call
       set_factyp_int_ret`, the top LIVE candidate in `ngram_sweep --main`
       (6 sites x 7 B).** Reason recorded at the source, beside `push_lhs_frame`
@@ -1060,7 +1099,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4146 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4185 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

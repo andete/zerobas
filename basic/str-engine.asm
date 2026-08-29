@@ -650,7 +650,7 @@ ev_str_arg:
                 ; SPLITS the two: LEN(5) (FPERR clean, genuinely numeric) -> FPERR=10
                 ; "type mismatch" (ref); LEN(LEFT$("AB")) (inner fn already set FPERR=4)
                 ; -> keeps "syntax error". (2026-07-17: was ev_f_empty -> always "syntax".)
-                jp      nc,ev_f_tmm
+                jr      nc,esa_tmm          ; D-STRTM: evaluate FIRST, then defer
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
                 call    ev_sp
@@ -660,6 +660,26 @@ ev_str_arg:
                 jp      flt_int_result      ; LEN/ASC/VAL return ints even when a float
                                             ; is nested in the string arg (float.asm F1;
                                             ; clobbers A only, then ret to the caller)
+; --- D-STRTM: a NON-string argument is a type mismatch, but the operand's OWN
+; fault outranks it (docs/spec-basic-strtm.md). This was a bare `jp nc,ev_f_tmm`
+; -- armed WITHOUT LOOKING AT THE OPERAND -- and the comment above reasoned that
+; first-error-wins would split LEN(5) from LEN(LEFT$("AB")). It does, but ONLY
+; when the inner thing already set FPERR. `LEN(0*(1/0)+1)` sets nothing: str_eval
+; declines without evaluating, the mismatch arms first, and the division by zero
+; is never raised. Both references answer Division by zero.
+; 🎯 SAME FIX AS D-LEFTTM AND D-INSTRTM, AND FOR THE THIRD TIME THE FIX IS THE
+; ORDER: evaluate the operand, THEN defer -- ev_f_defer is first-error-wins, so a
+; fault the operand raises keeps the answer.
+; 🟢 AND THERE IS NO DOUBLE EVALUATION HERE, which is what makes it safe:
+; ev_str_arg is already ON the numeric evaluator's path, so nothing re-drives the
+; operand afterwards. (sct_err2's mirror of this bug does NOT have that property
+; -- it returns NC and the caller re-drives -- which is why that one is filed
+; rather than fixed here.)
+; HL is the cursor, still on the operand; `eval` takes it there and preserves IX.
+esa_tmm:
+                call    eval                ; the operand, numerically -- it arms its
+                                            ; OWN fault first if it has one
+                jp      ev_f_tmm            ; -> ERR 13, unless the operand beat us
 ev_ff_len:
                 call    ev_str_arg          ; STRPTR -> desc
                 ld      hl,(STRPTR)
