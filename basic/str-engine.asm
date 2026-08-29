@@ -674,6 +674,48 @@ ev_ff_val:
                 ld      de,(SH_PTR)         ; DE = the parsed integer value
                 ret
 
+; --- str_arg_snap: evaluate a string argument and OWN it (D-NGRAM8) ---------
+; LEFT$, RIGHT$ and MID$ all open the same way: evaluate the source expression,
+; decline if it is not a string, then snapshot it into a temp we own before the
+; count argument is evaluated (that evaluation can push temps of its own). 3
+; identical runs -> one body plus three 3 B calls.
+;   in:  HL = cursor at the source expression.
+;   out: STRPTR -> an OWNED temp, HL = the cursor just past the expression --
+;        exactly as the open-coded form left them, so each caller's following
+;        `ld a,(hl)` reads the same byte.
+; ⚠️ THE DECLINE IS A KNOWN DIVERGENCE AND IT IS DELIBERATELY LEFT ALONE HERE.
+; `LEFT$(5,2)` answers ERR 2 where both references answer ERR 13, because
+; str_eval_no DECLINES and the evaluator re-drives the whole thing numerically.
+; 🔴 BOTH OBVIOUS FIXES ARE WRONG, MEASURED: a direct `jp type_mismatch_error`
+; overrides a fault that is already pending, and a DEFERRED `type_mismatch_set`
+; here is worse -- at this instant the argument has NOT been evaluated yet, so
+; nothing is pending, the type mismatch is armed FIRST, and first-error-wins
+; then BLOCKS the real fault the numeric re-drive raises. penderr-acceptance row
+; `o.pt.left` (`Q2$=LEFT$(0*(1/0)+1)`) caught both. The reference evaluates the
+; expression and reports what IT raises; only a clean expression is a type
+; mismatch. That is a change to what happens AFTER the decline, not here.
+; Filed in TODO.md.
+str_arg_snap:
+                call    str_eval            ; STRPTR -> source; HL advanced; CF=ok
+                jp      nc,sas_decline
+                push    hl                  ; save the cursor across the snapshot
+                call    str_snapshot_arg    ; STRPTR -> an OWNED temp; HL=temp
+                pop     hl
+                ret
+sas_decline:
+                ; 🔴 THE DECLINE IS THE PART A CALL BREAKS, AND IT COST A RED GATE.
+                ; Open-coded, `jp nc,str_eval_no` ran in the VERB's frame, so
+                ; str_eval_no's `ret` declined out of LEFT$/RIGHT$/MID$ entirely.
+                ; Behind a `call` it runs one frame deeper and that `ret` lands
+                ; back INSIDE the verb, just after the call -- the decline stops
+                ; declining and the verb carries on. penderr-acceptance row
+                ; `o.pt.left` caught it (zb answered 2 where the references
+                ; answer 11). Discarding our own return address restores the
+                ; original stack shape exactly. +4 B, and not optional.
+                ; [[a-shared-tail-is-not-a-decision]]
+                pop     af                  ; discard str_arg_snap's return address
+                jp      str_eval_no         ; now declines out of the VERB, as before
+
 ; --- CHR$/STR$/LEFT$/RIGHT$/MID$: string-VALUED $FF functions ---------------
 ; Reached from str_eval_maybe_mki (basic/strvar.asm) via `jp str_func_ff` on a
 ; non-MKI$ $FF token (repack build only). Entered with HL on the selector byte and
@@ -811,11 +853,7 @@ str_fn_left:
                 jr      z,str_arg_empty
                 cp      ','
                 jr      z,str_arg_empty
-                call    str_eval            ; STRPTR -> source; HL advanced; CF=ok
-                jp      nc,str_eval_no
-                push    hl                  ; save cursor@','
-                call    str_snapshot_arg    ; STRPTR -> an OWNED temp; HL=temp
-                pop     hl
+                call    str_arg_snap        ; STRPTR -> an OWNED temp; HL = cursor
                 ld      a,(hl)
                 cp      ','
                 jr      nz,str_arg_empty
@@ -856,11 +894,7 @@ str_fn_right:
                 jr      z,str_arg_empty
                 cp      ','
                 jr      z,str_arg_empty
-                call    str_eval
-                jp      nc,str_eval_no
-                push    hl
-                call    str_snapshot_arg
-                pop     hl
+                call    str_arg_snap        ; STRPTR -> an OWNED temp; HL = cursor
                 ld      a,(hl)
                 cp      ','
                 jr      nz,str_arg_empty
@@ -904,11 +938,7 @@ str_fn_mid:
                 jp      z,str_arg_empty
                 cp      ','
                 jp      z,str_arg_empty
-                call    str_eval            ; STRPTR -> source
-                jp      nc,str_eval_no
-                push    hl
-                call    str_snapshot_arg    ; STRPTR -> an OWNED temp; HL=temp
-                pop     hl
+                call    str_arg_snap        ; STRPTR -> an OWNED temp; HL = cursor
                 ld      a,(hl)
                 cp      ','
                 jp      nz,str_arg_empty

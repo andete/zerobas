@@ -32,6 +32,11 @@ gfx_pstk_addr    POINTER  returns HL = GFX_PSTK + slot
 df_entptr        POINTER  returns HL = FSECTOR_BUF + entry offset
 
 eval             CLOBBER  returns the value in DE; A is scratch, HL the advanced cursor
+str_arg_snap     CLOBBER  returns HL = the cursor it PUSHED before the snapshot
+#                         (pop hl / ret); A is the sub-ROM snapshot op's residue,
+#                         NOT the byte at (HL). All three callers -- LEFT$, RIGHT$,
+#                         MID$ -- reload with `ld a,(hl)`, and that load is LIVE.
+#                         Read 2026-08-28, D-NGRAM8.
 var_name_key     CLOBBER  returns A = the RESOLVED TYPE (VARTYPE), HL past the name
 tape_parse_name  CLOBBER  exits through a djnz fill loop; A is loop residue
 # parse_disk_fcb -- RETIRED 2026-08-21 (D-FNEXPR2). It read:

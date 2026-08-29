@@ -331,6 +331,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / tooling**
 
+- [x] ✅ **D-NGRAM8 (2026-08-28): `str_arg_snap` for LEFT$/RIGHT$/MID$**
+      ([`docs/spec-basic-ngram8.md`](docs/spec-basic-ngram8.md)). **Low read
+      106 -> 114 B free** — 12 B of carve minus 4 B the decline needs back.
+      🔴 **A `call` MOVED THE DECLINE ONE FRAME DEEPER AND IT STOPPED
+      DECLINING**: `str_eval_no`'s `ret` landed back INSIDE the verb instead of
+      out of it. `pop af` restores the stack shape. Caught by
+      `penderr-acceptance`, NOT by this slice's own 12-row probe.
+      🎯 **AND THAT IS THE LESSON: an existing DIFF row MASKS a new breakage on
+      the same path.** The probe HAD decline rows, but they were already DIFF
+      (the ERR 2/13 divergence), so a second, different failure changed nothing
+      in the report. The probe now carries the ORDERING rows — and only the
+      ASSIGNMENT shape separates the trees; `PRINT LEFT$(0*(1/0)+1)` reads the
+      same on HEAD, shipped and a deliberately broken tree.
+
+- [ ] 🔴 **`LEFT$(5,2)` ANSWERS ERR 2 WHERE BOTH REFERENCES ANSWER ERR 13.**
+      Filed 2026-08-28 by D-NGRAM8
+      ([`docs/spec-basic-ngram8.md`](docs/spec-basic-ngram8.md) §4). Pre-existing
+      (verified by reverting the carve). 5 rows measured: `.bad` x3 and `.pexp`
+      x2 (`PRINT LEFT$(0*(1/0)+1)` -> ERR 2 where the references say ERR 11).
+      🔴 **BOTH OBVIOUS FIXES ARE WRONG, AND BOTH WERE MEASURED WRONG:** a direct
+      `jp type_mismatch_error` OVERRIDES a fault already pending; a DEFERRED
+      `type_mismatch_set` is worse, because at that instant the argument has NOT
+      been evaluated, so nothing is pending, the type mismatch is armed FIRST,
+      and first-error-wins then BLOCKS the real fault the numeric re-drive
+      raises. `penderr-acceptance` row `o.pt.left` caught both.
+      ➡️ **The reference evaluates the expression and reports what IT raises;
+      only a CLEAN expression is a type mismatch.** So the fix belongs AFTER the
+      decline — in whatever re-drives the expression numerically — not in
+      `str_arg_snap`. Unpriced.
+      🤖 AUTONOMOUS — the references settle it.
+
 - [x] ⛔ **DECLINED 2026-08-28: the 18 B `ld a,$DD / ld (ERRMARK),a / ld de,0 /
       ret` tail at four sites** (`ev_f_err`, `ev_f_base`, `ev_usr_err`,
       `usr_undef`). Byte-identical, no interior labels, and it would save 18 B.
@@ -757,7 +788,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3843 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3874 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
