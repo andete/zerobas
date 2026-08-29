@@ -454,22 +454,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       recipe REFUSES rather than passes. `run_gates.py --selftest`, 6 arms.
       [[apparatus-is-part-of-the-measurement]]
 
-- [ ] 🔴 **`LEFT$(5,2)` ANSWERS ERR 2 WHERE BOTH REFERENCES ANSWER ERR 13.**
-      Filed 2026-08-28 by D-NGRAM8
-      ([`docs/spec-basic-ngram8.md`](docs/spec-basic-ngram8.md) §4). Pre-existing
-      (verified by reverting the carve). 5 rows measured: `.bad` x3 and `.pexp`
-      x2 (`PRINT LEFT$(0*(1/0)+1)` -> ERR 2 where the references say ERR 11).
-      🔴 **BOTH OBVIOUS FIXES ARE WRONG, AND BOTH WERE MEASURED WRONG:** a direct
-      `jp type_mismatch_error` OVERRIDES a fault already pending; a DEFERRED
-      `type_mismatch_set` is worse, because at that instant the argument has NOT
-      been evaluated, so nothing is pending, the type mismatch is armed FIRST,
-      and first-error-wins then BLOCKS the real fault the numeric re-drive
-      raises. `penderr-acceptance` row `o.pt.left` caught both.
-      ➡️ **The reference evaluates the expression and reports what IT raises;
-      only a CLEAN expression is a type mismatch.** So the fix belongs AFTER the
-      decline — in whatever re-drives the expression numerically — not in
-      `str_arg_snap`. Unpriced.
-      🤖 AUTONOMOUS — the references settle it.
+- [x] ✅ **D-LEFTTM (2026-08-29): FIXED — `PRINT LEFT$(5,2)` now answers ERR 13
+      and `PRINT LEFT$(0*(1/0)+1)` answers ERR 11, as both references do**
+      ([`docs/spec-basic-lefttm.md`](docs/spec-basic-lefttm.md)). **20 rows,
+      DIFF 5 -> 0. +16 B of the low region** (134 -> 118 B free; page 1
+      unchanged). `penderr-acceptance` 61/61.
+      🎯 **IT WAS NEVER IN `str_arg_snap`.** `str_eval` declines, PRINT re-drives
+      numerically, and `ev_ff_strnum`'s string-only-token arm answered
+      `jp ev_f_empty` — FPERR=4, armed WITHOUT EVER LOOKING AT THE ARGUMENT.
+      The reference rule is the opposite: evaluate the argument and report what
+      IT raises; only a CLEAN expression is a type mismatch. `ev_f_defer` is
+      already first-error-wins, so the whole fix is ORDER.
+      🔴 **THE SAME MECHANISM ON THE WRONG SIDE OF THE EVALUATION IS THE BUG
+      D-NGRAM8 ALREADY MADE ONCE — and it is now arm K-LT2, not an argument.**
+      Move `penderr_set` ahead of `call ev_e` and the three `.bad` rows DO NOT
+      MOVE (clean expressions cannot tell) while only the two `.pexp` rows go
+      11 -> 13. A row set of just `.bad` would have scored the wrong fix green.
+      [[two-rules-that-coincide-on-every-row-you-have]]
 
 - [x] ⛔ **DECLINED 2026-08-28: the 18 B `ld a,$DD / ld (ERRMARK),a / ld de,0 /
       ret` tail at four sites** (`ev_f_err`, `ev_f_base`, `ev_usr_err`,
@@ -897,7 +898,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3983 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3984 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

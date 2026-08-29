@@ -589,10 +589,32 @@ ev_ff_strnum:
                 ; 2026-07-17): the old bare `jp ev_f_err` set only ERRMARK (which
                 ; check_expr_errors does NOT inspect) and did NOT advance IX, so
                 ; once ev_rel's fixed probe re-drives `LEFT$("AB")` numerically the
-                ; PRINT item loop spun forever emitting " 0". Defer a real "syntax
-                ; error" via ev_f_empty (sets FPERR=4, first-error-wins) so the
-                ; driver's check_expr_errors aborts the statement.
-                jp      ev_f_empty          ; deferred FPERR=4 "syntax error"
+                ; PRINT item loop spun forever emitting " 0". A DEFERRED fault it
+                ; must stay -- but D-LEFTTM changes WHICH fault, and WHEN.
+                ;
+                ; D-LEFTTM (docs/spec-basic-lefttm.md): `PRINT LEFT$(5,2)` answered
+                ; ERR 2 where both references answer ERR 13. This was `jp ev_f_empty`
+                ; -- FPERR=4 "syntax error", armed WITHOUT LOOKING AT THE ARGUMENT.
+                ; 🎯 THE REFERENCE RULE IS "EVALUATE THE ARGUMENT AND REPORT WHAT IT
+                ; RAISES; ONLY A CLEAN EXPRESSION IS A TYPE MISMATCH." So evaluate
+                ; FIRST, then defer TYPEMM -- ev_f_defer is already first-error-wins,
+                ; so a fault the argument raised keeps the answer and this one is
+                ; dropped. `PRINT LEFT$(0*(1/0)+1)` is Division by zero, not 13.
+                ; 🔴 AND THAT ORDER IS THE WHOLE FIX. D-NGRAM8 tried a deferred
+                ; type_mismatch_set in str_arg_snap and it measured WRONG for exactly
+                ; the mirror-image reason: at that instant the argument has NOT been
+                ; evaluated, so the mismatch armed FIRST and BLOCKED the real fault.
+                ; Same code, same mechanism, opposite side of the evaluation.
+                inc     ix                  ; past the selector
+                call    ev_sp
+                cp      '('
+                jr      nz,evff_strnum_tm   ; malformed: no argument to evaluate
+                inc     ix
+                call    ev_e                ; the argument, numerically -- it arms its
+                                            ; OWN fault first if it has one
+evff_strnum_tm:
+                ld      e,FPERR_TYPEMM      ; -> ERR 13, unless the argument beat us
+                jp      ev_f_defer
 
 ; ev_str_arg: parse "( <string-expr> )" from the IX token stream, leaving STRPTR ->
 ; the argument's descriptor and IX past ')'. Mirrors ev_ff_cvi's IX<->HL
