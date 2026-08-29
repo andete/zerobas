@@ -113,7 +113,75 @@ def parse():
     return out
 
 
+# ⛔ CANDIDATES ALREADY DECLINED, WITH THE REASON. This sweep ranks by BYTES and
+# has no way to know a run is unfactorable, so the same two shapes kept coming
+# back to the top of every run and each one re-paid the same analysis. Marking
+# them costs nothing and makes the ranking say what is actually available.
+# 🔴 A DECLINE IS NOT A DELETION: the rows still print, with the reason attached,
+# because a decline can be OVERTURNED (D-N8ARM overturned two "structurally null"
+# verdicts in one morning) and a candidate silently filtered out cannot be.
+# 🔴 KEYED ON A PREFIX OF THE SHAPE, NOT ON ITS FIRST INSTRUCTION. The first
+# draft matched `shape[0]` alone -- and `push de` opens a great many runs, so it
+# would have stamped ⛔ DECLINED on unrelated candidates and hidden real savings
+# behind a reason that does not apply to them. A false decline is worse than the
+# re-analysis it was meant to save. Selftest arm D3 is that near-miss.
+DECLINED = {
+    ("ld a,$dd", "ld (errmark),a", "ld de,0"):
+        "D-EVFERR: a new `jp ev_f_err` is a factor deciding to fail with NO "
+        "error code, which measured wrong at all seven sites that made it "
+        "(basic/expr.asm, beside ev_f_err)",
+    ("push de", "call push_lhs_frame", "call set_factyp_int_ret"):
+        "D-NGRAM (2026-08-29): a FIXED-SIZE FRAME PROTOCOL -- a helper's return "
+        "address lands INSIDE the frame, and the tail-jump form that avoids that "
+        "cannot carry the FACTYP reset, because push_lhs_frame captures FACTYP "
+        "into the frame (basic/float-arith.asm, beside push_lhs_frame)",
+    ("inc ix", "push de", "call push_lhs_frame"):
+        "D-NGRAM (2026-08-29): the same frame protocol -- see "
+        "basic/float-arith.asm beside push_lhs_frame",
+}
+
+
+def declined_reason(shape):
+    """-> the reason this shape is already declined, or None."""
+    shape = tuple(shape or ())
+    for head, why in DECLINED.items():
+        if shape[:len(head)] == head:
+            return why
+    return None
+
+
+def _selftest():
+    ok = True
+
+    def arm(name, cond):
+        nonlocal ok
+        print(f"{'PASS' if cond else 'FAIL'}  {name}")
+        ok = ok and bool(cond)
+
+    frame = ("push de", "call push_lhs_frame", "call set_factyp_int_ret")
+    arm("D1 a declined shape is recognised", declined_reason(frame) is not None)
+    arm("D2 a longer shape with the declined PREFIX is recognised",
+        declined_reason(frame + ("call ev_mod",)) is not None)
+    # 🔴 THE ARM THAT MATTERS: `push de` alone must NOT stamp a decline.
+    arm("D3 a NEAR MISS sharing only the first instruction is NOT declined",
+        declined_reason(("push de", "call something_else", "ret")) is None)
+    arm("D4 an unrelated shape is not declined",
+        declined_reason(("inc hl", "call skip_spaces", "jp str_eval")) is None)
+    arm("D5 an empty shape does not crash", declined_reason(()) is None)
+    # positive control on the LIVE table: every declined key must still be a
+    # real run in the tree, or the entry is stale and silently protects nothing.
+    st = parse()
+    forms = {e[3] for e in st if e[0] == "I"}
+    stale = [k for k in DECLINED if not set(k) <= forms]
+    arm(f"D6 every declined key still exists in the tree (stale: {stale})",
+        not stale)
+    print("selftest:", "GREEN" if ok else "🔴 RED")
+    return 0 if ok else 1
+
+
 def main(argv):
+    if "--selftest" in argv:
+        return _selftest()
     seq = parse()
     print(f"D-NGRAM — exact repeated instruction sequences across "
           f"basic/ + sub/ ({sum(1 for x in seq if x[0]=='I')} instructions)\n")
@@ -189,8 +257,12 @@ def main(argv):
         seen.add(sig); shown += 1
         if shown > 14: break
         kind = "TAIL" if tail else "sub"
-        print(f"{gain:>4d} {N:>3d} {k:>3d} {m:>5d}  [{kind}] " + " | ".join(g[:5])
+        why = declined_reason(g)
+        mark = "⛔ " if why else ""
+        print(f"{gain:>4d} {N:>3d} {k:>3d} {m:>5d}  {mark}[{kind}] " + " | ".join(g[:5])
               + (" ..." if N > 5 else ""))
+        if why:
+            print(f"                     ⛔ DECLINED — {why}")
         for rel, ln, _, _ in hits[:4]:
             print(f"                     {rel}:{ln}")
     if not shown:

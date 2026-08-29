@@ -348,6 +348,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       part of the reading.**
       [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
+- [x] ⛔ **DECLINED 2026-08-29: `push de / call push_lhs_frame / call
+      set_factyp_int_ret`, the top LIVE candidate in `ngram_sweep --main`
+      (6 sites x 7 B).** Reason recorded at the source, beside `push_lhs_frame`
+      in [`basic/float-arith.asm`](basic/float-arith.asm).
+      🔴 **IT IS A FIXED-SIZE FRAME PROTOCOL.** The caller's `push de` and
+      `push_lhs_frame`'s five word-pushes must end up CONTIGUOUS, because the
+      matching `combine_*` pops them as one frame. Behind a `call`, the helper's
+      own return address is pushed BETWEEN them — **inside** the frame. The
+      D-NGRAM8 hazard, one level up.
+      🎯 **AND THE ONE ARRANGEMENT THAT AVOIDS IT CANNOT CARRY THE SECOND HALF.**
+      A helper that re-pushes its return address under the frame and TAIL-JUMPS
+      into `push_lhs_frame` keeps the frame contiguous — but it cannot also do
+      the `FACTYP:=2`, because `push_lhs_frame` **captures (FACTYP) into the
+      frame** (`ld a,(FACTYP) / push af`) so the reset must happen after it.
+      Reduced to the frame half alone it saves 1 B per site and costs 6: ZERO.
+      ⚠️ Stashing the return address in a register is blocked at the largest
+      site: `evr` holds the relation bits in BC across the call.
+      🟢 **AND THE SWEEP NOW CARRIES ITS OWN DECLINES** — it ranks by BYTES and
+      cannot know a run is unfactorable, so this shape and the `ERRMARK` tail
+      kept returning to the top and each run re-paid the same analysis. They are
+      now marked ⛔ with the reason **in the output**, not filtered out: a decline
+      can be OVERTURNED (D-N8ARM overturned two "structurally null" verdicts in
+      one morning) and a silently-filtered candidate cannot be.
+      🔴 **THE FIRST DRAFT MATCHED ON THE SHAPE'S FIRST INSTRUCTION ALONE** —
+      and `push de` opens a great many runs, so it would have stamped DECLINED on
+      unrelated candidates and hidden real savings behind a reason that does not
+      apply. **A false decline is worse than the re-analysis it saves.** Keyed on
+      a shape PREFIX now, with a near-miss arm (D3) and a staleness arm (D6: a
+      declined key that no longer exists in the tree protects nothing).
+      `python3 scratchpad/ngram_sweep.py --selftest`, 6 arms, collected by
+      `selftest-check`.
+
 - [x] ✅ **D-INSTRTM (2026-08-29): FIXED — `INSTR` with a non-string operand now
       answers ERR 13, and a faulting operand answers its OWN error**
       ([`docs/spec-basic-instrtm.md`](docs/spec-basic-instrtm.md)). **18 rows,
@@ -1028,7 +1060,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4114 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4146 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

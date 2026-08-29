@@ -1464,6 +1464,28 @@ widen_int_to:
 ; Called right after the caller has already pushed the LHS's plain DE
 ; value, so the two together form one fixed-size frame the matching
 ; combine_* pops in the opposite order. Clobbers A, DE, HL.
+; ⛔ AND THAT IS ALSO WHY `push de / call push_lhs_frame / call
+; set_factyp_int_ret` MUST STAY OPEN-CODED AT ALL SIX SITES. It is the
+; top-ranked live candidate in `ngram_sweep --main` (6 sites x 7 B) and it is
+; DECLINED, 2026-08-29, for a structural reason rather than a measured one:
+;   * The run is a FIXED-SIZE FRAME PROTOCOL. The caller's `push de` and this
+;     routine's five word-pushes must end up CONTIGUOUS, because the matching
+;     combine_* pops them as one frame. Put the run behind a `call` and that
+;     helper's own return address is pushed BETWEEN the two -- it lands INSIDE
+;     the frame. Exactly the D-NGRAM8 hazard, one level up.
+;   * The one arrangement that avoids it is a helper that re-pushes its return
+;     address under the frame and TAIL-JUMPS here (`pop hl / push de / push hl /
+;     jp push_lhs_frame`), so this routine's own ret lands back in the original
+;     caller. That works -- and it cannot carry the `set_factyp_int_ret` half,
+;     because THIS ROUTINE CAPTURES (FACTYP) INTO THE FRAME (`ld a,(FACTYP) /
+;     push af` below) and the reset to 2 must therefore happen AFTER it. Reduced
+;     to just the frame half, the helper saves 1 B per site and costs 6, i.e.
+;     ZERO.
+;   * Stashing the return address in a register instead is blocked at the
+;     largest site: `evr` (basic/expr.asm) holds the relation bits in BC across
+;     this call and pushes them immediately after.
+; 🎯 So the sweep will keep ranking it, and the answer will keep being no.
+; [[a-shared-tail-is-not-a-decision]]
 push_lhs_frame:
                 pop     de                  ; DE = our own return address (taken
                                             ; off the stack so it's not in the way)
