@@ -210,6 +210,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       must be RE-RUN, not inherited**.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
+- [ ] 💰 **~42 B OF THE *LOW REGION* (estimated 2026-08-30) IN ONE HELPER: `str_fn_left` /
+      `str_fn_right` / `str_fn_mid` SHARE AN 18-INSTRUCTION PROLOGUE.** Measured
+      2026-08-30, `scratchpad/ngram_sweep.py --main`. The low region is the
+      scarce one (run `make basic-reloc`; it read 66 B on 2026-08-30 after
+      D-STRFLT).
+      The run is `inc hl` (past the selector) through `push bc`, identical at all
+      three sites: the `(` test, the two empty-argument tests, `str_arg_snap`,
+      the `,` test, and the temp-address capture. Only what follows differs —
+      LEFT$/RIGHT$ call `eval_byte_arg`, MID$ calls `eval_pos_arg`.
+      🔴 **THE BYTE-LEVEL SWEEP RANKS IT AT TWO SITES, NOT THREE.** `str_fn_mid`
+      spells the same four exits with `jp` where LEFT$/RIGHT$ use `jr`, so the
+      spans are not byte-identical and `ngram_sweep` reports a 12-instruction /
+      2-site / 16 B run. **Grep the IDIOM, then check the jump form** —
+      [[grep-the-idiom-beats-the-clone-ranking]]. Three sites is ~90 B of
+      duplicate against a ~30 B body.
+      🔴 **AND THE EXIT IS THE WHOLE DESIGN. Four of the run's instructions jump
+      to `str_arg_empty`, which ends `jp str_eval_no`** — an outward jump that,
+      from inside a helper, leaves the helper's return address on the stack.
+      **That is exactly the `tcr_ovf` defect fixed on 2026-08-30**
+      ([`docs/spec-basic-pcttrunc.md`](docs/spec-basic-pcttrunc.md) §3,
+      [[factoring-a-run-into-a-helper]]), and here it would corrupt the CF
+      contract `str_eval`'s caller reads.
+      ➡️ **The shape that avoids it entirely: the helper `ret`s with CF clear on
+      the empty-argument case and each caller does `jp nc,str_arg_empty`** —
+      3 B × 3 sites, no frame arithmetic, and the exit stays where the reader
+      can see it. Budget the 9 B into the estimate rather than saving it.
+      ⚠️ **`str_arg_snap` (D-NGRAM8) ALREADY FACTORED THE INSIDE OF THIS FAMILY**,
+      so the remaining duplicate is the part BEFORE and AROUND that call. Check
+      the overlap rather than inheriting this estimate.
+      🤖 AUTONOMOUS — a gate settles it (`make gates`), and the row set is the
+      existing string-acceptance / strparen-acceptance suites plus
+      `scratchpad/val_probe.py`'s LEFT$/RIGHT$/MID$ rows.
+
 - [x] 🟢 **D-STRFLT: `STR$` OF A NON-INTEGER — THE VAL/STR$ SWEEP CLOSES AT
       0 DIFF / 97 AND 0 DIFF / 27.** Spec
       [`docs/spec-basic-strflt.md`](docs/spec-basic-strflt.md); probe
@@ -1454,7 +1487,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4540 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4573 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
