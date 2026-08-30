@@ -194,7 +194,7 @@ def verify(lines, src_out, dst_out, mapping):
 # 🔴 `(?!\d)` IS LOAD-BEARING, AND ITS ABSENCE CORRUPTED 19 CITATIONS IN 12 FILES
 # ON 2026-08-30. The `(?!\s*\(T-)` lookahead is meant to skip a citation that
 # ALREADY carries its block id -- and BACKTRACKING defeats it: on
-# `TODO.md:3251 (T-529ABE)` the greedy `\d+` takes `4618`, the lookahead correctly
+# `TODO<dot>md:4618 (T-529ABE)` the greedy `\d+` takes `4618`, the lookahead correctly
 # rejects it, and the engine then RETRIES with `461`, where the next character is
 # `8` rather than ` (T-` -- so the lookahead passes, `TODO.md:461` is rewritten,
 # and the orphaned `8 (T-529ABE)` is left behind. Every already-id'd citation in
@@ -315,7 +315,15 @@ def selftest() -> int:
         ok = ok and bool(cond)
 
     # --- defect 2: the backtracking lookahead, on the exact corrupting input --
-    already = "TODO.md:3251 (T-529ABE), a Phase-1 entry"
+    # 🔴 ASSEMBLED, NOT WRITTEN LITERALLY -- AND THAT IS THE THIRD INSTANCE OF
+    # ONE CLASS IN A DAY. `check_todo_citations.py --fix` cannot tell a citation
+    # QUOTED AS AN EXAMPLE from a live one, so it repointed this fixture (4618 ->
+    # 3251 -> 3287 across two runs) and rewrote the comment above it until the
+    # explanation contradicted itself. The arm kept passing -- any already-id'd
+    # citation is skipped -- so nothing would have caught the drift except
+    # reading it. Concatenating keeps the input EXACT and invisible to the fixer.
+    # [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
+    already = "TODO" + ".md:4618 (T-529ABE), a Phase-1 entry"
     arm("S1 an ALREADY-ID'D citation is not matched at all (the backtracking "
         "bug rewrote `TODO.md:461` and orphaned the `8`)",
         CITE.findall(already) == [])
@@ -323,7 +331,7 @@ def selftest() -> int:
         [m.group(0) for m in CITE.finditer("see TODO.md:2811 for the rest")]
         == ["TODO.md:2811"])
     arm("S3 the same holds for the `../` form used from docs/",
-        CITE.findall("../TODO.md:302 (T-6FE392)") == []
+        CITE.findall("../TODO.md:325 (T-6FE392)") == []
         and len(CITE.findall("../TODO.md:273")) == 1)
 
     # --- defect 1: the archive clobber ---------------------------------------

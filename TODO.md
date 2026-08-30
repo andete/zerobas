@@ -135,6 +135,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **BASIC surface**
 
+- [ ] ⚠️ **`check_todo_citations.py --fix` CANNOT TELL A CITATION QUOTED AS AN
+      EXAMPLE FROM A LIVE ONE, AND REWRITES BOTH.** Found 2026-08-30 while
+      writing D-SPLITFIX, whose comment explains the citation-corruption bug BY
+      QUOTING A CITATION. `--fix` repointed the example twice (`4618` -> `3251`
+      -> `3287`), leaving the sentence self-contradicting — *"on `TODO.md:3287`
+      the greedy `\d+` takes `4618`"* — and silently drifted the selftest's input
+      fixture with it.
+      🔴 **THE ARM KEPT PASSING**, because ANY already-id'd citation is skipped,
+      so nothing but reading it would have caught the drift. **A green arm on a
+      mutated fixture is the failure mode here**, not a red one.
+      🎯 **THIRD INSTANCE OF ONE CLASS IN A DAY**, and the first that MUTATES
+      rather than miscounts: a `FOUTBUF`-writer grep and a knife's guard counter
+      both hit a comment written an hour earlier
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      ➡️ **WORKED AROUND AT THE ONE SITE** (the comment spells the shape
+      `TODO<dot>md:`, the fixture is assembled by concatenation so no literal
+      citation exists in the file). **The general fix is not done**: any doc that
+      quotes a `TODO.md:NNN (T-xxxxxx)` as an example is exposed, and neither the
+      fixer nor `todo-citation-check` has a way to mark one inert.
+      ➡️ Candidate: an explicit escape the tools honour (a leading `!` or a
+      fenced span), plus a gate arm that a marked example survives `--fix`.
+      🤖 AUTONOMOUS — a gate settles it.
+
 - [x] 🟢 **FIXED 2026-08-30 (D-SPLITFIX) — BOTH DEFECTS, WITH SEVEN ARMS THE
       BATTERY COLLECTS.** `(?!\d)` added to `CITE` (backtracking is what defeated
       the already-id'd lookahead: greedy `\d+` takes `4618`, the lookahead
@@ -161,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:302 (T-6FE392)8 (T-529ABE)` from `TODO.md:3251 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3310 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -641,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3251 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3310 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2852,6 +2875,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that seeds a cell it also tests.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
+- [ ] 🔴 **THE THIRD `PUT` OF A SESSION HANGS ZEROBAS, UNTRAPPABLY — AND A
+      RANDOM-ACCESS WRITE LOOP IS AN ORDINARY MSX BASIC PROGRAM.** Measured
+      2026-08-30, [`docs/spec-basic-put3.md`](docs/spec-basic-put3.md),
+      probe `scratchpad/reclen_probe.py` (15 rows, CF-3300 vs repack).
+      ```
+      OPEN"TS.DAT"AS #1 LEN=128 : FIELD#1,128 AS A$
+      LSET A$=STRING$(128,"B") : PUT#1,1   ok
+                                 PUT#1,2   ok
+                                 PUT#1,3   cf3300 [OK]   zb <NO OUTPUT>
+      ```
+      🎯 **THREE FACTS, EACH WITH ITS OWN ROW.** It is the `PUT` COUNT and
+      nothing else (`p.same3` writes the SAME record three times and dies, so no
+      layout or straddle question is involved); it is CUMULATIVE ACROSS THE
+      SESSION (`p.close3` closes and reopens between writes and still dies, so
+      `CLOSE` does not release whatever is consumed); and it is NOT A TRAPPABLE
+      ERROR (`p.trap3`, with a handler the interpreter can reach, prints nothing
+      at all — the handler never runs). `p.put1` / `p.put2` / `p.trap2` are the
+      controls and all pass.
+      ➡️ **NEXT: find what the third `PUT` consumes.** The `CLOSE`-survives clue
+      points at a cumulative resource rather than per-`FCB` state.
+      ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
+      🤖 AUTONOMOUS — the reference settles the behaviour and the bisect is done.
+
 - [ ] 🔴 **A NON-TILING `LEN=r` IS `Syntax error` HERE AND `OK` ON THE CF-3300 —
       AND THE DOC CLAIMED BYTE-IDENTITY ON A CORPUS THAT NEVER CONTAINED THE
       CASE.** Filed 2026-08-19 by D-RECLEN, found by a row that MISSED its
@@ -2877,6 +2923,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       not tile a 512-byte sector), so "just widen the validator" is exactly the
       cheap wrong answer — what the reference DOES with a straddling record is
       unmeasured, and `GET`/`PUT` round-trip rows come before any byte.
+      ✅ **THE STRADDLE PREMISE IS REFUTED, 2026-08-30**
+      ([`docs/spec-basic-put3.md`](docs/spec-basic-put3.md) §2). The CF-3300
+      round-trips record 6 at `LEN=100` — bytes 500..599, ACROSS the 512-byte
+      boundary — intact, and damages neither neighbour; `LEN=96` agrees. So the
+      constraint `oo_parse_reclen`'s comment asserts is not one the reference
+      has, and the power-of-two validator is zerobas's own invention.
+      🔴 **RECORD 6 IS THE ONLY ROW THAT COULD HAVE SAID SO** — records 1 and 5
+      lie wholly inside the first sector and would round-trip on an
+      implementation that cannot straddle at all.
+      ⚠️ **STILL NOT A LICENCE TO WIDEN THE VALIDATOR.** What is refuted is the
+      stated REASON. zerobas's own straddling behaviour is still unmeasured,
+      because the rows that would measure it need three `PUT`s and the third one
+      hangs — see the item above, which must be fixed first.
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 - [ ] ⚠️ **A STORED `DATA` LITERAL CHARGES THE STRING POOL NOTHING ON BOTH
