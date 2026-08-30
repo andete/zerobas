@@ -143,6 +143,18 @@ CASES = [
     ("bare-run",       ['10 PRINT"ZQ1"', "RUN"],                   -1, None),
     ("load-plain",     MK + ['10 PRINT"ZQ1"', 'LOAD"A:RT.BAS"', "LIST"],
      -2, (-1, "listing")),
+    # 🔴 D-NGRAM12 ADDED THIS ROW BECAUSE A KNIFE PROVED THE BATTERY BLIND.
+    # K-N12A cut the `$0000` END-OF-PROGRAM MARKER the loader writes, and every
+    # row above HELD -- because `load-plain` re-loads a program byte-identical
+    # to the one it just typed, so the terminator the cut failed to write was
+    # ALREADY THERE from the typed copy. The rows agreed for a reason that had
+    # nothing to do with the marker (the tape twin of this row, castail's
+    # `cas2-cload:listing`, moved).
+    # Here the resident program is LONGER than the file, so the bytes past the
+    # loaded line are a real line the loader must terminate away.
+    ("load-short",     MK + ['10 PRINT"ZQ1"', '20 PRINT"ZQ2"', '30 PRINT"ZQ3"',
+                             'LOAD"A:RT.BAS"', "LIST"],
+     -2, (-1, "listing")),
 ]
 
 # Rows whose agreed reading must additionally carry POSITIVE TEXT: proof that a
@@ -154,6 +166,7 @@ CONTROLS = {
     "run-hit":            ("ZQ9",),
     "bare-run":           ("ZQ1",),
     "load-plain:listing": ("ZQ9",),
+    "load-short:listing": ("ZQ9",),
 }
 
 ROWS = 24

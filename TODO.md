@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3556 (T-529ABE)`: a
+      `TODO.md:352 (T-6FE392)8 (T-529ABE)` from `TODO.md:3583 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -252,9 +252,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       CHR$ had no row while the set looked complete. The knife caught it only
       because its prediction named WHICH rows should move. **Name a site from
       its ENCLOSING LABEL.**
+      ✅ **ALSO SHIPPED 2026-08-30: `load_commit_prog`** (D-NGRAM12,
+      [`docs/spec-basic-ngram12.md`](docs/spec-basic-ngram12.md)) — the
+      ten-instruction completion tail that the TAPE loader (`do_tape_prog`,
+      CLOAD) and the DISK loader (`disk_prog_load`, `LOAD"file"`) each carried
+      verbatim. `dpl_done`'s WHOLE BODY was the run, so it is a free `equ`
+      alias, not a 3 B shared-tail jump: **22 B gross, 21 B net** after the
+      `jr z,dpl_done` that no longer reached had to widen to `jp`. **Page 1 read
+      323 -> 344 B free on 2026-08-30** (a READING; run `make basic-reloc`).
+      11 disk + 31 tape rows, DIFF 0; 2 knives + S1; 47/47 battery.
+      🔴 **THE SWEEP RANKED IT AT 19 B AND IT IS WORTH 22** — it prices every
+      collapse as a shared TAIL (one site pays a jump), and cannot see that a
+      site whose whole label block IS the run can be reached by a free `equ`.
+      **Worth checking on any candidate whose second site is a whole label
+      block.** The `--main` board below it is now thin: 18, 16, 15, then 14s.
+      🔴 **AND ITS FIRST KNIFE FOUND A HOLE IN A STANDING GATE.** Cutting the
+      `$0000` end-of-program marker moved the tape row and NOT ONE disk row:
+      `runtail-acceptance`'s fixture re-loads a program byte-identical to the
+      one it just typed, so the terminator the cut failed to write was already
+      in RAM. Nine rows agreed for a reason that had nothing to do with the
+      marker. Closed by a new row, `load-short` (a LONGER program resident, so
+      the loader must terminate a real line away) — 11/11 agree with the
+      CF-3300, and it moves under the knife.
       ➡️ **STILL OPEN, measured 2026-08-28:** an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
+      ➡️ **ALSO OPEN, opened 2026-08-30 by D-NGRAM12:** the *class* behind
+      `load-short`. A load/save row whose fixture writes a file and reads it
+      back into the SAME machine state is blind to anything the load fails to
+      overwrite. `runtail` is fixed; **nothing has counted how many other
+      fixtures have that shape** (`castail`, `bload`, `fat-*`, `merge`).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
 - [ ] 💰 **D-PEEPHOLE: THE CLASSIC Z80 SIZE IDIOMS, COUNTED — SAFE CLASS TAKEN,
@@ -664,7 +691,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3556 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3583 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

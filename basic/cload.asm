@@ -576,6 +576,16 @@ ctp_done:
                 or      a
                 jr      nz,ctp_verify_done  ; CLOAD? -> report, do NOT mutate memory
 
+; --- load_commit_prog: COMMIT A FRESHLY LOADED PROGRAM -----------------------
+; D-NGRAM12: the SHARED completion tail of BOTH program loaders. do_tape_prog
+; (CLOAD) falls through into it; disk_prog_load (LOAD "file") reaches it as
+; `dpl_done`, which is an ALIAS of this label and not a second copy -- its whole
+; body was these ten instructions, byte for byte.
+; Entered with CLPTR = the store cursor just past the last line.
+; Leaves CF CLEAR = loaded, run it (D-CASTAIL / D-RUNTAIL: the SUCCESS half of
+; the CF contract both callers publish; `relink`'s own carry is not a result and
+; may not be passed off as one, which is what the `or a` is for).
+load_commit_prog:
                 ; --- write the $0000 end-of-program marker and set PRGEND ---
                 ld      hl,(CLPTR)
                 ld      (PRGEND),hl         ; end marker sits at the store cursor
@@ -979,7 +989,10 @@ dpl_line:
                                             ; BC = saved link word L_n = A_{n+1}
                 ld      a,b
                 or      c
-                jr      z,dpl_done          ; $0000 link -> program complete
+                jp      z,dpl_done          ; $0000 link -> program complete
+                                            ; (`jp`, not `jr` -- D-NGRAM12 moved
+                                            ; dpl_done to the shared tail, which
+                                            ; is out of relative range from here)
 
                 ; body length = L_n - A_n - 4   (A_n = CLINK = previous link word)
                 ld      hl,(CLINK)          ; HL = A_n
@@ -1067,23 +1080,12 @@ dpl_oom_pop:
                 pop     de
                 jr      dpl_oom
 
-dpl_done:
-                ; (program fully read; no Close — the read side has no dirty state.)
-                ; --- write the $0000 end-of-program marker and set PRGEND ---
-                ld      hl,(CLPTR)
-                ld      (PRGEND),hl         ; end marker sits at the store cursor
-                ld      (hl),0
-                inc     hl
-                ld      (hl),0
-                ; keep the TXTTAB sysvar consistent with the program base
-                ld      hl,TXTBASE
-                ld      (TXTTAB),hl
-                ; --- relink: recompute every line's absolute link pointer ---
-                call    relink
-                or      a                   ; D-RUNTAIL: CF clear = LOADED. relink's own
-                                            ; carry is not a result, so it may not be
-                                            ; passed off as one
-                ret
+; dpl_done — program fully read; no Close, the read side has no dirty state.
+; D-NGRAM12: an ALIAS, not a second copy. This body WAS ten instructions
+; byte-identical to do_tape_prog's completion tail; they are one routine now,
+; `load_commit_prog`, which carries the comment. The NAME and its call site
+; survive so the disk face still reads as its own.
+dpl_done        equ     load_commit_prog
 
 ; dpl_err — take the normal error path. Reached on an unexpected EOF mid-program,
 ; a wrong marker, an Open after the file vanished, a missing disk slot, or any
