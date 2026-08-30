@@ -1025,18 +1025,10 @@ dpl_line:
                 ld      (CLPTR),hl
 
                 ; line number (2 bytes)
-                call    fat_io_getbyte
+                call    dpl_get_store
                 jp      c,dpl_err_pop
-                ld      hl,(CLPTR)
-                ld      (hl),a
-                inc     hl
-                ld      (CLPTR),hl
-                call    fat_io_getbyte
+                call    dpl_get_store
                 jp      c,dpl_err_pop
-                ld      hl,(CLPTR)
-                ld      (hl),a
-                inc     hl
-                ld      (CLPTR),hl
                 pop     de                  ; DE = body length
 
                 ; token body: copy EXACTLY DE bytes (embedded $00s and all)
@@ -1050,12 +1042,8 @@ dpl_body:
                 or      a
                 sbc     hl,de
                 jr      nc,dpl_oom_pop
-                call    fat_io_getbyte
+                call    dpl_get_store
                 jp      c,dpl_err_pop
-                ld      hl,(CLPTR)
-                ld      (hl),a
-                inc     hl
-                ld      (CLPTR),hl
                 pop     de                  ; DE = remaining count
                 dec     de
                 jr      dpl_body
@@ -1076,6 +1064,34 @@ dpl_link_err    equ     ctp_link_err
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
 dpl_err_pop     equ     ctp_err_pop
+; --- dpl_get_store: read ONE file byte and store it at CLPTR, advancing -------
+; D-NGRAM13. The disk loader's line-number and body copies each said this six
+; times over; it is one routine now.
+;   in:  nothing.   out: CF set = EOF (nothing stored); CF clear = the byte is
+;   stored and CLPTR has advanced.  Clobbers A, HL, flags. BC/DE preserved.
+;
+; 🔴 IT RETURNS CF AND THE CALLER STILL RAISES, AND THAT COSTS 4 B ON PURPOSE.
+; Each call site guards exactly ONE value across the read (the body length, or
+; the remaining count) and `dpl_err_pop` drops it. Folding the `jp c,dpl_err_pop`
+; INTO this helper is 4 B cheaper and needs a frame fix -- the helper's own
+; return address sits on top of the guard, so the tail must drop two.
+; ⚠️ THAT FIX CANNOT BE WITNESSED. K-N13A cut it and moved ZERO rows, on TWO
+; fixtures chosen to make the bogus return address as hostile as possible ($0007
+; and $0BB3): the stack below the loader is the REPL's own, so a stray `ret`
+; finds a plausible address in it and the machine wanders back to the prompt.
+; A guard no row can see is one nobody can maintain, so the CF-return shape wins
+; -- the `jp c,dpl_err_pop` stays at the site, where the stack is exactly what
+; every existing analysis of this routine assumes.
+; (docs/spec-basic-ngram13.md §3; the same call D-ARGOPEN made.)
+dpl_get_store:
+                call    fat_io_getbyte
+                ret     c                   ; EOF -> the CALLER raises, in ITS frame
+                ld      hl,(CLPTR)
+                ld      (hl),a
+                inc     hl
+                ld      (CLPTR),hl
+                ret
+
 dpl_oom_pop:
                 pop     de
                 jr      dpl_oom

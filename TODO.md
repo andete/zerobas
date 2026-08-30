@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:352 (T-6FE392)8 (T-529ABE)` from `TODO.md:3583 (T-529ABE)`: a
+      `TODO.md:394 (T-6FE392)8 (T-529ABE)` from `TODO.md:3625 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -277,12 +277,54 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ➡️ **STILL OPEN, measured 2026-08-28:** an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
+      ✅ **ALSO SHIPPED 2026-08-30: `dpl_get_store`** (D-NGRAM13,
+      [`docs/spec-basic-ngram13.md`](docs/spec-basic-ngram13.md)) — the disk
+      loader's `fat_io_getbyte` + store-at-CLPTR run, open-coded 3x at 14 B.
+      **Page 1 read 344 -> 355 B free on 2026-08-30** (a READING; run
+      `make basic-reloc`). 9 rows, 3 DIFF (all pre-existing, see below);
+      2 knives + S1.
+      🔴 **THE 15 B VERSION WORKED AND WAS THE WRONG ONE.** Folding
+      `jp c,dpl_err_pop` into the helper is 4 B cheaper and needs a frame fix
+      (the helper's own return address sits on the caller's guarded count, so
+      the tail must drop two). **K-N13A cut that fix and moved ZERO rows — on
+      TWO fixtures picked to make the bogus return address hostile ($0007, then
+      $0BB3).** The stack below the loader is the REPL's own, so a stray `ret`
+      finds a plausible address in it and the machine wanders back to the
+      prompt. 4 B given back for the CF-return shape, whose failure IS a
+      reading. The D-ARGOPEN call, for the same reason.
+      🔴 **AND A SECOND CHECK DOWNSTREAM HID THE FIRST ONE'S FAILURE.** With the
+      EOF swallowed the loader runs past the file and hits EOF again at the next
+      LINK-WORD read, which prints the IDENTICAL message — so the two rows that
+      read only the MESSAGE cannot move. Only the rows that read the resulting
+      PROGRAM see it.
       ➡️ **ALSO OPEN, opened 2026-08-30 by D-NGRAM12:** the *class* behind
       `load-short`. A load/save row whose fixture writes a file and reads it
       back into the SAME machine state is blind to anything the load fails to
       overwrite. `runtail` is fixed; **nothing has counted how many other
       fixtures have that shape** (`castail`, `bload`, `fat-*`, `merge`).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
+
+- [ ] 📌 **A TRUNCATED TOKENISED BASIC FILE: THE REFERENCE ACCEPTS IT SILENTLY,
+      ZEROBAS REPORTS `load error`.** Measured 2026-08-30 by D-NGRAM13 on the
+      UNMODIFIED tree, [`docs/spec-basic-ngram13.md`](docs/spec-basic-ngram13.md)
+      §5, rows in `scratchpad/ngram13_probe.py`. Nothing in the tree reached
+      `dpl_err_pop` before that slice, so this path had never been read on
+      either machine.
+      | row | CF-3300 | zerobas |
+      |---|---|---|
+      | `d.body` (message) | `<nothing>` | `load error` |
+      | `d.lineno` (message) | `<nothing>` | `load error` |
+      | `d.lineno-l` (listing) | `<nothing>` | `0` |
+      🟢 **WHERE THEY AGREE THEY AGREE EXACTLY**: `d.body-l` lists `10` on both,
+      and a truncated load OVER a resident program leaves the same mangled
+      `10 POKE ZQ1"` on both, byte for byte. So this is not a broken loader —
+      it is one extra message and one extra empty line.
+      🔬 **THE HYPOTHESIS, UNTESTED:** the reference reads whole SECTORS and
+      never sees a byte-level EOF (the zero padding terminates the program
+      cleanly), while `fat_io_getbyte` honours the directory entry's byte
+      length. A file whose real length is a multiple of 512 would separate the
+      two rules; so would one padded with non-zero bytes.
+      🤖 AUTONOMOUS — the references settle the behaviour; the rows exist.
 
 - [ ] 💰 **D-PEEPHOLE: THE CLASSIC Z80 SIZE IDIOMS, COUNTED — SAFE CLASS TAKEN,
       FLAG-CHANGING CLASS STILL OPEN (20 B).** Pattern list from the WikiTI
@@ -691,7 +733,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3583 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3625 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

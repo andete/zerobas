@@ -331,7 +331,7 @@ def selftest() -> int:
         [m.group(0) for m in CITE.finditer("see TODO.md:2811 for the rest")]
         == ["TODO.md:2811"])
     arm("S3 the same holds for the `../` form used from docs/",
-        CITE.findall("../TODO.md:352 (T-6FE392)") == []
+        CITE.findall("../TODO.md:394 (T-6FE392)") == []
         and len(CITE.findall("../TODO.md:273")) == 1)
 
     # --- defect 1: the archive clobber ---------------------------------------
