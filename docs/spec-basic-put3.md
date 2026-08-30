@@ -120,6 +120,36 @@ pointed at the count. Guessing a cause and patching it would have left a
 
 ⚠️ **ONE REFERENCE.** Disk BASIC; a diskless VG-8020 cannot express any of this.
 
+## 3a. The characterisation, extended 2026-08-30 — and what still is NOT known
+
+| question | row | answer |
+|---|---|---|
+| disk ops generally, or `PUT`s? | three `GET`s | **`PUT`s** — three `GET`s are fine |
+| does a `GET` between reset it? | `P,P,G,P` | **no** — still dies |
+| does `CLOSE` + `CLEAR` reset it? | `P,P,CLOSE,CLEAR,reopen,P` | **no** |
+| does the count move with record length? | `LEN=64`, `LEN=128` | **no** — three either way |
+| does it need the fixture's existing file? | a file that does not exist yet | **no** — dies the same |
+| same record, or different ones? | `1,1,1` and `1,2,3` | **both die** |
+
+So: **the third `PUT` of a run, unconditionally**, with nothing yet found that
+resets it.
+
+🔴 **STILL OPEN, AND NAMED RATHER THAN GUESSED: is the count PER-CHANNEL or
+GLOBAL?** The row that answers it — four `PUT`s spread two-and-two over two
+channels — has not run. Four fixture faults in one sitting is what stopped it,
+and the fourth is unresolved: `MAXFILES=2` on its own is **`OK` on both sides**
+(measured), so the two-channel fixture fails for some other reason, and until
+that is isolated any reading from it would be about my fixture.
+⚠️ **Three of the four faults produced a plausible wrong answer rather than an
+obvious break** — `ON ERROR GOTO 100` on a harness that numbers 10,20,30…;
+`OPEN … AS #2` with the default `MAXFILES=1` (`Bad file number`); and the
+two-channel fixture's `Syntax error`. Each looked briefly like a finding.
+
+⚠️ **Also seen, not filed:** `OPEN … LEN=256` answers `Illegal function call` on
+zerobas — a power of two inside the validator's stated 1..256 range. Whether the
+refusal is the `OPEN` or the `FIELD#1,256` behind it is unmeasured; it belongs
+with D-FLDWIDTH's domain rows, not here.
+
 ## 4. What comes next
 
 1. **Find what the third `PUT` consumes** — the `CLOSE`-survives clue says a

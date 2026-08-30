@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3325 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3339 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3325 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3339 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2908,6 +2908,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ERROR (`p.trap3`, with a handler the interpreter can reach, prints nothing
       at all — the handler never runs). `p.put1` / `p.put2` / `p.trap2` are the
       controls and all pass.
+      ✅ **CHARACTERISED FURTHER 2026-08-30** (spec §3a): three `GET`s are fine,
+      so it is `PUT`s and not disk ops; a `GET` between the second and third does
+      NOT reset it; `CLOSE` + `CLEAR` + reopen does NOT reset it; the count does
+      not move with record length (64 and 128 alike); it dies on a file that does
+      not exist yet; and `1,1,1` and `1,2,3` both die. **The third `PUT` of a
+      run, unconditionally.**
+      🔴 **STILL OPEN: PER-CHANNEL OR GLOBAL?** The row is four `PUT`s spread
+      two-and-two over two channels, and it has not run — the two-channel fixture
+      answers `Syntax error` for a reason not yet isolated (`MAXFILES=2` ALONE is
+      `OK` on both sides, measured, so it is not that).
+      ⚠️ **FOUR FIXTURE FAULTS IN ONE SITTING, THREE OF WHICH LOOKED LIKE
+      FINDINGS**: `ON ERROR GOTO 100` on a harness numbering 10,20,30…;
+      `OPEN … AS #2` under the default `MAXFILES=1`; and the two-channel
+      `Syntax error`. Budget for that when picking this up.
       ➡️ **NEXT: find what the third `PUT` consumes.** The `CLOSE`-survives clue
       points at a cumulative resource rather than per-`FCB` state.
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
