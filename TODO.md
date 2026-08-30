@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3532 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3556 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3532 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3556 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3094,8 +3094,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ➡️ **Widening needs BOTH**: `mul_reclen` to really multiply (shift-add,
       ~9 B, written and measured working) AND `fat_rand_put`/`get` to span two
       sectors. Until then `LEN=100`/`255` stay divergent, now with an ERR 5 face.
-      📐 **THE DESIGN, WORKED OUT 2026-08-30 SO THE NEXT SESSION WRITES RATHER
-      THAN DESIGNS:**
+      🔬 **ATTEMPTED 2026-08-30 AND REVERTED AT THE LAST STEP — three of the four
+      pieces WORK, and the fourth is localised.** The tree is back at the
+      face-only commit; nothing below is speculation, it was built and measured.
+      - ✅ **`mul_reclen` shift-add multiply: CORRECT.** Verified by
+        `tests/test_open_len.py`'s independent oracle for r=100 AND r=255,
+        record 6 (within=500) included. ~9 B.
+      - ✅ **`frnd_seg1` / `frnd_seg2`, one shared pair for `PUT` and `GET`, and
+        NO NEW RAM** — n1 is the only value that must survive the second sector
+        and it fits on the stack, so the RAM question the design below worried
+        about does not arise. A record touches at most two sectors, so it is one
+        optional second segment, never a loop.
+      - 🔴 **`write_sector` CLOBBERS BC**, and n1 lives there. Without a
+        push/pop around it the NO-STRADDLE path reached `frnd_seg2` with garbage,
+        invented a second segment and wrote rubbish — `LEN=128` regressed. Caught
+        by the `a.tiling` CONTROL row, i.e. by a length the change was not even
+        about.
+      - 🔴 **STILL OPEN: the SECOND sector on a `PUT`.** `LEN=100` with record 6
+        still fails. The first sector has a read-vs-fill decision
+        (`frp_readold` / `frnd_fill_fwbuf`) driven by `GP_OLDNSEC`; the second
+        segment re-enters `frnd_locate` + `read_sector` with no equivalent, and a
+        newly-allocated sector past EOF has nothing to read. That distinction is
+        what the tail needs.
+      - ⚠️ Adding the two-segment tail also pushed `jr nz,frp_err` out of
+        relative range; both early rejects need `jp`.
+      📐 **THE ORIGINAL DESIGN NOTE (its RAM paragraph is superseded by the
+      stack, above):**
       - **At most TWO segments, never a loop.** `reclen <= 256` and a sector is
         512, so a record touches two sectors at most: `n1 = min(reclen, 512 -
         within)` from sector `GP_SEC`, then `reclen - n1` from `GP_SEC + 1` at
