@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3339 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3366 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3339 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3366 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2875,6 +2875,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that seeds a cell it also tests.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
+- [ ] 🔴 **ONLY ONE FILE MAY BE OPEN AT A TIME — A SECOND CONCURRENT `OPEN` IS
+      `Syntax error`, AND TWO DOCUMENTS SAY OTHERWISE.** Measured 2026-08-30,
+      [`docs/spec-basic-open2.md`](docs/spec-basic-open2.md), probe
+      `scratchpad/open2_probe.py` (13 rows vs a CF-3300, **9 DIFF**).
+      ```
+      MAXFILES=2 : OPEN"TS.DAT"AS #1 LEN=128 : OPEN"TS2.DAT"AS #2 LEN=128
+          cf3300 -> [OK]        zb -> Syntax error
+      ```
+      Every shape: two random channels either order, two SEQUENTIAL channels, one
+      of each, with or without `LEN=`, at `MAXFILES=2` or `3`.
+      🎯 **THE CEILING IS HONOURED; CONCURRENCY IS NOT.** After `MAXFILES=2`,
+      channel #2 opens fine ON ITS OWN on both sides — so the table does raise
+      the ceiling. And with NO `MAXFILES`, a second open reads `Bad file number`
+      on both, which is what says the default ceiling of 1 is enforced correctly
+      and the fixture is sound.
+      ⚠️ **THE FACE IS WRONG TOO**: for the same file on two channels the
+      reference says `File already open`; zerobas says `Syntax error`, naming the
+      parser for a condition the parser is not in.
+      🔴 **FALSIFIES TWO RECORDED CLAIMS**, both corrected in place with the
+      analysis kept: `basic/PROVENANCE.md` §MAXFILES said it *"retires the
+      single-channel limit"*, and this file marked the multi-channel table
+      **DONE**. [[a-fix-falsifies-the-justification-beside-it]]
+      ➡️ **BLOCKS D-PUT3's per-channel question** — the row that would answer it
+      needs two channels and is unwritable on this machine.
+      ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
+      🤖 AUTONOMOUS — the reference settles the behaviour.
+
 - [ ] 🔴 **THE THIRD `PUT` OF A SESSION HANGS ZEROBAS, UNTRAPPABLY — AND A
       RANDOM-ACCESS WRITE LOOP IS AN ORDINARY MSX BASIC PROGRAM.** Measured
       2026-08-30, [`docs/spec-basic-put3.md`](docs/spec-basic-put3.md),
@@ -3344,7 +3371,13 @@ architecture and write code. Each step is independently oracle-validatable.
             and the on-disk `OUT.TXT` is **byte-identical to the real CF-3300**
             (`b"hello world\r\n\x1a"`, `disk_probe_filewrite.py` differential). See
             basic/PROVENANCE.md §file channel — sequential write.
-      - [x] **`MAXFILES` + the multi-channel table** — DONE (basic/files.asm channel
+      - [ ] 🔴 **`MAXFILES` + the multi-channel table** — **THE CEILING IS DONE,
+            THE CONCURRENCY IS NOT** (measured 2026-08-30, D-OPEN2,
+            [`docs/spec-basic-open2.md`](docs/spec-basic-open2.md), 9 DIFF of 13):
+            a SECOND CONCURRENT `OPEN` is `Syntax error` in every shape tried.
+            The token work below is real and oracle-locked, and after
+            `MAXFILES=2` channel #2 opens fine ON ITS OWN — it is having two
+            channels open AT THE SAME TIME that fails. Was marked DONE (basic/files.asm channel
             manager + basic/sysvars.inc FCH_CTX). Retires the single-channel limit:
             up to `FCH_CEIL`(=2) channels open at once, via a **write-back context
             cache** over the UNCHANGED fat.asm (each channel owns a saved

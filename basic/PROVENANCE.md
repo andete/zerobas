@@ -2462,7 +2462,20 @@ from scratch.
 
 `MAXFILES = n` sets how many sequential file channels may be open at once (and
 bounds every `OPEN`/`INPUT#`/`PRINT#`/`CLOSE`/`EOF`/`LOF` channel number). This
-**retires the single-channel limit** every Phase-2 file verb previously shared.
+~~**retires the single-channel limit** every Phase-2 file verb previously
+shared.~~
+
+🔴 **THAT LAST SENTENCE IS FALSE, MEASURED 2026-08-30 (D-OPEN2,
+`docs/spec-basic-open2.md`, 9 DIFF of 13 against a CF-3300). A SECOND CONCURRENT
+`OPEN` IS `Syntax error`** — in every shape: two random channels either order,
+two sequential channels, one of each, with or without `LEN=`, at `MAXFILES=2` or
+`3`. The reference accepts all of them and even diagnoses the same-file case as
+`File already open`.
+🎯 **What IS true is everything else in this section**: the token work is
+oracle-locked, and the CEILING is honoured — after `MAXFILES=2`, channel #2 opens
+fine *on its own*, and with no `MAXFILES` at all a second open correctly reads
+`Bad file number` on both machines. **The ceiling works; the concurrency does
+not.** Conclusion inverted, analysis kept.
 
 **Token (oracle-locked).** "MAXFILES" crunches to **TWO** reserved words —
 `MAX` (`$CD`) + `FILES` (`$B7`) — exactly like `OUTPUT` = `OUT`+`PUT`. Proven
