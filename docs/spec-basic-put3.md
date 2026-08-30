@@ -50,6 +50,33 @@ the `LEN=` question it was found under.
 sides answered `Undefined line number`. The handler has to be the last statement
 and the `ON ERROR` has to name its position.
 
+## 1a. 🔴 And the first write-up conflated two rules — the separation, done
+
+Every row in §1 pairs an `LSET A$=STRING$(128,…)` with each `PUT`, so **"the
+third `PUT`" and "the third `LSET`" coincided on all of them**. That is two rules
+on one row set, and it was filed as fact before being separated.
+[[two-rules-that-coincide-on-every-row-you-have]]
+
+| row | zerobas | CF-3300 |
+|---|---|---|
+| `x.l3p1` — three `LSET`s, **one** `PUT` | OK | OK |
+| `x.l3p0` — three `LSET`s, **no** `PUT` | OK | OK |
+| `x.l1p3` — one `LSET`, **three** `PUT`s | **dies** | OK |
+| **`x.l0p3` — no `LSET` at all, three `PUT`s** | **dies** | OK |
+| `x.l2p2` — two and two | OK | OK |
+
+🟢 **The claim survives and gets sharper.** It is the `PUT`, with no string
+handling involved at all, and the reproducer is three statements:
+
+```
+OPEN"TS.DAT"AS #1 LEN=128 : FIELD#1,128 AS A$
+PUT#1,1 : PUT#1,1 : PUT#1,1
+```
+
+⚠️ `x.str3` (three 128-byte string variables, no file at all) answers
+`Out of string space` on **both** sides — a fixture limit, identical everywhere,
+and not a divergence. It is kept so the next reader does not re-derive it.
+
 ## 2. The straddle premise, refuted
 
 | row | CF-3300 |
@@ -96,5 +123,10 @@ pointed at the count. Guessing a cause and patching it would have left a
 ## 4. What comes next
 
 1. **Find what the third `PUT` consumes** — the `CLOSE`-survives clue says a
-   cumulative resource, not per-`FCB` state.
+   cumulative resource, not per-`FCB` state. The path is narrowed but not read:
+   `ex_put` ([`basic/field.asm`](basic/field.asm)) is stack-balanced, so the
+   subject is inside `fat_rand_put`
+   ([`basic/randio-body.inc`](basic/randio-body.inc)) and its chain —
+   `frnd_locate`, which extends the cluster chain with `GP_FLAGS=1`, and the
+   `fat_dir_update` tail.
 2. Only then re-take §2's rows on zerobas at `LEN=100`, and price the validator.

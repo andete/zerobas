@@ -65,9 +65,25 @@ def write_three(reclen):
 
 W = 'LSET A$=STRING$(128,"B"):PUT#1,{n}'
 B128 = ['OPEN"TS.DAT"AS #1 LEN=128', 'FIELD#1,128 AS A$']
+LS = 'LSET A$=STRING$(128,"B")' 
 OK = 'PRINT"[";"OK";"]"'
 
 CASES = [
+    # === 🔴 THE MINIMAL REPRODUCER: THREE `PUT`s, NO STRINGS ANYWHERE ========
+    # 🎯 EVERY ROW BELOW PAIRED AN `LSET ... STRING$` WITH EACH `PUT`, so "the
+    # third PUT" and "the third LSET" coincided on all of them -- two rules, one
+    # row set. These four separate them, and the answer is the PUT:
+    #   x.l3p1  three LSETs, ONE put   -> OK      (LSET is not it)
+    #   x.l3p0  three LSETs, NO put    -> OK      (nor STRING$ + LSET alone)
+    #   x.l1p3  ONE LSET, three puts   -> DIES
+    #   x.l0p3  NO LSET AT ALL, three  -> DIES    (the minimal form)
+    # [[two-rules-that-coincide-on-every-row-you-have]]
+    ("x.l3p1",    "dsk", B128 + [LS, LS, LS, 'PUT#1,1', OK]),
+    ("x.l3p0",    "dsk", B128 + [LS, LS, LS, OK]),
+    ("x.l1p3",    "dsk", B128 + [LS, 'PUT#1,1', 'PUT#1,1', 'PUT#1,1', OK]),
+    ("x.l0p3",    "dsk", B128 + ['PUT#1,1', 'PUT#1,1', 'PUT#1,1', OK]),
+    ("x.l2p2",    "dsk", B128 + [LS, 'PUT#1,1', LS, 'PUT#1,1', OK]),
+
     # === 🔴 THE THIRD `PUT` HANGS ZEROBAS -- found while trying to MEASURE the
     # === straddle question, because the ctl.* rows below could not be read.
     # The bisect is the finding: it is the PUT COUNT and nothing else.

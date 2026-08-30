@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3310 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3325 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3310 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3325 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2885,6 +2885,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
                                  PUT#1,2   ok
                                  PUT#1,3   cf3300 [OK]   zb <NO OUTPUT>
       ```
+      🔴 **AND THE FIRST FILING CONFLATED TWO RULES — SEPARATED 2026-08-30.**
+      Every row paired an `LSET ... STRING$` with each `PUT`, so "the third PUT"
+      and "the third LSET" coincided on all of them. Four rows separate them:
+      three LSETs with ONE put is OK, three LSETs with NO put is OK, one LSET
+      with three puts DIES, and **no LSET at all with three puts DIES**. The
+      claim survives and the reproducer is now three statements with no string
+      handling anywhere. [[two-rules-that-coincide-on-every-row-you-have]]
+      ```
+      OPEN"TS.DAT"AS #1 LEN=128 : FIELD#1,128 AS A$
+      PUT#1,1 : PUT#1,1 : PUT#1,1
+      ```
+      ➡️ **PATH NARROWED, NOT READ**: `ex_put` (`basic/field.asm`) is
+      stack-balanced, so the subject is inside `fat_rand_put`
+      (`basic/randio-body.inc`) and its chain — `frnd_locate`, which extends the
+      cluster chain with `GP_FLAGS=1`, and the `fat_dir_update` tail.
       🎯 **THREE FACTS, EACH WITH ITS OWN ROW.** It is the `PUT` COUNT and
       nothing else (`p.same3` writes the SAME record three times and dies, so no
       layout or straddle question is involved); it is CUMULATIVE ACROSS THE
