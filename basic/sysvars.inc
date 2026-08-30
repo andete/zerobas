@@ -3401,7 +3401,8 @@ FOUTBUF         equ     $F024   ; flt_out formatter output scratch (24)
 TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array,
                                 ; one decimal digit value (0-9) per byte (24)
 ; tk_float single-literal scan state (own choice — free RAM; transient, dead
-; between literals). See basic/float.asm tk_float for field semantics.
+; between literals). See sub/tkfloat.asm tk_float for field semantics (the crunch
+; was evicted to the sub-ROM; this pointer said basic/float.asm until 2026-08-30).
 TKPOS           equ     $F054   ; running digit-position counter (1)
 TKINTLEN        equ     $F055   ; integer-part digit count = P (1)
 TKHAVESIG       equ     $F056   ; 1 once the first nonzero digit is seen (1)
@@ -3416,9 +3417,28 @@ TKPC            equ     $F05F   ; target precision digit count: 6 / 14 (1)
 TKDEXP          equ     $F060   ; signed dec_exp, pre-/post-round (2)
 TKLEAD          equ     $F062   ; computed lead byte (sign+excess-64 exponent) (1)
 ; flt_out formatter scratch (own choice — free RAM; transient, dead between
-; PRINT items). TKPC/TKDEXP/TKDIG above are reused here too — flt_out never
-; runs concurrently with tk_float (tokenising a line always finishes before
-; any statement, including PRINT, executes).
+; PRINT items). TKPC/TKDEXP/TKDIG above are reused here too — flt_out never runs
+; concurrently with tk_float.
+; 🔴 AND THE REASON FOR THAT CHANGED ON 2026-08-30. It used to be "tokenising a
+; line always finishes before any statement, including PRINT, executes", and
+; D-VALFLT MADE THAT SENTENCE FALSE: `VAL` calls tk_float AT STATEMENT TIME, from
+; inside an expression that a PRINT is very likely to be formatting. The
+; conclusion survives, for a different and stronger reason — the two never
+; INTERLEAVE, because neither can reach the other:
+;   * tk_float calls only its own tkf_* helpers plus the sub-local `upcase` /
+;     `cmp16_bits` clones. It never reaches the evaluator or PRINT, so no flt_out
+;     can start inside a scan.
+;   * flt_out/flt_fmt calls only flo_* plus cmp16_bits and print_string. It never
+;     reaches VAL, so no scan can start inside a format.
+; So every use is a COMPLETED call, and the cells are dead across the boundary in
+; both directions. D-STRFLT (str_fn_str calling flt_fmt directly) is the closest
+; the two now come, and it is still strictly sequential: VAL finishes, then the
+; formatter runs.
+; ⚠️ THE OLD SENTENCE WAS TRUE WHEN WRITTEN, AND THE ITEM THAT PREDICTED ITS
+; DEATH SAID SO IN ADVANCE. Recorded rather than quietly edited, because the next
+; reader would otherwise inherit "tokenising finishes before statements run" as a
+; live invariant about this machine, and it is not one any more.
+; [[a-fix-falsifies-the-justification-beside-it]]
 ; D-VALFLOAT: the VAL-mode SOURCE BOUND for tk_float, aliased onto two of the
 ; formatter's own cells. FOSIGCOUNT/FOMBYTES are written ONLY by flt_out
 ; (`basic/float.asm`) and appear ZERO times in `sub/tkfloat.asm`, so they are

@@ -438,7 +438,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       part of the reading.**
       [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
-- [ ] 🔴 **D-VAL (2026-08-29): `VAL` AND `STR$` ARE INTEGER-ONLY — 20 OF 40 ROWS
+- [x] 🟢 **CLOSED 2026-08-30 — D-VALFLT + D-STRFLT: 0 DIFF / 97 AND 0 DIFF / 27.**
+      The remaining 14 rows named below all shipped: fractions, exponents,
+      embedded spaces and `STR$` of a non-integer. See
+      [`docs/spec-basic-valflt.md`](docs/spec-basic-valflt.md) and
+      [`docs/spec-basic-strflt.md`](docs/spec-basic-strflt.md), and the three
+      CRUNCH defects the twinning found on the way
+      ([`docs/spec-basic-pcttrunc.md`](docs/spec-basic-pcttrunc.md)).
+      ✅ **AND THE PROSE DEBT THIS BLOCK PREDICTED HAS BEEN PAID.** The
+      `sysvars.inc` justification for sharing the TK/FO cells said the two never
+      coincide *"because tokenising a line always finishes before any statement
+      executes"*; `VAL` now calls `tk_float` at statement time and that sentence
+      is false. It is REWRITTEN, not deleted: the conclusion survives because
+      neither routine can REACH the other, so every use is a completed call.
+      [[a-fix-falsifies-the-justification-beside-it]]
+- [x] 🔴 **D-VAL (2026-08-29): `VAL` AND `STR$` ARE INTEGER-ONLY — 20 OF 40 ROWS
       DIVERGE, AND THE SURFACE HAD **ONE** ROW OF COVERAGE**
       ([`docs/spec-basic-val.md`](docs/spec-basic-val.md),
       [`scratchpad/val_probe.py`](scratchpad/val_probe.py)).
@@ -1440,7 +1454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4526 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4540 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
