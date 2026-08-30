@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""D-OPEN2 — only ONE file may be open at a time, and the refusal is `Syntax error`.
+"""D-OPEN2 — TWO DISK CHANNELS cannot be open at once; the refusal is `Syntax error`.
 
 Found 2026-08-30 while trying to answer a D-PUT3 question (is the third-PUT
 counter per-channel or global?). The two-channel fixture kept failing; three
 rounds of blaming the fixture were wrong -- it is the machine.
 
-🔴 AND IT CONTRADICTS TWO RECORDED CLAIMS. `TODO.md` marks "`MAXFILES` + the
-multi-channel table -- DONE", and `basic/PROVENANCE.md` §MAXFILES says
-`MAXFILES = n` "**retires the single-channel limit** every Phase-2 file verb
-previously shared". A second concurrent `OPEN` is `Syntax error`.
+🔴 THE FIRST WRITE-UP OF THIS SAID "only ONE file may be open at a time" AND THAT
+WAS AN OVER-CLAIM. Multi-channel WORKS: device+device, device+disk and
+disk+device are all fine. Every row in the first pass opened two DISK channels --
+`A.TXT` and `B.TXT` are disk files too -- so no device channel was ever in the
+comparison, and "every shape" was one shape. It is TWO DISK CHANNELS.
 
 🎯 THE CEILING IS HONOURED; CONCURRENCY IS NOT. `a.ch2only` opens channel #2 on
 its own after `MAXFILES=2` and succeeds on both sides -- so the table DOES raise
@@ -38,6 +39,7 @@ import basic_probe_fldwidth as F                                  # noqa: E402
 OK = 'PRINT"[";"OK";"]"'
 M = 'MAXFILES=2'
 R1 = 'OPEN"TS.DAT"AS #1 LEN=128'
+LPT1 = 'OPEN"LPT:"FOR OUTPUT AS #1'
 
 CASES = [
     # --- 🟢 CONTROLS: one channel, every shape, must pass on both ------------
@@ -62,6 +64,21 @@ CASES = [
     ("e.same2",    "dsk", [M, R1, 'OPEN"TS.DAT"AS #2 LEN=128', OK]),
     # --- 🟢 and the row that says the fixture is sound without MAXFILES ------
     ("n.nomaxf",   "dsk", [R1, 'OPEN"TS2.DAT"AS #2 LEN=128', OK]),
+
+    # === 🔴 THE ROWS THAT NARROWED THIS, AND REFUTED THE FIRST WRITE-UP ======
+    # The first pass concluded "only ONE file may be open at a time". WRONG:
+    # every row above opens two DISK channels -- `A.TXT` and `B.TXT` are disk
+    # files too -- so a DEVICE channel was never in the comparison. It is
+    # specifically TWO DISK CHANNELS that fail.
+    ("v.1dev",     "dsk", [M, LPT1, OK]),                       # the control
+    ("v.2dev",     "dsk", [M, LPT1, 'OPEN"CRT:"FOR OUTPUT AS #2', OK]),
+    ("v.dev1dsk2", "dsk", [M, LPT1, 'OPEN"TS.DAT"AS #2 LEN=128', OK]),
+    ("v.dsk1dev2", "dsk", [M, R1, 'OPEN"LPT:"FOR OUTPUT AS #2', OK]),
+    # ⚠️ AND THE CONTROL THAT WAS MISSING THE FIRST TIME. `OPEN"LPT:"AS #1`
+    # (a device with no FOR clause, i.e. RANDOM mode) is `Syntax error` here and
+    # OK on the reference -- a SEPARATE divergence, and it voided a whole
+    # discriminator run by failing as the baseline of a comparison.
+    ("v.devbare",  "dsk", [M, 'OPEN"LPT:"AS #1', OK]),
 ]
 
 F.CASES = CASES

@@ -1,12 +1,36 @@
-# D-OPEN2 — only ONE file may be open at a time, and two documents say otherwise
+# D-OPEN2 — TWO DISK CHANNELS cannot be open at once
+
+🔴 **CORRECTED 2026-08-30, HOURS AFTER IT WAS FIRST WRITTEN AND COMMITTED. The
+first version of this document said "only ONE file may be open at a time" and
+that is an OVER-CLAIM.** Multi-channel works: **device+device, device+disk and
+disk+device are all fine on both machines**. Every row in the first pass opened
+two DISK channels — `A.TXT` and `B.TXT` are disk files too — so a device channel
+was never in the comparison, and what read as "every shape" was one shape.
+The finding is narrower and sharper: **two DISK channels.**
+🎯 The rows below stand exactly as measured; only the CONCLUSION drawn from them
+was wrong. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
 *2026-08-30. Probe `scratchpad/open2_probe.py`, 13 rows, National CF-3300 vs the
 repack: **9 DIFF**. **Measurement only — no code change.***
 
 ## 1. The finding
 
-A **second concurrent `OPEN`** answers `Syntax error` on zerobas. The CF-3300
-accepts every shape of it.
+A second concurrent **disk** `OPEN` answers `Syntax error` on zerobas. The
+CF-3300 accepts every shape of it.
+
+| row | CF-3300 | zerobas |
+|---|---|---|
+| `v.2dev` — two **device** channels | OK | **OK** |
+| `v.dev1dsk2` · `v.dsk1dev2` — one device, one disk, either order | OK | **OK** |
+| `v.2dsk` — two **disk** channels | OK | **Syntax error** |
+
+🎯 **So the channel machinery is not the subject — the FAT engine's single global
+streaming state is.** `basic/sysvars.inc` says so in its own words: *"Because
+fat.asm keeps ONE global set of streaming state … only one channel's state is
+'live' in those globals at a time"*, swapped by a write-back cache discipline.
+A device channel needs none of it, which is why it coexists.
+
+The disk-only rows:
 
 | row | CF-3300 | zerobas |
 |---|---|---|
@@ -42,15 +66,23 @@ had a second sufficient cause.
 
 ## 3. 🔴 Two recorded claims are falsified by this
 
-- `basic/PROVENANCE.md` §MAXFILES: *"`MAXFILES = n` sets how many sequential file
-  channels may be open at once … This **retires the single-channel limit** every
-  Phase-2 file verb previously shared."*
+- `basic/PROVENANCE.md` §MAXFILES: *"… This **retires the single-channel limit**
+  every Phase-2 file verb previously shared."*
 - `TODO.md`: *"**`MAXFILES` + the multi-channel table** — DONE."*
 
-The **token** work those entries describe is real and oracle-locked
-(`MAXFILES` = `MAX`+`FILES`, byte-identical on a VG-8020), and so is the ceiling.
-**The concurrency is not.** Both are corrected in place — conclusion inverted,
-analysis kept. [[a-fix-falsifies-the-justification-beside-it]]
+⚠️ **AND MY FIRST CORRECTION OF THEM WAS ITSELF TOO BROAD.** Those entries are
+**mostly right**: the token work is oracle-locked, the ceiling is honoured, and
+multi-channel genuinely works for device channels and for one-disk-plus-device.
+What does not work is **two disk channels at once** — exactly the case the FAT
+engine's single global streaming state would predict. Both documents now say
+that, rather than the blanket refutation the first pass wrote.
+[[a-fix-falsifies-the-justification-beside-it]]
+
+⚠️ **Separately measured and NOT the same thing:** `OPEN"LPT:"AS #1` — a device
+with no `FOR` clause, i.e. RANDOM mode — is `Syntax error` here and `OK` on the
+CF-3300 (`v.devbare`). It is its own divergence, and it **voided a whole
+discriminator run** by failing as the baseline of a comparison before anyone
+noticed it was red.
 
 ## 4. How it was found, and what it blocks
 
