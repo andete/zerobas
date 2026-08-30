@@ -191,7 +191,17 @@ def verify(lines, src_out, dst_out, mapping):
 # first pass shipped a repoint that rewrote link LABELS and left their TARGETS.
 # One process, one map, no file between them.
 
-CITE = re.compile(r"(?<![-\w])(\.\./)?TODO\.md:(\d+)(?!\s*\(T-)")
+# 🔴 `(?!\d)` IS LOAD-BEARING, AND ITS ABSENCE CORRUPTED 19 CITATIONS IN 12 FILES
+# ON 2026-08-30. The `(?!\s*\(T-)` lookahead is meant to skip a citation that
+# ALREADY carries its block id -- and BACKTRACKING defeats it: on
+# `TODO.md:3251 (T-529ABE)` the greedy `\d+` takes `4618`, the lookahead correctly
+# rejects it, and the engine then RETRIES with `461`, where the next character is
+# `8` rather than ` (T-` -- so the lookahead passes, `TODO.md:461` is rewritten,
+# and the orphaned `8 (T-529ABE)` is left behind. Every already-id'd citation in
+# the tree was mangled that way, each into a plausible-looking hybrid.
+# `(?!\d)` forces the match to be the WHOLE number, so there is no shorter
+# alternative to backtrack into. Arms S1/S2 in --selftest.
+CITE = re.compile(r"(?<![-\w])(\.\./)?TODO\.md:(\d+)(?!\d)(?!\s*\(T-)")
 
 
 def repoint(mapping, blocks):
@@ -273,13 +283,93 @@ def main():
     if not a.apply:
         print("\n(dry run; pass --apply to write)")
         return 0
+    # 🔴 APPEND, NEVER OVERWRITE. `dst_out` is built from what is in TODO.md
+    # RIGHT NOW, so writing it wholesale rebuilds the archive out of only what is
+    # still in the pickup list. On 2026-08-30 a second run DELETED 8857 of the
+    # 8903 lines already there, and `verify()` printed "lossless" while it did:
+    # that check reconstructs the SOURCE, and had nothing to say about the
+    # DESTINATION's prior content. This is a repeated-split tool that had only
+    # ever been run once.
+    prior = open(DST).read() if os.path.exists(DST) else ""
+    out = _append_or_write(DST, dst_out)
+    how = (f"APPENDED to (prior {prior.count(chr(10))} lines kept)"
+           if prior.strip() else "wrote")
+    if len(out) < len(prior):
+        sys.exit(f"REFUSED: the archive would SHRINK ({len(prior)} -> {len(out)} "
+                 f"bytes). Nothing archived is ever removed by a split.")
     open(SRC, "w").write("\n".join(src_out) + "\n")
     os.makedirs(os.path.dirname(DST), exist_ok=True)
-    open(DST, "w").write("\n".join(dst_out) + "\n")
-    print(f"\nwrote {SRC} and {DST}")
+    open(DST, "w").write(out)
+    print(f"\nwrote {SRC} and {how} {DST}")
     repoint(mapping, blocks)
     return 0
 
 
+def selftest() -> int:
+    """Both 2026-08-30 defects, as arms. Collected by `make selftest-check`."""
+    ok = True
+
+    def arm(name, cond):
+        nonlocal ok
+        print(f"{'PASS' if cond else '🔴 FAIL'}  {name}")
+        ok = ok and bool(cond)
+
+    # --- defect 2: the backtracking lookahead, on the exact corrupting input --
+    already = "TODO.md:3251 (T-529ABE), a Phase-1 entry"
+    arm("S1 an ALREADY-ID'D citation is not matched at all (the backtracking "
+        "bug rewrote `TODO.md:461` and orphaned the `8`)",
+        CITE.findall(already) == [])
+    arm("S2 ...and a BARE citation still is -- the fix must not blind the tool",
+        [m.group(0) for m in CITE.finditer("see TODO.md:2811 for the rest")]
+        == ["TODO.md:2811"])
+    arm("S3 the same holds for the `../` form used from docs/",
+        CITE.findall("../TODO.md:302 (T-6FE392)") == []
+        and len(CITE.findall("../TODO.md:273")) == 1)
+
+    # --- defect 1: the archive clobber ---------------------------------------
+    # Exercised against a REAL file rather than by reading the branch, because
+    # the branch is what was already believed to be right.
+    import tempfile
+    d = tempfile.mkdtemp(prefix="splitself-")
+    dst = os.path.join(d, "TODO-done.md")
+    prior = "# archive\n\n## From TODO.md\n\n- [x] an old block\n" * 40
+    open(dst, "w").write(prior)
+    fresh = ["# generated header", "", "## From `TODO.md` § Open", "",
+             "- [x] a newly moved block"]
+    g = dict(globals()); g["DST"] = dst
+    src = _append_or_write(dst, fresh)
+    arm("S4 a second pass APPENDS: every prior line survives",
+        all(l in src for l in prior.splitlines() if l.strip()))
+    arm("S5 ...and the newly moved block is there too",
+        "- [x] a newly moved block" in src)
+    arm("S6 the archive never SHRINKS across a pass", len(src) >= len(prior))
+    empty = os.path.join(d, "empty.md")
+    arm("S7 a FIRST pass (no archive yet) still writes the header",
+        _append_or_write(empty, fresh).startswith("# generated header"))
+
+    print("selftest:", "GREEN" if ok else "🔴 RED")
+    return 0 if ok else 1
+
+
+def _append_or_write(dst, dst_out):
+    """The write half of main(), factored so --selftest can exercise it.
+
+    🎯 FACTORED FOR THE ARM, NOT FOR TIDINESS. Inline in main() the only way to
+    check it was to read it, and reading it is what missed the defect.
+    """
+    prior = open(dst).read() if os.path.exists(dst) else ""
+    body = "\n".join(dst_out) + "\n"
+    if prior.strip():
+        keep = body.split("\n## ", 1)
+        body = ("\n---\n\n## Appended by a later split pass\n\n"
+                "Blocks that moved out of `TODO.md` in a subsequent run, under\n"
+                "the section headings they were written beneath.\n\n"
+                + ("## " + keep[1] if len(keep) > 1 else body))
+        return prior.rstrip("\n") + "\n" + body
+    return body
+
+
 if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        sys.exit(selftest())
     sys.exit(main())

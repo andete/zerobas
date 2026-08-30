@@ -52,9 +52,10 @@ verdict is LIVE**.
 📦 **SECOND PASS 2026-08-30**: 54 more blocks and three whole done-record
 sections moved, **6145 → 4676 lines**; the archive grew to ~10400. **Count the
 markers, do not quote these** — `python3 tools/todo_inventory.py --count`.
-🔴 **AND THE SECOND PASS FOUND TWO DEFECTS IN THE SPLIT TOOL, BOTH OF WHICH
-DAMAGED TRACKED FILES** — see the item below. Do not run
-`split_todo_archive.py --apply` again until they are fixed. 🔴 **THE SPLIT RULE IS THE VERDICT, NOT THE CHECKBOX** —
+🟢 **THE TWO DEFECTS THAT SECOND PASS FOUND ARE FIXED (D-SPLITFIX, 2026-08-30)**
+— the archive is APPENDED to and refuses to shrink, and the citation repointer no
+longer backtracks into a shorter line number. Seven arms, collected by
+`make selftest-check`. 🔴 **THE SPLIT RULE IS THE VERDICT, NOT THE CHECKBOX** —
 `- [x]` was not evidence of finished work until the sweep said so, which is the
 whole reason this section exists. Regenerate with
 [`tools/split_todo_archive.py`](tools/split_todo_archive.py) (it refuses unless
@@ -134,7 +135,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **BASIC surface**
 
-- [ ] 🔴 **`tools/split_todo_archive.py --apply` IS A ONE-SHOT TOOL THAT DOES NOT
+- [x] 🟢 **FIXED 2026-08-30 (D-SPLITFIX) — BOTH DEFECTS, WITH SEVEN ARMS THE
+      BATTERY COLLECTS.** `(?!\d)` added to `CITE` (backtracking is what defeated
+      the already-id'd lookahead: greedy `\d+` takes `4618`, the lookahead
+      rejects it, the engine retries `461` where the next char is `8` and it
+      PASSES); and the archive write became APPEND-with-a-shrink-refusal, sharing
+      one `_append_or_write` helper with `main()` so the arm scores the shipped
+      path and not a copy. Falsified by planting the old code back: each plant
+      reddens its own two arms and leaves the controls green.
+      🎯 **THE HELPER WAS FACTORED FOR THE ARM, NOT FOR TIDINESS** — inline in
+      `main()` the only way to check it was to READ it, and reading it is what
+      missed the defect.
+- [x] 🔴 **`tools/split_todo_archive.py --apply` IS A ONE-SHOT TOOL THAT DOES NOT
       SAY SO, AND THE SECOND RUN DAMAGED TWO TRACKED FILES.** Found 2026-08-30
       while doing the routine second split; both were caught by hand, and
       **neither was caught by the tool's own checks**.
@@ -149,7 +161,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:290 (T-6FE392)8 (T-529ABE)` from `TODO.md:3239 (T-529ABE)`: a
+      `TODO.md:302 (T-6FE392)8 (T-529ABE)` from `TODO.md:3251 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -629,7 +641,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3239 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3251 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
