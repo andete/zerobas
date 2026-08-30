@@ -210,6 +210,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       must be RE-RUN, not inherited**.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
+- [x] 🟢 **D-PCTTRUNC / D-VALUNDER / D-ERLENTRY: THREE DEFECTS IN THE FLOAT
+      CRUNCH AND THE LINE EDITOR, FOUND BY GIVING EVERY `VAL` ROW A LITERAL
+      TWIN.** Specs
+      [`docs/spec-basic-pcttrunc.md`](docs/spec-basic-pcttrunc.md) and
+      [`docs/spec-basic-erlentry.md`](docs/spec-basic-erlentry.md); probe
+      `scratchpad/val_probe.py`, knives `scratchpad/crunch_knives.py`.
+      🎯 **NONE OF IT WAS THE JOB.** The job was activating `tk_float` for VAL,
+      and the design needed the reference's answer to three questions VAL had
+      never had to have. Each got a LITERAL twin (`PRINT 1.7%` beside
+      `PRINT VAL("1.7%")`) for the standing reason that a case which agrees can
+      agree for the wrong reason — and **all three defects were in the twins**.
+      VAL's own rows were ACCIDENTALLY right, because its integer-only parser
+      stopped at the dot.
+      ✅ **`%` TRUNCATES, and this build CONCATENATED**: `1.7%`→17, `2.5%`→25,
+      `.5%`→5, `40000.5%`→ a silent −25536. Five wrong answers and one wrap.
+      ✅ **`1E-66`…`1E-99` answered a silent 0 where both references say
+      `Overflow`** — and the fix is **−4 B**: the "forced lead 0" arm produced
+      what the normal path produced anyway.
+      ✅ **A line rejected at ENTRY left `ERL` = 0; both references read 65535.**
+      Sited on the shared `dl_ovf_report` tail — after BOTH its arms (crunch
+      reject, out-of-range line number) were measured, not because the tail was
+      convenient.
+      🔴 **AND A LATENT STACK BUG THE ROWS COULD NOT SEE**: `tkf_overflow`'s
+      `pop de` wants the destination `tk_float` pushed at ENTRY, but two jumps
+      reach it from inside `tkf_calc_and_round` — one frame deeper. Invisible in
+      tokenise mode (the error path's stack reset absorbs the leak); **fatal the
+      moment VAL uses that path**, where `tkf_rej` ends in `ret`.
+      🔴 **K-PT2 PREDICTED TWO ROWS AND MOVED ZERO, AND THE CODE WAS RIGHT.**
+      `TKPOS` counts DIGITS and the dot does not advance it, so `.5%` and `0.7%`
+      never reach the negative-difference clamp at all; only a fraction with its
+      OWN leading zeros does (`0.07%`). The arm found a hole in the ROW SET.
+      Rows added, arm re-run.
+
 - [ ] 💰 **D-PEEPHOLE: THE CLASSIC Z80 SIZE IDIOMS, COUNTED — SAFE CLASS TAKEN,
       FLAG-CHANGING CLASS STILL OPEN (20 B).** Pattern list from the WikiTI
       "Z80 Optimization" page (Joost, 2026-08-28);
@@ -1350,7 +1383,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4436 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4469 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

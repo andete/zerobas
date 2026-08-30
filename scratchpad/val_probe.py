@@ -17,8 +17,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "probes", "basic"))
 import basic_probe_deffn as D
 
 CASES, ORDER = {}, []
-def add(lab, setup, expr):
-    CASES[lab] = (setup, expr); ORDER.append(lab)
+def add(lab, setup, expr, extra=None):
+    CASES[lab] = (setup, expr, list(extra or [])); ORDER.append(lab)
 
 # --- the plain cases --------------------------------------------------------
 add('p.int',     [], 'VAL("34")')
@@ -74,6 +74,30 @@ add('e.eneg',    [], 'VAL("1E-3")')
 add('e.d3',      [], 'VAL("1D3")')
 add('e.ebare',   [], 'VAL("1E")')
 add('e.big',     [], 'VAL("1E38")')
+add('e.plus',    [], 'VAL("1E+3")')
+add('e.fracexp', [], 'VAL("1.5E2")')
+
+# --- 🔴 THE ROWS THAT DECIDE THE DESIGN, asked BEFORE the code is written.
+# tk_float's own classification has three answers this parser has never had to
+# give: a value past int16 (which becomes a FLOAT, not a wrapped integer), a
+# TYPE SUFFIX (!/#/%), and the OVERFLOW reject -- whose VAL-mode answer is the
+# one piece D-VALFLOAT's spec named as still open.
+add('x.40000',   [], 'VAL("40000")')
+add('x.n32768',  [], 'VAL("-32768")')
+add('x.n40000',  [], 'VAL("-40000")')
+add('x.ovf',     [], 'VAL("1E99")')
+add('x.ovfd',    [], 'VAL("1D99")')
+add('x.under',   [], 'VAL("1E-99")')
+add('x.bang',    [], 'VAL("1.5!")')
+add('x.hash',    [], 'VAL("1#")')
+add('x.pct',     [], 'VAL("12%")')
+add('x.pctfrac', [], 'VAL("1.7%")')
+add('x.dbl',     [], 'VAL("1.234567890123")')
+add('x.hexdot',  [], 'VAL("&HFF.5")')
+add('x.pct9',    [], 'VAL("1.9%")')
+add('x.pct25',   [], 'VAL("2.5%")')
+add('x.pctbig',  [], 'VAL("40000.5%")')
+add('x.pct007',  [], 'VAL("0.07%")')
 
 # --- STR$, which the Phase-3 deferral note pairs with VAL ("floats in
 # VAL/STR$"). If the note is stale for one it may be stale for both.
@@ -95,6 +119,54 @@ add('c.lit',     [], '1.5')
 add('c.litbig',  [], '1E9')
 add('c.arith',   [], '3/2')
 add('c.hexlit',  [], '&HFF')
+# 🔴 THE SECOND CAUSE OF GREEN, and of red: every x.* row above has a LITERAL
+# twin here. If VAL and the literal disagree on the same text, the answer is
+# VAL's own; if they agree, the rule belongs to the crunch and a VAL fix must not
+# invent a different one. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+add('c.pctlit',  [], '1.7%')
+add('c.underlit',[], '1E-99')
+add('c.ovflit',  [], '1E99')
+add('c.40000lit',[], '40000')
+add('c.banglit', [], '1.5!')
+# 🔴 TRUNCATE OR ROUND? `1.7%` -> 1 cannot tell them apart on its own if the
+# rule were "round toward zero"; `1.9%` and `2.5%` can. And the `%` range is
+# +-32767, so a fractional literal whose INTEGER part is out of range asks
+# whether the check runs before or after the truncation.
+add('c.pct9lit', [], '1.9%')
+add('c.pct25lit',[], '2.5%')
+add('c.pct0lit', [], '0.7%')
+add('c.pctdot',  [], '.5%')
+add('c.pctbig',  [], '40000.5%')
+add('c.pctzero', [], '0%')
+# 🔴 THE ROW K-PT2 SAID WAS MISSING. `.5%` and `0.7%` do NOT exercise the
+# negative-difference clamp: TKPOS counts DIGITS and the dot does not advance it,
+# so `.5` has TKINTLEN=0 with TKNZPOS=0 and `0.7` has 1 and 1 -- a difference of
+# zero, not a negative. TKNZPOS only passes TKINTLEN when the FRACTION has its
+# own leading zeros. The arm reddened nothing until this row existed.
+add('c.pct007lit',[], '0.07%')
+add('c.pctd07lit',[], '.007%')
+# the underflow boundary: the crunch's own rule is "dec_exp<=-64 reads as 0, no
+# error", and 1E-99 refuses on both references, so the boundary is somewhere in
+# between and this is where it gets named instead of assumed.
+add('c.e64lit',  [], '1E-64')
+add('c.e65lit',  [], '1E-65')
+add('c.e70lit',  [], '1E-70')
+add('c.e66lit',  [], '1E-66')
+add('c.e67lit',  [], '1E-67')
+add('c.e68lit',  [], '1E-68')
+add('c.e69lit',  [], '1E-69')
+
+# --- 🔴 WHAT ERL READS AFTER A TYPE-IN ERROR, and it needs its own instrument.
+# The rows above read `ERR 6 AT 65535` on the references and `AT 0` here, but
+# they read it through line 60 having been REJECTED, so they cannot say whether
+# the 65535 is the line-entry error's doing or the missing line's. These three
+# leave line 60 intact and read ERL as a VALUE, after a bad line typed behind it.
+# ⚠️ TWO ARMS SHARE dl_ovf_report -- the crunch reject AND the out-of-range line
+# number -- so both get a row before either gets a fix.
+# [[a-shared-tail-is-not-a-decision]]
+add('c.erlovf',  [], 'ERL', ['70 X=1E99'])
+add('c.erlbadln',[], 'ERL', ['70000 X=1'])
+add('c.erlnone', [], 'ERL')
 add('ctl.num',   [], '1+1')
 
 D.CASES.update(CASES)

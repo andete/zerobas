@@ -101,7 +101,38 @@ tkf_classify:
                 jp      c,tkf_go_int
                 jp      tkf_bydcount
 tkf_check_percent:
-                ld      a,(TKDCOUNT)
+                ; --- D-PCTTRUNC: `%` TRUNCATES, and this arm CONCATENATED ------
+                ; `1.7%` printed 17, `2.5%` printed 25, `.5%` printed 5 and
+                ; `40000.5%` printed -25536 -- all four SILENT wrong answers, on a
+                ; suffix nothing had a row for. Both references answer 1, 2, 0 and
+                ; `Overflow`. The cause is that TKDCOUNT counts EVERY significant
+                ; digit, fraction included, and tkf_int_value reads TKDCOUNT of
+                ; them as if they were all integer-part digits.
+                ; 🎯 The integer part is TKDIG[0 .. TKINTLEN-TKNZPOS-1]: TKINTLEN
+                ; is how many characters the integer part had and TKNZPOS is how
+                ; many of them were skipped leading zeros, so the difference is how
+                ; many STORED digits belong in front of the dot.
+                ; Two clamps, and both have a row: a first significant digit PAST
+                ; the dot makes the difference negative (`.5%`, `0.7%`), and `0%`
+                ; has TKINTLEN=1 with nothing stored at all -- reading one digit
+                ; there would have read uninitialised TKDIG.
+                ; ⚠️ Overwriting TKDCOUNT is safe ONLY on this path: what follows
+                ; reads it in the `cp 5` classification and in tkf_int_value, and
+                ; tkf_cmp32767 walks TKDIG[0..4] without it. The range check then
+                ; runs on the TRUNCATED value, which is what makes `40000.5%`
+                ; Overflow rather than a wrap.
+                ld      a,(TKINTLEN)
+                ld      hl,TKNZPOS
+                sub     (hl)
+                jr      nc,tkcp_pos
+                xor     a                   ; the number starts past the dot
+tkcp_pos:
+                ld      hl,TKDCOUNT
+                cp      (hl)
+                jr      c,tkcp_set
+                ld      a,(hl)              ; never more digits than were stored
+tkcp_set:
+                ld      (TKDCOUNT),a
                 cp      5
                 jp      c,tkf_go_int
                 jp      nz,tkf_overflow
@@ -729,22 +760,49 @@ tcr_go:
                 call    cmp16_bits          ; A=1/2/4 (lt/eq/gt); HL clobbered inside
                 pop     hl
                 cp      4
-                jp      z,tkf_overflow      ; dec_exp > 63
+                jp      z,tcr_ovf           ; dec_exp > 63
                 push    hl
                 ld      de,$FFC0            ; -64
                 call    cmp16_bits
                 pop     hl
+                ; --- D-VALUNDER: -65 IS AN OVERFLOW, -64 IS A ZERO -------------
+                ; The header above cited `1e-65` as "reads as value 0, no error",
+                ; and that row is real -- but it is the LAST one that is. Measured
+                ; on both references: 1E-64 prints 1E-64, 1E-65 prints 0, and
+                ; 1E-66 / -67 / -68 / -69 / -70 / -99 all refuse with `Overflow`.
+                ; zerobas printed 0 for every one of them, so five rows were a
+                ; SILENT zero where the reference stops the line.
+                ; 🎯 In dec_exp terms the boundary is exactly the one already being
+                ; computed: dec_exp == -64 (which is `1E-65`) keeps the old answer
+                ; through tcr_leadok, whose `+64` makes TKLEAD 0 on its own -- so
+                ; the forced-lead-0 arm was never doing anything the normal path
+                ; would not have done, and it cost 5 bytes to say so. Everything
+                ; BELOW -64 is the reject.
                 cp      1
-                jr      nz,tcr_leadok
-                xor     a
-                ld      (TKLEAD),a          ; dec_exp <= -64 -> forced lead 0
-                ret
+                jp      z,tcr_ovf           ; dec_exp <= -65 -> Overflow
 tcr_leadok:
                 ld      de,64
                 add     hl,de
                 ld      a,l
                 ld      (TKLEAD),a
                 ret
+
+; --- tcr_ovf: the overflow exit, ONE FRAME DEEPER than tkf_overflow expects -
+; 🔴 tkf_overflow's first act is `pop de`, and what it means to pop is the TOKBUF
+; destination that tk_float pushed at ENTRY. Reached by `jp` from the classify
+; chain that is true; reached from inside tkf_calc_and_round -- a `call` -- the
+; top of the stack is this routine's own return address instead, so DE came back
+; as a code address and one word was left on the stack.
+; [[factoring-a-run-into-a-helper]]: a call moves an outward jump one frame down.
+; ⚠️ INVISIBLE UNTIL VAL. In tokenise mode the leaked word is absorbed by the
+; error path's stack reset and the wrong DE only mis-sites a 0 terminator on a
+; line that is being rejected anyway, which is why `1E99` has always LOOKED
+; right. In VAL mode tkf_rej ends in `ret`, and that `ret` would have gone to
+; the destination pointer.
+tcr_ovf:
+                inc     sp                  ; discard tkf_calc_and_round's own
+                inc     sp                  ; return address
+                jp      tkf_overflow
 
 ; --- tkf_round_mantissa: round/pad TKDIG to TKPC digits, half-up -----------
 ; D<=PC: pad TKDIG[D..PC-1] with zeros, no rounding. D>PC: keep TKDIG[0..PC-1],

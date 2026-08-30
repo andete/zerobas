@@ -153,7 +153,29 @@ dl_overflow:
                 ld      a,(TKOVF)
                 ld      (ERRFLG),a          ; the reject reason IS the ERR code
                 ld      hl,err_subhosted    ; ERR 6 -> em_overflow, 25 -> em_linebuf_overflow
-dl_ovf_report:                              ; 🔴 SHARED TAIL, AND MY ENUMERATION MISSED
+dl_ovf_report:
+                ; --- D-ERLENTRY: A LINE-ENTRY ERROR LEAVES ERL = 65535 --------
+                ; Both arms below set ERRFLG and neither ever set ERRLIN, so after
+                ; a rejected line `PRINT ERL` read whatever the last RUN left --
+                ; 0 on a fresh machine. Both references read 65535, the direct-mode
+                ; sentinel record_error_line (interp.asm rel_direct) already writes
+                ; for a direct-mode RUNTIME error; a line typed at the prompt is
+                ; direct mode too, so the sentinel is the same one.
+                ; 🟢 SITED ON THE SHARED TAIL DELIBERATELY, and only because BOTH
+                ; arms were measured, not because the tail was convenient: `70 X=1E99`
+                ; (the crunch reject, ERR 6) and `70000 X=1` (the out-of-range line
+                ; number, ERR 2) each read 65535 on both references, and the control
+                ; that types no bad line at all reads 0 on all three.
+                ; [[a-shared-tail-is-not-a-decision]] -- the point of that rule is to
+                ; ENUMERATE the jumps, not to avoid shared tails.
+                ; ⚠️ ERRLIN ONLY. `.` (DOT) is NOT written by a direct-mode error --
+                ; interp.asm's rel_direct carries the row that says so, and the same
+                ; reasoning applies here.
+                ; DE rather than HL because HL is already the message pointer, which
+                ; is this tail's whole input.
+                ld      de,65535
+                ld      (ERRLIN),de
+                                            ; 🔴 SHARED TAIL, AND MY ENUMERATION MISSED
                                             ; IT. The line-number-out-of-range arm above
                                             ; (ERR 2, err_syntax) reaches print_msg by
                                             ; `jr` to THIS label, never naming print_msg
