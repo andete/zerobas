@@ -1080,6 +1080,24 @@ clear_vars:
                 ld      (GSP),hl
                 ld      hl,FOR_STK
                 ld      (FSP),hl
+                ; --- D-CLRTRAP: and the EVENT TRAPS, for the same reason -------
+                ; Measured on a VG-8020 (scratchpad/clrarm_probe.py): an
+                ; `ON INTERVAL` trap that is ARMED AND LIVE fires 16 times in the
+                ; window before a `CLEAR` and **0** in the window after it, against
+                ; a no-CLEAR control that fires 16 and 16. zerobas fired 16 and 17
+                ; -- `CLEAR` did not touch the trap block at all.
+                ; 🎯 AND THIS CLOSES THE FILED TRAPSTK DEFECT WITH IT
+                ; (docs/spec-basic-trapsvc.md §7): `clear_vars` reset GSP to the
+                ; base WITHOUT resetting TRAPSTK, so an unrelated later
+                ; GOSUB/RETURN landed on a stale record's saved gsp and re-enabled
+                ; a trap the program had killed -- 17 fires against the
+                ; reference's 1. Both rows are the same missing reset.
+                ; ⚠️ clear_vars has EXACTLY FOUR call sites -- cold boot, RUN, NEW
+                ; and CLEAR -- and trap_init already runs on the first two, so this
+                ; adds NEW and CLEAR and is idempotent on the others. That is the
+                ; same "single hook covering all four" argument the GOSUB/FOR reset
+                ; above and the RND seed below already rest on.
+                call    trap_init
                 ld      hl,DEFTBL           ; F3 S3b: reset every letter's default type
                 ld      b,26                ; to DOUBLE (8) -- DEFINT/SNG/DBL/STR are
                 ld      a,8                 ; re-established by re-running their statements

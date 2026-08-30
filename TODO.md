@@ -1509,7 +1509,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4595 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4618 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2286,12 +2286,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       **8**, which is what says the cap is `TRAPSTK_MAX` and not `GOSUB_DEPTH`.
       💰 **PRICED AND DECLINED**: the only fix that closes the class is popping
       the stale record when a `SERVICING` entry is explicitly re-armed, **~25–30 B
-      of main page 1** against **2 B free** (measured `b8a8137`), and it still
-      misses a nested leak. The two cheaper designs are rejected on principle in
+      of main page 1**, and it still misses a nested leak.
+      🔴 **THE COST HALF OF THAT DECLINE IS STALE AND IS CORRECTED HERE, 2026-08-30:
+      it read "against 2 B free (measured `b8a8137`)", and page 1 read 333 B free
+      after D-CLRTRAP.** The ~25–30 B is affordable now. **The decline STANDS on
+      its other half** — §6 rejects the two cheaper designs on principle and one
+      of them makes a trap SILENTLY dead — so this stays 🙋. A price rots like a
+      wall; re-read it before quoting a decline that rests on it. The two cheaper designs are rejected on principle in
       §6 — one of them makes the trap *silently* dead.
       🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).
 
-- [ ] 🔴 **`CLEAR` BREAKS THE CONSTRUCTION THAT MAKES `TRAPSTK`'s GSP MATCH SOUND
+- [x] 🟢 **SHIPPED 2026-08-30 (D-CLRTRAP,
+      [`docs/spec-basic-clrtrap.md`](docs/spec-basic-clrtrap.md)) — 3 BYTES, AND
+      IT CLOSED A SECOND DEFECT NOBODY HAD MEASURED.**
+      `clear_vars` now calls `trap_init`. The filed row goes zb **17 -> 1** (the
+      reference's answer), and a NEW row goes with it: an ARMED, live
+      `ON INTERVAL` fired **17** times in the window after a `CLEAR` where the
+      VG-8020 fires **0** (`scratchpad/clrarm_probe.py`). Same missing reset.
+      🎯 **THE QUESTION IN FRONT OF THE FIX WAS THE UNASKED ONE.** `clear_vars`
+      has four call sites, so the hook wipes the trap block on `CLEAR` too — only
+      correct if the REFERENCE also stops an armed trap there. It does; the probe
+      that asked is the new one.
+      🔴 **AND THE MARKER BELOW WAS JUSTIFIED BY A PRICE THAT HAD ROTTED.** It
+      read "the FIX costs main page-1 bytes, which is yours to spend", and its
+      sibling was declined at "~25–30 B against **2 B free** (measured
+      `b8a8137`)". Page 1 stood at **336 B free** before this change and 333
+      after. **A PRICE ROTS EXACTLY LIKE A WALL, AND IT TAKES THE MARKER WITH
+      IT** — re-pricing is what the 🔭 marker itself says is not Joost's to do.
+      ⚠️ 3 bytes to revert if he disagrees.
+- [x] 🔴 **`CLEAR` BREAKS THE CONSTRUCTION THAT MAKES `TRAPSTK`'s GSP MATCH SOUND
       — UNMEASURED.** Filed 2026-08-23,
       [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §7. After a
       leaked trap dispatch the abandoned GOSUB frame is still on the stack, so
