@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:431 (T-6FE392)8 (T-529ABE)` from `TODO.md:3662 (T-529ABE)`: a
+      `TODO.md:446 (T-6FE392)8 (T-529ABE)` from `TODO.md:3677 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -303,6 +303,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       overwrite. `runtail` is fixed; **nothing has counted how many other
       fixtures have that shape** (`castail`, `bload`, `fat-*`, `merge`).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
+
+- [ ] 🙋 **`basic/lineedit-body.inc` IS ASSEMBLED BY NOTHING — DELETE IT OR KEEP
+      IT?** Found 2026-08-30 by D-DEADBODY,
+      [`docs/spec-deadbody-gate.md`](docs/spec-deadbody-gate.md). It is the ONLY
+      `.inc` under `basic/` or `sub/` that no source includes, and it holds a
+      COPY of the `relink` loop D-TRUNCLOAD had just bounded — byte-identical
+      until that fix, divergent since. Still a Makefile dependency of the sub
+      ROM, which can never affect the build.
+      ✅ **THE CLASS IS GATED NOW**: `make shared-body-check` (static tier),
+      allowlist with a reason in `tools/shared-body-allow.txt`. The file is
+      annotated at the top with both facts.
+      ⚠️ **NOT SYNCED, DELIBERATELY** — syncing a dead copy restores the illusion
+      that either one is authoritative.
+      🙋 NEEDS-JOOST — deleting a deliberate historical record is a call that is
+      yours, not the gate's. The measuring in front of it is DONE.
 
 - [ ] 📌 **A TRUNCATED TOKENISED BASIC FILE: THE REFERENCE ACCEPTS IT SILENTLY,
       ZEROBAS REPORTS `load error`.** Measured 2026-08-30 by D-NGRAM13 on the
@@ -770,7 +785,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3662 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3677 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

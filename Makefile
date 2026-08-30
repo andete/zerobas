@@ -700,6 +700,15 @@ graphics-floor-acceptance: repack-machine
 temp-root-check:
 	python3 tools/check_temp_root.py
 
+# --- shared-body-check: every `.inc` under basic/ and sub/ must be ASSEMBLED --
+# D-TRUNCLOAD's follow-up sweep. `deadcode-check` reasons about labels in an
+# assembled image, so an UNASSEMBLED source contributes none and is invisible to
+# it -- and a dead COPY of a live routine is worse than dead code, because it
+# reads as the live one while being free to drift from it. Which is exactly what
+# `basic/lineedit-body.inc` did.
+shared-body-check:
+	python3 tools/check_shared_bodies.py
+
 # --- D-REFCACHE (docs/spec-refcache.md): the reference-column store ---------
 # 🔴 A CACHE IS ONE SLIP AWAY FROM "A PREDICTION COPIED INTO THE RESULT COLUMN",
 # so its falsification suite is a GATE, not a script somebody remembers to run.
@@ -2884,7 +2893,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check citation-check todo-citation-check \
+        omsx-diag-teeth temp-root-check shared-body-check citation-check todo-citation-check \
         chokepoint-check banner-acceptance wall-literal-check \
         patch-freshness-check gates clean
 

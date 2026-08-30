@@ -4,6 +4,22 @@
 ; lineedit-body.inc — store_line/prog_find_del/delete_at/open_gap/relink
 ; shared body (the numbered-line editor's TXTTAB memmove engine).
 ;
+; ⛔⛔ THIS FILE IS NOT ASSEMBLED. NOTHING INCLUDES IT. ⛔⛔
+; Measured 2026-08-30 (D-TRUNCLOAD follow-up, `make shared-body-check`): it is
+; the ONLY `.inc` under basic/ or sub/ that no source includes. The live code is
+; sub/lineedit.asm's page-1 tenant. The Makefile still lists this file as a
+; dependency of the sub ROM, which can never affect the build.
+;
+; 🔴 AND THE TWO COPIES HAVE DIVERGED. D-TRUNCLOAD bounded the live `relink`
+; walk to `HL >= PRGEND` -- an equality test never fires again once
+; `skip_to_eol` overshoots on a truncated store, and relink then walks RAM
+; forever (docs/spec-basic-truncload.md §5). `rl_lp` below still reads `==`.
+; It is left that way ON PURPOSE: syncing a dead copy restores the illusion that
+; either one is authoritative. Read sub/lineedit.asm.
+;
+; Whether this file is deleted or kept as a historical record is Joost's call
+; (tools/shared-body-allow.txt).
+;
 ; docs/spec-eviction-g4-space.md §4 (carve #2). Extracted verbatim from
 ; basic/program.asm so the SAME source fed two homes until the lean cart retired:
 ;   * (retired) inline in basic/program.asm, at this
