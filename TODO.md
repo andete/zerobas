@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:412 (T-6FE392)8 (T-529ABE)` from `TODO.md:3643 (T-529ABE)`: a
+      `TODO.md:431 (T-6FE392)8 (T-529ABE)` from `TODO.md:3662 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -327,7 +327,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       📏 **AND THE RULE IS MAPPED AT ALL FIVE EOF SITES**, including a zero-byte
       file: the reference is SILENT at every one. 13 rows,
       `scratchpad/truncload_probe.py`.
-      🔴 **TWO REPAIRS BUILT, MEASURED AND REVERTED — BOTH HANG THE MACHINE.**
+      ✅ **CLOSED 2026-08-30 — 18 scored rows, 18 agree, 0 diverge.** All five
+      message divergences gone. Main page 1 −4 B (355 → 351), sub page 1 +1 B.
+      🔴 **AND THE FIX WAS NOT IN THE LOADER.** The memory read this item asked
+      for showed both machines write the IDENTICAL store on a truncated file;
+      the only difference was that the reference had RELINKED and zerobas had
+      not, because it took the error path. So the loader change is exactly the
+      repair that hung — and the hang was `sub/lineedit.asm`'s `rlb_lp`, which
+      stopped only on `HL == PRGEND`. A truncated store's last line has no `$00`
+      terminator, so `skip_to_eol` OVERSHOOTS and an equality test never fires
+      again: relink walks RAM forever. Bounded to `>=`, which agrees exactly on
+      every well-formed program and is **2 B smaller**.
+      📌 **SIX ROWS HAVE NO ORACLE and are named, not dropped**: an unterminated
+      last line makes relink's forward scan stop wherever RAM happens to hold a
+      `$00`, and the two machines reach these rows over different RAM history
+      (`$FF` vs a preceding `NEW`'s zeros). The STORES agree, which is what says
+      it is history and not behaviour.
+      🔴 **AND I WROTE A WRONG MECHANISM INTO A FILE**: `?PEEK(...)` read
+      `<NO ECHO>` on zerobas only, and I commented "`?` is not accepted as PRINT
+      here". `ctl.qmark` asks directly — both machines print `2`. The cause was a
+      39-character line wrapping on one machine. An unverified mechanism in a
+      comment is worse than a row.
+      🗄️ HISTORY — **two repairs built, measured and reverted first, BOTH
+      HANGING THE MACHINE.**
       (A) EOF joins the completion path (+4 B): closes all five message rows,
       then `relink` walks a body with no `$00` terminator, follows the line's
       saved ABSOLUTE link past the end marker and never returns -- `<NO ECHO>` on
@@ -336,13 +358,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       hang MOVES to `t.lno-l` and `t.link-l`, one of which (A) had right.
       A loader that hangs on some truncated files is worse than one that prints
       a message the reference does not.
-      ➡️ **WHAT THE NEXT ATTEMPT NEEDS, and it is one instrument:** the MEMORY
-      IMAGE the reference is left holding. Repair B shows zerobas keeps two body
-      bytes where the reference keeps fewer, so the reference does more than
-      "stop and commit". A `PEEK` sweep of `$8001..` after each truncated load,
-      on both machines, settles which of three candidate rules it follows
-      (spec §4). That instrument does not exist yet.
-      🤖 AUTONOMOUS — the references settle the behaviour; the rows exist.
+      ✅ That instrument was built and it is what closed the item — `PRINT PEEK`,
+      three rows per fixture, both machines (spec §4). **It refuted the reading
+      that motivated it**: repair B's `10 POKE` vs `10` looked like different
+      stores and was the same store rendered past its own end.
 
 - [ ] 💰 **D-PEEPHOLE: THE CLASSIC Z80 SIZE IDIOMS, COUNTED — SAFE CLASS TAKEN,
       FLAG-CHANGING CLASS STILL OPEN (20 B).** Pattern list from the WikiTI
@@ -751,7 +770,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3643 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3662 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

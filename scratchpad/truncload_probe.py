@@ -52,6 +52,32 @@ SIDES = {
 CUT = 1 + 4 + 2          # marker + link + lineno + two body bytes
 GARBAGE = b"\xAA" * 64   # non-zero, and not a plausible link word
 
+# The text area, three bytes at a time, in decimal.
+# 🔴 TWO APPARATUS FAULTS GOT US HERE AND BOTH LOOKED LIKE MACHINE SILENCE.
+#   (1) `FORI=0TO15:PRINTPEEK(&H8001+I);"/";:NEXT` is 40 characters, so the echo
+#       WRAPS -- and `tail_after` matches a typed line against ONE screen row.
+#       Every memory row read `<NO ECHO>`, the well-formed-file control included,
+#       which is what caught it.
+#   (2) Split into four short lines it MIS-ECHOED instead: after the `load
+#       error` the machine swallowed 36 leading characters of the next line.
+#       omsx_repl refused the run rather than reporting it -- the right
+#       behaviour, and the reason this is now ONE line per row.
+# So: no loop, no variables, one short line, `&H8001` written as its signed
+# decimal (-32767) to stay well under 40 columns.
+#   (3) `?PEEK(-32767);PEEK(-32766);PEEK(-32765)` -- 39 characters -- read
+#       `<NO ECHO>` on zerobas while measuring cleanly on the CF-3300.
+#       🔴 I WROTE THE WRONG CAUSE INTO THIS COMMENT FIRST: "`?` is not accepted
+#       as PRINT here", which is a mechanism claim, from a one-sided silence.
+#       `ctl.qmark` asks it directly and BOTH machines print `2`. The cause is
+#       the 39-character line, not the abbreviation -- one column of usable
+#       width between the two machines is enough to wrap on one and not the
+#       other, and a wrapped echo is what `<NO ECHO>` means.
+#       An unverified mechanism in a comment is worse than a row; the row stays.
+# Two bytes per row, spelled out, comfortably short.
+def peek2(first):
+    a = first - 0x10000
+    return f"PRINT PEEK({a});PEEK({a + 1})"
+
 
 def build_dsk(path):
     img = MK.Fat12Image()
@@ -97,8 +123,44 @@ CASES = [
     ("t.nil",    ['LOAD"A:NIL.BAS"'],              -1),
     ("t.nil-l",  ['LOAD"A:NIL.BAS"', "LIST"],      -1),
     ("ctl.ok",   ['LOAD"A:PROG.BAS"', "LIST"],     -1),
+    # 🟢 CONTROL for the store-shape change: a program TYPED in and listed goes
+    # through the SAME relink this slice bounds, and must not move.
+    ("ctl.edit", ['10 PRINT"ZQ1"', '20 PRINT"ZQ2"', "5 PRINT\"ZQ0\"", "LIST"], -1),
+    # 📌 NOT THIS PROBE'S SUBJECT, but it was measured here and an unverified
+    # claim in a comment is worse than a row: the memory read was first written
+    # with `?PEEK(...)` and read `<NO ECHO>` on zerobas while measuring cleanly
+    # on the CF-3300. This row asks the question directly.
+    ("ctl.qmark", ["?1+1"],                        -1),
+    # 🎯 THE MEMORY IMAGE, which is what spec §4 says the next attempt needs.
+    # `LIST` renders the store through relink and the lister, and two DIFFERENT
+    # stores can render the same (or one can hang). These rows read the STORE.
+] + [
+    # bytes $8001-$8003 and $8004-$8006 of the store, per fixture. Separate
+    # cases rather than two readings of one, because each row is one typed line.
+    (f"m.{tag}{n}", [f'LOAD"A:{f}.BAS"', peek2(0x8001 + 2 * n)], -1)
+    for tag, f in (("ok", "PROG"), ("zero", "ZERO"), ("lno", "LNO"))
+    for n in (0, 1, 2)
 ]
-CONTROLS = {"ctl.ok": ("POKE",)}
+# `m.ok` must carry a `/` -- the separator the read emits. Without a positive
+# control here a wrapped or unrun line reads as agreement between two silences.
+CONTROLS = {"ctl.ok": ("POKE",), "m.ok0": (" ",)}
+
+# 🔴 ROWS WITH NO ORACLE, AND ONE REASON COVERS ALL OF THEM: they read a value
+# that RAM HISTORY decides, not the loader.
+#
+# A truncated store ends with a line whose body was never terminated, so
+# `relink` computes that line's link by scanning FORWARD for a `$00` the loader
+# never wrote. Where that scan stops -- and everything `LIST` then renders from
+# it -- depends on what happened to be in memory. The CF-3300 reaches these rows
+# over UNINITIALISED RAM ($FF); zerobas reaches them over RAM a preceding `NEW`
+# zeroed.
+# 🟢 THE MEASURED STORES AGREE, which is what says this is history and not
+# behaviour: `m.zero1`/`m.zero2` are identical on both machines, so both wrote
+# the same bytes and only the scan PAST them differs. `m.lno0` -- the relinked
+# link word of the header-only fixture -- agrees too.
+# ⚠️ NAMED, NOT DROPPED. An unscored row that vanishes from the report reads as
+# coverage; these print with their own verdict.
+NO_ORACLE = {"t.zero-l", "t.garb-l", "t.lno-l", "m.zero0", "m.lno1", "m.lno2"}
 
 
 def run_side(side):
@@ -124,11 +186,13 @@ def main():
         scored = len(sides) > 1
         want = CONTROLS.get(label)
         alive = (not want) or all(any(t in v for t in want) for v in vals)
-        if scored and not same:
+        if scored and not same and label not in NO_ORACLE:
             diff.append(label)
         if not alive:
             dead.append(label)
-        tag = "--" if not scored else ("ok" if same else "DIFF")
+        tag = ("--" if not scored
+               else ("NO-OR" if label in NO_ORACLE
+                     else ("ok" if same else "DIFF")))
         print(f"{tag:<4} {label:<{w}}  "
               + "  ".join(f"{s}={res[s].get(label)!r}" for s in sides)
               + ("   [CONTROL]" if want else "")
@@ -144,8 +208,11 @@ def main():
                     else "honours the recorded LENGTH")
             print(f"  {s:<7} {what:<8} {a!r} vs {b!r}  -> {rule}")
     n = len(CASES)
-    print(f"ROWS: {n} printed, {n if len(sides) > 1 else 0} scored"
-          + (f" — {n - len(diff)} agree, {len(diff)} diverge"
+    sc = n - len(NO_ORACLE)
+    print(f"ROWS: {n} printed, {sc if len(sides) > 1 else 0} scored"
+          + (f" — {sc - len(diff)} agree, {len(diff)} diverge, "
+             f"{len(NO_ORACLE)} NO-ORACLE (a value RAM history decides, not "
+             f"the loader)"
              if len(sides) > 1 else " — CHARACTERIZATION (one side)"))
     if dead:
         print(f"🔴 CONTROL CARRIES NO TEXT: {' '.join(dead)}")

@@ -633,12 +633,25 @@ og_end:
 relink_body:
                 ld      hl,TXTBASE
 rlb_lp:
-                ld      a,(PRGEND+1)            ; reached the end marker (HL == PRGEND)?
-                cp      h                       ; (a fresh line's link is a placeholder
-                jr      nz,rlb_more             ;  0000, so we cannot stop on link==0)
-                ld      a,(PRGEND)
-                cp      l
-                jr      nz,rlb_more             ; HL != PRGEND -> more lines to link
+                ; Reached the end marker? (A fresh line's link is a placeholder
+                ; 0000, so we cannot stop on link==0.)
+                ; 🔴 THE TEST IS `>=`, NOT `==`, AND THE DIFFERENCE IS A HANG.
+                ; D-TRUNCLOAD: on a well-formed program HL lands on PRGEND
+                ; exactly and the two tests agree. On a store whose LAST LINE was
+                ; cut off mid-body -- which is what a truncated `LOAD` leaves --
+                ; `skip_to_eol` runs past the end marker looking for a terminator
+                ; that was never written, so HL OVERSHOOTS and an equality test
+                ; never fires again: relink walks RAM forever. The reference
+                ; survives exactly this store (docs/spec-basic-truncload.md §5
+                ; reads both machines' memory images and they agree byte for
+                ; byte on everything but this link word), so `>=` is what it
+                ; does. 2 B cheaper than the pair of byte compares it replaces.
+                ld      de,(PRGEND)
+                push    hl
+                or      a
+                sbc     hl,de
+                pop     hl
+                jr      c,rlb_more              ; HL < PRGEND -> more lines to link
                 jp      vars_reset              ; tail call (own header: page-0 low-region
                                                 ; resident, directly reachable here)
 rlb_more:

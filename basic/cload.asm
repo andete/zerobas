@@ -955,16 +955,25 @@ disk_prog_load:
                                            ; mount / I-O -> the unchanged `load error`.
                                            ; DISKOP_OP is FRESH here and nowhere else
                                            ; in this routine.
-                ; (3) first byte selects the format: $FF = tokenised BASIC; anything
-                ; else = an ASCII (SAVE",A") program (ASCII text never starts $FF).
-                call    fat_io_getbyte
-                jp      c,dpl_err           ; EOF before any data -> close + error
-                cp      BASIC_DISK_ID
-                jp      nz,ascii_load       ; not the $FF marker -> ASCII program load
-                ; (5) start a fresh program: store cursor at the text base.
+                ; (3) start a fresh program: store cursor at the text base.
+                ; ⚠️ HOISTED ABOVE THE MARKER READ BY D-TRUNCLOAD: an EOF on the
+                ; very first byte (a ZERO-BYTE file) must commit an EMPTY program
+                ; like every other EOF here, and it cannot do that with CLPTR
+                ; unset. Nothing between here and `ascii_load` reads either
+                ; variable -- that path uses new_prog / ascii_read_lines -- so
+                ; the two stores are dead on that arm rather than wrong.
                 ld      hl,TXTBASE
                 ld      (CLPTR),hl
                 ld      (CLINK),hl          ; A_0 = saving machine's text base (== ours)
+                ; (4) first byte selects the format: $FF = tokenised BASIC; anything
+                ; else = an ASCII (SAVE",A") program (ASCII text never starts $FF).
+                call    fat_io_getbyte
+                jp      c,dpl_done          ; D-TRUNCLOAD: EOF is the END of the
+                                            ; program, not an error -- the
+                                            ; reference is SILENT at all five of
+                                            ; this routine's EOF sites
+                cp      BASIC_DISK_ID
+                jp      nz,ascii_load       ; not the $FF marker -> ASCII program load
                 ; --- read the line-link image, stopping at the $0000 end-link ---
                 ; LENGTH-DRIVEN, exactly like do_tape_prog's ctp_line/ctp_body: a
                 ; token body may contain $00 bytes, so the line boundary is taken
@@ -979,10 +988,11 @@ disk_prog_load:
                 ; the computed body byte count and loop.
 dpl_line:
                 call    fat_io_getbyte        ; link low
-                jp      c,dpl_err           ; EOF mid-program -> truncated -> error
+                jp      c,dpl_done          ; D-TRUNCLOAD: EOF between lines is the
+                                            ; normal end of the program
                 push    af                  ; preserve link-low: fat_io_getbyte may clobber C
                 call    fat_io_getbyte        ; link high
-                jp      c,dpl_link_err      ; must pop before leaving
+                jp      c,dpl_eof           ; must drop the pushed link-low first
                 ld      b,a                 ; B = link high
                 pop     af
                 ld      c,a                 ; C = link low (restored)
@@ -1026,9 +1036,9 @@ dpl_line:
 
                 ; line number (2 bytes)
                 call    dpl_get_store
-                jp      c,dpl_err_pop
+                jp      c,dpl_eof           ; D-TRUNCLOAD
                 call    dpl_get_store
-                jp      c,dpl_err_pop
+                jp      c,dpl_eof           ; D-TRUNCLOAD
                 pop     de                  ; DE = body length
 
                 ; token body: copy EXACTLY DE bytes (embedded $00s and all)
@@ -1043,7 +1053,7 @@ dpl_body:
                 sbc     hl,de
                 jr      nc,dpl_oom_pop
                 call    dpl_get_store
-                jp      c,dpl_err_pop
+                jp      c,dpl_eof           ; D-TRUNCLOAD
                 pop     de                  ; DE = remaining count
                 dec     de
                 jr      dpl_body
@@ -1056,6 +1066,26 @@ dpl_body:
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
 dpl_link_err    equ     ctp_link_err
+
+; --- dpl_eof: EOF reached with ONE word guarded on the stack -----------------
+; D-TRUNCLOAD. A truncated tokenised BASIC file is not an error condition: the
+; reference is SILENT at all five of this routine's EOF sites, including a
+; zero-byte file, and NOT because it reads whole sectors -- a garbage-padded
+; truncation of the same recorded length reads identically to a zero-padded one
+; (docs/spec-basic-truncload.md §2). So EOF joins the normal completion path and
+; the caller's one guarded word is dropped on the way.
+; 🔴 ONE TAIL FOR TWO DIFFERENT PUSHES. Three sites guard a 16-bit COUNT
+; (`push de`) and one guards the LINK-LOW byte (`push af`); both are one stack
+; word, and `load_commit_prog` reads neither A, DE nor the flags -- it opens
+; `ld hl,(CLPTR)` and ends `or a`. The pop only has to be the right SIZE.
+; ⚠️ THIS DOES NOT WORK WITHOUT THE BOUNDED RELINK (sub/lineedit.asm
+; `rlb_lp`): committing a line whose body was cut off leaves no `$00`
+; terminator, so relink's end-find OVERSHOOTS PRGEND -- and against an equality
+; test it then walks RAM forever. Measured as a HANG before that test became
+; `>=`.
+dpl_eof:
+                pop     af                  ; drop the caller's guarded word
+                jp      dpl_done
 
 ; dpl_err_pop / dpl_oom_pop — drop the stacked body length / remaining count, then
 ; take the file-closing error / out-of-memory path (stack stays balanced).
