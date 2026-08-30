@@ -38,6 +38,11 @@ tokenise:
                 ld      (TKNAME),a          ; a fresh line starts outside any name
                 ld      (TKLNUM),a          ; ...and outside line-number mode (D-LNLIST
                                             ; R-L1, docs/spec-basic-lnlist.md)
+                ld      (TKVALEND),a        ; D-VALFLOAT: ordinary tokenising is
+                ld      (TKVALEND+1),a      ; ALWAYS unbounded -- only VAL, which
+                                            ; enters tk_float directly, ever sets a
+                                            ; bound, and clearing it here means RAM
+                                            ; garbage at cold boot cannot fake one
                 ld      (TKOVF),a           ; ...and no crunch-time reject yet (F1,
 tk_loop:
                 ld      a,(TKNAME)

@@ -127,7 +127,7 @@ tkf_single:
                 inc     de
                 call    tkf_emit_mantissa   ; also clobbers HL (own TKDIG walk)
                 ld      hl,(TKSRCSAVE)      ; restore the source cursor for tk_loop
-                jp      tk_loop             ; continue tokenising (HL/DE advanced)
+                jp      tkf_done             ; continue tokenising (HL/DE advanced)
 tkf_double:
                 ld      a,DBL_DIGITS
                 ld      (TKPC),a
@@ -141,7 +141,7 @@ tkf_double:
                 inc     de
                 call    tkf_emit_mantissa
                 ld      hl,(TKSRCSAVE)
-                jp      tk_loop             ; continue tokenising (HL/DE advanced)
+                jp      tkf_done             ; continue tokenising (HL/DE advanced)
 tkf_go_int:
                 call    tkf_int_value       ; DE = value (0..32767); clobbers HL
                 ld      b,d
@@ -168,7 +168,7 @@ tkf_overflow:
                 ; and tke_fits's "first reject wins" test is `or a`, a nonzero test.
                 ld      a,6
                 ld      (TKOVF),a
-                jp      tk_end              ; end the line here (TKOVF flags the reject;
+                jp      tkf_rej              ; end the line here (TKOVF flags the reject;
                                              ; DE is the truncation point for the 0 term)
 
 ; --- tkf_scan_digits: consume a run of ASCII digits at (HL) -----------------
@@ -260,16 +260,80 @@ tksd_stop:
 ; that finds nothing still swallow the blanks (knife K4), and a `pop hl` on the
 ; accept path rewinds every iteration (K2) -- two different wrong answers that
 ; a probe row without a trailing blank cannot tell apart from the right one.
+; 🟢 D-VALFLOAT: THIS IS THE ONLY PLACE tk_float READS THE SOURCE, which is why
+; the VAL-mode bound goes here and nowhere else. (The file's other `ld a,(hl)`
+; sites all read TKDIG, the internal digit array.)
+; ⚠️ AND IT IS A POSITION TEST, NOT A COUNTER. Per the protocol above, callers
+; push HL and may `pop hl` to REWIND across a blank run they decided not to
+; consume -- a decrementing counter would drift out of step with the cursor on
+; every rejected run. Comparing HL against a stored end address cannot.
 tkf_fetch:
+                call    tkf_inrange
+                jr      nc,tkf_eos
                 ld      a,(hl)
                 cp      ' '
                 ret     nz
 tkf_f_lp:
                 inc     hl
+                call    tkf_inrange
+                jr      nc,tkf_eos
                 ld      a,(hl)
                 cp      ' '
                 jr      z,tkf_f_lp
                 ret
+; Out of bounds: hand back EXACTLY what a real 0 terminator would give -- A = 0,
+; and the flags `cp ' '` leaves on it -- so every caller's classification is
+; unchanged and no caller needs to know the bound exists.
+tkf_eos:
+                xor     a
+                cp      ' '
+                ret
+; CF set = HL is within the source. A zero TKVALEND means "no bound", which is
+; every use except VAL's.
+tkf_inrange:
+                push    hl
+                push    de
+                ld      de,(TKVALEND)
+                ld      a,d
+                or      e
+                jr      z,tki_yes
+                or      a
+                sbc     hl,de               ; CF iff HL < TKVALEND
+                jr      c,tki_yes
+                pop     de
+                pop     hl
+                or      a                   ; CF clear = past the end
+                ret
+tki_yes:
+                pop     de
+                pop     hl
+                scf
+                ret
+
+; --- D-VALFLOAT: the two exits, which RETURN in VAL mode -------------------
+; Every one of tk_float's exits was already `jp tk_loop` (success) or `jp tk_end`
+; (the TKOVF reject), so re-pointing them costs ZERO bytes -- the instruction is
+; the same, only the target changed. In VAL mode there is no tokeniser loop to go
+; back to: VAL reaches tk_float by an ordinary `call`, so these `ret` to it.
+; 🟢 The `ret` is safe ONLY in VAL mode. In ordinary tokenising tk_float is
+; entered by `jp tk_float` from tk_loop and has no return address of its own,
+; which is exactly why the test is on TKVALEND and not on anything else.
+tkf_done:
+                push    hl
+                ld      hl,(TKVALEND)
+                ld      a,h
+                or      l
+                pop     hl
+                ret     nz                  ; VAL mode: hand the token back
+                jp      tk_loop
+tkf_rej:
+                push    hl
+                ld      hl,(TKVALEND)
+                ld      a,h
+                or      l
+                pop     hl
+                ret     nz                  ; VAL mode: TKOVF says "no number here"
+                jp      tk_end
 
 ; --- tkf_try_exponent: consume an optional E/D exponent (§9.2 rule 6) ------
 ; HL -> the char right after the mantissa digits. If E/e/D/d is followed by
@@ -602,7 +666,7 @@ tkf_emit_int_bc:
                 add     a,INT_DIGIT_BASE
                 ld      (de),a
                 inc     de
-                jp      tk_loop             ; continue tokenising (HL/DE advanced)
+                jp      tkf_done             ; continue tokenising (HL/DE advanced)
 tei_b:
                 ld      a,INT1_TOKEN
                 ld      (de),a
@@ -610,7 +674,7 @@ tei_b:
                 ld      a,c
                 ld      (de),a
                 inc     de
-                jp      tk_loop             ; continue tokenising (HL/DE advanced)
+                jp      tkf_done             ; continue tokenising (HL/DE advanced)
 tei_w:
                 ld      a,INT2_TOKEN
                 ld      (de),a
@@ -621,7 +685,7 @@ tei_w:
                 ld      a,b
                 ld      (de),a
                 inc     de
-                jp      tk_loop             ; continue tokenising (HL/DE advanced)
+                jp      tkf_done             ; continue tokenising (HL/DE advanced)
 
 ; --- tkf_calc_and_round: dec_exp + rounded mantissa -> TKLEAD/TKDIG --------
 ; in: TKPC = target precision (6/14), TKHAVESIG/TKINTLEN/TKNZPOS/TKEXP/

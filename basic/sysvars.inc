@@ -3419,6 +3419,14 @@ TKLEAD          equ     $F062   ; computed lead byte (sign+excess-64 exponent) (
 ; PRINT items). TKPC/TKDEXP/TKDIG above are reused here too — flt_out never
 ; runs concurrently with tk_float (tokenising a line always finishes before
 ; any statement, including PRINT, executes).
+; D-VALFLOAT: the VAL-mode SOURCE BOUND for tk_float, aliased onto two of the
+; formatter's own cells. FOSIGCOUNT/FOMBYTES are written ONLY by flt_out
+; (`basic/float.asm`) and appear ZERO times in `sub/tkfloat.asm`, so they are
+; dead for the whole of a tk_float scan -- the same sharing argument the block
+; above already makes for TKDIG/TKPC/TKDEXP, applied in the other direction.
+; 0 = no bound (ordinary tokenising); otherwise the first address PAST the
+; source. `tokenise` clears it on entry, so only VAL can ever set it.
+TKVALEND        equ     $F064   ; VAL-mode source bound, 0 = unbounded (2)
 FOSIGN          equ     $F063   ; 0 / $80 = the value's sign bit (1)
 FOSIGCOUNT      equ     $F064   ; significant digit count = s, trailing zeros
                                 ; stripped (1)

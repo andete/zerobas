@@ -1,15 +1,32 @@
-# D-VALFLOAT — the plumbing for a float-capable VAL, written and held
+# D-VALFLOAT — the plumbing for a float-capable VAL, and a night lost to sleep throttling
 
 *2026-08-30. `sub/tkfloat.asm`, `basic/tokenise.inc`, `basic/sysvars.inc`.*
 
-🔴 **WRITTEN, STATICALLY VERIFIED, AND HELD OUT OF THE TREE.** The diff is kept
-as [`scratchpad/valfloat-plumbing.patch`](../scratchpad/valfloat-plumbing.patch)
-(174 lines) and the working tree is clean. **It is not committed because it
-changes the ROM and no trustworthy battery could be run**: the host went to load
-**10.6** mid-run, with `math-acceptance` failing in 4 s and `intarg-acceptance`
-in 0 s — preflight refusals under contention, not results. The same standard was
-applied to the preflight move earlier in this session, and re-running it on a
-quiet host later proved it green.
+🟢 **SHIPPED — but held for an hour first, and the reason it was held turned out
+to be the wrong diagnosis.**
+
+Three batteries failed on it with `math-acceptance` refusing in 4 s and
+`intarg-acceptance` in 0 s. I read that as host contention and withheld the
+change, keeping the diff as a patch file. **Joost asked whether it was sleep
+throttling instead, and he was right.** `pmset -g log` says:
+
+- `Using BATT (Charge:100%)` — the machine is on battery, where macOS throttles
+  and sleeps aggressively;
+- `DarkWake to FullWake from Deep Idle` — it was in Deep Idle and woke on
+  *keyboard activity*, not on anything the battery was doing;
+- **`Total Sleep/Wakes since boot: 610`**, and `PreventUserIdleSystemSleep` held
+  **only** by powerd *"while display is on"* — so once the display slept, nothing
+  kept the system awake and the emulators were suspended.
+
+🎯 **And the stall watchdog measures WALL CLOCK.** A suspended process burns wall
+time without progress, which is precisely the signature it reported — *"989 s
+wall, no emulated instant recorded"* — and its own message warns that a
+host-clock deadline **cannot separate a frozen emulator from one starved of
+CPU**. It was telling me the answer; I read "starved" and never considered
+"suspended".
+
+**`caffeinate -i make gates` → 47/47 green**, same change, same tree, one hour
+later. [[apparatus-is-part-of-the-measurement]]
 
 **Cost when applied: 65 B of sub page 0** (2203 → 2138 B free). Main regions
 untouched. **Verified neutral by 59 host test files and `kwsweep`** — which is
@@ -86,20 +103,29 @@ plumbing inert.**
 | 59 host test files, incl. `test_float.py` (drives `tk_float` on bare literals to exact token bytes) and `test_tokenise.py` | **all pass** |
 | `kwsweep` | green |
 | every real exit retargeted | verified by grep, after the replace came up one short |
-| full battery | 🔴 **not obtained** — host at load 10.6, refusals in 0–4 s |
+| full battery | **47/47 green** under `caffeinate -i` (3 flakes, all green on serial retry) |
 
 The host tests are what make this *re-appliable* with confidence: they exercise
 the changed code **statically**, so the invasive half is proven neutral without
 an emulator. What is missing is only the battery, and the patch reproduces the
 work exactly.
 
-## 6. To resume
+## 6. 🔴 RUN EVERY BATTERY UNDER `caffeinate`
 
 ```
-git apply scratchpad/valfloat-plumbing.patch
-make unit-test          # expect: ALL 59 TEST FILE(S) PASSED
-make gates              # expect 47/47 — needs a QUIET host (load < ~3)
+caffeinate -i make gates
 ```
 
-Then answer §4's question — where the ~9-byte destination lives — before wiring
+Nothing to install — `caffeinate` ships with macOS, and `-i` prevents idle system
+sleep for the command's lifetime. Without it, an unattended battery on battery
+power is racing the display timeout, and **the failure does not look like sleep**:
+it looks like emulators stalling and preflights refusing, i.e. exactly like a
+contended host. Two batteries were thrown away and one correct change was
+withdrawn before this was understood.
+
+⚠️ **The tell to remember:** refusals in **0–4 seconds** are not contention.
+Contention makes things slow; a 0-second refusal means the preflight lost a race
+against work that never got scheduled at all.
+
+Next: answer §4's question — where the ~9-byte destination lives — before wiring
 VAL to `tk_float`.
