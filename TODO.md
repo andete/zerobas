@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3506 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3532 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3506 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3532 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3094,6 +3094,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ➡️ **Widening needs BOTH**: `mul_reclen` to really multiply (shift-add,
       ~9 B, written and measured working) AND `fat_rand_put`/`get` to span two
       sectors. Until then `LEN=100`/`255` stay divergent, now with an ERR 5 face.
+      📐 **THE DESIGN, WORKED OUT 2026-08-30 SO THE NEXT SESSION WRITES RATHER
+      THAN DESIGNS:**
+      - **At most TWO segments, never a loop.** `reclen <= 256` and a sector is
+        512, so a record touches two sectors at most: `n1 = min(reclen, 512 -
+        within)` from sector `GP_SEC`, then `reclen - n1` from `GP_SEC + 1` at
+        offset 0. Both `fat_rand_put`'s `frp_overlay` and `fat_rand_get`'s
+        read-back copy take the same shape, so the split belongs in ONE helper.
+      - **The second segment re-enters `frnd_locate`** with `GP_SEC` bumped —
+        for `PUT` that is also what allocates a new cluster if the record crosses
+        one, which is why `GP_FLAGS`'s extend bit must still be set on the second
+        pass.
+      - ⚠️ **RAM: two words are wanted (running destination + remaining count),
+        and `sysvars.inc` ADVERTISES `$EA92..$EAFF` free (110 B) — DO NOT TRUST
+        THAT LINE.** RAM has no gate here; walk it with
+        `scratchpad/rammap_sweep.py` and then ASK THE MACHINE with
+        `ramfree_probe.py`. A delta between two names is not free space.
+      - 🟢 **THE INSTRUMENTS ALREADY EXIST, AND THEY ARE THE POINT.**
+        `tests/test_open_len.py` checks `frnd_calc` against an INDEPENDENTLY
+        derived offset and is what caught the shift loop; restore its `r=100`
+        geometry rows (recno 1/5/6/7/11/255 — record 6 is the straddle) as the
+        first gate. `scratchpad/reclen2_probe.py`'s `x.adjacent` is the
+        emulator-side check that does not round-trip through the arithmetic
+        under test.
+      - ⚠️ **A ROUND-TRIP ROW IS NOT EVIDENCE HERE** — `PUT` and `GET` share
+        `frnd_calc`, so they agree on a wrong offset. That mistake shipped once
+        already.
 - [ ] 🔴 **A NON-TILING `LEN=r` IS `Syntax error` HERE AND `OK` ON THE CF-3300 —
       AND THE DOC CLAIMED BYTE-IDENTITY ON A CORPUS THAT NEVER CONTAINED THE
       CASE.** Filed 2026-08-19 by D-RECLEN, found by a row that MISSED its
