@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3467 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3480 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3467 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3480 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2802,12 +2802,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       how the G2-g disposal happened in the first place.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] 🔴 **`FIELD #(A$<5),1 AS Z$` IS `Type mismatch` HERE AND `Illegal function
-      call` ON THE VG-8020.** Filed 2026-08-09 by D-STMTPEND. The reference
-      evidently classifies the CHANNEL before it classifies the expression, i.e.
-      the opposite order from `fch_check`'s. One row; the rest of the FIELD
-      channel domain is `make badfnum-acceptance`'s.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+- [x] 🟢 **NOT A DIVERGENCE — RETIRED 2026-08-30 (D-FIELDCH). THE REFERENCE SIDE
+      WAS VOID.** Probe `scratchpad/fieldch_probe.py`, 9 rows x 3 machines,
+      **0 DIFF against the CF-3300**.
+      🔴 **THE VG-8020 IS DISKLESS AND HAS NO `FIELD` AT ALL**, so it answers
+      `Illegal function call` to EVERY row — including `FIELD #1,1 AS Z$`, an
+      ordinary well-formed FIELD. It is not an oracle for this statement, and the
+      filed row compared zerobas against a machine that cannot express the
+      question. Other disk items in this file carry that caveat verbatim ("ONE
+      REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it)"); this one
+      lacked it. [[classify-a-control-failure-by-which-side-failed-it]]
+      🎯 **AND THE STATED RULE WAS UNTESTABLE FROM ONE ROW ANYWAY.** "The channel
+      is classified before the expression" is a claim about an ORDER, and one row
+      cannot show an order. The cheaper rule it never tested: a comparison yields
+      -1 or 0 and BOTH are illegal channel numbers, so `#(1<2)` raises ERR 5 with
+      no ordering involved — it does, on both machines, as does a bare `#-1`,
+      while `#(2<1)` and `#0` both give `File not open`. The type error and the
+      channel-domain error are simply different rows.
+      ⚠️ Was `- [ ] 🔴 FIELD #(A$<5) ... Illegal function call ON THE VG-8020`,
+      filed 2026-08-09 by D-STMTPEND.
 
 - [ ] 🔴 **K-FA5's FALSIFIABILITY PREMISE IS STALE, AND SO ARE FOUR OTHER
       COMMENTS.** Filed 2026-08-09 by D-STMTPEND
