@@ -1,4 +1,4 @@
-# D-OPEN2 — TWO DISK CHANNELS cannot be open at once
+# D-OPEN2 — a second disk OPEN raises a SPURIOUS `Syntax error` (the open itself succeeds)
 
 🔴 **CORRECTED 2026-08-30, HOURS AFTER IT WAS FIRST WRITTEN AND COMMITTED. The
 first version of this document said "only ONE file may be open at a time" and
@@ -117,6 +117,43 @@ claimed.** A device open never calls `fch_claim` at all (it just sets
 either inside that write-back chain or a **deferred `FPERR`=4 surfacing at the
 statement boundary** — which would be attributed to line 40 exactly as observed.
 Distinguishing those two is the next step, and it wants instrumentation.
+
+## 3b. 🎯 It is not a refusal — the open COMPLETES and the error is spurious
+
+Trapping the `ERR 2`, `RESUME`ing past it and reading the channel table out of
+RAM (`FCH_MODES` at `$EA00+ch`, `FCH_ACTIVE` at `$E012`):
+
+| row | `MODES[1]` | `MODES[2]` | `ACTIVE` |
+|---|---|---|---|
+| `s.two` — the failing second open | **4** | **4** | **2** |
+| `s.one` — one open | 4 | 0 | 1 |
+| `s.bad` — the `#9` reject | 4 | 0 | 1 |
+| `s.none` — nothing open | 0 | 0 | 0 |
+
+**Both channels are marked open and channel 2 is active.** The second `OPEN` did
+all of its work — table entry, slot claim, the lot — and the `Syntax error` is
+raised *afterwards*. It is a **spurious deferred error**, not a refusal, which is
+why `oo_nodisk`/`oo_fail` never matched: neither of them ran.
+
+And the channels are usable afterwards:
+
+| row | result |
+|---|---|
+| `u.field` — `FIELD` on both channels | **works** |
+| `u.put1` / `u.put2` — one `PUT` on each, individually | **both work** |
+
+⚠️ **`u.both` (write through both, read one back) is `<NO OUTPUT>` and is NOT
+read here as "two-channel writes fail".** It has three sufficient causes —
+D-PUT3's `PUT` counter, two 128-byte `STRING$` temps against the default pool, or
+a genuine two-channel write fault — and separating them needs its own row set.
+[[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+
+➡️ **So the fix may be small: stop raising the error.** What remains is finding
+what sets `FPERR`=4 on this path. Guessing has already cost two refuted
+hypotheses (§3a), so the next step is **instrumentation, not another reading** —
+the candidate is still `fch_claim` -> `fch_save_active` -> `fch_flush_active`,
+the write-back that only runs when a second disk channel is claimed, and whose
+CALSLT into the sub-ROM is the kind of path that sets `SH_ERR`.
 
 ## 4. How it was found, and what it blocks
 

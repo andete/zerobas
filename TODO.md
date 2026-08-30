@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3427 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3440 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3427 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3440 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2891,10 +2891,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **`FOR INPUT` ON A DEVICE IS NOT COPIED**: the reference HANGS there, and
       a hang is not a behaviour to reproduce.
 
-- [ ] 🔴 **TWO DISK CHANNELS CANNOT BE OPEN AT ONCE — THE SECOND IS
-      `Syntax error`. (Corrected from "only ONE file may be open at a time",
-      which was an over-claim: device+device, device+disk and disk+device all
-      WORK.)** Measured 2026-08-30,
+- [ ] 🔴 **A SECOND DISK `OPEN` RAISES A SPURIOUS `Syntax error` — THE OPEN
+      ITSELF SUCCEEDS. (Corrected TWICE: first from "only ONE file may be open at
+      a time" — device+device, device+disk and disk+device all WORK — and then
+      from "refuses", which the channel table refutes.)** Measured 2026-08-30,
       [`docs/spec-basic-open2.md`](docs/spec-basic-open2.md), probe
       `scratchpad/open2_probe.py` (13 rows vs a CF-3300, **9 DIFF**).
       ```
@@ -2938,6 +2938,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `oo_parse_reclen`, which cannot fail without a clause. That was the only
       `Syntax error` exit I had enumerated on the disk path after the channel
       check, so the enumeration is incomplete.
+      🎯 **AND IT IS NOT A REFUSAL — THE OPEN COMPLETES (2026-08-30).** Trapping
+      the ERR 2, RESUMEing past it and reading the channel table out of RAM shows
+      `FCH_MODES[1]=4, FCH_MODES[2]=4, FCH_ACTIVE=2`: **both channels marked
+      open, channel 2 active**. The second OPEN did all its work and the error is
+      raised AFTERWARDS — a spurious DEFERRED error, which is why `oo_nodisk` and
+      `oo_fail` never matched: neither ran. And the channels are usable: `FIELD`
+      on both works, and a `PUT` on each works individually.
+      ⚠️ **`u.both` (write both, read one back) is `<NO OUTPUT>` and is NOT read
+      as "two-channel writes fail"** — three sufficient causes (D-PUT3's counter,
+      two 128 B `STRING$` temps in the default pool, a real two-channel write
+      fault) and separating them needs its own rows.
+      ➡️ **SO THE FIX MAY BE SMALL: STOP RAISING THE ERROR.** What remains is
+      finding what sets `FPERR`=4 on this path.
       🎯 **REMAINING CANDIDATE (named as a candidate, not a cause):**
       `fch_claim` is reached only by a DISK open, and claiming a SECOND channel
       calls `fch_save_active` -> `fch_flush_active` — the write-back that
