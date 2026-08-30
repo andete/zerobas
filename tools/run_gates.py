@@ -311,36 +311,17 @@ def lineerr_shards(k):
             for i, b in enumerate(buckets)]
 
 
-# 🔴 D-NOSLEEP (2026-08-30): THE BATTERY HOLDS ITS OWN WAKE ASSERTION.
-# An unattended emulator battery on a macOS laptop is racing the display timeout.
-# When the display sleeps, nothing holds `PreventUserIdleSystemSleep` -- the only
-# assertion powerd keeps is *"while display is on"* -- so the emulators are
-# SUSPENDED, and the stall watchdog, which measures WALL CLOCK, kills them.
-# 🎯 AND THE FAILURE DOES NOT LOOK LIKE SLEEP. It looks like stalled emulators and
-# preflights refusing, i.e. exactly like a contended host: on 2026-08-30 that read
-# cost two thrown-away batteries and one CORRECT change withdrawn unshipped,
-# while `pmset -g log` showed `Using BATT`, `DarkWake to FullWake from Deep Idle`
-# and 610 sleep/wakes since boot. The watchdog's own message had said a host-clock
-# deadline "CANNOT separate a frozen emulator from one starved of CPU".
-# ⚠️ THE TELL: refusals in 0-4 SECONDS are not contention. Contention makes work
-# SLOW; a 0-second refusal means it was never scheduled at all.
-#
-# `caffeinate -i -w <pid>` asserts for exactly as long as that pid lives, so the
-# assertion is released when this process exits however it exits -- no atexit, no
-# leak if we are killed. Nothing to install: caffeinate ships with macOS.
-# [[apparatus-is-part-of-the-measurement]]
-def hold_awake():
-    """-> (held, why). Spawns a caffeinate that dies with this process."""
-    if sys.platform != "darwin":
-        return False, "not macOS -- no idle-sleep hazard to hold off"
-    try:
-        subprocess.Popen(["caffeinate", "-i", "-w", str(os.getpid())],
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except (OSError, subprocess.SubprocessError) as e:
-        # Not fatal: a battery without the assertion still RUNS, it is just
-        # exposed. Say so rather than failing, and never say "held" when it is not.
-        return False, f"🔴 caffeinate unavailable ({type(e).__name__}) -- "
-    return True, "caffeinate -i held for this run"
+# 🔴 D-NOSLEEP (2026-08-30): THE BATTERY HOLDS ITS OWN WAKE ASSERTION -- and
+# since D-AWAKE (same day) it is NOT THE ONLY THING THAT DOES, and no longer owns
+# the code. The record of the night it cost, and the reasoning, live with the
+# implementation in `probes/lib/probe_awake.py`; that module is imported by
+# `probes/lib/omsx_repl.py` so EVERY probe and knife runner holds one too, not
+# just `make gates`.
+# ⚠️ ONE DEFINITION, TWO CALLERS. This used to be a private copy here; a second
+# copy in the probe lib would have been two places to fix the day the mechanism
+# changes. The selftest arms below (S10/S11/S12) still exercise THIS name, so
+# they now score the shared implementation.
+from probe_awake import hold_awake  # noqa: E402  (probes/lib is on sys.path, l.55)
 
 
 def main():

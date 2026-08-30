@@ -117,6 +117,12 @@ import omsx_preflight  # noqa: E402
 # IMPORT -- see probes/lib/probe_tmp.py. Imported here, at a chokepoint every
 # probe reaches, so a bare `tempfile.*` anywhere lands under the one root.
 import probe_tmp  # noqa: E402,F401
+# 🎯 AND HOLDS OFF macOS IDLE SLEEP, ALSO AS A SIDE EFFECT OF IMPORT, for the
+# same chokepoint reason -- probes/lib/probe_awake.py carries the night it cost.
+# D-NOSLEEP covered `make gates` only; every ad-hoc probe and knife runner, which
+# is what an unattended session runs BEFORE the battery, was still exposed.
+import probe_awake  # noqa: E402
+probe_awake.hold_once()
 
 # --- published sysvar contract (MSX2 Technical Handbook; no disasm) ----------
 KEYBUF = 0xFBF0
