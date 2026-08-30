@@ -441,6 +441,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       what makes `VAL("&")` an ERR 2 on the references.
       🤖 AUTONOMOUS — the references settle the behaviour and the code settles
       the interface.
+      🟢 **AND THE DESTINATION QUESTION DISSOLVED TOO (2026-08-30, §4a of
+      [`docs/spec-basic-valfloat.md`](docs/spec-basic-valfloat.md)): PUT IT ON
+      THE STACK.** The ~9-byte scratch for `tk_float`'s emitted token is written
+      and read entirely inside `sh_val_parse`'s own call, so it need not be RAM
+      anyone else can see — `ld hl,-10 / add hl,sp / ld sp,hl`, `DE` points at
+      it. **It cannot alias anything**, so there is no ownership question to get
+      wrong, and `tk_float`'s own pushes go BELOW SP.
+      🎯 **The float still reaches the main ROM without shared scratch**, because
+      `FAC` already is shared: the sub-ROM fills FAC, sets FACTYP, and the glue
+      calls `flt_to_int16` (`basic/float.asm:384`) for the DE that `ev_f`'s int
+      consumers expect — exactly what `ev_f_float` does for a literal.
+      ⚠️ **WHAT IS LEFT: the SIGN** (easy on an int, fiddlier on a float — flip
+      the lead byte's sign bit; `tk_float` never sees one because the tokeniser
+      emits it as an operator) **and the `TKOVF` reject path's VAL-mode answer.**
+      ⛔ **The three shared buffers that were searched first — `TOKBUF`
+      (direct-mode lines EXECUTE from it), `DETOKBUF` (`PRINT USING` drains it)
+      and `FOUTBUF` (the math pack writes it via `SQRT_R`/`MATH_R`/`HORNER_ACC`)
+      — are recorded because the SEARCH is the reusable part**, even though the
+      answer turned out not to need any of them.
 
 - [x] ✅ **D-VALFLOAT (2026-08-30): the `tk_float` plumbing SHIPPED — 47/47
       green** ([`docs/spec-basic-valfloat.md`](docs/spec-basic-valfloat.md)).
@@ -1331,7 +1350,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4417 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4436 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

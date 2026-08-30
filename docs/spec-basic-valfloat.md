@@ -82,7 +82,40 @@ Verified after the fact by grepping for any surviving exit — the two that rema
 are inside the new tails themselves. A missed exit would have dropped VAL into
 the tokeniser loop.
 
-## 4. Why VAL does not use it yet
+## 4a. 🟢 The destination question dissolves — put it on the STACK
+
+The activation needs ~9 bytes for the token `tk_float` emits, and §4 below records
+the search for them ending in a third shared-buffer ownership question. **That
+search was the wrong shape.** The scratch is written and read entirely within
+`sh_val_parse`'s own call, so it does not need to be RAM anyone else can see:
+
+```
+                ld      hl,-10
+                add     hl,sp
+                ld      sp,hl               ; 10 bytes of scratch AT SP
+                ex      de,hl               ; DE = the emit destination
+                …  call tk_float  …
+                ld      hl,10
+                add     hl,sp
+                ld      sp,hl               ; released
+```
+
+🎯 **It cannot alias anything, so there is no ownership question to get wrong.**
+`tk_float`'s own pushes go *below* SP and never touch the scratch above it. Ten
+bytes of stack in a tenant is nothing.
+
+**And the float value still reaches the main ROM without shared scratch**, because
+`FAC` is already shared: the sub-ROM copies the token's value bytes into `FAC`,
+sets `FACTYP` (4 or 8), and returns a "float in FAC" marker. The glue then calls
+`flt_to_int16` (`basic/float.asm:384`) for the `DE` that `ev_f`'s int consumers
+still expect — exactly what `ev_f_float` does for a literal.
+
+⚠️ **Remaining work, named honestly:** the sign. A leading `-` is easy to apply to
+an integer result and fiddlier on a float (flip the sign bit in the lead byte),
+and `tk_float` never sees a sign because the tokeniser emits it as an operator.
+That, and the `TKOVF` reject path's VAL-mode answer, are what is left.
+
+## 4. The search that led there — three shared buffers, all owned
 
 The scan needs a **destination** for the token bytes (~9: one token byte plus at
 most 8 value bytes). `FOUTBUF` looked ideal — 24 bytes, and `flt_out`-only by the
