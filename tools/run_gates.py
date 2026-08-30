@@ -219,6 +219,28 @@ def selftest():
 
     arm("S6 the LIVE premise holds: no emulator recipe leaves the fingerprint",
         unfingerprinted_scripts() == set())
+
+    # --- D-NOSLEEP: the wake assertion -------------------------------------
+    held, why = hold_awake()
+    if sys.platform == "darwin":
+        import time as _t
+        _t.sleep(0.4)                       # let caffeinate register
+        a = subprocess.run(["pmset", "-g", "assertions"],
+                           capture_output=True, text=True).stdout
+        arm("S10 on macOS the assertion is ACTUALLY held, per pmset",
+            held and "caffeinate" in a)
+        # 🔴 The arm that matters: it must die with us, not leak. A caffeinate
+        # bound to a DEAD pid must not still be asserting.
+        pre = subprocess.run(["pgrep", "-f", f"caffeinate -i -w"],
+                             capture_output=True, text=True).stdout.split()
+        arm("S11 the assertion is bound to THIS pid, so it cannot outlive the run",
+            any(str(os.getpid()) in
+                subprocess.run(["ps", "-o", "args=", "-p", p],
+                               capture_output=True, text=True).stdout
+                for p in pre) if pre else False)
+    else:
+        arm("S10 off macOS hold_awake is a no-op and says so", not held and "macOS" in why)
+    arm("S12 hold_awake never claims 'held' without saying why", bool(why))
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 1
 
@@ -289,9 +311,42 @@ def lineerr_shards(k):
             for i, b in enumerate(buckets)]
 
 
+# 🔴 D-NOSLEEP (2026-08-30): THE BATTERY HOLDS ITS OWN WAKE ASSERTION.
+# An unattended emulator battery on a macOS laptop is racing the display timeout.
+# When the display sleeps, nothing holds `PreventUserIdleSystemSleep` -- the only
+# assertion powerd keeps is *"while display is on"* -- so the emulators are
+# SUSPENDED, and the stall watchdog, which measures WALL CLOCK, kills them.
+# 🎯 AND THE FAILURE DOES NOT LOOK LIKE SLEEP. It looks like stalled emulators and
+# preflights refusing, i.e. exactly like a contended host: on 2026-08-30 that read
+# cost two thrown-away batteries and one CORRECT change withdrawn unshipped,
+# while `pmset -g log` showed `Using BATT`, `DarkWake to FullWake from Deep Idle`
+# and 610 sleep/wakes since boot. The watchdog's own message had said a host-clock
+# deadline "CANNOT separate a frozen emulator from one starved of CPU".
+# ⚠️ THE TELL: refusals in 0-4 SECONDS are not contention. Contention makes work
+# SLOW; a 0-second refusal means it was never scheduled at all.
+#
+# `caffeinate -i -w <pid>` asserts for exactly as long as that pid lives, so the
+# assertion is released when this process exits however it exits -- no atexit, no
+# leak if we are killed. Nothing to install: caffeinate ships with macOS.
+# [[apparatus-is-part-of-the-measurement]]
+def hold_awake():
+    """-> (held, why). Spawns a caffeinate that dies with this process."""
+    if sys.platform != "darwin":
+        return False, "not macOS -- no idle-sleep hazard to hold off"
+    try:
+        subprocess.Popen(["caffeinate", "-i", "-w", str(os.getpid())],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError) as e:
+        # Not fatal: a battery without the assertion still RUNS, it is just
+        # exposed. Say so rather than failing, and never say "held" when it is not.
+        return False, f"🔴 caffeinate unavailable ({type(e).__name__}) -- "
+    return True, "caffeinate -i held for this run"
+
+
 def main():
     if "--selftest" in sys.argv:
         return selftest()
+    awake, awake_why = hold_awake()
     ap = argparse.ArgumentParser()
     cpu = os.cpu_count() or 8
     ap.add_argument("--jobs", type=int, default=min(8, max(2, cpu)))
@@ -483,6 +538,12 @@ def main():
     if skip_emu:
         print(f"  ⚠️  {len(EMULATOR)} EMULATOR TARGET(S) NOT RUN — {skip_why}")
         print(f"  ⚠️  this is NOT a full battery; `make gates-full` to force one")
+    elif not awake:
+        # 🔴 SAID OUT LOUD, because an assertion nobody reports is one nobody
+        # notices missing -- and its absence disguises itself as contention.
+        print(f"  ⚠️  RAN WITHOUT AN IDLE-SLEEP ASSERTION — {awake_why}"
+              f"if this host can sleep, stalls and 0-4 s preflight refusals below "
+              f"may be SUSPENSION, not contention (D-NOSLEEP)")
     for n, why in sorted(skips.items()):
         print(f"  SKIPPED {n}: {why}")
     # the arithmetic must agree with the verdict, and now it says so out loud

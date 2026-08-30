@@ -462,20 +462,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       things slow; a 0-second refusal means the work was never scheduled at all.
       [[apparatus-is-part-of-the-measurement]]
 
-- [ ] 🔴 **RUN EVERY EMULATOR BATTERY UNDER `caffeinate -i` — AND NO GATE ENFORCES
-      IT.** Established 2026-08-30 by D-VALFLOAT
-      ([`docs/spec-basic-valfloat.md`](docs/spec-basic-valfloat.md) §6).
-      `caffeinate` ships with macOS (nothing to install); `-i` prevents idle
-      system sleep for the command's lifetime. Without it an unattended battery on
-      BATTERY POWER is racing the display timeout, and **the failure does not look
-      like sleep** — it looks like stalled emulators and refusing preflights, i.e.
-      exactly like a contended host. **Two batteries were thrown away and one
-      correct change withdrawn** before this was understood.
-      ➡️ Candidates: wrap the `gates` recipe in `caffeinate -i` (macOS only, so it
-      needs a `uname` guard), or have `run_gates.py` REFUSE to start an emulator
-      tier when `pmset -g assertions` shows no sleep assertion held. The second is
-      the D-PREFLIGHT shape — refuse rather than measure badly.
-      🤖 AUTONOMOUS — the code settles it.
+- [x] ✅ **D-NOSLEEP (2026-08-30): THE BATTERY HOLDS ITS OWN WAKE ASSERTION — no
+      user discipline, no Makefile wrapper** (`tools/run_gates.py hold_awake()`).
+      `caffeinate -i -w <own pid>`: **`-w` ties the assertion's lifetime to the
+      process it protects**, so it is released however the run ends — normally,
+      on error, or killed — and **cannot leak**. Three batteries were killed
+      overnight; a plain `caffeinate -i` child would have orphaned three
+      processes silently holding the Mac awake.
+      📏 **VERIFIED BOTH WAYS, END TO END:** during a run with NO caffeinate on
+      the command line, `pmset -g assertions` shows *"caffeinate asserting on
+      behalf of Process ID 80160"* (the battery's own pid) and
+      `PreventUserIdleSystemSleep 1`; after it exits, `pgrep` finds nothing.
+      **47/47 green.**
+      🟢 **AND IT REPORTS WHEN IT CANNOT HOLD** — off macOS, or with `caffeinate`
+      missing — instead of running exposed and silent: *"RAN WITHOUT AN
+      IDLE-SLEEP ASSERTION … stalls and 0-4 s preflight refusals below may be
+      SUSPENSION, not contention"*. Arms S10/S11/S12: the assertion is really
+      held per `pmset`, it is bound to THIS pid, and it never claims "held"
+      without a reason.
+      ⚠️ **NOT COVERED: ad-hoc probe runs outside `make gates`** (a bare
+      `python3 scratchpad/*_probe.py`) are still exposed. The battery is the
+      expensive victim, so it went first.
+      [[apparatus-is-part-of-the-measurement]]
 
 - [x] ✅ **D-ONDOM (2026-08-30): `ON n GOTO/GOSUB`'s VALUE DOMAIN IS MEASURED
       AND EMPTY — 15 rows, 0 DIFF**
@@ -1323,7 +1331,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4409 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4417 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
