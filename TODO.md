@@ -442,6 +442,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the references settle the behaviour and the code settles
       the interface.
 
+- [ ] 🔬 **D-VALFLOAT: THE PLUMBING IS WRITTEN AND STATICALLY VERIFIED, AND HELD
+      OUT OF THE TREE FOR WANT OF A GREEN BATTERY**
+      ([`docs/spec-basic-valfloat.md`](docs/spec-basic-valfloat.md); diff kept as
+      [`scratchpad/valfloat-plumbing.patch`](scratchpad/valfloat-plumbing.patch),
+      174 lines; the working tree is CLEAN).
+      🟢 **DONE AND PROVEN NEUTRAL BY 59 HOST TEST FILES + `kwsweep`** — including
+      `test_float.py`, which drives `tk_float` on bare literals to exact token
+      bytes. The bound lives in `tkf_fetch`, the ONLY place `tk_float` reads the
+      source, as a POSITION test (callers rewind HL, so a counter would drift);
+      out-of-bounds returns exactly what a real `0` terminator gives. All six
+      exits re-point to returning tails at **0 B** — they were already
+      `jp tk_loop`/`jp tk_end`.
+      ⚠️ **A literal-text replace matched 5 of 6 exits** (the sixth grep hit was a
+      COMMENT); caught by re-grepping for survivors. A missed exit would have
+      dropped VAL into the tokeniser loop.
+      🔴 **NOT COMMITTED: it changes the ROM and the host hit load 10.6 mid-run**,
+      with `math-acceptance` failing in 4 s and `intarg` in 0 s — contention
+      refusals, not results. Same standard as the preflight move earlier in this
+      session, which re-ran green on a quiet host.
+      ⛔ **AND ACTIVATION IS STILL BLOCKED ON A DESTINATION BUFFER.** `FOUTBUF`
+      looked ideal (24 B, `flt_out`-only by the argument that freed `TKVALEND`) —
+      it is **not**: `basic/program.asm` and four math-pack files write it too.
+      That is the THIRD shared-buffer ownership question in this arc, after
+      `TOKBUF` (direct-mode lines execute from it) and `DETOKBUF` (`PRINT USING`
+      drains it), **and the first two were both real hazards**.
+      ➡️ **TO RESUME:** `git apply scratchpad/valfloat-plumbing.patch`,
+      `make unit-test` (expect 59/59), `make gates` on a host under ~load 3.
+      🤖 AUTONOMOUS — needs only an idle machine, then the buffer question.
+
 - [x] ✅ **D-ONDOM (2026-08-30): `ON n GOTO/GOSUB`'s VALUE DOMAIN IS MEASURED
       AND EMPTY — 15 rows, 0 DIFF**
       ([`docs/spec-basic-ondom.md`](docs/spec-basic-ondom.md),
@@ -1288,7 +1317,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4374 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4403 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

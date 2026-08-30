@@ -1,0 +1,105 @@
+# D-VALFLOAT — the plumbing for a float-capable VAL, written and held
+
+*2026-08-30. `sub/tkfloat.asm`, `basic/tokenise.inc`, `basic/sysvars.inc`.*
+
+🔴 **WRITTEN, STATICALLY VERIFIED, AND HELD OUT OF THE TREE.** The diff is kept
+as [`scratchpad/valfloat-plumbing.patch`](../scratchpad/valfloat-plumbing.patch)
+(174 lines) and the working tree is clean. **It is not committed because it
+changes the ROM and no trustworthy battery could be run**: the host went to load
+**10.6** mid-run, with `math-acceptance` failing in 4 s and `intarg-acceptance`
+in 0 s — preflight refusals under contention, not results. The same standard was
+applied to the preflight move earlier in this session, and re-running it on a
+quiet host later proved it green.
+
+**Cost when applied: 65 B of sub page 0** (2203 → 2138 B free). Main regions
+untouched. **Verified neutral by 59 host test files and `kwsweep`** — which is
+what makes it re-appliable with confidence.
+
+## 1. What this is, and what it is not
+
+D-VAL's remaining 14 rows (fractions, exponents, `STR$` of a non-integer) need
+`tk_float` — the tokeniser's own numeric scanner — to run over a *string body*
+rather than a program line. Two things stand in the way, and this slice removes
+both **without switching anything on**:
+
+1. `tk_float` stops on a `0` byte, and a string body is not terminated.
+2. `tk_float` does not `ret` — every exit is `jp tk_loop` / `jp tk_end`, back into
+   the tokeniser loop it was called from.
+
+The remaining piece — VAL actually calling it — is **not** here, for a reason
+given in §4.
+
+## 2. A bound, in the one place the source is read
+
+🟢 **`tkf_fetch` is the only place `tk_float` reads the source.** The file's other
+`ld a,(hl)` sites all read `TKDIG`, the internal digit array — an earlier draft of
+D-VAL claimed seven source reads and five of those were that mistake.
+
+⚠️ **It is a POSITION test, not a counter.** `tkf_fetch`'s own header calls the
+accept/reject split "the whole rule": callers `push hl` and may `pop hl` to
+**rewind** across a blank run they decided not to consume. A decrementing counter
+would drift out of step with the cursor on every rejected run; comparing HL
+against a stored end address cannot.
+
+Out of bounds returns **exactly what a real `0` terminator gives** — `A = 0` and
+the flags `cp ' '` leaves on it — so no caller's classification changes and no
+caller needs to know the bound exists.
+
+`TKVALEND = 0` means *unbounded*, and `tokenise` clears it on entry, so ordinary
+tokenising can never see a bound even if cold-boot RAM garbage put one there.
+
+## 3. Exits that return, at zero bytes
+
+Every exit was already `jp tk_loop` (success) or `jp tk_end` (the `TKOVF`
+reject), so re-pointing all six at `tkf_done`/`tkf_rej` **costs nothing** — the
+instruction is identical, only the target changed. Those tails `ret` when
+`TKVALEND` is set and otherwise jump where they always did.
+
+🔴 **The `ret` is safe only in VAL mode, and that is why the test is on
+`TKVALEND`.** In ordinary tokenising `tk_float` is reached by `jp tk_float` from
+`tk_loop` and has no return address of its own.
+
+⚠️ **A literal-text replace caught one short.** Retargeting by exact string
+matched 5 of 6 `jp tk_loop`; the sixth hit in the original grep was a *comment*.
+Verified after the fact by grepping for any surviving exit — the two that remain
+are inside the new tails themselves. A missed exit would have dropped VAL into
+the tokeniser loop.
+
+## 4. Why VAL does not use it yet
+
+The scan needs a **destination** for the token bytes (~9: one token byte plus at
+most 8 value bytes). `FOUTBUF` looked ideal — 24 bytes, and `flt_out`-only by the
+same argument that freed `TKVALEND` — but it is **not** `flt_out`-only:
+`basic/program.asm` and four math-pack files (`fp_sqrt`, `fp_atan`, `fp_pow`,
+`fp_exp`) also write it.
+
+That is the third shared-buffer ownership question in this arc, after `TOKBUF`
+(direct-mode lines execute from it) and `DETOKBUF` (`PRINT USING` drains it).
+Each of the first two turned out to be a real hazard, so this one gets checked
+rather than assumed. **Naming it and stopping is the point of landing the
+plumbing inert.**
+
+## 5. Verification
+
+| check | result |
+|---|---|
+| 59 host test files, incl. `test_float.py` (drives `tk_float` on bare literals to exact token bytes) and `test_tokenise.py` | **all pass** |
+| `kwsweep` | green |
+| every real exit retargeted | verified by grep, after the replace came up one short |
+| full battery | 🔴 **not obtained** — host at load 10.6, refusals in 0–4 s |
+
+The host tests are what make this *re-appliable* with confidence: they exercise
+the changed code **statically**, so the invasive half is proven neutral without
+an emulator. What is missing is only the battery, and the patch reproduces the
+work exactly.
+
+## 6. To resume
+
+```
+git apply scratchpad/valfloat-plumbing.patch
+make unit-test          # expect: ALL 59 TEST FILE(S) PASSED
+make gates              # expect 47/47 — needs a QUIET host (load < ~3)
+```
+
+Then answer §4's question — where the ~9-byte destination lives — before wiring
+VAL to `tk_float`.
