@@ -858,35 +858,69 @@ str_fn_str:
                 jr      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor                       [CURSOR]
+                ; --- D-STRFLT: STR$ OF A NON-INTEGER --------------------------
+                ; This formatted DE with pu_fmt_int and never looked at FACTYP,
+                ; so a float argument was silently the int16 flt_to_int16 left
+                ; behind: `STR$(1.5)` -> "1", `STR$(.5)` -> "0",
+                ; `STR$(1E9)` -> "0", `STR$(1.234567890123#)` -> "1".
+                ; 🟢 PRINT's own formatter was already right (the ctl.* rows in
+                ; scratchpad/strflt_probe.py are green), so the defect is HERE and
+                ; the fix is to reuse it rather than to write a second one.
+                ld      a,(FACTYP)          ; §9.4: dispatch after eval, exactly as
+                cp      2                   ; print.asm's exp_num does
+                jr      nz,sfs_float
                 ld      c,0                 ; C = leading-space count
                 bit     7,d                 ; sign of n
                 jr      nz,sfs_conv         ; negative -> no leading space
                 inc     c                   ; non-negative -> one leading space
 sfs_conv:
                 call    pu_fmt_int          ; NUMBUF="[-]digits",0; B=digit count; C preserved
+                ld      hl,NUMBUF           ; HL = the source text
+                jr      sfs_build
+                ; --- the float arm: flt_fmt's text, MINUS PRINT's trailing space
+                ; ⚠️ THE TRAILING SPACE IS THE WHOLE DIFFERENCE BETWEEN PRINT AND
+                ; STR$, and no row in the value suite could see it -- the harness
+                ; prints `"[";expr;"]"` and the capture strips, so ` 1.5` and
+                ; `1.5` read the same. It is pinned twice in strflt_probe.py: a
+                ; `"<"+...+">"` fence (` < 1.5>` on both references) and LEN
+                ; (`LEN(STR$(1.5))` = 4, `LEN(STR$(0))` = 2).
+                ; The LEADING space/sign is kept, because flt_fmt writes it and
+                ; both references keep it -- which is why C is 0 on this arm.
+sfs_float:
+                call    flt_fmt             ; HL = FOUTBUF, NUL-terminated
+                ld      b,255               ; -> B = length INCLUDING the trailing
+sfs_flen:                                   ;    space (first `inc b` makes it 0)
+                inc     b
+                ld      a,(hl)
+                inc     hl
+                or      a
+                jr      nz,sfs_flen
+                dec     b                   ; drop it
+                ld      c,0                 ; the text carries its own sign/space
+                ld      hl,FOUTBUF
+sfs_build:                                  ; HL = source, B = length, C = leading spaces
                 ld      a,c
-                add     a,b                 ; total length = leading space + digits
-                push    bc                  ; guard B(digits),C(leadspace)         [CURSOR][BC]
+                add     a,b                 ; total length
+                push    hl                  ; guard the SOURCE               [CURSOR][SRC]
+                push    bc                  ; guard B(len),C(leadspace)  [CURSOR][SRC][BC]
                 call    str_temp_alloc      ; A=total -> HL=temp desc, DE=body (or 0)
-                pop     bc                  ; B=digits, C=leadspace                [CURSOR]
-                push    hl                  ; guard temp desc addr                  [CURSOR][TDESC]
+                pop     bc                  ; B=len, C=leadspace             [CURSOR][SRC]
+                ex      (sp),hl             ; HL = source; temp desc guarded [CURSOR][TDESC]
                 ld      a,d
                 or      e
                 jr      z,sfs_finish        ; failure -> DE=0, nothing to fill
                 ld      a,c
                 or      a
-                jr      z,sfs_digits
+                jr      z,sfs_cp
                 ld      a,' '
                 ld      (de),a
                 inc     de
-sfs_digits:
-                ld      hl,NUMBUF
 sfs_cp:
                 ld      a,(hl)
                 ld      (de),a
                 inc     hl
                 inc     de
-                djnz    sfs_cp              ; B = digit count (>=1)
+                djnz    sfs_cp              ; B = source length (>=1)
 sfs_finish:
                 pop     hl                  ; HL = temp desc addr                    [CURSOR]
                 ld      (STRPTR),hl

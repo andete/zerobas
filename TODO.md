@@ -210,6 +210,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       must be RE-RUN, not inherited**.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
+- [x] 🟢 **D-STRFLT: `STR$` OF A NON-INTEGER — THE VAL/STR$ SWEEP CLOSES AT
+      0 DIFF / 97 AND 0 DIFF / 27.** Spec
+      [`docs/spec-basic-strflt.md`](docs/spec-basic-strflt.md); probe
+      `scratchpad/strflt_probe.py`, knives `scratchpad/strflt_knives.py`.
+      `str_fn_str` formatted `DE` with `pu_fmt_int` and never read `FACTYP`, so
+      a float argument was silently whatever int16 `flt_to_int16` left behind:
+      `STR$(1.5)`->1, `STR$(.5)`->0, `STR$(1E9)`->0,
+      `STR$(1.234567890123#)`->1.
+      🟢 **PRINT's OWN FORMATTER WAS ALREADY RIGHT** — the three `ctl.*` rows are
+      green before AND after — which is what places the defect in STR$ and makes
+      the fix a REUSE (`flt_out` split into a two-liner over `flt_fmt`, ~2 B)
+      rather than a second formatter.
+      🔴 **THE TRAILING SPACE IS INVISIBLE TO EVERY VALUE ROW.** MSX number
+      format puts a space in FRONT of every number and PRINT adds one BEHIND;
+      STR$ keeps the first and drops the second. The harness prints
+      `"[";expr;"]"` and the capture STRIPS, so `" 1.5"` and `"1.5"` read the
+      same. Pinned twice instead: a `"<"+…+">"` fence (`< 1.5>` on both
+      references) and LEN (4 / 2 / 11).
+      ✅ **ALL THREE ARMS EXACT, AND TWO DISCRIMINATE.** K-SF2 keeps the trailing
+      space and ONLY the 2 fences + 3 lengths move — which is what proves those
+      rows were necessary. K-SF3 makes `flt_out` skip `flt_fmt` and ONLY the 3
+      CONTROLS move, the exact inverse of K-SF1: that is what says the split is a
+      split and not a rename.
+      ⚠️ **`NUMBUF` IS 8 BYTES**, so the obvious "one source buffer"
+      simplification would have overrun it on `" 1000000000"` and every double.
+      The two arms keep their own buffers.
+      ✅ 29 B of the low region.
+
 - [x] 🟢 **D-VALFLT: `VAL` STOPS BEING ITS OWN NUMBER PARSER AND CALLS THE
       TOKENISER'S — 29 DIFF -> 4, EVERY `VAL` ROW GREEN.** Spec
       [`docs/spec-basic-valflt.md`](docs/spec-basic-valflt.md); probe
@@ -232,12 +260,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the arm the D-PCTTRUNC commit promised and could not witness. Its
       prediction DISCRIMINATES: `VAL("40000.5%")` must NOT move, because
       `tkf_check_percent` refuses at the right frame depth already.
-      ➡️ **STILL OPEN: `STR$` OF A NON-INTEGER** (`STR$(1.5)` -> 1,
-      `STR$(.5)` -> 0, `STR$(1E9)` -> 0). `str_fn_str` formats `DE` with
-      `pu_fmt_int` and never reads `FACTYP`. Probe
-      `scratchpad/strflt_probe.py` written, and it pins the LEADING/TRAILING
-      SPACE two ways (a `"<"+…+">"` fence and `LEN`) because the harness's
-      capture strips whitespace and cannot see it.
+      ✅ **AND THE `STR$` HALF CLOSED THE SAME DAY — D-STRFLT, above.** The
+      four survivors named here were all `str_fn_str` formatting `DE` with
+      `pu_fmt_int` without reading `FACTYP`; `scratchpad/strflt_probe.py` pins
+      the LEADING/TRAILING SPACE two ways (a `"<"+…+">"` fence and `LEN`)
+      because the harness's capture strips whitespace and cannot see it.
       🤖 AUTONOMOUS — the references settle the behaviour.
 
 - [x] 🟢 **D-PCTTRUNC / D-VALUNDER / D-ERLENTRY: THREE DEFECTS IN THE FLOAT
@@ -1413,7 +1440,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4499 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4526 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

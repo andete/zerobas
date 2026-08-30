@@ -39,7 +39,17 @@ tkf_ref32768:
 ; else E form. Value 0 (lead byte 0; also the dec_exp<=-64 crunch-time
 ; underflow case, mantissa retained but unprinted per §9.2 rule 6) -> "0".
 ; Clobbers A, B, C, D, E, H, L.
+; --- D-STRFLT: flt_out is now a two-liner over flt_fmt ---------------------
+; STR$ needs the TEXT, not the printing. `flt_fmt` builds FOUTBUF and returns
+; HL pointing at it; `flt_out` is what PRINT has always called.
+; 🟢 THE SPLIT COSTS ~2 BYTES, because the two `jp print_string` tails below
+; become `ret`. FOUTBUF is safe across STR$'s own temp allocation: the only
+; writers are this file and the math pack (via the SQRT_R / MATH_R aliases),
+; and neither is on `str_temp_alloc`'s path.
 flt_out:
+                call    flt_fmt
+                jp      print_string
+flt_fmt:
                 ld      a,(FACTYP)
                 cp      8
                 jr      z,flo_dblsz
@@ -132,7 +142,7 @@ flo_finish:
                 xor     a
                 ld      (hl),a              ; 0-terminate
                 ld      hl,FOUTBUF
-                jp      print_string
+                ret                         ; D-STRFLT: HL = the formatted text
 flo_zero:
                 ld      hl,FOUTBUF
                 ld      (hl),' '
@@ -144,7 +154,7 @@ flo_zero:
                 xor     a
                 ld      (hl),a
                 ld      hl,FOUTBUF
-                jp      print_string
+                ret                         ; D-STRFLT: HL = the formatted text
 
 ; --- flo_is_fixed: CF set iff -1 <= dec_exp <= 14. Preserves HL. -----------
 ; Clobbers A, DE.
