@@ -185,6 +185,33 @@ open**. It runs for the first time exactly when a second disk channel is
 claimed. The whole path is untested by construction, and every single-channel
 row in this project has always been green.
 
+### What the tenant actually returned (RAM readout, not reasoning)
+
+Dumping the request block in the error handler — `SH_OP` `$E36D`, `SH_LEN`
+`$E36E`, `SH_PTR` `$E371`, `SH_ERR` `$E37E`:
+
+| row | `SH_OP` | `SH_LEN` | `SH_PTR` | `SH_ERR` |
+|---|---|---|---|---|
+| the failing second open | 18 | **1** | **47572 = `$B9D4`** | **0** |
+| one channel / none (controls) | 255 | 255 | 65535 | 255 |
+
+🎯 **The controls read as UNINITIALISED**, which is the direct confirmation that
+op 18 never runs with a single channel — the structural fact above, measured
+rather than argued.
+
+🟢 **And the call SUCCEEDED**: `SH_ERR` = 0, `SH_LEN` = 1 (channel 1 is the one
+being saved, which is correct), and the address is plausible. `TXTTAB` = `$8001`,
+`HIMEM` = `$F380`; the table is carved below **`TXTMAX`**, not below `HIMEM`, and
+`$B9D4` plus a ~200 B pool and two ~562 B contexts lands about where `TXTMAX`
+should be. **So the 50-byte context save is not landing in the program**, and the
+"stray write corrupts the tokenised text" theory — which would have explained a
+`Syntax error` neatly — is not supported.
+
+⚠️ **Noted in passing, not chased:** `VARTAB` (`$F6C2`) and `STREND` (`$F6C6`)
+both read **0** — zerobas does not maintain those published MSX cells. A program
+that `PEEK`s them gets 0 where a reference gives a real pointer. That is its own
+question and does not belong to this item.
+
 ⚠️ **NEXT STEP NEEDS A DEBUGGER, NOT ANOTHER READING.** The handler
 (`sub/strheap.asm sh_chan_addr`) and its callee chain read correctly for both
 channel 1 and channel 2, and BASIC-level bisection has bottomed out. What is

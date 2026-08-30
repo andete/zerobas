@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3456 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3467 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3456 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3467 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2963,6 +2963,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `FCH_ACTIVE` is 0, so `fch_ctx_addr` — and op 18 — NEVER RUN with a single
       channel.** The path executes for the first time when a second disk channel
       is claimed; it is untested by construction.
+      ✅ **AND THE TENANT CALL ITSELF IS EXONERATED (RAM readout, not reasoning):**
+      `SH_ERR`=0, `SH_LEN`=1 (correct — channel 1 is the one being saved), and
+      `SH_PTR`=`$B9D4`, which is plausible against `TXTTAB`=`$8001` /
+      `HIMEM`=`$F380` since the table is carved below **TXTMAX**, not HIMEM. So
+      the 50-byte save is NOT landing in the program, and the tidy "stray write
+      corrupts the tokenised text" theory is unsupported. The one-channel
+      controls read UNINITIALISED (255/65535), which is the direct measurement
+      that op 18 never runs with a single channel.
+      ⚠️ **SEEN IN PASSING, NOT CHASED:** `VARTAB` ($F6C2) and `STREND` ($F6C6)
+      both read **0** — zerobas does not maintain those published MSX cells. Its
+      own question; filed here only so it is not lost.
       ⚠️ **NEXT NEEDS A DEBUGGER, NOT A READING**: a breakpoint on the second
       `fch_ctx_addr` with a register/RAM dump. The handler and its callee chain
       read correctly for both channels, and BASIC-level bisection has bottomed
