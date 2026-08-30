@@ -442,6 +442,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the references settle the behaviour and the code settles
       the interface.
 
+- [x] ✅ **D-ONDOM (2026-08-30): `ON n GOTO/GOSUB`'s VALUE DOMAIN IS MEASURED
+      AND EMPTY — 15 rows, 0 DIFF**
+      ([`docs/spec-basic-ondom.md`](docs/spec-basic-ondom.md),
+      [`scratchpad/ondom_probe.py`](scratchpad/ondom_probe.py)). No code change.
+      📏 `missop3` covered `ON 1 GOTO` with the LIST missing; nothing covered the
+      SELECTOR. ⚠️ **The interesting half is the half that does NOT raise** — `n`
+      past the list falls through silently, so a wrong answer there has no error
+      code to notice.
+      🟢 All correct: past-the-list and `ON 0` fall through; `-1` and `256` are
+      ERR 5; `32768` is ERR 6; `ON 0*(1/0)+1` is **ERR 11** (the selector's own
+      fault wins); GOSUB mirrors GOTO.
+      🎯 **AND ONE ROW SETTLES A RULE: THE SELECTOR TRUNCATES, IT DOES NOT
+      ROUND.** `ON 1.7 GOTO 40,60` takes the FIRST target on all three machines;
+      a rounding selector would have taken the second. `ON 1.4` agrees but cannot
+      discriminate — the 1.7 row is the one that matters.
+      **CLASS MEASURED EMPTY** — recorded so it is not re-measured on a hunch.
+
 - [x] ✅ **D-NUMSTR (2026-08-29): a STRING where a numeric factor is required is
       now ERR 13, not ERR 24 — and the refcache had switched the preflight off**
       ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md)). 26 rows,
@@ -1271,7 +1288,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4357 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4374 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
