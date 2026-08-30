@@ -77,6 +77,27 @@ PUT#1,1 : PUT#1,1 : PUT#1,1
 `Out of string space` on **both** sides — a fixture limit, identical everywhere,
 and not a divergence. It is kept so the next reader does not re-derive it.
 
+## 1b. 🟢 The positive control the "untrappable" claim needed
+
+§1 concluded *"not a trappable error"* from `p.trap3` printing **nothing** with a
+handler in place. That is an **absence**, and an absence is exactly what a broken
+fixture also looks like — this arc has produced five of those.
+
+| row | zerobas | CF-3300 |
+|---|---|---|
+| `k.puttrap` — handler, two `PUT`s, then a **known** `ERROR 7` | **`ERR 7 AT 60`** | `ERR 7 AT 60` |
+| `k.put3` — the same program, third `PUT` instead of the error | **`<NO OUTPUT>`** | OK |
+
+The handler is **demonstrably armed and live after two `PUT`s**, and the third
+`PUT` kills the program anyway. The claim now rests on a live handler rather than
+on silence.
+
+⚠️ **AND THE FIXTURE CAVEAT THAT COST A WHOLE PROBE: `MAXFILES=n` DISARMS
+`ON ERROR`** — on **both** machines (`k.mfwipes`; `k.mfctl` is the same shape
+without it and traps normally). It is correct behaviour, not a divergence. An
+earlier run put `MAXFILES=2` between the handler and the subject, got an
+untrapped error, and I read it as a finding about the machine.
+
 ## 2. The straddle premise, refuted
 
 | row | CF-3300 |

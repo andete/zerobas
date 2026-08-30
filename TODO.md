@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3400 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3410 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3400 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3410 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2975,10 +2975,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       not move with record length (64 and 128 alike); it dies on a file that does
       not exist yet; and `1,1,1` and `1,2,3` both die. **The third `PUT` of a
       run, unconditionally.**
+      ✅ **THE "UNTRAPPABLE" CLAIM NOW RESTS ON A LIVE HANDLER, NOT ON SILENCE
+      (2026-08-30).** It was concluded from a row that printed NOTHING with a
+      handler in place — an ABSENCE, which is also what a broken fixture looks
+      like. `k.puttrap` arms the same handler, does TWO `PUT`s, then forces a
+      KNOWN `ERROR 7`, and traps it (`ERR 7 AT 60`) on both machines; `k.put3` is
+      the same program with the third `PUT` instead and still dies.
+      ⚠️ **FIXTURE CAVEAT THAT COST A PROBE: `MAXFILES=n` DISARMS `ON ERROR`** —
+      on BOTH machines (correct behaviour, not a divergence). An earlier run put
+      `MAXFILES=2` between the handler and the subject and read the untrapped
+      error as a finding.
       🔴 **STILL OPEN: PER-CHANNEL OR GLOBAL?** The row is four `PUT`s spread
-      two-and-two over two channels, and it has not run — the two-channel fixture
-      answers `Syntax error` for a reason not yet isolated (`MAXFILES=2` ALONE is
-      `OK` on both sides, measured, so it is not that).
+      two-and-two over two channels, and it CANNOT BE WRITTEN on this machine —
+      D-OPEN2 (two disk channels are `Syntax error`) blocks it, which is the
+      reason the two-channel fixture kept failing.
       ⚠️ **FOUR FIXTURE FAULTS IN ONE SITTING, THREE OF WHICH LOOKED LIKE
       FINDINGS**: `ON ERROR GOTO 100` on a harness numbering 10,20,30…;
       `OPEN … AS #2` under the default `MAXFILES=1`; and the two-channel

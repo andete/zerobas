@@ -69,6 +69,33 @@ LS = 'LSET A$=STRING$(128,"B")'
 OK = 'PRINT"[";"OK";"]"'
 
 CASES = [
+    # === 🟢 THE POSITIVE CONTROL THE "UNTRAPPABLE" CLAIM NEEDED ==============
+    # The first write-up said "not a trappable error" because p.trap3 printed
+    # NOTHING with a handler in place. That is an ABSENCE, and an absence is what
+    # a broken fixture also looks like. k.puttrap arms the same handler, does TWO
+    # PUTs, then forces a KNOWN `ERROR 7` -- and it traps (`ERR 7 AT 60`) on both
+    # machines. So the handler is demonstrably ARMED AND LIVE after two PUTs, and
+    # k.put3 -- the same program with the third PUT in place of the forced error
+    # -- still dies. The claim now rests on a live handler, not on silence.
+    # ⚠️ AND THE FIXTURE CAVEAT THAT COST A WHOLE PROBE: `MAXFILES=n` DISARMS
+    # `ON ERROR` -- on BOTH machines (k.mfwipes, correct behaviour, not a
+    # divergence). An earlier attempt put `MAXFILES=2` between the handler and
+    # the subject and read the resulting untrapped error as a finding.
+    ("k.puttrap",  "dsk", ['ONERRORGOTO70', 'OPEN"TS.DAT"AS #1 LEN=128',
+                           'FIELD#1,128 AS A$', 'PUT#1,1', 'PUT#1,1',
+                           'ERROR 7:PRINT"[";"NOTRAP";"]":END',
+                           'PRINT"[ERR";ERR;"AT";ERL;"]":END']),
+    ("k.put3",     "dsk", ['ONERRORGOTO70', 'OPEN"TS.DAT"AS #1 LEN=128',
+                           'FIELD#1,128 AS A$', 'PUT#1,1', 'PUT#1,1',
+                           'PUT#1,1:PRINT"[";"OK";"]":END',
+                           'PRINT"[ERR";ERR;"AT";ERL;"]":END']),
+    ("k.mfwipes",  "dsk", ['ONERRORGOTO50', 'MAXFILES=2', 'ERROR 7',
+                           'PRINT"[";"NOTRAP";"]":END',
+                           'PRINT"[ERR";ERR;"AT";ERL;"]":END']),
+    ("k.mfctl",    "dsk", ['ONERRORGOTO50', 'REM', 'ERROR 7',
+                           'PRINT"[";"NOTRAP";"]":END',
+                           'PRINT"[ERR";ERR;"AT";ERL;"]":END']),
+
     # === 🔴 THE MINIMAL REPRODUCER: THREE `PUT`s, NO STRINGS ANYWHERE ========
     # 🎯 EVERY ROW BELOW PAIRED AN `LSET ... STRING$` WITH EACH `PUT`, so "the
     # third PUT" and "the third LSET" coincided on all of them -- two rules, one
