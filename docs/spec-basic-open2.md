@@ -155,6 +155,42 @@ the candidate is still `fch_claim` -> `fch_save_active` -> `fch_flush_active`,
 the write-back that only runs when a second disk channel is claimed, and whose
 CALSLT into the sub-ROM is the kind of path that sets `SH_ERR`.
 
+## 3c. Located to one call, with six hypotheses refuted by rows
+
+Diagnostic knives (cuts made to LOCATE, never proposed as fixes), each rebuilt
+and re-run against the ERL rows:
+
+| cut | spurious `ERR 2` |
+|---|---|
+| `call fch_save_active` in `fch_claim` | **gone** |
+| only `fch_flush_active` (the CALSLT flush) | remains |
+| only the `ldir` context save | remains |
+| clear `SH_ERR` after the tenant call | remains |
+| guard `IX` around `fch_claim` | remains |
+
+So the raise is inside `fch_save_active`, in the part that survives cutting both
+the flush and the save: **`fch_ctx_addr`**, which asks the string-heap tenant for
+the channel's context-block address (op 18) through a CALSLT.
+
+🔴 **SIX HYPOTHESES REFUTED, ALL MINE:** cursor damage after the statement
+(`ERL` says `AT 40`); the `oo_parse_reclen` exit (`g.nolen` has no clause and
+still fails); the flush; the `ldir`; a stale `SH_ERR`; and an `IX` clobber —
+the last despite `fch_ctx_addr`'s own header naming IX, which is what made it
+worth testing.
+
+🎯 **AND THE STRUCTURAL FACT THAT EXPLAINS WHY NOTHING CAUGHT THIS.**
+`fch_save_active` returns early when `FCH_ACTIVE` is 0, so `fch_ctx_addr` — and
+with it op 18 `sh_chan_addr` — **never executes while only one channel is
+open**. It runs for the first time exactly when a second disk channel is
+claimed. The whole path is untested by construction, and every single-channel
+row in this project has always been green.
+
+⚠️ **NEXT STEP NEEDS A DEBUGGER, NOT ANOTHER READING.** The handler
+(`sub/strheap.asm sh_chan_addr`) and its callee chain read correctly for both
+channel 1 and channel 2, and BASIC-level bisection has bottomed out. What is
+wanted is a breakpoint on the second `fch_ctx_addr` with a register/RAM dump —
+guessing further is what produced the six refutations above.
+
 ## 4. How it was found, and what it blocks
 
 Looking for something else: D-PUT3 left open *"is the third-`PUT` counter

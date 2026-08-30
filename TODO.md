@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3440 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3456 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3440 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3456 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2951,7 +2951,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       fault) and separating them needs its own rows.
       ➡️ **SO THE FIX MAY BE SMALL: STOP RAISING THE ERROR.** What remains is
       finding what sets `FPERR`=4 on this path.
-      🎯 **REMAINING CANDIDATE (named as a candidate, not a cause):**
+      ✅ **LOCATED TO ONE CALL 2026-08-30, BY DIAGNOSTIC KNIVES.** Cutting
+      `call fch_save_active` in `fch_claim` REMOVES the spurious error; cutting
+      only the flush, only the `ldir`, clearing `SH_ERR`, or guarding `IX` each
+      leave it. So the raise is in what survives all of those: **`fch_ctx_addr`**,
+      the op-18 CALSLT that asks the string-heap tenant for the channel's
+      context-block address.
+      🔴 **SIX HYPOTHESES REFUTED, ALL MINE** — cursor damage, the reclen exit,
+      the flush, the `ldir`, a stale `SH_ERR`, an `IX` clobber.
+      🎯 **AND WHY NOTHING CAUGHT IT: `fch_save_active` returns early when
+      `FCH_ACTIVE` is 0, so `fch_ctx_addr` — and op 18 — NEVER RUN with a single
+      channel.** The path executes for the first time when a second disk channel
+      is claimed; it is untested by construction.
+      ⚠️ **NEXT NEEDS A DEBUGGER, NOT A READING**: a breakpoint on the second
+      `fch_ctx_addr` with a register/RAM dump. The handler and its callee chain
+      read correctly for both channels, and BASIC-level bisection has bottomed
+      out — guessing further is what produced the six refutations.
+      🎯 **SUPERSEDED CANDIDATE (kept for the reasoning):**
       `fch_claim` is reached only by a DISK open, and claiming a SECOND channel
       calls `fch_save_active` -> `fch_flush_active` — the write-back that
       persists the FIRST channel. That path runs ONLY when a second disk channel
