@@ -781,7 +781,22 @@ sas_decline:
                 ; answer 11). Discarding our own return address restores the
                 ; original stack shape exactly. +4 B, and not optional.
                 ; [[a-shared-tail-is-not-a-decision]]
+                ; 🎯 D-ARGOPEN ADDS A SECOND FRAME, AND THEREFORE A SECOND POP.
+                ; str_arg_snap's three call sites are now ONE -- str_arg_open, the
+                ; shared prologue below -- so the decline is two frames deep, not
+                ; one, and discarding a single return address would land
+                ; str_eval_no's `ret` back INSIDE str_arg_open. That is the very
+                ; failure this routine's comment describes, one level up.
+                ; ⚠️ THE SECOND POP IS CORRECT ONLY WHILE str_arg_snap HAS EXACTLY
+                ; ONE CALLER. Arm S1 in scratchpad/argopen_knives.py counts them;
+                ; a fourth verb calling it directly would need its own shape.
+                ; 🎯 AND THIS ONE IS WITNESSED WHERE str_arg_open's BAIL IS NOT:
+                ; a DECLINE is not an error. The caller retries the operand
+                ; numerically and that retry is visible (`LEFT$(5,2)` -> ERR 13),
+                ; whereas a deferred error's report resets SP and erases the
+                ; damage. K-AO1 moves rows; the pop it replaced moved none.
                 pop     af                  ; discard str_arg_snap's return address
+                pop     af                  ; ...and str_arg_open's
                 jp      str_eval_no         ; now declines out of the VERB, as before
 
 ; --- CHR$/STR$/LEFT$/RIGHT$/MID$: string-VALUED $FF functions ---------------
@@ -944,23 +959,60 @@ str_arg_empty:
                 ld      a,4
                 call    penderr_set
                 jp      str_eval_no
-str_fn_left:
+; --- str_arg_open: the prologue LEFT$ / RIGHT$ / MID$ all share (D-ARGOPEN) --
+; 16 instructions, open-coded three times: the `(` test, both empty-argument
+; tests, str_arg_snap, the `,` test, and the temp-address capture. Only what
+; FOLLOWS differs -- LEFT$/RIGHT$ evaluate a 0-based count (eval_byte_arg), MID$
+; a 1-based position (eval_pos_arg).
+;   in:  HL = cursor ON the function's selector byte.
+;   out: BC = the owned temp's descriptor address, STRPTR -> it, HL = cursor just
+;        past the ',' -- exactly what each open-coded copy produced. Does not
+;        return on a malformed call.
+; 🔴 THE RANKING SEES TWO SITES, NOT THREE. `str_fn_mid` spells the same four
+; exits with `jp` where the other two use `jr`, so the spans are not
+; byte-identical and `ngram_sweep` reports a 2-site run. Grep the IDIOM, then
+; check the jump form. [[grep-the-idiom-beats-the-clone-ranking]]
+; 🔴 AND THE BAIL IS THE WHOLE DESIGN, NOT A DETAIL. str_arg_empty ends
+; `jp str_eval_no`, which declines out of the VERB by returning to the verb's
+; caller -- so behind a `call` it would run one frame deeper and that `ret` would
+; land back inside this helper. [[factoring-a-run-into-a-helper]]
+; 🎯 SO THE BAIL IS NOT TAKEN HERE AT ALL: this returns CF CLEAR and each caller
+; does its own `jp nc,str_arg_empty`, at the frame depth the open-coded copies
+; had. 6 bytes more than discarding the return address with `pop af` -- and the
+; 6 bytes buy a guard that a ROW CAN SEE.
+; ⚠️ THE `pop af` SHAPE WAS WRITTEN FIRST, AND ITS KNIFE MOVED ZERO ROWS. Not
+; because it was wrong, but because it is UNWITNESSABLE: this bail's only outcome
+; is a DEFERRED error, and every path that reports one resets SP, so the frame
+; damage is erased before any row reads anything.
+; [[a-guard-witnessed-only-by-a-deferred-error]]
+; Contrast sas_decline below, whose pop IS witnessed -- a DECLINE is not an
+; error; the caller RETRIES the operand numerically, and that retry is visible.
+str_arg_open:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jr      nz,str_arg_empty
+                jr      nz,sao_empty
                 inc     hl
                 ld      a,(hl)              ; empty first arg -> deferred syntax error
                 cp      ')'
-                jr      z,str_arg_empty
+                jr      z,sao_empty
                 cp      ','
-                jr      z,str_arg_empty
+                jr      z,sao_empty
                 call    str_arg_snap        ; STRPTR -> an OWNED temp; HL = cursor
                 ld      a,(hl)
                 cp      ','
-                jr      nz,str_arg_empty
+                jr      nz,sao_empty
                 inc     hl
-                ld      bc,(STRPTR)         ; BC = temp addr
+                ld      bc,(STRPTR)         ; BC = temp addr (ld rr,(nn) leaves flags)
+                scf                         ; CF set = a well-formed call
+                ret
+sao_empty:
+                or      a                   ; CF clear -> the caller raises, in ITS frame
+                ret
+
+str_fn_left:
+                call    str_arg_open        ; BC = temp addr; HL past the ','
+                jr      nc,str_arg_empty    ; malformed -> raise HERE, not one frame in
                 push    bc                  ; save it across the numeric eval
                 call    eval_byte_arg       ; DE = n, 0..255 (D-MISS-2; or aborts)
                 pop     bc                  ; BC = temp addr
@@ -986,22 +1038,8 @@ str_fn_left:
 
 ; RIGHT$(a$,n): the last min(n,len) bytes. Snapshot, then slice from (len-count).
 str_fn_right:
-                inc     hl                  ; past the selector
-                ld      a,(hl)
-                cp      '('
-                jr      nz,str_arg_empty
-                inc     hl
-                ld      a,(hl)              ; empty first arg -> deferred syntax error
-                cp      ')'
-                jr      z,str_arg_empty
-                cp      ','
-                jr      z,str_arg_empty
-                call    str_arg_snap        ; STRPTR -> an OWNED temp; HL = cursor
-                ld      a,(hl)
-                cp      ','
-                jr      nz,str_arg_empty
-                inc     hl
-                ld      bc,(STRPTR)
+                call    str_arg_open        ; BC = temp addr; HL past the ','
+                jr      nc,str_arg_empty    ; malformed -> raise HERE, not one frame in
                 push    bc
                 call    eval_byte_arg       ; DE = n, 0..255 (D-MISS-2; or aborts)
                 pop     bc
@@ -1030,22 +1068,8 @@ str_fn_right:
 ; MID$(a$,p[,n]): count bytes from 1-based position p (or to end if n omitted).
 ; p<1 is clamped to the start; p>len yields "". Snapshot, then slice.
 str_fn_mid:
-                inc     hl                  ; past the selector
-                ld      a,(hl)
-                cp      '('
-                jp      nz,str_arg_empty
-                inc     hl
-                ld      a,(hl)              ; empty first arg -> deferred syntax error
-                cp      ')'
-                jp      z,str_arg_empty
-                cp      ','
-                jp      z,str_arg_empty
-                call    str_arg_snap        ; STRPTR -> an OWNED temp; HL = cursor
-                ld      a,(hl)
-                cp      ','
-                jp      nz,str_arg_empty
-                inc     hl
-                ld      bc,(STRPTR)
+                call    str_arg_open        ; BC = temp addr; HL past the ','
+                jp      nc,str_arg_empty    ; malformed -> raise HERE, not one frame in
                 push    bc                  ; [temp]
                 call    eval_pos_arg        ; DE = p, 1..255 (D-MISS-2; or aborts).
                                             ; p is the family's one 1-BASED argument:

@@ -210,7 +210,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       must be RE-RUN, not inherited**.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
-- [ ] 💰 **~42 B OF THE *LOW REGION* (estimated 2026-08-30) IN ONE HELPER: `str_fn_left` /
+- [x] 🟢 **D-ARGOPEN: ONE PROLOGUE FOR LEFT$ / RIGHT$ / MID$ — LOW REGION
+      66 -> 107 B FREE (2026-08-30).** Spec
+      [`docs/spec-basic-argopen.md`](docs/spec-basic-argopen.md); probe
+      `scratchpad/ngram8_probe.py`, knives `scratchpad/argopen_knives.py`.
+      16 instructions open-coded three times. The byte-level ranking sees only
+      TWO sites, because `str_fn_mid` spells the same four exits with `jp`.
+      🔴 **THE FIRST DESIGN WAS CORRECT AND UNWITNESSABLE.** `str_arg_open`
+      discarded its own return address so the bail ran at the verb's depth —
+      `sas_decline`'s own idiom — and its knife moved ZERO rows, because that
+      bail's only outcome is a DEFERRED error and every path that reports one
+      resets SP. Changed to a CF-clear return with a per-caller guard: **6 bytes
+      more, and a guard a row can see.**
+      🎯 **AND THAT WAS THE SHAPE THIS ITEM HAD ALREADY FILED AS THE SAFE ONE**
+      before the clever one was written.
+      ✅ **S1 + K-AO1 (8/8) + K-AO2 (1/1) all live.**
+      🔴 **THREE MISTAKES, ONLY ONE IN THE ROM:** S1 counted its OWN COMMENT as a
+      guard (4, want 3 — second instrument-reads-its-own-prose of the session);
+      K-AO1 was "corrected" 8 -> 2 from a number taken on a SUPERSEDED build
+      where two frame errors cancelled; K-AO2's 4 -> 1 is a real finding — three
+      of the four malformed calls converge on the same deferred ERR 2 through
+      the garbage path, so only `LEFT$"AB"` separates them.
+
+- [x] 💰 **~42 B OF THE *LOW REGION* (estimated 2026-08-30) IN ONE HELPER: `str_fn_left` /
       `str_fn_right` / `str_fn_mid` SHARE AN 18-INSTRUCTION PROLOGUE.** Measured
       2026-08-30, `scratchpad/ngram_sweep.py --main`. The low region is the
       scarce one (run `make basic-reloc`; it read 66 B on 2026-08-30 after
@@ -1487,7 +1509,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4573 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4595 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

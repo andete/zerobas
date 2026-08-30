@@ -66,6 +66,14 @@ add('s.mid.bad',   [], 'MID$(5,1,2)')
 add('s.left.pend',  ['Q2$=LEFT$(0*(1/0)+1)'],  '"done"')
 add('s.right.pend', ['Q2$=RIGHT$(0*(1/0)+1)'], '"done"')
 add('s.mid.pend',   ['Q2$=MID$(0*(1/0)+1)'],   '"done"')
+# --- 🔴 D-ARGOPEN: THE OTHER BAIL. The rows above decline because the first
+# argument is NOT A STRING (str_arg_snap's path); these bail because the CALL is
+# malformed (str_arg_open's own path). Both are outward jumps out of a helper
+# frame, and they are separate `pop af` sites -- so one arm each.
+add('s.left.noc',   [], 'LEFT$("AB")')     # the ',' that never came
+add('s.left.nopar', [], 'LEFT$"AB"')       # no '(' at all
+add('s.mid.noc',    [], 'MID$("AB")')      # the same on the `jp`-form site
+add('s.right.empty',[], 'RIGHT$()')        # '(' then ')' -- the empty-arg test
 add('s.left.pexp',  [], 'LEFT$(0*(1/0)+1)')    # the printed form, kept: it reads
 add('s.mid.pexp',   [], 'MID$(0*(1/0)+1)')     # the same on all three trees
 
