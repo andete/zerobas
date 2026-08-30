@@ -27,6 +27,11 @@ add('p.plus',    [], 'VAL("+34")')
 add('p.frac',    [], 'VAL("1.5")')
 add('p.lead',    [], 'VAL(".5")')
 add('p.trail',   [], 'VAL("5.")')
+# 🔴 THE ONLY ROW THAT CAN SEE THE FLOAT SIGN. `VAL("-34")` and `VAL(" - 12")`
+# are NEGATIVE INTEGERS and take the negate arm; a negative FLOAT is a bit flip
+# in the lead byte, and nothing else in this suite exercises it small enough to
+# stay single-precision.
+add('p.negfrac', [], 'VAL("-1.5")')
 
 # --- junk and partial parses: VAL returns what it could read, never raises ---
 add('j.empty',   [], 'VAL("")')

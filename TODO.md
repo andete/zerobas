@@ -210,6 +210,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       must be RE-RUN, not inherited**.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
+- [x] 🟢 **D-VALFLT: `VAL` STOPS BEING ITS OWN NUMBER PARSER AND CALLS THE
+      TOKENISER'S — 29 DIFF -> 4, EVERY `VAL` ROW GREEN.** Spec
+      [`docs/spec-basic-valflt.md`](docs/spec-basic-valflt.md); probe
+      `scratchpad/val_probe.py` (97 rows), knives
+      `scratchpad/valflt_knives.py`.
+      `VAL` read a leading signed DECIMAL INTEGER and stopped, so every
+      fraction, every exponent, every embedded blank and every value past int16
+      was wrong — and the last of those **wrapped silently**: `VAL("40000")`
+      read -25536, `VAL("-40000")` read 25536.
+      🎯 **THE FIX IS NOT TO WRITE A PARSER.** All of it is already written and
+      oracle-pinned in `tk_float`; D-VALFLOAT had landed the bound and the
+      returning exits, so what this adds is the CALLER.
+      🟢 **THE SCRATCH GOES ON THE STACK.** Three shared RAM buffers were
+      examined across this arc and all three turned out to be OWNED (`TOKBUF`,
+      `DETOKBUF`, `FOUTBUF`). At `SP` there is no ownership question to get
+      wrong — and it is DECODED BEFORE IT IS RELEASED, because above `SP` the
+      next interrupt owns those bytes.
+      ✅ **101 B of sub page 0 + 7 B of the low region**; main page 1 untouched.
+      ✅ **ALL FOUR KNIVES EXACT**, including a 42-row prediction and K-VF4 —
+      the arm the D-PCTTRUNC commit promised and could not witness. Its
+      prediction DISCRIMINATES: `VAL("40000.5%")` must NOT move, because
+      `tkf_check_percent` refuses at the right frame depth already.
+      ➡️ **STILL OPEN: `STR$` OF A NON-INTEGER** (`STR$(1.5)` -> 1,
+      `STR$(.5)` -> 0, `STR$(1E9)` -> 0). `str_fn_str` formats `DE` with
+      `pu_fmt_int` and never reads `FACTYP`. Probe
+      `scratchpad/strflt_probe.py` written, and it pins the LEADING/TRAILING
+      SPACE two ways (a `"<"+…+">"` fence and `LEN`) because the harness's
+      capture strips whitespace and cannot see it.
+      🤖 AUTONOMOUS — the references settle the behaviour.
+
 - [x] 🟢 **D-PCTTRUNC / D-VALUNDER / D-ERLENTRY: THREE DEFECTS IN THE FLOAT
       CRUNCH AND THE LINE EDITOR, FOUND BY GIVING EVERY `VAL` ROW A LITERAL
       TWIN.** Specs
@@ -1383,7 +1413,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4469 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4499 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

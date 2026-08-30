@@ -2262,6 +2262,12 @@ svs_oom:
 ; decimal integer from (STRPTR)'s body -> SH_PTR (0 if no digits; integer-
 ; only, spec D-E; SH_ERR always 0). Clobbers A,B,C,D,E,H,L.
 sh_val_parse:
+                xor     a
+                ld      (SH_LEN),a          ; 0 = "the answer is the integer in
+                                            ; SH_PTR"; every early exit below
+                                            ; (empty, bare sign, base literal)
+                                            ; inherits it, and only the float
+                                            ; decode overwrites it
                 ld      hl,(STRPTR)
                 ld      b,(hl)              ; B = byte count
                 inc     hl
@@ -2269,12 +2275,26 @@ sh_val_parse:
                 inc     hl
                 ld      d,(hl)              ; DE = ptr (body)
                 ex      de,hl               ; HL = body cursor
-                ld      de,0                ; accumulator
-                ld      c,0                 ; C bit0 = negative flag
+                ; --- D-VALFLT: publish the body's END as tk_float's bound ------
+                ; A string body is not 0-terminated, so the crunch would run off
+                ; it. TKVALEND is a POSITION, not a counter, because tkf_fetch's
+                ; callers REWIND across a blank run they decide not to consume
+                ; (docs/spec-basic-valfloat.md §2). 0 means unbounded, and a heap
+                ; body is never at address 0.
+                push    hl
+                ld      d,0
+                ld      e,b
+                add     hl,de
+                ld      (TKVALEND),hl       ; one past the last body byte
+                pop     hl
+                ld      de,0                ; the "no number here" answer
+                ld      c,e                 ; C bit0 = negative flag
 svp_sp:
                 ld      a,b
                 or      a
-                jr      z,svp_done
+                jp      z,svp_done          ; D-VALFLT put ~140 B between here and
+                                            ; the tail; both empty-answer arms are
+                                            ; `jp` for reach, not for style
                 ld      a,(hl)
                 cp      ' '
                 jr      nz,svp_sign
@@ -2306,41 +2326,123 @@ svp_sign:
                 ld      c,1                 ; negative
                 inc     hl
                 dec     b
-                jr      svp_digits
+                jr      svp_flt
 svp_plus:
                 cp      '+'
-                jr      nz,svp_digits
+                jr      nz,svp_flt
                 inc     hl
                 dec     b
-svp_digits:
+; --- D-VALFLT: the number itself is the TOKENISER'S scanner --------------------
+; VAL's own parser read a leading signed DECIMAL INTEGER and stopped, so 16 rows
+; of scratchpad/val_probe.py were wrong: every fraction, every exponent, every
+; embedded blank, and every value past int16 (which wrapped, silently). All of
+; that is already written, correct and oracle-pinned, in tk_float -- so VAL calls
+; it rather than growing a second copy that would drift.
+;
+; 🟢 THE SCRATCH GOES ON THE STACK, where it cannot alias anything. The emitted
+; token needs at most 9 bytes (DBL_TOKEN + 8), and three shared RAM buffers were
+; examined and all three turned out to be owned (TOKBUF: direct-mode lines
+; EXECUTE from it; DETOKBUF: PRINT USING drains it; FOUTBUF: four math-pack files
+; write it). The question dissolves at SP: this scratch is written and read
+; inside one call, tk_float's own pushes go BELOW SP, and an interrupt lands
+; below them -- so nothing can reach it. Ten bytes of stack in a tenant is
+; nothing. docs/spec-basic-valfloat.md §4a.
+; ⚠️ AND IT IS DECODED BEFORE IT IS RELEASED. Once SP moves back up the bytes
+; are above SP, where the next interrupt overwrites them.
+svp_flt:
                 ld      a,b
                 or      a
-                jr      z,svp_fin
+                jp      z,svp_done          ; a bare sign, or nothing left -> 0
+                xor     a
+                ld      (TKOVF),a           ; the reject flag is ours to read: only
+                                            ; `tokenise` clears it, and VAL does
+                                            ; not go through tokenise
+                push    bc                  ; the sign, across tk_float
+                ex      de,hl               ; DE = source cursor
+                ld      hl,-10
+                add     hl,sp
+                ld      sp,hl               ; 10 bytes of scratch AT SP
+                ex      de,hl               ; HL = source cursor, DE = emit dest
+                call    tk_float
+                ld      a,(TKOVF)
+                or      a
+                jr      nz,svp_frel         ; refused: NOTHING was emitted, so the
+                                            ; scratch holds whatever was on the
+                                            ; stack -- decoding it would read a
+                                            ; float type out of garbage
+                ld      hl,0
+                add     hl,sp               ; HL -> the emitted token
+                call    svp_token           ; -> DE = int16, or FAC/FACTYP/SH_LEN
+svp_frel:
+                ld      hl,10
+                add     hl,sp
+                ld      sp,hl               ; scratch released
+                pop     bc                  ; C bit0 = negative
+                ld      a,(TKOVF)
+                or      a
+                jp      nz,svp_bovf         ; `VAL("1E99")` -> Overflow on both
+                                            ; references, the same ERR 6 the base
+                                            ; literal's own overflow raises
+                ld      a,(SH_LEN)
+                or      a
+                jr      z,svp_fin           ; an integer: the sign path below
+                ; a float: the sign is a BIT, and value 0 is exempt -- the same
+                ; rule as basic/float.asm's flt_neg, which cannot be called from
+                ; here (main low region, invisible to a page-0 tenant).
+                bit     0,c
+                jr      z,svp_fok
+                ld      a,(FAC)
+                or      a
+                jr      z,svp_fok
+                xor     $80
+                ld      (FAC),a
+svp_fok:
+                xor     a
+                ld      (SH_ERR),a
+                ret
+
+; --- svp_token: decode the token tk_float emitted at (HL) -------------------
+; out: SH_LEN = 0 and DE = the int16 value, or SH_LEN = FACTYP (4/8) with FAC
+; holding the value bytes -- exactly the state basic/expr.asm's ev_f_float
+; leaves, so the glue's flt_to_int16 finishes the job the same way.
+; Clobbers A,B,C,D,E,H,L.
+svp_token:
                 ld      a,(hl)
-                cp      '0'
-                jr      c,svp_fin
-                cp      '9'+1
-                jr      nc,svp_fin
-                sub     '0'                 ; A = digit 0..9
-                push    hl                  ; guard cursor across the *10
-                push    af
-                ld      h,d
-                ld      l,e                 ; HL = acc
-                add     hl,hl               ; *2
-                add     hl,hl               ; *4
-                add     hl,hl               ; *8
-                ex      de,hl               ; DE = acc*8 ; HL = acc
-                add     hl,hl               ; HL = acc*2
-                add     hl,de               ; HL = acc*10
-                pop     af                  ; A = digit
-                ld      d,0
-                ld      e,a
-                add     hl,de               ; HL = acc*10 + digit
-                ex      de,hl               ; DE = new acc
-                pop     hl                  ; restore cursor
                 inc     hl
-                dec     b
-                jr      svp_digits
+                cp      SNG_TOKEN
+                jr      z,svp_t_sng
+                cp      DBL_TOKEN
+                jr      z,svp_t_dbl
+                ld      de,0
+                cp      INT2_TOKEN
+                jr      z,svp_t_w
+                cp      INT1_TOKEN
+                jr      z,svp_t_b
+                sub     INT_DIGIT_BASE      ; $11..$1A -> the value 0..9
+                ld      e,a
+                ret
+svp_t_b:
+                ld      e,(hl)              ; $0F,<byte>
+                ret
+svp_t_w:
+                ld      e,(hl)              ; $1C,<word LE>
+                inc     hl
+                ld      d,(hl)
+                ret
+svp_t_dbl:
+                ld      c,8
+                jr      svp_t_f
+svp_t_sng:
+                ld      c,4
+svp_t_f:
+                ld      a,c
+                ld      (SH_LEN),a          ; the marker IS the FACTYP value
+                ld      (FACTYP),a
+                ld      b,0
+                ld      de,FAC
+                ldir
+                ret
+
 svp_fin:
                 bit     0,c
                 jr      z,svp_done          ; non-negative -> DE is the value

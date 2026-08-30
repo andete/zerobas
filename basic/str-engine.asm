@@ -724,6 +724,14 @@ ev_ff_val:
                 ld      a,(SH_ERR)
                 or      a
                 jr      nz,evv_refuse
+                ; D-VALFLT: SH_LEN is 0 when the answer is the integer in SH_PTR,
+                ; and otherwise the FACTYP (4/8) of a value the tenant has already
+                ; placed in FAC. The float arm then ends exactly where a float
+                ; LITERAL's does -- ev_f_float's own tail -- so every int consumer
+                ; downstream keeps working and the type is the literal's type.
+                ld      a,(SH_LEN)
+                or      a
+                jp      nz,flt_to_int16     ; DE = the rounded int16; FAC/FACTYP stand
                 ld      de,(SH_PTR)         ; DE = the parsed integer value
                 ret
 evv_refuse:
