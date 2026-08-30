@@ -84,6 +84,40 @@ CF-3300 (`v.devbare`). It is its own divergence, and it **voided a whole
 discriminator run** by failing as the baseline of a comparison before anyone
 noticed it was red.
 
+## 3a. Where it is raised — narrowed by rows, not by reading
+
+`ERL` names the line, once the handler is armed **after** `MAXFILES` (which
+disarms `ON ERROR` on both machines — that cost an earlier probe):
+
+| row | reading |
+|---|---|
+| `f.two` — second disk open, valid channel | **`ERR 2 AT 40`** — the OPEN itself |
+| `f.pin` — second open, channel `#9` | `ERR 52 AT 40` — the readout can name line 40 |
+| `f.one` / `g.alone` — one open | OK at line 50 — the handler survives |
+
+🔴 **Two hypotheses refuted on the way, both mine.**
+
+1. *"The open succeeds and corrupts the text cursor, so the NEXT statement is the
+   syntax error."* `f.two` says `AT 40`: it is the OPEN.
+2. *"It is the `jr c,oo_fail_syn` after `oo_parse_reclen`, the only `Syntax
+   error` exit on the disk path after the channel check."* `g.nolen` — the same
+   open with **no `LEN=` clause at all**, where `oo_parse_reclen` returns the 256
+   default with carry clear and cannot fail — is **also `ERR 2 AT 40`**. So that
+   exit is not the site and the enumeration was incomplete.
+
+🎯 **What the rows leave, and it fits every observation:** `fch_claim` is reached
+only by a **disk** open, and when a *second* channel is claimed it calls
+`fch_save_active` → `fch_flush_active` — the write-back that persists the FIRST
+channel's state. **That path executes only when a second disk channel is
+claimed.** A device open never calls `fch_claim` at all (it just sets
+`FCH_MODES[ch]`), which is exactly why device+disk coexists.
+
+⚠️ **Named as the remaining candidate, not as the cause.** Neither `oo_nodisk`
+(`load_error`) nor `oo_fail` (`df_or_loaderr`) maps to ERR 2, so the raise is
+either inside that write-back chain or a **deferred `FPERR`=4 surfacing at the
+statement boundary** — which would be attributed to line 40 exactly as observed.
+Distinguishing those two is the next step, and it wants instrumentation.
+
 ## 4. How it was found, and what it blocks
 
 Looking for something else: D-PUT3 left open *"is the third-`PUT` counter

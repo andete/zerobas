@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3410 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3427 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3410 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3427 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2931,6 +2931,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       **DONE**. Both are MOSTLY RIGHT — the token work, the ceiling and
       device-channel concurrency are all real. Only two-disk concurrency fails.
       [[a-fix-falsifies-the-justification-beside-it]]
+      ➡️ **NARROWED 2026-08-30 BY ROWS, AND TWO OF MY HYPOTHESES REFUTED.**
+      `ERL` says `ERR 2 AT 40` — the OPEN itself, not the statement after it (so
+      it is not cursor damage); and `g.nolen`, the same open with NO `LEN=`
+      clause, is also `AT 40` — so it is NOT the `jr c,oo_fail_syn` after
+      `oo_parse_reclen`, which cannot fail without a clause. That was the only
+      `Syntax error` exit I had enumerated on the disk path after the channel
+      check, so the enumeration is incomplete.
+      🎯 **REMAINING CANDIDATE (named as a candidate, not a cause):**
+      `fch_claim` is reached only by a DISK open, and claiming a SECOND channel
+      calls `fch_save_active` -> `fch_flush_active` — the write-back that
+      persists the FIRST channel. That path runs ONLY when a second disk channel
+      is claimed, and a device open never calls `fch_claim` at all, which is why
+      device+disk coexists. Neither `oo_nodisk` nor `oo_fail` maps to ERR 2, so
+      the raise is either in that chain or a deferred `FPERR`=4 surfacing at the
+      statement boundary. Distinguishing them wants instrumentation.
+      ⚠️ **`MAXFILES` DISARMS `ON ERROR`** (both machines): arm the handler
+      AFTER it, or the probe measures nothing.
       ➡️ **BLOCKS D-PUT3's per-channel question** — the row that would answer it
       needs two channels and is unwritable on this machine.
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
