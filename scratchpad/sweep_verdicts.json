@@ -13,23 +13,23 @@
   "ids": "CONTENT-derived (sha256 of the headline). Positional ids were replaced after a single TODO.md edit renumbered them.",
   "screen": "tools/todo_subject_check.py screens whether each item's named subject still exists. It may RETIRE an item and may never CONFIRM one: a present symbol proves only that the subject exists, not that the behaviour still holds.",
   "screen_false_positive_classes": 6,
-  "denominator_correction": "The subject set was scoped as 'open + done-carrying-a-residual-KEYWORD' = 146. But 38 of the 237 done blocks open with a \ud83d\udd34/\u26a0\ufe0f/\ud83d\udcb0 headline that STATES A DIVERGENCE, and only 8 of those 38 also carry a keyword. The keyword screen silently dropped 30 blocks -- and those are precisely the class the pickup list's own header exists to catch. Subject is now open + keyword-marked + open-reading-headline = 176.",
-  "marker_regex_undermatch": "\u26a0\ufe0f tranche 13's self-declaration regex required `\u2705 **CLOSED`; T-3B013F writes `**CLOSED 2026-08-17 by D-DRAWCLAMP**` with no tick and was therefore NOT swept up by it. The 10 self-declaring blocks are a LOWER BOUND on that class, not its size.",
+  "denominator_correction": "The subject set was scoped as 'open + done-carrying-a-residual-KEYWORD' = 146. But 38 of the 237 done blocks open with a 🔴/⚠️/💰 headline that STATES A DIVERGENCE, and only 8 of those 38 also carry a keyword. The keyword screen silently dropped 30 blocks -- and those are precisely the class the pickup list's own header exists to catch. Subject is now open + keyword-marked + open-reading-headline = 176.",
+  "marker_regex_undermatch": "⚠️ tranche 13's self-declaration regex required `✅ **CLOSED`; T-3B013F writes `**CLOSED 2026-08-17 by D-DRAWCLAMP**` with no tick and was therefore NOT swept up by it. The 10 self-declaring blocks are a LOWER BOUND on that class, not its size.",
   "self_declaring_total": "19 of the 38 open-reading headlines self-declare closure (10 by the strict marker, 9 more by the broadened one). The strict count was a LOWER BOUND, as tranche 14 predicted.",
-  "new_question_from_t18": "\u26a0\ufe0f UNFILED AND UNMEASURED: `SCREEN 2:CLS` leaves 4923 set pixels in the VG-8020's pattern generator and 0 in zerobas's. If the name table does not reference them it is invisible and harmless; if it does, it is a visible divergence. No row in the sweep or the battery asks.",
-  "plane_instrument": "\ud83d\udd34 THREE RULES, THREE ANSWERS -- AND THAT IS THE FINDING. The VG-8020's SCREEN 2 pattern plane holds 4923 leftover bits that `CLS` does not clear (a colour-0 `LINE ...,BF` fill does not either). Every counting rule is then wrong in a different direction: RAW counts invisible bits (~5000); VISIBLE (fg!=0) over-counts, because drawing recolours a row and makes leftovers in it visible; BASELINE-SUBTRACTED under-counts, because a drawn pixel landing on a leftover bit is subtracted away. Readings for one row under the three rules: ref 4955 / 125 / 32. \ud83c\udfaf AN EXACT WHOLE-PLANE COUNT OF A FIGURE IS NOT AVAILABLE ON THIS MACHINE BY ANY OF THEM.",
-  "citation_family": "\ud83c\udfaf A FAMILY IS EMERGING ACROSS THREE TRANCHES: this project cites many kinds of thing and gates exactly one. `check_citation_paths.py` (shipped this morning) covers scratchpad/ paths in committed docs. Tranche 9 found a dangling probes/ path that nothing polices. This tranche finds 90 provably-broken file:LINE anchors that nothing polices. Same class, three surfaces, one gate.",
-  "gates_that_record_their_own_limits": "\ud83c\udfaf A THIRD PATTERN, now seen four times: injector-check's EXEMPT table, check_report_shape's kwsweep exception, check_dead_code's 'Only a PROLOGUE is skipped' and its 'Fix (5) still matters -- for tools/, which still seeds'. These gates ANNOTATE the cases they cannot judge. That is why so many items in this sweep are confirmable by reading the gate: the residual and its record live in the same file. It is also why they do not rot -- unlike the 30 divergences buried in `- [x]` blocks, which had no such home.",
+  "new_question_from_t18": "⚠️ UNFILED AND UNMEASURED: `SCREEN 2:CLS` leaves 4923 set pixels in the VG-8020's pattern generator and 0 in zerobas's. If the name table does not reference them it is invisible and harmless; if it does, it is a visible divergence. No row in the sweep or the battery asks.",
+  "plane_instrument": "🔴 THREE RULES, THREE ANSWERS -- AND THAT IS THE FINDING. The VG-8020's SCREEN 2 pattern plane holds 4923 leftover bits that `CLS` does not clear (a colour-0 `LINE ...,BF` fill does not either). Every counting rule is then wrong in a different direction: RAW counts invisible bits (~5000); VISIBLE (fg!=0) over-counts, because drawing recolours a row and makes leftovers in it visible; BASELINE-SUBTRACTED under-counts, because a drawn pixel landing on a leftover bit is subtracted away. Readings for one row under the three rules: ref 4955 / 125 / 32. 🎯 AN EXACT WHOLE-PLANE COUNT OF A FIGURE IS NOT AVAILABLE ON THIS MACHINE BY ANY OF THEM.",
+  "citation_family": "🎯 A FAMILY IS EMERGING ACROSS THREE TRANCHES: this project cites many kinds of thing and gates exactly one. `check_citation_paths.py` (shipped this morning) covers scratchpad/ paths in committed docs. Tranche 9 found a dangling probes/ path that nothing polices. This tranche finds 90 provably-broken file:LINE anchors that nothing polices. Same class, three surfaces, one gate.",
+  "gates_that_record_their_own_limits": "🎯 A THIRD PATTERN, now seen four times: injector-check's EXEMPT table, check_report_shape's kwsweep exception, check_dead_code's 'Only a PROLOGUE is skipped' and its 'Fix (5) still matters -- for tools/, which still seeds'. These gates ANNOTATE the cases they cannot judge. That is why so many items in this sweep are confirmable by reading the gate: the residual and its record live in the same file. It is also why they do not rot -- unlike the 30 divergences buried in `- [x]` blocks, which had no such home.",
   "battery_coverage_finding": {
-   "headline": "\ud83d\udd34 THE lof-acceptance VOID IS STRUCTURAL, NOT AN ISOLATED ITEM",
-   "measured": "87 gate-shaped make targets (*-acceptance / *-check / *-sweep / *-selftest / *-teeth). 35 are in run_gates.py's GATES list. 52 ARE NOT. Of those 52, 30 have a documented exclusion within 14 lines (\u26d4 DELIBERATELY NOT IN `make gates`, 'on demand', 'characterisation', 'denominator'). **22 HAVE NO DOCUMENTED EXCLUSION AT ALL.**",
+   "headline": "🔴 THE lof-acceptance VOID IS STRUCTURAL, NOT AN ISOLATED ITEM",
+   "measured": "87 gate-shaped make targets (*-acceptance / *-check / *-sweep / *-selftest / *-teeth). 35 are in run_gates.py's GATES list. 52 ARE NOT. Of those 52, 30 have a documented exclusion within 14 lines (⛔ DELIBERATELY NOT IN `make gates`, 'on demand', 'characterisation', 'denominator'). **22 HAVE NO DOCUMENTED EXCLUSION AT ALL.**",
    "the_22": "diskdep-selftest, bdos-acceptance, diskbasic-acceptance, fat-error-acceptance, subrom-acceptance, graphics-floor-acceptance, input-acceptance, input-devices-acceptance, stop-trap-acceptance, strig-trap-acceptance, key-trap-acceptance, time-acceptance, lnblank-say-acceptance, editverb-acceptance, lptverb-acceptance, readvar-acceptance, namspc-acceptance, direct-ctrl-acceptance, sound-acceptance, play-acceptance, beep-acceptance, bdos-cbios-selfcheck",
-   "why_it_matters": "\ud83c\udfaf EVERY ITEM THAT REASONS FROM 'THE BATTERY HAS BEEN GREEN/QUIET' ABOUT ONE OF THESE 22 INHERITS THE VOID tranche 46 found in lof-acceptance. `make gates` going 39/39 says nothing whatever about fat-error, input, time, sound, play, beep, the four trap gates, or the disk gates. A green battery is a claim about 39 units, and the project owns at least 57 gate-shaped things that could run.",
-   "caveats": "\u26a0\ufe0f 22 IS AN UPPER BOUND ON THE PROBLEM, THREE WAYS: (1) my detector looks 14 lines back for an exclusion phrase, so an exclusion documented in a spec or in run_gates.py's own docstring is missed; (2) some are covered under a DIFFERENT unit name that IS in the battery (deffn-acceptance is absent but deffn-selftest and deffn-strict are present); (3) some may be run by CI rather than by `make gates`. What is certain is the 87/35 split and that 22 carry no nearby note explaining it.",
+   "why_it_matters": "🎯 EVERY ITEM THAT REASONS FROM 'THE BATTERY HAS BEEN GREEN/QUIET' ABOUT ONE OF THESE 22 INHERITS THE VOID tranche 46 found in lof-acceptance. `make gates` going 39/39 says nothing whatever about fat-error, input, time, sound, play, beep, the four trap gates, or the disk gates. A green battery is a claim about 39 units, and the project owns at least 57 gate-shaped things that could run.",
+   "caveats": "⚠️ 22 IS AN UPPER BOUND ON THE PROBLEM, THREE WAYS: (1) my detector looks 14 lines back for an exclusion phrase, so an exclusion documented in a spec or in run_gates.py's own docstring is missed; (2) some are covered under a DIFFERENT unit name that IS in the battery (deffn-acceptance is absent but deffn-selftest and deffn-strict are present); (3) some may be run by CI rather than by `make gates`. What is certain is the 87/35 split and that 22 carry no nearby note explaining it.",
    "how": "regex over Makefile targets vs run_gates.py's GATES list"
   },
   "unrun_gate_exposure": {
-   "headline": "\ud83d\udd34 THIRTEEN SUBJECT ITEMS REFERENCE A GATE THE BATTERY NEVER RUNS",
+   "headline": "🔴 THIRTEEN SUBJECT ITEMS REFERENCE A GATE THE BATTERY NEVER RUNS",
    "measured": "cross-checking the 176 subject blocks against the 22 undocumented-exclusion unrun targets from tranche 47: 13 items name at least one.",
    "the_13": {
     "T-E56017 / T-CAA3DC / T-2148BA": "lnblank-say-acceptance",
@@ -40,17 +40,17 @@
     "T-48AC8B": "direct-ctrl-acceptance",
     "T-632DF5": "bdos-, fat-error-, graphics-floor- and subrom-acceptance (four at once)"
    },
-   "\u26a0\ufe0f_what_this_does_and_does_not_show": "REFERENCING A GATE IS NOT THE SAME AS DEPENDING ON IT HAVING RUN. Some of the 13 merely name the gate as the place a row lives, which is unaffected. The exposure is specific: any item whose reasoning is 'that gate is green / has been quiet / would have caught it' inherits tranche 46's void. Each of the 13 needs a read to say which kind it is; ONE has already been read (T-E56017, tranche 52) and it was the exposed kind.",
-   "\ud83d\udd34_the_uncomfortable_one": "T-FE1732 was verdicted in this sweep as SELF-DECLARED CLOSED ('fat-error-acceptance's missing NAME control -- CLOSED 2026-08-07'). Its gate is one of the 22. A closure asserted against a gate that has not run since is a claim about the day it was written, not about today -- and my own read-not-run verdict inherited that without noticing until now.",
+   "⚠️_what_this_does_and_does_not_show": "REFERENCING A GATE IS NOT THE SAME AS DEPENDING ON IT HAVING RUN. Some of the 13 merely name the gate as the place a row lives, which is unaffected. The exposure is specific: any item whose reasoning is 'that gate is green / has been quiet / would have caught it' inherits tranche 46's void. Each of the 13 needs a read to say which kind it is; ONE has already been read (T-E56017, tranche 52) and it was the exposed kind.",
+   "🔴_the_uncomfortable_one": "T-FE1732 was verdicted in this sweep as SELF-DECLARED CLOSED ('fat-error-acceptance's missing NAME control -- CLOSED 2026-08-07'). Its gate is one of the 22. A closure asserted against a gate that has not run since is a claim about the day it was written, not about today -- and my own read-not-run verdict inherited that without noticing until now.",
    "resolved_t54": {
     "method": "read the sentence around each gate mention in all 13",
     "DEPENDS_ON_A_SCORE (7)": "T-6A9F9F ('namspc-acceptance 58/58 -> 60/60'), T-8A24D5 ('namspc-acceptance 62/62 -> 99/99'), T-4B3ABB ('readvar-acceptance 22/22, 1 positive...'), T-CFEA4A ('readvar-acceptance 24/24'), T-8A25E8 ('diskbasic-acceptance 34/34'), T-48AC8B ('direct-ctrl-acceptance 40/...'), T-632DF5 ('fat-error-acceptance reports ALL PASS', 'bdos-acceptance is the deep one').",
     "NAMES_ONLY (6)": "T-E56017, T-CAA3DC, T-2148BA, T-5858A6, T-70A01E, T-FE1732",
-    "\ud83d\udd34_the_finding": "SEVEN ITEMS CITE A GATE SCORE AS EVIDENCE, AND NONE OF THOSE GATES RUNS IN THE BATTERY. The scores were real on the day they were taken -- the issue is that nothing re-checks them, so '58/58 -> 60/60' is a claim about a past run with no standing verification. That is weaker than 'the item is wrong' and stronger than 'the item is fine'.",
-    "\ud83c\udfaf_the_precedent_inside_the_list": "T-70A01E ALREADY CONTAINS A CORRECTION OF THIS EXACT SHAPE: '\ud83d\udd34 AND \"no Makefile target runs it\" WAS FALSE. `make diskbasic-acceptance` dispatches...'. Someone hit this class before and fixed it in the other direction. \u26a0\ufe0f BUT THAT CORRECTION IS ITSELF INCOMPLETE: a target EXISTING is not the battery RUNNING it, and diskbasic-acceptance is one of the 22. The fix replaced one wrong claim with a narrower one that is still not the question that matters."
+    "🔴_the_finding": "SEVEN ITEMS CITE A GATE SCORE AS EVIDENCE, AND NONE OF THOSE GATES RUNS IN THE BATTERY. The scores were real on the day they were taken -- the issue is that nothing re-checks them, so '58/58 -> 60/60' is a claim about a past run with no standing verification. That is weaker than 'the item is wrong' and stronger than 'the item is fine'.",
+    "🎯_the_precedent_inside_the_list": "T-70A01E ALREADY CONTAINS A CORRECTION OF THIS EXACT SHAPE: '🔴 AND \"no Makefile target runs it\" WAS FALSE. `make diskbasic-acceptance` dispatches...'. Someone hit this class before and fixed it in the other direction. ⚠️ BUT THAT CORRECTION IS ITSELF INCOMPLETE: a target EXISTING is not the battery RUNNING it, and diskbasic-acceptance is one of the 22. The fix replaced one wrong claim with a narrower one that is still not the question that matters."
    }
   },
-  "id_scheme_tradeoff": "\ud83c\udfaf NEITHER ID SCHEME IS STABLE, AND THE AUDIT IS WHAT MAKES EITHER USABLE. Positional ids (tranche 1) rot on any edit ABOVE the block -- one paragraph inserted in the header renumbered everything. Content-derived ids (tranche 2 onward) rot on any edit TO THE BLOCK'S OWN HEADLINE -- correcting NINE to ELEVEN in tranche 58 re-keyed T-872E8C to T-AC33CE and orphaned its verdict. Both failures are silent; what caught the second one instantly was `--audit` reporting 'verdicts for NON-subject: 1'. The lesson is not 'pick better ids' -- it is that a verdict set needs a RECONCILIATION CHECK against the live file, because any keying scheme will drift."
+  "id_scheme_tradeoff": "🎯 NEITHER ID SCHEME IS STABLE, AND THE AUDIT IS WHAT MAKES EITHER USABLE. Positional ids (tranche 1) rot on any edit ABOVE the block -- one paragraph inserted in the header renumbered everything. Content-derived ids (tranche 2 onward) rot on any edit TO THE BLOCK'S OWN HEADLINE -- correcting NINE to ELEVEN in tranche 58 re-keyed T-872E8C to T-AC33CE and orphaned its verdict. Both failures are silent; what caught the second one instantly was `--audit` reporting 'verdicts for NON-subject: 1'. The lesson is not 'pick better ids' -- it is that a verdict set needs a RECONCILIATION CHECK against the live file, because any keying scheme will drift."
  },
  "T-B96267": {
   "verdict": "LIVE",
@@ -59,7 +59,7 @@
   "control": "PRINT[;1;] prints 1 on all three",
   "note": "a D-PLAYOP closed block sits directly below it; that fix was the PLAY STATEMENT's operand, NOT the function form. Re-running is what separated them.",
   "was_positional_id": "T056",
-  "headline": "\ud83d\udd34 **zerobas does NOT implement the `PLAY(n)` FUNCTION (background-queue"
+  "headline": "🔴 **zerobas does NOT implement the `PLAY(n)` FUNCTION (background-queue"
  },
  "T-77303B": {
   "verdict": "LIVE",
@@ -67,14 +67,14 @@
   "reading": "RUN 20 with 10/20 stored: refs print [B] only, zb prints [A][B]",
   "control": "bare RUN prints [A][B] on all three, pinning 'from the top'",
   "was_positional_id": "T064",
-  "headline": "\ud83d\udcb0 **`RUN <lineno>` IN DIRECT MODE IS STILL THE OLD BEHAVIOUR \u2014 R2, ONE"
+  "headline": "💰 **`RUN <lineno>` IN DIRECT MODE IS STILL THE OLD BEHAVIOUR — R2, ONE"
  },
  "T-EF8C91": {
   "verdict": "LIVE",
   "how": "REPL x3",
   "reading": "KEY 1,\"X\": both references silent, zb raises Syntax error",
   "was_positional_id": "T008",
-  "headline": "\ud83d\udd34 **`KEY n,\"str\"` AND `KEY LIST` ARE UNIMPLEMENTED \u2014 A WELL-FORMED"
+  "headline": "🔴 **`KEY n,\"str\"` AND `KEY LIST` ARE UNIMPLEMENTED — A WELL-FORMED"
  },
  "T-CC4F5F": {
   "verdict": "LIVE",
@@ -83,7 +83,7 @@
   "control": "no-PAINT reads 4 on both (pins the untouched colour); PAINT + POINT ABOVE the wall reads 9 on BOTH, so zb's PAINT does fill -- it just does not cross",
   "gap": "cf3300 returned no span on ANY of the three rows, control included -- ONE REFERENCE ONLY this pass, apparatus gap not a finding",
   "was_positional_id": "T131",
-  "headline": "\ud83d\udd34 **A SCREEN-2 `PAINT` WITH `C != B` FLOODS THE ENTIRE SCREEN ON THE"
+  "headline": "🔴 **A SCREEN-2 `PAINT` WITH `C != B` FLOODS THE ENTIRE SCREEN ON THE"
  },
  "T-7A608F": {
   "verdict": "STALE-AS-FILED",
@@ -92,7 +92,7 @@
   "was": "filed as 'the domain is UNMEASURED'; it is measured now and AGREES at both points",
   "residue": "only two points sampled; the full domain is still unswept",
   "was_positional_id": "T123",
-  "headline": "\u26a0\ufe0f **THE THIRD TRAILING `SCREEN` ARGUMENT'S DOMAIN IS UNMEASURED.**"
+  "headline": "⚠️ **THE THIRD TRAILING `SCREEN` ARGUMENT'S DOMAIN IS UNMEASURED.**"
  },
  "T-63A411": {
   "verdict": "PARTLY-STALE; the WAIT residue is now MEASURED",
@@ -100,13 +100,13 @@
   "reading": "kwsweep today: TRON/TROFF/FRE/SWAP/ERASE all SUPPORTED; RENUM/AUTO/DELETE shipped (LE_OP_RENUM/_AUTO in sub/lineedit.asm, D-EDITVERB). The bucket is down to WAIT + full CLEAR semantics.",
   "gap": "WAIT UNMEASURED -- `WAIT 1,0` BLOCKS on a port condition and hung both references, voiding every case after it in the batch. It needs an isolated timeout-bounded row.",
   "was_positional_id": "T278",
-  "headline": "**Editor / program management** \u2014 `RENUM`, `AUTO`,",
+  "headline": "**Editor / program management** — `RENUM`, `AUTO`,",
   "wait_residue": {
    "verdict": "MEASURED -- closes the WAIT gap left open in tranche 1",
    "how": "isolated run_case, WAIT as the LAST line",
    "belongs_to": "the Editor / program-management bucket item",
    "reading": "vg8020: `WAIT 1,0` is typed and NO `Ok` prompt ever follows -- the machine is still inside it; the no-WAIT control shows `Ok`. zb: `Syntax error` -- WAIT is unimplemented here.",
-   "note": "\ud83d\udd34 THE FIRST ATTEMPT WAS ABORTED BY THE HARNESS ITSELF, AND THE ABORT WAS THE EVIDENCE. With a PRINT after the WAIT, the echo guard refused to report anything: the reference was still inside WAIT when the next line was injected, so 12 leading characters were swallowed. A guard that declines to produce a reading told me more than the reading would have."
+   "note": "🔴 THE FIRST ATTEMPT WAS ABORTED BY THE HARNESS ITSELF, AND THE ABORT WAS THE EVIDENCE. With a PRINT after the WAIT, the echo guard refused to report anything: the reference was still inside WAIT when the next line was injected, so 12 leading characters were swallowed. A guard that declines to produce a reading told me more than the reading would have."
   }
  },
  "T-D2A359": {
@@ -115,7 +115,7 @@
   "reading": "DIVERGENT=1 NO-ORACLE=5 SUPPORTED=30, and NO `MISSING=` line at all",
   "was": "'of 162 reserved words, 34 are genuinely absent' (2026-07-26)",
   "was_positional_id": "T279",
-  "headline": "**Keyword-completeness gaps \u2014 the measured remainder of MSX1 BASIC.**"
+  "headline": "**Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**"
  },
  "T-E20888": {
   "verdict": "LIVE, REFRAMED",
@@ -123,21 +123,21 @@
   "reading": "reference counter 1->2->3 as re-entries accumulate, zb stays 1; re-read unit is the LOGICAL LINE",
   "note": "the blocker named the wrong obstacle: C-BIOS CHPUT already honours the cursor codes on the zerobas machine, the per-keystroke path needs no sub-ROM crossing, and the 'in-window 0.6-0.9KB' classification predates the tenant architecture",
   "was_positional_id": "T277",
-  "headline": "**Screen-editor REPL** \u2014 real MSX BASIC does not use a sequential prompt"
+  "headline": "**Screen-editor REPL** — real MSX BASIC does not use a sequential prompt"
  },
  "T-FA0579": {
   "verdict": "STALE",
   "how": "make basic-reloc today",
   "reading": "main page 1 is 89 B free; the item says 1 B at 4db8010",
   "was_positional_id": "T029",
-  "headline": "\ud83d\udcb0 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` \u2014 NOTHING LANDS"
+  "headline": "💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS"
  },
  "T-64AD27": {
   "verdict": "STALE",
   "how": "make basic-reloc today",
   "reading": "main page 1 89 B, low region 39 B; the item says 2 B and 17 B",
   "was_positional_id": "T047",
-  "headline": "\u26a0\ufe0f **Main page 1 is 2 B free and the low region 17 B, at"
+  "headline": "⚠️ **Main page 1 is 2 B free and the low region 17 B, at"
  },
  "T-8A24D5": {
   "verdict": "STALE",
@@ -145,7 +145,7 @@
   "reading": "the item ranks the list 38/62 apparatus with 15 BASIC-surface items; the list is now 109 open, split 60 behavioural / 39 gate+space / 3 doc / 7 unclassified",
   "note": "a ranked candidate rots like a wall -- this one IS the ranking",
   "was_positional_id": "T122",
-  "headline": "\ud83d\udccb **THE PICKUP LIST IS 38/62 APPARATUS, AND THE REAL BASIC SURFACE IS 15"
+  "headline": "📋 **THE PICKUP LIST IS 38/62 APPARATUS, AND THE REAL BASIC SURFACE IS 15"
  },
  "T-13B166": {
   "verdict": "STALE",
@@ -167,7 +167,7 @@
   "how": "REPL x3, direct",
   "headline": "A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM",
   "reading": "after CLEAR 300,TXTTAB+1000: FRE(0) reads 148 / 148 / 646 -- the filed numbers exactly. Storing a 32-byte line then raises `Out of memory` on BOTH references while zb stores it (FRE 646 -> 615)",
-  "caveat": "\u26a0\ufe0f THE CONTROL DOES NOT CONFIRM THE ITEM'S MECHANISM. Plain `CLEAR 300` reads 148/148/646 too, so the HIMEM argument changes FRE(0) on NEITHER side; the symptom is reproduced exactly, the attribution to 'CLEAR's HIMEM argument does not reach the store check' is not tested by these rows"
+  "caveat": "⚠️ THE CONTROL DOES NOT CONFIRM THE ITEM'S MECHANISM. Plain `CLEAR 300` reads 148/148/646 too, so the HIMEM argument changes FRE(0) on NEITHER side; the symptom is reproduced exactly, the attribution to 'CLEAR's HIMEM argument does not reach the store check' is not tested by these rows"
  },
  "T-66E1EE": {
   "verdict": "LIVE",
@@ -182,7 +182,7 @@
   "headline": "`FIELD #(A$<5),1 AS Z$` IS `Type mismatch` HERE AND `Illegal function call` ON THE VG-8020",
   "reading": "zb `Type mismatch`, cf3300 `Type mismatch`, vg8020 `Illegal function call`",
   "reframe": "the item files this as zerobas-vs-reference; the TWO REFERENCES DISAGREE and zerobas matches the CF-3300",
-  "caveat": "\ud83d\udd34 AND THE VG-8020 READING MAY BE AN APPARATUS ARTIFACT. That machine has NO DRIVE: the control row (OPEN + FIELD #1) raises `Bad file name` AND `Illegal function call` on it, i.e. it errors on every disk statement. Its `Illegal function call` cannot be separated from 'no drive' by this apparatus. Settling it needs a VG-8020 WITH a disk interface."
+  "caveat": "🔴 AND THE VG-8020 READING MAY BE AN APPARATUS ARTIFACT. That machine has NO DRIVE: the control row (OPEN + FIELD #1) raises `Bad file name` AND `Illegal function call` on it, i.e. it errors on every disk statement. Its `Illegal function call` cannot be separated from 'no drive' by this apparatus. Settling it needs a VG-8020 WITH a disk interface."
  },
  "T-3CC9D3": {
   "verdict": "SPLIT: first clause LIVE, SECOND CLAUSE FALSE",
@@ -191,14 +191,14 @@
   "reading": "FILES\"TOOLONGNAME.EXTRA\": zb prints `load error`, cf3300 prints no error at all",
   "control": "bare FILES is clean on both",
   "gap": "the cf3300 side of the clause-2 read is UNUSABLE: run_case applies no reset, so that machine stayed in SCREEN 1 and the scrape is VRAM garbage. The reference comparison for clause 1 rests on tranche 3's batched run, which did reset it.",
-  "clause2": "\ud83d\udd34 MEASURED FALSE. The item says `FILES` LISTS ANYWAY. Screen read (scratchpad/sweep_tranche4.py): FILES\"TOOLONGNAME.EXTRA\" on zb prints `load error`, then `File not found`, and NO directory listing. The bare-FILES control on the same disk lists six entries (TEST.BIN HI.TXT PROG.BIN PROG.BAS PROG2.BAS TS.DAT), so a listing WOULD have been visible. The half nobody ran is the half that is wrong."
+  "clause2": "🔴 MEASURED FALSE. The item says `FILES` LISTS ANYWAY. Screen read (scratchpad/sweep_tranche4.py): FILES\"TOOLONGNAME.EXTRA\" on zb prints `load error`, then `File not found`, and NO directory listing. The bare-FILES control on the same disk lists six entries (TEST.BIN HI.TXT PROG.BIN PROG.BAS PROG2.BAS TS.DAT), so a listing WOULD have been visible. The half nobody ran is the half that is wrong."
  },
  "T-BDB99C": {
   "verdict": "LIVE",
   "how": "the item's OWN probe re-run (scratchpad/trapsvc_probe.py --only int.six,gos.leak)",
   "headline": "A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD ... the SIX-EVENT CAP",
   "reading": "int.six: vg8020 '9 18', cf3300 '9 18', zb '6 18' -- the filed reading exactly",
-  "finding": "\ud83d\udd34 ITS SUPPORTING CONTROL IS AN UNFILED SECOND DIVERGENCE. gos.leak reads '12 0' on BOTH references and '8 7' on zb. The item says only 'gos.leak caps at 8, which is what says the cap is TRAPSTK_MAX and not GOSUB_DEPTH' -- it never states the reference value, so the fact that the references reach 12 with NO error while zb stops at 8 WITH ERR 7 is nowhere in the record."
+  "finding": "🔴 ITS SUPPORTING CONTROL IS AN UNFILED SECOND DIVERGENCE. gos.leak reads '12 0' on BOTH references and '8 7' on zb. The item says only 'gos.leak caps at 8, which is what says the cap is TRAPSTK_MAX and not GOSUB_DEPTH' -- it never states the reference value, so the fact that the references reach 12 with NO error while zb stops at 8 WITH ERR 7 is nowhere in the record."
  },
  "T-ABA845": {
   "verdict": "LIVE, exact",
@@ -218,14 +218,14 @@
   "how": "make temp-root-check + allowlist split",
   "headline": "122 HARDCODED /tmp/... LITERALS ARE OUTSIDE THE TEMP ROOT",
   "reading": "the allowlist pins 124 literals, but 20 of those are INSIDE /tmp/zerobas -- outside the root is 104, not 122",
-  "note": "\ud83d\udd34 THE GATE'S NUMBER AND THE ITEM'S NUMBER COUNT DIFFERENT SETS, and taking the gate's 124 as a refutation of the item's 122 would have been wrong in the other direction. Reading check_temp_root.py settled it. The shrink is the shrink-only gate working as designed."
+  "note": "🔴 THE GATE'S NUMBER AND THE ITEM'S NUMBER COUNT DIFFERENT SETS, and taking the gate's 124 as a refutation of the item's 122 would have been wrong in the other direction. Reading check_temp_root.py settled it. The shrink is the shrink-only gate working as designed."
  },
  "T-B5DD7F": {
   "verdict": "STALE AS WORDED",
   "how": "static read of the Makefile",
   "headline": "`latch-check` IS THE ONE GATE WITH NO PREREQUISITES",
   "reading": "TEN *-check targets have an empty prerequisite list today: wall-assertion-check, diskdep-check, patch-freshness-check, temp-root-check, preflight-check, rowshape-check, switch-build-check, latch-check, injector-check, citation-check",
-  "note": "\ud83d\udd34 AND TWO OF THE TEN ARE MINE, ADDED EARLIER TODAY. The uniqueness claim is false; the underlying hazard (latch-check refuses after `rm -rf build`) is untested by this check and stays open"
+  "note": "🔴 AND TWO OF THE TEN ARE MINE, ADDED EARLIER TODAY. The uniqueness claim is false; the underlying hazard (latch-check refuses after `rm -rf build`) is untested by this check and stays open"
  },
  "T-2E1C86": {
   "verdict": "LIVE, with a stale count",
@@ -257,28 +257,28 @@
   "how": "grep of probes/",
   "headline": "`DEF FN`: a STRING formal's shadow slot is not a GC root",
   "reading": "strheap_gc's walk members in the tree today are sg_walk_arrays, sg_walk_scalars, sg_walk_strtab and sg_walk_temps -- exactly the 'variable chain and temp-descriptor stack' the item names, and there is NO FN-frame walker of any name. The shadow slot is genuinely unwalked. No probe row names the class either (fnstr: 0 files).",
-  "caveat": "\u26a0\ufe0f `sg_walk_fnframe` is absent from the tree because the item PROPOSES it ('the fix is either a sg_walk_fnframe or a snapshot at bind time'). A bulk screen flagged that absence as evidence of staleness; reading the item inverted it into evidence the claim is LIVE."
+  "caveat": "⚠️ `sg_walk_fnframe` is absent from the tree because the item PROPOSES it ('the fix is either a sg_walk_fnframe or a snapshot at bind time'). A bulk screen flagged that absence as evidence of staleness; reading the item inverted it into evidence the claim is LIVE."
  },
  "T-FE0E95": {
   "verdict": "CLASS MEASURED EMPTY TODAY",
   "how": "regex walk of tools/*.py",
   "headline": "A wall figure hardcoded inside a GATE is unpoliced by design",
   "reading": "0 hardcoded 16-bit CEILING/WALL/_END/LIMIT constants remain in tools/. The named instance (gen_resident_abi.py's LOW_CEILING) was fixed in the filing commit; nothing has re-grown.",
-  "note": "\ud83c\udfaf 'found 0' is a fact about today's tools, not about the apparatus that permits them. The right residual is to make the class UNWRITABLE (a check), not to keep watching for it -- restate the item that way rather than closing it."
+  "note": "🎯 'found 0' is a fact about today's tools, not about the apparatus that permits them. The right residual is to make the class UNWRITABLE (a check), not to keep watching for it -- restate the item that way rather than closing it."
  },
  "T-027472": {
   "verdict": "NOT SCOREABLE BY EITHER EXISTING TOOL -- by construction",
   "how": "attempted by grep; grep cannot decide byte-identity of two spans",
   "headline": "A 4 B DUP-SPAN THE D-ONLIST FIX CREATED",
   "reading": "tools/dupspan_indep.py re-run today reports 26 groups and NO `esn_` label appears in any of them. The tool works on LABEL-TO-LABEL spans (its own docstring, line 4), and this item's subject is an INTERIOR fragment -- `esn_notlineno`'s discriminator against a test four instructions above it, inside the same label block.",
-  "note": "\ud83c\udfaf THIS IS THE SAME BLIND SPOT A SIBLING ITEM ALREADY FILES. T-CB89FD says `clone_scout` prices LABEL-BLOCKS so a routine split by an interior label is priced at a fraction of its collapse. Both dup-span tools share that span model, so this 4 B item is invisible to the whole toolchain, not merely unmeasured. The two items should be linked: one is an instance of the other."
+  "note": "🎯 THIS IS THE SAME BLIND SPOT A SIBLING ITEM ALREADY FILES. T-CB89FD says `clone_scout` prices LABEL-BLOCKS so a routine split by an interior label is priced at a fraction of its collapse. Both dup-span tools share that span model, so this 4 B item is invisible to the whole toolchain, not merely unmeasured. The two items should be linked: one is an instance of the other."
  },
  "T-6E72AD": {
   "verdict": "STALE FIGURES -- and the supply has HALVED",
   "how": "python3 tools/dupspan_indep.py, re-run today",
   "headline": "The rest of the byte-identical-span supply: 53 groups, 403 B",
   "reading": "26 byte-identical groups today over a denominator of 1445 non-empty spans; nominal 163 B; MEASURED SAFE NET 8 B (page-0 low 3 B, page 1 8 B, jr widening charged 3 B)",
-  "note": "the item's 53 groups / 403 B is roughly double today's supply -- the carve slices since have eaten it. \ud83c\udfaf And the number that matters is not the nominal one: 163 B nominal is 8 B SAFE. An item quoting the nominal figure overstates the fundable amount by 20x."
+  "note": "the item's 53 groups / 403 B is roughly double today's supply -- the carve slices since have eaten it. 🎯 And the number that matters is not the nominal one: 163 B nominal is 8 B SAFE. An item quoting the nominal figure overstates the fundable amount by 20x."
  },
  "T-D35BCC": {
   "verdict": "SUPERSEDED BY ITS OWN TEXT -- should not be an open item",
@@ -305,7 +305,7 @@
   "verdict": "NOT A MEASURABLE CLAIM -- awaiting a human sign-off",
   "how": "read",
   "headline": "SLIM THE FILE-CHANNEL CONTEXT toward the reference",
-  "reading": "the item says '\u2705 MEASURED 2026-07-29; awaiting spec sign-off'. The measurement is done and recorded; what is open is a DECISION. Re-running cannot advance it.",
+  "reading": "the item says '✅ MEASURED 2026-07-29; awaiting spec sign-off'. The measurement is done and recorded; what is open is a DECISION. Re-running cannot advance it.",
   "note": "`ERRMSG_BUF` is absent from the tree (only `ERRMSG` exists) -- unresolved, and not load-bearing for the verdict."
  },
  "T-6AC87B": {
@@ -336,7 +336,7 @@
   "headline": "`RUN <lineno>` IGNORES THE LINE NUMBER AND RESTARTS FROM THE TOP",
   "reading": "10 ON ERROR / 20 GOTO 50 / 30 PRINT[B] / 40 END / 50 RUN 30 -- all three print B and raise nothing. zerobas honours the line number.",
   "control": "n.runlinectl prints B on all three",
-  "note": "\ud83c\udfaf DISTINCT FROM THE DIRECT-MODE ITEM, which is still LIVE. `RUN 20` typed at the PROMPT still runs from the top here; `RUN 30` inside a PROGRAM now honours the number. One verb, two mechanisms, two different verdicts -- merging them by name would have been wrong in both directions."
+  "note": "🎯 DISTINCT FROM THE DIRECT-MODE ITEM, which is still LIVE. `RUN 20` typed at the PROMPT still runs from the top here; `RUN 30` inside a PROGRAM now honours the number. One verb, two mechanisms, two different verdicts -- merging them by name would have been wrong in both directions."
  },
  "T-D65E52": {
   "verdict": "AGREES AT THE SAMPLED POINTS -- weaker than the filing",
@@ -344,62 +344,62 @@
   "headline": "THE PRODUCT BOUND IS REAL AND REACHABLE: `CIRCLE` WITH r >= 256 DRAWS PIXELS THE REFERENCE DOES NOT",
   "reading": "CIRCLE(128,96),256 then POINT(0,96)/POINT(128,0)/POINT(250,96): '4 4 4' on vg8020, cf3300 AND zb",
   "control": "the same at r=128 reads '15 4 4' on all three -- different from r=256, so the fixture does discriminate radius",
-  "caveat": "\ud83d\udd34 THREE SAMPLE POINTS ARE NOT THE ITEM'S MEASUREMENT. It was taken 'on the whole pattern plane'; a 3-point signature can agree while the planes differ. This row CANNOT retire the item -- it only says the divergence is not at these three points. The whole-plane instrument is what would settle it."
+  "caveat": "🔴 THREE SAMPLE POINTS ARE NOT THE ITEM'S MEASUREMENT. It was taken 'on the whole pattern plane'; a 3-point signature can agree while the planes differ. This row CANNOT retire the item -- it only says the divergence is not at these three points. The whole-plane instrument is what would settle it."
  },
  "T-3B539B": {
   "verdict": "CLOSED IN ITS OWN BODY -- the headline is the FILING",
   "how": "read",
   "headline": "`DRAW`'s BOOT-DEFAULT SCALE STATE IS NOT `S4`, AND ZEROBAS TREATS IT AS IF IT WERE",
-  "reading": "the body says '\u2705 CLOSED 2026-08-11 by D-DSCALE ... Both rows below are undeferred and green'. GFX_DSCALE boots at 0 with a sentinel gdo_s cannot write.",
-  "note": "\u26a0\ufe0f A NEW CLASS IN THE \u00a71.2 SET: an open-reading HEADLINE over a body that records the CLOSURE. The 38 are not all hidden live work -- some are filed-and-closed in one block. The headline signal over-includes, and only reading separates them."
+  "reading": "the body says '✅ CLOSED 2026-08-11 by D-DSCALE ... Both rows below are undeferred and green'. GFX_DSCALE boots at 0 with a sentinel gdo_s cannot write.",
+  "note": "⚠️ A NEW CLASS IN THE §1.2 SET: an open-reading HEADLINE over a body that records the CLOSURE. The 38 are not all hidden live work -- some are filed-and-closed in one block. The headline signal over-includes, and only reading separates them."
  },
  "T-229618": {
   "verdict": "SELF-DECLARED WITHDRAWN IN ITS OWN BODY",
   "how": "read -- NOT re-run",
-  "headline": "\ud83d\udd34 **SAVESTATE-RESTORE-PER-CASE \u2014 BUILT, MEASURED, AND WITHDRAWN 2026-08-24",
-  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "headline": "🔴 **SAVESTATE-RESTORE-PER-CASE — BUILT, MEASURED, AND WITHDRAWN 2026-08-24",
+  "epistemic_status": "⚠️ THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. 🟢 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
   "note": "one of the 38 open-reading headlines surfaced in tranche 10"
  },
  "T-A1BDEB": {
   "verdict": "SELF-DECLARED DECLINED IN ITS OWN BODY",
   "how": "read -- NOT re-run",
-  "headline": "\ud83d\udd34 **~~`FIELD` AND `LSET`/`RSET` STILL REFUSE AN ARRAY ELEMENT~~ \u2014 DECLINED",
-  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "headline": "🔴 **~~`FIELD` AND `LSET`/`RSET` STILL REFUSE AN ARRAY ELEMENT~~ — DECLINED",
+  "epistemic_status": "⚠️ THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. 🟢 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
   "note": "one of the 38 open-reading headlines surfaced in tranche 10"
  },
  "T-791D60": {
   "verdict": "SELF-DECLARED DECLINED IN ITS OWN BODY",
   "how": "read -- NOT re-run",
-  "headline": "\ud83d\udcb0 ~~**A \u221229 B CARVE EXISTS IN `loc_next`, IT FIXES A MEASURED DIVERGENCE,",
-  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "headline": "💰 ~~**A −29 B CARVE EXISTS IN `loc_next`, IT FIXES A MEASURED DIVERGENCE,",
+  "epistemic_status": "⚠️ THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. 🟢 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
   "note": "one of the 38 open-reading headlines surfaced in tranche 10"
  },
  "T-D1F78B": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY",
   "how": "read -- NOT re-run",
-  "headline": "\ud83d\udd34 **THE STATEMENT BOUNDARY IS TOO LATE FOR A DRIVER WITH A SIDE EFFECT.**",
-  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "headline": "🔴 **THE STATEMENT BOUNDARY IS TOO LATE FOR A DRIVER WITH A SIDE EFFECT.**",
+  "epistemic_status": "⚠️ THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. 🟢 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
   "note": "one of the 38 open-reading headlines surfaced in tranche 10"
  },
  "T-5AA386": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY",
   "how": "read -- NOT re-run",
-  "headline": "\ud83d\udd34 **NOTHING SWEEPS THE `$8000` FIXED POINT AT THE OTHER SIGNED-16",
-  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "headline": "🔴 **NOTHING SWEEPS THE `$8000` FIXED POINT AT THE OTHER SIGNED-16",
+  "epistemic_status": "⚠️ THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. 🟢 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
   "note": "one of the 38 open-reading headlines surfaced in tranche 10"
  },
  "T-FA2A33": {
   "verdict": "SELF-DECLARED SUPERSEDED IN ITS OWN BODY",
   "how": "read -- NOT re-run",
-  "headline": "\u26a0\ufe0f **78 GATE ROWS OUTSIDE THE SPRITE/VDP PHASES ARE STILL UNMEASURED BY",
-  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "headline": "⚠️ **78 GATE ROWS OUTSIDE THE SPRITE/VDP PHASES ARE STILL UNMEASURED BY",
+  "epistemic_status": "⚠️ THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. 🟢 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
   "note": "one of the 38 open-reading headlines surfaced in tranche 10"
  },
  "T-7A9746": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY",
   "how": "read -- NOT re-run",
-  "headline": "\u26a0\ufe0f **`DRAW`'s mode gate was left alone, with a green row behind it.**",
-  "epistemic_status": "\u26a0\ufe0f THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. \ud83d\udfe2 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
+  "headline": "⚠️ **`DRAW`'s mode gate was left alone, with a green row behind it.**",
+  "epistemic_status": "⚠️ THIS IS A BODY CLAIM, NOT A MEASUREMENT, and the sweep's rule is to inherit nothing. It is recorded as read-not-run so it cannot be mistaken for a machine result. 🟢 CALIBRATION: 2 of these 10 self-declaring blocks WERE independently re-run in tranche 11 (the LINE string-relational row and SCREEN (1<5)) and the machine agreed with the body both times -- 2/2. That is calibration on a sample of two, not a licence.",
   "note": "one of the 38 open-reading headlines surfaced in tranche 10"
  },
  "T-3B013F": {
@@ -419,102 +419,102 @@
   "how": "static read + today's battery",
   "headline": "A KNIFE RUNNER READ A COMPLETE 32-ROW EXIT-2 REPORT AS TRUNCATED",
   "reading": "tools/check_report_shape.py exists and its own docstring names this exact defect ('the exit-2 rows are indented two spaces'). Its target `rowshape-check` is one of the 39 gates that ran green today.",
-  "note": "\ud83d\udfe2 STRONGER THAN A BODY CLAIM: the fix is a gate that runs on every battery, so it cannot lapse the way a note can."
+  "note": "🟢 STRONGER THAN A BODY CLAIM: the fix is a gate that runs on every battery, so it cannot lapse the way a note can."
  },
  "T-978578": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
   "how": "read -- NOT re-run",
-  "headline": "\u26a0\ufe0f **`DRAW` WITH OFF-SCREEN COORDINATES IS UNMEASURED, AND THE CLAMP",
+  "headline": "⚠️ **`DRAW` WITH OFF-SCREEN COORDINATES IS UNMEASURED, AND THE CLAMP",
   "marker": "**CLOSED",
   "spot_verified": false,
-  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+  "epistemic_status": "⚠️ A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. 🟢 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
  },
  "T-81A230": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
   "how": "read -- NOT re-run",
-  "headline": "\u26a0\ufe0f **THE WORK AREA AFTER AN OFF-SCREEN LINE IS UNMEASURED.** Filed",
+  "headline": "⚠️ **THE WORK AREA AFTER AN OFF-SCREEN LINE IS UNMEASURED.** Filed",
   "marker": "**CLOSED",
   "spot_verified": false,
-  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+  "epistemic_status": "⚠️ A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. 🟢 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
  },
  "T-386A5D": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
   "how": "read -- NOT re-run",
-  "headline": "\u26a0\ufe0f **`PSET(0,192)` HAS NO INSTRUMENT: A FAILED y-CLIP WRITES THE NAME",
+  "headline": "⚠️ **`PSET(0,192)` HAS NO INSTRUMENT: A FAILED y-CLIP WRITES THE NAME",
   "marker": "**CLOSED",
   "spot_verified": false,
-  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+  "epistemic_status": "⚠️ A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. 🟢 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
  },
  "T-DE9A5C": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
   "how": "read -- NOT re-run",
-  "headline": "\u26a0\ufe0f **232 OF 355 GATE ROWS WERE NOT REDDENED BY THE FIRST MUTATION",
+  "headline": "⚠️ **232 OF 355 GATE ROWS WERE NOT REDDENED BY THE FIRST MUTATION",
   "marker": "**CLOSED",
   "spot_verified": false,
-  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+  "epistemic_status": "⚠️ A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. 🟢 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
  },
  "T-5F2A8D": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
   "how": "read -- NOT re-run",
-  "headline": "\u26a0\ufe0f **THE 51-ROW RESIDUE IS ACCEPTANCE, THE WORK AREA, AND THE ERR 6 TAIL.**",
+  "headline": "⚠️ **THE 51-ROW RESIDUE IS ACCEPTANCE, THE WORK AREA, AND THE ERR 6 TAIL.**",
   "marker": "**CLOSED",
   "spot_verified": false,
-  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+  "epistemic_status": "⚠️ A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. 🟢 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
  },
  "T-8F7199": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
   "how": "read -- NOT re-run",
-  "headline": "\ud83d\udd34 **THREE ROWS' ERROR SITE HAS PROVABLY NOT BEEN FOUND.** Filed 2026-08-17",
+  "headline": "🔴 **THREE ROWS' ERROR SITE HAS PROVABLY NOT BEEN FOUND.** Filed 2026-08-17",
   "marker": "**CLOSED",
   "spot_verified": false,
-  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+  "epistemic_status": "⚠️ A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. 🟢 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
  },
  "T-592DFC": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
   "how": "read -- NOT re-run",
-  "headline": "\ud83d\udd34 **THE GATE HAS NO ROW THAT SEPARATES LINE'S *TWO* WORK-AREA WRITERS, SO",
+  "headline": "🔴 **THE GATE HAS NO ROW THAT SEPARATES LINE'S *TWO* WORK-AREA WRITERS, SO",
   "marker": "**CLOSED",
   "spot_verified": true,
-  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+  "epistemic_status": "⚠️ A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. 🟢 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
  },
  "T-2FB5C7": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
   "how": "read -- NOT re-run",
-  "headline": "\ud83d\udd34 **A BOX FILL WRITES A FULLY-COVERED BYTE AS *BACKGROUND*, AND WE WROTE",
+  "headline": "🔴 **A BOX FILL WRITES A FULLY-COVERED BYTE AS *BACKGROUND*, AND WE WROTE",
   "marker": "**CLOSED",
   "spot_verified": true,
-  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+  "epistemic_status": "⚠️ A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. 🟢 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
  },
  "T-4813D0": {
   "verdict": "SELF-DECLARED CLOSED IN ITS OWN BODY (broadened marker)",
   "how": "read -- NOT re-run",
-  "headline": "\u26a0\ufe0f **THE SECOND LATCH WINDOW IS OPEN AND HAS NEVER BEEN OBSERVED.** A CPU",
-  "marker": "\u2705 **",
+  "headline": "⚠️ **THE SECOND LATCH WINDOW IS OPEN AND HAS NEVER BEEN OBSERVED.** A CPU",
+  "marker": "✅ **",
   "spot_verified": false,
-  "epistemic_status": "\u26a0\ufe0f A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. \ud83d\udfe2 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
+  "epistemic_status": "⚠️ A BODY CLAIM, NOT A MEASUREMENT. Recorded read-not-run. 🟢 2 of these 9 were spot-read in full (the box-fill byte rule and LINE's two work-area writers) and both carry detailed closure evidence -- byte counts, gate row totals, knife results -- so the marker is not decorative in this file. Sample of two."
  },
  "T-D550FC": {
   "verdict": "STALE FOR THE RAY -- not reproduced, with a separating control",
   "how": "REPL x3, the item's own fixture (PSET(75,60),9 : CIRCLE(60,60),15,6,-0.01,1.57)",
   "headline": "ZEROBAS'S SPOKE ENDPOINT DIVERGES FROM THE REFERENCE AT NEAR-ZERO ANGLES",
   "reading": "POINT(75,60)/POINT(75,59)/POINT(74,60) read '6 6 6' on vg8020, cf3300 AND zb",
-  "why_not_a_heal": "\ud83d\udd34 (75,60) IS CENTRE + (15,0) -- a point ON THE ARC ITSELF, and the arc spans -0.01..1.57 which includes angle 0. So the CIRCLE paints that pixel whether or not the SPOKE reaches it. The row cannot separate the two writers, so agreement here is not evidence the endpoint agrees. Recorded unresolved rather than healed.",
-  "instrument_note": "\u26a0\ufe0f AND MY FIRST DRAFT WAS NOT THE ITEM'S FIXTURE AT ALL -- it dropped the `PSET(75,60),9` seed, turning 'does colour 6 REACH and overwrite a pixel holding 9' into 'does the spoke paint the pixel'. Same coordinates, different experiment. Re-run verbatim before the confound above was even visible.",
+  "why_not_a_heal": "🔴 (75,60) IS CENTRE + (15,0) -- a point ON THE ARC ITSELF, and the arc spans -0.01..1.57 which includes angle 0. So the CIRCLE paints that pixel whether or not the SPOKE reaches it. The row cannot separate the two writers, so agreement here is not evidence the endpoint agrees. Recorded unresolved rather than healed.",
+  "instrument_note": "⚠️ AND MY FIRST DRAFT WAS NOT THE ITEM'S FIXTURE AT ALL -- it dropped the `PSET(75,60),9` seed, turning 'does colour 6 REACH and overwrite a pixel holding 9' into 'does the spoke paint the pixel'. Same coordinates, different experiment. Re-run verbatim before the confound above was even visible.",
   "what_would_settle_it": "a point on the SPOKE but OFF the arc -- i.e. strictly inside radius 15 along the near-zero-angle ray -- or the banked full-plane capture the item was originally measured from (scratchpad/g4_arc_boundary_capture.json)",
   "reading_t17": "y=60 at radii 5/9/13 (strictly inside the arc): '6 6 6' on vg8020, cf3300 AND zb. The SAME radii at y=59, where a (15,-1) ray would have to pass: '4 4 4' on all three. All three machines draw the spoke along y=60 and none rises.",
-  "the_control_that_makes_it_mean_something": "\ud83d\udfe2 A POSITIVE start angle (CIRCLE...,0.01,1.57) draws NO SPOKE, and the same y=60 points then read '4 4 4' on all three. THAT is what proves those pixels are the SPOKE's and not the arc's -- exactly the control tranche 16's row lacked, and without it this row would have been the same non-answer.",
-  "residue": "\u26a0\ufe0f THE ENDPOINT PIXEL ITSELF REMAINS UNSEPARABLE -- centre+(15,0) lies on the arc, which paints it either way. So the filed claim is refuted for the RAY (13 of 15 pixels measured identical, and the y=59 alternative empty) and untested for the single last pixel. That is a much narrower claim than 'zerobas's spoke endpoint diverges', and the item should be restated to it rather than closed outright."
+  "the_control_that_makes_it_mean_something": "🟢 A POSITIVE start angle (CIRCLE...,0.01,1.57) draws NO SPOKE, and the same y=60 points then read '4 4 4' on all three. THAT is what proves those pixels are the SPOKE's and not the arc's -- exactly the control tranche 16's row lacked, and without it this row would have been the same non-answer.",
+  "residue": "⚠️ THE ENDPOINT PIXEL ITSELF REMAINS UNSEPARABLE -- centre+(15,0) lies on the arc, which paints it either way. So the filed claim is refuted for the RAY (13 of 15 pixels measured identical, and the y=59 alternative empty) and untested for the single last pixel. That is a much narrower claim than 'zerobas's spoke endpoint diverges', and the item should be restated to it rather than closed outright."
  },
  "T-0DFFD6": {
   "verdict": "SPLIT: the r200 row HEALED (trustworthy); the other three NOT MEASURABLE by this instrument",
   "how": "whole-plane visible-pixel count, stable across 25 s and 45 s capture windows",
   "headline": "THE ARC MASK DIVERGES AT LARGE RADII, AND IT IS NOT THE PRODUCT BOUND",
-  "r200": "CIRCLE(128,352),200,15,1.1,2.04 -> ref 170, zb 170. Filed ref 170 / zb 181. \u2705 HEALED, and the reference reproducing its filed 170 EXACTLY is what validates the instrument.",
-  "r700": "CIRCLE(128,96),700,15,0,1.57,.137 -> ref 18, zb 127. Filed ref 127 / zb 126. \ud83d\udd34 LIVE and LARGE (7x), and NEITHER side matches the filing.",
+  "r200": "CIRCLE(128,352),200,15,1.1,2.04 -> ref 170, zb 170. Filed ref 170 / zb 181. ✅ HEALED, and the reference reproducing its filed 170 EXACTLY is what validates the instrument.",
+  "r700": "CIRCLE(128,96),700,15,0,1.57,.137 -> ref 18, zb 127. Filed ref 127 / zb 126. 🔴 LIVE and LARGE (7x), and NEITHER side matches the filing.",
   "r400": "CIRCLE(128,96),400,15,-1.57,0 -> ref 125, zb 97. Filed ref 97 / zb 97.",
   "pi2": "CIRCLE(128,96),95,15,0,1.5707963 -> ref 103, zb 135. Filed ref 135 / zb 134.",
-  "caveat": "\u26a0\ufe0f ON THREE OF THE FOUR ROWS BOTH SIDES DIFFER FROM THE FILED NUMBERS, and in each case zerobas today reads the value filed for the REFERENCE. Two readings are possible: the rows moved, or the filed figures were taken with a different visibility rule than mine. The r200 row -- where my reference matches its filed value exactly -- argues for the first, but ONE validating case is not enough to reinterpret three. The divergences are real and measured TODAY; their relationship to the filing is NOT settled.",
-  "why_r200_is_trusted": "\ud83d\udfe2 IT IS THE ONE ROW THAT AGREES UNDER TWO INDEPENDENT RULES: visible-only and baseline-subtracted both give ref 170 / zb 170, and 170 is exactly the filed reference value. A reading that survives a change of rule is a reading; the other three move with the rule (r400 ref: 125 visible vs 32 subtracted) and are therefore artefacts of the instrument, not measurements of the machine.",
+  "caveat": "⚠️ ON THREE OF THE FOUR ROWS BOTH SIDES DIFFER FROM THE FILED NUMBERS, and in each case zerobas today reads the value filed for the REFERENCE. Two readings are possible: the rows moved, or the filed figures were taken with a different visibility rule than mine. The r200 row -- where my reference matches its filed value exactly -- argues for the first, but ONE validating case is not enough to reinterpret three. The divergences are real and measured TODAY; their relationship to the filing is NOT settled.",
+  "why_r200_is_trusted": "🟢 IT IS THE ONE ROW THAT AGREES UNDER TWO INDEPENDENT RULES: visible-only and baseline-subtracted both give ref 170 / zb 170, and 170 is exactly the filed reference value. A reading that survives a change of rule is a reading; the other three move with the rule (r400 ref: 125 visible vs 32 subtracted) and are therefore artefacts of the instrument, not measurements of the machine.",
   "next_instrument": "the project's OWN graphics apparatus (probes/basic/basic_probe_graphics.py, which compares per-cell VRAM segments rather than whole-plane counts) -- three tranches of building a fresh one is enough, and that is why the existing one is shaped the way it is."
  },
  "T-F78A04": {
@@ -528,16 +528,16 @@
   "verdict": "NOT MEASURED -- my plane instrument counts data the screen may not show",
   "how": "attempted via capture=('vram',0x0000,6144), abandoned",
   "headline": "THE REFERENCE'S SPOKE LINE ADVANCES ITS MINOR AXIS BEFORE THE MIDPOINT",
-  "why": "\ud83d\udd34 `SCREEN 2:CLS` LEAVES 4923 SET PIXELS IN THE VG-8020's PATTERN TABLE AND 0 IN ZEROBAS'S. A whole-plane bit count therefore compares a reference baseline of 4923 against a zerobas baseline of 0, and an XOR against the empty plane is no better: where the figure sets a bit the leftover already set, nothing changes, so the count under-reports what was drawn (circle: ref XOR 275 vs zb 536 for the SAME figure).",
+  "why": "🔴 `SCREEN 2:CLS` LEAVES 4923 SET PIXELS IN THE VG-8020's PATTERN TABLE AND 0 IN ZEROBAS'S. A whole-plane bit count therefore compares a reference baseline of 4923 against a zerobas baseline of 0, and an XOR against the empty plane is no better: where the figure sets a bit the leftover already set, nothing changes, so the count under-reports what was drawn (circle: ref XOR 275 vs zb 536 for the SAME figure).",
   "what_it_needs": "the NAME table as well as the pattern table -- the leftover is probably unreferenced by the name table and therefore invisible, which is why the items' own figures are small (170/127/97/135). Counting the pattern table alone measures bytes the screen may never show.",
-  "note": "\ud83d\udfe2 zerobas's counts came out at exactly the filed REFERENCE values on all four rows (170, 127, 97, 135 against filed ref 170, 127, 97, 135) -- suggestive that all four healed, but NOT evidence, because the reference side of the same run is invalid."
+  "note": "🟢 zerobas's counts came out at exactly the filed REFERENCE values on all four rows (170, 127, 97, 135 against filed ref 170, 127, 97, 135) -- suggestive that all four healed, but NOT evidence, because the reference side of the same run is invalid."
  },
  "T-4AC4B2": {
   "verdict": "LIVE, exact",
   "how": "static read of basic/str-engine.asm:1116",
   "headline": "A 2 B CARVE WITH ITS EVIDENCE ALREADY ATTACHED: `ems_typecheck`'s two `pop de`",
   "reading": "ems_typecheck: is followed by exactly two `pop de` (discard m, discard n) then `jp els_tc_common` -- present and unchanged",
-  "and_the_sibling": "\ud83c\udfaf THE ITEM'S OWN 'the same 2 B sit in ems_err_pop2/ems_err_pop1 next door' IS ALSO EXACT: those two labels follow immediately with two more `pop de`, four in the region."
+  "and_the_sibling": "🎯 THE ITEM'S OWN 'the same 2 B sit in ems_err_pop2/ems_err_pop1 next door' IS ALSO EXACT: those two labels follow immediately with two more `pop de`, four in the region."
  },
  "T-15B362": {
   "verdict": "LIVE, confirmed",
@@ -551,21 +551,21 @@
   "how": "static read of tests/_tmp.py",
   "headline": "A `unit-test` FLAKE IS OPEN AND UNCAUSED",
   "reading": "the sys.excepthook that prints the child's stderr IS installed in tests/_tmp.py, so the NEXT such failure will name itself.",
-  "why_unfalsifiable": "\u26a0\ufe0f THE ITEM'S SUBJECT IS A PAST EVENT WHOSE EVIDENCE WAS DISCARDED (capture_output=True held pasmo's message and CalledProcessError.__str__ does not print it). No re-run can recover it. The item should be restated as 'the diagnostic is armed; close this when a flake next fires and is named' -- an open item whose subject cannot be measured is a WAIT, not a task."
+  "why_unfalsifiable": "⚠️ THE ITEM'S SUBJECT IS A PAST EVENT WHOSE EVIDENCE WAS DISCARDED (capture_output=True held pasmo's message and CalledProcessError.__str__ does not print it). No re-run can recover it. The item should be restated as 'the diagnostic is armed; close this when a flake next fires and is named' -- an open item whose subject cannot be measured is a WAIT, not a task."
  },
  "T-1AF0BC": {
   "verdict": "STALE -- the last surviving row healed too",
   "how": "REPL (vg8020 + zb) + the item's own in-place D-MISSOP3 note",
   "headline": "THE `Missing operand` CLASS HAS THREE MECHANISMS; ONE IS CLOSED AND 3 ROWS STILL DIVERGE",
   "reading": "the item already carried an in-place re-measurement (D-MISSOP3, 2026-08-26) retiring two of its three rows and reframing `KEY1,` as KEY n,\"str\" being unimplemented, leaving `MID$(A$,2)=` as 'the ONE row of the three that survives as filed'. Measured today: MID$(A$,2)= reads ERR 24 on vg8020 AND zb -- filed as zb 2 / refs 24. HEALED, consistent with D-MIDOP shipping the MID$()= fix.",
-  "gap": "\u26a0\ufe0f cf3300 produced no reading in this quick fixture -- ONE reference only for the final row"
+  "gap": "⚠️ cf3300 produced no reading in this quick fixture -- ONE reference only for the final row"
  },
  "T-CB89FD": {
   "verdict": "LIVE, exact",
   "how": "static read of tools/clone_scout.py",
   "headline": "`clone_scout` prices LABEL-BLOCKS, so a routine split by an interior label is priced at a fraction",
   "reading": "the tool's own docstring says 'groups of label-blocks' and 'only structurally identical label-blocks differing in <=2 operands', and its extractor yields '(label, [...]) per label-delimited block'. The span model is exactly what the item describes.",
-  "link": "\ud83c\udfaf this is the SAME blind spot that made the 4 B dup-span item unreachable in tranche 7 -- both dup-span tools share this span model. Two items, one cause."
+  "link": "🎯 this is the SAME blind spot that made the 4 B dup-span item unreachable in tranche 7 -- both dup-span tools share this span model. Two items, one cause."
  },
  "T-5F2080": {
   "verdict": "STALE -- DEF FN has knives now",
@@ -583,8 +583,8 @@
   "verdict": "LIVE, exact -- and the SOURCE annotates its own residual",
   "how": "static read of basic/cload.asm:240",
   "headline": "BARE `RUN` INSIDE A RUNNING PROGRAM STILL RE-ENTERS THE LOOP NESTED",
-  "reading": "`dr_stored:` is still `jp run_prog`, not `jp run_prog_top`. The comment beneath it says so itself: '\u26a0\ufe0f STILL THE ONE ARM D-RUNTAIL DID NOT CONVERT, and D-RUNLINE deliberately left...'",
-  "note": "\ud83d\udfe2 a residual that is annotated AT THE SITE is the one kind that cannot rot unnoticed -- the next reader of that routine sees it whether or not they read TODO.md"
+  "reading": "`dr_stored:` is still `jp run_prog`, not `jp run_prog_top`. The comment beneath it says so itself: '⚠️ STILL THE ONE ARM D-RUNTAIL DID NOT CONVERT, and D-RUNLINE deliberately left...'",
+  "note": "🟢 a residual that is annotated AT THE SITE is the one kind that cannot rot unnoticed -- the next reader of that routine sees it whether or not they read TODO.md"
  },
  "T-F7EBCE": {
   "verdict": "LIVE, with a measured denominator",
@@ -598,26 +598,26 @@
   "how": "static read of both probes",
   "headline": "`castail-acceptance` VOIDS THE WHOLE BATTERY WHEN A CONTROL FAILS ON THE ZEROBAS SIDE",
   "reading": "basic_probe_castail.py gates on `for lab in CONTROLS: for s in sides:` -- every side, zerobas included -- so a control failing on zb voids the run. It contains ZERO occurrences of the split-by-side rule.",
-  "the_cure_is_shipped_next_door": "\ud83c\udfaf basic_probe_namspc.py:1036 carries it verbatim: 'ONLY A REFERENCE CAN SAY THE APPARATUS IS BROKEN. A control that fails...'. One probe has the rule, the other does not, and nothing carries it across -- the same shape as tranche 8, where a rule encoded in one checker did not reach the next one."
+  "the_cure_is_shipped_next_door": "🎯 basic_probe_namspc.py:1036 carries it verbatim: 'ONLY A REFERENCE CAN SAY THE APPARATUS IS BROKEN. A control that fails...'. One probe has the rule, the other does not, and nothing carries it across -- the same shape as tranche 8, where a rule encoded in one checker did not reach the next one."
  },
  "T-F80602": {
   "verdict": "LIVE, exact -- and the code says so in its own comment",
   "how": "static read of tools/check_dead_code.py:_edges",
   "headline": "A DATA-ONLY SPAN STILL CONFERS FALLTHROUGH ON WHATEVER FOLLOWS IT",
-  "reading": "the fallthrough edge is gated on `_last_code(...)` not being a terminator. Fix (7) skips a PROLOGUE that emits nothing -- and its comment is explicit that this is the ONLY exemption: '\u26a0\ufe0f Only a PROLOGUE is skipped, never any other empty span'. A data-only span (`err_io: db \"load\",...`) emits bytes, its last code line is a `db`, and a `db` is not a terminator -- so it still confers fallthrough, exactly as filed."
+  "reading": "the fallthrough edge is gated on `_last_code(...)` not being a terminator. Fix (7) skips a PROLOGUE that emits nothing -- and its comment is explicit that this is the ONLY exemption: '⚠️ Only a PROLOGUE is skipped, never any other empty span'. A data-only span (`err_io: db \"load\",...`) emits bytes, its last code line is a `db`, and a `db` is not a terminator -- so it still confers fallthrough, exactly as filed."
  },
  "T-816985": {
   "verdict": "LIVE -- the gate's own comment concedes it",
   "how": "static read of tools/check_dead_code.py",
   "headline": "THE `tools/` SEED ARM IS AN INTERSECTION, NOT AN ASSERTION",
-  "reading": "the gate still seeds from 'every label named in the CODE COLUMN of tools/', and its own header says '\u26a0\ufe0f Fix (5) still matters -- for tools/, which still seeds.' The arm is unchanged since the item was filed."
+  "reading": "the gate still seeds from 'every label named in the CODE COLUMN of tools/', and its own header says '⚠️ Fix (5) still matters -- for tools/, which still seeds.' The arm is unchanged since the item was filed."
  },
  "T-6ACF9C": {
   "verdict": "PARTLY ADDRESSED -- needs a closer read than this pass gave it",
   "how": "static read, inconclusive",
   "headline": "A linear predecessor walk stops at `ENDIF` and calls it an instruction",
   "reading": "tools/dupspan_indep.py DOES decode the predecessor span and has an explicit 'predecessor ... does not decode' -> UNKNOWN path (line 214), which is the safe handling the item asks for. Whether the ENDIF case specifically reaches that path was NOT determined.",
-  "why_not_scored": "\u26a0\ufe0f I could establish that a safe path EXISTS, not that THIS input takes it. Those are different claims and only the second answers the item. Recorded partial rather than closed on the strength of the first."
+  "why_not_scored": "⚠️ I could establish that a safe path EXISTS, not that THIS input takes it. Those are different claims and only the second answers the item. Recorded partial rather than closed on the strength of the first."
  },
  "T-1738AC": {
   "verdict": "LIVE -- confirmed by absence",
@@ -638,7 +638,7 @@
   "headline": "AN UNNAMED OUTCOME READS AS NO OUTCOME, AND THE FIX MOVES THE HOLE ONE MESSAGE ALONG",
   "subject_identified": "scratchpad/circmiss_sib2.py -- found by reading the spec, not by guessing among the four probes that have a `face()` or an UNTRAPPED branch",
   "reading": "the UNTRAPPED branch shipped, and the probe's OWN comment narrates the item verbatim: '<NO OUTPUT> ON ALL THREE MACHINES for one reason only: \"Division by zero\" was [missing] ... That is the SAME failure the UNTRAPPED branch was added to fix, one message along.' The cure is an ALTERNATION of 16 named messages -- a CLOSED LIST -- so message 17 still reads as nothing. The structural residual is exactly as filed.",
-  "denominator_gap": "\u26a0\ufe0f I could not cleanly count MSX1's full error-message set from the tree: the main build yields 14 message strings and the rest live in the sub-ROM's errmsg tenant. So '16 of N' has no N here, and the item's severity is unquantified rather than quantified."
+  "denominator_gap": "⚠️ I could not cleanly count MSX1's full error-message set from the tree: the main build yields 14 message strings and the rest live in the sub-ROM's errmsg tenant. So '16 of N' has no N here, and the item's severity is unquantified rather than quantified."
  },
  "T-687C2B": {
   "verdict": "LIVE, exact -- and the source says 'must be a quoted name'",
@@ -658,30 +658,30 @@
   "how": "static read of scratchpad/trapsvc_probe.py",
   "headline": "KEY / STRIG / SPRITE / STOP were NOT run against the D-TRAPSVC rows",
   "reading": "the probe contains ON INTERVAL and NO `ON KEY`, `ON STRIG`, `ON SPRITE` or `ON STOP` row. Its line 26 says why: 'ON INTERVAL is the instrument because it is the ONLY self-firing MSX1 trap'.",
-  "note": "\ud83c\udfaf the item already concedes the other four rest on a CODE argument (shared check_traps / ct_find / set_state / trap_return_check, index as a parameter). So this is not a wrong claim to fix -- it is a stated coverage limit, and re-running confirms the limit is still exactly where it was put."
+  "note": "🎯 the item already concedes the other four rest on a CODE argument (shared check_traps / ct_find / set_state / trap_return_check, index as a parameter). So this is not a wrong claim to fix -- it is a stated coverage limit, and re-running confirms the limit is still exactly where it was put."
  },
  "T-F37B1B": {
   "verdict": "LIVE -- and now with a measured, actionable subset",
   "how": "walk of every file:LINE citation in every committed .md",
   "headline": "`file:LINE` CITATIONS ARE UNMAINTAINED AND BROADLY ROTTED -- ONLY 31% WERE STILL CORRECT, AND NO GATE READS ONE",
   "reading": "1990 file:LINE citations in committed docs. 66 name a file that does not resolve; 24 name a line PAST THE END of the file they cite (e.g. disk/disk.asm:742 where the file has 62 lines, PROVENANCE.md:3591 where it has 29). 1900 -- 95% -- point at a line that EXISTS.",
-  "why_this_does_not_contradict_the_filing": "\ud83d\udd34 95% IS AN UPPER BOUND ON CORRECTNESS, NOT A CORRECTNESS RATE. 'The line exists' and 'the line still says what the doc claims' are different properties, and only the second is what the filed 31% measured -- by READING. My walk cannot read; it can only prove a citation WRONG, never right. The two numbers measure different things and neither refutes the other.",
-  "the_actionable_part": "\ud83c\udfaf 90 CITATIONS ARE PROVABLY BROKEN (66 unresolvable + 24 past EOF) and nothing checks them. That subset is mechanically decidable, unlike the semantic majority, and it is the part a gate could own tomorrow.",
-  "caveat": "\u26a0\ufe0f some of the 66 may be basename-only forms my resolver failed on rather than genuinely absent files",
-  "semantic_measurement_t38": "\ud83c\udfaf THE MEASUREMENT TRANCHE 28 COULD NOT MAKE, on a tractable subset. Of the 28 file:LINE citations sitting inside PENDING items, a symbol the item names appears within +-4 lines of the cited line in only 9. TEN have DRIFTED -- the symbol is defined elsewhere in the same file. Decidable rate: 9 of 19 = 47%.\nDrift magnitudes: basic/vars.asm:1061 cited for `clear_vars`, actually :1047 (14 lines); basic/interp.asm:574 for `skip_spaces`, actually :712 (138); basic/cload.asm:580 for `err_verify`, actually :664 (84); basic/cload.asm:840 for `dpl_nf`, actually :1113 (273).\n\ud83d\udd34 SO THE FILED 31% AND THIS 47% ARE THE SAME KIND OF NUMBER, AND MY TRANCHE-28 95% IS NOT. The structural walk ('does the line exist') and the semantic one ('does the line say it') differ by roughly a factor of two, exactly as the upper-bound label warned. The item's spirit is confirmed.\n\u26a0\ufe0f HEURISTIC: a citation may legitimately point at a CALL SITE rather than a definition, so DRIFT here means 'the named symbol is not near the cited line but is defined elsewhere' -- suggestive, not proof, on any individual row."
+  "why_this_does_not_contradict_the_filing": "🔴 95% IS AN UPPER BOUND ON CORRECTNESS, NOT A CORRECTNESS RATE. 'The line exists' and 'the line still says what the doc claims' are different properties, and only the second is what the filed 31% measured -- by READING. My walk cannot read; it can only prove a citation WRONG, never right. The two numbers measure different things and neither refutes the other.",
+  "the_actionable_part": "🎯 90 CITATIONS ARE PROVABLY BROKEN (66 unresolvable + 24 past EOF) and nothing checks them. That subset is mechanically decidable, unlike the semantic majority, and it is the part a gate could own tomorrow.",
+  "caveat": "⚠️ some of the 66 may be basename-only forms my resolver failed on rather than genuinely absent files",
+  "semantic_measurement_t38": "🎯 THE MEASUREMENT TRANCHE 28 COULD NOT MAKE, on a tractable subset. Of the 28 file:LINE citations sitting inside PENDING items, a symbol the item names appears within +-4 lines of the cited line in only 9. TEN have DRIFTED -- the symbol is defined elsewhere in the same file. Decidable rate: 9 of 19 = 47%.\nDrift magnitudes: basic/vars.asm:1061 cited for `clear_vars`, actually :1047 (14 lines); basic/interp.asm:574 for `skip_spaces`, actually :712 (138); basic/cload.asm:580 for `err_verify`, actually :664 (84); basic/cload.asm:840 for `dpl_nf`, actually :1113 (273).\n🔴 SO THE FILED 31% AND THIS 47% ARE THE SAME KIND OF NUMBER, AND MY TRANCHE-28 95% IS NOT. The structural walk ('does the line exist') and the semantic one ('does the line say it') differ by roughly a factor of two, exactly as the upper-bound label warned. The item's spirit is confirmed.\n⚠️ HEURISTIC: a citation may legitimately point at a CALL SITE rather than a definition, so DRIFT here means 'the named symbol is not near the cited line but is defined elsewhere' -- suggestive, not proof, on any individual row."
  },
  "T-F2BCFF": {
   "verdict": "LIVE -- and named as a declared exception inside the gate",
   "how": "static read of tools/check_report_shape.py",
   "headline": "`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS EXIT-2 PATH PRINTS A DIFFERENT TABLE",
-  "reading": "the gate walks every probe (os.walk(PROBES)) and its line 29 names this one explicitly: the kwsweep case is handled 'out loud (basic_probe_kwsweep.py, spec \u00a72.4) -- never silently skipped'. The limitation is RECORDED IN THE GATE rather than fixed.",
+  "reading": "the gate walks every probe (os.walk(PROBES)) and its line 29 names this one explicitly: the kwsweep case is handled 'out loud (basic_probe_kwsweep.py, spec §2.4) -- never silently skipped'. The limitation is RECORDED IN THE GATE rather than fixed.",
   "class": "same shape as injector-check's EXEMPT table (tranche 14): a gate that cannot judge a case says so instead of passing it"
  },
  "T-0813D3": {
   "verdict": "LIVE, exact -- and the probe documents its own provenance",
   "how": "static read of probes/basic/basic_probe_fldary.py",
   "headline": "`s.fldarymix` IS A GATE ROW NO KNIFE CAN REDDEN, and that is recorded rather than fixed",
-  "reading": "the row exists at :145 and the file's own header says at :34 '\ud83c\udfaf `s.fldary2` AND `s.fldarymix` EXIST BECAUSE A KNIFE WAS DRAFTED FIRST' -- the row was written to satisfy a knife that then could not redden it, and the file says so."
+  "reading": "the row exists at :145 and the file's own header says at :34 '🎯 `s.fldary2` AND `s.fldarymix` EXIST BECAUSE A KNIFE WAS DRAFTED FIRST' -- the row was written to satisfy a knife that then could not redden it, and the file says so."
  },
  "T-A04C9F": {
   "verdict": "LIVE, exact",
@@ -694,7 +694,7 @@
   "how": "walk of scratchpad/*knives*.py",
   "headline": "A KNIFE RUNNER STILL HAS NO SHARED WAY TO SCOPE A CUT TO ONE ROUTINE",
   "reading": "30 knife runners exist in scratchpad/ and NOT ONE has a shared scope-to-one-routine helper. Every one that needs to scope a cut does it ad hoc.",
-  "note": "\ud83c\udfaf the item was filed without a count; 30 runners with 0 sharing is what makes it a duplication problem rather than a nicety"
+  "note": "🎯 the item was filed without a count; 30 runners with 0 sharing is what makes it a duplication problem rather than a nicety"
  },
  "T-3AED26": {
   "verdict": "LIVE, exact",
@@ -707,15 +707,15 @@
   "how": "grep of probes/basic/",
   "headline": "NOTHING IN 360 ROWS PINS THE TENANT'S `GRPACX` STORE",
   "reading": "the 360 rows are `graphics-acceptance`, and it only MENTIONS GRPACX in comments (:569, :1968). But `basic_probe_lineerr.py`:42 READS IT BACK: `X = PEEK(&HFCB7)+256*PEEK(&HFCB8)` -- a live readout of the very address K-GR4 diverts.",
-  "why_that_matters": "\ud83c\udfaf THE ITEM IS TRUE AS WRITTEN AND MISLEADING AS READ. 'Nothing pins the store' is what a reader takes away; what was measured is 'nothing in THESE 360 rows'. A knife aimed at the store may well redden a lineerr row instead -- which is a different gate, a different battery unit, and a place nobody scoring K-GR4 would look.",
-  "unresolved": "\u26a0\ufe0f whether the lineerr readout actually reddens under K-GR4 is NOT tested here -- that needs the knife run, not a grep"
+  "why_that_matters": "🎯 THE ITEM IS TRUE AS WRITTEN AND MISLEADING AS READ. 'Nothing pins the store' is what a reader takes away; what was measured is 'nothing in THESE 360 rows'. A knife aimed at the store may well redden a lineerr row instead -- which is a different gate, a different battery unit, and a place nobody scoring K-GR4 would look.",
+  "unresolved": "⚠️ whether the lineerr readout actually reddens under K-GR4 is NOT tested here -- that needs the knife run, not a grep"
  },
  "T-7F8323": {
   "verdict": "LIVE, exact -- and last tranche's refusal was RIGHT",
   "how": "read of docs/gate-blindness-sweep.md:250-256",
   "headline": "PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT",
   "reading": "the sweep says it outright: 'Q3's control exists to prove the emulator is alive when the subject case freezes TIME -- but its RESTORE LINE is `VDP(1)=VDP(1)OR32`, the very statement the subject uses. A cut to the VDP grammar takes the control down with the subject.' That restore is at basic_probe_graphics.py:1943.",
-  "why_the_deferral_mattered": "\ud83d\udd34 LAST TRANCHE I FOUND `cases = [(\"ie_off\", ...), (\"control\", \"A=0\")]` AND NEARLY SCORED THE ITEM STALE ON IT -- the control's CASE genuinely does not share the subject's statement. The sharing is in the RESTORE LINE, one line further down. Scoring on the first plausible site would have produced a confident WRONG verdict, and the only thing that prevented it was refusing to score a subject I had not established."
+  "why_the_deferral_mattered": "🔴 LAST TRANCHE I FOUND `cases = [(\"ie_off\", ...), (\"control\", \"A=0\")]` AND NEARLY SCORED THE ITEM STALE ON IT -- the control's CASE genuinely does not share the subject's statement. The sharing is in the RESTORE LINE, one line further down. Scoring on the first plausible site would have produced a confident WRONG verdict, and the only thing that prevented it was refusing to score a subject I had not established."
  },
  "T-E0B493": {
   "verdict": "LIVE, confirmed by the knife roster",
@@ -734,7 +734,7 @@
   "how": "static read of probes/basic/basic_probe_graphics.py",
   "headline": "THE THREE SCALE STATES ARE NOT SWEPT THROUGH `X` SUBSTRINGS OR `=var;` SUBSTITUTION",
   "reading": "X-substring rows DO exist -- `xsub` (`DRAW\"A0S4XA$;D5\"`), `xnest` (`A$=\"XB$;\"`), `x_nosemi`. But every one of them pins the scale at **S4**. The three states are never-set / S4 / Sn, so two of the three are never combined with an X substring.",
-  "why_precise": "\ud83c\udfaf 'not swept' could mean 'no such rows' or 'rows that do not cross the dimension'. It is the second, and the difference matters: the fixture is already there and only the scale axis is missing, which is a much smaller job than the item's wording implies."
+  "why_precise": "🎯 'not swept' could mean 'no such rows' or 'rows that do not cross the dimension'. It is the second, and the difference matters: the fixture is already there and only the scale axis is missing, which is a much smaller job than the item's wording implies."
  },
  "T-F7FF11": {
   "verdict": "LIVE -- the shape is proven, the nine cuts are not written",
@@ -750,19 +750,19 @@
   "route_A_today": "1445 spans, 26 groups, 163 B nominal -> MEASURED SAFE NET 8 B",
   "route_B_filed": "2563 B free in the page-0 sub-ROM",
   "route_B_today": "2464 B free (sub p0), measured by `make basic-reloc`",
-  "reading": "\ud83c\udfaf ROUTE A IS TWICE AS OPEN AS FILED -- 8 B safe net, not 4 B -- while its NOMINAL figure fell (190 -> 163 B). The two move in opposite directions because carves since have consumed easy groups while the safe/unsafe classification shifted. Route B's free space fell by 99 B, consistent with D-PAINTVRAM landing there.",
+  "reading": "🎯 ROUTE A IS TWICE AS OPEN AS FILED -- 8 B safe net, not 4 B -- while its NOMINAL figure fell (190 -> 163 B). The two move in opposite directions because carves since have consumed easy groups while the safe/unsafe classification shifted. Route B's free space fell by 99 B, consistent with D-PAINTVRAM landing there.",
   "what_stands": "the STRUCTURAL conclusions are untouched: a verb that can PRINT or RAISE reaches the BIOS transitively (pchar->CHPUT, raise_error->BREAKX) and a page-0 tenant runs with that region switched out -- five candidates at 177-762 B all refused for those two paths. That is an argument about reachability, not a number, and re-running does not touch it.",
-  "why_it_matters_now": "\u26a0\ufe0f THIS ITEM SAYS 'Read this BEFORE opening any slice that needs main page-1 bytes' -- so its numbers are load-bearing for exactly the decision the screen-editor question turns on. Anyone reading '4 B' would price the seam at half what it is."
+  "why_it_matters_now": "⚠️ THIS ITEM SAYS 'Read this BEFORE opening any slice that needs main page-1 bytes' -- so its numbers are load-bearing for exactly the decision the screen-editor question turns on. Anyone reading '4 B' would price the seam at half what it is."
  },
  "T-B10921": {
   "verdict": "INSTANCE CLOSED (verified); CLASS OPEN AND GROWING",
   "how": "static read of probes/basic/basic_probe_deffn.py + git grep over basic/ and sub/",
   "headline": "A RULE WITNESSED ONLY BY A *DEFERRED* ERROR IS WITNESSED BY NOTHING",
-  "instance": "\u2705 VERIFIED CLOSED. The rows the item says were added are present: `o.errfend13` (:123) and `o.errfend18` (:124) in basic_probe_deffn.py, both with an ON ERROR handler and an `X;E` readout, exactly as described.",
+  "instance": "✅ VERIFIED CLOSED. The rows the item says were added are present: `o.errfend13` (:123) and `o.errfend18` (:124) in basic_probe_deffn.py, both with an ON ERROR handler and an `X;E` readout, exactly as described.",
   "class_filed": "21 `penderr_set` sites; exactly ONE raises on the spot (str_heap_oom_error), the other 20 return",
   "class_today": "22 call sites",
-  "reading": "\ud83d\udd34 THE DENOMINATOR HAS GROWN BY ONE SINCE THE ITEM WAS FILED. A new `penderr_set` call site was added between 2026-08-23 and today, so the class of guards that can be witnessed only by a deferred error is not merely open -- it is EXPANDING while unwatched.",
-  "why_that_is_the_finding": "\ud83c\udfaf The item's own point is that the ERR CODE a row expects carries no information about whether it can witness an ordering-sensitive guard. A growing site count means each new site inherits that blindness silently, and nothing counts them. The re-measurement is the only thing that made the growth visible."
+  "reading": "🔴 THE DENOMINATOR HAS GROWN BY ONE SINCE THE ITEM WAS FILED. A new `penderr_set` call site was added between 2026-08-23 and today, so the class of guards that can be witnessed only by a deferred error is not merely open -- it is EXPANDING while unwatched.",
+  "why_that_is_the_finding": "🎯 The item's own point is that the ERR CODE a row expects carries no information about whether it can witness an ordering-sensitive guard. A growing site count means each new site inherits that blindness silently, and nothing counts them. The re-measurement is the only thing that made the growth visible."
  },
  "T-70A01E": {
   "verdict": "LIVE -- and ENUMERATED for the first time",
@@ -770,37 +770,38 @@
   "headline": "THE DELIVERY GUARDS DO NOT COVER PROBES WITH THEIR OWN `build_tcl`",
   "filed": "'Every probes/disk/* script and basic_probe_printusing.py ... Not enumerated; not known to be affected.'",
   "measured_today": "201 probe .py files. **72 import omsx_repl** (and so reach the shared injector, the stored-program oracle and the echo oracle). **59 build their own Tcl and do not** -- 43 of them under probes/disk/, plus basic_probe_printusing.py exactly as the item names, and 15 more under probes/basic/ that the item does NOT name (graphics_floor, subrom_inttest, key_trap, strig_trap, usr, cas_verify, cas_leader_budget, cas_verbs, ...).",
-  "why_it_matters": "\ud83d\udd34 THE ITEM UNDERSTATES ITS OWN SCOPE. It names probes/disk/* and one basic probe; the measurement finds FIFTEEN further basic probes in the same position. Nearly half the probe corpus (59 of 131 that do either) bypasses the shared injector -- and D-LATCH already promoted this from a coverage item to a CORRECTNESS one, because a local copy of the pre-D-LATCH `__key` still has the race the shared injector no longer has.",
-  "caveat": "\u26a0\ufe0f HEURISTIC COUNT: 'builds its own Tcl' is detected as (mentions build_tcl / debug write / set tcl) AND (does not import omsx_repl). Some of the 59 may not inject keystrokes at all. The figure is an upper bound on the exposed set and a genuine lower bound on the item's scope, which was previously zero."
+  "why_it_matters": "🔴 THE ITEM UNDERSTATES ITS OWN SCOPE. It names probes/disk/* and one basic probe; the measurement finds FIFTEEN further basic probes in the same position. Nearly half the probe corpus (59 of 131 that do either) bypasses the shared injector -- and D-LATCH already promoted this from a coverage item to a CORRECTNESS one, because a local copy of the pre-D-LATCH `__key` still has the race the shared injector no longer has.",
+  "caveat": "⚠️ HEURISTIC COUNT: 'builds its own Tcl' is detected as (mentions build_tcl / debug write / set tcl) AND (does not import omsx_repl). Some of the 59 may not inject keystrokes at all. The figure is an upper bound on the exposed set and a genuine lower bound on the item's scope, which was previously zero."
  },
  "T-876600": {
   "verdict": "LIVE -- and its own citation has rotted",
   "how": "static read of sub/arrays.asm + call-site count",
   "headline": "THE TWO TYPE-CODE NAMESPACES SHOULD PROBABLY BECOME ONE",
   "reading": "`elsize_from_type` still exists and is still deletable-in-principle. Call sites: **6** today; the item says '~7'.",
-  "citation_rot": "\ud83d\udd34 THE ITEM CITES `sub/arrays.asm:943`. THE ROUTINE IS AT **:1037** -- a drift of 94 lines. This is a LIVE INSTANCE of the class measured in tranche 28 (90 provably-broken file:LINE anchors, nothing checking them), sitting inside a pending item on the same list. The anchor still resolves to a line that exists, so my tranche-28 walk would have counted it as 'line exists' -- which is exactly why that 95% is an upper bound and not a correctness rate.",
-  "note": "the item's own \u26a0\ufe0f ('the entry field ORDER may differ -- unmeasured') is untouched by this pass"
+  "citation_rot": "🔴 THE ITEM CITES `sub/arrays.asm:943`. THE ROUTINE IS AT **:1037** -- a drift of 94 lines. This is a LIVE INSTANCE of the class measured in tranche 28 (90 provably-broken file:LINE anchors, nothing checking them), sitting inside a pending item on the same list. The anchor still resolves to a line that exists, so my tranche-28 walk would have counted it as 'line exists' -- which is exactly why that 95% is an upper bound and not a correctness rate.",
+  "note": "the item's own ⚠️ ('the entry field ORDER may differ -- unmeasured') is untouched by this pass"
  },
  "T-7438C3": {
   "verdict": "PARTLY ANSWERED -- the verdict exists, its reach was not established",
   "how": "grep of probes/basic/basic_probe_sysvarsweep.py",
   "headline": "HOW MUCH OF THE 311-BYTE `NO-ORACLE` BUCKET IS A POINTER?",
   "reading": "`SAME-DELTA` IS implemented -- basic_probe_sysvarsweep.py:802 returns `('SAME-DELTA' if rd == zd else 'DIFF-DELTA')` and :1000 documents it in the legend.",
-  "why_partial": "\u26a0\ufe0f The item's claim is narrower than 'does SAME-DELTA exist': it is that the verdict is applied ONLY in the re-homing table while the 3199-byte census still classifies absolutely. Establishing that needs a read of which code path the census takes, not a grep for the string. The QUESTION the item asks -- how much of the 311 B is a pointer -- remains unanswered, and its own \u26a0\ufe0f says why: a byte-wise delta pass needs a rule for what counts as a pointer PAIR, since naive per-byte deltas agree by luck on the high byte."
+  "why_partial": "⚠️ The item's claim is narrower than 'does SAME-DELTA exist': it is that the verdict is applied ONLY in the re-homing table while the 3199-byte census still classifies absolutely. Establishing that needs a read of which code path the census takes, not a grep for the string. The QUESTION the item asks -- how much of the 311 B is a pointer -- remains unanswered, and its own ⚠️ says why: a byte-wise delta pass needs a rule for what counts as a pointer PAIR, since naive per-byte deltas agree by luck on the high byte."
  },
  "T-7BA8D1": {
-  "verdict": "LIVE as filed",
+  "verdict": "CLOSED 2026-08-30 (D-CLRTRAP) -- was: LIVE as filed",
   "how": "static read of basic/vars.asm",
   "headline": "`CLEAR` BREAKS THE CONSTRUCTION THAT MAKES `TRAPSTK`'s GSP MATCH SOUND -- UNMEASURED",
   "reading": "`clear_vars:` is at :1047 and `ld (GSP),hl` at :1061 -- it resets GSP, with no trap_init call in the routine. Exactly the construction the item says is broken.",
-  "\ud83d\udd34_my_own_heuristic_was_wrong_here": "TRANCHE 38 FLAGGED THIS ITEM'S CITATION (basic/vars.asm:1061) AS DRIFTED because `clear_vars` is defined 14 lines earlier at :1047. THE CITATION IS EXACTLY RIGHT: :1061 is the `ld (GSP),hl` the item is ABOUT. This is the 'call site vs definition' false positive I attached as a caveat to that measurement, caught firing on a real row. The 47% figure is correspondingly an UNDER-estimate of correctness, just as the 95% was an over-estimate -- the true rate is bracketed, not pinned."
+  "🔴_my_own_heuristic_was_wrong_here": "TRANCHE 38 FLAGGED THIS ITEM'S CITATION (basic/vars.asm:1061) AS DRIFTED because `clear_vars` is defined 14 lines earlier at :1047. THE CITATION IS EXACTLY RIGHT: :1061 is the `ld (GSP),hl` the item is ABOUT. This is the 'call site vs definition' false positive I attached as a caveat to that measurement, caught firing on a real row. The 47% figure is correspondingly an UNDER-estimate of correctness, just as the 95% was an over-estimate -- the true rate is bracketed, not pinned.",
+  "closed_2026_08_30": "SHIPPED. `clear_vars` now calls `trap_init` (3 B of main page 1, docs/spec-basic-clrtrap.md). The sweep's reading below -- 'no trap_init call in the routine' -- was exact when taken and is what made the fix findable; it is no longer true of the tree. The VERDICT TEXT AND READING ARE KEPT VERBATIM: this record is what the 2026-08-26 sweep saw, and only its STATE is updated, so split_todo_archive.py archives the block with the closing block written above it instead of splitting the pair. The fix also closed a second row the sweep never measured: an ARMED ON INTERVAL trap surviving CLEAR (zb 17 fires, VG-8020 0)."
  },
  "T-783F00": {
   "verdict": "LIVE for PSET/PRESET -- and POINT was already changed",
   "how": "static read of basic/graphics.asm",
   "headline": "`GFX_OP=1`'s MARSHALLING IS STILL ALIASED TO THE WORK AREA",
   "reading": "graphics.asm:22 says GXPOS/GYPOS 'move to the resolved (unclipped) coordinate on EVERY PSET/PRESET' -- the aliasing stands. But :106-111 records that D-GIRDOM already moved POINT off it: 'marshal through POINT'S OWN cells, NOT GXPOS/GYPOS. This used to be `ld (GXPOS),bc / ld (GYPOS),de`'.",
-  "note": "\ud83c\udfaf the decision the item says 'nothing re-examines' HAS been re-examined for one verb and left for the other two, which is a narrower and more actionable statement than the item makes"
+  "note": "🎯 the decision the item says 'nothing re-examines' HAS been re-examined for one verb and left for the other two, which is a narrower and more actionable statement than the item makes"
  },
  "T-940CF2": {
   "verdict": "LIVE -- confirmed by the item's own spec",
@@ -813,14 +814,14 @@
   "how": "static read of probes/basic/basic_probe_locarg.py and basic_probe_screenerr.py",
   "headline": "`t.zero` IS BLIND TO A CUT THAT ALSO DISABLES ITS SEED, AND THE PROBE CLAIMS OTHERWISE",
   "reading": "`t.zero` is at basic_probe_locarg.py:129 (`SEED + \"LOCATE 0,0\"`), and the probe's own comment at :118 documents the blindness: a cut 'breaks the SEED too, and `t.zero` -- whose target IS home -- then reads...'. The row and its blindness are both still there.",
-  "\ud83d\udfe2_the_contrast": "AND THE LESSON PROPAGATED. basic_probe_screenerr.py:112 carries it: '[[t.zero is blind to a cut that also disables its seed]], caught before it...' -- a DIFFERENT probe, citing this row's lesson to avoid repeating it. \ud83c\udfaf That is the exact opposite of tranche 23, where the split-by-side control rule sat in one probe and never reached its sibling. Both patterns exist in this tree; the difference is whether the lesson was written as a NAMED, citable thing or left in a comment about one file."
+  "🟢_the_contrast": "AND THE LESSON PROPAGATED. basic_probe_screenerr.py:112 carries it: '[[t.zero is blind to a cut that also disables its seed]], caught before it...' -- a DIFFERENT probe, citing this row's lesson to avoid repeating it. 🎯 That is the exact opposite of tranche 23, where the split-by-side control rule sat in one probe and never reached its sibling. Both patterns exist in this tree; the difference is whether the lesson was written as a NAMED, citable thing or left in a comment about one file."
  },
  "T-D5F7A9": {
   "verdict": "NOT SCORED -- the surviving row was not identified this pass",
   "how": "partial read",
   "headline": "`load error` IS PRINTED, NOT RAISED -- FIXED AT ALL SIX MISSING-FILE VERBS ... WHAT REMAINS IS ONE ROW",
   "reading": "the block is a long closure narrative (D-LOADERR-FIX, D-BLNF, the cassette regression caught by castail's `cas-run-brk`, the five pinned rows that were a green oracle for the defect). The five graduated verbs are recorded as fixed.",
-  "why_not_scored": "\u26a0\ufe0f the item's live half is 'ONE ROW and it is a DIFFERENT FACE', and I did not locate which row that is within this pass. Scoring the item on the closure narrative would be scoring the part that is already \u2705 -- the same shape as the tranche-32 near-miss."
+  "why_not_scored": "⚠️ the item's live half is 'ONE ROW and it is a DIFFERENT FACE', and I did not locate which row that is within this pass. Scoring the item on the closure narrative would be scoring the part that is already ✅ -- the same shape as the tranche-32 near-miss."
  },
  "T-DB105B": {
   "verdict": "LIVE -- confirmed by absence, which is the item's own claim",
@@ -834,35 +835,35 @@
   "how": "count of probes/basic/basic_probe_locarg.py",
   "headline": "\"THE APPARATUS IS STILL MEASURED\" IS A CLAIM ABOUT A ROW SET, AND `locarg`'s IS MUCH WEAKER THAN ITS OWN SENTENCE SAYS",
   "reading": "locarg's probe carries 45 rows today.",
-  "why_partial": "\u26a0\ufe0f the item's claim is comparative -- the row set is weaker than the SENTENCE asserting it -- and I did not locate that sentence in the probe or its spec. A row COUNT does not settle a claim about what the rows are said to prove; that needs the sentence and the row set side by side."
+  "why_partial": "⚠️ the item's claim is comparative -- the row set is weaker than the SENTENCE asserting it -- and I did not locate that sentence in the probe or its spec. A row COUNT does not settle a claim about what the rows are said to prove; that needs the sentence and the row set side by side."
  },
  "T-927679": {
   "verdict": "LIVE -- the asserts are PROSE, and nothing enforces them",
   "how": "grep of basic/ + tools/",
   "headline": "A PAGE-ALIGNMENT ASSERT WITH NO ENFORCEMENT IS A LANDMINE FOR THE NEXT UNRELATED EDIT",
   "reading": "page-alignment requirements exist only as COMMENTS: sysvars.inc:796 ('LINEBUF is one PAGE (page-aligned, <= 256 B), so a single low...'), :808 ('PAGE-ALIGNED base and <= 256 bytes -- NOT <= 96'), :1973, :3182 ('PAGE-ALIGNED at $E600 so the read...'), and save.asm:376. No assembler assert enforces any of them, and no tool in tools/ checks alignment.",
-  "note": "\ud83c\udfaf each comment states a CONSTRAINT that the next edit to that address can silently break, and the comment is the only thing standing between the constraint and a landmine -- exactly as filed"
+  "note": "🎯 each comment states a CONSTRAINT that the next edit to that address can silently break, and the comment is the only thing standing between the constraint and a landmine -- exactly as filed"
  },
  "T-5B155E": {
   "verdict": "LIVE -- and CHEAPER TO CLOSE than the item implies",
   "how": "ls of scratchpad/ + the 39-gate battery list",
   "headline": "NOTHING POLICES A RAM FREE-SPACE CLAIM, AND THE ONE IN THE MAP WAS 36x WRONG",
   "reading": "no gate polices it -- neither `ramfree_probe.py` nor `rammap_sweep.py` is a make target or a member of the 39-unit battery.",
-  "\ud83d\udfe2_the_nuance": "BUT BOTH INSTRUMENTS ALREADY EXIST in scratchpad/: `rammap_sweep.py` (walk the map) and `ramfree_probe.py` (ask the machine). The item reads as 'this needs building'; what it actually needs is WIRING -- the measuring code is written and merely unattached to any gate. That is a materially smaller job than the wording suggests, and the third time this sweep has found an item larger in prose than in fact."
+  "🟢_the_nuance": "BUT BOTH INSTRUMENTS ALREADY EXIST in scratchpad/: `rammap_sweep.py` (walk the map) and `ramfree_probe.py` (ask the machine). The item reads as 'this needs building'; what it actually needs is WIRING -- the measuring code is written and merely unattached to any gate. That is a materially smaller job than the wording suggests, and the third time this sweep has found an item larger in prose than in fact."
  },
  "T-DDE134": {
   "verdict": "LIVE, exact -- and one of them is hardcoded TWICE",
   "how": "static read of the three probes",
   "headline": "Three probe page-0 entry addresses stay HARDCODED",
   "reading": "basic_probe_subrom_inttest.py:19 `ld ix,$0049`; basic_probe_graphics_floor.py:16 `ld ix,$0058` AND :76 the same address as RAW OPCODE BYTES `0xDD, 0x21, 0x58, 0x00`.",
-  "note": "\ud83c\udfaf the raw-byte copy is the worse half: a change to SUBROM_IDX_GRAPHICS would be caught by nothing and would not even LOOK like an address to a reader scanning for one."
+  "note": "🎯 the raw-byte copy is the worse half: a change to SUBROM_IDX_GRAPHICS would be caught by nothing and would not even LOOK like an address to a reader scanning for one."
  },
  "T-9CD0D4": {
   "verdict": "LIVE, exact -- the fix landed in one gate and not its sibling",
   "how": "static read of both gates",
   "headline": "`check_probe_preflight.py` carries the IDENTICAL `SCAN_DIRS`",
   "reading": "check_probe_preflight.py:43 still has the HAND-LISTED `SCAN_DIRS = (\"probes\", \"tools\", \"tests\")`. check_probe_injectors.py has NO such constant -- D-INJJUDGE replaced its hand-list with a derived denominator, and only mentions the three directories in prose at :24.",
-  "\ud83d\udd34_third_instance": "THIS IS THE THIRD SIGHTING OF ONE PATTERN IN THIS SWEEP: a fix landing in one file and never reaching its sibling. (1) the split-by-side control rule, in namspc not castail (tranche 23). (2) the path-not-basename rule, in check_citation_paths not todo_subject_check -- my own, hours apart (tranche 8). (3) the derived denominator, in injector-check not preflight-check. \ud83c\udfaf And tranche 40 found the counter-example: the ONE lesson that DID travel was written as a NAMED, citable thing rather than as prose in a file."
+  "🔴_third_instance": "THIS IS THE THIRD SIGHTING OF ONE PATTERN IN THIS SWEEP: a fix landing in one file and never reaching its sibling. (1) the split-by-side control rule, in namspc not castail (tranche 23). (2) the path-not-basename rule, in check_citation_paths not todo_subject_check -- my own, hours apart (tranche 8). (3) the derived denominator, in injector-check not preflight-check. 🎯 And tranche 40 found the counter-example: the ONE lesson that DID travel was written as a NAMED, citable thing rather than as prose in a file."
  },
  "T-E93A7E": {
   "verdict": "LIVE -- and EXACT TO THE BYTE, the only figure in this sweep that has not moved",
@@ -870,7 +871,7 @@
   "headline": "`build/disk.rom` pad-only damage is invisible ON PURPOSE",
   "filed": "9543 of 16384 bytes (58.2%) are $00 pad",
   "measured_today": "16384 bytes, 9543 are $00 = 58.2%",
-  "why_it_did_not_drift": "\ud83c\udfaf EVERY OTHER FIGURE THIS SWEEP RE-MEASURED HAD MOVED -- carve supply, /tmp literals, penderr sites, page-1 walls, dup-span groups. This one is byte-identical because it is a property of a GENERATED artifact with a fixed size and a deterministic pad, not of hand-maintained source. A number is stable exactly when nothing a human edits can reach it.",
+  "why_it_did_not_drift": "🎯 EVERY OTHER FIGURE THIS SWEEP RE-MEASURED HAD MOVED -- carve supply, /tmp literals, penderr sites, page-1 walls, dup-span groups. This one is byte-identical because it is a property of a GENERATED artifact with a fixed size and a deterministic pad, not of hand-maintained source. A number is stable exactly when nothing a human edits can reach it.",
   "note": "the item's own point stands unchanged: closing it needs a whole-image digest, which would pin the ROM against every legitimate disk/*.asm change"
  },
  "T-F6B771": {
@@ -878,31 +879,31 @@
   "how": "static read of tools/audit_citations.py",
   "headline": "The raw-byte class beyond the dump row has NO mechanical floor, by measurement",
   "reading": "audit_citations.py:58 still carries it: 'Recall against the class is 1 of 20 and the check says so'. The gate documents its own recall against the class it cannot cover, and :263 and :266 record the two variants that were DECLINED (0 recall; 26 affirmative false positives over 278 files).",
-  "note": "\ud83c\udfaf fifth gate found stating its own limit in its own source -- the pattern from tranche 29 holds across the whole tools/ directory"
+  "note": "🎯 fifth gate found stating its own limit in its own source -- the pattern from tranche 29 holds across the whole tools/ directory"
  },
  "T-8947C8": {
   "verdict": "LIVE -- and it is a HUMAN DECISION, not a task",
   "how": "static read of tools/citations-listing-allow.txt",
   "headline": "Both check-5 allowlist entries need a HUMAN paper-trail confirm",
-  "reading": "both entries are present -- probes/lib/latch_check.py at :22 and omsx_repl.py at :24 -- each with its full adjudication. The omsx_repl entry says so itself: 'Flagged for the human paper trail 2026-08-06 (D-DOCJUDGE \u00a72.6) -- a judgement docs/clean-room-audit.md RESERVES FOR A HUMAN, which is why it is written down here rather than decided by the tool.'",
-  "category": "\ud83c\udfaf the tool has already done everything a tool may do here and says so. Re-running cannot advance it; only a person can."
+  "reading": "both entries are present -- probes/lib/latch_check.py at :22 and omsx_repl.py at :24 -- each with its full adjudication. The omsx_repl entry says so itself: 'Flagged for the human paper trail 2026-08-06 (D-DOCJUDGE §2.6) -- a judgement docs/clean-room-audit.md RESERVES FOR A HUMAN, which is why it is written down here rather than decided by the tool.'",
+  "category": "🎯 the tool has already done everything a tool may do here and says so. Re-running cannot advance it; only a person can."
  },
  "T-99C822": {
   "verdict": "LIVE -- a human decision, and its citation is EXACT",
   "how": "static read of disk/runtime.asm:423 + the advisory allowlist",
   "headline": "`disk/runtime.asm:423` `int_h_body` awaits a HUMAN decision",
   "reading": "the header is exactly at :423: 'int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) -- SUPERSEDED by A-3 ... DEAD as of A-3 ... Kept in place (net-zero, no address shift) pending removal'. One matching entry in tools/citations-advisory-allow.txt -- acknowledged, not resolved.",
-  "\ud83d\udfe2_a_counter_example": "THIS ITEM'S file:LINE CITATION IS EXACT. Tranche 38 measured a 47% semantic rate and tranche 39 showed that figure is itself an under-estimate; this is a clean counter-example -- :423 lands precisely on the header the item is about. The citation class has both failure and success in it, which is why the honest answer was a BRACKET rather than a rate."
+  "🟢_a_counter_example": "THIS ITEM'S file:LINE CITATION IS EXACT. Tranche 38 measured a 47% semantic rate and tranche 39 showed that figure is itself an under-estimate; this is a clean counter-example -- :423 lands precisely on the header the item is about. The citation class has both failure and success in it, which is why the honest answer was a BRACKET rather than a rate."
  },
  "T-E19368": {
-  "verdict": "\ud83d\udd34 ITS EVIDENCE OF QUIESCENCE IS VOID -- the gate does not run in the battery",
+  "verdict": "🔴 ITS EVIDENCE OF QUIESCENCE IS VOID -- the gate does not run in the battery",
   "how": "static read of Makefile + tools/run_gates.py",
   "headline": "`lof-acceptance` intermittent oracle drift -- two sightings, nothing since",
   "the_filed_evidence": "'Sighting 3 has not occurred across EIGHT consecutive slices (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE, D-DOCJUDGE, ...)'",
   "reading": "`lof-acceptance` IS a real target (Makefile:1736, `.PHONY` at :2785) but it is NOT in run_gates.py's GATES list -- `make gates` never runs it. Those eight slices ran the battery; the battery does not include this gate.",
-  "why_that_matters": "\ud83d\udd34 'NOTHING SINCE' IS NOT EVIDENCE OF STABILITY WHEN NOTHING LOOKED. The item reasons from eight quiet slices to a quiescent drift, and the quiet is explained by the gate's absence from the battery rather than by the drift stopping. An intermittent fault that stopped being OBSERVED is not an intermittent fault that stopped.",
-  "class": "\ud83c\udfaf the same family as 'an unnamed outcome reads as no outcome' (tranche 26) and the 0/0-ALL-CONVERGED shape the patch-freshness gate was built to avoid this morning: A GATE THAT DOES NOT RUN READS EXACTLY LIKE A GATE THAT PASSES.",
-  "caveat": "\u26a0\ufe0f a slice could have run `make lof-acceptance` by hand; the item does not say so, and the battery certainly did not"
+  "why_that_matters": "🔴 'NOTHING SINCE' IS NOT EVIDENCE OF STABILITY WHEN NOTHING LOOKED. The item reasons from eight quiet slices to a quiescent drift, and the quiet is explained by the gate's absence from the battery rather than by the drift stopping. An intermittent fault that stopped being OBSERVED is not an intermittent fault that stopped.",
+  "class": "🎯 the same family as 'an unnamed outcome reads as no outcome' (tranche 26) and the 0/0-ALL-CONVERGED shape the patch-freshness gate was built to avoid this morning: A GATE THAT DOES NOT RUN READS EXACTLY LIKE A GATE THAT PASSES.",
+  "caveat": "⚠️ a slice could have run `make lof-acceptance` by hand; the item does not say so, and the battery certainly did not"
  },
  "T-3628DB": {
   "verdict": "LIVE, confirmed by today's kwsweep",
@@ -914,15 +915,15 @@
   "verdict": "LIVE -- and FENCED at the point of use",
   "how": "read of README.md:291-300",
   "headline": "README \"Limitations (this slice)\" IS STALE",
-  "reading": "the section is still there and still stale -- but it now opens with a banner: '\u26a0\ufe0f THIS SECTION IS STALE AND IS KNOWN DOC DEBT -- do not trust it', naming TWO flatly false claims (`ON..GOTO` listed as 'still out' though implemented and gated; 'variables are single-letter integers; no strings, arrays, or multi-character names', which predates the string engine, float pack and array engine) and citing this TODO entry by name.",
-  "\ud83d\udfe2_why_that_matters": "THE DOC DEBT IS FENCED. A reader hitting the section cannot be misled, because the section says what it is before it says anything else. Compare the 30 divergences buried in `- [x]` blocks (\u00a71.2), which carried no such fence and were invisible to every listing of open work. \ud83c\udfaf Same defect -- stale text -- with opposite consequences, and the difference is entirely whether the staleness is DECLARED WHERE IT IS READ."
+  "reading": "the section is still there and still stale -- but it now opens with a banner: '⚠️ THIS SECTION IS STALE AND IS KNOWN DOC DEBT -- do not trust it', naming TWO flatly false claims (`ON..GOTO` listed as 'still out' though implemented and gated; 'variables are single-letter integers; no strings, arrays, or multi-character names', which predates the string engine, float pack and array engine) and citing this TODO entry by name.",
+  "🟢_why_that_matters": "THE DOC DEBT IS FENCED. A reader hitting the section cannot be misled, because the section says what it is before it says anything else. Compare the 30 divergences buried in `- [x]` blocks (§1.2), which carried no such fence and were invisible to every listing of open work. 🎯 Same defect -- stale text -- with opposite consequences, and the difference is entirely whether the staleness is DECLARED WHERE IT IS READ."
  },
  "T-EC28F3": {
   "verdict": "LIVE -- undecidable BY PROOF, and the tool says so",
   "how": "static read of tools/audit_citations.py + docs/spec-audit-citations-bytes.md",
   "headline": "The INLINE decoded form is measured UNDECIDABLE, and that is a standing hole, not a closed item",
-  "reading": "audit_citations.py:50 records that 'docs/spec-audit-citations-bytes.md measures that the general raw-byte class is UNDECIDABLE from text', and :384 that it is 'still undecidable, BY PROOF rather than by threshold'. The spec's own \u00a7512 lists the inline decoded form among what it 'did not revisit'.",
-  "category": "\ud83c\udfaf a standing hole that is PROVEN unclosable by the available instrument is not a task either -- it is a boundary. That is the seventh not-a-task item in this sweep."
+  "reading": "audit_citations.py:50 records that 'docs/spec-audit-citations-bytes.md measures that the general raw-byte class is UNDECIDABLE from text', and :384 that it is 'still undecidable, BY PROOF rather than by threshold'. The spec's own §512 lists the inline decoded form among what it 'did not revisit'.",
+  "category": "🎯 a standing hole that is PROVEN unclosable by the available instrument is not a task either -- it is a boundary. That is the seventh not-a-task item in this sweep."
  },
  "T-23E24B": {
   "verdict": "LIVE, exact -- the classifier works as the item describes",
@@ -935,44 +936,44 @@
   "how": "grep over all four float probes",
   "headline": "`float-acceptance` HAS NO NAMED EXPECTED-FAILURE MECHANISM",
   "reading": "the gate runs four probes. Expected-failure mentions: basic_probe_float_arith.py **0**, basic_probe_float_fmt.py **0**, basic_probe_floatlit.py **0**, basic_probe_float_vars.py **1**. Three of four have no mechanism at all.",
-  "note": "\ud83c\udfaf the item says 'the suite is green today, so this is not urgent' -- which is the same reasoning tranche 46 found void for lof-acceptance. Here it holds, because float-acceptance IS in the 39-unit battery and did run green today. Worth stating: the identical sentence is sound for one gate and void for the other, and the only thing that separates them is battery membership."
+  "note": "🎯 the item says 'the suite is green today, so this is not urgent' -- which is the same reasoning tranche 46 found void for lof-acceptance. Here it holds, because float-acceptance IS in the 39-unit battery and did run green today. Worth stating: the identical sentence is sound for one gate and void for the other, and the only thing that separates them is battery membership."
  },
  "T-BBA612": {
   "verdict": "LIVE -- and its citation carries the LARGEST DRIFT in this sweep",
   "how": "static read of probes/lib/omsx_repl.py",
   "headline": "A `--say` row with no brackets cannot have a reading",
   "reading": "`result_span_after_echo` exists and its own docstring confirms the behaviour: '... an aborted case's echoed `[` is not misread as printed output. None if the [span is absent]', with `return None` on both the raw-is-None and echo-not-found paths. The item's claim holds.",
-  "\ud83d\udd34_citation_drift": "THE ITEM CITES probes/lib/omsx_repl.py:1212. THE FUNCTION IS AT :1765 -- **553 LINES**, the largest drift measured anywhere in this sweep (previous worst: 273, basic/cload.asm's `dpl_nf`). And :1212 is not empty -- it holds settle-instrument regex parsing, unrelated code that a reader following the citation would land in and try to make sense of."
+  "🔴_citation_drift": "THE ITEM CITES probes/lib/omsx_repl.py:1212. THE FUNCTION IS AT :1765 -- **553 LINES**, the largest drift measured anywhere in this sweep (previous worst: 273, basic/cload.asm's `dpl_nf`). And :1212 is not empty -- it holds settle-instrument regex parsing, unrelated code that a reader following the citation would land in and try to make sense of."
  },
  "T-DC3629": {
   "verdict": "NOT A TASK -- a priced-and-declined decision",
   "how": "read + static check",
   "headline": "zerobas' `VALTYP $E0C8` READS `$FF` AT COLD BOOT -- CAUSE MEASURED, FIX PRICED AT 3 B AND DECLINED",
   "reading": "VALTYP is documented at basic/sysvars.inc:1400-1407 as an own-design TRANSIENT whose value at any given moment is not a contract. The item records the cause as measured (D-VALTYP, docs/valtyp-coldram-notes.md) and the 3 B fix as DECLINED.",
-  "category": "\ud83c\udfaf the EIGHTH not-a-task item: a decision already taken, sitting on the list in the same shape as unfinished work"
+  "category": "🎯 the EIGHTH not-a-task item: a decision already taken, sitting on the list in the same shape as unfinished work"
  },
  "T-40B7E8": {
   "verdict": "LIVE -- and it is a priced-and-DECLINED decision",
   "how": "git grep over basic/ and sub/",
   "headline": "`err_verify` AND `brk_msg` ARE THE LAST TWO MAIN-RESIDENT MESSAGES",
   "reading": "both are still in `basic/`: `err_verify` at cload.asm:664 (`db \"Verify\",MSGESC_ERROR,0`) and `brk_msg` at program.asm:658 (`db \"Break\",0`). Neither has migrated to sub/.",
-  "category": "\ud83c\udfaf the NINTH not-a-task item -- D-MSGMIGRATE 'measured both and declined both'. The state is unchanged because a decision was taken, not because work is outstanding.",
-  "citation_note": "\u26a0\ufe0f the item cites basic/cload.asm:580 for err_verify; it is at :664 -- one of the drifts tranche 38 counted"
+  "category": "🎯 the NINTH not-a-task item -- D-MSGMIGRATE 'measured both and declined both'. The state is unchanged because a decision was taken, not because work is outstanding.",
+  "citation_note": "⚠️ the item cites basic/cload.asm:580 for err_verify; it is at :664 -- one of the drifts tranche 38 counted"
  },
  "T-438D23": {
   "verdict": "LIVE -- and UNFALSIFIABLE BY THE INSTRUMENT IT CRITICISES",
   "how": "git grep, which is the point",
   "headline": "AN INDIRECT REACHER CANNOT BE ENUMERATED BY NAMING THE CALLEE",
   "reading": "the direct-call denominator today: 15 `(jp|call|jr) ... print_msg` reachers across arrays(2), bload(1), cload(3), input(2), program(7). Neither of the two common INDIRECT shapes -- `ld <reg>,print_msg` or `dw print_msg` -- appears anywhere in basic/ or sub/.",
-  "\ud83c\udfaf_the_reflexive_part": "THE ITEM'S CLAIM IS THAT GREPPING FOR CALL SHAPES MISSES REACHERS. I checked it BY GREPPING FOR CALL SHAPES. Finding no indirect reacher of the two shapes I happened to think of is exactly the evidence the item says is worthless -- a fourth reacher of a FIFTH shape would be invisible to me for the same reason it was invisible to D-MSGMIGRATE. The item can only be closed by an instrument that does not enumerate by name at all (a symbol closure over the built image), which is the cure this project already applied to the seed-set problem in D-SEEDHOLE2."
+  "🎯_the_reflexive_part": "THE ITEM'S CLAIM IS THAT GREPPING FOR CALL SHAPES MISSES REACHERS. I checked it BY GREPPING FOR CALL SHAPES. Finding no indirect reacher of the two shapes I happened to think of is exactly the evidence the item says is worthless -- a fourth reacher of a FIFTH shape would be invisible to me for the same reason it was invisible to D-MSGMIGRATE. The item can only be closed by an instrument that does not enumerate by name at all (a symbol closure over the built image), which is the cure this project already applied to the seed-set problem in D-SEEDHOLE2."
  },
  "T-E56017": {
   "verdict": "LIVE -- and WORSE than filed: the covering gate never runs",
   "how": "static read of Makefile + run_gates.py GATES",
   "headline": "THE `--say` SURFACE IS STILL UN-GATED OUTSIDE `ONLY=lnrd-`",
   "reading": "`lnblank-say-acceptance` IS a make target (Makefile:1439) and IS in .PHONY (:2760) -- and it is NOT in run_gates.py's GATES list.",
-  "\ud83d\udd34_the_escalation": "THE ITEM SAYS THE SURFACE IS UN-GATED OUTSIDE ONE FILTER. THE MEASUREMENT SAYS THE GATE THAT WOULD COVER IT NEVER RUNS AT ALL. `lnblank-say-acceptance` is one of the 22 targets tranche 47 found with no documented exclusion. So the item understates itself twice over: not merely a narrow filter, but a unit the battery has never executed.",
-  "note": "\ud83c\udfaf this is the first pending item that tranche 47's structural finding directly reclassifies -- and there are 21 more targets in that set, any of which could be doing the same to another item"
+  "🔴_the_escalation": "THE ITEM SAYS THE SURFACE IS UN-GATED OUTSIDE ONE FILTER. THE MEASUREMENT SAYS THE GATE THAT WOULD COVER IT NEVER RUNS AT ALL. `lnblank-say-acceptance` is one of the 22 targets tranche 47 found with no documented exclusion. So the item understates itself twice over: not merely a narrow filter, but a unit the battery has never executed.",
+  "note": "🎯 this is the first pending item that tranche 47's structural finding directly reclassifies -- and there are 21 more targets in that set, any of which could be doing the same to another item"
  },
  "T-94C4D6": {
   "verdict": "LIVE -- confirmed by absence of any shared constant",
@@ -986,8 +987,8 @@
   "how": "grep of probes/lib/ and scratchpad/",
   "headline": "THE `[...]` READOUT FAMILY IS DEFENDED BY ACCIDENT IN EVERY SCRATCH PROBE",
   "reading": "the DEFENDED readers exist and are shared: probes/lib/omsx_repl.py `result_span` (:1725) and `result_span_after_echo` (:1765), the latter specifically so 'an aborted case's echoed `[` is not misread as printed output'. Meanwhile **8 scratch probes carry their own bracket reader** and inherit none of that defence.",
-  "\ud83d\udd34_and_I_added_to_it": "EVERY SWEEP PROBE I WROTE IN THIS SESSION HAS ITS OWN `spans()` -- sweep_tranche1/11/12/16/17, citepaths/patchfresh falsifiers, the layout and reentry scouts. Each re-implements the bracket scan and none uses result_span_after_echo, so each is vulnerable to exactly the echo confusion the shared reader was written to prevent. I read this item AFTER writing nine probes that instantiate it.",
-  "note": "\ud83c\udfaf that is the strongest possible evidence for the item: it describes a trap that catches whoever is not looking, and it caught the person auditing it"
+  "🔴_and_I_added_to_it": "EVERY SWEEP PROBE I WROTE IN THIS SESSION HAS ITS OWN `spans()` -- sweep_tranche1/11/12/16/17, citepaths/patchfresh falsifiers, the layout and reentry scouts. Each re-implements the bracket scan and none uses result_span_after_echo, so each is vulnerable to exactly the echo confusion the shared reader was written to prevent. I read this item AFTER writing nine probes that instantiate it.",
+  "note": "🎯 that is the strongest possible evidence for the item: it describes a trap that catches whoever is not looking, and it caught the person auditing it"
  },
  "T-F09939": {
   "verdict": "LIVE, confirmed in the source's own words",
@@ -1000,7 +1001,7 @@
   "how": "grep of scratchpad/",
   "headline": "A SCRATCH PROBE THAT NEEDS A DISK MUST MOUNT ONE, AND THE FAILURE READS AS A LANGUAGE RULE",
   "reading": "of six scratch probes that reference disk verbs (OPEN\"/FILES/KILL/BLOAD) -- circmiss_sib2, evferr_probe, g4_hang_probe, i2_frame, i1_input_char2, i2_pinmap -- **all six pass `diska` zero times**. A probe that needs a disk and does not mount one gets a disk error the reader will read as a language rule.",
-  "\ud83d\udfe2_my_own_contrast": "MY sweep_tranche3.py DID mount one -- but only because I read the convention in an existing probe first. Contrast tranche 55, where I did NOT read the convention and re-implemented `spans()` nine times. The difference between complying and not was entirely whether I happened to look, which is the item's whole point."
+  "🟢_my_own_contrast": "MY sweep_tranche3.py DID mount one -- but only because I read the convention in an existing probe first. Contrast tranche 55, where I did NOT read the convention and re-implemented `spans()` nine times. The difference between complying and not was entirely whether I happened to look, which is the item's whole point."
  },
  "T-9EFF88": {
   "verdict": "NOT MEASURABLE BY THIS SWEEP'S INSTRUMENTS -- fixture named",
@@ -1035,13 +1036,13 @@
   "how": "static read of probes/lib/omsx_repl.py",
   "headline": "A TRAILING BLANK at end of line is not measurable through the keyboard",
   "reading": "the readout path compares against `rstrip()` (omsx_repl.py:1349 records a variant that 'reported every row mangled' for that reason). A screen row is stripped before comparison, so a trailing blank cannot survive into any reading -- the two rows the item names (`dec-eol` / `dec-eolctl`) are informational BY CONSTRUCTION, exactly as filed.",
-  "note": "\ud83c\udfaf this is not a gap that better rows would close: the instrument cannot represent the value. Naming that is the verdict."
+  "note": "🎯 this is not a gap that better rows would close: the instrument cannot represent the value. Naming that is the verdict."
  },
  "T-329DD3": {
   "verdict": "SUPERSEDED, as the item itself says",
   "how": "grep of the superseding mechanism",
   "headline": "THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS (struck through)",
-  "reading": "the item is struck through and says '\u26a0\ufe0f PARTLY SUPERSEDED by the sentinel item above'. The sentinel capture IS shipped -- 30 mentions in probes/lib/omsx_repl.py and 1 in tools/run_gates.py -- so the superseding mechanism exists and the supersession is real.",
+  "reading": "the item is struck through and says '⚠️ PARTLY SUPERSEDED by the sentinel item above'. The sentinel capture IS shipped -- 30 mentions in probes/lib/omsx_repl.py and 1 in tools/run_gates.py -- so the superseding mechanism exists and the supersession is real.",
   "note": "kept for the reasoning it carries, which is what its own header says it is for"
  },
  "T-051734": {
@@ -1049,7 +1050,7 @@
   "how": "uptime",
   "headline": "THE HARNESS'S WALL TIME HAS A ~5.7 s PERIODIC STALL ... AND IT MUST BE RE-MEASURED ON AN IDLE HOST BEFORE ANYONE ACTS ON IT",
   "reading": "load average right now is 2.50 / 2.54 / 3.56 -- this host is NOT idle, partly because this sweep has been running emulator batteries on it all evening.",
-  "\ud83c\udfaf_why_that_is_the_right_answer": "THE ITEM STATES ITS OWN PRECONDITION AND THE PRECONDITION IS UNMET. Re-measuring now would produce a number contaminated in exactly the way the item warns about -- and would then sit on the list looking like a measurement. The item is better written than most on this list precisely because it makes its own falsification refusable.",
+  "🎯_why_that_is_the_right_answer": "THE ITEM STATES ITS OWN PRECONDITION AND THE PRECONDITION IS UNMET. Re-measuring now would produce a number contaminated in exactly the way the item warns about -- and would then sit on the list looking like a measurement. The item is better written than most on this list precisely because it makes its own falsification refusable.",
   "note": "scratchpad/harness_walltime.py is present and ready; it needs a quiet host, not new code"
  },
  "T-C7AC0E": {
@@ -1057,21 +1058,21 @@
   "how": "uptime",
   "headline": "`PAINT` IS STILL 1.9-2.0x SLOWER THAN BOTH REFERENCES -- HALVED BY D-PAINTVRAM, NOT CLOSED",
   "reading": "load average 1.84 / 2.18 / 3.21 -- not idle, and this sweep's own emulator batteries are part of why. A 1.9-2.0x ratio re-measured under contention would be contaminated in the same way T-051734 warns about for wall time.",
-  "note": "\ud83c\udfaf the item is a RATIO between two machines measured in the same run, so it is more robust to load than an absolute figure -- but not robust enough to bank a two-significant-figure number from, and banking one is exactly how a contaminated reading becomes a filed fact."
+  "note": "🎯 the item is a RATIO between two machines measured in the same run, so it is more robust to load than an absolute figure -- but not robust enough to bank a two-significant-figure number from, and banking one is exactly how a contaminated reading becomes a filed fact."
  },
  "T-356731": {
   "verdict": "NOT MEASURABLE BY READING -- needs the knife re-run",
   "how": "read",
   "headline": "K-PE1's FOUR UNEXPLAINED ROWS: SOMETHING RAISES ERR 5 WITHOUT THE WRITER",
   "reading": "K-PE1 is documented at docs/spec-basic-penderr.md:285 as inverting the guard's polarity ('jr nz,pes_pending -> jr z,pes_pending: nothing is ever recorded'). Its four unexplained rows are a KNIFE RESULT.",
-  "why_not": "\u26a0\ufe0f a knife result can only be re-established by running the knife -- cutting the source, rebuilding both ROMs, scoring the rows, and restoring. That is a full slice's apparatus, and per the operating rules it must never run while anything else is building. Named rather than guessed."
+  "why_not": "⚠️ a knife result can only be re-established by running the knife -- cutting the source, rebuilding both ROMs, scoring the rows, and restoring. That is a full slice's apparatus, and per the operating rules it must never run while anything else is building. Named rather than guessed."
  },
  "T-AC33CE": {
   "verdict": "LIVE -- and my own filed COUNT was wrong",
   "how": "grep over this session's probes",
   "headline": "D-TODOSWEEP'S OWN NINE PROBES RE-IMPLEMENT THE `[...]` READER",
   "reading": "**11**, not nine: sweep_tranche1 (two readers), 2, 3, 4, 11, 12, 16, 17, plus editscout_layout, editscout_reentry, editscout_reentry2. And **0 of them import the shared reader** -- not `result_span`, not `result_span_after_echo`.",
-  "\ud83d\udd34_the_irony_is_load_bearing": "I FILED THIS ITEM WITH AN UNMEASURED COUNT ('nine') IN A SWEEP WHOSE ENTIRE PREMISE IS THAT FILED COUNTS ROT. It rotted within two tranches -- not through drift, but because I never counted in the first place and wrote the number from memory of what I had done. \ud83c\udfaf That is the same failure the sweep has found in a dozen items, committed by the person cataloguing it, at the moment of cataloguing it. Corrected here rather than quietly.",
+  "🔴_the_irony_is_load_bearing": "I FILED THIS ITEM WITH AN UNMEASURED COUNT ('nine') IN A SWEEP WHOSE ENTIRE PREMISE IS THAT FILED COUNTS ROT. It rotted within two tranches -- not through drift, but because I never counted in the first place and wrote the number from memory of what I had done. 🎯 That is the same failure the sweep has found in a dozen items, committed by the person cataloguing it, at the moment of cataloguing it. Corrected here rather than quietly.",
   "id_history": "was T-872E8C; became T-AC33CE when its headline was corrected from NINE to ELEVEN in tranche 58. Content-derived ids survive line MOVES and FILE moves -- they do not survive REWORDING."
  },
  "T-B11411": {
@@ -1079,23 +1080,23 @@
   "how": "read + the tranche-1 PLAY(n) measurement",
   "headline": "CLOSED 2026-08-26, D-PLAYOP, +2 B",
   "residual_1": "'the fourth (a 4th voice string) is UNMEASURED -- do not assume it into either half' -- the block itself records this as since measured: **2 on both references, already correct**. Resolved in place.",
-  "residual_2": "\u26a0\ufe0f 'NOT MEASURED: whether PLAY QUEUES BEFORE RAISING. The seam found wrong ordering at SWAP and PAINT; this probe reads the error code only.' STILL OPEN.",
-  "\ud83d\udd34_and_it_cannot_be_measured_while_another_item_is_live": "READING THE QUEUE NEEDS `PLAY(n)` -- and tranche 1 measured that zerobas raises `Missing operand` on `PLAY(0)` while both references print 0. So the instrument for THIS residual is the exact function a DIFFERENT filed item says is unimplemented. \ud83c\udfaf ONE OPEN ITEM BLOCKS THE MEASUREMENT OF ANOTHER, and neither item mentions the other. The queue question is not 'unmeasured because nobody tried' -- it is unmeasurable until PLAY(n) ships.",
+  "residual_2": "⚠️ 'NOT MEASURED: whether PLAY QUEUES BEFORE RAISING. The seam found wrong ordering at SWAP and PAINT; this probe reads the error code only.' STILL OPEN.",
+  "🔴_and_it_cannot_be_measured_while_another_item_is_live": "READING THE QUEUE NEEDS `PLAY(n)` -- and tranche 1 measured that zerobas raises `Missing operand` on `PLAY(0)` while both references print 0. So the instrument for THIS residual is the exact function a DIFFERENT filed item says is unimplemented. 🎯 ONE OPEN ITEM BLOCKS THE MEASUREMENT OF ANOTHER, and neither item mentions the other. The queue question is not 'unmeasured because nobody tried' -- it is unmeasurable until PLAY(n) ships.",
   "note": "the seam ordering was wrong at SWAP and at PAINT, so the prior is that it is wrong here too -- which makes the blocked measurement worth more, not less"
  },
  "T-E98A8C": {
   "verdict": "CLOSED, with a LIVE residual of the 'reasoned not measured' class",
   "how": "read",
   "headline": "CLOSED 2026-08-24 (D-CIRCTC) -- AND IT WAS A CLEAN DELETE",
-  "reading": "the fix is closed; the block carries '\ud83d\udd34 THAT VERDICT WAS REASONED, NOT MEASURED. The trailing comma is not a [...]'",
+  "reading": "the fix is closed; the block carries '🔴 THAT VERDICT WAS REASONED, NOT MEASURED. The trailing comma is not a [...]'",
   "class": "same family as the fp_exp/fp_log $8000 item (tranche 41) -- a conclusion resting on an argument about the code with no row behind it. Two instances now, in unrelated slices."
  },
  "T-EB2497": {
   "verdict": "CLOSED -- and my residual marker FALSE-POSITIVED on it",
   "how": "read",
   "headline": "CLOSED 2026-08-24 (D-SWAP3) -- AND IT WAS A GENERIC MECHANISM",
-  "reading": "the matched phrase is '\ud83c\udfaf That closes TWO divergences the 0 B patch **left open**' -- a sentence stating that two things are now CLOSED. My keyword screen matched 'left open' and read a closure as a residual.",
-  "\ud83c\udfaf_instrument_note": "THE KEYWORD SCREEN HAS A FALSE-POSITIVE DIRECTION I HAD NOT SEEN: it matches residual vocabulary used in the PAST TENSE inside a closure. Tranche 1 measured its over-inclusion at 67-vs-37 on the word OPEN; this is the same failure with a two-word phrase. The screen remains a superset -- which is the safe direction -- but its precision is worse than the 37 suggested."
+  "reading": "the matched phrase is '🎯 That closes TWO divergences the 0 B patch **left open**' -- a sentence stating that two things are now CLOSED. My keyword screen matched 'left open' and read a closure as a residual.",
+  "🎯_instrument_note": "THE KEYWORD SCREEN HAS A FALSE-POSITIVE DIRECTION I HAD NOT SEEN: it matches residual vocabulary used in the PAST TENSE inside a closure. Tranche 1 measured its over-inclusion at 67-vs-37 on the word OPEN; this is the same failure with a two-word phrase. The screen remains a superset -- which is the safe direction -- but its precision is worse than the 37 suggested."
  },
  "T-7A663B": {
   "verdict": "CLOSED, verified by mechanism -- and a screen false positive",
@@ -1109,7 +1110,7 @@
   "how": "read + tranche 47's battery list",
   "headline": "`fat-error-acceptance`'s missing `NAME` control -- CLOSED 2026-08-07 by D-FEVERB",
   "reading": "the fix is real and described in detail (a control that prints `NOT MEASURED` and exits 2 rather than passing).",
-  "\ud83d\udd34_exposure": "its gate, `fat-error-acceptance`, is one of the 22 targets tranche 47 found NOT in the battery with no documented exclusion. A closure verified only by a gate that has not run since is a claim about the day it was written.",
+  "🔴_exposure": "its gate, `fat-error-acceptance`, is one of the 22 targets tranche 47 found NOT in the battery with no documented exclusion. A closure verified only by a gate that has not run since is a claim about the day it was written.",
   "screen_note": "the keyword hit was the FIX's own behaviour ('if it fails, THAT case prints NOT MEASURED'), not a residual"
  },
  "T-AEE8D4": {
@@ -1124,14 +1125,14 @@
   "how": "read + make basic-reloc",
   "headline": "~~MAIN PAGE 1 HAS 2 B~~ -- 69 B FREE SINCE 2026-08-19",
   "residual": "'are now UNPRICED, not automatically live: each was a claim about a design' -- the carve candidates the wall change freed are unpriced, deliberately",
-  "note": "\ud83c\udfaf the 69 B in its own corrected headline is ITSELF stale: today's wall is 89 B. A block that corrects a stale number acquires a stale number."
+  "note": "🎯 the 69 B in its own corrected headline is ITSELF stale: today's wall is 89 B. A block that corrects a stale number acquires a stale number."
  },
  "T-CFEA4A": {
   "verdict": "CLOSED with a GENUINE live residual, and it points forward",
   "how": "read",
   "headline": "CLOSED 2026-08-08 -- AN ARRAY ELEMENT IS NOW A LEGAL LVALUE TARGET",
-  "residual": "'\u27a1\ufe0f **Still open below:** the four further lvalue parse sites'",
-  "note": "\ud83d\udfe2 the well-behaved shape: a closed block that names its residual AND says where the rest lives. Compare the 30 divergences of \u00a71.2, which named nothing."
+  "residual": "'➡️ **Still open below:** the four further lvalue parse sites'",
+  "note": "🟢 the well-behaved shape: a closed block that names its residual AND says where the rest lives. Compare the 30 divergences of §1.2, which named nothing."
  },
  "T-67470D": {
   "verdict": "CLOSED -- the fix is IN the gate, verified twice this sweep",
@@ -1143,8 +1144,8 @@
   "verdict": "LIVE -- and unmeasurable by the battery BY DESIGN",
   "how": "grep for any time assertion in tools/ and probes/lib/",
   "headline": "ZEROBAS DRAWS ARCS 5-6x SLOWER THAN THE REFERENCE",
-  "reading": "its residual says '\ud83d\udcb0 Not priced. \u26a0\ufe0f NO GATE MEASURES TIME AT ALL -- this is invisible to [the battery]'. Confirmed: no gate asserts on elapsed time anywhere. run_gates.py PRINTS per-unit wall times but nothing fails on them.",
-  "note": "\ud83c\udfaf same family as the PAINT 1.9-2.0x item -- both are performance divergences in a project whose entire verification apparatus is value-based. Two items, one missing instrument."
+  "reading": "its residual says '💰 Not priced. ⚠️ NO GATE MEASURES TIME AT ALL -- this is invisible to [the battery]'. Confirmed: no gate asserts on elapsed time anywhere. run_gates.py PRINTS per-unit wall times but nothing fails on them.",
+  "note": "🎯 same family as the PAINT 1.9-2.0x item -- both are performance divergences in a project whose entire verification apparatus is value-based. Two items, one missing instrument."
  },
  "T-C7589B": {
   "verdict": "CLOSED -- fixed by D-KNIFEGUARD, verified in the tree",
@@ -1156,49 +1157,49 @@
   "verdict": "CLOSED with a DECLARED scope limit, not a residual",
   "how": "read",
   "headline": "~~AN `ERASE`D FIELDED ARRAY LEAVES A STALE `FLD_TAB` ENTRY~~",
-  "reading": "the matched text is 'unmeasured -- named in the spec's \u00a79 denominator, not claimed' -- an explicitly DECLARED limit of the measurement, which is the well-behaved shape rather than a hidden gap"
+  "reading": "the matched text is 'unmeasured -- named in the spec's §9 denominator, not claimed' -- an explicitly DECLARED limit of the measurement, which is the well-behaved shape rather than a hidden gap"
  },
  "T-AD8053": {
   "verdict": "READ -- entered the subject set by HEADLINE signal, no keyword residual in body",
   "how": "read",
   "headline": "`DEF FN` SHIPS (2026-08-23, D-DEFFNLAND)",
   "note": "a shipping announcement; kwsweep today has no MISSING= line, consistent with DEF FN being complete",
-  "caveat": "\u26a0\ufe0f scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
+  "caveat": "⚠️ scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
  },
  "T-8E48C2": {
   "verdict": "READ -- entered the subject set by HEADLINE signal, no keyword residual in body",
   "how": "read",
   "headline": "A SECOND SEEDING HOLE, AND IT IS WORTH 16 B ON MAIN PAGE 1",
   "note": "D-SEEDHOLE2 shipped; the seed-set cure ('the cure for a proxy is not a narrower proxy -- it is the REAL surface') is the one tranche 51 cites as already-learned",
-  "caveat": "\u26a0\ufe0f scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
+  "caveat": "⚠️ scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
  },
  "T-5C480A": {
   "verdict": "READ -- entered the subject set by HEADLINE signal, no keyword residual in body",
   "how": "read",
   "headline": "FOUR `$8000` VERDICTS REST ON ONE COMMENT, AND IT IS AN OVERFLOW [comment]",
   "note": "same class as the fp_exp/fp_log item (tranche 41, LIVE): verdicts resting on an argument rather than a row",
-  "caveat": "\u26a0\ufe0f scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
+  "caveat": "⚠️ scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
  },
  "T-B0F181": {
   "verdict": "READ -- entered the subject set by HEADLINE signal, no keyword residual in body",
   "how": "read",
   "headline": "THE 32-BIT CROSS PRODUCT HAS NO GREEN ROW THAT CAN SEE IT",
   "note": "a coverage gap of the same shape as pat_8_empty (tranche 33) and s.fldarymix (tranche 29) -- a row that cannot witness its subject",
-  "caveat": "\u26a0\ufe0f scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
+  "caveat": "⚠️ scored from the headline and body shape, NOT re-run. Recorded read-not-run like the other 19."
  },
  "T-771822": {
   "verdict": "CLOSED -- same-day round 3 closed it, and the 3 rows ARE in the battery",
   "how": "grep of probes/basic/basic_probe_graphics.py",
   "headline": "ASPS TRUNCATION IS MEASURED FOR aspect < 1 ONLY",
-  "reading": "the \u26a0\ufe0f headline is the ORIGINAL filing; the body's \u2705 records D-CIRCDOM round 3 closing it the SAME DAY, 0/5 divergences. Verified the discriminators shipped: ell_a17r128 / ell_a13r128 / ell_a11r128 are lines 452-454 of basic_probe_graphics.py, in graphics-acceptance, green today.",
-  "note": "\ud83c\udfaf the keyword 'unmeasured' matched TWICE and both were rebuttal text: the stale headline, and 'the second claim was riding along unmeasured AND IS NOW PINNED'. Same false-positive class as the headline-states-the-original-problem screen."
+  "reading": "the ⚠️ headline is the ORIGINAL filing; the body's ✅ records D-CIRCDOM round 3 closing it the SAME DAY, 0/5 divergences. Verified the discriminators shipped: ell_a17r128 / ell_a13r128 / ell_a11r128 are lines 452-454 of basic_probe_graphics.py, in graphics-acceptance, green today.",
+  "note": "🎯 the keyword 'unmeasured' matched TWICE and both were rebuttal text: the stale headline, and 'the second claim was riding along unmeasured AND IS NOW PINNED'. Same false-positive class as the headline-states-the-original-problem screen."
  },
  "T-5858A6": {
-  "verdict": "CLOSED -- the matched \ud83d\udd34 sits inside a quoted *Original filing:* the body OVERTURNS",
+  "verdict": "CLOSED -- the matched 🔴 sits inside a quoted *Original filing:* the body OVERTURNS",
   "how": "read",
   "headline": "OPEN \"X\" FOR APPEND AS #1 ON A NON-EXISTENT FILE",
   "reading": "D-LOADERR measured it: the reference raises 'File not found in 10'; zerobas printed 'load error'. The quoted 'WHAT THE REFERENCE DOES IS UNMEASURED AND MUST NOT BE GUESSED' is the pre-measurement filing, preserved verbatim under '*Original filing:*'.",
-  "note": "\ud83d\udd34 BUT ITS ACCEPTANCE TARGET IS OUT OF THE BATTERY: `namspc-acceptance` is a real Makefile target and appears 0 times in tools/run_gates.py -- another instance of the 22-target finding. The row that witnessed this item is not run by `make gates`."
+  "note": "🔴 BUT ITS ACCEPTANCE TARGET IS OUT OF THE BATTERY: `namspc-acceptance` is a real Makefile target and appears 0 times in tools/run_gates.py -- another instance of the 22-target finding. The row that witnessed this item is not run by `make gates`."
  },
  "T-E35568": {
   "verdict": "CLOSED -- and its residual is correctly SPLIT OUT into its own open block",
@@ -1209,44 +1210,44 @@
  "T-1388E8": {
   "verdict": "CLOSED -- struck through / explicitly superseded",
   "how": "read",
-  "headline": "\ud83d\udcb0 ~~THE RE-RAISE NAMES THE WRONG LINE WHEN THE TWO CONTEXTS DISAGREE~~",
+  "headline": "💰 ~~THE RE-RAISE NAMES THE WRONG LINE WHEN THE TWO CONTEXTS DISAGREE~~",
   "reading": "headline struck through -- the project's own closed marker",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-BB36E0": {
   "verdict": "CLOSED -- struck through / explicitly superseded",
   "how": "read",
-  "headline": "\u2705 (superseded -- the original filing, kept for its measurements)",
+  "headline": "✅ (superseded -- the original filing, kept for its measurements)",
   "reading": "explicitly superseded; retained only so its measurements stay citable",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-7030AF": {
   "verdict": "CLOSED -- struck through / explicitly superseded",
   "how": "read",
-  "headline": "\u2705 ~~THREE OF tss_ary's FIVE CALLERS ARE UNMEASURED FOR THE ERR-14~~",
+  "headline": "✅ ~~THREE OF tss_ary's FIVE CALLERS ARE UNMEASURED FOR THE ERR-14~~",
   "reading": "struck through; the 'unmeasured' keyword is INSIDE the strikethrough",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-6A9F9F": {
   "verdict": "CLOSED -- struck through / explicitly superseded",
   "how": "read",
-  "headline": "\u2705 CLOSED 2026-08-21 (D-FNEXPR2), 0 EXTRA BYTES -- FILES A$",
-  "reading": "closed; '\ud83d\udcb0 Not priced' attaches to a follow-on observation, not to the item",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "headline": "✅ CLOSED 2026-08-21 (D-FNEXPR2), 0 EXTRA BYTES -- FILES A$",
+  "reading": "closed; '💰 Not priced' attaches to a follow-on observation, not to the item",
+  "caveat": "⚠️ read-not-run."
  },
  "T-CC29FA": {
   "verdict": "CLOSED -- and it is THIS SWEEP'S OWN PRECEDENT",
   "how": "read",
   "headline": "RE-RAN THE STALENESS SWEEP'S 'LIVE' ROWS -- DONE 2026-08-20",
   "reading": "a prior sweep of exactly this shape: re-measured 17 items at 14dc44d and marked 11 LIVE. Its 'LIVE' rows became their own items; this block records the RUN, not an open gap.",
-  "note": "\ud83c\udfaf it is the answer to 'has this been done before' -- yes, at 17 items on 2026-08-09. The present sweep is 177. The reason it had to be redone is the reason this file exists: a verdict rots, and nothing gated the 2026-08-09 one."
+  "note": "🎯 it is the answer to 'has this been done before' -- yes, at 17 items on 2026-08-09. The present sweep is 177. The reason it had to be redone is the reason this file exists: a verdict rots, and nothing gated the 2026-08-09 one."
  },
  "T-48AC8B": {
   "verdict": "LIVE residual (D-DIR-3), correctly declared -- and its gate is OUT OF THE BATTERY",
   "how": "read + grep of Makefile / tools/run_gates.py / probes",
   "headline": "Direct-mode control flow -- DONE 2026-07-26",
-  "reading": "the slice itself is closed (40/40 vs the VG-8020). The live part is DEFERRED D-DIR-3: interrupt traps still do not dispatch in direct mode, and whether the REFERENCE fires them at the prompt is unmeasured. The conservative answer is gated in at one RAM load. Spec \u00a76 names the characterization that would close it. No probe carries a direct-mode trap row -- grep of the interval probes finds no 'direct'.",
-  "note": "\ud83d\udd34 `direct-ctrl-acceptance` is a real Makefile target that appears 0 times in run_gates.py. That is TWO out-of-battery gates found in two tranches (with namspc-acceptance), both cited by closed items as their evidence. The 22-target finding is not abstract: these are the rows that witnessed two of the sweep's own verdicts."
+  "reading": "the slice itself is closed (40/40 vs the VG-8020). The live part is DEFERRED D-DIR-3: interrupt traps still do not dispatch in direct mode, and whether the REFERENCE fires them at the prompt is unmeasured. The conservative answer is gated in at one RAM load. Spec §6 names the characterization that would close it. No probe carries a direct-mode trap row -- grep of the interval probes finds no 'direct'.",
+  "note": "🔴 `direct-ctrl-acceptance` is a real Makefile target that appears 0 times in run_gates.py. That is TWO out-of-battery gates found in two tranches (with namspc-acceptance), both cited by closed items as their evidence. The 22-target finding is not abstract: these are the rows that witnessed two of the sweep's own verdicts."
  },
  "T-632DF5": {
   "verdict": "CLOSED -- its 'open' text is DECISIONS, not gaps (the not-a-task class)",
@@ -1259,42 +1260,42 @@
   "verdict": "CLOSED -- residual correctly PROMOTED to its own priced item",
   "how": "read",
   "headline": "ZEROBAS HAS NO STRING READ -- CLOSED 2026-08-07 by D-READVAR",
-  "reading": "the body says its leftovers were filed as an **item** in \u00a7'Open -- standing residuals', with their price and with the unmeasured question that decides the work's worth (`INPUT A(1)`). Same well-behaved split as T-E35568."
+  "reading": "the body says its leftovers were filed as an **item** in §'Open -- standing residuals', with their price and with the unmeasured question that decides the work's worth (`INPUT A(1)`). Same well-behaved split as T-E35568."
  },
  "T-D667F8": {
   "verdict": "CLOSED -- docs-only, and its 'no gate was run' is now PARTLY false in a good way",
   "how": "read",
   "headline": "STALE LEAN-CART CLAIMS SWEPT -- 2026-07-31, docs only, 0 ROM bytes",
   "reading": "byte-neutral doc edits; the block declares 'no gate was run (they measure nothing about docs)'. True on 2026-07-31.",
-  "note": "\ud83c\udfaf that sentence has since been narrowed by this session's own first slice: `citation-check` DOES gate one class of doc content (scratchpad citations). The claim is not wrong, it is now SCOPED -- gates measure nothing about doc PROSE. Not filing it; it changes no action."
+  "note": "🎯 that sentence has since been narrowed by this session's own first slice: `citation-check` DOES gate one class of doc content (scratchpad citations). The claim is not wrong, it is now SCOPED -- gates measure nothing about doc PROSE. Not filing it; it changes no action."
  },
  "T-DEE8E5": {
   "verdict": "CLOSED",
   "how": "read",
   "headline": "DONE -- diskbasic_probe_format.py on real CF-3300: CALL FORMAT writes",
   "reading": "a DONE measurement record on real hardware",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-B95002": {
   "verdict": "CLOSED",
   "how": "read",
   "headline": "Probes streamed audio on every boot -- `sound_driver null` had reached",
   "reading": "an apparatus fix, landed",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-A2EDF6": {
   "verdict": "CLOSED",
   "how": "read",
   "headline": "A RANDOM PUT stamps the on-disk directory size immediately",
   "reading": "closed; the body records DIR_EXPECT reddening that row ALONE, i.e. the new column is live and discriminating",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-B42E11": {
-  "verdict": "\ud83d\udd34 LIVE -- REOPENED BY MEASUREMENT. Two divergences on the verb its own plan named.",
+  "verdict": "🔴 LIVE -- REOPENED BY MEASUREMENT. Two divergences on the verb its own plan named.",
   "how": "scratchpad/sweep_tranche65.py, differential vs National_CF-3300 on a scratch copy of test720.dsk",
   "headline": "CLOSED 2026-08-21 (D-FNEXPR2), 0 ROM BYTES -- THE FACE FOR A NON-STRING FILENAME",
-  "reading": "the \u26a0\ufe0f UNMEASURED text is quoted *Original filing:*, so the keyword screen was right to be suspicious and wrong about which half. The real defect is in the CLOSURE: it measured SIX verbs (OPEN/KILL/SAVE/LOAD/BLOAD/FILES) and the item's own plan named THREE -- OPEN, KILL and **NAME**. NAME is not among the six. Measured now:\n  NAME\"X.DAT\"AS 5   (old file ABSENT)  cf3300 53 File not found  | zb 24 Missing operand  DIFF\n  NAME\"HI.TXT\"AS 5  (old file EXISTS)  cf3300 13 Type mismatch   | zb 24 Missing operand  DIFF\n  NAME 5 AS\"X.DAT\"  (old-name position) cf3300 13 | zb 13  ok -- the first fname_expr call DID inherit the fix\ncontrols KILL 5 / OPEN 5 (13=13), KILL 1/0 (11=11, the operand's-own-fault rule), NAME\"NOSUCH\"AS\"Y\" (53=53) all agree, so the apparatus is not the story.",
-  "note": "\ud83c\udfaf THE DISCRIMINATOR IS WHAT MAKES IT A RULE. With an ABSENT old file, cf3300's 53 has TWO sufficient causes -- lookup-first, or never-faults-on-the-new-name. HI.TXT EXISTS on test720.dsk, so the lookup succeeds and the reference still answers 13. The reference rule is therefore **look the old file up FIRST, then evaluate the new name, which faults like every other verb**. zerobas answers 24 in BOTH, so it is wrong twice for DIFFERENT reasons: wrong ORDER when the file is absent, wrong FACE when it is present.\n\ud83d\udd34 AND THE COMMENT ABOVE do_name ARGUES FOR THE INVERSE: 'Evaluating early is what preserves the error ORDER ... `NAME\"x.dat\"AS 5` is still `Syntax error`, not `File not found`.' The reference says File not found is exactly right there, and the face the comment names is not even the one the tree produces. A fix falsified the paragraph beside it, and no gate reads prose."
+  "reading": "the ⚠️ UNMEASURED text is quoted *Original filing:*, so the keyword screen was right to be suspicious and wrong about which half. The real defect is in the CLOSURE: it measured SIX verbs (OPEN/KILL/SAVE/LOAD/BLOAD/FILES) and the item's own plan named THREE -- OPEN, KILL and **NAME**. NAME is not among the six. Measured now:\n  NAME\"X.DAT\"AS 5   (old file ABSENT)  cf3300 53 File not found  | zb 24 Missing operand  DIFF\n  NAME\"HI.TXT\"AS 5  (old file EXISTS)  cf3300 13 Type mismatch   | zb 24 Missing operand  DIFF\n  NAME 5 AS\"X.DAT\"  (old-name position) cf3300 13 | zb 13  ok -- the first fname_expr call DID inherit the fix\ncontrols KILL 5 / OPEN 5 (13=13), KILL 1/0 (11=11, the operand's-own-fault rule), NAME\"NOSUCH\"AS\"Y\" (53=53) all agree, so the apparatus is not the story.",
+  "note": "🎯 THE DISCRIMINATOR IS WHAT MAKES IT A RULE. With an ABSENT old file, cf3300's 53 has TWO sufficient causes -- lookup-first, or never-faults-on-the-new-name. HI.TXT EXISTS on test720.dsk, so the lookup succeeds and the reference still answers 13. The reference rule is therefore **look the old file up FIRST, then evaluate the new name, which faults like every other verb**. zerobas answers 24 in BOTH, so it is wrong twice for DIFFERENT reasons: wrong ORDER when the file is absent, wrong FACE when it is present.\n🔴 AND THE COMMENT ABOVE do_name ARGUES FOR THE INVERSE: 'Evaluating early is what preserves the error ORDER ... `NAME\"x.dat\"AS 5` is still `Syntax error`, not `File not found`.' The reference says File not found is exactly right there, and the face the comment names is not even the one the tree produces. A fix falsified the paragraph beside it, and no gate reads prose."
  },
  "T-2148BA": {
   "verdict": "LIVE residual, correctly DECLARED as choices-not-readings",
@@ -1308,41 +1309,41 @@
   "how": "read",
   "headline": "DELETE <range> -- LANDED 2026-08-02 (D-DELETE), 34/34, six knives",
   "reading": "closed; its unmeasured part was PROMOTED ('Its own item is filed below') -- the well-behaved split",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-CAA3DC": {
   "verdict": "CLOSED",
   "how": "read",
   "headline": "lnblank-say-acceptance WAS NOT RUN FOR D-LATCH -- RUN 2026-08-04",
   "reading": "a run record: zero MIS-ECHOED / MIS-DELIVERED / ORACLES-DISAGREE rows",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-246CED": {
   "verdict": "CLOSED",
   "how": "read",
   "headline": "ERROR-MESSAGE CAPITALISATION -- CLOSED 2026-08-02 by D-MSGEXACT",
   "reading": "closed; 'no gate ever caught it' is the block explaining why it was NOT a defect, not a gap",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-BC5343": {
   "verdict": "CLOSED",
   "how": "read",
   "headline": "~~135 MORE DEAD BYTES OF THE SAME SHAPE~~ -- THE GATE THIS ITEM ASKED FOR",
   "reading": "struck through; the gate it asked for exists, and all 28 candidates were read the same day and are live CODE",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-7DA331": {
   "verdict": "CLOSED",
   "how": "read",
   "headline": "WIDTH n's VALID DOMAIN -- LANDED 2026-07-28, 76/76, falsified",
   "reading": "landed with a falsification pass",
-  "caveat": "\u26a0\ufe0f read-not-run."
+  "caveat": "⚠️ read-not-run."
  },
  "T-D20535": {
   "verdict": "LIVE -- this is tranche 65's own finding, filed by the sweep",
   "how": "scratchpad/sweep_tranche65.py (see T-B42E11 for the measurement)",
   "headline": "NAME \"old\" AS <non-string> DIVERGES TWICE",
   "reading": "the new open item carrying the two measured DIFFs. Its parent T-B42E11 is now REOPENED.",
-  "note": "\ud83c\udfaf the subject set grew by one BECAUSE the sweep worked -- 177 -> 178. A sweep that files nothing has not necessarily been thorough; this one moved a closed item back to open on a measurement."
+  "note": "🎯 the subject set grew by one BECAUSE the sweep worked -- 177 -> 178. A sweep that files nothing has not necessarily been thorough; this one moved a closed item back to open on a measurement."
  }
 }

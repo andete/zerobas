@@ -8901,3 +8901,1507 @@ parity — `BLOAD"CAS:",R`, `CLOAD` and `LOAD"CAS:"` load and `CSAVE`/`SAVE"CAS:
 the `$D3`/`$D0` cassette format through `TAPOON`/`TAPOUT`/`TAPOOF`. Both are
 oracle-validated — see the now-checked items in the **Remaining** section above and
 `basic_probe_tape_save.py` / `basic_probe_cload_ondevice.py`.)
+
+---
+
+## Appended 2026-08-30 — the second archive pass
+
+🔴 **`tools/split_todo_archive.py` REGENERATES THIS FILE FROM `TODO.md` ALONE, so
+running it a SECOND time rebuilds the archive out of only what is still in the
+pickup list — it deleted 8857 of the 8903 lines below and its own `--verify`
+passed, because that check reconstructs the SOURCE, not this file.** Restored
+from git and the new blocks appended by hand. The tool is a ONE-SHOT split; a
+second pass needs an append mode it does not have (filed in `TODO.md`).
+
+The blocks below moved out of `TODO.md` on 2026-08-30, under the section
+headings they were written beneath, byte-identical as before.
+
+## From `TODO.md` § Open — standing residuals (INDEX; this is the pickup list)
+
+- [x] ✅ **`DIM`'s BOUND LIST IS OPTIONAL, AND THE SOURCE ASSERTED IT WAS NOT.**
+      Found 2026-08-28 by D-POPRAISE while looking for a row that reached
+      `ee_synerr_pop` — the witness row WAS the divergence.
+      [`docs/spec-basic-dimbare.md`](docs/spec-basic-dimbare.md). `arrays.asm`
+      raised ERR 2 for any `DIM` item with no `(`, justified in-line by *"DIM
+      requires a bound list"* — a claim **both references refute on 11 rows**:
+      `DIM A`, `DIM A$`, `DIM A,B`, `DIM A,B(2)`, `DIM A(2),B`, `DIM B,A(2)`,
+      `DIM A B` all accepted, and `DIM A:A=5` / `DIM A:A(0)=5` both answer 5.
+      🎯 **`DIM A:DIM A(2)` reports NO `Redimensioned array`**, so the ignored
+      item creates NOTHING — that is what makes "fall into the list
+      continuation" the faithful shape rather than "allocate a default bound".
+      ✅ **FIXED: 11 DIFF → 0, +1 B of the low region (measured 2026-08-28).**
+      🔴 **TWO RULES FITTED ALL 11 ROWS** and the separating cases were measured
+      BEFORE the fix was written: `DIM A,` / bare `DIM` / `DIM 1` / `DIM $` all
+      still raise ERR 2 and `DIM A(` still raises ERR 24, so the rule is "no
+      bound list", not "lax about anything that is not `(`" — the wider reading
+      would have shipped regressions into green rows.
+      🔴 **PREDICTION MISSED, AND THE MISS IS THE FINDING**: K-DB3 (widen past
+      `is_letter`) was predicted to redden 4 of those green rows and reddened
+      **2**. `DIM 1`/`DIM $` still error through a SECOND cause — the leftover
+      token reaches `exec_stmt`, which rejects it. So the wider rule would have
+      shipped TWO regressions, not four, and those two rows agree under BOTH
+      rules for a reason that is not the guard under test.
+      Knives K-DB1 (11 rows) / K-DB2 (3) / K-DB3 (2), all live:
+      [`scratchpad/dimbare_knives.py`](scratchpad/dimbare_knives.py).
+
+- [x] 🟢 **D-ARGOPEN: ONE PROLOGUE FOR LEFT$ / RIGHT$ / MID$ — LOW REGION
+      66 -> 107 B FREE (2026-08-30).** Spec
+      [`docs/spec-basic-argopen.md`](docs/spec-basic-argopen.md); probe
+      `scratchpad/ngram8_probe.py`, knives `scratchpad/argopen_knives.py`.
+      16 instructions open-coded three times. The byte-level ranking sees only
+      TWO sites, because `str_fn_mid` spells the same four exits with `jp`.
+      🔴 **THE FIRST DESIGN WAS CORRECT AND UNWITNESSABLE.** `str_arg_open`
+      discarded its own return address so the bail ran at the verb's depth —
+      `sas_decline`'s own idiom — and its knife moved ZERO rows, because that
+      bail's only outcome is a DEFERRED error and every path that reports one
+      resets SP. Changed to a CF-clear return with a per-caller guard: **6 bytes
+      more, and a guard a row can see.**
+      🎯 **AND THAT WAS THE SHAPE THIS ITEM HAD ALREADY FILED AS THE SAFE ONE**
+      before the clever one was written.
+      ✅ **S1 + K-AO1 (8/8) + K-AO2 (1/1) all live.**
+      🔴 **THREE MISTAKES, ONLY ONE IN THE ROM:** S1 counted its OWN COMMENT as a
+      guard (4, want 3 — second instrument-reads-its-own-prose of the session);
+      K-AO1 was "corrected" 8 -> 2 from a number taken on a SUPERSEDED build
+      where two frame errors cancelled; K-AO2's 4 -> 1 is a real finding — three
+      of the four malformed calls converge on the same deferred ERR 2 through
+      the garbage path, so only `LEFT$"AB"` separates them.
+
+- [x] 💰 **~42 B OF THE *LOW REGION* (estimated 2026-08-30) IN ONE HELPER: `str_fn_left` /
+      `str_fn_right` / `str_fn_mid` SHARE AN 18-INSTRUCTION PROLOGUE.** Measured
+      2026-08-30, `scratchpad/ngram_sweep.py --main`. The low region is the
+      scarce one (run `make basic-reloc`; it read 66 B on 2026-08-30 after
+      D-STRFLT).
+      The run is `inc hl` (past the selector) through `push bc`, identical at all
+      three sites: the `(` test, the two empty-argument tests, `str_arg_snap`,
+      the `,` test, and the temp-address capture. Only what follows differs —
+      LEFT$/RIGHT$ call `eval_byte_arg`, MID$ calls `eval_pos_arg`.
+      🔴 **THE BYTE-LEVEL SWEEP RANKS IT AT TWO SITES, NOT THREE.** `str_fn_mid`
+      spells the same four exits with `jp` where LEFT$/RIGHT$ use `jr`, so the
+      spans are not byte-identical and `ngram_sweep` reports a 12-instruction /
+      2-site / 16 B run. **Grep the IDIOM, then check the jump form** —
+      [[grep-the-idiom-beats-the-clone-ranking]]. Three sites is ~90 B of
+      duplicate against a ~30 B body.
+      🔴 **AND THE EXIT IS THE WHOLE DESIGN. Four of the run's instructions jump
+      to `str_arg_empty`, which ends `jp str_eval_no`** — an outward jump that,
+      from inside a helper, leaves the helper's return address on the stack.
+      **That is exactly the `tcr_ovf` defect fixed on 2026-08-30**
+      ([`docs/spec-basic-pcttrunc.md`](docs/spec-basic-pcttrunc.md) §3,
+      [[factoring-a-run-into-a-helper]]), and here it would corrupt the CF
+      contract `str_eval`'s caller reads.
+      ➡️ **The shape that avoids it entirely: the helper `ret`s with CF clear on
+      the empty-argument case and each caller does `jp nc,str_arg_empty`** —
+      3 B × 3 sites, no frame arithmetic, and the exit stays where the reader
+      can see it. Budget the 9 B into the estimate rather than saving it.
+      ⚠️ **`str_arg_snap` (D-NGRAM8) ALREADY FACTORED THE INSIDE OF THIS FAMILY**,
+      so the remaining duplicate is the part BEFORE and AROUND that call. Check
+      the overlap rather than inheriting this estimate.
+      🤖 AUTONOMOUS — a gate settles it (`make gates`), and the row set is the
+      existing string-acceptance / strparen-acceptance suites plus
+      `scratchpad/val_probe.py`'s LEFT$/RIGHT$/MID$ rows.
+
+- [x] 🟢 **D-STRFLT: `STR$` OF A NON-INTEGER — THE VAL/STR$ SWEEP CLOSES AT
+      0 DIFF / 97 AND 0 DIFF / 27.** Spec
+      [`docs/spec-basic-strflt.md`](docs/spec-basic-strflt.md); probe
+      `scratchpad/strflt_probe.py`, knives `scratchpad/strflt_knives.py`.
+      `str_fn_str` formatted `DE` with `pu_fmt_int` and never read `FACTYP`, so
+      a float argument was silently whatever int16 `flt_to_int16` left behind:
+      `STR$(1.5)`->1, `STR$(.5)`->0, `STR$(1E9)`->0,
+      `STR$(1.234567890123#)`->1.
+      🟢 **PRINT's OWN FORMATTER WAS ALREADY RIGHT** — the three `ctl.*` rows are
+      green before AND after — which is what places the defect in STR$ and makes
+      the fix a REUSE (`flt_out` split into a two-liner over `flt_fmt`, ~2 B)
+      rather than a second formatter.
+      🔴 **THE TRAILING SPACE IS INVISIBLE TO EVERY VALUE ROW.** MSX number
+      format puts a space in FRONT of every number and PRINT adds one BEHIND;
+      STR$ keeps the first and drops the second. The harness prints
+      `"[";expr;"]"` and the capture STRIPS, so `" 1.5"` and `"1.5"` read the
+      same. Pinned twice instead: a `"<"+…+">"` fence (`< 1.5>` on both
+      references) and LEN (4 / 2 / 11).
+      ✅ **ALL THREE ARMS EXACT, AND TWO DISCRIMINATE.** K-SF2 keeps the trailing
+      space and ONLY the 2 fences + 3 lengths move — which is what proves those
+      rows were necessary. K-SF3 makes `flt_out` skip `flt_fmt` and ONLY the 3
+      CONTROLS move, the exact inverse of K-SF1: that is what says the split is a
+      split and not a rename.
+      ⚠️ **`NUMBUF` IS 8 BYTES**, so the obvious "one source buffer"
+      simplification would have overrun it on `" 1000000000"` and every double.
+      The two arms keep their own buffers.
+      ✅ 29 B of the low region.
+
+- [x] 🟢 **D-VALFLT: `VAL` STOPS BEING ITS OWN NUMBER PARSER AND CALLS THE
+      TOKENISER'S — 29 DIFF -> 4, EVERY `VAL` ROW GREEN.** Spec
+      [`docs/spec-basic-valflt.md`](docs/spec-basic-valflt.md); probe
+      `scratchpad/val_probe.py` (97 rows), knives
+      `scratchpad/valflt_knives.py`.
+      `VAL` read a leading signed DECIMAL INTEGER and stopped, so every
+      fraction, every exponent, every embedded blank and every value past int16
+      was wrong — and the last of those **wrapped silently**: `VAL("40000")`
+      read -25536, `VAL("-40000")` read 25536.
+      🎯 **THE FIX IS NOT TO WRITE A PARSER.** All of it is already written and
+      oracle-pinned in `tk_float`; D-VALFLOAT had landed the bound and the
+      returning exits, so what this adds is the CALLER.
+      🟢 **THE SCRATCH GOES ON THE STACK.** Three shared RAM buffers were
+      examined across this arc and all three turned out to be OWNED (`TOKBUF`,
+      `DETOKBUF`, `FOUTBUF`). At `SP` there is no ownership question to get
+      wrong — and it is DECODED BEFORE IT IS RELEASED, because above `SP` the
+      next interrupt owns those bytes.
+      ✅ **101 B of sub page 0 + 7 B of the low region**; main page 1 untouched.
+      ✅ **ALL FOUR KNIVES EXACT**, including a 42-row prediction and K-VF4 —
+      the arm the D-PCTTRUNC commit promised and could not witness. Its
+      prediction DISCRIMINATES: `VAL("40000.5%")` must NOT move, because
+      `tkf_check_percent` refuses at the right frame depth already.
+      ✅ **AND THE `STR$` HALF CLOSED THE SAME DAY — D-STRFLT, above.** The
+      four survivors named here were all `str_fn_str` formatting `DE` with
+      `pu_fmt_int` without reading `FACTYP`; `scratchpad/strflt_probe.py` pins
+      the LEADING/TRAILING SPACE two ways (a `"<"+…+">"` fence and `LEN`)
+      because the harness's capture strips whitespace and cannot see it.
+      🤖 AUTONOMOUS — the references settle the behaviour.
+
+- [x] 🟢 **D-PCTTRUNC / D-VALUNDER / D-ERLENTRY: THREE DEFECTS IN THE FLOAT
+      CRUNCH AND THE LINE EDITOR, FOUND BY GIVING EVERY `VAL` ROW A LITERAL
+      TWIN.** Specs
+      [`docs/spec-basic-pcttrunc.md`](docs/spec-basic-pcttrunc.md) and
+      [`docs/spec-basic-erlentry.md`](docs/spec-basic-erlentry.md); probe
+      `scratchpad/val_probe.py`, knives `scratchpad/crunch_knives.py`.
+      🎯 **NONE OF IT WAS THE JOB.** The job was activating `tk_float` for VAL,
+      and the design needed the reference's answer to three questions VAL had
+      never had to have. Each got a LITERAL twin (`PRINT 1.7%` beside
+      `PRINT VAL("1.7%")`) for the standing reason that a case which agrees can
+      agree for the wrong reason — and **all three defects were in the twins**.
+      VAL's own rows were ACCIDENTALLY right, because its integer-only parser
+      stopped at the dot.
+      ✅ **`%` TRUNCATES, and this build CONCATENATED**: `1.7%`→17, `2.5%`→25,
+      `.5%`→5, `40000.5%`→ a silent −25536. Five wrong answers and one wrap.
+      ✅ **`1E-66`…`1E-99` answered a silent 0 where both references say
+      `Overflow`** — and the fix is **−4 B**: the "forced lead 0" arm produced
+      what the normal path produced anyway.
+      ✅ **A line rejected at ENTRY left `ERL` = 0; both references read 65535.**
+      Sited on the shared `dl_ovf_report` tail — after BOTH its arms (crunch
+      reject, out-of-range line number) were measured, not because the tail was
+      convenient.
+      🔴 **AND A LATENT STACK BUG THE ROWS COULD NOT SEE**: `tkf_overflow`'s
+      `pop de` wants the destination `tk_float` pushed at ENTRY, but two jumps
+      reach it from inside `tkf_calc_and_round` — one frame deeper. Invisible in
+      tokenise mode (the error path's stack reset absorbs the leak); **fatal the
+      moment VAL uses that path**, where `tkf_rej` ends in `ret`.
+      🔴 **K-PT2 PREDICTED TWO ROWS AND MOVED ZERO, AND THE CODE WAS RIGHT.**
+      `TKPOS` counts DIGITS and the dot does not advance it, so `.5%` and `0.7%`
+      never reach the negative-difference clamp at all; only a fraction with its
+      OWN leading zeros does (`0.07%`). The arm found a hole in the ROW SET.
+      Rows added, arm re-run.
+
+- [x] ~~🔴 **THE STRMAX CLAMP DIVERGES: zerobas SILENTLY CLAMPS TO 255 WHERE
+      BOTH REFERENCES RAISE `String too long`.**~~ ✅ **SHIPPED 2026-08-28
+      (D-STRLONG, [`docs/spec-basic-strlong.md`](docs/spec-basic-strlong.md)),
+      and the filing was RIGHT — all four of its rows reproduced unchanged on
+      the first run.** `sh_append`'s over-STRMAX carry now sets `SH_ERR=3`,
+      mapped to `FPERR_STRLONG` → ERR 15, sited BEFORE every allocation.
+      📏 **20 rows, 16 DIFF → 3** (`scratchpad/strlong_probe.py`; K-SL0 reverts
+      both sites to read the before/after on ONE denominator, because the row
+      set grew mid-slice — the first run's "14 of 17" is a DIFFERENT row set). Cost as measured 2026-08-28: **page-0 low +2 B
+      (68 → 70 free), page 1 −1 B (186 → 185), sub page 0 −6 B (2335 → 2329)**
+      — the slice GIVES BACK low bytes.
+      🎯 **THE TWO DEFECTS WERE SEPARATED BY SWEEPING ONE KNOB.** Fixing the
+      clamp also moved four of the six precedence rows: the test precedes
+      `heap_alloc`, so wherever the operand-1 snapshot still fits, the LENGTH is
+      now reached before the allocation that used to fail first.
+      🔬 5 knives, all live, `scratchpad/strlong_knives.py`.
+
+- [x] ✅ **D-NGRAM11 (2026-08-29): one `str_eval_next` for the six "past the
+      delimiter, evaluate a string" sites — page-0 low 118 -> 134 B free**
+      ([`docs/spec-basic-ngram11.md`](docs/spec-basic-ngram11.md)). LET A$(i)= /
+      LSET / RSET / LET A$= / MID$-statement / INSTR's two arguments. **-17 B**,
+      four of the six sites in the LOW region — which is where D-LEFTTM had just
+      spent 16 B. 16 rows.
+      🟢 **THE TAIL IS A `jp`, AND THE ARM SAYS WHAT THAT IS WORTH.** It makes the
+      depth at `str_eval` identical to the open-coded form — the property
+      D-NGRAM8 lost. But K-N11B turns it into `call`+`ret` and moves **ZERO**
+      rows, so the value here is STRUCTURAL (it cannot go wrong for the next
+      caller added) plus one byte, **not a measured hazard**. An arm asserting
+      its own zero beats a comment asserting a danger never demonstrated.
+      🔴 **ONE OF THE TWO "CONTROLS" WAS A SUBJECT ROW.** `ctl.cat`'s SETUP was
+      two `LET A$=` statements — one of the six sites — so it ran the subject's
+      own machinery and read as reassurance. K-N11A moved it, which is how it was
+      caught. Renamed `g.letcat`; a literals-only control replaces it.
+      🔴 **I PREDICTED 7 ROWS FOR K-N11A AND 12 MOVED.** The already-declining
+      `b.*` rows move too, 13 -> **24**: handed the `=` itself, the decline
+      reason changes from "a non-string is here" to "NOTHING is here".
+      **I had assumed a declining row cannot move; the code it declines WITH is
+      part of the reading.**
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+
+- [x] 🟢 **CLOSED 2026-08-30 — D-VALFLT + D-STRFLT: 0 DIFF / 97 AND 0 DIFF / 27.**
+      The remaining 14 rows named below all shipped: fractions, exponents,
+      embedded spaces and `STR$` of a non-integer. See
+      [`docs/spec-basic-valflt.md`](docs/spec-basic-valflt.md) and
+      [`docs/spec-basic-strflt.md`](docs/spec-basic-strflt.md), and the three
+      CRUNCH defects the twinning found on the way
+      ([`docs/spec-basic-pcttrunc.md`](docs/spec-basic-pcttrunc.md)).
+      ✅ **AND THE PROSE DEBT THIS BLOCK PREDICTED HAS BEEN PAID.** The
+      `sysvars.inc` justification for sharing the TK/FO cells said the two never
+      coincide *"because tokenising a line always finishes before any statement
+      executes"*; `VAL` now calls `tk_float` at statement time and that sentence
+      is false. It is REWRITTEN, not deleted: the conclusion survives because
+      neither routine can REACH the other, so every use is a completed call.
+      [[a-fix-falsifies-the-justification-beside-it]]
+- [x] 🔴 **D-VAL (2026-08-29): `VAL` AND `STR$` ARE INTEGER-ONLY — 20 OF 40 ROWS
+      DIVERGE, AND THE SURFACE HAD **ONE** ROW OF COVERAGE**
+      ([`docs/spec-basic-val.md`](docs/spec-basic-val.md),
+      [`scratchpad/val_probe.py`](scratchpad/val_probe.py)).
+      🟢 **BASE LITERALS SHIPPED 2026-08-30 (D-VALBASE,
+      [`docs/spec-basic-valbase.md`](docs/spec-basic-valbase.md)) — 16 rows, all
+      green.** `&HFF`/`&hff`/`&HFFZZ`/`  &HFF` = 255, `&O17` = 15, `&B101` = 5,
+      `&HFFFF` = -1 (signed int16), `&H1FFFF` = ERR 6, a prefix with no valid
+      digit = 0, and `&`/`&17` = ERR 2. **Cost measured 2026-08-30: 17 B of the
+      low region + 126 B of sub page 0** (`make basic-reloc` for the standing
+      figures; do not quote these). DIFF 20 -> 14.
+      📏 **STILL MISSING (14 rows): fractions** (`VAL("1.5")` -> 1),
+      **exponents** (`VAL("1E3")` -> 1), **embedded spaces** (`VAL("1 2")` -> 1,
+      `VAL(" - 12")` -> 0), and STR$ of any non-integer (`STR$(1.5)` -> `1`).
+      🟢 **THE DESIGN FOR THAT HALF IS COMPLETE (2026-08-30, §5.3) AND THE RAM
+      PROBLEM DISSOLVED.** A bounded COPY was rejected by measurement — spaces
+      are skipped everywhere inside a number (`"1"`+40 spaces+`"2"` = 12,
+      `"1 . 5"` = 1.5, `"1 E 3"` = 1000), so any copy bound is a silent wrong
+      answer past it. And every 256 B buffer belongs to someone (TOKBUF is where
+      DIRECT-MODE LINES EXECUTE FROM; DETOKBUF is PRINT USING's; LINEBUF is the
+      INPUT line).
+      🎯 **SO BOUND THE SCAN, NOT THE COPY** — with a length bound there is no
+      terminator to write and therefore no buffer to find. `tkf_getc` replaces
+      `tk_float`'s SEVEN source reads (lines 264/269/533/574/704/749/788);
+      `tkf_done` is one tail that `ret`s in VAL mode, and the seven exits are
+      already `jp tk_loop` so retargeting them is **0 B**; the destination is
+      ~9 B (one token byte + at most 8 value bytes); `ev_f_float` already
+      decodes. All the CODE fits in sub page 0, 2203 B free on 2026-08-30.
+      🔴 **CORRECTION (2026-08-30): THE BOUND GOES IN ONE PLACE, NOT SEVEN.** An
+      earlier note here said `tk_float` has seven source reads — **five of those
+      read `TKDIG`, the internal digit array.** The only source reads are inside
+      the single helper `tkf_fetch`. 🎯 And it must be a POSITION test, not a
+      counter: `tkf_fetch`'s callers push HL and may `pop hl` to REWIND across a
+      rejected blank run, so a counter would drift out of step with the cursor.
+      ⚠️ A quick `sysvars.inc` scan reported a 23 B gap at `$F03D..$F054` and
+      **that was a tooling artifact** — `TKDIG` is `$F03C` **+24**, exactly up to
+      `$F054`; the scan defaulted its size to 1 because the `(24)` is on a
+      continuation line.
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
+      🟢 **AND THEN THE RAM BLOCKER DISSOLVED WITHOUT A HUNT (§5.5).** The TK
+      block already SHARES `TKDIG`/`TKPC`/`TKDEXP` with the `flt_out` formatter
+      because the two never run concurrently — and that argument cuts both ways:
+      `FOSIGN`/`FOSIGCOUNT`/`FOMBYTES` (`$F063`-`$F065`) appear **0 times** in
+      `tkfloat.asm` and only in `float.asm`. `TKVALEND` takes two of them.
+      🔴 **BUT THE STATED JUSTIFICATION GOES FALSE AND THE FIX MUST PAY THAT DEBT.**
+      The comment says the two never coincide *"because tokenising a line always
+      finishes before any statement executes"* — and VAL would call `tk_float` AT
+      STATEMENT TIME. The conclusion survives for a DIFFERENT reason (`flt_out`
+      calls only its own three helpers and can never reach the evaluator), but
+      the reason must be rewritten or the next reader inherits a false premise
+      about a shared-RAM invariant. Left alone for now on purpose: the sentence
+      is TRUE TODAY. [[a-fix-falsifies-the-justification-beside-it]]
+      🟢 **ATTRIBUTED TO THE RIGHT LAYER BY CONTROLS:** `PRINT 1.5`, `PRINT 1E9`,
+      `PRINT 3/2` and `PRINT &HFF` are all CORRECT on zerobas. Float literals,
+      float arithmetic, hex literals and float printing work — the gap is
+      precisely the two functions that convert between numbers and strings at
+      RUNTIME. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+      🔴 **THE DEFERRAL NOTE IS STALE AND UNDERSTATES THE GAP.**
+      `basic/PROVENANCE.md`'s Phase-3 entry defers *"string comparison,
+      INSTR/HEX$/OCT$/STRING$/SPACE$/INKEY$, the MID$ statement, and floats in
+      VAL/STR$"* — and **every other item on that list has since shipped**. And
+      "floats" omits the base literals, the exponents and the `&` silent zero. A
+      deferral note describes what was skipped THEN; it is not a specification of
+      what is missing NOW.
+      ➡️ **THE ROUTE IS DELEGATION, NOT A SECOND IMPLEMENTATION — BUT IT IS A
+      LEAD, NOT A PLAN.** `sh_val_parse` lives in `sub/strheap.asm`; the
+      tokeniser's full numeric scanner `tk_float` lives in `sub/tkfloat.asm`, the
+      SAME sub-ROM, and already handles every shape above (HL = source cursor).
+      🟢 **THE THREE QUESTIONS ARE ANSWERED (2026-08-29, §5.1)** — and answering
+      them CHANGED THE DESIGN. **Q1 RAM buffer: YES** (`tokenise` takes
+      HL = 0-terminated ASCII, DE = destination). **Q2 trailing junk: A NON-ISSUE
+      and the question was slightly wrong** — the tokeniser crunches the whole
+      line and VAL reads only the LEADING token, which IS VAL's semantics.
+      **Q3 tenant-to-tenant: THE QUESTION DISSOLVES** — `ev_ff_val` is in the MAIN
+      ROM and already reaches the sub-ROM by `subrom_call`, so nothing needs a
+      tenant-to-tenant call; it decodes locally with `ev_f_float`.
+      🔴 **BUT A FOURTH BLOCKER TURNED UP AND IT IS THE REAL ONE: THE DESTINATION
+      BUFFER.** A whole-line tokenise needs ~256 B of scratch and every candidate
+      is taken — **`TOKBUF` is where DIRECT-MODE LINES EXECUTE FROM**
+      (`ld hl,TOKBUF / jp rp_exec`), so `PRINT VAL("1.5")` at the prompt would
+      have VAL overwrite the statement running it; `DETOKBUF` is drained by
+      `PRINT USING`, and VAL can appear in a PRINT USING value list; `LINEBUF` is
+      the runtime INPUT line.
+      🎯 **SO THE DESIGN FLIPS BACK TO `tk_float`** — it emits only a token byte
+      plus at most 8 value bytes, so ~**9 B of scratch**, not 256. Its own blocker
+      is the EXIT PROTOCOL: it does not `ret`, it ends `jp tk_loop` / `jp tk_end`,
+      so it needs a small variant entry that returns.
+      **A ~6 B variant entry versus ~256 B of new RAM** — a concrete trade now,
+      not an open question.
+      ⚠️ Still unmeasured: whether the tokeniser's `TKOVF` crunch-time reject is
+      what makes `VAL("&")` an ERR 2 on the references.
+      🤖 AUTONOMOUS — the references settle the behaviour and the code settles
+      the interface.
+      🟢 **AND THE DESTINATION QUESTION DISSOLVED TOO (2026-08-30, §4a of
+      [`docs/spec-basic-valfloat.md`](docs/spec-basic-valfloat.md)): PUT IT ON
+      THE STACK.** The ~9-byte scratch for `tk_float`'s emitted token is written
+      and read entirely inside `sh_val_parse`'s own call, so it need not be RAM
+      anyone else can see — `ld hl,-10 / add hl,sp / ld sp,hl`, `DE` points at
+      it. **It cannot alias anything**, so there is no ownership question to get
+      wrong, and `tk_float`'s own pushes go BELOW SP.
+      🎯 **The float still reaches the main ROM without shared scratch**, because
+      `FAC` already is shared: the sub-ROM fills FAC, sets FACTYP, and the glue
+      calls `flt_to_int16` (`basic/float.asm:384`) for the DE that `ev_f`'s int
+      consumers expect — exactly what `ev_f_float` does for a literal.
+      ⚠️ **WHAT IS LEFT: the SIGN** (easy on an int, fiddlier on a float — flip
+      the lead byte's sign bit; `tk_float` never sees one because the tokeniser
+      emits it as an operator) **and the `TKOVF` reject path's VAL-mode answer.**
+      ⛔ **The three shared buffers that were searched first — `TOKBUF`
+      (direct-mode lines EXECUTE from it), `DETOKBUF` (`PRINT USING` drains it)
+      and `FOUTBUF` (the math pack writes it via `SQRT_R`/`MATH_R`/`HORNER_ACC`)
+      — are recorded because the SEARCH is the reusable part**, even though the
+      answer turned out not to need any of them.
+
+- [x] ✅ **D-VALFLOAT (2026-08-30): the `tk_float` plumbing SHIPPED — 47/47
+      green** ([`docs/spec-basic-valfloat.md`](docs/spec-basic-valfloat.md)).
+      **65 B of sub page 0**, no behaviour change (the bound is never set yet).
+      The bound lives in `tkf_fetch`, the ONLY place `tk_float` reads the source,
+      as a POSITION test (callers rewind HL, so a counter would drift); all six
+      exits re-point to returning tails at **0 B**.
+      🔴 **AND IT WAS WITHHELD FOR AN HOUR ON A WRONG DIAGNOSIS.** Three batteries
+      failed with `math-acceptance` refusing in 4 s and `intarg` in 0 s; I called
+      it host contention. **Joost asked whether it was sleep throttling, and he
+      was right** — `pmset -g log`: `Using BATT`, `DarkWake to FullWake from Deep
+      Idle`, **610 sleep/wakes since boot**, and `PreventUserIdleSystemSleep` held
+      only *"while display is on"*.
+      🎯 **THE STALL WATCHDOG MEASURES WALL CLOCK**, so a SUSPENDED process burns
+      wall time without progress — its own message says a host-clock deadline
+      "CANNOT separate a frozen emulator from one starved of CPU". It was naming
+      the answer and I read "starved" instead of "suspended".
+      ⚠️ **THE TELL: refusals in 0–4 SECONDS ARE NOT CONTENTION.** Contention makes
+      things slow; a 0-second refusal means the work was never scheduled at all.
+      [[apparatus-is-part-of-the-measurement]]
+
+- [x] ✅ **D-NOSLEEP (2026-08-30): THE BATTERY HOLDS ITS OWN WAKE ASSERTION — no
+      user discipline, no Makefile wrapper** (`tools/run_gates.py hold_awake()`).
+      `caffeinate -i -w <own pid>`: **`-w` ties the assertion's lifetime to the
+      process it protects**, so it is released however the run ends — normally,
+      on error, or killed — and **cannot leak**. Three batteries were killed
+      overnight; a plain `caffeinate -i` child would have orphaned three
+      processes silently holding the Mac awake.
+      📏 **VERIFIED BOTH WAYS, END TO END:** during a run with NO caffeinate on
+      the command line, `pmset -g assertions` shows *"caffeinate asserting on
+      behalf of Process ID 80160"* (the battery's own pid) and
+      `PreventUserIdleSystemSleep 1`; after it exits, `pgrep` finds nothing.
+      **47/47 green.**
+      🟢 **AND IT REPORTS WHEN IT CANNOT HOLD** — off macOS, or with `caffeinate`
+      missing — instead of running exposed and silent: *"RAN WITHOUT AN
+      IDLE-SLEEP ASSERTION … stalls and 0-4 s preflight refusals below may be
+      SUSPENSION, not contention"*. Arms S10/S11/S12: the assertion is really
+      held per `pmset`, it is bound to THIS pid, and it never claims "held"
+      without a reason.
+      ⚠️ **NOT COVERED: ad-hoc probe runs outside `make gates`** (a bare
+      `python3 scratchpad/*_probe.py`) are still exposed. The battery is the
+      expensive victim, so it went first.
+      [[apparatus-is-part-of-the-measurement]]
+
+- [x] ✅ **D-ONDOM (2026-08-30): `ON n GOTO/GOSUB`'s VALUE DOMAIN IS MEASURED
+      AND EMPTY — 15 rows, 0 DIFF**
+      ([`docs/spec-basic-ondom.md`](docs/spec-basic-ondom.md),
+      [`scratchpad/ondom_probe.py`](scratchpad/ondom_probe.py)). No code change.
+      📏 `missop3` covered `ON 1 GOTO` with the LIST missing; nothing covered the
+      SELECTOR. ⚠️ **The interesting half is the half that does NOT raise** — `n`
+      past the list falls through silently, so a wrong answer there has no error
+      code to notice.
+      🟢 All correct: past-the-list and `ON 0` fall through; `-1` and `256` are
+      ERR 5; `32768` is ERR 6; `ON 0*(1/0)+1` is **ERR 11** (the selector's own
+      fault wins); GOSUB mirrors GOTO.
+      🎯 **AND ONE ROW SETTLES A RULE: THE SELECTOR TRUNCATES, IT DOES NOT
+      ROUND.** `ON 1.7 GOTO 40,60` takes the FIRST target on all three machines;
+      a rounding selector would have taken the second. `ON 1.4` agrees but cannot
+      discriminate — the 1.7 row is the one that matters.
+      **CLASS MEASURED EMPTY** — recorded so it is not re-measured on a hunch.
+
+- [x] ✅ **D-NUMSTR (2026-08-29): a STRING where a numeric factor is required is
+      now ERR 13, not ERR 24 — and the refcache had switched the preflight off**
+      ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md)). 26 rows,
+      DIFF 8 -> 2. **+6 B of main page 1.**
+      🔴 **D-MISSOP's RULE WAS MEASURED AT SLOTS IT DOES NOT ONLY SERVE.** Its
+      header says both references answer 24 "at every such slot, measured at 16
+      of them" — all sixteen were STATEMENT-ARGUMENT slots, and the label serves
+      EVERY factor position. `POKE &HE000,` and `LOCATE ,` are 24 on all three
+      sides ✓; `5+` inside an expression is **2** on both references and 24 here.
+      🎯 **THE STRING HALF IS FIXED, AND IT FIXED `5+LEFT$("AB",1)` WITHOUT
+      TOUCHING IT** — that row reaches `ev_ff_strnum`, whose D-LEFTTM arm
+      evaluates the argument numerically, and THAT inner eval is what landed on
+      the `"`. **Measured: it was ERR 2 before D-LEFTTM and ERR 24 after** — one
+      wrong code for another, and no row saw it because that slice's probe had no
+      string function nested in a numeric expression.
+      ⚠️ **THE `ev_f` DISPATCH CHAIN IS AT ITS RELATIVE-RANGE LIMIT.** Five bytes
+      in it pushed TWO `jr` arms out of range (as D-PLAYFN's 5-byte arm did to
+      the ERL arm); even sited past the chain, two still had to be widened.
+      Assume +1 B per surviving `jr` for anything inserted there.
+      [[two-rules-that-coincide-on-every-row-you-have]]
+
+- [x] ✅ **D-CACHEPRE's PREFLIGHT MOVED TO THE CACHE-HIT PATH — withdrawn
+      2026-08-29 for want of a green battery, re-applied and VALIDATED
+      2026-08-30: 47/47 green** ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md)
+      §5.1).
+      ➡️ Justified by **cost, not safety**: a miss goes on to `Popen`, which is
+      already guarded, so an entry check buys no extra cover and adds a `make -q`
+      to every one of the thousands of `run_cases` calls a batched probe makes.
+      The hit path is the one that had no guard at all.
+      🔴 **THE HYPOTHESIS THAT FIRST MOTIVATED THE MOVE WAS REFUTED** — I believed
+      the entry placement had reddened a battery, but the emulator tier forces
+      `ZEROBAS_REFCACHE=0` and never takes the cached path, so neither placement
+      can affect it. **The real cause was HOST CPU STARVATION, which the stall
+      watchdog names in its own message** ("a host-clock deadline CANNOT separate
+      a frozen emulator from one starved of CPU").
+      🟢 **AND THE RE-RUN CONFIRMS THAT RATHER THAN ASSUMING IT:** the same change
+      on the same tree went RED under load ~6 and GREEN under load ~2.5.
+      [[apparatus-is-part-of-the-measurement]]
+
+- [x] ✅ **D-CACHEPRE (2026-08-29): A WARM REFCACHE SILENTLY DISABLED THE STALE-ROM
+      PREFLIGHT** ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md) §5).
+      `omsx_preflight.guarded()` is applied at the `Popen` call INSIDE
+      `_run_cases_impl`, so it only ever ran when the emulator actually LAUNCHED
+      — and a fully-cached `run_cases` returns before that.
+      🔴 **IT BIT TWICE IN TEN MINUTES.** A `make repack-machine` failed on an
+      assembler error; pasmo fails cleanly, leaving the PREVIOUS ROM in place;
+      the cache hit every row because it keys on the ROM's identity, which had
+      not changed; and the probe printed a complete, self-consistent, entirely
+      plausible table **of the edit that had just failed to build**. Caught only
+      by happening to read the build's exit code.
+      🟢 The preflight now runs at `run_cases` entry, ahead of the cache.
+      Falsified BOTH ways: a fully-cached run on a touched source refuses
+      (rc=2, STALE), and after a rebuild the same run measures normally — a guard
+      that refuses everything is worthless.
+      [[apparatus-is-part-of-the-measurement]]
+
+- [x] ✅ **D-STRTM (2026-08-29): SWEPT THE STRING-ARGUMENT TYPE-MISMATCH SURFACE
+      ON PURPOSE, AND IT FOUND THREE MORE**
+      ([`docs/spec-basic-strtm.md`](docs/spec-basic-strtm.md),
+      [`scratchpad/strtm_probe.py`](scratchpad/strtm_probe.py)). 22 rows,
+      DIFF 3 -> 1. **+5 B of the low region** (124 -> 119 B free).
+      🎯 **THREE SLICES FOUND THE SAME DEFECT IN THREE PLACES IN ONE DAY**
+      (D-NGRAM9, D-LEFTTM, D-INSTRTM), every one INCIDENTALLY, by a carve that
+      happened to touch the site. Three instances is a class, so this walked the
+      whole surface deliberately — every verb taking a string, handed a number,
+      **each with an ORDERING twin**.
+      🟢 **FIXED: `LEN`/`ASC`/`VAL`.** `ev_str_arg` ended its decline with a bare
+      `jp nc,ev_f_tmm` — a type mismatch armed WITHOUT LOOKING AT THE OPERAND.
+      The comment beside it reasoned first-error-wins would separate `LEN(5)`
+      from `LEN(LEFT$("AB"))`, and it does — **but only when the inner thing
+      already set FPERR.** `LEN(0*(1/0)+1)` sets nothing. For the third time the
+      fix is the ORDER, and here it is safe because `ev_str_arg` is already ON
+      the numeric evaluator's path, so nothing re-drives the operand.
+      🔴 **AND THE SWEEP'S SHARPEST ROW: `"AB"+5` IS CORRECT AT 13 WHILE
+      `"AB"+(0*(1/0)+1)` IS WRONG — THE SAME OPERATOR, OPPOSITE HALVES.** A row
+      set of clean expressions only would have declared concat fine.
+      [[two-rules-that-coincide-on-every-row-you-have]]
+
+- [x] ⛔ **DECLINED 2026-08-29: `push de / call push_lhs_frame / call
+      set_factyp_int_ret`, the top LIVE candidate in `ngram_sweep --main`
+      (6 sites x 7 B).** Reason recorded at the source, beside `push_lhs_frame`
+      in [`basic/float-arith.asm`](basic/float-arith.asm).
+      🔴 **IT IS A FIXED-SIZE FRAME PROTOCOL.** The caller's `push de` and
+      `push_lhs_frame`'s five word-pushes must end up CONTIGUOUS, because the
+      matching `combine_*` pops them as one frame. Behind a `call`, the helper's
+      own return address is pushed BETWEEN them — **inside** the frame. The
+      D-NGRAM8 hazard, one level up.
+      🎯 **AND THE ONE ARRANGEMENT THAT AVOIDS IT CANNOT CARRY THE SECOND HALF.**
+      A helper that re-pushes its return address under the frame and TAIL-JUMPS
+      into `push_lhs_frame` keeps the frame contiguous — but it cannot also do
+      the `FACTYP:=2`, because `push_lhs_frame` **captures (FACTYP) into the
+      frame** (`ld a,(FACTYP) / push af`) so the reset must happen after it.
+      Reduced to the frame half alone it saves 1 B per site and costs 6: ZERO.
+      ⚠️ Stashing the return address in a register is blocked at the largest
+      site: `evr` holds the relation bits in BC across the call.
+      🟢 **AND THE SWEEP NOW CARRIES ITS OWN DECLINES** — it ranks by BYTES and
+      cannot know a run is unfactorable, so this shape and the `ERRMARK` tail
+      kept returning to the top and each run re-paid the same analysis. They are
+      now marked ⛔ with the reason **in the output**, not filtered out: a decline
+      can be OVERTURNED (D-N8ARM overturned two "structurally null" verdicts in
+      one morning) and a silently-filtered candidate cannot be.
+      🔴 **THE FIRST DRAFT MATCHED ON THE SHAPE'S FIRST INSTRUCTION ALONE** —
+      and `push de` opens a great many runs, so it would have stamped DECLINED on
+      unrelated candidates and hidden real savings behind a reason that does not
+      apply. **A false decline is worse than the re-analysis it saves.** Keyed on
+      a shape PREFIX now, with a near-miss arm (D3) and a staleness arm (D6: a
+      declined key that no longer exists in the tree protects nothing).
+      `python3 scratchpad/ngram_sweep.py --selftest`, 6 arms, collected by
+      `selftest-check`.
+
+- [x] ✅ **D-INSTRTM (2026-08-29): FIXED — `INSTR` with a non-string operand now
+      answers ERR 13, and a faulting operand answers its OWN error**
+      ([`docs/spec-basic-instrtm.md`](docs/spec-basic-instrtm.md)). **18 rows,
+      DIFF 5 -> 0. +10 B of the low region** (134 -> 124 B free; page 1
+      unchanged). `penderr-acceptance` 61/61, `tmfp-acceptance` 50/50.
+      🔴 **THE TAIL HAD TO BE SPLIT, NOT RETARGETED.** `efi_reject_p` /
+      `efi_reject_pa` were each reached BOTH by a `jr nz` ("the ',' is missing")
+      and a `jr nc` ("there IS an operand and it is not a string"), and both
+      answered Syntax error. Retargeting would have fixed 3 rows and BROKEN 7
+      that are already correct — the shape D-MIDOP measured for MID$ (24/13/24).
+      **The reference surface was measured before anything changed**, and 2 filed
+      rows turned out to be 5. [[a-shared-tail-is-not-a-decision]]
+      🎯 **THE ORDER IS THE FIX, AGAIN** — evaluate the operand, THEN defer
+      TYPEMM, so `ev_f_defer`'s first-error-wins lets the operand's own fault
+      keep the answer.
+      🔴 **AND K-IT2 FOUND A THIRD DISCRIMINATING ROW I HAD NOT PREDICTED:**
+      `INSTR("AB",)` — a MALFORMED shape, not a pending-fault one. It reaches the
+      new tail, and in the shipped order `eval` fails on the `)` and defers a
+      SYNTAX error which wins. **So the ordering is not merely "nicer for pending
+      faults": without it the split would have BROKEN a malformed shape that was
+      already right.** The three clean-expression rows cannot tell the two fixes
+      apart at all.
+
+- [x] ✅ **D-NGRAM10 (2026-08-29): one `req_lineno` for RESUME / GOTO / GOSUB /
+      ON ERROR GOTO — main page 1 331 -> 348 B free**
+      ([`docs/spec-basic-ngram10.md`](docs/spec-basic-ngram10.md)). The 4th-ranked
+      exact repeat in the main regions: 7 instructions x 4 sites = 40 B, replaced
+      by an 11 B body plus four calls. **-17 B.** 13 rows.
+      🟢 The bail never returns (`stmt_error` -> `raise_error` resets SP), so the
+      `call` is safe — checked at the source, and no interior label sits inside
+      any of the four runs.
+      🔴 **I PREDICTED BOTH KNIVES WRONG AND THE ARMS CAUGHT IT.** K-N10A: I said
+      `b.resume` would not move because its message is untrapped — but an
+      untrapped message IS the error's text and the text follows the code
+      (`<Syntax error>` -> `<Type mismatch>`). K-N10B: I predicted 6 rows and
+      **all 13** moved, controls included — because LINE 10 OF EVERY FIXTURE IS
+      `ON ERROR GOTO 900`, which goes through this very helper.
+      🔴 **AND THE PROBE FOUND TWO FAULTS IN ITSELF:** its blindness check read
+      only the zb column, so a row where BOTH REFERENCES echoed their own source
+      text was scored a DIFF; and the first repair blinded on a word the row also
+      PRINTS when the bail fails, which would have filed a real failure as
+      blindness. It now detects the ECHO signature, on every side.
+      [[readout-blind-to-its-own-subject]]
+
+- [x] ✅ **D-SPCLAMP (2026-08-29): THERE IS NO CLAMP — `SPACE$`/`STRING$` RAISE,
+      and zerobas already agreed with both references at every point**
+      ([`docs/spec-basic-spclamp.md`](docs/spec-basic-spclamp.md),
+      [`scratchpad/spclamp_probe.py`](scratchpad/spclamp_probe.py)). **14 rows,
+      0 DIFF. No code change.**
+      📏 Past 255 both verbs answer `Illegal function call` on all three sides —
+      the count coerces to a BYTE and 256 is not representable. Over int16 it is
+      `Overflow`, raised earlier. At `CLEAR 600` both build a **255**-byte string
+      on all three sides. **This is the ALTERNATIVE the item flagged as likelier
+      than the clamp story, and it is the one that is true.**
+      🔴 **THE BOUNDARY ROW AGREED FOR THE WRONG REASON FIRST:** at the default
+      pool `LEN(STRING$(255,"A"))` is `ERR 14` (out of string space) on every
+      side — a POOL answer, not a ceiling one, behind which a wrong ceiling could
+      hide. The `CLEAR 600` rows separate them.
+      🟢 **`basic/PROVENANCE.md`'s cell was wrong TWICE OVER** — no clamp, and
+      `STRMAX` has not been 64 since slice-4a widened it. Corrected, and moved
+      from **quarantined** to **sourced**.
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+
+**Apparatus / tooling**
+
+- [x] ✅ **D-NGRAM9 (2026-08-28): `str_target_parse` for INPUT# / LINE INPUT /
+      MID$-statement, AND a live divergence closed for 0 B**
+      ([`docs/spec-basic-ngram9.md`](docs/spec-basic-ngram9.md)). **Low read
+      114 -> 134 B free, page 1 335 -> 331** (READINGS; run `make basic-reloc`).
+      8 rows, DIFF 2 -> 0.
+      🎯 **`MID$(A,1,1)="X"` and `LINE INPUT A` answered ERR 2 where both
+      references answer ERR 13.** Pre-existing. One retargeted `jp z`, three
+      sites at once, 0 B.
+      🟢 **A DIRECT RAISE IS SAFE HERE AND WAS NOT IN D-NGRAM8** — this test is
+      the FIRST thing the statement does, so nothing can be pending to override.
+      The gates owning the ERRMARK and pending-error invariants
+      (`missing`/`stmtpend`/`penderr`) were run BEFORE the suite, not after.
+
+- [x] ⛔ **DECLINED 2026-08-29 (D-N9BAIL): the `jp nz,fp_runtime_error` in
+      `str_target_parse` is LOAD-BEARING**
+      ([`docs/spec-basic-ngram9.md`](docs/spec-basic-ngram9.md) §4, rewritten).
+      🔴 **THE FILED CLAIM WAS WRONG IN EVERY CLAUSE, AND ITS PRICE WAS STALE.**
+      Not 9 B: D-NGRAM9 had already collapsed the three sites into one `jp`, so
+      the candidate was **3 B** the moment the slice that filed it shipped.
+      📏 **Don't nop the jump — RETARGET it.** `fp_runtime_error` →
+      `type_mismatch_error` moves `s.mid.sub` **ERR 11 → ERR 13**: the bail is
+      reached and taken.
+      🎯 **THE NOP'S ZERO HAD A SECOND CAUSE OF GREEN, AND NOT THE ONE WRITTEN
+      DOWN.** Not `exec_stmt`'s boundary — `ex_mid_stmt`'s very next act is
+      `eval_pos_arg` → `get_int16_checked`, which ends `jp check_fperr_only` and
+      re-raises the pending FPERR inside the SAME statement. That is why even the
+      line number never moved (`AT 30` both ways, where the boundary story
+      predicts `AT 60`).
+      🔴 **AND THAT COVER IS MID$'s ALONE.** `inpc_line` and `inp_readvar` reach
+      `check_expr_errors` only AFTER `read_line`/`read_into_strscr` and
+      `tgt_store_str`, so without the bail `LINE INPUT A$(0*(1/0))` WAITS ON THE
+      KEYBOARD where both references raise at once, and both store through a
+      `TGT_ADDR` that `tgt_parse`'s `ret nz` never wrote.
+      🟢 **THE ARM IS FIXED, NOT JUST THE VERDICT:** K-N9B is now the retarget
+      (live, 1 row), K-N9C keeps the nop with its zero **asserted and its cause
+      named**, and all three arms score against an EXPECTED ROW SET rather than
+      against "did anything move".
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+
+- [x] ✅ **D-NGRAM8 (2026-08-28): `str_arg_snap` for LEFT$/RIGHT$/MID$**
+      ([`docs/spec-basic-ngram8.md`](docs/spec-basic-ngram8.md)). **Low read
+      106 -> 114 B free** — 12 B of carve minus 4 B the decline needs back.
+      🔴 **A `call` MOVED THE DECLINE ONE FRAME DEEPER AND IT STOPPED
+      DECLINING**: `str_eval_no`'s `ret` landed back INSIDE the verb instead of
+      out of it. `pop af` restores the stack shape. Caught by
+      `penderr-acceptance`, NOT by this slice's own 12-row probe.
+      🎯 **AND THAT IS THE LESSON: an existing DIFF row MASKS a new breakage on
+      the same path.** The probe HAD decline rows, but they were already DIFF
+      (the ERR 2/13 divergence), so a second, different failure changed nothing
+      in the report. The probe now carries the ORDERING rows — and only the
+      ASSIGNMENT shape separates the trees; `PRINT LEFT$(0*(1/0)+1)` reads the
+      same on HEAD, shipped and a deliberately broken tree.
+
+- [x] ⛔ **DECLINED 2026-08-29 (D-N8ARM): `str_arg_snap`'s snapshot is
+      LOAD-BEARING — and BOTH of `ngram8_knives.py`'s arms had stopped testing
+      anything** ([`docs/spec-basic-n8arm.md`](docs/spec-basic-n8arm.md)).
+      🔴 **K-N8B's "expected null" WAS A ROW-GEOMETRY HOLE, not evidence.** All
+      17 rows printed the FUNCTION'S RESULT; nothing read the SOURCE back, so
+      in-place truncation of the source — the exact damage the snapshot prevents
+      — could not appear. `LEFT$(A$,2)` returns `AB` whether or not it wrecked
+      `A$` on the way. Three rows reading `C$+"/"+A$` move it immediately.
+      🔴 **K-N8A HAD BEEN CUTTING A STRING THAT IS NOT IN THE SOURCE** since the
+      slice shipped (`jp nc,type_mismatch_error`; the `pop af` fix made it
+      `jp nc,sas_decline`), printing `KNIFE BROKEN` into a log nobody read — and
+      its stated claim described **D-NGRAM9's** fix in **D-NGRAM8's** file.
+      🔴 **A REPAIR TO THE INSTRUMENT BROKE A GATE THAT READS IT.** 2 of 7 S1
+      patterns carry a form that no longer occurs anywhere; `ngram7`'s was
+      written against `ngram_sweep.py`'s BUGGY whitespace normalisation and went
+      stale when that regex was fixed. Staleness cost depends on which way the
+      count points: `ngram8` (wants 0) went **vacuous**, `ngram7` (wants 1) went
+      **red**. D-NGRAM7's control checked only `PAT[0]`;
+      `knife_guard.pattern_alive()` now checks every element.
+      🟢 **All four ngram knife files now score against an EXPECTED ROW SET.**
+      [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
+
+- [x] ✅ **D-KNIFEROM2 (2026-08-29): 48 of 52 knife runners ACT on their ROM
+      hash, 4 have none to hash, 0 are unguarded**
+      ([`docs/spec-basic-kniferom2.md`](docs/spec-basic-kniferom2.md)). Gate:
+      `make knife-rom-guard-check`, static tier, **ratchet at 0**.
+      🔴 **I ANSWERED THIS WITH A REGEX FOUR TIMES AND WAS WRONG FOUR TIMES**
+      (33 → 10 → 24 → 6 print-only), always OVERSTATING the gap — the second
+      time this same claim has been filed too pessimistically.
+      🔴 **AND THE FIRST AST VERSION FAILED FIVE MORE TIMES, THE SAME WAY: IT
+      ENCODED A SPELLING INSTEAD OF FOLLOWING THE DATA** — a path inside the
+      function body, one level of taint, the name `hashes`, a direct call, a
+      literal image filename. Each was caught by PINNING THE REAL FILE THAT
+      BROKE THE PREVIOUS VERSION as an arm (S8 is five real files by name).
+      🎯 **THE RULE THAT HOLDS IS ABOUT DATA FLOW:** a function is a ROM-hash
+      source when its body calls `hashlib` in a ROM-aware module; taint crosses
+      assignments AND function returns, to a fixpoint; a runner acts when an
+      `if`/`assert` reads a tainted name.
+      🟢 **ONE REAL FIX: `banner_knife.py`** verified its anchor and its restore
+      — both over the SOURCE — and never asked whether the cut reached the ROM.
+      ⚠️ **AND "MENTIONS A BUILD PATH" IS NOT "BUILDS":** the three source-sweep
+      knives read `build/*.sym` and never invoke make.
+      [[a-knife-can-be-inert-because-the-build-did-not-happen]]
+
+- [x] ✅ **REFUTED 2026-08-29, THE SAME DAY IT WAS FILED: piping a knife runner
+      to `head` does NOT risk leaving a cut source.** Filed after I piped three
+      runners to `head -2`, reasoning that SIGPIPE could kill one mid-plant.
+      📏 **MEASURED, not reasoned:** a script that plants a marker, registers an
+      `atexit` restore and prints 100 000 lines into `| head -2` leaves the
+      marker reading **RESTORED**. Python ignores SIGPIPE and raises
+      `BrokenPipeError`, so `atexit` and `finally` both still run.
+      🟢 **AND THE RESIDUAL HAZARD IS ALREADY COVERED.** Dying mid-run restores
+      the SOURCE but leaves the ROM CUT — and the probe preflight refuses on
+      exactly that (`make -q` reports the image stale w.r.t. its sources).
+      Observed firing today during the D-N8ARM run, not assumed.
+      ⚠️ The operating rule (`> file 2>&1`, never `| head`) still stands, for its
+      REAL reason: a truncated log loses the evidence.
+      [[a-justification-parenthesis-is-an-unrun-claim]]
+
+- [x] 🟢 **THE EMULATOR-TIER SKIP NOW CHECKS ITS OWN PREMISE (2026-08-29,
+      D-N8ARM)** ([`docs/spec-gateskip.md`](docs/spec-gateskip.md) §3.1). The
+      fingerprint covers `probes`/`tests`/`tools` + the Makefile, which makes the
+      skip a proof ONLY while every script an emulator unit runs lives there —
+      and `scratchpad/` is tracked here on purpose. The premise HOLDS (0 of 23
+      recipes reach outside it) but nothing re-derived it;
+      `unfingerprinted_scripts()` now does, at every skip, and an unreadable
+      recipe REFUSES rather than passes. `run_gates.py --selftest`, 6 arms.
+      [[apparatus-is-part-of-the-measurement]]
+
+- [x] ✅ **D-LEFTTM (2026-08-29): FIXED — `PRINT LEFT$(5,2)` now answers ERR 13
+      and `PRINT LEFT$(0*(1/0)+1)` answers ERR 11, as both references do**
+      ([`docs/spec-basic-lefttm.md`](docs/spec-basic-lefttm.md)). **20 rows,
+      DIFF 5 -> 0. +16 B of the low region** (134 -> 118 B free; page 1
+      unchanged). `penderr-acceptance` 61/61.
+      🎯 **IT WAS NEVER IN `str_arg_snap`.** `str_eval` declines, PRINT re-drives
+      numerically, and `ev_ff_strnum`'s string-only-token arm answered
+      `jp ev_f_empty` — FPERR=4, armed WITHOUT EVER LOOKING AT THE ARGUMENT.
+      The reference rule is the opposite: evaluate the argument and report what
+      IT raises; only a CLEAN expression is a type mismatch. `ev_f_defer` is
+      already first-error-wins, so the whole fix is ORDER.
+      🔴 **THE SAME MECHANISM ON THE WRONG SIDE OF THE EVALUATION IS THE BUG
+      D-NGRAM8 ALREADY MADE ONCE — and it is now arm K-LT2, not an argument.**
+      Move `penderr_set` ahead of `call ev_e` and the three `.bad` rows DO NOT
+      MOVE (clean expressions cannot tell) while only the two `.pexp` rows go
+      11 -> 13. A row set of just `.bad` would have scored the wrong fix green.
+      [[two-rules-that-coincide-on-every-row-you-have]]
+
+- [x] ⛔ **DECLINED 2026-08-28: the 18 B `ld a,$DD / ld (ERRMARK),a / ld de,0 /
+      ret` tail at four sites** (`ev_f_err`, `ev_f_base`, `ev_usr_err`,
+      `usr_undef`). Byte-identical, no interior labels, and it would save 18 B.
+      🔴 **THE SOURCE FORBIDS IT IN SO MANY WORDS.** `basic/expr.asm` beside
+      `ev_f_err`: *"⚠️ Keep it that way. A new `jp ev_f_err` is a factor deciding
+      to fail with NO error code, which measured wrong at every one of the seven
+      sites that had made it."* D-EVFERR SPLIT this family by MEANING (0 B,
+      11 DIFF → 1); merging the bytes back re-couples the decisions it
+      separated. `ev_f_base` is a factor, so routing it there is exactly the
+      forbidden move.
+      🎯 **The sweep ranks BYTES; the source carries the DECISION.** An
+      identical-run ranking cannot see a deliberate split, so a high-ranked
+      candidate is not automatically a candidate.
+
+- [x] ✅ **`ngram_sweep.py`'s whitespace normalisation had NEVER RUN** (fixed
+      2026-08-28): the regex was `r'\\s+'` — a DOUBLE backslash — so it matched a
+      literal `\s`, never whitespace. Keys therefore kept their interior spacing
+      AND a trailing space on no-operand instructions (`'ret '`).
+      🔴 **THAT BIT A KNIFE'S S1 ARM IN TWO CONSECUTIVE SLICES**, each time by
+      matching NOTHING and reporting "0 occurrences" — which reads exactly like
+      a clean tree (D-NGRAM7 §3).
+      📏 **MEASURED, NOT ASSUMED: the ranking is IDENTICAL after the fix** (bar
+      the display's trailing space). The assembly is consistently formatted, so
+      no grouping was actually lost. A real bug with no effect today; fixed
+      because it is a trap for the next pattern, not because it revealed
+      candidates.
+
+- [x] ✅ **D-NGRAM7 (2026-08-28): one `gfx_call` for PSET/PRESET, LINE and
+      PAINT** ([`docs/spec-basic-ngram7.md`](docs/spec-basic-ngram7.md)).
+      **Page 1 read 315 -> 335 B free** (a READING; run `make basic-reloc`).
+      7 rows, DIFF 0/7.
+      🔴 **AN S1 ARM WHOSE EXPECTED COUNT IS ZERO CANNOT TELL A CLEAN TREE FROM
+      A BROKEN MATCHER.** S1 failed on a pattern whose spacing did not match the
+      sweep's keys — it matched NOTHING and reported "0 open-coded runs left".
+      D-NGRAM6's S1 expects zero and had the same hole; it now carries a POSITIVE
+      CONTROL that the pattern still finds something.
+
+- [x] ✅ **D-SELFTEST (2026-08-28): three of fifteen `--selftest` scripts were
+      RED and nothing collected their exit codes**
+      ([`docs/spec-selftest.md`](docs/spec-selftest.md), `make selftest-check`,
+      now in the STATIC tier).
+      🎯 **THE CLASS: a known-answer test keyed to a LIVE artifact rots every
+      time the artifact legitimately improves, and rots SILENTLY when nothing
+      reads its rc.** `popraise_sweep` froze a symbol's MEANING (`elas_abort_fp`,
+      which D-POPRAISE's own fix aliased away); `dupspan_indep` froze a symbol's
+      ADDRESS (`jp $429A`) that every carve since has moved. Both now DERIVE the
+      answer. The third was a false positive of my sweep.
+      🔴 **And my first sweep wrapped each run in `timeout`, which does not exist
+      on macOS — all 15 returned rc=127.** An instrument that fails identically
+      on every input is reporting about itself.
+
+- [x] ✅ **D-NGRAM6 (2026-08-28): seven sites open-coded `check_fperr_only`,
+      which ALREADY EXISTED** ([`docs/spec-basic-ngram6.md`](docs/spec-basic-ngram6.md)).
+      **−28 B and no new body** — low 94 -> 106 B free, page 1 299 -> 315 B free
+      (READINGS; run `make basic-reloc`). 13 rows, DIFF 0/13.
+      🎯 **The sweep priced it at 20 B because it assumes a new helper must be
+      written. Look for an existing one first — the cheapest carve adds nothing.**
+      🔴 Three rows were vacuous: `A%=99999` raises the right error through the
+      WRONG LAYER (the LET store's own check, not the boundary), and `A(1)=1E10`
+      / `A=1E10` raise nothing at all. All replaced or dropped.
+
+- [x] ~~💰 **D-NGRAM's remaining main-region exact repeats.**~~ ✅ **BOTH SHIPPED
+      2026-08-28**: `shx_tail`/`shx_op_tail` (D-NGRAM4,
+      [`docs/spec-basic-ngram4.md`](docs/spec-basic-ngram4.md), **low 70 -> 94 B
+      free**) and `goto_take_bc` (D-NGRAM5,
+      [`docs/spec-basic-ngram5.md`](docs/spec-basic-ngram5.md), **page 1 275 ->
+      299 B free**). Both are READINGS — run `make basic-reloc`.
+      🔴 **EACH ONE'S ROW SET WAS WRONG UNTIL A KNIFE SAID SO.** D-NGRAM4: I
+      named the sites from nearby PROSE and `:733` is CHR$, not SPACE$, so CHR$
+      had no row while the set looked complete. D-NGRAM5: the success rows could
+      not tell a taken jump from FALLING THROUGH to the same line, and K-N5A
+      moved 0 rows with the ROM provably changed.
+
+- [x] ~~🔴 **A KNIFE CAN BE SILENTLY INERT BECAUSE THE BUILD DID NOT HAPPEN — AND
+      NONE OF THE 14 RUNNERS CHECKS.**~~ ✅ **SHIPPED 2026-08-28 (D-KNIFEROM,
+      [`docs/spec-kniferom.md`](docs/spec-kniferom.md))** — **and the filing was
+      WRONG IN BOTH THE COUNT AND THE DIRECTION.**
+      📏 **NOT 13 of 14; it is 5 of 41.** The convention ALREADY EXISTED and 36
+      of 41 runners follow it (`circmiss_knives.py` is the canonical shape:
+      `hashes()` over the built images plus `rm -rf build`), and several specs
+      already separate *"the cut reached the artifact and reddened nothing"* from
+      *"the cut never happened"*.
+      🎯 **FOUR OF THE FIVE GAPS WERE RUNNERS I WROTE IN THE LAST 48 H** — the
+      real defect was that NO GATE existed, so a new runner could omit it
+      unseen. `scratchpad/knife_guard.py` (one implementation, 9 arms), the five
+      wired, my two inline copies folded in, and `make knife-guard-check`
+      (5 arms + a live-tree falsification).
+
+- [x] ~~🔬 **DO THE 41 KNIFE RUNNERS *COMPARE* THEIR HASH, OR ONLY PRINT IT?**~~
+      ✅ **MEASURED 2026-08-28 — THE CLASS IS EFFECTIVELY EMPTY** (D-KNIFEROM
+      [`docs/spec-kniferom.md`](docs/spec-kniferom.md) §6,
+      `scratchpad/knife_verdict_audit.py`). Of **22** recorded null verdicts in
+      `docs/`, **ZERO** rest on a knife that exists and has no ROM evidence. Two
+      name a knife not in the tree — and BOTH read *"reddened nothing AND THAT
+      WAS A MISSING ROW"*, so the finding is carried by a committed, gated row
+      rather than by the knife. Three more have their hash transition RECORDED IN
+      THE SPEC, so the evidence outlived the script.
+      🎯 **THE AXIS THAT MATTERS: a null verdict that ADDS A ROW is
+      self-correcting; one that CLOSES something is not.** Ask that of the next
+      one.
+      🔴 The audit was wrong THREE TIMES before it was right, each time
+      OVERSTATING the alarming bucket (spec §7).
+
+- [x] ~~💰 **THE BATTERY AND THE PROBES RE-MEASURE CONSTANTS.**~~ ✅ **SHIPPED
+      2026-08-28, at Joost's request, as TWO independent mechanisms.**
+
+      **D-REFCACHE** ([`docs/spec-refcache.md`](docs/spec-refcache.md),
+      `probes/lib/probe_refcache.py`, gate `make refcache-check`): the reference
+      sides are FIXED ROMs, so their answers are constants.
+      📏 **MEASURED on a 23-row matrix: vg8020 14.5s + cf3300 19.8s + zb 11.2s =
+      45.6s, of which 75 % is the references.** An in-slice repeat (zb rebuilt,
+      refs cached) is **11.2s — 4.1x**; a repeat with nothing rebuilt is 0.0s.
+      🎯 Keyed on the machine's ACTUAL BYTES, so zerobas needs no special case —
+      its entries expire on every build, and a byte-identical rebuild hits
+      CORRECTLY. 23 falsification arms.
+
+      **D-GATESKIP** ([`docs/spec-gateskip.md`](docs/spec-gateskip.md),
+      `tools/run_gates.py`, arms `scratchpad/gateskip_arms.py`): split the
+      battery by WHAT A UNIT READS. 📏 **21 static units = 65 serial-seconds; 23
+      emulator targets = 2870.** `make gates-fast` is **21s** against a full
+      battery's ~420s. `make gates` skips the emulator tier only when the four
+      ROMs AND every probe/test/tool source AND the Makefile are byte-identical
+      to a baseline written by a fully-green FULL battery — a PROOF, not a
+      judgement about blast radius. 12 arms, all live.
+
+- [x] ✅ **D-REFAGE (2026-08-29): REFCACHE ENTRIES NOW EXPIRE, AND THE STORE HAS
+      A READOUT THAT CAN GO RED** ([`docs/spec-refcache.md`](docs/spec-refcache.md)
+      §8). `make refcache-check` also runs `--maintain`.
+      🎯 **THE ITEM NAMED ITS OWN REAL COMPLAINT: the hazard was never disk, it
+      was STALENESS.** A well-formed but WRONG reference reading was frozen
+      FOREVER because nothing re-measured it and nothing scheduled
+      `ZEROBAS_REFCACHE=verify`. Past `MAX_AGE_DAYS` (14) an entry now reads as a
+      MISS and is re-measured against the live machine — self-healing, no
+      operator step. **An age cap does not DETECT a bad reading; it BOUNDS how
+      long one survives, and that is all that is claimed for it.**
+      ⚠️ Deliberately NOT a random re-verify sample: re-measuring a different
+      subset every run makes the probe's own wall-clock unpredictable, and this
+      cache exists to make repeats cheap.
+      📏 **MEASURED: 5386 entries, 11.2 MB, oldest 0.7 d.** The filed figure
+      (3132 / 17 MB) had rotted in BOTH directions. Re-run `--maintain`.
+      🟢 **10 new arms**, two of them the controls that matter: a FRESH entry must
+      NOT be expired (else every other arm passes on a store that never wrote),
+      and prune must KEEP a fresh entry (else a prune that deletes everything
+      passes). [[an-unnamed-outcome-reads-as-no-outcome]]
+
+- [x] ✅ **CLOSED 2026-08-28 — THE `unit-test` FLAKE IS DIAGNOSED AND FIXED: a
+      GATE was rewriting `basic/sysvars.inc` inside the parallel pool.**
+      ~~A `unit-test` FLAKE IS OPEN AND UNCAUSED — the diagnostic that would
+      have named it was only installed AFTERWARDS.~~ Filed 2026-08-26 by
+      D-PASMOSAY ([`docs/spec-probe-pasmosay.md`](docs/spec-probe-pasmosay.md)).
+      The D-PLAYOP battery went 38/38 with one *"recovered flake (green on
+      serial retry)"* on `unit-test`; the failing file was `test_expr.py` and
+      the cause was `pasmo` exiting 1 while assembling `basic/main.asm`. **Why
+      it exited 1 is unrecoverable** — `capture_output=True` held the message
+      and `CalledProcessError.__str__` does not print it.
+      🟢 **THE NEXT ONE WILL SAY**: `tests/_tmp.py` now installs a
+      `sys.excepthook` that prints the child's stderr, falsified 4 arms of 4.
+      ⚠️ **THAT IS NOT A DIAGNOSIS OF THIS ONE.** Ruled out by measurement, not
+      by argument: the artifact name `zb_eval.rom` is used by **one** test file,
+      `tests/run.py` is **not** parallel, and `ZB_TEST_TMP` was set to a
+      per-invocation directory — so it is not the fixed-name collision class
+      `tests/_tmp.py` was written for. A solo `make unit-test` on the same tree
+      is **59 PASS / 0 FAIL**. What is left is resource pressure under 8-way
+      parallelism, or something not yet named. **Do not close this on the next
+      green battery; close it on a captured message.**
+      📏 **DRIVEN 2026-08-26, NOT REPRODUCED IN 384 RUNS — AND THE DETECTOR IS
+      PROVEN.** [`scratchpad/pasmoflake_repro.py`](scratchpad/pasmoflake_repro.py)
+      runs `test_expr.build()`'s exact command under concurrency, three arms:
+      ```
+      DETECT    rc=1 "ERROR: Macro name expected …"   the harness CAN see a failure
+      SHARED      0 / 96   12 workers on ONE output pair
+      PRESSURE    0 / 288  12 workers on their own pairs
+      ```
+      ✅ **CLOSED 2026-08-28 BY D-MUTRACE ON THIS ITEM'S OWN TERMS — A CAPTURED
+      MESSAGE, THEN A REPRODUCTION.** [`docs/spec-battery-integrity.md`](docs/spec-battery-integrity.md),
+      commit `80722de`. The message this item demanded arrived on a later
+      instance (`test_float.py`, same signature — pasmo exiting 1 while
+      assembling `basic/main.asm` in a parallel battery):
+      `ERROR: Unexpected 'EQ' used as instruction on line 4216 of file
+      basic/sysvars.inc` — pasmo read a valid `equ` line **with its label gone**,
+      i.e. a TORN READ.
+      🎯 **CAUSE: `tools/check_switch_builds.py` REWRITES `basic/sysvars.inc`
+      AND RESTORES IT** (its own docstring says so), and `switch-build-check`
+      ran in the SAME parallel pool as `unit-test`, whose tests assemble
+      `basic/main.asm`, which includes `sysvars.inc`. Two more gates do the same
+      to other shared files — `diskdep-check` to the **Makefile**,
+      `wall-literal-check` to tracked probe/tool sources. All three now run in a
+      SERIAL phase before the pool (`MUTATORS` in `tools/run_gates.py`).
+      🔴 **AND THIS ITEM'S OWN REPRO HAD BOTH HYPOTHESES WRONG.** A fourth arm
+      was added to [`scratchpad/pasmoflake_repro.py`](scratchpad/pasmoflake_repro.py)
+      that plants the real mechanism: **SHARED 0/16 · PRESSURE 0/48 ·
+      MUTATOR 13/16.** The writer was never another pasmo — it was a GATE.
+      🎯 **A REPRO THAT FAILS TO REPRODUCE HAS ONLY EXCLUDED THE HYPOTHESES IT
+      ENCODED**, and 384 clean runs said nothing about the one it did not.
+      🔴 **THE FIRST CUT USED `SHARED` AS ITS POSITIVE CONTROL AND IT CAME BACK
+      0/32** — so the run had no evidence it could detect a `pasmo` failure at
+      all, and a silent subject would have read as ALL-CONVERGED. The detection
+      control is now a source `pasmo` *cannot* assemble, and it is checked first.
+      ⚠️ **BOTH NAMED HYPOTHESES ARE NOW MEASURED NEGATIVE AT 384**: a shared
+      output path does not break `pasmo`, and neither does 12-way CPU pressure.
+      What is NOT modelled is the battery's actual mix — 7 concurrent
+      **emulators**, i.e. memory and I/O pressure, not more assemblers. The item
+      stays open and now names a number instead of a suspicion.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (driven 2026-08-26, negative at 384; needs the flake to recur).
+
+- [x] ✅ **THE TAPE PATCH PAIR IS GUARDED — CLOSED 2026-08-28** (the box was
+      still open on work its own marker recorded as SHIPPED; re-verified today,
+      `make patch-freshness-check` walks both deliverables and `--only tape`
+      selects one, each with its own GATE-SKIPPED condition).
+      ~~THE TAPE PATCH PAIR IS UNGUARDED BY THE SAME RULE.~~ Filed 2026-08-26
+      by D-PATCHFRESH. `tape/zerobas-tape-msx1.ips`/`.bps` are tracked
+      deliverables built from `tape/tape.asm` by the same `build_patches.py`,
+      and `patch-freshness-check` covers only the MAIN pair. 📏 **MEASURED
+      INCIDENTALLY**: regenerating the tape pair is reproducible and it is
+      currently FRESH (it rebuilt byte-identical during this slice), so this is a
+      hole, not a known-stale artifact. The check is the same three-way
+      comparison against a different target and a different prerequisite list;
+      it needs a `--out-dir` on the tape path, which `build_patches.py` does not
+      have yet.
+      ✅ **SHIPPED 2026-08-26.** `build_patches.py --tape` takes `--out-dir`
+      (same contract as `--main`; the SOURCE is always the repo's `tape.asm`),
+      and `check_patch_freshness.py` now walks a **`DELIVERABLES` list** rather
+      than one hardcoded pair — `--only main|tape` selects one. Prerequisites
+      come from make's own database per target: **66** for main, **4** for tape.
+      🎯 **AND THE TWO DO NOT SHARE A SKIP CONDITION — WHICH IS THE PART WORTH
+      NOTICING.** The main pair needs a C-BIOS **source checkout** to
+      regenerate; the tape pair only needs a stock ROM, which `resolve_stock()`
+      finds inside openMSX. **Folding them under one skip would have silently
+      left the tape half unmeasured on every machine without a checkout** — the
+      `GATE-SKIPPED` is now per deliverable.
+      🔬 **FALSIFIED BY PLANTING, 4/4**
+      ([`scratchpad/tapefresh_falsify.py`](scratchpad/tapefresh_falsify.py)), in
+      a `git clone --local` so the working tree is never the subject: GREEN
+      untouched · RED `STALE IN YOUR TREE` (source edited, pair not rebuilt) ·
+      RED `STALE IN THE LAST COMMIT` (committed without the pair) · GREEN
+      (pair carried).
+      🔴 **THE HARNESS BROKE ITSELF TWICE, BOTH LOUDLY.** `git clone --local`
+      takes **HEAD, not the working tree**, so the first run falsified the
+      *committed* checker and reported `unrecognized arguments: --only tape`,
+      0/4. Copying the working-tree tools in then made the clone **dirty** — and
+      `tools/build_patches.py` is a PREREQUISITE of the tape pair, so
+      *"sources are clean"* was false and **RED-B correctly DEFERRED instead of
+      firing**: the fix had suppressed the arm it exists to test. Committing the
+      copies inside the clone is what made all four fire.
+      🔴 **AND THE REFACTOR TRIPPED A THIRD GATE.** Turning the one hardcoded
+      pair into a `DELIVERABLES` loop changed the regeneration spawn from a
+      **list literal** into a variable `argv`, and `make preflight-check` went
+      red: it can no longer read the argv and prove the call is not an emulator
+      launch. `omsx_preflight.guarded()` is a passthrough here and is what the
+      rule requires of every spawn site. 🎯 **THAT IS THREE TIMES TODAY A
+      MECHANICAL, LOCALLY-CORRECT EDIT BROKE A DIFFERENT INVARIANT** — the
+      frozen injector RECORD, this, and the harness's own dirty clone. The
+      battery is not a formality after a refactor.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (SHIPPED 2026-08-26, falsified 4/4).
+
+- [x] 🟢 **SHIPPED 2026-08-30 (D-CLRTRAP,
+      [`docs/spec-basic-clrtrap.md`](docs/spec-basic-clrtrap.md)) — 3 BYTES, AND
+      IT CLOSED A SECOND DEFECT NOBODY HAD MEASURED.**
+      `clear_vars` now calls `trap_init`. The filed row goes zb **17 -> 1** (the
+      reference's answer), and a NEW row goes with it: an ARMED, live
+      `ON INTERVAL` fired **17** times in the window after a `CLEAR` where the
+      VG-8020 fires **0** (`scratchpad/clrarm_probe.py`). Same missing reset.
+      🎯 **THE QUESTION IN FRONT OF THE FIX WAS THE UNASKED ONE.** `clear_vars`
+      has four call sites, so the hook wipes the trap block on `CLEAR` too — only
+      correct if the REFERENCE also stops an armed trap there. It does; the probe
+      that asked is the new one.
+      🔴 **AND THE MARKER BELOW WAS JUSTIFIED BY A PRICE THAT HAD ROTTED.** It
+      read "the FIX costs main page-1 bytes, which is yours to spend", and its
+      sibling was declined at "~25–30 B against **2 B free** (measured
+      `b8a8137`)". Page 1 stood at **336 B free** before this change and 333
+      after. **A PRICE ROTS EXACTLY LIKE A WALL, AND IT TAKES THE MARKER WITH
+      IT** — re-pricing is what the 🔭 marker itself says is not Joost's to do.
+      ⚠️ 3 bytes to revert if he disagrees.
+- [x] 🔴 **`CLEAR` BREAKS THE CONSTRUCTION THAT MAKES `TRAPSTK`'s GSP MATCH SOUND
+      — UNMEASURED.** Filed 2026-08-23,
+      [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §7. After a
+      leaked trap dispatch the abandoned GOSUB frame is still on the stack, so
+      the only `RETURN` that can reach `record.gsp` is the one popping the trap's
+      own frame — the match is sound *by construction*. **`clear_vars`
+      (`basic/vars.asm:1061`) resets `GSP` and does NOT call `trap_init`**, so
+      after a `CLEAR` an unrelated later `GOSUB`/`RETURN` pair can land on the
+      stale record's gsp and re-enable a trap the program believes is dead
+      (+`TRAPENA`). The references have no `TRAPSTK` at all. **Needs the T5
+      probe's POKE-based readout, not D-TRAPSVC's** — `CLEAR` wipes the variables
+      a fenced `PRINT` row carries its flags in.
+      🔴 **CONFIRMED LIVE 2026-08-26 — `vg8020` 1 FIRE, `zb` 17**
+      ([`scratchpad/clrtrapstk_probe.py`](scratchpad/clrtrapstk_probe.py),
+      [`scratchpad/clrtrapstk.out`](scratchpad/clrtrapstk.out)). A 2×2 over
+      *{CLEAR, no CLEAR} × {trap killed in the escape path, state left
+      SERVICING}*, and **exactly one cell is live**:
+      ```
+      case                        vg8020  zb   TRAPSVC TRAPENA rec.gsp  GSP
+      CLEAR, still SERVICING           1  17         0       1    E056  E050  DIFF
+      CLEAR, trap killed               1   1         0       0    E056  E050
+      no-CLEAR, still SERVICING        1   1         1       0    E056  E056
+      no-CLEAR (control)               1   1         1       0    E056  E056
+      ```
+      🎯 **BOTH CONDITIONS ARE NECESSARY, WHICH IS WHY IT HAD NOT BEEN SEEN.**
+      `CLEAR` resets `GSP` to the base (`E050`), so the *first* unrelated `GOSUB`
+      lands back on the stale record's saved gsp (`E056`) — without it the
+      abandoned frame keeps `GSP` at `E056` and the next `GOSUB` reaches `E05C`,
+      which never matches. And the pop re-enables only **iff** the entry is still
+      SERVICING (`cp ZTS_SERVICING / ret nz`, [`basic/traps.asm`](basic/traps.asm)),
+      so a handler whose escape path does `INTERVAL OFF` **pops the record
+      without re-enabling anything** — the obvious construction hides the defect.
+      🎯 **THE FILED CLAIM IS RIGHT, AND ITS MECHANISM IS ONE GUARD DEEPER.** The
+      collision happens in BOTH `CLEAR` rows — `TRAPSVC` goes 1 → 0, an unrelated
+      `RETURN` popping a record that was never its own. Only the live cell also
+      takes `or ZTS_ON` + `inc TRAPENA` (read out of RAM: `TRAPENA=1`), and the
+      trap resumes firing **17 times** in the second wait, on a program that
+      never re-armed it.
+      ⚠️ **`trap_init` IS REACHED ONLY FROM COLD BOOT AND `RUN`**
+      (`initext.asm`, `basic/program.asm`) — nothing on the `CLEAR` path, which
+      confirms the filed reading of `clear_vars`.
+      🔬 The probe imports `basic_probe_interval_trap` rather than re-rolling its
+      harness, and reads `TRAPSVC` / `TRAPENA` / `rec.gsp` / `GSP` out of
+      emulated RAM so a 1-fire row says WHICH of its several sufficient causes
+      applied [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. Two
+      instrument faults on the way: a subroutine numbered `700` sat before
+      `790 END`, so execution fell into it (ERR 3 — and under `CLEAR`, which also
+      resets `ON ERROR`, that killed the run silently); and the first mechanism
+      readout named its cells in the wrong order.
+      💰 **NOT PRICED, AND THE FIX IS A SPEND.** `clear_vars` calling
+      `trap_init`, or validating the record against the live frame, costs main
+      page-1 bytes — a budget decision, not an edit.
+      🔭 SCOUT-THEN-ASK — measured and isolated 2026-08-26; the FIX costs main page-1 bytes, which is yours to spend.
+
+- [x] 🔴 **THE `Missing operand` CLASS HAS THREE MECHANISMS; ONE IS CLOSED AND
+      3 ROWS STILL DIVERGE.** D-MISSOPFIX shipped 2026-08-23, 5 B
+      ([`docs/spec-basic-missop.md`](docs/spec-basic-missop.md) §10-§14),
+      closing **13 of 16** rows including **all four SILENT MEMORY WRITES**
+      (`POKE` three ways + `VPOKE`, each turning a byte holding 99 into 0).
+      3/3 knives EXACT. What remains:
+      * ✅ **CLOSED FOR CIRCLE 2026-08-23 (D-CIRCMISS, 7 B),**
+        [`docs/spec-basic-circmiss.md`](docs/spec-basic-circmiss.md). A verb's
+        own grammar swallowed the dangling comma before `eval` was ever reached,
+        so `CIRCLE(50,50),20,` **drew the circle and reported nothing**. One
+        `cpt_err24` raiser in [`sub/circleparse.asm`](sub/circleparse.asm) and
+        **eight `jp z,cpt_finish` retargeted to it (0 B, same instruction)**;
+        sub page 1 free **1624 → 1617 B**, the arithmetic estimate EXACT.
+        **17 rows x 3 machines, 9 DIFF → 1; 4/4 knives EXACT; 34/34 gates.**
+        🔴 The filing's label set was wrong and its count was right:
+        `cpt_after_aspect` carries no such pair at all — the four labels are
+        `cpt_at_c` / `cpt_at_start` / `cpt_at_end` / `cpt_at_aspect`.
+        🎯 The slice's real work was the four `o.*` rows proving the LEGITIMATE
+        omitted slot (`CIRCLE(50,50),20,,0.1,6.2`) still draws, and K-CM3/K-CM4
+        proving those rows can go red. ✅ **PAINT WAS THE SAME DEFECT AND IS
+        CLOSED 2026-08-23 (D-PAINTMISS, 3 B, below).**
+      * 🔴 **RE-MEASURED 2026-08-26 — D-MISSOP3,
+        [`docs/spec-basic-missop3.md`](docs/spec-basic-missop3.md),
+        `scratchpad/missop3_probe.py`, 29 rows x 3 machines — AND THE FILED
+        SENTENCE IS FALSE.** It read
+        *"predicted not to move under the evaluator fix, and they did not"* —
+        **`A$=` and `A$=+` now read 24 on all three and are GREEN.** Something
+        between 2026-08-23 and today closed them and nothing re-read the item.
+        🔴 **`KEY1,` IS MISDIAGNOSED, NOT UNFIXED**: it is not a wrong error
+        CODE, it is `KEY n,"str"` being UNIMPLEMENTED — see the item below,
+        found by a control that was supposed to be trivially green.
+        **`MID$(A$,2)=` (zb 2, refs 24) is the ONE row of the three that
+        survives as filed.**
+      * 🔴 **AND THE SWEEP FOUND THREE MORE, NONE OF THEM FILED ANYWHERE**:
+        `PLAY` (zb **2**, refs 24 — confirms the separate item below),
+        `PRINT USING` (zb **2**, refs 24), and `ON 1 GOTO` (zb **0**, it
+        SILENTLY COMPLETES, refs **2**).
+      * ✅ **THE DENOMINATOR IS NO LONGER A SAMPLE — the ten verbs this item
+        named as *"unmeasured, not green"* were all run.** Already correct:
+        `WIDTH`, `OPEN`, `INPUT#`, `PRINT#` (24 on all three). `FIELD` is
+        **excluded, not green**: the references DISAGREE (VG-8020 5, CF-3300
+        24) because the VG-8020 has no disk. Bare `INPUT`/`LINE INPUT` are
+        UNMEASURABLE by this instrument — they are valid statements that prompt
+        and WAIT, so the row would hang rather than answer.
+      * 🔴 **THE ONE-RULE PREDICTION WAS REFUTED, THEN HALF-RESTORED BY ITS
+        OWN SEPARATORS.** *"A required slot that ends where a value was needed
+        is 24"* is wrong on both references twice — `SWAP A,` is 2, `DRAW` is 5.
+        `SWAP ,B` is **2 on all three** (its slot is a NAME), so SWAP is a real
+        exception. 🔴 **`DRAW` NEVER WAS ONE: `SCREEN2:DRAW` is 24 on both
+        references and 13 here.** The baseline row agreed at 5 on all three
+        because **SCREEN 0 makes `DRAW` `Illegal function call` before the
+        operand is ever looked at** — a case that agreed for the wrong reason,
+        on every machine, hiding a live divergence.
+        🎯 **THE REFINED RULE:** *a missing **VALUE** is 24; a missing **NAME**
+        is 2; and a missing **SEPARATOR** is 2* — `PRINT USING"##"` is 2 on both
+        references, not 24, because the format is present and the `;` is not.
+        ⚠️ Rests on TWO separating rows; the scope is the verbs measured.
+      * 🟢 **NINE OF THE TEN ARE CLOSED (2026-08-26)** — D-EVFERR, D-PLAYOP,
+        D-PUSING (which turned 2 rows into 13), D-MIDOP and D-DRAWOP. The tenth
+        is KEY's absent form, blocked on ~160 B of defaults DATA rather than on
+        knowledge. 🔴 **AND `SCREEN2:DRAW` IS THE ONE TO REMEMBER FROM THIS
+        LIST**: this item's own `DRAW` row agreed at 5 on all three because
+        SCREEN 0 refuses before the operand is read, so the row that was
+        supposed to find the defect was structurally incapable of it.
+      * 📏 **FULL LIVE LIST — TEN, where this item knew of two:** `KEY1,"X"` and
+        `KEY LIST` (refs **0**, zb 2 — the item below), `KEY1,` (24 vs 2),
+        `MID$(A$,2)=` (24 vs 2), `PLAY` (24 vs 2), `PRINT USING` (24 vs 2),
+        `PRINT USING"##"` (2 vs **0**), `ON 1 GOTO` and `ON 1 GOSUB` (2 vs
+        **0**, they SILENTLY COMPLETE), `SCREEN2:DRAW` (24 vs 13).
+        **Four roots, so four slices, none of them priced here** — page 1 was
+        99 B free on 2026-08-26; read the wall, never this line.
+      ✅ **RE-VERIFIED 2026-08-26 AFTER ALL FIVE SLICES SHIPPED — THE LIVE LIST
+      IS TEN → THREE, AND ALL THREE ARE ONE ROOT.** `scratchpad/missop3_probe.py`
+      re-run whole ([`scratchpad/missop3_reverify.out`](scratchpad/missop3_reverify.out)):
+      **27 scored, 3 DIFF, 1 excluded.**
+      ```
+      r.key      KEY1,        refs 24  zb 2    🔴
+      r.keyok    KEY1,"X"     refs  0  zb 2    🔴
+      r.keylist  KEY LIST     refs  0  zb 2    🔴
+      ```
+      🟢 **THE OTHER SEVEN ARE GREEN BY MEASUREMENT, NOT BY THE SLICES' OWN
+      REPORTS**: `MID$(A$,2)=` → 24 (the row this item called *"the ONE of the
+      three that survives as filed"*), `PLAY` → 24, `PRINT USING` → 24,
+      `PRINT USING"##"` → 2, `ON 1 GOTO` and `ON 1 GOSUB` → 2, `SCREEN2:DRAW`
+      → 24. `d.field` still has the references DISAGREEING (VG-8020 5, CF-3300
+      24) and stays EXCLUDED, not counted green.
+      🎯 **SO THIS TRACKING ITEM IS SPENT.** All three survivors are
+      `KEY n,"str"` / `KEY LIST` being UNIMPLEMENTED — a single filed item,
+      blocked on ~160 B of defaults DATA against a scarce main page 1, not on
+      knowledge. The residual is an ITEM, not a sentence, so this one closes and
+      that one carries it.
+      🔬 The run also exercised the sentinel machinery end to end: **84 captures
+      on signal, 0 fell back to the scheduled budget** (signalled at 29.1–44.4
+      emulated s).
+
+- [x] ⚠️ **`latch-check` IS THE ONE GATE WITH NO PREREQUISITES, AND A HAND-ROLLED
+      BATTERY WILL TRIP IT.** Filed 2026-08-23, D-CIRCMISS §8.
+      [`Makefile`](Makefile):2498 is `latch-check:` with an empty prerequisite
+      list, so running it straight after `rm -rf build` makes it refuse (*"a
+      probe booted against this machine would report the absence of the ROM as
+      the absence of the FEATURE"*) and `make` exits 2. **The gate is right and
+      the driver is wrong** — but every other acceptance target self-heals via
+      its own `repack-machine` prerequisite, so this one is the only way to
+      learn the rule. Either give it the prerequisite or say so where batteries
+      get written; unpriced, and 16/16 once the ROMs exist.
+      ✅ **FIXED 2026-08-26 — `latch-check: repack-machine`.** The requirement
+      was already written in the comment directly above the target (*"Needs
+      `make repack-machine`"*); it is now a prerequisite, which is the shape the
+      other emulator-driving targets use. **Falsified by planting, both senses,
+      from the same clean tree**: with the prerequisite REMOVED, `rm -rf build`
+      then `make latch-check` exits **2** with the preflight refusal — exactly
+      as filed; with it, the same clean tree gives **16/16 rows, rc 0**.
+      🔴 **AND CHECKING IT WAS SAFE FALSIFIED `run_gates.py`'s OWN JUSTIFICATION.**
+      `repack-machine` is **PHONY**, so it re-runs unconditionally — and
+      **24 of the battery's targets already name it**, so one battery
+      re-publishes `~/.openMSX/share/machines/*.xml` up to 24 times,
+      concurrently, while every other unit reads it. The docstring said *"in the
+      parallel phase … no build/ writes, no races … nothing rebuilds"*, which is
+      the load-bearing excuse for running `make` concurrently with a battery and
+      was **false for the one artifact all 41 units share**.
+      🎯 **THAT ALSO EXPLAINS WHY D-MACHXML'S RACE WAS REPRODUCIBLE AT ALL** — it
+      is not a rare window, it is two dozen publishes per run. It is survivable
+      only because `openmsx_paths.publish()` is atomic (the non-atomic form
+      measured **412/1200 = 34.3 %** of concurrent reads torn). Docstring
+      corrected in place: conclusion narrowed, the exception named
+      [[a-fix-falsifies-the-justification-beside-it]].
+      ⚠️ This change adds a 24th such target, not the first — the cost was
+      already being paid, and it is now written down where the next person will
+      read it.
+
+- [x] 💰 **NINE STATEMENT ENTRIES SPENT 11 B EACH ON THE SAME SIX INSTRUCTIONS —
+      +45 B.** Done 2026-08-28 (D-BAREEND),
+      [`docs/spec-bareend.md`](docs/spec-bareend.md), on Joost's steer toward work
+      that aggregates common behaviour and reduces size. `pcr_flag_end`,
+      `ex_clear`, `ex_close`, `ex_resume`, `ex_return`, `b4_maybe_s`, `ex_color`,
+      `clr_bd`, `ex_width` all open with *"skip my token; did the statement end
+      here?"*. 🎯 **In every one of the nine BOTH `jr z` go to the SAME label**, so
+      the idiom takes ONE parameter and collapses to a flag: `stmt_bare_end`
+      (9 B, Z iff the statement ends), each site `call` + `jr z` (5 B).
+      99 B → 54 B; **main page 1 was 61 B → 106 B free on 2026-08-28**.
+      🔴 **`clone_scout` FOUND THREE OF THE NINE AND PRICED THEM WRONG, neither a
+      bug.** It groups on a fixed span window with up to two operands masked, so
+      the other six differ beyond that window; and its `(n-1)·each - 4n` prices a
+      plain `call`, while this body ENDS IN A BRANCH and needs a flag-returning
+      helper. The family was found by grepping the IDIOM. A ROM dump shows the
+      three "30 B" bodies share **six bytes** and diverge at the `jr`
+      displacement — source-level identity modulo masked operands is a legitimate
+      question, but it is not a price.
+      🟢 Region checked BEFORE writing code: all nine callers and `skip_spaces`
+      are page 1, so nothing crosses the low/page-1 boundary. Battery 43/43,
+      `deadcode` clean.
+
+- [x] ⚠️ **`DEF FN` has NO KNIVES, and now it has a shipping ROM to cut
+      against.** Filed 2026-08-23 by D-DEFFNLAND,
+      [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md) §7. Four
+      obvious sites, three of them defects this arc actually found: `fn_slot`'s
+      `E`, `fn_leave`'s `DE`, PRINT's item classification, and the servicer's
+      `push de`/`pop de` around the tenant bounce (§3.2 — its knife is deleting
+      those two bytes and watching `o.defint` go red). 🔴 **And the ceiling
+      compare of §3.1 needs one too**: a knife that restores `cp low
+      FN_PAREA_END` must redden `o.p3`, and a knife that widens `FN_AREA` by one
+      slot must redden `o.p10` — the second is what would have caught the wrap
+      the first version of that test also got wrong.
+      ✅ **FULLY SUPERSEDED — VERIFIED 2026-08-26 BY COUNTING THE KNIVES.**
+      The headline is false: `DEF FN` has **NINE**, not none — eight implemented
+      in [`scratchpad/deffn_knives.py`](scratchpad/deffn_knives.py) (K-DF1,
+      K-CE1, K-CE2, K-DE2, K-PR1, K-RT1, K-FE1, K-SF1) plus **K-DE1** in
+      [`scratchpad/deffn_de_knife.py`](scratchpad/deffn_de_knife.py). Every site
+      this item names is accounted for:
+      | this item asked for | covered by |
+      |---|---|
+      | `fn_leave`'s `DE` | **K-DE2** |
+      | PRINT's item classification | **K-PR1** |
+      | the servicer's `push de`/`pop de` | **K-DE1** — that IS its subject |
+      | the ceiling compare, both directions | **K-DF1 / K-CE1 / K-CE2** |
+      | `fn_slot`'s `E` | 🔴 **the label does not exist** |
+      🔴 **`fn_slot:` WAS REMOVED BY THIS ITEM'S OWN SLICE.** `git log -S` puts
+      its last change in `dd0c84d` — *"DEF FN ships"* — which is D-DEFFNLAND,
+      the slice that filed this. The item named a knife target its own commit
+      had just deleted.
+      🎯 **AND I NEARLY REBUILT K-DE1.** The plan here — *"deleting those two
+      bytes and watching `o.defint` go red"* — is word for word what
+      `deffn_de_knife.py` already does; `basic/deffn.asm` even carries the
+      result in a comment (*"these two bytes and `deffn-strict` goes 0 → 31 of
+      69 rows divergent"*). Counting the roster before building is the only
+      reason that duplicate did not ship.
+      ➡️ The live successor is the *unknifed* roster in the D-DEFFNKNIFE item
+      above — five named sites, none of them these.
+- [x] ⚠️ **A wall figure hardcoded inside a GATE is unpoliced by design.** Filed
+      2026-08-22 by D-DUPSPAN2, §5.2 — `tools/gen_resident_abi.py`'s
+      `LOW_CEILING = 0x3FE5` under a comment naming `__MEAS_LOW_END`, stale by
+      65 B; fixed in that commit by reading the label. The CLASS is open:
+      `make wall-assertion-check` scopes itself to TODO.md's `- [ ]` items, so
+      no gate reads a free-space or region-boundary figure baked into
+      `tools/`, `probes/` or a source `equ`. A sweep for the class is owed.
+      ✅ **SWEPT AND GATED 2026-08-27 (D-WALLIT), and the class was NOT empty —
+      three live defects.** [`docs/spec-wall-literals.md`](docs/spec-wall-literals.md);
+      new `make wall-literal-check`. Both filed claims re-ran true first.
+      **Rule: a HAND COPY of a value the build already resolves.** Two shapes,
+      each with its own denominator — **A** `NAME = <literal>` in `tools/`/`probes/`
+      where NAME is a build symbol (**93 anchored of 626**), **B** `NAME equ <expr>
+      ; $XXXX…` (**64** rows). ⚠️ The scout's wider rule reports `960 of 1464`;
+      that is NOT this gate's denominator and the docstring says so.
+      🔴 **`basic_probe_cas_verbs.py` read `STRSCR = $E360` — 243 B INTO the buffer
+      ($E26D). BOTH STRSCR cases had been FAILING on all-`$FF` and nobody knew:
+      the probe is README-listed but in NO battery, so its honest `rc=1` was never
+      collected.** 4 FAIL/2 PASS → **6/6 PASS**, four untouched controls — and the
+      BASIC was right all along; only the readout was blind.
+      🔴 **`basic_probe_clear.py`: FOUR of six sysvars pointed at the wrong cell**
+      ($F691/$F693/$FC4C read `$0000` on a VG-8020; $FC48 is ceiling-independent).
+      Case 3 printed two DEAD cells as `SAME` — agreement made of two zeroes.
+      🎯 The right addresses were ALREADY in this repo (`sysvars.inc:1528`,
+      `sysvar-rehoming-decisions.md:210`); nothing compared the copies to them.
+      ⚠️ Of my two discriminators only one worked: varying string-space size moved
+      NOTHING, including live cells — the ceiling arm and the live/dead split
+      carried it.
+      🔴 **`sysvars.inc`: the `GFX_SPATN..GFX_SFLAGS` chain annotated addresses 2 B
+      high, and :2615 said basic-core RAM "tops out at STRSCR $E360..$E380" —
+      wrong span AND wrong cell** (:1481 of the same file has it right; the real
+      cap is the build-enforced $E560, 512 B higher). Comment-only: all three ROM
+      images rebuilt byte-identical (md5s in the spec doc §3.3).
+      Exemptions are mechanical (PER-BUILD, CONDITIONAL ×32) except PUBLISHED,
+      which is 2 pinned lines — both MEASURED on the reference, not accepted.
+      ⚠️ Does NOT catch prose, or a literal with no name in a sym file: §3.3 was
+      found by READING, not by either gate.
+
+- [x] ✅ **CLOSED 2026-08-28 (D-CONCATPEAK): the peak is 3L, and it matches the
+      references TO THE BYTE.** ~~zerobas EXHAUSTS A `CLEAR 100` STRING POOL
+      WHERE BOTH REFERENCES COPE.~~
+      Filed 2026-08-27 by D-FNGCROOT,
+      [`docs/spec-deffn-gcroot.md`](docs/spec-deffn-gcroot.md) §3 — found as a
+      CONFOUND, by the control rather than the subject. With `CLEAR 100`,
+      `X$="ABCDEFGHIJ"+"KLMNOPQRST"` and
+      `LEFT$(STR$(FRE(""))+X$+X$,0)+A$` (no `DEF FN` anywhere in it), vg8020 and
+      CF-3300 both answer `ABCD` and zerobas raises **Out of string space**.
+      Green from `CLEAR 150` up (150/200/300 all ABCD), so the ladder is measured
+      and the boundary is between 100 and 150 — **not bisected further, and not
+      attributed**: it may be the CLEARPOOL partition charging the same expression
+      more, a temp that is not released, or a genuine per-temp overhead. The
+      reproducer is `g2.cap*` in
+      [`scratchpad/deffn_gcroot2_probe.py`](scratchpad/deffn_gcroot2_probe.py).
+      ⚠️ Nothing here is a DEF FN claim — the failing expression has no FN in it.
+      ✅ **HALF OF IT IS FIXED, AT ZERO BYTES (2026-08-28, D-POOLCAP),**
+      [`docs/spec-poolcap.md`](docs/spec-poolcap.md). **Threshold CLEAR 120 → 100**;
+      still red at 70/80, where both references work.
+      🔴 **TWO EXPLANATIONS DIED FIRST.** The pool is NOT smaller (grant 100/150,
+      free-after 76/126, concat cost 36 — identical on all three), and the result
+      is NOT over-allocated (`LEFT$(X$,n)` charges exactly n: 0/5/20 everywhere).
+      The cost is a TRANSIENT PEAK, which a before/after `FRE("")` cannot see.
+      🎯 **`FRE("")` IS EXONERATED** — `LEFT$(X$+X$,0)+A$` has none and fails too.
+      The separator is the SOURCE's kind: slicing a VARIABLE is green at CLEAR 70
+      on every side; slicing a TEMP is what diverges.
+      🎯 **CAUSE: A KNOWN CLASS WITH ONE SITE CONVERTED.** `LEFT$`/`RIGHT$`/`MID$`
+      called `str_snapshot_to_temp` when `str_snapshot_keep` sits beside it, whose
+      header already describes this defect — *"with `CLEAR n` it was a second full
+      charge against the user's pool"*. D-CLP converted `str_set_key` and left the
+      three verbs. Fixed via a `str_snapshot_arg` ALIAS (not an `IF` per site: the
+      non-CLEARPOOL build has no `keep` to call) — **0 B, all four walls unchanged**.
+      🔴 **THE HAZARD IS IN LEFT$'s OWN SENTENCE — it truncates the snapshot IN
+      PLACE**, so handing the source back as-is mutates it. Six rows written to
+      break it (nested slices, a temp sliced two ways, a slice beside a rebuilt
+      copy) all agree with both references; string/str-domain/strparen/array/
+      deffn-strict/unit-test green, and **`switch-build-check` builds
+      `CLEARPOOL equ 0`** — the arm the alias exists for.
+      🔴 **~~WHAT REMAINS, WITH ITS SITE NAMED: `str_concat` snapshots BOTH
+      operands (`basic/str-engine.asm:1435`)~~ — THAT CAUSE IS WRONG IN THREE
+      WAYS, corrected 2026-08-28 (D-CONCATPEAK,
+      [`scratchpad/concatpeak_probe.py`](scratchpad/concatpeak_probe.py)).**
+      There is **no `str_concat` label** in the tree; **line 1435 is
+      `ev_f_instr`** — INSTR, which does snapshot both operands, a DIFFERENT
+      routine; and concatenation is **`str_concat_tail`**
+      ([`basic/str-engine.asm:426`](basic/str-engine.asm:426)), which snapshots
+      **operand 1 ONLY** — operand 2 is passed straight through as `SH_SRC`.
+      Acting on the filed cause would have edited the wrong verb.
+      🎯 **THE REAL MECHANISM IS IN THE SUB-ROM, AND IT PREDICTS THE THRESHOLD.**
+      `sh_append` ([`sub/strheap.asm:1309`](sub/strheap.asm:1309)) never appends
+      in place: it `heap_alloc`s a body of the COMBINED length, copies BOTH
+      operands into it, repoints R and lets R's old body become garbage. So for
+      `LEFT$(X$+X$,0)` with X$ of length L and A$ holding 4 B:
+      **peak = L (X$) + 4 (A$) + L (R's body) + 2L (new body) = 4L + 4.**
+      📏 **12/12 ROWS MATCH, and two of the three L values were never measured
+      before** — L=10 predicts 44 (fails 30/40, passes 50/60), L=20 predicts 84
+      (fails 70/80, passes 90/100), L=30 predicts 124 (fails 110/120, passes
+      130/140). The threshold MOVES WITH L, which a "double snapshot" story
+      cannot explain.
+      ⚠️ **AND THE SNAPSHOT'S OWN JUSTIFICATION IS FALSE.** `str_concat_tail`
+      says *"R must be a fresh temp we can modify in place"* — `sh_append` does
+      NOT modify the body in place. What R must be is a **SLOT that can be
+      repointed**; the BODY copy buys nothing and is exactly the L bytes that
+      make the peak 4L instead of 3L. ➡️ The fix is a single allocation copying
+      BOTH sources (peak 3L+4, which would make CLEAR 70 pass at L=20) — a new
+      sub-ROM op, its own slice, and the ground is surveyed: **ops 0–11 are
+      taken**, the op needs **THREE descriptors (srcA/srcB/dest) where only
+      `SH_SRC` and `SH_DEST` exist**, and 🔴 **the obvious third cell `SH_P` is
+      INSTR's — and concat can appear INSIDE an INSTR argument**
+      (`INSTR(A$+B$,"x")`). Settle that FIRST, or walk the RAM map for a new
+      cell. ⚠️ The cheap shortcut is measured DEAD: starting R empty and
+      appending both operands leaves the peak at 4L+4, because the first append
+      still leaves an L-byte body live while allocating 2L.
+      ✅ **THE GATE HOLE IS CLOSED 2026-08-28**: `clearpool-acceptance` now
+      carries the recovered ground as GATED rows (`tslice-100`, `tslice-120`,
+      and `tslice-var70` — the row that separates slicing a TEMP from slicing a
+      VARIABLE), and the still-divergent half as REPORTED-not-gated
+      (`topen-70`/`topen-80`). They lived only in
+      [`scratchpad/leftkeep_probe.py`](scratchpad/leftkeep_probe.py); the battery
+      now shows the open half every run.
+      ✅ **FIXED 2026-08-28 — `sap_try_extend` in `sub/strheap.asm`, 109 B of sub
+      page 0 and ZERO bytes of main** (main ROM hashes byte-identical; only
+      `build/sub.rom` moved). The heap grows DOWNWARD from `FRETOP`, so the most
+      recent body sits exactly AT `FRETOP` — and in `A$+B$` that body is the
+      operand-1 snapshot made one step earlier. `sh_append` now grows it IN
+      PLACE, costing only `ext` instead of a fresh `lenR+lenTk` body allocated
+      while the old one is still live. It also leaves NO garbage.
+      📏 **BOTH MODELS SCORED, because "stopped failing" is a weaker claim than
+      "behaves as the mechanism requires": 4L+4 now fits 7/12, 3L+4 fits 12/12,
+      DIFF vs references 0/12.** The boundary is pinned TO A BYTE on all three
+      sides: `CLEAR 59` is Out of string space everywhere, `CLEAR 60` answers 0
+      everywhere.
+      🔴 **TWO MISTAKES OF MINE, both recurring classes.** (1) `strheap_floor`'s
+      own header says *"Clobbers A,B,C,D,E,H,L"*; the first cut held `total`/
+      `lenR` in B/C across it and **every concatenation in the language died**.
+      (2) **The probe scored the dead machine as HALF-PASSING** — every row
+      returned the typed line (echo fence), the pass test asked only *"is `Out of
+      string space` in the answer"*, and **6 rows read `ok` on a ROM that could
+      not concatenate**. It had NO CONTROL ROW; it now has three plus an
+      echo-fence detector.
+      ✅ **`topen-70`/`topen-80` PROMOTED to gated**, joined by `tslice-59`/`-60`.
+      🎯 `tslice-59` is the load-bearing one: a passing row says the pool was big
+      enough, a row FAILING one byte lower says the peak is what the mechanism
+      claims. 68/68 gated rows agree.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended
+      (SHIPPED 2026-08-28, 0 DIFF, gated).
+
+- [x] ⚠️ **The rest of the byte-identical-span supply: 53 groups, 403 B
+      NOMINAL, and nominal is not a price.** Filed 2026-08-22 by D-DUPSPAN.
+      Re-run `python3 scratchpad/dupspan_sweep.py` — never quote this figure,
+      it rots exactly like a wall. The two error-tail families are gone; what
+      remains is 11–20 B pairs (`sav_ascii_flag`/`sav_cas_flag`,
+      `esn_p2`/`esn_scan_lp`, `ems_print`/`exps_print`, `ai14_lp`/`ai6_lp`,
+      `raf_zero_ok`/`cpow_x0_pos`, `eostr_lp`/`eokey_lp`,
+      `sst_overflow`/`shxf_overflow`, `ex_on_strig`/`ex_on_key`,
+      `asw_single`/`vsf_single`). 🔴 **Each needs BOTH checks D-DUPSPAN ran**:
+      a fallthrough predecessor (via `check_tenant_closure._is_terminator`, not
+      a regex — `ret nz` and `jp nc,x` are not terminators) and `jr` reach at
+      every caller. **These are LOOP BODIES, not error tails**, so unlike the
+      tails they are not obviously position-independent: a relative jump out of
+      the span makes two identical spans un-collapsible.
+      ✅ **PRICED AND CLOSED 2026-08-28 (D-DUPSUPPLY),**
+      [`docs/spec-dupsupply.md`](docs/spec-dupsupply.md). **The class is MEASURED
+      EMPTY apart from 5 B, and that 5 B is taken.**
+      📏 The figure had rotted exactly as this item warned: **53 groups / 403 B →
+      26 groups / 163 B nominal**, and pairs it named by size moved
+      (`sav_ascii_flag`/`sav_cas_flag` was in its "11–20 B" list, now a 3 B group)
+      while `pn_wr`/`dde_wr` (11 B) appeared since.
+      🎯 **THIS ITEM'S PREDICTION WAS RIGHT ABOUT THE MECHANISM, NOT JUST THE
+      DIRECTION.** Every large pair dies on "relative jump leaves the span" or
+      "runs off its end" — the literal verdict strings — which is the loop-body
+      hazard it named in advance. 163 B nominal → **5 B same-region net**.
+      🔴 **THE DEFAULT `dupspan_indep.py` RUN OVER-PRICES AT 8 B** because its
+      REGION check is a FLAG, not a default: the extra 3 B is collapsing
+      `affn_found` ($333D, page-0 low) onto `cal_srv_ret` ($67A3, page 1) — across
+      the boundary its OWN comment forbids. `--samereg` is the number to act on.
+      ✅ **TAKEN: `pu_ifc equ gb_illegal`** — a NINTH copy of a body that already
+      carried eight names; terminates, no escaping `jr`, no fallthrough entry, same
+      region, and its one incoming jump was already a `jp` so nothing widened.
+      Main page 1 was **89 B → 94 B free on 2026-08-28**; low and both sub islands
+      unchanged. The tool's price was right to the byte.
+      🔴 **NOTHING IN `make gates` NAMES PRINT USING**, so the collapsed arm got its
+      own reading ([`scratchpad/puifc_probe.py`](scratchpad/puifc_probe.py)):
+      `PRINT USING"abc"`→ERR 2, `"abc";`/`"abc";5`→**ERR 5** (the pu_ifc arm),
+      `"##";5` prints — all three machines agreeing. `deadcode` clean; battery
+      **43/43** with no flakes.
+      ➡️ **The remaining 158 B nominal is refused by the byte decoder, not by
+      judgement**, and structurally: a loop body with a `jr` inside it does not
+      collapse at any price. Reopening means restructuring loops, which an alias
+      carve does not fund.
+
+## Phase 1 record — committed work (all ✅ done)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — its preamble says so: 'nothing here is outstanding'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+## Done — Phase 1 (loader-stub BASIC)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — 'Complete and oracle-validated; kept below as the provenance record'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+
+## From `TODO.md` § Phase 3+ — full MSX1 BASIC (active charter)
+
+- [x] ✅ **CLOSED 2026-08-30 — THE CHECKBOX WAS STALE, AND THE BODY ALREADY SAID
+      SO.** Re-verified rather than inherited: `make injector-check` is **green**,
+      and it does not walk three named directories any more — it walks the WHOLE
+      REPO (`os.walk(REPO)`), **667 files**, so `probes/disk/*` is enumerated by
+      the gate and the opening complaint below ("Not enumerated; not known to be
+      affected") no longer holds. Every sub-part beneath is marked ✅ already.
+      ⚠️ **THIS IS THE HAZARD THIS FILE'S OWN RULES NAME:** an item left `- [ ]`
+      whose body ends in ✅ is work the loop will re-pick. A sweep for the class
+      found exactly two candidates and only this one was real — the D-NGRAM item
+      is a STANDING sweep whose body records shipped SUB-slices, and closing it
+      would have been the mirror-image error.
+      **The original text is kept below unchanged**, because the reasoning in it
+      is the reason the gate exists.
+      ⚠️ **THE DELIVERY GUARDS DO NOT COVER PROBES WITH THEIR OWN `build_tcl`.**
+      Every `probes/disk/*` script and `basic_probe_printusing.py` build their own
+      Tcl and never reach `omsx_repl._tcl`, so neither the stored-program oracle
+      nor the echo oracle sees them. Not enumerated; not known to be affected.
+      🔴 **D-LATCH promoted this from a COVERAGE item to a CORRECTNESS one.** A
+      local copy of the pre-D-LATCH `__key` — write at `KEYBUF`, reset `GETPNT` —
+      still has the race the shared injector no longer has, and still has no
+      oracle that would notice.
+      ✅ **The five trap probes are DONE** (`interval`, `key`, `sprite`, `strig`,
+      `stop`): each held a byte-identical copy, each now calls
+      `omsx_repl.key_proc()`, and all five gates were re-run green.
+      ✅ **CLOSED 2026-08-04 BY D-LASTINJ**
+      ([`docs/spec-probe-lastinj.md`](docs/spec-probe-lastinj.md),
+      [`docs/lastinj-characterization.md`](docs/lastinj-characterization.md)).
+      🔴 **AND "no Makefile target runs it" WAS FALSE.** `make diskbasic-acceptance`
+      dispatches `disk_probe_getput.py` as registry row `GET/PUT`
+      (`probes/disk/diskbasic_acceptance.py:81`), and a SECOND row (`OPEN(LEN=)`)
+      imports its driver — so it was scored all along and sat inside D-LATCH's own
+      corpus under the name `diskbasic`. The question asked was *"is there a target
+      called `getput`?"*; the load-bearing question was *"is this file scored?"*
+      ([[readout-blind-to-its-own-subject]] reached through a naming convention).
+      Its `__inj` was **character-identical** (after constant folding) to
+      `latch_check.OLD_KEY` — the body row A forces and requires to MANGLE.
+      🎯 **Measured latent, not harmless:** 0 of 16 slots at the trigger, but slot
+      11 landed at `$119B` INSIDE `chget`'s wait loop, and the swallow law's
+      precondition held at **15/15** slots with a predecessor. Re-pointed at
+      `key_proc()`; `2/2` before and after, `34/34` full gate.
+      🔴 **`make injector-check` now GENERATES the list** instead of a reader
+      maintaining it (`tools/check_probe_injectors.py`, spec §3.4): AST, not grep
+      — a file offends when its STRING LITERALS emit `debug write memory` and it
+      NAMES a type-ahead cursor. 256 files, 3 structural exemptions, fails CLOSED.
+      It found the one copy that existed (exit 1) BEFORE it was allowed to report
+      zero, and it scores its classifier against two frozen bodies on every run so
+      that an empty walk cannot certify itself [[fixing-the-fault-silences-the-control]].
+      `basic_probe_printusing.py` builds its own Tcl but injects nothing through
+      KEYBUF, so it is not in this class — the new gate classifies it CLEAN
+      independently.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (hand-corrected: apparatus, no ROM bytes).
+
+## Done — storage transports
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
