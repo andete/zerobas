@@ -5636,7 +5636,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Detail: [`docs/decblank-msx1-characterization.md`](docs/decblank-msx1-characterization.md) §5.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] ⚠️ **THE DELIVERY GUARDS DO NOT COVER PROBES WITH THEIR OWN `build_tcl`.**
+- [x] ✅ **CLOSED 2026-08-30 — THE CHECKBOX WAS STALE, AND THE BODY ALREADY SAID
+      SO.** Re-verified rather than inherited: `make injector-check` is **green**,
+      and it does not walk three named directories any more — it walks the WHOLE
+      REPO (`os.walk(REPO)`), **667 files**, so `probes/disk/*` is enumerated by
+      the gate and the opening complaint below ("Not enumerated; not known to be
+      affected") no longer holds. Every sub-part beneath is marked ✅ already.
+      ⚠️ **THIS IS THE HAZARD THIS FILE'S OWN RULES NAME:** an item left `- [ ]`
+      whose body ends in ✅ is work the loop will re-pick. A sweep for the class
+      found exactly two candidates and only this one was real — the D-NGRAM item
+      is a STANDING sweep whose body records shipped SUB-slices, and closing it
+      would have been the mirror-image error.
+      **The original text is kept below unchanged**, because the reasoning in it
+      is the reason the gate exists.
+      ⚠️ **THE DELIVERY GUARDS DO NOT COVER PROBES WITH THEIR OWN `build_tcl`.**
       Every `probes/disk/*` script and `basic_probe_printusing.py` build their own
       Tcl and never reach `omsx_repl._tcl`, so neither the stored-program oracle
       nor the echo oracle sees them. Not enumerated; not known to be affected.
