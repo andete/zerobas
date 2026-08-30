@@ -174,11 +174,40 @@ that was a tooling artifact.** `TKDIG` is `$F03C` **+ 24 bytes** — exactly up 
 sits on a continuation line. A confident table from a mis-parse.
 [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
 
-**RAM has no gate here** — `wall-assertion-check` covers ROM only — so the
-question has to be put to the machine the way `scratchpad/ramfree_probe.py` puts
-it: fill a candidate window with a pattern, run the subsystems hard, read it back,
-and see what moved. That is the next step, and it is a small investigation of its
-own rather than a line of assembly.
+**RAM has no gate here** — `wall-assertion-check` covers ROM only — so a map
+cannot settle it.
+
+### 5.5 🟢 …and the two bytes were already there. No RAM hunt needed.
+
+The `TK` block's own comment says `TKDIG`/`TKPC`/`TKDEXP` are **shared with the
+`flt_out` formatter**, because the two never run concurrently. That argument cuts
+the other way too: the formatter's *own* cells are dead during a `tk_float` scan.
+
+| cell | in `tkfloat.asm` | in `float.asm` | anywhere else |
+|---|---|---|---|
+| `FOSIGN` `$F063` | **0** | 2 | none |
+| `FOSIGCOUNT` `$F064` | **0** | 8 | none |
+| `FOMBYTES` `$F065` | **0** | 3 | none |
+
+Three bytes, used only by `flt_out`, never touched by `tk_float`. `TKVALEND`
+takes two of them, on exactly the sharing argument the block already documents.
+
+🔴 **BUT THE STATED JUSTIFICATION GOES FALSE, AND THAT IS DOC DEBT A FIX MUST PAY.**
+The comment reads:
+
+> flt_out never runs concurrently with tk_float (**tokenising a line always
+> finishes before any statement, including PRINT, executes**)
+
+VAL would call `tk_float` **at statement-execution time**, so the parenthesis
+stops being true. The *conclusion* survives for a different reason — `flt_out`
+calls only `flo_is_fixed` / `flo_emit_fixed` / `flo_emit_e` and can never reach
+the evaluator, so neither routine can be mid-flight when the other starts — but
+whoever implements this **must rewrite that reason**, or the next reader inherits
+a false premise about a shared-RAM invariant.
+[[a-fix-falsifies-the-justification-beside-it]]
+
+⚠️ It is left alone for now on purpose: the sentence is *true today*, and
+pre-emptively documenting a state that does not yet exist is its own defect.
 
 ⚠️ Still unmeasured: what the integer tokens (`INT1_TOKEN`, the digit tokens)
 decode through on the VAL path, and whether `tk_float`'s `TKOVF` reject exit

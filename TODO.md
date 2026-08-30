@@ -382,15 +382,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the single helper `tkf_fetch`. 🎯 And it must be a POSITION test, not a
       counter: `tkf_fetch`'s callers push HL and may `pop hl` to REWIND across a
       rejected blank run, so a counter would drift out of step with the cursor.
-      ⛔ **REMAINING BLOCKER: TWO BYTES OF VERIFIED-FREE RAM.** The `TK` block is
-      packed solid. ⚠️ A quick `sysvars.inc` scan reported a 23 B gap at
-      `$F03D..$F054` and **that was a tooling artifact** — `TKDIG` is `$F03C`
-      **+24**, exactly up to `$F054`; the scan defaulted its size to 1 because
-      the `(24)` is on a continuation line.
-      ➡️ **RAM HAS NO GATE, so ask the machine** the way
-      [`scratchpad/ramfree_probe.py`](scratchpad/ramfree_probe.py) does: fill a
-      candidate window, run the subsystems hard, read it back. That is the next
-      step. [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
+      ⚠️ A quick `sysvars.inc` scan reported a 23 B gap at `$F03D..$F054` and
+      **that was a tooling artifact** — `TKDIG` is `$F03C` **+24**, exactly up to
+      `$F054`; the scan defaulted its size to 1 because the `(24)` is on a
+      continuation line.
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
+      🟢 **AND THEN THE RAM BLOCKER DISSOLVED WITHOUT A HUNT (§5.5).** The TK
+      block already SHARES `TKDIG`/`TKPC`/`TKDEXP` with the `flt_out` formatter
+      because the two never run concurrently — and that argument cuts both ways:
+      `FOSIGN`/`FOSIGCOUNT`/`FOMBYTES` (`$F063`-`$F065`) appear **0 times** in
+      `tkfloat.asm` and only in `float.asm`. `TKVALEND` takes two of them.
+      🔴 **BUT THE STATED JUSTIFICATION GOES FALSE AND THE FIX MUST PAY THAT DEBT.**
+      The comment says the two never coincide *"because tokenising a line always
+      finishes before any statement executes"* — and VAL would call `tk_float` AT
+      STATEMENT TIME. The conclusion survives for a DIFFERENT reason (`flt_out`
+      calls only its own three helpers and can never reach the evaluator), but
+      the reason must be rewritten or the next reader inherits a false premise
+      about a shared-RAM invariant. Left alone for now on purpose: the sentence
+      is TRUE TODAY. [[a-fix-falsifies-the-justification-beside-it]]
       🟢 **ATTRIBUTED TO THE RIGHT LAYER BY CONTROLS:** `PRINT 1.5`, `PRINT 1E9`,
       `PRINT 3/2` and `PRINT &HFF` are all CORRECT on zerobas. Float literals,
       float arithmetic, hex literals and float printing work — the gap is
@@ -1262,7 +1271,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4348 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4357 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
