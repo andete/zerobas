@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3384 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3400 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3384 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3400 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2875,6 +2875,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that seeds a cell it also tests.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
+- [x] 🟢 **D-DEVBARE 2026-08-30: the `FOR` clause is OPTIONAL on a device channel
+      — ZERO BYTES.** Spec
+      [`docs/spec-basic-devbare.md`](docs/spec-basic-devbare.md); probe
+      `scratchpad/devbare_probe.py`, knife `scratchpad/devbare_knives.py` (4/4).
+      `basic/files.asm` read `jr nz,oo_fail_syn ; device channels require FOR
+      OUTPUT` — a rule the reference does not have. `OPEN"CRT:"AS #1` and
+      `OPEN"LPT:"AS #1` are accepted on a CF-3300 and the channel WORKS
+      (`PRINT#1` and `CLOSE#1` both fine). A jump-target change fixes 4 rows.
+      🔴 **FOUND BY A CONTROL THAT FAILED** — it was the baseline of a D-OPEN2
+      discriminator run and voided it before I noticed the baseline was what was
+      red. [[classify-a-control-failure-by-which-side-failed-it]]
+      🟢 **`LEN=` STAYS REFUSED, FOR FREE** (the terminator check does it), and
+      `w.crtlen` proves the refusal survived rather than assuming it.
+      ⚠️ **`FOR INPUT` ON A DEVICE IS NOT COPIED**: the reference HANGS there, and
+      a hang is not a behaviour to reproduce.
+
 - [ ] 🔴 **TWO DISK CHANNELS CANNOT BE OPEN AT ONCE — THE SECOND IS
       `Syntax error`. (Corrected from "only ONE file may be open at a time",
       which was an over-claim: device+device, device+disk and disk+device all
@@ -2897,10 +2913,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       channel's state is 'live' in those globals at a time"*, swapped by a
       write-back cache discipline. A device channel needs none of it, which is
       why it coexists — and the swap does not carry two open DISK channels.
-      ⚠️ **SEPARATE DIVERGENCE, MEASURED IN THE SAME RUN:** `OPEN"LPT:"AS #1` (a
-      device with no `FOR` clause) is `Syntax error` here and `OK` on the
-      CF-3300. It **voided a whole discriminator run** by failing as the baseline
-      of a comparison before I noticed it was red.
+      ✅ **THE SEPARATE DIVERGENCE THAT VOIDED A DISCRIMINATOR RUN IS FIXED**
+      (D-DEVBARE, above, zero bytes): `OPEN"LPT:"AS #1` was `Syntax error` here
+      and `OK` on the CF-3300, and it was the BASELINE of the device-vs-disk
+      comparison.
       🎯 **THE CEILING IS HONOURED; TWO-DISK CONCURRENCY IS NOT.** After `MAXFILES=2`,
       channel #2 opens fine ON ITS OWN on both sides — so the table does raise
       the ceiling. And with NO `MAXFILES`, a second open reads `Bad file number`

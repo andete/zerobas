@@ -500,10 +500,26 @@ oodv_fn:
                 ld      hl,(FN_RESUME)      ; D-FNEXPR: that quote was the one
                                             ; fname_expr appended to the staged
                                             ; copy -- resume in the program text
-                ; require: FOR OUTPUT AS [#]n , then end-of-statement
+                ; --- D-DEVBARE: the FOR clause is OPTIONAL on a device -------
+                ; This read `jr nz,oo_fail_syn ; device channels require FOR
+                ; OUTPUT`, and the comment asserted a rule the reference does not
+                ; have. Measured on a CF-3300: `OPEN"CRT:"AS #1` and
+                ; `OPEN"LPT:"AS #1` are accepted, and the channel then WORKS --
+                ; `PRINT#1,"x"` and `CLOSE#1` both fine (rows w.crtbare /
+                ; w.crtwrite / w.crtclose / w.lptbare, scratchpad/devbare_probe.py).
+                ; A bare device OPEN means OUTPUT, which is the only direction
+                ; LPT:/CRT: have.
+                ; 🟢 `LEN=` STAYS REFUSED, AND FOR FREE: the terminator check
+                ; after oo_parse_as_chan below accepts only end-of-statement or
+                ; ':', so `OPEN"CRT:"AS #1 LEN=128` is still `Syntax error` --
+                ; which is what BOTH machines answer (row w.crtlen).
+                ; ⚠️ `FOR INPUT` ON A DEVICE IS DELIBERATELY NOT COPIED. The
+                ; reference's answer there is `<NO OUTPUT>` -- the program dies or
+                ; hangs -- and a hang is not a behaviour to reproduce. zerobas
+                ; keeps refusing it. [[a-fix-falsifies-the-justification-beside-it]]
                 call    skip_spaces
                 cp      FOR_TOKEN
-                jr      nz,oo_fail_syn      ; device channels require FOR OUTPUT
+                jr      nz,oodv_as          ; no FOR clause -> OUTPUT (measured)
                 inc     hl
                 call    skip_spaces
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
@@ -513,6 +529,7 @@ oodv_fn:
                 cp      PUT_TOKEN
                 jr      nz,oo_fail_syn
                 inc     hl
+oodv_as:
                 call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
                 call    skip_spaces         ; only a terminator may follow (no LEN=)
                 or      a
