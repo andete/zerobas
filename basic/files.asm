@@ -370,7 +370,12 @@ oo_setmode:
                 ld      a,e
                 ld      (OO_RECLEN_CHAN),a  ; stash channel across the LEN= eval
                 call    oo_parse_reclen     ; DE = reclen (default 256); HL past; Cy=1 bad
-                jr      c,oo_fail_syn       ; non-tiling / out-of-range record size
+                jp      c,oo_fail_ifc       ; D-RECLEN2: out-of-range record size is
+                                            ; (`jp`, not `jr` -- the ERR 5 tail this
+                                            ; slice adds puts it out of relative range)
+                                            ; `Illegal function call` on the CF-3300
+                                            ; (LEN=0 / 257 / 512 all ERR 5), NOT the
+                                            ; `Syntax error` this used to raise
                 push    hl                  ; GUARD the text cursor -- the store below
                                             ; uses HL as scratch (a bug once: the lost
                                             ; cursor abandoned a same-line ':' tail)
@@ -464,6 +469,16 @@ oo_fail_syn:
                 xor     a
                 ld      (FCH_MODE),a
                 jp      stmt_error
+
+; --- oo_fail_ifc: OPEN's ILLEGAL FUNCTION CALL reject (D-RECLEN2, ERR 5) -----
+; Same channel-state cleanup as oo_fail_syn, different face. Measured: the
+; CF-3300 answers ERR 5 to `LEN=0`, `LEN=257` and `LEN=512`, and accepts
+; everything in 1..256.
+oo_fail_ifc:
+                xor     a
+                ld      (FCH_MODE),a
+                ld      a,5                 ; Illegal function call
+                jp      raise_error
 
 ; --- oo_fail_bfn: OPEN's BAD FILE NUMBER reject (S-FCH-2, ERR 52) ------------
 ; The body lives in main.asm's low region (page 1 is the scarce wall).
@@ -814,9 +829,13 @@ fnx_term:
 ; oo_parse_reclen — parse an optional "LEN = expr" record-size clause at (HL).
 ; LEN is the $FF $92 function token; '=' is EQ_TOKEN. Absent -> DE = 256 (the
 ; historical fixed record length), Cy = 0. Present -> DE = the evaluated record
-; length, validated to a power of two in 1..256 (so records tile the 512-byte
-; sector with no straddle); a non-tiling / out-of-range value returns Cy = 1
-; (caller raises Syntax error). HL advances past whatever was consumed.
+; length, validated to a power of two in 1..256; a non-tiling / out-of-range
+; value returns Cy = 1, which the caller raises as ILLEGAL FUNCTION CALL
+; (D-RECLEN2: measured ERR 5 on the CF-3300 for LEN=0/257/512, where this used to
+; answer Syntax error).
+; ⚠️ THE POWER-OF-TWO RULE IS NOT THE REFERENCE'S -- it accepts any 1..256 -- but
+; it IS load-bearing here until fat_rand_put/get can span two sectors. See
+; opr_lowbyte for the measurement that put it back.
 ; Clobbers A,BC,DE,HL.
 oo_parse_reclen:
                 call    skip_spaces
@@ -854,11 +873,26 @@ opr_lowbyte:
                 ld      a,e
                 or      a
                 jr      z,opr_bad           ; reclen 0 invalid
+                ; 🔴 D-RECLEN2 TRIED TO DROP THIS AND HAD TO PUT IT BACK. The
+                ; power-of-two rule is NOT the reference's -- a CF-3300 accepts
+                ; LEN=100/255 and round-trips a straddling record intact -- but it
+                ; IS load-bearing HERE: `fat_rand_put`'s overlay is an `ldir` into
+                ; `FWBUF + GP_WITHIN` for GP_RECLEN bytes, and record 6 at r=100
+                ; has within=500, so it writes 88 bytes PAST the 512-byte sector
+                ; buffer. Measured: two PUTs at LEN=100 including record 6 kill the
+                ; program; the same shape at LEN=128 is fine, and ONE put to
+                ; record 5 (within=400, no straddle) is fine.
+                ; ⚠️ AND THE PROBE THAT "PROVED" IT SAFE WAS BLIND TWICE: it wrote
+                ; record 6 through the OLD shift arithmetic (*64 -> within=320, no
+                ; straddle at all), and a round-trip cannot see a wrong offset
+                ; because PUT and GET share it. tests/test_open_len.py caught the
+                ; arithmetic; the adjacency row caught the overrun.
+                ; ➡️ Widening needs fat_rand_put/get to span TWO sectors first.
                 ld      b,a
                 dec     a
                 and     b                   ; (E & (E-1)) == 0 iff power of two
                 jr      nz,opr_bad          ; not a power of two -> would straddle
-                or      a                   ; Cy = 0 (A already 0); DE = reclen (D=0)
+                or      a                   ; Cy = 0; DE = reclen (D = 0)
                 ret
 opr_bad:
                 scf

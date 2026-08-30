@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3480 (T-529ABE)`: a
+      `TODO.md:325 (T-6FE392)8 (T-529ABE)` from `TODO.md:3506 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -664,7 +664,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3480 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3506 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2821,6 +2821,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       channel-domain error are simply different rows.
       ⚠️ Was `- [ ] 🔴 FIELD #(A$<5) ... Illegal function call ON THE VG-8020`,
       filed 2026-08-09 by D-STMTPEND.
+      ✅ **AND THE CLASS WAS SWEPT, NOT JUST THE ITEM** (2026-08-30): every other
+      TODO mention of a diskless VG-8020 beside a disk verb either already
+      carries the "ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express
+      it)" caveat, or says outright that the machine cannot exercise it — and the
+      one item whose caveat WAS wrong had already been refuted properly by
+      re-measuring on the CF-3300 (the 267 B channel-context target). **This was
+      the only outlier.**
 
 - [ ] 🔴 **K-FA5's FALSIFIABILITY PREMISE IS STALE, AND SO ARE FOUR OTHER
       COMMENTS.** Filed 2026-08-09 by D-STMTPEND
@@ -3068,6 +3075,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
       🤖 AUTONOMOUS — the reference settles the behaviour and the bisect is done.
 
+- [x] 🟢 **D-RECLEN2 2026-08-30 — THE FACE SHIPPED, THE DOMAIN DID NOT**
+      ([`docs/spec-basic-reclen2.md`](docs/spec-basic-reclen2.md)). An
+      out-of-range `LEN=` now raises **`Illegal function call`** as the CF-3300
+      does (`LEN=0`/`257`/`512`), not `Syntax error` — 3 rows closed, K-RL2 5/5.
+      🔴 **THE DOMAIN WIDENING WAS TRIED AND REVERTED: ZEROBAS CANNOT STRADDLE.**
+      `fat_rand_put`'s overlay `ldir`s into `FWBUF + within` for `reclen` bytes,
+      so record 6 at `r=100` (within=500) writes **88 bytes past the 512-byte
+      sector buffer**. Two `PUT`s at `LEN=100` including record 6 kill the
+      program; the same shape at `LEN=128` is fine.
+      🔴 **AND THE PROBE THAT "PROVED" IT SAFE WAS BLIND TWICE**: a round trip
+      cannot see a wrong offset (`PUT`/`GET` share `frnd_calc`), and
+      `mul_reclen` is a SHIFT loop, so `r=100` computed `*64` and the record
+      never straddled at all. **`tests/test_open_len.py` caught it** — it checks
+      the arithmetic against an INDEPENDENTLY derived offset.
+      🎯 **D-RECLEN's ORIGINAL CAUTION WAS RIGHT AND MY REFUTATION WAS WRONG**:
+      the reference not needing the constraint does not mean this engine does not.
+      ➡️ **Widening needs BOTH**: `mul_reclen` to really multiply (shift-add,
+      ~9 B, written and measured working) AND `fat_rand_put`/`get` to span two
+      sectors. Until then `LEN=100`/`255` stay divergent, now with an ERR 5 face.
 - [ ] 🔴 **A NON-TILING `LEN=r` IS `Syntax error` HERE AND `OK` ON THE CF-3300 —
       AND THE DOC CLAIMED BYTE-IDENTITY ON A CORPUS THAT NEVER CONTAINED THE
       CASE.** Filed 2026-08-19 by D-RECLEN, found by a row that MISSED its
@@ -3102,10 +3128,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 **RECORD 6 IS THE ONLY ROW THAT COULD HAVE SAID SO** — records 1 and 5
       lie wholly inside the first sector and would round-trip on an
       implementation that cannot straddle at all.
-      ⚠️ **STILL NOT A LICENCE TO WIDEN THE VALIDATOR.** What is refuted is the
-      stated REASON. zerobas's own straddling behaviour is still unmeasured,
-      because the rows that would measure it need three `PUT`s and the third one
-      hangs — see the item above, which must be fixed first.
+      ✅ **AND THE VALIDATOR IS NOW WIDENED (D-RECLEN2, 2026-08-30).** The
+      "still unmeasured, needs three `PUT`s" caveat that stood here is
+      DISCHARGED: writing only record 6 is a SINGLE `PUT`, and zerobas
+      round-trips it exactly as the reference does.
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 - [ ] ⚠️ **A STORED `DATA` LITERAL CHARGES THE STRING POOL NOTHING ON BOTH

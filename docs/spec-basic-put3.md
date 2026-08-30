@@ -118,11 +118,14 @@ implementation that cannot straddle at all. A probe that stopped at record 5
 would have reported a clean round trip and settled nothing.
 [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
 
-⚠️ **This is NOT a licence to widen the validator yet.** What is refuted is the
-*stated reason*. `GET`/`PUT` round-trip rows on zerobas at a non-tiling length
-cannot be taken while §1 stands — the third write never happens — so zerobas's
-own straddling behaviour remains **unmeasured**, and it is what the fix has to be
-designed against.
+🔴 **A WIDENING WAS TRIED ON 2026-08-30 AND REVERTED — D-RECLEN2.** The caveat
+here was right, and my refutation of it was wrong. `zerobas` CANNOT straddle:
+`fat_rand_put`'s overlay `ldir`s into `FWBUF + within`, so record 6 at `r=100`
+writes 88 bytes past the 512-byte sector buffer. The emulator rows that appeared
+to show a clean straddle were blind twice — a round trip cannot see a wrong
+offset, and `mul_reclen`'s shift loop put record 6 at within=320 so it never
+straddled. What DID ship is the out-of-range FACE (`Illegal function call`).
+🎯 The reference not needing a constraint does not mean this engine does not.
 
 ## 3. ⚠️ Why the zerobas column is blind above, and what that cost
 

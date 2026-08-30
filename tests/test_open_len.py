@@ -3,9 +3,19 @@
 """Unit test: OPEN..AS #n LEN=r record geometry (field.asm frnd_calc), no emulator.
 
 Disk-BASIC option-closure Item 3 generalizes the random-record engine from a
-hard-wired 256-byte record (2 per 512-byte sector) to any LEN=r that TILES the
-512-byte sector -- r a power of two in 1..256, so a record never straddles two
-sectors. frnd_calc is the pure-arithmetic core: it maps a 1-based record number
+hard-wired 256-byte record (2 per 512-byte sector) to ANY LEN=r in 1..256.
+
+🔴 THE "power of two" RULE IS NOT THE REFERENCE'S -- a CF-3300 accepts every
+length in 1..256 -- BUT IT IS LOAD-BEARING HERE, and this file is what proved it.
+D-RECLEN2 (2026-08-30) dropped the rule after emulator rows appeared to show
+zerobas round-tripping a straddling record. THIS TEST FAILED THE CHANGE: it
+checks frnd_calc against an INDEPENDENTLY derived offset, and `mul_reclen` is a
+SHIFT loop (HL * 2^floor(log2 r)), so r=100 computed *64. The emulator rows could
+not see that -- PUT and GET share the arithmetic and agree on the same wrong
+offset -- and they never straddled at all, because *64 put record 6 at within=320.
+The rule went back in. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+
+frnd_calc is the pure-arithmetic core: it maps a 1-based record number
 to (GP_SEC = file sector index, GP_WITHIN = byte offset within that sector) via
 byteoffset = (recno-1)*r, GP_SEC = byteoffset>>9, GP_WITHIN = byteoffset&511.
 Like test_field.py, this drives frnd_calc directly (no disk I/O -- the sector
@@ -94,12 +104,25 @@ def run():
     # r=1 -- 512 records per sector (extreme tiling); recno<=255 -> all in sector 0
     for recno in (1, 2, 255):
         report(f"r=1 recno={recno}", geom(1, recno), expect(1, recno))
+    # 🔴 NON-TILING LENGTHS ARE NOT TESTED HERE, AND THAT IS A STATEMENT ABOUT
+    # THE ENGINE, NOT AN OMISSION. `mul_reclen` is a SHIFT loop -- HL *
+    # 2^floor(log2 r) -- so at r=100 it computes *64, and `fat_rand_put`'s
+    # overlay would `ldir` 88 bytes past the 512-byte FWBUF for record 6
+    # (within=500). Both were measured on 2026-08-30 when D-RECLEN2 tried to
+    # widen the domain and had to put the power-of-two rule back.
+    # ➡️ When fat_rand_put/get can span two sectors and mul_reclen really
+    # multiplies, add:  for recno in (1, 5, 6, 7, 11, 255): r=100  -- record 6 is
+    # bytes 500..599 and is the row that matters.
 
     # -----------------------------------------------------------------------
     # oo_parse_reclen: the OPEN LEN= clause parser + tiling validation. LEN is
     # the $FF $92 function token, '=' is EQ_TOKEN ($EF); numeric constants crunch
     # as $0F+byte (10..255) or $1C+word (expr.asm §const tokens). Absent LEN ->
-    # 256, Cy=0; a non-power-of-two or out-of-range r -> Cy=1 (Syntax error).
+    # 256, Cy=0; a non-power-of-two or out-of-range r -> Cy=1, which the caller
+    # now raises as ILLEGAL FUNCTION CALL rather than Syntax error (D-RECLEN2:
+    # the CF-3300 answers ERR 5 to LEN=0 / 257 / 512).
+    # ⚠️ The CF-3300 ACCEPTS 100 and 255; this engine cannot yet (see above), so
+    # those rows pin OUR limit, not the reference's rule.
     # -----------------------------------------------------------------------
     # oo_parse_reclen is MAIN-ROM resident (basic/files.asm), so this half runs
     # on the main image while the geometry half above ran on the sub image.
@@ -127,8 +150,10 @@ def run():
         ("LEN=64",       LEN + i1(64),          64, False),
         ("LEN=1",        LEN + i1(1),            1, False),
         ("LEN=200 (bad)", LEN + i1(200),         0, True),   # not a power of two
+        ("LEN=100 (bad)", LEN + i1(100),         0, True),   # would straddle here
         ("LEN=0 (bad)",  LEN + i1(0),            0, True),
         ("LEN=512 (bad)", LEN + i2(512),         0, True),   # > 256
+        ("LEN=257 (bad)", LEN + i2(257),         0, True),   # just past the top
     ]
     for label, toks, want_de, want_cy in cases:
         de, cy = parse(toks)
