@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:394 (T-6FE392)8 (T-529ABE)` from `TODO.md:3625 (T-529ABE)`: a
+      `TODO.md:412 (T-6FE392)8 (T-529ABE)` from `TODO.md:3643 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -319,11 +319,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and a truncated load OVER a resident program leaves the same mangled
       `10 POKE ZQ1"` on both, byte for byte. So this is not a broken loader —
       it is one extra message and one extra empty line.
-      🔬 **THE HYPOTHESIS, UNTESTED:** the reference reads whole SECTORS and
-      never sees a byte-level EOF (the zero padding terminates the program
-      cleanly), while `fat_io_getbyte` honours the directory entry's byte
-      length. A file whose real length is a multiple of 512 would separate the
-      two rules; so would one padded with non-zero bytes.
+      🔬 **THAT HYPOTHESIS IS NOW REFUTED, 2026-08-30**
+      ([`docs/spec-basic-truncload.md`](docs/spec-basic-truncload.md)). A
+      garbage-padded truncation with the SAME recorded size reads IDENTICALLY to
+      the zero-padded one on the CF-3300, so the reference honours the length and
+      sees the EOF -- it simply does not REPORT it.
+      📏 **AND THE RULE IS MAPPED AT ALL FIVE EOF SITES**, including a zero-byte
+      file: the reference is SILENT at every one. 13 rows,
+      `scratchpad/truncload_probe.py`.
+      🔴 **TWO REPAIRS BUILT, MEASURED AND REVERTED — BOTH HANG THE MACHINE.**
+      (A) EOF joins the completion path (+4 B): closes all five message rows,
+      then `relink` walks a body with no `$00` terminator, follows the line's
+      saved ABSOLUTE link past the end marker and never returns -- `<NO ECHO>` on
+      three rows. (B) terminate the partial line first (+7 B): the body case
+      stops hanging and reads `10 POKE` against the reference's `10`, and the
+      hang MOVES to `t.lno-l` and `t.link-l`, one of which (A) had right.
+      A loader that hangs on some truncated files is worse than one that prints
+      a message the reference does not.
+      ➡️ **WHAT THE NEXT ATTEMPT NEEDS, and it is one instrument:** the MEMORY
+      IMAGE the reference is left holding. Repair B shows zerobas keeps two body
+      bytes where the reference keeps fewer, so the reference does more than
+      "stop and commit". A `PEEK` sweep of `$8001..` after each truncated load,
+      on both machines, settles which of three candidate rules it follows
+      (spec §4). That instrument does not exist yet.
       🤖 AUTONOMOUS — the references settle the behaviour; the rows exist.
 
 - [ ] 💰 **D-PEEPHOLE: THE CLASSIC Z80 SIZE IDIOMS, COUNTED — SAFE CLASS TAKEN,
@@ -733,7 +751,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3625 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3643 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
