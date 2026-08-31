@@ -22,14 +22,22 @@ the crude signal refined by which arc/gate actually exercises the file:
   RESTORE's `ret` ended the whole line (`RESTORE:C=9` skipped `C=9`), and junk
   after RESTORE was silence where the references raise ERR 8. 6 DIFF -> 0 on
   7 rows x 3 machines. The reverse of the trio's no-finding.
-- ex_deftype (usr.asm)        DEFINT/SNG/DBL/STR letter-range parse.
-- ex_time_assign + TIME       time.asm; interval-trap acceptance touches TIME
-  only as a counter.
+- ✅ ex_deftype — **REVIEWED 2026-08-31, ONE DEFECT, hidden by a
+  wrong-reason SAME** (D-DEFCORNER,
+  [`spec-basic-defcorner.md`](spec-basic-defcorner.md)): the item-end check
+  accepted any non-comma byte, so `DEFINT AC=7` executed `C=7` as a statement
+  (refs: ERR 2). `DEFINT AB` agreed on ERR 2 by coincidence — the separating
+  row made the tail harmless and observable. 9 rows x 3 machines, 0 DIFF after.
+- ✅ ex_time_assign + TIME — **FALSE THIN ENTRY** (found by reading,
+  2026-08-31): `spec-basic-time.md` exists with a 45/45 characterization; the
+  stem-match missed it because the handler is `ex_time_assign`. The body is
+  exemplary — torn-store DI guard, site-local ERR 24, adjudicated domain.
 - ex_call_us (format.asm)     CALL statement surface.
 - ex_key_stmt (program.asm)   KEY n,"s" is NOT-THIS-ONE (blocked ~160 B), but
   KEY LIST / KEY ON/OFF mechanism unreviewed.
-- ex_motor (missing.asm)      MOTOR ON/OFF -> cassette relay; tape arc never
-  reviewed the VERB (bios_probe_stmotr covers the BIOS call).
+- ✅ ex_motor — **REVIEWED 2026-08-31, NO FINDING**: measured to its corners
+  already (spec §3.5 — `MOTOR STOP` is ERR 2 with a do-not-harmonise warning,
+  bare-MOTOR toggles only at a statement boundary).
 - ex_locate (missing.asm)     D-LOCATE fixed one arg-shape bug; full review
   pending.
 - ex_auto, ex_renum           line-editor verbs, LARGE; lineedit rows exist

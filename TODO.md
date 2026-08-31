@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:803 (T-6FE392)8 (T-529ABE)` from `TODO.md:4217 (T-529ABE)`: a
+      `TODO.md:815 (T-6FE392)8 (T-529ABE)` from `TODO.md:4229 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -631,6 +631,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ERR 8 (RESTORE-to-nothing). An unterminated quote swallows the line on
       both references — the row that decided the flag's EOL rule. Second verb
       group off the review tier; the reverse of the trio's no-finding.
+
+- [x] ✅ **D-DEFCORNER (2026-08-31): a DEFtype item's tail ran as a
+      statement, hidden by a row that agreed for the wrong reason**
+      ([`docs/spec-basic-defcorner.md`](docs/spec-basic-defcorner.md),
+      `scratchpad/defcorner_probe.py`, 9 rows x 3 machines, 1 DIFF -> 0).
+      `DEFINT AC=7` executed `C=7` here (refs: ERR 2) — the item-end check
+      accepted any non-comma byte. `DEFINT AB` agreed on ERR 2 by COINCIDENCE
+      (zb re-dispatched the bare `B`, also ERR 2 at the same line); the
+      separating row made the tail harmless and observable. The hazard was
+      written into the probe's docstring BEFORE the first run — without it,
+      0/8 would have closed the review as a no-finding with the defect alive.
+      Item end is now ',' / ':' / EOL only. Sub-ROM only, no patch pair due.
 
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
@@ -1224,7 +1236,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4217 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4229 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

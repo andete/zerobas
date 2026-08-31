@@ -155,7 +155,20 @@ edt_fill_lp:
                 call    edt_skip_spaces
                 cp      ','                 ; more items?
                 jr      z,edt_comma
-                jp      edt_ok              ; end of the list -> hand the cursor back
+                ; 🔴 D-DEFCORNER (2026-08-31): this used to hand the cursor back
+                ; on ANY non-comma byte -- so `DEFINT AC=7` filled A and then
+                ; EXECUTED `C=7` as a statement (measured 7 here, ERR 2 on both
+                ; references). The agreeing row `DEFINT AB` hid it: zb's
+                ; re-dispatch of the bare `B` is ERR 2 too, the same code at the
+                ; same line as the references' item reject -- two mechanisms
+                ; agreeing by accident until the d.tail row made the tail
+                ; harmless and observable. An item may end only at ',', ':' or
+                ; EOL; anything else rejects the STATEMENT, not the next one.
+                or      a                   ; end of line -> done
+                jp      z,edt_ok
+                cp      COLON               ; ':' -> the next statement runs
+                jp      z,edt_ok
+                jp      edt_fail            ; junk glued to the item -> ERR 2
 edt_comma:
                 inc     hl                  ; past ','
                 jr      edt_item
