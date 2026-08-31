@@ -113,3 +113,38 @@ oracles whose answers are already written into specs, which is a legitimate
 end state. It says only that **their `rc` is collected by nothing**, so a break
 in any of them is silent. That is the shape D-WALLIT hit, and it is now counted
 and watched instead of rediscovered by accident.
+
+
+## 9. D-PROBEREACH4 — the BASIC batch: 23 of 26 still re-provable
+
+*Joost's framing, and it is the right one:* **a probe that proved a documented
+fact is worth keeping as an ARCHIVE, because the fact stays re-provable.** The
+criterion that follows is sharper than "does it deserve a battery slot":
+
+> **An archived probe is only worth keeping if it still RUNS.** Otherwise it is
+> not an archive but a fossil — the fact is no longer re-provable, and nobody
+> finds out until they try.
+
+All 26 unreached `probes/basic/` probes, run **serially on a fresh build**:
+
+| | count | |
+|---|---|---|
+| green | **22** | archived and re-provable |
+| refuses legibly, runs on the merged rig | 1 | `cas_leader_budget` — repaired here |
+| `--cart` REQUIRED by design | 2 | `bload_openstack`, `cload_ondevice` — they test cartridge behaviour |
+| genuinely rotten | **1** | `printusing` — bound to the retired lean cart |
+
+🎯 **`basic_probe_cas_verbs` is GREEN.** That is the probe D-WALLIT found failing
+*"for an unknown number of months"* and which opened this whole item. It got
+fixed — and **nobody knew, because nothing ran it.** An archive that nothing ever
+runs cannot tell you the good news either.
+
+🎯 **A third instance of one defect.** `cas_leader_budget` handed openMSX a
+literal `None` for its cart, so the preflight said `MISSING None` — accurate and
+useless. After `cas_verify` and `cas_match`, that is three probes with the same
+half-finished lean-cart migration, all invisible because unreached. Its refusal
+now names the cause, and **the fix its message suggests was verified**:
+`--machine C-BIOS_MSX1_EU_REPACK_DISK` runs it green.
+
+⚠️ **Only `probes/basic/` has been run.** The other 78 entries (disk, tape, lib)
+are pinned but UNVERIFIED — their reasons say so rather than implying a verdict.

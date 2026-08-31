@@ -368,6 +368,23 @@ def main() -> int:
 
     machine = args.machine or os.environ.get("ZEROBAS_BASIC_MACHINE") or MACHINE_TAPE
     TS.ZB_MACHINE = machine
+    # 🔴 THE TAPE RIG NEEDS A CART, AND THE LEAN ONE IS RETIRED. This probe's
+    # default machine is MACHINE_TAPE, which carries no BASIC -- so without
+    # `--cart` it used to hand openMSX a literal `None` and the preflight
+    # reported `MISSING None`, an accurate refusal with a useless name in it.
+    # The cart it was written for is `build/basic.rom`, removed by
+    # docs/spec-lean-retire-s1..s3 ("there is no `build/basic.rom` rule any
+    # more"), so a bare run can no longer work at all and should say WHY.
+    # Found 2026-08-31 by D-PROBEREACH4, the third probe with this shape after
+    # basic_probe_cas_verify and basic_probe_cas_match -- all three invisible
+    # because no `make` target runs them.
+    if machine == MACHINE_TAPE and not args.cart:
+        print(f"no cart for {machine}: that rig carries no BASIC, so it needs "
+              f"--cart. The lean 16 KB cart this probe was written for is "
+              f"RETIRED (docs/spec-lean-retire-s1..s3); pass a cartridge "
+              f"explicitly, or --machine C-BIOS_MSX1_EU_REPACK_DISK to run "
+              f"against the merged build instead.")
+        return 2
     # The qualifier exists to keep the sub-ROM out of page-1 breakpoints; the
     # lean cart machine has no sub-ROM (and its cart is not in slot 0 anyway).
     main_slot = args.main_slot or ("any" if machine == MACHINE_TAPE else "0")

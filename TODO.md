@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4010 (T-529ABE)`: a
+      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4029 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1080,7 +1080,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4010 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4029 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2300,6 +2300,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       📏 **SAMPLE RUN, six probes, SERIALLY on a fresh build: 5 green, 1
       refusing.** ⚠️ Run in PARALLEL on a stale ROM first, all six came back
       non-zero — a headline that would have been entirely my own apparatus.
+      🎯 **REFRAMED BY JOOST 2026-08-31: A PROBE THAT PROVED A DOCUMENTED FACT
+      IS WORTH KEEPING AS AN *ARCHIVE*, because the fact stays RE-PROVABLE.** The
+      criterion that follows is sharper than "does it deserve a slot": **an
+      archived probe is only worth keeping if it still RUNS** — otherwise it is a
+      fossil and nobody finds out until they try. 📏 93 of the 104 are CITED in a
+      spec or doc (measured, not guessed); 11 are cited nowhere and are the
+      separate deletion question.
+      ✅ **ALL 26 `probes/basic/` ONES RUN, SERIALLY ON A FRESH BUILD
+      (D-PROBEREACH4): 22 GREEN**, 1 repaired to refuse legibly and verified to
+      run on the merged rig (`cas_leader_budget` — the THIRD probe with the same
+      half-finished lean-cart migration), 2 require `--cart` by design, and
+      **exactly 1 is genuinely rotten** (`basic_probe_printusing`, bound to the
+      retired cart; needs a design call, not a one-line default).
+      🎯 **`basic_probe_cas_verbs` IS GREEN** — the probe D-WALLIT found failing
+      "for an unknown number of months", which opened this item. It got fixed and
+      NOBODY KNEW, because nothing ran it. An archive nothing runs cannot deliver
+      the good news either.
+      ⚠️ **Only `probes/basic/` has been run**; the other 78 entries are pinned
+      but UNVERIFIED and their reasons say so.
       🙋 **(b) IS STILL YOURS** — which of the 104 earn a battery slot is a
       runtime-budget call (one tape probe is ~4 min against a ~460 s battery).
       The measuring in front of it is DONE, and the 6 lean-cart ones are the
