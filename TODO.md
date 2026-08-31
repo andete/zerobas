@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:649 (T-6FE392)8 (T-529ABE)` from `TODO.md:3953 (T-529ABE)`: a
+      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:3972 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -351,6 +351,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       what its geometry predicted.)
       ⚠️ **"No fixture exists" is a claim about the tree and deserved a
       `ls probes/` before it was written down.**
+      ✅ **ALSO SHIPPED 2026-08-31: `evmc_arg_int`** (D-NGRAM19,
+      [`docs/spec-basic-argint.md`](docs/spec-basic-argint.md)) — the argument
+      gate + "is it already an int16?" that ABS, SGN, INT and FIX each opened
+      with. **Page 1 read 371 -> 378 B free on 2026-08-31** (a READING; run
+      `make basic-reloc`). 16 rows on three machines, DIFF 0; 2 knives + S1.
+      🔴 **THE SWEEP RANKED IT 14 B AND IT IS WORTH 7.** Two things leave the run
+      for the caller and the ranking can see neither: the `ret nz` returns FROM
+      THE VERB (inside a helper it would land one frame too shallow -- the
+      D-NGRAM8 bug), and the final `cp 2` publishes a Z FLAG each of the four
+      branches on DIFFERENTLY. So the malformed case moves to CARRY and each site
+      keeps a 1 B `ret c` -- the D-ARGOPEN shape, a flag a row can see beating a
+      frame trick. **The ranking is a floor in BOTH directions**: D-NGRAM12 was
+      worth more than ranked, this is worth less.
+      🔴 **AND A THIRD MASKED CHECK IN ONE DAY.** `scf` -> `or a` (malformed
+      stops reporting carry) moved ZERO rows: `ev_mc_arg_checked` has already
+      armed the deferred D-F2-4 error and `check_expr_errors` reports it at the
+      statement boundary regardless. The `ret c` decides whether the verb's BODY
+      runs on garbage, not what is printed. Re-aimed at reachability, it moves
+      all 14 subject rows with both controls holding.
       ➡️ **STILL OPEN, measured 2026-08-28:** an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
@@ -1061,7 +1080,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3953 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3972 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

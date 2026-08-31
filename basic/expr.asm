@@ -1630,16 +1630,39 @@ ecpst_zero:
                 ld      de,0
                 ret
 
+
+; --- evmc_arg_int: the math-verb argument gate, and "is it already an int?" ---
+; D-NGRAM19. ABS, SGN, INT and FIX each opened with the same nine bytes:
+;   call ev_mc_arg_checked / ret nz / ld a,(FACTYP) / cp 2
+;
+; 🔴 IT CANNOT BE A PLAIN SUBROUTINE, AND THE SWEEP'S 14 B IS AN OVER-ESTIMATE
+; BECAUSE OF IT. Two things leave the run for the caller: the `ret nz` returns
+; from the VERB (inside a helper it would return to the call site, one frame too
+; shallow -- the D-NGRAM8 bug), and the final `cp 2` publishes a Z FLAG that each
+; of the four then branches on DIFFERENTLY (`jr nz` / `jr z` / `ret z` / `ret z`).
+; One flag cannot carry both answers, so the malformed case moves to CARRY and
+; each site keeps a one-byte `ret c` of its own. That is the D-ARGOPEN shape: a
+; flag a row can see beats a frame trick.
+;   out: CF set = malformed argument (the caller returns);
+;        CF clear, Z = the argument is already an int16 (FACTYP == 2).
+evmc_arg_int:
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                jr      nz,eai_bad          ; malformed/empty -> deferred syntax error
+                ld      a,(FACTYP)
+                cp      2
+                ret                         ; CF clear; Z = already an int
+eai_bad:
+                scf
+                ret
+
 ; --- evmc_abs: ABS(x) -> |x|, same FACTYP as x (spec §9.1). Int path: plain -
 ; magnitude, except the -32768 edge escapes int16 (promotes to a double
 ; +32768.0, mirroring float-arith.asm's -32768\-1 quirk, spec §10.4/§9.1's
 ; "int-domain per §10 float core"). Float path: clear FAC's sign bit in place
 ; (0's sign bit is already clear) and refresh DE; FACTYP untouched.
 evmc_abs:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      a,(FACTYP)
-                cp      2
+                call    evmc_arg_int        ; D-NGRAM19
+                ret     c                   ; malformed -> deferred
                 jr      nz,evabs_float
                 ld      a,d
                 cp      $80
@@ -1671,10 +1694,8 @@ evabs_float:
 
 ; --- evmc_sgn: SGN(x) -> -1/0/+1, always int (FACTYP:=2, spec §9.1). -------
 evmc_sgn:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      a,(FACTYP)
-                cp      2
+                call    evmc_arg_int        ; D-NGRAM19
+                ret     c                   ; malformed -> deferred
                 jr      z,evsgn_int
                 ld      a,(FAC)
                 or      a
@@ -1706,10 +1727,8 @@ evsgn_settype:
 ; §9.1). fp_trunc (float-arith.asm) truncates toward 0; if a fraction was
 ; dropped AND x was negative, one more step (-1) makes it a floor (§9.2).
 evmc_int:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      a,(FACTYP)
-                cp      2
+                call    evmc_arg_int        ; D-NGRAM19
+                ret     c                   ; malformed -> deferred
                 ret     z                   ; already int: INT(x)=x
                 ld      hl,ARGA
                 call    widen_rhs_operand   ; ARGA := FPNUM(x)
@@ -1725,10 +1744,8 @@ evmc_int_pack:
 ; --- evmc_fix: FIX(x) -> truncate toward 0, same FACTYP as x (spec §9.1). --
 ; Never needs the INT adjustment ("FIX = fp_trunc", §9.2).
 evmc_fix:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      a,(FACTYP)
-                cp      2
+                call    evmc_arg_int        ; D-NGRAM19
+                ret     c                   ; malformed -> deferred
                 ret     z
                 ld      hl,ARGA
                 call    widen_rhs_operand
