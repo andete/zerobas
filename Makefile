@@ -709,6 +709,15 @@ temp-root-check:
 shared-body-check:
 	python3 tools/check_shared_bodies.py
 
+# --- probe-reach-check: which probes does no `make` target ever run? ---------
+# D-WALLIT §3.1 asked for the COUNT and nobody had it: 204 probes, 89 invoked,
+# 11 imported by an invoked one, 104 unreached. `basic_probe_cas_verbs` returned
+# an honest rc=1 for MONTHS because nothing collected it. The 104 are PINNED as a
+# ratchet (tools/probe-reach-allow.txt) so the number can only go down; which of
+# them earn a battery slot is the runtime-budget call TODO.md marks NEEDS-JOOST.
+probe-reach-check:
+	python3 tools/check_probe_reach.py
+
 # --- D-REFCACHE (docs/spec-refcache.md): the reference-column store ---------
 # 🔴 A CACHE IS ONE SLIP AWAY FROM "A PREDICTION COPIED INTO THE RESULT COLUMN",
 # so its falsification suite is a GATE, not a script somebody remembers to run.
@@ -2893,7 +2902,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check shared-body-check citation-check todo-citation-check \
+        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check \
         chokepoint-check banner-acceptance wall-literal-check \
         patch-freshness-check gates clean
 

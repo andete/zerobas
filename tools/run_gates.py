@@ -67,7 +67,7 @@ WARM = ["repack-machine", "basic-reloc", "subrom-abi-check", "disk/test720.dsk"]
 STATIC = """basic-reloc subrom-abi-check subrom-closure-check unit-test deadcode
 wall-assertion-check redundant-load-check rowshape-check injector-check
 temp-root-check todo-citation-check chokepoint-check wall-literal-check
-shared-body-check
+shared-body-check probe-reach-check
 preflight-check latch-check diskdep-check switch-build-check kwsweep
 patch-freshness-check refcache-check knife-guard-check knife-rom-guard-check
 selftest-check

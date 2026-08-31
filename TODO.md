@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:3972 (T-529ABE)`: a
+      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:3986 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1080,7 +1080,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3972 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3986 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2264,8 +2264,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       found by accident; (b) decide which of them earn a battery slot. (b) is a
       RUNTIME-BUDGET call: `cas_verbs` alone is a ~4 min tape probe against a 426 s
       battery, so adding the tape corpus could roughly double it.
-      🙋 NEEDS-JOOST — a call that is yours to make (battery runtime budget). The
-      COUNT in (a) is autonomous and should be measured first; the spending is not.
+      ✅ **(a) MEASURED 2026-08-31 (D-PROBEREACH,
+      [`docs/spec-probe-reach.md`](docs/spec-probe-reach.md)): 204 probes — 89
+      invoked by a `make` recipe, 11 imported by an invoked one, **104
+      unreached**.** `make probe-reach-check`, static tier, 49/49.
+      🔴 **THREE STATES, NOT TWO.** `basic_probe_deffn` is the expression harness
+      a dozen probes drive: no target of its own, and its code runs on every
+      battery. A check asking only "is it in the Makefile?" would call every
+      harness dead — the very failure it exists to prevent — so the tool walks
+      the IMPORT GRAPH and `S2` is the control for it.
+      🎯 **THE 104 ARE PINNED AS A RATCHET**, with grouped reasons, so the number
+      can only go DOWN: any probe added from here must get a target or be pinned
+      on purpose, and it is reported the same day instead of months later. `S6`
+      drops an entry and requires RED, so the allowlist cannot be vacuous.
+      🙋 **(b) IS STILL YOURS** — which of the 104 earn a battery slot is a
+      runtime-budget call (one tape probe is ~4 min against a ~460 s battery).
+      The measuring in front of it is DONE.
 
 - [ ] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
       it.** Filed 2026-08-22 by D-DEFFN,
