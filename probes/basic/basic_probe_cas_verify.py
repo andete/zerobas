@@ -64,7 +64,12 @@ MACHINE_TAPE = "C-BIOS_MSX1_EU_TAPE"
 # stack, selectable via --machine / ZEROBAS_BASIC_MACHINE, and the only mode in
 # which a `-cart` is passed at all.
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE") or "C-BIOS_MSX1_EU_REPACK_DISK"
-DEFAULT_CART = os.path.join(os.path.dirname(_PROBES), "build", "basic.rom")
+# 🗄️ DEFAULT_CART is GONE (D-PROBEREACH3, 2026-08-31). It named
+# `build/basic.rom` -- the lean 16 KB cart retired by
+# docs/spec-lean-retire-s1..s3, for which the Makefile says there is no rule
+# any more -- and after `--cart` stopped defaulting to it, nothing referenced
+# it. A dead constant naming a retired artifact is the same rot this slice is
+# clearing; pass `--cart` explicitly with the MACHINE_TAPE rig instead.
 TXTBASE = 0x8001
 WITNESS = 0xD0FF
 RAN = 0x99

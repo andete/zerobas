@@ -62,7 +62,12 @@ from basic_probe_cas_verbs import (                     # noqa: E402
     run_typed, check, MACHINE_TAPE, TXTBASE, WITNESS, POISON)
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
-DEFAULT_CART = os.path.join(os.path.dirname(_PROBES), "build", "basic.rom")
+# 🗄️ DEFAULT_CART is GONE (D-PROBEREACH3, 2026-08-31). It named
+# `build/basic.rom` -- the lean 16 KB cart retired by
+# docs/spec-lean-retire-s1..s3, for which the Makefile says there is no rule
+# any more -- and after `--cart` stopped defaulting to it, nothing referenced
+# it. A dead constant naming a retired artifact is the same rot this slice is
+# clearing; pass `--cart` explicitly with the MACHINE_TAPE rig instead.
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE") or "C-BIOS_MSX1_EU_REPACK_DISK"
 
 WA = 0xA1   # witness for file "AAA" / first file
@@ -161,9 +166,19 @@ def test_case_sensitive(cart, tmp):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", default=DEFAULT_CART)
+    # 🔴 NO DEFAULT CART, AND THE CHECK ONLY FIRES WHEN ONE IS GIVEN. `--cart`
+    # used to default to `build/basic.rom` -- the lean 16 KB cart retired by
+    # docs/spec-lean-retire-s1..s3, which the Makefile says has no rule any more
+    # -- so this probe REFUSED at startup on a cartridge that, by this file's own
+    # header, "is simply unused" on the default repack rig. It only means
+    # anything with --machine C-BIOS_MSX1_EU_TAPE. Same half-finished migration
+    # as basic_probe_cas_verify (D-PROBEREACH3): the retirement landed in the
+    # prose and not in the code, and nothing noticed because no `make` target
+    # runs either probe.
+    ap.add_argument("--cart", default=None,
+                    help="only used with the %s rig" % MACHINE_TAPE)
     args = ap.parse_args()
-    if not os.path.exists(args.cart):
+    if args.cart and not os.path.exists(args.cart):
         print(f"cart not found: {args.cart}")
         return 2
     print(f"(machine={ZB_MACHINE})")
