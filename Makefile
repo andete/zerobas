@@ -72,7 +72,6 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
          basic/randio-body.inc basic/fld-fill-body.inc \
-         basic/lineedit-body.inc \
          basic/casmatch-body.inc basic/cal-refill-body.inc \
          basic/fcbname-body.inc basic/bload-body.inc basic/fatio-body.inc \
          basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc basic/sv-tsb.inc \
@@ -161,7 +160,7 @@ SUB_SRC   := sub/sub.asm
 # the G4-space eviction slice): the tenant body + its two shared .inc files
 # (the lean cart's inline copies, basic/field.asm) -- same staleness hazard,
 # same fix ([[makefile-subparts-stale-tenant]]).
-# sub/lineedit.asm + basic/lineedit-body.inc (numbered-line editor TXTTAB-
+# sub/lineedit.asm + (numbered-line editor TXTTAB-
 # memmove engine, docs/spec-eviction-g4-space.md §4, carve #2 of the
 # G4-space eviction slice): the tenant body + its shared .inc file (the lean
 # cart's inline copy, basic/program.asm) -- same staleness hazard, same fix.
@@ -192,7 +191,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/errtrap.asm \
              sub/fatprim.asm basic/fat-prim-body.inc basic/fat-delete-body.inc \
              sub/dirverb.asm sub/randio.asm sub/fiawalk.asm basic/fiawalked-body.inc basic/randio-body.inc basic/fld-fill-body.inc \
-             sub/lineedit.asm basic/lineedit-body.inc \
+             sub/lineedit.asm \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/fcbname.asm basic/fcbname-body.inc \
              sub/fldlook.asm \
@@ -705,7 +704,9 @@ temp-root-check:
 # assembled image, so an UNASSEMBLED source contributes none and is invisible to
 # it -- and a dead COPY of a live routine is worse than dead code, because it
 # reads as the live one while being free to drift from it. Which is exactly what
-# `basic/lineedit-body.inc` did.
+# `basic/lineedit-body.inc` did -- it was DELETED 2026-08-31 once this gate had
+# surfaced it and its relink copy had DIVERGED from the live one; commit 136aee8
+# keeps the historical content.
 shared-body-check:
 	python3 tools/check_shared_bodies.py
 

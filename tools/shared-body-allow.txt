@@ -5,4 +5,9 @@
 # 🔴 AN ENTRY HERE IS NOT AN EXEMPTION FROM THE FINDING, it is the finding
 # written down. A dead shared body still reads as the live routine it copies.
 
-lineedit-body.inc  Found 2026-08-30 by D-TRUNCLOAD's follow-up sweep, and it is the ONLY .inc in the tree that nothing includes. Its own header records why: the body was extracted verbatim from basic/program.asm so the SAME source could feed two homes, and the main-ROM home is marked "(retired)" -- the live copy is sub/lineedit.asm's page-1 tenant. It is still listed as a Makefile dependency of the sub ROM, which can never affect the build. 🔴 AND THE TWO COPIES HAVE NOW DIVERGED: D-TRUNCLOAD bounded the live `relink` walk to `HL >= PRGEND` (an equality test walks RAM forever on a truncated store); the copy here still reads `==`. The file is annotated at the top with both facts. KEEP-OR-DELETE IS JOOST'S CALL -- deleting a deliberate historical record is not a judgement this gate, or the agent that wrote it, should make; syncing the dead copy would be worse, because it would restore the illusion that either one is authoritative.
+
+# 🗄️ `lineedit-body.inc` was DELETED 2026-08-31 (Joost's call). It was the only
+# .inc nothing assembled, and its copy of the relink loop had DIVERGED from the
+# live one in sub/lineedit.asm after D-TRUNCLOAD bounded that walk to `>=`.
+# The eviction commit 136aee8 keeps the historical content. This file is now
+# EMPTY of entries, which is the state the gate wants: every .inc is assembled.
