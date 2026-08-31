@@ -25,7 +25,27 @@ emulator through, and it asserts AS A SIDE EFFECT OF IMPORT. Same reasoning as
 `probe_tmp` establishing the temp root: one chokepoint beats 200 call sites that
 each have to remember. [[apparatus-is-part-of-the-measurement]]
 
-`caffeinate -i -w <pid>` asserts for exactly as long as that pid lives, so it is
+🔴 `-i` IS NOT ENOUGH, AND ONE NIGHT OF BAD BATTERIES PROVED IT (2026-08-31).
+`caffeinate -i` asserts `PreventUserIdleSystemSleep` -- it blocks IDLE sleep, the
+kind that follows inactivity. It does NOT block macOS's scheduled
+**'Maintenance Sleep' / 'Sleep Service'** cycle, which fires on AC power with the
+machine 100% charged and a probe actively running. `pmset -g log` from that
+night:
+
+    03:51:15  Entering Sleep state due to 'Maintenance Sleep' ... 939 secs
+    04:07:39  Entering Sleep state due to 'Sleep Service Back to Sleep' ... 979 secs
+
+Fifteen minutes asleep, forty-five seconds awake, repeatedly -- and
+`graphics-acceptance` reported a **977 s** stall, which is that 979-second sleep
+almost to the second. A full battery walled at **3861 s against 471 s**, with
+`REAL (still red)` verdicts on units that are green on a live machine.
+`-s` (prevent system sleep) is the assertion that covers it; macOS ignores `-s`
+on battery, so it is safe to pass unconditionally.
+⚠️ THE OLD ARM PASSED THROUGHOUT. It checked that *an* assertion was held, and
+one was -- the idle one. **An arm that checks the wrong assertion is an arm that
+certifies the exposure.** S6 below names `PreventSystemSleep` specifically.
+
+`caffeinate -i -s -w <pid>` asserts for exactly as long as that pid lives, so it is
 released when this process exits HOWEVER it exits -- no atexit, no leak if we are
 killed, and no way for it to outlive the run. Nothing to install: caffeinate
 ships with macOS. Concurrent probes each hold their own; they are cheap and each
@@ -51,13 +71,16 @@ def hold_awake():
     if sys.platform != "darwin":
         return False, "not macOS -- no idle-sleep hazard to hold off"
     try:
-        subprocess.Popen(["caffeinate", "-i", "-w", str(os.getpid())],
+        # -i: idle sleep.  -s: SYSTEM sleep, which is what macOS's scheduled
+        # 'Maintenance Sleep' uses and what -i alone does not touch. macOS
+        # ignores -s on battery, so it needs no power-source test.
+        subprocess.Popen(["caffeinate", "-i", "-s", "-w", str(os.getpid())],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except (OSError, subprocess.SubprocessError) as e:
         # Not fatal: a run without the assertion still RUNS, it is just exposed.
         # Say so rather than failing, and never say "held" when it is not.
         return False, f"🔴 caffeinate unavailable ({type(e).__name__}) -- "
-    return True, "caffeinate -i held for this run"
+    return True, "caffeinate -i -s held for this run"
 
 
 def hold_once():
@@ -96,7 +119,17 @@ def _selftest() -> int:
             held and "caffeinate" in a)
         # 🔴 It must die with US, not leak: a caffeinate bound to a dead pid
         # must not still be asserting.
-        mine = subprocess.run(["pgrep", "-f", "caffeinate -i -w"],
+        # 🎯 S6 IS THE ARM THAT WOULD HAVE CAUGHT THE 2026-08-31 NIGHT. S1 asks
+        # only whether SOME caffeinate assertion is held, and one always was --
+        # the IDLE one -- while macOS's scheduled 'Maintenance Sleep' walked
+        # straight past it and froze four hours of batteries. Name the assertion.
+        sysheld = any(ln.split()[-1] not in ("0", "")
+                      for ln in a.splitlines()
+                      if "PreventSystemSleep" in ln)
+        arm("S6 PreventSystemSleep specifically is held -- `-i` alone does NOT "
+            "block macOS 'Maintenance Sleep', which is what actually fired",
+            sysheld)
+        mine = subprocess.run(["pgrep", "-f", "caffeinate -i -s -w"],
                               capture_output=True, text=True).stdout.split()
         arm("S2 the assertion is bound to THIS pid, so it cannot outlive the run",
             any(str(os.getpid()) in

@@ -232,7 +232,7 @@ def selftest():
             held and "caffeinate" in a)
         # 🔴 The arm that matters: it must die with us, not leak. A caffeinate
         # bound to a DEAD pid must not still be asserting.
-        pre = subprocess.run(["pgrep", "-f", f"caffeinate -i -w"],
+        pre = subprocess.run(["pgrep", "-f", f"caffeinate -i -s -w"],
                              capture_output=True, text=True).stdout.split()
         arm("S11 the assertion is bound to THIS pid, so it cannot outlive the run",
             any(str(os.getpid()) in

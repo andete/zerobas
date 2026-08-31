@@ -63,6 +63,9 @@ LOWREGION = 0x2812   # main page-0 low region starts here; below it is BIOS
 
 _SYM = re.compile(r'^(\S+)\s+EQU\s+([0-9A-Fa-f]+)H', re.IGNORECASE)
 _LBL = re.compile(r'^([A-Za-z_]\w*):')
+# `name equ other` with a BARE identifier on the right -- an ALIAS, not a
+# constant. See sub_local_aliases() for why the distinction is load-bearing.
+_ALIAS = re.compile(r'^([A-Za-z_]\w*)\s+equ\s+([A-Za-z_]\w*)\s*$', re.I)
 # call/jp/jr/djnz <optional cc,> <label>   (label = symbolic target, not a number)
 _XFER = re.compile(
     r'\b(?:call|jp|jr|djnz)\s+(?:(?:nz|z|nc|c|p|m|pe|po)\s*,\s*)?([A-Za-z_]\w*)')
@@ -102,6 +105,48 @@ def _is_terminator(code: str) -> bool:
         first = rest.split(',', 1)[0].strip()
         return first not in _COND             # `jp X` uncond; `jp nz,X` falls through
     return False
+
+
+def sub_local_aliases(files, sub_local):
+    """`name equ other` where `other` is a sub-local LABEL -> {name}.
+
+    🔴 WHY THIS EXISTS. `sub_local` is built from `label:` definitions only, for
+    a documented reason (build_datagraph: "an `equ` is a VALUE, only a `label:`
+    is a LOCATION" -- without it, token numbers and PSG ports read as addresses
+    and 63 spurious escapes appear). But D-DUPSPAN2's whole method is ALIASING a
+    routine with `name equ other`, and such an alias is not a label -- so a
+    SUB-LOCAL alias of a SUB-LOCAL routine fell through to the external branch
+    and was reported as a main-ROM escape at its own correct address.
+
+    Measured 2026-08-30 (D-NGRAM14): `fexp_underflow equ fexp_overflow` in
+    sub/fp_exp.asm, both names resolving to $4F5C in build/sub.sym, reported as
+    `fexp_underflow = 4F5C <- main-BASIC page-1`. The alias was ABANDONED rather
+    than the checker fixed, which is the wrong way round.
+
+    ⚠️ DELIBERATELY NARROW. Only an `equ` whose right-hand side is a BARE
+    IDENTIFIER that is already known sub-local counts. `X equ 12`, `X equ Y+3`
+    and `X equ SOME_MAIN_LABEL` are all untouched, so the rule this repairs can
+    only ever ADD a symbol the tree already proves is sub-local. Resolved to a
+    fixed point, so an alias of an alias is also sub-local."""
+    out = set()
+    pairs = []
+    for f in files:
+        if not os.path.exists(f):
+            continue
+        for line in open(f, errors="replace"):
+            m = _ALIAS.match(line.split(";", 1)[0].rstrip())
+            if m:
+                pairs.append((m.group(1), m.group(2)))
+    known = set(sub_local)
+    changed = True
+    while changed:                               # an alias OF an alias
+        changed = False
+        for name, target in pairs:
+            if name not in known and target in known:
+                known.add(name)
+                out.add(name)
+                changed = True
+    return out
 
 
 def build_callgraph(files):
@@ -335,6 +380,7 @@ def check_page0(argv) -> int:
     sources = collect_sources(sub_asm)
     graph = build_callgraph(sources)
     sub_local = set(graph)                        # every label DEFINED in the sub image
+    sub_local |= sub_local_aliases(sources, sub_local)   # ...and aliases OF those
     seeds = page0_seeds(sub_asm)
     if not seeds:
         print(f"FAIL: no page-0 seeds found (sub_p0_table) in {sub_asm}",
@@ -411,6 +457,7 @@ def check_page1_tenant(argv) -> int:
     sources = collect_sources(sub_asm)
     graph = build_callgraph(sources)
     sub_local = set(graph)                        # every label DEFINED in the sub image
+    sub_local |= sub_local_aliases(sources, sub_local)   # ...and aliases OF those
     seeds = page1_seeds(sub_asm)
     if not seeds:
         print(f"FAIL: no page-1 seeds found (sub_p1_table) in {sub_asm}",
@@ -471,8 +518,75 @@ def check_page1_tenant(argv) -> int:
     return 0
 
 
+def selftest() -> int:
+    """Arms for sub_local_aliases -- the rule D-NGRAM14 needed and did not have.
+
+    🔴 THE CONTROL IS THE POINT. The label-only rule exists because treating
+    every `equ` as an address reports 63 spurious escapes; a fix that widened it
+    to ALL equs would trade one blind spot for a much louder one. So C1/C2 assert
+    that a constant and an expression are still NOT sub-local, and they would
+    both pass trivially if the alias rule had simply been made permissive."""
+    ok = True
+
+    def arm(name, cond):
+        nonlocal ok
+        print(f"{'PASS' if cond else 'FAIL'}  {name}")
+        ok = ok and bool(cond)
+
+    # probe_tmp owns the scratch root and clears it at exit -- `temp-root-check`
+    # refuses a hardcoded one, and it caught this line.
+    sys.path.insert(0, os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "probes", "lib"))
+    import probe_tmp                                              # noqa: E402
+    tmp = probe_tmp.tmp("closure_selftest.asm")
+    with open(tmp, "w") as fh:
+        fh.write(
+            "real_body:\n"
+            "                ret\n"
+            "the_alias       equ     real_body\n"
+            "alias_of_alias  equ     the_alias\n"
+            "a_constant      equ     12\n"
+            "an_expression   equ     real_body+3\n"
+            "main_import     equ     $4F5C\n"
+            "with_comment    equ     real_body    ; an alias, and a comment\n")
+    got = sub_local_aliases([tmp], {"real_body"})
+
+    arm("A1 `the_alias equ real_body` is sub-local "
+        "(the exact shape subrom-closure-check refused in D-NGRAM14)",
+        "the_alias" in got)
+    arm("A2 an alias OF an alias resolves too (fixed point)",
+        "alias_of_alias" in got)
+    arm("A3 a trailing comment does not hide the alias",
+        "with_comment" in got)
+    # 🔴 the three that must NOT be reclassified
+    arm("C1 CONTROL: `a_constant equ 12` is NOT sub-local",
+        "a_constant" not in got)
+    arm("C2 CONTROL: `an_expression equ real_body+3` is NOT sub-local "
+        "(it is a VALUE derived from a label, not that label)",
+        "an_expression" not in got)
+    arm("C3 CONTROL: an equ of an address literal is NOT sub-local",
+        "main_import" not in got)
+    arm("C4 CONTROL: an alias of an UNKNOWN name is NOT sub-local",
+        sub_local_aliases([tmp], set()) == set())
+    # the live tree: the rule must not be vacuous OR sweeping
+    live = collect_sources("sub/sub.asm") if os.path.exists("sub/sub.asm") else []
+    if live:
+        base = set(build_callgraph(live))
+        found = sub_local_aliases(live, base)
+        arm(f"L1 on the live sub tree it adds a BOUNDED set "
+            f"({len(found)} alias(es): {sorted(found) or 'none'}) — "
+            f"fewer than the {len(base)} labels it starts from",
+            len(found) < len(base))
+    os.remove(tmp)
+    print("selftest:", "GREEN" if ok else "🔴 RED")
+    return 0 if ok else 1
+
+
 def main() -> int:
     args = sys.argv[1:]
+    if args and args[0] == "--selftest":
+        return selftest()
     if args and args[0] == "--page0":
         if len(args) != 3:
             sys.exit(__doc__)

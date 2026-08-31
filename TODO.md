@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:493 (T-6FE392)8 (T-529ABE)` from `TODO.md:3724 (T-529ABE)`: a
+      `TODO.md:525 (T-6FE392)8 (T-529ABE)` from `TODO.md:3756 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -304,6 +304,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       fixtures have that shape** (`castail`, `bload`, `fat-*`, `merge`).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
+- [ ] 📌 **ANY BATTERY OR KNIFE SCORE TAKEN 2026-08-30 EVENING .. 2026-08-31
+      04:30 IS SUSPECT — THE HOST WAS ASLEEP UNDER IT.** Found 2026-08-31 by
+      D-NOSLEEP2, [`docs/spec-nosleep2.md`](docs/spec-nosleep2.md).
+      `caffeinate -i` asserts `PreventUserIdleSystemSleep` and does NOT block
+      macOS's scheduled **'Maintenance Sleep'**, which fired on AC power at 100%
+      charge: 15 minutes asleep, 45 seconds awake, repeatedly. A battery walled
+      at **3861 s against 471 s** for the same ROM hashes, and
+      `graphics-acceptance` reported a **977 s** stall against a **979 s** sleep.
+      ✅ **FIXED**: `caffeinate -i -s -w <pid>`, at the `omsx_repl` chokepoint, so
+      every probe and knife runner holds it.
+      🔴 **AND THE OLD ARM PASSED ALL NIGHT** — `S1` asked whether *an* assertion
+      was held and one always was, the idle one. New `S6` names
+      `PreventSystemSleep`; re-planting the old flags makes S6 red while S1 stays
+      green.
+      ➡️ **OWED: nothing is known-bad, but nothing from that window is
+      known-good either.** The D-NGRAM14 and D-CLOSALIAS knife scores were taken
+      in it; both have since been re-run or are re-run below. Re-run anything
+      else that was scored in that window before building on it.
+      🤖 AUTONOMOUS — a re-run settles each one.
+
 - [ ] ⚠️ **`subrom-closure-check` CLASSIFIES A SUB-LOCAL `equ` ALIAS AS A
       MAIN-ROM ESCAPE.** Found 2026-08-30 by D-NGRAM14,
       [`docs/spec-basic-ngram14.md`](docs/spec-basic-ngram14.md) §5.
@@ -320,7 +340,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **AVOIDED, NOT WORKED AROUND**, in D-NGRAM14: the two callers name
       `fexp_overflow` directly, which costs nothing here — but the next sub-side
       alias will hit this again, and D-DUPSPAN2's whole method is aliasing.
-      🤖 AUTONOMOUS — a gate settles it; the reproduction is one `equ`.
+      ✅ **FIXED 2026-08-31 (D-CLOSALIAS,
+      [`docs/spec-closure-alias.md`](docs/spec-closure-alias.md))**: an `equ`
+      whose right-hand side is a BARE IDENTIFIER already known sub-local is now
+      sub-local too, resolved to a fixed point. 8 arms, 4 of them controls that a
+      constant / an expression / an address literal / an alias of an unknown stay
+      OUT — the label-only rule is repaired, not widened.
+      🔴 **THE UNIT ARMS WERE NOT ENOUGH AND SAID SO**: arm `L1` reports the live
+      tree has **0** such aliases (D-EXPNEG's was reverted), so the rule is
+      vacuous today and unit arms could only prove the helper. Falsified
+      end-to-end instead with a BYTE-IDENTICAL plant — rename one `jp
+      fexp_underflow` to an alias — which is RED on the unfixed checker
+      (`fexp_und_alias = 4F66 <- main-BASIC page-1`) and GREEN on the fixed one,
+      with identical ROM hashes proving the plant changed only a name.
 
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
@@ -832,7 +864,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3724 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3756 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
