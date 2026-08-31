@@ -56,7 +56,45 @@ allowlist and the check must go RED. An allowlist that pins everything is exactl
 as useless as no check at all unless an unpinned name is still reported — so that
 is driven, not asserted, and `S7` puts it back and confirms clean.
 
-## 5. What this does not claim
+## 5. 🔴 The reasons in the first cut were written from FILENAMES, and 65 were wrong
+
+The allowlist's first version grouped the 104 by directory and name and called
+them all *"characterisation oracles whose answers are already in specs"*. Reading
+them says otherwise: **65 of the 104 describe themselves as differential /
+functional / regression / acceptance** — live verdicts nobody collects. That is
+the D-WALLIT shape at scale, not a pile of spent oracles. The reasons now say
+which is which.
+
+**A grouping derived from filenames is a hypothesis, and it went into a committed
+file as a statement.**
+
+## 6. 🔴 Six of them cannot run at all
+
+`basic_probe_printusing.py` defaults to `build/basic.rom` — the **lean cart** that
+`docs/spec-lean-retire-s1..s3` removed. The Makefile says it outright: *"there is
+no `build/basic.rom` rule any more."* Run bare, the probe refuses at preflight.
+
+A whole three-slice arc retired that artifact and **six probes still ask for it**,
+because nothing runs them. This is exactly what D-WALLIT hit, found this time by
+the instrument instead of by accident.
+
+⚠️ **The first count was 2, and it was wrong**: grepping `build/basic.rom` misses
+`os.path.join(ZEROBAS, "build", "basic.rom")`, which splits the path across
+arguments. Matching the FILENAME found six. *A literal-path grep is the same
+instrument hazard this project keeps re-learning.*
+
+## 7. 🔴 And I nearly reported six false failures
+
+Running six of the uncollected probes **in parallel**, on a tree whose ROM was
+stale after a Makefile edit, produced `rc != 0` on all six. Read at face value
+that is a headline: *"every uncollected probe is failing."*
+
+Re-run **serially on a fresh build**: five green, one refusing (the lean-cart
+one). The reds were entirely my own apparatus — six emulators at once plus a
+stale ROM — which is the contention lesson from this morning's D-NOSLEEP2,
+re-learned in the same session.
+
+## 8. What this does not claim
 
 It does **not** say those 104 probes are worthless — most are characterisation
 oracles whose answers are already written into specs, which is a legitimate

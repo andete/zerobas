@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:3986 (T-529ABE)`: a
+      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4002 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1080,7 +1080,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3986 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4002 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2277,9 +2277,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       can only go DOWN: any probe added from here must get a target or be pinned
       on purpose, and it is reported the same day instead of months later. `S6`
       drops an entry and requires RED, so the allowlist cannot be vacuous.
+      🔴 **AND THE FIRST CUT'S REASONS WERE WRITTEN FROM FILENAMES, WRONG FOR
+      65 OF THEM** (D-PROBEREACH2, same day): reading the files, **65 of the 104
+      describe themselves as differential / functional / regression /
+      acceptance** — LIVE VERDICTS nobody collects, the D-WALLIT shape at scale,
+      not spent oracles. The reasons now say which is which.
+      🔴 **SIX OF THEM CANNOT RUN AT ALL**: they default to `build/basic.rom`,
+      the LEAN CART that `docs/spec-lean-retire-s1..s3` removed — the Makefile
+      says "there is no `build/basic.rom` rule any more". Run bare they REFUSE at
+      preflight. A three-slice arc retired the artifact and six probes still ask
+      for it. (The first count was 2: grepping `build/basic.rom` misses
+      `os.path.join(ZEROBAS,"build","basic.rom")`. Matching the FILENAME found
+      six.)
+      📏 **SAMPLE RUN, six probes, SERIALLY on a fresh build: 5 green, 1
+      refusing.** ⚠️ Run in PARALLEL on a stale ROM first, all six came back
+      non-zero — a headline that would have been entirely my own apparatus.
       🙋 **(b) IS STILL YOURS** — which of the 104 earn a battery slot is a
       runtime-budget call (one tape probe is ~4 min against a ~460 s battery).
-      The measuring in front of it is DONE.
+      The measuring in front of it is DONE, and the 6 lean-cart ones are the
+      cheapest place to start: they need a `ZEROBAS_ROM` default, not a slot.
 
 - [ ] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
       it.** Filed 2026-08-22 by D-DEFFN,
