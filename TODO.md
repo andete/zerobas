@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4002 (T-529ABE)`: a
+      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4010 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1080,7 +1080,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4002 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4010 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2282,7 +2282,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       describe themselves as differential / functional / regression /
       acceptance** — LIVE VERDICTS nobody collects, the D-WALLIT shape at scale,
       not spent oracles. The reasons now say which is which.
-      🔴 **SIX OF THEM CANNOT RUN AT ALL**: they default to `build/basic.rom`,
+      🔴 **SIX NAME THE RETIRED LEAN CART — AND RUNNING THEM SAYS THREE
+      DIFFERENT THINGS** (my "six cannot run" was an over-claim, corrected by
+      running them serially on a fresh build): **2 refuse BY DESIGN** with the S1
+      message and merely need an argument; **1 CRASHED** (`os.path.exists(None)`)
+      and is now **REPAIRED and ALL PASS** — half of the S3 lean-cart retirement
+      had landed in the prose and not in the code, and nothing noticed because no
+      target runs it; **3 genuinely preflight-refuse**, and for those the
+      preflight's own advice ("FIX: make repack-machine") cannot help.
+      🗄️ Original wording: they default to `build/basic.rom`,
       the LEAN CART that `docs/spec-lean-retire-s1..s3` removed — the Makefile
       says "there is no `build/basic.rom` rule any more". Run bare they REFUSE at
       preflight. A three-slice arc retired the artifact and six probes still ask

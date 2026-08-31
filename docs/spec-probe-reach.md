@@ -68,15 +68,27 @@ which is which.
 **A grouping derived from filenames is a hypothesis, and it went into a committed
 file as a statement.**
 
-## 6. 🔴 Six of them cannot run at all
+## 6. 🔴 Six name the retired lean cart — and running them says three different things
 
-`basic_probe_printusing.py` defaults to `build/basic.rom` — the **lean cart** that
-`docs/spec-lean-retire-s1..s3` removed. The Makefile says it outright: *"there is
-no `build/basic.rom` rule any more."* Run bare, the probe refuses at preflight.
+⚠️ **"Six cannot run at all" was my own over-claim, corrected by running them
+serially on a fresh build.** The accurate breakdown:
 
-A whole three-slice arc retired that artifact and **six probes still ask for it**,
-because nothing runs them. This is exactly what D-WALLIT hit, found this time by
-the instrument instead of by accident.
+| | probes | state |
+|---|---|---|
+| refuse **by design** | `disk_probe_autoexec`, `disk_probe_save_bas` | *"no zerobas machine: pass `--ours-machine`… one would silently pick the BUILD under test"* — the S1 rule **working**. They name the cart only in a usage comment. They need an argument, not a repair. |
+| **crashed** | `basic_probe_cas_verify` | `os.path.exists(None)` before any check — could not run in its default mode at all. **Repaired; now ALL PASS.** |
+| preflight-refuse | `basic_probe_printusing`, `disk_probe_crossbios`, `basic_probe_cas_match` | genuinely bound to `build/basic.rom` |
+
+🎯 **The repair is a half-finished migration.** `cas_verify`'s own header says the
+default rig carries BASIC in slot 0 and needs no cartridge — and the code still
+built `-cart` unconditionally. **Half of the S3 lean-cart retirement landed in
+the prose and not in the code**, and nothing noticed because no `make` target
+runs the probe. It is now green over four cases asserting `CLOAD?` verify
+behaviour.
+
+⚠️ **And the preflight's advice is wrong for these**: it says *"FIX: make
+repack-machine"*, which cannot help — the Makefile says *"there is no
+`build/basic.rom` rule any more."*
 
 ⚠️ **The first count was 2, and it was wrong**: grepping `build/basic.rom` misses
 `os.path.join(ZEROBAS, "build", "basic.rom")`, which splits the path across

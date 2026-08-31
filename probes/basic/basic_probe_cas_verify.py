@@ -96,7 +96,19 @@ def run_typed_scr(cart, cas, type_cmds, cap_time=40.0, timeout=110.0):
     open(tcl, "w").write("\n".join(lines) + "\n")
     if os.path.exists(out):
         os.unlink(out)
-    cmd = [OMSX, "-machine", ZB_MACHINE, "-cart", cart, "-cassetteplayer", cas, "-script", tcl]
+    # 🔴 THE `-cart` IS OPTIONAL, AND UNTIL 2026-08-31 IT WAS NOT. The default rig
+    # is the merged repack machine, which carries BASIC in slot 0 and needs no
+    # cartridge (see this file's own header); only MACHINE_TAPE takes one. Built
+    # unconditionally, `cart=None` reached openMSX as a literal None and `main`
+    # crashed before that on `os.path.exists(None)` -- so the probe could not run
+    # in its DEFAULT mode at all. Half of the S3 lean-cart retirement
+    # (docs/spec-lean-retire-s3-gates.md) landed in the prose and not in the code,
+    # and nothing noticed because no `make` target runs this probe
+    # (D-PROBEREACH2).
+    cmd = [OMSX, "-machine", ZB_MACHINE]
+    if cart:
+        cmd += ["-cart", cart]
+    cmd += ["-cassetteplayer", cas, "-script", tcl]
     p = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          start_new_session=True)
     dl = time.time() + timeout
@@ -175,7 +187,7 @@ def main() -> int:
     ap.add_argument("--cart", default=None,
                     help="only used with the %s rig" % MACHINE_TAPE)
     args = ap.parse_args()
-    if not os.path.exists(args.cart):
+    if args.cart and not os.path.exists(args.cart):
         print(f"cart not found: {args.cart}")
         return 2
     tmp = tempfile.mkdtemp(prefix="cas_verify_")
