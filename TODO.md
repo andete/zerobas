@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:774 (T-6FE392)8 (T-529ABE)` from `TODO.md:4188 (T-529ABE)`: a
+      `TODO.md:791 (T-6FE392)8 (T-529ABE)` from `TODO.md:4205 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -581,10 +581,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       on both references, accepted here. Fixed alongside. (3) The edge
       accidental clamps HOLD at the accept/reject level (`O1 C-` and `O8 B#`
       play on all three).
-      ➡️ **STILL OPEN, narrower:** whether the reference's clamped PITCH equals
-      ours needs a PSG-trace row (`basic_probe_playtrace.py`'s method), not a
-      screen read.
-      🤖 AUTONOMOUS — the trace method exists; the row is mechanical.
+      ✅ **AND THE NARROW RESIDUAL WAS THE REAL FINDING (D-CLAMPPITCH, same
+      day,** [`docs/spec-basic-clamppitch.md`](docs/spec-basic-clamppitch.md)):
+      the trace shows the reference's accidental **wraps the semitone mod 12
+      INSIDE the octave** — `C-` plays B of the SAME octave, `B#` plays C of
+      the SAME octave, at EVERY octave — so the "edge clamp" was wrong
+      mid-range too, and the accept/reject rows were blind to it by
+      construction. Two rules coincided on every edge row; the mid-octave rows
+      separated them. Fixed (accidental before octave base, mod 12; clamp
+      deleted as unreachable); 8/8 traces identical, fast-layer vectors added.
 
 - [ ] 🔁 **STANDING TIER (Joost, 2026-08-31): WHEN THE 🤖 QUEUE DRAINS, REVIEW
       EACH STATEMENT'S IMPLEMENTATION IN FULL, one verb at a time.** The
@@ -599,6 +604,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the rows. The review finds what row-first sweeps cannot: a wholesale
       store that is only wrong across TWO statements, a wrap that only shows
       at 65536+.
+      📋 **WORKLIST DRAFTED (2026-08-31, while a battery ran):**
+      [`docs/review-tier-worklist.md`](docs/review-tier-worklist.md) — 133
+      handlers, 48 with a same-named spec, 85 without, grouped into likely-THIN
+      (the `OUT`/`POKE`/`VPOKE` raw-I/O trio first: the coercion SURFACE is
+      gated, the port/address MECHANISM never reviewed, and the D-PLAYCORNER
+      wrap class lives exactly there; then DATA/RESTORE, DEFtype, TIME, CALL,
+      MOTOR, AUTO/RENUM) vs arc-covered-under-another-name. ⚠️ A RANKED
+      CANDIDATE ROTS — the file says so itself; re-verify per verb at pick-up.
+      🔁 **PIPELINE RULE (Joost, same day): battery time is the NEXT verb's
+      reading time.** Only emulator rows and tracked-file edits serialize
+      behind a running battery; the read-and-review phase runs in parallel,
+      with notes in /tmp until the battery lands.
       🤖 AUTONOMOUS — kwsweep's keyword list is the denominator; work through
       it verb by verb, cheapest-context verbs first, and file what each review
       measures.
@@ -1195,7 +1212,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4188 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4205 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

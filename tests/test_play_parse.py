@@ -139,6 +139,19 @@ def run():
     m, st = parse([b"C#C+D-"])
     check("accidentals C# C+ D-", decode_queue(m, 0),
           [note(C4 + 1), note(C4 + 1), note(D4 - 1), ("END",)])
+    # 🔴 EDGE-CROSSING ACCIDENTALS WRAP THE SEMITONE MOD 12 INSIDE THE OCTAVE
+    # (D-CLAMPPITCH, PSG-trace measured on the VG-8020): C- is B of the SAME
+    # octave (a seventh UP), B# is C of the SAME octave (a seventh DOWN), at
+    # every octave -- the old edge clamp and the plausible octave-borrow are
+    # BOTH wrong, and they coincide on the O1/O8 edge rows, which is why these
+    # vectors pin the mid-octave cases too.
+    m, st = parse([b"O1C-O8B#C-B#"])
+    check("edge accidentals wrap in-octave", decode_queue(m, 0),
+          [note(0 * 12 + 11),           # O1 C- -> B1
+           note(7 * 12 + 0),            # O8 B# -> C8
+           note(7 * 12 + 11),           # O8 C- -> B8
+           note(7 * 12 + 0),            # O8 B# -> C8 again
+           ("END",)])
 
     # --- octave: O, >, < -------------------------------------------------------
     m, st = parse([b"O5C>C<C"])

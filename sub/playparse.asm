@@ -184,6 +184,17 @@ pt_voice_end:
                 ret
 
 ; --- pt_note_letter: A = 'A'..'G' -> compute the note number, then emit ------
+; 🔴 ACCIDENTAL FIRST, MOD 12, INSIDE THE OCTAVE (D-CLAMPPITCH, 2026-08-31).
+; This used to add the octave base FIRST, apply the accidental to the 0..95
+; note number, and clamp the edges (C- at O1 -> note 0, B# at O8 -> note 95).
+; The reference does neither the borrow nor the clamp: the PSG trace shows
+; `O4 C-` playing B4 (period 227, not B3's 453) and `O4 B#` playing C4 (428,
+; not C5's 214) -- the accidental wraps the SEMITONE mod 12 and the octave
+; never moves, at the edges and mid-range alike. The two rules COINCIDE on the
+; edge rows alone (B1 is both "mod 12 at O1" and "borrow then clamp"), which
+; is why scratchpad/clamppitch_probe.py carries the mid-octave separating rows.
+; The result is always (octave-1)*12 + 0..11 = 0..95, so the old clamp is
+; unreachable and deleted rather than kept as dead reassurance.
 pt_note_letter:
                 sub     'A'
                 ld      hl,pt_semitab
@@ -193,20 +204,9 @@ pt_note_letter:
                 adc     a,h
                 ld      h,a
                 ld      c,(hl)              ; C = semitone 0..11
-                ld      a,(ix+VCX_OCTAVE)
-                dec     a
-                ld      hl,pt_oct12
-                add     a,l
-                ld      l,a
-                ld      a,0
-                adc     a,h
-                ld      h,a
-                ld      a,(hl)              ; (octave-1)*12
-                add     a,c
-                ld      c,a                 ; C = note base (0..95)
                 ld      a,b                 ; accidental? (only if a char remains)
                 or      a
-                jr      z,pnl_clamp
+                jr      z,pnl_base
                 push    hl
                 ld      hl,(MCLPTR)
                 ld      a,(hl)
@@ -217,12 +217,18 @@ pt_note_letter:
                 jr      z,pnl_sharp
                 cp      '-'
                 jr      z,pnl_flat
-                jr      pnl_clamp
+                jr      pnl_base
 pnl_sharp:
                 inc     c
+                ld      a,c
+                cp      12
+                jr      c,pnl_eat
+                ld      c,0                 ; B# -> C of the SAME octave
                 jr      pnl_eat
 pnl_flat:
                 dec     c
+                jp      p,pnl_eat
+                ld      c,11                ; C- -> B of the SAME octave
 pnl_eat:
                 push    hl                  ; consume the accidental
                 ld      hl,(MCLPTR)
@@ -230,16 +236,18 @@ pnl_eat:
                 ld      (MCLPTR),hl
                 pop     hl
                 dec     b
-pnl_clamp:
-                bit     7,c                 ; underflow (e.g. C- at octave 1) -> 0
-                jr      z,pnl_hi
-                ld      c,0
-                jr      pt_emit_pitch
-pnl_hi:
-                ld      a,c
-                cp      96
-                jr      c,pt_emit_pitch
-                ld      c,95                ; overflow (e.g. B# at octave 8) -> 95
+pnl_base:
+                ld      a,(ix+VCX_OCTAVE)
+                dec     a
+                ld      hl,pt_oct12
+                add     a,l
+                ld      l,a
+                ld      a,0
+                adc     a,h
+                ld      h,a
+                ld      a,(hl)              ; (octave-1)*12
+                add     a,c
+                ld      c,a                 ; C = note number, 0..95 by construction
                 ; fall through
 
 ; --- pt_emit_pitch: C = note number 0..95 -> emit an OP_NOTE ----------------
