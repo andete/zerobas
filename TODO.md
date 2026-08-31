@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:713 (T-6FE392)8 (T-529ABE)` from `TODO.md:4127 (T-529ABE)`: a
+      `TODO.md:728 (T-6FE392)8 (T-529ABE)` from `TODO.md:4142 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -541,6 +541,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       control reads neither). The set is pinned; the judgement is not.
       🤖 AUTONOMOUS — what remains is keeping the file honest as entries close,
       and the sweep now says so itself when one rots.
+
+- [x] ✅ **D-OOMTAIL (2026-08-31): the two store-overflow exits share one
+      body — +13 B main page 1.** `ctp_oom`'s seven-instruction tail was
+      byte-for-byte `dpl_oom`'s whole body (its own comment said "mirrors
+      dpl_oom"); it is now `jp dpl_oom`.
+      [`docs/spec-basic-oomtail.md`](docs/spec-basic-oomtail.md), probe
+      `scratchpad/oomtail_probe.py` — both exits WITNESSED for the first time
+      (castail's spec records them differentially unreachable; the functional
+      rows reach them by exceeding the REAL bound, a fixed `$BB00`, with a
+      ~17 KB fixture). zb rows IDENTICAL before/after the carve; the probe was
+      wrong four ways first and the spec names each. The 17 KB fixture's
+      CF-3300 divergence is the SETTLED D-LINEMAX/D-FCH ceiling (14079 B by
+      measurement) — rows print ADJ and are pinned in
+      [`tools/filed-row-known.txt`](tools/filed-row-known.txt), the D-FILEDROT
+      convention's first live entry.
 
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
@@ -1134,7 +1149,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4127 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4142 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

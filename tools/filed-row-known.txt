@@ -25,3 +25,4 @@ playfn_fixture_probe: one voice, no delay; voice 2, no delay -- "PLAY(n) start-u
 ramfree_probe: ctl.self; base.none; n.for9; n.gosub; n.crunch; s.draw; s.play; s.str; s.files -- "the [...] readout family is defended by accident": APPARATUS rows (echo-fence), not BASIC divergences; the entry names these very rows
 reqcomma_probe: g.field -- "CLOSE empties a fielded variable here and does not on the reference"
 trapsvc_probe: int.six; gos.leak -- "a trap handler left without RETURN is permanently dead; the six-event cap is not faithful" §4/§6
+oomtail_probe: d.oom; d.oom-l -- TXTMAX $BB00 is the repack's own text ceiling (sysvars.inc, D-LINEMAX/D-FCH: capacity 14079 B, chosen by measurement, funds DETOKBUF as the reference funds its channel buffers); a ~17 KB program loads on the CF-3300 and raises Out of memory here BY DESIGN. Pinned the day the probe was written (D-OOMTAIL, 2026-08-31).

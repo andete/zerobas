@@ -620,15 +620,14 @@ ctp_oom:
                 ld      a,(CAS_VERIFY)
                 or      a
                 jr      nz,verify_error     ; CLOAD? overrun = mismatch, do NOT wipe
-                call    new_prog            ; leave a clean (empty) program
-                ld      a,$CC               ; out-of-memory landmark (as store_line)
-                ld      (ERRMARK),a
-                ld      hl,err_prog_mem
-                call    print_msg           ; D-MSGENC: err_prog_mem aliases err_mem,
-                scf                         ; D-CASTAIL: a store overflow is a FAILED
-                ret                         ; load -- RUN"CAS:x" must not then run the
-                                            ; empty program new_prog just left (mirrors
-                                            ; dpl_oom on the disk half)
+                ; D-OOMTAIL: the seven instructions that used to sit here were
+                ; byte-for-byte dpl_oom's whole body (the comments even said
+                ; "mirrors dpl_oom") -- so jump to the mirror instead of
+                ; carrying it. 13 B. The D-CASTAIL contract is unchanged: CF=1,
+                ; empty program, "Out of memory" -- dpl_oom IS that contract,
+                ; and this couples the two halves ON PURPOSE: they are filed as
+                ; mirrors, so a future edit to one is an edit to both.
+                jp      dpl_oom
 err_prog_mem    equ     err_mem             ; repack: share sl_oom's "out of memory"
                                             ; (program.asm) — identical bytes. Part of
                                             ; D-2's self-funding string dedup (S1).
