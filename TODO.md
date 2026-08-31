@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:728 (T-6FE392)8 (T-529ABE)` from `TODO.md:4142 (T-529ABE)`: a
+      `TODO.md:749 (T-6FE392)8 (T-529ABE)` from `TODO.md:4163 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -556,6 +556,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       measurement) — rows print ADJ and are pinned in
       [`tools/filed-row-known.txt`](tools/filed-row-known.txt), the D-FILEDROT
       convention's first live entry.
+
+- [x] ✅ **D-MUSICF (2026-08-31): a PLAY naming FEWER voices stopped a
+      still-playing voice's drain WITHOUT silencing it.** Found by Joost's
+      review request over the PLAY implementation, then measured: `pt_commit`
+      stored `AUDIO_VMASK` into `MUSICF` wholesale, so `PLAY"C"` while voice B
+      was mid-music cleared B's bit — drain stopped, `psv_end` (the only amp-0
+      writer) unreachable, channel sounding FOREVER, `PLAY(2)` idle under an
+      audible tone. Both references keep the voice playing (`r.drop`:
+      -1/-1/**0**). Fix: OR into `MUSICF` (+2 B sub p1); 5/5 SAME after.
+      [`docs/spec-basic-musicf.md`](docs/spec-basic-musicf.md),
+      `scratchpad/musicf_probe.py`.
+
+- [ ] ⚠️ **THREE UNMEASURED PLAY CORNERS, from the same review.** (1)
+      `pt_number` wraps at 16 bits: `T65568` aliases to 32 and PASSES the range
+      check — the reference's answer to an out-of-range-but-aliasing argument
+      is unmeasured. (2) The accidental clamp at the edges (`C-` at O1 -> note
+      0, `B#` at O8 -> 95) is own-design, asserted only against
+      `tests/mml_ref.py` — which encodes the SAME clamp, so the fast layer
+      cannot catch a wrong rule. (3) `M0` stores envelope period 0 and emits
+      OP_ENV — unmeasured. Each needs a VG-8020 row before any code changes.
+      🤖 AUTONOMOUS — the reference settles all three; the rows are cheap.
 
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
@@ -1149,7 +1170,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4142 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4163 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

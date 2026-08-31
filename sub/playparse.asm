@@ -88,9 +88,20 @@ pi_lp:
                 ret
 
 ; --- pt_commit: publish the parsed queues (MUSICF set LAST) ------------------
+; 🔴 OR, NOT STORE (D-MUSICF, 2026-08-31). This was `ld (MUSICF),a` -- a
+; wholesale overwrite -- and a PLAY naming FEWER voices than were sounding
+; cleared a still-playing voice's bit: its drain stopped, psv_end (the only
+; writer of amplitude 0) became unreachable, the channel kept sounding at its
+; last amplitude, and PLAY(2) read idle under an audible tone. Both references
+; keep the unmentioned voice playing (scratchpad/musicf_probe.py r.drop:
+; -1/-1/0 before, 4/4 SAME after). Voices being REPLACED are in both masks, so
+; OR is exact; the drain is suspended throughout the tenant (htimi_guard), so
+; no torn read.
 pt_commit:
                 ld      a,(AUDIO_VMASK)
-                ld      (MUSICF),a          ; the present voices are now active
+                ld      hl,MUSICF
+                or      (hl)                ; unmentioned voices keep playing
+                ld      (hl),a
                 ld      a,(PLYCNT)
                 inc     a
                 ld      (PLYCNT),a
