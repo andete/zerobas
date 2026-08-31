@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:829 (T-6FE392)8 (T-529ABE)` from `TODO.md:4243 (T-529ABE)`: a
+      `TODO.md:829 (T-6FE392)8 (T-529ABE)` from `TODO.md:4258 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -972,11 +972,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the extra evaluation is NOT the cursor. A silent doubled side effect is
       worse than a loud wrong error code (the Bug C ranking), so it does not
       ship.
-      ➡️ **THE REMAINING QUESTION, AND IT IS NARROW:** what makes the numeric
-      re-drive SKIP the operand when the mismatch is armed with no prior
-      evaluation, but REACH it when an evaluation has already happened? Answer
-      that and the fix is a one-evaluation version of the above — every error row
-      is already known to land correctly.
+      ✅ **THE NARROW QUESTION IS ANSWERED (2026-09-01, by reading, verified
+      against u.cat's row shape):** the numeric re-drive's factor for a string
+      LITERAL (the D-NUMSTR site, expr.asm ~656) defers TM and returns
+      **WITHOUT CONSUMING THE LITERAL** — IX still points at the `"`, no
+      operator can follow, the re-driven expression ends right there, and the
+      `+ operand` is never parsed. Count 0. Any variant that evaluates in
+      `sct_err2` double-counts because the decline path is RE-ENTERED by the
+      driver (count 2, measured). A string VARIABLE would be consumed by the
+      var parse — the asymmetry that made the question look paradoxical.
+      ➡️ **AND THE REFERENCE'S SINGLE-PASS ORDER DISSOLVES THE PRECEDENCE
+      QUESTION TOO:** it evaluates the RHS during its one drive, so the
+      operand's DZ fires BEFORE any TM conclusion — first-error-wins already
+      produces 11 if the evaluation order matches. **Design (unimplemented):
+      `sct_err2` evaluates the operand, arms TM only if that eval was clean,
+      and returns CF=1 with R (the partial result) as the string value — no
+      NC decline, so the driver NEVER re-drives** and the count stays 1 by
+      construction. Guards to satisfy: the 9 catterm rows, catusr's counts
+      (u.cat -> 1, u.catl stays 1), penderr `o.pt.left`, tmfp-acceptance,
+      string-acceptance.
+      🤖 AUTONOMOUS — the design is written; the rows and gates are named.
       🤖 AUTONOMOUS — the references settle the behaviour; the separating row is
       named.
 
@@ -1250,7 +1265,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4243 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4258 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
