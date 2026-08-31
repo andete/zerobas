@@ -3031,7 +3031,10 @@ AUDIO_STATUS    equ     DISKOP_STATUS   ; $E9FC tenant->main: 0 ok / nonzero ERR
 ; QUEBAK putback area ($F971-F974, a "TODO purpose" cell in the music work area we
 ; do not use in 2a). The persistent per-voice state (octave/length/tempo/...) lives
 ; in the VCBs; the source cursor rides HL and the byte count B during a voice parse.
-PLY_NUM         equ     DISKOP_A        ; $E9FD (2): decimal number-literal accumulator
+PLY_NUMOVF      equ     DISKOP_A        ; $E9FD (1): pt_number 16-bit overflow latch
+;                 (was PLY_NUM, a 'decimal number-literal accumulator' that NOTHING
+;                 referenced -- the accumulator rides HL. D-PLAYCORNER repurposes the
+;                 byte: a wrapped number literal must REJECT, not alias into range)
 PLY_LASTDUR     equ     $F971           ; QUEBAK+0 (2): saved write pointer across pt_length
 PLY_BUFEND      equ     $F973           ; QUEBAK+2 (2): current voice buffer end (overflow guard)
 ; Queue packet opcodes (own-design; docs spec §6). A voice buffer is a stream of:

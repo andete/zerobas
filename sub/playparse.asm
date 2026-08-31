@@ -415,6 +415,15 @@ pt_cmd_env_shape:
 pt_cmd_env_per:
                 call    pt_number
                 jp      nc,pt_illegal
+                ld      a,(PLY_NUMOVF)
+                or      a
+                jp      nz,pt_illegal       ; M65600 wraps -> ERR 5 on both refs
+                                            ; (m.wrap); M65535 itself is LEGAL
+                                            ; (m.max), which is why the latch is
+                                            ; read here and not the $FFFF value
+                ld      a,h
+                or      l
+                jp      z,pt_illegal        ; M0 -> ERR 5 on both refs (m.zero)
                 ld      (ix+VCX_ENVPER),l
                 ld      (ix+VCX_ENVPER+1),h
                 jp      pt_emit_env
@@ -547,7 +556,17 @@ pd_done:
 
 ; --- pt_number: parse decimal digits at MCLPTR -> HL = value, CF=1 if any ----
 ;   advances MCLPTR + decrements B per digit. Preserves DE (write ptr), IX, IY.
+;   🔴 D-PLAYCORNER (2026-08-31): a number that OVERFLOWS 16 bits used to wrap
+;   and ALIAS INTO RANGE -- `T65568` became T32 and PASSED the range check,
+;   where both references raise ERR 5 (rows w.twrap/w.owrap/w.vwrap/m.wrap).
+;   Now: overflow latches PLY_NUMOVF and the result SATURATES to $FFFF, which
+;   every 8-bit-range caller already rejects through its existing `ld a,h /
+;   or a` check -- zero call-site changes there. Only M (16-bit domain) must
+;   read the latch itself, because a saturated $FFFF is indistinguishable from
+;   a legitimate M65535 (row m.max: accepted on both references).
 pt_number:
+                xor     a
+                ld      (PLY_NUMOVF),a      ; overflow latch: clear per literal
                 ld      hl,0                ; accumulator
                 ld      c,0                 ; digit count
 pn_lp:
@@ -563,6 +582,27 @@ pn_lp:
                 cp      '9'+1
                 jr      nc,pn_end
                 sub     '0'                 ; A = digit
+                ; overflow test BEFORE the multiply: 10v+d > 65535 iff v > 6553,
+                ; or v = 6553 and d >= 6 (65530+5 = 65535 is still exact).
+                push    af                  ; A = digit, needed after the test
+                ld      a,h
+                cp      $19                 ; v >= $1A00 (6656) -> overflow
+                jr      c,pn_fits
+                jr      nz,pn_ovf           ; $1Axx.. -> overflow
+                ld      a,l                 ; H = $19: compare the low byte
+                cp      $99
+                jr      c,pn_fits           ; < $1999 (6553) -> fits
+                jr      nz,pn_ovf           ; > $1999 -> overflow
+                pop     af                  ; exactly 6553: only d >= 6 overflows
+                push    af
+                cp      6
+                jr      c,pn_fits
+pn_ovf:
+                ld      a,1
+                ld      (PLY_NUMOVF),a      ; latch; the wrapped value is dead --
+                                            ; pn_end saturates it
+pn_fits:
+                pop     af                  ; A = digit
                 push    de                  ; HL = HL*10 + digit
                 ex      de,hl
                 ld      h,d
@@ -586,6 +626,12 @@ pn_lp:
                 inc     c
                 jr      pn_lp
 pn_end:
+                ld      a,(PLY_NUMOVF)
+                or      a
+                jr      z,pn_ret
+                ld      hl,$FFFF            ; overflowed -> saturate: every 8-bit
+                                            ; range check rejects this
+pn_ret:
                 ld      a,c
                 or      a
                 ret     z                   ; no digits -> CF=0, HL = 0

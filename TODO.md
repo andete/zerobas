@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:749 (T-6FE392)8 (T-529ABE)` from `TODO.md:4163 (T-529ABE)`: a
+      `TODO.md:774 (T-6FE392)8 (T-529ABE)` from `TODO.md:4188 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -568,15 +568,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [`docs/spec-basic-musicf.md`](docs/spec-basic-musicf.md),
       `scratchpad/musicf_probe.py`.
 
-- [ ] ⚠️ **THREE UNMEASURED PLAY CORNERS, from the same review.** (1)
-      `pt_number` wraps at 16 bits: `T65568` aliases to 32 and PASSES the range
-      check — the reference's answer to an out-of-range-but-aliasing argument
-      is unmeasured. (2) The accidental clamp at the edges (`C-` at O1 -> note
-      0, `B#` at O8 -> 95) is own-design, asserted only against
-      `tests/mml_ref.py` — which encodes the SAME clamp, so the fast layer
-      cannot catch a wrong rule. (3) `M0` stores envelope period 0 and emits
-      OP_ENV — unmeasured. Each needs a VG-8020 row before any code changes.
-      🤖 AUTONOMOUS — the reference settles all three; the rows are cheap.
+- [x] ✅ **D-PLAYCORNER (2026-08-31): the three PLAY corners MEASURED — two
+      were real, one holds.**
+      [`docs/spec-basic-playcorner.md`](docs/spec-basic-playcorner.md),
+      `scratchpad/playcorner_probe.py`, 10 rows x 3 machines, **5 DIFF -> 0**.
+      (1) `pt_number`'s 16-bit wrap was REAL x4: `T65568`/`O65537`/`V65551`/
+      `M65600` all ERR 5 on both references, all accepted here by aliasing into
+      range. Fixed: overflow latch (`PLY_NUMOVF`, the byte the unused `PLY_NUM`
+      declaration held) + saturate to $FFFF so every 8-bit range check rejects
+      with ZERO call-site changes; `M` reads the latch (m.max: `M65535` is
+      LEGAL, so the $FFFF value alone cannot decide). (2) `M0` was REAL: ERR 5
+      on both references, accepted here. Fixed alongside. (3) The edge
+      accidental clamps HOLD at the accept/reject level (`O1 C-` and `O8 B#`
+      play on all three).
+      ➡️ **STILL OPEN, narrower:** whether the reference's clamped PITCH equals
+      ours needs a PSG-trace row (`basic_probe_playtrace.py`'s method), not a
+      screen read.
+      🤖 AUTONOMOUS — the trace method exists; the row is mechanical.
+
+- [ ] 🔁 **STANDING TIER (Joost, 2026-08-31): WHEN THE 🤖 QUEUE DRAINS, REVIEW
+      EACH STATEMENT'S IMPLEMENTATION IN FULL, one verb at a time.** The
+      calibration: PLAY was picked at RANDOM for review and yielded D-MUSICF (a
+      stuck-voice bug both references separate,
+      [`docs/spec-basic-musicf.md`](docs/spec-basic-musicf.md)) plus
+      D-PLAYCORNER (four wrap divergences + `M0`,
+      [`docs/spec-basic-playcorner.md`](docs/spec-basic-playcorner.md)) — two
+      commits from one verb nobody suspected. Method that worked: read all
+      layers of the implementation first, code-review for suspicious mechanism,
+      THEN write the differential rows for what the review flags, fix against
+      the rows. The review finds what row-first sweeps cannot: a wholesale
+      store that is only wrong across TWO statements, a wrap that only shows
+      at 65536+.
+      🤖 AUTONOMOUS — kwsweep's keyword list is the denominator; work through
+      it verb by verb, cheapest-context verbs first, and file what each review
+      measures.
 
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
@@ -1170,7 +1195,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4163 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4188 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
