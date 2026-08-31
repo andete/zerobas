@@ -239,6 +239,27 @@ req_comma:
                 inc     hl                  ; consume it
                 ret
 
+; --- req_gosub: the GOSUB keyword a TRAP statement requires ------------------
+; D-NGRAM18. `call skip_spaces / cp gosub_token / jp nz,trap_syntax / inc hl`
+; stood open-coded at four sites, one per trap verb: ON STOP (eos_common),
+; ON INTERVAL= (ex_on_interval), ON STRIG (ex_on_strig) and ON KEY (ex_on_key).
+; 9 B each.
+;
+; 📏 FIVE `cp gosub_token` SITES EXIST; only these four share a destination. The
+; fifth is `ON x GOTO|GOSUB`'s dispatch, which branches to TWO different labels
+; (`eon_goto` / `eon_gosub`) and so cannot share a body -- the same rule that
+; kept the optional-comma sites out of `req_comma` above.
+;
+; ⚠️ The extra return address costs nothing on the failing path: `trap_syntax`
+; is `pl_syntax`, which is `ld a,2 / jp raise_error` and never returns -- the
+; same fact `req_letter` and `req_comma` rest on.
+req_gosub:
+                call    skip_spaces
+                cp      GOSUB_TOKEN
+                jp      nz,trap_syntax      ; no GOSUB: malformed trap statement
+                inc     hl                  ; consume it
+                ret
+
 ; --- str_eval_next: step past the delimiter and evaluate the string ---------
 ; (D-NGRAM11.) `inc hl / call skip_spaces / call str_eval` stood open-coded at
 ; SIX sites -- the RHS of LET A$(i)= (arrays.asm), LSET/RSET (field.asm), LET A$=

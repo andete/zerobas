@@ -2376,11 +2376,8 @@ ex_on_sprite:                               ; ON SPRITE GOSUB <line> (traps T4)
 eos_common:                                 ; DE = &entry.handler; HL on the event token
                 push    de                  ; ...guarded: trap_line_link RETURNS in DE
                 inc     hl                  ; past STOP_TOKEN / SPRITE_TOKEN
-                call    skip_spaces
-                cp      GOSUB_TOKEN         ; syntax: ON <event> *GOSUB* <line>
-                jp      nz,trap_syntax      ; (abandons the pushed DE -- trap_syntax
+                call    req_gosub           ; D-NGRAM18
                                             ; raises, and raise_error resets SP)
-                inc     hl
                 call    skip_spaces
 eos_line:                                   ; T5 enters HERE: `ON INTERVAL=n GOSUB` has
                                             ; already consumed its own `=n` and GOSUB, so
@@ -2620,10 +2617,7 @@ ex_on_interval:
                 ld      (ZINTCNT),de        ; ...and RELOAD the live counter: arming
                                             ; restarts the period (§1.4 P2, measured --
                                             ; re-arming mid-run moves the next fire)
-                call    skip_spaces
-                cp      GOSUB_TOKEN
-                jp      nz,trap_syntax      ; `ON INTERVAL=10 GOTO 800` -> ERR 2
-                inc     hl
+                call    req_gosub           ; D-NGRAM18
                 call    skip_spaces
                 ld      de,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ+1
                 push    de                  ; eos_line pops it as the store target
@@ -2670,10 +2664,7 @@ ex_ff_stmt:
 ; Flow continues on the same line.
 ex_on_strig:
                 inc     hl                  ; past the STRIG selector byte
-                call    skip_spaces
-                cp      GOSUB_TOKEN         ; syntax: ON STRIG *GOSUB* <list>
-                jp      nz,trap_syntax
-                inc     hl
+                call    req_gosub           ; D-NGRAM18
                 ld      c,0                 ; C = slot index 0..4
 eostr_lp:
                 call    skip_spaces
@@ -2798,10 +2789,7 @@ strig_illegal   equ     gb_illegal  ; ERR 5 (STRIG n out of 0..4, KEY n out of 1
 ; T2's 6th STRIG slot which takes the machine down.
 ex_on_key:
                 inc     hl                  ; past the KEY token
-                call    skip_spaces
-                cp      GOSUB_TOKEN         ; syntax: ON KEY *GOSUB* <list>
-                jp      nz,trap_syntax
-                inc     hl
+                call    req_gosub           ; D-NGRAM18
                 ld      c,0                 ; C = slot index 0..9
 eokey_lp:
                 call    skip_spaces

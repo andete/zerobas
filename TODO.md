@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:617 (T-6FE392)8 (T-529ABE)` from `TODO.md:3921 (T-529ABE)`: a
+      `TODO.md:637 (T-6FE392)8 (T-529ABE)` from `TODO.md:3941 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -319,6 +319,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       first; and `b.swap` never presents a missing comma at all, because the
       crunch folds `A B` into the variable `AB` — measured by `x.spacename`, not
       guessed.
+      ✅ **ALSO SHIPPED 2026-08-31: `req_gosub`** (D-NGRAM18,
+      [`docs/spec-basic-reqgosub.md`](docs/spec-basic-reqgosub.md)) — the GOSUB
+      keyword the four TRAP statements require (ON STOP / ON INTERVAL= / ON
+      STRIG / ON KEY). **Page 1 read 357 -> 371 B free on 2026-08-31** (a
+      READING; run `make basic-reloc`). 12 rows on three machines, DIFF 0;
+      1 knife + S1; 48/48.
+      🔴 **A LINE-BASED MATCH FOUND ZERO OF THE FOUR** — the token is
+      `GOSUB_TOKEN` (not the lower-case name the sweep prints) AND a comment line
+      sits between the `jp` and the `inc hl` at every site. Matched at
+      instruction level, tolerating interior comments.
+      🔴 **AND TWO FINER KNIVES WERE INVISIBLE TO THEIR OWN ROWS.** Dropping the
+      `inc hl` moves NOTHING: the slot loop then finds no line number and
+      SILENTLY CLEARS the handlers, and no row here makes a trap FIRE. Accepting
+      a missing GOSUB moves nothing either: `ON KEY 100` is rejected LATER, not
+      by this check. What does work is making the helper ALWAYS RAISE — exactly
+      the four `g.*` rows move, the three controls hold — which is the
+      observable form of "every site was rewired" and refuted the live
+      hypothesis that the sites were dead code.
+      ➡️ **OWED:** a row that ARMS a trap and makes it FIRE (`ON STOP GOSUB` plus
+      a Ctrl-STOP injection) would see the finer cuts. Named, not left silent.
       ➡️ **STILL OPEN, measured 2026-08-28:** an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
@@ -1029,7 +1049,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3921 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3941 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
