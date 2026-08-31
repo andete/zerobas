@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4038 (T-529ABE)`: a
+      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4054 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1089,7 +1089,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4038 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4054 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2326,8 +2326,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       "for an unknown number of months", which opened this item. It got fixed and
       NOBODY KNEW, because nothing ran it. An archive nothing runs cannot deliver
       the good news either.
-      ⚠️ **Only `probes/basic/` has been run**; the other 78 entries are pinned
-      but UNVERIFIED and their reasons say so.
+      ✅ **AND ALL 65 `probes/disk/` ONES RUN (D-PROBEREACH5): 47 GREEN**, 10
+      need a `--dos-disk` image this repo does not ship, 4 need another argument,
+      2 are bound to the retired lean cart, and **2 GENUINELY ROTTED**:
+      • `disk_probe_files` — `disk/test720.dsk` gained `TS.DAT` and the probe's
+      HARDCODED expectation still lists the five older files. The reference
+      column is a FROZEN reading, so the fix is to RE-MEASURE the CF-3300 against
+      the current disk, not to edit the constant into agreement.
+      • `disk_probe_bload_fcb` — reads like a stale address ("refresh
+      do_disk_bload addr") and is not: `do_disk_bload` is ABSENT from
+      `build/basic-reloc.sym` and lives only in `build/sub.sym` ($73FB). The
+      routine was EVICTED TO THE SUB-ROM, so breaking at a main-ROM address on a
+      diskless machine cannot work at all. Re-siting is a design job.
+      🔴 **THE FIRST DISK BATCH ASKED THE WRONG QUESTION AND THE TIMING SAID SO**:
+      every failure returned in 0.1 s, so no emulator ever started — the S1
+      "pass --machine, there is no default" rule WORKING, not rot. Re-run with
+      `ZEROBAS_BASIC_MACHINE` supplied. *A 0-second refusal is not contention.*
+      ⚠️ **`probes/tape/` (12) and `probes/lib/` (1) are still UNVERIFIED**, and
+      their reasons say so.
       🙋 **(b) IS STILL YOURS** — which of the 104 earn a battery slot is a
       runtime-budget call (one tape probe is ~4 min against a ~460 s battery).
       The measuring in front of it is DONE, and the 6 lean-cart ones are the

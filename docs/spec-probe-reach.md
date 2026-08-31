@@ -148,3 +148,47 @@ now names the cause, and **the fix its message suggests was verified**:
 
 ⚠️ **Only `probes/basic/` has been run.** The other 78 entries (disk, tape, lib)
 are pinned but UNVERIFIED — their reasons say so rather than implying a verdict.
+
+
+## 10. D-PROBEREACH5 — the disk batch: 47 of 65 green, and TWO genuinely rotted
+
+🔴 **The first disk batch asked the wrong question, and the timing said so.**
+Every failure came back in **0.1 s** — no emulator ever started. `probes/disk/`
+almost all refuse with *"no zerobas machine: pass `--machine` … there is no
+default, one would silently pick the BUILD under test"*, which is the S1 rule
+**working**. A bare run measures *"does it have a default"* (deliberately no),
+not *"is the archived fact re-provable"*. Re-run with `ZEROBAS_BASIC_MACHINE`
+supplied:
+
+| | count |
+|---|---|
+| green — archived and re-provable | **47** |
+| need `--dos-disk` (a DOS image this repo does not ship) | 10 |
+| need another argument / preset | 4 |
+| bound to the retired lean cart | 2 |
+| **genuinely rotted** | **2** |
+
+⚠️ *A 0-second refusal is not contention* — the tell `probe_awake`'s own header
+records — and here it was the difference between a meaningless batch and a
+useful one.
+
+### The two that rotted
+
+**`disk_probe_files` — rotted against its FIXTURE.** `disk/test720.dsk` gained
+`TS.DAT`; the probe's hardcoded `EXPECT` and `CF3300_W29` still list only the
+five older files, so it reports *"wrap/format differs from CF-3300"*. The fixture
+legitimately changed and the probe never learned. **The reference column is a
+frozen reading**, so the fix is to RE-MEASURE the CF-3300 against the current
+disk, not to edit the constant into agreement.
+
+**`disk_probe_bload_fcb` — its SUBJECT MOVED.** It reports *"landmark 0x5355 not
+hit? refresh do_disk_bload addr"*, which reads like a stale number. It is not:
+`do_disk_bload` is **absent from `build/basic-reloc.sym`** and lives only in
+`build/sub.sym` at `$73FB` — the routine was **evicted to the sub-ROM**. The
+probe breaks at a main-ROM address on a diskless machine, which cannot work at
+all any more. Re-siting the breakpoint into a sub-ROM tenant is a design job, not
+a refresh.
+
+🎯 **Both are the D-WALLIT shape**: a documented fact whose proof quietly stopped
+working, invisible because nothing runs the proof. Two in 65, found by running
+them.
