@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:563 (T-6FE392)8 (T-529ABE)` from `TODO.md:3794 (T-529ABE)`: a
+      `TODO.md:581 (T-6FE392)8 (T-529ABE)` from `TODO.md:3812 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -377,6 +377,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (`fexp_und_alias = 4F66 <- main-BASIC page-1`) and GREEN on the fixed one,
       with identical ROM hashes proving the plant changed only a name.
 
+- [x] ✅ **`CVI(5)` READS `Syntax error` HERE AND `Type mismatch` ON THE
+      CF-3300 — CLOSED 2026-08-31 (D-CVITM,
+      [`docs/spec-basic-cvitm.md`](docs/spec-basic-cvitm.md)), and it took THREE
+      dispositions, not one. 14 rows, DIFF 3 -> 0, +11 B, 3 knives, 48/48.**
+      🎯 **THE FIRST FIX IS ZERO BYTES BECAUSE THE HELPER WAS ALREADY WRITTEN**:
+      `ev_f_tmm`'s own header names `LEN(5)/ASC(5)/VAL(5)` and explains that
+      FIRST-ERROR-WINS keeps a nested malformed string fn's syntax error. `CVI`
+      simply was not wired to it — one operand changed.
+      🔴 **A SECOND DIVERGENCE NOBODY HAD FILED**: `CVI("A")` (a 1-byte string)
+      read one byte of the string and one of whatever followed, and answered a
+      plausible `8769`; the reference says `Illegal function call`. Guarded on
+      the descriptor's length byte (6 B).
+      🔴 **AND MY FIRST CUT OVER-REACHED**: routing every decline to `ev_f_tmm`
+      turned `CVI()` from Syntax error into Type mismatch. An EMPTY argument is a
+      grammar fault and must be settled BEFORE the type question — the D-LEFTTM
+      shape again, the fix is the ORDER. Caught by a row that already AGREED,
+      kept because the domain was mapped rather than sampled (5 B).
+      ⚠️ Original filing follows.
 - [ ] 📌 **`CVI(5)` READS `Syntax error` HERE AND `Type mismatch` ON THE
       CF-3300.** Found 2026-08-31 by D-NGRAM15,
       [`docs/spec-basic-ngram15.md`](docs/spec-basic-ngram15.md) §6, row `b.cvi`
@@ -902,7 +920,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3794 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3812 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

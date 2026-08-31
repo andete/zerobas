@@ -1265,12 +1265,27 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                                             ; ev_f_err -> " 0"); ref = Syntax error
                 inc     ix
                 call    ev_sp
+                ; 🔴 D-CVITM, SECOND CUT: `CVI()` IS EMPTY, NOT A TYPE ERROR. Routing
+                ; every `str_eval` decline to ev_f_tmm below caught this case too and
+                ; turned the reference's Syntax error into Type mismatch. An EMPTY
+                ; argument is a grammar fault and has to be told apart BEFORE the
+                ; type question is asked -- the same order `str_arg_open` uses.
+                cp      ')'
+                jp      z,ev_f_empty        ; CVI() -> deferred Syntax error
                 call    str_eval_ix         ; STRPTR -> [len][bytes]; HL advanced; CF=ok
                 ; BUG C class (Fable 2026-07-17): repack str_eval CALSLTs and can
                 ; exit NC with garbage IX on a nested malformed string fn
-                ; (CVI(LEFT$("AB")) -> silent 0) or a non-string arg -- defer FPERR=4
-                ; via ev_f_empty so check_expr_errors aborts.
-                jp      nc,ev_f_empty
+                ; (CVI(LEFT$("AB")) -> silent 0) or a non-string arg -- defer via
+                ; check_expr_errors rather than unwinding mid-expression.
+                ; 🔴 D-CVITM: this was `ev_f_empty` (FPERR=4, Syntax error) for BOTH
+                ; causes, and the reference separates them -- `CVI(5)` is Type
+                ; mismatch, `CVI(LEFT$("AB"))` is Syntax error. `ev_f_tmm` is the
+                ; helper written for exactly this shape (its own header names
+                ; LEN(5)/ASC(5)/VAL(5)), and FIRST-ERROR-WINS does the separating
+                ; for free: a nested malformed string fn has ALREADY set FPERR=4
+                ; inside, so it keeps its syntax error, while a plain non-string
+                ; argument arrives with FPERR clean and gets 13. Zero bytes.
+                jp      nc,ev_f_tmm
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
                 call    ev_sp
@@ -1280,6 +1295,14 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 call    flt_int_result      ; CVI returns an int; a float nested in
                                             ;  the string arg must not stick (A only)
                 ld      hl,(STRPTR)
+                ; 🔴 D-CVITM: CVI NEEDS TWO BYTES AND DID NOT CHECK. `CVI("A")`
+                ; read one byte of the string and one byte of whatever followed
+                ; it, and answered a plausible number (8769); the reference says
+                ; `Illegal function call`. The descriptor's length byte is right
+                ; here, before pu_deref_body turns HL into the body pointer.
+                ld      a,(hl)              ; descriptor length
+                cp      2
+                jp      c,ev_f_ifc          ; fewer than 2 bytes -> deferred ERR 5
                 call    pu_deref_body       ; arrays slice-4a: HL(desc)->HL(body);
                                             ; shared with printusing.asm/field.asm
                 ld      a,(hl)              ; low byte
