@@ -69,7 +69,33 @@ def open_items():
     return [(n, c) for n, c in items if c]
 
 
-def score(out, state):
+# tools/, not scratchpad/: `scratchpad/*.txt` is gitignored, and a pinned
+# adjudication set must be COMMITTED -- it lives beside the other pinned sets
+# (probe-reach-allow.txt, citations-advisory-allow.txt).
+KNOWN_FILE = os.path.join(ROOT, "tools", "filed-row-known.txt")
+
+
+def known_rows():
+    """probe -> [row labels] from the adjudication file. Rows are ';'-separated
+    because two playfn labels contain commas."""
+    out = {}
+    for line in open(KNOWN_FILE, errors="replace"):
+        line = line.strip()
+        if not line or line.startswith("#") or ": " not in line:
+            continue
+        head, rest = line.split(": ", 1)
+        rows = rest.split(" --", 1)[0]
+        out[head] = [r.strip() for r in rows.split(";") if r.strip()]
+    # 🔴 Refuse-on-degenerate, same as the probe list: an empty adjudication
+    # file would score every divergence NEW, which is loud but wrong the other
+    # way -- and a parse failure would score every divergence KNOWN=0 silently.
+    if len(out) < 5:
+        raise SystemExit(f"🔴 REFUSING: only {len(out)} adjudicated probe(s) "
+                         f"parsed from {KNOWN_FILE}; expected ~13.")
+    return out
+
+
+def score(out, state, known=()):
     """Two INDEPENDENT channels -- printed markers and exit code -- reported
     together, because on this corpus they disagree."""
     body = open(out, errors="replace").read()
@@ -83,8 +109,30 @@ def score(out, state):
     # "measured nothing". A MARKER IS ITSELF PROOF THE PROBE MEASURED -- test it
     # before concluding the output is empty.
     if n:
-        where = f"{v.group(1)}/{v.group(2)}{v.group(3).rstrip()}" if v \
-            else f"{marks} marker(s) in {rows} parsed line(s)"
+        # --- adjudicate each MARKER LINE against the filed set --------------
+        # A marker line naming a known row is *measured-and-known*; one naming
+        # none is *measured-and-UNNOTICED* -- the sweep's whole reason to exist.
+        # A known row matching NO marker line has stopped diverging: the CVI
+        # shape (fixed-when-filed, entry stale), reported rather than dropped.
+        mlines = [l for l in body.splitlines() if MARKER.search(l)]
+        hit = set()
+        fresh = 0
+        for l in mlines:
+            owners = [r for r in known if r in l]
+            hit.update(owners)
+            if not owners:
+                fresh += 1
+        stale = [r for r in known if r not in hit]
+        adj = f"  [{len(hit)} known"
+        if fresh:
+            adj += f", \U0001f534 {fresh} marker line(s) UNFILED -- read them"
+        if stale:
+            adj += f", \u26a0\ufe0f {len(stale)} known row(s) NO LONGER " \
+                   f"DIVERGING ({' '.join(stale)}) -- the CVI shape, re-run " \
+                   f"and re-file"
+        adj += "]"
+        where = (f"{v.group(1)}/{v.group(2)}{v.group(3).rstrip()}" if v
+                 else f"{marks} marker(s) in {rows} parsed line(s)") + adj
         # 🔴 The second cause of green: a probe can print divergences and STILL
         # exit 0, so a collector reading only the rc would call this clean.
         hidden = "  \U0001f534 AND EXITS 0 -- invisible to any rc-only collector" \
@@ -136,6 +184,7 @@ def main():
     todo = names[a.skip:]
     if a.limit:
         todo = todo[:a.limit]
+    KNOWN = known_rows()
     env = dict(os.environ)
     env["ZEROBAS_REFCACHE"] = "0"          # a sweep measures, it never replays
     print(f"# {len(todo)} of {len(names)} cited probe(s), serial, refcache OFF, "
@@ -153,7 +202,7 @@ def main():
             except subprocess.TimeoutExpired:
                 state = "TIMEOUT"
         print(f"{i:3d}/{len(todo)}  {m:28s} {state:9s} {time.time()-t0:6.1f}s  "
-              f"{score(out, state)}", flush=True)
+              f"{score(out, state, KNOWN.get(m, ()))}", flush=True)
         print(f"          cites TODO.md:" +
               ",".join(str(x) for x in by_probe[m]), flush=True)
     return 0

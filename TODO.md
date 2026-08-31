@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:703 (T-6FE392)8 (T-529ABE)` from `TODO.md:4117 (T-529ABE)`: a
+      `TODO.md:713 (T-6FE392)8 (T-529ABE)` from `TODO.md:4127 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -529,8 +529,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       **eight** output shapes and two rc conventions. The sweep reads markers
       and rc as INDEPENDENT channels for exactly that reason, and refuses to
       call anything clean when they disagree.
-      🤖 AUTONOMOUS — the sweep settles the denominator; the convention is a
-      design call inside this tree.
+      ✅ **CONVENTION LANDED 2026-08-31 (same day):**
+      `tools/filed-row-known.txt` pins, per probe, the divergent rows a
+      filed item OWNS — named by the owning entry's HEADING, because line
+      numbers rot. The sweep adjudicates every marker line against it and the
+      verdict now reads `[N known]`, `🔴 UNFILED — read them`, or `⚠️ NO LONGER
+      DIVERGING — the CVI shape, re-run and re-file`. **Measured on all 18: 0
+      unfiled, 0 stale — every divergence in the corpus is owned by an entry.**
+      Falsified by planting BOTH directions on the same output (a dropped known
+      row reads UNFILED; a ghost row reads NO-LONGER-DIVERGING; the unmodified
+      control reads neither). The set is pinned; the judgement is not.
+      🤖 AUTONOMOUS — what remains is keeping the file honest as entries close,
+      and the sweep now says so itself when one rots.
 
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
@@ -1124,7 +1134,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4117 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4127 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -107,3 +107,28 @@ naming the second cause of green rather than trusting the first.
 answer reads like a measurement, and stays readable long after it stops being
 true — and the probe that would contradict it can be mis-scored in a way that
 agrees with it instead.
+
+## 8. The convention (landed same day): an adjudication file, not an exit code
+
+§5 said what is *not* owed. What landed instead:
+[`tools/filed-row-known.txt`](../tools/filed-row-known.txt) pins, per
+probe, the divergent rows a filed TODO item **owns** — each named by the owning
+entry's *heading*, because this same session watched TODO line numbers shift
+twice. The sweep adjudicates every marker line against the set:
+
+- a marker line naming a known row → **measured-and-known** (`[N known]`);
+- a marker line naming none → **`🔴 UNFILED — read them`**, the sweep's whole
+  reason to exist;
+- a known row matching no marker line → **`⚠️ NO LONGER DIVERGING`** — the CVI
+  shape of §2, fixed-when-filed, reported instead of silently dropped.
+
+Measured on all 18 saved outputs: **0 unfiled, 0 stale** — today, every
+divergence in the corpus is owned by an entry. That green was then falsified by
+planting both directions on the same output: dropping `gos.leak` from
+`trapsvc_probe`'s known set reads UNFILED; adding a ghost row reads
+NO-LONGER-DIVERGING; the unmodified control reads neither. And the loader
+refuses below 5 parsed probes, because an unparseable adjudication file would
+otherwise score every divergence silently un-adjudicated.
+
+The set is pinned; the judgement is not — the same shape as
+`probe-reach-allow.txt` and the citation advisories.
