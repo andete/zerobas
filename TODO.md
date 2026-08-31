@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:581 (T-6FE392)8 (T-529ABE)` from `TODO.md:3812 (T-529ABE)`: a
+      `TODO.md:591 (T-6FE392)8 (T-529ABE)` from `TODO.md:3822 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -394,6 +394,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       grammar fault and must be settled BEFORE the type question — the D-LEFTTM
       shape again, the fix is the ORDER. Caught by a row that already AGREED,
       kept because the domain was mapped rather than sampled (5 B).
+      🔴 **AND IT HAD A HOLE, CLOSED THE SAME DAY BY D-CVISTRTM**
+      ([`docs/spec-basic-cvistrtm.md`](docs/spec-basic-cvistrtm.md)):
+      `CVI(0*(1/0)+1)` armed Type mismatch where both references answer Division
+      by zero, because first-error-wins only splits the causes WHEN THE INNER
+      THING ALREADY SET FPERR — and `str_eval` declines WITHOUT evaluating.
+      **D-STRTM's own comment, in the file being edited, describes this exact
+      trap.** Fixed the way it was fixed there: evaluate the operand, THEN defer.
+      🎯 **AND THAT SUBSUMED THE `cp ')'` TEST**, which K-CV3 then measured as
+      moving ZERO rows — `eval` meets the `)` and raises the syntax error itself.
+      Test and knife both deleted, 5 B back, so the whole correction is +1 B.
       ⚠️ Original filing follows.
 - [ ] 📌 **`CVI(5)` READS `Syntax error` HERE AND `Type mismatch` ON THE
       CF-3300.** Found 2026-08-31 by D-NGRAM15,
@@ -920,7 +930,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3812 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3822 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

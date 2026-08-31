@@ -1265,13 +1265,14 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                                             ; ev_f_err -> " 0"); ref = Syntax error
                 inc     ix
                 call    ev_sp
-                ; 🔴 D-CVITM, SECOND CUT: `CVI()` IS EMPTY, NOT A TYPE ERROR. Routing
-                ; every `str_eval` decline to ev_f_tmm below caught this case too and
-                ; turned the reference's Syntax error into Type mismatch. An EMPTY
-                ; argument is a grammar fault and has to be told apart BEFORE the
-                ; type question is asked -- the same order `str_arg_open` uses.
-                cp      ')'
-                jp      z,ev_f_empty        ; CVI() -> deferred Syntax error
+                ; 🎯 `CVI()` NEEDS NO TEST OF ITS OWN. D-CVITM added a `cp ')'` here
+                ; because routing every decline straight to `ev_f_tmm` turned the
+                ; reference's Syntax error into Type mismatch. Once `cvi_tmm`
+                ; EVALUATES the operand first (D-CVISTRTM), `eval` meets the `)`
+                ; and raises that syntax error itself, and first-error-wins keeps
+                ; it -- so the test became dead weight and is gone. Its knife
+                ; (K-CV3) is what noticed: after the order fix, cutting the test
+                ; moved NO rows. 5 B back.
                 call    str_eval_ix         ; STRPTR -> [len][bytes]; HL advanced; CF=ok
                 ; BUG C class (Fable 2026-07-17): repack str_eval CALSLTs and can
                 ; exit NC with garbage IX on a nested malformed string fn
@@ -1285,7 +1286,7 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 ; for free: a nested malformed string fn has ALREADY set FPERR=4
                 ; inside, so it keeps its syntax error, while a plain non-string
                 ; argument arrives with FPERR clean and gets 13. Zero bytes.
-                jp      nc,ev_f_tmm
+                jp      nc,cvi_tmm
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
                 call    ev_sp
@@ -1311,6 +1312,26 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 ld      a,(hl)              ; high byte
                 ld      d,a                 ; DE = int (LE)
                 ret
+
+; --- cvi_tmm: CVI's non-string decline, with the OPERAND'S OWN FAULT FIRST ----
+; 🔴 D-CVISTRTM. D-CVITM pointed this decline at `ev_f_tmm` and that is the bug
+; D-STRTM had already fixed for the shared `ev_str_arg` path, in the very file
+; the CVI comment sits beside: first-error-wins only splits `CVI(5)` from a
+; nested fault WHEN THE INNER THING ALREADY SET FPERR. `CVI(0*(1/0)+1)` sets
+; nothing -- `str_eval` declines WITHOUT EVALUATING -- so the mismatch armed
+; first and the division by zero was never raised. Both references answer
+; Division by zero. (Before D-CVITM this row was Syntax error, so it was wrong
+; then too: that slice closed 3 of 4 and left the 4th wrong in a new way.)
+; 🎯 FOR THE FOURTH TIME IN THIS CLASS -- D-LEFTTM, D-INSTRTM, D-STRTM and now
+; here -- THE FIX IS THE ORDER: evaluate the operand, THEN defer.
+; 🟢 AND NO DOUBLE EVALUATION, which is what makes it safe: nothing re-drives the
+; operand after this point (CVI's own tail is the only continuation, and it is
+; not reached). `esa_tmm` wants HL on the operand; IX is still there because
+; `str_eval_ix` copies IX to HL and never writes IX.
+cvi_tmm:
+                push    ix
+                pop     hl                  ; HL = the operand cursor, unadvanced
+                jp      esa_tmm             ; `call eval` + `jp ev_f_tmm`, shared
 
 ; --- FRE(n) / FRE(s$): free memory (docs/spec-basic-binfre.md §4) -----------
 ; MEASURED on the VG-8020: the numeric argument is a DUMMY -- FRE(0), FRE(1),

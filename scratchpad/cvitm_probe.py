@@ -40,6 +40,14 @@ add('g.ok',      [], 'CVI("AB")')
 add('g.short',   [], 'CVI("A")')                  # 1-byte string: len < 2
 add('m.ok',      [], 'ASC(MKI$(258))')            # MKI$ round-trips
 add('m.str',     [], 'MKI$("A")')                 # the INVERSE type error
+# --- 🔴 THE OPERAND'S OWN FAULT, which D-STRTM says must OUTRANK the type
+# error. `str_eval` declines WITHOUT evaluating, so a bare `jp nc,ev_f_tmm` arms
+# the mismatch first and the operand's division by zero is never raised. D-STRTM
+# fixed exactly this for the shared `ev_str_arg` path (`esa_tmm: call eval / jp
+# ev_f_tmm`); `ctl.lenfault` is that fix, and `a.fault` asks whether CVI has it.
+add('a.fault',   [], 'CVI(0*(1/0)+1)')
+add('ctl.lenfault', [], 'LEN(0*(1/0)+1)')
+
 # --- 🟢 CONTROLS: the shared string-arg path, which is already correct -------
 add('ctl.len',   [], 'LEN(5)')
 add('ctl.instr', [], 'INSTR("ABCDE",5)')

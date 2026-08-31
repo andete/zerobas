@@ -5,13 +5,26 @@ The slice made THREE distinct corrections inside `ev_ff_cvi`, and they are
 separable, so each gets a cut that must move ITS rows and no others:
 
   K-CV1  the non-string decline goes back to `ev_f_empty` (Syntax error).
-         PREDICTED: `a.num`, `a.numvar`. 🎯 `b.nested` must HOLD -- it is the row
-         that says FIRST-ERROR-WINS is doing the separating, not the branch.
+         PREDICTED: `a.num`, `a.numvar`, `a.fault`. 🎯 `b.nested` must HOLD -- it
+         is the row that says FIRST-ERROR-WINS is doing the separating, not the
+         branch.
+  K-CV4  defer WITHOUT evaluating the operand first (`cvi_tmm` -> `ev_f_tmm`).
+         PREDICTED: `a.fault` and `c.empty`. This is the D-STRTM bug and the arm
+         for the ORDER: `a.num`/`a.numvar` read Type mismatch either way, so only
+         an operand carrying its OWN fault -- or an EMPTY one, which `eval` also
+         faults on -- can tell the two forms apart. That `c.empty` rides on this
+         one correction is why the explicit test it used to need is gone.
   K-CV2  drop the 2-byte length guard.
          PREDICTED: `g.short` alone.
-  K-CV3  drop the empty-argument test.
-         PREDICTED: `c.empty` alone -- it falls through to the type error, which
-         is the mistake the first cut of this slice actually made.
+
+🎯 K-CV3 IS GONE, AND DELETING IT IS THE RESULT IT PRODUCED. It cut an explicit
+`cp ')'` test that D-CVITM had added so `CVI()` would stay a Syntax error. After
+D-CVISTRTM made the decline EVALUATE the operand first, that knife moved ZERO
+rows -- because `eval` meets the `)` and raises the syntax error itself, and
+first-error-wins keeps it. The test was dead weight; it and its knife are both
+gone, and 5 B came back. **An arm that stops moving can mean the code it guards
+has become redundant, not that the arm went blind** -- the row set said so, still
+at 0 DIFF without it.
 """
 import atexit, os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -23,8 +36,11 @@ PROBE = "python3 scratchpad/cvitm_probe.py zb"
 
 KNIVES = [
     ("K-CV1 non-string decline -> Syntax error again", [
-        ("                jp      nc,ev_f_tmm",
+        ("                jp      nc,cvi_tmm",
          "                jp      nc,ev_f_empty       ; K-CV1 CUT (restored on exit)")]),
+    ("K-CV4 defer WITHOUT evaluating the operand first", [
+        ("                jp      nc,cvi_tmm",
+         "                jp      nc,ev_f_tmm         ; K-CV4 CUT (restored on exit)")]),
     ("K-CV2 drop the 2-byte length guard", [
         ("""                ld      a,(hl)              ; descriptor length
                 cp      2
@@ -35,20 +51,21 @@ KNIVES = [
                 nop
                 nop
                 nop""")]),
-    ("K-CV3 drop the empty-argument test", [
-        ("""                cp      ')'
-                jp      z,ev_f_empty        ; CVI() -> deferred Syntax error""",
-         """                nop                         ; K-CV3 CUT (restored on exit)
-                nop
-                nop
-                nop
-                nop""")]),
 ]
 
 EXPECT = {
-    "K-CV1": {"a.num", "a.numvar"},
+    "K-CV1": {"a.num", "a.numvar", "a.fault"},
+    # 🎯 THE ARM FOR THE ORDER. `ev_f_tmm` is the bare defer -- correct for
+    # `CVI(5)`, WRONG for an operand carrying its own fault, because `str_eval`
+    # declines without evaluating and the mismatch arms first. Only `a.fault`
+    # may move: `a.num` and `a.numvar` still read Type mismatch either way, and
+    # that is what says this cut is about the ORDER and not the code.
+    # 🎯 TWO ROWS, NOT ONE, AND THE SECOND IS THE POINT. Once the redundant
+    # `cp ')'` test was removed, `CVI()` also depends on this order fix: cutting
+    # it breaks BOTH the operand-carrying-its-own-fault case and the empty
+    # argument. One correction now covers what took two before.
+    "K-CV4": {"a.fault", "c.empty"},
     "K-CV2": {"g.short"},
-    "K-CV3": {"c.empty"},
 }
 
 
@@ -81,13 +98,12 @@ def main():
     src = open(SRC).read()
     # S1: all three corrections present, each exactly once.
     bits = {
-        "the non-string decline defers TYPE MISMATCH": "jp      nc,ev_f_tmm",
+        "the non-string decline evaluates the operand THEN defers": "jp      nc,cvi_tmm",
         "the 2-byte length guard": "jp      c,ev_f_ifc          ; fewer than 2 bytes",
-        "the empty-argument test": "jp      z,ev_f_empty        ; CVI() -> deferred",
     }
     missing = [k for k, v in bits.items() if src.count(v) != 1]
-    print(f"{'PASS' if not missing else 'FAIL'}  S1 all three corrections present "
-          f"exactly once{'' if not missing else ' 🔴 MISSING: ' + str(missing)}")
+    print(f"{'PASS' if not missing else 'FAIL'}  S1 both surviving corrections "
+          f"present exactly once{'' if not missing else ' 🔴 MISSING: ' + str(missing)}")
     if missing:
         fails.append("S1")
 
