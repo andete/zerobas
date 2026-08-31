@@ -39,7 +39,10 @@ dispatch_line:
 dl_cmd:
                 ld      de,run_kw
                 call    is_cmd
-                jr      c,dl_run
+                call    c,dl_bare           ; matched -- but ONLY the BARE form is
+                jp      c,dl_run            ; the REPL's own (D-RUNARG below).
+                                            ; `jp`, not `jr`: dl_bare's body pushed
+                                            ; dl_run out of relative range.
                 ld      de,new_kw
                 call    is_cmd
                 jr      c,dl_new
@@ -216,6 +219,41 @@ dl_ovf_report:
 ; "in 0" rather than garbage.
 dir_line:       dw      dir_line + 2        ; [link] -> the word below
                 dw      0                   ; [lineno] = 0 == the $0000 end marker
+; --- dl_bare: is the REPL keyword at (HL) FOLLOWED BY AN ARGUMENT? ------------
+; 🔴 D-RUNARG. `is_cmd` matches when the next input byte is a DELIMITER -- end,
+; SPACE or ':' -- which is exactly right for telling `RUN` from `RUNNER` and
+; exactly wrong as a "takes no argument" test. So `RUN 20`, `RUN A$` and
+; `RUN "name"` all matched the REPL's bare-RUN fast path and their argument was
+; DISCARDED: the resident program ran from the top. Measured against the
+; CF-3300 (scratchpad/fnamedev_probe.py):
+;
+;     RUN 20      ref runs from line 20      here ran from the TOP
+;     RUN "f"     ref File not found         here ran the resident program
+;     RUN A$      ref File not found         here ran the resident program
+;     RUN20 / RUN"f"   agree -- no space, so `is_cmd` never matched
+;
+; 🎯 A SILENT WRONG PROGRAM RUN, not a wrong message, which is the class this
+; project ranks worst. Only the bare form belongs on the fast path; everything
+; else is crunched and reaches `do_run` as a statement, where the argument is
+; already handled.
+;   in: HL -> the keyword.  out: CF set iff nothing but ':' or end follows.
+;   HL is preserved; the caller still needs it.
+dl_bare:
+                push    hl
+                inc     hl
+                inc     hl
+                inc     hl                  ; past the 3-letter keyword
+                call    skip_spaces
+                pop     hl
+                or      a
+                scf
+                ret     z                   ; end of line -> bare
+                cp      COLON
+                scf
+                ret     z                   ; `RUN : ...` -> bare
+                or      a                   ; anything else -> an ARGUMENT: crunch it
+                ret
+
 dl_run:
                 jr      run_prog
 dl_new:

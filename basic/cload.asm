@@ -98,7 +98,7 @@ do_load:
                 ; ✅ D-FNEXPR2: the filename is a string EXPRESSION (row f.loadvar:
                 ; `LOAD A$` on a missing file is `File not found` on the CF-3300
                 ; and was `load error` here -- PRINTED, so the program ran on).
-                call    fname_expr          ; HL -> the staged '"'-terminated copy
+                call    fname_dev   ; D-NGRAM16
                 ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
                 ; 🎯 D-FNEXPR2 CARVE: THIS WAS A **THIRD** HAND-ROLLED COPY OF
                 ; `dev_cmp`, and D-FNFUND collapsed only the two in save.asm --
@@ -107,8 +107,6 @@ do_load:
                 ; then grep the MECHANISM). Same upcase, same 0-terminated
                 ; prefix, same advance-on-hit / restore-HL-on-miss contract, and
                 ; the `push`/`pop` pair goes with it because dev_cmp owns one.
-                ld      de,dev_cas          ; compare device name to "CAS:"
-                call    dev_cmp
                 jr      nz,dl_is_disk       ; no "CAS:" prefix -> disk (HL restored)
 dl_is_cas:
                 ; HL is now inside the STAGED copy, past "CAS:". Tier-3: CAPTURE
@@ -219,13 +217,11 @@ do_run:
                 jr      z,dr_stored         ; `RUN : ...`      -> bare RUN
                 cp      LINENO_TOKEN        ; $0E -> RUN <lineno>
                 jr      z,dr_lineno         ; D-RUNLINE: start AT that line
-                call    fname_expr          ; a string EXPRESSION; HL -> the staged
+                call    fname_dev   ; D-NGRAM16
                                             ; '"'-terminated copy in STRSCR
                 ; device dispatch: "CAS:" -> tape, else -> disk (mirrors do_load).
                 ; dev_cmp advances HL past a matched prefix and restores it on a miss,
                 ; so the disk path below still sees HL at the filename start.
-                ld      de,dev_cas
-                call    dev_cmp
                 jr      z,dr_is_cas         ; matched "CAS:" -> tape program run
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
                 ld      hl,(FN_RESUME)      ; D-FNRUN: resume past the EXPRESSION --

@@ -90,6 +90,27 @@ sv_load_error   equ     load_error          ; resident: a zero-byte EQU, so ever
 ; string EXPRESSION (it was "verbatim ASCII filename" here, and that described a
 ; literal-only gate); the address args are unchanged crunched expressions,
 ; comma + &H/decimal each, and are parsed from FN_RESUME.
+; --- fname_dev: the filename EXPRESSION, then the "CAS:" device test ----------
+; D-NGRAM16. Four verbs opened identically -- LOAD, RUN"name", SAVE and BSAVE:
+; parse the filename as a string expression, then ask whether it names the tape.
+;
+; 🔴 IT IS A TAIL JUMP BECAUSE THE CALLER BRANCHES ON `dev_cmp`'s Z FLAG, and
+; because `fname_expr` JUMPS OUT: `jp nc,els_tc_common` when the filename is not
+; a string. Behind a helper that jump sits one frame deeper -- the D-NGRAM8 shape
+; exactly, where a `call` moved an outward jump and a decline stopped declining.
+; 🟢 Here it cannot bite, and the reason is checkable rather than hopeful: BOTH
+; of `els_tc_common`'s exits (`stmt_error`, `type_mismatch_error`) RAISE and
+; never return, so the frame they leave behind is discarded with the rest.
+; That is an argument, so it has rows -- `n.load`/`n.save`/`n.bsave` drive a
+; NON-STRING filename through three of the four verbs
+; (scratchpad/fnamedev_probe.py). `RUN`'s own row set found a SEPARATE bug
+; while it was at it -- see D-RUNARG in basic/program.asm.
+;   out: HL past a matched "CAS:" prefix (restored on a miss), Z = matched.
+fname_dev:
+                call    fname_expr          ; HL -> the staged '"'-terminated copy
+                ld      de,dev_cas
+                jp      dev_cmp             ; TAIL -- Z and HL go to OUR caller
+
 do_bsave:
                 xor     a
                 ld      (VRAM_FLAG),a       ; default RAM source; ",S" sets it below
@@ -97,15 +118,13 @@ do_bsave:
                 ; `call skip_spaces` / `cp '"'` / `jp nz,load_error` / `inc hl`:
                 ; a LITERAL gate whose refusal PRINTED `load error` and RETURNED,
                 ; so `BSAVE A$,&H8000,&H9000` ran on as if nothing had happened.
-                call    fname_expr          ; HL -> the staged '"'-terminated copy
+                call    fname_dev   ; D-NGRAM16
                 ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
                 ; D-FNFUND: this was a hand-rolled copy of files.asm's dev_cmp --
                 ; same upcase, same 0-terminated prefix, same "advance on a hit,
                 ; restore HL on a miss" contract, 22 B against 9. The push/pop
                 ; pair moved INSIDE dev_cmp, which is why bsv_is_cas below no
                 ; longer discards a saved start.
-                ld      de,dev_cas
-                call    dev_cmp
                 jr      z,bsv_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
 bsv_is_disk:
                 ; HL = filename start (after the quote); build the FCB.
@@ -177,12 +196,10 @@ do_save:
                 ; `SAVE A$` is `OK` on the CF-3300 and was `load error` here --
                 ; PRINTED, not raised, so the program carried on having saved
                 ; nothing at all).
-                call    fname_expr          ; HL -> the staged '"'-terminated copy
+                call    fname_dev   ; D-NGRAM16
                 ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
                 ; D-FNFUND: the second hand-rolled copy of dev_cmp (see do_bsave
                 ; above). Identical contract; the push/pop pair is dev_cmp's now.
-                ld      de,dev_cas
-                call    dev_cmp
                 jr      z,sav_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
 sav_is_disk:
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'

@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:591 (T-6FE392)8 (T-529ABE)` from `TODO.md:3857 (T-529ABE)`: a
+      `TODO.md:601 (T-6FE392)8 (T-529ABE)` from `TODO.md:3887 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -293,6 +293,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       has broken the machine, not the subject. The decline half therefore rests
       on the rows agreeing with both references plus K-N15B's asserted zero, and
       the spec says so rather than papering over it.
+      ✅ **ALSO SHIPPED 2026-08-31: `fname_dev`** (D-NGRAM16,
+      [`docs/spec-basic-runarg.md`](docs/spec-basic-runarg.md)) — `call
+      fname_expr / ld de,dev_cas / call dev_cmp` at LOAD, RUN"name", SAVE and
+      BSAVE, 9 B each. **+15 B**, spent again by the D-RUNARG fix the same row
+      set found (net −6 B, page 1 355 -> 349).
+      🔴 **THE RISK WAS `fname_expr`'s OUTWARD JUMP, NOT THE Z FLAG** — it does
+      `jp nc,els_tc_common` on a non-string filename, which behind a helper sits
+      one frame deeper (the D-NGRAM8 shape). Both of that tail's exits RAISE and
+      never return, so it cannot bite — and three `n.*` rows drive a non-string
+      filename through three of the four verbs to say so.
       ➡️ **STILL OPEN, measured 2026-08-28:** an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
@@ -643,6 +653,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🙋 rather than 🤖. The measuring in front of the decision is DONE.
       🙋 **NEEDS-JOOST** — spend ~18 B and reopen D-MISSOP's rule, or leave it.
 
+- [x] ✅ **`RUN <argument>` IGNORED ITS ARGUMENT AND RAN THE RESIDENT PROGRAM —
+      CLOSED 2026-08-31 (D-RUNARG,
+      [`docs/spec-basic-runarg.md`](docs/spec-basic-runarg.md)).** 20 rows,
+      DIFF 7 -> 0; 2 knives + S1; 48/48.
+      🔴 **A WRONG PROGRAM RUN, NOT A WRONG MESSAGE**, which is the class this
+      project ranks worst. `RUN 20` ran from the TOP; `RUN "name"`, `RUN A$`,
+      `RUN A+0` and `RUN (A)` all ran the RESIDENT program. Only the no-space
+      forms (`RUN20`, `RUN"name"`) were ever right.
+      🎯 **ONE WORD IN A DELIMITER TEST.** The REPL's `dl_cmd` matches `RUN`
+      with `is_cmd`, whose contract accepts end / SPACE / ':' — right for telling
+      `RUN` from `RUNNER`, wrong as a "takes no argument" test. A space is a
+      delimiter, so `RUN <anything>` took the bare-RUN fast path and the argument
+      was discarded. The no-space forms worked only because `"` and `2` are not
+      delimiters, so the line was crunched and reached `do_run`, which handles
+      arguments correctly. `dl_bare` now asks the second question.
+      ⚠️ **FOUND BY A CARVE'S ROW SET**, not by looking for it: D-NGRAM16 gave
+      each of the four filename verbs a non-string row, and `RUN`'s came back
+      `<nothing>` — which one more row (a resident program) separated from
+      "refused quietly".
+
 - [ ] 🔴 **THE CONCATENATION DIVERGENCE IS ONE ROW, NOT TWO:
       `"AB"+(0*(1/0)+1)` READS ERR 13 WHERE BOTH REFERENCES SAY 11.**
       Filed 2026-08-29 by D-STRTM §4; **re-measured 2026-08-31 by D-CATTM**
@@ -965,7 +995,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3857 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3887 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
