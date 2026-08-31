@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:591 (T-6FE392)8 (T-529ABE)` from `TODO.md:3822 (T-529ABE)`: a
+      `TODO.md:591 (T-6FE392)8 (T-529ABE)` from `TODO.md:3838 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -643,22 +643,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🙋 rather than 🤖. The measuring in front of the decision is DONE.
       🙋 **NEEDS-JOOST** — spend ~18 B and reopen D-MISSOP's rule, or leave it.
 
-- [ ] 🔴 **THE CONCATENATION PAIR: `5+"AB"` READS ERR 24 AND
-      `"AB"+(0*(1/0)+1)` READS ERR 13, WHERE BOTH REFERENCES SAY 13 AND 11.**
-      Found 2026-08-29 by D-STRTM
-      ([`docs/spec-basic-strtm.md`](docs/spec-basic-strtm.md) §4).
-      ⚠️ **NOT FIXED WITH D-STRTM's ROUTE, AND THE REASON IS A HAZARD.** Both live
-      at `sct_err2`, which calls `type_mismatch_set` and then RETURNS NC so the
-      caller re-drives the whole expression numerically. Evaluating the operand
-      inside `sct_err2` would evaluate it **TWICE** — once there and once on the
-      re-drive — and a string operand can contain a `USR` call or a `DEF FN`
-      invocation with side effects.
-      ⚠️ **AND REMOVING THE ARM IS CLOSED BY BUG C:** without it `PRINT A$+5`
-      printed `" 0"`, a silent wrong answer, which this project ranks worse than
-      the refusal beside it.
-      ➡️ So the fix probably belongs in whatever the NUMERIC RE-DRIVE meets, not
-      in `sct_err2`. Unpriced.
-      🤖 AUTONOMOUS — the references settle the behaviour.
+- [ ] 🔴 **THE CONCATENATION DIVERGENCE IS ONE ROW, NOT TWO:
+      `"AB"+(0*(1/0)+1)` READS ERR 13 WHERE BOTH REFERENCES SAY 11.**
+      Filed 2026-08-29 by D-STRTM §4; **re-measured 2026-08-31 by D-CATTM**
+      ([`docs/spec-basic-catterm.md`](docs/spec-basic-catterm.md),
+      `scratchpad/catterm_probe.py`, 9 rows, three machines).
+      🔴 **HALF THE ORIGINAL CLAIM IS STALE:** `5+"AB"` reads **13 on all three**
+      now. The likely closer is D-TMFP — *"the rule was not a rank between two
+      flags but which fault happened first"* — the same question, settled for
+      that row and never struck from this entry.
+      🎯 **AND THE MIRRORS NARROW IT TO ONE ORDER.** `"AB"+5`, `A$+5`, `5+A$` all
+      agree; so does `(0*(1/0)+1)+"AB"` — with the faulting operand on the LEFT
+      it is evaluated first and raises Division by zero. Only
+      `<string> + <numeric expression carrying its own fault>` diverges.
+      🔴 **THE STATED HAZARD IS NOT THE OBSTACLE.** The filing barred D-STRTM's
+      route because evaluating in `sct_err2` would evaluate TWICE. But
+      `sct_err2` does not evaluate the operand at all — the numeric re-drive
+      does, and the operand's fault is reachable and merely OUTRANKED, because
+      `type_mismatch_set` arms FPERR *before* the re-drive and `ev_f_defer` is
+      first-error-wins.
+      ➡️ **SO THE FIX IS ABOUT WHEN THE TYPE MISMATCH IS ARMED, NOT WHERE THE
+      OPERAND IS EVALUATED**: it must arm at a LOWER PRIORITY than anything the
+      re-drive raises — a `check_expr_errors` precedence change, not an
+      `sct_err2` evaluation change. Removing the arm stays closed (Bug C:
+      `PRINT A$+5` printed `" 0"`).
+      ⚠️ **NOT ESTABLISHED, AND IT DECIDES THE FIX:** whether the re-drive
+      actually reaches the operand. The error code cannot tell —
+      armed-and-outranked and never-evaluated both read 13. It needs an operand
+      with an observable SIDE EFFECT (`USR` writing through `POKE`), which the
+      probe does not build. If the re-drive does NOT reach it, the
+      lower-priority-arm route also reads 13 and the fix belongs elsewhere.
+      🤖 AUTONOMOUS — the references settle the behaviour; the separating row is
+      named.
 
 - [ ] 🔬 **`LSET`/`RSET` ON A NEVER-FIELDED VARIABLE HAS NO ORACLE: THE TWO
       REFERENCES DISAGREE.** Found 2026-08-29 by D-NGRAM11. `A$="12345":LSET
@@ -930,7 +946,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3822 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3838 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
