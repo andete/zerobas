@@ -549,6 +549,17 @@ fexp_overflow:
                 xor     a
                 ld      (FAC),a
                 ret
+; ⛔ UNDERFLOW IS SILENT ON PURPOSE, AND IT IS NOT THE SAME AS OVERFLOW HERE.
+; The true answer underflows to 0 and zerobas returns it; both references throw
+; `Overflow` instead, which docs/spec-basic-mathpack-slice2.md §12.9 records as
+; a full disposition BUG in the reference. `math-acceptance` encodes that
+; decision -- its truth oracle asserts `exp(-1000)` is 0, and `10^-70.5` is
+; scored on OURS only.
+;
+; 🔴 D-EXPNEG (2026-08-30) FOLDED THIS INTO `fexp_overflow` to match the
+; references, AND WAS REVERTED. Measuring the references is not the same as
+; checking whether the divergence was already DECIDED; here it was, fifteen days
+; earlier (docs/spec-basic-ngram14.md §7).
 fexp_underflow:
                 xor     a
                 ld      (FAC),a

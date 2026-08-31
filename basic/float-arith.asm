@@ -489,6 +489,20 @@ raf_noround:
                                             ; check_preexp_bounds's own header comment);
                                             ; in bounds -> falls through normally below
                 call    arga_pack_fac
+
+; --- fac_dbl_int16: publish FAC as a DOUBLE, then hand DE to our caller -------
+; D-NGRAM14: the tail four sites wrote out -- this one by fallthrough, `^`'s
+; below by `jp`, and two in basic/expr.asm (evmc_dispatch, evmc_exp_huge).
+; It is a TAIL, not a call: whoever jumps here returns to THEIR caller out of
+; `flt_to_int16`, exactly as the open-coded copy did, so no frame moves.
+;
+; 🔴 IT LIVES IN THE PAGE-0 LOW REGION, AND THAT IS NOT A PREFERENCE. Siting it
+; in page 1 -- where the other two reachers are, and where the free bytes are --
+; builds, and `subrom-closure-check` REFUSES it: these two sites run inside the
+; page-1 tenant's RESIDENT CLOSURE, with page 1 switched out, so a `jp` into it
+; hangs. The cheaper-looking split was measured, rejected by a gate, and the
+; direction inverted. (docs/spec-basic-ngram14.md §2)
+fac_dbl_int16:
                 ld      a,8
                 ld      (FACTYP),a
                 jp      flt_to_int16        ; tail call: sets DE, returns to our caller
@@ -1979,9 +1993,7 @@ cpow_dispatch:
                                             ; in FAC (COMPUTE-ONLY tenant).
                 pop     ix
                 jp      c,subrom_absent_error
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16        ; tail: DE := flt_to_int16(FAC)
+                jp      fac_dbl_int16       ; D-NGRAM14
 
 ; --- combine_cmp: ev_rel's numeric-compare site. Both-int -> the EXISTING --
 ; cmp16_bits (byte-for-byte the same as before, tail-called). Any float ->

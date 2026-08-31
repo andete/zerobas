@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:446 (T-6FE392)8 (T-529ABE)` from `TODO.md:3677 (T-529ABE)`: a
+      `TODO.md:493 (T-6FE392)8 (T-529ABE)` from `TODO.md:3724 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -303,6 +303,53 @@ list. **When a slice lands, grep this list for what it just shipped.**
       overwrite. `runtail` is fixed; **nothing has counted how many other
       fixtures have that shape** (`castail`, `bload`, `fat-*`, `merge`).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
+
+- [ ] ⚠️ **`subrom-closure-check` CLASSIFIES A SUB-LOCAL `equ` ALIAS AS A
+      MAIN-ROM ESCAPE.** Found 2026-08-30 by D-NGRAM14,
+      [`docs/spec-basic-ngram14.md`](docs/spec-basic-ngram14.md) §5.
+      `fexp_underflow equ fexp_overflow` in `sub/fp_exp.asm` -- the D-DUPSPAN2
+      shape, keeping the name and both call sites -- was REFUSED: `FAIL: page-1
+      escapes ... fexp_underflow = 4F5C <- main-BASIC page-1`. Both names
+      resolve to the SAME address in `build/sub.sym`; the checker finds
+      sub-local symbols by `label:` and its own header records why an `equ` may
+      not count ("an `equ` is a VALUE, only a `label:` is a LOCATION" — without
+      that rule 63 spurious escapes appear).
+      ➡️ **THE FIX IS NARROW AND SAFE:** an `equ` whose VALUE equals the address
+      of a known sub-local label IS sub-local. That reclassifies aliases only,
+      and `build/sub.sym` already carries both sides of the equality.
+      ⚠️ **AVOIDED, NOT WORKED AROUND**, in D-NGRAM14: the two callers name
+      `fexp_overflow` directly, which costs nothing here — but the next sub-side
+      alias will hit this again, and D-DUPSPAN2's whole method is aliasing.
+      🤖 AUTONOMOUS — a gate settles it; the reproduction is one `equ`.
+
+- [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
+      DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
+      [`docs/spec-basic-ngram14.md`](docs/spec-basic-ngram14.md) §5, rows in
+      `scratchpad/ngram14_probe.py`.
+      [`docs/spec-basic-mathpack-slice2.md`](docs/spec-basic-mathpack-slice2.md)
+      §12.9 recorded ONE argument (`EXP(-200)`) as a disposition BUG in the
+      reference, with zerobas correctly returning the true 0. These rows show
+      the whole negative tail behaves that way — `EXP(-150)`, `-175`, `-180`,
+      `-200`, `-1E30`, `-1E38` all read `ERR 6` on both references and `0` here,
+      while `EXP(-100)` (still representable) reads `3.72E-44` on all three and
+      `EXP(1E30)` (a real overflow) reads `ERR 6` on all three.
+      🎯 **AND IT IS PRODUCED BY TWO DIFFERENT PATHS.** K-N14B moves
+      `EXP(-175/-180/-200)` and NOT `EXP(-1E30)`/`EXP(-1E38)`: the extreme
+      arguments raise from `evmc_exp_huge` in the main ROM before the sub-ROM is
+      dispatched at all, the rest from `fexp_underflow` in `sub/fp_exp.asm`.
+      Worth knowing whenever §12.9 is revisited.
+      🔴 **D-EXPNEG "FIXED" THIS TO MATCH THE REFERENCES AND WAS REVERTED IN
+      FULL** — `math-acceptance` encodes the §12.9 decision and went red.
+      Nothing here is owed; this entry exists so the next reader finds the
+      MEASUREMENT rather than repeating the mistake.
+      🙋 NEEDS-JOOST — only if the §12.9 carve-out is ever to be re-opened, and
+      that is your call, not a gate's.
+
+- [ ] 📌 **`ATN(1)`, `EXP(-100)` and `EXP(100)` differ in the LAST DIGIT only.**
+      Re-measured 2026-08-30 by D-NGRAM14 (pre-existing; identical before and
+      after that slice). `ATN(1)` reads `.78539816339746` against
+      `.78539816339745` on both references. A mathpack rounding question.
+      🤖 AUTONOMOUS — the references settle it; the rows exist.
 
 - [ ] 🙋 **`basic/lineedit-body.inc` IS ASSEMBLED BY NOTHING — DELETE IT OR KEEP
       IT?** Found 2026-08-30 by D-DEADBODY,
@@ -785,7 +832,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3677 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3724 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

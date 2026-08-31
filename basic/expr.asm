@@ -1844,9 +1844,11 @@ evmc_dispatch:
                 pop     ix                  ; restore the text cursor (flags survive)
                 jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on the
                                             ; merged machine, which always ships it)
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16        ; tail: DE := flt_to_int16(FAC)
+                jp      fac_dbl_int16       ; D-NGRAM14: tail -- FACTYP=8, then
+                                            ; DE := flt_to_int16(FAC). The body is
+                                            ; in basic/float-arith.asm, page-0 low:
+                                            ; two of its four reachers run with page 1
+                                            ; switched out and cannot leave it.
 
 ; --- evmc_log: LOG(x) -> natural logarithm, DOUBLE (math pack slice 2b, ----
 ; docs/spec-basic-mathpack-slice2.md §12.6). Same arg-parse + widen shape as
@@ -1903,15 +1905,28 @@ evmc_exp:
                                             ; this range) <=> dexp>=4
                 ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_EXP
                 jr      evmc_dispatch
+; ⛔ DO NOT "FIX" THIS TO MATCH THE REFERENCE. It answers 0 for EXP(-huge)
+; while BOTH references answer `Overflow`, and that divergence is DELIBERATE and
+; already adjudicated: docs/spec-basic-mathpack-slice2.md §12.9 records the
+; reference's own `EXP(-200)` Overflow as "a full disposition BUG in the
+; reference -- the true answer underflows to 0, which zerobas returns
+; correctly", and `math-acceptance` encodes that decision (its truth oracle
+; asserts `exp(-1000)` is 0, and `10^-70.5` is a row scored on OURS only).
+;
+; 🔴 D-EXPNEG (2026-08-30) DELETED THIS ARM ON EXACTLY THAT REASONING -- both
+; references say Overflow, so match them -- AND WAS REVERTED. Measuring the
+; references is not the same as checking whether the divergence was already
+; decided; here it was, fifteen days earlier, in the file this code is specified
+; by. The rows it took are kept in scratchpad/ngram14_probe.py because they
+; CONFIRM §12.9's characterisation at five more arguments
+; (docs/spec-basic-ngram14.md §7).
 evmc_exp_huge:
                 ld      a,(ARGA+FPNUM_SIGN)
                 or      a
                 jr      z,evmc_exp_overflow
                 xor     a
-                ld      (FAC),a             ; EXP(-huge) -> 0, not an error
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16
+                ld      (FAC),a             ; EXP(-huge) -> 0, not an error (§12.9)
+                jp      fac_dbl_int16       ; D-NGRAM14
 evmc_exp_overflow:
                 ld      a,1
                 call    penderr_set
