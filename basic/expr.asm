@@ -203,9 +203,7 @@ ev_rel:
                 ; path str_eval_arr also clobbers IX but always returns CF -> it
                 ; only reaches evr_lhs_str, never the NC restore.)
                 push    ix                  ; [guard] the cursor across str_eval
-                push    ix
-                pop     hl                  ; HL = cursor (bridge for the probe)
-                call    str_eval            ; CF set -> LHS is a string; STRPTR->desc
+                call    str_eval_ix         ; CF set -> LHS is a string; STRPTR->desc
                 jr      c,evr_lhs_str       ; string LHS -> discard guard, str path
                 pop     ix                  ; NC: restore the cursor str_eval trashed
                 call    ev_e                ; DE = lhs (arithmetic)
@@ -242,9 +240,7 @@ evr_rhs:
                 push    bc
                 push    de
                 push    ix                  ; [bc][de][guard]
-                push    ix
-                pop     hl
-                call    str_eval
+                call    str_eval_ix
                 pop     ix                  ; restore the cursor str_eval may have trashed
                 pop     de
                 pop     bc
@@ -1269,9 +1265,7 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                                             ; ev_f_err -> " 0"); ref = Syntax error
                 inc     ix
                 call    ev_sp
-                push    ix
-                pop     hl
-                call    str_eval            ; STRPTR -> [len][bytes]; HL advanced; CF=ok
+                call    str_eval_ix         ; STRPTR -> [len][bytes]; HL advanced; CF=ok
                 ; BUG C class (Fable 2026-07-17): repack str_eval CALSLTs and can
                 ; exit NC with garbage IX on a nested malformed string fn
                 ; (CVI(LEFT$("AB")) -> silent 0) or a non-string arg -- defer FPERR=4
@@ -1318,9 +1312,9 @@ ev_ff_fre:
                 inc     ix
                 call    ev_sp
                 push    ix                  ; guard the cursor for the numeric retry:
-                push    ix                  ; repack str_eval CALSLTs and can exit NC
-                pop     hl                  ; with GARBAGE IX -- the CVI landmine above
-                call    str_eval            ; a STRING argument?
+                call    str_eval_ix         ; a STRING argument? (repack str_eval
+                                            ; CALSLTs and can exit NC with GARBAGE IX --
+                                            ; the CVI landmine above)
                 jr      nc,ev_fre_num       ; no -> re-read the same text as numeric
                 pop     ix                  ; drop the guard; take str_eval's cursor
                 push    hl

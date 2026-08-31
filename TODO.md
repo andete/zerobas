@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:529 (T-6FE392)8 (T-529ABE)` from `TODO.md:3760 (T-529ABE)`: a
+      `TODO.md:563 (T-6FE392)8 (T-529ABE)` from `TODO.md:3794 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -274,6 +274,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       marker. Closed by a new row, `load-short` (a LONGER program resident, so
       the loader must terminate a real line away) — 11/11 agree with the
       CF-3300, and it moves under the knife.
+      ✅ **ALSO SHIPPED 2026-08-31: `str_eval_ix`** (D-NGRAM15,
+      [`docs/spec-basic-ngram15.md`](docs/spec-basic-ngram15.md)) — `push ix /
+      pop hl / call str_eval` at SEVEN sites (relational LHS and RHS, CVI, FRE,
+      the shared string-arg parse, INSTR, the string relational's RHS). **Low
+      region read 112 -> 121 B free and page 1 361 -> 367 on 2026-08-31**
+      (a READING; run `make basic-reloc`). 14 rows, 1 scored DIFF (pre-existing),
+      1 NO-ORACLE; 2 knives + S1; 48/48 battery.
+      🎯 **THE BODY IS SITED WHERE THE CALLERS ARE NOT.** Four callers are in
+      page 1 and three in the SCARCE low region — but `str_eval` itself is a
+      page-1 routine the low-region callers already reach, so the body goes
+      beside it and the scarce region takes the LARGER share (+9 vs +6).
+      Siting by "where the code lives" would have given low +3.
+      🔴 **A LINE-BASED GREP FOUND 6 OF THE 7** — `ev_ff_fre`'s site carries a
+      comment on its `push ix` line. Enumerated at instruction level instead.
+      🔴 **AND A THIRD KNIFE WAS BUILT, RUN AND DELETED**: forcing CF set moved
+      ALL FOURTEEN rows, both CONTROLS included — a knife that moves the controls
+      has broken the machine, not the subject. The decline half therefore rests
+      on the rows agreeing with both references plus K-N15B's asserted zero, and
+      the spec says so rather than papering over it.
       ➡️ **STILL OPEN, measured 2026-08-28:** an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
@@ -357,6 +376,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       fexp_underflow` to an alias — which is RED on the unfixed checker
       (`fexp_und_alias = 4F66 <- main-BASIC page-1`) and GREEN on the fixed one,
       with identical ROM hashes proving the plant changed only a name.
+
+- [ ] 📌 **`CVI(5)` READS `Syntax error` HERE AND `Type mismatch` ON THE
+      CF-3300.** Found 2026-08-31 by D-NGRAM15,
+      [`docs/spec-basic-ngram15.md`](docs/spec-basic-ngram15.md) §6, row `b.cvi`
+      in `scratchpad/ngram15_probe.py`. Pre-existing — measured identically
+      before and after that slice.
+      🎯 **THE D-LEFTTM CLASS**: the argument parse rejects before the type check
+      is reached, so the FIX IS THE ORDER, not the code. `LEN(5)` and
+      `INSTR("ABCDE",5)` both give the correct `Type mismatch`, so the shared
+      string-arg path is right and `ev_ff_cvi` has its own earlier reject.
+      ⚠️ **NO PRIOR ADJUDICATION EXISTS** — checked, after D-EXPNEG re-opened a
+      settled decision by not looking.
+      ⚠️ The VG-8020 cannot arbitrate: `CVI` is a Disk BASIC verb and it answers
+      `Illegal function call` to every form. The CF-3300 is the only oracle.
+      🤖 AUTONOMOUS — the disk reference settles it; the row exists.
 
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
@@ -868,7 +902,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3760 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3794 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -638,9 +638,7 @@ ev_str_arg:
                 jp      z,ev_f_empty
                 cp      ','
                 jp      z,ev_f_empty
-                push    ix
-                pop     hl                  ; HL = cursor
-                call    str_eval            ; STRPTR -> desc; HL advanced; CF=ok
+                call    str_eval_ix            ; STRPTR -> desc; HL advanced; CF=ok
                 ; BUG C class (Fable 2026-07-17): a NON-string arg -- LEN(5), or a
                 ; NESTED malformed string fn LEN(LEFT$("AB")) whose str_eval CALSLT'd
                 ; then exited NC -- used to `jp ev_f_err` (ERRMARK only, un-advanced
@@ -1610,9 +1608,7 @@ ev_f_instr:
                                             ; syntax error (was silent ev_f_err)
                 inc     ix
                 call    ev_sp
-                push    ix
-                pop     hl                  ; HL = cursor (bridge for the D-5 probe)
-                call    str_eval            ; CF set -> a$ (2-arg form); STRPTR->desc
+                call    str_eval_ix            ; CF set -> a$ (2-arg form); STRPTR->desc
                 jr      c,efi_have_a
                 ; --- not a string: the leading numeric p (3-arg form) ---
                 call    eval_pos_arg        ; DE = p, 1..255 (D-MISS-2; or aborts)
@@ -1966,9 +1962,7 @@ ev_rel_str:
 ers_rhs:
                 push    ix                  ; [LHStemp][cursor]
                 push    bc                  ; [LHStemp][cursor][bits]
-                push    ix
-                pop     hl                  ; HL = cursor
-                call    str_eval            ; STRPTR -> RHS desc; HL advanced; clobbers IX
+                call    str_eval_ix            ; STRPTR -> RHS desc; HL advanced; clobbers IX
                 pop     bc                  ; C = bits            [LHStemp][cursor]
                 jr      nc,ers_rhs_mismatch ; RHS not a string -> D-2 (`A$ < 5`)
                 ; HL = new cursor (past RHS). STRPTR = RHS descriptor.

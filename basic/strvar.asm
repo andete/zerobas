@@ -31,6 +31,29 @@
 ; (string-engine arc S3) it folds any trailing `+ operand` terms via str_concat_tail
 ; (basic/str-engine.asm, in the reclaimed low region), giving `A$+B$+C$` concatenation
 ; to every string context at once (PRINT, LET, function args, LSET/RSET, PRINT USING).
+; --- str_eval_ix: evaluate the string expression at the IX cursor -------------
+; D-NGRAM15. Seven sites said `push ix / pop hl / call str_eval` verbatim: four
+; in basic/expr.asm and three in basic/str-engine.asm.
+;
+; 🔴 IT IS A TAIL JUMP, AND THAT MAKES IT FRAME-NEUTRAL. `call str_eval_ix`
+; pushes the return to the SITE; the `jp` pushes nothing; `str_eval`'s own `ret`
+; returns to the site. The depth at `str_eval` is therefore IDENTICAL to the
+; open-coded form -- which matters because `str_eval` DECLINES (CF clear) as well
+; as succeeding, and every caller keeps its OWN `jr c` / `jr nc` at the site.
+; D-NGRAM8 lost exactly that when it put `str_eval` behind a `call` whose `ret`
+; landed one frame too shallow and the decline stopped declining.
+;
+; ⚠️ SITED HERE, IN PAGE 1, BESIDE `str_eval` ITSELF -- not in the low region
+; with three of its seven callers. `str_eval` is already a page-1 routine that
+; `basic/str-engine.asm` (page-0 low) calls, so the low-region sites lose 3 B
+; each and gain nothing to jump to: low +9 B, page 1 +6 B. The scarce region
+; takes the larger share, which is the opposite of where the sites are.
+;   out: HL = advanced cursor, CF/STRPTR exactly as `str_eval` leaves them.
+str_eval_ix:
+                push    ix
+                pop     hl                  ; HL = cursor
+                jp      str_eval            ; TAIL -- CF, HL and STRPTR go to OUR caller
+
 str_eval:
                 call    str_eval_one
                 ret     nc                  ; not a string operand -> propagate
