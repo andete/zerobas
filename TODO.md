@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:591 (T-6FE392)8 (T-529ABE)` from `TODO.md:3838 (T-529ABE)`: a
+      `TODO.md:591 (T-6FE392)8 (T-529ABE)` from `TODO.md:3857 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -667,12 +667,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       re-drive raises — a `check_expr_errors` precedence change, not an
       `sct_err2` evaluation change. Removing the arm stays closed (Bug C:
       `PRINT A$+5` printed `" 0"`).
-      ⚠️ **NOT ESTABLISHED, AND IT DECIDES THE FIX:** whether the re-drive
-      actually reaches the operand. The error code cannot tell —
-      armed-and-outranked and never-evaluated both read 13. It needs an operand
-      with an observable SIDE EFFECT (`USR` writing through `POKE`), which the
-      probe does not build. If the re-drive does NOT reach it, the
-      lower-priority-arm route also reads 13 and the fix belongs elsewhere.
+      ✅ **MEASURED 2026-08-31 (D-CATUSR,
+      [`docs/spec-basic-catusr.md`](docs/spec-basic-catusr.md),
+      `scratchpad/catusr_probe.py`)** — a `USR` routine that INCREMENTS A BYTE
+      turns the question into a count:
+      | `PRINT "AB"+USR(0)` | vg8020 | cf3300 | zerobas |
+      |---|---|---|---|
+      | evaluations of the operand | 1 | 1 | **0** |
+      🔴 **BOTH HYPOTHESES WERE WRONG.** Mine (D-CATTM: "reachable and merely
+      outranked") is refuted — the operand is evaluated ZERO times. And this
+      entry's hazard ("would evaluate it TWICE") is refuted as stated: the
+      references evaluate it ONCE, so one evaluation is the CORRECT behaviour.
+      🔴 **AND THE EVALUATION COUNT IS ITSELF A PRE-EXISTING DIVERGENCE**, 0
+      against 1 — the error code was never the only symptom.
+      🔬 **THE FIX WAS BUILT AND REVERTED.** `call eval` before
+      `type_mismatch_set` in `sct_err2` makes EVERY error row agree (0/9 DIFF,
+      `"AB"+(0*(1/0)+1)` -> 11) **and takes the count to 2**. A second variant
+      that leaves `HL = R` exactly as the old `pop hl` did gives the same 2, so
+      the extra evaluation is NOT the cursor. A silent doubled side effect is
+      worse than a loud wrong error code (the Bug C ranking), so it does not
+      ship.
+      ➡️ **THE REMAINING QUESTION, AND IT IS NARROW:** what makes the numeric
+      re-drive SKIP the operand when the mismatch is armed with no prior
+      evaluation, but REACH it when an evaluation has already happened? Answer
+      that and the fix is a one-evaluation version of the above — every error row
+      is already known to land correctly.
       🤖 AUTONOMOUS — the references settle the behaviour; the separating row is
       named.
 
@@ -946,7 +965,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3838 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3857 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
