@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4054 (T-529ABE)`: a
+      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4082 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1089,7 +1089,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4054 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4082 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2342,8 +2342,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       every failure returned in 0.1 s, so no emulator ever started — the S1
       "pass --machine, there is no default" rule WORKING, not rot. Re-run with
       `ZEROBAS_BASIC_MACHINE` supplied. *A 0-second refusal is not contention.*
-      ⚠️ **`probes/tape/` (12) and `probes/lib/` (1) are still UNVERIFIED**, and
-      their reasons say so.
+      ✅ **AND THE LAST TWO GROUPS RAN (D-CASINSETTLE,
+      [`docs/spec-casin-settle.md`](docs/spec-casin-settle.md)): `probes/tape/`
+      (12) and `probes/lib/` (1) are VERIFIED.** Seven documented cassette facts
+      were RE-PROVED END TO END on the Philips VG-8020 — `STMOTR` (`$5A`→`$4A`,
+      delta `$10`), `TAPOON` (motor bit cleared), `TAPIOF`/`TAPOOF` (PPI-C
+      unchanged), `TAPOUT` (carry 0), `tapraw` (R14 half-periods ~4 on a `.cas`
+      vs ~14 on a 1200-baud WAV, a 3.5× against the encodings' 3.1×), and the
+      flagship `tapfile` two-block round-trip, header AND data byte-identical
+      from a fixture the probe MINTS ITSELF. `winwid_idle` and `cas_baud_oracle`
+      run bare and green; `probe_cart` is INFRASTRUCTURE, not a probe.
+      🔧 **AND ONE PROBE WAS SILENTLY WRONG:** `bios_probe_casin` printed BOTH
+      candidate lines static — the REFUTATION of its own recorded finding
+      ("PPI-B static, PSG R14 carries the FSK") — and exited 0. `tapraw`, on the
+      SAME WAV in the same sitting, read the signal, which convicted the probe
+      rather than the rig. Two hypotheses died first (settle too long; the
+      in-loop R14 re-latch); the cause was the settle being too SHORT — ~119 ms
+      against openMSX's ~0.5 s player start-up. Widened to ~0.9 s (23
+      transitions, 127/256 high) AND taught to return 2 when neither line moves,
+      so a null reading can never again be printed in the same calm voice as a
+      result. Scored RED on the old capture and GREEN on the fixed cart.
+      🔴 **THREE TIMES IN ONE SITTING A TABLE OF PLAUSIBLE EXIT CODES ANSWERED
+      A QUESTION NOBODY ASKED**: `rc=2` was "you forgot a flag", `rc=127` was
+      "`timeout(1)` is not on macOS", and `rc=0` in 0.1 s was "phase one of a
+      two-phase mint-then-boot probe succeeded". Only reading the OUTPUT
+      separated them.
+      ⚠️ **TWO TAPE PROBES REMAIN UN-RE-RUN, BOTH FOR NAMED REASONS**:
+      `bios_probe_tapread` asserts against a byte pattern only
+      `bios_probe_tapwrite` lays down (pairing the two carts is a job, not a
+      rot), and `bios_probe_realtape` needs an external tape corpus this repo
+      does not ship and refuses legibly saying so.
       🙋 **(b) IS STILL YOURS** — which of the 104 earn a battery slot is a
       runtime-budget call (one tape probe is ~4 min against a ~460 s battery).
       The measuring in front of it is DONE, and the 6 lean-cart ones are the

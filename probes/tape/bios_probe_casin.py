@@ -62,9 +62,20 @@ def build() -> bytes:
     c = Z.Cart()
     c.emit(Z.di())
     c.emit(Z.ld_a(1), Z.call(STMOTR))     # motor on -> inserted tape plays
-    # short settle so the player is definitely running
-    c.emit(Z.ld_bc(0x4000))
-    c.emit([0x0B, 0x78, 0xB1, 0x20, 0xFB])  # settle: DEC BC; LD A,B; OR C; JR NZ
+    # Settle so the player is definitely DELIVERING, not merely running.
+    # 🔴 THIS WAS 0x4000 (~119 ms) AND THAT IS TOO SHORT (D-CASINSETTLE,
+    # 2026-08-31). openMSX's cassette player needs roughly half an emulated
+    # second after motor-on before signal reaches the port, so the shipped
+    # window sampled the silence and the probe printed BOTH candidates static
+    # -- the refutation of its own documented finding -- and still exited 0.
+    # Measured on one WAV, one machine, in one sitting: 0x0100 static,
+    # 0x4000 static, 2x0xFFFF (~0.9 s) 23 transitions on R14. The GREEN
+    # CONTROL is bios_probe_tapraw.py, which never saw this because it blocks
+    # on edges instead of counting down, and read ~14-iteration half-periods
+    # off the very same WAV in the very same sitting.
+    for _ in range(2):
+        c.emit(Z.ld_bc(0xFFFF))
+        c.emit([0x0B, 0x78, 0xB1, 0x20, 0xFB])  # settle: DEC BC; LD A,B; OR C; JR NZ
     # candidate 1: PPI Port B ($A9) bit 7
     c.emit(_sample_loop(0xE000, Z.in_a(KBD_STAT)))
     # candidate 2: PSG R14 bit 7  (latch reg 14, read data port)
@@ -86,12 +97,28 @@ def analyze(path: str) -> int:
     if len(data) < 512:
         print(f"short capture: {len(data)} bytes", file=sys.stderr)
         return 2
+    live = 0
     for name, off in (("PPI Port B $A9 bit7", 0), ("PSG R14 bit7", 256)):
         bits = [(data[off + i] >> 7) & 1 for i in range(NSAMP)]
         trans = sum(1 for i in range(1, NSAMP) if bits[i] != bits[i - 1])
         ones = sum(bits)
-        verdict = "  <-- CARRIES SIGNAL" if trans > 8 else "  (static)"
+        carries = trans > 8
+        live += carries
+        verdict = "  <-- CARRIES SIGNAL" if carries else "  (static)"
         print(f"{name:24s}: {trans:3d} transitions, {ones:3d}/{NSAMP} high{verdict}")
+    # 🔴 A NULL READING IS AN APPARATUS FAILURE, NOT A FINDING. If NEITHER
+    # candidate moves, no signal reached the sampler at all: the tape is not
+    # inserted, the motor did not start, or -- the case that actually happened
+    # -- the settle window closed before the player began delivering. Printing
+    # "both static" and exiting 0 states the OPPOSITE of what this probe was
+    # written to establish, in the same calm voice as the real answer. Refuse.
+    if not live:
+        print("\n🔴 NEITHER candidate carries signal -- NOTHING WAS MEASURED.\n"
+              "   Check: a tape is inserted (--cassette), the motor starts, and\n"
+              "   the settle window outlasts the player's start-up (~0.5 s).\n"
+              "   Cross-check with bios_probe_tapraw.py, which blocks on edges.",
+              file=sys.stderr)
+        return 2
     return 0
 
 
