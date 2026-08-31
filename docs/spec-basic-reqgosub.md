@@ -50,8 +50,38 @@ live hypothesis was that the sites are unreachable — dead code, the D-DEADBODY
 shape. The always-raise cut refuted that in one run.
 
 ➡️ **What would see the finer cuts**: a row that ARMS a trap and then makes it
-FIRE (`ON STOP GOSUB` plus a Ctrl-STOP injection), which needs an input fixture
-this probe does not build. Named rather than left as a silent gap.
+FIRE.
+
+## 3b. 🔴 That fixture already existed, and one of the two cuts is now witnessed
+
+The sentence above said such a row "needs an input fixture this probe does not
+build". **True of this probe, and wrong about the tree**:
+`probes/basic/basic_probe_stop_trap.py` already presses Ctrl-STOP through
+openMSX's key matrix, and there are five trap probes beside it.
+
+Re-scored against it (`scratchpad/reqgosub_trapknives.py`):
+
+| cut | rows moved |
+|---|---|
+| **K-G1b** drop the `inc hl` | **all 8** — `A_on_fires`, `C_handler_baseline`, `D_interruptible`, `E_rearm_under_held_key_refires`, … |
+| K-G2b accept a missing GOSUB | 0 |
+
+The first is exactly the predicted failure: the handler is silently cleared, so
+the trap never fires — and a probe that makes it fire sees it immediately.
+
+🎯 **And the second is reached, not dead.** Replacing the branch's target with a
+*distinguishable* error (`ld a,5 / jp raise_error`) makes `ON STOP 100`,
+`ON KEY 100` and `ON STRIG 100` report **Illegal function call** — so the arm
+runs. `ret nz` moved nothing because **a downstream check reports the identical
+`Syntax error`**, which is the D-CVISTRTM shape: *a second check makes the first
+one's failure invisible to any row that reads only the message.*
+
+⚠️ `ON INTERVAL=100 100` stays `Overflow` under the diagnostic too — confirming
+from the machine what §2 predicted from its geometry: its rejection precedes the
+GOSUB check.
+
+**The lesson is about the filing, not the code: "no fixture exists" is a claim
+about the tree, and it deserved a `ls probes/` before it was written down.**
 
 ## 4. Two apparatus faults on the way
 

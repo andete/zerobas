@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:637 (T-6FE392)8 (T-529ABE)` from `TODO.md:3941 (T-529ABE)`: a
+      `TODO.md:649 (T-6FE392)8 (T-529ABE)` from `TODO.md:3953 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -337,8 +337,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the four `g.*` rows move, the three controls hold — which is the
       observable form of "every site was rewired" and refuted the live
       hypothesis that the sites were dead code.
-      ➡️ **OWED:** a row that ARMS a trap and makes it FIRE (`ON STOP GOSUB` plus
-      a Ctrl-STOP injection) would see the finer cuts. Named, not left silent.
+      ✅ **CLOSED SAME DAY (D-NGRAM18b) — AND MY "OWED" NOTE WAS WRONG ABOUT THE
+      TREE.** It said a firing row "needs an input fixture this probe does not
+      build"; `probes/basic/basic_probe_stop_trap.py` ALREADY presses Ctrl-STOP
+      through openMSX's key matrix, and five trap probes sit beside it. Scored
+      against it, dropping the `inc hl` moves **all 8** zb rows — the handler is
+      silently cleared so the trap never fires.
+      🎯 **AND THE OTHER BRANCH IS REACHED, NOT DEAD**: pointing it at a
+      DISTINGUISHABLE error makes `ON STOP/KEY/STRIG 100` report `Illegal
+      function call`, so the arm runs. `ret nz` moved nothing because a
+      DOWNSTREAM check reports the identical `Syntax error` — the D-CVISTRTM
+      shape. (`ON INTERVAL=100 100` stays `Overflow`, confirming from the machine
+      what its geometry predicted.)
+      ⚠️ **"No fixture exists" is a claim about the tree and deserved a
+      `ls probes/` before it was written down.**
       ➡️ **STILL OPEN, measured 2026-08-28:** an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
@@ -1049,7 +1061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3941 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3953 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
