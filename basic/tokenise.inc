@@ -286,16 +286,37 @@ tk_rem_rest:
                 inc     de
                 inc     hl
                 jr      tk_rem_rest
+; 🔴 D-DATACOLON (2026-08-31): the old loop ended the body at the FIRST ':'
+; with no quote state, under a comment claiming "no strings" -- while the READ
+; engine's own rows prove a comma inside quotes is content. Both references
+; treat a quoted ':' the same way: `DATA "A:B":C=7` is one item A:B and then
+; C=7 (measured 7/7), and an UNTERMINATED quote swallows the line
+; (`DATA "A:B:C=7` leaves C=0 on both). So the scan carries a quote flag in C:
+; '"' toggles it, ':' terminates only outside it, EOL terminates regardless.
+; C is free here -- tk_loop re-derives B from TKNAME and never touches C.
 tk_data_rest:                               ; DATA body verbatim up to ':' or EOL
-                ld      a,(hl)              ; (oracle: items stored as ASCII text;
-                or      a                   ;  ':' ends DATA, the next statement is
-                jp      z,tk_end            ;  crunched normally). Quoted ':' inside
-                cp      COLON               ;  DATA is not special-cased (no strings).
+                ld      c,0                 ; C = in-quote flag
+tkd_lp:
+                ld      a,(hl)              ; (oracle: items stored as ASCII text)
+                or      a
+                jp      z,tk_end
+                cp      '"'
+                jr      nz,tkd_nq
+                ld      a,c                 ; toggle quote mode; the quote itself
+                xor     1                   ; is body text and is copied below
+                ld      c,a
+                ld      a,'"'
+                jr      tkd_copy
+tkd_nq:
+                cp      COLON
+                jr      nz,tkd_copy
+                bit     0,c                 ; ':' ends DATA only OUTSIDE quotes
                 jp      z,tk_loop
+tkd_copy:
                 ld      (de),a
                 inc     de
                 inc     hl
-                jr      tk_data_rest
+                jr      tkd_lp
 tk_underscore:                              ; '_' (CALL abbreviation): copy it, then the
                 ; D-LNLIST R-L3, the second symbol that expands to a word token.
                 ; `20 IF A THEN _X(5)` stores `_X(<16>)` on both references, like

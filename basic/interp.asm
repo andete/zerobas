@@ -771,12 +771,27 @@ ex_rem:
                 ret                         ; rest of line is a comment -> done
 ex_data:                                    ; DATA is a no-op at run time: skip its
                 inc     hl                  ; verbatim body up to ':' or EOL, then
-exd_lp:                                     ; continue with the next statement.
+                ld      c,0                 ; continue with the next statement.
+                                            ; C = in-quote flag: D-DATACOLON, the
+                                            ; runtime twin of tk_data_rest's rule --
+                                            ; a quoted ':' is item content on both
+                                            ; references, not a separator
+exd_lp:
                 ld      a,(hl)
                 or      a
                 ret     z                   ; end of line
+                cp      '"'
+                jr      nz,exd_nq
+                ld      a,c
+                xor     1                   ; toggle quote mode
+                ld      c,a
+                jr      exd_step
+exd_nq:
                 cp      COLON
-                jp      z,exec_stmt         ; ':' -> next statement runs
+                jr      nz,exd_step
+                bit     0,c
+                jp      z,exec_stmt         ; unquoted ':' -> next statement runs
+exd_step:
                 inc     hl
                 jr      exd_lp
 ex_bload:

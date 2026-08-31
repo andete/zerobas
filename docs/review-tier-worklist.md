@@ -16,8 +16,12 @@ the crude signal refined by which arc/gate actually exercises the file:
   surface (`PRINT PEEK`) was pinned by the I1 differential. `intarg-acceptance`
   gates it per battery. 🎯 The tier's first no-finding: recorded WITH the
   refuting table so nobody re-walks this on the same suspicion.
-- ex_data + ex_restore        DATA pointer lifecycle (program.asm). READ has
-  rows; RESTORE <line> edge cases (undefined line, after merge) unknown.
+- ✅ ex_data + ex_restore — **REVIEWED 2026-08-31, THREE REAL DEFECTS**
+  (D-DATACOLON, [`spec-basic-datacolon.md`](spec-basic-datacolon.md)): the DATA
+  body scan had no quote state at BOTH sites (crunch + runtime skip), bare
+  RESTORE's `ret` ended the whole line (`RESTORE:C=9` skipped `C=9`), and junk
+  after RESTORE was silence where the references raise ERR 8. 6 DIFF -> 0 on
+  7 rows x 3 machines. The reverse of the trio's no-finding.
 - ex_deftype (usr.asm)        DEFINT/SNG/DBL/STR letter-range parse.
 - ex_time_assign + TIME       time.asm; interval-trap acceptance touches TIME
   only as a counter.

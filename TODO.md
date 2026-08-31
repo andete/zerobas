@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:791 (T-6FE392)8 (T-529ABE)` from `TODO.md:4205 (T-529ABE)`: a
+      `TODO.md:803 (T-6FE392)8 (T-529ABE)` from `TODO.md:4217 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -619,6 +619,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — kwsweep's keyword list is the denominator; work through
       it verb by verb, cheapest-context verbs first, and file what each review
       measures.
+
+- [x] ✅ **D-DATACOLON (2026-08-31): three DATA/RESTORE defects from one
+      review read** ([`docs/spec-basic-datacolon.md`](docs/spec-basic-datacolon.md),
+      `scratchpad/datacolon_probe.py`, 7 rows x 3 machines, 6 DIFF -> 0). The
+      DATA body scan had NO QUOTE STATE at both sites (crunch `tk_data_rest` +
+      runtime `ex_data`), so `DATA "A:B"` split at the quoted colon and
+      executed the string tail as code; bare `RESTORE`'s `ret` ended the WHOLE
+      LINE (the dispatcher enters handlers by push/ret), so `RESTORE:C=9`
+      skipped `C=9`; and `RESTORE X` was silence where both references raise
+      ERR 8 (RESTORE-to-nothing). An unterminated quote swallows the line on
+      both references — the row that decided the flag's EOL rule. Second verb
+      group off the review tier; the reverse of the trio's no-finding.
 
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
@@ -1212,7 +1224,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4205 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4217 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

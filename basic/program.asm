@@ -2013,11 +2013,30 @@ ex_restore:
                 call    skip_spaces
                 cp      LINENO_TOKEN        ; $0E,<lineno LE> -> restore to a line
                 jr      z,ers_line
-                ld      hl,TXTBASE          ; bare RESTORE -> program start
+                ; D-DATACOLON: this arm used to be an unconditional `ret` under
+                ; "nothing else on a bare RESTORE word" -- and the dispatcher
+                ; enters handlers by push/ret, so that `ret` ended the whole
+                ; LINE: `RESTORE:C=9` left C unset (refs 9, here 0), and
+                ; `READ A:RESTORE:READ B` never read B (refs 2, here 1). The
+                ; bare arm now falls back into the statement loop; junk after
+                ; the word (`RESTORE X`) is RESTORE-to-nothing on both
+                ; references -- ERR 8, not ERR 2 and not silence -- so it takes
+                ; the line path with BC=0 and fails the lookup there.
+                or      a
+                jr      z,ers_bare          ; end of line
+                cp      COLON
+                jr      z,ers_bare          ; ':' -> the next statement runs
+                ld      bc,0                ; junk -> RESTORE to line 0: undefined
+                push    hl                  ; (unless a line 0 exists, as on the
+                jr      ers_find            ; references)
+ers_bare:
+                push    hl                  ; keep the exec cursor -- the old code
+                ld      hl,TXTBASE          ; clobbered HL because it never came back
                 ld      (RESTORE_LINE),hl
                 xor     a
                 ld      (DATASTATE),a
-                ret                         ; nothing else on a bare RESTORE word
+                pop     hl
+                jp      exec_stmt
 ers_line:
                 inc     hl
                 ld      c,(hl)              ; target line number, LE
@@ -2025,6 +2044,7 @@ ers_line:
                 ld      b,(hl)
                 inc     hl                  ; HL past the $0E operand (exec cursor)
                 push    hl
+ers_find:
                 call    find_line_bc        ; CF set + HL = line link-field
                 jr      nc,ers_undef
                 ld      (RESTORE_LINE),hl
