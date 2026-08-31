@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:601 (T-6FE392)8 (T-529ABE)` from `TODO.md:3887 (T-529ABE)`: a
+      `TODO.md:617 (T-6FE392)8 (T-529ABE)` from `TODO.md:3921 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -303,6 +303,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       one frame deeper (the D-NGRAM8 shape). Both of that tail's exits RAISE and
       never return, so it cannot bite — and three `n.*` rows drive a non-string
       filename through three of the four verbs to say so.
+      ✅ **ALSO SHIPPED 2026-08-31: `req_comma`** (D-NGRAM17,
+      [`docs/spec-basic-reqcomma.md`](docs/spec-basic-reqcomma.md)) — the
+      MANDATORY-comma run at FIELD, INPUT#, SWAP and SOUND. **Low region read
+      121 -> 127 B free and page 1 349 -> 357 on 2026-08-31** (a READING; run
+      `make basic-reloc`). 12 rows, 2 knives + S1, 48/48.
+      📏 **THE DENOMINATOR IS 72 `cp ','` SITES**, grouped at instruction level
+      by WHERE THEY JUMP: 4 to `stmt_error` (required — these), 3 to `exec_stmt`
+      (an optional comma that ends the statement), the rest two-site groups with
+      their own local labels. Only a shared DESTINATION can share a body.
+      🔴 **AND THE KNIVES FOUND FOUR ROWS THAT CANNOT REACH THEIR SITE**: I
+      predicted 5 and 4, and 4 and 2 moved. `g.sound` read the NEXT LINE's PRINT
+      (fixed — joined with `:`, and the knife then moves it); `g.field` reads
+      after a CLOSE (the divergence above); `b.field` raises Bad file number
+      first; and `b.swap` never presents a missing comma at all, because the
+      crunch folds `A B` into the variable `AB` — measured by `x.spacename`, not
+      guessed.
       ➡️ **STILL OPEN, measured 2026-08-28:** an `inc hl` +
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
@@ -673,6 +689,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `<nothing>` — which one more row (a resident program) separated from
       "refused quietly".
 
+- [ ] 📌 **`CLOSE` EMPTIES A FIELDED VARIABLE HERE AND DOES NOT ON THE
+      REFERENCE.** Found 2026-08-31 by D-NGRAM17,
+      [`docs/spec-basic-reqcomma.md`](docs/spec-basic-reqcomma.md) §5, rows
+      `g.field` / `g.field2` in `scratchpad/reqcomma_probe.py`.
+      | | CF-3300 | zerobas |
+      |---|---|---|
+      | `FIELD#1,10 AS A$` -> `LEN(A$)` | 10 | 10 ✅ |
+      | ...then `CLOSE#1` -> `LEN(A$)` | **10** | **0** |
+      🎯 **READING BEFORE THE `CLOSE` AGREES, so `FIELD` is right** — it is
+      `CLOSE` that resets the descriptor. The reference leaves it pointing into
+      the released buffer.
+      ⚠️ Pre-existing (identical before and after that carve); NO PRIOR
+      ADJUDICATION FOUND (checked, after D-EXPNEG).
+      🙋 NEEDS-JOOST — matching the reference means keeping a deliberately
+      DANGLING descriptor after CLOSE. That is a judgement about what this
+      implementation is willing to leave pointing at a freed buffer, not a
+      measurement. The measuring in front of it is DONE.
+
 - [ ] 🔴 **THE CONCATENATION DIVERGENCE IS ONE ROW, NOT TWO:
       `"AB"+(0*(1/0)+1)` READS ERR 13 WHERE BOTH REFERENCES SAY 11.**
       Filed 2026-08-29 by D-STRTM §4; **re-measured 2026-08-31 by D-CATTM**
@@ -995,7 +1029,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3887 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3921 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -387,10 +387,7 @@ ex_swap:
                 ld      (SW_ADDR1),de       ; nested eval() and keeps nothing in registers
                 ld      a,(SW_TYPE)
                 ld      (SW_TYPE1),a
-                call    skip_spaces
-                cp      ','
-                jp      nz,stmt_error       ; `SWAP` / `SWAP A` -> Syntax error
-                inc     hl
+                call    req_comma           ; D-NGRAM17
                 call    req_letter          ; D-NGRAM: operand 2 is not a name -> Syntax error
                                             ; (see the header: this must be tested at
                                             ; THIS depth, not inside sw_operand)

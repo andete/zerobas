@@ -971,10 +971,7 @@ inp_cas:
                 ld      de,cas_in_getbyte   ; CAS: input channel -> tape block source
                 ld      (ARL_GETBYTE),de
 inp_readvar:
-                call    skip_spaces
-                cp      ','
-                jp      nz,stmt_error
-                inc     hl
+                call    req_comma           ; D-NGRAM17
                 call    req_letter          ; D-NGRAM: a string variable name must follow
                 call    str_target_parse    ; string-var target: type-check, parse,
                                             ; raise -- D-NGRAM9

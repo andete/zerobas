@@ -55,10 +55,7 @@ ex_sound:
                 cp      14                  ; registers 0..13 are the writable PSG set;
                 jp      nc,snd_illegal      ; 14..255 -> Illegal function call (ERR5)
                 ld      c,a                 ; C = register number (kept across the value eval)
-                call    skip_spaces
-                cp      ','                 ; comma required between register and value
-                jp      nz,stmt_error
-                inc     hl
+                call    req_comma           ; D-NGRAM17
                 call    eval                ; DE = value (silent flt_to_int16)
                 call    get_byte_arg        ; A = value 0..255 (ERR6 >int16, ERR5 >255/neg)
                 ld      b,a                 ; B = value byte to write

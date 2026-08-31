@@ -285,10 +285,7 @@ exf_havech:
                 ld      (FLD_CUROFF),a
                 ld      (FLD_CUROFF+1),a
                 ; a comma separates the channel from the field list: FIELD #f , w AS v$
-                call    skip_spaces
-                cp      ','
-                jp      nz,stmt_error
-                inc     hl
+                call    req_comma           ; D-NGRAM17
 exf_item:
                 ; D-FLDWIDTH (docs/spec-basic-fldwidth.md): THE WIDTH IS A BYTE
                 ; ARGUMENT, and it is the ordinary two-stage one every other

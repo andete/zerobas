@@ -213,6 +213,32 @@ req_letter:
                 ret     c                   ; a letter: hand it back untouched
                 jp      stmt_error          ; not a letter: the statement aborts
 
+; --- req_comma: the argument separator this statement REQUIRES ---------------
+; D-NGRAM17. `call skip_spaces / cp ',' / jp nz,stmt_error / inc hl` -- *a comma
+; belongs here* -- stood open-coded at four sites, one per verb: FIELD
+; (exf_havech), INPUT# (inp_readvar), SWAP (ex_swap) and SOUND (ex_sound).
+; 9 B each.
+;
+; 🔴 THE FAMILY IS BIGGER THAN THE COLLAPSIBLE SET, and the difference is WHERE
+; THEY JUMP. `basic/` has 72 `cp ','` sites; enumerated at instruction level they
+; group by destination -- 4 to `stmt_error` (the comma is REQUIRED: these), 3 to
+; `exec_stmt` (an OPTIONAL comma that simply ends the statement) and a tail of
+; two-site groups each branching to its own local label. Only a shared
+; DESTINATION can share a body; a caller's own decline target is what keeps it at
+; the call site (the D-NGRAM11 rule).
+;
+; ⚠️ The extra return address costs nothing on the failing path: `stmt_error`
+; never returns and both its arms reset SP -- the same fact `req_letter` above
+; rests on. On the succeeding path the `inc hl` is INSIDE the helper, so the
+; comma is consumed exactly once; `g.*` rows read the argument AFTER it to say so
+; (scratchpad/reqcomma_probe.py).
+req_comma:
+                call    skip_spaces
+                cp      ','
+                jp      nz,stmt_error       ; no comma: the statement aborts
+                inc     hl                  ; consume it
+                ret
+
 ; --- str_eval_next: step past the delimiter and evaluate the string ---------
 ; (D-NGRAM11.) `inc hl / call skip_spaces / call str_eval` stood open-coded at
 ; SIX sites -- the RHS of LET A$(i)= (arrays.asm), LSET/RSET (field.asm), LET A$=
