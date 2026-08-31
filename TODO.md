@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4029 (T-529ABE)`: a
+      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4038 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -753,10 +753,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the released buffer.
       ⚠️ Pre-existing (identical before and after that carve); NO PRIOR
       ADJUDICATION FOUND (checked, after D-EXPNEG).
-      🙋 NEEDS-JOOST — matching the reference means keeping a deliberately
-      DANGLING descriptor after CLOSE. That is a judgement about what this
-      implementation is willing to leave pointing at a freed buffer, not a
-      measurement. The measuring in front of it is DONE.
+      ✅ **MEASURED 2026-08-31 (D-FLDCLOSE,
+      [`docs/spec-basic-fldclose.md`](docs/spec-basic-fldclose.md)) — Joost asked
+      what the dangling one actually DOES before deciding, and it is the more
+      dangerous of the two possibilities: THE REFERENCE'S DESCRIPTOR IS LIVE, not
+      a stale copy.** After `CLOSE`, `A$` survives 8 string allocations intact
+      (the FIELD buffer is not in the string heap) — but re-opening a channel and
+      `FIELD`ing it makes `A$` read `ZZZZZZZZZZ`, the NEW field's content. A
+      later FIELD silently rebinds it.
+      ⚠️ **NEITHER CHOICE IS SAFE.** Matching the reference fixes the COMMON
+      idiom (read a record, close, use the value) and buys a silent alias in a
+      narrow one. Keeping today's reset guarantees a wrong value in the common
+      case and never dangles.
+      🙋 NEEDS-JOOST — still a judgement, but now against the real behaviour.
 
 - [ ] 🔴 **THE CONCATENATION DIVERGENCE IS ONE ROW, NOT TWO:
       `"AB"+(0*(1/0)+1)` READS ERR 13 WHERE BOTH REFERENCES SAY 11.**
@@ -1080,7 +1089,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4029 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4038 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
