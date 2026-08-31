@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:525 (T-6FE392)8 (T-529ABE)` from `TODO.md:3756 (T-529ABE)`: a
+      `TODO.md:529 (T-6FE392)8 (T-529ABE)` from `TODO.md:3760 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -318,10 +318,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       was held and one always was, the idle one. New `S6` names
       `PreventSystemSleep`; re-planting the old flags makes S6 red while S1 stays
       green.
-      ➡️ **OWED: nothing is known-bad, but nothing from that window is
-      known-good either.** The D-NGRAM14 and D-CLOSALIAS knife scores were taken
-      in it; both have since been re-run or are re-run below. Re-run anything
-      else that was scored in that window before building on it.
+      ✅ **RE-VERIFIED 2026-08-31 ON AN AWAKE MACHINE**: the D-NGRAM14 arms
+      re-run identically (S1 green, K-N14A moves exactly `r.atn r.round2 x.m100
+      x.p100`), and D-CLOSALIAS's red/green plant was taken after the fix. The
+      D-NGRAM12/13, D-TRUNCLOAD and D-DEADBODY batteries all walled at 449-476 s,
+      which is the AWAKE wall -- a slept-through run walls at 3861 s, so the wall
+      itself dates them outside the window.
+      ➡️ **STILL OWED:** re-run anything ELSE scored in that window before
+      building on it. **The wall time is the cheap discriminator.**
       🤖 AUTONOMOUS — a re-run settles each one.
 
 - [ ] ⚠️ **`subrom-closure-check` CLASSIFIES A SUB-LOCAL `equ` ALIAS AS A
@@ -864,7 +868,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:3756 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:3760 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
