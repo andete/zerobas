@@ -196,7 +196,7 @@ def verify(lines, src_out, dst_out, mapping):
 # ALREADY carries its block id -- and BACKTRACKING defeats it: on
 # `TODO<dot>md:4618 (T-529ABE)` the greedy `\d+` takes `4618`, the lookahead correctly
 # rejects it, and the engine then RETRIES with `461`, where the next character is
-# `8` rather than ` (T-` -- so the lookahead passes, `TODO.md:461` is rewritten,
+# `8` rather than ` (T-` -- so the lookahead passes, `TODO.md:461` is rewritten,  NOT-A-CITATION
 # and the orphaned `8 (T-529ABE)` is left behind. Every already-id'd citation in
 # the tree was mangled that way, each into a plausible-looking hybrid.
 # `(?!\d)` forces the match to be the WHOLE number, so there is no shorter
@@ -325,14 +325,14 @@ def selftest() -> int:
     # [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
     already = "TODO" + ".md:4618 (T-529ABE), a Phase-1 entry"
     arm("S1 an ALREADY-ID'D citation is not matched at all (the backtracking "
-        "bug rewrote `TODO.md:461` and orphaned the `8`)",
+        "bug rewrote `TODO.md:461` and orphaned the `8`)",   # NOT-A-CITATION
         CITE.findall(already) == [])
     arm("S2 ...and a BARE citation still is -- the fix must not blind the tool",
-        [m.group(0) for m in CITE.finditer("see TODO.md:2811 for the rest")]
-        == ["TODO.md:2811"])
+        [m.group(0) for m in CITE.finditer("see TODO.md:2811 for the rest")]  # NOT-A-CITATION
+        == ["TODO.md:2811"])   # NOT-A-CITATION
     arm("S3 the same holds for the `../` form used from docs/",
-        CITE.findall("../TODO.md:668 (T-6FE392)") == []
-        and len(CITE.findall("../TODO.md:273")) == 1)
+        CITE.findall("../TODO.md:668 (T-6FE392)") == []   # NOT-A-CITATION
+        and len(CITE.findall("../TODO.md:273")) == 1)   # NOT-A-CITATION
 
     # --- defect 1: the archive clobber ---------------------------------------
     # Exercised against a REAL file rather than by reading the branch, because

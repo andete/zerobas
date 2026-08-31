@@ -57,12 +57,17 @@ add('ctl.arr',   ['DIM A(3)', 'A(1)=7'], 'A(1)')
 # DISAGREE WITH EACH OTHER on `g.cvi`, and a row with two different right answers
 # is not evidence about this tree either way. zerobas targets the disk machine
 # and matches it (16961).
-# ⚠️ `b.cvi` is NOT in here: there the two references disagree too, but zerobas
-# ALSO disagrees with the CF-3300 -- `CVI(5)` reads Type mismatch on the disk
-# reference and Syntax error here. That is a real divergence (the D-LEFTTM class:
-# the argument parse rejects before the type check), pre-existing, filed in
-# TODO.md, and NOT this slice's to fix.
-NO_ORACLE = {'g.cvi'}
+# 🔴 `b.cvi` WAS NOT IN HERE, AND THE REASON IT WAS LEFT OUT HAS SINCE BEEN
+# FIXED. When this probe was written `CVI(5)` read `Syntax error` here against
+# `Type mismatch` on the CF-3300, so the row carried a real divergence on top of
+# its missing oracle and was scored. D-CVITM (`fef3d69`) fixed that THE SAME DAY
+# -- measured 2026-08-31 with the refcache OFF, both the CF-3300 and this tree
+# answer `ERR 13`. What is left is ONLY the structural problem `g.cvi` already
+# has: `CVI` is a Disk BASIC verb, the cassette-only VG-8020 answers
+# `Illegal function call` (`ERR 5`) to every form, and a row whose two references
+# disagree is not evidence about this tree either way. Scoring it DIFF said this
+# tree was wrong when it AGREES WITH THE ONLY REFERENCE THAT CAN ARBITRATE.
+NO_ORACLE = {'g.cvi', 'b.cvi'}
 
 D.CASES.update(CASES)
 sides = (sys.argv[1] if len(sys.argv) > 1 else "vg8020,cf3300,zb").split(",")

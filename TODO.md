@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:668 (T-6FE392)8 (T-529ABE)` from `TODO.md:4082 (T-529ABE)`: a
+      `TODO.md:703 (T-6FE392)8 (T-529ABE)` from `TODO.md:4117 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -482,6 +482,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       moving ZERO rows — `eval` meets the `)` and raises the syntax error itself.
       Test and knife both deleted, 5 B back, so the whole correction is +1 B.
       ⚠️ Original filing follows.
+- [x] ✅ **CLOSED 2026-08-31 (D-FILEDROT) — ALREADY FIXED WHEN IT WAS FILED.**
+      `CVI(5)` reads **`ERR 13` on the CF-3300 AND here**, re-measured with the
+      refcache OFF. **`fef3d69` (D-CVITM) fixed it the same day this entry was
+      written**, and D-CVITM found a THIRD wrong disposition (`CVI("A")`) while
+      it was in there — see
+      [`docs/spec-basic-cvitm.md`](docs/spec-basic-cvitm.md).
+      🔴 **AND THE ROW WENT ON READING `DIFF` AFTERWARDS, FOR A DIFFERENT
+      REASON.** `scratchpad/ngram15_probe.py` scored `b.cvi` against BOTH
+      references, and the VG-8020 answers `Illegal function call` to every `CVI`
+      — the exact structural problem for which `g.cvi` was already excluded. So
+      the row said this tree was wrong while it AGREED WITH THE ONLY REFERENCE
+      THAT CAN ARBITRATE. `b.cvi` joins `g.cvi` in `NO_ORACLE`; the probe is now
+      0/12 DIFF. **A stale entry and a mis-scored row kept each other alive.**
+      ⚠️ Original filing follows.
 - [ ] 📌 **`CVI(5)` READS `Syntax error` HERE AND `Type mismatch` ON THE
       CF-3300.** Found 2026-08-31 by D-NGRAM15,
       [`docs/spec-basic-ngram15.md`](docs/spec-basic-ngram15.md) §6, row `b.cvi`
@@ -496,6 +510,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ The VG-8020 cannot arbitrate: `CVI` is a Disk BASIC verb and it answers
       `Illegal function call` to every form. The CF-3300 is the only oracle.
       🤖 AUTONOMOUS — the disk reference settles it; the row exists.
+
+- [ ] 🔴 **SEVEN FILED PROBES PRINT DIVERGENCES AND EXIT 0.** Measured
+      2026-08-31 by D-FILEDROT,
+      [`docs/spec-filed-row-rot.md`](docs/spec-filed-row-rot.md), instrument
+      `scratchpad/filed_row_sweep.py` — every open TODO item's cited row set,
+      re-run serially with the refcache OFF. **THE DENOMINATOR: 18 probes — 14
+      diverge, 7 of those INVISIBLE to any rc-only collector, 2 clean, 2 with no
+      verdict channel at all.**
+      The seven: `deffn_alias_probe`, `keystr_probe`, `ntwall_probe`,
+      `onerrarm_probe`, `open2_probe`, `playfn_fixture_probe`, `trapsvc_probe`.
+      Several are divergences we have DECIDED not to fix (`keystr` is the
+      NOT-THIS-ONE `KEY n,"str"` item, ~160 B), so the fix is NOT "make them
+      exit 1" — a deliberate non-fix must still be VISIBLE, and a probe cannot
+      tell the two apart. What is owed is a convention that separates *measured
+      and known* from *measured and unnoticed*.
+      🔴 **AND THERE IS NO VERDICT CONTRACT TO BUILD ON**: the 18 probes use
+      **eight** output shapes and two rc conventions. The sweep reads markers
+      and rc as INDEPENDENT channels for exactly that reason, and refuses to
+      call anything clean when they disagree.
+      🤖 AUTONOMOUS — the sweep settles the denominator; the convention is a
+      design call inside this tree.
 
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
@@ -1089,7 +1124,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4082 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4117 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

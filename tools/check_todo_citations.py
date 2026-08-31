@@ -46,6 +46,20 @@ CITE = re.compile(r"(?<![-\w])((?:\.\./)?TODO(?:-done)?\.md):(\d+)"
                   r"(?:\s*\((T-[0-9A-F]{6}(?:\.\d+)?)\))?")
 SCAN_EXT = (".md", ".py", ".asm", ".inc")
 
+# 🔴 A SYNTHETIC TEST VECTOR IS NOT A CITATION, AND --fix REWROTE ONE
+# (2026-08-31, D-FILEDROT). `tools/split_todo_archive.py`'s own self-test feeds
+# its regex the string `../TODO.md:668 (T-6FE392)` and asserts the `../` form is   NOT-A-CITATION
+# NOT matched. This check read that STRING LITERAL as a live citation and
+# re-anchored 668 -> 703. The assertion survived (it asserts `== []`, so any
+# number passes) -- which is exactly why nobody would have noticed: the vector's
+# MEANING was corrupted while every test stayed green, and the rewrite recurred
+# on every TODO.md edit, churning a tool file and forcing the emulator tier to
+# re-run for nothing.
+# This file's header already names the hazard for ITS OWN literals; the marker
+# generalises that to any file. Same shape as audit_citations.py's `_DUMP_VEC`,
+# whose invented bytes are recorded rather than worked around.
+NOCITE = "NOT-A-CITATION"
+
 
 def tracked():
     out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True,
@@ -107,6 +121,8 @@ def scan(files, root=ROOT):
         if "TODO" not in text:
             continue
         for n, src in enumerate(text.splitlines(), 1):
+            if NOCITE in src:       # a synthetic vector, not a reference
+                continue
             for m in CITE.finditer(src):
                 spelled, line, bid = m.group(1), int(m.group(2)), m.group(3)
                 tgt = resolve(rel, spelled)
@@ -249,8 +265,32 @@ def selftest():
               f"({r[0][5] if r else 'citation not found'}). The check cannot "
               f"detect the thing it exists to detect.")
         return 2
+    # --- S-NOCITE: the opt-out marker suppresses, and ONLY when present ------
+    # 🔬 The same red/green discipline: an exemption that never fires is not an
+    # exemption, and one that fires unconditionally is a hole. Both directions
+    # are checked on the SAME line of the SAME file.
+    txt = open(p).read().splitlines(keepends=True)
+    txt[lineno - 1] = txt[lineno - 1].replace(f"{spelled}:{line + 400}",
+                                              f"{spelled}:{line}")
+    open(p, "w").writelines(txt)
+    _CACHE.clear()
+    before = [f for f in scan([rel], root=tmp) if f[1] == lineno]
+    txt[lineno - 1] = txt[lineno - 1].rstrip("\n") + f"  {NOCITE}\n"
+    open(p, "w").writelines(txt)
+    _CACHE.clear()
+    after = [f for f in scan([rel], root=tmp) if f[1] == lineno]
+    _CACHE.clear()
+    if not before:
+        print("SELFTEST rc 2: the un-marked control found NO citation, so the "
+              "marker arm below would pass on an empty set.")
+        return 2
+    if after:
+        print(f"SELFTEST rc 2: {NOCITE} did NOT suppress the citation on "
+              f"{rel}:{lineno} -- the opt-out does not work.")
+        return 2
     print(f"selftest: GREEN control passes and a planted drift goes RED "
-          f"on {rel}:{lineno} ({bid}) ✅")
+          f"on {rel}:{lineno} ({bid}); {NOCITE} suppresses "
+          f"{len(before)} citation(s) there and nothing else ✅")
     return 0
 
 
