@@ -32,14 +32,22 @@ the crude signal refined by which arc/gate actually exercises the file:
   2026-08-31): `spec-basic-time.md` exists with a 45/45 characterization; the
   stem-match missed it because the handler is `ex_time_assign`. The body is
   exemplary — torn-store DI guard, site-local ERR 24, adjudicated domain.
-- ex_call_us (format.asm)     CALL statement surface.
+- ⚠️ ex_call / ex_call_us — **REVIEWED 2026-08-31, ONE SUSPICION FILED (TODO,
+  unmeasured)**: `exc_skip` swallows everything to ':'/EOL after matching
+  "FORMAT", so `CALL FORMATFOO` and `CALL FORMAT anything` both format here —
+  and the skip is quote-blind (the D-DATACOLON class). Rows need the
+  interactive-format rig (the CF-3300's CALL FORMAT prompts), so they are
+  sketched in the TODO item rather than run tonight.
 - ex_key_stmt (program.asm)   KEY n,"s" is NOT-THIS-ONE (blocked ~160 B), but
   KEY LIST / KEY ON/OFF mechanism unreviewed.
 - ✅ ex_motor — **REVIEWED 2026-08-31, NO FINDING**: measured to its corners
   already (spec §3.5 — `MOTOR STOP` is ERR 2 with a do-not-harmonise warning,
   bare-MOTOR toggles only at a statement boundary).
-- ex_locate (missing.asm)     D-LOCATE fixed one arg-shape bug; full review
-  pending.
+- ✅ ex_locate — **REVIEWED 2026-08-31, NO FINDING**: the surface is already
+  measured to an unusual depth — screen-dumped domain-error ORDERING (parse
+  all three then apply, corrected against the spec's own first reading), the
+  ERR-24 missing-operand family, the fourth-argument row, and the O-3
+  cursor-argument deviation recorded as such.
 - ex_auto, ex_renum           line-editor verbs, LARGE; lineedit rows exist
   but no mechanism review.
 
