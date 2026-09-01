@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:829 (T-6FE392)8 (T-529ABE)` from `TODO.md:4269 (T-529ABE)`: a
+      `TODO.md:835 (T-6FE392)8 (T-529ABE)` from `TODO.md:4275 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -393,12 +393,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       LINK-WORD read, which prints the IDENTICAL message — so the two rows that
       read only the MESSAGE cannot move. Only the rows that read the resulting
       PROGRAM see it.
-      ➡️ **ALSO OPEN, opened 2026-08-30 by D-NGRAM12:** the *class* behind
-      `load-short`. A load/save row whose fixture writes a file and reads it
-      back into the SAME machine state is blind to anything the load fails to
-      overwrite. `runtail` is fixed; **nothing has counted how many other
-      fixtures have that shape** (`castail`, `bload`, `fat-*`, `merge`).
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
+      ✅ **AND THE CLASS IS NOW COUNTED (2026-09-01, D-LOADSHAPE,
+      `scratchpad/loadshape_audit.py` — the audit's answer is in its header):
+      denominator 9, fully blind 0, partial 1.** Four candidates are genuinely
+      guarded (NEW / POKE witnesses); four of the finder's own flags were FALSE
+      POSITIVES (token vectors, error-surface rows, a VPOKE-sentinel the regex
+      missed); ONE is partial — `disk_probe_save_ascii` witnesses only the
+      corrupted line's restoration — adjudicated as covered because a partial
+      load is a REFUSAL on this tree (D-TRUNCLOAD's measured EOF arms), so the
+      silent-partial shape cannot occur without truncload's rows going red
+      first. 🔴 **The four names the filing guessed (`castail`, `bload`,
+      `fat-*`, `merge`) are not in the class at all** — their loads come from
+      minted fixtures, not a same-boot save. The fear outran its instances.
 
 - [ ] 📌 **ANY BATTERY OR KNIFE SCORE TAKEN 2026-08-30 EVENING .. 2026-08-31
       04:30 IS SUSPECT — THE HOST WAS ASLEEP UNDER IT.** Found 2026-08-31 by
@@ -1276,7 +1282,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4269 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4275 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
