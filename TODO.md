@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4665 (T-529ABE)`: a
+      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4686 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -978,7 +978,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       external oracle — which is why this is now 🙋 and not 🤖.
       🙋 **NEEDS-JOOST** — a refactor of the string heap's ownership rules.
 
-- [ ] 🙋 **THE MISSING-OPERAND HALF: `5+` READS ERR 24 WHERE BOTH REFERENCES SAY
+- [x] 🟢 **THE MISSING-OPERAND HALF: `5+` READS ERR 24 WHERE BOTH REFERENCES SAY
       ERR 2 — ENUMERATED 2026-08-29, AND THE PRICE IS THE REASON IT IS NOW 🙋**
       ([`docs/spec-basic-numstr.md`](docs/spec-basic-numstr.md) §4.1).
       📏 **THE ENUMERATION IS RUN, NOT READ.** Planting `ld e,4` at
@@ -998,6 +998,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rule that took a whole slice to establish back in motion. **That is a
       judgement about what a scarce page is for, not a measurement**, so it is
       🙋 rather than 🤖. The measuring in front of the decision is DONE.
+      ✅ **CLOSED 2026-09-01 BY D-MISSOPBOUND, AT ZERO EXTRA COST — THE DECISION
+      EVAPORATED RATHER THAN BEING MADE.** Re-measured, 7 trailing-operator
+      shapes, all three machines: **0 DIFF.**
+      | typed | all three |
+      |---|---|
+      | `X=5+` · `PRINT 5+` · `X=5+:PRINT 1` · `X=5+6+` | ERR 24 |
+      | `X=(5+)` · `IF 5+ THEN Z=1` · `X=ABS(5+)` | ERR 2 |
+      🎯 **THE DIVERGENT ROWS WERE THE ONES WHERE SOMETHING FOLLOWS THE
+      OPERATOR** — `)`, `THEN` — which is exactly the boundary D-MISSOPBOUND
+      implemented. The truly EMPTY slots (`5+` at end of statement) read 24 on
+      the references too and were never divergent.
+      💰 **SO THE ~18 B TRADE IS MOOT**, and the six "dependent" statement slots
+      the enumeration worried about kept their 24 for free: the fix is
+      conditional on something being PRESENT, and end-of-statement is untouched
+      (`missing-acceptance` green).
+      🔴 **AND THE FILED ROW WAS CONTEXT-BLIND.** `docs/spec-basic-numstr.md`
+      §4.1 lists `5+` *(expression-internal)* as "references 2, zerobas 24" with
+      no following token shown; the answer depends entirely on what follows, and
+      the bare form agrees. **When a divergence is filed, record the WHOLE typed
+      line** — that file's own §2 already warns about a claim written before it
+      was run [[a-justification-parenthesis-is-an-unrun-claim]].
       🙋 **NEEDS-JOOST** — spend ~18 B and reopen D-MISSOP's rule, or leave it.
 
 - [x] ✅ **`RUN <argument>` IGNORED ITS ARGUMENT AND RAN THE RESIDENT PROGRAM —
@@ -1395,7 +1416,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4665 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4686 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
