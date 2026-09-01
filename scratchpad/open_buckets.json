@@ -29,11 +29,6 @@
   "signal": "page-1 budget",
   "matched": "carve"
  },
- "T-EECF2E": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
-  "signal": "retire / delete",
-  "matched": "DELETE"
- },
  "T-41A782": {
   "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "page-1 budget, but unpriced/unmeasured first",
@@ -118,16 +113,6 @@
   "bucket": "\u26d4 BLOCKED",
   "signal": "needs an idle host",
   "matched": "wall time"
- },
- "T-245997": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
- "T-99F14B": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
-  "signal": "charter / scope",
-  "matched": "CHARTER"
  },
  "T-D20535": {
   "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
@@ -383,6 +368,11 @@
   "bucket": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "refactor, no oracle",
   "matched": "namespaces"
+ },
+ "T-C17B7B": {
+  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "signal": "charter / scope",
+  "matched": "charter"
  },
  "T-1CA9F7": {
   "bucket": "\ud83e\udd16 AUTONOMOUS",

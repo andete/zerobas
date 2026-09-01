@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4686 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4748 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -802,7 +802,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       range-reduced AND refusing instead of returning
       [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
 
-- [ ] 🙋 **`basic/lineedit-body.inc` IS ASSEMBLED BY NOTHING — DELETE IT OR KEEP
+- [x] 🟢 **`basic/lineedit-body.inc` IS ASSEMBLED BY NOTHING — DELETE IT OR KEEP
       IT?** Found 2026-08-30 by D-DEADBODY,
       [`docs/spec-deadbody-gate.md`](docs/spec-deadbody-gate.md). It is the ONLY
       `.inc` under `basic/` or `sub/` that no source includes, and it holds a
@@ -816,6 +816,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that either one is authoritative.
       🙋 NEEDS-JOOST — deleting a deliberate historical record is a call that is
       yours, not the gate's. The measuring in front of it is DONE.
+      ✅ **ANSWERED 2026-09-01: DELETE — AND IT HAD ALREADY BEEN DONE.** The file
+      was removed on 2026-08-31 in `b58f34b` ("Joost's call"); `Makefile:707`
+      and `docs/spec-deadbody-gate.md` both record it, and commit `136aee8` keeps
+      the historical content.
+      🔴 **THE ITEM SURVIVED ITS OWN EXECUTION AND COST A REAL QUESTION.** It was
+      still `- [ ] 🙋` a day later, so it was put to Joost as an open decision
+      when the answer was already in the tree — the exact failure the pickup
+      list's own rule names: *"when a slice lands, grep this list for what it
+      just shipped"*. **Re-run a filed claim before spending someone's attention
+      on it, not just before spending bytes on it.**
 
 - [x] 🟢 **A TRUNCATED TOKENISED BASIC FILE: THE REFERENCE ACCEPTS IT SILENTLY,
       ZEROBAS REPORTS `load error`.** Measured 2026-08-30 by D-NGRAM13 on the
@@ -1416,7 +1426,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4686 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4748 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2034,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
 **Language / verb surface**
       ⛔ BLOCKED — neither of us can start it now (needs an idle host).
 
-- [ ] ⚠️ **TEN `tests/_tmp.py` ARTIFACT NAMES ARE SHARED BY 2–4 FILES, AND
+- [x] 🟢 **TEN `tests/_tmp.py` ARTIFACT NAMES ARE SHARED BY 2–4 FILES, AND
       `tp()`'s FALLBACK BASE IS THE *SHARED* ROOT.** Found 2026-08-26 while
       driving the `unit-test` flake (item above), by walking every `tp("…")` in
       the tracked tree rather than inheriting *"`zb_eval.rom` is used by one
@@ -2062,7 +2072,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that wants isolation sets `ZB_TEST_TMP`), so it is a decision, not an edit.
       🙋 NEEDS-JOOST — a call that is yours to make (changes the documented test-isolation contract).
 
-- [ ] 🧭 **THE BOOT BANNER STILL CALLS ZEROBAS A "PROGRAM LOADER", AND THE
+      ✅ **DONE 2026-09-01 (Joost's call: isolate by default) — BUT
+      PER-INVOCATION, NOT PER-PROCESS, AND THE DIFFERENCE IS LOAD-BEARING.**
+      `tests/run.py` now mints one temp base per run and exports `ZB_TEST_TMP`;
+      every child inherits it, so a bare `make unit-test` can no longer collide
+      with a `scratchpad/paint*.py` probe. `tools/run_gates.py` already did this
+      for the battery — a bare run had nothing.
+      🔴 **PER-PROCESS WAS THE OBVIOUS READING AND WOULD HAVE BROKEN A DOCUMENTED
+      DEPENDENCY**: `test_rdblk_randrecord.py:53` reads
+      `test_wrblk_body_e2e.py`'s ROM and says so on the line that names it, and
+      `_tmp.py`'s own docstring calls that sharing deliberate. One base per
+      invocation keeps the sharing exactly and removes only the cross-invocation
+      collision [[a-mechanical-fix-can-break-a-different-invariant]].
+      📏 **THE COUNT IN THE HEADLINE HAD ROTTED: 8 shared names, not ten**
+      (4 pairs of `.rom`/`.sym`). 59/59 test files pass isolated, which is what
+      shows the deliberate sharing survived.
+- [x] 🟢 **THE BOOT BANNER STILL CALLS ZEROBAS A "PROGRAM LOADER", AND THE
       CHARTER STOPPED BEING THAT ON 2026-07-17.** Noticed 2026-08-26 while
       gating the banner. [`basic/title-body.inc`](basic/title-body.inc) prints:
       ```
@@ -2085,6 +2110,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       strings live in the sub-ROM tenant, not main page 1.
       🙋 NEEDS-JOOST — a call that is yours to make (user-visible product text, and what the project says it is).
 
+      ✅ **DONE 2026-09-01 (Joost's call, wording reviewed against a real boot
+      capture before settling).** Now `clean-room MSX1 BASIC` — it names the
+      charter's TARGET rather than the old role.
+      📏 **−14 B, AND NOT WHERE A READER WOULD LOOK**: both MAIN walls are
+      unchanged (low 106 B, page 1 349 B) because `banner_text` lives in the
+      `title_tenant`. The saving shows in **sub page 1: 1572 → 1586 B free**.
+      ⚠️ **THE `ZB` PROMPT WAS LEFT ALONE, DELIBERATELY** (same call). It sits
+      beside every typed line where both references show `Ok`, so it is a larger
+      identity signal than the banner — and it stays as the marker that this is
+      not the reference while the charter work is unfinished.
+      🟢 `banner-acceptance` needed no edit: it reads the strings from the source
+      rather than pinning a copy, so it re-verified the NEW text
+      (`PRESENT 'clean-room MSX-BASIC implementation'`) on the same run. A gate
+      that derives its expectation instead of freezing one costs nothing here.
 - [ ] 🔴 **`NAME "old" AS <non-string>` DIVERGES TWICE, AND `NAME` IS THE VERB
       D-FNEXPR2's OWN PLAN NAMED AND ITS MEASUREMENT SKIPPED.** Measured
       2026-08-26 by D-TODOSWEEP tranche 65
@@ -4189,6 +4228,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
+
+- [ ] 🧭 **THE REFERENCE PRINTS A DISK-ROM BANNER LINE AND ZEROBAS PRINTS NONE.**
+      Noticed 2026-09-01 by Joost while reviewing the main banner.
+      | | reference (CF-3300) | zerobas |
+      |---|---|---|
+      | main BASIC | `MSX BASIC version 1.0` / `Copyright 1983 by Microsoft` / `23430 Bytes free` | `zerobas version 0.1` / `clean-room MSX1 BASIC` |
+      | disk ROM | `Disk BASIC version 1.0` | *(nothing)* |
+      📏 **MEASURED: `disk/` HAS NO BANNER AT ALL.** Its only string is the `"AB"`
+      ROM signature at `$4000` (`disk/init.asm:16`). Every other banner reference
+      in `disk/` is DOS-mode: emitting the MSXDOS.SYS sign-on, and — the one
+      worth knowing — **CLEARING** the BASIC banner on DOS handoff
+      (`disk/runtime.asm:569`, "blank BASIC banner + home cursor").
+      💰 **SPACE IS NOT THE OBSTACLE HERE, WHICH IS UNUSUAL FOR THIS PROJECT**:
+      `build/disk.rom` carries a **3464 B** run of `$00` at `$281D`, so a line
+      costs nothing scarce. That makes this purely an identity question.
+      ⚠️ **AND IT IS THE SAME QUESTION AS THE `ZB` PROMPT**, which was decided on
+      2026-09-01 to STAY as `ZB` — the marker that this is not the reference. A
+      disk-ROM banner would pull the boot screen toward the reference in the same
+      breath that the prompt deliberately does not. Decide them together or not
+      at all.
+      🙋 NEEDS-JOOST — what the boot screen SAYS is a charter/identity call, not
+      a measurement. The measuring in front of it is DONE (both texts captured
+      from real boots, and the space priced).
 
 - [ ] 🐌 **THE BATTERY IS NOW 846 s AND EACH EMULATOR UNIT PAYS ITS OWN BOOT —
       COLLAPSE SUITES THAT SHARE A MACHINE INTO ONE RUN.** Joost's suggestion,

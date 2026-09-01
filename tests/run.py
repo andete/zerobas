@@ -12,6 +12,7 @@ import glob
 import os
 import subprocess
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,6 +22,26 @@ def main():
     if not tests:
         print("no tests found", file=sys.stderr)
         return 1
+    # 🔴 ISOLATE THIS INVOCATION BY DEFAULT (2026-09-01, Joost's call). Eight
+    # artifact names are shared by 2-4 test files, and three
+    # `scratchpad/paint*.py` probes share `zb_graphics_sub.*` with a unit test --
+    # so a scratch probe run alongside a bare `make unit-test` can read or
+    # overwrite the other's ROM mid-build. `tools/run_gates.py` already sets this
+    # for the battery; a bare run had nothing.
+    # 🎯 PER-INVOCATION, NOT PER-PROCESS, AND THAT DISTINCTION IS LOAD-BEARING.
+    # Some sharing is DELIBERATE: `test_rdblk_randrecord.py` reads
+    # `test_wrblk_body_e2e.py`'s ROM and says so on the line that names it. Every
+    # child inherits this ONE base, so that sharing is preserved exactly while
+    # concurrent invocations stop colliding. A per-process directory would have
+    # been the obvious reading and would have broken it
+    # [[a-mechanical-fix-can-break-a-different-invariant]].
+    # An outer runner that has already chosen a base keeps it.
+    if not os.environ.get("ZB_TEST_TMP"):
+        sys.path.insert(0, os.path.join(os.path.dirname(HERE), "probes", "lib"))
+        import probe_tmp
+        os.environ["ZB_TEST_TMP"] = tempfile.mkdtemp(prefix="unit-",
+                                                     dir=probe_tmp.ROOT)
+        print(f"isolated build artifacts: {os.environ['ZB_TEST_TMP']}")
     fails = []
     for t in tests:
         name = os.path.basename(t)

@@ -38,5 +38,13 @@ st_loop:
 ; whatever the interpreter does next, as on a booted MSX.
 banner_text:
                 db      "zerobas version 0.1",13,10
-                db      "clean-room MSX-BASIC program loader",13,10,13,10
+                ; 🧭 CHARTER, NOT LOADER (2026-09-01, Joost's call). "clean-room
+                ; MSX-BASIC program loader" predates the 2026-07-17 charter and
+                ; described the Phase-1 scope; it is the first thing a user reads
+                ; and it was still naming the old goal. The replacement names the
+                ; TARGET (MSX1) rather than the role, and is 14 bytes shorter.
+                ; ⚠️ The `ZB` prompt is deliberately NOT `Ok` and was left alone
+                ; (Joost, same call): it marks this as not-the-reference while
+                ; the charter work is unfinished.
+                db      "clean-room MSX1 BASIC",13,10,13,10
                 db      0
