@@ -28,6 +28,31 @@ specs are a later phase.) Black-box: types REPL lines, reads VRAM.
 """
 from __future__ import annotations
 
+
+# ============================================================================
+# 🔴 RETIRED 2026-09-01 (D-LEANRETIRE-PROBES) -- THE VEHICLE, NOT THE ROWS.
+# This probe booted zerobas AS A CARTRIDGE on a real MSX BIOS machine. That
+# delivery vehicle was the lean 16 KB cart, retired by
+# docs/spec-lean-retire-s1..s3; the shipping artifact is now the 32 KB repack
+# MAIN ROM, which by construction cannot be a cartridge on the VG-8020 (a cart
+# maps at $4000-$7FFF; the repack image IS the machine's $0000-$7FFF). So the
+# experiment has no vehicle, not merely no default -- no S1 machine flag can
+# revive it.
+# Its SUBJECT survives: PRINT USING coverage lives in the standing rows
+# (docs/spec-print-hash-using.md) and disk_probe_printusing_file, which is
+# archived AND re-provable on the repack machine.
+# The file is kept for its harness patterns and history; running it says this
+# instead of pretending to measure.
+# ============================================================================
+import sys as _retired_sys
+if __name__ == "__main__" or True:
+    _retired_sys.exit("RETIRED (D-LEANRETIRE-PROBES, 2026-09-01): this probe "
+                      "booted zerobas as a CARTRIDGE on a real MSX BIOS -- the "
+                      "lean-cart vehicle docs/spec-lean-retire-s1..s3 removed. "
+                      "The repack main ROM cannot be that cartridge. "
+                      "PRINT USING coverage: docs/spec-print-hash-using.md + disk_probe_printusing_file.")
+
+
 # --- zerobas probes: locate shared infra (probes/lib) + sibling probes ---
 import os as _os
 import sys as _sys

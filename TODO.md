@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:835 (T-6FE392)8 (T-529ABE)` from `TODO.md:4280 (T-529ABE)`: a
+      `TODO.md:835 (T-6FE392)8 (T-529ABE)` from `TODO.md:4289 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1282,7 +1282,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4280 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4289 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2570,10 +2570,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `bios_probe_tapwrite` lays down (pairing the two carts is a job, not a
       rot), and `bios_probe_realtape` needs an external tape corpus this repo
       does not ship and refuses legibly saying so.
+      ✅ **AND THE TWO CART-VEHICLE PROBES ARE RETIRED (2026-09-01,
+      D-LEANRETIRE-PROBES)**: `basic_probe_printusing` and
+      `disk_probe_crossbios` booted zerobas AS A CARTRIDGE on a real VG-8020 —
+      the lean cart was their VEHICLE, and the repack main ROM cannot be a
+      cartridge by construction, so no S1 machine flag revives them.
+      printusing's subject survives in the standing rows +
+      `disk_probe_printusing_file`; crossbios's CLAIM was a property of the
+      cart and retired with it. Both files kept, now printing the retirement
+      and exiting. Authorized by your standing "only keep the ones that
+      genuinely test something of value".
       🙋 **(b) IS STILL YOURS** — which of the 104 earn a battery slot is a
       runtime-budget call (one tape probe is ~4 min against a ~460 s battery).
-      The measuring in front of it is DONE, and the 6 lean-cart ones are the
-      cheapest place to start: they need a `ZEROBAS_ROM` default, not a slot.
+      The measuring in front of it is DONE.
 
 - [ ] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
       it.** Filed 2026-08-22 by D-DEFFN,
