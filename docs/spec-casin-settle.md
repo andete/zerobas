@@ -115,10 +115,11 @@ Scored both ways on the same apparatus:
 
 ## 6. What is left, named
 
-- **`bios_probe_tapread`** — mints fine; its assertion is against `PATTERN
-  55 AA 4A 4F 4E 47`, which only `bios_probe_tapwrite` lays down, and the
-  fixture this repo can mint (`tapfile --write-cas`) carries different bytes.
-  Pairing the two carts is a job, not a rot.
+- **`bios_probe_tapread`** — ✅ **closed 2026-09-01 (D-TAPPAIR)**: paired with
+  `bios_probe_tapwrite` on the VG-8020 (write cart → recorded WAV → read cart),
+  all six PATTERN bytes round-trip byte-identically. The recipe is in
+  [tools/probe-reach-allow.txt](../tools/probe-reach-allow.txt); it took five
+  commands.
 - **`bios_probe_realtape`** — needs an external tape corpus
   (`--corpus` / `--wav-dir` / `$MSX_TAPE_CORPUS` / `$MSX_TAPE_WAVS`) that is not
   in this repo. Refuses legibly, naming both the flags and the env vars.
