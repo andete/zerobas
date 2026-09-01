@@ -739,6 +739,14 @@ fixture-integrity-check:
 	python3 tools/check_fixture_integrity.py --selftest
 	python3 tools/check_fixture_integrity.py
 
+# --- the disk ROM's free space (docs/disk-rom-layout.md) ---------------------
+# A COVERAGE REPORT, not a gate: prints where the pinned-address pads are and how
+# much room each holds. The disk ROM's APPENDABLE tail is 2 B -- every usable
+# byte is interior, and the only way to find it was to diff the image by hand,
+# which produced two wrong answers in one session.
+diskmap:
+	python3 tools/disk_rom_map.py
+
 # --- D-REFCACHE (docs/spec-refcache.md): the reference-column store ---------
 # 🔴 A CACHE IS ONE SLIP AWAY FROM "A PREDICTION COPIED INTO THE RESULT COLUMN",
 # so its falsification suite is a GATE, not a script somebody remembers to run.
@@ -2882,7 +2890,7 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
-        battery-membership-check fixture-integrity-check \
+        battery-membership-check fixture-integrity-check diskmap \
         interval-trap-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \

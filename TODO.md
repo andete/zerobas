@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4783 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4806 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4783 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4806 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4264,7 +4264,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       BOTH; this row is the one where it would not.
       🙋 NEEDS-JOOST — the measuring is done (9 rows, both machines, mechanism
       identified); what is left is whether to reproduce a silent aliasing bug.
-- [ ] 🧭 **THE REFERENCE PRINTS A DISK-ROM BANNER LINE AND ZEROBAS PRINTS NONE.**
+- [x] 🟢 **THE REFERENCE PRINTS A DISK-ROM BANNER LINE AND ZEROBAS PRINTS NONE.**
       Noticed 2026-09-01 by Joost while reviewing the main banner.
       | | reference (CF-3300) | zerobas |
       |---|---|---|
@@ -4284,8 +4284,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       breath that the prompt deliberately does not. Decide them together or not
       at all.
       🙋 NEEDS-JOOST — what the boot screen SAYS is a charter/identity call, not
-      a measurement. The measuring in front of it is DONE (both texts captured
-      from real boots, and the space priced).
+      a measurement.
+      ✅ **DONE 2026-09-01 (Joost: `zerobas Disk BASIC`, no version number).**
+      The boot screen now reads `zerobas version 0.1` / `clean-room MSX1 BASIC` /
+      `zerobas Disk BASIC`, in the reference's order.
+      🔴 **I PRICED IT "FREE" AND WAS WRONG TWICE.** The disk ROM's APPENDABLE
+      TAIL IS 2 B (image ends `$7FFD`); the 3464 B run I quoted is INTERIOR pad,
+      and I gave its address as a file offset (`$281D`) rather than `$681D`.
+      Three attempts to add ~25 B to `init` drove a `ds $XXXX - $` count NEGATIVE
+      and ran pasmo past 64 KB — loudly, because `pad_rom.py` refuses to pad an
+      empty image.
+      🔴 **AND THE OBVIOUS IMPLEMENTATION HANGS THE MACHINE.** Printing from the
+      disk INIT is one line — but `init_ext_roms` is what DISCOVERS the sub-ROM
+      slot, `show_title` is a SUB-ROM tenant, and `show_title`'s `INITXT` clears
+      the screen. So the scan must run first (or `show_title` CALSLTs a slot
+      nothing was recorded in — **measured: never reaches BASIC**), and anything
+      the scan printed is then wiped.
+      ➡️ **Shipped shape:** body + string in the disk ROM's largest pad
+      (`kernel.asm:2046`), exposed at the unused pinned entry **`$4022`**, and
+      CALSLTed from `interp.asm` AFTER `show_title`, gated on `DISKSLOT_OK`.
+      💰 **Page 1 355 → 331 B (−24 B)** — the text is free in the disk ROM, the
+      CALSLT machinery is not, and it lives in the scarce region.
+      📏 **AND THE HOLES ARE DOCUMENTED NOW** (Joost's call):
+      [`docs/disk-rom-layout.md`](docs/disk-rom-layout.md) + **`make diskmap`**,
+      which reads the BUILT ROM so no figure can rot. **9328 B of 16384 (56.9%)
+      sits in pads**; the tail that you must not spend is printed beside them.
 
 - [ ] 🐌 **THE BATTERY IS NOW 846 s AND EACH EMULATOR UNIT PAYS ITS OWN BOOT —
       COLLAPSE SUITES THAT SHARE A MACHINE INTO ONE RUN.** Joost's suggestion,

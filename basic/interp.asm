@@ -135,6 +135,35 @@ init:
                                             ; (e.g. zerobas-disk in slot 3-1) since
                                             ; our own INIT never returns to the scan
                 call    show_title          ; startup header lines
+                ; --- the disk ROM announces itself, UNDER the main banner -----
+                ; 🧭 2026-09-01 (Joost's call). The reference prints `Disk BASIC
+                ; version 1.0` from its disk ROM on the line below the main
+                ; header; zerobas printed nothing. The text and the routine live
+                ; in the DISK ROM (its $4022 entry, body in kernel.asm's $75A5
+                ; pad) -- only the call is here.
+                ; 🔴 IT CANNOT BE DONE THE OBVIOUS WAY, AND THE OBVIOUS WAY HANGS.
+                ; Letting the disk INIT print is one line of code -- but
+                ; `init_ext_roms` is what DISCOVERS the sub-ROM slot, `show_title`
+                ; is a SUB-ROM tenant, so the scan must run FIRST; and
+                ; show_title's INITXT then clears the screen and wipes whatever
+                ; the scan printed. Swapping the two instead makes `show_title`
+                ; CALSLT with no recorded sub-ROM slot: MEASURED, the machine
+                ; never reaches BASIC.
+                ; ⚠️ Gated on DISKSLOT_OK: no disk ROM, no line, no CALSLT into a
+                ; slot nothing was found in.
+                ld      a,(DISKSLOT_OK)
+                or      a
+                jr      z,init_no_diskbanner
+                ld      a,(DISKSLOT)
+                ld      d,a
+                ld      e,0
+                push    de
+                pop     iy                  ; IYh = disk-ROM slot id (CALSLT ABI)
+                ld      ix,$4022            ; the disk ROM's banner entry
+                di
+                call    CALSLT
+                ei
+init_no_diskbanner:
                 call    autoexec_run        ; auto-run AUTOEXEC.BAS if present (cload.asm)
                 jp      repl                ; read/eval loop (never returns)
 

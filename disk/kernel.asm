@@ -2043,6 +2043,50 @@ wsww_divdone:
                 pop     af
                 ret
 
+; --- the disk ROM's banner line (docs/disk-rom-layout.md) -------------------
+; Own text, own code: nothing here is derived from any reference ROM. The only
+; external facts are documented BIOS/cartridge interface points already used
+; throughout this file -- CHPUT ($00A2) and the disk-ROM entry table, MSX2
+; Technical Handbook (see disk/PROVENANCE.md). The placement rule this block
+; relies on is our own: docs/disk-rom-layout.md.
+; 🧭 2026-09-01 (Joost's call). The CF-3300 prints `Disk BASIC version 1.0` from
+; its disk ROM, under the main banner; zerobas printed nothing -- `disk/` held no
+; text at all but the "AB" signature. NO VERSION NUMBER: the main banner already
+; carries `version 0.1`, and a second one would have to be kept in step with it
+; for no benefit.
+; 🔴 SITED HERE, IN THE PAD BELOW, AND THAT IS THE WHOLE POINT. The disk ROM is a
+; PINNED-ADDRESS layout and its appendable tail is 2 B: three attempts to add
+; this inline in `init` drove a `ds $XXXX - $` count NEGATIVE and ran pasmo past
+; 64 KB. Code placed immediately BEFORE a pad shrinks that pad by exactly what it
+; adds and moves no pinned address at all. `make diskmap` prints where the pads
+; are; this one is the largest.
+; 🟢 CHPUT direct: during the boot scan page 0 is still the main ROM, so this
+; needs none of conout_emit_e's page-0 swap. Every register is preserved because
+; `init` falls THROUGH into boot_disk.
+disk_show_banner:
+                push    af
+                push    bc
+                push    de
+                push    hl
+                ld      hl, disk_banner
+dsb_lp:
+                ld      a,(hl)
+                or      a
+                jr      z,dsb_end
+                inc     hl
+                push    hl
+                call    CHPUT
+                pop     hl
+                jr      dsb_lp
+dsb_end:
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af
+                ret
+disk_banner:
+                db      "zerobas Disk BASIC",13,10,0
+
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
                 ds      $77B8 - $, $00

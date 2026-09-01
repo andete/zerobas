@@ -43,7 +43,18 @@
 ; work-area pointer in HL, preserving every other register (black-box oracle, a3
 ; §8.13: disk_probe_dosboot_4030.py --sweep). Inlined at exactly $4030 (not a JP)
 ; so it lands on the address the boot CALLs; `ld hl,nn`+`ret` preserves AF too.
-                ds      $402D - $, $00  ; pad $4022-$402C (unused kernel-entry slots)
+                ; $4022: zerobas's own extension entry -- print this ROM's
+                ; banner line. 🧭 IT IS CALLED FROM THE MAIN ROM, NOT FROM INIT,
+                ; AND THE ORDER IS WHY (2026-09-01). On the reference the disk
+                ; line sits UNDER the main banner, but zerobas's `show_title` is
+                ; a SUB-ROM tenant and `init_ext_roms` is what DISCOVERS the
+                ; sub-ROM slot -- so the banner cannot print before the scan, and
+                ; `show_title`'s INITXT clears the screen, wiping anything the
+                ; scan printed. interp.asm therefore CALSLTs here AFTER the
+                ; banner. (Swapping the two instead HANGS the machine: measured.)
+                ds      $4022 - $, $00  ; pad up to the pinned $4022 entry
+                jp      disk_show_banner ; $4022: emit "zerobas Disk BASIC"
+                ds      $402D - $, $00  ; pad $4025-$402C (unused kernel-entry slots)
                 jp      k_402D          ; $402D: COMMAND.COM-load kernel entry (Tier-2)
                 ld      hl, GETWRK_AREA ; $4030: return our work-area base
                 ret                     ; ($4033) HL = work area, all else preserved
@@ -152,6 +163,7 @@ init:
 ; property (the bridge runs in every host's INIT). Steps 6-7 (the page-0 MSX-DOS
 ; environment + the CY-set $C01E) are slice a2; see provider-oracle-scope.md §8.
 ; No disk / read error / no signature all return cleanly to BASIC.
+CHPUT           equ     $00A2   ; MSX BIOS: emit the character in A (MSX2 TH)
 BOOT_LOAD       equ     $C000   ; standard boot-sector load address (MSX2 TH ch.3)
 BOOT_ENTRY      equ     $C01E   ; custom-boot-program entry (BOOT_LOAD + $1E)
 ; page-0 RAM-swap scratch (transient, used only during INIT's boot bridge).
