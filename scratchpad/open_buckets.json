@@ -44,11 +44,6 @@
   "signal": "no his-decision signal found",
   "matched": ""
  },
- "T-046E94": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
-  "signal": "page-1 budget",
-  "matched": "carve"
- },
  "T-F10828": {
   "bucket": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
@@ -368,6 +363,11 @@
   "bucket": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "refactor, no oracle",
   "matched": "namespaces"
+ },
+ "T-0A4625": {
+  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "signal": "charter / scope",
+  "matched": "CHARTER"
  },
  "T-C17B7B": {
   "bucket": "\ud83d\ude4b NEEDS-JOOST",

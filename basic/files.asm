@@ -1492,9 +1492,24 @@ fdcc_disk:
                 call    fat_io_putbyte      ; real CF-3300 CLOSE of a sequential file
                 call    fat_io_close        ; flush partial sector + dir size/cluster
 fdcc_clear:
+                ; 🧭 CLOSE LEAVES THE FIELD DEFINITIONS ALONE (2026-09-01,
+                ; Joost's call: match the reference). This used to
+                ; `call fld_clear_chan` here, which made `LEN(A$)` read 0 the
+                ; moment the file closed -- and the common idiom is read a
+                ; record, CLOSE, then use the value.
+                ; 📏 D-FLDCLOSE measured what the reference's surviving
+                ; descriptor actually IS, and it is the more dangerous of the two
+                ; possibilities: a LIVE pointer, not a stale copy. `A$` survives
+                ; eight string allocations (the FIELD buffer is not in the string
+                ; heap) but a later OPEN + FIELD on a channel that reuses that
+                ; buffer silently rebinds it. Neither behaviour is "safe" -- this
+                ; one risks a silent wrong value in a narrow case, the old one
+                ; guaranteed a wrong value in a common one.
+                ; ⚠️ THE OTHER `fld_clear_chan` CALLER STAYS (field.asm:282): a
+                ; NEW `FIELD` on a channel still drops that channel's old
+                ; definitions, which is what keeps FLD_SLOTS (16) from filling on
+                ; the ordinary OPEN/FIELD/CLOSE/OPEN/FIELD cycle.
                 ld      a,(FCH_ACTIVE)      ; = the channel (fch_select made it active)
-                call    fld_clear_chan      ; drop any FIELD definitions on this channel
-                ld      a,(FCH_ACTIVE)      ; (fld_clear_chan clobbered A; reload)
                 call    fch_modes_ptr
                 xor     a
                 ld      (hl),a              ; FCH_MODES[ch] = 0 (closed)

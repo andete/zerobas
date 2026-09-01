@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4748 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4783 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1051,7 +1051,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `<nothing>` — which one more row (a resident program) separated from
       "refused quietly".
 
-- [ ] 📌 **`CLOSE` EMPTIES A FIELDED VARIABLE HERE AND DOES NOT ON THE
+- [x] 🟢 **`CLOSE` EMPTIES A FIELDED VARIABLE HERE AND DOES NOT ON THE
       REFERENCE.** Found 2026-08-31 by D-NGRAM17,
       [`docs/spec-basic-reqcomma.md`](docs/spec-basic-reqcomma.md) §5, rows
       `g.field` / `g.field2` in `scratchpad/reqcomma_probe.py`.
@@ -1078,6 +1078,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       case and never dangles.
       🙋 NEEDS-JOOST — still a judgement, but now against the real behaviour.
 
+      ✅ **DECIDED AND SHIPPED 2026-09-01 (Joost's call: MATCH THE REFERENCE).**
+      `CLOSE` no longer calls `fld_clear_chan` — **8 of 9 rows now agree, from
+      3 of 9 — and it GAVE BACK 6 B** (page 1 349 → 355 B free). The common
+      idiom works again: read a record, `CLOSE`, use the value.
+      🟢 Every FIELD-adjacent suite green on the change: `fldary`, `fldwidth`,
+      `lrvar`, `diskbasic`.
+      🔴 **ONE ROW STILL DIVERGES, AND IT IS THE DANGEROUS ONE — `e.val`.** After
+      `CLOSE` + reopen + `FIELD#1,10 AS C$` + `LSET C$="ZZZZZZZZZZ"`, the CF-3300
+      reads `A$` as **`ZZZZZZZZZZ`**; zerobas reads `<nothing>`.
+      🎯 **BECAUSE THE TWO BIND A FIELDED VARIABLE DIFFERENTLY, AND THAT IS
+      STRUCTURAL.** zerobas resolves `A$` THROUGH `FLD_TAB`, so the new `FIELD`
+      on that channel drops `A$`'s entry (`field.asm:282`, the caller that must
+      stay or 16 slots fill). The reference stores a POINTER in the variable
+      itself, so re-FIELDing rebinds what it READS without unbinding it.
+      Reproducing that row means moving to descriptor-based binding — a much
+      larger change than this one.
+      ⚠️ **AND THE REMAINING DIVERGENCE IS IN ZEROBAS'S FAVOUR**: the reference
+      silently hands back another channel's data; zerobas hands back nothing.
+      Filed as its own question below rather than left implicit.
 - [x] ✅ **CLOSED 2026-09-01 (D-CATFIX,
       [`docs/spec-basic-catfix.md`](docs/spec-basic-catfix.md)): `sct_err2` now
       runs the reference's SINGLE PASS** — missing operand -> ERR 24 (three
@@ -1426,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4748 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4783 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4229,6 +4248,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
 
+- [ ] 🙋 **THE LAST FIELD ROW (`e.val`) NEEDS DESCRIPTOR-BASED BINDING, AND IT IS
+      THE ROW WHERE THE REFERENCE IS WORSE.** Filed 2026-09-01 after D-FLDCLOSE
+      shipped (`CLOSE` matches the reference on 8 of 9 rows).
+      After `CLOSE` + reopen + `FIELD#1,10 AS C$` + `LSET C$="ZZZZZZZZZZ"`:
+      CF-3300 `A$` = **`ZZZZZZZZZZ`** (another channel's data, silently),
+      zerobas `A$` = `<nothing>`.
+      🎯 **STRUCTURAL, NOT A MISSING GUARD.** zerobas resolves a fielded variable
+      through `FLD_TAB`; the reference stores a pointer in the variable. Matching
+      it means changing how `FIELD` binds — and keeping `fld_clear_chan` on the
+      FIELD path, which is what stops 16 slots filling.
+      ⚠️ **SO THE CHARTER AND THE SAFER ANSWER POINT OPPOSITE WAYS HERE**, which
+      is exactly the shape of the `ZB`-prompt and disk-banner calls: faithful vs
+      sane, decided case by case. Today's answer was "faithful" and it improved
+      BOTH; this row is the one where it would not.
+      🙋 NEEDS-JOOST — the measuring is done (9 rows, both machines, mechanism
+      identified); what is left is whether to reproduce a silent aliasing bug.
 - [ ] 🧭 **THE REFERENCE PRINTS A DISK-ROM BANNER LINE AND ZEROBAS PRINTS NONE.**
       Noticed 2026-09-01 by Joost while reviewing the main banner.
       | | reference (CF-3300) | zerobas |
