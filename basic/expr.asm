@@ -655,7 +655,28 @@ ev_f_missop:                                ; D-MISSOP (docs/spec-basic-missop.m
                 ; its Division by zero.
                 cp      '"'
                 jr      z,ev_f_tmm          ; -> ERR 13
-                ld      e,FPERR_MISSOP
+                ; 🔴 MISSING OPERAND IS FOR AN EMPTY SLOT, NOT FOR A WRONG ONE
+                ; (D-MISSOPBOUND, docs/spec-basic-missopbound.md). The comment
+                ; above says "end of line, ':', or a stray operator" -- the first
+                ; two are right and THE THIRD IS NOT. Measured on 18 rows, both
+                ; references split them:
+                ;   `X=` and `X=:`            -> ERR 24  nothing is there
+                ;   `X=*5` `X=TAB(5)` `X=THEN` `X=GOTO` `X=PRINT` `X=TO`
+                ;   `X=STEP` `X=INPUT` `X=USING`  -> ERR 2, something IS there
+                ; zerobas answered 24 to all of them, so NINE token classes were
+                ; wrong, not the three `cursor-acceptance` happens to name.
+                ; 🟢 `X=ELSE` reads 24 on all three and is NOT an exception: MSX
+                ; tokenises ELSE as `:ELSE`, so the slot really does see a colon.
+                ; That row is what shows the rule is END-OF-STATEMENT and not
+                ; "is it a keyword" [[two-rules-that-coincide-on-every-row-you-have]].
+                ld      e,FPERR_MISSOP      ; default: the slot is EMPTY
+                or      a
+                jr      z,ev_f_defer        ; end of line
+                cp      COLON
+                jr      z,ev_f_defer        ; end of statement
+                ld      e,4                 ; something IS here -> fperr_to_err[4]
+                                            ; = ERR 2 syntax error (interp.asm),
+                                            ; the same code ev_f_empty defers
                 jr      ev_f_defer
 ev_f_empty:                                 ; D-F2-3: the empty parenthesised/argument
                                             ; expression -> deferred FPERR=4 "syntax error",

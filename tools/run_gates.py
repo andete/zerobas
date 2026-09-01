@@ -78,7 +78,8 @@ penderr-acceptance missing-acceptance error-acceptance error-trap-acceptance
 onerr0-acceptance math-acceptance float-acceptance intarg-acceptance
 logicops-acceptance lineerr-acceptance screenerr-acceptance tmfp-acceptance
 stmtpend-acceptance array-acceptance deffn-strict graphics-acceptance
-abort-acceptance interval-trap-acceptance clearpool-acceptance""".split()
+abort-acceptance interval-trap-acceptance clearpool-acceptance
+cursor-acceptance""".split()
 
 GATES = STATIC + EMULATOR
 

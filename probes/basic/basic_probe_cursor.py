@@ -191,12 +191,18 @@ ERRS = [
 #
 # Reported, never gated: a permanently red row inside the gate makes the failure
 # banner permanent, and a banner that is always on is one nobody reads.
-KNOWN_RED = {
-    'PRINT TAB(-1);"Z"', 'PRINT SPC(-1);"Z"',
-    'PRINT TAB(256);"Z"', 'PRINT SPC(256);"Z"',
-    'PRINT TAB(99999);"Z"', 'PRINT SPC(99999);"Z"',
-    'PRINT VPEEK(-1);"Z"', 'PRINT STICK(9);"Z"',
-}
+# 🟢 RETIRED 2026-09-01 (D-MISSOPBOUND). All eight exempted rows AGREE on all
+# three machines and had been agreeing for an unknown time -- the exemption
+# suppressed nothing while the suite was RED for a completely different reason
+# (`X=TAB(5)` outside PRINT: ERR 24 here, ERR 2 on both references). Nothing
+# collected the suite, so nobody saw either fact
+# [[a-fix-falsifies-the-justification-beside-it]].
+# 🔴 AN EXEMPTION THAT NO LONGER FIRES IS NOT INERT: it is a row set silently
+# ungated, and it makes the suite's banner describe a defect that is gone.
+# Emptying it puts the eight rows back under the verdict; they pass. The D-CUR-3
+# analysis above is kept because it is the record of a real defect, and inverting
+# a conclusion beats deleting the reasoning that reached it.
+KNOWN_RED: set[str] = set()
 
 # --- battery 4: the PRINT comma-zone rule, across widths ---------------------
 # Not one of the four words, but the routine SPC( is meant to share (`pcz_pad`),
@@ -363,7 +369,7 @@ def main() -> int:
     if red:
         print("\n=== D-CUR-3 -- KNOWN RED, reported not gated ===")
         print("  a mid-statement error does not abort the statement "
-              "(pre-existing; see the ctl-* rows)")
+              "(pre-existing; see the ctl-* rows)")   # (set now empty -- retired)
         for c in red:
             print(f"  {'same' if agree(c.ref, c.zb) else 'DIVERGES':8} "
                   f"{c.label:14} {c.line[:30]:30} ref={c.ref}  zb={c.zb}")

@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4580 (T-529ABE)`: a
+      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4607 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1395,7 +1395,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4580 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4607 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4192,7 +4192,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       floors exist because the instrument failed that way inside this slice
       [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
 
-- [ ] 🔴 **`X=TAB(5)` OUTSIDE A `PRINT` GIVES `Missing operand` WHERE BOTH
+- [x] 🟢 **`X=TAB(5)` OUTSIDE A `PRINT` GIVES `Missing operand` WHERE BOTH
       REFERENCES SAY `Syntax error` — AND `cursor-acceptance`'s KNOWN-RED
       EXEMPTION NAMES SOMETHING ELSE.** Found 2026-09-01 by D-UNCOLLECTED,
       which ran the suite the battery does not collect
@@ -4206,10 +4206,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       suppresses nothing while the suite is red for a reason it never names.
       Whatever fixed D-CUR-3 did not update the exemption
       [[a-fix-falsifies-the-justification-beside-it]].
-      ➡️ Two pieces of work: the `Missing operand`/`Syntax error` disposition,
-      and RETIRING the 8 stale `KNOWN_RED` entries so those rows are gated again
-      (dropping an exemption can only tighten the suite — verify by running it).
-      🤖 AUTONOMOUS — both references settle it and the rows exist.
+      ✅ **FIXED 2026-09-01 (D-MISSOPBOUND,
+      [`docs/spec-basic-missopbound.md`](docs/spec-basic-missopbound.md); rows in
+      `scratchpad/missopbound_probe.py`) — 11 DIFF of 18 → 0, page 1 358 → 349 B
+      (−9 B).**
+      🔴 **THE THREE ROWS WERE A TENTH OF THE DEFECT.** zerobas answered ERR 24
+      for **nine token classes** the references call ERR 2: a bare operator
+      (`X=*5`), `TAB(`/`SPC(`, and `THEN TO STEP GOTO PRINT INPUT USING`.
+      📏 **THE RULE IS A BOUNDARY, NOT A SPECIAL CASE**: a factor slot ended by
+      END OF STATEMENT (EOL or `':'`) is `Missing operand`; anything actually
+      PRESENT is `Syntax error`. Two rules fit every row either side had, so the
+      probe was built to separate them
+      [[two-rules-that-coincide-on-every-row-you-have]].
+      🟢 **`X=ELSE` IS THE ROW THAT PROVES IT AND LOOKS LIKE A COUNTER-EXAMPLE** —
+      ERR 24 on all three, because MSX tokenises `ELSE` as `:ELSE` so the slot
+      really sees a colon. An AGREEING row that separates two rules is worth more
+      than a diverging one that does not.
+      🔴 **AND `basic/print.asm`'s COMMENT WAS FALSIFIED FIRST** — it claimed
+      siting TAB(/SPC( outside `ev_f` "is what makes `X=TAB(5)` a SYNTAX error
+      (MEASURED)". The design is right, the consequence was wrong, and the claim
+      carried the word MEASURED
+      [[a-fix-falsifies-the-justification-beside-it]].
+      ⚠️ The deferred code is **FPERR 4**, not 2: `fperr_to_err` is a dense index,
+      not a BASIC error number
+      [[a-derived-constant-falsified-from-another-file]]. Regression checks all
+      green and all needed: `missing-acceptance` (D-MISSOP's 16 slots),
+      `lineerr-acceptance` (which D-MISSOP's first draft broke), `cursor`.
+      ✅ **AND THE STALE EXEMPTION IS RETIRED.** All 8 `KNOWN_RED` rows agree, so
+      it suppressed nothing while the suite was red for a reason its banner never
+      named. 🔴 **An exemption that no longer fires is not inert — it is a row set
+      silently ungated.** Emptied; 67 rows green. **`cursor-acceptance` now JOINS
+      the battery** (51 units, 23 of 68 acceptance targets collected).
 
 - [ ] 🔴 **`namspc-acceptance` REFUSES: A POSITIVE CONTROL FAILS ON THE
       REFERENCE.** Found 2026-09-01 by D-UNCOLLECTED. `f.filesbare` expects
