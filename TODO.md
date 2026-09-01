@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:881 (T-6FE392)8 (T-529ABE)` from `TODO.md:4430 (T-529ABE)`: a
+      `TODO.md:881 (T-6FE392)8 (T-529ABE)` from `TODO.md:4449 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1328,7 +1328,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4430 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4449 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4141,7 +4141,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       residual written up inside a `- [x]` is exactly what this section exists to
       prevent, so it gets its own line rather than a paragraph in this one.
 
-- [ ] 🔴 **NOTHING STOPS THE NEXT PLANTING `--selftest` FROM LANDING IN A POOL
+- [x] 🟢 **NOTHING STOPS THE NEXT PLANTING `--selftest` FROM LANDING IN A POOL
       UNIT — THE TORN READ HAS NO WITNESS.** Filed 2026-09-01 by D-SELFMUT
       ([`docs/spec-selfmut.md`](docs/spec-selfmut.md)), which fixed the other
       half of the same race.
@@ -4164,7 +4164,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the honest form re-runs the battery. A cheap first cut is to snapshot
       tracked-file mtimes around each POOL unit inside `run_gates.py`, which
       needs no extra runs at all.
-      🤖 AUTONOMOUS — a gate settles it.
+      ✅ **CLOSED 2026-09-01 (D-POOLWRITE,
+      [`docs/spec-poolwrite.md`](docs/spec-poolwrite.md))** — the cheap cut was
+      the right one, and it turned out to **ATTRIBUTE, not merely detect**.
+      🎯 **THE MTIME IS A TIMESTAMP**: the file records WHEN it was written and
+      the runner already tracks each unit's start/end, so the candidates are the
+      units whose window contains it. Two `os.stat` passes over the tracked tree,
+      no extra runs — the battery already held the information and never looked.
+      ⚠️ Under parallelism that is a **candidate set, not a culprit** (up to `J`
+      names) and the report says so; a restore that also restores the mtime stays
+      invisible, which is why the snapshot carries **size as well as mtime**.
+      🔬 **FALSIFIED BY PUTTING THE REAL DEFECT BACK** — a one-line revert of
+      D-SELFMUT, not a synthetic plant: the battery FAILS, names all three files,
+      and attributes every one to `selftest-check`; the control is `26/26` green.
+      The attribution logic is separately armed against synthetic windows,
+      including the case that matters — **a unit that finished before the write
+      is excluded**, so the set narrows instead of listing everything that ran.
+      ➡️ A pool write **sets the exit status**; an advisory nobody collects is the
+      shape `check_selftests.py` exists to end. Exemptions go in `REGENERATED`
+      with their reason — and that list is not hand-kept either, it is the
+      six-path class D-GENFRESH enumerated from make's own database.
 
 - [x] 🟢 **A GENERATED FILE THAT IS ALSO TRACKED CAN GO STALE IN A COMMIT, AND
       THE GATE FOR THAT COVERED 2 OF THE 6.** Found and fixed 2026-09-01

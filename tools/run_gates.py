@@ -299,6 +299,49 @@ REGENERATED = ["zerobas-main-eu.ips", "zerobas-main-eu.bps",
                "sub/basic-resident-abi.inc", "sub/math-coeffs.inc"]
 
 
+def snapshot_tracked():
+    """{path: (mtime, size)} for every tracked file a pool unit has no business
+    touching. Returns None if git is unusable -- UNMEASURED, never "clean"."""
+    out = subprocess.run(["git", "ls-files"], capture_output=True, text=True)
+    if out.returncode != 0:
+        return None
+    snap = {}
+    for f in out.stdout.split("\n"):
+        f = f.strip()
+        if not f or f in REGENERATED:
+            continue
+        try:
+            st = os.stat(f)
+        except OSError:
+            continue
+        snap[f] = (st.st_mtime, st.st_size)
+    return snap
+
+
+def blame_windows(before, after, windows):
+    """Which units were RUNNING when each changed file was written.
+
+    🎯 THE MTIME IS A TIMESTAMP, WHICH IS WHY THIS CAN ATTRIBUTE AND NOT MERELY
+    DETECT: the file itself records the instant of the write, so the candidates
+    are the units whose [start, end] window contains it.
+    ⚠️ UNDER PARALLELISM THAT IS A CANDIDATE SET, NOT A CULPRIT. Every unit
+    running at that moment is named; with J=8 that is up to 8 names. It narrows
+    a battery-wide "something wrote to the tree" down to the handful worth
+    re-running alone, and it says so rather than pretending to a single answer.
+    A restore that also restores the mtime is invisible here, and that limit is
+    real -- it is the reason this checks mtime AND size rather than content."""
+    out = []
+    for f, (mt, sz) in sorted(after.items()):
+        was = before.get(f)
+        if was is None or was == (mt, sz):
+            continue
+        who = sorted(n for n, (s0, s1) in windows.items() if s0 <= mt <= s1)
+        out.append((f, was, (mt, sz), who))
+    for f in sorted(set(before) - set(after)):
+        out.append((f, before[f], None, []))
+    return out
+
+
 def tracked_dirty():
     """Tracked files differing from HEAD, minus the ones a build regenerates."""
     out = subprocess.run(["git", "status", "--porcelain", "-uno"],
@@ -504,6 +547,17 @@ def main():
             rest_u.append((name, wrap(name, bare[name])))
     units = solo_u + rest_u                # solo first -> grabs a worker at once
 
+    # 🔴 THE TORN READ HAS NO WITNESS (D-SELFMUT residual). The stale-ROM half of
+    # that race announces itself because a preflight refuses; a unit that writes
+    # a tracked file while 40+ others read it surfaces only as an inexplicable
+    # red somewhere else, or as a build that quietly used corrupted bytes.
+    # Serialising the one known offender fixed today; nothing stopped the next
+    # planting `--selftest` from landing in a POOL unit -- and MUTATORS had
+    # already been wrong in BOTH directions at once, which is the argument
+    # against a list maintained by hand. This measures instead.
+    pool_before = snapshot_tracked()
+    windows = {}
+
     print(f"=== {len(units)} units, J={jobs}"
           + (f", lineerr in {a.lineerr_shards} shards" if not a.serial else "")
           + f", nice={a.nice} solo={sorted(solo) or None} ===", flush=True)
@@ -513,7 +567,9 @@ def main():
         log = f"{OUT}/{name.replace('/', '_').replace('#', '_')}.log"
         s = time.time()
         rc = sh(argv, log)
-        return name, rc, time.time() - s, (skipped_reason(log) if rc == 0 else None)
+        e = time.time()
+        windows[name] = (s, e)
+        return name, rc, e - s, (skipped_reason(log) if rc == 0 else None)
 
     results, skips = {}, {}
     for g, rc, dt, _ in mut_results:       # the serial phase counts in the tally
@@ -525,6 +581,19 @@ def main():
                 skips[name] = skip
             print(f"  rc={rc}{'  SKIPPED' if skip else '        '}  {dt:5.0f}s  "
                   f"{name}", flush=True)
+
+    # --- did any POOL unit write into the tracked tree? ----------------------
+    pool_writes = []
+    if pool_before is None:
+        print("  ⚠️  pool tracked-write check UNMEASURED (git unusable)")
+    else:
+        after = snapshot_tracked()
+        pool_writes = blame_windows(pool_before, after, windows) if after else []
+        # ⚠️ MEASURED HERE, REPORTED IN THE SUMMARY. It has to be taken before
+        # the serial retries run (they would write the tree themselves and
+        # blur the windows); it has to be PRINTED after the verdict, or a
+        # "N/N green" line lands underneath a red finding and reads as the
+        # answer [[an-unnamed-outcome-reads-as-no-outcome]].
 
     # RETRY red units SERIALLY, in isolation (docs-spec-probe-emutime-watchdog):
     # heavy emulator gates can drop a capture under concurrency (a `ref=None` on a
@@ -596,6 +665,20 @@ def main():
         print("RED:", " ".join(red))
     if flaky:
         print("recovered flakes (green on serial retry):", " ".join(flaky))
+    if pool_writes:
+        print(f"🔴 BATTERY FAILED ON A POOL WRITE: {len(pool_writes)} TRACKED "
+              f"FILE(S) WERE WRITTEN DURING THE PARALLEL POOL. The gate tally "
+              f"above is about the gates; this is about the tree they ran on — "
+              f"40+ units read these while they changed, and a torn read has no "
+              f"witness of its own.")
+        for f, was, now, who in pool_writes:
+            print(f"     {f}{' (DELETED)' if now is None else ''}")
+            print(f"       running at the write: " + (", ".join(who) if who else
+                  "(no unit window covers it — the serial phase, a retry, or "
+                  "something outside the battery)"))
+        print("     → re-run each named unit ALONE and diff the tree, then put "
+              "the offender in MUTATORS. A legitimately regenerated path goes "
+              "in REGENERATED, with its reason.")
     print("hashes: " + " ".join(f"{h}" for h in hashes()))
     # A unit that plants into the tree and does not restore it is invisible
     # otherwise: the NEXT battery inherits the plant as if it were the source.
@@ -607,7 +690,12 @@ def main():
         print(f"🔴 THE BATTERY LEFT {len(left)} TRACKED FILE(S) DIRTY that were "
               f"clean when it started -- a plant that was not restored: "
               + " ".join(left))
-    ok = not (red or not lineerr_ok)
+    # 🔴 A POOL WRITE IS A FAILURE, NOT AN ADVISORY. An advisory nobody reads is
+    # the shape `check_selftests.py` was built to end (a script red for months
+    # with no one collecting its exit code). If a write turns out to be
+    # legitimate it goes in REGENERATED with its reason, the way EXPECT_ARG
+    # entries do -- the list cannot quietly grow.
+    ok = not (red or not lineerr_ok or pool_writes)
     # --- record the proof, and ONLY from a full, fully green, unexcluded run --
     # ⚠️ A SKIPPED RUN NEVER WRITES THIS. If it did, a chain of skips would end
     # up vouching for nothing but the first link, and the proof would decay into
