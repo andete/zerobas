@@ -639,7 +639,13 @@ def run_rec_group(side, only, row, out):
                        f"{label}.wav")
     caps = omsx_repl.run_cases(
         cfg["machine"], [("direct", list(cfg["reset"]) + list(lines))],
-        batch=False, reset=(), boot=cfg["boot"], step=cfg["step"],
+        batch=False, reset=(),
+                # 🔴 BOOT-PER-CASE IS LOAD-BEARING — MEASURED (D-BATCH2,
+                # 2026-09-01). `scratchpad/batchcheck.py` ran it both ways and
+                # the two modes DISAGREE ON PASS/FAIL (rc 2 batched vs 0
+                # boot-per-case): the cassette tail state does not survive being
+                # shared. Refused rather than converted.
+                 boot=cfg["boot"], step=cfg["step"],
         prologue=(f"cassetteplayer new {{{wav}}}",), **kw)
     raw = caps[0]
     out[label] = tail_after(raw, lines[subj], cfg["failmsg"])

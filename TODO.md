@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4931 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4949 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4931 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4949 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4455,9 +4455,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       before the control can say anything at all; only **10** hand it a
       multi-case list, and 3 of those are now judged (strparen converted,
       lptverb refused, runtail cleared).
-      ➡️ Remaining: 7 testable-now candidates, then 25 restructures — each a
-      `run_side` rewrite (see `basic_probe_strparen.py`) followed by one
-      `batchcheck` run.
+      ✅ **THE TESTABLE SET IS NOW FULLY JUDGED (2026-09-01, D-BATCH4).** All
+      ten multi-case candidates run through the control:
+      | verdict | suites |
+      |---|---|
+      | **CONVERTIBLE → converted** | `strparen` (4.3x), `dskmsg` (4.6x), `msgexact` (2.2x), `runtail` (1.6x) |
+      | **must stay boot-per-case, reason now IN THE SOURCE** | `lptverb`, `castail`, `editverb` |
+      | **NOT TESTED (matrix=1, needs a restructure first)** | `banner`, `cassave` |
+      | not run (no battery target) | `bload_fcb` |
+      📏 Measured effect: `dskmsg` 11 s → 3 s, `runtail` 10 s → 2 s,
+      `msgexact` → 2 s.
+      🔴 **AND THE STATIC HEURISTIC OVER-COUNTED**: it called `banner` and
+      `cassave` testable; the control's matrix-width guard says they are
+      matrix=1. The guard is the authority, the grep was an estimate — worth
+      remembering before trusting the "25 need restructuring" figure, which comes
+      from the SAME grep.
+      🟢 **EVERY REFUSAL NOW SAYS WHY, IN THE SOURCE**, which is what the item
+      asked for: `lptverb`'s accumulating printer log (with the measured
+      before/after strings), `castail`'s rc 2-vs-0, and `editverb`'s
+      header-warning now backed by a measurement.
+      ➡️ Remaining: the ~25 for-loop probes, each a `run_side` rewrite (see
+      `basic_probe_strparen.py`) followed by one `batchcheck` run.
 
 - [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
       RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01

@@ -418,7 +418,18 @@ def run_side(side, only):
         cases = [(("direct"), list(cfg["reset"]) + list(lines))
                  for _, lines in rows]
         caps = omsx_repl.run_cases(
-            cfg["machine"], cases, batch=False, reset=(), boot=cfg["boot"],
+            cfg["machine"], cases, batch=False, reset=(),
+                # 🔴 BOOT-PER-CASE IS LOAD-BEARING HERE — MEASURED, NOT ASSUMED
+                # (D-BATCH2, 2026-09-01). `scratchpad/batchcheck.py` ran this
+                # suite both ways: batched, the printer log ACCUMULATES, so
+                # `lpr-comma` reads
+                #   'CTL\r\nX\r\n 5 \r\n-5 \r\nAB\r\nA             B\r\n'
+                # where boot-per-case reads 'A             B\r\n' -- every row a
+                # running total of its predecessors.
+                # ⚠️ AND BOTH MODES REPORTED ok AND rc=0. The suite PASSES while
+                # measuring the wrong thing, so no exit status could catch this;
+                # only the row diff does. Do not "optimise" this to batch=True.
+                 boot=cfg["boot"],
             step=cfg["step"], prologue=plug,
             capture=("screen_printer", log), diska=diska)
         for (label, _), raw in zip(rows, caps):

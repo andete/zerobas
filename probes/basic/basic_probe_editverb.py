@@ -339,6 +339,12 @@ def run_side(side, only, repeat):
                  for _, lines, _ in aut]
         caps = omsx_repl.run_cases(
             cfg["machine"], cases, batch=False, reset=(),
+                # 🔴 BOOT-PER-CASE IS LOAD-BEARING, AND THIS FILE'S OWN HEADER
+                # SAYS WHY (the printer log ACCUMULATES; a case's capture is a
+                # DELTA). Confirmed by measurement 2026-09-01 (D-BATCH2):
+                # `scratchpad/batchcheck.py` gets rc 2 batched vs 0
+                # boot-per-case. The header's warning is now a measured fact.
+                
             boot=cfg["boot"], step=cfg["step"], prologue=plug)
         for (label, lines, declared), raw in zip(aut, caps):
             out[label] = reading(raw, anchor_for(lines, declared))

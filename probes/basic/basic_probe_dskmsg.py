@@ -312,7 +312,17 @@ def run_side(side, only):
 
     def battery(sel, dsk):
         cases = [("direct", list(cfg["reset"]) + list(lines)) for _, lines in sel]
-        caps = omsx_repl.run_cases(cfg["machine"], cases, batch=False, reset=(),
+        caps = omsx_repl.run_cases(cfg["machine"], cases, batch=True, reset=(),
+                # 🟢 BATCHED 2026-09-01 (D-BATCH4). Was boot-per-case with no
+                # recorded reason. `scratchpad/batchcheck.py` ran the suite BOTH
+                # ways and every row is identical, which is the only evidence
+                # that makes this safe -- D-EDITVERB records what a wrongly
+                # batched suite does (one case's capture becomes a running total
+                # and every later row is silently wrong).
+                # ⚠️ `reset=()` IS KEPT EXACTLY AS THE CONTROL TESTED IT. The
+                # cases are self-contained; adding a reset here would be a second
+                # change the both-ways diff never scored.
+                
                                    boot=cfg["boot"], step=cfg["step"], diska=dsk)
         for (label, lines), raw in zip(sel, caps):
             out[label] = reading(raw, ANCHOR.get(label) or anchor_for(lines))

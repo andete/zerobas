@@ -572,7 +572,17 @@ def measure_extra(side: str, *, omsx: str | None = None
         shutil.copy(diska, tmp)
     try:
         cases = [(mode, list(reset) + lines) for _, mode, lines, _ in EXTRA]
-        raws = omsx_repl.run_cases(machine, cases, batch=False, reset=(),
+        raws = omsx_repl.run_cases(machine, cases, batch=True, reset=(),
+                # 🟢 BATCHED 2026-09-01 (D-BATCH4). Was boot-per-case with no
+                # recorded reason. `scratchpad/batchcheck.py` ran the suite BOTH
+                # ways and every row is identical, which is the only evidence
+                # that makes this safe -- D-EDITVERB records what a wrongly
+                # batched suite does (one case's capture becomes a running total
+                # and every later row is silently wrong).
+                # ⚠️ `reset=()` IS KEPT EXACTLY AS THE CONTROL TESTED IT. The
+                # cases are self-contained; adding a reset here would be a second
+                # change the both-ways diff never scored.
+                
                                    capture="screen", omsx=omsx, diska=tmp, **cfg)
     finally:
         if tmp and os.path.exists(tmp):
@@ -610,7 +620,17 @@ def measure_subx(side: str, *, omsx: str | None = None
         shutil.copy(diska, tmp)
     try:
         cases = [("direct", list(reset) + lines) for _, lines, _, _ in rows]
-        raws = omsx_repl.run_cases(machine, cases, batch=False, reset=(),
+        raws = omsx_repl.run_cases(machine, cases, batch=True, reset=(),
+                # 🟢 BATCHED 2026-09-01 (D-BATCH4). Was boot-per-case with no
+                # recorded reason. `scratchpad/batchcheck.py` ran the suite BOTH
+                # ways and every row is identical, which is the only evidence
+                # that makes this safe -- D-EDITVERB records what a wrongly
+                # batched suite does (one case's capture becomes a running total
+                # and every later row is silently wrong).
+                # ⚠️ `reset=()` IS KEPT EXACTLY AS THE CONTROL TESTED IT. The
+                # cases are self-contained; adding a reset here would be a second
+                # change the both-ways diff never scored.
+                
                                    capture="screen", omsx=omsx, diska=tmp, **cfg)
     finally:
         if tmp and os.path.exists(tmp):
