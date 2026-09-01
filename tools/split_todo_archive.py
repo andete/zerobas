@@ -203,6 +203,32 @@ def verify(lines, src_out, dst_out, mapping):
 # alternative to backtrack into. Arms S1/S2 in --selftest.
 CITE = re.compile(r"(?<![-\w])(\.\./)?TODO\.md:(\d+)(?!\d)(?!\s*\(T-)")
 
+# 🔴 THE REPOINTER REWRITES A CITATION QUOTED AS AN EXAMPLE, TOO. The opt-out
+# marker was introduced for `check_todo_citations.py --fix` (D-FILEDROT) and
+# honoured ONLY there, so this file's own arms sat exposed to the rewriter it
+# ships: measured 2026-09-01, FIVE lines here carry the marker and match CITE,
+# including S2's and S3's input vectors. One of them corrupts SILENTLY -- S1's
+# `already` fixture still asserts `== []` after a rewrite, so its MEANING would
+# go while the arm stayed green, which is the same failure this marker exists to
+# stop [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+NOCITE = "NOT-A-CITATION"
+
+
+def _repoint_text(txt, sub_for_line):
+    """Substitute citations LINE BY LINE, leaving any line marked `NOCITE`
+    byte-identical.
+
+    🎯 FACTORED FOR THE ARM, NOT FOR TIDINESS -- inline in `repoint()` the only
+    way to check the exemption is to READ it, and reading is what missed the
+    defect the first time. `_append_or_write` exists for the same reason.
+    Per-line is also what makes the marker checkable at all: a whole-text
+    `CITE.sub` cannot see which line a match landed on."""
+    out = []
+    for src_line in txt.splitlines(keepends=True):
+        out.append(src_line if NOCITE in src_line
+                   else CITE.sub(sub_for_line(src_line), src_line))
+    return "".join(out)
+
 
 def repoint(mapping, blocks):
     """Rewrite every `TODO.md:NNN` citation from the map; attach the block id."""
@@ -224,30 +250,36 @@ def repoint(mapping, blocks):
         if not CITE.search(txt):
             continue
         misses = []
+        done = []
 
-        def sub(m):
-            old = int(m.group(2))
-            if old not in mapping:
-                misses.append(old); return m.group(0)
-            which, new = mapping[old]
-            if rel.startswith("docs/"):
-                tgt = "TODO-done.md" if which == "dst" else "../TODO.md"
-            else:
-                tgt = "TODO.md" if which == "src" else "docs/TODO-done.md"
-            bid = block_at(old)
-            # ⚠️ THE ID GOES ON THE LABEL, NEVER INSIDE A LINK TARGET -- a
-            # `](path (T-x))` is not a URL.
-            in_href = txt[:m.start()].endswith("](")
-            return f"{tgt}:{new}" + ("" if in_href or not bid else f" ({bid})")
+        def sub_for_line(line):
+            def sub(m):
+                old = int(m.group(2))
+                if old not in mapping:
+                    misses.append(old); return m.group(0)
+                which, new = mapping[old]
+                if rel.startswith("docs/"):
+                    tgt = "TODO-done.md" if which == "dst" else "../TODO.md"
+                else:
+                    tgt = "TODO.md" if which == "src" else "docs/TODO-done.md"
+                bid = block_at(old)
+                # ⚠️ THE ID GOES ON THE LABEL, NEVER INSIDE A LINK TARGET -- a
+                # `](path (T-x))` is not a URL. The offset is into the LINE now,
+                # which is where a `](` could ever be anyway.
+                in_href = line[:m.start()].endswith("](")
+                done.append(old)
+                return f"{tgt}:{new}" + ("" if in_href or not bid else f" ({bid})")
+            return sub
 
-        new_txt = CITE.sub(sub, txt)
+        new_txt = _repoint_text(txt, sub_for_line)
         if misses:
             print(f"  ⚠️  {rel}: {len(misses)} citation(s) name a line the map "
                   f"does not have: {sorted(set(misses))}")
         if new_txt != txt:
             open(path, "w").write(new_txt)
             n_files += 1
-            n_cites += len(CITE.findall(txt))
+            n_cites += len(done)      # rewrites, not matches: a marked line is
+            #                              a match this pass deliberately left alone
     print(f"  repointed {n_cites} citation(s) in {n_files} file(s)")
 
 
@@ -333,6 +365,24 @@ def selftest() -> int:
     arm("S3 the same holds for the `../` form used from docs/",
         CITE.findall("../TODO.md:668 (T-6FE392)") == []   # NOT-A-CITATION
         and len(CITE.findall("../TODO.md:273")) == 1)   # NOT-A-CITATION
+
+    # --- D-REPOINTMARK: the opt-out marker, honoured by the REWRITER too ------
+    # 🔬 Both directions on the same apparatus. The control matters more than
+    # the exemption here: an exemption scored against a line nothing would have
+    # rewritten passes for free. Fixtures assembled by concatenation so no
+    # literal citation exists in this file to be repointed [[an-instrument-can-
+    # fail-the-way-the-thing-it-replaced-failed]].
+    bare = "see TODO" + ".md:2811 for the rest\n"
+    marked = bare.rstrip("\n") + "   # " + NOCITE + "\n"
+    bump = lambda line: (lambda m: "TODO" + ".md:%d" % (int(m.group(2)) + 400))
+    arm("S8 an UNMARKED citation is still rewritten (the control)",
+        _repoint_text(bare, bump) == "see TODO" + ".md:3211 for the rest\n")
+    arm("S9 ...and a line carrying the marker comes back BYTE-IDENTICAL",
+        _repoint_text(marked, bump) == marked)
+    arm("S10 the marker is line-scoped, not file-scoped -- a marked line does "
+        "not exempt its neighbours",
+        _repoint_text(marked + bare, bump)
+        == marked + "see TODO" + ".md:3211 for the rest\n")
 
     # --- defect 1: the archive clobber ---------------------------------------
     # Exercised against a REAL file rather than by reading the branch, because

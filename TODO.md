@@ -87,7 +87,16 @@ those.)
 | 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **25** |
 | ⛔ **BLOCKED** | neither can start it now — an idle host, a missing fixture, apparatus that must be built first | **9** |
 
-**102 open items, 102 markers, 0 unmarked** — the invariant above, checked.
+**RE-CHECKED 2026-09-01: 116 open blocks, 116 markers, 0 unmarked.** It was
+**118 blocks / 115 markers** when this session opened — 🔴 **THREE OPEN ITEMS HAD
+NO MARKER, WHICH IS THE FAILURE THIS INVARIANT EXISTS TO CATCH, AND IT HAD BEEN
+FAILING SILENTLY**: nothing runs `--count`, so the line below said "checked"
+about a day in August. Two of the three (`subrom-closure-check`'s `equ` alias;
+the truncated tokenised load) were **finished work still spelled `- [ ]`** — both
+re-verified by RUNNING, not reading, then closed — and the third (D-NGRAM) is the
+arc this loop has shipped nineteen slices of, invisible to the pick-up rule for
+want of one emoji. The figures in the table above are **2026-08-27** and stand as
+taken; these are today's. Recount, never quote.
 
 🔴 **A MISFILED 🤖 IS NOT A STOP CONDITION — WRAP UP AND REFILE.** If an item
 marked autonomous turns out to need a decision of his: **finish and commit
@@ -135,7 +144,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **BASIC surface**
 
-- [ ] ⚠️ **`check_todo_citations.py --fix` CANNOT TELL A CITATION QUOTED AS AN
+- [x] 🟢 **`check_todo_citations.py --fix` CANNOT TELL A CITATION QUOTED AS AN
       EXAMPLE FROM A LIVE ONE, AND REWRITES BOTH.** Found 2026-08-30 while
       writing D-SPLITFIX, whose comment explains the citation-corruption bug BY
       QUOTING A CITATION. `--fix` repointed the example twice (`4618` -> `3251`
@@ -151,12 +160,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
       ➡️ **WORKED AROUND AT THE ONE SITE** (the comment spells the shape
       `TODO<dot>md:`, the fixture is assembled by concatenation so no literal
-      citation exists in the file). **The general fix is not done**: any doc that
-      quotes a `TODO.md:NNN (T-xxxxxx)` as an example is exposed, and neither the
-      fixer nor `todo-citation-check` has a way to mark one inert.
-      ➡️ Candidate: an explicit escape the tools honour (a leading `!` or a
-      fenced span), plus a gate arm that a marked example survives `--fix`.
-      🤖 AUTONOMOUS — a gate settles it.
+      citation exists in the file).
+      🟢 **CLOSED 2026-09-01 (D-REPOINTMARK)** —
+      [`docs/spec-repoint-marker.md`](docs/spec-repoint-marker.md).
+      🔴 **THE ITEM WAS STALE ON BOTH OF THE NAMES IT ACCUSED, AND BLIND TO THE
+      ONE THAT WAS GUILTY.** *"neither the fixer nor `todo-citation-check` has a
+      way to mark one inert"* was already false when written down: D-FILEDROT had
+      given `check_todo_citations.py` the `NOT-A-CITATION` marker, honoured in
+      `scan()` — which `--fix` runs off — with a both-directions arm. The escape
+      and the gate arm this item asks for **had both shipped**.
+      What no one had noticed is that the repo has a **SECOND** citation
+      rewriter: `tools/split_todo_archive.py`'s `repoint()`. It substituted over
+      WHOLE-FILE text, so the marker was not merely unimplemented there, it was
+      **unimplementable in that shape**. Swept: **5 lines carry the marker and
+      match its `CITE`, every one of them in the rewriter's own file**, including
+      arms S1/S2/S3's fixtures. S2 and S3 would have gone red; **S1 asserts
+      `== []`, so its vector would have been gutted SILENTLY** — the exact
+      failure the marker exists to stop, one file over.
+      ➡️ Fixed: per-line substitution in `_repoint_text()`, factored so an arm
+      scores the shipped path. Arms **S8/S9/S10** (rewrite / exempt /
+      line-scoped), each falsified by planting both failure directions; S8 is the
+      load-bearing control, and only S10 survives neither plant. `in_href` moved
+      to a per-line offset — **the two readings disagree on 0 of the tree's 12
+      matches**. Markdown needed two spellings (an HTML comment in prose, an
+      elision inside a fenced quote) and this doc's own first draft shipped
+      three unmarked examples.
+      🎯 **A RESIDUAL CAN BE CLOSED HALF BY A SLICE AIMING ELSEWHERE AND HALF BY
+      A HOLE IT NEVER NAMED** — re-run the item's own accusation before building
+      on it [[a-justification-parenthesis-is-an-unrun-claim]].
 
 - [x] 🟢 **FIXED 2026-08-30 (D-SPLITFIX) — BOTH DEFECTS, WITH SEVEN ARMS THE
       BATTERY COLLECTS.** `(?!\d)` added to `CITE` (backtracking is what defeated
@@ -184,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:835 (T-6FE392)8 (T-529ABE)` from `TODO.md:4289 (T-529ABE)`: a
+      `TODO.md:881 (T-6FE392)8 (T-529ABE)` from `TODO.md:4335 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -405,6 +436,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       first. 🔴 **The four names the filing guessed (`castail`, `bload`,
       `fat-*`, `merge`) are not in the class at all** — their loads come from
       minted fixtures, not a same-boot save. The fear outran its instances.
+      🤖 AUTONOMOUS — **marker added 2026-09-01; this block had none**, and an
+      unmarked open item is unclassified, so the loop was skipping the one arc it
+      has shipped nineteen slices of. Not a tie: what is left is a MEASUREMENT
+      (`scratchpad/ngram_sweep.py --main` — does any candidate still rank above
+      its call overhead in the scarce regions?), and D-NGRAM2..19 all shipped
+      unattended. ⚠️ **THE TITLE'S "THREE CANDIDATES LEFT" IS A RANKING AND
+      RANKINGS ROT** — re-run the sweep, do not spend that number.
 
 - [ ] 📌 **ANY BATTERY OR KNIFE SCORE TAKEN 2026-08-30 EVENING .. 2026-08-31
       04:30 IS SUSPECT — THE HOST WAS ASLEEP UNDER IT.** Found 2026-08-31 by
@@ -430,7 +468,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       building on it. **The wall time is the cheap discriminator.**
       🤖 AUTONOMOUS — a re-run settles each one.
 
-- [ ] ⚠️ **`subrom-closure-check` CLASSIFIES A SUB-LOCAL `equ` ALIAS AS A
+- [x] 🟢 **`subrom-closure-check` CLASSIFIES A SUB-LOCAL `equ` ALIAS AS A
       MAIN-ROM ESCAPE.** Found 2026-08-30 by D-NGRAM14,
       [`docs/spec-basic-ngram14.md`](docs/spec-basic-ngram14.md) §5.
       `fexp_underflow equ fexp_overflow` in `sub/fp_exp.asm` -- the D-DUPSPAN2
@@ -459,6 +497,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       fexp_underflow` to an alias — which is RED on the unfixed checker
       (`fexp_und_alias = 4F66 <- main-BASIC page-1`) and GREEN on the fixed one,
       with identical ROM hashes proving the plant changed only a name.
+      ✅ **RE-VERIFIED 2026-09-01, NOT RE-READ** (this block was `- [ ]` and
+      UNMARKED, so the loop could have re-picked it): `make subrom-closure-check`
+      green on both tenancies, and `check_tenant_closure.py --selftest` green on
+      all 8 arms including the 4 controls. **Closed.**
 
 - [x] ✅ **`CVI(5)` READS `Syntax error` HERE AND `Type mismatch` ON THE
       CF-3300 — CLOSED 2026-08-31 (D-CVITM,
@@ -708,7 +750,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🙋 NEEDS-JOOST — deleting a deliberate historical record is a call that is
       yours, not the gate's. The measuring in front of it is DONE.
 
-- [ ] 📌 **A TRUNCATED TOKENISED BASIC FILE: THE REFERENCE ACCEPTS IT SILENTLY,
+- [x] 🟢 **A TRUNCATED TOKENISED BASIC FILE: THE REFERENCE ACCEPTS IT SILENTLY,
       ZEROBAS REPORTS `load error`.** Measured 2026-08-30 by D-NGRAM13 on the
       UNMODIFIED tree, [`docs/spec-basic-ngram13.md`](docs/spec-basic-ngram13.md)
       §5, rows in `scratchpad/ngram13_probe.py`. Nothing in the tree reached
@@ -766,6 +808,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       three rows per fixture, both machines (spec §4). **It refuted the reading
       that motivated it**: repair B's `10 POKE` vs `10` looked like different
       stores and was the same store rendered past its own end.
+      ✅ **RE-VERIFIED 2026-09-01, NOT RE-READ** (this block was `- [ ]` and
+      UNMARKED): `scratchpad/truncload_probe.py` on a clean rebuild reads
+      **24 printed, 18 scored, 18 agree, 0 diverge, 6 NO-ORACLE** — the filed
+      figure exactly. **Closed.**
 
 - [ ] 💰 **D-PEEPHOLE: THE CLASSIC Z80 SIZE IDIOMS, COUNTED — SAFE CLASS TAKEN,
       FLAG-CHANGING CLASS STILL OPEN (20 B).** Pattern list from the WikiTI
@@ -1282,7 +1328,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4289 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4335 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
