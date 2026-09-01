@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:881 (T-6FE392)8 (T-529ABE)` from `TODO.md:4335 (T-529ABE)`: a
+      `TODO.md:881 (T-6FE392)8 (T-529ABE)` from `TODO.md:4366 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1328,7 +1328,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4335 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4366 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4101,6 +4101,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
+
+- [x] 🟢 **A GENERATED FILE THAT IS ALSO TRACKED CAN GO STALE IN A COMMIT, AND
+      THE GATE FOR THAT COVERED 2 OF THE 6.** Found and fixed 2026-09-01
+      (D-GENFRESH, [`docs/spec-genfresh.md`](docs/spec-genfresh.md)).
+      `sub/basic-resident-abi.inc` — the sub-ROM's table of MAIN-ROM addresses —
+      had been **stale in HEAD across 11 main-ROM commits**. Surfaced by
+      accident: a probe's preflight refused on a stale ROM, and
+      `make clean && make repack-machine` reproduced the dirty working copy
+      **byte for byte**, which says the tree was right and HEAD was wrong.
+      🎯 **A DEFECT WITH NO FAILING BEHAVIOUR IS NOT A SMALL ONE, IT IS AN
+      UNGATED ONE.** Its Makefile rule regenerates it on every build, so it
+      self-heals before anything reads it wrong; the only symptoms are a tree
+      that is dirty the moment you build it (the `git status` noise that makes
+      the banned `git add -A` tempting) and a committed file naming wrong
+      addresses to anyone who READS rather than builds.
+      ➡️ **THE FIX IS THE DENOMINATOR, NOT THE FILE.** The class is *a tracked
+      path that is also a Makefile target*, asked of make's own database: **six
+      members**, of which `check_patch_freshness.py` covered two (the main and
+      tape patch pairs). Its header already had the instinct — *"TWO shipped
+      patch deliverables, not one"* — it just never asked whether two was the
+      total. Both uncovered members are entered; **6 of 6**.
+      🔬 **NO PLANT WAS NEEDED — the stale file WAS the red state**, and fixing
+      the denominator bought a control set the size of the class: five green in
+      the same invocation that reddens the sixth.
+      ⚠️ Two traps the generalisation had to dodge: `make_target` is the
+      STALENESS question, not the shipped file (the include's own prerequisites
+      are a build product and a script, so a dirty check on them is vacuous —
+      the 61 tracked sources of `build/basic-reloc.sym` are what get asked); and
+      the coeffs regeneration goes through `--emit` under `cwd=<tmp>`, the branch
+      the Makefile uses, not the dry-run branch that would have left it
+      unmeasured. Costs ~5.6 s, almost all of it the minimax fitting.
 
 - [ ] 🔴 **A PAGE-ALIGNMENT ASSERT WITH NO ENFORCEMENT IS A LANDMINE FOR THE
       NEXT UNRELATED EDIT — one fired, and the class is not swept.** Filed
