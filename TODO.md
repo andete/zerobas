@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:881 (T-6FE392)8 (T-529ABE)` from `TODO.md:4449 (T-529ABE)`: a
+      `TODO.md:918 (T-6FE392)8 (T-529ABE)` from `TODO.md:4486 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -692,7 +692,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       0/8 would have closed the review as a no-finding with the defect alive.
       Item end is now ',' / ':' / EOL only. Sub-ROM only, no patch pair due.
 
-- [ ] ⚠️ **`CALL FORMAT`'s NAME-TAIL AND ARGUMENT SKIP ARE SLOPPY-ACCEPT —
+- [x] 🟢 **`CALL FORMAT`'s NAME-TAIL AND ARGUMENT SKIP ARE SLOPPY-ACCEPT —
       UNMEASURED.** Filed 2026-08-31 by the review tier (reading
       `basic/format.asm` `exc_name`/`exc_skip`): after matching the 6 chars
       "FORMAT", everything up to ':'/EOL is silently swallowed, so
@@ -703,8 +703,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       keys), so the rows need that rig. Sketch: `CALL FORMATX` /
       `CALL FORMAT X` / `_FORMAT("A:")` on the CF-3300, watching whether an
       error lands BEFORE the prompt appears; a minted scratch disk per row.
-      🤖 AUTONOMOUS — the CF-3300 settles it; the rig exists in
-      `probes/disk/diskbasic_probe_format.py`.
+      ✅ **MEASURED AND FIXED 2026-09-01 (D-FMTTAIL,
+      [`docs/spec-basic-fmttail.md`](docs/spec-basic-fmttail.md); rows in
+      `scratchpad/fmttail_probe.py`)** — **4 DIFF of 8 rows → 0, for ZERO
+      BYTES** (page 1 free 358 B before and after). The reference is **strict on
+      every count**:
+      `CALL FORMATX`, `CALL FORMATFOO`, `CALL FORMAT X` and `_FORMAT("A:")` are
+      all `Syntax error` on the CF-3300.
+      🔴 **AND THE FILED NAME UNDERSTATES IT — "sloppy-accept" DESTROYS DATA.**
+      On zerobas `CALL FORMATX`, a typo one key past the verb, **silently
+      FORMATTED the disk** where the reference refuses and touches nothing.
+      ➡️ `exc_skip`'s swallow-to-delimiter loop became a require-end-of-STATEMENT
+      test raised BEFORE `do_format` (the reference errors before its prompt).
+      ⚠️ **`CALL FORMAT:PRINT 1` is accepted on both**, so it is end-of-statement,
+      not end-of-line — and that row is the ONLY one of the eight that separates
+      the two rules [[two-rules-that-coincide-on-every-row-you-have]]. The
+      `or a / jr z / cp COLON / <error>` idiom occurs at **0** other main-ROM
+      sites, so there was nothing to aggregate.
+      🟢 **A GATE MADE THE FIX FREE.** The first cut cost 1 B and
+      `redundant-load-check` went **REAL red on the serial retry** (not a flake),
+      naming the site: `skip_spaces` ALREADY returns `A = (HL)`, so the reload
+      was dead. 🎯 The gate knew a calling contract the code being written did
+      not — the argument for asserting contracts instead of documenting them.
+      🎯 **THE ROWS NEEDED NO FORMAT TO COMPLETE** — a rejection lands before
+      anything happens and an acceptance parks the CF-3300 at its prompt, so the
+      observable is REJECTED-vs-ACCEPTED read off the screen with the prompt
+      never answered. Nothing was formatted on the reference.
+      🔴 **THREE INSTRUMENT FAULTS, AND THE NEGATIVE CONTROL CAUGHT ALL OF
+      THEM** by reading ACCEPTED for `CALL FORMA`: a name-table plane chosen by
+      "whichever renders more non-blank rows" (the PATTERN GENERATOR won — two
+      different lines gave BYTE-IDENTICAL screens); the two machines putting the
+      name table at DIFFERENT addresses (CF-3300 `$1800`, zerobas `$0000`, both
+      stride 40, and `$F3B3` reads `0000` on both); and `rstrip()` breaking
+      `Syntax`/` error` across the 40-column wrap. The plane is now selected by
+      **containing the echo of the line we typed**
+      [[readout-blind-to-its-own-subject]].
+      🔬 **SIDE FINDING, FIXED:** the kept provenance spike
+      `probes/disk/diskbasic_probe_format.py` renders that same `$1800` at width
+      **32**, so every screen dump it ever printed was scrambled (its `PROCNM`
+      evidence is a hex read and was unaffected). Corrected to 40.
 
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
@@ -1328,7 +1365,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4449 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4486 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

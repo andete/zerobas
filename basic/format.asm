@@ -56,15 +56,25 @@ exc_name:
                 call    skip_spaces
                 call    fmt_match_format    ; CF set if (HL) == "FORMAT"
                 jp      nc,stmt_error       ; unsupported CALL extension
-                ; skip an optional drive argument, e.g. ("A:"), to the statement end.
-exc_skip:
-                ld      a,(hl)
+                ; 🔴 THE REFERENCE REJECTS EVERY TAIL — MEASURED, NOT ASSUMED
+                ; (D-FMTTAIL, docs/spec-basic-fmttail.md). On the National
+                ; CF-3300 `CALL FORMATX`, `CALL FORMATFOO`, `CALL FORMAT X` and
+                ; `_FORMAT("A:")` are ALL `Syntax error`, raised BEFORE the
+                ; format prompt appears. So the name must END the statement and
+                ; CALL FORMAT takes no argument at all.
+                ; What was here swallowed everything up to ':'/EOL, which made a
+                ; TYPO silently FORMAT THE DISK: `CALL FORMATX` wiped it where
+                ; the reference refuses. It was also quote-blind, so
+                ; `_FORMAT("A:")` stopped at the colon INSIDE the quotes (the
+                ; D-DATACOLON class).
+                ; ⚠️ COLON MUST STILL PASS: `CALL FORMAT:PRINT 1` is accepted on
+                ; both references, so this requires end-of-STATEMENT, not
+                ; end-of-line. That row is why the test is not a bare `or a`.
+                call    skip_spaces         ; returns A = (HL) -- no reload
                 or      a
                 jr      z,exc_go
                 cp      COLON
-                jr      z,exc_go
-                inc     hl
-                jr      exc_skip
+                jp      nz,stmt_error
 exc_go:
                 push    hl                  ; save the statement-end cursor (CALSLT clobbers)
                 call    do_format

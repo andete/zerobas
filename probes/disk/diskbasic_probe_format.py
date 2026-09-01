@@ -89,7 +89,7 @@ def build_tcl(out_path: str) -> str:
          "proc __scr {tag} {",
          "  global __f",
          f'  puts $__f "$tag.procnm=[__hex 0xFD89 16]"',
-         f'  puts $__f "$tag.scr1=[__hex_v 0x1800 768]"',
+         f'  puts $__f "$tag.scr1=[__hex_v 0x1800 960]"',
          "  flush $__f",
          "}",
          f"after time {BP_INSTALL_T} {{ debug set_bp 0x{DSKIO:04X} {{}} {{ __dskio }} }}",
@@ -108,9 +108,13 @@ def show(out: str):
             tag, _, hexv = line.partition("=")
             d = bytes.fromhex(hexv)
             print(f"--- {tag} ---")
+            # 🔴 STRIDE 40, NOT 32 (D-FMTTAIL, 2026-09-01). The CF-3300's name
+            # table at $1800 is 40 columns wide; rendering it at 32 scrambled
+            # every screen this spike has ever printed. The PROCNM evidence
+            # beside it is a hex read and was never affected.
             for r in range(24):
                 s = "".join(chr(c) if 32 <= c < 127 else " "
-                            for c in d[r*32:(r+1)*32]).rstrip()
+                            for c in d[r*40:(r+1)*40]).rstrip()
                 if s.strip():
                     print(f"{r:2}|{s}")
         elif ".procnm=" in line:
