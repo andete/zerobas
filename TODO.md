@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:881 (T-6FE392)8 (T-529ABE)` from `TODO.md:4366 (T-529ABE)`: a
+      `TODO.md:881 (T-6FE392)8 (T-529ABE)` from `TODO.md:4430 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1328,7 +1328,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4366 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4430 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4101,6 +4101,70 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
+
+- [x] 🟢 **A RECURRING "FLAKE" WAS A REAL RACE, AND THE MUTATOR LIST NAMED THREE
+      UNITS THAT MUTATE NOTHING WHILE MISSING THE ONE THAT DOES.** Found and
+      fixed 2026-09-01 (D-SELFMUT, [`docs/spec-selfmut.md`](docs/spec-selfmut.md);
+      instrument `scratchpad/stale_sampler.py`).
+      `float-acceptance` scored rc=2 and passed on the serial retry in BOTH of
+      the day's full batteries (`math-acceptance` earlier). It was not a flake:
+      the probe never booted — preflight refused because **both repack ROMs had
+      gone stale mid-battery**, and the retry rebuilt them on its way past.
+      🔬 **GUESSING REFUTED TWO HYPOTHESES** (the serial mutator phase; a gate
+      re-linking via `make basic-reloc`). What settled it was sampling `make -q`
+      on both ROMs once a second and printing on every state change with the
+      mtime that moved: stale at **t=53.5 s — inside the POOL — and never
+      recovering**.
+      📏 **THEN ONE GATE AT A TIME, FROM A FRESH TREE:** `switch-build-check`,
+      `diskdep-check`, `wall-literal-check` mutate **nothing**;
+      `selftest-check` mutates `basic/sysvars.inc`, the `Makefile` and
+      `probes/basic/basic_probe_clear.py` and leaves both ROMs stale. The first
+      three are exactly `MUTATORS`. **The list was inverted.**
+      🎯 **THE GUARD WAS AIMED AT THE TOOLS, NOT AT THE CALLERS THAT ARM THEM** —
+      planting lives behind `--selftest` and those three recipes never pass it;
+      only `check_selftests.py` does. Exit-safe (D-KNIFEGUARD), never
+      concurrency-safe. Ask not *can this tool mutate* but *does THIS INVOCATION
+      mutate* [[exit-safe-is-not-concurrency-safe]].
+      ➡️ Fixed three ways: `selftest-check` joins `MUTATORS`; a **rebuild after
+      the mutator phase** (a restored plant is not a restored tree — the bytes go
+      back, the MTIME does not); and the battery now **reports any tracked file
+      it leaves dirty**, exempting only the six paths D-GENFRESH enumerated as
+      legitimately regenerated.
+      ✅ Verified on a forced-full battery: **49/49 green with NO retry line and
+      NO recovered flakes**, and the sampler shows the pool running **0 s** with
+      stale ROMs where it previously ran ~390 s.
+      ⚠️ **THE COST ESTIMATE WAS 10x THE MEASUREMENT, IN THE DIRECTION THAT
+      ARGUES AGAINST FIXING IT**: moving a 44 s unit out of the pool cost **4 s**
+      (449 s vs 445 s) — the wall clock is bound by the long acceptance shards,
+      not by total work.
+      ➡️ **The TORN READ half is NOT fixed and is filed separately below** — a
+      residual written up inside a `- [x]` is exactly what this section exists to
+      prevent, so it gets its own line rather than a paragraph in this one.
+
+- [ ] 🔴 **NOTHING STOPS THE NEXT PLANTING `--selftest` FROM LANDING IN A POOL
+      UNIT — THE TORN READ HAS NO WITNESS.** Filed 2026-09-01 by D-SELFMUT
+      ([`docs/spec-selfmut.md`](docs/spec-selfmut.md)), which fixed the other
+      half of the same race.
+      While a plant is live, any parallel unit that assembles
+      `basic/sysvars.inc` or reads the `Makefile` sees **deliberately corrupted
+      content**. Serialising `selftest-check` closes the window *today*, by
+      hand, on a list a human maintains.
+      🔴 **AND ONLY THE OTHER HALF IS OBSERVABLE.** The stale-ROM half announces
+      itself because a preflight refuses and scores rc=2. A torn read has no such
+      witness: it surfaces as an inexplicable red in an unrelated unit, or as a
+      build that silently used corrupted bytes — the `unit-test` case
+      `tools/run_gates.py`'s own header records, where the retry passed and the
+      race was called a flake.
+      ⚠️ **THE LIST WAS ALREADY WRONG ONCE, IN BOTH DIRECTIONS AT THE SAME
+      TIME** (three inert units serialised, the one live one in the pool), which
+      is the argument against maintaining it by hand.
+      ➡️ Candidate: a gate that runs each unit and asserts no tracked file is
+      written outside `MUTATORS` — the battery-wide version of the
+      one-gate-at-a-time measurement D-SELFMUT did by hand. Cost is the problem:
+      the honest form re-runs the battery. A cheap first cut is to snapshot
+      tracked-file mtimes around each POOL unit inside `run_gates.py`, which
+      needs no extra runs at all.
+      🤖 AUTONOMOUS — a gate settles it.
 
 - [x] 🟢 **A GENERATED FILE THAT IS ALSO TRACKED CAN GO STALE IN A COMMIT, AND
       THE GATE FOR THAT COVERED 2 OF THE 6.** Found and fixed 2026-09-01
