@@ -44,7 +44,17 @@ OMSX = shutil.which("openmsx") or "/Applications/openMSX.app/Contents/MacOS/open
 ZEROBAS = os.environ.get("ZEROBAS", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 SRC_DSK = os.environ.get("DISK_DSK", os.path.join(ZEROBAS, "disk", "test720.dsk"))
 
-EXPECT = ["TEST    .BIN", "HI      .TXT", "PROG    .BIN", "PROG    .BAS", "PROG2   .BAS"]
+# 🔴 RE-MEASURED 2026-09-01 (D-FILESROT): test720.dsk gained TS.DAT (a zero-byte
+# data file another probe's fixture work added) and this frozen list went stale
+# -- the D-PROBEREACH5 audit found the probe red against its own fixture. The
+# reference column is a MEASUREMENT, not a belief, so the fix was to boot the
+# National CF-3300 on the CURRENT disk (diskbasic_probe_files.py) and read its
+# listing again: six 8.3 fields, directory order, TS      .DAT last
+# (/tmp capture, 2026-09-01: "TEST .BIN HI .TXT / PROG .BIN PROG .BAS /
+# PROG2 .BAS TS .DAT"). Editing the constant WITHOUT the re-measure would have
+# been the rot the audit exists to catch.
+EXPECT = ["TEST    .BIN", "HI      .TXT", "PROG    .BIN", "PROG    .BAS",
+          "PROG2   .BAS", "TS      .DAT"]
 
 
 def build_tcl(out_path: str, width: int | None) -> str:
@@ -103,11 +113,17 @@ def run(machine: str, out: str, width=None, timeout: float = 90.0):
     return rows, linlen
 
 
-# The CF-3300 reference listing at WIDTH 29 (diskbasic_probe_files.py), as the
-# sequence of non-empty logical lines the directory produces.
+# The CF-3300 reference listing at WIDTH 29, as the sequence of non-empty
+# logical lines the directory produces.
+# 🔴 RE-MEASURED 2026-09-01 (D-FILESROT), same discipline as EXPECT above: this
+# second frozen constant ALSO still listed five files. Booted the CF-3300 on
+# the current disk with the date prompt cleared, WIDTH 29, FILES -- the first
+# attempt skipped the date-clear \r and the prompt swallowed both typed lines,
+# which read as a listing of nothing. Three rows, TS      .DAT closing the
+# third: two entries per 29-column line, directory order.
 CF3300_W29 = ["TEST    .BIN HI      .TXT",
               "PROG    .BIN PROG    .BAS",
-              "PROG2   .BAS"]
+              "PROG2   .BAS TS      .DAT"]
 
 
 def _files_lines(rows):
@@ -148,7 +164,7 @@ def main() -> int:
     if missing:
         print("FAIL — missing entries:", missing); rc = 1
     elif _ordered(rows):
-        print("PASS — all 5 expected 8.3 fields present, in directory order")
+        print(f"PASS — all {len(EXPECT)} expected 8.3 fields present, in directory order")
     else:
         print("FAIL — fields present but out of order"); rc = 1
 

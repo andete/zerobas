@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:835 (T-6FE392)8 (T-529ABE)` from `TODO.md:4275 (T-529ABE)`: a
+      `TODO.md:835 (T-6FE392)8 (T-529ABE)` from `TODO.md:4278 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1282,7 +1282,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4275 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4278 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2522,10 +2522,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ✅ **AND ALL 65 `probes/disk/` ONES RUN (D-PROBEREACH5): 47 GREEN**, 10
       need a `--dos-disk` image this repo does not ship, 4 need another argument,
       2 are bound to the retired lean cart, and **2 GENUINELY ROTTED**:
-      • `disk_probe_files` — `disk/test720.dsk` gained `TS.DAT` and the probe's
-      HARDCODED expectation still lists the five older files. The reference
-      column is a FROZEN reading, so the fix is to RE-MEASURE the CF-3300 against
-      the current disk, not to edit the constant into agreement.
+      • ✅ `disk_probe_files` — REPAIRED 2026-09-01 (D-FILESROT) as prescribed:
+      BOTH frozen constants (EXPECT and the WIDTH-29 wrap reference — the
+      second one the filing had not named) re-MEASURED by booting the CF-3300
+      on the current disk. Six fields, directory order, W29 wrap
+      byte-identical; both PASS against zb. 🔴 The first W29 re-measure skipped
+      the date-clear \r and the prompt swallowed both typed lines — a listing
+      of nothing that would have frozen as the new reference.
       • `disk_probe_bload_fcb` — reads like a stale address ("refresh
       do_disk_bload addr") and is not: `do_disk_bload` is ABSENT from
       `build/basic-reloc.sym` and lives only in `build/sub.sym` ($73FB). The
