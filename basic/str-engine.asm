@@ -474,19 +474,47 @@ sct_cont:
                 scf
                 ret
 sct_err2:
-                ; BUG C (Fable, 2026-07-17): a '+' COMMITTED this expression to
-                ; string concatenation, but the trailing operand is non-string
-                ; (`A$+5`, `A$+`). Returning bare NC let the caller silently
-                ; re-drive the WHOLE thing as a number (PRINT A$+5 -> " 0"). Raise
-                ; the DEFERRED Type mismatch instead: set ERRMARK+TMISMATCH so the
-                ; driver's check_expr_errors aborts at the statement boundary (the
-                ; same D-2 deferral the string comparator uses). Still return NC --
-                ; the caller restores its own cursor, and on the numeric re-drive
-                ; the TMISMATCH we set makes check_expr_errors abort with "type
-                ; mismatch" rather than printing a bogus value.
-                pop     hl                  ; discard R              [ ]
-                call    type_mismatch_set   ; ERRMARK+TMISMATCH (DE=0); clobbers A
-                or      a                   ; A=1 -> CF clear (malformed operand)
+                ; D-CATFIX (2026-09-01, supersedes the BUG C NC-decline that stood
+                ; here). A '+' committed this expression to string concatenation
+                ; and the operand is not a string form. The old shape armed a
+                ; deferred TM and returned NC, and the driver's numeric re-drive
+                ; then ENDED AT THE UNCONSUMED QUOTE (the D-NUMSTR factor defers
+                ; without consuming a literal), so the operand was evaluated ZERO
+                ; times -- `"AB"+(0*(1/0)+1)` read 13 where both references say
+                ; 11, and catusr's counter read 0 against the references' 1. The
+                ; reference is SINGLE-PASS: it evaluates the operand during its
+                ; one drive, so the operand's own fault fires before any type
+                ; conclusion. Mirror that here and never decline:
+                ;   * operand slot ENDED (EOL/':') -> Missing operand, ERR 24 --
+                ;     measured on both references for `A$+`, `"AB"+` and
+                ;     `"AB"+:...` (scratchpad/cattrail_probe.py), the D-MISSOP
+                ;     "slot ends where a value was needed" rule;
+                ;   * otherwise EVALUATE THE OPERAND ONCE (its fault, if any,
+                ;     lands in FPERR first), then arm type mismatch through
+                ;     penderr_set, whose first-error-wins keeps the operand's
+                ;     own code -- and, unlike TMISMATCH, FPERR is what
+                ;     ems_print's check_fperr_only reads BEFORE emitting the
+                ;     item, so `PRINT "AB"+5` raises without leaking `AB`;
+                ;   * return CF=1 with R (the partial result) as the value, so
+                ;     the driver NEVER re-drives -- one evaluation by
+                ;     construction, not by precedence.
+                ld      a,(hl)              ; decline left HL at the operand start
+                or      a
+                jr      z,se2_miss          ; `A$+` at end of line
+                cp      COLON
+                jr      z,se2_miss          ; `A$+:...`
+                call    eval                ; the ONE evaluation; HL advances past
+                                            ; the operand ([R] stays under eval's
+                                            ; own frame, untouched)
+                ld      a,10                ; type mismatch, unless the operand's
+                jr      se2_arm             ; own fault already holds FPERR
+se2_miss:
+                ld      a,FPERR_MISSOP      ; ERR 24
+se2_arm:
+                call    penderr_set         ; first-error-wins
+                pop     de                  ; DE = R                 [ ]
+                ld      (STRPTR),de         ; the partial result IS the value
+                scf                         ; success-shaped: no re-drive
                 ret
 sct_append_err:
                 ; SH_ERR = 1 (heap OOM), 2 (temp overflow) or 3 (D-STRLONG: the

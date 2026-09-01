@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:829 (T-6FE392)8 (T-529ABE)` from `TODO.md:4258 (T-529ABE)`: a
+      `TODO.md:829 (T-6FE392)8 (T-529ABE)` from `TODO.md:4269 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -928,6 +928,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       case and never dangles.
       🙋 NEEDS-JOOST — still a judgement, but now against the real behaviour.
 
+- [x] ✅ **CLOSED 2026-09-01 (D-CATFIX,
+      [`docs/spec-basic-catfix.md`](docs/spec-basic-catfix.md)): `sct_err2` now
+      runs the reference's SINGLE PASS** — missing operand -> ERR 24 (three
+      more divergences `cattrail_probe` measured first), otherwise evaluate the
+      operand ONCE and arm TM through `penderr_set` (first-error-wins keeps the
+      operand's own fault), return CF=1 with the partial result so the driver
+      NEVER re-drives. `c.strfault` reads 11; `u.cat`'s counter reads 1, the
+      references' count, BY CONSTRUCTION. -21 B low region. FPERR-not-TMISMATCH
+      keeps `AB` off the screen (`ems_print` checks FPERR before emitting);
+      no check_expr_errors precedence change, so D-TMFP's rows are untouched.
+      ⚠️ Original filing follows.
 - [ ] 🔴 **THE CONCATENATION DIVERGENCE IS ONE ROW, NOT TWO:
       `"AB"+(0*(1/0)+1)` READS ERR 13 WHERE BOTH REFERENCES SAY 11.**
       Filed 2026-08-29 by D-STRTM §4; **re-measured 2026-08-31 by D-CATTM**
@@ -1265,7 +1276,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4258 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4269 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
