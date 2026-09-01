@@ -434,7 +434,7 @@ def run_side(side, labels):
         sn = probe_signal.kwargs(so) if marked else {}
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", list(cfg["reset"]) + lines)],
-            batch=False, boot=cfg["boot"], step=8.0, cap_gap=10.0, timeout=300.0,
+            batch=False, reset=(), boot=cfg["boot"], step=8.0, cap_gap=10.0, timeout=300.0,
             **sn)
         SIG.add(so, label=f"{side}:{label}")
         out[label] = face(caps[0])

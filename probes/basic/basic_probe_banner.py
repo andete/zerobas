@@ -72,7 +72,7 @@ def main() -> int:
               f"and every run would pass.")
         return 2
     caps = omsx_repl.run_cases(ZB, [("direct", ['10 PRINT"[";7;0;"]"', "RUN"])],
-                               batch=False, boot=8.0, step=3.0, cap_gap=8.0,
+                               batch=False, reset=(), boot=8.0, step=3.0, cap_gap=8.0,
                                timeout=300.0)
     scr = caps[0] or ""
     marker = omsx_repl.result_span_after_echo(caps[0], "RUN")

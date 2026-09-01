@@ -984,7 +984,7 @@ def run_side(side: str, only: list[str]) -> dict:
         if kind == "tok":
             caps = omsx_repl.run_cases(
                 cfg["machine"], [("direct", list(cfg["reset"]) + list(lines))],
-                batch=False, boot=cfg["boot"], step=cfg["step"],
+                batch=False, reset=(), boot=cfg["boot"], step=cfg["step"],
                 capture=("stored_line", TXTTAB), **kw)
             out[label] = tokens(caps[0])
             continue
@@ -992,7 +992,7 @@ def run_side(side: str, only: list[str]) -> dict:
         caps = omsx_repl.run_cases(
             cfg["machine"],
             [("direct", list(cfg["reset"]) + body + ["RUN"])],
-            batch=False, boot=cfg["boot"], step=cfg["step"], **kw)
+            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
         out[label] = {"dskerr": errface,
                       "dsklist": listface}.get(kind, bracket)(caps[0])
     return out

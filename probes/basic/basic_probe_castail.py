@@ -639,7 +639,7 @@ def run_rec_group(side, only, row, out):
                        f"{label}.wav")
     caps = omsx_repl.run_cases(
         cfg["machine"], [("direct", list(cfg["reset"]) + list(lines))],
-        batch=False, boot=cfg["boot"], step=cfg["step"],
+        batch=False, reset=(), boot=cfg["boot"], step=cfg["step"],
         prologue=(f"cassetteplayer new {{{wav}}}",), **kw)
     raw = caps[0]
     out[label] = tail_after(raw, lines[subj], cfg["failmsg"])
@@ -675,7 +675,7 @@ def run_group(side, only, kind, group, out):
     cases = [("direct", list(cfg["reset"]) + list(lines))
              for _, lines, _, _ in rows]
     caps = omsx_repl.run_cases(
-        cfg["machine"], cases, batch=False, boot=cfg["boot"], step=cfg["step"],
+        cfg["machine"], cases, batch=False, reset=(), boot=cfg["boot"], step=cfg["step"],
         prologue=(f"cassetteplayer insert {{{tape_path(kind)}}}",), **kw)
     for (label, lines, subj, extra), raw in zip(rows, caps):
         out[label] = tail_after(raw, lines[subj], cfg["failmsg"],

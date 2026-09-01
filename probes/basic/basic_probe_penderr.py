@@ -336,7 +336,7 @@ def run_side(side: str, only: list[str]) -> dict:
         sn = probe_signal.kwargs(so) if kind == "t" else {}
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", lines)],
-            batch=False, boot=cfg["boot"], step=cfg["step"], **kw, **sn)
+            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw, **sn)
         SIG.add(so, label=f"{side}:{label}")
         out[label] = read_case(kind, caps[0])
     return out

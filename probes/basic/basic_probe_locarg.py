@@ -315,7 +315,7 @@ def run_side(side: str, only: list[str]) -> dict:
         lines = list(cfg["reset"]) + program(kind, stmt) + ["RUN"]
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", lines)],
-            batch=False, boot=cfg["boot"], step=cfg["step"], **kw)
+            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
         out[label] = read_case(kind, caps[0])
     return out
 

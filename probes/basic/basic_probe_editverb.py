@@ -328,7 +328,7 @@ def run_side(side, only, repeat):
         # `Illegal function call` on all three sides and agrees. A batched modal
         # verb produces a PLAUSIBLE reading of the wrong thing, which is the one
         # failure mode `--repeat` cannot catch (it reproduces exactly).
-        # ⚠️ THE RESET HAS TO BE CARRIED INTO THE CASE. `run_cases(batch=False)`
+        # ⚠️ THE RESET HAS TO BE CARRIED INTO THE CASE. `run_cases(batch=False, reset=())`
         # IGNORES `reset` (its own docstring says so), and the CF-3300's reset is
         # not cosmetic: the leading "" answers the boot date prompt and
         # `SCREEN 0` puts it in the 40-column mode this scrape reads. Without
@@ -338,7 +338,7 @@ def run_side(side, only, repeat):
         cases = [("direct", list(cfg["reset"]) + list(lines))
                  for _, lines, _ in aut]
         caps = omsx_repl.run_cases(
-            cfg["machine"], cases, batch=False,
+            cfg["machine"], cases, batch=False, reset=(),
             boot=cfg["boot"], step=cfg["step"], prologue=plug)
         for (label, lines, declared), raw in zip(aut, caps):
             out[label] = reading(raw, anchor_for(lines, declared))
@@ -350,7 +350,7 @@ def run_side(side, only, repeat):
         # date-prompt CR and SCREEN 0 among them).
         cases = [("direct", list(cfg["reset"]) + list(lines)) for _, lines in llt]
         caps = omsx_repl.run_cases(
-            cfg["machine"], cases, batch=False, boot=cfg["boot"],
+            cfg["machine"], cases, batch=False, reset=(), boot=cfg["boot"],
             step=cfg["step"], prologue=plug,
             capture=("screen_printer", log))
         for (label, _), raw in zip(llt, caps):

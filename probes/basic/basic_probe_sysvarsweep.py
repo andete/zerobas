@@ -614,7 +614,7 @@ def run_side(side, keys, repeat, mode):
     runs = []
     for i in range(repeat):
         runs.append(omsx_repl.run_cases(
-            cfg["machine"], specs, batch=False, capture=capture,
+            cfg["machine"], specs, batch=False, reset=(), capture=capture,
             boot=cfg["boot"] + i * CAP_JITTER, step=cfg["step"], diska=tmp))
     if tmp:
         os.unlink(tmp)

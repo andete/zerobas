@@ -107,9 +107,9 @@ def phase_a() -> int:
         segs = [(pa, 1), (pa + 0x2000, 1)]
         specs = [("stored", paint_mark(prog([INIT, ops])))]
         so_r, so_z = {}, {}
-        ref = omsx_repl.run_cases(REF, specs, batch=False,
+        ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(),
                                   capture=("vram_segs", segs), **paint_sn(so_r))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False,
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(),
                                  capture=("vram_segs", segs), **paint_sn(so_z))[0]
         paint_tally(so_r, so_z)
         ok = ref is not None and ref == zb
@@ -327,9 +327,9 @@ def phase_c() -> int:
         segs = band_segs(xr, yr, color=col)
         specs = [("stored", paint_mark(prog([LINIT, ops])))]
         so_r, so_z = {}, {}
-        ref = omsx_repl.run_cases(REF, specs, batch=False,
+        ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(),
                                   capture=("vram_segs", segs), **paint_sn(so_r))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False,
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(),
                                  capture=("vram_segs", segs), **paint_sn(so_z))[0]
         paint_tally(so_r, so_z)
         ok = ref is not None and ref == zb
@@ -554,8 +554,8 @@ def phase_e() -> int:
         yr = (max(0, cy - h), cy + h)
         segs = band_segs(xr, yr, color=col)
         specs = [("stored", prog([LINIT, ops]))]
-        ref = omsx_repl.run_cases(REF, specs, batch=False, capture=("vram_segs", segs))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, capture=("vram_segs", segs))[0]
+        ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(), capture=("vram_segs", segs))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(), capture=("vram_segs", segs))[0]
         ok = ref is not None and ref == zb
         fails += not ok
         plane = "colour" if col else "pattern"
@@ -953,10 +953,10 @@ def phase_h() -> int:
         prog_lines = paint_points_prog(setup, pts)
         specs = [("stored", paint_mark(prog_lines))]
         so_r, so_z = {}, {}
-        ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=PAINT_STEP,
+        ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(), run_gap=PAINT_STEP,
                                   cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
                                   **paint_sn(so_r))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=PAINT_STEP,
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(), run_gap=PAINT_STEP,
                                  cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
                                  **paint_sn(so_z))[0]
         paint_tally(so_r, so_z)
@@ -1080,10 +1080,10 @@ def phase_h_vram() -> int:
             segs += [(pa, 1), (pa + 0x2000, 1)]
         specs = [("stored", paint_mark(prog([INIT] + ops)))]
         so_r, so_z = {}, {}
-        ref = omsx_repl.run_cases(REF, specs, batch=False, capture=("vram_segs", segs),
+        ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(), capture=("vram_segs", segs),
                                   run_gap=PAINT_STEP, cap_gap=PAINT_CAP_GAP,
                                   timeout=PAINT_TIMEOUT, **paint_sn(so_r))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, capture=("vram_segs", segs),
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(), capture=("vram_segs", segs),
                                  run_gap=PAINT_STEP, cap_gap=PAINT_CAP_GAP,
                                  timeout=PAINT_TIMEOUT, **paint_sn(so_z))[0]
         paint_tally(so_r, so_z)
@@ -1182,10 +1182,10 @@ def phase_h_mc() -> int:
     for label, setup, pts in PAINT_MC_CASES:
         specs = [("stored", paint_mark(paint_points_prog_mc(setup, pts)))]
         so_r, so_z = {}, {}
-        ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=MC_PAINT_STEP,
+        ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(), run_gap=MC_PAINT_STEP,
                                   cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
                                   **paint_sn(so_r))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=MC_PAINT_STEP,
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(), run_gap=MC_PAINT_STEP,
                                  cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
                                  **paint_sn(so_z))[0]
         paint_tally(so_r, so_z)
@@ -1218,10 +1218,10 @@ def phase_i_aliasing() -> int:
              'SCREEN0:PRINT"S";L;M;P;Q;W:END']
     specs = [("stored", paint_mark(lines))]
     so_r, so_z = {}, {}
-    ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=PAINT_STEP,
+    ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(), run_gap=PAINT_STEP,
                               cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
                               **paint_sn(so_r))[0]
-    zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=PAINT_STEP,
+    zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(), run_gap=PAINT_STEP,
                              cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT,
                              **paint_sn(so_z))[0]
     paint_tally(so_r, so_z)
@@ -1465,8 +1465,8 @@ def phase_k() -> int:
     for label, setup, pts in DRAW_FILL_CASES + DRAW_COLOUR_CASES:
         specs = [("stored", paint_mark(paint_points_prog(setup, pts)))]
         so_r, so_z = {}, {}
-        ref = omsx_repl.run_cases(REF, specs, batch=False, **paint_sn(so_r))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, **paint_sn(so_z))[0]
+        ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(), **paint_sn(so_r))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(), **paint_sn(so_z))[0]
         paint_tally(so_r, so_z)
         ra, za = _points(ref, len(pts)), _points(zb, len(pts))
         ok = ra is not None and ra == za
@@ -1618,8 +1618,8 @@ def phase_n() -> int:
         specs = [("stored", paint_mark([f"CLEAR 2000:COLOR15,4,7:{head}"]
                                        + spr_dump(base, n, extra)))]
         so_r, so_z = {}, {}
-        ref = omsx_repl.run_cases(REF, specs, batch=False, **paint_sn(so_r))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, **paint_sn(so_z))[0]
+        ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(), **paint_sn(so_r))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(), **paint_sn(so_z))[0]
         paint_tally(so_r, so_z)
         ra, za = _spr_bytes(ref), _spr_bytes(zb)
         ok = ra is not None and ra == za
@@ -1733,8 +1733,8 @@ def phase_p() -> int:
         specs = [("stored", paint_mark([f"CLEAR 2000:{head}"]
                                        + spr_dump(base, n, extra)))]
         so_r, so_z = {}, {}
-        ref = omsx_repl.run_cases(REF, specs, batch=False, **paint_sn(so_r))[0]
-        zb = omsx_repl.run_cases(ZB, specs, batch=False, **paint_sn(so_z))[0]
+        ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(), **paint_sn(so_r))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(), **paint_sn(so_z))[0]
         paint_tally(so_r, so_z)
         ra, za = _spr_bytes(ref), _spr_bytes(zb)
         ok = ra is not None and ra == za
@@ -1812,9 +1812,9 @@ def phase_q_state() -> int:
         _m, _l = _g8_prog(lines)
         specs = [(_m, paint_mark(_l))]
         so_r, so_z = {}, {}
-        r = _g8_state(omsx_repl.run_cases(REF, specs, batch=False, capture=G8_CAP,
+        r = _g8_state(omsx_repl.run_cases(REF, specs, batch=False, reset=(), capture=G8_CAP,
                                           run_gap=6.0, **paint_sn(so_r))[0])
-        z = _g8_state(omsx_repl.run_cases(ZB, specs, batch=False, capture=G8_CAP,
+        z = _g8_state(omsx_repl.run_cases(ZB, specs, batch=False, reset=(), capture=G8_CAP,
                                           run_gap=6.0, **paint_sn(so_z))[0])
         paint_tally(so_r, so_z)
         if r is None or z is None:
@@ -1945,7 +1945,7 @@ def phase_q_teeth() -> int:
     ])) for _, stmt in cases]
     for mach in (REF, ZB):
         so = {}
-        outs = omsx_repl.run_cases(mach, specs, batch=False,
+        outs = omsx_repl.run_cases(mach, specs, batch=False, reset=(),
                                    capture=("mem_abs", [(G8_RES, 3)]),
                                    run_gap=25.0, **paint_sn(so))
         paint_tally(so)
@@ -2041,9 +2041,9 @@ def phase_r_workarea() -> int:
     specs = [("stored", paint_mark(["SCREEN2:" + ops, WORKAREA_RD]))
              for _, ops in WORKAREA_CASES]
     so_r, so_z = {}, {}
-    ref = omsx_repl.run_cases(REF, specs, batch=False, run_gap=30.0,
+    ref = omsx_repl.run_cases(REF, specs, batch=False, reset=(), run_gap=30.0,
                               **paint_sn(so_r))
-    zb = omsx_repl.run_cases(ZB, specs, batch=False, run_gap=30.0,
+    zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=(), run_gap=30.0,
                              **paint_sn(so_z))
     paint_tally(so_r, so_z)
     for (label, _), r, z in zip(WORKAREA_CASES, ref, zb):
@@ -2061,9 +2061,9 @@ def phase_r_workarea() -> int:
               for _, ops in WORKAREA_ERR_CASES]
     especs = [(m, paint_mark(l)) for m, l in especs]
     so_er, so_ez = {}, {}
-    eref = omsx_repl.run_cases(REF, especs, batch=False, run_gap=30.0,
+    eref = omsx_repl.run_cases(REF, especs, batch=False, reset=(), run_gap=30.0,
                                **paint_sn(so_er))
-    ezb = omsx_repl.run_cases(ZB, especs, batch=False, run_gap=30.0,
+    ezb = omsx_repl.run_cases(ZB, especs, batch=False, reset=(), run_gap=30.0,
                               **paint_sn(so_ez))
     paint_tally(so_er, so_ez)
     for (label, _), r, z in zip(WORKAREA_ERR_CASES, eref, ezb):

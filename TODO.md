@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4884 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4912 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4884 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4912 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4411,6 +4411,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `run_cases` own `reset` in BOTH modes, and the both-ways diff becomes a
       one-command control for all 30 candidates. Until then each conversion needs
       its own hand-built comparison, which is what this one got.
+      ✅ **PREREQUISITE DONE 2026-09-01 (D-BATCH2), AND THE CONTROL EXISTS:
+      `python3 scratchpad/batchcheck.py <make-target>`.** `_run_cases_impl`'s
+      boot-per-case branch passed `reset=()`; it now passes the caller's `reset`,
+      so a mode forced from outside is FAITHFUL instead of a third behaviour.
+      🔴 **THAT ONE-LINE CHANGE HAD A 69-SITE BLAST RADIUS, AND A PROBE CAUGHT
+      IT IMMEDIATELY.** `banner-acceptance` went red on the first spot-check: its
+      subject IS the untouched boot screen, and the now-injected default `CLS`
+      wiped the header it reads — *"the marker printed but 2 header line(s) are
+      GONE ... no other gate in this tree would have noticed"*. The resets are
+      all idempotent (`NEW`/`CLS`/`SCREEN 0`), but idempotent is not the same as
+      HARMLESS when the screen is the subject.
+      ➡️ Fixed by making the implicit explicit: **69 sites in 33 probes** now
+      pass `reset=()` where they were relying on the mode's default. Behaviour-
+      preserving by construction, and it means every probe now DECLARES its reset
+      instead of inheriting one that differed by mode. 92/92 green after the
+      sweep.
+      🟢 **AND THE CONTROL DISCRIMINATES, WHICH IS THE ONLY THING THAT MAKES IT
+      WORTH HAVING**: `runtail` 22/22 rows identical → CONVERTIBLE; `lptverb`
+      rows DIFFER, and the difference is the exact accumulation D-EDITVERB
+      predicted — the batched printer log reads
+      `CTL\r\nX\r\n 5 \r\n-5 \r\nAB\r\nA B\r\n` where boot-per-case
+      reads `A B\r\n`.
+      🔴 **BOTH MODES REPORTED `ok` AND rc=0.** The suite PASSES while measuring
+      a running total, so exit status could never have caught it — only the row
+      diff does. That is what "silently wrong in the direction of a plausible-
+      looking divergence" looks like when you finally point an instrument at it.
+      ➡️ Remaining: run the control over the other ~29 candidates and convert the
+      ones it clears. Each is now one command plus a `run_side` restructure.
 
 - [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
       RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01

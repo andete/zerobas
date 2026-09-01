@@ -312,7 +312,7 @@ def run_side(side, only):
 
     def battery(sel, dsk):
         cases = [("direct", list(cfg["reset"]) + list(lines)) for _, lines in sel]
-        caps = omsx_repl.run_cases(cfg["machine"], cases, batch=False,
+        caps = omsx_repl.run_cases(cfg["machine"], cases, batch=False, reset=(),
                                    boot=cfg["boot"], step=cfg["step"], diska=dsk)
         for (label, lines), raw in zip(sel, caps):
             out[label] = reading(raw, ANCHOR.get(label) or anchor_for(lines))

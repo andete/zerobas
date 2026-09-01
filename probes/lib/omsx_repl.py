@@ -1575,9 +1575,29 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
     passes it. (Getting that wrong would only ever cause a miss, never a wrong
     hit -- but a cache that misses on equivalent calls is not worth having.)
     """
+    # 🔬 $ZB_BATCH FORCES A MODE, FOR THE CONVERSION CONTROL (D-BATCH2).
+    # `batch=False` is passed by 35 of the tree's 60 emulator probes -- the
+    # docstring calls it "the historical default" -- and it dominates the
+    # battery: strparen went 35 s -> 5 s on the flip. But D-EDITVERB records what
+    # a WRONGLY batched suite does: one case's capture becomes a whole log and
+    # every later delta is silently wrong "in the direction of a plausible-
+    # looking divergence". So a conversion must be proved by running the suite
+    # BOTH ways and diffing its rows.
+    # 🔴 THIS ONLY WORKS BECAUSE `reset` NOW APPLIES IN BOTH MODES. D-BATCH1's
+    # first attempt at this switch was WITHDRAWN as unsound: `reset` meant
+    # something batched and nothing boot-per-case, so forcing the other mode
+    # produced a THIRD behaviour rather than the old one. The fix was in
+    # `_run_cases_impl`, not here -- see the `if not batch:` branch.
+    # ⚠️ A TEST-HARNESS SWITCH, NOT A TUNABLE: the runner never sets it, and
+    # `scratchpad/batchcheck.py` is its only consumer.
     import inspect
     bound = inspect.signature(_run_cases_impl).bind(machine, cases, **kw)
     bound.apply_defaults()
+    _force = os.environ.get("ZB_BATCH")
+    if _force in ("0", "1"):
+        want = (_force == "1")
+        bound.arguments["batch"] = want
+        kw = dict(kw); kw["batch"] = want
     args = dict(bound.arguments)
     args.pop("machine"); args.pop("cases")
     settle = args.pop("settle_out", None)
@@ -1704,7 +1724,20 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
         kw["settle_out"] = settle_out
     to_single = timeout if timeout is not None else 240.0
     if not batch:
-        return [run_batch(machine, [c], reset=(), timeout=to_single,
+        # 🔬 THE CALLER'S `reset` APPLIES IN BOTH MODES (D-BATCH2, 2026-09-01).
+        # This used to be `reset=()`, so `reset` meant something in the batched
+        # path and nothing in the boot-per-case one -- and every boot-per-case
+        # probe therefore PREPENDS its own reset to each case body. That
+        # asymmetry is what made a generic "run it both ways" control impossible:
+        # forcing the other mode from outside produced a THIRD behaviour (no
+        # reset, or two), which is exactly how D-BATCH1's first control failed.
+        # 🟢 SAFE BECAUSE EVERY RESET IN THE TREE IS IDEMPOTENT -- swept: only
+        # NEW / CLS / SCREEN 0 / blank lines, in ten combinations. A probe that
+        # already prepends its own now runs it twice, which costs a little
+        # emulated time and changes nothing observable; a probe that does NOT
+        # prepend (i.e. a converted one) now behaves the same in both modes,
+        # which is the whole point.
+        return [run_batch(machine, [c], reset=reset, timeout=to_single,
                           holds=[holds[i]] if holds else None,
                           verify_delivery=verify_delivery, **kw)[0]
                 for i, c in enumerate(cases)]

@@ -480,7 +480,7 @@ def run_side(side: str, rows) -> dict:
                 if mode == "stored" else list(lines))
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", list(cfg["reset"]) + body)],
-            batch=False, boot=cfg["boot"], step=cfg["step"], **kw)
+            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
         out[lab] = read(bat, subj, caps[0])
     return out
 

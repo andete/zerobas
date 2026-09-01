@@ -61,7 +61,7 @@ CASES = [
 
 def main() -> int:
     cases = [("direct", ["NEW", line]) for line, _, _ in CASES]
-    caps = omsx_repl.run_cases(MACHINE, cases, batch=False,
+    caps = omsx_repl.run_cases(MACHINE, cases, batch=False, reset=(),
                                capture=("mem_abs", [(DISK_FCB, FCB_LEN)]))
     rc = 0
     for (line, exp_drv, exp_name), cap in zip(CASES, caps):

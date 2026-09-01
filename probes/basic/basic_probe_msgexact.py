@@ -572,7 +572,7 @@ def measure_extra(side: str, *, omsx: str | None = None
         shutil.copy(diska, tmp)
     try:
         cases = [(mode, list(reset) + lines) for _, mode, lines, _ in EXTRA]
-        raws = omsx_repl.run_cases(machine, cases, batch=False,
+        raws = omsx_repl.run_cases(machine, cases, batch=False, reset=(),
                                    capture="screen", omsx=omsx, diska=tmp, **cfg)
     finally:
         if tmp and os.path.exists(tmp):
@@ -610,7 +610,7 @@ def measure_subx(side: str, *, omsx: str | None = None
         shutil.copy(diska, tmp)
     try:
         cases = [("direct", list(reset) + lines) for _, lines, _, _ in rows]
-        raws = omsx_repl.run_cases(machine, cases, batch=False,
+        raws = omsx_repl.run_cases(machine, cases, batch=False, reset=(),
                                    capture="screen", omsx=omsx, diska=tmp, **cfg)
     finally:
         if tmp and os.path.exists(tmp):

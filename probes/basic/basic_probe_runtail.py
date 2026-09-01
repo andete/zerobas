@@ -222,7 +222,7 @@ def run_side(side, only):
     shutil.copy(TEST_DSK, dsk)
     cases = [("direct", list(cfg["reset"]) + list(lines))
              for _, lines, _, _ in rows]
-    caps = omsx_repl.run_cases(cfg["machine"], cases, batch=False,
+    caps = omsx_repl.run_cases(cfg["machine"], cases, batch=False, reset=(),
                                boot=cfg["boot"], step=cfg["step"], diska=dsk)
     for (label, lines, subj, extra), raw in zip(rows, caps):
         out[label] = tail_after(raw, lines[subj], cfg["missmsg"])

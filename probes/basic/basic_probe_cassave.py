@@ -194,7 +194,7 @@ def run_row(side, label, saveline, out):
     lines = list(PROG) + [saveline, W_SAVE, f'PRINT"{ALIVE}"']
     caps = omsx_repl.run_cases(
         cfg["machine"], [("direct", list(cfg["reset"]) + lines)],
-        batch=False, boot=cfg["boot"], step=cfg["step"],
+        batch=False, reset=(), boot=cfg["boot"], step=cfg["step"],
         prologue=(f"cassetteplayer new {{{wav}}}",), **kw)
     raw = caps[0]
     out[label] = tail_after(raw, saveline)            # the verb prints NOTHING

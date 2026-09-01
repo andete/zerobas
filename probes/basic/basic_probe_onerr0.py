@@ -436,7 +436,7 @@ def run_side(side: str, only: list[str]) -> dict:
         anchors = (["RUN"] if prog else []) + list(tails)
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", lines)],
-            batch=False, boot=cfg["boot"], step=cfg["step"], **kw)
+            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
         out[label] = read_case(caps[0], anchors)
     return out
 

@@ -38,7 +38,7 @@ the shape D-EDITVERB found on `AUTO` -- a batched case measuring the one before
 it, producing a plausible reading of the wrong thing that `--repeat` cannot
 catch. Accumulated state ⇒ boot-per-case, and it is not caution.
 
-⚠️ AND `run_cases(batch=False)` IGNORES `reset` -- its own docstring says so --
+⚠️ AND `run_cases(batch=False, reset=())` IGNORES `reset` -- its own docstring says so --
 so every boot-per-case battery carries the side's reset INSIDE the case. The
 CF-3300's reset is not cosmetic: the leading "" answers its boot date prompt and
 `SCREEN 0` puts it in the 40-column mode this scrape reads. Omit them and every
@@ -418,7 +418,7 @@ def run_side(side, only):
         cases = [(("direct"), list(cfg["reset"]) + list(lines))
                  for _, lines in rows]
         caps = omsx_repl.run_cases(
-            cfg["machine"], cases, batch=False, boot=cfg["boot"],
+            cfg["machine"], cases, batch=False, reset=(), boot=cfg["boot"],
             step=cfg["step"], prologue=plug,
             capture=("screen_printer", log), diska=diska)
         for (label, _), raw in zip(rows, caps):
@@ -434,7 +434,7 @@ def run_side(side, only):
         cases = [("direct", list(cfg["reset"]) + list(lines))
                  for _, lines in lps]
         caps = omsx_repl.run_cases(
-            cfg["machine"], cases, batch=False, boot=cfg["boot"],
+            cfg["machine"], cases, batch=False, reset=(), boot=cfg["boot"],
             step=cfg["step"], prologue=plug)
         for (label, lines), raw in zip(lps, caps):
             out[label] = reading(raw, anchor_for(lines))
@@ -450,7 +450,7 @@ def run_side(side, only):
         cases = [("direct", list(cfg["reset"]) + list(lines))
                  for _, lines in scr_rows]
         caps = omsx_repl.run_cases(
-            cfg["machine"], cases, batch=False, boot=cfg["boot"],
+            cfg["machine"], cases, batch=False, reset=(), boot=cfg["boot"],
             step=cfg["step"], prologue=plug)
         for (label, lines), raw in zip(scr_rows, caps):
             out[label] = reading(raw, anchor_for(lines))
@@ -460,7 +460,7 @@ def run_side(side, only):
         cases = [("direct", list(cfg["reset"]) + list(lines))
                  for _, lines in rows]
         caps = omsx_repl.run_cases(
-            cfg["machine"], cases, batch=False, boot=cfg["boot"],
+            cfg["machine"], cases, batch=False, reset=(), boot=cfg["boot"],
             step=cfg["step"], prologue=plug, diska=diska)
         for (label, lines), raw in zip(rows, caps):
             out[label] = reading(raw, anchor_for(lines))

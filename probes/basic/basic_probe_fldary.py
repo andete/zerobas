@@ -207,7 +207,7 @@ def run_side(side: str, only: list[str]) -> dict:
         body = [f"{10 * (k + 1)} {ln}" for k, ln in enumerate(lines)]
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", list(cfg["reset"]) + body + ["RUN"])],
-            batch=False, boot=cfg["boot"], step=cfg["step"], **kw)
+            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
         out[label] = bracket(caps[0])
     return out
 
