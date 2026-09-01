@@ -38,8 +38,13 @@ the crude signal refined by which arc/gate actually exercises the file:
   and the skip is quote-blind (the D-DATACOLON class). Rows need the
   interactive-format rig (the CF-3300's CALL FORMAT prompts), so they are
   sketched in the TODO item rather than run tonight.
-- ex_key_stmt (program.asm)   KEY n,"s" is NOT-THIS-ONE (blocked ~160 B), but
-  KEY LIST / KEY ON/OFF mechanism unreviewed.
+- ✅ ex_key + ex_key_stmt — **REVIEWED 2026-09-01, NO NEW FINDING**: the
+  surface is two measured forms plus one pinned decline. `KEY ON/OFF` is a
+  BIOS pair (ERAFNK/DSPFNK, cursor guarded); `KEY(n) ON/OFF/STOP` is the
+  T3-measured trap form (byte-coerced arg, reversed band, STOP==OFF per
+  D-T3-6, trappable ERR 2 on junk); `KEY <n>,"str"` and `KEY LIST` are
+  stmt_error — the NOT-THIS-ONE item, already scouted (D-KEYSTR: storage
+  measured, cold-boot defaults absent) and pinned in filed-row-known.txt.
 - ✅ ex_motor — **REVIEWED 2026-08-31, NO FINDING**: measured to its corners
   already (spec §3.5 — `MOTOR STOP` is ERR 2 with a do-not-harmonise warning,
   bare-MOTOR toggles only at a statement boundary).
@@ -48,8 +53,20 @@ the crude signal refined by which arc/gate actually exercises the file:
   all three then apply, corrected against the spec's own first reading), the
   ERR-24 missing-operand family, the fourth-argument row, and the O-3
   cursor-argument deviation recorded as such.
-- ex_auto, ex_renum           line-editor verbs, LARGE; lineedit rows exist
-  but no mechanism review.
+- ✅ ex_auto + ex_renum — **REVIEWED 2026-09-01, NO FINDING — measured deeper
+  than a review reaches**: D-EDITVERB's R-AU*/R-RN* row families already cover
+  every corner a read flags (empty-entry-vs-bare-lineno-DELETE separated by
+  `au-emptykill`, Ctrl-STOP discard, the screen-only `*` marker, the dangling
+  reference report's OLD-number format, and R-RN17's measured CONT/vars
+  survival with its own separating pair). AUTO's loop stores nothing itself —
+  every dispatch_line rule applies for free.
+
+**THE THIN SECTION IS FULLY WALKED (2026-09-01).** Score: 3 verb groups with
+real defects (DATA/RESTORE x3, DEFtype x1, PLAY x3 slices earlier), 5
+no-findings recorded with their refuting citations, 2 false-thin entries, 1
+suspicion filed with its rig named (CALL FORMAT). What remains of the tier is
+the arc-covered groups below — spot-verify each arc actually reads the
+MECHANISM before trusting the name — and the filed suspicions.
 
 ## Covered by an arc under another name (verify the arc actually reads the
 ## mechanism before skipping)
