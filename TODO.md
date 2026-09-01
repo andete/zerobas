@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4949 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4976 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4949 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4976 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4474,8 +4474,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       asked for: `lptverb`'s accumulating printer log (with the measured
       before/after strings), `castail`'s rc 2-vs-0, and `editverb`'s
       header-warning now backed by a measurement.
-      ➡️ Remaining: the ~25 for-loop probes, each a `run_side` rewrite (see
-      `basic_probe_strparen.py`) followed by one `batchcheck` run.
+      🔴 **AND THE FOUR SLOWEST FOR-LOOP PROBES SHARE ONE BLOCKER, WHICH TURNED
+      OUT TO BE A DEFECT (2026-09-01, D-BATCH5).** `screenerr`, `stmtpend`,
+      `penderr` and `tmfp` all carry the same comment: *"A FRESH `so` PER CALL
+      ... every boot indexes from 0, so one dict reused across the loop would
+      hold a single entry and the tally would silently under-count."* **Seven
+      probes use `probe_signal`; all seven are boot-per-case; none is batched.**
+      🎯 **THE COMMENT IS A STATEMENT ABOUT `batch=False`, AND BATCHING FIXES
+      WHAT IT FEARS.** `settle_out` keys by the case index the emulator emits, so
+      a batched matrix of N cases writes N DISTINCT keys into ONE dict. The
+      per-call dict was a boot-per-case workaround, not a barrier.
+      📏 **`tmfp` CONVERTED AND MEASURED: 61.7 s → 15.1 s (4.1x), 58 of 59 rows
+      IDENTICAL.** The one differing row is the instrument's own tally —
+      **`capture-on-signal: 123 on signal` batched vs `3` boot-per-case.** 41
+      signal cases x 3 sides = 123, so the batched figure is the arithmetically
+      consistent one and **boot-per-case has been under-counting 40x**: exactly
+      the failure the comment warned a shared dict would cause, happening all
+      along in the mode it thought was safe.
+      ⚠️ The tally is report-only, so no verdict was ever wrong — but it is the
+      detector that reports FALLBACKS, so **40 of every 41 fallbacks were
+      invisible**. The other six `probe_signal` probes are presumed to carry the
+      same under-count; it is not measured for them yet.
+      ⚠️ The conversion splits the matrix by `kind == "t"`, because
+      `probe_signal.kwargs` is a whole-CALL setting and a mixed matrix would
+      apply sentinel capture to the non-signal cases too. The disk is now one per
+      GROUP, not per case — a real reduction in isolation, which is why this only
+      lands with the control green.
+      ➡️ Remaining: the other six `probe_signal` probes (the same split applies,
+      and `lineerr` + `graphics` are the two biggest units in the battery), then
+      the rest of the for-loop probes.
 
 - [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
       RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01
