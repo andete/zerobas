@@ -399,11 +399,6 @@
   "signal": "refactor, no oracle",
   "matched": "namespaces"
  },
- "T-C7D96E": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
  "T-927679": {
   "bucket": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
