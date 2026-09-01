@@ -369,11 +369,6 @@
   "signal": "charter / scope",
   "matched": "CHARTER"
  },
- "T-C17B7B": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
-  "signal": "charter / scope",
-  "matched": "charter"
- },
  "T-1CA9F7": {
   "bucket": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",

@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4860 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4884 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4860 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4884 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4387,6 +4387,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       once per suite when it opts in.**
       🤖 AUTONOMOUS — a gate settles it, and the before/after row sets are the
       oracle.
+      🔴 **RE-MEASURED 2026-09-01 (D-BATCH1) AND THE PREMISE ABOVE IS WRONG.**
+      "The marginal cost is per-unit openMSX boots, so share a boot across
+      SUITES" — no. `run_cases` already defaults to `batch=True`, **one boot for
+      a whole matrix**, so a batched suite boots ONCE and sharing across suites
+      would save ~0.5 s each.
+      🎯 **THE COST IS BOOT-PER-CASE WITHIN A SUITE.** `batch=False` — described
+      in `run_cases`'s own docstring as "the historical default" — is passed by
+      **35 of the 60 emulator probes**, and it is the battery's dominant cost.
+      **30 of those 35 carry no reason within 25 lines of the call** (a crude
+      scan: a candidate list, not a verdict).
+      📏 **PROVED ON ONE: `strparen-acceptance` 35 s → 5 s (7x), 16/16 rows still
+      matching their references**, verified by running the matrix BOTH ways and
+      diffing every row (0/16 differ) before flipping it.
+      🔴 **AND THE GENERIC CONTROL WAS BUILT AND WITHDRAWN — IT WAS UNSOUND.** A
+      `$ZB_BATCH=0` switch at the `run_cases` chokepoint cannot reproduce the old
+      behaviour, because **`reset` lives in different places in the two modes**:
+      the probe prepends it per case for `batch=False`, the harness injects it
+      for `batch=True`. Forcing the other mode from outside yields a THIRD
+      behaviour (no reset, or two). Its first run said `rc 0 vs 2` and that was
+      the instrument, not the suite.
+      ➡️ **So the remaining work has a PREREQUISITE nobody had named**: make
+      `run_cases` own `reset` in BOTH modes, and the both-ways diff becomes a
+      one-command control for all 30 candidates. Until then each conversion needs
+      its own hand-built comparison, which is what this one got.
 
 - [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
       RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01

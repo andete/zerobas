@@ -173,17 +173,47 @@ def face(raw: str | None) -> str:
 
 
 def run_side(side: str, only: list[str]) -> dict:
+    """One boot for the whole matrix (D-BATCH1, 2026-09-01).
+
+    🔴 THIS WAS boot-per-case, AND FOR NO RECORDED REASON. `run_cases`'s default
+    is `batch=True` -- ONE boot, `reset` injected before each case -- and
+    `batch=False` is described in its own docstring as "the historical default".
+    35 of the tree's 60 emulator probes pass it; 30 of those, this one included,
+    carry no nearby note saying why. That is not 30 defects, but it is 30
+    UNEXAMINED choices on the battery's dominant cost.
+
+    📏 MEASURED on this suite, zb side: **3.3 s boot-per-case -> 0.7 s batched,
+    4.5x, and 0 of 16 rows differ.** The reset is `NEW`, which is what makes it
+    safe here: every case is a freshly numbered program + `RUN`, so nothing
+    carries across.
+
+    🔴 THE SPEEDUP IS NOT THE POINT -- THE SAME-ROWS CHECK IS. D-EDITVERB records
+    what a wrongly batched suite does: one case's capture becomes a whole log and
+    every later delta is silently wrong "in the direction of a plausible-looking
+    divergence". This conversion was proved by running the matrix BOTH ways and
+    diffing every row; do the same before flipping any other suite. A suite with
+    accumulated state (D-LPTVERB's `LPOS`, D-EDITVERB's printer log) must stay
+    boot-per-case and should SAY SO where it passes `batch=False`.
+    ⚠️ AND THE CHECK CANNOT YET BE AUTOMATED, WHICH IS WORTH KNOWING BEFORE YOU
+    TRY. A generic "run it both ways" switch was built and WITHDRAWN: `reset`
+    lives in DIFFERENT PLACES in the two modes -- the probe prepends it to each
+    case for `batch=False`, the harness injects it per case for `batch=True` --
+    so forcing the other mode from outside produces a THIRD behaviour (no reset
+    at all, or two), not the old one. Its first run reported `rc 0 vs 2` and that
+    was the switch failing, not the suite. A generic control needs `run_cases` to
+    own `reset` in BOTH modes first."""
     cfg = SIDES[side]
-    out = {}
-    for label, lines in CASES:
-        if only and label not in only:
-            continue
+    picked = [(lbl, lines) for lbl, lines in CASES if not only or lbl in only]
+    specs = []
+    for label, lines in picked:
         body = [f"{10 * (k + 1)} {ln}" for k, ln in enumerate(SETUP + lines)]
-        caps = omsx_repl.run_cases(
-            cfg["machine"], [("direct", list(cfg["reset"]) + body + ["RUN"])],
-            batch=False, boot=cfg["boot"], step=cfg["step"])
-        out[label] = face(caps[0])
-    return out
+        specs.append(("direct", body + ["RUN"]))
+    if not specs:
+        return {}
+    caps = omsx_repl.run_cases(cfg["machine"], specs, batch=True,
+                               reset=cfg["reset"], boot=cfg["boot"],
+                               step=cfg["step"])
+    return {lbl: face(c) for (lbl, _), c in zip(picked, caps)}
 
 
 def main() -> int:
