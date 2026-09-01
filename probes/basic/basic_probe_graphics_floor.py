@@ -21,8 +21,8 @@ graphics_selftest (sub/graphics.asm) EI's, writes f(addr)=low^high to every cell
 of an 8 KB VRAM block via the di-guarded direct-port primitives, reads the block
 back, and publishes two results in page-3 RAM:
 
-    GFX_DJ  ($C120) = JIFFY delta observed while drawing under EI  (>= 1 = interrupts serviced)
-    GFX_BAD ($C121) = VRAM read-back mismatch count               (0 = no address-latch corruption)
+    GFX_DJ  ($E220) = JIFFY delta observed while drawing under EI  (>= 1 = interrupts serviced)
+    GFX_BAD ($E3E5) = VRAM read-back mismatch count               (0 = no address-latch corruption)
 
 PASS = delta >= 1 AND bad == 0: interrupts stayed live during the draw (music
 would keep playing) and the di-guarded 2-byte VDP address latch kept every access
@@ -64,11 +64,11 @@ MACHINE = os.environ.get("ZEROBAS_SUBROM_INTTEST_MACHINE", "C-BIOS_MSX1_EU_REPAC
 
 # The CALSLT stub. Loaded at $C000; halt sentinel at $C00E. Index 8 lives at
 # page-0 entry $0040 + 3*8 = $0058. Results are written by the tenant itself into
-# GFX_DJ ($C120) / GFX_BAD ($C121), so the stub only needs to make the call.
+# GFX_DJ ($C120) / GFX_BAD ($E3E5), so the stub only needs to make the call.
 STUB_ADDR = 0xC000
 STUB_HALT = 0xC00E
-GFX_DJ = 0xC120
-GFX_BAD = 0xC121
+GFX_DJ = 0xE220
+GFX_BAD = 0xE3E5
 GFX_OP = 0xE030   # G2: index 8 is now selector-dispatched; 0 = the floor self-test
 STUB_BYTES = bytes([
     0xF3,                    # di

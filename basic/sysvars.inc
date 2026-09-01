@@ -83,8 +83,16 @@ ATRBYT          equ     $F3F2   ; current graphics attribute / plot colour (1)
 ; BASIC -- only by basic_probe_graphics_floor.py -- so its two result bytes live in
 ; high scratch RAM (page 3, the same $C0xx region the inttest probe uses), NOT in the
 ; exhausted system-variable area. The probe reads them straight after the CALSLT.
-GFX_DJ          equ     $C120   ; JIFFY delta observed while drawing under EI (1; >=1 = live)
-GFX_BAD         equ     $C121   ; VRAM read-back mismatch count (1; 0 = no latch corruption)
+; 🔴 THESE TWO WERE STRANDED AT $C120, ABOVE A BOUNDARY EVERY OTHER ALLOCATION
+; RESPECTS -- two bytes alone in the 8192 B the text ceiling was reserving. That
+; is what made them findable (D-FREGAP) and what forced them to move: with
+; TXTMAX raised over $C000 they would sit INSIDE the BASIC text area, written by
+; any draw, corrupting a program larger than ~16 KB. Homed 2026-09-01 in two
+; cells this file already documents as retired-and-free, one each:
+;   $E220      was STOPGRACE (retired 2026-07-25, spec §12.3)
+;   $E3E5      was STRENG_SPARE / the D-2 flag (D-PENDERR)
+GFX_DJ          equ     $E220   ; JIFFY delta observed while drawing under EI (1)
+GFX_BAD         equ     $E3E5   ; VRAM read-back mismatch count (1)
 
 ; --- Slot access BIOS entry points + work area (extension-ROM INIT scan) ----
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook. The
@@ -1998,9 +2006,28 @@ TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
 ; still charged to page 2 and the ceiling rises to meet it.
 ; ⚠️ The rise is BOUNDED BY DETOKBUF, not by the freed RAM: at 1280 B it does not
 ; fit in the 1024 B window, so $BB00 is the ceiling until it is dealt with.
-TXTMAX          equ     $BB00   ; repack: text ceiling, 1280 B below the $C000 BLOAD
-                                ; region — DETOKBUF alone now reserves that window.
-DETOKBUF        equ     $BB00   ; repack: 1280 B one-shot detok output buffer.
+; 🟢 D-RECLAIM (2026-09-01): THE CEILING RISES OVER $C000, +8192 B OF BASIC RAM.
+; FRE(0) 14767 -> 22959, against the CF-3300's 23348 -- within 389 B of the
+; reference, from 8581 B short. docs/spec-fre-gap.md is the measurement that
+; found it; docs/spec-reclaim.md is this change.
+; 🎯 WHAT WAS ACTUALLY RESERVING IT: nothing in BASIC mode. $C000..$E000 is
+; MSX-DOS territory -- boot-sector load $C000, kernel work area $D606, BDOS
+; dispatcher $D831, kernel FCB $DA40, DOS work area $DD0E..$DD8E -- and
+; **BASIC and DOS never co-exist** (Joost, 2026-09-01). A DOS boot replaces
+; BASIC wholesale; the boot sector loads at $C000 during INIT, before any
+; program exists. The reference proves the model: the CF-3300 runs BASIC up to
+; HIMEM $DE77 and expects a program that BLOADs high to CLEAR/HIMEM down first,
+; which is what those verbs are for.
+; ⚠️ THE OLD COMMENT NAMED THE SMALL LEVER AND NOT THE BIG ONE. "The rise is
+; BOUNDED BY DETOKBUF" was true and worth ~768 B; the 8192 B $C000 reservation
+; was priced NOWHERE and held two bytes ($C120, now rehomed above).
+TXTMAX          equ     $DB00   ; repack: text ceiling. DETOKBUF sits immediately
+                                ; above it, topping out exactly at the $E000
+                                ; workspace floor.
+DETOKBUF        equ     $DB00   ; repack: 1280 B one-shot detok output buffer,
+                                ; $DB00..$DFFF. Size is a consequence of LINEMAX
+                                ; (254 chars x 5 + terminator = 1271); see the
+                                ; derivation above.
 PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 bytes)
 
 ; --- Arrays slice-1, SPLIT design (repack build only, docs/spec-basic- ------

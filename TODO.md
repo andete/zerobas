@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4835 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4860 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4835 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4860 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4248,7 +4248,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
 
-- [ ] 🙋 **8192 B OF BASIC MEMORY IS RESERVED BY A CONVENTION NOBODY PRICED —
+- [x] 🟢 **8192 B OF BASIC MEMORY IS RESERVED BY A CONVENTION NOBODY PRICED —
       `$C000`–`$E000` HOLDS TWO ALLOCATED BYTES.** Measured 2026-09-01
       (D-FREGAP, [`docs/spec-fre-gap.md`](docs/spec-fre-gap.md)), asked while
       reviewing the boot banner: what would a `Bytes free` line print?
@@ -4276,6 +4276,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the convention**.
       🔬 Worth a look either way: the two bytes at `$C120` are stranded above a
       boundary every other allocation respects.
+      ✅ **SPENT 2026-09-01 (D-RECLAIM,
+      [`docs/spec-reclaim.md`](docs/spec-reclaim.md); rows in
+      `scratchpad/reclaim_probe.py`) — `FRE(0)` 14767 → 22959, +8192 B, ZERO ROM
+      COST** (low 106 B, page 1 331 B, both unchanged). From **8581 B short of
+      the CF-3300 to 389 B short.**
+      🎯 **THE DECISION WAS JOOST'S AND IT WAS ONE SENTENCE**: *"BASIC and DOS
+      never co-exist."* That is what makes the `$C000`–`$E000` DOS territory
+      (boot load, kernel work area, BDOS dispatcher, kernel FCB, DOS work area)
+      free in BASIC mode — and the reference already proves the model, running
+      BASIC to `HIMEM $DE77` and expecting a program that BLOADs high to
+      `CLEAR`/`HIMEM` down first.
+      ➡️ Three constants: `TXTMAX` and `DETOKBUF` `$BB00` → `$DB00` (the buffer
+      tops out exactly at the `$E000` workspace floor), and the two stranded
+      bytes rehomed to `$E220` / `$E3E5`, cells this file already documents as
+      retired.
+      🔴 **THOSE TWO BYTES WOULD HAVE CORRUPTED SILENTLY** — with the ceiling
+      raised they sit INSIDE the text area, written by any draw, wrecking a
+      program over ~16 KB. Small test programs would never have caught it. Being
+      stranded above a boundary is what made them findable.
+      🔬 **THE ROWS ALLOCATE, THEY DO NOT JUST READ `FRE`**: a rising `FRE(0)` is
+      an arithmetic change, not proof the memory works. `d.big` (`DIM C%(9000)`,
+      18000 B) does not fit the old 14767 and does fit the new 22959, so **the
+      row IS the reclaim**; `d.big0` reads the far end back. 0 DIFF on 5 rows,
+      and **`d.huge` still ERR 7 on both — the ceiling still EXISTS**, which a
+      change that removed the bound entirely would have passed.
 
 - [ ] 🙋 **THE LAST FIELD ROW (`e.val`) NEEDS DESCRIPTOR-BASED BINDING, AND IT IS
       THE ROW WHERE THE REFERENCE IS WORSE.** Filed 2026-09-01 after D-FLDCLOSE

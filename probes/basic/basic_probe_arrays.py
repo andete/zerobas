@@ -491,8 +491,19 @@ CASES = [
     # FPERR via ary_errmap, but NOTHING checked it afterward -- the
     # assignment silently dropped exactly like the pre-4c fixed-pool
     # contract (observed: no "Out of memory" text anywhere in the capture).
+    # 🔴 THE CEILING IS PINNED AT 47872 ($BB00), NOT 50000, AND THAT IS THE
+    # POINT (D-RECLAIM, 2026-09-01). The squeeze needs the ALLOCATION CEILING to
+    # be a known value; it is min(HIMEM,TXTMAX). While TXTMAX was $BB00 it was
+    # the binding term and `CLEAR 200,50000` was a no-op ceiling -- so raising
+    # TXTMAX to $DB00 handed the row 2128 B it did not expect and `DIM Z(1840)`
+    # stopped filling the room. Both OOM rows went green-to-red on a change that
+    # had nothing to do with what they test.
+    # 🎯 Pinning CLEAR at the OLD binding value restores the geometry EXACTLY and
+    # makes the row depend only on a number it sets itself. A test whose squeeze
+    # is defined by someone else's ceiling measures that ceiling, not its subject
+    # [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
     ("scalar.str.chain.oom",   "direct",
-        ['CLEAR 200,50000', 'DIM Z(1840)']
+        ['CLEAR 200,47872', 'DIM Z(1840)']
         + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
         "zberr"),
 
@@ -951,7 +962,7 @@ def _line_tokens(raw):
 # path even after ex_let_str's own fix); post-fix it is '1|Out of memory'.
 INPUT_OOM = [
     ("scalar.input.chain.oom",
-     ['CLEAR 200,50000', 'DIM Z(1840)'] +
+     ['CLEAR 200,47872', 'DIM Z(1840)'] +
      [ln for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" for ln in (f'LINE INPUT {c}$', '1')],
      "LINE INPUT Z$", "1|Out of memory"),
 ]
