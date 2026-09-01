@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4641 (T-529ABE)`: a
+      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4665 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1395,7 +1395,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4641 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4665 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4168,6 +4168,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
+
+- [ ] 🐌 **THE BATTERY IS NOW 846 s AND EACH EMULATOR UNIT PAYS ITS OWN BOOT —
+      COLLAPSE SUITES THAT SHARE A MACHINE INTO ONE RUN.** Joost's suggestion,
+      filed 2026-09-01 with the number that motivates it: D-COLLECTALL took the
+      battery from **49 units / 450 s to 92 units / 846 s**. Nothing is wasted —
+      every added unit measures something real and 92/92 are green — but the
+      marginal cost is dominated by **per-unit openMSX boots**, not by rows.
+      📏 **64 EMULATOR UNITS.** Individual probes already batch their cases
+      (`omsx_repl.run_cases(..., batch=True)`), so the win left is one level up:
+      several SUITES that want the same machine and the same reset sharing a
+      single boot.
+      ⚠️ **THE OBSTACLE IS STATE, AND IT IS THE REASON THIS IS NOT FREE.** Some
+      suites boot per case ON PURPOSE — D-EDITVERB's printer-log deltas and
+      D-LPTVERB's accumulated `LPOS` state both say so in their headers — and
+      D-EDITVERB records the exact failure mode: a shared log where one case's
+      capture becomes a whole log and every later delta is silently wrong "in
+      the direction of a plausible-looking divergence".
+      ➡️ So the shape is a per-suite OPT-IN, not a blanket change: a suite
+      declares "machine M, reset R, no cross-case state" and the runner packs
+      those together. 🔴 **And it needs the control D-EDITVERB's note implies —
+      a batched suite must produce the SAME rows as it did unbatched, checked
+      once per suite when it opts in.**
+      🤖 AUTONOMOUS — a gate settles it, and the before/after row sets are the
+      oracle.
 
 - [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
       RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01

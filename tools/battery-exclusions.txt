@@ -1,9 +1,17 @@
 # Acceptance targets the battery does NOT collect, each with its reason.
 #
 # 🔴 WRITTEN 2026-09-01 (D-UNCOLLECTED) BECAUSE THE MEMBERSHIP HAD NO
-# RECORDED RATIONALE AT ALL. `make gates` collects 22 of the Makefile's 68
-# `*-acceptance` targets. That is a legitimate choice -- but until now it was
-# an UNWRITTEN one, and three of the uncollected suites were RED.
+# RECORDED RATIONALE AT ALL. `make gates` collected 22 of the Makefile's 68
+# `*-acceptance` targets, nothing recorded why, and three of the uncollected
+# suites were RED.
+#
+# 🟢 CLOSED OUT 2026-09-01 (D-COLLECTALL): the three reds are fixed and the 38
+# that measured GREEN in the D-UNCOLLECTED sweep are now IN the battery. The
+# list below is no longer a debt roster -- it is five entries, each naming a
+# reason that is not "nobody looked". 63 of 68 collected.
+#
+# ⚠️ AN ENTRY HERE IS A CLAIM THAT SOMETHING ELSE COVERS IT, OR THAT IT CANNOT
+# RUN HERE. If neither is true, the suite belongs in run_gates.py.
 #
 # `make battery-membership-check` fails if an acceptance target is neither in
 # run_gates.py's STATIC/EMULATOR nor listed here. A reason is REQUIRED: the
@@ -12,46 +20,8 @@
 #
 # Format:  <target>  <TAB>  <reason>
 
-arrdim-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-arylv-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-badfnum-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 bdos-acceptance	NOT MEASURED 2026-09-01 — Tier-2 DOS-boot sub-track (disk/docs/tier2-STATE.md), a distinct arc.
-beep-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-binfre-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-cassave-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-castail-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-deffn-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-direct-ctrl-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 diskbasic-acceptance	NOT MEASURED 2026-09-01 — Tier-2 disk-provider arc.
-dskmsg-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-editverb-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 fat-error-acceptance	NOT MEASURED 2026-09-01 — Tier-2 disk-provider arc.
-fldary-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-fldwidth-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-forvar-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-graphics-floor-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-input-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 input-devices-acceptance	NOT MEASURED 2026-09-01 — needs input devices; held back from the sweep rather than assumed about.
-inputary-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-key-trap-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-linemax-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-lnblank-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 lnblank-say-acceptance	NOT MEASURED 2026-09-01 — a --say variant of lnblank-acceptance, which IS measured green.
-locarg-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-lof-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-lptverb-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-lrvar-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-lvfix-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-nxary-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-nxlist-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-play-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-play-trace-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-readvar-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-runtail-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-sound-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-sprite-trap-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-stop-trap-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-strig-trap-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-subrom-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-tgtspc-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-width-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.

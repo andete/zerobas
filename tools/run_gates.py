@@ -79,7 +79,17 @@ onerr0-acceptance math-acceptance float-acceptance intarg-acceptance
 logicops-acceptance lineerr-acceptance screenerr-acceptance tmfp-acceptance
 stmtpend-acceptance array-acceptance deffn-strict graphics-acceptance
 abort-acceptance interval-trap-acceptance clearpool-acceptance
-cursor-acceptance time-acceptance namspc-acceptance""".split()
+cursor-acceptance time-acceptance namspc-acceptance arrdim-acceptance
+arylv-acceptance badfnum-acceptance beep-acceptance binfre-acceptance
+cassave-acceptance castail-acceptance deffn-acceptance direct-ctrl-acceptance
+dskmsg-acceptance editverb-acceptance fldary-acceptance fldwidth-acceptance
+forvar-acceptance graphics-floor-acceptance input-acceptance
+inputary-acceptance key-trap-acceptance linemax-acceptance lnblank-acceptance
+locarg-acceptance lof-acceptance lptverb-acceptance lrvar-acceptance
+lvfix-acceptance nxary-acceptance nxlist-acceptance play-acceptance
+play-trace-acceptance readvar-acceptance runtail-acceptance sound-acceptance
+sprite-trap-acceptance stop-trap-acceptance strig-trap-acceptance
+subrom-acceptance tgtspc-acceptance width-acceptance""".split()
 
 GATES = STATIC + EMULATOR
 
