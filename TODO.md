@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4607 (T-529ABE)`: a
+      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4641 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1395,7 +1395,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4607 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4641 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4238,7 +4238,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       silently ungated.** Emptied; 67 rows green. **`cursor-acceptance` now JOINS
       the battery** (51 units, 23 of 68 acceptance targets collected).
 
-- [ ] 🔴 **`namspc-acceptance` REFUSES: A POSITIVE CONTROL FAILS ON THE
+- [x] 🟢 **`namspc-acceptance` REFUSES: A POSITIVE CONTROL FAILS ON THE
       REFERENCE.** Found 2026-09-01 by D-UNCOLLECTED. `f.filesbare` expects
       `6 entries + OK` from the CF-3300 and does not get it, so the probe
       correctly reports *"A POSITIVE CONTROL FAILED ON A REFERENCE, so nothing
@@ -4249,16 +4249,50 @@ list. **When a slice lands, grep this list for what it just shipped.**
       fixture, do not edit it to taste.
       ⚠️ The instrument is behaving CORRECTLY here; a suite that refuses is the
       good outcome. What is wrong is that **nothing collected the refusal**.
-      🤖 AUTONOMOUS — re-measuring a frozen constant on the current disk.
+      ✅ **CLOSED 2026-09-01 (D-FIXTUREPOLL,
+      [`docs/spec-fixturepoll.md`](docs/spec-fixturepoll.md)) — AND THE
+      PRESCRIBED REPAIR WAS THE WRONG ONE.** The constant was RIGHT; the FIXTURE
+      was wrong. `disk/test720.dsk` is **untracked and generated** (`e7c5eab`
+      removed it from git to kill "the openMSX write-back hazard on a committed
+      image"), and a probe had written `TS.DAT` into the local copy — attr `$00`
+      where every generated file is `$20`. A fresh generation has FIVE files.
+      🔴 **`make test-dsk` CANNOT CATCH IT**: make is timestamp-driven and a
+      polluted image is NEWER than its generator, so the rule is satisfied and
+      nothing rebuilds. The file has to be deleted first.
+      🔴 **AND D-FILESROT (EARLIER THE SAME DAY) FROZE THE POLLUTION.** It did
+      exactly what its filing prescribed — re-measure the CF-3300, never edit the
+      constant into agreement — but it booted against the POLLUTED disk and
+      froze `TS      .DAT` into two constants. 🎯 **RE-MEASURING IS NOT ENOUGH IF
+      THE THING MEASURED IS CONTAMINATED.** Both reverted and re-verified on a
+      fresh image; D-FILESROT's measuring METHOD is kept in the comment.
+      ➡️ **GATED: `make fixture-integrity-check`** — regenerates each generated
+      image hermetically and compares the DIRECTORY (name + attr), not the whole
+      image. 4 arms; the S3 plant is the exact wild pollution.
+      **`namspc-acceptance` now JOINS the battery.**
 
-- [ ] 🔴 **`time-acceptance`: `is_jiffy` READS 12289, WANT 12288.** Found
+- [x] 🟢 **`time-acceptance`: `is_jiffy` READS 12289, WANT 12288.** Found
       2026-09-01 by D-UNCOLLECTED. One row, off by one.
       ⚠️ **RUN IT TWICE BEFORE BELIEVING IT IS A DEFECT** — a jiffy counter is
       the one quantity in this tree where an off-by-one can be genuine sampling
       jitter rather than a divergence, and a frozen `want=` for a free-running
       counter is a suspect construction in itself. Establish which it is BEFORE
       changing anything.
-      🤖 AUTONOMOUS — the machine settles it.
+      ✅ **CLOSED 2026-09-01 (D-FIXTUREPOLL). RUNNING IT THRICE WAS RIGHT AND
+      THE ANSWER WAS THE OPPOSITE OF THE WARNING**: not jitter — **deterministic
+      on all eight phases, three runs** (ref 12288, zb 12289).
+      🎯 The row POKEs JIFFY and reads TIME back, so it measures **how many
+      interrupts fit between the POKE and the read** — interpreter speed.
+      `TIME=0:PRINT TIME` reads **1 / 2 / 1** on VG-8020 / CF-3300 / zerobas, and
+      `PEEK(&HFC9F)`=`$30` on all three, so TIME and JIFFY are the same cell.
+      ⚠️ **THE FILE HAD ALREADY DRAWN THE LINE**: `run_side` excludes the clock
+      group from the equality differential because "the tick rate belongs to the
+      host BIOS/VDP". `is_jiffy` is that same kind of quantity in the wrong
+      group — pinned at the VG-8020's value it asserted that zerobas interprets
+      at the VG-8020's SPEED. Now an inclusive window `12288..12304`.
+      🔴 And the module docstring exempts "every row but `is_jiffy`" from the
+      tick race; it is subject to the same race, its window is just long enough
+      to be deterministic [[a-justification-parenthesis-is-an-unrun-claim]].
+      **`time-acceptance` now JOINS the battery.**
 
 - [x] 🟢 **A RECURRING "FLAKE" WAS A REAL RACE, AND THE MUTATOR LIST NAMED THREE
       UNITS THAT MUTATE NOTHING WHILE MISSING THE ONE THAT DOES.** Found and

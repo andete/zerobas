@@ -42,7 +42,6 @@ lof-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-0
 lptverb-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 lrvar-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 lvfix-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-namspc-acceptance	RED (still) 2026-09-01 — a POSITIVE CONTROL fails on the CF-3300 (`f.filesbare`), so it refuses and measures nothing: a frozen FILES expectation that rotted, the D-FILESROT class. Filed in TODO.md.
 nxary-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 nxlist-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 play-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
@@ -55,5 +54,4 @@ stop-trap-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 
 strig-trap-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 subrom-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
 tgtspc-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.
-time-acceptance	RED (still) 2026-09-01 — `is_jiffy` reads 12289, want 12288. Filed in TODO.md.
 width-acceptance	UNREVIEWED — no reason was ever recorded; measured GREEN 2026-09-01 in the D-UNCOLLECTED sweep.

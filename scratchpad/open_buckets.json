@@ -389,16 +389,6 @@
   "signal": "refactor, no oracle",
   "matched": "namespaces"
  },
- "T-BEE743": {
-  "bucket": "\u26d4 BLOCKED",
-  "signal": "needs a fixture",
-  "matched": "fixture"
- },
- "T-80B263": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
  "T-927679": {
   "bucket": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",

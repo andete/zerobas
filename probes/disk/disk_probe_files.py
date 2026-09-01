@@ -44,17 +44,23 @@ OMSX = shutil.which("openmsx") or "/Applications/openMSX.app/Contents/MacOS/open
 ZEROBAS = os.environ.get("ZEROBAS", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 SRC_DSK = os.environ.get("DISK_DSK", os.path.join(ZEROBAS, "disk", "test720.dsk"))
 
-# 🔴 RE-MEASURED 2026-09-01 (D-FILESROT): test720.dsk gained TS.DAT (a zero-byte
-# data file another probe's fixture work added) and this frozen list went stale
-# -- the D-PROBEREACH5 audit found the probe red against its own fixture. The
-# reference column is a MEASUREMENT, not a belief, so the fix was to boot the
-# National CF-3300 on the CURRENT disk (diskbasic_probe_files.py) and read its
-# listing again: six 8.3 fields, directory order, TS      .DAT last
-# (/tmp capture, 2026-09-01: "TEST .BIN HI .TXT / PROG .BIN PROG .BAS /
-# PROG2 .BAS TS .DAT"). Editing the constant WITHOUT the re-measure would have
-# been the rot the audit exists to catch.
+# 🔴 D-FILESROT RE-MEASURED THIS AGAINST A POLLUTED FIXTURE AND FROZE THE
+# POLLUTION (found and reverted the same day, D-FIXTUREPOLL). It observed that
+# "test720.dsk gained TS.DAT (a zero-byte data file another probe's fixture work
+# added)", booted the CF-3300 on THAT disk, and correctly recorded six fields.
+# The re-measure was done exactly as prescribed. The FIXTURE was the wrong one.
+# 🎯 `disk/test720.dsk` IS UNTRACKED AND GENERATED (`make test-dsk`; commit
+# e7c5eab removed it from git precisely to kill "the openMSX write-back hazard
+# on a committed image"). TS.DAT, attr $00 where every generated file is $20, is
+# a PROBE WRITING INTO THE LOCAL COPY. A freshly generated image has FIVE files.
+# 🔴 AND `make test-dsk` DOES NOT NOTICE: it is timestamp-driven, so a polluted
+# image is never rebuilt. `make fixture-integrity-check` now compares the working
+# fixture's directory against a hermetic regeneration.
+# ⚠️ RE-MEASURING IS NOT ENOUGH IF THE THING MEASURED IS CONTAMINATED. The rule
+# "re-measure, never edit the constant into agreement" is right and was followed;
+# it just cannot see a bad input [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
 EXPECT = ["TEST    .BIN", "HI      .TXT", "PROG    .BIN", "PROG    .BAS",
-          "PROG2   .BAS", "TS      .DAT"]
+          "PROG2   .BAS"]
 
 
 def build_tcl(out_path: str, width: int | None) -> str:
@@ -115,15 +121,14 @@ def run(machine: str, out: str, width=None, timeout: float = 90.0):
 
 # The CF-3300 reference listing at WIDTH 29, as the sequence of non-empty
 # logical lines the directory produces.
-# 🔴 RE-MEASURED 2026-09-01 (D-FILESROT), same discipline as EXPECT above: this
-# second frozen constant ALSO still listed five files. Booted the CF-3300 on
-# the current disk with the date prompt cleared, WIDTH 29, FILES -- the first
-# attempt skipped the date-clear \r and the prompt swallowed both typed lines,
-# which read as a listing of nothing. Three rows, TS      .DAT closing the
-# third: two entries per 29-column line, directory order.
+# 🔴 THE SECOND CONSTANT D-FILESROT FROZE FROM THE POLLUTED FIXTURE, reverted
+# with EXPECT above (see the note there). Its measuring method was sound and is
+# worth keeping: boot the CF-3300, CLEAR THE DATE PROMPT FIRST (skipping the
+# `\r` lets the prompt swallow both typed lines, which reads as a listing of
+# nothing), WIDTH 29, FILES -- two entries per 29-column line, directory order.
 CF3300_W29 = ["TEST    .BIN HI      .TXT",
               "PROG    .BIN PROG    .BAS",
-              "PROG2   .BAS TS      .DAT"]
+              "PROG2   .BAS"]
 
 
 def _files_lines(rows):

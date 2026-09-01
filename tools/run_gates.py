@@ -67,7 +67,7 @@ WARM = ["repack-machine", "basic-reloc", "subrom-abi-check", "disk/test720.dsk"]
 STATIC = """basic-reloc subrom-abi-check subrom-closure-check unit-test deadcode
 wall-assertion-check redundant-load-check rowshape-check injector-check
 temp-root-check todo-citation-check chokepoint-check wall-literal-check
-shared-body-check probe-reach-check battery-membership-check
+shared-body-check probe-reach-check battery-membership-check fixture-integrity-check
 preflight-check latch-check diskdep-check switch-build-check kwsweep
 patch-freshness-check refcache-check knife-guard-check knife-rom-guard-check
 selftest-check
@@ -79,7 +79,7 @@ onerr0-acceptance math-acceptance float-acceptance intarg-acceptance
 logicops-acceptance lineerr-acceptance screenerr-acceptance tmfp-acceptance
 stmtpend-acceptance array-acceptance deffn-strict graphics-acceptance
 abort-acceptance interval-trap-acceptance clearpool-acceptance
-cursor-acceptance""".split()
+cursor-acceptance time-acceptance namspc-acceptance""".split()
 
 GATES = STATIC + EMULATOR
 

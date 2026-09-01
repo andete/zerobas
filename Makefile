@@ -729,6 +729,16 @@ battery-membership-check:
 	python3 tools/check_battery_membership.py --selftest
 	python3 tools/check_battery_membership.py
 
+# --- D-FIXTUREPOLL (docs/spec-fixturepoll.md): the generated disk images -------
+# disk/test720.dsk is UNTRACKED and generated. A probe wrote TS.DAT into the
+# local copy; namspc-acceptance refused (nobody collected it) and D-FILESROT then
+# re-measured two frozen constants against the polluted disk. `make test-dsk`
+# cannot catch it -- make is timestamp-driven and a polluted image is NEWER than
+# its generator, so the rule is satisfied. Regenerate and compare instead.
+fixture-integrity-check:
+	python3 tools/check_fixture_integrity.py --selftest
+	python3 tools/check_fixture_integrity.py
+
 # --- D-REFCACHE (docs/spec-refcache.md): the reference-column store ---------
 # 🔴 A CACHE IS ONE SLIP AWAY FROM "A PREDICTION COPIED INTO THE RESULT COLUMN",
 # so its falsification suite is a GATE, not a script somebody remembers to run.
@@ -2872,7 +2882,7 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
-        battery-membership-check \
+        battery-membership-check fixture-integrity-check \
         interval-trap-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \

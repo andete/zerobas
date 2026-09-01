@@ -54,7 +54,24 @@ CRUNCH = [
 
 # --- §1.2 read: (label, body, expected) ------------------------------------
 READ = [
-    ("is_jiffy", f"POKE&HFC9F,&H30:POKE&HFC9E,0:PRINT{M};TIME;{M}", "12288"),
+    # 🔴 A WINDOW, NOT AN EQUALITY -- AND THE FILE ALREADY SAID WHY (D-JIFFYWIN,
+    # 2026-09-01). This row POKEs JIFFY to $3000 and reads TIME back, so what it
+    # measures is HOW MANY INTERRUPTS FIT BETWEEN THE POKE AND THE READ: a
+    # per-machine SPEED property, exactly the kind `run_side` already excludes
+    # from the equality differential for the clock group ("the tick rate belongs
+    # to the host BIOS/VDP"). Pinned at the VG-8020's 12288 it asserted that
+    # zerobas interprets at the VG-8020's speed, which is not a claim this
+    # project makes.
+    # 📏 MEASURED, DETERMINISTIC ON ALL EIGHT PHASES, NOT JITTER: reference
+    # 12288, zerobas 12289. `TIME=0:PRINT TIME` reads 1 / 2 / 1 on
+    # VG-8020 / CF-3300 / zerobas -- every machine has already ticked before the
+    # read. And `PEEK(&HFC9F)` is 48 ($30) on all three, so TIME and JIFFY are
+    # the same cell, which is the thing this row exists to show.
+    # ⚠️ The module docstring exempts "every row but `is_jiffy`" from the
+    # tick race. It is subject to exactly the same race; its window is simply
+    # long enough to be deterministic per machine, which reads like immunity
+    # [[a-justification-parenthesis-is-an-unrun-claim]].
+    ("is_jiffy", f"POKE&HFC9F,&H30:POKE&HFC9E,0:PRINT{M};TIME;{M}", (12288, 12304)),
     ("unsigned", f"TIME=40000:PRINT{M};TIME;{M}",                   "40000"),
     ("max",      f"TIME=65535:PRINT{M};TIME;{M}",                   "65535"),
     ("hex",      f"TIME=&HFFFF:PRINT{M};TIME;{M}",                  "65535"),
@@ -290,9 +307,13 @@ def run_side(machine: str, label: str, g: str, phases: int) -> bool:
     if "r" in g:
         print(f"\n=== read (spec §1.2, earliest over {phases} phases) ===")
         for (lbl, body, want), (have, obs) in zip(READ, run_read(machine, phases)):
-            good = have == want
+            # a tuple `want` is an inclusive WINDOW -- see is_jiffy above
+            good = (want[0] <= int(have) <= want[1]
+                    if isinstance(want, tuple) and have.lstrip("-").isdigit()
+                    else have == want)
             ok &= good
-            print(f"  {'PASS' if good else 'FAIL':4} {lbl:9} {have:10} want={want:8} "
+            w = (f"{want[0]}..{want[1]}" if isinstance(want, tuple) else want)
+            print(f"  {'PASS' if good else 'FAIL':4} {lbl:9} {have:10} want={w:8} "
                   f"obs={sorted(set(obs))}")
 
     if "w" in g:
