@@ -184,7 +184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:835 (T-6FE392)8 (T-529ABE)` from `TODO.md:4278 (T-529ABE)`: a
+      `TODO.md:835 (T-6FE392)8 (T-529ABE)` from `TODO.md:4280 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1282,7 +1282,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4278 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4280 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2529,11 +2529,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       byte-identical; both PASS against zb. 🔴 The first W29 re-measure skipped
       the date-clear \r and the prompt swallowed both typed lines — a listing
       of nothing that would have frozen as the new reference.
-      • `disk_probe_bload_fcb` — reads like a stale address ("refresh
-      do_disk_bload addr") and is not: `do_disk_bload` is ABSENT from
-      `build/basic-reloc.sym` and lives only in `build/sub.sym` ($73FB). The
-      routine was EVICTED TO THE SUB-ROM, so breaking at a main-ROM address on a
-      diskless machine cannot work at all. Re-siting is a design job.
+      • ✅ `disk_probe_bload_fcb` — RE-SITED 2026-09-01 (D-FCBSITE),
+      breakpoint-FREE: both the frozen address AND the frozen machine choice
+      were obsolete (build_83_name is a sub-ROM tenant too, and the old
+      diskless machine has no zerobas sub-ROM, so the parse could not even run
+      there). Now: repack machine, echo-paced delivery, mem_abs capture of the
+      12 FCB bytes after the statement — the subject was never the address.
+      3/3 PASS, refcache off.
       🔴 **THE FIRST DISK BATCH ASKED THE WRONG QUESTION AND THE TIMING SAID SO**:
       every failure returned in 0.1 s, so no emulator ever started — the S1
       "pass --machine, there is no default" rule WORKING, not rot. Re-run with
