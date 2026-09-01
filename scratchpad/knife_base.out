@@ -1,3 +1,5 @@
+    capture-on-signal: 71 on signal, 1 fell back to the scheduled budget   [signalled at 56.1-88.1 emulated s]
+      ⚠️ NEVER SIGNALLED (captured on the budget, as before this conversion): zb:o.clearwipe3
 PASS b.ctl            ref='6'  zb='6'
 ok   b.forward        ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
 ok   b.nested         ref='8'  zb='8'
