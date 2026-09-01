@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:918 (T-6FE392)8 (T-529ABE)` from `TODO.md:4486 (T-529ABE)`: a
+      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4516 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -766,11 +766,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🙋 NEEDS-JOOST — only if the §12.9 carve-out is ever to be re-opened, and
       that is your call, not a gate's.
 
-- [ ] 📌 **`ATN(1)`, `EXP(-100)` and `EXP(100)` differ in the LAST DIGIT only.**
+- [x] 🟢 **`ATN(1)`, `EXP(-100)` and `EXP(100)` differ in the LAST DIGIT only.**
       Re-measured 2026-08-30 by D-NGRAM14 (pre-existing; identical before and
       after that slice). `ATN(1)` reads `.78539816339746` against
       `.78539816339745` on both references. A mathpack rounding question.
-      🤖 AUTONOMOUS — the references settle it; the rows exist.
+      ✅ **CLOSED 2026-09-01, NO CODE CHANGE (D-MATHACC,
+      [`docs/spec-basic-mathacc.md`](docs/spec-basic-mathacc.md); 38 rows in
+      `scratchpad/mathacc_probe.py`).**
+      🔴 **EVERY CLAUSE ABOVE IS WRONG, INCLUDING THE MARKER'S PREMISE — "the
+      references settle it" is exactly backwards, they are the LESS ACCURATE
+      SIDE.** A differential cannot say who is wrong, and this item was entirely
+      a question of who is wrong, so every row is now scored against a 60-digit
+      oracle in **units of the last place**.
+      📏 **`EXP`: zerobas is within ±0.5 ulp on ALL TEN rows; the references
+      reach 330.8 ulp** (`EXP(-50)`), 100.6 (`EXP(-100)`), 74 (`EXP(±100)`,
+      `EXP(50)`). "Last digit only" describes which printed COLUMN first differs,
+      not the size of the error — which is why this read as trivial for a month.
+      🔴 **THE IMPLIED FIX WOULD HAVE BEEN A REGRESSION**: matching the
+      references means adopting a 330-ulp error — the D-EXPNEG mistake recorded
+      two items above in this same file.
+      📏 **`ATN`: no defect.** `ATN(1)` alone looks damning (+1.2 ulp vs +0.2),
+      and TWELVE arguments still said so. **TWENTY-SIX refuted it**: zerobas is
+      1 ulp worse on 5 (`0.1 .75 1 -.75 -1`) and 1–2 ulp BETTER on 5
+      (`0.3 0.4 0.8 0.9 1.25`), identical on 15, and neither side is correctly
+      rounded. Over all 38 rows, rows ≥0.5 ulp from truth: **refs 23, zb 16**.
+      🎯 **A SPOT FINDING ROTS THE WAY A RANKING DOES** — one argument was enough
+      to file this defect and would have been enough to "fix" one that does not
+      exist. Both of the hypotheses this slice started with were refuted by
+      WIDENING THE DENOMINATOR, including "the error is one-sided, so it lives in
+      the final rounding".
+      🔴 **AND THE ORACLE FAILED FIRST, PLAUSIBLY**: it printed `ATN(100)` as
+      `1.0623664808539` under a heading of *correctly rounded* while all three
+      machines agreed on the true `1.5607966601082` — Euler's series at
+      `z = 0.9999` hit its iteration cap and **returned the truncated sum**. Now
+      range-reduced AND refusing instead of returning
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
 
 - [ ] 🙋 **`basic/lineedit-body.inc` IS ASSEMBLED BY NOTHING — DELETE IT OR KEEP
       IT?** Found 2026-08-30 by D-DEADBODY,
@@ -1365,7 +1395,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4486 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4516 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
