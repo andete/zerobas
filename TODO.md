@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4912 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4931 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4912 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4931 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4437,8 +4437,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       a running total, so exit status could never have caught it — only the row
       diff does. That is what "silently wrong in the direction of a plausible-
       looking divergence" looks like when you finally point an instrument at it.
-      ➡️ Remaining: run the control over the other ~29 candidates and convert the
-      ones it clears. Each is now one command plus a `run_side` restructure.
+      🔴 **AND THE CONTROL'S FIRST SWEEP WAS A FALSE POSITIVE — GUARDED
+      2026-09-01 (D-BATCH3).** It reported `screenerr`, `tmfp`, `stmtpend` and
+      `penderr` all **CONVERTIBLE**, having compared two IDENTICAL runs: those
+      probes loop in PYTHON and call `run_cases` once per case, so forcing
+      `batch=True` on a ONE-CASE matrix batches nothing. Both modes booted per
+      case, every row matched, and **the only tell was a 1.0x "speedup"**
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ➡️ `run_cases` now records the matrix width (`$ZB_BATCH_STAT`) and
+      `batchcheck` **REFUSES with `NOT TESTED`** when the widest matrix a suite
+      ever handed it is < 2, naming the remedy. Verified in all three
+      directions: `strparen` CONVERTIBLE (4.3x, 16-case matrix), `lptverb`
+      ROW(S) DIFFER (16-case, real state), `tmfp` NOT TESTED (1-case).
+      📏 **SO THE REMAINING WORK IS BIGGER THAN "RUN A COMMAND 29 TIMES"**, and
+      that is the useful part of this pass: **25 of the 35 boot-per-case probes
+      call `run_cases` inside a for-loop** and need a `run_side` restructure
+      before the control can say anything at all; only **10** hand it a
+      multi-case list, and 3 of those are now judged (strparen converted,
+      lptverb refused, runtail cleared).
+      ➡️ Remaining: 7 testable-now candidates, then 25 restructures — each a
+      `run_side` rewrite (see `basic_probe_strparen.py`) followed by one
+      `batchcheck` run.
 
 - [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
       RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01

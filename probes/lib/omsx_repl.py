@@ -1593,6 +1593,19 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
     import inspect
     bound = inspect.signature(_run_cases_impl).bind(machine, cases, **kw)
     bound.apply_defaults()
+    # 🔴 AND RECORD THE MATRIX SIZE, BECAUSE FORCING `batch=True` ON A
+    # ONE-CASE LIST BATCHES NOTHING. Probes that loop in PYTHON and call this
+    # once per case cannot be tested by flipping the flag: both modes boot per
+    # case, every row matches, and batchcheck reported four suites CONVERTIBLE
+    # having compared two identical runs. The 1.0x "speedup" was the only tell.
+    # `scratchpad/batchcheck.py` reads this to refuse that verdict.
+    _stat = os.environ.get("ZB_BATCH_STAT")
+    if _stat:
+        try:
+            with open(_stat, "a") as _fh:
+                _fh.write(f"{len(cases)}\n")
+        except OSError:
+            pass
     _force = os.environ.get("ZB_BATCH")
     if _force in ("0", "1"):
         want = (_force == "1")

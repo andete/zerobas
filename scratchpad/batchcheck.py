@@ -36,6 +36,9 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
+import probe_tmp                       # noqa: E402
+TMP = probe_tmp.ROOT
 NOISE = re.compile(r"refcache:|wall |elapsed|seconds|make\[|^python3 |^\s*wrote |"
                    r"^\s*/Users/|install-repack-machine")
 
@@ -45,12 +48,23 @@ def rows(text: str) -> list[str]:
             if l.strip() and not NOISE.search(l)]
 
 
-def run(target: str, mode: str) -> tuple[list[str], float, int]:
-    env = dict(os.environ, ZEROBAS_REFCACHE="0", ZB_BATCH=mode)
+def run(target: str, mode: str) -> tuple[list[str], float, int, int]:
+    """-> (rows, wall, rc, largest matrix the suite ever handed to run_cases)."""
+    stat = os.path.join(TMP, f"batchstat-{mode}.txt")
+    try:
+        os.remove(stat)
+    except OSError:
+        pass
+    env = dict(os.environ, ZEROBAS_REFCACHE="0", ZB_BATCH=mode,
+               ZB_BATCH_STAT=stat)
     t = time.time()
     p = subprocess.run(["make", target], cwd=ROOT, env=env,
                        capture_output=True, text=True)
-    return rows(p.stdout + p.stderr), time.time() - t, p.returncode
+    widest = 0
+    if os.path.exists(stat):
+        widest = max((int(l) for l in open(stat) if l.strip().isdigit()),
+                     default=0)
+    return rows(p.stdout + p.stderr), time.time() - t, p.returncode, widest
 
 
 def main(argv: list[str]) -> int:
@@ -58,13 +72,28 @@ def main(argv: list[str]) -> int:
         print(__doc__)
         return 2
     target = argv[0]
-    a_rows, a_t, a_rc = run(target, "1")      # forced BATCHED
-    b_rows, b_t, b_rc = run(target, "0")      # forced BOOT-PER-CASE
+    a_rows, a_t, a_rc, a_wide = run(target, "1")   # forced BATCHED
+    b_rows, b_t, b_rc, b_wide = run(target, "0")   # forced BOOT-PER-CASE
     if not a_rows or not b_rows:
         print(f"INSTRUMENT: {target} printed no row lines in one or both modes "
               f"({len(a_rows)} / {len(b_rows)}) — nothing was compared.")
         return 2
     print(f"{target}")
+    # 🔴 THE FLAG IS NOT THE TEST. A probe that loops in PYTHON and calls
+    # run_cases once per case hands it a ONE-CASE matrix, so `batch=True`
+    # batches nothing: both modes boot per case, every row matches, and the
+    # verdict would read CONVERTIBLE having compared two identical runs. That
+    # happened to four suites before this guard existed; the only tell was a
+    # 1.0x "speedup" [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+    if max(a_wide, b_wide) < 2:
+        print(f"  ⚠️  NOT TESTED — the widest matrix this suite ever handed to "
+              f"run_cases was {max(a_wide, b_wide)} case(s), so forcing "
+              f"`batch=True` changed nothing.\n"
+              f"     It loops in Python and calls run_cases per case. Restructure "
+              f"`run_side` to pass ALL cases in one call first (see "
+              f"basic_probe_strparen.py), THEN re-run this.")
+        return 2
+    print(f"  widest matrix : {max(a_wide, b_wide)} cases")
     print(f"  batched       : {a_t:6.1f}s  rc={a_rc}  {len(a_rows)} rows")
     print(f"  boot-per-case : {b_t:6.1f}s  rc={b_rc}  {len(b_rows)} rows")
     if a_t:
