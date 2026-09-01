@@ -719,6 +719,16 @@ shared-body-check:
 probe-reach-check:
 	python3 tools/check_probe_reach.py
 
+# --- D-UNCOLLECTED (docs/spec-uncollected.md): the battery's MEMBERSHIP -------
+# `probe-reach-check` above asks whether SOME make target runs a probe. That is
+# weaker than whether the BATTERY does, and the gap is where three RED suites sat:
+# `make gates` collects 22 of 68 `*-acceptance` targets, nothing recorded why, and
+# running the other 46 by hand found cursor/namspc/time red. Excluding a suite is
+# fine; excluding it SILENTLY is not.
+battery-membership-check:
+	python3 tools/check_battery_membership.py --selftest
+	python3 tools/check_battery_membership.py
+
 # --- D-REFCACHE (docs/spec-refcache.md): the reference-column store ---------
 # 🔴 A CACHE IS ONE SLIP AWAY FROM "A PREDICTION COPIED INTO THE RESULT COLUMN",
 # so its falsification suite is a GATE, not a script somebody remembers to run.
@@ -2862,6 +2872,7 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
+        battery-membership-check \
         interval-trap-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \

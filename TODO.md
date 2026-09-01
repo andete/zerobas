@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4516 (T-529ABE)`: a
+      `TODO.md:948 (T-6FE392)8 (T-529ABE)` from `TODO.md:4580 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1395,7 +1395,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4516 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4580 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4168,6 +4168,70 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
+
+- [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
+      RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01
+      (D-UNCOLLECTED, [`docs/spec-uncollected.md`](docs/spec-uncollected.md);
+      per-suite rc reproduced by running each excluded target serially with
+      `ZEROBAS_REFCACHE=0`; the roster is `tools/battery-exclusions.txt`).
+      🎯 **THE GAP IS BETWEEN "REACHABLE" AND "COLLECTED".** `probe-reach-check`
+      asks whether SOME make target runs a probe; it does not ask whether the
+      BATTERY does. **All 46 uncollected suites pass probe-reach.** There is no
+      aggregate `acceptance` target, and exactly one exclusion in the whole tree
+      carried a written reason.
+      ➡️ **GATED: `make battery-membership-check`** (static tier; battery 26 → 27
+      static, 50 total). An acceptance target must be in the battery or in
+      `tools/battery-exclusions.txt` WITH A REASON — the `EXPECT_ARG` /
+      `REGENERATED` discipline. **38 of the 46 entries read `UNREVIEWED`**, each
+      carrying its measured colour: the debt is now visible and counted rather
+      than invisible, and inventing rationales for 38 undocumented decisions
+      would have been worse than naming the gap.
+      🔴 **S4 IS NOT HYPOTHETICAL** — this slice's own first measurement parsed
+      **zero** gate names (the lists are triple-quoted strings, not a list
+      literal) and produced a tidy table calling all 86 probes uncollected. The
+      floors exist because the instrument failed that way inside this slice
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+
+- [ ] 🔴 **`X=TAB(5)` OUTSIDE A `PRINT` GIVES `Missing operand` WHERE BOTH
+      REFERENCES SAY `Syntax error` — AND `cursor-acceptance`'s KNOWN-RED
+      EXEMPTION NAMES SOMETHING ELSE.** Found 2026-09-01 by D-UNCOLLECTED,
+      which ran the suite the battery does not collect
+      ([`docs/spec-uncollected.md`](docs/spec-uncollected.md)).
+      Three rows fail: `X=99:X=TAB(5)`, `X=99:X=SPC(5)`, `IF TAB(5)=0 THEN Z=1`.
+      `TAB(`/`SPC(` are PRINT-only on the reference; anywhere else is a Syntax
+      error.
+      🔴 **AND THE SUITE'S OWN EXEMPTION IS STALE**: its `KNOWN_RED` set of 8
+      rows is banner-documented as *"a mid-statement error does not abort the
+      statement"* (D-CUR-3), and **all 8 now AGREE** — so the exemption
+      suppresses nothing while the suite is red for a reason it never names.
+      Whatever fixed D-CUR-3 did not update the exemption
+      [[a-fix-falsifies-the-justification-beside-it]].
+      ➡️ Two pieces of work: the `Missing operand`/`Syntax error` disposition,
+      and RETIRING the 8 stale `KNOWN_RED` entries so those rows are gated again
+      (dropping an exemption can only tighten the suite — verify by running it).
+      🤖 AUTONOMOUS — both references settle it and the rows exist.
+
+- [ ] 🔴 **`namspc-acceptance` REFUSES: A POSITIVE CONTROL FAILS ON THE
+      REFERENCE.** Found 2026-09-01 by D-UNCOLLECTED. `f.filesbare` expects
+      `6 entries + OK` from the CF-3300 and does not get it, so the probe
+      correctly reports *"A POSITIVE CONTROL FAILED ON A REFERENCE, so nothing
+      was measured"* and exits 2.
+      🎯 **THE D-FILESROT CLASS, AND THIS SESSION ALREADY REPAIRED ONE**: a
+      frozen FILES expectation measured against a disk whose contents have since
+      changed. The repair is prescribed — re-measure the constant on the current
+      fixture, do not edit it to taste.
+      ⚠️ The instrument is behaving CORRECTLY here; a suite that refuses is the
+      good outcome. What is wrong is that **nothing collected the refusal**.
+      🤖 AUTONOMOUS — re-measuring a frozen constant on the current disk.
+
+- [ ] 🔴 **`time-acceptance`: `is_jiffy` READS 12289, WANT 12288.** Found
+      2026-09-01 by D-UNCOLLECTED. One row, off by one.
+      ⚠️ **RUN IT TWICE BEFORE BELIEVING IT IS A DEFECT** — a jiffy counter is
+      the one quantity in this tree where an off-by-one can be genuine sampling
+      jitter rather than a divergence, and a frozen `want=` for a free-running
+      counter is a suspect construction in itself. Establish which it is BEFORE
+      changing anything.
+      🤖 AUTONOMOUS — the machine settles it.
 
 - [x] 🟢 **A RECURRING "FLAKE" WAS A REAL RACE, AND THE MUTATOR LIST NAMED THREE
       UNITS THAT MUTATE NOTHING WHILE MISSING THE ONE THAT DOES.** Found and
