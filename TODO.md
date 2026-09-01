@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4806 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4835 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4806 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4835 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4247,6 +4247,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
+
+- [ ] 🙋 **8192 B OF BASIC MEMORY IS RESERVED BY A CONVENTION NOBODY PRICED —
+      `$C000`–`$E000` HOLDS TWO ALLOCATED BYTES.** Measured 2026-09-01
+      (D-FREGAP, [`docs/spec-fre-gap.md`](docs/spec-fre-gap.md)), asked while
+      reviewing the boot banner: what would a `Bytes free` line print?
+      📏 **`FRE(0)`: zerobas 14767, CF-3300 23348, VG-8020 28733** — and the
+      shape says it is NOT a leak: zerobas's HIMEM is HIGHER than the CF-3300's.
+      Not the file buffers either (`MAXFILES=0` recovers 41 B).
+      🎯 **THE REAL CEILING IS `TXTMAX $BB00`, NOT HIMEM.** `$BB00 − $8001 =
+      15103`, against `FRE(0) = 14767` — that is the whole figure. Above it,
+      walked with `scratchpad/rammap_sweep.py` and an `equ` sweep, never read off
+      a comment:
+      | span | size | what is there |
+      |---|---|---|
+      | `$BB00`-`$C000` | 1280 B | `DETOKBUF`, a one-shot detokenise buffer |
+      | `$C000`-`$E000` | **8192 B** | the BLOAD/boot region — **2 bytes allocated** (`GFX_DJ`/`GFX_BAD` at `$C120`) |
+      | `$E000`-`$F380` | 5000 B | the real workspace, 502 named cells |
+      ⚠️ **THE SOURCE KNEW THE SMALL LEVER AND NOT THE BIG ONE.** `sysvars.inc`
+      states the rise is "BOUNDED BY DETOKBUF" — true, and worth only ~768 B.
+      The 8192 B `$C000` reservation is priced NOWHERE, and the reference does
+      not make it: the CF-3300 runs BASIC to `HIMEM $DE77` and expects a program
+      that BLOADs high to lower `HIMEM`/`CLEAR` first.
+      🙋 NEEDS-JOOST — raising the ceiling over `$C000` changes where a BLOAD or
+      a boot sector may safely land, and its failure mode is a SILENTLY
+      overwritten program. That is a design call, not a measurement. The
+      measuring is done: the prize is ~768 B behind `DETOKBUF` and **~8 KB behind
+      the convention**.
+      🔬 Worth a look either way: the two bytes at `$C120` are stranded above a
+      boundary every other allocation respects.
 
 - [ ] 🙋 **THE LAST FIELD ROW (`e.val`) NEEDS DESCRIPTOR-BASED BINDING, AND IT IS
       THE ROW WHERE THE REFERENCE IS WORSE.** Filed 2026-09-01 after D-FLDCLOSE
