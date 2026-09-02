@@ -25,7 +25,19 @@ add('g.letary',  ['DIM A$(3)', 'A$(1)="XY"'],             'A$(1)')   # arrays.as
 # targets the disk machine and agrees with it. Scored separately below rather
 # than counted as a divergence -- a row with two different "right" answers is not
 # evidence about this tree either way.
-NO_ORACLE = {'g.lset', 'g.rset'}
+# ✅ RESOLVED 2026-09-02 BY D-LSETREF (docs/spec-basic-lsetref.md). The set is
+# now EMPTY and the two rows score normally.
+# The National CF-3000 is a CASSETTE machine whose main BASIC ROM is
+# BYTE-IDENTICAL to the disk CF-3300's -- openMSX publishes the same
+# <sha1> c7a2c5ba... in both machine XMLs -- and it answers ERR 5 on these rows,
+# exactly like the VG-8020. Same ROM, one has a drive: "firmware revision" is
+# excluded arithmetically, so the split is the DISK ROM. A cassette machine
+# REFUSES THE VERB; it holds no opinion about the row. zerobas ships a disk ROM,
+# so the CF-3300 is the oracle and the cassette machines have no vote.
+# 🔴 THIS LINE WAS THE DEBT D-LSETREF LEFT: the finding landed in lrvar and
+# TODO.md the same morning and this probe -- the one that FILED the rows -- kept
+# calling them unscorable for four more hours.
+NO_ORACLE: set = set()
 add('g.lset',    ['A$="12345"', 'LSET A$="AB"'],          'A$+"|"')  # field.asm
 add('g.rset',    ['A$="12345"', 'RSET A$="AB"'],          'A$+"|"')  # field.asm
 add('g.let',     ['A$="XY"'],                             'A$')      # interp.asm

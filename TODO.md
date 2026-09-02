@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5158 (T-529ABE)`: a
+      `TODO.md:975 (T-6FE392)8 (T-529ABE)` from `TODO.md:5175 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -544,20 +544,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       THAT CAN ARBITRATE. `b.cvi` joins `g.cvi` in `NO_ORACLE`; the probe is now
       0/12 DIFF. **A stale entry and a mis-scored row kept each other alive.**
       ⚠️ Original filing follows.
-- [ ] 📌 **`CVI(5)` READS `Syntax error` HERE AND `Type mismatch` ON THE
-      CF-3300.** Found 2026-08-31 by D-NGRAM15,
-      [`docs/spec-basic-ngram15.md`](docs/spec-basic-ngram15.md) §6, row `b.cvi`
-      in `scratchpad/ngram15_probe.py`. Pre-existing — measured identically
-      before and after that slice.
-      🎯 **THE D-LEFTTM CLASS**: the argument parse rejects before the type check
-      is reached, so the FIX IS THE ORDER, not the code. `LEN(5)` and
-      `INSTR("ABCDE",5)` both give the correct `Type mismatch`, so the shared
-      string-arg path is right and `ev_ff_cvi` has its own earlier reject.
-      ⚠️ **NO PRIOR ADJUDICATION EXISTS** — checked, after D-EXPNEG re-opened a
-      settled decision by not looking.
-      ⚠️ The VG-8020 cannot arbitrate: `CVI` is a Disk BASIC verb and it answers
-      `Illegal function call` to every form. The CF-3300 is the only oracle.
-      🤖 AUTONOMOUS — the disk reference settles it; the row exists.
+- [x] 🟢 **`CVI(5)` — THE ITEM WAS STALE ON THE DAY IT WAS FILED, AND THE ROWS
+      ARE NOW SCORED RATHER THAN PARKED.** Filed 2026-08-31 by D-NGRAM15;
+      re-verified and closed 2026-09-02.
+      🔴 **THE PREMISE IS FALSE. `CVI(5)` reads `ERR 13` here**, and has since
+      **D-CVITM (`fef3d69`) fixed it THE SAME DAY this was filed** — the probe's
+      own source says so in a comment nobody re-read. Re-measured with the
+      refcache OFF: `b.cvi` = `ERR 13 AT 60` on cf3300 AND zb.
+      **A FILED DIVERGENCE ROTS LIKE A WALL** — check whether it still
+      reproduces before costing a fix. [[a-ranked-candidate-rots-like-a-wall]]
+      ✅ **AND THE `NO-ORACLE` PARK IS DISSOLVED TOO**, by the D-LSETREF argument
+      applied to a second verb ([`docs/spec-basic-lsetref.md`](docs/spec-basic-lsetref.md)).
+      Measured all four sides:
+
+          row      vg8020     cf3000     cf3300      zb
+          g.cvi    ERR 5      ERR 5      16961       16961
+          b.cvi    ERR 5      ERR 5      ERR 13      ERR 13
+
+      The National CF-3000 is a CASSETTE machine whose main BASIC ROM is
+      **byte-identical** to the CF-3300's (same `<sha1>` in both openMSX XMLs),
+      and it answers ERR 5 like the VG-8020. Same ROM, one has a drive ⇒ the
+      split is the DISK ROM, and a machine without `CVI` **refuses the verb**
+      rather than holding a second opinion. `NO_ORACLE` is now EMPTY in
+      `ngram15_probe` (12 → 14 scorable, 0 DIFF).
+      🔴 **AND THE SAME PASS PAID MY OWN DEBT**: `ngram11_probe` was STILL
+      marking `g.lset`/`g.rset` NO-ORACLE four hours after D-LSETREF resolved
+      them — the finding had landed in `lrvar` and `TODO.md` and not in the
+      probe that filed it. Now empty there too (14 → 16 scorable, 0 DIFF).
+      ⚠️ **THE ARGUMENT HAS A BOUNDARY, AND THE SWEEP FOUND IT.**
+      `truncload_probe`'s six NO-ORACLE rows are a DIFFERENT cause —
+      uninitialised-RAM history behind a truncated store, not disk-vs-cassette —
+      and they legitimately stay.
 
 - [ ] 🔴 **SEVEN FILED PROBES PRINT DIVERGENCES AND EXIT 0.** Measured
       2026-08-31 by D-FILEDROT,
@@ -1536,7 +1553,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5158 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5175 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

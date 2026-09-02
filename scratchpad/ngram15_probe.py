@@ -67,7 +67,28 @@ add('ctl.arr',   ['DIM A(3)', 'A(1)=7'], 'A(1)')
 # `Illegal function call` (`ERR 5`) to every form, and a row whose two references
 # disagree is not evidence about this tree either way. Scoring it DIFF said this
 # tree was wrong when it AGREES WITH THE ONLY REFERENCE THAT CAN ARBITRATE.
-NO_ORACLE = {'g.cvi', 'b.cvi'}
+# ✅ RESOLVED 2026-09-02 by the D-LSETREF argument applied to a second verb
+# (docs/spec-basic-lsetref.md). The set is now EMPTY.
+# Everything above is correct about WHAT the machines say; it is wrong that the
+# disagreement leaves no oracle. Measured this day, all four sides:
+#     row      vg8020       cf3000       cf3300      zb
+#     g.cvi    ERR 5        ERR 5        16961       16961
+#     b.cvi    ERR 5        ERR 5        ERR 13      ERR 13
+# The CF-3000 is a CASSETTE machine whose main BASIC ROM is BYTE-IDENTICAL to
+# the CF-3300's (openMSX publishes the same <sha1> c7a2c5ba... in both machine
+# XMLs). Same ROM, one has a drive -- so "firmware revision" is excluded
+# arithmetically and the split is the DISK ROM. A machine without CVI refuses
+# the VERB; that is not a second opinion about the row. The CF-3300 is the
+# oracle, zerobas agrees with it, and both rows score.
+NO_ORACLE: set = set()
+
+# D-LSETREF (2026-09-02): the National CF-3000 is a CASSETTE machine whose main
+# BASIC ROM is BYTE-IDENTICAL to the disk CF-3300's (openMSX publishes the same
+# <sha1> c7a2c5ba... in both machine XMLs). If it answers ERR 5 like the
+# VG-8020, the cassette reading is a refusal of the VERB and not an opinion
+# about the row -- which is what promotes g.cvi/b.cvi off NO-ORACLE.
+D.SIDES.setdefault("cf3000", dict(machine="National_CF-3000", boot=8.0,
+                                  reset=("", "SCREEN 0", "NEW")))
 
 D.CASES.update(CASES)
 sides = (sys.argv[1] if len(sys.argv) > 1 else "vg8020,cf3300,zb").split(",")
