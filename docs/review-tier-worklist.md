@@ -70,6 +70,21 @@ MECHANISM before trusting the name — and the filed suspicions.
 
 ## Covered by an arc under another name (verify the arc actually reads the
 ## mechanism before skipping)
+- 🔴 **ex_if — REVIEWED 2026-09-02, ONE REAL DEFECT, AND THE ARC NAME WAS THE
+  PROBLEM** (D-IFSEM, [`spec-basic-ifsem.md`](spec-basic-ifsem.md)). The first
+  entry in this section to be checked, and it justifies the section's own
+  warning. Claimed cover: "interp.asm core: lineerr + unit tests" — but
+  `lineerr` is LINE ENTRY, `lnblank`'s four ELSE rows are about CRUNCHING, there
+  is no `spec-basic-if.md`, and `IF` appears across dozens of probes as FIXTURE
+  SCAFFOLDING with `direct_ctrl`'s single `if_then` row as the entire execution
+  surface. **A statement the whole battery leans on, measured by almost
+  nothing.** Found: a false outer `IF` was caught by a NESTED `IF`'s `ELSE`
+  (`IF 0 THEN IF 1 THEN B=1 ELSE B=2` ran `B=2`; refs leave B alone). +27 B,
+  4 DIFF → 0 of 16. ⚠️ Two rules fit the first rows and only `n.outerelse`
+  separates them — "a false IF ends the line" would have been the wrong fix.
+  🟢 One suspicion REFUTED and recorded: a string condition is `Type mismatch`
+  on all three (eval rejects before truthiness), and `tok_skip` is already
+  quote/REM/DATA/float-stride aware.
 - graphics.asm handlers (pset/preset/line_gfx/put_sprite/point/vdp/base):
   graphics-acceptance + gateblind sweeps.
 - program.asm flow (gosub/return/next/on_*): lineerr shards + trap

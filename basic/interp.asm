@@ -1943,8 +1943,45 @@ if_false:
 ; (o.quotedcolon / o.stmtcolon). Parameterising costs this caller 2 B and the
 ; loop gives 1 back; a second 15-byte copy in basic/deffn.asm would have cost 15.
 ; C is dead at both call sites and tok_skip preserves it.
+; 🔴 D-IFSEM: THE SCAN COUNTS NESTED `IF`s, AND IT DID NOT.
+; This used to be `ld c,ELSE_TOKEN` falling into tok_skip_to -- a FLAT scan that
+; stops at the first ELSE token. Measured 2026-09-02 against both references:
+;
+;   B=9 : IF 0 THEN IF 1 THEN B=1 ELSE B=2                refs 9   was 2
+;   B=9 : IF 0 THEN IF 1 THEN B=1 ELSE B=2 ELSE B=3       refs 3   was 2
+;
+; so a false outer IF must NOT be caught by the nested IF's ELSE, and an ELSE at
+; its OWN level still must catch it. EACH NESTED `IF` CONSUMES ONE `ELSE`.
+; ⚠️ TWO RULES FIT THE FIRST ROW AND ONLY ONE FITS THE SECOND: "a false IF ends
+; the line" also predicts refs=9 there, and would have been the wrong fix --
+; `n.outerelse` is the row that separates them.
+; [[two-rules-that-coincide-on-every-row-you-have]]
+; 🟢 tok_skip_to stays exactly as it was: `DEF FN` is its other caller (C=COLON)
+; and wants the flat scan.
 if_skip_to_else:
-                ld      c,ELSE_TOKEN
+                ld      b,0                 ; nested-IF depth
+ifs_lp:
+                ld      a,(hl)
+                or      a
+                ret     z                   ; end of line -> no ELSE for us
+                cp      ELSE_TOKEN
+                jr      z,ifs_else
+                cp      IF_TOKEN
+                jr      nz,ifs_step
+                inc     b                   ; a nested IF claims the next ELSE
+ifs_step:
+                call    tok_skip            ; token-aware: quotes/REM/DATA/floats
+                jr      ifs_lp
+ifs_else:
+                ld      a,b
+                or      a
+                jr      nz,ifs_nested
+                ld      a,ELSE_TOKEN        ; the caller tests A -- restore it
+                ret
+ifs_nested:
+                dec     b                   ; this ELSE belongs to a nested IF
+                jr      ifs_step
+
 tok_skip_to:                                ; C = the terminator token
                 ld      a,(hl)
                 or      a
