@@ -42,7 +42,7 @@ D-DATACOLON lesson visibly applied. Recorded so nobody re-walks it.
 """
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(HERE), "probes", "basic"))
+sys.path.insert(0, HERE)
 import basic_probe_deffn as D
 
 CASES, ORDER = {}, []
@@ -86,8 +86,31 @@ add('n.outerelse2',['B=9', 'IF 0 THEN IF 0 THEN B=1 ELSE B=2 ELSE B=3'], 'B'),
 # if it is not, the fixture cannot express the question at all.
 add('n.plainelse', ['B=9', 'IF 0 THEN B=1 ELSE B=3'], 'B'),
 
+# --- ROUND 2: the rest of the interp.asm core group, and DEPTH-2 regression --
+# 🎯 DEPTH 2 IS THE ROW THE FIX ITSELF NEEDS. D-IFSEM's counter was validated at
+# depth 1 only; two nested IFs must consume TWO ELSEs before the outer one
+# catches. A counter that saturated, or a boolean instead of a count, passes
+# every depth-1 row and fails here.
+add('d.depth2',  ['B=9', 'IF 0 THEN IF 1 THEN IF 1 THEN B=1 ELSE B=2 ELSE B=3 ELSE B=4'], 'B'),
+add('d.depth2b', ['B=9', 'IF 1 THEN IF 0 THEN IF 1 THEN B=1 ELSE B=2 ELSE B=3 ELSE B=4'], 'B'),
+# --- REM / apostrophe swallow the rest of the line -- INCLUDING an ELSE? -----
+# tok_skip's tsk_rem consumes to EOL, so the scan cannot see an ELSE behind a
+# REM. Whether that is RIGHT is a reference question, not a code question.
+add('r.rem',     ['B=9', "IF 0 THEN REM ELSE B=1"],   'B'),
+add('r.quote',   ['B=9', "IF 0 THEN 'X ELSE B=1"],    'B'),
+add('r.remtrue', ['B=9', "IF 1 THEN REM ELSE B=1"],   'B'),
+# --- the IF <expr> GOTO form, with an ELSE after it --------------------------
+add('g.gotoelse',['B=9', 'IF 0 GOTO 900 ELSE B=1'],   'B'),
+# --- a nested IF in the ELSE BRANCH (taken path, not the skip path) ----------
+add('e.nestelse',['B=9', 'IF 0 THEN B=1 ELSE IF 1 THEN B=2 ELSE B=3'], 'B'),
+add('e.nestelse2',['B=9','IF 0 THEN B=1 ELSE IF 0 THEN B=2 ELSE B=3'], 'B'),
+# --- END / STOP inside a branch ---------------------------------------------
+add('x.endelse', ['B=9', 'IF 1 THEN B=5 ELSE END'],   'B'),
+
 D.CASES.update(CASES)
-sides = (sys.argv[1] if len(sys.argv) > 1 else "vg8020,cf3300,zb").split(",")
+GATE = "--gate" in sys.argv
+args = [a for a in sys.argv[1:] if not a.startswith("--")]
+sides = (args[0] if args else "vg8020,cf3300,zb").split(",")
 res = {s: D.run_side(s, ORDER) for s in sides}
 w = max(len(l) for l in ORDER)
 print(f"\n{'row':<{w}}  " + "  ".join(f"{s:>18}" for s in sides) + "   verdict")
@@ -99,3 +122,8 @@ for l in ORDER:
     print(f"{l:<{w}}  " + "  ".join(f"{v:>18}" for v in vals)
           + f"   {'SAME' if same else 'DIFF'}")
 print(f"\nDIFF: {len(diff)}/{len(ORDER)}  " + " ".join(diff))
+print("🟢 CONTROLS: c.* are the shapes every other row is read against -- float\n"
+      "   truthiness (IF .5 / IF -.5), the plain no-nesting ELSE, and the\n"
+      "   no-ELSE line-end. If one of those reddens, no n.* row means anything.")
+if GATE:
+    sys.exit(1 if diff else 0)

@@ -2123,6 +2123,20 @@ lrvar-characterize: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_lrvar.py \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# --- D-IFSEM: `IF`'s EXECUTION semantics (docs/spec-basic-ifsem.md) ----------
+# 🔴 THIS GATE EXISTS BECAUSE THE ARC NAME LIED. `IF` was listed as covered by
+# "interp.asm core: lineerr + unit tests" -- but lineerr is LINE ENTRY, lnblank's
+# ELSE rows are about CRUNCHING, and `IF` appears across dozens of probes as
+# FIXTURE SCAFFOLDING. Its whole execution surface was ONE row in direct_ctrl,
+# and the review found a real defect there (a false outer IF caught by a nested
+# IF's ELSE). Rows: nesting depth 0/1/2, ELSE binding, the GOTO form, REM and `'`
+# swallowing an ELSE, string-condition type errors, float truthiness.
+ifsem-characterize: repack-machine
+	python3 probes/basic/basic_probe_ifsem.py $(if $(SIDES),$(SIDES),)
+
+ifsem-acceptance: repack-machine
+	python3 probes/basic/basic_probe_ifsem.py --gate $(if $(SIDES),$(SIDES),)
+
 lrvar-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_lrvar.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)

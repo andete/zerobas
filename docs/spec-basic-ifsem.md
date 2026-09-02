@@ -1,8 +1,9 @@
 # D-IFSEM — a false `IF` was caught by a nested `IF`'s `ELSE`
 
 *Fixed 2026-09-02. **+27 B** on main page 1 (299 → 272 B free). 4 divergent rows
-closed, 16/16 agree. Probe:
-[`scratchpad/ifsem_probe.py`](../scratchpad/ifsem_probe.py).*
+closed, 16/16 agree. Probe: [`probes/basic/basic_probe_ifsem.py`](../probes/basic/basic_probe_ifsem.py),
+gated by `make ifsem-acceptance`. Knives:
+[`scratchpad/ifsem_knives.py`](../scratchpad/ifsem_knives.py).*
 
 ## 1. Why `IF` was reviewed at all
 
@@ -107,3 +108,33 @@ literal `"IF"`, an `IF` inside `REM`, and a `DATA` body cannot be miscounted.
 controls hold throughout, including float truthiness (`IF .5`, `IF -.5` → true)
 and the plain no-nesting `ELSE`, which is what says the fixture can express the
 question at all.
+
+
+## 7. Gated, and the gate is knifed
+
+The rows live in `probes/basic/basic_probe_ifsem.py` and run as
+`make ifsem-acceptance`, collected by `make gates` (64 of 69 acceptance targets
+collected, 5 excluded with reasons). **`battery-membership-check` caught the new
+target before I did** — a suite nobody runs fails silently, and it refused the
+tree until the target was added to the battery list.
+
+⚠️ **THE SCRATCHPAD COPY WAS DELETED RATHER THAN LEFT BESIDE IT.** Two copies of
+one probe is the `shared-body-check` class — a file that is authoritative in
+neither place and drifts in both.
+
+Two knives, each rebuilt clean, ROM-hash guarded:
+
+| arm | plant | gate |
+|---|---|---|
+| **K-IF1** | the original FLAT scan | **RED** ✅, 6 rows move |
+| **K-IF2** | 🎯 the WRONG fix — *"a nested IF ends the line"* | **RED** ✅, 6 rows move |
+
+**K-IF2 is the one worth having.** R1 fits `n.dangle` and `n.after` exactly, so a
+gate built only from the rows that first showed the defect would have passed a
+wrong repair. It reddens, which is what says the row set is thick enough to
+reject a plausible wrong fix and not merely a missing one.
+
+⚠️ I predicted BOTH arms' row sets wrongly — K-IF1 also moves the depth-2 rows
+(obvious in hindsight: a flat scan fails at every depth), and K-IF2's set was
+mis-guessed too. The arms were written to accept a superset provided the gate
+still catches, which is what saved the verdict.
