@@ -85,6 +85,42 @@ MECHANISM before trusting the name — and the filed suspicions.
   🟢 One suspicion REFUTED and recorded: a string condition is `Type mismatch`
   on all three (eval rejects before truthiness), and `tok_skip` is already
   quote/REM/DATA/float-stride aware.
+- ✅ **program.asm flow (gosub/return/next/on_*) — VERIFIED COVERED 2026-09-02,
+  a FALSE THIN ENTRY.** A name search finds no `spec-basic-gosub.md` and no
+  `gosub-acceptance`, which looks like a hole — it is not. `RETURN <line>` has
+  `spec-basic-retln.md` + a 27-row characterization with both references
+  agreeing; `ON <trap> GOSUB` has `spec-basic-reqgosub.md` (12 rows); FOR/NEXT
+  has THREE suites (`forvar`, `nxary`, `nxlist`) and two specs; `ON GOTO/GOSUB`
+  has `ondom` + `onlist`. The GOSUB DEPTH difference (refs 12, zb 8) is already
+  filed under `trapsvc` (🙋). Same failure mode as the `ex_time_assign` entry
+  above: **the stem-match misses coverage filed under a slice name.**
+  ⚠️ NOT reviewed line-by-line — `ex_gosub`'s own body was read only far enough
+  to confirm the depth question is the filed one. Recorded as covered, not as
+  audited.
+- ✅ **print/lprint/llist — REVIEWED 2026-09-02, NO FINDING**
+  (`scratchpad/printzone_probe.py`, 25 rows x 3 machines).
+  🎯 **THE GAP WAS REAL BUT THE SURFACE IS CORRECT.** There is no general PRINT
+  spec and no `print-acceptance`: only `spec-basic-print-unparen-compare.md`
+  (one corner), `spec-print-hash-using.md` (`PRINT#` USING) and
+  `lptverb-acceptance` (the LPRINT/LLIST VERB). And every probe in the tree
+  prints with SEMICOLONS, so COMMA ZONES, `TAB`, `SPC` and trailing separators
+  were exercised by almost nothing — `IF`'s exact shape. Measured anyway:
+  comma zones (14/28), empty and doubled commas, over-width comma, `TAB`
+  forwards/backwards/0/1, `SPC` 0 and wide, and the numeric leading-space rule.
+  **23 of 25 agree outright.**
+  🔴 **THE OTHER TWO ARE A REFERENCES-DISAGREE, NOT A DEFECT**: `TAB(45)`/
+  `SPC(45)` read vg8020 **8** vs cf3300 **6**, with zerobas on 6 — a column past
+  the line WRAPS, so the answer is a function of each machine's BOOT WIDTH.
+  Pinning it dissolves them: `WIDTH 39` → 6/6/6, `WIDTH 32` → 13/13/13, control
+  `WIDTH 39:TAB(10)` → 10/10/10. [[no-oracle-is-about-the-comparison]]
+  🔴 **AND ROUND 1's READOUT WAS STRUCTURALLY BLIND — ITS OWN CONTROL CAUGHT
+  IT.** Reading `POS(0)` as the harness EXPRESSION returned **1 on all 21 rows**,
+  because the fixture emits `60 CLS:PRINT"[";<expr>;"]"` and that CLS resets the
+  cursor first. `p.ctl` (`PRINT"AB";`, expected 3) is the row that said so. The
+  read now happens on the printing line.
+  📌 **NOT GATED, deliberately**: a 25-row no-finding suite costs battery time
+  forever and protects no fix. The rows are kept in scratchpad and named here, so
+  anything that touches `basic/print.asm` has them to hand.
 - graphics.asm handlers (pset/preset/line_gfx/put_sprite/point/vdp/base):
   graphics-acceptance + gateblind sweeps.
 - program.asm flow (gosub/return/next/on_*): lineerr shards + trap
