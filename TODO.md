@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5139 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5154 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1261,31 +1261,46 @@ list. **When a slice lands, grep this list for what it just shipped.**
       probe's own rows are the control.
       [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
 
-- [ ] 🔬 **`ON ERROR GOTO <non-line>` IS UNTRAPPABLE ON BOTH REFERENCES —
-      MEASURED 2026-08-29 (D-ONERRARM), AND BOTH OF MY HYPOTHESES WERE REFUTED**
-      ([`docs/spec-basic-onerrarm.md`](docs/spec-basic-onerrarm.md),
-      [`scratchpad/onerrarm_probe.py`](scratchpad/onerrarm_probe.py)). 12 rows,
-      4 DIFF. Pre-existing (HEAD gives the same reading).
-      🔴 **NOT "disarm before parsing"** — the guess this item was filed with.
-      `ON ERROR PRINT` fails EARLIER in the same statement and TRAPS on all three
-      sides; `ON ERROR GOTO 12345` fails LATER and traps too. Only the `$0E`
-      operand stage differs. [[a-justification-parenthesis-is-an-unrun-claim]]
-      🔴 **NOT a tokenise-time rejection either.** `CLS:ON ERROR GOTO A:B=9`
-      printing `B` reads the MESSAGE on both references, not `9` — a line
-      rejected at entry would leave `B=9` to run, which the 🟢 control
-      (`ON ERROR GOTO 900:B=9`) shows this shape does report as `9`. The line was
-      stored, executed, and raised UNTRAPPED.
-      ➡️ **SO IT IS A ONE-STAGE ASYMMETRY**, and any fix must reproduce exactly
-      that: trap the wrong-token stage, trap the undefined-line stage, and NOT
-      trap the operand stage in between.
-      ⚠️ **UNPRICED AND NOT CHEAP:** `req_lineno` (D-NGRAM10) is now shared by
-      four verbs and only ON ERROR wants this exit, so it needs a second entry
-      point or a flag — against a page 1 that was 348 B free on 2026-08-29
-      (`make basic-reloc`; do not quote this). And "untrapped" must be
-      EXPRESSIBLE: it needs a raise that skips the trap check, which is not what
-      `stmt_error` does.
-      🤖 AUTONOMOUS — the references settle the behaviour; the cost is the open
-      part.
+- [x] 🟢 **`ON ERROR GOTO`'s OPERAND STAGE — FIXED 2026-09-02 (D-ONERRGO), AND
+      IT HAD **THREE** OUTCOMES, NOT THE TWO THIS ITEM DESCRIBED.**
+      Filed 2026-08-29 by D-ONERRARM, closed by
+      [`docs/spec-basic-onerrgo.md`](docs/spec-basic-onerrgo.md).
+      **+26 B (page-1 free 327 → 301 B), nine rows, D-ONERRARM 4/12 DIFF → 0/12,
+      eight standing rows in `onerr0-acceptance` (32/32, two references each).**
+      🔴 **BOTH FILED OBSTACLES WERE WRONG, AND THE SECOND WAS THE EXPENSIVE
+      ONE.** *"It needs a raise that skips the trap check, which is not what
+      `stmt_error` does"* — **it was already expressible.** `raise_error`'s tail
+      is split: `raise_error_hl` makes the trap decision and **`ra_abort` is the
+      abort body below it**. Entering at `ra_abort` with the message in HL IS the
+      untrapped raise, and it is the same shape `raise_error_forced` (ERR 22) has
+      used all along. And `req_lineno` needed no second entry point — the CALLER
+      makes the test before calling.
+      🔴 **THE THIRD OUTCOME NEARLY SHIPPED AS A NEW BUG.** The obvious fix is one
+      test (`cp LINENO_TOKEN / jp nz,<untrapped>`) — and `ON ERROR GOTO` with NO
+      operand fails that test too, while on both references it is **not an error
+      at all**: it is exactly `ON ERROR GOTO 0`. The draft would have converted a
+      row the old code got right BY ACCIDENT into a fresh divergence. Measured
+      before any code moved. **Second time in one day that asking "what else
+      reaches this test?" was the whole slice** (D-LSETTM was the first).
+      [[two-rules-that-coincide-on-every-row-you-have]]
+      🎯 **"THE BARE FORM IS `GOTO 0`" IS THREE CLAIMS AND GOT THREE ROWS** — it
+      DISARMS (`h.bare` ≡ `h.off`), it **RE-RAISES inside an active handler**
+      (`i.bare` ≡ `i.zero`, D-ONERR0's special case inherited whole — which is
+      why routing to `oe_disable` had to be measured, its own header warning that
+      *"disarming is special"*), and the statement after it on the same line
+      still runs (`j.colonrun` → `[B= 7 ]`). Both controls moved in both
+      directions.
+      ⚠️ **ONE ROW SITES `record_errline` AND NOTHING ELSE DOES**: `e.errl` reads
+      `[ 2  30 ]` on both references (against an `e.ctl` of `[ 5  20 ]`). A fix
+      that skipped the record would read `[ 0  0 ]` **and every other row would
+      still be green.** K-OG3 plants exactly that.
+      🟢 **`o.gotoctl` IS THE LEAK DETECTOR** — plain `GOTO A` must still TRAP,
+      since `req_lineno` is shared by GOTO/GOSUB/RESUME/ON ERROR and only ON
+      ERROR wanted the new exit.
+      ⚠️ **NOT COVERED, named:** the same bad operand in DIRECT mode (every row
+      is run-mode, and the abort's ` in <line>` suffix has no direct-mode
+      analogue); `ON ERROR GOSUB` and the other `ON <expr> GOTO` forms, which
+      share no code with this site.
 
 - [ ] 🔬 **KNIFE TAGS ARE NOT UNIQUE: `K2`/`K5`/`K6` ARE REUSED ACROSS SLICES.**
       Filed 2026-08-28 by D-KNIFEROM
@@ -1517,7 +1532,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5139 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5154 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

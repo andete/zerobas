@@ -296,6 +296,61 @@ CASES = [
                    'PRINT"[RANON]"'], ['CONT']),
     # --- 8. DIRECT MODE ------------------------------------------------------
     # no handler, typed at the prompt: a no-op
+    # === D-ONERRGO: the OPERAND stage of ON ERROR GOTO ======================
+    # 🔴 THREE OUTCOMES AT ONE STAGE, NOT TWO (docs/spec-basic-onerrgo.md).
+    # zerobas used to answer every non-`$0E` byte with a trapped ERR 2.
+    # (a) an operand that IS there but is not a line number -> UNTRAPPED
+    #     `Syntax error in <line>`. These rows carry TWO references.
+    ("o.badop",   ['ON ERROR GOTO 40',
+                   'ON ERROR GOTO A',
+                   'PRINT"[NO]"',
+                   'PRINT"[TRAPPED]"'], []),
+    ("o.badstr",  ['ON ERROR GOTO 40',
+                   'ON ERROR GOTO "X"',
+                   'PRINT"[NO]"',
+                   'PRINT"[TRAPPED]"'], []),
+    # ERR/ERL after that abort -- the row that says record_errline belongs in
+    # the path. Both references read [2,20]; a fix that skipped the record
+    # would read [0,0] and every other o.* row would still be green.
+    ("o.badoperl",['ON ERROR GOTO 40',
+                   'ON ERROR GOTO A',
+                   'PRINT"[NO]"',
+                   'PRINT"[TRAPPED]"'], [ERRERL]),
+    # (b) NO operand at all == `ON ERROR GOTO 0`. Three rows, because "it is
+    # the same as GOTO 0" is three separate claims and only the first is
+    # obvious: it DISARMS...
+    ("o.bare",    ['ON ERROR GOTO 50',
+                   'ON ERROR GOTO',
+                   'ERROR 7',
+                   'PRINT"[NO]"',
+                   'PRINT"[TRAPPED]"'], []),
+    ("o.barecol", ['ON ERROR GOTO 50',
+                   'ON ERROR GOTO :B=7',
+                   'ERROR 7',
+                   'PRINT"[NO]"',
+                   'PRINT"[TRAPPED]"'], []),
+    # ...the statement AFTER it on the same line still runs...
+    ("o.barerun", ['ON ERROR GOTO 40',
+                   'ON ERROR GOTO :B=7',
+                   'PRINT"[B";B;"]"',
+                   'PRINT"[TRAPPED]"'], []),
+    # ...and INSIDE an active handler it RE-RAISES rather than merely
+    # disarming, which is D-ONERR0's special case inherited whole. THIS is the
+    # row that had to be measured before the bare form could be routed to
+    # oe_disable at all. Its twin is r.reraise (the `GOTO 0` form) above.
+    ("o.bareinh", ['ON ERROR GOTO 40',
+                   'ERROR 7',
+                   'PRINT"[NO]"',
+                   'ON ERROR GOTO',
+                   'PRINT"[HANDLERRAN]"'], []),
+    # 🟢 CONTROL: plain `GOTO` with the same bad operand must STILL TRAP --
+    # req_lineno is shared by GOTO/GOSUB/RESUME/ON ERROR and only ON ERROR
+    # wanted the new exit. If this row ever goes untrapped, the fix leaked.
+    ("o.gotoctl", ['ON ERROR GOTO 40',
+                   'GOTO A',
+                   'PRINT"[NO]"',
+                   'PRINT"[TRAPPED]"'], []),
+
     ("d.plain",   [], ['ON ERROR GOTO 0', 'PRINT"[OK]"']),
     # a handler armed by a RUN that has ENDed, then an error typed at the
     # prompt: does a DIRECT-mode error trap at all? This is the precondition

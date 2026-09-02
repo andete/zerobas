@@ -2303,6 +2303,32 @@ ex_on_error:
                 jp      nz,stmt_error
                 inc     hl                  ; past GOTO_TOKEN
                 call    skip_spaces
+                ; --- D-ONERRGO: THE OPERAND STAGE HAS THREE OUTCOMES, MEASURED
+                ; --- ON BOTH REFERENCES (docs/spec-basic-onerrgo.md).
+                ; This used to be a bare `call req_lineno`, i.e. ONE outcome for
+                ; every non-`$0E` byte: trapped ERR 2. The references split it:
+                ;   * NO operand (end of line, or `:`) is not an error at all --
+                ;     it is EXACTLY `ON ERROR GOTO 0`. Measured three ways: it
+                ;     DISARMS (h.bare == h.off, `Illegal function call in 40`),
+                ;     it RE-RAISES inside an active handler (i.bare == i.zero),
+                ;     and the statement after it on the same line still runs
+                ;     (j.colonrun -> `[B= 7 ]`). So it routes to oe_disable and
+                ;     inherits D-ONERR0's re-raise -- which is why that had to be
+                ;     measured and not assumed.
+                ;   * an operand that IS present but is not a line number raises
+                ;     `Syntax error` UNTRAPPED (oe_badop below).
+                ;   * a line number keeps the old path, undefined-line included
+                ;     (a.undef traps ERR 8 on all three sides, unchanged).
+                ; 🔴 THE FIRST DRAFT OF THIS FIX HAD ONLY THE cp LINENO_TOKEN TEST
+                ; and would have made `ON ERROR GOTO` an untrapped Syntax error --
+                ; a NEW divergence, in a row the old code got right by accident.
+                ; [[two-rules-that-coincide-on-every-row-you-have]]
+                or      a
+                jr      z,oe_disable        ; `ON ERROR GOTO` <eol>  == GOTO 0
+                cp      COLON
+                jr      z,oe_disable        ; `ON ERROR GOTO :`      == GOTO 0
+                cp      LINENO_TOKEN
+                jp      nz,oe_badop         ; present, not a line number
                 call    req_lineno          ; D-NGRAM10: $0E,lo,hi expected (GOTO's
                                             ; own operand shape) -- BC = the line,
                                             ; HL past the $0E operand
@@ -2324,6 +2350,25 @@ ex_on_error:
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
 oe_undef        equ     ers_undef
+; --- oe_badop: the operand is PRESENT and is not a line number ---------------
+; `ON ERROR GOTO A` / `ON ERROR GOTO "X"` -> `Syntax error in <line>`, UNTRAPPED,
+; with ERR/ERL set to 2 / the erroring line (measured: e.errl reads `[ 2  30 ]`
+; on both references, against an e.ctl of `[ 5  20 ]` for an ordinary abort --
+; which is why record_errline is called and not skipped).
+;
+; 🎯 "UNTRAPPED" IS EXPRESSIBLE AND ALREADY WAS. TODO.md filed this as needing
+; "a raise that skips the trap check, which is not what stmt_error does" -- but
+; raise_error's own tail is already split: raise_error_hl makes the trap
+; decision and ra_abort is the abort body BELOW it. Entering at ra_abort with
+; the message in HL is the untrapped raise, and it is the same four steps
+; raise_error_forced (ERR 22) has always used.
+oe_badop:
+                ld      a,2
+                ld      (ERRFLG),a
+                call    record_errline      ; ERRLIN := this line (ERL reads 30)
+                ld      hl,err_syntax       ; err_msgtab entry 2, low-region pool
+                jp      ra_abort            ; PAST raise_error_hl -> never traps
+
 oe_disable:
                 ld      de,0                ; (DE, not HL -- HL still holds the cursor
                 ld      (ONELIN),de         ; to continue the line with)
