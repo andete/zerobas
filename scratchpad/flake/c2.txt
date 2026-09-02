@@ -1,9 +1,0 @@
-TODO: record the settings.xml flake, and file the temp-disk-path residual under it
-
-The fix and its measurement, plus one thing it did NOT close: the per-case temp
-disk path is keyed by (side, label) only, and run_gates replicates the four
-CONTROLS into every lineerr shard, so eight concurrent processes copy onto the
-same twelve paths. None of the four flakes examined was a control row, so this
-caused none of them -- but it is the same class and one os.getpid() from closed.
-
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

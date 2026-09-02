@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5488 (T-529ABE)`: a
+      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5514 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1605,7 +1605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5488 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5514 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4163,13 +4163,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
           cf3300 -> File already open      zb -> OK
       ```
       Row `e.same2` in `scratchpad/open2_probe.py`, the only remaining DIFF of 18.
-      ⚠️ **THE FACE IS KNOWN, THE SITE IS NOT.** `File already open` is ERR 54 and
-      the message already ships; what is unmeasured is WHERE the reference checks
-      — at name-parse time, or at claim time against the other channels' stored
-      names — and the rows that would separate those do not exist yet. Writing
-      them comes before any byte.
-      🤖 AUTONOMOUS — the reference settles the behaviour; the discriminating
-      rows are the work.
+      ✅ **CHARACTERISED 2026-09-02 (D-DUPOPEN,
+      [`scratchpad/dupopen_probe.py`](scratchpad/dupopen_probe.py)), 11 rows,
+      6 DIFF — AND THE RULE IS EXACT:**
+
+          s.same      TS.DAT twice                cf3300 File already open  zb OK
+          s.case      ts.dat after TS.DAT         cf3300 OK                 zb OK
+          s.space     "TS.DAT " (trailing space)  cf3300 File already open  zb OK
+          s.newtwice  a name NOT on disk, twice   cf3300 File already open  zb OK
+          s.modes     same file, different mode   cf3300 File already open  zb OK
+          s.seqsame   sequential, same name       cf3300 File already open  zb OK
+
+      🎯 **CASE-SENSITIVE, TRAILING-SPACE-INSENSITIVE, AND IT READS THE CHANNEL
+      TABLE, NOT THE DISK.** `s.newtwice` refuses a file that does not exist yet,
+      so the comparison cannot be a directory lookup; `s.space` collapsing and
+      `s.case` NOT collapsing is exactly the 11-byte space-padded 8.3 name field
+      compared WITHOUT case folding. Mode is irrelevant.
+      🔴 **AND THE CHEAP IMPLEMENTATION ROUTE IS REFUTED.** The per-channel
+      context block already carries `FWR_DIRSEC`/`FWR_DIROFF` — the directory
+      entry's LOCATION — so comparing those would cost ZERO new RAM and
+      reproduces five of the six rows. It dies on `s.case`: `q.upcase` shows a
+      file created as `zz2.dat` opens fine as `ZZ2.DAT`, so the lookup is
+      case-insensitive and `ts.dat`/`TS.DAT` are ONE directory entry — a dirent
+      comparison would REFUSE `s.case`, which the reference ALLOWS.
+      💰 **SO THE PRICE IS RAM, AND IT IS NOT SMALL.** There is no `FCH_NAMES`
+      array — `FCH_MODES` and `FCH_RECLENS` are per-channel, names are not — and
+      the 50-byte context block is a span of existing sysvars with no name in it.
+      Storing the parsed name per channel is **11 B × `FCH_CEIL` (15) = 165 B of
+      page-3 RAM**, plus the compare. ⚠️ **RAM HAS NO GATE** — `wall-assertion-
+      check` covers ROM only — so this is not a wall you can read.
+      🙋 **NEEDS-JOOST — the measuring is DONE, the spend is yours.** 165 B of
+      RAM to make zerobas refuse what it currently permits. Worth noting it is
+      protective and not cosmetic: two channels writing one file corrupts it.
+      [[deffn-ramhunt-slice]]
 
 - [x] 🟢 **(superseded, kept for its row work) A SECOND DISK `OPEN` RAISES A
       SPURIOUS `Syntax error` — THE OPEN
