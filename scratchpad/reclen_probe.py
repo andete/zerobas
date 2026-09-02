@@ -177,3 +177,55 @@ print("   records), so they are NOT evidence about record layout.")
 print("\nexpect: ctl.* = BBB / AAA / CCC on the CF-3300 (the machinery works);\n"
       "        s.100.r6 is the whole question -- BBB means the reference straddles\n"
       "        correctly, anything else means its acceptance is not a model to copy.")
+
+# --- D-RECLENV: a VERDICT CHANNEL, because this probe had none ---------------
+# 🔴 WHY THIS EXISTS. `scratchpad/filed_row_sweep.py` re-runs every row set an
+# open TODO item cites and says which filed divergences no longer reproduce. It
+# reported this probe as "🔴 NOTHING PARSED -- probe measured nothing, or format
+# unknown", and its own source names why: this is "a two-column table, NO
+# verdict word anywhere -- an EIGHTH shape that simply has no channel to read".
+# That refusal is honest -- it guesses at nothing -- but the consequence is that
+# a probe documenting an UNTRAPPABLE HANG is invisible to the one instrument
+# built to notice unnoticed divergences. So give it a channel it can read.
+#
+# 🔴 AND A NAIVE DIFF COUNT WOULD BE WRONG, WHICH IS THE WHOLE DESIGN. Every
+# `ctl.*`, `s.*` and `x.*` row writes THREE records, so on zerobas they read
+# `<NO OUTPUT>` as a CONSEQUENCE of the put3 hang -- not as independent
+# divergences. Counting them would inflate one defect into fourteen and would
+# claim record-layout evidence this run does not have. The split is derived
+# from the CASES data (how many PUTs the row's own program issues), not from a
+# hand-kept list that would drift from the table above it.
+# [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
+LINES = {label: lines for label, _, lines in CASES}
+
+
+def _puts(label):
+    return sum(1 for l in LINES[label] if "PUT#" in l)
+
+
+SUBJECT = [l for l, _, _ in CASES if l.startswith("p.")]
+diverge = [l for l in SUBJECT if str(res["zb"].get(l)) != str(res["cf3300"].get(l))]
+# collateral: NOT a p.* row, needs 3+ PUTs, and blank on zb only
+blind = [l for l, _, _ in CASES
+         if not l.startswith("p.") and _puts(l) >= 3
+         and str(res["zb"].get(l)) != str(res["cf3300"].get(l))]
+
+print()
+# 🔴 TWO CHANNELS, AND THE SECOND IS NOT DECORATION. filed_row_sweep reads a
+# SUMMARY (`DIFF: n/m`) and a per-row MARKER separately, and adjudicates the
+# pinned set against the MARKER lines only. A summary alone made it report
+# "0 known, ⚠️ 4 known row(s) NO LONGER DIVERGING" while listing those same four
+# AS DIVERGING -- its `MARKER` wants `DIFF` + whitespace and `DIFF:` has a
+# colon. Caught by RUNNING the sweep against this file rather than assuming the
+# channel worked. [[readout-blind-to-its-own-subject]]
+for l in diverge:
+    print(f"DIFF {l}  cf3300={res['cf3300'].get(l)!r}  zb={res['zb'].get(l)!r}")
+print(f"DIFF: {len(diverge)}/{len(SUBJECT)}  " + " ".join(diverge))
+print(f"   the PUT-count subject rows only; controls p.put1/p.put2/p.trap2 are "
+      f"in that denominator and must stay green.")
+if blind:
+    print(f"⚠️ {len(blind)} row(s) BLIND ON zb AS A CONSEQUENCE of that hang "
+          f"(their programs issue 3+ PUTs), NOT independent divergences: "
+          + " ".join(blind))
+    print("   They are named rather than dropped -- an unscored row that "
+          "vanishes from a report reads as coverage.")

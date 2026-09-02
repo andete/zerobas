@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:975 (T-6FE392)8 (T-529ABE)` from `TODO.md:5206 (T-529ABE)`: a
+      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5258 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -443,6 +443,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       its call overhead in the scarce regions?), and D-NGRAM2..19 all shipped
       unattended. ⚠️ **THE TITLE'S "THREE CANDIDATES LEFT" IS A RANKING AND
       RANKINGS ROT** — re-run the sweep, do not spend that number.
+      📏 **RE-RUN 2026-09-02 (`scratchpad/ngram_sweep.py --main`, 20760
+      instructions, 524 positively-priced candidates before dedup). "THREE" WAS
+      STALE: 14 ranked, 3 already ⛔ DECLINED with their reasons recorded, so
+      ~11 open.** The ranking has NOT collapsed, but the HEAD has: the top three
+      are all declined, and the best open candidate is **12 B**, where the
+      shipped slices were 17–50 B. Top open, verbatim:
+
+          12  [TAIL] ld (errmark),a | ld de,0 | ret             4 sites
+          12  [sub]  jp nz,ev_f_empty | inc ix | call ev_sp     4 sites
+          12  [TAIL] call penderr_set | ld de,0 | ret           4 sites
+          12  [TAIL] ld (strptr),hl | pop hl | jp str_eval_ok   4 sites
+          12  [sub]  call skip_spaces | or a | ret z | cp colon 5 sites
+
+      ⚠️ **THE FIRST ONE IS THE DECLINED 18 B CANDIDATE'S TAIL** — the same four
+      sites minus `ld a,$dd`. D-EVFERR's decline is about what a `jp ev_f_err`
+      MEANS (failing with NO error code), so whether it also forbids the tail is
+      an open question, not an inherited answer.
+      🎯 **THE LAST ONE IS `req_operand`'S NEAR-TWIN** — the same
+      end-of-statement test with `ret z` instead of a raise. Read it against
+      `req_operand` and `scan_stmt_end` before treating it as new.
+      💰 **NOT SPENT, AND THE REASON IS THE WALL, NOT THE RANKING**: page 1 was
+      301 B free on 2026-09-02. At 12 B a slice, each costing a knife and a row
+      set, the carve pressure that justified D-NGRAM2..19 is not there today.
+      Re-read this when a slice is actually blocked on bytes.
 
 - [ ] 📌 **ANY BATTERY OR KNIFE SCORE TAKEN 2026-08-30 EVENING .. 2026-08-31
       04:30 IS SUSPECT — THE HOST WAS ASLEEP UNDER IT.** Found 2026-08-31 by
@@ -604,6 +628,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Falsified by planting BOTH directions on the same output (a dropped known
       row reads UNFILED; a ghost row reads NO-LONGER-DIVERGING; the unmodified
       control reads neither). The set is pinned; the judgement is not.
+      📏 **RE-RUN IN FULL 2026-09-02 (13 probes, serial, refcache OFF).** The
+      corpus shrank 18 → 13 because five items closed; **0 UNFILED, 0 NO-LONGER-
+      DIVERGING** across all thirteen. The one stale pin the day produced —
+      `onerrarm_probe`'s four rows, fixed by D-ONERRGO an hour earlier — was
+      found and removed by hand before this run, which is the debt a fix leaves
+      when it does not move the pin with it.
+      ✅ **AND THE RUN CLOSED THE `reclen_probe` HOLE (D-RECLENV).** It reported
+      `🔴 NOTHING PARSED`, and the sweep's own source says why: *"a two-column
+      table, NO verdict word anywhere -- an EIGHTH shape that simply has no
+      channel to read"*. That refusal is honest, but the consequence was that a
+      probe documenting an **untrappable hang** (D-PUT3) was invisible to the one
+      instrument built to notice unnoticed divergences. It now emits per-row
+      `DIFF <label>` markers and a `DIFF: n/m` summary, and the sweep reads
+      `DIVERGES 4/7 ... [4 known]`.
+      🔴 **A NAIVE DIFF COUNT WOULD HAVE BEEN WRONG, AND THAT IS THE DESIGN.**
+      Ten `k./x./ctl./s.` rows read blank on zb as a CONSEQUENCE of that same
+      hang (their programs issue 3+ PUTs). Counting them would inflate ONE defect
+      into fourteen and claim record-layout evidence the run does not have, so
+      they are reported separately and **deliberately NOT pinned**. The split is
+      derived from the CASES data, not a hand-kept list that would drift.
+      🔴 **AND THE FIRST CUT OF THAT CHANNEL DID NOT WORK** — a `DIFF:` summary
+      alone made the sweep say *"0 known, ⚠️ 4 known row(s) NO LONGER DIVERGING"*
+      while listing those four AS DIVERGING: its `MARKER` wants `DIFF` followed
+      by whitespace, and `DIFF:` has a colon. Caught by RUNNING the sweep against
+      the file rather than assuming the channel worked.
+      📌 **12 of 13 now have a readable verdict channel.** `budget_probe` is the
+      last, and it is a TIMING TABLE with no verdict concept at all — an honest
+      unparsed, not a hole.
       🤖 AUTONOMOUS — what remains is keeping the file honest as entries close,
       and the sweep now says so itself when one rots.
 
@@ -1553,7 +1605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5206 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5258 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2295,7 +2347,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `FN_RESUME` is already documented to survive (*"the text cursor no longer
       needs guarding across CALSLT -- it lives in FN_RESUME"*):
       `ld (FN_RESUME),hl` + `ld hl,(FN_RESUME)` = **6 B**, against a page 1 that
-      was 301 B free after D-ONERRGO (`make basic-reloc`; do not quote this).
+      was 301 B free on 2026-09-02 (`make basic-reloc`; do not quote this).
       🎯 **THE REORDER ALONE FIXES BOTH ROWS, AND NOTHING NEW HAS TO PRODUCE
       ERR 13**: with the old file absent, `fat_find` misses and the new name is
       never evaluated → 53; with it present, `fname_expr` runs and faults → 13,
