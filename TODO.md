@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5522 (T-529ABE)`: a
+      `TODO.md:1052 (T-6FE392)8 (T-529ABE)` from `TODO.md:5547 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -707,6 +707,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       construction. Two rules coincided on every edge row; the mid-octave rows
       separated them. Fixed (accidental before octave base, mod 12; clamp
       deleted as unreachable); 8/8 traces identical, fast-layer vectors added.
+
+- [ ] 🔁 **STANDING SEQUENCING (Joost, 2026-09-02): SPEED MATTERS AND WE SHOULD
+      AT LEAST TRY — BUT CORRECTNESS COMES FIRST.** Answers the charter question
+      D-INTERPSPEED raised (*does "faithful MSX1 BASIC" include speed?*): **yes**,
+      and the 2.5–3.1× measured against the CF-3300 is therefore a real defect
+      and not an accepted property. **It is also NOT the next thing to work on.**
+      🎯 **WHAT THIS RE-ORDERS.** Every open DIVERGENCE outranks every speed item.
+      A row where zerobas answers differently from the reference is correctness;
+      a row where it answers the same thing slower is not, and optimising code
+      whose behaviour is still wrong means optimising code that will change.
+      ⚠️ **SO THE Z80 REFERENCES ARE PARKED, NOT DECLINED**
+      (<https://shiar.nl/calc/z80/optimize>,
+      <https://www.smspower.org/Development/Z80ProgrammingTechniques>) — they sit
+      on the D-INTERPSPEED item and stay unread until the correctness queue is
+      down. Reading them now would invite spending page-1 bytes and review effort
+      on the wrong axis.
+      ➡️ **AND IT GIVES "DONE" A MEASURE**, which the file did not have before:
+      correctness is reached when the open divergence set is EMPTY — the filed
+      row sets (`scratchpad/filed_row_sweep.py`), `kwsweep`'s keyword
+      denominator and `sysvarsweep`'s cell denominator all read clean, with no
+      row parked as NO-ORACLE that a third reference could settle.
+      🔴 **WHEN SPEED DOES COME UP, THE BASELINE IS NOT 1.0** — `PAINT`'s filed
+      "1.9–2.0× slower" is measured against a zero that does not exist on this
+      tree (D-INTERPSPEED §4), and any future speed row has the same problem.
+      🙋→🤖 The charter half is ANSWERED; what remains under it is autonomous.
 
 - [ ] 🔁 **STANDING TIER (Joost, 2026-08-31): WHEN THE 🤖 QUEUE DRAINS, REVIEW
       EACH STATEMENT'S IMPLEMENTATION IN FULL, one verb at a time.** The
@@ -1605,7 +1630,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5522 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5547 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
