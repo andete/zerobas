@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5514 (T-529ABE)`: a
+      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5521 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1605,7 +1605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5514 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5521 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1850,6 +1850,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔬 **HOW IT WAS FOUND, because the lesson generalises**: not by looking for
       it. D-PUTTIME added a pure-CPU row purely to VALIDATE that `TIME` can see
       CPU work before trusting it on disk work. The control was the finding.
+      📚 **REFERENCE (Joost, 2026-09-02): <https://shiar.nl/calc/z80/optimize>** —
+      Z80 size/speed idioms. Filed HERE rather than on a carve item on purpose:
+      the constant factor is in resident interpreter code (§5's CALSLT route is
+      refuted), so instruction-level work on the hot dispatch path is the shape
+      that could actually move it. ⚠️ Not read yet, and it changes nothing about
+      the charter question below — optimising is only worth starting once "does
+      faithful include speed?" is answered.
       🙋 **NEEDS-JOOST** on the charter question (does faithful include speed?);
       🤖 the non-repack comparison in §5 is autonomous and comes first.
 
