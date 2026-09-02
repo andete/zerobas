@@ -113,6 +113,24 @@ def run_side(side):
     return out
 
 
+# 🔴 THREE ROWS HAVE NO ORACLE, AND THE NEWER PROBE ALREADY SAYS SO.
+# `d.body-l`, `d.lineno-l` and `d.body-res` LIST a program stored from a
+# TRUNCATED file. Its last line has no `$00` terminator, so relink's forward
+# scan stops wherever RAM happens to hold one -- and the two machines reach
+# these rows over different RAM history (`$FF` on the CF-3300 vs a preceding
+# `NEW`'s zeros here). `10 POKE` against `10` is THE SAME STORE rendered past
+# its own end, which D-TRUNCLOAD proved with a PEEK instrument rather than a
+# listing.
+# The owning item CLOSED 2026-08-30 at 18 scored / 18 agree / 0 diverge, and
+# `scratchpad/truncload_probe.py` -- the probe that closed it -- marks six rows
+# NO_ORACLE for exactly this reason and still reads 18/18 today.
+# 🎯 THIS PROBE IS THE OLDER ONE AND NEVER GOT THE CLASSIFICATION, so it kept
+# reporting three history rows as divergences and a scoreboard built from its
+# pin counted them as outstanding CORRECTNESS debt. Marked here so the next
+# reader does not re-derive it. [[no-oracle-is-about-the-comparison]]
+NO_ORACLE = {"d.body-l", "d.lineno-l", "d.body-res"}
+
+
 def main():
     sides = (sys.argv[1] if len(sys.argv) > 1 else "cf3300,zb").split(",")
     res = {s: run_side(s) for s in sides}
@@ -125,19 +143,24 @@ def main():
         scored = len(sides) > 1
         want = CONTROLS.get(label)
         alive = (not want) or all(any(t in v for t in want) for v in vals)
-        if scored and not same:
+        if scored and not same and label not in NO_ORACLE:
             diff.append(label)
         if not alive:
             dead.append(label)
-        tag = ("--" if not scored else ("ok" if same else "DIFF"))
+        tag = ("--" if not scored
+               else ("NO-OR" if label in NO_ORACLE and not same
+                     else ("ok" if same else "DIFF")))
         print(f"{tag:<4} {label:<{w}}  "
               + "  ".join(f"{s}={res[s].get(label)!r}" for s in sides)
               + ("   [CONTROL]" if want else "")
               + ("   🔴 CONTROL TEXT MISSING" if not alive else ""))
     n = len(CASES)
     if len(sides) > 1:
-        print(f"ROWS: {n} printed, {n} scored — {n - len(diff)} agree, "
-              f"{len(diff)} diverge")
+        nno = sum(1 for l, _, _ in CASES if l in NO_ORACLE
+                  and len({str(res[s].get(l)) for s in sides}) != 1)
+        print(f"ROWS: {n} printed, {n - nno} scored — {n - len(diff) - nno} "
+              f"agree, {len(diff)} diverge, {nno} NO-ORACLE (RAM history "
+              f"decides the listing, not the loader — see truncload_probe)")
     else:
         print(f"ROWS: {n} printed, 0 scored — CHARACTERIZATION (one side)")
     if dead:
