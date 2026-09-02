@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5422 (T-529ABE)`: a
+      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5441 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1605,7 +1605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5422 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5441 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1818,13 +1818,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       interpreter, PAINT is **faster than the machine it runs on**. Not a
       retraction (PAINT may have its own gap on top), but the number has to be
       re-read against 2.5–3.1x.
-      🔴 **MECHANISM IS A HYPOTHESIS AND IS LABELLED ONE.** The repack evicts a
-      great deal of code into sub-ROM tenants reached by `subrom_call`/CALSLT,
-      bought with MAIN PAGE 1 SPACE — the constraint most of this file is
-      fighting. If any per-statement path crosses a slot, that produces exactly
-      this shape. **UNTESTED**, and the test exists: run these rows on a
-      non-repack build and see whether the ratio moves. Two plausible mechanisms
-      were refuted today already; this one gets no more credit until it is run.
+      🔴 **THE CALSLT MECHANISM WAS TESTED THE SAME DAY AND IS REFUTED — THE
+      THIRD PLAUSIBLE MECHANISM TO DIE ON 2026-09-02.** The hypothesis was that
+      the repack's sub-ROM eviction puts a cross-slot call on a per-statement
+      path.
+      ✅ **THERE IS SUCH A CALL, ON A HOTTER PATH THAN EXPECTED.** A bounded
+      call-graph walk: `exec_stmt`, `ex_next` and `ex_if` do NOT reach
+      `subrom_call`, but `ex_for` does — via `var_store_fac` →
+      `var_alloc_or_find` → `ary_engine_call`. And `var_alloc_or_find` is **not**
+      the array path despite its callee's name: it sets `op = 5 SCALAR_ALLOC` and
+      calls unconditionally, so **every scalar variable store crosses a slot.**
+      🔴 **AND IT COSTS NOTHING DISPROPORTIONATE.** Two measured rows differ by
+      exactly one scalar store per iteration — `FOR I=1 TO 2000:NEXT` (200/611)
+      and `FOR J=1 TO 2000:I=I+1:NEXT` (576/1692). The MARGINAL cost of the store
+      is 376 jiffies on the reference and 1081 on zb: **1081/376 = 2.87×**, the
+      same as the baseline and slightly BELOW it. A cross-slot call unique to
+      zerobas would put this far above 3.
+      🎯 **THE ORDERING AGREES**: `FOR`/`NEXT` (3.06×) does NOT cross a slot per
+      iteration (`ex_next` writes through the cached `FOR_CUR` address) while the
+      `GOTO` loop (2.50×) does. **The path that crosses a slot is the LESS slowed
+      of the two** — the opposite of what a dominant CALSLT cost predicts.
+      ⇒ **THE EVICTION IS NOT WHAT MAKES THIS TREE SLOW.** The factor is in the
+      interpreter's own RESIDENT code. That matters because "the repack bought
+      space with speed" is the intuitive story and it is wrong — un-evicting
+      tenants would not buy the speed back.
+      ⚠️ Not claimed: that the cross-slot scalar store is free, or that no other
+      tenant call is expensive. Only that this is not the explanation.
       ⚠️ **WHETHER 3x MATTERS IS A CHARTER QUESTION, NOT A MEASUREMENT** — the
       project targets *faithful* MSX1 BASIC and whether faithful includes speed
       is Joost's call.

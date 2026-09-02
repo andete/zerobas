@@ -57,7 +57,60 @@ comparison: *the baseline is not 1.0*.
 is graphics-heavy and may have its own gap on top of the baseline. It means the
 number needs re-reading against 2.5–3.1×, not against 1.
 
-## 5. Mechanism: a HYPOTHESIS, explicitly not a finding
+## 5. Mechanism: the CALSLT hypothesis, tested and REFUTED
+
+*Added 2026-09-02, same day. §5 below is kept as filed; this section is what
+happened when it was run.*
+
+The hypothesis was that the repack's sub-ROM eviction — code reached by
+`subrom_call`/CALSLT, bought to free MAIN PAGE 1 — puts a cross-slot call on a
+per-statement path and so costs a broad constant factor.
+
+**Step 1 — is there such a call? YES, and on a hotter path than expected.** A
+bounded call-graph walk over `basic/` finds:
+
+```
+exec_stmt  -> subrom_call: NOT REACHABLE
+ex_next    -> subrom_call: NOT REACHABLE
+ex_if      -> subrom_call: NOT REACHABLE
+ex_for     -> ex_for -> for_set -> var_store_fac -> vsf_coerced
+                     -> var_alloc_or_find -> ary_engine_call -> subrom_call
+```
+
+and `var_alloc_or_find` is **not** the array path despite the name of its callee:
+it sets `op = 5 SCALAR_ALLOC` and calls `ary_engine_call` **unconditionally**. So
+*every scalar variable store crosses a slot*, once per assignment.
+
+**Step 2 — does it cost anything? NO, not disproportionately.** Two rows differ
+by exactly one scalar store per iteration:
+
+| | CF-3300 | zerobas |
+|---|---|---|
+| `FOR I=1 TO 2000:NEXT` | 200 | 611 |
+| `FOR J=1 TO 2000:I=I+1:NEXT` | 576 | 1692 |
+| **marginal cost of the store** | **376** | **1081** |
+
+**1081 / 376 = 2.87×** — the same as the 2.5–3.1× baseline, in fact slightly
+*below* it. If the cross-slot call carried a cost unique to zerobas, this
+marginal ratio would be far above 3, not under it.
+
+🎯 **AND THE ORDERING POINTS THE SAME WAY.** `FOR`/`NEXT` (3.06×) does **not**
+cross a slot per iteration — `ex_next` writes through the cached `FOR_CUR`
+address — while the `GOTO` loop (2.50×) crosses one per iteration for its store.
+**The path that crosses a slot is the LESS slowed of the two.** A dominant CALSLT
+cost predicts the opposite.
+
+⇒ **The eviction is not what makes this tree slow.** The 2.5–3.1× is in the
+interpreter's own resident code, and optimising it means optimising that code —
+not un-evicting tenants. That matters, because "the repack bought space with
+speed" is the intuitive story and it is wrong.
+
+⚠️ **WHAT THIS DOES NOT SAY:** that the cross-slot scalar store is free, or that
+no OTHER tenant call is expensive. It says this one is not the explanation for
+the constant factor. A per-call cost of the same order as everything else is
+still a cost.
+
+## 5b. The hypothesis as originally filed
 
 The repack build evicts a great deal of code into **sub-ROM tenants** (page-0 and
 page-1 islands reached by `subrom_call`/CALSLT), and it does so to buy MAIN PAGE
