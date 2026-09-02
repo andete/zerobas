@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5377 (T-529ABE)`: a
+      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5422 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1605,7 +1605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5377 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5422 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -1788,6 +1788,51 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [[a-mechanical-fix-can-break-a-different-invariant]]. Convert
       opportunistically, when touching a probe for another reason.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (re-measured 2026-08-26: 0 stray writes on a battery path; DE-ESCALATED).
+
+- [ ] 🐌 **THE INTERPRETER IS 2.5–3.1× SLOWER THAN THE CF-3300 — ON EVERYTHING,
+      NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.** Measured
+      2026-09-02 (D-INTERPSPEED,
+      [`docs/spec-basic-interpspeed.md`](docs/spec-basic-interpspeed.md),
+      [`scratchpad/interpspeed_probe.py`](scratchpad/interpspeed_probe.py)).
+      **Measurement only, no code change.** `TIME` jiffies read from inside the
+      machine, so the harness step is not in the loop:
+
+          FOR I=1 TO 1000:NEXT          cf3300   96   zb  295   3.07x
+          FOR I=1 TO 2000:NEXT                  200       611   3.06x
+          FOR I=1 TO 4000:NEXT                  407      1242   3.05x
+          I=I+1:IF I<2000 THEN 30 (no FOR)      718      1797   2.50x
+          FOR J=1 TO 2000:I=I+1:NEXT            576      1692   2.94x
+          FOR I=1 TO 500:A$="AB"+"CD":NEXT      122       300   2.46x
+          X=1                    (the floor)      0         0     --
+
+      ✅ **IT IS A RATIO, NOT AN OFFSET** — 3.07/3.06/3.05 across a 4x range of
+      loop counts; a per-statement overhead would shrink as the loop grows.
+      ✅ **IT IS NOT `FOR`/`NEXT`** — the `GOTO` row has no FOR machinery at all
+      and is still 2.50x. The subject is statement dispatch and expression
+      evaluation.
+      🟢 **AND THE CLOCK IS THE SAME**, which is the control that would have
+      dissolved the whole thing: neither machine XML carries a clock-frequency
+      tag and both are `<type>MSX`, so openMSX runs both at 3.58 MHz.
+      🎯 **THIS REFRAMES THE `PAINT` ITEM BELOW.** "1.9–2.0x slower" is measured
+      against a baseline of 1.0 that does not exist on this tree — at a 2.5–3.1x
+      interpreter, PAINT is **faster than the machine it runs on**. Not a
+      retraction (PAINT may have its own gap on top), but the number has to be
+      re-read against 2.5–3.1x.
+      🔴 **MECHANISM IS A HYPOTHESIS AND IS LABELLED ONE.** The repack evicts a
+      great deal of code into sub-ROM tenants reached by `subrom_call`/CALSLT,
+      bought with MAIN PAGE 1 SPACE — the constraint most of this file is
+      fighting. If any per-statement path crosses a slot, that produces exactly
+      this shape. **UNTESTED**, and the test exists: run these rows on a
+      non-repack build and see whether the ratio moves. Two plausible mechanisms
+      were refuted today already; this one gets no more credit until it is run.
+      ⚠️ **WHETHER 3x MATTERS IS A CHARTER QUESTION, NOT A MEASUREMENT** — the
+      project targets *faithful* MSX1 BASIC and whether faithful includes speed
+      is Joost's call.
+      🔬 **HOW IT WAS FOUND, because the lesson generalises**: not by looking for
+      it. D-PUTTIME added a pure-CPU row purely to VALIDATE that `TIME` can see
+      CPU work before trusting it on disk work. The control was the finding.
+      🙋 **NEEDS-JOOST** on the charter question (does faithful include speed?);
+      🤖 the non-repack comparison in §5 is autonomous and comes first.
 
 - [ ] 🐌 **`PAINT` IS STILL 1.9–2.0× SLOWER THAN BOTH REFERENCES — HALVED BY
       D-PAINTVRAM, NOT CLOSED.** Was 2.4–3.4× (filed 2026-08-24 out of the budget
