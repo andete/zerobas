@@ -65,7 +65,20 @@ def main() -> int:
         raw = open(f).read()
         if "<NO OUTPUT>" not in raw:
             continue
-        if not re.search(r"<NO OUTPUT[^\"']*\{", raw):
+        # 🔴 TWO SPELLINGS SATISFY THIS, AND THE FIRST CUT SAW ONLY ONE.
+        # The question is "when the readout cannot name what the screen said,
+        # does it carry the text?" -- and a probe can answer that either by
+        # making `<NO OUTPUT>` itself an f-string, or by returning a SEPARATE
+        # sentinel for the unnameable case and keeping `<NO OUTPUT>` bare for a
+        # genuinely empty screen. The second is strictly MORE informative (it
+        # distinguishes "nothing was printed" from "something was printed that I
+        # cannot spell"), and D-CARRYTEXT gave ten probes exactly that shape --
+        # which this sweep then reported as unchanged, because it was matching
+        # the SPELLING rather than the property. Measured 2026-09-02: the ten
+        # edits moved the count by zero until this line was widened, while a
+        # planted empty alphabet proved the new path fires on all of them.
+        # [[readout-blind-to-its-own-subject]]
+        if not re.search(r"<(?:NO OUTPUT|UNREADABLE)[^\"']*\{", raw):
             bare.append(f)
         t = code_only(f)
         known = {m for m in C if m in t}

@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5343 (T-529ABE)`: a
+      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5377 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1605,7 +1605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5343 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5377 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2522,6 +2522,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       COMPLETE readouts                            0 of 31
       sentinels that do NOT carry the text        52 of 53
       ```
+      📏 **RE-SWEPT 2026-09-02 (D-CARRYTEXT), AND THE THESIS IS ACTED ON RATHER
+      THAN RE-STATED.** The corpus is bigger than the 2026-08-26 numbers above
+      (82 probes with the bucket, 34 classifying by message text):
+
+          COMPLETE readouts                    0 of 31  ->  1 of 34
+          sentinels NOT carrying the text     52 of 53  ->  68 of 82
+          the widest readout                     15/30  ->  30/30
+
+      🎯 **CARRYING THE TEXT IS THE BOUNDED FIX, AND IT IS THIS ITEM'S OWN LOGIC
+      FOLLOWED THROUGH.** If "add the next name" is unbounded, stop adding names:
+      make the readout say WHAT IT COULD NOT NAME. Twelve probes now do
+      (`lrvar`, `fldwidth`, and ten more sharing one exact `for e in ERRORS`
+      shape — `readvar inputary arylv forvar nxary nxlist lvsites lvfix fldary
+      tgtspc`). `<NO OUTPUT>` now means the screen was genuinely EMPTY;
+      `<UNREADABLE: …>` means it had text this probe cannot spell — a sentence
+      about the PROBE, where the old one was a sentence about the MACHINE.
+      ✅ **WITNESSED, BECAUSE THE BATTERY MOVED ZERO ROWS** (92/92 green, as it
+      should be — every currently-named reading is still named). A change that
+      moves nothing is unwitnessed, so K-CT1/K-CT2 EMPTY a probe's alphabet
+      entirely: `fldary` then reads 4 rows and `forvar` 30 rows as
+      `<UNREADABLE: Subscript out of range in 30>` / `<UNREADABLE: NEXT without
+      FOR in 20>`, with **zero** `<NO OUTPUT>`. The path is live and carries the
+      line suffix too.
+      🔴 **AND THE SWEEP COULD NOT SEE ITS OWN SUBJECT.** After all twelve edits
+      it still reported `80 of 82`, because its predicate matched the SPELLING —
+      `<NO OUTPUT` followed by a `{` — rather than the PROPERTY. A separate
+      `<UNREADABLE:` sentinel is strictly MORE informative (it separates "nothing
+      printed" from "something I cannot spell") and scored as no fix at all.
+      Widened to accept both shapes; the count then moved 80 → 68, exactly the
+      twelve. **The instrument said the fix had not happened, and a planted
+      knife said it had.** [[readout-blind-to-its-own-subject]]
+      ➡️ **REMAINING: 68**, of which 48 classify by code/span/VRAM rather than by
+      message text and may not want this shape at all — check before assuming
+      the number is a to-do list.
       🎯 **SO "ADD THE NEXT NAME" IS PROVABLY UNBOUNDED, WHICH IS THE ITEM'S OWN
       THESIS MEASURED.** Not one readout in the tree can name even half the
       canon; the widest — `basic_probe_fldwidth.py`, 15/30 — is still blind to

@@ -183,6 +183,18 @@ def bracket(raw: str | None) -> str:
     for e in ERRORS:
         if e in txt:
             return f"<{e}>"
+    # 🔴 THE SCREEN HAD TEXT AND THE ALPHABET COULD NOT NAME IT (D-CARRYTEXT,
+    # 2026-09-02). `ERRORS` is a hand-written list and the ROM can print 30
+    # different messages; the sweep in TODO.md ("AN UNNAMED OUTCOME READS AS NO
+    # OUTCOME") measured this tree's readouts at a MEDIAN of 5 of those 30, and
+    # its thesis is that "add the next name" is provably unbounded. Carrying the
+    # text is the BOUNDED fix: a reading nobody modelled stops being reported as
+    # `<NO OUTPUT>`, which is a sentence about the MACHINE, and becomes one about
+    # this probe. Note this is deliberately NOT a new alphabet entry -- it is the
+    # thing that makes the alphabet's incompleteness visible instead of silent.
+    # [[an-unnamed-outcome-reads-as-no-outcome]]
+    if txt.replace("Ok", "").strip():
+        return f"<UNREADABLE: {txt.strip()[:48]}>"
     return "<NO OUTPUT>"
 
 
