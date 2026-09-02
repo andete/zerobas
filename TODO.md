@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4976 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4993 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4976 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:4993 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4500,9 +4500,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       apply sentinel capture to the non-signal cases too. The disk is now one per
       GROUP, not per case — a real reduction in isolation, which is why this only
       lands with the control green.
-      ➡️ Remaining: the other six `probe_signal` probes (the same split applies,
-      and `lineerr` + `graphics` are the two biggest units in the battery), then
-      the rest of the for-loop probes.
+      📏 **TWO MORE JUDGED 2026-09-02 (D-BATCH6), AND THEY SPLIT — WHICH IS THE
+      POINT.** `screenerr` and `penderr` have **BYTE-IDENTICAL** `run_side`
+      bodies (modulo the disk name), so the same transformation applied to both:
+      | suite | verdict | |
+      |---|---|---|
+      | `penderr` | **CONVERTED** | 3.7x; the ONLY differing row is the tally, 165 vs 3 |
+      | `screenerr` | **REVERTED** | a REAL leak: `a.sprskip` reads ` 99 , 2 ` batched, ` 0 , 2 ` fresh |
+      🔴 **AND THE LEAKING ROW STILL SAYS `ok` IN BOTH MODES**, because all three
+      sides agree on the polluted value too. Cross-side agreement cannot see it;
+      only the both-ways diff can
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. The file's own
+      DENOMINATOR names sprite-size persistence as something it does NOT sweep —
+      batching would have swept it accidentally and silently.
+      🎯 **SAME SHAPE, DIFFERENT VERDICT: run the control on EACH ONE.** Two
+      probes with identical bodies came out opposite ways, so an argument by
+      analogy ("its twin converted, so this one will") would have been wrong half
+      the time. `screenerr`'s reason is now in its own docstring.
+      ➡️ Remaining: `stmtpend` (the one `probe_signal` sibling whose `run_side`
+      is NOT identical), `deffn`, and then `lineerr` + `graphics` — the two
+      biggest units in the battery.
 
 - [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
       RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01

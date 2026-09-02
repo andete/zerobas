@@ -346,6 +346,21 @@ def read_case(kind: str, raw: str | None) -> str:
 
 
 def run_side(side: str, only: list[str]) -> dict:
+    """BOOT-PER-CASE IS LOAD-BEARING HERE, AND IT IS MEASURED (D-BATCH6).
+
+    🔴 `a.sprskip` READS ` 99 , 2 ` BATCHED AND ` 0 , 2 ` FRESH -- on ALL THREE
+    SIDES. The sprite-size argument survives into the next case, so a batched
+    matrix measures a polluted state. This file's own DENOMINATOR names that
+    persistence ("the sprite size's persistence across a later bare SCREEN") as
+    something it does NOT sweep; batching would have swept it accidentally and
+    silently.
+    ⚠️ THE ROW STILL SAYS `ok` IN BOTH MODES, because all three sides agree on
+    the polluted value too. Cross-side agreement cannot see this; only
+    `scratchpad/batchcheck.py`'s both-ways diff can
+    [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+    🟢 Its sibling `penderr` -- a byte-identical run_side -- IS convertible: the
+    difference there is only the signal tally. Same shape, different verdict,
+    which is why each one gets the control rather than an argument by analogy."""
     cfg = SIDES[side]
     out = {}
     for label, kind, stmt in CASES:
