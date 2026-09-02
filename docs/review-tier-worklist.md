@@ -163,8 +163,33 @@ MECHANISM before trusting the name — and the filed suspicions.
   Disk-BASIC verb surface still matches the oracle. Third exclusion this day
   moved from *"NOT MEASURED"* to a measurement; re-reasoned to SCOPE. Two left:
   `bdos` and `input-devices`.
-- graphics.asm handlers (pset/preset/line_gfx/put_sprite/point/vdp/base):
-  graphics-acceptance + gateblind sweeps.
+- ✅ **graphics.asm handlers — VERIFIED COVERED 2026-09-02, and this group's
+  cover is the STRONGEST of the seven.** `graphics-acceptance` is a collected
+  ~300 s tent-pole, but the load-bearing part is
+  `scratchpad/gate_blindness_sweep.py`: a MUTATION sweep that asks *"which
+  graphics-acceptance rows can anything redden?"*, mutating the graphics tenant
+  one instruction at a time and recording which rows go red.
+  🎯 **THAT IS THIS TIER'S OWN QUESTION, AUTOMATED.** "Does the arc read the
+  MECHANISM" is exactly what a mutation sweep answers, and it has already found
+  **three blind gate rows in one week** — G3's clip rows (D-SPOKELINE), G6's
+  `clip_left` (D-DRAWCLAMP) and `box_bf` (D-BFBYTE), each green for months while
+  blind to the very thing it was named for. No other group has an instrument that
+  checks its own gate this way.
+  ⚠️ The open `ntwall` rows (6, PAINT) are NOT closed by this — they are a real
+  divergence behind a design step, tracked on the correctness scoreboard.
+
+**THE ARC-COVERED SECTION IS FULLY WALKED (2026-09-02).** Seven groups. Score:
+**2 real defects** (`IF` — a false outer IF caught by a nested IF's ELSE, +27 B,
+now gated; `PRINT USING` — six float format specifiers missing behind a stale
+"arrives with Phase-3 floats" comment), **1 real gap with no defect** (`PRINT`'s
+comma/TAB/SPC surface, 25 rows measured, ungated by choice), **4 verified
+covered** (program.asm flow, files.asm, save/cassette verbs, graphics).
+🔴 **THE ARC NAME WAS WRONG IN 3 OF 7.** And the split is worth keeping: the
+defects came from READING THE CODE; the covered verdicts came from reading what
+the probes exercise. Those are worth less, and are marked *covered, not audited*.
+📏 **FOUR BATTERY EXCLUSIONS CONVERTED** from *"NOT MEASURED"* to a measurement
+along the way: `fat-error` 11/11, `lnblank-say` 208/208, `diskbasic` 34/34,
+`input-devices` 50/50. One left: `bdos` (Tier-2 DOS-boot).
 - program.asm flow (gosub/return/next/on_*): lineerr shards + trap
   acceptances + D-TRAPSVC/D-ONERRARM.
 - field.asm (get/lset/rset): FIELD arc + D-FLDCLOSE; files.asm
