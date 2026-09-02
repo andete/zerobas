@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1130 (T-6FE392)8 (T-529ABE)` from `TODO.md:5633 (T-529ABE)`: a
+      `TODO.md:1130 (T-6FE392)8 (T-529ABE)` from `TODO.md:5666 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1708,7 +1708,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5633 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5666 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3429,8 +3429,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       easily observe a window a `CLS` closes — but it is a measured difference and
       the gate rows are written AROUND it (`SETTLE`), which is the kind of
       accommodation that should be visible rather than silent.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended
-      (both machines answer; the open question is the window's mechanism and width).
+      ✅ **BOTH OPEN QUESTIONS MEASURED 2026-09-02 (D-PLAYWIN), AND THE FILED
+      FRAMING IS WRONG IN TWO WAYS.**
+      ⏱ **WIDTH: THE WINDOW CLOSES WITHIN ONE STATEMENT.** Not "a CLS suffices" —
+      `FOR I=1 TO 1:NEXT` suffices, and so does every longer delay tried (5, 20,
+      50, 200). So **no BASIC program that does anything at all between the `PLAY`
+      and the read can observe it**; only a read on the very next statement can.
+      🔴 **SHAPE: IT IS NOT "VOICE 2 IS MARKED", AND THE FILED ROW IS A SPECIAL
+      CASE READ AS THE RULE.** Playing only voice 2 gives the reference
+      `-1 -1 -1 0` and only voice 3 gives `-1 -1 0 -1` — in BOTH the extra voice
+      is **VOICE 1**, not voice 2:
+
+          supplied        reference (no delay)   settled
+          v1 only         -1 -1 -1 0             -1 -1 0 0    extra: v2
+          v2 only         -1 -1 -1 0             -1 0 -1 0    extra: v1
+          v3 only         -1 -1 0 -1             -1 0 0 -1    extra: v1
+          v1+v2           -1 -1 -1 0             (agrees)     extra: none
+          v1+v2+v3        -1 -1 -1 -1            (agrees)     extra: none
+
+      The one-string row this item was filed on is the ONLY case where the extra
+      voice is v2. The precise rule is still unnamed — but it is not the one
+      written above, and any fix aimed at "stop marking voice 2" would be aimed
+      at the wrong thing. [[two-rules-that-coincide-on-every-row-you-have]]
+      🔴 **AND ZEROBAS HAS A WINDOW TOO — the item says it "settles instantly"
+      and that is false.** `PLAY""` reads `-1 0 0 0` on the reference and
+      `-1 -1 0 0` here, and **both settle to `0 0 0 0`**. So this is not
+      "reference has a transient, zerobas does not"; it is **two transients of
+      different shape**, which is a different fix and a different risk.
+      🟢 `no PLAY at all` reads `0 0 0 0` on both — the resting state is shared,
+      so every row above is read against a real zero.
+      🙋 **NEEDS-JOOST — and the measurement argues for DECLINING.** The window is
+      unobservable to any program that executes one statement first; the gate rows
+      already accommodate it explicitly (`SETTLE`); and reproducing it means
+      matching a transient whose rule is still unnamed, in `playsvc.asm`'s
+      interrupt servicer. **Worth-it is the question, and it is yours** — the
+      measuring the item asked for is done.
 
 - [ ] ⚠️ **The bare-`jp raise_error` carve family is worth ~2 B, and the reason
       is worth more than the bytes.** Filed 2026-08-22 by D-DUPSPAN,
