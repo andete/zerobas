@@ -147,6 +147,22 @@ MECHANISM before trusting the name — and the filed suspicions.
   `--say` variant of a suite that IS collected and green, so running both doubles
   ~134 s of battery for one subject. Three left: `bdos`, `diskbasic`,
   `input-devices`.
+- ✅ **cload/csave/bload/bsave/save — VERIFIED COVERED 2026-09-02, four probes
+  under three names.** `csave`/`bload`/`bsave` have no same-named spec, which is
+  what put them on this list; all three are covered anyway. `BSAVE"CAS:"` →
+  `basic_probe_tape_save`; `BSAVE"A:…"` → `disk_probe_option_hygiene`; `BLOAD` →
+  the bload probes plus `fat-error`'s bload-alive/missing/nodisk; `CSAVE` →
+  `cassave-acceptance` (collected); `CLOAD`/`SAVE` have specs.
+  🟢 The two archived probes are allowlisted in `probe-reach-allow.txt` as
+  **"ARCHIVED AND STILL RE-PROVABLE — RUN GREEN 2026-08-31"**, with no `make`
+  target BY CHOICE and their findings written up. That is a coherent policy, not
+  a hole — the fact can be re-proven when the code changes, which is the point.
+  ⚠️ Coverage verified by READING what each probe exercises; the handlers
+  themselves were not re-read line by line. Covered, not audited.
+- ✅ **`diskbasic-acceptance` RUN 2026-09-02: 34/34 verbs CONVERGED** — the whole
+  Disk-BASIC verb surface still matches the oracle. Third exclusion this day
+  moved from *"NOT MEASURED"* to a measurement; re-reasoned to SCOPE. Two left:
+  `bdos` and `input-devices`.
 - graphics.asm handlers (pset/preset/line_gfx/put_sprite/point/vdp/base):
   graphics-acceptance + gateblind sweeps.
 - program.asm flow (gosub/return/next/on_*): lineerr shards + trap
