@@ -22,6 +22,6 @@
 
 bdos-acceptance	NOT MEASURED 2026-09-01 — Tier-2 DOS-boot sub-track (disk/docs/tier2-STATE.md), a distinct arc.
 diskbasic-acceptance	NOT MEASURED 2026-09-01 — Tier-2 disk-provider arc.
-fat-error-acceptance	NOT MEASURED 2026-09-01 — Tier-2 disk-provider arc.
+fat-error-acceptance	MEASURED GREEN 2026-09-02 (D-FILESVERBS): 20 rows printed, 11 scored, ALL PASS, over a LIVE FAT layer — including merge-alive/name-alive/kill-alive/append-alive verified AT THE DIRECTORY SECTOR, not just the screen. Still EXCLUDED, and the reason is now SCOPE not ignorance: Tier-2 disk-provider arc, and it needs the disk ROM + a live FAT fixture. ⚠️ The old reason read "NOT MEASURED 2026-09-01" — which is a statement that ROTS the moment anyone runs it, and nobody had.
 input-devices-acceptance	NOT MEASURED 2026-09-01 — needs input devices; held back from the sweep rather than assumed about.
-lnblank-say-acceptance	NOT MEASURED 2026-09-01 — a --say variant of lnblank-acceptance, which IS measured green.
+lnblank-say-acceptance	MEASURED GREEN 2026-09-02 (D-FILESVERBS): 208/208 gating rows agree across vg8020/cf3300/zb (2 allowlisted KNOWN_DIVERGE, pinned to their exact value). Still EXCLUDED for SCOPE: it is a --say variant of lnblank-acceptance, which IS collected and green, so collecting both doubles ~134 s of battery for the same subject. ⚠️ Was "NOT MEASURED 2026-09-01" — nobody had run it.

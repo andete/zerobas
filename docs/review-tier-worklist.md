@@ -121,6 +121,32 @@ MECHANISM before trusting the name — and the filed suspicions.
   📌 **NOT GATED, deliberately**: a 25-row no-finding suite costs battery time
   forever and protects no fix. The rows are kept in scratchpad and named here, so
   anything that touches `basic/print.asm` has them to hand.
+- ✅ **field.asm / files.asm (close/files/kill/merge/name) — VERIFIED COVERED
+  2026-09-02, and the coverage READS THE MECHANISM.** `MERGE` looked like the
+  risk: no `spec-basic-merge.md`, and every probe naming it (`castail`,
+  `cas_match`, `lnblank`) is the CASSETTE path, while the token comment says
+  "merge an ASCII program from DISK". But `disk_probe_fat_error_disposition.py`
+  covers the disk path properly — and its `merge-alive` row tests the
+  DISTINGUISHING property with its reasoning written down: it merges INTO an
+  existing program and asserts BOTH that the file arrived (`MG`) and that the
+  resident program survived (`ZQ`), noting *"a control asserting only MG would be
+  green on a MERGE that behaved like LOAD"*. That is mechanism coverage, not name
+  coverage.
+  🔴 **BUT IT WAS EXCLUDED FROM THE BATTERY AS "NOT MEASURED", SO NOTHING RAN
+  IT.** Run 2026-09-02: **20 rows printed, 11 scored, ALL PASS** over a live FAT
+  layer, with merge/name/kill/append each verified AT THE DIRECTORY SECTOR rather
+  than the screen. The exclusion is re-reasoned to SCOPE (Tier-2 disk-provider
+  arc, needs the disk ROM + a live FAT fixture) — *"NOT MEASURED"* is a claim that
+  rots the moment anyone runs it, and nobody had.
+  ⚠️ **FOUR MORE EXCLUSIONS STILL SAY "NOT MEASURED"** (I first wrote two, and
+  counted only the ones I had looked at): `bdos-acceptance`,
+  `diskbasic-acceptance`, `input-devices-acceptance`, `lnblank-say-acceptance`.
+  Same shape, same cheap remedy: run them, then re-reason the exclusion as SCOPE
+  or drop it. ✅ **`lnblank-say-acceptance` DONE the same day: 208/208 gating rows
+  agree** (2 allowlisted KNOWN_DIVERGE, pinned); re-reasoned to SCOPE — it is a
+  `--say` variant of a suite that IS collected and green, so running both doubles
+  ~134 s of battery for one subject. Three left: `bdos`, `diskbasic`,
+  `input-devices`.
 - graphics.asm handlers (pset/preset/line_gfx/put_sprite/point/vdp/base):
   graphics-acceptance + gateblind sweeps.
 - program.asm flow (gosub/return/next/on_*): lineerr shards + trap
