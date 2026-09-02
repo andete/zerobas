@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5295 (T-529ABE)`: a
+      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5343 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1605,7 +1605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5295 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5343 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4129,7 +4129,55 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
       🤖 AUTONOMOUS — the reference settles the behaviour.
 
-- [ ] 🔴 **THE THIRD `PUT` OF A SESSION HANGS ZEROBAS, UNTRAPPABLY — AND A
+- [ ] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
+      ITEM WAS FILED AS IS WITHDRAWN (D-PUT3SLOW, 2026-09-02,
+      [`docs/spec-basic-put3slow.md`](docs/spec-basic-put3slow.md)).**
+      🔴 **NOTHING HANGS.** Every reading behind the hang claim was taken at a
+      **2.5 s step**, and `step` is how long the harness waits before typing the
+      next line — so a statement needing longer reads as a blank screen.
+      **"Hung" and "slow" are the same observation at a fixed step.** Same
+      program, same machine, only the wait changed:
+
+          3 PUTs + LOF(1)      2.5s blank | 5s 128 | 10s 128 | 90s 128
+          4 PUTs + LOF(1)      2.5s blank | 5s 128 | 10s 128 | 90s 128
+          the filing's own LSET+STRING$+PUT x3 shape   -> OK from 5s up
+          PUT then DSKF(0)     2.5s blank | 5s 706 | 20s 706 | 90s 706
+
+      The answers are also CORRECT (706 is the CF-3300's own answer). That
+      dissolves "untrappable" too — the most alarming part of the filing — since
+      **no handler runs because there is no error.**
+      ✅ **THE DIVERGENCE IS REAL, AND IT IS PERFORMANCE.** The obvious worry is
+      the probe's own asymmetry (`SIDES` gives cf3300 `step=4.5`, zb `step=2.5`),
+      which would manufacture exactly this. **Controlled: the CF-3300 passes
+      every row at zerobas's own 2.5 s step.** So zb needs >2.5 s where the
+      reference needs <2.5 s. Bounded **>2.5 s and <5 s**, not pinned.
+      🔴 **BOTH PROPOSED MECHANISMS REFUTED.** A per-`PUT` cluster leak (growing
+      chain ⇒ longer `frnd_locate` walk each time) predicts falling free space:
+      `DSKF` after 1/2/3 writes reads **706 / 706 / 706 on both machines** — the
+      chain does not grow. And `fat_count_free`'s "cache keyed by `FWR_FIRST`"
+      (the same cell `frnd_locate` writes) initialises it to `$FFFF` on entry, so
+      it inherits nothing.
+      ⚠️ **A CLAIM I AM NOT MAKING:** that the third `PUT` is individually
+      slower. 1 and 2 pass at 2.5 s and 3 does not, but the harness types at
+      fixed intervals, so three writes of ~2.4 s each overrun **cumulatively**
+      with none of them growing. Flat-vs-rising is UNMEASURED, and the leak
+      refutation removes the only mechanism proposed for rising.
+      ➡️ **AT A 20 s STEP, ZB MATCHES THE CF-3300 ON ALL TWELVE ROWS.** There is
+      no behavioural divergence here at all.
+      ⚠️ **AND D-PUT3CONSUME's "DSKF AFTER ONE PUT DIES" (committed EARLIER THE
+      SAME DAY) IS WITHDRAWN BY THIS** — same cause, same correction. It returns
+      706, slowly.
+      ➡️ **WHAT IS STILL OWED:** the per-`PUT` cost, measured rather than
+      bounded, against the reference's. A write loop at ~2x the reference is a
+      real defect against a faithful-implementation charter — just not the
+      correctness emergency this was filed as.
+      🤖 AUTONOMOUS — the reference settles it; what is left is a timing
+      measurement, not a bisect.
+
+      ⬇️ **THE ORIGINAL FILING FOLLOWS, KEPT BECAUSE ITS ROW WORK IS SOUND** —
+      every characterisation below (PUT count, not layout; survives CLOSE; not
+      the LSET) reproduces; only the word "hangs" was wrong.
+      🔴 **THE THIRD `PUT` OF A SESSION HANGS ZEROBAS, UNTRAPPABLY — AND A
       RANDOM-ACCESS WRITE LOOP IS AN ORDINARY MSX BASIC PROGRAM.** Measured
       2026-08-30, [`docs/spec-basic-put3.md`](docs/spec-basic-put3.md),
       probe `scratchpad/reclen_probe.py` (15 rows, CF-3300 vs repack).
