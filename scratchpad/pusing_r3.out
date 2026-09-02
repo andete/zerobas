@@ -1,0 +1,13 @@
+  ran vg8020  u.valcomma    -> '0 6'
+  ran vg8020  u.chan        -> '0 6'
+  ran cf3300  u.valcomma    -> '0 6'
+  ran cf3300  u.chan        -> '0 6'
+  ran zb      u.valcomma    -> '0 6'
+  ran zb      u.chan        -> '0 6'
+
+  u.valcomma  vg8020='0 6'  cf3300='0 6'  zb='0 6'   ✅
+  u.chan      vg8020='0 6'  cf3300='0 6'  zb='0 6'   ✅
+
+  2 scored, 0 DIFF, 0 not measured
+    capture-on-signal: 6 on signal, 0 fell back to the scheduled budget   [signalled at 35.1-50.7 emulated s]
+rc=0

@@ -1,0 +1,6 @@
+  ran zb      k.none    -> '<NO OUTPUT>'
+
+  k.none  zb='<NO OUTPUT>'   ⚠️ THE REFERENCES DISAGREE — not a want
+
+    capture-on-signal: 0 on signal, 1 fell back to the scheduled budget
+      ⚠️ NEVER SIGNALLED (captured on the budget, as before this conversion): zb/k.none

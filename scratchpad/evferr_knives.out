@@ -1,0 +1,38 @@
+=== baseline ===
+baseline roms=fa720d6a / ae796ccb / cb06e156
+baseline 30 rows match evferr_after.out
+
+K-EV1  roms=b653dba6 / ae796ccb / 7f0547e5
+  cut: ev_f_paren's close check back to the SILENT ev_f_err -- re-creates the pre-slice defect at its own site
+  moved 6 rows: p.colon='0', p.for='0', p.if='0', p.nested='0', p.noclose='0', p.print='0'
+  ✅ EXACT — 6 predicted, 6 moved
+
+K-EV2  roms=5c91a80b / ae796ccb / bcce235e
+  cut: ev_f_paren's close check to ev_f_missop -- the right SITE with the wrong CODE (24 instead of 2)
+  moved 7 rows: p.colon='24', p.for='24', p.if='24', p.nested='24', p.noclose='24', p.print='24', s.strparen='24'
+  🔴 NOT EXACT: s.strparen got '24' want '2'
+
+K-EV3  roms=f1c7c614 / ae796ccb / 24b1b98e
+  cut: VARPTR's missing-'(' check back to ev_f_err -- ONE of the two VARPTR sites, so ONE row
+  moved 1 rows: v.nopareol='0'
+  ✅ EXACT — 1 predicted, 1 moved
+
+K-EV4  roms=b9bb71b7 / ae796ccb / 1a1a32b3
+  cut: VARPTR's not-a-name check back to ev_f_err -- the OTHER site, the other row
+  moved 1 rows: v.badargeol='0'
+  ✅ EXACT — 1 predicted, 1 moved
+
+K-EV5  roms=bf29d0b3 / ae796ccb / e16249ec
+  cut: EOF's length-less-channel check to ev_f_empty -- a DEFERRED error either way, but Syntax (2) instead of the measured 5
+  moved 1 rows: e.eofcrt='2'
+  ✅ EXACT — 1 predicted, 1 moved
+
+K-EV6  roms=6db7c1f0 / ae796ccb / 918b2909
+  cut: vptr_unset back to raising its domain error FIRST -- the pre-slice ordering, restored by DELETING the close check
+  moved 2 rows: d.strunset='5', v.noclose='5'
+  ✅ EXACT — 2 predicted, 2 moved
+
+restored, roms=fa720d6a / ae796ccb / cb06e156
+
+5 of 6 knives EXACT
+rc=1

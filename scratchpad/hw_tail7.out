@@ -1,0 +1,34 @@
+150 identical invocations, 1 case(s) each, on C-BIOS_MSX1_EU_REPACK_DISK
+
+wall: median 0.116s  mean 0.233s  min 0.103s  max 5.755s
+slowest 15 = 56% of total
+
+  stalls (>3x median): 4 at [0, 45, 90, 135]
+  deltas in COUNT: [45, 45, 45]  median 45.0
+  => one stall per 5.2s of non-stall wall
+  SLOWEST 5
+    #45  wall  5.755s = preflight 0.000 + spawn 0.004 + after-spawn 0.183
+    #135 wall  5.748s = preflight 0.000 + spawn 0.004 + after-spawn 0.169
+    #90  wall  5.707s = preflight 0.000 + spawn 0.004 + after-spawn 0.139
+    #0   wall  0.790s = preflight 0.056 + spawn 0.001 + after-spawn 0.732
+    #64  wall  0.165s = preflight 0.000 + spawn 0.001 + after-spawn 0.163
+  FASTEST 5
+    #83  wall  0.103s = preflight 0.000 + spawn 0.001 + after-spawn 0.102
+    #114 wall  0.106s = preflight 0.000 + spawn 0.002 + after-spawn 0.104
+    #88  wall  0.106s = preflight 0.000 + spawn 0.002 + after-spawn 0.104
+    #72  wall  0.106s = preflight 0.000 + spawn 0.002 + after-spawn 0.104
+    #20  wall  0.107s = preflight 0.000 + spawn 0.001 + after-spawn 0.105
+
+  WHAT THE EMULATOR WAS DOING DURING A STALL (%cpu, state):
+    #45 wall 5.75s  omsx: ['0.3 Ss      2', '0.0 Ss      2', '0.0 Ss      2', '0.0 Ss      2', '0.0 Ss      2', '0.0 Ss      2']
+       hottest: ['47.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer', '37.1 /Applications/Claude.app/Contents/Frameworks/Claude Helper (Renderer).app/Contents/MacOS/Claude Helper (Renderer)', '24.5 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper', '3.8 /Users/joost/Library/Application Support/Claude/claude-code/2.1.237/claude.app/Contents/MacOS/claude']
+       hottest: ['48.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer', '34.5 /Applications/Claude.app/Contents/Frameworks/Claude Helper (Renderer).app/Contents/MacOS/Claude Helper (Renderer)', '20.6 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper', '6.8 /Users/joost/Library/Application Support/Claude/claude-code/2.1.237/claude.app/Contents/MacOS/claude']
+    #135 wall 5.75s  omsx: ['0.2 Ss      2', '0.0 Ss      2', '0.0 Ss      2', '0.0 Ss      2', '0.0 Ss      2', '0.0 Ss      2']
+       hottest: ['47.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer', '35.2 /Applications/Claude.app/Contents/Frameworks/Claude Helper (Renderer).app/Contents/MacOS/Claude Helper (Renderer)', '17.5 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper', '7.5 /Users/joost/Library/Application Support/Claude/claude-code/2.1.237/claude.app/Contents/MacOS/claude']
+       hottest: ['47.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer', '30.8 /Applications/Claude.app/Contents/Frameworks/Claude Helper (Renderer).app/Contents/MacOS/Claude Helper (Renderer)', '27.7 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper', '5.9 /System/Applications/Utilities/Activity Monitor.app/Contents/MacOS/Activity Monitor']
+    #90 wall 5.71s  omsx: ['0.2 Ss      2', '0.0 Ss      2', '0.0 Ss      2', '0.0 Ss      2', '0.0 Ss      2', '0.0 Ss      2']
+       hottest: ['50.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer', '31.8 /Applications/Claude.app/Contents/Frameworks/Claude Helper (Renderer).app/Contents/MacOS/Claude Helper (Renderer)', '24.3 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper', '4.6 /System/Library/DriverExtensions/com.apple.DriverKit-AppleBCMWLAN.dext/com.apple.DriverKit-AppleBCMWLAN']
+       hottest: ['51.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer', '34.8 /Applications/Claude.app/Contents/Frameworks/Claude Helper (Renderer).app/Contents/MacOS/Claude Helper (Renderer)', '32.7 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper', '5.9 /Applications/JetBrains Toolbox.app/Contents/MacOS/jetbrains-toolbox']
+
+  median preflight 0.000s  median spawn 0.002s  median after-spawn 0.114s
+rc=0

@@ -1,0 +1,50 @@
+temp: one root, /tmp/zerobas, and a gate that keeps it that way
+
+Cleaning up everything this project writes is now one command:
+
+    rm -rf /tmp/zerobas
+
+probes/lib/probe_tmp.py owns the root and sets `tempfile.tempdir` to it.
+Python resolves every bare mkstemp/mkdtemp/NamedTemporaryFile through that one
+global, so setting it once relocates 140 call sites across probes/, tools/ and
+tests/ without editing any of them -- and, more to the point, without a future
+one being able to escape by being written the ordinary way. A per-site helper
+would have had to be remembered 140 times; this has to be right once.
+
+The root is a LITERAL path on purpose. `tempfile.gettempdir()` is $TMPDIR, which
+on macOS is a per-user /var/folders path nobody can type from memory, and
+"cleaning up" has to be a command a person will actually run. $ZEROBAS_TMP
+overrides it; tests/_tmp.py now derives its base from probe_tmp.ROOT so unit-test
+artefacts land under it too, instead of as /tmp/zb_*.rom.
+
+Wired in at the four lib chokepoints every probe reaches (omsx_preflight,
+omsx_repl, omsx_run, probe_report) plus the five files that use tempfile and
+import nothing from lib. 153 of 188 probe files reach lib; the five were the gap.
+
+NOT MOVED, AND PINNED INSTEAD: 122 hardcoded "/tmp/..." literals in 67 files.
+They are not uniformly scratch -- eleven are argparse defaults, i.e. a documented
+output location someone may be relying on -- so moving them in bulk would have
+been a silent behaviour change in probes no gate runs. tools/temp-root-allow.txt
+pins the set; it may shrink, never grow.
+
+`make temp-root-check` (38th gate, emulator-free, <1s) enforces three rules: a
+bare tempfile call must reach the root, only probe_tmp may set it, and a new
+hardcoded literal is RED. The allowlist is a CONTROL, not a suppressor: a pin
+that stops matching is an error, so the file cannot drift from what it claims.
+
+FALSIFIED IN BOTH SENSES, 6/6 (scratchpad/flake/temproot_teeth.sh): a green
+control either side, and one plant per rule -- an orphan bare tempfile call, a
+second module setting tempdir, a new /tmp literal, and a pin that no longer
+matches. This tree already lost this class once: tests/_tmp.py solved it for the
+unit tests and nobody carried it to the probes, which cost 2165 orphaned files,
+1.1 GB, and a stochastic gate flake. A rule nobody enforces holds until the next
+person writes the obvious thing.
+
+Verified: make unit-test 59/59, make gates 38/38 green with no flakes, and a
+census either side of a full battery shows zero strays outside the root. What
+remains inside it is 3.3 MB of unit-test .rom/.sym build cache, which
+tests/_tmp.py keeps ON PURPOSE so tests can reuse each other's builds.
+
+ROM hashes 41b8c4ed ae796ccb 7d27b871, unchanged.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

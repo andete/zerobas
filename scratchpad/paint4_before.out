@@ -1,0 +1,40 @@
+  ran vg8020  pa.plain  '<NO OUTPUT>'
+  ran vg8020  pa.color  '<NO OUTPUT>'
+  ran vg8020  pa.border '<NO OUTPUT>'
+  ran vg8020  pa.nopnt  '0 4'
+  ran vg8020  pa.4comma '<NO OUTPUT>'
+  ran vg8020  pa.4arg   '<NO OUTPUT>'
+  ran vg8020  pa.4colon '<NO OUTPUT>'
+  ran vg8020  pa.3comma '24 4'
+  ran vg8020  pa.ccomma '2 4'
+  ran cf3300  pa.plain  '<NO OUTPUT>'
+  ran cf3300  pa.color  '<NO OUTPUT>'
+  ran cf3300  pa.border '<NO OUTPUT>'
+  ran cf3300  pa.nopnt  '0 4'
+  ran cf3300  pa.4comma '<NO OUTPUT>'
+  ran cf3300  pa.4arg   '<NO OUTPUT>'
+  ran cf3300  pa.4colon '<NO OUTPUT>'
+  ran cf3300  pa.3comma '24 4'
+  ran cf3300  pa.ccomma '2 4'
+  ran zb      pa.plain  '<NO OUTPUT>'
+  ran zb      pa.color  '<NO OUTPUT>'
+  ran zb      pa.border '<NO OUTPUT>'
+  ran zb      pa.nopnt  '0 4'
+  ran zb      pa.4comma '2 4'
+  ran zb      pa.4arg   '2 4'
+  ran zb      pa.4colon '2 4'
+  ran zb      pa.3comma '24 4'
+  ran zb      pa.ccomma '2 4'
+
+  pa.plain   vg8020='<NO OUTPUT>'  cf3300='<NO OUTPUT>'  zb='<NO OUTPUT>'   .... NOT MEASURED
+  pa.color   vg8020='<NO OUTPUT>'  cf3300='<NO OUTPUT>'  zb='<NO OUTPUT>'   .... NOT MEASURED
+  pa.border  vg8020='<NO OUTPUT>'  cf3300='<NO OUTPUT>'  zb='<NO OUTPUT>'   .... NOT MEASURED
+  pa.nopnt   vg8020='0 4'  cf3300='0 4'  zb='0 4'
+  pa.4comma  vg8020='<NO OUTPUT>'  cf3300='<NO OUTPUT>'  zb='2 4'   .... NOT MEASURED
+  pa.4arg    vg8020='<NO OUTPUT>'  cf3300='<NO OUTPUT>'  zb='2 4'   .... NOT MEASURED
+  pa.4colon  vg8020='<NO OUTPUT>'  cf3300='<NO OUTPUT>'  zb='2 4'   .... NOT MEASURED
+  pa.3comma  vg8020='24 4'  cf3300='24 4'  zb='24 4'
+  pa.ccomma  vg8020='2 4'  cf3300='2 4'  zb='2 4'
+
+ROWS: 9 printed, 3 scored -- 0 DIFF
+EXIT rc=0

@@ -1,0 +1,6 @@
+case     side      fixed-time   sentinel    fired@  verdict
+circle   zb             24576      24576   548.399  ✅ identical
+
+1 identical, 0 differ, 0 NOT MEASURED
+A row that agrees WITHOUT its sentinel firing proves nothing: both sides
+would be the scheduled fallback, i.e. the old path compared to itself.

@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5441 (T-529ABE)`: a
+      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5488 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1605,7 +1605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5441 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5488 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4125,7 +4125,54 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **`FOR INPUT` ON A DEVICE IS NOT COPIED**: the reference HANGS there, and
       a hang is not a behaviour to reproduce.
 
-- [ ] 🔴 **A SECOND DISK `OPEN` RAISES A SPURIOUS `Syntax error` — THE OPEN
+- [x] 🟢 **A SECOND DISK `OPEN` — FIXED 2026-09-02 (D-OPEN2FIX), +2 B, 9 DIFF →
+      1.** [`docs/spec-basic-open2fix.md`](docs/spec-basic-open2fix.md).
+      🎯 **A REGISTER CLOBBER, AND THE GUARD WAS ONE CALL TOO LATE.** `HL` (the
+      token cursor) enters `fch_claim` as `$EC15` and the statement boundary
+      reads it back as `$E9FB`, so the parser resumes on garbage and raises
+      `Syntax error` AFTER the OPEN has completed — which is exactly why the
+      channel table showed both channels correctly open. The call site already
+      guards HL, one call below, for `fat_io_*`'s CALSLT; `fch_claim` runs its
+      OWN CALSLT (`fch_save_active` → `fch_ctx_addr`) and was uncovered, though
+      its header says `Clobbers regs.`
+      🔬 **FOUND WITH THE DEBUGGER THIS ITEM ASKED FOR.** openMSX is driven
+      through Tcl, so breakpoints and watchpoints are available to the same
+      harness the probes use; breakpointing the OPEN path and logging hit order
+      showed the cursor moving across `fch_claim` in one run.
+      🔴 **AND IT REFUTED TWO OF THIS ITEM'S OWN CONCLUSIONS.** A watchpoint on
+      `FPERR` recorded only TWO writes in the whole run, both `00`, the second
+      from inside `record_errline` (the consume); `penderr_set` and `ev_f_empty`
+      never fired. So it is **not a deferred error and nothing sets FPERR=4** —
+      the filed next step ("what remains is finding what sets `FPERR`=4") was
+      chasing something that does not happen. A direct `jp stmt_error`.
+      🎯 **UNTESTED BY CONSTRUCTION, exactly as this item said**: `fch_claim`
+      returns at its `ret z` before any CALSLT when the channel already owns the
+      globals, so the missing guard is unreachable with a single channel.
+      ✅ **9 DIFF → 1 of 18.** Two random channels either order, two sequential,
+      mixed, with/without `LEN=`, `MAXFILES=2` and `3` — all now agree. Controls
+      green, `n.nomaxf` still `Bad file number` on both.
+      ➡️ **ONE ROW LEFT, WHICH THE Syntax error WAS HIDING — filed below.**
+      [[a-scratch-register-that-was-the-callers-value]]
+
+- [ ] 🔴 **THE SAME FILE ON TWO CHANNELS IS ACCEPTED HERE AND REFUSED ON THE
+      CF-3300.** Uncovered 2026-09-02 by D-OPEN2FIX, which removed the
+      `Syntax error` that was killing every two-channel open before this could be
+      reached.
+      ```
+      MAXFILES=2 : OPEN"TS.DAT"AS #1 : OPEN"TS.DAT"AS #2
+          cf3300 -> File already open      zb -> OK
+      ```
+      Row `e.same2` in `scratchpad/open2_probe.py`, the only remaining DIFF of 18.
+      ⚠️ **THE FACE IS KNOWN, THE SITE IS NOT.** `File already open` is ERR 54 and
+      the message already ships; what is unmeasured is WHERE the reference checks
+      — at name-parse time, or at claim time against the other channels' stored
+      names — and the rows that would separate those do not exist yet. Writing
+      them comes before any byte.
+      🤖 AUTONOMOUS — the reference settles the behaviour; the discriminating
+      rows are the work.
+
+- [x] 🟢 **(superseded, kept for its row work) A SECOND DISK `OPEN` RAISES A
+      SPURIOUS `Syntax error` — THE OPEN
       ITSELF SUCCEEDS. (Corrected TWICE: first from "only ONE file may be open at
       a time" — device+device, device+disk and disk+device all WORK — and then
       from "refuses", which the channel table refutes.)** Measured 2026-08-30,

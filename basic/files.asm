@@ -397,9 +397,27 @@ oo_setmode:
                 jr      z,oo_nodisk         ; no disk -> fail BEFORE claiming a slot
                 ; claim the channel's slot (saving any OTHER active channel) so the
                 ; engine globals belong to this channel before fat_io_* fills them.
+                ; 🔴 D-OPEN2FIX: HL IS GUARDED HERE, NOT ONE CALL LATER.
+                ; `fch_claim` documents "Clobbers regs", and when it claims a
+                ; SECOND channel it runs fch_save_active -> fch_ctx_addr, an
+                ; op-18 CALSLT that clobbers HL like every other. The guard
+                ; below said so in its own words -- "CALSLT ... clobbers HL +
+                ; regs" -- and sat one call too late, protecting fat_io_* and
+                ; not this. With ONE channel `fch_claim` returns at its `ret z`
+                ; before reaching any CALSLT, so the omission is INVISIBLE until
+                ; a second disk channel exists: untested by construction, which
+                ; is exactly what D-OPEN2 concluded about this path.
+                ; Traced 2026-09-02 with an openMSX breakpoint script: the token
+                ; cursor goes into fch_claim as $EC15 and the statement boundary
+                ; reads it back as $E9FB, so the parser resumes on garbage and
+                ; raises `Syntax error` AFTER the OPEN has completed -- which is
+                ; why the channel table showed both channels correctly open.
+                ; [[a-scratch-register-that-was-the-callers-value]]
                 push    de
+                push    hl
                 ld      a,e
                 call    fch_claim           ; FCH_ACTIVE = e (no stale load)
+                pop     hl
                 pop     de
                 push    hl                  ; guard the text cursor — CALSLT (inside
                 push    de                  ; fat_io_*) clobbers HL + regs

@@ -1,0 +1,23 @@
+  ran zb      p.colour   '5 4'
+  ran zb      p.kcolour  '5 4'
+  ran zb      p.b        '5 4'
+  ran zb      p.kb       '5 4'
+  ran zb      p.cc       '5 4'
+  ran zb      p.kcc      '5 4'
+  ran zb      p.none     '0 15'
+  ran zb      p.omit     '0 15'
+  ran zb      p.plain    '0 15'
+  ran zb      p.ok       '0 15'
+
+  p.colour   zb='5 4'   (zb only)
+  p.kcolour  zb='5 4'   (zb only)
+  p.b        zb='5 4'   (zb only)
+  p.kb       zb='5 4'   (zb only)
+  p.cc       zb='5 4'   (zb only)
+  p.kcc      zb='5 4'   (zb only)
+  p.none     zb='0 15'   (zb only)
+  p.omit     zb='0 15'   (zb only)
+  p.plain    zb='0 15'   (zb only)
+  p.ok       zb='0 15'   (zb only)
+
+ROWS: 10 printed, 0 scored -- 0 DIFF

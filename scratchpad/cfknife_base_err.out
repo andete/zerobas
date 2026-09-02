@@ -1,0 +1,35 @@
+  ran zb      q.trail   '24 0'
+  ran zb      q.kcolon  '24 0'
+  ran zb      q.comma   '2 0'
+  ran zb      q.commak  '2 0'
+  ran zb      q.conly   '2 0'
+  ran zb      q.div     '11 0'
+  ran zb      q.str     '13 0'
+  ran zb      q.ovf     '6 0'
+  ran zb      q.ok      '0 0'
+  ran zb      q.both    '0 0'
+  ran zb      q.bare    '0 0'
+  ran zb      q.kbare   '0 0'
+  ran zb      z.hd000   '2 0'
+  ran zb      z.seq     'UNTRAPPED Syntax error in 30'
+  ran zb      z.neg     '0 0'
+  ran zb      t.notrap  '11 0'
+
+  q.trail   zb='24 0'   (zb only)
+  q.kcolon  zb='24 0'   (zb only)
+  q.comma   zb='2 0'   (zb only)
+  q.commak  zb='2 0'   (zb only)
+  q.conly   zb='2 0'   (zb only)
+  q.div     zb='11 0'   (zb only)
+  q.str     zb='13 0'   (zb only)
+  q.ovf     zb='6 0'   (zb only)
+  q.ok      zb='0 0'   (zb only)
+  q.both    zb='0 0'   (zb only)
+  q.bare    zb='0 0'   (zb only)
+  q.kbare   zb='0 0'   (zb only)
+  z.hd000   zb='2 0'   (zb only)
+  z.seq     zb='UNTRAPPED Syntax error in 30'   (zb only)
+  z.neg     zb='0 0'   (zb only)
+  t.notrap  zb='11 0'   (zb only)
+
+ROWS: 16 printed, 0 scored -- 0 DIFF

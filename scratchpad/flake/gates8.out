@@ -1,0 +1,52 @@
+=== warm-up (serial build of shared artifacts) ===
+warm-up 7s
+=== 45 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0      2s  basic-reloc
+  rc=0      0s  subrom-abi-check
+  rc=0      1s  subrom-closure-check
+  rc=0     23s  unit-test
+  rc=0      0s  deadcode
+  rc=0      2s  wall-assertion-check
+  rc=0      0s  redundant-load-check
+  rc=0      1s  rowshape-check
+  rc=0      3s  injector-check
+  rc=0      0s  temp-root-check
+  rc=0      1s  preflight-check
+  rc=0      4s  latch-check
+  rc=0      3s  diskdep-check
+  rc=0      1s  switch-build-check
+  rc=0     40s  kwsweep
+  rc=0      0s  deffn-selftest
+  rc=0     38s  string-acceptance
+  rc=0     18s  str-domain-acceptance
+  rc=0     44s  strparen-acceptance
+  rc=0    171s  penderr-acceptance
+  rc=0     35s  missing-acceptance
+  rc=0     13s  error-acceptance
+  rc=0     74s  error-trap-acceptance
+  rc=0     79s  onerr0-acceptance
+  rc=0    102s  math-acceptance
+  rc=0     84s  float-acceptance
+  rc=0     43s  intarg-acceptance
+  rc=0     40s  logicops-acceptance
+  rc=0    204s  screenerr-acceptance
+  rc=0    138s  tmfp-acceptance
+  rc=0    182s  stmtpend-acceptance
+  rc=0    108s  array-acceptance
+  rc=0    119s  deffn-strict
+  rc=0    315s  graphics-acceptance
+  rc=0     60s  abort-acceptance
+  rc=0    149s  interval-trap-acceptance
+  rc=0     76s  clearpool-acceptance
+  rc=0    116s  lineerr#1/8
+  rc=0    116s  lineerr#2/8
+  rc=0    116s  lineerr#3/8
+  rc=0    106s  lineerr#4/8
+  rc=0    103s  lineerr#5/8
+  rc=0    100s  lineerr#6/8
+  rc=0     73s  lineerr#7/8
+  rc=0     73s  lineerr#8/8
+
+=== wall 445s (7s build + 438s gates) ===
+GATES: 38/38 green
+hashes: 41b8c4ed ae796ccb 7d27b871

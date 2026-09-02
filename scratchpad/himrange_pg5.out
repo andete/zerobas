@@ -1,0 +1,6 @@
+  ran zb      x.pg5     '<NO OUTPUT>'
+      RAW: [' zerobas version 0.1                     clean-room MSX-BASIC program loader                                             ZBNEW                                   ZB10 ONERRORGOTO900                     ZB20 PRINT"<A>";                        ZB30 CLEAR 200,33700                    ZB40 PRINT"<E";ERR;">":END              ZB900 PRINT"<E";ERR;">":END             ZBPRINT"[";PEEK(&HE026)+256*PEEK(&HE027 );"]"                                   [ 32843 ]                               ZB']
+
+  x.pg5  zb='<NO OUTPUT>'   (zb only)
+
+ROWS: 1 printed, 0 scored -- 0 DIFF

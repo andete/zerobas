@@ -1,0 +1,9 @@
+[main b08d356] D-PAINT4: PAINT's 4th-argument error is the statement boundary; fill THEN raise -- -8 B carve, 3 DIFF -> 0
+ 11 files changed, 552 insertions(+), 24 deletions(-)
+ create mode 100644 docs/spec-basic-paint4.md
+ create mode 100644 scratchpad/paint4_after.out
+ create mode 100644 scratchpad/paint4_before3.out
+ create mode 100644 scratchpad/paint4_gates_run.out
+ create mode 100644 scratchpad/paint4_knives.py
+ create mode 100644 scratchpad/paint4_knives2.out
+ create mode 100644 scratchpad/paint4_probe.py

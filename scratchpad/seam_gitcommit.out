@@ -1,0 +1,4 @@
+[main 9f53c97] Seam classifier: one pass classifies SPRITE (DELETABLE) / CIRCLE (RESTRUCTURE) / PLAY (KEEP) -- and finds PLAY(n) missing
+ 3 files changed, 200 insertions(+)
+ create mode 100644 scratchpad/seam_classify.out
+ create mode 100644 scratchpad/seam_classify.py

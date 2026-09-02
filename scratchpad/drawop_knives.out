@@ -1,0 +1,18 @@
+=== baseline ===
+baseline roms=350db281 / 33ba143a / eced167f
+baseline 8 rows match drawop_after.out
+
+K-DR1  roms=a19e1637 / 33ba143a / 8e9ba847   [sub unmoved (size-neutral cut)]
+  cut: the delegation reverted to gfx_typeerr -- the pre-slice ERR 13 at all three shapes
+  moved 3 rows: d.colon='13', d.none='13', d.plus='13'
+  ✅ EXACT — 3 predicted, 3 moved
+
+K-DR2  roms=94a38d36 / 33ba143a / 4abeaa6a   [sub unmoved (size-neutral cut)]
+  cut: the MODE GATE moved AFTER the operand -- tests the ordering the source asserts in prose and D-DRAWERR measured
+  moved 2 rows: d.scr0='24', d.scr0num='13'
+  ✅ EXACT — 2 predicted, 2 moved
+
+restored, roms=350db281 / 33ba143a / eced167f
+
+2 of 2 knives EXACT
+rc=0

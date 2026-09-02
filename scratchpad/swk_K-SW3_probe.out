@@ -1,0 +1,45 @@
+  ran zb      s.3none   '5 0'
+  ran zb      s.3bund   '5 0'
+  ran zb      s.3cund   '2 0'
+  ran zb      s.3all    '2 0'
+  ran zb      s.tc.def  '2 0'
+  ran zb      s.tc.bun  '5 0'
+  ran zb      s.tc.non  '5 0'
+  ran zb      s.tc.va   '2 2'
+  ran zb      s.tc.vb   '2 2'
+  ran zb      s.mm3     '13 0'
+  ran zb      s.mm3v    '13 1'
+  ran zb      s.4all    '2 0'
+  ran zb      s.2none   '5 0'
+  ran zb      s.2bund   '5 0'
+  ran zb      s.ok      '0 2'
+  ran zb      s.ok3     '2 2'
+  ran zb      s.ok3b    '2 2'
+  ran zb      z.45.3    '5 0'
+  ran zb      z.45.tc   '5 0'
+  ran zb      z.45.one  '2 0'
+  ran zb      z.45.lit  '2 0'
+
+  s.3none   zb='5 0'   (zb only)
+  s.3bund   zb='5 0'   (zb only)
+  s.3cund   zb='2 0'   (zb only)
+  s.3all    zb='2 0'   (zb only)
+  s.tc.def  zb='2 0'   (zb only)
+  s.tc.bun  zb='5 0'   (zb only)
+  s.tc.non  zb='5 0'   (zb only)
+  s.tc.va   zb='2 2'   (zb only)
+  s.tc.vb   zb='2 2'   (zb only)
+  s.mm3     zb='13 0'   (zb only)
+  s.mm3v    zb='13 1'   (zb only)
+  s.4all    zb='2 0'   (zb only)
+  s.2none   zb='5 0'   (zb only)
+  s.2bund   zb='5 0'   (zb only)
+  s.ok      zb='0 2'   (zb only)
+  s.ok3     zb='2 2'   (zb only)
+  s.ok3b    zb='2 2'   (zb only)
+  z.45.3    zb='5 0'   (zb only)
+  z.45.tc   zb='5 0'   (zb only)
+  z.45.one  zb='2 0'   (zb only)
+  z.45.lit  zb='2 0'   (zb only)
+
+ROWS: 21 printed, 0 scored -- 0 DIFF

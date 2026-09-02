@@ -1,0 +1,45 @@
+  ran vg8020  u.none        -> '24 5'
+  ran vg8020  u.colon       -> '24 5'
+  ran vg8020  u.num         -> '13 5'
+  ran vg8020  u.numsemi     -> '13 5'
+  ran vg8020  u.fmtonly     -> '2 5'
+  ran vg8020  u.fmtsemi     -> '24 5'
+  ran vg8020  u.lit         -> '2 5'
+  ran vg8020  u.litsemi     -> '5 5'
+  ran vg8020  u.ok          -> '0 6'
+  ran vg8020  u.ok2         -> '0 6'
+  ran cf3300  u.none        -> '24 5'
+  ran cf3300  u.colon       -> '24 5'
+  ran cf3300  u.num         -> '13 5'
+  ran cf3300  u.numsemi     -> '13 5'
+  ran cf3300  u.fmtonly     -> '2 5'
+  ran cf3300  u.fmtsemi     -> '24 5'
+  ran cf3300  u.lit         -> '2 5'
+  ran cf3300  u.litsemi     -> '5 5'
+  ran cf3300  u.ok          -> '0 6'
+  ran cf3300  u.ok2         -> '0 6'
+  ran zb      u.none        -> '2 5'
+  ran zb      u.colon       -> '2 5'
+  ran zb      u.num         -> '2 5'
+  ran zb      u.numsemi     -> '2 5'
+  ran zb      u.fmtonly     -> '0 6'
+  ran zb      u.fmtsemi     -> '0 6'
+  ran zb      u.lit         -> '0 6'
+  ran zb      u.litsemi     -> '0 6'
+  ran zb      u.ok          -> '0 6'
+  ran zb      u.ok2         -> '0 6'
+
+  u.none     vg8020='24 5'  cf3300='24 5'  zb='2 5'   🔴 DIFF
+  u.colon    vg8020='24 5'  cf3300='24 5'  zb='2 5'   🔴 DIFF
+  u.num      vg8020='13 5'  cf3300='13 5'  zb='2 5'   🔴 DIFF
+  u.numsemi  vg8020='13 5'  cf3300='13 5'  zb='2 5'   🔴 DIFF
+  u.fmtonly  vg8020='2 5'  cf3300='2 5'  zb='0 6'   🔴 DIFF
+  u.fmtsemi  vg8020='24 5'  cf3300='24 5'  zb='0 6'   🔴 DIFF
+  u.lit      vg8020='2 5'  cf3300='2 5'  zb='0 6'   🔴 DIFF
+  u.litsemi  vg8020='5 5'  cf3300='5 5'  zb='0 6'   🔴 DIFF
+  u.ok       vg8020='0 6'  cf3300='0 6'  zb='0 6'   ✅
+  u.ok2      vg8020='0 6'  cf3300='0 6'  zb='0 6'   ✅
+
+  10 scored, 8 DIFF, 0 not measured
+    capture-on-signal: 30 on signal, 0 fell back to the scheduled budget   [signalled at 35.1-47.7 emulated s]
+rc=0

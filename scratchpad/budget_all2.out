@@ -1,0 +1,16 @@
+case           side       window     used   margin  used%  note
+paint.flood    vg8020      90.00    16.005    74.00  17.8%  
+paint.flood    cf3300      90.00    16.005    74.00  17.8%  
+paint.flood    zb          90.00    53.610    36.39  59.6%  
+paint.circle   vg8020      90.00     4.778    85.22   5.3%  
+paint.circle   cf3300      90.00     4.778    85.22   5.3%  
+paint.circle   zb          90.00    11.330    78.67  12.6%  
+circle         vg8020      90.00     0.715    89.29   0.8%  
+circle         cf3300      90.00     0.715    89.28   0.8%  
+circle         zb          90.00     0.426    89.57   0.5%  
+text.err       vg8020       2.50     0.094     2.41   3.8%  
+text.err       cf3300       2.50     0.094     2.41   3.8%  
+text.err       zb           2.50     0.024     2.48   1.0%  
+
+window = emulated s bought between RUN and capture; used = to the last change
+in the capture region; margin = the rest. Resolution is window/40.

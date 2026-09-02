@@ -1,0 +1,5 @@
+case           side       window     used   margin  used%  note
+text.err       zb           2.50     0.024     2.48   1.0%  
+
+window = emulated s bought between RUN and capture; used = to the last change
+in the capture region; margin = the rest. Resolution is window/40.

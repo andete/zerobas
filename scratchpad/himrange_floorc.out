@@ -1,0 +1,19 @@
+  ran vg8020  f.33600   '7 SAME'
+  ran vg8020  f.33650   '7 SAME'
+  ran vg8020  f.33700   '7 SAME'
+  ran vg8020  f.33750   '0 ->33750'
+  ran cf3300  f.33600   '7 SAME'
+  ran cf3300  f.33650   '7 SAME'
+  ran cf3300  f.33700   '7 SAME'
+  ran cf3300  f.33750   '0 ->33750'
+  ran zb      f.33600   '0 ->33600'
+  ran zb      f.33650   '0 ->33650'
+  ran zb      f.33700   '0 ->33700'
+  ran zb      f.33750   '0 ->33750'
+
+  f.33600  vg8020='7 SAME'  cf3300='7 SAME'  zb='0 ->33600'   *** DIFF
+  f.33650  vg8020='7 SAME'  cf3300='7 SAME'  zb='0 ->33650'   *** DIFF
+  f.33700  vg8020='7 SAME'  cf3300='7 SAME'  zb='0 ->33700'   *** DIFF
+  f.33750  vg8020='0 ->33750'  cf3300='0 ->33750'  zb='0 ->33750'
+
+ROWS: 4 printed, 4 scored -- 3 DIFF

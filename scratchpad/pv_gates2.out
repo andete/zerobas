@@ -1,0 +1,53 @@
+python3 tools/run_gates.py 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 7s
+=== 44 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0      2s  basic-reloc
+  rc=0      0s  subrom-abi-check
+  rc=0      1s  subrom-closure-check
+  rc=0     23s  unit-test
+  rc=0      0s  deadcode
+  rc=0      2s  wall-assertion-check
+  rc=0      0s  redundant-load-check
+  rc=0      1s  rowshape-check
+  rc=0      3s  injector-check
+  rc=0      1s  preflight-check
+  rc=0      4s  latch-check
+  rc=0      3s  diskdep-check
+  rc=0      1s  switch-build-check
+  rc=0     28s  kwsweep
+  rc=0      0s  deffn-selftest
+  rc=0     36s  string-acceptance
+  rc=0     18s  str-domain-acceptance
+  rc=0     42s  strparen-acceptance
+  rc=0    202s  penderr-acceptance
+  rc=0     43s  missing-acceptance
+  rc=0     13s  error-acceptance
+  rc=0     71s  error-trap-acceptance
+  rc=0     80s  onerr0-acceptance
+  rc=0    103s  math-acceptance
+  rc=0     93s  float-acceptance
+  rc=0     43s  intarg-acceptance
+  rc=0     37s  logicops-acceptance
+  rc=0    215s  screenerr-acceptance
+  rc=0    169s  tmfp-acceptance
+  rc=0    209s  stmtpend-acceptance
+  rc=0    110s  array-acceptance
+  rc=0    140s  deffn-strict
+  rc=0    373s  graphics-acceptance
+  rc=0     60s  abort-acceptance
+  rc=0    151s  interval-trap-acceptance
+  rc=0     74s  clearpool-acceptance
+  rc=0    131s  lineerr#1/8
+  rc=0    124s  lineerr#2/8
+  rc=0    125s  lineerr#3/8
+  rc=0    117s  lineerr#4/8
+  rc=0    122s  lineerr#5/8
+  rc=0    108s  lineerr#6/8
+  rc=0     92s  lineerr#7/8
+  rc=0     94s  lineerr#8/8
+
+=== wall 502s (7s build + 495s gates) ===
+GATES: 37/37 green
+hashes: 41b8c4ed ae796ccb 7d27b871
+gates rc=0

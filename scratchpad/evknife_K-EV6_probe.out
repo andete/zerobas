@@ -1,0 +1,64 @@
+  ran zb      p.noclose     -> '2'
+  ran zb      p.colon       -> '2'
+  ran zb      p.nested      -> '2'
+  ran zb      p.print       -> '2'
+  ran zb      p.ok          -> '0'
+  ran zb      v.nopar       -> '2'
+  ran zb      v.nopareol    -> '2'
+  ran zb      v.badarg      -> '2'
+  ran zb      v.badargeol   -> '2'
+  ran zb      v.noclose     -> '5'
+  ran zb      v.nocloseset  -> '2'
+  ran zb      v.ok          -> '0'
+  ran zb      e.eofdev      -> '59'
+  ran zb      e.eofcrt      -> '5'
+  ran zb      e.lofcrt      -> '5'
+  ran zb      e.crtok       -> '0'
+  ran zb      s.strparen    -> '2'
+  ran zb      s.strvp       -> '2'
+  ran zb      s.strok       -> '13'
+  ran zb      p.if          -> '2'
+  ran zb      p.for         -> '2'
+  ran zb      v.aryunset    -> '2'
+  ran zb      d.arybadsub   -> '9'
+  ran zb      d.arybadsubok -> '9'
+  ran zb      d.strunset    -> '5'
+  ran zb      d.strunsetok  -> '5'
+  ran zb      b.nopar       -> '2'
+  ran zb      b.nopareol    -> '2'
+  ran zb      b.openeol     -> '24'
+  ran zb      b.ok          -> '0'
+
+  p.noclose      zb='2'   (zb only)
+  p.colon        zb='2'   (zb only)
+  p.nested       zb='2'   (zb only)
+  p.print        zb='2'   (zb only)
+  p.ok           zb='0'   (zb only)
+  v.nopar        zb='2'   (zb only)
+  v.nopareol     zb='2'   (zb only)
+  v.badarg       zb='2'   (zb only)
+  v.badargeol    zb='2'   (zb only)
+  v.noclose      zb='5'   (zb only)
+  v.nocloseset   zb='2'   (zb only)
+  v.ok           zb='0'   (zb only)
+  e.eofdev       zb='59'   (zb only)
+  e.eofcrt       zb='5'   (zb only)
+  e.lofcrt       zb='5'   (zb only)
+  e.crtok        zb='0'   (zb only)
+  s.strparen     zb='2'   (zb only)
+  s.strvp        zb='2'   (zb only)
+  s.strok        zb='13'   (zb only)
+  p.if           zb='2'   (zb only)
+  p.for          zb='2'   (zb only)
+  v.aryunset     zb='2'   (zb only)
+  d.arybadsub    zb='9'   (zb only)
+  d.arybadsubok  zb='9'   (zb only)
+  d.strunset     zb='5'   (zb only)
+  d.strunsetok   zb='5'   (zb only)
+  b.nopar        zb='2'   (zb only)
+  b.nopareol     zb='2'   (zb only)
+  b.openeol      zb='24'   (zb only)
+  b.ok           zb='0'   (zb only)
+
+  0 scored, 0 DIFF, 30 not measured
+    capture-on-signal: 30 on signal, 0 fell back to the scheduled budget   [signalled at 29.1-29.1 emulated s]
