@@ -362,29 +362,55 @@ def read_case(kind: str, raw: str | None) -> str:
 
 
 def run_side(side: str, only: list[str]) -> dict:
+    """TWO BATCHED CALLS, split by whether the case wants the signal (D-BATCH5).
+
+    🟢 BATCHING MAKES THE SIGNAL TALLY MORE CORRECT, NOT LESS, WHICH IS THE
+    OPPOSITE OF WHAT THE OLD COMMENT HERE IMPLIED. It said "a fresh `so` per
+    call ... every boot indexes from 0, so one dict reused across the loop would
+    hold a single entry" -- true, and it is a statement about `batch=False`.
+    `settle_out` keys by the case index the emulator emits, so under `batch=True`
+    a matrix of N cases writes N DISTINCT keys into ONE dict. The per-call dict
+    was a boot-per-case workaround, not a barrier to batching.
+
+    🔴 SPLIT BY KIND BECAUSE `probe_signal.kwargs` APPLIES TO THE WHOLE CALL.
+    Sentinel capture is a run_cases-level setting, so a mixed matrix would apply
+    it to the non-`t` cases too -- a silent change to how they are captured.
+    Two calls keep each group's capture exactly as it was.
+
+    ⚠️ AND THE DISK IS NOW ONE PER GROUP, NOT ONE PER CASE. That is a real
+    reduction in isolation, and it is why this conversion is only allowed to
+    land with `scratchpad/batchcheck.py` green: if any case writes the image,
+    a later case in the same group would see it and the rows would move."""
     cfg = SIDES[side]
-    out = {}
-    for label, kind, stmt in CASES:
-        if only and label not in only:
+    picked = [(lbl, kind, stmt) for lbl, kind, stmt in CASES
+              if not only or lbl in only]
+    out: dict = {}
+    for want_sig in (True, False):
+        group = [(lbl, k, st) for lbl, k, st in picked if (k == "t") == want_sig]
+        if not group:
             continue
         kw = {}
         if cfg["diska"]:
-            dsk = probe_tmp.tmp(f"zb_stpd_{side}_{label}.dsk")
+            dsk = probe_tmp.tmp(f"zb_stmt_{side}_{'sig' if want_sig else 'plain'}.dsk")
             shutil.copy(TEST_DSK, dsk)
             kw["diska"] = dsk
-        reset = (tuple(r for r in cfg["reset"] if r != "CLS")
-                 if label in NO_CLS_RESET else cfg["reset"])
-        lines = list(reset) + program(kind, stmt) + ["RUN"]
-        # 🔴 A FRESH `so` PER CALL. Each case is its own boot and every boot
-        # indexes from 0, so one dict reused across the loop would hold a single
-        # entry and the tally would silently under-count.
         so: dict = {}
-        sn = probe_signal.kwargs(so) if kind == "t" else {}
+        sn = probe_signal.kwargs(so) if want_sig else {}
+        # ⚠️ THE PER-CASE RESET SURVIVES THE CONVERSION. Cases in NO_CLS_RESET
+        # drop the `CLS`; that variation lives in each spec's OWN lines, not in
+        # the `reset` kwarg, so batching carries it unchanged.
+        specs = []
+        for lbl, k, st in group:
+            rst = (tuple(r for r in cfg["reset"] if r != "CLS")
+                   if lbl in NO_CLS_RESET else cfg["reset"])
+            specs.append(("direct", list(rst) + program(k, st) + ["RUN"]))
         caps = omsx_repl.run_cases(
-            cfg["machine"], [("direct", lines)],
-            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw, **sn)
-        SIG.add(so, label=f"{side}:{label}")
-        out[label] = read_case(kind, caps[0])
+            cfg["machine"], specs,
+            batch=True, reset=(), boot=cfg["boot"], step=cfg["step"], **kw, **sn)
+        if want_sig:
+            SIG.add(so, label=f"{side}:stmtpend-signal-batch")
+        for (lbl, k, _), cap in zip(group, caps):
+            out[lbl] = read_case(k, cap)
     return out
 
 

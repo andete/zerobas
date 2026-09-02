@@ -914,7 +914,8 @@ def program(label: str, kind: str, seed: str, stmt: str) -> list[str]:
 
 # --- D-SNCAP: capture-on-signal (probes/lib/probe_signal.py) -----------------
 # Every case here is its OWN BOOT (`batch=False`), so the scheduled RUN..capture
-# budget is a guess. The TRAPPED template ends at a single
+# budget is a guess. (D-BATCH7 measured batching it: 30 of 220 rows move. See
+# run_side.) The TRAPPED template ends at a single
 # `:END` that BOTH paths reach (the handler `RESUME`s onto line 50), so the case
 # announces completion itself and the budget becomes a pure FAILURE detector.
 #
@@ -948,6 +949,26 @@ def read_case(kind: str, raw: str | None) -> str:
 
 
 def run_side(side: str, only: list[str]) -> dict:
+    """BOOT-PER-CASE IS LOAD-BEARING, AND IT IS MEASURED (D-BATCH7).
+
+    🔴 THIS SUITE LEAKS ACROSS CASES: 30 OF 220 ROWS MOVE WHEN BATCHED.
+    `scratchpad/batchcheck.py`, batched vs boot-per-case:
+        d.defd40k  ' 0 , 7 , 7236 '   vs  ' 0 , 7 , 40004 '
+        d.a0.32k   ' 0 , 7 , 5 '      vs  ' 0 , 7 , 32773 '
+        d.prev32k  ' 0 , 8 , 4 '      vs  ' 0 , 7 , 5 '
+    The `d.*` rows PEEK system variables (GRPACX/GRPACY, GXPOS/GYPOS) whose
+    values survive a case, so a shared boot reads the PREVIOUS case's graphics
+    accumulator instead of this case's seed.
+
+    ⚠️ EVERY ONE OF THOSE ROWS STILL SAYS `ok` IN BOTH MODES, because all three
+    sides agree on the polluted value too. Cross-side agreement -- what every
+    row here is scored by -- cannot see it; only the both-ways diff can
+    [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+
+    💰 It was the biggest prize in the battery (~210 boots, 3.2x on offer) and
+    it is not available. Recorded so the next reader does not re-derive it: the
+    siblings tmfp / penderr / stmtpend DID convert, and this one is why each
+    suite gets the control rather than an argument from its family."""
     cfg = SIDES[side]
     out = {}
     for label, kind, seed, stmt in CASES:

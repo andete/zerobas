@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:4993 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5011 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:4993 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5011 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4517,9 +4517,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       probes with identical bodies came out opposite ways, so an argument by
       analogy ("its twin converted, so this one will") would have been wrong half
       the time. `screenerr`'s reason is now in its own docstring.
-      ➡️ Remaining: `stmtpend` (the one `probe_signal` sibling whose `run_side`
-      is NOT identical), `deffn`, and then `lineerr` + `graphics` — the two
-      biggest units in the battery.
+      📏 **THE `probe_signal` FAMILY IS NOW SETTLED (2026-09-02, D-BATCH7).**
+      | suite | verdict | |
+      |---|---|---|
+      | `tmfp` | CONVERTED | 4.1x (61.7 s → 15.1 s) |
+      | `penderr` | CONVERTED | 3.7x (~170 s → 22 s) |
+      | `stmtpend` | CONVERTED | 3.8x (73.5 s → 19.5 s); per-case `NO_CLS_RESET` variation preserved |
+      | `screenerr` | REVERTED | `a.sprskip` leaks: ` 99 , 2 ` vs ` 0 , 2 ` |
+      | **`lineerr`** | **REVERTED** | **30 of 220 rows leak** |
+      | `graphics` | not attempted | 44 separate `run_cases` sites, a different job |
+      | `deffn` | not attempted | imported by a dozen probes; wide blast radius |
+      🔴 **`lineerr` WAS THE BIGGEST PRIZE IN THE BATTERY (~210 boots, 3.2x on
+      offer) AND IT IS NOT AVAILABLE.** Its `d.*` rows PEEK system variables
+      (`GRPACX`/`GRPACY`, `GXPOS`/`GYPOS`) that survive a case, so a shared boot
+      reads the PREVIOUS case's graphics accumulator: `d.defd40k` reads
+      ` 0 , 7 , 7236 ` batched against ` 0 , 7 , 40004 ` fresh.
+      ⚠️ **AND ALL 30 STILL SAY `ok` IN BOTH MODES** — all three sides agree on
+      the polluted value too. Four suites in this family converted and two leak,
+      which is why each gets the control rather than an argument from its
+      siblings.
+      ➡️ Remaining: `graphics` (44 call sites) and `deffn` (shared harness), then
+      the non-`probe_signal` for-loop probes.
 
 - [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
       RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01
