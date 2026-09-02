@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:975 (T-6FE392)8 (T-529ABE)` from `TODO.md:5175 (T-529ABE)`: a
+      `TODO.md:975 (T-6FE392)8 (T-529ABE)` from `TODO.md:5206 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1553,7 +1553,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5175 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5206 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2287,11 +2287,42 @@ list. **When a slice lands, grep this list for what it just shipped.**
       D-FNEXPR2 closed at six verbs while its own plan said *"a row on each of
       `OPEN`/`KILL`/`NAME`"*, and the verb it dropped is the one that diverges
       [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
-      💰 Not priced. The two rows above exist and are in **no gate**; the change
-      is a REORDER in `do_name`, not a new tail — `els_tc_common` already ships
-      the face. ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express
-      `NAME`).
-      🔭 SCOUT-THEN-ASK — the decision is yours; the measuring and pricing in front of it are not (charter / scope, but unpriced/unmeasured first).
+      💰 **SCOUTED AND PRICED 2026-09-02 — +6 B, AND THE MECHANISM IS ALREADY
+      PROVEN BY A GREEN ROW.** The reference rule is *look the old file up FIRST,
+      then evaluate the new name*, so the reorder moves `call fname_expr` (the
+      NEW name) from before `fat_mount` to after `fat_find` succeeds. The only
+      cost is parking the text cursor across the disk primitives, which
+      `FN_RESUME` is already documented to survive (*"the text cursor no longer
+      needs guarding across CALSLT -- it lives in FN_RESUME"*):
+      `ld (FN_RESUME),hl` + `ld hl,(FN_RESUME)` = **6 B**, against a page 1 that
+      was 301 B free after D-ONERRGO (`make basic-reloc`; do not quote this).
+      🎯 **THE REORDER ALONE FIXES BOTH ROWS, AND NOTHING NEW HAS TO PRODUCE
+      ERR 13**: with the old file absent, `fat_find` misses and the new name is
+      never evaluated → 53; with it present, `fname_expr` runs and faults → 13,
+      which is exactly what the FIRST `fname_expr` call already does — row
+      `name.old5` (`NAME 5 AS"X.DAT"`) reads 13=13 today.
+      🔴 **RE-MEASURED, AND THE FILED zb FACE HAD ROTTED.** This item and the
+      corrected comment in `basic/files.asm` BOTH say `zb ERR 24`. Both rows now
+      read **ERR 2**:
+
+          NAME"X.DAT"AS 5    (old ABSENT)   cf3300 53   zb 2   DIFF
+          NAME"HI.TXT"AS 5   (old EXISTS)   cf3300 13   zb 2   DIFF
+
+      The DIVERGENCE is unchanged and the rule is unchanged; only the face this
+      tree gives has moved, some time after 2026-08-26. Six controls green on the
+      same run (`name.old5` 13=13, `ctl.kill5`, `ctl.open5`, `ctl.div0` 11=11,
+      `ctl.wf` 53=53), so the apparatus is not the story.
+      **THIRD STALE FILING FOUND ON 2026-09-02** — after the CVI row (fixed the
+      day it was filed) and `filed-row-known.txt`'s `onerrarm` pin.
+      ⚠️ **ONE SIDE-EFFECT TO WEIGH, NOT HIDDEN**: the reorder also moves the
+      `DISKSLOT_OK` check ahead of the new-name evaluation, so on a machine with
+      NO disk `NAME"x"AS 5` would read the no-disk error rather than a type one.
+      Unmeasured — the reference always has a drive.
+      ⚠️ The two rows are still in **NO GATE**. ONE REFERENCE (Disk BASIC; a
+      diskless VG-8020 cannot express `NAME`).
+      🙋 **NEEDS-JOOST — PRICED, YOURS TO SPEND.** 6 B for two rows on a verb no
+      program in the corpus renames with a numeric operand. The scouting the 🔭
+      asked for is DONE; what is left is the call.
 
 - [ ] 🔴 **A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD — AND
       THAT IS FAITHFUL; WHAT IS NOT IS THE SIX-EVENT CAP.** Measured 2026-08-23,
