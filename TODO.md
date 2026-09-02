@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1052 (T-6FE392)8 (T-529ABE)` from `TODO.md:5547 (T-529ABE)`: a
+      `TODO.md:1096 (T-6FE392)8 (T-529ABE)` from `TODO.md:5591 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -707,6 +707,50 @@ list. **When a slice lands, grep this list for what it just shipped.**
       construction. Two rules coincided on every edge row; the mid-octave rows
       separated them. Fixed (accidental before octave base, mod 12; clamp
       deleted as unreachable); 8/8 traces identical, fast-layer vectors added.
+
+- [ ] 📊 **THE CORRECTNESS SCOREBOARD — WHAT "FULL CORRECTNESS" ACTUALLY
+      REQUIRES, 2026-09-02.** Built the moment Joost's sequencing (below) made
+      "reach full correctness" the goal, because the file had no map of it.
+      🔴 **54 PINNED DIVERGENT ROWS IS NOT 54 DEFECTS**, and reading it that way
+      would send the next slice at the wrong things. Classified from
+      `tools/filed-row-known.txt`, every row owned by a filed item:
+
+          ACCEPTED DEVIATION, signed off — not defects              11
+            ngram14  9  the §12.9-adjudicated negative-EXP carve-out
+            oomtail  2  TXTMAX $BB00 is the repack's own text ceiling
+          DECLINED, priced and refused                               5
+            keystr   5  NOT-THIS-ONE `KEY n,"str"` (~160 B)
+          APPARATUS, not BASIC behaviour                             9
+            ramfree  9  echo-fence readout rows; the entry says so
+          SPEED, not correctness (reclassified today)                4
+            reclen   4  D-PUT3SLOW: all four PASS with the CORRECT
+                        answer at a 5 s step; blank only at 2.5 s
+          ---------------------------------------------------------------
+          REAL OPEN CORRECTNESS DEBT                                17
+            ntwall       6  PAINT: a borderless wall is eaten
+            ngram13      3  the truncated-load class residual
+            deffn_alias  2  DEF FN: two formals of one call alias
+            playfn       2  PLAY(n) start-up window
+            trapsvc      2  trap handler w/o RETURN; six-event cap
+            open2        1  same file on two channels (🙋, 165 B RAM)
+            reqcomma     1  CLOSE empties a fielded variable
+
+      🎯 **SO THE CORRECTNESS QUEUE IS 17 ROWS, NOT 54** — and two of those are
+      already 🙋 on a spend. That is a finishable number, which is the point of
+      writing it down.
+      ⚠️ **THIS COUNTS ONLY WHAT IS PINNED.** It is the set of divergences some
+      filed item OWNS; it is NOT a claim that the tree has no others. The
+      denominators that would say so are `kwsweep` (keywords), `sysvarsweep`
+      (sysvar cells) and the NO-ORACLE buckets — **and the last of those moved
+      TWICE on 2026-09-02**, when a third reference dissolved `LSET`/`RSET` and
+      `CVI` from unscorable to scored-and-agreeing. A row parked NO-ORACLE is
+      unmeasured, not clean. [[no-oracle-is-about-the-comparison]]
+      🔴 **AND TWO PINS WERE STALE WHEN THIS WAS BUILT, BOTH MINE FROM TODAY**:
+      `open2` still claimed 9 rows after D-OPEN2FIX closed 8, and `reclen`'s 4
+      still read as a hang after D-PUT3SLOW withdrew it. **A fix that does not
+      move its pin leaves the set claiming defects that no longer exist** — third
+      occurrence in one day, after the `onerrarm` pin.
+      🤖 AUTONOMOUS — the 17 are named; work them.
 
 - [ ] 🔁 **STANDING SEQUENCING (Joost, 2026-09-02): SPEED MATTERS AND WE SHOULD
       AT LEAST TRY — BUT CORRECTNESS COMES FIRST.** Answers the charter question
@@ -1630,7 +1674,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5547 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5591 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
