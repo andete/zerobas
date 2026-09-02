@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1109 (T-6FE392)8 (T-529ABE)` from `TODO.md:5611 (T-529ABE)`: a
+      `TODO.md:1130 (T-6FE392)8 (T-529ABE)` from `TODO.md:5633 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -726,13 +726,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
                         answer at a 5 s step; blank only at 2.5 s
           ---------------------------------------------------------------
           REAL OPEN CORRECTNESS DEBT                                16
+          ✅ ALL SIX CLUSTERS RE-RUN 2026-09-02 — EVERY PIN ACCURATE.
+
+          🤖 AUTONOMOUS                                             11
             ntwall       6  PAINT: a borderless wall is eaten
-            ngram13      3  the truncated-load class residual  ✅ re-run,
-                            still diverges — the pin is accurate
-            deffn_alias  2  DEF FN: two formals of one call alias
+                            19 rows / 6 DIFF. ⚠️ BEHIND A DESIGN STEP:
+                            "no row yet separates the candidate rules",
+                            and the fix touches gfx_plot_cur, shared with
+                            PSET/LINE/CIRCLE/DRAW (all agreeing today).
+            ngram13      3  the truncated-load class residual
+                            3 of 9, controls green.
             playfn       2  PLAY(n) start-up window
-            trapsvc      2  trap handler w/o RETURN; six-event cap
-            open2        1  same file on two channels (🙋, 165 B RAM)
+                            the reference marks a voice active during
+                            PLAY's own start-up and settles after ANY
+                            delay; zerobas answers settled immediately.
+                            3 delay-controls agree on both sides.
+
+          🙋 BLOCKED ON JOOST                                        5
+            deffn_alias  2  two formals of one call alias. TWO PRICED
+                            OPTIONS, and one is FREE: fix top-level only
+                            for **−8 B** (closes 1 of 2), or grow the
+                            shadow area **+99 B RAM** (closes both).
+            trapsvc      2  trap handler w/o RETURN; six-event cap.
+                            Priced and DECLINED — charter/scope.
+            open2        1  same file on two channels. **+165 B RAM.**
+
+      🎯 **SO THE ACTUALLY-WORKABLE QUEUE IS 5 ROWS** (`ngram13` 3 + `playfn` 2),
+      with `ntwall`'s 6 behind a design step and 5 rows waiting on a decision.
+      That is the number that should drive what gets picked up next — "16" is the
+      debt, not the work available.
 
       🎯 **SO THE CORRECTNESS QUEUE IS 16 ROWS, NOT 54** — and one of those is
       already 🙋 on a spend. That is a finishable number, which is the point of
@@ -1686,7 +1708,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5611 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5633 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
