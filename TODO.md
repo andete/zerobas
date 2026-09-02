@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5053 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5067 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5053 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5067 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4248,7 +4248,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
 
-- [ ] 🔴 **`badfnum-acceptance` REPORTED `1 unfiled divergence` AND NEVER SAID
+- [x] 🟢 **`badfnum-acceptance` REPORTED `1 unfiled divergence` AND NEVER SAID
       WHICH ROW — THEN PASSED ON RETRY.** Seen 2026-09-02 in a full battery
       (`rc 2 -> 0`, "recovered flake"). The summary line is
       `93 cases, 0 mangled, 0 oracle drift, 1 unfiled divergence` on the failing
@@ -4268,7 +4268,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       because it does not name the row.
       ➡️ Make the probe print the diverging row's label, expected and observed —
       then a repeat is diagnosable from the log alone.
-      🤖 AUTONOMOUS — the probe's own reporting; no oracle needed.
+      🔴 **THAT FILING WAS WRONG, AND I CORRECTED IT THE NEXT MORNING.** The
+      probe DOES name the row: its per-row table prints
+      `DIVERGE (UNFILED)` against the label, expected and observed. I had only
+      `tail`ed the log and never grepped it — **an incomplete read reported as an
+      absent feature** [[a-justification-parenthesis-is-an-unrun-claim]].
+      🎯 **THE REAL GAP IS THAT THE EVIDENCE DOES NOT SURVIVE.**
+      `tools/run_gates.py:453` does `rm -rf {OUT}` at the START of every battery,
+      so the failing run's log — the only artifact that can diagnose a
+      stochastic failure — is destroyed by the NEXT battery. And because the
+      retry turned the battery green, nothing prompts anyone to look before
+      then. That is why the row was unavailable by the time I went back for it.
+      ✅ **FIXED 2026-09-02 (D-FLAKEKEEP)**: a unit that goes red now has its log
+      AND its retry log copied to `/tmp/zerobas/gate_flakes/<stamp>-<unit>/`
+      before the next battery can wipe them — outside `OUT`, under the sanctioned
+      temp root, and untracked so the pool-write detector is unaffected.
 - [x] 🟢 **8192 B OF BASIC MEMORY IS RESERVED BY A CONVENTION NOBODY PRICED —
       `$C000`–`$E000` HOLDS TWO ALLOCATED BYTES.** Measured 2026-09-01
       (D-FREGAP, [`docs/spec-fre-gap.md`](docs/spec-fre-gap.md)), asked while

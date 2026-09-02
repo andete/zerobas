@@ -46,6 +46,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -54,6 +55,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 import omsx_preflight              # noqa: E402  (path set above)
+import probe_tmp                   # noqa: E402  -- ROOT for the flake keeper
 OUT = "scratchpad/gate_logs"
 
 WARM = ["repack-machine", "basic-reloc", "subrom-abi-check", "disk/test720.dsk"]
@@ -625,6 +627,26 @@ def main():
                 rc = sh(bare[n], f"{OUT}/{n.replace('/', '_').replace('#', '_')}.retry.log")
                 old = results[n][0]
                 results[n] = (rc, results[n][1])
+                # 🔴 PRESERVE THE EVIDENCE BEFORE THE NEXT BATTERY EATS IT
+                # (D-FLAKEKEEP, 2026-09-02). `main()` opens with
+                # `rm -rf {OUT}`, so a red unit's log -- the ONLY artifact that
+                # can diagnose a stochastic failure -- survives just until the
+                # next run. And a green retry is exactly what stops anyone
+                # looking before then: badfnum-acceptance named its diverging
+                # row correctly and the line was gone by the time it was wanted.
+                # Kept under the sanctioned temp root, untracked, so neither the
+                # wipe nor the pool-write detector touches it.
+                keep = os.path.join(probe_tmp.ROOT, "gate_flakes",
+                                    f"{time.strftime('%Y%m%d-%H%M%S')}-"
+                                    f"{n.replace('/', '_').replace('#', '_')}")
+                try:
+                    os.makedirs(keep, exist_ok=True)
+                    for suffix in ("", ".retry"):
+                        src = f"{OUT}/{n.replace('/', '_').replace('#', '_')}{suffix}.log"
+                        if os.path.exists(src):
+                            shutil.copy(src, keep)
+                except OSError:
+                    pass
                 verdict = "FLAKE (green on retry)" if rc == 0 else "REAL (still red)"
                 if rc == 0:
                     flaky.append(n)
