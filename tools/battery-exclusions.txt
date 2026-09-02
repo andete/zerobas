@@ -20,7 +20,15 @@
 #
 # Format:  <target>  <TAB>  <reason>
 
-bdos-acceptance	NOT MEASURED 2026-09-01 — Tier-2 DOS-boot sub-track (disk/docs/tier2-STATE.md), a distinct arc.
+bdos-acceptance	MEASURED GREEN 2026-09-02 (D-EXCLMEASURE): 12/12 gated differentials CONVERGED — the BDOS surface still matches the stock oracle BYTE-FOR-BYTE (the only diffs are allowlisted: FCB date fields we intentionally do not stamp, and the M22a dirloc cosmetic class). Still EXCLUDED for SCOPE: Tier-2 DOS-boot sub-track (disk/docs/tier2-STATE.md), a distinct arc with its own state doc. ⚠️ Was "NOT MEASURED 2026-09-01"; nobody had run it.
+#
+# 📏 ALL FIVE EXCLUSIONS ARE NOW MEASURED GREEN (2026-09-02). Every one of them
+# previously read "NOT MEASURED" or was assumed about. Each is now excluded for a
+# SCOPE reason with a measurement behind it -- fat-error 11/11, lnblank-say 208/208,
+# diskbasic 34/34, input-devices 50/50, bdos 12/12. So every acceptance target in
+# the tree is either COLLECTED AND GREEN or EXCLUDED-WITH-A-REASON AND GREEN.
+# 🔴 THAT IS A DATED FACT, NOT A STANDING ONE: an exclusion goes stale the moment
+# the code it covers changes, and nothing re-runs these. Re-measure before quoting.
 diskbasic-acceptance	MEASURED GREEN 2026-09-02 (D-SAVEVERBS): 34/34 verbs CONVERGED — the whole Disk-BASIC verb surface still matches the oracle. Still EXCLUDED for SCOPE: Tier-2 disk-provider arc, needs the disk ROM + a live fixture. ⚠️ Was "NOT MEASURED 2026-09-01"; nobody had run it.
 fat-error-acceptance	MEASURED GREEN 2026-09-02 (D-FILESVERBS): 20 rows printed, 11 scored, ALL PASS, over a LIVE FAT layer — including merge-alive/name-alive/kill-alive/append-alive verified AT THE DIRECTORY SECTOR, not just the screen. Still EXCLUDED, and the reason is now SCOPE not ignorance: Tier-2 disk-provider arc, and it needs the disk ROM + a live FAT fixture. ⚠️ The old reason read "NOT MEASURED 2026-09-01" — which is a statement that ROTS the moment anyone runs it, and nobody had.
 input-devices-acceptance	MEASURED GREEN 2026-09-02 (D-GFXVERIFY): ALL PASS, 50 cases — STICK/STRIG/PDL/PAD match the VG-8020, arkanoidpad teeth included. Still EXCLUDED for SCOPE: it plugs emulated input devices, which the main sweep does not. ⚠️ Was "NOT MEASURED 2026-09-01 — held back from the sweep rather than assumed about" — honest at the time, and it turns out it runs clean.

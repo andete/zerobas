@@ -32,7 +32,19 @@ the crude signal refined by which arc/gate actually exercises the file:
   2026-08-31): `spec-basic-time.md` exists with a 45/45 characterization; the
   stem-match missed it because the handler is `ex_time_assign`. The body is
   exemplary — torn-store DI guard, site-local ERR 24, adjudicated domain.
-- ⚠️ ex_call / ex_call_us — **REVIEWED 2026-08-31, ONE SUSPICION FILED (TODO,
+- ✅ ex_call / ex_call_us — **SUSPICION MEASURED AND FIXED 2026-08-31/09-02
+  (D-FMTTAIL, `425ae88`, [`spec-basic-fmttail.md`](spec-basic-fmttail.md)):
+  4 DIFF → 0 FOR ZERO BYTES.** The entry below is kept as filed; this line is
+  what happened to it. The reference rejects EVERY tail — `CALL FORMATX`,
+  `CALL FORMATFOO`, `CALL FORMAT X` and `_FORMAT("A:")` are all `Syntax error`
+  on the CF-3300, raised BEFORE the format prompt — so the name must END the
+  statement. 🔴 **THE OLD BEHAVIOUR MEANT A TYPO SILENTLY FORMATTED THE DISK**:
+  `CALL FORMATX` wiped it where the reference refuses. ⚠️ And the fix is
+  end-of-STATEMENT, not end-of-line: `CALL FORMAT:PRINT 1` is accepted on both
+  references, which is why the test is not a bare `or a`.
+  📌 This line exists because the worklist still said "unmeasured" a day after
+  the fix shipped — the same stale-record class as the five battery exclusions.
+- ⚠️ (as filed) ex_call / ex_call_us — **REVIEWED 2026-08-31, ONE SUSPICION FILED (TODO,
   unmeasured)**: `exc_skip` swallows everything to ':'/EOL after matching
   "FORMAT", so `CALL FORMATFOO` and `CALL FORMAT anything` both format here —
   and the skip is quote-blind (the D-DATACOLON class). Rows need the
