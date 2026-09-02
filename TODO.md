@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1096 (T-6FE392)8 (T-529ABE)` from `TODO.md:5591 (T-529ABE)`: a
+      `TODO.md:1109 (T-6FE392)8 (T-529ABE)` from `TODO.md:5604 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -715,9 +715,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       would send the next slice at the wrong things. Classified from
       `tools/filed-row-known.txt`, every row owned by a filed item:
 
-          ACCEPTED DEVIATION, signed off — not defects              11
+          ACCEPTED DEVIATION, signed off — not defects               9
             ngram14  9  the §12.9-adjudicated negative-EXP carve-out
-            oomtail  2  TXTMAX $BB00 is the repack's own text ceiling
           DECLINED, priced and refused                               5
             keystr   5  NOT-THIS-ONE `KEY n,"str"` (~160 B)
           APPARATUS, not BASIC behaviour                             9
@@ -726,18 +725,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
             reclen   4  D-PUT3SLOW: all four PASS with the CORRECT
                         answer at a 5 s step; blank only at 2.5 s
           ---------------------------------------------------------------
-          REAL OPEN CORRECTNESS DEBT                                17
+          REAL OPEN CORRECTNESS DEBT                                16
             ntwall       6  PAINT: a borderless wall is eaten
-            ngram13      3  the truncated-load class residual
+            ngram13      3  the truncated-load class residual  ✅ re-run,
+                            still diverges — the pin is accurate
             deffn_alias  2  DEF FN: two formals of one call alias
             playfn       2  PLAY(n) start-up window
             trapsvc      2  trap handler w/o RETURN; six-event cap
             open2        1  same file on two channels (🙋, 165 B RAM)
-            reqcomma     1  CLOSE empties a fielded variable
 
-      🎯 **SO THE CORRECTNESS QUEUE IS 17 ROWS, NOT 54** — and two of those are
+      🎯 **SO THE CORRECTNESS QUEUE IS 16 ROWS, NOT 54** — and one of those is
       already 🙋 on a spend. That is a finishable number, which is the point of
       writing it down.
+      🔴 **THE FIRST VERSION OF THIS BOARD SAID 17, AND IT WAS WRONG WITHIN THE
+      HOUR.** `reqcomma`'s pinned `g.field` reads **10 on both machines** (0/12
+      DIFF) — its item shipped 2026-09-01 and the row that still diverges is
+      `e.val`, a different, structural 🙋. `oomtail`'s two are stale the same way
+      (0/3 DIFF). **A scoreboard built from pins inherits every stale pin**, so
+      each line was re-run rather than trusted; `ngram13` survived that and
+      `reqcomma`/`oomtail` did not.
+      🎯 **AND THE CAUSE IS STRUCTURAL, WHICH IS WHY IT KEEPS HAPPENING.**
+      `filed_row_sweep.py` validates the probes cited by OPEN items. When an item
+      CLOSES its probe leaves that corpus and **its pin becomes unreachable by
+      the one instrument that would notice it going stale.** Five stale pins in
+      one day, and the last two were invisible by construction. New
+      `--check-orphans` reports any pin whose probe no OPEN item cites; it found
+      both within a minute of existing. **Run it whenever an item closes.**
       ⚠️ **THIS COUNTS ONLY WHAT IS PINNED.** It is the set of divergences some
       filed item OWNS; it is NOT a claim that the tree has no others. The
       denominators that would say so are `kwsweep` (keywords), `sysvarsweep`
@@ -1674,7 +1687,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5591 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5604 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

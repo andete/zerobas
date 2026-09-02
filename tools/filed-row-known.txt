@@ -17,7 +17,7 @@
 # known row that stops diverging leaves the set, per the file's own rule.
 deffn_alias_probe: o.alias; o.aliasnest -- "DEF FN: two formals of ONE call can alias"; the rows ARE the filing
 keystr_probe: k.slot1; k.slot2; k.slot10; k.s1at2; k.none -- NOT-THIS-ONE `KEY n,"str"` (~160 B) + "defaults absent on cold boot"; DECLINED, not unnoticed
-ngram13_probe: d.body-l; d.lineno-l; d.body-res -- the truncated-load class D-NGRAM12/13 filed; `load-short` residual
+ngram13_probe: d.body-l; d.lineno-l; d.body-res -- the truncated-load class D-NGRAM12/13 filed; `load-short` residual. ⚠️ KNOWN ORPHAN (no OPEN item cites this probe, so --check-orphans flags it and the sweep never runs it). RE-VALIDATED BY HAND 2026-09-02: all three still diverge, 3 of 9 rows, controls green. The pin is accurate; re-run it by hand when this file is next audited.
 ngram14_probe: r.atn; r.exphuge; x.m100; x.m200; x.m1e30; x.m150; x.m170; x.m180; x.p100 -- the §12.9-adjudicated negative-EXP carve-out + the last-digit mathpack rows; D-EXPNEG's revert is the standing decision
 ntwall_probe: wall.row; solid.row; h2; h4; hp3; vp.solid -- "PAINT: a borderless wall is eaten" (retracted+replaced filing); mechanism at gfx group level
 # onerrarm_probe: REMOVED 2026-09-02 (D-ONERRGO) -- a.badtok, a.badstr,
@@ -29,7 +29,30 @@ ntwall_probe: wall.row; solid.row; h2; h4; hp3; vp.solid -- "PAINT: a borderless
 open2_probe: e.same2 -- "THE SAME FILE ON TWO CHANNELS is accepted here and refused on the CF-3300" (D-DUPOPEN; 165 B RAM, 🙋). ⚠️ RE-PINNED 2026-09-02: this entry held NINE rows until D-OPEN2FIX closed eight of them (+2 B, the HL guard). A fix that does not move its pin leaves the set claiming defects that no longer exist -- the second time in one day.
 playfn_fixture_probe: one voice, no delay; voice 2, no delay -- "PLAY(n) start-up window": reference marks a voice active during PLAY's own start-up, zerobas settles instantly
 ramfree_probe: ctl.self; base.none; n.for9; n.gosub; n.crunch; s.draw; s.play; s.str; s.files -- "the [...] readout family is defended by accident": APPARATUS rows (echo-fence), not BASIC divergences; the entry names these very rows
-reqcomma_probe: g.field -- "CLOSE empties a fielded variable here and does not on the reference"
+# reqcomma_probe: REMOVED 2026-09-02 -- `g.field` reads 10 on BOTH machines and
+# the whole probe is 0/12 DIFF. The owning item shipped 2026-09-01 (Joost's call:
+# match the reference; CLOSE no longer calls fld_clear_chan) and is `- [x]`; the
+# row that still diverges is `e.val`, a SEPARATE structural 🙋 item, not this one.
+# 🔴 FOURTH STALE PIN FOUND ON 2026-09-02 (after onerrarm, open2, reclen) and the
+# first one the sweep could never have caught: see the ORPHAN check below.
 reclen_probe: p.put3; p.same3; p.close3; p.trap3 -- ⚠️ RECLASSIFIED 2026-09-02 (D-PUT3SLOW): NOT a hang and NOT a correctness divergence. Every one of these PASSES with the CORRECT answer at a 5 s step; they read blank only at the probe's 2.5 s default. What is left is the general 2.5-3.1x interpreter slowdown (D-INTERPSPEED), which Joost's standing sequencing puts BEHIND correctness. Pinned so the sweep stays quiet, but do not count them as correctness debt. (D-PUT3, docs/spec-basic-put3.md); the rows ARE the filing. Pinnable only from 2026-09-02, when D-RECLENV gave the probe a verdict channel -- before that the sweep read it as "NOTHING PARSED" and could adjudicate nothing. ⚠️ The ten `k./x./ctl./s.` rows are NOT pinned and must not be: they read blank on zb as a CONSEQUENCE of this same hang (their programs issue 3+ PUTs), so pinning them would file ten defects where there is one.
 trapsvc_probe: int.six; gos.leak -- "a trap handler left without RETURN is permanently dead; the six-event cap is not faithful" §4/§6
-oomtail_probe: d.oom; d.oom-l -- TXTMAX $BB00 is the repack's own text ceiling (sysvars.inc, D-LINEMAX/D-FCH: capacity 14079 B, chosen by measurement, funds DETOKBUF as the reference funds its channel buffers); a ~17 KB program loads on the CF-3300 and raises Out of memory here BY DESIGN. Pinned the day the probe was written (D-OOMTAIL, 2026-08-31).
+# oomtail_probe: REMOVED 2026-09-02 -- `d.oom` and `d.oom-l` now AGREE
+# (`<nothing>` / `<NO ECHO>` on both machines; the probe is 0/3 DIFF). Found by
+# the NEW `--check-orphans` check, within a minute of it existing: the pin was
+# unreachable because oomtail_probe is cited by no OPEN item, so the sweep never
+# ran it. FIFTH stale pin of the day.
+# ⚠️ SEEN IN PASSING, NOT CHASED: `c.oom` FAILS as a dead control -- it reads a
+# boot banner (`<UNEXPECTED: ...Init ROM in slot: 0>`) rather than its expected
+# result. zb-only row (the references hang on tokenised tape), apparatus not
+# behaviour, filed here only so it is not lost.
+
+# ═══ ORPHANED PINS ═══════════════════════════════════════════════════════════
+# 🔴 A PIN WHOSE PROBE IS NOT IN THE SWEEP'S CORPUS CAN NEVER BE VALIDATED, AND
+# THAT IS HOW reqcomma SURVIVED A DAY AFTER ITS ROW STOPPED DIVERGING.
+# filed_row_sweep.py runs the probes cited by OPEN `- [ ]` items. When an item
+# CLOSES, its probe leaves the corpus -- but its pin stays here, unreachable by
+# the one instrument that would notice it had gone stale. Three earlier stale
+# pins were caught only because their probes happened to still be cited by
+# something open.
+# `--check-orphans` reports them. Run it whenever an item closes.

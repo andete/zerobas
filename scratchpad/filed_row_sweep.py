@@ -153,6 +153,10 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--timeout", type=float, default=900.0)
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--check-orphans", action="store_true",
+                    help="report pins in filed-row-known.txt whose probe is no "
+                         "longer cited by any OPEN item -- those pins can never "
+                         "be validated by this sweep and go stale invisibly")
     a = ap.parse_args()
 
     items = open_items()
@@ -174,6 +178,8 @@ def main():
               file=sys.stderr)
         return 2
 
+    if a.check_orphans:
+        return check_orphans()
     if a.list:
         for m in names:
             print(f"{m:28s} cited by TODO.md:" +
@@ -206,6 +212,35 @@ def main():
         print(f"          cites TODO.md:" +
               ",".join(str(x) for x in by_probe[m]), flush=True)
     return 0
+
+
+def check_orphans() -> int:
+    """🔴 THE PINS THIS SWEEP CANNOT REACH. Its corpus is the probes cited by
+    OPEN items; when an item closes, its probe leaves the corpus and its pin
+    stays in filed-row-known.txt, unvalidatable. reqcomma_probe sat stale for a
+    day that way -- `g.field` agreed on both machines while the pin still
+    claimed it as a known divergence, and the scoreboard built from these pins
+    counted it as outstanding correctness debt.
+    [[a-ranked-candidate-rots-like-a-wall]]"""
+    corpus = {m for _, mods in open_items() for m in mods}
+    pinned, orphans = [], []
+    for ln in open(KNOWN_FILE):
+        m = re.match(r"([a-z0-9_]+_probe):", ln.strip())
+        if not m:
+            continue
+        pinned.append(m.group(1))
+        if m.group(1) not in corpus:
+            orphans.append(m.group(1))
+    print(f"pins: {len(pinned)}   sweep corpus: {len(corpus)} probe(s)")
+    if not orphans:
+        print("  no orphans — every pin names a probe this sweep still runs")
+        return 0
+    print(f"🔴 {len(orphans)} ORPHANED PIN(S) — cited by no OPEN item, so this "
+          f"sweep never runs them and cannot see them go stale:")
+    for o in orphans:
+        print(f"     {o}")
+    print("  Re-run each by hand; if its rows now agree, the pin leaves the set.")
+    return 1
 
 
 if __name__ == "__main__":
