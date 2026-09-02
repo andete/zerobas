@@ -20,10 +20,30 @@
 ; run out, the remaining literal text up to the next field is emitted and output
 ; stops. A trailing ';' suppresses the closing newline, exactly like PRINT.
 ;
-; This is the COMPLETE feature for zerobas's current numeric domain (integers): the
-; float-only format specs — the decimal point '.', exponential '^^^^', and the
-; '+'/'-'/','/'**'/'$$' embellishments — arrive with Phase-3 floats. The '_' literal-
-; escape is likewise deferred. (PROVENANCE.md §PRINT USING.)
+; 🔴 THE PARAGRAPH THAT STOOD HERE IS STALE, AND ITS CONDITION HAS BEEN MET.
+; It read: "This is the COMPLETE feature for zerobas's current numeric domain
+; (integers): the float-only format specs — the decimal point '.', exponential
+; '^^^^', and the '+'/'-'/','/'**'/'$$' embellishments — arrive with Phase-3
+; floats. The '_' literal-escape is likewise deferred."
+; FLOATS HAVE ARRIVED (SNG/DBL tokens, the float-pack arc is concluded,
+; `PRINT 1.5` renders), so the deferral's own precondition is satisfied and the
+; specs are simply MISSING. Measured 2026-09-02 (D-PUSING,
+; scratchpad/pusing_probe.py), both references agreeing on every one:
+;
+;   PRINT USING"##.##";1.5        refs ` 1.50`      here ` 1.`
+;   PRINT USING"##.##";5          refs ` 5.00`      here ` 5.`
+;   PRINT USING"#,###";1234       refs `1,234`      here `%1234,`
+;   PRINT USING"+##";5            refs ` +5`        here `+ 5`
+;   PRINT USING"##-";5            refs ` 5 `        here ` 5-`
+;   PRINT USING"**##";5           refs `***5`       here `** 5`
+;   PRINT USING"##.##^^^^";1.5    refs ` 1.50E+00`  here ` 1.`
+;
+; ⚠️ READ AS CURRENT, THE OLD TEXT PRICED THE FEATURE OUT OF EXISTENCE -- the
+; same trap play.asm's "NO live drain" header sprang on D-PLAYFN. `_` and `$$`
+; are NOT in that list: `_` agrees on all three today, and `$$` is a
+; REFERENCES-DISAGREE row (vg8020 `  $5` vs cf3300 `$$ 5`, and this tree matches
+; the CF-3300). Filed in TODO.md; unpriced.
+; [[a-fix-falsifies-the-justification-beside-it]]
 ;
 ; PRINT# USING (the file form) IS supported (repack): ex_print (basic/print.asm)
 ; dispatches a USING after a #channel here with PRDEST=1, so the formatter streams

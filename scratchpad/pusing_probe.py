@@ -1,157 +1,82 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
-"""D-PUSING — PRINT USING has TWO defects, and one of them is silent.
+r"""D-PUSING — `PRINT USING`'s format-specifier surface, after floats landed.
 
-D-MISSOP3 measured `PRINT USING` at 24/24/2 and `PRINT USING"##"` at 2/2/0.
-Different sites, different shapes:
+Review tier, arc-covered group. `ex_print_using`'s claimed cover is
+`spec-print-hash-using.md` -- which is the FILE form. Verifying that name:
 
-  * the FORMAT operand reaches `jp nc,stmt_error` (printusing.asm:51) from TWO
-    entry conditions -- nothing at all, and something that is not a string;
-  * a format CONTAINING A FIELD with no value list reaches `pu_endlist` and
-    COMPLETES, where both references raise.
+  * `basic_probe_printusing.py` (the SCREEN probe) is RETIRED, allowlisted in
+    probe-reach-allow.txt: its vehicle was a cartridge boot on a real VG-8020 and
+    the repack image cannot be a cartridge. The retirement says "the SUBJECT
+    survives in spec-print-hash-using.md + disk_probe_printusing_file" -- and
+    BOTH of those are the file form.
+  * What actually runs covers three format strings: `"## "`, `"###"`, `"[!]"`.
+    So `#`, `!` and literals. MSX's specifier set is far wider.
 
-Readout `[ERR L]` -- L is CSRLIN after the statement, with the cursor parked at
-row 5 first, because an ERR code cannot tell a silent no-op from a silent print.
+🔴 AND THE IMPLEMENTATION'S OWN HEADER MAY BE STALE. basic/printusing.asm says:
+"the float-only format specs -- the decimal point '.', exponential '^^^^', and
+the '+'/'-'/','/'**'/'$$' embellishments -- ARRIVE WITH PHASE-3 FLOATS. The '_'
+literal-escape is likewise deferred." **Floats have since landed** (SNG/DBL
+tokens, the float-pack arc is CONCLUDED, `PRINT 1.5` works), so the condition
+that justified deferring them is satisfied and the paragraph was never revisited.
+[[a-fix-falsifies-the-justification-beside-it]]
 
-Predictions pinned in scratchpad/pusing_predictions.md before this ran once.
+🎯 READOUT: THE RAW SCREEN, NOT THE HARNESS BRACKET. The shared fixture emits
+`60 CLS:PRINT"[";<expr>;"]"`, and PRINT USING is a STATEMENT whose output that
+CLS would wipe -- the same blindness D-PRINTZONE hit an hour earlier. Rows print
+between two markers on one line and the screen is read directly.
 """
-from __future__ import annotations
-
-import os
-import re
-import sys
-
+import os, re, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-os.chdir(ROOT)
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 import omsx_repl                                                  # noqa: E402
-import probe_signal                                               # noqa: E402
 
-ZB_M = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 SIDES = {
-    "vg8020": dict(machine="Philips_VG_8020", boot=8.0, reset=("NEW",)),
-    "cf3300": dict(machine="National_CF-3300", boot=14.0,
-                   reset=("", "SCREEN 0", "NEW")),
-    "zb":     dict(machine=ZB_M, boot=8.0, reset=("NEW",)),
+    "vg8020": ("Philips_VG_8020", 8.0, ("NEW",)),
+    "cf3300": ("National_CF-3300", 14.0, ("", "SCREEN 0", "NEW")),
+    "zb": (os.environ.get("ZEROBAS_BASIC_MACHINE",
+                          "C-BIOS_MSX1_EU_REPACK_DISK"), 8.0, ("NEW",)),
 }
 
+CASES = [
+    # 🟢 CONTROLS: the three specifiers something actually runs today
+    ("c.hash",   'PRINT USING"###";5'),
+    ("c.hash2",  'PRINT USING"## ";1;2'),
+    ("c.bang",   'PRINT USING"!";"AB"'),
+    ("c.lit",    'PRINT USING"[#]";7'),
+    # --- the specifiers the header defers to "Phase-3 floats" ---------------
+    ("f.dot",    'PRINT USING"##.##";1.5'),
+    ("f.dotint", 'PRINT USING"##.##";5'),
+    ("f.comma",  'PRINT USING"#,###";1234'),
+    ("f.plus",   'PRINT USING"+##";5'),
+    ("f.minus",  'PRINT USING"##-";5'),
+    ("f.dollar", 'PRINT USING"$$##";5'),
+    ("f.star",   'PRINT USING"**##";5'),
+    ("f.exp",    'PRINT USING"##.##^^^^";1.5'),
+    ("f.under",  'PRINT USING"_##";5'),
+    # --- string fields the header does NOT defer ----------------------------
+    ("s.amp",    'PRINT USING"&";"ABC"'),
+    ("s.slash",  'PRINT USING"\\   \\";"ABCDE"'),
+]
 
-def case(stmt):
-    """Park the cursor at row 5, run `stmt`, then read CSRLIN before anything
-    clears the screen.
+def run(side, stmt):
+    machine, boot, reset = SIDES[side]
+    prog = ['10 ON ERROR GOTO 90', '20 PRINT"<";', f'30 {stmt};',
+            '40 PRINT">":END', '90 PRINT"<ERR";ERR;">"', 'RUN']
+    raw = omsx_repl.run_cases(machine, [("direct", list(reset) + prog)],
+                              batch=False, reset=(), boot=boot, step=5.0,
+                              cap_gap=10.0, timeout=300.0)[0] or ""
+    m = re.findall(r"<([^<>]*)>", "".join(raw))
+    return repr(m[-1]) if m else "<NO OUTPUT>"
 
-    🎯 AN ERR CODE ALONE CANNOT TELL A SILENT NO-OP FROM A SILENT PRINT, and
-    this verb's whole job is printing. `PRINT USING"##"` completes with ERR 0
-    here and ERR 2 on both references -- but "completes" covers both "emitted
-    nothing" and "emitted a line", and the fix is a different shape depending on
-    which. L=5 is nothing printed, L=6 is one line.
-    """
-    return probe_signal.mark_ends([
-        "10 ONERRORGOTO900",
-        "15 SCREEN0:CLS:LOCATE0,5",
-        f"20 {stmt}",
-        "25 L=CSRLIN",
-        '50 SCREEN0:CLS:PRINT"[";ERR;L;"]":END',
-        '900 L=CSRLIN:SCREEN0:CLS:PRINT"[";ERR;L;"]":END'])
-
-
-CASES = {
-    # --- defect 1: the FORMAT operand. printusing.asm:51 `jp nc,stmt_error` is
-    # reached both when there is NOTHING here and when there is something that
-    # is not a string -- one instruction, two meanings.
-    'u.none':     case('PRINT USING'),
-    'u.colon':    case('PRINT USING:PRINT1'),
-    'u.num':      case('PRINT USING 5'),
-    'u.numsemi':  case('PRINT USING 5;1'),
-    # --- defect 2: a format that CONTAINS A FIELD with no value list ---------
-    'u.fmtonly':  case('PRINT USING"##"'),
-    'u.fmtsemi':  case('PRINT USING"##";'),
-    # --- the rows that keep defect 2 NARROW: a field-less format is complete
-    # on its own, and zerobas already distinguishes that at pu_has_field.
-    'u.lit':      case('PRINT USING"abc"'),
-    'u.litsemi':  case('PRINT USING"abc";'),
-    # --- ROUND 2: the row that decides whether pu_literal_only is DEAD -------
-    # pu_literal_only (printusing.asm:139) has exactly ONE incoming jump. If a
-    # field-less format errors in every case, that block goes unreachable and
-    # `make deadcode` refuses the build -- so the fix would also be a carve.
-    'u.litval':   case('PRINT USING"abc";5'),
-    'u.comma':    case('PRINT USING"##",5'),
-    'u.emptyonly': case('PRINT USING""'),
-    'u.emptysemi': case('PRINT USING"";5'),
-    'u.strfield': case('PRINT USING"!";"AB"'),
-    'u.numnosemi': case('PRINT USING"##"5'),
-    # --- ROUND 3: two rows that BOUND the fix --------------------------------
-    # `,` is rejected as the FORMAT separator (u.comma). pu_msep_chk accepts it
-    # between VALUES too, which is a DIFFERENT grammatical position and was not
-    # measured -- do not carry one row's answer into the other.
-    'u.valcomma': case('PRINT USING"##";1,2'),
-    # ex_print_using is shared by PRINT, LPRINT and PRINT# -- the fix serves all
-    # three, so at least one non-PRINT entry needs a row.
-    'u.chan':     case('OPEN"CRT:"FOROUTPUTAS#1:PRINT#1,USING"##";5'),
-    # --- controls ------------------------------------------------------------
-    'u.ok':       case('PRINT USING"##";5'),
-    'u.ok2':      case('PRINT USING"###";12'),
-}
-
-
-BR = re.compile(r"\[([^\]]*)\]")
-NUM = re.compile(r"^[-0-9. ]*$")
-
-
-def face(cap):
-    if cap is None:
-        return "<NO CAPTURE>"
-    for m in BR.finditer("".join(cap)):
-        if NUM.match(m.group(1)):
-            return " ".join(m.group(1).split()) or "<EMPTY>"
-    return "<NO OUTPUT>"
-
-
-def main():
-    only, sides = None, ["vg8020", "cf3300", "zb"]
-    for a in sys.argv[1:]:
-        if a.startswith("--sides="):
-            sides = [x for x in a.split("=", 1)[1].split(",") if x in SIDES]
-        else:
-            only = a.split(",")
-    labels = [l for l in CASES if not only or any(o in l for o in only)]
-    faces, tally = {}, probe_signal.Tally()
-    for s in sides:
-        cfg = SIDES[s]
-        faces[s] = {}
-        for l in labels:
-            out = {}
-            caps = omsx_repl.run_cases(
-                cfg["machine"],
-                [("direct", list(cfg["reset"]) + CASES[l] + ["RUN"])],
-                batch=False, boot=cfg["boot"], step=3.0, cap_gap=8.0,
-                timeout=300.0, **probe_signal.kwargs(out))
-            tally.add(out, label=f"{s}/{l}")
-            faces[s][l] = face(caps[0])
-            print(f"  ran {s:7s} {l:<13s} -> {faces[s][l]!r}", flush=True)
-    print()
-    W = max(len(l) for l in labels)
-    ndiff = nmeas = 0
-    for l in labels:
-        vals = {s: faces[s][l] for s in sides}
-        refs = {vals[s] for s in sides if s != "zb"}
-        line = f"  {l:<{W}}  " + "  ".join(f"{s}={vals[s]!r}" for s in sides)
-        if not refs:
-            print(line + "   (zb only)"); continue
-        if len(refs) != 1:
-            note = "   ⚠️ THE REFERENCES DISAGREE — not a want"
-        elif any("<NO" in v for v in vals.values()):
-            note = "   .... NOT MEASURED"
-        elif vals["zb"] not in refs:
-            note = "   🔴 DIFF"; ndiff += 1; nmeas += 1
-        else:
-            note = "   ✅"; nmeas += 1
-        print(line + note)
-    print(f"\n  {nmeas} scored, {ndiff} DIFF, {len(labels) - nmeas} not measured")
-    print(tally.line())
-    return 1 if nmeas != len(labels) else 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+sides = (sys.argv[1] if len(sys.argv) > 1 else "vg8020,cf3300,zb").split(",")
+res = {s: {lab: run(s, st) for lab, st in CASES} for s in sides}
+w = max(len(l) for l, _ in CASES)
+print(f"\n{'row':<{w}}  " + "  ".join(f"{s:>20}" for s in sides) + "   verdict")
+diff = []
+for lab, _ in CASES:
+    vals = [res[s][lab] for s in sides]
+    same = len(set(vals)) == 1
+    if not same: diff.append(lab)
+    print(f"{lab:<{w}}  " + "  ".join(f"{v:>20}" for v in vals)
+          + f"   {'SAME' if same else 'DIFF'}")
+print(f"\nDIFF: {len(diff)}/{len(CASES)}  " + " ".join(diff))

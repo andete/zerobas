@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1138 (T-6FE392)8 (T-529ABE)` from `TODO.md:5674 (T-529ABE)`: a
+      `TODO.md:1175 (T-6FE392)8 (T-529ABE)` from `TODO.md:5711 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -707,6 +707,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       construction. Two rules coincided on every edge row; the mid-octave rows
       separated them. Fixed (accidental before octave base, mod 12; clamp
       deleted as unreachable); 8/8 traces identical, fast-layer vectors added.
+
+- [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
+      DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
+      (review tier, [`scratchpad/pusing_probe.py`](scratchpad/pusing_probe.py),
+      15 rows x 3 machines, **10 DIFF**).
+      `basic/printusing.asm`'s header said the `.` `,` `+` `-` `**` `$$` `^^^^`
+      specs *"arrive with Phase-3 floats"*. **Floats arrived** — SNG/DBL tokens,
+      the float-pack arc is concluded, `PRINT 1.5` renders — so the deferral's
+      precondition is satisfied and the specs are simply missing. Both references
+      agree on every row below:
+
+          PRINT USING"##.##";1.5      refs ` 1.50`      here ` 1.`
+          PRINT USING"##.##";5        refs ` 5.00`      here ` 5.`
+          PRINT USING"#,###";1234     refs `1,234`      here `%1234,`
+          PRINT USING"+##";5          refs ` +5`        here `+ 5`
+          PRINT USING"##-";5          refs ` 5 `        here ` 5-`
+          PRINT USING"**##";5         refs `***5`       here `** 5`
+          PRINT USING"##.##^^^^";1.5  refs ` 1.50E+00`  here ` 1.`
+
+      🟢 **FOUR CONTROLS GREEN** (`###`, `## ` repeat, `!`, a literal `[#]`), so
+      the formatter's own machinery is right and this is the specifier set.
+      ⚠️ **TWO ROWS ARE REFERENCES-DISAGREE AND ARE NOT IN THE TEN**: `$$` reads
+      vg8020 `  $5` vs cf3300 `$$ 5` (this tree matches the CF-3300), and `&` /
+      `\ \` read `ABC`/`ABCDE` on the VG-8020 and **ERR 5** on the CF-3300 — a
+      split worth its own look before either is called a defect.
+      🎯 **HOW IT WAS FOUND: THE ARC NAME AGAIN.** `ex_print_using`'s claimed
+      cover is `spec-print-hash-using.md` — the FILE form. The SCREEN probe is
+      RETIRED (its vehicle was a cartridge boot the repack image cannot be), and
+      its retirement note says *"the SUBJECT survives"* in that spec plus
+      `disk_probe_printusing_file` — **both of which are the file form**. What
+      actually runs covers three format strings: `"## "`, `"###"`, `"[!]"`.
+      ✅ **THE STALE HEADER IS ALREADY CORRECTED** (zero bytes) — read as current
+      it priced the feature out of existence, the same trap `play.asm`'s "NO live
+      drain" header sprang on D-PLAYFN.
+      💰 **UNPRICED.** Six specifiers over a float formatter; needs its own slice
+      and its own rows before any byte.
+      🤖 AUTONOMOUS — the references settle every row; the price is the open part.
 
 - [ ] 📊 **THE CORRECTNESS SCOREBOARD — WHAT "FULL CORRECTNESS" ACTUALLY
       REQUIRES, 2026-09-02.** Built the moment Joost's sequencing (below) made
@@ -1716,7 +1753,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5674 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5711 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
