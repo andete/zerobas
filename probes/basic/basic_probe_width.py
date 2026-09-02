@@ -468,20 +468,31 @@ def read(bat: str, subj: str, raw) -> str:
 def run_side(side: str, rows) -> dict:
     cfg = SIDES[side]
     out = {}
-    for lab, bat, mode, lines, subj, sides in rows:
-        if side not in sides:
-            continue
-        kw = {}
-        if cfg["diska"]:
-            dsk = probe_tmp.tmp(f"zb_width_{side}_{lab}.dsk")
-            shutil.copy(TEST_DSK, dsk)
-            kw["diska"] = dsk
+    # BATCHED (D-BATCH8). `WIDTH` is exactly the kind of state that does not
+    # survive sharing a boot, so this only lands because
+    # `scratchpad/batchcheck.py` found every row identical both ways: each
+    # case's own `cfg["reset"]` is prepended to its lines and re-establishes the
+    # screen before it runs.
+    # ⚠️ The disk is now one per SIDE rather than one per case -- a real
+    # reduction in isolation, covered by the same control.
+    group = [r for r in rows if side in r[5]]
+    if not group:
+        return out
+    kw = {}
+    if cfg["diska"]:
+        dsk = probe_tmp.tmp(f"zb_width_{side}_batch.dsk")
+        shutil.copy(TEST_DSK, dsk)
+        kw["diska"] = dsk
+    specs = []
+    for lab, bat, mode, lines, subj, _sides in group:
         body = ([f"{10 * (k + 1)} {ln}" for k, ln in enumerate(lines)] + ["RUN"]
                 if mode == "stored" else list(lines))
-        caps = omsx_repl.run_cases(
-            cfg["machine"], [("direct", list(cfg["reset"]) + body)],
-            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
-        out[lab] = read(bat, subj, caps[0])
+        specs.append(("direct", list(cfg["reset"]) + body))
+    caps = omsx_repl.run_cases(
+        cfg["machine"], specs,
+        batch=True, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
+    for (lab, bat, _m, _l, subj, _s), cap in zip(group, caps):
+        out[lab] = read(bat, subj, cap)
     return out
 
 

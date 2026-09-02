@@ -304,19 +304,24 @@ def read_case(kind: str, raw: str | None) -> str:
 def run_side(side: str, only: list[str]) -> dict:
     cfg = SIDES[side]
     out = {}
-    for label, kind, stmt in CASES:
-        if only and label not in only:
-            continue
-        kw = {}
-        if cfg["diska"]:
-            dsk = probe_tmp.tmp(f"zb_locarg_{side}_{label}.dsk")
-            shutil.copy(TEST_DSK, dsk)
-            kw["diska"] = dsk
-        lines = list(cfg["reset"]) + program(kind, stmt) + ["RUN"]
-        caps = omsx_repl.run_cases(
-            cfg["machine"], [("direct", lines)],
-            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
-        out[label] = read_case(kind, caps[0])
+    # BATCHED (D-BATCH8); `scratchpad/batchcheck.py` found every row identical
+    # both ways. Each case's own `cfg["reset"]` is prepended to its lines, and
+    # the disk is now one per SIDE rather than one per case.
+    group = [(l, k, st) for l, k, st in CASES if not only or l in only]
+    if not group:
+        return out
+    kw = {}
+    if cfg["diska"]:
+        dsk = probe_tmp.tmp(f"zb_locarg_{side}_batch.dsk")
+        shutil.copy(TEST_DSK, dsk)
+        kw["diska"] = dsk
+    specs = [("direct", list(cfg["reset"]) + program(k, st) + ["RUN"])
+             for _l, k, st in group]
+    caps = omsx_repl.run_cases(
+        cfg["machine"], specs,
+        batch=True, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
+    for (label, kind, _st), cap in zip(group, caps):
+        out[label] = read_case(kind, cap)
     return out
 
 

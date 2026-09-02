@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5011 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5022 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5011 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5022 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4536,8 +4536,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the polluted value too. Four suites in this family converted and two leak,
       which is why each gets the control rather than an argument from its
       siblings.
-      ➡️ Remaining: `graphics` (44 call sites) and `deffn` (shared harness), then
-      the non-`probe_signal` for-loop probes.
+      ✅ **THREE MORE CONVERTED 2026-09-02 (D-BATCH8), ALL CLEAN — 0 DIFFERING
+      ROWS EACH**: `width` 3.5x (134.1 s → 37.9 s, 94-case matrix, 103 rows),
+      `locarg` 3.9x, `forvar` 3.2x. These have no `probe_signal` and no per-case
+      `run_gap`, so the transformation is the plain one.
+      🟢 **`width` IS THE INTERESTING PASS**: `WIDTH n` is exactly the kind of
+      state that does not survive a shared boot, and it converts cleanly because
+      each case's own `cfg["reset"]` is prepended to its lines and re-establishes
+      the screen before it runs. Being stateful is not the same as leaking —
+      which is why the control decides and not a reading of the subject.
+      ➡️ Remaining: `graphics` (44 call sites) and `deffn` (shared harness, wide
+      blast radius), then the smaller for-loop probes (`arylv`, `fldary`,
+      `fldwidth`, `inputary`, `lrvar`, `lvfix`, `namspc`, `nxary`, `nxlist`,
+      `readvar`, `tgtspc`, `onerr0`, `cassave`, `banner`, `sysvarsweep`).
 
 - [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
       RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01

@@ -237,15 +237,19 @@ def run_side(side: str, only: list[str]) -> dict:
     if cfg["diska"]:
         kw["diska"] = TEST_DSK
     out = {}
-    for label, lines in CASES:
-        if only and label not in only:
-            continue
-        body = [f"{10 * (k + 1)} {ln}" for k, ln in enumerate(lines)]
-        caps = omsx_repl.run_cases(
-            cfg["machine"],
-            [("direct", list(cfg["reset"]) + body + ["RUN"])],
-            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
-        out[label] = bracket(caps[0])
+    # BATCHED (D-BATCH8); `scratchpad/batchcheck.py` found every row identical
+    # both ways. Each case's own `cfg["reset"]` is prepended to its lines.
+    group = [(l, ln) for l, ln in CASES if not only or l in only]
+    if not group:
+        return out
+    specs = [("direct", list(cfg["reset"])
+              + [f"{10 * (k + 1)} {x}" for k, x in enumerate(lines)] + ["RUN"])
+             for _l, lines in group]
+    caps = omsx_repl.run_cases(
+        cfg["machine"], specs,
+        batch=True, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
+    for (label, _lines), cap in zip(group, caps):
+        out[label] = bracket(cap)
     return out
 
 
