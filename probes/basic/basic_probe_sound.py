@@ -98,7 +98,17 @@ def psg_after(machine, stmt):
         cmd = [sys.executable, OMSX_RUN, "--machine", machine,
                "--type", stmt + "\r", "--type-delay", str(delay),
                "--time", str(secs), "--mem", "PSG regs:0:14", "--out", out]
-        subprocess.run(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # 🔴 KEEP THE SUB-RUN'S OWN WORDS. Discarding stderr and then reading a
+        # file that may not exist turned every failure into the SAME misleading
+        # traceback -- see the `finally` below.
+        r = subprocess.run(omsx_preflight.guarded(cmd), capture_output=True,
+                           text=True)
+        if not os.path.exists(out):
+            sys.stderr.write(
+                f"\n--- {OMSX_RUN} wrote no capture (rc={r.returncode}) ---\n"
+                + ((r.stderr or r.stdout or "").strip()[-1500:] or
+                   "(and it said nothing)") + "\n")
+            return None
         with open(out) as fh:
             for line in fh:
                 m = re.search(r"mem\.PSG regs:0x0000:14=([0-9a-f]+)", line)
@@ -106,7 +116,18 @@ def psg_after(machine, stmt):
                     b = bytes.fromhex(m.group(1))
                     return list(b) if len(b) == 14 else None
     finally:
-        os.unlink(out)
+        # 🔴 THE CLEANUP MUST NOT REPLACE THE FAILURE (2026-09-02). A bare
+        # `os.unlink` here raised FileNotFoundError out of the `finally` and
+        # MASKED the real exception, so a run that produced no capture reported
+        # itself as a missing temp file during teardown -- a traceback pointing
+        # at the one line that was never the problem. Seen live as a
+        # "recovered flake" on sound-acceptance.
+        # 🎯 Same lesson as D-PASMOSAY: when PASS is "nothing happened", spend
+        # the evidence the run already holds instead of throwing it away.
+        try:
+            os.unlink(out)
+        except OSError:
+            pass
     return None
 
 

@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5022 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5053 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1445,7 +1445,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5022 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5053 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4248,6 +4248,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
 
+- [ ] 🔴 **`badfnum-acceptance` REPORTED `1 unfiled divergence` AND NEVER SAID
+      WHICH ROW — THEN PASSED ON RETRY.** Seen 2026-09-02 in a full battery
+      (`rc 2 -> 0`, "recovered flake"). The summary line is
+      `93 cases, 0 mangled, 0 oracle drift, 1 unfiled divergence` on the failing
+      run and `... 0 unfiled divergence` on the retry, and **nothing anywhere in
+      the log names the row.**
+      🎯 **AN UNNAMED OUTCOME READS AS NO OUTCOME**
+      [[an-unnamed-outcome-reads-as-no-outcome]]. A count says the detector
+      fired; only the label says what it caught — the same lesson
+      `probe_signal.add`'s docstring already records for fallbacks ("the first
+      run reported '1 fell back' out of 72 and could not say WHICH row"). A
+      TRANSIENT divergence is exactly the case where the log is the only
+      evidence there will ever be, and this one threw it away.
+      ⚠️ **AND THE RETRY LAUNDERED IT.** Under `run_gates.py`'s flake-vs-real
+      rule a green retry is accepted, so a stochastic row divergence in a
+      differential currently leaves no trace at all. That rule is right for
+      contention; it is wrong here, and the log cannot tell the two apart
+      because it does not name the row.
+      ➡️ Make the probe print the diverging row's label, expected and observed —
+      then a repeat is diagnosable from the log alone.
+      🤖 AUTONOMOUS — the probe's own reporting; no oracle needed.
 - [x] 🟢 **8192 B OF BASIC MEMORY IS RESERVED BY A CONVENTION NOBODY PRICED —
       `$C000`–`$E000` HOLDS TWO ALLOCATED BYTES.** Measured 2026-09-01
       (D-FREGAP, [`docs/spec-fre-gap.md`](docs/spec-fre-gap.md)), asked while
@@ -4545,10 +4566,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       each case's own `cfg["reset"]` is prepended to its lines and re-establishes
       the screen before it runs. Being stateful is not the same as leaking —
       which is why the control decides and not a reading of the subject.
-      ➡️ Remaining: `graphics` (44 call sites) and `deffn` (shared harness, wide
-      blast radius), then the smaller for-loop probes (`arylv`, `fldary`,
-      `fldwidth`, `inputary`, `lrvar`, `lvfix`, `namspc`, `nxary`, `nxlist`,
-      `readvar`, `tgtspc`, `onerr0`, `cassave`, `banner`, `sysvarsweep`).
+      ✅ **THREE MORE 2026-09-02 (D-BATCH9), 0 DIFFERING ROWS EACH**: `nxary`
+      4.6x, `nxlist` 3.3x, `readvar` 2.3x. **13 converted, 6 refused.**
+      🔴 **AND "THE TRANSFORMATION IS NOW MECHANICAL" WAS WRONG.** Normalised
+      against a converted template, **none of the ten remaining candidates is
+      byte-identical** — a blind bulk transform would have been applied to
+      shapes it does not fit. The differences turn out to be shallow (the disk is
+      hoisted and shared rather than copied per case; the `CASES` tuple has 2 or
+      3 fields), so `nxary`/`nxlist`/`readvar` are the `forvar` shape EXACTLY and
+      converted from that template — but that had to be checked, not assumed.
+      ➡️ Remaining, each needing its own read: `arylv` (per-case `responses`),
+      `fldary`, `fldwidth`, `inputary`, `lrvar`, `lvfix`, `onerr0`, `cassave`,
+      `namspc`/`tgtspc` (2 `run_cases` sites each), `sysvarsweep` (85-line
+      `run_side`), `banner` (no single `run_side` at all), plus `graphics` (44
+      sites) and `deffn` (shared harness).
 
 - [x] 🟢 **`make gates` COLLECTS 22 OF THE 68 `*-acceptance` TARGETS, NOTHING
       RECORDED WHY, AND THREE OF THE REST ARE RED.** Found and gated 2026-09-01
