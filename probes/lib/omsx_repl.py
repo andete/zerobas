@@ -1488,6 +1488,42 @@ def echoed_suffix(typed: str, stream: str) -> str | None:
     return None
 
 
+# --- D-SCRAPEMODE: the scrape was pointed at the WRONG PLANE ----------------
+# 🔴 THIS IS NOT A BLIND SPOT, IT IS A POSITIVE READING, AND IT WAS BEING
+# DISCARDED. `BLIND/mode` is emitted when the echo oracle reads SCRMOD out of
+# the machine's own RAM and finds it non-zero -- "this scrape is not looking at
+# the text plane". `mis_echoed` below counts only MANGLED, correctly (a blind
+# SLOT is a refusal to judge), so every one of these was dropped.
+#
+# Measured 2026-09-02 (D-LSETREF §6): `National_CF-3000` booted without the
+# `SCREEN 0` this module's 40-column scrape assumes returned
+# `['BLIND/mode', 'BLIND/mode', 'BLIND/mode']`, `mis_echoed() == []`, a capture
+# of the SCREEN-1 PATTERN GENERATOR TABLE read as text -- and
+# `probe_refcache.storable()` said True. Seven ghost entries were written that
+# no re-run would have dislodged.
+#
+# ⚠️ THE PREDICATE IS `BLIND/mode` SPECIFICALLY, NOT "all blind". A probe that
+# CLSes early legitimately produces `BLIND/rewrote` for every slot; refusing on
+# that would redden correct runs. Only the mode verdict says the instrument was
+# aimed wrong, and only it is used here.
+#
+# 🎯 IT REFUSES TO **CACHE**, NOT TO RUN. The readings are still returned and
+# printed: an early refusal is how 08-31 buried two real divergences
+# ([[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]), so the
+# operator still sees whatever the probe made of the garbage -- it simply never
+# becomes permanent.
+_LAST_SCRAPE_INVALID: str | None = None
+
+
+def scrape_invalid(echo: list[tuple]) -> str | None:
+    """A one-line reason iff EVERY judged slot says the scrape was off-plane."""
+    verdicts = [v for _, _, _, v, _ in echo]
+    if len(verdicts) >= 2 and all(v == "BLIND/mode" for v in verdicts):
+        return (f"all {len(verdicts)} echo slots read BLIND/mode (SCRMOD != 0): "
+                f"the capture is not the text plane")
+    return None
+
+
 def mis_echoed(echo: list[tuple]) -> list[tuple[int, int, str, list]]:
     """`(case_index, slot, typed, screen_rows)` for every injection the machine
     did not echo as typed. Only MANGLED counts -- a BLIND slot is a refusal to
@@ -1546,6 +1582,8 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     deliberately drives line entry to refusal. No probe needs it today (spec
     §3.4)."""
     caps, delivered, echo = _run_batch(machine, cases, **kw)
+    global _LAST_SCRAPE_INVALID
+    _LAST_SCRAPE_INVALID = scrape_invalid(echo) if verify_delivery else None
     bad = mis_delivered(cases, delivered) if verify_delivery else []
     bad_echo = mis_echoed(echo) if verify_delivery else []
     if bad or bad_echo:
@@ -1680,7 +1718,17 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
                 f"or the machine moved; key {key[:12]}\n")
     else:
         rc.STATS["miss"] += 1
-    rc.store(key, result, machine, settle=settle)
+    # D-SCRAPEMODE: never freeze an off-plane scrape into the cache.
+    if _LAST_SCRAPE_INVALID:
+        sys.stderr.write(
+            f"🔴 omsx_repl: NOT CACHING {machine} -- {_LAST_SCRAPE_INVALID}. "
+            f"The readings below are returned as measured, but they are a scrape "
+            f"of the wrong VRAM plane, not the text screen. A stock MSX1 boots "
+            f"SCREEN 1; this module's scrape assumes SCREEN 0 (40 cols at "
+            f"{SCR_ADDR:#06x}), so a machine whose `reset` does not put it there "
+            f"reads the pattern generator table as if it were text.\n")
+    else:
+        rc.store(key, result, machine, settle=settle)
     return result
 
 
@@ -1767,6 +1815,8 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
     # alone, on the boot-per-case path measured immune to the race -- and SAY SO,
     # because a matrix that genuinely depends on batch context would answer
     # differently on the repair path and the operator has to be able to see it.
+    global _LAST_SCRAPE_INVALID
+    _LAST_SCRAPE_INVALID = scrape_invalid(echo) if verify_delivery else None
     bad_stored = mis_delivered(cases, delivered) if verify_delivery else []
     bad_echo = mis_echoed(echo) if verify_delivery else []
     notes = ([(i, _delivery_note(machine, cases, i, want, got))

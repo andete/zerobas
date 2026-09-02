@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5154 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5158 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1205,33 +1205,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       zerobas, whose target IS the CF-3300.
       [[an-unnamed-outcome-reads-as-no-outcome]]
 
-- [ ] 🔴 **A DEAD REFERENCE MACHINE IS CACHED AS A READING, AND TWO GUARDS EACH
-      MISS IT BY ONE LAYER.** Found 2026-09-02 by D-LSETREF
-      ([`docs/spec-basic-lsetref.md`](docs/spec-basic-lsetref.md) §6), the hard
-      way: a first `National_CF-3000` run returned `<NO OUTPUT>` on all seven
-      rows **including both controls**, and **stored seven refcache entries**.
-      Cause: a stock MSX1 boots SCREEN 1 (name table `$1800`, 32 cols) and
-      `omsx_repl.SCR_ADDR` is `$0000`/40 — the module's own comment predicts it
-      (*"a stock SCREEN-1 machine would need 0x1800/768/32"*). What was read at
-      `$0000` is the **pattern-generator table**, i.e. character bitmaps as text:
-      non-blank, so nothing refused it. Seven ghost entries, purged by hand.
-      🔴 **`probe_refcache.storable()` TESTS THE WRONG LAYER** — it refuses the
-      string `<NO OUTPUT>`, but that is produced by each probe's `face()`
-      DOWNSTREAM; the raw capture it inspects is garbage bytes, and its own
-      header promises "a non-reading is never stored".
-      🔴 **AND THE D-ECHO ORACLE JUDGED EVERY SLOT BLIND** — `mis_echoed()`
-      counts only `MANGLED`, because *"a BLIND slot is a refusal to judge, not a
-      finding"*. Correct PER SLOT. But **every slot blind on every case is not a
-      blind spot, it is a dead machine**, and that aggregate is never asked.
-      ➡️ **THE FIX IS THE AGGREGATE, NOT A REFUSAL.** Do not make the run abort —
-      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]] records a
-      refusal that fired early and buried two real divergences. Refuse to
-      **CACHE** instead: readings still returned and printed, ghost never
-      written. The tell to assert on: seven DIFFERENT programs produced
-      byte-identical screens.
-      🤖 AUTONOMOUS — the reproduction is one line (`reset=("NEW",)` on
-      `National_CF-3000`) and the arm is its own green/red control.
-      [[apparatus-is-part-of-the-measurement]] [[readout-blind-to-its-own-subject]]
+- [x] 🟢 **A DEAD REFERENCE MACHINE WAS CACHED AS A READING — FIXED 2026-09-02
+      (D-SCRAPEMODE), AND THE HARNESS HAD DIAGNOSED IT THREE TIMES ALREADY.**
+      Filed and closed the same day,
+      [`docs/spec-scrapemode.md`](docs/spec-scrapemode.md).
+      🔴 **THE DIAGNOSIS EXISTED AND WAS DISCARDED.** Re-running the exact call
+      that wrote seven ghost entries prints
+      `verdicts: ['BLIND/mode', 'BLIND/mode', 'BLIND/mode']`,
+      `mis_echoed() == []`, `storable() == True`. `BLIND/mode` is emitted when
+      the echo oracle reads **SCRMOD out of the machine's own RAM** and finds it
+      non-zero — *"this scrape is not looking at the text plane"*. The harness
+      concluded that three times out of three and dropped all three, because
+      `mis_echoed()` counts only `MANGLED`.
+      🎯 **THAT RULE IS RIGHT AND IS NOT THE BUG.** A blind SLOT really is a
+      refusal to judge. But `BLIND/mode` is not a blind spot — it is a POSITIVE
+      reading, from the machine, that the instrument is aimed wrong. Nothing
+      downstream asked for it.
+      ✅ **FIXED**: `scrape_invalid()` at the single `run_cases` chokepoint —
+      every judged slot `BLIND/mode` ⇒ **do not store**, and say why on stderr.
+      ⚠️ The predicate is `BLIND/mode` SPECIFICALLY, not "all blind": a probe
+      that CLSes early legitimately produces `BLIND/rewrote` throughout, and
+      refusing on that would redden correct runs.
+      🎯 **IT REFUSES TO CACHE, NOT TO RUN** — readings still returned and
+      printed, so an early refusal cannot bury a divergence the way 08-31's did.
+      🟢 **RED AND GREEN ON THE SAME APPARATUS**, same machine and probe, only
+      `reset` differing, scored by COUNTING CACHE ENTRIES ON DISK rather than by
+      reading the guard's own message: off-plane 0 → 0 (refused, guard spoke),
+      on-plane 0 → 1 (stored, guard silent).
+      ➡️ **STILL OPEN, named:** the scrape is still SCREEN-0-only (this does not
+      teach it `$1800`/32 columns — a stock MSX1 side must still inject
+      `SCREEN 0` in its `reset`), and `storable()` still tests the wrong layer
+      for every OTHER way a capture can be junk.
 
 - [ ] 🔬 **A HAND-WRITTEN ERROR-MESSAGE ALPHABET IS A BLIND SPOT, AND 19 PROBES
       CARRY ONE.** Found 2026-09-02 by D-LSETTM
@@ -1532,7 +1536,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5154 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5158 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
