@@ -27,7 +27,7 @@ to straddle.
 
 ## 0. Why this needs its own spec + provenance boundary
 
-Graphics is the largest remaining Phase-3 charter item ([../TODO.md:2188 (T-BDB99C)](TODO.md))
+Graphics is the largest remaining Phase-3 charter item ([../TODO.md:2260 (T-BDB99C)](TODO.md))
 and the first arc whose runtime is **compute-heavy and long-running** (a full-screen
 `PAINT` is milliseconds-to-seconds of work), which collides directly with the live
 `PLAY` servicer we just landed ([basic/playsvc.asm:67](basic/playsvc.asm)). The

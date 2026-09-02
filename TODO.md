@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5067 (T-529ABE)`: a
+      `TODO.md:958 (T-6FE392)8 (T-529ABE)` from `TODO.md:5139 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1175,19 +1175,91 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the references settle the behaviour; the separating row is
       named.
 
-- [ ] 🔬 **`LSET`/`RSET` ON A NEVER-FIELDED VARIABLE HAS NO ORACLE: THE TWO
-      REFERENCES DISAGREE.** Found 2026-08-29 by D-NGRAM11. `A$="12345":LSET
-      A$="AB"` reads `Illegal function call` on the cassette-only VG-8020 and
-      pads in place (`AB   `) on the disk-equipped CF-3300. zerobas targets the
-      disk machine and agrees with it, so **nothing is known to be wrong** — but
-      the row cannot score either way and is marked NO-ORACLE in the probe rather
-      than dropped from it.
-      ➡️ The open question is whether the split is DISK vs CASSETTE (a machine
-      capability) or a firmware revision, which decides whether the CF-3300 is
-      the right oracle for this row at all. `b.lset` (`LSET A$=5`) is in the same
-      bucket: ERR 5 / ERR 13 / ERR 2 across the three sides.
-      🤖 AUTONOMOUS — a third reference or the disk-ROM source settles it.
+- [x] 🟢 **`LSET`/`RSET` ON A NEVER-FIELDED VARIABLE — NO LONGER NO-ORACLE. THE
+      SPLIT IS THE DISK ROM, AND A sha1 SETTLED IT BEFORE ANY MACHINE BOOTED.**
+      Filed 2026-08-29 by D-NGRAM11, closed 2026-09-02 by D-LSETREF
+      ([`docs/spec-basic-lsetref.md`](docs/spec-basic-lsetref.md),
+      [`scratchpad/lsetref_probe.py`](scratchpad/lsetref_probe.py)).
+      🎯 **THE CONTROLLED PAIR WAS FREE.** openMSX's own configs give
+      `National_CF-3000` (cassette) and `National_CF-3300` (disk) the SAME
+      `<sha1>` for their main BASIC ROM — `c7a2c5ba…`, byte-identical, published
+      in both machine XMLs. So "firmware revision" is excluded arithmetically for
+      that pair; whatever separates them is the disk ROM. The CF-3000 then
+      answers **ERR 5 on every LSET/RSET row**, like the VG-8020, with both
+      controls green. **A cassette machine refuses the VERB; it holds no opinion
+      about the row.** zerobas ships a disk ROM ⇒ the CF-3300 is the oracle, the
+      cassette machines have no vote, and `g.lset`/`g.rset` score as ordinary
+      agreeing rows. 🟢 **CLEAN-ROOM INTACT** — a `<sha1>` in an emulator config
+      is not ROM content; nothing was disassembled or byte-copied.
+      ➡️ **AND THE PROMOTION PAID.** `b.lset` (`LSET A$=5`) was parked in the same
+      bucket as a three-way disagreement; once the cassette reading is known to
+      be a refusal of the verb, it is a plain divergence — **ERR 2 here, ERR 13
+      on the reference.** Fixed the same day, +4 B, six rows:
+      [`docs/spec-basic-lsettm.md`](docs/spec-basic-lsettm.md).
+      ⚠️ **ONE DISK LINEAGE ONLY, AND SAYING SO IS THE POINT.** The Spectravideo
+      SVI-738 (a second, unrelated DiskROM) could not be run: its XML wants
+      `svi-738_rs232.rom` at sha1 `4e9384c9…` and the local dump is `9de525e0…`,
+      so openMSX refuses the machine. Sony HB-701FD and Gradiente Expert DD Plus
+      have no local ROMs. "Disk BASIC pads" is measured on **National's disk ROM
+      alone**; whether other vendors agree is open, untested, and irrelevant to
+      zerobas, whose target IS the CF-3300.
       [[an-unnamed-outcome-reads-as-no-outcome]]
+
+- [ ] 🔴 **A DEAD REFERENCE MACHINE IS CACHED AS A READING, AND TWO GUARDS EACH
+      MISS IT BY ONE LAYER.** Found 2026-09-02 by D-LSETREF
+      ([`docs/spec-basic-lsetref.md`](docs/spec-basic-lsetref.md) §6), the hard
+      way: a first `National_CF-3000` run returned `<NO OUTPUT>` on all seven
+      rows **including both controls**, and **stored seven refcache entries**.
+      Cause: a stock MSX1 boots SCREEN 1 (name table `$1800`, 32 cols) and
+      `omsx_repl.SCR_ADDR` is `$0000`/40 — the module's own comment predicts it
+      (*"a stock SCREEN-1 machine would need 0x1800/768/32"*). What was read at
+      `$0000` is the **pattern-generator table**, i.e. character bitmaps as text:
+      non-blank, so nothing refused it. Seven ghost entries, purged by hand.
+      🔴 **`probe_refcache.storable()` TESTS THE WRONG LAYER** — it refuses the
+      string `<NO OUTPUT>`, but that is produced by each probe's `face()`
+      DOWNSTREAM; the raw capture it inspects is garbage bytes, and its own
+      header promises "a non-reading is never stored".
+      🔴 **AND THE D-ECHO ORACLE JUDGED EVERY SLOT BLIND** — `mis_echoed()`
+      counts only `MANGLED`, because *"a BLIND slot is a refusal to judge, not a
+      finding"*. Correct PER SLOT. But **every slot blind on every case is not a
+      blind spot, it is a dead machine**, and that aggregate is never asked.
+      ➡️ **THE FIX IS THE AGGREGATE, NOT A REFUSAL.** Do not make the run abort —
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]] records a
+      refusal that fired early and buried two real divergences. Refuse to
+      **CACHE** instead: readings still returned and printed, ghost never
+      written. The tell to assert on: seven DIFFERENT programs produced
+      byte-identical screens.
+      🤖 AUTONOMOUS — the reproduction is one line (`reset=("NEW",)` on
+      `National_CF-3000`) and the arm is its own green/red control.
+      [[apparatus-is-part-of-the-measurement]] [[readout-blind-to-its-own-subject]]
+
+- [ ] 🔬 **A HAND-WRITTEN ERROR-MESSAGE ALPHABET IS A BLIND SPOT, AND 19 PROBES
+      CARRY ONE.** Found 2026-09-02 by D-LSETTM
+      ([`docs/spec-basic-lsettm.md`](docs/spec-basic-lsettm.md) §5).
+      `basic_probe_lrvar.bracket()` classifies a screen against a literal list of
+      error strings; anything absent reads `<NO OUTPUT>`, which routes to
+      *"without a reference"* — **a sentence about the MACHINE, for a fault in
+      the PROBE.** Three new rows whose answer is `Missing operand` (ERR 24, not
+      in the list) were reported as unscored while BOTH machines had printed it.
+      ✅ **FIXED IN `lrvar` ONLY**: alphabet re-derived from `sub/errmsg.asm` +
+      main's `err_msgtab` (15 → 37), and an unclassifiable NON-EMPTY screen now
+      returns `<UNREADABLE: …>`, deliberately **not** a sentinel, so the gate
+      scores it RED and carries the text. K-LT3 plants the omission back and the
+      loud path fires. 27/27 scored, 0 without a reference.
+      📏 **THE CLASS IS 19 PROBES** (`grep -rln '"Type mismatch"' probes/`), and a
+      sweep of every message literal against the ROM source found the SAME
+      casing defect in **four more**: `fldary`, `lvfix`, `lvsites`, `tgtspc` all
+      said `Field overflow` where the ROM says **`FIELD overflow`**.
+      ⚠️ **THOSE FOUR ARE FIXED BUT UNWITNESSED** — no row in any of them
+      provokes a FIELD overflow (`fldary` names it in its own NOT-COVERED list:
+      *"unchecked today, unchanged here"*), so the fix removes a latent blindness
+      and **changes no current reading**. Do not read it as a measured win.
+      ➡️ **OPEN: the `<UNREADABLE>` fallback in the other 18**, and better, ONE
+      shared classifier (there is precedent — `probe_report`) so the alphabet
+      cannot drift per-probe again.
+      🤖 AUTONOMOUS — the alphabet is derivable from the ROM source and each
+      probe's own rows are the control.
+      [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
 
 - [ ] 🔬 **`ON ERROR GOTO <non-line>` IS UNTRAPPABLE ON BOTH REFERENCES —
       MEASURED 2026-08-29 (D-ONERRARM), AND BOTH OF MY HYPOTHESES WERE REFUTED**
@@ -1445,7 +1517,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5067 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5139 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

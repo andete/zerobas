@@ -530,9 +530,27 @@ lrs_haveeq:
                 call    skip_spaces
                 cp      EQ_TOKEN            ; '='
                 jp      nz,stmt_error
-                call    str_eval_next       ; D-NGRAM11: past '=', STRPTR ->
-                                            ; [len][ptr]; HL advanced, CF=ok
-                jp      nc,stmt_error       ; RHS not a string operand
+                ; --- D-LSETTM: THE DECLINE HAS TWO CAUSES AND THE CF-3300
+                ; --- ANSWERS THEM DIFFERENTLY (docs/spec-basic-lsettm.md).
+                ; `str_eval` declines both for "the slot is EMPTY" and for
+                ; "something is here and it is not a string", and this site used
+                ; ONE `jp nc,stmt_error` for both -- ERR 2 where the reference
+                ; says 24 and 13 respectively. Measured on the National CF-3300:
+                ; `LSET A$=` / `LSET A$=:` -> ERR 24, `LSET A$=5` / `RSET A$=5` /
+                ; `LSET A$=N` -> ERR 13. Six rows, all ERR 2 here.
+                ; 🎯 THE SAME SPLIT printusing.asm:66 ALREADY RECORDS in this very
+                ; machinery, and the same repair: take the missing case off the
+                ; front with req_operand, after which an NC can only mean the
+                ; second. str_eval_next is unrolled to its `inc hl / skip / eval`
+                ; because req_operand must run PAST the '=' but BEFORE the eval,
+                ; and req_operand does its own skip_spaces (so no second one).
+                ; +4 B. [[two-rules-that-coincide-on-every-row-you-have]]
+                inc     hl                  ; past '='
+                call    req_operand         ; `LSET A$=` / `= :` -> ERR 24
+                call    str_eval            ; STRPTR -> [len][ptr]; HL advanced
+                jp      nc,type_mismatch_error  ; a non-string RHS -> ERR 13
+                                            ; (0 B: the same instruction,
+                                            ; retargeted -- printusing.asm:74)
                 push    hl                  ; guard cursor across select + store
                 ld      a,(FLD_CHAN)
                 or      a

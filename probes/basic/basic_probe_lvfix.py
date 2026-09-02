@@ -269,7 +269,7 @@ SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>", "<NO DISK ON THIS SIDE>")
 
 ERRORS = ("Syntax error", "Type mismatch", "Subscript out of range",
           "Illegal function call", "Out of memory", "Out of string space",
-          "Overflow", "Bad file number", "File not found", "Field overflow",
+          "Overflow", "Bad file number", "File not found", "FIELD overflow",
           "Bad file name", "Disk offline", "File already open",
           "Redimensioned array")
 

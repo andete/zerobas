@@ -162,6 +162,23 @@ CASES = [
                          'PRINT"[";A$(1);"]"']),
     # === grammar: a NUMERIC target is not a string variable ==================
     ("n.num",     True, ['A=1', 'LSET A=2']),
+    # === grammar: the RHS DECLINE has TWO causes (D-LSETTM) =================
+    # 🔴 THESE SIX ARE MARKED disk-ONLY ON PURPOSE, and D-LSETREF is why. The
+    # cassette VG-8020 raises ERR 5 for every LSET row -- not a third opinion
+    # about the RHS but a refusal of the whole verb -- and scoring against it
+    # would file a Type-mismatch question as a three-way disagreement. The
+    # National CF-3000 (cassette) runs a main BASIC ROM BYTE-IDENTICAL to the
+    # CF-3300's (sha1 c7a2c5ba...) and also answers ERR 5, so the split is the
+    # DISK ROM, not a firmware revision: the CF-3300 is the oracle here and the
+    # cassette machines have no vote. docs/spec-basic-lsetref.md.
+    # `str_eval` declines both for "the slot is EMPTY" and for "something is
+    # here and it is not a string"; the CF-3300 answers 24 and 13.
+    ("d.miss",    True, ['A$="12345"', 'LSET A$=']),
+    ("d.misscol", True, ['A$="12345"', 'LSET A$=:PRINT']),
+    ("d.rmiss",   True, ['A$="12345"', 'RSET A$=']),
+    ("d.num",     True, ['A$="12345"', 'LSET A$=5']),
+    ("d.rnum",    True, ['A$="12345"', 'RSET A$=5']),
+    ("d.numvar",  True, ['A$="12345"', 'N=5', 'LSET A$=N']),
     # === the ERASE oracle D-FLDARY declined to take (spec §5.4) =============
     # An element's field key is its ARYTAB-relative offset, and aeng_erase
     # COMPACTS the descriptor list -- so a key above the erased array is stale.
@@ -194,11 +211,29 @@ SITE_CONTROL = {
 LABEL_W = 10
 SENTINELS = ("<NO CAPTURE>", "<NO OUTPUT>", "<NO DISK ON THIS SIDE>")
 
+# 🔴 THIS LIST IS AN ALPHABET, AND A CLOSED ALPHABET IS A BLIND SPOT. D-LSETTM
+# added three rows whose answer is `Missing operand` (ERR 24) -- absent here --
+# and all three read `<NO OUTPUT>` and were reported as "without a reference"
+# while BOTH machines had printed a perfectly good message. The old list was
+# ALSO wrong for a message it did name: it said `Field overflow` where the ROM
+# says `FIELD overflow` (sub/errmsg.asm), so that row would have dropped the
+# same way had anything ever provoked it. Both faults are the same fault --
+# a hand-maintained alphabet drifting from sub/errmsg.asm + main's err_msgtab.
+# Re-derived from those tables 2026-09-02. The `bracket()` fallback below is
+# what stops the NEXT omission from being silent.
+# [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
 ERRORS = ("Syntax error", "Type mismatch", "Subscript out of range",
           "Illegal function call", "Out of memory", "Out of string space",
-          "Overflow", "Bad file number", "File not found", "Field overflow",
+          "Overflow", "Bad file number", "File not found", "FIELD overflow",
           "Bad file name", "Disk offline", "File already open",
-          "Bad file mode", "Redimensioned array")
+          "Bad file mode", "Redimensioned array",
+          "Missing operand", "Division by zero", "NEXT without FOR",
+          "RETURN without GOSUB", "Out of DATA", "Undefined line number",
+          "Undefined user function", "String too long", "Can't CONTINUE",
+          "RESUME without error", "Illegal direct", "Internal error",
+          "Device I/O error", "Direct statement in file", "Input past end",
+          "Bad drive name", "Bad sector number", "Bad FAT", "File not OPEN",
+          "File still open", "Sequential I/O only", "Unprintable error")
 
 
 def bracket(raw: str | None) -> str:
@@ -213,6 +248,13 @@ def bracket(raw: str | None) -> str:
     for e in ERRORS:
         if e in txt:
             return f"<{e}>"
+    # 🔴 THE SCREEN HAD TEXT AND THE ALPHABET COULD NOT NAME IT. That is a fault
+    # in THIS PROBE, not a missing reading, and it must not wear `<NO OUTPUT>`'s
+    # clothes -- that sentinel routes the row to "without a reference", which is
+    # a sentence about the MACHINE and reads as "nothing to see". Carry the text
+    # so the next reader can classify it in one glance rather than re-running.
+    if txt.replace("Ok", "").strip():
+        return f"<UNREADABLE: {txt.strip()[:48]}>"
     return "<NO OUTPUT>"
 
 
@@ -316,6 +358,19 @@ def main() -> int:
         if own and own in present and ctl_red_on_zb(own):
             note += ("   [ITS OWN ARM'S CONTROL IS RED ON zb — this row is NOT "
                      "evidence about the TARGET FORM]")
+        # An UNREADABLE face is a PROBE failure. It is deliberately not a
+        # sentinel: a sentinel would be excluded from `refs` and the row would
+        # print as "no reference", which is exactly the silent drop D-LSETTM
+        # found. Red, loud, and carrying the screen.
+        unread = [s_ for s_, v in vals.items() if v.startswith("<UNREADABLE")]
+        if unread:
+            dis += 1
+            print(probe_report.row("DIFF", lab, LABEL_W, vals,
+                                   "   [PROBE CANNOT READ THIS SCREEN on "
+                                   + ",".join(unread)
+                                   + " — ERRORS does not name what the machine "
+                                     "printed; this row scored NOTHING]"))
+            continue
         if not refs:
             noref += 1
             print(probe_report.row("....", lab, LABEL_W, vals,
