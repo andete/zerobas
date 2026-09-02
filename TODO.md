@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1175 (T-6FE392)8 (T-529ABE)` from `TODO.md:5711 (T-529ABE)`: a
+      `TODO.md:1210 (T-6FE392)8 (T-529ABE)` from `TODO.md:5746 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -707,6 +707,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       construction. Two rules coincided on every edge row; the mid-octave rows
       separated them. Fixed (accidental before octave base, mod 12; clamp
       deleted as unreachable); 8/8 traces identical, fast-layer vectors added.
+
+- [ ] 🔴 **`MKS$` / `MKD$` / `CVS` / `CVD` ARE MISSING, AND THEIR DEFERRAL'S
+      CONDITION HAS BEEN MET.** Found 2026-09-03 by D-DEFERCHECK
+      ([`scratchpad/defercheck_probe.py`](scratchpad/defercheck_probe.py)),
+      via the deferral sweep
+      ([`scratchpad/deferral_sweep.py`](scratchpad/deferral_sweep.py)).
+      `basic/sysvars.inc` deferred the float siblings to *"Phase-3 floats"*.
+      **Floats landed.** Measured against the CF-3300 — the only reference that
+      has these verbs, since the VG-8020 raises ERR 5 on all of them (Disk BASIC,
+      the same disk-vs-cassette split D-LSETREF settled for `LSET` and `CVI`):
+
+          CVS(MKS$(1.5))   cf3300 1.5   here ERR 13
+          CVD(MKD$(1.5))   cf3300 1.5   here ERR 13
+          LEN(MKS$(1.5))   cf3300   4   here 0
+          LEN(MKD$(1.5))   cf3300   8   here 0
+
+      **`MKS$` returns an EMPTY STRING.**
+      🟢 **CONTROL: the INTEGER pair works** — `CVI(MKI$(258))` = 258 and
+      `LEN(MKI$(258))` = 2 on both, so the machinery and the fixture are sound
+      and this is the float half specifically.
+      🎯 **SECOND FINDING FROM THE SAME SWEEP, AND THE SAME SHAPE AS D-PUSING** —
+      a comment deferring work to an event that has since happened, which nobody
+      revisited. The sweep exists because that had bitten three times
+      (`printusing` "Phase-3 floats", `play.asm` "NO live drain", and this).
+      ✅ **THE STALE COMMENT IS CORRECTED IN PLACE** (zero bytes), with the
+      measurements under it.
+      💰 **UNPRICED** — four verbs over the float pack; its own slice.
+      🤖 AUTONOMOUS — the CF-3300 settles every row; the price is the open part.
+
+- [x] 🟢 **"RND NOT YET IMPLEMENTED" — THREE STALE COMMENTS, NO DEFECT.** Same
+      sweep, same day. `basic/sysvars.inc` said it three times; `fp_rnd` ships as
+      a sub-ROM tenant and `RND(1)`, `RND(0)`, `RND(-1)` all work, with the value
+      in [0,1) on all three machines (`r.range` = 1 everywhere).
+      🎯 **A VALUE ROW CANNOT TEST RND** — it is random, so the rows ask only what
+      the comment raises: does it EXIST and is it in range. Corrected in place.
 
 - [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
       DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
@@ -1753,7 +1788,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5711 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5746 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

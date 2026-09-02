@@ -229,7 +229,15 @@ DSKF_TOKEN      equ     $A6     ; DSKF(d)  -> free clusters on the drive (=free 
 ; Random-access conversion functions (Phase 2c). $FF-prefixed function tokens,
 ; oracle-locked to the VG-8020 crunch (MKI$=$FF$AE, CVI=$FF$A8; MSX2 TH Table 2.20).
 ; MKI$(n) packs a 16-bit int into a 2-byte little-endian string; CVI(s$) is the
-; inverse. The float siblings (MKS$/MKD$/CVS/CVD) need Phase-3 floats and are
+; inverse. 🔴 THE FLOAT SIBLINGS (MKS$/MKD$/CVS/CVD) ARE MISSING, AND THIS LINE
+; USED TO DEFER THEM TO "Phase-3 floats" -- WHICH LANDED. Measured 2026-09-03
+; (D-DEFERCHECK) against the CF-3300, the only reference that has these verbs
+; (the VG-8020 raises ERR 5 on all of them, Disk BASIC):
+;     CVS(MKS$(1.5))  cf3300 1.5   here ERR 13      LEN(MKS$(1.5))  4  here 0
+;     CVD(MKD$(1.5))  cf3300 1.5   here ERR 13      LEN(MKD$(1.5))  8  here 0
+; MKS$ returns an EMPTY STRING. The integer pair (MKI$/CVI) round-trips 258 and
+; LEN 2, matching. Filed in TODO.md, unpriced. The old text said they "need
+; Phase-3 floats and are"
 ; deferred. MKI$ is evaluated in basic/strvar.asm (string result); CVI in
 ; basic/expr.asm ev_f_ff (numeric result, string argument).
 MKI_TOKEN       equ     $AE     ; MKI$(n)  -> 2-byte LE string of integer n
@@ -311,7 +319,9 @@ CDBL_TOKEN      equ     $A0     ; CDBL(x) -> $FF $A0
 ; Math pack slice 1b (Phase 3, repack-only -- docs/spec-basic-math-pack.md
 ; §10.1). SQR: same $FF-prefixed function-token table, MSX2 TH Table 2.20 +
 ; black-box VG-8020 crunch capture (probes/basic/basic_probe_math_conv.py).
-; Interleaves cleanly: ABS $86 . SQR $87 . RND $88 (RND not yet implemented).
+; Interleaves cleanly: ABS $86 . SQR $87 . RND $88. (⚠️ said "RND not yet
+; implemented" until 2026-09-03 -- STALE: fp_rnd ships as a sub-ROM tenant and
+; RND(1)/RND(0)/RND(-1) all agree with both references, D-DEFERCHECK.)
 SQR_TOKEN       equ     $87     ; SQR(x) -> $FF $87
 ; Math pack slice 2a (Phase 3, repack-only -- docs/spec-basic-mathpack-
 ; slice2.md §11.1). ATN: same $FF-prefixed function-token table, MSX2 TH
@@ -325,7 +335,8 @@ ATN_TOKEN       equ     $8E     ; ATN(x) -> $FF $8E
 ; TH Table 2.20 + black-box VG-8020 crunch capture (probes/basic/basic_
 ; probe_math_conv.py, §1.4). Interleaves cleanly with the slice-2a comment
 ; above: SIN $89 . LOG $8A . EXP $8B . COS $8C . TAN $8D . ATN $8E . RND $88
-; (SIN/COS/TAN/RND not yet implemented -- later sub-slices).
+; (⚠️ said SIN/COS/TAN/RND "not yet implemented -- later sub-slices" until
+; 2026-09-03; all four ship. D-DEFERCHECK measured RND directly.)
 EXP_TOKEN       equ     $8B     ; EXP(x) -> $FF $8B
 LOG_TOKEN       equ     $8A     ; LOG(x) -> $FF $8A
 ; Math pack slice 2d (Phase 3, repack-only -- docs/spec-basic-mathpack-
@@ -333,7 +344,7 @@ LOG_TOKEN       equ     $8A     ; LOG(x) -> $FF $8A
 ; table, MSX2 TH Table 2.20 + black-box VG-8020 crunch capture (probes/
 ; basic/basic_probe_math_conv.py, §14.8, fresh 2026-07-14 capture). Completes
 ; the interleave: SIN $89 . LOG $8A . EXP $8B . COS $8C . TAN $8D . ATN $8E .
-; RND $88 (RND not yet implemented -- a later sub-slice).
+; RND $88. (⚠️ said "not yet implemented" until 2026-09-03 -- STALE, D-DEFERCHECK.)
 SIN_TOKEN       equ     $89     ; SIN(x) -> $FF $89
 COS_TOKEN       equ     $8C     ; COS(x) -> $FF $8C
 TAN_TOKEN       equ     $8D     ; TAN(x) -> $FF $8D
