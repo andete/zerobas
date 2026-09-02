@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1109 (T-6FE392)8 (T-529ABE)` from `TODO.md:5604 (T-529ABE)`: a
+      `TODO.md:1109 (T-6FE392)8 (T-529ABE)` from `TODO.md:5611 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -758,12 +758,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       TWICE on 2026-09-02**, when a third reference dissolved `LSET`/`RSET` and
       `CVI` from unscorable to scored-and-agreeing. A row parked NO-ORACLE is
       unmeasured, not clean. [[no-oracle-is-about-the-comparison]]
-      🔴 **AND TWO PINS WERE STALE WHEN THIS WAS BUILT, BOTH MINE FROM TODAY**:
-      `open2` still claimed 9 rows after D-OPEN2FIX closed 8, and `reclen`'s 4
-      still read as a hang after D-PUT3SLOW withdrew it. **A fix that does not
-      move its pin leaves the set claiming defects that no longer exist** — third
-      occurrence in one day, after the `onerrarm` pin.
-      🤖 AUTONOMOUS — the 17 are named; work them.
+      ✅ **EVERY LINE RE-RUN, NOT TRUSTED (2026-09-02).** `ntwall` 19 rows / 6
+      DIFF — exactly the pinned six (`wall.row solid.row h2 h4 hp3 vp.solid`),
+      pin ACCURATE. `ngram13` 3 of 9, pin ACCURATE. `reqcomma` 0/12 and `oomtail`
+      0/3, pins REMOVED. Four probes re-run; two pins died.
+      🤖 AUTONOMOUS — the 16 are named; work them.
 
 - [ ] 🔁 **STANDING SEQUENCING (Joost, 2026-09-02): SPEED MATTERS AND WE SHOULD
       AT LEAST TRY — BUT CORRECTNESS COMES FIRST.** Answers the charter question
@@ -1687,7 +1686,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5604 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5611 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3963,6 +3962,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `,BF` wall is not a border anywhere and three of this scout's own rows
       agreed for a reason unrelated to the subject.
 
+      ✅ **RE-VALIDATED 2026-09-02: 19 rows, 6 DIFF — `wall.row solid.row h2 h4
+      hp3 vp.solid`, exactly the pinned set.** Both references agree on every
+      row; the 13 that agree include the two GREEN PINS below and every `vp.*`
+      write-shape control, so the divergence is narrow and the fixture is sound.
+      ⚠️ **THE PROBE RUNS FIVE ROUNDS AND A BARE INVOCATION RUNS ALL OF THEM** —
+      a partial read of its output shows 4 rows and 2 DIFF, which is what a
+      too-early wait predicate reports. It prints `done` when finished; wait for
+      that, not for the first `DIFF`.
       💰 **NO PRICE AND NO DESIGN YET, deliberately.** Matching the reference
       means changing what a filled span WRITES, which is `gfx_plot_cur`'s
       contract, shared with PSET/LINE/CIRCLE/DRAW — all of which measurably
