@@ -395,7 +395,23 @@ _ERRORS = ("Type mismatch", "Syntax error", "Illegal function call",
            "Bad file mode", "Sequential I/O only", "Subscript out of range",
            "Redimensioned array", "Out of memory", "Out of string space",
            "String too long", "Missing operand", "Device I/O error",
-           "NEXT without FOR", "Undefined line number", "Unprintable error")
+           "NEXT without FOR", "Undefined line number", "Unprintable error",
+           # 🔴 ADDED 2026-09-02 (D-PUT3CONSUME). `Input past end` was ABSENT,
+           # and a `GET` past EOF on a freshly-created empty file raises exactly
+           # that -- so three CF-3300 rows read `<NO OUTPUT>` and looked like the
+           # REFERENCE failing, when the probe simply could not spell what it
+           # said. An unreadable answer is indistinguishable from no answer, and
+           # on the ORACLE side that reads as "the reference is broken", which is
+           # the worst direction for this mistake to point.
+           # The rest are the remaining `db "...",0` message strings in
+           # sub/errmsg.asm + basic/, added at the same time so the next gap is
+           # not found the same way. Re-derived, not hand-listed.
+           "Input past end", "File not found", "File still open",
+           "Bad file name", "Bad drive name", "Bad sector number", "Bad FAT",
+           "Illegal direct", "Direct statement in file", "Can't CONTINUE",
+           "No RESUME", "RESUME without error", "RETURN without GOSUB",
+           "Out of DATA", "Undefined user function", "Line buffer overflow",
+           "String formula too complex")
 # 🔴 LONGEST NEEDLE FIRST, AND THIS IS A LANDED DEFECT, NOT TIDINESS. `Overflow`
 # is a SUBSTRING of `FIELD overflow` — the first draft listed it earlier and
 # scored a screen reading `FIELD overflow in 30` as `<Overflow>`, i.e. the one
@@ -428,6 +444,13 @@ def bracket(raw: str | None) -> str:
     for e in ERRORS:
         if e.lower() in low:
             return f"<{e}>"
+    # 🔴 THE SCREEN HAD TEXT AND THE ALPHABET COULD NOT NAME IT. That is a fault
+    # in THIS PROBE, not a missing reading, and `<NO OUTPUT>` hides it -- worse
+    # here than in most probes, because a blank on the CF-3300 side reads as
+    # "the reference is broken". Carry the text instead. (D-PUT3CONSUME; the
+    # same repair lrvar took in D-LSETTM.)
+    if low.replace("ok", "").strip():
+        return f"<UNREADABLE: {txt.strip()[:48]}>"
     return "<NO OUTPUT>"
 
 

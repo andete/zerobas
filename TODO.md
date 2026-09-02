@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5258 (T-529ABE)`: a
+      `TODO.md:1027 (T-6FE392)8 (T-529ABE)` from `TODO.md:5295 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1605,7 +1605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5258 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5295 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4186,8 +4186,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       FINDINGS**: `ON ERROR GOTO 100` on a harness numbering 10,20,30…;
       `OPEN … AS #2` under the default `MAXFILES=1`; and the two-channel
       `Syntax error`. Budget for that when picking this up.
-      ➡️ **NEXT: find what the third `PUT` consumes.** The `CLOSE`-survives clue
-      points at a cumulative resource rather than per-`FCB` state.
+      ✅ **RE-MEASURED 2026-09-02 (D-PUT3CONSUME,
+      [`scratchpad/put3consume_probe.py`](scratchpad/put3consume_probe.py)), AND
+      THE CLAIM SURVIVES A CONFOUND OF MY OWN MAKING.** The first design read
+      `DSKF(0)` at the end of every PUT ladder — and `DSKF` after a PUT turns out
+      to die on its own (below), so every "third PUT" row had two sufficient
+      causes. `x.put3lof` reads `LOF(1)` instead and touches no `DSKF`:
+      **3 PUTs `<NO OUTPUT>` on zb against `128` on the CF-3300, while 2 PUTs
+      read `128` on both.** The filed claim stands, now on a row that cannot mean
+      anything else. [[two-rules-that-coincide-on-every-row-you-have]]
+      🔴 **AND A SECOND, SIMPLER DEFECT WAS UNDER IT: `DSKF(0)` AFTER A SINGLE
+      `PUT` DIES.** One write, not three:
+
+          OPEN"TS.DAT"AS #1 LEN=128 : FIELD#1,128 AS A$
+          PUT#1,1 : PRINT"[";DSKF(0);"]"     cf3300 706   zb dies
+
+      `x.dskf0` (no PUT) reads 707 on both and `x.getdskf` (a GET, then DSKF)
+      reads 707 on zb, so it is the **PUT** that arms it, not any disk op — and
+      ONE is enough.
+      🎯 **THE FAILURE SIGNATURES DIFFER, AND THAT LOCALISES BOTH.** The 3-PUT
+      rows print **nothing at all** (`<NO OUTPUT>`) — they die before reaching
+      the `PRINT`. The DSKF rows print **`[`** and stop (`<UNREADABLE: [>`), so
+      the statement is reached and the machine dies **inside `DSKF(0)`**. That
+      distinction did not exist before 2026-09-02, when the probe's blank-face
+      fallback was made to carry the text: both readings used to be `<NO OUTPUT>`
+      and were indistinguishable.
+      ⚠️ **AND THE `d.lof*` LADDER SAYS THE FILE IS FINE**: `LOF(1)` reads 128
+      after one PUT and after two, on both machines. Whatever accumulates is not
+      visible in the file's length.
+      ⚠️ **A REFERENCE COLUMN I FIRST MIS-READ**: three CF-3300 rows showed
+      `<NO OUTPUT>` and looked like the ORACLE failing. They are
+      `<Input past end>` — a `GET` past EOF on a freshly-created empty file,
+      correct behaviour — and `basic_probe_fldwidth`'s error alphabet simply did
+      not contain that message. **An unreadable answer on the oracle side reads
+      as "the reference is broken", which is the worst direction for this class
+      of mistake to point.** Alphabet re-derived from the ROM's own `db` strings
+      and the loud fallback added.
+      ➡️ **NEXT: two separate hunts, and the DSKF one is cheaper.** `DSKF` needs
+      only ONE `PUT` to arm and dies inside a known, small routine, so whatever a
+      `PUT` corrupts is reachable from there; the 3-PUT hang may share the root.
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
       🤖 AUTONOMOUS — the reference settles the behaviour and the bisect is done.
 
