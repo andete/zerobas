@@ -96,6 +96,17 @@ kwtable:
                 ; INPUT$; CVI=$FF$A8 returns a number). Oracle-locked to the VG-8020.
                 db      4,"MKI$",2,PEEK_PREFIX,MKI_TOKEN
                 db      3,"CVI",2,PEEK_PREFIX,CVI_TOKEN
+                ; D-MKSD: the FLOAT siblings. Until 2026-09-03 these four were
+                ; absent from this table entirely, so `MKS$(1.5)` was not
+                ; tokenised as a keyword at all -- it parsed as the string ARRAY
+                ; `MKS$(1)` and answered 0. `kwsweep` calls that a SILENT-GAP,
+                ; its own "worst kind", and could not see it either until
+                ; D-KWORACLE fixed the second oracle's boot.
+                ; Order is free here: match_kw is FULL-KEYWORD, not prefix.
+                db      4,"MKS$",2,PEEK_PREFIX,MKS_TOKEN
+                db      4,"MKD$",2,PEEK_PREFIX,MKD_TOKEN
+                db      3,"CVS",2,PEEK_PREFIX,CVS_TOKEN
+                db      3,"CVD",2,PEEK_PREFIX,CVD_TOKEN
                 ; File management: KILL (delete) + NAME (rename). Oracle-locked
                 ; tokens ($D4 / $D3). "NAME" shares no prefix with another entry.
                 db      4,"KILL",1,KILL_TOKEN

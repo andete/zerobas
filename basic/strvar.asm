@@ -265,27 +265,77 @@ str_eval_ok:
 str_eval_maybe_mki:
                 inc     hl                  ; tentatively past $FF
                 ld      a,(hl)
-                cp      MKI_TOKEN           ; $AE -> MKI$
+                cp      MKI_TOKEN           ; $AE -> MKI$  (2 bytes, integer)
                 jr      z,str_mki
+                cp      MKS_TOKEN           ; $AF -> MKS$  (4 bytes, single)
+                jr      z,str_mks
+                cp      MKD_TOKEN           ; $B0 -> MKD$  (8 bytes, double)
+                jr      z,str_mkd
                 jp      str_func_ff         ; repack: CHR$/STR$/LEFT$/RIGHT$/MID$ (HL on selector)
-str_mki:
-                inc     hl                  ; past the MKI$ selector
+
+; --- MKI$ / MKS$ / MKD$: the value's STORED BYTES, as a string ---------------
+; docs/spec-basic-mksd.md. One body, parameterised by C = the byte count, because
+; the three verbs differ in exactly two things: how many bytes, and what the
+; argument is coerced to first.
+;
+; 🎯 THE BYTE COUNT *IS* THE FACTYP CODE. MSX numbers the types 2/4/8 and the
+; widths are 2/4/8, so `C` serves as both and no second table is needed. That is
+; the reference's own numbering, not a coincidence this code invented.
+;
+; 🔬 MKS$/MKD$ EMIT EXACTLY WHAT THE VARIABLE STORE HOLDS, measured: the CF-3300's
+; `MKS$(1.5)` reads back `65 21 0 0` byte for byte, which is what `PEEK(VARPTR(A!))`
+; gives for `A!=1.5` on all three machines (docs/spec-basic-faczero.md §0). So the
+; coercion here is the SAME pair `var_store_fac` uses -- widen, then round/pack to
+; the target precision -- and not a private encoder that could drift from it.
+; ⚠️ `MKS$(0)` is `0 0 0 0` on the reference, and would have been `0 255 255 255`
+; here until D-FACZERO canonicalised zero's mantissa the day before this shipped.
+str_mki:        ld      c,2
+                jr      str_mkf
+str_mks:        ld      c,4
+                jr      str_mkf
+str_mkd:        ld      c,8
+str_mkf:
+                inc     hl                  ; past the MKx$ selector
                 ld      a,(hl)
                 cp      '('
                 jr      nz,str_eval_no
                 inc     hl
-                call    eval                ; DE = n; HL advanced past the argument
+                push    bc                  ; C (the width) across the argument eval
+                call    eval                ; DE = n if int; FAC/FACTYP otherwise
+                pop     bc
                 ld      a,(hl)
                 cp      ')'
                 jr      nz,str_eval_no
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard the cursor across the STRSCR write
-                ld      a,2
-                ld      (STRSCR),a          ; length = 2
+                ld      a,c
+                ld      (STRSCR),a          ; length = the width; reloaded below because
+                                            ; the coercion helpers clobber BC
+                cp      2
+                jr      z,str_mkf_int
+                ld      hl,ARGA             ; --- coerce to single / double ---
+                call    widen_rhs_operand   ; exact widen of the live RHS (float-arith)
+                ld      a,(STRSCR)
+                cp      4
+                jr      nz,str_mkf_dbl
+                call    round_single_and_pack   ; 6-digit half-up round -> FAC as single
+                jr      str_mkf_copy
+str_mkf_dbl:
+                call    round_and_finalize      ; exact widen -> FAC as double
+str_mkf_copy:
+                ld      a,(STRSCR)
+                ld      c,a
+                ld      b,0
+                ld      hl,FAC
+                ld      de,STRSCR+1
+                ldir                        ; the packed bytes ARE the string
+                jr      str_mkf_desc
+str_mkf_int:
                 ld      a,e
                 ld      (STRSCR+1),a        ; low byte of n
                 ld      a,d
                 ld      (STRSCR+2),a        ; high byte of n
+str_mkf_desc:
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
                                             ; (arrays slice-4a §10: every STRPTR
                                             ; target is a [len:1][ptr:2] descriptor)
@@ -298,28 +348,28 @@ str_eval_maybe_inputd:
                 cp      '$'
                 jr      z,str_inputd
                 dec     hl                  ; not INPUT$ -> restore, not a string operand
-                jr      str_eval_no
+                jp      str_eval_no
 str_inputd:
                 inc     hl                  ; past '$'
                 ld      a,(hl)
                 cp      '('
-                jr      nz,str_eval_no
+                jp      nz,str_eval_no
                 inc     hl
                 call    eval                ; DE = n (byte count); HL advanced past it
                 ld      a,e
                 ld      (INDLR_N),a         ; target count (low byte; n <= 255)
                 ld      a,(hl)
                 cp      ','                 ; INPUT$(n) keyboard form (no ',') = Phase 3
-                jr      nz,str_eval_no
+                jp      nz,str_eval_no
                 inc     hl
                 ld      a,(hl)
                 cp      '#'                 ; file form requires '#f'
-                jr      nz,str_eval_no
+                jp      nz,str_eval_no
                 inc     hl
                 call    eval                ; DE = channel f; HL advanced
                 ld      a,(hl)
                 cp      ')'
-                jr      nz,str_eval_no
+                jp      nz,str_eval_no
                 inc     hl                  ; HL past ')'
                 call    fch_check           ; D-BADFNUM: 5 / 59 / 52. Was
                                             ; `jp nc,str_eval_no` -- a PARSE-level

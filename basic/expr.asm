@@ -911,6 +911,10 @@ ev_f_ff:
                 ; nor BC is live here (ev_ff_arg's first act is `ld c,a`).
                 cp      CVI_TOKEN           ; $A8 -> CVI (STRING arg: not in the set)
                 jp      z,ev_ff_cvi
+                cp      CVS_TOKEN           ; $A9 -> CVS (D-MKSD; same STRING-arg body,
+                jp      z,ev_ff_cvs         ; 4 bytes instead of 2)
+                cp      CVD_TOKEN           ; $AA -> CVD (ditto, 8 bytes)
+                jp      z,ev_ff_cvd
                 cp      FRE_TOKEN           ; $8F -> FRE (EITHER type: not in the set)
                 jp      z,ev_ff_fre
                 ld      hl,ev_ff_argtab
@@ -1271,7 +1275,25 @@ ev_ff_dskf:                                 ; DSKF(d): free clusters on the driv
                 pop     iy
                 pop     ix
                 ret
-ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2 bytes
+; --- CVI / CVS / CVD: a number out of a string's leading bytes ---------------
+; D-MKSD (docs/spec-basic-mksd.md). ONE body, parameterised by C = the width, so
+; the three verbs share every hard-won piece of CVI's error ordering rather than
+; re-deriving it twice: the deferred missing-`(`/`)` syntax errors (BUG C), the
+; non-string vs nested-fault split (D-CVITM + D-CVISTRTM), and the
+; too-short-string check (D-CVITM) that stops a plausible number being read out
+; of whatever followed the string.
+;
+; ⚠️ A SHARED TAIL IS A LABEL, NOT A DECISION -- so the width is threaded through
+; C and the ONLY divergence is the last few instructions. Measured on the CF-3300:
+; `CVS("AB")` and `CVS("")` are ERR 5 exactly as `CVI("A")` is, and
+; `CVS("ABCDEFGH")` uses the first four bytes and ignores the rest -- the same
+; rule at three widths, which is why one body is right here and not merely short.
+ev_ff_cvs:      ld      c,4
+                jr      ev_ff_cv
+ev_ff_cvd:      ld      c,8
+                jr      ev_ff_cv
+ev_ff_cvi:      ld      c,2                 ; CVI(s$): integer from s$'s first 2 bytes
+ev_ff_cv:
                 ; CVI takes a STRING argument, so it cannot use ev_ff_arg's numeric
                 ; ev_xor. Parse "( <string> )" by bridging the IX token cursor to the
                 ; HL-based str_eval and back, then read 2 little-endian bytes from the
@@ -1294,7 +1316,9 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 ; it -- so the test became dead weight and is gone. Its knife
                 ; (K-CV3) is what noticed: after the order fix, cutting the test
                 ; moved NO rows. 5 B back.
+                push    bc                  ; C (the width) across the operand eval
                 call    str_eval_ix         ; STRPTR -> [len][bytes]; HL advanced; CF=ok
+                pop     bc
                 ; BUG C class (Fable 2026-07-17): repack str_eval CALSLTs and can
                 ; exit NC with garbage IX on a nested malformed string fn
                 ; (CVI(LEFT$("AB")) -> silent 0) or a non-string arg -- defer via
@@ -1323,16 +1347,32 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 ; `Illegal function call`. The descriptor's length byte is right
                 ; here, before pu_deref_body turns HL into the body pointer.
                 ld      a,(hl)              ; descriptor length
-                cp      2
-                jp      c,ev_f_ifc          ; fewer than 2 bytes -> deferred ERR 5
+                cp      c                   ; fewer bytes than the width -> deferred
+                jp      c,ev_f_ifc          ; ERR 5 (D-CVITM, now at three widths)
                 call    pu_deref_body       ; arrays slice-4a: HL(desc)->HL(body);
                                             ; shared with printusing.asm/field.asm
+                ld      a,c
+                cp      2
+                jr      nz,ev_cv_float
                 ld      a,(hl)              ; low byte
                 inc     hl
                 ld      e,a
                 ld      a,(hl)              ; high byte
                 ld      d,a                 ; DE = int (LE)
                 ret
+ev_cv_float:
+                ; 🎯 THE WIDTH *IS* THE FACTYP CODE (2/4/8 for int/single/double),
+                ; so the same C that sized the check now types the result and no
+                ; second table is needed. flt_int_result above already set
+                ; FACTYP=2; this overwrites it, which is exactly the "a float
+                ; nested in the string arg must not stick" contract read the
+                ; other way round.
+                ld      a,c
+                ld      (FACTYP),a
+                ld      b,0
+                ld      de,FAC
+                ldir                        ; the string's bytes ARE the packed value
+                jp      flt_to_int16        ; tail: sets DE, returns to OUR caller
 
 ; --- cvi_tmm: CVI's non-string decline, with the OPERAND'S OWN FAULT FIRST ----
 ; 🔴 D-CVISTRTM. D-CVITM pointed this decline at `ev_f_tmm` and that is the bug

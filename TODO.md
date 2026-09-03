@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1286 (T-6FE392)8 (T-529ABE)` from `TODO.md:5822 (T-529ABE)`: a
+      `TODO.md:1296 (T-6FE392)8 (T-529ABE)` from `TODO.md:5832 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -784,33 +784,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       💰 **COST: page-0 low region 79 -> 63 B free; page 1 UNCHANGED at 269 B.**
       📏 **0 DIFF / 31 rows**, knives 2/2 on the arms that survived.
 
-- [ ] 🔴 **`MKS$` / `MKD$` / `CVS` / `CVD` ARE MISSING, AND THEIR DEFERRAL'S
-      CONDITION HAS BEEN MET.** Found 2026-09-03 by D-DEFERCHECK
-      ([`scratchpad/defercheck_probe.py`](scratchpad/defercheck_probe.py)),
-      via the deferral sweep
-      ([`scratchpad/deferral_sweep.py`](scratchpad/deferral_sweep.py)).
-      `basic/sysvars.inc` deferred the float siblings to *"Phase-3 floats"*.
-      **Floats landed.** Measured against the CF-3300 — the only reference that
-      has these verbs, since the VG-8020 raises ERR 5 on all of them (Disk BASIC,
-      the same disk-vs-cassette split D-LSETREF settled for `LSET` and `CVI`):
-
-          CVS(MKS$(1.5))   cf3300 1.5   here ERR 13
-          CVD(MKD$(1.5))   cf3300 1.5   here ERR 13
-          LEN(MKS$(1.5))   cf3300   4   here 0
-          LEN(MKD$(1.5))   cf3300   8   here 0
-
-      **`MKS$` returns an EMPTY STRING.**
-      🟢 **CONTROL: the INTEGER pair works** — `CVI(MKI$(258))` = 258 and
-      `LEN(MKI$(258))` = 2 on both, so the machinery and the fixture are sound
-      and this is the float half specifically.
-      🎯 **SECOND FINDING FROM THE SAME SWEEP, AND THE SAME SHAPE AS D-PUSING** —
-      a comment deferring work to an event that has since happened, which nobody
-      revisited. The sweep exists because that had bitten three times
-      (`printusing` "Phase-3 floats", `play.asm` "NO live drain", and this).
-      ✅ **THE STALE COMMENT IS CORRECTED IN PLACE** (zero bytes), with the
-      measurements under it.
-      💰 **UNPRICED** — four verbs over the float pack; its own slice.
-      🤖 AUTONOMOUS — the CF-3300 settles every row; the price is the open part.
+- [x] ✅ **D-MKSD — `MKS$` / `MKD$` / `CVS` / `CVD` SHIP.** 2026-09-03,
+      [`docs/spec-basic-mksd.md`](docs/spec-basic-mksd.md).
+      **The real defect was that they were absent from
+      [`basic/kwtable.inc`](basic/kwtable.inc) entirely** — 148 entries, only
+      `MKI$` and `CVI` from the family — so `MKS$(1.5)` was never tokenised as a
+      keyword: it parsed as the string ARRAY `MKS$(1)`. That is the mechanism
+      behind the filed "MKS$ returns an empty string", and a SILENT WRONG ANSWER.
+      📏 **0 DIFF / 32 rows** (cf3300 vs zb) including every error case, the byte
+      formats, the coercion rounding and the domain. The VG-8020 column is
+      printed throughout: it answers ERR 5 to all of them, which is the
+      disk-vs-cassette split D-LSETREF settled, shown rather than asserted.
+      🔬 **`MKS$` EMITS EXACTLY WHAT THE VARIABLE STORE HOLDS** — `MKS$(1.5)` is
+      `65 21 0 0`, byte-identical to `PEEK(VARPTR(A!))` for `A!=1.5`. So the
+      coercion is the same widen+round/pack pair `var_store_fac` uses, not a
+      private encoder that could drift from it.
+      ⚠️ **`MKS$(0)` is `0 0 0 0` on the reference and would have shipped here as
+      `0 255 255 255`** — D-FACZERO fixed that the day before, and was itself
+      found by the scout that was only SIZING this slice.
+      🎯 **THE WIDTH *IS* THE FACTYP CODE** (2/4/8 for int/single/double), so one
+      register sizes the length check and types the result; K-MK4 exists to prove
+      the code depends on it. Two shared bodies, so `CVS`/`CVD` inherit `CVI`'s
+      error ordering (D-CVITM, D-CVISTRTM) instead of re-deriving it twice.
+      💰 **COST: main page 1 269 -> 164 B free; sub-ROM page 0 1992 -> 1962 B**
+      (the four table entries — the table has a single copy and it lives there).
+      Low region unchanged at 63 B. ⚠️ Five `jr`s became `jp`s in `strvar.asm`:
+      the new body pushed `str_eval_no` out of relative range.
+      📏 **DENOMINATOR:** `make kwsweep` went `SILENT-GAP=2 MISSING=2
+      SUPPORTED=31` -> **`DIVERGENT=1 SUPPORTED=35`**, all five MK/CV words
+      `present SUPPORTED match`. The lone DIVERGENT is `csrlin`, the documented
+      probe artifact.
+      🔴 **KNIVES 4/4 — after THREE faults in the knife harness**, none of them in
+      the fix: a row parser that ate the count and failed all four arms; a ROM
+      guard hashing the main ROM when the keyword table lives in the sub-ROM; and
+      the guard's own INERT fast path finishing inside `make`'s 1-second mtime
+      resolution, so the next arm built against a STALE sub-ROM and measured the
+      previous plant. I then inherited that contaminated result as a prediction.
+      Spec §5.1.
 
 - [x] 🟢 **"RND NOT YET IMPLEMENTED" — THREE STALE COMMENTS, NO DEFECT.** Same
       sweep, same day. `basic/sysvars.inc` said it three times; `fp_rnd` ships as
@@ -1864,7 +1874,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5822 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5832 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -242,6 +242,14 @@ DSKF_TOKEN      equ     $A6     ; DSKF(d)  -> free clusters on the drive (=free 
 ; basic/expr.asm ev_f_ff (numeric result, string argument).
 MKI_TOKEN       equ     $AE     ; MKI$(n)  -> 2-byte LE string of integer n
 CVI_TOKEN       equ     $A8     ; CVI(s$)  -> integer from the first 2 bytes of s$
+; The FLOAT siblings, shipped 2026-09-03 (D-MKSD, docs/spec-basic-mksd.md). Token
+; bytes are BLACK-BOX ORACLE READINGS: `kwsweep`'s crunch layer captured what the
+; CF-3300 stores for `a$=mks$(1)` / `a=cvs("abcd")` and so on -- `FF AF`, `FF B0`,
+; `FF A9`, `FF AA`. Typed input in, stored bytes out; no disassembly.
+MKS_TOKEN       equ     $AF     ; MKS$(n)  -> 4-byte string: the SINGLE-precision bytes
+MKD_TOKEN       equ     $B0     ; MKD$(n)  -> 8-byte string: the DOUBLE-precision bytes
+CVS_TOKEN       equ     $A9     ; CVS(s$)  -> single from the first 4 bytes of s$
+CVD_TOKEN       equ     $AA     ; CVD(s$)  -> double from the first 8 bytes of s$
 ; File/directory management (Phase 2). Tokens oracle-locked to the VG-8020 crunch
 ; (KILL=$D4, NAME=$D3; MSX2 TH Table 2.20). The handlers live in basic/files.asm.
 KILL_TOKEN      equ     $D4     ; KILL "name" — delete a file (statement)
