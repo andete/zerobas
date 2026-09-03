@@ -331,6 +331,31 @@ str_mkf_copy:
                 ldir                        ; the packed bytes ARE the string
                 jr      str_mkf_desc
 str_mkf_int:
+                ; --- D-MKHOOK: MKI$ belongs to the DISK ROM ---------------------
+                ; docs/spec-basic-nodisk.md. The verb's TABLE entry is faithfully
+                ; ours (a diskless VG-8020 crunches MKI$ to `FF AE`), but its
+                ; IMPLEMENTATION is the disk ROM's, reached through H.MKI$. Ask the
+                ; hook: claimed -> CF=1, carry on; unclaimed -> C-BIOS's `ret`
+                ; leaves CF as we set it, so we defer ERR 5. A diskless zerobas is
+                ; then correct BY ABSENCE, the way the reference is, rather than by
+                ; a presence guard bolted onto a verb that is still here.
+                ; ⚠️ DE IS THE VALUE AND THE CALL CROSSES SLOTS. A claimed hook runs
+                ; RST 30h/CALSLT, which is documented to affect DE among others, so
+                ; the operand is guarded across it -- the unclaimed path is a bare
+                ; `ret` and would have hidden this until a disk was present.
+                push    de
+                or      a                   ; CF clear = "nobody claimed it"
+                call    H_MKI
+                pop     de
+                jr      c,str_mkf_int_go
+                ld      a,3                 ; Illegal function call, DEFERRED --
+                call    penderr_set         ; first-error-wins, so it outranks the
+                                            ; syntax error the decline would raise
+                                            ; (stmt_error calls check_expr_errors
+                                            ; before it reaches `ld a,2`)
+                pop     hl                  ; balance the guarded cursor
+                jp      str_eval_no
+str_mkf_int_go:
                 ld      a,e
                 ld      (STRSCR+1),a        ; low byte of n
                 ld      a,d
@@ -341,7 +366,7 @@ str_mkf_desc:
                                             ; target is a [len:1][ptr:2] descriptor)
                 ld      (STRPTR),hl
                 pop     hl                  ; restore the eval cursor
-                jr      str_eval_ok
+                jp      str_eval_ok
 str_eval_maybe_inputd:
                 inc     hl                  ; tentatively past the INPUT token
                 ld      a,(hl)

@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1396 (T-6FE392)8 (T-529ABE)` from `TODO.md:5932 (T-529ABE)`: a
+      `TODO.md:1429 (T-6FE392)8 (T-529ABE)` from `TODO.md:5965 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -828,6 +828,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       in [0,1) on all three machines (`r.range` = 1 everywhere).
       🎯 **A VALUE ROW CANNOT TEST RND** — it is random, so the rows ask only what
       the comment raises: does it EXIST and is it in range. Corrected in place.
+
+- [x] ✅ **D-MKHOOK — THE HOOK MECHANISM WORKS, PROVED ON `MKI$`.** 2026-09-03,
+      [`docs/spec-basic-nodisk.md`](docs/spec-basic-nodisk.md) §9.
+      **The first BASIC-extension hook zerobas has ever claimed, and the first it
+      has ever CALLED** — `HPHYD` was installed for foreign hosts and never
+      invoked here, so the whole round trip (main page 1 -> a RAM `CALLF` stub ->
+      `RST 30h` across slots -> `disk.rom` -> back) was unproven.
+
+          LEN(MKI$(258))   vg8020 ERR 5   zb-disk  2    zb-nodisk ERR 5 ✅
+          ASC(MKI$(1))     vg8020 ERR 5   zb-disk  1    zb-nodisk ERR 5 ✅
+          CVI(MKI$(258))   vg8020 ERR 5   zb-disk 258   zb-nodisk ERR 5 ✅
+
+      📏 **Pins 8 -> 5** in `nodisk-acceptance`; the three rows are now scored as
+      ordinary agreeing rows so the gate enforces they STAY fixed. ⚠️ `k.cvi`
+      moved because its ARGUMENT is `MKI$` — **CVI itself is not hooked yet**, and
+      `v.cvistr` (`CVI("AB")`) still measures CVI alone and is still pinned.
+      🟢 **No regression on the disk side**: `mksd_probe` 0 DIFF / 32.
+      💰 **COST: main page 1 164 -> 146 B free.** Gating one verb COSTS 18 B, which
+      is §8's arithmetic playing out — this migration buys FAITHFULNESS, not space.
+      🔧 `install_hook` factored out of `disk/init.asm` into the free corridor: the
+      pad before the `$41EF` pin is 25 B and one inline install had spent it all, so
+      a second overran and pasmo emitted an EMPTY image (`pad_rom.py` refused it,
+      exactly as its header describes). 9 B per hook now, not 25.
+      🔴 **KNIVES 2/2 — after THREE faults in the harness, none in the fix**: the
+      comparison ran backwards; `os.utime(+1)` on restore left files dated in the
+      FUTURE so the next arm went INERT; and stamping the plant forward too made
+      the source permanently newer than the ROM, so the PREFLIGHT REFUSED TO
+      MEASURE — **and the scorer read that refusal page as "agrees on
+      everything"**. The scorer now refuses a run with no verdict line, and the
+      arms delete the ROMs instead of playing with mtimes.
+      📋 **NEXT:** `MKS$`/`MKD$` share `str_mkf` with `MKI$`, so they need a
+      per-verb hook address at the shared call site; `CVI`/`CVS`/`CVD` share
+      `ev_ff_cv`; `DSKF` has almost no main-side body (spec §8).
 
 - [ ] 🙋 **SHOULD THE DISK-BASIC VERBS LIVE IN `disk.rom` BEHIND A HOOK, AS ON
       REAL HARDWARE? (Joost's question, 2026-09-03.)** Raised while D-MKSD was
@@ -1974,7 +2007,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5932 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5965 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

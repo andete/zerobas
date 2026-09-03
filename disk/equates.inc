@@ -27,6 +27,19 @@ HPHYD           equ     $FFA7   ; PHYDIO hook (5 RAM bytes, default C9)
 ; disk ROM interface). The HPHYD CALLF targets it cross-slot.
 DSKIO_ENTRY     equ     $4010   ; our DSKIO ($4000 + $10)
 
+; --- BASIC-extension hooks (D-MKHOOK, docs/spec-basic-nodisk.md) ------------
+; On real MSX the MAIN ROM owns the disk keywords' TABLE and the DISK ROM supplies
+; their IMPLEMENTATION through these hooks -- which is why a diskless machine
+; tokenises `MKI$` and then answers `Illegal function call`. zerobas implemented
+; every disk verb BASIC-side, so a diskless build ANSWERED instead: 8 measured
+; divergences (probes/basic/basic_probe_nodisk.py).
+; Addresses: the MSX2 Technical Handbook hook table (grade B, docs/allowed-sources.md),
+; CORROBORATED by a black-box diff of the hook region between the VG-8020 (no disk)
+; and the CF-3300 (disk) -- 35 slots carry an `F7 87 <addr> C9` stub there, and
+; three of them were already known in-tree ($FD9F H.TIMI, $FFA7 H.PHYD, $FFCA).
+; scratchpad/hookdiff_probe.py.
+H_MKI           equ     $FE30   ; MKI$ -- the first verb routed this way
+
 ; --- Disk scratch RAM (disk/PROVENANCE.md §Scratch RAM) --------------------
 ; (GETDPB writes the 18-byte DPB into the CALLER's buffer per MSX2 TH, so the disk
 ; ROM reserves no local DPB area.)

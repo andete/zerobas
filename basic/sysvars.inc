@@ -3044,6 +3044,14 @@ VCX_FRAMES      equ     20      ; frames remaining for this voice's current note
 ; $0038 ISR; play_service is main-ROM page-1 resident (reached by a near JP, mapped
 ; whenever the ISR fires -- page-1 tenants run DI, §4a) and does the MUSICF==0 fast-out.
 H_TIMI          equ     $FD9F   ; timer-interrupt hook, 5-byte inter-slot call area
+; --- BASIC-extension hooks the DISK ROM claims (D-MKHOOK) -------------------
+; docs/spec-basic-nodisk.md. On real MSX the MAIN ROM owns the disk keywords'
+; TABLE and the DISK ROM supplies their IMPLEMENTATION through these -- which is
+; why a diskless machine tokenises `MKI$` and then answers Illegal function call.
+; Unclaimed, the slot is C-BIOS's `ret` (its hook-area init $C9-fills
+; $FD9A..$FFE7) and leaves CF exactly as the caller set it, which is what makes
+; "CF=0 -> no disk ROM" a sound test rather than a guess.
+H_MKI           equ     $FE30   ; MKI$ handler (disk/kernel.asm hk_mki)
 ; --- the KEY-trap fn-key hook (interrupt-traps T3, docs/spec-traps-t3-key.md §4) ---
 ; NOT a standard MSX hook: it is added by OUR C-BIOS patch
 ; (cbios-repack/key-trap-hook.patch) because no published hook can see the current

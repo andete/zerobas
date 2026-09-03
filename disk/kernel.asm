@@ -2087,6 +2087,58 @@ dsb_end:
 disk_banner:
                 db      "zerobas Disk BASIC",13,10,0
 
+; --- hk_mki: the H.MKI$ handler (D-MKHOOK, docs/spec-basic-nodisk.md §6) ----
+; ⚠️ DELIBERATELY A SPIKE, AND THE SMALLEST ONE THAT PROVES ANYTHING. Nothing in
+; zerobas had ever CALLED an installed hook -- HPHYD is installed for foreign
+; hosts and never invoked here -- so the whole round trip (main page 1 -> a RAM
+; CALLF stub -> RST 30h across slots -> this ROM -> back) was unproven. This body
+; therefore does the minimum that is still a real answer: it says "a disk ROM is
+; present and claims MKI$".
+;
+; MKI$'s own conversion stays main-side ON PURPOSE. It is four instructions
+; storing DE into STRSCR, and moving it would cost more in cross-slot marshalling
+; than it saves -- docs/spec-basic-nodisk.md §8, where the space argument for the
+; whole migration was withdrawn after measuring how little can actually move.
+; What the hook buys here is FAITHFULNESS, not bytes.
+;
+; Contract (own-design signalling over the published layout, §6):
+;   in   nothing; the argument is already evaluated and the width is in STRSCR
+;   out  CF=1  handled. An unclaimed slot is C-BIOS's `ret`, which leaves CF
+;              exactly as the caller set it -- so CF=0 means "no disk ROM".
+;   Clobbers nothing but the flags.
+hk_mki:
+                scf
+                ret
+
+; --- install_hook: write one 5-byte CALLF stub into a hook slot -------------
+; Layout source: MSX2 Technical Handbook §2 (inter-slot call / CALLF) --
+; `RST 30H (0F7H) ; slot byte ; addr-lo ; addr-hi ; RET (0C9H)`, the same five
+; bytes disk/equates.inc cites for HPHYD. CORROBORATED black-box: a diff of the
+; hook region between the diskless VG-8020 and the CF-3300 shows exactly that
+; shape in all 35 slots the reference disk ROM claims
+; (scratchpad/hookdiff_probe.py, docs/spec-basic-nodisk.md §5.2). No stock
+; routine internals decoded -- only the RAM cell's own byte layout, which is
+; published interface.
+; in:  HL = hook address (a RAM cell in $FD9A..$FFE7)
+;      DE = target address in THIS ROM
+; out: HL advanced past the stub. Clobbers A, HL.
+; Sited here rather than in init.asm because the pad before the $41EF pin is only
+; 25 B and one inline install already spent all of it.
+install_hook:
+                ld      a, $F7              ; +0: RST 30h (CALLF)
+                ld      (hl), a
+                inc     hl
+                ld      a, (HOOK_SLOT)      ; +1: this ROM's slot byte
+                ld      (hl), a
+                inc     hl
+                ld      (hl), e             ; +2: target lo
+                inc     hl
+                ld      (hl), d             ; +3: target hi
+                inc     hl
+                ld      a, $C9              ; +4: RET
+                ld      (hl), a
+                ret
+
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
                 ds      $77B8 - $, $00

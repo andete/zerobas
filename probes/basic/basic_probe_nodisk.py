@@ -79,15 +79,19 @@ CONTROLS = {"c.print", "c.str", "v.eof", "v.lof"}
 # 🔴 THE KNOWN DIVERGENCES, PINNED. (vg8020, zb-nodisk) exactly as measured
 # 2026-09-03. Owned by the TODO.md item "SHOULD THE DISK-BASIC VERBS LIVE IN
 # disk.rom BEHIND A HOOK". A change in EITHER column is a gate failure.
+# ✅ THREE ROWS LEFT THIS SET ON 2026-09-03 (D-MKHOOK) and are now scored as
+# ordinary agreeing rows, so the gate enforces that they STAY fixed:
+#   k.mki      MKI$ is routed through H.MKI$; unclaimed -> deferred ERR 5
+#   v.mkifld   ASC(MKI$(1)) -- the same verb
+#   k.cvi      CVI(MKI$(258)) -- its ARGUMENT is MKI$, so it fails at the inner
+#              call. CVI itself is NOT hooked yet; `v.cvistr` (CVI("AB")) is the
+#              row that still measures CVI alone, and it is still pinned.
 PINNED = {
     "k.mks":    ("'ERR 5 '", "' 4 '"),
     "k.mkd":    ("'ERR 5 '", "' 8 '"),
     "k.cvs":    ("'ERR 5 '", "' 1.5 '"),
-    "k.mki":    ("'ERR 5 '", "' 2 '"),
-    "k.cvi":    ("'ERR 5 '", "' 258 '"),
     "v.dskf":   ("'ERR 5 '", "' 0 '"),
     "v.cvistr": ("'ERR 5 '", "' 16961 '"),
-    "v.mkifld": ("'ERR 5 '", "' 1 '"),
 }
 
 

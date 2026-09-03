@@ -360,3 +360,60 @@ Measured from `build/basic-reloc.sym` and the instruction sequences:
 about one side of a question can still answer the wrong question.** The trailing
 scan was an instrument error; this was worse, because the instrument was right
 and the *inference* was not.
+
+## 9. ✅ D-MKHOOK — the mechanism, proved on one verb
+
+**The first BASIC-extension hook zerobas has ever claimed**, and the first it has
+ever *called*: `HPHYD` was installed for foreign hosts and never invoked here, so
+the round trip — main page 1 → a RAM `CALLF` stub → `RST 30h` across slots →
+`disk.rom` → back — was entirely unproven. `MKI$` is the smallest verb that
+proves it.
+
+| | vg8020 (oracle) | zb-disk | zb-nodisk |
+|---|---|---|---|
+| `LEN(MKI$(258))` | ERR 5 | ` 2 ` | **ERR 5** ✅ |
+| `ASC(MKI$(1))` | ERR 5 | ` 1 ` | **ERR 5** ✅ |
+| `CVI(MKI$(258))` | ERR 5 | ` 258 ` | **ERR 5** ✅ |
+
+Three rows left the pinned set (8 → 5) and are now scored as ordinary agreeing
+rows, so the gate enforces that they stay fixed. `k.cvi` moved because its
+*argument* is `MKI$` — **`CVI` itself is not hooked yet**, and `v.cvistr`
+(`CVI("AB")`) is the row that still measures `CVI` alone. It is still pinned.
+
+**No regression on the disk side:** `scratchpad/mksd_probe.py` is 0 DIFF / 32.
+
+**Cost: main page 1 164 → 146 B** (−18 B) to gate one verb, which is §8's
+arithmetic playing out exactly as predicted — gating costs main-side bytes and
+this migration buys faithfulness, not space.
+
+`install_hook` was factored out of `disk/init.asm` into the free corridor, because
+the pad before the `$41EF` pin is **25 B** and one inline install had already spent
+all of it — a second overran, pasmo emitted an empty image, and `pad_rom.py`
+refused it exactly as its own header describes. Nine bytes per hook now, not 25.
+
+### 9.1 Knives — 2/2, after three faults in the harness
+
+```
+K-MH1  disk/init.asm no longer INSTALLS H.MKI$   zb-disk loses k.cvi k.mki v.mkifld  PASS
+K-MH2  hk_mki returns CF CLEAR instead of set    zb-disk loses k.cvi k.mki v.mkifld  PASS
+```
+
+K-MH1 proves the **install** is load-bearing; K-MH2 proves the **CF convention**
+carries the answer, not merely the presence of a stub — same visible outcome,
+reached by a completely different route.
+
+🔴 **Three harness faults on the way, none in the fix**, and the third is the
+worst kind:
+
+1. **The comparison ran backwards.** `zb-disk` *should* differ from the diskless
+   oracle at base; killing the hook makes it **stop** differing. Looking for
+   newly-differing rows found nothing and failed both arms on a correct fix.
+2. **`os.utime(+1)` on restore left files dated in the future**, so the next arm's
+   plant looked *older* than the ROM and `make` skipped it → INERT. That stamp was
+   the fix for the *previous* knife set; it broke the one after it.
+3. 🔴 **Stamping the plant forward too made the source permanently newer than the
+   built ROM, so `omsx_preflight` REFUSED to measure — and the scorer read that
+   refusal page as "agrees on everything" and reported all 8 rows moving.** The
+   preflight did its job; the harness ignored it. The scorer now returns `None` on
+   a run with no verdict line, and the mtime games are gone entirely: the arms
+   **delete the ROMs** and let `make` rebuild.

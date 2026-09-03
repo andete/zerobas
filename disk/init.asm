@@ -105,19 +105,32 @@ init:
                 ; Do this FIRST, before anything clobbers A.
                 ld      (HOOK_SLOT), a      ; HOOK_SLOT = our slot byte (e.g. $87 = 3-1)
 
-                ; --- install HPHYD ($FFA7) -> DSKIO ($4010) inter-slot CALLF ----
-                ; Write the 5 hook bytes: F7 <slot> 10 40 C9
-                ;   = RST 30h ; slot ; addr-lo ; addr-hi ; RET   (CALLF, MSX2 TH §2)
-                ld      a, $F7              ; +0: RST 30h opcode (CALLF)
-                ld      (HPHYD + 0), a
-                ld      a, (HOOK_SLOT)      ; +1: this ROM's slot byte
-                ld      (HPHYD + 1), a
-                ld      a, low DSKIO_ENTRY  ; +2: target addr low  ($10)
-                ld      (HPHYD + 2), a
-                ld      a, high DSKIO_ENTRY ; +3: target addr high ($40)
-                ld      (HPHYD + 3), a
-                ld      a, $C9              ; +4: RET
-                ld      (HPHYD + 4), a
+                ; --- install the hooks this ROM claims -------------------------
+                ; Each is the standard 5-byte CALLF stub `F7 <slot> <lo> <hi> C9`
+                ; (RST 30h ; slot ; addr-lo ; addr-hi ; RET -- MSX2 TH §2), written
+                ; by the shared `install_hook` helper (disk/kernel.asm).
+                ;
+                ; 🔴 FACTORED 2026-09-03 (D-MKHOOK), AND THE REGION IS WHY. This was
+                ; 25 B of inline writes for ONE hook, and the pad before the $41EF
+                ; pin is 25 B -- so a SECOND inline install overran it and pasmo
+                ; emitted an EMPTY image (caught by tools/pad_rom.py, exactly the
+                ; refusal its header describes). Nine bytes per hook instead of 25,
+                ; and the helper sits in the free $607B-$75A5 corridor where space
+                ; is not scarce.
+                ;
+                ; HPHYD: so a foreign MSX-BASIC / MSX-DOS host reaches our DSKIO.
+                ld      hl, HPHYD
+                ld      de, DSKIO_ENTRY
+                call    install_hook
+                ; H.MKI$: the first BASIC-EXTENSION hook zerobas has ever claimed.
+                ; Until now the main ROM implemented every disk verb itself, so a
+                ; DISKLESS build ANSWERED where a diskless MSX raises ERR 5. With
+                ; this claimed, `str_mkf` finds a handler; with no disk ROM the slot
+                ; is C-BIOS's `ret`, CF stays clear, and the main ROM defers ERR 5 --
+                ; correct BY ABSENCE, which is how the reference gets it right.
+                ld      hl, H_MKI
+                ld      de, hk_mki
+                call    install_hook
 
                 ; --- publish the BDOS entry as an executable JP vector ---------
                 ; $F37D (SYSTEM) is the disk system's BDOS-call jump vector. The
