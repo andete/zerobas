@@ -4252,6 +4252,10 @@ SUBROM_IDX_ERRMSG    equ 22     ; errmsg_tenant (sub/errmsg.asm): the fourteen E
                                 ; program.asm `pm_sub`), which is the only site that
                                 ; computes IX = SUBROM_ENTRY_BASE_P1 +
                                 ; 3*SUBROM_IDX_ERRMSG.
+SUBROM_IDX_PUNUM     equ 24     ; pu_num_tenant (sub/punum.asm): PRINT USING's
+                                ; numeric renderer (D-PUNUM). PAGE 1, because it
+                                ; calls flt_fmt in the main LOW region -- and
+                                ; because main page 1 had 32 B free.
 SUBROM_IDX_PARSELN   equ 23     ; parseln_tenant (sub/lineno.asm): the ASCII
                                 ; line-number scanner `dl_store` runs once per
                                 ; typed/loaded numbered line (D-EVLNO, docs/

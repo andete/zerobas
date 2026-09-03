@@ -22,3 +22,4 @@ widen_uint_to equ 03B42H
 flt_to_int16 equ 03211H
 vars_reset equ 03D12H
 penderr_set equ 0281DH
+flt_fmt equ 0305EH

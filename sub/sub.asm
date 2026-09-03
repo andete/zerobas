@@ -632,6 +632,13 @@ sub_p1_table:
                                                 ;   the PAGE-0 TABLE ABOVE IS FULL, which
                                                 ;   is what actually decides it. Marshals
                                                 ;   BC/HL out through PLN_NUM/PLN_PTR.
+                jp      pu_num_tenant           ; index 24 (SUBROM_IDX_PUNUM): PRINT
+                                                ;   USING's numeric renderer (D-PUNUM,
+                                                ;   sub/punum.asm). PAGE 1 because it
+                                                ;   CALLS flt_fmt in the main low
+                                                ;   region -- the first PRINT USING
+                                                ;   tenant that is not pure RAM.
+
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -818,6 +825,7 @@ sub_p1_ping:
 ; and it would be legal on page 0 too; it is here because the page-0 table is full
 ; to the $0038 vector. Marshals BC/HL through PLN_NUM/PLN_PTR.
                 include "lineno.asm"
+                include "punum.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
 ; __MEAS_SUB_P1_END: page-1 free space is $8000 - __MEAS_SUB_P1_END. Same

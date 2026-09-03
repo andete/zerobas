@@ -268,7 +268,25 @@ pu_emit_tail:
 pu_do_number:
                 call    eval                ; DE = value; HL advanced
                 push    hl                  ; guard the token cursor
+                ; --- D-PUNUM: route by TYPE ------------------------------------
+                ; The integer path is already right for FACTYP==2 (32767 and
+                ; -32768 both agree with the references) and is cheaper, so it
+                ; stays. Everything else -- a fraction, or a magnitude past int16
+                ; -- goes to the sub-ROM renderer, which formats with the main
+                ; ROM's OWN flt_fmt and rounds half-up. Before this, `eval` handed
+                ; back a float and DE was read anyway: `USING"#######";1234567`
+                ; printed 0. docs/spec-basic-pufloat.md §5.
+                ld      a,(FACTYP)
+                cp      2
+                jr      z,pu_num_int
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PUNUM
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      b,a                 ; the rendered length
+                jr      pu_num_typed
+pu_num_int:
                 call    pu_fmt_int          ; NUMBUF = "[-]digits",0 ; B = length
+pu_num_typed:
                 ; D-PUSIGN: `+`/`-` sign placement, done sub-side (pure RAM over
                 ; NUMBUF; ~60 B, and page 1 had 50). Returns the new length in A.
                 ld      a,(PU_FLAGS)

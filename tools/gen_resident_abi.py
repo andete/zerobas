@@ -62,6 +62,11 @@ REQUIRED_SUB = [
     "flt_to_int16",
     "vars_reset",
     "penderr_set",
+    # D-PUNUM: PRINT USING's numeric renderer (sub/punum.asm) renders the live
+    # value with the main ROM's own float formatter rather than a second copy of
+    # one -- so `PRINT USING` and `PRINT` cannot disagree about what a number
+    # looks like. Low-region by construction (basic/float.asm).
+    "flt_fmt",
 ]
 
 # --- the DISK ROM's profile (D-DISKABI, docs/spec-basic-nodisk.md §13) -------

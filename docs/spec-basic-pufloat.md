@@ -141,15 +141,69 @@ slices established works here too, one level up:
 
 Main side then pays only a flag test and a CALSLT, as `D-PUSIGN` does.
 
-## 6. Still open — one slice, not three
+## 6. ✅ D-PUNUM — the float renderer, and the `#` field is right now
+
+`pu_num_tenant` (`sub/punum.asm`), a sub-ROM **page-1** tenant — the first
+`PRINT USING` tenant that is not pure RAM. It calls the main ROM's **own**
+`flt_fmt` ($305E, low region) through the generated
+`sub/basic-resident-abi.inc`, so `PRINT USING` and `PRINT` cannot disagree about
+what a number looks like, and a low-region shift cannot leave it calling a stale
+address.
+
+| row | was | now | ref |
+|---|---|---|---|
+| `c.over16` | `      0` | `1234567` | `1234567` ✅ |
+| `c.round` | `    1` | `    2` | `    2` ✅ |
+| `c.round2` | `    2` | `    3` | `    3` ✅ |
+| `d.roundup` | ` 1.` | ` 2.` | ` 2.` ✅ |
+
+**4 fixed, 0 broken.** The integer path stays for `FACTYP==2` — already correct
+at both boundaries and cheaper — and everything else routes to the tenant.
+
+🎯 **Rounding the rendered TEXT is exact here, and that is not a shortcut.** MSX
+floats are BCD, so `flt_fmt`'s decimal output *is* the value: there is no binary
+representation error to defeat and no tie-breaking to reproduce. `c.round` and
+`c.round2` pin the direction as **half-up**, not banker's.
+
+**Cost: page 1 32 → 12 B; sub page 1 1586 → 1480 B.**
+
+### 6.1 Knife — and a scoring design fix
+
+```
+K-PN1  make the renderer TRUNCATE instead of rounding
+       must-move  c.round, c.round2, d.roundup   -> yes
+       must-hold  c.over16                       -> held      PASS
+```
+
+`c.over16` is the discriminator: `1234567` has no fraction, so rounding cannot
+touch it — only *reaching the float path* can. Had it moved too, the arm would
+merely have said "the tenant is wired up", which the four green rows already say.
+
+⚠️ **The arm first read FAIL against an exact expected set**, because truncating
+moves **every** fractional row — including the ten still waiting on `.`, which
+are wrong before and after. That is the third exact-set arm this session to fail
+on already-wrong rows shifting. The arm now scores the **discrimination**
+(`must-move` ⊆ moved, `must-hold` ∩ moved = ∅) rather than an exact set, which is
+a design fix and not a patched expectation.
+
+## 7. Still open — and page 1 is at 12 B
 
 `.` `,` `^^^^`. **Nine of the divergent rows are now closed**; what remains needs
 the decimal point, and `p.dot` / `n.dot` / `a.dot` stay divergent until `.` lands
 — each of those combines a shipped specifier with `.`, so they will fall out of
 that slice rather than needing new sign or fill work.
 
-🔴 **PAGE 1 IS AT 32 B** (2026-09-03) and `.` is the largest of the three: it
-needs rounding at a decimal position, not just placement. The scanner and any
-buffer work can go sub-side as these two did, but the emitter cannot. **A page-1
-carve, or moving more of `pu_do_number` sub-side, is now the prerequisite** —
-not an optimisation to do afterwards.
+🔴 **PAGE 1 IS AT 12 B** (2026-09-03, after D-PUNUM). That is not "tight", it is
+**spent**: the next slice cannot add main-side code at all.
+
+`.` `,` `^^^^` all now have their renderer — `pu_num_tenant` already produces the
+digits and can take a decimal count, a grouping flag and an exponent form without
+main-side growth, since the flags travel in `PU_FLAGS` and the result in `NUMBUF`.
+What each still needs main-side is **nothing**, if the scanner sets the flag and
+the tenant reads it. That is the shape to keep.
+
+⚠️ **But anything that does need main-side bytes is blocked until page 1 is
+carved.** The classic routes are recorded as exhausted (dup-span 4 B, page-0
+eviction closed to printing verbs, `jp`→`jr` fully banked), so the route is more
+eviction — `pu_do_number`'s pad/emit tail is the obvious candidate, and it is
+pure `pchar` work.

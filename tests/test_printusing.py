@@ -58,6 +58,7 @@ def run():
     build()
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     NUMBUF = m.sym["NUMBUF"]
+    FACTYP = m.sym["FACTYP"]
     STRPTR = m.sym["STRPTR"]
     fails = 0
 
@@ -93,7 +94,17 @@ def run():
     #   width <  len  -> '%' then the full number (MSX overflow marker)
     # -----------------------------------------------------------------------
     def num_case(value, width, want):
-        m.trap("eval", lambda mm, v=value: setattr(mm.cpu, "de", v & 0xFFFF))
+        # 🔴 THE STUB MUST SET FACTYP TOO, and until D-PUNUM nothing noticed.
+        # Real `eval` leaves the RESULT TYPE in FACTYP alongside DE; this stub set
+        # only DE, which was invisible while pu_do_number read DE unconditionally.
+        # It now routes FACTYP != 2 to the sub-ROM float renderer, and a stub that
+        # leaves FACTYP at whatever RAM held sent every integer down a path this
+        # emulator-free harness cannot follow -- four cases printed 0.
+        # A stub that models a routine has to model the part the caller reads.
+        def _eval_stub(mm, v=value):
+            mm.cpu.de = v & 0xFFFF
+            mm.poke(FACTYP, 2)              # integer result, as `eval` sets it
+        m.trap("eval", _eval_stub)
         m.poke(m.sym["PU_W"], width)
         out = m.capture_chput()
         m.call("pu_do_number")

@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1573 (T-6FE392)8 (T-529ABE)` from `TODO.md:6109 (T-529ABE)`: a
+      `TODO.md:1594 (T-6FE392)8 (T-529ABE)` from `TODO.md:6130 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1091,7 +1091,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 **THE CONTROLS ARE WHY IT HID**: `c.hash`/`c.neg`/`c.over` all used SMALL
       INTEGERS, agreed, and I read that as "the `#` field is already right". A
       control only certifies the ground it stands on.
-      📋 **SO `.` `,` `^^^^` ARE ONE SLICE, NOT THREE** — PRINT USING needs a
+      ✅ **D-PUNUM SHIPPED THE RENDERER (same day)** — `pu_num_tenant`
+      (`sub/punum.asm`), a sub-ROM **PAGE-1** tenant calling the main ROM's OWN
+      `flt_fmt` through the generated ABI, so `PRINT USING` and `PRINT` cannot
+      disagree about what a number looks like. **4 fixed, 0 broken**: `c.over16`
+      `1234567`, `c.round` 2, `c.round2` 3, `d.roundup` ` 2.`. The integer path
+      stays for `FACTYP==2` (already correct at both boundaries, and cheaper).
+      🎯 **Rounding the rendered TEXT is EXACT** — MSX floats are BCD, so
+      `flt_fmt`'s decimal output IS the value; no binary tie-breaking to
+      reproduce, and the references pin half-up.
+      🔴 **KNIFE 1/1 — and the scoring itself needed a design fix.** Truncating
+      instead of rounding moves EVERY fractional row, including the ten still
+      waiting on `.`, so an exact-set arm read FAIL on a correct fix (the THIRD
+      such this session). It now scores the DISCRIMINATION: `c.round`/`c.round2`/
+      `d.roundup` must MOVE and `c.over16` — which has no fraction — must HOLD.
+      🔴 **AND A REGRESSION THE UNIT TEST CAUGHT THAT THE EMULATOR PROBE DID
+      NOT**: `tests/test_printusing.py` stubs `eval` and set only DE, never
+      FACTYP. That was invisible while `pu_do_number` read DE unconditionally;
+      the type test sent every stubbed integer to a sub-ROM the emulator-free
+      harness cannot reach, and four cases printed 0. **A stub that models a
+      routine must model the part the caller reads.**
+      💰 **COST: page 1 32 -> 12 B; sub page 1 1586 -> 1480 B.**
+      📋 **`.` `,` `^^^^` ARE ONE SLICE, NOT THREE** — PRINT USING needs a
       FLOAT RENDERER, which fixes the three rows above on the way past. It also
       re-explains `m.big` (` 0,`), filed as a comma gap and really the same
       truncation. Shape: a SUB-ROM PAGE-1 tenant (1586 B free) calling `flt_fmt`
@@ -2151,7 +2172,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6109 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6130 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
