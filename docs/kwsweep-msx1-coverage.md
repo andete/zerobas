@@ -24,7 +24,9 @@ gate `make kwsweep` · reference Philips VG-8020 · zerobas
 > against a `rm -rf build && make basic-reloc` of `e9843c4` (page-1 free 8 B, low
 > region 5 B), so the ROM hash and the git rev now agree. **The main-ROM hash
 > moved (`05f43b…` → `4ea7a2…`) and every tally below is unchanged** —
-> SILENT-GAP=8, MISSING=6, NO-ORACLE=5. The findings were not an artifact of the
+> SILENT-GAP=8, MISSING=6, NO-ORACLE=5 (⚠️ those NO-ORACLE five were a BLIND
+> APPARATUS, not an absence of oracle — see the NO-ORACLE section, closed
+> 2026-09-03). The findings were not an artifact of the
 > stale build. The probe fingerprints the ROMs before and after every run and
 > aborts the report if they change mid-flight — the machine XML points straight
 > at the project tree, so a concurrent `make` in another session silently changes
@@ -179,16 +181,49 @@ reference itself does for any non-keyword containing a keyword. It round-trips
 through `LIST` unchanged. It is recorded because it looks alarming in a hex dump
 and is not a defect.
 
-### NO-ORACLE — not answered by this run (5)
+### NO-ORACLE — ✅ CLOSED 2026-09-03 (D-KWORACLE), and it was blocking four findings
 
-`MKI$` `MKS$` `MKD$` `CVS` `CVD`. The MK/CV family lives in Disk BASIC, and the
-default reference is a **diskless** VG-8020 while the zerobas side is
-`..._REPACK_DISK` — so these rows were comparing *machines*, not *languages*. The
-probe now routes them to `National_CF-3300`, which does not yet yield a readable
-SCREEN-0 capture under `omsx_repl` (a trivial `PRINT 1+1` returns VRAM pattern
-garbage — likely still in the boot video mode when the capture fires). Rather than
-answer from the wrong machine, the probe reports `NO-ORACLE`. Blocks no finding:
-`MKS$`/`MKD$`/`CVS`/`CVD` are already tracked as deferred in `TODO.md`.
+This section used to read: *"the probe now routes them to `National_CF-3300`,
+which does not yet yield a readable SCREEN-0 capture under `omsx_repl` (a trivial
+`PRINT 1+1` returns VRAM pattern garbage — likely still in the boot video mode
+when the capture fires). Rather than answer from the wrong machine, the probe
+reports `NO-ORACLE`. **Blocks no finding.**"*
+
+🔴 **THE DIAGNOSIS IN THAT PARENTHESIS WAS RIGHT, AND THE CONCLUSION AFTER IT WAS
+WRONG.** The CF-3300 really was still in its boot video mode — `run_cases`
+defaults to `boot=8.0`, which is right for the VG-8020 and ~6 s short for the
+CF-3300, and that machine also needs a `SCREEN 0` before the scrape can read
+anything. Both fixes were **already in this tree**, in
+`basic_probe_deffn.SIDES` (`boot=14.0`, `reset=("", "SCREEN 0", "NEW")`); the two
+tables simply never met. `ref_capture` now carries per-machine boot and reset.
+
+And it blocked four findings:
+
+| word | was | now |
+|---|---|---|
+| `MKI$` | NO-ORACLE | **SUPPORTED, match** — the family CONTROL |
+| `MKS$` | NO-ORACLE | **SILENT-GAP** — ref `4`, zerobas `0` |
+| `MKD$` | NO-ORACLE | **SILENT-GAP** — ref `8`, zerobas `0` |
+| `CVS` | NO-ORACLE | **MISSING** — ref `1`, zerobas `Type mismatch` |
+| `CVD` | NO-ORACLE | **MISSING** — ref `1`, zerobas `Type mismatch` |
+
+🎯 **THE FAMILY CONTROL IS WHAT MADE IT VISIBLE, AND ONLY IN HINDSIGHT.** `MKI$`
+is in the row set precisely because it ships on **both** sides — so a
+`NO-ORACLE` verdict on *it* is impossible unless the apparatus is broken. That
+was sitting in the output the whole time. The summary line read
+`NO-ORACLE=5  SUPPORTED=30  DIVERGENT=1`, with **no `MISSING` and no
+`SILENT-GAP` count at all**, which is indistinguishable at a glance from a clean
+bill of health.
+
+⚠️ **`MKS$`/`MKD$` are `SILENT-GAP`, this probe's own "worst kind".** They are
+absent from `basic/kwtable.inc` entirely, so `MKS$(1.5)` is not tokenised as a
+keyword — it parses as the string **array** `MKS$(1)` and answers `0`. A silent
+wrong answer, not a refusal.
+
+The summary is now `SILENT-GAP=2  MISSING=2  DIVERGENT=1  SUPPORTED=31`.
+Exactly six rows changed verdict between the blind run and this one — the five
+above plus `lfiles` (crunch-only, `ABSENT` → `present`) — and every one of them
+is a row routed to the second oracle, which is the bound a fix like this needs.
 
 ### Not executed — 18 words, crunch-only
 

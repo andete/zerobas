@@ -506,13 +506,38 @@ def main() -> int:
     def ref_machine_for(note: str) -> str:
         return args.disk_machine if note.startswith("NEEDS-DISK:") else args.machine
 
+    # 🔴 D-KWORACLE (2026-09-03): THE SECOND REFERENCE WAS NEVER BOOTED IN TIME,
+    # AND ALL FIVE OF ITS WITH-ORACLE ROWS CAME BACK EMPTY. `run_cases` defaults
+    # to `boot=8.0`, which is right for the VG-8020 and ~6 s SHORT for the
+    # CF-3300; and the CF-3300 boots into a screen mode the scrape cannot read
+    # until a `SCREEN 0`. So every NEEDS-DISK row was typed into an unbooted
+    # machine: layer 2 got `ref ''` -> NO-ORACLE, and layer 1 read TXTTAB before
+    # the line was there -> `<not stored>` -> ABSENT, which called even `MKI$`
+    # absent from the reference's own keyword table.
+    #
+    # 🎯 THE FAMILY CONTROL IS WHAT MADE IT VISIBLE. `mki` is in the row set
+    # precisely because MKI$/CVI ship on BOTH sides; when the control reports no
+    # oracle, nothing else in the family can be believed. It did, and the summary
+    # line -- `NO-ORACLE=5`, with no MISSING count -- reads like a clean bill of
+    # health if you do not look at which five.
+    #
+    # The values here are the SAME ones basic_probe_deffn.SIDES already carries
+    # for these machines; the two tables disagreeing is what let this sit.
+    MACH_BOOT = {"National_CF-3300": 14.0}
+    MACH_RESET_PRE = {"National_CF-3300": ("", "SCREEN 0")}
+
     def ref_capture(specs, sel_rows, **kw):
         """Capture `specs` on the reference, splitting the batch by which
         reference machine each row needs, then re-interleaving in row order."""
         out: list[str | None] = [None] * len(specs)
         for mach in sorted({ref_machine_for(r[4]) for r in sel_rows}):
             idx = [i for i, r in enumerate(sel_rows) if ref_machine_for(r[4]) == mach]
-            got = omsx_repl.run_cases(mach, [specs[i] for i in idx], batch=batch, **kw)
+            mkw = dict(kw)
+            mkw["boot"] = MACH_BOOT.get(mach, 8.0)
+            pre = MACH_RESET_PRE.get(mach, ())
+            if pre:
+                mkw["reset"] = pre + tuple(kw.get("reset", ()))
+            got = omsx_repl.run_cases(mach, [specs[i] for i in idx], batch=batch, **mkw)
             for i, g in zip(idx, got):
                 out[i] = g
         return out
