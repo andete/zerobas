@@ -18,8 +18,8 @@ import hashlib, os, re, subprocess, sys
 ROMS = ("build/zerobas-main-eu.rom", "build/sub.rom")
 ARMS = {
     "K-PN1": ("sub/punum.asm",
-              "                cp      '5'\n                jr      c,pnt_end           ; below half -> plain truncation",
-              "                jr      pnt_end             ; KNIFE: always truncate",
+              "                cp      '5'\n                jr      c,pnt_point         ; below half -> plain truncation",
+              "                jr      pnt_point           ; KNIFE: always truncate",
               {"c.round", "c.round2", "d.roundup"},   # MUST move
               {"c.over16"}),                          # MUST NOT move
 }

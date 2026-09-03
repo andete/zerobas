@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1635 (T-6FE392)8 (T-529ABE)` from `TODO.md:6171 (T-529ABE)`: a
+      `TODO.md:1672 (T-6FE392)8 (T-529ABE)` from `TODO.md:6208 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1168,6 +1168,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       page-1 carve, or moving more of `pu_do_number` sub-side, is now the
       prerequisite** — not an optimisation to do afterwards.
 
+- [x] ✅ **D-PUDOT — `PRINT USING`'s `.` DECIMAL SPECIFIER SHIPS** (2026-09-04,
+      [`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md) §12), on the
+      SECOND attempt; §9 records the first and its revert.
+
+          PRINT USING"##.##";1.5          refs ` 1.50`      was ` 1`
+          PRINT USING"##.";1.5            refs `  2.`       was ` 2`
+          PRINT USING"####.####";3.14159  refs `   3.1416`  was `    3`
+
+      **12 rows green**, taking
+      [`scratchpad/pufloat_probe.py`](scratchpad/pufloat_probe.py) to **11
+      divergent of 43** — and every one of the 11 is now in a family with no
+      code at all (`,`, `^^^^`) plus `d.lead`. Knives **6/6**
+      ([`scratchpad/pudot_knives.py`](scratchpad/pudot_knives.py)).
+      🎯 **THE MODEL CAME BEFORE THE ASSEMBLY.** The reverted attempt was written
+      straight into Z80 and crashed the fixture; this one was written in Python
+      and checked against the measured values first. It settled two corner cases
+      the first attempt had wrong — `##.` (zero places) still PRINTS the point,
+      and rounding can GROW the integer part (`##.` with 9.5 is `10.`). Those two
+      existed only as model predictions, so they were added to the probe as
+      `d.grow` / `d.growfrac` and **confirmed on both references** before the code
+      was trusted; they are also the only rows that witness knife K-PD2.
+      🔴 **ELEVEN GREEN ROWS HID A BUG EXACTLY ONE ROW COULD SEE** (§12.3): the
+      new scanner code saved the field width with `push bc` and restored it with
+      `pop bc`, which preserves `B` — **and rewinds `C`, the scan cursor**. Every
+      `d.*` row is blind to it (a re-entered field with no argument left is just a
+      trailing literal); `##.##-` is not, because the character *after* the
+      decimal part is load-bearing there. That row went green with the fix.
+      🔴 **THE HARNESS LOST TWO RUNS TO A PLANT THAT OUTLIVED ITS RUN** (§12.5) —
+      `finally` does not survive `SIGTERM`, and the next run read the planted file
+      as its own baseline. Plants now go through a **disk sidecar** restored at
+      startup; the sidecar's existence is the alarm.
+
 - [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
       DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
       (review tier, [`scratchpad/pusing_probe.py`](scratchpad/pusing_probe.py),
@@ -1178,13 +1210,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       precondition is satisfied and the specs are simply missing. Both references
       agree on every row below:
 
-          PRINT USING"##.##";1.5      refs ` 1.50`      here ` 1.`
-          PRINT USING"##.##";5        refs ` 5.00`      here ` 5.`
-          PRINT USING"#,###";1234     refs `1,234`      here `%1234,`
-          PRINT USING"+##";5          refs ` +5`        here `+ 5`
-          PRINT USING"##-";5          refs ` 5 `        here ` 5-`
-          PRINT USING"**##";5         refs `***5`       here `** 5`
-          PRINT USING"##.##^^^^";1.5  refs ` 1.50E+00`  here ` 1.`
+          PRINT USING"##.##";1.5      refs ` 1.50`      ✅ D-PUDOT
+          PRINT USING"##.##";5        refs ` 5.00`      ✅ D-PUDOT
+          PRINT USING"#,###";1234     refs `1,234`      🔴 here `%1234,`
+          PRINT USING"+##";5          refs ` +5`        ✅ D-PUSIGN
+          PRINT USING"##-";5          refs ` 5 `        ✅ D-PUSIGN
+          PRINT USING"**##";5         refs `***5`       ✅ D-PUSTAR
+          PRINT USING"##.##^^^^";1.5  refs ` 1.50E+00`  🔴 here ` 1.50^^^^`
+
+      🟢 **AS OF 2026-09-04 ONLY `,` AND `^^^^` REMAIN** (5 rows each), plus
+      `d.lead` (`.##`, an empty integer part — a SCANNER entry point, not a
+      renderer change: `ptf_num` only starts a field on `#`). `^^^^`'s MANTISSA
+      is already correct; only the exponent is missing.
 
       🟢 **FOUR CONTROLS GREEN** (`###`, `## ` repeat, `!`, a literal `[#]`), so
       the formatter's own machinery is right and this is the specifier set.
@@ -2213,7 +2250,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6171 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6208 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

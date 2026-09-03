@@ -38,6 +38,30 @@
 ; `flt_fmt` leaves FOUTBUF as: a sign column (`-` or a SPACE), the digits, then
 ; ONE trailing space. We keep a `-`, drop the space column, copy digits until the
 ; run ends, and round on the first fraction digit.
+; --- pu_num_tenant: the live numeric value -> NUMBUF, to PU_DEC places -------
+;   in   FAC / FACTYP hold the evaluated argument
+;        PU_FLAGS bit6 = a `.` was scanned; PU_DEC = how many places
+;   out  NUMBUF = "[-]digits[.digits]",0 ; A = its length. Clobbers AF, BC, DE, HL.
+;
+; 🎯 THE DIGITS ARE BUILT CONTIGUOUSLY AND THE POINT IS INSERTED LAST, so rounding
+; at N places is ONE carry walk over ONE array -- there is no decimal point in the
+; middle for the carry to cross. C carries the INTEGER-digit count throughout, and
+; the carry growing the number (9.5 -> 10.) simply increments it.
+;
+; ⚠️ DIGSTART IS RECOMPUTED, NOT STACKED. The first attempt at this (D-PUDOT,
+; reverted) juggled it through push/pop across three branches and crashed. It is
+; NUMBUF, or NUMBUF+1 when a `-` leads -- cheaper to derive than to keep, and it
+; removes every unbalanced-stack path at once.
+;
+; ⚠️ `##.` -- a point with ZERO places -- still prints the point (` 2.`, measured).
+; The reverted attempt returned early on PU_DEC==0 and lost it.
+;
+; ⚠️ A format with an EMPTY integer part (`.##`) never reaches here: ptf_num only
+; starts a numeric field on a `#`, so a leading `.` is still scanned as a literal.
+; `d.lead` stays divergent until that scanner entry point exists.
+;
+; The algorithm was checked as a model against the eleven measured `d.*` values
+; (plus the two carry-growth cases) BEFORE this was written.
 pu_num_tenant:
                 call    flt_fmt             ; HL -> FOUTBUF
                 ld      de,NUMBUF
@@ -48,30 +72,64 @@ pu_num_tenant:
                 inc     de
 pnt_nosign:
                 inc     hl                  ; past the sign column either way
-                push    de                  ; remember where the DIGITS start --
-                                            ; the carry walk must not run into the
-                                            ; minus sign
-pnt_copy:
+                ld      c,0                 ; C = integer digits written
+pnt_int:
                 ld      a,(hl)
-                cp      '.'
-                jr      z,pnt_frac
                 cp      '0'
-                jr      c,pnt_end           ; not a digit (space, 0, or `E`) -> done
+                jr      c,pnt_intdone
                 cp      '9' + 1
-                jr      nc,pnt_end
+                jr      nc,pnt_intdone
                 ld      (de),a
                 inc     de
                 inc     hl
-                jr      pnt_copy
-pnt_frac:
-                ; round half-up on the FIRST fraction digit, then drop the rest
+                inc     c
+                jr      pnt_int
+pnt_intdone:
+                ld      a,c
+                or      a
+                jr      nz,pnt_places
+                ld      a,'0'               ; a pure fraction: emit the leading 0
+                ld      (de),a              ; the reference shows for `#.##`
+                inc     de
+                inc     c
+pnt_places:
+                ld      b,0                 ; B = decimal places wanted
+                ld      a,(PU_FLAGS)
+                bit     6,a
+                jr      z,pnt_atdot
+                ld      a,(PU_DEC)
+                ld      b,a
+pnt_atdot:
+                ld      a,(hl)              ; step past the source `.` so HL walks
+                cp      '.'                 ; the fraction digits
+                jr      nz,pnt_frac
                 inc     hl
+pnt_frac:
+                ld      a,b
+                or      a
+                jr      z,pnt_round
+pnt_frlp:
                 ld      a,(hl)
+                cp      '0'
+                jr      c,pnt_frpad
+                cp      '9' + 1
+                jr      nc,pnt_frpad
+                inc     hl                  ; a real source digit
+                jr      pnt_frput
+pnt_frpad:
+                ld      a,'0'               ; source exhausted -- pad, and do NOT
+                                            ; advance HL, so the rounding digit
+                                            ; below stays absent
+pnt_frput:
+                ld      (de),a
+                inc     de
+                djnz    pnt_frlp
+pnt_round:
+                ld      a,(hl)              ; first source digit past the cut
                 cp      '5'
-                jr      c,pnt_end           ; below half -> plain truncation
-                ; --- carry the increment back through the digits ---------------
-                pop     bc                  ; BC = first digit position
-                push    bc
+                jr      c,pnt_point         ; below half -> plain truncation
+                push    de                  ; the end of the digits
+                call    pnt_digstart        ; HL = first digit
 pnt_carry:
                 dec     de
                 ld      a,(de)
@@ -79,55 +137,70 @@ pnt_carry:
                 jr      z,pnt_nine
                 inc     a
                 ld      (de),a
-                jr      pnt_carry_done
+                pop     de                  ; back to the end
+                jr      pnt_point
 pnt_nine:
                 ld      a,'0'
                 ld      (de),a              ; 9 -> 0 and keep carrying
                 ld      a,d
-                cp      b
+                cp      h
                 jr      nz,pnt_carry
                 ld      a,e
-                cp      c
+                cp      l
                 jr      nz,pnt_carry
-                ; ran off the front: every digit was a 9, so the number grows by
-                ; one place (9.5 -> 10). Shift right and write the leading 1.
-                call    pnt_grow
-pnt_carry_done:
-                pop     de                  ; DE = first digit position
-                call    pnt_end_of           ; DE -> the terminator position
-                jr      pnt_term
-pnt_end:
-                pop     bc                  ; discard the remembered start
+                ; every digit carried: the number gains a place (9.5 -> 10.).
+                ; The run is all '0' now, so growing it is a write, not a move.
+                pop     de
+                ld      a,'0'
+                ld      (de),a
+                inc     de
+                call    pnt_digstart
+                ld      (hl),'1'
+                inc     c                   ; one more integer digit
+pnt_point:
+                ld      a,(PU_FLAGS)
+                bit     6,a
+                jr      z,pnt_term          ; no `.` in the format at all
+                ; fraction length = end - DIGSTART - C. NUMBUF is 8 bytes and the
+                ; widest result fits, so neither subtraction borrows across a page.
+                call    pnt_digstart
+                ld      a,e
+                sub     l
+                sub     c
+                ld      b,a                 ; B = fraction digits (may be 0)
+                push    de                  ; the shift moves DE
+                ld      h,d
+                ld      l,e
+                inc     hl                  ; HL = the new end
+                ld      a,b
+                or      a
+                jr      z,pnt_putdot        ; `##.` -- no fraction to move
+pnt_shift:
+                dec     de
+                dec     hl
+                ld      a,(de)
+                ld      (hl),a
+                djnz    pnt_shift
+pnt_putdot:
+                dec     hl
+                ld      (hl),'.'            ; lands where the fraction began
+                pop     de
+                inc     de                  ; one byte longer overall
 pnt_term:
                 xor     a
                 ld      (de),a              ; 0-terminate
-                ; A = length
                 ld      hl,NUMBUF
                 ld      a,e
                 sub     l
                 ret
 
-; pnt_end_of -- DE points at the first digit; advance it past the digit run.
-pnt_end_of:
-                ld      a,(de)
-                cp      '0'
-                ret     c
-                cp      '9' + 1
-                ret     nc
-                inc     de
-                jr      pnt_end_of
-
-; pnt_grow -- every digit carried, so the run gains a place. BC = the first digit
-; position; DE is at it. Shift the run one right and write '1' at the front.
-; The run is all '0' by now, so "shifting" is just writing one more '0' at the
-; end and putting the '1' in front -- no block move is needed.
-pnt_grow:
-                push    de
-                call    pnt_end_of
-                ld      a,'0'
-                ld      (de),a              ; extend the run by one place
-                inc     de
-                pop     de
-                ld      a,'1'
-                ld      (de),a
+; pnt_digstart -- HL = NUMBUF's first DIGIT, stepping past a leading `-`.
+; Clobbers AF and HL only, which is why it can be called from inside the carry
+; walk without disturbing DE, BC or the count in C.
+pnt_digstart:
+                ld      hl,NUMBUF
+                ld      a,(hl)
+                cp      '-'
+                ret     nz
+                inc     hl
                 ret

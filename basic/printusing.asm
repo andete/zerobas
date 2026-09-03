@@ -278,7 +278,17 @@ pu_do_number:
                 ; printed 0. docs/spec-basic-pufloat.md §5.
                 ld      a,(FACTYP)
                 cp      2
+                jr      nz,pu_num_flt
+                ; D-PUDOT: an INTEGER with a `##.##` format still needs the
+                ; renderer -- ` 5.00`, not ` 5`. Its value is in DE, which CALSLT
+                ; destroys, so widen and pack it into FAC first.
+                ld      a,(PU_FLAGS)
+                bit     6,a
                 jr      z,pu_num_int
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                call    round_and_finalize
+pu_num_flt:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PUNUM
                 call    subrom_call
                 jp      c,subrom_absent_error

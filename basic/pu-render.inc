@@ -25,11 +25,12 @@
 ; Clobbers A, B, C, DE, HL.
 pu_to_field:
                 ld      a,(PU_FLAGS)
-                and     $C1                 ; clear "wrapped" (bit1), the asterisk
-                                            ; fill (bit2) and the sign specifier
-                                            ; (bits 3-5, D-PUSIGN) -- all per-FIELD
-                                            ; state. Bit0 (trailing separator) is
-                                            ; per-STATEMENT and must survive.
+                and     $81                 ; clear "wrapped" (bit1), the asterisk
+                                            ; fill (bit2), the sign specifier
+                                            ; (bits 3-5) and the decimal flag
+                                            ; (bit6) -- all per-FIELD state. Bit0
+                                            ; (trailing separator) is per-STATEMENT
+                                            ; and must survive.
                 ld      (PU_FLAGS),a
 ptf_scan:
                 ld      a,(PU_POS)
@@ -91,6 +92,51 @@ ptf_num_lp:
                 inc     c
                 jr      ptf_num_lp
 ptf_num_done:
+                ; --- D-PUDOT: a `.` and its own `#` run, right after this one ----
+                ; `##.##` is FIVE wide: the point takes a position and so does each
+                ; decimal place. The count goes in PU_DEC for the renderer.
+                ld      a,(PU_FMTLEN)
+                cp      c
+                jr      z,ptf_num_sign      ; format ended: no decimal part
+                ld      e,c
+                ld      d,0
+                ld      hl,PU_FMT
+                add     hl,de
+                ld      a,(hl)
+                cp      '.'
+                jr      nz,ptf_num_sign
+                inc     c                   ; consume the point
+                xor     a
+                ld      (PU_DEC),a
+                ; ⚠️ COUNT STRAIGHT INTO PU_DEC, do NOT borrow B. B holds the
+                ; integer-digit width and C the scan cursor, so the obvious
+                ; `push bc` / `ld b,0` / `pop bc` preserves the width and REWINDS
+                ; THE CURSOR -- the scanner then re-reads the decimal `#`s instead
+                ; of the character after them. That is invisible on all eleven
+                ; `d.*` rows (a field with no argument left is just a trailing
+                ; literal) and visible on exactly ONE: `##.##-`, where the
+                ; trailing sign is the character the cursor never reached.
+ptf_dec_lp:
+                ld      a,(PU_FMTLEN)
+                cp      c
+                jr      z,ptf_dec_done
+                ld      e,c
+                ld      d,0
+                ld      hl,PU_FMT
+                add     hl,de
+                ld      a,(hl)
+                cp      '#'
+                jr      nz,ptf_dec_done
+                ld      a,(PU_DEC)
+                inc     a
+                ld      (PU_DEC),a
+                inc     c
+                jr      ptf_dec_lp
+ptf_dec_done:
+                ld      a,(PU_FLAGS)
+                set     6,a                 ; a decimal part is present
+                ld      (PU_FLAGS),a
+ptf_num_sign:
                 ; --- D-PUSIGN: a TRAILING `+` or `-` right after the run --------
                 ld      a,(PU_FMTLEN)
                 cp      c
@@ -130,8 +176,18 @@ ptf_num_sw:
                 ; D-PUSIGN: the sign character occupies a position too --
                 ; `+##` with 5 is ` +5`, three wide.
                 bit     3,a
-                jr      z,ptf_num_w
+                jr      z,ptf_num_dw
                 inc     b
+ptf_num_dw:
+                ; D-PUDOT: the point plus every decimal place
+                bit     6,a
+                jr      z,ptf_num_w
+                inc     b                   ; the `.` itself
+                push    af
+                ld      a,(PU_DEC)
+                add     a,b
+                ld      b,a
+                pop     af
 ptf_num_w:
                 ld      a,b
                 ld      (PU_W),a

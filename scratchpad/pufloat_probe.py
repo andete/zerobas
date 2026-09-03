@@ -76,6 +76,14 @@ CASES = [
     ("d.over",     'PRINT USING"#.##";12.5'),
     ("d.wide",     'PRINT USING"####.####";3.14159'),
     ("d.zero",     'PRINT USING"##.##";0'),
+    # The two CARRY-GROWTH cases. Rounding at N places can make the number gain
+    # an integer digit, which moves the point one column right -- the shape the
+    # renderer's `inc c` exists for, and the shape the reverted D-PUDOT attempt
+    # got wrong. Both existed only as MODEL predictions until this row set;
+    # neither is exercised by any other d.* row, so without them the knife arm
+    # for that branch would be a designed no-op.
+    ("d.grow",     'PRINT USING"##.";9.5'),
+    ("d.growfrac", 'PRINT USING"##.#";9.99'),
 
     # --- ',' the thousands separator ---------------------------------------
     ("m.basic",    'PRINT USING"#,###";1234'),

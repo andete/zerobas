@@ -317,3 +317,104 @@ is one less thing to keep in step across the CALSLT.
 The second fact is the one that is easy to skip. "Nothing moved" is equally what
 evicting **dead** code looks like, and an eviction that quietly dropped the
 overflow or fill behaviour would read identically on the first fact alone.
+## 12. ✅ D-PUDOT — `.`, on the second attempt
+
+`PRINT USING"##.##";1.5` is the specifier the whole slice was built toward.
+§9 records the first attempt and its revert. This is the one that shipped.
+
+    PRINT USING"##.##";1.5     refs ` 1.50`     was ` 1`
+    PRINT USING"##.";1.5       refs `  2.`      was ` 2`
+    PRINT USING"####.####";3.14159  refs `   3.1416`   was `    3`
+
+**11 rows went green.** Divergent rows on this probe: **11 of 43**, all of them
+now in the two families that have no code at all (`,` and `^^^^`) plus `d.lead`.
+
+### 12.1 The model came before the assembly, and that is why it worked
+
+§9's attempt was written straight into Z80 and crashed the fixture on every row.
+The retry was written **in Python first** and checked against the eleven measured
+values before a single instruction existed. Two corner cases the model settled on
+paper — both of which the reverted attempt had wrong — are:
+
+* **`##.` — a point with zero places — still prints the point** (` 2.`). The
+  first attempt returned early when the place count was zero and lost it.
+* **Rounding can grow the integer part**, moving the point one column right:
+  `##.` with 9.5 is `10.`, `##.#` with 9.99 is `10.0`.
+
+Those two carry-growth cases existed **only as model predictions**. They were
+added to the probe as `d.grow` / `d.growfrac` and **both references confirmed
+them** before the code was trusted — and they are also the only rows that can
+witness knife K-PD2, so without them that arm would have been a designed no-op.
+
+### 12.2 The design decision that removed the crash
+
+Digits are built **contiguously**, with the decimal point **inserted last**.
+Rounding is then one carry walk over one array with no point in the middle for
+the carry to cross, and growth is a single `inc c` on the integer-digit count.
+
+The other half is smaller and mattered more: **`DIGSTART` is recomputed, not
+stacked**. It is `NUMBUF`, or `NUMBUF+1` when a `-` leads — cheaper to derive
+than to carry, and deriving it deletes every unbalanced-stack path at once. The
+reverted attempt pushed and popped it across three branches; that is what
+crashed.
+
+### 12.3 🔴 Eleven green rows hid a scanner bug that exactly one row could see
+
+With `.` working, `n.dot` (`PRINT USING"##.##-";-1.5`) still printed `-1.50`
+where both references say ` 1.50-`. The cause was in the code this slice added:
+the scanner saved the field width with `push bc` and restored it with `pop bc`,
+which preserves `B`, the width — **and also rewinds `C`, the scan cursor**. The
+scanner then re-read the decimal `#`s instead of the character after them.
+
+It is invisible on all eleven `d.*` rows, because a field the scanner re-enters
+with no argument left simply behaves as a trailing literal. It is visible on
+exactly one row in the set: the one where the character after the decimal part
+is load-bearing. Counting straight into `PU_DEC` instead of borrowing `B` fixes
+it, and `n.dot` went green with it — **12 rows, not 11**.
+
+The lesson is not "use a different register". It is that **a family of rows that
+all go green together can share a blind spot**, and the row that finds it is the
+one whose format has something *after* the new syntax.
+
+### 12.4 Knives — 6/6, and two of them are the interesting ones
+
+| arm | plant | must move | must hold |
+|---|---|---|---|
+| K-PD1 | never round | `d.roundup` `d.grow` `d.growfrac` | `d.basic` `d.int` `c.over16` |
+| K-PD2 | drop the carry's `inc c` | `d.grow` `d.growfrac` | `d.round` `d.roundup` `d.basic` |
+| K-PD3 | re-plant §9's zero-places bug | `d.roundup` `d.grow` | `d.basic` `d.growfrac` |
+| K-PD4 | skip the leading-zero emit | `d.leadzero` | `d.basic` `d.zero` |
+| K-PD5 | stop counting places in the width | `d.basic` `d.wide` | `c.hash` `c.round` |
+| K-PD6 | re-plant the §12.3 cursor rewind | `n.dot` | `d.basic` `d.wide` `d.roundup` `a.dot` `p.dot` |
+
+**K-PD2 moved exactly `{d.grow, d.growfrac}`** and nothing else — the two rows
+that were added for it. **K-PD1's must-hold is `d.basic`**: 1.5 at two places is
+exact, so removing rounding must *not* touch the headline row; if it did, the arm
+would only be saying "the renderer runs".
+
+**K-PD4 answered a question the source could not.** It moves `d.leadzero`, which
+means `flt_fmt` emits `.5`, not `0.5` — the leading-zero emit is load-bearing,
+not defensive.
+
+**K-PD6's must-hold list is the whole point**: five rows that exercise `.` and
+cannot see the bug §12.3 describes.
+
+### 12.5 🔴 The harness lost two runs to a plant that outlived its run
+
+Both were killed from outside — once by `pkill`, once by a two-minute command
+timeout — and **a `finally` does not survive `SIGTERM`**. Each left a plant in a
+tracked source file, and the next run then read the planted file as its own
+baseline: a knife measuring itself. Neither run printed anything wrong; the tell
+was two live `KNIFE` markers in the tree.
+
+The runner now writes the original to a **sidecar on disk** before planting and
+restores from it at startup. The sidecar existing at all is the alarm — it means
+a previous run did not finish. `atexit` and a `SIGTERM` handler cover the rest.
+
+### 12.6 Still open
+
+* **`d.lead`** — `.##` with an empty integer part. `ptf_num` only starts a
+  numeric field on `#`, so a leading `.` is still scanned as a literal; it needs
+  a second scanner entry point, not a renderer change.
+* **`,`** (5 rows) and **`^^^^`** (5 rows) — no implementation yet. `^^^^`'s
+  mantissa is already correct as of this slice; only the exponent is missing.

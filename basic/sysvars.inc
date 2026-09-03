@@ -3197,6 +3197,9 @@ PU_W            equ     $EEF8   ; current field width (1)
 PU_TYPE         equ     $EEF9   ; field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
 PU_FLAGS        equ     $EEFA   ; bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
 PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2)
+PU_DEC          equ     $EEFE   ; PRINT USING `.`: decimal places requested (D-PUDOT).
+                                ; Free byte in the same $EED6..$EEFF gap; read only
+                                ; when PU_FLAGS bit 6 says a `.` was scanned (1)
 ; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT
 ; clobbers every register, so the format loop keeps its position here in RAM. One byte
 ; ($EEFD) in the gap below FLD_DESC. Repack eviction (docs/spec-evict-call-format.md):
