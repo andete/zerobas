@@ -216,6 +216,12 @@ sub_p0_table:
                                                 ;   the new length in A -- so it meets the
                                                 ;   page-0 closure rule with nothing to
                                                 ;   marshal.
+                jp      pu_emit_tenant          ; index 16 (SUBROM_IDX_PUEMIT): PRINT
+                                                ;   USING's numeric pad+emit, built
+                                                ;   into DETOKBUF for the resident
+                                                ;   stub to drain (D-PUEMIT). Evicted
+                                                ;   to buy back main page 1.
+
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to SUBROM_ENTRY_BASE_P0 mapped slot 3-2 into PAGE 0 and that

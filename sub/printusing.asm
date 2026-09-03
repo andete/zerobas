@@ -161,6 +161,68 @@ psh_done:
                 pop     hl
                 ret
 
+; --- pu_emit_tenant: PRINT USING's numeric PAD + EMIT (D-PUEMIT) ------------
+; docs/spec-basic-pufloat.md. Builds the finished field into DETOKBUF; the
+; resident stub drains it through the real print_string, honouring PRDEST -- so
+; PRINT# USING's file form is untouched.
+;
+; ⚠️ WHY IT BUFFERS RATHER THAN PRINTING. A tenant cannot call the real `pchar`
+; at all: `pchar` reaches CHPUT in the BIOS (PAGE 0) and lives in main PAGE 1, and
+; whichever island a tenant runs on, one of those two is switched out. That is the
+; same constraint pu_to_field already lives under, and the reason this file binds
+; `pchar` to the sub-local DETOKBUF append instead.
+;
+;   in   NUMBUF holds the rendered digits; PU_W the field width; PU_FLAGS bit2
+;        the asterisk fill
+;   out  DETOKBUF = pad + digits (or `%` + digits on overflow), 0-terminated
+pu_emit_tenant:
+                ld      de,DETOKBUF
+                ld      (DB_CUR),de         ; reset the append cursor
+                ld      hl,NUMBUF           ; length, measured here rather than
+                ld      b,0                 ; passed -- a marshalled byte would be
+pet_len:                                    ; one more thing to keep in step
+                ld      a,(hl)
+                or      a
+                jr      z,pet_have
+                inc     hl
+                inc     b
+                jr      pet_len
+pet_have:
+                ld      a,(PU_W)
+                sub     b                   ; pad = width - length
+                jr      c,pet_over          ; longer than the field -> `%`
+                jr      z,pet_body
+                ld      b,a
+                ld      a,(PU_FLAGS)
+                bit     2,a                 ; D-PUSTAR: `**` pads with asterisks
+                ld      a,' '
+                jr      z,pet_pad
+                ld      a,'*'
+pet_pad:
+                push    af
+                call    pchar
+                pop     af
+                djnz    pet_pad
+                jr      pet_body
+pet_over:
+                ld      a,'%'               ; field overflow marker (MSX)
+                call    pchar
+pet_body:
+                ld      hl,NUMBUF
+pet_cp:
+                ld      a,(hl)
+                or      a
+                jr      z,pet_done
+                push    hl
+                call    pchar
+                pop     hl
+                inc     hl
+                jr      pet_cp
+pet_done:
+                ld      hl,(DB_CUR)
+                ld      (hl),0              ; 0-terminate for the drain
+                ret
+
 ; The shared scanner body (pu_to_field/ptf_* + pu_emit_tail). Binds pchar to
 ; sub/detok.asm's sub-local DETOKBUF append (defined once, co-resident).
                 include "basic/pu-render.inc"

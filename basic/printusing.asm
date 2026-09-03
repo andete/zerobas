@@ -297,36 +297,19 @@ pu_num_typed:
                 jp      c,subrom_absent_error
                 ld      b,a                 ; the rewritten length
 pu_num_nosign:
-                ld      a,(PU_W)
-                sub     b                   ; pad = width - length
-                jr      c,pu_num_over       ; length > width -> overflow
-                jr      z,pu_num_emit
-                ld      b,a                 ; B = pad count
-                ; D-PUSTAR: `**` in the format pads with asterisks. The character
-                ; is chosen ONCE, not per iteration, and carried on the stack
-                ; because pchar does not promise A back.
-                ld      a,(PU_FLAGS)
-                bit     2,a
-                ld      a,' '
-                jr      z,pu_num_pad
-                ld      a,'*'
-pu_num_pad:
-                push    af
-                call    pchar
-                pop     af
-                djnz    pu_num_pad
-                jr      pu_num_emit
-                ; D-PUCARVE: the overflow arm ends the same four instructions as
-                ; the normal one, so it FALLS THROUGH instead of repeating them --
-                ; 8 B of duplicated tail for a 2 B jump, net +6 B in a page 1 that
-                ; had TWELVE. It has to sit here, before pu_num_emit, for the
-                ; fallthrough to exist; the two `jr`s above still reach both.
-pu_num_over:
-                ld      a,'%'               ; field overflow marker (MSX)
-                call    pchar
-pu_num_emit:
-                ld      hl,NUMBUF
-                call    pu_emit_str0
+                ; --- D-PUEMIT: the pad + emit is a sub-ROM tenant now -----------
+                ; It builds the finished field into DETOKBUF and this stub drains
+                ; it through the real print_string, honouring PRDEST -- the same
+                ; shape pu_to_field has always had, and for the same reason: a
+                ; tenant cannot call `pchar` (BIOS page 0 + main page 1, one of
+                ; which is always switched out under a tenant).
+                ; 22 B back in a page 1 that had 18, which is what `.` is waiting
+                ; on. docs/spec-basic-pufloat.md.
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PUEMIT
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      hl,DETOKBUF
+                call    print_string
                 pop     hl
                 ret
 

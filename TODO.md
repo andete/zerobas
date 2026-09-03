@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1624 (T-6FE392)8 (T-529ABE)` from `TODO.md:6160 (T-529ABE)`: a
+      `TODO.md:1635 (T-6FE392)8 (T-529ABE)` from `TODO.md:6171 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1120,7 +1120,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       than debugged at that headroom.
       📏 **WHAT IT ESTABLISHED, MEASURED:** the main-side cost is **16 B** and
       lands page 1 at 2 B, so `.` is **blocked on evicting `pu_do_number`'s
-      pad/emit tail**, not merely tight. The renderer design survives (digits
+      pad/emit tail**, not merely tight.
+      ✅ **AND THAT EVICTION IS DONE (D-PUEMIT, same day): page 1 18 -> 42 B**
+      free, sub page 0 1668 -> 1590 B. `.` now fits with room instead of landing
+      at 2 B. ⚠️ A tenant **cannot call `pchar` at all** — it reaches CHPUT in the
+      BIOS (page 0) and lives in main page 1, and whichever island a tenant runs
+      on, one of those is switched out — so the tenant BUFFERS into DETOKBUF and
+      the stub drains it through the real `print_string`, honouring PRDEST. That
+      is the shape `pu_to_field` always had; reading WHY is what made this an
+      eviction rather than a crash.
+      🟢 Proved neutral AND live: 0 of 44 rows moved, and both branches of the
+      evicted body are still exercised (8 rows on the `%` arm, 3 on the `*` arm).
+      "Nothing moved" is equally what evicting DEAD code looks like. The renderer design survives (digits
       built CONTIGUOUSLY, point inserted last, so rounding is one carry walk over
       one array); the carry/shift implementation is what was wrong. And `.##` --
       an EMPTY integer part -- never reaches the renderer at all, because
@@ -2202,7 +2213,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6160 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6171 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -4104,6 +4104,12 @@ SUBROM_IDX_PLAY_PARSE equ 14    ; play_parse_tenant (sub/playparse.asm): the aud
                                 ; MML string into its VOICxQ ring buffer, sets MUSICF
                                 ; LAST. Only ex_play (basic/play.asm) computes
                                 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE.
+SUBROM_IDX_PUEMIT    equ 16     ; pu_emit_tenant (sub/printusing.asm): PRINT USING's
+                                ; numeric PAD + EMIT, built into DETOKBUF for the
+                                ; resident stub to drain (D-PUEMIT). PAGE-0 index
+                                ; space. It cannot call pchar itself -- see the
+                                ; tenant's own header -- which is exactly why it
+                                ; buffers, as pu_to_field already does.
 SUBROM_IDX_PUSIGN    equ 15     ; pu_sign_tenant (sub/printusing.asm): PRINT USING's
                                 ; `+` / `-` sign placement (D-PUSIGN). PAGE-0 index
                                 ; space -- pure RAM work over NUMBUF + PU_FLAGS, no

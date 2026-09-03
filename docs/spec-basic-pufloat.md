@@ -286,3 +286,34 @@ failure. Continuations are joined before anything is parsed.
 Both behaviours are tested, not assumed: a degenerate parse (zero includes) exits
 **2** with nothing checked, and removing two entries from `SUB_PARTS` is caught
 and exits **1**.
+
+## 11. ✅ D-PUEMIT — the pad/emit tail evicted, and `.` is unblocked
+
+§9 established that `.` is **blocked on evicting `pu_do_number`'s pad/emit tail**,
+not merely tight. That eviction is done.
+
+**Page 1: 18 → 42 B free** (sub page 0 1668 → 1590 B). `.`'s measured main-side
+cost is 16 B, so it now fits with room rather than landing at 2 B.
+
+⚠️ **A tenant cannot call `pchar` at all**, and that is the constraint that shapes
+this. `pchar` reaches `CHPUT` in the **BIOS (page 0)** and itself lives in **main
+page 1** — whichever island a tenant runs on, one of those two is switched out.
+So `pu_emit_tenant` **buffers** into `DETOKBUF` and the resident stub drains it
+through the real `print_string`, honouring `PRDEST` so `PRINT# USING`'s file form
+is untouched. That is exactly the shape `pu_to_field` has always had, and reading
+*why* it was written that way is what made this eviction possible at all rather
+than a crash.
+
+The length is **measured inside the tenant** rather than marshalled in, so there
+is one less thing to keep in step across the CALSLT.
+
+### 11.1 Proof: neutral, and both arms still live
+
+* **Behaviour-neutral** — 0 of 44 probe rows moved.
+* **Both branches of the evicted body are still exercised** — 8 rows reach the
+  `%` overflow arm (`c.over`, `d.over`, `e.big`, `m.basic`, `m.big`, `m.dot`,
+  `m.neg`, `m.small`) and 3 reach the `*` fill arm (`a.basic`, `a.dot`, `a.neg`).
+
+The second fact is the one that is easy to skip. "Nothing moved" is equally what
+evicting **dead** code looks like, and an eviction that quietly dropped the
+overflow or fill behaviour would read identically on the first fact alone.
