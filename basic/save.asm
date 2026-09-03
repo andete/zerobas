@@ -572,7 +572,8 @@ tpn_fill:
 ; ===========================================================================
 ; (repack: tape_putword has NO resident caller once the BSAVE tape engine leaves
 ;  — its only callers were bsv_cas_open's three header words — so it does not get
-;  a stub, it simply moves. The tenant's copy arrives with sv-tputw.inc.)
+;  a stub, it simply moves. The tenant's copy IS `basic/sv-tputw.inc`, included
+;  by `sub/save.asm` — arrived; the future tense here was stale until 2026-09-03.)
 
 ; ===========================================================================
 ; bsave_opt4 — classify the optional 4th BSAVE slot (,exec or ,S).

@@ -134,6 +134,14 @@ fre_abort_low:
                 ; routines push and pop BELOW the new SP, and never touch the
                 ; word AT it -- which is the return address the tail consumes.
                 ld      sp,(SAVSTK)
+                ; D-GICINI (docs/spec-basic-gicini.md): an UNTRAPPED abort stops
+                ; the music on both references -- rows e.untrap / e.errnat /
+                ; e.errdir, in run mode AND in direct mode, which is why it sits
+                ; in the funnel and not at a mode-specific site. A TRAPPED error
+                ; does NOT (row m.err), and that branch left at raise_error_hl
+                ; several instructions ago, so this site is already the right
+                ; side of that fork. HL (the message) is preserved by the call.
+                call    psg_silence
                 ld      a,1
                 ld      (ENDFLAG),a         ; D-1 (docs/spec-basic-error-handling.md
                                             ; S1): an untrapped runtime error ABORTS the

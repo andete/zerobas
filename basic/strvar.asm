@@ -3,21 +3,32 @@
 
 ; strvar.asm — minimal string-VALUE layer (own-design; see PROVENANCE.md).
 ;
-; "Enough for PRINT": a string operand is either a "literal" or a `$`-suffixed
-; variable that holds a previously-assigned string. There is NO heap, NO concat
+; The STRING-OPERAND DISPATCHER: given a cursor, decide whether what it points at
+; is a string operand at all, and if so leave STRPTR on its [len][bytes]
+; descriptor. `str_eval_one` is the one-term half; `str_eval` chains
+; `str_concat_tail` so `+` terms append. Both DECLINE (CF clear) on a numeric
+; operand, and every caller keeps its own `jr c` / `jr nc` at the site.
+;
+; ⚠️ THIS HEADER USED TO SAY "Enough for PRINT ... There is NO heap, NO concat
 ; (`+`), and NO string functions (LEFT$/MID$/CHR$/…) — those are the Phase-2
-; string engine. The few routines here let LET assign a string operand to a
-; string variable and let PRINT emit one.
+; string engine", and that the reference's real heap/descriptor "is not
+; reproduced — Phase 2". EVERY CLAUSE OF THAT IS FALSE (corrected 2026-09-03,
+; D-DEFERSWEEP): the string engine shipped and its arc is CONCLUDED
+; (basic/str-engine.asm, sub/strheap.asm), `str_eval` itself calls
+; `str_concat_tail`, and the dispatch below routes INKEY$ / STRING$ / INPUT$ /
+; MKI$ / SPRITE$ / FN…$ / a parenthesised subexpression / a `$` array element.
+; A deferral is a promise with a trigger, and nothing in this tree watched this
+; one fire. [[a-fix-falsifies-the-justification-beside-it]]
 ;
 ; A string VALUE is represented by a [len:1][bytes...] descriptor; STRPTR points
 ; at it and VALTYP=1 flags "the current operand is a string". The variable store
 ; (basic/vars.asm: str_find/str_get_key/str_set_key over STRTAB) holds the live
 ; values; STRSCR is scratch for a literal lifted out of the token stream.
 ;
-; Clean-room: original code. String assignment / PRINT *semantics* are from the
-; public MSX-BASIC language reference; the descriptor + store layout are zerobas'
-; own minimal design (the reference's real string heap/descriptor is not
-; reproduced — Phase 2). No disassembly.
+; Clean-room: original code. String *semantics* are from the public MSX-BASIC
+; language reference; the descriptor + store layout are zerobas' own design (the
+; reference's heap layout is not reproduced — ours is in sub/strheap.asm and is
+; not a copy of it). No disassembly.
 
 ; --- str_eval / str_eval_one: evaluate a string operand at (HL) -> descriptor -
 ; str_eval_one evaluates ONE string operand: a '"'-quoted literal or a `$`-suffixed

@@ -10,11 +10,17 @@
 ; stock code, so the output firewall (0 C-BIOS-leak bytes) is trivially clean.
 ; See docs/spec-basic-subrom.md and sub/PROVENANCE.md.
 ;
-; This is the S2a SKELETON: an empty container that carries only the discovery
-; signature and one round-trip PING per page. It has no real tenants yet — the
-; first (float.asm's tokeniser+formatter) arrives with the S2b/eviction session,
-; appended to the entry tables below. The main ROM does not yet call in; S2a's
-; boot gate drives the CALSLTs by injection from the openMSX debugger.
+; ⚠️ THIS PARAGRAPH DESCRIBED THE S2a SKELETON AND WAS YEARS OF WORK OUT OF DATE
+; (corrected 2026-09-03, D-DEFERSWEEP). It said: "an empty container that carries
+; only the discovery signature and one round-trip PING per page. It has no real
+; tenants yet — the first (float.asm's tokeniser+formatter) arrives with the
+; S2b/eviction session ... The main ROM does not yet call in." Every clause of
+; that is now false, and this is the sub-ROM's ENTRY file — the first thing a
+; reader opens. `make basic-reloc` counts 15 page-0 tenants and 24 page-1 ones
+; over 35 tenant sources here, and the main ROM reaches them through
+; `subrom_call` from ~98 sites. The pings and the boot gate below are still real,
+; but they are now the SKELETON UNDER a full building, not the building.
+; A deferral is a promise with a trigger; nothing in this tree watched this one.
 ;
 ; TWO OPPOSITE ISLANDS (spec §3b). CALSLT switches only the called page, so:
 ;   * PAGE 0 ($0000-$3FFF) — while a page-0 tenant runs, slot-0 page 1 (main

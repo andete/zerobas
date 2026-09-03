@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1210 (T-6FE392)8 (T-529ABE)` from `TODO.md:5746 (T-529ABE)`: a
+      `TODO.md:1251 (T-6FE392)8 (T-529ABE)` from `TODO.md:5787 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -683,7 +683,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       audible tone. Both references keep the voice playing (`r.drop`:
       -1/-1/**0**). Fix: OR into `MUSICF` (+2 B sub p1); 5/5 SAME after.
       [`docs/spec-basic-musicf.md`](docs/spec-basic-musicf.md),
-      `scratchpad/musicf_probe.py`.
+      `scratchpad/gicini_probe.py`.
 
 - [x] ✅ **D-PLAYCORNER (2026-08-31): the three PLAY corners MEASURED — two
       were real, one holds.**
@@ -707,6 +707,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       construction. Two rules coincided on every edge row; the mid-octave rows
       separated them. Fixed (accidental before octave base, mod 12; clamp
       deleted as unreachable); 8/8 traces identical, fast-layer vectors added.
+
+- [x] ✅ **D-GICINI — AN ABORTED PROGRAM KEPT PLAYING FOREVER, AND THE DEFERRAL
+      SWEEP POINTED STRAIGHT AT IT.** Found and fixed 2026-09-03,
+      [`docs/spec-basic-gicini.md`](docs/spec-basic-gicini.md).
+      `basic/sound.asm` deferred a GICINI-equivalent to *"Slice 2"* on the
+      grounds that *"there are no PLAY queues / MUSICF to zero yet"*. The queues
+      shipped; nothing watched the trigger. **Six divergent rows**, both
+      references agreeing on every one, `PEEK(&HFB3F)` (MUSICF, a published work-
+      area address zerobas places deliberately):
+
+          e.untrap / e.errnat   untrapped error in a program   refs 0   here 1
+          e.errdir              the same error typed direct     refs 0   here 1
+          e.stop / e.cont       STOP, and CONT afterwards       refs 0   here 1
+          m.beep                BEEP during an active drain     refs 0   here 1
+
+      🎯 **THE DEFERRAL NAMED THE WRONG THING.** It promised an *init*; what was
+      missing is a *teardown*. Reading the file would never have said so — only
+      the reference would.
+      🟢 **THE ROWS THAT MAKE THE RULE PRECISE ARE THE ONES THAT AGREE**: a clean
+      `END` leaves the music playing on all three (so the trigger is ABORT, not
+      "back to `Ok`"), a TRAPPED error leaves it playing (so it is not error-
+      raising), and `SOUND` — including a mixer write to R7 — never touches the
+      queue (so `BEEP` is not clearing it merely by being a PSG writer).
+      🔬 **AND THE FIX HAD TO SILENCE, NOT JUST ZERO MUSICF** — measured, not
+      argued, with `probes/lib/psgtrace.py`: both references drop the tone
+      amplitude to 0 at the abort; zerobas held the note at volume 8 forever.
+      🔴 **THE ROW SET LIED TWICE ON THE WAY, IN THE SAME WAY.** `omsx_repl`
+      types one line per 8 s slot and the first `PLAY` ran ~16 s, so any row with
+      two typed lines after it outlived its own queue: four rows read as
+      "zerobas already matches" (`e.errdir`, `e.new`, `e.cont`, `e.nop`) and
+      **`NEW`'s answer was the exact opposite of the one recorded**. Caught by
+      `e.nop`/`e.nop2` — a HARMLESS statement in the subject's position, written
+      to fail if the fixture outlived the case. Re-measured at `T32` (7.5 s per
+      whole note). The identical artefact then bit the two `e.replay` rows and
+      was caught immediately, because by then it had a name.
+      💰 **COST: page-0 low region 106 → 79 B free, page 1 272 → 269 B** (read
+      from `make basic-reloc`, before and after). One 21 B routine, three 3 B
+      call sites.
+      📏 **0 DIFF / 36 rows** on three machines afterwards, including
+      `e.replay`/`e.replayfn` — a `PLAY` after the abort still works, so the
+      queue is left reusable and not merely quiet.
 
 - [ ] 🔴 **`MKS$` / `MKD$` / `CVS` / `CVD` ARE MISSING, AND THEIR DEFERRAL'S
       CONDITION HAS BEEN MET.** Found 2026-09-03 by D-DEFERCHECK
@@ -1788,7 +1829,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5746 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5787 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

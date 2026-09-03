@@ -23,9 +23,19 @@
 ; Event sources so far: STOP (T1) is NOT polled here — it rides the run loop's
 ; existing BREAKX detection (spec-traps-t1-stop-reslice.md §6); STRIG 0..4 (T2)
 ; IS polled, via the published page-0 BIOS GTTRIG (a plain call, never CALSLT —
-; the VBLANK ban stands). KEY/SPRITE sources arrive with T3/T4; event_poll grows
-; one stanza per slice. INTERVAL (T5) is polled here too — a pure frame
+; the VBLANK ban stands). INTERVAL (T5) is polled here too — a pure frame
 ; down-counter, no I/O at all.
+;
+; ⚠️ THIS PARAGRAPH USED TO END "KEY/SPRITE sources arrive with T3/T4; event_poll
+; grows one stanza per slice", and BOTH ARRIVED (corrected 2026-09-03,
+; D-DEFERSWEEP) — but NOT as event_poll stanzas, which is why the stale line
+; survived: KEY (T3) is a C-BIOS keyboard-scan hook in `basic/keytrap.asm`
+; because no published ISR seam runs after the scan, and SPRITE (T4) is sampled
+; in `basic/sprtrap-body.inc` from `basic/subromcall.asm` ahead of the slot test
+; (D-T4-2). §"the shadow" below already named "T2 STRIG, T3 KEY and now T1 STOP"
+; — two sections of one file disagreeing on the load-bearing list, which is a
+; class this project has been bitten by before.
+; [[two-sections-of-one-doc-disagreed]]
 ;
 ; ⚠️ This header used to say "INTERVAL's counter stanza is retained but inert on
 ; MSX1 (INTERVAL is an MSX2 statement — out of charter)". That was RETRACTED on

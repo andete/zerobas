@@ -700,6 +700,12 @@ do_break:
                                             ; INVALIDATES NOTHING -- see cont_record's
                                             ; own header for why this stopped being an
                                             ; `xor 1` on DIRECTF here.
+                ; D-GICINI (docs/spec-basic-gicini.md): a break DESTROYS the PLAY
+                ; queue on both references, and `CONT` does not bring it back --
+                ; rows e.stop and e.cont. `psg_silence` lives in the low region
+                ; (basic/sound.asm) and is reached from page 1 by an ordinary
+                ; in-slot call. cont_record above has already consumed HL.
+                call    psg_silence
                 ld      a,1
                 ld      (ENDFLAG),a         ; stop the run, fall back to the REPL
                 ; report: "break in <lineno>" + CR/LF. The line number is at

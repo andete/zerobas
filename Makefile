@@ -2137,6 +2137,16 @@ ifsem-characterize: repack-machine
 ifsem-acceptance: repack-machine
 	python3 probes/basic/basic_probe_ifsem.py --gate $(if $(SIDES),$(SIDES),)
 
+# --- D-GICINI: the abort seam must STOP THE MUSIC (docs/spec-basic-gicini.md) --
+# Two halves, and the second is not belt-and-braces. Knife K-GI4 deleted the
+# amplitude loop while keeping `ld (MUSICF),a` and moved ZERO of the 36 rows --
+# the machine sustains the note forever and every row stays green, because every
+# row reads MUSICF. `--gate` scores the rows AND the PSG amplitude trace, whose
+# own control (a program that never aborts) must read NON-ZERO or the trace is
+# not looking at music and its verdict says nothing.
+gicini-acceptance: repack-machine
+	python3 probes/basic/basic_probe_gicini.py --gate $(if $(SIDES),--sides $(SIDES),)
+
 lrvar-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_lrvar.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)

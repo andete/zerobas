@@ -72,9 +72,22 @@ def main() -> int:
         if len(by_file[f]) > 4:
             print(f"     ... {len(by_file[f]) - 4} more")
     print("\n🔴 A COUNT HERE IS NOT A DEFECT COUNT. Each row is a PROMISE WITH A\n"
-          "   TRIGGER; whether the trigger has fired is a judgement per row. Two\n"
-          "   known-fired ones (printusing 'Phase-3 floats', play 'Slice 3') are\n"
-          "   already corrected -- they are what motivated this sweep.")
+          "   TRIGGER; whether the trigger has fired is a judgement per row.\n"
+          "\n"
+          "📏 MEASURED PRECISION, all 30 rows dispositioned 2026-09-03:\n"
+          "     1  REAL DEFECT   sound.asm's GICINI deferral -> D-GICINI, 6 rows\n"
+          "     4  STALE PROSE   strvar.asm 'NO string functions', traps.asm\n"
+          "                      'KEY/SPRITE arrive with T3/T4', save.asm's future\n"
+          "                      tense, sub/sub.asm 'no real tenants yet'\n"
+          "     4  ALREADY FIXED the sysvars.inc rows this sweep itself found\n"
+          "    21  DESCRIPTIVE   'the Phase-1.5 HOST side', 'arrives with FPERR\n"
+          "                      clean' -- a phase NAME or a runtime event, not a\n"
+          "                      promise. These are the cost of a narrow pattern\n"
+          "                      set, and they are cheap to reject by eye.\n"
+          "   So ~1 defect and 4 doc-debt corrections per 30 hits. That is the\n"
+          "   instrument's yield ON ITS FIRST FULL PASS, over a tree nobody had\n"
+          "   swept before; a second pass over the same rows will yield far less,\n"
+          "   and the number to watch is what NEW deferrals arrive with.")
     return 0
 
 if __name__ == "__main__":

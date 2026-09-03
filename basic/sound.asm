@@ -6,10 +6,15 @@
 ;   SOUND register, value    write one byte to a PSG register
 ;
 ; SOUND is a synchronous single register write — no interrupt, no queue, no
-; sub-ROM tenant (spec-basic-audio-play.md §3.D). Slice 1 is SOUND-only; the
-; GICINI-equivalent init is deferred to Slice 2 (there are no PLAY queues /
-; MUSICF to zero yet, and C-BIOS's own boot GICINI already leaves the PSG quiet
-; — amplitudes 0 — so a fresh SOUND works with no init of ours).
+; sub-ROM tenant (spec-basic-audio-play.md §3.D). C-BIOS's own boot GICINI leaves
+; the PSG quiet (amplitudes 0), so a fresh SOUND still needs no init of ours.
+;
+; ⚠️ THIS PARAGRAPH USED TO DEFER A GICINI-EQUIVALENT TO "Slice 2", on the
+; grounds that "there are no PLAY queues / MUSICF to zero yet". They shipped
+; (basic/play.asm, basic/playsvc.asm) and the deferral was never revisited —
+; D-DEFERSWEEP's whole point. Corrected 2026-09-03: what was missing is
+; `psg_silence` below, a TEARDOWN rather than the init the deferral named, and it
+; was a real 6-row divergence (docs/spec-basic-gicini.md).
 ;
 ; Faithful contract — every boundary black-box-captured from the Philips VG-8020
 ; reference (scratchpad spikes, 2026-07-21), NOT taken from the draft spec:
@@ -114,7 +119,53 @@ snd_illegal     equ     gb_illegal  ; ERR 5 (register out of 0..13)
 ;
 ; HL (the statement cursor) is preserved throughout (beep_delay touches only AF/BC),
 ; so `jp exec_stmt` chains the next `:`-separated statement.
+; --- psg_silence: the GICINI-equivalent teardown (D-GICINI) -----------------
+; docs/spec-basic-gicini.md. Stop the PLAY drain and silence the three tone
+; amplitudes. Preserves HL (every caller is holding a live pointer across it);
+; clobbers AF and B only.
+;
+; 🔴 THIS ROUTINE IS THE ANSWER TO A DEFERRAL THAT WENT STALE. This file's own
+; header used to say a GICINI-equivalent "is deferred to Slice 2 (there are no
+; PLAY queues / MUSICF to zero yet ...)". The queues shipped; nothing watched the
+; trigger; and what was actually missing turned out to be a TEARDOWN, not the
+; init the deferral named. Both references stop the music on an untrapped abort,
+; on a break, and on BEEP -- measured, 6 divergent rows, spec §1.
+;
+; 🎯 MUSICF FIRST, AND DI AROUND BOTH HALVES. Clearing MUSICF makes
+; play_service's own fast-out (playsvc.asm) skip the PSG entirely, so the
+; amplitude writes below cannot be fought. The `di` closes the one remaining
+; window: an ISR that fired just BEFORE the MUSICF store is already past its
+; fast-out and would write one more frame of amplitude after ours. One frame of
+; leaked tone is exactly the kind of edge that is invisible to a +-1-frame PSG
+; trace, which is why it is closed by construction rather than measured away.
+; Reached only from statement level and from the abort funnel, both of which run
+; with interrupts enabled, so the unconditional `ei` restores the true state.
+psg_silence:
+                di
+                xor     a
+                ld      (MUSICF),a          ; the drain's fast-out: no more PSG writes
+                ld      b,8                 ; R8/R9/R10 = the three tone amplitudes
+psgs_lp:        ld      a,b
+                out     (PSG_ADDR),a        ; latch the amplitude register
+                xor     a
+                out     (PSG_DATW),a        ; amplitude 0
+                inc     b
+                ld      a,b
+                cp      11
+                jr      c,psgs_lp
+                ei
+                ret
+
 ex_beep:
+                ; D-GICINI: BEEP stops an active PLAY drain on BOTH references
+                ; (row `m.beep`), which SOUND -- including a mixer write to R7 --
+                ; does not (`m.sound2`/`m.sound7`). Sited BEFORE the CALSLT: the
+                ; ordering is not black-box separable at the trace's ~1-frame
+                ; resolution, and silencing first also retires the "a BEEP during
+                ; an active PLAY drain is fought by play_service in the delay
+                ; window (accepted edge)" note above -- there is no longer a drain
+                ; to fight.
+                call    psg_silence
                 ; The body is a PAGE-0 sub-ROM tenant (sub/beep.asm,
                 ; docs/spec-basic-input-devices.md §7): the 71 B it occupied here
                 ; is what funds input-devices slice I1. The carve is clean because
