@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1352 (T-6FE392)8 (T-529ABE)` from `TODO.md:5888 (T-529ABE)`: a
+      `TODO.md:1396 (T-6FE392)8 (T-529ABE)` from `TODO.md:5932 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -874,16 +874,60 @@ list. **When a slice lands, grep this list for what it just shipped.**
       them would have inflated this by a third.
       🔴 **AND IT IS NOT NEW WITH D-MKSD** — `MKI$`, `CVI` and `DSKF` show it too,
       so this is the standing architecture, not something today's slice broke.
-      💰 **AND IT IS NOT AN OBVIOUS SPACE WIN, WHICH IS THE REASON IT MIGHT HAVE
-      BEEN WORTH DOING ANYWAY.** Main page 1 is down to 164 B free and the disk
-      verbs are a large body sitting in the scarcest region — but `build/disk.rom`
-      is 16384 B with a trailing free run of **2 bytes**, so there is no evident
-      room to move them INTO. A real price needs a disk-ROM wall check, which
-      does not exist (`make basic-reloc` reports main and sub walls only).
-      🙋 **BLOCKED ON JOOST**: this is a structural decision — invent a BASIC
-      extension hook and move the verb bodies, or record the current split as an
-      accepted deviation with the reasoning above. Not something to settle
-      unilaterally mid-slice.
+      🔴 **I MEASURED THE DISK ROM'S SPACE WRONG, AND JOOST CAUGHT IT.** This
+      item first said moving the verbs was "NOT AN OBVIOUS SPACE WIN", on the
+      grounds that `build/disk.rom` had "a trailing free run of 2 bytes". That
+      was a TRAILING scan, which cannot see interior holes — and Joost's reply
+      was *"there's holes, plenty of space"*. Re-measured 2026-09-03 by scanning
+      for interior fill runs: **9012 bytes of 0x00 fill across 32 runs >= 16 B**,
+      the largest being **3420 B at $2849** and **2531 B at $1602** (mapped
+      $6849 / $5602). Main page 1 was **164 B** free on 2026-09-03. So the move
+      is a LARGE space win, not a neutral one, and the claim that priced it out
+      was an instrument error of exactly the kind this project keeps filing
+      against other people's numbers.
+      ⚠️ Not all 9012 B are necessarily free: the disk ROM has pinned
+      fixed-offset entry points and stub bodies at known addresses, so a real
+      figure needs a disk-ROM WALL CHECK, which does not exist
+      (`make basic-reloc` reports main and sub walls only). The two large runs
+      are the candidates.
+
+      🧭 **DECIDED IN PART (Joost, 2026-09-03): "the diskless zerobas should be an
+      official build target and any disk related thing should be validated on
+      both."** Shipped that same day:
+      * **`C-BIOS_MSX1_EU_REPACK_NODISK`** — same merged main ROM and sub-ROM,
+        slot 3-1 empty; `tools/install-repack-machine.py --no-disk`, and
+        `make repack-machine` installs BOTH so neither can go stale.
+      * **`make nodisk-acceptance`** — in the battery. Oracle: the VG-8020, which
+        needs no argument, being that configuration on real hardware.
+      * The 8 divergences are **PINNED to their exact values**, so the gate goes
+        RED if either column changes — a regression AND an unannounced fix both
+        show. Also listed in [`tools/filed-row-known.txt`](tools/filed-row-known.txt).
+      ⚠️ **ANY NEW DISK-RELATED VERB OR FIX ADDS ITS ROWS TO THAT PROBE.** That is
+      the "validated on both" half of the directive and the part most likely to be
+      forgotten.
+      🧭 **AND THE ARCHITECTURAL HALF IS NOW DECIDED TOO (Joost, 2026-09-03):**
+      *"not only should diskless match vg8020 and withdisk the cf, the
+      implementation of the disk related keywords should probably be in the disk
+      rom (there's holes, plenty of space) and work via the officially documented
+      hooks."*
+      So the target shape is: **main ROM keeps the keyword TABLE** (measured
+      faithful — the diskless VG-8020 crunches `MKS$` to `FF AF`), and the
+      **BODIES move into `disk.rom`, reached through the published MSX BASIC
+      expansion hooks**. Diskless then matches the VG-8020 *because the code is
+      not there*, which is how the reference gets it right, rather than by a
+      guard bolted on.
+      ⚠️ **THE HOOK SET MUST COME FROM A PUBLISHED SOURCE AND BE CITED** (MSX
+      Technical Handbook / MSX Assembly Page, into PROVENANCE) — NOT from
+      recall. It is also directly measurable without any document: diff the hook
+      RAM region between the VG-8020 (no disk) and the CF-3300 (disk) and the
+      differences ARE the hooks disk BASIC installs. Do that first; it is an
+      observation of an interface boundary, the same class as the already-published
+      HPHYD -> DSKIO vector, and it needs no disassembly.
+      📋 **SCOPE:** this is a multi-slice migration (`MKI$` `MKS$` `MKD$` `CVI`
+      `CVS` `CVD` `DSKF` first — the no-medium verbs the gate already pins — then
+      the channel verbs). Each slice must leave `nodisk-acceptance` GREEN with its
+      pins MOVED, since a fixed row that keeps its old pin is the failure mode
+      that gate was built for.
 
 - [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
       DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
@@ -1930,7 +1974,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5888 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5932 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

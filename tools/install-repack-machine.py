@@ -49,6 +49,15 @@ import openmsx_paths  # noqa: E402
 
 MACHINE = "C-BIOS_MSX1_EU_REPACK_DISK"
 
+# 🧭 THE DISKLESS SIBLING IS AN OFFICIAL BUILD TARGET (Joost, 2026-09-03: "it
+# should also be possible to ship zerobas without a disk ROM ... any disk related
+# thing should be validated on both"). Same merged main ROM and same sub-ROM;
+# slot 3-1 is simply EMPTY. That makes it the exact hardware shape of the
+# Philips VG-8020 oracle, so a diskless zerobas can be scored against the machine
+# it is meant to be faithful to -- which is what turned an architectural
+# discussion into 8 measured divergent rows (docs/spec-basic-nodisk.md).
+MACHINE_NODISK = "C-BIOS_MSX1_EU_REPACK_NODISK"
+
 
 def find_logo() -> str:
     """Locate cbios_logo_msx1.rom in any openMSX share dir (same search the repack-boot
@@ -85,6 +94,27 @@ def sub_secondary(sub_rom_abs: str) -> str:
     )
 
 
+def disk_secondary(disk_rom_abs: str) -> str:
+    """The slot-3-1 secondary block holding zerobas-disk behind a National-style
+    WD2793. Empty string when no disk ROM is supplied, which is the DISKLESS
+    target: 3-1 is left empty and nothing else about the machine changes, so the
+    only difference from the disk build is the absence of the disk ROM."""
+    if not disk_rom_abs:
+        return '      <secondary slot="1"/>'
+    return (
+        '      <secondary slot="1">\n'
+        '        <WD2793 id="zerobas-disk FDC">\n'
+        '          <connectionstyle>National</connectionstyle>\n'
+        '          <drives>1</drives>\n'
+        '          <rom>\n'
+        f'            <filename>{disk_rom_abs}</filename>\n'
+        '          </rom>\n'
+        '          <mem base="0x4000" size="0x8000"/>\n'
+        '        </WD2793>\n'
+        '      </secondary>'
+    )
+
+
 def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str = "") -> str:
     # ⚠️ NO `--` ANYWHERE INSIDE AN XML COMMENT BELOW. A double hyphen is illegal
     # there, and every machine this tool has ever written carried one (in the PSG
@@ -101,6 +131,7 @@ def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str =
     the repack-boot probe machine so the only difference from the lean disk machine is the
     baked-in relocated BASIC (plus the sub-ROM in the previously-empty 3-2)."""
     sub_block = sub_secondary(sub_rom_abs)
+    disk_block = disk_secondary(disk_rom_abs)
     return f"""<?xml version="1.0" ?>
 <!DOCTYPE msxconfig SYSTEM 'msxconfig2.dtd'>
 <msxconfig>
@@ -128,16 +159,7 @@ def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str =
         </RAM>
       </secondary>
 
-      <secondary slot="1">
-        <WD2793 id="zerobas-disk FDC">
-          <connectionstyle>National</connectionstyle>
-          <drives>1</drives>
-          <rom>
-            <filename>{disk_rom_abs}</filename>
-          </rom>
-          <mem base="0x4000" size="0x8000"/>
-        </WD2793>
-      </secondary>
+{disk_block}
 
 {sub_block}
 
@@ -182,13 +204,22 @@ def main() -> int:
                     default=None, metavar="ROM",
                     help="also place zerobas-sub (the built-in sub-ROM) in slot 3-2 "
                          "(default ROM: build/sub.rom). Omit to leave 3-2 empty.")
+    ap.add_argument("--no-disk", dest="no_disk", action="store_true",
+                    help=f"write the DISKLESS sibling {MACHINE_NODISK} instead: "
+                         "slot 3-1 left empty, everything else identical. This is "
+                         "an official build target (Joost, 2026-09-03) and the "
+                         "hardware shape of the VG-8020 oracle, so disk-related "
+                         "work is validated on BOTH configurations.")
     ap.add_argument("--dry-run", action="store_true", help="print the config, do not write")
     args = ap.parse_args()
 
     merged = os.path.abspath(args.merged)
-    disk = os.path.abspath(args.disk_rom)
-    for p, what in ((merged, "merged main ROM (build it: make build/zerobas-main-eu.rom)"),
-                    (disk, "disk ROM (build it: make disk)")):
+    need = [(merged, "merged main ROM (build it: make build/zerobas-main-eu.rom)")]
+    disk = ""
+    if not args.no_disk:
+        disk = os.path.abspath(args.disk_rom)
+        need.append((disk, "disk ROM (build it: make disk)"))
+    for p, what in need:
         if not os.path.isfile(p):
             sys.exit(f"missing {what}: {p}")
 
@@ -205,7 +236,8 @@ def main() -> int:
 
     mdir = os.path.join(openmsx_paths.find_user(), "share", "machines")
     os.makedirs(mdir, exist_ok=True)
-    out = os.path.join(mdir, MACHINE + ".xml")
+    name = MACHINE_NODISK if args.no_disk else MACHINE
+    out = os.path.join(mdir, name + ".xml")
     # 🔴 ATOMIC, AND A MEASURED BATTERY FLAKE IS WHY. The mechanism, the
     # 34.3 %-torn measurement and the cure now live at ONE site --
     # `openmsx_paths.publish()` -- because this was never the only publisher
@@ -214,8 +246,10 @@ def main() -> int:
     # See openmsx_paths.publish and docs/spec-probe-machxml.md.
     openmsx_paths.publish(out, cfg)
     subtail = ", zerobas-sub in slot 3-2" if sub else ""
-    print(f"wrote {MACHINE}  (-> machine \"{MACHINE}\": merged repack ROM in slot 0, "
-          f"zerobas-disk in slot 3-1{subtail})")
+    disktail = "slot 3-1 EMPTY (diskless target)" if args.no_disk \
+        else "zerobas-disk in slot 3-1"
+    print(f"wrote {name}  (-> machine \"{name}\": merged repack ROM in slot 0, "
+          f"{disktail}{subtail})")
     print(f"     {out}")
     return 0
 

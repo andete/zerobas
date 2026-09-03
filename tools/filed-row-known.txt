@@ -67,3 +67,12 @@ trapsvc_probe: int.six; gos.leak -- "a trap handler left without RETURN is perma
 # pins were caught only because their probes happened to still be cited by
 # something open.
 # `--check-orphans` reports them. Run it whenever an item closes.
+
+# D-NODISK (2026-09-03): the DISKLESS build target. These eight rows are the
+# disk verbs that need NO MEDIUM answering where a diskless MSX raises ERR 5 --
+# zerobas implements every disk verb BASIC-side while real MSX puts the keyword
+# table in the main ROM and the implementation behind the disk ROM's hooks.
+# 🎯 UNLIKE EVERY OTHER ENTRY HERE, THESE ARE ALSO PINNED IN THE PROBE ITSELF
+# (basic_probe_nodisk.PINNED) to their exact values, so the gate goes RED if
+# either column changes -- a regression AND an unannounced fix both show.
+basic_probe_nodisk: k.mks; k.mkd; k.cvs; k.mki; k.cvi; v.dskf; v.cvistr; v.mkifld -- "SHOULD THE DISK-BASIC VERBS LIVE IN disk.rom BEHIND A HOOK"; 🙋 Joost, docs/spec-basic-nodisk.md

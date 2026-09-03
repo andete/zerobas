@@ -624,6 +624,18 @@ REPACK_MACHINE  := C-BIOS_MSX1_EU_REPACK_DISK
 repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --disk-rom $(DISK_ROM) \
 	  --sub-rom $(SUB_ROM)
+	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --sub-rom $(SUB_ROM) \
+	  --no-disk
+
+# --- the DISKLESS target (Joost, 2026-09-03) --------------------------------
+# "it should also be possible to ship zerobas without a disk ROM ... any disk
+# related thing should be validated on both". C-BIOS_MSX1_EU_REPACK_NODISK is the
+# same merged main ROM and sub-ROM with slot 3-1 EMPTY -- the hardware shape of
+# the Philips VG-8020 oracle -- so `nodisk-acceptance` can score a diskless
+# zerobas against the machine it is meant to be faithful to. It is installed by
+# `repack-machine` above so no probe can ever run against a stale copy of it.
+nodisk-acceptance: repack-machine
+	python3 probes/basic/basic_probe_nodisk.py --gate
 
 diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 	python3 probes/disk/diskbasic_acceptance.py \
