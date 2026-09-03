@@ -77,10 +77,11 @@ stops diverging is the `CVI` shape that `tools/filed-row-known.txt` opens on.
 Pinning makes the gate go red when the answer **changes in either direction**,
 which is what makes it a measurement rather than a permission slip.
 
-⚠️ **Rows needing a live disk are excluded by construction.**
-`OPEN`/`FILES`/`KILL`/`NAME` return the fixture's `load error` on a diskless
-machine — an unreadable cell, not a divergence. Counting them would have inflated
-this finding by a third.
+🔴 **THAT EXCLUSION WAS WRONG AND IS WITHDRAWN (2026-09-03) — see §11.**
+This section used to read: *"Rows needing a live disk are excluded by
+construction. `OPEN`/`FILES`/`KILL`/`NAME` return the fixture's `load error` on a
+diskless machine — an unreadable cell, not a divergence. Counting them would have
+inflated this finding by a third."* Every clause of that is false.
 
 ## 5. The architectural target (decided 2026-09-03)
 
@@ -503,3 +504,49 @@ and `init.asm` costs **one call**. The first overrun, hours earlier, is what mov
 ⚠️ And one self-inflicted repair: a `str.replace` of `install_hook:` matched the
 string inside that routine's **own comment header** first, mangling the comment
 into code. Anchor on the label, not on prose that names it.
+
+
+## 11. 🔴 The channel verbs were never unreadable — the exclusion is withdrawn
+
+§4 and §10 both said `OPEN`/`FILES`/`KILL`/`NAME` return "the **fixture's**
+`load error` on a diskless machine — an UNREADABLE cell, not a divergence", and
+§4 went further: counting them "would have inflated this finding by a third".
+
+**`load error` is zerobas's own message.** The machine prints it and carries on —
+a following `PRINT"C"` still answers `C`. Traced directly:
+
+| | `PRINT"A":FILES` |
+|---|---|
+| vg8020 (diskless) | `A` then `Illegal function call in 10` |
+| zb-nodisk | `A` then **`load error`** |
+| zb-disk (no floppy) | `A` then `load error` |
+
+So the cell was always readable, and these were always divergences: the oracle
+**refuses because the verb does not exist without a disk ROM**, while zerobas
+**runs the verb and fails on the medium**. Four rows the gate had been blind to,
+now scored and pinned:
+
+| row | oracle | zb-nodisk | hook (named, unclaimed) |
+|---|---|---|---|
+| `h.files` | ERR 5 | `load error` | `H.FILE` `$FE7B` |
+| `h.kill` | ERR 5 | `load error` | `H.KILL` `$FDFE` |
+| `h.name` | ERR 5 | `load error` | `H.NAME` `$FDF9` |
+| `h.open` | **ERR 2** | `load error` | — see below |
+
+⚠️ **`h.open` is a different class** and is pinned as characterisation, not as a
+hook candidate: the oracle answers **Syntax error**, because `FOR OUTPUT` is not
+parseable at all without Disk BASIC. That is a keyword-surface question, which no
+handler hook fixes.
+
+🎯 **The lesson is the ordinary one, and it is about confidence rather than
+cleverness.** "I do not recognise this output" and "the instrument failed" look
+identical until you look — and I asserted the second twice, once with an argument
+about how much it would have *inflated* the finding. An unreadable cell must be
+**proved** unreadable. The probe's own scorer carried the same premise (it
+treated the string `load error` as an apparatus failure); that rule is gone, and
+only a genuinely absent capture counts as unreadable now.
+
+**Cost of fixing them:** page 1 is at **75 B** free (2026-09-03) and each verb
+gate has run 7–12 B, so hooking the three real candidates is affordable but would
+leave very little. That is the next slice's problem, and it should be weighed
+against moving conversions into `disk.rom` (§8) to buy the room back first.

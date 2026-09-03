@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1457 (T-6FE392)8 (T-529ABE)` from `TODO.md:5993 (T-529ABE)`: a
+      `TODO.md:1480 (T-6FE392)8 (T-529ABE)` from `TODO.md:6016 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -884,10 +884,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       row (which builds its argument with `MKS$`). A blanket presence check would
       have moved both arms alike — that asymmetry is what proves the selection is
       per-verb.
-      📋 **STILL OPEN, SMALLER:** the CHANNEL verbs (`OPEN`/`FILES`/`KILL`/`NAME`
-      …) are not hooked. They read `load error` on a diskless machine — an
-      UNREADABLE cell, so the probe excludes them by construction and they are
-      unmeasured, not known-good.
+      🔴 **AND THE CHANNEL VERBS WERE NEVER "UNREADABLE" — that exclusion is
+      WITHDRAWN the same day** ([`docs/spec-basic-nodisk.md`](docs/spec-basic-nodisk.md) §11).
+      I wrote twice that `OPEN`/`FILES`/`KILL`/`NAME` return *"the FIXTURE's `load
+      error` … an UNREADABLE cell, not a divergence"*, once arguing that counting
+      them "would have inflated this finding by a third". **`load error` is
+      zerobas's OWN message**: the machine prints it and carries on — a following
+      `PRINT"C"` still answers. Traced directly, `PRINT"A":FILES` gives `A` then
+      `Illegal function call in 10` on the VG-8020 and `A` then `load error` here.
+      So they were always readable and always divergences: the oracle REFUSES
+      because the verb does not exist, while zerobas RUNS it and fails on the
+      MEDIUM. **4 rows the gate had been blind to, now scored and pinned:**
+
+          h.files  oracle ERR 5  here `load error`   H.FILE $FE7B unclaimed
+          h.kill   oracle ERR 5  here `load error`   H.KILL $FDFE unclaimed
+          h.name   oracle ERR 5  here `load error`   H.NAME $FDF9 unclaimed
+          h.open   oracle ERR 2  here `load error`   -- different class
+
+      ⚠️ `h.open` is pinned as CHARACTERISATION, not as a hook candidate: the
+      oracle answers Syntax error because `FOR OUTPUT` is not parseable at all
+      without Disk BASIC — a keyword-surface question no handler hook fixes.
+      🎯 **"I do not recognise this output" and "the instrument failed" look
+      identical until you look.** The probe's own scorer carried the same premise
+      (it treated the STRING `load error` as an apparatus failure); that rule is
+      gone, and only a genuinely absent capture counts as unreadable now.
+      💰 Hooking the three real candidates is affordable but page 1 is at **75 B**
+      free (2026-09-03) and each gate has run 7-12 B — weigh it against moving
+      conversions into `disk.rom` (§8) to buy the room back first.
 
       *(original question, kept for the reasoning:)*
 - [x] 🙋 **SHOULD THE DISK-BASIC VERBS LIVE IN `disk.rom` BEHIND A HOOK, AS ON
@@ -2035,7 +2058,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5993 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6016 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

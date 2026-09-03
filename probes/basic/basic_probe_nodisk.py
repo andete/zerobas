@@ -71,6 +71,21 @@ CASES = [
     ("v.lof",    'PRINT LOF(1)'),
     ("v.cvistr", 'PRINT CVI("AB")'),
     ("v.mkifld", 'PRINT ASC(MKI$(1))'),
+    # --- the CHANNEL verbs -------------------------------------------------
+    # 🔴 THESE WERE EXCLUDED AS "UNREADABLE" AND THAT WAS WRONG (corrected
+    # 2026-09-03). The reasoning was that they "return the fixture's `load error`
+    # on a diskless machine -- an UNREADABLE cell, not a divergence", and it was
+    # even argued that counting them "would have inflated this finding by a
+    # third". `load error` is not the fixture: it is ZEROBAS'S OWN MESSAGE,
+    # printed by the machine, which then carries on -- a following `PRINT"C"`
+    # still answers. So the cell was always readable and these were always
+    # divergences: the oracle says `Illegal function call` (the verb does not
+    # exist without a disk ROM) while zerobas RUNS the verb and fails on the
+    # medium.
+    ("h.files",  'FILES'),
+    ("h.kill",   'KILL"NOSUCH.XXX"'),
+    ("h.name",   'NAME"A"AS"B"'),
+    ("h.open",   'OPEN"X"FOR OUTPUT AS#1'),
 ]
 
 # Rows that MUST agree with the oracle. A red here is a plain defect.
@@ -90,7 +105,20 @@ CONTROLS = {"c.print", "c.str", "v.eof", "v.lof"}
 # Every row is now scored against the oracle, so ANY of them regressing is a plain
 # failure with no pin to hide behind. A new disk verb that answers on a diskless
 # build lands here as a red row, not as an entry someone has to remember to add.
-PINNED: dict[str, tuple[str, str]] = {}
+# 🔴 REFILLED 2026-09-03: the CHANNEL verbs, whose exclusion as "unreadable" was
+# withdrawn the same day. zerobas RUNS them and fails on the MEDIUM (`load error`)
+# where a diskless MSX refuses because the verb is not there. Their hooks are
+# named and unclaimed: H.FILE $FE7B, H.KILL $FDFE, H.NAME $FDF9.
+# ⚠️ `h.open` is a DIFFERENT CLASS and is pinned as characterisation, not as a
+# hook candidate: the oracle answers ERR 2 (Syntax error), because `FOR OUTPUT`
+# is not parseable without Disk BASIC at all. That is a keyword-surface question,
+# not something a handler hook can fix.
+PINNED: dict[str, tuple[str, str]] = {
+    "h.files": ("'ERR 5 '", "'load error                             '"),
+    "h.kill":  ("'ERR 5 '", "'load error                             '"),
+    "h.name":  ("'ERR 5 '", "'load error                             '"),
+    "h.open":  ("'ERR 2 '", "'load error                             '"),
+}
 
 
 def run(side, stmt):
@@ -117,7 +145,10 @@ def main() -> int:
     for lab, _ in CASES:
         vals = [res[s][lab] for s in sides]
         ref, nod = res["vg8020"][lab], res["zb-nodisk"][lab]
-        if any(v == "<NO OUTPUT>" or "load error" in v for v in vals):
+        # 🔴 `load error` USED TO COUNT AS UNREADABLE HERE. It is not: it is
+        # zerobas's own message, printed by a machine that then carries on. Only a
+        # genuinely absent capture is unreadable.
+        if any(v == "<NO OUTPUT>" for v in vals):
             blank.append(lab); tag = "🔴 UNREADABLE"
         elif lab in CONTROLS:
             ok = ref == nod
