@@ -69,7 +69,34 @@
 ; two jobs: it is the tenant's op selector AND the tenant's SINK selector. So
 ; LFILES needs no mode cell of its own — the mode rides marshalling that had to
 ; happen anyway.
+; --- chan_gate: the channel verbs' disk-ROM presence gate (D-CHANHOOK) ------
+; docs/spec-basic-nodisk.md §11/§12. FILES/KILL/NAME are Disk BASIC's, and a
+; diskless MSX answers `Illegal function call` because the handler is not there.
+; zerobas RAN them and failed on the MEDIUM instead -- `load error` -- which is a
+; different answer to a different question, and it was measured only after the
+; "unreadable cell" excuse for those rows was withdrawn.
+;
+;   in   HL = the verb's hook cell
+;   out  returns to the CALLER with CF set when a disk ROM claimed it; otherwise
+;        raises ERR 5 and never returns.
+; One helper rather than three inline gates: 6 B per verb instead of 12, which
+; matters at 75 B of page 1 (2026-09-03).
+chan_gate:
+                ld      de,cg_back          ; call THROUGH HL: the cell is
+                push    de                  ; `F7 <slot> <lo> <hi> C9`, so its own
+                or      a                   ; `ret` lands here; unclaimed it is a
+                jp      (hl)                ; bare `ret` and lands here at once
+cg_back:
+                ret     c                   ; claimed -> back to the verb
+                ld      a,5                 ; Illegal function call -- TRAPPABLE,
+                jp      raise_error         ; which is what the reference gives
+
 ex_files:
+                push    hl                  ; ⚠️ HL IS THE STATEMENT CURSOR HERE and
+                ld      hl,H_FILE           ; the gate needs it for the hook address;
+                call    chan_gate           ; clobbering it made all three verbs answer
+                pop     hl                  ; ERR 2 on the DISK build -- caught by the
+                                            ; gate's own zb-disk column, not by review
                 ld      a,DISKOP_SEL_FILES  ; screen: CHPUT, packed rows
                 jr      do_files
 ex_lfiles:
@@ -1564,6 +1591,11 @@ fcla_next:
 ; wildcards: `KILL "*.BAK"` deletes every match. Errors (no disk / none matched /
 ; I-O) reuse the loader's load_error path. See basic/PROVENANCE.md §KILL.
 ex_kill:
+                push    hl                  ; ⚠️ HL IS THE STATEMENT CURSOR HERE and
+                ld      hl,H_KILL           ; the gate needs it for the hook address;
+                call    chan_gate           ; clobbering it made all three verbs answer
+                pop     hl                  ; ERR 2 on the DISK build -- caught by the
+                                            ; gate's own zb-disk column, not by review
                 inc     hl                  ; HL -> bytes after the KILL token
                 jr      do_kill
 do_kill:
@@ -1628,6 +1660,11 @@ do_kill:
 ; drive prefix on either name is accepted + ignored for the stamp); the no-disk /
 ; mount / I-O wording (quarantined). See basic/PROVENANCE.md §NAME.
 ex_name:
+                push    hl                  ; ⚠️ HL IS THE STATEMENT CURSOR HERE and
+                ld      hl,H_NAME           ; the gate needs it for the hook address;
+                call    chan_gate           ; clobbering it made all three verbs answer
+                pop     hl                  ; ERR 2 on the DISK build -- caught by the
+                                            ; gate's own zb-disk column, not by review
                 inc     hl                  ; HL -> bytes after the NAME token
                 jr      do_name
 do_name:

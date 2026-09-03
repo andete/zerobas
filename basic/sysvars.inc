@@ -3058,6 +3058,9 @@ H_MKD           equ     $FE3A   ; MKD$ handler
 H_CVI           equ     $FE3F   ; CVI handler
 H_CVS           equ     $FE44   ; CVS handler
 H_CVD           equ     $FE49   ; CVD handler
+H_NAME          equ     $FDF9   ; NAME handler   (channel verbs, D-CHANHOOK)
+H_KILL          equ     $FDFE   ; KILL handler
+H_FILE          equ     $FE7B   ; FILES handler
 ; --- the KEY-trap fn-key hook (interrupt-traps T3, docs/spec-traps-t3-key.md §4) ---
 ; NOT a standard MSX hook: it is added by OUR C-BIOS patch
 ; (cbios-repack/key-trap-hook.patch) because no published hook can see the current

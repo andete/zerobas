@@ -113,10 +113,13 @@ CONTROLS = {"c.print", "c.str", "v.eof", "v.lof"}
 # hook candidate: the oracle answers ERR 2 (Syntax error), because `FOR OUTPUT`
 # is not parseable without Disk BASIC at all. That is a keyword-surface question,
 # not something a handler hook can fix.
+# ✅ FILES / KILL / NAME LEFT THIS SET 2026-09-03 (D-CHANHOOK): they are routed
+# through H.FILE / H.KILL / H.NAME and a diskless build now answers ERR 5, like
+# the oracle. They are scored as ordinary agreeing rows, so the gate enforces it.
+# ⚠️ `h.open` STAYS, and is characterisation rather than a hook candidate: the
+# oracle answers ERR 2 (Syntax error) because `FOR OUTPUT` is not parseable at
+# all without Disk BASIC -- a keyword-surface question no handler hook fixes.
 PINNED: dict[str, tuple[str, str]] = {
-    "h.files": ("'ERR 5 '", "'load error                             '"),
-    "h.kill":  ("'ERR 5 '", "'load error                             '"),
-    "h.name":  ("'ERR 5 '", "'load error                             '"),
     "h.open":  ("'ERR 2 '", "'load error                             '"),
 }
 

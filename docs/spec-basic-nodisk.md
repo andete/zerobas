@@ -550,3 +550,47 @@ only a genuinely absent capture counts as unreadable now.
 gate has run 7–12 B, so hooking the three real candidates is affordable but would
 leave very little. That is the next slice's problem, and it should be weighed
 against moving conversions into `disk.rom` (§8) to buy the room back first.
+
+
+## 12. ✅ D-CHANHOOK — FILES / KILL / NAME, and page 1 is now the constraint
+
+The three divergences §11 uncovered are closed. `FILES`, `KILL` and `NAME` go
+through `H.FILE $FE7B`, `H.KILL $FDFE` and `H.NAME $FDF9`; a diskless build
+answers **ERR 5** like the oracle, and the disk build is unchanged.
+
+**`nodisk-acceptance`: 16 rows, PASS, 1 pin** — `h.open`, held as
+characterisation because the oracle answers *Syntax error* (`FOR OUTPUT` is not
+parseable without Disk BASIC), which no handler hook fixes.
+
+### 12.1 What it cost, and why this is now the binding constraint
+
+| step | page 1 free |
+|---|---|
+| before the whole migration | 164 B |
+| after the seven no-medium verbs | 75 B |
+| after `FILES`/`KILL`/`NAME` | **39 B** |
+
+🔴 **39 B is the tightest page 1 has been, and the next slice cannot ignore it.**
+One shared `chan_gate` helper was used rather than three inline gates precisely
+because of this — 6 B per verb instead of 12.
+
+⚠️ **The obvious relief is blocked.** §8 identified ~50 B of conversion tail that
+could move into `disk.rom`, and with the gates already paid for that would now be
+**pure recovery** rather than break-even. But it does not work today: **the disk
+ROM has no main-ROM ABI bridge.** `sub/basic-resident-abi.inc` is generated for
+the sub-ROM alone, so `disk/*.asm` cannot see `ARGA`, `STRSCR`, `FAC` or the
+float-arith entries. Building the equivalent for `disk.rom` — a generated include
+plus a staleness check, mirroring `tools/gen_resident_abi.py` /
+`check_resident_abi.py` — is the prerequisite, and it is a slice of its own.
+
+### 12.2 A regression the gate caught that review did not
+
+The first cut clobbered **HL — the statement cursor** — to load the hook address,
+and all three verbs began answering ERR 2 **on the disk build**. Nothing about the
+diskless side changed, so a probe that only looked at the target would have
+called it a success.
+
+🎯 **The `zb-disk` column is what caught it**, and it is in the table for exactly
+this reason: a change aimed at the diskless build must leave the disk build
+alone, and only a row that watches both can say so. Fixed with `push hl`/`pop hl`
+(2 B per verb).

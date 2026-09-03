@@ -47,6 +47,9 @@ H_MKD           equ     $FE3A   ; MKD$
 H_CVI           equ     $FE3F   ; CVI
 H_CVS           equ     $FE44   ; CVS
 H_CVD           equ     $FE49   ; CVD
+H_NAME          equ     $FDF9   ; NAME    (channel verbs, D-CHANHOOK)
+H_KILL          equ     $FDFE   ; KILL
+H_FILE          equ     $FE7B   ; FILES
 
 ; --- Disk scratch RAM (disk/PROVENANCE.md §Scratch RAM) --------------------
 ; (GETDPB writes the 18-byte DPB into the CALLER's buffer per MSX2 TH, so the disk

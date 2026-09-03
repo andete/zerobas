@@ -2141,7 +2141,8 @@ ibh_lp:
 ; The seven conversion hooks, each one of the 35 slots the CF-3300's disk ROM
 ; claims (scratchpad/hookdiff_probe.py) and each named in the MSX2 TH table.
 hook_tab:
-                dw      H_DSKF, H_MKI, H_MKS, H_MKD, H_CVI, H_CVS, H_CVD, 0
+                dw      H_DSKF, H_MKI, H_MKS, H_MKD, H_CVI, H_CVS, H_CVD
+                dw      H_NAME, H_KILL, H_FILE, 0
 
 ; --- install_hook: write one 5-byte CALLF stub into a hook slot -------------
 ; Layout source: MSX2 Technical Handbook §2 (inter-slot call / CALLF) --

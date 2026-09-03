@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1480 (T-6FE392)8 (T-529ABE)` from `TODO.md:6016 (T-529ABE)`: a
+      `TODO.md:1493 (T-6FE392)8 (T-529ABE)` from `TODO.md:6029 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -908,9 +908,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       identical until you look.** The probe's own scorer carried the same premise
       (it treated the STRING `load error` as an apparatus failure); that rule is
       gone, and only a genuinely absent capture counts as unreadable now.
-      💰 Hooking the three real candidates is affordable but page 1 is at **75 B**
-      free (2026-09-03) and each gate has run 7-12 B — weigh it against moving
-      conversions into `disk.rom` (§8) to buy the room back first.
+      ✅ **DONE THE SAME DAY (D-CHANHOOK)**: `FILES`/`KILL`/`NAME` go through
+      `H.FILE`/`H.KILL`/`H.NAME`, diskless answers ERR 5 like the oracle, disk
+      build unchanged. `nodisk-acceptance` 16 rows PASS with **1** pin (`h.open`,
+      characterisation). 🔴 **COST: page 1 75 -> 39 B free (2026-09-03) — the
+      tightest it has been**, and the next slice cannot ignore it.
+      ⚠️ **THE OBVIOUS RELIEF IS BLOCKED**: §8's ~50 B of movable conversion would
+      now be PURE recovery (the gates are already paid for), but **`disk.rom` has
+      no main-ROM ABI bridge** — `sub/basic-resident-abi.inc` is generated for the
+      sub-ROM alone, so `disk/*.asm` cannot see `ARGA`/`STRSCR`/`FAC` or
+      float-arith. Building the equivalent (a generated include + a staleness
+      check, mirroring `tools/gen_resident_abi.py`) is the prerequisite and is a
+      slice of its own.
+      🎯 **A REGRESSION THE GATE CAUGHT THAT REVIEW DID NOT**: the first cut
+      clobbered HL — the statement cursor — to load the hook address, and all
+      three verbs answered ERR 2 **on the DISK build** while the diskless side
+      looked perfect. The `zb-disk` column is in that table for exactly this.
 
       *(original question, kept for the reasoning:)*
 - [x] 🙋 **SHOULD THE DISK-BASIC VERBS LIVE IN `disk.rom` BEHIND A HOOK, AS ON
@@ -2058,7 +2071,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6016 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6029 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
