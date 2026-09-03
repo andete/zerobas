@@ -609,9 +609,37 @@ rsp_noround:
                 ld      a,4
                 ld      (FACTYP),a
                 jp      flt_to_int16        ; tail call: sets DE, returns to our caller
+; --- fac_zero_mantissa: make a ZERO FAC byte-identical to the reference's ----
+; docs/spec-basic-faczero.md (D-FACZERO). in: A = 0. Clears FAC+1..FAC+7.
+; Clobbers HL and B; A stays 0, so every caller's following `ld a,<type>` is
+; unaffected and DE is untouched.
+;
+; 🔴 EVERY ZERO EXIT USED TO WRITE THE LEAD BYTE AND STOP. Lead byte 0 IS "the
+; value is zero" -- flt_out never reads further and nothing printed wrong -- so
+; the mantissa kept whatever the destination happened to hold. Measured: a fresh
+; slot gave `0 255 255 255` where both references give `0 0 0 0`, and
+; `A!=1.5 : A!=0` gave `0 21 0 0` -- 21 being 1.5's OWN leftover mantissa byte.
+; That is a read of stale memory wearing the value's clothes.
+;
+; ⚠️ IT IS INVISIBLE TODAY AND WOULD NOT HAVE BEEN FOR LONG. `MKS$`/`MKD$` are
+; the next slice; they emit these exact bytes as a STRING, which a program
+; writes to disk. The scout that asked "is our float byte-identical to the
+; reference's?" -- a question about whether that slice was small -- is what
+; found it, before the verb could ship the divergence to a file.
+fac_zero_mantissa:
+                ld      hl,FAC+1
+                ld      b,7                 ; always all 7: single copies 4 bytes and
+                                            ; double 8, and a uniformly canonical FAC
+                                            ; costs nothing over clearing only 3
+fzm_lp:         ld      (hl),a
+                inc     hl
+                djnz    fzm_lp
+                ret
+
 rsp_zero_ok:
                 xor     a
                 ld      (FAC),a
+                call    fac_zero_mantissa   ; D-FACZERO: and the mantissa too
                 ld      a,4
                 ld      (FACTYP),a
                 ld      de,0
@@ -1899,6 +1927,10 @@ cpow_y_nonzero:
 cpow_x0_pos:
                 xor     a
                 ld      (FAC),a             ; FAC := 0 (double lead byte)
+                call    fac_zero_mantissa   ; D-FACZERO: ...and its mantissa.
+                                            ; This label IS `raf_zero_ok`, the
+                                            ; shared zero-pack tail every
+                                            ; fp_* underflow jumps to.
                 ld      a,8
                 ld      (FACTYP),a
                 ld      de,0

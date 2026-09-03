@@ -601,6 +601,17 @@ var_load_fac:
                 jp     z,vlf_unset_int
                 xor     a
                 ld      (FAC),a             ; lead byte 0 -> float zero
+                ; 🔴 D-FACZERO DELIBERATELY DOES *NOT* CALL fac_zero_mantissa HERE,
+                ; AND ITS OWN KNIFE IS WHY. K-FZ3 removed the call that used to sit
+                ; on this line and moved ZERO rows -- including `z.unset` /
+                ; `z.dunset`, added specifically to witness it. The reason is that
+                ; `A!=B!` on an unset B! does not hand FAC's bytes to the store: it
+                ; RE-PACKS through widen_rhs_operand + round_single_and_pack, whose
+                ; own zero exit is already canonical. So the call was 3 bytes no row
+                ; could defend, and this project does not ship guards like that.
+                ; ⚠️ IT COMES BACK THE DAY A CONSUMER READS FAC WITHOUT RE-PACKING,
+                ; and `MKS$`/`MKD$` are exactly that consumer -- see
+                ; docs/spec-basic-faczero.md §5.
                 ld      de,0
                 ret
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to vptr_none,

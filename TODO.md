@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1251 (T-6FE392)8 (T-529ABE)` from `TODO.md:5787 (T-529ABE)`: a
+      `TODO.md:1286 (T-6FE392)8 (T-529ABE)` from `TODO.md:5822 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -748,6 +748,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       📏 **0 DIFF / 36 rows** on three machines afterwards, including
       `e.replay`/`e.replayfn` — a `PLAY` after the abort still works, so the
       queue is left reusable and not merely quiet.
+
+- [x] ✅ **D-FACZERO — ZERO KEPT THE PREVIOUS VALUE'S MANTISSA.** Found and
+      fixed 2026-09-03, [`docs/spec-basic-faczero.md`](docs/spec-basic-faczero.md).
+      Found by [`scratchpad/mkfloat_scout.py`](scratchpad/mkfloat_scout.py) while
+      SIZING the MKS$ slice below — asking "is our stored float byte-identical to
+      the reference's?" (it is: 1.5 -> `65 21 0 0`, 1/3 -> `64 51 51 51 51 51 51
+      51`, so MKS$ really is MKI$ with a different length).
+      **12 of 29 rows diverged.** Every zero exit wrote the LEAD BYTE ONLY and
+      left the mantissa holding whatever the destination contained:
+
+          A!=0                refs 0 0 0 0   here 0 255 255 255
+          A!=1.5 : A!=0       refs 0 0 0 0   here 0  21   0   0   <- 1.5's OWN byte
+          A!(1)=0 / READ A! / DEFSNG B : B=0 / the double forms: all the same
+
+      🎯 **`z.reassign` NAMES THE MECHANISM** — 21 is 1.5's mantissa byte. A read
+      of stale memory wearing the value's clothes.
+      🟢 **INVISIBLE BECAUSE LEAD BYTE 0 *IS* "THE VALUE IS ZERO"** — flt_out
+      never reads further, so every zero always PRINTED correctly. `A!=0.0` was
+      green even before the fix (a dotted literal crunches as a float and packs a
+      real mantissa; a bare `0` crunches as an INTEGER and reaches the store
+      through the int->single widen). Two spellings, two paths, one wrong.
+      ⚠️ **AND IT WOULD NOT HAVE STAYED INVISIBLE** — `MKS$(0)` emits these exact
+      bytes as a STRING that a program writes to a file. Caught before the verb
+      could ship the divergence to disk.
+      🔬 **THE DENOMINATOR CHOSE THE SITE.** Scalars, arrays, READ and DEFSNG all
+      diverged and have different store paths, but all of them `ldir` from FAC —
+      so the fix is at the two PACKER zero exits, not at `var_store_fac`, which
+      would have left `z.arr` and `z.read` behind.
+      🔴 **AND A THIRD CALL SITE WAS DELETED BECAUSE ITS OWN KNIFE FAILED.** K-FZ3
+      removed the `vars.asm` unset-arm call and moved ZERO rows — including the
+      two rows added specifically to witness it — because `A!=B!` RE-PACKS rather
+      than handing FAC's bytes to the store. 3 bytes no row could defend, so they
+      are gone; the spec records the condition that brings them back.
+      💰 **COST: page-0 low region 79 -> 63 B free; page 1 UNCHANGED at 269 B.**
+      📏 **0 DIFF / 31 rows**, knives 2/2 on the arms that survived.
 
 - [ ] 🔴 **`MKS$` / `MKD$` / `CVS` / `CVD` ARE MISSING, AND THEIR DEFERRAL'S
       CONDITION HAS BEEN MET.** Found 2026-09-03 by D-DEFERCHECK
@@ -1829,7 +1864,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5787 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5822 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
