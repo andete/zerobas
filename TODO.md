@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1594 (T-6FE392)8 (T-529ABE)` from `TODO.md:6130 (T-529ABE)`: a
+      `TODO.md:1613 (T-6FE392)8 (T-529ABE)` from `TODO.md:6149 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1112,6 +1112,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       harness cannot reach, and four cases printed 0. **A stub that models a
       routine must model the part the caller reads.**
       💰 **COST: page 1 32 -> 12 B; sub page 1 1586 -> 1480 B.**
+      🔴 **`.` WAS ATTEMPTED AND REVERTED (D-PUDOT, same day)** —
+      [`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md) §9. It crashed
+      the fixture on every `d.*`/`e.*` row AND broke a previously-correct row
+      (`d.roundup`: `"##."` with 1.5 went ` 2.` -> `  2`; a point with ZERO places
+      still prints the point), while leaving page 1 at **2 B**. Backed out rather
+      than debugged at that headroom.
+      📏 **WHAT IT ESTABLISHED, MEASURED:** the main-side cost is **16 B** and
+      lands page 1 at 2 B, so `.` is **blocked on evicting `pu_do_number`'s
+      pad/emit tail**, not merely tight. The renderer design survives (digits
+      built CONTIGUOUSLY, point inserted last, so rounding is one carry walk over
+      one array); the carry/shift implementation is what was wrong. And `.##` --
+      an EMPTY integer part -- never reaches the renderer at all, because
+      `ptf_num` only starts a field on a `#`: a separate scanner entry point.
+      🔴 **AND IT EXPOSED A REAL LATENT BUG, NOW FIXED**: `sub/punum.asm` was
+      never in `SUB_PARTS`, so `make sub` said "nothing to be done" after a full
+      rewrite -- D-PUNUM shipped with `build/sub.rom` able to go quietly stale.
+      ⚠️ **THERE IS NO GATE FOR THIS** despite the Makefile carrying
+      `[[makefile-subparts-stale-tenant]]`: nothing cross-checks `SUB_PARTS`
+      against the files `sub/sub.asm` actually includes. Worth writing.
       📋 **`.` `,` `^^^^` ARE ONE SLICE, NOT THREE** — PRINT USING needs a
       FLOAT RENDERER, which fixes the three rows above on the way past. It also
       re-explains `m.big` (` 0,`), filed as a comma gap and really the same
@@ -2172,7 +2191,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6130 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6149 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

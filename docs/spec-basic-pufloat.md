@@ -207,3 +207,53 @@ carved.** The classic routes are recorded as exhausted (dup-span 4 B, page-0
 eviction closed to printing verbs, `jp`→`jr` fully banked), so the route is more
 eviction — `pu_do_number`'s pad/emit tail is the obvious candidate, and it is
 pure `pchar` work.
+
+
+## 9. 🔴 D-PUDOT attempted and REVERTED — what the attempt established
+
+`.` was implemented end to end (scanner recognition + `PU_DEC`, a rewritten
+renderer taking a decimal count, and the main-side routing for an integer with a
+`##.##` format) and then **backed out**. The tree is unchanged apart from one
+real bug the attempt exposed (§9.2).
+
+**Why it was reverted, not debugged further:**
+
+* the decimal path **crashed the fixture** on every `d.*`, `e.*` and `.dot` row —
+  the probe read the harness's own `ERR` line back, which is what a corrupted
+  return or a runaway loop looks like from outside;
+* it **broke a row that was previously correct**: `d.roundup` (`"##."` · 1.5)
+  went from ` 2.` to `  2`. A `.` with **zero** places still prints the point, and
+  the renderer returned early on `PU_DEC == 0`;
+* and it left page 1 at **2 B**. Debugging a carry-and-shift rewrite with two
+  bytes of headroom is not a position to work from.
+
+**What the attempt did establish, and it is worth keeping:**
+
+* The main-side cost is **16 B** and lands page 1 at 2 B — measured, not
+  estimated. `.` is therefore **blocked on evicting `pu_do_number`'s pad/emit
+  tail**, not merely tight.
+* The renderer wants the digits built **contiguously** with the point inserted
+  last, so rounding is one carry walk over one array. That part of the design
+  survives; the implementation of the carry/shift is what was wrong.
+* `"##."` — a point with **no** places — is a real case and prints the point.
+* A format with an **empty integer part** (`.##`, row `d.lead`) never reaches the
+  renderer at all: `ptf_num` only starts a numeric field on a `#`. That is a
+  separate scanner entry point.
+
+### 9.2 The bug the attempt exposed — `sub/punum.asm` was not a build prerequisite
+
+`make sub` reported *"nothing to be done"* after a full rewrite of the tenant,
+and the sub-ROM wall did not move. **`sub/punum.asm` was never added to
+`SUB_PARTS`**, so `D-PUNUM` shipped with a latent staleness bug: an edit to that
+file would not have triggered a rebuild, and `build/sub.rom` would have gone
+quietly stale.
+
+The Makefile carries a memory link for exactly this shape —
+`[[makefile-subparts-stale-tenant]]` — and **there is no gate for it**: nothing
+in `tools/` cross-checks `SUB_PARTS` against the files `sub/sub.asm` actually
+includes. That check is worth writing; it would have caught this at the moment
+the file was added rather than one slice later.
+
+⚠️ And the truncation that started the debugging was self-inflicted, for the
+**second time today**: a `str.index('pu_num_tenant:')` matched the name inside
+that routine's own comment header and cut the file there. Anchor on the label.
