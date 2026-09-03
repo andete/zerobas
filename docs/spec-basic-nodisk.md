@@ -228,3 +228,67 @@ already pins** (`MKI$` `MKS$` `MKD$` `CVI` `CVS` `CVD` `DSKF`) first, then the
 channel verbs. Each slice must leave `make nodisk-acceptance` green **with its
 pins moved** — a fixed row that keeps its old pin is precisely the failure mode
 §4 built that gate to catch.
+
+
+## 6. The calling convention — settled from C-BIOS and our own precedent
+
+The Technical Handbook documents the hook **layout** but not how a caller learns
+a hook was *handled*. That convention is not observable in the reference without
+tracing inside its ROM, which this project does not do — so it was answered from
+sources that are permitted and, as it turns out, already in this tree.
+**Joost's suggestion:** *"we can look in the c bios code to see how they handle
+hooks."*
+
+**1. The layout is confirmed three ways.** The Technical Handbook gives
+`RST 30H (0F7H) / byte data / addr-lo / addr-hi / RET (0C9H)`; my hook diff
+measured `F7 87 <lo> <hi> C9` on all 35 claimed slots; and `disk/init.asm`
+already *writes* exactly those five bytes for `HPHYD`.
+
+**2. An unclaimed hook is `RET` with the flags untouched.** C-BIOS's hook-area
+init `$C9`-fills `$FD9A..$FFE7` — stated in this project's own C-BIOS patch
+(`cbios-repack/key-trap-hook.patch`: *"still inside the span the hook-area init
+`$C9`-fills ($FD9A..$FFE7), so it defaults to `ret` with CF undisturbed"*) and
+independently measured: all seven target slots read `C9C9C9C9C9` on **both**
+zerobas builds.
+
+**3. 🎯 AND ZEROBAS ALREADY HAS THE SIGNALLING CONVENTION.** `H_ZKEY`, the KEY-trap
+seam this project added to C-BIOS, contracts exactly:
+
+> `CF=1` → swallow this delivery entirely … `CF=0` → expand `FNKSTR[A]` as before
+
+That works *because* an unclaimed hook is a `RET` that leaves CF alone. So the
+migration adopts the project's **own established convention** rather than
+inventing one, and rather than guessing at the reference's internals:
+
+| | |
+|---|---|
+| main ROM | clear CF, `CALL <hook>`, `jr c` = handled; fall through = raise ERR 5 |
+| with `disk.rom` | the stub inter-slot-calls the body, which returns `CF=1` |
+| diskless | the slot is `RET`; CF stays clear; ERR 5 — **correct by absence** |
+
+⚠️ This is **own-design signalling over a published layout**, and it is recorded
+as such. The observable contract is what must match the reference (works with a
+disk, ERR 5 without); how our two ROMs talk to each other between those points is
+ours, because the reference's internal answer is not available without
+disassembly.
+
+## 7. Slice 1 — fully specified, nothing left to guess
+
+| verb | hook | verb | hook |
+|---|---|---|---|
+| `MKI$` | `H.MKI$` `$FE30` | `CVI` | `H.CVI` `$FE3F` |
+| `MKS$` | `H.MKS$` `$FE35` | `CVS` | `H.CVS` `$FE44` |
+| `MKD$` | `H.MKD$` `$FE3A` | `CVD` | `H.CVD` `$FE49` |
+| `DSKF` | `H.DSKF` `$FE12` | | |
+
+* **Install:** extend `disk/init.asm`'s `init:` — it already captures
+  `HOOK_SLOT` on entry and writes one such stub; this adds seven more.
+* **Bodies:** into `disk.rom`'s interior holes (§5.1: 9012 B, largest 3420 B at
+  `$2849`). ⚠️ A **disk-ROM wall check** should land with this slice; there is
+  none today, so the space is measured but not *guarded*.
+* **Main side:** `str_mkf` (`basic/strvar.asm`) and `ev_ff_cv` (`basic/expr.asm`)
+  lose their bodies and gain a hook call each — the space win, and the reason the
+  two were factored into shared bodies in D-MKSD in the first place.
+* **Gate:** `make nodisk-acceptance` must stay green **with its pins moved** —
+  `k.mks` etc. become `ERR 5` on `zb-nodisk`, matching the oracle. A fixed row
+  that keeps its old pin is exactly what §4 built that gate to catch.
