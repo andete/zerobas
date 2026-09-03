@@ -274,9 +274,18 @@ pu_do_number:
                 jr      c,pu_num_over       ; length > width -> overflow
                 jr      z,pu_num_emit
                 ld      b,a                 ; B = pad count
-pu_num_pad:
+                ; D-PUSTAR: `**` in the format pads with asterisks. The character
+                ; is chosen ONCE, not per iteration, and carried on the stack
+                ; because pchar does not promise A back.
+                ld      a,(PU_FLAGS)
+                bit     2,a
                 ld      a,' '
+                jr      z,pu_num_pad
+                ld      a,'*'
+pu_num_pad:
+                push    af
                 call    pchar
+                pop     af
                 djnz    pu_num_pad
 pu_num_emit:
                 ld      hl,NUMBUF

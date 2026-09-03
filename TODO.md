@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1512 (T-6FE392)8 (T-529ABE)` from `TODO.md:6048 (T-529ABE)`: a
+      `TODO.md:1533 (T-6FE392)8 (T-529ABE)` from `TODO.md:6069 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1044,6 +1044,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the channel verbs). Each slice must leave `nodisk-acceptance` GREEN with its
       pins MOVED, since a fixed row that keeps its old pin is the failure mode
       that gate was built for.
+
+- [x] ✅ **D-PUSTAR — `PRINT USING`'s `**` ASTERISK FILL SHIPS** (2026-09-03,
+      [`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md)), the first of the
+      six. `"**##"` gives `***5` / `**-5` / `1234`, matching both references.
+      🔬 **The full contract for all six is now measured**:
+      [`scratchpad/pufloat_probe.py`](scratchpad/pufloat_probe.py), **36 rows on
+      which both references AGREE**, 3 carried as NO-ORACLE (`$$`, `&`, `\ \` —
+      the references split on those and zerobas matches a different one in each,
+      which is worth its own look).
+      💰 **AFFORDABLE ONLY BECAUSE THE SCANNER IS NOT IN PAGE 1**:
+      `basic/pu-render.inc` is included ONLY by `sub/printusing.asm`, so
+      recognition and width accounting cost SUB-ROM bytes and just the pad-char
+      choice touches page 1. **Page 1 61 -> 50 B; sub page 0 1962 -> 1894 B.**
+      `PU_FLAGS` bit 2 — no new RAM cell.
+      🔴 **KNIVES 2/2, and `a.full` is the evidence**: it emits NO padding, so
+      killing the FILL cannot touch it while killing the WIDTH makes it overflow.
+      Two claims, separated. ⚠️ Round 1 predicted both sets without `a.dot` and
+      both arms read FAIL — `**#.##` exercises `**` even though its `.` half is
+      unimplemented. The arms were right; the prediction was short.
+      📋 **STILL OPEN: `.` `,` `+` `-` `^^^^`** — contract measured, page 1 at
+      50 B is the scarce thing.
 
 - [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
       DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
@@ -2090,7 +2111,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6048 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6069 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

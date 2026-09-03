@@ -25,7 +25,9 @@
 ; Clobbers A, B, C, DE, HL.
 pu_to_field:
                 ld      a,(PU_FLAGS)
-                and     $FD                 ; clear "wrapped" (bit1)
+                and     $F9                 ; clear "wrapped" (bit1) AND the
+                                            ; asterisk-fill flag (bit2, D-PUSTAR):
+                                            ; both are per-FIELD state
                 ld      (PU_FLAGS),a
 ptf_scan:
                 ld      a,(PU_POS)
@@ -46,6 +48,8 @@ ptf_scan:
                 jp      z,ptf_amp
                 cp      BACKSLASH
                 jp      z,ptf_back
+                cp      '*'
+                jp      z,ptf_star
                 call    pchar               ; literal -> emit
                 ld      a,(PU_POS)
                 inc     a
@@ -83,6 +87,15 @@ ptf_num_lp:
                 inc     c
                 jr      ptf_num_lp
 ptf_num_done:
+                ; D-PUSTAR: the two asterisks COUNT toward the field width --
+                ; measured, `PRINT USING"**##";5` is `***5`, four characters wide,
+                ; and `**##` with 1234 is `1234` with no fill at all.
+                ld      a,(PU_FLAGS)
+                bit     2,a
+                jr      z,ptf_num_w
+                inc     b
+                inc     b
+ptf_num_w:
                 ld      a,b
                 ld      (PU_W),a
                 ld      a,c
@@ -90,6 +103,41 @@ ptf_num_done:
                 xor     a
                 ld      (PU_TYPE),a         ; numeric (also CF clear)
                 ret
+; --- ptf_star: `**` before a `#` run selects ASTERISK FILL (D-PUSTAR) --------
+; docs/spec-basic-pufloat.md. Both characters are consumed and both count toward
+; the width; the emitter (basic/printusing.asm pu_do_number) reads PU_FLAGS bit 2
+; and pads with `*` instead of a space.
+; ⚠️ A LONE `*` STAYS A LITERAL, and so does a `*` at the very end of the format.
+; Only the PAIR is a specifier, so `PRINT USING"*#";5` keeps its asterisk.
+ptf_star:
+                ld      a,(PU_POS)
+                inc     a
+                ld      c,a                 ; C = index of the SECOND character
+                ld      a,(PU_FMTLEN)
+                cp      c
+                jr      z,ptf_star_lit      ; `*` was the last char -> literal
+                ld      e,c
+                ld      d,0
+                ld      hl,PU_FMT
+                add     hl,de
+                ld      a,(hl)
+                cp      '*'
+                jr      nz,ptf_star_lit     ; not a PAIR -> literal
+                ld      a,(PU_FLAGS)
+                set     2,a
+                ld      (PU_FLAGS),a
+                ld      a,c
+                inc     a
+                ld      (PU_POS),a          ; past BOTH asterisks
+                jp      ptf_scan
+ptf_star_lit:
+                ld      a,'*'
+                call    pchar
+                ld      a,(PU_POS)
+                inc     a
+                ld      (PU_POS),a
+                jp      ptf_scan
+
 ptf_bang:
                 ld      a,(PU_POS)
                 inc     a
