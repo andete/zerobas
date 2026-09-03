@@ -163,10 +163,57 @@ patterns on one side and `C9`/`FF` on the other — uninitialised RAM differing 
 boot history, not installed stubs. `$FEBC` reads `33 33 C3 1D 6F` and needs its
 own look. Counting all 42 would have overstated the set by a fifth.
 
-⚠️ **THIS GIVES ADDRESSES AND A COUNT, NOT NAMES.** Which slot serves which BASIC
-verb still has to come from the published table and be cited — the measurement
-says *how many* and *where*, and the documentation says *what*. Agreement between
-the two is the goal; neither alone is enough.
+### 5.2.2 ✅ Names attached — 35 of 35, from a grade-B source
+
+Source: the **MSX2 Technical Handbook** appendix (Konamiman's public English
+translation, <https://www.konamiman.com/msx/msx2th/th-ap.txt>) — grade **B /
+Scoped** in `docs/allowed-sources.md`, an interface table, no code. The join was
+done **in code from the probe output**, not transcribed by hand.
+
+🟢 **THREE IN-REPO CONTROLS, ALL MATCHING**, checked before believing any row:
+`$FD9F` = H.TIMI (`basic/sysvars.inc`: `H_TIMI equ $FD9F`), `$FFA7` = H.PHYD
+(`disk/disk.asm`: *"the standard HPHYD ($FFA7) -> DSKIO inter-slot hook"*), and
+`$FFCA` = the expanded-BIOS call, which `sysvars.inc` calls H.BEXT — same address
+and meaning, different name between the two sources, worth knowing.
+
+**Every one of the 35 measured stubs is a named hook, and every one is
+disk-related** (plus H.TIMI, which a disk ROM legitimately chains for drive-motor
+timeout, and H.ERRP for error display):
+
+```
+$FD9F H.TIMI   $FDEF H.DSKO   $FDF9 H.NAME   $FDFE H.KILL   $FE08 H.COPY
+$FE12 H.DSKF   $FE17 H.DSKI   $FE21 H.LSET   $FE26 H.RSET   $FE2B H.FIEL
+$FE30 H.MKI$   $FE35 H.MKS$   $FE3A H.MKD$   $FE3F H.CVI    $FE44 H.CVS
+$FE49 H.CVD    $FE4E H.GETP   $FE58 H.NOFO   $FE5D H.NULO   $FE62 H.NTFL
+$FE71 H.BINS   $FE76 H.BINL   $FE7B H.FILE   $FE80 H.DGET   $FE85 H.FILO
+$FE8A H.INDS   $FE99 H.LOC    $FE9E H.LOF    $FEA3 H.EOF    $FEAD H.BAKU
+$FEB2 H.PARD   $FEB7 H.NODE   $FEFD H.ERRP   $FFA7 H.PHYD   $FFAC H.FORM
+```
+
+🎯 **AND EVERY VERB THIS GATE ALREADY PINS HAS ITS OWN DEDICATED HOOK.** There is
+nothing to invent:
+
+| verb | hook | verb | hook |
+|---|---|---|---|
+| `MKI$` | `H.MKI$` `$FE30` | `CVI` | `H.CVI` `$FE3F` |
+| `MKS$` | `H.MKS$` `$FE35` | `CVS` | `H.CVS` `$FE44` |
+| `MKD$` | `H.MKD$` `$FE3A` | `CVD` | `H.CVD` `$FE49` |
+| `DSKF` | `H.DSKF` `$FE12` | | |
+
+⚠️ **`$FEBC` (H.POSD) IS A LOOSE END, NOT A CLOSED ONE.** The table names it a
+hook, but the CF-3300 holds `33 33 C3 1D 6F` there — not the `F7 87 … C9`
+inter-slot stub every other claimed hook uses. Either it is claimed by a
+different mechanism (a bare `JP`, valid only while the disk ROM is mapped) or the
+5-byte read is misaligned at that slot. It is excluded from the 35 and flagged;
+it is **not** silently counted either way.
+
+⚠️ **24 table entries are NOT claimed by this disk ROM** — `H.SETS` `H.IPL`
+`H.CMD` `H.ATTR` `H.SETF` `H.MERG` `H.SAVE` `H.RSLF` `H.SAVD` `H.FPOS` `H.DEVN`
+`H.GEND` `H.RUNC` `H.CLEAR` `H.LOPD` `H.STKE` `H.ISFL` `H.OUTD` `H.CRDO`
+`H.DSKC` `H.DOGR` `H.PRGE` `H.ERRF` (and `H.POSD` above). The hook AREA is
+bigger than what Disk BASIC 1.0 uses, so "the hook exists" does not mean "the
+reference uses it" — a distinction that matters when deciding what zerobas must
+install.
 
 🔴 **AND ROUND 1 OF THIS DIFF WAS 90% BLIND WHILE PRINTING A VERDICT.** It read
 64 bytes per chunk — 128 hex characters into a 40-column screen — so nine of ten
