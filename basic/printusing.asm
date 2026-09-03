@@ -315,14 +315,16 @@ pu_num_pad:
                 call    pchar
                 pop     af
                 djnz    pu_num_pad
-pu_num_emit:
-                ld      hl,NUMBUF
-                call    pu_emit_str0
-                pop     hl
-                ret
+                jr      pu_num_emit
+                ; D-PUCARVE: the overflow arm ends the same four instructions as
+                ; the normal one, so it FALLS THROUGH instead of repeating them --
+                ; 8 B of duplicated tail for a 2 B jump, net +6 B in a page 1 that
+                ; had TWELVE. It has to sit here, before pu_num_emit, for the
+                ; fallthrough to exist; the two `jr`s above still reach both.
 pu_num_over:
                 ld      a,'%'               ; field overflow marker (MSX)
                 call    pchar
+pu_num_emit:
                 ld      hl,NUMBUF
                 call    pu_emit_str0
                 pop     hl
