@@ -131,6 +131,49 @@ vector this project documents — and needs no disassembly. Do it first, then ma
 it against the published list; agreement between an independent measurement and
 the documentation is worth more than either alone.
 
+### 5.2.1 ✅ The hook set, MEASURED — 35 slots
+
+`scratchpad/hookdiff_probe.py` reads the published system-hook region
+`$FD9A..$FFE7` on both references and diffs it. 42 five-byte slots differ, and
+they fall into two clearly distinct shapes:
+
+| shape | vg8020 (no disk) | cf3300 (disk) | count |
+|---|---|---|---|
+| **installed hook stub** | `C9 C9 C9 C9 C9` (five `RET` — unclaimed) | `F7 87 <addr-lo> <addr-hi> C9` | **35** |
+| not that shape | `FF`/`00` patterns | `C9`/`FF` patterns | 7 |
+
+`F7` is `RST 30h` (the inter-slot call), `87` the slot byte, then a 2-byte target
+and a `RET` — the documented MSX hook-installation stub. The 35:
+
+```
+$FD9F $FDEF $FDF9 $FDFE $FE08 $FE12 $FE17 $FE21 $FE26 $FE2B $FE30 $FE35 $FE3A
+$FE3F $FE44 $FE49 $FE4E $FE58 $FE5D $FE62 $FE71 $FE76 $FE7B $FE80 $FE85 $FE8A
+$FE99 $FE9E $FEA3 $FEAD $FEB2 $FEB7 $FEFD $FFA7 $FFAC
+```
+
+🟢 **THE MEASUREMENT PASSED A CONTROL NOBODY PLANTED.** `$FFA7` is in that list —
+and `disk/disk.asm`'s own header already says it *"installs the standard HPHYD
+($FFA7) -> DSKIO inter-slot hook"*. So the diff independently rediscovered the one
+hook this project already documents, with exactly the expected signature.
+`$FD9F` (H.TIMI, which `keytrap.asm` and `playsvc.asm` already use) is in it too.
+Two known hooks recovered from a blind diff is what says the other 33 are real.
+
+⚠️ **THE 7 OTHERS ARE NOT CLAIMED AS HOOKS.** Six (`$FFCA`–`$FFE3`) show `FF`/`00`
+patterns on one side and `C9`/`FF` on the other — uninitialised RAM differing by
+boot history, not installed stubs. `$FEBC` reads `33 33 C3 1D 6F` and needs its
+own look. Counting all 42 would have overstated the set by a fifth.
+
+⚠️ **THIS GIVES ADDRESSES AND A COUNT, NOT NAMES.** Which slot serves which BASIC
+verb still has to come from the published table and be cited — the measurement
+says *how many* and *where*, and the documentation says *what*. Agreement between
+the two is the goal; neither alone is enough.
+
+🔴 **AND ROUND 1 OF THIS DIFF WAS 90% BLIND WHILE PRINTING A VERDICT.** It read
+64 bytes per chunk — 128 hex characters into a 40-column screen — so nine of ten
+chunks per side matched nothing, and it still reported "3 hooks claimed" off an
+almost entirely absent table. The probe now names unread cells as unread and
+refuses to let a hook count be read past them.
+
 ### 5.3 Scope
 
 A multi-slice migration, and the gate orders it: the **no-medium verbs the gate
