@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1296 (T-6FE392)8 (T-529ABE)` from `TODO.md:5832 (T-529ABE)`: a
+      `TODO.md:1352 (T-6FE392)8 (T-529ABE)` from `TODO.md:5888 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -828,6 +828,62 @@ list. **When a slice lands, grep this list for what it just shipped.**
       in [0,1) on all three machines (`r.range` = 1 everywhere).
       🎯 **A VALUE ROW CANNOT TEST RND** — it is random, so the rows ask only what
       the comment raises: does it EXIST and is it in range. Corrected in place.
+
+- [ ] 🙋 **SHOULD THE DISK-BASIC VERBS LIVE IN `disk.rom` BEHIND A HOOK, AS ON
+      REAL HARDWARE? (Joost's question, 2026-09-03.)** Raised while D-MKSD was
+      landing `MKS$`/`MKD$`/`CVS`/`CVD` into the MAIN ROM.
+      🟢 **THE KEYWORD-TABLE HALF IS SETTLED AND MEASURED: main-ROM placement is
+      FAITHFUL.** Pointed at the DISKLESS Philips VG-8020
+      (`basic_probe_kwsweep.py --disk-machine Philips_VG_8020 --layer crunch`),
+      all five MK/CV words crunch **SAME** as zerobas — the VG-8020 tokenises
+      `MKS$` to `FF AF` with no disk ROM present. So on real MSX the MAIN ROM
+      owns the crunch table and the disk ROM supplies only the IMPLEMENTATION,
+      via hooks. That is exactly why a diskless machine tokenises `MKS$` happily
+      and then answers ERR 5 at execution.
+      🔴 **THE IMPLEMENTATION HALF IS A REAL, STANDING DIVERGENCE, AND IT LONG
+      PREDATES D-MKSD.** `disk/disk.asm`'s own header says zerobas-BASIC reaches
+      the file layer through the BDOS SYSTEM vector with CALSLT, *"NOT through
+      the H.* / HPHYD chain; HPHYD exists for FOREIGN hosts"* — `disk.rom` is a
+      STORAGE PROVIDER and carries no BASIC-extension hook at all. So every disk
+      verb (`FILES` `KILL` `NAME` `OPEN` `FIELD` `MKI$` `CVI` …) is implemented
+      BASIC-side, and has been since Phase 1.5.
+      📏 **MEASURED, NOT ARGUED — AND IT IS 8 ROWS.**
+      ⚠️ The first draft of this item called the consequence "a divergence in
+      PRINCIPLE, not one a user can currently reach", because every installed
+      machine carries `disk.rom`. **Joost: "it should also be possible to ship
+      zerobas without a disk ROM."** That makes it reachable, so it was measured
+      instead ([`scratchpad/nodisk_probe.py`](scratchpad/nodisk_probe.py)):
+      `ZB_REPACK_NODISK`, the shipped repack machine with the disk.rom slot
+      removed and nothing else changed, against the VG-8020 — which IS that
+      configuration on real hardware.
+
+          row        vg8020    zb-nodisk
+          k.mks      ERR 5      4          MKS$/MKD$/CVS -- D-MKSD, today
+          k.mki      ERR 5      2          MKI$/CVI      -- shipped LONG ago
+          k.cvi      ERR 5      258
+          v.dskf     ERR 5      0          DSKF
+          v.cvistr   ERR 5      16961
+          🟢 c.print / c.str  identical -- the diskless machine boots and runs
+          🟢 v.eof / v.lof    ERR 59 on ALL THREE -- already refuse correctly
+
+      🎯 **THE SHAPE IS SHARPER THAN "DISK VERBS LEAK": it is exactly the disk
+      verbs that need NO MEDIUM.** `EOF`/`LOF` want a channel and already raise;
+      the CONVERSION functions and `DSKF` compute an answer and so answer.
+      ⚠️ Four rows (`OPEN`/`FILES`/`KILL`/`NAME`) read the fixture's `load error`
+      on a diskless machine — UNREADABLE, and explicitly not scored; counting
+      them would have inflated this by a third.
+      🔴 **AND IT IS NOT NEW WITH D-MKSD** — `MKI$`, `CVI` and `DSKF` show it too,
+      so this is the standing architecture, not something today's slice broke.
+      💰 **AND IT IS NOT AN OBVIOUS SPACE WIN, WHICH IS THE REASON IT MIGHT HAVE
+      BEEN WORTH DOING ANYWAY.** Main page 1 is down to 164 B free and the disk
+      verbs are a large body sitting in the scarcest region — but `build/disk.rom`
+      is 16384 B with a trailing free run of **2 bytes**, so there is no evident
+      room to move them INTO. A real price needs a disk-ROM wall check, which
+      does not exist (`make basic-reloc` reports main and sub walls only).
+      🙋 **BLOCKED ON JOOST**: this is a structural decision — invent a BASIC
+      extension hook and move the verb bodies, or record the current split as an
+      accepted deviation with the reasoning above. Not something to settle
+      unilaterally mid-slice.
 
 - [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
       DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
@@ -1874,7 +1930,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5832 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5888 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
