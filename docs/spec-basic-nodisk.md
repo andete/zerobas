@@ -303,3 +303,60 @@ disassembly.
 * **Gate:** `make nodisk-acceptance` must stay green **with its pins moved** —
   `k.mks` etc. become `ERR 5` on `zb-nodisk`, matching the oracle. A fixed row
   that keeps its old pin is exactly what §4 built that gate to catch.
+
+
+## 8. 🔴 THE SPACE ARGUMENT IS WITHDRAWN — the destination has room, the *source* does not
+
+Written 2026-09-03, before any Z80 was cut, from reading the call graph the
+migration would have to break.
+
+§5.1 corrected a wrong disk-ROM figure (2 B → 9012 B) and concluded the move was
+"a **large** space win — roughly 55× the room". **The 9012 B is right and the
+conclusion is wrong**, because it prices the *destination* and the binding
+constraint is the *source*.
+
+### What actually pins the verbs to main page 1
+
+A body living in `disk.rom` executes with `disk.rom` mapped at `$4000-$7FFF`, so
+it can reach **main's low region** (page 0 still holds slot 0) but **not main
+page 1**. Marking each line of `str_mkf` by what it reaches:
+
+| calls | region | movable? |
+|---|---|---|
+| `eval`, `str_eval_no`, `strscr_desc` | main **page 1** | ❌ never |
+| `widen_rhs_operand`, `round_single_and_pack`, `round_and_finalize` | main **low** | ✅ |
+
+Same shape for `ev_ff_cv`: `ev_sp`, `ev_f_empty`, `ev_f_ifc`, `cvi_tmm`,
+`str_eval_ix` are page-1-bound; only `flt_int_result` and `pu_deref_body` (low)
+and the final `ldir` are not.
+
+**So the parse/marshalling half cannot move at all**, which is also why the
+reference must call its hooks *after* evaluating the argument — the main ROM owns
+the tokeniser and the evaluator.
+
+### The arithmetic
+
+Measured from `build/basic-reloc.sym` and the instruction sequences:
+
+| | |
+|---|---|
+| `str_mkf` total body | **72 B** (of which the coercion+copy tail ≈ **35 B** is movable) |
+| `ev_ff_cv` parse+checks | **61 B**, page-1 bound; its float tail ≈ **15 B** movable |
+| movable, both trios | **≈ 50 B** |
+| hook-call cost added back | ≈ 6 B at each shared call site + ≈ 4 B per entry stub to select the hook → **≈ 18 B per trio** |
+| **net for main page 1** | **≈ break-even**, perhaps ~15 B recovered |
+
+### What this changes
+
+* **The migration is still worth doing** — but for **faithfulness**, which was the
+  actual directive ("diskless should match vg8020"), *not* for space.
+* **Any pitch of it as a page-1 relief valve is retracted.** Main page 1 was
+  164 B free on 2026-09-03 and would stay about there.
+* The 9012 B in `disk.rom` remains genuinely free — it is simply not reachable by
+  *this* code. It stays available for anything whose call graph is low-region or
+  self-contained.
+
+🎯 **The lesson is the one this project keeps re-filing: a number that is correct
+about one side of a question can still answer the wrong question.** The trailing
+scan was an instrument error; this was worse, because the instrument was right
+and the *inference* was not.
