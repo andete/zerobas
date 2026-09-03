@@ -91,6 +91,21 @@ CASES = [
     ("m.big",      'PRINT USING"##,###,###";1234567'),
     ("m.dot",      'PRINT USING"#,###.##";1234.5'),
     ("m.neg",      'PRINT USING"#,###";-1234'),
+    # Three cases the original five cannot answer, all load-bearing for the
+    # SCANNER (where a `,` may legally sit) rather than the renderer.
+    # 🎯 `m.pos` SEPARATES TWO RULES that agree on every other row: commas every
+    # three digits FROM THE RIGHT, versus commas at the positions the format's own
+    # `,` characters occupy. Here they differ in LENGTH -- every-3 gives
+    # `12,345,678` (10) which OVERFLOWS a 9-wide field, format-positions gives
+    # `1234,5678` (9) which fits. `m.small` separates them too, less loudly.
+    ("m.pos",      'PRINT USING"####,####";12345678'),
+    ("m.trail",    'PRINT USING"##,";5'),
+    ("m.lead",     'PRINT USING",##";5'),
+    # 🎯 THE ALIAS ROW. PU_DEC / PU_COMMAS share PU_WP, `pu_fmt_int`'s scratch,
+    # on the argument that a field with `.` or `,` never takes the pu_fmt_int
+    # path. ONE format string with BOTH a plain field and a `.` field is the
+    # statement that breaks first if that ever stops holding.
+    ("x.mixed",    'PRINT USING"## ##.##";5;1.5'),
 
     # --- '+' explicit sign --------------------------------------------------
     ("p.lead",     'PRINT USING"+##";5'),

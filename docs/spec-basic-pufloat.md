@@ -418,3 +418,97 @@ a previous run did not finish. `atexit` and a `SIGTERM` handler cover the rest.
   a second scanner entry point, not a renderer change.
 * **`,`** (5 rows) and **`^^^^`** (5 rows) — no implementation yet. `^^^^`'s
   mantissa is already correct as of this slice; only the exponent is missing.
+
+## 13. ✅ D-PUCOMMA — `,`, and a collision found while allocating its scratch byte
+
+    PRINT USING"#,###";1234        refs `1,234`        was `%1234,`
+    PRINT USING"##,###,###";1234567  refs ` 1,234,567`  was `%1234567,`
+    PRINT USING"#,###.##";1234.5   refs `1,234.50`     was `%1235,`
+
+**8 rows green on the first build.** The probe is now **6 divergent of 47**:
+`d.lead` plus the five `^^^^` rows.
+
+### 13.1 Three cases the original five rows could not answer
+
+The comma family arrived as five rows, and none of them pinned *where a `,` may
+legally sit* or *what the grouping rule actually is*. Three rows were measured
+before any code was written:
+
+| row | typed | both refs |
+|---|---|---|
+| `m.pos` | `USING"####,####";12345678` | `%12,345,678` |
+| `m.trail` | `USING"##,";5` | `  5` |
+| `m.lead` | `USING",##";5` | `, 5` |
+
+🎯 **`m.pos` separates two rules that agree everywhere else.** Commas every three
+digits **from the right**, versus commas **at the positions the format's own `,`
+characters occupy**. Here they differ in *length*: every-three gives
+`12,345,678` (10 characters) which **overflows** the 9-wide field and takes the
+`%` prefix; format-positions gives `1234,5678` (9) which fits. The references say
+`%12,345,678`, so the format's comma positions are **not** used — only the count
+of them, for the width. `m.small` separates the same two rules more quietly.
+
+`m.trail` says a **trailing** `,` is still part of the field: `##,` is *three*
+wide, so the comma occupies a column even when no comma is printed. `m.lead` says
+a **leading** one is a literal — and that needs no test in the scanner, because
+`ptf_num` is only entered on a `#`, so the run has always started.
+
+### 13.2 🔴 `PU_DEC` was aliasing `FMT_DESC`, and nothing could have caught it
+
+Allocating a byte for `PU_COMMAS` meant reading the gap properly for the first
+time. §12 put `PU_DEC` at `$EEFE` with the comment *"free byte in the same
+`$EED6..$EEFF` gap"*. **That gap is full**: `PU_WP` ends at `$EEFC` and
+`FMT_SEC` / `FMT_DESC` own `$EEFD..$EEFF`. `PU_DEC` was sitting on `FMT_DESC`'s
+low byte.
+
+**RAM has no gate** — `wall-assertion-check` covers ROM only — so this was
+invisible, and the claim that made it invisible was a parenthesis in a comment
+nobody could run.
+
+Aliasing is *not* itself the defect: `scratchpad/rammap_sweep.py` reports **50
+addresses already carrying more than one name**, and deliberate reuse is the
+convention in this file. What was wrong was the **partner** and the **unstated
+argument**. `PU_DEC` and `PU_COMMAS` now share `PU_WP`, where the exclusivity is
+provable in one file against one flag: `PU_WP` is scratch for `pu_fmt_int`, and
+`pu_fmt_int` is reached only when `PU_FLAGS` bits 6/7 are **both clear**, while
+these two cells are written only by the scanner branches that **set** those bits.
+
+And the argument is **measured, not asserted**: row `x.mixed` puts a plain field
+and a `.` field in **one** format string — `PRINT USING"## ##.##";5;1.5` — which
+is the statement that breaks first if the exclusion ever stops holding. It reads
+` 5  1.50` on both references and here.
+
+### 13.3 The renderer pass
+
+Commas are inserted **after** rounding, so a carry that grows the integer part
+regroups correctly, and **before** the point, so the point still lands at the
+integer-digit count — which this pass widens by the commas it adds. The fraction
+is shifted right unchanged first, then the integer digits are copied right-to-left
+with a comma every three.
+
+The group test is **`dec b` before the group count**, which is what keeps the
+leftmost group from taking a leading comma: `123` stays `123`, not `,123`.
+
+### 13.4 Knives — 4/4
+
+| arm | plant | must move | must hold |
+|---|---|---|---|
+| K-PC1 | skip the comma pass | `m.basic` `m.big` `m.dot` `m.neg` `m.pos` | `m.small` `m.trail` `m.lead` `d.basic` |
+| K-PC2 | consume `,` without widening | `m.basic` `m.small` | `d.basic` `c.hash` |
+| K-PC3 | group in twos | `m.basic` `m.big` `m.dot` `m.pos` | `m.small` `m.trail` `d.basic` |
+| K-PC4 | drop bit7 from the routing | `m.basic` `m.neg` | `d.basic` `m.dot` `m.small` `m.trail` `m.big` `m.pos` |
+
+🎯 **K-PC4's must-hold list is the interesting half.** `m.small` and `m.trail`
+render *identically* through the plain integer path — three digits need no comma,
+and a trailing `,` prints none — and `m.dot` is a float, so it routes on bit 6
+regardless. The arm therefore names exactly which rows are paying for the
+renderer; if the must-holds moved, the routing change would be doing something
+broader than the claim.
+
+🔴 **I predicted K-PC4 wrong and the arm read FAIL on its first run.** I had
+`m.big` and `m.pos` in the must-move set. They did not move, for a reason sitting
+in the rows themselves: **1234567 and 12345678 are past int16**, so BASIC holds
+them as floats and they reach the renderer on bit 6's path whatever bit 7 does.
+The routing bit only decides for values that genuinely are integers, which in
+this row set is exactly `m.basic` and `m.neg`. The code was right; the prediction
+was not, and the fix was to the arm.

@@ -279,12 +279,14 @@ pu_do_number:
                 ld      a,(FACTYP)
                 cp      2
                 jr      nz,pu_num_flt
-                ; D-PUDOT: an INTEGER with a `##.##` format still needs the
+                ; D-PUDOT/D-PUCOMMA: an INTEGER with a `##.##` or `#,###` format
+                ; still needs the
                 ; renderer -- ` 5.00`, not ` 5`. Its value is in DE, which CALSLT
                 ; destroys, so widen and pack it into FAC first.
                 ld      a,(PU_FLAGS)
-                bit     6,a
-                jr      z,pu_num_int
+                and     $C0                 ; bit6 `.` or bit7 `,` -- either one
+                jr      z,pu_num_int        ; needs the renderer, and `and` costs
+                                            ; exactly what the old `bit 6,a` did
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 call    round_and_finalize

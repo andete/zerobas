@@ -3196,10 +3196,26 @@ PU_POS          equ     $EEF7   ; current scan index into PU_FMT (1)
 PU_W            equ     $EEF8   ; current field width (1)
 PU_TYPE         equ     $EEF9   ; field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
 PU_FLAGS        equ     $EEFA   ; bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
-PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2)
-PU_DEC          equ     $EEFE   ; PRINT USING `.`: decimal places requested (D-PUDOT).
-                                ; Free byte in the same $EED6..$EEFF gap; read only
-                                ; when PU_FLAGS bit 6 says a `.` was scanned (1)
+PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2) -- ALIASED by
+                                ; PU_COMMAS / PU_DEC below; see the block there
+; 🔴 THE $EED6..$EEFF GAP IS FULL: PU_WP ends at $EEFC and FMT_SEC / FMT_DESC own
+; $EEFD..$EEFF. D-PUDOT first put PU_DEC at $EEFE saying "free byte in the same
+; gap" -- FALSE, it aliased FMT_DESC, and nothing caught it because RAM HAS NO
+; GATE (wall-assertion-check covers ROM only).
+;
+; Aliasing itself is normal here (scratchpad/rammap_sweep.py: 50 addresses carry
+; more than one name). What was wrong was the PARTNER and the unstated argument.
+; These two share PU_WP, whose exclusivity is provable in ONE file against ONE
+; flag: PU_WP is scratch for `pu_fmt_int`, and basic/printusing.asm reaches
+; `pu_fmt_int` only when PU_FLAGS bits 6/7 are BOTH CLEAR -- while these two cells
+; are written only by the scanner branches that SET those same bits. A field is
+; scanned and then rendered before the next field is scanned, so a later plain
+; `#` field cannot reach back into an earlier `##.##` field's count.
+; That argument is measured, not asserted: probe row `x.mixed` puts a plain field
+; and a `.` field in ONE format string, which is the statement that would break
+; if the exclusion ever stopped holding.
+PU_COMMAS       equ     $EEFB   ; PRINT USING `,`: commas to insert (D-PUCOMMA) (1)
+PU_DEC          equ     $EEFC   ; PRINT USING `.`: decimal places requested (D-PUDOT) (1)
 ; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT
 ; clobbers every register, so the format loop keeps its position here in RAM. One byte
 ; ($EEFD) in the gap below FLD_DESC. Repack eviction (docs/spec-evict-call-format.md):

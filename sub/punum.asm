@@ -127,7 +127,7 @@ pnt_frput:
 pnt_round:
                 ld      a,(hl)              ; first source digit past the cut
                 cp      '5'
-                jr      c,pnt_point         ; below half -> plain truncation
+                jr      c,pnt_comma         ; below half -> plain truncation
                 push    de                  ; the end of the digits
                 call    pnt_digstart        ; HL = first digit
 pnt_carry:
@@ -138,7 +138,7 @@ pnt_carry:
                 inc     a
                 ld      (de),a
                 pop     de                  ; back to the end
-                jr      pnt_point
+                jr      pnt_comma
 pnt_nine:
                 ld      a,'0'
                 ld      (de),a              ; 9 -> 0 and keep carrying
@@ -157,6 +157,79 @@ pnt_nine:
                 call    pnt_digstart
                 ld      (hl),'1'
                 inc     c                   ; one more integer digit
+; --- D-PUCOMMA: group the INTEGER digits in threes ---------------------------
+; Runs after rounding (so a carry that grows the number regroups correctly) and
+; before the point is inserted (so the point still lands at C, which this pass
+; widens by the commas it adds).
+;
+; 🎯 THE GROUPING IS EVERY THREE FROM THE RIGHT, and the format's own `,`
+; POSITIONS ARE NOT USED. Those two rules agree on almost every format; row
+; `m.pos` separates them loudly -- `USING"####,####";12345678` is `%12,345,678`
+; on both references, so the every-three rule OVERFLOWS a 9-wide field where
+; placing commas at the format's positions would have fitted in it.
+pnt_comma:
+                ld      a,(PU_FLAGS)
+                bit     7,a
+                jp      z,pnt_point
+                ld      a,c                 ; K = (integer digits - 1) / 3
+                dec     a
+                ld      b,0
+pnt_ck:
+                sub     3
+                jr      c,pnt_ckd
+                inc     b
+                jr      pnt_ck
+pnt_ckd:
+                ld      a,b
+                or      a
+                jp      z,pnt_point         ; 3 digits or fewer: no comma at all
+                ld      (PU_COMMAS),a
+                ld      h,d                 ; HL = the NEW end = old end + K
+                ld      l,e
+                add     a,l
+                ld      l,a
+                jr      nc,pnt_cne
+                inc     h
+pnt_cne:
+                push    hl                  ; ...kept for the finish
+                push    hl
+                pop     ix                  ; IX = write cursor, walking down
+                call    pnt_digstart        ; HL = DIGSTART
+                ld      a,e                 ; B = fraction bytes = L - C
+                sub     l
+                sub     c
+                ld      b,a
+                or      a
+                jr      z,pnt_cint          ; an integer-only field
+pnt_cfrac:
+                dec     de                  ; the fraction moves right unchanged
+                dec     ix
+                ld      a,(de)
+                ld      (ix+0),a
+                djnz    pnt_cfrac
+pnt_cint:
+                ld      b,c                 ; B = integer digits still to place
+                ld      l,3                 ; L = digits left in this group
+pnt_clp:
+                dec     de
+                dec     ix
+                ld      a,(de)
+                ld      (ix+0),a
+                dec     b
+                jr      z,pnt_cdone         ; ⚠️ TESTED BEFORE THE GROUP COUNT, so
+                                            ; the LEFTMOST group never gets a
+                                            ; leading comma: `123` stays `123`.
+                dec     l
+                jr      nz,pnt_clp
+                ld      l,3
+                dec     ix
+                ld      (ix+0),','
+                jr      pnt_clp
+pnt_cdone:
+                ld      a,(PU_COMMAS)
+                add     a,c
+                ld      c,a                 ; the point now sits K columns later
+                pop     de                  ; DE = the new end
 pnt_point:
                 ld      a,(PU_FLAGS)
                 bit     6,a

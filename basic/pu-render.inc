@@ -25,7 +25,7 @@
 ; Clobbers A, B, C, DE, HL.
 pu_to_field:
                 ld      a,(PU_FLAGS)
-                and     $81                 ; clear "wrapped" (bit1), the asterisk
+                and     $01                 ; clear "wrapped" (bit1), the asterisk
                                             ; fill (bit2), the sign specifier
                                             ; (bits 3-5) and the decimal flag
                                             ; (bit6) -- all per-FIELD state. Bit0
@@ -87,8 +87,20 @@ ptf_num_lp:
                 add     hl,de
                 ld      a,(hl)
                 cp      '#'
+                jr      z,ptf_num_wide
+                ; --- D-PUCOMMA: a `,` INSIDE the run joins the field -----------
+                ; Measured (`m.trail`): `USING"##,";5` is `  5`, THREE wide -- the
+                ; comma is consumed by the field and occupies a column even when
+                ; no comma is printed. A LEADING one is a literal (`m.lead`:
+                ; `USING",##";5` is `, 5`), and that needs no test here: the caller
+                ; only enters ptf_num on a `#`, so the run has always started.
+                cp      ','
                 jr      nz,ptf_num_done
-                inc     b
+                ld      a,(PU_FLAGS)
+                set     7,a
+                ld      (PU_FLAGS),a
+ptf_num_wide:
+                inc     b                   ; `#` and `,` both take a column
                 inc     c
                 jr      ptf_num_lp
 ptf_num_done:

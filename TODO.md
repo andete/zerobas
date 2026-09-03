@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1672 (T-6FE392)8 (T-529ABE)` from `TODO.md:6208 (T-529ABE)`: a
+      `TODO.md:1700 (T-6FE392)8 (T-529ABE)` from `TODO.md:6236 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1200,6 +1200,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       as its own baseline. Plants now go through a **disk sidecar** restored at
       startup; the sidecar's existence is the alarm.
 
+- [x] ✅ **D-PUCOMMA — `PRINT USING`'s `,` SHIPS, AND IT FOUND A RAM COLLISION**
+      (2026-09-04, [`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md) §13).
+
+          PRINT USING"#,###";1234          refs `1,234`       was `%1234,`
+          PRINT USING"##,###,###";1234567  refs ` 1,234,567`  was `%1234567,`
+
+      **8 rows green on the first build**, taking
+      [`scratchpad/pufloat_probe.py`](scratchpad/pufloat_probe.py) to **6
+      divergent of 47** — `d.lead` plus the five `^^^^` rows. Knives **4/4**
+      ([`scratchpad/pucomma_knives.py`](scratchpad/pucomma_knives.py)).
+      🎯 **THREE ROWS WERE MEASURED BEFORE ANY CODE**, because the original five
+      pinned neither where a `,` may sit nor what the grouping rule is. `m.pos`
+      (`USING"####,####";12345678`) **separates two rules that agree everywhere
+      else**: commas every three from the RIGHT versus commas at the format's own
+      `,` POSITIONS. They differ in LENGTH here — every-three gives 10 characters
+      and overflows a 9-wide field (`%12,345,678`, which is what both references
+      say); format-positions gives 9 and would have fitted.
+      🔴 **IT ALSO FOUND THAT D-PUDOT'S `PU_DEC` WAS ALIASING `FMT_DESC`** (§13.2).
+      §12 placed it at `$EEFE` calling that *"a free byte in the same gap"* — the
+      gap is FULL (`PU_WP` ends at `$EEFC`, `FMT_SEC`/`FMT_DESC` own
+      `$EEFD..$EEFF`). **RAM HAS NO GATE**, so nothing could have caught it, and
+      the claim that hid it was a parenthesis in a comment nobody could run.
+      Aliasing is not itself the defect — `scratchpad/rammap_sweep.py` reports 50
+      addresses already carrying more than one name — the PARTNER was. `PU_DEC`
+      and `PU_COMMAS` now share `PU_WP`, where the exclusivity is provable in one
+      file against one flag, and **row `x.mixed` measures it** rather than
+      asserting it: one format string carrying both a plain field and a `.` field.
+
 - [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
       DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
       (review tier, [`scratchpad/pusing_probe.py`](scratchpad/pusing_probe.py),
@@ -1212,16 +1240,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
           PRINT USING"##.##";1.5      refs ` 1.50`      ✅ D-PUDOT
           PRINT USING"##.##";5        refs ` 5.00`      ✅ D-PUDOT
-          PRINT USING"#,###";1234     refs `1,234`      🔴 here `%1234,`
+          PRINT USING"#,###";1234     refs `1,234`      ✅ D-PUCOMMA
           PRINT USING"+##";5          refs ` +5`        ✅ D-PUSIGN
           PRINT USING"##-";5          refs ` 5 `        ✅ D-PUSIGN
           PRINT USING"**##";5         refs `***5`       ✅ D-PUSTAR
           PRINT USING"##.##^^^^";1.5  refs ` 1.50E+00`  🔴 here ` 1.50^^^^`
 
-      🟢 **AS OF 2026-09-04 ONLY `,` AND `^^^^` REMAIN** (5 rows each), plus
-      `d.lead` (`.##`, an empty integer part — a SCANNER entry point, not a
-      renderer change: `ptf_num` only starts a field on `#`). `^^^^`'s MANTISSA
-      is already correct; only the exponent is missing.
+      🟢 **AS OF 2026-09-04 ONLY `^^^^` REMAINS** (5 rows), plus `d.lead`
+      (`.##`, an empty integer part — a SCANNER entry point, not a renderer
+      change: `ptf_num` only starts a field on `#`). `^^^^`'s MANTISSA is already
+      correct; only the exponent is missing.
 
       🟢 **FOUR CONTROLS GREEN** (`###`, `## ` repeat, `!`, a literal `[#]`), so
       the formatter's own machinery is right and this is the specifier set.
@@ -2250,7 +2278,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6208 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6236 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
