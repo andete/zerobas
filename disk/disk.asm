@@ -53,6 +53,11 @@
 ; include order reproduces the exact byte sequence. Do not reorder.
 ; ===========================================================================
                 include "equates.inc"
+                ; The main ROM's addresses this ROM calls into (D-DISKABI).
+                ; GENERATED per build from build/basic-reloc.sym, so a low-region
+                ; shift cannot leave us calling stale addresses; `make
+                ; diskrom-abi-check` is the standing assert.
+                include "basic-resident-abi.inc"
                 include "init.asm"
                 include "pageenv.asm"
                 include "driver.asm"

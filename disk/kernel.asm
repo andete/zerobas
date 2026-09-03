@@ -2117,21 +2117,63 @@ hk_present:
                 scf
                 ret
 
+; --- hk_mkfloat: MKS$/MKD$'s conversion, RUNNING IN THE DISK ROM -------------
+; D-DISKABI, docs/spec-basic-nodisk.md §13. The FIRST disk-verb body actually to
+; live here rather than merely being gated from here -- which is what Joost asked
+; for ("the implementation ... should probably be in the disk rom").
+;
+; It is possible because this is a PAGE-1 ROM: while we are mapped at
+; $4000-$7FFF, page 0 still holds slot 0, so main's LOW REGION is callable by
+; absolute address. Those addresses arrive through disk/basic-resident-abi.inc,
+; GENERATED per build from build/basic-reloc.sym, so a low-region shift cannot
+; leave this routine calling stale ones (`make diskrom-abi-check`).
+;
+; ⚠️ EVERYTHING CROSSES IN RAM, NOT IN REGISTERS. CALSLT is documented to affect
+; most of them, so the width arrives in STRSCR, the value in FAC/FACTYP, and the
+; result goes back into STRSCR -- all work-area cells, all mapped throughout.
+;   in   STRSCR = the width (4 or 8); FAC/FACTYP = the evaluated argument
+;   out  STRSCR+1.. = the packed bytes; CF set (handled)
+hk_mkfloat:
+                ; ⚠️ THE WIDEN IS NOT HERE, AND THAT IS NOT AN OVERSIGHT.
+                ; `widen_rhs_operand` reads the live RHS, which for an INTEGER
+                ; argument is DE -- a register CALSLT does not preserve. It runs
+                ; main-side; by the time we are entered, ARGA already holds the
+                ; widened value and everything we touch is RAM.
+                ld      a, (STRSCR)
+                cp      4
+                jr      nz, hkm_dbl
+                call    round_single_and_pack   ; 6-digit half-up round -> single
+                jr      hkm_copy
+hkm_dbl:
+                call    round_and_finalize      ; exact widen -> double
+hkm_copy:
+                ld      a, (STRSCR)
+                ld      c, a
+                ld      b, 0
+                ld      hl, FAC
+                ld      de, STRSCR + 1
+                ldir                        ; the packed bytes ARE the string
+                scf
+                ret
+
 ; --- ; --- install_basic_hooks: claim every BASIC-extension hook this ROM answers --
 ; Table-driven so init.asm costs ONE call: the pad before its $41EF pin is 31 B
 ; and seven inline installs need 45. docs/spec-basic-nodisk.md §9.
 ; Clobbers A, BC, DE, HL.
 install_basic_hooks:
-                ld      de, hk_present      ; every entry answers the same question
                 ld      hl, hook_tab
 ibh_lp:
-                ld      c, (hl)
+                ld      c, (hl)             ; the hook cell
                 inc     hl
                 ld      b, (hl)
                 inc     hl
                 ld      a, b
                 or      c
                 ret     z                   ; $0000 terminates the table
+                ld      e, (hl)             ; ...and ITS OWN handler: the table is
+                inc     hl                  ; pairs now, because MKS$/MKD$ answer
+                ld      d, (hl)             ; with a real body while the rest only
+                inc     hl                  ; report presence
                 push    hl
                 ld      h, b
                 ld      l, c
@@ -2141,8 +2183,18 @@ ibh_lp:
 ; The seven conversion hooks, each one of the 35 slots the CF-3300's disk ROM
 ; claims (scratchpad/hookdiff_probe.py) and each named in the MSX2 TH table.
 hook_tab:
-                dw      H_DSKF, H_MKI, H_MKS, H_MKD, H_CVI, H_CVS, H_CVD
-                dw      H_NAME, H_KILL, H_FILE, 0
+                dw      H_DSKF, hk_present
+                dw      H_MKI,  hk_present   ; MKI$'s store needs DE, which does
+                                             ; not survive CALSLT -- stays main-side
+                dw      H_MKS,  hk_mkfloat   ; the float coercion LIVES HERE now
+                dw      H_MKD,  hk_mkfloat
+                dw      H_CVI,  hk_present
+                dw      H_CVS,  hk_present
+                dw      H_CVD,  hk_present
+                dw      H_NAME, hk_present
+                dw      H_KILL, hk_present
+                dw      H_FILE, hk_present
+                dw      0
 
 ; --- install_hook: write one 5-byte CALLF stub into a hook slot -------------
 ; Layout source: MSX2 Technical Handbook §2 (inter-slot call / CALLF) --

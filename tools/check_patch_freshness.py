@@ -124,7 +124,14 @@ DELIVERABLES = [
     dict(name="abi", needs_cbios=False, floor=20,
          make_target="build/basic-reloc.sym",
          pair=["sub/basic-resident-abi.inc"],
-         regen="abi", needs=["build/basic-reloc.sym"]),
+         regen="abi", abi_profile="sub", needs=["build/basic-reloc.sym"]),
+    # The DISK ROM's bridge (D-DISKABI) is the same kind of generated file and
+    # goes stale the same way -- this gate's own header records that the sub one
+    # was STALE IN HEAD across 11 commits before it was covered.
+    dict(name="abi-disk", needs_cbios=False, floor=20,
+         make_target="build/basic-reloc.sym",
+         pair=["disk/basic-resident-abi.inc"],
+         regen="abi", abi_profile="disk", needs=["build/basic-reloc.sym"]),
     # The coefficients genuinely depend on nothing but their generator, so a
     # floor of 1 is the honest floor here rather than a weakened one -- and the
     # R != W clause catches an un-regenerated edit to it regardless.
@@ -208,7 +215,8 @@ def check(d, cbios, keep) -> int:
         if d.get("regen") == "abi":
             argv = [sys.executable, str(ROOT / "tools" / "gen_resident_abi.py"),
                     str(ROOT / "build" / "basic-reloc.sym"),
-                    os.path.join(work, "basic-resident-abi.inc")]
+                    os.path.join(work, "basic-resident-abi.inc"),
+                    f"--profile={d.get('abi_profile', 'sub')}"]
         elif d.get("regen") == "coeffs":
             # 🎯 THE SHIPPED PATH, NOT THE DRY-RUN BRANCH. gen_math_coeffs.py
             # writes to the RELATIVE path `sub/math-coeffs.inc`, so running it

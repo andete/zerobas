@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1493 (T-6FE392)8 (T-529ABE)` from `TODO.md:6029 (T-529ABE)`: a
+      `TODO.md:1512 (T-6FE392)8 (T-529ABE)` from `TODO.md:6048 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -913,7 +913,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       build unchanged. `nodisk-acceptance` 16 rows PASS with **1** pin (`h.open`,
       characterisation). 🔴 **COST: page 1 75 -> 39 B free (2026-09-03) — the
       tightest it has been**, and the next slice cannot ignore it.
-      ⚠️ **THE OBVIOUS RELIEF IS BLOCKED**: §8's ~50 B of movable conversion would
+      ✅ **AND THE BLOCKER IS GONE (D-DISKABI, same day)** —
+      [`docs/spec-basic-nodisk.md`](docs/spec-basic-nodisk.md) §13.
+      `disk/basic-resident-abi.inc` is generated per build by the SAME
+      `tools/gen_resident_abi.py` the sub-ROM uses (a PROFILE, not a fork, so the
+      two cannot drift); `make diskrom-abi-check` is the standing assert and
+      `patch-freshness-check` now covers it as `abi-disk` — that gate's own header
+      records the sub-ROM copy having been **stale in HEAD across 11 commits**
+      before it was covered.
+      🎯 **AND IT IS WITNESSED, NOT SPECULATIVE**: `hk_mkfloat` — `MKS$`/`MKD$`'s
+      round-and-pack — now runs INSIDE `disk.rom`, the first disk-verb body
+      actually to live there rather than merely be gated from there.
+      💰 **Page 1 39 -> 61 B free** (2026-09-03), 22 B recovered.
+      🔴 **TWO REGISTER MISTAKES, BOTH CAUGHT BY MEASUREMENT.**
+      `widen_rhs_operand` CANNOT move: for an INTEGER argument it reads `DE`,
+      which `CALSLT` does not preserve — moving it broke `MKS$(0)`, `MKS$(1)`,
+      `MKD$(7)`, `MKS$(3%)` while every FLOAT argument stayed green (5 DIFF).
+      Then the repair went in AFTER `HL` held the hook address and clobbered it —
+      24 DIFF, controls included. ⚠️ So the recovery is **22 B, not the 37 B the
+      first build reported**: that number was measured on a ROM that did not work.
+      ⚠️ Superseded, kept for the reasoning — §8's ~50 B of movable conversion would
       now be PURE recovery (the gates are already paid for), but **`disk.rom` has
       no main-ROM ABI bridge** — `sub/basic-resident-abi.inc` is generated for the
       sub-ROM alone, so `disk/*.asm` cannot see `ARGA`/`STRSCR`/`FAC` or
@@ -2071,7 +2090,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6029 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6048 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -37,8 +37,15 @@ def main() -> int:
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     sym_path, inc_path = sys.argv[1], sys.argv[2]
+    # name the artifact this .inc actually feeds -- the messages hardcoded
+    # "sub.rom" / "make sub", which is wrong guidance for the disk profile
+    artifact = "disk.rom" if "disk/" in inc_path else "sub.rom"
+    target = "disk" if "disk/" in inc_path else "sub"
 
-    fresh = gen_resident_abi.generate(sym_path, out_path=None)
+    # ⚠️ PASS THE PATH, SUPPRESS THE WRITE. The path is what selects the ABI
+    # profile (sub-ROM vs disk ROM); passing None to mean "do not write" used to
+    # discard that too, and the disk profile failed on its first invocation.
+    fresh = gen_resident_abi.generate(sym_path, inc_path, write=False)
 
     try:
         on_disk = Path(inc_path).read_text()
@@ -52,13 +59,13 @@ def main() -> int:
               "regen (tools/gen_resident_abi.py) differs from the on-disk "
               "file. sub.rom may have been assembled from OLD resident "
               "addresses (a page-0 low-region shift without a full "
-              "`make sub` rebuild). Re-run `make sub` (or the abi.inc rule) "
-              "and rebuild.", file=sys.stderr)
+              f"`make {target}` rebuild). Re-run `make {target}` (or the "
+              "abi.inc rule) and rebuild.", file=sys.stderr)
         return 1
 
     n = fresh.count("equ")
     print(f"OK: {inc_path} matches a fresh regen from {sym_path} "
-          f"({n} resident-ABI addresses, sub.rom is not stale)")
+          f"({n} resident-ABI addresses, {artifact} is not stale)")
     return 0
 
 

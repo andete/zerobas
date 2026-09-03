@@ -49,7 +49,7 @@ import sys
 # ones or first-error-wins would hold everywhere EXCEPT `x^y` and `EXP(x)`.
 # It is page-0-resident by construction (basic/str-engine.asm, low region),
 # which is exactly the property this file's low_ceiling() check enforces.
-REQUIRED = [
+REQUIRED_SUB = [
     "fp_add",
     "fp_sub",
     "fp_mul",
@@ -63,6 +63,63 @@ REQUIRED = [
     "vars_reset",
     "penderr_set",
 ]
+
+# --- the DISK ROM's profile (D-DISKABI, docs/spec-basic-nodisk.md §13) -------
+# disk.rom is a PAGE-1 ROM exactly like a sub-ROM page-1 tenant, so it faces the
+# same rule and gets the same bridge: while it is mapped at $4000-$7FFF, page 0
+# still holds slot 0, so main's LOW REGION is callable by absolute address and
+# main page 1 is not. Until now it had no bridge at all, which is why the disk
+# verbs' bodies could not follow their hooks (§8/§12).
+#
+# CODE: ceiling-checked, exactly as the sub list is.
+REQUIRED_DISK_CODE = [
+    "widen_rhs_operand",        # MKS$/MKD$: widen the live RHS into ARGA
+    "round_single_and_pack",    # ...then pack it as single
+    "round_and_finalize",       # ...or as double
+]
+# RAM: NOT ceiling-checked, and that exemption is the point -- these are work-area
+# cells above $8000, always mapped, and applying the page-0-resident test to them
+# would reject every one. They are here rather than in disk/equates.inc so that a
+# sysvar MOVE cannot leave disk.rom writing the old address: the same staleness
+# argument the code half rests on.
+REQUIRED_DISK_RAM = [
+    "ARGA",                     # the 15-digit working record
+    "STRSCR",                   # [len][bytes] staging buffer
+    "FAC",                      # the packed float accumulator
+    "FACTYP",                   # 2 / 4 / 8
+]
+
+# out-path -> (code symbols, ram symbols, what it feeds)
+PROFILES = {
+    "sub/basic-resident-abi.inc":  (REQUIRED_SUB, [], "sub-ROM"),
+    "disk/basic-resident-abi.inc": (REQUIRED_DISK_CODE, REQUIRED_DISK_RAM,
+                                    "disk ROM"),
+}
+
+
+def profile_for(out_path: str, name: str | None = None):
+    """`name` wins when given; otherwise the profile is inferred from the path.
+
+    ⚠️ THE EXPLICIT NAME EXISTS BECAUSE THE PATH IS NOT ALWAYS THE REAL ONE.
+    `check_patch_freshness.py` regenerates into a TEMP directory to diff against
+    the tracked copy, and that path carries no `sub/` or `disk/` hint -- so
+    path-only selection refused it and reddened a gate that had nothing to do
+    with this change."""
+    if name is not None:
+        for key, prof in PROFILES.items():
+            if key.startswith(name + "/"):
+                return prof
+        raise SystemExit(f"FAIL: gen_resident_abi.py: unknown --profile {name!r}")
+    """Pick the symbol set from the OUTPUT path -- the one thing both call sites
+    already state explicitly, so neither Makefile rule needs a new flag."""
+    key = out_path.replace("\\", "/")
+    for name, prof in PROFILES.items():
+        if key.endswith(name):
+            return prof
+    raise SystemExit(
+        f"FAIL: gen_resident_abi.py: no ABI profile for output path {out_path!r} "
+        f"-- known: {', '.join(sorted(PROFILES))}")
+
 
 # Page-0-resident ceiling. Any resident-ABI address must be strictly below the
 # END OF THE LOW REGION, or a page-1 CALSLT (which switches page 0 OUT to the
@@ -97,10 +154,16 @@ def load_syms(path: str) -> dict[str, int]:
     return syms
 
 
-def generate(sym_path: str, out_path: str) -> str:
+def generate(sym_path: str, out_path: str, write: bool = True,
+             profile: str | None = None) -> str:
+    """`out_path` ALWAYS selects the profile, even when `write` is False -- the
+    checker regenerates into memory and still has to know WHICH ABI it is
+    checking. Passing None for that reason used to be the only way to say
+    "do not write", and it took the profile with it."""
+    code, ram, what = profile_for(out_path, profile)
     syms = load_syms(sym_path)
 
-    missing = [name for name in REQUIRED if name not in syms]
+    missing = [n for n in code + ram if n not in syms]
     if missing:
         raise SystemExit(
             "FAIL: gen_resident_abi.py: missing resident symbol(s) in "
@@ -109,8 +172,11 @@ def generate(sym_path: str, out_path: str) -> str:
         )
 
     ceiling = low_ceiling(syms)
+    # ⚠️ THE CEILING APPLIES TO CODE ONLY. A RAM cell is above $8000 by
+    # construction and is mapped in every configuration; testing it here would
+    # reject the whole disk profile on its first symbol.
     not_resident = [
-        f"{name}=${syms[name]:04X}" for name in REQUIRED if syms[name] >= ceiling
+        f"{name}=${syms[name]:04X}" for name in code if syms[name] >= ceiling
     ]
     if not_resident:
         raise SystemExit(
@@ -128,14 +194,14 @@ def generate(sym_path: str, out_path: str) -> str:
         "; GENERATED FILE -- do not hand-edit. Produced by",
         "; tools/gen_resident_abi.py from build/basic-reloc.sym (Makefile rule);",
         "; regenerated on every build so a page-0-low shift can never leave this",
-        "; sub-ROM calling stale addresses. docs/spec-basic-subrom-mathpack.md §4.",
+        f"; {what} calling stale addresses. docs/spec-basic-subrom-mathpack.md §4.",
         ";",
         "; Clean-room: every value below is an address inside THIS project's own",
         "; main ROM, read out of our own build's symbol file. Nothing here is derived",
         "; from a disassembly or byte-copy of any reference ROM.",
         "",
     ]
-    for name in REQUIRED:
+    for name in code + ram:
         # Leading "0" (same convention pasmo's own --sym output uses, e.g.
         # "fp_div EQU 03632H") so a value whose hex form starts A-F never
         # parses as an identifier instead of a numeric literal.
@@ -143,18 +209,21 @@ def generate(sym_path: str, out_path: str) -> str:
     lines.append("")
     text = "\n".join(lines)
 
-    if out_path:
+    if write and out_path:
         with open(out_path, "w") as fh:
             fh.write(text)
     return text
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
+    args = [a for a in sys.argv[1:] if not a.startswith("--profile")]
+    prof = next((a.split("=", 1)[1] for a in sys.argv[1:]
+                 if a.startswith("--profile=")), None)
+    if len(args) != 2:
         sys.exit(__doc__)
-    text = generate(sys.argv[1], sys.argv[2])
+    text = generate(args[0], args[1], profile=prof)
     n = text.count("equ")
-    print(f"wrote {sys.argv[2]}: {n} resident-ABI symbols (from {sys.argv[1]})")
+    print(f"wrote {args[1]}: {n} resident-ABI symbols (from {args[0]})")
     return 0
 
 

@@ -323,6 +323,27 @@ str_mkf:
                 ; is therefore SELECTED HERE from the width, which STRSCR already
                 ; holds -- no new RAM cell, and the three widths 2/4/8 are exactly
                 ; the three verbs.
+                ; 🔴 THE WIDEN RUNS FIRST, AND BEFORE HL IS LOADED.
+                ; `widen_rhs_operand` reads the LIVE RHS, which for an INTEGER
+                ; argument is **DE** -- a register CALSLT does not preserve. So it
+                ; cannot live in the disk-ROM body: moving it there broke MKS$(0),
+                ; MKS$(1), MKD$(7) and MKS$(3%) while every FLOAT argument stayed
+                ; green, because only the int path reads a register (mksd_probe,
+                ; 5 DIFF). ⚠️ And it must run BEFORE the hook address is selected:
+                ; putting it after cost HL, which by then holds the hook cell --
+                ; 24 DIFF including the controls, on the very next measurement.
+                cp      2
+                jr      z,mkf_sel           ; MKI$ needs no widen; DE is its value
+                push    de
+                ld      hl,ARGA
+                call    widen_rhs_operand   ; -> ARGA, which IS RAM and survives
+                pop     de
+                ld      a,(STRSCR)          ; the widen clobbered A
+mkf_sel:
+                ; The hook address cannot be carried in a register from the entry
+                ; stub -- `eval` above owns IX as its token cursor -- so it is
+                ; SELECTED HERE from the width STRSCR already holds. No new RAM
+                ; cell, and the widths 2/4/8 are exactly the three verbs.
                 ld      hl,H_MKI
                 cp      2
                 jr      z,mkf_hook
@@ -331,12 +352,11 @@ str_mkf:
                 jr      z,mkf_hook
                 ld      hl,H_MKD
 mkf_hook:
-                ; Call THROUGH HL by pushing our own return address: the hook cell
-                ; is `F7 <slot> <lo> <hi> C9`, so `jp (hl)` runs the inter-slot call
-                ; and its `ret` lands on mkf_back. Unclaimed, the cell is a bare
-                ; `ret` and lands there immediately with CF untouched. 6 B, and no
-                ; call-through-HL helper to invent.
-                push    de                  ; DE is MKI$'s value; CALSLT may clobber it
+                ; Call THROUGH HL by pushing our own return address: the cell is
+                ; `F7 <slot> <lo> <hi> C9`, so `jp (hl)` runs the inter-slot call
+                ; and its `ret` lands on mkf_back. Unclaimed it is a bare `ret` and
+                ; lands there at once with CF untouched.
+                push    de                  ; DE is MKI$'s value; CALSLT clobbers it
                 ld      de,mkf_back
                 push    de
                 or      a                   ; CF clear = "nobody claimed it"
@@ -352,24 +372,13 @@ mkf_back:
 mkf_have:
                 ld      a,(STRSCR)          ; the hook clobbered A
                 cp      2
-                jr      z,str_mkf_int
-                ld      hl,ARGA             ; --- coerce to single / double ---
-                call    widen_rhs_operand   ; exact widen of the live RHS (float-arith)
-                ld      a,(STRSCR)
-                cp      4
-                jr      nz,str_mkf_dbl
-                call    round_single_and_pack   ; 6-digit half-up round -> FAC as single
-                jr      str_mkf_copy
-str_mkf_dbl:
-                call    round_and_finalize      ; exact widen -> FAC as double
-str_mkf_copy:
-                ld      a,(STRSCR)
-                ld      c,a
-                ld      b,0
-                ld      hl,FAC
-                ld      de,STRSCR+1
-                ldir                        ; the packed bytes ARE the string
-                jr      str_mkf_desc
+                ; 🎯 D-DISKABI: THE FLOAT COERCION IS NOT HERE ANY MORE. For MKS$
+                ; and MKD$ the hook above WAS the conversion -- hk_mkfloat
+                ; (disk/kernel.asm) widened, packed and filled STRSCR before
+                ; returning -- so there is nothing left to do but wrap the
+                ; descriptor. MKI$ keeps its store here because it needs DE, which
+                ; does not survive CALSLT.
+                jr      nz,str_mkf_desc
 str_mkf_int:
                 ld      a,e
                 ld      (STRSCR+1),a        ; low byte of n

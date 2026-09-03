@@ -594,3 +594,56 @@ called it a success.
 this reason: a change aimed at the diskless build must leave the disk build
 alone, and only a row that watches both can say so. Fixed with `push hl`/`pop hl`
 (2 B per verb).
+
+
+## 13. ✅ D-DISKABI — the bridge, and the first body actually living in `disk.rom`
+
+§12.1 named the blocker: `disk.rom` had **no main-ROM ABI bridge**, so the verb
+bodies could not follow their hooks. It has one now, and it is witnessed by a
+real consumer rather than built on speculation.
+
+**The bridge.** `disk/basic-resident-abi.inc`, generated per build from
+`build/basic-reloc.sym` by the *same* `tools/gen_resident_abi.py` the sub-ROM
+uses — a **profile**, not a fork, so the two cannot drift. `make
+diskrom-abi-check` is the standing assert; `patch-freshness-check` now covers it
+as `abi-disk` too, because this gate's own header records that the sub-ROM copy
+was **stale in HEAD across 11 commits** before it was covered.
+
+* **Code symbols are ceiling-checked** exactly as the sub list is: `disk.rom` is
+  a page-1 ROM, so main's low region is callable and main page 1 is not.
+* **RAM symbols are exempt from that ceiling**, and the exemption is the point —
+  work-area cells live above `$8000` and are always mapped; applying the
+  page-0-resident test would reject every one. They go through the bridge anyway
+  so that a *sysvar move* cannot leave `disk.rom` writing the old address.
+
+**The consumer.** `hk_mkfloat` — `MKS$`/`MKD$`'s round-and-pack now runs **inside
+`disk.rom`**, the first disk-verb body actually to live there rather than merely
+be gated from there. Everything crosses in RAM (width in `STRSCR`, value in
+`FAC`/`FACTYP`, result back into `STRSCR`), because `CALSLT` preserves almost
+nothing.
+
+**Page 1: 39 → 61 B free** — 22 B recovered.
+
+### 13.1 Two register mistakes, both caught by measurement
+
+🔴 **`widen_rhs_operand` cannot move, because for an integer argument it reads
+`DE`** — a register `CALSLT` does not preserve. Moving it broke `MKS$(0)`,
+`MKS$(1)`, `MKD$(7)` and `MKS$(3%)` while **every float argument stayed green**,
+because only the int path reads a register. `mksd_probe`: 5 DIFF. It stays
+main-side; the hook receives `ARGA`, which is RAM.
+
+🔴 **Then the repair went in after `HL` already held the hook address** and
+clobbered it — 24 DIFF on the next measurement, controls included. The widen now
+runs *before* hook selection. Two ordering bugs in one small block, both found by
+running it rather than by reading it.
+
+⚠️ **So the recovery is 22 B, not the 37 B the first (broken) build reported.**
+The first number was measured on a ROM that did not work.
+
+### 13.2 A gate this broke that had nothing to do with it
+
+Selecting the profile from the output path reddened **`patch-freshness-check`**,
+which regenerates into a **temp directory** to diff against the tracked copy —
+that path carries no `sub/` or `disk/` hint, so selection refused it. An explicit
+`--profile=` now wins over the path. Textbook "correct by its own rule, breaks a
+different invariant", and the battery is what said so.

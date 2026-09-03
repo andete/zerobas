@@ -226,7 +226,7 @@ $(BUILD):
 # CART, docs/spec-lean-retire-s3-gates.md) together with the 284 `IF ROM_BASE`
 # gates that selected it. $(SRC) now assembles the one $2812-based image.
 
-$(DISK_ROM): $(DISK_SRC) $(DISK_PARTS) | $(BUILD)
+$(DISK_ROM): $(DISK_SRC) $(DISK_PARTS) disk/basic-resident-abi.inc | $(BUILD)
 	$(PASMO) -I disk --bin $(DISK_SRC) $(DISK_ROM)
 	python3 tools/pad_rom.py $(DISK_ROM) 16384
 
@@ -271,6 +271,19 @@ $(RELOC_ROM): $(RELOC_SYM)
 # only (never $(SUB_ROM) -- see the cycle note above).
 sub/basic-resident-abi.inc: $(RELOC_SYM) tools/gen_resident_abi.py
 	python3 tools/gen_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
+
+# --- the DISK ROM's own resident-ABI import (D-DISKABI) ---------------------
+# disk.rom is a PAGE-1 ROM, so main's LOW REGION is callable from it by absolute
+# address while main page 1 is not -- the same rule the sub-ROM page-1 tenants
+# live under. Until 2026-09-03 it had NO bridge, which is exactly why the disk
+# verbs' bodies could not follow their hooks into it (docs/spec-basic-nodisk.md
+# §12.1). Generated from the same sym file by the same tool, so a low-region
+# shift cannot leave disk.rom calling stale addresses.
+disk/basic-resident-abi.inc: $(RELOC_SYM) tools/gen_resident_abi.py
+	python3 tools/gen_resident_abi.py $(RELOC_SYM) disk/basic-resident-abi.inc
+
+diskrom-abi-check: disk/basic-resident-abi.inc $(RELOC_SYM)
+	python3 tools/check_resident_abi.py $(RELOC_SYM) disk/basic-resident-abi.inc
 
 # --- Math-pack coefficient generator (math pack slice 2a, spec §11.3 point 3) --
 # fp_atan's ATAN_COEF/PI_2/PI_6/SQRT3/BREAK FPNUM records are a deterministic own
@@ -328,6 +341,7 @@ basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM) $(DISK_ROM)
 	python3 tools/check_disk_walls.py $(DISK_ROM)
 	python3 tools/check_kwtable_identity.py $(RELOC_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB_SYM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
+	python3 tools/check_resident_abi.py $(RELOC_SYM) disk/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
 	python3 tools/check_tenant_closure.py --page1 $(SUB_SYM) sub/sub.asm
