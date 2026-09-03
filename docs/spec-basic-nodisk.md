@@ -283,9 +283,20 @@ disassembly.
 
 * **Install:** extend `disk/init.asm`'s `init:` — it already captures
   `HOOK_SLOT` on entry and writes one such stub; this adds seven more.
-* **Bodies:** into `disk.rom`'s interior holes (§5.1: 9012 B, largest 3420 B at
-  `$2849`). ⚠️ A **disk-ROM wall check** should land with this slice; there is
-  none today, so the space is measured but not *guarded*.
+* **Bodies:** into `disk.rom`'s interior holes. ✅ **`tools/check_disk_walls.py`
+  shipped 2026-09-03 and `make basic-reloc` now prints five regions, not four** —
+  so this figure comes from a tool rather than from anyone's memory, which is the
+  project's own standing rule and exactly what the "2-byte" error broke.
+  Measured: **9012 B in 32 runs**, largest **3420 B at `$6849`** bounded by the
+  pin at `$75A5`.
+  🎯 **AND A RAW BYTE COUNT WOULD STILL HAVE BEEN THE WRONG NUMBER.** This is a
+  provider ROM with **69 pinned entry addresses**, each reached by
+  `ds $XXXX - $, $00`, so nearly all the fill is the gap *before* the next pin —
+  every hole's usable room equals its fill length exactly, and a body must fit
+  before that pin. The check reports room-before-pin per hole for that reason.
+  ⚠️ It is a **readout, not a new guard**: overrun was already caught, because a
+  negative `ds` makes pasmo emit an empty image and `tools/pad_rom.py` refuses
+  it. What was missing was the number.
 * **Main side:** `str_mkf` (`basic/strvar.asm`) and `ev_ff_cv` (`basic/expr.asm`)
   lose their bodies and gain a hook call each — the space win, and the reason the
   two were factored into shared bodies in D-MKSD in the first place.
