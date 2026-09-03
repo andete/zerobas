@@ -160,3 +160,16 @@ forcing `FACTYP=4` still copies `C` bytes, so only a value needing more than
 three mantissa bytes can move — `r.third`, and nothing else.
 
 The four `moved` sets are identical across two independent runs after the fix.
+
+
+## 6. Closing demo
+
+`scratchpad/session_demo.py` runs the four verbs as ordinary MSX BASIC on all
+three machines, with the pre-fix zerobas reading quoted beside each row
+(`demo.mkslen`, `demo.mksbytes`, `demo.cvsround`, `demo.mkdround`,
+`demo.mkszero`).
+
+⚠️ Those rows are scored **`cf3300` vs `zb` only**, and the VG-8020 column is
+marked `n/a` rather than dropped. Scoring them three-way printed `DIFF` on a
+byte-for-byte correct slice — a readout comparing *machines* instead of
+*languages*, which is precisely the reading D-LSETREF settled.

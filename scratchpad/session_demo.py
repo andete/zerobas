@@ -33,10 +33,26 @@ add('demo.faczero', ['A!=1.5', 'A!=0'],
 add('demo.ctl', ['A!=0', 'A!=1.5'],
     ";".join(f"PEEK(VARPTR(A!)+{i})" for i in range(4)))
 
+# D-MKSD: the four random-access float conversions, which did not exist here.
+#   10 A$=MKS$(1.5) : PRINT LEN(A$)          -> 4 (was 0: parsed as an ARRAY)
+#   10 PRINT CVS(MKS$(1.5))                  -> 1.5 (was Type mismatch)
+add('demo.mkslen', [], 'LEN(MKS$(1.5))')
+add('demo.mksbytes', [], ";".join(f"ASC(MID$(MKS$(1.5),{i},1))" for i in range(1, 5)))
+add('demo.cvsround', [], 'CVS(MKS$(1.5))')
+add('demo.mkdround', [], 'CVD(MKD$(1/3))')
+# 🟢 and the zero case, which D-FACZERO had to fix FIRST for this to be right
+add('demo.mkszero', [], ";".join(f"ASC(MID$(MKS$(0),{i},1))" for i in range(1, 5)))
+
 BEFORE = {                       # zerobas, quoted from the pre-fix probe runs
     'demo.gicini':  '1  (the music played on for ~60 s at the Ok prompt)',
     'demo.faczero': '0 21 0 0  (21 = 1.5\'s own leftover mantissa byte)',
     'demo.ctl':     '65 21 0 0  (unchanged -- it never diverged)',
+    'demo.mkslen':   '0        (MKS$(1.5) parsed as the string ARRAY MKS$(1))',
+    'demo.mksbytes': 'ERR 5    (an array subscript error, not a verb)',
+    'demo.cvsround': 'ERR 13   Type mismatch',
+    'demo.mkdround': 'ERR 13   Type mismatch',
+    'demo.mkszero':  'ERR 5    -- and once MKS$ worked it would have been'
+                     ' 0 255 255 255 until D-FACZERO',
 }
 
 D.CASES.update(CASES)
@@ -44,11 +60,21 @@ sides = ["vg8020", "cf3300", "zb"]
 res = {s: D.run_side(s, ORDER) for s in sides}
 w = max(len(l) for l in ORDER)
 print(f"\n{'row':<{w}}  " + "  ".join(f"{s:>12}" for s in sides) + "   verdict")
+# 🔴 THE MK/CV VERBS ARE DISK BASIC, SO THE CASSETTE VG-8020 ANSWERS ERR 5 TO ALL
+# OF THEM. Scoring those rows three-way prints DIFF on a slice that is byte-for-byte
+# correct -- a readout that reads like a regression because it is comparing MACHINES
+# and not LANGUAGES. Their oracle is the CF-3300 (the D-LSETREF disposition); the
+# VG-8020 column stays PRINTED, and is marked `n/a` rather than dropped.
+DISK_ROWS = {'demo.mkslen', 'demo.mksbytes', 'demo.cvsround', 'demo.mkdround',
+             'demo.mkszero'}
 for l in ORDER:
     vals = [str(res[s].get(l)) for s in sides]
-    same = len(set(vals)) == 1
-    print(f"{l:<{w}}  " + "  ".join(f"{v:>12}" for v in vals)
-          + f"   {'SAME' if same else 'DIFF'}")
+    if l in DISK_ROWS:
+        same, tag = vals[1] == vals[2], "SAME (vg8020 n/a: no disk ROM)"
+    else:
+        same, tag = len(set(vals)) == 1, "SAME"
+    print(f"{l:<{w}}  " + "  ".join(f"{v:>16}" for v in vals)
+          + f"   {tag if same else 'DIFF'}")
 print("\nzerobas BEFORE today (quoted from the recorded pre-fix runs):")
 for l in ORDER:
     print(f"  {l:<{w}}  {BEFORE[l]}")
