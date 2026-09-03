@@ -19,6 +19,17 @@ here as NO-ORACLE: printed, never scored, never counted as defects.
 
 So the real set is 7 rows over SIX specifiers: `.` `,` `+` `-` `**` `^^^^`.
 
+🔴 AND THE `c.*` CONTROLS WERE TOO NARROW TO NOTICE THE BIGGEST PROBLEM. Every
+one of them used a SMALL INTEGER, so all three agreed -- and that agreement read
+as "the plain `#` field is already right". It is not: `PRINT USING"#######"` with
+1234567 answers **0** here and 1234567 on both references, and `USING"#####"`
+with 1.5 answers **1** where both references ROUND to 2. Neither involves a
+specifier. `pu_do_number` calls `eval` for a 16-bit DE and formats it with
+`pu_fmt_int`, so the whole numeric field is integer-only and truncating.
+🎯 THAT REFRAMES THE REMAINING WORK: `.` `,` and `^^^^` are not three independent
+slices but ONE -- PRINT USING needs a FLOAT renderer, and that renderer fixes
+`c.over16` and `c.round` on the way past.
+
 ⚠️ THIS PROBE DOES NOT SCORE ZEROBAS AT ALL YET. Its job is to establish what the
 REFERENCES do across each specifier's corners -- rounding, negatives, overflow,
 and the combinations -- because the implementation does not exist and every zb
@@ -44,6 +55,14 @@ CASES = [
     ("c.hash",     'PRINT USING"###";5'),
     ("c.neg",      'PRINT USING"###";-5'),
     ("c.over",     'PRINT USING"##";12345'),
+    # 🔴 THE CONTROLS ABOVE ALL USED SMALL INTEGERS, AND THAT IS WHY THIS HID.
+    # They agreed, and agreement was read as "the plain `#` field is fine". These
+    # four say otherwise, and none of them involves a SPECIFIER at all:
+    ("c.max",      'PRINT USING"#######";32767'),      # the int16 ceiling: agrees
+    ("c.over16",   'PRINT USING"#######";1234567'),    # past it: refs 1234567, here 0
+    ("c.round",    'PRINT USING"#####";1.5'),          # refs ROUND to 2, here 1
+    ("c.round2",   'PRINT USING"#####";2.5'),          # which way at the tie?
+    ("c.negmax",   'PRINT USING"#######";-32768'),
 
     # --- '.' the decimal point --------------------------------------------
     ("d.basic",    'PRINT USING"##.##";1.5'),

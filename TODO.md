@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1552 (T-6FE392)8 (T-529ABE)` from `TODO.md:6088 (T-529ABE)`: a
+      `TODO.md:1573 (T-6FE392)8 (T-529ABE)` from `TODO.md:6109 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1076,7 +1076,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       leading-`-` removal moved `p.trailneg` and `n.neg` and left `p.trail` /
       `n.pos` alone. Had the positives moved too, the arm would only have said
       "trailing signs exist", which the six green rows already say.
-      📋 **STILL OPEN: `.` `,` `^^^^`** — 9 of the divergent rows are closed;
+      🔴 **AND THE PLAIN `#` FIELD IS ITSELF WRONG — my controls were too narrow
+      to see it** ([`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md) §5):
+
+          PRINT USING"#######";1234567   refs 1234567   here `      0`
+          PRINT USING"#####";1.5         refs `    2`   here `    1`
+          PRINT USING"#####";2.5         refs `    3`   here `    2`
+
+      None involves a specifier. `pu_do_number` evaluates to a 16-bit DE and
+      formats with `pu_fmt_int`, so the numeric field is INTEGER-ONLY and
+      TRUNCATING: past int16 it silently renders 0, and a fraction is chopped
+      where both references ROUND HALF-UP. The int16 boundaries themselves
+      (32767, -32768) are exact on all three.
+      🎯 **THE CONTROLS ARE WHY IT HID**: `c.hash`/`c.neg`/`c.over` all used SMALL
+      INTEGERS, agreed, and I read that as "the `#` field is already right". A
+      control only certifies the ground it stands on.
+      📋 **SO `.` `,` `^^^^` ARE ONE SLICE, NOT THREE** — PRINT USING needs a
+      FLOAT RENDERER, which fixes the three rows above on the way past. It also
+      re-explains `m.big` (` 0,`), filed as a comma gap and really the same
+      truncation. Shape: a SUB-ROM PAGE-1 tenant (1586 B free) calling `flt_fmt`
+      in the main low region, with text-level half-up rounding — exact, because
+      MSX floats are BCD. Main pays a flag test and a CALSLT, as D-PUSIGN does.
+      📋 **9 of the divergent rows are closed;
       `p.dot`/`n.dot`/`a.dot` each combine a SHIPPED specifier with `.` and will
       fall out of that slice rather than needing new sign or fill work.
       🔴 **PAGE 1 IS AT 32 B (2026-09-03) AND `.` IS THE LARGEST OF THE THREE** —
@@ -2130,7 +2151,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6088 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6109 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

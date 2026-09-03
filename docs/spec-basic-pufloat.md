@@ -89,7 +89,59 @@ Had the trailing *positive* rows moved too, the arm would only have been saying
 "trailing signs are implemented", which the six green rows already say. The
 asymmetry is what shows the negative move is its own transformation.
 
-## 5. Still open — three specifiers
+## 5. 🔴 The plain `#` field is itself wrong — and my controls were too narrow to see it
+
+Found 2026-09-03 while deciding whether `.` `,` `^^^^` were three slices or one.
+
+| row | | vg8020 | cf3300 | zb |
+|---|---|---|---|---|
+| `c.max` | `"#######"` · 32767 | `  32767` | `  32767` | `  32767` ✅ |
+| `c.negmax` | `"#######"` · −32768 | ` -32768` | ` -32768` | ` -32768` ✅ |
+| `c.over16` | `"#######"` · 1234567 | `1234567` | `1234567` | **`      0`** |
+| `c.round` | `"#####"` · 1.5 | `    2` | `    2` | **`    1`** |
+| `c.round2` | `"#####"` · 2.5 | `    3` | `    3` | **`    2`** |
+
+**None of these involves a specifier.** `pu_do_number` calls `eval` for a 16-bit
+`DE` and formats it with `pu_fmt_int`, so the numeric field is **integer-only and
+truncating**: a value past `int16` renders as `0` — a silent wrong answer — and a
+fraction is chopped where both references **round half-up** (`1.5`→2, `2.5`→3;
+the int16 boundaries themselves are exact on all three).
+
+🎯 **AND THE CONTROLS ARE WHY IT HID.** `c.hash`, `c.neg` and `c.over` all used
+**small integers**. They agreed, and I read that agreement as "the plain `#`
+field is already right". A control only certifies the ground it stands on, and
+all three stood on the same narrow patch.
+
+### 5.1 What that reframes
+
+`.` `,` and `^^^^` are **not three independent slices**. Each of them needs a
+value rendered as text with a decimal point, an exponent, or grouping — which the
+integer path cannot produce at all. They are **one slice**: *give `PRINT USING` a
+float renderer*, and that renderer fixes `c.over16`, `c.round` and `c.round2` on
+the way past.
+
+That also explains a row already on the books: `m.big` (`"##,###,###"` · 1234567)
+reads ` 0,` here. It was filed as a comma-grouping gap; it is really the same
+int16 truncation.
+
+### 5.2 The shape it has to take
+
+Page 1 is at **32 B**, so the renderer cannot live there. The route the last two
+slices established works here too, one level up:
+
+* a **sub-ROM PAGE-1 tenant** — 1586 B free — which may call the main **low
+  region** by absolute address (the rule `sub/circleparse.asm` already relies on,
+  and which `D-DISKABI` re-confirmed for `disk.rom`);
+* `flt_fmt` (`basic/float.asm`) is low-region, so the tenant can render the value
+  to text and then place the point, group, or exponentiate it;
+* MSX floats are **BCD**, so rounding the rendered *text* half-up is exact — no
+  binary tie-breaking to reproduce. `c.round`/`c.round2` pin the direction.
+* `flt_fmt` would need adding to `sub/basic-resident-abi.inc`'s REQUIRED list —
+  one entry, already ceiling-legal.
+
+Main side then pays only a flag test and a CALSLT, as `D-PUSIGN` does.
+
+## 6. Still open — one slice, not three
 
 `.` `,` `^^^^`. **Nine of the divergent rows are now closed**; what remains needs
 the decimal point, and `p.dot` / `n.dot` / `a.dot` stay divergent until `.` lands
