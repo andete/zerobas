@@ -7,13 +7,15 @@ started raising ERR 5 on the diskless build for some unrelated reason, with the
 disk build unaffected because it never needed the hook at all.
 
 TWO ARMS, EACH KILLING ONE HALF OF THE MECHANISM:
-  K-MH1  disk/init.asm no longer INSTALLS H.MKI$  -> the slot stays C-BIOS's
-         `ret`, so even the DISK build must lose MKI$ (k.mki/v.mkifld/k.cvi go
-         ERR 5 on zb-disk too).
-  K-MH2  hk_mki returns CF CLEAR (`or a` instead of `scf`) -> installed, reached,
-         but signalling "not handled". Same visible outcome as K-MH1 on the disk
-         side, reached by a completely different route: it proves the CF
-         convention carries the answer, not merely the presence of a stub.
+  K-MH1  disk/init.asm installs NOTHING -> every slot stays C-BIOS's `ret`, so
+         even the DISK build loses all seven verbs.
+  K-MH2  hk_present returns CF CLEAR -> installed and reached, but signalling
+         "not handled". Same outcome as K-MH1 by a completely different route:
+         it proves the CF convention carries the answer, not the stub's presence.
+  K-MH3  drop H_CVS from the table  -> ONLY the CVS row falls.
+  K-MH4  drop H_MKS from the table  -> the MKS$ row falls, AND the CVS row, which
+         builds its argument with MKS$. K-MH3 not taking k.mks is what proves the
+         SELECTION is per-verb; a blanket presence check would move both alike.
 
 🎯 IF EITHER ARM MOVES NOTHING, THE HOOK IS DECORATION and the ERR 5 came from
 somewhere else entirely.
@@ -25,13 +27,27 @@ import hashlib, os, re, subprocess, sys, time
 
 ROMS = ("build/zerobas-main-eu.rom", "build/disk.rom")
 ARMS = {
+    # the mechanism, both halves
     "K-MH1": ("disk/init.asm",
-              "                ld      hl, H_MKI\n                ld      de, hk_mki\n                call    install_hook\n",
-              "", {"k.mki", "v.mkifld", "k.cvi"}),
+              "                call    install_basic_hooks\n", "",
+              {"k.mks", "k.mkd", "k.cvs", "k.mki", "k.cvi",
+               "v.dskf", "v.cvistr", "v.mkifld"}),
     "K-MH2": ("disk/kernel.asm",
-              "hk_mki:\n                scf\n                ret\n",
-              "hk_mki:\n                or      a\n                ret\n",
-              {"k.mki", "v.mkifld", "k.cvi"}),
+              "hk_present:\n                scf\n                ret\n",
+              "hk_present:\n                or      a\n                ret\n",
+              {"k.mks", "k.mkd", "k.cvs", "k.mki", "k.cvi",
+               "v.dskf", "v.cvistr", "v.mkifld"}),
+    # 🎯 THE ARMS THE BATCH ADDS: is the PER-VERB SELECTION real, or does any
+    # claimed hook satisfy every verb? Dropping ONE entry from the table must
+    # cost exactly the rows that use THAT verb and nothing else.
+    "K-MH3": ("disk/kernel.asm", "H_CVS, ", "",
+              # k.cvs is `CVS(MKS$(1.5))` -- the only row that uses CVS
+              {"k.cvs"}),
+    "K-MH4": ("disk/kernel.asm", "H_MKS, ", "",
+              # k.mks is LEN(MKS$(1.5)); k.cvs uses MKS$ to build its argument, so
+              # it falls too. That K-MH3 does NOT take k.mks is what separates the
+              # two hooks -- a blanket presence check would move both arms alike.
+              {"k.mks", "k.cvs"}),
 }
 
 

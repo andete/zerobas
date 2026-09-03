@@ -417,3 +417,89 @@ worst kind:
    preflight did its job; the harness ignored it. The scorer now returns `None` on
    a run with no verdict line, and the mtime games are gone entirely: the arms
    **delete the ROMs** and let `make` rebuild.
+
+
+## 10. ✅ D-MKHOOK COMPLETE — all seven verbs, and the diskless build is faithful
+
+Batched in one cycle on Joost's suggestion (*"once we know the move to disk rom
+works, can't we move all others in one go, saving test time?"*). Safe here for a
+specific reason: **the gate has one row per verb**, so a batched change still
+localises its own failure — batching costs nothing in diagnosis.
+
+| | vg8020 (oracle) | zb-disk | zb-nodisk |
+|---|---|---|---|
+| all 8 verb rows | ERR 5 | answers | **ERR 5** |
+| `EOF` / `LOF` controls | ERR 59 | ERR 59 | ERR 59 |
+| plain-BASIC controls | identical | identical | identical |
+
+**`nodisk-acceptance` pins: 8 → 0.** The diskless build now matches the VG-8020
+on every row this probe measures, and the disk build is unchanged
+(`mksd_probe` 0 DIFF / 32).
+
+🔴 **AN EMPTY PIN SET IS THE STRICTEST STATE THIS GATE HAS**, not the weakest.
+Every row is now scored against the oracle, so any regression is a plain failure
+with no pin to hide behind — and a *new* disk verb that answers on a diskless
+build lands as a red row rather than as an entry someone must remember to add.
+
+### 10.1 What it cost, plainly
+
+**Main page 1: 164 → 75 B free.** Eighty-nine bytes to gate seven verbs. §8
+predicted "roughly break-even" for a migration that *moved bodies*; this slice
+moved none, so it is pure overhead — and the overhead is real:
+
+| step | page 1 free |
+|---|---|
+| before | 164 B |
+| `MKI$` alone (the spike) | 146 B |
+| + `MKS$`/`MKD$` (shared gate) | 124 B |
+| + `CVI`/`CVS`/`CVD` + `DSKF` | **75 B** |
+
+⚠️ **75 B is tight**, and the next page-1 slice has to reckon with it. The
+conversions themselves could still follow into `disk.rom` (§8: ~50 B movable),
+which would claw back most of the MK/CV gate cost — but that is a separate slice
+that must justify itself, not a rider on this one.
+
+### 10.2 Two design notes
+
+**The hook address cannot travel in a register.** `eval` (MK) and the expression
+evaluator (CV) both own `IX` as their token cursor and clobber it, so the address
+is *selected at the gate* from the width already in `C` — no new RAM cell, and
+the three widths 2/4/8 are exactly the three verbs in each trio.
+
+**Calling through `HL` needs no helper.** The hook cell is
+`F7 <slot> <lo> <hi> C9`, so pushing a return address and `jp (hl)` runs the
+inter-slot call and lands on it; unclaimed, the cell is a bare `ret` and lands
+there immediately with `CF` untouched. Six bytes.
+
+⚠️ **Both gates sit AFTER the operand and the `)`**, so a malformed call still
+reports its own syntax error first — which is what both references do *with* a
+disk. A gate must not reorder errors it was not asked to change. The diskless
+behaviour of a *malformed* call is unmeasured on the reference and is not claimed
+here.
+
+### 10.3 Knives — 4/4, and two of them are the batch's own argument
+
+```
+K-MH1  init installs NOTHING              zb-disk loses all 8 rows      PASS
+K-MH2  hk_present returns CF CLEAR        zb-disk loses all 8 rows      PASS
+K-MH3  drop H_CVS from the table          zb-disk loses k.cvs ONLY      PASS
+K-MH4  drop H_MKS from the table          zb-disk loses k.cvs + k.mks   PASS
+```
+
+K-MH1/2 re-prove the mechanism at seven verbs. 🎯 **K-MH3 and K-MH4 are the pair
+that matters**: dropping `CVS` does *not* take `MKS$`, while dropping `MKS$` takes
+both (`k.cvs` builds its argument with `MKS$`). A blanket presence check would
+have moved both arms identically. That asymmetry is what proves the selection is
+genuinely per-verb.
+
+### 10.4 The `$41EF` pad decided this code's shape twice in one day
+
+Seven inline installs need 45 B; the pad before that pin is **31 B**, so it
+overran and pasmo emitted an empty image — caught by `pad_rom.py`, exactly as its
+header describes. The installs are now a table-driven loop in the free corridor
+and `init.asm` costs **one call**. The first overrun, hours earlier, is what moved
+`install_hook` there in the first place.
+
+⚠️ And one self-inflicted repair: a `str.replace` of `install_hook:` matched the
+string inside that routine's **own comment header** first, mangling the comment
+into code. Anchor on the label, not on prose that names it.

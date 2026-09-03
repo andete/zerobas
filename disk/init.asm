@@ -122,15 +122,20 @@ init:
                 ld      hl, HPHYD
                 ld      de, DSKIO_ENTRY
                 call    install_hook
-                ; H.MKI$: the first BASIC-EXTENSION hook zerobas has ever claimed.
-                ; Until now the main ROM implemented every disk verb itself, so a
-                ; DISKLESS build ANSWERED where a diskless MSX raises ERR 5. With
-                ; this claimed, `str_mkf` finds a handler; with no disk ROM the slot
-                ; is C-BIOS's `ret`, CF stays clear, and the main ROM defers ERR 5 --
-                ; correct BY ABSENCE, which is how the reference gets it right.
-                ld      hl, H_MKI
-                ld      de, hk_mki
-                call    install_hook
+                ; The BASIC-EXTENSION hooks -- all seven, through a table-driven
+                ; loop in the free corridor (disk/kernel.asm). Until D-MKHOOK the
+                ; main ROM implemented every disk verb itself, so a DISKLESS build
+                ; ANSWERED where a diskless MSX raises ERR 5. With these claimed the
+                ; main ROM finds a handler; with no disk ROM each slot is C-BIOS's
+                ; `ret`, CF stays clear, and the main ROM defers ERR 5 -- correct BY
+                ; ABSENCE, which is how the reference gets it right.
+                ;
+                ; 🔴 A LOOP, NOT SEVEN INLINE PAIRS, AND THE REGION IS WHY -- AGAIN.
+                ; The pad before the $41EF pin is 31 B; seven inline installs need
+                ; 45 and overran it, so pasmo emitted an EMPTY image (pad_rom.py
+                ; refused it). This is the SECOND time this pad has decided the
+                ; shape of this code in one day: 3 B here instead of 45.
+                call    install_basic_hooks
 
                 ; --- publish the BDOS entry as an executable JP vector ---------
                 ; $F37D (SYSTEM) is the disk system's BDOS-call jump vector. The

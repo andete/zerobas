@@ -3051,7 +3051,13 @@ H_TIMI          equ     $FD9F   ; timer-interrupt hook, 5-byte inter-slot call a
 ; Unclaimed, the slot is C-BIOS's `ret` (its hook-area init $C9-fills
 ; $FD9A..$FFE7) and leaves CF exactly as the caller set it, which is what makes
 ; "CF=0 -> no disk ROM" a sound test rather than a guess.
-H_MKI           equ     $FE30   ; MKI$ handler (disk/kernel.asm hk_mki)
+H_DSKF          equ     $FE12   ; DSKF handler
+H_MKI           equ     $FE30   ; MKI$ handler (disk/kernel.asm hk_present)
+H_MKS           equ     $FE35   ; MKS$ handler
+H_MKD           equ     $FE3A   ; MKD$ handler
+H_CVI           equ     $FE3F   ; CVI handler
+H_CVS           equ     $FE44   ; CVS handler
+H_CVD           equ     $FE49   ; CVD handler
 ; --- the KEY-trap fn-key hook (interrupt-traps T3, docs/spec-traps-t3-key.md §4) ---
 ; NOT a standard MSX hook: it is added by OUR C-BIOS patch
 ; (cbios-repack/key-trap-hook.patch) because no published hook can see the current

@@ -2087,7 +2087,8 @@ dsb_end:
 disk_banner:
                 db      "zerobas Disk BASIC",13,10,0
 
-; --- hk_mki: the H.MKI$ handler (D-MKHOOK, docs/spec-basic-nodisk.md §6) ----
+; --- hk_present: the handler ALL SEVEN conversion hooks are installed at ------
+; D-MKHOOK, docs/spec-basic-nodisk.md §6/§9.
 ; ⚠️ DELIBERATELY A SPIKE, AND THE SMALLEST ONE THAT PROVES ANYTHING. Nothing in
 ; zerobas had ever CALLED an installed hook -- HPHYD is installed for foreign
 ; hosts and never invoked here -- so the whole round trip (main page 1 -> a RAM
@@ -2095,20 +2096,52 @@ disk_banner:
 ; therefore does the minimum that is still a real answer: it says "a disk ROM is
 ; present and claims MKI$".
 ;
-; MKI$'s own conversion stays main-side ON PURPOSE. It is four instructions
-; storing DE into STRSCR, and moving it would cost more in cross-slot marshalling
-; than it saves -- docs/spec-basic-nodisk.md §8, where the space argument for the
-; whole migration was withdrawn after measuring how little can actually move.
-; What the hook buys here is FAITHFULNESS, not bytes.
+; ⚠️ THE CONVERSIONS THEMSELVES STAY MAIN-SIDE FOR NOW, AND THAT IS A SCOPE
+; DECISION RECORDED, NOT AN OVERSIGHT. §8 measured how little can actually move:
+; the parse/marshalling half of every one of these verbs calls main PAGE 1
+; (`eval`, `str_eval_no`, `ev_sp`, `str_eval_ix`, `cvi_tmm`), which is switched
+; OUT while this ROM is mapped. Only the float coercion could follow, and it is
+; ~50 B against ~36 B of call overhead. So this slice buys the thing that was
+; actually broken -- a diskless build must REFUSE -- and leaves the byte-shuffling
+; to a follow-up that has to justify itself on its own.
+;
+; One body for all seven because today they all answer the same question. When a
+; conversion does move here, it gets its own entry and this one keeps the rest.
 ;
 ; Contract (own-design signalling over the published layout, §6):
 ;   in   nothing; the argument is already evaluated and the width is in STRSCR
 ;   out  CF=1  handled. An unclaimed slot is C-BIOS's `ret`, which leaves CF
 ;              exactly as the caller set it -- so CF=0 means "no disk ROM".
 ;   Clobbers nothing but the flags.
-hk_mki:
+hk_present:
                 scf
                 ret
+
+; --- ; --- install_basic_hooks: claim every BASIC-extension hook this ROM answers --
+; Table-driven so init.asm costs ONE call: the pad before its $41EF pin is 31 B
+; and seven inline installs need 45. docs/spec-basic-nodisk.md §9.
+; Clobbers A, BC, DE, HL.
+install_basic_hooks:
+                ld      de, hk_present      ; every entry answers the same question
+                ld      hl, hook_tab
+ibh_lp:
+                ld      c, (hl)
+                inc     hl
+                ld      b, (hl)
+                inc     hl
+                ld      a, b
+                or      c
+                ret     z                   ; $0000 terminates the table
+                push    hl
+                ld      h, b
+                ld      l, c
+                call    install_hook
+                pop     hl
+                jr      ibh_lp
+; The seven conversion hooks, each one of the 35 slots the CF-3300's disk ROM
+; claims (scratchpad/hookdiff_probe.py) and each named in the MSX2 TH table.
+hook_tab:
+                dw      H_DSKF, H_MKI, H_MKS, H_MKD, H_CVI, H_CVS, H_CVD, 0
 
 ; --- install_hook: write one 5-byte CALLF stub into a hook slot -------------
 ; Layout source: MSX2 Technical Handbook §2 (inter-slot call / CALLF) --

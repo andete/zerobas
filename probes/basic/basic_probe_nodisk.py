@@ -79,20 +79,18 @@ CONTROLS = {"c.print", "c.str", "v.eof", "v.lof"}
 # 🔴 THE KNOWN DIVERGENCES, PINNED. (vg8020, zb-nodisk) exactly as measured
 # 2026-09-03. Owned by the TODO.md item "SHOULD THE DISK-BASIC VERBS LIVE IN
 # disk.rom BEHIND A HOOK". A change in EITHER column is a gate failure.
-# ✅ THREE ROWS LEFT THIS SET ON 2026-09-03 (D-MKHOOK) and are now scored as
-# ordinary agreeing rows, so the gate enforces that they STAY fixed:
-#   k.mki      MKI$ is routed through H.MKI$; unclaimed -> deferred ERR 5
-#   v.mkifld   ASC(MKI$(1)) -- the same verb
-#   k.cvi      CVI(MKI$(258)) -- its ARGUMENT is MKI$, so it fails at the inner
-#              call. CVI itself is NOT hooked yet; `v.cvistr` (CVI("AB")) is the
-#              row that still measures CVI alone, and it is still pinned.
-PINNED = {
-    "k.mks":    ("'ERR 5 '", "' 4 '"),
-    "k.mkd":    ("'ERR 5 '", "' 8 '"),
-    "k.cvs":    ("'ERR 5 '", "' 1.5 '"),
-    "v.dskf":   ("'ERR 5 '", "' 0 '"),
-    "v.cvistr": ("'ERR 5 '", "' 16961 '"),
-}
+# ✅ EMPTY SINCE 2026-09-03 (D-MKHOOK completed), AND THAT IS THE POINT OF THE
+# WHOLE PROBE. It opened with EIGHT pinned divergences -- the disk verbs that need
+# no medium, answering where a diskless MSX raises ERR 5. All seven are now routed
+# through their own documented hook (H.DSKF/H.MKI$/H.MKS$/H.MKD$/H.CVI/H.CVS/
+# H.CVD), so a diskless build REFUSES because the handler is not there, which is
+# how the reference gets it right.
+#
+# 🔴 EMPTY IS NOT "NOTHING TO CHECK" -- IT IS THE STRICTEST STATE THIS GATE HAS.
+# Every row is now scored against the oracle, so ANY of them regressing is a plain
+# failure with no pin to hide behind. A new disk verb that answers on a diskless
+# build lands here as a red row, not as an entry someone has to remember to add.
+PINNED: dict[str, tuple[str, str]] = {}
 
 
 def run(side, stmt):

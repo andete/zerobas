@@ -311,6 +311,46 @@ str_mkf:
                 ld      a,c
                 ld      (STRSCR),a          ; length = the width; reloaded below because
                                             ; the coercion helpers clobber BC
+                ; --- D-MKHOOK: these three verbs belong to the DISK ROM ---------
+                ; docs/spec-basic-nodisk.md §9. Their keyword-table entries are
+                ; faithfully ours (a diskless VG-8020 crunches MKI$ to `FF AE`),
+                ; but the IMPLEMENTATION is the disk ROM's, reached through a hook
+                ; each. Claimed -> CF=1; unclaimed -> C-BIOS's `ret` leaves CF as we
+                ; set it, so we defer ERR 5 and a diskless zerobas is correct BY
+                ; ABSENCE, the way the reference is.
+                ; ⚠️ THE HOOK ADDRESS CANNOT BE CARRIED IN A REGISTER FROM THE ENTRY
+                ; STUB: `eval` above owns IX as its token cursor and clobbers it. It
+                ; is therefore SELECTED HERE from the width, which STRSCR already
+                ; holds -- no new RAM cell, and the three widths 2/4/8 are exactly
+                ; the three verbs.
+                ld      hl,H_MKI
+                cp      2
+                jr      z,mkf_hook
+                ld      hl,H_MKS
+                cp      4
+                jr      z,mkf_hook
+                ld      hl,H_MKD
+mkf_hook:
+                ; Call THROUGH HL by pushing our own return address: the hook cell
+                ; is `F7 <slot> <lo> <hi> C9`, so `jp (hl)` runs the inter-slot call
+                ; and its `ret` lands on mkf_back. Unclaimed, the cell is a bare
+                ; `ret` and lands there immediately with CF untouched. 6 B, and no
+                ; call-through-HL helper to invent.
+                push    de                  ; DE is MKI$'s value; CALSLT may clobber it
+                ld      de,mkf_back
+                push    de
+                or      a                   ; CF clear = "nobody claimed it"
+                jp      (hl)
+mkf_back:
+                pop     de
+                jr      c,mkf_have
+                ld      a,3                 ; Illegal function call, DEFERRED --
+                call    penderr_set         ; first-error-wins outranks the syntax
+                                            ; error the decline would otherwise raise
+                pop     hl                  ; balance the guarded cursor
+                jp      str_eval_no
+mkf_have:
+                ld      a,(STRSCR)          ; the hook clobbered A
                 cp      2
                 jr      z,str_mkf_int
                 ld      hl,ARGA             ; --- coerce to single / double ---
@@ -331,31 +371,6 @@ str_mkf_copy:
                 ldir                        ; the packed bytes ARE the string
                 jr      str_mkf_desc
 str_mkf_int:
-                ; --- D-MKHOOK: MKI$ belongs to the DISK ROM ---------------------
-                ; docs/spec-basic-nodisk.md. The verb's TABLE entry is faithfully
-                ; ours (a diskless VG-8020 crunches MKI$ to `FF AE`), but its
-                ; IMPLEMENTATION is the disk ROM's, reached through H.MKI$. Ask the
-                ; hook: claimed -> CF=1, carry on; unclaimed -> C-BIOS's `ret`
-                ; leaves CF as we set it, so we defer ERR 5. A diskless zerobas is
-                ; then correct BY ABSENCE, the way the reference is, rather than by
-                ; a presence guard bolted onto a verb that is still here.
-                ; ⚠️ DE IS THE VALUE AND THE CALL CROSSES SLOTS. A claimed hook runs
-                ; RST 30h/CALSLT, which is documented to affect DE among others, so
-                ; the operand is guarded across it -- the unclaimed path is a bare
-                ; `ret` and would have hidden this until a disk was present.
-                push    de
-                or      a                   ; CF clear = "nobody claimed it"
-                call    H_MKI
-                pop     de
-                jr      c,str_mkf_int_go
-                ld      a,3                 ; Illegal function call, DEFERRED --
-                call    penderr_set         ; first-error-wins, so it outranks the
-                                            ; syntax error the decline would raise
-                                            ; (stmt_error calls check_expr_errors
-                                            ; before it reaches `ld a,2`)
-                pop     hl                  ; balance the guarded cursor
-                jp      str_eval_no
-str_mkf_int_go:
                 ld      a,e
                 ld      (STRSCR+1),a        ; low byte of n
                 ld      a,d

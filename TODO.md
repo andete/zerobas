@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1429 (T-6FE392)8 (T-529ABE)` from `TODO.md:5965 (T-529ABE)`: a
+      `TODO.md:1457 (T-6FE392)8 (T-529ABE)` from `TODO.md:5993 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -862,7 +862,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       per-verb hook address at the shared call site; `CVI`/`CVS`/`CVD` share
       `ev_ff_cv`; `DSKF` has almost no main-side body (spec §8).
 
-- [ ] 🙋 **SHOULD THE DISK-BASIC VERBS LIVE IN `disk.rom` BEHIND A HOOK, AS ON
+- [x] ✅ **DISK-BASIC VERBS NOW GO THROUGH THE DOCUMENTED HOOKS — the diskless
+      build is faithful. (Joost's question AND his decision, 2026-09-03.)**
+      Completed by D-MKHOOK the same day, [`docs/spec-basic-nodisk.md`](docs/spec-basic-nodisk.md) §10.
+      **`nodisk-acceptance` pins 8 -> 0**: every verb that needs no medium
+      (`MKI$` `MKS$` `MKD$` `CVI` `CVS` `CVD` `DSKF`) is routed through its own
+      documented hook, so a diskless zerobas REFUSES because the handler is not
+      there — the way the reference does it. Disk build unchanged (`mksd_probe`
+      0 DIFF / 32).
+      🔴 **AN EMPTY PIN SET IS THE STRICTEST STATE THIS GATE HAS**, not the
+      weakest: every row is now scored against the oracle, and a NEW disk verb
+      that answers on a diskless build lands as a red row rather than as an entry
+      someone must remember to add.
+      💰 **COST: main page 1 164 -> 75 B free** (2026-09-03) — 89 B to gate seven
+      verbs, pure overhead because this slice moved no bodies. ⚠️ **75 B is
+      tight** and the next page-1 slice must reckon with it; §8 measured ~50 B of
+      conversion that could still follow into `disk.rom`, which would claw most of
+      it back — a separate slice that must justify itself.
+      🔴 **KNIVES 4/4**, and two are the batch's own argument: dropping `H_CVS`
+      costs ONLY the CVS row while dropping `H_MKS` costs the MKS$ row AND the CVS
+      row (which builds its argument with `MKS$`). A blanket presence check would
+      have moved both arms alike — that asymmetry is what proves the selection is
+      per-verb.
+      📋 **STILL OPEN, SMALLER:** the CHANNEL verbs (`OPEN`/`FILES`/`KILL`/`NAME`
+      …) are not hooked. They read `load error` on a diskless machine — an
+      UNREADABLE cell, so the probe excludes them by construction and they are
+      unmeasured, not known-good.
+
+      *(original question, kept for the reasoning:)*
+- [x] 🙋 **SHOULD THE DISK-BASIC VERBS LIVE IN `disk.rom` BEHIND A HOOK, AS ON
       REAL HARDWARE? (Joost's question, 2026-09-03.)** Raised while D-MKSD was
       landing `MKS$`/`MKD$`/`CVS`/`CVD` into the MAIN ROM.
       🟢 **THE KEYWORD-TABLE HALF IS SETTLED AND MEASURED: main-ROM placement is
@@ -2007,7 +2035,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:5965 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:5993 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

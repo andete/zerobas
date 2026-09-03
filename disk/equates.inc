@@ -38,7 +38,15 @@ DSKIO_ENTRY     equ     $4010   ; our DSKIO ($4000 + $10)
 ; and the CF-3300 (disk) -- 35 slots carry an `F7 87 <addr> C9` stub there, and
 ; three of them were already known in-tree ($FD9F H.TIMI, $FFA7 H.PHYD, $FFCA).
 ; scratchpad/hookdiff_probe.py.
-H_MKI           equ     $FE30   ; MKI$ -- the first verb routed this way
+; The seven this ROM claims. Addresses from the TH table, each corroborated by
+; the hook diff (all seven are among the 35 slots the CF-3300's disk ROM claims).
+H_DSKF          equ     $FE12   ; DSKF
+H_MKI           equ     $FE30   ; MKI$ -- the first verb routed this way (D-MKHOOK)
+H_MKS           equ     $FE35   ; MKS$
+H_MKD           equ     $FE3A   ; MKD$
+H_CVI           equ     $FE3F   ; CVI
+H_CVS           equ     $FE44   ; CVS
+H_CVD           equ     $FE49   ; CVD
 
 ; --- Disk scratch RAM (disk/PROVENANCE.md §Scratch RAM) --------------------
 ; (GETDPB writes the 18-byte DPB into the CALLER's buffer per MSX2 TH, so the disk

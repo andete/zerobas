@@ -1265,6 +1265,20 @@ fch_mode_class:
                 cp      LPT_MODE
                 ret                         ; CF set (A<LPT_MODE) = disk file channel
 ev_ff_dskf:                                 ; DSKF(d): free clusters on the drive
+                ; --- D-MKHOOK: DSKF is the DISK ROM's, through H.DSKF -----------
+                ; docs/spec-basic-nodisk.md §9. Unlike the conversions this verb had
+                ; almost no main-side body to begin with -- the work is already a
+                ; sub-ROM tenant -- so the hook buys exactly one thing: a diskless
+                ; build REFUSES instead of answering 0.
+                push    ix
+                ld      hl,H_DSKF
+                ld      de,dskf_back
+                push    de
+                or      a
+                jp      (hl)
+dskf_back:
+                pop     ix
+                jp      nc,ev_f_ifc         ; no disk ROM -> Illegal function call
                 ; The drive arg (DE) is ignored (single drive). Returns the count
                 ; of free FAT entries — = free KB on a 1 KB/cluster 720 KB volume.
                 ; CALSLT (inside fat_count_free) clobbers IX/IY, and IX is the
@@ -1338,6 +1352,34 @@ ev_ff_cv:
                 cp      ')'
                 jp      nz,ev_f_empty       ; BUG C class: missing ')' -> deferred syntax err
                 inc     ix
+                ; --- D-MKHOOK: CVI/CVS/CVD belong to the DISK ROM ---------------
+                ; docs/spec-basic-nodisk.md §9. Sited AFTER the operand and the
+                ; `)` so a malformed call still reports its own syntax error first,
+                ; which is what both references do WITH a disk -- the gate must not
+                ; reorder errors it was not asked to change.
+                ; ⚠️ IX IS THE TOKEN CURSOR AND THE CALL CROSSES SLOTS. CALSLT is
+                ; documented to affect IX among others, and the UNCLAIMED path is a
+                ; bare `ret` that would have hidden it until a disk was present --
+                ; the same trap DE set for MKI$.
+                push    ix
+                push    bc                  ; C = the width, and the verb's identity
+                ld      hl,H_CVI
+                ld      a,c
+                cp      2
+                jr      z,ev_cv_hook
+                ld      hl,H_CVS
+                cp      4
+                jr      z,ev_cv_hook
+                ld      hl,H_CVD
+ev_cv_hook:
+                ld      de,ev_cv_back       ; call THROUGH HL: the cell is
+                push    de                  ; `F7 <slot> <lo> <hi> C9`, so its own
+                or      a                   ; `ret` lands here; unclaimed it is a
+                jp      (hl)                ; bare `ret` and lands here at once
+ev_cv_back:
+                pop     bc
+                pop     ix
+                jp      nc,ev_f_ifc         ; no disk ROM -> Illegal function call
                 call    flt_int_result      ; CVI returns an int; a float nested in
                                             ;  the string arg must not stick (A only)
                 ld      hl,(STRPTR)
