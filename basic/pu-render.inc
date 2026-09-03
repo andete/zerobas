@@ -25,9 +25,11 @@
 ; Clobbers A, B, C, DE, HL.
 pu_to_field:
                 ld      a,(PU_FLAGS)
-                and     $F9                 ; clear "wrapped" (bit1) AND the
-                                            ; asterisk-fill flag (bit2, D-PUSTAR):
-                                            ; both are per-FIELD state
+                and     $C1                 ; clear "wrapped" (bit1), the asterisk
+                                            ; fill (bit2) and the sign specifier
+                                            ; (bits 3-5, D-PUSIGN) -- all per-FIELD
+                                            ; state. Bit0 (trailing separator) is
+                                            ; per-STATEMENT and must survive.
                 ld      (PU_FLAGS),a
 ptf_scan:
                 ld      a,(PU_POS)
@@ -50,6 +52,8 @@ ptf_scan:
                 jp      z,ptf_back
                 cp      '*'
                 jp      z,ptf_star
+                cp      '+'
+                jp      z,ptf_plus
                 call    pchar               ; literal -> emit
                 ld      a,(PU_POS)
                 inc     a
@@ -87,13 +91,46 @@ ptf_num_lp:
                 inc     c
                 jr      ptf_num_lp
 ptf_num_done:
+                ; --- D-PUSIGN: a TRAILING `+` or `-` right after the run --------
+                ld      a,(PU_FMTLEN)
+                cp      c
+                jr      z,ptf_num_fill      ; format ended: no trailing sign
+                ld      e,c
+                ld      d,0
+                ld      hl,PU_FMT
+                add     hl,de
+                ld      a,(hl)
+                cp      '+'
+                jr      z,ptf_num_tplus
+                cp      '-'
+                jr      nz,ptf_num_fill
+                ld      a,(PU_FLAGS)
+                set     3,a                 ; a sign specifier is present
+                set     4,a                 ; ...and it is TRAILING
+                ld      (PU_FLAGS),a
+                inc     c                   ; consume it
+                jr      ptf_num_fill
+ptf_num_tplus:
+                ld      a,(PU_FLAGS)
+                set     3,a
+                set     4,a
+                set     5,a                 ; ...and the character is `+`
+                ld      (PU_FLAGS),a
+                inc     c
+ptf_num_fill:
                 ; D-PUSTAR: the two asterisks COUNT toward the field width --
                 ; measured, `PRINT USING"**##";5` is `***5`, four characters wide,
                 ; and `**##` with 1234 is `1234` with no fill at all.
                 ld      a,(PU_FLAGS)
                 bit     2,a
-                jr      z,ptf_num_w
+                jr      z,ptf_num_sw
                 inc     b
+                inc     b
+ptf_num_sw:
+                ; D-PUSIGN: the sign character occupies a position too --
+                ; `+##` with 5 is ` +5`, three wide.
+                bit     3,a
+                jr      z,ptf_num_w
                 inc     b
 ptf_num_w:
                 ld      a,b
@@ -132,6 +169,38 @@ ptf_star:
                 jp      ptf_scan
 ptf_star_lit:
                 ld      a,'*'
+                call    pchar
+                ld      a,(PU_POS)
+                inc     a
+                ld      (PU_POS),a
+                jp      ptf_scan
+
+; --- ptf_plus: a LEADING `+` before a `#` run (D-PUSIGN) --------------------
+; One character, consumed, and it counts toward the width. ⚠️ A `+` NOT followed
+; by `#` stays a literal, so `PRINT USING"+A#";5` keeps its plus.
+ptf_plus:
+                ld      a,(PU_POS)
+                inc     a
+                ld      c,a
+                ld      a,(PU_FMTLEN)
+                cp      c
+                jr      z,ptf_plus_lit      ; `+` was the last char -> literal
+                ld      e,c
+                ld      d,0
+                ld      hl,PU_FMT
+                add     hl,de
+                ld      a,(hl)
+                cp      '#'
+                jr      nz,ptf_plus_lit
+                ld      a,(PU_FLAGS)
+                set     3,a                 ; sign present, LEADING (bit4 clear)
+                set     5,a                 ; and the character is `+`
+                ld      (PU_FLAGS),a
+                ld      a,c
+                ld      (PU_POS),a          ; past the `+`
+                jp      ptf_scan
+ptf_plus_lit:
+                ld      a,'+'
                 call    pchar
                 ld      a,(PU_POS)
                 inc     a

@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1533 (T-6FE392)8 (T-529ABE)` from `TODO.md:6069 (T-529ABE)`: a
+      `TODO.md:1552 (T-6FE392)8 (T-529ABE)` from `TODO.md:6088 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1063,8 +1063,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Two claims, separated. ⚠️ Round 1 predicted both sets without `a.dot` and
       both arms read FAIL — `**#.##` exercises `**` even though its `.` half is
       unimplemented. The arms were right; the prediction was short.
-      📋 **STILL OPEN: `.` `,` `+` `-` `^^^^`** — contract measured, page 1 at
-      50 B is the scarce thing.
+      ✅ **AND `+` / `-` SHIP TOO (D-PUSIGN, same day)** — six more rows:
+      `+##` gives ` +5` / ` -5`, `##+` gives ` 5+` / ` 5-`, `##-` gives ` 5 ` /
+      ` 5-`. **THREE transformations, not one**: prepend `+`, append `+`-or-SPACE,
+      and MOVE the leading `-` to the end (where it stays `-` even under `##+`).
+      `+##` with a NEGATIVE needs nothing at all — `pu_fmt_int` already wrote it.
+      💰 Sited sub-side for SPACE, not structure: pure RAM work over `NUMBUF`,
+      ~60 B, and page 1 had 50. `pu_sign_tenant`, page-0 index 15, closure trivial
+      (no main-ROM call); main pays 18 B for the flag test and the CALSLT.
+      **Page 1 50 -> 32 B; sub page 0 1894 -> 1668 B.**
+      🔴 **KNIFE 1/1, and the rows that must NOT move are the claim**: dropping the
+      leading-`-` removal moved `p.trailneg` and `n.neg` and left `p.trail` /
+      `n.pos` alone. Had the positives moved too, the arm would only have said
+      "trailing signs exist", which the six green rows already say.
+      📋 **STILL OPEN: `.` `,` `^^^^`** — 9 of the divergent rows are closed;
+      `p.dot`/`n.dot`/`a.dot` each combine a SHIPPED specifier with `.` and will
+      fall out of that slice rather than needing new sign or fill work.
+      🔴 **PAGE 1 IS AT 32 B (2026-09-03) AND `.` IS THE LARGEST OF THE THREE** —
+      it needs rounding at a decimal position, not just placement. Scanner and
+      buffer work can go sub-side as these two did, but the EMITTER cannot. **A
+      page-1 carve, or moving more of `pu_do_number` sub-side, is now the
+      prerequisite** — not an optimisation to do afterwards.
 
 - [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
       DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
@@ -2111,7 +2130,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6069 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6088 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

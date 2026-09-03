@@ -269,6 +269,16 @@ pu_do_number:
                 call    eval                ; DE = value; HL advanced
                 push    hl                  ; guard the token cursor
                 call    pu_fmt_int          ; NUMBUF = "[-]digits",0 ; B = length
+                ; D-PUSIGN: `+`/`-` sign placement, done sub-side (pure RAM over
+                ; NUMBUF; ~60 B, and page 1 had 50). Returns the new length in A.
+                ld      a,(PU_FLAGS)
+                bit     3,a
+                jr      z,pu_num_nosign
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PUSIGN
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      b,a                 ; the rewritten length
+pu_num_nosign:
                 ld      a,(PU_W)
                 sub     b                   ; pad = width - length
                 jr      c,pu_num_over       ; length > width -> overflow

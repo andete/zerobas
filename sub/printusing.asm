@@ -61,6 +61,106 @@ pu_tail_tenant:
                 ld      (hl),0
                 ret
 
+; --- pu_sign_tenant: PRINT USING's `+` / `-` sign placement (D-PUSIGN) ------
+; docs/spec-basic-pufloat.md. Reached only when PU_FLAGS bit 3 says the field
+; carried a sign specifier.
+;
+;   in   NUMBUF = "[-]digits",0 as pu_fmt_int left it
+;        PU_FLAGS bit4 = TRAILING (else leading), bit5 = the char is `+`
+;   out  NUMBUF rewritten; A = its new length. Clobbers AF, BC, DE, HL.
+;
+; Three transformations, and the measured contract is what picks them:
+;     `+##` ·  5   ->  ` +5`   a `+` is PREPENDED
+;     `+##` · -5   ->  ` -5`   the `-` pu_fmt_int already wrote is the sign
+;     `##+` ·  5   ->  ` 5+`   a `+` is APPENDED
+;     `##+` · -5   ->  ` 5-`   the `-` MOVES to the end -- and it is `-`, not `+`
+;     `##-` ·  5   ->  ` 5 `   a SPACE is appended, not nothing
+;     `##-` · -5   ->  ` 5-`
+;
+; ⚠️ SITED SUB-SIDE BECAUSE OF SPACE, NOT STRUCTURE. It is pure RAM work and could
+; equally live in basic/printusing.asm -- but that is main page 1, which had 50 B
+; free, and this is ~60. Page-0 closure holds trivially: no main-ROM call at all.
+;
+; NUMBUF is 8 bytes and the widest case fits: "-32768" is 6 + terminator, and the
+; trailing form only MOVES that byte, while the leading form prepends to at most
+; "32767" -> 6 + terminator.
+pu_sign_tenant:
+                ld      a,(PU_FLAGS)
+                bit     4,a
+                jr      nz,pst_trail
+                ; --- LEADING: only a POSITIVE value changes ------------------
+                ld      a,(NUMBUF)
+                cp      '-'
+                jr      z,pst_len           ; negative: the `-` already leads
+                call    pst_end             ; HL -> terminator, B = length
+                ld      d,h
+                ld      e,l
+                inc     de                  ; DE -> one past it
+                ld      c,b
+                inc     bc                  ; move length+1 bytes (with the 0)
+                ld      b,0
+                lddr                        ; shift right, backwards
+                ld      a,'+'
+                ld      (NUMBUF),a
+                jr      pst_len
+pst_trail:
+                ld      a,(NUMBUF)
+                cp      '-'
+                jr      z,pst_tneg
+                ; positive: append `+` (bit5) or a SPACE
+                call    pst_end             ; HL -> terminator
+                ld      a,(PU_FLAGS)
+                bit     5,a
+                ld      a,' '
+                jr      z,pst_tput
+                ld      a,'+'
+pst_tput:
+                ld      (hl),a
+                inc     hl
+                ld      (hl),0
+                jr      pst_len
+pst_tneg:
+                ; negative: drop the leading `-`, then append one. Always `-`,
+                ; even under `##+` -- measured.
+                ld      hl,NUMBUF+1
+                ld      de,NUMBUF
+                call    pst_end_hl          ; BC = bytes remaining incl. terminator
+                ldir
+                call    pst_end
+                ld      (hl),'-'
+                inc     hl
+                ld      (hl),0
+pst_len:
+                call    pst_end
+                ld      a,b
+                ret
+
+; pst_end -- HL -> NUMBUF's 0 terminator, B = the length before it.
+pst_end:
+                ld      hl,NUMBUF
+                ld      b,0
+pse_lp:
+                ld      a,(hl)
+                or      a
+                ret     z
+                inc     hl
+                inc     b
+                jr      pse_lp
+; pst_end_hl -- BC = bytes from HL through the terminator INCLUSIVE.
+pst_end_hl:
+                push    hl
+                ld      bc,1
+psh_lp:
+                ld      a,(hl)
+                or      a
+                jr      z,psh_done
+                inc     hl
+                inc     bc
+                jr      psh_lp
+psh_done:
+                pop     hl
+                ret
+
 ; The shared scanner body (pu_to_field/ptf_* + pu_emit_tail). Binds pchar to
 ; sub/detok.asm's sub-local DETOKBUF append (defined once, co-resident).
                 include "basic/pu-render.inc"

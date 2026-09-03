@@ -4104,6 +4104,12 @@ SUBROM_IDX_PLAY_PARSE equ 14    ; play_parse_tenant (sub/playparse.asm): the aud
                                 ; MML string into its VOICxQ ring buffer, sets MUSICF
                                 ; LAST. Only ex_play (basic/play.asm) computes
                                 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE.
+SUBROM_IDX_PUSIGN    equ 15     ; pu_sign_tenant (sub/printusing.asm): PRINT USING's
+                                ; `+` / `-` sign placement (D-PUSIGN). PAGE-0 index
+                                ; space -- pure RAM work over NUMBUF + PU_FLAGS, no
+                                ; main-ROM call, so it satisfies the page-0 closure
+                                ; rule. Sited sub-side because the transformation is
+                                ; ~60 B and main page 1 had 50.
 SUBROM_IDX_LINEEDIT  equ 15     ; lineedit_tenant (sub/lineedit.asm): the numbered-
                                 ; line editor's TXTTAB memmove engine (docs/spec-
                                 ; eviction-g4-space.md §4, carve #2 of the G4-space

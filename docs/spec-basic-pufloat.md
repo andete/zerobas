@@ -54,8 +54,50 @@ arms moved the same rows, one of the two claims would be unproven.
 unimplemented, so killing either half changes that row too. The arms were right
 and the prediction was short.
 
-## 4. Still open — five specifiers
+## 4. D-PUSIGN — `+` and `-`, six more rows
 
-`.` `,` `+` `-` `^^^^`, and `a.dot` (`**#.##`) stays divergent until `.` lands.
-The contract for all of them is already measured in
-`scratchpad/pufloat_probe.py`; what is scarce is page 1, at **50 B**.
+| row | format · value | answer |
+|---|---|---|
+| `p.lead` | `"+##"` · 5 | ` +5` |
+| `p.leadneg` | `"+##"` · −5 | ` -5` |
+| `p.trail` | `"##+"` · 5 | ` 5+` |
+| `p.trailneg` | `"##+"` · −5 | ` 5-` |
+| `n.pos` | `"##-"` · 5 | ` 5 ` |
+| `n.neg` | `"##-"` · −5 | ` 5-` |
+
+Three transformations, not one: **prepend** `+` (leading, positive), **append**
+`+` or a *space* (trailing, positive), and **move** the leading `-` to the end
+(trailing, negative) — where it stays `-` even when the specifier is `+`.
+`p.leadneg` needs nothing at all: `pu_fmt_int` already wrote the `-` in front.
+
+**Sited sub-side because of space, not structure.** It is pure RAM work over
+`NUMBUF` and could equally live in `basic/printusing.asm` — but that is main
+page 1, which had **50 B**, and the transformation is ~60. It became
+`pu_sign_tenant`, page-0 index 15, whose closure holds trivially: no main-ROM
+call at all. Main side pays 18 B for the flag test and the CALSLT.
+
+**Cost: page 1 50 → 32 B; sub page 0 1894 → 1668 B.**
+
+### 4.1 Knife — the rows that must NOT move are the claim
+
+```
+K-PG1  drop the leading `-` removal (append without moving)
+       moved p.trailneg, n.neg   —   p.trail and n.pos unchanged   PASS
+```
+
+Had the trailing *positive* rows moved too, the arm would only have been saying
+"trailing signs are implemented", which the six green rows already say. The
+asymmetry is what shows the negative move is its own transformation.
+
+## 5. Still open — three specifiers
+
+`.` `,` `^^^^`. **Nine of the divergent rows are now closed**; what remains needs
+the decimal point, and `p.dot` / `n.dot` / `a.dot` stay divergent until `.` lands
+— each of those combines a shipped specifier with `.`, so they will fall out of
+that slice rather than needing new sign or fill work.
+
+🔴 **PAGE 1 IS AT 32 B** (2026-09-03) and `.` is the largest of the three: it
+needs rounding at a decimal position, not just placement. The scanner and any
+buffer work can go sub-side as these two did, but the emitter cannot. **A page-1
+carve, or moving more of `pu_do_number` sub-side, is now the prerequisite** —
+not an optimisation to do afterwards.

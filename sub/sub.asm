@@ -209,6 +209,14 @@ sub_p0_table:
                                                 ;   re-entered once per bounce and recovers
                                                 ;   its phase from L.
 
+                jp      pu_sign_tenant          ; index 15 (SUBROM_IDX_PUSIGN): PRINT
+                                                ;   USING's `+`/`-` sign placement
+                                                ;   (D-PUSIGN, docs/spec-basic-pufloat.md).
+                                                ;   Pure RAM -- NUMBUF in, NUMBUF out,
+                                                ;   the new length in A -- so it meets the
+                                                ;   page-0 closure rule with nothing to
+                                                ;   marshal.
+
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to SUBROM_ENTRY_BASE_P0 mapped slot 3-2 into PAGE 0 and that
 ; page-3 RAM is reachable from there: stamp SUB_PING with the page-0 tag and
