@@ -120,3 +120,9 @@ find it in your own.
 `MKS$`/`MKD$` are exactly that consumer. Either they call `fac_zero_mantissa`
 themselves or they route through the packer; whichever, the choice needs a row
 that fails without it.
+
+
+## Closing demo
+
+`scratchpad/session_demo.py` runs this as ordinary MSX BASIC on all three
+machines, with the pre-fix zerobas reading quoted beside it (`demo.faczero`).

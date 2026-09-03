@@ -271,3 +271,9 @@ tooling objected; the only signal was one character in a status listing.
 The slice was also briefly named **D-MUSICF**, which is the name `3764e23`
 already carries. Both the file name and the slice name were taken, and neither
 collision was checked before writing.
+
+
+## Closing demo
+
+`scratchpad/session_demo.py` runs this as ordinary MSX BASIC on all three
+machines, with the pre-fix zerobas reading quoted beside it (`demo.gicini`).
