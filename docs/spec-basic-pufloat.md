@@ -257,3 +257,32 @@ the file was added rather than one slice later.
 ⚠️ And the truncation that started the debugging was self-inflicted, for the
 **second time today**: a `str.index('pu_num_tenant:')` matched the name inside
 that routine's own comment header and cut the file there. Anchor on the label.
+
+## 10. ✅ The `SUB_PARTS` gate — and it found three more
+
+`make rom-parts-check` (`tools/check_rom_parts.py`), in the battery. It compares
+each ROM's **transitive include closure** against the prerequisites its Makefile
+rule actually has — the `*_PARTS` variable plus anything named on the target
+line. A file in the closure but not in the prerequisites is *a rebuild that will
+not happen*.
+
+**Its first run found three more of exactly tonight's bug**, none of them mine:
+
+| file | included by |
+|---|---|
+| `sub/lrsetst.asm` | `sub/sub.asm` |
+| `sub/deffn.asm` | `sub/sub.asm` |
+| `basic/pdfcb-body.inc` | `sub/bload.asm` |
+
+Each is a tenant whose edits would not have triggered a rebuild. All three are
+now prerequisites; `disk.rom` was already clean.
+
+🔴 **AND THE GATE'S OWN FIRST RUN WAS WRONG, CONFIDENTLY.** It reported **63**
+missing files — because it parsed the Makefile line-at-a-time and `SUB_PARTS`
+spans a dozen backslash-continued lines, so it saw only the first. A plausible
+table from a misread input, in the very tool whose docstring is about that
+failure. Continuations are joined before anything is parsed.
+
+Both behaviours are tested, not assumed: a degenerate parse (zero includes) exits
+**2** with nothing checked, and removing two entries from `SUB_PARTS` is caught
+and exits **1**.

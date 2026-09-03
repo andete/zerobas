@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1613 (T-6FE392)8 (T-529ABE)` from `TODO.md:6149 (T-529ABE)`: a
+      `TODO.md:1624 (T-6FE392)8 (T-529ABE)` from `TODO.md:6160 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1128,9 +1128,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 **AND IT EXPOSED A REAL LATENT BUG, NOW FIXED**: `sub/punum.asm` was
       never in `SUB_PARTS`, so `make sub` said "nothing to be done" after a full
       rewrite -- D-PUNUM shipped with `build/sub.rom` able to go quietly stale.
-      ⚠️ **THERE IS NO GATE FOR THIS** despite the Makefile carrying
-      `[[makefile-subparts-stale-tenant]]`: nothing cross-checks `SUB_PARTS`
-      against the files `sub/sub.asm` actually includes. Worth writing.
+      ✅ **AND THE GATE IS NOW WRITTEN — `make rom-parts-check`**, in the
+      battery ([`tools/check_rom_parts.py`](tools/check_rom_parts.py)). It
+      compares each ROM's TRANSITIVE include closure against the prerequisites
+      its Makefile rule actually has. **Its first run found THREE MORE of the
+      same bug**, none of them from tonight: `sub/lrsetst.asm`, `sub/deffn.asm`
+      (both included by `sub/sub.asm`) and `basic/pdfcb-body.inc` (by
+      `sub/bload.asm`) — each a tenant whose edits would not have triggered a
+      rebuild. All fixed; `disk.rom` was already clean.
+      🔴 **THE GATE'S OWN FIRST RUN WAS CONFIDENTLY WRONG** — it reported 63
+      missing files, because it parsed the Makefile line-at-a-time and
+      `SUB_PARTS` spans a dozen continuations. A plausible table from a misread
+      input, in the very tool whose docstring is about that failure. Both
+      behaviours are now TESTED: a degenerate parse exits 2 with nothing checked,
+      and a planted removal is caught and exits 1.
       📋 **`.` `,` `^^^^` ARE ONE SLICE, NOT THREE** — PRINT USING needs a
       FLOAT RENDERER, which fixes the three rows above on the way past. It also
       re-explains `m.big` (` 0,`), filed as a comma gap and really the same
@@ -2191,7 +2202,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6149 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6160 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

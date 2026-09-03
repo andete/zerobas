@@ -194,8 +194,8 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/lineedit.asm \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/fcbname.asm basic/fcbname-body.inc \
-             sub/fldlook.asm \
-             sub/bload.asm basic/bload-body.inc basic/fatio-body.inc \
+             sub/fldlook.asm sub/lrsetst.asm sub/deffn.asm \
+             sub/bload.asm basic/bload-body.inc basic/fatio-body.inc basic/pdfcb-body.inc \
              sub/save.asm basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc \
              basic/sv-tsb.inc basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
              basic/fatiocreate-body.inc basic/fatiow-body.inc \
@@ -302,6 +302,15 @@ sub/math-coeffs.inc: tools/gen_math_coeffs.py
 # a stale .inc (and therefore a stale sub.rom calling wrong addresses) that the
 # build-order dependency above should prevent but a partial/interrupted build
 # or a hand-edit might not. Also run as a step of `basic-reloc` below.
+# --- every file a ROM INCLUDES must be a prerequisite of that ROM -----------
+# 🔴 WRITTEN BECAUSE IT HAPPENED (D-PUDOT): sub/punum.asm was added as a tenant
+# and never put in SUB_PARTS, so `make sub` said "nothing to be done" after a
+# full rewrite of it. The Makefile already carried [[makefile-subparts-stale-
+# tenant]] from a PREVIOUS occurrence and there was still no check -- a lesson
+# with no gate is a lesson that gets re-learned. Its first run found three more.
+rom-parts-check:
+	python3 tools/check_rom_parts.py
+
 subrom-abi-check: sub/basic-resident-abi.inc $(RELOC_SYM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
 
