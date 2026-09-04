@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6622 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6694 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6622 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6694 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2686,6 +2686,78 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [[a-mechanical-fix-can-break-a-different-invariant]]. Convert
       opportunistically, when touching a probe for another reason.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (re-measured 2026-08-26: 0 stray writes on a battery path; DE-ESCALATED).
+
+- [ ] 🏗️ **ARC: CONTROL FRAMES BELONG IN ONE HIMEM-BOUNDED POOL, NOT THREE FIXED
+      ARRAYS.** Opened 2026-09-04 (Joost) out of D-TRAPSVC, after D-TRAPDEPTH and
+      D-STACKPOOL measured what the references actually do
+      ([`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §10–§11).
+
+      **THE MODEL, MEASURED — not inferred.** `CLEAR n` resizes the string space
+      and `CLEAR n,addr` sets HIMEM:
+
+          row                     vg8020   cf3300   zb
+          baseline, no CLEAR        4080     3311    8
+          CLEAR 2200  (+2000 B)     3793     3024    8
+          CLEAR 4200  (+4000 B)     3508     2738    8
+          CLEAR 200,&HC000          2195     2195    8
+
+      • **+2000 B of string space costs 286 frames on BOTH references**, and the
+        next +2000 costs 285/286 — **7.0 B per frame, linear, four times over.**
+        One shared pool.
+      • **Pinning HIMEM makes the references agree EXACTLY (2195 = 2195).** They
+        differed only because Disk BASIC had taken RAM. A fixed array cannot
+        produce that.
+      • **zerobas reads 8 in every row.** `CLEAR` and HIMEM change nothing.
+      • And an abandoned trap dispatch costs ~1 frame on the references too
+        (D-TRAPDEPTH) — **nothing is reclaimed anywhere.** `SP` simply moves.
+
+      🎯 **SO THE GAP IS AN ALLOCATION MODEL, NOT A NUMBER**, which is why both
+      options the trap item had left were the wrong shape: one added a reclaim the
+      reference does not do, the other swapped a fixed array for a bigger fixed
+      array — still insensitive to `CLEAR` and HIMEM.
+
+      **WHAT WE HAVE — 154 B of page-3 RAM in three arrays:**
+
+          GOSUB_STK  $E050   8 x 6 B  = 48    GOSUB_DEPTH=8, GOSUB_FRAME=6
+          FOR_STK    $EA3A   8 x 11 B = 88    FOR_DEPTH=8,   FOR_FRAME=11
+          TRAPSTK    $E20D   6 x 3 B  = 18    TRAPSTK_MAX=6
+
+      🟢 **THE GROUNDWORK EXISTS.** `HIMEM` ($FC4A) is live, `CLEAR` already
+      records its second argument, and `basic/str-engine.asm` already computes
+      `FRETOP := min(HIMEM,TXTMAX)`. The ceiling concept is there; the control
+      frames are what do not use it.
+
+      **THE CHANGE:**
+      1. `GSP` / `FSP` / `TRAPSVC` become pointers into one DESCENDING pool
+         instead of indices into three arrays.
+      2. Overflow stops being "index >= DEPTH" and becomes "collided with the
+         variable / string area" — **one check replacing three**.
+      3. `CLEAR` resets the pool; that is what makes depth respond to `CLEAR` and
+         HIMEM at all, which is rows 2–4 above.
+      4. Callers: [`basic/program.asm`](basic/program.asm),
+         [`basic/traps.asm`](basic/traps.asm), [`basic/vars.asm`](basic/vars.asm),
+         plus the FOR/NEXT path.
+      🟢 It also RECOVERS the 154 B and deletes two of the three overflow paths.
+
+      **ACCEPTANCE ROWS, ALREADY WRITTEN AND CHEAP:**
+      [`scratchpad/stackpool_probe.py`](scratchpad/stackpool_probe.py) (the
+      `CLEAR` ladder + the pinned-HIMEM row) and
+      [`scratchpad/trapdepth_probe.py`](scratchpad/trapdepth_probe.py)
+      (`d.depth0`, `d.ctl20` vs `d.depth20`, `d.selfarm`). They are sensitive to
+      exactly this and read 8/8/8 today. ⚠️ Both are scratchpad probes with no
+      gate: **promote them to `probes/basic/` and collect them** before relying on
+      them (the D-CATGATE lesson — an honest rc no battery collects is not an
+      oracle), and pin FACES not just rows (D-NAMEGATE).
+
+      ⚠️ **GUARDS THAT MUST NOT MOVE:** `d.selfarm` (a handler that re-enables its
+      own trap then RETURNs) reads `9 0` on all three TODAY — the case
+      `spec-basic-trapsvc.md` §6 warns a fix must not break. And `gosub_push`'s
+      `FSP-at-push` field (`GOSUB_FRAME` = `[CURLINE][resume][FSP-at-push]`, from
+      D-FORRET) is a cross-stack invariant: a pooled design still has to restore
+      the FOR stack on RETURN.
+      ⚠️ **`CLEAR` RESETS THE ERROR VECTOR** — measured while writing these rows.
+      Any probe that arms `ON ERROR` before a `CLEAR` reads `<NO OUTPUT>`.
+      🏗️ ARC — its own slice, its own knives, per verb (GOSUB/RETURN, FOR/NEXT, traps) plus the CLEAR interaction.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
