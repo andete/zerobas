@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1820 (T-6FE392)8 (T-529ABE)` from `TODO.md:6493 (T-529ABE)`: a
+      `TODO.md:1848 (T-6FE392)8 (T-529ABE)` from `TODO.md:6521 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -599,6 +599,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `truncload_probe`'s six NO-ORACLE rows are a DIFFERENT cause —
       uninitialised-RAM history behind a truncated store, not disk-vs-cassette —
       and they legitimately stay.
+
+- [ ] 🔴 **A FILED *FACE* ROTS WITHOUT THE ROW CEASING TO DIVERGE, AND NOTHING
+      DETECTS THAT.** Found three times on 2026-09-04, each by hand while picking
+      the item up:
+      • the NAME rows — entry and the corrected comment in `basic/files.asm` both
+        said `zb ERR 24`; both read **ERR 2** (noted 2026-09-02, and the entry
+        called it "THIRD STALE FILING");
+      • `LEN=r` — entry says `zb -> Syntax error`; both sides raise **ERR 5**, so
+        the CODE agrees and only the domain differs (D-RECLENDOM);
+      • the concatenation entry — its whole subject had been FIXED by D-CATFIX
+        three days earlier and the box was never struck (D-CATGATE).
+      🎯 **`filed_row_sweep` CANNOT SEE THIS CLASS, AND ITS OWN DESIGN SAYS WHY.**
+      It adjudicates each divergent row as *known* / *unfiled* / *no longer
+      diverging*. A row that still diverges but now diverges **to a different
+      face** is `known`, and reads green. The 2026-09-04 run was **0 UNFILED, 0
+      NO-LONGER-DIVERGING** on all 15 probes — and two of the three above were
+      live at that moment.
+      ⚠️ **THIS IS NOT "add faces to the pin file" WITHOUT A DESIGN.**
+      `tools/filed-row-known.txt` is row-labels-only and its loader refuses a
+      degenerate parse (`< 5` probes) on purpose; a face column would have to
+      survive that refusal, and several probes in the corpus print faces the
+      sweep cannot even parse into row names (`playfn` reads *"6 marker(s) in 0
+      parsed line(s)"* and works only by substring containment).
+      💰 Not priced. The cheap half may be that a face belongs in the PROBE's own
+      pin, not in the sweep's — the `basic_probe_nodisk.py` `PINNED` dict already
+      does exactly this for 8 rows and goes RED on drift **in either direction**,
+      which is the shape this wants.
+      🤖 AUTONOMOUS — the corpus and the failure mode are both in hand; what is missing is a design, not a decision.
 
 - [ ] 🔴 **SEVEN FILED PROBES PRINT DIVERGENCES AND EXIT 0.** Measured
       2026-08-31 by D-FILEDROT,
@@ -2421,7 +2449,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6493 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6521 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
