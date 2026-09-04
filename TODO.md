@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:7831 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:7864 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7034 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7067 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7034 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7067 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5350,8 +5350,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       mode set), or state in the probe that Q3 is a pair, not a control.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] ⚠️ **`M-SPRPBASE` AND `M-SPRSZAPL` EACH HAVE ONE ROW THAT *SHOULD* SEE THEM
-      AND DOES NOT.** Filed 2026-08-17 by D-GATEBLIND round 2 (§9). `pat_8_empty`
+- [x] ✅ **`M-SPRPBASE` AND `M-SPRSZAPL` EACH HAVE ONE ROW THAT *SHOULD* SEE THEM
+      AND DOES NOT.** CLOSED 2026-09-05 — **both confirmed by re-running the two
+      mutations, and only ONE was a row defect.**
+      • Baseline re-measured first: under `M-SPRPBASE`, `pat_8_empty` PASSed
+      (`ref='00000000' zb='00000000'`) while all seven sibling pattern rows
+      FAILed; under `M-SPRSZAPL`, `put_pat63_16` PASSed while `put_pat64_16`
+      FAILed (`ref='ZE 5' zb='ZK'`). The filing was exact.
+      • **`pat_8_empty` FIXED.** 🎯 The generalisable part is not "give it a
+      neighbour" but **an empty write is indistinguishable from NO write at ANY
+      single address** — freshly cleared VRAM already reads what a correct `""`
+      leaves, so no choice of window fixes it alone. The window must contain
+      something NON-ZERO whose POSITION moves. Entry 4 now holds `204`s and the
+      window spans both entries: correct `00000000`+`204`×8, mutant sixteen
+      zeros. Re-measured PASS → FAIL, red rows 13 → 14, green on the unmutated
+      ROM with both sides agreeing.
+      • 🔴 **`put_pat63_16` WAS NOT A ROW DEFECT — THE PREDICTION WAS**, and it
+      had been contradicted inside the same dict since it was written:
+      `M-SPRPATSC`'s entry says *"put_pat63_16 should NOT move: accepted either
+      way"* while `M-SPRSZAPL`'s listed it as expected-to-move. **Two
+      predictions disagreed about one row and neither was read against the
+      other** — a class worth watching in any table of per-mutation expectations
+      [[two-sections-of-one-doc-disagreed]]. Corrected, with `put_pat64_16`
+      named as the discriminator it always was.
+      Recorded in [`docs/gate-blindness-sweep.md`](docs/gate-blindness-sweep.md)
+      §9 beside the original over-prediction list; `cls_keeps`/`M-SPRXREST`, the
+      third entry there, is untouched and stays open.
+      ⚠️ **Instrument hazard met on the way, not fixed:** running
+      `gate_blindness_sweep.py` with a SUBSET of mutations rewrites the tracked
+      `scratchpad/gate_blindness_round2.json` to just that subset — my
+      one-mutation re-run replaced `M-GRPAC2`'s recorded prediction with
+      `M-SPRPBASE`'s. Reverted by hand here, and the only signal was `git
+      status`. A subset run should not be able to narrow a recorded round
+      [[a-mechanical-fix-can-break-a-different-invariant]].
+      --- the original filing ---
+      Filed 2026-08-17 by D-GATEBLIND round 2 (§9). `pat_8_empty`
       (`SPRITE$(0)=""`) writes eight zeros, so an 8-byte base shift leaves the
       read cell at 0 — the row cannot distinguish the right entry from the wrong
       one **for the empty string only**; and `put_pat63_16` compares the error

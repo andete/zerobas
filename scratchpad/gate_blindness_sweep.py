@@ -352,8 +352,17 @@ PREDICT = {
                    "read-back rows rd_vdp1 / wr_vfrac / wr_vnegfrac / "
                    "wr_v255fr / g_self / g_mid_stmt / g_if_stmt.",
     "M-SPRSZAPL":  "the 16x16 rows N pat_16_*/read_16/attr_16_*, O "
-                   "put_pat64_16/put_pat63_16, P size_persist/size_persist0/"
-                   "size_mag3. size_mag and size_back should NOT move.",
+                   "put_pat64_16, P size_persist/size_persist0/"
+                   "size_mag3. size_mag and size_back should NOT move. "
+                   "🔴 put_pat63_16 WAS LISTED HERE AND CANNOT MOVE (corrected "
+                   "2026-09-05): pattern 63 is in range under BOTH the 8x8 and "
+                   "the 16x16 rule, so it is accepted either way and the row "
+                   "compares only the error outcome. M-SPRPATSC's own "
+                   "prediction said so in this same dict -- two predictions "
+                   "contradicted each other about one row and neither was "
+                   "read against the other. put_pat64_16 is the discriminator: "
+                   "64 is out of range at 16x16 and in range at 8x8, so it "
+                   "reads ERR 5 vs accepted (measured).",
     "M-SPRPBASE":  "every N pattern row (pat_8_*, pat_16_*, read_*), P "
                    "pat_survives, cls_keeps, size_persist. The attr_* rows read "
                    "the ATTRIBUTE table and should NOT move.",

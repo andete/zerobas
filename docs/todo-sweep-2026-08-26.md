@@ -1013,9 +1013,19 @@ wrong.
 
 | item | verdict |
 |---|---|
-| `pat_8_empty` cannot see an 8-byte sprite base shift | **LIVE, exact** |
-| the three scale states are not swept through `X` substrings | **LIVE — but narrower than it reads** |
+| `pat_8_empty` cannot see an 8-byte sprite base shift | ~~LIVE, exact~~ → ✅ **CLOSED 2026-09-05** |
+| the three scale states are not swept through `X` substrings | ~~LIVE — but narrower than it reads~~ → ✅ **CLOSED 2026-09-05** |
 | nine acceptance rows still need a refusal cut | **LIVE — shape proven, cuts unwritten** |
+
+> ✅ **Two of the three closed 2026-09-05, and this sweep's verdicts held up on
+> both.** `pat_8_empty` was blind exactly as described and is fixed — the row now
+> carries a non-zero neighbour in a 16-byte window, because an empty write is
+> indistinguishable from no write at any *single* address
+> ([`gate-blindness-sweep.md`](gate-blindness-sweep.md) §9). The scale item was
+> indeed "narrower than it reads", and the nine rows that closed it found no
+> divergence at all — plus one thing this sweep did not predict: an `S` inside an
+> `X` substring **persists after the substring returns**
+> ([`spec-basic-lineerr.md`](spec-basic-lineerr.md) §12.9).
 
 `pat_8_empty` is `SPRITE$(3)=STRING$(8,170):SPRITE$(3)=""` — it writes eight
 bytes then blanks them, so its final state is eight zeros and an 8-byte base

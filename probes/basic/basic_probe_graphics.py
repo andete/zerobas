@@ -1559,8 +1559,21 @@ SPRITE_CASES = [
     ("pat_8_full",   "SCREEN2:SPRITE$(0)=STRING$(8,170)",      f"&H{SPR_PAT:04X}", 10, "0"),
     ("pat_8_short",  "SCREEN2:SPRITE$(1)=CHR$(255)",           f"&H{SPR_PAT+8:04X}", 10, "0"),
     ("pat_8_long",   "SCREEN2:SPRITE$(2)=STRING$(20,204)",     f"&H{SPR_PAT+16:04X}", 12, "0"),
-    ("pat_8_empty",  "SCREEN2:SPRITE$(3)=STRING$(8,170):SPRITE$(3)=\"\"",
-     f"&H{SPR_PAT+24:04X}", 8, "0"),
+    # 🔴 THE NEIGHBOUR AND THE WIDE WINDOW ARE LOAD-BEARING (D-GATEBLIND round 2
+    # §9, filed as a residual 2026-08-17; fixed 2026-09-05). Written as
+    # `SPRITE$(3)=STRING$(8,170):SPRITE$(3)=""` over an 8-byte window this row
+    # was BLIND to M-SPRPBASE (pattern base 8 bytes high): the mutant sends both
+    # writes one entry up, the window is never written, and freshly-cleared VRAM
+    # reads all-zero -- which is exactly what a CORRECT empty-string write
+    # leaves. It PASSed while all seven sibling pattern rows FAILed.
+    # 🎯 An empty write is indistinguishable from NO write at ANY single
+    # address, so no choice of window can fix it alone -- the window has to
+    # contain something NON-ZERO whose POSITION moves. Entry 4 holds 204s and
+    # the window spans both entries: correct reads 8 zeros then eight 204s,
+    # the mutant reads sixteen zeros (entry 4's write having gone to entry 5).
+    ("pat_8_empty",  "SCREEN2:SPRITE$(4)=STRING$(8,204):"
+                     "SPRITE$(3)=STRING$(8,170):SPRITE$(3)=\"\"",
+     f"&H{SPR_PAT+24:04X}", 16, "0"),
     ("pat_8_n255",   "SCREEN2:SPRITE$(255)=STRING$(8,204)",    f"&H{SPR_PAT+255*8:04X}", 8, "0"),
     ("pat_16_full",  "SCREEN2,2:SPRITE$(0)=STRING$(32,170)",   f"&H{SPR_PAT:04X}", 34, "0"),
     ("pat_16_short", "SCREEN2,2:SPRITE$(1)=STRING$(8,204)",    f"&H{SPR_PAT+32:04X}", 34, "0"),

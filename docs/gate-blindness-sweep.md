@@ -240,6 +240,29 @@ Three over-predictions by exactly one row, each instructive:
   is real and lands in phase N — which did redden.
 * `cls_keeps` survives `M-SPRXREST`.
 
+> 🟢 **RESOLVED 2026-09-05 — the first two, differently, and only one was a row
+> defect.**
+>
+> **`pat_8_empty` was fixed.** 🎯 The generalisable part: **an empty write is
+> indistinguishable from NO write at any single address**, because freshly
+> cleared VRAM already reads what a correct `""` leaves. No choice of window
+> fixes that alone — the window has to contain something **non-zero whose
+> POSITION moves**. The row now writes entry 4 with `204`s first and spans both
+> entries (16 bytes): correct reads `00000000` + `204`×8, the mutant reads
+> sixteen zeros, entry 4's write having gone to entry 5. Re-measured: the row
+> goes `PASS` → `FAIL` under `M-SPRPBASE`, red rows 13 → 14, and it is green on
+> the unmutated ROM with both sides agreeing.
+>
+> **`put_pat63_16` was NOT a row defect — the PREDICTION was wrong**, and it had
+> been contradicted in the same dict all along: `M-SPRPATSC`'s own entry reads
+> *"put_pat63_16 should NOT move: accepted either way"*, while `M-SPRSZAPL`'s
+> listed it as expected-to-move. **Two predictions disagreed about one row and
+> neither was ever read against the other.** `M-SPRSZAPL`'s is corrected;
+> `put_pat64_16` is the discriminator and always was — 64 is out of range at
+> 16×16 and in range at 8×8, measured `ref='ZE 5'` vs `zb='ZK'`.
+>
+> ⚠️ **`cls_keeps` / `M-SPRXREST` is untouched** and stays on this list.
+
 🔴 **The big miss: `M-VDPMIRR`, predicted ~24 rows, measured 68.** `RG0SAV+1` for
 register 0 *is* `RG1SAV`, so one `VDP(0)=2` poisons the screen-mode and
 sprite-size mirror — and **phase Q2 is batched**, so a single early case's poison
