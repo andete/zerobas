@@ -109,3 +109,43 @@ A fix sited *there* is a decision about all of them, which is the trap
 * ⚠️ **The cf3300 side is still in no gate.** `name.as5` / `name.ex5` live only in
   `scratchpad/sweep_tranche65.py`, a sweep instrument. The row this slice fixed is
   therefore unguarded against regression on the disk build.
+
+## D-NAMEGATE — the rows are gated now, and the pins are FACES
+
+The cf3300 rows lived only in `scratchpad/sweep_tranche65.py`, a sweep
+instrument, so the row this slice fixed was unguarded against regression on the
+disk build. `make namegate-acceptance` runs all seven.
+
+### Why the pin records a face and not just a row name
+
+Three filed faces rotted on 2026-09-04 — including this entry's own, which said
+`zb ERR 24` while both rows read `ERR 2`. **`filed_row_sweep` cannot see that
+class**: it adjudicates each divergent row as *known* / *unfiled* / *no longer
+diverging*, so a row that still diverges but now diverges **to a different face**
+is `known` and reads green. That day's full run was 0 UNFILED and 0
+NO-LONGER-DIVERGING across all 15 probes, with two of the three stale faces live
+at that moment.
+
+So `PINNED` carries the exact `(cf3300, zerobas)` pair and the gate reddens on
+drift **in either direction** — the shape `basic_probe_nodisk.py` already uses
+for 8 rows. A row that gets **fixed** reddens it too, deliberately: that is the
+news, and an un-updated pin is how a fixed row goes back to looking normal.
+
+### Mutation sweep — 3/3, and the third arm is the whole point
+
+| arm | plant | ROM | gate |
+|---|---|---|---|
+| P1 | revert D-NAMEORD's reorder | moved | **RED** |
+| P2 | set the pin to the **fixed** pair | **byte-identical** | **RED** |
+| P0 | control: comment-only edit | byte-identical | GREEN |
+
+**P1 alone would be satisfied by an ordinary "does it still diverge" check** —
+the kind that missed three stale faces. P2 is what proves the other direction.
+
+🔴 **And P2's own premise had to be fixed before it meant anything.** The first
+run printed `bytes-moved` for P2 — an arm that touches no assembly at all —
+because the previous arm's cleanup deletes the ROMs and P2 skipped the rebuild,
+so it hashed *absent* files. P2's entire claim is "reddens with the ROM
+byte-identical", and that was the one thing the readout was not checking. The
+harness now rebuilds for every arm and **refuses to score** a probe-only arm
+whose ROM moved.

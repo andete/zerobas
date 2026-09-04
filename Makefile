@@ -672,6 +672,11 @@ repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 # evaluation, so the driveless build could have answered the no-disk error where a
 # type error is due. It does not -- and this gate is what keeps that true, on the
 # target whose oracle (VG-8020) has no drive either.
+# D-NAMEGATE: the NAME operand rows, with their FACES pinned. $(DISK_TEST_DSK)
+# because it drives a scratch copy of test720.dsk.
+namegate-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_namegate.py
+
 nameord-acceptance: repack-machine
 	python3 probes/basic/basic_probe_namend.py
 
