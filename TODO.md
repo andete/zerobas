@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1801 (T-6FE392)8 (T-529ABE)` from `TODO.md:6337 (T-529ABE)`: a
+      `TODO.md:1818 (T-6FE392)8 (T-529ABE)` from `TODO.md:6354 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1049,7 +1049,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md)), the first of the
       six. `"**##"` gives `***5` / `**-5` / `1234`, matching both references.
       🔬 **The full contract for all six is now measured**:
-      [`scratchpad/pufloat_probe.py`](scratchpad/pufloat_probe.py), **36 rows on
+      [`probes/basic/basic_probe_pusing.py`](probes/basic/basic_probe_pusing.py), **36 rows on
       which both references AGREE**, 3 carried as NO-ORACLE (`$$`, `&`, `\ \` —
       the references split on those and zerobas matches a different one in each,
       which is worth its own look).
@@ -1177,7 +1177,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
           PRINT USING"####.####";3.14159  refs `   3.1416`  was `    3`
 
       **12 rows green**, taking
-      [`scratchpad/pufloat_probe.py`](scratchpad/pufloat_probe.py) to **11
+      [`probes/basic/basic_probe_pusing.py`](probes/basic/basic_probe_pusing.py) to **11
       divergent of 43** — and every one of the 11 is now in a family with no
       code at all (`,`, `^^^^`) plus `d.lead`. Knives **6/6**
       ([`scratchpad/pudot_knives.py`](scratchpad/pudot_knives.py)).
@@ -1207,7 +1207,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
           PRINT USING"##,###,###";1234567  refs ` 1,234,567`  was `%1234567,`
 
       **8 rows green on the first build**, taking
-      [`scratchpad/pufloat_probe.py`](scratchpad/pufloat_probe.py) to **6
+      [`probes/basic/basic_probe_pusing.py`](probes/basic/basic_probe_pusing.py) to **6
       divergent of 47** — `d.lead` plus the five `^^^^` rows. Knives **4/4**
       ([`scratchpad/pucomma_knives.py`](scratchpad/pucomma_knives.py)).
       🎯 **THREE ROWS WERE MEASURED BEFORE ANY CODE**, because the original five
@@ -1264,7 +1264,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
           PRINT USING"**##.##^^^^";1.5   refs `*150.00E-02`  was `***1.50^^^^`
 
       **All 17 exponent rows green**, taking
-      [`scratchpad/pufloat_probe.py`](scratchpad/pufloat_probe.py) to **1
+      [`probes/basic/basic_probe_pusing.py`](probes/basic/basic_probe_pusing.py) to **1
       divergent of 47** — only `d.lead`. Knives **6/6**
       ([`scratchpad/puexp_knives.py`](scratchpad/puexp_knives.py)), two of them
       moving exactly one row each.
@@ -1289,8 +1289,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
           PRINT USING".##";0     refs `.00`    was `. 0`
           PRINT USING".##";1.5   refs `%1.50`  was `. 2`
 
-      **All 52 agreeing rows in
-      [`scratchpad/pufloat_probe.py`](scratchpad/pufloat_probe.py) match.** The
+      **All 67 agreeing rows in
+      [`probes/basic/basic_probe_pusing.py`](probes/basic/basic_probe_pusing.py) match.** The
       format-specifier surface — `**`, `+`/`-`, `.`, `,`, `^^^^` and a leading
       `.` — is complete. Knives **4/4**
       ([`scratchpad/pulead_knives.py`](scratchpad/pulead_knives.py)).
@@ -1311,8 +1311,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       session whose prediction was wrong while the code under it was right, and
       both times the **must-hold** list is what said so.
 
-- [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
-      DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
+- [x] ✅ **CLOSED 2026-09-04 — ALL SIX SPECIFIERS SHIP, AND THE PROBE IS GATED.**
+      `**` (D-PUSTAR), `+`/`-` (D-PUSIGN), the float `#` field itself (D-PUNUM),
+      `.` (D-PUDOT), `,` (D-PUCOMMA), `^^^^` (D-PUEXP) and a leading `.`
+      (D-PULEAD). [`probes/basic/basic_probe_pusing.py`](probes/basic/basic_probe_pusing.py)
+      reads **67 rows with an oracle, 0 divergent**.
+      ⚠️ **THE COVERAGE MOVED BEFORE THE ITEM DID.** `filed_row_sweep.py` walks
+      only `- [ ]` items (`open_items()`), so closing this entry would have
+      dropped the probe out of the only thing watching it — and it had no
+      acceptance gate, printing divergences and exiting 0 like the seven named
+      in the D-FILEDROT item. So `make pusing-acceptance` landed FIRST
+      (D-PUGATE, [`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md) §18)
+      and this box was ticked after.
+      🔴 **AND THE `52 agreeing rows` I WROTE IN §17, IN THIS FILE AND IN
+      D-PULEAD's COMMIT MESSAGE WAS WRONG** — the measured figure was **67**
+      (`references agree on 67 row(s)`). The conclusion (0 divergent) is
+      unchanged; the count was quoted rather than read, which is the failure this
+      file's own header warns about. The docs are corrected; the commit message
+      stands as written.
+      The original finding, for the record: found 2026-09-02 by D-PUSING
       (review tier, [`scratchpad/pusing_probe.py`](scratchpad/pusing_probe.py),
       15 rows x 3 machines, **10 DIFF**).
       `basic/printusing.asm`'s header said the `.` `,` `+` `-` `**` `$$` `^^^^`
@@ -2379,7 +2396,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6337 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6354 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

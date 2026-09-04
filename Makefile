@@ -658,6 +658,14 @@ repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 # the Philips VG-8020 oracle -- so `nodisk-acceptance` can score a diskless
 # zerobas against the machine it is meant to be faithful to. It is installed by
 # `repack-machine` above so no probe can ever run against a stale copy of it.
+# D-PUGATE: the PRINT USING format-specifier surface, 67 rows with an oracle.
+# ⚠️ THIS ONE SCORES ZEROBAS AGAINST PINNED REFERENCE ANSWERS rather than
+# re-booting both references: with the refcache off that would be ~140 extra
+# boots. `--refresh` re-measures and rewrites the pins, and the plain run still
+# boots all three sides. docs/spec-basic-pufloat.md §18.
+pusing-acceptance: repack-machine
+	python3 probes/basic/basic_probe_pusing.py --gate
+
 nodisk-acceptance: repack-machine
 	python3 probes/basic/basic_probe_nodisk.py --gate
 

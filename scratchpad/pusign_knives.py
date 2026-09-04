@@ -56,7 +56,7 @@ def main():
             os.remove(r)
     sh("make repack-machine", "/tmp/zerobas/pg_build_base.out")
     base_hash = rom_hash()
-    sh("caffeinate -i -s python3 scratchpad/pufloat_probe.py vg8020,cf3300,zb",
+    sh("caffeinate -i -s python3 probes/basic/basic_probe_pusing.py vg8020,cf3300,zb",
        "/tmp/zerobas/pg_base.out")
     base = rows("/tmp/zerobas/pg_base.out")
     if base is None:
@@ -76,7 +76,7 @@ def main():
             h = rom_hash()
             if rc != 0 or h == base_hash:
                 print(f"{lab}: INERT -- rc={rc} roms={h}; DISCARDED"); continue
-            sh("caffeinate -i -s python3 scratchpad/pufloat_probe.py vg8020,cf3300,zb",
+            sh("caffeinate -i -s python3 probes/basic/basic_probe_pusing.py vg8020,cf3300,zb",
                f"/tmp/zerobas/pg_{lab}.out")
             got = rows(f"/tmp/zerobas/pg_{lab}.out")
             if got is None:

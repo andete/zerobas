@@ -1,11 +1,11 @@
 # D-PUSTAR — `PRINT USING`'s `**` asterisk fill
 
-**Status:** shipped 2026-09-03. **Probe:** `scratchpad/pufloat_probe.py`.
+**Status:** shipped 2026-09-03. **Probe:** `probes/basic/basic_probe_pusing.py`.
 **Knives:** `scratchpad/pustar_knives.py`.
 
 The first of `PRINT USING`'s six missing format specifiers. D-PUSING found them
 (header deferred to *"Phase-3 floats"*, which had arrived) and filed the item
-unpriced; `scratchpad/pufloat_probe.py` then established the full contract —
+unpriced; `probes/basic/basic_probe_pusing.py` then established the full contract —
 **36 rows on which both references agree**, plus 3 carried as NO-ORACLE.
 
 ## 1. What `**` does, measured
@@ -728,7 +728,7 @@ must hold when the exponent path is removed entirely.
     PRINT USING".##";0      refs `.00`     was `. 0`
     PRINT USING".##";1.5    refs `%1.50`   was `. 2`
 
-**All 52 agreeing rows match.** `PRINT USING`'s format-specifier surface —
+**All 67 agreeing rows match.** `PRINT USING`'s format-specifier surface —
 `**`, `+`/`-`, `.`, `,`, `^^^^` and a leading `.` — is complete.
 
 ### 17.1 The zero belongs to the column, not to the value
@@ -787,3 +787,75 @@ must-hold list fired exactly as it should. Suppressing a branch means **removing
 it, not reversing it. That is the second arm this session whose prediction was
 wrong while the code under it was right (K-PC4 was the first), and in both cases
 the must-hold list is what said so rather than the must-move list.
+
+## 18. ✅ D-PUGATE — the probe is a gate now, and the coverage moved before the item did
+
+Sixty-seven rows at 0 divergent, protected by nothing. The probe — then a
+scratchpad file, now [`probes/basic/basic_probe_pusing.py`](../probes/basic/basic_probe_pusing.py) —
+**printed divergences and exited 0** — one of exactly the class the D-FILEDROT
+item names — and the only thing watching it was `filed_row_sweep.py`, which walks
+**open** `- [ ]` items (`open_items()`).
+
+🎯 **So closing the `PRINT USING` item would itself have removed the coverage.**
+Ticking the box drops the probe out of the sweep's corpus, and there was no
+acceptance gate underneath. The order matters and it is the whole point of this
+slice: `make pusing-acceptance` landed **first**, and the item was closed after.
+
+### 18.1 The gate scores zerobas against pinned reference answers
+
+A gate runs with the refcache **off** — a gate measures, it never replays. Booting
+both references for 67 rows is ~140 extra boots, so the gate boots **zerobas
+only** and scores it against an `EXPECT` table.
+
+Pins rot, so they are never hand-typed:
+
+* `--refresh` re-measures both references and rewrites the `EXPECT` block in the
+  file itself.
+* the plain run still boots all three sides and scores the references against
+  each other, which is what says a pin is still the right answer.
+* `EXPECT` omits the three `NO_ORACLE` rows entirely — where the references
+  disagree there is nothing to hold zerobas to, and the survey prints them.
+
+**A vanished row is checked separately.** The scoring loop walks `CASES`, so a row
+deleted from the table is a row that cannot fail; the gate compares `set(EXPECT)`
+against the case labels and reports `PINNED ROW(S) NO LONGER IN THE CASE TABLE`.
+
+🔴 **The `--refresh` writer was wrong on its first use.** `run()` returns a
+`repr()` — deliberately, so a leading space survives the readout — and writing it
+bare dropped one quote layer, so every pin mismatched by exactly its quotes. The
+gate printed **"divergent 67"**: a formatting fault wearing the costume of a total
+regression.
+
+### 18.2 It costs 35.8 s, and that is why it was mutation-swept
+
+67 rows with the refcache off, in **35.8 s** solo (**114 s** as a battery unit,
+under J=8 contention — still well under the ~400 s tent-pole) — cheaper than most
+acceptance units,
+because the probe's boot and step budgets are **emulated** seconds and openMSX
+runs well above real time. That is an explanation, not a measurement, and a gate
+that is suspiciously cheap is exactly the kind that turns out not to measure.
+
+`scratchpad/pugate_blindness.py` breaks the ROM four ways and requires the gate to
+notice each:
+
+| mutant | plant | gate |
+|---|---|---|
+| M1 | never round in the fixed-point renderer | RED |
+| M2 | no commas | RED |
+| M3 | exponent path unreachable | RED |
+| M4 | drop the `**` fill width | RED |
+| M0 | **control:** a comment-only edit | GREEN, ROM byte-identical |
+
+**M0 is the arm that matters.** If the gate reddened for it too, it would be
+reacting to the tree having been touched rather than to the machine's behaviour,
+and the four successes would mean nothing. **5/5.**
+
+### 18.3 🔴 `52 agreeing rows` was quoted, not read
+
+§17, the TODO entry and D-PULEAD's commit message all say **52**. The measured
+figure was **67** — `references agree on 67 row(s)`, in the same run the section
+was written from. The conclusion (0 divergent, all specifiers complete) is
+unchanged, but the count is the kind of thing a later reader quotes, and quoting
+a count instead of running it is the failure `TODO.md`'s own header warns about.
+The prose is corrected here and in `TODO.md`; the commit message stands as
+written.

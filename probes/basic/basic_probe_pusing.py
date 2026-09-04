@@ -38,8 +38,8 @@ one example per specifier is how a formatter ships correct on the example and
 wrong on the case beside it. The `agree` column is the ORACLE: it says the two
 references agree, which is what makes a row usable as a target at all.
 """
-import os, re, sys
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import argparse, os, re, sys
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 import omsx_repl                                                  # noqa: E402
 
@@ -194,20 +194,173 @@ def run(side, stmt):
     return repr(m[-1]) if m else "<NO OUTPUT>"
 
 
-sides = (sys.argv[1] if len(sys.argv) > 1 else "vg8020,cf3300,zb").split(",")
-res = {s: {lab: run(s, st) for lab, st in CASES} for s in sides}
-w = max(len(l) for l, _ in CASES)
-print(f"\n{'row':<{w}}  " + "  ".join(f"{s:>22}" for s in sides) + "   oracle")
-agree = disagree = 0
-for lab, _ in CASES:
-    vals = [res[s][lab] for s in sides]
-    if lab in NO_ORACLE:
-        tag = "NO-ORACLE (refs split; recorded, not scored)"
-    elif len(sides) >= 2 and vals[0] == vals[1]:
-        tag = "refs agree -> usable target"; agree += 1
-    else:
-        tag = "🔴 REFS DISAGREE -- not a target"; disagree += 1
-    print(f"{lab:<{w}}  " + "  ".join(f"{v:>22}" for v in vals) + f"   {tag}")
-print(f"\nreferences agree on {agree} row(s); disagree on {disagree}; "
-      f"{len(NO_ORACLE)} carried as NO-ORACLE")
-print("done")
+# --- EXPECT: the reference answer for every row with an oracle ---------------
+# 🎯 THE GATE RUNS ZEROBAS ONLY, AGAINST THESE. A gate measures with the refcache
+# OFF, and re-booting both references for 67 rows is ~140 extra boots -- twenty
+# minutes, on a battery whose tent-pole is seven. The references do not change;
+# zerobas does, and a regression in zerobas is what this exists to catch.
+#
+# ⚠️ SO THESE PINS CAN ROT, and the mitigation is that they are never hand-typed:
+# `--refresh` re-measures both references and rewrites this block, and the plain
+# (no-argument) run still boots all three sides and scores the references against
+# each other. Measured 2026-09-04, 67 rows with an oracle, 0 divergent.
+EXPECT = {
+    'c.hash'        : "'  5'",
+    'c.neg'         : "' -5'",
+    'c.over'        : "'%12345'",
+    'c.max'         : "'  32767'",
+    'c.over16'      : "'1234567'",
+    'c.round'       : "'    2'",
+    'c.round2'      : "'    3'",
+    'c.negmax'      : "' -32768'",
+    'd.basic'       : "' 1.50'",
+    'd.int'         : "' 5.00'",
+    'd.neg'         : "'-1.50'",
+    'd.round'       : "' 1.3'",
+    'd.round2'      : "' 1.4'",
+    'd.roundup'     : "' 2.'",
+    'd.lead'        : "'.50'",
+    'd.leadover'    : "'%1.50'",
+    'd.leadone'     : "'.5'",
+    'd.leadzer'     : "'.00'",
+    'd.leadneg'     : "'%-.50'",
+    'd.leadrnd'     : "'.3'",
+    'd.leadzero'    : "'0.50'",
+    'd.over'        : "'%12.50'",
+    'd.wide'        : "'   3.1416'",
+    'd.zero'        : "' 0.00'",
+    'd.grow'        : "'10.'",
+    'd.growfrac'    : "'10.0'",
+    'm.basic'       : "'1,234'",
+    'm.small'       : "'  123'",
+    'm.big'         : "' 1,234,567'",
+    'm.dot'         : "'1,234.50'",
+    'm.neg'         : "'%-1,234'",
+    'm.pos'         : "'%12,345,678'",
+    'm.trail'       : "'  5'",
+    'm.lead'        : "', 5'",
+    'x.mixed'       : "' 5  1.50'",
+    'p.lead'        : "' +5'",
+    'p.leadneg'     : "' -5'",
+    'p.trail'       : "' 5+'",
+    'p.trailneg'    : "' 5-'",
+    'p.dot'         : "' +1.50'",
+    'n.pos'         : "' 5 '",
+    'n.neg'         : "' 5-'",
+    'n.dot'         : "' 1.50-'",
+    'a.basic'       : "'***5'",
+    'a.neg'         : "'**-5'",
+    'a.full'        : "'1234'",
+    'a.dot'         : "'**1.50'",
+    'e.basic'       : "' 1.50E+00'",
+    'e.big'         : "'0.1E+04'",
+    'e.small'       : "'0.1E-02'",
+    'e.neg'         : "'-1.50E+00'",
+    'e.zero'        : "' 0.00E+00'",
+    'e.wide'        : "' 15.00E-01'",
+    'e.negtight'    : "'-.1E+04'",
+    'e.round'       : "'0.1E+00'",
+    'e.car3'        : "' 1.50^^^'",
+    'e.car5'        : "' 1.50E+00^'",
+    'e.nodot'       : "' 2E+00'",
+    'e.huge'        : "' 1.50E+10'",
+    'e.tiny'        : "' 1.50E-10'",
+    'f.big'         : "' 15000000000 '",
+    'f.small'       : "' 1.5E-10 '",
+    'f.frac'        : "' .0999 '",
+    'e.comma'       : "' 1234.50E+00'",
+    'e.sign'        : "'+15.00E-01'",
+    'e.star'        : "'*150.00E-02'",
+    'e.dot0'        : "' 2.E+00'",
+}
+
+# rows the references answer differently from each other are NOT in EXPECT at all
+# (NO_ORACLE above); they are printed by the survey run and invisible to the gate.
+
+
+def survey(sides):
+    """Boot every side and score the REFERENCES against each other."""
+    res = {s: {lab: run(s, st) for lab, st in CASES} for s in sides}
+    w = max(len(l) for l, _ in CASES)
+    print(f"\n{'row':<{w}}  " + "  ".join(f"{s:>22}" for s in sides) + "   oracle")
+    agree = disagree = 0
+    for lab, _ in CASES:
+        vals = [res[s][lab] for s in sides]
+        if lab in NO_ORACLE:
+            tag = "NO-ORACLE (refs split; recorded, not scored)"
+        elif len(sides) >= 2 and vals[0] == vals[1]:
+            tag = "refs agree -> usable target"; agree += 1
+        else:
+            tag = "🔴 REFS DISAGREE -- not a target"; disagree += 1
+        print(f"{lab:<{w}}  " + "  ".join(f"{v:>22}" for v in vals) + f"   {tag}")
+    print(f"\nreferences agree on {agree} row(s); disagree on {disagree}; "
+          f"{len(NO_ORACLE)} carried as NO-ORACLE")
+    return res
+
+
+def gate(side):
+    """Score `side` against EXPECT. rc=1 on any divergence or missing capture."""
+    w = max(len(l) for l, _ in CASES)
+    bad, blank, missing = [], [], []
+    print(f"\n{'row':<{w}}  {'expected':>22}  {side:>22}   verdict")
+    for lab, st in CASES:
+        if lab not in EXPECT:
+            continue                        # NO-ORACLE: nothing to hold it to
+        got, want = run(side, st), EXPECT[lab]
+        if got == "<NO OUTPUT>":
+            blank.append(lab); tag = "🔴 UNREADABLE"
+        elif got == want:
+            tag = "ok"
+        else:
+            bad.append(lab); tag = "🔴 DIVERGES"
+        print(f"{lab:<{w}}  {want:>22}  {got:>22}   {tag}")
+    # ⚠️ A ROW THAT VANISHES FROM `CASES` WOULD OTHERWISE PASS SILENTLY: the loop
+    # scores what it finds, so a deleted row is a row that cannot fail. Compare
+    # the two sets rather than trusting the walk.
+    missing = sorted(set(EXPECT) - {l for l, _ in CASES})
+    if missing:
+        print(f"🔴 {len(missing)} PINNED ROW(S) NO LONGER IN THE CASE TABLE: "
+              + " ".join(missing))
+    print(f"\nscored {len(EXPECT) - len(missing)}  divergent {len(bad)}  "
+          f"unreadable {len(blank)}  vanished {len(missing)}")
+    print("PUSING: PASS" if not (bad or blank or missing)
+          else f"PUSING: RED ({len(bad) + len(blank) + len(missing)})")
+    return bad + blank + missing
+
+
+def refresh():
+    """Re-measure both references and rewrite the EXPECT block in this file."""
+    res = survey(["vg8020", "cf3300"])
+    keep = [(l, res["vg8020"][l]) for l, _ in CASES
+            if l not in NO_ORACLE and res["vg8020"][l] == res["cf3300"][l]]
+    # ⚠️ `v` IS ALREADY A repr() -- run() returns repr(text) so a leading space
+    # survives the readout. Writing it bare drops one quote layer and every pin
+    # then mismatches by exactly those quotes, which reads as "all 67 rows
+    # diverge" rather than as a formatting fault.
+    body = "".join(f"    {l!r:16}: {v!r},\n" for l, v in keep)
+    src = open(__file__).read()
+    a = src.index("EXPECT = {\n") + len("EXPECT = {\n")
+    b = src.index("}\n", a)
+    open(__file__, "w").write(src[:a] + body + src[b:])
+    print(f"\nEXPECT rewritten: {len(keep)} row(s) with an oracle")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("sides", nargs="?", default="vg8020,cf3300,zb")
+    ap.add_argument("--gate", action="store_true",
+                    help="score zerobas against EXPECT; rc=1 on any red")
+    ap.add_argument("--refresh", action="store_true",
+                    help="re-measure the references and rewrite EXPECT")
+    a = ap.parse_args()
+    if a.refresh:
+        refresh(); return 0
+    if a.gate:
+        return 1 if gate("zb") else 0
+    survey(a.sides.split(","))
+    print("done")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
