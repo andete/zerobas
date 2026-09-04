@@ -146,6 +146,8 @@ strheap_engine:
                 jp      z,sh_free_vars      ; FRE(n) -- free VARIABLE space (D-CLP)
                 cp      18
                 jp      z,sh_chan_addr      ; file-channel block address (D-FCH §3.2)
+                cp      20
+                jp      z,sh_ctl_reset      ; D-CTLPOOL: derive the pool's top
     ENDIF
                 jp      sh_val_parse        ; op==13: the only other value the
                                             ; main-ROM glue ever writes
@@ -353,6 +355,29 @@ strheap_floor:
                 ld      hl,0                ; pool larger than the whole map
                 ret
 
+; --- strheap_ctllim: CTLLIM := ARYEND+2, the control pool's collision floor -
+; D-CTLPOOL. The pool descends from CTLTOP and is full when its frontier would
+; reach the first byte the variable/array region does not already own. ARYEND is
+; found by walking the array chain -- sub-ROM knowledge -- so the main ROM cannot
+; derive this, and a `subrom_call` on the PUSH path is not affordable:
+; `FOR I=1 TO 1000:GOSUB 100:NEXT` pushes a thousand times.
+;
+; 🔴 SO THIS IS A STORED DERIVATION, AND STORED DERIVATIONS GO STALE -- exactly
+; what strheap_floor's own header argues against. It is safe only because it has
+; ONE definition (here) and is refreshed at every point the region's end can
+; move: both allocator success paths (scv_ceil_fits, aal's descriptor tail) and
+; sh_ctl_reset. ⚠️ A path that grows the region without passing one of those
+; would leave CTLLIM STALE-LOW, which is the DANGEROUS direction -- the pool
+; would be allowed to overwrite live variables. That is a gate's job, not a
+; comment's: see docs/spec-basic-trapsvc.md §17.
+; Clobbers A,B,C,D,E,H,L (strheap_aryend's).
+strheap_ctllim:
+                call    strheap_aryend      ; HL = ARYEND (the live $0000 terminator)
+                inc     hl
+                inc     hl                  ; +2: past the live 2-byte sentinel, the
+                ld      (CTLLIM),hl         ; first byte the region does not own
+                ret
+
 ; --- strheap_varceil: -> HL = the VARIABLE/ARRAY region's ceiling (D-FCH §3.2)
 ; `strheap_floor() - MAXF*FCH_CTXSZ`. The file-channel table is carved out of
 ; the pool immediately BELOW the string pool's floor, so the map is
@@ -377,13 +402,37 @@ strheap_varceil:
                 call    strheap_floor       ; HL = the string pool's floor
                 ld      a,(MAXF)
                 or      a
-                ret     z                   ; MAXFILES=0 -> no table at all
+                jr      z,svc_ctl           ; MAXFILES=0 -> no table at all
                 ld      b,a
                 ld      de,-FCH_CTXSZ
 svc_sub_lp:
                 add     hl,de               ; CF set iff no borrow (HL >= block)
                 jr      nc,svc_under
                 djnz    svc_sub_lp
+svc_ctl:
+                ; 🎯 D-CTLPOOL, THE SYMMETRIC HALF -- and it is one comparison.
+                ; Control frames descend from this same ceiling, so the variable
+                ; and array region may only grow up to the pool's live FRONTIER,
+                ; not to the empty pool's top. Without this a deep recursion and a
+                ; fresh `DIM` would silently overwrite each other -- the pool's own
+                ; check (main-ROM ctl_alloc, against CTLLIM) is only one side of it.
+                ; ⚠️ CSP == CTLTOP when the pool is empty, so this costs nothing at
+                ; rest and every caller keeps its previous answer.
+                ; ⚠️ AND IT MUST NOT FIRE BEFORE THE POOL IS INITIALISED: CSP is
+                ; power-on garbage until clear_vars runs, so a zero CSP would answer
+                ; "no room at all". `sh_ctl_reset` runs from clear_vars at cold boot,
+                ; before any array can exist, and the guard below keeps a
+                ; never-initialised CSP from shrinking the ceiling to nothing.
+                ld      de,(CSP)
+                ld      a,d
+                or      e
+                ret     z                   ; CSP not initialised yet -> unchanged
+                push    hl
+                or      a
+                sbc     hl,de
+                pop     hl
+                ret     c                   ; ceiling already below CSP -> unchanged
+                ex      de,hl               ; CSP is the lower of the two
                 ret
 svc_under:
                 ld      hl,0                ; the table does not fit under the pool
@@ -1704,6 +1753,41 @@ sh_free_vars:
                 ld      hl,0                ; region already at/over the floor -> 0
 sfv_have:
                 ld      (SH_PTR),hl
+                xor     a
+                ld      (SH_ERR),a
+                ret
+
+; --- sh_ctl_reset: op=20 -- (re)derive the CONTROL POOL's top and floor -----
+; ⚠️ NO `IF CLEARPOOL` WRAPPER HERE: this sits INSIDE the block opened above for
+; sh_free_vars/sh_chan_addr. A nested one closed the OUTER block early and the
+; machine booted to a garbage screen -- pasmo assembles an unbalanced pair
+; without complaint, so the only symptom was a dead ROM.
+; D-CTLPOOL (docs/spec-basic-trapsvc.md §11-§16). CTLTOP := strheap_varceil();
+; CSP := GSP := FSP := TSP := CTLTOP; CTLLIM := ARYEND+2. SH_ERR always 0.
+;
+; 🎯 CTLTOP IS `strheap_varceil()` AND THAT IS THE MEASURED REFERENCE STKTOP.
+; §14 read the reference's published STKTOP and found it is
+; `(ceiling - files) - string space` -- the same expression this file already
+; computes for the channel table and the string pool. Nothing new is derived
+; here; the control pool simply starts where the reference's stack starts.
+;
+; ⚠️ THIS IS THE ONLY POOL OPERATION THAT CROSSES A SLOT, and it is the only one
+; that may: it needs `strheap_varceil` (POOLSIZE/HIMEM/MAXF) and `strheap_aryend`
+; (an array-chain walk), both sub-ROM knowledge, and it runs from clear_vars --
+; cold boot, RUN, NEW and CLEAR. The PUSH and POP paths are main-ROM and touch
+; nothing but RAM: `FOR I=1 TO 1000:GOSUB 100:NEXT` is a thousand pushes and a
+; thousand pops, and a CALSLT on either would land on the hot path
+; docs/spec-basic-interpspeed.md measures.
+; Clobbers everything (tenant convention).
+sh_ctl_reset:
+                call    strheap_varceil     ; HL = the pool top (= reference STKTOP)
+                ld      (CTLTOP),hl
+                ld      (CSP),hl
+                ld      (GSP),hl
+                ld      (FSP),hl
+                ld      (TSP),hl
+                ld      (SH_PTR),hl
+                call    strheap_ctllim      ; CTLLIM := ARYEND+2
                 xor     a
                 ld      (SH_ERR),a
                 ret

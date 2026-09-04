@@ -1383,8 +1383,12 @@ exa_stop:
                 ret
 
 ; --- gosub_push: push a bounds-checked GOSUB return frame (repack golf) -------
-; The 6-byte frame is [CURLINE:2][resume-ptr:2][FSP-at-push:2]; resume = the token
-; position to run when RETURN pops it. Factored out of ex_gosub / eon_gosub (which each used
+; D-CTLPOOL: the 8-byte frame is [CURLINE:2][resume-ptr:2][prevGSP:2][prevFSP:2],
+; taken from the control pool rather than a fixed array; resume = the token
+; position to run when RETURN pops it. prevGSP chains the GOSUB frames (they are
+; no longer contiguous -- FOR frames interleave with them), and prevFSP is
+; D-FORRET's field under a new name: FSP is the FOR run's FLOOR, so restoring it
+; discards every FOR opened since this GOSUB (row lnrt-forret). Factored out of ex_gosub / eon_gosub (which each used
 ; to inline this) so the interrupt-trap dispatcher can reuse it as its GOSUB-into-
 ; handler branch (docs/spec-basic-interrupt-traps.md §2.1/§10.1).
 ;   IN:  HL = resume token pointer; CURLINE = the line to resume in.
@@ -1394,46 +1398,53 @@ exa_stop:
 gosub_push:
                 push    bc                  ; guard the caller's target line number
                 push    hl                  ; save resume ptr
-                ld      hl,(GSP)
-                ld      de,GOSUB_STK_END
-                or      a
-                sbc     hl,de
-                jr      nc,gp_full          ; GSP >= end -> too many GOSUBs
-                ld      de,(GSP)            ; write frame at GSP
+                ld      hl,GOSUB_FRAME
+                call    ctl_alloc           ; 🎯 THE ONE CHECK THAT REPLACED THREE:
+                jr      c,gp_full           ; "collided with the variable area"
+                ex      de,hl               ; DE = the frame base = the write cursor
                 ld      hl,(CURLINE)
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a
-                inc     de
+                call    ctl_put             ; [0..1] the line to resume in
                 pop     hl                  ; HL = resume ptr
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a
-                inc     de
-                ; D-FORRET: frame[4..5] = FSP AS IT IS NOW. RETURN truncates the FOR
-                ; stack back to this, which is what "discards the FOR entries it walks
-                ; past" means when the two stacks are not the same stack. Recorded on
-                ; EVERY push, so the interrupt-trap dispatcher's GOSUB-into-handler
-                ; branch gets it too (traps.asm reuses this routine).
+                call    ctl_put             ; [2..3] where in it
+                ld      hl,(GSP)
+                call    ctl_put             ; [4..5] prevGSP -- the frame chain
                 ld      hl,(FSP)
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a
-                inc     de
-                ld      (GSP),de            ; advance (push complete)
+                call    ctl_put             ; [6..7] prevFSP -- D-FORRET's field
+                ; 🎯 GSP AND FSP BOTH BECOME THE FRAME'S BASE, and the second one
+                ; is what D-CTLCROSS needs: FSP is the FOR run's FLOOR, so every
+                ; FOR frame opened BEFORE this GOSUB is now below it and invisible
+                ; to a NEXT inside the subroutine. Both references answer
+                ; `NEXT without FOR` there (spec-basic-trapsvc.md §12) and three
+                ; separate arrays could not express it.
+                ld      hl,(CSP)
+                ld      (GSP),hl
+                ld      (FSP),hl
                 pop     bc                  ; restore target line number
                 or      a                   ; CF = 0 -> success
                 ret
 gp_full:
                 pop     hl                  ; discard resume ptr
                 pop     bc                  ; discard target
-                scf                         ; CF = 1 -> stack full
+                scf                         ; CF = 1 -> pool full
+                ret
+; ctl_put / ctl_get: store/load HL at (DE), DE += 2. Four call sites each in the
+; two routines below -- open-coding them costs 21 bytes of main page 1 apiece,
+; which this region does not have (`make basic-reloc` reports the wall).
+ctl_put:
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                inc     de
+                ret
+ctl_get:
+                ld      a,(de)
+                ld      l,a
+                inc     de
+                ld      a,(de)
+                ld      h,a
+                inc     de
                 ret
 ; gosub_stk_over: shared control-stack-overflow tail (ex_gosub + eon_gosub).
 gosub_stk_over:
@@ -1495,7 +1506,7 @@ ex_return:
                                             ; RETURN-without-GOSUBs in one program --
                                             ; is what proves it, not this comment.
                 ld      hl,(GSP)            ; empty stack -> RETURN without GOSUB
-                ld      de,GOSUB_STK        ; D-RETLN R-T1: THIS CHECK COMES FIRST,
+                ld      de,(CTLTOP)         ; D-RETLN R-T1: THIS CHECK COMES FIRST,
                 or      a                   ; before the argument is parsed OR
                 sbc     hl,de               ; resolved. Measured both references:
                 jr      z,ex_ret_under      ; `RETURN B` with an empty stack is
@@ -1543,8 +1554,10 @@ ex_ret_under:
                 ; raises. Row lnrt-forret is this arm and nothing else: ` 102  0  1 `
                 ; on both references against ` 103  0  4 ` here, and the loop that
                 ; kept running IS the frame this clears.
-                ld      hl,FOR_STK
-                ld      (FSP),hl
+                ; D-CTLPOOL: the FOR run is [CSP,FSP), so dropping the frontier
+                ; to the floor discards every open FOR in one store.
+                ld      hl,(FSP)
+                ld      (CSP),hl
                 ld      a,$CD               ; "return without gosub" landmark
                 ld      (ERRMARK),a
                 ld      a,3                 ; ERR 3: return without gosub (error-handling S2a)
@@ -1557,27 +1570,28 @@ ex_ret_under:
 ; needs the contents, the `RETURN <line>` arm needs only the GSP decrement and
 ; must NOT let the contents reach CURLINE.
 ret_frame:
-                ld      hl,(GSP)
-                ; D-FORRET: frame[4..5] first — the FOR-stack depth at GOSUB time.
-                ; Restoring it here rather than in either arm is deliberate: BOTH
-                ; arms pop through this routine, and `RETURN <line>` discards the
-                ; same entries as a bare RETURN (row lnrt-forgline, measured on both
-                ; references BEFORE this shipped). DE is scratch until the CURLINE
-                ; load below overwrites it, so this costs no register.
-                dec     hl
-                ld      d,(hl)              ; FSP-at-push high
-                dec     hl
-                ld      e,(hl)              ; FSP-at-push low
-                ld      (FSP),de            ; every FOR opened since the GOSUB is gone
-                dec     hl                  ; pop the remaining 4, reading high-to-low
-                ld      b,(hl)              ; resume ptr high
-                dec     hl
-                ld      c,(hl)              ; resume ptr low   -> BC = resume ptr
-                dec     hl
-                ld      d,(hl)              ; curline high
-                dec     hl
-                ld      e,(hl)              ; curline low      -> DE = saved CURLINE
-                ld      (GSP),hl            ; GSP -= GOSUB_FRAME (popped)
+                ld      de,(GSP)            ; DE = the read cursor
+                call    ctl_get
+                push    hl                  ; [saved CURLINE]
+                call    ctl_get
+                push    hl                  ; [resume ptr]
+                call    ctl_get
+                push    hl                  ; [prevGSP]
+                call    ctl_get
+                ; D-FORRET, unchanged in meaning: restoring the FOR run's floor is
+                ; what discards the frames opened since this GOSUB. `RETURN <line>`
+                ; discards the same ones as a bare RETURN (row lnrt-forgline,
+                ; measured on both references), which is why BOTH arms pop here.
+                ld      (FSP),hl            ; prevFSP
+                ; 🎯 ONE STORE FREES THE WHOLE SUBTREE. DE has walked to
+                ; base+GOSUB_FRAME exactly, so this drops the frame, every FOR
+                ; opened since it, AND a trap service record if this RETURN is a
+                ; handler's -- all of them sit at lower addresses than DE.
+                ld      (CSP),de
+                pop     hl
+                ld      (GSP),hl            ; prevGSP -- the chain, not an offset
+                pop     bc                  ; BC = resume ptr
+                pop     de                  ; DE = saved CURLINE
                 ret
 
 ; --- for_name: parse a FOR/NEXT loop variable into the frame key -------------
@@ -1686,21 +1700,20 @@ ef_havestep:
                                             ; ldir does not touch the stack (-1 B)
                 ld      de,(CURLINE)
                 ld      (FOR_CUR+7),de      ; frame[7..8] = CURLINE
-                ; D-NXARY §4.3: the bound test used to destroy HL with `sbc hl,de` and
-                ; then re-load (FSP) into DE for the ldir. One `add` answers both --
-                ; CF is set iff FSP >= FOR_STK_END, and DE is left holding the ldir
-                ; destination (-5 B).
-                ; ⚠️ THIS IS THE SENSE OF A COMPARISON, the edit most likely to pass
-                ; every row that never reaches it: row a.dep8 (8 nested loops) is the
-                ; only one in the battery that does, and K-NA4 is its knife.
-                ld      de,(FSP)            ; the ldir destination, loaded ONCE
-                ld      hl,-FOR_STK_END
-                add     hl,de
-                jp     c,ef_over           ; too many nested FORs
+                ; D-CTLPOOL: the FOR_STK_END bound test is gone with the array.
+                ; ⚠️ FSP IS NOT TOUCHED HERE, and that is the invariant the whole
+                ; NEXT walk rests on: the FOR run is [CSP, FSP), so lowering the
+                ; frontier IS the push and the run stays contiguous -- nothing but
+                ; a FOR frame is ever pushed without also moving FSP.
+                ; ⚠️ Row a.dep8 (8 nested loops) is still the row that reaches the
+                ; full-pool arm, and K-NA4 is still its knife.
+                ld      hl,FOR_FRAME
+                call    ctl_alloc
+                jp      c,ef_over           ; collided with the variable area
+                ex      de,hl               ; DE = the frame base (ldir destination)
                 ld      hl,FOR_CUR          ; push the FOR_FRAME-byte frame
                 ld      bc,FOR_FRAME
                 ldir
-                ld      (FSP),de            ; advance FSP by FOR_FRAME
                 pop     hl                  ; HL = loop body -> run it
                 jp      exec_stmt
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to gosub_stk_over,
@@ -1808,11 +1821,14 @@ nx_notletter:
                                             ; falls through to nx_find
 nx_find:
                 push    hl                  ; save the post-NEXT cursor
-                ld      hl,(FSP)
+                ld      hl,(CSP)            ; the NEWEST frame -- the run's top
                 jr      nx_bound
 nx_miss:
-                pop     hl
-                ld      (FSP),hl            ; mismatch -> close this inner frame
+                pop     hl                  ; the frame just rejected
+                ld      de,FOR_FRAME
+                add     hl,de               ; close it: on to the next-older frame
+                ld      (CSP),hl            ; (a named NEXT closes inner frames as
+                                            ;  it walks, exactly as before)
 nx_bound:
                 ; D-NXLIST §4.3: ONE frame-stack bound test, entered from nx_find ("is
                 ; the stack empty?") and from nx_miss ("did the walk run out?"). Both
@@ -1824,13 +1840,20 @@ nx_bound:
                 ; n.nofor / n.barenofor take nx_find's (a NEXT with no FOR at all --
                 ; a program no D-FORVAR row contains) and m.wrong / m.typex take
                 ; nx_miss's.
-                ld      de,-FOR_STK
-                add     hl,de               ; HL = FSP - FOR_STK
+                ; D-CTLPOOL: the run is [CSP, FSP) and HL walks it from the top.
+                ; It is exhausted when HL reaches the FLOOR -- which is the base of
+                ; the innermost live GOSUB frame, NOT the base of an array. 🎯 That
+                ; is what makes a NEXT stop at a GOSUB frame instead of matching
+                ; past it: D-CTLCROSS (spec-basic-trapsvc.md §12), `NEXT without
+                ; FOR` on both references, and it costs nothing here -- the same
+                ; comparison that used to ask "is the array empty?".
+                ld      de,(FSP)
                 ld      a,h
-                or      l
-                jr      z,nx_nofor          ; ...zero -> no frame left at all
-                ld      de,FOR_STK-FOR_FRAME
-                add     hl,de               ; ...else HL = the top frame's base
+                cp      d
+                jr      nz,nx_scan
+                ld      a,l
+                cp      e
+                jr      z,nx_nofor          ; reached the floor -> no frame left
 nx_scan:
                 ld      a,(FOR_CUR+1)       ; name0 (for_name's header: +1, not +0)
                 or      a
@@ -1887,7 +1910,9 @@ nx_again:
                 ret
 nx_end:
                 pop     hl                  ; frame base -> pop the frame
-                ld      (FSP),hl
+                ld      de,FOR_FRAME        ; D-CTLPOOL: the pool descends, so
+                add     hl,de               ; freeing it means raising the frontier
+                ld      (CSP),hl
                 pop     hl                  ; restore the post-NEXT cursor
                 ; D-NXLIST: `NEXT B,A` is `NEXT B : NEXT A`, and THIS is the only path
                 ; that may read the comma. The loop-CONTINUES exit (nx_again) resumes at

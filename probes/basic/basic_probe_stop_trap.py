@@ -266,7 +266,22 @@ def show_screen(res):
 # --- cases (short lines; tap@+0.3s lands inside the FOR delay on both machines) ---
 # FOR..NEXT then a distinct GOTO poll loop: the tap fires the trap during the FOR;
 # the handler ENDs. A trailing GOTO keeps the program alive if it did NOT fire.
-CLR = "5 POKE&HD000,0:POKE&HD002,0:POKE&HD003,0"
+# 🔴 THE `CLEAR ,&HCFFF` IS LOAD-BEARING AND WAS MISSING (added 2026-09-04).
+# The three sentinels live at $D000..$D003, which is INSIDE BASIC's own free
+# area on every one of these machines -- between STREND and STKTOP on the
+# references (D-CTLSTACK, spec-basic-trapsvc.md §14) and between the variable
+# region and the control pool here. Squatting there worked only by luck: the
+# reference's stack starts ~8 KB above $D000 and never descends that far, and
+# zerobas used to keep its control frames in a fixed page-3 array.
+# 🎯 THE CONTROL-FRAME POOL ENDED THE LUCK. zerobas's pool top is
+# `min(HIMEM,TXTMAX) - ...` ~= $DA38, only ~2.6 KB above the sentinels, and this
+# case's held key abandons dispatch after dispatch -- which NEITHER machine
+# reclaims (§10, measured) -- so the pool walks down over $D002 and `ran` read
+# **208**, i.e. `$D0`: the high byte of a frame pointer, not a flag.
+# ⚠️ RESERVING THE MEMORY IS THE FIX, AND IT IS WHAT AN MSX PROGRAM WOULD DO.
+# `CLEAR n,addr` sets HIMEM; everything above it belongs to the program. The
+# alternative -- moving the sentinels -- only relocates the same accident.
+CLR = "5 CLEAR200,&HCFFF:POKE&HD000,0:POKE&HD002,0:POKE&HD003,0"
 RANOK = "25 POKE&HD002,1"        # every arming statement executed (see the header)
 DELAY = "30 FORI=1TO4000:NEXT"
 POLL = "40 GOTO40"

@@ -10,21 +10,16 @@ make a whole class of question INVISIBLE: a `NEXT` can always reach its `FOR`
 frame, because no GOSUB frame can ever be between them. Put the frames in one
 pool and they interleave, and the machine has to answer.
 
-🔴 THE ANSWER IS MEASURED, AND ZEROBAS IS ON THE WRONG SIDE OF IT (2026-09-04).
+🔴 THE ANSWER IS MEASURED, AND ZEROBAS WAS ON THE WRONG SIDE OF IT (2026-09-04).
 Both references raise `NEXT without FOR` (ERR 1) whenever the matching `FOR`
-frame lies below a live GOSUB frame; zerobas matches straight across and runs the
-loop. Three rows, both references agreeing on every one:
+frame lies below a live GOSUB frame; zerobas matched straight across and ran the
+loop -- `1 0`, `1 0` and `2 0` on x.nxgos / x.nxdeep / x.nxagain.
 
-    row         vg8020   cf3300   zb        what the row does
-    x.nxgos      0 1      0 1     1 0       NEXT inside a sub, FOR outside
-    x.nxdeep     0 1      0 1     1 0       NEXT I across [FOR J][GOSUB][FOR I]
-    x.nxagain    0 1      0 1     2 0       ...and the loop-CONTINUES arm
-
-🎯 SO THE POOL IS NOT ONLY ABOUT DEPTH. A single descending pool whose `NEXT`
-search stops at the first non-`FOR` frame answers all three the way both
-references do, for no extra mechanism -- the divergence exists BECAUSE the
-stacks are separate. These rows are the pool arc's behavioural acceptance, and
-until it lands they are pinned as known-divergent below.
+✅ THE CONTROL-FRAME POOL CLOSED ALL THREE THE SAME DAY, with no extra mechanism.
+In one descending pool the FOR frames a `NEXT` may match are exactly [CSP, FSP),
+and FSP is the innermost live GOSUB frame's base -- so the search stops at it.
+The divergence existed BECAUSE the stacks were separate arrays, and these rows
+are the arc's behavioural acceptance.
 
 READING. Each row prints `[R E]`: R = 1 iff the statement after the cross-`NEXT`
 ran (x.nxagain reports the handler-entry COUNT there instead), E = the ERR that
@@ -130,15 +125,13 @@ CASES = [
      "RETURN over an inner FOR, then NEXT J outside"),
 ]
 
-# row -> (reference, zerobas): the CURRENT truth, measured 2026-09-04 on both
-# references. 🔴 THESE THREE ARE THE POOL ARC'S ACCEPTANCE. When it lands they
-# become agreements and this gate goes RED until the pins are REMOVED -- which
-# is deliberate: a fixed row that keeps its pin goes back to looking normal.
-PINNED = {
-    "x.nxgos":   ("0 1", "1 0"),
-    "x.nxdeep":  ("0 1", "1 0"),
-    "x.nxagain": ("0 1", "2 0"),
-}
+# row -> (reference, zerobas), for rows that are known-divergent.
+# ✅ EMPTY SINCE 2026-09-04: the control-frame pool closed all three. They read
+# ("0 1","1 0"), ("0 1","1 0") and ("0 1","2 0") until then -- a `NEXT` matching
+# straight across a live GOSUB frame. In one pool the FOR frames a NEXT may match
+# are exactly [CSP, FSP), and FSP is the innermost GOSUB frame's base, so the
+# search stops there with no per-frame tag and no walk.
+PINNED = {}
 
 SIDES = {
     "vg8020": dict(machine="Philips_VG_8020", boot=8.0, reset=("NEW",)),

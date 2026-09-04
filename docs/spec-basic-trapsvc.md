@@ -729,3 +729,110 @@ which mechanism produces it.
 🟢 The `DEF FN` cap is separable and could be addressed on its own (more room for
 the save, or a different save strategy). It is filed here because it was found
 here, not because it must be fixed here.
+
+## 17. ✅ D-CTLPOOL — the pool, implemented
+
+Landed 2026-09-04. `GSP`/`FSP`/`TRAPSVC` stop indexing three fixed arrays and
+become pointers into one descending pool, which is what §11–§16 said the
+references do. **105/105 gates green, 59/59 unit-test files.**
+
+### The map, and it is the reference's own
+
+    [PRGEND+2 .. ARYEND+2)  variables + arrays, growing UP
+         [ the free gap ]
+                             control frames, growing DOWN   <- CSP
+    CTLTOP = strheap_varceil()
+    [varceil .. floor)      the MAXFILES channel table
+    [floor .. C)            the string pool     C = min(HIMEM,TXTMAX)
+
+🎯 **`CTLTOP` is `strheap_varceil()` — the address §14 measured the reference
+publishing as `STKTOP`.** Nothing new is derived: zerobas already computed it for
+the string pool and the channel table, and simply put nothing there.
+
+| cell | was | is |
+|---|---|---|
+| `GSP` | index into `GOSUB_STK` | the newest GOSUB frame's address |
+| `FSP` | index into `FOR_STK` | **the `FOR` run's floor** — the run is `[CSP, FSP)` |
+| `CSP` | — | the allocation frontier |
+| `CTLTOP` | — | the pool's top, re-derived at every `clear_vars` |
+| `TSP` | — | the newest trap service record |
+| `CTLLIM` | — | the collision floor, `ARYEND+2` |
+| `TRAPSVC` | count | count (kept: `ex_return` gates on it every RETURN) |
+
+`GOSUB_STK` (48 B), `FOR_STK` (88 B) and `TRAPSTK` (18 B) are retired — **146 B
+of page-3 RAM recovered** net of the four new cells.
+
+### Results
+
+| | before | after | reference |
+|---|---|---|---|
+| `GOSUB` depth | **8** | **2866** | 4080 / 3311 |
+| responds to `CLEAR n` | no | **yes, 8.0 B/frame linear** | yes, 7.0 |
+| responds to `CLEAR n,addr` | no | **yes (2000)** | yes (2195) |
+| `x.nxgos` / `x.nxdeep` / `x.nxagain` | `1 0` / `1 0` / `2 0` | **`0 1` ×3** | `0 1` ×3 |
+| 20 abandoned dispatches | aborted at `TRAPSTK_MAX`=6 | **completes, leaks 29 frames** | leaks 24 |
+| `d.selfarm` | `9 0` | **`9 0`** | `9 0` |
+
+The absolute depth and the 8.0 B/frame rate are **not gated** — they are
+properties of this machine's map and frame layout, and the two references cannot
+agree on them either (4080 vs 3311). What is gated is the model.
+
+### Three design points the measurements settled
+
+1. **No per-frame type tag.** §12 measured that a `NEXT` never crosses a GOSUB
+   frame, so the frames it may match are exactly the contiguous run above the
+   newest one — `[CSP, FSP)`, with `FSP` set to the frame base by `gosub_push`.
+   The search stops at the floor and D-CTLCROSS falls out with no walk.
+2. **D-FORRET's field survives under a new name.** The frame is
+   `[CURLINE][resume][prevGSP][prevFSP]`; restoring `prevFSP` discards every
+   `FOR` opened since the GOSUB. `prevGSP` is new and unavoidable — the GOSUB
+   frames are no longer contiguous.
+3. **The trap record loses its `gsp` key.** It is pushed *after* its GOSUB frame,
+   so it sits immediately below it and `TSP + TRAP_FRAME == GSP` *is* the match.
+   `ret_frame`'s single `CSP := GSP + GOSUB_FRAME` then frees the frame, the
+   record and every `FOR` above them at once. ⚠️ `FSP` moves to the record too,
+   or the next `NEXT` would read those 3 bytes as a `FOR` frame.
+
+### 🔴 The one stored derivation, and why it is not `ctl_alloc`'s ceiling
+
+`CTLLIM` (= `ARYEND+2`) is **cached**, against `strheap_floor`'s own
+"DERIVED, NEVER STORED" rule. The reason is speed: `ARYEND` needs an array-chain
+walk, which is sub-ROM knowledge, and every push would then cost a `CALSLT` —
+`FOR I=1 TO 1000:GOSUB 100:NEXT` pushes a thousand times, on an interpreter
+already 2.5–3.8× the CF-3300. So `sub/strheap.asm`'s `strheap_ctllim` is the one
+definition and it is refreshed at every point the region's end can move (both
+allocator success paths, and `sh_ctl_reset`). ⚠️ **A path that grows the region
+without passing one of those leaves `CTLLIM` stale-LOW — the dangerous
+direction.** That is this design's weakest joint and it needs a gate of its own.
+
+🟢 The symmetric half is one comparison: `strheap_varceil` now answers
+`min(varceil, CSP)`, so the variable/array region cannot grow into live frames
+either. At rest `CSP == CTLTOP` and every existing caller keeps its answer.
+
+### Three faults this cost, all worth recording
+
+1. 🔴 **A nested `IF CLEARPOOL` closed the OUTER block early.** The new ops were
+   inserted inside an existing conditional; pasmo assembles the unbalanced pair
+   **without complaint**, and the only symptom was a ROM that booted to a screen
+   of pattern-table noise.
+2. 🔴 **`SUBSLOT_OK` is power-on garbage at `init` line 28.** `clear_vars` reaches
+   `ctl_reset` a hundred lines before `init_ext_roms` records the sub-ROM slot,
+   and RAM there reads `$FF` (D-VALTYP) — so `subrom_call`'s `or a` guard does
+   **not** fire and it `CALSLT`s into a wild slot. No caller had ever dispatched
+   the tenant that early. `ctl_reset` now tests `cp 1`, the value the scan
+   actually writes, so garbage reads as absent.
+3. 🔴 **`sh_ctl_alloc` publishes the new `CSP` in `SH_PTR` — the cell the caller
+   passed its resume pointer in.** Caught before a build. The parameter block is
+   shared; an op that writes a cell another op reads is not a private register.
+
+### ⚠️ And a probe was squatting in memory BASIC now uses
+
+`basic_probe_stop_trap.py` keeps its sentinels at `$D000..$D003`, which is inside
+BASIC's free area on **every** one of these machines. It worked by luck: the
+reference's stack starts ~8 KB above and never descends that far, and zerobas
+kept its frames in page 3. With the pool starting at ~`$DA38`, this suite's
+held-key case — which abandons dispatch after dispatch, and neither machine
+reclaims those (§10) — walked the pool down over `$D002`, and `ran` read **208**,
+i.e. `$D0`: the high byte of a frame pointer, read as a flag. The fix is
+`CLEAR 200,&HCFFF` in the fixture: reserving the memory is what an MSX program
+would do, and moving the sentinels would only relocate the same accident.

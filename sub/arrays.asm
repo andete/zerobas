@@ -882,6 +882,12 @@ scva_zero_lp:
                 inc     sp
                 inc     sp
                 inc     sp                  ; deallocate the 19-byte frame
+                ; D-CTLPOOL: the region's end just moved -- refresh the control
+                ; pool's collision floor. HL is the caller's result, so it rides
+                ; the stack across the walk.
+                push    hl
+                call    strheap_ctllim
+                pop     hl
                 scf
                 ret
 scv_oom:
@@ -1322,6 +1328,11 @@ aal_zero_done:
                 inc     sp
                 inc     sp                  ; deallocate the 10-byte frame (INC SP: no
                                             ; register/flag effect other than SP)
+                ; D-CTLPOOL: same refresh as scv_ceil_fits' -- a new array moved
+                ; the region's end, so the pool's floor moved with it.
+                push    hl
+                call    strheap_ctllim
+                pop     hl
                 scf
                 ret
 ; --- aal_soor: the SIZE-RULE exit (D-ARR-B, docs/spec-basic-arrdim.md §3) ---

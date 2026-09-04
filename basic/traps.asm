@@ -343,9 +343,11 @@ check_traps:
                 push    hl                  ; [S] = resume stmt ptr
                 call    ct_find
                 jr      nc,ct_none
-                ld      a,(TRAPSVC)         ; service-stack depth guard
-                cp      TRAPSTK_MAX
-                jr      nc,ct_svc_full
+                ; D-CTLPOOL: the TRAPSTK_MAX depth guard is GONE. The service
+                ; record comes out of the control pool now, so "too many nested
+                ; in-service traps" is the same condition as every other
+                ; overflow -- the pool met the variable area -- and ctl_alloc
+                ; below is the one place that decides it.
                 ; --- fire: HL=&state, C=idx, DE=handler ---
                 ld      a,(hl)
                 and     ZTS_SHADOW          ; KEEP the T2 device edge shadow (bit 6) --
@@ -358,22 +360,34 @@ check_traps:
                 push    de                  ; save handler link across gosub_push
                 call    gosub_push          ; push [CURLINE][resume=HL]; BC(idx) kept; CF=full
                 jr      c,ct_gsfull
-                ; record service entry [GSP][idx] at TRAPSTK + TRAPSVC*3
-                ld      a,(TRAPSVC)
-                ld      l,a
-                ld      h,0
-                ld      e,a
-                ld      d,0
-                add     hl,hl
-                add     hl,de               ; 3*TRAPSVC
-                ld      de,TRAPSTK
-                add     hl,de               ; HL -> record slot
-                ld      de,(GSP)            ; GSP after the push == the RETURN match key
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
-                inc     hl
-                ld      (hl),c              ; idx
+                ; D-CTLPOOL: the service record goes on the pool, pushed AFTER the
+                ; GOSUB frame so it lands at a LOWER address -- newer than the
+                ; frame, and therefore freed by the one `CSP := GSP + GOSUB_FRAME`
+                ; store in ret_frame. 🎯 AND THE `gsp` KEY IS GONE WITH THE ARRAY:
+                ; the record sits immediately below its own frame, so "is this
+                ; RETURN the trap's own?" is the pointer identity
+                ; TSP + TRAP_FRAME == GSP -- no stored key and no search.
+                push    bc                  ; guard the trap index
+                ld      hl,TRAP_FRAME
+                call    ctl_alloc
+                pop     bc
+                jr      c,ct_gsfull
+                ex      de,hl               ; DE = the record's base
+                ld      hl,(TSP)
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a              ; [0..1] prevTSP -- the record chain
+                inc     de
+                ld      a,c
+                ld      (de),a              ; [2] the trap index
+                ld      hl,(CSP)
+                ld      (TSP),hl
+                ; ⚠️ AND FSP MOVES WITH IT. FSP is the FOR run's floor; leaving it
+                ; at the GOSUB frame's base would put this 3-byte record INSIDE the
+                ; run, where the next NEXT would read it as a FOR frame.
+                ld      (FSP),hl
                 ld      hl,TRAPSVC
                 inc     (hl)
                 ; (The STOP-trap STOPGRACE set that used to sit here is GONE, spec §12.3.
@@ -388,10 +402,9 @@ check_traps:
                 ret                         ;  fires next boundary; ct_none clears it)
 ct_gsfull:
                 pop     de                  ; discard handler
-                jp      gosub_stk_over      ; control-stack overflow -> ERR 7
-ct_svc_full:
-                pop     hl                  ; discard resume ptr
-                jp      gosub_stk_over      ; too many nested traps -> ERR 7
+                jp      gosub_stk_over      ; control-pool overflow -> ERR 7
+                                            ; (ct_svc_full is retired with
+                                            ;  TRAPSTK_MAX -- one arm, not two)
 ct_none:
                 pop     hl                  ; restore resume ptr (unchanged)
                 xor     a
@@ -406,28 +419,27 @@ ct_none:
 ; re-raise TRAPPEND if a fresh PENDING re-latched during the handler). No match ->
 ; a normal/nested RETURN, leave everything. Clobbers A, BC, DE, HL.
 trap_return_check:
-                ld      a,(TRAPSVC)
-                dec     a
-                ld      l,a
-                ld      h,0
-                ld      e,a
-                ld      d,0
-                add     hl,hl
-                add     hl,de               ; 3*(TRAPSVC-1)
-                ld      de,TRAPSTK
-                add     hl,de               ; HL -> top record [gsp lo][gsp hi][idx]
+                ; D-CTLPOOL: the top record is at TSP, and it is the CURRENT
+                ; RETURN's own iff it sits immediately below that RETURN's GOSUB
+                ; frame. No stored gsp key, no multiply, no array base.
+                ld      hl,(TSP)
+                ld      de,TRAP_FRAME
+                add     hl,de
                 ld      de,(GSP)
-                ld      a,(hl)
-                cp      e
-                ret     nz                  ; gsp lo mismatch -> normal RETURN
+                or      a
+                sbc     hl,de
+                ret     nz                  ; a normal or nested RETURN -- leave all
+                ld      hl,(TSP)
+                ld      e,(hl)
                 inc     hl
-                ld      a,(hl)
-                cp      d
-                ret     nz                  ; gsp hi mismatch
+                ld      d,(hl)              ; DE = prevTSP
                 inc     hl
                 ld      c,(hl)              ; C = trap idx
+                ld      (TSP),de            ; pop the record (its POOL space is
+                                            ; reclaimed by ret_frame's single
+                                            ; CSP := GSP + GOSUB_FRAME, below it)
                 ld      hl,TRAPSVC
-                dec     (hl)                ; pop the service record
+                dec     (hl)
                 ld      a,c
                 call    ztrap_entry         ; HL = &ZTRAP[idx]
                 ld      a,(hl)

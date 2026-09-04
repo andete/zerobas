@@ -134,6 +134,15 @@ init:
                 call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
                                             ; (e.g. zerobas-disk in slot 3-1) since
                                             ; our own INIT never returns to the scan
+                ; D-CTLPOOL: NOW the control pool can be sized. clear_vars called
+                ; ctl_reset back at line 28, but the sub-ROM slot was not known
+                ; yet, so it only parked the CSP=0 "not live" sentinel -- the pool
+                ; top comes from `strheap_varceil()` and that lives in the tenant.
+                ; 🔴 SAME ORDERING TRAP AS show_title BELOW, and it has the same
+                ; symptom: a CALSLT with no recorded slot and the machine never
+                ; reaches BASIC. Every later reset (NEW / RUN / CLEAR) goes through
+                ; clear_vars as normal, by which time the scan has long run.
+                call    ctl_reset
                 call    show_title          ; startup header lines
                 ; --- the disk ROM announces itself, UNDER the main banner -----
                 ; 🧭 2026-09-01 (Joost's call). The reference prints `Disk BASIC

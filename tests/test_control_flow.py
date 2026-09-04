@@ -49,10 +49,30 @@ def build():
                    capture_output=True)
 
 
+# D-CTLPOOL: the control frames come out of a pool whose TOP is derived by the
+# sub-ROM tenant (`strheap_varceil`), and there is no sub ROM in this harness --
+# `ctl_reset` checks SUBSLOT_OK, finds none, and correctly leaves the pool empty.
+# So the harness stands in for the tenant, which is what a unit test is for.
+# 🔴 IT MUST BE A TRAP ON `ctl_reset`, NOT A POKE IN setup(): `run_prog` calls
+# clear_vars -> ctl_reset on every RUN, which would wipe a pre-seeded pool. The
+# first cut poked the cells and every FOR and GOSUB still read 0.
+# The addresses are arbitrary but must satisfy CTLLIM < CTLTOP with room between:
+# 0x9000..0xD000 is 16 KB, ~2000 frames, far more than any row here nests.
+POOL_TOP, POOL_FLOOR = 0xD000, 0x9000
+
+
+def seed_pool(m):
+    for cell in ("CTLTOP", "CSP", "GSP", "FSP", "TSP"):
+        m.poke_w(m.addr(cell), POOL_TOP)
+    m.poke_w(m.addr("CTLLIM"), POOL_FLOOR)
+
+
 def setup(m, lines):
     """Store a program (list of (lineno, ascii-body)) and arm the run traps."""
     m.trap("BREAKX", lambda mm: setattr(mm.cpu, "f", mm.cpu.f & ~0x01))  # CF=0
     m.trap("CHPUT", lambda mm: None)                                     # discard
+    m.trap("ctl_reset", seed_pool)                                       # the pool
+    seed_pool(m)
     m.call("new_prog")
     for lineno, body in lines:
         m.poke(SRC, body.encode("ascii") + b"\x00")

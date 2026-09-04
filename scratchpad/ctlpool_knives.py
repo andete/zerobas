@@ -10,18 +10,18 @@ tree. Each cut below has a PREDICTED red arm and PREDICTED green controls, and
 the controls are the half that carries the information: a knife that reddens
 every gate has only proved the machine broke.
 
-    knife                        stackpool   trapdepth   ctlcross
-    K-CP1  GOSUB_DEPTH 8 -> 7      green🟢      RED🔴      green🟢
-    K-CP2  FOR_DEPTH   8 -> 1      green🟢     green🟢      RED🔴
-    K-CP3  GOSUB overflow ERR 7->3  RED🔴       RED🔴      green🟢
+    knife                          stackpool   trapdepth   ctlcross
+    K-CP1  gosub_push drops FSP      green🟢     green🟢      RED🔴
+    K-CP2  pool top ignores POOLSIZE   RED🔴     green🟢     green🟢
+    K-CP3  collision floor removed     RED🔴       RED🔴     green🟢
 
-🎯 K-CP1'S GREEN IS THE SHARPEST CELL IN THE TABLE. Shrinking the GOSUB array
-changes the DEPTH zerobas reaches (8 -> 7) and changes NOTHING about the
-allocation MODEL -- it is still a fixed array, still insensitive to `CLEAR`. So
-`stackpool-acceptance`, which deliberately gates the model and never an absolute
-depth, MUST stay green while `trapdepth-acceptance`, which pins faces, MUST go
-red. A stackpool gate that reddened here would be pinning the wrong thing, which
-is precisely the mistake its docstring argues against.
+🎯 EACH CUT IS AIMED AT ONE INVARIANT AND THE GREENS ARE THE EVIDENCE. K-CP1
+leaves the pool fully working -- same depth, same CLEAR response -- and moves
+ONLY the three interleave rows, which is what says `ctlcross` is measuring the
+FOR-run floor and not the pool in general. K-CP2 leaves the depth large and the
+interleave correct and moves ONLY sensitivity, which is what says `stackpool`
+gates the MODEL rather than a number. A knife that reddened everything would
+have proved only that the machine broke.
 
 🔴 THE ROM HASH ROUND EVERY PLANT (D-KNIFEROM2). A knife whose rebuild did not
 happen reports "nothing moved", which is what an arm with nothing to say looks
@@ -49,8 +49,9 @@ sys.path.insert(0, HERE)
 import knife_guard                                                # noqa: E402
 
 TMP = "scratchpad/ctlpool_knives"
-SYSV = "basic/sysvars.inc"
 PROG = "basic/program.asm"
+SUBSH = "sub/strheap.asm"
+STRENG = "basic/str-engine.asm"
 
 GATES = {
     "stackpool": "probes/basic/basic_probe_stackpool.py",
@@ -59,37 +60,45 @@ GATES = {
 }
 
 # tag -> (file, anchor, replacement, expected verdicts, why)
+# 🔴 ALL THREE CUTS WERE REPLACED 2026-09-04 WHEN THE POOL LANDED. They used to
+# shrink `GOSUB_DEPTH` and `FOR_DEPTH` and move the overflow ERR -- constants
+# that no longer exist. A knife whose anchor has been deleted cuts NOTHING and
+# its red arm passes by never firing; the anchor guard below is what catches
+# that, and it caught it here.
 KNIVES = [
-    ("K-CP1", SYSV,
-     "GOSUB_DEPTH     equ     8",
-     "GOSUB_DEPTH     equ     7                   ; K-CP1 CUT",
-     {"stackpool": "green", "trapdepth": "red", "ctlcross": "green"},
-     "one fewer GOSUB frame: the DEPTH moves, the MODEL does not"),
-
-    ("K-CP2", SYSV,
-     "FOR_DEPTH       equ     8",
-     "FOR_DEPTH       equ     1                   ; K-CP2 CUT",
+    # 🎯 THE D-CTLCROSS INVARIANT, AND NOTHING ELSE. `gosub_push` sets FSP -- the
+    # FOR run's floor -- to the new frame's base, which is what makes the FOR
+    # frames opened OUTSIDE a subroutine invisible to a NEXT inside it. Drop that
+    # one store and the pool still works, the depth is unchanged, and the three
+    # interleave rows go back to their pre-pool answers.
+    ("K-CP1", PROG,
+     "                ld      hl,(CSP)\n"
+     "                ld      (GSP),hl\n"
+     "                ld      (FSP),hl",
+     "                ld      hl,(CSP)\n"
+     "                ld      (GSP),hl          ; K-CP1 CUT: no FSP",
      {"stackpool": "green", "trapdepth": "green", "ctlcross": "red"},
-     "one FOR frame only: x.nxdeep opens two and must change face"),
+     "the FOR run's floor stops moving at a GOSUB"),
 
-    # ⚠️ THE ANCHOR IS THE SHARED OVERFLOW TAIL `gosub_stk_over`, which
-    # `ef_over` is an ALIAS of (D-DUPSPAN2) -- so this one cut moves BOTH the
-    # GOSUB and the FOR overflow error. That is stated here rather than
-    # discovered later: a fix sited on a shared tail serves all its jumps
-    # [[a-shared-tail-is-not-a-decision]].
-    # ⚠️ THE ANCHOR IS THREE LINES, NOT THE `ld a,7`. That instruction occurs
-    # TWICE in the file and the knife's own guard caught it on the first run --
-    # a one-line anchor here would have cut the WRONG overflow path, or (with a
-    # replace-all) both. The landmark store above it is what makes it unique.
-    ("K-CP3", PROG,
-     "                ld      a,$CE               ; control-stack overflow landmark\n"
-     "                ld      (ERRMARK),a\n"
-     "                ld      a,7                 ; ERR 7: out of memory (error-handling S2a)",
-     "                ld      a,$CE               ; control-stack overflow landmark\n"
-     "                ld      (ERRMARK),a\n"
-     "                ld      a,3                 ; K-CP3 CUT (was ERR 7)",
+    # 🎯 THE ALLOCATION MODEL, AND NOTHING ELSE. `strheap_ceiling` is
+    # min(HIMEM,TXTMAX) -- the same ceiling, WITHOUT the string pool subtracted --
+    # so the pool top stops tracking POOLSIZE and `CLEAR n` no longer moves the
+    # depth. The pool still works and is still big, so only the row that gates
+    # SENSITIVITY can see it.
+    ("K-CP2", SUBSH,
+     "                call    strheap_varceil     ; HL = the pool top (= reference STKTOP)",
+     "                call    strheap_ceiling     ; K-CP2 CUT: ignores POOLSIZE",
+     {"stackpool": "red", "trapdepth": "green", "ctlcross": "green"},
+     "the pool top stops tracking CLEAR's string space"),
+
+    # 🎯 THE ONE OVERFLOW CHECK. With the floor at 0 the pool never collides with
+    # the variable area, so a runaway recursion runs until the address space
+    # wraps instead of raising ERR 7 at the boundary.
+    ("K-CP3", STRENG,
+     "                ld      de,(CTLLIM)         ; the variable region's first free byte",
+     "                ld      de,0                ; K-CP3 CUT: no floor at all",
      {"stackpool": "red", "trapdepth": "red", "ctlcross": "green"},
-     "control-stack overflow raises ERR 3, not ERR 7"),
+     "the collision floor is removed"),
 ]
 
 

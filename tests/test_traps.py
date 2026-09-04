@@ -6,7 +6,8 @@ repack-only trap code is present).
 
 Slice T1 = STOP (docs/spec-traps-t1-stop-reslice.md). These are the §9.1 host tests:
 the tri-state + auto-STOP + PENDING-latch + GSP-match service-stack logic, where the
-subtle bugs live. They poke ZTRAP/TRAPENA/TRAPPEND/TRAPSVC/TRAPSTK/GSP directly and
+subtle bugs live. They poke ZTRAP/TRAPENA/TRAPPEND/TRAPSVC and the control pool
+directly and
 call set_state / ct_find / check_traps / trap_return_check by label, asserting the
 RAM result. End-to-end Ctrl-STOP -> handler -> RETURN -> resume is covered by the
 openMSX stop-trap-acceptance differential (§9.2), on real hardware.
@@ -116,6 +117,32 @@ def t_set_state(fails):
     return fails
 
 
+# D-CTLPOOL: the control frames live in one descending pool whose top the
+# sub-ROM tenant derives; there is no sub ROM here, so the harness seeds it. The
+# addresses are arbitrary -- what matters is CTLLIM < CTLTOP with room between.
+POOL_TOP, POOL_FLOOR = 0xD000, 0x9000
+
+
+def seed_pool(m, top=POOL_TOP):
+    """An EMPTY pool: every pointer at the top, the collision floor well below."""
+    for cell in ("CTLTOP", "CSP", "GSP", "FSP", "TSP"):
+        m.poke_w(m.addr(cell), top)
+    m.poke_w(m.addr("CTLLIM"), POOL_FLOOR)
+
+
+def seed_record(m, idx, rec=0x7B00, prev=POOL_TOP):
+    """One live service record at `rec`, with the GOSUB frame it belongs to
+    directly above it -- which is the whole match key now: the record carries no
+    gsp, and `TSP + TRAP_FRAME == GSP` is what says "this RETURN is the trap's".
+    -> the GSP value that MATCHES it."""
+    m.poke_w(m.addr("TSP"), rec)
+    m.poke_w(rec, prev)                       # prevTSP -- the record chain
+    m.poke(rec + 2, bytes([idx]))
+    gsp = rec + m.addr("TRAP_FRAME")
+    m.poke_w(m.addr("GSP"), gsp)
+    return gsp
+
+
 def t_check_traps_fire(fails):
     m = Machine(RES_ROM, RES_SYM, rom_base=RELOC_BASE)
     reset_traps(m)
@@ -126,12 +153,19 @@ def t_check_traps_fire(fails):
     m.poke(m.addr("TRAPENA"), b"\x01")
     m.poke(m.addr("TRAPPEND"), b"\x01")
     m.poke(m.addr("TRAPSVC"), b"\x00")
-    m.poke_w(m.addr("GSP"), m.addr("GOSUB_STK"))   # empty control stack
+    # D-CTLPOOL: the frames come out of one descending pool now, and the harness
+    # stands in for the sub-ROM tenant that would size it (see the module note).
+    # 🎯 GSP AND FSP ARE SEEDED APART ON PURPOSE. They mean different things --
+    # GSP is the innermost GOSUB frame, FSP is the FOR run's floor -- and seeding
+    # both to CTLTOP would let a fix that confused them pass. FSP is parked one
+    # FOR frame BELOW the top, so the value the frame records is one this test
+    # could not get by accident from a zeroed cell.
+    POOL_TOP, POOL_FLOOR = 0xD000, 0x9000
+    for cell in ("CTLTOP", "CSP", "GSP", "TSP"):
+        m.poke_w(m.addr(cell), POOL_TOP)
+    m.poke_w(m.addr("CTLLIM"), POOL_FLOOR)
     m.poke_w(m.addr("CURLINE"), 0x8000)            # the "current line" saved into the frame
-    # D-FORRET: the dispatcher reaches gosub_push, which now records (FSP) as the
-    # frame's third field. Seed it one FOR frame deep so the recorded value is a
-    # number this test could not get by accident from a zeroed cell.
-    seeded_fsp = m.addr("FOR_STK") + m.addr("FOR_FRAME")
+    seeded_fsp = POOL_TOP - m.addr("FOR_FRAME")
     m.poke_w(m.addr("FSP"), seeded_fsp)
 
     r = m.call("check_traps", hl=STMT)
@@ -146,19 +180,35 @@ def t_check_traps_fire(fails):
     # as a literal 4 and D-FORRET widened the frame to 6 -- this assertion went
     # red and was RIGHT to, but a test that restates a constant can only ever
     # rot into agreement with whatever it was last edited to match.
+    # 🔴 THE WIDTHS ARE READ FROM THE SYMBOLS, NOT SPELT AGAIN HERE -- see above.
     gframe = m.addr("GOSUB_FRAME")
+    tframe = m.addr("TRAP_FRAME")
     new_gsp = m.peek(m.addr("GSP"), 2)
     new_gsp = new_gsp[0] | (new_gsp[1] << 8)
-    fails = check(fails, "GSP advanced by one GOSUB_FRAME", new_gsp - m.addr("GOSUB_STK"), gframe)
-    rec = m.peek(m.addr("TRAPSTK"), 3)
-    fails = check(fails, "service record gsp", rec[0] | (rec[1] << 8), new_gsp)
+    # The pool DESCENDS, so a push LOWERS the pointer by exactly one frame.
+    fails = check(fails, "GSP descended by one GOSUB_FRAME", POOL_TOP - new_gsp, gframe)
+    # D-CTLPOOL: the service record sits immediately BELOW its own GOSUB frame,
+    # so no gsp key is stored -- the pointer identity IS the match. Assert the
+    # geometry that replaced the key.
+    tsp = m.peek(m.addr("TSP"), 2)
+    tsp = tsp[0] | (tsp[1] << 8)
+    fails = check(fails, "service record sits under its frame", tsp + tframe, new_gsp)
+    rec = m.peek(tsp, tframe)
+    fails = check(fails, "service record prevTSP", rec[0] | (rec[1] << 8), POOL_TOP)
     fails = check(fails, "service record idx", rec[2], ZTI_STOP)
+    # ⚠️ AND FSP MOVES TO THE RECORD, not to the frame: the FOR run is [CSP,FSP),
+    # so leaving FSP at the frame base would put the record inside the run and the
+    # next NEXT would read it as a FOR frame.
+    new_fsp = m.peek(m.addr("FSP"), 2)
+    fails = check(fails, "FSP excludes the service record",
+                  new_fsp[0] | (new_fsp[1] << 8), tsp)
     # the pushed GOSUB frame carries resume == STMT (bytes 2-3 of the frame)
-    frame = m.peek(m.addr("GOSUB_STK"), gframe)
+    frame = m.peek(new_gsp, gframe)
     fails = check(fails, "frame resume ptr = STMT", frame[2] | (frame[3] << 8), STMT)
-    # D-FORRET: and bytes 4-5 carry the FOR-stack depth, so the handler's RETURN
-    # can discard whatever FOR frames the handler itself opened.
-    fails = check(fails, "frame records FSP-at-push", frame[4] | (frame[5] << 8), seeded_fsp)
+    # D-FORRET under its new name: bytes 6-7 carry the FOR run's floor at push
+    # time, so the handler's RETURN discards whatever FOR frames it opened.
+    fails = check(fails, "frame records prevGSP", frame[4] | (frame[5] << 8), POOL_TOP)
+    fails = check(fails, "frame records prevFSP", frame[6] | (frame[7] << 8), seeded_fsp)
     return fails
 
 
@@ -174,7 +224,7 @@ def t_check_traps_nofire(fails):
         reset_traps(m)
         set_entry(m, ZTI_STOP, state, handler=handler, pending=pending)
         m.poke(m.addr("TRAPPEND"), b"\x01")
-        m.poke_w(m.addr("GSP"), m.addr("GOSUB_STK"))
+        seed_pool(m)
         e = stop_entry(m)
         before = m.peek(e)[0]
         r = m.call("check_traps", hl=0x9C40)
@@ -190,14 +240,11 @@ def t_trap_return_check(fails):
 
     # gsp MATCH: SERVICING -> ON, TRAPENA +1, TRAPSVC popped to 0
     reset_traps(m)
-    GSPV = 0x7B34
     m.poke(e, bytes([ZTS_SERVICING]))
     m.poke(m.addr("TRAPENA"), b"\x00")
     m.poke(m.addr("TRAPSVC"), b"\x01")
-    rec = m.addr("TRAPSTK")
-    m.poke_w(rec, GSPV)
-    m.poke(rec + 2, bytes([ZTI_STOP]))
-    m.poke_w(m.addr("GSP"), GSPV)             # this RETURN's GSP == the record
+    seed_pool(m)
+    GSPV = seed_record(m, ZTI_STOP)             # this RETURN's GSP == the record
     m.call("trap_return_check")
     fails = check(fails, "return match: SERVICING->ON", m.peek(e)[0] & 3, ZTS_ON)
     fails = check(fails, "return match: TRAPENA +1", m.peek(m.addr("TRAPENA"))[0], 1)
@@ -208,13 +255,15 @@ def t_trap_return_check(fails):
     m.poke(e, bytes([ZTS_SERVICING]))
     m.poke(m.addr("TRAPENA"), b"\x00")
     m.poke(m.addr("TRAPSVC"), b"\x01")
-    m.poke_w(rec, GSPV)
-    m.poke(rec + 2, bytes([ZTI_STOP]))
-    # one whole frame higher -> no match. Read from the symbol rather than spelt
-    # as a literal 4: D-FORRET widened GOSUB_FRAME to 6 and this line kept
-    # passing, because ANY non-equal value satisfies it -- so the number here was
-    # never load-bearing, but the comment claiming "a nested GOSUB" was.
-    m.poke_w(m.addr("GSP"), GSPV + m.addr("GOSUB_FRAME"))
+    seed_record(m, ZTI_STOP)
+    # A NESTED GOSUB inside the handler: the pool descends, so a further frame
+    # puts GSP one GOSUB_FRAME BELOW the record's own -- no match, nothing moves.
+    # 🔴 THE DIRECTION IS THE POINT AND IT INVERTED WITH THE POOL. Read from the
+    # symbol rather than spelt as a literal: this line kept passing when
+    # D-FORRET widened the frame, because ANY non-equal value satisfies it, so
+    # the number was never load-bearing -- but the comment claiming "a nested
+    # GOSUB" was, and only the sign makes it true.
+    m.poke_w(m.addr("GSP"), GSPV - m.addr("GOSUB_FRAME"))
     m.call("trap_return_check")
     fails = check(fails, "return mismatch: state untouched", m.peek(e)[0] & 3, ZTS_SERVICING)
     fails = check(fails, "return mismatch: TRAPSVC untouched", m.peek(m.addr("TRAPSVC"))[0], 1)
@@ -225,9 +274,7 @@ def t_trap_return_check(fails):
     m.poke(e, bytes([ZTS_OFF]))               # handler did STOP OFF
     m.poke(m.addr("TRAPENA"), b"\x00")
     m.poke(m.addr("TRAPSVC"), b"\x01")
-    m.poke_w(rec, GSPV)
-    m.poke(rec + 2, bytes([ZTI_STOP]))
-    m.poke_w(m.addr("GSP"), GSPV)
+    seed_record(m, ZTI_STOP)
     m.call("trap_return_check")
     fails = check(fails, "return match, handler-OFF: stays OFF", m.peek(e)[0] & 3, ZTS_OFF)
     fails = check(fails, "return match, handler-OFF: TRAPENA unchanged", m.peek(m.addr("TRAPENA"))[0], 0)
@@ -254,7 +301,7 @@ def t_strig_shadow(fails):
     m.poke(m.addr("TRAPENA"), b"\x01")
     m.poke(m.addr("TRAPPEND"), b"\x01")
     m.poke(m.addr("TRAPSVC"), b"\x00")
-    m.poke_w(m.addr("GSP"), m.addr("GOSUB_STK"))
+    seed_pool(m)
     m.poke_w(m.addr("CURLINE"), 0x8000)
     r = m.call("check_traps", hl=0x9C40)
     fails = check(fails, "STRIG fire: CF=1", carry(r), True)
@@ -266,13 +313,10 @@ def t_strig_shadow(fails):
     # 2. trap_return_check's SERVICING -> ON must also keep bit 6, so a trigger
     #    still held when the handler RETURNs does not immediately re-fire.
     reset_traps(m)
-    GSPV = 0x7B34
     m.poke(e0, bytes([ZTS_SERVICING | ZTS_SHADOW]))
     m.poke(m.addr("TRAPSVC"), b"\x01")
-    rec = m.addr("TRAPSTK")
-    m.poke_w(rec, GSPV)
-    m.poke(rec + 2, bytes([ZTI_STRIG0]))
-    m.poke_w(m.addr("GSP"), GSPV)
+    seed_pool(m)
+    GSPV = seed_record(m, ZTI_STRIG0)
     m.call("trap_return_check")
     fails = check(fails, "STRIG return: SERVICING->ON", m.peek(e0)[0] & 3, ZTS_ON)
     fails = check(fails, "STRIG return: SHADOW PRESERVED", m.peek(e0)[0] & ZTS_SHADOW,
@@ -331,7 +375,7 @@ def t_stop_shadow(fails):
     m.poke(m.addr("TRAPENA"), b"\x01")
     m.poke(m.addr("TRAPPEND"), b"\x01")
     m.poke(m.addr("TRAPSVC"), b"\x00")
-    m.poke_w(m.addr("GSP"), m.addr("GOSUB_STK"))
+    seed_pool(m)
     m.poke_w(m.addr("CURLINE"), 0x8000)
     r = m.call("check_traps", hl=0x9C40)
     fails = check(fails, "STOP fire: CF=1", carry(r), True)
@@ -342,13 +386,10 @@ def t_stop_shadow(fails):
     # 2. RETURN: SERVICING -> ON must keep bit 6 too, or a key held across the whole
     #    handler re-fires the instant it returns -- an infinite handler loop.
     reset_traps(m)
-    GSPV = 0x7B34
     m.poke(e, bytes([ZTS_SERVICING | ZTS_SHADOW]))
     m.poke(m.addr("TRAPSVC"), b"\x01")
-    rec = m.addr("TRAPSTK")
-    m.poke_w(rec, GSPV)
-    m.poke(rec + 2, bytes([ZTI_STOP]))
-    m.poke_w(m.addr("GSP"), GSPV)
+    seed_pool(m)
+    GSPV = seed_record(m, ZTI_STOP)
     m.call("trap_return_check")
     fails = check(fails, "STOP return: SERVICING->ON", m.peek(e)[0] & 3, ZTS_ON)
     fails = check(fails, "STOP return: SHADOW PRESERVED",

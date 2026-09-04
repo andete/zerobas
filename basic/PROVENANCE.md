@@ -4912,3 +4912,29 @@ The cause is in this project's own source and is stated rather than inferred:
 
 Full rows and what they mean for the control-frame-pool arc:
 [`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md) §16.
+
+## 2026-09-04 — control frames move into one HIMEM-bounded pool (D-CTLPOOL)
+
+**quarantined** — own design. The *contract* is oracle-sourced (D-STACKPOOL §11,
+D-TRAPDEPTH §10, D-CTLCROSS §12, D-CTLSTACK §14, D-CTLFRE §15: depth responds to
+`CLEAR`/HIMEM, a `NEXT` cannot cross a GOSUB frame, nothing is reclaimed on an
+abandoned dispatch); the *mechanism* is ours. No reference ROM was disassembled
+and no frame layout was lifted — §14's rows deliberately asked only where the
+reference's stack is and how big its frames are, never what one contains.
+
+`GSP`/`FSP`/`TRAPSVC` become pointers into one descending pool based at
+`strheap_varceil()`, which §14 measured to be the same address the reference
+publishes as `STKTOP`. `GOSUB_STK`, `FOR_STK` and `TRAPSTK` are retired (146 B of
+page-3 RAM recovered net), three fixed-array bound tests collapse into one
+collision check against `ARYEND+2`, and `clear_vars` — already the four-site hook
+— resets the pool, which is what makes depth respond to `CLEAR` at all.
+
+Depth 8 → 2866, linear in `CLEAR` at 8.0 B/frame (the references: 4080/3311 at
+7.0); the three D-CTLCROSS divergences close; `d.selfarm` unmoved at `9 0`.
+Design, results, the three implementation faults, and the one stored derivation
+that needs a gate: [`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md)
+§17.
+
+⚠️ The absolute depth and the byte-per-frame rate are NOT asserted anywhere: they
+are properties of this machine's memory map and frame layout, and the two
+references do not agree on them either.

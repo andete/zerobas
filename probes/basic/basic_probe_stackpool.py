@@ -34,10 +34,10 @@ number against the reference. What is gated is the MODEL:
                     something.
   * THE ERROR    -- every side must stop with ERR 7 (`Out of memory`).
 
-zerobas's own verdict is PINNED below. It reads INSENSITIVE today. When the
-control-frame-pool arc lands it must read SENSITIVE+LINEAR, and this gate goes
-RED until the pin is updated -- deliberately: a fixed row that keeps its pin goes
-back to looking normal.
+✅ zerobas AGREES ON THE MODEL since the control-frame-pool arc landed
+(2026-09-04): SENSITIVE+LINEAR, at 8.0 B/frame against the references' 7.0, and
+~2866 frames against 4080 / 3311. The rate and the depth are per-machine and are
+NOT gated -- the four bullets above are what is.
 
 ⚠️ THE `CLEAR` MUST COME BEFORE `ON ERROR`, AND THAT COST A WHOLE FIRST DRAFT.
 With it after, every CLEAR row read `<NO OUTPUT>` on ALL THREE machines: `CLEAR`
@@ -80,11 +80,15 @@ CASES = [
 STEP = 2000          # the string-space step between consecutive ladder rows
 LADDER = ("c.clr200", "c.clr2200", "c.clr4200")
 
-# side -> verdict, the CURRENT truth measured 2026-09-04.
-# 🔴 zerobas's is the control-frame-pool arc's HEADLINE acceptance: it reads
-# INSENSITIVE because the frames live in fixed arrays (GOSUB_DEPTH = 8). When the
-# arc lands, change this to "SENSITIVE+LINEAR" in the same commit.
-PINNED = {"zb": "INSENSITIVE"}
+# ✅ THE POOL LANDED 2026-09-04, so there is no divergence left to pin: zerobas
+# must now demonstrate the SAME MODEL as the references, and `PINNED` is empty.
+# It read "INSENSITIVE" here until the arc; leaving that pin in place is how a
+# fixed row goes back to looking normal, so it came out with the fix.
+# ⚠️ THE MODEL, NOT THE NUMBER. zerobas reaches ~2866 frames at 8.0 B/frame
+# against 4080 at 7.0 and 3311 at 7.0 -- the absolute depth and the rate are
+# properties of each machine's map and its frame layout, and nothing here gates
+# them. See the header.
+PINNED = {}
 
 # The references' own model, checked BEFORE any zerobas verdict is read as a
 # finding. Not the absolute depths (which drift with the machine's own map) --
@@ -247,17 +251,17 @@ def main():
                 print(f"🔴 {s}: lowering HIMEM did not cost depth ({db} -> {dh}) "
                       f"although the machine is {verdicts[s]}.")
 
-    # --- the pinned verdict --------------------------------------------------
-    want = PINNED.get("zb")
-    if want is not None and verdicts["zb"] != want:
-        bad.append("zb/pin")
-        print(f"\n🔴 PIN DRIFT: zerobas reads {verdicts['zb']!r}, pinned {want!r}.")
-        print("  If the control-frame-pool arc landed, that is the NEWS -- update "
-              "PINNED in the same commit; an un-updated pin is how a fixed row "
-              "goes back to looking normal.")
-    elif want is not None:
-        print(f"\nzerobas: {verdicts['zb']} -- known-divergent, pinned "
-              f"(the control-frame-pool arc's headline acceptance).")
+    # --- zerobas's own verdict ------------------------------------------------
+    want = PINNED.get("zb", REF_EXPECT)
+    if verdicts["zb"] != want:
+        bad.append("zb")
+        print(f"\n🔴 zerobas reads {verdicts['zb']!r}, expected {want!r}.")
+        print("  The control-frame-pool arc made this row AGREE; if it has gone "
+              "back to INSENSITIVE, the pool is not being reset (clear_vars -> "
+              "ctl_reset) or CTLTOP is not tracking POOLSIZE/HIMEM.")
+    else:
+        print(f"\nzerobas: {verdicts['zb']} -- agrees with both references on the "
+              f"MODEL (the depth and the rate are per-machine, and ungated).")
 
     print(f"\nrows {len(sel)}  red {len(bad)}")
     print("STACKPOOL: PASS" if not bad else f"STACKPOOL: RED ({len(bad)})")

@@ -44,6 +44,78 @@ call_strheap:
                 ret     nc
                 jp      subrom_absent_error
 
+; --- ctl_alloc / ctl_reset: the CONTROL POOL's two main-ROM entry points ----
+; D-CTLPOOL (docs/spec-basic-trapsvc.md §11-§16). Both are thin wrappers over
+; the strheap tenant, which is where the collision floor lives (ARYEND+2 is
+; found by walking the array chain -- sub-ROM knowledge). They sit HERE, beside
+; `call_strheap`, for the same reason the other thirteen wrappers do: the tenant
+; dispatch is one shared tail and main page 1 has no room to inline it three
+; times.
+;
+;   ctl_alloc   IN  HL = frame size.  OUT  CF=0 -> HL = the frame's base (CSP
+;               already advanced).  CF=1 -> pool full, NOTHING written; the
+;               caller raises ERR 7 through gosub_stk_over. Clobbers DE.
+;               🔴 IT TOUCHES NO SLOT. Every push goes through here and
+;               `FOR I=1 TO 1000:GOSUB 100:NEXT` pushes a thousand times, so the
+;               collision floor is READ from CTLLIM rather than derived -- the
+;               sub ROM keeps that cell current (strheap_ctllim).
+;               🎯 ONE CHECK REPLACING THREE -- the GOSUB_DEPTH, FOR_DEPTH and
+;               TRAPSTK_MAX bound tests are all gone; "the frame collided with
+;               the variable area" is now the only way to be full.
+;   ctl_reset   empties the pool and re-derives CTLTOP. Called from clear_vars
+;               only (cold boot / RUN / NEW / CLEAR).
+;
+; Clobbers A, IX (call_strheap's) plus DE.
+ctl_alloc:
+                ex      de,hl               ; DE = the frame size
+                ld      hl,(CSP)
+                or      a
+                sbc     hl,de               ; HL = the frame's base
+                jr      c,ca_full           ; CSP wrapped -> refuse (an
+                                            ; uninitialised pool cannot push)
+                ld      de,(CTLLIM)         ; the variable region's first free byte
+                push    hl
+                sbc     hl,de               ; (CF is clear from the jr above)
+                pop     hl
+                jr      c,ca_full           ; base < floor -> collided
+                ld      (CSP),hl
+                ret                         ; CF = 0 -- the sbc left NC
+ca_full:
+                scf
+                ret
+ctl_reset:
+                ; 🔴 THIS MUST SURVIVE BEING CALLED BEFORE THE SUB ROM EXISTS.
+                ; `clear_vars` reaches it at init line 28, and `init_ext_roms` --
+                ; which DISCOVERS the sub-ROM slot -- does not run until line 134.
+                ; Going through `call_strheap` there takes subrom_absent_error and
+                ; the machine never reaches BASIC: measured, and the same trap
+                ; interp.asm already records for `show_title`. So this dispatches
+                ; RAW and tolerates CF, and interp.asm calls it again once the scan
+                ; has run.
+                ; ⚠️ CSP := 0 FIRST, because a pool that is not live must say so:
+                ; strheap_varceil's min(varceil, CSP) stands down on a zero CSP,
+                ; and ctl_alloc's wrap test refuses every push. Power-on RAM here
+                ; reads $FF (D-VALTYP), which would do neither.
+                ld      hl,0
+                ld      (CSP),hl
+                ; 🔴 `cp 1`, NOT `or a`. SUBSLOT_OK is only zeroed INSIDE
+                ; init_ext_roms, and clear_vars reaches here a hundred lines
+                ; earlier -- so at cold boot the cell is power-on RAM, which reads
+                ; $FF on this machine (D-VALTYP, docs/valtyp-coldram-notes.md §1).
+                ; subrom_call's own `or a` guard therefore does NOT fire on
+                ; garbage: it CALSLTs into a wild slot and the machine boots to a
+                ; screen of pattern-table noise. No caller had ever dispatched the
+                ; sub ROM this early, so the trap was latent until this arc.
+                ; Testing for the value the scan actually WRITES is what makes
+                ; garbage read as absent.
+                ld      a,(SUBSLOT_OK)
+                cp      1
+                ret     nz                  ; not recorded yet -- CSP=0 stands
+                ld      a,20
+                ld      (SH_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
+                jp      subrom_call         ; CF set = not discovered yet: harmless
+
 ; --- penderr_set: FIRST-ERROR-WINS, AS A PROPERTY OF THE WRITE --------------
 ; (D-PENDERR, docs/spec-basic-penderr.md §4.) FPERR is the interpreter's single
 ; PENDING-ERROR CODE cell: a deferred fault records its code here and the

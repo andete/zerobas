@@ -1087,10 +1087,14 @@ clear_vars:
                 ; a live direct-mode FOR frame does NOT survive NEW or CLEAR, but
                 ; DOES survive the end of the typed line that made it). Same
                 ; "single hook covering all four" argument as the RND seed below.
-                ld      hl,GOSUB_STK
-                ld      (GSP),hl
-                ld      hl,FOR_STK
-                ld      (FSP),hl
+                ; D-CTLPOOL: one call empties the whole pool AND re-derives its
+                ; top from `strheap_varceil()` -- the address §14 measured the
+                ; reference publishing as STKTOP. 🎯 THIS IS WHY DEPTH RESPONDS TO
+                ; `CLEAR` AT ALL: ex_clear stores POOLSIZE and HIMEM BEFORE falling
+                ; into clr_done, so the reset below picks up the new ceiling for
+                ; free, and `CLEAR n` / `CLEAR n,addr` move the reachable depth the
+                ; way both references do (spec-basic-trapsvc.md §11).
+                call    ctl_reset
                 ; --- D-CLRTRAP: and the EVENT TRAPS, for the same reason -------
                 ; Measured on a VG-8020 (scratchpad/clrarm_probe.py): an
                 ; `ON INTERVAL` trap that is ARMED AND LIVE fires 16 times in the

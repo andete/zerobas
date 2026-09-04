@@ -1226,7 +1226,7 @@ TRAPENA         equ     $E20B   ; 1 B: count of traps currently in state ON. Gat
                                 ; H.TIMI event_poll (fast-out when 0 — the common no-trap
                                 ; program's cost). Bumped by set_state on OFF/STOP->ON,
                                 ; dropped on ON->anything (incl. the auto ON->SERVICING).
-TRAPPEND        equ     $E21F   ; 1 B (== TRAPSTK_END, just past the service stack): 1 =
+TRAPPEND        equ     $E21F   ; 1 B (was just past the retired TRAPSTK): 1 =
                                 ; event_poll has latched a PENDING on some ON
                                 ; trap since the last dispatch. Gates the run-loop
                                 ; check_traps subrom_call — set (resident) by event_poll,
@@ -1235,14 +1235,14 @@ TRAPPEND        equ     $E21F   ; 1 B (== TRAPSTK_END, just past the service sta
 TRAPSVC         equ     $E20C   ; 1 B: count of live SERVICING entries == depth of the
                                 ; service stack. Gates ex_return's re-enable hook (0 =
                                 ; no added cost on a normal RETURN).
-TRAPSTK         equ     $E20D   ; service stack, TRAPSVC entries of [gsp:2][idx:1]
-                                ; (LIFO, grows up). On trap dispatch push {GSP-after-
-                                ; frame-push, trap index}; ex_return re-enables the
-                                ; entry whose gsp matches the pre-pop GSP. Depth of
-                                ; SIMULTANEOUSLY-servicing traps is tiny; size 6.
-TRAPSTK_MAX     equ     6       ; max nested in-service traps (6 * 3 = 18 B)
-TRAPSTK_END     equ     TRAPSTK + TRAPSTK_MAX*3   ; $E21F — still < $E240, clear of
-                                ; the retired STRTAB span ($E240..$E268 also freed)
+; D-CTLPOOL: TRAPSTK ($E20D, 6 x 3 B) IS RETIRED -- $E20D..$E21F is FREE. The
+; service record now lives in the control pool (TSP, sysvars below), pushed
+; BEFORE its GOSUB frame so it lands under it and stays out of the [CSP,FSP) run
+; a `NEXT` walks. TRAPSVC survives as the COUNT, because ex_return gates on it
+; with one RAM load on every RETURN and a pointer compare there would cost more.
+; 🎯 THE `gsp` KEY IS GONE WITH THE ARRAY. The record sits immediately above its
+; own GOSUB frame, so "is this RETURN the trap's own?" is the pointer identity
+; TSP == GSP + GOSUB_FRAME -- no stored key, no search.
 ; ($E220 is FREE again. It held STOPGRACE, the STOP-trap handler grace: a byte set by
 ; check_traps on fire and cleared by event_poll each VBLANK, during which rp_break
 ; would not break a SERVICING STOP handler. Retired 2026-07-25, spec §12.3 — the
@@ -3344,8 +3344,27 @@ CAS_WBUF        equ     $E600   ; cassette ASCII save: 256-byte tape block buffe
 ; f.dep8 (8 nested FOR/NEXT pairs, OK on all three sides) is what makes that a
 ; measurement rather than a preference. $E070..$E0B8 -- 72 B of this crowded
 ; page -- is now FREE.
-GSP             equ     $E041   ; GOSUB return-stack pointer (2)
-FSP             equ     $E043   ; FOR-stack pointer (2)
+; 🎯 D-CTLPOOL (docs/spec-basic-trapsvc.md §11-§16): THESE ARE POINTERS INTO ONE
+; DESCENDING POOL, not indices into three fixed arrays. The pool runs DOWN from
+; CTLTOP -- which is `strheap_varceil()`, the SAME address the reference publishes
+; as STKTOP (§14 measured the two formulas identical) -- and collides with the
+; variable/array region at ARYEND+2. That is what makes the reachable depth
+; respond to `CLEAR` and to HIMEM at all, which is §11's whole finding.
+;
+;   [PRGEND+2 .. ARYEND+2)  variables + arrays, growing UP
+;        [ the free gap ]
+;                            control frames, growing DOWN   <- CSP
+;   CTLTOP = strheap_varceil()
+;   [varceil .. floor)      the MAXFILES channel table
+;   [floor .. C)            the string pool          C = min(HIMEM,TXTMAX)
+;
+; 🔴 FSP IS THE `FOR` RUN'S **FLOOR**, NOT AN INDEX. The FOR frames a `NEXT` may
+; match are exactly [CSP, FSP) -- everything pushed since the last non-FOR frame.
+; That is not a convenience: D-CTLCROSS (§12) measured that BOTH references
+; refuse to match a `FOR` frame lying below a live GOSUB frame, and this is the
+; invariant that reproduces it with no per-frame type tag and no walk.
+GSP             equ     $E041   ; newest GOSUB frame's address; == CTLTOP if none (2)
+FSP             equ     $E043   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) (2)
 FOR_FRAME       equ     11      ; FOR frame size, in bytes (see the layout above)
 FOR_CUR         equ     $E045   ; scratch: a working copy of one FOR frame (11), and
                                 ; ALSO the key a NEXT parses into before it matches
@@ -3356,21 +3375,40 @@ FOR_CUR         equ     $E045   ; scratch: a working copy of one FOR frame (11),
 ; $E04E was FOR_NEW — NEXT's freshly-stepped loop value, parked in RAM across the
 ; var_set call. D-FORVAR keeps it on the STACK instead (one push/pop replaces one
 ; store and two loads on mutually exclusive branches), and FOR_CUR grew over it.
-GOSUB_STK       equ     $E050   ; GOSUB return-stack base
-GOSUB_DEPTH     equ     8
-GOSUB_FRAME     equ     6       ; D-FORRET: [CURLINE:2][resume:2][FSP-at-push:2].
-                                ; The third field is what lets RETURN discard the
-                                ; FOR frames opened since its GOSUB — MS-BASIC gets
-                                ; that for free by keeping both on the Z80 stack and
-                                ; walking past them; zerobas keeps two separate RAM
-                                ; stacks, so the depth has to be RECORDED to be
-                                ; restored (docs/spec-basic-forret.md §4).
-GOSUB_STK_END   equ     GOSUB_STK + GOSUB_DEPTH*GOSUB_FRAME   ; $E080
-; $E080..$E0B8 was FOR_STK — 56 B still FREE since D-FORVAR relocated the stack
-; (above); D-FORRET spent 16 of that 72 widening the GOSUB frame 4 -> 6.
-FOR_STK         equ     $EA3A   ; FOR-stack base, in the page-3 window S-FCH-1 freed
-FOR_DEPTH       equ     8       ; (see FCH_RECLENS below). 8 x 11 = 88 B.
-FOR_STK_END     equ     FOR_STK + FOR_DEPTH*FOR_FRAME   ; $EA92
+; D-CTLPOOL: $E050.. held GOSUB_STK (8 x 6 B). The array is retired; these six
+; bytes are the pool's own pointers and $E058..$E080 is FREE.
+CSP             equ     $E050   ; the pool's allocation frontier, descending (2)
+CTLTOP          equ     $E052   ; the pool's TOP = strheap_varceil(), cached (2)
+TSP             equ     $E054   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
+CTLLIM          equ     $E056   ; the pool's collision FLOOR = ARYEND+2 (2). Written
+                                ; sub-side by strheap_ctllim at the two allocator
+                                ; success paths and at reset; read by the main ROM's
+                                ; ctl_alloc on every push. ARYEND needs an array-chain
+                                ; walk (sub-ROM knowledge) and a push cannot afford a
+                                ; subrom_call -- `FOR I=1 TO 1000:GOSUB 100:NEXT`
+                                ; pushes a thousand times. 🔴 A STORED DERIVATION,
+                                ; therefore a staleness hazard; §17 of
+                                ; docs/spec-basic-trapsvc.md is its gate.
+; ⚠️ CTLTOP IS THE ONE STORED DERIVATION HERE, and it is bounded on purpose. Its
+; inputs (POOLSIZE, HIMEM, MAXF) change only at `CLEAR` and `MAXFILES`, and
+; `clear_vars` -- the four-site hook (cold boot, RUN, NEW, CLEAR) -- rewrites it
+; there. Everything else (the collision floor, which moves on EVERY variable
+; allocation) stays DERIVED, sub-side, exactly as strheap_floor's own comment
+; argues. 🔴 §14 measured that `MAXFILES` moves the reference's stack top too, so
+; the dependency is faithful rather than an artefact -- but a `MAXFILES` with
+; frames already live is a staleness window this cell does not close.
+GOSUB_FRAME     equ     8       ; [CURLINE:2][resume:2][prevGSP:2][prevFSP:2].
+                                ; prevGSP chains the GOSUB frames (they are no
+                                ; longer contiguous -- FOR frames interleave), and
+                                ; prevFSP is D-FORRET's field under its new name:
+                                ; restoring it discards every FOR opened since the
+                                ; GOSUB (docs/spec-basic-forret.md §4). Both are
+                                ; needed; neither is derivable from the other.
+TRAP_FRAME      equ     3       ; [prevTSP:2][idx:1] -- see TRAPSTK's retirement above
+; $E056..$E080 is FREE (was the rest of GOSUB_STK), and so is $E080..$E0B8.
+; $EA3A..$EA92 (88 B) is FREE: it was FOR_STK, retired with the same arc.
+FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY as
+                                ; FN_BASE's anchor below, which must not move.
 ; --- DEF FN: the parameter (shadow) area -----------------------------------
 ; D-DEFFN (docs/deffn-design-2026-08-22.md §2, docs/deffn-ramhunt-2026-08-22.md).
 ; The formal parameters of the FN call in progress live here, NOT in the
@@ -3461,8 +3499,10 @@ FN_STK_FLOOR    equ     $F200
     IF (high FN_BASE) != (high (FN_BASE + FN_BLK - 1))
                 db      FN_PAREA_CROSSES_A_PAGE__8BIT_SLOT_WALK_WOULD_CARRY
     ENDIF
-    IF FN_BASE < FOR_STK_END
-                db      FN_PAREA_OVERLAPS_THE_FOR_STACK
+; D-CTLPOOL: FOR_STK is retired, so this no longer guards a live stack -- but
+; FN_BASE is PINNED at $EA92 and the assert is what says so out loud.
+    IF FN_BASE != $EA92
+                db      FN_PAREA_MOVED__FN_BASE_IS_PINNED_AT_EA92
     ENDIF
     IF FN_MAXP < 9
                 db      FN_PARAM_CEILING_BELOW_THE_MEASURED_NINE

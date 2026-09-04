@@ -8,14 +8,20 @@ options on a premise NOBODY HAD MEASURED: that the reference reclaims the
 abandoned dispatch, so zerobas's cap is a leak the references do not have. These
 rows measure it, and the premise is FALSE (§10, 2026-09-04):
 
-    row        vg8020   cf3300   zb        what it is
-    d.depth0    4071      3302    8        plain recursion depth, no trap at all
-    d.depth20   4016      3247    -        ...after TWENTY abandoned dispatches
-    d.ctl20     4040      3271    8        the SAME program, `INTERVAL ON` removed
+    row        vg8020   cf3300   zb (pre-pool)  what it is
+    d.depth0    4071      3302    8             plain recursion depth, no trap
+    d.depth20   4016      3247    <NO OUTPUT>   ...after TWENTY abandoned dispatches
+    d.ctl20     4040      3271    8             the SAME program, `INTERVAL ON` gone
 
 **≈1 frame per abandoned dispatch, on both references -- the same as zerobas.**
 Nothing is reclaimed anywhere; the difference is CAPACITY, which is what
 D-STACKPOOL then explained (one HIMEM-bounded pool, `basic_probe_stackpool.py`).
+
+✅ THE POOL LANDED 2026-09-04. zerobas now reaches ~2800 on every row (the `8`s
+above were the fixed array) and d.depth20 COMPLETES -- it used to abort at the
+`TRAPSTK_MAX = 6` cap, with the untrapped ERR 7 eating the fence. It still leaks
+~1.45 frames per abandoned dispatch, which is the faithful answer: neither
+reference reclaims either.
 
 ⚠️ `d.ctl20` IS THE ROW THAT MAKES THE OTHERS MEAN ANYTHING. It is byte-for-byte
 `d.depth20` with the one `INTERVAL ON` removed, so program text, variable count
@@ -35,7 +41,7 @@ never ran [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
 
 ⚠️ `d.selfarm` IS A GUARD, NOT A MEASUREMENT. A handler that re-enables its OWN
 trap and then RETURNs is the case §6 warns a fix must not break; it reads `9 0`
-on all three machines TODAY. The control-frame-pool arc must leave it there.
+on all three machines, and it still did after the control-frame pool landed.
 
 ON INTERVAL is the instrument because it is the ONLY self-firing MSX1 trap --
 KEY/STRIG/SPRITE/STOP need a human -- and all five share `check_traps` and
@@ -123,19 +129,30 @@ CASES = [
      "GUARD: a handler that re-arms its OWN trap, then RETURNs"),
 ]
 
-# row -> (reference, zerobas), the CURRENT truth measured 2026-09-04.
-# ⚠️ `<NO OUTPUT>` IS A NAMED OUTCOME HERE, NOT A MISSING ONE. zerobas caps at
-# SIX abandoned dispatches (TRAPSTK_MAX = 6), so d.depth20's twentieth cycle
-# raises ERR 7 inside an already-active error handler; that is untrapped, the
-# program ABORTS and the fence is never printed. Pinning it says which of the
-# two it is -- an unnamed outcome reads as no outcome
-# [[an-unnamed-outcome-reads-as-no-outcome]].
+# row -> the REFERENCE face. ✅ REWORKED 2026-09-04 WHEN THE CONTROL-FRAME POOL LANDED. These rows used to
+# pin zerobas's face exactly -- `8 7 0`, and `<NO OUTPUT>` for d.depth20, which
+# aborted at the TRAPSTK_MAX=6 cap. Both are gone: depth is now ~2800 and every
+# row completes.
+# 🔴 BUT A POOLED DEPTH IS A MEMORY-MAP READING AND MUST NOT BE PINNED. It moves
+# with PRGEND, POOLSIZE, MAXFILES and the frame size -- the same reason
+# basic_probe_stackpool.py gates the MODEL and never the number, and the reason
+# `basic_probe_clearpool.py` forbids an absolute `FRE(0)`. So the REFERENCE faces
+# are pinned (stable oracles, and their drift is an instrument fault) and
+# zerobas is held to RELATIONS instead: see ZB_FLOOR and ZB_LEAK below.
 PINNED = {
-    "d.depth0":  ("4071 7 0", "8 7 0"),
-    "d.depth1":  ("4046 7 0", "8 7 0"),
-    "d.depth20": ("4016 7 20", "<NO OUTPUT>"),
-    "d.ctl20":   ("4040 7 0", "8 7 0"),
+    "d.depth0":  "4071 7 0",
+    "d.depth1":  "4046 7 0",
+    "d.depth20": "4016 7 20",
+    "d.ctl20":   "4040 7 0",
 }
+# zerobas must reach a depth only a POOL can reach. The fixed array read 8; the
+# pool reads ~2800 and varies with the map, so this is a floor, not a value.
+ZB_FLOOR = 1000
+# ...and it must LEAK like the references: 20 abandoned dispatches cost frames
+# and are never reclaimed (§10). The references spend 24; zerobas spends more per
+# dispatch because its frame is bigger (8 B + a 3 B service record against 7 B),
+# so the band is generous -- what is gated is "nothing is reclaimed", not a rate.
+ZB_LEAK = (10, 80)
 # 🎯 THE GUARD, and it must read the SAME on all three. Not a divergence pin: a
 # row all three agree on, recorded so a fix that breaks it goes red here.
 GUARD = {"d.selfarm": "9 0"}
@@ -235,6 +252,21 @@ def main():
                       f"times, so the frames above are not twenty dispatches' cost.")
                 return 1
 
+    # --- zerobas leaks like the references: nothing is reclaimed (§10) -------
+    if set(LEAK_ROWS) <= set(reads["zb"]):
+        a, b = (num(reads["zb"][l]) for l in LEAK_ROWS)
+        if a is None or b is None:
+            print("⚠️ zerobas's leak rows are not readable -- no verdict.")
+            return 1
+        cost = a - b
+        lo, hi = ZB_LEAK
+        ok = lo <= cost <= hi
+        print(f"  {'zb':<8} 20 abandoned dispatches cost {cost:>3} frames "
+              f"({cost / 20:.2f}/dispatch)   "
+              f"{'leaks, like both references' if ok else '🔴 OUTSIDE ' + str(ZB_LEAK)}")
+        if not ok:
+            bad.append("zb/leak")
+
     print()
     for lab, _p, _w in sel:
         r, g = reads["vg8020"][lab], reads["zb"][lab]
@@ -247,11 +279,19 @@ def main():
                 bad.append(lab)
         elif lab in PINNED:
             want = PINNED[lab]
-            if (r, g) == want:
-                print(f"{lab:<{w}}  known-divergent, pinned {want}")
-            else:
+            d = num(g)
+            if r != want:
                 bad.append(lab)
-                print(f"{lab:<{w}}  🔴 PIN DRIFT from {want} to {(r, g)}")
+                print(f"{lab:<{w}}  🔴 THE REFERENCE MOVED: {r!r}, pinned {want!r} "
+                      f"-- an oracle drift, not a zerobas finding")
+            elif d is None or d < ZB_FLOOR:
+                bad.append(lab)
+                print(f"{lab:<{w}}  🔴 zerobas reached {g!r} -- below the {ZB_FLOOR} "
+                      f"floor a POOLED control stack must clear (a fixed array "
+                      f"read 8 here)")
+            else:
+                print(f"{lab:<{w}}  ref pinned {want!r}; zb {g!r} "
+                      f"(>= {ZB_FLOOR}, a pool)")
         elif r == g:
             print(f"{lab:<{w}}  ok")
         else:
