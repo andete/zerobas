@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1820 (T-6FE392)8 (T-529ABE)` from `TODO.md:6416 (T-529ABE)`: a
+      `TODO.md:1820 (T-6FE392)8 (T-529ABE)` from `TODO.md:6431 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2421,7 +2421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6416 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6431 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3273,6 +3273,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       needs guarding across CALSLT -- it lives in FN_RESUME"*):
       `ld (FN_RESUME),hl` + `ld hl,(FN_RESUME)` = **6 B**, against a page 1 that
       was 301 B free on 2026-09-02 (`make basic-reloc`; do not quote this).
+      🔴 **MEASURED 2026-09-04 (D-NAMEORD,
+      [`docs/spec-basic-nameord.md`](docs/spec-basic-nameord.md)): THE REORDER
+      SHIPPED AT THE PRICED +6 B AND FIXES ONE ROW, NOT TWO.** `name.as5` goes
+      2 -> **53** and matches; `name.ex5` stays at **2** where 13 is due; all five
+      controls hold. **And the cause is not the ordering** — a bisect with the
+      cursor round-trip and NO disk primitive in between still read 2, so
+      `FN_RESUME` is not clobbered ($E227, no declared overlap, two writers in the
+      tree) and the second `fname_expr` site produces `Syntax error` for a numeric
+      operand for a reason that predates this change. The same routine gives 13
+      from the old-name position (`name.old5`, green). A separate defect, still
+      open. ⚠️ And the side-effect this entry named is now REAL and unmeasured:
+      `DISKSLOT_OK` is checked before the new name is evaluated, so the diskless
+      build answers the no-disk error there — measurable against the VG-8020,
+      which has no drive either.
+      The claim this replaces read:
       🎯 **THE REORDER ALONE FIXES BOTH ROWS, AND NOTHING NEW HAS TO PRODUCE
       ERR 13**: with the old file absent, `fat_find` misses and the new name is
       never evaluated → 53; with it present, `fname_expr` runs and faults → 13,

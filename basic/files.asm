@@ -1706,17 +1706,31 @@ do_name:
                 ; is not even the one this tree produces: both rows read ERR 24
                 ; `Missing operand`.
                 ;
-                ; ⚠️ NOT FIXED HERE -- reordering is a priced change and no row
-                ; drives it. Filed in TODO.md; the ANALYSIS above (what is
-                ; evaluated vs parsed, and where) is unchanged and still true.
-                call    fname_expr          ; new -> STRSCR, FN_RESUME = cursor
+                ; ✅ FIXED 2026-09-04 (D-NAMEORD): the new name is now evaluated
+                ; AFTER the old file is located, which is the reference rule. The
+                ; cursor is parked in FN_RESUME across the disk primitives -- the
+                ; same cell the OLD name's call already uses, and the reason the
+                ; error exits below carry no `pop`.
+                ;
+                ; 🟢 AND IT DELETES A CLAIM RATHER THAN ADDING ONE. The paragraph
+                ; below used to argue that the staged NEW name survives fat_mount
+                ; + fat_find by ADDRESS -- 30 bytes of margin against DSKIO's FDC
+                ; work area. With the evaluation moved after the lookup there is
+                ; nothing staged across a disk primitive at all, so that argument
+                ; is no longer load-bearing. It is kept, inverted, because the
+                ; reasoning about STRSCR's span is still true and still useful if
+                ; anything is ever staged there again.
+                ld      (FN_RESUME),hl      ; park the cursor: the new-name text
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error
                 ; find the OLD file first (records FWR_DIRSEC/FWR_DIROFF). The
                 ; text cursor no longer needs guarding across CALSLT -- it lives
                 ; in FN_RESUME, which is why the three exits below lost a `pop`.
-                ; ⚠️ THE STAGED NEW NAME MUST SURVIVE fat_mount + fat_find, and
+                ; ⚠️ SUPERSEDED BY D-NAMEORD: nothing is staged across these
+                ; primitives any more. Kept because the span reasoning is still
+                ; correct, and still the answer if anything is staged here again.
+                ; THE STAGED NEW NAME MUST SURVIVE fat_mount + fat_find, and
                 ; that is the one claim here that is NOT "consumed immediately".
                 ; It holds by ADDRESS, not by luck: the only writer into STRSCR's
                 ; span during a disk primitive is DSKIO's FDC work area
@@ -1730,7 +1744,12 @@ do_name:
                 ld      hl,DISK_FCB_NAME
                 call    fat_find            ; old located; sets the entry location
                 jr      c,nm_notfound       ; old not found -> ERR 53 (R-DK2)
-                ld      hl,STRSCR+1         ; the staged NEW name
+                ; the old file exists: NOW evaluate the new name, so its own fault
+                ; (type mismatch, division by zero, ...) is what the statement
+                ; raises -- exactly as the OLD-name position already does.
+                ld      hl,(FN_RESUME)
+                call    fname_expr          ; new -> STRSCR, FN_RESUME = cursor
+                ld      hl,STRSCR+1         ; the NEW name
                 call    parse_disk_fcb      ; new -> DISK_FCB_NAME
                 ; read the dir sector, overwrite the 11-byte name, write it back.
                 ; repack: the read+overwrite+write runs in the dirverb_tenant
