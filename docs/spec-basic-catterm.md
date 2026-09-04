@@ -1,6 +1,6 @@
 # D-CATTM — the filed concatenation pair is one row, not two, and the stated hazard is not the obstacle
 
-*2026-08-31. No ROM change. Probe `scratchpad/catterm_probe.py`, 9 rows, three
+*2026-08-31. No ROM change. Probe `probes/basic/basic_probe_catterm.py`, 9 rows, three
 machines.*
 
 ## 1. Running the claim before building on it

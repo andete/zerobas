@@ -17,7 +17,7 @@ specifically is".
 """
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(HERE), "probes", "basic"))
+sys.path.insert(0, HERE)   # sibling probes; this file now lives here
 import basic_probe_deffn as D                                    # noqa: E402
 
 CASES, ORDER = {}, []

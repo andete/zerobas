@@ -1,7 +1,7 @@
 # D-CATUSR — counting the evaluations, and the fix that trades one divergence for another
 
-*2026-08-31. No ROM change. Probes `scratchpad/catusr_probe.py` (5 rows) and
-`scratchpad/catterm_probe.py` (9 rows), three machines.*
+*2026-08-31. No ROM change. Probes `probes/basic/basic_probe_catusr.py` (5 rows) and
+`probes/basic/basic_probe_catterm.py` (9 rows), three machines.*
 
 ## 1. The row D-CATTM named, built
 

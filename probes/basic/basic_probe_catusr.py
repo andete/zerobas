@@ -37,7 +37,7 @@ being moved by something else in the setup.
 """
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 sys.path.insert(0, os.path.join(ROOT, "probes", "basic"))
 import omsx_repl                                                 # noqa: E402

@@ -663,6 +663,20 @@ repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 # re-booting both references: with the refcache off that would be ~140 extra
 # boots. `--refresh` re-measures and rewrites the pins, and the plain run still
 # boots all three sides. docs/spec-basic-pufloat.md §18.
+# D-CATGATE: the concatenation / first-error-wins rows. BOTH of these already
+# exited non-zero on DIFF -- they were never the "prints divergences and exits 0"
+# class. They were the OTHER one: an honest rc that no battery collects, which is
+# not an oracle. D-CATFIX (2026-09-01) is the fix they guard, and nothing in
+# probes/ carries `"AB"+(0*(1/0)+1)` at all.
+catterm-acceptance: repack-machine
+	python3 probes/basic/basic_probe_catterm.py
+
+# ⚠️ $(DISK_TEST_DSK): catusr imports basic_probe_runtail, which names the image.
+# diskdep-check found this the moment the probe became a make target -- as a
+# scratchpad file the dependency was real and invisible.
+catusr-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_catusr.py
+
 pusing-acceptance: repack-machine
 	python3 probes/basic/basic_probe_pusing.py --gate
 

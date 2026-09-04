@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1818 (T-6FE392)8 (T-529ABE)` from `TODO.md:6381 (T-529ABE)`: a
+      `TODO.md:1818 (T-6FE392)8 (T-529ABE)` from `TODO.md:6404 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1968,11 +1968,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       keeps `AB` off the screen (`ems_print` checks FPERR before emitting);
       no check_expr_errors precedence change, so D-TMFP's rows are untouched.
       ⚠️ Original filing follows.
-- [ ] 🔴 **THE CONCATENATION DIVERGENCE IS ONE ROW, NOT TWO:
-      `"AB"+(0*(1/0)+1)` READS ERR 13 WHERE BOTH REFERENCES SAY 11.**
+- [x] ✅ **CLOSED 2026-09-04 — IT WAS ALREADY FIXED, AND THIS ENTRY IS A
+      DUPLICATE OF THE `- [x]` D-CATFIX ONE.** `4d5420e` (2026-09-01)
+      implemented *exactly* the design written at the bottom of this entry —
+      "evaluates the operand … returns CF=1 … the count stays 1 by
+      construction" — and the open box was never struck. Re-measured 2026-09-04
+      before touching anything: `c.strfault` reads **ERR 11 on all three**
+      (0/9 DIFF) and `u.cat` reads **1 on all three**. Both symptoms gone.
+      🔴 **THIS ENTRY SAID 🤖 AUTONOMOUS AND FOLLOWING IT WOULD HAVE CHANGED
+      WORKING CODE.** A written design in an open item is not evidence that the
+      work is outstanding; running the item's own rows first is what caught it.
+      ✅ **AND CLOSING IT WOULD HAVE DELETED THE COVERAGE (D-CATGATE).** No gated
+      probe carries `"AB"+(0*(1/0)+1)` at all — the two probes were in
+      `filed_row_sweep`'s corpus ONLY because this open item cited them, and that
+      sweep walks `- [ ]` items. ⚠️ **AND THE GAP WAS NOT THE `exit 0` CLASS:**
+      both probes already returned rc=1 on DIFF. They were the OTHER filed class
+      — *an honest rc that no battery collects is not an oracle*. So they are
+      promoted to `probes/basic/` and collected as `make catterm-acceptance` /
+      `make catusr-acceptance`, mutation-swept 4/4
+      ([`scratchpad/catgate_blindness.py`](scratchpad/catgate_blindness.py)):
+      N1 (no evaluation) reddens both, **N2 (wrong error armed) reddens catterm
+      and leaves catusr green** — which is what says the two gates are not one
+      gate wearing two names — and N0, a comment-only edit, leaves both green
+      with the ROM byte-identical.
+      The original finding, for the record:
+      `"AB"+(0*(1/0)+1)` READ ERR 13 WHERE BOTH REFERENCES SAY 11.
       Filed 2026-08-29 by D-STRTM §4; **re-measured 2026-08-31 by D-CATTM**
       ([`docs/spec-basic-catterm.md`](docs/spec-basic-catterm.md),
-      `scratchpad/catterm_probe.py`, 9 rows, three machines).
+      `probes/basic/basic_probe_catterm.py`, 9 rows, three machines).
       🔴 **HALF THE ORIGINAL CLAIM IS STALE:** `5+"AB"` reads **13 on all three**
       now. The likely closer is D-TMFP — *"the rule was not a rank between two
       flags but which fault happened first"* — the same question, settled for
@@ -1994,7 +2017,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `PRINT A$+5` printed `" 0"`).
       ✅ **MEASURED 2026-08-31 (D-CATUSR,
       [`docs/spec-basic-catusr.md`](docs/spec-basic-catusr.md),
-      `scratchpad/catusr_probe.py`)** — a `USR` routine that INCREMENTS A BYTE
+      `probes/basic/basic_probe_catusr.py`)** — a `USR` routine that INCREMENTS A BYTE
       turns the question into a count:
       | `PRINT "AB"+USR(0)` | vg8020 | cf3300 | zerobas |
       |---|---|---|---|
@@ -2396,7 +2419,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6381 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6404 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

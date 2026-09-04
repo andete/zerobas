@@ -73,3 +73,58 @@ hazard was about a fix nobody needed, the count had to be measured with a side
 effect because two mechanisms produce the same error code, and the paradox
 dissolved only when the unconsumed quote was read off the factor. The bytes
 were never the hard part.
+
+## D-CATGATE (2026-09-04) — nothing was watching this fix
+
+D-CATFIX shipped 2026-09-01. On 2026-09-04 the `PRINT USING` arc's habit of
+re-running a filed item's own rows before touching anything was applied to the
+still-open concatenation entry, and both of its symptoms were gone:
+`c.strfault` reads **ERR 11 on all three** (0/9 DIFF) and `u.cat` reads **1 on
+all three**.
+
+🔴 **THE OPEN ENTRY WAS A DUPLICATE, AND IT SAID 🤖 AUTONOMOUS.** Its written
+design — *"`sct_err2` evaluates the operand … returns CF=1 … the count stays 1 by
+construction"* — is exactly what D-CATFIX implemented. Following it would have
+rewritten working code. **A written design in an open item is not evidence that
+the work is outstanding.**
+
+### The coverage was attached to the stale entry
+
+Closing it was not free. **No probe under `probes/` carries
+`"AB"+(0*(1/0)+1)` at all.** `catterm_probe` and `catusr_probe` were in
+`filed_row_sweep`'s corpus *only because the open item cited them*, and that
+sweep walks `- [ ]` items — so ticking the box would have removed the last thing
+watching this fix.
+
+⚠️ **AND IT WAS NOT THE `exit 0` CLASS.** Both probes already returned `rc=1` on
+DIFF. The gap was the *other* filed one — **an honest `rc` that no battery
+collects is not an oracle**. They needed collecting, not rewriting: promoted to
+`probes/basic/` and wired as `make catterm-acceptance` / `make catusr-acceptance`.
+
+### The mutation sweep — 4/4, and the two gates are not one gate
+
+`scratchpad/catgate_blindness.py` undoes D-CATFIX three ways:
+
+| mutant | plant | catterm | catusr |
+|---|---|---|---|
+| N1 | remove the one evaluation | **RED** | **RED** |
+| N2 | arm the wrong error | **RED** | green |
+| N3 | decline instead of `CF=1` | green | **RED** |
+| N0 | **control:** comment-only edit | green | green, ROM byte-identical |
+
+🎯 **N2 AND N3 REDDEN OPPOSITE GATES.** N2 changes the error code without
+changing how many times the operand runs; N3 changes the count without changing
+the codes. Neither probe is redundant, and that is measured rather than argued —
+had one gate caught everything, the other would have been decoration.
+
+### 🔴 N3's first plant was wrong and the code was fine
+
+It inserted `or a` / `ret` **before** the `pop de`, which does not model
+"decline instead of `CF=1`" — it models "return with an unbalanced stack", and
+the rows still raised the right errors, so both gates stayed green and the arm
+read FAIL. The real decline is one instruction: the `scf` that makes the return
+success-shaped becomes `or a`.
+
+That is the **third** mispredicted plant of the session (K-PC4, K-PL3, N3), and
+every one of them was a fault in the arm rather than in the code under it. Twice
+the must-hold list is what said so; here it was the must-move list going quiet.
