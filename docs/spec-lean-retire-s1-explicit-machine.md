@@ -4,7 +4,7 @@ SPDX-License-Identifier: 0BSD
 -->
 # S1 — Make the build under test EXPLICIT AT THE CALL SITE
 
-Step 1 of **RETIRE THE LEAN 16 KB CART** ([`TODO-done.md:10149 (T-FE0E95)`](TODO-done.md:10149)).
+Step 1 of **RETIRE THE LEAN 16 KB CART** ([`TODO-done.md:5988 (T-9C566E)`](TODO-done.md:5988)).
 Touches **no assembly** and changes **no ROM byte**. Pure test-harness plumbing.
 
 Status: ✅ **LANDED 2026-07-29.** Specced and measured at `1bbf6eb`; signed off; implemented;

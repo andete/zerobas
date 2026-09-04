@@ -3403,6 +3403,14 @@ gdrw_negate_hl:
 ;     at the same product). $8000 is the ONE 16-bit value that is its own two's
 ;     -complement negation, which is why the twelve points §3's model was fitted
 ;     and falsified on never saw it.
+;
+; 🟢 THE STATE IS GLOBAL, NOT PER-SUBSTRING (D-DSCALE round 4, 2026-09-05,
+; docs/spec-basic-lineerr.md §12.9). An `S` executed INSIDE an `X` substring
+; persists after the substring returns (`d.xspost`: A$="S4":DRAW"XA$;BU40000"
+; reads the S4 value, not the never-set one), an `S` set outside applies inside,
+; and the `=V;` substitution path enters both states exactly as a literal count
+; does (`d.eq8193` == `d.def8193`). All nine rows agree on both references, so
+; nothing here may be re-scoped per substring or re-armed per substitution.
 ; ---------------------------------------------------------------------------
 gdrw_scale:
                 ld      a,(GFX_DSCALE)

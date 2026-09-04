@@ -661,6 +661,41 @@ CASES = [
     ("d.spc2",    "t", S2, 'DRAW"R 10"'),
     ("d.avar2",   "t", S2, 'A$="R"+STR$(10):DRAW A$'),
     ("d.strv2",   "t", S2, 'A$=STR$(10):DRAW"R"+A$'),
+    # === D-DSCALE ROUND 4 — THE TWO SCALE STATES THROUGH THE OTHER TWO ======
+    # === ARGUMENT PATHS (filed 2026-08-11, TODO; run 2026-09-05) ============
+    # Every scale-state row above reaches `gdrw_scale` with a LITERAL count.
+    # `DRAW"XA$;"` and `DRAW"BU=V;"` do not, and nothing had asked either.
+    #
+    # 🔴 THE `=V;` PATH CANNOT EVEN SAY 40000. `d.sub2` above pins that: the
+    # substitution path leaves the tenant for `gfx_eval_int16`, domain
+    # -32768..32767, so `V=40000` is ERR 6 while the literal is fine. The filed
+    # item proposed `V=-25536` (40000's int16 face) as the way in, and `d.eq40k`
+    # is that row -- but it carries a SECOND question (does a negative count
+    # reach the multiply as $9C40?), so it cannot be the primary discriminator.
+    # 🎯 `d.eq8193` IS. 8193 is `d.def8193`'s true minimal discriminator, it is
+    # POSITIVE, and it fits int16 -- so it separates never-set from S4 through
+    # the substitution path with no domain and no sign question attached. If
+    # only one of these two rows can be trusted it is this one.
+    ("d.eq40k",   "t", S2, 'V=-25536:DRAW"BU=V;"'),
+    ("d.eqs4",    "t", S2, 'V=-25536:DRAW"S4BU=V;"'),
+    ("d.eqs8",    "t", S2, 'V=-25536:DRAW"S8BU=V;"'),
+    ("d.eq8193",  "t", S2, 'V=8193:DRAW"BU=V;"'),
+    ("d.eqs48193","t", S2, 'V=8193:DRAW"S4BU=V;"'),
+    # 🔴 THE `X` PATH ASKS A DIFFERENT QUESTION — SCOPE, NOT DOMAIN. The count
+    # inside a substring is still LITERAL text, so these cannot move the domain;
+    # what they ask is whether the scale STATE crosses the substring boundary,
+    # in each direction. `d.xs40k`/`d.xss4` set it outside (or not at all) and
+    # spend it inside; `d.xsin` sets it inside; `d.xspost` sets it inside and
+    # spends it OUTSIDE, after the substring returns.
+    # 🎯 `d.xspost` IS THE ONE WITH A REAL FORK: if an `S` inside a substring
+    # does not persist, the substring has its own state and §4's persistence
+    # claim is scoped in a way no row has ever said. A large count is the only
+    # observable that can see any of it (the multiply is the identity below the
+    # wrap), which is why the whole question survived to 2026-09-05.
+    ("d.xs40k",   "t", S2, 'A$="BU40000":DRAW"XA$;"'),
+    ("d.xss4",    "t", S2, 'A$="BU40000":DRAW"S4XA$;"'),
+    ("d.xsin",    "t", S2, 'A$="S4BU40000":DRAW"XA$;"'),
+    ("d.xspost",  "t", S2, 'A$="S4":DRAW"XA$;BU40000"'),
 
     # === w.* THE OTHER HALF OF THE WORK AREA ===============================
     # Identical statements to rows above, read through GXPOS/GYPOS instead of
@@ -1026,10 +1061,20 @@ DENOMINATOR = (
     "has already taken effect, and the empty string), crossed with the modes "
     "DRAW is legal and illegal in. Its work area is swept through BOTH halves "
     "on the three shapes where they DISAGREE -- the B prefix, the N prefix and "
-    "an upward segment. NOT swept: what DRAW DRAWS once accepted "
-    "(spec-basic-graphics-g6.md and its notebook own that), the A/S/C/X "
-    "commands' own argument domains, and the coroutine's second and later "
-    "substitution round trips."
+    "an upward segment. The SCALE STATE is swept across all three of DRAW's "
+    "argument paths, not just the literal one: a large count reaches "
+    "gdrw_scale as a literal (d.def*/d.s4.*), through `=V;` substitution "
+    "(d.eq*, entered at 8193 so the count is positive and inside int16, and "
+    "again at -25536 = 40000's int16 face) and through an `X` substring "
+    "(d.xs*), with the S set OUTSIDE, INSIDE, and inside-then-spent-outside "
+    "-- that last one being the only row that can say whether a substring has "
+    "its own state. A large count is the only observable for any of it, since "
+    "the multiply is the identity below the wrap. NOT swept: what DRAW DRAWS "
+    "once accepted (spec-basic-graphics-g6.md and its notebook own that), the "
+    "A/C/X commands' own ARGUMENT domains (S's is swept, by the rows above; "
+    "X's is not -- these rows use X to carry the scale question, and never ask "
+    "what X itself accepts), and the coroutine's second and later substitution "
+    "round trips."
 )
 
 

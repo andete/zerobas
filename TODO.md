@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:7786 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:7831 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -206,12 +206,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       matter which block it names. `--fix` makes it worse in exactly this case —
       it rewrites the LINE from the ID, so a citation pointing at the wrong block
       gets its wrong target mechanically preserved across every future edit.
-      ⚠️ **How many others?** Unknown, and that is the point — nothing has ever
-      compared a citation's own words against its target's headline. A cheap
-      first cut: flag any citation whose surrounding sentence shares no
-      distinctive token (a backticked identifier, a quoted keyword) with the
-      cited block's headline; expect false positives, so report ADVISORY rather
-      than red [[readout-blind-to-its-own-subject]]
+      🔴 **FOUR INSTANCES, NOT ONE — AND THE FOURTH WAS GREEN.** Having found the
+      first by accident I walked the docs that cite items I had touched, and
+      every one of the four citations I inspected named the wrong block:
+      | doc | says | actually pointed at | state |
+      |---|---|---|---|
+      | `gapsweep-2026-08-21.md:124` | `LOAD"CAS:"` tokenised tape | the `$8000` reachability item | red (today) |
+      | `spec-lean-retire-s3-gates.md:7` | RETIRE THE LEAN 16 KB CART | the DRAW scale-state item | red (today) |
+      | `spec-lean-retire-s2-switch.md:7` | RETIRE THE LEAN 16 KB CART | `GFX_OP=1`'s marshalling | red (today) |
+      | `spec-lean-retire-s1-explicit-machine.md:7` | RETIRE THE LEAN 16 KB CART | "a wall figure hardcoded inside a GATE" | 🔴 **GREEN** |
+      All three lean-retire steps cite the same parent, and the real parent is
+      block **T-9C566E** in `docs/TODO-done.md` — a file none of them named.
+      (Cited by id, not `file:line`: the checker resolves a citation's path
+      relative to the CITING file, so the `TODO-done.md:NNN` spelling that works
+      from `docs/` cannot be written from `TODO.md` at the repo root at all.) **S1's was
+      GREEN and verified-against-the-block-id at the moment I read it**, which is
+      the proof this hole is not hypothetical: the gate's strongest category
+      ("verified") contained a citation pointing at an unrelated subject. All
+      four are repointed; the count is now 37 verified, 0 red.
+      ⚠️ **This is 4 of the ~5 citations I actually inspected, NOT 4 of 37** — I
+      looked only where an edit had already made one go red, plus the sibling
+      docs beside it. The rate over the whole set is unmeasured, and the
+      archive-move shape above (an item cited in `TODO.md` that later moved to
+      `TODO-done.md`) predicts more. A cheap first cut: flag any citation whose
+      surrounding sentence shares no distinctive token (a backticked identifier,
+      a quoted keyword) with the cited block's headline; expect false positives,
+      so report ADVISORY rather than red [[readout-blind-to-its-own-subject]]
       [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
       💰 Zero ROM bytes; a tools-only change.
       🤖 AUTONOMOUS — a gate settles it; finishable unattended (no his-decision signal found).
@@ -242,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1897 (T-6FE392)8 (T-529ABE)` from `TODO.md:6989 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7034 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2498,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6989 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7034 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5413,8 +5433,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       💰 Zero bytes either way; the cost is one reading.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] ⚠️ **THE THREE SCALE STATES ARE NOT SWEPT THROUGH `X` SUBSTRINGS OR
-      `=var;` SUBSTITUTION.** Filed 2026-08-11 by D-DSCALE. §12 measured the
+- [x] ✅ **THE THREE SCALE STATES ARE NOT SWEPT THROUGH `X` SUBSTRINGS OR
+      `=var;` SUBSTITUTION.** CLOSED 2026-09-05 (D-DSCALE round 4). Nine rows
+      (`d.eq*`, `d.xs*`) in `lineerr-acceptance`, on both references:
+      **all nine agree on all three sides — no divergence, no code change.**
+      • The `=V;` path is the SAME STATEMENT as the literal one: `d.eq8193`
+      (`V=8193:DRAW"BU=V;"`) reads `57347`, byte-for-byte `d.def8193`'s literal
+      reading, and `d.eqs48193` reads its `S4` twin `8195`.
+      • The filed item's own proposal — `V=-25536`, 40000's int16 face — works
+      too (`25540`/`58308`, exactly `d.lit2`/`d.s4.40k`), ⚠️ **but it is not the
+      row that settles it**: it carries a second question (does a negative count
+      reach the multiply as `$9C40`?). `8193` is positive, fits int16, and is
+      `d.def8193`'s minimal discriminator, so it separates the two states with no
+      domain and no sign question attached. **A row proposed in a filing can be
+      one question wider than the filing needs.**
+      • The `X` path asks SCOPE, not domain (a count inside a substring is still
+      literal text). 🎯 `d.xspost` (`A$="S4":DRAW"XA$;BU40000"`) reads `58308`,
+      not the never-set `25540`: **an `S` inside a substring PERSISTS after the
+      substring returns** — a substring has no scale state of its own. The two
+      hypotheses give different numbers, which is what makes it a discriminator
+      rather than a row that agrees.
+      Recorded at `sub/graphics.asm`'s `gdrw_scale` (so no future fix re-scopes
+      it), in `docs/spec-basic-lineerr.md` §12.9, and in the probe's own
+      DENOMINATOR — which had said the X path was unswept and now names what
+      still is (`X`'s own argument domain, `A`/`C`'s, and the coroutine's second
+      and later round trips). `lineerr-acceptance` 219/219, 0 deferred.
+      --- the original filing ---
+      Filed 2026-08-11 by D-DSCALE. §12 measured the
       never-set / `S4` / `Sn` distinction at literal counts only. `DRAW"XA$;"`
       and `DRAW"BU=V;"` reach `gdrw_scale` by different argument paths, and
       `d.sub2` already showed the substitution path has a NARROWER domain than

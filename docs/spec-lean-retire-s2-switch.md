@@ -4,7 +4,7 @@ SPDX-License-Identifier: 0BSD
 -->
 # S2 — RETIRE LEAN: stop building it, stop shipping it, stop measuring it
 
-Step 2 of **RETIRE THE LEAN 16 KB CART** ([`../TODO.md:5429 (T-783F00)`](../TODO.md:5429)).
+Step 2 of **RETIRE THE LEAN 16 KB CART** ([`../docs/TODO-done.md:5988 (T-9C566E)`](TODO-done.md:5988)).
 Follows [`docs/spec-lean-retire-s1-explicit-machine.md`](docs/spec-lean-retire-s1-explicit-machine.md).
 
 Status: ✅ **LANDED 2026-07-29.** §8 answered by the user:

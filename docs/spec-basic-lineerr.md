@@ -1349,3 +1349,39 @@ after the corpus, because §12.7 and §12.8 and two `TODO.md` entries were writt
 standalone, at the same 210 rows. Both are real host wall time on a loaded
 machine; neither is reproducible to the second, which is why the lineage in the
 Makefile records rows *and* seconds together.
+
+### 12.9 Round 4 (2026-09-05) — the scale state through the OTHER TWO argument paths
+
+§12 measured the never-set / `S4` / `Sn` distinction at **literal counts only**.
+`DRAW"XA$;"` and `DRAW"BU=V;"` reach `gdrw_scale` by different argument paths and
+neither had ever been asked; TODO carried it as a filed residual. Nine rows,
+`d.eq*` and `d.xs*`, on both references. **All nine agree on all three sides —
+no divergence, and no code change.** What they establish:
+
+**The `=V;` path is the same statement as the literal one.** `d.eq8193`
+(`V=8193:DRAW"BU=V;"`) reads `57347`, byte-for-byte `d.def8193`'s literal
+reading; `d.eqs48193` reads `8195`, its `S4` twin. So the substitution path
+enters the never-set state and the explicit-`S` state identically.
+
+⚠️ **8193, not 40000, is the row that says so.** The filed item proposed
+`V=-25536` (40000's int16 face) as the way past `d.sub2`'s narrower domain, and
+`d.eq40k`/`d.eqs4` do read `25540`/`58308` — exactly `d.lit2`/`d.s4.40k`. But
+those rows carry a *second* question (whether a negative count reaches the
+multiply as `$9C40`), so they cannot be the primary discriminator. `8193` is
+`d.def8193`'s minimal discriminator, is positive, and fits int16 — it separates
+the two states with no domain and no sign question attached.
+
+**The `X` path asks SCOPE, not domain** — a count inside a substring is still
+literal text, so these rows cannot move the domain. Set outside and spent inside
+(`d.xss4`), set inside (`d.xsin`), and set inside then spent *outside*
+(`d.xspost`) all read `58308`. 🎯 **`d.xspost` is the one with a real fork, and
+it resolves against a scoped state**: an `S` executed inside a substring
+**persists after the substring returns**, so a substring has no scale state of
+its own. Had it not persisted the row would read `25540`, the never-set value —
+the two hypotheses give different numbers, which is what makes it a
+discriminator rather than a row that agrees.
+
+⚠️ **Still not swept**, and now said in the probe's own DENOMINATOR: what `X`
+itself accepts as an argument (these rows *use* `X` to carry the scale question),
+`A`/`C`'s argument domains, and the coroutine's second and later substitution
+round trips.
