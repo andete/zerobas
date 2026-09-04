@@ -273,3 +273,57 @@ changed and all three images are byte-identical to `b8a8137`.
 quoted from memory:** main page-1 free **2 B**, page-0 low region free **17 B**,
 sub page-0 **2563 B**, sub page-1 **1624 B**. §6's ~25–30 B is measured against
 the 2.
+
+## 10. 🔴 D-TRAPDEPTH (2026-09-04) — the references leak too, and §6's principle is refuted
+
+§6 declined the fix and ranked three options on a premise nobody had measured:
+that the reference **reclaims** the abandoned dispatch, so zerobas's cap is a
+leak the reference does not have. `scratchpad/trapdepth_probe.py` measures it.
+
+### The reference leaks at the same rate we do
+
+Recurse until the control stack overflows and report the depth reached. Two rows,
+**byte-for-byte the same program** except that one has its `INTERVAL ON` removed,
+so the trap never fires:
+
+| | 20 abandoned dispatches | 0 dispatches | cost |
+|---|---|---|---|
+| VG-8020 | 4016 | 4040 | **24 frames** |
+| CF-3300 | 3247 | 3271 | **24 frames** |
+
+**≈1 frame per abandoned dispatch — the same as zerobas.** Nothing is reclaimed
+on either reference. The plain depth is **4071 / 3302 / 8**, and the two
+references differ from *each other* because the limit is free RAM, not a
+constant.
+
+### So the difference is CAPACITY, and §6's own principle inverts
+
+* **Option 3 ("pop the stale record") is not what the reference does.** It would
+  invent a mechanism the oracles do not have, to patch one symptom — and still
+  leave zerobas at 8 against their ~4040. It also cannot make `int.six` pass:
+  `TRAPSTK_MAX` is 6 and `GOSUB_DEPTH` is 8, so popping the record moves the cap
+  to 8 and the row needs 9.
+* **Option 1 ("raise the number") was rejected as *"a bigger number is a
+  different wrong answer, not a fix"*.** Measured, the reference's leak is
+  **also** unbounded and a bigger number is exactly what it has. The principle
+  was sound in the abstract and false about this machine.
+
+⚠️ **This is therefore not a trap defect.** It is the already-filed fixed-size
+control-stack design (`GOSUB_DEPTH` = 8, `TRAPSTK_MAX` = 6) seen through a trap,
+and it should be priced there — against a RAM-bounded stack, not a bigger array.
+
+### ⚠️ Two faults in these rows, both caught by a counter I nearly left out
+
+`F` counts actual handler entries. Without it:
+
+1. `d.depth20`'s handler resumed **past** the loop tail, so it fired **once** and
+   fell through to the recursion. The row would have read "nineteen more
+   dispatches are free" — the exact conclusion the slice was testing for, arrived
+   at because nothing happened.
+2. An earlier `d.depth1` resumed to the **print** line and read `0 18` on all
+   three sides. It agreed everywhere because the program ended before the
+   measurement began.
+
+Both are the same shape: **a row that agrees, or reads flat, because its subject
+never ran.** `d.ctl20` — same text, trap unarmed — is what turns the remaining
+number into a per-dispatch cost rather than a program-size artefact.

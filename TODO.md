@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6584 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6607 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6584 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6607 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3399,6 +3399,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       💰 **PRICED AND DECLINED**: the only fix that closes the class is popping
       the stale record when a `SERVICING` entry is explicitly re-armed, **~25–30 B
       of main page 1**, and it still misses a nested leak.
+      🔴 **MEASURED 2026-09-04 (D-TRAPDEPTH,
+      [`scratchpad/trapdepth_probe.py`](scratchpad/trapdepth_probe.py),
+      [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §10): THE
+      REFERENCES LEAK TOO, AND §6's PRINCIPLE IS REFUTED.** Two rows, the same
+      program byte-for-byte except one has its `INTERVAL ON` removed so the trap
+      never fires: 20 abandoned dispatches cost **24 frames** of control stack on
+      the VG-8020 (4040 -> 4016) and **24** on the CF-3300 (3271 -> 3247).
+      **≈1 frame each — the same rate as zerobas. Nothing is reclaimed on either
+      reference.** Plain depth is **4071 / 3302 / 8**, and the two references
+      differ from EACH OTHER because the limit is free RAM, not a constant.
+      ➡️ **SO OPTION 3 IS NOT WHAT THE REFERENCE DOES.** "Pop the stale record"
+      would invent a mechanism the oracles do not have to patch one symptom, and
+      still leave us at 8 against ~4040 — and it cannot make `int.six` pass
+      anyway: `TRAPSTK_MAX` 6 -> `GOSUB_DEPTH` 8, and the row needs 9.
+      ➡️ **AND OPTION 1 INVERTS.** It was rejected as *"a bigger number is a
+      different wrong answer, not a fix"*; measured, the reference's leak is ALSO
+      unbounded and a bigger number is exactly what it has.
+      ⚠️ **THIS IS NOT A TRAP DEFECT.** It is the fixed-size control-stack design
+      (`GOSUB_DEPTH`=8, `TRAPSTK_MAX`=6) seen through a trap, and belongs with
+      that item — priced against a RAM-bounded stack, not a bigger array.
+      🟢 **AND `d.selfarm` IS GREEN ON ALL THREE** (`9 0`): the case §6 warns a
+      fix must not break already works here, and now has a row.
+
       🔴 **THE COST HALF HAS NOW ROTTED TWICE, IN BOTH DIRECTIONS.** 2026-08-30 it
       read *"against 2 B free"* and was corrected UP to 333 B free after
       D-CLRTRAP, with the note *"affordable now"*. **2026-09-04: main page 1 is
