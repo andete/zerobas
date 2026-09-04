@@ -721,3 +721,69 @@ right one". **K-PX5 and K-PX6 each move exactly one row.**
 
 `e.car3` is the control that matters for K-PX1: three carets are literal, so it
 must hold when the exponent path is removed entirely.
+
+## 17. ✅ D-PULEAD — `.##`, and the probe closes at 0 divergent
+
+    PRINT USING".##";.5     refs `.50`     was `. 1`
+    PRINT USING".##";0      refs `.00`     was `. 0`
+    PRINT USING".##";1.5    refs `%1.50`   was `. 2`
+
+**All 52 agreeing rows match.** `PRINT USING`'s format-specifier surface —
+`**`, `+`/`-`, `.`, `,`, `^^^^` and a leading `.` — is complete.
+
+### 17.1 The zero belongs to the column, not to the value
+
+`.##` prints `.50`; `#.##` prints `0.50`. The difference is one `#`, and the
+naive reading — "a pure fraction gets a leading zero" — is wrong. Six rows were
+measured before the fix:
+
+| row | typed | both refs |
+|---|---|---|
+| `d.lead` | `USING".##";.5` | `.50` |
+| `d.leadzer` | `USING".##";0` | `.00` |
+| `d.leadover` | `USING".##";1.5` | `%1.50` |
+| `d.leadneg` | `USING".##";-.5` | `%-.50` |
+| `d.leadone` | `USING".#";.5` | `.5` |
+| `d.leadrnd` | `USING".#";.25` | `.3` |
+
+🎯 **`d.leadzer` is the row that shapes the code.** `flt_fmt` renders zero as
+`" 0 "` — a real integer digit — so a field with no integer column would print
+`%0.00` unless that digit is dropped. But `d.leadover` shows a digit that is
+*really there* must be kept, and overflow the field. So the renderer drops a
+**lone `0`** and nothing else, and `d.leadover`/`d.leadneg` are the rows that
+stop that from becoming "drop the integer part".
+
+The scanner side is small: a `.` starts a numeric field when a `#` follows (a
+bare `.` stays literal), and `ptf_num` already copes with a zero-length `#` run —
+it falls straight through to the decimal scan, and the width comes out
+`1 + places`. The field is marked as having no integer column only when the run
+was empty *and* neither `**` nor a sign has already claimed one.
+
+### 17.2 Knives — 4/4, and one guards a consequence rather than a feature
+
+| arm | plant | must move | must hold |
+|---|---|---|---|
+| K-PL1 | no field on a leading `.` | `d.lead` `d.leadone` `d.leadzer` | `d.leadzero` `d.basic` `c.hash` |
+| K-PL2 | don't mark "no integer column" | `d.lead` `d.leadzer` | `d.leadzero` `d.basic` `d.leadover` |
+| K-PL3 | keep `flt_fmt`'s lone `0` | `d.leadzer` | `d.leadover` `d.leadzero` `d.basic` |
+| K-PL4 | widen the places mask back to `$7F` | `d.lead` `d.leadzer` | `d.basic` `d.wide` `c.hash` |
+
+**K-PL4 guards a consequence.** Claiming `PU_DEC` bit 6 for this slice made every
+existing `and $7F` on that cell wrong — three of them, across two files — because
+places would then read as 64 + places. Nothing about the `.##` rows says "check
+the mask"; the arm exists because the change that enabled those rows silently
+moved a boundary somewhere else.
+
+**K-PL2 and K-PL3 separate two things that look like one**: whether the *format*
+has an integer column, and whether `flt_fmt` happened to produce a digit for it.
+`.##` with `.5` has neither; `.##` with `0` has the second and not the first, and
+`d.leadzer` is the row that tells them apart.
+
+### 17.3 🔴 K-PL3 read FAIL on its first run and the code was fine
+
+The plant inverted `jr z,pnt_dropz` to `jr nz`, which does not "keep the lone
+zero" — it drops every **non**-zero digit, so `d.leadover` lost its `1` and the
+must-hold list fired exactly as it should. Suppressing a branch means **removing**
+it, not reversing it. That is the second arm this session whose prediction was
+wrong while the code under it was right (K-PC4 was the first), and in both cases
+the must-hold list is what said so rather than the must-move list.

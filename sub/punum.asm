@@ -88,6 +88,29 @@ pnt_int:
                 inc     c
                 jr      pnt_int
 pnt_intdone:
+                ; --- D-PULEAD: `.##` has NO integer column ---------------------
+                ; so it prints neither a leading zero of our own NOR flt_fmt's:
+                ; `.##` with .5 is `.50` and with 0 is `.00`, while `#.##` -- one
+                ; integer column -- is `0.50` and `0.00`. The zero belongs to the
+                ; COLUMN, not to the value. A value that really has an integer
+                ; digit keeps it and overflows the field (`.##` with 1.5 is
+                ; `%1.50`), which is why this drops only a LONE `0`.
+                ld      a,(PU_DEC)
+                bit     6,a
+                jr      z,pnt_int_col
+                ld      a,c
+                dec     a
+                jr      nz,pnt_places       ; no digits, or several -> leave them
+                dec     de
+                ld      a,(de)
+                cp      '0'
+                jr      z,pnt_dropz
+                inc     de                  ; a real digit: put it back
+                jr      pnt_places
+pnt_dropz:
+                ld      c,0
+                jr      pnt_places
+pnt_int_col:
                 ld      a,c
                 or      a
                 jr      nz,pnt_places
@@ -101,7 +124,7 @@ pnt_places:
                 bit     6,a
                 jr      z,pnt_atdot
                 ld      a,(PU_DEC)
-                and     $7F                 ; mask D-PUEXP's marker bit
+                and     $3F                 ; mask D-PUEXP's marker bit
                 ld      b,a
 pnt_atdot:
                 ld      a,(hl)              ; step past the source `.` so HL walks
@@ -312,7 +335,7 @@ pnt_exp:
                 ; wrong answers was a plausible 0 that let e.round pass anyway.
                 call    flt_fmt             ; HL -> FOUTBUF
                 ld      a,(PU_DEC)
-                and     $7F
+                and     $3F
                 ld      b,a                 ; B = places
                 ld      a,(PU_W)
                 sub     5                   ; the `E+dd` and the leading column
@@ -489,7 +512,7 @@ pnt_x_pt:
                 bit     6,a
                 jr      z,pnt_x_e
                 ld      a,(PU_DEC)
-                and     $7F
+                and     $3F
                 ld      b,a                 ; the fraction moves right by one
                 push    de
                 ld      h,d

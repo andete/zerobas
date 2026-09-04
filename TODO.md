@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1772 (T-6FE392)8 (T-529ABE)` from `TODO.md:6308 (T-529ABE)`: a
+      `TODO.md:1801 (T-6FE392)8 (T-529ABE)` from `TODO.md:6337 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1281,6 +1281,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the fixed-point path writes NOTHING and `pu_sign_tenant` PREPENDS its `+`
       rather than overwriting a blank — `+##.##^^^^` overflowed its own field.
       K-PX4 is its regression arm.
+
+- [x] ✅ **D-PULEAD — `.##` SHIPS; THE `PRINT USING` PROBE CLOSES AT 0 DIVERGENT**
+      (2026-09-04, [`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md) §17).
+
+          PRINT USING".##";.5    refs `.50`    was `. 1`
+          PRINT USING".##";0     refs `.00`    was `. 0`
+          PRINT USING".##";1.5   refs `%1.50`  was `. 2`
+
+      **All 52 agreeing rows in
+      [`scratchpad/pufloat_probe.py`](scratchpad/pufloat_probe.py) match.** The
+      format-specifier surface — `**`, `+`/`-`, `.`, `,`, `^^^^` and a leading
+      `.` — is complete. Knives **4/4**
+      ([`scratchpad/pulead_knives.py`](scratchpad/pulead_knives.py)).
+      🎯 **THE LEADING ZERO BELONGS TO THE COLUMN, NOT THE VALUE.** `.##` gives
+      `.50` where `#.##` gives `0.50`; the difference is one `#`, so "a pure
+      fraction gets a leading zero" is the wrong reading. `d.leadzer` shapes the
+      code: `flt_fmt` renders 0 as `" 0 "`, a REAL integer digit, so a field with
+      no integer column would print `%0.00` unless it is dropped — while
+      `d.leadover` (`.##` with 1.5 -> `%1.50`) shows a digit that is really there
+      must be KEPT and overflow. Hence: drop a LONE `0`, nothing else.
+      🔴 **K-PL4 GUARDS A CONSEQUENCE, NOT A FEATURE**: claiming `PU_DEC` bit 6
+      made every existing `and $7F` on that cell wrong — three, across two files
+      — since places would read as 64 + places. Nothing about the `.##` rows
+      points at that mask.
+      🔴 **K-PL3 READ FAIL ON ITS FIRST RUN AND THE CODE WAS FINE** (§17.3):
+      inverting `jr z` to `jr nz` does not "keep the lone zero", it drops every
+      NON-zero digit. Suppressing a branch means REMOVING it. Second arm this
+      session whose prediction was wrong while the code under it was right, and
+      both times the **must-hold** list is what said so.
 
 - [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
       DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
@@ -2350,7 +2379,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6308 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6337 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

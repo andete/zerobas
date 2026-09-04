@@ -45,6 +45,23 @@ ptf_scan:
                 ld      a,(hl)
                 cp      '#'
                 jp      z,ptf_num
+                ; --- D-PULEAD: `.##` -- a field with NO integer column ----------
+                ; Only when a `#` follows, so a bare `.` stays literal. ptf_num
+                ; already copes with a zero-length `#` run: it falls straight to
+                ; the decimal scan, and the width comes out 1 + places.
+                cp      '.'
+                jr      nz,ptf_notdot
+                ld      a,(PU_FMTLEN)
+                dec     a
+                cp      b
+                jr      z,ptf_notdot2       ; the `.` is the last character
+                inc     hl
+                ld      a,(hl)
+                cp      '#'
+                jp      z,ptf_num
+ptf_notdot2:
+                ld      a,'.'
+ptf_notdot:
                 cp      '!'
                 jp      z,ptf_bang
                 cp      '&'
@@ -147,6 +164,16 @@ ptf_dec_lp:
                 inc     c
                 jr      ptf_dec_lp
 ptf_dec_done:
+                ld      a,b
+                or      a
+                jr      nz,ptf_dec_f        ; the run had `#` columns
+                ld      a,(PU_FLAGS)
+                and     $0C
+                jr      nz,ptf_dec_f        ; `**` or a sign already claims one
+                ld      a,(PU_DEC)
+                or      $40                 ; D-PULEAD: no integer column at all
+                ld      (PU_DEC),a
+ptf_dec_f:
                 ld      a,(PU_FLAGS)
                 set     6,a                 ; a decimal part is present
                 ld      (PU_FLAGS),a
@@ -239,7 +266,7 @@ ptf_num_dw:
                 inc     b                   ; the `.` itself
                 push    af
                 ld      a,(PU_DEC)
-                and     $7F                 ; bit7 is D-PUEXP's marker, not places
+                and     $3F                 ; bits 7/6 are D-PUEXP / D-PULEAD markers
                 add     a,b
                 ld      b,a
                 pop     af

@@ -72,6 +72,14 @@ CASES = [
     ("d.round2",   'PRINT USING"##.#";1.35'),
     ("d.roundup",  'PRINT USING"##.";1.5'),
     ("d.lead",     'PRINT USING".##";.5'),
+    # `.##` prints `.50` but `#.##` prints `0.50`, so the leading zero is NOT a
+    # property of the value -- it belongs to the format's INTEGER COLUMN. These
+    # pin what a leading `.` field does when there is no such column at all.
+    ("d.leadover", 'PRINT USING".##";1.5'),
+    ("d.leadone",  'PRINT USING".#";.5'),
+    ("d.leadzer",  'PRINT USING".##";0'),
+    ("d.leadneg",  'PRINT USING".##";-.5'),
+    ("d.leadrnd",  'PRINT USING".#";.25'),
     ("d.leadzero", 'PRINT USING"#.##";.5'),
     ("d.over",     'PRINT USING"#.##";12.5'),
     ("d.wide",     'PRINT USING"####.####";3.14159'),
