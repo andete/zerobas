@@ -132,3 +132,59 @@ otherwise score every divergence silently un-adjudicated.
 
 The set is pinned; the judgement is not — the same shape as
 `probe-reach-allow.txt` and the citation advisories.
+
+## D-FILEDPIN (2026-09-04) — sixteen unfiled divergences, and a loader that hid pins
+
+Run after two open items in a row turned out to be stale or to have their only
+coverage attached to the stale entry. **15 probes, 12 open items, 0 orphan pins.**
+
+**0 rows have stopped diverging** — nothing in the corpus is fixed-when-filed
+today. But three probes carried divergences no entry claimed:
+
+| probe | unfiled | what they were |
+|---|---|---|
+| `keylist_probe` | 6 | **debt this session created** — D-KEYSCOUT2's rows, measured and written into the entry's prose an hour earlier, never pinned |
+| `dupopen_probe` | 6 | **filed in prose, never pinned** — D-DUPOPEN names all six by row in the entry, and the sweep reads *this file*, not prose. Unfiled for two days. |
+| `playfn_fixture_probe` | 4 | two more of the same PLAY transient, plus two rows a *different* entry owns |
+
+### 🎯 One probe's DIFF set can span two filed items
+
+`playfn_fixture_probe`'s six differing rows are not one finding. Four are the
+`PLAY(n)` start-up transient — and `empty string, no delay` is the sharpest of
+them, because there is nothing to play and the reference *still* marks voice 1
+active. The other two are `width: TIME for FOR 20/50`, which are **`TIME`
+readings** (2 vs 6, 4 vs 14) owned by the interpreter-speed entry, not PLAY
+behaviour at all.
+
+🔴 **And 4 vs 14 is ~3.5×, above that entry's filed 2.5–3.1× band** even allowing
+`TIME`'s ±1 quantisation on small integers — worth re-reading when it is priced.
+
+### 🔴 The loader replaced pins instead of accumulating them
+
+Splitting those rows across their two owners meant writing a second
+`playfn_fixture_probe:` line. `known_rows()` built `out[head] = rows`, so the
+second line **silently discarded the first**.
+
+What makes it worth writing down is how it reads: the pin set changed *members*
+but not *size*, so the report still said **`[2 known, 4 UNFILED]`** — the same
+numbers for a different reason. I first read that as "the edit did not apply".
+The loader now `setdefault(...).extend(...)`, and the file carries a one-line-per-
+probe warning; but the durable fix is that a duplicate can no longer lose data.
+
+### ⚠️ Three of fifteen probes are unreadable to this sweep
+
+`budget_probe`, `interpspeed_probe` and `put3consume_probe` report **`NOTHING
+PARSED — probe measured nothing, or format unknown`**. That is 20 % of the corpus
+the sweep cannot adjudicate at all, and it is *not* the same as "clean": the
+refusal is honest, but a probe it cannot read is a probe whose rows can rot
+invisibly. `playfn_fixture_probe` is a near miss of the same kind — its markers
+are found but its row *names* are not (`6 marker(s) in 0 parsed line(s)`), which
+works only because adjudication does substring containment on the marker line.
+
+### ⚠️ And the sweep is structurally blind outside `scratchpad/`
+
+`CITE` matches `scratchpad/([a-z0-9_]+_probe)\.py`. A probe promoted into
+`probes/basic/` — as `catterm`, `catusr` and `pusing` were this session — cannot
+enter this corpus even if an open item cites it. That is *correct* for those
+three, because each is now collected by the battery as a gate, which is stronger.
+It is a hazard for any future promotion that does **not** get a gate.

@@ -85,7 +85,14 @@ def known_rows():
             continue
         head, rest = line.split(": ", 1)
         rows = rest.split(" --", 1)[0]
-        out[head] = [r.strip() for r in rows.split(";") if r.strip()]
+        # 🔴 ACCUMULATE, NEVER REPLACE. This was `out[head] = ...`, so a SECOND
+        # line for the same probe silently discarded the first -- and the failure
+        # is invisible in the report: a pin set of the same SIZE with different
+        # MEMBERS still prints "[2 known, 4 UNFILED]". Found 2026-09-04 by
+        # splitting playfn's rows across their two owning entries and reading the
+        # unchanged counts as "the edit did not apply".
+        out.setdefault(head, []).extend(
+            r.strip() for r in rows.split(";") if r.strip())
     # 🔴 Refuse-on-degenerate, same as the probe list: an empty adjudication
     # file would score every divergence NEW, which is loud but wrong the other
     # way -- and a parse failure would score every divergence KNOWN=0 silently.
