@@ -1185,6 +1185,40 @@ interval-trap-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_interval_trap.py \
 	  $(if $(ONLY),--only '$(ONLY)',) $(if $(REPORT),--report,)
 
+# --- THE CONTROL-FRAME POOL: three gates for one arc --------------------------
+# TODO.md "ARC: CONTROL FRAMES BELONG IN ONE HIMEM-BOUNDED POOL, NOT THREE FIXED
+# ARRAYS", out of D-TRAPSVC / D-TRAPDEPTH / D-STACKPOOL
+# (docs/spec-basic-trapsvc.md §10-§12). All three were scratchpad probes with NO
+# GATE until 2026-09-04 -- the D-CATGATE lesson: an honest rc no battery collects
+# is not an oracle. Promoted together, and PINNED BY FACE rather than by row name
+# (D-NAMEGATE: a row that still diverges, but to a DIFFERENT face, adjudicates as
+# `known` and reads green).
+#
+# stackpool-acceptance  the ALLOCATION MODEL. A `CLEAR` ladder + a pinned-HIMEM
+#   row. ⚠️ IT GATES A RELATION, NEVER AN ABSOLUTE DEPTH: the two machines have
+#   different memory maps by construction, so what is asserted is sensitivity,
+#   linearity, the ERR, and -- between the two REFERENCES, where it means
+#   something -- that pinning HIMEM makes them agree exactly.
+# trapdepth-acceptance  the LEAK RATE, plus the `d.selfarm` GUARD (a handler that
+#   re-arms its own trap and RETURNs; spec §6 warns a fix must not break it).
+# ctlcross-acceptance   the INTERLEAVE semantics -- what a `NEXT` does when a
+#   GOSUB frame is in the way. 🔴 THREE ROWS DIVERGE TODAY and are pinned; a
+#   single pool whose NEXT search stops at the first non-FOR frame closes all
+#   three, so they are the arc's behavioural acceptance.
+#
+# Repack-only; oracle-dependent. `make stackpool-acceptance ONLY=himem` to scope.
+stackpool-acceptance: repack-machine
+	python3 probes/basic/basic_probe_stackpool.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
+
+trapdepth-acceptance: repack-machine
+	python3 probes/basic/basic_probe_trapdepth.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
+
+ctlcross-acceptance: repack-machine
+	python3 probes/basic/basic_probe_ctlcross.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
+
 # --- TIME / TIME=n acceptance gate (docs/spec-basic-time.md) -------------------
 # VG-8020 differential, BOTH sides asserted against the SAME pinned reference
 # values (spec §1 is all measurement, so those values ARE the comparison and the
@@ -2986,6 +3020,7 @@ clean:
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         battery-membership-check fixture-integrity-check diskmap \
         interval-trap-acceptance \
+        stackpool-acceptance trapdepth-acceptance ctlcross-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep sysvarsweep fat-error-acceptance \

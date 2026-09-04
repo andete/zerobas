@@ -257,7 +257,7 @@ rows, 3 clean builds). Predictions written before the matrix:
 
 ---
 
-## 10. Gates — all rc=0, from a clean build, ROMs byte-identical throughout
+## 9.1 Gates — all rc=0, from a clean build, ROMs byte-identical throughout
 
 `basic-reloc`, `unit-test` **59/59**, `deadcode`, `wall-assertion-check`,
 `redundant-load-check`, `rowshape-check`, `injector-check`, `preflight-check`,
@@ -374,3 +374,106 @@ HIMEM — measurably unlike the reference on all three rows above.
 was untrapped and nothing printed. The probe's digits-only guard refused rather
 than reporting a value, which is the only reason that read as an instrument fault
 and not as "CLEAR breaks recursion".
+
+## 12. 🔴 D-CTLCROSS — a `NEXT` cannot see a `FOR` frame below a live `GOSUB` frame
+
+Measured 2026-09-04, `probes/basic/basic_probe_ctlcross.py`, both references
+agreeing on every row.
+
+§11 settled *where the frames live*. Designing the pooled replacement raised a
+question the current shape makes **invisible**: with three separate arrays
+(`GOSUB_STK`, `FOR_STK`, `TRAPSTK`) a `NEXT` can always reach its `FOR` frame,
+because no GOSUB frame can ever be between them. Put the frames in one pool and
+they interleave, and the machine has to answer.
+
+| row | what it does | VG-8020 | CF-3300 | zerobas |
+|---|---|---|---|---|
+| `x.ctl` | `FOR` opened **inside** the sub — nothing interleaves | `1 0` | `1 0` | `1 0` |
+| `x.nxgos` | `NEXT` inside a sub, `FOR` opened outside | `0 1` | `0 1` | **`1 0`** |
+| `x.nxdeep` | `NEXT I` across `[FOR J][GOSUB][FOR I]` | `0 1` | `0 1` | **`1 0`** |
+| `x.nxagain` | …and the loop-**continues** arm | `0 1` | `0 1` | **`2 0`** |
+| `x.retfor` | `RETURN` over an inner `FOR` (D-FORRET's direction) | `1 1` | `1 1` | `1 1` |
+
+Each row prints `[R E]`: `R` = the statement after the cross-`NEXT` ran
+(`x.nxagain` reports the handler-entry **count** there), `E` = the stopping
+`ERR`, 0 = none.
+
+**Both references raise `NEXT without FOR` (ERR 1) on all three interleaved
+rows.** Their `NEXT` search stops at the first frame that is not a `FOR` frame;
+it neither walks past a GOSUB frame nor discards one to reach the loop. zerobas
+matches straight across and runs the loop — **three divergences, and they exist
+precisely *because* the stacks are separate.**
+
+🎯 **So the pool is not only about depth: it closes these for free.** A single
+descending pool whose `NEXT` search stops at the first non-`FOR` frame answers
+all three the way both references do, with no extra mechanism and no walk. The
+rows are pinned as known-divergent in the gate and are the arc's **behavioural**
+acceptance; the pins come out in the commit that lands the pool.
+
+### What this fixes about the pooled design
+
+The frame layout follows from the rows rather than from taste:
+
+* **No per-frame type tag is needed.** Because a `NEXT` never crosses a GOSUB
+  frame, the `FOR` frames it may match are exactly the contiguous run at the top
+  of the pool — everything newer than the newest GOSUB frame. `GSP` *is* that
+  run's floor.
+* **D-FORRET's `FSP-at-push` field becomes `GSP-at-push`**, and `x.retfor` (which
+  zerobas already answers faithfully) keeps working for the same reason it does
+  now: `RETURN` truncates the pool back to its own frame, discarding every `FOR`
+  opened since.
+* **A trap's service record must be pushed *before* its GOSUB frame**, so it ends
+  up below it and stays out of the `FOR` run a `NEXT` walks.
+
+### ⚠️ `x.ctl` is a precondition, not a row
+
+It is the same program with the `FOR` opened **inside** the subroutine, so
+nothing interleaves and every machine must read `1 0`. The probe refuses with no
+verdict if it diverges: with the no-interleave control broken, none of the rows
+above is readable as a finding.
+
+## 13. Gates — the three probes are COLLECTED now, and falsified by planting
+
+All three were `scratchpad/` probes with **no gate** until 2026-09-04 — an honest
+rc that no battery collects is not an oracle (D-CATGATE). Promoted, given `make`
+targets, and added to `tools/run_gates.py`'s `EMULATOR` list:
+
+| target | probe | what it gates |
+|---|---|---|
+| `make stackpool-acceptance` | `basic_probe_stackpool.py` | the allocation **model** |
+| `make trapdepth-acceptance` | `basic_probe_trapdepth.py` | the leak rate + the `d.selfarm` guard |
+| `make ctlcross-acceptance` | `basic_probe_ctlcross.py` | the interleave semantics |
+
+Faces are pinned, not row names (D-NAMEGATE): a row that still diverges but to a
+*different* face would otherwise adjudicate as `known` and read green.
+
+⚠️ **`stackpool-acceptance` gates a RELATION and never an absolute depth.** The
+two machines have different memory maps by construction, so the reachable depth
+is not a shared quantity — the same rule `basic_probe_clearpool.py` states for
+`FRE(0)`. What it asserts is sensitivity, linearity, the stopping `ERR`, and —
+*between the two references, where it means something* — that pinning HIMEM makes
+them agree exactly.
+
+### The knives, `scratchpad/ctlpool_knives.py` — 9 cells, 9 as predicted
+
+| knife | `stackpool` | `trapdepth` | `ctlcross` |
+|---|---|---|---|
+| K-CP1 `GOSUB_DEPTH` 8→7 | green 🟢 | **RED** 🔴 | green 🟢 |
+| K-CP2 `FOR_DEPTH` 8→1 | green 🟢 | green 🟢 | **RED** 🔴 |
+| K-CP3 overflow `ERR 7`→`3` | **RED** 🔴 | **RED** 🔴 | green 🟢 |
+
+🎯 **K-CP1's green is the sharpest cell.** Shrinking the GOSUB array moves the
+depth zerobas reaches (8 → 7) and changes nothing about the allocation model — it
+is still a fixed array, still insensitive to `CLEAR`. A `stackpool` gate that
+reddened there would be pinning the absolute number its own docstring argues
+against pinning. The controls are the half that carries the information.
+
+⚠️ **K-CP3's anchor had to be three lines**, and the knife's own guard caught it:
+`ld a,7` occurs **twice** in `basic/program.asm`, so a one-line anchor would have
+cut the wrong overflow path. It also lands on the shared tail `gosub_stk_over`,
+of which `ef_over` is an alias (D-DUPSPAN2), so the one cut moves **both** the
+GOSUB and the FOR overflow error [[a-shared-tail-is-not-a-decision]].
+
+Every plant hashes the four built images round itself (D-KNIFEROM2) and the tree
+is restored byte-identically; the ROM hash after the run is identical to the one
+before it.

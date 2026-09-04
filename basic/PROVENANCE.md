@@ -4808,3 +4808,28 @@ and [`docs/spec-basic-graphics-g6.md`](../docs/spec-basic-graphics-g6.md) §3/§
 are corrected in place with pointers rather than deleted: nineteen readings
 fitted and falsified that model and not one of them was at `$8000` or at the
 boot default.
+
+## 2026-09-04 — a `NEXT` cannot see a `FOR` frame below a live `GOSUB` frame (D-CTLCROSS)
+
+**sourced** — black-box oracle observation on the Philips VG-8020 and the
+National CF-3300, `probes/basic/basic_probe_ctlcross.py`. No reference ROM was
+disassembled; the machines were run as oracles only, whole programs in and one
+fenced value out.
+
+Both references raise **`NEXT without FOR`** (ERR 1) whenever the matching `FOR`
+frame lies below a live GOSUB frame — three rows, both references agreeing on
+every one, against zerobas which matches straight across and runs the loop.
+zerobas diverges **because** its control frames live in three separate arrays
+(`GOSUB_STK` / `FOR_STK` / `TRAPSTK`): with the two stacks disjoint, no GOSUB
+frame can ever be between a `NEXT` and its `FOR`, so the case cannot arise and
+was never decided.
+
+The rows and the numbers are in
+[`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md) §12; they are
+pinned as known-divergent in `make ctlcross-acceptance` and are the behavioural
+acceptance for the control-frame-pool arc, which closes all three with no extra
+mechanism.
+
+Nothing new was derived about the reference's *implementation* — only about its
+observable answers. The pooled design that follows is our own; what the oracle
+supplies is the contract it has to meet.

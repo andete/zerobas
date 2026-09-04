@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6694 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6768 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6694 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6768 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2739,15 +2739,89 @@ list. **When a slice lands, grep this list for what it just shipped.**
          plus the FOR/NEXT path.
       🟢 It also RECOVERS the 154 B and deletes two of the three overflow paths.
 
-      **ACCEPTANCE ROWS, ALREADY WRITTEN AND CHEAP:**
-      [`scratchpad/stackpool_probe.py`](scratchpad/stackpool_probe.py) (the
-      `CLEAR` ladder + the pinned-HIMEM row) and
-      [`scratchpad/trapdepth_probe.py`](scratchpad/trapdepth_probe.py)
-      (`d.depth0`, `d.ctl20` vs `d.depth20`, `d.selfarm`). They are sensitive to
-      exactly this and read 8/8/8 today. ⚠️ Both are scratchpad probes with no
-      gate: **promote them to `probes/basic/` and collect them** before relying on
-      them (the D-CATGATE lesson — an honest rc no battery collects is not an
-      oracle), and pin FACES not just rows (D-NAMEGATE).
+      🟢 **THE SHAPE IS SETTLED (2026-09-04), and it is cheap in the SCARCE ROM.**
+      Read against the walls (`make basic-reloc`: the main low region and page 1
+      are the scarce halves; the sub ROM has ~1.4 KB of page-0 island):
+
+          CTLTOP   the pool's high boundary = `strheap_varceil()`, the SAME cell
+                   the string pool already derives from. DERIVED sub-side, never
+                   stored -- strheap_floor's own rule and the reason
+                   `CLEAR ,himem` falls out for free.
+          CSP      the allocation frontier, descending. Empty pool -> CTLTOP.
+          GSP      the newest GOSUB frame's address 🎯 AND THEREFORE THE FLOOR OF
+                   THE `FOR` RUN -- that is what D-CTLCROSS buys: the FOR frames
+                   a NEXT may match are exactly the contiguous run above it, so
+                   NO PER-FRAME TAG AND NO WALK.
+          TRAPSVC  stays a BYTE COUNT (`ex_return` gates on it with one RAM load
+                   on every RETURN; a pointer would cost a 16-bit compare there),
+                   beside a new 2-byte `TSP`. 18 B of array -> 2 B.
+
+      🟢 **THE SYMMETRIC HALF IS ONE LINE IN THE SUB ROM.** The variable/array
+      allocator already calls `strheap_varceil` for its ceiling (a sub-LOCAL
+      call, not a CALSLT) — it becomes `min(varceil, CSP)`, and `sh_free_vars`
+      then reports FRE(0) counting down past the live control frames, which is
+      what the reference does (`basic_probe_clearpool.py`'s docstring records
+      `FRE(0)` falling ~6 B per nesting level there).
+      🔴 **THE PUSH SIDE MUST NOT CALSLT.** `GOSUB` push is hot and the
+      interpreter is already 2.5–3.8× slow; the collision floor is `ARYEND+2`,
+      which lives sub-side. Cache it in a RAM cell the sub-ROM allocator writes
+      when it moves `ARYEND` (it is walking the region anyway) so the main ROM's
+      check is a plain 16-bit compare. ⚠️ That is a STORED derivation and
+      therefore a staleness hole of exactly the kind `strheap_floor`'s comment
+      warns about — it needs a gate, not a comment.
+      ⚠️ **`MAXFILES=n` MOVES THE POOL TOP** (the channel table is carved below
+      the string pool floor). With frames live that is a hazard the string pool
+      already has; measure what the references do before assuming it is benign.
+      ⚠️ **AND `clear_vars` IS ALREADY THE RIGHT HOOK** — cold boot, RUN, NEW and
+      CLEAR, exactly four sites, and `ex_clear` stores POOLSIZE and HIMEM BEFORE
+      falling into `clr_done`, so a pool reset sited there picks up the new
+      ceiling for free. Point 3 needs no new plumbing.
+
+      ✅ **STEP 1 LANDED 2026-09-04 — THE ACCEPTANCE IS GATED.** All three probes
+      are promoted, collected in `tools/run_gates.py`, pinned BY FACE
+      (D-NAMEGATE) and **falsified by planting**
+      ([`scratchpad/ctlpool_knives.py`](scratchpad/ctlpool_knives.py), 9 cells,
+      9 as predicted):
+
+          make stackpool-acceptance   probes/basic/basic_probe_stackpool.py   29 s
+          make trapdepth-acceptance   probes/basic/basic_probe_trapdepth.py   52 s
+          make ctlcross-acceptance    probes/basic/basic_probe_ctlcross.py    22 s
+
+      ⚠️ **`stackpool-acceptance` GATES A RELATION, NEVER AN ABSOLUTE DEPTH** —
+      the two machines have different memory maps by construction, the same rule
+      `basic_probe_clearpool.py` states for `FRE(0)`. It asserts sensitivity,
+      linearity, the stopping `ERR`, and — between the two REFERENCES, where it
+      means something — that pinning HIMEM makes them agree exactly. 🎯 Knife
+      K-CP1 (`GOSUB_DEPTH` 8→7) is the control that proves it: the depth moves,
+      the MODEL does not, and stackpool correctly stays **green** while trapdepth
+      goes red.
+      🟢 The filed claims were RE-RUN before any of this was built on: §10's and
+      §11's tables reproduce exactly, and `d.selfarm` reads `9 0` on all three.
+
+      🔴 **AND A NEW DIVERGENCE CAME OUT OF DESIGNING IT — D-CTLCROSS
+      ([`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §12).** Three
+      fixed arrays make a whole class of question INVISIBLE: a `NEXT` can always
+      reach its `FOR` frame, because no GOSUB frame can ever be between them.
+      Both references raise **`NEXT without FOR`** whenever it is:
+
+          row         vg8020   cf3300   zb     what the row does
+          x.nxgos      0 1      0 1    1 0     NEXT inside a sub, FOR outside
+          x.nxdeep     0 1      0 1    1 0     NEXT I across [FOR J][GOSUB][FOR I]
+          x.nxagain    0 1      0 1    2 0     ...and the loop-CONTINUES arm
+
+      🎯 **A single pool whose `NEXT` search stops at the first non-`FOR` frame
+      closes all three for free** — they diverge BECAUSE the stacks are separate.
+      Pinned as known-divergent; **the pins come out in the commit that lands the
+      pool.**
+
+      🟢 **AND THE ROWS SETTLE THE FRAME LAYOUT, so it is not a taste question:**
+      • **no per-frame type tag** — the `FOR` frames a `NEXT` may match are
+        exactly the contiguous run newer than the newest GOSUB frame, and `GSP`
+        IS that run's floor;
+      • D-FORRET's `FSP-at-push` field becomes **`GSP-at-push`** (`x.retfor`, the
+        mirror direction, is already faithful and must stay so);
+      • a trap's service record is pushed **before** its GOSUB frame, so it lands
+        below it and stays out of the run a `NEXT` walks.
 
       ⚠️ **GUARDS THAT MUST NOT MOVE:** `d.selfarm` (a handler that re-enables its
       own trap then RETURNs) reads `9 0` on all three TODAY — the case
