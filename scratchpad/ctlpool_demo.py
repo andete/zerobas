@@ -25,6 +25,20 @@ PROG = ["10 ONERRORGOTO200",
         "210 RESUME300",
         '300 PRINT"DONE"']
 
+# 🎯 THE SECOND DEMO, added when the pool landed: the reachable GOSUB depth, and
+# what `CLEAR` does to it. Before D-CTLPOOL zerobas answered 8 to all three of
+# these and `CLEAR` moved nothing; the references have always answered thousands,
+# falling ~7 bytes per frame as the string space grows. The absolute numbers
+# differ by construction (different memory maps) -- the MODEL is the point.
+DEPTH = ["10 ONERRORGOTO900",
+         "20 D=0",
+         "30 GOSUB100",
+         '40 PRINT"DEPTH";D',
+         "50 END",
+         "100 D=D+1:GOSUB100",
+         "110 RETURN",
+         "900 RESUME40"]
+
 SIDES = [("vg8020", "Philips_VG_8020", 8.0, ("NEW", "CLS")),
          ("cf3300", "National_CF-3300", 14.0, ("", "SCREEN 0", "NEW", "CLS")),
          ("zb", os.environ.get("ZEROBAS_BASIC_MACHINE",
@@ -58,3 +72,18 @@ for name, machine, boot, reset in SIDES:
         if line.strip() in ("Ok", "ZB"):
             break
         print("   ", line.strip())
+
+
+print("\n\n=== and the headline: how deep can GOSUB go, and does CLEAR move it?")
+for name, machine, boot, reset in SIDES:
+    out = []
+    for clr in ("", "CLEAR 4200"):
+        prog = ([f"5 {clr}"] if clr else []) + DEPTH
+        caps = omsx_repl.run_cases(machine, [("d", list(reset) + prog + ["RUN"])],
+                                   batch=False, reset=(), boot=boot, step=45.0,
+                                   cap_gap=15.0, timeout=420.0)
+        raw = "".join(caps[0] or "")
+        rows = [raw[i:i + 40].rstrip() for i in range(0, len(raw), 40)]
+        hit = [r.strip() for r in rows if r.strip().startswith("DEPTH")]
+        out.append(hit[-1] if hit else "<no reading>")
+    print(f"  {name:<8} bare: {out[0]:<14} after CLEAR 4200: {out[1]}")
