@@ -463,6 +463,31 @@ CASES = [
     ("v.oempty",  "dskerr", ['OPEN""AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
     ("v.o2dot",   "dskerr", ['OPEN"A.B.C"AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
 
+    # === w.* WHAT AN OVER-LONG NAME ACTUALLY BECOMES =========================
+    # 🎯 THE ROWS THAT SEPARATE TWO RULES THAT AGREE ON EVERY *ERROR* ROW.
+    # "reject an over-long name" and "truncate it" both produce `File not found`
+    # at FILES on a disk with no matching file, so no error-face row can tell
+    # them apart [[two-rules-that-coincide-on-every-row-you-have]]. SAVE writes,
+    # so the DIRECTORY says which: the entry count changes, and the created name
+    # is visible in the listing.
+    # 🔴 THE ANSWER IS NEITHER "REJECT" NOR "TRUNCATE AT THE DOT". The reference
+    # takes 8 characters for the name and then the NEXT THREE POSITIONALLY as
+    # the extension, ignoring the dot once the name is full:
+    # `SAVE"TOOLONGNAME.BAS"` creates **TOOLONGN.AME**. An over-long EXTENSION is
+    # simply truncated (`AB.EXTRA` -> `AB.EXT`), and neither is an error.
+    ("w.savelong", "dsklist", ['A=1', 'SAVE"TOOLONGNAME.BAS"', 'FILES',
+                               'PRINT"[OK]"']),
+    ("w.saveext",  "dsklist", ['A=1', 'SAVE"AB.EXTRA"', 'FILES', 'PRINT"[OK]"']),
+    # the CONTROL: an exact 8.3 fit must ADD an entry on both sides, or a changed
+    # count above says nothing about truncation.
+    # ⚠️ A FULL THREE-CHARACTER EXTENSION, AND THAT IS THE INSTRUMENT'S RULE, NOT
+    # A STYLE CHOICE. `DIRENT` matches `8 chars + '.' + 3 chars`, so an entry
+    # whose extension is SHORTER loses its padding when it falls at the end of a
+    # screen row and is not counted -- `SAVE"ABCDEFGH.IJ"` read 5 entries on BOTH
+    # sides and looked like a save that never happened on either.
+    ("w.savefit",  "dsklist", ['A=1', 'SAVE"ABCDEFGH.IJK"', 'FILES',
+                               'PRINT"[OK]"']),
+
     # === D-FNFUND: THE ROWS THAT MAKE `dev_cmp`'s MISS ARM LIVE ===============
     # 🔴 K-FF1 (`dcmp_miss:` `pop hl` -> `pop bc`, i.e. the miss arm stops
     # restoring HL) REDDENED NOTHING ON THE ROW SET AS IT STOOD, AND THAT WAS A
@@ -759,6 +784,15 @@ DEFERRED: dict[str, str] = {
     "m.dot":    "D-FSPEC: `Bad file name` there; `load error`+FNF here",
     "m.dotdot": "D-FSPEC: `Bad file name` there; `load error`+FNF here",
     "m.blank":  "D-FSPEC: a BLANK filespec is `no filespec` there (lists all); `load error`+FNF here",
+    # 🔴 THE TRUNCATION ROWS. The reference takes 8 chars of name then the NEXT
+    # THREE POSITIONALLY as the extension (`TOOLONGNAME.BAS` -> `TOOLONGN.AME`)
+    # and truncates an over-long extension (`AB.EXTRA` -> `AB.EXT`); NEITHER is
+    # an error. zerobas rejects both in build_83_name -- and the two rows differ
+    # in what the reject then COSTS, which is the nested-reject hazard showing
+    # its teeth: the over-long NAME blocks the save (5 entries), the over-long
+    # EXTENSION does not (6 entries) and both print `load error` anyway.
+    "w.savelong": "D-FSPEC: ref creates TOOLONGN.AME; here the save is blocked + `load error`",
+    "w.saveext":  "D-FSPEC: ref creates AB.EXT; here the save happens AND `load error` prints",
     # 🔴 AND THE VERB SWEEP SETTLED THE BLAST-RADIUS QUESTION IN THE GOOD
     # DIRECTION: `Bad file name` is UNIFORM on the reference across KILL, LOAD,
     # SAVE and OPEN, so ONE check in the shared `parse_disk_fcb` is not a risk to

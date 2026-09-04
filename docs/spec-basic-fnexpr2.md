@@ -417,9 +417,31 @@ expensive kind, and this readout manufactured two of them.
 
 ### 🟢 What the reference actually does — three rules, all missing here
 
-1. **An over-long name or extension is NOT an error.** The reference prints
-   `File not found` alone; zerobas rejects in `build_83_name` (`>8 name chars`,
-   `>3 ext chars`) and so prints `load error` first.
+1. **An over-long name or extension is NOT an error — it is TRUNCATED, and not
+   at the dot.** Measured through `SAVE`, which writes, so the directory says
+   what was actually built:
+
+   | typed | reference creates |
+   |---|---|
+   | `TOOLONGNAME.BAS` | **`TOOLONGN.AME`** |
+   | `AB.EXTRA` | `AB.EXT` |
+   | `ABCDEFGH.IJK` | `ABCDEFGH.IJK` |
+
+   🎯 **The reference takes 8 characters for the name and then the NEXT THREE
+   POSITIONALLY as the extension, ignoring the dot once the name is full.** That
+   single rule explains every error row too: `FILES"TOOLONGNAME.BIN"` builds the
+   pattern `TOOLONGN.AME`, which matches nothing — and it still reports
+   `File not found` when a real `TOOLONGN.BIN` is on the disk, which is the row
+   that rules truncation-at-the-dot out.
+   ⚠️ **No error-face row could have found this.** "Reject the over-long name"
+   and "truncate it" both produce `File not found` at `FILES` on a disk with no
+   matching file [[two-rules-that-coincide-on-every-row-you-have]]; only a verb
+   that WRITES separates them.
+   zerobas rejects both cases in `build_83_name` (`>8 name chars`, `>3 ext
+   chars`) and prints `load error`. The two rows then differ in what the reject
+   COSTS — the over-long NAME blocks the save, the over-long EXTENSION does not,
+   and both print the message — which is the nested-reject hazard showing its
+   teeth twice in one pair.
 2. **A structurally malformed name is `Bad file name`** — a second dot, an empty
    string, or a name that is only dots — *raised*, not printed-and-continued.
 3. **A BLANK filespec is no filespec at all** and lists the whole directory,

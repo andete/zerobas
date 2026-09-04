@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6922 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6929 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6922 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6929 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4894,8 +4894,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **Two rows flipped AGREE -> DIVERGE** (`m.long`, `m.both`): the blind
       readout manufactured two false agreements, which is the expensive kind.
       🟢 **THE REFERENCE'S THREE RULES, all missing here:**
-      • an **over-long** name/ext is NOT an error — plain `File not found` there,
-        `load error`+FNF here (`build_83_name` rejects >8 / >3);
+      • an **over-long** name/ext is NOT an error — it is **TRUNCATED, and not at
+        the dot**: 8 chars of name then the **next three POSITIONALLY** as the
+        extension, so `SAVE"TOOLONGNAME.BAS"` creates **`TOOLONGN.AME`** and
+        `AB.EXTRA` creates `AB.EXT`. 🎯 **No error-face row could find this** —
+        "reject" and "truncate" both give `File not found` at FILES; only a verb
+        that WRITES separates them
+        [[two-rules-that-coincide-on-every-row-you-have]]. The rule also explains
+        the error rows: the pattern built is `TOOLONGN.AME`, which is why a real
+        `TOOLONGN.BIN` on the disk still reads `File not found`;
       • a **structurally** malformed name (`""`, `"."`, `".."`, `"A.B.C"`) is
         **`Bad file name`**, RAISED — not printed-and-continued;
       • a **blank** filespec is **no filespec at all** and lists the whole

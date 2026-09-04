@@ -5019,9 +5019,17 @@ readout manufactured two false agreements, which is the expensive kind.
 
 What is divergent (5 rows, deferred in the gate):
 
-* `"A.B.C"`, `""`, `"."`, `".."` → **`Bad file name`** on the reference,
-  `File not found` here. **Length is not part of the rule** — an over-long name
-  or extension is `File not found` on both.
+* `"A.B.C"`, `""`, `"."`, `".."` → **`Bad file name`** on the reference.
+* an over-long name or extension is **not an error at all** — it is TRUNCATED,
+  and not at the dot. Measured through `SAVE`, which writes, so the directory
+  says what was built: `SAVE"TOOLONGNAME.BAS"` creates **`TOOLONGN.AME`** and
+  `SAVE"AB.EXTRA"` creates `AB.EXT`. The reference takes 8 characters for the
+  name and then the **next three positionally** as the extension, ignoring the
+  dot once the name is full. 🎯 No error-face row could establish this: "reject"
+  and "truncate" both produce `File not found` at `FILES`, and only a verb that
+  WRITES separates them. The rule also explains why a real `TOOLONGN.BIN` on the
+  disk still reads `File not found` for `FILES"TOOLONGNAME.BIN"` — the pattern
+  built is `TOOLONGN.AME`.
 * `" "` (blank) → the reference treats it as **no filespec at all** and lists the
   whole directory; here it is another `File not found`.
 
