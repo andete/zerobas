@@ -4959,3 +4959,20 @@ alone — which is what a stale floor actually produces, because the machine die
 was being reported as an instrument fault rather than as the finding. Both fixed;
 the matrix is now 3/3 and orthogonal.
 [`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md) §18.
+
+## 2026-09-04 — where zerobas's Z80 stack actually is, and why the DEF FN cap is not a constant (D-FNSTK)
+
+**sourced** — own-machine measurement (no oracle needed): `SAVSTK` read from
+BASIC, and a before/after byte-count of `$F24E..$F2B8` around single statements.
+
+`SP` at the run-loop-clean depth is **`$F2EA`**, not the `$F380` §16 assumed, so
+the headroom to `FN_STK_FLOOR` (`$F200`) is 234 bytes — ~78 B per `DEF FN`
+nesting level, which is the measured cap of 3. That descent passes through RAM
+the disk ROM claims (`RES_STUBS $F24E..$F2B8` and neighbours); snapshotting it
+shows **`X=1` alone changes 87 of those bytes**, so the stack routinely works
+there during ordinary interpretation. ⚠️ Not a defect: those are tier-2 MSX-DOS
+segment-hook stubs plain Disk BASIC never calls, and the full battery including
+the Disk BASIC suites is green. What it establishes is that there is no
+unclaimed room to give the evaluator, so the cap cannot be fixed by moving a
+constant — see [`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md) §19
+for the three non-fixes and the SP-relocation this points at.

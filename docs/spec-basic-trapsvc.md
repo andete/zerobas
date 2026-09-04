@@ -909,3 +909,72 @@ It proves the two *known* hooks are load-bearing and that the floor tracks both
 allocators. It cannot prove no **third** growth path exists — that would need the
 derivation back, not a cache. If one is ever added without a refresh, these rows
 catch it only if that path is exercised by a row here.
+
+## 19. 🔴 D-FNSTK — the `DEF FN` cap is not a constant, it is the Z80 stack's address
+
+§16 measured that zerobas caps `DEF FN` nesting at **3** where both references
+manage ≥4 at 25 B/level, and named `FN_STK_FLOOR` (`$F200`) against `SP` from
+C-BIOS's `$F380` as the cause. Asked to raise the cap, the first thing to check
+was that arithmetic — and **it is wrong in a way that makes the obvious fix
+impossible**.
+
+### `SP` is not at `$F380`, and the region below it is not empty
+
+`SAVSTK` (`$E1C3`, the run-loop-clean anchor `dispatch_line` writes) reads
+**`$F2EA`** on both the disk and diskless targets. So the real headroom is
+`$F2EA − $F200` = **234 bytes**, ~78 B per nesting level, not the 384 §16
+implied.
+
+🔴 **And that descent runs through claimed RAM.** The disk ROM's own cells sit
+all over it: `CURDRV_CELL $F247`, `RES_STUBS $F24E..$F2B8` (installed at boot by
+`disk/init.asm`'s fill), `DRVCNT/DRVTBL $F347/$F348`, `F365_STUB $F365`. Measured
+by snapshotting `$F24E..$F2B8` around a statement and counting changed bytes:
+
+| program | bytes changed in `$F24E..$F2B8` |
+|---|---|
+| `X=1` | **87** |
+| `X=((((((((1))))))))` | 102 |
+| `X=1+2*(3+4*(5+6*(7+8*(9+1*(2+3)))))` | 103 |
+| a 3-deep `DEF FN` nest | 103 |
+
+⚠️ **This is NOT a `DEF FN` defect, and it is not corruption of anything live.**
+The idle row changes 87 bytes, so the stack routinely works in that region during
+ordinary interpretation, and the full battery — including the Disk BASIC suites —
+is green: the segment-hook stubs are a **tier-2 MSX-DOS** structure that plain
+Disk BASIC never calls. What it does mean is that **there is no unclaimed room to
+give `DEF FN`**: the stack is already sharing the disk work area, and the nearest
+genuinely free space below (`RES_PRINT $F1C9`, `DRVA_DPB $F195`) is a further
+~48 B — less than one nesting level.
+
+### So the fix is not a constant, and three that look like fixes are not
+
+* **Lower `FN_STK_FLOOR`.** ~48 B available before live disk RAM; one level costs
+  ~78. Buys nothing.
+* **Raise it to a "safe" `$F2B8`.** Leaves `$F2EA − $F2B8` = **50 bytes** — less
+  than one level, so nested `DEF FN` would stop working entirely. Strictly worse
+  for users, and it would not be protecting anything measured.
+* **Move the FN save into the control pool.** The saved live prefix is
+  `(FN_FEND − FN_PAREA) + FN_CELLS` ≈ 14 B plus the pushed size word — **~16 of
+  the ~78 B per level, about 20 %.** 3 levels would become 3. Not a fix, and it
+  would spend main-ROM bytes to buy nothing measurable.
+
+🎯 **The fix is to put the Z80 stack where the reference puts it.** §14 measured
+the VG-8020's `STKTOP` at `$F0A0` — *below* the `$F1xx..$F3xx` work areas,
+descending into the free gap — which is why its evaluator gets 25 B/level and
+thousands of levels while ours gets 78 B/level and three. zerobas never sets `SP`
+at all (`basic/` contains no `ld sp,nn`); it inherits C-BIOS's and lives in the
+234 bytes left over.
+
+That is the same SP-relocation this arc declined at the mechanism fork, and it
+now has a second, independent motive. ⚠️ Its hazards are real and are why it is
+filed rather than done here: the Z80 stack and the control pool would both want
+the top of the free gap (they must be partitioned, or merged as the reference
+merges them); moving `SP` while return addresses are live is only safe at
+specific points; and a boot-fixed stack sitting above a later `CLEAR n,addr`
+HIMEM would be inside memory the user has just reserved — the exact accident
+`basic_probe_stop_trap.py` was making at `$D000` (§17).
+
+⚠️ **NOT MEASURED:** whether the ~78 B per level is mostly evaluator recursion or
+mostly the FN machinery. The 20 % above is arithmetic from the save size, not a
+measurement of the rest, and it is the number to check first if this is picked
+up — a cheaper win may be hiding in the evaluator's own frame.

@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6802 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6832 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6802 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6832 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2866,6 +2866,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **`CLEAR` RESETS THE ERROR VECTOR** — measured while writing these rows.
       Any probe that arms `ON ERROR` before a `CLEAR` reads `<NO OUTPUT>`.
       🏗️ ARC — its own slice, its own knives, per verb (GOSUB/RETURN, FOR/NEXT, traps) plus the CLEAR interaction.
+
+- [ ] 🏗️ **THE Z80 STACK IS IN THE WRONG PLACE, AND THE `DEF FN` CAP IS THE
+      SYMPTOM.** Opened 2026-09-04 out of D-EVALDEPTH/D-CTLPOOL (D-FNSTK,
+      [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §19).
+      `DEF FN` nesting caps at **3** here against the references' ≥4 at 25 B/level
+      — and asking to raise it found the filed arithmetic wrong:
+      • **`SP` is at `$F2EA`, not `$F380`** (measured via `SAVSTK`), so the
+        headroom to `FN_STK_FLOOR` is **234 B**, ~78 B/level — not 384.
+      • 🔴 **That region is claimed RAM.** `CURDRV_CELL $F247`,
+        `RES_STUBS $F24E..$F2B8`, `DRVCNT/DRVTBL $F347/$F348`, `F365_STUB $F365`.
+        Snapshotting `$F24E..$F2B8`: **`X=1` alone changes 87 bytes.** ⚠️ NOT a
+        defect — those are tier-2 MSX-DOS stubs plain Disk BASIC never calls, and
+        the battery is green — but it means **there is no unclaimed room to give**.
+      ⇒ **THREE THINGS THAT LOOK LIKE FIXES ARE NOT:** lowering the floor buys
+      ~48 B (< one level); raising it to a safe `$F2B8` leaves **50 B** and breaks
+      nested `DEF FN` entirely; moving the FN save into the control pool is ~16 of
+      78 B, **20 %**, and 3 stays 3.
+      🎯 **THE FIX IS SP RELOCATION** — the VG-8020's `STKTOP` is `$F0A0`, BELOW
+      the work areas, descending into the free gap; zerobas never sets `SP` at all.
+      ⚠️ Hazards, and why this is filed rather than rushed: the stack and the
+      control pool both want the top of the free gap (partition, or merge as the
+      reference merges them); moving `SP` with live return addresses is only safe
+      at specific points; and a boot-fixed stack above a later `CLEAR n,addr`
+      HIMEM lands in memory the user just reserved — the exact `$D000` accident
+      §17 records.
+      ⚠️ **FIRST THING TO MEASURE IF PICKED UP:** how much of the ~78 B/level is
+      evaluator recursion vs FN machinery. The 20 % above is arithmetic from the
+      save size, not a measurement of the rest.
+      🙋 NEEDS A DECISION — the mechanism (partition vs merge) is Joost's call; the
+      measurements are done.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
