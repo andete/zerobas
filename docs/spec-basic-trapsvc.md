@@ -327,3 +327,50 @@ and it should be priced there — against a RAM-bounded stack, not a bigger arra
 Both are the same shape: **a row that agrees, or reads flat, because its subject
 never ran.** `d.ctl20` — same text, trap unarmed — is what turns the remaining
 number into a per-dispatch cost rather than a program-size artefact.
+
+## 11. ✅ D-STACKPOOL — the references use the GENERIC stack, measured three ways
+
+Joost's read of §10: *"does that smell like they use the generic stack?"* — ~4000
+frames, nothing reclaimed, and the two references disagreeing with **each other**.
+`scratchpad/stackpool_probe.py` tests it with `CLEAR`, which resizes the string
+space (`CLEAR n`) and sets HIMEM outright (`CLEAR n,addr`).
+
+| row | VG-8020 | CF-3300 | zerobas |
+|---|---|---|---|
+| baseline, no `CLEAR` | 4080 | 3311 | 8 |
+| `CLEAR 200` | 4079 | 3310 | 8 |
+| `CLEAR 2200` (+2000 B) | 3793 | 3024 | **8** |
+| `CLEAR 4200` (+4000 B) | 3508 | 2738 | **8** |
+| `CLEAR 200,&HC000` | **2195** | **2195** | **8** |
+
+**1. The pool is shared, and the rate is linear.** +2000 bytes of string space
+costs **286** frames on the VG-8020 and **286** on the CF-3300; the next +2000
+costs **285** and **286**. That is **7.0 bytes per frame**, four times over, on
+two different machines.
+
+**2. Pinning HIMEM makes the references agree exactly — 2195 = 2195.** They
+differed at all only because Disk BASIC had taken RAM on the CF-3300. Fix the top
+of the pool and both machines have the same room, which is what a HIMEM-bounded
+stack predicts and what a fixed array cannot produce.
+
+**3. zerobas reads 8 in every row.** `CLEAR` and HIMEM change nothing, because
+the frames are in a fixed array.
+
+### What this settles
+
+The gap is not a number, it is an **allocation model**. The reference takes
+control frames from one RAM pool bounded by HIMEM at ~7 B each; zerobas has two
+fixed arrays (`GOSUB_DEPTH` = 8, `TRAPSTK_MAX` = 6). That single fact explains
+everything §10 measured: the thousands of frames, the two references disagreeing,
+and why nothing is ever "reclaimed" — `SP` simply moves.
+
+So **both** of §6's surviving options are the wrong shape. "Pop the stale record"
+adds a reclaim the reference does not do; "raise `TRAPSTK_MAX`" swaps one fixed
+array for a bigger fixed array, and would still be insensitive to `CLEAR` and
+HIMEM — measurably unlike the reference on all three rows above.
+
+⚠️ **And the CLEAR rows were `<NO OUTPUT>` on all three sides at first**, because
+`CLEAR` resets the error vector: with `ON ERROR` armed *before* it, the overflow
+was untrapped and nothing printed. The probe's digits-only guard refused rather
+than reporting a value, which is the only reason that read as an instrument fault
+and not as "CLEAR breaks recursion".

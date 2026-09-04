@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6607 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6622 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6607 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6622 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3419,6 +3419,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **THIS IS NOT A TRAP DEFECT.** It is the fixed-size control-stack design
       (`GOSUB_DEPTH`=8, `TRAPSTK_MAX`=6) seen through a trap, and belongs with
       that item — priced against a RAM-bounded stack, not a bigger array.
+      ✅ **AND THE MODEL IS NOW MEASURED, NOT INFERRED (D-STACKPOOL, §11, Joost's
+      read: "does that smell like they use the generic stack?").** `CLEAR`
+      resizes the string space and `CLEAR n,addr` sets HIMEM:
+      • **+2000 B of string space costs 286 frames** on the VG-8020 and **286**
+        on the CF-3300; the next +2000 costs 285 / 286 — **7.0 B per frame,
+        linear, four times over on two machines**. One shared pool.
+      • **`CLEAR 200,&HC000` makes the references agree EXACTLY: 2195 = 2195.**
+        They differed only because Disk BASIC had taken RAM. That is a
+        HIMEM-bounded stack and a fixed array cannot produce it.
+      • **zerobas reads 8 in every row** — `CLEAR` and HIMEM change nothing.
+      ➡️ **SO THE GAP IS AN ALLOCATION MODEL, NOT A NUMBER**, and BOTH of §6's
+      surviving options are the wrong shape: option 3 adds a reclaim the
+      reference does not do, and option 1 swaps one fixed array for a bigger one,
+      still insensitive to `CLEAR` and HIMEM — measurably unlike the reference on
+      all three rows.
       🟢 **AND `d.selfarm` IS GREEN ON ALL THREE** (`9 0`): the case §6 warns a
       fix must not break already works here, and now has a row.
 
