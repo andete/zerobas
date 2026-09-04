@@ -487,11 +487,11 @@ csav_sp_err:
 do_csave:
                 call    skip_spaces
                 or      a
-                jr      z,csav_noname       ; bare CSAVE (no name)
+                jr      z,csav_noname       ; bare CSAVE -> Missing operand
                 cp      COLON
-                jr      z,csav_noname       ; CSAVE followed by : -> no name
+                jr      z,csav_noname       ; `CSAVE:` -> Missing operand
                 cp      ','
-                jr      z,csav_noname       ; CSAVE ,speed -> no name, then speed
+                jr      z,csav_comma        ; `CSAVE,2` -> Syntax error (measured)
                 cp      '"'
                 jp      nz,load_error       ; must be a quoted name
                 inc     hl                  ; past opening '"'
@@ -503,24 +503,30 @@ do_csave:
                 call    csav_speed          ; optional ,1/,2 speed; CF=1 on bad speed/junk
                 jp      c,load_error
                 jr      tape_save_basic
+csav_comma:
+                ; D-CSAVENAME (2026-09-04): `CSAVE,2` -- no name, a speed --
+                ; is `Syntax error` on BOTH references, a different face from the
+                ; other two no-name forms. The face depends only on whether a `,`
+                ; follows, which is why the three tests above now split here.
+                jp      stmt_error
 csav_noname:
-                ; no name given: fill TSV_NAME with 6 spaces, then honour an
-                ; optional ,speed (CSAVE,2 with no name). csav_speed handles the
-                ; end/':'/',' cases, so it is called for the bare CSAVE form too.
-                ; Preserve the text cursor across the fill (csav_speed needs it).
-                push    hl                  ; save text cursor (fill clobbers HL)
-                ld      hl,TSV_NAME
-                ld      b,6
-csav_sp:
-                ld      (hl),' '
-                inc     hl
-                djnz    csav_sp
-                pop     hl                  ; restore text cursor (end / ':' / ',')
-                call    csav_speed          ; optional ,1/,2 speed; CF=1 on bad speed/junk
-                jp      c,load_error
-                ; fall into tape_save_basic
-
-; ===========================================================================
+                ; 🔴 CSAVE's NAME IS NOT OPTIONAL. This used to fill TSV_NAME with
+                ; six spaces and SAVE ANYWAY -- so `CSAVE`, `CSAVE:` and `CSAVE,2`
+                ; all wrote a tape the reference refuses, with NO MESSAGE. Silent
+                ; acceptance, which is the worst class this project ranks.
+                ; Measured on both references (scratchpad/csaveexpr_probe.py, on a
+                ; fresh recording tape per row):
+                ;
+                ;   CSAVE      Missing operand   CSAVE:   Missing operand
+                ;   CSAVE,2    Syntax error      CSAVE"P",2  accepted (control)
+                ;
+                ; ⚠️ THE ENTRY THAT FILED THIS CALLED THE ARGUMENT "OPTIONAL" and
+                ; asked the `FILES`-style "is there an argument at all" question.
+                ; There is no no-name form: the reference errors on all three.
+                ; 🟢 And the six-space fill this replaces is why the change is
+                ; byte-NEGATIVE rather than a spend, in a page 1 with 8 B free.
+                ld      a,24                ; Missing operand
+                jp      raise_error
 tape_save_basic:
                 ld      a,SV_OP_SAV_CAS
                 jp      sv_tenant           ; CSAVE -> tape, tokenised (D-CASSAVE:
