@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6797 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6802 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6797 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6802 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2691,11 +2691,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ARRAYS.** 🟢 **LANDED 2026-09-04** (D-CTLPOOL, spec §17): depth **8 -> 2866**,
       linear in `CLEAR` at 8.0 B/frame, `CLEAR ,himem` responds, all three
       D-CTLCROSS rows close, `d.selfarm` unmoved, **146 B of page-3 RAM
-      recovered**, 105/105 gates + 59/59 unit files. 🔴 **ONE RESIDUAL: `CTLLIM`
-      is a STORED derivation** (`ARYEND+2`, cached because a per-push `CALSLT` is
-      not affordable) refreshed at the two allocator success paths and at reset --
-      a path that grows the variable region without passing one of those leaves it
-      stale-LOW, the dangerous direction. **It needs its own gate.** Opened 2026-09-04 (Joost) out of D-TRAPSVC, after D-TRAPDEPTH and
+      recovered**, 105/105 gates + 59/59 unit files. ✅ **AND THE STORED-FLOOR
+      RESIDUAL IS GATED** (D-CTLLIM, spec §18): `make ctllim-acceptance` fills
+      memory, drives the pool to its floor and counts corrupted cells -- 0 on all
+      three machines, both allocators exercised, knives **3/3 and orthogonal**.
+      🔴 Its first matrix scored **0/3** and found two defects IN THE GATE: the
+      two refresh hooks cover for each other, and a blank reading on zerobas alone
+      -- what a stale floor actually produces, because the machine dies -- was
+      reported as an instrument fault instead of as the finding.
+      ⚠️ **STILL NOT COVERED:** that no THIRD growth path exists. That would need
+      the derivation back, not a cache. Opened 2026-09-04 (Joost) out of D-TRAPSVC, after D-TRAPDEPTH and
       D-STACKPOOL measured what the references actually do
       ([`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §10–§11).
 

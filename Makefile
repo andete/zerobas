@@ -1219,6 +1219,27 @@ ctlcross-acceptance: repack-machine
 	python3 probes/basic/basic_probe_ctlcross.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
+# --- D-CTLLIM: the pool's collision floor is a STORED derivation ---------------
+# spec-basic-trapsvc.md §17 shipped `CTLLIM` (= ARYEND+2) as a CACHE, against
+# strheap_floor's own "DERIVED, NEVER STORED" rule, because deriving it needs an
+# array-chain walk and a subrom_call per PUSH is not affordable. Its failure mode
+# is SILENT: a path that grows the variable region without refreshing leaves the
+# floor stale-LOW and control frames land inside live variables.
+#
+# 🎯 THE ROWS TEST THE CORRUPTION, NOT THE POINTER -- reading CTLLIM back would
+# assert the implementation against itself. Each row fills memory with a known
+# pattern, drives the pool to its floor by recursing to `Out of memory`, and
+# counts cells that changed; it must be 0, and the allocation must COST depth.
+# ⚠️ BOTH ALLOCATORS ARE EXERCISED: scv_alloc (scalars) and ary_alloc (arrays)
+# have SEPARATE refresh hooks, and a gate that only DIMmed would leave one of
+# them completely untested.
+# ⚠️ Slower than its siblings by design (~150 s): every A() element crosses a
+# slot here, so the budget is 180 emulated seconds -- at 45 both bulk rows read
+# blank on zerobas only, which looks exactly like the corruption this hunts.
+ctllim-acceptance: repack-machine
+	python3 probes/basic/basic_probe_ctllim.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
+
 # --- TIME / TIME=n acceptance gate (docs/spec-basic-time.md) -------------------
 # VG-8020 differential, BOTH sides asserted against the SAME pinned reference
 # values (spec §1 is all measurement, so those values ARE the comparison and the
@@ -3020,7 +3041,7 @@ clean:
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         battery-membership-check fixture-integrity-check diskmap \
         interval-trap-acceptance \
-        stackpool-acceptance trapdepth-acceptance ctlcross-acceptance \
+        stackpool-acceptance trapdepth-acceptance ctlcross-acceptance ctllim-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep sysvarsweep fat-error-acceptance \

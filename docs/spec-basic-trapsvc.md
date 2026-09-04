@@ -836,3 +836,76 @@ reclaims those (§10) — walked the pool down over `$D002`, and `ran` read **20
 i.e. `$D0`: the high byte of a frame pointer, read as a flag. The fix is
 `CLEAR 200,&HCFFF` in the fixture: reserving the memory is what an MSX program
 would do, and moving the sentinels would only relocate the same accident.
+
+## 18. ✅ D-CTLLIM — the stored floor is gated now, and the first gate was blind
+
+§17 shipped `CTLLIM` (= `ARYEND+2`) as a **cache**, against `strheap_floor`'s own
+"DERIVED, NEVER STORED" rule, because deriving it needs an array-chain walk and a
+`subrom_call` per push is not affordable. Its failure mode is silent: a growth
+with no subsequent refresh leaves the floor **stale-LOW** and control frames land
+inside live variables. `make ctllim-acceptance`
+(`probes/basic/basic_probe_ctllim.py`) is the gate §17 said it needed.
+
+🎯 **The rows test the corruption, not the pointer.** Reading `CTLLIM` back would
+assert the implementation against itself. Instead each row fills memory with a
+known pattern, drives the pool **all the way to its floor** by recursing to
+`Out of memory`, and counts cells that changed.
+
+| row | VG-8020 | CF-3300 | zerobas |
+|---|---|---|---|
+| `l.ctl` — five scalars, no bulk allocation | `4051 0 7` | `3282 0 7` | `2840 0 7` |
+| `l.ary` — `DIM A(300)`, filled | `3715 0 7` | `2946 0 7` | `2549 0 7` |
+| `l.scal` — 60 scalars, the *other* allocator | `3800 0 7` | `3031 0 7` | `2621 0 7` |
+
+`[depth, corrupted cells, ERR]`. **Zero corruption everywhere**, and the `DIM`
+costs depth on every machine (333 / 333 / 291) — the floor rises with `ARYEND`.
+🟢 The references pass too, which makes this a differential rather than a
+zerobas-only assertion: their frames come out of the same gap, bounded by
+`STREND`.
+
+⚠️ **Both allocators are exercised, and that is not padding.** `scv_alloc` and
+`ary_alloc` have **separate** refresh hooks; a gate that only `DIM`med would
+leave the scalar one untested — which knife K-CL1 proves.
+
+### 🔴 The knives scored 0/3 first, and found two defects in the gate
+
+`scratchpad/ctllim_knives.py` removes a refresh — the real failure, not a proxy.
+The first matrix reddened **nothing**:
+
+1. **The hooks cover for each other.** `CTLLIM` is recomputed from scratch by
+   whichever allocator ran last, so a scalar created *after* a `DIM` refreshes
+   the floor and hides a missing array hook completely. `l.ary` now creates every
+   scalar it will use **before** the `DIM`, which is what lets K-CL2 fire at all.
+   (K-CL3's first cut removed the *reset* hook — invisible for the same reason:
+   the first variable allocation refreshes it.)
+2. 🔴 **The gate reported its own subject as an instrument fault.** A floor stale
+   enough to reach the interpreter's state takes the machine with it, so the row
+   prints **nothing** — and `<NO OUTPUT>` returned rc 2, "not measured". That is
+   how **every** knife scored green. A blank on a *reference* is an instrument
+   fault; a blank on zerobas alone while both references answer is the finding in
+   its loudest form [[an-unnamed-outcome-reads-as-no-outcome]]. Every knifed row
+   fails exactly this way, so without the fix the matrix stays 0/3.
+
+The second matrix is **3/3, and orthogonal**:
+
+| knife | rows named corrupted |
+|---|---|
+| K-CL1 `scv_alloc` refresh removed | `l.ctl`, `l.scal` — 🟢 `l.ary` green, its own `DIM` refreshes last |
+| K-CL2 `ary_alloc` refresh removed | `l.ary` **only** — 🟢 the others have no array |
+| K-CL3 **both** removed | all three |
+
+Each cut reddens exactly the rows whose last growth went through the hook it
+removed. A knife that reddened everything would prove only that the machine
+broke; the greens are what say each row isolates the hook it names.
+
+⚠️ **The runner rebuilds before taking its baseline.** A restore puts the *source*
+back but leaves `build/` holding the last knifed image, so a baseline without it
+measures the previous knife and refuses — which is what happened, and the ROM
+hash in the log is what made it obvious rather than mysterious.
+
+### ⚠️ What this gate still does not cover
+
+It proves the two *known* hooks are load-bearing and that the floor tracks both
+allocators. It cannot prove no **third** growth path exists — that would need the
+derivation back, not a cache. If one is ever added without a refresh, these rows
+catch it only if that path is exercised by a row here.

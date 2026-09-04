@@ -4938,3 +4938,24 @@ that needs a gate: [`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md)
 ⚠️ The absolute depth and the byte-per-frame rate are NOT asserted anywhere: they
 are properties of this machine's memory map and frame layout, and the two
 references do not agree on them either.
+
+## 2026-09-04 — the control pool's stored floor is gated (D-CTLLIM)
+
+**quarantined** — own design (the cache and its gate); the rows are a
+differential against both references, which pass them for the same structural
+reason zerobas does.
+
+`CTLLIM` (= `ARYEND+2`) is the one stored derivation D-CTLPOOL shipped, and its
+failure is silent. `probes/basic/basic_probe_ctllim.py` fills memory with a known
+pattern, drives the control pool to its floor by recursing to `Out of memory`,
+and counts cells that changed — testing the corruption rather than reading the
+pointer back. Zero corruption on all three machines across three rows, and a
+`DIM A(300)` costs depth everywhere (333 / 333 / 291).
+
+🔴 The knives scored **0/3** on the first attempt and found two defects in the
+gate itself: the two allocator refresh hooks cover for each other (a scalar
+created after a `DIM` hides a missing array hook), and a blank reading on zerobas
+alone — which is what a stale floor actually produces, because the machine dies —
+was being reported as an instrument fault rather than as the finding. Both fixed;
+the matrix is now 3/3 and orthogonal.
+[`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md) §18.
