@@ -1235,7 +1235,8 @@ TRAPPEND        equ     $E21F   ; 1 B (was just past the retired TRAPSTK): 1 =
 TRAPSVC         equ     $E20C   ; 1 B: count of live SERVICING entries == depth of the
                                 ; service stack. Gates ex_return's re-enable hook (0 =
                                 ; no added cost on a normal RETURN).
-; D-CTLPOOL: TRAPSTK ($E20D, 6 x 3 B) IS RETIRED -- $E20D..$E21F is FREE. The
+; D-CTLPOOL: TRAPSTK ($E20D, 6 x 3 B) IS RETIRED.
+; FREE-RAM $E20D..$E21F  the retired trap service stack. The
 ; service record now lives in the control pool (TSP, sysvars below), pushed
 ; BEFORE its GOSUB frame so it lands under it and stays out of the [CSP,FSP) run
 ; a `NEXT` walks. TRAPSVC survives as the COUNT, because ex_return gates on it
@@ -1243,7 +1244,9 @@ TRAPSVC         equ     $E20C   ; 1 B: count of live SERVICING entries == depth 
 ; 🎯 THE `gsp` KEY IS GONE WITH THE ARRAY. The record sits immediately above its
 ; own GOSUB frame, so "is this RETURN the trap's own?" is the pointer identity
 ; TSP == GSP + GOSUB_FRAME -- no stored key, no search.
-; ($E220 is FREE again. It held STOPGRACE, the STOP-trap handler grace: a byte set by
+; ($E220 was freed here and has since been RE-TAKEN by GFX_DJ -- corrected
+; 2026-09-04 by `make ram-claim-check`, which is what a claim nobody gates
+; costs. It held STOPGRACE, the STOP-trap handler grace: a byte set by
 ; check_traps on fire and cleared by event_poll each VBLANK, during which rp_break
 ; would not break a SERVICING STOP handler. Retired 2026-07-25, spec §12.3 — the
 ; entry's own edge shadow (ZTS_SHADOW, bit 6, preserved across a fire) does that job
@@ -1402,7 +1405,7 @@ PLN_NUM         equ     $E234   ; 2 B: the parsed line number (BC), $FFFF if the
                                 ; BC*10+digit chain carried (pl_sat's saturation --
                                 ; dl_store's ceiling check rejects it)
 PLN_PTR         equ     $E236   ; 2 B: LINEBUF pointer at the body (HL)
-; ($E238..$E23F still free; STRTAB/VAREND begin at $E240.)
+; FREE-RAM $E238..$E240  below STRTAB/VAREND, which begin at $E240
 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) claims NO new RAM:
 ; the virtual line header a typed line executes under (`dir_line`, program.asm) is
 ; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct
@@ -3405,8 +3408,9 @@ GOSUB_FRAME     equ     8       ; [CURLINE:2][resume:2][prevGSP:2][prevFSP:2].
                                 ; GOSUB (docs/spec-basic-forret.md §4). Both are
                                 ; needed; neither is derivable from the other.
 TRAP_FRAME      equ     3       ; [prevTSP:2][idx:1] -- see TRAPSTK's retirement above
-; $E056..$E080 is FREE (was the rest of GOSUB_STK), and so is $E080..$E0B8.
-; $EA3A..$EA92 (88 B) is FREE: it was FOR_STK, retired with the same arc.
+; FREE-RAM $E058..$E080  the rest of the retired GOSUB_STK
+; FREE-RAM $E080..$E0B8  the pre-D-FORVAR FOR stack, free since it relocated
+; FREE-RAM $EA3A..$EA92  the retired FOR_STK (88 B), same arc
 FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY as
                                 ; FN_BASE's anchor below, which must not move.
 ; --- DEF FN: the parameter (shadow) area -----------------------------------

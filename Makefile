@@ -410,6 +410,25 @@ redundant-load-check: $(RELOC_SYM)
 wall-assertion-check:
 	python3 tools/wall_assertion_check.py
 
+# --- D-RAMCLAIM: a RAM free-space claim may not contain a NAME ----------------
+# `wall-assertion-check` above polices ROM figures and dates them; RAM figures
+# had NO gate, so they rot silently -- sysvars.inc advertised "376 B spare" where
+# 10 were, for three slices, and the ASSEMBLER caught it rather than any reading.
+# 🎯 The class bit again the day this was written: D-CTLPOOL added
+# `CTLLIM equ $E056` and left a neighbour claiming `$E056..$E080 is FREE`.
+# ⚠️ A CLAIM IS DECLARED (`; FREE-RAM $A..$B`), NOT PROSE-MATCHED. The first cut
+# matched prose and reported 7 violations of which most were its own misreading
+# -- a cell's own extent read as a claim, a layout table's "FREE" describing the
+# named cell, a comment QUOTING a claim it had already corrected. Prose that
+# still looks free-shaped is listed ADVISORY so the set can be migrated
+# deliberately instead of hiding behind a tighter regex.
+# 🔴 NAME-LEVEL ONLY, AND IT SAYS SO: an address is where a cell STARTS, never
+# how long it is, so a cell can extend up into a claim from below (TOKBUF's
+# 612 B delta is 36 B free). Extent needs the machine -- scratchpad/ramfree_probe.py.
+ram-claim-check:
+	python3 tools/check_ram_claims.py --selftest
+	python3 tools/check_ram_claims.py
+
 # --- WALL LITERALS OUTSIDE TODO.md (docs/spec-wall-literals.md, D-WALLIT) -----
 # `wall-assertion-check` above scopes itself to TODO.md's `- [ ]` items BY DESIGN.
 # A stale figure inside a GATE, a PROBE or a source comment misleads the gate
@@ -767,6 +786,7 @@ graphics-floor-acceptance: repack-machine
 # tests and nobody carried it to the probes, which cost 1.1 GB of orphans and a
 # stochastic gate flake. Emulator-free, <1 s.
 temp-root-check:
+	python3 tools/check_temp_root.py --selftest
 	python3 tools/check_temp_root.py
 
 # --- shared-body-check: every `.inc` under basic/ and sub/ must be ASSEMBLED --
@@ -3039,7 +3059,7 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
-        battery-membership-check fixture-integrity-check diskmap \
+        battery-membership-check fixture-integrity-check diskmap ram-claim-check \
         interval-trap-acceptance \
         stackpool-acceptance trapdepth-acceptance ctlcross-acceptance ctllim-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \

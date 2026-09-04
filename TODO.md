@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6832 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6848 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6832 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6848 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6626,6 +6626,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       it back). ⚠️ **A delta between two names is NOT free space** — `TOKBUF`'s
       612 B delta is 36 B free and `LINEBUF`'s 256 B delta is 0. Promoting
       either tool to a gate needs that caveat encoded, not just documented.
+      ✅ **HALF DONE 2026-09-04 — `make ram-claim-check` IS A GATE** (107/107):
+      a claim is DECLARED (`; FREE-RAM $A..$B`) and no `equ` name may resolve
+      inside it. 🎯 **It found a defect ONE COMMIT OLD** — D-CTLPOOL's own
+      `CTLLIM equ $E056` sat inside a neighbouring `$E056..$E080 is FREE` — plus
+      a stale `$E220 is FREE` that `GFX_DJ` had retaken. Five spans declared and
+      verified; 7 prose spans listed ADVISORY rather than dropped.
+      🔴 **THE CAVEAT IS ENCODED AS A REFUSAL, NOT AS COVERAGE.** The check says
+      out loud that it is NAME-LEVEL ONLY and cannot see a cell extending up into
+      a claim from below (`TOKBUF`: 612 B delta, 36 B free). ⚠️ **THE EXTENT HALF
+      IS STILL OPEN**: generalise `scratchpad/ramfree_probe.py` (fill the window,
+      work the machine, read it back) from its one hardcoded window to the
+      declared set. That is the only thing that can settle extent.
+      🔬 And the first cut of the checker PROSE-MATCHED and reported 7 violations
+      of which most were its own misreading — a cell's own extent read as a
+      claim, a layout table's `FREE` describing the named cell, a comment quoting
+      a claim it had already corrected [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] 🔴 **THE `[...]` READOUT FAMILY IS DEFENDED BY ACCIDENT IN EVERY SCRATCH
