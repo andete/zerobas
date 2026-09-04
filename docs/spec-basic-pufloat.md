@@ -512,3 +512,73 @@ them as floats and they reach the renderer on bit 6's path whatever bit 7 does.
 The routing bit only decides for values that genuinely are integers, which in
 this row set is exactly `m.basic` and `m.neg`. The code was right; the prediction
 was not, and the fix was to the arm.
+
+## 14. `^^^^` — the rule, fully pinned (characterisation; implementation next)
+
+The last specifier family. **13 rows were measured before writing any code**, and
+they changed the design three times — the five original `e.*` rows do not pin the
+rule at all.
+
+### 14.1 What the original five could not say
+
+`##.##` yields ` 1.50E+00` — **one** mantissa integer digit — while `#.#` yields
+`0.1E+04` — **zero**. Both "always one integer digit" and "one column is reserved
+for the sign" fit those five rows. Eight more rows separate them:
+
+| row | typed | both refs | what it settles |
+|---|---|---|---|
+| `e.wide` | `USING"###.##^^^^";1.5` | ` 15.00E-01` | digits = columns − 1, **not** always 1 |
+| `e.negtight` | `USING"#.#^^^^";-1234` | `-.1E+04` | the lead column is the sign; `0` when positive with no integer digit |
+| `e.round` | `USING"#.#^^^^";.0999` | `0.1E+00` | a rounding carry **bumps the exponent** |
+| `e.car3` | `USING"##.##^^^";1.5` | ` 1.50^^^` | three carets are **literal** |
+| `e.car5` | `USING"##.##^^^^^";1.5` | ` 1.50E+00^` | exactly **four** are consumed |
+| `e.nodot` | `USING"##^^^^";1.5` | ` 2E+00` | no `.` is legal; places = 0 |
+| `e.comma` | `USING"#,###.##^^^^";1234.5` | ` 1234.50E+00` | `,` is **not** grouped in exponent form |
+| `e.sign` | `USING"+##.##^^^^";1.5` | `+15.00E-01` | a leading sign is just another column |
+| `e.star` | `USING"**##.##^^^^";1.5` | `*150.00E-02` | so is the `**` pair |
+
+### 14.2 🎯 One rule, after two special cases nearly got written
+
+`e.sign` and `e.star` both looked like they needed their own clause — an explicit
+sign "frees the reserved column", the `**` pair "adds two". They do not. Every
+row above is explained by:
+
+> **mantissa integer digits = (field columns before the point) − 1**
+
+counting `#`, `,`, `**` and a leading sign alike. `e.comma` is the row that makes
+this unmistakable: `#,###` is *five* columns, and the mantissa gets *four*
+integer digits (` 1234.50E+00`) — while the comma itself is never printed.
+
+And it needs **no new RAM**, which is the part that matters after §13.2: the
+count is derivable from two cells that already exist,
+
+    n = PU_W − 4 (the `E+dd`) − (1 + PU_DEC, if a point) − 1
+
+verified against all seven format shapes above.
+
+### 14.3 `flt_fmt`'s text is not uniform, and the renderer parses it
+
+The plan reads `flt_fmt`'s decimal text and shifts the point symbolically, so no
+float scaling is needed. What that text actually looks like was measured too
+(rows `f.big` / `f.small` / `f.frac`), because assuming a plain digit run would
+have been wrong:
+
+    PRINT 1.5E+10   ->  ` 15000000000 `   plain, eleven digits
+    PRINT 1.5E-10   ->  ` 1.5E-10 `       already exponential
+    PRINT .0999     ->  ` .0999 `         plain
+
+So the parser must accept an `E±dd` suffix on its *input*. A **model of the whole
+algorithm in those exact digit-string terms passes 11/11** against the measured
+rows, including the carry that bumps the exponent.
+
+### 14.4 Where the flag goes
+
+`PU_FLAGS` is now full — bits 0–7 all mean something as of D-PUCOMMA. The
+exponent flag goes in **`PU_TYPE` bit 2**: that cell holds 0–3 for the field
+kind, and its numeric test is `PU_TYPE == 0`, so the test becomes `and $03`
+(one byte) and `PU_TYPE = 4` still reads as numeric while the string dispatch's
+`cp 1` / `cp 2` are untouched.
+
+**Status: rule pinned and modelled, Z80 not yet written.** The 13 rows are in the
+probe and divergent, which is the honest state — they are characterisation, not
+regressions.

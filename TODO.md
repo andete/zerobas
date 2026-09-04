@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1700 (T-6FE392)8 (T-529ABE)` from `TODO.md:6236 (T-529ABE)`: a
+      `TODO.md:1718 (T-6FE392)8 (T-529ABE)` from `TODO.md:6254 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1246,7 +1246,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
           PRINT USING"**##";5         refs `***5`       ✅ D-PUSTAR
           PRINT USING"##.##^^^^";1.5  refs ` 1.50E+00`  🔴 here ` 1.50^^^^`
 
-      🟢 **AS OF 2026-09-04 ONLY `^^^^` REMAINS** (5 rows), plus `d.lead`
+      🔭 **`^^^^`'s RULE IS NOW PINNED AND MODELLED, Z80 NOT YET WRITTEN**
+      ([`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md) §14, 2026-09-04).
+      **13 rows measured before any code**, and they changed the design three
+      times — the five original `e.*` rows do not pin the rule at all (`##.##`
+      gives ONE mantissa integer digit, `#.#` gives ZERO, and both "always one"
+      and "a reserved sign column" fit those five). 🎯 **TWO SPECIAL CASES NEARLY
+      GOT WRITTEN AND NEITHER IS REAL**: a leading sign and the `**` pair each
+      looked like its own clause, but every row follows ONE rule — mantissa
+      integer digits = (field columns before the point) − 1, counting `#`, `,`,
+      `**` and the sign alike. `e.comma` makes it unmistakable (`#,###` is five
+      columns, four integer digits, and the comma is never printed).
+      🟢 **NO NEW RAM**: n = PU_W − 4 − (1 + PU_DEC if a point) − 1, verified on
+      all seven format shapes; the flag goes in PU_TYPE bit 2 (`or a` -> `and
+      $03`, one byte). ⚠️ `flt_fmt`'s own text is NOT uniform — `PRINT 1.5E+10`
+      is plain but `PRINT 1.5E-10` is already exponential (rows `f.*`), so the
+      parser must accept an `E±dd` suffix on its INPUT. A model in those exact
+      digit-string terms passes **11/11**.
+
+      🟢 **AS OF 2026-09-04 ONLY `^^^^` REMAINS** (now 13 rows), plus `d.lead`
       (`.##`, an empty integer part — a SCANNER entry point, not a renderer
       change: `ptf_num` only starts a field on `#`). `^^^^`'s MANTISSA is already
       correct; only the exponent is missing.
@@ -2278,7 +2296,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6236 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6254 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

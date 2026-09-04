@@ -131,6 +131,35 @@ CASES = [
     ("e.small",    'PRINT USING"#.#^^^^";.001'),
     ("e.neg",      'PRINT USING"##.##^^^^";-1.5'),
     ("e.zero",     'PRINT USING"##.##^^^^";0'),
+    # The five original `e.*` rows do NOT pin the normalisation rule. `##.##`
+    # yields `1.50E+00` (ONE integer digit) but `#.#` yields `0.1E+04` (ZERO), so
+    # "always one integer digit" and "one column is the sign" both fit the five.
+    # 🎯 `e.wide` SEPARATES THEM: with 3 integer slots, "int_slots - 1 digits"
+    # predicts ` 15.00E-01` and "always one digit" predicts `  1.50E+00`.
+    ("e.wide",     'PRINT USING"###.##^^^^";1.5'),
+    ("e.negtight", 'PRINT USING"#.#^^^^";-1234'),
+    ("e.round",    'PRINT USING"#.#^^^^";.0999'),
+    ("e.car3",     'PRINT USING"##.##^^^";1.5'),
+    ("e.car5",     'PRINT USING"##.##^^^^^";1.5'),
+    # The renderer plan reads `flt_fmt`'s DECIMAL TEXT and shifts the point
+    # symbolically, so it needs to know (a) whether `^^^^` is legal with no `.`
+    # at all, and (b) what happens when flt_fmt would itself go exponential --
+    # the case where the text being parsed is not a plain digit run.
+    ("e.nodot",    'PRINT USING"##^^^^";1.5'),
+    ("e.huge",     'PRINT USING"##.##^^^^";1.5E+10'),
+    ("e.tiny",     'PRINT USING"##.##^^^^";1.5E-10'),
+    # What `flt_fmt` itself produces for these values -- i.e. the exact TEXT the
+    # exponent renderer will be parsing. If it is already exponential for the big
+    # and small ones, the renderer cannot assume a plain digit run.
+    ("f.big",      'PRINT 1.5E+10'),
+    ("f.small",    'PRINT 1.5E-10'),
+    ("f.frac",     'PRINT .0999'),
+    # Does `^^^^` COMBINE with the other specifiers? The answer decides whether
+    # the exponent path may reuse PU_COMMAS for its own scratch, which is the
+    # same alias question §13.2 got wrong once already -- so it is measured.
+    ("e.comma",    'PRINT USING"#,###.##^^^^";1234.5'),
+    ("e.sign",     'PRINT USING"+##.##^^^^";1.5'),
+    ("e.star",     'PRINT USING"**##.##^^^^";1.5'),
 
     # --- ⚠️ NO-ORACLE: printed, never scored --------------------------------
     ("x.dollar",   'PRINT USING"$$##";5'),
