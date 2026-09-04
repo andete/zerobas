@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1848 (T-6FE392)8 (T-529ABE)` from `TODO.md:6548 (T-529ABE)`: a
+      `TODO.md:1848 (T-6FE392)8 (T-529ABE)` from `TODO.md:6557 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2449,7 +2449,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6548 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6557 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4541,7 +4541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ✅ **MEASURED 2026-09-04 — D-CSAVEEXPR
       ([`scratchpad/csaveexpr_probe.py`](scratchpad/csaveexpr_probe.py)), on a
       fresh recording tape per row (the `basic_probe_cassave.py` fixture). Both
-      references agree on every row; **FOUR divergences, not one**:
+      references agree on every row; **SEVEN divergences, not one**:
 
           CSAVE A$        refs accepted (silent)   zb `load error`
           CSAVE A$+""     refs accepted            zb `load error`
@@ -4549,10 +4549,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
           CSAVE 5         refs `Type mismatch`     zb `load error`
           CSAVE"P"        silent on all three      (control)
 
-      🔴 **AND `CSAVE` BARE IS THE SHARPEST: zerobas ACCEPTS IT SILENTLY** where
-      both references raise. The entry framed this as "takes a literal only",
-      which is one of the four; the optional-argument question it flagged has a
-      measured answer now, and it is the one where this tree is silently wrong.
+      🔴 **AND `CSAVE`'s NAME IS NOT OPTIONAL AT ALL.** `csav_noname` serves three
+      forms and the reference **errors on every one**, with TWO different faces:
+
+          CSAVE       refs `Missing operand`   zb SILENT
+          CSAVE:      refs `Missing operand`   zb SILENT
+          CSAVE,2     refs `Syntax error`      zb SILENT
+          CSAVE"P",2  accepted on all three    (control)
+
+      So the entry's "optional argument … the `FILES`-style *is there an argument
+      at all* question" is answered and the premise is wrong: there is no
+      no-name form. **Seven divergences**, and the three above are all SILENT
+      ACCEPTANCE — this tree runs a `CSAVE` the reference refuses. The face
+      depends only on whether a `,` follows, which fully specifies the fix.
       🔴 **EVERY ZEROBAS REFUSAL HERE IS NON-RAISING.** `do_csave`'s `cp '"'`
       gate goes to `load_error`, which PRINTS and carries on, so `ON ERROR`
       cannot trap any of them — exactly the class D-FNEXPR2 closed for the other

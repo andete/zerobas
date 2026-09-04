@@ -49,6 +49,12 @@ CASES = [
     ("s.expr",   'CSAVE A$+""','a string EXPRESSION'),
     ("s.bare",   'CSAVE',      "CSAVE's OPTIONAL argument"),
     ("s.num",    'CSAVE 5',    'a NUMERIC operand'),
+    # ⚠️ csav_noname SERVES THREE FORMS, and "bare CSAVE must raise" would change
+    # all of them. These separate the one the reference rejects from the ones it
+    # may accept -- without them the fix is specified on one row out of three.
+    ("s.speed",  'CSAVE,2',    'NO NAME but a speed -- the same csav_noname path'),
+    ("s.colon",  'CSAVE:',     'no name, followed by a colon -- also csav_noname'),
+    ("c.namesp", 'CSAVE"P",2', 'CONTROL: name AND speed, the fully-formed case'),
 ]
 
 
