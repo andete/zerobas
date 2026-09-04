@@ -297,10 +297,23 @@ pu_num_flt:
                 ld      b,a                 ; the rendered length
                 jr      pu_num_typed
 pu_num_int:
+                ; ⚠️ pu_fmt_int IS SHARED WITH STR$ (basic/str-engine.asm), which
+                ; calls it and then reads NUMBUF. It is not a PRINT USING-private
+                ; routine, so its output buffer is part of STR$'s contract too --
+                ; retargeting it moved the writer and left that reader behind,
+                ; and STR$(5) started returning a blank. Its result is at most 7
+                ; bytes ("-32768"), so NUMBUF is the right size for it; only the
+                ; RENDERER needs the wide buffer. Copy across instead.
                 call    pu_fmt_int          ; NUMBUF = "[-]digits",0 ; B = length
+                ld      hl,NUMBUF
+                ld      de,PU_NUM
+                ld      c,b
+                inc     c                   ; digits + the 0 terminator
+                ld      b,0
+                ldir
 pu_num_typed:
                 ; D-PUSIGN: `+`/`-` sign placement, done sub-side (pure RAM over
-                ; NUMBUF; ~60 B, and page 1 had 50). Returns the new length in A.
+                ; PU_NUM; ~60 B, and page 1 had 50). Returns the new length in A.
                 ld      a,(PU_FLAGS)
                 bit     3,a
                 jr      z,pu_num_nosign

@@ -65,9 +65,9 @@ pu_tail_tenant:
 ; docs/spec-basic-pufloat.md. Reached only when PU_FLAGS bit 3 says the field
 ; carried a sign specifier.
 ;
-;   in   NUMBUF = "[-]digits",0 as pu_fmt_int left it
+;   in   PU_NUM = "[-]digits",0 as pu_fmt_int left it
 ;        PU_FLAGS bit4 = TRAILING (else leading), bit5 = the char is `+`
-;   out  NUMBUF rewritten; A = its new length. Clobbers AF, BC, DE, HL.
+;   out  PU_NUM rewritten; A = its new length. Clobbers AF, BC, DE, HL.
 ;
 ; Three transformations, and the measured contract is what picks them:
 ;     `+##` ·  5   ->  ` +5`   a `+` is PREPENDED
@@ -81,7 +81,7 @@ pu_tail_tenant:
 ; equally live in basic/printusing.asm -- but that is main page 1, which had 50 B
 ; free, and this is ~60. Page-0 closure holds trivially: no main-ROM call at all.
 ;
-; NUMBUF is 8 bytes and the widest case fits: "-32768" is 6 + terminator, and the
+; PU_NUM is 8 bytes and the widest case fits: "-32768" is 6 + terminator, and the
 ; trailing form only MOVES that byte, while the leading form prepends to at most
 ; "32767" -> 6 + terminator.
 pu_sign_tenant:
@@ -89,7 +89,7 @@ pu_sign_tenant:
                 bit     4,a
                 jr      nz,pst_trail
                 ; --- LEADING: only a POSITIVE value changes ------------------
-                ld      a,(NUMBUF)
+                ld      a,(PU_NUM)
                 cp      '-'
                 jr      z,pst_len           ; negative: the `-` already leads
                 call    pst_end             ; HL -> terminator, B = length
@@ -101,10 +101,10 @@ pu_sign_tenant:
                 ld      b,0
                 lddr                        ; shift right, backwards
                 ld      a,'+'
-                ld      (NUMBUF),a
+                ld      (PU_NUM),a
                 jr      pst_len
 pst_trail:
-                ld      a,(NUMBUF)
+                ld      a,(PU_NUM)
                 cp      '-'
                 jr      z,pst_tneg
                 ; positive: append `+` (bit5) or a SPACE
@@ -122,8 +122,8 @@ pst_tput:
 pst_tneg:
                 ; negative: drop the leading `-`, then append one. Always `-`,
                 ; even under `##+` -- measured.
-                ld      hl,NUMBUF+1
-                ld      de,NUMBUF
+                ld      hl,PU_NUM+1
+                ld      de,PU_NUM
                 call    pst_end_hl          ; BC = bytes remaining incl. terminator
                 ldir
                 call    pst_end
@@ -135,9 +135,9 @@ pst_len:
                 ld      a,b
                 ret
 
-; pst_end -- HL -> NUMBUF's 0 terminator, B = the length before it.
+; pst_end -- HL -> PU_NUM's 0 terminator, B = the length before it.
 pst_end:
-                ld      hl,NUMBUF
+                ld      hl,PU_NUM
                 ld      b,0
 pse_lp:
                 ld      a,(hl)
@@ -172,13 +172,13 @@ psh_done:
 ; same constraint pu_to_field already lives under, and the reason this file binds
 ; `pchar` to the sub-local DETOKBUF append instead.
 ;
-;   in   NUMBUF holds the rendered digits; PU_W the field width; PU_FLAGS bit2
+;   in   PU_NUM holds the rendered digits; PU_W the field width; PU_FLAGS bit2
 ;        the asterisk fill
 ;   out  DETOKBUF = pad + digits (or `%` + digits on overflow), 0-terminated
 pu_emit_tenant:
                 ld      de,DETOKBUF
                 ld      (DB_CUR),de         ; reset the append cursor
-                ld      hl,NUMBUF           ; length, measured here rather than
+                ld      hl,PU_NUM           ; length, measured here rather than
                 ld      b,0                 ; passed -- a marshalled byte would be
 pet_len:                                    ; one more thing to keep in step
                 ld      a,(hl)
@@ -208,7 +208,7 @@ pet_over:
                 ld      a,'%'               ; field overflow marker (MSX)
                 call    pchar
 pet_body:
-                ld      hl,NUMBUF
+                ld      hl,PU_NUM
 pet_cp:
                 ld      a,(hl)
                 or      a

@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1718 (T-6FE392)8 (T-529ABE)` from `TODO.md:6254 (T-529ABE)`: a
+      `TODO.md:1747 (T-6FE392)8 (T-529ABE)` from `TODO.md:6283 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1227,6 +1227,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and `PU_COMMAS` now share `PU_WP`, where the exclusivity is provable in one
       file against one flag, and **row `x.mixed` measures it** rather than
       asserting it: one format string carrying both a plain field and a `.` field.
+
+- [x] 🔴 **D-PUBUF — `PRINT USING` WAS RENDERING INTO AN 8-BYTE BUFFER**
+      (2026-09-04, [`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md) §15).
+      Found while sizing the `^^^^` renderer. `NUMBUF` is EIGHT bytes at `$E0C0`
+      and is shared with `print.asm` / `list.asm` / `str-engine.asm`, so widening
+      it was not the fix. **D-PUCOMMA already overran it** — `1,234,567` is ten
+      bytes with its terminator — reaching `VALTYP` and `STRPTR`, which are
+      rewritten before any read, and **RAM HAS NO GATE**, so nothing flagged it.
+      🎯 **THE WITNESS WAS ALREADY IN THE ROW SET, PRINTING NOTHING.** `e.huge`
+      renders `15000000000.00` — FIFTEEN bytes — reaching **`PRDEST`**, the cell
+      `PRINT` reads to pick its sink, and the row produced **no output at all**.
+      An empty column reads like a row with nothing to say rather than the defect
+      itself. Fixed with a 32-byte `PU_NUM` at `DETOKBUF + 256` (the buffer
+      D-PUEMIT already established as PRINT USING scratch); 30 references
+      retargeted. Knife **1/1**
+      ([`scratchpad/pubuf_knives.py`](scratchpad/pubuf_knives.py)) — and the
+      plant's ROM hash is **byte-identical to the pre-fix baseline**, so the arm
+      reproduces the shipped state rather than approximating it.
+      🔴 **THE 30-REFERENCE SWEEP BROKE `STR$` AND THE BATTERY CAUGHT IT** (§15.4,
+      92/97: `unit-test`, `string-acceptance`, `graphics-acceptance` and three
+      `lineerr` shards). `"N="+STR$(5)` returned `b'N= \x00'`. **`pu_fmt_int` is
+      not PRINT USING-private** — `basic/str-engine.asm` calls it and reads
+      `NUMBUF` itself, so that buffer is part of STR$'s contract too. The sweep
+      moved the writer and left the reader behind: a mechanical rule applied
+      correctly, breaking a different invariant. Fixed by DECOUPLING rather than
+      chasing readers — `pu_fmt_int` keeps `NUMBUF` (8 bytes is right for
+      `-32768`) and `pu_do_number` copies across, so only the renderer holds the
+      wide buffer. **0 of 64 rows move**, which is what makes the copy equivalent
+      rather than merely plausible.
 
 - [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
       DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
@@ -2296,7 +2325,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6254 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6283 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

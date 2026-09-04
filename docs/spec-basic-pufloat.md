@@ -582,3 +582,69 @@ kind, and its numeric test is `PU_TYPE == 0`, so the test becomes `and $03`
 **Status: rule pinned and modelled, Z80 not yet written.** The 13 rows are in the
 probe and divergent, which is the honest state — they are characterisation, not
 regressions.
+
+## 15. 🔴 D-PUBUF — PRINT USING was rendering into an 8-byte buffer
+
+Found while sizing the `^^^^` renderer: **`NUMBUF` is eight bytes** (`$E0C0`),
+and it is shared with `print.asm`, `list.asm` and `str-engine.asm`, so it cannot
+simply be widened.
+
+D-PUCOMMA already overran it. `USING"##,###,###";1234567` renders `1,234,567` —
+**ten bytes with its terminator** — into eight, reaching `VALTYP` (`$E0C8`) and
+`STRPTR` (`$E0C9`). That shipped, and stayed invisible because both cells are
+rewritten by the next evaluation before anything reads them. **RAM has no gate**,
+so nothing could have flagged it.
+
+### 15.1 🎯 The witness was already in the row set, printing nothing
+
+`e.huge` — `USING"##.##^^^^";1.5E+10` — renders `15000000000.00`, **fifteen bytes
+with its terminator**. That reaches `PRDEST` (`$E0CB`), the cell `PRINT` reads to
+choose its sink. The row's output was:
+
+    e.huge     refs ' 1.50E+10'     zerobas ''
+
+**Empty.** Not "wrong text" — *no output at all*, because the destination byte
+had been overwritten. And an empty column reads like a row with nothing to say
+rather than like the defect itself, which is exactly the failure mode
+[an-unnamed-outcome-reads-as-no-outcome] names. The row had been sitting in the
+probe as an unremarkable `^^^^` divergence.
+
+After the fix the same row prints `%15000000000.00^^^^` — still wrong, because
+`^^^^` is not implemented yet, but the machine is no longer writing over its own
+print destination.
+
+### 15.2 The fix
+
+`PU_NUM` is a 32-byte buffer at `DETOKBUF + 256`. `DETOKBUF` is 1280 bytes and is
+already the established PRINT USING scratch — D-PUEMIT builds the finished field
+at `DETOKBUF + 0` — so the two are live at once and cannot collide: a field is
+bounded by `PU_FMTMAX` (32), far below the 256-byte offset. 30 references across
+`basic/printusing.asm`, `sub/printusing.asm` and `sub/punum.asm` were retargeted.
+
+### 15.3 Knife — 1/1, and the plant reproduces the shipped ROM exactly
+
+`K-PB1` points the render buffer back at `NUMBUF`. `e.huge` goes silent again and
+the five short-field rows hold. The planted build's ROM hash is **byte-identical
+to the pre-fix baseline**, which is what makes the arm a reproduction of the
+shipped state rather than an approximation of it.
+
+### 15.4 🔴 The 30-reference sweep broke `STR$`, and the battery caught it
+
+Retargeting every `NUMBUF` in the three PRINT USING files went 92/97: `unit-test`,
+`string-acceptance`, `graphics-acceptance` and three `lineerr` shards all red.
+
+    "N="+STR$(5)   ->   b'N= \x00'      (want b'N= 5')
+
+**`pu_fmt_int` is not a PRINT USING-private routine.** `basic/str-engine.asm`
+calls it and then reads `NUMBUF` itself, so that buffer is part of **`STR$`'s**
+contract as much as PRINT USING's. The sweep moved the writer and left that
+reader behind — the shared-tail failure again, where a routine's name suggests
+one owner and its callers say otherwise. The mechanical rule ("this file's
+references") was applied correctly and still broke a different invariant.
+
+The fix is to **decouple rather than chase readers**: `pu_fmt_int` keeps `NUMBUF`,
+whose eight bytes are the right size for its output (`-32768` is seven with the
+terminator), and `pu_do_number` copies the result across into `PU_NUM`. Only the
+*renderer* — the path that can produce twelve characters — needs the wide buffer.
+Twelve bytes of main page 1, and **0 of 64 probe rows move**, which is what says
+the copy is equivalent rather than merely plausible.

@@ -3214,6 +3214,25 @@ PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2) -- ALIASE
 ; That argument is measured, not asserted: probe row `x.mixed` puts a plain field
 ; and a `.` field in ONE format string, which is the statement that would break
 ; if the exclusion ever stopped holding.
+; 🔴 PRINT USING RENDERS INTO ITS OWN BUFFER, NOT `NUMBUF`. NUMBUF is EIGHT
+; bytes at $E0C0 and is shared with print.asm / list.asm / str-engine.asm, so it
+; cannot simply be widened. D-PUCOMMA rendered `12,345,678` into it -- ten
+; characters plus a terminator, ELEVEN bytes -- which runs into VALTYP ($E0C8)
+; and STRPTR ($E0C9). That shipped, and stayed invisible because both cells are
+; rewritten by the next evaluation before anything reads them; RAM HAS NO GATE,
+; so nothing could have flagged it either.
+;
+; The exponent form measured in docs/spec-basic-pufloat.md §14 makes it real
+; rather than latent: ` 1234.50E+00` is THIRTEEN bytes with its terminator and
+; reaches PRDEST ($E0CB) and PRDEV ($E0CC), which ARE live across the render --
+; PRINT# USING reads PRDEST to choose its sink.
+;
+; This sits in DETOKBUF's tail. That buffer is 1280 bytes and is already the
+; established PRINT USING scratch (D-PUEMIT builds the finished field at
+; DETOKBUF+0), so both are live at once and cannot collide: a field is bounded by
+; PU_FMTMAX, far below the 256-byte offset here.
+PU_NUM          equ     DETOKBUF + 256      ; PRINT USING numeric render buffer,
+                                            ; 32 bytes, 0-terminated
 PU_COMMAS       equ     $EEFB   ; PRINT USING `,`: commas to insert (D-PUCOMMA) (1)
 PU_DEC          equ     $EEFC   ; PRINT USING `.`: decimal places requested (D-PUDOT) (1)
 ; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT

@@ -29,19 +29,19 @@
 ; our own flt_fmt. No disassembly.
 ; ===========================================================================
 
-; --- pu_num_tenant: the live numeric value -> NUMBUF as PRINT USING wants it -
+; --- pu_num_tenant: the live numeric value -> PU_NUM as PRINT USING wants it -
 ;   in   FAC / FACTYP hold the evaluated argument (the caller routes FACTYP==2
 ;        to its own integer path, which is already correct and cheaper)
-;   out  NUMBUF = "[-]digits",0 rounded half-up to a whole number
+;   out  PU_NUM = "[-]digits",0 rounded half-up to a whole number
 ;        A = its length. Clobbers AF, BC, DE, HL.
 ;
 ; `flt_fmt` leaves FOUTBUF as: a sign column (`-` or a SPACE), the digits, then
 ; ONE trailing space. We keep a `-`, drop the space column, copy digits until the
 ; run ends, and round on the first fraction digit.
-; --- pu_num_tenant: the live numeric value -> NUMBUF, to PU_DEC places -------
+; --- pu_num_tenant: the live numeric value -> PU_NUM, to PU_DEC places -------
 ;   in   FAC / FACTYP hold the evaluated argument
 ;        PU_FLAGS bit6 = a `.` was scanned; PU_DEC = how many places
-;   out  NUMBUF = "[-]digits[.digits]",0 ; A = its length. Clobbers AF, BC, DE, HL.
+;   out  PU_NUM = "[-]digits[.digits]",0 ; A = its length. Clobbers AF, BC, DE, HL.
 ;
 ; 🎯 THE DIGITS ARE BUILT CONTIGUOUSLY AND THE POINT IS INSERTED LAST, so rounding
 ; at N places is ONE carry walk over ONE array -- there is no decimal point in the
@@ -50,7 +50,7 @@
 ;
 ; ⚠️ DIGSTART IS RECOMPUTED, NOT STACKED. The first attempt at this (D-PUDOT,
 ; reverted) juggled it through push/pop across three branches and crashed. It is
-; NUMBUF, or NUMBUF+1 when a `-` leads -- cheaper to derive than to keep, and it
+; PU_NUM, or PU_NUM+1 when a `-` leads -- cheaper to derive than to keep, and it
 ; removes every unbalanced-stack path at once.
 ;
 ; ⚠️ `##.` -- a point with ZERO places -- still prints the point (` 2.`, measured).
@@ -64,7 +64,7 @@
 ; (plus the two carry-growth cases) BEFORE this was written.
 pu_num_tenant:
                 call    flt_fmt             ; HL -> FOUTBUF
-                ld      de,NUMBUF
+                ld      de,PU_NUM
                 ld      a,(hl)
                 cp      '-'
                 jr      nz,pnt_nosign
@@ -234,7 +234,7 @@ pnt_point:
                 ld      a,(PU_FLAGS)
                 bit     6,a
                 jr      z,pnt_term          ; no `.` in the format at all
-                ; fraction length = end - DIGSTART - C. NUMBUF is 8 bytes and the
+                ; fraction length = end - DIGSTART - C. PU_NUM is 8 bytes and the
                 ; widest result fits, so neither subtraction borrows across a page.
                 call    pnt_digstart
                 ld      a,e
@@ -262,16 +262,16 @@ pnt_putdot:
 pnt_term:
                 xor     a
                 ld      (de),a              ; 0-terminate
-                ld      hl,NUMBUF
+                ld      hl,PU_NUM
                 ld      a,e
                 sub     l
                 ret
 
-; pnt_digstart -- HL = NUMBUF's first DIGIT, stepping past a leading `-`.
+; pnt_digstart -- HL = PU_NUM's first DIGIT, stepping past a leading `-`.
 ; Clobbers AF and HL only, which is why it can be called from inside the carry
 ; walk without disturbing DE, BC or the count in C.
 pnt_digstart:
-                ld      hl,NUMBUF
+                ld      hl,PU_NUM
                 ld      a,(hl)
                 cp      '-'
                 ret     nz
