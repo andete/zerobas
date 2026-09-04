@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1818 (T-6FE392)8 (T-529ABE)` from `TODO.md:6404 (T-529ABE)`: a
+      `TODO.md:1820 (T-6FE392)8 (T-529ABE)` from `TODO.md:6416 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1477,7 +1477,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
 - [ ] 🔁 **STANDING SEQUENCING (Joost, 2026-09-02): SPEED MATTERS AND WE SHOULD
       AT LEAST TRY — BUT CORRECTNESS COMES FIRST.** Answers the charter question
       D-INTERPSPEED raised (*does "faithful MSX1 BASIC" include speed?*): **yes**,
-      and the 2.5–3.1× measured against the CF-3300 is therefore a real defect
+      and the 2.5–3.8× measured against the CF-3300 (the band was 2.5–3.1× until
+      2026-09-04, when the missing seventh row was measured at 3.81×) is
+      therefore a real defect
       and not an accepted property. **It is also NOT the next thing to work on.**
       🎯 **WHAT THIS RE-ORDERS.** Every open DIVERGENCE outranks every speed item.
       A row where zerobas answers differently from the reference is correctness;
@@ -2419,7 +2421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6404 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6416 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2630,9 +2632,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       opportunistically, when touching a probe for another reason.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (re-measured 2026-08-26: 0 stray writes on a battery path; DE-ESCALATED).
 
-- [ ] 🐌 **THE INTERPRETER IS 2.5–3.1× SLOWER THAN THE CF-3300 — ON EVERYTHING,
-      NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.** Measured
-      2026-09-02 (D-INTERPSPEED,
+- [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
+      NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
+      🔴 **THE BAND WAS 2.5–3.1× UNTIL 2026-09-04, AND THE APPARATUS WAS PICKING
+      IT.** The seventh row, `FOR I=1 TO 2000:X=I*2+1:NEXT`, read `<NO OUTPUT>`
+      at the probe's 60-emulated-second budget and never entered the table below
+      — it needs ~64 s on zerobas. It is the **worst ratio in the set (3.81×)**,
+      so its absence pulled the reported ceiling down by 0.7×. A missing
+      measurement printed like a row with nothing to say, in a probe
+      `filed_row_sweep` cannot parse and therefore never adjudicated. Budget
+      widened to 150 s; all seven rows report. **The independent `width: TIME`
+      rows in `playfn_fixture_probe` had already read ~3.5×**, above the old
+      band, and nothing connected them. Measured 2026-09-02 (D-INTERPSPEED,
       [`docs/spec-basic-interpspeed.md`](docs/spec-basic-interpspeed.md),
       [`scratchpad/interpspeed_probe.py`](scratchpad/interpspeed_probe.py)).
       **Measurement only, no code change.** `TIME` jiffies read from inside the
@@ -2644,6 +2655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
           I=I+1:IF I<2000 THEN 30 (no FOR)      718      1797   2.50x
           FOR J=1 TO 2000:I=I+1:NEXT            576      1692   2.94x
           FOR I=1 TO 500:A$="AB"+"CD":NEXT      122       300   2.46x
+          FOR I=1 TO 2000:X=I*2+1:NEXT         1004      3826   3.81x  <- added 09-04
           X=1                    (the floor)      0         0     --
 
       ✅ **IT IS A RATIO, NOT AN OFFSET** — 3.07/3.06/3.05 across a 4x range of

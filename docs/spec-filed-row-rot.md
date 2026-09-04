@@ -188,3 +188,47 @@ works only because adjudication does substring containment on the marker line.
 enter this corpus even if an open item cites it. That is *correct* for those
 three, because each is now collected by the battery as a gate, which is stronger.
 It is a hazard for any future promotion that does **not** get a gate.
+
+## D-SPEEDHOLE (2026-09-04) — the three unparseable probes, and what one of them was hiding
+
+D-FILEDPIN recorded that `budget_probe`, `interpspeed_probe` and
+`put3consume_probe` report `🔴 NOTHING PARSED`. Reading them settles what that
+means — and finds a published number that was wrong because of it.
+
+### They have no verdict channel, and that is not the same as measuring nothing
+
+All three are **measurement instruments**: emulated-time margins, `TIME` ratios,
+cluster/LOF values under an explicit `read:` note. None has a `SAME`/`DIFF`
+column to adjudicate. The old label conflated that with a probe that genuinely
+produced nothing, and **three permanent red lines are how a real one stops being
+noticed.**
+
+A probe may now declare it — `<probe>: NO-VERDICT -- why` in the pin file — and
+an *undeclared* silence stays red. The declaration says only "there is no verdict
+to read here"; it explicitly does not say the probe's rows are fine.
+
+### 🔴 Which matters, because one of them was hiding a wrong published number
+
+`interpspeed_probe`'s seventh row read `<NO OUTPUT>`:
+
+    FOR I=1 TO 2000:X=I*2+1:NEXT     cf3300 1004   zb 3826   3.81x
+
+zerobas needs ~64 emulated seconds for it and the probe's budget was 60. So the
+row never entered any table — and it is the **worst ratio in the set**, so its
+absence pulled the published ceiling from 3.8× down to **2.5–3.1×**. The
+apparatus was choosing the headline of `docs/spec-basic-interpspeed.md`.
+
+Three separate things kept it invisible, and each is a named failure shape here:
+
+1. **A missing measurement prints like a row with nothing to say** — `<NO OUTPUT>`
+   in a column, next to six rows that reported.
+2. **The probe was unadjudicated**, because the sweep cannot parse it — so
+   nothing ever asked why one row was blank.
+3. **A corroborating reading existed and was not connected**:
+   `playfn_fixture_probe`'s `width: TIME` rows independently read ~3.5×, above the
+   published band, and sat unpinned until D-FILEDPIN attached them to that entry
+   an hour before this was found.
+
+The default budget is 150 s now and all seven rows report. Emulated time runs far
+above real time, so the wide budget is nearly free — **the narrow one bought
+nothing and cost the conclusion.**

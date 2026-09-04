@@ -146,8 +146,22 @@ def score(out, state, known=()):
             if state == "rc=0" else ""
         return f"DIVERGES {where}{hidden}"
     if rows == 0:
-        # Not "clean": either the probe measured nothing, or this sweep cannot
-        # read its format. Both need a human; neither is a green tree.
+        # 🎯 TWO DIFFERENT THINGS WORE ONE RED LABEL. "The probe measured
+        # nothing" is a fault; "this probe has no verdict channel at all" is a
+        # MEASUREMENT INSTRUMENT doing its job -- budget_probe prints emulated-
+        # time margins, interpspeed_probe prints ratios, put3consume_probe prints
+        # values under a reading note. None of them has a SAME/DIFF column to
+        # adjudicate, and three permanent red lines are how a real one stops
+        # being noticed.
+        #
+        # So a probe may DECLARE it in the pin file (`<probe>: NO-VERDICT -- why`)
+        # and the declaration is what separates them. An undeclared silence stays
+        # red. ⚠️ Declaring one does NOT make its rows safe: interpspeed sat here
+        # for two days with `c.arith` reading `<NO OUTPUT>`, which set the filed
+        # speed band 0.7x too low -- see docs/spec-basic-interpspeed.md.
+        if "NO-VERDICT" in known:
+            return ("--  no verdict channel BY DESIGN (declared): a measurement "
+                    "instrument, not an oracle. Its ROWS still need a human.")
         return "🔴 NOTHING PARSED -- probe measured nothing, or format unknown"
     if state not in ("rc=0",):
         return f"\u26a0\ufe0f  {state} but no divergence marker in {rows} parsed line(s) -- READ IT"

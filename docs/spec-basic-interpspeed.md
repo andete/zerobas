@@ -1,4 +1,10 @@
-# D-INTERPSPEED — zerobas's interpreter is 2.5–3.1× slower than the CF-3300, on everything
+# D-INTERPSPEED — zerobas's interpreter is 2.5–3.8× slower than the CF-3300, on everything
+
+> 🔴 **THE TITLE SAID 2.5–3.1× UNTIL 2026-09-04.** The seventh benchmark row was
+> missing from every table below — see §"The band was set by the apparatus" at
+> the end. The analysis in this document is unchanged and still correct; only its
+> ceiling moves, and the passages that reason against "2.5–3.1×" are left as
+> written so the correction is visible rather than absorbed.
 
 *Measured 2026-09-02. Probe:
 [`scratchpad/interpspeed_probe.py`](../scratchpad/interpspeed_probe.py).
@@ -135,3 +141,33 @@ today (a cluster leak and a stale cache key, both plausible, both refuted).
 * `c.arith` (`FOR I=1 TO 2000:X=I*2+1:NEXT`) has **no zb reading**: at 1004
   jiffies on the reference, 3× exceeds even the 60 s step. Consistent with the
   finding, but it is an absence and is not counted as a data point.
+
+
+## 🔴 The band was set by the apparatus (correction, 2026-09-04)
+
+Every table in this document has **six** benchmark rows. The probe has **seven**.
+
+    FOR I=1 TO 2000:X=I*2+1:NEXT     cf3300 1004   zb 3826   3.81x
+
+It read `<NO OUTPUT>` at the probe's 60-emulated-second budget, because zerobas
+needs ~64 s for it, and a missing measurement prints like a row with nothing to
+say. It is the **worst ratio in the set**, so its absence pulled the reported
+ceiling from 3.8× down to 3.1× — **the apparatus was choosing the range, and the
+range is this document's headline.**
+
+Two things kept it invisible:
+
+* the probe is one of three `filed_row_sweep` reports as `NOTHING PARSED`, so no
+  adjudication ever looked at its rows;
+* `playfn_fixture_probe`'s `width: TIME for FOR 20/50` rows independently read
+  **~3.5×**, above the published band, and nothing connected them to this
+  document until D-FILEDPIN pinned them to this entry.
+
+The default budget is now 150 s and all seven rows report. Emulated time runs far
+above real time, so a wide budget is nearly free — the narrow one bought nothing
+and cost the conclusion.
+
+**What does not change:** every ratio already published is still correct, and the
+comparisons that reason against the baseline (PAINT, the eviction question) are
+unaffected in direction — PAINT's 1.9–2.0× is still *below* the interpreter
+baseline, which was the point being made.

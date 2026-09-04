@@ -33,7 +33,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "probes", "basic"))
 import basic_probe_fldwidth as F                                  # noqa: E402
 
-STEP = float(sys.argv[2]) if len(sys.argv) > 2 else 60.0
+# 🔴 60.0 WAS TOO SMALL AND IT COST THE SLOWEST ROW. `c.arith` needs ~3826 TIME
+# ticks on zerobas (~64 emulated seconds) and read `<NO OUTPUT>` at 60 -- a
+# MISSING MEASUREMENT that prints like a row with nothing to say. It was the
+# worst ratio in the set (3.81x), so its absence pulled the reported band down to
+# 2.5-3.1x: the apparatus was choosing the range. Measured at 150; the budget is
+# emulated time, which openMSX runs well above real time, so a wide one is cheap.
+STEP = float(sys.argv[2]) if len(sys.argv) > 2 else 150.0
 for s in ("zb", "cf3300", "vg8020"):
     F.SIDES[s] = dict(F.SIDES[s], step=STEP)
 
