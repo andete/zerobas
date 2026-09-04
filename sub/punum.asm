@@ -63,6 +63,9 @@
 ; The algorithm was checked as a model against the eleven measured `d.*` values
 ; (plus the two carry-growth cases) BEFORE this was written.
 pu_num_tenant:
+                ld      a,(PU_DEC)
+                and     a                   ; bit7 = D-PUEXP's `^^^^` marker
+                jp      m,pnt_exp
                 call    flt_fmt             ; HL -> FOUTBUF
                 ld      de,PU_NUM
                 ld      a,(hl)
@@ -98,6 +101,7 @@ pnt_places:
                 bit     6,a
                 jr      z,pnt_atdot
                 ld      a,(PU_DEC)
+                and     $7F                 ; mask D-PUEXP's marker bit
                 ld      b,a
 pnt_atdot:
                 ld      a,(hl)              ; step past the source `.` so HL walks
@@ -275,5 +279,295 @@ pnt_digstart:
                 ld      a,(hl)
                 cp      '-'
                 ret     nz
+                inc     hl
+                ret
+
+; --- D-PUEXP: `^^^^`, the exponent form --------------------------------------
+; docs/spec-basic-pufloat.md §14. Transcribed from a Python model that passes
+; 15/15 against the measured rows -- the same order of work that made D-PUDOT
+; land on its second attempt after the first was written straight into Z80.
+;
+; 🎯 ONE RULE, and two special cases that looked real and are not: the mantissa
+; carries (FIELD COLUMNS BEFORE THE POINT) - 1 integer digits, counting `#`, `,`,
+; `**` and a leading sign alike. `e.comma` is what makes that unmistakable --
+; `#,###` is FIVE columns and the mantissa gets FOUR integer digits, while the
+; comma itself is never printed.
+;
+; It needs no new RAM: n is derived from cells that already exist,
+;     n = PU_W - 4 (the `E+dd`) - 1 (the sign column) - (1 + places, if a point)
+;
+; ⚠️ NO FLOAT SCALING. The value's decimal TEXT comes from flt_fmt and the point
+; is shifted symbolically. flt_fmt's text is not uniform and that was measured
+; (rows f.big / f.small): `PRINT 1.5E+10` is ` 15000000000 ` but `PRINT 1.5E-10`
+; is ` 1.5E-10 ` -- already exponential -- so the parser accepts an `E±dd` on its
+; own INPUT.
+;
+; ⚠️ THE POINT PRINTS ON `##.^^^^` (row e.dot0, ` 2.E+00`), so "has a point" is
+; PU_FLAGS bit6 and NOT "places > 0". The model had that wrong until e.dot0 was
+; measured.
+pnt_exp:
+                ; ⚠️ flt_fmt FIRST, then n -- n's inputs are all in RAM, while BC
+                ; is NOT preserved across the call. Computing n before it and
+                ; reading C after cost two rows (e.big / e.small), and one of the
+                ; wrong answers was a plausible 0 that let e.round pass anyway.
+                call    flt_fmt             ; HL -> FOUTBUF
+                ld      a,(PU_DEC)
+                and     $7F
+                ld      b,a                 ; B = places
+                ld      a,(PU_W)
+                sub     5                   ; the `E+dd` and the leading column
+                ld      c,a
+                ld      a,(PU_FLAGS)
+                bit     6,a
+                jr      z,pnt_x_n
+                ld      a,c
+                sub     b
+                dec     a                   ; ...and the point's own column
+                ld      c,a
+pnt_x_n:
+                ; --- the leading column ---------------------------------------
+                ; ⚠️ EMIT NOTHING FOR A POSITIVE VALUE THAT HAS INTEGER DIGITS.
+                ; The fixed-point path writes no sign either, and pu_sign_tenant
+                ; PREPENDS its `+` rather than overwriting a blank -- a space here
+                ; made `+##.##^^^^` overflow its own field, and stopped `**`
+                ; filling. The `0` of `0.1E+04` is a different thing: with no
+                ; integer digit it IS the column (rows e.big / e.negtight).
+                ld      de,PU_NUM
+                ld      a,(hl)
+                cp      '-'
+                jr      nz,pnt_x_pos
+                ld      a,'-'
+                jr      pnt_x_put
+pnt_x_pos:
+                ld      a,c
+                or      a
+                jr      nz,pnt_x_sgnd
+                ld      a,'0'
+pnt_x_put:
+                ld      (de),a
+                inc     de
+pnt_x_sgnd:
+                inc     hl                  ; past flt_fmt's own sign column
+                push    de
+                pop     ix                  ; IX = the first mantissa digit, and
+                                            ; the floor the carry walk stops at
+                push    bc                  ; n, places
+                ; --- the significant digits -> PU_DIG, B = P ------------------
+                ; The value is 0.<digits> x 10^P.
+                ld      de,PU_DIG
+                ld      b,0
+pnt_x_ip:
+                ld      a,(hl)
+                cp      '0'
+                jr      c,pnt_x_ipd
+                cp      '9' + 1
+                jr      nc,pnt_x_ipd
+                ld      (de),a
+                inc     de
+                inc     hl
+                inc     b                   ; P counts the INTEGER digits
+                jr      pnt_x_ip
+pnt_x_ipd:
+                ld      a,(hl)
+                cp      '.'
+                jr      nz,pnt_x_ex
+                inc     hl
+pnt_x_fp:
+                ld      a,(hl)
+                cp      '0'
+                jr      c,pnt_x_ex
+                cp      '9' + 1
+                jr      nc,pnt_x_ex
+                ld      (de),a
+                inc     de
+                inc     hl
+                jr      pnt_x_fp
+pnt_x_ex:
+                xor     a
+                ld      (de),a              ; terminate PU_DIG -- "exhausted" is
+                                            ; then a byte test, not a compare
+                ld      a,(hl)
+                cp      'E'
+                jr      nz,pnt_x_strip
+                inc     hl
+                ld      a,(hl)
+                cp      '-'
+                jr      nz,pnt_x_eplus
+                inc     hl
+                call    pnt_x_e2
+                ld      c,a
+                ld      a,b
+                sub     c
+                ld      b,a
+                jr      pnt_x_strip
+pnt_x_eplus:
+                cp      '+'
+                jr      nz,pnt_x_e2go
+                inc     hl
+pnt_x_e2go:
+                call    pnt_x_e2
+                add     a,b
+                ld      b,a
+pnt_x_strip:
+                ; leading zeros are not significant; each one lowers P
+                ld      hl,PU_DIG
+pnt_x_sl:
+                ld      a,(hl)
+                cp      '0'
+                jr      nz,pnt_x_have
+                inc     hl
+                dec     b
+                jr      pnt_x_sl
+pnt_x_have:
+                ld      a,b
+                ld      (PU_COMMAS),a       ; P -- PU_COMMAS is free here, and
+                                            ; measurably so: `e.comma` shows the
+                                            ; exponent form never groups
+                pop     bc                  ; C = n, B = places
+                ld      a,(hl)
+                or      a
+                jr      nz,pnt_x_pnz
+                ld      a,c                 ; a ZERO value: force the exponent to
+                ld      (PU_COMMAS),a       ; 0 by taking P as n (row e.zero)
+pnt_x_pnz:
+                ld      a,(PU_COMMAS)
+                sub     c
+                ld      (PU_COMMAS),a       ; the displayed exponent = P - n
+                ld      a,b
+                add     a,c
+                ld      b,a                 ; B = wanted significant digits
+                ; --- copy that many digits, padding when the source runs out ---
+                push    ix
+                pop     de                  ; DE = where the mantissa begins
+                or      a
+                jr      z,pnt_x_round
+pnt_x_cl:
+                ld      a,(hl)
+                or      a
+                jr      z,pnt_x_cpad
+                inc     hl                  ; a real digit: advance the source so
+                jr      pnt_x_cput          ; the rounding digit below is right
+pnt_x_cpad:
+                ld      a,'0'
+pnt_x_cput:
+                ld      (de),a
+                inc     de
+                djnz    pnt_x_cl
+pnt_x_round:
+                ld      a,(hl)              ; first digit past the cut (0 when the
+                cp      '5'                 ; source was exhausted -> no rounding)
+                jr      c,pnt_x_pt
+                push    ix
+                pop     hl                  ; HL = the carry floor
+                push    de
+pnt_x_cw:
+                dec     de
+                ld      a,(de)
+                cp      '9'
+                jr      z,pnt_x_c9
+                inc     a
+                ld      (de),a
+                pop     de
+                jr      pnt_x_pt
+pnt_x_c9:
+                ld      a,'0'
+                ld      (de),a
+                ld      a,d
+                cp      h
+                jr      nz,pnt_x_cw
+                ld      a,e
+                cp      l
+                jr      nz,pnt_x_cw
+                ld      (hl),'1'            ; 999 -> 100: one more integer digit,
+                ld      a,(PU_COMMAS)       ; which the EXPONENT absorbs rather
+                inc     a                   ; than the field (row e.round)
+                ld      (PU_COMMAS),a
+                pop     de
+pnt_x_pt:
+                ; --- the point, if the format carries one ----------------------
+                ld      a,(PU_FLAGS)
+                bit     6,a
+                jr      z,pnt_x_e
+                ld      a,(PU_DEC)
+                and     $7F
+                ld      b,a                 ; the fraction moves right by one
+                push    de
+                ld      h,d
+                ld      l,e
+                inc     hl
+                ld      a,b
+                or      a
+                jr      z,pnt_x_dot
+pnt_x_sh:
+                dec     de
+                dec     hl
+                ld      a,(de)
+                ld      (hl),a
+                djnz    pnt_x_sh
+pnt_x_dot:
+                dec     hl
+                ld      (hl),'.'
+                pop     de
+                inc     de
+pnt_x_e:
+                ; --- `E`, the sign, and two exponent digits --------------------
+                ld      a,'E'
+                ld      (de),a
+                inc     de
+                ld      a,(PU_COMMAS)
+                ld      c,a
+                or      a
+                jp      p,pnt_x_epl
+                ld      a,'-'
+                ld      (de),a
+                inc     de
+                xor     a
+                sub     c
+                ld      c,a                 ; C = the magnitude
+                jr      pnt_x_ed
+pnt_x_epl:
+                ld      a,'+'
+                ld      (de),a
+                inc     de
+pnt_x_ed:
+                ld      b,'0' - 1
+pnt_x_tens:
+                inc     b
+                ld      a,c
+                sub     10
+                ld      c,a
+                jr      nc,pnt_x_tens
+                ld      a,c
+                add     a,10
+                add     a,'0'
+                ld      c,a
+                ld      a,b
+                ld      (de),a              ; tens
+                inc     de
+                ld      a,c
+                ld      (de),a              ; units
+                inc     de
+                xor     a
+                ld      (de),a
+                ld      hl,PU_NUM
+                ld      a,e
+                sub     l
+                ret
+
+; pnt_x_e2 -- the two exponent digits at HL as a binary value in A; HL advances.
+; Clobbers C, which the caller has already spilled.
+pnt_x_e2:
+                ld      a,(hl)
+                sub     '0'
+                ld      c,a
+                add     a,a
+                add     a,a
+                add     a,c
+                add     a,a                 ; A = 10 * the first digit
+                inc     hl
+                ld      c,a
+                ld      a,(hl)
+                sub     '0'
+                add     a,c
                 inc     hl
                 ret

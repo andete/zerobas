@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1747 (T-6FE392)8 (T-529ABE)` from `TODO.md:6283 (T-529ABE)`: a
+      `TODO.md:1772 (T-6FE392)8 (T-529ABE)` from `TODO.md:6308 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1257,6 +1257,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       wide buffer. **0 of 64 rows move**, which is what makes the copy equivalent
       rather than merely plausible.
 
+- [x] ✅ **D-PUEXP — `^^^^` SHIPS; THE FLOAT SPECIFIER SET IS COMPLETE**
+      (2026-09-04, [`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md) §16).
+
+          PRINT USING"##.##^^^^";1.5     refs ` 1.50E+00`    was ` 1.50^^^^`
+          PRINT USING"**##.##^^^^";1.5   refs `*150.00E-02`  was `***1.50^^^^`
+
+      **All 17 exponent rows green**, taking
+      [`scratchpad/pufloat_probe.py`](scratchpad/pufloat_probe.py) to **1
+      divergent of 47** — only `d.lead`. Knives **6/6**
+      ([`scratchpad/puexp_knives.py`](scratchpad/puexp_knives.py)), two of them
+      moving exactly one row each.
+      🟢 **ZERO RESIDENT COST.** §14 planned `PU_TYPE` bit 2 plus ~8 bytes of
+      routing against main page 1's 14. Not needed: `PU_FLAGS` bit 7 already
+      means "needs the renderer" and adds no width, so the scanner just sets it,
+      and `PU_DEC` bit 7 carries the marker (masked by the two sub-ROM readers).
+      325 bytes landed in sub page 1 (1321 -> 996); **main page 1 did not move**.
+      🔴 **ONE OF THE TWO FIRST-BUILD DEFECTS LIED CONVINCINGLY** (§16.2): `n` was
+      computed BEFORE `call flt_fmt` and read out of `C` after, and BC does not
+      survive that call — but **one of the two wrong answers was a plausible 0**,
+      so `e.round` PASSED on the same format string (`#.#^^^^`) that `e.big` and
+      `e.small` failed on. The other: writing `' '` in the leading column, when
+      the fixed-point path writes NOTHING and `pu_sign_tenant` PREPENDS its `+`
+      rather than overwriting a blank — `+##.##^^^^` overflowed its own field.
+      K-PX4 is its regression arm.
+
 - [ ] 🔴 **`PRINT USING`'s FLOAT FORMAT SPECIFIERS ARE MISSING, AND THE COMMENT
       DEFERRING THEM HAS HAD ITS CONDITION MET.** Found 2026-09-02 by D-PUSING
       (review tier, [`scratchpad/pusing_probe.py`](scratchpad/pusing_probe.py),
@@ -1273,7 +1298,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
           PRINT USING"+##";5          refs ` +5`        ✅ D-PUSIGN
           PRINT USING"##-";5          refs ` 5 `        ✅ D-PUSIGN
           PRINT USING"**##";5         refs `***5`       ✅ D-PUSTAR
-          PRINT USING"##.##^^^^";1.5  refs ` 1.50E+00`  🔴 here ` 1.50^^^^`
+          PRINT USING"##.##^^^^";1.5  refs ` 1.50E+00`  ✅ D-PUEXP
 
       🔭 **`^^^^`'s RULE IS NOW PINNED AND MODELLED, Z80 NOT YET WRITTEN**
       ([`docs/spec-basic-pufloat.md`](docs/spec-basic-pufloat.md) §14, 2026-09-04).
@@ -2325,7 +2350,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6283 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6308 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

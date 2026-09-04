@@ -3233,6 +3233,8 @@ PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2) -- ALIASE
 ; PU_FMTMAX, far below the 256-byte offset here.
 PU_NUM          equ     DETOKBUF + 256      ; PRINT USING numeric render buffer,
                                             ; 32 bytes, 0-terminated
+PU_DIG          equ     DETOKBUF + 512      ; D-PUEXP: the significant digits of
+                                            ; flt_fmt's text, point removed, 32 B
 PU_COMMAS       equ     $EEFB   ; PRINT USING `,`: commas to insert (D-PUCOMMA) (1)
 PU_DEC          equ     $EEFC   ; PRINT USING `.`: decimal places requested (D-PUDOT) (1)
 ; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT

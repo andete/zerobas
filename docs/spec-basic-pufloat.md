@@ -648,3 +648,76 @@ terminator), and `pu_do_number` copies the result across into `PU_NUM`. Only the
 *renderer* — the path that can produce twelve characters — needs the wide buffer.
 Twelve bytes of main page 1, and **0 of 64 probe rows move**, which is what says
 the copy is equivalent rather than merely plausible.
+
+## 16. ✅ D-PUEXP — `^^^^` ships, and `PRINT USING` is 46 of 47
+
+    PRINT USING"##.##^^^^";1.5      refs ` 1.50E+00`   was ` 1.50^^^^`
+    PRINT USING"#.#^^^^";1234       refs `0.1E+04`     was `%1234.0^^^^`
+    PRINT USING"**##.##^^^^";1.5    refs `*150.00E-02` was `***1.50^^^^`
+
+**All seventeen exponent rows are green.** The probe is **1 divergent of 47** —
+only `d.lead`, the `.##` empty-integer-part case, which needs a scanner entry
+point rather than a renderer change. The float specifier set (`**`, `+`/`-`,
+`.`, `,`, `^^^^`) is complete.
+
+### 16.1 Zero resident cost
+
+§14 planned to put the exponent flag in `PU_TYPE` bit 2, at the price of one byte
+in main page 1 plus about seven for routing. Main page 1 has **14 bytes**, so the
+plan was affordable but tight. It turned out to be free:
+
+* **`PU_FLAGS` bit 7 already means "this field needs the renderer, not
+  `pu_fmt_int`"** and contributes no width of its own, so the scanner just sets
+  it. Routing is untouched.
+* **`PU_DEC` bit 7** carries the exponent marker itself. Places are bounded by
+  `PU_FMTMAX`, so the bit is free — and the two readers that must not see it
+  (the width accounting and the fixed-point places count) mask with `and $7F`.
+  Both are sub-ROM, where bytes are not scarce.
+
+The scanner clears `PU_DEC` at the *start of every field* now, because a stale
+marker bit would make the next plain field exponential.
+
+The whole 325-byte renderer landed in sub page 1, which went 1321 → 996 B.
+**Main page 1 did not move.**
+
+### 16.2 🔴 Two defects in the first build, and one of them lied convincingly
+
+Thirteen of seventeen rows were green immediately. The four that were not came
+from two causes:
+
+**A scratch register that was the caller's value.** `n` was computed *before*
+`call flt_fmt` and read out of `C` afterwards — and `BC` does not survive that
+call. What makes it worth writing down is the shape of the failure: **one of the
+two wrong answers was a plausible `0`**, so `e.round` passed on the *same format
+string* (`#.#^^^^`) that `e.big` and `e.small` failed on. A row agreeing for the
+wrong reason, on the same format as the rows that disagreed. The fix is to
+compute `n` *after* the call — all of its inputs (`PU_W`, `PU_DEC`, `PU_FLAGS`)
+are in RAM, so nothing needed to survive anything.
+
+**A space is not "no sign".** The renderer wrote `' '` in the leading column for
+a positive value. The fixed-point path writes *nothing*, and `pu_sign_tenant`
+**prepends** its `+` rather than overwriting a blank — so `+##.##^^^^` overflowed
+its own field (`%+ 15.00E-01`) and `**##.##^^^^` stopped filling. The rule is:
+`-` when negative, `0` when there is no integer digit at all, and **nothing**
+otherwise. The `0` of `0.1E+04` is not padding — with no integer digit it *is*
+the column, which is exactly what `e.negtight`'s `-.1E+04` shows from the other
+side.
+
+### 16.3 Knives — 6/6
+
+| arm | plant | must move | must hold |
+|---|---|---|---|
+| K-PX1 | exponent path unreachable | `e.basic` `e.big` `e.comma` `e.wide` `e.zero` | `e.car3` `d.basic` `m.basic` |
+| K-PX2 | carets take no width | `e.basic` `e.wide` | `d.basic` `c.hash` |
+| K-PX3 | drop the point's column from `n` | `e.basic` `e.comma` `e.wide` | `e.nodot` `d.basic` |
+| K-PX4 | never write a leading column | `e.big` `e.small` | `e.basic` `e.wide` `e.negtight` `d.basic` |
+| K-PX5 | don't force a zero value's exponent | `e.zero` | `e.basic` `e.big` `d.basic` |
+| K-PX6 | a rounding carry doesn't bump the exponent | `e.round` | `e.basic` `e.big` `e.zero` |
+
+**K-PX4 is a regression arm for a bug that existed in the draft**, and its
+must-hold list carries `e.negtight`, where the leading character is real —
+without that row the arm could not tell "never write a column" from "write the
+right one". **K-PX5 and K-PX6 each move exactly one row.**
+
+`e.car3` is the control that matters for K-PX1: three carets are literal, so it
+must hold when the exponent path is removed entirely.

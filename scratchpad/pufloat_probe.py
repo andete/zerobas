@@ -160,6 +160,10 @@ CASES = [
     ("e.comma",    'PRINT USING"#,###.##^^^^";1234.5'),
     ("e.sign",     'PRINT USING"+##.##^^^^";1.5'),
     ("e.star",     'PRINT USING"**##.##^^^^";1.5'),
+    # A point with ZERO places AND an exponent. The n formula subtracts a column
+    # for the point, so this is the one shape where "no places" and "no point"
+    # stop coinciding -- measured rather than reasoned about.
+    ("e.dot0",     'PRINT USING"##.^^^^";1.5'),
 
     # --- ⚠️ NO-ORACLE: printed, never scored --------------------------------
     ("x.dollar",   'PRINT USING"$$##";5'),

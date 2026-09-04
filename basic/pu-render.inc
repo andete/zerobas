@@ -74,6 +74,10 @@ ptf_nofield:
                 ret
 ptf_num:
                 ; width = run of '#' from PU_POS (bounded by the format end).
+                xor     a
+                ld      (PU_DEC),a          ; per FIELD: bit7 is the D-PUEXP
+                                            ; marker, so a stale one would make
+                                            ; the next plain field exponential
                 ld      a,(PU_POS)
                 ld      c,a                 ; C = scan index
                 ld      b,0                 ; B = width
@@ -109,17 +113,15 @@ ptf_num_done:
                 ; decimal place. The count goes in PU_DEC for the renderer.
                 ld      a,(PU_FMTLEN)
                 cp      c
-                jr      z,ptf_num_sign      ; format ended: no decimal part
+                jr      z,ptf_num_caret     ; format ended: no decimal part
                 ld      e,c
                 ld      d,0
                 ld      hl,PU_FMT
                 add     hl,de
                 ld      a,(hl)
                 cp      '.'
-                jr      nz,ptf_num_sign
+                jr      nz,ptf_num_caret
                 inc     c                   ; consume the point
-                xor     a
-                ld      (PU_DEC),a
                 ; ⚠️ COUNT STRAIGHT INTO PU_DEC, do NOT borrow B. B holds the
                 ; integer-digit width and C the scan cursor, so the obvious
                 ; `push bc` / `ld b,0` / `pop bc` preserves the width and REWINDS
@@ -147,6 +149,46 @@ ptf_dec_lp:
 ptf_dec_done:
                 ld      a,(PU_FLAGS)
                 set     6,a                 ; a decimal part is present
+                ld      (PU_FLAGS),a
+ptf_num_caret:
+                ; --- D-PUEXP: EXACTLY FOUR `^` make the field exponential -------
+                ; Measured: three carets stay literal (`e.car3` -> ` 1.50^^^`) and
+                ; five consume four, leaving one literal (`e.car5`).
+                ld      a,(PU_FMTLEN)
+                sub     c
+                cp      4
+                jr      c,ptf_num_sign      ; fewer than four characters left
+                ld      e,c
+                ld      d,0
+                ld      hl,PU_FMT
+                add     hl,de
+                ld      e,4                 ; ⚠️ NOT B -- B is the field WIDTH
+ptf_car_lp:
+                ld      a,(hl)
+                cp      '^'
+                jr      nz,ptf_num_sign
+                inc     hl
+                dec     e
+                jr      nz,ptf_car_lp
+                ld      a,c
+                add     a,4
+                ld      c,a                 ; consume the four
+                ld      a,b
+                add     a,4
+                ld      b,a                 ; and they occupy four columns
+                ld      a,(PU_DEC)
+                or      $80                 ; mark the field exponential
+                ld      (PU_DEC),a
+                ld      a,(PU_FLAGS)
+                set     7,a                 ; 🎯 ROUTE IT THROUGH THE RENDERER FOR
+                                            ; FREE. Bit7 already means "this field
+                                            ; needs the renderer, not pu_fmt_int"
+                                            ; and contributes NO width of its own,
+                                            ; so reusing it costs zero resident
+                                            ; bytes -- and main page 1 has 14.
+                                            ; The tenant tells the two apart on
+                                            ; PU_DEC bit7 and takes the exponent
+                                            ; path before any comma pass.
                 ld      (PU_FLAGS),a
 ptf_num_sign:
                 ; --- D-PUSIGN: a TRAILING `+` or `-` right after the run --------
@@ -197,6 +239,7 @@ ptf_num_dw:
                 inc     b                   ; the `.` itself
                 push    af
                 ld      a,(PU_DEC)
+                and     $7F                 ; bit7 is D-PUEXP's marker, not places
                 add     a,b
                 ld      b,a
                 pop     af
