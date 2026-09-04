@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6918 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6922 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6918 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6922 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4879,23 +4879,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       raising the battery's.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] 🔴 **THE FILED `load error` SYMPTOM IS REFUTED — WHAT IS THERE IS FILESPEC
-      VALIDATION.** Measured 2026-09-04 (D-FSPEC,
-      [`docs/spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md)), twelve rows in
-      `namspc-acceptance` through `listface` (`N entries + <face>`).
-      🔴 **`FILES"TOOLONGNAME.EXTRA"` — the row this item itself proposed — reads
-      `0 entries + File not found` on BOTH machines.** Every zerobas row reads
-      `0 entries`: nothing lists after a reject and no row shows `load error`.
-      The reasoning below was an unrun claim
-      [[a-justification-parenthesis-is-an-unrun-claim]]; ⚠️ the hazard it names
-      is still real in the source, but `FILES` with a malformed filespec does not
-      REACH it — an over-long name is accepted into a pattern that matches
-      nothing.
-      🟢 **WHAT IS ACTUALLY DIVERGENT (5 rows, all DEFERRED in the gate):**
-      • `"A.B.C"`, `""`, `"."`, `".."` → **`Bad file name`** there,
-        `File not found` here. Length is NOT part of the rule.
-      • `" "` (blank) → the reference treats it as **no filespec** and lists the
-        whole directory; here it is another `File not found`.
+- [ ] 🔴 **CONFIRMED IN FULL — AND MY OWN FIRST READING OF IT WAS WRONG.**
+      Measured 2026-09-04 (D-FSPEC,
+      [`docs/spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md)), 20 rows in
+      `namspc-acceptance`.
+      🔴 **THE FIRST PASS CONCLUDED "the filed symptom is not reproduced" AND
+      PUBLISHED THAT TWICE. It was false.** `listface` reported the FIRST match
+      in a fixed `ERRORS` tuple and stopped, so a row printing TWO messages lost
+      one — and WHICH one survived was decided by the tuple's order, not by the
+      machine. The real screen for `FILES"TOOLONGNAME.EXTRA"` is `load error`
+      then `File not found in 10`. With the readout fixed, **every** malformed
+      `FILES` form here reads `<load error+File not found>`
+      [[readout-blind-to-its-own-subject]].
+      ⚠️ **Two rows flipped AGREE -> DIVERGE** (`m.long`, `m.both`): the blind
+      readout manufactured two false agreements, which is the expensive kind.
+      🟢 **THE REFERENCE'S THREE RULES, all missing here:**
+      • an **over-long** name/ext is NOT an error — plain `File not found` there,
+        `load error`+FNF here (`build_83_name` rejects >8 / >3);
+      • a **structurally** malformed name (`""`, `"."`, `".."`, `"A.B.C"`) is
+        **`Bad file name`**, RAISED — not printed-and-continued;
+      • a **blank** filespec is **no filespec at all** and lists the whole
+        directory.
       🟢 **AND THE VERB SWEEP WAS RUN THE SAME DAY — the blast-radius question is
       SETTLED, in the good direction.** `""` and `"A.B.C"` on every verb:
 

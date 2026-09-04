@@ -5007,13 +5007,15 @@ a diskless VG-8020 cannot express these rows), twelve rows added to
 `probes/basic/basic_probe_namspc.py` and read through `listface`, which reports
 the directory-entry COUNT beside the message.
 
-🔴 **The filed symptom is refuted.** TODO.md carried *"a malformed filespec
-prints `load error` and `FILES` lists anyway"*; `FILES"TOOLONGNAME.EXTRA"` — the
-string that filing named — reads `0 entries + File not found` on **both**
-machines, and every zerobas row reads `0 entries`. Nothing lists after a reject.
-An over-long name is accepted into a pattern that matches nothing, so `FILES`
-never reaches the `jp bl_load_error` the filing reasoned from. The hazard itself
-remains real in the source; this says only that these inputs do not reach it.
+🔴 **RETRACTED WITHIN THE DAY: the filed symptom IS reproduced.** This row first
+said it was refuted, on the strength of a readout that reported only the FIRST
+error in a fixed list and so dropped the second message a row printed. The real
+screen for `FILES"TOOLONGNAME.EXTRA"` is `load error` followed by
+`File not found in 10`, and with `listface` fixed to report every message in
+screen order, EVERY malformed `FILES` form here reads
+`<load error+File not found>`. The 2026-08-21 filing was right in full.
+⚠️ Two rows also flipped from agree to diverge (`m.long`, `m.both`): a blind
+readout manufactured two false agreements, which is the expensive kind.
 
 What is divergent (5 rows, deferred in the gate):
 

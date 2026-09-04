@@ -745,11 +745,20 @@ SITE_CONTROL = {
 # 🟢 The disk ROM has room (8910 B free, 2026-09-04), so this is deferred on the
 # MEASUREMENT that is missing, not on a wall.
 DEFERRED: dict[str, str] = {
-    "m.twodot": "D-FSPEC: `Bad file name` vs `File not found`; parse_disk_fcb has 11 callers",
-    "m.empty":  "D-FSPEC: `Bad file name` vs `File not found`; parse_disk_fcb has 11 callers",
-    "m.dot":    "D-FSPEC: `Bad file name` vs `File not found`; parse_disk_fcb has 11 callers",
-    "m.dotdot": "D-FSPEC: `Bad file name` vs `File not found`; parse_disk_fcb has 11 callers",
-    "m.blank":  "D-FSPEC: a BLANK filespec is `no filespec` there (lists all), an error here",
+    # 🔴 EVERY MALFORMED `FILES` ROW PRINTS **TWO** MESSAGES HERE:
+    # `load error` and then `File not found`. That is the filed nested-reject
+    # symptom in full -- parse_disk_fcb rejects, `load_error` PRINTS AND RETURNS,
+    # and do_files carries on to the directory walk. It was invisible until
+    # `listface` was fixed to report every message instead of the first one in
+    # its ERRORS tuple.
+    "m.long":   "D-FSPEC: over-long name -> `load error`+FNF here, plain FNF there",
+    "m.longext": "D-FSPEC: over-long ext -> `load error`+FNF here, plain FNF there",
+    "m.both":   "D-FSPEC: over-long both -> `load error`+FNF here, plain FNF there",
+    "m.twodot": "D-FSPEC: `Bad file name` there; `load error`+FNF here",
+    "m.empty":  "D-FSPEC: `Bad file name` there; `load error`+FNF here",
+    "m.dot":    "D-FSPEC: `Bad file name` there; `load error`+FNF here",
+    "m.dotdot": "D-FSPEC: `Bad file name` there; `load error`+FNF here",
+    "m.blank":  "D-FSPEC: a BLANK filespec is `no filespec` there (lists all); `load error`+FNF here",
     # 🔴 AND THE VERB SWEEP SETTLED THE BLAST-RADIUS QUESTION IN THE GOOD
     # DIRECTION: `Bad file name` is UNIFORM on the reference across KILL, LOAD,
     # SAVE and OPEN, so ONE check in the shared `parse_disk_fcb` is not a risk to
@@ -1022,11 +1031,21 @@ def listface(raw: str | None) -> str:
     txt = " ".join(str(tail).split("\n"))
     n = len(DIRENT.findall(txt))
     face = "<none>"
-    for e in ERRORS:
-        if e in txt:
-            face = f"<{e}>"
-            break
-    else:
+    # 🔴 EVERY MESSAGE ON THE SCREEN, IN SCREEN ORDER -- NOT THE FIRST MATCH IN
+    # `ERRORS`. This returned `f"<{e}>"` at the first hit and broke, so a row that
+    # printed TWO messages silently lost one, and WHICH one survived was decided
+    # by the ORDER OF THE TUPLE rather than by the machine. It cost a published
+    # conclusion: `FILES"TOOLONGNAME.EXTRA"` prints `load error` AND THEN
+    # `File not found`, and because "File not found" sits three entries earlier
+    # in ERRORS the face read `<File not found>` alone -- from which D-FSPEC
+    # concluded, twice and in a commit message, that the filed `load error`
+    # symptom "is not reproduced". It is reproduced; the readout was hiding it.
+    # A readout blind to its own subject fails by AGREEING
+    # [[readout-blind-to-its-own-subject]].
+    hits = sorted(((txt.find(e), e) for e in ERRORS if e in txt))
+    if hits:
+        face = "<" + "+".join(e for _i, e in hits) + ">"
+    if not hits:
         i, j = txt.find("["), txt.find("]", txt.find("[") + 1)
         if i >= 0 and j > i:
             face = txt[i + 1:j]

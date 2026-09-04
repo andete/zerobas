@@ -386,30 +386,43 @@ machine.
 | `".."` | 0 + **`Bad file name`** | 🔴 0 + `File not found` |
 | `" "` | **5 entries + OK** | 🔴 0 + `File not found` |
 
-### 🔴 The filed symptom is NOT reproduced, and the item's own row is why
+### 🔴 RETRACTED — the filed symptom IS reproduced, and the readout was hiding it
 
-`FILES"TOOLONGNAME.EXTRA"` — the exact string the filing named — reads
-`0 entries + File not found` on **both** machines. **Every** zerobas row above
-reads `0 entries`: nothing lists after a reject, and no row shows `load error`.
-So the reasoning in the filing — that `parse_disk_fcb`'s 8.3 reject reaches
-`jp bl_load_error`, which prints and RETURNS into `do_files`, which then walks
-the directory with a half-built pattern — does not describe what these inputs do.
+**The table above is what a blind readout printed, and this section originally
+concluded from it that the filed `load error` symptom "is not reproduced". That
+conclusion was FALSE and was published twice.**
 
-⚠️ **That does not retire the hazard**, which `sub/bload.asm` names in prose and
-which is real in the source ([[load-error-is-not-abort]]). It says only that
-`FILES` with a malformed filespec **does not reach it**: an over-long name is
-accepted into a pattern that simply matches nothing. The filing's premise was an
-unrun claim and the row it proposed would have measured nothing
-[[a-justification-parenthesis-is-an-unrun-claim]].
+`listface` reported the **first** match in a fixed `ERRORS` tuple and stopped, so
+a row printing TWO messages silently lost one — and *which* one survived was
+decided by the order of the tuple rather than by the machine. `"File not found"`
+sits three entries before `"Bad file name"` and well before `"load error"`. The
+actual screen for `FILES"TOOLONGNAME.EXTRA"` is:
 
-### 🟢 What IS there: filespec validation, and a blank that means "no filespec"
+```
+ load error
+ File not found in 10
+```
 
-Two rules, both missing here:
+With the readout fixed to report **every** message in screen order, **every**
+malformed `FILES` form on zerobas reads `0 entries + <load error+File not
+found>`. The 2026-08-21 filing was right in full: `parse_disk_fcb` rejects,
+`load_error` **prints and RETURNS**, and `do_files` carries on to the directory
+walk — which then reports `File not found` of its own accord
+[[load-error-is-not-abort]] [[readout-blind-to-its-own-subject]].
 
-1. **A structurally malformed name is `Bad file name`**, not a pattern that
-   fails to match — a second dot, an empty string, or a name that is only dots.
-   Length is *not* part of it: an over-long name is `File not found` on both.
-2. **A BLANK filespec is no filespec at all** and lists the whole directory,
+⚠️ **And two rows flipped from AGREE to DIVERGE**: `m.long` and `m.both`
+(over-long names) were scored as matching the reference. They do not — zerobas
+prints an extra `load error` the reference never prints. A false agreement is the
+expensive kind, and this readout manufactured two of them.
+
+### 🟢 What the reference actually does — three rules, all missing here
+
+1. **An over-long name or extension is NOT an error.** The reference prints
+   `File not found` alone; zerobas rejects in `build_83_name` (`>8 name chars`,
+   `>3 ext chars`) and so prints `load error` first.
+2. **A structurally malformed name is `Bad file name`** — a second dot, an empty
+   string, or a name that is only dots — *raised*, not printed-and-continued.
+3. **A BLANK filespec is no filespec at all** and lists the whole directory,
    where zerobas treats it as a pattern and finds nothing.
 
 ### 🔴 The verb sweep — and it corrects the section above
