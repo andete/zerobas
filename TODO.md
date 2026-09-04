@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1820 (T-6FE392)8 (T-529ABE)` from `TODO.md:6442 (T-529ABE)`: a
+      `TODO.md:1820 (T-6FE392)8 (T-529ABE)` from `TODO.md:6469 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2421,7 +2421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6442 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6469 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3344,9 +3344,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       💰 **PRICED AND DECLINED**: the only fix that closes the class is popping
       the stale record when a `SERVICING` entry is explicitly re-armed, **~25–30 B
       of main page 1**, and it still misses a nested leak.
-      🔴 **THE COST HALF OF THAT DECLINE IS STALE AND IS CORRECTED HERE, 2026-08-30:
-      it read "against 2 B free (measured `b8a8137`)", and page 1 read 333 B free
-      after D-CLRTRAP.** The ~25–30 B is affordable now. **The decline STANDS on
+      🔴 **THE COST HALF HAS NOW ROTTED TWICE, IN BOTH DIRECTIONS.** 2026-08-30 it
+      read *"against 2 B free"* and was corrected UP to 333 B free after
+      D-CLRTRAP, with the note *"affordable now"*. **2026-09-04: main page 1 is
+      back to 8 B** (`make basic-reloc`; D-PUDOT/D-PUCOMMA/D-PUEXP and D-NAMEORD
+      spent it), so ~25–30 B is **NOT affordable there** today. 🟢 **But that may
+      no longer be the right region to price against**: the same day's PRINT USING
+      arc put a 325-byte renderer in the SUB ROM for **zero** resident bytes by
+      reusing an existing flag, and sub page 0 reads 1416 B free. A tenant-side
+      design was never costed for this item. **Re-measure before quoting either
+      number** — this is the second correction to this one line. **The decline STANDS on
       its other half** — §6 rejects the two cheaper designs on principle and one
       of them makes a trap SILENTLY dead — so this stays 🙋. A price rots like a
       wall; re-read it before quoting a decline that rests on it. The two cheaper designs are rejected on principle in
@@ -4469,9 +4476,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `Missing operand` for those is a THIRD wording zerobas does not produce
       here"* (`A$=` and `A$=+`). One message, one ERR code, five known sites —
       price it once, at the message, not once per verb.
-      💰 Not priced. Shape: a message-table entry (the D-MSGSUB sub-ROM host
-      machinery exists) plus whatever `els_tc_common`'s `jp nz,stmt_error` arm
-      becomes. ⚠️ The MSX ERR code for it is **not measured**, only the wording.
+      ✅ **THE CODE IS MEASURED 2026-09-04 (D-MISSOPERR,
+      [`scratchpad/missop_err_probe.py`](scratchpad/missop_err_probe.py)):
+      `Missing operand` is ERR 24**, on both references, read through `ON ERROR`
+      + `ERR` rather than off the screen — a number needs no classifier and
+      cannot come back as `<NO OUTPUT>`, which is how the first attempt lost it.
+      🟢 **AND THE THREE FILED VERBS ALREADY ANSWER 24 HERE**: `SAVE`, `LOAD`,
+      `BLOAD` and `A$=` all read 24/24/24. So the disposition really is closed and
+      only the WORDING is outstanding for those four.
+      🔴 **BUT A FIFTH SITE IS WRONG ON THE CODE, NOT JUST THE WORDING:
+      `A$=+` reads ERR 2 here against 24 on both references.** The entry names
+      `A$=+` as a mirror but never recorded it as currently divergent.
+      🎯 **AND IT SITS EXACTLY ON D-MISSOPBOUND'S BOUNDARY.** `ev_f_missop` gives
+      24 for an EMPTY slot and 4 -> ERR 2 for a WRONG one (a stray operator), and
+      that rule is measured — D-MISSOPBOUND took 11 DIFF to 0 with it. `A$=+` is a
+      stray operator that both references nevertheless call `Missing operand`, so
+      the boundary is not "empty vs wrong" everywhere: **the LET RHS position
+      disagrees with the factor position.** That is the question a fix has to
+      answer, and it was invisible while only the wording was in view.
+      ⚠️ `els_tc_common` is a SHARED TAIL (every `fname_expr` caller plus the LET
+      mirror), and `ev_f_missop`'s own comment records why the last fix here got
+      its own label instead of joining one — a shipped gate went 209/210.
+      💰 Still not priced. Shape: a message-table entry (the D-MSGSUB sub-ROM host
+      machinery exists) plus a decision about that boundary.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] ⚠️ **`CSAVE` AND `CLOAD` STILL TAKE A LITERAL FILENAME ONLY, AND THAT IS
