@@ -425,6 +425,43 @@ The frame layout follows from the rows rather than from taste:
 * **A trap's service record must be pushed *before* its GOSUB frame**, so it ends
   up below it and stays out of the `FOR` run a `NEXT` walks.
 
+### The same thing in a program a person would write
+
+[`scratchpad/ctlpool_demo.py`](../scratchpad/ctlpool_demo.py) runs this on all
+three machines — a `NEXT` that belongs to a `FOR` opened before the `GOSUB` it
+now sits inside:
+
+```basic
+10 ONERRORGOTO200
+20 FORI=1TO1
+30 GOSUB100
+40 PRINT"BACK IN LOOP"
+50 GOTO300
+100 PRINT"IN SUB: NEXT I"
+110 NEXTI
+120 PRINT"NEXT MATCHED"
+130 RETURN
+200 PRINT"ERR";ERR;"IN";ERL
+210 RESUME300
+300 PRINT"DONE"
+```
+
+| VG-8020 and CF-3300 | zerobas |
+|---|---|
+| `IN SUB: NEXT I` | `IN SUB: NEXT I` |
+| `ERR 1 IN 110` | `NEXT MATCHED` |
+| `DONE` | `BACK IN LOOP` |
+| | `DONE` |
+
+The references stop at line 110. zerobas matches the frame, ends the loop, falls
+through to 120, `RETURN`s into line 40 and finishes with no error anywhere.
+
+⚠️ **The prompt is part of the apparatus.** The demo's first reader looked for a
+screen row equal to `RUN` and to `Ok`; zerobas prompts `ZB`, so its echo row
+reads `ZBRUN` and its terminator is `ZB`, and the run that had measured the whole
+divergence printed *"nothing was measured"*
+[[an-unnamed-outcome-reads-as-no-outcome]].
+
 ### ⚠️ `x.ctl` is a precondition, not a row
 
 It is the same program with the `FOR` opened **inside** the subroutine, so
