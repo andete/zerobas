@@ -701,6 +701,38 @@ disposition BUG in the reference — the true answer underflows to 0, which zero
 returns); its `EXP(88)` is −45 ulp off truth; its LOG misses truth on 19/35 of our
 battery. All captured in the gate's informational reports, never asserted against.
 
+> 🔴 **CORRECTED 2026-09-05 (D-EXPBAND) — THE `EXP(-200)` FIND IS TRUE BUT ITS
+> SCOPE WAS NEVER MEASURED, AND IT IS A BAND, NOT A HALF-LINE.** Swept on both
+> references, all edges bracketed to <0.02 in `x`:
+>
+> | EXP result magnitude | references | zerobas | |
+> |---|---|---|---|
+> | `>= 1E-64` | value | value | agree |
+> | `[1E-65, 1E-64)` | **0** | 0 | **agree — not a deviation** |
+> | `[1E-129, 1E-65)` | `Overflow` | 0 | **the deviation** |
+> | `< 1E-129` | **0** | 0 | **agree — not a deviation** |
+>
+> So the references deviate only for `x ∈ (−297.033, −149.668]` — a band exactly
+> **64 decades wide**, one exponent byte. Both edges land on an exact decade
+> (`ln(1E-65) = −149.668`, `ln(1E-129) = −297.033`). Every sample that had ever
+> been taken (`EXP(-200)` here, `EXP(−162)` behind the §13.1 `10^-70.5` row) fell
+> inside the band, so a half-line read as obvious and nobody sampled next to it.
+>
+> ⚠️ **The deviation is EXP-LOCAL, not the float pack's.** `1E-40*1E-30` and
+> `1E-60/1E10` return `0` on all three machines at every depth — so this is not
+> `round_and_finalize`'s shared underflow disposition, which was the reading
+> §12.4 step 8's own comment invites.
+>
+> 🎯 **The DECISION (we return 0 throughout) is unchanged and strengthened**: 0 is
+> the references' own answer on *both* sides of their band, so returning it
+> throughout is the consistent reading rather than a unilateral one. D-EXPNEG's
+> reverted "match the references" change stays reverted. What did change is the
+> gate: the four band edges (`-149.65/-149.67/-297.02/-297.04`) are now rows in
+> `probes/basic/basic_probe_math_conv.py`, so the extent is gated instead of
+> asserted in prose. And note `exp(-1000)` — the row `sub/fp_exp.asm` cited as
+> proof we deviate — is a row where the references **return 0 too**; it pins our
+> value, but it never witnessed a deviation.
+
 **Fable review verdict: SHIP.** Constants/tables independently re-derived from the
 emitted bytes (all 41 records byte-exact vs closed forms; both polys re-validated on
 a 2001-point dense grid: EXP 7.9e-17, LOG 1.9e-17); both tenant bodies traced
@@ -774,7 +806,13 @@ before contract before asm") applied again.
    `x > 0` → **EXP(y·LOG(x))** (§5.1: bit-for-bit the reference's own
    derivation on all probes; ends follow OUR EXP's §12 dispositions — the
    reference's `10^-70.5`→Overflow is its own EXP(−162) disposition BUG
-   (§12.9), ours correctly returns 0: documented deviation).
+   (§12.9), ours correctly returns 0: documented deviation — and EXP(−162) is
+   *inside* the 64-decade band §12.9's 2026-09-05 correction measured, which is
+   what makes this row divergent. 🔴 A first draft of this sentence added "…while
+   e.g. `10^-500` would not", REASONED from the band and FALSE on the machine:
+   `10^-100`/`10^-200`/`10^-500` raise `Overflow` on **all three**, because an
+   integer `y` takes rule 3's integer path and never reaches EXP at all. Only a
+   FRACTIONAL `y` can witness this band).
 
 **Type**: result is ALWAYS double (`2!^3!`=8, `A%^B%`=8, `2!^.5!` prints the
 full 14-digit 1.414213562373 — no single-width chain).

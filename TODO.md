@@ -189,6 +189,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       A HOLE IT NEVER NAMED** — re-run the item's own accusation before building
       on it [[a-justification-parenthesis-is-an-unrun-claim]].
 
+- [ ] 🔴 **`check_todo_citations.py` VERIFIES THAT AN ID MATCHES ITS LINE, NEVER
+      THAT THE CITED BLOCK IS THE ONE THE PROSE IS ABOUT — AND ONE CITATION HAD
+      BEEN POINTING AT AN UNRELATED ITEM FOR AN UNKNOWN LENGTH OF TIME.** Found
+      2026-09-05 by D-EXPBAND, by accident.
+      `docs/gapsweep-2026-08-21.md:124` reads **“`LOAD"CAS:"` accepts a tokenised
+      tape (`../TODO.md:5345 (T-DB105B)`)”**, and `TODO.md:5345` was  NOT-A-CITATION
+      `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
+      entirely. The gate was GREEN on it, correctly by its own rule: the id
+      really was the id of the block at that line. The real `LOAD"CAS:"` item is
+      at `TODO.md:7786 (T-A55F3D)`, now cited. **It surfaced only because closing
+      the `$8000` item changed that headline, so the id stopped resolving** — had
+      I not touched that line it would still be wrong and still be green.
+      🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
+      headline, so a citation whose line and id agree is self-consistent no
+      matter which block it names. `--fix` makes it worse in exactly this case —
+      it rewrites the LINE from the ID, so a citation pointing at the wrong block
+      gets its wrong target mechanically preserved across every future edit.
+      ⚠️ **How many others?** Unknown, and that is the point — nothing has ever
+      compared a citation's own words against its target's headline. A cheap
+      first cut: flag any citation whose surrounding sentence shares no
+      distinctive token (a backticked identifier, a quoted keyword) with the
+      cited block's headline; expect false positives, so report ADVISORY rather
+      than red [[readout-blind-to-its-own-subject]]
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      💰 Zero ROM bytes; a tools-only change.
+      🤖 AUTONOMOUS — a gate settles it; finishable unattended (no his-decision signal found).
+
 - [x] 🟢 **FIXED 2026-08-30 (D-SPLITFIX) — BOTH DEFECTS, WITH SEVEN ARMS THE
       BATTERY COLLECTS.** `(?!\d)` added to `CITE` (backtracking is what defeated
       the already-id'd lookahead: greedy `\d+` takes `4618`, the lookahead
@@ -215,7 +242,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6934 (T-529ABE)`: a
+      `TODO.md:1897 (T-6FE392)8 (T-529ABE)` from `TODO.md:6989 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2498,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6934 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6989 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5342,8 +5369,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       what says the win is the mask and not the rig. ⚠️ Still true: **no gate
       measures time** — this closure is a hand-run probe, not a standing gate.
 
-- [ ] ⚠️ **`fp_exp`/`fp_log`'s `$8000` REACHABILITY WAS REASONED, NOT
-      MEASURED.** Filed 2026-08-11 by D-NEG8K (same doc, §4.4). Both take a
+- [x] ✅ **`fp_exp`/`fp_log`'s `$8000` REACHABILITY WAS REASONED, NOT
+      MEASURED.** CLOSED 2026-09-05 (D-EXPBAND). **Unreachable in both, and the
+      bound is the DOMAIN, not the arithmetic.** `evmc_exp` disposes `dexp>=4`
+      (`|x|>=1000`) before `fp_exp` runs and step 2's own `dexp>4` arm jumps to
+      the tails WITHOUT negating, so the largest `|n8|` that can reach the
+      negation site is `round(999.9999999999*8/ln10) = 3474` — short of `$8000`
+      by 9.4x. `e'` is `dexp-1` off an FPNUM field, so `|e'| <= 64`, short by
+      ~500x. ⚠️ THE PART THAT WAS ACTUALLY UNMEASURED was whether the domain
+      guards hold, and they do: `EXP(-999.9)` returns `0`, which ONLY step 3's
+      underflow tail produces, so `fp_exp` ran and negated an `n8` of ~3474 —
+      now a `math-acceptance` row, together with the format corners
+      (`EXP(1E10)`, `EXP(-9.9E62)`, `LOG(1E-64)`, `LOG(9.9E62)`, all disposed
+      identically on both references).
+      🎁 **AND THE ROW LADDER FOUND SOMETHING THE ITEM DID NOT ASK FOR.** The
+      reference's documented EXP underflow deviation (spec §12.9) is a **BAND,
+      not a half-line**: refs return `0` — agreeing with us — for results in
+      `[1E-65, 1E-64)` AND for results `< 1E-129`, and raise `Overflow` only in
+      between, a band exactly **64 decades wide** with both edges on an exact
+      decade (measured to <0.02 in `x` on BOTH references). Every sample ever
+      taken (`EXP(-200)`, `10^-70.5` = `EXP(-162)`) fell inside it. 🔴 `exp(-1000)`,
+      the anchor `sub/fp_exp.asm` cited as PROOF we deviate, is a row where the
+      references return `0` too — it never witnessed a deviation
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. The DECISION is
+      unchanged and strengthened (0 is the refs' own answer on both sides);
+      D-EXPNEG stays reverted; the four band edges are now gate rows so the
+      extent is gated instead of asserted in prose. Also measured: the deviation
+      is EXP-LOCAL (`1E-40*1E-30` → `0` on all three), NOT the shared
+      `round_and_finalize`, which step 8's own comment invites you to believe.
+      --- the original filing, kept because its VERDICT note is still true ---
+      Filed 2026-08-11 by D-NEG8K (same doc, §4.4). Both take a
       magnitude by negation (`DE := |n8|` / `DE := |e'|`) and both are
       **correct at `$8000` either way**, because the following
       `widen_uint_to` reads the magnitude as UNSIGNED and the sign is poked

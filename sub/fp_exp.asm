@@ -556,6 +556,28 @@ fexp_overflow:
 ; decision -- its truth oracle asserts `exp(-1000)` is 0, and `10^-70.5` is
 ; scored on OURS only.
 ;
+; 🔴 CORRECTION 2026-09-05 (D-EXPBAND) -- THE PARAGRAPH ABOVE IS RIGHT ABOUT
+; THE DECISION AND WRONG ABOUT ITS EXTENT, and the sentence that misleads is
+; "both references throw `Overflow` instead". They do not, except inside a BAND:
+;
+;     result >= 1E-64        value        refs == ours
+;     [1E-65, 1E-64)         0            refs == ours   <- NOT a deviation
+;     [1E-129, 1E-65)        Overflow     ours 0         <- the deviation
+;     < 1E-129               0            refs == ours   <- NOT a deviation
+;
+; x in (-297.033, -149.668] only, both edges landing exactly on a decade and
+; bracketed to <0.02 in x on BOTH references -- a band 64 decades wide. Every
+; sample anyone had taken (`EXP(-200)`, the `10^-70.5` row = EXP(-162)) happened
+; to fall inside it, so a half-line read as obvious.
+; 🎯 AND `exp(-1000)`, THE ANCHOR THE PARAGRAPH ABOVE CITES AS PROOF WE
+; DEVIATE, IS A ROW WHERE THE REFERENCES RETURN 0 -- it agrees with us. It still
+; belongs in the gate (it pins OUR value), but it never witnessed a deviation
+; [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. The four band edges are
+; now gate rows in probes/basic/basic_probe_math_conv.py.
+; ⚠️ THE DECISION IS UNCHANGED AND STRENGTHENED: 0 is the references' OWN answer
+; on both sides of their band, so returning 0 throughout is the consistent
+; reading, not a unilateral one. D-EXPNEG (below) stays reverted.
+;
 ; 🔴 D-EXPNEG (2026-08-30) FOLDED THIS INTO `fexp_overflow` to match the
 ; references, AND WAS REVERTED. Measuring the references is not the same as
 ; checking whether the divergence was already DECIDED; here it was, fifteen days

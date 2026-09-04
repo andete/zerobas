@@ -961,7 +961,45 @@ EXP_BROAD_XS = [
     # --- finite range straddles (still in-range, value-asserted) ----------
     "145.062", "-147.3",
     # --- deep underflow-to-0 (truth_exp14's own MINV floor gives 0) --------
+    # 🔴 THE REFERENCE'S OWN DEVIATION HERE IS A **BAND**, NOT A HALF-LINE, AND
+    # UNTIL 2026-09-05 EVERY WRITE-UP OF IT SAID OTHERWISE (spec §12.9 "the
+    # reference's own EXP(-200) throws Overflow"; sub/fp_exp.asm's own
+    # fexp_underflow note "both references throw Overflow instead"). Measured
+    # on BOTH references, all four edges bracketed to <0.02 in x:
+    #
+    #     result >= 1E-64        value        both refs == ours
+    #     [1E-65, 1E-64)         0            both refs == ours   <- NOT a deviation
+    #     [1E-129, 1E-65)        Overflow     ours 0              <- the deviation
+    #     < 1E-129               0            both refs == ours   <- NOT a deviation
+    #
+    # i.e. x in (-297.033, -149.668] only -- a band exactly 64 DECADES wide.
+    # 🎯 SO TWO OF THE THREE ROWS ABOVE NEVER WITNESSED THE DEVIATION THEY WERE
+    # WRITTEN FOR: at -147.4 (9.5E-65) and -1000 the references return 0, same
+    # as us. `-1000` is the anchor fp_exp.asm cites as proof we deviate, and it
+    # is a row that AGREES -- for a reason nobody had measured
+    # [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. The DECISION (we
+    # return 0 throughout) is untouched and in fact strengthened: 0 is the
+    # references' own answer on BOTH sides of their band.
     "-147.4", "-200", "-1000",
+    # --- the band's four edges, so the extent above is GATED, not prose ------
+    # Each asserts OURS=0 (truth_exp14's MINV floor); together they are what a
+    # future re-run of D-EXPNEG's reverted "raise Overflow like the references"
+    # would break, at the exact x where it would start and stop being wrong.
+    "-149.65", "-149.67", "-297.02", "-297.04",
+    # --- D-NEG8K's `$8000` reachability, MEASURED at last (2026-09-05) -------
+    # fp_exp takes `DE := |n8|` by negation, which is correct even at $8000
+    # (widen_uint_to reads the magnitude UNSIGNED and the sign is poked
+    # separately, so $8000 -> 32768 -> -32768 round-trips). What had never been
+    # established is whether n8 can BE $8000. It cannot, and the bound is the
+    # DOMAIN: evmc_exp disposes dexp>=4 (|x|>=1000) before fp_exp runs, and step
+    # 2's own dexp>4 arm jumps to the tails WITHOUT negating -- so the largest
+    # |n8| that can ever reach the negation site is round(999.9999999999 *
+    # 8/ln10) = 3474, short of $8000 by 9.4x. This row is that maximum, and it
+    # is the witness the filing lacked: it returns 0, which only fp_exp's own
+    # step-3 underflow tail produces, so fp_exp DID run and DID negate an n8 of
+    # ~3474. (`-1000` above sits AT the stub guard and may be disposed by
+    # evmc_exp instead, so it cannot witness the negation site at all.)
+    "-999.9",
 ]
 EXPRS = EXPRS + [f"exp({_x})" for _x in EXP_BROAD_XS]
 

@@ -5084,3 +5084,58 @@ line 84 of file basic/pdfcb-body.inc`. A mechanism was inferred from one `make`
 run's exit code instead of isolated; it is withdrawn rather than replaced with a
 better guess.
 [`docs/spec-basic-fnexpr2.md`](../docs/spec-basic-fnexpr2.md) §D-FSPEC part 2.
+
+## D-EXPBAND (2026-09-05) — the reference's EXP underflow deviation is a BAND, and two of its three witness rows agreed
+
+Behaviour UNCHANGED; this row is a characterization correction plus five gate
+rows. `sub/fp_exp.asm`'s `fexp_underflow` note and
+[`docs/spec-basic-mathpack-slice2.md`](../docs/spec-basic-mathpack-slice2.md)
+§12.9 both said *"both references throw `Overflow` instead"* of underflowing to
+0. Swept on the VG-8020 and the CF-3300, all edges bracketed to <0.02 in `x`:
+
+| EXP result magnitude | references | zerobas | |
+|---|---|---|---|
+| `>= 1E-64` | value | value | agree |
+| `[1E-65, 1E-64)` | **0** | 0 | **agree — not a deviation** |
+| `[1E-129, 1E-65)` | `Overflow` | 0 | **the deviation** |
+| `< 1E-129` | **0** | 0 | **agree — not a deviation** |
+
+The references deviate only for `x ∈ (−297.033, −149.668]` — a band exactly **64
+decades wide**, one exponent byte, both edges landing on an exact decade. Every
+sample anyone had ever taken (`EXP(-200)`; `10^-70.5`, i.e. `EXP(−162)`) fell
+inside it, so a half-line read as obvious and nobody sampled beside it.
+
+🔴 **`exp(-1000)` — the anchor `fp_exp.asm` cited as PROOF we deviate — is a row
+where both references return `0` too.** It pins our value and always did, but it
+never witnessed a deviation, and its PASS was read as if it had. Same for
+`exp(-147.4)`. Two of the three rows written to characterize this agreed, for a
+reason nobody had measured
+[[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+
+⚠️ **The deviation is EXP-LOCAL.** `1E-40*1E-30` and `1E-60/1E10` return `0` on
+all three machines at every depth, so this is NOT `round_and_finalize`'s shared
+underflow disposition — which is exactly the reading §12.4 step 8's own comment
+invites, and the first one I took.
+
+✅ **THE DECISION IS UNCHANGED AND STRENGTHENED**: `0` is the references' own
+answer on *both* sides of their band, so returning it throughout is the
+consistent reading rather than a unilateral one. **D-EXPNEG (2026-08-30, which
+made zerobas raise `Overflow` here and was reverted) stays reverted** — and this
+is the second time that reversion has had to be re-earned, so the extent now
+lives in the gate: `-149.65`/`-149.67`/`-297.02`/`-297.04` are `math-acceptance`
+rows whose reference capture prints `0` / `<no span>` / `<no span>` / `0`.
+
+Also closes D-NEG8K's filed `$8000` reachability question (TODO, filed
+2026-08-11): unreachable in both, bounded by the DOMAIN rather than the
+arithmetic — `evmc_exp` disposes `dexp>=4` before `fp_exp` runs and step 2's
+`dexp>4` arm never negates, so the largest `|n8|` reaching the negation site is
+3474, short of `$8000` by 9.4x (`|e'| <= 64`, short by ~500x). The unmeasured
+link was whether those guards hold; `exp(-999.9)` is now a row, and its `0` can
+only come from step 3's underflow tail, so `fp_exp` ran and negated an `n8` of
+~3474.
+
+🔴 **One claim in the draft of this row was FALSE and is corrected in place**:
+*"`10^-500` would not diverge"*, reasoned from the band. `10^-100`/`-200`/`-500`
+raise `Overflow` on **all three** — an integer `y` takes §13.1's integer path and
+never reaches EXP. Only a fractional `y` can witness this band.
+[`docs/spec-basic-mathpack-slice2.md`](../docs/spec-basic-mathpack-slice2.md) §12.9.
