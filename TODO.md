@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1820 (T-6FE392)8 (T-529ABE)` from `TODO.md:6431 (T-529ABE)`: a
+      `TODO.md:1820 (T-6FE392)8 (T-529ABE)` from `TODO.md:6442 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2421,7 +2421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6431 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6442 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3283,7 +3283,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       tree) and the second `fname_expr` site produces `Syntax error` for a numeric
       operand for a reason that predates this change. The same routine gives 13
       from the old-name position (`name.old5`, green). A separate defect, still
-      open. ⚠️ And the side-effect this entry named is now REAL and unmeasured:
+      open — **and now localised**: `els_tc_common` (`basic/missing.asm:562`)
+      RE-DRIVES the operand with `eval` and reports `stmt_error` when `ERRMARK`
+      says nothing was parsed, so ERR 2 is that routine saying *"the re-drive
+      found no operand"*. **Four hypotheses measured and refuted**: the disk
+      primitives (park+restore with none between → still 2), the operand's shape
+      (`AS 5` / `AS 5+0` / `AS5` → all 2), end-of-statement (`AS 5:REM` → 2, while
+      `NAME 5` at EOL → **13**), and the D-NUMSTR literal/variable asymmetry in
+      the OLD name (`A$="HI.TXT":NAME A$ AS 5` → still 2). What survives is the
+      CALL SITE. Next step is reading what `str_eval` leaves in HL on each path,
+      not more black-box rows. ⚠️ `els_tc_common` is a SHARED TAIL — every
+      `fname_expr` caller lands there — so a fix sited in it is a decision about
+      all of them. ⚠️ And the side-effect this entry named is now REAL and unmeasured:
       `DISKSLOT_OK` is checked before the new name is evaluated, so the diskless
       build answers the no-disk error there — measurable against the VG-8020,
       which has no drive either.
