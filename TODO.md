@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1848 (T-6FE392)8 (T-529ABE)` from `TODO.md:6521 (T-529ABE)`: a
+      `TODO.md:1848 (T-6FE392)8 (T-529ABE)` from `TODO.md:6548 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2449,7 +2449,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6521 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6548 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4538,7 +4538,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ([`basic/save.asm`](basic/save.asm)) keep their `cp '"'` gates, and
       `basic/PROVENANCE.md` now says so explicitly instead of describing both
       halves with one sentence.
-      🔴 **UNMEASURED, AND THE APPARATUS IS THE PROBLEM, NOT THE PRICE.** These
+      ✅ **MEASURED 2026-09-04 — D-CSAVEEXPR
+      ([`scratchpad/csaveexpr_probe.py`](scratchpad/csaveexpr_probe.py)), on a
+      fresh recording tape per row (the `basic_probe_cassave.py` fixture). Both
+      references agree on every row; **FOUR divergences, not one**:
+
+          CSAVE A$        refs accepted (silent)   zb `load error`
+          CSAVE A$+""     refs accepted            zb `load error`
+          CSAVE           refs `Missing operand`   zb SILENT -- accepted
+          CSAVE 5         refs `Type mismatch`     zb `load error`
+          CSAVE"P"        silent on all three      (control)
+
+      🔴 **AND `CSAVE` BARE IS THE SHARPEST: zerobas ACCEPTS IT SILENTLY** where
+      both references raise. The entry framed this as "takes a literal only",
+      which is one of the four; the optional-argument question it flagged has a
+      measured answer now, and it is the one where this tree is silently wrong.
+      🔴 **EVERY ZEROBAS REFUSAL HERE IS NON-RAISING.** `do_csave`'s `cp '"'`
+      gate goes to `load_error`, which PRINTS and carries on, so `ON ERROR`
+      cannot trap any of them — exactly the class D-FNEXPR2 closed for the other
+      eight filename verbs and did not close here.
+      ⚠️ **THE INSTRUMENT TOOK THREE CUTS AND EACH FAILED DIFFERENTLY**, which is
+      why the probe reports TWO channels: an `ERR`-reading probe scores a
+      non-raising `load error` as **accepted**; a screen-reading one that maps an
+      EMPTY capture to "accepted" scores an error the same way; and a `<...>`
+      fence matches the `PRINT` statement in the SOURCE IT ECHOES. The trap
+      channel currently reads `<NO READING>` on every row and says so rather than
+      agreeing — the screen channel carries the result, corroborated by the first
+      cut's ERR codes (24 = Missing operand, 13 = Type mismatch).
+      The original framing, for the record: these
       are CASSETTE verbs: `CSAVE A$` on the CF-3300 needs a tape, and the
       `namspc` battery has none. `cassave-acceptance` / `castail-acceptance` are
       the batteries that CAN drive tape — the reading belongs there, and it
