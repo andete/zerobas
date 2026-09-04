@@ -85,7 +85,7 @@ cursor-acceptance time-acceptance namspc-acceptance arrdim-acceptance
 arylv-acceptance badfnum-acceptance beep-acceptance binfre-acceptance
 cassave-acceptance castail-acceptance deffn-acceptance direct-ctrl-acceptance
 dskmsg-acceptance editverb-acceptance fldary-acceptance fldwidth-acceptance
-forvar-acceptance gicini-acceptance graphics-floor-acceptance ifsem-acceptance input-acceptance nodisk-acceptance pusing-acceptance catterm-acceptance catusr-acceptance
+forvar-acceptance gicini-acceptance graphics-floor-acceptance ifsem-acceptance input-acceptance nodisk-acceptance pusing-acceptance catterm-acceptance catusr-acceptance nameord-acceptance
 inputary-acceptance key-trap-acceptance linemax-acceptance lnblank-acceptance
 locarg-acceptance lof-acceptance lptverb-acceptance lrvar-acceptance
 lvfix-acceptance nxary-acceptance nxlist-acceptance play-acceptance

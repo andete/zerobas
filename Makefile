@@ -668,6 +668,13 @@ repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 # class. They were the OTHER one: an honest rc that no battery collects, which is
 # not an oracle. D-CATFIX (2026-09-01) is the fix they guard, and nothing in
 # probes/ carries `"AB"+(0*(1/0)+1)` at all.
+# D-NAMEORD's diskless side. The reorder moved DISKSLOT_OK ahead of the new-name
+# evaluation, so the driveless build could have answered the no-disk error where a
+# type error is due. It does not -- and this gate is what keeps that true, on the
+# target whose oracle (VG-8020) has no drive either.
+nameord-acceptance: repack-machine
+	python3 probes/basic/basic_probe_namend.py
+
 catterm-acceptance: repack-machine
 	python3 probes/basic/basic_probe_catterm.py
 

@@ -58,9 +58,21 @@ was discarded rather than trusted, and the readings above come from the
 ## Still open
 
 * `name.ex5` — `Syntax error` where `Type mismatch` is due, cause not the order.
-* ⚠️ **The side-effect the entry named is now real and unmeasured**: `DISKSLOT_OK`
-  is checked before the new name is evaluated, so on the diskless build
-  `NAME"x"AS 5` gives the no-disk error rather than a type one. The diskless
-  target's oracle is the VG-8020, which has no drive either — so this is
-  measurable, and was not measured here.
-* Both rows remain in **no gate**.
+* ✅ **The side-effect is measured, and it is benign.** [`probes/basic/basic_probe_namend.py`](../probes/basic/basic_probe_namend.py),
+  **0/6 DIFF**: the VG-8020 answers `ERR 5` to every disk-verb form because it has
+  no drive, and `zb-nodisk` matches exactly. `q.open5` gives **13** on both —
+  `OPEN`'s type check precedes its disk check — and zerobas reproduces that shape
+  too, which is what makes the reading a rule rather than one flat column of 5s.
+  Gated as `make nameord-acceptance`, because an honest `rc` no battery collects
+  is not an oracle.
+  🔴 **And the gate caught me wiring it wrong.** The probe was written into
+  `scratchpad/` and the recipe pointed there; `run_gates.py`'s own selftest **S6
+  — "the LIVE premise holds: no emulator recipe leaves the fingerprint"** — went
+  RED. The D-GATESKIP fingerprint covers ROMs and probe/test/tool sources, *not*
+  `scratchpad/`, so editing that probe would not have invalidated the skip: the
+  battery could have skipped the entire emulator tier while the gate's own probe
+  changed underneath it. I had checked that convention earlier in the session and
+  then broke it an hour later. Promoted to `probes/basic/`; S6 green.
+* ⚠️ **The cf3300 side is still in no gate.** `name.as5` / `name.ex5` live only in
+  `scratchpad/sweep_tranche65.py`, a sweep instrument. The row this slice fixed is
+  therefore unguarded against regression on the disk build.
