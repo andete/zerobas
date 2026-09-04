@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6768 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6790 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6768 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6790 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2738,6 +2738,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
          [`basic/traps.asm`](basic/traps.asm), [`basic/vars.asm`](basic/vars.asm),
          plus the FOR/NEXT path.
       🟢 It also RECOVERS the 154 B and deletes two of the three overflow paths.
+
+      🔴 **AND THE MECHANISM QUESTION RE-OPENED ON 2026-09-04 (D-CTLSTACK §14,
+      D-CTLFRE §15, D-EVALDEPTH §16), MEASURED RATHER THAN ARGUED.** The oracles
+      were asked WHERE their stack is, not just how deep:
+      • `CLEAR n` lowers the published `STKTOP` by exactly n; `MEMSIZ` does not
+        move. `(STKTOP-STREND)/depth` = **7.0**, and `FRE(0)` falls **7 B per
+        GOSUB level** (7/70/140) — **three independent routes to one number.**
+      • 🔴 `CLEAR n,addr` does NOT set `MEMSIZ` to addr: it sets
+        `addr - 269 - MAXFILES*267`, so **`MAXFILES` moves the stack top** (the
+        ⚠️ filed here as "measure it before assuming it is benign" — it is not).
+      • 🎯 **`STKTOP` and zerobas's `strheap_varceil` ARE THE SAME FORMULA.** We
+        already compute the reference's stack top and put nothing there.
+      • 🔴 **THE EVALUATOR NESTS OUT OF THAT POOL TOO** — 25 B per `DEF FN`
+        level, 6 B per parenthesis, both references — **and zerobas caps `DEF FN`
+        nesting at THREE** (`FN_STK_FLOOR` `$F200` against `SP` from `$F380` =
+        384 B). A separating row proves it is DEPTH, not definition count.
+      ⇒ **SO THERE ARE TWO CAPS WITH ONE CAUSE** (GOSUB 8, DEF FN 3), and a
+      software pointer running down from `varceil` fixes only the first: `SP`
+      stays at `$F380`. Relocating `SP` fixes both, which is why the reference
+      has ONE stack — and the honest cost of merging is the per-frame type tag a
+      `NEXT` then needs. **The design below is the software-pointer option;
+      it is no longer the only candidate. Decide before building.**
 
       🟢 **THE SHAPE IS SETTLED (2026-09-04), and it is cheap in the SCARCE ROM.**
       Read against the walls (`make basic-reloc`: the main low region and page 1

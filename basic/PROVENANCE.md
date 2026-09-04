@@ -4887,3 +4887,28 @@ zerobas reads **0** at depth 1 and raises ERR 7 before depth 10
 the probe read `<NO OUTPUT>` there because the untrapped ERR 7 aborted the
 program before its fence. Every row now arms `ON ERROR` and reports the `ERR`
 beside the delta.
+
+## 2026-09-04 — the evaluator nests 25 B a level out of the reference's pool; ours caps at three (D-EVALDEPTH)
+
+**sourced** — black-box oracle observation on the Philips VG-8020 and the
+National CF-3300, `scratchpad/evaldepth_probe.py`. Whole BASIC programs in, one
+fenced value out; no ROM code decoded.
+
+A chain of `DEF FN`s whose innermost body is `FRE(0)` measures the interpreter's
+own recursion against the memory `FRE(0)` reports. Both references read **25 B
+per nesting level, exactly linear** to four levels, and **6 B per parenthesis**
+(48 B for eight) — the latter independently reproducing the figure
+`probes/basic/basic_probe_clearpool.py`'s docstring recorded and never gated.
+
+🔴 zerobas raises `Out of memory` at **three** levels. The separating control
+`e.def5` (the same five definitions, nested only one deep, reading `0 0`) is what
+establishes the cap is on DEPTH and not on the number of definitions. This is
+distinct from the already-agreed `b.recurse` row (unbounded self-recursion, which
+raises on all three); finite nesting had never been asked.
+
+The cause is in this project's own source and is stated rather than inferred:
+`basic/deffn.asm:192` refuses a nested save that would cross `FN_STK_FLOOR`
+(`$F200`) and `SP` begins at C-BIOS's `$F380` — 384 bytes.
+
+Full rows and what they mean for the control-frame-pool arc:
+[`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md) §16.

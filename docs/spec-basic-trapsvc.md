@@ -659,3 +659,73 @@ there is ~6 for *evaluator* nesting; a `GOSUB` level is 7.)
 
 🎯 **The frame and the address arithmetic already match; the allocation does
 not.** zerobas computes the reference's stack top and then puts nothing there.
+
+## 16. 🔴 D-EVALDEPTH — the EVALUATOR nests out of the same pool there, and out of 384 B here
+
+§15 asked whether *control* frames come from the memory `FRE(0)` reports. This
+asks the same of the interpreter's **own** recursion, because on the reference
+both live on one Z80 stack — so if evaluator nesting also comes out of that pool,
+`CLEAR` bounds **both** depths with one number. Measured 2026-09-04,
+`scratchpad/evaldepth_probe.py`. Each row reads `[FRE(0)@shallow − FRE(0)@deep,
+ERR]`; the instrument is a chain of `DEF FN`s (`FNE`→`FND`→…→`FNA`, whose body is
+`FRE(0)`), the one evaluator recursion whose depth is countable from BASIC.
+
+| row | VG-8020 | CF-3300 | zerobas |
+|---|---|---|---|
+| `e.ctl` — both reads at the **same** depth | `0 0` | `0 0` | `0 0` |
+| `e.fn1` — one extra level | `25 0` | `25 0` | `0 0` |
+| `e.fn2` — two | `50 0` | `50 0` | `0 0` |
+| `e.fn3` — three | `75 0` | `75 0` | 🔴 **`ERR 7`** |
+| `e.fn4` — four | `100 0` | `100 0` | 🔴 **`ERR 7`** |
+| `e.def5` — **five definitions, depth ONE** | `0 0` | `0 0` | `0 0` |
+| `e.paren8` — eight nested parentheses | `48 0` | `48 0` | `0 0` |
+
+**25 B per `DEF FN` level, exactly linear, both references identical** — and
+48 B for eight parentheses is **6 B per level**, which is precisely the *"`FRE(0)`
+counts down to SP at ~6 bytes per nesting level"* that
+`basic_probe_clearpool.py`'s docstring recorded in passing and never gated.
+
+### 🔴 zerobas caps `DEF FN` nesting at THREE, and `e.def5` is what names it
+
+`e.fn4` **defines** five functions and **nests** four, so its `ERR 7` had two
+sufficient causes that coincide on every other row: a nesting-depth cap and a
+definition-*count* cap. `e.def5` defines the same five and calls only `FNA` —
+depth one — and reads `0 0`. **The cap is on DEPTH.**
+[[two-rules-that-coincide-on-every-row-you-have]]
+
+This is **not** the already-agreed `b.recurse` row (`DEF FNA(X)=FNA(X)`, infinite
+recursion → `Out of memory` on all three, deffn slice). That is unbounded
+recursion, which every machine must refuse. This is *finite* nesting three deep,
+which both references take in their stride, and it had never been asked.
+
+**The cause is in our own source, not inferred:** `basic/deffn.asm:192` guards a
+nested FN's live-prefix save against `FN_STK_FLOOR` = `$F200`
+(`basic/sysvars.inc:3453`), and `SP` starts at C-BIOS's `$F380` — **384 usable
+bytes** for every nested save plus the evaluator's own frames. The comment there
+already says it: *"this machine's Z80 stack is a few hundred bytes"*.
+
+### 🎯 What this does to the arc's design choice
+
+zerobas now has **two** functional depth caps, and they have **one** cause — the
+frames are not in the HIMEM-bounded region the reference puts them in:
+
+| | reference | zerobas | in the `FRE(0)` pool? |
+|---|---|---|---|
+| `GOSUB` depth | ~4080 | **8** | there yes (7 B/level), here no |
+| `DEF FN` nesting | ≥4, 25 B/level | **3** | there yes, here no |
+
+⚠️ **A software pointer running down from `varceil` fixes only the first.** It
+moves `GOSUB`/`FOR` frames into the free gap and leaves `SP` at `$F380`, so
+`DEF FN` nesting stays capped at 3 and evaluator depth stays un-bounded-by-`CLEAR`.
+Relocating `SP` fixes both with one mechanism — which is exactly why the
+reference has one stack and not two.
+
+⚠️ **And the two cannot simply both descend from `varceil` independently**: they
+would collide. That is the structural reason the reference merges them, and the
+honest cost of the merge is the per-frame type tag a `NEXT` then needs to scan
+past return addresses. §12's rows say what the behaviour must be; they do not say
+which mechanism produces it.
+
+🟢 The `DEF FN` cap is separable and could be addressed on its own (more room for
+the save, or a different save strategy). It is filed here because it was found
+here, not because it must be fixed here.
