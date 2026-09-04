@@ -415,6 +415,35 @@ CASES = [
     ("f.fileslitl", "dsklist", ['FILES"FC*.*"', 'PRINT"[OK]"']),
     ("f.filesvarl", "dsklist", ['A$="FC*.*"', 'FILES A$', 'PRINT"[OK]"']),
 
+    # === m.* A MALFORMED FILESPEC: does the reject STOP the listing? =========
+    # Noticed 2026-08-21 walking D-FNEXPR2's sites, never measured. On this side
+    # `parse_disk_fcb` refuses a name that will not fit 8.3 with
+    # `jp bl_load_error`, and `load_error` PRINTS AND RETURNS -- from inside
+    # parse_disk_fcb, so the `ret` lands in the CALLER and `do_files` walks the
+    # directory anyway with a half-built pattern. That is the nested-reject
+    # hazard sub/bload.asm already names in prose [[load-error-is-not-abort]];
+    # what is new is that `listface` can SEE it, because it reports the entry
+    # COUNT beside the face.
+    # 🎯 `N entries + <face>` IS THE WHOLE POINT OF THE READOUT HERE. "printed an
+    # error" and "listed anyway" are two independent facts and either alone is
+    # satisfied by the wrong machine: a reject that lists reads the same as a
+    # clean reject if you only look at the message, and the same as a clean
+    # listing if you only count entries.
+    # 🟢 The controls above (f.filesbare / f.fileslitl) are what make a count
+    # meaningful at all -- without them 0 could equally be "the counter is blind".
+    ("m.long",    "dsklist", ['FILES"TOOLONGNAME.EXT"', 'PRINT"[OK]"']),
+    ("m.longext", "dsklist", ['FILES"AB.EXTRA"', 'PRINT"[OK]"']),
+    ("m.both",    "dsklist", ['FILES"TOOLONGNAME.EXTRA"', 'PRINT"[OK]"']),
+    ("m.twodot",  "dsklist", ['FILES"A.B.C"', 'PRINT"[OK]"']),
+    ("m.empty",   "dsklist", ['FILES""', 'PRINT"[OK]"']),
+    # ...and the BOUNDARY of `Bad file name`, because two rows naming it do not
+    # say what the rule IS. A dot alone, a bare drive colon and a blank all
+    # probe different halves of "what makes a filespec malformed".
+    ("m.dot",     "dsklist", ['FILES"."', 'PRINT"[OK]"']),
+    ("m.dotdot",  "dsklist", ['FILES".."', 'PRINT"[OK]"']),
+    ("m.colon",   "dsklist", ['FILES"A:B"', 'PRINT"[OK]"']),
+    ("m.blank",   "dsklist", ['FILES" "', 'PRINT"[OK]"']),
+
     # === D-FNFUND: THE ROWS THAT MAKE `dev_cmp`'s MISS ARM LIVE ===============
     # 🔴 K-FF1 (`dcmp_miss:` `pop hl` -> `pop bc`, i.e. the miss arm stops
     # restoring HL) REDDENED NOTHING ON THE ROW SET AS IT STOOD, AND THAT WAS A
@@ -684,7 +713,25 @@ SITE_CONTROL = {
 # `Type mismatch`, which is what the CF-3300 has answered all along. The
 # deferral was honoured rather than merely filed
 # ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
-DEFERRED: dict[str, str] = {}
+# 🔴 D-FSPEC (2026-09-04): FILESPEC VALIDATION, measured and deferred on a
+# MEASURED BLAST RADIUS. The reference refuses a malformed 8.3 filespec with
+# `Bad file name`; zerobas builds a pattern that simply matches nothing and says
+# `File not found`. And a BLANK filespec is "no filespec at all" there -- it
+# lists the whole directory -- where here it is another `File not found`.
+# ⚠️ THE FIX BELONGS IN `parse_disk_fcb`, WHICH HAS ELEVEN CALL SITES
+# (basic/files.asm:768 names them: LOAD, SAVE, BLOAD, KILL, NAME, FILES...), so
+# it is one routine serving every disk verb and a change there changes all of
+# them [[a-shared-tail-is-not-a-decision]]. The same forms have NOT been measured
+# on those verbs, and doing that is the next step -- not writing the check.
+# 🟢 The disk ROM has room (8910 B free, 2026-09-04), so this is deferred on the
+# MEASUREMENT that is missing, not on a wall.
+DEFERRED: dict[str, str] = {
+    "m.twodot": "D-FSPEC: `Bad file name` vs `File not found`; parse_disk_fcb has 11 callers",
+    "m.empty":  "D-FSPEC: `Bad file name` vs `File not found`; parse_disk_fcb has 11 callers",
+    "m.dot":    "D-FSPEC: `Bad file name` vs `File not found`; parse_disk_fcb has 11 callers",
+    "m.dotdot": "D-FSPEC: `Bad file name` vs `File not found`; parse_disk_fcb has 11 callers",
+    "m.blank":  "D-FSPEC: a BLANK filespec is `no filespec` there (lists all), an error here",
+}
 
 # ✅ ALL EIGHT D-FNARG2 ROWS GRADUATED 2026-08-21 (D-FNEXPR2) and are ORDINARY
 # SCORED ROWS above: f.savelit, f.savevar, f.loadlit, f.loadvar, f.bloadlit,

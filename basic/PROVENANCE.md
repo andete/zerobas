@@ -4999,3 +4999,31 @@ Measured and priced, **not fixed**: ~12 B for the slot-3 arm plus ~8 B for the
 arity bound, against 6 B free in main page 1 on 2026-09-04. The three rows are
 `DEFERRED` in the gate with that price attached rather than left out.
 [`docs/spec-basic-screenerr.md`](../docs/spec-basic-screenerr.md) §10.
+
+## 2026-09-04 — a malformed filespec is `Bad file name`, and a blank one is no filespec (D-FSPEC)
+
+**sourced** — black-box oracle observation on the National CF-3300 (Disk BASIC;
+a diskless VG-8020 cannot express these rows), twelve rows added to
+`probes/basic/basic_probe_namspc.py` and read through `listface`, which reports
+the directory-entry COUNT beside the message.
+
+🔴 **The filed symptom is refuted.** TODO.md carried *"a malformed filespec
+prints `load error` and `FILES` lists anyway"*; `FILES"TOOLONGNAME.EXTRA"` — the
+string that filing named — reads `0 entries + File not found` on **both**
+machines, and every zerobas row reads `0 entries`. Nothing lists after a reject.
+An over-long name is accepted into a pattern that matches nothing, so `FILES`
+never reaches the `jp bl_load_error` the filing reasoned from. The hazard itself
+remains real in the source; this says only that these inputs do not reach it.
+
+What is divergent (5 rows, deferred in the gate):
+
+* `"A.B.C"`, `""`, `"."`, `".."` → **`Bad file name`** on the reference,
+  `File not found` here. **Length is not part of the rule** — an over-long name
+  or extension is `File not found` on both.
+* `" "` (blank) → the reference treats it as **no filespec at all** and lists the
+  whole directory; here it is another `File not found`.
+
+Deferred on a measured blast radius rather than a wall: the check belongs in
+`parse_disk_fcb`, which has eleven call sites across the disk verbs, and the same
+forms are unmeasured on LOAD/SAVE/BLOAD/KILL/NAME. Disk ROM free was 8910 B.
+[`docs/spec-basic-fnexpr2.md`](../docs/spec-basic-fnexpr2.md) §D-FSPEC.

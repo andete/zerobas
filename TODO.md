@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6880 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6903 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6880 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6903 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4879,7 +4879,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       raising the battery's.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] ⚠️ **A MALFORMED FILESPEC PRINTS `load error` AND `FILES` LISTS ANYWAY.**
+- [ ] 🔴 **THE FILED `load error` SYMPTOM IS REFUTED — WHAT IS THERE IS FILESPEC
+      VALIDATION.** Measured 2026-09-04 (D-FSPEC,
+      [`docs/spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md)), twelve rows in
+      `namspc-acceptance` through `listface` (`N entries + <face>`).
+      🔴 **`FILES"TOOLONGNAME.EXTRA"` — the row this item itself proposed — reads
+      `0 entries + File not found` on BOTH machines.** Every zerobas row reads
+      `0 entries`: nothing lists after a reject and no row shows `load error`.
+      The reasoning below was an unrun claim
+      [[a-justification-parenthesis-is-an-unrun-claim]]; ⚠️ the hazard it names
+      is still real in the source, but `FILES` with a malformed filespec does not
+      REACH it — an over-long name is accepted into a pattern that matches
+      nothing.
+      🟢 **WHAT IS ACTUALLY DIVERGENT (5 rows, all DEFERRED in the gate):**
+      • `"A.B.C"`, `""`, `"."`, `".."` → **`Bad file name`** there,
+        `File not found` here. Length is NOT part of the rule.
+      • `" "` (blank) → the reference treats it as **no filespec** and lists the
+        whole directory; here it is another `File not found`.
+      ⚠️ **DEFERRED ON A MEASURED BLAST RADIUS, NOT A WALL:** the check belongs in
+      `parse_disk_fcb`, which `basic/files.asm:768` records as having **eleven
+      call sites** (LOAD/SAVE/BLOAD/KILL/NAME/FILES) — one routine serving every
+      disk verb [[a-shared-tail-is-not-a-decision]]. **NEXT STEP is measuring the
+      same forms on those verbs**, not writing the check. Disk ROM free was
+      8910 B on 2026-09-04, so space is not the objection.
+      --- the original filing, kept because its MECHANISM note is still true ---
       Noticed 2026-08-21 while walking D-FNEXPR2's sites; not measured on the
       reference, so it is filed rather than fixed.
       `parse_disk_fcb` rejects a name that does not fit 8.3 with

@@ -361,3 +361,61 @@ inside a `- [x]`:
   filespec prints `load error` from *inside* `parse_disk_fcb` and `FILES` lists
   anyway — pre-existing, not widened here).
 
+
+## D-FSPEC (2026-09-04) — a malformed filespec, measured; and the filed symptom is not what happens
+
+TODO.md carried *"A MALFORMED FILESPEC PRINTS `load error` AND `FILES` LISTS
+ANYWAY"*, noticed 2026-08-21 while walking this slice's sites and filed
+explicitly as *not measured on the reference*. Measured now, twelve rows in
+`basic_probe_namspc.py` through `listface`, whose reading is `N entries + <face>`
+— the entry COUNT beside the message, because "printed an error" and "listed
+anyway" are two independent facts and either alone is satisfied by the wrong
+machine.
+
+| `FILES` argument | CF-3300 | zerobas |
+|---|---|---|
+| *(bare)* | 5 entries + OK | 5 entries + OK |
+| `"FC*.*"` | 0 + `File not found` | 0 + `File not found` |
+| `"TOOLONGNAME.EXT"` | 0 + `File not found` | 0 + `File not found` |
+| `"AB.EXTRA"` | 0 + `File not found` | 0 + `File not found` |
+| `"TOOLONGNAME.EXTRA"` | 0 + `File not found` | 0 + `File not found` |
+| `"A:B"` | 0 + `File not found` | 0 + `File not found` |
+| `"A.B.C"` | 0 + **`Bad file name`** | 🔴 0 + `File not found` |
+| `""` | 0 + **`Bad file name`** | 🔴 0 + `File not found` |
+| `"."` | 0 + **`Bad file name`** | 🔴 0 + `File not found` |
+| `".."` | 0 + **`Bad file name`** | 🔴 0 + `File not found` |
+| `" "` | **5 entries + OK** | 🔴 0 + `File not found` |
+
+### 🔴 The filed symptom is NOT reproduced, and the item's own row is why
+
+`FILES"TOOLONGNAME.EXTRA"` — the exact string the filing named — reads
+`0 entries + File not found` on **both** machines. **Every** zerobas row above
+reads `0 entries`: nothing lists after a reject, and no row shows `load error`.
+So the reasoning in the filing — that `parse_disk_fcb`'s 8.3 reject reaches
+`jp bl_load_error`, which prints and RETURNS into `do_files`, which then walks
+the directory with a half-built pattern — does not describe what these inputs do.
+
+⚠️ **That does not retire the hazard**, which `sub/bload.asm` names in prose and
+which is real in the source ([[load-error-is-not-abort]]). It says only that
+`FILES` with a malformed filespec **does not reach it**: an over-long name is
+accepted into a pattern that simply matches nothing. The filing's premise was an
+unrun claim and the row it proposed would have measured nothing
+[[a-justification-parenthesis-is-an-unrun-claim]].
+
+### 🟢 What IS there: filespec validation, and a blank that means "no filespec"
+
+Two rules, both missing here:
+
+1. **A structurally malformed name is `Bad file name`**, not a pattern that
+   fails to match — a second dot, an empty string, or a name that is only dots.
+   Length is *not* part of it: an over-long name is `File not found` on both.
+2. **A BLANK filespec is no filespec at all** and lists the whole directory,
+   where zerobas treats it as a pattern and finds nothing.
+
+⚠️ **DEFERRED ON A MEASURED BLAST RADIUS, NOT ON A WALL.** The check belongs in
+`parse_disk_fcb`, which `basic/files.asm:768` records as having **eleven call
+sites** — LOAD, SAVE, BLOAD, KILL, NAME and FILES among them — so one routine
+serves every disk verb and a change there changes all of them
+[[a-shared-tail-is-not-a-decision]]. The same eleven forms have **not** been
+measured on those verbs, and doing that is the next step, not writing the check.
+The disk ROM has 8910 B free (2026-09-04), so this is not a space decline.
