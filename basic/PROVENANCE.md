@@ -4865,3 +4865,25 @@ The consequence for zerobas is a coincidence of formulas, not of code: the
 reference's `STKTOP` and zerobas's existing `strheap_varceil` compute the same
 address. Nothing here is copied; what the oracle supplies is a target the
 existing derivation already hits.
+
+## 2026-09-04 — `FRE(0)` counts down 7 B per GOSUB level on the reference (D-CTLFRE)
+
+**sourced** — black-box oracle observation on the Philips VG-8020 and the
+National CF-3300, `scratchpad/ctlfre_probe.py`. Whole BASIC programs in, one
+fenced value out; no ROM code decoded.
+
+`FRE(0)` read at top level and again at nesting depth N differs by **7, 70 and
+140 bytes at N = 1, 10 and 20** — exactly 7.0 B per level, marginally, on both
+machines. That is the same per-frame figure obtained from the `CLEAR` ladder
+(§11) and from `(STKTOP − STREND)/depth` (§14): three independent routes to one
+number, which is what establishes that the reference's control frames come out of
+the same memory `FRE(0)` reports. Ten nested `FOR` entries cost a further 250 B,
+i.e. **25 B per `FOR` frame**, both references identical.
+
+zerobas reads **0** at depth 1 and raises ERR 7 before depth 10
+([`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md) §15).
+
+⚠️ The zerobas rows are an outcome, not a missing measurement: the first cut of
+the probe read `<NO OUTPUT>` there because the untrapped ERR 7 aborted the
+program before its fence. Every row now arms `ON ERROR` and reports the `ERR`
+beside the delta.

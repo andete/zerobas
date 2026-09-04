@@ -601,3 +601,61 @@ initialises.
 `NEXT` finds its entry among the return addresses. Those are implementation, not
 contract; §12's `x.*` rows already pin the behaviour that any implementation has
 to produce.
+
+## 15. ✅ D-CTLFRE — `FRE(0)` counts down as you nest, and here it does not
+
+A third independent route to the same 7.0, and the one that answers *"are we
+working the same way as the oracles?"* directly. §14 put the reference's control
+frames in the `STKTOP..STREND` gap — which is the memory `FRE(0)` reports. So
+nesting a `GOSUB` must visibly shrink `FRE(0)`. Measured 2026-09-04,
+`scratchpad/ctlfre_probe.py`; each row reads `[FRE(0)@top − FRE(0)@depth N, ERR]`.
+
+| row | VG-8020 | CF-3300 | zerobas |
+|---|---|---|---|
+| `f.g0` — GOSUB depth 1 | `7 0` | `7 0` | **`0 0`** |
+| `f.g10` — depth 10 | `70 0` | `70 0` | **`22865 7`** |
+| `f.g20` — depth 20 | `140 0` | `140 0` | **`22865 7`** |
+| `f.n10` — 10 GOSUB+FOR pairs | `320 0` | `320 0` | **`22840 7`** |
+
+**7, 70, 140 — exactly 7.0 B per level, marginally, on both references.** That is
+the same figure §11 got from the `CLEAR` ladder and §14 got from
+`(STKTOP − STREND)/depth`: three independent routes, one number.
+
+🟢 **And a new one: `f.n10` − `f.g10` = 250 B over ten `FOR` entries = 25 B per
+`FOR` frame** on both references (against zerobas's 11 B frame, which is smaller
+because zerobas keeps 16-bit limits and steps where the reference keeps floats).
+
+🔴 **zerobas reads `0` at depth 1 and cannot reach depth 10 at all.** Its frames
+are in a fixed page-3 array `FRE(0)` has never seen, and its Z80 `SP` is still
+C-BIOS's at `$F380` — neither is in the gap `FRE(0)` reports.
+
+⚠️ **The `22865 7` readings are an OUTCOME, not a measurement**, and the first cut
+of this probe reported them as `<NO OUTPUT>`. zerobas caps `GOSUB` at 8, so depth
+10 raises ERR 7; untrapped, the program aborted before its fence. Every row now
+arms `ON ERROR` and reports the `ERR` beside the delta, and the summary refuses
+to read a delta whose `ERR` is non-zero — `A−B` there is `A` (B was never
+written), a large and entirely plausible number
+[[an-unnamed-outcome-reads-as-no-outcome]].
+
+🔴 **This claim had been asserted twice in this arc and run zero times.**
+`basic_probe_clearpool.py`'s docstring records the reference half in passing —
+*"`FRE(0)` counts down to SP at ~6 bytes per nesting level"* — and then cancels
+it out by reading every pair at equal depth, which is correct for what that probe
+measures and is exactly why the zerobas half was never looked at. (The figure
+there is ~6 for *evaluator* nesting; a `GOSUB` level is 7.)
+[[a-justification-parenthesis-is-an-unrun-claim]]
+
+### What §12–§15 together say about "the same way"
+
+| | reference | zerobas |
+|---|---|---|
+| frame carries line number + resume pointer | yes | yes |
+| stack top = `ceiling − files − string space` | `STKTOP` | `strheap_varceil` — **same formula** |
+| nothing reclaimed on an abandoned trap dispatch | yes | yes |
+| frames come out of the memory `FRE(0)` reports | **yes, 7 B/level** | 🔴 **no, 0** |
+| depth responds to `CLEAR` / HIMEM | **yes** | 🔴 no |
+| reachable depth | ~4080 / ~3311 | 🔴 **8** |
+| `NEXT` can cross a `GOSUB` frame | **no** | 🔴 yes (§12) |
+
+🎯 **The frame and the address arithmetic already match; the allocation does
+not.** zerobas computes the reference's stack top and then puts nothing there.
