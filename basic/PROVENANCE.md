@@ -4833,3 +4833,35 @@ mechanism.
 Nothing new was derived about the reference's *implementation* — only about its
 observable answers. The pooled design that follows is our own; what the oracle
 supplies is the contract it has to meet.
+
+## 2026-09-04 — where the reference's control stack IS, and what `CLEAR n,addr` really sets (D-CTLSTACK)
+
+**sourced** — black-box oracle observation on the Philips VG-8020 and the
+National CF-3300, `scratchpad/ctlstack_probe.py`, reading the **documented** MSX
+system variables `MEMSIZ` `$F672`, `STKTOP` `$F674`, `STREND` `$F6C6` and
+`FRETOP` `$F69B` (MSX2 Technical Handbook / MSX Assembly Page `map.grauw.nl`;
+already named in `basic/sysvars.inc:951` and `:1561`) through `PEEK` from BASIC.
+No ROM code was decoded and no internal layout was lifted.
+
+Three facts, both references agreeing on every row
+([`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md) §14):
+
+* `CLEAR n` lowers `STKTOP` by exactly `n` and leaves `MEMSIZ` alone.
+* `(STKTOP − STREND) / depth` = **7.0 / 7.1 B per control frame**, which is the
+  same figure §11 derived from the `CLEAR` ladder by a completely independent
+  route — so the control frames occupy the gap between the stack top and the
+  variable area.
+* `CLEAR n,addr` does **not** set `MEMSIZ` to `addr`: it sets
+  `addr − 269 − MAXFILES × 267`, so **`MAXFILES` moves the stack top**. The
+  267 B/channel figure independently reproduces the ladder recorded in
+  `docs/clearpool-vg8020-characterization.md` §2.
+
+⚠️ **Deliberately NOT measured**: what a reference control frame contains, or how
+its `NEXT` locates an entry. Those are implementation rather than contract, and
+the behavioural contract any implementation must meet is already pinned by
+D-CTLCROSS's rows (§12). The rows here ask only *where* and *how big*.
+
+The consequence for zerobas is a coincidence of formulas, not of code: the
+reference's `STKTOP` and zerobas's existing `strheap_varceil` compute the same
+address. Nothing here is copied; what the oracle supplies is a target the
+existing derivation already hits.

@@ -514,3 +514,90 @@ GOSUB and the FOR overflow error [[a-shared-tail-is-not-a-decision]].
 Every plant hashes the four built images round itself (D-KNIFEROM2) and the tree
 is restored byte-identically; the ROM hash after the run is identical to the one
 before it.
+
+## 14. ✅ D-CTLSTACK — the oracle says WHERE, not just how deep
+
+§11 concluded *"the references use the GENERIC stack"* from **depth alone** —
+~4080 frames, 7.0 B/frame, linear in `CLEAR`, the two machines agreeing once
+HIMEM is pinned. That is an inference from a behaviour, and it never asked the
+machine where the stack **is**. MSX publishes the answer, so on 2026-09-04
+(`scratchpad/ctlstack_probe.py`) the inference was replaced by a reading.
+
+The system variables are documented (MSX2 Technical Handbook / MSX Assembly Page
+`map.grauw.nl`; already named in `basic/sysvars.inc:951` and `:1561`) and BASIC
+can `PEEK` them: `MEMSIZ` `$F672`, `STKTOP` `$F674`, `STREND` `$F6C6`,
+`FRETOP` `$F69B`.
+
+⚠️ **This is RAM read through `PEEK`, not a disassembly.** Documented addresses
+in, observed values out — the same black-box use every other row in this document
+makes of these machines. The rows ask **where** and **how big**, deliberately
+never *"what does a frame look like"*: that answer would be an implementation to
+copy rather than a contract to meet.
+
+### 1. `CLEAR n` lowers `STKTOP` by exactly n — `MEMSIZ` does not move
+
+| `CLEAR` | VG-8020 `STKTOP` | CF-3300 `STKTOP` |
+|---|---|---|
+| none | 61600 | 56215 |
+| `CLEAR 2200` | 59600 (**−2000**) | 54215 (**−2000**) |
+| `CLEAR 4200` | 57600 (**−2000**) | 52215 (**−2000**) |
+
+The stack top is bounded by the string space, and that is the whole of §11's
+"+2000 B costs 286 frames".
+
+### 2. 🎯 7.0 B/frame, reached a second way — from ADDRESSES
+
+`STKTOP` and `STREND` are read **before** the recursion (which creates no
+variables, so `STREND` cannot move under it), then the machine is driven to
+control-stack overflow:
+
+| | depth | `STKTOP − STREND` | B/frame |
+|---|---|---|---|
+| VG-8020 | 4067 | 28651 | **7.0** |
+| CF-3300 | 3298 | 23266 | **7.1** |
+
+§11 got 7.0 from the `CLEAR` ladder alone. **Two independent routes to one
+number**: the control frames occupy the gap between the stack top and the
+variable area. It is the generic stack, read rather than inferred.
+
+### 3. 🔴 `CLEAR n,addr` does NOT set `MEMSIZ` to `addr` — 267 B per file buffer
+
+`CLEAR 200,&HC000` reads `MEMSIZ` = **48616**, 536 below the requested 49152,
+**identically on both references**. `MAXFILES` explains all of it:
+
+| `MAXFILES` | `MEMSIZ` (both refs) | vs. MAXFILES 1 |
+|---|---|---|
+| 0 | 48883 | +267 |
+| 1 (default) | 48616 | — |
+| 2 | 48349 | −267 |
+
+So `MEMSIZ = addr − 269 − MAXFILES × 267`, and **`MAXFILES` moves the stack
+top**, because `STKTOP` tracks `MEMSIZ`. ⚠️ That settles an open ⚠️ in the
+control-frame-pool arc (*"`MAXFILES=n` moves the pool top; measure what the
+references do before assuming it is benign"*): it is **not** benign, and the
+reference has the same dependency. The 267 B/channel figure independently
+matches the ladder already recorded in
+[`docs/clearpool-vg8020-characterization.md`](clearpool-vg8020-characterization.md) §2.
+
+### 4. 🎯 What this settles for the design — the address is already right
+
+    reference   STKTOP          = (addr − 269 − MAXFILES*267) − <string space>
+    zerobas     strheap_varceil = min(HIMEM,TXTMAX) − MAXF*FCH_CTXSZ − POOLSIZE
+
+**Those are the same formula.** zerobas already computes the reference's
+`STKTOP` — it derives it sub-side for the string pool and the channel table
+(`sub/strheap.asm`) — and simply puts no control frames there. So the two
+candidate designs (relocate the Z80 `SP`, or run a software pointer down from
+`varceil`) place the frames at **exactly the same addresses**; they differ only
+in which pointer walks the range.
+
+⚠️ **And zerobas's own `SP` is still C-BIOS's.** Its `$F674` reads 62336 =
+`$F380` — C-BIOS's stack top, ~870 B of headroom — and `basic/` contains no
+`ld sp,nn` at all: `SP` is only ever anchored and restored through `SAVSTK`.
+Relocating it is therefore a change to a register nothing in this tree currently
+initialises.
+
+⚠️ **NOT MEASURED, and deliberately:** what a reference frame contains, or how
+`NEXT` finds its entry among the return addresses. Those are implementation, not
+contract; §12's `x.*` rows already pin the behaviour that any implementation has
+to produce.
