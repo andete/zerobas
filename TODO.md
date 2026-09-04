@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1818 (T-6FE392)8 (T-529ABE)` from `TODO.md:6354 (T-529ABE)`: a
+      `TODO.md:1818 (T-6FE392)8 (T-529ABE)` from `TODO.md:6381 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2396,7 +2396,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6354 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6381 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2426,12 +2426,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       D-MISSOP3's `r.keyok` turned *"wrong error code"* into *"the form is
       absent"*; this scout's `k.none` turns that into *"the storage is empty
       too"*.
-      💰 **STILL UNPRICED, AND THE DEFAULTS ARE THE LARGER HALF**: ~160 B of
-      DATA, which needs a home outside main page 1 (**85 B** free 2026-08-26 —
-      read the wall, never this line) before it needs a design. Also still
-      unmeasured: the `n` domain (`KEY 0,` / `KEY 11,`), the truncation length
-      (15 is read off the stride, not off a machine), and `KEY LIST` entirely.
-      🔭 SCOUT-THEN-ASK — the decision is yours; the measuring and pricing in front of it are not (charter / scope, but unpriced/unmeasured first).
+      ✅ **MEASURED AND PRICED 2026-09-04 — D-KEYSCOUT2**
+      ([`docs/spec-basic-keystr-scout.md`](docs/spec-basic-keystr-scout.md),
+      [`scratchpad/keylist_probe.py`](scratchpad/keylist_probe.py), 11 rows x 3
+      machines). All three unmeasured things are now read off machines:
+      • **the `n` domain is 1..10**, and `KEY 0,` / `KEY 11,` / `KEY -1,` are
+        **ERR 5**; the empty string is legal. zerobas answers **ERR 2 to every
+        form**, and the `A=1` control is green on all three, so that is a reading
+        about zerobas and not about the program.
+      • **truncation is 15**, measured (`KEY 1,"ABCDEFGHIJKLMNOPQRST"` lists back
+        `ABCDEFGHIJKLMNO`) — it AGREES with the stride inference, but it is now a
+        reading rather than a deduction from a memory map.
+      • **`KEY LIST` works on both references** and is `Syntax error` here — and
+        it is also the cheapest way to read the defaults: one row instead of
+        forty PEEK rows over FNKSTR.
+      🔴 **THE DEFAULTS ARE NOT UNIVERSAL, WHICH THIS ITEM DID NOT KNOW.** Slot
+      **F6** is `color 15,4,4` on the VG-8020 and `color 15,4,7` on the CF-3300.
+      zerobas has TWO official targets with different oracles, so "F6's default"
+      is a per-target answer, not a constant.
+      ⚠️ `KEY LIST` cannot show trailing spaces or a CR, and the real defaults
+      have both (`color `, and a CR is what makes `run` execute). The first
+      scout's PEEK read `"colo"` from `"color "`, consistent. So a packed figure
+      is a LOWER bound and a straight 160-byte image sidesteps the question.
+      💰 **PRICED: ~7 B of main page 1, everything else sub-side.** `ex_key` is
+      at `$5AB8` — main page 1, the constrained region — but only the dispatch
+      needs to live there: `jp stmt_error` (3 B) becomes `ld ix` / `call
+      subrom_call` / `jp c,...` (~10 B). A page-0 tenant may call main page 1, so
+      it can reach the expression evaluator (the D-PUSIGN / D-PUEMIT pattern).
+      The 160-byte FNKSTR image plus ~120 B of parse/store/list code go in sub
+      page 0. **Run `make basic-reloc` for the walls — do not quote this line.**
+      🔭 **ONLY THE DECISION IS LEFT, plus one question the measuring surfaced:**
+      does the disk build ship the CF-3300's F6 default and the diskless build
+      the VG-8020's (faithful to each target's oracle, two different ROMs), or
+      one value everywhere?
 
 - [x] 🔴 **D-TODOSWEEP'S OWN ELEVEN PROBES RE-IMPLEMENT THE `[...]` READER, WHICH
       IS THE TRAP THE ITEM BELOW DESCRIBES.** Filed 2026-08-26 by D-TODOSWEEP

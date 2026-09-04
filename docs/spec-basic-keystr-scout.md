@@ -105,3 +105,86 @@ disagreed"* — and it is only legible because `probe_signal.Tally` prints it
 💰 Main page 1 was **85 B** free on 2026-08-26 — read the wall, never this line.
 The defaults table alone is ~160 B of *data*, so this needs a home outside main
 page 1 before it needs a design.
+
+## D-KEYSCOUT2 (2026-09-04) — the three unmeasured things, measured
+
+The item is marked SCOUT-THEN-ASK and draws its own line: *"the decision is
+yours; the measuring and pricing in front of it are not"*. It then names what was
+missing — the `n` domain, the truncation length, and `KEY LIST` entirely.
+`scratchpad/keylist_probe.py`, 11 rows × 3 machines.
+
+### The `n` domain
+
+| typed | VG-8020 | CF-3300 | zerobas |
+|---|---|---|---|
+| `KEY 1,"X"` | accepted | accepted | **ERR 2** |
+| `KEY 10,"X"` | accepted | accepted | **ERR 2** |
+| `KEY 0,"X"` | **ERR 5** | **ERR 5** | ERR 2 |
+| `KEY 11,"X"` | **ERR 5** | **ERR 5** | ERR 2 |
+| `KEY -1,"X"` | **ERR 5** | **ERR 5** | ERR 2 |
+| `KEY 1,""` | accepted | accepted | ERR 2 |
+| `A=1` (control) | 0 | 0 | 0 |
+
+So the domain is **1..10, out of range is Illegal function call**, and the empty
+string is legal. The control is green on all three, which is what makes "ERR 2
+everywhere" a reading about zerobas rather than about the program.
+
+### The truncation length — read off a machine, not off the stride
+
+    KEY 1,"ABCDEFGHIJKLMNOPQRST"   (20 characters)
+    KEY LIST  ->  ABCDEFGHIJKLMNO  (15)
+
+**15 confirmed**, on both references. The filed caveat was that 15 came from the
+16-byte stride with a NUL, which is an inference from a memory map rather than a
+measurement of a verb. It agrees — but it is now a reading.
+
+### `KEY LIST` — and the defaults it hands over
+
+`KEY LIST` works on both references and is `Syntax error` here. It also prints
+the ten defaults, which is the cheapest way to read them: the item prices them as
+*"~160 B of DATA … the larger half"*, and one row produces all ten as text
+instead of forty PEEK rows over `FNKSTR`.
+
+| slot | VG-8020 | CF-3300 |
+|---|---|---|
+| F1–F5 | `color` `auto` `goto` `list` `run` | identical |
+| **F6** | **`color 15,4,4`** | **`color 15,4,7`** |
+| F7–F10 | `cload"` `cont` `list.` `run` | identical |
+
+🔴 **THE DEFAULTS ARE NOT UNIVERSAL, AND THE ITEM DID NOT KNOW THAT.** Slot 6
+differs between the two references — they are different machines with different
+default screen colours. zerobas has **two official build targets** with different
+oracles (disk → CF-3300, diskless → VG-8020), so "the default for F6" is a
+per-target answer, not a constant. That is a design input, and it is the one part
+of this that is genuinely a decision.
+
+⚠️ **`KEY LIST` CANNOT SHOW TRAILING SPACES OR A CR.** The real defaults end in
+spaces (`color `) and several in a carriage return (which is what makes `run`
+execute rather than just type). The first scout's PEEK read `"colo"` at F1, from
+`"color "` — consistent. So the 60-byte packed figure above is a **lower bound**;
+the exact bytes need a `PEEK` read of `FNKSTR`, and a straight 160-byte image
+sidesteps the question entirely.
+
+### The price
+
+`ex_key` is at **`$5AB8` — main page 1**, which is the constrained region
+(read `make basic-reloc`; it was 14 B when this was written). The sub ROM is not:
+sub page 0 had 1416 B.
+
+* **main page 1: ~7 B net** — the `jp stmt_error` at `basic/screen.asm:294` (3 B)
+  becomes a tenant dispatch (`ld ix` / `call subrom_call` / `jp c,…`, ~10 B). A
+  page-0 tenant may call main page 1, so the tenant can reach the expression
+  evaluator, which is the D-PUSIGN / D-PUEMIT pattern.
+* **sub page 0: ~160 B of data + ~120 B of code** — a straight `FNKSTR` image
+  copied with `LDIR` at init (exact, no unpacking), plus the `KEY n,"str"` parse
+  and store and the `KEY LIST` print.
+
+Nothing here needs main-page-1 room beyond those ~7 B, which is what the filed
+*"needs a home outside main page 1"* was waiting on.
+
+### What is left for Joost
+
+Only the decision, plus one question the measuring surfaced: **F6's default is
+machine-specific**, so does zerobas ship the CF-3300 value on the disk build and
+the VG-8020 value on the diskless one (faithful to each target's oracle, but two
+different ROMs), or one value everywhere?
