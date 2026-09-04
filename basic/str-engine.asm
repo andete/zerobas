@@ -83,6 +83,20 @@ ctl_alloc:
 ca_full:
                 scf
                 ret
+; --- pdf_badname: a structurally malformed 8.3 filename -> ERR 56 ----------
+; D-FSPEC. `parse_disk_fcb` used `jp bl_load_error` here, and load_error PRINTS
+; AND RETURNS -- from inside the parser, so the `ret` landed in the CALLER and
+; do_files walked the directory anyway, printing TWO messages. Both references
+; RAISE `Bad file name` and stop, uniformly across KILL/LOAD/SAVE/OPEN/FILES.
+; 🟢 The message already ships (sub/errmsg.asm em_bad_filename; err_msgtab[56] is
+; the err_subhosted marker), so this is five bytes and no new string.
+; ⚠️ SITED IN THE LOW REGION ON PURPOSE. `parse_disk_fcb` lives in main page 1,
+; the scarcer of the two co-mapped walls (6 B free vs 14 on 2026-09-04); a
+; five-byte leaf should not spend page-1 space it cannot spare.
+pdf_badname:
+                ld      a,56
+                jp      raise_error
+
 ctl_reset:
                 ; 🔴 THIS MUST SURVIVE BEING CALLED BEFORE THE SUB ROM EXISTS.
                 ; `clear_vars` reaches it at init line 28, and `init_ext_roms` --

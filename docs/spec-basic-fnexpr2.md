@@ -476,3 +476,58 @@ verbs the filing did not test, and the row it proposed could not have found it.
 for a structurally malformed 8.3 name (empty, a second dot, only dots) — and
 **not** for an over-long one, which is `File not found` on both machines. The
 disk ROM has 8910 B free (2026-09-04), so space is not the objection.
+
+
+## D-FSPEC, part 2 (2026-09-04) — the fix, and the three parts it has
+
+All thirteen divergent rows now match the reference; only `m.blank` remains
+deferred, because a blank filespec is a `do_files` question rather than a
+`parse_disk_fcb` one.
+
+**1. `build_83_name` truncates positionally instead of rejecting.** A full name
+no longer sets CF — it falls into the extension field *at that point*, with the
+dot neither required nor consumed (`bn_ext_pos`). ⚠️ The `'.'` test in `bn_name`
+still comes first, and must: `ABCDEFGH.IJK` has a dot exactly at position 8 and
+needs the ordinary separator path.
+
+**2. In `bn_ext_loop` the FULL test now comes BEFORE the `'.'` test.** That
+ordering *is* `TOOLONGNAME.BAS`: once three extension characters are in,
+everything left is ignored — including the dot that name still has after `AME`.
+With the tests the other way round the leftover `.BAS` reads as a second dot and
+the name is rejected, which is what the code did before.
+
+**3. `parse_disk_fcb` RAISES `Bad file name` (ERR 56)** instead of
+`jp bl_load_error`. The message already ships (`sub/errmsg.asm`
+`em_bad_filename`), so this is five bytes and no new string. ⚠️ `pdf_badname`
+binds per build like `bl_load_error` does: the resident copy raises, the tenant
+copy (reached only by `do_bload`) keeps the old file-and-return, because BLOAD's
+answer to a malformed name is **unmeasured** and this slice does not move an
+unmeasured verb.
+
+⚠️ **Sited in the low region on purpose.** `parse_disk_fcb` is in main page 1,
+the scarcer of the two co-mapped walls (6 B free against 14 on 2026-09-04).
+
+### The knives — `scratchpad/fspec_knives.py`, 3/3 exact
+
+| knife | rows reddened |
+|---|---|
+| K-FS1 positional split → reject again | `w.savepos`, `w.savenodot`, `w.savelong`, `m.long`, `m.both` |
+| K-FS2 `'.'` tested before the full check | the same five — the leftover reads as a second dot |
+| K-FS3 `Bad file name` → `bl_load_error` | all 12 malformed-name rows, **and no truncation row** |
+
+🎯 **K-FS3's greens are the sharpest cell.** It changes only how a reject is
+*reported*, so every row whose name is now *accepted* must be untouched — and
+they are. That is what says the parse change and the reporting change are
+separable, and that the rows can tell them apart.
+
+### 🔴 A near-miss worth recording: the assembler took an undefined symbol
+
+The first cut put `jp pdf_badname` in `pdfcb-body.inc` and defined the label
+**only in `sub/bload.asm`**. `basic/pdfcb-body.inc` is included *unconditionally*
+into the resident build too, so the main image assembled a jump to a label it did
+not have — and `make basic-reloc` returned **0**, with the symbol simply absent
+from `build/basic-reloc.sym`. An earlier undefined symbol in the same file
+(`raise_error`, missing on the *tenant* side) had been a hard error, so the
+failure is not uniform. It was caught by grepping the symbol table rather than by
+the build. ⚠️ **A shared include that resolves a symbol per build needs the
+symbol checked in BOTH images, not just a green build.**

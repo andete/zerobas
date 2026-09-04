@@ -104,6 +104,14 @@ bl_upcase:
 ; only difference is that the message is not printed here. The resident stub sees
 ; BL_STAT and reports once, which also removes the double-report the resident
 ; path could produce.
+; D-FSPEC: the TENANT's binding for parse_disk_fcb's malformed-name exit. The
+; RESIDENT copy raises ERR 56 `Bad file name` (basic/str-engine.asm); here it
+; keeps the file-and-return shape, because the only caller of this copy is
+; do_bload below and BLOAD's answer to a malformed name is UNMEASURED. Moving an
+; unmeasured verb on a reading taken for five others is exactly what D-DSKMSG
+; declined to do for NAME.
+pdf_badname     equ     bl_load_error
+
 bl_load_error:
                 call    TAPIOF
                 ld      a,$EE

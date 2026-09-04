@@ -28,8 +28,8 @@
 ;   out: DISK_FCB_DRV = drive code (1=A, 2=B; default A when no prefix);
 ;        DISK_FCB_NAME = the 11-byte space-padded upper-case 8.3 field;
 ;        HL -> the closing '"' (so parse_close_run resumes there).
-; On a malformed drive spec or a name that doesn't fit 8.3, jumps to bl_load_error
-; (does not return). Clobbers A, B, C, DE, HL.
+; On a malformed drive spec, jumps to bl_load_error (does not return). On a
+; structurally malformed 8.3 name, RAISES `Bad file name` (ERR 56). Clobbers A, B, C, DE, HL.
 parse_disk_fcb:
                 ; --- detect an optional drive letter "X:" -------------------
                 ; "A:" / "B:" (case-insensitive). Default drive = A when absent.
@@ -66,5 +66,19 @@ build_name:
                 ; HL -> first char of the bare filename (after any "X:").
                 ; --- convert to the 11-byte 8.3 field at DISK_FCB_NAME ------
                 call    build_83_name       ; HL advanced to the closing quote
-                jp      c,bl_load_error        ; name didn't fit 8.3 / malformed
-                ret
+                ret     nc
+                ; 🔴 D-FSPEC: A MALFORMED NAME IS `Bad file name` (ERR 56),
+                ; RAISED. It was `jp bl_load_error`, and load_error PRINTS AND
+                ; RETURNS -- from inside here, so the `ret` landed in the CALLER
+                ; and do_files walked the directory anyway with a half-built
+                ; pattern, printing TWO messages [[load-error-is-not-abort]].
+                ; Measured uniform across KILL/LOAD/SAVE/OPEN/FILES on the
+                ; reference, which is why one site serves all eleven callers.
+                ; ⚠️ The DRIVE-LETTER reject above still goes to bl_load_error:
+                ; `FILES"C:X"` is unmeasured and is not this row's subject.
+                ; ⚠️ `pdf_badname` BINDS PER BUILD, like bl_load_error does: the
+                ; RESIDENT copy raises ERR 56, the TENANT copy (reached only by
+                ; do_bload inside sub/bload.asm) keeps bl_load_error's file-and-
+                ; return, because BLOAD's answer to a malformed name is
+                ; UNMEASURED and this slice does not move an unmeasured verb.
+                jp      pdf_badname

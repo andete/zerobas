@@ -34,8 +34,11 @@
 ;   - split on the FIRST '.'; up to 8 chars before -> name, up to 3 after -> ext
 ;   - no '.' -> all-name, ext = 3 spaces
 ;   - the filename ends at the closing '"' (or NUL, defensively)
-;   - more than 8 name chars or 3 ext chars, or an empty name, is REJECTED
-;     (CF set) — truncation hides typos, so we error instead.
+;   - more than 8 name chars: the extension starts THERE, positionally (D-FSPEC,
+;     measured: `TOOLONGNAME.BAS` -> `TOOLONGN.AME` on both references)
+;   - more than 3 ext chars: the remainder is IGNORED (`AB.EXTRA` -> `AB.EXT`)
+;   - a SECOND '.' while the extension is still filling, or an empty name, is
+;     REJECTED (CF set) — the caller raises `Bad file name` (ERR 56)
 build_83_name:
                 ; pre-fill the 11-byte field with spaces
                 push    hl
@@ -64,7 +67,16 @@ bn_name:
                 ld      c,a                 ; must consume even if field full
                 ld      a,b
                 or      a
-                jr      z,bn_reject         ; >8 name chars -> reject
+                ; 🔴 D-FSPEC: A FULL NAME IS NOT A REJECT -- IT IS WHERE THE
+                ; EXTENSION STARTS. Measured by writing (SAVE names the file it
+                ; creates): `SAVE"TOOLONGNAME.BAS"` creates **TOOLONGN.AME** on
+                ; both references -- 8 characters of name, then the NEXT THREE
+                ; POSITIONALLY, with the dot neither required nor consumed once
+                ; the name is full. ⚠️ The '.' test above comes FIRST and must
+                ; stay there: `ABCDEFGH.IJK` has a dot exactly at position 8 and
+                ; must take the normal separator path, not have the dot land in
+                ; the extension field.
+                jr      z,bn_ext_pos        ; name full -> extension, positionally
                 ld      a,c
                 call    fcb_upcase
                 ld      (de),a
@@ -75,6 +87,9 @@ bn_name:
 bn_ext:
                 ; HL -> '.'; skip it, write up to 3 ext chars
                 inc     hl
+bn_ext_pos:                                 ; ...or entered with NO dot at all,
+                                            ; HL already on the first ext char
+                                            ; (the name-full path above)
                 ld      de,DISK_FCB_NAME + 8 ; DE -> ext field write cursor
                 ld      b,3                 ; max ext chars remaining
 bn_ext_loop:
@@ -83,15 +98,23 @@ bn_ext_loop:
                 jr      z,bn_done
                 or      a
                 jr      z,bn_done
-                cp      '.'
-                jr      z,bn_reject         ; a second '.' is malformed 8.3
-                cp      '*'
-                jr      z,bn_star_ext       ; '*' -> fill the rest of the ext with '?'
-                ld      c,a
+                ; 🔴 D-FSPEC: THE FULL TEST COMES BEFORE THE '.' TEST, AND THE
+                ; ORDER IS THE WHOLE OF `TOOLONGNAME.BAS`. Once three extension
+                ; characters are in, everything left is IGNORED -- including a
+                ; dot, which is what that name has after `AME`. With the tests
+                ; the other way round the leftover `.BAS` reads as a second dot
+                ; and the name is rejected, which is what this code did before.
                 ld      a,b
                 or      a
-                jr      z,bn_reject         ; >3 ext chars -> reject
-                ld      a,c
+                jr      z,bn_skip           ; ext full -> swallow the rest (NOT
+                                            ; an error: `AB.EXTRA` -> `AB.EXT`)
+                ld      a,(hl)
+                cp      '.'
+                jr      z,bn_reject         ; a second '.' WHILE STILL FILLING is
+                                            ; malformed -- `A.B.C` is `Bad file
+                                            ; name` on the reference
+                cp      '*'
+                jr      z,bn_star_ext       ; '*' -> fill the rest of the ext with '?'
                 call    fcb_upcase
                 ld      (de),a
                 inc     de
@@ -105,6 +128,18 @@ bn_done:
                 jr      z,bn_reject         ; first name char still space -> empty
                 or      a                   ; CF clear = success
                 ret
+bn_skip:
+                ; the 8.3 field is full; consume the rest of the quoted name and
+                ; report success. D-FSPEC measured both overflow forms as SILENT
+                ; on the reference -- `SAVE"AB.EXTRA"` creates `AB.EXT` and
+                ; `SAVE"TOOLONGNAME.BAS"` creates `TOOLONGN.AME`, no error either.
+                ld      a,(hl)
+                cp      '"'
+                jr      z,bn_done
+                or      a
+                jr      z,bn_done
+                inc     hl
+                jr      bn_skip
 bn_reject:
                 scf
                 ret

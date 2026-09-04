@@ -487,6 +487,16 @@ CASES = [
     # sides and looked like a save that never happened on either.
     ("w.savefit",  "dsklist", ['A=1', 'SAVE"ABCDEFGH.IJK"', 'FILES',
                                'PRINT"[OK]"']),
+    # 🎯 AND THE ROW THAT PINS THE NAME, not just the count. `6 entries` is
+    # equally satisfied by a save that truncated AT THE DOT (`TOOLONGN.BAS`),
+    # so the count alone cannot say the split was POSITIONAL. Save under the
+    # over-long name, then list the name the positional rule predicts: exactly
+    # one entry iff `TOOLONGNAME.BAS` became `TOOLONGN.AME`.
+    ("w.savepos",  "dsklist", ['A=1', 'SAVE"TOOLONGNAME.BAS"',
+                               'FILES"TOOLONGN.AME"', 'PRINT"[OK]"']),
+    # ...and its NEGATIVE twin: the truncate-at-the-dot name must NOT exist.
+    ("w.savenodot", "dsklist", ['A=1', 'SAVE"TOOLONGNAME.BAS"',
+                                'FILES"TOOLONGN.BAS"', 'PRINT"[OK]"']),
 
     # === D-FNFUND: THE ROWS THAT MAKE `dev_cmp`'s MISS ARM LIVE ===============
     # 🔴 K-FF1 (`dcmp_miss:` `pop hl` -> `pop bc`, i.e. the miss arm stops
@@ -769,45 +779,74 @@ SITE_CONTROL = {
 # on those verbs, and doing that is the next step -- not writing the check.
 # 🟢 The disk ROM has room (8910 B free, 2026-09-04), so this is deferred on the
 # MEASUREMENT that is missing, not on a wall.
+NEGATIVE = ("z.kw", "z.miss")
+LABEL_W = 10
+
+# Each spaced row is evidence about the SPACE only while its own site's
+# CONTIGUOUS control is green on zerobas.
+SITE_CONTROL = {
+    "t.name": "t.ctl", "t.dollar": "t.dctl", "t.dig": "t.digctl",
+    "t.kw": "t.kwctl", "t.and": "t.andctl", "t.abs": "t.absctl",
+    "r.name": "c.let", "r.multi": "c.let", "r.three": "c.let",
+    "r.run": "c.let", "r.dig": "r.digctl",
+    "r.instr": "r.strctl", "r.dollar": "r.strctl",
+    "r.pct": "r.pctctl", "r.bang": "r.bangctl", "r.hash": "r.hashctl",
+    "a.name": "c.let", "a.sig": "c.let", "a.dig": "r.digctl",
+    "a.str": "r.strctl", "a.dollar": "r.strctl",
+    "s.if": "s.ifctl", "s.for": "s.forctl", "s.next": "s.forctl",
+    "s.dim": "s.dimctl", "s.ary": "s.dimctl",
+    "s.read": "s.readctl", "s.swap": "s.swapctl",
+    "z.miss": "s.forctl", "z.kw": "c.let",
+    "k.and": "c.let", "k.abs": "c.let",
+    "w.let": "c.let", "w.print": "c.let", "w.for": "s.forctl",
+    "w.comma": "s.swapctl", "z.fldvar": "z.fldctl",
+    "z.fldstr": "z.fldctl", "z.join": "c.let", "z.joinnum": "c.let",
+}
+
+# --- DEFERRED: measured, printed, NEVER scored ------------------------------
+# 🔴 THE TWO `FIELD` ROWS ARE A DIVERGENCE THIS SLICE CANNOT CLOSE, AND THE
+# ROW THAT SAYS SO HAS NO SPACE IN IT. `ex_field` (basic/field.asm:270) `eval`s
+# its width and never checks the TYPE of the result, so `FIELD#1,B$ AS A$(1)`
+# -- contiguous, no space anywhere -- is `OK` here and `Type mismatch` on the
+# CF-3300 (`z.fldstr`). Once the name scan joins `N AS A$(1)` the same way the
+# reference does, `z.fldvar` reaches that identical missing check: the CF-3300
+# refuses the width BEFORE looking for its literal `AS`, while this tree gets
+# as far as the missing `AS` and says `Syntax error`.
+# 🎯 `z.join` / `z.joinnum` are the CONTROL for that claim -- the same joined
+# reference with FIELD taken out, agreeing on all three sides. Scoring the two
+# `fld` rows would charge the name scan for FIELD's error classification and
+# leave no row able to separate them ([[one-row-cannot-separate-two-rules]]).
+# Filed in TODO.md as its own residual with these four readings as its
+# denominator; a deferred row that started AGREEING would itself be a finding.
+# ✅ EMPTY SINCE D-FLDWIDTH (2026-08-08). Both rows are now ORDINARY SCORED
+# ROWS: `ex_field` type-checks and domain-checks its width (a byte argument --
+# docs/spec-basic-fldwidth.md), so `z.fldstr` and `z.fldvar` both read
+# `Type mismatch`, which is what the CF-3300 has answered all along. The
+# deferral was honoured rather than merely filed
+# ([[a-deferral-honoured-is-worth-more-than-one-filed]]).
+# 🔴 D-FSPEC (2026-09-04): FILESPEC VALIDATION, measured and deferred on a
+# MEASURED BLAST RADIUS. The reference refuses a malformed 8.3 filespec with
+# `Bad file name`; zerobas builds a pattern that simply matches nothing and says
+# `File not found`. And a BLANK filespec is "no filespec at all" there -- it
+# lists the whole directory -- where here it is another `File not found`.
+# ⚠️ THE FIX BELONGS IN `parse_disk_fcb`, WHICH HAS ELEVEN CALL SITES
+# (basic/files.asm:768 names them: LOAD, SAVE, BLOAD, KILL, NAME, FILES...), so
+# it is one routine serving every disk verb and a change there changes all of
+# them [[a-shared-tail-is-not-a-decision]]. The same forms have NOT been measured
+# on those verbs, and doing that is the next step -- not writing the check.
+# 🟢 The disk ROM has room (8910 B free, 2026-09-04), so this is deferred on the
+# MEASUREMENT that is missing, not on a wall.
 DEFERRED: dict[str, str] = {
-    # 🔴 EVERY MALFORMED `FILES` ROW PRINTS **TWO** MESSAGES HERE:
-    # `load error` and then `File not found`. That is the filed nested-reject
-    # symptom in full -- parse_disk_fcb rejects, `load_error` PRINTS AND RETURNS,
-    # and do_files carries on to the directory walk. It was invisible until
-    # `listface` was fixed to report every message instead of the first one in
-    # its ERRORS tuple.
-    "m.long":   "D-FSPEC: over-long name -> `load error`+FNF here, plain FNF there",
-    "m.longext": "D-FSPEC: over-long ext -> `load error`+FNF here, plain FNF there",
-    "m.both":   "D-FSPEC: over-long both -> `load error`+FNF here, plain FNF there",
-    "m.twodot": "D-FSPEC: `Bad file name` there; `load error`+FNF here",
-    "m.empty":  "D-FSPEC: `Bad file name` there; `load error`+FNF here",
-    "m.dot":    "D-FSPEC: `Bad file name` there; `load error`+FNF here",
-    "m.dotdot": "D-FSPEC: `Bad file name` there; `load error`+FNF here",
-    "m.blank":  "D-FSPEC: a BLANK filespec is `no filespec` there (lists all); `load error`+FNF here",
-    # 🔴 THE TRUNCATION ROWS. The reference takes 8 chars of name then the NEXT
-    # THREE POSITIONALLY as the extension (`TOOLONGNAME.BAS` -> `TOOLONGN.AME`)
-    # and truncates an over-long extension (`AB.EXTRA` -> `AB.EXT`); NEITHER is
-    # an error. zerobas rejects both in build_83_name -- and the two rows differ
-    # in what the reject then COSTS, which is the nested-reject hazard showing
-    # its teeth: the over-long NAME blocks the save (5 entries), the over-long
-    # EXTENSION does not (6 entries) and both print `load error` anyway.
-    "w.savelong": "D-FSPEC: ref creates TOOLONGN.AME; here the save is blocked + `load error`",
-    "w.saveext":  "D-FSPEC: ref creates AB.EXT; here the save happens AND `load error` prints",
-    # 🔴 AND THE VERB SWEEP SETTLED THE BLAST-RADIUS QUESTION IN THE GOOD
-    # DIRECTION: `Bad file name` is UNIFORM on the reference across KILL, LOAD,
-    # SAVE and OPEN, so ONE check in the shared `parse_disk_fcb` is not a risk to
-    # be managed -- it is the correct site, because the reference's rule is
-    # shared too. zerobas splits: File not found (KILL/LOAD/FILES) vs
-    # 🔴 `load error` (SAVE/OPEN) -- which is where the originally-filed
-    # nested-reject symptom actually lives [[load-error-is-not-abort]].
-    "v.kempty": "D-FSPEC: Bad file name vs File not found (KILL)",
-    "v.k2dot":  "D-FSPEC: Bad file name vs File not found (KILL)",
-    "v.lempty": "D-FSPEC: Bad file name vs File not found (LOAD)",
-    "v.l2dot":  "D-FSPEC: Bad file name vs File not found (LOAD)",
-    "v.sempty": "D-FSPEC: Bad file name vs `load error` (SAVE) -- the filed symptom",
-    "v.s2dot":  "D-FSPEC: Bad file name vs `load error` (SAVE) -- the filed symptom",
-    "v.oempty": "D-FSPEC: Bad file name vs `load error` (OPEN) -- the filed symptom",
-    "v.o2dot":  "D-FSPEC: Bad file name vs `load error` (OPEN) -- the filed symptom",
+    # ✅ ALL THIRTEEN OTHER D-FSPEC ROWS GRADUATED THE SAME DAY THEY WERE FILED
+    # and are ORDINARY SCORED ROWS above: build_83_name truncates positionally
+    # instead of rejecting, and parse_disk_fcb RAISES `Bad file name` (ERR 56)
+    # instead of load_error's print-and-return. A deferral honoured is worth more
+    # than one filed [[a-deferral-honoured-is-worth-more-than-one-filed]].
+    # ⚠️ THIS ONE STAYS: a BLANK filespec is "no filespec at all" on the
+    # reference (it lists the whole directory), which is a `do_files` question
+    # and not a parse_disk_fcb one -- a different site, and unmeasured on the
+    # other verbs.
+    "m.blank": "D-FSPEC: a BLANK filespec is `no filespec` there (lists all); a do_files question",
 }
 
 # ✅ ALL EIGHT D-FNARG2 ROWS GRADUATED 2026-08-21 (D-FNEXPR2) and are ORDINARY

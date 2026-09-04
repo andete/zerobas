@@ -5050,3 +5050,29 @@ The fix is fully specified and unwritten: `parse_disk_fcb` answers
 dots) and **not** for an over-long one. Disk ROM free was 8910 B on 2026-09-04;
 13 rows are deferred in `namspc-acceptance` carrying the contract.
 [`docs/spec-basic-fnexpr2.md`](../docs/spec-basic-fnexpr2.md) §D-FSPEC.
+
+
+## 2026-09-04 — the filespec fix: positional truncation and a raised `Bad file name` (D-FSPEC part 2)
+
+**quarantined** — own design; the contract is oracle-sourced (D-FSPEC part 1),
+the code is ours. No reference ROM was disassembled.
+
+Three changes, all in shared bodies:
+
+* `build_83_name` (`basic/fcbname-body.inc`) truncates **positionally** instead
+  of rejecting — a full name falls into the extension field at that point, the
+  dot neither required nor consumed, and an over-long extension is ignored.
+* the extension loop's FULL test now precedes its `'.'` test, which is what lets
+  `TOOLONGNAME.BAS` keep its leftover `.BAS` instead of reading it as a second
+  dot.
+* `parse_disk_fcb` (`basic/pdfcb-body.inc`) **raises** `Bad file name` (ERR 56)
+  where it used `jp bl_load_error`, whose print-and-return let the caller carry
+  on with a half-built pattern and print two messages.
+
+All thirteen divergent rows in `namspc-acceptance` now match the CF-3300 and are
+ordinary scored rows; `m.blank` stays deferred as a `do_files` question. Knives
+3/3 exact (`scratchpad/fspec_knives.py`), and K-FS3 leaves every truncation row
+green — which is what establishes that the parse change and the reporting change
+are separable. `pdf_badname` binds per build: the tenant keeps the old shape,
+because BLOAD's answer to a malformed name is unmeasured.
+[`docs/spec-basic-fnexpr2.md`](../docs/spec-basic-fnexpr2.md) §D-FSPEC part 2.
