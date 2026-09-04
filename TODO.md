@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:7864 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:7904 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7067 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7107 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7067 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7107 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5334,8 +5334,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
       but each remaining acceptance row sits on its own path: `off_ok` (LINE),
       `clip_neg_ok` / `clip_offscr_ok` (CIRCLE), `border16_flood_ok` (PAINT),
       `bare_b` / `empty` / `offscreen` (DRAW), `arc_ovf_r260` /
-      `arc_ovf_wrap300` (the arc mask). 💰 Six or seven cuts, one each; there is no
-      shared site the way `gdrw_err5` was for phase L.
+      `arc_ovf_wrap300` (the arc mask). ~~💰 Six or seven cuts, one each; there is no
+      shared site the way `gdrw_err5` was for phase L.~~
+      🔴 **THE COST ESTIMATE IS WRONG, MEASURED 2026-09-05 by walking every site.
+      ONE of the nine has a retargetable branch; two are miscategorised; six
+      would need a check SYNTHESISED, not a jump retargeted.**
+      | row(s) | verb | reads | arm |
+      |---|---|---|---|
+      | `border16_flood_ok` | PAINT | **pixels** | ✅ **DONE** — `M-PAINTBDOM` |
+      | `arc_ovf_r260`, `arc_ovf_wrap300` | arc | **pixels** | ⚠️ not acceptance rows at all |
+      | `off_ok` | LINE | error code | ❌ nothing to retarget |
+      | `clip_offscr_ok`, `clip_neg_ok` | CIRCLE | error code | ❌ nothing to retarget |
+      | `offscreen`, `empty`, `bare_b` | DRAW | error code | ❌ nothing to retarget |
+      🎯 **WHY `M-PSETOFF` WORKED AND THESE CANNOT.** PSET's off-screen decision
+      is a BRANCH IN THE RESIDENT (`basic/graphics.asm:101`,
+      `jp nc,exec_stmt`), where `gfx_err5` is reachable — so the cut is one
+      retarget. LINE/CIRCLE/DRAW do not decide off-screen at all: they clip in
+      the TENANT, at `gfx_plot_cur`'s three bare `ret`s (`sub/graphics.asm:665`
+      /`669`/`672`), deep inside plotting loops that cannot raise. And `empty` /
+      `bare_b` are accepted by the **absence** of any test — the only exit they
+      share is `gdo_done`, which EVERY `DRAW` takes, so a cut there reddens the
+      whole verb and isolates nothing. **These six rows read only the error code,
+      so no cut that changes what is DRAWN can move them; the arm has to make the
+      statement RAISE, which means writing a bounds check that does not exist.**
+      ⚠️ **AND TWO WERE NEVER ACCEPTANCE ROWS.** `arc_ovf_r260` /
+      `arc_ovf_wrap300` are documented IN THE PROBE as *"ONE-SIDED DETECTORS…
+      blank on BOTH machines now, and a both-blank row is vacuous"*. Their arm is
+      "make the mask paint again", not "make it refuse" — they belong to the
+      arc-mask residual, not this one.
+      ✅ **`M-PAINTBDOM` LANDED** (`ep_b_dom`: SCREEN 2's border domain narrowed
+      from 0..255 to the nibble, so `PAINT(5,5),9,16` raises). PAINT's border is
+      the one argument here that is genuinely domain-checked, which is why it has
+      a branch. Measured: 2 rows red, ROM restored byte-identical.
+      🔴 My prediction said "`border16_flood_ok` ONLY" and was one row too
+      narrow. `b_s2_16_comma` moved too (`ref='E 2'` → `zb='E 5'`) — it is the
+      row that races this domain against the grammar's trailing-comma ERR 2, and
+      it is the reason the check sits ABOVE the fill, so a domain cut cannot help
+      moving it. **A prediction can be too narrow because it forgot which row
+      exists to pin the check's PLACEMENT.**
+      💰 **REVISED: 1 done. 6 need a synthesised check each (not a retarget) —
+      genuinely more expensive than filed, and worth asking whether an
+      error-code-only acceptance row is the right shape before writing six of
+      them.** 2 to be re-filed under the arc mask.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] 🔴 **PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT, SO THE PAIR CANNOT

@@ -300,6 +300,19 @@ MUTS4 = {
         MAIN, "main",
         "                ld      (GRPACX),bc         ; last-referenced point X\n",
         "                ld      (GRPACX),de         ; MUTANT\n"),
+    # --- the ACCEPTANCE class, round 5's residual (2026-09-05) --------------
+    # 🎯 Of the nine acceptance rows filed as "six or seven cuts, one each",
+    # this is the ONLY one with a retargetable branch. PAINT's border argument
+    # is genuinely DOMAIN-CHECKED -- 0..15 in MULTICOLOUR, 0..255 in SCREEN 2 --
+    # so narrowing the SCREEN-2 domain to the nibble makes B=16 raise, and
+    # border16_flood_ok reads PIXELS rather than an error code, so it can see it.
+    "M-PAINTBDOM": (
+        "ep_b_dom: SCREEN 2's PAINT border domain narrowed from 0..255 to the "
+        "MULTICOLOUR nibble, so `PAINT(5,5),9,16` raises ERR 5 instead of "
+        "flooding -- the acceptance class's one clean refusal cut",
+        MAIN, "main",
+        "                xor     a                   ; SCREEN 2: B is a whole byte, 0..255\n",
+        "                ld      a,$F0               ; MUTANT\n"),
     "M-PSETOFF": (
         "gfx_plot_go: an off-screen PSET RAISES ERR 5 instead of being a silent "
         "no-op -- the acceptance class needs a cut that refuses what the "
@@ -416,6 +429,18 @@ PREDICT = {
                    "grpac_step, and phase R's w_line_*/w_box_*/w_bf_*/"
                    "w_step_after (STEP resolves against GRPAC). The w_draw_* "
                    "rows go through gdrw's own cursor and may hold.",
+    "M-PAINTBDOM": "border16_flood_ok AND b_s2_16_comma -- exactly 2, measured. "
+                   "🔴 THE FIRST DRAFT OF THIS PREDICTION SAID 'border16_flood_ok "
+                   "ONLY' and was one row too narrow, informatively so: "
+                   "b_s2_16_comma is `PAINT(5,5),4,16,` with a TRAILING COMMA, "
+                   "and it pins the ORDERING (ERR 2 from the grammar, because "
+                   "B=16 is in-domain and raises nothing). Narrow the domain and "
+                   "the same statement raises ERR 5 first -- ref='E 2' vs "
+                   "zb='E 5'. A domain cut cannot help moving the row that races "
+                   "that domain against the grammar, and that row is the reason "
+                   "the check sits ABOVE the fill. Every other PAINT row uses a "
+                   "B of 0..15 or none, and the SCREEN-3 rows take the other arm "
+                   "of this branch, so they correctly did NOT move.",
     "M-PSETOFF":   "B pset_offscr_ok. ⚠️ The three A/clip_noop_* rows should NOT "
                    "move: an untrapped ERR 5 aborts before the hold loop, but "
                    "the cells they read stay blank either way -- which is the "

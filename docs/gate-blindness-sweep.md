@@ -584,7 +584,42 @@ is what to fix.
 | what | rows | why it never moved |
 |---|---|---|
 | the LINE/BOX work area | 9 | §19 — two writers mask each other |
-| acceptance rows | 9 | `off_ok`, `clip_neg_ok`, `clip_offscr_ok`, `border16_flood_ok`, `bare_b`, `empty`, `offscreen`, `arc_ovf_r260`, `arc_ovf_wrap300` — still need a cut that refuses what the reference allows, per path |
+| acceptance rows | 9 → **6** | `off_ok`, `clip_neg_ok`, `clip_offscr_ok`, `bare_b`, `empty`, `offscreen` — still need a cut that refuses what the reference allows. `border16_flood_ok` is **armed** (`M-PAINTBDOM`, 2026-09-05); `arc_ovf_r260`/`arc_ovf_wrap300` were miscategorised (see below) |
+
+> 🔴 **2026-09-05 — "six or seven cuts, one each" WAS WRONG, and walking the
+> sites is what said so.** Of the nine, exactly **one** had a branch to
+> retarget.
+>
+> **Why `M-PSETOFF` worked and the other six cannot.** PSET decides off-screen
+> in the **resident** (`basic/graphics.asm:101`, `jp nc,exec_stmt`), where
+> `gfx_err5` is reachable — one retarget. LINE, CIRCLE and DRAW never make that
+> decision: they clip in the **tenant**, at `gfx_plot_cur`'s three bare `ret`s
+> (`sub/graphics.asm:665`/`669`/`672`), deep inside plotting loops that cannot
+> raise. `empty` and `bare_b` are accepted by the **absence** of a test, and the
+> only exit they share is `gdo_done`, which every `DRAW` takes — a cut there
+> reddens the whole verb and isolates nothing. 🎯 **All six read only the ERROR
+> CODE, so no cut that changes what is DRAWN can move them; the arm has to make
+> the statement RAISE, which means synthesising a bounds check rather than
+> retargeting a jump.**
+>
+> **`border16_flood_ok` is armed.** PAINT's border is the one argument in this
+> set that is genuinely domain-checked (0..15 in MULTICOLOUR, 0..255 in
+> SCREEN 2), so `M-PAINTBDOM` narrows the SCREEN-2 domain to the nibble and
+> `PAINT(5,5),9,16` raises instead of flooding. The row reads **pixels**, which
+> is the other reason it can see the cut at all.
+>
+> 🔴 **The prediction for it said "`border16_flood_ok` ONLY" and was one row too
+> narrow.** `b_s2_16_comma` moved as well (`ref='E 2'` → `zb='E 5'`): it is the
+> row that races this very domain against the grammar's trailing-comma ERR 2,
+> and it is *why* the check sits above the fill — so a domain cut cannot help
+> moving it. **A prediction can be too narrow because it forgot the row that
+> exists to pin the check's PLACEMENT.**
+>
+> ⚠️ **Two of the nine were never acceptance rows.** `arc_ovf_r260` /
+> `arc_ovf_wrap300` are documented in the probe itself as *"ONE-SIDED DETECTORS…
+> blank on BOTH machines now, and a both-blank row is vacuous"*. Their arm is
+> "make the mask paint again", not "make it refuse"; they belong to the arc-mask
+> residual.
 | `bfbyte_*` + `clip_alloff` | 5 | `clip_alloff` is D-SPOKELINE's documented keep-with-a-twin |
 | `A/clip_noop_*` | 3 | **known live** — K-CN2 and K-Y192 redden them; flagged as measured by fewer than the whole battery |
 | the reference-side floor | 2 | §10 — no mutation of our ROM can ever move them |
