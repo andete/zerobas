@@ -429,6 +429,24 @@ ram-claim-check:
 	python3 tools/check_ram_claims.py --selftest
 	python3 tools/check_ram_claims.py
 
+# --- D-RAMFREE: ...and is a declared window ACTUALLY free? Ask the machine -----
+# `ram-claim-check` above is the NAME half and refuses to claim more. This is the
+# EXTENT half, and the only thing that can settle it: fill every declared span
+# with a pattern, run one subsystem hard, read every byte back, report changes
+# PER SPAN. Generalised 2026-09-04 from scratchpad/ramfree_probe.py, which
+# watched one hardcoded window.
+# 🎯 THE SPANS COME FROM sysvars.inc VIA check_ram_claims.py'S OWN REGEX, so a
+# span that is declared and name-checked but never extent-checked cannot exist.
+# ⚠️ Two controls, both asserting: ctl.poke writes one byte into EACH span and
+# every counter must read 1; ctl.pool requires a deep GOSUB nest to move the
+# control pool while no declared span moves. Repack-only, no oracle (this is a
+# claim about zerobas's own map). ~3 min.
+# ⚠️ NEEDS $(DISK_TEST_DSK): the `s.files` row mounts a WRITABLE COPY of the
+# test image, and `diskdep-check` refuses a target that names it without
+# declaring it -- the image is generated, not tracked.
+ramfree-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_ramfree.py --gate $(if $(ONLY),--only '$(ONLY)',)
+
 # --- WALL LITERALS OUTSIDE TODO.md (docs/spec-wall-literals.md, D-WALLIT) -----
 # `wall-assertion-check` above scopes itself to TODO.md's `- [ ]` items BY DESIGN.
 # A stale figure inside a GATE, a PROBE or a source comment misleads the gate
@@ -3062,6 +3080,7 @@ clean:
         battery-membership-check fixture-integrity-check diskmap ram-claim-check \
         interval-trap-acceptance \
         stackpool-acceptance trapdepth-acceptance ctlcross-acceptance ctllim-acceptance \
+        ramfree-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep sysvarsweep fat-error-acceptance \

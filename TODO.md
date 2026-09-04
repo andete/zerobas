@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6848 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6859 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6848 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6859 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6638,6 +6638,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       IS STILL OPEN**: generalise `scratchpad/ramfree_probe.py` (fill the window,
       work the machine, read it back) from its one hardcoded window to the
       declared set. That is the only thing that can settle extent.
+      ✅ **AND THE EXTENT HALF LANDED 2026-09-04 TOO — `make ramfree-acceptance`**
+      (D-RAMFREE): fill every DECLARED span, run 9 subsystems hard, read back and
+      count changes PER SPAN. All five spans survive every workout. 🎯 The spans
+      are parsed by `check_ram_claims.py`'s OWN regex, so a span that is declared
+      and name-checked but never extent-checked cannot exist. Two controls, both
+      asserting: `ctl.poke` (one byte into EACH span, every counter must read 1)
+      and `ctl.pool` (a deep GOSUB nest must move the pool while no declared span
+      moves). ⇒ **THE ITEM IS CLOSED** — both halves gated, 108/108.
+      🔬 It also caught its ancestor going stale: `scratchpad/ramfree_probe.py`'s
+      `ctl.forstk` required a `FOR` workout to change `$EA3A`, and D-CTLPOOL moved
+      control frames out of that array — the control reads 0 now, correctly RED.
       🔬 And the first cut of the checker PROSE-MATCHED and reported 7 violations
       of which most were its own misreading — a cell's own extent read as a
       claim, a layout table's `FREE` describing the named cell, a comment quoting
