@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6903 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6918 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6903 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6918 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4896,12 +4896,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
         `File not found` here. Length is NOT part of the rule.
       • `" "` (blank) → the reference treats it as **no filespec** and lists the
         whole directory; here it is another `File not found`.
-      ⚠️ **DEFERRED ON A MEASURED BLAST RADIUS, NOT A WALL:** the check belongs in
-      `parse_disk_fcb`, which `basic/files.asm:768` records as having **eleven
-      call sites** (LOAD/SAVE/BLOAD/KILL/NAME/FILES) — one routine serving every
-      disk verb [[a-shared-tail-is-not-a-decision]]. **NEXT STEP is measuring the
-      same forms on those verbs**, not writing the check. Disk ROM free was
-      8910 B on 2026-09-04, so space is not the objection.
+      🟢 **AND THE VERB SWEEP WAS RUN THE SAME DAY — the blast-radius question is
+      SETTLED, in the good direction.** `""` and `"A.B.C"` on every verb:
+
+          verb   cf3300            zb
+          KILL   Bad file name     File not found
+          LOAD   Bad file name     File not found
+          SAVE   Bad file name  🔴 load error
+          OPEN   Bad file name  🔴 load error
+
+      **`Bad file name` is UNIFORM on the reference**, so one check in the shared
+      `parse_disk_fcb` is not a risk to manage — it is the correct site, because
+      the reference's rule is shared too.
+      🔴 **AND `load error` IS REAL — IT IS JUST NOT AT `FILES`.** `SAVE""` and
+      `OPEN""` print exactly the symptom this item was filed for. **The filing was
+      right about the mechanism and wrong about where to look**; its own proposed
+      row could not have found it.
+      ⇒ **THE FIX IS FULLY SPECIFIED:** `parse_disk_fcb` answers `Bad file name`
+      for a structurally malformed 8.3 name (empty / second dot / only dots) and
+      **not** for an over-long one, which is `File not found` on both. Disk ROM
+      free was 8910 B on 2026-09-04. 13 rows DEFERRED in `namspc-acceptance`
+      carry the whole contract.
       --- the original filing, kept because its MECHANISM note is still true ---
       Noticed 2026-08-21 while walking D-FNEXPR2's sites; not measured on the
       reference, so it is filed rather than fixed.

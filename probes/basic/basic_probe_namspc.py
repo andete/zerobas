@@ -444,6 +444,25 @@ CASES = [
     ("m.colon",   "dsklist", ['FILES"A:B"', 'PRINT"[OK]"']),
     ("m.blank",   "dsklist", ['FILES" "', 'PRINT"[OK]"']),
 
+    # === v.* THE SAME MALFORMED FORMS ON THE OTHER DISK VERBS ================
+    # 🎯 THE MEASUREMENT `parse_disk_fcb`'s ELEVEN CALLERS DEMAND. D-FSPEC found
+    # `Bad file name` at FILES for a second dot, an empty string and a bare dot.
+    # The check belongs in parse_disk_fcb -- shared by LOAD, SAVE, BLOAD, KILL,
+    # NAME and OPEN -- so whether the rule is UNIFORM across those verbs decides
+    # whether the fix is one site or several, and that is not guessable
+    # [[a-shared-tail-is-not-a-decision]].
+    # ⚠️ Each verb gets the same two forms so the rows are comparable ACROSS the
+    # table and not only against their own reference; `""` and `"A.B.C"` are the
+    # two D-FSPEC showed the reference refusing outright.
+    ("v.kempty",  "dskerr", ['KILL""', 'PRINT"[OK]"']),
+    ("v.k2dot",   "dskerr", ['KILL"A.B.C"', 'PRINT"[OK]"']),
+    ("v.lempty",  "dskerr", ['LOAD""', 'PRINT"[OK]"']),
+    ("v.l2dot",   "dskerr", ['LOAD"A.B.C"', 'PRINT"[OK]"']),
+    ("v.sempty",  "dskerr", ['SAVE""', 'PRINT"[OK]"']),
+    ("v.s2dot",   "dskerr", ['SAVE"A.B.C"', 'PRINT"[OK]"']),
+    ("v.oempty",  "dskerr", ['OPEN""AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
+    ("v.o2dot",   "dskerr", ['OPEN"A.B.C"AS #1', 'CLOSE#1', 'PRINT"[OK]"']),
+
     # === D-FNFUND: THE ROWS THAT MAKE `dev_cmp`'s MISS ARM LIVE ===============
     # 🔴 K-FF1 (`dcmp_miss:` `pop hl` -> `pop bc`, i.e. the miss arm stops
     # restoring HL) REDDENED NOTHING ON THE ROW SET AS IT STOOD, AND THAT WAS A
@@ -731,6 +750,21 @@ DEFERRED: dict[str, str] = {
     "m.dot":    "D-FSPEC: `Bad file name` vs `File not found`; parse_disk_fcb has 11 callers",
     "m.dotdot": "D-FSPEC: `Bad file name` vs `File not found`; parse_disk_fcb has 11 callers",
     "m.blank":  "D-FSPEC: a BLANK filespec is `no filespec` there (lists all), an error here",
+    # 🔴 AND THE VERB SWEEP SETTLED THE BLAST-RADIUS QUESTION IN THE GOOD
+    # DIRECTION: `Bad file name` is UNIFORM on the reference across KILL, LOAD,
+    # SAVE and OPEN, so ONE check in the shared `parse_disk_fcb` is not a risk to
+    # be managed -- it is the correct site, because the reference's rule is
+    # shared too. zerobas splits: File not found (KILL/LOAD/FILES) vs
+    # 🔴 `load error` (SAVE/OPEN) -- which is where the originally-filed
+    # nested-reject symptom actually lives [[load-error-is-not-abort]].
+    "v.kempty": "D-FSPEC: Bad file name vs File not found (KILL)",
+    "v.k2dot":  "D-FSPEC: Bad file name vs File not found (KILL)",
+    "v.lempty": "D-FSPEC: Bad file name vs File not found (LOAD)",
+    "v.l2dot":  "D-FSPEC: Bad file name vs File not found (LOAD)",
+    "v.sempty": "D-FSPEC: Bad file name vs `load error` (SAVE) -- the filed symptom",
+    "v.s2dot":  "D-FSPEC: Bad file name vs `load error` (SAVE) -- the filed symptom",
+    "v.oempty": "D-FSPEC: Bad file name vs `load error` (OPEN) -- the filed symptom",
+    "v.o2dot":  "D-FSPEC: Bad file name vs `load error` (OPEN) -- the filed symptom",
 }
 
 # ✅ ALL EIGHT D-FNARG2 ROWS GRADUATED 2026-08-21 (D-FNEXPR2) and are ORDINARY

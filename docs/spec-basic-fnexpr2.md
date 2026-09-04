@@ -412,10 +412,32 @@ Two rules, both missing here:
 2. **A BLANK filespec is no filespec at all** and lists the whole directory,
    where zerobas treats it as a pattern and finds nothing.
 
-⚠️ **DEFERRED ON A MEASURED BLAST RADIUS, NOT ON A WALL.** The check belongs in
-`parse_disk_fcb`, which `basic/files.asm:768` records as having **eleven call
-sites** — LOAD, SAVE, BLOAD, KILL, NAME and FILES among them — so one routine
-serves every disk verb and a change there changes all of them
-[[a-shared-tail-is-not-a-decision]]. The same eleven forms have **not** been
-measured on those verbs, and doing that is the next step, not writing the check.
-The disk ROM has 8910 B free (2026-09-04), so this is not a space decline.
+### 🔴 The verb sweep — and it corrects the section above
+
+The blast-radius question ("the check belongs in `parse_disk_fcb`, which has
+eleven callers, and the same forms are unmeasured on the other verbs") was
+answered the same day by running them:
+
+| | CF-3300 | zerobas |
+|---|---|---|
+| `KILL""` / `KILL"A.B.C"` | `Bad file name` | `File not found` |
+| `LOAD""` / `LOAD"A.B.C"` | `Bad file name` | `File not found` |
+| `SAVE""` / `SAVE"A.B.C"` | `Bad file name` | 🔴 **`load error`** |
+| `OPEN""` / `OPEN"A.B.C"` | `Bad file name` | 🔴 **`load error`** |
+
+🟢 **`Bad file name` is UNIFORM on the reference across every verb**, which
+settles the shared-routine worry in the *good* direction: one check in
+`parse_disk_fcb` is not a risk to be managed, it is the correct site, because the
+reference's rule is shared too.
+
+🔴 **AND `load error` IS REAL — IT JUST IS NOT AT `FILES`.** The section above
+says the filed symptom "is not reproduced", and that is right about `FILES` and
+wrong as a general statement: `SAVE""` and `OPEN""` print exactly the `load
+error` the original filing described. The nested-reject hazard is live on the
+verbs the filing did not test, and the row it proposed could not have found it.
+**The filing was right about the mechanism and wrong about where to look.**
+
+⇒ The fix is now fully specified: `parse_disk_fcb` must answer `Bad file name`
+for a structurally malformed 8.3 name (empty, a second dot, only dots) — and
+**not** for an over-long one, which is `File not found` on both machines. The
+disk ROM has 8910 B free (2026-09-04), so space is not the objection.

@@ -5023,7 +5023,20 @@ What is divergent (5 rows, deferred in the gate):
 * `" "` (blank) → the reference treats it as **no filespec at all** and lists the
   whole directory; here it is another `File not found`.
 
-Deferred on a measured blast radius rather than a wall: the check belongs in
-`parse_disk_fcb`, which has eleven call sites across the disk verbs, and the same
-forms are unmeasured on LOAD/SAVE/BLOAD/KILL/NAME. Disk ROM free was 8910 B.
+🟢 **The verb sweep, run the same day, settles the shared-routine question in
+the good direction.** `""` and `"A.B.C"` on KILL, LOAD, SAVE and OPEN are
+`Bad file name` on the reference **uniformly**, so one check in
+`parse_disk_fcb` is the correct site rather than a risk to manage. zerobas
+splits: `File not found` on KILL/LOAD/FILES and 🔴 **`load error`** on
+SAVE/OPEN.
+
+🔴 **That also corrects the paragraph above.** `load error` IS real — it is just
+not at `FILES`. `SAVE""` and `OPEN""` print exactly the symptom the original
+item was filed for, so the filing was right about the mechanism and wrong about
+where to look, and the row it proposed could not have found it.
+
+The fix is fully specified and unwritten: `parse_disk_fcb` answers
+`Bad file name` for a structurally malformed 8.3 name (empty, a second dot, only
+dots) and **not** for an over-long one. Disk ROM free was 8910 B on 2026-09-04;
+13 rows are deferred in `namspc-acceptance` carrying the contract.
 [`docs/spec-basic-fnexpr2.md`](../docs/spec-basic-fnexpr2.md) §D-FSPEC.
