@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1848 (T-6FE392)8 (T-529ABE)` from `TODO.md:6557 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6584 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1502,6 +1502,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       0/3, pins REMOVED. Four probes re-run; two pins died.
       🤖 AUTONOMOUS — the 16 are named; work them.
 
+- [ ] 🔁 **STANDING (Joost, 2026-09-04): A PURELY STYLISTIC ORACLE SPLIT GOES TO
+      THE VG-8020, ON BOTH TARGETS.** *"when there is stylish differences (color,
+      screen) between the oracles, pick the VG8020"*. So a references-split row
+      that is only presentational is neither a NO-ORACLE park nor a per-target
+      answer: the VG-8020 value ships everywhere, including the disk build whose
+      oracle is otherwise the CF-3300. **The point is that a cosmetic split must
+      not fork the ROMs** — the first such row, `KEY`'s F6 default (`color
+      15,4,4` vs `color 15,4,7`), would otherwise have made the two targets
+      differ in shipped DATA rather than only in the disk ROM's presence.
+      ⚠️ **SCOPE, as given: colour and screen.** It does NOT cover splits that
+      exist because the CF-3300 has **Disk BASIC** — those are capability
+      differences and each target still follows its own oracle. Measured examples
+      of the distinction, all in
+      [`probes/basic/basic_probe_pusing.py`](probes/basic/basic_probe_pusing.py):
+      `PRINT USING"&";…` and `"\ \"` print on the VG-8020 and are ERR 5 on the
+      CF-3300 — Disk BASIC, **not covered**. And `PRINT USING"$$#";5` reads
+      `  $5` vs `$$ 5`, which is formatting rather than colour or screen —
+      **outside the words as given, so not assumed covered; ask before
+      extending.**
+      ⚠️ **IT DECIDES THE VALUE, NEVER WHETHER TO MEASURE.** A split still has to
+      be read off both machines first; this only says which reading ships.
+
 - [ ] 🔁 **STANDING SEQUENCING (Joost, 2026-09-02): SPEED MATTERS AND WE SHOULD
       AT LEAST TRY — BUT CORRECTNESS COMES FIRST.** Answers the charter question
       D-INTERPSPEED raised (*does "faithful MSX1 BASIC" include speed?*): **yes**,
@@ -2449,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6557 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6584 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2508,10 +2530,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       it can reach the expression evaluator (the D-PUSIGN / D-PUEMIT pattern).
       The 160-byte FNKSTR image plus ~120 B of parse/store/list code go in sub
       page 0. **Run `make basic-reloc` for the walls — do not quote this line.**
-      🔭 **ONLY THE DECISION IS LEFT, plus one question the measuring surfaced:**
-      does the disk build ship the CF-3300's F6 default and the diskless build
-      the VG-8020's (faithful to each target's oracle, two different ROMs), or
-      one value everywhere?
+      ✅ **THE F6 QUESTION IS ANSWERED (Joost, 2026-09-04): "when there is
+      stylish differences (color, screen) between the oracles, pick the VG8020".**
+      So F6 ships **`color 15,4,4`** — the VG-8020 value — on **BOTH** targets,
+      including the disk build whose oracle is otherwise the CF-3300. A cosmetic
+      split does not fork the ROMs. This is a STANDING rule, not a one-off: see
+      the "Settled decisions" note below.
+      🔭 **ONLY THE IMPLEMENTATION DECISION IS LEFT** — whether to spend the ~7 B
+      of main page 1 (read `make basic-reloc`; it was 8 B free 2026-09-04) plus
+      the sub-side body. Everything the fix needs is measured.
 
 - [x] 🔴 **D-TODOSWEEP'S OWN ELEVEN PROBES RE-IMPLEMENT THE `[...]` READER, WHICH
       IS THE TRAP THE ITEM BELOW DESCRIBES.** Filed 2026-08-26 by D-TODOSWEEP
