@@ -5075,4 +5075,12 @@ ordinary scored rows; `m.blank` stays deferred as a `do_files` question. Knives
 green — which is what establishes that the parse change and the reporting change
 are separable. `pdf_badname` binds per build: the tenant keeps the old shape,
 because BLOAD's answer to a malformed name is unmeasured.
+
+🔴 **A claim in the first version of this row is WITHDRAWN** (2026-09-05): it
+reported that the assembler had silently accepted `jp pdf_badname` with the label
+defined only sub-side. It does not — a minimal repro and the real scenario both
+make pasmo refuse, the latter with `ERROR: Symbol 'pdf_badname' is undefined on
+line 84 of file basic/pdfcb-body.inc`. A mechanism was inferred from one `make`
+run's exit code instead of isolated; it is withdrawn rather than replaced with a
+better guess.
 [`docs/spec-basic-fnexpr2.md`](../docs/spec-basic-fnexpr2.md) §D-FSPEC part 2.

@@ -520,14 +520,30 @@ the scarcer of the two co-mapped walls (6 B free against 14 on 2026-09-04).
 they are. That is what says the parse change and the reporting change are
 separable, and that the rows can tell them apart.
 
-### 🔴 A near-miss worth recording: the assembler took an undefined symbol
+### 🔴 WITHDRAWN: "the assembler took an undefined symbol"
 
-The first cut put `jp pdf_badname` in `pdfcb-body.inc` and defined the label
-**only in `sub/bload.asm`**. `basic/pdfcb-body.inc` is included *unconditionally*
-into the resident build too, so the main image assembled a jump to a label it did
-not have — and `make basic-reloc` returned **0**, with the symbol simply absent
-from `build/basic-reloc.sym`. An earlier undefined symbol in the same file
-(`raise_error`, missing on the *tenant* side) had been a hard error, so the
-failure is not uniform. It was caught by grepping the symbol table rather than by
-the build. ⚠️ **A shared include that resolves a symbol per build needs the
-symbol checked in BOTH images, not just a green build.**
+This section originally reported a near-miss — that `jp pdf_badname`, with the
+label defined **only** in `sub/bload.asm`, assembled into the resident image
+anyway and `make basic-reloc` returned 0 with the symbol absent from
+`build/basic-reloc.sym`. **That claim does not reproduce and is withdrawn.**
+
+Two checks, both run 2026-09-05:
+
+* a minimal file (`org $4000` / `jp nosuchlabel`) — pasmo exits **1** with
+  `ERROR: Symbol 'nosuchlabel' is undefined`;
+* the real scenario — delete `pdf_badname`'s three lines from
+  `basic/str-engine.asm` and rebuild: `make basic-reloc` exits **2** with
+  `ERROR: Symbol 'pdf_badname' is undefined on line 84 of file
+  basic/pdfcb-body.inc`.
+
+So the toolchain does refuse it, on exactly the path claimed. What I actually
+observed was a `make` invocation reporting rc 0 and a wall figure while the
+symbol was missing from the sym file, and I inferred a mechanism from that
+instead of isolating it — the intervening edit script had also thrown an
+`AssertionError` on an unrelated block, so what was in the tree at build time is
+not what I assumed. **I cannot substantiate the original claim and am not
+replacing it with a better guess.**
+
+⚠️ The one thing that stands is procedural and much smaller: the symbol table is
+worth grepping after a change to a shared include, because it is cheap. It is not
+evidence that the build would have let the error through.
