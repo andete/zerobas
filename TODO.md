@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1820 (T-6FE392)8 (T-529ABE)` from `TODO.md:6469 (T-529ABE)`: a
+      `TODO.md:1820 (T-6FE392)8 (T-529ABE)` from `TODO.md:6493 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2421,7 +2421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6469 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6493 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5490,8 +5490,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       corpus, not about a rule ([[arcmask-slice]]); the row that would have
       falsified it was never in the corpus. Doc corrected to `◐` with the
       divergence named.
-      ⚠️ **NOT PART OF THE ERR-50 RULE and must not be folded into it** — it is
-      an `OPEN` parse question, not a `FIELD` one. 💰 Not scouted, not priced:
+      ✅ **SCOUTED 2026-09-04 — D-RECLENDOM
+      ([`scratchpad/reclendom_probe.py`](scratchpad/reclendom_probe.py), 21 rows),
+      AND THE RULE IS EXACT:** the reference accepts **1 ≤ r ≤ 256** and rejects
+      0, 257, 300, 512, 1000, 32767 and −1; zerobas accepts only the **powers of
+      two** in that range (1, 2, 128, 256 pass; 3, 7, 100, 127, 255 do not).
+      🔴 **THE FILED FACE IS STALE: BOTH SIDES RAISE ERR 5**, not `Syntax error`.
+      The CODE already agrees and only the DOMAIN differs — third stale filed
+      face this session.
+      🔴 **AND THE ENTRY'S OWN FRAMING IS REFUTED.** It says this "is an `OPEN`
+      parse question, not a `FIELD` one". Measured, the reference supports a
+      non-tiling record END TO END: `LEN=100` then `FIELD #1,100 AS A$` **works**
+      (`f.100` → 0), fielding one byte PAST the record is the ordinary
+      `FIELD overflow` (`f.over` → **ERR 50**), and `LSET` + `PUT #1,1`
+      **writes it** (`p.100` → 0). `f.128`, the tiling twin, is 0 on both sides,
+      so FIELD itself is not the variable.
+      ➡️ **SO THE PARSE CHECK IS GUARDING A GEOMETRY LIMITATION, AND THE PRICE IS
+      THE GEOMETRY, NOT THE PARSE.** `GET`/`PUT` here are built on
+      `recPerSec = 512/r` with no straddle; dropping the power-of-two test alone
+      would accept `LEN=100` and then compute the wrong sector — **worse than the
+      error it replaces**. Removing the check is a one-liner and is the WRONG
+      one-liner.
+      💰 Still not priced, but priced AGAINST THE RIGHT THING now: straddling
+      record geometry.
+      The framing this replaces read: ⚠️ **NOT PART OF THE ERR-50 RULE and must
+      not be folded into it** — it is an `OPEN` parse question, not a `FIELD` one.
+      💰 Not scouted, not priced:
       the straddle argument is a REAL design constraint (a 100-byte record does
       not tile a 512-byte sector), so "just widen the validator" is exactly the
       cheap wrong answer — what the reference DOES with a straddling record is
