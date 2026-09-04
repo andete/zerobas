@@ -4976,3 +4976,26 @@ the Disk BASIC suites is green. What it establishes is that there is no
 unclaimed room to give the evaluator, so the cap cannot be fixed by moving a
 constant — see [`docs/spec-basic-trapsvc.md`](../docs/spec-basic-trapsvc.md) §19
 for the three non-fixes and the SP-relocation this points at.
+
+## 2026-09-04 — `SCREEN`'s slot 3 is 1..2, and the argument list stops at five (D-SCRSLOT)
+
+**sourced** — black-box oracle observation on the Philips VG-8020 and the
+National CF-3300, twelve rows added to
+`probes/basic/basic_probe_screenerr.py`; both references agree on all twelve.
+
+D-SCRERR (2026-08-10) pinned slot 1 (sprite size) to 0..3 and slot 2 (key click)
+to 0..255, and filed the risk that a reference might NARROW a later slot, since
+`scr_extra` treats every slot after the first identically. It does:
+
+* **slot 3 (cassette baud rate) has domain `1..2`** — `SCREEN 1,,,0` and
+  `SCREEN 1,,,3` are `Illegal function call` on both references and are accepted
+  by zerobas. `1`/`2` are accepted everywhere and `300`/`-1` refused everywhere,
+  which is what makes the pair a domain reading rather than a blanket reject.
+* **the argument list is bounded at five slots** — `SCREEN 1,,,,,1` is
+  `Syntax error` on both references, accepted here.
+* slot 4 (printer) really is byte-wide, so the narrowing is specific to slot 3.
+
+Measured and priced, **not fixed**: ~12 B for the slot-3 arm plus ~8 B for the
+arity bound, against 6 B free in main page 1 on 2026-09-04. The three rows are
+`DEFERRED` in the gate with that price attached rather than left out.
+[`docs/spec-basic-screenerr.md`](../docs/spec-basic-screenerr.md) §10.

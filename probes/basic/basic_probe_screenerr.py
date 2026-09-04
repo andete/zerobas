@@ -208,6 +208,31 @@ CASES = [
     ("a.clk300",  "t", "SCREEN 1,,300"),
     ("a.clkbig",  "t", "SCREEN 1,,70000"),
 
+    # === t.* THE TRAILING SLOTS 3+ — the open risk this slice filed =========
+    # Filed 2026-08-10: slot 1 (sprite size) is pinned 0..3 and slot 2 (key
+    # click) 0..255, but `scr_extra` treats EVERY later slot exactly like slot 2,
+    # so a reference that NARROWS one of them is an unmeasured divergence.
+    # MSX documents slot 3 as the cassette BAUD RATE (1 or 2) and slot 4 as the
+    # PRINTER TYPE (0 or 1) -- both far narrower than 0..255, which is precisely
+    # the shape the filing worried about.
+    # 🎯 t.b1/t.b2 and t.p0/t.p1 are the POSITIVE side: the documented-valid
+    # values must be ACCEPTED, or a row rejecting 300 proves only that the
+    # statement rejects everything.
+    ("t.b1",      "t", "SCREEN 1,,,1"),
+    ("t.b2",      "t", "SCREEN 1,,,2"),
+    ("t.b0",      "t", "SCREEN 1,,,0"),
+    ("t.b3",      "t", "SCREEN 1,,,3"),
+    ("t.b300",    "t", "SCREEN 1,,,300"),
+    ("t.bneg",    "t", "SCREEN 1,,,-1"),
+    ("t.bbig",    "t", "SCREEN 1,,,70000"),
+    ("t.p0",      "t", "SCREEN 1,,,,0"),
+    ("t.p1",      "t", "SCREEN 1,,,,1"),
+    ("t.p2",      "t", "SCREEN 1,,,,2"),
+    ("t.p300",    "t", "SCREEN 1,,,,300"),
+    # a SIXTH slot: MSX2 documents interlace there, so on an MSX1 this asks
+    # whether the parser bounds the ARITY at all.
+    ("t.s6",      "t", "SCREEN 1,,,,,1"),
+
     # === o.* THE ORDERING ROWS — a deferred fault vs the side effect ========
     # 🔴 M is the whole point of these. The CODE was already made right by
     # D-STMTPEND (the trapped twin s.scr.dz agrees); what was never measured is
@@ -284,7 +309,25 @@ NEGATIVE = {
 }
 LABEL_W = 10
 
-DEFERRED: dict[str, str] = {}
+# 🔴 THE TRAILING-SLOT DIVERGENCES, MEASURED 2026-09-04 and PRICED, not fixed.
+# The filing (2026-08-10) worried that a reference might NARROW a later slot.
+# It does: slot 3 is the cassette BAUD RATE and its domain is 1..2 on BOTH
+# references, where `scr_extra` treats every slot after the first as a plain
+# 0..255 byte. And the ARITY is bounded at five -- a sixth slot is Syntax error.
+# ⚠️ DEFERRED ON A MEASURED PRICE, NOT ON TASTE. Both `scr_extra` and
+# `spr_extra_arg` live in main page 1, which `make basic-reloc` reports at 6
+# BYTES FREE; the slot-3 dispatch plus its domain test is ~12 B and the arity
+# bound another ~8. Re-price before inheriting this -- a wall reading rots
+# [[repricing-page1-slice]].
+# 🟢 t.b1/t.b2 (accepted) and t.b300/t.bneg (ERR 5) are what make the pair a
+# domain rather than a blanket reject, and they AGREE -- so the divergence is
+# exactly "0 and 3 are accepted here and refused there", not "this slot is
+# unchecked".
+DEFERRED: dict[str, str] = {
+    "t.b0":  "slot 3 domain is 1..2 on both refs; ~12 B against 6 B free",
+    "t.b3":  "slot 3 domain is 1..2 on both refs; ~12 B against 6 B free",
+    "t.s6":  "arity bounded at 5 slots on both refs (ERR 2); ~8 B, same wall",
+}
 
 SENTINELS = ("<NO CAPTURE>", "<NO ECHO>")
 

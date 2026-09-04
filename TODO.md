@@ -215,7 +215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6859 (T-529ABE)`: a
+      `TODO.md:1870 (T-6FE392)8 (T-529ABE)` from `TODO.md:6880 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2471,7 +2471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:6859 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:6880 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5112,6 +5112,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       slot 2 (key click) to 0..255; `scr_extra` treats slots 3+ identically to
       slot 2, so the open risk is a reference that narrows a later one.
       `SCREEN 1,,,300` — one row, no scouting done.
+      ✅ **MEASURED 2026-09-04 (D-SCRSLOT,
+      [`docs/spec-basic-screenerr.md`](docs/spec-basic-screenerr.md) §10), and
+      the worry was RIGHT.** Twelve rows, both references agreeing on all twelve,
+      now in `screenerr-acceptance`:
+      • 🔴 **slot 3 is the cassette BAUD RATE and its domain is `1..2`** —
+        `SCREEN 1,,,0` and `SCREEN 1,,,3` are **ERR 5** on both references and
+        ACCEPTED here.
+      • 🔴 **the argument list stops at FIVE** — `SCREEN 1,,,,,1` is **ERR 2**
+        there, accepted here.
+      • 🟢 slot 4 (printer) really IS byte-wide (0/1/2 accepted, 300 → ERR 5), so
+        the narrowing is specific to slot 3 rather than general to "later
+        slots" — a shape the filing could not have guessed.
+      🎯 `t.b1`/`t.b2` (accepted) and `t.b300`/`t.bneg` (ERR 5) are what make it a
+      DOMAIN reading: without the accepted pair a refusal of 0 and 3 is equally
+      "the slot rejects everything".
+      💰 **PRICED, NOT FIXED: ~12 B for the slot-3 arm + ~8 B for the arity
+      bound.** Main page 1 free was **6 B on 2026-09-04** (`scr_extra` and
+      `spr_extra_arg` both live there; the latter already dispatches on
+      `GFX_SARGN`, so the arm has a natural home). The three rows are DEFERRED in the gate with that price
+      attached. 🔴 **RE-PRICE BEFORE INHERITING** — a decline resting on a wall
+      reading rots [[repricing-page1-slice]].
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] ⚠️ **`a.spr` IS BLIND TO A CUT THAT STOPS THE SPRITE SIZE BEING APPLIED.**

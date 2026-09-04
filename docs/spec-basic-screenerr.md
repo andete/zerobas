@@ -325,3 +325,52 @@ named. This is [[t.zero-is-blind-to-a-cut-that-also-disables-its-seed]] asked
   `a.spr` reads only the error code and a size that is never applied raises
   nothing. Recorded, not changed — `a.sprslot1` covers it, and `a.spr` is still
   the row that says an in-domain size is *accepted*.
+
+## 10. 🔴 D-SCRSLOT — slot 3 is 1..2, and the arity stops at five
+
+§2 pinned slot 1 (sprite size) to 0..3 and slot 2 (key click) to 0..255, and
+left a filed risk: `scr_extra` treats **every** slot after the first exactly like
+slot 2, so a reference that *narrows* a later one would be an unmeasured
+divergence. Measured 2026-09-04, twelve rows, both references agreeing on all
+twelve.
+
+| row | statement | VG-8020 | CF-3300 | zerobas |
+|---|---|---|---|---|
+| `t.b1` | `SCREEN 1,,,1` | ok | ok | ok |
+| `t.b2` | `SCREEN 1,,,2` | ok | ok | ok |
+| `t.b0` | `SCREEN 1,,,0` | **ERR 5** | **ERR 5** | 🔴 ok |
+| `t.b3` | `SCREEN 1,,,3` | **ERR 5** | **ERR 5** | 🔴 ok |
+| `t.b300` | `SCREEN 1,,,300` | ERR 5 | ERR 5 | ERR 5 |
+| `t.bneg` | `SCREEN 1,,,-1` | ERR 5 | ERR 5 | ERR 5 |
+| `t.bbig` | `SCREEN 1,,,70000` | ERR 6 | ERR 6 | ERR 6 |
+| `t.p0` / `t.p1` / `t.p2` | `SCREEN 1,,,,n` | ok | ok | ok |
+| `t.p300` | `SCREEN 1,,,,300` | ERR 5 | ERR 5 | ERR 5 |
+| `t.s6` | `SCREEN 1,,,,,1` | **ERR 2** | **ERR 2** | 🔴 ok |
+
+**Slot 3 is the cassette baud rate and its domain is `1..2`** — not the 0..255
+byte `scr_extra` applies. **Slot 4 (printer) really is byte-wide**, so the
+narrowing is specific to slot 3 rather than general to "later slots", which is
+the shape the filing could not have guessed. And the **argument list stops at
+five**: a sixth slot is a *Syntax error*, i.e. the arity is bounded by the
+parser, where `scr_extra`'s loop accepts commas indefinitely.
+
+🎯 **`t.b1`/`t.b2` and `t.b300`/`t.bneg` are what make this a domain reading.**
+Without the accepted pair, a row refusing `0` and `3` would be equally consistent
+with "the slot rejects everything"; without the refused pair, with "the slot
+checks nothing". Both pairs agree on all three machines, so the divergence is
+precisely *"0 and 3 are accepted here and refused there"*.
+
+### ⚠️ Measured and priced, NOT fixed
+
+Both `scr_extra` (`basic/screen.asm`) and `spr_extra_arg`
+(`basic/graphics.asm`) are in **main page 1**, which `make basic-reloc` reports
+at **6 bytes free**. `spr_extra_arg` already dispatches on `GFX_SARGN`, so the
+slot-3 arm is the natural home — `ld a,e / dec a / cp 2 / jp nc,gb_illegal`
+behind a slot test, about **12 B**, with the arity bound another **8**. That does
+not fit, and the three rows are `DEFERRED` in the gate with that price attached
+rather than silently left out.
+
+🔴 **Re-price before inheriting this.** A decline resting on a wall reading is a
+decline resting on a figure that rots — the `CLEAR`/TRAPSTK item sat deferred on
+*"2 B free"* and turned out to be a 3 B fix against 333 B
+[[repricing-page1-slice]].
