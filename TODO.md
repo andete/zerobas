@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9086 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9113 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8289 (T-529ABE)`: a
+      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8316 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2801,7 +2801,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8289 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8316 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8097,7 +8097,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the sibling's measurement is exactly [[a-borrowed-window-inherits-its-corpus]].
       Re-open by walking preflight's own rule over its subject's life first.
       Detail: `docs/spec-probe-injjudge.md` §3.6.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      🟢 **WALKED 2026-09-05 (D-PREWIDEN,
+      [`scratchpad/preflight_widen.py`](scratchpad/preflight_widen.py)), IN
+      PREFLIGHT'S OWN TERMS** — `scan_file()` imported and applied verbatim to
+      every tracked `.py` outside `SCAN_DIRS`, so the verdicts are the checker's
+      and not a heuristic's:
+
+          tracked .py 808 — inside the window 345, outside 463
+          outside, by preflight's own rule:
+            EXEMPT (argv proves no -machine)     50
+            REQUIRED                            127
+              of which UNGUARDED                123   in 109 files
+
+      🔴 **SO THE FILED "6" IS OFF BY A FACTOR OF TWENTY.** Widening `SCAN_DIRS`
+      would turn **123 sites in 109 files** red on the next `make gates` — a
+      109-file edit, not a tidy-up, and the figure is what changes the shape of
+      the decision.
+      🎯 **AND THE TREE ALREADY HAS A POSITION ON THIS EXACT TRADE.** Knife
+      runners are deliberately throwaway (`spec-probe-injjudge.md` §1.3), and the
+      `/tmp` literals item reached the same fork with the same arithmetic — 124
+      sites in 69 files — and chose **containment plus a gate over a bulk edit it
+      could not verify**, on the ground that a mechanical sweep whose blast radius
+      cannot be checked breaks invariants its own rule cannot see
+      [[a-mechanical-fix-can-break-a-different-invariant]]. The consistent answer
+      here is the same one: **do not widen; guard opportunistically when touching
+      a runner anyway.**
+      🔭 SCOUT-THEN-ASK — the walk this entry asked for is DONE and the number is
+      123/109, not 6; whether a throwaway knife runner ought to preflight at all
+      is a scope call, and it is his.
 - [x] ✅ **Three probe page-0 entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
