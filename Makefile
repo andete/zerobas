@@ -3076,6 +3076,20 @@ citation-check:
 todo-citation-check:
 	python3 tools/check_todo_citations.py
 
+# D-MARKGATE. TODO.md's header states "EVERY OPEN ITEM CARRIES A PICK-UP MARKER"
+# and until 2026-09-05 the only thing that could check it lived in scratchpad and
+# NOTHING RAN IT -- so it had failed silently on 2026-08-27, on 2026-09-01 and
+# again the day this target was written. 🔴 And the readout that caught those saw
+# HALF of the last set: its rule was "a line in the block STARTS with a marker
+# emoji", which scores prose ("🙋 NEEDS A DECISION -- the mechanism is Joost's
+# call") as a marker and had put an unmarked item INSIDE the 🤖 tally the /loop
+# picks from. This target requires the bucket NAME, correctly paired with its
+# emoji; the 8 arms include two that go green under the old loose rule.
+# <1 s, read-only, no emulator. Same weight and the same non-prerequisite
+# reasoning as todo-citation-check above.
+todo-marker-check:
+	python3 tools/check_todo_markers.py
+
 # Three items filed "and nothing checks it" and each proposed its own cheap
 # checker. They are ONE property, not three subjects: a shared helper exists
 # BECAUSE the obvious hand-written version was measured wrong, so writing the
@@ -3156,7 +3170,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check \
+        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check \
         chokepoint-check banner-acceptance wall-literal-check \
         patch-freshness-check gates clean
 

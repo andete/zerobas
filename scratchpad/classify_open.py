@@ -126,39 +126,22 @@ json.dump({x["id"]: {"bucket": b, "signal": s, "matched": w}
 
 
 # --- `--count`: recount the markers actually in TODO.md ---------------------
-# 🔴 THE HEADER TABLE'S `n` COLUMN ROTS, AND ON 2026-08-27 IT WAS WRONG BY 12 IN
-# ONE BUCKET. It is a hand copy of a number the file itself carries -- exactly the
-# class D-WALLIT gated for build symbols, in a place no gate reads. The table now
-# carries a DATE and names this mode; run it rather than quoting it.
-# It also enforces the header's own stated invariant (every open item is marked):
-# three items on 2026-08-27 were `- [ ]` with no marker AND ended "✅ DONE", so the
-# loop would have re-picked finished work.
+# 🔴 THIS USED TO CARRY ITS OWN MARKER RULE AND THE RULE WAS WRONG. It counted a
+# block as marked if any line in it BEGAN with a marker emoji, which scores prose
+# ("🙋 NEEDS A DECISION -- the mechanism is Joost's call") as a pick-up marker; on
+# 2026-09-05 it reported 4 unmarked open items where there were 8, and had scored
+# one of the missed four INTO the 🤖 tally the /loop picks from. It is now a thin
+# wrapper over the gate, so there is exactly ONE rule and it is the gated one --
+# a second, uncross-checked membership list is a failure this tree has had twice.
+#     make todo-marker-check
+import os as _os
+sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(
+    _os.path.abspath(__file__))), "tools"))
+
+
 def _count(path="TODO.md"):
-    import re as _re
-    s = open(path).read()
-    marks = ("🤖", "🔭", "🙋", "⛔")
-    c = {m: 0 for m in marks}
-    opened, unmarked = 0, []
-    for b in _re.split(r"\n(?=- \[[ x]\] )", s):
-        if not b.startswith("- [ ] "):
-            continue
-        opened += 1
-        hit = False
-        for m in marks:
-            if _re.search(r"^\s*" + m + r" ", b, _re.M):
-                c[m] += 1
-                hit = True
-        if not hit:
-            unmarked.append(b.splitlines()[0][:70])
-    for m in marks:
-        print(f"  {m}  {c[m]}")
-    print(f"  open blocks {opened}, markers {sum(c.values())}")
-    if unmarked:
-        print("🔴 UNMARKED OPEN ITEM(S) -- unclassified, NOT autonomous:")
-        for u in unmarked:
-            print("   ", u)
-        return 1
-    return 0
+    import check_todo_markers
+    return check_todo_markers.check(path)
 
 
 if __name__ == "__main__" and "--count" in sys.argv:

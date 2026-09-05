@@ -71,8 +71,10 @@ BE IN THE ROOM** — not what the item touches. Derived 2026-08-26 by
 signal that decided each one so it can be argued with.
 
 ⚠️ **THE `n` COLUMN ROTS — RECOUNT IT, DO NOT QUOTE IT:**
-`python3 scratchpad/classify_open.py --count`. It reads the markers actually in
-this file and FAILS if an open item carries none. The figures below are **as
+**`make todo-marker-check`** (D-MARKGATE, 2026-09-05; `scratchpad/classify_open.py --count` is now a
+wrapper over the same rule, because it used to carry a DIFFERENT and wrong one).
+It reads the markers actually in this file and FAILS if an open item carries none,
+or carries two buckets, or if its block splitter and `todo_inventory.py` disagree. The figures below are **as
 measured 2026-08-27** and stand as taken; on that day the previous set was wrong
 by **12** in the 🤖 bucket, and three items were `- [ ]`, unmarked, and ended
 "✅ DONE" — so the loop would have re-picked finished work. (`classify_open.py`'s
@@ -87,7 +89,12 @@ those.)
 | 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **25** |
 | ⛔ **BLOCKED** | neither can start it now — an idle host, a missing fixture, apparatus that must be built first | **9** |
 
-**RE-CHECKED 2026-09-01: 116 open blocks, 116 markers, 0 unmarked.** It was
+**RE-CHECKED 2026-09-01: 116 open blocks, 116 markers, 0 unmarked.** 🔴 **AND THAT SENTENCE
+IS THE PROBLEM, NOT THE PROOF — IT WAS TRUE ONLY OF THE RULE THAT WROTE IT.**
+Re-run 2026-09-05 by [`tools/check_todo_markers.py`](tools/check_todo_markers.py):
+**8** open blocks carried no marker, and `--count` — the instrument that produced
+the line above — reported **4**. See the D-MARKGATE record below; this paragraph
+stands as taken, and it is now GATED rather than re-asserted. It was
 **118 blocks / 115 markers** when this session opened — 🔴 **THREE OPEN ITEMS HAD
 NO MARKER, WHICH IS THE FAILURE THIS INVARIANT EXISTS TO CATCH, AND IT HAD BEEN
 FAILING SILENTLY**: nothing runs `--count`, so the line below said "checked"
@@ -144,6 +151,55 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **BASIC surface**
 
+- [x] 🟢 **D-MARKGATE: THE ONE INVARIANT THIS SECTION IS BUILT ON HAD NO
+      GATE, AND THE READOUT THAT STOOD IN FOR ONE SAW HALF OF WHAT WAS WRONG.**
+      2026-09-05. The header above says *"EVERY OPEN ITEM CARRIES A PICK-UP
+      MARKER"*; until today the only thing that could check it was
+      [`scratchpad/classify_open.py`](scratchpad/classify_open.py) `--count`,
+      **which nothing ran**. It had therefore failed silently on 2026-08-27
+      (three items `- [ ]`, unmarked, ending "✅ DONE" — the /loop would have
+      re-picked finished work), on 2026-09-01 (three more), and again today.
+      🔴 **THE READOUT SAW 4 OF 8.** Its rule is *"the block contains a line
+      beginning with a marker emoji"*, which scores PROSE as a marker —
+      `🔭 **ONLY THE IMPLEMENTATION DECISION IS LEFT** — whether to spend the
+      ~7 B`, `🙋 NEEDS A DECISION — the mechanism … is Joost's call`,
+      `🙋 **(b) IS STILL YOURS**` — and in D-INTERPSPEED's case a
+      `🙋 …` / `🤖 …` PAIR splitting the item's two halves, counted as BOTH
+      buckets at once.
+      🎯 **SO AN UNMARKED ITEM WAS SITTING INSIDE THE `🤖` TALLY THE LOOP PICKS
+      FROM** — not merely missed, *scored*. TODO.md's own rule is that misfiling
+      toward 🤖 is the expensive direction, and that is the direction this failed
+      in [[readout-blind-to-its-own-subject]].
+      ⚠️ **THE ARITHMETIC HID IT.** `--count` printed `open blocks 107,
+      markers 105`, and 2 is not 4: two blocks carry a marker emoji TWICE (a
+      `🤖`/`🙋` cell inside the correctness scoreboard's ASCII table), so 4
+      missing and 2 double-counted netted to a plausible-looking gap of 2
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      ➡️ **THE RULE NOW REQUIRES THE BUCKET NAME, PAIRED WITH ITS EMOJI**, and an
+      `—`/`:` separator: `🤖 AUTONOMOUS —`. That rejects prose about a bucket and
+      rejects `🙋 BLOCKED ON JOOST` (a scoreboard row, not a `⛔ BLOCKED`
+      marker). The gap between the loose and tight rules is PRINTED rather than
+      policed — prose may name a bucket, and being able to see where it does is
+      what made this findable.
+      🟢 **8 SELFTEST ARMS, AND TWO OF THEM GO GREEN UNDER THE OLD LOOSE RULE** —
+      falsified by reverting `MARKER` to `LOOSE` and re-running (6/8), not
+      asserted. A third failure was caught inside the selftest itself: the
+      denominator cross-check ran `todo_inventory.py` on every FIXTURE, where it
+      reads the real `TODO.md` regardless, so **four arms were passing on a
+      denominator mismatch instead of on their own subject**
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      🔁 **A FIFTH BUCKET WAS MISSING FROM THE VOCABULARY, WHICH IS WHY TWO OF
+      HIS OWN RULINGS WERE UNMARKED**: the oracle-split rule (2026-09-04) and the
+      speed sequencing (2026-09-02) are STANDING, kept open so they stay visible,
+      and are not pickable work. `🔁 STANDING` now says so.
+      📏 **AND THE TALLIES MOVED WHEN THE RULE TIGHTENED**: `🤖` read 59 under
+      the old rule and **58** under the new one before the fixes, because prose
+      lines were being counted into buckets. **Recount with
+      `make todo-marker-check`; never quote a figure from here.**
+      💰 0 ROM bytes. `make gates` collects it in the STATIC tier, and both
+      membership lists (the Makefile's and
+      [`tools/run_gates.py`](tools/run_gates.py)'s) name it.
+
 - [x] 🟢 **`check_todo_citations.py --fix` CANNOT TELL A CITATION QUOTED AS AN
       EXAMPLE FROM A LIVE ONE, AND REWRITES BOTH.** Found 2026-08-30 while
       writing D-SPLITFIX, whose comment explains the citation-corruption bug BY
@@ -198,7 +254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8362 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8443 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +318,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7565 (T-529ABE)`: a
+      `TODO.md:1977 (T-6FE392)8 (T-529ABE)` from `TODO.md:7646 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1570,6 +1626,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       extending.**
       ⚠️ **IT DECIDES THE VALUE, NEVER WHETHER TO MEASURE.** A split still has to
       be read off both machines first; this only says which reading ships.
+      🔁 STANDING — a ruling of Joost's, kept open so it stays visible. NOT
+      pickable work: the /loop reads it, it does not do it.
 
 - [ ] 🔁 **STANDING SEQUENCING (Joost, 2026-09-02): SPEED MATTERS AND WE SHOULD
       AT LEAST TRY — BUT CORRECTNESS COMES FIRST.** Answers the charter question
@@ -1597,6 +1655,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       "1.9–2.0× slower" is measured against a zero that does not exist on this
       tree (D-INTERPSPEED §4), and any future speed row has the same problem.
       🙋→🤖 The charter half is ANSWERED; what remains under it is autonomous.
+      🔁 STANDING — a ruling of Joost's, kept open so it stays visible. NOT
+      pickable work; what it re-orders is marked on the items themselves.
 
 - [ ] 🔁 **STANDING TIER (Joost, 2026-08-31): WHEN THE 🤖 QUEUE DRAINS, REVIEW
       EACH STATEMENT'S IMPLEMENTATION IN FULL, one verb at a time.** The
@@ -2518,7 +2578,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7565 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7646 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -2586,6 +2646,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔭 **ONLY THE IMPLEMENTATION DECISION IS LEFT** — whether to spend the ~7 B
       of main page 1 (read `make basic-reloc`; it was 8 B free 2026-09-04) plus
       the sub-side body. Everything the fix needs is measured.
+      🙋 NEEDS-JOOST — everything the fix needs is measured; what is left is a
+      main page-1 spend (the dated figure is on the 🔭 line above — read the wall
+      with `make basic-reloc`, never from here), and spends are his. That 🔭 line
+      said exactly this and was invisible to the old marker readout.
 
 - [x] 🔴 **D-TODOSWEEP'S OWN ELEVEN PROBES RE-IMPLEMENT THE `[...]` READER, WHICH
       IS THE TRAP THE ITEM BELOW DESCRIBES.** Filed 2026-08-26 by D-TODOSWEEP
@@ -2943,6 +3007,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       save size, not a measurement of the rest.
       🙋 NEEDS A DECISION — the mechanism (partition vs merge) is Joost's call; the
       measurements are done.
+      🙋 NEEDS-JOOST — partition vs merge is his call, in the block's own words.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
@@ -3025,6 +3090,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       faithful include speed?" is answered.
       🙋 **NEEDS-JOOST** on the charter question (does faithful include speed?);
       🤖 the non-repack comparison in §5 is autonomous and comes first.
+      🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
+      2026-09-02: speed is a real defect), so what remains under it is measurable work.
+      ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
+      being 🤖 makes it pickable, not next.
 
 - [ ] 🐌 **`PAINT` IS STILL 1.9–2.0× SLOWER THAN BOTH REFERENCES — HALVED BY
       D-PAINTVRAM, NOT CLOSED.** Was 2.4–3.4× (filed 2026-08-24 out of the budget
@@ -4308,6 +4377,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🙋 **(b) IS STILL YOURS** — which of the 104 earn a battery slot is a
       runtime-budget call (one tape probe is ~4 min against a ~460 s battery).
       The measuring in front of it is DONE.
+      🙋 NEEDS-JOOST — (a) is done; (b), which of the 104 earn a battery slot, is a
+      runtime-budget call and the measuring in front of it is finished.
 
 - [ ] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
       it.** Filed 2026-08-22 by D-DEFFN,
@@ -4888,6 +4959,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       operator whose operand is missing" here — it is simply not a factor, hence
       ERR 2. Fix that and `A=+`, `A$=+`, `PRINT +` and `SAVE +` all become 24 by
       themselves, with no message work.
+      🤖 AUTONOMOUS — the references settle every row and the message table already
+      has the slot.
+      🔴 **AND THIS ENTRY'S OWN PREMISE IS FALSIFIED**: *"zerobas has no `Missing
+      operand` message at all"* was true when filed and is not true now —
+      [`sub/errmsg.asm`](sub/errmsg.asm):231 carries `em_missing_operand: db "Missing
+      operand",0 ; ERR 24`, reached by [`sub/circleparse.asm`](sub/circleparse.asm)'s
+      `cpt_err24`. So the WORDING half may already be closed and the only measured
+      divergence left is `A$=+` reading ERR 2 against 24. **Run the three verbs before
+      pricing anything** [[a-justification-parenthesis-is-an-unrun-claim]].
 
 - [ ] 🔴 **UNARY PLUS IS NOT IMPLEMENTED: `A=+1` IS ERR 2 HERE AND LEGAL ON BOTH
       REFERENCES.** Found 2026-09-05 by D-UNARYPLUS while answering the boundary
@@ -5016,6 +5096,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       these rows, and **why** is unmeasured. Either the tenant does not consult
       `DISKOP_OP` on the FILES path, or 7 is harmless there. That is a smaller
       and much more answerable question than the one this entry was filed with.
+      🤖 AUTONOMOUS — 💰 0 ROM bytes; it is a row, and the references settle it.
 
 - [x] ✅ **A FILESPEC OF CONTROL BYTES: CF-3300 SAYS `Bad file name`, ZEROBAS
       SAYS `File not found`.** **FIXED 2026-09-05 (D-FSPECCHAR) — 45/45 byte

@@ -1,4 +1,9 @@
 {
+ "T-385BF0": {
+  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "signal": "retire / delete, but unpriced/unmeasured first",
+  "matched": "retir"
+ },
  "T-B5EEF6": {
   "bucket": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
@@ -229,17 +234,17 @@
   "signal": "no his-decision signal found",
   "matched": ""
  },
+ "T-9B4922": {
+  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "signal": "page-1 budget",
+  "matched": "main page 1"
+ },
  "T-687C2B": {
   "bucket": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-51C633": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
- "T-3CC9D3": {
   "bucket": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
@@ -275,9 +280,9 @@
   "matched": "retir"
  },
  "T-7A608F": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
+  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "signal": "page-1 budget, but unpriced/unmeasured first",
+  "matched": "Main page 1"
  },
  "T-3AED26": {
   "bucket": "\ud83e\udd16 AUTONOMOUS",
@@ -309,27 +314,7 @@
   "signal": "no his-decision signal found",
   "matched": ""
  },
- "T-870B77": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
- "T-DB105B": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
- "T-5EDF8A": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
  "T-783F00": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
- "T-940CF2": {
   "bucket": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
@@ -389,11 +374,6 @@
   "signal": "retire / delete",
   "matched": "WITHDRAW"
  },
- "T-927679": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
  "T-5B155E": {
   "bucket": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
@@ -410,11 +390,6 @@
   "matched": "NEEDS A DISK"
  },
  "T-9CD0D4": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
- "T-DDE134": {
   "bucket": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
@@ -509,20 +484,10 @@
   "signal": "retire / delete",
   "matched": "retir"
  },
- "T-23E24B": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
- "T-C6421D": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
- "T-F2E36E": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
+ "T-4BBD39": {
+  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "signal": "page-1 budget, but unpriced/unmeasured first",
+  "matched": "main page 1"
  },
  "T-876600": {
   "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
@@ -565,8 +530,8 @@
   "matched": ""
  },
  "T-94C4D6": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
+  "bucket": "\u26d4 BLOCKED",
+  "signal": "needs a fixture",
+  "matched": "fixture"
  }
 }
