@@ -170,6 +170,37 @@ shipped a hole its own rule predicts.
 
 ## 5. 🔴 The trailing-blank cell is NOT MEASURABLE with this instrument
 
+> ✅ **…AND IT IS MEASURABLE WITH A DIFFERENT ONE — 2026-09-05 (D-TRAILBLANK,
+> `scratchpad/trailblank_probe.py`), built from this section's own suggestion.**
+> An `$EA` ASCII program on tape, `LOAD"CAS:"`, and the readout is the tokenised
+> program at TXTBASE via `debug read_block` — **bytes, not a screen, so nothing
+> `rstrip`s anything.** Same payload path on all three machines; only the command
+> differs (typed on the VG-8020 and zerobas; an `AUTOEXEC.BAS` on a disk for the
+> CF-3300, whose date prompt hijacks the keyboard — the disk carries the command,
+> never the payload).
+>
+> | line delivered verbatim | VG-8020 | CF-3300 | zerobas |
+> |---|---|---|---|
+> | `10 REM HELLO␣` | `<8F> HELLO␣` | `<8F> HELLO␣` | `<8F> HELLO␣` |
+> | `20 A=1␣` | `A<EF><12>␣` | `A<EF><12>␣` | `A<EF><12>␣` |
+>
+> 🎯 **All three KEEP the blank, in the `REM` tail and after a literal.** Against
+> the typed table below — where both references DROP it and zerobas keeps it —
+> that isolates the site: the tokeniser is identical on all three, and the
+> reference's own drop happens before it. **The paragraph below reasoned to
+> exactly that conclusion from the verbatim-`REM` argument; it now has a
+> measurement under it.**
+>
+> ⚠️ **It does not rescue the unstable half.** The `--repeat 1` disagreement
+> recorded further down is about the TYPED path, and this run says nothing about
+> it — the difference itself still needs re-establishing before anyone goes
+> looking inside the editor.
+>
+> 🎁 And *"a payload whose delivery cannot be verified may not gate"* was true of
+> the KEYBOARD path only: this delivery is verified by construction, so the two
+> informational rows could become scored rows through it.
+
+
 At `--repeat 2` on the final build, both rows read the same way and point away
 from the scanner:
 
