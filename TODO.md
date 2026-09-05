@@ -151,6 +151,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **BASIC surface**
 
+- [x] 🟢 **D-DGTPUSH: THREE COPIES OF ONE ELEVEN-BYTE DIGIT LOOP BECOME ONE —
+      +10 B OF MAIN PAGE 1, MEASURED.** 2026-09-05, found by
+      [`tools/clone_scout.py`](tools/clone_scout.py) `--min 4 --extend`, which is
+      the standing carve method and had **two** candidates today: this one at 10 B
+      and a 4 B group in `basic/files.asm` (not taken).
+      📏 **Main page 1 5 B → 15 B free** (`make basic-reloc` before and after —
+      re-run it, never quote this). The scout priced it at 10 B and it is 10 B.
+      🎯 **THE SHAPE IS WHY IT WAS STILL THERE.** `pn_conv`
+      ([`basic/print.asm`](basic/print.asm)), `ln_div_entry`
+      ([`basic/list.asm`](basic/list.asm)) and `pfi_pos`
+      ([`basic/printusing.asm`](basic/printusing.asm)) each carried
+      `ld a,$FF / push af / <div10 loop>` byte for byte — and **it cannot be a
+      plain subroutine**: the loop PUSHES its results, so a `call` buries the
+      return address underneath them and `ret` pops a digit. `dgt_push` lifts the
+      return address into DE on entry and pushes it back on top before the `ret`.
+      ⚠️ **THAT IS LEGAL ONLY BECAUSE `div10`'S CONTRACT LEAVES DE ALONE**
+      (*"clobbers A, B, HL"*, [`basic/float-arith.asm`](basic/float-arith.asm)),
+      and only because all three sites reload DE or HL immediately afterwards —
+      which is what makes the collapse free rather than costing a push/pop pair
+      per site. Both facts are stated at the helper.
+      🟢 **AND IT HAS TEETH: K-DGT1** replaced the `push de` before the `ret`
+      with a `nop` and `pusing-acceptance` went **RED (15 unreadable rows)** with
+      `float-acceptance` red too — so the battery genuinely executes this path and
+      the 113/113 green is not blindness. `basic/print.asm` restored
+      byte-identically; ROM hashes re-read afterwards.
+      🔧 Three prose sites that NAMED the deleted labels were corrected with the
+      code: `print.asm`'s and `float-arith.asm`'s *"callers here (pn_div,
+      list.asm, printusing.asm)"* notes, which would otherwise have pointed a
+      reader at labels that no longer exist
+      [[a-fix-falsifies-the-justification-beside-it]].
+      ⚠️ `basic/detok.inc`'s sub-side copy is NOT collapsed and cannot be: it is a
+      different assembly unit, in sub page 1, where the wall is 918 B and the
+      pressure is not.
+      ➡️ **THIS IS FUNDING, NOT A FIX.** Two items are blocked on small main
+      page-1 spends and this is what pays for one of them: the `TXTMAX` line-store
+      bound (**9 B**, measured by planting it) and unary plus on a STRING
+      (**~6–7 B** at `str_eval_one`). 15 B free does not fit both.
+
 - [x] 🟢 **D-MARKGATE: THE ONE INVARIANT THIS SECTION IS BUILT ON HAD NO
       GATE, AND THE READOUT THAT STOOD IN FOR ONE SAW HALF OF WHAT WAS WRONG.**
       2026-09-05. The header above says *"EVERY OPEN ITEM CARRIES A PICK-UP
@@ -272,7 +310,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8790 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8828 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -336,7 +374,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7993 (T-529ABE)`: a
+      `TODO.md:2063 (T-6FE392)8 (T-529ABE)` from `TODO.md:8031 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2663,7 +2701,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7993 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8031 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

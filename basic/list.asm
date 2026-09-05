@@ -269,14 +269,7 @@ detok:
 ; program.asm's line-number printing stay resident and reach this by in-slot call;
 ; detok.inc carries a byte-identical sub-side twin for the evicted detok_dec.
 ln_div_entry:
-                ld      a,$FF
-                push    af
-dde_div:
-                call    div10
-                push    af
-                ld      a,h
-                or      l
-                jr      nz,dde_div
+                call    dgt_push            ; D-DGTPUSH: the shared digit loop
                 ld      de,NUMBUF
 dde_wr:
                 pop     af

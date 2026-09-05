@@ -400,14 +400,7 @@ pn_neg:
                 or      a
                 sbc     hl,de               ; HL = -value = magnitude
 pn_conv:
-                ld      a,$FF               ; stack sentinel (not a digit)
-                push    af
-pn_div:
-                call    div10               ; HL /= 10, A = remainder 0..9
-                push    af                  ; push digit (least-significant first)
-                ld      a,h
-                or      l
-                jr      nz,pn_div
+                call    dgt_push            ; D-DGTPUSH: the shared digit loop
                 ld      de,NUMBUF+1         ; write digits after the sign char
 pn_wr:
                 pop     af
@@ -425,6 +418,37 @@ pn_tail:
                 ld      (de),a              ; 0-terminate
                 ld      hl,NUMBUF
                 jp      print_string        ; guards HL across CHPUT
+
+; --- dgt_push: HL -> decimal digits on the STACK, LSB first, under a sentinel -
+; D-DGTPUSH (2026-09-05). THREE main-ROM sites carried this eleven-byte loop
+; byte for byte -- `pn_conv` here, `ln_div_entry` (basic/list.asm) and
+; `pfi_pos` (basic/printusing.asm) -- found by `tools/clone_scout.py --extend`,
+; which prices the collapse at 10 B and is exactly what it measured.
+;
+; 🔴 IT CANNOT BE A PLAIN SUBROUTINE, AND THAT IS THE WHOLE DESIGN. The loop
+; PUSHES its results; a `call` would bury the return address underneath them and
+; `ret` would pop a digit. So the return address is lifted into DE on entry and
+; pushed back on top before the `ret` -- which is legal only because div10's
+; contract is "clobbers A, B, HL" and leaves DE alone (basic/float-arith.asm).
+; ⚠️ DE IS THEREFORE NOT AVAILABLE TO CALLERS ACROSS THIS CALL. All three
+; sites reload DE (or HL) immediately afterwards, which is why the collapse is
+; free rather than costing a push/pop pair at each of them.
+;
+;   in:  HL = magnitude (unsigned)
+;   out: digits on the stack, least-significant first, with $FF beneath them;
+;        HL = 0, A/B clobbered, DE clobbered.
+dgt_push:
+                pop     de                  ; the return address, out of the way
+                ld      a,$FF               ; stack sentinel (not a digit)
+                push    af
+dgp_lp:
+                call    div10               ; HL /= 10, A = remainder 0..9
+                push    af                  ; push digit (least-significant first)
+                ld      a,h
+                or      l
+                jr      nz,dgp_lp
+                push    de                  ; return address back on top
+                ret
 
 ; --- div10: HL = HL/10, A = remainder (0..9) -------------------------------
 ; Shift-and-subtract (standard binary divide). Clobbers A, B, HL.

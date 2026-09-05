@@ -103,8 +103,9 @@ c16_gt:
 ; (above) -- found by the full-closure re-audit (114 labels from the 9
 ; resident-ABI roots + the flt_to_int16 tail) that the cmp16_bits fix
 ; prompted; that audit shows these two are the ONLY page-1 escapes. Relocated
-; to page 0 it is reachable from BOTH the normal page-1 callers (pn_div,
-; list.asm, printusing.asm -- page 0 is always mapped when they run) and the
+; to page 0 it is reachable from BOTH the normal page-1 caller (dgt_push in
+; basic/print.asm, which D-DGTPUSH collapsed the three of them into -- page 0 is
+; always mapped when it runs; detok.inc keeps a separate sub-side copy) and the
 ; page-1 tenant's page-0-resident float routines.
 ; (its copy stays in print.asm, page 1).
 div10:

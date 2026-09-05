@@ -356,14 +356,7 @@ pu_fmt_int:
 pfi_pos:
                 ld      (PU_WP),hl          ; digits start
                 ex      de,hl               ; HL = magnitude
-                ld      a,$FF               ; stack sentinel
-                push    af
-pfi_div:
-                call    div10               ; HL/=10, A = remainder
-                push    af
-                ld      a,h
-                or      l
-                jr      nz,pfi_div
+                call    dgt_push            ; D-DGTPUSH: the shared digit loop
                 ld      hl,(PU_WP)
 pfi_wr:
                 pop     af
