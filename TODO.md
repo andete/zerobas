@@ -199,6 +199,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       💰 0 ROM bytes. `make gates` collects it in the STATIC tier, and both
       membership lists (the Makefile's and
       [`tools/run_gates.py`](tools/run_gates.py)'s) name it.
+      🔴 **AND THE LIST BEING PICKED FROM WAS NOT THE PICK-UP LIST (2026-09-05,
+      later the same day, and it nearly cost a wrong pick).** This header says
+      *"the MARKERS in this file are what the loop reads"*;
+      [`scratchpad/classify_open.py`](scratchpad/classify_open.py)'s **listing**
+      grouped by its own re-derived heuristic, and nothing compared the two.
+      Measured: **34 of 107 open items bucket differently**, and in **five** the
+      heuristic says 🤖 where the file says 🙋 — `T-6FE392` (whose headline
+      literally reads *"RE-MARKED 🙋"*), `T-624750`, `T-789D41`, `T-B34E15`, and
+      `T-AB1311`, a **165 B page-3 RAM spend** filed with the words *"the
+      measuring is DONE, the spend is yours"*.
+      🎯 **THAT IS THE EXPENSIVE DIRECTION, AND IT WAS LIVE**: `T-AB1311` was
+      opened to be worked, off that listing, and only the block's own 🙋 line
+      stopped it. The listing now buckets **by the marker**, prints the heuristic
+      beside each row as commentary, and states the disagreement count in its
+      header; its totals agree with `make todo-marker-check` (61/3/32/9/2).
+      ⚠️ **The heuristic is kept, not deleted** — the file says it exists to be
+      argued with, and a disagreement is now an argument you can see rather than
+      a silent substitution.
 
 - [x] 🟢 **`check_todo_citations.py --fix` CANNOT TELL A CITATION QUOTED AS AN
       EXAMPLE FROM A LIVE ONE, AND REWRITES BOTH.** Found 2026-08-30 while
@@ -254,7 +272,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8548 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8566 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -318,7 +336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2007 (T-6FE392)8 (T-529ABE)` from `TODO.md:7751 (T-529ABE)`: a
+      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7769 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2645,7 +2663,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7751 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7769 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -9318,6 +9336,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ **SCOPE, stated in the tool's own output**: it checks needles in tables
       discovered as case-folded. A one-off `'Foo' in x.lower()` is a different
       shape — **measured separately at 0 occurrences today**, but not gated.
+      🟢 **NOW GATED TOO — PASS 3 (D-ONEOFFCASE, 2026-09-05).** *"0 today,
+      measured separately"* is a hand measurement with nothing keeping it at 0,
+      which is the same shape as every other filed figure in this file. Re-run
+      before extending: still **0**. Pass 3 compares a literal against an
+      expression already `.lower()`/`.upper()`-ed **with no table between them** —
+      `if "Type mismatch" in txt.lower():` can never be true and the branch
+      simply never runs, so the row reclassifies instead of going red, exactly
+      like D-MSGEXACT's 30.
+      🔴 **AND AN EMPTY PASS IS INDISTINGUISHABLE FROM A BLIND ONE**, which is the
+      trap this whole entry is about: "0 findings" from a working pass reads the
+      same as "0 findings" from a pass that cannot see. **Eight arms plant the
+      shape** — plain, negated, equality with the literal on either side, the
+      `.upper()` mirror, and four that must NOT fire (a correctly-cased literal
+      either way, no folding at all, and a `.lower(x)` that takes an argument and
+      is therefore somebody else's method). K-OC1 disables the `.lower()` arm and
+      **three of them go red**, verified rather than asserted
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ➡️ **The last open half of this entry is closed.**
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [x] ✅ **CLOSED 2026-08-21 (D-FNEXPR2), 0 ROM BYTES — THE FACE FOR A

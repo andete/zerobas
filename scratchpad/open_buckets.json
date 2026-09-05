@@ -1,536 +1,643 @@
 {
  "T-385BF0": {
-  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "retire / delete, but unpriced/unmeasured first",
   "matched": "retir"
  },
  "T-B5EEF6": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-0553D8": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs an idle host",
   "matched": "wall time"
  },
  "T-5F1188": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "signal": "refactor, no oracle, but unpriced/unmeasured first",
+  "matched": "design question"
  },
  "T-C1D0BC": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-17EE15": {
-  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "charter / scope, but unpriced/unmeasured first",
   "matched": "DECLINED"
  },
  "T-04C37D": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83d\udd01 STANDING",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-2914B2": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\udd01 STANDING",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "charter / scope",
   "matched": "charter"
  },
  "T-031AE0": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-8BFBB6": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "page-1 budget",
   "matched": "carve"
  },
  "T-41A782": {
-  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "page-1 budget, but unpriced/unmeasured first",
   "matched": "carve"
  },
  "T-AF2416": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-6FE392": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-139B2D": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-624750": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-4AC4B2": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "retire / delete",
   "matched": "delete"
  },
  "T-15B362": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\u26d4 BLOCKED",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs an idle host",
   "matched": "CONTENDED"
  },
  "T-027472": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "page-1 budget",
   "matched": "carve"
  },
  "T-EF8C91": {
-  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "charter / scope, but unpriced/unmeasured first",
   "matched": "charter"
  },
  "T-64EB78": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-789D41": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-706919": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-C7AC0E": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "charter / scope",
   "matched": "DECLINED"
  },
  "T-051734": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\u26d4 BLOCKED",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs an idle host",
   "matched": "WALL TIME"
  },
  "T-D35BCC": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "retire / delete",
   "matched": "WITHDRAW"
  },
  "T-329DD3": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\u26d4 BLOCKED",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs an idle host",
   "matched": "wall time"
  },
  "T-D20535": {
-  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "charter / scope, but unpriced/unmeasured first",
   "matched": "OUT OF SCOPE"
  },
  "T-BDB99C": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "charter / scope",
   "matched": "DECLINED"
  },
  "T-847C24": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-FA0579": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "no oracle can settle it",
   "matched": "cannot be measured"
  },
  "T-8768F7": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "page-1 budget",
   "matched": "CARVE"
  },
  "T-7F8654": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-B10921": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-BDB5E2": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "retire / delete",
   "matched": "delete"
  },
  "T-CB89FD": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "page-1 budget",
   "matched": "carve"
  },
  "T-64AD27": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "page-1 budget",
   "matched": "Main page 1"
  },
  "T-466ECC": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "charter / scope",
   "matched": "DECLINED"
  },
  "T-F61823": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-1738AC": {
-  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "page-1 budget, but unpriced/unmeasured first",
   "matched": "evict"
  },
  "T-B34E15": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-06346A": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-F7EBCE": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "charter / scope",
   "matched": "DECLINED"
  },
  "T-6ACF9C": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs an idle host",
   "matched": "contended"
  },
  "T-77303B": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\u26d4 BLOCKED",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-B62D37": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\u26d4 BLOCKED",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-816985": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-13B166": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-9B4922": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "page-1 budget",
   "matched": "main page 1"
  },
  "T-687C2B": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-51C633": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-E0B493": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-F37B1B": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-F2BCFF": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-0813D3": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-A04C9F": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "page-1 budget",
   "matched": "carve"
  },
  "T-8A24D5": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "retire / delete",
   "matched": "retir"
  },
  "T-7A608F": {
-  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "page-1 budget, but unpriced/unmeasured first",
   "matched": "Main page 1"
  },
  "T-3AED26": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-CC4F5F": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-D4D426": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-45C1F6": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-F7FF11": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-7F8323": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-783F00": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-356731": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-DDBFFA": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "hand-corrected: its own body prices it at 0 ROM bytes",
   "matched": ""
  },
  "T-87A882": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-AB1311": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-59C37A": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-66E1EE": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-B22650": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "refactor, no oracle",
   "matched": "design question"
  },
  "T-D5F7A9": {
-  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "marker": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "refactor, no oracle, but unpriced/unmeasured first",
   "matched": "design question"
  },
  "T-F09939": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "refactor, no oracle",
   "matched": "namespaces"
  },
  "T-0A4625": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "charter / scope",
   "matched": "CHARTER"
  },
  "T-1CA9F7": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "retire / delete",
   "matched": "WITHDRAW"
  },
  "T-5B155E": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-977D6F": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\u26d4 BLOCKED",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-78990E": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\u26d4 BLOCKED",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "NEEDS A DISK"
  },
  "T-9CD0D4": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-E93A7E": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-F6B771": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-EC28F3": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-8947C8": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-99C822": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "retire / delete",
   "matched": "awaits a HUMAN"
  },
  "T-E19368": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-3628DB": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "charter / scope",
   "matched": "DEFERRED to Phase"
  },
  "T-9EFF88": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\u26d4 BLOCKED",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "DOS boot"
  },
  "T-2A1D8A": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-E2C671": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "charter / scope",
   "matched": "Charter"
  },
  "T-E20888": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-63A411": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "retire / delete",
   "matched": "DELETE"
  },
  "T-D2A359": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\u26d4 BLOCKED",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  },
  "T-A55F3D": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-E0B04B": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-4857B9": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "hand-corrected: the charter it contradicts is already settled",
   "matched": ""
  },
  "T-E5E8DB": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "retire / delete",
   "matched": "retir"
  },
  "T-CA0671": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "retire / delete",
   "matched": "retir"
  },
  "T-4BBD39": {
-  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "page-1 budget, but unpriced/unmeasured first",
   "matched": "main page 1"
  },
  "T-876600": {
-  "bucket": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "marker": "\ud83d\udd2d SCOUT-THEN-ASK",
+  "heuristic": "\ud83d\udd2d SCOUT-THEN-ASK",
   "signal": "refactor, no oracle, but unpriced/unmeasured first",
   "matched": "NAMESPACES"
  },
  "T-7438C3": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-DC3629": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "charter / scope",
   "matched": "DECLINED"
  },
  "T-E56017": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-BBA612": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-F97E35": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-40B7E8": {
-  "bucket": "\ud83d\ude4b NEEDS-JOOST",
+  "marker": "\ud83d\ude4b NEEDS-JOOST",
+  "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "charter / scope",
   "matched": "declined"
  },
  "T-438D23": {
-  "bucket": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-94C4D6": {
-  "bucket": "\u26d4 BLOCKED",
+  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "heuristic": "\u26d4 BLOCKED",
   "signal": "needs a fixture",
   "matched": "fixture"
  }

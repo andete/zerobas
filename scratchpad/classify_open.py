@@ -107,21 +107,57 @@ for x in B:
     else:
         rows.append(("🤖 AUTONOMOUS", "no his-decision signal found", "", x))
 
+# --- \U0001f534 THE LISTING IS GROUPED BY THE **MARKER IN THE FILE**, NOT BY THE
+# HEURISTIC ABOVE, AND IT USED TO BE THE OTHER WAY ROUND (fixed 2026-09-05).
+# TODO.md says in its own header that "the MARKERS in this file are what the loop
+# reads"; this script's headline re-derives a classification, and NOTHING
+# compared the two. Measured the day the comparison was first written:
+# **34 of 107 disagree**, and in FIVE of them the heuristic says \U0001f916 where the file
+# says \U0001f64b -- T-6FE392 (whose headline literally reads "RE-MARKED \U0001f64b"), T-624750,
+# T-789D41, T-B34E15 and T-AB1311 (a 165 B page-3 RAM spend, explicitly "the
+# measuring is DONE, the spend is yours"). \U0001f3af THAT IS THE EXPENSIVE DIRECTION
+# THE FILE WARNS ABOUT, and a loop reading this listing walks straight into it --
+# which is how the fix came to be written. The derived bucket is kept, as
+# COMMENTARY beside each row, because arguing with it is the whole point.
+sys.path.insert(0, "tools")
+import check_todo_markers as _M                                   # noqa: E402
+
+_NAME = {"\U0001f916": "\U0001f916 AUTONOMOUS", "\U0001f52d": "\U0001f52d SCOUT-THEN-ASK",
+         "\U0001f64b": "\U0001f64b NEEDS-JOOST", "⛔": "⛔ BLOCKED",
+         "\U0001f501": "\U0001f501 STANDING"}
+
+
+def _marker(x):
+    body = "\n".join(L[x["start"] - 1:x["end"]])
+    hit = [_NAME[m] for m, rx in _M.MARKER.items() if rx.search(body)]
+    return hit[0] if len(hit) == 1 else f"<{len(hit)} MARKERS>"
+
+
 import collections
-c = collections.Counter(r[0] for r in rows)
-print(f"{len(B)} open items")
-ORDER = ("🤖 AUTONOMOUS", "🔭 SCOUT-THEN-ASK", "🙋 NEEDS-JOOST", "⛔ BLOCKED")
+filed = {x["id"]: _marker(x) for _b, _s, _w, x in rows}
+c = collections.Counter(filed.values())
+disagree = [(x["id"], filed[x["id"]], b) for b, _s, _w, x in rows
+            if filed[x["id"]] != b]
+print(f"{len(B)} open items, bucketed by THE MARKER IN THE FILE")
+ORDER = ("\U0001f916 AUTONOMOUS", "\U0001f52d SCOUT-THEN-ASK", "\U0001f64b NEEDS-JOOST",
+         "⛔ BLOCKED", "\U0001f501 STANDING")
 for k in ORDER:
-    print(f"  {c[k]:4d}  {k}")
-for k in ("🙋 NEEDS-JOOST", "🔭 SCOUT-THEN-ASK", "⛔ BLOCKED", "🤖 AUTONOMOUS"):
+    print(f"  {c[k]:4d}  {k}" + ("   <- the /loop picks from here"
+                                 if k.endswith("AUTONOMOUS") else ""))
+print(f"\n\U0001f534 {len(disagree)} item(s) where the HEURISTIC below disagrees with the "
+      f"marker. The MARKER wins; the heuristic is commentary.")
+for k in ORDER:
+    named = [(b, s, w, x) for b, s, w, x in rows if filed[x["id"]] == k]
+    if not named:
+        continue
     print(f"\n=== {k}")
-    for bucket, sig, word, x in rows:
-        if bucket != k:
-            continue
+    for bucket, sig, word, x in named:
         h = re.sub(r"[*`~]", "", x["headline"])
         h = re.sub(r"^[^A-Za-z`]*", "", h)
-        print(f"  {x['id']}  [{sig}] {h[:74]}")
-json.dump({x["id"]: {"bucket": b, "signal": s, "matched": w}
+        note = "" if bucket == k else f"  \U0001f534 heuristic said {bucket}"
+        print(f"  {x['id']}  [{sig}] {h[:66]}{note}")
+json.dump({x["id"]: {"marker": filed[x["id"]], "heuristic": b,
+                     "signal": s, "matched": w}
            for b, s, w, x in rows}, open("scratchpad/open_buckets.json", "w"), indent=1)
 
 

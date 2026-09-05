@@ -138,6 +138,48 @@ def writes_to(tree, tables):
     return out
 
 
+# --- PASS 3: the ONE-OFF shape, which pass 1/2 cannot see (D-ONEOFFCASE) -----
+# 🔴 THE FILED SCOPE NOTE SAID "0 of those today, measured separately" AND
+# NOTHING KEPT IT AT 0. A comparison between a literal and a `.lower()`-ed
+# expression, with no table between them, is the same defect in one line:
+#
+#     if "Type mismatch" in txt.lower():        # can NEVER be true
+#
+# It fails by AGREEING, exactly like the 30 comparisons D-MSGEXACT broke -- the
+# branch simply never runs, so the row reclassifies rather than going red. The
+# mirror (`"abc" == x.upper()`) is checked too, because a table-free comparison
+# has no convention to lean on in either direction.
+# ⚠️ AN EMPTY RESULT IS THE EXPECTED ONE HERE, which is why the selftest carries
+# a planted instance: "0 findings" from a pass that cannot find anything looks
+# identical to "0 findings" from a clean tree
+# [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+def _folded_call(n, meth):
+    return (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+            and n.func.attr == meth and not n.args)
+
+
+def oneoffs(tree):
+    """(line, literal, method, op) for a literal that can never match."""
+    out = []
+    for n in ast.walk(tree):
+        if not isinstance(n, ast.Compare) or len(n.ops) != 1:
+            continue
+        op = type(n.ops[0]).__name__
+        if op not in ("In", "NotIn", "Eq", "NotEq"):
+            continue
+        for lit, other in ((n.left, n.comparators[0]),
+                           (n.comparators[0], n.left)):
+            if not (isinstance(lit, ast.Constant)
+                    and isinstance(lit.value, str) and lit.value.strip()):
+                continue
+            v = lit.value
+            if _folded_call(other, "lower") and v != v.lower():
+                out.append((n.lineno, v, "lower", op))
+            elif _folded_call(other, "upper") and v != v.upper():
+                out.append((n.lineno, v, "upper", op))
+    return out
+
+
 def scan():
     trees = {rel: _parse(rel) for rel in sources()}
     trees = {k: v for k, v in trees.items() if v is not None}
@@ -153,7 +195,9 @@ def scan():
             total += 1
             if any(c.isupper() for c in lit):
                 bad.append((rel, line, tbl, lit))
-    return tables, consumers, bad, total
+    solo = [(rel, line, lit, meth, op)
+            for rel, t in trees.items() for line, lit, meth, op in oneoffs(t)]
+    return tables, consumers, bad, total, solo
 
 
 def selftest() -> int:
@@ -200,6 +244,28 @@ def selftest() -> int:
     if folded_tables(ast.parse("for k in TAB:\n    print(k)\n")):
         print("  selftest: a table with no case-folded comparison was discovered")
         fails += 1
+
+    # --- PASS 3 ARMS. \U0001f534 THE LIVE RUN OF PASS 3 FINDS NOTHING, WHICH IS THE
+    # EXPECTED ANSWER -- so nothing about a clean tree distinguishes a working
+    # pass from a pass that cannot see. Every arm below plants the shape.
+    P3 = [
+        ('if "Type mismatch" in t.lower(): pass\n', 1, "the plain shape"),
+        ('if "Type mismatch" not in t.lower(): pass\n', 1, "negated"),
+        ('if t.lower() == "Ok": pass\n', 1, "equality, literal on the RIGHT"),
+        ('if "abc" == t.upper(): pass\n', 1, "the .upper() mirror"),
+        ('if "type mismatch" in t.lower(): pass\n', 0,
+         "a lowercase literal against .lower() is CORRECT and must not fire"),
+        ('if "ABC" in t.upper(): pass\n', 0,
+         "an uppercase literal against .upper() is CORRECT"),
+        ('if "Type mismatch" in t: pass\n', 0, "no folding at all -- not in scope"),
+        ('if "Type mismatch" in t.lower(x): pass\n', 0,
+         "a .lower() that takes an argument is somebody else's method"),
+    ]
+    for src, want, why in P3:
+        got = len(oneoffs(ast.parse(src)))
+        if got != want:
+            print(f"  selftest: pass 3 -- {why}: want {want} finding(s), got {got}")
+            fails += 1
     print("  selftest: PASS" if not fails else f"  selftest: {fails} FAILURE(S)")
     return fails
 
@@ -207,7 +273,7 @@ def selftest() -> int:
 def main(argv):
     if "--selftest" in argv:
         return 2 if selftest() else 0
-    tables, consumers, bad, total = scan()
+    tables, consumers, bad, total, solo = scan()
     if len(tables) < MIN_TABLES:
         print(f"INSTRUMENT FAULT: discovered {len(tables)} case-folded needle "
               f"table(s); the floor is {MIN_TABLES}. The discovery pass broke -- "
@@ -219,20 +285,27 @@ def main(argv):
         print(f"  {name:14} consumed case-folded in "
               f"{', '.join(sorted(consumers[name]))}")
     if "--list" in argv:
-        for rel, line, tbl, lit in sorted(scan()[2]):
+        for rel, line, tbl, lit in sorted(bad):
             print(f"    {rel}:{line}  {tbl}  {lit!r}")
     print()
     for rel, line, tbl, lit in bad:
         print(f"🔴 {rel}:{line} writes {lit!r} into {tbl}, which is matched "
               f"against a `.lower()`-ed string -- it can NEVER match, and the "
               f"row reclassifies instead of going red.")
-    if bad:
-        print(f"\n{len(bad)} capitalised needle(s)")
+    for rel, line, lit, meth, op in solo:
+        print(f"🔴 {rel}:{line} compares {lit!r} ({op}) against an expression "
+              f"already `.{meth}()`-ed -- it can NEVER match, and the branch "
+              f"simply never runs.")
+    if bad or solo:
+        print(f"\n{len(bad)} capitalised needle(s), "
+              f"{len(solo)} one-off comparison(s) that can never match")
         return 1
-    print("clean -- every needle in a case-folded table is lowercase.")
-    print("⚠️ SCOPE: this checks needles in tables DISCOVERED as case-folded. A "
-          "one-off `'Foo' in x.lower()` comparison is a different shape; there "
-          "are 0 of those today, measured separately.")
+    print(f"clean -- every needle in a case-folded table is lowercase, and "
+          f"0 one-off comparison(s) can never match.")
+    print("⚠️ SCOPE: needles in tables DISCOVERED as case-folded (passes 1-2) "
+          "plus table-free literal-vs-`.lower()`/`.upper()` comparisons "
+          "(pass 3, added 2026-09-05 -- the filed \"0 today, measured "
+          "separately\" is now KEPT at 0 rather than re-measured by hand).")
     return 0
 
 
