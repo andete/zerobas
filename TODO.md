@@ -8960,11 +8960,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         is *"the cell at the low address PLUS whatever follows, NEVER free
         space"*, and `$E038` is `CURLINE` in that very map
         [[deffn-ramhunt-slice]].
-        ➡️ **NEXT STEP, and the ROM side is DONE**: find a genuinely free 2-byte
-        cell — walk `rammap_sweep.py`, then PROVE it with a
-        `ramfree_probe.py`-style fill-and-read-back, because a map is still a
-        reading — and re-plant. The 11 B fit (main page 1 15 → 4 B free on
-        2026-09-05) and the machine is healthy with `push hl` in place.
+        🟢 **CELL FOUND AND PROVEN, PLUMBING COMPLETE — AND THE CEILING VALUE
+        THIS ENTRY SPECIFIES IS THE THING THAT IS WRONG.** `$E058` (the head of
+        the retired `GOSUB_STK` window `sysvars.inc` marks `; FREE-RAM`) was
+        **measured** rather than trusted:
+        [`scratchpad/ramfree_e058.py`](scratchpad/ramfree_e058.py) fills
+        `$E058..$E07F` with `$AA`, works a line store, `GOSUB`/`RETURN` (this IS
+        the retired GOSUB stack), `FOR`/`NEXT`, string ops, `DEF FN` and `CLEAR`,
+        and reads **0 of 40 bytes changed**. With that cell the 11 B build is
+        healthy and `SL_CEIL` publishes **33419**, which is exactly
+        `min(HIMEM,TXTMAX) − POOLSIZE − MAXF×FCH_CTXSZ`. End to end, it works.
+        🔴 **AND `crf-oomsay` / `crf-oomlst` DO NOT MOVE.** PRGEND reads 32777, so
+        the new bound leaves **642 B** of program headroom where **both
+        references have 148** — and the filed pre-fix reading was **646**. The
+        whole fix moves the headroom by **four bytes**.
+        🎯 **SO THE DESIGN ABOVE IS REFUTED AT ITS CENTRAL CLAIM**: *"the bound
+        wanted is the VARIABLE-region ceiling … which is exactly
+        `strheap_varceil`"*. It is not. The reference reserves roughly **500 B
+        more** below HIMEM than `POOLSIZE + MAXF×FCH_CTXSZ` — the variable/array
+        area and the Z80 stack, which `strheap_varceil` does not model. That is
+        now a NUMBER to hit rather than a design to guess at.
+        ➡️ **WHAT IS LEFT IS THE VALUE, NOT THE PLUMBING.** The cell is proven,
+        the fetch site is right, the `push hl` and `IF CLEARPOOL` guards are
+        settled, and 11 B fits (main page 1 15 → 4 B free on 2026-09-05).
+        **Nothing is shipped**: swapping one wrong bound for another that is 4 B
+        closer changes behaviour no row pins and leaves `crf-oom*` DIFF either
+        way.
         💰 **THE 11 B ARE NOT SPENT** — the attempt was reverted and all four
         ROM digests re-read back to the values `make gates` had recorded for the
         preceding green battery (not quoted here: four 8-hex groups in a row are
