@@ -103,6 +103,15 @@ def call_new_prog(m):
 def call_store_line(m, lineno, token_bytes):
     """Store a line. BC=lineno, HL=TOKBUF_SCRATCH (pointing at token body)."""
     ptr = place_body(m, token_bytes)
+    # 🔴 D-TXTCEIL: `store_line` now bounds the store against `SL_CEIL`, a RAM
+    # cell that `dl_store` publishes on the real machine (from fch_ctx_addr(1) =
+    # strheap_varceil). These tests call `store_line` DIRECTLY, so they must
+    # supply it too -- without it the cell is 0 in this harness's zeroed RAM,
+    # every store is refused as OOM, and the abort funnel does `ld sp,(SAVSTK)`
+    # with SAVSTK=0 and runs away (msxtest.StackLost). The value is TXTMAX, which
+    # is exactly the CONSTANT the code compared against before, so these rows go
+    # on testing what they tested.
+    m.poke_w(m.sym["SL_CEIL"], m.sym["TXTMAX"])
     m.call("store_line", bc=lineno, hl=ptr)
 
 
@@ -111,6 +120,7 @@ def call_delete_line(m, lineno):
     # An empty body is just the $00 terminator; store_line detects (hl)==0
     # and jumps to sl_delete (program.asm:347 "empty body -> delete only").
     ptr = place_body(m, [])  # places [0x00] at TOKBUF_SCRATCH
+    m.poke_w(m.sym["SL_CEIL"], m.sym["TXTMAX"])   # see call_store_line above
     m.call("store_line", bc=lineno, hl=ptr)
 
 

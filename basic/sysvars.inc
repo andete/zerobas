@@ -3408,7 +3408,24 @@ GOSUB_FRAME     equ     8       ; [CURLINE:2][resume:2][prevGSP:2][prevFSP:2].
                                 ; GOSUB (docs/spec-basic-forret.md §4). Both are
                                 ; needed; neither is derivable from the other.
 TRAP_FRAME      equ     3       ; [prevTSP:2][idx:1] -- see TRAPSTK's retirement above
-; FREE-RAM $E058..$E080  the rest of the retired GOSUB_STK
+SL_CEIL         equ     $E058   ; store_line: the VARIABLE-region ceiling the
+                                ; store must stay below (2). D-TXTCEIL: written
+                                ; by dl_store from fch_ctx_addr(1) -- channel 1's
+                                ; block base IS strheap_varceil() -- and read by
+                                ; the lineedit tenant, which cannot reach the
+                                ; string-heap engine itself (a different sub-ROM
+                                ; page). Only meaningful when CLEARPOOL, the
+                                ; switch sh_chan_addr lives behind.
+                                ; 🔴 SITED HERE ONLY AFTER MEASURING. The first
+                                ; attempt took $E038 -- the delta after SL_TOK,
+                                ; with nothing grepping for it -- and $E038 is
+                                ; CURLINE. scratchpad/ramfree_e058.py fills
+                                ; $E058..$E07F with $AA, works a line store,
+                                ; GOSUB/RETURN (this IS the retired GOSUB stack),
+                                ; FOR/NEXT, string ops, DEF FN and CLEAR, and
+                                ; reads 0 of 40 bytes changed. A map is a reading;
+                                ; that is a measurement.
+; FREE-RAM $E05A..$E080  the rest of the retired GOSUB_STK
 ; FREE-RAM $E080..$E0B8  the pre-D-FORVAR FOR stack, free since it relocated
 ; FREE-RAM $EA3A..$EA92  the retired FOR_STK (88 B), same arc
 FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY as

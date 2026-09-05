@@ -1,0 +1,10 @@
+
+side      TXTTAB   PRGEND    HIMEM   POOL  floor=H-P  headroom   verdict
+zb         32769    33694    33769    300      33469      -225   🔴 STORED 225 B PAST THE FLOOR
+
+🎯 `PRGEND <= HIMEM - POOLSIZE` is a SELF-CONSISTENCY invariant about ZEROBAS's
+   own map: it needs no oracle, and it holds whatever a machine reserves per
+   file channel — which is exactly what `crf-oom*` cannot say (D-HIMEMRES:
+   267 B/channel there vs 50 here). 25 lines x ~36 B are typed to cross a
+   floor 700 B above the text base.
+refcache: 0 hit, 1 miss, 1 stored

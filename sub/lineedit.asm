@@ -166,7 +166,17 @@ le_store:
                 ; bounds: PRGEND + size must stay below TXTMAX
                 ld      hl,(PRGEND)
                 add     hl,bc
-                ld      de,TXTMAX
+    IF CLEARPOOL
+                ld      de,(SL_CEIL)        ; D-TXTCEIL: the LIVE variable-region
+                                            ; ceiling, published by dl_store --
+                                            ; not the constant, so `CLEAR n,himem`
+                                            ; reaches this check at last.
+    ELSE
+                ld      de,TXTMAX           ; CLEARPOOL=0 has no sh_chan_addr, so
+                                            ; SL_CEIL is never written: that build
+                                            ; keeps the old constant bound rather
+                                            ; than reading an unwritten cell.
+    ENDIF
                 or      a
                 sbc     hl,de                   ; (PRGEND+size) - TXTMAX
                 jr      nc,le_oom               ; >= TXTMAX -> out of memory

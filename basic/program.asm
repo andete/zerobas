@@ -45,7 +45,10 @@ dl_cmd:
                                             ; dl_run out of relative range.
                 ld      de,new_kw
                 call    is_cmd
-                jr      c,dl_new
+                jp      c,dl_new            ; ⚠️ `jp`, not `jr`: D-TXTCEIL's bytes
+                                            ; at dl_lnok pushed dl_new out of
+                                            ; relative range -- the same thing the
+                                            ; two comments above record for dl_run.
                 ; direct mode: crunch the whole line and execute it now
                 ld      hl,LINEBUF
                 ld      de,TOKBUF
@@ -117,6 +120,49 @@ dl_store:
                                             ; The reference cannot trap it either.
 dl_lnok:
                 push    bc                  ; guard line number across tokenise
+    IF CLEARPOOL
+                ; D-TXTCEIL: publish the VARIABLE-region ceiling for the lineedit
+                ; tenant, which bounds the store. It compared against the CONSTANT
+                ; TXTMAX ($DB00), so `CLEAR n,himem` never reached it and the
+                ; program grew PAST HIMEM into the string and variable area --
+                ; silent corruption, pinned by scratchpad/prgend_overrun.py at
+                ; 225 B past the pool floor on a `CLEAR 300,TXTTAB+1000` fixture.
+                ;
+                ; CHANNEL 1'S BLOCK BASE **IS** strheap_varceil(): min(HIMEM,
+                ; TXTMAX) - POOLSIZE - MAXF*FCH_CTXSZ is exactly what
+                ; fch_ctx_addr(1) returns, DERIVED on every call rather than
+                ; stored, so `CLEAR ,himem` falls out and no new sub-ROM op is
+                ; needed.
+                ;
+                ; 🔴 THE `push hl` IS NOT OPTIONAL AND ITS ABSENCE COST A WHOLE
+                ; BUILD-AND-REVERT CYCLE. HL here is tokenise's SOURCE CURSOR
+                ; (parse_lineno left it at the body) and fch_ctx_addr RETURNS in
+                ; HL -- its header lists "Clobbers A, BC, DE, IX" and does not
+                ; mention HL precisely BECAUSE HL is the result, so a reader
+                ; checking the clobber list sees nothing wrong. Without the save,
+                ; `10 PRINT"HI"` echoed and the machine stopped.
+                ; ⚠️ BC is already saved by the push above, which is why the
+                ; fetch is HERE and not beside `jp store_line`, where BC is the
+                ; line number and fch_ctx_addr would eat it.
+                ; ⚠️ THE IX CONTRACT fch_ctx_addr's header demands of every NEW
+                ; caller is satisfied by argument, not by a guard: store_line
+                ; reaches the tenant through le_call_op, which does `ld ix,
+                ; SUBROM_ENTRY_BASE_P1 + ...` itself and never reads an inherited
+                ; IX.
+                ; ⚠️ THIS DOES NOT MAKE `crf-oom*` AGREE AND IS NOT MEANT TO.
+                ; D-HIMEMRES measured the references reserving 293 + 267*MAXFILES
+                ; below HIMEM against 12 + 50*MAXFILES here, because D-FCH's block
+                ; is "state ONLY (no buffer)". Those rows compare FRE(0) across
+                ; that architectural difference; this fix is about not writing
+                ; past HIMEM at all.
+                ; 🔴 GUARDED, because `make switch-build-check` BUILDS CLEARPOOL=0
+                ; on every run and sh_chan_addr does not exist there.
+                push    hl                  ; tokenise's source cursor
+                ld      a,1
+                call    fch_ctx_addr        ; HL = strheap_varceil()
+                ld      (SL_CEIL),hl
+                pop     hl
+    ENDIF
                 ld      de,TOKBUF
                 call    tokenise            ; crunch the remainder of the line
                 ld      a,(TKOVF)

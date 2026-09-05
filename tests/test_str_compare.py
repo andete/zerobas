@@ -284,6 +284,15 @@ def run():
             mm.poke(SRC, body.encode("ascii") + b"\x00")
             mm.mem[TOKBUF:TOKBUF + 192] = b"\x00" * 192
             mm.call("tokenise", hl=SRC, de=TOKBUF)
+    # 🔴 D-TXTCEIL: `store_line` now bounds the store against `SL_CEIL`, a RAM
+    # cell that `dl_store` publishes on the real machine (from fch_ctx_addr(1) =
+    # strheap_varceil). These tests call `store_line` DIRECTLY, so they must
+    # supply it too -- without it the cell is 0 in this harness's zeroed RAM,
+    # every store is refused as OOM, and the abort funnel does `ld sp,(SAVSTK)`
+    # with SAVSTK=0 and runs away (msxtest.StackLost). The value is TXTMAX, which
+    # is exactly the CONSTANT the code compared against before, so these rows go
+    # on testing what they tested.
+            mm.poke_w(mm.sym["SL_CEIL"], mm.sym["TXTMAX"])
             mm.call("store_line", bc=lineno, hl=TOKBUF)
         mm.call("run_prog")
         return mm, bytes(out)

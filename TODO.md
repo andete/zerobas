@@ -9007,11 +9007,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         references**, which would mean reserving 267 B per channel for buffers
         that do not exist here. That is a faithfulness call about a measured
         architectural difference, not a bug.
-        ➡️ **NEXT: build the row that pins the REAL defect** — after
-        `CLEAR p,TXTTAB+gap`, store lines until refusal and assert zerobas
-        refuses BEFORE PRGEND passes HIMEM−pool. `crf-oom*` cannot pin it (they
-        compare against the reference's larger reserve), which is why the fix has
-        no green row today and is not shipped on this pass.
+        🟢 **THE ROW EXISTS AND THE FIX SHIPPED (2026-09-05, D-TXTCEIL)**
+        ([`scratchpad/prgend_overrun.py`](scratchpad/prgend_overrun.py)). After
+        `CLEAR 300,TXTTAB+1000`, 25 typed `REM` lines cross a pool floor 700 B
+        above the text base:
+
+            PRGEND   floor = HIMEM−POOLSIZE   headroom
+            before   33694        33469         −225   🔴 stored PAST the floor
+            after    33398        33469          +71   🟢
+
+        🎯 **`PRGEND <= HIMEM − POOLSIZE` NEEDS NO ORACLE.** It is a claim about
+        zerobas's own map and holds whatever a machine reserves per file channel
+        — which is exactly what `crf-oom*` cannot say, and why those rows were
+        the wrong instrument for this defect all along.
+        🔴 **TWO INSTRUMENT FAULTS ON THE WAY, BOTH CAUGHT BY THEIR OWN
+        CONTROLS.** Round 1 ran the row on ALL THREE machines and printed the
+        references' numbers as readings — `PRGEND` and `POOLSIZE` are zerobas
+        sysvars, so on a VG-8020 they are unrelated bytes, and it duly reported
+        one reference green and the other *"stored 74119 B past the floor"*. And
+        round 1 reported **zerobas green on a fixture that never took**:
+        `CLEAR 300,TXTTAB+400` is refused and leaves HIMEM at its default, so the
+        verdict was about a machine never set up. `c.clear` now asserts
+        `HIMEM == TXTTAB+GAP` and refuses the run otherwise.
+        🔧 **`unit-test` WENT RED FOR A GOOD REASON.** Four test files call
+        `store_line` DIRECTLY, so `SL_CEIL` was 0 in the harness's zeroed RAM,
+        every store was refused as OOM, and the abort funnel's `ld sp,(SAVSTK)`
+        ran away (`msxtest.StackLost`). Fixed in the TESTS, as the harness message
+        says: each site publishes `TXTMAX` — the constant the code compared
+        against before — so those rows go on testing what they tested. ⚠️ Which
+        means **the unit rows still do not cover the live ceiling**; the emulator
+        row above is what does.
+        ⚠️ **STILL OPEN, and it is why this item is not closed**: the row is a
+        scratchpad probe, not a collected gate unit. Wiring it in needs a 25-line
+        fixture and a PEEK-triple readout that `lnblank`'s row shapes do not have.
+        🙋 And the `FRE(0)`-agreement question above stays his.
         ➡️ **WHAT IS LEFT IS THE VALUE, NOT THE PLUMBING.** The cell is proven,
         the fetch site is right, the `push hl` and `IF CLEARPOOL` guards are
         settled, and 11 B fits (main page 1 15 → 4 B free on 2026-09-05).
