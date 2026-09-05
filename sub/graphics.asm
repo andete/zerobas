@@ -2411,18 +2411,19 @@ gprd_g2:
 ; extend_lr needs the looser passable test to keep walking into newly-opened
 ; territory beyond it). Clobbers everything.
 ; ---------------------------------------------------------------------------
+; 🎯 D-NTFLOOD STEP 1 (2026-09-05): `inside` IS `passable` PLUS THE "ALREADY C"
+; STOP, and it now says so instead of open-coding the same border test a second
+; time. `passable` = (background OR colour != B); `inside` = passable AND
+; colour != C -- read off the two bodies that stood here, which were identical
+; up to that one extra pair. 26 B -> 11 B, and the DRAWN==B test now exists in
+; exactly ONE place, which is what makes the R-FLOOD change below a one-site
+; edit rather than two edits that must agree.
+; ⚠️ `gfx_paint_passable` leaves B = the pixel's colour and never touches it
+; again, which is what lets the `already C` test here run without re-reading
+; VRAM -- the VDP traffic is unchanged, one gfx_paint_read per call as before.
 gfx_paint_inside:
-                ld      a,(GFX_PTESTY)
-                ld      d,a
-                ld      a,(GFX_PTESTX)
-                ld      e,a
-                call    gfx_paint_read      ; A = colour; Zf=1 iff bit clear (background)
-                ld      b,a                 ; B = colour (LD doesn't touch flags)
-                jr      z,gpi_bg            ; background -> B can never block it (skip)
-                ld      a,(GFX_B)
-                cp      b
-                ret     z                   ; drawn AND == B -> CF=0 (border, not inside)
-gpi_bg:
+                call    gfx_paint_passable  ; CF=0 iff a DRAWN==B border; B = colour
+                ret     nc
                 ld      a,(GFX_C)
                 cp      b
                 ret     z                   ; == C already -> CF=0 (own-design stop)
@@ -2456,7 +2457,41 @@ gfx_paint_passable:
                 call    gfx_paint_read      ; A = colour; Zf=1 iff bit clear (background)
                 ld      b,a                 ; B = colour (LD doesn't touch flags)
                 jr      z,gpsb_ok           ; background -> always passable
+                ; 🎯 D-NTFLOOD STEP 2: A DRAWN PIXEL IS A BORDER ONLY WHEN C == B.
+                ; R-FLOOD, measured by D-NTSEP (scratchpad/ntwall_sep.py): with
+                ; C != B BOTH references fill past EVERY wall, in both
+                ; arrangements, including a wall whose colour is neither B nor C
+                ; -- so it is not a rule about which colour counts as a border,
+                ; it is no bounding at all. The rival R-BONLY ("only B-coloured
+                ; pixels stop bounding") is refuted by the same two rows.
+                ; ⚠️ Every fixture in ntwall_probe.py draws its wall in B's own
+                ; colour, so those 19 rows cannot separate the two rules -- the
+                ; separator had to be a SECOND wall in a THIRD colour
+                ; [[two-rules-that-coincide-on-every-row-you-have]].
+                ; With C != B the only remaining stop is gfx_paint_inside's
+                ; "already C", which is exactly the termination argument this
+                ; file's own gfx_paint_inside header already relies on.
+                ; 🔴 AND IT IS SCREEN-2 ONLY. R-FLOOD was measured in SCREEN 2 and
+                ; the first cut applied it to MULTICOLOUR too, where the
+                ; references DO bound: `graphics-acceptance` went red on FOUR
+                ; MC rows at once -- `mc_border_stops` ref=[9,4] against
+                ; zb=[9,9], plus mc_notch_one_cell / mc_box_bounded /
+                ; mc_bg_border_walk. The two SCREEN-2 pins stayed green
+                ; throughout, so the battery separated the modes for me. This is
+                ; the same mode split `gfx_paint_read` already carries, and for
+                ; the same reason: in MC a cell IS its colour, so the whole
+                ; drawn/undrawn distinction R-FLOOD lives inside does not exist.
+                call    gfx_is_mc           ; Zf=1 iff multicolour (clobbers A only)
+                jr      z,gpsb_btest        ; MC -> the plain DRAWN==B border test
+                ld      a,(GFX_C)
+                ld      hl,GFX_B
+                cp      (hl)                ; C == B ?
+                ld      a,(hl)              ; A = B; `ld` leaves the flags alone
+                jr      nz,gpsb_ok          ; C != B -> nothing bounds this walk
+                jr      gpsb_cmp            ; A is already B
+gpsb_btest:
                 ld      a,(GFX_B)
+gpsb_cmp:
                 cp      b
                 ret     z                   ; drawn AND == B -> CF=0 (border, blocked)
 gpsb_ok:

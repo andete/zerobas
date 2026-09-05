@@ -485,7 +485,7 @@ def zbres(m, x0, y0, x1, y1):
 def py_paint_flood(screen, w, h, seed, C, B):
     """Own-design oracle mirroring gfx_paint_inside's own rule EXACTLY: 4-
     connected flood from seed, painting C, stopping a walk at a pixel whose
-    colour is already B OR already C (see sub/graphics.asm gfx_paint_op's
+    colour is already C -- and, ONLY WHEN C == B, also at one whose colour is B (see sub/graphics.asm gfx_paint_op's
     header for why "already C" is needed, not just "!=B" -- the teeth test
     below). BIT-AWARE (matches the gfx_paint_read/gfx_paint_inside VG-8020
     bug fix, sub/graphics.asm): a pixel not present in `screen` is UNDRAWN
@@ -500,6 +500,18 @@ def py_paint_flood(screen, w, h, seed, C, B):
             return False
         if (x, y) in screen:
             colour = screen[(x, y)]
+            # 🔴 D-NTFLOOD: A DRAWN PIXEL BOUNDS ONLY WHEN C == B, in SCREEN 2.
+            # R-FLOOD, measured on BOTH references by D-NTSEP: with C != B the
+            # reference walk does not bound at all -- it fills past every wall,
+            # in both arrangements, including one whose colour is neither B nor
+            # C. The rival "only B-coloured pixels stop bounding" is refuted by
+            # the same rows. Written from the RULE, not from the Z80: the
+            # emulator-side rows (ntwall_sep / ntwall_probe / graphics-
+            # acceptance) are what validate against the references, and this
+            # oracle's job is to be an INDEPENDENT expression of the same
+            # sentence so the two can disagree.
+            if C != B:
+                return colour != C
             return colour != B and colour != C
         return C != 0               # background (bit clear) -- B can't block it
     sx, sy = seed
@@ -1127,21 +1139,39 @@ def run():
     # gfx_paint_passable: CF=1 iff NOT (drawn AND ==B) -- an already-C pixel
     # (drawn or background) IS passable here, unlike gfx_paint_inside (own
     # header: extend_lr's walk must cross an "eaten" pixel, not stop at it).
-    for b, colour, bit_set, want in [
-        (5, 5, True,  False),   # drawn, == B -> blocked
-        (5, 3, True,  True),    # drawn, != B -> passable
-        (5, 5, False, True),    # BUG FIX: background whose bg-nibble==B is
-                                # still passable (never a real border)
-        (5, 3, False, True),    # background, != B anyway -> passable
+    # 🔴 D-NTFLOOD: THIS TABLE NOW HAS A C COLUMN AND A SCREEN-MODE COLUMN,
+    # because `passable` depends on both. Its first cut poked only GFX_B and
+    # left C at whatever the previous loop had stored -- so the row it most
+    # needed to pin (`drawn, == B -> blocked`) was being answered under an
+    # ACCIDENTAL C, and the fix turned it red rather than the test catching the
+    # fix. Both regimes and both modes are spelled out here:
+    #   SCREEN 2, C == B  -> bounded, the classic rule
+    #   SCREEN 2, C != B  -> R-FLOOD: a drawn ==B pixel does NOT block
+    #   SCREEN 3 (MC)     -> the references DO bound whatever C is
+    for b, c, scrmod, colour, bit_set, want in [
+        (5, 5, 2, 5, True,  False),  # SCREEN 2, C == B: drawn ==B -> blocked
+        (5, 5, 2, 3, True,  True),   # SCREEN 2, C == B: drawn !=B -> passable
+        (5, 7, 2, 5, True,  True),   # 🎯 SCREEN 2, C != B: nothing bounds it
+        (5, 7, 2, 3, True,  True),   # SCREEN 2, C != B: passable anyway
+        (5, 5, 2, 5, False, True),   # background whose bg-nibble==B: never a border
+        (5, 7, 2, 5, False, True),   # background, C != B: passable
+        (5, 7, 3, 5, True,  False),  # 🔴 MULTICOLOUR: a drawn ==B cell BLOCKS
+                                     #    even with C != B -- four graphics-
+                                     #    acceptance rows say so (mc_border_stops
+                                     #    ref=[9,4]) and the first cut of the fix
+                                     #    reddened all four at once
+        (5, 7, 3, 3, True,  True),   # MC, != B -> passable
     ]:
         m.trap("gfx_paint_read", lambda mm, c=colour, s=bit_set: trap_paint_read(mm, c, s))
         m.poke(m.addr("GFX_B"), b)
+        m.poke(m.addr("GFX_C"), c)
+        m.poke(m.addr("SCRMOD"), scrmod)
         m.poke(m.addr("GFX_PTESTX"), 10)
         m.poke(m.addr("GFX_PTESTY"), 10)
         cpu = m.call("gfx_paint_passable")
         check(carry(cpu) == want,
-              f"gfx_paint_passable B={b} colour={colour} bit_set={bit_set} "
-              f"-> {carry(cpu)} want {want}")
+              f"gfx_paint_passable B={b} C={c} SCREEN {scrmod} colour={colour} "
+              f"bit_set={bit_set} -> {carry(cpu)} want {want}")
 
     # --- G5 PAINT -- whole-algorithm span-fill vs the Python oracle ---------
     # Case A: bounded box, C==B -- fill self-limits to the interior (spec's
@@ -1168,20 +1198,49 @@ def run():
     # gfx_paint_extend_lr's header, sub/graphics.asm -- else the fill stalls
     # at the notch and never reaches the far chamber. Kept as a regression
     # case, not just a shape exercise.)
+    # 🔴 RE-CAST TO C == B BY D-NTFLOOD, AND THE RE-CAST IS THE POINT. This
+    # case was written with C=9 B=2 and its value is the NOTCH-WRAPPING
+    # regression named above -- but with C != B the reference does not bound at
+    # all, so under R-FLOOD the fill covers the whole domain and the notch
+    # stops discriminating anything. Moving it to C == B keeps it BOUNDED and
+    # keeps exactly the property it was written to protect. The C != B regime
+    # gets its own case below rather than silently inheriting this one's name.
     walls_b = rect_ring(2, 2, 25, 20)
     for y in range(2, 12):
         walls_b.add((14, y))
     screen_asm_b = {p: 2 for p in walls_b}
     screen_py_b = dict(screen_asm_b)
     seed_b = (5, 5)
-    ovf_b = run_asm_paint(m, screen_asm_b, seed_b, C=9, B=2)
-    want_b = py_paint_flood(screen_py_b, W, H, seed_b, C=9, B=2)
-    got_b = {p for p, c in screen_asm_b.items() if c == 9}
+    ovf_b = run_asm_paint(m, screen_asm_b, seed_b, C=2, B=2)
+    want_b = py_paint_flood(screen_py_b, W, H, seed_b, C=2, B=2)
+    got_b = {p for p, c in screen_asm_b.items() if c == 2 and p not in walls_b}
     check(ovf_b == 0 and got_b == want_b,
-          f"G5 concave L-room C!=B: matches oracle ({len(got_b)} pts)"
+          f"G5 concave L-room C==B: matches oracle ({len(got_b)} pts)"
           + ("" if got_b == want_b else f"  DIFF {sorted(got_b ^ want_b)[:8]}"))
     check(any(x > 14 for x, y in got_b),
           "G5 concave room: fill wraps around the notch into the far chamber")
+    check(not any(x < 2 or x > 25 or y < 2 or y > 20 for x, y in got_b),
+          "G5 concave room C==B: the ring still bounds it (anti-overshoot pin)")
+
+    # Case B2: the SAME room with C != B -- R-FLOOD. The fill must LEAVE the
+    # ring entirely, which is the whole divergence D-NTFLOOD fixes, and the
+    # anti-overshoot pin above is what stops this pair being satisfied by
+    # "paint everything always".
+    screen_asm_b2 = {p: 2 for p in walls_b}
+    screen_py_b2 = dict(screen_asm_b2)
+    ovf_b2 = run_asm_paint(m, screen_asm_b2, seed_b, C=9, B=2)
+    # ⚠️ THE FULL DOMAIN, NOT W x H. `run_asm_paint` always drives the real
+    # gfx_paint_op over 256x192; case B could use the 40x30 window only because
+    # the ring bounded the fill well inside it. Under R-FLOOD it does not, and
+    # the first run of this case reported a 49152-point DIFF that was entirely
+    # the oracle stopping at y=30 -- an instrument bound read as a machine one.
+    want_b2 = py_paint_flood(screen_py_b2, 256, 192, seed_b, C=9, B=2)
+    got_b2 = {p for p, c in screen_asm_b2.items() if c == 9}
+    check(ovf_b2 == 0 and got_b2 == want_b2,
+          f"G5 concave L-room C!=B: R-FLOOD, matches oracle ({len(got_b2)} pts)"
+          + ("" if got_b2 == want_b2 else f"  DIFF {sorted(got_b2 ^ want_b2)[:8]}"))
+    check(any(x < 2 or x > 25 or y < 2 or y > 20 for x, y in got_b2),
+          "G5 concave room C!=B: the fill escapes the ring (the R-FLOOD row)")
 
     # Case C: seed at the screen corner (0,0) -- exercises the hardcoded
     # x=0/y=0 screen-edge stops against the REAL full domain (0..255x0..191);

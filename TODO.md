@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9327 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9374 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -502,7 +502,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2253 (T-6FE392)8 (T-529ABE)` from `TODO.md:8530 (T-529ABE)`: a
+      `TODO.md:2253 (T-6FE392)8 (T-529ABE)` from `TODO.md:8577 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2891,7 +2891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8530 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8577 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6236,7 +6236,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DISPOSITION. Fixed there with an arm.
       ~~🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).~~
 
-- [ ] 🔴 **A SCREEN-2 `PAINT` WITH `C != B` FLOODS THE ENTIRE SCREEN ON THE
+- [x] ✅ **A SCREEN-2 `PAINT` WITH `C != B` FLOODS THE ENTIRE SCREEN ON THE
       REFERENCES WHATEVER IS DRAWN, AND HERE ONLY WHEN A BORDER PIXEL SHARES A
       COLOUR GROUP WITH A REACHABLE PIXEL.** ⚠️ **RETRACTS AND REPLACES** the
       item filed 2026-08-22 by D-PAINTMC §7 as *"a `,B` wall sharing a colour
@@ -6327,13 +6327,60 @@ list. **When a slice lands, grep this list for what it just shipped.**
       everywhere and is what caught it
       [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. It stays in the
       probe for that reason.
-      ⚠️ **THE PRICE IS STILL NOT SETTLED** — matching R-FLOOD still means
+      ⚠️ ~~**THE PRICE IS STILL NOT SETTLED** — matching R-FLOOD still means
       changing what a filled span writes, which is `gfx_plot_cur`'s contract,
-      shared with PSET/LINE/CIRCLE/DRAW. What this closes is the DESIGN QUESTION
-      in front of that, not the design.
+      shared with PSET/LINE/CIRCLE/DRAW.~~ **IT DOES NOT: R-FLOOD IS A RULE ABOUT
+      THE WALK, AND THE WALK IS SOMEWHERE ELSE ENTIRELY.**
+      ✅ **LANDED 2026-09-05 (D-NTFLOOD). `ntwall_probe.py` reads 19/19 agreeing
+      (was 6 DIFF), `ntwall_sep.py` 4/4, `graphics-acceptance: PASS`, battery
+      114/114.**
+      🎯 **THE SCOPING ABOVE WAS THE THING BLOCKING THIS, AND IT WAS WRONG.**
+      `gfx_paint_inside` / `gfx_paint_passable` live in
+      [`sub/graphics.asm`](sub/graphics.asm) — the sub page-0 island, ~1350 B
+      free — not in main page 1, which is at **0 B free (2026-09-05)**. No
+      write-side code was touched at all.
+      📏 **TWO STEPS, THE FIRST DELIBERATELY BEHAVIOUR-FREE.** `gfx_paint_inside`
+      IS `gfx_paint_passable` plus the *"already C"* stop — the two bodies were
+      identical up to that one pair — so it now says so: **26 B → 11 B**, and the
+      DRAWN==B test exists in exactly ONE place, which is what made step 2 a
+      one-site edit. Verified before any behaviour changed: `graphics-acceptance:
+      PASS` and `ntwall_sep` reading the documented pre-fix values EXACTLY. Step
+      2 then gates that test on `C == B`. Net **2 B of sub page 0**; the refactor
+      paid for the arm.
+      🔴 **AND R-FLOOD IS SCREEN-2 ONLY — THE PINS CAUGHT ME.** The first cut
+      applied it in MULTICOLOUR too and `graphics-acceptance` went red on FOUR MC
+      rows at once (`mc_border_stops` ref=`[9,4]` vs zb=`[9,9]`, plus
+      `mc_notch_one_cell` / `mc_box_bounded` / `mc_bg_border_walk`) while both
+      SCREEN-2 pins stayed green — the battery separated the modes. It uses the
+      same `gfx_is_mc` split `gfx_paint_read` already carries, for the same
+      reason: in MC a cell IS its colour, so the drawn/undrawn distinction
+      R-FLOOD lives inside does not exist.
+      📏 **AND THE WRITE-SHAPE ROWS AGREE NOW TOO, WITH NO WRITE-SIDE CHANGE.**
+      `vp.solid` reads `0 / 9(fg0,bg9)` on all three — byte-identical — where
+      this entry recorded `$FF`/`$94` here against `0`/`$09` there. ⚠️ **THE
+      MECHANISM IS NOT ESTABLISHED**: a plausible reading is that the clash rule
+      already writes *"background = c"* for a FULLY COVERED group (this entry
+      says so for `,BF`) and R-FLOOD now covers whole groups where it used to
+      stop — but that is one observation, and this entry has been wrong about a
+      mechanism before [[a-mechanism-inferred-from-one-observation]]. What is
+      MEASURED is that every `vp.*` row agrees.
+      🔬 **TWO HOST TESTS ENCODED THE SUPERSEDED RULE, AND ONE HAD TO BE
+      RE-CAST RATHER THAN RE-POINTED.** `gfx_paint_passable`'s unit table poked
+      `GFX_B` and never `GFX_C`, so the row it most needed to pin was answered
+      under whatever C the PREVIOUS loop had left in RAM; it has explicit C and
+      screen-mode columns now, covering all three regimes. The `G5 concave
+      L-room` oracle case was written with `C=9 B=2` and its real value is the
+      NOTCH-WRAPPING regression it names — under R-FLOOD the fill covers
+      everything and the notch discriminates nothing, so it moves to `C == B`
+      (bounded, property preserved, plus an anti-overshoot pin) and the `C != B`
+      regime gets its OWN case asserting the fill ESCAPES the ring. ⚠️ That new
+      case first reported a 49152-point DIFF that was **entirely the oracle
+      stopping at y=30** — `run_asm_paint` always drives the real routine over
+      256×192 — an instrument bound read as a machine one.
       🟢 Two rows SHIP GREEN as pins against a fix that overshoots
-      (`plain_wall_cb_bounded`, `bf_wall_not_a_border`, PHASE H).
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      (`plain_wall_cb_bounded`, `bf_wall_not_a_border`, PHASE H) — both still
+      green after the fix, which is what makes "more filling" falsifiable.
+      ~~🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).~~
 
 - [x] ⚠️ **A KNIFE RUNNER STILL HAS NO SHARED WAY TO SCOPE A CUT TO ONE
       ✅ **CLOSED 2026-09-05 — the helper exists, is SHARED, and the "where should
@@ -9339,7 +9386,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       does not degrade a run, it kills it. Recorded in
       [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
       §5 so the skip is a decision and not an omission.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      🔴 **RE-MARKED 🙋 2026-09-05 — THIS WAS A MISFILED 🤖, AND THE ENTRY SAYS SO
+      IN ITS OWN WORDS**: *"Filed for the judgement call — bug-for-bug fidelity
+      here costs a working feature — not for a fix."* A judgement call about
+      whether to trade a working `LOAD"CAS:"` for reference fidelity is Joost's,
+      not something a reference or a gate can settle, and the faithful behaviour
+      is a HANG that no row can carry. Misfiling toward 🤖 is the expensive
+      direction, which is why ties go to 🙋.
+      🙋 NEEDS-JOOST — bug-for-bug fidelity here costs a working feature; that trade is his call.
 
 - [ ] 🔴 **A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM.**
       Found 2026-08-03 by D-DOTGAPS (§4.2/§6 D4). After
