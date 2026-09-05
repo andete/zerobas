@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9261 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9268 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2225 (T-6FE392)8 (T-529ABE)` from `TODO.md:8464 (T-529ABE)`: a
+      `TODO.md:2225 (T-6FE392)8 (T-529ABE)` from `TODO.md:8471 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2863,7 +2863,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8464 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8471 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6171,7 +6171,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `scratchpad/jr_mapper.py`; both of those figures rot.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] ⚠️ **`a.spr` IS BLIND TO A CUT THAT STOPS THE SPRITE SIZE BEING APPLIED.**
+- [x] ✅ **`a.spr` IS BLIND TO A CUT THAT STOPS THE SPRITE SIZE BEING APPLIED.**
       Filed 2026-08-10 by D-SCRERR ([`docs/spec-basic-screenerr.md`](docs/spec-basic-screenerr.md)
       §9), found by knife K-SE5, which reddened `a.sprslot1` and left `a.spr`
       untouched. `SCREEN 1,3` reads only the ERROR CODE, and a size that is
@@ -6199,7 +6199,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **Still not a reason to change `a.spr`**, and this run is the evidence
       for that rather than an argument: the blindness is real, bounded, and
       covered by a row built for it.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **CHECKBOX CLOSED 2026-09-05 (D-CLOSESWEEP2).** The disposition was
+      settled the moment the re-verification ran and nothing is owed — the entry
+      says so in its own last sentence. It stayed `- [ ]` because
+      `scratchpad/closesweep.py` could not see it: the sentence above,
+      *"**Still** **not** a reason to change"*, matched the tool's residual
+      vocabulary, which read `STILL NOT` as an open-work token. It is a
+      DISPOSITION. Fixed there with an arm.
+      ~~🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).~~
 
 - [ ] 🔴 **A SCREEN-2 `PAINT` WITH `C != B` FLOODS THE ENTIRE SCREEN ON THE
       REFERENCES WHATEVER IS DRAWN, AND HERE ONLY WHEN A BORDER PIXEL SHARES A
@@ -10214,7 +10221,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         independent blockers; this one needs a PRINTER change, not a key.
       🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).
 
-- [ ] ⚠️ **AN INDIRECT REACHER CANNOT BE ENUMERATED BY NAMING THE CALLEE.**
+- [x] ✅ **AN INDIRECT REACHER CANNOT BE ENUMERATED BY NAMING THE CALLEE.**
       Filed 2026-08-02 by D-MSGMIGRATE §9, whose blast-radius sweep grepped for
       `jp|call|jr .*print_msg` and therefore missed a FOURTH reacher:
       `dispatch_line`'s line-number-out-of-range arm arrives by
@@ -10250,7 +10257,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ `@prologue:` nodes are filtered: they are the dead-code graph's own
       per-file artefact, not routines anyone can name or migrate, and counting
       them would pad the answer with things that are not callers.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **CHECKBOX CLOSED 2026-09-05 (D-CLOSESWEEP2).** The entry asked for a
+      tool (*"Worth a tool: resolve fall-through and shared-tail edges…"*); the
+      tool exists, its selftest is this entry's own case, and `selftest-check`
+      collects it. Deliberately not a gate, which is a disposition and not a
+      residual — 64 legitimate silent reachers for one callee.
+      ~~🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).~~
 
 - [x] ⚠️ **A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A CLASSIFIER
       ✅ **CLOSED 2026-09-05.** Both halves are gated: `make needle-case-check` passes 1-2 (tables discovered as case-folded) and pass 3 (the table-free one-off), 8 arms, two of which go green under the old loose rule. Nothing outstanding.
