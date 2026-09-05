@@ -117,6 +117,26 @@ TM = "(Q$<5)"
 
 CLS = "CLS:"
 
+# 🔬 `WIDTH`'s OWN DOMAIN IS 1..40, AND `WIDTH 0` IS ITSELF ERR 5 — measured
+# 2026-09-05 on the VG-8020 and zerobas (`WIDTH 0` and `WIDTH 41` raise 5;
+# `WIDTH 1` and `WIDTH 40` do not). Every FP* constant above is `0*(<faulting
+# expr>)`, so a row's argument is 0 whenever its fault does not fire, which means
+# the reader verb can raise the very code the pending cell delivers.
+#
+# 🔴 THAT LOOKED LIKE THE EXPLANATION OF K-PE1'S FOUR UNEXPLAINED ROWS (TODO,
+# D-PENDERR §9.1) AND IT IS NOT. Tested, twice, and refuted both times:
+#   * cut `penderr_set`'s store outright — `n.dz.w` reads 0, NOT 5. `WIDTH 0`'s
+#     own ERR 5 is recorded through the SAME cell, so a cut that silences the
+#     cell silences the collision too.
+#   * cut ONLY `evmc_sqr_err`'s writer — `o.nn.5dz` reads 11 and `n.5.w` reads 0,
+#     IDENTICALLY with and without a leading `1+` on every row. The rows detect a
+#     per-writer defect on their own.
+# So the collision is real as a fact about WIDTH and cannot mask a pending-cell
+# defect. A `1+` prefix was drafted to remove it and REVERTED: it changed no
+# reading in either cut, and it lengthened the typed line enough to provoke
+# mis-echoes. K-PE1's four rows remain unexplained — one plausible hypothesis is
+# now eliminated with evidence rather than left in the candidate list.
+
 # (label, kind, statement)   kind: "t" trapped / "u" untrapped
 CASES = [
     # === o.nn.* NUMERIC vs NUMERIC — the generalisation D-TMFP did not make ==

@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:7988 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8017 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7191 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7220 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7191 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7220 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5650,6 +5650,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       but only when another operand follows. This is a property of a CUT tree, so
       it does not bear on shipped correctness; it is filed because an unexplained
       knife result is a gap in the model of the error surface, not a curiosity.
+      🔬 **ONE HYPOTHESIS ELIMINATED WITH EVIDENCE, 2026-09-05 — STILL OPEN.**
+      `WIDTH`'s own domain is **1..40, and `WIDTH 0` is itself ERR 5** — measured
+      on the VG-8020 and zerobas (`WIDTH 41` too; `WIDTH 1`/`WIDTH 40` not).
+      Every `FP*` constant in the probe is `0*(<faulting expr>)`, so a row's
+      argument collapses to **0** whenever its fault does not fire, which makes
+      the READER VERB able to raise the very code the pending cell delivers —
+      and would have explained all four rows AND why `n.5.w` (`WIDTH {FP5}+1`,
+      argument 1, legal) was the one that behaved.
+      🔴 **Tested twice, refuted twice.** (1) Cutting `penderr_set`'s store
+      outright: `n.dz.w` reads **0, not 5** — `WIDTH 0`'s own ERR 5 is recorded
+      through the SAME cell, so a cut that silences the cell silences the
+      collision with it. (2) Cutting ONLY `evmc_sqr_err`'s writer: `o.nn.5dz`
+      reads 11 and `n.5.w` reads 0, **identically with and without** a leading
+      `1+` on every row — the rows detect a per-writer defect unaided. A `1+`
+      repair was drafted and **REVERTED**: it changed no reading in either cut,
+      and lengthened the typed line enough to provoke mis-echoes.
+      ⚠️ **AND I COULD NOT REPRODUCE THE ORIGINAL OBSERVATION AT ALL**, which is
+      the more useful half. Under the cut this entry describes, the probe's four
+      POSITIVE CONTROLS now fail (correctly — with nothing recorded, `n.dz.w`
+      reads 0 where it wants 11), so it REFUSES and prints no scored rows. The
+      four rows' readings under that cut are therefore **no longer obtainable
+      from this probe as it stands**; whatever produced them in 2026-08 cannot be
+      re-read today without either a narrower cut or a mode that reports rows
+      through a control failure. 🎯 **The next step is to find out whether that
+      run's cut was the same one** — this one neuters the store inside
+      `penderr_set`, and a cut placed elsewhere may leave a writer standing that
+      mine does not.
+      The `WIDTH 0` fact is recorded in the probe beside the constants so the
+      next reader does not re-derive it.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] 🔴 **"THE APPARATUS IS STILL MEASURED" IS A CLAIM ABOUT A ROW SET, AND
