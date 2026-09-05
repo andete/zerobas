@@ -231,14 +231,44 @@ measurement and an attribution control, and it has both: it is the same
 divergence as `rand_put` at a different value, and it is *load-bearing* — it is
 what shows the early stamp follows `recno × reclen` rather than the sector size.
 
-### Residual, FILED not answered
+### Residual, ~~FILED not answered~~ — ✅ ANSWERED 2026-09-05 (D-PUTCUT)
 
 A machine reset *between* the `PUT` and the `CLOSE` leaves the two disks
 different: the reference loses the write entirely, while zerobas's entry is
 already stamped and points at a chain whose FAT state at that instant nothing
-here examined. Measuring it needs a reset-mid-program harness this probe does not
-have, and it is a robustness question rather than a parity one. Filed in
-[`TODO.md`](../TODO.md).
+here examined. ~~Measuring it needs a reset-mid-program harness this probe does
+not have~~, and it is a robustness question rather than a parity one.
+
+> 🎯 **THE HARNESS WAS ONE TCL LINE.** openMSX backs `-diska` with the host file
+> and writes sectors through as the guest issues them, so **killing the emulator
+> IS the power cut**, and the `.dsk` left behind is the artifact. The cut lands at
+> a chosen instant rather than a guessed one because the guest says when: the
+> program POKEs a sentinel after `PUT` and spins, and the script polls that byte
+> and exits the moment it appears. `scratchpad/putcut_probe.py`.
+>
+> | | clean `CLOSE` | CUT after `PUT` |
+> |---|---|---|
+> | **zerobas** | entry, size=16, clus=3, FAT=EOC, record on disk | **IDENTICAL** |
+> | **CF-3300** | entry, size=16, clus=3, FAT=EOC, record on disk | **entry present, clus=0, size=0, no chain, no data** |
+>
+> 🔴 **"The reference loses the write entirely" is half right and the wrong
+> half.** It does lose the write — but it has *already* stamped a directory entry
+> at `OPEN`, so what it leaves is a **0-byte entry pointing at nothing**, visible
+> in `DIR`. Losing the write silently would have been tidier.
+>
+> ✅ **zerobas's chain is now examined**: `FAT=EOC`, a proper single-cluster
+> chain, with the record's bytes on the disk. The `CLOSE` changes nothing on disk
+> for zerobas — the `PUT` has already committed everything the file needs.
+>
+> 🎯 **So it is not a parity question in either direction**: under normal
+> operation the two images tell the same story (the clean-`CLOSE` row is
+> identical on both machines), and the difference exists only inside the crash
+> window, where **zerobas is strictly the more robust**. The dangling entry the
+> filing worried might be ours is the reference's.
+>
+> ⚠️ The clean-`CLOSE` arm is what makes any of that readable: an entry present
+> after a cut says nothing without the same machine's normal image beside it. All
+> four arms run and are compared as a matrix.
 
 ### The lesson
 

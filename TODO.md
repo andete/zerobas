@@ -8438,7 +8438,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       set has no CAS: channel rows at all yet.
       🤖 AUTONOMOUS — the reference settles it; finishable unattended (no his-decision signal found).
 
-- [ ] **UNMEASURED: a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`.**
+- [x] ✅ **UNMEASURED: a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`.**
+      **MEASURED 2026-09-05 (D-PUTCUT, `scratchpad/putcut_probe.py`) — and the
+      filing's expectation is INVERTED.**
+      🎯 **THE POWER CUT IS ONE TCL LINE.** openMSX backs `-diska` with the host
+      file and writes sectors through as the guest issues them, so **killing the
+      emulator IS the power cut** and the `.dsk` left behind is the artifact. The
+      only real requirement is that the cut land at a chosen INSTANT rather than
+      a guessed one, and the guest can say when: the program POKEs a sentinel
+      after `PUT` and spins; the script polls that byte and exits the moment it
+      appears. No race, no sleep-and-hope. Both re-examinations
+      (2026-08-09 included) said *"the harness reads the image after the machine
+      exits normally"* — which is true of `diskbasic_probe_lof.py` and was never
+      a property of the question.
+      | | clean `CLOSE` | CUT after `PUT` |
+      |---|---|---|
+      | **zerobas** | entry, size=16, clus=3, FAT=EOC, record on disk | **IDENTICAL** |
+      | **CF-3300** | entry, size=16, clus=3, FAT=EOC, record on disk | **entry present, clus=0, size=0, no chain, no data** |
+      🔴 **"The reference has stamped nothing" is FALSE.** It stamps a directory
+      entry at `OPEN`; what is missing after the cut is the cluster, the size and
+      the chain — so the reference leaves a **0-byte entry pointing at NOTHING**,
+      which `DIR` will show. That is arguably worse than stamping nothing at all.
+      ✅ **And zerobas's chain — "whose FAT state at that instant NOTHING HAS
+      EXAMINED" — is now examined: `FAT=EOC`, a proper single-cluster chain, with
+      the record's bytes actually on the disk.** For zerobas the `CLOSE` changes
+      nothing on disk at all; everything the file needs is committed by the `PUT`.
+      🎯 **So it is not a parity question in either direction.** Under normal
+      operation the two images are byte-for-byte the same story (the clean-CLOSE
+      row is identical on both machines); the difference exists ONLY inside the
+      crash window, and there **zerobas is strictly the more robust of the two**.
+      The filing offered "zerobas is more robust here" and "zerobas leaves a
+      dangling entry here" as the two plausible outcomes — the first is right,
+      and the dangling entry is the REFERENCE's.
+      ⚠️ **The control is what makes any of that readable.** An entry present
+      after a cut means nothing without the same machine's clean-CLOSE image
+      beside it, so all four arms run and are compared as a matrix.
+      🔴 My first formatter CRASHED on `clus=0` — `if entry and clus` skipped the
+      FAT lookup and left `fat=None`. A cluster of 0 is a real state, not a
+      missing reading, and it was the whole finding.
+      --- the original filing ---
       Filed 2026-07-31 by D-RNDDIR as the one thing its rows do not reach. In
       that window the two disks genuinely differ: the reference has stamped
       nothing and loses the write, while zerobas's root-directory entry is
