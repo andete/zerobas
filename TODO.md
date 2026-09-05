@@ -8938,13 +8938,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         bogus token inside the `IF CLEARPOOL` branch of
         [`sub/lineedit.asm`](sub/lineedit.asm) and the assembler saw it on line
         170 — so this is not a branch that was compiled out.
-        ⚠️ **THAT IS AN OBSERVATION, NOT A DIAGNOSIS.** `SH_PTR` holding a
-        plausible-looking ROM address is consistent with op 18 not having run,
-        with `fch_ctx_addr` needing pool state this path does not have, and with
-        several other things; naming one would be the error this entry has
-        already made once today
-        [[a-mechanism-inferred-from-one-observation]]. **The next step is to read
-        `SH_OP`/`SH_LEN`/`SH_PTR` around the call**, not to try another site.
+        🟢 **READ THEM — AND THE ANSWER IS THAT `SL_CEIL equ $E038` ALIASES
+        `CURLINE`.** Two readings on the **UNMODIFIED** ROM settle it, no build
+        required:
+        • `PEEK($E038)` already reads **30108** with none of this planted — the
+          address was never free, and the 30119 above was `CURLINE`'s value, not
+          a ceiling that failed to arrive.
+        • `PEEK($E371)` (`SH_PTR`) reads **33419**, which is exactly
+          `min(HIMEM,TXTMAX) − POOLSIZE − MAXF×FCH_CTXSZ` for this fixture
+          (HIMEM 33769, POOLSIZE 300, MAXF 1, `FCH_CTXSZ` 50 — all PEEKed).
+          **So the varceil is already correct and already computed**; neither
+          `fch_ctx_addr` nor op 18 was ever in question.
+        🔴 **AND IT WOULD HAVE BEEN WORSE THAN NOT WORKING**: publishing the
+        ceiling into `CURLINE` on every line store corrupts current-line tracking.
+        The bound not binding is the *mild* symptom.
+        🎯 **THIS IS THE "RAM HAS NO GATE" CLASS, WALKED INTO WITH THE RULE IN
+        MY OWN INDEX.** `$E038` was chosen as the DELTA after `SL_TOK` (2 B at
+        `$E036`) and because nothing greps for the literal — neither of which is
+        evidence the address is free. `make wall-assertion-check` covers **ROM
+        only**; `scratchpad/rammap_sweep.py` says in its own banner that a delta
+        is *"the cell at the low address PLUS whatever follows, NEVER free
+        space"*, and `$E038` is `CURLINE` in that very map
+        [[deffn-ramhunt-slice]].
+        ➡️ **NEXT STEP, and the ROM side is DONE**: find a genuinely free 2-byte
+        cell — walk `rammap_sweep.py`, then PROVE it with a
+        `ramfree_probe.py`-style fill-and-read-back, because a map is still a
+        reading — and re-plant. The 11 B fit (main page 1 15 → 4 B free on
+        2026-09-05) and the machine is healthy with `push hl` in place.
         💰 **THE 11 B ARE NOT SPENT** — the attempt was reverted and all four
         ROM digests re-read back to the values `make gates` had recorded for the
         preceding green battery (not quoted here: four 8-hex groups in a row are
