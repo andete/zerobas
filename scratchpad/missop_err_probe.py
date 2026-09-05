@@ -32,6 +32,28 @@ CASES = [
     ("m.letop", 'A$=+',      'the second LET mirror'),
     ("c.syn",   'PRINT)',    'CONTROL: a REAL syntax error'),
     ("c.ok",    'A=1',       'CONTROL: no error at all -> 0'),
+    # === D-MISSOPBOUND round 2: WHICH rule draws the 24/2 line? ==============
+    # The TODO entry reads the split as POSITIONAL -- "the LET RHS position
+    # disagrees with the factor position" -- because `A$=+` is 24 on the refs
+    # and 2 here. There is a competing rule it does not mention, and the two
+    # coincide on every case measured so far: the token `+` can be UNARY, so
+    # `A$=+` may be "a unary operator whose operand is missing" (24) rather than
+    # "a stray token in the RHS position" (2).
+    # 🎯 `*` AND `/` ARE WHAT SEPARATE THEM. They have no unary form anywhere, so
+    # under the OPERATOR rule they are 2 in every position, while under the
+    # POSITION rule they are 24 in the LET RHS exactly like `+`.
+    ("b.n.emp", 'A=',        'numeric LET RHS, EMPTY'),
+    ("b.n.pl",  'A=+',       'numeric LET RHS, `+` (has a unary form)'),
+    ("b.n.mi",  'A=-',       'numeric LET RHS, `-` (has a unary form)'),
+    ("b.n.mul", 'A=*',       '🎯 numeric LET RHS, `*` (NO unary form) -- separator'),
+    ("b.n.div", 'A=/',       '🎯 numeric LET RHS, `/` (NO unary form) -- separator'),
+    ("b.s.mul", 'A$=*',      '🎯 string LET RHS, `*` (NO unary form) -- separator'),
+    ("b.n.uok", 'A=+1',      'CONTROL: unary + WITH an operand must be legal -> 0'),
+    ("b.n.trl", 'A=1+',      'trailing BINARY `+` -- operand missing on the RIGHT'),
+    ("b.n.trm", 'A=1*',      'trailing BINARY `*` -- same shape, no unary form'),
+    ("b.p.pl",  'PRINT +',   'the FACTOR position, `+`'),
+    ("b.p.mul", 'PRINT *',   'the FACTOR position, `*`'),
+    ("b.f.pl",  'SAVE +',    'a FILESPEC position, `+`'),
 ]
 
 

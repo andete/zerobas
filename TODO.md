@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8273 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8317 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7476 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7520 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7476 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7520 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4870,6 +4870,50 @@ list. **When a slice lands, grep this list for what it just shipped.**
       its own label instead of joining one — a shipped gate went 209/210.
       💰 Still not priced. Shape: a message-table entry (the D-MSGSUB sub-ROM host
       machinery exists) plus a decision about that boundary.
+      🔴 **THE BOUNDARY QUESTION IS ANSWERED, AND THE ENTRY'S FRAMING OF IT IS
+      REFUTED (2026-09-05, D-UNARYPLUS, `scratchpad/missop_err_probe.py`).** It
+      is **not** positional. The separating cases are the operators with NO unary
+      form: `A=*`, `A=/`, `A$=*` and `PRINT *` all read **2 on all three
+      machines**, so `*` in the LET RHS behaves exactly as in the factor
+      position. *"The LET RHS position disagrees with the factor position"* was
+      a rule that coincided with the real one on every case then measured
+      [[two-rules-that-coincide-on-every-row-you-have]]. The real rule is about
+      the TOKEN: an operator that HAS a unary form, with its operand missing, is
+      `Missing operand` (24) in every position — `A=-`, `A=1+`, `A=1*` are all 24
+      on all three, ours included.
+      🔴 **AND THE FOUR REMAINING `+` ROWS ARE NOT A WORDING GAP AT ALL — THEY
+      ARE DOWNSTREAM OF A MISSING LANGUAGE FEATURE.** See the new entry directly
+      below: zerobas does not implement **unary plus**. `ev_f` tests
+      `MINUS_TOKEN` and has no `PLUS_TOKEN` arm, so a leading `+` is never "an
+      operator whose operand is missing" here — it is simply not a factor, hence
+      ERR 2. Fix that and `A=+`, `A$=+`, `PRINT +` and `SAVE +` all become 24 by
+      themselves, with no message work.
+
+- [ ] 🔴 **UNARY PLUS IS NOT IMPLEMENTED: `A=+1` IS ERR 2 HERE AND LEGAL ON BOTH
+      REFERENCES.** Found 2026-09-05 by D-UNARYPLUS while answering the boundary
+      question in the entry above. **Six forms measured, all ERR 2 here and `0`
+      on both the VG-8020 and the CF-3300**: `A=+1`, `PRINT +1`, `A=(+1)`,
+      `B=1:A=+B`, `IF +1 THEN A=2`, `A=1++2`. 🟢 Unary MINUS is the control and
+      is correct on all three (`A=-1`, `B=1:A=-B` → 0).
+      🎯 **THE SITE IS ONE MISSING ARM.** `basic/expr.asm` `ev_f` reads
+      `cp MINUS_TOKEN / jp z,ev_f_neg` and has no `PLUS_TOKEN` test, so a leading
+      `+` falls through to "not a factor". `PLUS_TOKEN equ $F1` already exists.
+      💰 **PRICED AT 10 B AND IT DOES NOT FIT — the build overran the `$8000`
+      ceiling** (`BASIC_IMAGE_OVERRAN_8000_CEILING__TRIM_IT_OR_EVICT_TO_SUBROM`),
+      against **6 B free in main page 1** on 2026-09-05. So it needs ~4 B of
+      carve. ⚠️ Wall readings rot — re-run `make basic-reloc`.
+      🔴 **AND 10 B, NOT THE 8 I ESTIMATED, FOR A REASON WORTH RECORDING**: both
+      jumps had to be `jp` rather than `jr`. `ev_f_pos` sits beside `ev_f_neg`,
+      ~390 B from `ev_f`, so the test's `jr z` was refused AND the body's `jr`
+      back was refused — each costing a byte, the second only after the first was
+      fixed. **In a page this dense, inserting anywhere also moves everything
+      after it**; the second refusal was an unrelated-looking line number until I
+      read it and found it was my own new code.
+      ✅ Shape, measured: `cp PLUS_TOKEN / jp z,ev_f_pos` at `ev_f`, and
+      `ev_f_pos: inc ix / jp ev_f` beside `ev_f_neg` — unary plus is the
+      identity, so consuming the token and re-entering is the whole fix.
+      ⚠️ Closes four rows of the entry above for free if it lands.
+      🤖 AUTONOMOUS — the reference settles it; finishable unattended (no his-decision signal found).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] ⚠️ **`CSAVE` AND `CLOAD` STILL TAKE A LITERAL FILENAME ONLY, AND THAT IS
