@@ -256,9 +256,13 @@ single-letter variables `A`–`Z`, `PEEK(expr)`, parentheses, unary `-`, and
 string literals; and the evaluator *decodes* these tokens at run time. This is
 verified against the reference VG-8020 by a differential crunch test
 (`basic_probe_crunch.py`): zerobas's `TOKBUF` equals the reference's `KBUF`, byte
-for byte. (Decimal `≥ 32768` — which the reference stores as a float — plus
+for byte. ~~(Decimal `≥ 32768` — which the reference stores as a float — plus
 `&O`/`&B` and line-number references are out of scope for now; use `&H` for
-16-bit values.)
+16-bit values.)~~ 📏 **Stale, and measured 2026-09-05**: `PRINT 40000` reads
+`40000`, `PRINT &O17` reads `15`, and the tokeniser emits the `$0E`
+line-number identification code for branch targets. **`&B` stays out on
+purpose**, not for want of work — the oracle emits no `&B` token, so zerobas
+fabricates none (`basic/PROVENANCE.md`, quarantined).
 
 0. **header** — `INITXT` brings up the text screen; `CHPUT` prints a couple of
    original left-aligned lines (the same role as MSX-BASIC's top-of-screen
@@ -274,9 +278,13 @@ for byte. (Decimal `≥ 32768` — which the reference stores as a float — plu
    the `REM`/`'` comment tail are kept verbatim; the line is `$00`-terminated
    (see `spec-tokenise.md`, `spec-tokens-statements.md`)
 3. **execute** — walk the line statement-by-statement (`:` separated),
-   dispatching each on its leading token: `POKE`, a `<letter> = <expr>`
-   assignment, `REM` (ends the line), `BLOAD`; an empty line reprompts and
-   anything else prints `syntax error`
+   dispatching each on its leading token through the statement table; an empty
+   line reprompts and an unknown one raises `Syntax error`.
+   ~~dispatching each on its leading token: `POKE`, a `<letter> = <expr>`
+   assignment, `REM` (ends the line), `BLOAD`~~ 📏 **That four-statement list is
+   the loader-era slice.** The dispatcher now covers the MSX1 statement surface —
+   `make kwsweep` reports **0 MISSING** reserved words (2026-09-05); see *What is
+   implemented, and what is not* below.
 4. the **BLOAD handler** parses `"CAS:"` (device) and optional `,R`, then:
    - `TAPION` — open tape, skip the file-header tone
    - read + verify the 16-byte file header (binary id `$D0`)
@@ -288,50 +296,56 @@ for byte. (Decimal `≥ 32768` — which the reference stores as a float — plu
 This is the *interpreter half* of BLOAD. The *device half* (decoding the
 cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
 
-### Limitations (this slice)
+### What is implemented, and what is not
 
-> ⚠️ **THIS SECTION IS STALE AND IS KNOWN DOC DEBT — do not trust it.** It describes
-> a game-loader-scoped slice from early in the project, not today's BASIC. At least
-> two of its claims are flatly false: `ON … GOTO` is listed as "still out" but is
-> implemented and gated, and "variables are single-letter integers; no strings,
-> arrays, or multi-character names" predates the string engine, the float pack and
-> the array engine. Predates the charter change to FAITHFUL FULL MSX1 BASIC.
-> Flagged 2026-07-29 (S3 of the lean-cart retirement, which deliberately did not
-> rewrite it); see the TODO entry **README "Limitations (this slice)" IS STALE**.
+> 📏 **THIS SECTION IS GENERATED FROM MEASUREMENTS, NOT FROM MEMORY**, and the
+> figures below were re-read on **2026-09-05**. Re-run them rather than trusting
+> them: `make kwsweep` for the keyword axis, `make gates` for the battery, and
+> `TODO.md`'s open list for the divergences. It replaces a *"Limitations (this
+> slice)"* section that described a game-loader-scoped slice from early in the
+> project — it listed `ON … GOTO` as "still out" and said variables were
+> single-letter integers with no strings or arrays, all of which predate the
+> string engine, the float pack and the array engine, and all of which the
+> charter change to **faithful full MSX1 BASIC** superseded.
 
-- **Stored programs + control flow (Step B).** Numbered lines are stored at the
-  real text base (`TXTTAB`/`$F676` = `$8001`, oracle-confirmed) in the real
-  line-link format, with insert / replace / delete by line number, plus `NEW`
-  and `RUN`. The tokeniser knows the full control-flow keyword set
-  (`GOTO`/`GOSUB`/`IF`/`THEN`/`ELSE`/`FOR`/`TO`/`STEP`/`NEXT`/`DATA`/`READ`/
-  `RESTORE`/`END`/…, from MSX2 Technical Handbook Table 2.20) and emits the `$0E`
-  line-number identification code (Figure 2.12) for branch targets, so a stored
-  program is byte-identical to a real ROM's. The executor runs `GOTO`,
-  `GOSUB`/`RETURN`, `FOR … TO … [STEP …] … NEXT [var]`,
-  `IF … THEN … [ELSE …]` (line-number or statement clauses), and `END`/`STOP`
-  via a redirectable run loop with a line resolver. `GOSUB`/`RETURN` and
-  `FOR`/`NEXT` use control stacks and a *mid-line resume* path (RETURN comes
-  back to the statement after `GOSUB`; a continuing `NEXT` re-enters the loop
-  body), so subroutines and loops nest and span lines. Conditions use real
-  comparison operators — `=` `<` `>` and the compound `<=` `>=` `<>` (signed
-  16-bit, yielding `-1`/`0`). The `FOR` loop is bottom-tested (the body always
-  runs at least once), matching the VG-8020 oracle. `DATA`/`READ`/`RESTORE` work
-  too: `DATA` items are stored as verbatim ASCII (byte-identical to the
-  reference — the oracle stores them as text, not number tokens), `READ` parses
-  them at run time into variables across statements and lines, and
-  `RESTORE [<line>]` rewinds the data cursor. **Still out:** `ON … GOTO` and
-  `ELSE <line>` branch lists, and string DATA. See
-  [`spec-controlflow.md`](basic/docs/spec-controlflow.md).
-  Validated by `tests/test_control_flow.py` (stored programs + branches + loops +
-  DATA/READ/RESTORE, run against the shipped image) and on openMSX by
-  `basic_probe_crunch.py` (byte-identical tokenisation).
-- Variables are single-letter integers (`A`–`Z`); no strings, arrays, or
-  multi-character names. Expressions have `+ - *`, the comparisons
-  `= < > <= >= <>`, and `PEEK` (no `/`, no string ops).
-- **Crunch fidelity scope:** decimal integer constants `0`–`32767`, `&H` hex
-  (`0`–`FFFF`), and `= + - *` are byte-identical. Decimal `≥ 32768` (a float on
-  the reference), `&O`/`&B`, floating-point, and line-number-reference tokens are
-  not yet emitted.
+**The keyword axis is closed.** `make kwsweep` walks the MSX1 reserved-word list
+and reports, today: **0 MISSING**, 35 SUPPORTED, 1 DIVERGENT. It executes 37 of
+55 words; the other 18 are crunch-only and each says why (destructive, printer-
+bound, blocking on a keypress, or needing a disk fixture).
+
+⚠️ **The one DIVERGENT is not a defect and checking that is the point.** `CSRLIN`
+reads `4` on the reference and `3` here in a row that has no `CLS`, so it reports
+wherever the boot banner and the batch's own scrolling left the cursor — the
+reference disagrees with *itself* (4 vs 9) across differently-scrolled batches.
+`CSRLIN` is correct and gated at a pinned `WIDTH 40` by `cursor-acceptance`.
+
+**Variables and expressions are the real MSX1 surface**: integers, floats and
+strings with multi-character names and type suffixes (`% ! # $`), arrays with
+`DIM`, `DEF FN`, the full operator set including `/` and `^`, string functions,
+and `PRINT USING`. The three-page ROM layout that made a single-letter integer
+slice necessary is long gone.
+
+**What is measurably still divergent**, each with a row set and a TODO entry —
+this list is the honest part, and it is short:
+
+* **`SCREEN 3` pixel operations** — `PSET`/`LINE` draw on both references and
+  raise `Illegal function call` here. A whole feature: there is no SCREEN-3
+  rasteriser, and the refusal is correct for every mode that IS implemented.
+* **A SCREEN-2 `PAINT` with `C != B`** floods the whole screen on both
+  references; here it stops at any pixel whose colour is `B`. Measured
+  2026-09-05: the references do not bound the fill at all in that regime.
+* **`OPEN … LEN=r`** accepts any `1..256` on the CF-3300 and only the powers of
+  two here — a deliberate limit while `fat_rand_put`/`fat_rand_get` cannot span
+  two sectors, not an oversight.
+* **Unary `+` on a STRING** (`B$=+A$`) is `Type mismatch` here and the identity
+  there. The numeric forms were fixed 2026-09-05.
+* **`LOAD"CAS:"` on a tokenised tape** — the reference searches to end-of-tape
+  and does not return, which no acceptance row can express.
+
+**The battery is the standing answer to "does it still work":** `make gates`
+runs **114 units** — static checks plus differential probes that boot a real
+Philips VG-8020 and a National CF-3300 in openMSX beside the zerobas image and
+compare readings row by row.
 
 ### Validation
 

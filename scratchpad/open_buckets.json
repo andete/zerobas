@@ -275,23 +275,11 @@
   "signal": "no his-decision signal found",
   "matched": ""
  },
- "T-13B166": {
-  "marker": "\ud83e\udd16 AUTONOMOUS",
-  "heuristic": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
  "T-9B4922": {
   "marker": "\ud83e\udd16 AUTONOMOUS",
   "heuristic": "\ud83d\ude4b NEEDS-JOOST",
   "signal": "page-1 budget",
   "matched": "main page 1"
- },
- "T-687C2B": {
-  "marker": "\ud83e\udd16 AUTONOMOUS",
-  "heuristic": "\u26d4 BLOCKED",
-  "signal": "needs a fixture",
-  "matched": "fixture"
  },
  "T-51C633": {
   "marker": "\ud83e\udd16 AUTONOMOUS",
@@ -318,7 +306,7 @@
   "matched": ""
  },
  "T-0813D3": {
-  "marker": "\ud83e\udd16 AUTONOMOUS",
+  "marker": "\ud83d\udd01 STANDING",
   "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
@@ -353,25 +341,7 @@
   "signal": "needs a fixture",
   "matched": "fixture"
  },
- "T-D4D426": {
-  "marker": "\ud83e\udd16 AUTONOMOUS",
-  "heuristic": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
- "T-45C1F6": {
-  "marker": "\ud83e\udd16 AUTONOMOUS",
-  "heuristic": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
  "T-F7FF11": {
-  "marker": "\ud83e\udd16 AUTONOMOUS",
-  "heuristic": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
- "T-7F8323": {
   "marker": "\ud83e\udd16 AUTONOMOUS",
   "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
@@ -383,22 +353,10 @@
   "signal": "no his-decision signal found",
   "matched": ""
  },
- "T-356731": {
-  "marker": "\ud83e\udd16 AUTONOMOUS",
-  "heuristic": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
- },
  "T-DDBFFA": {
   "marker": "\ud83e\udd16 AUTONOMOUS",
   "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "hand-corrected: its own body prices it at 0 ROM bytes",
-  "matched": ""
- },
- "T-87A882": {
-  "marker": "\ud83e\udd16 AUTONOMOUS",
-  "heuristic": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
   "matched": ""
  },
  "T-AB1311": {
@@ -559,9 +517,9 @@
  },
  "T-E0B04B": {
   "marker": "\ud83e\udd16 AUTONOMOUS",
-  "heuristic": "\ud83e\udd16 AUTONOMOUS",
-  "signal": "no his-decision signal found",
-  "matched": ""
+  "heuristic": "\u26d4 BLOCKED",
+  "signal": "needs a fixture",
+  "matched": "fixture"
  },
  "T-4857B9": {
   "marker": "\ud83e\udd16 AUTONOMOUS",
@@ -634,11 +592,5 @@
   "heuristic": "\ud83e\udd16 AUTONOMOUS",
   "signal": "no his-decision signal found",
   "matched": ""
- },
- "T-94C4D6": {
-  "marker": "\ud83e\udd16 AUTONOMOUS",
-  "heuristic": "\u26d4 BLOCKED",
-  "signal": "needs a fixture",
-  "matched": "fixture"
  }
 }
