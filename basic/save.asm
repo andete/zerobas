@@ -492,14 +492,32 @@ do_csave:
                 jr      z,csav_noname       ; `CSAVE:` -> Missing operand
                 cp      ','
                 jr      z,csav_comma        ; `CSAVE,2` -> Syntax error (measured)
-                cp      '"'
-                jp      nz,load_error       ; must be a quoted name
-                inc     hl                  ; past opening '"'
-                call    tape_parse_name     ; fills TSV_NAME; HL -> closing '"'
-                ld      a,(hl)
-                cp      '"'
-                jp      nz,load_error
-                inc     hl                  ; past closing '"'
+                ; \U0001f7e2 D-CSAVEEXPR (2026-09-05): A STRING EXPRESSION, like the other
+                ; eight filename verbs since D-FNEXPR2 -- this was the last
+                ; `cp '"'` gate in the tree, and it cost FIVE divergent rows,
+                ; every one of them a NON-RAISING `load error` that `ON ERROR`
+                ; could not trap. Measured on both references, which agree:
+                ;
+                ;   CSAVE A$      accepted (silent)   was `load error`
+                ;   CSAVE A$+""   accepted            was `load error`
+                ;   CSAVE 5       Type mismatch       was `load error`
+                ;   CSAVE"P       accepted            was `load error`  <- see below
+                ;   CLOAD 5       Type mismatch       was `load error`  (do_cload)
+                ;
+                ; \U0001f534 `CSAVE"P` -- AN UNTERMINATED LITERAL -- IS THE ROW THIS EDIT
+                ; WOULD HAVE MOVED WITHOUT BEING ASKED TO, and it was measured
+                ; BEFORE the edit for exactly that reason. The hand-rolled parse
+                ; below demanded the CLOSING quote; `str_eval` follows MSX BASIC
+                ; and auto-terminates a literal at end of line. Both references
+                ; accept it silently, so the fix closes that row rather than
+                ; changing it -- but "rather than" is a measurement, not a guess.
+                ;
+                ; \U0001f3af tape_parse_name IS UNCHANGED and needs no second source: it
+                ; walks (HL) to a '"', and fname_expr hands back exactly that --
+                ; a staged, '"'-terminated copy at STRSCR+1.
+                call    fname_expr          ; HL -> the staged '"'-terminated copy
+                call    tape_parse_name     ; fills TSV_NAME from the staged copy
+                ld      hl,(FN_RESUME)      ; resume just past the expression
                 call    csav_speed          ; optional ,1/,2 speed; CF=1 on bad speed/junk
                 jp      c,load_error
                 jr      tape_save_basic

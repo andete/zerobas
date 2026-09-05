@@ -354,9 +354,18 @@ inside a `- [x]`:
   corrected: the face is `Type mismatch` in all three contexts now instead of
   two-faces-by-context, so it is one divergence to fix rather than two to
   reconcile.
-* **`CSAVE` / `CLOAD`** — the last two literal-only filename gates. Unmeasured,
+* **`CSAVE` / `CLOAD`** — the last two literal-only filename gates. ~~Unmeasured,
   and the apparatus is the obstacle: they are cassette verbs and `namspc` has no
-  tape. The reading belongs in `cassave` / `castail`.
+  tape. The reading belongs in `cassave` / `castail`.~~
+  🟢 **MEASURED AND CLOSED 2026-09-05 (D-CSAVEEXPR).** Both now `call
+  fname_expr`; **five** divergent rows went to zero and the edit **recovered 9 B
+  of main page 1** (each hand-rolled gate is longer than the call replacing it).
+  🎯 **The apparatus was NOT the obstacle** — a fresh `cassetteplayer new` per
+  row, in `scratchpad/csaveexpr_probe.py`, was enough, and the prediction that
+  the reading "belongs in `cassave`/`castail`" was wrong about where and right
+  about what: those two batteries corroborate it by reading the DECODED WAV.
+  ⚠️ One CLOAD row only (`CLOAD 5`, the parse face): `CLOAD A$` reaches the tape,
+  and a tape search that finds nothing is the `LOAD"CAS:"` non-returning class.
 * **the `do_files` guard** (§6.4) and the **nested-reject** hazard (a malformed
   filespec prints `load error` from *inside* `parse_disk_fcb` and `FILES` lists
   anyway — pre-existing, not widened here).

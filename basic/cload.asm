@@ -65,9 +65,18 @@ dcl_name:
                 jr      z,dcl_noname        ; bare CLOAD / CLOAD? -> next tape file
                 cp      COLON               ; CLOAD : ... -> bare form
                 jr      z,dcl_noname
-                cp      '"'                 ; CLOAD "name" -> capture the quoted name
-                jr      nz,load_error
-                inc     hl                  ; past the opening quote
+                ; \U0001f7e2 D-CSAVEEXPR (2026-09-05): a string EXPRESSION, the same edit
+                ; as do_csave's. `CLOAD 5` is `Type mismatch` on BOTH references
+                ; and was a non-raising `load error` here.
+                ; \u26a0\ufe0f AND IT IS THE ONLY CLOAD ROW THAT EXISTS. `CLOAD A$` and
+                ; `CLOAD"P"` REACH THE TAPE, and a tape search that finds nothing
+                ; is the `LOAD"CAS:"` class -- TODO.md records the reference as
+                ; NOT RETURNING, "no row can carry this". So the argument is
+                ; evaluated on the strength of the PARSE face, which is what the
+                ; gate below actually decided, plus the eight verbs already on
+                ; fname_expr. That distinction is stated here rather than left
+                ; for a reader to assume the whole verb was measured.
+                call    fname_expr          ; HL -> the staged '"'-terminated copy
                 call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON=1
                 jp      do_tape_prog        ; (CLOAD has no ,R; trailing chars ignored)
 dcl_noname:

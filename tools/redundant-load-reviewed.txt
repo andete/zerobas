@@ -38,7 +38,15 @@ str_arg_snap     CLOBBER  returns HL = the cursor it PUSHED before the snapshot
 #                         MID$ -- reload with `ld a,(hl)`, and that load is LIVE.
 #                         Read 2026-08-28, D-NGRAM8.
 var_name_key     CLOBBER  returns A = the RESOLVED TYPE (VARTYPE), HL past the name
-tape_parse_name  CLOBBER  exits through a djnz fill loop; A is loop residue
+# tape_parse_name -- RETIRED 2026-09-05 (D-CSAVEEXPR). It read:
+#   tape_parse_name  CLOBBER  exits through a djnz fill loop; A is loop
+#                             residue
+# and it is gone the same way parse_disk_fcb's below went: the CANDIDATE
+# disappeared, not the verdict. do_csave's `call tape_parse_name /
+# ld a,(hl) / cp '"'` was the closing-quote check, and fname_expr's
+# staged copy is '"'-terminated by construction, so there is nothing left
+# to reload. The verdict was and is correct; it now asserts about no site,
+# and an entry that asserts nothing is how this control goes blind.
 # parse_disk_fcb -- RETIRED 2026-08-21 (D-FNEXPR2). It read:
 #   parse_disk_fcb   CLOBBER  exits through build_83_name; A is not the
 #                             cursor byte

@@ -55,6 +55,24 @@ CASES = [
     ("s.speed",  'CSAVE,2',    'NO NAME but a speed -- the same csav_noname path'),
     ("s.colon",  'CSAVE:',     'no name, followed by a colon -- also csav_noname'),
     ("c.namesp", 'CSAVE"P",2', 'CONTROL: name AND speed, the fully-formed case'),
+    # --- CLOAD, 2026-09-05: ONE ROW, AND THE OMISSION IS DELIBERATE ----------
+    # \U0001f534 The entry names `do_cload` beside `do_csave`, and the 09-04 run measured
+    # only CSAVE -- so half the filed claim was never read. This adds the half
+    # that CAN be read safely.
+    # \u26a0\ufe0f `CLOAD A$` / `CLOAD"P"` REACH THE TAPE, and a tape search that finds
+    # nothing is the `LOAD"CAS:"` class: TODO.md records the reference as NOT
+    # RETURNING, with "no row can carry this" beside it. Each such row would be a
+    # 300 s timeout on three machines and two channels for a `<NO READING>`.
+    # `CLOAD 5` errors in the PARSE, before any tape access, so it reads the one
+    # thing a fix needs: does the reference EVALUATE the operand, or does it
+    # demand a quote? A `Type mismatch` says evaluate.
+    ("l.num",    'CLOAD 5',    "\U0001f3af CLOAD's parse face -- the only tape-free CLOAD row"),
+    # \u26a0\ufe0f THE ROW THE FIX WOULD CHANGE WITHOUT BEING ASKED TO. `do_csave`'s
+    # hand-rolled parse checks for the CLOSING quote and load_errors without it;
+    # `str_eval` follows MSX BASIC, which auto-terminates a literal at end of
+    # line. So replacing the gate silently changes this row's answer, and it has
+    # to be READ BEFORE and AFTER rather than reasoned about.
+    ("s.unterm", 'CSAVE"P',    'an UNTERMINATED literal -- the fix moves this row'),
 ]
 
 
@@ -100,6 +118,19 @@ def screen(side, stmt):
             return word
     return "silent"
 
+
+# `--only lab,lab` so a before/after differential does not re-run eleven rows on
+# three machines to read two of them.
+_only = ""
+for _i, _a in enumerate(sys.argv):
+    if _a == "--only" and _i + 1 < len(sys.argv):
+        _only = sys.argv[_i + 1]
+if _only:
+    _want = set(_only.split(","))
+    CASES = [c for c in CASES if c[0] in _want]
+    if not CASES:
+        sys.exit(f"--only {_only} matches no row; nothing to measure is not a "
+                 f"clean run")
 
 w = max(len(l) for l, _, _ in CASES)
 print(f"\n{'row':<{w}}  {'vg8020':>26}  {'cf3300':>26}  {'zb':>26}")

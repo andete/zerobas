@@ -272,7 +272,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8566 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8610 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -336,7 +336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7769 (T-529ABE)`: a
+      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7813 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2663,7 +2663,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7769 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7813 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5173,6 +5173,50 @@ list. **When a slice lands, grep this list for what it just shipped.**
       than the `call fname_expr` that replaces it); what is not free is knowing
       what the reference does with `CSAVE`'s OPTIONAL argument, which has the
       `FILES`-style "is there an argument at all" question in it.
+      🟢 **FIXED 2026-09-05 (D-CSAVEEXPR) — AND IT RECOVERED 9 BYTES OF MAIN
+      PAGE 1.** `do_csave` and `do_cload` now `call fname_expr`, the same route
+      the other eight verbs took. **These were the last two `cp '"'` filename
+      gates in the tree.**
+
+          row        refs                zb before     zb after
+          s.var      accepted (silent)   load error    silent
+          s.expr     accepted            load error    silent
+          s.num      Type mismatch       load error    Type mismatch
+          s.unterm   accepted            load error    silent
+          l.num      Type mismatch       load error    Type mismatch
+
+      10 rows, 3 machines, **all agree after; 5 divergences → 0.**
+      🔴 **TWO OF THE FIVE ARE NEW, AND BOTH CAME FROM ASKING WHAT THE EDIT WOULD
+      TOUCH RATHER THAN WHAT IT WAS FOR.**
+      • `s.unterm` (`CSAVE"P`, no closing quote) is the row the fix would have
+      MOVED unasked: the hand-rolled parse demanded the closing quote, `str_eval`
+      follows MSX BASIC and auto-terminates at end of line. **Measured BEFORE the
+      edit**, so *"the fix closes it rather than changing it"* is a reading, not a
+      guess [[a-fix-falsifies-the-justification-beside-it]].
+      • `l.num` is **CLOAD**, which this entry names beside `CSAVE` and the
+      2026-09-04 run never measured — half the filed claim had never been read
+      [[a-justification-parenthesis-is-an-unrun-claim]].
+      ⚠️ **THE CLOAD SCOPE IS STATED, NOT ASSUMED.** `CLOAD A$` and `CLOAD"P"`
+      reach the tape, and a tape search that finds nothing is the `LOAD"CAS:"`
+      class this file records as NOT RETURNING (*"no row can carry this"*) — each
+      would be a 300 s timeout on three machines and two channels for a
+      `<NO READING>`. `CLOAD 5` errors in the PARSE, before any tape access, and
+      says the reference EVALUATES the operand. The verb is changed on that face
+      plus the eight already on `fname_expr`, and
+      [`basic/cload.asm`](basic/cload.asm) says so at the site.
+      💰 **MAIN PAGE 1: 6 B → 15 B FREE** (`make basic-reloc`, before and after —
+      re-run it, never quote this). Each hand-rolled gate was longer than the
+      `call fname_expr` replacing it, exactly as the price note above predicted.
+      🎯 **THAT IS A CARVE**, and it is the one the unary-plus entry needs: filed
+      at 10 B against 6 B free, it now fits.
+      🟢 `cassave-acceptance` 20/20 and `castail-acceptance` green — those read
+      the **decoded WAV**, not the screen, so a `silent` row is corroborated by a
+      tape that actually contains the right bytes.
+      🔧 One stale review entry retired with the site it described:
+      `tape_parse_name` in
+      [`tools/redundant-load-reviewed.txt`](tools/redundant-load-reviewed.txt),
+      caught by `redundant-load-check` going red — an entry that asserts nothing
+      is how that control goes blind, and the gate says so itself.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] 🔴 **THE `do_files` OP-SELECTOR GUARD IS PINNED BY NOTHING.** Filed
