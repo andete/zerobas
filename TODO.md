@@ -8830,10 +8830,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         before it marshals, and published in a RAM cell beside `SL_NUM`/
         `SL_TOK`. Shape: main ROM ≈ a `ld a,1` + `call fch_ctx_addr` + a store;
         sub page 1 **+1 B** (`ld de,TXTMAX` → `ld de,(cell)`).
-      * ⚠️ **UNVERIFIED, AND IT IS THE FIRST THING TO CHECK**: `sh_chan_addr` sits
+        💰 **PRICED BY BUILDING IT, 2026-09-05 (D-TXTCEIL): 9 B in main page 1,
+        not the ~7 counted here — and it does NOT fit.** Planted, measured,
+        reverted byte-identically (ROM hashes unchanged). `ld a,1` (2) +
+        `call fch_ctx_addr` (3) + `ld (SL_CEIL),hl` (3) = **8**, and the build
+        then refused with *"Relative jump out of range on line 48"* —
+        `jr c,dl_new`, which has nothing to do with this edit and goes out of
+        reach because **inserting into `dl_store` moves everything after it**.
+        Converting it to `jp` is the **9th** byte, and with that the image
+        overran the `$8000` ceiling.
+        📏 **Main page 1 was 5 B free on 2026-09-05** (`make basic-reloc`, the
+        same run — re-read it, never quote this), so this is **4 B short**. Same reach
+        mechanism D-UNARYPLUS recorded: a counted price in this page is a LOWER
+        BOUND, not a price.
+        🎯 **AND THERE IS NO LOW-REGION ESCAPE FOR THE FETCH**: `dl_store`
+        (`$7567`) and `fch_ctx_addr` (`$6FB6`) are BOTH in main page 1, read from
+        `build/basic-reloc.sym`.
+      * ⚠️ ~~**UNVERIFIED, AND IT IS THE FIRST THING TO CHECK**: `sh_chan_addr` sits
         behind an assembly-time `IF` in `sub/strheap.asm`, so a build without
-        D-FCH may not have it. Read the guard before believing the 7-byte shape
+        D-FCH may not have it. Read the guard before believing the 7-byte shape~~
         [[a-filed-blocker-can-name-the-wrong-obstacle]].
+        🟢 **CHECKED 2026-09-05 (D-TXTCEIL scout) — AND THE FILING NAMED THE
+        WRONG SWITCH.** The guard is `IF CLEARPOOL`, not a D-FCH one, and
+        `basic/sysvars.inc` ships `CLEARPOOL equ 1`, so `sh_chan_addr` **is**
+        present. 🔴 **But `make switch-build-check` actively FLIPS CLEARPOOL TO 0**
+        and requires that build to assemble — so a new caller of `fch_ctx_addr`
+        from `dl_store` must be inside `IF CLEARPOOL` too, or it breaks a build
+        the battery checks on every run. The filing did not state that, and it is
+        the real constraint the wrong-switch note was gesturing at.
       * ⚠️ And the rule itself is UNMEASURED beyond the three rows below: what
         the references do when the program grows into the variables *while
         variables exist* is a different question from the empty-program case
