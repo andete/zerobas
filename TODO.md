@@ -272,7 +272,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8745 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8790 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -336,7 +336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7948 (T-529ABE)`: a
+      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7993 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2663,7 +2663,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7948 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7993 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5933,9 +5933,54 @@ list. **When a slice lands, grep this list for what it just shipped.**
       contract, shared with PSET/LINE/CIRCLE/DRAW — all of which measurably
       agree today and must keep agreeing (`vp.pset.pre` / `vp.solid.pre` are
       identical on all three sides). Its own slice, with its own knives.
-      ⚠️ **AND THE FIRST THING THAT SLICE MUST MEASURE IS NOT IN HAND**: §4 says
+      ⚠️ ~~**AND THE FIRST THING THAT SLICE MUST MEASURE IS NOT IN HAND**: §4 says
       what the reference WRITES, not how its walk reaches a border row it can
-      still see. No row yet separates the candidate rules.
+      still see. No row yet separates the candidate rules.~~
+      🟢 **IT IS IN HAND NOW — D-NTSEP, 2026-09-05**
+      ([`scratchpad/ntwall_sep.py`](scratchpad/ntwall_sep.py),
+      [`.out`](scratchpad/ntwall_sep2.out)). Every fixture in
+      `ntwall_probe.py` draws its wall in the SAME colour as `B`, so the two
+      candidate rules predict identical answers on all 19 rows — which is why
+      none of them separated [[two-rules-that-coincide-on-every-row-you-have]]:
+
+          R-FLOOD  with `C != B` the walk ignores boundaries ALTOGETHER
+          R-BONLY  with `C != B` only pixels whose colour IS `B` stop bounding
+                   (the fill writes `pattern := 0, bg := C`, so a B-coloured
+                   pixel in the group ceases to read as B) — any OTHER colour
+                   still bounds
+
+      🎯 **THE SEPARATOR IS A SECOND WALL IN A THIRD COLOUR**, plus the
+      inversion that swaps the two walls' roles:
+
+          SCREEN 2:LINE(0,20)-(255,20),7:LINE(0,40)-(255,40),15
+          sampled at (50,19) (50,21) (50,30) (50,39) (50,41) (10,100)
+
+          case      refs (both)          zb
+          sep.b7    9 9 9 9 9 9          9 4 4 4 4 4    🔴 DIFF
+          sep.b15   9 9 9 9 9 9          9 9 9 9 4 4    🔴 DIFF
+          sep.cb    7 4 4 4 4 4          7 4 4 4 4 4    (C == B control)
+          sep.noclr 4 4 4 4 4 4          4 4 4 4 4 4    (no PAINT control)
+
+      ✅ **R-BONLY IS REFUTED AND R-FLOOD CONFIRMED.** The references fill past
+      **both** walls in **both** arrangements, including a wall whose colour is
+      neither `B` nor `C`. So with `C != B` the reference walk does not bound at
+      all — it is not a rule about which colour counts as a border.
+      📏 **AND ZEROBAS'S RULE IS NOW STATED TOO, from the same two rows**: it
+      bounds on `colour == B`, the textbook per-pixel flood fill, in both
+      regimes. `sep.b7` stops at the colour-7 wall; `sep.b15` crosses it and
+      stops at the colour-15 one. That is a clean, single sentence for each side,
+      which the fix's design needs and did not have.
+      🔴 **ROUND 1 OF THIS DREW THE SECOND WALL IN COLOUR 4, WHICH IS THE
+      SCREEN-2 BACKGROUND** — an invisible wall — and zerobas's inversion row
+      then AGREED with the references for a reason unrelated to the rule under
+      test. `sep.noclr`, the control that reads an unpainted pixel, returned 4
+      everywhere and is what caught it
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. It stays in the
+      probe for that reason.
+      ⚠️ **THE PRICE IS STILL NOT SETTLED** — matching R-FLOOD still means
+      changing what a filled span writes, which is `gfx_plot_cur`'s contract,
+      shared with PSET/LINE/CIRCLE/DRAW. What this closes is the DESIGN QUESTION
+      in front of that, not the design.
       🟢 Two rows SHIP GREEN as pins against a fix that overshoots
       (`plain_wall_cb_bounded`, `bf_wall_not_a_border`, PHASE H).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
