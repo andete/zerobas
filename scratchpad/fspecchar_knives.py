@@ -110,11 +110,16 @@ def main():
         return 2
 
     src = open(SRC).read()
-    for tag, anchor, _r, _w, _y in sel:
-        if src.count(anchor) != 1:
-            print(f"INSTRUMENT FAULT: {tag}'s anchor occurs {src.count(anchor)} "
-                  f"time(s), not once -- it would cut nothing and its red arm "
-                  f"would pass by never firing.")
+    # 🎯 THE UNIQUENESS CHECK IS `knife_guard.cut`'s NOW (D-CUTSCOPE). Every
+    # runner had been re-writing this same `.count(anchor) != 1` guard, and
+    # D-PAINTSEED's K-PS1 shows what happens to one that does not: a bare
+    # `.replace(x, y, 1)` takes the FIRST occurrence -- a position, not a
+    # decision -- and it cut the probe's own PSET seed.
+    for tag, anchor, repl, _w, _y in sel:
+        try:
+            knife_guard.cut(src, anchor, repl)
+        except knife_guard.CutError as e:
+            print(f"INSTRUMENT FAULT: {tag}: {e}")
             return 2
     digest = hashlib.sha256(src.encode()).hexdigest()
 
@@ -139,7 +144,7 @@ def main():
     results, faults = [], []
     for tag, anchor, repl, want, why in sel:
         print(f"\n=== {tag}: {why}")
-        open(SRC, "w").write(src.replace(anchor, repl, 1))
+        open(SRC, "w").write(knife_guard.cut(src, anchor, repl))
         h0 = knife_guard.hashes()
         moved, h1, brc = knife_guard.build(f"{TMP}/{tag}_build.log", h0)
         if brc:
