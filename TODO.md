@@ -254,7 +254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8443 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8481 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -318,7 +318,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1977 (T-6FE392)8 (T-529ABE)` from `TODO.md:7646 (T-529ABE)`: a
+      `TODO.md:1977 (T-6FE392)8 (T-529ABE)` from `TODO.md:7684 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2578,7 +2578,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7646 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7684 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4968,6 +4968,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `cpt_err24`. So the WORDING half may already be closed and the only measured
       divergence left is `A$=+` reading ERR 2 against 24. **Run the three verbs before
       pricing anything** [[a-justification-parenthesis-is-an-unrun-claim]].
+      🟢 **RUN, SAME DAY — THE WORDING HALF IS CLOSED AND THE THREE FILED ROWS
+      ARE NOW SCORED** (D-MISSOPMSG,
+      [`scratchpad/missop_msg_probe.py`](scratchpad/missop_msg_probe.py), which
+      reads the PRINTED TEXT rather than `ERR`):
+
+          row      vg8020            cf3300            zb
+          q.save   Missing operand   Missing operand   Missing operand
+          q.load   Missing operand   Missing operand   Missing operand
+          q.bload  Missing operand   Missing operand   Missing operand
+          q.let    Missing operand   Missing operand   Missing operand
+          q.letop  Missing operand   Missing operand   Syntax error   🔴 the survivor
+          d.err24  Missing operand   Missing operand   Missing operand
+          d.err2   Syntax error      Syntax error      Syntax error   CONTROL
+          c.ok     <EMPTY>           <EMPTY>           <EMPTY>        CONTROL
+
+      🎯 **`d.err24` IS THE ROW THAT SEPARATES THE TWO EXPLANATIONS** — it asks
+      the message TABLE and no verb — so a `Syntax error` anywhere above would
+      have been about which CODE a verb raises, not about a missing message.
+      `d.err2` is what stops a green being the classifier defaulting, and
+      **`q.letop` is a live NEGATIVE CONTROL on the same machine through the same
+      readout**: the instrument returns a DIFFERENT answer for zerobas on a
+      sibling row, so the four greens are not it agreeing with itself
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ➡️ `n.savebare` / `n.loadbare` / `n.bloadbare` are **un-DEFERRED in
+      `namspc-acceptance`** (5 deferred rows -> 2) and read
+      `<Missing operand>` 3/3.
+      📏 **AND THEY GAINED A SECOND REFERENCE ON THE WAY.** They were kind
+      `dskerr`, skipped on the diskless VG-8020 under the rule that a machine
+      with no disk controller cannot express a disk question — true of `FIELD`,
+      **not true of a bare verb**, which fails in the PARSE before anything
+      chooses cassette or disk. The VG-8020 answers `Missing operand` too, so a
+      new kind `err` (`errface` without that skip) puts them on TWO oracles.
+      🔴 A row parked on one oracle by a rule about its NEIGHBOURS is a coverage
+      claim nobody re-measured [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+      🔴 **SO WHAT IS LEFT OF THIS ITEM IS EXACTLY ONE ROW, AND IT IS THE NEXT
+      ENTRY'S**: `A$=+`. There is no message work outstanding at all — the
+      "price it once, at the message" plan above is answered by there being
+      nothing to price. **The item stays open only until unary plus lands.**
 
 - [ ] 🔴 **UNARY PLUS IS NOT IMPLEMENTED: `A=+1` IS ERR 2 HERE AND LEGAL ON BOTH
       REFERENCES.** Found 2026-09-05 by D-UNARYPLUS while answering the boundary

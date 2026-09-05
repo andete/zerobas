@@ -680,9 +680,9 @@ CASES = [
     # that gate changes what a bare verb answers whether or not anybody meant
     # it to. An unmeasured face change is exactly the thing D-FNEXPR §3.3
     # refused to make; these rows are what stops this one being that.
-    ("n.savebare", "dskerr", ['SAVE', 'PRINT"[OK]"']),
-    ("n.loadbare", "dskerr", ['LOAD', 'PRINT"[OK]"']),
-    ("n.bloadbare", "dskerr", ['BLOAD', 'PRINT"[OK]"']),
+    ("n.savebare", "err", ['SAVE', 'PRINT"[OK]"']),
+    ("n.loadbare", "err", ['LOAD', 'PRINT"[OK]"']),
+    ("n.bloadbare", "err", ['BLOAD', 'PRINT"[OK]"']),
 
     # === D-FNEXPR2: IS `RUN` REALLY AMBIGUOUS? ===============================
     # TODO.md and docs/spec-basic-fnexpr.md §2 both name `RUN`'s bare-RUN
@@ -973,29 +973,43 @@ DEFERRED: dict[str, str] = {
 #   n.opendiv    <Division by zero>          / <Division by zero>
 #   f.paren      OK                          / <Type mismatch>   (still DEFERRED,
 #                and it MOVES: `Syntax error` -> `Type mismatch`, see below)
-#   n.savebare   <Missing operand>           / <Syntax error>    (still DEFERRED)
-#   n.loadbare   <Missing operand>           / <Syntax error>    (still DEFERRED)
-#   n.bloadbare  <Missing operand>           / <Syntax error>    (still DEFERRED)
+#   n.savebare   <Missing operand>           / <Syntax error>    [2026-09-05:
+#   n.loadbare   <Missing operand>           / <Syntax error>     zb now reads
+#   n.bloadbare  <Missing operand>           / <Syntax error>     <Missing
+#                operand> on all THREE machines and these rows are SCORED --
+#                see "NO LONGER DEFERRED (1)" below. The faces above are what
+#                they read when this table was taken and stand as taken.]
 #   n.runvar     <File not found>            / <RUN SCROLLED OFF> (DEFERRED: RUN
 #                is not converted by this slice -- see its own note)
 
-# --- STILL DEFERRED (1): the BARE forms ------------------------------------
-# 🔴 `SAVE` / `LOAD` / `BLOAD` WITH NO ARGUMENT ANSWER `Missing operand in 10`
-# ON THE CF-3300 -- raised, with a line number. They answered a PRINTED
-# `load error` here and they answer a RAISED `Syntax error` now: the DISPOSITION
-# is fixed (it stops, ERR is set, ON ERROR traps it) and the WORDING is not,
-# because `Missing operand` is a message zerobas does not have. That is exactly
-# the disposition basic/missing.asm's els_typecheck already records for the LET
-# mirror `A$=` -- "a THIRD wording zerobas does not produce here" -- so these
-# three rows are that same open item, at three more verbs.
-# ⚠️ THEY MOVED, SO THEY MAY NOT SILENTLY STAY DEFERRED WITH A STALE REASON:
-# the reason below names the face they have NOW.
-for _lab in ("n.savebare", "n.loadbare", "n.bloadbare"):
-    DEFERRED[_lab] = ("DEFERRED — the bare form: `Missing operand` on the "
-                      "CF-3300, `Syntax error` here. RAISED on both sides since "
-                      "D-FNEXPR2 (it was a PRINTED `load error`); the wording is "
-                      "D-MISS-1's open `Missing operand` residual, one verb "
-                      "family over")
+# --- NO LONGER DEFERRED (1): the BARE forms AGREE, measured 2026-09-05 -------
+# 🟢 D-MISSOPMSG. These three were deferred with the reason *"`Missing operand`
+# on the CF-3300, `Syntax error` here"*, and 🔴 THAT REASON WENT STALE WITHOUT
+# ANYTHING SAYING SO -- which is precisely the failure its own ⚠️ warned about one
+# round earlier. `scratchpad/missop_msg_probe.py` reads the printed text:
+#
+#     row      vg8020            cf3300            zb
+#     q.save   Missing operand   Missing operand   Missing operand
+#     q.load   Missing operand   Missing operand   Missing operand
+#     q.bload  Missing operand   Missing operand   Missing operand
+#     d.err24  Missing operand   Missing operand   Missing operand  <- the TABLE
+#     d.err2   Syntax error      Syntax error      Syntax error     <- CONTROL
+#
+# 🎯 `d.err24` IS WHAT SEPARATES THE TWO EXPLANATIONS: sub/errmsg.asm:231's
+# `em_missing_operand` is wired and reachable, so the old face was about which
+# CODE the verb raised, not about a missing message. So they are SCORED now.
+#
+# 📏 AND THEY GAINED A SECOND REFERENCE. They were kind `dskerr`, which is
+# skipped on the diskless VG-8020 on the rule that a machine without a disk
+# controller cannot express a disk question -- true of `FIELD`, NOT true here:
+# a bare verb fails in the PARSE, before anything chooses cassette or disk, and
+# the VG-8020 answers `Missing operand` too (row q.save above, measured on it
+# directly). Kind `err` is `errface` WITHOUT that skip. 🔴 A row parked on one
+# oracle by a rule about its NEIGHBOURS is a coverage claim nobody re-measured.
+#
+# ⚠️ WHAT REMAINS OPEN IS ONE ROW AND IT IS NOT HERE: `A$=+` reads `Syntax
+# error` here against `Missing operand` on both references (ERR 2 vs 24) -- the
+# unary-plus item, which is blocked on a main page-1 carve.
 
 # --- STILL DEFERRED (2): RUN, and its filed blocker is REFUTED --------------
 # `RUN A$` is `File not found` on the CF-3300 (row n.runvar) against the 🟢
@@ -1103,6 +1117,11 @@ ERRORS = ("Syntax error", "Type mismatch", "Subscript out of range",
           # kept `Syntax error` for the LET mirror `A$=`), so naming it is what
           # lets these rows stay an honest DEFERRED divergence instead of a
           # silence that looks like agreement.
+          # 🟢 2026-09-05 (D-MISSOPMSG): "a THIRD wording zerobas does not
+          # produce here" is FALSIFIED -- sub/errmsg.asm:231 carries it and all
+          # three machines now print `Missing operand` for these verbs, so the
+          # rows are SCORED. The sentence above is kept because it is why the
+          # name is in this list at all; only its tense is wrong.
           "Missing operand",
           # 🔴 NOT AN MSX ERROR NAME. `load error` is zerobas's OWN lowercase
           # string (basic/bload.asm `err_io`), printed by a routine that RETURNS
@@ -1254,7 +1273,7 @@ def run_side(side: str, only: list[str]) -> dict:
             cfg["machine"],
             [("direct", list(cfg["reset"]) + body + ["RUN"])],
             batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
-        out[label] = {"dskerr": errface,
+        out[label] = {"dskerr": errface, "err": errface,
                       "dsklist": listface}.get(kind, bracket)(caps[0])
     return out
 
