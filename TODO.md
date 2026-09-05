@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9233 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9261 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2225 (T-6FE392)8 (T-529ABE)` from `TODO.md:8436 (T-529ABE)`: a
+      `TODO.md:2225 (T-6FE392)8 (T-529ABE)` from `TODO.md:8464 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2863,7 +2863,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8436 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8464 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6135,12 +6135,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 `t.b1`/`t.b2` (accepted) and `t.b300`/`t.bneg` (ERR 5) are what make it a
       DOMAIN reading: without the accepted pair a refusal of 0 and 3 is equally
       "the slot rejects everything".
-      💰 **PRICED, NOT FIXED: ~12 B for the slot-3 arm + ~8 B for the arity
-      bound.** Main page 1 free was **6 B on 2026-09-04** (`scr_extra` and
-      `spr_extra_arg` both live there; the latter already dispatches on
-      `GFX_SARGN`, so the arm has a natural home). The three rows are DEFERRED in the gate with that price
-      attached. 🔴 **RE-PRICE BEFORE INHERITING** — a decline resting on a wall
-      reading rots [[repricing-page1-slice]].
+      💰 ~~**PRICED, NOT FIXED: ~12 B for the slot-3 arm + ~8 B for the arity
+      bound.** Main page 1 free was **6 B on 2026-09-04**~~ — **the arity half is
+      FIXED and cost 5 B, not 8**; the slot-3 half is re-priced below. (`scr_extra`
+      and `spr_extra_arg` both live in main page 1; the latter already dispatches
+      on `GFX_SARGN`, so the arm has a natural home.) 🔴 **RE-PRICE BEFORE
+      INHERITING** — a decline resting on a wall reading rots
+      [[repricing-page1-slice]], and that instruction is what this entry then
+      followed.
+      ✅ **THE ARITY HALF SHIPPED 2026-09-05 (D-SCRARITY), 5 B. THREE ROWS
+      DIVERGED, NOT ONE, AND THE FILED ONE COULD NOT PICK THE RULE.**
+      🎯 **`SCREEN 1,,,,,1` CANNOT SAY WHERE THE BOUND LIVES** — a 6th argument
+      SLOT and a 6th argument VALUE are the same thing in that row, so *"bound the
+      comma count"* and *"bound a present argument's slot index"* agree on it
+      [[two-rules-that-coincide-on-every-row-you-have]]. The separator is
+      **`SCREEN 1,,,,,` — an EMPTY 6th slot** — and both references answer
+      **ERR 2**, where the rival rule would have left the comma-promises-an-argument
+      rule to answer ERR 24. So the bound is on the COMMA COUNT and fires BEFORE
+      `req_operand`, which is also the cheap shape here:
+      [`basic/screen.asm`](basic/screen.asm:134) already counts at the comma.
+      `SCREEN 1,,,,` (inside the bound, empty) still reads **ERR 24** on all
+      three, and that control is what makes the reading mean anything.
+      ⚠️ **THE FIRST CUT WAS OFF BY ONE AND THE PROBE NAMED IT IN ONE RUN**:
+      `GFX_SARGN` counts TRAILING slots only, so *"the list stops at five"* is the
+      mode PLUS FOUR. With `cp 6` only `SCREEN 1,,,,,,1` moved and the filed row
+      did not.
+      📏 [`scratchpad/scrarity_probe.py`](scratchpad/scrarity_probe.py), 11 rows,
+      both references agreeing on all 11. `t.s6`, `t.s6omit` and `t.s7` are now
+      SCORED in `screenerr-acceptance` (74/74, 2 deferred) rather than deferred.
+      💰 **THE SLOT-3 HALF DOES NOT FIT, RE-PRICED 2026-09-05: ~12 B against
+      0 B free in main page 1**, and the `jp`→`jr` reserve is down to **3 page-1
+      sites**, one of which is `basic/pdfcb-body.inc` — a shared `*-body.inc`
+      that has TWO answers (in range in main, out of range in the sub tenant),
+      so it is not 3 spendable bytes. ⚠️ Re-run `make basic-reloc` and
+      `scratchpad/jr_mapper.py`; both of those figures rot.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] ⚠️ **`a.spr` IS BLIND TO A CUT THAT STOPS THE SPRITE SIZE BEING APPLIED.**

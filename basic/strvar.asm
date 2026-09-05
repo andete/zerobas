@@ -382,7 +382,7 @@ mkf_back:
                 call    penderr_set         ; first-error-wins outranks the syntax
                                             ; error the decline would otherwise raise
                 pop     hl                  ; balance the guarded cursor
-                jp      str_eval_no
+                jr      str_eval_no         ; `jr` (D-SCRARITY carve): 1 B
 mkf_have:
                 ld      a,(STRSCR)          ; the hook clobbered A
                 cp      2

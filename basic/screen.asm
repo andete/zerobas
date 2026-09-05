@@ -134,6 +134,24 @@ scr_extra:                                  ; the trailing arguments
                 ld      a,(GFX_SARGN)       ; 🔴 NOT `ld hl,GFX_SARGN / inc (hl)`
                 inc     a                   ; (D-PEEPHOLE): HL is the PARSE CURSOR
                 ld      (GFX_SARGN),a       ; here -- skip_spaces below advances it.
+                ; 🎯 D-SCRARITY: THE ARGUMENT LIST STOPS AT FIVE, AND THE BOUND IS
+                ; ON THE COMMA COUNT, NOT ON HOW MANY ARGUMENTS ARE PRESENT.
+                ; D-SCRSLOT measured `SCREEN 1,,,,,1` as ERR 2 on both references
+                ; and could not tell which rule that was: a 6th SLOT and a 6th
+                ; VALUE are the same thing in that row. `SCREEN 1,,,,,` separates
+                ; them -- an EMPTY 6th slot -- and both references answer **ERR 2**
+                ; where the promise rule below would have said ERR 24. So the
+                ; bound is here, at the comma, and it fires BEFORE req_operand
+                ; (D-SCRARITY, scratchpad/scrarity_probe.py: 11 rows, both
+                ; references agreeing on all 11).
+                ; ⚠️ `cp 5`, and the first cut wrote `cp 6`. GFX_SARGN counts
+                ; TRAILING slots only -- 1 is the sprite size, 4 the printer --
+                ; so "the list stops at five" is the MODE plus FOUR of these.
+                ; With `cp 6` only `SCREEN 1,,,,,,1` moved and the filed row did
+                ; not; the probe named it in one run.
+                cp      5                   ; a 5th TRAILING slot = a 6th argument
+                jp      nc,pl_syntax        ; ERR 2 (`jp`: pl_syntax is out of jr
+                                            ; range from here -- measured, not assumed)
     ENDIF
                 call    req_operand         ; a comma PROMISED an argument, so a
                                             ; statement end here is ERR 24 --

@@ -1389,7 +1389,7 @@ ev_ff_cv:
                 ; for free: a nested malformed string fn has ALREADY set FPERR=4
                 ; inside, so it keeps its syntax error, while a plain non-string
                 ; argument arrives with FPERR clean and gets 13. Zero bytes.
-                jp      nc,cvi_tmm
+                jr      nc,cvi_tmm      ; `jr` (D-SCRARITY carve): 1 B
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
                 call    ev_sp

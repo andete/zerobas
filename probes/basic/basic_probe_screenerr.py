@@ -232,6 +232,17 @@ CASES = [
     # a SIXTH slot: MSX2 documents interlace there, so on an MSX1 this asks
     # whether the parser bounds the ARITY at all.
     ("t.s6",      "t", "SCREEN 1,,,,,1"),
+    # 🎯 D-SCRARITY: THE TWO ROWS THAT SAY WHERE THE BOUND LIVES. `t.s6`
+    # alone cannot: a 6th SLOT and a 6th VALUE are the same thing in it, so
+    # "bound the comma count" and "bound a present argument's index" agree on it
+    # [[two-rules-that-coincide-on-every-row-you-have]]. `t.s6omit` has an EMPTY
+    # 6th slot -- ERR 2 on both references, where the rival rule would leave the
+    # comma-promises-an-argument rule to answer ERR 24. `t.s5omit` is the control
+    # that makes that reading mean something: INSIDE the bound, an empty trailing
+    # slot really is ERR 24 on all three.
+    ("t.s6omit",  "t", "SCREEN 1,,,,,"),
+    ("t.s5omit",  "t", "SCREEN 1,,,,"),
+    ("t.s7",      "t", "SCREEN 1,,,,,,1"),
 
     # === o.* THE ORDERING ROWS — a deferred fault vs the side effect ========
     # 🔴 M is the whole point of these. The CODE was already made right by
@@ -313,7 +324,9 @@ LABEL_W = 10
 # The filing (2026-08-10) worried that a reference might NARROW a later slot.
 # It does: slot 3 is the cassette BAUD RATE and its domain is 1..2 on BOTH
 # references, where `scr_extra` treats every slot after the first as a plain
-# 0..255 byte. And the ARITY is bounded at five -- a sixth slot is Syntax error.
+# 0..255 byte. ✅ The ARITY half SHIPPED 2026-09-05 (D-SCRARITY): the bound is
+# on the COMMA COUNT and fires before the promise rule, measured by the empty
+# 6th slot, and `t.s6`/`t.s6omit`/`t.s7` are scored rather than deferred.
 # ⚠️ DEFERRED ON A MEASURED PRICE, NOT ON TASTE. Both `scr_extra` and
 # `spr_extra_arg` live in main page 1, which `make basic-reloc` reports at 6
 # BYTES FREE; the slot-3 dispatch plus its domain test is ~12 B and the arity
@@ -324,18 +337,18 @@ LABEL_W = 10
 # exactly "0 and 3 are accepted here and refused there", not "this slot is
 # unchecked".
 DEFERRED: dict[str, str] = {
-    # \u26a0\ufe0f THE "6 B free" IN THESE REASONS IS A WALL READING AND WALL READINGS
-    # ROT -- `make wall-assertion-check` polices TODO.md, not a probe. Read the
-    # live figure with `make basic-reloc`; the prices are ~2026-09-05.
+    # \u26a0\ufe0f THE FREE-SPACE FIGURE IN THESE REASONS IS A WALL READING AND WALL
+    # READINGS ROT -- `make wall-assertion-check` polices TODO.md, not a probe.
+    # Read the live figure with `make basic-reloc`; the prices are 2026-09-05,
+    # RE-TAKEN that day after D-SCRARITY spent the last of page 1 on the arity
+    # half (6 B free became 0, and the jp->jr reserve 5 sites became 3, one of
+    # which is a shared *-body.inc that has two answers).
     "t.b0": probe_report.Deferral(
-        "slot 3 domain is 1..2 on both refs; ~12 B against 6 B free (2026-09-05)",
+        "slot 3 domain is 1..2 on both refs; ~12 B against 0 B free (2026-09-05)",
         vg8020=" 5 , 1 ", cf3300=" 5 , 1 ", zb=" 0 , 1 "),
     "t.b3": probe_report.Deferral(
-        "slot 3 domain is 1..2 on both refs; ~12 B against 6 B free (2026-09-05)",
+        "slot 3 domain is 1..2 on both refs; ~12 B against 0 B free (2026-09-05)",
         vg8020=" 5 , 1 ", cf3300=" 5 , 1 ", zb=" 0 , 1 "),
-    "t.s6": probe_report.Deferral(
-        "arity bounded at 5 slots on both refs (ERR 2); ~8 B, same wall",
-        vg8020=" 2 , 1 ", cf3300=" 2 , 1 ", zb=" 0 , 1 "),
 }
 
 SENTINELS = ("<NO CAPTURE>", "<NO ECHO>")
@@ -560,7 +573,7 @@ def main() -> int:
                 rotted.append((lab, moved))
             print(probe_report.row("....", lab, LABEL_W, vals,
                                    f"   [{DEFERRED[lab]}]"
-                                   + (f"   \U0001f534 FACE ROTTED: {moved}" if moved else "")))
+                                   + (f"   🔴 FACE ROTTED: {moved}" if moved else "")))
             continue
         agree += ok
         dis += not ok
@@ -590,7 +603,7 @@ def main() -> int:
           "are legitimate oracles for every row here")
     print("DENOMINATOR: " + DENOMINATOR)
     if rotted:
-        print("\U0001f534 DEFERRED FACE(S) ROTTED — a deferral is a PIN, not a "
+        print("🔴 DEFERRED FACE(S) ROTTED — a deferral is a PIN, not a "
               "note (D-DEFERPIN). The row still may not be scored; what moved "
               "is the reading the deferral's REASON is written about:")
         for _lab, _why in rotted:
