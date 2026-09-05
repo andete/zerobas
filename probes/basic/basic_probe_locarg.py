@@ -115,18 +115,38 @@ UNTRAP_PROG = [
 # home" the same reading.
 # 🔴 WITH ONE EXCEPTION, AND KNIFE K-LA5 FOUND IT (docs/spec-basic-locarg.md
 # §8.3): the seed is itself a `LOCATE`, so a cut that breaks LOCATE's accept path
-# breaks the SEED too, and `t.zero` -- whose target IS home -- then reads
-# ` 0  0  0 ` either way. Sound in the shipped tree, blind under that cut. The
-# row stays as it is: `LOCATE 0` being a VALUE and not an omission is what it is
-# for, and narrowing the claim is cheaper than losing the row (TODO.md).
+# breaks the SEED too, and `t.zero` -- whose target IS home -- then read
+# ` 0  0  0 ` either way. ✅ FIXED 2026-09-05 (D-ZEROSEED) by giving that ONE row
+# a seed that is not a `LOCATE` (ZSEED below) -- the exception is removed rather
+# than narrowed, and re-running K-LA5 now moves the row (` 0  0  7 ` here against
+# ` 0  0  0 ` on both references).
 SEED = "CLS:LOCATE 7,4:"
+
+# 🟢 …AND `t.zero` GETS A SEED THAT IS NOT A `LOCATE` (2026-09-05, D-ZEROSEED),
+# which removes the exception above rather than narrowing the claim about it.
+# Printing seven spaces leaves the cursor at column 7 by a mechanism the cut
+# under test does not touch, so:
+#
+#     seed alone                        -> ` 0  0  7 `   (measured, all 3 sides)
+#     seed + LOCATE 0,0                 -> ` 0  0  0 `   (measured, all 3 sides)
+#
+# The row's SUBJECT and its PASS reading are both unchanged -- ` 0  0  0 `, as
+# before -- and it can now FAIL under a cut that breaks LOCATE, which is exactly
+# what K-LA5 showed it could not.
+# 🎯 THE GENERAL SHAPE, which is why this is worth 40 characters: a probe that
+# SEEDS a cell with the mechanism it also TESTS has no reading for "the
+# mechanism is gone". Seed with something else.
+# ⚠️ Only `t.zero` needs it: it is the sole row whose target IS the seed-free
+# home position. Changing SEED globally would shift every other row's recorded
+# "did not move" reading from ` 4  7 ` to ` 0  7 ` for no gain.
+ZSEED = 'CLS:PRINT"       ";:'
 
 # (label, kind, statement)   kind: "t" trapped / "u" untrapped
 CASES = [
     # --- in-range: the reading itself, and the omitted-argument grid ---------
     ("t.ok",       "t", "CLS:LOCATE 5,3"),
     ("t.ok3",      "t", "CLS:LOCATE 5,3,1"),
-    ("t.zero",     "t", SEED + "LOCATE 0,0"),
+    ("t.zero",     "t", ZSEED + "LOCATE 0,0"),
     ("t.omitc",    "t", SEED + "LOCATE ,2"),
     ("t.omitr",    "t", SEED + "LOCATE 3"),
     ("t.omitr2",   "t", SEED + "LOCATE 3,,1"),
