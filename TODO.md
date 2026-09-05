@@ -272,7 +272,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8704 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8721 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -336,7 +336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7907 (T-529ABE)`: a
+      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7924 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2663,7 +2663,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7907 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7924 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3943,7 +3943,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [[a-mechanism-inferred-from-one-observation]]. What it does establish is
       that *"the index is a parameter, so all five behave alike"* is too strong:
       two verbs through the same routine gave different answers.
-      ➡️ **`KEY` and `STRIG` remain arguments. 2 of 4 converted.**
+      🟢 **`STRIG` CONVERTED THE SAME DAY — 3 of 4 — AND IT AGREES TOO**
+      ([`scratchpad/clrtrapstk_strig.py`](scratchpad/clrtrapstk_strig.py),
+      [`.out`](scratchpad/clrtrapstk_strig.out)). Same 2×2 plus the same positive
+      control, through `basic_probe_strig_trap.run()` (imported; trigger 0 IS the
+      SPACE key, matrix row 8 bit 0). All four cells **1/1**, `c.twofire` **2/2**.
+      📏 **SO THE SHAPE IS: SPRITE DIVERGES, STOP AND STRIG DO NOT.** The code
+      argument predicted all four alike; three measured, and one of the three is
+      the odd one out.
+      🔴 **AND THE THREE RUNS MAY NOT BE MEASURING THE SAME THING — this bounds
+      what "3 of 4" is worth.** SPRITE re-fires once per FRAME, so a trap left
+      enabled fires with **no new event** and saturates at 250. `STOP` and
+      `STRIG` fire once per EDGE, so their 2×2 can only detect a re-enable that
+      survives until the **second tap**; a trap left enabled-but-unfired is
+      invisible to them. Both read 1 where a re-enable would read 2, which rules
+      out *that* failure — it does not rule out SPRITE's. ⚠️ **The MECHANISM for
+      the SPRITE divergence is still NOT established and is deliberately not
+      guessed at** [[a-mechanism-inferred-from-one-observation]].
+      ➡️ **`KEY` remains an argument. 3 of 4 converted.**
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (SPRITE measured 2026-08-26; KEY/STRIG/STOP still argued).
 
 - [ ] 💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS
