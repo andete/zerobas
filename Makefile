@@ -481,6 +481,23 @@ needle-case-check:
 ramfree-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_ramfree.py --gate $(if $(ONLY),--only '$(ONLY)',)
 
+# --- D-TXTCEIL: a line store may not grow past the string-pool floor ----------
+# The store used to compare against the CONSTANT TXTMAX ($$DB00), so
+# `CLEAR n,himem` never reached it and the program grew PAST HIMEM into the
+# string and variable area, silently. dl_store now publishes the live ceiling in
+# SL_CEIL and the lineedit tenant bounds against it; this row went -225 B -> +71 B
+# across the fix.
+# 🎯 ZEROBAS-ONLY ON PURPOSE. `PRGEND <= HIMEM - POOLSIZE` is a claim about this
+# machine's own map and needs no oracle. lnblank's crf-oom* rows compare FRE(0)
+# against references that reserve 293 + 267*MAXFILES below HIMEM where zerobas
+# reserves 12 + 50*MAXFILES (D-HIMEMRES), because D-FCH's per-channel block is
+# "state ONLY (no buffer)" -- they can never agree and are the wrong instrument.
+# 🔴 c.fits IS NOT DECORATION: a one-sided invariant is trivially satisfied by a
+# machine that stores NOTHING, so a bound that over-refused would read green
+# without it. ~4 boots.
+txtceil-acceptance: repack-machine
+	python3 probes/basic/basic_probe_txtceil.py --gate $(if $(ONLY),--only '$(ONLY)',)
+
 # --- WALL LITERALS OUTSIDE TODO.md (docs/spec-wall-literals.md, D-WALLIT) -----
 # `wall-assertion-check` above scopes itself to TODO.md's `- [ ]` items BY DESIGN.
 # A stale figure inside a GATE, a PROBE or a source comment misleads the gate
@@ -3156,7 +3173,7 @@ clean:
         build-assert-check \
         interval-trap-acceptance \
         stackpool-acceptance trapdepth-acceptance ctlcross-acceptance ctllim-acceptance \
-        ramfree-acceptance \
+        ramfree-acceptance txtceil-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep sysvarsweep fat-error-acceptance \

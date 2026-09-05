@@ -82,7 +82,7 @@ logicops-acceptance lineerr-acceptance screenerr-acceptance tmfp-acceptance
 stmtpend-acceptance array-acceptance deffn-strict graphics-acceptance
 abort-acceptance interval-trap-acceptance clearpool-acceptance
 stackpool-acceptance trapdepth-acceptance ctlcross-acceptance ctllim-acceptance
-ramfree-acceptance
+ramfree-acceptance txtceil-acceptance
 cursor-acceptance time-acceptance namspc-acceptance arrdim-acceptance
 arylv-acceptance badfnum-acceptance beep-acceptance binfre-acceptance
 cassave-acceptance castail-acceptance deffn-acceptance direct-ctrl-acceptance

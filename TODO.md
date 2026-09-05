@@ -9037,10 +9037,37 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         against before — so those rows go on testing what they tested. ⚠️ Which
         means **the unit rows still do not cover the live ceiling**; the emulator
         row above is what does.
-        ⚠️ **STILL OPEN, and it is why this item is not closed**: the row is a
-        scratchpad probe, not a collected gate unit. Wiring it in needs a 25-line
-        fixture and a PEEK-triple readout that `lnblank`'s row shapes do not have.
-        🙋 And the `FRE(0)`-agreement question above stays his.
+        🟢 **AND IT IS A COLLECTED GATE NOW: `make txtceil-acceptance`**
+        ([`probes/basic/basic_probe_txtceil.py`](probes/basic/basic_probe_txtceil.py)),
+        in the EMULATOR tier, named by both membership lists. Four rows:
+
+            c.fits   3 lines, room to spare   stored=111  head=589   🟢
+            p.n25   25 lines                  stored=629  head= 71   🟢
+            p.n40   40 lines                  stored=629  head= 71   🟢
+            p.pool2 25 lines, pool 200        stored=740  head= 60   🟢
+
+        🔴 **`c.fits` IS NOT DECORATION.** A one-sided invariant is trivially
+        satisfied by a machine that stores NOTHING, so a bound that over-refused
+        would read green on the other three
+        [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. And `p.pool2`
+        shrinks the pool by 100 B: the floor rises 100 B and the store follows
+        it, so "bounded" is not one arithmetic coincidence.
+        🔧 **The fixture control earned its place on the first run**: `p.tight`
+        (pool 500, gap 900) reported `NOT MEASURED` because that `CLEAR` is
+        REFUSED and leaves HIMEM at its default — the same trap that made an
+        earlier cut of this row report a comfortable green about a machine never
+        set up. Replaced with a geometry that takes.
+        🔧 **AND THE BESPOKE RAM PROBE WAS UNNECESSARY.** Shrinking the
+        `; FREE-RAM` claim to `$E05A..$E080` is enough:
+        `make ramfree-acceptance` already fills EVERY declared window and fills
+        that one across 11 workload rows on every battery run, so the cell's
+        freedom is **gated**, not measured once.
+        [`scratchpad/ramfree_e058.py`](scratchpad/ramfree_e058.py) is kept as the
+        pre-flight it was — it ran before the claim was shrunk — and is not the
+        standing check.
+        🙋 **Still his**: whether `FRE(0)` should AGREE with the references, which
+        would mean reserving 267 B per channel for buffers that do not exist
+        here.
         ➡️ **WHAT IS LEFT IS THE VALUE, NOT THE PLUMBING.** The cell is proven,
         the fetch site is right, the `push hl` and `IF CLEARPOOL` guards are
         settled, and 11 B fits (main page 1 15 → 4 B free on 2026-09-05).
