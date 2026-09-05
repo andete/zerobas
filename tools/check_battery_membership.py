@@ -54,14 +54,26 @@ def battery(src: str) -> set[str]:
     return out
 
 
+# 🔴 `-check` JOINED THE DENOMINATOR 2026-09-05, AFTER THIS GATE WATCHED A NEW
+# ONE GO UNCOLLECTED. `build-assert-check` was added to the Makefile and to the
+# `gates` variable, the full battery ran 108/108 GREEN, and the new gate had not
+# run at all -- the battery's real membership lives in `tools/run_gates.py`'s
+# STATIC/EMULATOR lists, which are a SECOND list nothing cross-checked. The only
+# signal was grepping the log for the target's own name.
+# 🎯 And this gate could not have caught it, by construction: its denominator was
+# `*-acceptance` only. The static `-check` tier is precisely the one D-GATESKIP
+# measured as catching the real reds, so leaving it out inverted the priority.
+SUFFIXES = ("-acceptance", "-check")
+
+
 def acceptance_targets(mk: str) -> set[str]:
-    """`*-acceptance` targets that actually have a recipe."""
+    """Targets in the policed suffixes that actually have a recipe."""
     out, target = set(), None
     for line in mk.splitlines():
         m = re.match(r"^([A-Za-z0-9_./-]+):", line)
         if m and not line.startswith("\t"):
             target = m.group(1)
-        elif line.startswith("\t") and target and target.endswith("-acceptance"):
+        elif line.startswith("\t") and target and target.endswith(SUFFIXES):
             out.add(target)
     return out
 

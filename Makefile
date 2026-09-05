@@ -429,6 +429,25 @@ ram-claim-check:
 	python3 tools/check_ram_claims.py --selftest
 	python3 tools/check_ram_claims.py
 
+# --- D-DEFFN §4.5: an ALIGNMENT assert over a MOVING symbol is a landmine ------
+# `wall-assertion-check` and `ram-claim-check` police FIGURES; this polices the
+# `IF <cond> / db UNDEFINED_SYMBOL / ENDIF` asserts themselves. Two shapes look
+# identical and behave completely differently: a BUDGET assert (`IF $ > $4000`)
+# is tripped by your own edit with the usual remedy, while an ALIGNMENT assert
+# (`high X != high (X+n)`) is tripped by a STRANGER's unrelated edit upstream and
+# its diagnostic names no remedy. `sub/deftype.asm`'s `edt_codes` guard fired
+# exactly that way -- a 40 B routine added to a file included AHEAD of it.
+# 🎯 The rule is the CONJUNCTION: alignment-shaped AND an operand that can move.
+# Three of this tree's four alignment asserts are over symbols that cannot
+# (USRTAB is the published $F39A, SUBROM_ENTRY_BASE_P1 is `equ $4010`, FN_BASE is
+# separately pinned), and an assert over a pinned literal is a PROOF.
+# ⚠️ ENFORCEMENT IS DETECTED IN THE SOURCE, not acknowledged in a list: the check
+# looks for the `IF (low $) > n / ds` pad before the label, so deleting the pad
+# turns the row red by itself instead of an allowlist entry quietly going stale.
+build-assert-check:
+	python3 tools/check_build_asserts.py --selftest
+	python3 tools/check_build_asserts.py
+
 # --- D-RAMFREE: ...and is a declared window ACTUALLY free? Ask the machine -----
 # `ram-claim-check` above is the NAME half and refuses to claim more. This is the
 # EXTENT half, and the only thing that can settle it: fill every declared span
@@ -3078,6 +3097,7 @@ clean:
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         battery-membership-check fixture-integrity-check diskmap ram-claim-check \
+        build-assert-check \
         interval-trap-acceptance \
         stackpool-acceptance trapdepth-acceptance ctlcross-acceptance ctllim-acceptance \
         ramfree-acceptance \

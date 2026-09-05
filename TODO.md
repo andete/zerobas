@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:7942 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:7988 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7145 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7191 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7145 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7191 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6885,7 +6885,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the Makefile uses, not the dry-run branch that would have left it
       unmeasured. Costs ~5.6 s, almost all of it the minimax fitting.
 
-- [ ] 🔴 **A PAGE-ALIGNMENT ASSERT WITH NO ENFORCEMENT IS A LANDMINE FOR THE
+- [x] ✅ **A PAGE-ALIGNMENT ASSERT WITH NO ENFORCEMENT IS A LANDMINE FOR THE
       NEXT UNRELATED EDIT — one fired, and the class is not swept.** Filed
       2026-08-22 by D-DEFFN,
       [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md) §4.5.
@@ -6899,6 +6899,52 @@ list. **When a slice lands, grep this list for what it just shipped.**
       shape over a sysvar rather than a ROM label, and nothing has walked the
       tree for the rest. A `db UNDEFINED_SYMBOL` assert that a stranger's edit
       can trip is a build break with a diagnostic and no remedy.
+      ✅ **SWEPT AND GATED 2026-09-05 — `make build-assert-check`
+      (`tools/check_build_asserts.py`), collected in the battery.** It walks
+      `basic/`, `sub/` and `disk/` and finds **22 asserts: 18 BUDGET, 4
+      ALIGNMENT.**
+      🎯 **The rule is the CONJUNCTION, and that is what the sweep established**:
+      alignment-shaped **and** an operand that can move. Three of the four are
+      over symbols that CANNOT — `USRTAB` is the published MSX `$F39A`,
+      `SUBROM_ENTRY_BASE_P1` is `equ $4010`, `FN_BASE` is an `equ` chain
+      *separately pinned* by its own `IF FN_BASE != $EA92`. **An assert over a
+      pinned literal is a PROOF, not a landmine**: the only way to trip it is to
+      edit the literal, which is deliberate and self-explanatory. So the entry's
+      own worry about `basic/usr.asm` is answered — it is safe, and for a reason
+      it can state.
+      The one over a **code label** is `edt_codes`, i.e. exactly the one that
+      fired, and it is enforced.
+      🔴 **MY OWN DETECTOR MISSED ONE ON ITS FIRST RUN.** Matching `high`/`low`
+      classified `basic/expr.asm:1656` as a budget assert, because it spells the
+      same page-crossing question `(X >> 8) - (Y >> 8)`. **The shape is the
+      question, not the operator** — `>> 8` and `& $FF00` ask it too. Widened,
+      and the count went 3 → 4.
+      ⚠️ **Enforcement is DETECTED IN THE SOURCE, not acknowledged in a list.**
+      The check looks for the `IF (low $) > n / ds` pad ahead of the label, so
+      deleting the pad turns the row red by itself — an allowlist entry would
+      have recorded the fix and then gone stale the day someone removed it,
+      which is the exact failure mode this check exists to prevent. Armed: with
+      the pad deleted the check goes rc 1 and names the landmine; restored, rc 0;
+      `sub/deftype.asm` byte-identical after.
+      ⚠️ SHAPE-LEVEL ONLY, and it says so: it cannot tell whether a pad is still
+      BIG ENOUGH — the assert itself answers that, at build time.
+      🔴 **AND ADDING THIS GATE EXPOSED A HOLE IN THE BATTERY ITSELF, FIXED HERE.**
+      `build-assert-check` was added to the Makefile *and* to the `gates`
+      variable, the full battery then ran **108/108 GREEN — and the new gate had
+      not run at all.** The battery's real membership lives in
+      `tools/run_gates.py`'s `STATIC`/`EMULATOR` lists, a **second list nothing
+      cross-checked**; the only signal was grepping the log for the target's own
+      name. 🎯 `battery-membership-check` could not have caught it by
+      construction: its denominator was `*-acceptance` ONLY, and the static
+      `-check` tier is precisely the one D-GATESKIP measured as catching the real
+      reds — so the gate's scope inverted its own priority. Its denominator now
+      covers `-check` too: **109 targets, 103 collected, 6 excused.** The single
+      new gap it found was `citation-check`, excused with its reason (a
+      standalone ALIAS — `check_citation_paths.py` already runs as a step of
+      `basic-reloc`, deliberately, because a cadence in a comment is a habit and
+      a habit is not a control). ⚠️ Its selftest caught my exclusions line being
+      space-separated where the file is TAB-separated, which had silently made
+      the entry not parse.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] 🔴 **NOTHING POLICES A RAM FREE-SPACE CLAIM, AND THE ONE IN THE MAP WAS
