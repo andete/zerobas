@@ -151,6 +151,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **BASIC surface**
 
+- [x] 🟢 **D-REVERTSWEEP: A FILED ✅ FOR WORK THE SOURCE SAYS WAS UNDONE — AND
+      MY OWN RETRACTION DID NOT READ AS ONE.** 2026-09-05,
+      [`scratchpad/revertsweep.py`](scratchpad/revertsweep.py). Two of these were
+      found by hand in one afternoon (`D-RECLEN2`'s widening; a probe header
+      wrong about its own gate), so the class got an instrument.
+      🎯 **THE SHAPE IS ONE-SIDED AND THAT IS WHY NOTHING CATCHES IT.** A slice
+      lands, is written up ✅, and is LATER undone by a different slice that
+      records the reversal **where the code is** — in a source comment nobody
+      re-reads against the filing. `todo-citation-check` verifies a citation
+      points at the right BLOCK; nothing asks whether the block is still TRUE.
+      It sweeps 120 ROM sources for revert language, reads the `D-XXX` names
+      beside it, and reports the ones TODO.md still marks ✅.
+      🔴 **AND ITS FIRST RUN CAUGHT MY OWN CORRECTION FROM AN HOUR EARLIER.** I
+      had written `✅ ~~**AND THE VALIDATOR IS NOW WIDENED**~~` — the checkmark
+      OUTSIDE the strike — so the retraction still reads as a live ✅ to anything
+      scanning for one, and to a human skimming. Now `~~✅ **…**~~`. **A
+      retraction that leaves the marker standing is not a retraction.**
+      📏 **1 TRUE, 2 FALSE on the first run, and both false ones taught it
+      something.** `; D-LINEMAX had to put it somewhere, and it cost 1792 B` is a
+      PLACEMENT COST, so `had to put` came out. *"The first attempt at this
+      (D-PUDOT, reverted) juggled it through push/pop"* is a discarded DRAFT
+      inside a slice that then shipped a better design — its ✅ is correct — so a
+      draft exclusion went in. ⚠️ **And that exclusion had to read the WINDOW, not
+      the line**: `punum.asm` wraps mid-sentence, so a line-scoped test saw
+      `reverted` with no `attempt` beside it and kept the false positive the very
+      comment disqualifies.
+      ⚠️ **THE ONE REMAINING HIT IS READ AND ALLOWED, WITH THE REASON IN THE
+      TOOL**: `D-RECLEN2` is filed exactly right at `TODO.md:6875` — *"THE FACE
+      SHIPPED, THE DOMAIN DID NOT"* — and a **half**-shipped slice is something
+      this sweep cannot tell from a filing that claims the whole. Allowed rather
+      than tuned away, so clean means *nothing new* instead of *nothing looked*.
+
 - [x] 🟢 **D-CLOSESWEEP: FOUR ITEMS WERE FINISHED WORK STILL SPELLED
       `- [ ]`, AND THE SHORTLIST THAT FOUND THEM WAS WRONG ABOUT THREE MORE.**
       2026-09-05, [`scratchpad/closesweep.py`](scratchpad/closesweep.py). This
@@ -336,7 +368,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8879 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8911 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -400,7 +432,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2089 (T-6FE392)8 (T-529ABE)` from `TODO.md:8082 (T-529ABE)`: a
+      `TODO.md:2121 (T-6FE392)8 (T-529ABE)` from `TODO.md:8114 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2727,7 +2759,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8082 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8114 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6999,7 +7031,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 **RECORD 6 IS THE ONLY ROW THAT COULD HAVE SAID SO** — records 1 and 5
       lie wholly inside the first sector and would round-trip on an
       implementation that cannot straddle at all.
-      ✅ ~~**AND THE VALIDATOR IS NOW WIDENED (D-RECLEN2, 2026-08-30).** The
+      ~~✅ **AND THE VALIDATOR IS NOW WIDENED (D-RECLEN2, 2026-08-30).** The
       "still unmeasured, needs three `PUT`s" caveat that stood here is
       DISCHARGED: writing only record 6 is a SINGLE `PUT`, and zerobas
       round-trips it exactly as the reference does.~~
