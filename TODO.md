@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9113 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9142 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8316 (T-529ABE)`: a
+      `TODO.md:2192 (T-6FE392)8 (T-529ABE)` from `TODO.md:8345 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -973,8 +973,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       📌 **12 of 13 now have a readable verdict channel.** `budget_probe` is the
       last, and it is a TIMING TABLE with no verdict concept at all — an honest
       unparsed, not a hole.
+      📏 **RE-RUN IN FULL 2026-09-05 — 20 PROBES, SERIAL, REFCACHE OFF — AND
+      THE CORPUS GREW 13 → 20 AS TODAY'S SLICES CITED NEW PROBES.**
+      🟢 **THE MAINTENANCE THIS ENTRY ASKS FOR WAS OWED BY TODAY'S OWN WORK**:
+      `reclendom_probe` and `uplus_probe` entered the corpus diverging and
+      unpinned, and would have read `🔴 UNFILED`. Both adjudicated into
+      `tools/filed-row-known.txt` from the runs, named by their owning heading.
+      🔴 **AND ONE OF THOSE PINS WAS UNVALIDATABLE — WORSE THAN NO PIN.**
+      `reclendom_probe` read `🔴 NOTHING PARSED`: it prints `DIFF` in the MIDDLE
+      of a table row, and the sweep's `MARKER` wants it at line START or END. So
+      eight pinned rows could be neither confirmed nor go stale, while
+      `--check-orphans` still called the pin live. **A NINTH output shape**, and
+      the same remedy D-RECLENV applied to `reclen_probe`: per-row `DIFF <label>`
+      lines.
+      🔴 **AND THE FIX PRODUCED A PHANTOM ROW ON ITS FIRST TRY** — the summary
+      `DIFF total 8/23` matched `^\s*DIFF\s` and was counted as a NINTH marker,
+      reading as `1 UNFILED`. Re-worded to carry no marker token; now 8 markers,
+      **8 known, 0 unfiled**. Caught by RUNNING the sweep against the file, which
+      is the same way D-RECLENV caught its mirror-image `DIFF:` bug.
+      🔴 **THREE PROBES CARRY GENUINELY UNADJUDICATED DIVERGENCES — 11 MARKER
+      LINES, AND THEY ARE THE NEXT THING TO READ:**
+
+          casfch_probe      6 markers   0 known, 6 UNFILED   (rc=1)
+          trapdepth_probe   4 markers   0 known, 4 UNFILED   (exits 0)
+          ramfree_probe    10 markers   9 known, 1 UNFILED   (rc=1)
+
+      That is the sweep doing exactly what it exists for: a divergence nobody has
+      adjudicated, made loud. **Not read yet — recorded so the next pass starts
+      from a list rather than a re-run.**
       🤖 AUTONOMOUS — what remains is keeping the file honest as entries close,
-      and the sweep now says so itself when one rots.
+      and the sweep now says so itself when one rots; the 11 above are the
+      standing to-do.
 
 - [x] ✅ **D-OOMTAIL (2026-08-31): the two store-overflow exits share one
       body — +13 B main page 1.** `ctp_oom`'s seven-instruction tail was
@@ -2801,7 +2830,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8316 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8345 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -47,6 +47,14 @@ keylist_probe: d.n1; d.n0; d.n10; d.n11; d.nneg; d.empty -- the SAME entry (`KEY
 # scoreboard built from this pin counted them as outstanding debt.
 ngram14_probe: r.atn; r.exphuge; x.m100; x.m200; x.m1e30; x.m150; x.m170; x.m180; x.p100 -- the §12.9-adjudicated negative-EXP carve-out + the last-digit mathpack rows; D-EXPNEG's revert is the standing decision
 ntwall_probe: wall.row; solid.row; h2; h4; hp3; vp.solid -- "PAINT: a borderless wall is eaten" (retracted+replaced filing); mechanism at gfx group level
+
+# --- ADDED 2026-09-05: the debt two of the day's slices left behind ----------
+# Both probes entered the sweep corpus the moment an OPEN item cited them, and
+# both DIVERGE. Unpinned they would read `🔴 UNFILED -- read them`, which is the
+# sweep working: a divergence nobody has adjudicated. Adjudicated here, from the
+# runs, against the entries that own them.
+reclendom_probe: r.3; r.7; r.100; r.127; r.255; f.100; f.over; p.100 -- "A NON-TILING `LEN=r` IS `Syntax error` HERE AND `OK` ON THE CF-3300"; the reference takes any 1..256, zerobas only the powers of two -- a deliberate limit while fat_rand_put/get cannot span two sectors (basic/files.asm opr_lowbyte), not an oversight
+uplus_probe: x.str; x.strlit; x.prstr -- "UNARY PLUS IS NOT IMPLEMENTED: `A=+1` IS ERR 2 HERE AND LEGAL ON BOTH REFERENCES"; the NUMERIC half shipped 2026-09-05 (D-UNARYPLUS) and these three are the STRING half, sited at basic/strvar.asm str_eval_one and priced ~6-7 B
 # onerrarm_probe: REMOVED 2026-09-02 (D-ONERRGO) -- a.badtok, a.badstr,
 # t.stored and t.stored2 no longer diverge (the matrix is 0/12), so the four
 # rows leave the set per this file's own rule. The entry that owned them is

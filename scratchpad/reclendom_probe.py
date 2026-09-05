@@ -123,9 +123,30 @@ def main():
     for (lab, stmt, exp), r in zip(CASES, reads["cf3300"]):
         ref[lab] = (omsx_repl.result_span_after_echo(r, "RUN") or "<none>").strip()
     print(f"{'row':10s} {'cf3300':>8s} {'zb':>8s}  {'':4s} statement   -- expectation")
+    diffs = []
     for lab, stmt, exp in CASES:
-        mark = "DIFF" if ref[lab] != got[lab] else "  ok"
+        d = ref[lab] != got[lab]
+        mark = "DIFF" if d else "  ok"
+        if d:
+            diffs.append(lab)
         print(f"{lab:10s} {ref[lab]:>8s} {got[lab]:>8s}  {mark}  {stmt}   -- {exp}")
+    # 🔴 A VERDICT CHANNEL scratchpad/filed_row_sweep.py CAN ACTUALLY READ.
+    # Its MARKER wants `DIFF` at LINE START or LINE END; this table prints it in
+    # the MIDDLE of a row, so the sweep read `🔴 NOTHING PARSED -- probe
+    # measured nothing, or format unknown` and the eight rows pinned for this
+    # probe in tools/filed-row-known.txt could be neither confirmed nor go
+    # stale. A pin the sweep cannot see is worse than no pin: `--check-orphans`
+    # still calls it live. Same remedy D-RECLENV applied to reclen_probe, and
+    # the same trap: a `DIFF:` summary alone does NOT match (the MARKER wants
+    # whitespace after `DIFF`, and a colon is not whitespace), so the per-row
+    # lines below are what carry it.
+    for lab in diffs:
+        print(f"DIFF {lab}")
+    # 🔴 AND THE SUMMARY MUST NOT LOOK LIKE A ROW. `DIFF total 8/23` matched
+    # the sweep's `^\s*DIFF\s` and was counted as a NINTH marker, which then
+    # read as `1 marker line(s) UNFILED` -- a phantom divergence produced by
+    # the fix for the last one. Worded so it carries no marker token.
+    print(f"rows diverging: {len(diffs)} of {len(CASES)}")
     bad += [l for l in ref if ref[l] in ("<none>", "")]
     if bad:
         print(f"\nINSTRUMENT FAULT: no reading on {sorted(set(bad))} -- no verdict.")
