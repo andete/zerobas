@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8343 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8362 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7546 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7565 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7546 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7565 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5482,6 +5482,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       which is the row that says an in-domain size is accepted. Recorded because
       the same shape recurs in any row that tests an effect by its absence of an
       error.
+      ✅ **RE-VERIFIED 2026-09-05 (D-SPRCOVER) — the covering claim still holds,
+      measured today rather than re-read from 2026-08-10.** A coverage claim is
+      exactly the kind that rots silently: if `a.sprslot1` ever stopped moving,
+      nothing would say so, and this entry's "harmless" would quietly become
+      false.
+      K-SE5 re-planted (`basic/screen.asm`'s comma-side slot counter →
+      7 `nop`s, via `knife_guard.cut()` so the anchor's uniqueness is enforced):
+      | row | vg8020 | cf3300 | zb | |
+      |---|---|---|---|---|
+      | `a.spr` | ` 0 , 1 ` | ` 0 , 1 ` | ` 0 , 1 ` | **holds — blind, as filed** |
+      | `a.sprslot1` | ` 0 , 2 ` | ` 0 , 2 ` | ` 99 , 2 ` | **MOVES — the cover** |
+      | `a.sprbad` | ` 5 , 1 ` | ` 5 , 1 ` | ` 0 , 1 ` | moves (the 0..3 domain row) |
+      `a.sprslot1`'s `ERROR 99` fires because `LEN(SPRITE$(0))` is no longer 32 —
+      it reads the EFFECT, which is precisely what `a.spr` cannot. Its own label
+      already says so: *"NEGATIVE CONTROL — the size witness on the slot that IS
+      the size"*. `basic/screen.asm` restored byte-identically.
+      ⚠️ **Still not a reason to change `a.spr`**, and this run is the evidence
+      for that rather than an argument: the blindness is real, bounded, and
+      covered by a row built for it.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] 🔴 **A SCREEN-2 `PAINT` WITH `C != B` FLOODS THE ENTIRE SCREEN ON THE
