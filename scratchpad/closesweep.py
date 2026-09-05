@@ -15,8 +15,14 @@ subprocess.run([sys.executable, "tools/todo_inventory.py", "--json",
 inv = [x for x in json.load(open("/tmp/zerobas/inv_close.json"))
        if x["depth"] == 0 and x["state"] == "open"]
 L = open("TODO.md", encoding="utf-8").read().splitlines()
+# 🔴 THE *DONE* SIDE MISSES TOO, AND ITS MISSES ARE SILENT. The first run's
+# vocabulary had no `ANSWERED`, so `⚠️ NOTHING IN 360 ROWS PINS THE TENANT'S
+# GRPACX STORE` -- which carries `✅ READ AND ANSWERED ... VERDICT: KEEP THE
+# WRITE` and no open scope at all -- was never even shortlisted. A false NEGATIVE
+# here is worse than the false positives, because nothing prints it.
 DONE = re.compile(r"(✅|🟢)\s*\*?\*?(FIXED|CLOSED|LANDED|SHIPS|SHIPPED|DONE|"
-                  r"BUILT AND GATED|CONVERTED)", re.I)
+                  r"BUILT AND GATED|CONVERTED|ANSWERED|VERDICT|RESOLVED|"
+                  r"SETTLED|RE-VALIDATED|CLOSED THE)", re.I)
 # 🔴 THE FIRST RUN SHORTLISTED 7 AND 3 WERE STILL OPEN -- a 43% false rate, every
 # one of them because the block spelled its residual in a form this pattern did
 # not carry: "STILL OWED", "REVISED: 1 done. 6 need...", and a "priced" that the
