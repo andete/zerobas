@@ -598,8 +598,44 @@ def main(argv):
     # standing control below needs it.
     abi = resident_abi_seeds(m)
     _assert_sub_resolves_locally(m, s, abi)
-    m_seeds = {'init'} | abi | (set(m.nodes) & external_names(['tools']))
+    # 🔴 THE `tools/` ARM IS AN INTERSECTION, NOT AN ASSERTION (D-SEEDHOLE2
+    # §11.5, filed 2026-08-22). `init`, the sub entry-table tenants and the
+    # resident-ABI import all fail LOUDLY if they stop resolving; this arm is
+    # `set(m.nodes) & external_names(['tools'])`, so a main routine renamed out
+    # from under a `tools/` by-name `.sym` lookup silently drops out of the seed
+    # set. Nothing could see that happen.
+    #
+    # 🎯 THE STANDING CONTROL BELOW IS WHAT MAKES THE SILENCE OBSERVABLE, and it
+    # works because of a MEASURED fact: as of 2026-09-05 this arm contributes 37
+    # seeds, 23 of them seeded no other way, and **removing it entirely changes
+    # no finding** -- dead-with = dead-without = 0. Every name it seeds is
+    # already reachable from `init` + the resident ABI + the prologue seeds, so
+    # the arm is REDUNDANT and both of its failure directions (a missed finding
+    # from over-seeding, a dropped seed from a rename) are empty today.
+    #
+    # So the assertion is not "every tools/ name resolves" -- that is the
+    # per-tool lookup model this cannot substitute for -- it is "this arm still
+    # carries no weight". The moment it does, its silence starts to matter, and
+    # THAT is the moment to build the real model for the specific names named
+    # below. Until then the arm is belt-and-braces and its hole cannot bite.
+    tools_arm = set(m.nodes) & external_names(['tools'])
+    m_seeds = {'init'} | abi | tools_arm
     m_seeds |= {n for n in m.nodes if n.startswith(PROLOGUE)}
+    _without = ({'init'} | abi | {n for n in m.nodes if n.startswith(PROLOGUE)})
+    _d_with, _ = m.dead(m_seeds)
+    _d_without, _ = m.dead(_without)
+    _carried = sorted(set(_d_without) - set(_d_with))
+    if _carried:
+        sys.exit(
+            "FAIL: the `tools/` seed arm has started CARRYING WEIGHT -- "
+            f"{len(_carried)} routine(s) are live ONLY because a tools/ file "
+            f"mentions them by name: {_carried[:12]}"
+            + (" ..." if len(_carried) > 12 else "")
+            + "\n  That arm is an INTERSECTION, so a rename drops it SILENTLY "
+              "(D-SEEDHOLE2 §11.5) -- and it was measured contributing NOTHING "
+              "on 2026-09-05, which is what made it safe to leave coarse.\n"
+              "  Give these names a per-tool lookup model that fails loudly, or "
+              "seed them from something that does.")
     builds['main'] = (m, m_seeds, main_sym)
 
     tenants = ctc.page0_seeds('sub/sub.asm') + ctc.page1_seeds('sub/sub.asm')
