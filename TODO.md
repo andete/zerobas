@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9299 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9327 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -440,11 +440,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       looked only where an edit had already made one go red, plus the sibling
       docs beside it. The rate over the whole set is unmeasured, and the
       archive-move shape above (an item cited in `TODO.md` that later moved to
-      `TODO-done.md`) predicts more. A cheap first cut: flag any citation whose
+      `TODO-done.md`) predicts more. ~~A cheap first cut: flag any citation whose
       surrounding sentence shares no distinctive token (a backticked identifier,
       a quoted keyword) with the cited block's headline; expect false positives,
-      so report ADVISORY rather than red [[readout-blind-to-its-own-subject]]
-      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      so report ADVISORY rather than red.~~
+      🔴 **THAT CHEAP FIRST CUT IS A MEASURED NEGATIVE, 2026-09-05 (D-CITESUBJ).**
+      Built and run over the live corpus, after stripping the citation's own
+      machinery (the id and the `TODO.md`/`TODO-done.md` spellings are artefacts
+      of the citation, not evidence of its subject): comparing the citing
+      sentence against the **headline** flags **30 of 46**; against the **whole
+      cited block**, **21 of 46**. The four known-bad citations are already
+      repointed, so **every one of those is a false positive** — the rule has no
+      true positive left to find and a 46% advisory is one nobody reads
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]. Not
+      shipped; recorded in the tool so it is not re-derived.
+      ✅ **WHAT SHIPPED INSTEAD IS STRUCTURAL AND READS 0 FALSE POSITIVES:
+      `subject_conflicts()` in
+      [`tools/check_todo_citations.py`](tools/check_todo_citations.py).** THREE
+      of the four were the SAME sentence in three sibling docs (`RETIRE THE LEAN
+      16 KB CART`) resolving to THREE DIFFERENT blocks — a contradiction inside
+      the tree, at most one of which can be right, detectable with no guess about
+      meaning. Live reading: **34 distinct subject-bearing citing sentences, 0
+      naming more than one block.** RED when it fires, and not mechanically
+      fixable: the sentence has to be read.
+      🔬 **AND ITS ONLY EVIDENCE THAT IT CAN FIRE IS ITS SELFTEST**, because the
+      historical instances are fixed. Three arms reconstruct the shape (two docs
+      → different blocks must give 1 conflict; → the same block must give 0), plus
+      a distinctive-token arm so generic boilerplate cannot collide. Verified by
+      falsification: widening the threshold to `> 99` turns the selftest RED.
+      ➡️ **RESIDUAL: the LONE wrong citation is still undetectable.** This catches
+      the sibling shape (3 of the 4); `gapsweep-2026-08-21.md:124`, a single
+      citation naming a single wrong block, has no sibling to disagree with and
+      would still be green. Nothing cheap is known for that one — the semantic
+      route above is measured shut.
       💰 Zero ROM bytes; a tools-only change.
       🤖 AUTONOMOUS — a gate settles it; finishable unattended (no his-decision signal found).
 
@@ -474,7 +502,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2225 (T-6FE392)8 (T-529ABE)` from `TODO.md:8502 (T-529ABE)`: a
+      `TODO.md:2253 (T-6FE392)8 (T-529ABE)` from `TODO.md:8530 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2863,7 +2891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8502 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8530 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

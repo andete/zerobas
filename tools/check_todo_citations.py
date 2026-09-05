@@ -179,6 +179,71 @@ def scan(files, root=ROOT):
     return out
 
 
+# --- D-CITESUBJ: the same sentence must not name two different blocks --------
+# 🔴 THE HOLE THIS CLOSES (TODO.md, filed 2026-09-05 by D-EXPBAND). Every check
+# above asks "does the id match the line?", so a citation whose line and id agree
+# is self-consistent NO MATTER WHICH BLOCK IT NAMES. Four citations were found
+# pointing at unrelated subjects, and the fourth was **GREEN and in the
+# "verified" category** at the moment it was read.
+#
+# 🎯 THE STRUCTURAL SIGNAL, NOT A SEMANTIC ONE. Three of the four were the SAME
+# sentence in three sibling docs (`RETIRE THE LEAN 16 KB CART`) resolving to
+# THREE DIFFERENT blocks. That is a contradiction inside the tree — at most one
+# can be right — and it needs no guess about meaning to detect.
+#
+# ⚠️ THE SEMANTIC VERSION IS A MEASURED NEGATIVE, AND THAT IS WHY THIS IS NOT IT.
+# The filed suggestion was to flag a citation sharing no distinctive token with
+# the cited block. Measured 2026-09-05 over the live corpus: comparing against
+# the HEADLINE flags **30 of 46**; against the WHOLE BLOCK, **21 of 46** — and
+# since the four known-bad citations are already repointed, every one of those is
+# a false positive. A 46% advisory is one nobody reads
+# [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]. Not shipped;
+# recorded so the next person does not re-derive it.
+SUBJ_TOK = re.compile(r"`[^`\n]{2,40}`|\"[^\"\n]{2,40}\"|\b[A-Z][A-Z0-9_$]{3,}\b")
+
+
+def _sentence(src_line: str) -> str | None:
+    """The citing sentence, normalised, or None if it cannot carry a subject.
+
+    The citation's own machinery is stripped: a `TODO.md:NNN (T-XXXXXX)` is not
+    evidence of what the sentence is ABOUT. What is left must be long enough to
+    be a claim AND carry at least one distinctive token (a backticked
+    identifier, a quoted string, a CAPITALISED word) — otherwise two unrelated
+    items could share it honestly and the check would be measuring boilerplate.
+    """
+    bare = CITE.sub("", src_line)
+    if not SUBJ_TOK.search(bare):
+        return None
+    norm = " ".join(re.sub(r"[^A-Za-z0-9`$#\"'()/. ]+", " ", bare).split()).lower()
+    return norm if len(norm) >= 25 else None
+
+
+def subject_conflicts(findings, root=ROOT):
+    """-> [(sentence, [(citing, target, id), ...])] where one sentence names
+    two or more DIFFERENT blocks."""
+    seen = {}
+    for rel, n, spelled, line, bid, verdict, _ in findings:
+        if verdict not in ("OK", "PAIR"):
+            continue
+        tgt = resolve(rel, spelled)
+        if tgt is None:
+            continue
+        blk = block_at(tgt, line)
+        if blk is None:
+            continue
+        try:
+            src = open(os.path.join(root, rel), encoding="utf-8",
+                       errors="replace").read().splitlines()
+        except OSError:
+            continue
+        key = _sentence(src[n - 1]) if n <= len(src) else None
+        if key is None:
+            continue
+        seen.setdefault(key, []).append((f"{rel}:{n}", tgt, blk["id"]))
+    return [(k, v) for k, v in seen.items()
+            if len({(t, i) for _, t, i in v}) > 1]
+
+
 def apply_fix(findings, root=ROOT):
     """Rewrite drifted line numbers from the id. Only touches repairable REDs."""
     by_file: dict[str, list] = {}
@@ -288,9 +353,60 @@ def selftest():
         print(f"SELFTEST rc 2: {NOCITE} did NOT suppress the citation on "
               f"{rel}:{lineno} -- the opt-out does not work.")
         return 2
+    # --- D-CITESUBJ arms: the sibling-conflict check, both senses -----------
+    # 🔴 THIS CHECK HAS NO LIVE TRUE POSITIVE — the four citations that motivated
+    # it are already repointed, and it reads 0 on the tree. So its ONLY evidence
+    # that it can detect anything is here, reconstructing the historical shape:
+    # three sibling docs carrying the SAME sentence and resolving to DIFFERENT
+    # blocks. Without this arm it would be a check that has never fired, which is
+    # indistinguishable from a check that cannot [[a-case-that-agrees-can-agree-
+    # for-the-wrong-reason]].
+    _CACHE.clear()
+    tb = [b for b in blocks_of("TODO.md") if b["id"]][:2]
+    if len(tb) < 2:
+        print("SELFTEST rc 2: fewer than two identified blocks to point at.")
+        return 2
+    sent = "RETIRE THE LEAN 16 KB CART — the parent item"
+    os.makedirs(os.path.join(tmp, "docs"), exist_ok=True)
+    def _plant(l0, l1):
+        for name, blk in (("s_a.md", l0), ("s_b.md", l1)):
+            with open(os.path.join(tmp, "docs", name), "w") as fh:
+                fh.write(f"{sent} (../TODO.md:{blk['start']} ({blk['id']}))\n")
+        _CACHE.clear()
+        found = scan(["docs/s_a.md", "docs/s_b.md"], root=tmp)
+        return subject_conflicts(found, root=tmp), found
+    conf, found = _plant(tb[0], tb[1])
+    if len(found) != 2 or any(f[5] != "OK" for f in found):
+        print(f"SELFTEST rc 2: the D-CITESUBJ fixture's own citations are not "
+              f"OK ({[f[5] for f in found]}) — the arm would score nothing.")
+        return 2
+    if len(conf) != 1:
+        print(f"SELFTEST rc 2: two docs naming DIFFERENT blocks with one "
+              f"sentence gave {len(conf)} conflict(s), want 1. The check "
+              f"cannot detect the shape it exists for.")
+        return 2
+    same, _ = _plant(tb[0], tb[0])
+    if same:
+        print(f"SELFTEST rc 2: two docs naming the SAME block gave "
+              f"{len(same)} conflict(s), want 0 — it fires on agreement.")
+        return 2
+    # a sentence with no distinctive token cannot carry a subject and must be
+    # skipped rather than grouped: generic boilerplate ("Detail: see below.")
+    # honestly appears under unrelated items.
+    if _sentence("detail is recorded in the section below for the reader") is not None:
+        print("SELFTEST rc 2: a sentence with no distinctive token was accepted "
+              "as a subject; boilerplate would collide.")
+        return 2
+    if _sentence("the `LOAD\"CAS:\"` tokenised-tape item, parent of this step") is None:
+        print("SELFTEST rc 2: a sentence WITH a distinctive token was rejected; "
+              "the check would see nothing.")
+        return 2
+    _CACHE.clear()
+
     print(f"selftest: GREEN control passes and a planted drift goes RED "
           f"on {rel}:{lineno} ({bid}); {NOCITE} suppresses "
-          f"{len(before)} citation(s) there and nothing else ✅")
+          f"{len(before)} citation(s) there and nothing else; D-CITESUBJ fires "
+          f"on two docs naming different blocks and not on agreement ✅")
     return 0
 
 
@@ -328,12 +444,23 @@ def main():
     print(f"  {len(weak):3d} id-less (line existence only -- NOT verified):")
     for x in weak:
         print(f"        {x[0]}:{x[1]} -> {x[2]}:{x[3]}")
-    if red:
+    conflicts = subject_conflicts(f)
+    print(f"  {len(conflicts):3d} sentence(s) naming MORE THAN ONE block "
+          f"(D-CITESUBJ: at most one can be right)")
+    for key, hits in conflicts:
+        print(f'        "{key[:76]}"')
+        for citing, tgt, bid in hits:
+            print(f"           {citing} -> {tgt} ({bid})")
+    if red or conflicts:
         print(f"  {len(red):3d} RED:")
         for x in red:
             print(f"        {x[0]}:{x[1]} -> {x[2]}:{x[3]} "
                   f"{'(' + x[4] + ') ' if x[4] else ''}{x[6]}")
-        print("\n  fix mechanically with: python3 tools/check_todo_citations.py --fix")
+        if red:
+            print("\n  fix mechanically with: python3 tools/check_todo_citations.py --fix")
+        if conflicts:
+            print("\n  \U0001f534 a conflict is NOT mechanically fixable: read the "
+                  "sentence and decide which block it is about.")
         return 1
     return 0
 
