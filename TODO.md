@@ -8258,8 +8258,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       §5.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] **`float-acceptance` HAS NO NAMED EXPECTED-FAILURE MECHANISM.** Filed
-      2026-08-01 by D-EXPKW. The suite is green today, so this is not urgent —
+- [x] ✅ **`float-acceptance` HAS NO NAMED EXPECTED-FAILURE MECHANISM.** CLOSED
+      2026-09-05. All five suites now name their denominator and the one
+      known-deviation table is a CONTROL rather than a suppression.
+      🔴 **THE SUPPRESSION WAS REAL AND WAS WRITTEN DOWN AS A FEATURE.**
+      `float_arith`'s `KNOWN_DEV_DIV` stores both values per row — the
+      correctly-rounded zerobas one AND the reference's low-biased one — and its
+      comparator read **only** `zb_span`, never `ref_span`. The comment said so
+      out loud: *"the reference's low value noted, NOT asserted == reference."*
+      So if a reference had ever started AGREEING with us, the deviation would
+      have silently stopped being a deviation and the row would still print
+      PASS. The data for the control was already there and nothing read it.
+      Both halves are asserted now; pinning the reference is no more fragile than
+      the rest of the suite, every other row of which asserts exact reference
+      text already.
+      ✅ **AND THE DENOMINATOR IS PINNED**, per suite: 66 / 60 / 203 / 65 / 8 =
+      **402 cases**, printed in each `ALL PASS` line and refused if a full run
+      builds a different number. `ALL PASS` over a matrix that silently shrank
+      reads exactly like `ALL PASS` over the whole one.
+      🎯 **PRINTING THE COUNT EXPOSED A SECOND HOLE ON SIGHT**: `--only` with a
+      filter matching nothing printed **`ALL PASS (0 cases)`** and exited 0 — the
+      0/0-ALL-CONVERGED shape, pre-existing and invisible until there was a
+      number in the line. An empty selection now refuses in all five.
+      🔬 **THREE ARMS RUN, NOT ASSUMED:** a corrupted pinned reference reddens its
+      row (rc 1, and it would have PASSed under the old comparator); a matrix
+      shrunk by one fires the pin (rc 2, naming 202 vs 203, and again 64 vs 66 in
+      a second suite, so the mechanically-applied guards were each fired rather
+      than only parsed); a legitimate `--only` narrowing still runs green (17
+      cases). Probe restored byte-identical after each arm.
+      ⚠️ The filing's *"reports 371 PASS, 1 FAIL and exits non-zero"* is
+      historical — the suite is green today, and the count is 402, not 372.
+      --- the original filing ---
+      Filed 2026-08-01 by D-EXPKW. The suite is green today, so this is not urgent —
       but it reports `371 PASS, 1 FAIL` and exits non-zero with **nothing naming
       the expected count**, which is exactly what made the D-EXPKW regression
       unreadable for a whole slice. `array-acceptance`'s 149/151 names

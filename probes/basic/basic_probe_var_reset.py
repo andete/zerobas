@@ -90,6 +90,10 @@ def capture(machine, lines):
     return omsx_repl.result_span(raw)
 
 
+# Full-run case count, asserted in main(). See the guard there.
+EXPECT_CASES = 8
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -102,9 +106,11 @@ def main() -> int:
     args = ap.parse_args()
 
     ok = True
+    n_run = 0
     for label, lines, expect in CASES:
         if args.only and args.only not in label:
             continue
+        n_run += 1
         ref_span = capture(args.machine, lines)
         rs = f"[{ref_span}]" if ref_span is not None else "<no span>"
 
@@ -120,9 +126,26 @@ def main() -> int:
             match = "OK" if ref_span == expect else "MISMATCH vs spec!"
             print(f"{label:<16} {rs}   expect {expect!r} -> {match}")
 
+    # 🔴 NAME THE DENOMINATOR, AND FLOOR IT (2026-09-05) -- "ALL PASS" over a
+    # matrix that silently SHRANK reads exactly like "ALL PASS" over the whole
+    # one. `--only` legitimately narrows a run, so the pin is full-run only.
+    # 🔴 …AND AN EMPTY SELECTION IS THE SAME HOLE FROM THE OTHER SIDE.
+    # Printing the count above exposed it immediately: `--only` with a
+    # filter that matches nothing printed `ALL PASS (0 cases)` and exited
+    # 0. A run that measured nothing must never read as a green one.
+    if args.only and not n_run:
+        print(f"\n🔴 INSTRUMENT FAULT: --only {args.only!r} selected "
+              f"NO cases. An empty selection would print ALL PASS and "
+              f"exit 0 -- the 0/0-ALL-CONVERGED shape. Check the filter.")
+        return 2
+    if not args.only and n_run != EXPECT_CASES:
+        print(f"\n🔴 INSTRUMENT FAULT: a full run built {n_run} case(s); this "
+              f"suite is pinned at {EXPECT_CASES}. Bump EXPECT_CASES in the same "
+              f"commit that changes the matrix -- never to make a run go green.")
+        return 2
     if args.zb_machine:
-        print("\nALL PASS — variable reset (NEW/CLEAR) reference-identical" if ok
-              else "\nSOME FAILED")
+        print(f"\nALL PASS ({n_run} cases) — variable reset (NEW/CLEAR) "
+              f"reference-identical" if ok else "\nSOME FAILED")
         return 0 if ok else 1
     return 0
 

@@ -234,8 +234,28 @@ SPAN_ONLY = {
 # fp_div is correctly-rounded, so it DIVERGES here: zb == mathematical truth, the
 # reference is 1-2 ulp low. These close float-acceptance's original blind spot
 # (the 349-case matrix had no near-unity 14-digit division). Pinned as
-# characterized KNOWN-DEVIATIONS -- asserted == the correctly-rounded zb value
-# (stripped span), the reference's low value noted, NOT asserted == reference.
+# characterized KNOWN-DEVIATIONS -- BOTH halves asserted: zb == the correctly-
+# rounded value AND ref == the pinned low-biased value.
+#
+# 🔴 THE SECOND HALF WAS MISSING UNTIL 2026-09-05, AND ITS ABSENCE WAS WRITTEN
+# DOWN AS A FEATURE. The comment here read "the reference's low value noted, NOT
+# asserted == reference", and the comparator looked only at `zb_span` -- so if
+# the reference ever started AGREEING with us, the deviation would silently stop
+# being a deviation and the row would still print PASS. That is the SUPPRESSION
+# shape, which is exactly what TODO's "float-acceptance has no named
+# expected-failure mechanism" warned against ("give it the *control* shape").
+# The reference value was already stored in element [1] of every tuple; nothing
+# read it. A known-deviation table only earns its name if a row that stops
+# diverging BREAKS THE GATE [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+#
+# ⚠️ Pinning the reference here is no more fragile than the rest of this suite:
+# every other row asserts the reference's exact screen text already.
+# The full-run case count, asserted below. A matrix that silently shrinks prints
+# "ALL PASS" exactly like a whole one, so the denominator is pinned rather than
+# reported [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. Bump it in the
+# same commit that changes the matrix, never to make a run go green.
+EXPECT_CASES = 203
+
 KNOWN_DEV_DIV = {
     # expr                     : (zb == truth,        reference low-biased)
     "2/1.4142135623731":       ("1.4142135623731", "1.4142135623729"),
@@ -299,10 +319,14 @@ def main() -> int:
         ref_span, ref_tail = result_span(ref_raw), screen_tail(ref_raw, line)
         zb_span, zb_tail = result_span(zb_raw), screen_tail(zb_raw, line)
         if kind == "known_dev":
-            # div divergence: assert zb == the correctly-rounded value (NOT ref,
-            # which is low-biased); the ref span is reported informationally below.
-            return zb_span is not None \
-                and zb_span.strip() == KNOWN_DEV_DIV[expr][0]
+            # div divergence: BOTH halves. zb must be the correctly-rounded
+            # value, AND the reference must still be its pinned low-biased one --
+            # so the row goes RED if the deviation ever disappears, which is the
+            # difference between a control and a suppression.
+            want_zb, want_ref = KNOWN_DEV_DIV[expr]
+            return zb_span is not None and ref_span is not None \
+                and zb_span.strip() == want_zb \
+                and ref_span.strip() == want_ref
         if kind == "stmt":
             return ref_tail is not None and zb_tail is not None \
                 and (ref_tail == "") == (zb_tail == "")
@@ -339,12 +363,38 @@ def main() -> int:
             print(f"{'':>32}ref tail: {screen_tail(ref_raw, line)!r}")
             print(f"{'':>32}zb  span: {zs}  tail: {zb_tail!r}")
 
+    # 🔴 NAME THE DENOMINATOR, AND FLOOR IT (2026-09-05). "ALL PASS" printed
+    # over a matrix that silently SHRANK reads exactly like "ALL PASS" over the
+    # full one -- the 0/0-ALL-CONVERGED shape. `--only` legitimately narrows the
+    # run, so the floor applies only to a FULL run.
+    n_dev = sum(1 for _e, _l, k in cases if k == "known_dev")
+    # 🔴 …AND AN EMPTY SELECTION IS THE SAME HOLE FROM THE OTHER SIDE.
+    # Printing the count above exposed it immediately: `--only` with a
+    # filter that matches nothing printed `ALL PASS (0 cases)` and exited
+    # 0. A run that measured nothing must never read as a green one.
+    if args.only and not cases:
+        print(f"\n🔴 INSTRUMENT FAULT: --only {args.only!r} selected "
+              f"NO cases. An empty selection would print ALL PASS and "
+              f"exit 0 -- the 0/0-ALL-CONVERGED shape. Check the filter.")
+        return 2
+    if not args.only and (len(cases) != EXPECT_CASES
+                          or n_dev != len(KNOWN_DEV_DIV)):
+        print(f"\n🔴 INSTRUMENT FAULT: a full run built {len(cases)} case(s) "
+              f"and {n_dev} known-deviation row(s); this suite is pinned at "
+              f"{EXPECT_CASES} and {len(KNOWN_DEV_DIV)}. Either the matrix "
+              f"changed (bump EXPECT_CASES in the same commit, deliberately) "
+              f"or it is being built wrong -- a shrunken matrix prints ALL PASS "
+              f"identically to a whole one.")
+        return 2
     if args.zb_machine:
-        print(f"\nALL PASS — float arithmetic is reference-identical except "
-              f"{len(KNOWN_DEV_DIV)} documented division known-deviations "
-              f"(zerobas correctly-rounded, reference low-biased; see "
+        scope = f"{len(cases)} cases" if not args.only else f"{len(cases)} selected"
+        print(f"\nALL PASS ({scope}) — float arithmetic is reference-identical "
+              f"except {len(KNOWN_DEV_DIV)} documented division known-deviations "
+              f"(zerobas correctly-rounded, reference low-biased -- BOTH values "
+              f"asserted, so a deviation that disappears goes RED; see "
               f"KNOWN_DEV_DIV / spec-basic-float-core.md §10.2 addendum)" if ok
-              else "\nSOME FAILED")
+              else f"\nSOME FAILED ({len(cases)} cases, "
+                   f"{len(KNOWN_DEV_DIV)} expected known-deviations)")
         return 0 if ok else 1
     return 0
 

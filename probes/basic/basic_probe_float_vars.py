@@ -346,6 +346,10 @@ def extract(raw, line, kind, stored):
     return omsx_repl.result_span_after_echo(raw, line), omsx_repl.screen_tail(raw, line)
 
 
+# Full-run case count, asserted in main(). See the guard there.
+EXPECT_CASES = 65
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -429,7 +433,27 @@ def main() -> int:
             print(f"{'':>32}zb  span: {zs}  tail: {zb_tail!r}")
 
     if args.zb_machine:
-        print("\nALL PASS — float variables (F3 S3a) reference-identical" if ok
+        # 🔴 NAME THE DENOMINATOR, AND FLOOR IT (2026-09-05, TODO "float-acceptance
+        # has no named expected-failure mechanism"). "ALL PASS" over a matrix that
+        # silently SHRANK reads exactly like "ALL PASS" over the whole one -- the
+        # 0/0-ALL-CONVERGED shape. `--only` legitimately narrows a run, so the pin
+        # applies to a FULL run only.
+        # 🔴 …AND AN EMPTY SELECTION IS THE SAME HOLE FROM THE OTHER SIDE.
+        # Printing the count above exposed it immediately: `--only` with a
+        # filter that matches nothing printed `ALL PASS (0 cases)` and exited
+        # 0. A run that measured nothing must never read as a green one.
+        if args.only and not cases:
+            print(f"\n🔴 INSTRUMENT FAULT: --only {args.only!r} selected "
+                  f"NO cases. An empty selection would print ALL PASS and "
+                  f"exit 0 -- the 0/0-ALL-CONVERGED shape. Check the filter.")
+            return 2
+        if not args.only and len(cases) != EXPECT_CASES:
+            print(f"\n🔴 INSTRUMENT FAULT: a full run built {len(cases)} case(s); "
+                  f"this suite is pinned at {EXPECT_CASES}. Bump EXPECT_CASES in the "
+                  f"same commit that changes the matrix -- never to make a run go "
+                  f"green.")
+            return 2
+        print(f"\nALL PASS ({len(cases)} cases) — float variables (F3 S3a) reference-identical" if ok
               else "\nSOME FAILED")
         return 0 if ok else 1
     return 0
