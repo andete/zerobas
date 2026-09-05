@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9268 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9299 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2225 (T-6FE392)8 (T-529ABE)` from `TODO.md:8471 (T-529ABE)`: a
+      `TODO.md:2225 (T-6FE392)8 (T-529ABE)` from `TODO.md:8502 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2863,7 +2863,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8471 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8502 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6817,7 +6817,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       next reader does not re-derive it.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] 🔴 **"THE APPARATUS IS STILL MEASURED" IS A CLAIM ABOUT A ROW SET, AND
+- [x] ✅ **"THE APPARATUS IS STILL MEASURED" IS A CLAIM ABOUT A ROW SET, AND
       `locarg`'s IS MUCH WEAKER THAN ITS OWN SENTENCE SAYS.** Filed 2026-08-21 by
       D-LOCPARK, knife K-LP1
       ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §11.4).
@@ -6829,15 +6829,46 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and it reads `''`, not a doubled message. So the battery does detect the
       property, at one row, by a symptom other than the advertised one, and the
       row the sentence names cannot see it at all.
-      ➡️ **WHAT IS OPEN:** why `u.str` survives. `ENDFLAG` is set by
+      ➡️ ~~**WHAT IS OPEN:** why `u.str` survives. `ENDFLAG` is set by
       `fre_abort_low` before its `ret`, so the run may simply stop at the next
-      `rp_run` check before a second message can print — that is a hypothesis,
-      not a reading. Either the mechanism is established and §3.2 is narrowed to
-      what it can support, or a row is added that DOES see it.
+      `rp_run` check before a second message can print~~ — **that hypothesis is
+      the wrong way round, and the premise it rests on was wrong too.**
+      ✅ **ANSWERED 2026-09-05 (D-LOCMECH,
+      [`scratchpad/locmech_knives.py`](scratchpad/locmech_knives.py)), THREE ARMS
+      WITH A CONTROL.**
+      🔴 **THE FILED READING NO LONGER REPRODUCES, IN BOTH OF ITS PARTS.** K-LP1
+      re-planted: the red set is **`u.trail`**, not `u.bare`, and it reads a
+      **DOUBLED message** — `Missing operand in 10|Missing operand in 10|Illegal
+      function call in 10` against `Missing operand in 10` on both references —
+      not the empty tail on record. Run as `--gate`, in §11.4's own terms: *45
+      printed, 45 scored, 44 agree, 1 diverge*.
+      🎯 **SO THIS ITEM'S OWN COMPLAINT IS REFUTED.** The battery detects the
+      property by **exactly** the symptom §3.2 advertises, a doubled message —
+      what was wrong was the example ROW. `LOCATE "5",3` raises ONCE, so `u.str`
+      could never have shown it at any depth; a statement doubles only when a
+      LATER argument faults after an earlier one already has, which is what
+      `u.trail` is. §3.2 and §11.4 are corrected BESIDE their originals.
+      🔬 **AND THE MECHANISM, WITH THE CONTROL THAT MAKES IT ONE.** `K-LM3` cuts
+      `ld (ENDFLAG),a` ALONE: **0 of 45 rows move**. So with the SP reset in
+      place `ENDFLAG` is invisible to this battery — it is `ld sp,(SAVSTK)` plus
+      the tail `ret` that ends the run, exactly as the comment at the site says,
+      and `ENDFLAG` is belt-and-braces there. `K-LM2` (both cuts) makes the
+      run-on visible directly: the probe's positive control reads `Missing
+      op[RANON]n 10`, the run-on marker printed INTO the message.
+      ⚠️ **K-LM2 SCORES NOTHING, AND THE FIRST CUT OF THE RUNNER SAID IT SCORED
+      EVERYTHING.** `basic_probe_locarg` stops after a failed positive control
+      (*"nothing below it was measured"*), so the arm returned no rows — and the
+      runner reported **"45 of 45 rows moved"** and ticked both predictions OK.
+      A missing row is an INSTRUMENT outcome; the runner now names the refusal
+      and scores nothing [[an-unnamed-outcome-reads-as-no-outcome]].
       💰 0 ROM bytes; apparatus. ⚠️ This does NOT bear on the carve: D-LOCPARK's
       licence comes from reading both arms of `raise_error_hl`, not from this
       knife.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (hand-corrected: its own body prices it at 0 ROM bytes).
+      🎯 **THE DURABLE LESSON: a row that carries a property MOVES as the ROM
+      does.** `u.bare` carried it on 2026-08-21 and `u.trail` carries it now,
+      with nothing in between to say so — so an apparatus claim has to be
+      RE-knifed, not re-read [[a-ranked-candidate-rots-like-a-wall]].
+      ~~🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (hand-corrected: its own body prices it at 0 ROM bytes).~~
 
 - [x] 🔴 **`t.zero` IS BLIND TO A CUT THAT ALSO DISABLES ITS SEED, AND THE PROBE
       ✅ **CLOSED 2026-09-05.** Re-verified after the fix: `make locarg-acceptance ONLY=t.zero` reads ` 0  0  0 ` on all three and the row is armed by K-LA5, the knife that found the blindness.

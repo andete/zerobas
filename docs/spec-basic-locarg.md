@@ -86,9 +86,19 @@ trap arm always did, so aborts are **depth-independent**.
 
 A refuted claim is not the same as an unmeasured one. The eleven `u.*` rows of
 `make locarg-acceptance` run every abort class **untrapped** and read the whole
-screen tail, so the exact failure the header warned about — `LOCATE "5",3`
-printing `Type mismatch` and then `Missing operand` — is a red row. All eleven
-are green on all three sides through the new `call`.
+screen tail, so a doubled message is a red row. All eleven are green on all three
+sides through the new `call`.
+
+> ⚠️ **THE EXAMPLE IN THIS PARAGRAPH WAS WRONG AND THE CLAIM WAS RIGHT
+> (D-LOCMECH, 2026-09-05).** It used to name the failure as ~~*"`LOCATE "5",3`
+> printing `Type mismatch` and then `Missing operand`"*~~. Restore the
+> depth-dependence (K-LP1) and `LOCATE "5",3` — row `u.str` — does **not**
+> double: it raises exactly once, so it cannot show the fault whatever the
+> depth. The row that DOES is **`u.trail`**, which reads
+> `Missing operand in 10|Missing operand in 10|Illegal function call in 10`
+> against `Missing operand in 10` on both references. **A doubled message, which
+> is the symptom this paragraph advertises** — on a different row.
+> `scratchpad/locmech_knives.py`.
 
 ### 3.3 What the slice does NOT touch
 
@@ -570,20 +580,58 @@ ROMs: `basic-reloc` `becf1e98` → **`d66b47be`**, main-eu `670b8d4a` →
 
 | knife | cut | predicted | measured |
 |---|---|---|---|
-| **K-LP1** | `fre_abort_low`'s `ld sp,(SAVSTK)` — i.e. put the depth-dependence BACK | rc 2; the doubled message returns, at `u.str` (`LOCATE "5",3`) | rc **2** ✅, but the red set is **`u.bare` ALONE**, reading `''` — and `u.str` is **GREEN** ❌ |
+| **K-LP1** | `fre_abort_low`'s `ld sp,(SAVSTK)` — i.e. put the depth-dependence BACK | rc 2; the doubled message returns, at `u.str` (`LOCATE "5",3`) | rc **2** ✅; red set **`u.trail` ALONE**, reading the DOUBLED message — `u.str` is GREEN and always would be (re-taken 2026-09-05, ~~`u.bare` ALONE reading `''`~~) |
 | **K-LP2** | `loc_next`'s accepted arm: `scf` → `or a` | rc 2; `t.ok` reads ` 0  0  0 ` | rc **2** ✅, `t.ok` ` 0  0  0 ` ✅ **EXACT** — plus `t.c.256` ` 5  0  0 `, not predicted ❌ |
 | **K-LP3** | `loc_omit`'s `or a` → `scf` | rc **1**, five red rows | rc **2** ❌ — `u.ok` fails as a control at `<NO ECHO>` |
 
-**K-LP1 is the one that matters, and it refutes §3.2's confidence.** §3.2 says the
-eleven `u.*` rows keep the refuted apparatus claim MEASURED, and names the
-symptom: *"`LOCATE \"5\",3` printing `Type mismatch` and then `Missing
-operand`"*. Restore the depth-dependence and that row is **green**. Exactly one
-row of forty-five sees the cut at all, `u.bare`, and what it reads is not a
-doubled message but an empty tail. So the sentence is **true and much weaker than
-it sounds**: the battery detects the property, at one row, by a different symptom
-than the one it advertises. 🎯 **An apparatus that "still measures" a refuted
-claim is a claim about a ROW SET, and it has to be knifed like any other.**
-Filed in `TODO.md`.
+**K-LP1 is the one that matters.** §3.2 says the eleven `u.*` rows keep the
+refuted apparatus claim MEASURED, and used to name the symptom as
+*"`LOCATE \"5\",3` printing `Type mismatch` and then `Missing operand`"*. Restore
+the depth-dependence and that row is **green**, and exactly one row of forty-five
+sees the cut at all.
+
+~~and what it reads is not a doubled message but an empty tail. So the sentence
+is **true and much weaker than it sounds**: the battery detects the property, at
+one row, by a different symptom than the one it advertises.~~
+
+🔴 **RE-TAKEN 2026-09-05 (D-LOCMECH, `scratchpad/locmech_knives.py`) AND BOTH
+HALVES OF THAT SENTENCE ARE FALSE.** The row is **`u.trail`**, not `u.bare`, and
+what it reads is **a doubled message** — `Missing operand in 10|Missing operand
+in 10|Illegal function call in 10` — not an empty tail. Run as
+`--gate`, in this table's own terms: *45 printed, 45 scored, 44 agree, 1
+diverge*, and the one is `u.trail`. **So the battery detects the property by
+EXACTLY the symptom §3.2 advertises**; what was wrong was the example ROW, and
+`u.str` could never have shown it because `LOCATE "5",3` raises once. A
+statement raises twice only when a LATER argument faults after an earlier one
+already has, which is what `u.trail` is.
+
+🎯 **AND THE MECHANISM QUESTION THIS TABLE LEFT OPEN IS ANSWERED, WITH A
+CONTROL.** `TODO.md` asked why `u.str` survives and offered a hypothesis: that
+`ENDFLAG` stops the run before a second message can print. Two more arms:
+
+| knife | cut | measured |
+|---|---|---|
+| **K-LM2** | K-LP1 **plus** `fre_abort_low`'s `ld (ENDFLAG),a` | the probe's own POSITIVE CONTROL fails — `u.bare` reads `Missing op[RANON]n 10`, the run-on marker printed INTO the message — so **no row is scoreable**, and the run-on is the D-1 bug directly visible |
+| **K-LM3** | `ld (ENDFLAG),a` ALONE | **0 of 45 rows move** |
+
+**K-LM3 is why K-LM2 means anything.** With the SP reset in place, removing
+`ENDFLAG` changes nothing this battery can see: it is `ld sp,(SAVSTK)` plus the
+tail `ret` that ends the run — exactly what the comment at the site says — and
+`ENDFLAG` is belt-and-braces on that path, becoming load-bearing only once the
+reset is gone. So the filed hypothesis is **the wrong way round**, and `u.str`
+survives for a much duller reason: it was never the row that carries the
+property.
+
+⚠️ **AND THE FIRST CUT OF THE RUNNER SCORED THE REFUSAL AS DATA.** When a
+positive control fails, `basic_probe_locarg` prints *"nothing below it was
+measured"* and stops — so K-LM2 returned no rows, and the runner reported
+**"45 of 45 rows moved"** and ticked both of its predictions OK. A missing row is
+an INSTRUMENT outcome; the runner now names the refusal and scores nothing
+[[an-unnamed-outcome-reads-as-no-outcome]].
+
+🎯 **An apparatus that "still measures" a refuted claim is a claim about a ROW
+SET, and it has to be knifed like any other** — and re-knifed, because the row
+that carries a property moves as the ROM does.
 
 **K-LP3's miss is the echo lesson again.** With the omit arm returning CF=1,
 `LOCATE ,,1` becomes `LOCATE 44,1` — no error, the program runs on, and the
