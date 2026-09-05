@@ -8974,12 +8974,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         the new bound leaves **642 B** of program headroom where **both
         references have 148** — and the filed pre-fix reading was **646**. The
         whole fix moves the headroom by **four bytes**.
-        🎯 **SO THE DESIGN ABOVE IS REFUTED AT ITS CENTRAL CLAIM**: *"the bound
-        wanted is the VARIABLE-region ceiling … which is exactly
-        `strheap_varceil`"*. It is not. The reference reserves roughly **500 B
-        more** below HIMEM than `POOLSIZE + MAXF×FCH_CTXSZ` — the variable/array
-        area and the Z80 stack, which `strheap_varceil` does not model. That is
-        now a NUMBER to hit rather than a design to guess at.
+        🎯 **AND THE ~500 B IS NOW A FORMULA, NOT A GUESS — AND IT REFRAMES THE
+        WHOLE ITEM** (D-HIMEMRES,
+        [`scratchpad/himem_reserve.py`](scratchpad/himem_reserve.py)). Sweeping
+        `CLEAR <pool>,TXTTAB+<gap>` over three knobs and reading `FRE(0)`:
+
+            reserve R = gap − pool − FRE(0)
+            MAXFILES     1      2        model
+            vg8020     560    827     R = 293 + 267×MAXFILES
+            cf3300     560    827     R = 293 + 267×MAXFILES
+            zb          62    112     R =  12 +  50×MAXFILES   (R(4)=212, predicted 212)
+
+        🔴 **THE FIRST SWEEP VARIED POOL AND GAP ONLY AND READ "R CONSTANT 560" ON
+        BOTH REFERENCES** — which is exactly what `base + k×MAXFILES` looks like
+        when MAXFILES never moves. The `f2` row is what separated them
+        [[two-rules-that-coincide-on-every-row-you-have]]. (`f4` is OUT OF DOMAIN
+        on the references — 4 channels do not fit a 1500-byte gap, the `CLEAR`
+        errors, and `FRE` reports the un-CLEARed machine; the probe now refuses a
+        negative reserve instead of printing it beside the real ones.)
+        🎯 **267 B PER CHANNEL vs 50 IS D-FCH'S OWN DESIGN, NOT A DEFECT.**
+        `basic/files.asm` says it outright: `FCH_CTXSZ equ FCH_STATESZ ; repack:
+        block = state ONLY (no buffer)`. The reference reserves a per-channel
+        sector buffer; zerobas deliberately does not. **So `crf-oomsay` /
+        `crf-oomlst` CANNOT agree unless zerobas reserves RAM it has no use for**,
+        and the ~500 B was never a missing term in the ceiling formula.
+        🟢 **WHICH LEAVES A REAL DEFECT AND A SEPARATE QUESTION, AND THEY ARE NOT
+        THE SAME ONE.** The real defect is the one this entry's headline names:
+        the bound is the CONSTANT `TXTMAX` (`$DB00`), so with HIMEM at `$83E9`
+        zerobas keeps storing lines **past HIMEM, into the string and variable
+        area** — silent corruption, and `strheap_varceil` closes it exactly.
+        🙋 **The separate question is whether `FRE(0)` should AGREE with the
+        references**, which would mean reserving 267 B per channel for buffers
+        that do not exist here. That is a faithfulness call about a measured
+        architectural difference, not a bug.
+        ➡️ **NEXT: build the row that pins the REAL defect** — after
+        `CLEAR p,TXTTAB+gap`, store lines until refusal and assert zerobas
+        refuses BEFORE PRGEND passes HIMEM−pool. `crf-oom*` cannot pin it (they
+        compare against the reference's larger reserve), which is why the fix has
+        no green row today and is not shipped on this pass.
         ➡️ **WHAT IS LEFT IS THE VALUE, NOT THE PLUMBING.** The cell is proven,
         the fetch site is right, the `push hl` and `IF CLEARPOOL` guards are
         settled, and 11 B fits (main page 1 15 → 4 B free on 2026-09-05).

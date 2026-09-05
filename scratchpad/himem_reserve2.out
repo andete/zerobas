@@ -1,0 +1,18 @@
+
+case             pool   gap  mf   vg8020   cf3300       zb   reserve R = gap-pool-FRE
+g1000.p300.f1     300  1000   1      140      140      638   R: vg=560 cf=560 zb=62
+g1500.p300.f1     300  1500   1      640      640     1138   R: vg=560 cf=560 zb=62
+g2000.p300.f1     300  2000   1     1140     1140     1638   R: vg=560 cf=560 zb=62
+g1500.p100.f1     100  1500   1      840      840     1338   R: vg=560 cf=560 zb=62
+g1500.p500.f1     500  1500   1      440      440      938   R: vg=560 cf=560 zb=62
+g1500.p300.f2     300  1500   2      373      373     1088   R: vg=827 cf=827 zb=112
+g1500.p300.f4     300  1500   4    28006    22621      988   R: vg=-26806 cf=-21421 zb=212
+
+  vg8020  reserve VARIES over [-26806, 560, 827]   per MAXFILES: 1->560, 2->827, 4->-26806
+  cf3300  reserve VARIES over [-21421, 560, 827]   per MAXFILES: 1->560, 2->827, 4->-21421
+  zb      reserve VARIES over [62, 112, 212]   per MAXFILES: 1->62, 2->112, 4->212
+
+🎯 Read the two references first: if R is constant on both, the 
+   ceiling is `min(HIMEM,TXTMAX) - POOLSIZE - R` and R is a number to 
+   hardcode. If it varies, the missing term is neither knob.
+refcache: 0 hit, 21 miss, 21 stored
