@@ -272,7 +272,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8721 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8745 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -336,7 +336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7924 (T-529ABE)`: a
+      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7948 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2663,7 +2663,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7924 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7948 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3960,7 +3960,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       out *that* failure — it does not rule out SPRITE's. ⚠️ **The MECHANISM for
       the SPRITE divergence is still NOT established and is deliberately not
       guessed at** [[a-mechanism-inferred-from-one-observation]].
-      ➡️ **`KEY` remains an argument. 3 of 4 converted.**
+      🟢 **`KEY` CONVERTED THE SAME DAY — 4 of 4, THE CONVERSION IS COMPLETE, AND
+      IT AGREES** ([`scratchpad/clrtrapstk_key.py`](scratchpad/clrtrapstk_key.py),
+      [`.out`](scratchpad/clrtrapstk_key.out)). Same 2×2, same positive control,
+      through `basic_probe_key_trap.run()` (imported; F1 is matrix row 6 bit 5).
+      All four cells **1/1**, `c.twofire` **2/2**. The windows are
+      ITERATION-bounded, never timed — `TIME` does not exist on zerobas and the
+      reference is ~7× faster.
+      🎯 **THE ARGUMENT IS NOW A MEASUREMENT ON ALL FOUR, AND IT DOES NOT HOLD AS
+      STATED.** *"They share `check_traps`, `ct_find`, `set_state` and
+      `trap_return_check` verbatim; the index is a parameter"* predicted four
+      identical answers. Measured: **`SPRITE` diverges (1 vs 250); `KEY`, `STOP`
+      and `STRIG` do not.** One of four.
+      🔴 **AND THE BOUND ON THAT RESULT IS THE PART TO CARRY FORWARD.** `SPRITE`
+      re-fires once per FRAME, so a trap left enabled fires with **no new event**
+      and saturates. `KEY` / `STOP` / `STRIG` fire once per EDGE, so their 2×2
+      detects only a re-enable that survives to the **second tap** — a trap left
+      enabled-but-unfired is invisible to all three. Their `1`s rule out THAT
+      failure; they do not rule out SPRITE's. ⚠️ **So "3 agree" is not "3 are
+      clean", and the MECHANISM for SPRITE's divergence remains unestablished and
+      deliberately unguessed** [[a-mechanism-inferred-from-one-observation]].
+      ➡️ **WHAT KEEPS THIS ITEM OPEN IS NO LONGER THE CONVERSION** — that is done,
+      4 of 4 — **but the unexplained SPRITE cell**, and the fact that no
+      edge-fired 2×2 can decide whether the other three share it in a form their
+      event source cannot show. A discriminating instrument for that would have
+      to observe the trap STATE, not the fire count.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (SPRITE measured 2026-08-26; KEY/STRIG/STOP still argued).
 
 - [ ] 💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS
