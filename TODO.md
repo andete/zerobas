@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9024 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9043 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8227 (T-529ABE)`: a
+      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8246 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2801,7 +2801,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8227 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8246 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6124,7 +6124,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (`plain_wall_cb_bounded`, `bf_wall_not_a_border`, PHASE H).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] ⚠️ **A KNIFE RUNNER STILL HAS NO SHARED WAY TO SCOPE A CUT TO ONE
+- [x] ⚠️ **A KNIFE RUNNER STILL HAS NO SHARED WAY TO SCOPE A CUT TO ONE
+      ✅ **CLOSED 2026-09-05 — the helper exists, is SHARED, and the "where should
+      it live" question is answered by the gate that already collects it.**
+      [`scratchpad/knife_guard.py`](scratchpad/knife_guard.py) `cut(text, anchor,
+      repl, *, routine=None)`: `_region()` scopes to a routine's span, the
+      occurrence count must be exactly 1, and `CutError` is raised otherwise —
+      the mechanical remedy this entry specified, verbatim.
+      🔬 **FIVE ARMS, AND THE FIRST IS THIS ENTRY'S OWN FAILURE**, re-run today:
+
+          cut refuses a repeated anchor when unscoped   <- K-PS1's exact bug
+          cut scoped to a routine hits THAT copy
+          cut refuses an unknown routine
+          cut refuses an anchor absent from the routine
+          cut still takes a unique unscoped anchor
+
+      ➡️ **AND "WHERE IT LIVES" IS SETTLED BY USE, NOT BY ARGUMENT**: knife
+      runners stay throwaway, but the helper does not — it sits beside them and
+      `make knife-guard-check` collects it (`0 violation(s)` today, with 4 files
+      it names as rebuilding-but-not-cutting rather than passing them silently).
+      Two knives have already used it: K-SE5 (D-SPRCOVER) and K-LA5 (D-ZEROSEED).
       ROUTINE.** Filed 2026-08-11 by D-PAINTSEED
       ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md) §9.6). K-PS1's
       first runner did `src.replace("call gfx_point_gate  ; BC/DE/HL preserved",
