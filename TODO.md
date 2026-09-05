@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8122 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8138 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7325 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7341 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7325 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7341 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5035,7 +5035,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       comment has named `"A:"` as a rejected case all along, and
       `FILES"A:HI.TXT"` / `OPEN"A:HI.TXT"` are OK on both sides, so the drive
       prefix is stripped before the name builder and the new `:` rule never sees
-      it. 💰 Both members are one `do_files` change; unmeasured cost.
+      it.
+      💰 **SITE AND BUDGET MEASURED 2026-09-05 — it needs a carve.** The fix
+      cannot go in `parse_disk_fcb`: it RAISES internally (`jp pdf_badname`), so
+      `do_files` never sees the reject, and the routine is shared with KILL /
+      LOAD / SAVE, which `m.drvkill`/`m.drvload`/`m.drvsave` now pin as *correctly*
+      rejecting. So it has to be a PRE-CHECK local to `do_files`: after
+      `fname_expr` stages the string, skip spaces and an optional `X:` prefix and
+      jump to `df_nofilespec` if the next byte is the closing quote.
+      🔴 **That is ~15–20 B and `basic/files.asm` is included at
+      `basic/main.asm:289`, i.e. MAIN PAGE 1, which `make basic-reloc` printed at
+      6 B free on 2026-09-05.** It does not fit. ⚠️ Wall readings rot — re-run
+      `basic-reloc` — but the SITE is structural and will not.
+      ⚠️ **One tempting cheap version is WRONG**: testing `DISK_FCB_NAME[0]` for
+      a space after the reject does not isolate the empty-name case, because a
+      filespec whose FIRST character is illegal (`FILES CHR$(58)+"BC.TXT"`) also
+      leaves position 0 unwritten — it would turn `m.sepchar` into a
+      directory listing.
       🔴 **CONFIRMED IN FULL — AND MY OWN FIRST READING OF IT WAS WRONG.**
       Measured 2026-09-04 (D-FSPEC,
       [`docs/spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md)), 20 rows in
