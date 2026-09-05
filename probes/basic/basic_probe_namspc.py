@@ -507,6 +507,25 @@ CASES = [
     ("m.dotdot",  "dsklist", ['FILES".."', 'PRINT"[OK]"']),
     ("m.colon",   "dsklist", ['FILES"A:B"', 'PRINT"[OK]"']),
     ("m.blank",   "dsklist", ['FILES" "', 'PRINT"[OK]"']),
+    # 🔴 THE SAME CLASS AS `m.blank`, FOUND 2026-09-05 CHECKING D-FSPECCHAR FOR
+    # OVER-REACH: a filespec that is ONLY a drive prefix is also "no filespec at
+    # all" on the reference, which lists the directory, while `build_83_name`'s
+    # empty-name test refuses it. ⚠️ It is NOT a regression from the character
+    # check -- `bn_done`'s comment has named `"A:"` as a rejected case all along,
+    # and `FILES"A:HI.TXT"` / `OPEN"A:HI.TXT"` are OK on both sides, so the drive
+    # prefix is stripped before the name builder and the new `:` rule never sees
+    # it.
+    ("m.drvbare", "dsklist", ['FILES"A:"', 'PRINT"[OK]"']),
+    # 🟢 …AND THE THREE ROWS THAT SAY WHERE THE FIX MAY NOT GO. `m.blank`'s
+    # deferral note said the other verbs were "unmeasured"; they are measured
+    # now, and they AGREE: a bare drive prefix is `Bad file name` on both sides
+    # for KILL, LOAD and SAVE, because those verbs have no "no filespec" meaning
+    # to fall back to. So the empty-name rejection in `bn_done` is CORRECT and
+    # must stay -- loosening it would fix `m.drvbare` by breaking these three.
+    # The fix belongs in `do_files`, which is the only caller with a bare form.
+    ("m.drvkill", "dskerr", ['KILL"A:"', 'PRINT"[OK]"']),
+    ("m.drvload", "dskerr", ['LOAD"A:"', 'PRINT"[OK]"']),
+    ("m.drvsave", "dskerr", ['SAVE"A:"', 'PRINT"[OK]"']),
 
     # === v.* THE SAME MALFORMED FORMS ON THE OTHER DISK VERBS ================
     # 🎯 THE MEASUREMENT `parse_disk_fcb`'s ELEVEN CALLERS DEMAND. D-FSPEC found
@@ -906,11 +925,16 @@ DEFERRED: dict[str, str] = {
     # instead of rejecting, and parse_disk_fcb RAISES `Bad file name` (ERR 56)
     # instead of load_error's print-and-return. A deferral honoured is worth more
     # than one filed [[a-deferral-honoured-is-worth-more-than-one-filed]].
-    # ⚠️ THIS ONE STAYS: a BLANK filespec is "no filespec at all" on the
-    # reference (it lists the whole directory), which is a `do_files` question
-    # and not a parse_disk_fcb one -- a different site, and unmeasured on the
-    # other verbs.
+    # ⚠️ THESE TWO STAY: a BLANK filespec -- and, from 2026-09-05, a DRIVE-PREFIX
+    # -ONLY one -- is "no filespec at all" on the reference (it lists the whole
+    # directory), which is a `do_files` question and not a parse_disk_fcb one.
+    # ✅ "unmeasured on the other verbs" IS NO LONGER TRUE: `KILL"A:"`,
+    # `LOAD"A:"` and `SAVE"A:"` all read `Bad file name` on BOTH sides
+    # (m.drvkill/m.drvload/m.drvsave, scored). So the empty-name rejection is
+    # right for every verb that has no bare form, and the fix must go in
+    # `do_files` -- those three rows are what would catch it going anywhere else.
     "m.blank": "D-FSPEC: a BLANK filespec is `no filespec` there (lists all); a do_files question",
+    "m.drvbare": "D-FSPECCHAR: a DRIVE-PREFIX-ONLY filespec is the same class as m.blank -- `no filespec` there (lists all); the other verbs are measured and AGREE (m.drvkill/load/save), so the fix is in do_files, NOT in bn_done's empty-name test",
 }
 
 # ✅ ALL EIGHT D-FNARG2 ROWS GRADUATED 2026-08-21 (D-FNEXPR2) and are ORDINARY
