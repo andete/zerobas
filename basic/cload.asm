@@ -996,7 +996,12 @@ dpl_line:
                                             ; normal end of the program
                 push    af                  ; preserve link-low: fat_io_getbyte may clobber C
                 call    fat_io_getbyte        ; link high
-                jp      c,dpl_eof           ; must drop the pushed link-low first
+                jr      c,dpl_eof           ; must drop the pushed link-low first
+                                            ; (`jr`, not `jp`, here and at the three
+                                            ; D-TRUNCLOAD sites below: 4 B carved for
+                                            ; D-UPSTR. dpl_eof is in range and the
+                                            ; branch is taken once per load, so the
+                                            ; NOT-taken path is also 3 cycles cheaper)
                 ld      b,a                 ; B = link high
                 pop     af
                 ld      c,a                 ; C = link low (restored)
@@ -1040,9 +1045,9 @@ dpl_line:
 
                 ; line number (2 bytes)
                 call    dpl_get_store
-                jp      c,dpl_eof           ; D-TRUNCLOAD
+                jr      c,dpl_eof           ; D-TRUNCLOAD
                 call    dpl_get_store
-                jp      c,dpl_eof           ; D-TRUNCLOAD
+                jr      c,dpl_eof           ; D-TRUNCLOAD
                 pop     de                  ; DE = body length
 
                 ; token body: copy EXACTLY DE bytes (embedded $00s and all)
@@ -1057,7 +1062,7 @@ dpl_body:
                 sbc     hl,de
                 jr      nc,dpl_oom_pop
                 call    dpl_get_store
-                jp      c,dpl_eof           ; D-TRUNCLOAD
+                jr      c,dpl_eof           ; D-TRUNCLOAD
                 pop     de                  ; DE = remaining count
                 dec     de
                 jr      dpl_body

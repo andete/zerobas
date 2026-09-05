@@ -285,6 +285,37 @@ strscr_desc:
                 ld      hl,STRSCR+1
                 jr      mk_rvdesc
 
+; --- str_eval_plus (D-UPSTR): a leading `+` on a string operand -------------
+; Unary plus is the IDENTITY, measured on both references: `B$=+A$` reads `X`
+; and `B$=+"X"` reads `X`, where this ROM answered Type mismatch. The numeric
+; half (D-UNARYPLUS, basic/expr.asm `ev_f_pos`) does not serve these rows at
+; all -- a string RHS never reaches the numeric factor decoder; `ex_let_str`
+; asks `str_eval_one`, which dispatches on the FIRST BYTE.
+;
+; 🔴 IT MUST NOT ADVANCE HL WHEN IT DECLINES, AND THAT IS WHY THIS IS SEVEN
+; BYTES RATHER THAN ONE. `str_eval_one` is used as a DETECTOR as well as an
+; evaluator -- basic/graphics.asm's PAINT colour arm (`call str_eval_one` /
+; `jp c,gfx_typeerr` / `call gfx_eval_int16`), basic/time.asm and
+; `str_concat_tail` below all carry on parsing FROM HL after a decline. So the
+; obvious shape (`inc hl` and fall back into str_eval_one, mirroring
+; `ev_f_pos`'s loop) would hand every one of them a cursor moved past a `+`
+; they had not consumed. `PAINT(x,y),+1` happens to give the same answer either
+; way, which is exactly what makes it the wrong thing to reason from
+; [[two-rules-that-coincide-on-every-row-you-have]].
+;
+; ⚠️ Consequently this RECURSES where the numeric arm loops: `++A$` costs one
+; frame per `+`. That is a real asymmetry with `ev_f_pos` and it is deliberate --
+; the loop shape cannot restore the cursor.
+;   in:  HL on the PLUS_TOKEN.
+;   out: as str_eval_one -- CF set and HL past `+ operand` on success; CF clear
+;        and HL back ON the `+` when the operand is not a string form.
+str_eval_plus:
+                inc     hl                  ; past the '+'
+                call    str_eval_one        ; the operand itself
+                ret     c                   ; a string operand -> HL is already past it
+                dec     hl                  ; declined: the cursor goes back ON the '+'
+                ret                         ; CF clear, exactly as str_eval_one left it
+
 ; --- str_eval_lit (repack): a '"'-quoted literal -> a [len][ptr] rvalue -----
 ; descriptor over the literal's bytes IN PLACE in the tokenised line (§3:
 ; zero-copy — a literal is never mutated, so RVDESC.ptr points straight at

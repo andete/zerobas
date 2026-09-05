@@ -2201,8 +2201,10 @@ ex_on_expr:                                 ; ON <expr> GOTO/GOSUB -- the ordina
 eon_goto:
                 inc     hl                  ; past GOTO token
                 call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
-                jp      nc,eon_notfound     ; D-ONLIST: 0 B, the same instruction
-                jp      goto_take_bc        ; BC = target; arm GOTOTGT/GOTOFLAG
+                jr      nc,eon_notfound     ; D-ONLIST: 0 B, the same instruction
+                jr      goto_take_bc        ; BC = target; arm GOTOTGT/GOTOFLAG
+                                            ; (both `jr`: 3 B carved for D-UPSTR here
+                                            ; and at eon_gosub's copy below)
 
 ; eon_gosub (repack: via gosub_push, sharing gosub_stk_over)
 eon_notfound:                               ; D-ONLIST: eon_seek_nth found no Nth
@@ -2225,7 +2227,7 @@ eon_notfound:                               ; D-ONLIST: eon_seek_nth found no Nt
 eon_gosub:
                 inc     hl                  ; past GOSUB token
                 call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
-                jp      nc,eon_notfound     ; D-ONLIST: 0 B, the same instruction
+                jr      nc,eon_notfound     ; D-ONLIST: 0 B, the same instruction
                 call    gosub_push          ; push [CURLINE][resume=HL]; BC kept; CF=full
                 jp      c,gosub_stk_over    ; jp (not jr): gosub_stk_over is far back
 ; --- goto_take_bc: BC names the target line -- find it and ARM the jump ------

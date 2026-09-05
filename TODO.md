@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9179 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9233 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2214 (T-6FE392)8 (T-529ABE)` from `TODO.md:8382 (T-529ABE)`: a
+      `TODO.md:2225 (T-6FE392)8 (T-529ABE)` from `TODO.md:8436 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2151,8 +2151,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       "Z80 Optimization" page (Joost, 2026-08-28);
       `scratchpad/peephole_sweep.py --sites` counts each against basic/ + sub/
       (76 files, 20579 instructions). Two entries were ALREADY CLOSED and are
-      reported rather than re-counted: `jp`→`jr` (D-JRSLICE/2, banked
-      2026-08-24) and `call X`/`ld a,(hl)` (D-RETLN/D-EVSPDUP, gated).
+      reported rather than re-counted: ~~`jp`→`jr` (D-JRSLICE/2, banked
+      2026-08-24)~~ and `call X`/`ld a,(hl)` (D-RETLN/D-EVSPDUP, gated).
+      🔴 **`jp`→`jr` IS NOT CLOSED, MEASURED 2026-09-05.** D-UPSTR ran
+      `scratchpad/jr_mapper.py` because it was 1 B short and found **19
+      convertible sites, 14 in main page 1** — a class this entry had been
+      reporting as banked since 2026-08-24. Code moves, and every insertion since
+      (D-CTLPOOL moved a great deal) pulls fresh targets into `jr` range, so this
+      is not a one-off sweep but a RENEWABLE seam. D-UPSTR spent 8 of them; **13
+      remain in page 1**. The tool's own note is why it is safe to spend blind:
+      shrinking only TIGHTENS displacements, and `jr`/`jp` are flag- and
+      control-flow-identical, so *"it assembles"* == *"it is correct"*.
+      ⚠️ A count from this paragraph rots the same way the last one did — run the
+      mapper, do not quote it.
       🎯 **REGION IS WHAT THE BYTES ARE WORTH**: of a 106 B ceiling only **47 B
       is in MAIN** (35 page 1, 12 low, measured 2026-08-28) — the rest is sub,
       which had thousands of bytes free and is not a carve.
@@ -2852,7 +2863,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8382 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8436 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5416,7 +5427,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       because "closed" and "gated" are different claims
       [[a-probe-with-an-honest-rc-that-no-battery-collects]].
 
-- [ ] 🔴 **UNARY PLUS IS NOT IMPLEMENTED: `A=+1` IS ERR 2 HERE AND LEGAL ON BOTH
+- [x] ✅ **UNARY PLUS IS NOT IMPLEMENTED: `A=+1` IS ERR 2 HERE AND LEGAL ON BOTH
       REFERENCES.** Found 2026-09-05 by D-UNARYPLUS while answering the boundary
       question in the entry above. **Six forms measured, all ERR 2 here and `0`
       on both the VG-8020 and the CF-3300**: `A=+1`, `PRINT +1`, `A=(+1)`,
@@ -5476,12 +5487,55 @@ list. **When a slice lands, grep this list for what it just shipped.**
       as designed. 📏 **The proof it is the dispatch and not the parse: the arm
       moved `B$=+"X"` and `PRINT +A$` from ERR 2 to ERR 13**, so the token IS
       being consumed now.
-      💰 **~6–7 B** (`cp PLUS_TOKEN / jr z,<inc hl / jp str_eval_one>`) against
-      **5 B free**, so it needs a carve like its numeric half did. **Unary plus on
+      💰 ~~**~6–7 B** (`cp PLUS_TOKEN / jr z,<inc hl / jp str_eval_one>`) against
+      **5 B free**~~ — **the price was 11 B and the shape in that parenthesis is
+      the one that would have broken the tree**; see below. **Unary plus on
       a string is the IDENTITY on both references** — `B$=+A$` reads `X`, not
       `Type mismatch` — which is a fact the entry did not have before today.
-      🤖 AUTONOMOUS — the reference settles it; the numeric half has landed and the
-      string half is measured, sited and priced, needing only a carve.
+      ✅ **THE STRING HALF LANDED 2026-09-05 (D-UPSTR). 10 divergences → 0, and
+      `uplus_probe` reads 12/12 green on all three machines.**
+      🔴 **IT COST 11 B, NOT 6–7, BECAUSE THE ARM MUST NOT MOVE THE CURSOR WHEN
+      IT DECLINES.** `str_eval_one` is a DETECTOR as well as an evaluator, and its
+      callers carry on parsing FROM HL after a decline:
+      [`basic/graphics.asm`](basic/graphics.asm:747)'s PAINT colour arm does
+      `call str_eval_one / jp c,gfx_typeerr / call gfx_eval_int16`, and
+      [`basic/print.asm`](basic/print.asm:186) states the contract in its own
+      comment (*"str_eval left HL unmoved on failure, so this restores the same
+      cursor exp_num would see un-gated"*). So the priced shape — consume the `+`
+      and fall back into `str_eval_one`, mirroring `ev_f_pos`'s LOOP — would have
+      handed every one of them a cursor past a `+` they had not consumed.
+      🎯 **AND THE ROW THAT WOULD HAVE HIDDEN IT IS THE OBVIOUS ONE**:
+      `PAINT(x,y),+1` and `PRINT +1` read the same either way, because unary plus
+      is the identity and the numeric factor decoder has had its own `+` arm since
+      D-UNARYPLUS [[two-rules-that-coincide-on-every-row-you-have]]. The shipped
+      `str_eval_plus` (low region, [`basic/str-engine.asm`](basic/str-engine.asm))
+      RECURSES instead — `inc hl / call str_eval_one / ret c / dec hl / ret` — and
+      that asymmetry with `ev_f_pos`'s loop is deliberate: a loop cannot restore
+      the cursor. ⚠️ It costs one frame per `+`, which `ev_f_pos` does not.
+      🔴 **THREE SITES, NOT ONE — `PRINT +A$` WAS STILL RED AFTER THE FIRST FIX.**
+      `PRINT` has its OWN item-dispatch chain over the first byte, and the `+`
+      joins its `(` case (try the string path, allow a decline), not its `"` one,
+      for exactly the reason `(` is there: a leading `+` classifies NOTHING.
+      💰 **AND "ROUTE D IS FULLY BANKED" WAS A ROTTED WALL READING.**
+      `scratchpad/jr_mapper.py` reads **19 convertible `jp`→`jr` sites, 14 of them
+      in main page 1** (2026-09-05). One byte from `str_eval_ix`'s own tail jump
+      paid for the first arm; seven more (the four `dpl_eof` sites in
+      [`basic/cload.asm`](basic/cload.asm:999) and three in
+      [`basic/program.asm`](basic/program.asm:2204)) paid for the `PRINT` one.
+      **13 remain in page 1, measured and unspent.** Walls after, 2026-09-05:
+      main page 1 **3 B**, low region **2 B** — re-run `make basic-reloc`.
+      🔬 **THE BLAST RADIUS HAS ITS OWN ROWS**:
+      [`scratchpad/upstr_probe.py`](scratchpad/upstr_probe.py), 13 decline-path
+      cases (concat tail after a unary plus, a relop after one, `A$=+` with
+      nothing behind it, the PAINT colour detector reading ERR 5 and not ERR 13),
+      all three machines agreeing on every one. ⚠️ Its `g.paint` row read
+      `<NO READING>` on ALL THREE for two cuts: the row leaves the machine in
+      `SCREEN 2` and the fence is a TEXT-row scan, so the handler's own output is
+      drawn where the reader cannot see it. The first cut blamed the paint flood
+      — swapping in an out-of-range colour that errors BEFORE any flood left the
+      cells just as blank, and that is what named the real cause.
+      ~~🤖 AUTONOMOUS — the reference settles it; the numeric half has landed and the
+      string half is measured, sited and priced, needing only a carve.~~
 
 - [x] ⚠️ **`CSAVE` AND `CLOAD` STILL TAKE A LITERAL FILENAME ONLY, AND THAT IS
       ✅ **CLOSED 2026-09-05 (D-CSAVEEXPR).** 5 divergences → 0 across 10 rows on 3 machines, `cassave-acceptance` 20/20 and `castail-acceptance` green off the DECODED WAV, and the edit RECOVERED 9 B of main page 1. Nothing outstanding.

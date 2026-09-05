@@ -63,7 +63,12 @@
 str_eval_ix:
                 push    ix
                 pop     hl                  ; HL = cursor
-                jp      str_eval            ; TAIL -- CF, HL and STRPTR go to OUR caller
+                jr      str_eval            ; TAIL -- CF, HL and STRPTR go to OUR caller.
+                                            ; `jr`, not `jp` (D-UPSTR carve): str_eval
+                                            ; is 4 B below, and this 1 B is what paid
+                                            ; for the unary-plus arm's page-1 half.
+                                            ; jr and jp are flag- and control-flow-
+                                            ; identical, so the tail stays a tail.
 
 str_eval:
                 call    str_eval_one
@@ -93,6 +98,15 @@ str_eval_one:
                 cp      SPRITE_TOKEN        ; $C7 -> SPRITE$(n) (graphics G7; the `$` is
                 jp      z,ev_f_sprite       ; separate ASCII after the token)
     ENDIF
+                cp      PLUS_TOKEN          ; D-UPSTR: unary plus on a STRING is the
+                jp      z,str_eval_plus     ; identity on both references (`B$=+A$`
+                                            ; reads `X`, not Type mismatch). Sited
+                                            ; LAST in the chain: `+` is rare and a
+                                            ; `cp`/`jp` pair costs the same wherever
+                                            ; it sits, so the common literal and
+                                            ; variable forms pay nothing for it.
+                                            ; The body is in the low region -- page 1
+                                            ; had 4 B and this pair is 5.
                 call    is_letter           ; a `$`-suffixed variable?
                 jr      nc,str_eval_no
                 call    var_str_type        ; A=1 if `$` suffix

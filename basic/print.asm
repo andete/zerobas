@@ -209,6 +209,16 @@ exp_loop:
                 jr      z,exp_strvar
                 cp      '('
                 jr      z,exp_strvar
+                ; 🎯 D-UPSTR: `PRINT +A$`. THE THIRD SITE, and it joins the `(`
+                ; case rather than the `"` one for the same reason `(` does -- a
+                ; leading `+` classifies NOTHING (`+A$` is a string, `+1` is not),
+                ; so the string path is TRIED and allowed to decline. str_eval ->
+                ; str_eval_one -> str_eval_plus consumes the `+`, and on a numeric
+                ; operand puts the cursor BACK ON it and returns CF clear, which is
+                ; the contract `jp nc,exps_fallback` below already relies on. So
+                ; `PRINT +1` reaches exp_num with exactly the cursor it had before.
+                cp      PLUS_TOKEN          ; $F1 -> maybe a string (unary plus is the
+                jr      z,exp_strvar        ; identity on both references)
                 call    is_letter           ; a `$`-suffixed string variable?
                 jr      nc,exp_num
                 call    var_str_type        ; A=1 if `$` suffix
