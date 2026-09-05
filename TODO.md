@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8961 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8988 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8164 (T-529ABE)`: a
+      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8191 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2801,7 +2801,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8164 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8191 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6544,10 +6544,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       four rows' readings under that cut are therefore **no longer obtainable
       from this probe as it stands**; whatever produced them in 2026-08 cannot be
       re-read today without either a narrower cut or a mode that reports rows
-      through a control failure. 🎯 **The next step is to find out whether that
+      through a control failure. 🎯 ~~**The next step is to find out whether that
       run's cut was the same one** — this one neuters the store inside
       `penderr_set`, and a cut placed elsewhere may leave a writer standing that
-      mine does not.
+      mine does not.~~
+      🟢 **ANSWERED 2026-09-05 (D-KPE1CUT), AND THE CUTS WERE NOT THE SAME.**
+      [`docs/spec-basic-penderr.md`](docs/spec-basic-penderr.md) §8's own knife
+      table says what K-PE1 is: **`jr nz,pes_pending` -> `jr z,pes_pending`**, a
+      POLARITY FLIP of the guard. The 2026-09-05 attempt neutered the STORE
+      instead — a different cut, and the question was answerable by READING that
+      table rather than by re-deriving anything.
+      🟢 **AND UNDER THE REAL K-PE1 THE FOUR ROWS REPRODUCE EXACTLY**, on a
+      build restored byte-identically afterwards:
+
+          o.nn.5dz    vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+          o.nn.5ov    vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+          o.sub.5ex   vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+          u.nn.5dz    all three: `Illegal function call in 10`
+          n.5.w       zb=0 — correctly loses its error, as filed
+          n.dz.w      zb=0 — the POSITIVE CONTROL fails, so the probe REFUSES
+
+      🎯 The refusal is CORRECT under this cut, and is exactly why the rows
+      print unscored — which is how the original observation was obtainable.
+      🔴 **SO BOTH REFUTATIONS RECORDED ABOVE WERE MADE UNDER THE WRONG CUT AND
+      DO NOT REFUTE WHAT THEY CLAIM.** The `WIDTH 0` hypothesis is **back on the
+      table, not eliminated**: its dismissal rested on *"cutting `penderr_set`'s
+      store outright: `n.dz.w` reads 0, not 5"*, and that is a statement about a
+      cut K-PE1 never made. ⚠️ Struck rather than deleted — those readings are
+      real, they are just about a different machine
+      [[a-mechanism-inferred-from-one-observation]].
+      ➡️ **NEXT: re-test the `WIDTH 0` hypothesis under the POLARITY FLIP**, which
+      is the cut that actually produces the rows.
       The `WIDTH 0` fact is recorded in the probe beside the constants so the
       next reader does not re-derive it.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
