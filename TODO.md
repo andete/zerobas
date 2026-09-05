@@ -8884,6 +8884,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         🎯 **AND THERE IS NO LOW-REGION ESCAPE FOR THE FETCH**: `dl_store`
         (`$7567`) and `fch_ctx_addr` (`$6FB6`) are BOTH in main page 1, read from
         `build/basic-reloc.sym`.
+        🔴 **AND THE SHAPE ITSELF IS REFUTED — BUILT, RUN, REVERTED
+        (2026-09-05, after D-DGTPUSH's carve funded it).** The 9 B **fit**
+        (page 1 15 → 6 B free, sub page 1 918 → 917) and the machine then
+        **HANGS ON THE FIRST LINE STORE**: `NEW` / `10 PRINT"HI"` echoes and
+        nothing follows — no `RUN`, no prompt. Every `crf-*` row went to
+        `<none>` / `<NO ECHO>`, **including `crf-oomctl`, which is an ordinary
+        successful store**, and that is the tell: this is not a bound that
+        refuses too much, it is a machine that stops.
+        🎯 **K-TC1 LOCATES IT AT THE CALL, NOT THE VALUE.** Keeping
+        `call fch_ctx_addr` and reverting the sub side to `ld de,TXTMAX` — so the
+        published ceiling is fetched and then ignored — **still hangs**. So the
+        fault is `call fch_ctx_addr` from `dl_store`, not `strheap_varceil()`
+        being wrong or too low.
+        ⚠️ **THE MECHANISM IS NOT ESTABLISHED AND IS NOT GUESSED AT HERE**
+        [[a-mechanism-inferred-from-one-observation]]. What IS known: the same
+        routine works from its existing callers (`fch_save_active` /
+        `fch_load_ctx`), which the disk battery exercises green on every run — so
+        the fault is contextual to calling it at LINE-ENTRY time, not a broken
+        `fch_ctx_addr`. The IX contract its header demands of new callers was
+        checked and is satisfied (`store_line` reaches the tenant through
+        `le_call_op`, which does `ld ix,...` itself), so that is not it either.
+        ➡️ **NEXT SHAPE TO TRY, AND IT IS A BETTER ONE ANYWAY: publish `SL_CEIL`
+        FROM `CLEAR`, NOT FROM `dl_store`.** `CLEAR` is where HIMEM changes and it
+        already touches the pool, so the ceiling would be fetched once per
+        `CLEAR` instead of once per typed line — cheaper, and it moves the
+        sub-ROM call out of the line-entry path entirely, which is exactly where
+        the measured fault is. 🔴 It also needs a boot-time initial value, or a
+        program typed before any `CLEAR` reads an unwritten cell.
+        💰 **THE 9 B ARE NOT SPENT** — the attempt was reverted and all four
+        ROM digests re-read back to the values `make gates` had recorded for the
+        preceding green battery (not quoted here: four 8-hex groups in a row are
+        what `audit_citations.py`'s hex-dump check exists to catch, and it caught
+        this line). Main page 1 was back to **15 B free on 2026-09-05** — re-read
+        it with `make basic-reloc`, never from here.
       * ⚠️ ~~**UNVERIFIED, AND IT IS THE FIRST THING TO CHECK**: `sh_chan_addr` sits
         behind an assembly-time `IF` in `sub/strheap.asm`, so a build without
         D-FCH may not have it. Read the guard before believing the 7-byte shape~~
