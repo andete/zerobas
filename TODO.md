@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8199 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8228 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7402 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7431 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7402 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7431 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5129,6 +5129,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §8.6.
       *(Item (3), `run-missing`'s second message, is CLOSED — see D-RUNTAIL
       below.)*
+      ✅ **GAP (1) CLOSED and GAP (2) DEMONSTRATED, 2026-09-05 (D-FATVERB,
+      `scratchpad/fatverb_knives.py`) — knives 4/4 exact.**
+      • **K-FE2 / K-FE3 / K-FE4 each cut code only ONE verb executes** — BLOAD's
+      own `cp BSAVE_DISK_ID` marker compare, `oo_input`'s own `mode = INPUT`
+      store, and `fat_io_append`'s own re-use of the existing chain — and each
+      moves its own `*-alive` row. That is precisely what gap (1) said was
+      missing: the rows are now proven VERB-specific, not merely "the read path
+      died".
+      • **K-FE1 is the other half of the claim, and nobody had run it**: cutting
+      the shared `fat_io_getbyte` moves **all six** byte-reading controls
+      (load/run/bload/open/append/merge) while the DIRECTORY ones — `fat-alive`
+      (FILES), `kill-alive`, `name-alive` — correctly hold. Those greens are what
+      say the cut breaks the read layer and not the disk.
+      • 🎯 **GAP (2) IS VISIBLE IN K-FE3's OWN RESULT**: breaking `OPEN FOR
+      INPUT` moves `append-alive` too, because `append-alive` reads its data back
+      through an `OPEN FOR INPUT`. The prediction SAYS so rather than discovering
+      it, since a prediction omitting it would score the arm as a miss. Gap (2)
+      is therefore no longer a suspicion — it is a measured coupling with a named
+      mechanism.
+      🔴 **AND THE MATRIX'S FIRST RUN REPORTED TWO FALSE MISSES — the READOUT,
+      not the knives.** `append-alive` is printed TWICE (`FAIL append-alive …`
+      and later `PASS append-alive (directory) …`, a second check under the same
+      leading name), and a `name -> verdict` dict keeps the LAST, so a failing row
+      read as passing. A row is FAILing if ANY of its lines says so
+      [[readout-blind-to-its-own-subject]]. With that fixed, K-FE1 and K-FE4 were
+      exact all along.
+      ⚠️ **Gap (2) is DEMONSTRATED, not fixed**: `merge-alive`/`append-alive`
+      still lean on a second verb. Rebuilding them to stand alone is separate
+      work and is not done here.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 - [ ] 📌 **`file:LINE` CITATIONS ARE UNMAINTAINED AND BROADLY ROTTED — ONLY
       31% OF THEM WERE STILL CORRECT, AND NO GATE READS ONE.** Filed 2026-08-19
