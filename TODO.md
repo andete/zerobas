@@ -272,7 +272,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8610 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8646 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -336,7 +336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7813 (T-529ABE)`: a
+      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7849 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2663,7 +2663,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7813 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7849 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5116,8 +5116,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `ev_f_pos: inc ix / jp ev_f` beside `ev_f_neg` — unary plus is the
       identity, so consuming the token and re-entering is the whole fix.
       ⚠️ Closes four rows of the entry above for free if it lands.
-      🤖 AUTONOMOUS — the reference settles it; finishable unattended (no his-decision signal found).
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      🟢 **LANDED 2026-09-05 (D-UNARYPLUS), 10 B, AND IT FIT** — funded by
+      D-CSAVEEXPR's carve the same day (main page 1 6 → 15 → **5 B**; re-run
+      `make basic-reloc`, never quote this). `ev_f` gains
+      `cp PLUS_TOKEN / jp z,ev_f_pos`, and `ev_f_pos: inc ix / jp ev_f` sits
+      beside `ev_f_neg` — exactly the shape priced above, both jumps `jp` for the
+      reach reason recorded above.
+      🔴 **THE FILED SIX WERE TEN.** `scratchpad/uplus_probe.py` was written to ask
+      what the arm would REACH, not what it was for, and four rows the entry did
+      not have were divergent too: `A=++1`, `A=+-1`, `A=+2^2`, and the three
+      STRING forms. **9 of 12 rows are green after; 10 divergences → 3.**
+
+          row       refs   zb before   zb after
+          A=+1        1      ERR 2       1        A=++1       1   ERR 2   1
+          B=1:A=+B    1      ERR 2       1        A=+-1      -1   ERR 2  -1
+          A=(+1)      1      ERR 2       1        A=+2^2      4   ERR 2   4
+          A=1++2      3      ERR 2       3
+          B$=+A$      X      ERR 13    ERR 13  🔴   B$=+"X"  X  ERR 2  ERR 13
+          PRINT +A$   X      ERR 2     ERR 13  🔴
+
+      🔴 **AND A DRAFT OF THE ROM COMMENT CLAIMED THE STRING ROWS WERE CLOSED**,
+      written from the shape before the after-run existed. Corrected beside its
+      original in [`basic/expr.asm`](basic/expr.asm), not deleted
+      [[a-fix-falsifies-the-justification-beside-it]].
+      ➡️ **THE THREE STRING ROWS ARE A DIFFERENT SITE, AND IT IS NAMED.** This arm
+      is in the NUMERIC factor decoder; a string RHS never reaches it.
+      `ex_let_str` asks *"is this a string operand?"* through
+      [`basic/strvar.asm`](basic/strvar.asm) `str_eval_one`, which dispatches on
+      the FIRST BYTE and has no `PLUS_TOKEN` case — so a leading `+` falls to
+      `els_typecheck`, which evaluates numerically and reports `Type mismatch`,
+      as designed. 📏 **The proof it is the dispatch and not the parse: the arm
+      moved `B$=+"X"` and `PRINT +A$` from ERR 2 to ERR 13**, so the token IS
+      being consumed now.
+      💰 **~6–7 B** (`cp PLUS_TOKEN / jr z,<inc hl / jp str_eval_one>`) against
+      **5 B free**, so it needs a carve like its numeric half did. **Unary plus on
+      a string is the IDENTITY on both references** — `B$=+A$` reads `X`, not
+      `Type mismatch` — which is a fact the entry did not have before today.
+      🤖 AUTONOMOUS — the reference settles it; the numeric half has landed and the
+      string half is measured, sited and priced, needing only a carve.
 
 - [ ] ⚠️ **`CSAVE` AND `CLOAD` STILL TAKE A LITERAL FILENAME ONLY, AND THAT IS
       NOW A DIVERGENCE OF ITS OWN RATHER THAN PART OF A FAMILY.** Filed

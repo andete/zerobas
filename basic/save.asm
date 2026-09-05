@@ -492,7 +492,7 @@ do_csave:
                 jr      z,csav_noname       ; `CSAVE:` -> Missing operand
                 cp      ','
                 jr      z,csav_comma        ; `CSAVE,2` -> Syntax error (measured)
-                ; \U0001f7e2 D-CSAVEEXPR (2026-09-05): A STRING EXPRESSION, like the other
+                ; 🟢 D-CSAVEEXPR (2026-09-05): A STRING EXPRESSION, like the other
                 ; eight filename verbs since D-FNEXPR2 -- this was the last
                 ; `cp '"'` gate in the tree, and it cost FIVE divergent rows,
                 ; every one of them a NON-RAISING `load error` that `ON ERROR`
@@ -504,7 +504,7 @@ do_csave:
                 ;   CSAVE"P       accepted            was `load error`  <- see below
                 ;   CLOAD 5       Type mismatch       was `load error`  (do_cload)
                 ;
-                ; \U0001f534 `CSAVE"P` -- AN UNTERMINATED LITERAL -- IS THE ROW THIS EDIT
+                ; 🔴 `CSAVE"P` -- AN UNTERMINATED LITERAL -- IS THE ROW THIS EDIT
                 ; WOULD HAVE MOVED WITHOUT BEING ASKED TO, and it was measured
                 ; BEFORE the edit for exactly that reason. The hand-rolled parse
                 ; below demanded the CLOSING quote; `str_eval` follows MSX BASIC
@@ -512,7 +512,7 @@ do_csave:
                 ; accept it silently, so the fix closes that row rather than
                 ; changing it -- but "rather than" is a measurement, not a guess.
                 ;
-                ; \U0001f3af tape_parse_name IS UNCHANGED and needs no second source: it
+                ; 🎯 tape_parse_name IS UNCHANGED and needs no second source: it
                 ; walks (HL) to a '"', and fname_expr hands back exactly that --
                 ; a staged, '"'-terminated copy at STRSCR+1.
                 call    fname_expr          ; HL -> the staged '"'-terminated copy

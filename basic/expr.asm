@@ -477,6 +477,9 @@ ev_f:
                 jp      z,ev_f_empty
                 cp      MINUS_TOKEN         ; unary minus
                 jp      z,ev_f_neg
+                cp      PLUS_TOKEN          ; unary plus (D-UNARYPLUS)
+                jp      z,ev_f_pos          ; ⚠️ `jp`, not `jr`: ev_f_pos sits
+                                            ; beside ev_f_neg, ~390 B away
                 cp      '('
                 jp      z,ev_f_paren
                 cp      PEEK_PREFIX         ; $FF -> PEEK / VPEEK / INP function token
@@ -843,6 +846,47 @@ eff_cp:
                 inc     ix
                 djnz    eff_cp
                 jp      flt_to_int16        ; DE = rounded int16 (0 if out of range)
+
+; --- ev_f_pos: unary plus is the IDENTITY -------------------------------------
+; D-UNARYPLUS (2026-09-05). `A=+1` was ERR 2 here and `1` on both references:
+; ev_f tested MINUS_TOKEN and had no PLUS_TOKEN arm, so a leading `+` was simply
+; "not a factor". Consuming the token and re-entering ev_f is the whole fix.
+;
+; 🎯 RE-ENTERING ev_f RATHER THAN CALLING ev_pw IS THE POINT. Unary minus calls
+; ev_pw because `^` must bind tighter than negation (-2^2 = -4); plus changes
+; nothing, so the operand is just the next FACTOR. Measured on both references,
+; which agree on all ten rows (scratchpad/uplus_probe.py):
+;
+;   A=+1  1   B=1:A=+B  1   A=(+1)  1   A=1++2  3   A=++1  1   A=+-1  -1
+;   A=+2^2  4     A$="X":B$=+A$  X     B$=+"X"  X     PRINT +A$  X
+;
+; 🔴 THREE OF THOSE TEN ARE **NOT** CLOSED BY THIS ARM, AND A DRAFT OF THIS
+; COMMENT SAID THEY WERE. It read "re-entering ev_f ... is what makes the STRING
+; rows work", written from the shape before the after-run existed; it is
+; corrected here rather than deleted, because being wrong about WHICH rows an arm
+; reaches is the thing worth leaving on the record.
+; The three STRING rows still read ERR 13, and the re-measurement says why: this
+; arm is in the NUMERIC factor decoder and a string RHS never reaches it.
+; `ex_let_str` asks "is this a string operand?" through basic/strvar.asm's
+; `str_eval_one`, which dispatches on the FIRST BYTE and has no PLUS_TOKEN case,
+; so a leading `+` falls to els_typecheck -- which evaluates numerically and
+; reports Type mismatch, exactly as designed.
+; 📏 THE ARM DID MOVE `B$=+"X"` AND `PRINT +A$` FROM ERR 2 TO ERR 13, which is
+; the proof that the token is now consumed and that what remains is the type
+; dispatch, not the factor parse. Filed with that site and its price.
+;
+; ⚠️ The entry priced SIX numeric rows; the probe found TEN divergences, and
+; nine of the twelve rows are green after this. The four extra all came from
+; asking what the arm would REACH rather than what it was for
+; [[a-fix-falsifies-the-justification-beside-it]].
+; ⚠️ `A=++1` re-enters ev_f a second time and terminates because IX has
+; advanced past a token each time -- the regress is bounded by the line.
+; ⚠️ `A=+2^2` reads 4 under BOTH bindings, so it does not separate them; it
+; is recorded as a row that agrees without discriminating
+; [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+ev_f_pos:
+                inc     ix                  ; consume the '+'
+                jp      ev_f                ; the operand is the next factor
 
 ev_f_neg:
                 inc     ix

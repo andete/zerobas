@@ -65,10 +65,10 @@ dcl_name:
                 jr      z,dcl_noname        ; bare CLOAD / CLOAD? -> next tape file
                 cp      COLON               ; CLOAD : ... -> bare form
                 jr      z,dcl_noname
-                ; \U0001f7e2 D-CSAVEEXPR (2026-09-05): a string EXPRESSION, the same edit
+                ; 🟢 D-CSAVEEXPR (2026-09-05): a string EXPRESSION, the same edit
                 ; as do_csave's. `CLOAD 5` is `Type mismatch` on BOTH references
                 ; and was a non-raising `load error` here.
-                ; \u26a0\ufe0f AND IT IS THE ONLY CLOAD ROW THAT EXISTS. `CLOAD A$` and
+                ; ⚠️ AND IT IS THE ONLY CLOAD ROW THAT EXISTS. `CLOAD A$` and
                 ; `CLOAD"P"` REACH THE TAPE, and a tape search that finds nothing
                 ; is the `LOAD"CAS:"` class -- TODO.md records the reference as
                 ; NOT RETURNING, "no row can carry this". So the argument is
