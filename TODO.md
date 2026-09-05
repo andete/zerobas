@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9400 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9440 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -473,6 +473,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       citation naming a single wrong block, has no sibling to disagree with and
       would still be green. Nothing cheap is known for that one — the semantic
       route above is measured shut.
+      🔴 **AND A FIFTH INSTANCE LANDED THE NEXT DAY, THE SAME WAY, IN THE SAME
+      FILE (2026-09-06).** `docs/gapsweep-2026-08-21.md` §4 is headed *"A line
+      store is bounded by the constant `TXTMAX`, not by HIMEM"* and cited the
+      **`GFX_OP=1` marshalling** block. It was **GREEN** — the id really was the
+      id of the block at that line — and surfaced only because D-GIRDOM2 closed
+      that item, changing its headline so the id stopped resolving. **Exactly the
+      lone-citation residual named above, found by exactly the accident that
+      found the first four**, which is now five data points for a class no gate
+      covers. Repointed to `T-E0B04B`, with the wrong citation quoted in place
+      under the checker's own `NOT-A-CITATION` marker.
+      ⚠️ **CLOSING AN ITEM IS WHAT SURFACES THESE, and that is worth knowing when
+      picking work**: the id is derived from the headline, so a `- [ ]` → `- [x]`
+      edit re-keys every inbound citation. Five of five were found that way and
+      none by looking.
       💰 Zero ROM bytes; a tools-only change.
       🤖 AUTONOMOUS — a gate settles it; finishable unattended (no his-decision signal found).
 
@@ -502,7 +516,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2279 (T-6FE392)8 (T-529ABE)` from `TODO.md:8603 (T-529ABE)`: a
+      `TODO.md:2293 (T-6FE392)8 (T-529ABE)` from `TODO.md:8643 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2917,7 +2931,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8603 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8643 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6718,7 +6732,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       diverge, which is exactly why nobody has run them.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] ⚠️ **`GFX_OP=1`'s MARSHALLING IS STILL ALIASED TO THE WORK AREA, AND THAT
+- [x] ✅ **`GFX_OP=1`'s MARSHALLING IS STILL ALIASED TO THE WORK AREA, AND THAT
       IS A DECISION NOTHING RE-EXAMINES.** Filed 2026-08-11 by D-GIRDOM.
       `PSET`/`PRESET` hand the tenant their target through `GXPOS/GYPOS` and it
       is currently correct — those verbs write those cells as their contract, so
@@ -6730,7 +6744,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       change with no failing row behind it — so it is filed, not folded in.
       ⚠️ Whoever picks it up must produce the row FIRST; a fix with no row is
       how the G2-g disposal happened in the first place.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **THE ROW CANNOT EXIST, AND THE REASON IS STRUCTURAL — MEASURED
+      2026-09-06 (D-GIRDOM2). The premise above is wrong in one word: it is
+      invisible by CONSTRUCTION, not by coincidence.**
+      🎯 `gfx_work_area` stores BC/DE **verbatim** into `GXPOS`/`GYPOS` (16-bit,
+      no mod-256), and the ONLY path that reaches the tenant runs through
+      [`basic/graphics.asm`](basic/graphics.asm:98)'s `call gfx_in_range /
+      jp nc,exec_stmt` — which returns CF=1 only when `B == 0` and `E < 192`. So
+      wherever the tenant is entered, the work-area cells **are** the plot
+      target. Off-screen, the work area legitimately holds the raw out-of-range
+      value and no tenant call happens at all. The far end already relied on
+      this and said so — `sub/graphics.asm`'s op-1 arm reads `GXPOS` low byte
+      with *"0..255 guaranteed in-range"* — but **the guarantee was written down
+      only at the end that consumes it**, never at the one that provides it.
+      📏 **WHAT WOULD SEPARATE THE TWO RULES DOES NOT EXIST FOR THIS VERB.** It
+      needs a case where the marshalled target differs from the contracted
+      work-area value — the shape `ex_put_sprite` has ON PURPOSE (its
+      coordinates go over RAW and the tenant applies the mod-256 store, so the
+      work area measurably keeps the raw value). `gfx_in_range` closes that gap
+      for PSET/PRESET before the tenant is ever reached
+      [[two-rules-that-coincide-on-every-row-you-have]].
+      💰 **0 B, AND THE REMEDY IS THE INVARIANT, NOT THE REFACTOR.** The
+      `GFX_PTX/GFX_PTY` swap would cost main page-1 bytes (**3 B free,
+      2026-09-06**) to defend a class that cannot be entered; what was actually
+      missing is the STATEMENT, so the `jp nc` now carries it, with the two
+      edits that would break it named (moving the tenant call above the test, or
+      adding a second op-1 entry that skips it). Comments do not assemble.
+      ~~🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).~~
 
 - [x] 🟢 **NOT A DIVERGENCE — RETIRED 2026-08-30 (D-FIELDCH). THE REFERENCE SIDE
       WAS VOID.** Probe `scratchpad/fieldch_probe.py`, 9 rows x 3 machines,

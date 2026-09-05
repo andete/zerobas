@@ -97,6 +97,21 @@ gfx_plot_stmt:
                 pop     bc                  ; restore x
 gfx_plot_go:
                 ; --- range test decides plot vs silent no-op ---
+                ; 🎯 D-GIRDOM2 (2026-09-06): THIS `jp nc` IS WHAT MAKES GFX_OP=1'S
+                ; ALIASED MARSHALLING SAFE, AND THE GUARANTEE WAS ONLY WRITTEN
+                ; DOWN AT THE FAR END. `sub/graphics.asm`'s op-1 arm reads
+                ; `GXPOS`/`GYPOS` low byte and says "0..255 guaranteed
+                ; in-range" -- and THIS branch is the guarantee. `gfx_work_area`
+                ; stores BC/DE verbatim (16-bit, no mod-256), and `gfx_in_range`
+                ; returns CF=1 only when B==0 and E<192, so on the ONLY path
+                ; that reaches the tenant the work-area cells ARE the plot
+                ; target. Not a coincidence of two values: an invariant one
+                ; instruction wide.
+                ; ⚠️ SO DO NOT MOVE THE TENANT CALL ABOVE THIS TEST, and do not
+                ; add a second op-1 entry that skips it -- either would hand the
+                ; tenant an out-of-range GXPOS while the work area legitimately
+                ; keeps the raw value (which is exactly what `ex_put_sprite`
+                ; does on purpose, and why ITS coordinates go over RAW).
                 call    gfx_in_range        ; CF = 1 iff 0<=x<=255 and 0<=y<=191
                 jp      nc,exec_stmt        ; off-screen -> no plot (work area already moved)
                 ld      a,1                 ; GFX_OP = 1 -> tenant plot (PSET/PRESET)
