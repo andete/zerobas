@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9043 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9068 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8246 (T-529ABE)`: a
+      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8271 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2801,7 +2801,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8246 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8271 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4239,11 +4239,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ➡️ **REMAINING: 68**, of which 48 classify by code/span/VRAM rather than by
       message text and may not want this shape at all — check before assuming
       the number is a to-do list.
-      🎯 **SO "ADD THE NEXT NAME" IS PROVABLY UNBOUNDED, WHICH IS THE ITEM'S OWN
+      🎯 ~~**SO "ADD THE NEXT NAME" IS PROVABLY UNBOUNDED, WHICH IS THE ITEM'S OWN
       THESIS MEASURED.** Not one readout in the tree can name even half the
       canon; the widest — `basic_probe_fldwidth.py`, 15/30 — is still blind to
       `Bad FAT`, `Bad drive name`, `Bad file name`, `Bad sector number`,
-      `Can't CONTINUE` and ten more. The file this item names as carrying the
+      `Can't CONTINUE` and ten more.~~
+      🔴 **RE-SWEPT 2026-09-05 AND THAT SENTENCE IS FALSIFIED IN BOTH HALVES.**
+      `basic_probe_fldwidth.py` is **30/30 — a COMPLETE readout** — and
+      `basic_probe_lrvar.py` is **29/30**. "Not one can name even half" and "the
+      widest is 15/30" were both true when written and are not now.
+      📏 **TODAY'S FIGURES: 102 probes with the bucket, 38 classifying by message
+      text, 84 sentinels not carrying the text, coverage min 1 / median 5 /
+      max 30.** The filed line above reads 82 / 34 / 68. ⚠️ The corpus is
+      `git ls-files`, so it grows as probes are TRACKED — and **only 2 of the
+      +21 were added today** (`errmsg_alphabet.py`, now excluded, and
+      `ntwall_sep.py`), measured with `git log --diff-filter=A`, not assumed.
+      🔴 **AND THE SWEEP WAS COUNTING THE CANON ITSELF.**
+      [`probes/lib/errmsg_alphabet.py`](probes/lib/errmsg_alphabet.py) **IS** the
+      30-message table this sweep measures coverage against; its `<NO OUTPUT>`
+      sits in a docstring explaining the very class, and it scored **5/30** as
+      though it were a probe with a narrow alphabet. Excluded — a sweep that
+      includes its own denominator is reporting on itself
+      [[readout-blind-to-its-own-subject]].
+      🟢 **AND "CONVERSION IS OPPORTUNISTIC" IS NO LONGER THE WHOLE STORY**:
+      `make error-alphabet-check` (D-ALPHAGATE, 2026-09-05) makes an
+      `<UNREADABLE>` arm **mandatory** for any classifier that iterates an error
+      alphabet and can return a bare sentinel. Four more were converted under it
+      (`namspc`'s `bracket`/`errface`/`listface`, `strparen`'s `face`), and the
+      16 such classifiers in the tree now read **0 without the arm**. The
+      remaining 84 are sentinels of OTHER shapes, which that gate does not
+      claim. The file this item names as carrying the
       widened list, `scratchpad/circmiss_sib2.py`, reaches **11/30**: genuinely
       widened, still less than half.
       ➡️ **THE DURABLE FIX IS THE SELF-DESCRIBING SENTINEL, NOT A LONGER

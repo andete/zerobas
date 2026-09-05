@@ -61,7 +61,15 @@ def main() -> int:
                                        text=True).stdout.split()
              if f.endswith(".py") and (f.startswith("probes/") or f.startswith("scratchpad/"))]
     text_cls, other, bare = [], [], []
+    # 🔴 THE CANON DERIVATION IS NOT A READOUT, AND COUNTING IT MAKES THE
+    # SWEEP REPORT ON ITSELF. probes/lib/errmsg_alphabet.py IS the 30-message
+    # table this sweep measures coverage AGAINST; its `<NO OUTPUT>` sits in a
+    # docstring explaining the very class, and it scored 5/30 as if it were a
+    # probe with a narrow alphabet. Excluded 2026-09-05.
+    SELF = ("probes/lib/errmsg_alphabet.py",)
     for f in files:
+        if f in SELF:
+            continue
         raw = open(f).read()
         if "<NO OUTPUT>" not in raw:
             continue
