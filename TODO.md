@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8988 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9024 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8191 (T-529ABE)`: a
+      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8227 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2801,7 +2801,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8191 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8227 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6510,7 +6510,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `basic/expr.asm` (`ev_mc_arg_checked`).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] ⚠️ **K-PE1's FOUR UNEXPLAINED ROWS: SOMETHING RAISES ERR 5 WITHOUT THE
+- [x] ⚠️ **K-PE1's FOUR UNEXPLAINED ROWS: SOMETHING RAISES ERR 5 WITHOUT THE
+      ✅ **EXPLAINED AND CLOSED 2026-09-05 (D-KPE1WIDTH). The eliminated
+      hypothesis was right, and this entry's own framing is what was wrong.**
+      Re-run under the REAL K-PE1 (the polarity flip), reading EVERY `WIDTH` row
+      instead of the four filed ones:
+
+          argument collapses to 0      zb reads 5   (10 rows, ALL of them)
+            o.nn.dz5 5dz dzov ovdz 5ov ov5 · o.sub.dzex exdz dzpw pwdz 5ex
+          argument collapses to 1      zb reads 0   (5 rows)
+            n.dz.w  n.ov.w  n.ex.w  n.pw.w  n.5.w
+          no fault at all              zb reads 0   n.ok.w
+          same faults, OTHER readers   zb reads 0   o.nn.let / .ary / .pr
+
+      🎯 **SO THE RULE IS: WITH NOTHING RECORDED, EVERY FAULTING OPERAND
+      COLLAPSES TO 0, THE `WIDTH` ARGUMENT BECOMES 0, AND `WIDTH 0` IS ITSELF
+      ERR 5** — which this entry had already measured on the VG-8020 and zerobas.
+      🔴 **AND THE SQR FRAMING IS REFUTED**: `o.nn.dzov` is `WIDTH 0*(1/0)+
+      0*(1E38*1E38)` — **no `SQR` anywhere** — and still reads 5. The filed
+      sentence *"the SQR-domain error can reach ERR 5 by a route that does not
+      pass through the pending-error cell"* named the wrong operand; `SQR` is
+      incidental, the ZERO is the cause.
+      🟢 **THE READER-VARYING CONTROL IS WHAT MAKES IT A RULE, and it was already
+      in the probe**: `o.nn.let`, `o.nn.ary` and `o.nn.pr` carry the SAME faulting
+      operands to LET / an array subscript / PRINT and read **0**, because only
+      `WIDTH` has a domain that 0 violates.
+      🔴 **AND THE 2026-09-05 "REFUTATION" MISREAD ITS OWN FIXTURE AS WELL AS
+      USING THE WRONG CUT.** It said *"`n.dz.w` reads 0, not 5"* as though 5 were
+      predicted — but `n.dz.w` is `WIDTH {FP}+1`, argument **1**, which is legal.
+      0 is exactly what the hypothesis predicts there
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ⚠️ Two `u.` rows (`u.dz.w`, `u.tm.loc`) read `<NO ECHO>` on zb under the
+      cut and are recorded as UNREAD, not as agreement. They are not needed: the
+      `t.` rows carry the discriminator.
+      💰 0 ROM bytes, and it never bore on shipped correctness — this is a
+      property of a CUT tree, as the filing said. What is closed is the GAP IN
+      THE MODEL, which is what the item was for. `basic/str-engine.asm` restored
+      byte-identically.
       WRITER.** Filed 2026-08-09 by D-PENDERR
       ([`docs/spec-basic-penderr.md`](docs/spec-basic-penderr.md) §9.1). With
       `penderr_set` cut so that NO deferred code can be recorded, four rows keep
