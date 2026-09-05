@@ -151,6 +151,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **BASIC surface**
 
+- [x] 🎬 **CLOSING BLOCK, 2026-09-05 — the day's BASIC work, in BASIC**
+      ([`scratchpad/demo_0905.py`](scratchpad/demo_0905.py)). One program, three
+      machines, five readings that were all zerobas DIVERGENCES that morning:
+
+          10 ON ERROR GOTO 90
+          20 A=+1:PRINT"[A";A;"]"        30 B=1:PRINT"[B";+B;"]"
+          40 PRINT"[C";1++2;"]"          50 PRINT"[D";+2^2;"]"
+          60 CSAVE 5
+          70 PRINT"[E";0;"]":END         90 PRINT"[E";ERR;"]":END
+
+              vg8020  cf3300   zb    zb THIS MORNING
+          A        1       1    1    ERR 2
+          B        1       1    1    ERR 2
+          C        3       3    3    ERR 2
+          D        4       4    4    ERR 2
+          E       13      13   13    0 — a PRINTED `load error`, never raised
+
+      ⚠️ **`+2^2` IS IN THERE WITHOUT DECIDING ANYTHING** and the probe says so:
+      unary plus is the identity, so it reads 4 whether `+` binds like unary
+      minus or looser. It is a measured row, not a discriminator.
+      ⚠️ **AND THE THIRD SHIPPED CHANGE CANNOT BE DEMOED**: D-TXTCEIL is about
+      what happens while lines are TYPED, so no program can print it.
+      `make txtceil-acceptance` is its row.
+      📏 **PREDICTIONS SCORED, MISSES INCLUDED.**
+      ✅ D-UNARYPLUS's own — *"fix that and `A=+`, `A$=+`, `PRINT +`, `SAVE +`
+      all become 24 by themselves, with no message work"* — **correct**, 19/19.
+      ✅ D-CSAVEEXPR's *"would likely RECOVER bytes"* — **correct**, +9 B.
+      ✅ `clone_scout` priced D-DGTPUSH at 10 B — **exactly 10 B**.
+      🔴 **MINE, WRONG:** *"re-entering `ev_f` is what makes the STRING rows
+      work"* — written before the after-run; the three string rows still read
+      ERR 13 and the site is `str_eval_one`, not `ev_f`.
+      🔴 **MINE, UNDER-DIAGNOSED:** *"the fault is `call fch_ctx_addr` from
+      `dl_store`, mechanism not established"* — it was an HL clobber, and a knife
+      that NARROWS a site does not diagnose it.
+      🔴 **FILED, NOT REFUTED:** the entry's *"the bound wanted … is exactly
+      `strheap_varceil`"* (it is not — that is not where the defect was), and
+      D-HIMEMRES round 1's *"R constant 560"* (it is `293 + 267×MAXFILES`; only
+      varying MAXFILES separated them).
+      🙋 **LEFT FOR HIM, both measured and priced**: whether `FRE(0)` should
+      AGREE with the references (267 B/channel of buffers zerobas does not have),
+      and unary plus on a STRING (~6–7 B at `str_eval_one`, against 4 B free).
+
 - [x] 🟢 **D-REVERTSWEEP: A FILED ✅ FOR WORK THE SOURCE SAYS WAS UNDONE — AND
       MY OWN RETRACTION DID NOT READ AS ONE.** 2026-09-05,
       [`scratchpad/revertsweep.py`](scratchpad/revertsweep.py). Two of these were
@@ -368,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8911 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8953 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -432,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2121 (T-6FE392)8 (T-529ABE)` from `TODO.md:8114 (T-529ABE)`: a
+      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8156 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2759,7 +2801,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8114 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8156 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
