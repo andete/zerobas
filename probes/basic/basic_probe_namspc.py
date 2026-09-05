@@ -481,6 +481,20 @@ CASES = [
     # listing if you only count entries.
     # 🟢 The controls above (f.filesbare / f.fileslitl) are what make a count
     # meaningful at all -- without them 0 could equally be "the counter is blind".
+    # === D-FSPECCHAR: the 8.3 character domain (2026-09-05) =================
+    # `build_83_name` refused NUL, `"`, `.` and a leading space and NOTHING else,
+    # so a filespec of control bytes read `File not found` here and `Bad file
+    # name` on the CF-3300. The domain was swept at 45 byte values
+    # (`scratchpad/fspecchar_probe.py`); these five are its corners.
+    # 🔴 THE TWO ACCEPTED ROWS ARE THE LOAD-BEARING ONES. `$80` accepted beside
+    # `$FF` refused is what forbids re-writing this as a high-bit test, and `>`
+    # accepted is what forbids reading `<`/`>` as a separator pair. Without them
+    # the three refusals are equally explained by a check that is too broad.
+    ("m.ctlchar", "dskerr", ['FILES CHR$(4)+"BC.TXT"', 'PRINT"[OK]"']),
+    ("m.sepchar", "dskerr", ['FILES CHR$(58)+"BC.TXT"', 'PRINT"[OK]"']),
+    ("m.ffchar",  "dskerr", ['FILES CHR$(255)+"BC.TXT"', 'PRINT"[OK]"']),
+    ("m.hi80",    "dskerr", ['FILES CHR$(128)+"BC.TXT"', 'PRINT"[OK]"']),
+    ("m.gtchar",  "dskerr", ['FILES CHR$(62)+"BC.TXT"', 'PRINT"[OK]"']),
     ("m.long",    "dsklist", ['FILES"TOOLONGNAME.EXT"', 'PRINT"[OK]"']),
     ("m.longext", "dsklist", ['FILES"AB.EXTRA"', 'PRINT"[OK]"']),
     ("m.both",    "dsklist", ['FILES"TOOLONGNAME.EXTRA"', 'PRINT"[OK]"']),

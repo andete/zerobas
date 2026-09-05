@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8085 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8107 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7288 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7310 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7288 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7310 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4952,9 +4952,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `DISKOP_OP` on the FILES path, or 7 is harmless there. That is a smaller
       and much more answerable question than the one this entry was filed with.
 
-- [ ] 🔴 **A FILESPEC OF CONTROL BYTES: CF-3300 SAYS `Bad file name`, ZEROBAS
-      SAYS `File not found`.** Found 2026-09-05 by D-FILESINP while building the
-      row above. `FILES INPUT$(3,#1)` against `TEST.BIN` builds a 3-character
+- [x] ✅ **A FILESPEC OF CONTROL BYTES: CF-3300 SAYS `Bad file name`, ZEROBAS
+      SAYS `File not found`.** **FIXED 2026-09-05 (D-FSPECCHAR) — 45/45 byte
+      values now agree, for 39 B.** `bn_chk` in `basic/fcbname-body.inc` refuses
+      the `$01`–`$1F` control band with a single `cp ' ' / ret c`, and the nine
+      separators plus `$FF` with a 10-byte `cpir` table. Called from BOTH field
+      loops, before the upcase. Sub page 1 went 957 → 918 B free; no main-ROM
+      bytes.
+      🟢 **Five gate rows in `namspc-acceptance`, and TWO OF THEM ARE ACCEPTED
+      cases**: `m.hi80` (`$80` accepted beside `$FF` refused) is what forbids
+      re-writing this as a high-bit test, and `m.gtchar` (`>` accepted) forbids
+      reading `<`/`>` as a separator pair. Without them the three refusals are
+      equally explained by a check that is too broad.
+      🔬 **Knives 3/3 exact** (`scratchpad/fspecchar_knives.py`), and BOTH of my
+      first two arms were wrong in instructive ways:
+      • **K-FC2's cut broke the machine, not the table.** `BN_NBAD equ 0` makes
+      `ld bc,0` / `cpir` run **65536 times** and walk all of memory, so four
+      unrelated rows moved and neither predicted row did. The table is neutered
+      by filling it with `$01` instead — a control byte the band test already
+      refuses, so it can never reach the walk.
+      • **K-FC3's prediction was one row short**: a high-bit-only rule drops the
+      control band as well. 🎯 What still holds under it is `m.ffchar` — `$FF` is
+      high-bit, so **the WRONG rule gets that row right**, which is exactly why
+      `m.hi80` and not `m.ffchar` is the row that forbids the mistake.
+      --- the original filing ---
+      Found 2026-09-05 by D-FILESINP while building the row above. `FILES INPUT$(3,#1)` against `TEST.BIN` builds a 3-character
       filespec out of the file's own bytes, which at that offset are the value
       `$04` — non-printable control characters. The CF-3300 REJECTS the name;
       zerobas accepts it and reports the search result.

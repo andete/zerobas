@@ -64,6 +64,8 @@ bn_name:
                 cp      '*'
                 jr      z,bn_star_name      ; '*' -> fill the rest of the name with '?'
                 ; another name char
+                call    bn_chk              ; D-FSPECCHAR: the illegal set
+                jr      c,bn_reject
                 ld      c,a                 ; must consume even if field full
                 ld      a,b
                 or      a
@@ -115,6 +117,8 @@ bn_ext_loop:
                                             ; name` on the reference
                 cp      '*'
                 jr      z,bn_star_ext       ; '*' -> fill the rest of the ext with '?'
+                call    bn_chk              ; D-FSPECCHAR: the illegal set
+                jr      c,bn_reject
                 call    fcb_upcase
                 ld      (de),a
                 inc     de
@@ -143,6 +147,43 @@ bn_skip:
 bn_reject:
                 scf
                 ret
+
+; --- bn_chk: is this byte legal in an 8.3 field? (D-FSPECCHAR, 2026-09-05) ----
+; in:  A = the candidate byte.   out: CF SET if the byte is ILLEGAL. A preserved
+; (neither `cp` nor `cpir` writes it), DE untouched, BC/HL saved across.
+;
+; The domain is MEASURED, not assumed: `scratchpad/fspecchar_probe.py` swept 47
+; byte values as `FILES CHR$(n)+"BC.TXT"` on the CF-3300 and here. The reference
+; refuses the whole $01..$1F control band, the nine separators below, and $FF,
+; and ACCEPTS everything else -- letters upper and lower, digits, and
+; `! # $ % & ' ( ) - < > ? @ ^ _ ` { | } ~`, $7F and $80.
+;
+; ⚠️ TWO READINGS THAT LOOK LIKE RULES AND ARE NOT, both measured:
+;   * $80 is ACCEPTED while $FF is REFUSED, so this is NOT a high-bit test and
+;     must not be written as one.
+;   * `<` and `>` are BOTH accepted -- they are not a separator pair here.
+;
+; ⚠️ AND FOUR BYTES ARE ALREADY DISPOSED BEFORE THIS IS REACHED, which is why
+; they are absent from the table: `"` and NUL are TERMINATORS, `.` is the 8.3
+; SEPARATOR, and a leading space is caught by bn_done's empty-name test. Putting
+; any of them here would change a terminator into a reject.
+bn_chk:
+                cp      ' '
+                ret     c                   ; $01..$1F -> CF set by the compare
+                push    bc
+                push    hl
+                ld      hl,bn_badchars
+                ld      bc,BN_NBAD
+                cpir                        ; Z if A is in the table (A untouched)
+                pop     hl
+                pop     bc
+                scf
+                ret     z                   ; illegal
+                or      a                   ; legal -> CF clear
+                ret
+bn_badchars:
+                db      '+', ',', '/', ':', ';', '=', '[', $5C, ']', $FF
+BN_NBAD         equ     10
 
 ; bn_star_name / bn_star_ext — expand a '*' wildcard (FILES/KILL 8.3 pattern): fill
 ; the REMAINING positions of the current field (name = B left, or ext = B left) with

@@ -5139,3 +5139,54 @@ only come from step 3's underflow tail, so `fp_exp` ran and negated an `n8` of
 raise `Overflow` on **all three** — an integer `y` takes §13.1's integer path and
 never reaches EXP. Only a fractional `y` can witness this band.
 [`docs/spec-basic-mathpack-slice2.md`](../docs/spec-basic-mathpack-slice2.md) §12.9.
+
+## D-FSPECCHAR (2026-09-05) — the 8.3 filespec character domain, swept and enforced
+
+`build_83_name` refused `NUL`, `"`, `.` and a leading space, and **nothing else**
+— so a filespec containing control bytes or DOS separators was accepted here and
+refused on the reference. Found while building an unrelated row
+(`FILES INPUT$(3,#1)` builds its filespec out of a file's own bytes).
+
+**The domain was swept before anything was written**, 45 byte values as
+`FILES CHR$(n)+"BC.TXT"` on the CF-3300 and zerobas
+(`scratchpad/fspecchar_probe.py`):
+
+| | bytes |
+|---|---|
+| both refused already | `$00` · `$20` space · `$22` `"` · `$2E` `.` |
+| reference refused, zerobas accepted | the `$01`–`$1F` control band · `+ , / : ; = [ \ ]` · `$FF` |
+| both accept | letters upper and lower · digits · `! # $ % & ' ( ) - < > ? @ ^ _ \` { \| } ~` · `$7F` · `$80` · the wildcards `*` `?` |
+
+That is the DOS/CP-M illegal-character set plus `$FF`. `bn_chk` enforces it: one
+`cp ' ' / ret c` for the band, a 10-byte `cpir` table for the rest, called from
+both field loops before the upcase. **39 B, entirely in the sub-ROM page-1
+island** (957 → 918 B free) — `basic/fcbname-body.inc` has exactly one include
+site, `sub/fcbname.asm`, so no main-ROM byte was spent.
+
+⚠️ **TWO READINGS THAT LOOK LIKE RULES AND ARE NOT**, both measured and both
+given a gate row: `$80` is ACCEPTED while `$FF` is REFUSED, so this is **not** a
+high-bit test; and `<` and `>` are **both** accepted, so they are not a separator
+pair. `m.hi80` and `m.gtchar` are those rows, and they are the load-bearing half
+of the five — without them the three refusals are equally explained by a check
+that is too broad.
+
+⚠️ **Four bytes are disposed BEFORE `bn_chk` and are deliberately absent from its
+table**: `"` and `NUL` are terminators, `.` is the 8.3 separator, and a leading
+space is caught by `bn_done`'s empty-name test. Putting any of them in the table
+would turn a terminator into a reject.
+
+🔬 **Knives 3/3 exact, and two of the three arms were wrong first:**
+
+* **K-FC2's cut broke the machine rather than the table.** `BN_NBAD equ 0` makes
+  `ld bc,0` / `cpir` run **65536 times** and walk all of memory — four unrelated
+  rows moved and neither predicted row did. Neutering the table with `$01` bytes
+  (a control the band test already refuses, so it never reaches the walk) is the
+  cut that isolates it.
+* **K-FC3's prediction was one row short.** Rewritten as a high-bit test, the
+  control band goes too. 🎯 The row that HOLDS under that wrong rule is
+  `m.ffchar`, because `$FF` is high-bit — **a wrong rule can pass a row written
+  for the right one**, which is precisely why `m.hi80` is the row that forbids
+  the mistake [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+
+`namspc-acceptance` owns the surface; the sweep re-run after the fix reports
+**0 of 45 bytes diverging**.
