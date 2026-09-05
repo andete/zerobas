@@ -5,9 +5,18 @@
 
 docs/spec-traps-t4-sprite.md §1 and §8. This is the probe that produced every
 reading in §1; it runs as a straight REPORTING differential between the reference
-oracle (Philips VG-8020) and the relocated repack build. It is deliberately NOT
+oracle (Philips VG-8020) and the relocated repack build. ~~It is deliberately NOT
 yet wired to a `make` target, so the asserting gate `make sprite-trap-acceptance`
-still has to be built from these cases and the reference values in the spec.
+still has to be built from these cases and the reference values in the spec.~~
+
+🔴 THAT SENTENCE IS FALSIFIED TOO (2026-09-05), AND IT NAMES THE TARGET THAT
+RUNS IT. `sprite-trap-acceptance` exists in the Makefile, invokes THIS FILE with
+`--only` / `--report` / `--frames`, is collected by `make gates` in the EMULATOR
+tier, and ran green in 72 s in today's battery. So this is not a reporting
+differential awaiting a gate; it IS the gate, and `--report` is the mode that
+turns the asserting off. Struck rather than deleted, beside the D-G7-4 strike
+below: this header has now been wrong about its own status twice, in two
+different ways, and both were found by reading rather than by anything running.
 
 🔴 THE REASON RECORDED HERE FOR THAT IS FALSIFIED (2026-08-26). It read:
 `ON SPRITE GOSUB` is unimplemented on the zerobas side (D-G7-4 left

@@ -272,7 +272,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8662 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8704 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -336,7 +336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7865 (T-529ABE)`: a
+      `TODO.md:2025 (T-6FE392)8 (T-529ABE)` from `TODO.md:7907 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2663,7 +2663,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7865 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7907 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -3897,11 +3897,53 @@ list. **When a slice lands, grep this list for what it just shipped.**
       *"`ON SPRITE GOSUB` is unimplemented on the zerobas side (D-G7-4 left
       `SPRITE ON/OFF/STOP` a no-op)"*. It fires — `basic/sprtrap-body.inc` is
       included via `subromcall.asm`, `ZTI_SPRITE` is a live index, and the
-      control rows show one fire on both machines. Doc debt, filed not fixed.
-      ➡️ **STILL A CODE ARGUMENT FOR `KEY` / `STRIG` / `STOP`** — those three need
+      control rows show one fire on both machines. ~~Doc debt, filed not fixed.~~
+      🟢 **THE D-G7-4 HALF WAS ALREADY FIXED ON 2026-08-26** — the probe's
+      header carries the strike and the evidence. **This line was itself stale**,
+      which is the class it describes, one level up.
+      🔴 **AND READING IT FOUND A SECOND FALSIFIED CLAIM IN THE SAME HEADER**
+      (2026-09-05): *"deliberately NOT yet wired to a `make` target, so the
+      asserting gate `make sprite-trap-acceptance` still has to be built"*. That
+      target **exists**, invokes **this file**, is collected by `make gates` in
+      the EMULATOR tier, and ran green in 72 s in today's battery. The header had
+      been wrong about its own status twice, in two different ways, and both were
+      found by READING — nothing that runs can see a docstring.
+      ➡️ ~~**STILL A CODE ARGUMENT FOR `KEY` / `STRIG` / `STOP`**~~ — those three need
       device input (key matrix, joystick, the STOP key), and the harnesses exist.
       `SPRITE` was taken first because a sprite collision is reachable from pure
-      BASIC, so it needed no device at all. **1 of 4 converted.**
+      BASIC, so it needed no device at all. ~~**1 of 4 converted.**~~
+      🟢 **`STOP` CONVERTED 2026-09-05 — 2 of 4 — AND IT DOES NOT REPRODUCE**
+      ([`scratchpad/clrtrapstk_stop.py`](scratchpad/clrtrapstk_stop.py),
+      [`.out`](scratchpad/clrtrapstk_stop.out)). Same 2×2, driven through
+      `basic_probe_stop_trap.run()` (imported, not copied — a second copy would
+      sit outside `make latch-check` and re-open the delivery race that gate
+      exists for), with its tap length and `run_gap` inherited for its reasons:
+
+          case                        vg8020   zb
+          CLEAR, still SERVICING           1    1
+          CLEAR, trap killed               1    1
+          no-CLEAR, still SERVICING        1    1
+          no-CLEAR (control)               1    1
+          c.twofire POSITIVE CONTROL       2    2   🎯
+
+      🔴 **AND THE FIRST RUN OF THIS SAID NOTHING WHILE LOOKING LIKE AGREEMENT.**
+      Without the fifth row every cell read 1 — which is what the REFERENCE
+      correctly reads in all four (a trap left SERVICING does not re-fire until
+      `RETURN`), and also exactly what **a second tap that never landed** reads.
+      Two causes, one number. The SPRITE replay never needed this guard because
+      SPRITE re-fires per FRAME and its live cell SATURATED at 250, which nothing
+      else produces [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      `c.twofire` uses a handler that always `RETURN`s, so the trap is armed when
+      the second tap arrives; **it reads 2 on both machines**, which is what makes
+      the four 1s a reading.
+      🎯 **SO THE CODE ARGUMENT'S PREDICTION IS NOT CONFIRMED FOR `STOP`.** SPRITE
+      diverged in `CLEAR, still SERVICING` (1 vs 250); STOP agrees there. ⚠️ **The
+      MECHANISM for that difference is NOT established and is deliberately not
+      guessed at here** — one 2×2 supports "STOP is correct", not a cause
+      [[a-mechanism-inferred-from-one-observation]]. What it does establish is
+      that *"the index is a parameter, so all five behave alike"* is too strong:
+      two verbs through the same routine gave different answers.
+      ➡️ **`KEY` and `STRIG` remain arguments. 2 of 4 converted.**
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (SPRITE measured 2026-08-26; KEY/STRIG/STOP still argued).
 
 - [ ] 💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS
