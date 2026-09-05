@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9068 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9086 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8271 (T-529ABE)`: a
+      `TODO.md:2163 (T-6FE392)8 (T-529ABE)` from `TODO.md:8289 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2801,7 +2801,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8271 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8289 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5233,7 +5233,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       stops being empty**.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] ⚠️ **`SAVE` / `LOAD` / `BLOAD` WITH NO ARGUMENT SAY `Syntax error` WHERE
+- [x] ⚠️ **`SAVE` / `LOAD` / `BLOAD` WITH NO ARGUMENT SAY `Syntax error` WHERE
+      ✅ **CLOSED 2026-09-05 — and the checkbox is the point of this line.** The
+      body below already says "IT LANDED, AND THIS ITEM IS CLOSED"; the box stayed
+      `- [ ]` for another five hours, which is exactly the failure this section's
+      header describes and which `scratchpad/closesweep.py` exists to catch.
+      🔴 **IT DID NOT CATCH THIS ONE, AND THE REASON IS A REAL LIMIT.** Four
+      sentences below still read as open scope — *"What remains is that zerobas
+      has no `Missing operand` message"*, *"Still not priced"*, *"SO WHAT IS LEFT
+      OF THIS ITEM IS EXACTLY ONE ROW"*, *"stays open only until unary plus
+      lands"* — and every one of them is SUPERSEDED by text further down. **The
+      sweep cannot tell superseded prose from live prose**, which is why it
+      prints a shortlist and why the reading is done by hand.
+      ➡️ **THE EDITORIAL RULE THIS TEACHES**, and it is the same one that made a
+      `✅ ~~…~~` still read as a live ✅ this morning: **superseding text must
+      STRIKE what it replaces**, not merely follow it. Left standing here on
+      purpose as the worked example.
       BOTH THE REFERENCE AND D-MISS-1 SAY `Missing operand`.** Filed 2026-08-21
       by D-FNEXPR2 (rows `n.savebare`, `n.loadbare`, `n.bloadbare`, DEFERRED).
       Measured on the CF-3300 by reading the screen directly, because the
@@ -5920,7 +5935,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       no longer be the kind of guard nobody has enumerated.
       ⚠️ **STAYS OPEN ONLY AS A NOTE-TO-READERS**, which is what it was filed as:
       do not "fix" `s.fldarymix` or K-FA1.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      🔁 STANDING — a NOTE TO READERS, not pickable work. Every part of it
+      was RUN and verified on 2026-09-05; what keeps it open is the instruction
+      *do not "fix" `s.fldarymix` or K-FA1*, which only helps while it is
+      visible. It sat in the 🤖 queue with nothing in it to do.
 - [ ] ⚠️ **3 B carve candidate: `ex_mid_stmt`'s resolve abort is SHADOWED.**
       D-LVFIX's `jp nz,fp_runtime_error` at `ex_mid_stmt` is **not falsifiable**:
       K-LV3 cut it and reddened nothing, because `eval_pos_arg` →
