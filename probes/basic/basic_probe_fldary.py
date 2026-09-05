@@ -123,6 +123,51 @@ CASES = [
     # is unchanged and still green; what K-FA5 now reads is UNMEASURED (filed in
     # TODO.md) and is deliberately not predicted here.
     ("d.aryoor",    True, ['DIM A$(3)', OPEN, 'FIELD#1,10 AS A$(9)']),
+    # 🔴 THE ROW K-FA5's RE-RUN PROVED WAS MISSING (2026-09-05). Re-running the
+    # knife with the abort cut moved **0 of 14 rows** -- the ROM hash changed, so
+    # the cut took; the row set simply could not see it. `d.aryoor` reads only the
+    # ERROR, and after D-STMTPEND the statement boundary raises the same error
+    # whether or not the abort ran, so the two mechanisms are indistinguishable
+    # there. Meanwhile the reworded justification in `basic/field.asm` claims the
+    # check still earns its place because it raises BEFORE `ex_field`'s side
+    # effects -- and NO row read the field table after a FAILED resolve, because
+    # every `s.fld*` row uses a valid subscript
+    # [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+    # 🎯 This row is that case: a VALID first target and an out-of-range second,
+    # then an LSET through the valid one. If the abort runs before the side
+    # effects, target 1 was never committed and the LSET has no field to write;
+    # if the cut lets `ex_field` proceed, it was, and A$(1) reads back as a
+    # 5-wide field. The error line is identical either way -- which is exactly
+    # why the error-only row could not do this job.
+    # ⚠️ IT HAS TO BE A PROGRAM, NOT DIRECT-MODE LINES, AND THE FIRST CUT WAS NOT.
+    # Written as direct-mode statements the row read back `<Subscript out of
+    # range>` -- the d.* reader takes the error when one is on screen, so the
+    # trailing PRINT never became the reading and the row was a duplicate of
+    # `d.aryoor`. Trapping the error and printing a NUMBER makes the side effect
+    # the only thing on screen. LEN is the discriminator rather than LSET: a
+    # fielded element is fixed-width (5 here), an unfielded one is 0, and that
+    # holds without depending on what LSET does to a non-fielded variable (a
+    # separate residual).
+    # ⚠️ THE DRIVER NUMBERS THESE ITSELF (10, 20, 30 ... at :250), so the handler
+    # target is positional: entry 3 is line 30, entry 6 is line 60. A first cut
+    # wrote its own line numbers and produced `30 10 ONERRORGOTO100` -- the row
+    # read `<UNREADABLE>` against a bare function-key row, i.e. nothing ran.
+    ("d.aryoor2",   True, ['DIM A$(3)', OPEN,          # 10, 20
+                           'ONERRORGOTO60',            # 30
+                           'FIELD#1,5 AS A$(1),5 AS A$(9)',   # 40
+                           'PRINT"[";LEN(A$(1));"]":END',     # 50
+                           'RESUME 50']),              # 60
+    # 🎯 …AND THE SAME QUESTION WITH THE FAILING TARGET **FIRST**, which is the
+    # row that can actually arm the knife. In `d.aryoor2` the valid target is
+    # committed before the failure either way, so the abort changes nothing
+    # readable. Here NOTHING may commit: with the abort, `FIELD` dies on target 1
+    # and `A$(1)` is never fielded (LEN 0); with it cut, execution walks on into
+    # `ex_field` with a failed resolve behind it and reaches target 2.
+    ("d.aryoor3",   True, ['DIM A$(3)', OPEN,          # 10, 20
+                           'ONERRORGOTO60',            # 30
+                           'FIELD#1,5 AS A$(9),5 AS A$(1)',   # 40
+                           'PRINT"[";LEN(A$(1));"]":END',     # 50
+                           'RESUME 50']),              # 60
     # --- LSET / RSET: what the field actually HOLDS --------------------------
     ("s.fld",       True, [OPEN, 'FIELD#1,10 AS A$', 'LSET A$="HI"',
                            'PRINT"[";A$;"]"']),

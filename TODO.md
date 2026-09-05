@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:7904 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:7942 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7107 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7145 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7107 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7145 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5585,8 +5585,46 @@ list. **When a slice lands, grep this list for what it just shipped.**
       re-measuring on the CF-3300 (the 267 B channel-context target). **This was
       the only outlier.**
 
-- [ ] 🔴 **K-FA5's FALSIFIABILITY PREMISE IS STALE, AND SO ARE FOUR OTHER
-      COMMENTS.** Filed 2026-08-09 by D-STMTPEND
+- [x] ✅ **K-FA5's FALSIFIABILITY PREMISE IS STALE, AND SO ARE FOUR OTHER
+      COMMENTS.** RE-RUN 2026-09-05 (`scratchpad/fa5_knife.py`). The entry asked
+      for exactly one thing — *"what has NOT been done is re-running K-FA5 to
+      measure what the cut now reads"* — and the answer is **nothing: 0 of 16
+      rows move.** The ROM hash changes across the plant, so the cut took.
+      🔬 **AND THE ROW SET WAS EXTENDED BEFORE CONCLUDING THAT**, because "0 rows
+      moved" is a claim about the rows as much as the code. The reworded comments
+      say the check still earns its place by raising **before `ex_field`'s side
+      effects** — and no row read the field table after a FAILED resolve; every
+      `s.fld*` row uses a valid subscript
+      [[a-coverage-row-whose-geometry-cannot-reach-the-case]]. Two rows now do,
+      at both target positions, each agreeing with the CF-3300:
+      • `d.aryoor2` — valid target FIRST, then out-of-range: `LEN(A$(1))` = **5**.
+      The earlier target IS committed before the later one fails, on both
+      machines. ⚠️ So "raises before the side effects" is **false as stated for
+      earlier targets**; the abort protects only the failing target's.
+      • `d.aryoor3` — out-of-range target FIRST: `LEN(A$(1))` = **0**. Nothing
+      commits, on both machines.
+      **Neither moves under the cut either.**
+      🔬 **A SECOND ARM SETTLES THAT IT IS NOT DEAD CODE.** An UNCONDITIONAL,
+      distinguishable ERR 5 planted at the same site moves **14 of 16** — the
+      abort executes. 🔴 My write-up of that arm called it "unambiguous" and it is
+      not: the one row that HELD (`d.aryoor3`) holds because it traps the error
+      and reads `LEN`, so ERR 5 and ERR 9 give it the same reading — a row built
+      to be blind to the error's identity is blind to the arm too. What it does
+      establish is the reverse of the header-comment story: `d.aryoor` MOVED, so
+      for a single out-of-range target control **does** return to this `jp nz`,
+      and `tgt_parse`'s *"a failed array resolve does NOT return"* describes some
+      other failure mode.
+      🎯 **THE STANDING RESULT, as a reading and not a mechanism: the abort runs,
+      and removing it changes no BASIC-visible outcome across 16 rows** — the
+      statement boundary reports the same error, and the field table ends in the
+      same state at both target positions. The reworded justification is
+      therefore still UNWITNESSED; it is not refuted, but nothing distinguishes
+      having the check from not having it. ⚠️ Leave the check in — a defensive
+      abort that no row can see is not the same as one no row NEEDS, and the cut
+      leaves `FPERR` set with `(TGT_ADDR)` unset for whatever the rows do not
+      reach.
+      --- the original filing ---
+      Filed 2026-08-09 by D-STMTPEND
       ([`docs/spec-basic-stmtpend.md`](docs/spec-basic-stmtpend.md) §6.3).
       `basic/field.asm` (`tgt_parse_fld`) and
       `probes/basic/basic_probe_fldary.py` both argued that an abort is
@@ -8310,9 +8348,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `PUT` 58 in both modes; `INPUT$` 55 in OUTPUT mode is correct — a channel
       open for writing cannot be read). Only the one cell where the mode's own
       direction makes the verb legal is wrong.
-      💰 Unmeasured; the arm exists, so this is a dispatch test rather than new
-      machinery. ⚠️ `diskbasic-acceptance`/a cassette-side gate owns the surface,
-      and the row set has no CAS: channel rows at all yet.
+      💰 **SHAPE MEASURED 2026-09-05, AND IT DOES NOT FIT TODAY.** `strvar.asm` is
+      included at `basic/main.asm:192`, i.e. **main page 1**, which `make
+      basic-reloc` printed at **6 B free** on 2026-09-05 (low region 9 B). 🔴 The
+      cost driver is that `str_inputd_read` calls **`fat_io_getbyte` directly** —
+      no vector — so serving a cassette source needs either an indirection at
+      that call site plus a per-channel-type setter, or a parallel loop. With the
+      `cp CAS_IN_MODE / jr z,…` dispatch arm on top, the shape is **~12–20 B**,
+      against 6. ⚠️ **That is a WALL READING and wall readings rot** — re-run
+      `make basic-reloc` before believing it, and note `input_common` solves the
+      same problem with an `ARL_GETBYTE` vector, so a shared indirection might pay
+      for itself across both sites rather than costing twice.
+      ⚠️ `diskbasic-acceptance`/a cassette-side gate owns the surface, and the row
+      set has no CAS: channel rows at all yet.
       🤖 AUTONOMOUS — the reference settles it; finishable unattended (no his-decision signal found).
 
 - [ ] **UNMEASURED: a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`.**
