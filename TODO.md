@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8160 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8184 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7363 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7387 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7363 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7387 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5459,7 +5459,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] ⚠️ **NOTHING IN 360 ROWS PINS THE TENANT'S `GRPACX` STORE.** Filed
-      2026-08-17 by D-GATEBLIND round 5 (§21.2). `K-GR4` diverts
+      2026-08-17 by D-GATEBLIND round 5 (§21.2). ✅ **READ AND ANSWERED
+      2026-09-05 (D-GRPACDUP) — the residual asked for exactly this and the
+      answer inverts the code's own justification.**
+      🔴 **THE CIRCLE-SPOKES WORRY IS FALSE.** `gco_done` writes GRPACX/GRPACY
+      **unconditionally, AFTER** calling `gco_spoke_s`/`gco_spoke_e`, so a
+      spoke's own work-area write is always superseded — `gfx_line_op`'s own
+      header says so in as many words ("a spoke's endpoint never survives as the
+      last-referenced point"). The comment at `basic/graphics.asm` that keeps the
+      duplicate *because* "the CIRCLE spokes ... rely on it" is therefore wrong
+      about its reason; corrected in place, not deleted.
+      🔴 **AND ON THE LINE PATH THE RESIDENT ALREADY WROTE p2**: `elg_second`
+      parses p2 and then `call gfx_point_gate` → `gfx_work_area`, BEFORE the
+      tenant runs. That is why the store is unobservable, and it is a mechanism
+      the residual could not see from the gate's silence.
+      🔬 **TWO INDEPENDENT KNIVES AGREE**: `K-GR4` (divert the store) and
+      `M-GRPAC2` (feed it the Y value) each move **0 of 360 rows**. M-GRPAC2's
+      own PREDICT named 8–9 rows and **had never been run**; corrected in the
+      sweep, with the wrong prediction kept beside it.
+      ✅ **VERDICT: KEEP THE WRITE, and the residual's "before removing ~3 B"
+      is answered "do not".** The bytes are sub page 0, which `make basic-reloc`
+      printed at **1348 B free** on 2026-09-05 — there is no budget pressure, so
+      removing a redundant write buys nothing and risks a path no row watches.
+      The conclusion the code reached stands; only its reason was wrong.
+      --- the original filing ---
+      `K-GR4` diverts
       `gfx_line_op`'s `ld (GRPACX),hl` and **not one row of 360 moves** — the
       resident's write covers the drawn path and the tenant never runs on the
       error path. 💰 It may still be load-bearing for **CIRCLE's spokes**, which

@@ -448,7 +448,14 @@ PREDICT = {
     "M-DRWSCALE":  "L scale255ok and L scale0 (both end with DRAW\"S4\", now "
                    "ERR 5), plus every K/C row carrying an S command "
                    "(scale_s2, scale_s8, clampD_scaled).",
-    "M-GRPAC2":    "the LINE/BOX half of the WORK-AREA class: D grpac_line, D "
+    "M-GRPAC2":    "🔴 MEASURED 2026-09-05: **ZERO rows**, and the prediction "
+                   "below was never run. The resident already writes p2 via "
+                   "`call gfx_point_gate` (basic/graphics.asm) BEFORE the tenant "
+                   "runs, so the tenant's store is a duplicate nothing can "
+                   "observe; K-GR4 diverts the same store and also moves 0 of "
+                   "360. Kept as a record of the wrong prediction rather than "
+                   "silently corrected. The original read: "
+                   "the LINE/BOX half of the WORK-AREA class: D grpac_line, D "
                    "grpac_box, R w_line_off, w_line_neg, w_line_on, w_box_off, "
                    "w_bf_on, w_bf_topleft, and F grpac_step if CIRCLE's spokes "
                    "route through gfx_line_op.",

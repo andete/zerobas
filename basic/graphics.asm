@@ -207,6 +207,21 @@ elg_second:
                 ; (sub/graphics.asm gfx_line_op) and that write is KEPT: the
                 ; CIRCLE spokes call that op internally and rely on it, so this
                 ; is a deliberate duplicate on the drawn path, not dead code.
+                ; 🔴 THE REASON ABOVE IS FALSE, MEASURED 2026-09-05 (D-GRPACDUP).
+                ; The spokes do NOT rely on it: `gco_done` (sub/graphics.asm)
+                ; writes GRPACX/GRPACY UNCONDITIONALLY *after* calling
+                ; gco_spoke_s/gco_spoke_e, so a spoke's own work-area write is
+                ; always superseded -- its own header says so ("a spoke's
+                ; endpoint never survives as the last-referenced point"). And on
+                ; THIS path the `call gfx_point_gate` below already wrote p2
+                ; before the tenant runs at all.
+                ; 🎯 So the duplicate is genuinely unobservable on both paths,
+                ; which is what TWO independent knives measured: K-GR4 (divert
+                ; the store) and M-GRPAC2 (feed it the Y value) each move **0 of
+                ; 360 rows**. The CONCLUSION -- keep the write -- stands; only
+                ; its stated reason was wrong. It is 3 B of sub page 0, which had
+                ; 1348 B free on 2026-09-05, so removing it buys nothing and
+                ; risks a path no row watches [[a-fix-falsifies-the-justification-beside-it]].
                 call    gfx_point_gate      ; BC/DE/HL preserved
                 ; --- optional ",[c][,B|BF]" ---
                 xor     a
