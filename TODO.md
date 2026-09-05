@@ -9055,11 +9055,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ `badfnum` was invisible to two rounds of auditing — it has no `.lower()`
       at all; it `setdefault`s its needle into an `ERR_CLASSES` dict **imported
       from `lof`**. The gate caught it (12 oracle drifts), not the audit.
-      Worth a lint: a capitalised message literal reaching a case-folded
+      ~~Worth a lint: a capitalised message literal reaching a case-folded
       comparison, across module boundaries. Until then the vocabularies carry
       explicit "MUST STAY LOWERCASE" comments
       ([`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py) has the
-      worked one).
+      worked one).~~
+      ✅ **BUILT AND GATED 2026-09-05 (D-NEEDLECASE) — `make needle-case-check`,
+      collected in the battery (33/33 static).**
+      🎯 **THE TABLES ARE DISCOVERED, NOT LISTED**, because a hand-kept list of
+      "vocabularies that must stay lowercase" is precisely the thing that already
+      failed: nobody adds the entry for the module they are about to break. Pass
+      1 finds every table CONSUMED case-folded — a `for … in TABLE` whose loop
+      variable is then tested `in <x>.lower()` — and pass 2 flags a capitalised
+      string written into one of those names ANYWHERE, which is what crosses the
+      module boundary that hid `badfnum`. Found **3 tables** with no help:
+      `ERR_CLASSES` (the one that broke, consumed in two files), `ERROR_WORDS`
+      (this entry's own worked example) and `_ERR_TOKENS`. **46 needles, all
+      lowercase — clean today.**
+      🔴 **AND ITS FIRST RUN REPORTED 19 FINDINGS, ALL FALSE** — the dict KEYS
+      (`'SYNTAX'`, `'IFC'`, `'FNF'`…), which are class labels matched against
+      nothing. The walker took the whole dict where it should have taken only the
+      values, **while carrying a comment asserting that keys were already
+      excluded**. A needle table's keys are uppercase BY CONVENTION, so the bug
+      produced a full, tidy, entirely wrong report
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🔴 **The selftest PASSED with that bug present**, because its fixture had an
+      uppercase key AND an uppercase needle and it only asserted "some uppercase
+      literal was seen" — it agreed for the wrong reason. There is now an arm
+      whose fixture has uppercase KEYS and lowercase NEEDLES and requires ZERO
+      findings; reverting the walker makes that arm fail, verified.
+      ⚠️ **SCOPE, stated in the tool's own output**: it checks needles in tables
+      discovered as case-folded. A one-off `'Foo' in x.lower()` is a different
+      shape — **measured separately at 0 occurrences today**, but not gated.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [x] ✅ **CLOSED 2026-08-21 (D-FNEXPR2), 0 ROM BYTES — THE FACE FOR A

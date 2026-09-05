@@ -448,6 +448,21 @@ build-assert-check:
 	python3 tools/check_build_asserts.py --selftest
 	python3 tools/check_build_asserts.py
 
+# --- D-MSGEXACT §6b: a capitalised needle in a CASE-FOLDED table never matches -
+# That slice broke 30 comparisons across 9 files and every one failed BY
+# AGREEING -- a needle tested against an already-`.lower()`-ed screen string
+# cannot match if it is capitalised, so the row reclassifies instead of going
+# red. `diskbasic_probe_badfnum.py` survived TWO audits: it has no `.lower()` of
+# its own, it `setdefault`s needles into `ERR_CLASSES` imported from
+# `diskbasic_probe_lof`. The GATE caught it, not the audit.
+# 🎯 The tables are DISCOVERED, not listed -- a hand-kept list is the thing that
+# already failed. Pass 1 finds every table consumed case-folded; pass 2 flags a
+# capitalised string written into one ANYWHERE, which is what crosses the module
+# boundary.
+needle-case-check:
+	python3 tools/check_needle_case.py --selftest
+	python3 tools/check_needle_case.py
+
 # --- D-RAMFREE: ...and is a declared window ACTUALLY free? Ask the machine -----
 # `ram-claim-check` above is the NAME half and refuses to claim more. This is the
 # EXTENT half, and the only thing that can settle it: fill every declared span
