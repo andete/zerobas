@@ -151,6 +151,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **BASIC surface**
 
+- [x] 🟢 **D-CLOSESWEEP: FOUR ITEMS WERE FINISHED WORK STILL SPELLED
+      `- [ ]`, AND THE SHORTLIST THAT FOUND THEM WAS WRONG ABOUT THREE MORE.**
+      2026-09-05, [`scratchpad/closesweep.py`](scratchpad/closesweep.py). This
+      section's header records the same failure twice — items completed and left
+      open are invisible to the pick-up rule, so the loop can re-pick finished
+      work — and nothing looks for them.
+      ✅ **CLOSED, each re-read by hand and three re-run rather than trusted**:
+      the `t.zero` seed blindness (`locarg-acceptance ONLY=t.zero` re-run: ` 0  0
+      0 ` on all three), Phase Q3's control (re-verified under `M-G8PAREN`, the
+      mutation that exposed it), `CSAVE`/`CLOAD`'s literal-only filename
+      (5 divergences → 0, and it carved 9 B), and the needle-case entry (both
+      halves gated).
+      🔴 **THE SHORTLIST WAS 7 AND 3 OF THEM WERE STILL OPEN — a 43% false
+      rate, and the reason is worth keeping.** Each of the three spelled its
+      residual in a form the pattern did not carry: *"STILL OWED"* (the
+      asleep-host window), *"REVISED: 1 done. 6 need a synthesised check each"*
+      (the nine refusal cuts), and a **"priced"** that an `unpriced` alternative
+      cannot see (unary plus's string half). **A residual is written in whatever
+      words the writer reached for**, which is precisely why the tool prints
+      SHORTLIST and every hit was read before anything was closed.
+      🔧 The three vocabularies are folded in and it now reads 0 — but the
+      banner still says shortlist, because the next residual will be phrased in a
+      fourth way [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      📏 **107 → 103 open blocks**; recount with `make todo-marker-check`,
+      never from here.
+
 - [x] 🟢 **D-DGTPUSH: THREE COPIES OF ONE ELEVEN-BYTE DIGIT LOOP BECOME ONE —
       +10 B OF MAIN PAGE 1, MEASURED.** 2026-09-05, found by
       [`tools/clone_scout.py`](tools/clone_scout.py) `--min 4 --extend`, which is
@@ -310,7 +336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8828 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8857 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -374,7 +400,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2063 (T-6FE392)8 (T-529ABE)` from `TODO.md:8031 (T-529ABE)`: a
+      `TODO.md:2089 (T-6FE392)8 (T-529ABE)` from `TODO.md:8060 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2701,7 +2727,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8031 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8060 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5292,7 +5318,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the reference settles it; the numeric half has landed and the
       string half is measured, sited and priced, needing only a carve.
 
-- [ ] ⚠️ **`CSAVE` AND `CLOAD` STILL TAKE A LITERAL FILENAME ONLY, AND THAT IS
+- [x] ⚠️ **`CSAVE` AND `CLOAD` STILL TAKE A LITERAL FILENAME ONLY, AND THAT IS
+      ✅ **CLOSED 2026-09-05 (D-CSAVEEXPR).** 5 divergences → 0 across 10 rows on 3 machines, `cassave-acceptance` 20/20 and `castail-acceptance` green off the DECODED WAV, and the edit RECOVERED 9 B of main page 1. Nothing outstanding.
       NOW A DIVERGENCE OF ITS OWN RATHER THAN PART OF A FAMILY.** Filed
       2026-08-21 by D-FNEXPR2. Every OTHER filename verb — `OPEN`, `KILL`,
       `NAME`, `SAVE`, `BSAVE`, `LOAD`, `BLOAD`, `FILES` — takes a string
@@ -6124,7 +6151,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       them.** 2 to be re-filed under the arc mask.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] 🔴 **PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT, SO THE PAIR CANNOT
+- [x] 🔴 **PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT, SO THE PAIR CANNOT
+      ✅ **CLOSED 2026-09-05.** The control is honest about its own cell, re-verified under `M-G8PAREN` — the very mutation that exposed it — with `ie_off` FAILing and `control` PASSing where both used to move. Nothing outstanding.
       TELL THE TWO FAILURES APART.** Filed 2026-08-17 by D-GATEBLIND round 2
       (§9). Q3 freezes TIME with `VDP(1)=VDP(1)AND223` and proves the emulator is
       alive with a control case — but the control's restore line is
@@ -6464,7 +6492,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       knife.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (hand-corrected: its own body prices it at 0 ROM bytes).
 
-- [ ] 🔴 **`t.zero` IS BLIND TO A CUT THAT ALSO DISABLES ITS SEED, AND THE PROBE
+- [x] 🔴 **`t.zero` IS BLIND TO A CUT THAT ALSO DISABLES ITS SEED, AND THE PROBE
+      ✅ **CLOSED 2026-09-05.** Re-verified after the fix: `make locarg-acceptance ONLY=t.zero` reads ` 0  0  0 ` on all three and the row is armed by K-LA5, the knife that found the blindness.
       CLAIMS OTHERWISE.** Filed 2026-08-09 by D-LOCARG
       ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §8.3), found by
       knife K-LA5. Every `t.*` program in `basic_probe_locarg.py` opens with
@@ -9777,7 +9806,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       them would pad the answer with things that are not callers.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] ⚠️ **A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A CLASSIFIER
+- [x] ⚠️ **A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A CLASSIFIER
+      ✅ **CLOSED 2026-09-05.** Both halves are gated: `make needle-case-check` passes 1-2 (tables discovered as case-folded) and pass 3 (the table-free one-off), 8 arms, two of which go green under the old loose rule. Nothing outstanding.
       NEEDLE, AND THEY LOOK IDENTICAL.** Filed 2026-08-02 by D-MSGEXACT §6b,
       which silently broke **30 comparisons across 9 files** and every one failed
       by **agreeing**: a needle matched against an already-`.lower()`-ed screen
