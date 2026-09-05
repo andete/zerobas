@@ -391,6 +391,56 @@ CASES = [
     ("f.loadvar",  "dskerr", ['A$="FCZ.DAT"', 'LOAD A$', 'PRINT"[OK]"']),
     ("f.bloadlit", "dskerr", ['BLOAD"FCY.BIN"', 'PRINT"[OK]"']),
     ("f.bloadvar", "dskerr", ['A$="FCY.BIN"', 'BLOAD A$', 'PRINT"[OK]"']),
+    # 🎯 THE ROW `do_files`' OP-SELECTOR GUARD HAS NEVER HAD (TODO, filed
+    # 2026-08-21 by D-FNEXPR2 §3.5 AGAINST ITS OWN FIX). `do_files` parks its
+    # dirverb op selector on the stack across the filespec parse because
+    # `str_eval` can now run `INPUT$(n,#ch)`, which reaches the drive through
+    # `fatprim_bounce` and overwrites `DISKOP_OP`. The BALANCE of that push/pop
+    # is pinned by every FILES row; the CLOBBER protection was pinned by nothing,
+    # because **no row in any battery executed `FILES INPUT$(n,#ch)`** — so a
+    # knife unparking the selector would have reddened nothing, and that is a
+    # claim about the ROW SET, not about the code [[a-shadowed-guard-has-no-knife]].
+    # 🔴 AND THE SHAPE THE FILING PROPOSED DOES NOT REACH THE CASE. Written as
+    # `OPEN"HI.TXT"FOR INPUT AS #1` / `FILES INPUT$(3,#1)`, the row is green
+    # under a knife that restores the pre-fix head-write — measured, with every
+    # plain FILES row correctly holding, so the cut was right and the ROW was
+    # blind. HI.TXT is 26 bytes: the whole file arrives in the buffer at OPEN, so
+    # the 3-byte read touches no FAT primitive and never writes DISKOP_OP.
+    # 🎯 The read has to force a REFILL. TEST.BIN is 2048 bytes, so two 255-byte
+    # reads leave the channel 2 bytes short of the 512-byte sector boundary and
+    # the filespec's OWN `INPUT$(3,#1)` is the one that crosses it
+    # [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+    # 🔴 AND THE READ'S BYTES MUST NOT REACH THE NAME. `FILES INPUT$(3,#1)` on
+    # TEST.BIN builds a filespec out of CONTROL BYTES, and that DIVERGES —
+    # CF-3300 `Bad file name`, zerobas `File not found` (filed separately; it is
+    # a real finding and not this row's subject). `LEFT$(…,0)` keeps the read and
+    # discards its bytes, so the filespec is the same literal `f.fileslit` uses
+    # and the only thing this row varies is whether a drive access happened
+    # during the parse.
+    # 🔴 AND IT IS *NOT* YET A PIN — SAID HERE RATHER THAN ASSUMED. Under a
+    # faithful pre-fix knife (`scratchpad/filesinp_knife.py`: the selector
+    # written at the HEAD again and re-read from the cell at the call, with the
+    # push/pop balance untouched so the two properties are cut separately) this
+    # row HOLDS, while every plain FILES row correctly holds too — so the cut is
+    # right and the row is still blind to the clobber.
+    # 🔬 The clobber itself IS real: a throw-away diagnostic row read `DISKOP_OP`
+    # ($E9FB) either side of the very `INPUT$` and found **7 = 
+    # DISKOP_SEL_FAT_READ_FILE_SECTOR** — the file read does reach
+    # `fatprim_bounce`. It wrote the same 7 the two 255-byte reads had already
+    # left, which is why the before/after pair alone cannot show it. (That row is
+    # deleted rather than kept: `$E9FB` is zerobas's own sysvar, so it is
+    # meaningless on the CF-3300 and DIFFs by construction.)
+    # ⚠️ So the open question is now sharp and is filed: handing the dirverb
+    # tenant selector 7 instead of the FILES selector changes nothing observable
+    # in these rows, and WHY is unmeasured.
+    # ⚠️ `CLEAR 1000` FIRST, and BEFORE the OPEN: two 255-byte reads do not fit
+    # the default 200-byte string pool (the row read `<Out of string space>` on
+    # both sides), and `CLEAR` closes channels, so it cannot come after.
+    ("f.filesinp", "dskerr", ['CLEAR 1000',
+                              'OPEN"TEST.BIN"FOR INPUT AS #1',
+                              'A$=INPUT$(255,#1):A$=INPUT$(255,#1)',
+                              'FILES "FC*.*"+LEFT$(INPUT$(3,#1),0)',
+                              'PRINT"[OK]"']),
     ("f.fileslit", "dskerr", ['FILES"FC*.*"', 'PRINT"[OK]"']),
     ("f.filesvar", "dskerr", ['A$="FC*.*"', 'FILES A$', 'PRINT"[OK]"']),
 

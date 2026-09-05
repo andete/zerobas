@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8017 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8062 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7220 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7265 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7220 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7265 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4924,6 +4924,51 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and this row does an OPEN, a channel read and a directory walk. Build it
       with a shape control, or give it a per-row `step` override rather than
       raising the battery's.
+      🟡 **ROW BUILT 2026-09-05 (`f.filesinp` in `namspc-acceptance`), AND IT IS
+      NOT YET A PIN — the item stays open, better characterised.**
+      • ✅ The window was NOT the risk: the row fits the default `step`.
+      • 🔴 **The shape this entry proposed does not reach the case.**
+      `OPEN"HI.TXT"FOR INPUT AS #1` / `FILES INPUT$(3,#1)`: HI.TXT is 26 bytes,
+      so the whole file arrives in the buffer at `OPEN` and the 3-byte read
+      touches no FAT primitive at all
+      [[a-coverage-row-whose-geometry-cannot-reach-the-case]]. The read must
+      force a REFILL — `TEST.BIN` (2048 B), two 255-byte reads to leave the
+      channel 2 bytes short of the sector boundary, and the filespec's own
+      `INPUT$(3,#1)` crosses it. (`CLEAR 1000` first, before the `OPEN`: two
+      255-byte strings do not fit the default pool, and `CLEAR` closes channels.)
+      • 🔬 **The clobber is REAL, measured**: a throw-away diagnostic read
+      `DISKOP_OP` ($E9FB) either side of that `INPUT$` and found
+      **7 = `DISKOP_SEL_FAT_READ_FILE_SECTOR`** — the file read does reach
+      `fatprim_bounce`.
+      • 🔴 **And the row still HOLDS under a faithful pre-fix knife**
+      (`scratchpad/filesinp_knife.py`). ⚠️ Its FIRST cut was wrong and the green
+      control said so: changing only the read left `DISKOP_OP` never written at
+      the head, so a stale cell reached every row and `f.filesbare` moved too —
+      not the pre-fix behaviour but a third thing. With the head write restored,
+      all five plain FILES rows correctly hold and `f.filesinp` holds as well.
+      🎯 **SO THE OPEN QUESTION IS NOW SHARP**: handing the dirverb tenant
+      selector **7** instead of the FILES selector changes nothing observable in
+      these rows, and **why** is unmeasured. Either the tenant does not consult
+      `DISKOP_OP` on the FILES path, or 7 is harmless there. That is a smaller
+      and much more answerable question than the one this entry was filed with.
+
+- [ ] 🔴 **A FILESPEC OF CONTROL BYTES: CF-3300 SAYS `Bad file name`, ZEROBAS
+      SAYS `File not found`.** Found 2026-09-05 by D-FILESINP while building the
+      row above. `FILES INPUT$(3,#1)` against `TEST.BIN` builds a 3-character
+      filespec out of the file's own bytes, which at that offset are the value
+      `$04` — non-printable control characters. The CF-3300 REJECTS the name;
+      zerobas accepts it and reports the search result.
+      ⚠️ **Not a made-up case**: any program that builds a filespec from data it
+      read reaches it, and the row that found it was written for something else
+      entirely.
+      🎯 This is `build_83_name`'s domain, which D-FSPEC (2026-09-04) has just
+      been through for LENGTH and DOT rules — it validates neither the character
+      SET nor control bytes. The reference evidently does.
+      💰 Unmeasured. The character domain is unswept in both directions: which
+      bytes the reference refuses (control only? high-bit? the DOS separators
+      `:` `\` `/`?) is a sweep nobody has run, and the fix cannot be scoped
+      before it is. ⚠️ `namspc-acceptance` owns the surface.
+      🤖 AUTONOMOUS — the reference settles it; finishable unattended (no his-decision signal found).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [x] ✅ **FIXED 2026-09-04 — 13 of 14 rows graduated the day they were filed.**
