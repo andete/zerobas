@@ -33,9 +33,25 @@ tne_loop:
                 ld      hl,(TSV_PTR)
                 inc     hl
                 ld      (TSV_PTR),hl
-                ld      a,(TSV_CNT)
-                dec     a
-                ld      (TSV_CNT),a
+                ; 💰 D-PEEPINC (2026-09-05): `ld hl,nn / dec (hl)` is 4 B where
+                ; `ld a,(nn) / dec a / ld (nn),a` is 7 -- and this is the ONLY
+                ; site of that shape in the whole tree where HL is free AND the
+                ; bytes land in MAIN PAGE 1. The other four main-tree sites
+                ; (basic/screen.asm, basic/traps.asm x3) each already carry a
+                ; comment saying HL is live there; the other twelve are in
+                ; sub-only bodies, where a byte is not a carve.
+                ; ⚠️ HL IS DEAD HERE and that is READ, not assumed: `ld (TSV_PTR),hl`
+                ; two instructions up has already stored it, and the loop top
+                ; reloads it with `ld hl,(TSV_PTR)`.
+                ; ⚠️ A AND Zf ON RETURN CHANGE, AND ALL THREE CALLERS WERE CHECKED.
+                ; The old form left A = 0 on the fall-through; this one leaves
+                ; whatever the last TAPOUT byte was. basic/save.asm:354,
+                ; basic/sv-tsb.inc:37 and basic/sv-bsvcas.inc:43 each test CF
+                ; alone (`ret c` / `jp c,sv_load_error`) and go straight into
+                ; `call TAPOOF`. `or a` below still clears CF, which is the
+                ; documented half of the contract.
+                ld      hl,TSV_CNT
+                dec     (hl)
                 jr      nz,tne_loop
                 or      a                   ; CF = 0 (success)
                 ret

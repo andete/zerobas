@@ -5,7 +5,10 @@ Source of the pattern list: the WikiTI "Z80 Optimization" page (user, 2026-08-28
 A list of tricks is not a finding; the finding is HOW MANY BYTES EACH IS WORTH
 HERE. Two of the page's entries are already closed and are reported as such
 rather than re-counted:
-  * `jp`->`jr`            — D-JRSLICE/2, FULLY BANKED 2026-08-24
+  * `jp`->`jr`            — D-JRSLICE/2, and 🔴 NOT banked: it RENEWS.
+    Every insertion moves code and pulls fresh targets into range;
+    D-UPSTR read 19 convertible sites on 2026-09-05 in a class this
+    file had called closed since 2026-08-24. Run scratchpad/jr_mapper.py.
   * `call X`/`ld a,(hl)`  — D-RETLN/D-EVSPDUP, gated by tools/redundant_load_sweep.py
 
 🔴 EVERY HIT IS A CANDIDATE, NOT A CARVE. Most of these idioms CHANGE FLAGS, and
@@ -265,7 +268,8 @@ def main(argv):
     print(f"denominator: {len(files)} files, "
           f"{sum(len(v) for v in files.values())} instructions\n")
     print("ALREADY CLOSED, not re-counted:")
-    print("  jp -> jr                D-JRSLICE/2, FULLY BANKED 2026-08-24")
+    print("  jp -> jr                D-JRSLICE/2 -- 🔴 NOT banked, it RENEWS: "
+          "run scratchpad/jr_mapper.py, never quote a count")
     print("  call X / ld a,(hl)      D-RETLN/D-EVSPDUP, gated by "
           "tools/redundant_load_sweep.py\n")
 
@@ -300,7 +304,7 @@ def main(argv):
     print(f"  TOTAL ceiling: {sum(grand.values())} B "
           f"(a CEILING; FLAGS/REGS rows need each site read)")
     print()
-    print("BY REGION -- what the bytes are actually WORTH. Main's low region had"
+    print("🔴 THE REGION OF AN `.inc` IS ITS INCLUDE SITE, AND A BODY CAN HAVE TWO.\nbasic/sv-tne.inc is included into sub/save.asm AND basic/save.asm, so its\nbytes are in MAIN PAGE 1 as well -- this table filed it under sub and D-PEEPINC\nfound 3 B of main page 1 there that the by-region reading said was not available.\nSame shared-*-body.inc blindness D-JRSLICE hit from the other side.\nBY REGION -- what the bytes are actually WORTH. Main's low region had"
           "\n38 B free and page 1 124 B on 2026-08-28; sub had 2444 + 1622 B, so a"
           "\nsub-ROM byte is not a carve, it is a rounding error.")
     perreg = collections.Counter()
