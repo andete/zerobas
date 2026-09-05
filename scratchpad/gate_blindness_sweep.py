@@ -351,10 +351,18 @@ MUTS4 = {
 # A row NOT listed here that reddens is as interesting as one listed that does
 # not: the whole point of the exercise is which rows can move at all.
 PREDICT = {
-    "M-G8PAREN":   "every VDP()/BASE()/SPRITE$() index -> ERR 2: most of Q1, Q2 "
-                   "and the SPRITE$ half of N/P; Q3 ie_off too (VDP(1) never "
+    "M-G8PAREN":   "every VDP()/BASE()/SPRITE\u0024() index -> ERR 2: most of Q1, Q2 "
+                   "and the SPRITE\u0024 half of N/P; Q3 ie_off too (VDP(1) never "
                    "clears the IE bit). PUT SPRITE's own (x,y) is parse_coord, "
-                   "NOT this routine, so the attr_* rows should NOT move.",
+                   "NOT this routine, so the attr_* rows should NOT move. "
+                   "\U0001f7e2 AND Q3's CONTROL HOLDS -- it did NOT when this "
+                   "prediction was written, because the control shared the "
+                   "subject's `VDP(1)=VDP(1)OR32` restore and so ran the very "
+                   "statement under test. Fixed 2026-09-05 (D-Q3CTL) by giving "
+                   "the control no restore at all, which it never needed: it "
+                   "disabled nothing. Re-measured under this mutation -- ie_off "
+                   "FAILs (delta=None), control PASSes (delta=246) -- so the "
+                   "prediction is now satisfied instead of contradicted.",
     "M-PUTCOMMA":  "every PUT SPRITE that carries arguments -> ERR 2: all of N's "
                    "attr_* rows and O's put_* rows except put_bare/put_comma, "
                    "which are ERR 2 on both sides already.",

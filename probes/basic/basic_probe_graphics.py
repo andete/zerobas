@@ -1947,22 +1947,36 @@ def phase_q_teeth() -> int:
     hung/idle emulator would read as a pass."""
     fails = 0
     print("=== PHASE Q3: does VDP(n)= reach the CHIP? (TIME freeze) ===")
-    cases = [("ie_off", "VDP(1)=VDP(1)AND223"), ("control", "A=0")]
+    # 🔴 THE RESTORE IS PER-CASE, AND THAT IS THE WHOLE POINT (TODO, filed
+    # 2026-08-17 by D-GATEBLIND round 2 §9). Both cases used to share one
+    # template that ended `VDP(1)=VDP(1)OR32` — **the very statement under
+    # test** — so a mutation breaking `VDP(n)=` broke the CONTROL too and the
+    # pair could not tell "the emulator is dead" from "the subject is broken".
+    # `M-G8PAREN` reddened `control` alongside `ie_off`, which the sweep had
+    # predicted would hold. A control is only honest about the cell it READS
+    # [[girdom-slice]], and this one was executing the subject.
+    # 🎯 The fix needs no new machinery: the control never disabled interrupts,
+    # so it needs no restore at all. The line is now the case's own, and the
+    # control's is empty — the two programs differ only where they must.
+    # ⚠️ The restore sits AFTER the measurement in both, so dropping it for the
+    # control cannot move the reading it takes.
+    cases = [("ie_off", "VDP(1)=VDP(1)AND223", "VDP(1)=VDP(1)OR32"),
+             ("control", "A=0", "")]
     jiffy = "(PEEK(&HFC9E)+256*PEEK(&HFC9F))"
-    specs = [("stored", paint_mark([
-        f"POKE&H{G8_RES:04X},255",
-        f"SCREEN0:{stmt}",
-        f"T={jiffy}:FORI=1TO800:NEXT:D={jiffy}-T",
-        "VDP(1)=VDP(1)OR32",
-        f"POKE&H{G8_RES+1:04X},D-INT(D/256)*256:POKE&H{G8_RES:04X},0:END",
-    ])) for _, stmt in cases]
+    specs = [("stored", paint_mark(
+        [f"POKE&H{G8_RES:04X},255",
+         f"SCREEN0:{stmt}",
+         f"T={jiffy}:FORI=1TO800:NEXT:D={jiffy}-T"]
+        + ([restore] if restore else [])
+        + [f"POKE&H{G8_RES+1:04X},D-INT(D/256)*256:POKE&H{G8_RES:04X},0:END"]
+    )) for _, stmt, restore in cases]
     for mach in (REF, ZB):
         so = {}
         outs = omsx_repl.run_cases(mach, specs, batch=False, reset=(),
                                    capture=("mem_abs", [(G8_RES, 3)]),
                                    run_gap=25.0, **paint_sn(so))
         paint_tally(so)
-        for (label, stmt), o in zip(cases, outs):
+        for (label, stmt, _restore), o in zip(cases, outs):
             b = bytes.fromhex(o) if o else None
             delta = None if b is None or b[0] != 0 else b[1]
             want_zero = label == "ie_off"

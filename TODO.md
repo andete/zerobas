@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8184 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8199 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7387 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7402 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7387 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7402 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5555,6 +5555,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ([[girdom-slice]]) — and this one reads the subject. 💰 Give the control a
       restore that does not go through `VDP(n)=` (a `POKE` of the mirror plus a
       mode set), or state in the probe that Q3 is a pair, not a control.
+      ✅ **FIXED 2026-09-05 (D-Q3CTL), and it needed NO new machinery — nor
+      either of the two remedies suggested above.** The control never disabled
+      interrupts, so **it needs no restore at all**: the line was pure ceremony
+      inherited from a shared template. The restore is now the case's own
+      (`ie_off` keeps `VDP(1)=VDP(1)OR32`, the control's is empty), so the two
+      programs differ only where they must. ⚠️ The restore sits AFTER the
+      measurement in both, so dropping it cannot move the reading the control
+      takes — and it does not: `delta=62` / `246`, unchanged.
+      🔬 **RE-RUN OF THE VERY MUTATION THAT EXPOSED IT.** Under `M-G8PAREN`,
+      `C-BIOS ie_off` now **FAILs** (`delta=None`) while `C-BIOS control` still
+      **PASSes** (`delta=246`). Before, both moved. The pair can now tell "the
+      emulator is dead" from "the subject is broken", which is the whole job of a
+      control. The sweep's own PREDICT for `M-G8PAREN` already said "Q3 ie_off
+      too", implying the control holds — that prediction is now satisfied instead
+      of contradicted.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [x] ✅ **`M-SPRPBASE` AND `M-SPRSZAPL` EACH HAVE ONE ROW THAT *SHOULD* SEE THEM
