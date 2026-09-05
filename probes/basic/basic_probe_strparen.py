@@ -169,6 +169,15 @@ def face(raw: str | None) -> str:
     i, j = txt.find("["), txt.find("]", txt.find("[") + 1)
     if i >= 0 and j > i:
         return txt[i + 1:j]
+    # 🔴 THE SCREEN HAD TEXT AND THE ALPHABET COULD NOT NAME IT (D-ALPHAGATE).
+    # That is a fault in THIS PROBE, not a missing reading, and it must not wear
+    # `<NO OUTPUT>`'s clothes -- that sentinel routes the row to "without a
+    # reference", a sentence about the MACHINE that reads as "nothing to see".
+    # `Missing operand` was absent from three separate alphabets and cost real
+    # readings each time. Carry the text so the next omission is loud
+    # [[an-unnamed-outcome-reads-as-no-outcome]].
+    if txt.replace("Ok", "").strip():
+        return f"<UNREADABLE: {txt.strip()[:48]}>"
     return "<NO OUTPUT>"
 
 

@@ -254,7 +254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8511 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8548 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -318,7 +318,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2007 (T-6FE392)8 (T-529ABE)` from `TODO.md:7714 (T-529ABE)`: a
+      `TODO.md:2007 (T-6FE392)8 (T-529ABE)` from `TODO.md:7751 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2335,6 +2335,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       cannot drift per-probe again.
       🤖 AUTONOMOUS — the alphabet is derivable from the ROM source and each
       probe's own rows are the control.
+      🟢 **BOTH OPEN HALVES DONE (D-ALPHAGATE, 2026-09-05), AND THE FILED
+      COUNT WAS WRONG IN THE SAFE DIRECTION.**
+      📏 **"THE OTHER 18" WAS 4.** Walked with an AST sweep for the actual
+      shape — a function that iterates an error alphabet AND can return a bare
+      sentinel — not for `grep '"Type mismatch"'`, which counts comments and
+      probes with no classifier at all. **16 such classifiers exist; 12 already
+      had the arm**; the four that did not were `basic_probe_namspc.py`'s
+      `bracket()`, `errface()` and `listface()` and `basic_probe_strparen.py`'s
+      `face()`. All four now carry it; the sweep re-reads **0**.
+      🎯 **`listface()` WAS THE INTERESTING ONE**: its miss-face is `<none>`,
+      i.e. *"the listing ended cleanly"* — so an unmodelled screen would have
+      been reported as a clean directory listing, not as a silence. Its arm
+      subtracts the directory lines first, or every `FILES` row would read
+      unreadable.
+      ➡️ **ONE SHARED, DERIVED ALPHABET EXISTS**:
+      [`probes/lib/errmsg_alphabet.py`](probes/lib/errmsg_alphabet.py) reads the
+      messages out of `sub/errmsg.asm` **and** the escape-encoded main-ROM
+      strings, expanding `MSGESC_*` from the `equ` comments in
+      [`basic/sysvars.inc`](basic/sysvars.inc) rather than restating them — 39
+      messages, with known-answer arms including a NEGATIVE one for the
+      `Field overflow`/`FIELD overflow` casing that started this.
+      🟢 **AND THE CASING CLASS MEASURES EMPTY TODAY — a negative result this
+      entry did not have.** The sweep raised 58 literals differing from the ROM
+      by case; **57 are the case-folding idiom** (`"type mismatch" in
+      txt.lower()`), and the 58th, `basic_probe_fldwidth.py`'s `File not open`,
+      is **correct**: that probe folds case ON PURPOSE because `File not OPEN`
+      vs `File not open` is D-MSGEXACT's separately-owned surface. 🔴 **The first
+      cut of the advisory printed all 58** — an advisory that loud is one nobody
+      reads, which is the same instrument failure by another route
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🔒 `make error-alphabet-check` keeps both halves: RED on a classifier with
+      no UNREADABLE arm (6 arms, two of which are the shape that was broken),
+      ADVISORY on spelling. 💰 0 ROM bytes.
+      ⚠️ **NOT DONE: the 12 existing classifiers still each own their own list.**
+      The gate makes an omission LOUD rather than impossible, which is the
+      bounded fix; a single shared `classify()` now exists for the next probe to
+      use, and retrofitting the 12 is unpriced. **The item stays open for that.**
       [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
 
 - [x] 🟢 **`ON ERROR GOTO`'s OPERAND STAGE — FIXED 2026-09-02 (D-ONERRGO), AND
@@ -2608,7 +2645,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7714 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7751 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

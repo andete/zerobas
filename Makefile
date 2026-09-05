@@ -3102,6 +3102,21 @@ todo-marker-check:
 deferral-pin-check:
 	python3 tools/check_deferral_pins.py
 
+# D-ALPHAGATE. A probe classifies error text against a literal alphabet, and
+# anything absent used to fall through to `<NO OUTPUT>` -- which routes the row to
+# "without a reference", a sentence about the MACHINE for a fault in the PROBE.
+# `Missing operand` was missing from three separate alphabets and cost real
+# readings each time. 🎯 This does NOT demand a complete alphabet (a probe names
+# only the faces its rows produce, and the REFERENCES print messages zerobas has
+# no string for): it demands the property that makes an omission LOUD -- an
+# UNREADABLE arm carrying the text. Spelling drift against the ROM's own tables
+# is reported ADVISORY, because two probes case-fold ON PURPOSE (D-MSGEXACT).
+# The alphabet is DERIVED from sub/errmsg.asm + the escape-encoded main strings
+# by probes/lib/errmsg_alphabet.py, whose own known-answer arms run from here.
+# <1 s, read-only, no emulator.
+error-alphabet-check:
+	python3 tools/check_error_alphabet.py
+
 # Three items filed "and nothing checks it" and each proposed its own cheap
 # checker. They are ONE property, not three subjects: a shared helper exists
 # BECAUSE the obvious hand-written version was measured wrong, so writing the
@@ -3182,7 +3197,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check \
+        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check \
         chokepoint-check banner-acceptance wall-literal-check \
         patch-freshness-check gates clean
 

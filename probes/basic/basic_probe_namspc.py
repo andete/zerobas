@@ -1164,6 +1164,15 @@ def bracket(raw: str | None) -> str:
     for e in ERRORS:
         if e in txt:
             return f"<{e}>"
+    # 🔴 THE SCREEN HAD TEXT AND THE ALPHABET COULD NOT NAME IT (D-ALPHAGATE).
+    # That is a fault in THIS PROBE, not a missing reading, and it must not wear
+    # `<NO OUTPUT>`'s clothes -- that sentinel routes the row to "without a
+    # reference", a sentence about the MACHINE that reads as "nothing to see".
+    # `Missing operand` was absent from three separate alphabets and cost real
+    # readings each time. Carry the text so the next omission is loud
+    # [[an-unnamed-outcome-reads-as-no-outcome]].
+    if txt.replace("Ok", "").strip():
+        return f"<UNREADABLE: {txt.strip()[:48]}>"
     return "<NO OUTPUT>"
 
 
@@ -1192,6 +1201,15 @@ def errface(raw: str | None) -> str:
     i, j = txt.find("["), txt.find("]", txt.find("[") + 1)
     if i >= 0 and j > i:
         return txt[i + 1:j]
+    # 🔴 THE SCREEN HAD TEXT AND THE ALPHABET COULD NOT NAME IT (D-ALPHAGATE).
+    # That is a fault in THIS PROBE, not a missing reading, and it must not wear
+    # `<NO OUTPUT>`'s clothes -- that sentinel routes the row to "without a
+    # reference", a sentence about the MACHINE that reads as "nothing to see".
+    # `Missing operand` was absent from three separate alphabets and cost real
+    # readings each time. Carry the text so the next omission is loud
+    # [[an-unnamed-outcome-reads-as-no-outcome]].
+    if txt.replace("Ok", "").strip():
+        return f"<UNREADABLE: {txt.strip()[:48]}>"
     return "<NO OUTPUT>"
 
 
@@ -1241,6 +1259,14 @@ def listface(raw: str | None) -> str:
         i, j = txt.find("["), txt.find("]", txt.find("[") + 1)
         if i >= 0 and j > i:
             face = txt[i + 1:j]
+        # 🔴 THE SCREEN HAD TEXT AND NEITHER THE ALPHABET NOR A `[...]` SPAN
+        # COULD NAME IT (D-ALPHAGATE). `<none>` here would say "the listing ended
+        # cleanly" about a screen carrying something nobody modelled -- the same
+        # shape as this function's own `<File not found>`-alone bug above, where
+        # a readout blind to part of its subject failed by AGREEING. Subtract the
+        # directory lines first, or every FILES row would look unreadable.
+        elif DIRENT.sub("", txt).replace("Ok", "").strip():
+            face = f"<UNREADABLE: {DIRENT.sub('', txt).strip()[:48]}>"
     return f"{n} entries + {face}"
 
 
